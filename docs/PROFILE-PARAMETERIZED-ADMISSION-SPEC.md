@@ -44,6 +44,7 @@ The closest unsupported claim is arbitrary serial composition. Admission does no
 | BPMN resumption-bounded User Task cycle (`bpmn-2.0.2-user-task-cycle-draft`) | 1 | one `initiate`, one three-input `mergeExclusive`, one `awaitUserTask`, one `choose`, one `reachNoneEnd`, one `completeScope` |
 | BPMN interrupting Activity boundary Timer (`bpmn-2.0.2-activity-boundary-timer-draft`) | 1 | one `initiate`, one `awaitBoundedUserTask`, two `awaitUserTask`, two `reachNoneEnd`, one `completeScope` |
 | BPMN Activity data-input User Task (`bpmn-2.0.2-activity-data-input-user-task-draft`) | 1 | one `initiate`, one `awaitDataInputUserTask`, one `reachNoneEnd`, one `completeScope` |
+| BPMN Activity data-output User Task (`bpmn-2.0.2-activity-data-output-user-task-draft`) | 1 | one `initiate`, one `awaitDataOutputUserTask`, one `reachNoneEnd`, one `completeScope` |
 | BPMN sequential Multi-Instance User Task (`bpmn-2.0.2-sequential-multi-instance-user-task-draft`) | 1 | one `initiate`, one `awaitSequentialMultiInstanceUserTask`, one `awaitUserTask`, two `reachNoneEnd`, one `completeScope` |
 | BPMN parallel Multi-Instance User Task (`bpmn-2.0.2-parallel-multi-instance-user-task-draft`) | 1 | one `initiate`, one `awaitParallelMultiInstanceUserTask`, one `completeParallelMultiInstanceUserTask`, one `awaitUserTask`, two `reachNoneEnd`, one `completeScope` |
 | BPMN non-interrupting boundary Timer (`bpmn-2.0.2-non-interrupting-boundary-timer-draft`) | 1 | one `initiate`, one `awaitMonitoredUserTask`, two `awaitUserTask`, two `reachNoneEnd`, one `completeScope` |

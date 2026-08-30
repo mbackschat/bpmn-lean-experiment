@@ -206,6 +206,15 @@ function lowerNode(
         task: { elementId: node.id, name: node.name },
         directInput: node.directInput,
       });
+    case CheckedNodeKind.DataOutputUserTask:
+      return scoped({
+        ...base,
+        kind: SemanticOperationKind.AwaitDataOutputUserTask,
+        input: requireOnly(incoming, node.id, "incoming"),
+        output: requireOnly(outgoing, node.id, "outgoing"),
+        task: { elementId: node.id, name: node.name },
+        directOutput: node.directOutput,
+      });
     case CheckedNodeKind.SequentialMultiInstanceUserTask:
       return scoped(lowerSequentialMultiInstanceUserTask(node, source));
     case CheckedNodeKind.ParallelMultiInstanceUserTask:

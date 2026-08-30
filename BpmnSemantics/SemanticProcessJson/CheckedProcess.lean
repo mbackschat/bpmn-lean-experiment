@@ -91,6 +91,17 @@ private def decodeDirectActivityDataInput (json : Json) :
       targetDataInputId := ← stringField json "targetDataInputId"
       targetDataInputName := ← decodeOptionalString (← field json "targetDataInputName") }
 
+/-- Decode one direct Data Output Association's exact source identities. -/
+private def decodeDirectActivityDataOutput (json : Json) :
+    Except String DirectActivityDataOutput := do
+  requireObjectShape json
+    ["associationId", "sourceDataOutputId", "sourceDataOutputName", "targetPropertyId"]
+  pure
+    { associationId := ← stringField json "associationId"
+      sourceDataOutputId := ← stringField json "sourceDataOutputId"
+      sourceDataOutputName := ← decodeOptionalString (← field json "sourceDataOutputName")
+      targetPropertyId := ← stringField json "targetPropertyId" }
+
 private def decodeSequentialMultiInstanceInput (json : Json) :
     Except String SequentialMultiInstanceInputDefinition := do
   requireObjectShape json
@@ -197,6 +208,13 @@ private def decodeCheckedNode (json : Json) : Except String CheckedNode := do
           ⟨← stringField json "id"⟩
           (← decodeOptionalString (← field json "name"))
           (← decodeDirectActivityDataInput (← field json "directInput")))
+  | "dataOutputUserTask" =>
+      requireObjectShape json ["directOutput", "id", "kind", "name"]
+      pure
+        (.dataOutputUserTask
+          ⟨← stringField json "id"⟩
+          (← decodeOptionalString (← field json "name"))
+          (← decodeDirectActivityDataOutput (← field json "directOutput")))
   | "sequentialMultiInstanceUserTask" =>
       requireObjectShape json
         ["boundaryTimer", "id", "input", "kind", "name", "normalOutputFlowId",

@@ -440,6 +440,7 @@ def timerWaitDeclarers (program : Program) (elementId : NodeId) : List SemanticO
     | .returnProcess ..
     | .awaitUserTask ..
     | .awaitDataInputUserTask ..
+    | .awaitDataOutputUserTask ..
     | .completeParallelMultiInstanceUserTask ..
     | .awaitMessage ..
     | .awaitEffect ..
@@ -470,6 +471,7 @@ def messageWaitDeclarers (program : Program) (elementId : NodeId) : List Semanti
     | .returnProcess ..
     | .awaitUserTask ..
     | .awaitDataInputUserTask ..
+    | .awaitDataOutputUserTask ..
     | .awaitSequentialMultiInstanceUserTask ..
     | .awaitParallelMultiInstanceUserTask ..
     | .completeParallelMultiInstanceUserTask ..
@@ -499,7 +501,8 @@ def userTaskWaitDeclarers (program : Program) (taskId : TaskDefinitionId) :
         decide (task.id = taskId)
     | .awaitParallelMultiInstanceUserTask _ _ _ candidateTaskId _ _ _ _ _ _ =>
         decide (candidateTaskId = taskId)
-    | .awaitDataInputUserTask _ _ _ _ candidateTaskId _ _ =>
+    | .awaitDataInputUserTask _ _ _ _ candidateTaskId _ _
+    | .awaitDataOutputUserTask _ _ _ _ candidateTaskId _ _ =>
         decide (candidateTaskId = taskId)
     | .initiate ..
     | .initiateMessage ..
@@ -537,6 +540,7 @@ def effectWaitDeclarers (program : Program) (elementId : NodeId) : List Semantic
     | .returnProcess ..
     | .awaitUserTask ..
     | .awaitDataInputUserTask ..
+    | .awaitDataOutputUserTask ..
     | .awaitSequentialMultiInstanceUserTask ..
     | .awaitParallelMultiInstanceUserTask ..
     | .completeParallelMultiInstanceUserTask ..

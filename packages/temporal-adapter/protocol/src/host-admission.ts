@@ -213,6 +213,9 @@ function classifyHostOperation(
     case SemanticOperationKind.InvokeProcess:
     case SemanticOperationKind.ReturnProcess:
     case SemanticOperationKind.AwaitUserTask:
+    // Passive for the plain reason: entry consumes a token and arms no deadline, and the declared
+    // OutputSet becomes an obligation only once a completion command arrives.
+    case SemanticOperationKind.AwaitDataOutputUserTask:
     // Passive because the host schedules nothing for it: its readiness is decided entirely inside the
     // semantic core from committed Process data, and it arms no deadline or host-visible effect.
     case SemanticOperationKind.AwaitDataInputUserTask:

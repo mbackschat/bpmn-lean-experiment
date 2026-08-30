@@ -88,6 +88,26 @@ const writerRecords = new Map<string, WriterRecord>([
       markers: ["theorem completeDataInputUserTask_activity_identity_discipline"],
     },
   }],
+  ["BpmnSemantics/SemanticProcess/ActivityDataOutput.lean#activateDataOutputUserTask?@1", {
+    classification: WriterClassification.Issuer,
+    claimPreservation: ClaimPreservation.DisjointInsertion,
+    evidence: {
+      relativePath: "BpmnSemantics/SemanticProcess/ActivityDataOutput.lean",
+      markers: ["theorem activateDataOutputUserTask_issues_fresh_activity"],
+    },
+    claimEvidence: {
+      relativePath: "BpmnSemantics/SemanticProcess/ActivityBodyClaimWriterPreservation.lean",
+      markers: ["theorem activateDataOutputUserTask_preserves_activityBodyClaimsUnique"],
+    },
+  }],
+  ["BpmnSemantics/SemanticProcess/ActivityDataOutput.lean#completeDataOutputUserTask?@1", {
+    classification: WriterClassification.IdentityRemoving,
+    claimPreservation: ClaimPreservation.Removal,
+    evidence: {
+      relativePath: "BpmnSemantics/SemanticProcess/ActivityDataOutput.lean",
+      markers: ["theorem completeDataOutputUserTask_activity_identity_discipline"],
+    },
+  }],
   ["BpmnSemantics/SemanticProcess/BoundedScope.lean#BoundedScopeVictoryStep@1", {
     classification: WriterClassification.IdentityRemoving,
     claimPreservation: ClaimPreservation.Removal,
@@ -271,6 +291,28 @@ const writerRecords = new Map<string, WriterRecord>([
     },
   }],
   ["packages/semantic-core/src/semantic-process-activity-data-input-runtime.ts#completeDataInputUserTask@1", {
+    classification: WriterClassification.IdentityRemoving,
+    claimPreservation: ClaimPreservation.Removal,
+  }],
+  ["packages/semantic-core/src/semantic-process-activity-data-output-runtime.ts#armDataOutputUserTask@1", {
+    classification: WriterClassification.Issuer,
+    claimPreservation: ClaimPreservation.DisjointInsertion,
+    evidence: {
+      relativePath: "packages/semantic-core/test/activity-data-output.test.ts",
+      markers: [
+        "runtimeStateRegressions(initialState, state)",
+        "RuntimeStateRegression.ActivityOccurrenceIssue",
+      ],
+    },
+    claimEvidence: {
+      relativePath: "packages/semantic-core/test/activity-data-output.test.ts",
+      markers: [
+        "RuntimeStateDefect.DuplicateActivityBodyClaim",
+        "data-output arming inserts a disjoint Activity body claim",
+      ],
+    },
+  }],
+  ["packages/semantic-core/src/semantic-process-activity-data-output-runtime.ts#completeDataOutputUserTask@1", {
     classification: WriterClassification.IdentityRemoving,
     claimPreservation: ClaimPreservation.Removal,
   }],

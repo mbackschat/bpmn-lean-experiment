@@ -341,6 +341,7 @@ function waitMatchesUserTask(
           operation.task.name === wait.name &&
           sameJson(operation.task.metadata, wait.metadata);
       case SemanticOperationKind.AwaitDataInputUserTask:
+      case SemanticOperationKind.AwaitDataOutputUserTask:
         return operation.task.elementId === wait.id.elementId &&
           operation.output === wait.output &&
           operation.task.name === wait.name &&

@@ -344,6 +344,16 @@ private def lowerNode (source : CheckedProcess) :
         ⟨id.value⟩
         name
         directInput, scopeId)
+  | .dataOutputUserTask id name directOutput =>
+      checkedNodeScopeId? source id |>.map fun scopeId =>
+      (.awaitDataOutputUserTask
+        (nodeOperationId id)
+        { elementId := id }
+        (firstPlace (incomingPlaces source id))
+        (firstPlace (outgoingPlaces source id))
+        ⟨id.value⟩
+        name
+        directOutput, scopeId)
   | .sequentialMultiInstanceUserTask id name input output normalOutputFlowId boundaryTimer =>
       checkedNodeScopeId? source id |>.map fun scopeId =>
       (.awaitSequentialMultiInstanceUserTask

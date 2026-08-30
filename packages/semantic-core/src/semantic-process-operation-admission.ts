@@ -101,6 +101,60 @@ function isWellFormedAwaitDataInputUserTaskOperation(
   return new Set(identities).size === identities.length;
 }
 
+/**
+ * The direct Data Output Association arm of one output-bearing User Task entry operation.
+ *
+ * The four identities are the exact source identities the completion resolves by, so they must be
+ * present and mutually distinct. `sourceDataOutputId` and `targetPropertyId` differing is the
+ * load-bearing one: equal ids would make a routed write and a name-merged write indistinguishable,
+ * which is precisely the confusion this family exists to rule out.
+ */
+function isWellFormedAwaitDataOutputUserTaskOperation(
+  value: Record<string, unknown>,
+  placeIds: ReadonlySet<string>,
+): boolean {
+  if (
+    !hasOnlyKeys(value, [
+      "id",
+      "kind",
+      "origin",
+      "input",
+      "output",
+      "task",
+      "directOutput",
+    ]) ||
+    !isPlaceReference(value.input, placeIds) ||
+    !isPlaceReference(value.output, placeIds) ||
+    value.input === value.output ||
+    !isRecord(value.task) ||
+    !hasOnlyKeys(value.task, ["elementId", "name"]) ||
+    !isRecord(value.origin) ||
+    !isNonEmptyString(value.task.elementId) ||
+    value.task.elementId !== value.origin.elementId ||
+    !isOptionalName(value.task.name) ||
+    !isRecord(value.directOutput) ||
+    !hasOnlyKeys(value.directOutput, [
+      "associationId",
+      "sourceDataOutputId",
+      "sourceDataOutputName",
+      "targetPropertyId",
+    ]) ||
+    !isNonEmptyString(value.directOutput.associationId) ||
+    !isNonEmptyString(value.directOutput.sourceDataOutputId) ||
+    !isOptionalName(value.directOutput.sourceDataOutputName) ||
+    !isNonEmptyString(value.directOutput.targetPropertyId)
+  ) {
+    return false;
+  }
+  const identities = [
+    value.task.elementId,
+    value.directOutput.associationId,
+    value.directOutput.sourceDataOutputId,
+    value.directOutput.targetPropertyId,
+  ];
+  return new Set(identities).size === identities.length;
+}
+
 /** A BPMN `name` this profile admits: physically absent as `null`, or a nonempty string. */
 function isOptionalName(value: unknown): boolean {
   return value === null || isNonEmptyString(value);
@@ -184,6 +238,8 @@ export function isWellFormedSemanticOperation(
       );
     case SemanticOperationKind.AwaitDataInputUserTask:
       return isWellFormedAwaitDataInputUserTaskOperation(value, placeIds);
+    case SemanticOperationKind.AwaitDataOutputUserTask:
+      return isWellFormedAwaitDataOutputUserTaskOperation(value, placeIds);
     case SemanticOperationKind.AwaitSequentialMultiInstanceUserTask:
       return isWellFormedAwaitSequentialMultiInstanceUserTaskOperation(
         value,

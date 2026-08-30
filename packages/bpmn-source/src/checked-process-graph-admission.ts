@@ -150,6 +150,7 @@ function hasSelectedArity(
     case CheckedNodeKind.CallActivity:
     case CheckedNodeKind.UserTask:
     case CheckedNodeKind.DataInputUserTask:
+    case CheckedNodeKind.DataOutputUserTask:
     case CheckedNodeKind.SequentialMultiInstanceUserTask:
     case CheckedNodeKind.ParallelMultiInstanceUserTask:
     case CheckedNodeKind.IntermediateCatchTimerEvent:

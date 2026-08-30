@@ -16,6 +16,7 @@ import BpmnSemantics.SemanticProcess.CyclicControlFlow
 import BpmnSemantics.SemanticProcess.Transition
 import BpmnSemantics.SemanticProcess.BoundedTask
 import BpmnSemantics.SemanticProcess.ActivityDataInput
+import BpmnSemantics.SemanticProcess.ActivityDataOutput
 import BpmnSemantics.SemanticProcess.EventBasedGateway
 import BpmnSemantics.SemanticProcess.ErrorPropagation
 import BpmnSemantics.SemanticProcess.Message

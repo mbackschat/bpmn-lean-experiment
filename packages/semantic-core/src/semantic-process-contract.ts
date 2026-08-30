@@ -10,6 +10,7 @@
  * The program is immutable; runtime state lives in `semantic-process-state.ts`.
  */
 import type { DirectActivityDataInput } from "./activity-data-input-contract.js";
+import type { DirectActivityDataOutput } from "./activity-data-output-contract.js";
 import type { DeepReadonly } from "./deep-readonly.js";
 import type { SourceOverlayIdentity } from "./source-overlay-identity.js";
 import type { UserTaskMetadata } from "./user-task-metadata.js";
@@ -55,6 +56,7 @@ export enum SemanticOperationKind {
   ReturnProcess = "returnProcess",
   AwaitUserTask = "awaitUserTask",
   AwaitDataInputUserTask = "awaitDataInputUserTask",
+  AwaitDataOutputUserTask = "awaitDataOutputUserTask",
   AwaitSequentialMultiInstanceUserTask = "awaitSequentialMultiInstanceUserTask",
   AwaitParallelMultiInstanceUserTask = "awaitParallelMultiInstanceUserTask",
   CompleteParallelMultiInstanceUserTask = "completeParallelMultiInstanceUserTask",
@@ -317,6 +319,28 @@ export type AwaitDataInputUserTaskOperation = OperationBase &
     directInput: DirectActivityDataInput;
   }>;
 
+/**
+ * One User Task occurrence whose accepted completion writes one declared Activity data output.
+ *
+ * Separate from `awaitDataInputUserTask` because the two constrain opposite ends of the occurrence:
+ * that arm decides whether the task may become active, while this one leaves entry token-only and
+ * decides what an accepted completion must carry. Firing this arm arms an empty Activity-owned local
+ * scope and an Activity occurrence record; the completion fills the scope under
+ * `directOutput.sourceDataOutputId`, executes the association into the Process binding named by
+ * `directOutput.targetPropertyId`, and disposes the scope in the same transition.
+ */
+export type AwaitDataOutputUserTaskOperation = OperationBase &
+  DeepReadonly<{
+    kind: SemanticOperationKind.AwaitDataOutputUserTask;
+    input: string;
+    output: string;
+    task: {
+      elementId: string;
+      name: string | null;
+    };
+    directOutput: DirectActivityDataOutput;
+  }>;
+
 export type AwaitSequentialMultiInstanceUserTaskOperation = OperationBase &
   DeepReadonly<{
     kind: SemanticOperationKind.AwaitSequentialMultiInstanceUserTask;
@@ -441,6 +465,7 @@ export type SemanticOperation =
         };
       }>)
   | AwaitDataInputUserTaskOperation
+  | AwaitDataOutputUserTaskOperation
   | AwaitBoundedUserTaskOperation
   | AwaitMonitoredUserTaskOperation
   | AwaitSequentialMultiInstanceUserTaskOperation

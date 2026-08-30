@@ -90,7 +90,8 @@ def effectWaitDeclarationKey (elementId : NodeId) : WaitDeclarationKey :=
 key per family because runtime well-formedness validates each wait family independently. -/
 def operationWaitDeclarationKeys : SemanticOperation → List WaitDeclarationKey
   | .awaitUserTask _ _ _ _ task => [userTaskWaitDeclarationKey task.id]
-  | .awaitDataInputUserTask _ _ _ _ taskId _ _ =>
+  | .awaitDataInputUserTask _ _ _ _ taskId _ _
+  | .awaitDataOutputUserTask _ _ _ _ taskId _ _ =>
       [userTaskWaitDeclarationKey taskId]
   | .awaitBoundedUserTask _ _ _ task boundaryTimer
   | .awaitMonitoredUserTask _ _ _ task boundaryTimer =>
@@ -213,6 +214,23 @@ private def operationWellFormed (program : Program) (places : List ControlPlace)
         decide (origin.elementId.value = taskId.value) &&
         decide (taskName ≠ some "") &&
         decide (directInput.targetDataInputName ≠ some "") &&
+        decide (input ≠ output) &&
+        placeExists places input &&
+        placeExists places output
+  -- The direct-output identities are exact source identities the completion resolves by. Distinct
+  -- DataOutput and Property ids are the load-bearing pair: equal ids would make a routed write and a
+  -- name-merged write indistinguishable.
+  | .awaitDataOutputUserTask id origin input output taskId taskName directOutput =>
+      let identities :=
+        [taskId.value, directOutput.associationId, directOutput.sourceDataOutputId,
+          directOutput.targetPropertyId]
+      nonempty id.value &&
+        nonempty origin.elementId.value &&
+        identities.all nonempty &&
+        identities.eraseDups.length = identities.length &&
+        decide (origin.elementId.value = taskId.value) &&
+        decide (taskName ≠ some "") &&
+        decide (directOutput.sourceDataOutputName ≠ some "") &&
         decide (input ≠ output) &&
         placeExists places input &&
         placeExists places output
@@ -572,6 +590,7 @@ theorem programWellFormed_internalArm_element_nonempty (program : Program)
     (match operation with
     | .awaitUserTask _ _ _ _ task => !task.id.value.isEmpty
     | .awaitDataInputUserTask _ _ _ _ taskId _ _ => !taskId.value.isEmpty
+    | .awaitDataOutputUserTask _ _ _ _ taskId _ _ => !taskId.value.isEmpty
     | .awaitMessage _ _ _ _ message => !message.elementId.value.isEmpty
     | .awaitTimer _ _ _ _ timer => !timer.elementId.value.isEmpty
     | .awaitEffect _ _ _ _ effect _ => !effect.elementId.value.isEmpty

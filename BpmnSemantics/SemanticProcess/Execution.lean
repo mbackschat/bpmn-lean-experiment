@@ -179,6 +179,8 @@ theorem user_task_completion_with_same_successor_is_equal
       ⟨submittedTaskId.elementId.value⟩ = none)
     (noDataInputTask : isDataInputTaskDefinition program
       ⟨submittedTaskId.elementId.value⟩ = false)
+    (noDataOutputTask : isDataOutputTaskDefinition program
+      ⟨submittedTaskId.elementId.value⟩ = false)
     (ordinaryProgram : isCallActivityProgram program = false)
     (leftNoIncidents : leftState.effectIncidents = [])
     (rightNoIncidents : rightState.effectIncidents = [])
@@ -195,7 +197,7 @@ theorem user_task_completion_with_same_successor_is_equal
   simp [applyStimulus, admitStimulus, dispatchStimulus, leftNoIncidents,
     rightNoIncidents, leftRunning, rightRunning,
     ordinaryTask.1, ordinaryTask.2, noSequentialMultiInstance, noParallelMultiInstance,
-    noDataInputTask, ordinaryProgram, valuesAdmitted,
+    noDataInputTask, noDataOutputTask, ordinaryProgram, valuesAdmitted,
     leftCompletion, rightCompletion]
 
 /-- Any ordinary-family mismatch in the full semantic task-occurrence identity rejects completion with exact state preservation. -/
@@ -231,7 +233,8 @@ theorem task_identity_mismatch_is_rejected
       exact processMismatch exactMatch.1.1.symm
     simp [applyStimulus, admitStimulus, dispatchStimulus, completeUserTask, initialState,
       completeBoundedUserTask?, completeMonitoredUserTask?, completeDataInputUserTask?,
-      dataInputTaskWait?,
+      completeDataOutputUserTask?, isDataOutputTaskDefinition, dataOutputAssociation?,
+      dataOutputTaskOperations, dataOutputTaskWait?, dataInputTaskWait?,
       singletonWaitingState, noSequentialMultiInstance, noParallelMultiInstance, noMatch]
   · rcases remainingMismatch with elementMismatch | activationMismatch
     · have noMatch : ¬ (
@@ -243,7 +246,8 @@ theorem task_identity_mismatch_is_rejected
           (congrArg TaskDefinitionId.value exactMatch.1.2).symm
       simp [applyStimulus, admitStimulus, dispatchStimulus, completeUserTask, initialState,
         completeBoundedUserTask?, completeMonitoredUserTask?, completeDataInputUserTask?,
-      dataInputTaskWait?,
+      completeDataOutputUserTask?, isDataOutputTaskDefinition, dataOutputAssociation?,
+      dataOutputTaskOperations, dataOutputTaskWait?, dataInputTaskWait?,
         singletonWaitingState, noSequentialMultiInstance, noParallelMultiInstance, noMatch]
     · have noMatch : ¬ (
           (wait.processInstanceId = submittedTaskId.processInstanceId ∧
@@ -253,7 +257,8 @@ theorem task_identity_mismatch_is_rejected
         exact activationMismatch exactMatch.2.symm
       simp [applyStimulus, admitStimulus, dispatchStimulus, completeUserTask, initialState,
         completeBoundedUserTask?, completeMonitoredUserTask?, completeDataInputUserTask?,
-      dataInputTaskWait?,
+      completeDataOutputUserTask?, isDataOutputTaskDefinition, dataOutputAssociation?,
+      dataOutputTaskOperations, dataOutputTaskWait?, dataInputTaskWait?,
         singletonWaitingState, noSequentialMultiInstance, noParallelMultiInstance, noMatch]
 
 /-- Any generic timer-family mismatch in the full occurrence identity or exact logical deadline rejects firing with exact state preservation. This one law covers both early and late firing. -/

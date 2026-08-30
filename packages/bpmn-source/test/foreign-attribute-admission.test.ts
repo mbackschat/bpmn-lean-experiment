@@ -339,6 +339,16 @@ const dispatchFixtures = {
     semanticProfile: SemanticProfileId.ActivityDataInputUserTask,
     find: '<bpmn:startEvent id="StartEvent_Review"',
   },
+  activityDataOutputUserTask: {
+    path: "the Activity data-output reader",
+    source: new URL(
+      "../../../scenarios/activity-data-output-user-task/process.bpmn",
+      import.meta.url,
+    ),
+    sourceId: "activity-data-output-user-task",
+    semanticProfile: SemanticProfileId.ActivityDataOutputUserTask,
+    find: '<bpmn:startEvent id="StartEvent_Application"',
+  },
 } as const satisfies Record<CompilationDispatchId, DispatchFixture>;
 
 test("applies foreign-attribute admission through every registered compilation dispatch", async () => {

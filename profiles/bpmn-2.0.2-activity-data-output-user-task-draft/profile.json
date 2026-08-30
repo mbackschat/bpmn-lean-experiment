@@ -1,0 +1,99 @@
+{
+  "kind": "semanticProfile",
+  "id": "bpmn-2.0.2-activity-data-output-user-task-draft",
+  "status": "draft",
+  "claim": "bpmn-2.0.2-one-required-direct-activity-data-output-on-one-user-task",
+  "normativeAuthority": {
+    "name": "OMG Business Process Model and Notation",
+    "version": "2.0.2",
+    "references": [
+      "Clause 10.4.1",
+      "Clause 10.4.2",
+      "Clause 13.3.2",
+      "Clause 13.3.7",
+      "Table 10.57",
+      "Table 10.58",
+      "Table 10.59",
+      "Table 10.61",
+      "Table 10.62",
+      "Table 10.64"
+    ]
+  },
+  "bpmn": {
+    "process": "private-executable",
+    "features": [
+      "none-start-event",
+      "process-owned-property",
+      "activity-data-output-user-task",
+      "one-required-scalar-data-output",
+      "empty-input-set",
+      "one-output-set",
+      "direct-process-property-data-output-association",
+      "data-independent-activity-entry",
+      "association-routed-process-property-write",
+      "activity-occurrence-owned-data-output-lifetime",
+      "unavailable-required-output-refuses-completion",
+      "user-task-string-null-completion-data",
+      "user-task-discovery",
+      "user-task-instance-completion",
+      "none-end-event",
+      "sequence-flow",
+      "process-completion"
+    ],
+    "extensions": [],
+    "relationships": [
+      "CIB-AGR-0001",
+      "CIB-OP-0001"
+    ]
+  },
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "comparison": {
+    "trace": "exact-after-canonical-projection",
+    "semanticConcurrency": false
+  },
+  "excluded": [
+    "data-input",
+    "data-input-association",
+    "input-mediation",
+    "combined-input-and-output-on-one-activity",
+    "multiple-output-sets",
+    "multiple-data-outputs",
+    "optional-output",
+    "while-executing-output",
+    "output-set-input-set-pairing",
+    "assignment",
+    "transformation",
+    "formal-expression",
+    "item-definition",
+    "data-object",
+    "data-object-reference",
+    "data-store",
+    "data-store-reference",
+    "collection-and-nested-values",
+    "activity-local-mutation-while-active",
+    "another-activity-or-task-type",
+    "boundary-events",
+    "looping",
+    "multi-instance",
+    "sub-process-scope",
+    "call-activity-mappings",
+    "form-schema",
+    "field-validation",
+    "authorization",
+    "cib-data-association-compatibility-claim",
+    "expression-evaluation",
+    "production-history-compatibility",
+    "bpmn-process-execution-conformance"
+  ]
+}

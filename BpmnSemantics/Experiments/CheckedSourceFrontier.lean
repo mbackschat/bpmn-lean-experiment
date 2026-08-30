@@ -238,6 +238,8 @@ theorem nodeDisabled (source : CheckedProcess) (state : SourceRuntimeState)
       | some metadata => simp [nodeArityValid] at candidateArity
   | dataInputUserTask id name directInput =>
       simp [nodeArityValid] at candidateArity
+  | dataOutputUserTask id name directOutput =>
+      simp [nodeArityValid] at candidateArity
   | sequentialMultiInstanceUserTask id name input output normalOutputFlowId
       boundaryTimer =>
       simp [nodeArityValid] at candidateArity

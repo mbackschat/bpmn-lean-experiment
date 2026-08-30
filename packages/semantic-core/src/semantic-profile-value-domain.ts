@@ -129,6 +129,11 @@ function profileValueDomain(
       // pre-states here, and the completion surface stays empty because this profile's OutputSet is
       // empty: it selects no output mediation at all.
       return surfaceValueDomain(surface, stringNullValueDomain);
+    case SemanticProfileId.ActivityDataOutputUserTask:
+      // The mirror of the input profile's table. The start surface stays empty because this model
+      // declares no input mediation at all, and the completion surface admits explicit null because
+      // a supplied null makes the required output available exactly as a supplied string does.
+      return surfaceValueDomain(surface, emptyValueDomain, stringNullValueDomain);
     case SemanticProfileId.ServiceTaskIncidentCancellation:
       return surfaceValueDomain(surface, stringValueDomain);
     case SemanticProfileId.UserTask:

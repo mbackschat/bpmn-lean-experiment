@@ -132,6 +132,14 @@ export const mvpBpmnCapabilities = Object.freeze([
     cibEvidence: notSelected,
   },
   {
+    id: "directDataOutputUserTask",
+    family: "Activities",
+    element: "User Task with a direct Data Output",
+    support: BpmnCapabilitySupport.BoundedStandard,
+    restriction: "One required scalar DataOutput in one OutputSet with an empty InputSet, filled by the completion under its exact DataOutput id and written by one direct Data Output Association into one Process Property; entry never waits for data, and a completion that omits the output is refused.",
+    cibEvidence: notSelected,
+  },
+  {
     id: "sequentialMultiInstanceUserTask",
     family: "Activities",
     element: "Sequential Multi-Instance User Task",

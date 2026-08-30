@@ -51,7 +51,7 @@ export const warmBudgetPerCaseMs = 1_300;
  * silently outrunning this number. Raising it for a larger catalog keeps the declared per-case rate
  * intact and must keep the hosted CI budget at least 50% above it.
  */
-export const defaultWarmBudgetMs = 78_000;
+export const defaultWarmBudgetMs = 81_900;
 
 /**
  * Load per core above which a timing figure is not a comparable measurement.

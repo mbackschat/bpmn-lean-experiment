@@ -467,9 +467,7 @@ theorem process_start_admits_exactly_the_empty_binding_map
       have firstRejected :
           variableValueAdmitted parallelUserTaskMetadataCheckpointProfileId
             .processStart binding.value = false := by
-        cases binding.value <;>
-          simp [variableValueAdmitted,
-            parallelUserTaskMetadataCheckpointProfileId]
+        cases binding.value <;> simp [variableValueAdmitted]
       simp [processDataBindingsAdmitted, firstRejected]
 
 /-- Process Start admits only the empty binding map while completion admits string, null, and Boolean values for this exact profile. -/

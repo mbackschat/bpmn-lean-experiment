@@ -46,6 +46,9 @@ import {
 import {
   compileActivityDataInputCheckedProcess,
 } from "./activity-data-input-source.js";
+import {
+  compileActivityDataOutputCheckedProcess,
+} from "./activity-data-output-source.js";
 
 export const CompilationDispatchId = Object.freeze({
   Generic: "generic",
@@ -56,6 +59,7 @@ export const CompilationDispatchId = Object.freeze({
   SequentialMultiInstanceUserTask: "sequentialMultiInstanceUserTask",
   ParallelMultiInstanceUserTask: "parallelMultiInstanceUserTask",
   ActivityDataInputUserTask: "activityDataInputUserTask",
+  ActivityDataOutputUserTask: "activityDataOutputUserTask",
 } as const);
 
 export type CompilationDispatchId =
@@ -165,6 +169,16 @@ export const compilationDispatches: ReadonlyArray<CompilationDispatch> =
               "The Activity data-input profile does not admit a source overlay.",
             ),
     },
+    {
+      id: CompilationDispatchId.ActivityDataOutputUserTask,
+      semanticProfile: SemanticProfileId.ActivityDataOutputUserTask,
+      reader: (rootElement, source, overlay) =>
+        overlay === null
+          ? compileActivityDataOutputCheckedProcess(rootElement, source, null)
+          : unsupported(
+              "The Activity data-output profile does not admit a source overlay.",
+            ),
+    },
   ]);
 
 export function compileDispatchedCheckedProcess(
@@ -209,6 +223,7 @@ export function compileDispatchedCheckedProcess(
     case CompilationDispatchId.SequentialMultiInstanceUserTask:
     case CompilationDispatchId.ParallelMultiInstanceUserTask:
     case CompilationDispatchId.ActivityDataInputUserTask:
+    case CompilationDispatchId.ActivityDataOutputUserTask:
       return dispatch.reader(rootElement, source, overlay);
     default:
       return assertNever(dispatch);

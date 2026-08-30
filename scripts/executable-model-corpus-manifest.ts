@@ -82,6 +82,7 @@ const corpusMechanisms = new Set([
   "dataAssociation",
   "diagramInterchange",
   "directActivityDataInput",
+  "directActivityDataOutput",
   "earlyCompletion",
   "embeddedSubProcess",
   "errorPropagation",

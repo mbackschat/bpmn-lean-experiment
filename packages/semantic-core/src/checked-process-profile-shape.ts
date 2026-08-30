@@ -35,6 +35,12 @@ export function requiredCheckedProcessShape(
         CheckedNodeKind.DataInputUserTask,
         end,
       ]);
+    case SemanticProfileId.ActivityDataOutputUserTask:
+      return rootChecked([
+        start,
+        CheckedNodeKind.DataOutputUserTask,
+        end,
+      ]);
     case SemanticProfileId.StructuredHumanWork:
       return rootChecked([
         start,

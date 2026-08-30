@@ -283,6 +283,18 @@ export const normativeArtifactCases = Object.freeze([
     scenarioRelativePath:
       "scenarios/activity-data-input-user-task/null.scenario.json",
   }),
+  Object.freeze({
+    scenarioRelativePath:
+      "scenarios/activity-data-output-user-task/supplied.scenario.json",
+  }),
+  Object.freeze({
+    scenarioRelativePath:
+      "scenarios/activity-data-output-user-task/null.scenario.json",
+  }),
+  Object.freeze({
+    scenarioRelativePath:
+      "scenarios/activity-data-output-user-task/omitted.scenario.json",
+  }),
 ]);
 
 export type ArtifactCase = Readonly<{

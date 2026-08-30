@@ -742,7 +742,34 @@
         }
       }
     },
-    "dataInputTaskDefinition": {
+    "directActivityDataOutput": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "associationId",
+        "sourceDataOutputId",
+        "sourceDataOutputName",
+        "targetPropertyId"
+      ],
+      "properties": {
+        "associationId": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "sourceDataOutputId": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "sourceDataOutputName": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "targetPropertyId": {
+          "$ref": "#/$defs/nonemptyString"
+        }
+      }
+    },
+    "dataTaskDefinition": {
       "type": "object",
       "additionalProperties": false,
       "required": [
@@ -790,10 +817,46 @@
           "$ref": "#/$defs/nonemptyString"
         },
         "task": {
-          "$ref": "#/$defs/dataInputTaskDefinition"
+          "$ref": "#/$defs/dataTaskDefinition"
         },
         "directInput": {
           "$ref": "#/$defs/directActivityDataInput"
+        }
+      }
+    },
+    "awaitDataOutputUserTask": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "origin",
+        "input",
+        "output",
+        "task",
+        "directOutput"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "kind": {
+          "const": "awaitDataOutputUserTask"
+        },
+        "origin": {
+          "$ref": "#/$defs/bpmnElementOrigin"
+        },
+        "input": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "output": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "task": {
+          "$ref": "#/$defs/dataTaskDefinition"
+        },
+        "directOutput": {
+          "$ref": "#/$defs/directActivityDataOutput"
         }
       }
     },
@@ -1835,6 +1898,9 @@
         },
         {
           "$ref": "#/$defs/awaitDataInputUserTask"
+        },
+        {
+          "$ref": "#/$defs/awaitDataOutputUserTask"
         },
         {
           "$ref": "#/$defs/awaitSequentialMultiInstanceUserTask"

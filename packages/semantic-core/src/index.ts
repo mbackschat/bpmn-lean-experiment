@@ -7,6 +7,10 @@ export * from "./activity-data-input-observation.js";
 export {
   isDataInputTaskDefinition,
 } from "./semantic-process-activity-data-input-runtime.js";
+export * from "./activity-data-output-contract.js";
+export {
+  isDataOutputTaskDefinition,
+} from "./semantic-process-activity-data-output-runtime.js";
 export * from "./local-data-owner.js";
 export * from "./sequential-multi-instance-controller.js";
 export * from "./parallel-multi-instance-controller.js";

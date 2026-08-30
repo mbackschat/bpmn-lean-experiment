@@ -113,6 +113,7 @@ private def operationInputs : SemanticOperation → List ControlPlaceId
   | .invokeProcess _ _ input _ _ _ _
   | .awaitUserTask _ _ input _ _
   | .awaitDataInputUserTask _ _ input _ _ _ _
+  | .awaitDataOutputUserTask _ _ input _ _ _ _
   | .awaitSequentialMultiInstanceUserTask _ _ input _ _ _ _ _
   | .awaitParallelMultiInstanceUserTask _ _ input _ _ _ _ _ _ _
   | .awaitTimer _ _ input _ _
@@ -137,6 +138,7 @@ private def operationOutputs : SemanticOperation → List ControlPlaceId
   | .returnProcess _ _ _ _ output
   | .awaitUserTask _ _ _ output _
   | .awaitDataInputUserTask _ _ _ output _ _ _
+  | .awaitDataOutputUserTask _ _ _ output _ _ _
   | .awaitTimer _ _ _ output _
   | .awaitMessage _ _ _ output _
   | .synchronize _ _ _ output
@@ -323,6 +325,7 @@ private def enteredChildScopeId? : SemanticOperation → Option DefinitionScopeI
   | .enterBoundedScope _ _ _ _ childScopeId _ => some childScopeId
   | .initiate .. | .initiateMessage .. | .initiateTimer .. | .invokeProcess .. | .returnProcess .. | .awaitUserTask ..
   | .awaitDataInputUserTask ..
+  | .awaitDataOutputUserTask ..
   | .awaitSequentialMultiInstanceUserTask ..
   | .awaitParallelMultiInstanceUserTask ..
   | .completeParallelMultiInstanceUserTask ..
@@ -406,6 +409,7 @@ private def programEdges (program : Program) : List (GraphEdge OperationId) :=
 def semanticOperationIsResumptionCut : SemanticOperation → Bool
   | .awaitUserTask .. => true
   | .awaitDataInputUserTask .. => true
+  | .awaitDataOutputUserTask .. => true
   | .awaitSequentialMultiInstanceUserTask .. => true
   | .awaitParallelMultiInstanceUserTask .. => true
   | .initiate .. | .initiateMessage .. | .initiateTimer .. | .enterScope .. | .enterBoundedScope ..

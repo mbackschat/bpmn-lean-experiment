@@ -1126,6 +1126,40 @@
       }
     },
     {
+      "id": "underwriting-decision-recorded",
+      "title": "Record an underwriting decision on the application",
+      "businessPurpose": "Let an underwriter decide a credit application and have that decision land on the application itself, so the outcome is Process data rather than a note in the task.",
+      "cloneFamily": "human-decision-with-direct-data-output",
+      "constructs": [
+        "endEvent",
+        "process",
+        "sequenceFlow",
+        "startEvent",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "directActivityDataOutput",
+        "userTaskWait",
+        "userTaskCompletion"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/activity-data-output-user-task/process.bpmn",
+        "sha256": "de5a4f547f30a2137f8836130f2bbf6156bed14ca8d172d4effd80de2dac0b1b",
+        "scenarioRelativePath": "scenarios/activity-data-output-user-task/supplied.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "bpmn-2.0.2-activity-data-output-user-task-draft",
+      "admission": { "kind": "accepted" },
+      "pipelineCaseId": "activity-data-output-supplied",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "The exact profile publishes a metadata-free User Task whose completion must carry the declared DataOutput id; no honest claim-and-complete journey exists until an assignment/form extension binds that name to a rendered field."
+      }
+    },
+    {
       "id": "cib-order-goods",
       "title": "CIB Seven order goods",
       "businessPurpose": null,

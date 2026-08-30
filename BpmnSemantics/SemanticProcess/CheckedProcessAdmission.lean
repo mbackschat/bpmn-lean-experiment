@@ -234,6 +234,16 @@ private def checkedNodeArityValid (flows : List CheckedSequenceFlow) :
       identities.all nonempty &&
         identities.eraseDups.length = identities.length &&
         incomingCount flows id = 1 && outgoingCount flows id = 1
+  -- The three source identities are what the completion resolves by. Distinct DataOutput and
+  -- Property ids are the load-bearing pair: equal ids would make a routed write and a name-merged
+  -- write indistinguishable.
+  | .dataOutputUserTask id _ directOutput =>
+      let identities :=
+        [id.value, directOutput.associationId, directOutput.sourceDataOutputId,
+          directOutput.targetPropertyId]
+      identities.all nonempty &&
+        identities.eraseDups.length = identities.length &&
+        incomingCount flows id = 1 && outgoingCount flows id = 1
   | .sequentialMultiInstanceUserTask id _ input output normalOutputFlowId boundaryTimer =>
       let identities :=
         [id.value, boundaryTimer.elementId.value,

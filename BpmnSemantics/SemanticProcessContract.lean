@@ -158,6 +158,19 @@ structure DirectActivityDataInput where
   targetDataInputName : Option String
   deriving Repr, DecidableEq
 
+/-- The reusable value one direct BPMN Data Output Association contributes to an Activity.
+
+Task-neutral for the same reason as its input sibling. The direction is the mirror: the
+Activity-owned `sourceDataOutputId` is the association's source and the Process
+`targetPropertyId` is its target, so a reader that only renamed the input fields would have the
+write running backwards. `sourceDataOutputName` is carried for presentation only. -/
+structure DirectActivityDataOutput where
+  associationId : String
+  sourceDataOutputId : String
+  sourceDataOutputName : Option String
+  targetPropertyId : String
+  deriving Repr, DecidableEq
+
 /-- Inclusive runtime collection bounds selected by the bounded profile. -/
 structure SequentialMultiInstanceLimits where
   maximumItems : Nat
@@ -184,6 +197,11 @@ inductive CheckedNode where
   readiness select different lowering clauses. -/
   | dataInputUserTask (id : NodeId) (name : Option String)
       (directInput : DirectActivityDataInput)
+  /-- A User Task whose one required DataOutput is written by one direct Data Output Association. A
+  distinct node rather than a flag on `userTask`, because a declared OutputSet constrains completion
+  where the input node's InputSet constrains entry. -/
+  | dataOutputUserTask (id : NodeId) (name : Option String)
+      (directOutput : DirectActivityDataOutput)
   | sequentialMultiInstanceUserTask
       (id : NodeId)
       (name : Option String)
@@ -238,6 +256,7 @@ def CheckedNode.id : CheckedNode → NodeId
   | .timerBoundaryEvent id _ _ _ _
   | .userTask id _ _
   | .dataInputUserTask id _ _
+  | .dataOutputUserTask id _ _
   | .sequentialMultiInstanceUserTask id _ _ _ _ _
   | .parallelMultiInstanceUserTask id _ _ _ _ _ _
   | .intermediateCatchTimerEvent id _
@@ -469,6 +488,17 @@ inductive SemanticOperation where
       (taskId : TaskDefinitionId)
       (taskName : Option String)
       (directInput : DirectActivityDataInput)
+  /-- One User Task occurrence whose accepted completion writes one Activity data output. Separate
+  from `awaitDataInputUserTask` because the two constrain opposite ends: entry here is token-only,
+  and the declared output becomes an obligation only at completion. -/
+  | awaitDataOutputUserTask
+      (id : OperationId)
+      (origin : BpmnElementOrigin)
+      (input : ControlPlaceId)
+      (output : ControlPlaceId)
+      (taskId : TaskDefinitionId)
+      (taskName : Option String)
+      (directOutput : DirectActivityDataOutput)
   | awaitSequentialMultiInstanceUserTask
       (id : OperationId)
       (origin : BpmnElementOrigin)
@@ -604,6 +634,7 @@ def SemanticOperation.id : SemanticOperation → OperationId
   | .returnProcess id _ _ _ _
   | .awaitUserTask id _ _ _ _
   | .awaitDataInputUserTask id _ _ _ _ _ _
+  | .awaitDataOutputUserTask id _ _ _ _ _ _
   | .awaitSequentialMultiInstanceUserTask id _ _ _ _ _ _ _
   | .awaitParallelMultiInstanceUserTask id _ _ _ _ _ _ _ _ _
   | .completeParallelMultiInstanceUserTask id _ _ _ _

@@ -31,6 +31,9 @@ import { armBoundedUserTask } from "./semantic-process-bounded-task-runtime.js";
 import {
   armDataInputUserTask,
 } from "./semantic-process-activity-data-input-runtime.js";
+import {
+  armDataOutputUserTask,
+} from "./semantic-process-activity-data-output-runtime.js";
 import { armMonitoredUserTask } from "./semantic-process-monitored-task-runtime.js";
 import {
   throwError,
@@ -330,6 +333,14 @@ function applyInternalOperationState(
       return applyOwnedOperation(
         dataInputOwner,
         (selected) => armDataInputUserTask(operation, state, selected),
+        captureOwner,
+      );
+    }
+    case SemanticOperationKind.AwaitDataOutputUserTask: {
+      const dataOutputOwner = onlyTokenOwner(state, operation.input);
+      return applyOwnedOperation(
+        dataOutputOwner,
+        (selected) => armDataOutputUserTask(operation, state, selected),
         captureOwner,
       );
     }

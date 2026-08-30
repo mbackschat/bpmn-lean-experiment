@@ -7,6 +7,7 @@ import BpmnSemantics.SemanticProcess.ParallelMultiInstanceTransition
 import BpmnSemantics.SemanticProcess.ValueDomain
 import BpmnSemantics.SemanticProcess.WaitCompletion
 import BpmnSemantics.SemanticProcess.ActivityDataInput
+import BpmnSemantics.SemanticProcess.ActivityDataOutput
 
 /-! # Semantic Process external command admission
 
@@ -153,6 +154,18 @@ def dispatchStimulus (program : Program) (state : RuntimeState) :
                 taskId.activation with
             | some successor =>
                 if taskId.processInstanceId = instanceId && submittedValues.isEmpty then
+                  { outcome := .committed, state := successor }
+                else
+                  { outcome := .rejected, state }
+            | none => { outcome := .rejected, state }
+          else if isDataOutputTaskDefinition program ⟨taskId.elementId.value⟩ then
+            match completeDataOutputUserTask? program state
+                taskId.processInstanceId ⟨taskId.elementId.value⟩
+                taskId.activation submittedValues with
+            | some successor =>
+                if taskId.processInstanceId = instanceId &&
+                    processDataBindingsAdmitted program.identity.semanticProfile
+                      .userTaskCompletion submittedValues then
                   { outcome := .committed, state := successor }
                 else
                   { outcome := .rejected, state }

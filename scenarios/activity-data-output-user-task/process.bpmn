@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  id="Definitions_ActivityDataOutputUnderwriting"
+  targetNamespace="https://bpmn-lean.org/scenarios/activity-data-output-underwriting">
+  <bpmn:process id="Process_ActivityDataOutputUnderwriting" isExecutable="true">
+    <bpmn:property id="Property_UnderwritingOutcome" />
+
+    <bpmn:startEvent id="StartEvent_Application">
+      <bpmn:outgoing>Flow_Application_Decide</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow
+      id="Flow_Application_Decide"
+      sourceRef="StartEvent_Application"
+      targetRef="UserTask_Decide" />
+
+    <bpmn:userTask id="UserTask_Decide" name="Decide credit application">
+      <bpmn:incoming>Flow_Application_Decide</bpmn:incoming>
+      <bpmn:outgoing>Flow_Decide_Recorded</bpmn:outgoing>
+      <bpmn:ioSpecification id="IoSpecification_Decide">
+        <bpmn:dataOutput id="DataOutput_Decision" name="Underwriting decision" />
+        <bpmn:inputSet id="InputSet_Decide" />
+        <bpmn:outputSet id="OutputSet_Decide">
+          <bpmn:dataOutputRefs>DataOutput_Decision</bpmn:dataOutputRefs>
+        </bpmn:outputSet>
+      </bpmn:ioSpecification>
+      <bpmn:dataOutputAssociation id="DataOutputAssociation_Decision">
+        <bpmn:sourceRef>DataOutput_Decision</bpmn:sourceRef>
+        <bpmn:targetRef>Property_UnderwritingOutcome</bpmn:targetRef>
+      </bpmn:dataOutputAssociation>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow
+      id="Flow_Decide_Recorded"
+      sourceRef="UserTask_Decide"
+      targetRef="EndEvent_Recorded" />
+    <bpmn:endEvent id="EndEvent_Recorded">
+      <bpmn:incoming>Flow_Decide_Recorded</bpmn:incoming>
+    </bpmn:endEvent>
+  </bpmn:process>
+</bpmn:definitions>

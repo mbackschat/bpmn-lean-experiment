@@ -82,6 +82,7 @@ function operationWaitDeclarations(
   switch (operation.kind) {
     case SemanticOperationKind.AwaitUserTask:
     case SemanticOperationKind.AwaitDataInputUserTask:
+    case SemanticOperationKind.AwaitDataOutputUserTask:
       return [{
         family: InternalOccurrenceKind.UserTask,
         elementId: operation.task.elementId,

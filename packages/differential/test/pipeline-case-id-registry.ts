@@ -60,6 +60,9 @@ export const pipelineCaseIdRegistry = Object.freeze([
   "activity-data-input-absent",
   "activity-data-input-present",
   "activity-data-input-null",
+  "activity-data-output-supplied",
+  "activity-data-output-null",
+  "activity-data-output-omitted",
 ] as const);
 
 export type PipelineCaseId = typeof pipelineCaseIdRegistry[number];

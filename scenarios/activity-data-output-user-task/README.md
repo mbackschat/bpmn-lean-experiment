@@ -1,0 +1,9 @@
+# Activity data-output User Task scenarios
+
+This directory contains one exact BPMN 2.0.2 credit-underwriting source and three answer-free scenarios for the [Activity data-output mediation proposal](../../docs/capsules/ACTIVITY-DATA-OUTPUT-MEDIATION-PROPOSAL.md). The User Task declares one required scalar `DataOutput`, one empty `InputSet`, one `OutputSet` referencing exactly that output, and one direct `DataOutputAssociation` into the Process-owned `Property_UnderwritingOutcome`.
+
+Every scenario starts with no Process data at all. That is deliberate rather than incidental: a declared `OutputSet` constrains completion and never entry, so the task must activate in a Process whose Property is unbound, which is exactly the state in which the sibling data-input model creates nothing.
+
+The [supplied scenario](supplied.scenario.json) completes with the declared output named by its exact `DataOutput` id, so the association executes and writes the value into the Property. The [null scenario](null.scenario.json) supplies explicit null under the same name, which makes the required output available exactly as a String does and must reach a completed Process carrying an explicit-null Property. The [omitted scenario](omitted.scenario.json) submits nothing, so the required output is unavailable and the completion is refused with the task still open.
+
+The `DataOutput` id and the Property id differ on purpose, which is what separates a routed write from a name-merged one: an implementation that wrote the submitted name straight into Process scope would publish `DataOutput_Decision` where the association names `Property_UnderwritingOutcome`. No scenario carries an expected result, a Temporal Run identity, or a CIB Data Association target; the recorded CIB reference covers only the reused User Task lifecycle.

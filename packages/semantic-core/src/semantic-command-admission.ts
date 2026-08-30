@@ -30,6 +30,10 @@ import {
   isDataInputTaskDefinition,
 } from "./semantic-process-activity-data-input-runtime.js";
 import {
+  completeDataOutputUserTask,
+  isDataOutputTaskDefinition,
+} from "./semantic-process-activity-data-output-runtime.js";
+import {
   completeActivityVariableScope,
 } from "./semantic-process-data.js";
 import {
@@ -205,6 +209,12 @@ export function admit(
       }
       if (isDataInputTaskDefinition(program, stimulus.taskId)) {
         const next = completeDataInputUserTask(program, state, stimulus);
+        return next === null
+          ? { outcome: CommandOutcome.Rejected, state }
+          : { outcome: CommandOutcome.Committed, state: next };
+      }
+      if (isDataOutputTaskDefinition(program, stimulus.taskId)) {
+        const next = completeDataOutputUserTask(program, state, stimulus);
         return next === null
           ? { outcome: CommandOutcome.Rejected, state }
           : { outcome: CommandOutcome.Committed, state: next };

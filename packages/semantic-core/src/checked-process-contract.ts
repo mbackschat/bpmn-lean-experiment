@@ -7,6 +7,7 @@
  * The Semantic Process IL lowered from it is owned by `semantic-process-contract.ts`.
  */
 import type { DirectActivityDataInput } from "./activity-data-input-contract.js";
+import type { DirectActivityDataOutput } from "./activity-data-output-contract.js";
 import type { DeepReadonly } from "./deep-readonly.js";
 import type { SourceOverlayIdentity } from "./source-overlay-identity.js";
 import type { UserTaskMetadata } from "./user-task-metadata.js";
@@ -39,6 +40,7 @@ export enum CheckedNodeKind {
   TimerBoundaryEvent = "timerBoundaryEvent",
   UserTask = "userTask",
   DataInputUserTask = "dataInputUserTask",
+  DataOutputUserTask = "dataOutputUserTask",
   SequentialMultiInstanceUserTask = "sequentialMultiInstanceUserTask",
   ParallelMultiInstanceUserTask = "parallelMultiInstanceUserTask",
   IntermediateCatchTimerEvent = "intermediateCatchTimerEvent",
@@ -181,6 +183,21 @@ export type CheckedNode =
       id: string;
       name: string | null;
       directInput: DirectActivityDataInput;
+    }>
+  /**
+   * A User Task whose one required DataOutput is written back by one direct Data Output Association.
+   *
+   * Distinct from `dataInputUserTask` rather than a second field on it, because the two differ in
+   * when they act rather than only in direction: an input decides whether the task may become
+   * active at all, while an output constrains what an accepted completion must carry and leaves
+   * entry token-only. An Activity that did both would need its own reviewed node, not this one with
+   * an extra field, because that node has to say how the two local scopes coexist.
+   */
+  | DeepReadonly<{
+      kind: CheckedNodeKind.DataOutputUserTask;
+      id: string;
+      name: string | null;
+      directOutput: DirectActivityDataOutput;
     }>
   | DeepReadonly<{
       kind: CheckedNodeKind.SequentialMultiInstanceUserTask;

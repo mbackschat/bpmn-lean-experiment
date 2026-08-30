@@ -2,7 +2,7 @@
 
 ## Status
 
-Lifecycle: owner-approved
+Lifecycle: implementation-in-progress
 Review: approved-with-required-edits
 
 ## Question and bounded outcome
@@ -140,22 +140,22 @@ The executable constraints mechanically resolved by `node scripts/what-binds.ts`
 
 ### Owners this implementation grows
 
-The `OWNER` measurements below are the nonblank counts reported by `node scripts/what-binds.ts` at proposal time. Implementation reruns it before growing any owner. The 800-line soft target is the extraction threshold and 1,200 lines is the hard ceiling.
+The `OWNER` measurements below are the nonblank counts reported by `node scripts/what-binds.ts` and are re-measured as implementation grows each owner, so the table always states the remaining headroom rather than the headroom this capsule started from. The 800-line soft target is the extraction threshold and 1,200 lines is the hard ceiling.
 
 | Owner | Current headroom |
 |---|---:|
-| [Lean ProfileAdmission](../../BpmnSemantics/SemanticProcess/ProfileAdmission.lean) | 138 |
-| [Lean SemanticProcessContract](../../BpmnSemantics/SemanticProcessContract.lean) | 190 |
-| [TypeScript source lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 228 |
+| [Lean ProfileAdmission](../../BpmnSemantics/SemanticProcess/ProfileAdmission.lean) | 128 |
+| [Lean SemanticProcessContract](../../BpmnSemantics/SemanticProcessContract.lean) | 161 |
+| [TypeScript source lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 219 |
 | [TypeScript scenario projection](../../packages/semantic-core/src/scenario.ts) | 252 |
-| [TypeScript Semantic Process contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 311 |
+| [TypeScript Semantic Process contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 287 |
 | [TypeScript checked element projection](../../packages/bpmn-source/src/checked-element-projection.ts) | 358 |
 | [TypeScript projected-key owner](../../packages/bpmn-source/src/projected-flow-element-keys.ts) | 464 |
-| [TypeScript checked graph contract](../../packages/semantic-core/src/checked-process-contract.ts) | 505 |
-| [TypeScript compilation dispatch](../../packages/bpmn-source/src/compilation-dispatch.ts) | 526 |
+| [TypeScript checked graph contract](../../packages/semantic-core/src/checked-process-contract.ts) | 488 |
+| [TypeScript compilation dispatch](../../packages/bpmn-source/src/compilation-dispatch.ts) | 511 |
 | [TypeScript scoped-data owner](../../packages/semantic-core/src/semantic-process-data.ts) | 536 |
 
-`ProfileAdmission.lean` is the narrowest owner and the one the input capsule also flagged. If the exhaustive profile arm cannot fit cohesively in that headroom, extract the profile-specific rule as its own behavior-preserving change before semantic implementation rather than under a size squeeze. New source, runtime, proof, and conformance modules hold behavior by responsibility; the completion family gets its own module rather than growing [the input family's owner](../../BpmnSemantics/SemanticProcess/ActivityDataInput.lean).
+`ProfileAdmission.lean` is the narrowest owner and the one the input capsule also flagged. Its exhaustive profile arm fit within the headroom, so no extraction was required; had it not, the profile-specific rule would have been extracted as its own behavior-preserving change rather than added under a size squeeze. New source, runtime, proof, and conformance modules hold behavior by responsibility; the completion family gets its own module rather than growing [the input family's owner](../../BpmnSemantics/SemanticProcess/ActivityDataInput.lean).
 
 No size exception is requested.
 

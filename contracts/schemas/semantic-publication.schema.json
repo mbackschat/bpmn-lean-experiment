@@ -160,6 +160,7 @@
             "returnProcess",
             "awaitUserTask",
             "awaitDataInputUserTask",
+            "awaitDataOutputUserTask",
             "awaitBoundedUserTask",
             "awaitMonitoredUserTask",
             "awaitSequentialMultiInstanceUserTask",

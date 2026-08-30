@@ -42,7 +42,8 @@ private structure OwnedWaitDefinitions where
 /-- Deliberately exhaustive with no wildcard: a new operation variant must decide here which public waits it exposes. A catch-all made a composite family's waits silently invisible to every observation instead of failing to compile. -/
 private def ownedWaitDefinitions : SemanticOperation → OwnedWaitDefinitions
   | .awaitUserTask _ _ _ _ task => { tasks := [task] }
-  | .awaitDataInputUserTask _ _ _ _ taskId taskName _ =>
+  | .awaitDataInputUserTask _ _ _ _ taskId taskName _
+  | .awaitDataOutputUserTask _ _ _ _ taskId taskName _ =>
       { tasks := [{ id := taskId, name := taskName }] }
   | .awaitTimer _ _ _ _ timer => { timers := [timer] }
   | .awaitMessage _ _ _ _ message => { messages := [message] }

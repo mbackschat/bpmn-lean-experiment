@@ -32,6 +32,7 @@ export function semanticOperationInternalFamily(
       return InternalOperationFamily.OrdinaryWaitArming;
     case SemanticOperationKind.EnterBoundedScope:
     case SemanticOperationKind.AwaitDataInputUserTask:
+    case SemanticOperationKind.AwaitDataOutputUserTask:
     case SemanticOperationKind.AwaitBoundedUserTask:
     case SemanticOperationKind.AwaitMonitoredUserTask:
     case SemanticOperationKind.AwaitSequentialMultiInstanceUserTask:

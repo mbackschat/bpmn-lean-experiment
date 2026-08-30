@@ -25,6 +25,10 @@ abbrev parallelUserTaskMetadataCheckpointProfileId : ProfileId :=
 abbrev activityDataInputUserTaskProfileId : ProfileId :=
   ⟨"bpmn-2.0.2-activity-data-input-user-task-draft"⟩
 
+/-- Runtime-frozen identity of the owner-approved Activity data-output checkpoint. -/
+abbrev activityDataOutputUserTaskProfileId : ProfileId :=
+  ⟨"bpmn-2.0.2-activity-data-output-user-task-draft"⟩
+
 /-- Runtime-frozen identity for the owner-approved structured Human Work profile. -/
 abbrev structuredHumanWorkProfileId : ProfileId :=
   ⟨"bpmn-2.0.2-bpmn-lean-structured-human-work-draft"⟩
@@ -79,6 +83,10 @@ private inductive ProcessDataValueDomain where
       if profileIsOneOf profile
           [ "cibseven-2.2.0-user-task-process-data-draft"
           , userTaskProcessDataPreservedNotationProfileId.value
+          -- A supplied null makes the single required Data Output available exactly as a supplied
+          -- String does, and the start surface stays empty because this profile declares no input
+          -- mediation at all.
+          , activityDataOutputUserTaskProfileId.value
           , "bpmn-2.0.2-user-task-cycle-draft" ] then
         .stringNull
       else if profileIsOneOf profile

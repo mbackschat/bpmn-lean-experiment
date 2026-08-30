@@ -179,6 +179,7 @@ theorem parseFrom_sound (source : CheckedProcess) (fuel : Nat)
             | none => grind [parseFrom, mappedWait_sound, isWaitNode]
             | some metadata => simp [parseFrom, nodeResult] at result
         | dataInputUserTask _ _ _ => simp [parseFrom, nodeResult] at result
+        | dataOutputUserTask _ _ _ => simp [parseFrom, nodeResult] at result
         | sequentialMultiInstanceUserTask id name input output normalOutputFlowId
             boundaryTimer =>
             simp [parseFrom, nodeResult] at result
