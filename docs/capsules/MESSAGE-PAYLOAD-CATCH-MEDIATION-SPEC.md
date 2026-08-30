@@ -1,9 +1,9 @@
-# Message payload catch mediation proposal
+# Message payload catch mediation specification
 
 ## Status
 
-Lifecycle: implemented-awaiting-closure
-Review: approved-with-required-edits
+Lifecycle: implemented
+Review: closure-approved
 
 ## Question and bounded outcome
 
@@ -146,21 +146,6 @@ That is a deliberate design choice and not an accident of scope. Adding `payload
 
 The executable constraints that bind this contract include [contract schema coverage](../../scripts/contract-schema-coverage.test.ts), [contract artifacts](../../scripts/contract-artifacts.test.ts), [execution-publication contract coverage](../../scripts/execution-publication-contract-coverage.test.ts), [internal commutation census](../../scripts/internal-commutation-census.test.ts), [runtime collection removal completeness](../../scripts/runtime-collection-removal-completeness.test.ts), [canonical ordering](../../scripts/canonical-ordering.test.ts), [experiment union coverage](../../scripts/lean-import-boundaries.test.ts), [Lean source contracts](../../scripts/lean-source-contracts.test.ts), [source hygiene](../../scripts/source-hygiene.test.ts), [requirement-ledger consistency](../../scripts/requirement-ledger-consistency.test.ts), [model-corpus policy](../../scripts/bpmn-corpus-policy.test.ts), and [document reviewability](../../scripts/document-reviewability.test.ts). The principal source owners are [the semantic-core public contract](../../packages/semantic-core/src/contract.ts), [the Semantic Process contract](../../packages/semantic-core/src/semantic-process-contract.ts), [the checked graph contract](../../packages/semantic-core/src/checked-process-contract.ts), [the source compilation dispatch](../../packages/bpmn-source/src/compilation-dispatch.ts), [the Lean Semantic Process contract](../../BpmnSemantics/SemanticProcessContract.lean), and [Lean profile admission](../../BpmnSemantics/SemanticProcess/ProfileAdmission.lean).
 
-### Owners this implementation grows
-
-The `OWNER` measurements below are the nonblank counts reported by `node scripts/what-binds.ts` at the closure target. The 800-line soft target is the extraction threshold and 1,200 lines is the hard ceiling.
-
-| Owner | Current headroom |
-|---|---:|
-| [Lean ProfileAdmission](../../BpmnSemantics/SemanticProcess/ProfileAdmission.lean) | 102 |
-| [Lean SemanticProcessContract](../../BpmnSemantics/SemanticProcessContract.lean) | 141 |
-| [TypeScript Semantic Process contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 258 |
-| [TypeScript public contract](../../packages/semantic-core/src/contract.ts) | 363 |
-| [TypeScript checked graph contract](../../packages/semantic-core/src/checked-process-contract.ts) | 469 |
-| [TypeScript compilation dispatch](../../packages/bpmn-source/src/compilation-dispatch.ts) | 496 |
-
-No owner exceeds the soft target, and no size exception is requested. Graduation removes this proposal-only measurement rather than preserving volatile headroom in the specification.
-
 ## Epistemic closure and reopen conditions
 
 This capsule establishes the normative catch-Event payload assignment and association rules, the exact machine-readable cardinalities and the identity-based item equivalence that satisfies them, an operationalized and *witnessed* answer to the payload-free delivery gap, and an implementation whose source admission, Lean account, independently written TypeScript core, three answer-free scenarios, retained whole model, and real-service refinement agree.
@@ -181,4 +166,4 @@ Reopen before admitting `structureRef` or any structured payload, a collection, 
 |---|---|---|---|---|
 | Proposal | `48cc5b49` | `fork-turns-none` | `approve-with-required-edits` | `89ea501e, 0c44fdbd` |
 | Semantic checkpoint | `ba38efb8` | `fork-turns-none` | `approve-with-required-edits` | `c13901b5` |
-| Closure | `32337c43` | `not-recorded` | `pending` | `not-applicable` |
+| Closure | `32337c43` | `fork-turns-none` | `approve-with-required-edits` | `036a30bb` |

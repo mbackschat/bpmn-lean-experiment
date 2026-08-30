@@ -8,7 +8,7 @@ The implemented [Product 2 shared-persistence addendum](../BPM-PLATFORM-SHARED-P
 
 The later implemented [Workflow-chain production contract](../TEMPORAL-PROCESS-LIFECYCLE-SPEC.md#workflow-chain-production-contract) extends only the Temporal retention mechanism. Chain-enrolled Runs close E1 together with its aligned occurrence publication in private digest-bound segments and Product 1 traverses retained Runs without changing this public wire, its semantic meaning, Product 2 projection, or any BPMN claim. Run identity remains private and post-retention reconstruction remains excluded.
 
-The implemented [Message payload catch capsule](MESSAGE-PAYLOAD-CATCH-MEDIATION-PROPOSAL.md) extends the strict `Stimulus` union with one scalar payload-bearing Message arm. Publication retains that payload without redaction under the existing Operations authorization, and replay validates it as part of the exact external record; no publication field, revision rule, retention mechanism, or Product 2 interpretation changes.
+The implemented [Message payload catch specification](MESSAGE-PAYLOAD-CATCH-MEDIATION-SPEC.md) extends the strict `Stimulus` union with one scalar payload-bearing Message arm. Publication retains that payload without redaction under the existing Operations authorization, and replay validates it as part of the exact external record; no publication field, revision rule, retention mechanism, or Product 2 interpretation changes.
 
 ## Independent cold-review receipt
 
