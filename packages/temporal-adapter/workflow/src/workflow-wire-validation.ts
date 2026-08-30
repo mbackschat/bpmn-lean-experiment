@@ -22,9 +22,11 @@ import {
 } from "@bpmn-lean/semantic-core";
 import type {
   CompleteUserTaskInstanceStimulus,
-  DeliverMessageStimulus,
   Stimulus,
 } from "@bpmn-lean/semantic-core";
+import type {
+  MessageDeliveryStimulus,
+} from "@bpmn-lean/temporal-protocol";
 
 /**
  * Establishes that an Update payload is one well-formed completion stimulus, and that it agrees with
@@ -56,12 +58,15 @@ export function validateCompleteUserTaskUpdate(
  * be told about a conflict, and the accepted-command log is consulted by the delivery path instead.
  */
 export function validateDeliverMessageSignal(
-  stimulus: DeliverMessageStimulus,
+  stimulus: MessageDeliveryStimulus,
 ): void {
   const value = stimulus as unknown;
   if (
     !isWellFormedStimulus(value) ||
-    value.kind !== StimulusKind.DeliverMessage
+    (
+      value.kind !== StimulusKind.DeliverMessage &&
+      value.kind !== StimulusKind.DeliverPayloadMessage
+    )
   ) {
     throw new TypeError(
       "Message Signal must contain one well-formed delivery stimulus",

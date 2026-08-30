@@ -19,7 +19,6 @@ import {
 } from "@bpmn-lean/semantic-core";
 import type {
   CancelIncidentProcessStimulus,
-  DeliverMessageStimulus,
   CompleteUserTaskInstanceStimulus,
   StateObservation,
 } from "@bpmn-lean/semantic-core";
@@ -33,6 +32,7 @@ import {
 import type {
   HostInteractionPort,
   HostInteractionResponse,
+  MessageDeliveryStimulus,
   ProcessCommandResult,
 } from "@bpmn-lean/temporal-testkit";
 
@@ -98,6 +98,18 @@ function messageInteraction(messageId: string, activation = 1) {
   } as const;
 }
 
+function payloadMessageInteraction(messageId: string, activation = 1) {
+  return {
+    kind: StimulusKind.DeliverPayloadMessage,
+    subscriptionId: {
+      processInstanceId: instanceId,
+      elementId: `Catch_${messageId}`,
+      activation,
+    },
+    channel: directChannel(messageId),
+  } as const;
+}
+
 function completeResponse(
   elementId: string,
 ): HostInteractionResponse {
@@ -119,6 +131,18 @@ function deliverResponse(messageId: string): HostInteractionResponse {
   return {
     kind: StimulusKind.DeliverMessage,
     channel: directChannel(messageId),
+    delayMs: 1,
+  };
+}
+
+function deliverPayloadResponse(messageId: string): HostInteractionResponse {
+  return {
+    kind: StimulusKind.DeliverPayloadMessage,
+    channel: directChannel(messageId),
+    payload: {
+      kind: VariableValueKind.String,
+      value: "settlement-123",
+    },
     delayMs: 1,
   };
 }
@@ -148,11 +172,11 @@ function scriptedPort(
 ): {
   readonly port: HostInteractionPort;
   readonly completions: CompleteUserTaskInstanceStimulus[];
-  readonly deliveries: DeliverMessageStimulus[];
+  readonly deliveries: MessageDeliveryStimulus[];
   readonly cancellations: CancelIncidentProcessStimulus[];
 } {
   const completions: CompleteUserTaskInstanceStimulus[] = [];
-  const deliveries: DeliverMessageStimulus[] = [];
+  const deliveries: MessageDeliveryStimulus[] = [];
   const cancellations: CancelIncidentProcessStimulus[] = [];
   let index = 0;
   return {
@@ -365,6 +389,65 @@ test("delivers a Message through the published subscription identity", async () 
   assert.equal(result.kind, HostInteractionResultKind.Driven);
   assert.equal(deliveries[0]?.subscriptionId.elementId, "Catch_invoice");
   assert.equal(deliveries[0]?.channel.kind, MessageChannelKind.DirectMessage);
+});
+
+test("preserves a payload while answering the published payload Message interaction", async () => {
+  const { port, deliveries } = scriptedPort([
+    state({
+      openMessageSubscriptions: [
+        {
+          id: {
+            processInstanceId: instanceId,
+            elementId: "Catch_invoice",
+            activation: 1,
+          },
+          channel: directChannel("invoice"),
+        },
+      ],
+      enabledInteractions: [payloadMessageInteraction("invoice")],
+    }),
+    state({ status: ProcessStatus.Completed }),
+  ]);
+
+  const result = await driveHostInteractions(
+    [deliverPayloadResponse("invoice")],
+    port,
+    noWait,
+  );
+
+  assert.equal(result.kind, HostInteractionResultKind.Driven);
+  assert.deepEqual(deliveries, [{
+    kind: StimulusKind.DeliverPayloadMessage,
+    commandId: "mvp-deliver-payload-message:Catch_invoice:1",
+    subscriptionId: {
+      processInstanceId: instanceId,
+      elementId: "Catch_invoice",
+      activation: 1,
+    },
+    channel: directChannel("invoice"),
+    payload: {
+      kind: VariableValueKind.String,
+      value: "settlement-123",
+    },
+  }]);
+});
+
+test("does not recast a payload-free Message interaction as payload-bearing", async () => {
+  const { port, deliveries } = scriptedPort([
+    state({ enabledInteractions: [messageInteraction("raceMessage")] }),
+  ]);
+
+  const result = await driveHostInteractions(
+    [deliverPayloadResponse("raceMessage")],
+    port,
+    noWait,
+  );
+
+  assert.equal(
+    result.kind === HostInteractionResultKind.Refused ? result.code : null,
+    HostInteractionRefusalCode.UnmatchedEnabledInteraction,
+  );
+  assert.deepEqual(deliveries, []);
 });
 
 test("refuses an ambiguous response instead of choosing an occurrence", async () => {

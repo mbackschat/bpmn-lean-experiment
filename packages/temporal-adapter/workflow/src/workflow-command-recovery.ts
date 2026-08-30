@@ -487,6 +487,7 @@ function requireExternallyRetryableStimulus(stimulus: Stimulus): void {
   switch (stimulus.kind) {
     case StimulusKind.CompleteUserTaskInstance:
     case StimulusKind.DeliverMessage:
+    case StimulusKind.DeliverPayloadMessage:
     case StimulusKind.RetryIncident:
     case StimulusKind.CancelIncidentProcess:
       return;

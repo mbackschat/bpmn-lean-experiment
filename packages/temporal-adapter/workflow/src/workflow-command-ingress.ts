@@ -1,10 +1,10 @@
 /** Temporal Signal and Update admission for externally recoverable BPMN commands. */
 import {
   CommandOutcome,
+  StimulusKind,
 } from "@bpmn-lean/semantic-core";
 import type {
   CancelIncidentProcessStimulus,
-  DeliverMessageStimulus,
   RetryIncidentStimulus,
   RuntimeState,
   Stimulus,
@@ -24,6 +24,7 @@ import type {
   BpmnCompleteUserTaskUpdateArguments,
   BpmnDeliverMessageSignalArguments,
   MessageDeliveryResolution,
+  MessageDeliveryStimulus,
 } from "@bpmn-lean/temporal-protocol";
 
 import type {
@@ -120,7 +121,7 @@ export function registerWorkflowCommandIngress(
     reserveStimulus,
   } = options;
 
-  setHandler(bpmnDeliverMessageSignal, (stimulus: DeliverMessageStimulus) => {
+  setHandler(bpmnDeliverMessageSignal, (stimulus: MessageDeliveryStimulus) => {
     validateDeliverMessageSignal(stimulus);
     if (!acceptWorkflowChainSignalCapacity(workflowChain, stimulus)) {
       return;
@@ -152,11 +153,13 @@ export function registerWorkflowCommandIngress(
       stimulus,
       accepted,
     );
-    const scheduledByEventRace = eventRaceScheduler.recordMessageCallback(
-      currentState(),
-      stimulus,
-      acceptance.enqueue,
-    );
+    const scheduledByEventRace = stimulus.kind === StimulusKind.DeliverMessage
+      ? eventRaceScheduler.recordMessageCallback(
+          currentState(),
+          stimulus,
+          acceptance.enqueue,
+        )
+      : false;
     if (acceptance.enqueue) {
       acceptedStimuli.push(stimulus);
       if (!scheduledByEventRace) {

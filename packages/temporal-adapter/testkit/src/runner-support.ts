@@ -10,7 +10,6 @@ import type {
   CanonicalObservation,
   CommandOutcome,
   CompleteUserTaskInstanceStimulus,
-  DeliverMessageStimulus,
   FireTimerStimulus,
   OpenEffect,
   OpenTimer,
@@ -38,6 +37,7 @@ import {
 } from "./contracts.js";
 import type {
   CompletedProcessReceipt,
+  MessageDeliveryStimulus,
   ProcessCommandResult,
   TemporalScenarioExecutionOptions,
 } from "./contracts.js";
@@ -199,6 +199,7 @@ export function requireCompletionStimuli(
       case StimulusKind.CompleteUserTaskInstance:
         return [stimulus];
       case StimulusKind.DeliverMessage:
+      case StimulusKind.DeliverPayloadMessage:
       case StimulusKind.FireTimer:
       case StimulusKind.CompleteEffect:
       case StimulusKind.ReportEffectFailure:
@@ -219,10 +220,11 @@ export function requireCompletionStimuli(
 
 export function requireMessageDeliveryStimuli(
   scenario: Scenario,
-): ReadonlyArray<DeliverMessageStimulus> {
+): ReadonlyArray<MessageDeliveryStimulus> {
   return scenario.stimuli.slice(1).flatMap((stimulus) => {
     switch (stimulus.kind) {
       case StimulusKind.DeliverMessage:
+      case StimulusKind.DeliverPayloadMessage:
         return [stimulus];
       case StimulusKind.CompleteUserTaskInstance:
       case StimulusKind.FireTimer:
@@ -251,6 +253,7 @@ export function requireOptionalTimerStimulus(
     switch (stimulus.kind) {
       case StimulusKind.CompleteUserTaskInstance:
       case StimulusKind.DeliverMessage:
+      case StimulusKind.DeliverPayloadMessage:
       case StimulusKind.CompleteEffect:
       case StimulusKind.ReportEffectFailure:
       case StimulusKind.RetryIncident:
@@ -299,6 +302,7 @@ export function requireOptionalEffectExecution(
         return [stimulus];
       case StimulusKind.CompleteUserTaskInstance:
       case StimulusKind.DeliverMessage:
+      case StimulusKind.DeliverPayloadMessage:
       case StimulusKind.FireTimer:
       case StimulusKind.ReportEffectFailure:
       case StimulusKind.RetryIncident:

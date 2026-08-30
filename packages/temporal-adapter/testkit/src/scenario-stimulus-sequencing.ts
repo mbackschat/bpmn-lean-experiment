@@ -33,6 +33,7 @@ export function requiresHostProgressBeforeCompletion(
         case StimulusKind.FireTimer:
         case StimulusKind.CompleteEffect:
         case StimulusKind.DeliverMessage:
+        case StimulusKind.DeliverPayloadMessage:
           return true;
         case StimulusKind.StartProcess:
         case StimulusKind.TriggerMessageStart:

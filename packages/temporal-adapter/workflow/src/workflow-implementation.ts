@@ -423,7 +423,10 @@ export async function runBpmnProcessWithHostEffects(
         }
       }
       if (
-        stimulus.kind === StimulusKind.DeliverMessage &&
+        (
+          stimulus.kind === StimulusKind.DeliverMessage ||
+          stimulus.kind === StimulusKind.DeliverPayloadMessage
+        ) &&
         outcome !== undefined
       ) {
         recordMessageDeliveryOutcome(

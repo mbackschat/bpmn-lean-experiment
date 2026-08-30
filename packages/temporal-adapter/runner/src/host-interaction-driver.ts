@@ -32,7 +32,6 @@ import type {
   CancelIncidentProcessStimulus,
   CompleteUserTaskInstanceStimulus,
   DeepReadonly,
-  DeliverMessageStimulus,
   EnabledInteraction,
   StateObservation,
 } from "@bpmn-lean/semantic-core";
@@ -42,6 +41,7 @@ import {
 } from "@bpmn-lean/temporal-protocol";
 import type {
   ProcessCommandResult,
+  MessageDeliveryStimulus,
   UserTaskDetail,
   UserTaskDetailRequest,
 } from "@bpmn-lean/temporal-protocol";
@@ -56,7 +56,7 @@ export type HostInteractionPort = Readonly<{
     stimulus: CompleteUserTaskInstanceStimulus,
   ) => Promise<ProcessCommandResult>;
   submitMessage: (
-    stimulus: DeliverMessageStimulus,
+    stimulus: MessageDeliveryStimulus,
   ) => Promise<ProcessCommandResult>;
   submitCancellation: (
     stimulus: CancelIncidentProcessStimulus,
@@ -279,6 +279,9 @@ function answersInteraction(
     case StimulusKind.DeliverMessage:
       return interaction.kind === StimulusKind.DeliverMessage &&
         sameMessageChannel(interaction.channel, response.channel);
+    case StimulusKind.DeliverPayloadMessage:
+      return interaction.kind === StimulusKind.DeliverPayloadMessage &&
+        sameMessageChannel(interaction.channel, response.channel);
     case StimulusKind.CancelIncidentProcess:
       return interaction.kind === StimulusKind.CancelIncidentProcess;
     default:
@@ -373,6 +376,19 @@ async function submitAnswer(
         `mvp-deliver-message:${interaction.subscriptionId.elementId}:${interaction.subscriptionId.activation}`,
       subscriptionId: interaction.subscriptionId,
       channel: interaction.channel,
+    });
+  }
+  if (
+    interaction.kind === StimulusKind.DeliverPayloadMessage &&
+    response.kind === StimulusKind.DeliverPayloadMessage
+  ) {
+    return port.submitMessage({
+      kind: StimulusKind.DeliverPayloadMessage,
+      commandId:
+        `mvp-deliver-payload-message:${interaction.subscriptionId.elementId}:${interaction.subscriptionId.activation}`,
+      subscriptionId: interaction.subscriptionId,
+      channel: interaction.channel,
+      payload: response.payload,
     });
   }
   if (

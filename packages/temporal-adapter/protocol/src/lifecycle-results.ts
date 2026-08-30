@@ -43,7 +43,10 @@ export function isMessageDeliveryRecord(
     !isPlainDataTree(value) ||
     !isRecord(value) ||
     !isWellFormedStimulus(value.stimulus) ||
-    value.stimulus.kind !== StimulusKind.DeliverMessage
+    (
+      value.stimulus.kind !== StimulusKind.DeliverMessage &&
+      value.stimulus.kind !== StimulusKind.DeliverPayloadMessage
+    )
   ) {
     return false;
   }

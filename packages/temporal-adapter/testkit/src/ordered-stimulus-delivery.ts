@@ -97,6 +97,7 @@ export async function deliverStimuliInOrder(
         );
         break;
       case StimulusKind.DeliverMessage:
+      case StimulusKind.DeliverPayloadMessage:
       case StimulusKind.CompleteEffect:
       case StimulusKind.ReportEffectFailure:
       case StimulusKind.RetryIncident:

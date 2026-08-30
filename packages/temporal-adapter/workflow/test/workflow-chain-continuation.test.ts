@@ -389,6 +389,22 @@ test("rejects a carried Message resolution for another Process instance", () => 
   assertInvalidIncoming(malformedArgs);
 });
 
+test("preserves an exact payload Message resolution through continuation admission", () => {
+  const record = payloadMessageRecord(publicationStart.instanceId);
+  const args = successorArguments([record]);
+
+  assert.deepEqual(args[2].completedMessageDeliveryRecords, [record]);
+  assert.doesNotThrow(() => validateIncomingWorkflowContinuation(
+    args[0],
+    args[1],
+    args[2],
+    args[3],
+    args[4],
+    args[5],
+    firstExecutionRunId,
+  ));
+});
+
 test("classifies an oversized successor RuntimeState as exact capacity exhaustion", () => {
   const base = successorFixture();
   const state = {
@@ -628,6 +644,32 @@ function messageRecord(
       channel: {
         kind: MessageChannelKind.DirectMessage,
         messageId: "Message_1",
+      },
+    },
+    outcome: CommandOutcome.Committed,
+  };
+}
+
+function payloadMessageRecord(
+  processInstanceId: string,
+): MessageDeliveryRecord {
+  return {
+    kind: MessageDeliveryResolutionKind.Semantic,
+    stimulus: {
+      kind: StimulusKind.DeliverPayloadMessage,
+      commandId: "deliver-payload-message",
+      subscriptionId: {
+        processInstanceId,
+        elementId: "MessageCatch_1",
+        activation: 1,
+      },
+      channel: {
+        kind: MessageChannelKind.DirectMessage,
+        messageId: "Message_1",
+      },
+      payload: {
+        kind: VariableValueKind.String,
+        value: "settlement-123",
       },
     },
     outcome: CommandOutcome.Committed,

@@ -18,6 +18,11 @@ import {
   timerUserTaskCompositionScenarioUrl,
 } from "./temporal-test-support.ts";
 
+const payloadScenarioUrl = new URL(
+  "../../../../scenarios/message-payload-catch/supplied-scalar.scenario.json",
+  import.meta.url,
+);
+
 function completionIn(
   scenario: Scenario,
 ): CompleteUserTaskInstanceStimulus {
@@ -33,6 +38,7 @@ test("waits only when host-driven progress precedes a User Task completion", asy
   const composed = await loadJson<Scenario>(
     timerUserTaskCompositionScenarioUrl,
   );
+  const payload = await loadJson<Scenario>(payloadScenarioUrl);
   const direct = await loadJson<Scenario>(requiredScenarioUrl(0));
 
   assert.equal(
@@ -40,6 +46,10 @@ test("waits only when host-driven progress precedes a User Task completion", asy
       composed,
       completionIn(composed),
     ),
+    true,
+  );
+  assert.equal(
+    requiresHostProgressBeforeCompletion(payload, completionIn(payload)),
     true,
   );
   assert.equal(

@@ -316,6 +316,7 @@ export function isExternallyRecoverableStimulus(stimulus: Stimulus): boolean {
   switch (stimulus.kind) {
     case StimulusKind.CompleteUserTaskInstance:
     case StimulusKind.DeliverMessage:
+    case StimulusKind.DeliverPayloadMessage:
     case StimulusKind.RetryIncident:
     case StimulusKind.CancelIncidentProcess:
       return true;

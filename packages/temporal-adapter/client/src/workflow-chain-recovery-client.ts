@@ -1,7 +1,4 @@
 /** Content-bound Product 1 command recovery across a Workflow chain. */
-import type {
-  DeliverMessageStimulus,
-} from "@bpmn-lean/semantic-core";
 import {
   CommandOutcome,
   StimulusKind,
@@ -38,6 +35,7 @@ import {
 import type {
   BpmnProcessWorkflow,
   ExternallyRetryableStimulus,
+  MessageDeliveryStimulus,
   ProcessCommandResult,
   TerminalProcessReceipt,
   WorkflowChainCapacityFailureDetails,
@@ -72,7 +70,11 @@ export class BpmnWorkflowChainCapacityExhausted extends Error {
 
 type WorkflowChainUpdateStimulus = Exclude<
   ExternallyRetryableStimulus,
-  { kind: StimulusKind.DeliverMessage }
+  {
+    kind:
+      | StimulusKind.DeliverMessage
+      | StimulusKind.DeliverPayloadMessage;
+  }
 >;
 
 export type WorkflowChainUpdateResolution = Readonly<{
@@ -141,7 +143,7 @@ export type WorkflowChainMessageResolution = Readonly<{
   client: WorkflowClient;
   workflowId: string;
   processInstanceId: string;
-  stimulus: DeliverMessageStimulus;
+  stimulus: MessageDeliveryStimulus;
   signalName: string;
   resultQueryName: string;
   operation: string;
@@ -169,7 +171,7 @@ export async function resolveWorkflowChainMessage(
     await beforeDeadline(
       deadline,
       `${resolution.operation} Signal ${request.commandId}`,
-      () => handle.signal<[DeliverMessageStimulus]>(
+      () => handle.signal<[MessageDeliveryStimulus]>(
         resolution.signalName,
         resolution.stimulus,
       ),
@@ -203,7 +205,7 @@ export async function resolveWorkflowChainMessage(
       const candidate = await beforeDeadline(
         deadline,
         `${resolution.operation} result Query ${request.commandId}`,
-        () => handle.query<unknown, [DeliverMessageStimulus]>(
+        () => handle.query<unknown, [MessageDeliveryStimulus]>(
           resolution.resultQueryName,
           resolution.stimulus,
         ),
@@ -355,7 +357,7 @@ async function resolveTerminalResult(
 async function resolveTerminalMessageResult(
   handle: WorkflowHandle<BpmnProcessWorkflow>,
   request: WorkflowChainCommandRecoveryRequest,
-  stimulus: DeliverMessageStimulus,
+  stimulus: MessageDeliveryStimulus,
   deadline: number,
 ): Promise<ProcessCommandResult> {
   const terminal = await readTerminalResult(handle, deadline);
@@ -412,13 +414,16 @@ async function readTerminalResult(
 
 function interpretMessageResolution(
   candidate: unknown,
-  stimulus: DeliverMessageStimulus,
+  stimulus: MessageDeliveryStimulus,
 ): ProcessCommandResult | null {
   if (candidate === null) {
     return null;
   }
   if (!isRecord(candidate) || !isWellFormedStimulus(candidate.stimulus) ||
-    candidate.stimulus.kind !== StimulusKind.DeliverMessage) {
+    (
+      candidate.stimulus.kind !== StimulusKind.DeliverMessage &&
+      candidate.stimulus.kind !== StimulusKind.DeliverPayloadMessage
+    )) {
     throw new TypeError("Malformed Message delivery resolution");
   }
   switch (candidate.kind) {

@@ -4,6 +4,7 @@ import type {
   CompleteUserTaskInstanceStimulus,
   DeepReadonly,
   DeliverMessageStimulus,
+  DeliverPayloadMessageStimulus,
   OpenEffect,
   OpenTimer,
   OpenUserTask,
@@ -167,19 +168,23 @@ export type MessageDeliveryResolutionKind =
     keyof typeof MessageDeliveryResolutionKind
   ];
 
+export type MessageDeliveryStimulus =
+  | DeliverMessageStimulus
+  | DeliverPayloadMessageStimulus;
+
 export type MessageDeliveryResolution = DeepReadonly<
   | {
       kind: typeof MessageDeliveryResolutionKind.Pending;
-      stimulus: DeliverMessageStimulus;
+      stimulus: MessageDeliveryStimulus;
     }
   | {
       kind: typeof MessageDeliveryResolutionKind.Semantic;
-      stimulus: DeliverMessageStimulus;
+      stimulus: MessageDeliveryStimulus;
       outcome: CommandOutcome;
     }
   | {
       kind: typeof MessageDeliveryResolutionKind.RequestFailure;
-      stimulus: DeliverMessageStimulus;
+      stimulus: MessageDeliveryStimulus;
       failure: "commandIdentityConflict";
     }
 >;
@@ -230,9 +235,9 @@ export type BpmnUserTaskDetailQueryArguments = [
 ];
 
 export type BpmnDeliverMessageSignalArguments = [
-  stimulus: DeliverMessageStimulus,
+  stimulus: MessageDeliveryStimulus,
 ];
 
 export type BpmnMessageDeliveryResultQueryArguments = [
-  stimulus: DeliverMessageStimulus,
+  stimulus: MessageDeliveryStimulus,
 ];

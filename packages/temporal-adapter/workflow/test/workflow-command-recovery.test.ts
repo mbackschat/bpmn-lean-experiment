@@ -7,9 +7,11 @@ import {
   MessageChannelKind,
   ProcessStatus,
   StimulusKind,
+  VariableValueKind,
 } from "@bpmn-lean/semantic-core";
 import type {
   CompleteUserTaskInstanceStimulus,
+  DeliverPayloadMessageStimulus,
   Stimulus,
 } from "@bpmn-lean/semantic-core";
 import {
@@ -36,6 +38,26 @@ test("derives command recovery identity from the existing complete canonical sti
     workflowCommandStimulusSha256(stimulus),
     deterministicSha256Hex(canonicalStimulusEncoding(stimulus)),
   );
+});
+
+test("retains payload-distinct Message delivery identity across recovery", () => {
+  const first = payloadDelivery("payload-a");
+  const changed = payloadDelivery("payload-b");
+  const ledger = new WorkflowCommandRecoveryLedger();
+  const preflight = ledger.preflight(first);
+  assert.equal(preflight.kind, WorkflowCommandRecoveryPreflightKind.Admitted);
+  if (preflight.kind !== WorkflowCommandRecoveryPreflightKind.Admitted) {
+    assert.fail("expected payload delivery admission");
+  }
+  ledger.record(preflight.admission, CommandOutcome.Rejected);
+
+  assert.deepEqual(ledger.lookup(first), {
+    kind: WorkflowCommandRecoveryLookupKind.Resolved,
+    outcome: CommandOutcome.Rejected,
+  });
+  assert.deepEqual(ledger.lookup(changed), {
+    kind: WorkflowCommandRecoveryLookupKind.IdentityConflict,
+  });
 });
 
 test("rejects start and adapter-derived stimuli from external lifetime recovery", () => {
@@ -409,7 +431,27 @@ function completion(
   };
 }
 
-function recoveryRequest(value: CompleteUserTaskInstanceStimulus) {
+function payloadDelivery(value: string): DeliverPayloadMessageStimulus {
+  return {
+    kind: StimulusKind.DeliverPayloadMessage,
+    commandId: "Deliver_Message_1",
+    subscriptionId: {
+      processInstanceId: "Instance_1",
+      elementId: "MessageCatch_1",
+      activation: 1,
+    },
+    channel: {
+      kind: MessageChannelKind.DirectMessage,
+      messageId: "Message_1",
+    },
+    payload: {
+      kind: VariableValueKind.String,
+      value,
+    },
+  };
+}
+
+function recoveryRequest(value: Stimulus) {
   return {
     protocol: bpmnWorkflowChainProtocolV1,
     processInstanceId: "Instance_1",

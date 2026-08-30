@@ -7,7 +7,6 @@ import type {
   CanonicalObservation,
   CompleteUserTaskInstanceStimulus,
   DeepReadonly,
-  DeliverMessageStimulus,
   SemanticProcessProgram,
   ProcessStartStimulus,
 } from "@bpmn-lean/semantic-core";
@@ -37,6 +36,7 @@ import {
 } from "@bpmn-lean/temporal-protocol";
 import type {
   BpmnProcessWorkflow,
+  MessageDeliveryStimulus,
   ProcessCommandResult,
   TemporalHostAdmissionFailure,
   UserTaskDetail,
@@ -306,10 +306,13 @@ export async function submitMessageDeliveryAtWorkflowId(
 function requireMessageDelivery(
   processInstanceId: string,
   stimulus: unknown,
-): DeliverMessageStimulus {
+): MessageDeliveryStimulus {
   if (
     !isWellFormedStimulus(stimulus) ||
-    stimulus.kind !== StimulusKind.DeliverMessage ||
+    (
+      stimulus.kind !== StimulusKind.DeliverMessage &&
+      stimulus.kind !== StimulusKind.DeliverPayloadMessage
+    ) ||
     stimulus.subscriptionId.processInstanceId !== processInstanceId
   ) {
     throw new BpmnMessageIngressInvalid(

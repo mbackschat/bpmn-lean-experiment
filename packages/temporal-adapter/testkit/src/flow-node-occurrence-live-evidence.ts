@@ -291,6 +291,7 @@ async function runScenario(
   for (const stimulus of input.scenario.stimuli.slice(1)) {
     switch (stimulus.kind) {
       case StimulusKind.DeliverMessage:
+      case StimulusKind.DeliverPayloadMessage:
         requireCommitted(await withDeadline(
           submitMessageDeliveryAtWorkflowId(
             environment.client.workflow,

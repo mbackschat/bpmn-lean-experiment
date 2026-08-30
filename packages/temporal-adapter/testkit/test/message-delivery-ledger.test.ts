@@ -10,9 +10,11 @@ import {
   CommandOutcome,
   MessageChannelKind,
   StimulusKind,
+  VariableValueKind,
 } from "@bpmn-lean/semantic-core";
 import type {
   DeliverMessageStimulus,
+  DeliverPayloadMessageStimulus,
 } from "@bpmn-lean/semantic-core";
 import {
   MessageDeliveryResolutionKind,
@@ -95,4 +97,38 @@ test("records conflicting content in Signal order without replacing the first co
       CommandOutcome.Rejected,
     )
   );
+});
+
+test("treats a payload change under one command identity as a conflict", () => {
+  const records: MessageDeliveryResolution[] = [];
+  const first = {
+    ...delivery,
+    kind: StimulusKind.DeliverPayloadMessage,
+    payload: {
+      kind: VariableValueKind.String,
+      value: "payload-a",
+    },
+  } as const satisfies DeliverPayloadMessageStimulus;
+  const changed = {
+    ...first,
+    payload: {
+      kind: VariableValueKind.String,
+      value: "payload-b",
+    },
+  } as const satisfies DeliverPayloadMessageStimulus;
+
+  assert.equal(acceptMessageDelivery(records, first).enqueue, true);
+  assert.equal(acceptMessageDelivery(records, first).enqueue, false);
+  assert.equal(acceptMessageDelivery(records, changed).enqueue, false);
+  assert.deepEqual(records, [
+    {
+      kind: MessageDeliveryResolutionKind.Pending,
+      stimulus: first,
+    },
+    {
+      kind: MessageDeliveryResolutionKind.RequestFailure,
+      stimulus: changed,
+      failure: "commandIdentityConflict",
+    },
+  ]);
 });

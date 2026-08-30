@@ -11,7 +11,6 @@ import {
 } from "@bpmn-lean/semantic-core";
 import type {
   CommandOutcome,
-  DeliverMessageStimulus,
   Stimulus,
 } from "@bpmn-lean/semantic-core";
 
@@ -21,6 +20,7 @@ import {
 import type {
   MessageDeliveryRecord,
   MessageDeliveryResolution,
+  MessageDeliveryStimulus,
 } from "@bpmn-lean/temporal-protocol";
 
 export type MessageDeliveryAcceptance = Readonly<{
@@ -29,7 +29,7 @@ export type MessageDeliveryAcceptance = Readonly<{
 
 export function messageDeliveryWillEnqueue(
   resolutions: ReadonlyArray<MessageDeliveryResolution>,
-  stimulus: DeliverMessageStimulus,
+  stimulus: MessageDeliveryStimulus,
   previouslyAccepted?: Stimulus,
 ): boolean {
   return classifyMessageDelivery(
@@ -41,7 +41,7 @@ export function messageDeliveryWillEnqueue(
 
 export function acceptMessageDelivery(
   resolutions: MessageDeliveryResolution[],
-  stimulus: DeliverMessageStimulus,
+  stimulus: MessageDeliveryStimulus,
   previouslyAccepted?: Stimulus,
 ): MessageDeliveryAcceptance {
   switch (classifyMessageDelivery(resolutions, stimulus, previouslyAccepted)) {
@@ -73,7 +73,7 @@ enum MessageDeliveryAdmission {
 
 function classifyMessageDelivery(
   resolutions: ReadonlyArray<MessageDeliveryResolution>,
-  stimulus: DeliverMessageStimulus,
+  stimulus: MessageDeliveryStimulus,
   previouslyAccepted?: Stimulus,
 ): MessageDeliveryAdmission {
   if (findMessageDeliveryResolution(resolutions, stimulus) !== undefined) {
@@ -93,7 +93,7 @@ function classifyMessageDelivery(
 
 export function recordMessageDeliveryOutcome(
   resolutions: MessageDeliveryResolution[],
-  stimulus: DeliverMessageStimulus,
+  stimulus: MessageDeliveryStimulus,
   outcome: CommandOutcome,
 ): void {
   const index = resolutions.findIndex(
@@ -122,7 +122,7 @@ export function recordMessageDeliveryOutcome(
 
 export function findMessageDeliveryResolution(
   resolutions: ReadonlyArray<MessageDeliveryResolution>,
-  stimulus: DeliverMessageStimulus,
+  stimulus: MessageDeliveryStimulus,
 ): MessageDeliveryResolution | undefined {
   return resolutions.find(
     ({ stimulus: candidate }) => sameStimulus(candidate, stimulus),

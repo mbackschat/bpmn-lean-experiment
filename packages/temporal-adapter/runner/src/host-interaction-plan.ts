@@ -18,6 +18,7 @@ import type {
   DeepReadonly,
   MessageChannel,
   UserTaskCompletionBinding,
+  VariableValue,
 } from "@bpmn-lean/semantic-core";
 import type {
   EffectActivityImplementationResult,
@@ -44,6 +45,12 @@ export type HostInteractionResponse = DeepReadonly<
   | {
       kind: StimulusKind.DeliverMessage;
       channel: MessageChannel;
+      delayMs: number;
+    }
+  | {
+      kind: StimulusKind.DeliverPayloadMessage;
+      channel: MessageChannel;
+      payload: VariableValue;
       delayMs: number;
     }
   | {
@@ -119,7 +126,8 @@ function validateHostInteractionResponse(
       validateCompletionResponse(value);
       return;
     case StimulusKind.DeliverMessage:
-      validateDeliveryResponse(value);
+    case StimulusKind.DeliverPayloadMessage:
+      validateDeliveryResponse(value, value.kind);
       return;
     case StimulusKind.CancelIncidentProcess:
       validateCancellationResponse(value);
@@ -172,16 +180,41 @@ function validateCompletionResponse(value: Record<string, unknown>): void {
   }
 }
 
-function validateDeliveryResponse(value: Record<string, unknown>): void {
+function validateDeliveryResponse(
+  value: Record<string, unknown>,
+  kind:
+    | StimulusKind.DeliverMessage
+    | StimulusKind.DeliverPayloadMessage,
+): void {
   const record = requireExactObject(
     value,
-    ["kind", "channel", "delayMs"],
+    kind === StimulusKind.DeliverPayloadMessage
+      ? ["kind", "channel", "payload", "delayMs"]
+      : ["kind", "channel", "delayMs"],
     "Message delivery response",
   );
   requirePositiveSafeInteger(record.delayMs, "Delivery response delayMs");
   if (!isMessageChannel(record.channel)) {
     throw new TypeError(
       "Delivery response channel must be a canonical Message channel",
+    );
+  }
+  if (
+    kind === StimulusKind.DeliverPayloadMessage &&
+    !isWellFormedStimulus({
+      kind,
+      commandId: "interaction-plan-validation",
+      subscriptionId: {
+        processInstanceId: "interaction-plan-validation",
+        elementId: "interaction-plan-validation",
+        activation: 1,
+      },
+      channel: record.channel,
+      payload: record.payload,
+    })
+  ) {
+    throw new TypeError(
+      "Payload delivery response payload must be one canonical variable value",
     );
   }
 }

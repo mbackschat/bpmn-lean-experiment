@@ -11,6 +11,8 @@ import {
   assessTemporalHostCapability,
   buildWorkflowChainRecoveryRequest,
   canonicalStimulusEncoding,
+  isMessageDeliveryRecord,
+  MessageDeliveryResolutionKind,
   requireExecutionPublicationPage,
   requireExecutionPublicationTransportResult,
 } from "../dist/index.js";
@@ -70,6 +72,25 @@ test("content-binds the exact tagged payload in command and recovery identity", 
     () => buildWorkflowChainRecoveryRequest("Instance_Other", text),
     /mismatched Process-instance ID/u,
   );
+  assert.equal(isMessageDeliveryRecord({
+    kind: MessageDeliveryResolutionKind.Semantic,
+    stimulus: text,
+    outcome: "rejected",
+  }), true);
+  assert.equal(isMessageDeliveryRecord({
+    kind: MessageDeliveryResolutionKind.Semantic,
+    stimulus: {
+      kind: StimulusKind.CompleteUserTaskInstance,
+      commandId: text.commandId,
+      taskId: {
+        processInstanceId,
+        elementId: "UserTask_1",
+        activation: 1,
+      },
+      submittedValues: [],
+    },
+    outcome: "rejected",
+  }), false);
 });
 
 test("binds each Message subscription interaction to its declaring Program arm", () => {
