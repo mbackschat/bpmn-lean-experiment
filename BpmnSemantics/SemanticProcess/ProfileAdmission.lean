@@ -28,6 +28,7 @@ private structure ShapeCardinalities where
   dataInputUserTasks : Nat := 0
   dataOutputUserTasks : Nat := 0
   messages : Nat := 0
+  payloadMessages : Nat := 0
   receiveTasks : Nat := 0
   timers : Nat := 0
   configuredTasks : Nat := 0
@@ -89,6 +90,8 @@ private def nodeCardinalities (nodes : List CheckedNode) :
         { counts with timers := counts.timers + 1 }
     | .intermediateCatchMessageEvent .. =>
         { counts with messages := counts.messages + 1 }
+    | .payloadMessageCatchEvent .. =>
+        { counts with payloadMessages := counts.payloadMessages + 1 }
     | .receiveTask .. =>
         { counts with receiveTasks := counts.receiveTasks + 1 }
     | .configuredTask .. =>
@@ -139,6 +142,8 @@ private def addOperationCardinality (counts : ShapeCardinalities)
     | .completeParallelMultiInstanceUserTask .. => counts
     | .awaitTimer .. => { counts with timers := counts.timers + 1 }
     | .awaitMessage .. => { counts with messages := counts.messages + 1 }
+    | .awaitPayloadMessage .. =>
+        { counts with payloadMessages := counts.payloadMessages + 1 }
     | .awaitEventRace .. => { counts with eventRaces := counts.eventRaces + 1 }
     | .awaitBoundedUserTask .. =>
         { counts with boundedUserTasks := counts.boundedUserTasks + 1 }
@@ -269,6 +274,9 @@ private def checkedShape? (profile : String) : Option (Nat × ShapeCardinalities
   else if profile = "bpmn-2.0.2-intermediate-catch-message-draft" then
     some (1,
       { starts := 1, userTasks := 1, messages := 1, ends := 1 })
+  else if profile = messagePayloadCatchProfileId.value then
+    some (1,
+      { starts := 1, userTasks := 1, payloadMessages := 1, ends := 1 })
   else if profile =
       "cibseven-2.2.0-message-addressed-receive-task-draft" then
     some (1, { starts := 1, receiveTasks := 1, ends := 1 })
@@ -372,6 +380,9 @@ private def programShape? (profile : String) : Option (Nat × ShapeCardinalities
   else if profile = "bpmn-2.0.2-intermediate-catch-message-draft" then
     some (1, withScopeCompletions 1
       { initiates := 1, userTasks := 1, messages := 1, ends := 1 })
+  else if profile = messagePayloadCatchProfileId.value then
+    some (1, withScopeCompletions 1
+      { initiates := 1, userTasks := 1, payloadMessages := 1, ends := 1 })
   else if profile =
       "cibseven-2.2.0-message-addressed-receive-task-draft" then
     some (1, withScopeCompletions 1
@@ -616,6 +627,21 @@ private def operationPayloadCapabilitiesValid (profile : String)
       | .initiateMessage _ _ (.operationMessage ..) outputs =>
           outputs.length = 1
       | .initiateMessage .. => false
+      | _ => true
+  else if profile = messagePayloadCatchProfileId.value then
+    operations.all fun
+      | .awaitPayloadMessage _ origin _ _ message directOutput =>
+          origin.elementId = message.elementId &&
+            match message.channel with
+            | .operationMessage interfaceId operationId messageId =>
+                let identities :=
+                  [ message.elementId.value, interfaceId.value, operationId.value, messageId.value
+                  , directOutput.associationId, directOutput.sourceDataOutputId
+                  , directOutput.targetPropertyId ]
+                message.channel.identifiersNonempty && identities.all (fun id => !id.isEmpty) &&
+                  identities.eraseDups.length = identities.length &&
+                  decide (directOutput.sourceDataOutputName ≠ some "")
+            | .directMessage .. => false
       | _ => true
   else if profile = "bpmn-2.0.2-timer-start-event-draft" then
     operations.all fun

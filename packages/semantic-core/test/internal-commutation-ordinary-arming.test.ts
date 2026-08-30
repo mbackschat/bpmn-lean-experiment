@@ -152,9 +152,16 @@ function payloadMessageArmingCase(): Readonly<{
   assert.ok(
     ordinary.candidate.operation.kind === SemanticOperationKind.AwaitMessage,
   );
+  const channel = {
+    kind: "operationMessage",
+    interfaceId: "Interface_Payload",
+    interfaceOperationId: "Operation_ReceivePayload",
+    messageId: "Message_Payload",
+  } as const;
   const operation = {
     ...ordinary.candidate.operation,
     kind: SemanticOperationKind.AwaitPayloadMessage,
+    message: { ...ordinary.candidate.operation.message, channel },
     directOutput: {
       associationId: "DataOutputAssociation_Payload",
       sourceDataOutputId: "DataOutput_Payload",
@@ -170,7 +177,18 @@ function payloadMessageArmingCase(): Readonly<{
       ),
     },
     state: ordinary.state,
-    candidate: { ...ordinary.candidate, operation },
+    candidate: {
+      ...ordinary.candidate,
+      operation,
+      successor: {
+        ...ordinary.candidate.successor,
+        messageWaits: ordinary.candidate.successor.messageWaits.map((wait) =>
+          wait.id.elementId === operation.message.elementId
+            ? { ...wait, channel }
+            : wait
+        ),
+      },
+    },
   };
 }
 

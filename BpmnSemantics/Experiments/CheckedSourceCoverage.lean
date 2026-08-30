@@ -70,6 +70,8 @@ private theorem parseFrom_visited (source : CheckedProcess) (fuel : Nat)
             simp [segmentNodes, ih _ _ parsed]
         | intermediateCatchMessageEvent _ _ =>
             simp [parseFrom, nodeResult] at result
+        | payloadMessageCatchEvent _ _ _ =>
+            simp [parseFrom, nodeResult] at result
         | receiveTask _ _ =>
             simp [parseFrom, nodeResult] at result
         | exclusiveMerge _ =>

@@ -93,6 +93,16 @@ private def decodeDirectActivityDataOutput (json : Json) :
       sourceDataOutputName := ← decodeOptionalString (← field json "sourceDataOutputName")
       targetPropertyId := ← stringField json "targetPropertyId" }
 
+private def decodeDirectCatchEventPayloadOutput (json : Json) :
+    Except String DirectCatchEventPayloadOutput := do
+  requireObjectShape json
+    ["associationId", "sourceDataOutputId", "sourceDataOutputName", "targetPropertyId"]
+  pure
+    { associationId := ← stringField json "associationId"
+      sourceDataOutputId := ← stringField json "sourceDataOutputId"
+      sourceDataOutputName := ← decodeOptionalString (← field json "sourceDataOutputName")
+      targetPropertyId := ← stringField json "targetPropertyId" }
+
 private def decodeTimerDefinition (json : Json) :
     Except String TimerDefinition := do
   requireObjectShape json ["durationMs", "elementId"]
@@ -106,6 +116,13 @@ private def decodeMessageDefinition (json : Json) :
   pure
     { elementId := ⟨← stringField json "elementId"⟩
       channel := ← decodeMessageChannel (← field json "channel") }
+
+private def decodePayloadMessageDefinition (json : Json) :
+    Except String MessageDefinition := do
+  requireObjectShape json ["channel", "elementId"]
+  pure
+    { elementId := ⟨← stringField json "elementId"⟩
+      channel := ← decodeOperationMessageChannel (← field json "channel") }
 
 private def decodeEventRaceMessageArm (json : Json) :
     Except String EventRaceMessageArm := do
@@ -488,6 +505,17 @@ private def decodeOperation (json : Json) :
           ⟨← stringField json "input"⟩
           ⟨← stringField json "output"⟩
           (← decodeMessageDefinition (← field json "message")))
+  | "awaitPayloadMessage" =>
+      requireObjectShape json
+        ["directOutput", "id", "input", "kind", "message", "origin", "output"]
+      pure
+        (.awaitPayloadMessage
+          id
+          origin
+          ⟨← stringField json "input"⟩
+          ⟨← stringField json "output"⟩
+          (← decodePayloadMessageDefinition (← field json "message"))
+          (← decodeDirectCatchEventPayloadOutput (← field json "directOutput")))
   | "awaitEventRace" =>
       requireObjectShape json
         ["id", "input", "kind", "message", "origin", "timer"]

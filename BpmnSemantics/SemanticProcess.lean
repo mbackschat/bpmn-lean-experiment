@@ -20,6 +20,8 @@ import BpmnSemantics.SemanticProcess.ActivityDataOutput
 import BpmnSemantics.SemanticProcess.EventBasedGateway
 import BpmnSemantics.SemanticProcess.ErrorPropagation
 import BpmnSemantics.SemanticProcess.Message
+import BpmnSemantics.SemanticProcess.MessagePayload
+import BpmnSemantics.SemanticProcess.MessagePayloadPreservation
 import BpmnSemantics.SemanticProcess.MessageStart
 import BpmnSemantics.SemanticProcess.TimerStart
 import BpmnSemantics.SemanticProcess.TimerStartAdmission

@@ -195,6 +195,11 @@ def enabledInteractionJson : EnabledInteraction → Json
         [ ("kind", toJson "deliverMessage")
         , ("subscriptionId", occurrenceIdJson subscriptionId)
         , ("channel", messageChannelJson channel) ]
+  | .deliverPayloadMessage subscriptionId channel =>
+      Json.mkObj
+        [ ("kind", toJson "deliverPayloadMessage")
+        , ("subscriptionId", occurrenceIdJson subscriptionId)
+        , ("channel", messageChannelJson channel) ]
   | .retryIncident incidentId =>
       Json.mkObj
         [ ("kind", toJson "retryIncident")
@@ -298,6 +303,13 @@ def stimulusJson : Stimulus → Json
         , ("commandId", toJson commandId.value)
         , ("subscriptionId", occurrenceIdJson subscriptionId)
         , ("channel", messageChannelJson channel) ]
+  | .deliverPayloadMessage commandId subscriptionId channel payload =>
+      Json.mkObj
+        [ ("kind", toJson "deliverPayloadMessage")
+        , ("commandId", toJson commandId.value)
+        , ("subscriptionId", occurrenceIdJson subscriptionId)
+        , ("channel", messageChannelJson channel)
+        , ("payload", encodeVariableValue payload) ]
   | .fireTimer commandId timerId logicalTimeMs =>
       Json.mkObj
         [ ("kind", toJson "fireTimer")
@@ -399,6 +411,28 @@ theorem cancel_interaction_json_retains_process_and_incident_identity
         [ ("kind", toJson "cancelIncidentProcess")
         , ("processInstanceId", toJson processInstanceId.value)
         , ("incidentId", effectIncidentIdJson incidentId) ] := by
+  rfl
+
+theorem payload_message_stimulus_json_is_exact
+    (commandId : SemanticId) (subscriptionId : MessageSubscriptionId)
+    (channel : MessageChannel) (payload : VariableValue) :
+    stimulusJson
+        (.deliverPayloadMessage commandId subscriptionId channel payload) =
+      Json.mkObj
+        [ ("kind", toJson "deliverPayloadMessage")
+        , ("commandId", toJson commandId.value)
+        , ("subscriptionId", occurrenceIdJson subscriptionId)
+        , ("channel", messageChannelJson channel)
+        , ("payload", encodeVariableValue payload) ] := by
+  rfl
+
+theorem payload_message_interaction_json_is_exact
+    (subscriptionId : MessageSubscriptionId) (channel : MessageChannel) :
+    enabledInteractionJson (.deliverPayloadMessage subscriptionId channel) =
+      Json.mkObj
+        [ ("kind", toJson "deliverPayloadMessage")
+        , ("subscriptionId", occurrenceIdJson subscriptionId)
+        , ("channel", messageChannelJson channel) ] := by
   rfl
 
 theorem cancelled_state_observation_json_is_exact

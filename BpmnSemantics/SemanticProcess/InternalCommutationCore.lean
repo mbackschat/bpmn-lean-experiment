@@ -262,11 +262,13 @@ def selectedInputOrigin? (program : Program) (input : ControlPlaceId) (owner : S
 
 def internalArmInput? : SemanticOperation → Option ControlPlaceId
   | .awaitUserTask _ _ input _ _ | .awaitMessage _ _ input _ _
+  | .awaitPayloadMessage _ _ input _ _ _
   | .awaitTimer _ _ input _ _ | .awaitEffect _ _ input _ _ _ => some input
   | _ => none
 
 def internalArmOrigin? : SemanticOperation → Option BpmnElementOrigin
   | .awaitUserTask _ origin _ _ _ | .awaitMessage _ origin _ _ _
+  | .awaitPayloadMessage _ origin _ _ _ _
   | .awaitTimer _ origin _ _ _ | .awaitEffect _ origin _ _ _ _ => some origin
   | _ => none
 
@@ -316,6 +318,11 @@ def prepareInternalArm? (program : Program) (state : RuntimeState)
           { processInstanceId := owner.processInstanceId, owner, task, activation := next,
             output, metadata := task.metadata })
     | .awaitMessage _ _ _ output message =>
+        let next := messageActivationCount state message.elementId + 1
+        some (.message
+          { processInstanceId := owner.processInstanceId, owner,
+            elementId := message.elementId, activation := next, channel := message.channel, output })
+    | .awaitPayloadMessage _ _ _ output message _ =>
         let next := messageActivationCount state message.elementId + 1
         some (.message
           { processInstanceId := owner.processInstanceId, owner,

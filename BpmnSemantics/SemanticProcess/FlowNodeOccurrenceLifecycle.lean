@@ -13,6 +13,7 @@ def stimulusCommandId : Stimulus → SemanticId
   | .triggerTimerStart commandId ..
   | .completeUserTaskInstance commandId ..
   | .deliverMessage commandId ..
+  | .deliverPayloadMessage commandId ..
   | .fireTimer commandId ..
   | .completeEffect commandId ..
   | .reportEffectFailure commandId ..
@@ -141,6 +142,7 @@ def flowNodeSelectedOperationOwner? (state : RuntimeState) :
   | .awaitParallelMultiInstanceUserTask _ _ input _ _ _ _ _ _ _
   | .awaitTimer _ _ input _ _
   | .awaitMessage _ _ input _ _
+  | .awaitPayloadMessage _ _ input _ _ _
   | .awaitEventRace _ _ input _ _
   | .awaitBoundedUserTask _ _ input _ _
   | .awaitMonitoredUserTask _ _ input _ _
@@ -472,6 +474,13 @@ def candidateFlowNodeOccurrenceDeltaForStimulus? (program : Program) (before : R
         | some race => some (canonicalFlowNodeOccurrenceDelta []
             [waitEnd race.messageSubscriptionId .completed, waitEnd race.timerOccurrenceId .cancelled])
         | none => some (canonicalFlowNodeOccurrenceDelta [] [waitEnd subscriptionId .completed])
+  | .deliverPayloadMessage _ subscriptionId _ _ =>
+      if before.messageWaits.any fun wait => decide
+          (wait.processInstanceId = subscriptionId.processInstanceId &&
+            wait.elementId.value = subscriptionId.elementId.value &&
+            wait.activation = subscriptionId.activation) then
+        some (canonicalFlowNodeOccurrenceDelta [] [waitEnd subscriptionId .completed])
+      else none
   | .fireTimer _ timerId _ => do
       let timer ← before.timerWaits.find? fun wait => decide
         (wait.processInstanceId = timerId.processInstanceId &&
@@ -581,6 +590,17 @@ def candidateFlowNodeOccurrenceDeltaForOperation? (program : Program) (before af
         | [wait] => some wait
         | _ => none
       pure (canonicalFlowNodeOccurrenceDelta [← candidateMessageStart? program operation owner wait] [])
+  | .awaitPayloadMessage _ _ _ _ message _ =>
+      let activation := activationForNode
+        (before.messageActivations.map fun value => (value.elementId, value.count))
+        message.elementId + 1
+      let wait ← match after.messageWaits.filter fun wait => decide
+          (wait.owner = owner && wait.elementId = message.elementId &&
+            wait.activation = activation) with
+        | [wait] => some wait
+        | _ => none
+      pure (canonicalFlowNodeOccurrenceDelta
+        [← candidateMessageStart? program operation owner wait] [])
   | .awaitEventRace _ origin _ _ _ =>
       let activation := activationForNode (before.eventRaceActivations.map fun value => (value.elementId, value.count)) origin.elementId + 1
       let gateway ← identityFor origin.elementId

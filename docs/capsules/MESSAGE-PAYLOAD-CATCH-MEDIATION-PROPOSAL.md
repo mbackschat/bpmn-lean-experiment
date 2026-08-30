@@ -152,8 +152,8 @@ The `OWNER` measurements below are the nonblank counts reported by `node scripts
 
 | Owner | Current headroom |
 |---|---:|
-| [Lean ProfileAdmission](../../BpmnSemantics/SemanticProcess/ProfileAdmission.lean) | 128 |
-| [Lean SemanticProcessContract](../../BpmnSemantics/SemanticProcessContract.lean) | 161 |
+| [Lean ProfileAdmission](../../BpmnSemantics/SemanticProcess/ProfileAdmission.lean) | 102 |
+| [Lean SemanticProcessContract](../../BpmnSemantics/SemanticProcessContract.lean) | 141 |
 | [TypeScript Semantic Process contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 258 |
 | [TypeScript public contract](../../packages/semantic-core/src/contract.ts) | 363 |
 | [TypeScript checked graph contract](../../packages/semantic-core/src/checked-process-contract.ts) | 469 |

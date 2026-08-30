@@ -4,6 +4,7 @@ import BpmnSemantics.SequentialUserTask
 import BpmnSemantics.Conformance
 import BpmnSemantics.IntermediateCatchTimerConformance
 import BpmnSemantics.IntermediateCatchMessageConformance
+import BpmnSemantics.MessagePayloadCatchConformance
 import BpmnSemantics.MessageStartConformance
 import BpmnSemantics.TimerStartConformance
 import BpmnSemantics.ReceiveTaskConformance

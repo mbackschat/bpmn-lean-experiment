@@ -14,6 +14,7 @@ def isWaitNode : CheckedNode → Bool
   | .intermediateCatchTimerEvent ..
   | .serviceTask .. => true
   | .intermediateCatchMessageEvent .. => false
+  | .payloadMessageCatchEvent .. => false
   | .receiveTask .. => false
   | .configuredTask .. => false
   | .userTask _ _ (some _) => false
@@ -189,6 +190,8 @@ theorem parseFrom_sound (source : CheckedProcess) (fuel : Nat)
         | intermediateCatchTimerEvent id duration =>
             grind [parseFrom, mappedWait_sound, isWaitNode]
         | intermediateCatchMessageEvent id channel =>
+            simp [parseFrom, nodeResult] at result
+        | payloadMessageCatchEvent id channel directOutput =>
             simp [parseFrom, nodeResult] at result
         | receiveTask id channel =>
             simp [parseFrom, nodeResult] at result

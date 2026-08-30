@@ -432,27 +432,14 @@ def timerWaitDeclarers (program : Program) (elementId : NodeId) : List SemanticO
         decide (boundaryTimer.elementId = elementId)
     | .enterBoundedScope _ _ _ _ _ boundaryTimer => decide (boundaryTimer.elementId = elementId)
     | .awaitEventRace _ _ _ _ timer => decide (timer.elementId = elementId)
-    | .initiate ..
-    | .initiateMessage ..
-    | .initiateTimer ..
-    | .enterScope ..
-    | .invokeProcess ..
-    | .returnProcess ..
-    | .awaitUserTask ..
-    | .awaitDataInputUserTask ..
-    | .awaitDataOutputUserTask ..
+    | .initiate .. | .initiateMessage .. | .initiateTimer ..
+    | .enterScope .. | .invokeProcess .. | .returnProcess ..
+    | .awaitUserTask .. | .awaitDataInputUserTask .. | .awaitDataOutputUserTask ..
     | .completeParallelMultiInstanceUserTask ..
-    | .awaitMessage ..
-    | .awaitEffect ..
-    | .duplicate ..
-    | .synchronize ..
-    | .mergeExclusive ..
-    | .choose ..
-    | .selectMany ..
-    | .synchronizeSelected ..
-    | .throwError ..
-    | .reachNoneEnd ..
-    | .terminateScope ..
+    | .awaitMessage .. | .awaitPayloadMessage .. | .awaitEffect ..
+    | .duplicate .. | .synchronize .. | .mergeExclusive ..
+    | .choose .. | .selectMany .. | .synchronizeSelected ..
+    | .throwError .. | .reachNoneEnd .. | .terminateScope ..
     | .completeScope .. => false
 
 /-- The operations that may declare a Message wait for `elementId`. The Event-Based Gateway profile
@@ -461,33 +448,18 @@ declarer here for the same reason it is one above. -/
 def messageWaitDeclarers (program : Program) (elementId : NodeId) : List SemanticOperation :=
   program.operations.filter fun
     | .awaitMessage _ _ _ _ message => decide (message.elementId = elementId)
+    | .awaitPayloadMessage _ _ _ _ message _ =>
+        decide (message.elementId = elementId)
     | .awaitEventRace _ _ _ message _ => decide (message.elementId = elementId)
-    | .initiate ..
-    | .initiateMessage ..
-    | .initiateTimer ..
-    | .enterScope ..
-    | .enterBoundedScope ..
-    | .invokeProcess ..
-    | .returnProcess ..
-    | .awaitUserTask ..
-    | .awaitDataInputUserTask ..
-    | .awaitDataOutputUserTask ..
-    | .awaitSequentialMultiInstanceUserTask ..
-    | .awaitParallelMultiInstanceUserTask ..
-    | .completeParallelMultiInstanceUserTask ..
-    | .awaitTimer ..
-    | .awaitBoundedUserTask ..
-    | .awaitMonitoredUserTask ..
-    | .awaitEffect ..
-    | .duplicate ..
-    | .synchronize ..
-    | .mergeExclusive ..
-    | .choose ..
-    | .selectMany ..
-    | .synchronizeSelected ..
-    | .throwError ..
-    | .reachNoneEnd ..
-    | .terminateScope ..
+    | .initiate .. | .initiateMessage .. | .initiateTimer ..
+    | .enterScope .. | .enterBoundedScope .. | .invokeProcess .. | .returnProcess ..
+    | .awaitUserTask .. | .awaitDataInputUserTask .. | .awaitDataOutputUserTask ..
+    | .awaitSequentialMultiInstanceUserTask .. | .awaitParallelMultiInstanceUserTask ..
+    | .completeParallelMultiInstanceUserTask .. | .awaitTimer ..
+    | .awaitBoundedUserTask .. | .awaitMonitoredUserTask .. | .awaitEffect ..
+    | .duplicate .. | .synchronize .. | .mergeExclusive ..
+    | .choose .. | .selectMany .. | .synchronizeSelected ..
+    | .throwError .. | .reachNoneEnd .. | .terminateScope ..
     | .completeScope .. => false
 
 /-- The operations that may declare a User Task wait for `taskId`. -/
@@ -504,60 +476,29 @@ def userTaskWaitDeclarers (program : Program) (taskId : TaskDefinitionId) :
     | .awaitDataInputUserTask _ _ _ _ candidateTaskId _ _
     | .awaitDataOutputUserTask _ _ _ _ candidateTaskId _ _ =>
         decide (candidateTaskId = taskId)
-    | .initiate ..
-    | .initiateMessage ..
-    | .initiateTimer ..
-    | .enterScope ..
-    | .enterBoundedScope ..
-    | .invokeProcess ..
-    | .returnProcess ..
-    | .completeParallelMultiInstanceUserTask ..
-    | .awaitTimer ..
-    | .awaitMessage ..
-    | .awaitEventRace ..
-    | .awaitEffect ..
-    | .duplicate ..
-    | .synchronize ..
-    | .mergeExclusive ..
-    | .choose ..
-    | .selectMany ..
-    | .synchronizeSelected ..
-    | .throwError ..
-    | .reachNoneEnd ..
-    | .terminateScope ..
+    | .initiate .. | .initiateMessage .. | .initiateTimer ..
+    | .enterScope .. | .enterBoundedScope .. | .invokeProcess .. | .returnProcess ..
+    | .completeParallelMultiInstanceUserTask .. | .awaitTimer ..
+    | .awaitMessage .. | .awaitPayloadMessage .. | .awaitEventRace .. | .awaitEffect ..
+    | .duplicate .. | .synchronize .. | .mergeExclusive ..
+    | .choose .. | .selectMany .. | .synchronizeSelected ..
+    | .throwError .. | .reachNoneEnd .. | .terminateScope ..
     | .completeScope .. => false
 
 /-- The operations that may declare an effect wait for `elementId`. -/
 def effectWaitDeclarers (program : Program) (elementId : NodeId) : List SemanticOperation :=
   program.operations.filter fun
     | .awaitEffect _ origin _ _ _ _ => decide (origin.elementId = elementId)
-    | .initiate ..
-    | .initiateMessage ..
-    | .initiateTimer ..
-    | .enterScope ..
-    | .enterBoundedScope ..
-    | .invokeProcess ..
-    | .returnProcess ..
-    | .awaitUserTask ..
-    | .awaitDataInputUserTask ..
-    | .awaitDataOutputUserTask ..
-    | .awaitSequentialMultiInstanceUserTask ..
-    | .awaitParallelMultiInstanceUserTask ..
-    | .completeParallelMultiInstanceUserTask ..
-    | .awaitTimer ..
-    | .awaitMessage ..
-    | .awaitEventRace ..
-    | .awaitBoundedUserTask ..
-    | .awaitMonitoredUserTask ..
-    | .duplicate ..
-    | .synchronize ..
-    | .mergeExclusive ..
-    | .choose ..
-    | .selectMany ..
-    | .synchronizeSelected ..
-    | .throwError ..
-    | .reachNoneEnd ..
-    | .terminateScope ..
+    | .initiate .. | .initiateMessage .. | .initiateTimer ..
+    | .enterScope .. | .enterBoundedScope .. | .invokeProcess .. | .returnProcess ..
+    | .awaitUserTask .. | .awaitDataInputUserTask .. | .awaitDataOutputUserTask ..
+    | .awaitSequentialMultiInstanceUserTask .. | .awaitParallelMultiInstanceUserTask ..
+    | .completeParallelMultiInstanceUserTask .. | .awaitTimer ..
+    | .awaitMessage .. | .awaitPayloadMessage .. | .awaitEventRace ..
+    | .awaitBoundedUserTask .. | .awaitMonitoredUserTask ..
+    | .duplicate .. | .synchronize .. | .mergeExclusive ..
+    | .choose .. | .selectMany .. | .synchronizeSelected ..
+    | .throwError .. | .reachNoneEnd .. | .terminateScope ..
     | .completeScope .. => false
 
 private theorem nodeId_eq_iff_value_eq (left right : NodeId) :

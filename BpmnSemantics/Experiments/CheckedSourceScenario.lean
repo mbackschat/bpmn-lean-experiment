@@ -74,6 +74,7 @@ def commandId : Stimulus → SemanticId
   | .completeUserTaskInstance id _ _
   | .fireTimer id _ _
   | .deliverMessage id _ _
+  | .deliverPayloadMessage id _ _ _
   | .completeEffect id _ _
   | .reportEffectFailure id _ _
   | .retryIncident id _

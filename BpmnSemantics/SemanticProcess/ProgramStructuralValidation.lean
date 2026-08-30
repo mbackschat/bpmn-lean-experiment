@@ -104,6 +104,8 @@ def operationWaitDeclarationKeys : SemanticOperation → List WaitDeclarationKey
       [userTaskWaitDeclarationKey taskId,
         timerWaitDeclarationKey boundaryTimer.elementId]
   | .awaitMessage _ _ _ _ message => [messageWaitDeclarationKey message.elementId]
+  | .awaitPayloadMessage _ _ _ _ message _ =>
+      [messageWaitDeclarationKey message.elementId]
   | .awaitTimer _ _ _ _ timer => [timerWaitDeclarationKey timer.elementId]
   | .enterBoundedScope _ _ _ _ _ boundaryTimer =>
       [timerWaitDeclarationKey boundaryTimer.elementId]
@@ -280,6 +282,20 @@ private def operationWellFormed (program : Program) (places : List ControlPlace)
         decide (input ≠ output) &&
         placeExists places input &&
         placeExists places output
+  | .awaitPayloadMessage id origin input output message directOutput =>
+      match message.channel with
+      | .operationMessage interfaceId operationId messageId =>
+          let identities :=
+            [ origin.elementId.value, interfaceId.value, operationId.value, messageId.value
+            , directOutput.associationId, directOutput.sourceDataOutputId
+            , directOutput.targetPropertyId ]
+          nonempty id.value && identities.all nonempty &&
+            identities.eraseDups.length = identities.length &&
+            origin.elementId = message.elementId &&
+            decide (directOutput.sourceDataOutputName ≠ some "") &&
+            decide (input ≠ output) &&
+            placeExists places input && placeExists places output
+      | .directMessage .. => false
   | .awaitEventRace id origin input message timer =>
       nonempty id.value &&
         nonempty origin.elementId.value &&
@@ -592,10 +608,24 @@ theorem programWellFormed_internalArm_element_nonempty (program : Program)
     | .awaitDataInputUserTask _ _ _ _ taskId _ _ => !taskId.value.isEmpty
     | .awaitDataOutputUserTask _ _ _ _ taskId _ _ => !taskId.value.isEmpty
     | .awaitMessage _ _ _ _ message => !message.elementId.value.isEmpty
+    | .awaitPayloadMessage _ _ _ _ message _ => !message.elementId.value.isEmpty
     | .awaitTimer _ _ _ _ timer => !timer.elementId.value.isEmpty
     | .awaitEffect _ _ _ _ effect _ => !effect.elementId.value.isEmpty
     | _ => true) = true := by
-  cases operation <;> try rfl
+  revert member
+  cases operation <;> intro member <;> try rfl
+  case awaitPayloadMessage id origin input output message directOutput =>
+    have operationValid := operationWellFormed_of_programWellFormed program _ valid member
+    generalize channelEq : message.channel = channel at operationValid
+    cases channel with
+    | directMessage messageId => simp_all [operationWellFormed]
+    | operationMessage interfaceId operationId messageId =>
+        simp only [operationWellFormed, channelEq, nonempty, Bool.and_eq_true,
+          decide_eq_true_eq] at operationValid
+        have allNonempty := List.all_eq_true.mp operationValid.1.1.1.1.1.1.2
+        have originNonempty := allNonempty origin.elementId.value (by simp)
+        rw [operationValid.1.1.1.1.2] at originNonempty
+        exact originNonempty
   all_goals
     have operationValid := operationWellFormed_of_programWellFormed program _ valid member
     simp_all [operationWellFormed, nonempty]

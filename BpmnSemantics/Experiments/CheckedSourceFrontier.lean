@@ -214,6 +214,7 @@ theorem nodeDisabled (source : CheckedProcess) (state : SourceRuntimeState)
       simp [nodeArityValid] at candidateArity
   | intermediateCatchTimerEvent id duration => rfl
   | intermediateCatchMessageEvent id channel => rfl
+  | payloadMessageCatchEvent id channel directOutput => rfl
   | receiveTask id channel => rfl
   | configuredTask id descriptor => rfl
   | serviceTask id descriptor inputs outputs route => rfl

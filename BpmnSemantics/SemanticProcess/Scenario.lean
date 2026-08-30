@@ -26,6 +26,7 @@ private def commandId : Stimulus → SemanticId
   | .triggerTimerStart id _ _ _
   | .completeUserTaskInstance id _ _
   | .deliverMessage id _ _
+  | .deliverPayloadMessage id _ _ _
   | .fireTimer id _ _
   | .completeEffect id _ _
   | .reportEffectFailure id _ _
@@ -47,6 +48,7 @@ private def ownedWaitDefinitions : SemanticOperation → OwnedWaitDefinitions
       { tasks := [{ id := taskId, name := taskName }] }
   | .awaitTimer _ _ _ _ timer => { timers := [timer] }
   | .awaitMessage _ _ _ _ message => { messages := [message] }
+  | .awaitPayloadMessage _ _ _ _ message _ => { messages := [message] }
   | .awaitEffect _ _ _ _ effect _ => { effects := [effect] }
   | .awaitEventRace _ _ _ message timer =>
       { messages :=
@@ -375,6 +377,15 @@ private def openIncidents (program : Program) (state : RuntimeState) :
               descriptor := incident.wait.descriptor
               arguments := incident.wait.arguments } }
 
+private def messageEnabledInteraction? (program : Program)
+    (subscription : OpenMessageSubscription) : Option EnabledInteraction :=
+  match messageWaitDeclarers program ⟨subscription.id.elementId.value⟩ with
+  | [.awaitPayloadMessage ..] =>
+      some (.deliverPayloadMessage subscription.id subscription.channel)
+  | [.awaitMessage ..] | [.awaitEventRace ..] =>
+      some (.deliverMessage subscription.id subscription.channel)
+  | _ => none
+
 def observeStableState (program : Program) (state : RuntimeState) :
     Option StateObservation :=
   match state.control with
@@ -408,8 +419,7 @@ def observeStableState (program : Program) (state : RuntimeState) :
             variables := state.variables.process.bindings
             enabledInteractions :=
               tasks.map (fun task => .completeUserTaskInstance task.id) ++
-                messages.map (fun subscription =>
-                  .deliverMessage subscription.id subscription.channel) ++
+                messages.filterMap (messageEnabledInteraction? program) ++
                 incidentInteractions
             logicalTimeMs := state.logicalTimeMs }
   | .completed instanceId =>
@@ -514,7 +524,8 @@ private def requiredObservations (program : Program) : List ObservationKind :=
 
 private def isProcessStartStimulus : Stimulus → Bool
   | .startProcess .. | .triggerMessageStart .. | .triggerTimerStart .. => true
-  | .completeUserTaskInstance .. | .deliverMessage .. | .fireTimer ..
+  | .completeUserTaskInstance .. | .deliverMessage .. | .deliverPayloadMessage ..
+  | .fireTimer ..
   | .completeEffect .. | .reportEffectFailure .. | .retryIncident ..
   | .cancelIncidentProcess .. => false
 

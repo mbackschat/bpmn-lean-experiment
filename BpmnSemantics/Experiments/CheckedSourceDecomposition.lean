@@ -104,6 +104,7 @@ def parseFrom (source : CheckedProcess) :
       | some (.errorEndEvent ..)
       | some (.terminateEndEvent ..)
       | some (.intermediateCatchMessageEvent ..)
+      | some (.payloadMessageCatchEvent ..)
       | some (.receiveTask ..)
       | some (.configuredTask ..)
       | some (.parallelGateway _ .converging)
@@ -165,6 +166,7 @@ def composedNodeSurfaceValid : CheckedNode → Bool
         outputMappings.isEmpty &&
         route.isNone
   | .intermediateCatchMessageEvent .. => false
+  | .payloadMessageCatchEvent .. => false
   | .receiveTask .. => false
   | .configuredTask .. => false
   | .exclusiveMerge .. => false

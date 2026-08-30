@@ -42,6 +42,47 @@ private def programAccepted (contents : String) : Bool :=
   | .ok _ => true
   | .error _ => false
 
+private def checkedNodesDecodedAs (expected : List CheckedNode)
+    (contents : String) : Bool :=
+  match parseWireJson contents >>= decodeCheckedProcess with
+  | .ok process => decide (process.nodes = expected)
+  | .error _ => false
+
+private def programOperationDocument (operation : String) : String :=
+  "{\"kind\":\"semanticProcess\",\"identity\":{\"compiler\":\"bpmn-source-semantic-process\",\"semanticProfile\":\"p\",\"sourceId\":\"s\",\"sourceOverlay\":null,\"sourceSha256\":\"x\"},\"internalSchedulingMode\":\"rejectObservableChoice\",\"processId\":\"p\",\"definitionScopes\":[],\"operationScopes\":[],\"controlPlaceScopes\":[],\"controlPlaces\":[],\"operations\":[" ++
+    operation ++ "]}"
+
+private def programOperationsDecodedAs (expected : List SemanticOperation)
+    (contents : String) : Bool :=
+  match parseWireJson contents >>= decodeProgram with
+  | .ok program => decide (program.operations = expected)
+  | .error _ => false
+
+private def scenarioDocumentWithStimulus (stimulus : String) : String :=
+  "{\"kind\":\"scenario\",\"id\":\"s\",\"profile\":\"p\",\"bpmn\":{\"id\":\"b\",\"relativePath\":\"b\",\"sha256\":\"x\",\"sourceOverlay\":null},\"stimuli\":[" ++
+    stimulus ++
+    "],\"observations\":[],\"provenance\":{\"normativeRefs\":[],\"cibRevision\":\"r\",\"cibRefs\":[]}}"
+
+private def scenarioStimuliDecodedAs (expected : List Stimulus)
+    (contents : String) : Bool :=
+  match parseWireJson contents >>= decodeScenario with
+  | .ok scenario => decide (scenario.stimuli = expected)
+  | .error _ => false
+
+private def payloadChannel : MessageChannel :=
+  .operationMessage ⟨"interface"⟩ ⟨"operation"⟩ ⟨"message"⟩
+
+private def payloadOutput : DirectCatchEventPayloadOutput :=
+  { associationId := "association"
+    sourceDataOutputId := "dataOutput"
+    sourceDataOutputName := some "Payload"
+    targetPropertyId := "property" }
+
+private def payloadSubscription : MessageSubscriptionId :=
+  { processInstanceId := ⟨"instance"⟩
+    elementId := ⟨"catch"⟩
+    activation := 1 }
+
 theorem duplicate_and_escape_equivalent_json_keys_are_rejected :
     parseRejected "{\"id\":1,\"id\":1}" = true ∧
       parseRejected "{\"id\":1,\"\\u0069d\":1}" = true := by
@@ -72,7 +113,7 @@ theorem first_unsafe_wire_nat_is_rejected :
     isSafeWireNat 9007199254740992 = false := by decide +kernel
 
 theorem bmp_scalar_precedes_supplementary_scalar :
-    compare "\uE000" "𐀀" = .lt := by native_decide
+    compare "\uE000" "𐀀" = .lt := by decide +kernel
 
 theorem canonically_equivalent_strings_remain_distinct :
     ("e\u0301" : String) ≠ "\u00E9" := by decide +kernel
@@ -236,6 +277,37 @@ theorem semantic_operation_shapes_reject_missing_extra_and_malformed_fields :
     programAccepted "{\"kind\":\"semanticProcess\",\"identity\":{\"compiler\":\"bpmn-source-semantic-process\",\"semanticProfile\":\"p\",\"sourceId\":\"s\",\"sourceOverlay\":null,\"sourceSha256\":\"x\"},\"internalSchedulingMode\":\"rejectObservableChoice\",\"processId\":\"p\",\"definitionScopes\":[],\"operationScopes\":[],\"controlPlaceScopes\":[],\"controlPlaces\":[],\"operations\":[{\"id\":\"terminate\",\"input\":\"in\",\"kind\":\"terminateScope\",\"origin\":{\"elementId\":\"end\",\"kind\":\"bpmnElement\"},\"scopeId\":\"scope:p\",\"unexpected\":true}]}" = false ∧
     programAccepted "{\"kind\":\"semanticProcess\",\"identity\":{\"compiler\":\"bpmn-source-semantic-process\",\"semanticProfile\":\"p\",\"sourceId\":\"s\",\"sourceOverlay\":null,\"sourceSha256\":\"x\"},\"internalSchedulingMode\":\"rejectObservableChoice\",\"processId\":\"p\",\"definitionScopes\":[],\"operationScopes\":[],\"controlPlaceScopes\":[],\"controlPlaces\":[],\"operations\":[{\"id\":\"terminate\",\"input\":\"in\",\"kind\":\"terminateScope\",\"origin\":{\"elementId\":\"end\",\"kind\":\"bpmnElement\"},\"scopeId\":1}]}" = false ∧
     programAccepted "{\"kind\":\"semanticProcess\",\"identity\":{\"compiler\":\"bpmn-source-semantic-process\",\"semanticProfile\":\"p\",\"sourceId\":\"s\",\"sourceOverlay\":null,\"sourceSha256\":\"x\"},\"internalSchedulingMode\":\"rejectObservableChoice\",\"processId\":\"p\",\"definitionScopes\":[],\"operationScopes\":[],\"controlPlaceScopes\":[],\"controlPlaces\":[],\"operations\":[{\"id\":\"terminate\",\"input\":\"in\",\"kind\":\"terminateScope\",\"origin\":{\"elementId\":\"end\",\"kind\":\"bpmnElement\"},\"scopeId\":\"scope:p\",\"scopeId\":\"scope:p\"}]}" = false := by
+  native_decide
+
+theorem message_payload_checked_program_and_stimulus_wire_contracts_are_exact :
+    checkedNodesDecodedAs
+        [.payloadMessageCatchEvent ⟨"catch"⟩ payloadChannel payloadOutput]
+        (checkedNodeDocument "{\"channel\":{\"interfaceId\":\"interface\",\"interfaceOperationId\":\"operation\",\"kind\":\"operationMessage\",\"messageId\":\"message\"},\"directOutput\":{\"associationId\":\"association\",\"sourceDataOutputId\":\"dataOutput\",\"sourceDataOutputName\":\"Payload\",\"targetPropertyId\":\"property\"},\"id\":\"catch\",\"kind\":\"payloadMessageCatchEvent\"}") = true ∧
+      checkedProcessAccepted
+        (checkedNodeDocument "{\"channel\":{\"interfaceId\":\"interface\",\"interfaceOperationId\":\"operation\",\"kind\":\"operationMessage\",\"messageId\":\"message\"},\"id\":\"catch\",\"kind\":\"payloadMessageCatchEvent\"}") = false ∧
+      checkedProcessAccepted
+        (checkedNodeDocument "{\"channel\":{\"interfaceId\":\"interface\",\"interfaceOperationId\":\"operation\",\"kind\":\"operationMessage\",\"messageId\":\"message\"},\"directOutput\":{\"associationId\":\"association\",\"sourceDataOutputId\":\"dataOutput\",\"sourceDataOutputName\":\"Payload\",\"targetPropertyId\":\"property\"},\"id\":\"catch\",\"kind\":\"payloadMessageCatchEvent\",\"unexpected\":true}") = false ∧
+      checkedProcessAccepted
+        (checkedNodeDocument "{\"channel\":{\"kind\":\"directMessage\",\"messageId\":\"message\"},\"directOutput\":{\"associationId\":\"association\",\"sourceDataOutputId\":\"dataOutput\",\"sourceDataOutputName\":\"Payload\",\"targetPropertyId\":\"property\"},\"id\":\"catch\",\"kind\":\"payloadMessageCatchEvent\"}") = false ∧
+      programOperationsDecodedAs
+        [.awaitPayloadMessage ⟨"await"⟩ {
+            elementId := ⟨"catch"⟩ } ⟨"input"⟩ ⟨"output"⟩
+          { elementId := ⟨"catch"⟩, channel := payloadChannel } payloadOutput]
+        (programOperationDocument "{\"directOutput\":{\"associationId\":\"association\",\"sourceDataOutputId\":\"dataOutput\",\"sourceDataOutputName\":\"Payload\",\"targetPropertyId\":\"property\"},\"id\":\"await\",\"input\":\"input\",\"kind\":\"awaitPayloadMessage\",\"message\":{\"channel\":{\"interfaceId\":\"interface\",\"interfaceOperationId\":\"operation\",\"kind\":\"operationMessage\",\"messageId\":\"message\"},\"elementId\":\"catch\"},\"origin\":{\"elementId\":\"catch\",\"kind\":\"bpmnElement\"},\"output\":\"output\"}") = true ∧
+      programAccepted
+        (programOperationDocument "{\"id\":\"await\",\"input\":\"input\",\"kind\":\"awaitPayloadMessage\",\"message\":{\"channel\":{\"interfaceId\":\"interface\",\"interfaceOperationId\":\"operation\",\"kind\":\"operationMessage\",\"messageId\":\"message\"},\"elementId\":\"catch\"},\"origin\":{\"elementId\":\"catch\",\"kind\":\"bpmnElement\"},\"output\":\"output\"}") = false ∧
+      programAccepted
+        (programOperationDocument "{\"directOutput\":{\"associationId\":\"association\",\"sourceDataOutputId\":\"dataOutput\",\"sourceDataOutputName\":\"Payload\",\"targetPropertyId\":\"property\"},\"id\":\"await\",\"input\":\"input\",\"kind\":\"awaitPayloadMessage\",\"message\":{\"channel\":{\"interfaceId\":\"interface\",\"interfaceOperationId\":\"operation\",\"kind\":\"operationMessage\",\"messageId\":\"message\"},\"elementId\":\"catch\"},\"origin\":{\"elementId\":\"catch\",\"kind\":\"bpmnElement\"},\"output\":\"output\",\"unexpected\":true}") = false ∧
+      programAccepted
+        (programOperationDocument "{\"directOutput\":{\"associationId\":\"association\",\"sourceDataOutputId\":\"dataOutput\",\"sourceDataOutputName\":\"Payload\",\"targetPropertyId\":\"property\"},\"id\":\"await\",\"input\":\"input\",\"kind\":\"awaitPayloadMessage\",\"message\":{\"channel\":{\"kind\":\"directMessage\",\"messageId\":\"message\"},\"elementId\":\"catch\"},\"origin\":{\"elementId\":\"catch\",\"kind\":\"bpmnElement\"},\"output\":\"output\"}") = false ∧
+      scenarioStimuliDecodedAs
+        [.deliverPayloadMessage ⟨"deliver"⟩ payloadSubscription payloadChannel
+          (.string "settlement-reference-123")]
+        (scenarioDocumentWithStimulus "{\"channel\":{\"interfaceId\":\"interface\",\"interfaceOperationId\":\"operation\",\"kind\":\"operationMessage\",\"messageId\":\"message\"},\"commandId\":\"deliver\",\"kind\":\"deliverPayloadMessage\",\"payload\":{\"kind\":\"string\",\"value\":\"settlement-reference-123\"},\"subscriptionId\":{\"processInstanceId\":\"instance\",\"elementId\":\"catch\",\"activation\":1}}") = true ∧
+      scenarioRejected
+        (scenarioDocumentWithStimulus "{\"channel\":{\"interfaceId\":\"interface\",\"interfaceOperationId\":\"operation\",\"kind\":\"operationMessage\",\"messageId\":\"message\"},\"commandId\":\"deliver\",\"kind\":\"deliverPayloadMessage\",\"subscriptionId\":{\"processInstanceId\":\"instance\",\"elementId\":\"catch\",\"activation\":1}}") = true ∧
+      scenarioRejected
+        (scenarioDocumentWithStimulus "{\"channel\":{\"interfaceId\":\"interface\",\"interfaceOperationId\":\"operation\",\"kind\":\"operationMessage\",\"messageId\":\"message\"},\"commandId\":\"deliver\",\"kind\":\"deliverPayloadMessage\",\"payload\":{\"kind\":\"string\",\"value\":\"settlement-reference-123\"},\"subscriptionId\":{\"processInstanceId\":\"instance\",\"elementId\":\"catch\",\"activation\":1},\"unexpected\":true}") = true := by
   native_decide
 
 end BpmnSemantics.SemanticProcessJsonConformance

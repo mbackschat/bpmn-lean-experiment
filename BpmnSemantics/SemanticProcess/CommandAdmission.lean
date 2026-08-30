@@ -8,6 +8,7 @@ import BpmnSemantics.SemanticProcess.ValueDomain
 import BpmnSemantics.SemanticProcess.WaitCompletion
 import BpmnSemantics.SemanticProcess.ActivityDataInput
 import BpmnSemantics.SemanticProcess.ActivityDataOutput
+import BpmnSemantics.SemanticProcess.MessagePayload
 
 /-! # Semantic Process external command admission
 
@@ -218,6 +219,19 @@ def dispatchStimulus (program : Program) (state : RuntimeState) :
       | .notStarted
       | .completed _
       | .cancelled _ => { outcome := .rejected, state }
+  | .deliverPayloadMessage _ subscriptionId channel payload =>
+      match state.control with
+      | .running instanceId =>
+          match deliverPayloadMessage program state subscriptionId channel payload with
+          | some successor =>
+              if subscriptionId.processInstanceId = instanceId then
+                { outcome := .committed, state := successor }
+              else
+                { outcome := .rejected, state }
+          | none => { outcome := .rejected, state }
+      | .notStarted
+      | .completed _
+      | .cancelled _ => { outcome := .rejected, state }
   | .fireTimer _ timerId logicalTimeMs =>
       match state.control with
       | .running instanceId =>
@@ -315,7 +329,8 @@ def admitStimulus (program : Program) (state : RuntimeState)
       else
         { outcome := .rejected, state }
   | .startProcess .. | .triggerMessageStart .. | .triggerTimerStart ..
-  | .completeUserTaskInstance .. | .deliverMessage .. | .fireTimer ..
+  | .completeUserTaskInstance .. | .deliverMessage .. | .deliverPayloadMessage ..
+  | .fireTimer ..
   | .completeEffect .. | .reportEffectFailure .. | .retryIncident .. =>
       match state.effectIncidents with
       | [] => dispatchStimulus program state stimulus

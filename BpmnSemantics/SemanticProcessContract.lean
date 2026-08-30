@@ -171,6 +171,16 @@ structure DirectActivityDataOutput where
   targetPropertyId : String
   deriving Repr, DecidableEq
 
+/-- One direct Catch Event Data Output Association carrying a received Message payload into a
+Process `Property`. The source output identity is retained for the fill phase and the target
+property identity for routing; neither is interchangeable with the Message or Catch Event id. -/
+structure DirectCatchEventPayloadOutput where
+  associationId : String
+  sourceDataOutputId : String
+  sourceDataOutputName : Option String
+  targetPropertyId : String
+  deriving Repr, DecidableEq
+
 /-- Inclusive runtime collection bounds selected by the bounded profile. -/
 structure SequentialMultiInstanceLimits where
   maximumItems : Nat
@@ -219,6 +229,8 @@ inductive CheckedNode where
       (boundaryTimer : CheckedSequentialMultiInstanceBoundaryTimer)
   | intermediateCatchTimerEvent (id : NodeId) (durationLiteral : String)
   | intermediateCatchMessageEvent (id : NodeId) (channel : MessageChannel)
+  | payloadMessageCatchEvent (id : NodeId) (channel : MessageChannel)
+      (directOutput : DirectCatchEventPayloadOutput)
   | receiveTask (id : NodeId) (channel : MessageChannel)
   | configuredTask (id : NodeId) (descriptor : EffectDescriptor)
   | serviceTask
@@ -261,6 +273,7 @@ def CheckedNode.id : CheckedNode → NodeId
   | .parallelMultiInstanceUserTask id _ _ _ _ _ _
   | .intermediateCatchTimerEvent id _
   | .intermediateCatchMessageEvent id _
+  | .payloadMessageCatchEvent id _ _
   | .receiveTask id _
   | .configuredTask id _
   | .serviceTask id _ _ _ _
@@ -542,6 +555,13 @@ inductive SemanticOperation where
       (input : ControlPlaceId)
       (output : ControlPlaceId)
       (message : MessageDefinition)
+  | awaitPayloadMessage
+      (id : OperationId)
+      (origin : BpmnElementOrigin)
+      (input : ControlPlaceId)
+      (output : ControlPlaceId)
+      (message : MessageDefinition)
+      (directOutput : DirectCatchEventPayloadOutput)
   | awaitEventRace
       (id : OperationId)
       (origin : BpmnElementOrigin)
@@ -640,6 +660,7 @@ def SemanticOperation.id : SemanticOperation → OperationId
   | .completeParallelMultiInstanceUserTask id _ _ _ _
   | .awaitTimer id _ _ _ _
   | .awaitMessage id _ _ _ _
+  | .awaitPayloadMessage id _ _ _ _ _
   | .awaitEventRace id _ _ _ _
   | .awaitBoundedUserTask id _ _ _ _
   | .awaitMonitoredUserTask id _ _ _ _

@@ -72,6 +72,15 @@ private def decodeStimulus (json : Json) : Except String Stimulus := do
           ⟨← stringField json "commandId"⟩
           (← decodeOccurrenceId (← field json "subscriptionId"))
           (← decodeMessageChannel (← field json "channel")))
+  | "deliverPayloadMessage" =>
+      requireObjectShape json
+        ["channel", "commandId", "kind", "payload", "subscriptionId"]
+      pure
+        (.deliverPayloadMessage
+          ⟨← stringField json "commandId"⟩
+          (← decodeOccurrenceId (← field json "subscriptionId"))
+          (← decodeMessageChannel (← field json "channel"))
+          (← decodeVariableValue (← field json "payload")))
   | "fireTimer" =>
       requireObjectShape json
         ["commandId", "kind", "logicalTimeMs", "timerId"]

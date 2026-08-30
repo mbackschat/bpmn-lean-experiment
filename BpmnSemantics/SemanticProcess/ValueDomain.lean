@@ -29,6 +29,10 @@ abbrev activityDataInputUserTaskProfileId : ProfileId :=
 abbrev activityDataOutputUserTaskProfileId : ProfileId :=
   ⟨"bpmn-2.0.2-activity-data-output-user-task-draft"⟩
 
+/-- Runtime-frozen identity of the approved Message payload Catch Event profile. -/
+abbrev messagePayloadCatchProfileId : ProfileId :=
+  ⟨"bpmn-2.0.2-message-payload-catch-draft"⟩
+
 /-- Runtime-frozen identity for the owner-approved structured Human Work profile. -/
 abbrev structuredHumanWorkProfileId : ProfileId :=
   ⟨"bpmn-2.0.2-bpmn-lean-structured-human-work-draft"⟩
@@ -41,6 +45,7 @@ abbrev userTaskProcessDataPreservedNotationProfileId : ProfileId :=
 inductive ProcessDataIngress where
   | processStart
   | userTaskCompletion
+  | messagePayload
   deriving Repr, DecidableEq
 
 private inductive ProcessDataValueDomain where
@@ -49,6 +54,7 @@ private inductive ProcessDataValueDomain where
   | stringListOnly
   | stringNull
   | stringNullBoolean
+  | scalar
   | structuredHumanWork
 
 @[simp] private abbrev profileIsOneOf (profile : ProfileId) (ids : List String) : Bool :=
@@ -98,6 +104,8 @@ private inductive ProcessDataValueDomain where
         .structuredHumanWork
       else
         .empty
+  | .messagePayload =>
+      if profile = messagePayloadCatchProfileId then .scalar else .empty
 
 /-- Decide whether one typed value is admitted at an external Process-data surface under an exact profile. -/
 def variableValueAdmitted (profile : ProfileId) (surface : ProcessDataIngress)
@@ -111,6 +119,10 @@ def variableValueAdmitted (profile : ProfileId) (surface : ProcessDataIngress)
   | .stringNullBoolean, .string _
   | .stringNullBoolean, .null
   | .stringNullBoolean, .boolean _ => true
+  | .scalar, .string _
+  | .scalar, .boolean _
+  | .scalar, .integer _
+  | .scalar, .null => true
   | .structuredHumanWork, .string _
   | .structuredHumanWork, .null
   | .structuredHumanWork, .boolean _ => true

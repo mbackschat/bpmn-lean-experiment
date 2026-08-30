@@ -203,6 +203,67 @@ theorem prepared_arm_projectWaits_insert (program : Program) (state : RuntimeSta
         timersAfterEq, effectsAfterEq, incidentsAfterEq, rfl⟩
     · exact append_component_insert_perm tasks afterMessages messages
         (timers ++ (effects ++ incidents)) newStart messagePerm
+  case awaitPayloadMessage.isFalse.running =>
+    rename_i id origin input output message directOutput instanceId selection
+    let wait : MessageWait :=
+      { processInstanceId := owner.processInstanceId, owner,
+        elementId := message.elementId,
+        activation := messageActivationCount state message.elementId + 1,
+        channel := message.channel, output }
+    let currentPatch : InternalArmingPatch :=
+      { operation := .awaitPayloadMessage id origin input output message directOutput, origin,
+        runtimeInstanceId := instanceId, logicalTimeMs := state.logicalTimeMs,
+        input, inputOrigin, owner, write := .message wait }
+    have startEq : waitStart? program state wait.owner wait.elementId wait.activation =
+        some newStart := by
+      simpa [currentPatch, wait, InternalArmingWrite.elementId,
+        InternalArmingWrite.occurrence, messageWaitOccurrence] using started
+    have newMapped : waitStart? program (applyInternalArmingPatch state currentPatch)
+        wait.owner wait.elementId wait.activation = some newStart := by
+      rw [armingWaitStart_frame]
+      exact startEq
+    have oldMessagesMapped : state.messageWaits.mapM (fun current => waitStart? program
+        (applyInternalArmingPatch state currentPatch) current.owner current.elementId
+        current.activation) = some messages := by
+      rw [mapM_eq_of_pointwise state.messageWaits _ _
+        (fun current => armingWaitStart_frame _ _ _ _ _ _)]
+      exact messagesEq
+    obtain ⟨afterMessages, afterMessagesEq, messagePerm⟩ :=
+      mapM_canonicalInsertBy_some messageWaitBefore _ wait newStart state.messageWaits
+        messages newMapped oldMessagesMapped
+    have tasksAfterEq : state.waits.mapM (fun current => waitStart? program
+        (applyInternalArmingPatch state currentPatch) current.owner
+        ⟨current.task.id.value⟩ current.activation) = some tasks := by
+      rw [mapM_eq_of_pointwise state.waits _ _
+        (fun current => armingWaitStart_frame _ _ _ _ _ _)]
+      exact tasksEq
+    have timersAfterEq : (state.timerWaits.filter fun current =>
+        !flowNodeOccurrenceBoundaryTimerBound program state current).mapM
+        (fun current => waitStart? program (applyInternalArmingPatch state currentPatch)
+          current.owner current.elementId current.activation) = some timers := by
+      rw [mapM_eq_of_pointwise _ _ _
+        (fun current => armingWaitStart_frame _ _ _ _ _ _)]
+      exact timersEq
+    have effectsAfterEq : state.effectWaits.mapM (fun current => waitStart? program
+        (applyInternalArmingPatch state currentPatch) current.owner current.elementId
+        current.activation) = some effects := by
+      rw [mapM_eq_of_pointwise state.effectWaits _ _
+        (fun current => armingWaitStart_frame _ _ _ _ _ _)]
+      exact effectsEq
+    have incidentsAfterEq : state.effectIncidents.mapM (fun current => waitStart? program
+        (applyInternalArmingPatch state currentPatch) current.wait.owner current.wait.elementId
+        current.wait.activation) = some incidents := by
+      rw [mapM_eq_of_pointwise state.effectIncidents _ _
+        (fun current => armingWaitStart_frame _ _ _ _ _ _)]
+      exact incidentsEq
+    refine ⟨tasks ++ (afterMessages ++ (timers ++ (effects ++ incidents))), ?_, ?_⟩
+    · apply (projectWaits_eq_some_iff _ _ _).mpr
+      exact ⟨tasks, afterMessages, timers, effects, incidents, tasksAfterEq,
+        by simpa [currentPatch, applyInternalArmingPatch, wait, insertMessageWait] using
+          afterMessagesEq,
+        timersAfterEq, effectsAfterEq, incidentsAfterEq, rfl⟩
+    · exact append_component_insert_perm tasks afterMessages messages
+        (timers ++ (effects ++ incidents)) newStart messagePerm
   case awaitTimer.isFalse.running =>
     rename_i id origin input output timer instanceId selection
     let wait : TimerWait :=
@@ -487,6 +548,40 @@ theorem prepared_arm_preserves_flowNodeOccurrenceProgramValidity (program : Prog
         (by simpa [wait] using elementId) (by simp [wait]) rfl rfl rfl
     apply flowNodeOccurrenceProgramValidity_from_reference program state
       { state with messageWaits := insertMessageWait wait state.messageWaits } _ valid referenceValid
+    all_goals rfl
+  case awaitPayloadMessage.isFalse.running =>
+    rename_i id origin input output message directOutput instanceId selection
+    let wait : MessageWait :=
+      { processInstanceId := owner.processInstanceId, owner,
+        elementId := message.elementId,
+        activation := messageActivationCount state message.elementId + 1,
+        channel := message.channel, output }
+    have declarers : messageWaitDeclarers program message.elementId =
+        [.awaitPayloadMessage id origin input output message directOutput] := by
+      simpa [uniqueFamilyDeclarer?, InternalArmingWrite.kind,
+        InternalArmingWrite.elementId, wait] using unique.1.1
+    have operationMember :
+        .awaitPayloadMessage id origin input output message directOutput ∈
+          program.operations := by
+      have member : .awaitPayloadMessage id origin input output message directOutput ∈
+          messageWaitDeclarers program message.elementId := by rw [declarers]; simp
+      exact (List.mem_filter.mp member).1
+    have declared := declaredByExactlyOneOwnedOperation_of_exactSelection program
+      (.awaitPayloadMessage id origin input output message directOutput) owner _ declarers
+        selection.1
+    have live : flowNodeOccurrenceOwnerLiveUnique state owner = true := by
+      simpa [flowNodeOccurrenceOwnerLiveUnique, exactLiveOccurrence] using selection.2
+    have processId := flowNodeOccurrenceStructuralProgramValidity_live_owner_nonempty
+      program state owner structural selection.2
+    have elementId := programWellFormed_internalArm_element_nonempty program
+      (.awaitPayloadMessage id origin input output message directOutput) programAdmitted
+        operationMember
+    have referenceValid := flowNodeOccurrenceProgramValidity_insertPayloadMessage
+      program state id origin input message directOutput wait valid declarers declared live
+        processId (by simpa [wait] using elementId) (by simp [wait]) rfl rfl rfl
+    apply flowNodeOccurrenceProgramValidity_from_reference program state
+      { state with messageWaits := insertMessageWait wait state.messageWaits } _ valid
+        referenceValid
     all_goals rfl
   case awaitTimer.isFalse.running =>
     rename_i id origin input output timer instanceId selection

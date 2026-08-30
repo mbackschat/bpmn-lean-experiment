@@ -49,6 +49,10 @@ def awaitMessageState? (state : RuntimeState) (input output : ControlPlaceId)
   let _ ← runningInstance? state
   pure (activateMessage state owner.processInstanceId owner input output message)
 
+def awaitPayloadMessageState? (state : RuntimeState) (input output : ControlPlaceId)
+    (message : MessageDefinition) : Option RuntimeState :=
+  awaitMessageState? state input output message
+
 def awaitEventRaceState? (state : RuntimeState) (origin : BpmnElementOrigin)
     (input : ControlPlaceId) (message : EventRaceMessageArm)
     (timer : EventRaceTimerArm) : Option RuntimeState :=
@@ -210,6 +214,11 @@ inductive OperationStep (program : Program) :
   | awaitMessage (id origin input output message) (before after : RuntimeState)
       (transition : awaitMessageState? before input output message = some after) :
       OperationStep program (.awaitMessage id origin input output message) before after
+  | awaitPayloadMessage (id origin input output message directOutput)
+      (before after : RuntimeState)
+      (transition : awaitPayloadMessageState? before input output message = some after) :
+      OperationStep program
+        (.awaitPayloadMessage id origin input output message directOutput) before after
   | awaitEventRace (id origin input message timer) (before after : RuntimeState)
       (transition :
         EventRaceArmingStep before origin input message timer after) :
@@ -317,6 +326,8 @@ def fire? (program : Program) (operation : SemanticOperation)
       awaitTimerState? state input output timer
   | .awaitMessage _ _ input output message =>
       awaitMessageState? state input output message
+  | .awaitPayloadMessage _ _ input output message _ =>
+      awaitMessageState? state input output message
   | .awaitEventRace _ origin input message timer =>
       awaitEventRaceState? state origin input message timer
   | .awaitBoundedUserTask _ _ input task boundaryTimer =>
@@ -395,6 +406,7 @@ theorem fire_sound (program : Program) (operation : SemanticOperation)
         exact False.elim (by simp [fire?] at result)
     | exact .awaitTimer _ _ _ _ _ before after result
     | exact .awaitMessage _ _ _ _ _ before after result
+    | exact .awaitPayloadMessage _ _ _ _ _ _ before after result
     | exact OperationStep.awaitEventRace _ _ _ _ _ before after
         (armEventRaceState_sound before after _ _ _ _
           (by simpa [fire?, awaitEventRaceState?] using result))

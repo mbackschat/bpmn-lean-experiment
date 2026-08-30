@@ -235,6 +235,8 @@ private def normalizeEnabledInteraction : EnabledInteraction → EnabledInteract
       .completeUserTaskInstance (normalizeOccurrenceId id)
   | .deliverMessage id channel =>
       .deliverMessage (normalizeOccurrenceId id) channel
+  | .deliverPayloadMessage id channel =>
+      .deliverPayloadMessage (normalizeOccurrenceId id) channel
   | .retryIncident incidentId =>
       .retryIncident
         { incidentId with effectId := normalizeOccurrenceId incidentId.effectId }

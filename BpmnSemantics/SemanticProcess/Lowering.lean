@@ -402,6 +402,15 @@ private def lowerNode (source : CheckedProcess) :
           (firstPlace (incomingPlaces source id))
           (firstPlace (outgoingPlaces source id))
           { elementId := id, channel }, scopeId)
+  | .payloadMessageCatchEvent id channel directOutput =>
+      checkedNodeScopeId? source id |>.map fun scopeId =>
+      (.awaitPayloadMessage
+        (nodeOperationId id)
+        { elementId := id }
+        (firstPlace (incomingPlaces source id))
+        (firstPlace (outgoingPlaces source id))
+        { elementId := id, channel }
+        directOutput, scopeId)
   | .receiveTask id channel =>
       checkedNodeScopeId? source id |>.map fun scopeId =>
       (.awaitMessage

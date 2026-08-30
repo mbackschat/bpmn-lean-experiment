@@ -117,7 +117,7 @@ private def operationInputs : SemanticOperation → List ControlPlaceId
   | .awaitSequentialMultiInstanceUserTask _ _ input _ _ _ _ _
   | .awaitParallelMultiInstanceUserTask _ _ input _ _ _ _ _ _ _
   | .awaitTimer _ _ input _ _
-  | .awaitMessage _ _ input _ _
+  | .awaitMessage _ _ input _ _ | .awaitPayloadMessage _ _ input _ _ _
   | .awaitEventRace _ _ input _ _
   | .awaitBoundedUserTask _ _ input _ _
   | .awaitMonitoredUserTask _ _ input _ _
@@ -140,7 +140,7 @@ private def operationOutputs : SemanticOperation → List ControlPlaceId
   | .awaitDataInputUserTask _ _ _ output _ _ _
   | .awaitDataOutputUserTask _ _ _ output _ _ _
   | .awaitTimer _ _ _ output _
-  | .awaitMessage _ _ _ output _
+  | .awaitMessage _ _ _ output _ | .awaitPayloadMessage _ _ _ output _ _
   | .synchronize _ _ _ output
   | .mergeExclusive _ _ _ output => [output]
   | .awaitSequentialMultiInstanceUserTask _ _ _ _ _ normalOutput boundaryTimer _ =>
@@ -190,6 +190,9 @@ def operationControlPlacesShareOwner : SemanticOperation → Bool
   | .throwError .. => false
   | _ => true
 
+/-- A payload-bearing Message Catch Event's outgoing place is one of its same-scope token ports. -/
+theorem awaitPayloadMessage_output_mem_operationControlPlaces (id : OperationId) (origin : BpmnElementOrigin) (input output : ControlPlaceId) (message : MessageDefinition) (directOutput : DirectCatchEventPayloadOutput) :
+    output ∈ operationControlPlaces (.awaitPayloadMessage id origin input output message directOutput) := by simp [operationControlPlaces, operationInputs, operationOutputs]
 private def producers (operations : List SemanticOperation)
     (place : ControlPlaceId) : List OperationId :=
   operations.filterMap fun operation =>
@@ -329,7 +332,7 @@ private def enteredChildScopeId? : SemanticOperation → Option DefinitionScopeI
   | .awaitSequentialMultiInstanceUserTask ..
   | .awaitParallelMultiInstanceUserTask ..
   | .completeParallelMultiInstanceUserTask ..
-  | .awaitTimer .. | .awaitMessage .. | .awaitEventRace ..
+  | .awaitTimer .. | .awaitMessage .. | .awaitPayloadMessage .. | .awaitEventRace ..
   | .awaitBoundedUserTask .. | .awaitMonitoredUserTask ..
   | .awaitEffect .. | .duplicate ..
   | .synchronize .. | .mergeExclusive .. | .choose .. | .selectMany ..
@@ -414,7 +417,7 @@ def semanticOperationIsResumptionCut : SemanticOperation → Bool
   | .awaitParallelMultiInstanceUserTask .. => true
   | .initiate .. | .initiateMessage .. | .initiateTimer .. | .enterScope .. | .enterBoundedScope ..
   | .invokeProcess .. | .returnProcess .. | .completeParallelMultiInstanceUserTask .. | .awaitTimer ..
-  | .awaitMessage .. | .awaitEventRace .. | .awaitBoundedUserTask ..
+  | .awaitMessage .. | .awaitPayloadMessage .. | .awaitEventRace .. | .awaitBoundedUserTask ..
   | .awaitMonitoredUserTask .. | .awaitEffect .. | .duplicate ..
   | .synchronize .. | .mergeExclusive .. | .choose .. | .selectMany ..
   | .synchronizeSelected .. | .throwError .. | .reachNoneEnd ..

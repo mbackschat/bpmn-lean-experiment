@@ -125,6 +125,9 @@ inductive EnabledInteraction where
   | deliverMessage
       (subscriptionId : MessageSubscriptionId)
       (channel : MessageChannel)
+  | deliverPayloadMessage
+      (subscriptionId : MessageSubscriptionId)
+      (channel : MessageChannel)
   | retryIncident (incidentId : EffectIncidentId)
   | cancelIncidentProcess
       (processInstanceId : SemanticId)
@@ -157,6 +160,11 @@ inductive Stimulus where
       (commandId : SemanticId)
       (subscriptionId : MessageSubscriptionId)
       (channel : MessageChannel)
+  | deliverPayloadMessage
+      (commandId : SemanticId)
+      (subscriptionId : MessageSubscriptionId)
+      (channel : MessageChannel)
+      (payload : VariableValue)
   | fireTimer (commandId : SemanticId) (timerId : TimerOccurrenceId) (logicalTimeMs : Nat)
   | completeEffect
       (commandId : SemanticId)

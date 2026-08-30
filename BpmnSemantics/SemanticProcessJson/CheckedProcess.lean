@@ -102,6 +102,16 @@ private def decodeDirectActivityDataOutput (json : Json) :
       sourceDataOutputName := ← decodeOptionalString (← field json "sourceDataOutputName")
       targetPropertyId := ← stringField json "targetPropertyId" }
 
+private def decodeDirectCatchEventPayloadOutput (json : Json) :
+    Except String DirectCatchEventPayloadOutput := do
+  requireObjectShape json
+    ["associationId", "sourceDataOutputId", "sourceDataOutputName", "targetPropertyId"]
+  pure
+    { associationId := ← stringField json "associationId"
+      sourceDataOutputId := ← stringField json "sourceDataOutputId"
+      sourceDataOutputName := ← decodeOptionalString (← field json "sourceDataOutputName")
+      targetPropertyId := ← stringField json "targetPropertyId" }
+
 private def decodeSequentialMultiInstanceInput (json : Json) :
     Except String SequentialMultiInstanceInputDefinition := do
   requireObjectShape json
@@ -254,6 +264,13 @@ private def decodeCheckedNode (json : Json) : Except String CheckedNode := do
         (.intermediateCatchMessageEvent
           ⟨← stringField json "id"⟩
           (← decodeMessageChannel (← field json "channel")))
+  | "payloadMessageCatchEvent" =>
+      requireObjectShape json ["channel", "directOutput", "id", "kind"]
+      pure
+        (.payloadMessageCatchEvent
+          ⟨← stringField json "id"⟩
+          (← decodeOperationMessageChannel (← field json "channel"))
+          (← decodeDirectCatchEventPayloadOutput (← field json "directOutput")))
   | "receiveTask" =>
       requireObjectShape json ["channel", "id", "kind"]
       pure

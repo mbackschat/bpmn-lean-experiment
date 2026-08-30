@@ -82,6 +82,7 @@ def fireNode? (source : CheckedProcess) (node : CheckedNode)
   | .parallelMultiInstanceUserTask .. => none
   | .intermediateCatchTimerEvent _ _ => none
   | .intermediateCatchMessageEvent _ _ => none
+  | .payloadMessageCatchEvent _ _ _ => none
   | .receiveTask _ _ => none
   | .configuredTask _ _ => none
   | .serviceTask _ _ _ _ _ => none
@@ -160,6 +161,8 @@ theorem fireNode_sound (source : CheckedProcess) (node : CheckedNode)
   | intermediateCatchTimerEvent id durationLiteral =>
       simp [fireNode?] at result
   | intermediateCatchMessageEvent id channel =>
+      simp [fireNode?] at result
+  | payloadMessageCatchEvent id channel directOutput =>
       simp [fireNode?] at result
   | receiveTask id channel =>
       simp [fireNode?] at result
@@ -265,6 +268,7 @@ def admitStimulus (source : CheckedProcess) (state : SourceRuntimeState) :
       | .completed _ => { outcome := .rejected, state }
   | .fireTimer _ _ _ => { outcome := .unsupported, state }
   | .deliverMessage _ _ _ => { outcome := .unsupported, state }
+  | .deliverPayloadMessage _ _ _ _ => { outcome := .unsupported, state }
   | .completeEffect _ _ _ => { outcome := .unsupported, state }
   | .reportEffectFailure _ _ _ => { outcome := .unsupported, state }
   | .retryIncident _ _ => { outcome := .unsupported, state }

@@ -491,6 +491,34 @@ private theorem prepared_arm_candidate_singleton (program : Program) (state : Ru
       operationSelection scopeSelection scopeMatches processAligned rfl (by omega)
     simp [candidate]
     rfl
+  case awaitPayloadMessage.isFalse.running =>
+    rename_i id origin input output message directOutput stateInstanceId
+    obtain ⟨binding, operationSelection, scopeSelection, scopeMatches⟩ :=
+      exactProgramSelection_parts program
+        (.awaitPayloadMessage id origin input output message directOutput) owner
+        programValid selection.1
+    let wait : MessageWait :=
+      { processInstanceId := owner.processInstanceId, owner,
+        elementId := message.elementId,
+        activation := messageActivationCount state message.elementId + 1,
+        channel := message.channel, output }
+    have filtered : (insertMessageWait wait state.messageWaits).filter (fun old =>
+        decide (old.owner = owner) && decide (old.elementId = message.elementId) &&
+          decide (old.activation = activationForNode
+            (state.messageActivations.map fun value => (value.elementId, value.count))
+              message.elementId + 1)) = [wait] := by
+      rw [activationForNode_eq_elementActivationCount]
+      exact filter_insertMessageWait_eq_singleton wait state.messageWaits rfl ownerIds.2.1
+        (fun old member => (keyFresh old member).1)
+    dsimp [wait] at filtered
+    rw [filtered]
+    have candidate := candidateWaitStart_of_exact_selection program
+      (.awaitPayloadMessage id origin input output message directOutput) owner
+      owner.processInstanceId message.elementId
+      (messageActivationCount state message.elementId + 1) runtimeProcess binding
+      operationSelection scopeSelection scopeMatches processAligned rfl (by omega)
+    simp [candidate]
+    rfl
   case awaitTimer.isFalse.running =>
     rename_i id origin input output timer stateInstanceId
     obtain ⟨binding, operationSelection, scopeSelection, scopeMatches⟩ :=

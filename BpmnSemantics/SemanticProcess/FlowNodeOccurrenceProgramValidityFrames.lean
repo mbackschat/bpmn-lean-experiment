@@ -82,6 +82,30 @@ theorem flowNodeOccurrenceProgramValidity_insertOrdinaryMessage (program : Progr
       live processId elementId positive processOwner element channel
   all_goals rfl
 
+theorem flowNodeOccurrenceProgramValidity_insertPayloadMessage (program : Program)
+    (state : RuntimeState) (id : OperationId) (origin : BpmnElementOrigin)
+    (input : ControlPlaceId) (message : MessageDefinition)
+    (directOutput : DirectCatchEventPayloadOutput) (wait : MessageWait)
+    (prior : flowNodeOccurrenceProgramValidity program state = true)
+    (declarers : messageWaitDeclarers program wait.elementId =
+      [.awaitPayloadMessage id origin input wait.output message directOutput])
+    (declared : declaredByExactlyOneOwnedOperation program
+      (messageWaitDeclarers program wait.elementId) wait.owner = true)
+    (live : flowNodeOccurrenceOwnerLiveUnique state wait.owner = true)
+    (processId : !wait.processInstanceId.value.isEmpty = true)
+    (elementId : !wait.elementId.value.isEmpty = true) (positive : wait.activation > 0)
+    (processOwner : wait.processInstanceId = wait.owner.processInstanceId)
+    (element : message.elementId = wait.elementId) (channel : message.channel = wait.channel) :
+    flowNodeOccurrenceProgramValidity program
+      { state with messageWaits := insertMessageWait wait state.messageWaits } = true := by
+  let after : RuntimeState :=
+    { state with messageWaits := insertMessageWait wait state.messageWaits }
+  apply flowNodeOccurrenceProgramValidity_of_wait_frame program state after prior
+  · exact flowNodeOccurrenceWaitProgramValidity_insertPayloadMessage program state id origin input
+      message directOutput wait (waitProgramValidity_of_programValidity program state prior)
+      declarers declared live processId elementId positive processOwner element channel
+  all_goals rfl
+
 theorem flowNodeOccurrenceProgramValidity_insertOrdinaryTimer (program : Program)
     (state : RuntimeState) (id : OperationId) (origin : BpmnElementOrigin)
     (input : ControlPlaceId) (timer : TimerDefinition) (wait : TimerWait)
