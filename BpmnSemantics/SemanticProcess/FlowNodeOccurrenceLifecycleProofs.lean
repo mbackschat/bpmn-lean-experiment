@@ -383,19 +383,22 @@ theorem projectOpenFlowNodeOccurrences_validities (program : Program) (state : R
     flowNodeOccurrenceProgramValidity program state = true ∧
       calledProcessAssociationsValid state = true ∧
       eventRaceAssociationsValid state = true ∧
-      effectIncidentAssociationsValid state = true := by
+      effectIncidentAssociationsValid state = true ∧
+      messageBoundedProjectionValid program state = true := by
   unfold projectOpenFlowNodeOccurrences? at projected
   rw [running] at projected
   generalize invalidEq : (!programWellFormed program ||
     !flowNodeOccurrenceProgramValidity program state ||
     !eventRaceAssociationsValid state ||
     !calledProcessAssociationsValid state ||
-    !effectIncidentAssociationsValid state) = invalid at projected
+    !effectIncidentAssociationsValid state ||
+    !messageBoundedProjectionValid program state) = invalid at projected
   cases invalid with
   | true => simp at projected
   | false =>
       simp at invalidEq
-      exact ⟨invalidEq.1.1.1.2, invalidEq.1.2, invalidEq.1.1.2, invalidEq.2⟩
+      exact ⟨invalidEq.1.1.1.1.2, invalidEq.1.1.2, invalidEq.1.1.1.2,
+        invalidEq.1.2, invalidEq.2⟩
 
 /-- One fresh projected wait preserves the independent open-set oracle. -/
 theorem projectOpenFlowNodeOccurrences_one_wait_insert_isSome
@@ -421,7 +424,8 @@ theorem projectOpenFlowNodeOccurrences_one_wait_insert_isSome
     (occurrencesValid : flowNodeOccurrenceProgramValidity program after = true)
     (racesValid : eventRaceAssociationsValid after = true)
     (callsValid : calledProcessAssociationsValid after = true)
-    (incidentsValid : effectIncidentAssociationsValid after = true) :
+    (incidentsValid : effectIncidentAssociationsValid after = true)
+    (messagePairsValid : messageBoundedProjectionValid program after = true) :
     (projectOpenFlowNodeOccurrences? program after).isSome = true := by
   simp only [projectOpenFlowNodeOccurrences?, beforeRunning] at beforeProjected
   split at beforeProjected
@@ -478,8 +482,8 @@ theorem projectOpenFlowNodeOccurrences_one_wait_insert_isSome
                   ((sortFlowNodeOccurrenceStarts_perm afterRaw).map
                     (·.anchor)).nodup_iff.mpr afterRawNodup
                 simp [projectOpenFlowNodeOccurrences?, afterRunning, programValid,
-                  occurrencesValid, racesValid, callsValid, incidentsValid, afterWaitsEq,
-                  afterScopesEq, afterCallsEq, afterRaw, afterSortedNodup]
+                  occurrencesValid, racesValid, callsValid, incidentsValid, messagePairsValid,
+                  afterWaitsEq, afterScopesEq, afterCallsEq, afterRaw, afterSortedNodup]
 
 private theorem accepted_candidate_equals_independent_open_projection
     (program : Program) (before after : RuntimeState)

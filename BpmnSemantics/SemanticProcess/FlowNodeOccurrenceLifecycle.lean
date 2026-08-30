@@ -263,7 +263,7 @@ private def messageBoundedProjectionPairMatches (program : Program)
               activation := messageWait.activation }])
   | _ => false
 
-private def messageBoundedOperationProjectionValid (program : Program) (state : RuntimeState)
+def messageBoundedOperationProjectionValid (program : Program) (state : RuntimeState)
     (operation : SemanticOperation) : Bool :=
   match operation with
   | .awaitMessageBoundedUserTask _ _ _ task boundary =>
@@ -286,7 +286,7 @@ private def messageBoundedOperationProjectionValid (program : Program) (state : 
           (messages.filter fun messageWait => paired record taskWait messageWait).length = 1).length = 1
   | _ => true
 
-private def messageBoundedProjectionValid (program : Program) (state : RuntimeState) : Bool :=
+def messageBoundedProjectionValid (program : Program) (state : RuntimeState) : Bool :=
   program.operations.all (messageBoundedOperationProjectionValid program state)
 
 def projectOpenFlowNodeOccurrences? (program : Program) (state : RuntimeState) :
