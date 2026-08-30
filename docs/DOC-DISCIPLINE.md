@@ -85,7 +85,7 @@ Lifecycle: <closed-value>
 Review: <closed-value>
 ```
 
-Lifecycle is one of `draft`, `owner-approved`, `implementation-in-progress`, `implemented-awaiting-closure`, `superseded`, or `archived`. Review is one of `pending`, `approved`, `approved-with-required-edits`, `rejected`, or `not-required`. Dates, commits, findings, scope narration, and implementation results belong in a current-boundary section, review receipt, plan, or implementation detail map rather than Status. Only `owner-approved`, `implementation-in-progress`, and `implemented-awaiting-closure` authorize implementation.
+Lifecycle is one of `draft`, `owner-approved`, `implementation-in-progress`, `implemented-awaiting-closure`, `superseded`, or `archived`. Review is one of `pending`, `approved`, `approved-with-required-edits`, `rejected`, or `not-required`. Dates, commits, findings, scope narration, and implementation results belong in a current-boundary section, review receipt, plan, or implementation detail map rather than Status. Only `owner-approved`, `implementation-in-progress`, and `implemented-awaiting-closure` authorize implementation. `owner-approved` records the authority a green independent review establishes under [the review gate](TESTING-SPEC.md#independent-cold-review-gate); it names no separate manual step.
 
 Other maintained document roles continue to use concise plain status language such as Draft, Owner-approved, Implemented, Evidence-closed draft, Superseded, or Archived.
 

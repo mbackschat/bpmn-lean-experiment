@@ -2,8 +2,8 @@
 
 ## Status
 
-Lifecycle: draft
-Review: pending
+Lifecycle: owner-approved
+Review: approved-with-required-edits
 
 ## Question and bounded outcome
 
