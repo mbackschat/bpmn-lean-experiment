@@ -326,6 +326,20 @@ function pushWait(
   return true;
 }
 
+/**
+ * Refuses an operation family this matcher has not classified.
+ *
+ * Deliberately exhaustive with no wildcard, matching the Lean owner: a catch-all here reads as "this
+ * family declares no task wait", so a newly added wait-declaring family becomes silently invisible
+ * to every public projection instead of failing to compile. That exact mechanism has recurred often
+ * enough to be a recorded finding rather than an oversight.
+ */
+function assertNeverOperation(operation: never): never {
+  throw new TypeError(
+    `Unclassified semantic operation: ${JSON.stringify(operation)}`,
+  );
+}
+
 function waitMatchesUserTask(
   program: SemanticProcessProgram,
   state: RuntimeState,
@@ -361,8 +375,31 @@ function waitMatchesUserTask(
           operation,
           wait,
         );
-      default:
+      case SemanticOperationKind.Initiate:
+      case SemanticOperationKind.InitiateMessage:
+      case SemanticOperationKind.InitiateTimer:
+      case SemanticOperationKind.EnterScope:
+      case SemanticOperationKind.EnterBoundedScope:
+      case SemanticOperationKind.InvokeProcess:
+      case SemanticOperationKind.ReturnProcess:
+      case SemanticOperationKind.CompleteParallelMultiInstanceUserTask:
+      case SemanticOperationKind.AwaitMessage:
+      case SemanticOperationKind.AwaitTimer:
+      case SemanticOperationKind.AwaitEffect:
+      case SemanticOperationKind.AwaitEventRace:
+      case SemanticOperationKind.Duplicate:
+      case SemanticOperationKind.Synchronize:
+      case SemanticOperationKind.MergeExclusive:
+      case SemanticOperationKind.Choose:
+      case SemanticOperationKind.SelectMany:
+      case SemanticOperationKind.SynchronizeSelected:
+      case SemanticOperationKind.ThrowError:
+      case SemanticOperationKind.TerminateScope:
+      case SemanticOperationKind.ReachNoneEnd:
+      case SemanticOperationKind.CompleteScope:
         return false;
+      default:
+        return assertNeverOperation(operation);
     }
   })) !== undefined;
 }

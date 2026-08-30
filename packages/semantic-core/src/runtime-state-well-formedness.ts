@@ -141,11 +141,43 @@ function declaredElementIds(
       case SemanticOperationKind.AwaitEffect:
         effect.add(operation.origin.elementId);
         break;
-      default:
+      case SemanticOperationKind.Initiate:
+      case SemanticOperationKind.InitiateMessage:
+      case SemanticOperationKind.InitiateTimer:
+      case SemanticOperationKind.EnterScope:
+      case SemanticOperationKind.InvokeProcess:
+      case SemanticOperationKind.ReturnProcess:
+      case SemanticOperationKind.CompleteParallelMultiInstanceUserTask:
+      case SemanticOperationKind.Duplicate:
+      case SemanticOperationKind.Synchronize:
+      case SemanticOperationKind.MergeExclusive:
+      case SemanticOperationKind.Choose:
+      case SemanticOperationKind.SelectMany:
+      case SemanticOperationKind.SynchronizeSelected:
+      case SemanticOperationKind.ThrowError:
+      case SemanticOperationKind.TerminateScope:
+      case SemanticOperationKind.ReachNoneEnd:
+      case SemanticOperationKind.CompleteScope:
         break;
+      default:
+        assertNeverDeclarer(operation);
     }
   }
   return { userTask, message, timer, effect };
+}
+
+/**
+ * Refuses an operation family whose declared wait elements this owner has not classified.
+ *
+ * Deliberately exhaustive with no wildcard, matching the Lean owner: a catch-all here reads as "this
+ * family declares no wait element", so a newly added wait-declaring family produces a state whose
+ * hosted element looks undeclared, and the defect surfaces far downstream as an unexplained
+ * well-formedness rejection rather than as a compile error.
+ */
+function assertNeverDeclarer(operation: never): never {
+  throw new TypeError(
+    `Unclassified wait-declaring operation: ${JSON.stringify(operation)}`,
+  );
 }
 
 function isSorted<T>(
