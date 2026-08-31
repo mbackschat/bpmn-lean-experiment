@@ -48,7 +48,7 @@ The [interrupting Activity boundary Message proposal](capsules/ACTIVITY-BOUNDARY
 
 Active work ID: `EVENT-SUBSCRIPTIONS`.
 
-Next action: prepare the independently approved [interrupting Activity boundary Message proposal](capsules/ACTIVITY-BOUNDARY-MESSAGE-PROPOSAL.md) for closure: measure and record the exact implementation range against the interrupting Activity boundary Timer comparison, add the reflection and cost evidence, run the complete applicable gate on a clean committed target, and open the required context-cold closure review. Apply any required corrections through the same reviewer before lifecycle graduation.
+Next action: run the complete applicable gate on the clean committed Activity boundary Message closure target, generate its exact review packet, and open the required context-cold closure review. Apply any required corrections through the same reviewer before lifecycle graduation.
 
 Separate open changes: Internal Commutation closure, Activity issuing-discipline graduation, cross-family Activity wait withdrawal, PostgreSQL migration evidence, and Engine `v0.3` workload isolation. Host load no longer blocks this lane; [`implementation-status-owner:TEMPORAL-HOSTING`](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md) owns that evidence.
 

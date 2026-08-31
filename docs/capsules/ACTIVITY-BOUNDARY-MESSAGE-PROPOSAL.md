@@ -339,7 +339,7 @@ Reopen the account if general correlation becomes necessary, if one Activity may
 
 ## Closure cost
 
-No closure cost is claimed at proposal time. At closure, [`capsule-cost.ts`](../../scripts/capsule-cost.ts) must measure one immutable implementation range and compare it with the interrupting Activity boundary Timer increment because that is the nearest change across source, Lean, core, publication, and Temporal host readiness.
+The immutable implementation range `79406df6..b012ec49` adds `7581` and removes `750` nonblank code lines, and adds `103` and removes `64` nonblank documentation lines. The nearest same-mechanism comparator is the interrupting Activity boundary Timer at `+5521/-838` code and `+363/-31` documentation: code additions rose by `2060`, about 37%, while documentation additions fell by `260`, about 72%. The increase pays for replacing Timer-only Activity-handler ownership across its complete producer/consumer census and for settling both co-ready Signal and Update callers through continuation-safe fail-closed scheduling. The reusable code-axis weight removed in the range is Message-first runner batching: `StimulusOrder` now drives completion, Message, and Timer inputs from the declared answer-free schedule, so a later mixed-ingress family does not need another family-specific runner path. No semantic or evidence lane is removed to manufacture a lower figure. [The capsule cost ledger](../CAPSULE-COST-LEDGER.md) owns the reproducible measurement.
 
 ## Stage boundary
 
