@@ -2,6 +2,7 @@
 import {
   CommandOutcome,
   StimulusKind,
+  isCorrelatedMessageAddress,
   isWellFormedStimulus,
   sameStimulus,
 } from "@bpmn-lean/semantic-core";
@@ -19,6 +20,7 @@ import type {
 
 import {
   MessageDeliveryResolutionKind,
+  CorrelationRegistrationFailureKind,
   ProcessCommandResultKind,
   WorkflowChainBudgetKind,
   WorkflowChainCommandRecoveryResponseKind,
@@ -36,6 +38,7 @@ import type {
   BpmnProcessWorkflow,
   ExternallyRetryableStimulus,
   MessageDeliveryStimulus,
+  CorrelationRegistrationFailure,
   ProcessCommandResult,
   TerminalProcessReceipt,
   WorkflowChainCapacityFailureDetails,
@@ -65,6 +68,26 @@ export class BpmnWorkflowChainCapacityExhausted extends Error {
       `Workflow-chain capacity ${details.budget} exhausted at ${details.observedValue}`,
     );
     this.details = Object.freeze({ ...details });
+  }
+}
+
+export class BpmnCorrelationCandidateCapacityExhausted extends Error {
+  override readonly name = "BpmnCorrelationCandidateCapacityExhausted";
+  readonly failure: CorrelationRegistrationFailure;
+
+  constructor(failure: CorrelationRegistrationFailure) {
+    super(`Correlation candidate capacity exhausted for ${failure.transactionId}`);
+    this.failure = Object.freeze({ ...failure });
+  }
+}
+
+export class BpmnCorrelationAddressQuarantined extends Error {
+  override readonly name = "BpmnCorrelationAddressQuarantined";
+  readonly failure: CorrelationRegistrationFailure;
+
+  constructor(failure: CorrelationRegistrationFailure) {
+    super(`Correlation address quarantined for ${failure.transactionId}`);
+    this.failure = Object.freeze({ ...failure });
   }
 }
 
@@ -448,9 +471,40 @@ function interpretMessageResolution(
         throw new TypeError("Malformed Message delivery request failure");
       }
       throw identityConflict(stimulus.commandId);
+    case MessageDeliveryResolutionKind.CorrelationRegistrationFailed:
+      requireOnlyKeys(candidate, ["kind", "stimulus", "failure"]);
+      if (!sameStimulus(candidate.stimulus, stimulus) ||
+        !isCorrelationRegistrationFailure(candidate.failure, stimulus.commandId)) {
+        throw identityConflict(stimulus.commandId);
+      }
+      switch (candidate.failure.kind) {
+        case CorrelationRegistrationFailureKind.CandidateCapacity:
+          throw new BpmnCorrelationCandidateCapacityExhausted(candidate.failure);
+        case CorrelationRegistrationFailureKind.AddressQuarantined:
+          throw new BpmnCorrelationAddressQuarantined(candidate.failure);
+        default:
+          throw new TypeError("Malformed correlation registration failure");
+      }
     default:
       throw new TypeError("Malformed Message delivery resolution variant");
   }
+}
+
+function isCorrelationRegistrationFailure(
+  value: unknown,
+  transactionId: string,
+): value is CorrelationRegistrationFailure {
+  return isRecord(value) &&
+    Object.keys(value).length === 3 &&
+    Object.hasOwn(value, "kind") &&
+    Object.hasOwn(value, "address") &&
+    Object.hasOwn(value, "transactionId") &&
+    isCorrelatedMessageAddress(value.address) &&
+    value.transactionId === transactionId &&
+    (
+      value.kind === CorrelationRegistrationFailureKind.CandidateCapacity ||
+      value.kind === CorrelationRegistrationFailureKind.AddressQuarantined
+    );
 }
 
 function isIndeterminateUpdateFailure(error: unknown): boolean {

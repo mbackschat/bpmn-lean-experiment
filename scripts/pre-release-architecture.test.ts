@@ -9,6 +9,8 @@ const workflowChainPatchOwner =
   "packages/temporal-adapter/workflow/src/workflow-implementation.ts";
 const workflowChainPatchIdentityOwner =
   "packages/temporal-adapter/protocol/src/workflow-continuation.ts";
+const processCorrelationPatchIdentityOwner =
+  "packages/temporal-adapter/protocol/src/process-correlation-registration.ts";
 
 const temporalSourceRoots = [
   "packages/temporal-adapter/client/src",
@@ -288,13 +290,18 @@ test("keeps pre-release Temporal replay evidence and patch enrollment exact", as
   );
   assert.equal(
     patchOwnerSource.match(/\bpatched\(/gu)?.length,
-    1,
-    "the Workflow-chain compatibility branch must remain the only patch call",
+    2,
+    "only the reviewed Workflow-chain and Process-correlation patches may enroll",
   );
   assert.match(
     patchOwnerSource,
     /hostInput !== undefined &&\s+patched\(bpmnWorkflowChainPatchId\)/u,
     "ordinary two-argument starts must not enroll in the checkpoint patch branch",
+  );
+  assert.match(
+    patchOwnerSource,
+    /workflowChainPatchActive &&\s+patched\(bpmnProcessCorrelationRegistrationPatchId\)/u,
+    "Process correlation registration must enroll only inside the Workflow-chain branch",
   );
 
   const patchIdentitySource = await readFile(
@@ -305,5 +312,15 @@ test("keeps pre-release Temporal replay evidence and patch enrollment exact", as
     patchIdentitySource,
     /export const bpmnWorkflowChainPatchId = "bpmn-workflow-chain-v1" as const;/u,
     "the reviewed Workflow-chain patch identity must remain stable",
+  );
+
+  const processCorrelationPatchIdentitySource = await readFile(
+    path.join(projectRoot, processCorrelationPatchIdentityOwner),
+    "utf8",
+  );
+  assert.match(
+    processCorrelationPatchIdentitySource,
+    /export const bpmnProcessCorrelationRegistrationPatchId =\s+"bpmn-process-correlation-registration-v1";/u,
+    "the reviewed Process-correlation patch identity must remain stable",
   );
 });

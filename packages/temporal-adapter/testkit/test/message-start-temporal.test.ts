@@ -43,6 +43,7 @@ import {
   assertNoNonUpdateBpmnHostEvents,
   expectedTemporalIdentity,
   historyEvents,
+  workflowChainPatchHistoryEventCount,
 } from "./temporal-history-facts.ts";
 import {
   replayBpmnHistory,
@@ -207,7 +208,10 @@ test("Message Start survives Worker absence and replays without Signal ingress",
     );
     assert.equal(description.status.name, "COMPLETED");
     assert.equal(description.historyLength, typedHistory.events.length);
-    assert.equal(typedHistory.events.length, exactHistoryEventCount + 2);
+    assert.equal(
+      typedHistory.events.length,
+      exactHistoryEventCount + workflowChainPatchHistoryEventCount,
+    );
     const historySizeBytes = description.historySize;
     assert.equal(
       typeof historySizeBytes === "number" &&

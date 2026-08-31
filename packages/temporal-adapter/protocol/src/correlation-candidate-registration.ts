@@ -238,6 +238,79 @@ export function correlationCandidateRegistrationRequestFromRecord(
   };
 }
 
+export function requireCorrelationCandidateCapacityFailure(
+  value: unknown,
+): CorrelationCandidateCapacityFailure {
+  if (!isRecordWithExactKeys(value, [
+    "measure",
+    "configuredBound",
+    "observedValue",
+  ]) ||
+    !Object.values(CorrelationCandidateCapacityMeasure).includes(
+      value.measure as CorrelationCandidateCapacityMeasure,
+    ) ||
+    typeof value.configuredBound !== "number" ||
+    !Number.isSafeInteger(value.configuredBound) ||
+    value.configuredBound < 1 ||
+    typeof value.observedValue !== "number" ||
+    !Number.isSafeInteger(value.observedValue) ||
+    value.observedValue <= value.configuredBound) {
+    throw new TypeError("Correlation candidate capacity failure is malformed");
+  }
+  return value as CorrelationCandidateCapacityFailure;
+}
+
+export function requireCorrelationCandidateRegistrationResult(
+  value: unknown,
+  transactionId: string,
+): CorrelationCandidateRegistrationResult {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    throw new TypeError("Correlation candidate registration result is malformed");
+  }
+  const keys = Object.hasOwn(value, "phase")
+    ? ["kind", "transactionId", "phase"]
+    : Object.hasOwn(value, "scanId")
+    ? ["kind", "transactionId", "scanId"]
+    : Object.hasOwn(value, "failure")
+    ? ["kind", "transactionId", "failure"]
+    : ["kind", "transactionId"];
+  if (!isRecordWithExactKeys(value, keys) ||
+    value.transactionId !== transactionId) {
+    throw new TypeError("Correlation candidate registration result is malformed");
+  }
+  switch (value.kind) {
+    case CorrelationCandidateRegistrationResultKind.Prepared:
+      if (value.phase !== CorrelationCandidateRegistrationPhase.Pending) {
+        throw new TypeError("Correlation prepare result changed phase");
+      }
+      return value as CorrelationCandidateRegistrationResult;
+    case CorrelationCandidateRegistrationResultKind.Finalized:
+      if (value.phase !== CorrelationCandidateRegistrationPhase.Active) {
+        throw new TypeError("Correlation finalize result changed phase");
+      }
+      return value as CorrelationCandidateRegistrationResult;
+    case CorrelationCandidateRegistrationResultKind.Retained:
+      if (!Object.values(CorrelationCandidateRegistrationPhase).includes(
+        value.phase as CorrelationCandidateRegistrationPhase,
+      )) {
+        throw new TypeError("Correlation retained result changed phase");
+      }
+      return value as CorrelationCandidateRegistrationResult;
+    case CorrelationCandidateRegistrationResultKind.DeferredByScan:
+      if (!nonemptyWireString(value.scanId)) {
+        throw new TypeError("Correlation scan deferral is malformed");
+      }
+      return value as CorrelationCandidateRegistrationResult;
+    case CorrelationCandidateRegistrationResultKind.CandidateCapacity:
+      requireCorrelationCandidateCapacityFailure(value.failure);
+      return value as CorrelationCandidateRegistrationResult;
+    case CorrelationCandidateRegistrationResultKind.AddressQuarantined:
+      return value as CorrelationCandidateRegistrationResult;
+    default:
+      throw new TypeError("Unknown correlation candidate registration result");
+  }
+}
+
 export function correlationCandidateRegistrationCapacityFailure(
   records: ReadonlyArray<CorrelationCandidateRegistrationRecord>,
   request: CorrelationCandidateRegistrationRequest,

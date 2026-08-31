@@ -15,6 +15,7 @@ import {
 import type {
   SequentialMultiInstanceProductionHistoryEvidence,
 } from "./sequential-multi-instance-history-evidence.ts";
+import { workflowChainPatchMarkerCount } from "./temporal-history-facts.ts";
 
 const familyAttributes = Object.freeze({
   started: "workflowExecutionStartedEventAttributes",
@@ -165,8 +166,14 @@ function run(
     history: {
       events: [
         event(familyAttributes.started),
-        event(familyAttributes.patchMarker),
-        event(familyAttributes.searchAttributeUpsert),
+        ...Array.from(
+          { length: workflowChainPatchMarkerCount },
+          () => event(familyAttributes.patchMarker),
+        ),
+        ...Array.from(
+          { length: workflowChainPatchMarkerCount },
+          () => event(familyAttributes.searchAttributeUpsert),
+        ),
         event(familyAttributes.workflowTaskScheduled),
         event(familyAttributes.workflowTaskStarted),
         event(familyAttributes.workflowTaskCompleted),

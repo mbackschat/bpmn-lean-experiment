@@ -24,6 +24,18 @@ The non-binding [engine maturity ladder](PROJECT-DESIGN.md#engine-maturity-roadm
 
 `satisfied` means only that the exact Beta boundary in that row is green; it does not claim full MUE closure.
 
+#### Risk-first execution bands
+
+Higher bands cannot be displaced by easier work. Only the minimum contract, documentation, or harness needed by the active risk oracle may precede them; complete gates and reviews remain mandatory.
+
+| Order | Band | Exit condition; deferred work |
+|---|---|---|
+| 1 | Subscription snapshot/order | Barrier-linearized complete discovery, pending-registration exclusion, all-or-infrastructure fanout, result reservation, and settle-before-next order. Defer public API, profile, corpus, Product 2, cost, and closure. |
+| 2 | Subscription delivery/recovery | Unique delivery; zero/ambiguous preservation; same-target retry; quarantine without rematch; ingress continuation/capacity; replacement, replay, and cross-definition isolation. Keep the same deferrals. |
+| 3 | Compensation lifetime/cancellation | Scope-close disposal, bounded snapshots, deterministic handler order, nested cancellation, failure, retry, continuation, and replay. Defer profile, adoption, and closure. |
+| 4 | Admission/evidence closure | Bind the proved accounts to public APIs, profiles, whole models, corpus/disclosure, Product 2, cost/reflection, complete gates, and reviews. |
+| 5 | Beta integration | Compose the Product 2 journey, disclose limits, pass the clean complete gate and review, and tag Beta. |
+
 Integration state: `blocked`.
 
 When every row is satisfied, `MUE-PREVIEW-BETA` integrates the checkpoints into one coherent Product 2 journey, discloses every remaining limit, passes the clean complete gate and governed review, and receives its immutable checkpoint tag. After Beta, content IDs with broader work return to the queue for full MUE closure. `H3-WORKLOAD-ISOLATION` remains Engine `v0.3`; `CONFORMANCE-CLOSURE`, Engine `v0.9`, and reserved Engine `v1.0` remain later conditional boundaries.
@@ -41,7 +53,7 @@ Exactly one stable work ID is active. Required maps are part of the routing cont
 
 Beta breadth advances at `EVENT-SUBSCRIPTIONS`. The [Message payload catch specification](capsules/MESSAGE-PAYLOAD-CATCH-MEDIATION-SPEC.md) is implemented, independently closure-reviewed, evidence-closed, and graduated. Its independently approved checkpoint, pure TypeScript semantic lane, proved Lean lane, strict shared and Lean wire boundaries, three answer-free full Lean/core/Temporal cases, payload-sensitive Signal delivery and recovery identity, forced continuation and Worker-replacement refinement, retained settlement-confirmation model, capability disclosure, and Product 2 About-page row cover the exact bounded account without selecting CIB behavior. The clean complete gate is green at `0c34aace`, and the closure review's packet-completeness correction audit is approved. `DATA-AND-TASK-MECHANISMS` returns after Beta because its next coexistence decision does not outrank a content ID required by compensation and collaboration. Internal Commutation's broader closure also remains queued.
 
-The approved [Message key-correlation proposal](capsules/MESSAGE-KEY-CORRELATION-PROPOSAL.md) has passed its mandatory semantic-checkpoint review: exact source/checked/IL preservation, complete-address contracts, independent Lean/core finite matching and per-instance delivery, and the correlated internal-commutation census/footprint are green. The reviewer approved target `77ecd9bc` with the exhaustive-Stimulus correction audited at `1ce28ed5`. The first hosting slice now supplies the canonical ensure-only ingress identity, fixed configuration echo, lost-response and duplicate recovery, and replay without admitting the profile or storing a candidate or publication. Candidate registration and scan completeness are the active gate.
+The approved [Message key-correlation proposal](capsules/MESSAGE-KEY-CORRELATION-PROPOSAL.md) has passed its mandatory semantic-checkpoint review: exact source/checked/IL preservation, complete-address contracts, independent Lean/core finite matching and per-instance delivery, and the correlated internal-commutation census/footprint are green. The reviewer approved target `77ecd9bc` with the exhaustive-Stimulus correction audited at `1ce28ed5`. Three hosting slices now supply the canonical ingress identity and recovery, private candidate transaction, and Process-side prepare/commit/finalize staging. The opening command publishes no RuntimeState or E1/E2 before prepare, makes its exact candidate Query current before finalize, completes only afterward, maps capacity/quarantine to retained host failures, preserves both phases through continuation, and replays live success plus deferred/capacity refusal histories without admitting the profile. Scan completeness is the active gate.
 
 The [interrupting Activity boundary Message specification](capsules/ACTIVITY-BOUNDARY-MESSAGE-SPEC.md) is implemented, independently closure-reviewed, evidence-closed, and graduated. Its registered standards-only profile, both answer-free winner schedules, exact Lean/core/Temporal agreement with `cib: null`, retained model and corpus map, Product 2 disclosure, and both stale-loser witnesses cover the bounded account. The closure correction excludes ledger-suppressed Message callbacks from semantic races while preserving genuine exact Signal/Update coalescence failure; the same reviewer approved that correction and the complete clean-target pre-push gate passed at `af3712c5`.
 
@@ -61,12 +73,14 @@ The [interrupting Activity boundary Message specification](capsules/ACTIVITY-BOU
 
 Active work ID: `EVENT-SUBSCRIPTIONS`.
 
-Registration checkpoint: private prepare/finalize, barrier exclusion, typed capacity/quarantine, Worker replacement, and replay are green.
+Risk band: Event-subscription snapshot and order.
 
-Next action: wire Process Workflow staging around the first direct payload command that would arm a correlated wait. Retain the exact pre-state and successor, ensure the ingress, and call prepare. Publish neither RuntimeState nor E1/E2 while deferred or refused. After prepare, atomically install the successor, make its exact candidate Query current, then finalize the same transaction before completing the opening command. Map capacity and quarantine to distinct retained Process-host resolutions, never semantic results.
+Registration checkpoint: ingress transaction, Process staged commit, exact Query-before-finalize, typed capacity/quarantine, continuation, Worker replacement, and replay are green.
+
+Next action: implement private scan completeness. Add content-bound begin/finish scan Updates, hold the barrier across one Worker-owned all-or-infrastructure fanout Activity, Query every finalized locator for its exact candidate, and retain failure without returning a partial vector or clearing the barrier. Exclude public publication, matching, delivery, profile admission, and Product 2.
 
 Separate open changes: Internal Commutation closure, Activity issuing-discipline graduation, cross-family Activity wait withdrawal, PostgreSQL migration evidence, and Engine `v0.3` workload isolation. Host load no longer blocks this lane; [`implementation-status-owner:TEMPORAL-HOSTING`](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md) owns that evidence.
 
-Oracle: before prepare succeeds, committed state and E1/E2 remain byte-identical. The successor Query is current before finalize makes the locator active, and the opening command completes only afterward. Deferred, capacity, quarantine, response-loss, and continuation retain one content-bound phase without speculative semantic publication.
+Oracle: a scan starts only without pending registration, installs its barrier before network I/O, and returns the complete finalized vector only when every Process Query returns its exact candidate. Pending registration blocks start; a held scan makes prepare return no-record `deferredByScan`; any absent, malformed, changed, failed, or oversized Query yields infrastructure failure without a partial vector, and retry retains the scan identity and barrier.
 
-Stop if staging needs a platform or Event History fact; Process state advances before prepare; RuntimeState and E1/E2 do not install atomically; finalize precedes the exact candidate Query or changes the prepared fact; capacity/quarantine becomes absence or semantic outcome; inputs bypass an unresolved phase; or the lane admits the profile or exposes public publication before the barrier refinement is green.
+Stop if scan discovery reads Visibility, Event History, Product 2, or a platform store; network I/O precedes barrier installation; pending registration can enter or leave the vector; partial Query success becomes a candidate vector; candidate order chooses a winner; retry changes scan identity; the barrier clears on indeterminate fanout; or the lane admits the profile or exposes public publication before scan completeness is green.

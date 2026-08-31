@@ -64,6 +64,7 @@ import {
   assertNoNonUpdateBpmnHostEvents,
   assertWorkflowChainPatchHistory,
   assertUpdatesCompleteBeforeWorkflow,
+  workflowChainPatchHistoryEventCount,
 } from "./temporal-history-facts.ts";
 import {
   replayBpmnHistory,
@@ -241,7 +242,10 @@ describe("bounded Terminate End Temporal refinement", { concurrency: false }, ()
       );
       const typedHistory = history as TemporalHistory;
       assertWorkflowChainPatchHistory(typedHistory, 1);
-      assert.equal(typedHistory.events.length, exactHistoryEventCount + 2);
+      assert.equal(
+        typedHistory.events.length,
+        exactHistoryEventCount + workflowChainPatchHistoryEventCount,
+      );
       assert.deepEqual(
         acceptedCompletionOrder(typedHistory),
         [trigger.commandId, stale.commandId, outer.commandId],

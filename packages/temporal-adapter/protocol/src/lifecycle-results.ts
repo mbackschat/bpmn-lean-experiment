@@ -4,6 +4,7 @@ import {
   SemanticProcessCompilerId,
   StimulusKind,
   isSourceOverlayIdentityOrNull,
+  isCorrelatedMessageAddress,
   isVariablePatch,
   isWellFormedWireString,
   isWellFormedStimulus,
@@ -14,6 +15,7 @@ import type {
 
 import {
   MessageDeliveryResolutionKind,
+  CorrelationRegistrationFailureKind,
   ProcessCommandResultKind,
   processTerminalReceiptFormatV1,
 } from "./contracts.js";
@@ -57,6 +59,19 @@ export function isMessageDeliveryRecord(
     case MessageDeliveryResolutionKind.RequestFailure:
       return hasOnlyKeys(value, ["kind", "stimulus", "failure"]) &&
         value.failure === "commandIdentityConflict";
+    case MessageDeliveryResolutionKind.CorrelationRegistrationFailed:
+      return value.stimulus.kind === StimulusKind.DeliverPayloadMessage &&
+        hasOnlyKeys(value, ["kind", "stimulus", "failure"]) &&
+        isRecord(value.failure) &&
+        hasOnlyKeys(value.failure, ["kind", "address", "transactionId"]) &&
+        (
+          value.failure.kind ===
+            CorrelationRegistrationFailureKind.CandidateCapacity ||
+          value.failure.kind ===
+            CorrelationRegistrationFailureKind.AddressQuarantined
+        ) &&
+        isCorrelatedMessageAddress(value.failure.address) &&
+        value.failure.transactionId === value.stimulus.commandId;
     default:
       return false;
   }

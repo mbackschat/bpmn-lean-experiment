@@ -42,6 +42,9 @@ import { isMessageDeliveryRecord } from "./lifecycle-results.js";
 import type {
   BpmnWorkflowContinuationPublicationV1,
 } from "./workflow-publication-segments.js";
+import type {
+  BpmnWorkflowContinuationCorrelationV1,
+} from "./process-correlation-registration.js";
 
 export type {
   BpmnWorkflowContinuationPublicationV1,
@@ -217,8 +220,9 @@ export function workflowContinuationBudgetViolation(
   state: RuntimeState,
   recovery: BpmnWorkflowContinuationRecoveryV1,
   publication: BpmnWorkflowContinuationPublicationV1,
+  correlation?: BpmnWorkflowContinuationCorrelationV1,
 ): WorkflowContinuationBudgetViolation | null {
-  const measured: ReadonlyArray<readonly [WorkflowChainBudgetKind, unknown]> = [
+  const measured: Array<readonly [WorkflowChainBudgetKind, unknown]> = [
     [WorkflowChainBudgetKind.InitialStartStimulusBytes, start],
     [WorkflowChainBudgetKind.SemanticProcessProgramBytes, program],
     [WorkflowChainBudgetKind.PublicationContinuationAndSegmentDirectoryBytes, host],
@@ -226,6 +230,12 @@ export function workflowContinuationBudgetViolation(
     [WorkflowChainBudgetKind.CommandRecoveryLedgerBytes, recovery.entries],
     [WorkflowChainBudgetKind.PublicationContinuationAndSegmentDirectoryBytes, publication],
   ];
+  if (correlation !== undefined) {
+    measured.push([
+      WorkflowChainBudgetKind.CorrelationRegistrationContinuationBytes,
+      correlation,
+    ]);
+  }
   for (const [budget, value] of measured) {
     const observedValue = workflowChainCanonicalUtf8ByteLength(value);
     const configuredBound = workflowChainProductionLimit(budget);
@@ -233,8 +243,11 @@ export function workflowContinuationBudgetViolation(
       return { budget, observedValue, configuredBound };
     }
   }
-  // Temporal transports six separate payloads. Array brackets and separators are not carried.
-  const observedValue = [start, program, host, state, recovery, publication]
+  // Temporal transports separate payloads. Array brackets and separators are not carried.
+  const values = correlation === undefined
+    ? [start, program, host, state, recovery, publication]
+    : [start, program, host, state, recovery, publication, correlation];
+  const observedValue = values
     .reduce(
       (total, value) => total + workflowChainCanonicalUtf8ByteLength(value),
       0,

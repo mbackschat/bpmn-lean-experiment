@@ -60,6 +60,28 @@ test("retains payload-distinct Message delivery identity across recovery", () =>
   });
 });
 
+test("releases only the issued recovery preflight before a host-staged command awaits", () => {
+  const first = payloadDelivery("payload-a");
+  const second = completion("Command_2", "approved");
+  const ledger = new WorkflowCommandRecoveryLedger();
+  const preflight = ledger.preflight(first);
+  assert.equal(preflight.kind, WorkflowCommandRecoveryPreflightKind.Admitted);
+  if (preflight.kind !== WorkflowCommandRecoveryPreflightKind.Admitted) {
+    assert.fail("expected payload delivery admission");
+  }
+
+  assert.throws(
+    () => ledger.releasePreflight({ ...preflight.admission }),
+    /issued preflight/u,
+  );
+  ledger.releasePreflight(preflight.admission);
+  assert.deepEqual(ledger.snapshot(), []);
+  assert.equal(
+    ledger.preflight(second).kind,
+    WorkflowCommandRecoveryPreflightKind.Admitted,
+  );
+});
+
 test("rejects start and adapter-derived stimuli from external lifetime recovery", () => {
   const internalStimuli = [
     {

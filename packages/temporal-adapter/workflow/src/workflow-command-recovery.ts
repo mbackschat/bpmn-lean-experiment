@@ -284,6 +284,14 @@ export class WorkflowCommandRecoveryLedger {
     };
   }
 
+  /** Releases the exact in-memory reservation when a host transaction must await before commit. */
+  releasePreflight(admission: WorkflowCommandRecoveryAdmission): void {
+    if (admission !== this.#pendingAdmission) {
+      throw new TypeError("Command recovery has no matching issued preflight");
+    }
+    this.#pendingAdmission = null;
+  }
+
   projectResponse(
     processInstanceId: string,
     request: WorkflowChainCommandRecoveryRequest,

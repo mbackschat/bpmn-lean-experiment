@@ -5,6 +5,7 @@ import { test } from "node:test";
 import {
   MessageChannelKind,
   StimulusKind,
+  VariableValueKind,
 } from "@bpmn-lean/semantic-core";
 import {
   ApplicationFailure,
@@ -341,6 +342,30 @@ test("normalizes exact legacy Message recovery without exposing its private ledg
   );
 });
 
+test("rejects a correlation registration failure whose complete address is malformed", async () => {
+  const delivery = payloadMessageDelivery();
+  await assert.rejects(
+    submitMessageDeliveryAtWorkflowId(
+      fakeClient({
+        signal: async () => undefined,
+        query: async () => ({
+          kind: "correlationRegistrationFailed",
+          stimulus: delivery,
+          failure: {
+            kind: "candidateCapacity",
+            address: "not-a-complete-address",
+            transactionId: delivery.commandId,
+          },
+        }),
+      }),
+      workflowId,
+      processInstanceId,
+      delivery,
+    ),
+    BpmnCommandIdentityConflict,
+  );
+});
+
 test("keeps a Message Signal service failure as infrastructure failure", async () => {
   const serviceFailure = new ServiceError("Signal service failed");
   let queryCount = 0;
@@ -509,6 +534,14 @@ function messageDelivery() {
       interfaceOperationId: "Operation_1",
       messageId: "Message_1",
     },
+  } as const;
+}
+
+function payloadMessageDelivery() {
+  return {
+    ...messageDelivery(),
+    kind: StimulusKind.DeliverPayloadMessage,
+    payload: { kind: VariableValueKind.String, value: "key-1" },
   } as const;
 }
 

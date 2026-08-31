@@ -15,6 +15,7 @@ import {
 import type {
   SequentialMultiInstanceProductionHistoryEventFamily as ProductionHistoryEventFamily,
 } from "./sequential-multi-instance-production-history-topology.ts";
+import { workflowChainPatchMarkerCount } from "./temporal-history-facts.ts";
 
 export {
   SequentialMultiInstanceProductionHistoryEventFamily,
@@ -426,14 +427,14 @@ function requireCommonProductionFamilies(
   requireCount(
     counts,
     SequentialMultiInstanceProductionHistoryEventFamily.PatchMarker,
-    1,
-    `${role} Run requires one production patch marker`,
+    workflowChainPatchMarkerCount,
+    `${role} Run requires every production patch marker`,
   );
   requireCount(
     counts,
     SequentialMultiInstanceProductionHistoryEventFamily.SearchAttributeUpsert,
-    1,
-    `${role} Run requires one production search-attribute upsert`,
+    workflowChainPatchMarkerCount,
+    `${role} Run requires every production search-attribute upsert`,
   );
   const scheduled = counts[
     SequentialMultiInstanceProductionHistoryEventFamily.WorkflowTaskScheduled

@@ -24,11 +24,15 @@ import {
   defineQuery,
   patched,
   setHandler,
+  sleep,
+  workflowInfo,
 } from "@temporalio/workflow";
 
 import {
+  MessageDeliveryResolutionKind,
   bpmnMessageDeliveryResultQueryName,
   bpmnOpenUserTasksQueryName,
+  bpmnProcessCorrelationRegistrationPatchId,
   bpmnWorkflowChainPatchId,
   bpmnUserTaskDetailQueryName,
   bpmnTraceQueryName,
@@ -37,6 +41,7 @@ import type {
   BpmnMessageDeliveryResultQueryArguments,
   BpmnUserTaskDetailQueryArguments,
   BpmnWorkflowContinuationPublicationV1,
+  BpmnWorkflowContinuationCorrelationV1,
   BpmnWorkflowContinuationRecoveryV1,
   BpmnWorkflowContinuationStateV1,
   BpmnWorkflowHostInputV1,
@@ -51,6 +56,7 @@ import type {
 import {
   completedMessageDeliveryRecords,
   findMessageDeliveryResolution,
+  recordCorrelationRegistrationFailure,
   recordMessageDeliveryOutcome,
 } from "./message-delivery-ledger.js";
 import {
@@ -127,6 +133,17 @@ import type {
 import { registerWorkflowCommandIngress } from "./workflow-command-ingress.js";
 import { WorkflowCommandCapacityPreflightKind } from "./workflow-command-capacity.js";
 import { registerWorkflowPublicationQueries } from "./workflow-publication-segments.js";
+import {
+  createProcessCorrelationRegistrationStage,
+  registerProcessCorrelationCandidateQuery,
+} from "./process-correlation-registration.js";
+import {
+  resolveBpmnCorrelationCandidateRegistration,
+} from "./correlation-registration-activities.js";
+import {
+  ProcessCorrelationRegistrationCycleKind,
+  runProcessCorrelationRegistrationCycle,
+} from "./process-correlation-registration-cycle.js";
 
 export const bpmnTraceQuery =
   defineQuery<ReadonlyArray<CanonicalObservation>>(bpmnTraceQueryName);
@@ -153,9 +170,13 @@ export async function runBpmnProcessWithHostEffects(
   carriedState?: BpmnWorkflowContinuationStateV1,
   carriedRecovery?: BpmnWorkflowContinuationRecoveryV1,
   carriedPublication?: BpmnWorkflowContinuationPublicationV1,
+  carriedCorrelation?: BpmnWorkflowContinuationCorrelationV1,
 ): Promise<WorkflowExecutionResult> {
-  const chainInitialization = hostInput !== undefined &&
-      patched(bpmnWorkflowChainPatchId)
+  const workflowChainPatchActive = hostInput !== undefined &&
+    patched(bpmnWorkflowChainPatchId);
+  const correlationRegistrationPatchActive = workflowChainPatchActive &&
+    patched(bpmnProcessCorrelationRegistrationPatchId);
+  const chainInitialization = workflowChainPatchActive
     ? initializeWorkflowChain(
         start,
         semanticProcess,
@@ -163,6 +184,8 @@ export async function runBpmnProcessWithHostEffects(
         carriedState,
         carriedRecovery,
         carriedPublication,
+        carriedCorrelation,
+        correlationRegistrationPatchActive,
       )
     : null;
   const deployment = chainInitialization?.restored === null ||
@@ -187,6 +210,15 @@ export async function runBpmnProcessWithHostEffects(
   let state: RuntimeState = chainInitialization?.restored?.state ?? initialState;
   let commandPublication = chainInitialization?.restored?.publication ??
     createCommandPublicationState(semanticProcess, start.instanceId);
+  let correlationRegistration =
+    chainInitialization?.restored?.correlationRegistration ?? null;
+  if (correlationRegistration !== null) {
+    acceptedStimuli.push(correlationRegistration.stimulus);
+    messageDeliveryResolutions.push({
+      kind: MessageDeliveryResolutionKind.Pending,
+      stimulus: correlationRegistration.stimulus,
+    });
+  }
   const workflowChain = chainInitialization?.runtime ?? null;
   let runRetention = workflowChain === null
     ? null
@@ -263,6 +295,9 @@ export async function runBpmnProcessWithHostEffects(
     workflowChain,
     () => commandPublication,
   );
+  if (correlationRegistrationPatchActive) {
+    registerProcessCorrelationCandidateQuery(semanticProcess, () => state);
+  }
   registerIncidentOperationsQueryHandler(semanticProcess, () => state);
   setHandler(bpmnTraceQuery, () => [...trace]);
   setHandler(
@@ -301,7 +336,79 @@ export async function runBpmnProcessWithHostEffects(
   });
 
   while (true) {
-    while (pendingStimuli.length > 0) {
+    let correlationRegistrationRetryDeferred = false;
+    if (correlationRegistration !== null) {
+      const stage = correlationRegistration;
+      if (runRetention === null || workflowChain === null) {
+        throw new TypeError(
+          "Correlation registration lost its Workflow-chain runtime",
+        );
+      }
+      const cycle = await runProcessCorrelationRegistrationCycle({
+        program: semanticProcess,
+        stage,
+        publication: commandPublication,
+        traceEntries: trace.length,
+        retention: runRetention,
+        resolve: resolveBpmnCorrelationCandidateRegistration,
+        retryDelay: () => sleep("1s"),
+      });
+      switch (cycle.kind) {
+        case ProcessCorrelationRegistrationCycleKind.Retry:
+          correlationRegistrationRetryDeferred = true;
+          break;
+        case ProcessCorrelationRegistrationCycleKind.CommitSuccessor:
+          commandPublication = cycle.publication;
+          trace.push(...cycle.observations);
+          runRetention = cycle.retention;
+          state = cycle.stage.step.state;
+          correlationRegistration = cycle.stage;
+          eventRaceScheduler.reconcileCommittedState(state);
+          for (const scheduler of boundedDeadlineSchedulers) {
+            scheduler.reconcileCommittedState(state);
+          }
+          continue;
+        case ProcessCorrelationRegistrationCycleKind.CompleteOpening: {
+          const recovery = workflowChain.recovery.preflight(stage.stimulus);
+          if (recovery.kind !== WorkflowCommandRecoveryPreflightKind.Admitted) {
+            throw new TypeError(
+              "Finalized correlation registration changed recovery capacity",
+            );
+          }
+          const record = workflowChain.recovery.record(
+            recovery.admission,
+            cycle.outcome,
+          );
+          workflowChain.capacity.observeRecoveryRecord(
+            record,
+            cycle.publication.execution.headRevision,
+          );
+          commandPublication = cycle.publication;
+          recordMessageDeliveryOutcome(
+            messageDeliveryResolutions,
+            stage.stimulus,
+            cycle.outcome,
+          );
+          correlationRegistration = null;
+          break;
+        }
+        case ProcessCorrelationRegistrationCycleKind.FailOpening:
+          recordCorrelationRegistrationFailure(
+            messageDeliveryResolutions,
+            stage.stimulus,
+            cycle.failureKind,
+            stage.registration.candidate.address,
+            stage.registration.transactionId,
+          );
+          correlationRegistration = null;
+          break;
+        default:
+          return assertNever(cycle);
+      }
+    }
+
+    while (!correlationRegistrationRetryDeferred &&
+        correlationRegistration === null && pendingStimuli.length > 0) {
       const stimulus = pendingStimuli.shift();
       if (stimulus === undefined) {
         throw ApplicationFailure.nonRetryable(
@@ -339,12 +446,13 @@ export async function runBpmnProcessWithHostEffects(
         }
       }
       const step = advanceScenario(semanticProcess, state, stimulus);
+      const committedAtEpochMs = Date.now();
       const publicationCandidate = integrateCommandPublication(
         semanticProcess,
         commandPublication,
         stimulus,
         step,
-        () => Date.now(),
+        () => committedAtEpochMs,
       );
       if (
         step.kind === ScenarioStepKind.Terminal &&
@@ -408,6 +516,28 @@ export async function runBpmnProcessWithHostEffects(
             return assertNever(retentionCandidate);
         }
       }
+      const stagedCorrelation = correlationRegistrationPatchActive &&
+          workflowChain !== null &&
+          stimulus.kind === StimulusKind.DeliverPayloadMessage
+        ? createProcessCorrelationRegistrationStage({
+            program: semanticProcess,
+            committedState: state,
+            stimulus,
+            step,
+            processWorkflowId: workflowInfo().workflowId,
+            committedAtEpochMs,
+          })
+        : null;
+      if (stagedCorrelation !== null) {
+        if (recoveryAdmission === null || workflowChain === null) {
+          throw new TypeError(
+            "Staged correlation registration has no recovery preflight",
+          );
+        }
+        workflowChain.recovery.releasePreflight(recoveryAdmission);
+        correlationRegistration = stagedCorrelation;
+        break;
+      }
       commandPublication = completePublicationCandidate;
       const outcome = commandOutcome(
         commandPublication,
@@ -464,6 +594,13 @@ export async function runBpmnProcessWithHostEffects(
       }
     }
 
+    if (
+      correlationRegistration !== null &&
+      !correlationRegistrationRetryDeferred
+    ) {
+      continue;
+    }
+
     const processIsTerminal = isTerminalProcessState(state);
     const stableCheckpoint = workflowChain?.capacity.decideStableCheckpoint(processIsTerminal);
     if (processIsTerminal) {
@@ -515,8 +652,14 @@ export async function runBpmnProcessWithHostEffects(
         state,
         commandPublication,
         completedMessageDeliveryRecords(messageDeliveryResolutions),
+        correlationRegistration,
+        correlationRegistrationPatchActive,
       );
       return await continueAsNew<WorkflowChainWorkflow>(...successor);
+    }
+
+    if (correlationRegistrationRetryDeferred) {
+      continue;
     }
 
     const readinessAction = await waitForHostReadiness(
@@ -589,6 +732,7 @@ type WorkflowChainWorkflow = (
   carriedState: BpmnWorkflowContinuationStateV1,
   carriedRecovery: BpmnWorkflowContinuationRecoveryV1,
   carriedPublication: BpmnWorkflowContinuationPublicationV1,
+  carriedCorrelation?: BpmnWorkflowContinuationCorrelationV1,
 ) => Promise<WorkflowTerminalResultV1>;
 
 function assertNever(value: never): never {

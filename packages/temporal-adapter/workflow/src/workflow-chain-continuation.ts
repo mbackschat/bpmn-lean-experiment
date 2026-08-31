@@ -1,6 +1,7 @@
 import {
   StimulusKind,
   isWellFormedSemanticProcessProgram,
+  sameStimulus,
   stimulusCommandId,
   supportsSemanticProcessExecution,
 } from "@bpmn-lean/semantic-core";
@@ -17,12 +18,15 @@ import {
 } from "@temporalio/workflow";
 import {
   BpmnWorkflowHostInputKind,
+  MessageDeliveryResolutionKind,
   WorkflowChainBudgetKind,
+  bpmnProcessCorrelationRegistrationContinuationV1,
   bpmnWorkflowChainCapacityExhaustedFailureType,
   bpmnWorkflowContinuationV1,
   bpmnWorkflowRolloverInProgressFailureType,
   canonicalWorkflowChainJson,
   requireBpmnWorkflowContinuationPublicationV1,
+  requireBpmnWorkflowContinuationCorrelationV1,
   requireBpmnWorkflowContinuationStateV1,
   requireBpmnWorkflowHostInputV1,
   requireWorkflowChainInitialArgumentBudgets,
@@ -36,7 +40,9 @@ import type {
   BpmnWorkflowContinuationRecoveryV1,
   BpmnWorkflowContinuationStateV1,
   BpmnWorkflowHostInputV1,
+  BpmnWorkflowContinuationCorrelationV1,
   MessageDeliveryRecord,
+  ProcessCorrelationRegistrationStage,
   WorkflowPublicationSegmentDirectoryV1,
 } from "@bpmn-lean/temporal-protocol";
 
@@ -82,6 +88,7 @@ export type WorkflowChainRestoredState = Readonly<{
   state: RuntimeState;
   publication: CommandPublicationState;
   messageDeliveryRecords: MessageDeliveryRecord[];
+  correlationRegistration: ProcessCorrelationRegistrationStage | null;
 }>;
 
 export type WorkflowChainSuccessorArguments = readonly [
@@ -91,6 +98,7 @@ export type WorkflowChainSuccessorArguments = readonly [
   BpmnWorkflowContinuationStateV1,
   BpmnWorkflowContinuationRecoveryV1,
   BpmnWorkflowContinuationPublicationV1,
+  BpmnWorkflowContinuationCorrelationV1?,
 ];
 
 export function initializeWorkflowChain(
@@ -100,6 +108,8 @@ export function initializeWorkflowChain(
   carriedState: unknown,
   carriedRecovery: unknown,
   carriedPublication: unknown,
+  carriedCorrelation?: unknown,
+  correlationPatchActive = false,
 ): Readonly<{
   runtime: WorkflowChainRuntime;
   restored: WorkflowChainRestoredState | null;
@@ -111,7 +121,8 @@ export function initializeWorkflowChain(
       if (
         carriedState !== undefined ||
         carriedRecovery !== undefined ||
-        carriedPublication !== undefined
+        carriedPublication !== undefined ||
+        carriedCorrelation !== undefined
       ) {
         throw invalidContinuation("Initial host input carried successor state");
       }
@@ -143,6 +154,8 @@ export function initializeWorkflowChain(
         carriedRecovery,
         carriedPublication,
         workflowInfo().firstExecutionRunId,
+        carriedCorrelation,
+        correlationPatchActive,
       );
       const recovery = new WorkflowCommandRecoveryLedger(validated.recovery);
       return {
@@ -164,6 +177,8 @@ export function initializeWorkflowChain(
           state: validated.state,
           publication: restoreWorkflowCommandPublication(validated.publication),
           messageDeliveryRecords: [...input.completedMessageDeliveryRecords],
+          correlationRegistration:
+            validated.correlation?.registration ?? null,
         },
       };
     }
@@ -181,10 +196,13 @@ export function validateIncomingWorkflowContinuation(
   carriedRecovery: unknown,
   carriedPublication: unknown,
   firstExecutionRunId: string,
+  carriedCorrelation?: unknown,
+  correlationPatchActive = false,
 ): Readonly<{
   state: RuntimeState;
   recovery: BpmnWorkflowContinuationRecoveryV1;
   publication: BpmnWorkflowContinuationPublicationV1;
+  correlation: BpmnWorkflowContinuationCorrelationV1 | undefined;
 }> {
   requireExecutionIdentity(start, program);
   const input = requireHostInput(hostInput);
@@ -199,6 +217,8 @@ export function validateIncomingWorkflowContinuation(
     carriedRecovery,
     carriedPublication,
     firstExecutionRunId,
+    carriedCorrelation,
+    correlationPatchActive,
   );
 }
 
@@ -210,6 +230,8 @@ function validateContinuationArguments(
   carriedRecovery: unknown,
   carriedPublication: unknown,
   firstExecutionRunId: string,
+  carriedCorrelation: unknown,
+  correlationPatchActive: boolean,
 ) {
   const state = requireCarriedState(carriedState, program, start.instanceId);
   const recovery = requireCarriedRecovery(carriedRecovery);
@@ -221,6 +243,24 @@ function validateContinuationArguments(
     input.firstExecutionRunId,
     input.runOrdinal,
   );
+  const correlation = requireCarriedCorrelation(
+    carriedCorrelation,
+    correlationPatchActive,
+    program,
+    state,
+  );
+  const pendingRegistration = correlation?.registration;
+  if (
+    pendingRegistration !== null &&
+    pendingRegistration !== undefined &&
+    input.completedMessageDeliveryRecords.some(({ stimulus }) =>
+      sameStimulus(stimulus, pendingRegistration.stimulus)
+    )
+  ) {
+    throw invalidContinuation(
+      "Pending correlation registration already has a terminal Message record",
+    );
+  }
   requireContinuationIdentity(
     input,
     start,
@@ -235,8 +275,9 @@ function validateContinuationArguments(
     state,
     recovery,
     publication,
+    correlation,
   );
-  return { state, recovery, publication };
+  return { state, recovery, publication, correlation };
 }
 
 export function buildWorkflowChainSuccessor(
@@ -246,6 +287,8 @@ export function buildWorkflowChainSuccessor(
   state: RuntimeState,
   publication: CommandPublicationState,
   messageDeliveryRecords: ReadonlyArray<MessageDeliveryRecord>,
+  correlationRegistration: ProcessCorrelationRegistrationStage | null = null,
+  correlationPatchActive = false,
 ): WorkflowChainSuccessorArguments {
   if (messageDeliveryRecords.some(
     ({ stimulus }) =>
@@ -283,15 +326,29 @@ export function buildWorkflowChainSuccessor(
     processInstanceId: start.instanceId,
     startCommandId: start.commandId,
     publicationSegmentDirectorySha256: closedPublication.directorySha256,
-    completedMessageDeliveryRecords: messageDeliveryRecords.map((record) => ({
-      ...record,
-      stimulus: { ...record.stimulus },
-    })),
+    completedMessageDeliveryRecords: messageDeliveryRecords.map(
+      cloneMessageDeliveryRecord,
+    ),
   };
   const recovery: BpmnWorkflowContinuationRecoveryV1 = {
     entries: runtime.recovery.snapshot(),
   };
   const continuationPublication = closedPublication.publication;
+  if (!correlationPatchActive && correlationRegistration !== null) {
+    throw invalidContinuation(
+      "Unpatched Workflow cannot carry correlation registration state",
+    );
+  }
+  const correlation = correlationPatchActive
+    ? requireBpmnWorkflowContinuationCorrelationV1(
+        {
+          protocol: bpmnProcessCorrelationRegistrationContinuationV1,
+          registration: correlationRegistration,
+        },
+        program,
+        state,
+      )
+    : undefined;
   requireSuccessorArgumentBudgets(
     start,
     program,
@@ -299,6 +356,7 @@ export function buildWorkflowChainSuccessor(
     state,
     recovery,
     continuationPublication,
+    correlation,
     runtime,
   );
   requireWorkflowPublicationSuccessor(
@@ -309,7 +367,35 @@ export function buildWorkflowChainSuccessor(
     runtime.firstExecutionRunId,
     runOrdinal,
   );
-  return [start, program, host, state, recovery, continuationPublication];
+  return correlation === undefined
+    ? [start, program, host, state, recovery, continuationPublication]
+    : [
+        start,
+        program,
+        host,
+        state,
+        recovery,
+        continuationPublication,
+        correlation,
+      ];
+}
+
+function cloneMessageDeliveryRecord(
+  record: MessageDeliveryRecord,
+): MessageDeliveryRecord {
+  switch (record.kind) {
+    case MessageDeliveryResolutionKind.Semantic:
+    case MessageDeliveryResolutionKind.RequestFailure:
+      return { ...record, stimulus: { ...record.stimulus } };
+    case MessageDeliveryResolutionKind.CorrelationRegistrationFailed:
+      return {
+        ...record,
+        stimulus: { ...record.stimulus },
+        failure: { ...record.failure },
+      };
+    default:
+      return assertNever(record);
+  }
 }
 
 export function isExternallyRecoverableStimulus(stimulus: Stimulus): boolean {
@@ -519,6 +605,34 @@ function requireCarriedPublication(
   }
 }
 
+function requireCarriedCorrelation(
+  value: unknown,
+  correlationPatchActive: boolean,
+  program: SemanticProcessProgram,
+  state: RuntimeState,
+): BpmnWorkflowContinuationCorrelationV1 | undefined {
+  if (!correlationPatchActive) {
+    if (value !== undefined) {
+      throw invalidContinuation(
+        "Unpatched Workflow carried correlation registration state",
+      );
+    }
+    return undefined;
+  }
+  try {
+    return requireBpmnWorkflowContinuationCorrelationV1(
+      value,
+      program,
+      state,
+    );
+  } catch (error: unknown) {
+    throw invalidContinuation(
+      "Invalid Process correlation continuation",
+      error,
+    );
+  }
+}
+
 function requireIncomingContinuationArgumentBudgets(
   start: ProcessStartStimulus,
   program: SemanticProcessProgram,
@@ -526,10 +640,11 @@ function requireIncomingContinuationArgumentBudgets(
   state: RuntimeState,
   recovery: BpmnWorkflowContinuationRecoveryV1,
   publication: BpmnWorkflowContinuationPublicationV1,
+  correlation: BpmnWorkflowContinuationCorrelationV1 | undefined,
 ): void {
   try {
     const violation = workflowContinuationBudgetViolation(
-      start, program, host, state, recovery, publication,
+      start, program, host, state, recovery, publication, correlation,
     );
     if (violation !== null) {
       throw new RangeError(
@@ -548,10 +663,11 @@ function requireSuccessorArgumentBudgets(
   state: RuntimeState,
   recovery: BpmnWorkflowContinuationRecoveryV1,
   publication: BpmnWorkflowContinuationPublicationV1,
+  correlation: BpmnWorkflowContinuationCorrelationV1 | undefined,
   runtime: WorkflowChainRuntime,
 ): void {
   const violation = workflowContinuationBudgetViolation(
-    start, program, host, state, recovery, publication,
+    start, program, host, state, recovery, publication, correlation,
   );
   if (violation !== null) {
     throw capacityFailure(

@@ -5,6 +5,7 @@ import type {
   DeepReadonly,
   DeliverMessageStimulus,
   DeliverPayloadMessageStimulus,
+  CorrelatedMessageAddress,
   OpenEffect,
   OpenTimer,
   OpenUserTask,
@@ -167,7 +168,19 @@ export const MessageDeliveryResolutionKind = {
   Pending: "pending",
   Semantic: "semantic",
   RequestFailure: "requestFailure",
+  CorrelationRegistrationFailed: "correlationRegistrationFailed",
 } as const;
+
+export enum CorrelationRegistrationFailureKind {
+  CandidateCapacity = "candidateCapacity",
+  AddressQuarantined = "addressQuarantined",
+}
+
+export type CorrelationRegistrationFailure = DeepReadonly<{
+  kind: CorrelationRegistrationFailureKind;
+  address: CorrelatedMessageAddress;
+  transactionId: string;
+}>;
 
 export type MessageDeliveryResolutionKind =
   typeof MessageDeliveryResolutionKind[
@@ -192,6 +205,11 @@ export type MessageDeliveryResolution = DeepReadonly<
       kind: typeof MessageDeliveryResolutionKind.RequestFailure;
       stimulus: MessageDeliveryStimulus;
       failure: "commandIdentityConflict";
+    }
+  | {
+      kind: typeof MessageDeliveryResolutionKind.CorrelationRegistrationFailed;
+      stimulus: DeliverPayloadMessageStimulus;
+      failure: CorrelationRegistrationFailure;
     }
 >;
 
@@ -230,6 +248,7 @@ export type BpmnProcessWorkflow = (
   carriedState?: import("./workflow-continuation.js").BpmnWorkflowContinuationStateV1,
   carriedRecovery?: import("./workflow-continuation.js").BpmnWorkflowContinuationRecoveryV1,
   carriedPublication?: import("./workflow-continuation.js").BpmnWorkflowContinuationPublicationV1,
+  carriedCorrelation?: import("./process-correlation-registration.js").BpmnWorkflowContinuationCorrelationV1,
 ) => Promise<unknown>;
 
 export type BpmnCompleteUserTaskUpdateArguments = [

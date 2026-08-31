@@ -12,6 +12,7 @@ import {
   bpmnOpenUserTasksQueryName,
   bpmnSemanticTaskQueue,
   boundEffectActivities,
+  createCorrelationRegistrationActivities,
 } from "@bpmn-lean/temporal-testkit";
 import type { EffectActivityImplementations } from "@bpmn-lean/temporal-testkit";
 import { withDeadline } from "./temporal-test-support.ts";
@@ -47,9 +48,13 @@ export async function startBpmnTestWorker(
       identity,
       taskQueue: bpmnSemanticTaskQueue,
       workflowBundle,
-      ...(activities === undefined
-        ? {}
-        : { activities: boundEffectActivities(activities) }),
+      activities: {
+        ...(activities === undefined ? {} : boundEffectActivities(activities)),
+        ...createCorrelationRegistrationActivities(
+          environment.client.workflow as never,
+          bpmnSemanticTaskQueue,
+        ),
+      },
     }),
     operationDeadlineMs,
     "Temporal lifecycle Worker startup",

@@ -68,6 +68,7 @@ test("publishes the exact v1 names and every production budget", () => {
       ["effectActivityRequestBytes", 64 * 1_024],
       ["effectActivityResultBytes", 64 * 1_024],
       ["effectActivityFailureProjectionBytes", 16 * 1_024],
+      ["correlationRegistrationContinuationBytes", 64 * 1_024],
       ["continueAsNewCarriedArgumentsBytes", 448 * 1_024],
       ["workflowChainRuns", 128],
     ],

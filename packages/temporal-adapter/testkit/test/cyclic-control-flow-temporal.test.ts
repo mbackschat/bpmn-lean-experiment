@@ -69,6 +69,7 @@ import {
   decodeJsonPayload,
   historyEvents,
   temporalInt64ToBigInt,
+  workflowChainPatchHistoryEventCount,
 } from "./temporal-history-facts.ts";
 import {
   replayBpmnHistory,
@@ -331,7 +332,10 @@ test("the finite cycle survives Worker replacement and replays exact history", a
     );
     assert.equal(description.status.name, "COMPLETED");
     assert.equal(description.historyLength, typedHistory.events.length);
-    assert.equal(typedHistory.events.length, exactHistoryEventCount + 2);
+    assert.equal(
+      typedHistory.events.length,
+      exactHistoryEventCount + workflowChainPatchHistoryEventCount,
+    );
     const historySizeBytes = description.historySize;
     assert.equal(
       typeof historySizeBytes === "number" &&

@@ -139,21 +139,29 @@ export function assertNoNonUpdateBpmnHostEvents(
   }
 }
 
-/** Locks the one durable marker pair introduced by Temporal's production chain patch. */
+export const workflowChainPatchMarkerCount = 2;
+export const workflowChainPatchHistoryEventCount =
+  workflowChainPatchMarkerCount * 2;
+
+/**
+ * Locks both nested production-chain patches because each `patched` call writes
+ * durable history even when the correlated registration feature is inactive.
+ */
 export function assertWorkflowChainPatchHistory(
   history: TemporalHistory,
-  expectedCount: 0 | 1,
+  expectedEnrollment: 0 | 1,
 ): void {
+  const expectedPatchCount = expectedEnrollment * workflowChainPatchMarkerCount;
   assert.equal(
     historyEvents(history, "markerRecordedEventAttributes").length,
-    expectedCount,
+    expectedPatchCount,
   );
   assert.equal(
     historyEvents(
       history,
       "upsertWorkflowSearchAttributesEventAttributes",
     ).length,
-    expectedCount,
+    expectedPatchCount,
   );
 }
 

@@ -41,6 +41,7 @@ import type {
 } from "@bpmn-lean/temporal-worker";
 import {
   boundEffectActivities,
+  createCorrelationRegistrationActivities,
 } from "@bpmn-lean/temporal-worker";
 
 const temporalTestIdentity = "bpmn-lean-test-runtime";
@@ -205,7 +206,13 @@ async function createWorker(
       identity: temporalTestIdentity,
       taskQueue: bpmnSemanticTaskQueue,
       workflowBundle,
-      activities: boundEffectActivities(effectProbeRegistry.activities),
+      activities: {
+        ...boundEffectActivities(effectProbeRegistry.activities),
+        ...createCorrelationRegistrationActivities(
+          environment.client.workflow as never,
+          bpmnSemanticTaskQueue,
+        ),
+      },
     }),
     workerStartupDeadlineMs,
     operation,

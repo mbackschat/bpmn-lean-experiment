@@ -6,6 +6,7 @@
  * as an adapter request failure without reaching the semantic input queue.
  */
 import {
+  sameCorrelatedMessageAddress,
   sameStimulus,
   stimulusCommandId,
 } from "@bpmn-lean/semantic-core";
@@ -16,7 +17,11 @@ import type {
 
 import {
   MessageDeliveryResolutionKind,
+  CorrelationRegistrationFailureKind,
 } from "@bpmn-lean/temporal-protocol";
+import type {
+  CorrelatedMessageAddress,
+} from "@bpmn-lean/semantic-core";
 import type {
   MessageDeliveryRecord,
   MessageDeliveryResolution,
@@ -120,6 +125,40 @@ export function recordMessageDeliveryOutcome(
   };
 }
 
+export function recordCorrelationRegistrationFailure(
+  resolutions: MessageDeliveryResolution[],
+  stimulus: Extract<MessageDeliveryStimulus, { kind: "deliverPayloadMessage" }>,
+  failureKind: CorrelationRegistrationFailureKind,
+  address: CorrelatedMessageAddress,
+  transactionId: string,
+): void {
+  const index = resolutions.findIndex(
+    (resolution) =>
+      resolution.kind === MessageDeliveryResolutionKind.Pending &&
+      sameStimulus(resolution.stimulus, stimulus),
+  );
+  if (index < 0) {
+    const retained = findMessageDeliveryResolution(resolutions, stimulus);
+    if (
+      retained?.kind ===
+        MessageDeliveryResolutionKind.CorrelationRegistrationFailed &&
+      retained.failure.kind === failureKind &&
+      retained.failure.transactionId === transactionId &&
+      sameCorrelatedMessageAddress(retained.failure.address, address)
+    ) {
+      return;
+    }
+    throw new TypeError(
+      `Message delivery ${stimulus.commandId} has no pending correlation registration`,
+    );
+  }
+  resolutions[index] = {
+    kind: MessageDeliveryResolutionKind.CorrelationRegistrationFailed,
+    stimulus,
+    failure: { kind: failureKind, address, transactionId },
+  };
+}
+
 export function findMessageDeliveryResolution(
   resolutions: ReadonlyArray<MessageDeliveryResolution>,
   stimulus: MessageDeliveryStimulus,
@@ -138,6 +177,7 @@ export function completedMessageDeliveryRecords(
         return [];
       case MessageDeliveryResolutionKind.Semantic:
       case MessageDeliveryResolutionKind.RequestFailure:
+      case MessageDeliveryResolutionKind.CorrelationRegistrationFailed:
         return [resolution];
       default:
         return assertNever(resolution);

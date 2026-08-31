@@ -48,6 +48,8 @@ export enum WorkflowChainBudgetKind {
   EffectActivityRequestBytes = "effectActivityRequestBytes",
   EffectActivityResultBytes = "effectActivityResultBytes",
   EffectActivityFailureProjectionBytes = "effectActivityFailureProjectionBytes",
+  CorrelationRegistrationContinuationBytes =
+    "correlationRegistrationContinuationBytes",
   ContinueAsNewCarriedArgumentsBytes = "continueAsNewCarriedArgumentsBytes",
   WorkflowChainRuns = "workflowChainRuns",
 }
@@ -88,6 +90,7 @@ export function workflowChainProductionLimit(
     case WorkflowChainBudgetKind.PublicationContinuationAndSegmentDirectoryBytes:
     case WorkflowChainBudgetKind.EffectActivityRequestBytes:
     case WorkflowChainBudgetKind.EffectActivityResultBytes:
+    case WorkflowChainBudgetKind.CorrelationRegistrationContinuationBytes:
       return 64 * 1_024;
     case WorkflowChainBudgetKind.CommandRecoveryLedgerEntries:
       return 512;

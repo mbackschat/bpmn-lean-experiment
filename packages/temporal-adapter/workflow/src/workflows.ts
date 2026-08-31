@@ -20,6 +20,7 @@ export const runBpmnProcess: BpmnProcessWorkflow = (
   carriedState,
   carriedRecovery,
   carriedPublication,
+  carriedCorrelation,
 ) => runBpmnProcessWithHostEffects(
   start,
   semanticProcess,
@@ -30,4 +31,5 @@ export const runBpmnProcess: BpmnProcessWorkflow = (
   carriedState,
   carriedRecovery,
   carriedPublication,
+  carriedCorrelation,
 );
