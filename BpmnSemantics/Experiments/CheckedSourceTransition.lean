@@ -83,6 +83,7 @@ def fireNode? (source : CheckedProcess) (node : CheckedNode)
   | .intermediateCatchTimerEvent _ _ => none
   | .intermediateCatchMessageEvent _ _ => none
   | .payloadMessageCatchEvent _ _ _ => none
+  | .correlatedPayloadMessageCatchEvent _ _ _ _ _ _ => none
   | .receiveTask _ _ => none
   | .configuredTask _ _ => none
   | .serviceTask _ _ _ _ _ => none
@@ -164,6 +165,9 @@ theorem fireNode_sound (source : CheckedProcess) (node : CheckedNode)
   | intermediateCatchMessageEvent id channel =>
       simp [fireNode?] at result
   | payloadMessageCatchEvent id channel directOutput =>
+      simp [fireNode?] at result
+  | correlatedPayloadMessageCatchEvent id channel correlationKeyId
+      correlationPropertyId payloadSelector processPropertySelector =>
       simp [fireNode?] at result
   | receiveTask id channel =>
       simp [fireNode?] at result

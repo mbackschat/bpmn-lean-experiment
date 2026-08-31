@@ -7,6 +7,7 @@ import {
   utf8ByteLength,
 } from "@bpmn-lean/semantic-core";
 import type {
+  CorrelatedMessageAddress,
   MessageChannel,
   Stimulus,
   VariableBinding,
@@ -85,6 +86,21 @@ export function canonicalStimulusEncoding(stimulus: unknown): string {
         messageChannelTuple(stimulus.channel),
         variableValueTuple(stimulus.payload),
       ]);
+    case StimulusKind.DeliverCorrelatedPayloadMessage:
+      return encodeCommandTuple([
+        stimulus.kind,
+        stimulus.commandId,
+        correlatedMessageAddressTuple(stimulus.address),
+        stimulus.ingressOrdinal,
+        [
+          stimulus.subscriptionId.processInstanceId,
+          stimulus.subscriptionId.elementId,
+          stimulus.subscriptionId.activation,
+        ],
+        stimulus.correlationPropertyId,
+        stimulus.processPropertyId,
+        variableValueTuple(stimulus.payload),
+      ]);
     case StimulusKind.FireTimer:
       return encodeCommandTuple([
         stimulus.kind,
@@ -144,6 +160,29 @@ export function canonicalStimulusEncoding(stimulus: unknown): string {
     default:
       return assertNever(stimulus);
   }
+}
+
+function correlatedMessageAddressTuple(
+  address: CorrelatedMessageAddress,
+): ReadonlyArray<CanonicalTupleValue> {
+  return [
+    [
+      address.definition.compiler,
+      address.definition.semanticProfile,
+      address.definition.sourceId,
+      address.definition.sourceSha256,
+      address.definition.sourceOverlay === null
+        ? ["none"]
+        : [
+            "some",
+            address.definition.sourceOverlay.id,
+            address.definition.sourceOverlay.sha256,
+          ],
+    ],
+    address.processId,
+    messageChannelTuple(address.channel),
+    address.correlationKeyId,
+  ];
 }
 
 function messageChannelTuple(

@@ -26,6 +26,7 @@ inductive InternalStateAtom where
   | activation (kind : InternalWaitKind) (elementId : NodeId)
   | wait (kind : InternalWaitKind) (occurrence : OccurrenceId)
   | openWaitAnchor (occurrence : OccurrenceId)
+  | processVariable (processInstanceId : SemanticId) (propertyId : String)
   | activityVariableScope (occurrence : EffectOccurrenceId)
   | activityVariable (occurrence : EffectOccurrenceId) (name : String)
   deriving Repr, DecidableEq
@@ -39,6 +40,9 @@ structure InternalPositionDelta where
 inductive InternalPublicationAtom where
   | committedTransition (operationId : OperationId) (kind : InternalWaitKind) (origin : BpmnElementOrigin) (owner : ScopeOccurrenceId) (logicalTimeMs : Nat) (positionDelta : InternalPositionDelta)
   | flowNodeLifecycle (occurrence : OccurrenceId)
+  | correlationCandidate (address : CorrelatedMessageAddress)
+      (subscriptionOccurrence : OccurrenceId)
+      (correlationPropertyId processPropertyId : String)
   | publicationPair (operationId : OperationId) (occurrence : OccurrenceId)
   deriving Repr, DecidableEq
 
@@ -63,6 +67,8 @@ inductive InternalArmingWrite where
 
 structure InternalArmingPatch where
   operation : SemanticOperation
+  definition : ProgramIdentity
+  processId : ProcessId
   origin : BpmnElementOrigin
   runtimeInstanceId : SemanticId
   logicalTimeMs : Nat
@@ -106,8 +112,9 @@ def stateAtomRank : InternalStateAtom → Nat
   | .activation _ _ => 4
   | .wait _ _ => 5
   | .openWaitAnchor _ => 6
-  | .activityVariableScope _ => 7
-  | .activityVariable _ _ => 8
+  | .processVariable _ _ => 7
+  | .activityVariableScope _ => 8
+  | .activityVariable _ _ => 9
 
 def stateAtomBefore (left right : InternalStateAtom) : Bool :=
   if stateAtomRank left ≠ stateAtomRank right then
@@ -127,6 +134,10 @@ def stateAtomBefore (left right : InternalStateAtom) : Bool :=
         if leftKind ≠ rightKind then kindRank leftKind < kindRank rightKind
         else occurrenceBefore leftOccurrence rightOccurrence
     | .openWaitAnchor left, .openWaitAnchor right => occurrenceBefore left right
+    | .processVariable leftInstance leftProperty,
+        .processVariable rightInstance rightProperty =>
+        if leftInstance ≠ rightInstance then leftInstance.value < rightInstance.value
+        else leftProperty < rightProperty
     | .activityVariableScope left, .activityVariableScope right => effectOccurrenceBefore left right
     | .activityVariable left leftName, .activityVariable right rightName =>
         if left ≠ right then effectOccurrenceBefore left right
@@ -136,7 +147,40 @@ def stateAtomBefore (left right : InternalStateAtom) : Bool :=
 def publicationRank : InternalPublicationAtom → Nat
   | .committedTransition .. => 0
   | .flowNodeLifecycle .. => 1
-  | .publicationPair .. => 2
+  | .correlationCandidate .. => 2
+  | .publicationPair .. => 3
+
+private def sourceOverlayBefore (left right : Option SourceOverlayIdentity) : Bool :=
+  match left, right with
+  | none, some _ => true
+  | some left, some right =>
+      if left.id ≠ right.id then left.id.value < right.id.value else left.sha256 < right.sha256
+  | _, _ => false
+
+private def programIdentityBefore (left right : ProgramIdentity) : Bool :=
+  if left.semanticProfile ≠ right.semanticProfile then
+    left.semanticProfile.value < right.semanticProfile.value
+  else if left.sourceId ≠ right.sourceId then left.sourceId.value < right.sourceId.value
+  else if left.sourceSha256 ≠ right.sourceSha256 then left.sourceSha256 < right.sourceSha256
+  else sourceOverlayBefore left.sourceOverlay right.sourceOverlay
+
+private def messageChannelBefore (left right : MessageChannel) : Bool :=
+  match left, right with
+  | .operationMessage leftInterface leftOperation leftMessage,
+      .operationMessage rightInterface rightOperation rightMessage =>
+      if leftInterface ≠ rightInterface then leftInterface.value < rightInterface.value
+      else if leftOperation ≠ rightOperation then leftOperation.value < rightOperation.value
+      else leftMessage.value < rightMessage.value
+  | .operationMessage .., .directMessage .. => true
+  | .directMessage left, .directMessage right => left.value < right.value
+  | .directMessage .., .operationMessage .. => false
+
+private def correlatedAddressBefore
+    (left right : CorrelatedMessageAddress) : Bool :=
+  if left.definition ≠ right.definition then programIdentityBefore left.definition right.definition
+  else if left.processId ≠ right.processId then left.processId.value < right.processId.value
+  else if left.channel ≠ right.channel then messageChannelBefore left.channel right.channel
+  else left.correlationKeyId < right.correlationKeyId
 
 def publicationBefore (left right : InternalPublicationAtom) : Bool :=
   if publicationRank left ≠ publicationRank right then
@@ -157,6 +201,15 @@ def publicationBefore (left right : InternalPublicationAtom) : Bool :=
           scopeBefore leftDelta.owner rightDelta.owner
         else leftDelta.multiplicity < rightDelta.multiplicity
     | .flowNodeLifecycle leftOccurrence, .flowNodeLifecycle rightOccurrence => occurrenceBefore leftOccurrence rightOccurrence
+    | .correlationCandidate leftAddress leftOccurrence leftCorrelationProperty
+          leftProcessProperty,
+        .correlationCandidate rightAddress rightOccurrence rightCorrelationProperty
+          rightProcessProperty =>
+        if leftAddress ≠ rightAddress then correlatedAddressBefore leftAddress rightAddress
+        else if leftOccurrence ≠ rightOccurrence then occurrenceBefore leftOccurrence rightOccurrence
+        else if leftCorrelationProperty ≠ rightCorrelationProperty then
+          leftCorrelationProperty < rightCorrelationProperty
+        else leftProcessProperty < rightProcessProperty
     | .publicationPair leftId leftOccurrence, .publicationPair rightId rightOccurrence =>
         if leftId ≠ rightId then leftId.value < rightId.value
         else occurrenceBefore leftOccurrence rightOccurrence
@@ -263,12 +316,14 @@ def selectedInputOrigin? (program : Program) (input : ControlPlaceId) (owner : S
 def internalArmInput? : SemanticOperation → Option ControlPlaceId
   | .awaitUserTask _ _ input _ _ | .awaitMessage _ _ input _ _
   | .awaitPayloadMessage _ _ input _ _ _
+  | .awaitCorrelatedPayloadMessage _ _ input _ _ _ _ _ _
   | .awaitTimer _ _ input _ _ | .awaitEffect _ _ input _ _ _ => some input
   | _ => none
 
 def internalArmOrigin? : SemanticOperation → Option BpmnElementOrigin
   | .awaitUserTask _ origin _ _ _ | .awaitMessage _ origin _ _ _
   | .awaitPayloadMessage _ origin _ _ _ _
+  | .awaitCorrelatedPayloadMessage _ origin _ _ _ _ _ _ _
   | .awaitTimer _ origin _ _ _ | .awaitEffect _ origin _ _ _ _ => some origin
   | _ => none
 
@@ -327,6 +382,21 @@ def prepareInternalArm? (program : Program) (state : RuntimeState)
         some (.message
           { processInstanceId := owner.processInstanceId, owner,
             elementId := message.elementId, activation := next, channel := message.channel, output })
+    | .awaitCorrelatedPayloadMessage _ _ _ output message _ _ _
+        processPropertySelector => do
+        let binding ← match state.variables.process.bindings.filter fun candidate =>
+            candidate.name = processPropertySelector.propertyId with
+          | [binding] => some binding
+          | _ => none
+        match binding.value with
+        | .string value =>
+            if value.isEmpty then none else
+              let next := messageActivationCount state message.elementId + 1
+              some (.message
+                { processInstanceId := owner.processInstanceId, owner,
+                  elementId := message.elementId, activation := next,
+                  channel := message.channel, output })
+        | _ => none
     | .awaitTimer _ _ _ output timer =>
         let next := timerActivationCount state timer.elementId + 1
         some (.timer
@@ -350,6 +420,8 @@ def prepareInternalArm? (program : Program) (state : RuntimeState)
   else
     some
       { operation := operation
+        definition := program.identity
+        processId := program.processId
         origin := origin
         runtimeInstanceId := runtimeInstanceId
         logicalTimeMs := state.logicalTimeMs
@@ -398,9 +470,21 @@ def footprintOfPatch (patch : InternalArmingPatch) : InternalTransitionFootprint
     | .timer .. => [.logicalTime]
     | .effect wait _ => [.activityVariableScope (effectWaitOccurrence wait)]
     | _ => []
+  let correlationReads := match patch.operation with
+    | .awaitCorrelatedPayloadMessage _ _ _ _ _ _ _ _ processPropertySelector =>
+        [.processVariable patch.owner.processInstanceId processPropertySelector.propertyId]
+    | _ => []
   let extraWrites := match patch.write with
     | .effect wait bindings => .activityVariableScope (effectWaitOccurrence wait) ::
         bindings.map fun binding => .activityVariable (effectWaitOccurrence wait) binding.name
+    | _ => []
+  let correlationPublications := match patch.operation with
+    | .awaitCorrelatedPayloadMessage _ _ _ _ message correlationKeyId correlationPropertyId
+        _ processPropertySelector =>
+        [.correlationCandidate
+          { definition := patch.definition, processId := patch.processId,
+            channel := message.channel, correlationKeyId }
+          occurrence correlationPropertyId processPropertySelector.propertyId]
     | _ => []
   { operationId := patch.operation.id
     kind := kind
@@ -408,17 +492,17 @@ def footprintOfPatch (patch : InternalArmingPatch) : InternalTransitionFootprint
     reads := canonicalStateAtomSet
       ([.runtimeControl patch.runtimeInstanceId, .scopeOccurrence patch.owner,
         .controlToken patch.owner patch.input, .activation kind elementId,
-        .wait kind occurrence, .openWaitAnchor occurrence] ++ extraReads)
+        .wait kind occurrence, .openWaitAnchor occurrence] ++ extraReads ++ correlationReads)
     writes := canonicalStateAtomSet
       ([.controlToken patch.owner patch.input, .activation kind elementId,
         .wait kind occurrence, .openWaitAnchor occurrence] ++ extraWrites)
     publications := canonicalPublicationAtomSet
-      [.committedTransition patch.operation.id kind patch.origin patch.owner
+      ([.committedTransition patch.operation.id kind patch.origin patch.owner
           patch.logicalTimeMs
           { consumedSequenceFlow := patch.inputOrigin.elementId,
             owner := patch.owner, multiplicity := 1 },
         .flowNodeLifecycle occurrence,
-        .publicationPair patch.operation.id occurrence] }
+        .publicationPair patch.operation.id occurrence] ++ correlationPublications) }
 
 
 end InternalCommutation

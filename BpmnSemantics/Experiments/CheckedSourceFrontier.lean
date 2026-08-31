@@ -217,6 +217,8 @@ theorem nodeDisabled (source : CheckedProcess) (state : SourceRuntimeState)
   | intermediateCatchTimerEvent id duration => rfl
   | intermediateCatchMessageEvent id channel => rfl
   | payloadMessageCatchEvent id channel directOutput => rfl
+  | correlatedPayloadMessageCatchEvent id channel correlationKeyId
+      correlationPropertyId payloadSelector processPropertySelector => rfl
   | receiveTask id channel => rfl
   | configuredTask id descriptor => rfl
   | serviceTask id descriptor inputs outputs route => rfl

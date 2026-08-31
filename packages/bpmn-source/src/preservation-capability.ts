@@ -1,5 +1,6 @@
 /** Closed profile selection for material retained in exact BPMN source without execution meaning. */
 import {
+  MESSAGE_KEY_CORRELATION_CHECKPOINT_PROFILE_ID,
   SemanticProfileId,
 } from "@bpmn-lean/semantic-core";
 
@@ -27,10 +28,14 @@ enum PreservationCapabilityKind {
 }
 
 type SemanticProfile =
-  typeof SemanticProfileId[keyof typeof SemanticProfileId];
+  | typeof SemanticProfileId[keyof typeof SemanticProfileId]
+  | typeof MESSAGE_KEY_CORRELATION_CHECKPOINT_PROFILE_ID;
 
 const admittedSemanticProfiles: ReadonlySet<string> = new Set(
-  Object.values(SemanticProfileId),
+  [
+    ...Object.values(SemanticProfileId),
+    MESSAGE_KEY_CORRELATION_CHECKPOINT_PROFILE_ID,
+  ],
 );
 
 /**
@@ -123,7 +128,7 @@ function preservationCapabilityKind(
     case SemanticProfileId.InclusiveGatewaySelectedBranches:
     case SemanticProfileId.IntermediateCatchMessage:
     case SemanticProfileId.MessagePayloadCatch:
-    case SemanticProfileId.MessageKeyCorrelation:
+    case MESSAGE_KEY_CORRELATION_CHECKPOINT_PROFILE_ID:
     case SemanticProfileId.IntermediateCatchTimer:
     case SemanticProfileId.MappedBoundaryErrorServiceTask:
     case SemanticProfileId.MappedSuccessServiceTask:

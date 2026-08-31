@@ -43,6 +43,8 @@ A target scenario contains only admitted model/profile identity and explicit sem
 
 The Message payload catch profile admits Boolean, safe non-negative Integer, String, and Null on `deliverPayloadMessage`; StringList remains outside that scalar profile. The payload-free `deliverMessage` arm remains structurally distinct, so absence is not encoded as null.
 
+The bounded Message key-correlation checkpoint adds distinct `correlatedPayloadMessageCatchEvent` and `awaitCorrelatedPayloadMessage` definition arms, one private `deliverCorrelatedPayloadMessage` target stimulus, and one global `publishCorrelatedPayloadMessage` enabled interaction. Its String-only correlation payload is a non-empty tagged String, and both runtime arms carry the complete address: the exact Semantic Process program identity, Process id, operation-addressed Message channel, and CorrelationKey id. The target stimulus additionally requires a positive safe ingress ordinal plus the exact subscription, CorrelationProperty, and Process Property identities. No optional correlation field widens `intermediateCatchMessageEvent`, `payloadMessageCatchEvent`, `awaitMessage`, `awaitPayloadMessage`, `deliverMessage`, or `deliverPayloadMessage`; their existing wire shapes remain unchanged.
+
 Portable assertions are verifier-side claims over canonical results or relations between results. A future assertion artifact must bind the exact scenario content digest, semantic profile, applicable canonical observation contract, and stable rule identifiers. A general assertion language remains deferred until repeated semantic capsules demonstrate the smallest useful contract.
 
 ## Schemas

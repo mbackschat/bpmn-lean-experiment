@@ -28,6 +28,7 @@ inductive SemanticOperationKind where
   | awaitTimer
   | awaitMessage
   | awaitPayloadMessage
+  | awaitCorrelatedPayloadMessage
   | awaitEventRace
   | awaitBoundedUserTask
   | awaitMessageBoundedUserTask
@@ -62,6 +63,7 @@ def SemanticOperation.kind : SemanticOperation → SemanticOperationKind
   | .awaitTimer .. => .awaitTimer
   | .awaitMessage .. => .awaitMessage
   | .awaitPayloadMessage .. => .awaitPayloadMessage
+  | .awaitCorrelatedPayloadMessage .. => .awaitCorrelatedPayloadMessage
   | .awaitEventRace .. => .awaitEventRace
   | .awaitBoundedUserTask .. => .awaitBoundedUserTask
   | .awaitMessageBoundedUserTask .. => .awaitMessageBoundedUserTask
@@ -95,6 +97,7 @@ def SemanticOperation.origin : SemanticOperation → BpmnElementOrigin
   | .awaitTimer _ origin _ _ _
   | .awaitMessage _ origin _ _ _
   | .awaitPayloadMessage _ origin _ _ _ _
+  | .awaitCorrelatedPayloadMessage _ origin _ _ _ _ _ _ _
   | .awaitEventRace _ origin _ _ _
   | .awaitBoundedUserTask _ origin _ _ _
   | .awaitMessageBoundedUserTask _ origin _ _ _

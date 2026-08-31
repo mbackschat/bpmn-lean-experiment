@@ -93,6 +93,7 @@ const HostOperationClass = {
   MonitoredActivityWait: "monitoredActivityWait",
   SequentialMultiInstanceActivityWait: "sequentialMultiInstanceActivityWait",
   ParallelMultiInstanceActivityWait: "parallelMultiInstanceActivityWait",
+  CorrelatedMessageWait: "correlatedMessageWait",
 } as const;
 
 type HostOperationClass =
@@ -112,6 +113,15 @@ type ManagedHostClass = Readonly<{
 }>;
 
 const managedClasses: ReadonlyArray<ManagedHostClass> = [
+  {
+    operationClass: HostOperationClass.CorrelatedMessageWait,
+    isAdmissibleIsolatedForm: () => false,
+    failure: {
+      code: TemporalHostAdmissionFailureCode.CorrelatedMessageIngressUnavailable,
+      evidence:
+        "The Temporal host does not yet provide the definition-addressed correlation ingress required by a correlated Message wait.",
+    },
+  },
   {
     operationClass: HostOperationClass.ManagedEventRace,
     isAdmissibleIsolatedForm: (operation) =>
@@ -246,6 +256,8 @@ function classifyHostOperation(
     case SemanticOperationKind.TerminateScope:
     case SemanticOperationKind.CompleteScope:
       return HostOperationClass.Passive;
+    case SemanticOperationKind.AwaitCorrelatedPayloadMessage:
+      return HostOperationClass.CorrelatedMessageWait;
     case SemanticOperationKind.AwaitSequentialMultiInstanceUserTask:
       return HostOperationClass.SequentialMultiInstanceActivityWait;
     case SemanticOperationKind.AwaitParallelMultiInstanceUserTask:

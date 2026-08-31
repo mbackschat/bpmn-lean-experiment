@@ -52,6 +52,7 @@ private def operationKindJson : SemanticOperationKind → Option Json
   | .awaitTimer => some (toJson "awaitTimer")
   | .awaitMessage => some (toJson "awaitMessage")
   | .awaitPayloadMessage => some (toJson "awaitPayloadMessage")
+  | .awaitCorrelatedPayloadMessage => some (toJson "awaitCorrelatedPayloadMessage")
   | .awaitEventRace => some (toJson "awaitEventRace")
   | .awaitBoundedUserTask => some (toJson "awaitBoundedUserTask")
   | .awaitMessageBoundedUserTask => some (toJson "awaitMessageBoundedUserTask")

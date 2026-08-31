@@ -276,19 +276,19 @@ The 800-nonblank-line soft target is the extraction threshold and 1,200 lines is
 
 | Owner | Current headroom | Structural condition |
 |---|---:|---|
-| [Lean ProfileAdmission](../../BpmnSemantics/SemanticProcess/ProfileAdmission.lean) | 20 | extract the profile-family predicate before adding this profile because the complete arm cannot safely fit the measured margin |
-| [Lean SemanticProcessContract](../../BpmnSemantics/SemanticProcessContract.lean) | 123 | add only closed contract arms; extract correlation support types first if the edit would cross 800 |
-| [TypeScript semantic runtime dispatch](../../packages/semantic-core/src/semantic-process-runtime.ts) | 165 | add dispatch only; correlation behavior belongs in a new family owner |
-| [TypeScript lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 166 | add dispatch and construction only; source correlation validation belongs in a new owner |
-| [TypeScript scenario projection](../../packages/semantic-core/src/scenario.ts) | 213 | add the correlated interaction projection only; engine-population execution belongs in a new owner |
-| [TypeScript Semantic Process contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 236 | add one operation arm and referenced correlation contract; extract first if the edit would cross 800 |
-| [TypeScript public contract](../../packages/semantic-core/src/contract.ts) | 363 | add closed public arms without changing existing direct Message shapes |
+| [Lean ProfileAdmission](../../BpmnSemantics/SemanticProcess/ProfileAdmission.lean) | 4 | extract the profile-family predicate before adding this profile because the complete arm cannot safely fit the measured margin |
+| [Lean SemanticProcessContract](../../BpmnSemantics/SemanticProcessContract.lean) | 120 | add only closed contract arms; extract correlation support types first if the edit would cross 800 |
+| [TypeScript semantic runtime dispatch](../../packages/semantic-core/src/semantic-process-runtime.ts) | 157 | add dispatch only; correlation behavior belongs in a new family owner |
+| [TypeScript lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 154 | add dispatch and construction only; source correlation validation belongs in a new owner |
+| [TypeScript scenario projection](../../packages/semantic-core/src/scenario.ts) | 185 | add the correlated interaction projection only; engine-population execution belongs in a new owner |
+| [TypeScript Semantic Process contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 212 | add one operation arm and referenced correlation contract; extract first if the edit would cross 800 |
+| [TypeScript public contract](../../packages/semantic-core/src/contract.ts) | 338 | add closed public arms without changing existing direct Message shapes |
 | [Workflow command ingress](../../packages/temporal-adapter/workflow/src/workflow-command-ingress.ts) | 403 | route target delivery only; global correlation ingress belongs in new Workflow owners |
-| [Lean Transition](../../BpmnSemantics/SemanticProcess/Transition.lean) | 343 | add one dispatcher constructor; matcher and laws belong in new modules |
-| [TypeScript checked graph contract](../../packages/semantic-core/src/checked-process-contract.ts) | 457 | add one correlated catch arm and referenced correlation contract |
-| [TypeScript compilation dispatch](../../packages/bpmn-source/src/compilation-dispatch.ts) | 496 | dispatch to a new exact source reader; do not place validation logic here |
-| [TypeScript internal-commutation census](../../packages/semantic-core/src/internal-commutation-census.ts) | 671 | add the exact ordinary-wait classification only; footprint logic belongs in the correlated family owner |
-| [Lean internal-commutation census](../../BpmnSemantics/SemanticProcess/InternalCommutationCensus.lean) | 668 | add the matching exhaustive constructor classification only |
+| [Lean Transition](../../BpmnSemantics/SemanticProcess/Transition.lean) | 330 | add one dispatcher constructor; matcher and laws belong in new modules |
+| [TypeScript checked graph contract](../../packages/semantic-core/src/checked-process-contract.ts) | 440 | add one correlated catch arm and referenced correlation contract |
+| [TypeScript compilation dispatch](../../packages/bpmn-source/src/compilation-dispatch.ts) | 480 | dispatch to a new exact source reader; do not place validation logic here |
+| [TypeScript internal-commutation census](../../packages/semantic-core/src/internal-commutation-census.ts) | 670 | add the exact ordinary-wait classification only; footprint logic belongs in the correlated family owner |
+| [Lean internal-commutation census](../../BpmnSemantics/SemanticProcess/InternalCommutationCensus.lean) | 667 | add the matching exhaustive constructor classification only |
 | [Engine API index](../../packages/engine-api/src/index.ts) | 673 | export new bounded definition-correlation and publication owners only |
 | [Temporal protocol index](../../packages/temporal-adapter/protocol/src/index.ts) | 775 | export one new bounded protocol owner only |
 | [Temporal client index](../../packages/temporal-adapter/client/src/index.ts) | 793 | export one new bounded client owner only |
@@ -302,9 +302,9 @@ No size exception is requested. New source files own the correlation source read
 
 ## Epistemic closure and reopen conditions
 
-Established before implementation: the normative key/context account and exact machine-readable shape; direct payload extraction and Process-Property writing; direct Message subscription identity/lifetime; per-instance payload delivery and Temporal Signal recovery; CIB's modeled-correlation limitation; the SDK boundary requiring client-backed Activities for cross-Workflow Queries and Updates; and feasibility of a durable engine-owned, query-validated ingress without Event History or platform authority.
+Established: the normative key/context account and exact machine-readable shape; direct payload extraction and Process-Property writing; direct Message subscription identity/lifetime; per-instance payload delivery and Temporal Signal recovery; CIB's modeled-correlation limitation; exact source admission and checked/IL lowering for the bounded graph; strict scalar-path decoding; complete-address finite matching; target-revalidating per-instance delivery; correlated candidate projection; internal-commutation census and footprint integration; the SDK boundary requiring client-backed Activities for cross-Workflow Queries and Updates; and feasibility of a durable engine-owned, query-validated ingress without Event History or platform authority.
 
-Not established: source admission, checked/IL representation, exact path decoders, finite matcher proofs, cross-instance harness, adapter-private candidate Query, durable registration completeness, barrier-linearized fanout, Update admission/reservation recovery, capacity fit, or live Temporal refinement. Those remain executable obligations.
+Not established: a registered execution profile, cross-instance harness, adapter-private candidate Query, durable registration completeness, barrier-linearized fanout, Update admission/reservation recovery, capacity fit, live Temporal refinement, scenarios, corpus coverage, Product 2 binding, or closure. Those remain executable obligations after checkpoint approval.
 
 The principal common-mode risk is treating a durable directory as the semantic database. The design forbids that: finalized records provide bounded discovery only, the mutually exclusive scan barrier and completion-gated registration establish a stable complete set, every active entry must return its exact current Process fact, any discrepancy blocks the whole address as infrastructure inconsistency, the pure matcher decides exact cardinality, and target delivery revalidates. The second risk is hidden concurrency ordering; the durable ingress ordinal and settle-before-next rule make it an explicit input. The third is accepting more publications than can be durably classified; the Update validator and fixed per-command future-result reservation close that boundary before Temporal acceptance.
 
@@ -319,6 +319,8 @@ No closure cost is claimed at proposal time. At closure, [`capsule-cost.ts`](../
 ## Stage boundary
 
 The first green source/checked/IL plus Lean/core finite-matcher, per-instance transition, complete-address contract, and internal-commutation census/footprint target is a mandatory semantic checkpoint. No Temporal correlation-ingress, engine API/global client, Product 2 binding, retained corpus registration, or closure status may cross that checkpoint before its independent review is approved.
+
+The current implementation target has reached that boundary with focused source, contract, Lean, core, and fail-closed Temporal-protocol gates green. It remains an unapproved semantic checkpoint until the receipt below records the independent verdict; the prohibited downstream lanes remain absent.
 
 Closure requires the unique, zero, ambiguous, cross-definition, pending-registration, failed-fanout, exact-capacity, concurrent, stale/quarantine, same-target recovery, continuation, replay, and mutation evidence named above; complete applicable gates on a clean committed target; reflection and cost records; and independent closure review. The proposal graduates to `-SPEC` only after those owners agree.
 

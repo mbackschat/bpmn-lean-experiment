@@ -1,5 +1,6 @@
 import {
   CanonicalObservationKind,
+  CorrelatedMessageInteractionKind,
   ProcessStatus,
   SemanticOperationKind,
   SemanticOriginKind,
@@ -8,14 +9,17 @@ import {
   WaitKind,
   compareCanonicalStrings,
   hasExactOptionalUserTaskMetadata,
+  isCorrelatedMessageAddress,
   isMessageChannel,
   isSourceOverlayIdentityOrNull,
   isWellFormedStimulus,
   isWellFormedWireString,
   openEffectIncidentAssociationIsValid,
+  sameCorrelatedMessageAddress,
   sameMessageChannel,
 } from "@bpmn-lean/semantic-core";
 import type {
+  CorrelatedMessageAddress,
   PublicControlPositionDelta,
   PublicControlTokenPosition,
   PublicScopePosition,
@@ -238,6 +242,7 @@ function stimulusMatchesPage(
     case StimulusKind.CompleteUserTaskInstance:
     case StimulusKind.DeliverMessage:
     case StimulusKind.DeliverPayloadMessage:
+    case StimulusKind.DeliverCorrelatedPayloadMessage:
     case StimulusKind.CompleteEffect:
     case StimulusKind.ReportEffectFailure:
     case StimulusKind.RetryIncident:
@@ -272,7 +277,7 @@ function isCurrent(
 ): value is CurrentCommittedExecution {
   if (!isRecord(value) || !hasOnlyKeys(value, ["revision", "state", "controlTokens", "scopes"]) ||
     value.revision !== page.headRevision ||
-    !isState(value.state, page.processInstanceId, program) ||
+    !isState(value.state, page.processInstanceId, program, processId) ||
     !isTokenList(value.controlTokens, program) || !isScopeList(value.scopes, program, true) ||
     (lastLogicalTime !== undefined &&
       (value.state as StateObservation).logicalTimeMs !== lastLogicalTime)) {
@@ -289,6 +294,7 @@ function isState(
   value: unknown,
   instanceId: unknown,
   program: SemanticProcessProgram | null,
+  processId: string,
 ): value is StateObservation {
   const hasMultiInstances = isRecord(value) &&
     Object.hasOwn(value, "openMultiInstances");
@@ -323,7 +329,7 @@ function isState(
       program,
     )) ||
     !isPatch(value.variables) || !isActiveWaits(value.activeWaits) ||
-    !isEnabledInteractions(value.enabledInteractions, value, program)) {
+    !isEnabledInteractions(value.enabledInteractions, value, program, processId)) {
     return false;
   }
   return value.status === ProcessStatus.Running || [
@@ -403,6 +409,7 @@ function isEnabledInteractions(
   value: unknown,
   state: Record<string, unknown>,
   program: SemanticProcessProgram | null,
+  processId: string,
 ): boolean {
   if (!Array.isArray(value) || !value.every((item) => isRecord(item))) {
     return false;
@@ -422,6 +429,27 @@ function isEnabledInteractions(
     const expectedKind = program === null
       ? null
       : messageInteractionKind(program, message);
+    if (isRecord(item) &&
+      item.kind ===
+        CorrelatedMessageInteractionKind.PublishCorrelatedPayloadMessage) {
+      const address = item.address;
+      const expectedAddress = program === null
+        ? null
+        : correlatedMessageAddress(program, message);
+      if (!hasOnlyKeys(item, ["kind", "address"]) ||
+        !isCorrelatedMessageAddress(address) ||
+        !isMessageChannel(message.channel) ||
+        !sameMessageChannel(address.channel, message.channel) ||
+        address.processId !== processId ||
+        (program !== null &&
+          (expectedKind !==
+              CorrelatedMessageInteractionKind.PublishCorrelatedPayloadMessage ||
+            expectedAddress === null ||
+            !sameCorrelatedMessageAddress(address, expectedAddress)))) {
+        return false;
+      }
+      continue;
+    }
     if (!isRecord(item) || !hasOnlyKeys(item, ["kind", "subscriptionId", "channel"]) ||
       (program === null
         ? item.kind !== StimulusKind.DeliverMessage &&
@@ -449,12 +477,15 @@ function isEnabledInteractions(
 function messageInteractionKind(
   program: SemanticProcessProgram,
   message: Record<string, unknown>,
-): StimulusKind.DeliverMessage | StimulusKind.DeliverPayloadMessage | null {
+): StimulusKind.DeliverMessage | StimulusKind.DeliverPayloadMessage |
+  typeof CorrelatedMessageInteractionKind.PublishCorrelatedPayloadMessage |
+  null {
   const elementId = isRecord(message.id) ? message.id.elementId : null;
   const declarers = program.operations.filter((operation) => {
     switch (operation.kind) {
       case SemanticOperationKind.AwaitMessage:
       case SemanticOperationKind.AwaitPayloadMessage:
+      case SemanticOperationKind.AwaitCorrelatedPayloadMessage:
       case SemanticOperationKind.AwaitEventRace:
         return operation.message.elementId === elementId;
       case SemanticOperationKind.AwaitMessageBoundedUserTask:
@@ -466,9 +497,35 @@ function messageInteractionKind(
   if (declarers.length !== 1) {
     return null;
   }
-  return declarers[0]?.kind === SemanticOperationKind.AwaitPayloadMessage
-    ? StimulusKind.DeliverPayloadMessage
-    : StimulusKind.DeliverMessage;
+  switch (declarers[0]?.kind) {
+    case SemanticOperationKind.AwaitPayloadMessage:
+      return StimulusKind.DeliverPayloadMessage;
+    case SemanticOperationKind.AwaitCorrelatedPayloadMessage:
+      return CorrelatedMessageInteractionKind.PublishCorrelatedPayloadMessage;
+    default:
+      return StimulusKind.DeliverMessage;
+  }
+}
+
+function correlatedMessageAddress(
+  program: SemanticProcessProgram,
+  message: Record<string, unknown>,
+): CorrelatedMessageAddress | null {
+  const elementId = isRecord(message.id) ? message.id.elementId : null;
+  const operations = program.operations.filter((operation) =>
+    operation.kind === SemanticOperationKind.AwaitCorrelatedPayloadMessage &&
+    operation.message.elementId === elementId
+  );
+  const operation = operations[0];
+  return operations.length === 1 &&
+      operation?.kind === SemanticOperationKind.AwaitCorrelatedPayloadMessage
+    ? {
+        definition: program.identity,
+        processId: program.processId,
+        channel: operation.message.channel,
+        correlationKeyId: operation.correlationKeyId,
+      }
+    : null;
 }
 
 function isTokenList(

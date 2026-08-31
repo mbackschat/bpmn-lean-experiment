@@ -202,6 +202,10 @@ export function requireCompletionStimuli(
       case StimulusKind.RetryIncident:
       case StimulusKind.CancelIncidentProcess:
         return [];
+      case StimulusKind.DeliverCorrelatedPayloadMessage:
+        throw new TypeError(
+          "The Temporal scenario runner does not yet host correlated Message delivery",
+        );
       case StimulusKind.StartProcess:
       case StimulusKind.TriggerMessageStart:
       case StimulusKind.TriggerTimerStart:
@@ -222,6 +226,10 @@ export function requireMessageDeliveryStimuli(
       case StimulusKind.DeliverMessage:
       case StimulusKind.DeliverPayloadMessage:
         return [stimulus];
+      case StimulusKind.DeliverCorrelatedPayloadMessage:
+        throw new TypeError(
+          "The Temporal scenario runner does not yet host correlated Message delivery",
+        );
       case StimulusKind.CompleteUserTaskInstance:
       case StimulusKind.FireTimer:
       case StimulusKind.CompleteEffect:
@@ -255,6 +263,10 @@ export function requireOptionalTimerStimulus(
       case StimulusKind.RetryIncident:
       case StimulusKind.CancelIncidentProcess:
         break;
+      case StimulusKind.DeliverCorrelatedPayloadMessage:
+        throw new TypeError(
+          "The Temporal scenario runner does not yet host correlated Message delivery",
+        );
       case StimulusKind.FireTimer:
         if (timer !== undefined) {
           throw new TypeError(
@@ -304,6 +316,10 @@ export function requireOptionalEffectExecution(
       case StimulusKind.RetryIncident:
       case StimulusKind.CancelIncidentProcess:
         return [];
+      case StimulusKind.DeliverCorrelatedPayloadMessage:
+        throw new TypeError(
+          "The Temporal scenario runner does not yet host correlated Message delivery",
+        );
       case StimulusKind.StartProcess:
       case StimulusKind.TriggerMessageStart:
       case StimulusKind.TriggerTimerStart:

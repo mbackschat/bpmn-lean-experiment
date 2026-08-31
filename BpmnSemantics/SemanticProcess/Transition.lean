@@ -54,6 +54,10 @@ def awaitPayloadMessageState? (state : RuntimeState) (input output : ControlPlac
     (message : MessageDefinition) : Option RuntimeState :=
   awaitMessageState? state input output message
 
+def awaitCorrelatedPayloadMessageState? (state : RuntimeState)
+    (input output : ControlPlaceId) (message : MessageDefinition) : Option RuntimeState :=
+  awaitMessageState? state input output message
+
 def awaitEventRaceState? (state : RuntimeState) (origin : BpmnElementOrigin)
     (input : ControlPlaceId) (message : EventRaceMessageArm)
     (timer : EventRaceTimerArm) : Option RuntimeState :=
@@ -220,6 +224,13 @@ inductive OperationStep (program : Program) :
       (transition : awaitPayloadMessageState? before input output message = some after) :
       OperationStep program
         (.awaitPayloadMessage id origin input output message directOutput) before after
+  | awaitCorrelatedPayloadMessage
+      (id origin input output message correlationKeyId correlationPropertyId
+        payloadSelector processPropertySelector) (before after : RuntimeState)
+      (transition : awaitCorrelatedPayloadMessageState? before input output message = some after) :
+      OperationStep program
+        (.awaitCorrelatedPayloadMessage id origin input output message correlationKeyId
+          correlationPropertyId payloadSelector processPropertySelector) before after
   | awaitEventRace (id origin input message timer) (before after : RuntimeState)
       (transition :
         EventRaceArmingStep before origin input message timer after) :
@@ -334,6 +345,8 @@ def fire? (program : Program) (operation : SemanticOperation)
       awaitMessageState? state input output message
   | .awaitPayloadMessage _ _ input output message _ =>
       awaitMessageState? state input output message
+  | .awaitCorrelatedPayloadMessage _ _ input output message _ _ _ _ =>
+      awaitCorrelatedPayloadMessageState? state input output message
   | .awaitEventRace _ origin input message timer =>
       awaitEventRaceState? state origin input message timer
   | .awaitBoundedUserTask _ _ input task boundaryTimer =>
@@ -415,6 +428,7 @@ theorem fire_sound (program : Program) (operation : SemanticOperation)
     | exact .awaitTimer _ _ _ _ _ before after result
     | exact .awaitMessage _ _ _ _ _ before after result
     | exact .awaitPayloadMessage _ _ _ _ _ _ before after result
+    | exact .awaitCorrelatedPayloadMessage _ _ _ _ _ _ _ _ _ before after result
     | exact OperationStep.awaitEventRace _ _ _ _ _ before after
         (armEventRaceState_sound before after _ _ _ _
           (by simpa [fire?, awaitEventRaceState?] using result))

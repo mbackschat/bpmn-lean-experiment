@@ -123,6 +123,7 @@ function internalOperationStarts(
       return false;
     case SemanticOperationKind.AwaitMessage:
     case SemanticOperationKind.AwaitPayloadMessage:
+    case SemanticOperationKind.AwaitCorrelatedPayloadMessage:
       return sameScope(owner, transitionOwner) &&
         operation.message.elementId === value.elementId;
     case SemanticOperationKind.AwaitTimer:
@@ -178,6 +179,7 @@ function externalStimulusStarts(
     case StimulusKind.TriggerMessageStart:
     case StimulusKind.TriggerTimerStart:
     case StimulusKind.DeliverPayloadMessage:
+    case StimulusKind.DeliverCorrelatedPayloadMessage:
     case StimulusKind.ReportEffectFailure:
     case StimulusKind.RetryIncident:
     case StimulusKind.CancelIncidentProcess:
@@ -356,6 +358,7 @@ function operationPublishesNestedElement(
       return directlyOwned && operation.boundaryTimer.elementId === elementId;
     case SemanticOperationKind.AwaitMessage:
     case SemanticOperationKind.AwaitPayloadMessage:
+    case SemanticOperationKind.AwaitCorrelatedPayloadMessage:
       return directlyOwned && operation.message.elementId === elementId;
     case SemanticOperationKind.AwaitTimer:
       return directlyOwned && operation.timer.elementId === elementId;

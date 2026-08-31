@@ -7,6 +7,7 @@ import type {
   VariableBinding,
 } from "./contract.js";
 import {
+  MESSAGE_KEY_CORRELATION_CHECKPOINT_PROFILE_ID,
   SemanticProfileId,
 } from "./semantic-profile-catalog.js";
 import { isVariablePatch } from "./variable-value.js";
@@ -18,7 +19,8 @@ export enum VariableWriteSurface {
 }
 
 type SemanticProfile =
-  typeof SemanticProfileId[keyof typeof SemanticProfileId];
+  | typeof SemanticProfileId[keyof typeof SemanticProfileId]
+  | typeof MESSAGE_KEY_CORRELATION_CHECKPOINT_PROFILE_ID;
 
 const emptyValueDomain: ReadonlyArray<VariableValueKind> = Object.freeze([]);
 const stringValueDomain = Object.freeze([VariableValueKind.String]);
@@ -48,7 +50,10 @@ const scalarValueDomain = Object.freeze([
 ]);
 
 const admittedSemanticProfiles: ReadonlySet<string> = new Set(
-  Object.values(SemanticProfileId),
+  [
+    ...Object.values(SemanticProfileId),
+    MESSAGE_KEY_CORRELATION_CHECKPOINT_PROFILE_ID,
+  ],
 );
 
 /** Selects which typed Process-data values one profile admits at one external write surface. */
@@ -184,7 +189,7 @@ function profileValueDomain(
     case SemanticProfileId.EventBasedGatewayMessageTimer:
     case SemanticProfileId.IntermediateCatchMessage:
     case SemanticProfileId.MessagePayloadCatch:
-    case SemanticProfileId.MessageKeyCorrelation:
+    case MESSAGE_KEY_CORRELATION_CHECKPOINT_PROFILE_ID:
     case SemanticProfileId.IntermediateCatchTimer:
     case SemanticProfileId.MessageAddressedReceiveTask:
     case SemanticProfileId.MessageStart:
@@ -243,10 +248,10 @@ export function profileAllowsStimulusValueDomain(
       return true;
     case StimulusKind.DeliverPayloadMessage:
       return (semanticProfile === SemanticProfileId.MessagePayloadCatch ||
-        semanticProfile === SemanticProfileId.MessageKeyCorrelation) &&
+        semanticProfile === MESSAGE_KEY_CORRELATION_CHECKPOINT_PROFILE_ID) &&
         scalarValueDomain.includes(stimulus.payload.kind);
     case StimulusKind.DeliverCorrelatedPayloadMessage:
-      return semanticProfile === SemanticProfileId.MessageKeyCorrelation &&
+      return semanticProfile === MESSAGE_KEY_CORRELATION_CHECKPOINT_PROFILE_ID &&
         stimulus.payload.kind === VariableValueKind.String;
     default:
       return assertNever(stimulus);

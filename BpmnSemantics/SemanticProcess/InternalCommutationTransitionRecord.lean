@@ -23,7 +23,37 @@ theorem internalTransitionRecord_prepared (program : Program) (state : RuntimeSt
         owner := patch.owner } := by
   have operationAndOwner : patch.operation = operation ∧
       selectedOperationOwner? state operation = some patch.owner := by
-    cases operation <;>
+    cases operation
+    case awaitCorrelatedPayloadMessage id origin input output message correlationKeyId
+        correlationPropertyId payloadSelector processPropertySelector =>
+      simp_all [prepareInternalArm?, internalArmInput?, internalArmOrigin?,
+        selectedOperationOwner?, flowNodeSelectedOperationOwner?]
+      obtain ⟨owner, ownerEq, prepared⟩ := Option.bind_eq_some_iff.mp prepared
+      split at prepared
+      · simp at prepared
+      · obtain ⟨inputOrigin, inputOriginEq, prepared⟩ :=
+          Option.bind_eq_some_iff.mp prepared
+        cases controlEq : state.control <;> simp_all
+        rename_i instanceId selection
+        cases filteredEq : state.variables.process.bindings.filter fun candidate =>
+            candidate.name = processPropertySelector.propertyId with
+        | nil => simp_all
+        | cons binding rest =>
+          cases rest with
+          | cons _ _ => simp_all
+          | nil =>
+            cases valueEq : binding.value with
+            | string value =>
+              by_cases empty : value.isEmpty = true
+              · simp_all
+              · simp_all
+                obtain ⟨_, _, _, _, patchEq⟩ := prepared
+                exact ⟨rfl, rfl⟩
+            | boolean _ => simp_all
+            | integer _ => simp_all
+            | stringList _ => simp_all
+            | null => simp_all
+    all_goals
       simp_all [prepareInternalArm?, internalArmInput?, internalArmOrigin?,
         selectedOperationOwner?, flowNodeSelectedOperationOwner?]
     all_goals

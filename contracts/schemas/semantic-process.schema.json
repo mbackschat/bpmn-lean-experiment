@@ -796,6 +796,43 @@
         }
       }
     },
+    "correlationMessagePath": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "language",
+        "body"
+      ],
+      "properties": {
+        "language": {
+          "const": "urn:bpmn-lean:correlation-scalar-path:v1"
+        },
+        "body": {
+          "const": "payload"
+        }
+      }
+    },
+    "correlationProcessPropertyPath": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "language",
+        "body",
+        "propertyId"
+      ],
+      "properties": {
+        "language": {
+          "const": "urn:bpmn-lean:correlation-scalar-path:v1"
+        },
+        "body": {
+          "type": "string",
+          "pattern": "^property:.+$"
+        },
+        "propertyId": {
+          "$ref": "#/$defs/nonemptyString"
+        }
+      }
+    },
     "dataTaskDefinition": {
       "type": "object",
       "additionalProperties": false,
@@ -1147,6 +1184,67 @@
         },
         "directOutput": {
           "$ref": "#/$defs/directCatchEventPayloadOutput"
+        }
+      }
+    },
+    "awaitCorrelatedPayloadMessage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "origin",
+        "input",
+        "output",
+        "message",
+        "correlationKeyId",
+        "correlationPropertyId",
+        "payloadSelector",
+        "processPropertySelector"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "kind": {
+          "const": "awaitCorrelatedPayloadMessage"
+        },
+        "origin": {
+          "$ref": "#/$defs/bpmnElementOrigin"
+        },
+        "input": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "output": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "message": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "elementId",
+            "channel"
+          ],
+          "properties": {
+            "elementId": {
+              "$ref": "#/$defs/nonemptyString"
+            },
+            "channel": {
+              "$ref": "#/$defs/operationMessageChannel"
+            }
+          }
+        },
+        "correlationKeyId": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "correlationPropertyId": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "payloadSelector": {
+          "$ref": "#/$defs/correlationMessagePath"
+        },
+        "processPropertySelector": {
+          "$ref": "#/$defs/correlationProcessPropertyPath"
         }
       }
     },
@@ -1995,6 +2093,9 @@
         },
         {
           "$ref": "#/$defs/awaitPayloadMessage"
+        },
+        {
+          "$ref": "#/$defs/awaitCorrelatedPayloadMessage"
         },
         {
           "$ref": "#/$defs/awaitEventRace"

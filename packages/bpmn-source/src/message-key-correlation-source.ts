@@ -9,8 +9,8 @@ import {
   CheckedNodeKind,
   CheckedProcessKind,
   CorrelationScalarPathLanguage,
+  MESSAGE_KEY_CORRELATION_CHECKPOINT_PROFILE_ID,
   MessageChannelKind,
-  SemanticProfileId,
   compareCanonicalStrings,
 } from "@bpmn-lean/semantic-core";
 import type {
@@ -155,7 +155,7 @@ type ExactSource = Readonly<{
 export function messageKeyCorrelationContainmentCardinalities(
   semanticProfile: string,
 ): ReadonlyArray<ExactContainmentCardinality> {
-  return semanticProfile === SemanticProfileId.MessageKeyCorrelation
+  return semanticProfile === MESSAGE_KEY_CORRELATION_CHECKPOINT_PROFILE_ID
     ? exactContainmentCardinalities
     : [];
 }
@@ -205,7 +205,7 @@ export function compileMessageKeyCorrelationCheckedProcess(
         },
         undefined,
         undefined,
-        SemanticProfileId.MessageKeyCorrelation,
+        MESSAGE_KEY_CORRELATION_CHECKPOINT_PROFILE_ID,
       );
   if (sequenceFlows === undefined || ordinaryNodes === undefined) {
     return unsupported(
@@ -240,7 +240,7 @@ export function compileMessageKeyCorrelationCheckedProcess(
         flows,
       },
       exact.definitions.expressionLanguage,
-      SemanticProfileId.MessageKeyCorrelation,
+      MESSAGE_KEY_CORRELATION_CHECKPOINT_PROFILE_ID,
     )
   ) {
     return unsupported(
@@ -251,7 +251,7 @@ export function compileMessageKeyCorrelationCheckedProcess(
     checkedProcess: {
       kind: CheckedProcessKind.CheckedProcess,
       identity: {
-        semanticProfile: SemanticProfileId.MessageKeyCorrelation,
+        semanticProfile: MESSAGE_KEY_CORRELATION_CHECKPOINT_PROFILE_ID,
         sourceId: source.id,
         sourceSha256: source.sha256,
         sourceOverlay,

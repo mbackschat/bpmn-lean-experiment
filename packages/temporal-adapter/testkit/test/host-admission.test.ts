@@ -9,6 +9,7 @@ import {
 import {
   EffectOperation,
   EffectProtocol,
+  MESSAGE_KEY_CORRELATION_CHECKPOINT_PROFILE_ID,
   MessageChannelKind,
   SemanticProfileId,
   SemanticOperationKind,
@@ -135,6 +136,28 @@ test("classifies Message and User Task as passive ingress in either operation or
       kind: TemporalHostCapabilityResultKind.Admitted,
     },
   );
+});
+
+test("rejects correlated Message waits until their durable ingress is hosted", async () => {
+  const program = await compileFixture(
+    "../../../../scenarios/message-key-correlation/process.bpmn",
+    "message-key-correlation-host-admission",
+    MESSAGE_KEY_CORRELATION_CHECKPOINT_PROFILE_ID,
+  );
+  assert.ok(
+    program.operations.some(
+      ({ kind }) =>
+        kind === SemanticOperationKind.AwaitCorrelatedPayloadMessage,
+    ),
+  );
+  assert.deepEqual(assessTemporalHostCapability(program), {
+    kind: TemporalHostCapabilityResultKind.Rejected,
+    failure: {
+      code: TemporalHostAdmissionFailureCode.CorrelatedMessageIngressUnavailable,
+      evidence:
+        "The Temporal host does not yet provide the definition-addressed correlation ingress required by a correlated Message wait.",
+    },
+  });
 });
 
 test("admits only the exact isolated operation-addressed Message-bounded Activity", async () => {

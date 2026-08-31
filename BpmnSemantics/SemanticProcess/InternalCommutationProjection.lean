@@ -1,6 +1,4 @@
-import BpmnSemantics.SemanticProcess.InternalCommutationCore
-import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleProofs
-import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidityFrames
+import BpmnSemantics.SemanticProcess.InternalCommutationCorrelationProjection
 
 /-! # Internal commutation occurrence-projection frames
 
@@ -13,9 +11,9 @@ open BpmnSemantics
 
 namespace InternalCommutation
 
-theorem armingWaitStart_frame (program : Program) (state : RuntimeState) (patch : InternalArmingPatch) (owner : ScopeOccurrenceId) (element : NodeId) (activation : Nat) : waitStart? program (applyInternalArmingPatch state patch) owner element activation = waitStart? program state owner element activation := by cases patch with | mk _ _ _ _ _ _ _ write => cases write <;> rfl
-theorem armingScopeStart_frame (program : Program) (state : RuntimeState) (patch : InternalArmingPatch) (occurrence : RuntimeScopeOccurrence) : scopeStart? program (applyInternalArmingPatch state patch) occurrence = scopeStart? program state occurrence := by cases patch with | mk _ _ _ _ _ _ _ write => cases write <;> rfl
-theorem armingCallStart_frame (program : Program) (state : RuntimeState) (patch : InternalArmingPatch) (record : CalledProcessOccurrence) : callStart? program (applyInternalArmingPatch state patch) record = callStart? program state record := by cases patch with | mk _ _ _ _ _ _ _ write => cases write <;> rfl
+theorem armingWaitStart_frame (program : Program) (state : RuntimeState) (patch : InternalArmingPatch) (owner : ScopeOccurrenceId) (element : NodeId) (activation : Nat) : waitStart? program (applyInternalArmingPatch state patch) owner element activation = waitStart? program state owner element activation := by cases patch with | mk _ _ _ _ _ _ _ _ _ write => cases write <;> rfl
+theorem armingScopeStart_frame (program : Program) (state : RuntimeState) (patch : InternalArmingPatch) (occurrence : RuntimeScopeOccurrence) : scopeStart? program (applyInternalArmingPatch state patch) occurrence = scopeStart? program state occurrence := by cases patch with | mk _ _ _ _ _ _ _ _ _ write => cases write <;> rfl
+theorem armingCallStart_frame (program : Program) (state : RuntimeState) (patch : InternalArmingPatch) (record : CalledProcessOccurrence) : callStart? program (applyInternalArmingPatch state patch) record = callStart? program state record := by cases patch with | mk _ _ _ _ _ _ _ _ _ write => cases write <;> rfl
 
 theorem prepared_arm_anchor_shape (program : Program) (state : RuntimeState)
     (operation : SemanticOperation) (patch : InternalArmingPatch)
@@ -25,7 +23,12 @@ theorem prepared_arm_anchor_shape (program : Program) (state : RuntimeState)
           elementId := ⟨patch.write.elementId.value⟩,
           activation := patch.write.occurrence.activation } ∧
       openWaitAnchorAbsent state patch.write.occurrence = true := by
-  cases operation <;> simp_all [prepareInternalArm?, internalArmInput?, internalArmOrigin?]
+  cases operation
+  case awaitCorrelatedPayloadMessage id origin input output message correlationKeyId
+      correlationPropertyId payloadSelector processPropertySelector =>
+    exact prepared_correlated_arm_anchor_shape program state id origin input output message
+      correlationKeyId correlationPropertyId payloadSelector processPropertySelector patch prepared
+  all_goals simp_all [prepareInternalArm?, internalArmInput?, internalArmOrigin?]
   all_goals
     obtain ⟨owner, ownerEq, prepared⟩ := Option.bind_eq_some_iff.mp prepared
     split at prepared
@@ -52,7 +55,17 @@ theorem prepared_arm_projectWaits_insert (program : Program) (state : RuntimeSta
   obtain ⟨tasks, messages, timers, effects, incidents, tasksEq, messagesEq, timersEq,
       effectsEq, incidentsEq, rfl⟩ :=
     (projectWaits_eq_some_iff program state beforeWaits).mp beforeProjected
-  cases operation <;> simp_all [prepareInternalArm?, internalArmInput?, internalArmOrigin?]
+  cases operation
+  case awaitCorrelatedPayloadMessage id origin input output message correlationKeyId
+      correlationPropertyId payloadSelector processPropertySelector =>
+    exact prepared_correlated_arm_projectWaits_insert program state id origin input output message
+      correlationKeyId correlationPropertyId payloadSelector processPropertySelector patch prepared
+        newStart started (tasks ++ (messages ++ (timers ++ (effects ++ incidents)))) (by
+          apply (projectWaits_eq_some_iff program state
+            (tasks ++ (messages ++ (timers ++ (effects ++ incidents))))).mpr
+          exact ⟨tasks, messages, timers, effects, incidents, tasksEq, messagesEq, timersEq,
+            effectsEq, incidentsEq, rfl⟩)
+  all_goals simp_all [prepareInternalArm?, internalArmInput?, internalArmOrigin?]
   all_goals
     obtain ⟨owner, ownerEq, prepared⟩ := Option.bind_eq_some_iff.mp prepared
     split at prepared <;> try simp at prepared
@@ -67,7 +80,8 @@ theorem prepared_arm_projectWaits_insert (program : Program) (state : RuntimeSta
          { processInstanceId := owner.processInstanceId, owner, task,
            activation := activationCount state task.id + 1, output, metadata := task.metadata }
        let currentPatch : InternalArmingPatch :=
-         { operation := .awaitUserTask id origin input output task, origin,
+         { operation := .awaitUserTask id origin input output task,
+           definition := program.identity, processId := program.processId, origin,
            runtimeInstanceId := instanceId, logicalTimeMs := state.logicalTimeMs,
            input, inputOrigin, owner, write := .userTask wait }
        have declarer : userTaskWaitDeclarers program task.id =
@@ -151,7 +165,8 @@ theorem prepared_arm_projectWaits_insert (program : Program) (state : RuntimeSta
         elementId := message.elementId, activation := messageActivationCount state message.elementId + 1,
         channel := message.channel, output }
     let currentPatch : InternalArmingPatch :=
-      { operation := .awaitMessage id origin input output message, origin,
+      { operation := .awaitMessage id origin input output message,
+        definition := program.identity, processId := program.processId, origin,
         runtimeInstanceId := instanceId, logicalTimeMs := state.logicalTimeMs,
         input, inputOrigin, owner, write := .message wait }
     have startEq : waitStart? program state wait.owner wait.elementId wait.activation =
@@ -211,7 +226,8 @@ theorem prepared_arm_projectWaits_insert (program : Program) (state : RuntimeSta
         activation := messageActivationCount state message.elementId + 1,
         channel := message.channel, output }
     let currentPatch : InternalArmingPatch :=
-      { operation := .awaitPayloadMessage id origin input output message directOutput, origin,
+      { operation := .awaitPayloadMessage id origin input output message directOutput,
+        definition := program.identity, processId := program.processId, origin,
         runtimeInstanceId := instanceId, logicalTimeMs := state.logicalTimeMs,
         input, inputOrigin, owner, write := .message wait }
     have startEq : waitStart? program state wait.owner wait.elementId wait.activation =
@@ -271,7 +287,8 @@ theorem prepared_arm_projectWaits_insert (program : Program) (state : RuntimeSta
         activation := timerActivationCount state timer.elementId + 1,
         deadlineMs := state.logicalTimeMs + timer.durationMs, output }
     let currentPatch : InternalArmingPatch :=
-      { operation := .awaitTimer id origin input output timer, origin,
+      { operation := .awaitTimer id origin input output timer,
+        definition := program.identity, processId := program.processId, origin,
         runtimeInstanceId := instanceId, logicalTimeMs := state.logicalTimeMs,
         input, inputOrigin, owner, write := .timer wait }
     have declarer : timerWaitDeclarers program timer.elementId =
@@ -368,7 +385,8 @@ theorem prepared_arm_projectWaits_insert (program : Program) (state : RuntimeSta
         descriptor := effect.descriptor, arguments := bindings,
         outputMappings := effect.outputMappings, output, bpmnErrorRoute := route }
     let currentPatch : InternalArmingPatch :=
-      { operation := .awaitEffect id origin input output effect route, origin,
+      { operation := .awaitEffect id origin input output effect route,
+        definition := program.identity, processId := program.processId, origin,
         runtimeInstanceId := instanceId, logicalTimeMs := state.logicalTimeMs,
         input, inputOrigin, owner, write := .effect wait bindings }
     have startEq : waitStart? program state wait.owner wait.elementId wait.activation =
@@ -484,7 +502,13 @@ theorem prepared_arm_preserves_flowNodeOccurrenceProgramValidity (program : Prog
     have parts := valid
     simp only [flowNodeOccurrenceProgramValidity, Bool.and_eq_true] at parts
     exact parts.1.1.1
-  cases operation <;> simp_all [prepareInternalArm?, internalArmInput?, internalArmOrigin?]
+  cases operation
+  case awaitCorrelatedPayloadMessage id origin input output message correlationKeyId
+      correlationPropertyId payloadSelector processPropertySelector =>
+    exact prepared_correlated_arm_preserves_flowNodeOccurrenceProgramValidity program state id
+      origin input output message correlationKeyId correlationPropertyId payloadSelector
+        processPropertySelector patch programAdmitted valid prepared
+  all_goals simp_all [prepareInternalArm?, internalArmInput?, internalArmOrigin?]
   all_goals
     obtain ⟨owner, ownerEq, prepared⟩ := Option.bind_eq_some_iff.mp prepared
     split at prepared <;> try simp at prepared

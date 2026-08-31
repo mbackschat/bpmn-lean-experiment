@@ -15,6 +15,7 @@ def isWaitNode : CheckedNode → Bool
   | .serviceTask .. => true
   | .intermediateCatchMessageEvent .. => false
   | .payloadMessageCatchEvent .. => false
+  | .correlatedPayloadMessageCatchEvent .. => false
   | .receiveTask .. => false
   | .configuredTask .. => false
   | .userTask _ _ (some _) => false
@@ -194,6 +195,9 @@ theorem parseFrom_sound (source : CheckedProcess) (fuel : Nat)
         | intermediateCatchMessageEvent id channel =>
             simp [parseFrom, nodeResult] at result
         | payloadMessageCatchEvent id channel directOutput =>
+            simp [parseFrom, nodeResult] at result
+        | correlatedPayloadMessageCatchEvent id channel correlationKeyId
+            correlationPropertyId payloadSelector processPropertySelector =>
             simp [parseFrom, nodeResult] at result
         | receiveTask id channel =>
             simp [parseFrom, nodeResult] at result

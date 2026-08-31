@@ -1,6 +1,7 @@
 /** Exact Semantic Process operation multisets admitted by reviewed semantic profiles. */
 import { SemanticOperationKind } from "./semantic-process-contract.js";
 import {
+  MESSAGE_KEY_CORRELATION_CHECKPOINT_PROFILE_ID,
   SemanticProfileId,
 } from "./semantic-profile-catalog.js";
 
@@ -105,7 +106,7 @@ export function requiredProgramShape(
         SemanticOperationKind.ReachNoneEnd,
         SemanticOperationKind.CompleteScope,
       ]);
-    case SemanticProfileId.MessageKeyCorrelation:
+    case MESSAGE_KEY_CORRELATION_CHECKPOINT_PROFILE_ID:
       return rootProgram([
         SemanticOperationKind.Initiate,
         SemanticOperationKind.AwaitPayloadMessage,

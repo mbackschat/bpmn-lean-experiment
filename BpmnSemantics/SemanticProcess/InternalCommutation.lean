@@ -12,35 +12,63 @@ open InternalCommutation
 
 namespace InternalCommutation
 
+theorem not_mem_right_of_listsDisjoint [DecidableEq α] (left right : List α)
+    (separated : listsDisjoint left right = true) (value : α)
+    (present : value ∈ left) : value ∉ right := by
+  unfold listsDisjoint at separated
+  rw [List.all_eq_true] at separated
+  have absent := separated value present
+  simpa [List.contains_eq_mem] using absent
+
+theorem flowNodeLifecycle_mem_footprint_publications (patch : InternalArmingPatch) :
+    .flowNodeLifecycle patch.write.occurrence ∈ (footprintOfPatch patch).publications := by
+  simp [footprintOfPatch, canonicalPublicationAtomSet, mem_sortBy]
+
+theorem activation_mem_footprint_writes (patch : InternalArmingPatch) :
+    .activation patch.write.kind patch.write.elementId ∈ (footprintOfPatch patch).writes := by
+  simp [footprintOfPatch, canonicalStateAtomSet, mem_sortBy]
+
+theorem activation_mem_footprint_reads (patch : InternalArmingPatch) :
+    .activation patch.write.kind patch.write.elementId ∈ (footprintOfPatch patch).reads := by
+  simp [footprintOfPatch, canonicalStateAtomSet, mem_sortBy]
+
 theorem noninterfering_occurrence_ne (left right : InternalArmingPatch) (separated : footprintsNonInterfering (footprintOfPatch left) (footprintOfPatch right) = true) :
     left.write.occurrence ≠ right.write.occurrence := by
   intro same
-  cases left with | mk _ _ _ _ _ _ _ leftWrite => cases right with | mk _ _ _ _ _ _ _ rightWrite =>
-      cases leftWrite <;> cases rightWrite <;>
-        simp_all [footprintsNonInterfering, listsDisjoint, footprintOfPatch,
-          canonicalStateAtomSet, canonicalPublicationAtomSet, mem_sortBy]
+  simp only [footprintsNonInterfering, Bool.and_eq_true] at separated
+  have excluded := not_mem_right_of_listsDisjoint
+    (footprintOfPatch left).publications (footprintOfPatch right).publications
+    separated.2 (.flowNodeLifecycle left.write.occurrence)
+    (flowNodeLifecycle_mem_footprint_publications left)
+  apply excluded
+  simpa [same] using flowNodeLifecycle_mem_footprint_publications right
 
 theorem noninterfering_same_kind_element_ne (left right : InternalArmingPatch) (sameKind : left.write.kind = right.write.kind) (separated : footprintsNonInterfering (footprintOfPatch left) (footprintOfPatch right) = true) :
     left.write.elementId ≠ right.write.elementId := by
   intro same
-  cases left with | mk _ _ _ _ _ _ _ leftWrite => cases right with | mk _ _ _ _ _ _ _ rightWrite =>
-      cases leftWrite <;> cases rightWrite <;>
-        simp_all [footprintsNonInterfering, listsDisjoint, footprintOfPatch,
-          canonicalStateAtomSet, canonicalPublicationAtomSet, mem_sortBy]
+  simp only [footprintsNonInterfering, Bool.and_eq_true] at separated
+  have excluded := not_mem_right_of_listsDisjoint
+    (footprintOfPatch left).writes (footprintOfPatch right).reads separated.1.1.1
+    (.activation left.write.kind left.write.elementId)
+    (activation_mem_footprint_writes left)
+  apply excluded
+  simpa [sameKind, same] using activation_mem_footprint_reads right
 
 theorem applyInternalArmingPatches_commute (state : RuntimeState) (left right : InternalArmingPatch) (canonical : canonicalCollectionOrder state = true) (separated : footprintsNonInterfering (footprintOfPatch left) (footprintOfPatch right) = true) :
     applyInternalArmingPatch (applyInternalArmingPatch state left) right =
       applyInternalArmingPatch (applyInternalArmingPatch state right) left := by
   have elementDistinct : left.write.kind = right.write.kind → left.write.elementId ≠ right.write.elementId := fun sameKind => noninterfering_same_kind_element_ne left right sameKind separated
+  have occurrenceDistinct := noninterfering_occurrence_ne left right separated
   have updateOrders := canonicalCollectionOrder_internalArmingOrders state canonical
+  clear separated
   cases left with
-  | mk leftOperation leftOrigin leftRuntimeInstanceId leftLogicalTimeMs leftInput leftInputOrigin leftOwner leftWrite =>
+  | mk leftOperation _ _ leftOrigin leftRuntimeInstanceId leftLogicalTimeMs leftInput leftInputOrigin leftOwner leftWrite =>
       cases right with
-      | mk rightOperation rightOrigin rightRuntimeInstanceId rightLogicalTimeMs rightInput rightInputOrigin rightOwner rightWrite =>
+      | mk rightOperation _ _ rightOrigin rightRuntimeInstanceId rightLogicalTimeMs rightInput rightInputOrigin rightOwner rightWrite =>
           cases leftWrite <;> cases rightWrite <;>
-            simp_all [applyInternalArmingPatch, footprintOfPatch, footprintsNonInterfering,
-              listsDisjoint, canonicalStateAtomSet, canonicalPublicationAtomSet,
-              canonicalCollectionOrder, InternalArmingWrite.kind, InternalArmingWrite.elementId, InternalArmingWrite.occurrence, removeToken_commutes]
+            simp_all [applyInternalArmingPatch, canonicalCollectionOrder,
+              InternalArmingWrite.kind, InternalArmingWrite.elementId,
+              InternalArmingWrite.occurrence, removeToken_commutes]
           all_goals
             constructor
             · apply Eq.symm
@@ -53,7 +81,7 @@ theorem applyInternalArmingPatches_commute (state : RuntimeState) (left right : 
           all_goals
             constructor
             · apply insertActivityVariableScope_commutes
-              intro same; simp_all [mem_sortBy]
+              intro same; simp_all
             · exact setEffectActivationCount_commutes_of_ordered _ _ _ _ elementDistinct _ updateOrders.2.2.2.1
 
 theorem filterTokens_removeToken_other (tokens : List ControlToken) (removed queried : ControlPlaceId) (owner : ScopeOccurrenceId) (different : removed ≠ queried) : (removeToken tokens removed owner).filter (fun token => decide (token.placeId = queried)) = tokens.filter (fun token => decide (token.placeId = queried)) := by
@@ -68,7 +96,7 @@ theorem filterTokens_removeToken_other (tokens : List ControlToken) (removed que
         simp [removeToken, removeFalse, List.filter_cons, ih]
 
 theorem armingOwnerRead_frame (state : RuntimeState) (left : InternalArmingPatch) (queried : ControlPlaceId) (different : left.input ≠ queried) : onlyTokenOwner? (applyInternalArmingPatch state left) queried = onlyTokenOwner? state queried := by
-  cases left with | mk _ _ _ _ input _ owner write => cases write <;> simp only [applyInternalArmingPatch] <;> unfold onlyTokenOwner? tokenOwners <;> rw [filterTokens_removeToken_other state.tokens input queried owner different]
+  cases left with | mk _ _ _ _ _ _ input _ owner write => cases write <;> simp only [applyInternalArmingPatch] <;> unfold onlyTokenOwner? tokenOwners <;> rw [filterTokens_removeToken_other state.tokens input queried owner different]
 
 theorem taskActivationRead_set_other (state : RuntimeState) (target : TaskDefinitionId) (query : NodeId) (count : Nat) (different : (⟨target.value⟩ : NodeId) ≠ query) : taskActivationCount (setActivationCount state.activations target count) ⟨query.value⟩ = taskActivationCount state.activations ⟨query.value⟩ := by
   have other : (⟨query.value⟩ : TaskDefinitionId) ≠ target := by intro same; apply different; cases target; cases query; simp_all
@@ -83,13 +111,13 @@ theorem effectActivationRead_set_other (state : RuntimeState) (target query : No
 def internalActivationCount (state : RuntimeState) (kind : InternalWaitKind) (element : NodeId) : Nat := match kind with | .userTask => activationCount state ⟨element.value⟩ | .message => messageActivationCount state element | .timer => timerActivationCount state element | .effect => effectActivationCount state element
 
 theorem armingActivationRead_frame (state : RuntimeState) (left : InternalArmingPatch) (queryKind : InternalWaitKind) (queryElement : NodeId) (different : left.write.kind = queryKind → left.write.elementId ≠ queryElement) : internalActivationCount (applyInternalArmingPatch state left) queryKind queryElement = internalActivationCount state queryKind queryElement := by
-  cases left with | mk _ _ _ _ _ _ _ write => cases write <;> cases queryKind <;> simp_all [internalActivationCount, applyInternalArmingPatch, InternalArmingWrite.kind, InternalArmingWrite.elementId, activationCount, messageActivationCount, timerActivationCount, effectActivationCount, taskActivationRead_set_other, messageActivationRead_set_other, timerActivationRead_set_other, effectActivationRead_set_other]
+  cases left with | mk _ _ _ _ _ _ _ _ _ write => cases write <;> cases queryKind <;> simp_all [internalActivationCount, applyInternalArmingPatch, InternalArmingWrite.kind, InternalArmingWrite.elementId, activationCount, messageActivationCount, timerActivationCount, effectActivationCount, taskActivationRead_set_other, messageActivationRead_set_other, timerActivationRead_set_other, effectActivationRead_set_other]
 
 theorem armingOpenAnchorRead_frame (state : RuntimeState) (left : InternalArmingPatch) (queried : OccurrenceId) (different : left.write.occurrence ≠ queried) : openWaitAnchorAbsent (applyInternalArmingPatch state left) queried = openWaitAnchorAbsent state queried := by
-  cases left with | mk _ _ _ _ _ _ _ write => cases write <;> simp_all [applyInternalArmingPatch, InternalArmingWrite.occurrence, openWaitAnchorAbsent, openWaitAnchors, List.contains_eq_mem, insertUserTaskWait_eq_canonicalInsertBy, insertMessageWait, insertTimerWait, insertEffectWait, mem_canonicalInsertBy]
+  cases left with | mk _ _ _ _ _ _ _ _ _ write => cases write <;> simp_all [applyInternalArmingPatch, InternalArmingWrite.occurrence, openWaitAnchorAbsent, openWaitAnchors, List.contains_eq_mem, insertUserTaskWait_eq_canonicalInsertBy, insertMessageWait, insertTimerWait, insertEffectWait, mem_canonicalInsertBy]
 
 theorem effectAvailableRead_frame (state : RuntimeState) (left : InternalArmingPatch) (queried : EffectWait) (bindings : List VariableBinding) (different : left.write.occurrence ≠ effectWaitOccurrence queried) : (InternalArmingWrite.effect queried bindings).available (applyInternalArmingPatch state left) = (InternalArmingWrite.effect queried bindings).available state := by
-  cases left with | mk _ _ _ _ _ _ _ write =>
+  cases left with | mk _ _ _ _ _ _ _ _ _ write =>
       cases write with
       | userTask _ | message _ | timer _ => rfl
       | effect inserted _ =>
@@ -116,9 +144,14 @@ theorem effectAvailableRead_frame (state : RuntimeState) (left : InternalArmingP
             List.not_any_eq_all_not, insertActivityVariableScope_eq_canonicalInsertBy,
             all_canonicalInsertBy, activityScopeMatches, localDataOwnerMatches]
 
-theorem armingControlRead_frame (state : RuntimeState) (patch : InternalArmingPatch) : (applyInternalArmingPatch state patch).control = state.control := by cases patch with | mk _ _ _ _ _ _ _ write => cases write <;> rfl
-theorem armingTimeRead_frame (state : RuntimeState) (patch : InternalArmingPatch) : (applyInternalArmingPatch state patch).logicalTimeMs = state.logicalTimeMs := by cases patch with | mk _ _ _ _ _ _ _ write => cases write <;> rfl
-theorem armingLiveOwnerRead_frame (state : RuntimeState) (patch : InternalArmingPatch) (owner : ScopeOccurrenceId) : exactLiveOccurrence (applyInternalArmingPatch state patch) owner = exactLiveOccurrence state owner := by cases patch with | mk _ _ _ _ _ _ _ write => cases write <;> rfl
+theorem armingControlRead_frame (state : RuntimeState) (patch : InternalArmingPatch) : (applyInternalArmingPatch state patch).control = state.control := by cases patch with | mk _ _ _ _ _ _ _ _ _ write => cases write <;> rfl
+theorem armingTimeRead_frame (state : RuntimeState) (patch : InternalArmingPatch) : (applyInternalArmingPatch state patch).logicalTimeMs = state.logicalTimeMs := by cases patch with | mk _ _ _ _ _ _ _ _ _ write => cases write <;> rfl
+theorem armingLiveOwnerRead_frame (state : RuntimeState) (patch : InternalArmingPatch) (owner : ScopeOccurrenceId) : exactLiveOccurrence (applyInternalArmingPatch state patch) owner = exactLiveOccurrence state owner := by cases patch with | mk _ _ _ _ _ _ _ _ _ write => cases write <;> rfl
+theorem armingProcessVariablesRead_frame (state : RuntimeState)
+    (patch : InternalArmingPatch) :
+    (applyInternalArmingPatch state patch).variables.process = state.variables.process := by
+  cases patch with
+  | mk _ _ _ _ _ _ _ _ _ write => cases write <;> rfl
 
 theorem noninterfering_prepared_inputs_ne (program : Program) (state : RuntimeState) (leftOperation rightOperation : SemanticOperation) (left right : InternalArmingPatch)
     (leftPrepared : prepareInternalArm? program state leftOperation = some left) (rightPrepared : prepareInternalArm? program state rightOperation = some right)
@@ -140,7 +173,61 @@ theorem prepared_patch_frame (program : Program) (state : RuntimeState) (leftOpe
   have availableFrame : right.write.available (applyInternalArmingPatch state left) = right.write.available state := by
     cases writeEq : right.write <;> simp [InternalArmingWrite.available]
     case effect wait bindings => simpa [InternalArmingWrite.available] using effectAvailableRead_frame state left wait bindings (by rw [writeEq] at occurrenceDistinct; exact occurrenceDistinct)
-  cases rightOperation <;> simp [prepareInternalArm?, internalArmInput?, internalArmOrigin?] at rightPrepared
+  have processVariablesFrame := armingProcessVariablesRead_frame state left
+  clear leftPrepared separated
+  cases rightOperation
+  case awaitCorrelatedPayloadMessage id origin input output message correlationKeyId
+      correlationPropertyId payloadSelector processPropertySelector =>
+    simp [prepareInternalArm?, internalArmInput?, internalArmOrigin?] at rightPrepared
+    obtain ⟨owner, ownerEq, prepared⟩ := Option.bind_eq_some_iff.mp rightPrepared
+    split at prepared
+    · simp at prepared
+    · obtain ⟨inputOrigin, inputOriginEq, prepared⟩ :=
+        Option.bind_eq_some_iff.mp prepared
+      cases controlEq : state.control with
+      | notStarted => simp [controlEq] at prepared
+      | completed _ => simp [controlEq] at prepared
+      | cancelled _ => simp [controlEq] at prepared
+      | running instanceId =>
+        simp only [controlEq] at prepared
+        cases filteredEq : state.variables.process.bindings.filter fun candidate =>
+            candidate.name = processPropertySelector.propertyId with
+        | nil => simp [filteredEq] at prepared
+        | cons binding rest =>
+          cases rest with
+          | cons _ _ => simp [filteredEq] at prepared
+          | nil =>
+            cases valueEq : binding.value with
+            | string value =>
+              by_cases empty : value = ""
+              · simp [filteredEq, valueEq, empty] at prepared
+              · simp [filteredEq, valueEq, empty] at prepared
+                have correlatedAnchorFrame := anchorFrame
+                rw [← prepared.2] at correlatedAnchorFrame
+                simp only [InternalArmingWrite.occurrence] at correlatedAnchorFrame
+                have anchorAfter := correlatedAnchorFrame.trans prepared.1.1.2
+                have correlatedInputDistinct := inputDistinct
+                rw [← prepared.2] at correlatedInputDistinct
+                have ownerFrame := armingOwnerRead_frame state left input
+                  correlatedInputDistinct
+                have correlatedActivationFrame := activationFrame
+                rw [← prepared.2] at correlatedActivationFrame
+                simp only [InternalArmingWrite.kind, InternalArmingWrite.elementId,
+                  internalActivationCount] at correlatedActivationFrame
+                have correlatedAvailableFrame := availableFrame
+                rw [← prepared.2] at correlatedAvailableFrame
+                have availableAfter := correlatedAvailableFrame.trans prepared.1.2
+                simp only [InternalArmingWrite.kind, InternalArmingWrite.elementId,
+                  InternalArmingWrite.occurrence] at activationFrame anchorFrame
+                simp_all [prepareInternalArm?, internalArmInput?, internalArmOrigin?,
+                  internalActivationCount, armingControlRead_frame, armingTimeRead_frame,
+                  armingLiveOwnerRead_frame]
+                simpa only [InternalArmingWrite.occurrence] using anchorAfter
+            | boolean _ => simp [filteredEq, valueEq] at prepared
+            | integer _ => simp [filteredEq, valueEq] at prepared
+            | stringList _ => simp [filteredEq, valueEq] at prepared
+            | null => simp [filteredEq, valueEq] at prepared
+  all_goals simp [prepareInternalArm?, internalArmInput?, internalArmOrigin?] at rightPrepared
   all_goals
     obtain ⟨owner, ownerEq, prepared⟩ := Option.bind_eq_some_iff.mp rightPrepared
     split at prepared

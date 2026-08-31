@@ -91,3 +91,35 @@ test("gives every internal scheduling mode an exact top-level schema value", asy
   assert.ok(Array.isArray(document.required));
   assert.equal(document.required.includes("internalSchedulingMode"), true);
 });
+
+test("keeps correlated Message definition identity standalone and exact", async () => {
+  const [scenarioDocument, programDocument] = await Promise.all([
+    readFile(`${projectRoot}/contracts/schemas/scenario.schema.json`, "utf8"),
+    readFile(`${projectRoot}/contracts/schemas/semantic-process.schema.json`, "utf8"),
+  ]).then((documents) => documents.map((document) => JSON.parse(document) as unknown));
+  assert.ok(isRecord(scenarioDocument));
+  assert.ok(isRecord(programDocument));
+  assert.ok(isRecord(scenarioDocument.$defs));
+  assert.ok(isRecord(programDocument.$defs));
+
+  const address = scenarioDocument.$defs.correlatedMessageAddress;
+  assert.ok(isRecord(address));
+  assert.ok(isRecord(address.properties));
+  assert.deepEqual(address.properties.definition, {
+    $ref: "#/$defs/programIdentity",
+  });
+
+  // Scenario schemas are compiled independently throughout the repository, so this identity must
+  // stay local while remaining byte-for-byte equivalent modulo the historic definition-name case.
+  const normalizeLocalReferenceCase = (value: unknown): unknown => JSON.parse(
+    JSON.stringify(value).replaceAll("#/$defs/nonEmptyString", "#/$defs/nonemptyString"),
+  ) as unknown;
+  assert.deepEqual(
+    normalizeLocalReferenceCase(scenarioDocument.$defs.programIdentity),
+    programDocument.$defs.programIdentity,
+  );
+  assert.deepEqual(
+    normalizeLocalReferenceCase(scenarioDocument.$defs.sourceOverlayIdentity),
+    programDocument.$defs.sourceOverlayIdentity,
+  );
+});

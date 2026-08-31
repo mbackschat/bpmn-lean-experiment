@@ -36,25 +36,29 @@ private def messageWaitId (wait : MessageWait) : OccurrenceId :=
     elementId := ⟨wait.elementId.value⟩
     activation := wait.activation }
 
+private def messageOperationMatchesWait (program : Program) (eventRaces : List EventRace)
+    (wait : MessageWait) (operation : SemanticOperation) : Bool :=
+  operationOwnedBy program operation wait.owner && match operation with
+  | .awaitMessage _ _ _ output message
+  | .awaitPayloadMessage _ _ _ output message _
+  | .awaitCorrelatedPayloadMessage _ _ _ output message _ _ _ _ =>
+      message.elementId = wait.elementId && message.channel = wait.channel &&
+        output = wait.output
+  | .awaitMessageBoundedUserTask _ _ _ _ boundaryMessage =>
+      boundaryMessage.elementId = wait.elementId &&
+        boundaryMessage.channel = wait.channel && boundaryMessage.output = wait.output
+  | .awaitEventRace _ origin _ message _ =>
+      message.elementId = wait.elementId && message.channel = wait.channel &&
+        message.output = wait.output && eventRaces.any fun race =>
+          race.owner = wait.owner && race.id.elementId.value = origin.elementId.value &&
+            race.messageSubscriptionId = messageWaitId wait
+  | _ => false
+
 private def messageWaitValid (program : Program) (state : RuntimeState)
     (wait : MessageWait) : Bool :=
   occurrenceOwnerValid state wait.processInstanceId wait.owner wait.elementId wait.activation &&
-    (program.operations.filter fun operation =>
-      if !operationOwnedBy program operation wait.owner then false
-      else match operation with
-      | .awaitMessage _ _ _ output message =>
-          message.elementId = wait.elementId && message.channel = wait.channel && output = wait.output
-      | .awaitPayloadMessage _ _ _ output message _ =>
-          message.elementId = wait.elementId && message.channel = wait.channel && output = wait.output
-      | .awaitMessageBoundedUserTask _ _ _ _ boundaryMessage =>
-          boundaryMessage.elementId = wait.elementId &&
-            boundaryMessage.channel = wait.channel && boundaryMessage.output = wait.output
-      | .awaitEventRace _ origin _ message _ =>
-          message.elementId = wait.elementId && message.channel = wait.channel &&
-            message.output = wait.output && state.eventRaces.any fun race =>
-              race.owner = wait.owner && race.id.elementId.value = origin.elementId.value &&
-                race.messageSubscriptionId = messageWaitId wait
-      | _ => false).length = 1
+    (program.operations.filter
+      (messageOperationMatchesWait program state.eventRaces wait)).length = 1
 
 private def timerWaitId (wait : TimerWait) : OccurrenceId :=
   { processInstanceId := wait.processInstanceId
@@ -176,6 +180,69 @@ def flowNodeOccurrenceWaitProgramValidity (program : Program) (state : RuntimeSt
     state.messageWaits.all (messageWaitValid program state) &&
     state.timerWaits.all (timerWaitValid program state) &&
     flowNodeOccurrenceEffectProgramValidity program state
+
+private theorem messageOperationCount_eq_one (program : Program) (eventRaces : List EventRace)
+    (wait : MessageWait) (operation : SemanticOperation)
+    (declarers : messageWaitDeclarers program wait.elementId = [operation])
+    (declared : declaredByExactlyOneOwnedOperation program
+      (messageWaitDeclarers program wait.elementId) wait.owner = true)
+    (accepted : messageOperationMatchesWait program eventRaces wait operation = true) :
+    (program.operations.filter
+      (messageOperationMatchesWait program eventRaces wait)).length = 1 := by
+  have owned := operationOwnedBy_of_exact_declaration program operation wait.owner _
+    declarers declared
+  calc
+    _ = (messageWaitDeclarers program wait.elementId).length := by
+      apply congrArg List.length
+      unfold messageWaitDeclarers
+      apply List.filter_congr
+      intro candidate member
+      by_cases candidateEq : candidate = operation
+      · subst candidate
+        have familyMember : operation ∈ messageWaitDeclarers program wait.elementId := by
+          rw [declarers]
+          simp
+        cases operation <;>
+          simp_all [messageOperationMatchesWait, messageWaitDeclarers]
+      · have notDeclarer : candidate ∉ messageWaitDeclarers program wait.elementId := by
+          rw [declarers]
+          simp [candidateEq]
+        cases candidate with
+        | awaitMessage candidateId candidateOrigin candidateInput candidateOutput message =>
+            have different : message.elementId ≠ wait.elementId := by
+              intro same
+              apply notDeclarer
+              simp [messageWaitDeclarers, member, same]
+            simp [messageOperationMatchesWait, different]
+        | awaitPayloadMessage candidateId candidateOrigin candidateInput candidateOutput message
+            directOutput =>
+            have different : message.elementId ≠ wait.elementId := by
+              intro same
+              apply notDeclarer
+              simp [messageWaitDeclarers, member, same]
+            simp [messageOperationMatchesWait, different]
+        | awaitCorrelatedPayloadMessage candidateId candidateOrigin candidateInput
+            candidateOutput message correlationKeyId correlationPropertyId payloadSelector
+            processPropertySelector =>
+            have different : message.elementId ≠ wait.elementId := by
+              intro same
+              apply notDeclarer
+              simp [messageWaitDeclarers, member, same]
+            simp [messageOperationMatchesWait, different]
+        | awaitEventRace candidateId candidateOrigin candidateInput message timer =>
+            have different : message.elementId ≠ wait.elementId := by
+              intro same
+              apply notDeclarer
+              simp [messageWaitDeclarers, member, same]
+            simp [messageOperationMatchesWait, different]
+        | awaitMessageBoundedUserTask candidateId candidateOrigin candidateInput task boundary =>
+            have different : boundary.elementId ≠ wait.elementId := by
+              intro same
+              apply notDeclarer
+              simp [messageWaitDeclarers, member, same]
+            simp [messageOperationMatchesWait, different]
+        | _ => simp [messageOperationMatchesWait]
+    _ = 1 := by simpa using congrArg List.length declarers
 
 /-- Every projected wait stores the same process identity as its live owner. -/
 theorem flowNodeOccurrenceWaitProgramValidity_wait_owner_ids (program : Program) (state : RuntimeState)
@@ -362,69 +429,14 @@ theorem flowNodeOccurrenceWaitProgramValidity_insertOrdinaryMessage (program : P
   have owned := operationOwnedBy_of_exact_declaration program
     (.awaitMessage id origin input wait.output message) wait.owner _ declarers declared
   have operationCount :
-      (program.operations.filter fun operation =>
-        operationOwnedBy program operation wait.owner && match operation with
-        | .awaitMessage _ _ _ output candidate =>
-            candidate.elementId = wait.elementId && candidate.channel = wait.channel &&
-              output = wait.output
-        | .awaitPayloadMessage _ _ _ output candidate _ =>
-            candidate.elementId = wait.elementId && candidate.channel = wait.channel &&
-              output = wait.output
-        | .awaitMessageBoundedUserTask _ _ _ _ boundary =>
-            boundary.elementId = wait.elementId && boundary.channel = wait.channel &&
-              boundary.output = wait.output
-        | .awaitEventRace _ candidateOrigin _ candidate _ =>
-            candidate.elementId = wait.elementId && candidate.channel = wait.channel &&
-              candidate.output = wait.output && state.eventRaces.any fun race =>
-                race.owner = wait.owner &&
-                  race.id.elementId.value = candidateOrigin.elementId.value &&
-                  race.messageSubscriptionId = messageWaitId wait
-        | _ => false).length = 1 := by
-    calc
-      _ = (messageWaitDeclarers program wait.elementId).length := by
-        apply congrArg List.length
-        unfold messageWaitDeclarers
-        apply List.filter_congr
-        intro operation member
-        have only : operation ∈ messageWaitDeclarers program wait.elementId ↔
-            operation = .awaitMessage id origin input wait.output message := by
-          rw [declarers]
-          simp
-        by_cases familyMember : operation ∈ messageWaitDeclarers program wait.elementId
-        · have operationEq := only.mp familyMember
-          subst operation
-          simp [owned, element, channel]
-        · cases operation with
-          | awaitMessage candidateId candidateOrigin candidateInput candidateOutput candidate =>
-              have different : candidate.elementId ≠ wait.elementId := by
-                intro same
-                apply familyMember
-                simp [messageWaitDeclarers, member, same]
-              simp [different]
-          | awaitPayloadMessage candidateId candidateOrigin candidateInput candidateOutput
-              candidate directOutput =>
-              have different : candidate.elementId ≠ wait.elementId := by
-                intro same
-                apply familyMember
-                simp [messageWaitDeclarers, member, same]
-              simp [different]
-          | awaitEventRace candidateId candidateOrigin candidateInput candidateMessage candidateTimer =>
-              have different : candidateMessage.elementId ≠ wait.elementId := by
-                intro same
-                apply familyMember
-                simp [messageWaitDeclarers, member, same]
-              simp [different]
-          | awaitMessageBoundedUserTask candidateId candidateOrigin candidateInput candidateTask boundary =>
-              have different : boundary.elementId ≠ wait.elementId := by
-                intro same
-                apply familyMember
-                simp [messageWaitDeclarers, member, same]
-              simp [different]
-          | _ => simp
-      _ = 1 := by
-        simpa [messageWaitDeclarers] using congrArg List.length declarers
+      (program.operations.filter
+        (messageOperationMatchesWait program state.eventRaces wait)).length = 1 := by
+    apply messageOperationCount_eq_one program state.eventRaces wait
+      (.awaitMessage id origin input wait.output message) declarers declared
+    simp [messageOperationMatchesWait, owned, element, channel]
   have newValid : messageWaitValid program after wait = true := by
-    simp_all [messageWaitValid, occurrenceOwnerValid, flowNodeOccurrenceOwnerLiveUnique, after]
+    simp_all [messageWaitValid, occurrenceOwnerValid,
+      flowNodeOccurrenceOwnerLiveUnique, after]
   have timerFrame (timer : TimerWait) :
       timerWaitValid program after timer = timerWaitValid program state timer := by
     unfold timerWaitValid
@@ -478,65 +490,76 @@ theorem flowNodeOccurrenceWaitProgramValidity_insertPayloadMessage (program : Pr
     (.awaitPayloadMessage id origin input wait.output message directOutput) wait.owner _
       declarers declared
   have operationCount :
-      (program.operations.filter fun operation =>
-        operationOwnedBy program operation wait.owner && match operation with
-        | .awaitMessage _ _ _ output candidate
-        | .awaitPayloadMessage _ _ _ output candidate _ =>
-            candidate.elementId = wait.elementId && candidate.channel = wait.channel &&
-              output = wait.output
-        | .awaitMessageBoundedUserTask _ _ _ _ boundary =>
-            boundary.elementId = wait.elementId && boundary.channel = wait.channel &&
-              boundary.output = wait.output
-        | .awaitEventRace _ candidateOrigin _ candidate _ =>
-            candidate.elementId = wait.elementId && candidate.channel = wait.channel &&
-              candidate.output = wait.output && state.eventRaces.any fun race =>
-                race.owner = wait.owner &&
-                  race.id.elementId.value = candidateOrigin.elementId.value &&
-                  race.messageSubscriptionId = messageWaitId wait
-        | _ => false).length = 1 := by
-    calc
-      _ = (messageWaitDeclarers program wait.elementId).length := by
-        apply congrArg List.length
-        unfold messageWaitDeclarers
-        apply List.filter_congr
-        intro operation member
-        have only : operation ∈ messageWaitDeclarers program wait.elementId ↔
-            operation = .awaitPayloadMessage id origin input wait.output message directOutput := by
-          rw [declarers]
-          simp
-        by_cases familyMember : operation ∈ messageWaitDeclarers program wait.elementId
-        · have operationEq := only.mp familyMember
-          subst operation
-          simp [owned, element, channel]
-        · cases operation with
-          | awaitMessage candidateId candidateOrigin candidateInput candidateOutput candidate =>
-              have different : candidate.elementId ≠ wait.elementId := by
-                intro same
-                apply familyMember
-                simp [messageWaitDeclarers, member, same]
-              simp [different]
-          | awaitPayloadMessage candidateId candidateOrigin candidateInput candidateOutput
-              candidate candidateOutputDefinition =>
-              have different : candidate.elementId ≠ wait.elementId := by
-                intro same
-                apply familyMember
-                simp [messageWaitDeclarers, member, same]
-              simp [different]
-          | awaitEventRace candidateId candidateOrigin candidateInput candidateMessage candidateTimer =>
-              have different : candidateMessage.elementId ≠ wait.elementId := by
-                intro same
-                apply familyMember
-                simp [messageWaitDeclarers, member, same]
-              simp [different]
-          | awaitMessageBoundedUserTask candidateId candidateOrigin candidateInput candidateTask boundary =>
-              have different : boundary.elementId ≠ wait.elementId := by
-                intro same
-                apply familyMember
-                simp [messageWaitDeclarers, member, same]
-              simp [different]
-          | _ => simp
-      _ = 1 := by
-        simpa [messageWaitDeclarers] using congrArg List.length declarers
+      (program.operations.filter
+        (messageOperationMatchesWait program state.eventRaces wait)).length = 1 := by
+    apply messageOperationCount_eq_one program state.eventRaces wait
+      (.awaitPayloadMessage id origin input wait.output message directOutput) declarers declared
+    simp [messageOperationMatchesWait, owned, element, channel]
+  have newValid : messageWaitValid program after wait = true := by
+    simp_all [messageWaitValid, occurrenceOwnerValid,
+      flowNodeOccurrenceOwnerLiveUnique, after]
+  have timerFrame (timer : TimerWait) :
+      timerWaitValid program after timer = timerWaitValid program state timer := by
+    unfold timerWaitValid
+    simp only [occurrenceOwnerValid, flowNodeOccurrenceOwnerLiveUnique, after]
+    congr 4
+  simp only [flowNodeOccurrenceWaitProgramValidity, Bool.and_eq_true] at prior ⊢
+  obtain ⟨h2, effects⟩ := prior
+  obtain ⟨h1, timers⟩ := h2
+  obtain ⟨users, messages⟩ := h1
+  have messagesAfter : after.messageWaits.all (messageWaitValid program after) = true := by
+    rw [show after.messageWaits = insertMessageWait wait state.messageWaits by rfl,
+      show insertMessageWait wait state.messageWaits =
+        canonicalInsertBy messageWaitBefore wait state.messageWaits by rfl,
+      all_canonicalInsertBy]
+    simp only [Bool.and_eq_true]
+    refine ⟨newValid, ?_⟩
+    simpa [messageWaitValid, occurrenceOwnerValid, flowNodeOccurrenceOwnerLiveUnique,
+      after] using messages
+  have timersAfter : after.timerWaits.all (timerWaitValid program after) = true := by
+    simp only [List.all_eq_true] at timers ⊢
+    intro timer member
+    rw [timerFrame]
+    exact timers timer member
+  exact ⟨⟨⟨by simpa [userTaskWaitValid, occurrenceOwnerValid,
+      flowNodeOccurrenceOwnerLiveUnique, after] using users, messagesAfter⟩,
+    timersAfter⟩, by
+      rw [flowNodeOccurrenceEffectProgramValidity_frame program state after]
+      · exact effects
+      all_goals rfl⟩
+
+theorem flowNodeOccurrenceWaitProgramValidity_insertCorrelatedPayloadMessage
+    (program : Program) (state : RuntimeState) (id : OperationId)
+    (origin : BpmnElementOrigin) (input : ControlPlaceId) (message : MessageDefinition)
+    (correlationKeyId correlationPropertyId : String)
+    (payloadSelector : CorrelationMessagePath)
+    (processPropertySelector : CorrelationProcessPropertyPath) (wait : MessageWait)
+    (prior : flowNodeOccurrenceWaitProgramValidity program state = true)
+    (declarers : messageWaitDeclarers program wait.elementId =
+      [.awaitCorrelatedPayloadMessage id origin input wait.output message correlationKeyId
+        correlationPropertyId payloadSelector processPropertySelector])
+    (declared : declaredByExactlyOneOwnedOperation program
+      (messageWaitDeclarers program wait.elementId) wait.owner = true)
+    (live : flowNodeOccurrenceOwnerLiveUnique state wait.owner = true)
+    (processId : !wait.processInstanceId.value.isEmpty = true)
+    (elementId : !wait.elementId.value.isEmpty = true) (positive : wait.activation > 0)
+    (processOwner : wait.processInstanceId = wait.owner.processInstanceId)
+    (element : message.elementId = wait.elementId) (channel : message.channel = wait.channel) :
+    flowNodeOccurrenceWaitProgramValidity program
+      { state with messageWaits := insertMessageWait wait state.messageWaits } = true := by
+  let after : RuntimeState :=
+    { state with messageWaits := insertMessageWait wait state.messageWaits }
+  change flowNodeOccurrenceWaitProgramValidity program after = true
+  let operation : SemanticOperation :=
+    .awaitCorrelatedPayloadMessage id origin input wait.output message
+    correlationKeyId correlationPropertyId payloadSelector processPropertySelector
+  have owned := operationOwnedBy_of_exact_declaration program operation wait.owner _
+    declarers declared
+  have operationCount :
+      (program.operations.filter
+        (messageOperationMatchesWait program state.eventRaces wait)).length = 1 := by
+    apply messageOperationCount_eq_one program state.eventRaces wait operation declarers declared
+    simp [operation, messageOperationMatchesWait, owned, element, channel]
   have newValid : messageWaitValid program after wait = true := by
     simp_all [messageWaitValid, occurrenceOwnerValid, flowNodeOccurrenceOwnerLiveUnique, after]
   have timerFrame (timer : TimerWait) :

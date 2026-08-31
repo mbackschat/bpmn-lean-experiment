@@ -86,6 +86,9 @@
             "$ref": "#/$defs/deliverPayloadMessage"
           },
           {
+            "$ref": "#/$defs/deliverCorrelatedPayloadMessage"
+          },
+          {
             "$ref": "#/$defs/fireTimer"
           },
           {
@@ -294,6 +297,42 @@
           "$ref": "#/$defs/nonEmptyString"
         },
         "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "programIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "compiler",
+        "semanticProfile",
+        "sourceOverlay",
+        "sourceId",
+        "sourceSha256"
+      ],
+      "properties": {
+        "compiler": {
+          "const": "bpmn-source-semantic-process"
+        },
+        "semanticProfile": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "sourceOverlay": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/sourceOverlayIdentity"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "sourceId": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "sourceSha256": {
           "type": "string",
           "pattern": "^[0-9a-f]{64}$"
         }
@@ -569,6 +608,30 @@
         }
       ]
     },
+    "correlatedMessageAddress": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "definition",
+        "processId",
+        "channel",
+        "correlationKeyId"
+      ],
+      "properties": {
+        "definition": {
+          "$ref": "#/$defs/programIdentity"
+        },
+        "processId": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "channel": {
+          "$ref": "#/$defs/operationMessageChannel"
+        },
+        "correlationKeyId": {
+          "$ref": "#/$defs/nonEmptyString"
+        }
+      }
+    },
     "completeUserTaskInstance": {
       "type": "object",
       "additionalProperties": false,
@@ -645,6 +708,59 @@
         },
         "payload": {
           "$ref": "#/$defs/variableValue"
+        }
+      }
+    },
+    "deliverCorrelatedPayloadMessage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "commandId",
+        "address",
+        "ingressOrdinal",
+        "subscriptionId",
+        "correlationPropertyId",
+        "processPropertyId",
+        "payload"
+      ],
+      "properties": {
+        "kind": {
+          "const": "deliverCorrelatedPayloadMessage"
+        },
+        "commandId": {
+          "$ref": "#/$defs/commandId"
+        },
+        "address": {
+          "$ref": "#/$defs/correlatedMessageAddress"
+        },
+        "ingressOrdinal": {
+          "$ref": "#/$defs/positiveSafeInteger"
+        },
+        "subscriptionId": {
+          "$ref": "#/$defs/messageSubscriptionId"
+        },
+        "correlationPropertyId": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "processPropertyId": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "payload": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "value"
+          ],
+          "properties": {
+            "kind": {
+              "const": "string"
+            },
+            "value": {
+              "$ref": "#/$defs/nonEmptyString"
+            }
+          }
         }
       }
     },
@@ -1118,6 +1234,22 @@
         }
       }
     },
+    "enabledPublishCorrelatedPayloadMessage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "address"
+      ],
+      "properties": {
+        "kind": {
+          "const": "publishCorrelatedPayloadMessage"
+        },
+        "address": {
+          "$ref": "#/$defs/correlatedMessageAddress"
+        }
+      }
+    },
     "enabledRetryIncident": {
       "type": "object",
       "additionalProperties": false,
@@ -1453,6 +1585,9 @@
               },
               {
                 "$ref": "#/$defs/enabledDeliverPayloadMessage"
+              },
+              {
+                "$ref": "#/$defs/enabledPublishCorrelatedPayloadMessage"
               },
               {
                 "$ref": "#/$defs/enabledRetryIncident"

@@ -1,4 +1,4 @@
-import BpmnSemantics.SemanticProcess.JsonSupport
+import BpmnSemantics.SemanticProcessJson.Elements
 
 /-! # Scenario JSON admission
 
@@ -81,6 +81,28 @@ private def decodeStimulus (json : Json) : Except String Stimulus := do
           (← decodeOccurrenceId (← field json "subscriptionId"))
           (← decodeMessageChannel (← field json "channel"))
           (← decodeVariableValue (← field json "payload")))
+  | "deliverCorrelatedPayloadMessage" =>
+      requireObjectShape json
+        ["address", "commandId", "correlationPropertyId", "ingressOrdinal",
+          "kind", "payload", "processPropertyId", "subscriptionId"]
+      let ingressOrdinal ← decodeSafeNat (← field json "ingressOrdinal")
+      if ingressOrdinal = 0 then
+        throw "correlated Message ingress ordinal must be positive"
+      let payload ← field json "payload"
+      requireObjectShape payload ["kind", "value"]
+      expectStringField payload "kind" "string"
+      pure
+        (.deliverCorrelatedPayloadMessage
+          { commandId := ← decodeSemanticIdentityField json "commandId"
+            address := ← decodeCorrelatedMessageAddress (← field json "address")
+            ingressOrdinal
+            subscriptionId := ← decodeOccurrenceId (← field json "subscriptionId")
+            correlationPropertyId :=
+              ← decodeNonemptyStringField json "correlationPropertyId"
+            processPropertyId :=
+              ← decodeNonemptyStringField json "processPropertyId"
+            payload :=
+              { value := ← decodeNonemptyStringField payload "value" } })
   | "fireTimer" =>
       requireObjectShape json
         ["commandId", "kind", "logicalTimeMs", "timerId"]

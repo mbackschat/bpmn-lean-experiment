@@ -481,6 +481,22 @@ This table classifies every current top-level and recursively reachable field of
 | `variables[].value.value` | `engine-observed` | Exact host String or Boolean when the value is non-null |
 | `enabledInteractions` | `adapter-derived` | One project command interaction per retained live User Task, Receive Task Message subscription, or exact configured effect incident; the cancellation successor publishes Retry before Cancel from the same validated job/incident partner |
 | `enabledInteractions[].kind` | `adapter-decided` | Project command vocabulary selects task completion, Message delivery, incident retry, or the approved successor cancellation from the retained host collection |
+| `enabledInteractions[].address` | `not-claimed` | Correlated publication is outside the selected CIB compatibility surface; the standards-only semantic account owns this complete address |
+| `enabledInteractions[].address.definition` | `not-claimed` | Project-owned immutable semantic-definition identity, not a CIB runtime fact |
+| `enabledInteractions[].address.definition.compiler` | `not-claimed` | Project-owned compiler identity |
+| `enabledInteractions[].address.definition.semanticProfile` | `not-claimed` | Project-owned semantic-profile identity |
+| `enabledInteractions[].address.definition.sourceOverlay` | `not-claimed` | Project-owned optional source-overlay identity |
+| `enabledInteractions[].address.definition.sourceOverlay.id` | `not-claimed` | Project-owned source-overlay identifier when present |
+| `enabledInteractions[].address.definition.sourceOverlay.sha256` | `not-claimed` | Project-owned exact source-overlay digest when present |
+| `enabledInteractions[].address.definition.sourceId` | `not-claimed` | Project-owned admitted source identity |
+| `enabledInteractions[].address.definition.sourceSha256` | `not-claimed` | Project-owned exact BPMN source digest |
+| `enabledInteractions[].address.processId` | `not-claimed` | Project-owned BPMN Process identity |
+| `enabledInteractions[].address.channel` | `not-claimed` | Standards-only operation-bound Message channel, outside the selected CIB compatibility surface |
+| `enabledInteractions[].address.channel.kind` | `not-claimed` | Standards-only operation-Message discriminant |
+| `enabledInteractions[].address.channel.interfaceId` | `not-claimed` | BPMN Interface identity from the admitted definition |
+| `enabledInteractions[].address.channel.interfaceOperationId` | `not-claimed` | BPMN Interface Operation identity from the admitted definition |
+| `enabledInteractions[].address.channel.messageId` | `not-claimed` | BPMN Message identity from the admitted definition |
+| `enabledInteractions[].address.correlationKeyId` | `not-claimed` | BPMN CorrelationKey identity from the admitted definition |
 | `enabledInteractions[].processInstanceId` | `not-claimed` | Scenario-supplied semantic root identity for the approved cancellation interaction, never a generated CIB Process-instance ID |
 | `enabledInteractions[].subscriptionId` | `adapter-derived` | Reuses the projected Message subscription occurrence |
 | `enabledInteractions[].subscriptionId.processInstanceId` | `not-claimed` | Scenario-supplied semantic identity |

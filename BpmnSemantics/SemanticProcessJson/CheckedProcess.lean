@@ -282,6 +282,19 @@ private def decodeCheckedNode (json : Json) : Except String CheckedNode := do
           ⟨← stringField json "id"⟩
           (← decodeOperationMessageChannel (← field json "channel"))
           (← decodeDirectCatchEventPayloadOutput (← field json "directOutput")))
+  | "correlatedPayloadMessageCatchEvent" =>
+      requireObjectShape json
+        ["channel", "correlationKeyId", "correlationPropertyId", "id", "kind",
+          "payloadSelector", "processPropertySelector"]
+      pure
+        (.correlatedPayloadMessageCatchEvent
+          ⟨← decodeNonemptyStringField json "id"⟩
+          (← decodeOperationMessageChannel (← field json "channel"))
+          (← decodeNonemptyStringField json "correlationKeyId")
+          (← decodeNonemptyStringField json "correlationPropertyId")
+          (← decodeCorrelationMessagePath (← field json "payloadSelector"))
+          (← decodeCorrelationProcessPropertyPath
+            (← field json "processPropertySelector")))
   | "receiveTask" =>
       requireObjectShape json ["channel", "id", "kind"]
       pure

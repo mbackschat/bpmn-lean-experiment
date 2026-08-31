@@ -12,20 +12,6 @@ open BpmnSemantics
 open BpmnSemantics.SemanticProcess
 open Lean
 
-private def decodeProgramIdentity (json : Json) :
-    Except String ProgramIdentity := do
-  requireObjectShape json
-    ["compiler", "semanticProfile", "sourceId", "sourceOverlay",
-      "sourceSha256"]
-  expectStringField json "compiler" "bpmn-source-semantic-process"
-  pure
-    { compiler := .bpmnSourceSemanticProcess
-      semanticProfile := ⟨← stringField json "semanticProfile"⟩
-      sourceId := ⟨← stringField json "sourceId"⟩
-      sourceOverlay :=
-        ← decodeSourceOverlayIdentity (← field json "sourceOverlay")
-      sourceSha256 := ← stringField json "sourceSha256" }
-
 private def decodeInternalSchedulingMode (json : Json) :
     Except String InternalSchedulingMode := do
   match ← json.getStr? with
@@ -525,6 +511,23 @@ private def decodeOperation (json : Json) :
           ⟨← stringField json "output"⟩
           (← decodePayloadMessageDefinition (← field json "message"))
           (← decodeDirectCatchEventPayloadOutput (← field json "directOutput")))
+  | "awaitCorrelatedPayloadMessage" =>
+      requireObjectShape json
+        ["correlationKeyId", "correlationPropertyId", "id", "input", "kind",
+          "message", "origin", "output", "payloadSelector",
+          "processPropertySelector"]
+      pure
+        (.awaitCorrelatedPayloadMessage
+          id
+          origin
+          ⟨← decodeNonemptyStringField json "input"⟩
+          ⟨← decodeNonemptyStringField json "output"⟩
+          (← decodePayloadMessageDefinition (← field json "message"))
+          (← decodeNonemptyStringField json "correlationKeyId")
+          (← decodeNonemptyStringField json "correlationPropertyId")
+          (← decodeCorrelationMessagePath (← field json "payloadSelector"))
+          (← decodeCorrelationProcessPropertyPath
+            (← field json "processPropertySelector")))
   | "awaitEventRace" =>
       requireObjectShape json
         ["id", "input", "kind", "message", "origin", "timer"]

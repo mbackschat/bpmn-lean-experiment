@@ -125,6 +125,7 @@ export async function deliverStimuliInOrder(
       case StimulusKind.ReportEffectFailure:
       case StimulusKind.RetryIncident:
       case StimulusKind.CancelIncidentProcess:
+      case StimulusKind.DeliverCorrelatedPayloadMessage:
         throw new TypeError(
           `Stimulus-order delivery does not support ${stimulus.kind}`,
         );

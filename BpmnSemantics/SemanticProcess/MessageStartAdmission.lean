@@ -46,6 +46,7 @@ def startStimulusMatchesProgram (program : Program) : Stimulus → Bool
   | .triggerTimerStart _ processId _ startEventId =>
       timerStartTargetMatchesProgram program processId startEventId
   | .completeUserTaskInstance .. | .deliverMessage .. | .deliverPayloadMessage ..
+  | .deliverCorrelatedPayloadMessage ..
   | .fireTimer ..
   | .completeEffect .. | .reportEffectFailure .. | .retryIncident ..
   | .cancelIncidentProcess .. => false

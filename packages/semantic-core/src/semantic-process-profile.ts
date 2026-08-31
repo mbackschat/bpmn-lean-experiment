@@ -24,6 +24,7 @@ import {
 } from "./user-task-metadata.js";
 
 export {
+  MESSAGE_KEY_CORRELATION_CHECKPOINT_PROFILE_ID,
   SERVICE_TASK_INCIDENT_CHECKPOINT_PROFILE_ID,
   SemanticProfileId,
 } from "./semantic-profile-catalog.js";

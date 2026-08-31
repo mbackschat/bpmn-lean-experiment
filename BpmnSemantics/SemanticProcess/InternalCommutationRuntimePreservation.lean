@@ -138,31 +138,41 @@ theorem prepared_userTask_excludes_multiInstance (program : Program) (state : Ru
       | .awaitParallelMultiInstanceUserTask _ _ _ taskId _ _ _ _ _ _ =>
           taskId ≠ inserted.task.id
       | _ => True := by
-  cases operation <;> simp_all [prepareInternalArm?, internalArmInput?, internalArmOrigin?]
-  all_goals
-    obtain ⟨owner, ownerEq, prepared⟩ := Option.bind_eq_some_iff.mp prepared
-    split at prepared <;> try simp at prepared
-  all_goals
-    obtain ⟨inputOrigin, inputOriginEq, prepared⟩ := Option.bind_eq_some_iff.mp prepared
-    cases controlEq : state.control <;> simp_all
-  all_goals
-    obtain ⟨unique, absent, available, patchEq⟩ := prepared
-  case awaitUserTask.isFalse.running =>
-    rename_i id origin input output task instanceId selection
-    cases writeEq
-    have declarer : userTaskWaitDeclarers program task.id =
-        [.awaitUserTask id origin input output task] := by
-      simpa [uniqueFamilyDeclarer?, InternalArmingWrite.kind,
-        InternalArmingWrite.elementId] using unique.1.1
-    have excludesSequential :=
-      sole_user_task_declarer_excludes_smi program id origin input output task declarer
-    have excludesParallel :=
-      sole_user_task_declarer_excludes_parallel program id origin input output task declarer
-    intro candidate member
-    cases candidate <;> try trivial
-    · exact excludesSequential _ member
-    · exact excludesParallel _ member
-  all_goals simp_all
+  have facts := prepared_arm_selection_unique program state operation patch prepared
+  have patchOperationEq := prepared_operation_eq program state operation patch prepared
+  rw [writeEq] at facts
+  have declarer : userTaskWaitDeclarers program inserted.task.id = [operation] := by
+    simpa [uniqueFamilyDeclarer?, InternalArmingWrite.kind,
+      InternalArmingWrite.elementId, patchOperationEq] using facts.2.1
+  intro candidate member
+  cases candidate <;> try trivial
+  · rename_i id origin input task data output boundaryTimer limits
+    intro same
+    have candidateMember : SemanticOperation.awaitSequentialMultiInstanceUserTask id origin input
+        task data output boundaryTimer limits ∈ userTaskWaitDeclarers program inserted.task.id := by
+      simp [userTaskWaitDeclarers, member, same]
+    rw [declarer] at candidateMember
+    have candidateEq : SemanticOperation.awaitSequentialMultiInstanceUserTask id origin input task
+        data output boundaryTimer limits = operation := by simpa using candidateMember
+    have operationEq : operation = .awaitSequentialMultiInstanceUserTask id origin input task data
+        output boundaryTimer limits := candidateEq.symm
+    rw [operationEq] at prepared
+    simp [prepareInternalArm?, internalArmInput?] at prepared
+  · rename_i id origin input taskId taskName data output boundaryTimer completion limits
+    intro same
+    subst taskId
+    have candidateMember : SemanticOperation.awaitParallelMultiInstanceUserTask id origin input
+        inserted.task.id taskName data output boundaryTimer completion limits ∈
+          userTaskWaitDeclarers program inserted.task.id := by
+      simp [userTaskWaitDeclarers, member]
+    rw [declarer] at candidateMember
+    have candidateEq : SemanticOperation.awaitParallelMultiInstanceUserTask id origin input
+        inserted.task.id taskName data output boundaryTimer completion limits = operation := by
+      simpa using candidateMember
+    have operationEq : operation = .awaitParallelMultiInstanceUserTask id origin input
+        inserted.task.id taskName data output boundaryTimer completion limits := candidateEq.symm
+    rw [operationEq] at prepared
+    simp [prepareInternalArm?, internalArmInput?] at prepared
 
 theorem activityRecords_insertFreshTimerWait (state : RuntimeState) (inserted : TimerWait)
     (fresh : ∀ old ∈ state.timerWaits,
@@ -316,36 +326,17 @@ theorem prepared_arm_userTask_noninterference (program : Program)
   | message _ | timer _ | effect _ _ => simp
   | userTask inserted =>
     simp only [writeEq] at next ⊢
-    cases operation
-    case awaitUserTask id origin input output task =>
-      simp_all [prepareInternalArm?, internalArmInput?, internalArmOrigin?]
-      obtain ⟨owner, ownerEq, prepared⟩ := Option.bind_eq_some_iff.mp prepared
-      split at prepared
-      · simp at prepared
-      · obtain ⟨inputOrigin, inputOriginEq, prepared⟩ :=
-          Option.bind_eq_some_iff.mp prepared
-        cases controlEq : state.control <;> simp_all
-        rcases prepared with ⟨unique, absent, available, rfl⟩
-        cases writeEq
-        refine ⟨activityRecords_insertUserTaskWait state _ next bounds records, ?_⟩
-        have declarer : userTaskWaitDeclarers program task.id =
-            [.awaitUserTask id origin input output task] := by
-          simpa [uniqueFamilyDeclarer?, InternalArmingWrite.kind,
-            InternalArmingWrite.elementId] using unique.1.1
-        exact smiBindings_insertUserTaskWait_frame program state _
-          (sole_user_task_declarer_excludes_smi program id origin input output task declarer)
-          bindings
-    all_goals
-      simp_all [prepareInternalArm?, internalArmInput?, internalArmOrigin?] <;> try
-        obtain ⟨owner, ownerEq, prepared⟩ := Option.bind_eq_some_iff.mp prepared
-        split at prepared
-        · simp at prepared
-        · obtain ⟨inputOrigin, inputOriginEq, prepared⟩ :=
-            Option.bind_eq_some_iff.mp prepared
-          cases controlEq : state.control <;> simp_all
-          all_goals
-            rcases prepared with ⟨unique, absent, available, rfl⟩
-            cases writeEq
+    have disjoint : ∀ candidate ∈ program.operations,
+        match candidate with
+        | .awaitSequentialMultiInstanceUserTask _ _ _ task _ _ _ _ =>
+            task.id ≠ inserted.task.id
+        | _ => True := by
+      intro candidate member
+      have excludes := prepared_userTask_excludes_multiInstance program state operation patch
+        inserted prepared writeEq candidate member
+      cases candidate <;> try trivial
+    exact ⟨activityRecords_insertUserTaskWait state inserted next bounds records,
+      smiBindings_insertUserTaskWait_frame program state inserted disjoint bindings⟩
 
 theorem prepared_arm_preserves_parallelBindings (program : Program) (state : RuntimeState)
     (operation : SemanticOperation) (patch : InternalArmingPatch)
@@ -699,13 +690,13 @@ theorem prepared_arm_preserves_runtime (program : Program) (state : RuntimeState
   have liveRunning := prepared_arm_live_running program state operation patch prepared
   have writeOwner := (prepared_arm_selection_unique program state operation patch prepared).2.2
   have ownersAfter : waitOwnersLive (applyInternalArmingPatch state patch) = true := by
-    cases patch with | mk _ _ _ _ _ _ _ write =>
+    cases patch with | mk _ _ _ _ _ _ _ _ _ write =>
       cases write <;> simp_all [applyInternalArmingPatch, waitOwnersLive,
         exactLiveOccurrence, all_insertUserTaskWait, insertMessageWait, insertTimerWait,
         insertEffectWait, all_canonicalInsertBy,
         InternalArmingWrite.owner]
   have identitiesAfter : waitIdentitiesUnique (applyInternalArmingPatch state patch) = true := by
-    cases patch with | mk _ _ _ _ _ _ _ write =>
+    cases patch with | mk _ _ _ _ _ _ _ _ _ write =>
       cases write with
       | userTask inserted =>
           simp only [applyInternalArmingPatch, waitIdentitiesUnique,
@@ -738,7 +729,7 @@ theorem prepared_arm_preserves_runtime (program : Program) (state : RuntimeState
               inserted state.effectWaits effects keyFresh (by simp [effectWaitKeyMatches])⟩
   have declarationsAfter : waitDeclarationsValid program expectedInstanceId
       (applyInternalArmingPatch state patch) = true := by
-    cases patch with | mk _ _ _ _ _ _ _ write =>
+    cases patch with | mk _ _ _ _ _ _ _ _ _ write =>
       cases write <;> simp_all [applyInternalArmingPatch, waitDeclarationsValid,
         all_insertUserTaskWait, insertMessageWait, insertTimerWait, insertEffectWait,
         all_canonicalInsertBy]
@@ -748,7 +739,7 @@ theorem prepared_arm_preserves_runtime (program : Program) (state : RuntimeState
         controllersOwnLiveActivity (applyInternalArmingPatch state patch) = true ∧
         controllerIdentitiesUnique (applyInternalArmingPatch state patch) = true ∧
         controllersNotExhausted (applyInternalArmingPatch state patch) = true := by
-    cases patch with | mk _ _ _ _ _ _ _ write =>
+    cases patch with | mk _ _ _ _ _ _ _ _ _ write =>
       cases write <;> exact ⟨hidden, activityIdentities, controllers,
         controllerIdentities, exhausted⟩
   obtain ⟨runningInstanceId, running⟩ := liveRunning.2
@@ -757,14 +748,14 @@ theorem prepared_arm_preserves_runtime (program : Program) (state : RuntimeState
        | .notStarted => notStartedStateEmpty (applyInternalArmingPatch state patch)
        | _ => true) = true := by
     have controlFrame : (applyInternalArmingPatch state patch).control = state.control := by
-      cases patch with | mk _ _ _ _ _ _ _ write => cases write <;> rfl
+      cases patch with | mk _ _ _ _ _ _ _ _ _ write => cases write <;> rfl
     rw [controlFrame, running]
   have claimsAfter : activityBodyClaimsUnique
       (applyInternalArmingPatch state patch).activityOccurrences = true := by
     have recordsFrame :
         (applyInternalArmingPatch state patch).activityOccurrences =
           state.activityOccurrences := by
-      cases patch with | mk _ _ _ _ _ _ _ write => cases write <;> rfl
+      cases patch with | mk _ _ _ _ _ _ _ _ _ write => cases write <;> rfl
     rw [recordsFrame]
     exact claims
   have after2 := And.intro positionAfter eventAfter

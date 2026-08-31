@@ -1,6 +1,7 @@
 import BpmnSemantics.SemanticProcess.ValueDomain
 import BpmnSemantics.SemanticProcess.StructuredHumanWorkAdmission
 import BpmnSemantics.SemanticProcess.ParallelMultiInstanceProfileAdmission
+import BpmnSemantics.SemanticProcess.MessageKeyCorrelationProfileAdmission
 
 /-! # Semantic profile shape capabilities
 
@@ -30,6 +31,7 @@ private structure ShapeCardinalities where
   dataOutputUserTasks : Nat := 0
   messages : Nat := 0
   payloadMessages : Nat := 0
+  correlatedPayloadMessages : Nat := 0
   receiveTasks : Nat := 0
   timers : Nat := 0
   configuredTasks : Nat := 0
@@ -96,6 +98,8 @@ private def nodeCardinalities (nodes : List CheckedNode) :
         { counts with messages := counts.messages + 1 }
     | .payloadMessageCatchEvent .. =>
         { counts with payloadMessages := counts.payloadMessages + 1 }
+    | .correlatedPayloadMessageCatchEvent .. =>
+        { counts with correlatedPayloadMessages := counts.correlatedPayloadMessages + 1 }
     | .receiveTask .. =>
         { counts with receiveTasks := counts.receiveTasks + 1 }
     | .configuredTask .. =>
@@ -148,6 +152,8 @@ private def addOperationCardinality (counts : ShapeCardinalities)
     | .awaitMessage .. => { counts with messages := counts.messages + 1 }
     | .awaitPayloadMessage .. =>
         { counts with payloadMessages := counts.payloadMessages + 1 }
+    | .awaitCorrelatedPayloadMessage .. =>
+        { counts with correlatedPayloadMessages := counts.correlatedPayloadMessages + 1 }
     | .awaitEventRace .. => { counts with eventRaces := counts.eventRaces + 1 }
     | .awaitBoundedUserTask .. =>
         { counts with boundedUserTasks := counts.boundedUserTasks + 1 }
@@ -287,6 +293,10 @@ private def checkedShape? (profile : String) : Option (Nat × ShapeCardinalities
   else if profile = messagePayloadCatchProfileId.value then
     some (1,
       { starts := 1, userTasks := 1, payloadMessages := 1, ends := 1 })
+  else if profile = messageKeyCorrelationProfileId.value then
+    some (1,
+      { starts := 1, userTasks := 1, payloadMessages := 1,
+        correlatedPayloadMessages := 1, ends := 1 })
   else if profile =
       "cibseven-2.2.0-message-addressed-receive-task-draft" then
     some (1, { starts := 1, receiveTasks := 1, ends := 1 })
@@ -396,6 +406,10 @@ private def programShape? (profile : String) : Option (Nat × ShapeCardinalities
   else if profile = messagePayloadCatchProfileId.value then
     some (1, withScopeCompletions 1
       { initiates := 1, userTasks := 1, payloadMessages := 1, ends := 1 })
+  else if profile = messageKeyCorrelationProfileId.value then
+    some (1, withScopeCompletions 1
+      { initiates := 1, userTasks := 1, payloadMessages := 1,
+        correlatedPayloadMessages := 1, ends := 1 })
   else if profile =
       "cibseven-2.2.0-message-addressed-receive-task-draft" then
     some (1, withScopeCompletions 1
@@ -694,6 +708,7 @@ def checkedProfileCapabilitiesValid (source : CheckedProcess) : Bool :=
           checkedActivityBoundaryMessageTopologyValid source &&
           structuredHumanWorkCheckedTopologyValid source &&
           configuredTaskCheckedPayloadValid source
+          && messageKeyCorrelationCheckedPayloadValid source
     | none => false
 
 private def operationPayloadCapabilitiesValid (profile : String)
@@ -771,6 +786,7 @@ def programProfileCapabilitiesValid (program : Program) : Bool :=
           structuredHumanWorkProgramTopologyValid program &&
           operationPayloadCapabilitiesValid
             program.identity.semanticProfile.value program.operations
+          && messageKeyCorrelationProgramPayloadValid program
     | none => false
 
 /-- The Parallel Multi-Instance profile's exact Program shape contains one definition scope.
@@ -786,7 +802,7 @@ theorem parallelMultiInstanceProfile_has_one_definition_scope (program : Program
   rw [profile] at shape
   simp [programShape?, parallelMultiInstanceUserTaskProfileId,
     sequentialMultiInstanceUserTaskProfileId] at shape
-  exact shape.1.1.1.1.1.1
+  exact shape.1.1.1.1.1.1.1
 
 /-- The Parallel Multi-Instance profile admits no Event-Based Gateway race operation.
 
@@ -805,7 +821,7 @@ theorem parallelMultiInstanceProfile_has_no_event_race_operation (program : Prog
   simp [programShape?, parallelMultiInstanceUserTaskProfileId,
     sequentialMultiInstanceUserTaskProfileId] at shape
   have zero : (program.operations.filter isEventRaceOperation).length = 0 := by
-    have count := congrArg ShapeCardinalities.eventRaces shape.1.1.1.1.1.2
+    have count := congrArg ShapeCardinalities.eventRaces shape.1.1.1.1.1.1.2
     simpa [operationCardinalities_eventRaces, withScopeCompletions] using count
   have empty : program.operations.filter isEventRaceOperation = [] :=
     List.eq_nil_of_length_eq_zero zero

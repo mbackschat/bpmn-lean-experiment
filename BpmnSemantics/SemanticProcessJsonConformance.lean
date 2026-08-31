@@ -83,6 +83,26 @@ private def payloadSubscription : MessageSubscriptionId :=
     elementId := ⟨"catch"⟩
     activation := 1 }
 
+private def correlationPayloadSelector : CorrelationMessagePath :=
+  { language := correlationScalarPathLanguage, body := "payload" }
+
+private def correlationProcessSelector : CorrelationProcessPropertyPath :=
+  { language := correlationScalarPathLanguage
+    body := "property:processProperty"
+    propertyId := "processProperty" }
+
+private def correlationDefinition : ProgramIdentity :=
+  { compiler := .bpmnSourceSemanticProcess
+    semanticProfile := ⟨"profile"⟩
+    sourceId := ⟨"source"⟩
+    sourceSha256 := "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" }
+
+private def correlationAddress : CorrelatedMessageAddress :=
+  { definition := correlationDefinition
+    processId := ⟨"process"⟩
+    channel := payloadChannel
+    correlationKeyId := "correlationKey" }
+
 theorem duplicate_and_escape_equivalent_json_keys_are_rejected :
     parseRejected "{\"id\":1,\"id\":1}" = true ∧
       parseRejected "{\"id\":1,\"\\u0069d\":1}" = true := by
@@ -279,7 +299,7 @@ theorem semantic_operation_shapes_reject_missing_extra_and_malformed_fields :
     programAccepted "{\"kind\":\"semanticProcess\",\"identity\":{\"compiler\":\"bpmn-source-semantic-process\",\"semanticProfile\":\"p\",\"sourceId\":\"s\",\"sourceOverlay\":null,\"sourceSha256\":\"x\"},\"internalSchedulingMode\":\"rejectObservableChoice\",\"processId\":\"p\",\"definitionScopes\":[],\"operationScopes\":[],\"controlPlaceScopes\":[],\"controlPlaces\":[],\"operations\":[{\"id\":\"terminate\",\"input\":\"in\",\"kind\":\"terminateScope\",\"origin\":{\"elementId\":\"end\",\"kind\":\"bpmnElement\"},\"scopeId\":\"scope:p\",\"scopeId\":\"scope:p\"}]}" = false := by
   native_decide
 
-theorem message_payload_checked_program_and_stimulus_wire_contracts_are_exact :
+theorem message_payload_and_correlation_checked_program_and_stimulus_wire_contracts_are_exact :
     checkedNodesDecodedAs
         [.payloadMessageCatchEvent ⟨"catch"⟩ payloadChannel payloadOutput]
         (checkedNodeDocument "{\"channel\":{\"interfaceId\":\"interface\",\"interfaceOperationId\":\"operation\",\"kind\":\"operationMessage\",\"messageId\":\"message\"},\"directOutput\":{\"associationId\":\"association\",\"sourceDataOutputId\":\"dataOutput\",\"sourceDataOutputName\":\"Payload\",\"targetPropertyId\":\"property\"},\"id\":\"catch\",\"kind\":\"payloadMessageCatchEvent\"}") = true ∧
@@ -307,7 +327,31 @@ theorem message_payload_checked_program_and_stimulus_wire_contracts_are_exact :
       scenarioRejected
         (scenarioDocumentWithStimulus "{\"channel\":{\"interfaceId\":\"interface\",\"interfaceOperationId\":\"operation\",\"kind\":\"operationMessage\",\"messageId\":\"message\"},\"commandId\":\"deliver\",\"kind\":\"deliverPayloadMessage\",\"subscriptionId\":{\"processInstanceId\":\"instance\",\"elementId\":\"catch\",\"activation\":1}}") = true ∧
       scenarioRejected
-        (scenarioDocumentWithStimulus "{\"channel\":{\"interfaceId\":\"interface\",\"interfaceOperationId\":\"operation\",\"kind\":\"operationMessage\",\"messageId\":\"message\"},\"commandId\":\"deliver\",\"kind\":\"deliverPayloadMessage\",\"payload\":{\"kind\":\"string\",\"value\":\"settlement-reference-123\"},\"subscriptionId\":{\"processInstanceId\":\"instance\",\"elementId\":\"catch\",\"activation\":1},\"unexpected\":true}") = true := by
+        (scenarioDocumentWithStimulus "{\"channel\":{\"interfaceId\":\"interface\",\"interfaceOperationId\":\"operation\",\"kind\":\"operationMessage\",\"messageId\":\"message\"},\"commandId\":\"deliver\",\"kind\":\"deliverPayloadMessage\",\"payload\":{\"kind\":\"string\",\"value\":\"settlement-reference-123\"},\"subscriptionId\":{\"processInstanceId\":\"instance\",\"elementId\":\"catch\",\"activation\":1},\"unexpected\":true}") = true ∧
+    checkedNodesDecodedAs
+        [.correlatedPayloadMessageCatchEvent ⟨"catch"⟩ payloadChannel "correlationKey"
+          "correlationProperty" correlationPayloadSelector correlationProcessSelector]
+        (checkedNodeDocument "{\"channel\":{\"interfaceId\":\"interface\",\"interfaceOperationId\":\"operation\",\"kind\":\"operationMessage\",\"messageId\":\"message\"},\"correlationKeyId\":\"correlationKey\",\"correlationPropertyId\":\"correlationProperty\",\"id\":\"catch\",\"kind\":\"correlatedPayloadMessageCatchEvent\",\"payloadSelector\":{\"body\":\"payload\",\"language\":\"urn:bpmn-lean:correlation-scalar-path:v1\"},\"processPropertySelector\":{\"body\":\"property:processProperty\",\"language\":\"urn:bpmn-lean:correlation-scalar-path:v1\",\"propertyId\":\"processProperty\"}}") = true ∧
+      checkedProcessAccepted
+        (checkedNodeDocument "{\"channel\":{\"interfaceId\":\"interface\",\"interfaceOperationId\":\"operation\",\"kind\":\"operationMessage\",\"messageId\":\"message\"},\"correlationKeyId\":\"correlationKey\",\"correlationPropertyId\":\"correlationProperty\",\"id\":\"catch\",\"kind\":\"correlatedPayloadMessageCatchEvent\",\"payloadSelector\":{\"body\":\" payload\",\"language\":\"urn:bpmn-lean:correlation-scalar-path:v1\"},\"processPropertySelector\":{\"body\":\"property:processProperty\",\"language\":\"urn:bpmn-lean:correlation-scalar-path:v1\",\"propertyId\":\"processProperty\"}}") = false ∧
+      programOperationsDecodedAs
+        [.awaitCorrelatedPayloadMessage ⟨"await"⟩ { elementId := ⟨"catch"⟩ }
+          ⟨"input"⟩ ⟨"output"⟩ { elementId := ⟨"catch"⟩, channel := payloadChannel }
+          "correlationKey" "correlationProperty" correlationPayloadSelector
+          correlationProcessSelector]
+        (programOperationDocument "{\"correlationKeyId\":\"correlationKey\",\"correlationPropertyId\":\"correlationProperty\",\"id\":\"await\",\"input\":\"input\",\"kind\":\"awaitCorrelatedPayloadMessage\",\"message\":{\"channel\":{\"interfaceId\":\"interface\",\"interfaceOperationId\":\"operation\",\"kind\":\"operationMessage\",\"messageId\":\"message\"},\"elementId\":\"catch\"},\"origin\":{\"elementId\":\"catch\",\"kind\":\"bpmnElement\"},\"output\":\"output\",\"payloadSelector\":{\"body\":\"payload\",\"language\":\"urn:bpmn-lean:correlation-scalar-path:v1\"},\"processPropertySelector\":{\"body\":\"property:processProperty\",\"language\":\"urn:bpmn-lean:correlation-scalar-path:v1\",\"propertyId\":\"processProperty\"}}") = true ∧
+      programAccepted
+        (programOperationDocument "{\"correlationKeyId\":\"correlationKey\",\"correlationPropertyId\":\"correlationProperty\",\"id\":\"await\",\"input\":\"input\",\"kind\":\"awaitCorrelatedPayloadMessage\",\"message\":{\"channel\":{\"interfaceId\":\"interface\",\"interfaceOperationId\":\"operation\",\"kind\":\"operationMessage\",\"messageId\":\"message\"},\"elementId\":\"catch\"},\"origin\":{\"elementId\":\"catch\",\"kind\":\"bpmnElement\"},\"output\":\"output\",\"payloadSelector\":{\"body\":\"payload\",\"language\":\"urn:bpmn-lean:correlation-scalar-path:v1\"},\"processPropertySelector\":{\"body\":\"property:other\",\"language\":\"urn:bpmn-lean:correlation-scalar-path:v1\",\"propertyId\":\"processProperty\"}}") = false ∧
+      scenarioStimuliDecodedAs
+        [.deliverCorrelatedPayloadMessage
+          { commandId := ⟨"deliver"⟩, address := correlationAddress, ingressOrdinal := 1
+            subscriptionId := payloadSubscription
+            correlationPropertyId := "correlationProperty"
+            processPropertyId := "processProperty"
+            payload := { value := "settlement-reference-123" } }]
+        (scenarioDocumentWithStimulus "{\"address\":{\"channel\":{\"interfaceId\":\"interface\",\"interfaceOperationId\":\"operation\",\"kind\":\"operationMessage\",\"messageId\":\"message\"},\"correlationKeyId\":\"correlationKey\",\"definition\":{\"compiler\":\"bpmn-source-semantic-process\",\"semanticProfile\":\"profile\",\"sourceId\":\"source\",\"sourceOverlay\":null,\"sourceSha256\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"},\"processId\":\"process\"},\"commandId\":\"deliver\",\"correlationPropertyId\":\"correlationProperty\",\"ingressOrdinal\":1,\"kind\":\"deliverCorrelatedPayloadMessage\",\"payload\":{\"kind\":\"string\",\"value\":\"settlement-reference-123\"},\"processPropertyId\":\"processProperty\",\"subscriptionId\":{\"activation\":1,\"elementId\":\"catch\",\"processInstanceId\":\"instance\"}}") = true ∧
+      scenarioRejected
+        (scenarioDocumentWithStimulus "{\"address\":{\"channel\":{\"interfaceId\":\"interface\",\"interfaceOperationId\":\"operation\",\"kind\":\"operationMessage\",\"messageId\":\"message\"},\"correlationKeyId\":\"correlationKey\",\"definition\":{\"compiler\":\"bpmn-source-semantic-process\",\"semanticProfile\":\"profile\",\"sourceId\":\"source\",\"sourceOverlay\":null,\"sourceSha256\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"},\"processId\":\"process\"},\"commandId\":\"deliver\",\"correlationPropertyId\":\"correlationProperty\",\"ingressOrdinal\":0,\"kind\":\"deliverCorrelatedPayloadMessage\",\"payload\":{\"kind\":\"string\",\"value\":\"settlement-reference-123\"},\"processPropertyId\":\"processProperty\",\"subscriptionId\":{\"activation\":1,\"elementId\":\"catch\",\"processInstanceId\":\"instance\"}}") = true := by
   native_decide
 
 end BpmnSemantics.SemanticProcessJsonConformance

@@ -214,8 +214,19 @@ export function deliverPayloadMessage(
   };
 }
 
+/** Whether one Message wait belongs to an Event-Based Gateway race. */
+export function messageWaitIsInEventRace(
+  state: RuntimeState,
+  wait: RuntimeState["messageWaits"][number],
+): boolean {
+  return state.eventRaces.some((record) =>
+    sameOccurrence(record.messageSubscriptionId, wait.id) &&
+    sameScopeOccurrence(record.owner, wait.owner)
+  );
+}
+
 /** Direct catch delivery never consumes a handler wait owned by an Activity occurrence. */
-function messageWaitIsAttachedToActivity(
+export function messageWaitIsAttachedToActivity(
   state: RuntimeState,
   wait: RuntimeState["messageWaits"][number],
 ): boolean {

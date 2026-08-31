@@ -5,6 +5,7 @@ import {
   CanonicalObservationKind,
   CommandOutcome,
   ControlStateKind,
+  CorrelatedMessageInteractionKind,
   MessageChannelKind,
   ProcessStatus,
   ScenarioStepKind,
@@ -36,6 +37,7 @@ import {
 } from "./parallel-fork-join-fixture.ts";
 import { stateObservationAt } from "./canonical-observations.ts";
 import { rootScopeOccurrence } from "./root-scope-fixture.ts";
+import { operationBase } from "./semantic-program-parts.ts";
 
 const owner = rootScopeOccurrence(parallelProgram.processId, "Instance_1");
 
@@ -150,6 +152,7 @@ test("both orders expose the approved stable public observations", () => {
           return interaction;
         case StimulusKind.DeliverMessage:
         case StimulusKind.DeliverPayloadMessage:
+        case CorrelatedMessageInteractionKind.PublishCorrelatedPayloadMessage:
           throw new Error(
             "parallel User Task state exposed a Message interaction",
           );
@@ -233,6 +236,32 @@ test("task projection ignores internal wait storage order", () => {
 });
 
 test("active wait projection orders by semantic kind before element ID", () => {
+  const messageProjectionOperation: SemanticOperation = {
+    ...operationBase("A_Message"),
+    kind: SemanticOperationKind.AwaitMessage,
+    input: "place:Flow_ForkToA",
+    output: "place:Flow_MessageToEnd",
+    message: {
+      elementId: "A_Message",
+      channel: {
+        kind: MessageChannelKind.OperationMessage,
+        interfaceId: "Interface_Projection",
+        interfaceOperationId: "Operation_Projection",
+        messageId: "Message_Projection",
+      },
+    },
+  };
+  const projectionProgram: SemanticProcessProgram = {
+    ...parallelProgram,
+    operations: [...parallelProgram.operations, messageProjectionOperation],
+    operationScopes: [
+      ...parallelProgram.operationScopes,
+      {
+        operationId: messageProjectionOperation.id,
+        scopeId: owner.definitionScopeId,
+      },
+    ],
+  };
   const state: RuntimeState = {
     ...runningState([]),
     userTaskWaits: [
@@ -277,7 +306,7 @@ test("active wait projection orders by semantic kind before element ID", () => {
     ],
     effectIncidents: [],
   };
-  const step = advanceScenario(parallelProgram, state, {
+  const step = advanceScenario(projectionProgram, state, {
     kind: StimulusKind.CompleteUserTaskInstance,
     commandId: "reject-missing-task",
     taskId: taskId("Missing_UserTask"),

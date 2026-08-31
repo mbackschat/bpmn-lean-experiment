@@ -327,8 +327,36 @@ private theorem prepared_input_origin (program : Program) (state : RuntimeState)
     (operation : SemanticOperation) (patch : InternalArmingPatch)
     (prepared : prepareInternalArm? program state operation = some patch) :
     selectedInputOrigin? program patch.input patch.owner = some patch.inputOrigin := by
-  cases operation <;>
+  cases operation
+  case awaitCorrelatedPayloadMessage id origin input output message correlationKeyId
+      correlationPropertyId payloadSelector processPropertySelector =>
     simp_all [prepareInternalArm?, internalArmInput?, internalArmOrigin?]
+    obtain ⟨owner, ownerEq, prepared⟩ := Option.bind_eq_some_iff.mp prepared
+    split at prepared
+    · simp at prepared
+    · obtain ⟨inputOrigin, inputOriginEq, prepared⟩ :=
+        Option.bind_eq_some_iff.mp prepared
+      cases controlEq : state.control <;> simp_all
+      rename_i instanceId selection
+      cases filteredEq : state.variables.process.bindings.filter fun candidate =>
+          candidate.name = processPropertySelector.propertyId with
+      | nil => simp_all
+      | cons binding rest =>
+        cases rest with
+        | cons _ _ => simp_all
+        | nil =>
+          cases valueEq : binding.value with
+          | string value =>
+            by_cases empty : value.isEmpty = true
+            · simp_all
+            · simp_all
+              obtain ⟨_, _, _, _, patchEq⟩ := prepared
+              simp_all
+          | boolean _ => simp_all
+          | integer _ => simp_all
+          | stringList _ => simp_all
+          | null => simp_all
+  all_goals simp_all [prepareInternalArm?, internalArmInput?, internalArmOrigin?]
   all_goals
     obtain ⟨owner, ownerEq, prepared⟩ := Option.bind_eq_some_iff.mp prepared
     split at prepared <;> try simp at prepared
@@ -515,10 +543,10 @@ theorem controlPositionDelta_prepared_internal_arm (program : Program)
     expectedInstanceId state patch position selected
   have tokensEq : (applyInternalArmingPatch state patch).tokens =
       removeToken state.tokens patch.input patch.owner := by
-    cases patch with | mk _ _ _ _ _ _ _ write => cases write <;> rfl
+    cases patch with | mk _ _ _ _ _ _ _ _ _ write => cases write <;> rfl
   have scopesEq : (applyInternalArmingPatch state patch).scopeOccurrences =
       state.scopeOccurrences := by
-    cases patch with | mk _ _ _ _ _ _ _ write => cases write <;> rfl
+    cases patch with | mk _ _ _ _ _ _ _ _ _ write => cases write <;> rfl
   unfold controlPositionDelta?
   simp only [projectControlPosition?, position, afterPosition, if_true]
   simp only [tokensEq, scopesEq]

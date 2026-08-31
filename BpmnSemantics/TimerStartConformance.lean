@@ -237,6 +237,8 @@ private def normalizeEnabledInteraction : EnabledInteraction → EnabledInteract
       .deliverMessage (normalizeOccurrenceId id) channel
   | .deliverPayloadMessage id channel =>
       .deliverPayloadMessage (normalizeOccurrenceId id) channel
+  | .publishCorrelatedPayloadMessage address =>
+      .publishCorrelatedPayloadMessage address
   | .retryIncident incidentId =>
       .retryIncident
         { incidentId with effectId := normalizeOccurrenceId incidentId.effectId }

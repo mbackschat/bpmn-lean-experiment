@@ -19,6 +19,7 @@ def stimulusCommandId : Stimulus → SemanticId
   | .reportEffectFailure commandId ..
   | .retryIncident commandId ..
   | .cancelIncidentProcess commandId .. => commandId
+  | .deliverCorrelatedPayloadMessage delivery => delivery.commandId
 
 def scalarBefore (left right : String) : Bool := left < right
 
@@ -143,6 +144,7 @@ def flowNodeSelectedOperationOwner? (state : RuntimeState) :
   | .awaitTimer _ _ input _ _
   | .awaitMessage _ _ input _ _
   | .awaitPayloadMessage _ _ input _ _ _
+  | .awaitCorrelatedPayloadMessage _ _ input _ _ _ _ _ _
   | .awaitEventRace _ _ input _ _
   | .awaitBoundedUserTask _ _ input _ _
   | .awaitMessageBoundedUserTask _ _ input _ _
@@ -575,6 +577,14 @@ def candidateFlowNodeOccurrenceDeltaForStimulus? (program : Program) (before : R
             wait.activation = subscriptionId.activation) then
         some (canonicalFlowNodeOccurrenceDelta [] [waitEnd subscriptionId .completed])
       else none
+  | .deliverCorrelatedPayloadMessage delivery =>
+      if before.messageWaits.any fun wait => decide
+          (wait.processInstanceId = delivery.subscriptionId.processInstanceId &&
+            wait.elementId.value = delivery.subscriptionId.elementId.value &&
+            wait.activation = delivery.subscriptionId.activation) then
+        some (canonicalFlowNodeOccurrenceDelta []
+          [waitEnd delivery.subscriptionId .completed])
+      else none
   | .fireTimer _ timerId _ => do
       let timer ← before.timerWaits.find? fun wait => decide
         (wait.processInstanceId = timerId.processInstanceId &&
@@ -685,6 +695,17 @@ def candidateFlowNodeOccurrenceDeltaForOperation? (program : Program) (before af
         | _ => none
       pure (canonicalFlowNodeOccurrenceDelta [← candidateMessageStart? program operation owner wait] [])
   | .awaitPayloadMessage _ _ _ _ message _ =>
+      let activation := activationForNode
+        (before.messageActivations.map fun value => (value.elementId, value.count))
+        message.elementId + 1
+      let wait ← match after.messageWaits.filter fun wait => decide
+          (wait.owner = owner && wait.elementId = message.elementId &&
+            wait.activation = activation) with
+        | [wait] => some wait
+        | _ => none
+      pure (canonicalFlowNodeOccurrenceDelta
+        [← candidateMessageStart? program operation owner wait] [])
+  | .awaitCorrelatedPayloadMessage _ _ _ _ message _ _ _ _ =>
       let activation := activationForNode
         (before.messageActivations.map fun value => (value.elementId, value.count))
         message.elementId + 1

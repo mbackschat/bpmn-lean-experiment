@@ -4,6 +4,7 @@ import {
   CheckedNodeKind,
 } from "./checked-process-contract.js";
 import {
+  MESSAGE_KEY_CORRELATION_CHECKPOINT_PROFILE_ID,
   SemanticProfileId,
 } from "./semantic-profile-catalog.js";
 import {
@@ -84,7 +85,7 @@ export function requiredCheckedProcessShape(
         CheckedNodeKind.UserTask,
         end,
       ]);
-    case SemanticProfileId.MessageKeyCorrelation:
+    case MESSAGE_KEY_CORRELATION_CHECKPOINT_PROFILE_ID:
       return rootChecked([
         start,
         CheckedNodeKind.PayloadMessageCatchEvent,

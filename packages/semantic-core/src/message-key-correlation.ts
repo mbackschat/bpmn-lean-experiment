@@ -2,6 +2,7 @@ import type {
   MessageSubscriptionId,
   VariableValue,
 } from "./contract.js";
+import { StimulusKind } from "./contract.js";
 import type { DeepReadonly } from "./deep-readonly.js";
 import {
   operationIsSelectedFromProgram,
@@ -23,6 +24,10 @@ import {
 import type { RuntimeState } from "./semantic-process-state.js";
 import { MessageChannelKind } from "./semantic-value-contract.js";
 import type { MessageChannel } from "./semantic-value-contract.js";
+import {
+  messageWaitIsAttachedToActivity,
+  messageWaitIsInEventRace,
+} from "./semantic-process-message.js";
 import {
   isSourceOverlayIdentityOrNull,
   sameSourceOverlayIdentity,
@@ -241,6 +246,13 @@ export function deliverCorrelatedPayloadMessage(
   state: RuntimeState,
   stimulus: import("./contract.js").DeliverCorrelatedPayloadMessageStimulus,
 ): RuntimeState | null {
+  if (
+    stimulus.kind !== StimulusKind.DeliverCorrelatedPayloadMessage ||
+    !Number.isSafeInteger(stimulus.ingressOrdinal) ||
+    stimulus.ingressOrdinal < 1
+  ) {
+    return null;
+  }
   const candidate = projectCorrelatedMessageCandidate(program, state);
   if (
     candidate === null ||
@@ -255,7 +267,9 @@ export function deliverCorrelatedPayloadMessage(
   const wait = state.messageWaits.find((entry) =>
     sameOccurrence(entry.id, candidate.subscriptionId)
   );
-  return wait === undefined
+  return wait === undefined ||
+      messageWaitIsInEventRace(state, wait) ||
+      messageWaitIsAttachedToActivity(state, wait)
     ? null
     : {
         ...state,

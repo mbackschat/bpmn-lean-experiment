@@ -2,19 +2,22 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
+  ActivityBodyKind,
+  ActivityHandlerKind,
   CommandOutcome,
   CorrelatedMessageInteractionKind,
   CorrelatedMessageMatchKind,
   CorrelationScalarPathLanguage,
+  MESSAGE_KEY_CORRELATION_CHECKPOINT_PROFILE_ID,
   MessageChannelKind,
   SemanticOperationKind,
-  SemanticProfileId,
   SemanticProcessCompilerId,
   SemanticProcessKind,
   StimulusKind,
   VariableValueKind,
   applyStimulus,
   applyInternalOperationStep,
+  deliverCorrelatedPayloadMessage,
   initialState,
   isWellFormedSemanticProcessProgram,
   observeStableState,
@@ -120,7 +123,7 @@ function correlationProgram(
     kind: SemanticProcessKind.SemanticProcess,
     identity: {
       compiler: SemanticProcessCompilerId.BpmnSourceSemanticProcess,
-      semanticProfile: SemanticProfileId.MessageKeyCorrelation,
+      semanticProfile: MESSAGE_KEY_CORRELATION_CHECKPOINT_PROFILE_ID,
       sourceId: "settlement-correlation",
       sourceSha256:
         "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
@@ -410,6 +413,14 @@ test("projects one exact candidate and commits only content-bound target deliver
     processPropertyId: expectedCandidate.processPropertyId,
     payload: { kind: VariableValueKind.String, value: "settlement-42" },
   } as const satisfies DeliverCorrelatedPayloadMessageStimulus;
+  assert.equal(deliverCorrelatedPayloadMessage(program, initialized.state, {
+    ...delivery,
+    ingressOrdinal: 0,
+  }), null);
+  assert.equal(deliverCorrelatedPayloadMessage(program, initialized.state, {
+    ...delivery,
+    kind: StimulusKind.DeliverPayloadMessage,
+  } as unknown as DeliverCorrelatedPayloadMessageStimulus), null);
   const delivered = applyStimulus(program, initialized.state, delivery);
   assert.equal(delivered.outcome, CommandOutcome.Committed);
   assert.deepEqual(delivered.state.messageWaits, []);
@@ -422,6 +433,47 @@ test("projects one exact candidate and commits only content-bound target deliver
     elementId: "UserTask_ReviewSettlement",
     activation: 1,
   }]);
+
+  const correlatedWait = initialized.state.messageWaits[0];
+  const reviewTask = delivered.state.userTaskWaits[0];
+  assert.ok(correlatedWait !== undefined && reviewTask !== undefined);
+  if (correlatedWait === undefined || reviewTask === undefined) {
+    return;
+  }
+  assert.equal(deliverCorrelatedPayloadMessage(program, {
+    ...initialized.state,
+    eventRaces: [{
+      id: {
+        processInstanceId: instanceId,
+        elementId: "Gateway_UnexpectedRace",
+        activation: 1,
+      },
+      owner: correlatedWait.owner,
+      messageSubscriptionId: correlatedSubscriptionId,
+      timerOccurrenceId: {
+        processInstanceId: instanceId,
+        elementId: "Timer_UnexpectedRace",
+        activation: 1,
+      },
+    }],
+  }, delivery), null);
+  assert.equal(deliverCorrelatedPayloadMessage(program, {
+    ...initialized.state,
+    activityOccurrences: [{
+      id: {
+        processInstanceId: instanceId,
+        activityElementId: "UserTask_UnexpectedHost",
+        activation: 1,
+      },
+      owner: correlatedWait.owner,
+      operationId: "operation:UserTask_UnexpectedHost",
+      body: { kind: ActivityBodyKind.UserTask, task: reviewTask.id },
+      attachedHandlers: [{
+        kind: ActivityHandlerKind.Message,
+        occurrence: correlatedSubscriptionId,
+      }],
+    }],
+  }, delivery), null);
 
   for (const [index, mutation] of [
     { address: address("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb") },

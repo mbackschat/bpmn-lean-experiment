@@ -123,7 +123,8 @@ private def correspondenceOperationSupported : SemanticOperation → Bool
   | .awaitSequentialMultiInstanceUserTask ..
   | .awaitParallelMultiInstanceUserTask ..
   | .completeParallelMultiInstanceUserTask ..
-  | .awaitTimer .. | .awaitMessage .. | .awaitPayloadMessage .. | .awaitEventRace ..
+  | .awaitTimer .. | .awaitMessage .. | .awaitPayloadMessage ..
+  | .awaitCorrelatedPayloadMessage .. | .awaitEventRace ..
   | .awaitBoundedUserTask .. | .awaitMessageBoundedUserTask ..
   | .awaitMonitoredUserTask .. | .awaitEffect ..
   | .mergeExclusive .. | .choose .. | .selectMany ..

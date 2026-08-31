@@ -25,6 +25,7 @@ def semanticOperationInternalFamily : SemanticOperation → InternalOperationFam
   | .awaitUserTask _ _ _ _ _
   | .awaitMessage _ _ _ _ _
   | .awaitPayloadMessage _ _ _ _ _ _
+  | .awaitCorrelatedPayloadMessage _ _ _ _ _ _ _ _ _
   | .awaitTimer _ _ _ _ _
   | .awaitEffect _ _ _ _ _ _ => .ordinaryWaitArming
   | .enterBoundedScope _ _ _ _ _ _

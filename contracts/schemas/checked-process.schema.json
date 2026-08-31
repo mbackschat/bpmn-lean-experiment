@@ -561,6 +561,43 @@
         }
       }
     },
+    "correlationMessagePath": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "language",
+        "body"
+      ],
+      "properties": {
+        "language": {
+          "const": "urn:bpmn-lean:correlation-scalar-path:v1"
+        },
+        "body": {
+          "const": "payload"
+        }
+      }
+    },
+    "correlationProcessPropertyPath": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "language",
+        "body",
+        "propertyId"
+      ],
+      "properties": {
+        "language": {
+          "const": "urn:bpmn-lean:correlation-scalar-path:v1"
+        },
+        "body": {
+          "type": "string",
+          "pattern": "^property:.+$"
+        },
+        "propertyId": {
+          "$ref": "#/$defs/nonemptyString"
+        }
+      }
+    },
     "node": {
       "oneOf": [
         {
@@ -576,6 +613,42 @@
             },
             "id": {
               "$ref": "#/$defs/nonemptyString"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "id",
+            "channel",
+            "correlationKeyId",
+            "correlationPropertyId",
+            "payloadSelector",
+            "processPropertySelector"
+          ],
+          "properties": {
+            "kind": {
+              "const": "correlatedPayloadMessageCatchEvent"
+            },
+            "id": {
+              "$ref": "#/$defs/nonemptyString"
+            },
+            "channel": {
+              "$ref": "#/$defs/operationMessageChannel"
+            },
+            "correlationKeyId": {
+              "$ref": "#/$defs/nonemptyString"
+            },
+            "correlationPropertyId": {
+              "$ref": "#/$defs/nonemptyString"
+            },
+            "payloadSelector": {
+              "$ref": "#/$defs/correlationMessagePath"
+            },
+            "processPropertySelector": {
+              "$ref": "#/$defs/correlationProcessPropertyPath"
             }
           }
         },

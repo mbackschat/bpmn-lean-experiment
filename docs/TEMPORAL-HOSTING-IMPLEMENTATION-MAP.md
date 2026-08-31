@@ -12,6 +12,8 @@ Product 1 privately traverses paired E1 and occurrence-publication segments acro
 
 Activity boundary Message has isolated admission, E1/E2 validation, direct-VM scheduling, and real-service Signal/Update refinement through forced Continue-As-New, Worker replacement, typed coalescence failure, exact history assertions, and replay.
 
+The Message key-correlation semantic checkpoint extends protocol and validation types only far enough to preserve the complete global address, correlated interaction, candidate facts, and target delivery across shared boundaries. Host admission still rejects the checkpoint identity, and no Workflow, public client, global candidate discovery, ingress, routing, registration, or result lifecycle exists. This is fail-closed forward compatibility, not durable correlation capability.
+
 ## Implemented
 
 ### Temporal adapter
@@ -20,6 +22,7 @@ Activity boundary Message has isolated admission, E1/E2 validation, direct-VM sc
 - handle-free `started | rejected` production start after semantic and host admission; success exposes only the Process-instance ID
 - caller-configured Worker/client lifecycle with content-derived Workflow and command identities
 - one core-owned semantic loop with committed-state Query projection, User Task Update ingress, one Message Signal carrying distinct payload-free and payload-bearing command arms, durable Timer wakeup, bounded effect Activity, and retained result recovery
+- protocol, Workflow-recovery, continuation, publication, and testkit validation understand the checkpoint-only correlated global address and per-instance delivery arm, while exact host admission and a focused no-ingress witness reject its unregistered profile before Workflow start
 - exact duplicate, changed-content conflict, semantic refusal, closed/unknown separation, and committed-state-only acknowledgement
 - durable hosting for every closed family named in [`implementation-status-owner:ENGINE-RUNTIME-PROOF`](ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md#current-boundary), keeping embedded and called Process work inside one Workflow rather than assigning BPMN meaning to Child Workflows
 - passive `mergeExclusive` host admission; the finite cycle witness reuses User Task Update, survives replacement, recovers one result, refuses a stale occurrence, takes both back-edges and the default exit, observes no rollover suggestion, and replays without a new host mechanism
@@ -80,7 +83,7 @@ Activity boundary Message has isolated admission, E1/E2 validation, direct-VM sc
 - production canonical-observation API
 - protocol that imposes caller order on concurrent distinct commands
 - semantic policy copies in the Workflow
-- structured or collection-valued Message payloads, payload on another Event or Task locus, key-based/global correlation, modeled Message throw, and cross-Workflow Message routing
+- structured or collection-valued Message payloads, payload on another Event or Task locus, durable key-based/global correlation beyond the validation-only semantic checkpoint, modeled Message throw, and cross-Workflow Message routing
 - Message ingress broker/router, definition-version fanout, or multi-target publication receipt
 - committed Event History fixtures
 - engine-global task discovery through Search Attributes; Product 2 instead owns its current-task projection from published engine facts
@@ -96,7 +99,7 @@ Activity boundary Message has isolated admission, E1/E2 validation, direct-VM sc
 - host cancellation recovery and exceptional child-scope interruption or propagation beyond the exact direct-parent Error slice
 - timer forms/races/cancellation beyond the exact capsule
 - post-retention publication reconstruction or archive
-- timer forms or races beyond the implemented timer and boundary-event capsules, compensation, and Event Sub-Processes; Message payload beyond the exact scalar Intermediate Catch Event slice, key-based or global correlation, modeled throw, Message Flow, and other Message Event loci
+- timer forms or races beyond the implemented timer and boundary-event capsules, compensation, and Event Sub-Processes; Message payload beyond the exact scalar Intermediate Catch Event slice, hosted key-based or global correlation, modeled throw, Message Flow, and other Message Event loci
 - Multi-Instance hosting beyond the exact registered sequential and parallel User Task slices, including repeated or nested controllers, migration after an immutable history baseline, and a Workflow-chain policy that rolls over while a managed lifetime Timer is armed
 - immutable profile or production Event History compatibility
 - task inbox
@@ -129,4 +132,4 @@ The deadline change was independently reviewed. A context-cold sub-agent reviewe
 
 - **Post-retention publication:** reconstruction or archive remains outside the bounded Workflow-chain contract, whose public result is `unavailable` after the selected retained Run disappears.
 - **Workload isolation:** complete Horizon 3 with queue and Worker isolation, backpressure, tenant fairness, capacity observability, shared-store failover, representative mixed-model tests, and published throughput, latency, saturation, recovery, and cost evidence. More Workers or queue partitions alone do not constitute this result.
-- **Hosting breadth:** Message payload beyond the exact scalar Intermediate Catch Event slice and Message routing, general Worker versioning, Activity heartbeats, Search Attributes, general cancellation recovery, and broader timer, effect, and expression families remain absent.
+- **Hosting breadth:** the correlation checkpoint's contract validation is present, but global candidate registration/discovery, correlation ingress, target settlement, public client/API, capacity and continuation enforcement, live refinement, replay, and profile admission remain absent. Message payload beyond the exact scalar Intermediate Catch Event slice and Message routing, general Worker versioning, Activity heartbeats, Search Attributes, general cancellation recovery, and broader timer, effect, and expression families also remain absent.

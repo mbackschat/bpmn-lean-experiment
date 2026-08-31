@@ -103,126 +103,71 @@ private theorem prepared_arm_preserves_messageBoundedProjectionValid
     (valid : messageBoundedProjectionValid program state = true)
     (prepared : prepareInternalArm? program state operation = some patch) :
     messageBoundedProjectionValid program (applyInternalArmingPatch state patch) = true := by
+  have selected := prepared_arm_selection_unique program state operation patch prepared
+  have operationEq := prepared_operation_eq program state operation patch prepared
   unfold messageBoundedProjectionValid at valid ⊢
   simp only [List.all_eq_true] at valid ⊢
   intro candidate candidateMember
   have prior := valid candidate candidateMember
-  cases operation <;> simp_all [prepareInternalArm?, internalArmInput?, internalArmOrigin?]
-  all_goals
-    obtain ⟨owner, ownerEq, prepared⟩ := Option.bind_eq_some_iff.mp prepared
-    split at prepared <;> try simp at prepared
-  all_goals
-    obtain ⟨inputOrigin, inputOriginEq, prepared⟩ :=
-      Option.bind_eq_some_iff.mp prepared
-    cases controlEq : state.control <;> simp_all
-  all_goals
-    obtain ⟨unique, absent, available, patchEq⟩ := prepared
-  all_goals
-    cases candidate <;> try rfl
-  case awaitUserTask.isFalse.running.awaitMessageBoundedUserTask =>
-    rename_i armOrigin armInput armOutput armTask stateInstanceId selection candidateId
-      candidateOrigin candidateInput boundedTask boundaryMessage
-    let inserted : UserTaskWait :=
-      { processInstanceId := owner.processInstanceId, owner, task := armTask,
-        activation := activationCount state armTask.id + 1, output := armOutput,
-        metadata := armTask.metadata }
-    have declarer := unique.1.1
-    simp [uniqueFamilyDeclarer?, InternalArmingWrite.kind,
-      InternalArmingWrite.elementId] at declarer
-    have different : armTask.id ≠ boundedTask.id := by
-      intro same
-      have boundedMember : SemanticOperation.awaitMessageBoundedUserTask candidateId
-          candidateOrigin candidateInput boundedTask boundaryMessage ∈
-          userTaskWaitDeclarers program armTask.id := by
-        simp [userTaskWaitDeclarers, candidateMember, same]
-      rw [declarer] at boundedMember
-      simp at boundedMember
+  cases candidate <;> try exact prior
+  case awaitMessageBoundedUserTask candidateId candidateOrigin candidateInput boundedTask
+      boundaryMessage =>
     let boundedOperation := SemanticOperation.awaitMessageBoundedUserTask candidateId
       candidateOrigin candidateInput boundedTask boundaryMessage
-    let owned := FlowNodeOccurrenceProgramValidity.Internal.operationOwnedBy program
-      boundedOperation
-    let taskFilter := fun wait : UserTaskWait =>
-      owned wait.owner && decide (wait.task.id = boundedTask.id)
-    have taskFrame : (insertUserTaskWait inserted state.waits).filter taskFilter =
-        state.waits.filter taskFilter := by
-      rw [insertUserTaskWait_eq_canonicalInsertBy]
-      apply filter_canonicalInsertBy_rejected
-      simp [taskFilter, inserted, different]
-    have prior := valid boundedOperation candidateMember
-    simpa [boundedOperation, messageBoundedOperationProjectionValid,
-      applyInternalArmingPatch, inserted, owned, taskFilter, taskFrame] using prior
-  case awaitMessage.isFalse.running.awaitMessageBoundedUserTask =>
-    rename_i armOrigin armInput armOutput armMessage stateInstanceId selection candidateId
-      candidateOrigin candidateInput boundedTask boundaryMessage
-    let inserted : MessageWait :=
-      { processInstanceId := owner.processInstanceId, owner,
-        elementId := armMessage.elementId,
-        activation := messageActivationCount state armMessage.elementId + 1,
-        channel := armMessage.channel, output := armOutput }
-    have declarer := unique.1.1
-    simp [uniqueFamilyDeclarer?, InternalArmingWrite.kind,
-      InternalArmingWrite.elementId] at declarer
-    have different : armMessage.elementId ≠ boundaryMessage.elementId := by
-      intro same
-      have boundedMember : SemanticOperation.awaitMessageBoundedUserTask candidateId
-          candidateOrigin candidateInput boundedTask boundaryMessage ∈
-          messageWaitDeclarers program armMessage.elementId := by
-        simp [messageWaitDeclarers, candidateMember, same]
-      rw [declarer] at boundedMember
-      simp at boundedMember
-    let boundedOperation := SemanticOperation.awaitMessageBoundedUserTask candidateId
-      candidateOrigin candidateInput boundedTask boundaryMessage
-    let owned := FlowNodeOccurrenceProgramValidity.Internal.operationOwnedBy program
-      boundedOperation
-    let messageFilter := fun wait : MessageWait =>
-      owned wait.owner && decide (wait.elementId = boundaryMessage.elementId)
-    have messageFrame : (insertMessageWait inserted state.messageWaits).filter messageFilter =
-        state.messageWaits.filter messageFilter := by
-      unfold insertMessageWait
-      apply filter_canonicalInsertBy_rejected
-      simp [messageFilter, inserted, different]
-    have prior := valid boundedOperation candidateMember
-    simpa [boundedOperation, messageBoundedOperationProjectionValid,
-      applyInternalArmingPatch, inserted, owned, messageFilter, messageFrame] using prior
-  case awaitPayloadMessage.isFalse.running.awaitMessageBoundedUserTask =>
-    rename_i armOrigin armInput armOutput armMessage directOutput stateInstanceId selection
-      candidateId candidateOrigin candidateInput boundedTask boundaryMessage
-    let inserted : MessageWait :=
-      { processInstanceId := owner.processInstanceId, owner,
-        elementId := armMessage.elementId,
-        activation := messageActivationCount state armMessage.elementId + 1,
-        channel := armMessage.channel, output := armOutput }
-    have declarer := unique.1.1
-    simp [uniqueFamilyDeclarer?, InternalArmingWrite.kind,
-      InternalArmingWrite.elementId] at declarer
-    have different : armMessage.elementId ≠ boundaryMessage.elementId := by
-      intro same
-      have boundedMember : SemanticOperation.awaitMessageBoundedUserTask candidateId
-          candidateOrigin candidateInput boundedTask boundaryMessage ∈
-          messageWaitDeclarers program armMessage.elementId := by
-        simp [messageWaitDeclarers, candidateMember, same]
-      rw [declarer] at boundedMember
-      simp at boundedMember
-    let boundedOperation := SemanticOperation.awaitMessageBoundedUserTask candidateId
-      candidateOrigin candidateInput boundedTask boundaryMessage
-    let owned := FlowNodeOccurrenceProgramValidity.Internal.operationOwnedBy program
-      boundedOperation
-    let messageFilter := fun wait : MessageWait =>
-      owned wait.owner && decide (wait.elementId = boundaryMessage.elementId)
-    have messageFrame : (insertMessageWait inserted state.messageWaits).filter messageFilter =
-        state.messageWaits.filter messageFilter := by
-      unfold insertMessageWait
-      apply filter_canonicalInsertBy_rejected
-      simp [messageFilter, inserted, different]
-    have prior := valid boundedOperation candidateMember
-    simpa [boundedOperation, messageBoundedOperationProjectionValid,
-      applyInternalArmingPatch, inserted, owned, messageFilter, messageFrame] using prior
-  case awaitTimer.isFalse.running.awaitMessageBoundedUserTask =>
-    simpa [messageBoundedOperationProjectionValid, applyInternalArmingPatch] using
-      valid _ candidateMember
-  case awaitEffect.isFalse.running.awaitMessageBoundedUserTask =>
-    simpa [messageBoundedOperationProjectionValid, applyInternalArmingPatch] using
-      valid _ candidateMember
+    let owned := FlowNodeOccurrenceProgramValidity.Internal.operationOwnedBy program boundedOperation
+    cases writeEq : patch.write with
+    | userTask inserted =>
+        have declarer := selected.2.1
+        rw [writeEq] at declarer
+        simp [uniqueFamilyDeclarer?, InternalArmingWrite.kind,
+          InternalArmingWrite.elementId] at declarer
+        have different : inserted.task.id ≠ boundedTask.id := by
+          intro same
+          have boundedMember : boundedOperation ∈ userTaskWaitDeclarers program inserted.task.id := by
+            simp [boundedOperation, userTaskWaitDeclarers, candidateMember, same]
+          rw [declarer] at boundedMember
+          have boundedEq : boundedOperation = patch.operation := by simpa using boundedMember
+          have impossible : prepareInternalArm? program state boundedOperation = some patch := by
+            rw [boundedEq, operationEq]
+            exact prepared
+          simp [boundedOperation, prepareInternalArm?, internalArmInput?] at impossible
+        let taskFilter := fun wait : UserTaskWait =>
+          owned wait.owner && decide (wait.task.id = boundedTask.id)
+        have taskFrame : (insertUserTaskWait inserted state.waits).filter taskFilter =
+            state.waits.filter taskFilter := by
+          rw [insertUserTaskWait_eq_canonicalInsertBy]
+          apply filter_canonicalInsertBy_rejected
+          simp [taskFilter, different]
+        simpa [boundedOperation, messageBoundedOperationProjectionValid,
+          applyInternalArmingPatch, writeEq, owned, taskFilter, taskFrame] using prior
+    | message inserted =>
+        have declarer := selected.2.1
+        rw [writeEq] at declarer
+        simp [uniqueFamilyDeclarer?, InternalArmingWrite.kind,
+          InternalArmingWrite.elementId] at declarer
+        have different : inserted.elementId ≠ boundaryMessage.elementId := by
+          intro same
+          have boundedMember : boundedOperation ∈
+              messageWaitDeclarers program inserted.elementId := by
+            simp [boundedOperation, messageWaitDeclarers, candidateMember, same]
+          rw [declarer] at boundedMember
+          have boundedEq : boundedOperation = patch.operation := by simpa using boundedMember
+          have impossible : prepareInternalArm? program state boundedOperation = some patch := by
+            rw [boundedEq, operationEq]
+            exact prepared
+          simp [boundedOperation, prepareInternalArm?, internalArmInput?] at impossible
+        let messageFilter := fun wait : MessageWait =>
+          owned wait.owner && decide (wait.elementId = boundaryMessage.elementId)
+        have messageFrame : (insertMessageWait inserted state.messageWaits).filter messageFilter =
+            state.messageWaits.filter messageFilter := by
+          unfold insertMessageWait
+          apply filter_canonicalInsertBy_rejected
+          simp [messageFilter, different]
+        simpa [boundedOperation, messageBoundedOperationProjectionValid,
+          applyInternalArmingPatch, writeEq, owned, messageFilter, messageFrame] using prior
+    | timer _ | effect _ _ =>
+        simpa [boundedOperation, messageBoundedOperationProjectionValid,
+          applyInternalArmingPatch, writeEq] using prior
 
 theorem prepared_arm_preserves_runtime_and_open_projection_exact
     (program : Program) (state : RuntimeState)
@@ -271,11 +216,11 @@ theorem prepared_arm_preserves_runtime_and_open_projection_exact
           have freshWaits := prepared_arm_projectWaits_fresh program state operation patch prepared
             beforeValidities.1 newStart started
           have scopeStateFrame : after.scopeOccurrences = state.scopeOccurrences := by
-            cases patch with | mk _ _ _ _ _ _ _ write => cases write <;> rfl
+            cases patch with | mk _ _ _ _ _ _ _ _ _ write => cases write <;> rfl
           have callStateFrame : after.calledProcessOccurrences = state.calledProcessOccurrences := by
-            cases patch with | mk _ _ _ _ _ _ _ write => cases write <;> rfl
+            cases patch with | mk _ _ _ _ _ _ _ _ _ write => cases write <;> rfl
           have controlFrame : after.control = state.control := by
-            cases patch with | mk _ _ _ _ _ _ _ write => cases write <;> rfl
+            cases patch with | mk _ _ _ _ _ _ _ _ _ write => cases write <;> rfl
           have scopesFrame :
               (after.scopeOccurrences.filter fun occurrence => occurrence.parent.isSome).mapM
                   (scopeStart? program after) =
@@ -561,7 +506,62 @@ private theorem prepared_arm_candidate_singleton (program : Program) (state : Ru
   have processAligned := candidateProcessIdForDefinitionScope_eq_processIdForOwner
     program state patch.owner runtimeProcess instanceId programValid running structural live
       runtimeProcessEq
-  cases operation <;> simp_all [prepareInternalArm?, internalArmInput?, internalArmOrigin?]
+  cases operation
+  case awaitCorrelatedPayloadMessage id origin input output message correlationKeyId
+      correlationPropertyId payloadSelector processPropertySelector =>
+    simp_all [prepareInternalArm?, internalArmInput?, internalArmOrigin?]
+    obtain ⟨owner, ownerEq, prepared⟩ := Option.bind_eq_some_iff.mp prepared
+    split at prepared <;> try simp at prepared
+    obtain ⟨inputOrigin, inputOriginEq, prepared⟩ := Option.bind_eq_some_iff.mp prepared
+    cases controlEq : state.control <;> simp_all
+    rename_i stateInstanceId selected
+    cases filteredEq : state.variables.process.bindings.filter fun candidate =>
+        candidate.name = processPropertySelector.propertyId with
+    | nil => simp_all
+    | cons binding rest =>
+      cases rest with
+      | cons _ _ => simp_all
+      | nil =>
+        cases valueEq : binding.value with
+        | string value =>
+          by_cases empty : value.isEmpty = true
+          · simp_all
+          · simp_all
+            obtain ⟨_, unique, _, _, patchEq⟩ := prepared
+            simp_all [candidateFlowNodeOccurrenceDeltaForOperation?,
+              flowNodeSelectedOperationOwner?, applyInternalArmingPatch,
+              InternalArmingWrite.elementId, InternalArmingWrite.occurrence,
+              messageWaitOccurrence, candidateMessageStart?]
+            obtain ⟨scopeBinding, operationSelection, scopeSelection, scopeMatches⟩ :=
+              exactProgramSelection_parts program
+                (.awaitCorrelatedPayloadMessage id origin input output message correlationKeyId
+                  correlationPropertyId payloadSelector processPropertySelector) owner
+                programValid selection.1
+            let wait : MessageWait :=
+              { processInstanceId := owner.processInstanceId, owner,
+                elementId := message.elementId,
+                activation := messageActivationCount state message.elementId + 1,
+                channel := message.channel, output }
+            have filtered : (insertMessageWait wait state.messageWaits).filter (fun old =>
+                decide (old.owner = owner) && decide (old.elementId = message.elementId) &&
+                  decide (old.activation = activationForNode
+                    (state.messageActivations.map fun current =>
+                      (current.elementId, current.count)) message.elementId + 1)) = [wait] := by
+              rw [activationForNode_eq_elementActivationCount]
+              exact filter_insertMessageWait_eq_singleton wait state.messageWaits rfl ownerIds.2.1
+                (fun old member => (keyFresh old member).1)
+            dsimp [wait] at filtered
+            rw [filtered]
+            have candidate := candidateWaitStart_of_exact_selection program
+              (.awaitCorrelatedPayloadMessage id origin input output message correlationKeyId
+                correlationPropertyId payloadSelector processPropertySelector) owner
+              owner.processInstanceId message.elementId
+              (messageActivationCount state message.elementId + 1) runtimeProcess scopeBinding
+              operationSelection scopeSelection scopeMatches processAligned rfl (by omega)
+            simp [candidate]
+            rfl
+        | boolean _ | integer _ | stringList _ | null => simp_all
+  all_goals simp_all [prepareInternalArm?, internalArmInput?, internalArmOrigin?]
   all_goals
     obtain ⟨owner, ownerEq, prepared⟩ := Option.bind_eq_some_iff.mp prepared
     split at prepared <;> try simp at prepared

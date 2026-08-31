@@ -83,6 +83,30 @@ private def messageChannelJson : MessageChannel → Json
         [ ("kind", toJson "directMessage")
         , ("messageId", toJson messageId.value) ]
 
+private def sourceOverlayIdentityJson : Option SourceOverlayIdentity → Json
+  | none => .null
+  | some identity =>
+      Json.mkObj
+        [ ("id", toJson identity.id.value)
+        , ("sha256", toJson identity.sha256) ]
+
+private def programIdentityJson (identity : ProgramIdentity) : Json :=
+  Json.mkObj
+    [ ("compiler", match identity.compiler with
+        | .bpmnSourceSemanticProcess => toJson "bpmn-source-semantic-process")
+    , ("semanticProfile", toJson identity.semanticProfile.value)
+    , ("sourceId", toJson identity.sourceId.value)
+    , ("sourceOverlay", sourceOverlayIdentityJson identity.sourceOverlay)
+    , ("sourceSha256", toJson identity.sourceSha256) ]
+
+private def correlatedMessageAddressJson
+    (address : CorrelatedMessageAddress) : Json :=
+  Json.mkObj
+    [ ("definition", programIdentityJson address.definition)
+    , ("processId", toJson address.processId.value)
+    , ("channel", messageChannelJson address.channel)
+    , ("correlationKeyId", toJson address.correlationKeyId) ]
+
 private def openMessageSubscriptionJson
     (subscription : OpenMessageSubscription) : Json :=
   Json.mkObj
@@ -200,6 +224,10 @@ def enabledInteractionJson : EnabledInteraction → Json
         [ ("kind", toJson "deliverPayloadMessage")
         , ("subscriptionId", occurrenceIdJson subscriptionId)
         , ("channel", messageChannelJson channel) ]
+  | .publishCorrelatedPayloadMessage address =>
+      Json.mkObj
+        [ ("kind", toJson "publishCorrelatedPayloadMessage")
+        , ("address", correlatedMessageAddressJson address) ]
   | .retryIncident incidentId =>
       Json.mkObj
         [ ("kind", toJson "retryIncident")
@@ -310,6 +338,19 @@ def stimulusJson : Stimulus → Json
         , ("subscriptionId", occurrenceIdJson subscriptionId)
         , ("channel", messageChannelJson channel)
         , ("payload", encodeVariableValue payload) ]
+  | .deliverCorrelatedPayloadMessage delivery =>
+      Json.mkObj
+        [ ("kind", toJson "deliverCorrelatedPayloadMessage")
+        , ("commandId", toJson delivery.commandId.value)
+        , ("address", correlatedMessageAddressJson delivery.address)
+        , ("ingressOrdinal", toJson delivery.ingressOrdinal)
+        , ("subscriptionId", occurrenceIdJson delivery.subscriptionId)
+        , ("correlationPropertyId", toJson delivery.correlationPropertyId)
+        , ("processPropertyId", toJson delivery.processPropertyId)
+        , ("payload",
+            Json.mkObj
+              [ ("kind", toJson "string")
+              , ("value", toJson delivery.payload.value) ]) ]
   | .fireTimer commandId timerId logicalTimeMs =>
       Json.mkObj
         [ ("kind", toJson "fireTimer")
@@ -352,13 +393,6 @@ private def observationKindJson : ObservationKind → Json
   | .variables => toJson "variables"
   | .enabledInteractions => toJson "enabledInteractions"
   | .logicalTime => toJson "logicalTime"
-
-private def sourceOverlayIdentityJson : Option SourceOverlayIdentity → Json
-  | none => .null
-  | some identity =>
-      Json.mkObj
-        [ ("id", toJson identity.id.value)
-        , ("sha256", toJson identity.sha256) ]
 
 private def resourceIdentityJson (resource : ResourceIdentity) : Json :=
   Json.mkObj

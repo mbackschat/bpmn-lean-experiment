@@ -10,6 +10,7 @@ import { test } from "node:test";
 import {
   EffectExecutionResultKind,
   MessageChannelKind,
+  SemanticProcessCompilerId,
   StimulusKind,
   VariableValueKind,
 } from "@bpmn-lean/semantic-core";
@@ -154,6 +155,70 @@ test("content-binds every Message Start target field", () => {
       },
     },
     { ...exact, channel: { ...exact.channel, messageId: "OtherMessage" } },
+  ];
+  for (const mutation of mutations) {
+    assert.notEqual(contentBoundUpdateId(exact), contentBoundUpdateId(mutation));
+  }
+});
+
+test("content-binds the complete private correlated Message target", () => {
+  const exact = {
+    kind: StimulusKind.DeliverCorrelatedPayloadMessage,
+    commandId: "deliver-correlated-message",
+    address: {
+      definition: {
+        compiler: SemanticProcessCompilerId.BpmnSourceSemanticProcess,
+        semanticProfile: "bpmn-2.0.2-message-key-correlation-draft",
+        sourceId: "message-key-correlation-process",
+        sourceSha256: "a".repeat(64),
+        sourceOverlay: null,
+      },
+      processId: "Process_MessageCorrelation",
+      channel: {
+        kind: MessageChannelKind.OperationMessage,
+        interfaceId: "SettlementInterface",
+        interfaceOperationId: "receiveSettlement",
+        messageId: "SettlementMessage",
+      },
+      correlationKeyId: "SettlementKey",
+    },
+    ingressOrdinal: 1,
+    subscriptionId: {
+      processInstanceId: "Settlement_1",
+      elementId: "CatchSettlement",
+      activation: 1,
+    },
+    correlationPropertyId: "SettlementMessageProperty",
+    processPropertyId: "SettlementProcessProperty",
+    payload: { kind: VariableValueKind.String, value: "settlement-42" },
+  } as const satisfies Stimulus;
+  assert.equal(
+    canonicalStimulusEncoding(exact),
+    '["deliverCorrelatedPayloadMessage","deliver-correlated-message",[["bpmn-source-semantic-process","bpmn-2.0.2-message-key-correlation-draft","message-key-correlation-process","aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",["none"]],"Process_MessageCorrelation",["operationMessage","SettlementInterface","receiveSettlement","SettlementMessage"],"SettlementKey"],1,["Settlement_1","CatchSettlement",1],"SettlementMessageProperty","SettlementProcessProperty",["string","settlement-42"]]',
+  );
+  const mutations: ReadonlyArray<Stimulus> = [
+    {
+      ...exact,
+      address: {
+        ...exact.address,
+        definition: {
+          ...exact.address.definition,
+          sourceSha256: "b".repeat(64),
+        },
+      },
+    },
+    { ...exact, address: { ...exact.address, processId: "OtherProcess" } },
+    { ...exact, ingressOrdinal: 2 },
+    {
+      ...exact,
+      subscriptionId: { ...exact.subscriptionId, activation: 2 },
+    },
+    { ...exact, correlationPropertyId: "OtherCorrelationProperty" },
+    { ...exact, processPropertyId: "OtherProcessProperty" },
+    {
+      ...exact,
+      payload: { kind: VariableValueKind.String, value: "settlement-43" },
+    },
   ];
   for (const mutation of mutations) {
     assert.notEqual(contentBoundUpdateId(exact), contentBoundUpdateId(mutation));

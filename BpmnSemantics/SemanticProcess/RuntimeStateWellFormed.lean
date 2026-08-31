@@ -448,7 +448,8 @@ def timerWaitDeclarers (program : Program) (elementId : NodeId) : List SemanticO
     | .enterScope .. | .invokeProcess .. | .returnProcess ..
     | .awaitUserTask .. | .awaitDataInputUserTask .. | .awaitDataOutputUserTask ..
     | .completeParallelMultiInstanceUserTask ..
-    | .awaitMessage .. | .awaitPayloadMessage .. | .awaitEffect ..
+    | .awaitMessage .. | .awaitPayloadMessage .. | .awaitCorrelatedPayloadMessage ..
+    | .awaitEffect ..
     | .awaitMessageBoundedUserTask ..
     | .duplicate .. | .synchronize .. | .mergeExclusive ..
     | .choose .. | .selectMany .. | .synchronizeSelected ..
@@ -462,6 +463,8 @@ def messageWaitDeclarers (program : Program) (elementId : NodeId) : List Semanti
   program.operations.filter fun
     | .awaitMessage _ _ _ _ message => decide (message.elementId = elementId)
     | .awaitPayloadMessage _ _ _ _ message _ =>
+        decide (message.elementId = elementId)
+    | .awaitCorrelatedPayloadMessage _ _ _ _ message _ _ _ _ =>
         decide (message.elementId = elementId)
     | .awaitEventRace _ _ _ message _ => decide (message.elementId = elementId)
     | .awaitMessageBoundedUserTask _ _ _ _ boundaryMessage =>
@@ -495,7 +498,8 @@ def userTaskWaitDeclarers (program : Program) (taskId : TaskDefinitionId) :
     | .initiate .. | .initiateMessage .. | .initiateTimer ..
     | .enterScope .. | .enterBoundedScope .. | .invokeProcess .. | .returnProcess ..
     | .completeParallelMultiInstanceUserTask .. | .awaitTimer ..
-    | .awaitMessage .. | .awaitPayloadMessage .. | .awaitEventRace .. | .awaitEffect ..
+    | .awaitMessage .. | .awaitPayloadMessage .. | .awaitCorrelatedPayloadMessage ..
+    | .awaitEventRace .. | .awaitEffect ..
     | .duplicate .. | .synchronize .. | .mergeExclusive ..
     | .choose .. | .selectMany .. | .synchronizeSelected ..
     | .throwError .. | .reachNoneEnd .. | .terminateScope ..
@@ -510,7 +514,8 @@ def effectWaitDeclarers (program : Program) (elementId : NodeId) : List Semantic
     | .awaitUserTask .. | .awaitDataInputUserTask .. | .awaitDataOutputUserTask ..
     | .awaitSequentialMultiInstanceUserTask .. | .awaitParallelMultiInstanceUserTask ..
     | .completeParallelMultiInstanceUserTask .. | .awaitTimer ..
-    | .awaitMessage .. | .awaitPayloadMessage .. | .awaitEventRace ..
+    | .awaitMessage .. | .awaitPayloadMessage .. | .awaitCorrelatedPayloadMessage ..
+    | .awaitEventRace ..
     | .awaitBoundedUserTask .. | .awaitMonitoredUserTask ..
     | .awaitMessageBoundedUserTask ..
     | .duplicate .. | .synchronize .. | .mergeExclusive ..

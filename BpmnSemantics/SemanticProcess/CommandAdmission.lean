@@ -10,6 +10,7 @@ import BpmnSemantics.SemanticProcess.ActivityDataInput
 import BpmnSemantics.SemanticProcess.ActivityDataOutput
 import BpmnSemantics.SemanticProcess.MessagePayload
 import BpmnSemantics.SemanticProcess.MessageBoundedTask
+import BpmnSemantics.SemanticProcess.MessageKeyCorrelation
 
 /-! # Semantic Process external command admission
 
@@ -23,6 +24,31 @@ open BpmnSemantics
 structure ExternalAdmission where
   outcome : CommandOutcome
   state : RuntimeState
+
+/-- Closed dispatch for the globally selected, content-bound correlation target. -/
+def dispatchCorrelatedPayloadMessage (program : Program) (state : RuntimeState)
+    (delivery : DeliverCorrelatedPayloadMessageStimulus) : ExternalAdmission :=
+  match state.control with
+  | .running instanceId =>
+      match deliverCorrelatedPayloadMessage program state delivery with
+      | some successor =>
+          if delivery.subscriptionId.processInstanceId = instanceId then
+            { outcome := .committed, state := successor }
+          else { outcome := .rejected, state }
+      | none => { outcome := .rejected, state }
+  | .notStarted | .completed _ | .cancelled _ =>
+      { outcome := .rejected, state }
+
+/-- Correlation delivery is admitted only for the exact reviewed profile, structural program, and
+incident-free committed state. Refusal preserves the submitted state. -/
+def admitCorrelatedPayloadMessage (program : Program) (state : RuntimeState)
+    (delivery : DeliverCorrelatedPayloadMessageStimulus) : ExternalAdmission :=
+  if program.identity.semanticProfile = messageKeyCorrelationProfileId &&
+      programWellFormed program && programProfileCapabilitiesValid program &&
+      state.effectIncidents.isEmpty then
+    dispatchCorrelatedPayloadMessage program state delivery
+  else
+    { outcome := .rejected, state }
 
 def isCallActivityProgram (program : Program) : Bool :=
   program.identity.semanticProfile.value =
@@ -247,6 +273,8 @@ def dispatchStimulus (program : Program) (state : RuntimeState) :
       | .notStarted
       | .completed _
       | .cancelled _ => { outcome := .rejected, state }
+  | .deliverCorrelatedPayloadMessage delivery =>
+      dispatchCorrelatedPayloadMessage program state delivery
   | .fireTimer _ timerId logicalTimeMs =>
       match state.control with
       | .running instanceId =>
@@ -338,6 +366,8 @@ def dispatchStimulus (program : Program) (state : RuntimeState) :
 def admitStimulus (program : Program) (state : RuntimeState)
     (stimulus : Stimulus) : ExternalAdmission :=
   match stimulus with
+  | .deliverCorrelatedPayloadMessage delivery =>
+      admitCorrelatedPayloadMessage program state delivery
   | .cancelIncidentProcess _ processInstanceId incidentId =>
       if (incidentProcessCancellationRoot? program state processInstanceId incidentId).isSome then
         dispatchStimulus program state stimulus

@@ -401,6 +401,7 @@ function isProcessStartStimulus(
     case "completeUserTaskInstance":
     case "deliverMessage":
     case "deliverPayloadMessage":
+    case "deliverCorrelatedPayloadMessage":
     case "fireTimer":
     case "completeEffect":
     case "reportEffectFailure":

@@ -106,6 +106,34 @@ theorem flowNodeOccurrenceProgramValidity_insertPayloadMessage (program : Progra
       declarers declared live processId elementId positive processOwner element channel
   all_goals rfl
 
+theorem flowNodeOccurrenceProgramValidity_insertCorrelatedPayloadMessage
+    (program : Program) (state : RuntimeState) (id : OperationId)
+    (origin : BpmnElementOrigin) (input : ControlPlaceId) (message : MessageDefinition)
+    (correlationKeyId correlationPropertyId : String)
+    (payloadSelector : CorrelationMessagePath)
+    (processPropertySelector : CorrelationProcessPropertyPath) (wait : MessageWait)
+    (prior : flowNodeOccurrenceProgramValidity program state = true)
+    (declarers : messageWaitDeclarers program wait.elementId =
+      [.awaitCorrelatedPayloadMessage id origin input wait.output message correlationKeyId
+        correlationPropertyId payloadSelector processPropertySelector])
+    (declared : declaredByExactlyOneOwnedOperation program
+      (messageWaitDeclarers program wait.elementId) wait.owner = true)
+    (live : flowNodeOccurrenceOwnerLiveUnique state wait.owner = true)
+    (processId : !wait.processInstanceId.value.isEmpty = true)
+    (elementId : !wait.elementId.value.isEmpty = true) (positive : wait.activation > 0)
+    (processOwner : wait.processInstanceId = wait.owner.processInstanceId)
+    (element : message.elementId = wait.elementId) (channel : message.channel = wait.channel) :
+    flowNodeOccurrenceProgramValidity program
+      { state with messageWaits := insertMessageWait wait state.messageWaits } = true := by
+  let after : RuntimeState :=
+    { state with messageWaits := insertMessageWait wait state.messageWaits }
+  apply flowNodeOccurrenceProgramValidity_of_wait_frame program state after prior
+  · exact flowNodeOccurrenceWaitProgramValidity_insertCorrelatedPayloadMessage program state id
+      origin input message correlationKeyId correlationPropertyId payloadSelector
+      processPropertySelector wait (waitProgramValidity_of_programValidity program state prior)
+      declarers declared live processId elementId positive processOwner element channel
+  all_goals rfl
+
 theorem flowNodeOccurrenceProgramValidity_insertOrdinaryTimer (program : Program)
     (state : RuntimeState) (id : OperationId) (origin : BpmnElementOrigin)
     (input : ControlPlaceId) (timer : TimerDefinition) (wait : TimerWait)

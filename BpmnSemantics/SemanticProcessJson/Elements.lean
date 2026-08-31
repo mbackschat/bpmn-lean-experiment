@@ -12,6 +12,53 @@ open BpmnSemantics
 open BpmnSemantics.SemanticProcess
 open Lean
 
+def decodeProgramIdentity (json : Json) :
+    Except String ProgramIdentity := do
+  requireObjectShape json
+    ["compiler", "semanticProfile", "sourceId", "sourceOverlay",
+      "sourceSha256"]
+  expectStringField json "compiler" "bpmn-source-semantic-process"
+  pure
+    { compiler := .bpmnSourceSemanticProcess
+      semanticProfile := ⟨← stringField json "semanticProfile"⟩
+      sourceId := ⟨← stringField json "sourceId"⟩
+      sourceOverlay :=
+        ← decodeSourceOverlayIdentity (← field json "sourceOverlay")
+      sourceSha256 := ← stringField json "sourceSha256" }
+
+def decodeCorrelationMessagePath (json : Json) :
+    Except String CorrelationMessagePath := do
+  requireObjectShape json ["body", "language"]
+  let language ← stringField json "language"
+  let body ← stringField json "body"
+  match decodeCorrelationMessagePath? language body with
+  | some path => pure path
+  | none => throw "unsupported Message correlation payload selector"
+
+def decodeCorrelationProcessPropertyPath (json : Json) :
+    Except String CorrelationProcessPropertyPath := do
+  requireObjectShape json ["body", "language", "propertyId"]
+  let language ← stringField json "language"
+  let body ← stringField json "body"
+  let propertyId ← stringField json "propertyId"
+  match decodeCorrelationProcessPropertyPath? language body propertyId with
+  | some path => pure path
+  | none => throw "unsupported Message correlation Process Property selector"
+
+def decodeCorrelatedMessageAddress (json : Json) :
+    Except String CorrelatedMessageAddress := do
+  requireObjectShape json
+    ["channel", "correlationKeyId", "definition", "processId"]
+  let definition ← decodeProgramIdentity (← field json "definition")
+  if definition.semanticProfile.value.isEmpty || definition.sourceId.value.isEmpty ||
+      !lowercaseHexSha256 definition.sourceSha256 then
+    throw "invalid correlated Message definition identity"
+  pure
+    { definition
+      processId := ⟨← decodeNonemptyStringField json "processId"⟩
+      channel := ← decodeOperationMessageChannel (← field json "channel")
+      correlationKeyId := ← decodeNonemptyStringField json "correlationKeyId" }
+
 def decodeMappingExpression (json : Json) :
     Except String MappingExpression := do
   let kind ← stringField json "kind"

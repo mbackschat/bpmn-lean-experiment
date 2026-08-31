@@ -434,6 +434,19 @@ private def lowerNode (source : CheckedProcess) :
         (firstPlace (outgoingPlaces source id))
         { elementId := id, channel }
         directOutput, scopeId)
+  | .correlatedPayloadMessageCatchEvent id channel correlationKeyId
+      correlationPropertyId payloadSelector processPropertySelector =>
+      checkedNodeScopeId? source id |>.map fun scopeId =>
+      (.awaitCorrelatedPayloadMessage
+        (nodeOperationId id)
+        { elementId := id }
+        (firstPlace (incomingPlaces source id))
+        (firstPlace (outgoingPlaces source id))
+        { elementId := id, channel }
+        correlationKeyId
+        correlationPropertyId
+        payloadSelector
+        processPropertySelector, scopeId)
   | .receiveTask id channel =>
       checkedNodeScopeId? source id |>.map fun scopeId =>
       (.awaitMessage

@@ -291,6 +291,19 @@ private def checkedNodeArityValid (flows : List CheckedSequenceFlow) :
             decide (directOutput.sourceDataOutputName ≠ some "") &&
             incomingCount flows id = 1 && outgoingCount flows id = 1
       | .directMessage .. => false
+  | .correlatedPayloadMessageCatchEvent id channel correlationKeyId
+      correlationPropertyId payloadSelector processPropertySelector =>
+      match channel with
+      | .operationMessage interfaceId operationId messageId =>
+          let identities :=
+            [ id.value, interfaceId.value, operationId.value, messageId.value,
+              correlationKeyId, correlationPropertyId, processPropertySelector.propertyId ]
+          channel.identifiersNonempty && identities.all nonempty &&
+            identities.eraseDups.length = identities.length &&
+            correlationMessagePathValid payloadSelector &&
+            correlationProcessPropertyPathValid processPropertySelector &&
+            incomingCount flows id = 1 && outgoingCount flows id = 1
+      | .directMessage .. => false
   | .receiveTask id channel =>
       (match channel with
         | .operationMessage .. => false

@@ -111,6 +111,7 @@ export enum TemporalHostAdmissionFailureCode {
    */
   SequentialMultiInstanceSchedulerUnavailable = "sequentialMultiInstanceSchedulerUnavailable",
   ParallelMultiInstanceSchedulerUnavailable = "parallelMultiInstanceSchedulerUnavailable",
+  CorrelatedMessageIngressUnavailable = "correlatedMessageIngressUnavailable",
 }
 
 export type TemporalHostAdmissionFailure = DeepReadonly<{

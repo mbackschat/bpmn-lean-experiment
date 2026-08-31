@@ -1,4 +1,5 @@
 import BpmnSemantics.Scenario
+import BpmnSemantics.SemanticProcess.CorrelationScalarPath
 
 /-! # BpmnSemantics.SemanticProcessContract — reviewed definition and proof boundaries
 
@@ -6,10 +7,6 @@ This module owns the approved checked-process and Semantic Process definition ty
 -/
 
 namespace BpmnSemantics.SemanticProcess
-
-structure ProcessId where
-  value : String
-  deriving Repr, DecidableEq
 
 structure NodeId where
   value : String
@@ -44,10 +41,6 @@ structure SourceIdentity where
   sourceId : SemanticId
   sourceOverlay : Option SourceOverlayIdentity := none
   sourceSha256 : String
-  deriving Repr, DecidableEq
-
-inductive CompilerId where
-  | bpmnSourceSemanticProcess
   deriving Repr, DecidableEq
 
 inductive InternalSchedulingMode where
@@ -234,6 +227,10 @@ inductive CheckedNode where
   | intermediateCatchMessageEvent (id : NodeId) (channel : MessageChannel)
   | payloadMessageCatchEvent (id : NodeId) (channel : MessageChannel)
       (directOutput : DirectCatchEventPayloadOutput)
+  | correlatedPayloadMessageCatchEvent (id : NodeId) (channel : MessageChannel)
+      (correlationKeyId correlationPropertyId : String)
+      (payloadSelector : CorrelationMessagePath)
+      (processPropertySelector : CorrelationProcessPropertyPath)
   | receiveTask (id : NodeId) (channel : MessageChannel)
   | configuredTask (id : NodeId) (descriptor : EffectDescriptor)
   | serviceTask
@@ -278,6 +275,7 @@ def CheckedNode.id : CheckedNode → NodeId
   | .intermediateCatchTimerEvent id _
   | .intermediateCatchMessageEvent id _
   | .payloadMessageCatchEvent id _ _
+  | .correlatedPayloadMessageCatchEvent id _ _ _ _ _
   | .receiveTask id _
   | .configuredTask id _
   | .serviceTask id _ _ _ _
@@ -322,14 +320,6 @@ structure CheckedProcess where
   sequenceFlowScopes : List SequenceFlowScopeOwnership
   nodes : List CheckedNode
   sequenceFlows : List CheckedSequenceFlow
-  deriving Repr, DecidableEq
-
-structure ProgramIdentity where
-  compiler : CompilerId
-  semanticProfile : ProfileId
-  sourceId : SemanticId
-  sourceOverlay : Option SourceOverlayIdentity := none
-  sourceSha256 : String
   deriving Repr, DecidableEq
 
 structure BpmnSequenceFlowOrigin where
@@ -574,6 +564,15 @@ inductive SemanticOperation where
       (output : ControlPlaceId)
       (message : MessageDefinition)
       (directOutput : DirectCatchEventPayloadOutput)
+  | awaitCorrelatedPayloadMessage
+      (id : OperationId)
+      (origin : BpmnElementOrigin)
+      (input : ControlPlaceId)
+      (output : ControlPlaceId)
+      (message : MessageDefinition)
+      (correlationKeyId correlationPropertyId : String)
+      (payloadSelector : CorrelationMessagePath)
+      (processPropertySelector : CorrelationProcessPropertyPath)
   | awaitEventRace
       (id : OperationId)
       (origin : BpmnElementOrigin)
@@ -679,6 +678,7 @@ def SemanticOperation.id : SemanticOperation → OperationId
   | .awaitTimer id _ _ _ _
   | .awaitMessage id _ _ _ _
   | .awaitPayloadMessage id _ _ _ _ _
+  | .awaitCorrelatedPayloadMessage id _ _ _ _ _ _ _ _
   | .awaitEventRace id _ _ _ _
   | .awaitBoundedUserTask id _ _ _ _
   | .awaitMessageBoundedUserTask id _ _ _ _

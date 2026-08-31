@@ -1,4 +1,5 @@
 import {
+  MESSAGE_KEY_CORRELATION_CHECKPOINT_PROFILE_ID,
   PARALLEL_MULTI_INSTANCE_USER_TASK_PROFILE_ID,
   SEQUENTIAL_MULTI_INSTANCE_USER_TASK_PROFILE_ID,
   SemanticProfileId,
@@ -199,7 +200,7 @@ export const compilationDispatches: ReadonlyArray<CompilationDispatch> =
     },
     {
       id: CompilationDispatchId.MessageKeyCorrelation,
-      semanticProfile: SemanticProfileId.MessageKeyCorrelation,
+      semanticProfile: MESSAGE_KEY_CORRELATION_CHECKPOINT_PROFILE_ID,
       reader: (rootElement, source, overlay) =>
         overlay === null
           ? compileMessageKeyCorrelationCheckedProcess(rootElement, source, null)

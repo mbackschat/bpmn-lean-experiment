@@ -109,6 +109,8 @@ def operationWaitDeclarationKeys : SemanticOperation → List WaitDeclarationKey
   | .awaitMessage _ _ _ _ message => [messageWaitDeclarationKey message.elementId]
   | .awaitPayloadMessage _ _ _ _ message _ =>
       [messageWaitDeclarationKey message.elementId]
+  | .awaitCorrelatedPayloadMessage _ _ _ _ message _ _ _ _ =>
+      [messageWaitDeclarationKey message.elementId]
   | .awaitTimer _ _ _ _ timer => [timerWaitDeclarationKey timer.elementId]
   | .enterBoundedScope _ _ _ _ _ boundaryTimer =>
       [timerWaitDeclarationKey boundaryTimer.elementId]
@@ -296,6 +298,21 @@ private def operationWellFormed (program : Program) (places : List ControlPlace)
             identities.eraseDups.length = identities.length &&
             origin.elementId = message.elementId &&
             decide (directOutput.sourceDataOutputName ≠ some "") &&
+            decide (input ≠ output) &&
+            placeExists places input && placeExists places output
+      | .directMessage .. => false
+  | .awaitCorrelatedPayloadMessage id origin input output message correlationKeyId
+      correlationPropertyId payloadSelector processPropertySelector =>
+      match message.channel with
+      | .operationMessage interfaceId operationId messageId =>
+          let identities :=
+            [ origin.elementId.value, interfaceId.value, operationId.value, messageId.value,
+              correlationKeyId, correlationPropertyId, processPropertySelector.propertyId ]
+          nonempty id.value && identities.all nonempty &&
+            identities.eraseDups.length = identities.length &&
+            origin.elementId = message.elementId &&
+            correlationMessagePathValid payloadSelector &&
+            correlationProcessPropertyPathValid processPropertySelector &&
             decide (input ≠ output) &&
             placeExists places input && placeExists places output
       | .directMessage .. => false
@@ -630,6 +647,8 @@ theorem programWellFormed_internalArm_element_nonempty (program : Program)
     | .awaitDataOutputUserTask _ _ _ _ taskId _ _ => !taskId.value.isEmpty
     | .awaitMessage _ _ _ _ message => !message.elementId.value.isEmpty
     | .awaitPayloadMessage _ _ _ _ message _ => !message.elementId.value.isEmpty
+    | .awaitCorrelatedPayloadMessage _ _ _ _ message _ _ _ _ =>
+        !message.elementId.value.isEmpty
     | .awaitTimer _ _ _ _ timer => !timer.elementId.value.isEmpty
     | .awaitEffect _ _ _ _ effect _ => !effect.elementId.value.isEmpty
     | _ => true) = true := by
@@ -646,6 +665,19 @@ theorem programWellFormed_internalArm_element_nonempty (program : Program)
         have allNonempty := List.all_eq_true.mp operationValid.1.1.1.1.1.1.2
         have originNonempty := allNonempty origin.elementId.value (by simp)
         rw [operationValid.1.1.1.1.2] at originNonempty
+        exact originNonempty
+  case awaitCorrelatedPayloadMessage id origin input output message correlationKeyId
+      correlationPropertyId payloadSelector processPropertySelector =>
+    have operationValid := operationWellFormed_of_programWellFormed program _ valid member
+    generalize channelEq : message.channel = channel at operationValid
+    cases channel with
+    | directMessage messageId => simp_all [operationWellFormed]
+    | operationMessage interfaceId operationId messageId =>
+        simp only [operationWellFormed, channelEq, nonempty, Bool.and_eq_true,
+          decide_eq_true_eq] at operationValid
+        have allNonempty := List.all_eq_true.mp operationValid.1.1.1.1.1.1.1.2
+        have originNonempty := allNonempty origin.elementId.value (by simp)
+        rw [operationValid.1.1.1.1.1.2] at originNonempty
         exact originNonempty
   all_goals
     have operationValid := operationWellFormed_of_programWellFormed program _ valid member

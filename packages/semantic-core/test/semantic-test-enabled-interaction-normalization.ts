@@ -1,5 +1,8 @@
 /** Shared exact occurrence normalization for cross-instance observation comparisons. */
-import { StimulusKind } from "@bpmn-lean/semantic-core";
+import {
+  CorrelatedMessageInteractionKind,
+  StimulusKind,
+} from "@bpmn-lean/semantic-core";
 import type {
   EnabledInteraction,
   OccurrenceId,
@@ -21,6 +24,8 @@ export function normalizeEnabledInteraction(
         ...interaction,
         subscriptionId: normalizeOccurrence(interaction.subscriptionId),
       };
+    case CorrelatedMessageInteractionKind.PublishCorrelatedPayloadMessage:
+      return interaction;
     case StimulusKind.RetryIncident:
       return {
         ...interaction,

@@ -36,9 +36,73 @@ theorem awaitTimerState_eq (state : RuntimeState) (input output : ControlPlaceId
 
 theorem awaitEffectState_eq (state : RuntimeState) (input output : ControlPlaceId) (effect : EffectDefinition) (route : Option BpmnErrorRoute) : awaitEffectState? state input output effect route = (do let owner ← onlyTokenOwner? state input; let _ ← runningStateInstance? state; pure (activateEffect state owner.processInstanceId owner input output effect route)) := rfl
 
+private theorem correlated_prepared_state_frame_facts (program : Program)
+    (state : RuntimeState) (id : OperationId) (origin : BpmnElementOrigin)
+    (input output : ControlPlaceId) (message : MessageDefinition)
+    (correlationKeyId correlationPropertyId : String)
+    (payloadSelector : CorrelationMessagePath)
+    (processPropertySelector : CorrelationProcessPropertyPath)
+    (patch : InternalArmingPatch)
+    (prepared : prepareInternalArm? program state
+      (.awaitCorrelatedPayloadMessage id origin input output message correlationKeyId
+        correlationPropertyId payloadSelector processPropertySelector) = some patch) :
+    fire? program
+        (.awaitCorrelatedPayloadMessage id origin input output message correlationKeyId
+          correlationPropertyId payloadSelector processPropertySelector) state =
+        some (applyInternalArmingPatch state patch) ∧
+      patch.operation =
+        .awaitCorrelatedPayloadMessage id origin input output message correlationKeyId
+          correlationPropertyId payloadSelector processPropertySelector ∧
+      onlyTokenOwner? state patch.input = some patch.owner ∧
+      exactLiveOccurrence state patch.owner = true ∧
+      (∃ instanceId, state.control = .running instanceId) ∧
+      exactProgramSelection program patch.operation patch.owner = true ∧
+      uniqueFamilyDeclarer? program patch.operation patch.write.kind
+        patch.write.elementId = true ∧
+      patch.write.owner = patch.owner ∧
+      match patch.write with
+      | .userTask wait => wait.activation = activationCount state wait.task.id + 1
+      | .timer wait => wait.activation = timerActivationCount state wait.elementId + 1
+      | .message _ | .effect _ _ => True := by
+  simp_all [prepareInternalArm?, internalArmInput?, internalArmOrigin?]
+  obtain ⟨owner, ownerEq, prepared⟩ := Option.bind_eq_some_iff.mp prepared
+  split at prepared
+  · simp at prepared
+  · obtain ⟨inputOrigin, inputOriginEq, prepared⟩ :=
+      Option.bind_eq_some_iff.mp prepared
+    cases controlEq : state.control <;> simp_all
+    rename_i instanceId selection
+    cases filteredEq : state.variables.process.bindings.filter fun candidate =>
+        candidate.name = processPropertySelector.propertyId with
+    | nil => simp_all
+    | cons binding rest =>
+      cases rest with
+      | cons _ _ => simp_all
+      | nil =>
+        cases valueEq : binding.value with
+        | string value =>
+          by_cases empty : value.isEmpty = true
+          · simp_all
+          · simp_all
+            obtain ⟨_, _, _, _, patchEq⟩ := prepared
+            simp_all [fire?, awaitCorrelatedPayloadMessageState?, awaitMessageState_eq,
+              runningStateInstance?, activateMessage, applyInternalArmingPatch,
+              InternalArmingWrite.kind, InternalArmingWrite.elementId,
+              InternalArmingWrite.owner]
+        | boolean _ => simp_all
+        | integer _ => simp_all
+        | stringList _ => simp_all
+        | null => simp_all
+
 theorem prepareInternalArm_applies (program : Program) (state : RuntimeState) (operation : SemanticOperation) (patch : InternalArmingPatch) (prepared : prepareInternalArm? program state operation = some patch) :
     fire? program operation state = some (applyInternalArmingPatch state patch) := by
-  cases operation <;>
+  cases operation
+  case awaitCorrelatedPayloadMessage id origin input output message correlationKeyId
+      correlationPropertyId payloadSelector processPropertySelector =>
+    exact (correlated_prepared_state_frame_facts program state id origin input output message
+      correlationKeyId correlationPropertyId payloadSelector processPropertySelector patch
+      prepared).1
+  all_goals
     simp_all [prepareInternalArm?, internalArmInput?, internalArmOrigin?,
       applyInternalArmingPatch, fire?, awaitUserTaskState_eq, awaitMessageState_eq,
       awaitTimerState_eq, awaitEffectState_eq, runningStateInstance?, activateUserTask, activateMessage,
@@ -58,7 +122,14 @@ theorem prepared_operation_eq (program : Program) (state : RuntimeState)
     (operation : SemanticOperation) (patch : InternalArmingPatch)
     (prepared : prepareInternalArm? program state operation = some patch) :
     patch.operation = operation := by
-  cases operation <;> simp_all [prepareInternalArm?, internalArmInput?, internalArmOrigin?]
+  cases operation
+  case awaitCorrelatedPayloadMessage id origin input output message correlationKeyId
+      correlationPropertyId payloadSelector processPropertySelector =>
+    obtain ⟨_, operationEq, _⟩ := correlated_prepared_state_frame_facts program state id
+      origin input output message correlationKeyId correlationPropertyId payloadSelector
+      processPropertySelector patch prepared
+    exact operationEq
+  all_goals simp_all [prepareInternalArm?, internalArmInput?, internalArmOrigin?]
   all_goals
     obtain ⟨owner, ownerEq, prepared⟩ := Option.bind_eq_some_iff.mp prepared
     split at prepared
@@ -74,7 +145,14 @@ theorem prepared_owner_lookup (program : Program) (state : RuntimeState)
     (operation : SemanticOperation) (patch : InternalArmingPatch)
     (prepared : prepareInternalArm? program state operation = some patch) :
     onlyTokenOwner? state patch.input = some patch.owner := by
-  cases operation <;> simp_all [prepareInternalArm?, internalArmInput?, internalArmOrigin?]
+  cases operation
+  case awaitCorrelatedPayloadMessage id origin input output message correlationKeyId
+      correlationPropertyId payloadSelector processPropertySelector =>
+    obtain ⟨_, _, ownerEq, _⟩ := correlated_prepared_state_frame_facts program state id
+      origin input output message correlationKeyId correlationPropertyId payloadSelector
+      processPropertySelector patch prepared
+    exact ownerEq
+  all_goals simp_all [prepareInternalArm?, internalArmInput?, internalArmOrigin?]
   all_goals
     obtain ⟨owner, ownerEq, prepared⟩ := Option.bind_eq_some_iff.mp prepared
     split at prepared
@@ -90,7 +168,14 @@ theorem prepared_arm_live_running (program : Program) (state : RuntimeState)
     (prepared : prepareInternalArm? program state operation = some patch) :
     exactLiveOccurrence state patch.owner = true ∧
       ∃ instanceId, state.control = .running instanceId := by
-  cases operation <;> simp_all [prepareInternalArm?, internalArmInput?, internalArmOrigin?]
+  cases operation
+  case awaitCorrelatedPayloadMessage id origin input output message correlationKeyId
+      correlationPropertyId payloadSelector processPropertySelector =>
+    obtain ⟨_, _, _, live, running, _⟩ := correlated_prepared_state_frame_facts program state id
+      origin input output message correlationKeyId correlationPropertyId payloadSelector
+      processPropertySelector patch prepared
+    exact ⟨live, running⟩
+  all_goals simp_all [prepareInternalArm?, internalArmInput?, internalArmOrigin?]
   all_goals
     obtain ⟨owner, ownerEq, prepared⟩ := Option.bind_eq_some_iff.mp prepared
     split at prepared
@@ -109,7 +194,7 @@ theorem applyInternalArmingPatch_preserves_runtimePosition (program : Program)
     runtimePositionValid program expectedInstanceId (applyInternalArmingPatch state patch) = true := by
   apply runtimePositionValid_removeToken_frame program expectedInstanceId state _ patch.input patch.owner
     position selected
-  all_goals cases patch with | mk _ _ _ _ _ _ _ write => cases write <;> rfl
+  all_goals cases patch with | mk _ _ _ _ _ _ _ _ _ write => cases write <;> rfl
 
 theorem occurrence_fields_differ (left right : OccurrenceId) (different : left ≠ right) :
     (left.processInstanceId ≠ right.processInstanceId ∨
@@ -147,7 +232,7 @@ theorem prepared_arm_key_fresh (program : Program) (state : RuntimeState)
   obtain ⟨_, absent⟩ := prepared_arm_anchor_shape program state operation patch prepared
   have missing : patch.write.occurrence ∉ openWaitAnchors state := by
     simpa [openWaitAnchorAbsent, List.contains_eq_mem] using absent
-  cases patch with | mk _ _ _ _ _ _ _ write =>
+  cases patch with | mk _ _ _ _ _ _ _ _ _ write =>
     cases write with
     | userTask inserted =>
         intro old member
@@ -298,7 +383,7 @@ theorem applyInternalArmingPatch_preserves_order (state : RuntimeState)
     canonicalCollectionOrder (applyInternalArmingPatch state patch) = true := by
   have updateOrders := canonicalCollectionOrder_internalArmingOrders state canonical
   simp only [canonicalCollectionOrder, Bool.and_eq_true] at canonical ⊢
-  cases patch with | mk _ _ _ _ _ _ _ write =>
+  cases patch with | mk _ _ _ _ _ _ _ _ _ write =>
     cases write with
     | userTask wait =>
         have activationOrder := orderedBy_replaceStringKey
@@ -345,7 +430,15 @@ theorem prepared_arm_activation_next (program : Program) (state : RuntimeState)
     | .userTask wait => wait.activation = activationCount state wait.task.id + 1
     | .timer wait => wait.activation = timerActivationCount state wait.elementId + 1
     | .message _ | .effect _ _ => True := by
-  cases operation <;> simp_all [prepareInternalArm?, internalArmInput?, internalArmOrigin?]
+  cases operation
+  case awaitCorrelatedPayloadMessage id origin input output message correlationKeyId
+      correlationPropertyId payloadSelector processPropertySelector =>
+    obtain ⟨_, _, _, _, _, _, _, _, next⟩ :=
+      correlated_prepared_state_frame_facts program state id origin input output message
+        correlationKeyId correlationPropertyId payloadSelector processPropertySelector patch
+        prepared
+    exact next
+  all_goals simp_all [prepareInternalArm?, internalArmInput?, internalArmOrigin?]
   all_goals
     obtain ⟨owner, ownerEq, prepared⟩ := Option.bind_eq_some_iff.mp prepared
     split at prepared
@@ -363,7 +456,15 @@ theorem prepared_arm_selection_unique (program : Program) (state : RuntimeState)
     exactProgramSelection program patch.operation patch.owner = true ∧
       uniqueFamilyDeclarer? program patch.operation patch.write.kind patch.write.elementId = true ∧
       patch.write.owner = patch.owner := by
-  cases operation <;> simp_all [prepareInternalArm?, internalArmInput?, internalArmOrigin?]
+  cases operation
+  case awaitCorrelatedPayloadMessage id origin input output message correlationKeyId
+      correlationPropertyId payloadSelector processPropertySelector =>
+    obtain ⟨_, _, _, _, _, selected, unique, writeOwner, _⟩ :=
+      correlated_prepared_state_frame_facts program state id origin input output message
+        correlationKeyId correlationPropertyId payloadSelector processPropertySelector patch
+        prepared
+    exact ⟨selected, unique, writeOwner⟩
+  all_goals simp_all [prepareInternalArm?, internalArmInput?, internalArmOrigin?]
   all_goals
     obtain ⟨owner, ownerEq, prepared⟩ := Option.bind_eq_some_iff.mp prepared
     split at prepared
@@ -388,7 +489,7 @@ theorem prepared_arm_declared (program : Program) (state : RuntimeState)
     | .effect wait _ => declaredByExactlyOneOwnedOperation program
         (effectWaitDeclarers program wait.elementId) wait.owner = true := by
   have facts := prepared_arm_selection_unique program state operation patch prepared
-  cases patch with | mk patchOperation _ _ _ _ _ patchOwner write =>
+  cases patch with | mk patchOperation _ _ _ _ _ _ _ patchOwner write =>
     cases write <;>
       simp_all [uniqueFamilyDeclarer?, InternalArmingWrite.kind,
         InternalArmingWrite.elementId, InternalArmingWrite.owner]
@@ -406,7 +507,7 @@ theorem applyInternalArmingPatch_preserves_identityBound (state : RuntimeState)
     runtimeStateIdentityBound (applyInternalArmingPatch state patch) = true := by
   simp only [runtimeStateIdentityBound, Bool.and_eq_true] at holds ⊢
   obtain ⟨⟨tasks, timers⟩, activities⟩ := holds
-  cases patch with | mk _ _ _ _ _ _ _ write =>
+  cases patch with | mk _ _ _ _ _ _ _ _ _ write =>
     cases write with
     | userTask wait =>
         refine ⟨⟨?_, ?_⟩, ?_⟩
@@ -610,24 +711,32 @@ theorem prepared_timer_excludes_smi (program : Program) (state : RuntimeState)
       | .awaitSequentialMultiInstanceUserTask _ _ _ _ _ _ boundaryTimer _ =>
           boundaryTimer.elementId ≠ inserted.elementId
       | _ => True := by
-  cases operation <;> simp_all [prepareInternalArm?, internalArmInput?, internalArmOrigin?]
-  all_goals
-    obtain ⟨owner, ownerEq, prepared⟩ := Option.bind_eq_some_iff.mp prepared
-    split at prepared <;> try simp at prepared
-  all_goals
-    obtain ⟨inputOrigin, inputOriginEq, prepared⟩ := Option.bind_eq_some_iff.mp prepared
-    cases controlEq : state.control <;> simp_all
-  all_goals
-    obtain ⟨unique, absent, available, patchEq⟩ := prepared
-  case awaitTimer.isFalse.running =>
-    rename_i id origin input output timer instanceId selection
-    cases writeEq
-    have declarer : timerWaitDeclarers program timer.elementId =
-        [.awaitTimer id origin input output timer] := by
-      simpa [uniqueFamilyDeclarer?, InternalArmingWrite.kind,
-        InternalArmingWrite.elementId] using unique.1.1
-    exact sole_timer_declarer_excludes_smi program id origin input output timer declarer
-  all_goals simp_all
+  have facts := prepared_arm_selection_unique program state operation patch prepared
+  have patchOperationEq := prepared_operation_eq program state operation patch prepared
+  rw [writeEq] at facts
+  have declarer : timerWaitDeclarers program inserted.elementId = [operation] := by
+    simpa [uniqueFamilyDeclarer?, InternalArmingWrite.kind,
+      InternalArmingWrite.elementId, patchOperationEq] using facts.2.1
+  intro candidate member
+  cases candidate <;> try trivial
+  rename_i candidateId candidateOrigin candidateInput candidateTask candidateData
+    candidateOutput candidateTimer candidateLimits
+  intro same
+  have candidateMember : SemanticOperation.awaitSequentialMultiInstanceUserTask
+      candidateId candidateOrigin candidateInput candidateTask candidateData candidateOutput
+        candidateTimer candidateLimits ∈ timerWaitDeclarers program inserted.elementId := by
+    simp [timerWaitDeclarers, member, same]
+  rw [declarer] at candidateMember
+  have candidateEq : SemanticOperation.awaitSequentialMultiInstanceUserTask candidateId
+      candidateOrigin candidateInput candidateTask candidateData candidateOutput candidateTimer
+        candidateLimits = operation := by
+    simpa using candidateMember
+  have operationEq : operation = .awaitSequentialMultiInstanceUserTask candidateId
+      candidateOrigin candidateInput candidateTask candidateData candidateOutput candidateTimer
+        candidateLimits := by
+    exact candidateEq.symm
+  rw [operationEq] at prepared
+  simp [prepareInternalArm?, internalArmInput?] at prepared
 
 theorem prepared_timer_excludes_parallel (program : Program) (state : RuntimeState)
     (operation : SemanticOperation) (patch : InternalArmingPatch) (inserted : TimerWait)
@@ -638,24 +747,33 @@ theorem prepared_timer_excludes_parallel (program : Program) (state : RuntimeSta
       | .awaitParallelMultiInstanceUserTask _ _ _ _ _ _ _ boundaryTimer _ _ =>
           boundaryTimer.elementId ≠ inserted.elementId
       | _ => True := by
-  cases operation <;> simp_all [prepareInternalArm?, internalArmInput?, internalArmOrigin?]
-  all_goals
-    obtain ⟨owner, ownerEq, prepared⟩ := Option.bind_eq_some_iff.mp prepared
-    split at prepared <;> try simp at prepared
-  all_goals
-    obtain ⟨inputOrigin, inputOriginEq, prepared⟩ := Option.bind_eq_some_iff.mp prepared
-    cases controlEq : state.control <;> simp_all
-  all_goals
-    obtain ⟨unique, absent, available, patchEq⟩ := prepared
-  case awaitTimer.isFalse.running =>
-    rename_i id origin input output timer instanceId selection
-    cases writeEq
-    have declarer : timerWaitDeclarers program timer.elementId =
-        [.awaitTimer id origin input output timer] := by
-      simpa [uniqueFamilyDeclarer?, InternalArmingWrite.kind,
-        InternalArmingWrite.elementId] using unique.1.1
-    exact sole_timer_declarer_excludes_parallel program id origin input output timer declarer
-  all_goals simp_all
+  have facts := prepared_arm_selection_unique program state operation patch prepared
+  have patchOperationEq := prepared_operation_eq program state operation patch prepared
+  rw [writeEq] at facts
+  have declarer : timerWaitDeclarers program inserted.elementId = [operation] := by
+    simpa [uniqueFamilyDeclarer?, InternalArmingWrite.kind,
+      InternalArmingWrite.elementId, patchOperationEq] using facts.2.1
+  intro candidate member
+  cases candidate <;> try trivial
+  rename_i candidateId candidateOrigin candidateInput candidateTaskId candidateName
+    candidateData candidateOutput candidateTimer candidateCompletion candidateLimits
+  intro same
+  have candidateMember : SemanticOperation.awaitParallelMultiInstanceUserTask
+      candidateId candidateOrigin candidateInput candidateTaskId candidateName candidateData
+        candidateOutput candidateTimer candidateCompletion candidateLimits ∈
+          timerWaitDeclarers program inserted.elementId := by
+    simp [timerWaitDeclarers, member, same]
+  rw [declarer] at candidateMember
+  have candidateEq : SemanticOperation.awaitParallelMultiInstanceUserTask candidateId
+      candidateOrigin candidateInput candidateTaskId candidateName candidateData candidateOutput
+        candidateTimer candidateCompletion candidateLimits = operation := by
+    simpa using candidateMember
+  have operationEq : operation = .awaitParallelMultiInstanceUserTask candidateId
+      candidateOrigin candidateInput candidateTaskId candidateName candidateData candidateOutput
+        candidateTimer candidateCompletion candidateLimits := by
+    exact candidateEq.symm
+  rw [operationEq] at prepared
+  simp [prepareInternalArm?, internalArmInput?] at prepared
 
 
 end InternalCommutation

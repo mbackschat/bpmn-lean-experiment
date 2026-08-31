@@ -223,6 +223,12 @@ def candidateMessageStart? (program : Program) (operation : SemanticOperation)
         else
           candidateWaitStart? program operation owner wait.processInstanceId wait.elementId
             wait.activation
+    | .awaitCorrelatedPayloadMessage _ _ _ output message _ _ _ _ =>
+        if wait.elementId ≠ message.elementId || wait.channel ≠ message.channel ||
+            wait.output ≠ output then none
+        else
+          candidateWaitStart? program operation owner wait.processInstanceId wait.elementId
+            wait.activation
     | _ => none
 
 /-- The two Event-Based Gateway candidates come from its exact race and exact paired waits. -/

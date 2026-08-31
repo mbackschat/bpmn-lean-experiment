@@ -14,6 +14,10 @@ structure SemanticId where
   value : String
   deriving Repr, DecidableEq
 
+structure ProcessId where
+  value : String
+  deriving Repr, DecidableEq
+
 /-- Stable identity of one neutral scenario. -/
 structure ScenarioId where
   value : String
@@ -27,6 +31,18 @@ structure ProfileId where
 structure SourceOverlayIdentity where
   id : SemanticId
   sha256 : String
+  deriving Repr, DecidableEq
+
+inductive CompilerId where
+  | bpmnSourceSemanticProcess
+  deriving Repr, DecidableEq
+
+structure ProgramIdentity where
+  compiler : CompilerId
+  semanticProfile : ProfileId
+  sourceId : SemanticId
+  sourceOverlay : Option SourceOverlayIdentity := none
+  sourceSha256 : String
   deriving Repr, DecidableEq
 
 /-- Content-addressed identity of a BPMN resource. -/
@@ -106,6 +122,30 @@ inductive MessageChannel where
   | directMessage (messageId : SemanticId)
   deriving Repr, DecidableEq
 
+/-- Complete immutable definition address for one correlated Message candidate population. -/
+structure CorrelatedMessageAddress where
+  definition : ProgramIdentity
+  processId : ProcessId
+  channel : MessageChannel
+  correlationKeyId : String
+  deriving Repr, DecidableEq
+
+/-- The selected profile's only correlation-key payload kind. -/
+structure CorrelatedStringPayload where
+  value : String
+  deriving Repr, DecidableEq
+
+/-- Private target delivery selected by the global matcher. Every identity is rechecked locally. -/
+structure DeliverCorrelatedPayloadMessageStimulus where
+  commandId : SemanticId
+  address : CorrelatedMessageAddress
+  ingressOrdinal : Nat
+  subscriptionId : MessageSubscriptionId
+  correlationPropertyId : String
+  processPropertyId : String
+  payload : CorrelatedStringPayload
+  deriving Repr, DecidableEq
+
 /-- The exact identifier requirements shared by checked and lowered Message waits. -/
 def MessageChannel.identifiersNonempty : MessageChannel → Bool
   | .operationMessage interfaceId interfaceOperationId messageId =>
@@ -128,6 +168,7 @@ inductive EnabledInteraction where
   | deliverPayloadMessage
       (subscriptionId : MessageSubscriptionId)
       (channel : MessageChannel)
+  | publishCorrelatedPayloadMessage (address : CorrelatedMessageAddress)
   | retryIncident (incidentId : EffectIncidentId)
   | cancelIncidentProcess
       (processInstanceId : SemanticId)
@@ -165,6 +206,8 @@ inductive Stimulus where
       (subscriptionId : MessageSubscriptionId)
       (channel : MessageChannel)
       (payload : VariableValue)
+  | deliverCorrelatedPayloadMessage
+      (delivery : DeliverCorrelatedPayloadMessageStimulus)
   | fireTimer (commandId : SemanticId) (timerId : TimerOccurrenceId) (logicalTimeMs : Nat)
   | completeEffect
       (commandId : SemanticId)

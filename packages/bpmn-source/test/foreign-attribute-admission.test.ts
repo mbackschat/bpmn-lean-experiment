@@ -26,6 +26,7 @@ import {
   compileBpmnToSemanticProcess,
 } from "@bpmn-lean/bpmn-source";
 import {
+  MESSAGE_KEY_CORRELATION_CHECKPOINT_PROFILE_ID,
   SEQUENTIAL_MULTI_INSTANCE_USER_TASK_PROFILE_ID,
   SemanticProfileId,
 } from "@bpmn-lean/semantic-core";
@@ -366,7 +367,7 @@ const dispatchFixtures = {
       import.meta.url,
     ),
     sourceId: "message-key-correlation-process",
-    semanticProfile: SemanticProfileId.MessageKeyCorrelation,
+    semanticProfile: MESSAGE_KEY_CORRELATION_CHECKPOINT_PROFILE_ID,
     find: '<bpmn:startEvent id="StartEvent_PaymentInstructed"',
   },
 } as const satisfies Record<CompilationDispatchId, DispatchFixture>;

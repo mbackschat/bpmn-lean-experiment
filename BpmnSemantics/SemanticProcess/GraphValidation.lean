@@ -118,6 +118,7 @@ private def operationInputs : SemanticOperation → List ControlPlaceId
   | .awaitParallelMultiInstanceUserTask _ _ input _ _ _ _ _ _ _
   | .awaitTimer _ _ input _ _
   | .awaitMessage _ _ input _ _ | .awaitPayloadMessage _ _ input _ _ _
+  | .awaitCorrelatedPayloadMessage _ _ input _ _ _ _ _ _
   | .awaitEventRace _ _ input _ _
   | .awaitBoundedUserTask _ _ input _ _
   | .awaitMessageBoundedUserTask _ _ input _ _
@@ -142,6 +143,7 @@ private def operationOutputs : SemanticOperation → List ControlPlaceId
   | .awaitDataOutputUserTask _ _ _ output _ _ _
   | .awaitTimer _ _ _ output _
   | .awaitMessage _ _ _ output _ | .awaitPayloadMessage _ _ _ output _ _
+  | .awaitCorrelatedPayloadMessage _ _ _ output _ _ _ _ _
   | .synchronize _ _ _ output
   | .mergeExclusive _ _ _ output => [output]
   | .awaitSequentialMultiInstanceUserTask _ _ _ _ _ normalOutput boundaryTimer _ =>
@@ -196,6 +198,18 @@ def operationControlPlacesShareOwner : SemanticOperation → Bool
 /-- A payload-bearing Message Catch Event's outgoing place is one of its same-scope token ports. -/
 theorem awaitPayloadMessage_output_mem_operationControlPlaces (id : OperationId) (origin : BpmnElementOrigin) (input output : ControlPlaceId) (message : MessageDefinition) (directOutput : DirectCatchEventPayloadOutput) :
     output ∈ operationControlPlaces (.awaitPayloadMessage id origin input output message directOutput) := by simp [operationControlPlaces, operationInputs, operationOutputs]
+
+/-- A correlated payload Message Catch Event's outgoing place is one of its same-scope token ports. -/
+theorem awaitCorrelatedPayloadMessage_output_mem_operationControlPlaces
+    (id : OperationId) (origin : BpmnElementOrigin) (input output : ControlPlaceId)
+    (message : MessageDefinition) (correlationKeyId correlationPropertyId : String)
+    (payloadSelector : CorrelationMessagePath)
+    (processPropertySelector : CorrelationProcessPropertyPath) :
+    output ∈ operationControlPlaces
+      (.awaitCorrelatedPayloadMessage id origin input output message correlationKeyId
+        correlationPropertyId payloadSelector processPropertySelector) := by
+  simp [operationControlPlaces, operationInputs, operationOutputs]
+
 private def producers (operations : List SemanticOperation)
     (place : ControlPlaceId) : List OperationId :=
   operations.filterMap fun operation =>
@@ -335,7 +349,8 @@ private def enteredChildScopeId? : SemanticOperation → Option DefinitionScopeI
   | .awaitSequentialMultiInstanceUserTask ..
   | .awaitParallelMultiInstanceUserTask ..
   | .completeParallelMultiInstanceUserTask ..
-  | .awaitTimer .. | .awaitMessage .. | .awaitPayloadMessage .. | .awaitEventRace ..
+  | .awaitTimer .. | .awaitMessage .. | .awaitPayloadMessage ..
+  | .awaitCorrelatedPayloadMessage .. | .awaitEventRace ..
   | .awaitBoundedUserTask .. | .awaitMonitoredUserTask ..
   | .awaitMessageBoundedUserTask ..
   | .awaitEffect .. | .duplicate ..
@@ -422,7 +437,8 @@ def semanticOperationIsResumptionCut : SemanticOperation → Bool
   | .awaitMessageBoundedUserTask .. => true
   | .initiate .. | .initiateMessage .. | .initiateTimer .. | .enterScope .. | .enterBoundedScope ..
   | .invokeProcess .. | .returnProcess .. | .completeParallelMultiInstanceUserTask .. | .awaitTimer ..
-  | .awaitMessage .. | .awaitPayloadMessage .. | .awaitEventRace .. | .awaitBoundedUserTask ..
+  | .awaitMessage .. | .awaitPayloadMessage .. | .awaitCorrelatedPayloadMessage ..
+  | .awaitEventRace .. | .awaitBoundedUserTask ..
   | .awaitMonitoredUserTask .. | .awaitEffect .. | .duplicate ..
   | .synchronize .. | .mergeExclusive .. | .choose .. | .selectMany ..
   | .synchronizeSelected .. | .throwError .. | .reachNoneEnd ..
