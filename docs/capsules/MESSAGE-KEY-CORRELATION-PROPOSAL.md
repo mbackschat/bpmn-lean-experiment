@@ -196,6 +196,6 @@ Closure requires the unique, zero, ambiguous, concurrent, stale, recovery, conti
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `716b6bb8` | `not-recorded` | `pending` | `not-applicable` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
