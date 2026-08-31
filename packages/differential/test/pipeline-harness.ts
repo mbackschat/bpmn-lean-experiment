@@ -31,7 +31,10 @@ import type {
 import {
   CibEffectExecutionSchedule,
 } from "./pipeline-types.ts";
-import { settleOwnedLanes } from "./pipeline-parallel.ts";
+import {
+  runOwnedStepsInOrder,
+  settleOwnedLanes,
+} from "./pipeline-parallel.ts";
 import {
   elapsedMs,
   loadAndCompileCases,
@@ -133,10 +136,7 @@ export async function runPipelineCases(
     );
     const [
       cib,
-      lean,
-      leanDefinitionMutation,
-      leanScenarioMutation,
-      leanProvenanceMutation,
+      leanEvidence,
       temporal,
       cibEffectRetry,
     ] = await settleOwnedLanes([
@@ -145,20 +145,25 @@ export async function runPipelineCases(
         temporaryDirectory,
         "cib",
       ),
-      runLeanTargets(contexts, leanInputPath),
-      requireLeanDefinitionMutationRejection(
-        contexts,
-        leanMutationInputPath,
-      ),
-      requireLeanScenarioMutationRejection(
-        contexts,
-        leanScenarioMutationInputPath,
-        leanScenarioMutationPath,
-      ),
-      requireLeanProvenanceErasureRejection(
-        contexts,
-        leanProvenanceMutationInputPath,
-      ),
+      runOwnedStepsInOrder([
+        () => runLeanTargets(contexts, leanInputPath),
+        () =>
+          requireLeanDefinitionMutationRejection(
+            contexts,
+            leanMutationInputPath,
+          ),
+        () =>
+          requireLeanScenarioMutationRejection(
+            contexts,
+            leanScenarioMutationInputPath,
+            leanScenarioMutationPath,
+          ),
+        () =>
+          requireLeanProvenanceErasureRejection(
+            contexts,
+            leanProvenanceMutationInputPath,
+          ),
+      ] as const),
       runTemporalTargets(runner, contexts),
       effectContexts.length === 0
         ? Promise.resolve(null)
@@ -169,6 +174,12 @@ export async function runPipelineCases(
             EffectExecutionSchedule.FailAfterMutationOnce,
           ),
     ] as const);
+    const [
+      lean,
+      leanDefinitionMutation,
+      leanScenarioMutation,
+      leanProvenanceMutation,
+    ] = leanEvidence;
     const completedTargets: PipelineTargets = {
       cib,
       lean,

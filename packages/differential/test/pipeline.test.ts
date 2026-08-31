@@ -39,7 +39,10 @@ import {
 import {
   cibMavenBuildDirectory,
 } from "./pipeline-cib-targets.ts";
-import { settleOwnedLanes } from "./pipeline-parallel.ts";
+import {
+  runOwnedStepsInOrder,
+  settleOwnedLanes,
+} from "./pipeline-parallel.ts";
 import {
   coldBudgetMsFor,
   defaultWarmBudgetMs,
@@ -133,6 +136,42 @@ test("joins every owned lane before surfacing one parallel failure", async () =>
     /first lane failed/u,
   );
   assert.equal(siblingFinished, true);
+});
+
+test("runs one resource-exclusive lane's steps without overlap", async () => {
+  let activeSteps = 0;
+  let maximumActiveSteps = 0;
+  const events: Array<string> = [];
+  const step = (name: string) => async () => {
+    activeSteps += 1;
+    maximumActiveSteps = Math.max(maximumActiveSteps, activeSteps);
+    events.push(`start:${name}`);
+    await new Promise((resolve) => setTimeout(resolve, 5));
+    events.push(`finish:${name}`);
+    activeSteps -= 1;
+    return name;
+  };
+
+  const results = await runOwnedStepsInOrder([
+    step("primary"),
+    step("definition-mutation"),
+    step("scenario-mutation"),
+  ] as const);
+
+  assert.equal(maximumActiveSteps, 1);
+  assert.deepEqual(results, [
+    "primary",
+    "definition-mutation",
+    "scenario-mutation",
+  ]);
+  assert.deepEqual(events, [
+    "start:primary",
+    "finish:primary",
+    "start:definition-mutation",
+    "finish:definition-mutation",
+    "start:scenario-mutation",
+    "finish:scenario-mutation",
+  ]);
 });
 
 const cleanCibProjection = {
