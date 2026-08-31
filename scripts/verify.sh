@@ -35,6 +35,7 @@ verify_runtime() {
   ./scripts/test-cibseven-oracle.sh
   ./scripts/pnpm.sh run test:differential:built
   ./scripts/pnpm.sh run test:message-payload-lean-core:built
+  ./scripts/pnpm.sh run test:activity-boundary-message-lean-core:built
   ./scripts/pnpm.sh run test:temporal:built
 }
 

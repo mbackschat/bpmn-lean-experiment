@@ -88,6 +88,8 @@
     "test:differential": "pnpm build:differential && pnpm test:differential:built",
     "test:message-payload-lean-core": "./scripts/lake.sh build emitSemanticProcessResults && pnpm run build:bpmn-source && pnpm --filter @bpmn-lean/differential run build && pnpm run test:message-payload-lean-core:built",
     "test:message-payload-lean-core:built": "node --test --test-concurrency=1 packages/differential/test/message-payload-catch-lean-core.test.ts",
+    "test:activity-boundary-message-lean-core": "./scripts/lake.sh build emitSemanticProcessResults && pnpm run build:bpmn-source && pnpm --filter @bpmn-lean/differential run build && pnpm run test:activity-boundary-message-lean-core:built",
+    "test:activity-boundary-message-lean-core:built": "node --test --test-concurrency=1 packages/differential/test/activity-boundary-message-lean-core.test.ts",
     "test:differential:built": "node --test --test-concurrency=1 packages/differential/test/comparator.test.ts packages/differential/test/scenario-binding.test.ts packages/differential/test/pipeline-catalog.test.ts packages/differential/test/parallel-user-task-metadata-pipeline-cases.test.ts packages/differential/test/sequential-multi-instance-pipeline-cases.test.ts packages/differential/test/parallel-multi-instance-pipeline-cases.test.ts packages/differential/test/structured-human-work-pipeline-catalog.test.ts packages/differential/test/pipeline-temporal-lifecycle.test.ts packages/differential/test/service-task-incident-pipeline.test.ts packages/differential/test/service-task-incident-cancellation-pipeline.test.ts",
     "test:infrastructure": "pnpm check:harness-types && pnpm test:infrastructure:runtime",
     "test:infrastructure:runtime": "node --test --test-concurrency=2 scripts/*.test.ts",
