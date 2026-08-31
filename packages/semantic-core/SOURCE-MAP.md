@@ -2,6 +2,8 @@
 
 This contributor map assigns source-file responsibilities inside `@bpmn-lean/semantic-core`. Package purpose and usage start in the [README](README.md); semantic contracts and current support remain in the linked specifications and implementation map.
 
+## Source ownership
+
 | Source owner | Responsibility |
 |---|---|
 | [semantic-value-contract.ts](src/semantic-value-contract.ts) | Shared immutable value shapes carried by checked graphs and programs |
@@ -132,5 +134,7 @@ This contributor map assigns source-file responsibilities inside `@bpmn-lean/sem
 | [scenario.ts](src/scenario.ts) | Stable observation and scenario evaluation |
 | [stimulus.ts](src/stimulus.ts) | Stimulus validation, command identity, and equality |
 | [index.ts](src/index.ts) | The package's public export surface |
+
+## Test ownership
 
 Tests under [`test/`](test/) mirror these owners by contract or semantic family. The [testing specification](../../docs/TESTING-SPEC.md) selects the applicable focused and repository gates.
