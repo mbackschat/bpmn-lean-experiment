@@ -398,10 +398,10 @@ export function canonicalCorrelationPublicationLedgerRecordEnvelopeEncoding(
     "bpmnCorrelationPublicationLedgerRecord",
     "x".repeat(configuration.maxCommandIdUtf8Bytes),
     "f".repeat(64),
-    Number.MAX_SAFE_INTEGER,
+    "settled",
+    ["some", Number.MAX_SAFE_INTEGER],
     [
-      "infrastructureIndeterminate",
-      "targetDelivery",
+      "some",
       [
         candidate.processInstanceId,
         [
@@ -410,11 +410,22 @@ export function canonicalCorrelationPublicationLedgerRecordEnvelopeEncoding(
           candidate.subscriptionId.activation,
         ],
       ],
+    ],
+    [
+      "settled",
       [
-        "capacity",
-        "continuation",
-        Number.MAX_SAFE_INTEGER,
-        Number.MAX_SAFE_INTEGER,
+        "semantic",
+        [
+          "committed",
+          [
+            candidate.processInstanceId,
+            [
+              candidate.subscriptionId.processInstanceId,
+              candidate.subscriptionId.elementId,
+              candidate.subscriptionId.activation,
+            ],
+          ],
+        ],
       ],
     ],
   ]);

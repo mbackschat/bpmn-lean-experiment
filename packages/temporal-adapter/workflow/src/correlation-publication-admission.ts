@@ -15,7 +15,9 @@ import {
   CorrelationPublicationCapacityMeasure,
   CorrelationPublicationLedgerPhase,
   CorrelationPublicationOrderResultKind,
+  CorrelationPublicationSemanticOutcomeKind,
   CorrelationPublicationStatusKind,
+  CorrelationPublicationStoredResolutionKind,
   bpmnAdmitCorrelationPublicationUpdateName,
   bpmnCorrelationPublicationCapacityFailureType,
   bpmnCorrelationPublicationIdentityConflictFailureType,
@@ -28,6 +30,7 @@ import {
   requireCorrelationPublicationLedgerRecord,
   requireCorrelationPublicationQueueRecord,
   requireCorrelationPublicationStoredResolution,
+  requireCorrelationPublicationTarget,
 } from "@bpmn-lean/temporal-protocol";
 import type {
   CorrelatedMessageAddress,
@@ -44,6 +47,8 @@ import type {
   CorrelationPublicationSettlement,
   CorrelationPublicationState,
   CorrelationPublicationStatus,
+  CorrelationPublicationStoredResolution,
+  CorrelationPublicationTarget,
 } from "@bpmn-lean/temporal-protocol";
 
 export enum CorrelationPublicationFaultCode {
@@ -152,6 +157,7 @@ export function admitCorrelationPublication(
     contentSha256,
     phase: CorrelationPublicationLedgerPhase.Queued,
     ordinal: null,
+    target: null,
     resolution: null,
   };
   const reservationBytes = utf8ByteLength(
@@ -233,6 +239,7 @@ export function startNextCorrelationPublication(
     contentSha256: queued.contentSha256,
     ordinal,
     payload: queued.payload,
+    target: null,
   } as const;
   const ledger = state.ledger.map((record, index) =>
     index === ledgerIndex
@@ -256,6 +263,69 @@ export function startNextCorrelationPublication(
       contentSha256: queued.contentSha256,
       ordinal,
     },
+  };
+}
+
+export function reserveCorrelationPublicationTarget(
+  state: CorrelationPublicationState,
+  address: CorrelatedMessageAddress,
+  configuration: CorrelationIngressConfiguration,
+  commandId: string,
+  ordinal: number,
+  targetValue: CorrelationPublicationTarget,
+): CorrelationPublicationState {
+  requireCorrelationPublicationState(state, configuration);
+  const target = requireCorrelationPublicationTarget(targetValue);
+  const inFlight = state.inFlight;
+  if (inFlight === null ||
+    inFlight.commandId !== commandId ||
+    inFlight.ordinal !== ordinal) {
+    throw new CorrelationPublicationFault(
+      CorrelationPublicationFaultCode.Invalid,
+      "Correlation target does not identify the current publication ordinal",
+    );
+  }
+  const command = requireAddressedCommand({
+    commandId: inFlight.commandId,
+    address,
+    payload: inFlight.payload,
+  }, address);
+  if (correlationPublicationContentSha256(command) !== inFlight.contentSha256) {
+    invalidState("The target reservation changed publication content identity");
+  }
+  if (inFlight.target !== null) {
+    if (!sameCorrelationPublicationTarget(inFlight.target, target)) {
+      throw new CorrelationPublicationFault(
+        CorrelationPublicationFaultCode.Invalid,
+        "Correlation publication target changed after selection",
+      );
+    }
+    return state;
+  }
+  const ledgerIndex = state.ledger.findIndex(
+    (record) => record.commandId === inFlight.commandId,
+  );
+  const current = state.ledger[ledgerIndex];
+  if (current === undefined ||
+    current.phase !== CorrelationPublicationLedgerPhase.InFlight ||
+    current.ordinal !== inFlight.ordinal ||
+    current.contentSha256 !== inFlight.contentSha256 ||
+    current.target !== null ||
+    current.resolution !== null) {
+    invalidState("The selected target has no exact in-flight reservation");
+  }
+  const selected: CorrelationPublicationLedgerRecord = { ...current, target };
+  if (utf8ByteLength(canonicalCorrelationPublicationLedgerRecordEncoding(selected)) >
+    configuration.publicationLedgerRecordBytes) {
+    invalidState("The selected target exceeds its fixed ledger reservation");
+  }
+  return {
+    nextOrdinal: state.nextOrdinal,
+    queue: state.queue,
+    ledger: state.ledger.map((record, index) =>
+      index === ledgerIndex ? selected : record
+    ),
+    inFlight: { ...inFlight, target },
   };
 }
 
@@ -296,8 +366,15 @@ export function settleCorrelationPublication(
     current.contentSha256 !== inFlight.contentSha256 ||
     current.phase !== CorrelationPublicationLedgerPhase.InFlight ||
     current.ordinal !== inFlight.ordinal ||
+    !sameNullableCorrelationPublicationTarget(current.target, inFlight.target) ||
     current.resolution !== null) {
     invalidState("The in-flight publication has no exact reserved ledger record");
+  }
+  if (!resolutionMatchesTarget(resolution, inFlight.target)) {
+    throw new CorrelationPublicationFault(
+      CorrelationPublicationFaultCode.Invalid,
+      "Correlation publication resolution disagrees with its selected target",
+    );
   }
   const settled: CorrelationPublicationLedgerRecord = {
     ...current,
@@ -485,8 +562,10 @@ function requireCorrelationPublicationState(
     }
     switch (record.phase) {
       case CorrelationPublicationLedgerPhase.Queued:
-        if (record.ordinal !== null || record.resolution !== null) {
-          invalidState("A queued publication already has an ordinal or resolution");
+        if (record.ordinal !== null ||
+          record.target !== null ||
+          record.resolution !== null) {
+          invalidState("A queued publication already has an ordinal, target, or resolution");
         }
         reachedQueuedSuffix = true;
         break;
@@ -502,6 +581,9 @@ function requireCorrelationPublicationState(
       case CorrelationPublicationLedgerPhase.Settled:
         if (record.ordinal === null || record.resolution === null) {
           invalidState("A settled publication retained no resolution");
+        }
+        if (!resolutionMatchesTarget(record.resolution, record.target)) {
+          invalidState("A settled publication resolution disagrees with its target");
         }
         if (reachedQueuedSuffix || record.ordinal !== expectedOrdinal) {
           invalidState("Settled publication order is not the ledger prefix");
@@ -553,9 +635,58 @@ function requireCorrelationPublicationState(
   if (ledgerRecord === undefined ||
     ledgerRecord.commandId !== inFlight.commandId ||
     ledgerRecord.contentSha256 !== inFlight.contentSha256 ||
-    ledgerRecord.ordinal !== inFlight.ordinal) {
+    ledgerRecord.ordinal !== inFlight.ordinal ||
+    !sameNullableCorrelationPublicationTarget(
+      ledgerRecord.target,
+      inFlight.target,
+    )) {
     invalidState("The in-flight payload is not bound to its ledger reservation");
   }
+}
+
+function resolutionMatchesTarget(
+  resolution: CorrelationPublicationStoredResolution,
+  target: CorrelationPublicationTarget | null,
+): boolean {
+  switch (resolution.kind) {
+    case CorrelationPublicationStoredResolutionKind.Semantic:
+      switch (resolution.outcome.kind) {
+        case CorrelationPublicationSemanticOutcomeKind.RejectedNoMatch:
+        case CorrelationPublicationSemanticOutcomeKind.RejectedAmbiguous:
+          return target === null;
+        case CorrelationPublicationSemanticOutcomeKind.Committed:
+          return target !== null && sameCorrelationPublicationTarget(
+            resolution.outcome.target,
+            target,
+          );
+      }
+      break;
+    case CorrelationPublicationStoredResolutionKind.TargetInconsistent:
+      return target !== null && sameCorrelationPublicationTarget(
+        resolution.target,
+        target,
+      );
+  }
+}
+
+function sameNullableCorrelationPublicationTarget(
+  left: CorrelationPublicationTarget | null,
+  right: CorrelationPublicationTarget | null,
+): boolean {
+  return left === null
+    ? right === null
+    : right !== null && sameCorrelationPublicationTarget(left, right);
+}
+
+function sameCorrelationPublicationTarget(
+  left: CorrelationPublicationTarget,
+  right: CorrelationPublicationTarget,
+): boolean {
+  return left.processInstanceId === right.processInstanceId &&
+    left.subscriptionId.processInstanceId ===
+      right.subscriptionId.processInstanceId &&
+    left.subscriptionId.elementId === right.subscriptionId.elementId &&
+    left.subscriptionId.activation === right.subscriptionId.activation;
 }
 
 function admissionResult(

@@ -78,6 +78,12 @@ export enum CorrelationPublicationStatusKind {
   Accepted = "accepted",
 }
 
+export enum CorrelationPublicationScanResolutionKind {
+  RejectedNoMatch = "rejectedNoMatch",
+  RejectedAmbiguous = "rejectedAmbiguous",
+  TargetSelected = "targetSelected",
+}
+
 export type CorrelationPublicationPayload = Extract<
   VariableValue,
   { kind: "string" }
@@ -121,6 +127,7 @@ export type CorrelationPublicationLedgerRecord = DeepReadonly<{
   contentSha256: string;
   phase: CorrelationPublicationLedgerPhase;
   ordinal: number | null;
+  target: CorrelationPublicationTarget | null;
   resolution: CorrelationPublicationStoredResolution | null;
 }>;
 
@@ -129,6 +136,7 @@ export type CorrelationPublicationInFlightRecord = DeepReadonly<{
   contentSha256: string;
   ordinal: number;
   payload: CorrelationPublicationPayload;
+  target: CorrelationPublicationTarget | null;
 }>;
 
 export type CorrelationPublicationState = DeepReadonly<{
@@ -275,6 +283,9 @@ export function canonicalCorrelationPublicationLedgerRecordEncoding(
     accepted.contentSha256,
     accepted.phase,
     accepted.ordinal === null ? ["none"] : ["some", accepted.ordinal],
+    accepted.target === null
+      ? ["none"]
+      : ["some", correlationPublicationTargetTuple(accepted.target)],
     accepted.resolution === null
       ? ["reserved"]
       : ["settled", correlationPublicationResolutionTuple(accepted.resolution)],
@@ -303,6 +314,7 @@ export function requireCorrelationPublicationLedgerRecord(
     "contentSha256",
     "phase",
     "ordinal",
+    "target",
     "resolution",
   ]) ||
     !nonemptyBoundedCommandId(value.commandId) ||
@@ -311,6 +323,7 @@ export function requireCorrelationPublicationLedgerRecord(
       value.phase as CorrelationPublicationLedgerPhase,
     ) ||
     !(value.ordinal === null || isPositiveSafeInteger(value.ordinal)) ||
+    !(value.target === null || isCorrelationPublicationTarget(value.target)) ||
     !(value.resolution === null || isStoredResolution(value.resolution))) {
     throw new TypeError("Correlation publication ledger record is malformed");
   }
@@ -352,6 +365,15 @@ export function requireCorrelationPublicationStoredResolution(
       break;
   }
   throw new TypeError("Correlation publication resolution is malformed");
+}
+
+export function requireCorrelationPublicationTarget(
+  value: unknown,
+): CorrelationPublicationTarget {
+  if (!isCorrelationPublicationTarget(value)) {
+    throw new TypeError("Correlation publication target is malformed");
+  }
+  return value;
 }
 
 export function requireCorrelationPublicationCapacityFailure(

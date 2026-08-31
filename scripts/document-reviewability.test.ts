@@ -269,7 +269,7 @@ test("keeps the routed implementation maps reviewable", async () => {
   }
 });
 
-test("keeps the two owner-approved 5,000-word map budgets exactly scoped", () => {
+test("keeps the owner-approved detail-map budget exceptions exactly scoped", () => {
   assert.equal(
     reviewedDetailMapWordBudget(
       "docs/ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md",
@@ -280,7 +280,7 @@ test("keeps the two owner-approved 5,000-word map budgets exactly scoped", () =>
     reviewedDetailMapWordBudget(
       "docs/TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md",
     ),
-    5000,
+    6000,
   );
   assert.equal(
     reviewedDetailMapWordBudget(

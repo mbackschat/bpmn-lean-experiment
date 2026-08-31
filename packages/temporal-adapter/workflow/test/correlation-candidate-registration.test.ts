@@ -15,8 +15,12 @@ import {
   CorrelationCandidateRegistrationResultKind,
   CorrelationCandidateCapacityMeasure,
   CorrelationCandidateScanResultKind,
+  CorrelationPublicationLedgerPhase,
+  CorrelationPublicationSemanticOutcomeKind,
+  CorrelationPublicationStoredResolutionKind,
   canonicalCorrelationCandidateLocatorSetEncoding,
   canonicalCorrelationCandidateRegistrationEncoding,
+  canonicalCorrelationPublicationLedgerRecordEncoding,
   canonicalCorrelationPublicationLedgerRecordEnvelopeEncoding,
   productionCorrelationIngressConfiguration,
 } from "@bpmn-lean/temporal-protocol";
@@ -218,6 +222,27 @@ test("admits exact capacity and refuses one-over count, locator, Activity, and r
       first.candidate,
       configuration,
     ),
+  );
+  const target = {
+    processInstanceId: first.candidate.processInstanceId,
+    subscriptionId: first.candidate.subscriptionId,
+  };
+  assert.equal(
+    resultEnvelopeBytes,
+    utf8ByteLength(canonicalCorrelationPublicationLedgerRecordEncoding({
+      commandId: "x".repeat(configuration.maxCommandIdUtf8Bytes),
+      contentSha256: "f".repeat(64),
+      phase: CorrelationPublicationLedgerPhase.Settled,
+      ordinal: Number.MAX_SAFE_INTEGER,
+      target,
+      resolution: {
+        kind: CorrelationPublicationStoredResolutionKind.Semantic,
+        outcome: {
+          kind: CorrelationPublicationSemanticOutcomeKind.Committed,
+          target,
+        },
+      },
+    })),
   );
 
   assert.equal(

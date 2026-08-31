@@ -8,10 +8,12 @@ import {
   VariableValueKind,
 } from "@bpmn-lean/semantic-core";
 import {
+  CorrelationCandidateRegistrationResultKind,
   CorrelationPublicationAdmissionResultKind,
   CorrelationPublicationLedgerPhase,
   CorrelationPublicationStatusKind,
   bpmnAdmitCorrelationPublicationUpdateName,
+  bpmnPrepareCorrelationCandidateUpdateName,
   bpmnCorrelationIngressWorkflowType,
   bpmnCorrelationPublicationCapacityFailureType,
   bpmnCorrelationPublicationIdentityConflictFailureType,
@@ -21,9 +23,12 @@ import {
   correlationPublicationUpdateId,
   createCachedLocalEnvironment,
   loadBpmnWorkflowBundle,
+  prepareCorrelationCandidateRegistrationUpdateId,
   productionCorrelationIngressConfiguration,
 } from "@bpmn-lean/temporal-testkit";
 import type {
+  CorrelationCandidateRegistrationResult,
+  CorrelationCandidateRegistrationRequest,
   CorrelationPublicationAdmissionResult,
   CorrelationPublicationCommand,
   CorrelationPublicationStatus,
@@ -72,6 +77,18 @@ test("reserves the concurrent last queue slot before Update acceptance", async (
         workflowId: correlationIngressWorkflowId(address),
         workflowIdReusePolicy: "REJECT_DUPLICATE",
       },
+    );
+
+    const pending = pendingRegistration();
+    assert.equal(
+      (await ingress.executeUpdate<
+        CorrelationCandidateRegistrationResult,
+        [CorrelationCandidateRegistrationRequest]
+      >(bpmnPrepareCorrelationCandidateUpdateName, {
+          args: [pending],
+          updateId: prepareCorrelationCandidateRegistrationUpdateId(pending),
+        })).kind,
+      CorrelationCandidateRegistrationResultKind.Prepared,
     );
 
     const current = publication("Publication_in_flight", "settlement-current");
@@ -181,7 +198,7 @@ test("reserves the concurrent last queue slot before Update acceptance", async (
         event.workflowExecutionUpdateAcceptedEventAttributes !== undefined &&
         event.workflowExecutionUpdateAcceptedEventAttributes !== null
       ).length,
-      1 + productionCorrelationIngressConfiguration.maxQueuedPublicationRecords,
+      2 + productionCorrelationIngressConfiguration.maxQueuedPublicationRecords,
     );
   } finally {
     await ingress?.terminate("correlation publication admission cleanup")
@@ -267,6 +284,28 @@ function publication(
       correlationKeyId: "CorrelationKey_Settlement",
     },
     payload: { kind: VariableValueKind.String, value },
+  };
+}
+
+function pendingRegistration(): CorrelationCandidateRegistrationRequest {
+  const processInstanceId = "ProcessInstance_pending_admission";
+  return {
+    transactionId: "Registration_pending_admission",
+    candidate: {
+      address,
+      processInstanceId,
+      subscriptionId: {
+        processInstanceId,
+        elementId: "Catch_SettlementConfirmed",
+        activation: 1,
+      },
+      correlationPropertyId: "CorrelationProperty_SettlementReference",
+      processPropertyId: "Property_SettlementReference",
+      key: { kind: VariableValueKind.String, value: "settlement-current" },
+    },
+    processLocator: {
+      workflowId: "bpmn-process-sha256:pending-admission",
+    },
   };
 }
 

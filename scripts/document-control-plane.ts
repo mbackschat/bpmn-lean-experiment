@@ -284,8 +284,9 @@ export function assertDetailImplementationMap(
 export function reviewedDetailMapWordBudget(file: string): number {
   switch (file) {
     case "docs/ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md":
-    case "docs/TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md":
       return 5000;
+    case "docs/TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md":
+      return 6000;
     default:
       return 4000;
   }

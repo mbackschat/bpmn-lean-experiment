@@ -49,6 +49,7 @@ test("atomically installs one queue record and one fixed future-result reservati
     contentSha256: admitted.result.contentSha256,
     phase: CorrelationPublicationLedgerPhase.Queued,
     ordinal: null,
+    target: null,
     resolution: null,
   });
 
