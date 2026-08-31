@@ -255,7 +255,7 @@ export function assertDetailImplementationMap(
     assert.ok(index > previous, `${file} lacks ordered base section ${heading}`);
     previous = index;
   }
-  const budget = reviewedDetailMapWordBudget();
+  const budget = reviewedDetailMapWordBudget(file);
   assert.ok(
     wordCount(document) <= budget,
     `${file} exceeds ${budget.toLocaleString("en-US")} words`,
@@ -273,14 +273,21 @@ export function assertDetailImplementationMap(
  *
  * Splitting on the family axis retired both raises: per-family status moved to its own area and both
  * maps came back under this default, so a newly closed family grows the family map instead of pushing
- * a shared one past a threshold. An agent may not reintroduce an exception. The alternative to a raise
- * is another split, which is a routing change needing a new area ID and therefore visible, and the
- * deciding authority is recorded by its owner, [the documentation
+ * a shared one past a threshold. The repository owner approved the exact Temporal-hosting map at
+ * 5,000 words on 2026-08-31; every other map retains the default, and neither value is unilaterally
+ * agent-adjustable. An owner-authorized change must update this executable value and its documented
+ * basis together.
+ * The deciding authority is recorded by its owner, [the documentation
  * discipline](../docs/DOC-DISCIPLINE.md#reviewed-detail-map-word-budgets), because a threshold whose
  * only justification is its own comment is not reviewable as a decision.
  */
-export function reviewedDetailMapWordBudget(): number {
-  return 4000;
+export function reviewedDetailMapWordBudget(file: string): number {
+  switch (file) {
+    case "docs/TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md":
+      return 5000;
+    default:
+      return 4000;
+  }
 }
 
 function rootPathRoutes(file: string): ReadonlyArray<AreaId> {

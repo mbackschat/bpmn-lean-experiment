@@ -245,7 +245,7 @@ test("keeps the routed implementation maps reviewable", async () => {
   for (const [relativePath, maximumWords, permitsRoutingTable] of [
     [rootImplementationMap, 2000, true],
     ...detailImplementationMaps.map((relativePath) =>
-      [relativePath, reviewedDetailMapWordBudget(), false] as const),
+      [relativePath, reviewedDetailMapWordBudget(relativePath), false] as const),
   ] as const) {
     const document = await readFile(path.join(projectRoot, relativePath), "utf8");
     const lines = document.split("\n");
@@ -267,6 +267,21 @@ test("keeps the routed implementation maps reviewable", async () => {
       `${relativePath} is ${wordCount(document)} words against a ${maximumWords}-word backstop`,
     );
   }
+});
+
+test("keeps the owner-approved Temporal map budget scoped to that map", () => {
+  assert.equal(
+    reviewedDetailMapWordBudget(
+      "docs/TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md",
+    ),
+    5000,
+  );
+  assert.equal(
+    reviewedDetailMapWordBudget(
+      "docs/ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md",
+    ),
+    4000,
+  );
 });
 
 test("covers every registered semantic profile in the admission capability table", async () => {
