@@ -14,6 +14,10 @@
       "types": "./dist/definition-schedule-client.d.ts",
       "import": "./dist/definition-schedule-client.js"
     },
+    "./correlation-ingress": {
+      "types": "./dist/correlation-ingress-client.d.ts",
+      "import": "./dist/correlation-ingress-client.js"
+    },
     "./message-start": {
       "types": "./dist/message-start-client.d.ts",
       "import": "./dist/message-start-client.js"

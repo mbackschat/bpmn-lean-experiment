@@ -1,4 +1,5 @@
 export * from "./process-client.js";
+export * from "./correlation-ingress-client.js";
 export * from "./execution-publication-client.js";
 export * from "./flow-node-occurrence-publication-client.js";
 export * from "./incident-client.js";

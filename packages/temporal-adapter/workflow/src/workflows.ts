@@ -11,6 +11,8 @@ import {
 import { executeEffectForProfile } from "./effect-activities.js";
 import { ActivationDrain } from "./activation-tagged-readiness.js";
 
+export { runBpmnCorrelationIngress } from "./correlation-ingress-workflow.js";
+
 export const runBpmnProcess: BpmnProcessWorkflow = (
   start,
   semanticProcess,

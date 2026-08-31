@@ -2,6 +2,7 @@ export * from "./activation-batch.js";
 export * from "./activation-tagged-readiness.js";
 export * from "./bounded-deadline-scheduler.js";
 export * from "./command-publication-integration.js";
+export * from "./correlation-ingress-workflow.js";
 export * from "./workflow-command-recovery.js";
 export * from "./workflow-command-ingress.js";
 export * from "./workflow-chain-capacity.js";

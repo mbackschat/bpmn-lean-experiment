@@ -290,9 +290,9 @@ The 800-nonblank-line soft target is the extraction threshold and 1,200 lines is
 | [TypeScript internal-commutation census](../../packages/semantic-core/src/internal-commutation-census.ts) | 670 | add the exact ordinary-wait classification only; footprint logic belongs in the correlated family owner |
 | [Lean internal-commutation census](../../BpmnSemantics/SemanticProcess/InternalCommutationCensus.lean) | 667 | add the matching exhaustive constructor classification only |
 | [Engine API index](../../packages/engine-api/src/index.ts) | 673 | export new bounded definition-correlation and publication owners only |
-| [Temporal protocol index](../../packages/temporal-adapter/protocol/src/index.ts) | 775 | export one new bounded protocol owner only |
-| [Temporal client index](../../packages/temporal-adapter/client/src/index.ts) | 793 | export one new bounded client owner only |
-| [Temporal Workflow index](../../packages/temporal-adapter/workflow/src/index.ts) | 765 | export the new ingress Workflow and Process-candidate Query owner only |
+| [Temporal protocol index](../../packages/temporal-adapter/protocol/src/index.ts) | 774 | export one new bounded protocol owner only |
+| [Temporal client index](../../packages/temporal-adapter/client/src/index.ts) | 792 | export one new bounded client owner only |
+| [Temporal Workflow index](../../packages/temporal-adapter/workflow/src/index.ts) | 764 | export the new ingress Workflow and Process-candidate Query owner only |
 | [Temporal Worker index](../../packages/temporal-adapter/worker/src/index.ts) | 796 | export one bounded correlation-Activity owner only |
 | [Temporal Worker runtime](../../packages/temporal-adapter/worker/src/external-temporal-runtime.ts) | 621 | compose the private WorkflowClient-backed Activities; Activity logic belongs in the new owner |
 | [Process continuation](../../packages/temporal-adapter/protocol/src/workflow-continuation.ts) | 276 | carry the staged registration and correlated result inside the existing envelope; extract if the edit would cross 800 |
@@ -320,7 +320,7 @@ No closure cost is claimed at proposal time. At closure, [`capsule-cost.ts`](../
 
 The first green source/checked/IL plus Lean/core finite-matcher, per-instance transition, complete-address contract, and internal-commutation census/footprint target is a mandatory semantic checkpoint. No Temporal correlation-ingress, engine API/global client, Product 2 binding, retained corpus registration, or closure status may cross that checkpoint before its independent review is approved.
 
-The current implementation target has reached that boundary with focused source, contract, Lean, core, and fail-closed Temporal-protocol gates green. The independent review approved target `77ecd9bc` with required exhaustive-Stimulus corrections audited at `1ce28ed5`; the prohibited downstream lanes remain absent, and the approved Temporal correlation-ingress lane may now begin.
+The current implementation target has reached that boundary with focused source, contract, Lean, core, and fail-closed Temporal-protocol gates green. The independent review approved target `77ecd9bc` with required exhaustive-Stimulus corrections audited at `1ce28ed5`. The first approved downstream slice implements only the shared canonical ensure-ingress identity, exact address/protocol/capacity echo, lost-start-response recovery, live duplicate recovery, and replay. Candidate registration, discovery, publication, target settlement, public engine API, profile, scenario, corpus, Product 2 binding, and closure remain absent.
 
 Closure requires the unique, zero, ambiguous, cross-definition, pending-registration, failed-fanout, exact-capacity, concurrent, stale/quarantine, same-target recovery, continuation, replay, and mutation evidence named above; complete applicable gates on a clean committed target; reflection and cost records; and independent closure review. The proposal graduates to `-SPEC` only after those owners agree.
 
