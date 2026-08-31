@@ -17,6 +17,9 @@ import { waitForHostReadiness } from "../dist/workflow-host-readiness.js";
 import type {
   EventRaceReadinessScheduler,
 } from "../dist/event-race-readiness-scheduler.js";
+import type {
+  MessageBoundedActivityReadinessScheduler,
+} from "../dist/message-bounded-activity-readiness-scheduler.js";
 
 import { publicationProgram } from "./execution-publication-fixture.ts";
 
@@ -114,6 +117,16 @@ test("fails a malformed sixty-five-Timer state before a managed Timer is armed",
     },
     reconcileCommittedState: () => undefined,
   } satisfies EventRaceReadinessScheduler;
+  const messageBoundedActivityScheduler = {
+    hasPendingCallbacks: () => false,
+    ownsCommittedPair: () => false,
+    recordMessageCallback: () => false,
+    recordCompletionCallback: () => false,
+    waitForReadiness: async () => {
+      schedulerCalls += 1;
+      return [];
+    },
+  } satisfies MessageBoundedActivityReadinessScheduler;
 
   await assert.rejects(
     waitForHostReadiness(
@@ -122,6 +135,7 @@ test("fails a malformed sixty-five-Timer state before a managed Timer is armed",
       [],
       [],
       eventRaceScheduler,
+      messageBoundedActivityScheduler,
       [],
       async () => {
         timerCalls += 1;

@@ -457,6 +457,8 @@ function messageInteractionKind(
       case SemanticOperationKind.AwaitPayloadMessage:
       case SemanticOperationKind.AwaitEventRace:
         return operation.message.elementId === elementId;
+      case SemanticOperationKind.AwaitMessageBoundedUserTask:
+        return operation.boundaryMessage.elementId === elementId;
       default:
         return false;
     }

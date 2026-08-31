@@ -60,6 +60,7 @@ export {
 export {
   isMessageBoundaryDefinition,
   isMessageBoundedTaskDefinition,
+  messageBoundedPairForSubscription,
 } from "./semantic-process-message-bounded-task-runtime.js";
 export {
   isBoundedScopeDeadlineDefinition,

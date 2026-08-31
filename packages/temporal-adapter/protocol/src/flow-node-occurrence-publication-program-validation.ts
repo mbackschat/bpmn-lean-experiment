@@ -111,7 +111,10 @@ function internalOperationStarts(
       return sameScope(owner, transitionOwner) &&
         operation.task.elementId === value.elementId;
     case SemanticOperationKind.AwaitMessageBoundedUserTask:
-      return false;
+      return sameScope(owner, transitionOwner) && (
+        operation.task.elementId === value.elementId ||
+        operation.boundaryMessage.elementId === value.elementId
+      );
     case SemanticOperationKind.AwaitSequentialMultiInstanceUserTask:
     case SemanticOperationKind.AwaitParallelMultiInstanceUserTask:
       return sameScope(owner, transitionOwner) &&
@@ -174,12 +177,21 @@ function externalStimulusStarts(
     case StimulusKind.StartProcess:
     case StimulusKind.TriggerMessageStart:
     case StimulusKind.TriggerTimerStart:
-    case StimulusKind.DeliverMessage:
     case StimulusKind.DeliverPayloadMessage:
     case StimulusKind.ReportEffectFailure:
     case StimulusKind.RetryIncident:
     case StimulusKind.CancelIncidentProcess:
       return false;
+    case StimulusKind.DeliverMessage:
+      return stimulus.subscriptionId.processInstanceId ===
+          owner.processInstanceId &&
+        stimulus.subscriptionId.elementId === value.elementId &&
+        program.operations.some((operation) =>
+          operation.kind ===
+            SemanticOperationKind.AwaitMessageBoundedUserTask &&
+          operation.boundaryMessage.elementId === value.elementId &&
+          operationOwnsScope(operation, owner.definitionScopeId, program)
+        );
     case StimulusKind.CompleteUserTaskInstance: {
       if (stimulus.taskId.processInstanceId !== owner.processInstanceId) {
         return false;
@@ -326,7 +338,10 @@ function operationPublishesNestedElement(
         operation.boundaryTimer.elementId === elementId
       );
     case SemanticOperationKind.AwaitMessageBoundedUserTask:
-      return false;
+      return directlyOwned && (
+        operation.task.elementId === elementId ||
+        operation.boundaryMessage.elementId === elementId
+      );
     // Only generated inner tasks and the lifetime boundary Event are BPMN flow-node occurrences;
     // the operation origin must not create a second synthetic outer/controller occurrence.
     case SemanticOperationKind.AwaitSequentialMultiInstanceUserTask:

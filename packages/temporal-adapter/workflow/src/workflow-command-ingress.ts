@@ -37,6 +37,9 @@ import { commandOutcome } from "./command-publication-integration.js";
 import type {
   EventRaceReadinessScheduler,
 } from "./event-race-readiness-scheduler.js";
+import type {
+  MessageBoundedActivityReadinessScheduler,
+} from "./message-bounded-activity-readiness-scheduler.js";
 import {
   bpmnCancelIncidentProcessUpdate,
   validateCancelIncidentProcessUpdate,
@@ -92,6 +95,7 @@ type WorkflowCommandIngressOptions = Readonly<{
   currentPublication: () => CommandPublicationState;
   currentFence: () => WorkflowChainFenceState;
   eventRaceScheduler: EventRaceReadinessScheduler;
+  messageBoundedActivityScheduler: MessageBoundedActivityReadinessScheduler;
   boundedDeadlineSchedulerFor: (
     state: RuntimeState,
   ) => BoundedDeadlineScheduler | undefined;
@@ -117,6 +121,7 @@ export function registerWorkflowCommandIngress(
     currentPublication,
     currentFence,
     eventRaceScheduler,
+    messageBoundedActivityScheduler,
     boundedDeadlineSchedulerFor,
     reserveStimulus,
   } = options;
@@ -153,16 +158,21 @@ export function registerWorkflowCommandIngress(
       stimulus,
       accepted,
     );
-    const scheduledByEventRace = stimulus.kind === StimulusKind.DeliverMessage
-      ? eventRaceScheduler.recordMessageCallback(
-          currentState(),
+    const state = currentState();
+    const scheduledByManagedRace = stimulus.kind === StimulusKind.DeliverMessage
+      ? messageBoundedActivityScheduler.recordMessageCallback(
+          state,
+          stimulus,
+          acceptance.enqueue,
+        ) || eventRaceScheduler.recordMessageCallback(
+          state,
           stimulus,
           acceptance.enqueue,
         )
       : false;
     if (acceptance.enqueue) {
       acceptedStimuli.push(stimulus);
-      if (!scheduledByEventRace) {
+      if (!scheduledByManagedRace) {
         pendingStimuli.push(stimulus);
       }
     }
@@ -176,11 +186,14 @@ export function registerWorkflowCommandIngress(
         stimulus,
         currentPublication().execution.headRevision,
         async () => {
-          // A bounded completion races its deadline, so the scheduler classifies it by activation
-          // instead of the loop draining it in arrival order.
+          // A managed completion races either a Message callback or a deadline, so its scheduler
+          // classifies the activation instead of letting loop arrival order choose the winner.
           const state = currentState();
           if (
-            boundedDeadlineSchedulerFor(state)?.recordCompletionCallback(
+            messageBoundedActivityScheduler.recordCompletionCallback(
+              state,
+              stimulus,
+            ) || boundedDeadlineSchedulerFor(state)?.recordCompletionCallback(
               state,
               stimulus,
             ) === true

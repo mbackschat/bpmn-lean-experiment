@@ -26,6 +26,7 @@ export * from "./incident-cancellation-update-handler.js";
 export * from "./incident-operations-query-handler.js";
 export * from "./host-invariant.js";
 export * from "./message-delivery-ledger.js";
+export * from "./message-bounded-activity-readiness-scheduler.js";
 export * from "./sequential-multi-instance-history-capacity.js";
 export * from "./parallel-multi-instance-history-capacity.js";
 export * from "./terminal-process-receipt.js";

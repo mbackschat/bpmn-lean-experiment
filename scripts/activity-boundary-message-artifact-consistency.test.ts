@@ -33,6 +33,13 @@ type OperationFixture = {
   };
 };
 
+type ChannelFixture = {
+  readonly kind: "operationMessage";
+  readonly interfaceId: string;
+  readonly interfaceOperationId: string;
+  readonly messageId: string;
+};
+
 type ArtifactFixture = {
   checkedProcess: {
     nodes: NodeFixture[];
@@ -52,12 +59,12 @@ type ArtifactFixture = {
   };
 };
 
-const channel = {
+const channel: ChannelFixture = {
   kind: "operationMessage",
   interfaceId: "Interface_ApplicationMessages",
   interfaceOperationId: "Operation_ReceiveApplicationWithdrawal",
   messageId: "Message_ApplicationWithdrawal",
-} as const;
+};
 
 function artifacts(): ArtifactFixture {
   return {

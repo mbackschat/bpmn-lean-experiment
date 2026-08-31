@@ -37,6 +37,9 @@ import {
   executeEffectWithinCapacity,
 } from "./workflow-effect-capacity.js";
 import type { EventRaceReadinessScheduler } from "./event-race-readiness-scheduler.js";
+import type {
+  MessageBoundedActivityReadinessScheduler,
+} from "./message-bounded-activity-readiness-scheduler.js";
 import { hostInvariantFailure } from "./host-invariant.js";
 import { isTerminalProcessState } from "./terminal-process-receipt.js";
 import {
@@ -62,6 +65,7 @@ export async function waitForHostReadiness(
   pendingStimuli: Stimulus[],
   acceptedStimuli: Stimulus[],
   eventRaceScheduler: EventRaceReadinessScheduler,
+  messageBoundedActivityScheduler: MessageBoundedActivityReadinessScheduler,
   boundedDeadlineSchedulers: ReadonlyArray<BoundedDeadlineScheduler>,
   waitForTimer: (durationMs: number) => Promise<void>,
   executeEffect: (request: EffectRequest) => Promise<EffectActivityResult>,
@@ -80,6 +84,22 @@ export async function waitForHostReadiness(
       failCapacity(timerCapacity.failure);
     default:
       return assertNever(timerCapacity);
+  }
+  if (messageBoundedActivityScheduler.ownsCommittedPair(state)) {
+    if (state.eventRaces.length > 0 || timers.length > 0 || effects.length > 0) {
+      throw hostInvariantFailure(
+        "Pre-start host admission allowed another managed wait beside a Message-bounded Activity",
+      );
+    }
+    for (
+      const stimulus of await messageBoundedActivityScheduler.waitForReadiness(
+        state,
+      )
+    ) {
+      // Both Signal and Update handlers already accepted exact pair members before scheduling them.
+      pendingStimuli.push(stimulus);
+    }
+    return HostReadinessAction.RecheckMainLoop;
   }
   if (state.eventRaces.length > 0) {
     if (effects.length > 0) {

@@ -43,9 +43,6 @@ test("arming publishes the task and Message subscription without executing the B
     waitStart(subscriptionId, "Withdrawal"),
   ]);
   assert.deepEqual(lifecycle.ended, []);
-  assert.equal(lifecycle.started.some(({ anchor }) =>
-    anchor.kind === SemanticFlowNodeOccurrenceAnchorKind.Transition
-  ), false);
 });
 
 test("independent completeness rejects a premature Boundary Event occurrence while arming", () => {

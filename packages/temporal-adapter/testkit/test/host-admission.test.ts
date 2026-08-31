@@ -10,6 +10,7 @@ import {
   ACTIVITY_BOUNDARY_MESSAGE_CHECKPOINT_PROFILE_ID,
   EffectOperation,
   EffectProtocol,
+  MessageChannelKind,
   SemanticProfileId,
   SemanticOperationKind,
   StimulusKind,
@@ -137,7 +138,7 @@ test("classifies Message and User Task as passive ingress in either operation or
   );
 });
 
-test("fails closed before the Message-bounded Activity scheduler is installed", async () => {
+test("admits only the exact isolated operation-addressed Message-bounded Activity", async () => {
   const program = await compileFixture(
     "../../../../scenarios/activity-boundary-message/process.bpmn",
     "activity-boundary-message-host-admission",
@@ -145,14 +146,52 @@ test("fails closed before the Message-bounded Activity scheduler is installed", 
   );
 
   assert.deepEqual(assessTemporalHostCapability(program), {
+    kind: TemporalHostCapabilityResultKind.Admitted,
+  });
+  const bounded = program.operations.find(
+    ({ kind }) => kind === SemanticOperationKind.AwaitMessageBoundedUserTask,
+  );
+  assert.ok(bounded?.kind === SemanticOperationKind.AwaitMessageBoundedUserTask);
+  const failure = {
     kind: TemporalHostCapabilityResultKind.Rejected,
     failure: {
       code: TemporalHostAdmissionFailureCode
         .MessageBoundedActivitySchedulerUnavailable,
       evidence:
-        "The Temporal host has not installed the Message/Update co-readiness scheduler for a Message-bounded User Task.",
+        "The Temporal host admits only one isolated User Task with one operation-addressed payload-free interrupting Message boundary.",
     },
-  });
+  } as const;
+  const directMessageProgram = {
+    ...program,
+    operations: program.operations.map((operation) =>
+      operation === bounded
+        ? {
+          ...bounded,
+          boundaryMessage: {
+            ...bounded.boundaryMessage,
+            channel: {
+              kind: MessageChannelKind.DirectMessage,
+              messageId: bounded.boundaryMessage.channel.messageId,
+            },
+          },
+        }
+        : operation
+    ),
+  } as unknown as SemanticProcessProgram;
+  assert.deepEqual(
+    assessTemporalHostCapability({
+      ...program,
+      operations: [
+        ...program.operations,
+        { ...bounded, id: `${bounded.id}:second` },
+      ],
+    }),
+    failure,
+  );
+  assert.deepEqual(
+    assessTemporalHostCapability(directMessageProgram),
+    failure,
+  );
 });
 
 test("classifies a resumption-bounded Exclusive Merge as passive", async () => {

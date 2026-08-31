@@ -63,6 +63,9 @@ import {
   createEventRaceReadinessScheduler,
 } from "./event-race-readiness-scheduler.js";
 import {
+  createMessageBoundedActivityReadinessScheduler,
+} from "./message-bounded-activity-readiness-scheduler.js";
+import {
   projectUserTaskDetail,
 } from "@bpmn-lean/temporal-protocol";
 import {
@@ -216,6 +219,8 @@ export async function runBpmnProcessWithHostEffects(
     waitForTimer,
     eventRaceActivationDrain,
   );
+  const messageBoundedActivityScheduler =
+    createMessageBoundedActivityReadinessScheduler(semanticProcess);
   const boundedDeadlineSchedulers = createBoundedDeadlineSchedulers(
     semanticProcess,
     waitForTimer,
@@ -290,6 +295,7 @@ export async function runBpmnProcessWithHostEffects(
         ? WorkflowChainFenceState.Rollover
         : workflowChainFence,
     eventRaceScheduler,
+    messageBoundedActivityScheduler,
     boundedDeadlineSchedulerFor,
     reserveStimulus,
   });
@@ -494,6 +500,7 @@ export async function runBpmnProcessWithHostEffects(
         boundedDeadlineSchedulers.some((scheduler) =>
           scheduler.hasArmedDeadline()
         ),
+        messageBoundedActivityScheduler.hasPendingCallbacks(),
       )
     ) {
       workflowChainFence = WorkflowChainFenceState.Rollover;
@@ -518,6 +525,7 @@ export async function runBpmnProcessWithHostEffects(
       pendingStimuli,
       acceptedStimuli,
       eventRaceScheduler,
+      messageBoundedActivityScheduler,
       boundedDeadlineSchedulers,
       waitForTimer,
       executeEffect,
@@ -543,6 +551,7 @@ export async function runBpmnProcessWithHostEffects(
           boundedDeadlineSchedulers.some((scheduler) =>
             scheduler.hasArmedDeadline()
           ),
+          messageBoundedActivityScheduler.hasPendingCallbacks(),
         ),
     );
     if (readinessAction === HostReadinessAction.RecheckMainLoop) {

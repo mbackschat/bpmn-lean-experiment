@@ -36,6 +36,9 @@ export const bpmnEventRaceOrderingUnavailableFailureType =
  */
 export const bpmnBoundedActivitySchedulerUnavailableFailureType =
   "BpmnBoundedActivitySchedulerUnavailable";
+/** Distinct because Signal/Update co-readiness is not a Timer deadline race. */
+export const bpmnMessageBoundedActivitySchedulerUnavailableFailureType =
+  "BpmnMessageBoundedActivitySchedulerUnavailable";
 /**
  * Distinct from the bounded-Activity identity for the same reason that one is distinct from the
  * Event race: both are one wait racing one deadline, but the semantic outcome an operator loses

@@ -137,12 +137,15 @@ const managedClasses: ReadonlyArray<ManagedHostClass> = [
   },
   {
     operationClass: HostOperationClass.MessageBoundedActivityWait,
-    isAdmissibleIsolatedForm: () => false,
+    isAdmissibleIsolatedForm: (operation) =>
+      operation.kind === SemanticOperationKind.AwaitMessageBoundedUserTask &&
+      operation.boundaryMessage.channel.kind ===
+        MessageChannelKind.OperationMessage,
     failure: {
       code: TemporalHostAdmissionFailureCode
         .MessageBoundedActivitySchedulerUnavailable,
       evidence:
-        "The Temporal host has not installed the Message/Update co-readiness scheduler for a Message-bounded User Task.",
+        "The Temporal host admits only one isolated User Task with one operation-addressed payload-free interrupting Message boundary.",
     },
   },
   {
