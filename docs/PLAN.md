@@ -48,7 +48,7 @@ The [interrupting Activity boundary Message specification](capsules/ACTIVITY-BOU
 
 Active work ID: `EVENT-SUBSCRIPTIONS`.
 
-Next action: complete the normative and source preflight for the smallest key-based Message-correlation slice that reuses the three closed Message mechanisms, then draft its bounded proposal with the selected account, public contract, exclusions, Temporal preflight, and separating evidence strategy.
+Next action: run the focused proposal guards, commit the draft [Message key correlation proposal](capsules/MESSAGE-KEY-CORRELATION-PROPOSAL.md), record that exact proposal target in its receipt, generate the neutral proposal-review packet, and obtain the required context-cold independent verdict before implementation.
 
 Separate open changes: Internal Commutation closure, Activity issuing-discipline graduation, cross-family Activity wait withdrawal, PostgreSQL migration evidence, and Engine `v0.3` workload isolation. Host load no longer blocks this lane; [`implementation-status-owner:TEMPORAL-HOSTING`](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md) owns that evidence.
 
