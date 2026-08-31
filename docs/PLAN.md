@@ -48,7 +48,7 @@ The [interrupting Activity boundary Message specification](capsules/ACTIVITY-BOU
 
 Active work ID: `EVENT-SUBSCRIPTIONS`.
 
-Next action: commit the same level-two routing structure for the semantic-core source map already named by the redesigned proposal, bind that exact target in the receipt, then generate the complete neutral packet and obtain a new context-cold independent verdict before implementation.
+Next action: generate a complete neutral packet for redesigned proposal target `850f7c37`, including the shared wire evolution policy, affected IL and lifecycle sections, and the semantic-core and Temporal source-map ownership sections, and obtain a new context-cold independent verdict before implementation.
 
 Separate open changes: Internal Commutation closure, Activity issuing-discipline graduation, cross-family Activity wait withdrawal, PostgreSQL migration evidence, and Engine `v0.3` workload isolation. Host load no longer blocks this lane; [`implementation-status-owner:TEMPORAL-HOSTING`](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md) owns that evidence.
 
