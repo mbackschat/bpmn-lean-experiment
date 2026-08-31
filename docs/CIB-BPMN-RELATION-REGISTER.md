@@ -28,7 +28,7 @@ The counts below cover only entries reviewed and recorded by this project. Zero 
 | CIB interpretations of BPMN gaps or inconsistencies | 2 | 0 | CIB selects an operational meaning where BPMN does not uniquely settle it |
 | Selected CIB extensions | 14 | 0 | Project profile deliberately includes behavior beyond bare BPMN execution |
 | Configuration-specific realizations | 8 | 0 | Behavior is permitted or meaningful only under a declared CIB environment |
-| Known CIB limitations within reviewed scope | 1 | 0 | Unsupported or incomplete behavior that is not yet classified as a normative deviation |
+| Known CIB limitations within reviewed scope | 2 | 0 | Unsupported or incomplete behavior that is not yet classified as a normative deviation |
 
 The current sequential User Task capsule has no recorded CIB deviation. That statement is bounded to its clauses, pinned environment, witnesses, and observation surface; it is not a general CIB conformance result.
 
@@ -267,6 +267,22 @@ This remains a limitation rather than a confirmed deviation because the phase-ze
 **Evidence:** The [public-service phase-zero probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenSequentialMultiInstancePhaseZeroProbeTest.java), its [exact BPMN fixture](../runners/cibseven/src/test/resources/org/bpmnlean/cibseven/CibSevenSequentialMultiInstancePhaseZeroProbeTest.bpmn), and the [project output rule](capsules/SEQUENTIAL-MULTI-INSTANCE-SPEC.md#stable-semantic-rules).
 
 **Boundary:** The finding covers only this exact sequential User Task fixture and the five declared output identity/name candidates. It does not classify Camunda input/output extensions, delegates, expressions, Sub-Process data, another Activity body, or general CIB Data Association behavior.
+
+### CIB-LIM-0002: modeled BPMN key and context correlation is not executed
+
+**Status:** Observed bounded limitation; not a confirmed normative deviation
+
+BPMN 2.0.2 Clause 8.4.2 defines key-based correlation through a `CorrelationKey` whose `CorrelationProperty` retrieval expressions obtain values from a Message payload. A Process `CorrelationSubscription` adds context-based bindings whose data paths obtain the current correlation-property values from the Process context.
+
+The exact schema-valid fixture declares one Conversation-owned key, one payload retrieval expression, and one Process-owned subscription binding the same property to a Process property. Two Process instances wait on the same Intermediate Catch Message Event with different values for that Process property. A public CIB message-correlation call carrying the matching payload but no CIB API correlation criterion reports two matching executions and an empty API correlation-key set; it neither evaluates the modeled retrieval expression nor uses the modeled Process binding. Supplying `processInstanceVariableEquals` through the CIB public API then selects and completes the intended instance while leaving the other wait live.
+
+At the pinned `2.2.0` source revision, the [BPMN Model API registers the correlation model types](https://github.com/cibseven/cibseven/blob/834a9874760de8a0107f7c1b32806e37f17fb017/model-api/bpmn-model/src/main/java/org/cibseven/bpm/model/bpmn/Bpmn.java#L487-L492), while the [runtime correlation handler](https://github.com/cibseven/cibseven/blob/834a9874760de8a0107f7c1b32806e37f17fb017/engine/src/main/java/org/cibseven/bpm/engine/impl/runtime/DefaultCorrelationHandler.java#L79-L123) builds execution queries only from the public API's Process-variable, local-variable, business-key, Process-instance-ID, tenant, and Message-name criteria. CIB's API variable criterion is therefore a separate engine extension and not execution of the modeled BPMN retrieval and context paths.
+
+This remains a limitation rather than a confirmed deviation because the phase-zero probe is a calibration witness, not retained answer-free producer evidence for a general conformance claim. The project standards profile must define and evidence its own bounded correlation account rather than adopting the API extension as BPMN meaning.
+
+**Evidence:** The [public-service phase-zero probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenMessageCorrelationPhaseZeroProbeTest.java), its [exact BPMN fixture](../runners/cibseven/src/test/resources/org/bpmnlean/cibseven/CibSevenMessageCorrelationPhaseZeroProbeTest.bpmn), and the pinned source paths above.
+
+**Boundary:** The finding covers one non-instantiating Intermediate Catch Message Event, one non-empty string property, one key, one retrieval expression, one Process subscription binding, two waiting Process instances, one ambiguous no-criterion call, and one successful Process-variable API criterion under `CIB-CFG-0001`. The fixture separates correlation selection only: it does not select Intermediate Catch Message compatibility, the fixture's expression language, Message payload mediation, initialization by a first Message, dynamic context updates, multiple keys or properties, Conversation execution, start-Message correlation, broadcast, local-variable or business-key criteria, or a general CIB correlation profile.
 
 ## Extension register
 
@@ -639,6 +655,7 @@ The registered Service Task incident profile explicitly sets `createIncidentOnFa
 | Process start with a public variable map | `CIB-EXT-0006` under `CIB-CFG-0001` | Runtime-service and first-task observations establish initial Process-variable visibility before completion; BPMN does not define this host start API or universal start-map semantics |
 | Exact-code Error End propagation from an embedded Sub-Process | `CIB-AGR-0008` | Both child-command orders expose only Recover after the Error and complete only after Recover; retained raw task-state mutation detects a wrongly retained child sibling without claiming hidden execution-tree microsteps |
 | Message-addressed Receive Task subscription and completion | `CIB-AGR-0009` | A project-authored direct-Message Receive Task exposes one public Message subscription; exact public delivery removes it and completes the Process, without equating CIB's event name or generated execution ID with project semantic identity |
+| Modeled BPMN key/context Message correlation | `CIB-LIM-0002` under `CIB-CFG-0001` | Schema-valid modeled retrieval and Process-binding metadata leaves two same-name waits ambiguous; only a separate public API Process-variable criterion selects one instance, and no CIB correlation semantics are adopted by the project |
 | Collection-driven sequential Multi-Instance lifecycle | `CIB-AGR-0011`, `CIB-INT-0002`, and `CIB-LIM-0001` under `CIB-CFG-0001` | Public services expose ordered distinct task turnover, zero-item closure, one stable outer Timer, and interruption; desired cardinality is stored at entry, while the standard output collection is not produced |
 | Java delegates, beans, expressions, scripts, FEEL, listeners, mappings, connectors and other Camunda extension families | Research inventory only | The family-level surface is recorded in [CIB Seven extension research](research/CIB-SEVEN-EXTENSIONS-RESEARCH.md); no blanket extension or API compatibility claim is selected |
 | External-task execution | Deferred extension alternative | The protocol is source-realistic but introduces topic, lease, worker, failure, retry, and incident semantics with no current capsule consumer |

@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_MessageCorrelationPhaseZero"
+  targetNamespace="https://bpmn-lean.example/message-correlation-phase-zero">
+  <bpmn:itemDefinition id="ItemDefinition_CorrelationString" />
+  <bpmn:message
+    id="Message_CorrelatedOrder"
+    name="correlatedOrderMessage"
+    itemRef="ItemDefinition_CorrelationString" />
+  <bpmn:interface id="Interface_OrderReceiver" name="Order receiver">
+    <bpmn:operation id="Operation_ReceiveOrder" name="Receive order">
+      <bpmn:inMessageRef>Message_CorrelatedOrder</bpmn:inMessageRef>
+    </bpmn:operation>
+  </bpmn:interface>
+  <bpmn:correlationProperty
+    id="CorrelationProperty_OrderId"
+    name="Order ID">
+    <bpmn:correlationPropertyRetrievalExpression
+      id="RetrievalExpression_OrderId"
+      messageRef="Message_CorrelatedOrder">
+      <bpmn:messagePath
+        id="MessagePath_OrderId"
+        language="urn:bpmn-lean:correlation-scalar-path:v1">payload</bpmn:messagePath>
+    </bpmn:correlationPropertyRetrievalExpression>
+  </bpmn:correlationProperty>
+  <bpmn:process
+    id="Process_MessageCorrelationPhaseZero"
+    isExecutable="true"
+    definitionalCollaborationRef="Collaboration_MessageCorrelationPhaseZero">
+    <bpmn:property id="Property_OrderId" name="Order ID" />
+    <bpmn:startEvent id="Start_None">
+      <bpmn:outgoing>Flow_Start_To_Catch</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:intermediateCatchEvent id="Catch_CorrelatedOrder">
+      <bpmn:incoming>Flow_Start_To_Catch</bpmn:incoming>
+      <bpmn:outgoing>Flow_Catch_To_End</bpmn:outgoing>
+      <bpmn:messageEventDefinition
+        id="MessageEventDefinition_CorrelatedOrder"
+        messageRef="Message_CorrelatedOrder">
+        <bpmn:operationRef>Operation_ReceiveOrder</bpmn:operationRef>
+      </bpmn:messageEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:endEvent id="End_None">
+      <bpmn:incoming>Flow_Catch_To_End</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow
+      id="Flow_Start_To_Catch"
+      sourceRef="Start_None"
+      targetRef="Catch_CorrelatedOrder" />
+    <bpmn:sequenceFlow
+      id="Flow_Catch_To_End"
+      sourceRef="Catch_CorrelatedOrder"
+      targetRef="End_None" />
+    <bpmn:correlationSubscription
+      id="CorrelationSubscription_OrderId"
+      correlationKeyRef="CorrelationKey_OrderId">
+      <bpmn:correlationPropertyBinding
+        id="CorrelationPropertyBinding_OrderId"
+        correlationPropertyRef="CorrelationProperty_OrderId">
+        <bpmn:dataPath
+          id="DataPath_OrderId"
+          language="urn:bpmn-lean:correlation-scalar-path:v1">property:Property_OrderId</bpmn:dataPath>
+      </bpmn:correlationPropertyBinding>
+    </bpmn:correlationSubscription>
+  </bpmn:process>
+  <bpmn:collaboration id="Collaboration_MessageCorrelationPhaseZero">
+    <bpmn:participant id="Participant_ExternalSender" name="External sender" />
+    <bpmn:participant
+      id="Participant_OrderReceiver"
+      name="Order receiver"
+      processRef="Process_MessageCorrelationPhaseZero" />
+    <bpmn:messageFlow
+      id="MessageFlow_CorrelatedOrder"
+      sourceRef="Participant_ExternalSender"
+      targetRef="Catch_CorrelatedOrder"
+      messageRef="Message_CorrelatedOrder" />
+    <bpmn:conversation id="Conversation_Order">
+      <bpmn:participantRef>Participant_ExternalSender</bpmn:participantRef>
+      <bpmn:participantRef>Participant_OrderReceiver</bpmn:participantRef>
+      <bpmn:messageFlowRef>MessageFlow_CorrelatedOrder</bpmn:messageFlowRef>
+      <bpmn:correlationKey id="CorrelationKey_OrderId" name="Order ID">
+        <bpmn:correlationPropertyRef>CorrelationProperty_OrderId</bpmn:correlationPropertyRef>
+      </bpmn:correlationKey>
+    </bpmn:conversation>
+  </bpmn:collaboration>
+</bpmn:definitions>
