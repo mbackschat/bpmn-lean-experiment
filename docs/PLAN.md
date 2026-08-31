@@ -61,10 +61,12 @@ The [interrupting Activity boundary Message specification](capsules/ACTIVITY-BOU
 
 Active work ID: `EVENT-SUBSCRIPTIONS`.
 
-Next action: implement the ingress-owned candidate-registration transaction state and its `prepare`/`finalize` protocol before wiring Process Workflow staging. A pending transaction must block scans; prepare must return `deferredByScan` without recording while a barrier exists; exact retry must return retained state; changed content under one transaction ID must fail; and finalize must move the same fact from pending to active atomically.
+Registration checkpoint: private prepare/finalize, barrier exclusion, typed capacity/quarantine, Worker replacement, and replay are green.
+
+Next action: wire Process Workflow staging around the first direct payload command that would arm a correlated wait. Retain the exact pre-state and successor, ensure the ingress, and call prepare. Publish neither RuntimeState nor E1/E2 while deferred or refused. After prepare, atomically install the successor, make its exact candidate Query current, then finalize the same transaction before completing the opening command. Map capacity and quarantine to distinct retained Process-host resolutions, never semantic results.
 
 Separate open changes: Internal Commutation closure, Activity issuing-discipline graduation, cross-family Activity wait withdrawal, PostgreSQL migration evidence, and Engine `v0.3` workload isolation. Host load no longer blocks this lane; [`implementation-status-owner:TEMPORAL-HOSTING`](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md) owns that evidence.
 
-Oracle: the approved proposal's candidate-completeness barrier. No scan starts while registration is pending, no prepare records behind a barrier, and no candidate becomes active until the Process Query can be current; retries preserve one content-bound transaction rather than creating or changing a candidate.
+Oracle: before prepare succeeds, committed state and E1/E2 remain byte-identical. The successor Query is current before finalize makes the locator active, and the opening command completes only afterward. Deferred, capacity, quarantine, response-loss, and continuation retain one content-bound phase without speculative semantic publication.
 
-Stop if the transaction state needs a platform or Event History fact; a pending transaction can coexist with a scan; `deferredByScan` queues or records work; finalize can activate content other than the prepared fact; capacity or quarantine becomes candidate absence; or the lane admits the correlation profile, mutates Process state, or exposes a public publication command before Process-side staging and the complete barrier refinement are green.
+Stop if staging needs a platform or Event History fact; Process state advances before prepare; RuntimeState and E1/E2 do not install atomically; finalize precedes the exact candidate Query or changes the prepared fact; capacity/quarantine becomes absence or semantic outcome; inputs bypass an unresolved phase; or the lane admits the profile or exposes public publication before the barrier refinement is green.

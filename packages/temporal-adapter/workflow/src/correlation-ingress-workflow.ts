@@ -12,9 +12,15 @@ import {
   createCorrelationIngressEcho,
 } from "@bpmn-lean/temporal-protocol";
 import type {
+  CorrelationCandidateRegistrationState,
   CorrelationIngressConfiguration,
   CorrelationIngressEcho,
 } from "@bpmn-lean/temporal-protocol";
+
+import {
+  emptyCorrelationCandidateRegistrationState,
+  registerCorrelationCandidateRegistrationHandlers,
+} from "./correlation-candidate-registration.js";
 
 export const bpmnCorrelationIngressConfigurationQuery = defineQuery<
   CorrelationIngressEcho
@@ -26,6 +32,16 @@ export async function runBpmnCorrelationIngress(
   configuration: CorrelationIngressConfiguration,
 ): Promise<void> {
   const echo = createCorrelationIngressEcho(address, configuration);
+  let registrationState: CorrelationCandidateRegistrationState =
+    emptyCorrelationCandidateRegistrationState();
   setHandler(bpmnCorrelationIngressConfigurationQuery, () => echo);
+  registerCorrelationCandidateRegistrationHandlers(
+    address,
+    configuration,
+    () => registrationState,
+    (successor) => {
+      registrationState = successor;
+    },
+  );
   await condition(() => false);
 }
