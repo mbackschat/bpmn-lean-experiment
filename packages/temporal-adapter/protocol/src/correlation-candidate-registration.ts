@@ -451,7 +451,7 @@ function canonicalCorrelationCandidateRegistrationTuple(
   ];
 }
 
-function canonicalCorrelatedMessageCandidateTuple(
+export function canonicalCorrelatedMessageCandidateTuple(
   candidate: CorrelatedMessageCandidate,
 ): ReadonlyArray<CanonicalTupleValue> {
   if (!isCorrelatedMessageCandidate(candidate)) {

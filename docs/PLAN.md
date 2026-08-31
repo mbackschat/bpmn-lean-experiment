@@ -75,12 +75,12 @@ Active work ID: `EVENT-SUBSCRIPTIONS`.
 
 Risk band: Event-subscription snapshot and order.
 
-Registration checkpoint: ingress transaction, Process staged commit, exact Query-before-finalize, typed capacity/quarantine, continuation, Worker replacement, and replay are green.
+Subscription checkpoint: ingress registration, Process staged commit, exact Query-before-finalize, continuation, and barrier-linearized all-or-infrastructure fanout are green with replay.
 
-Next action: implement private scan completeness. Add content-bound begin/finish scan Updates, hold the barrier across one Worker-owned all-or-infrastructure fanout Activity, Query every finalized locator for its exact candidate, and retain failure without returning a partial vector or clearing the barrier. Exclude public publication, matching, delivery, profile admission, and Product 2.
+Next action: implement private publication admission and ordering. Content-bind the complete command, reserve its fixed future-result record before Update acceptance, assign one durable ordinal, admit one in flight plus the bounded FIFO queue, and prevent a later fanout until the earlier ordinal settles. Exclude matching, delivery, public API, profile admission, and Product 2.
 
 Separate open changes: Internal Commutation closure, Activity issuing-discipline graduation, cross-family Activity wait withdrawal, PostgreSQL migration evidence, and Engine `v0.3` workload isolation. Host load no longer blocks this lane; [`implementation-status-owner:TEMPORAL-HOSTING`](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md) owns that evidence.
 
-Oracle: a scan starts only without pending registration, installs its barrier before network I/O, and returns the complete finalized vector only when every Process Query returns its exact candidate. Pending registration blocks start; a held scan makes prepare return no-record `deferredByScan`; any absent, malformed, changed, failed, or oversized Query yields infrastructure failure without a partial vector, and retry retains the scan identity and barrier.
+Oracle: no publication Update is accepted without a reserved result slot and canonical-byte fit. Exact retry retains its ordinal and phase; changed content conflicts; an admission refusal records nothing; concurrent accepted commands preserve ordinal FIFO; and only settlement of the current ordinal permits the next scan.
 
-Stop if scan discovery reads Visibility, Event History, Product 2, or a platform store; network I/O precedes barrier installation; pending registration can enter or leave the vector; partial Query success becomes a candidate vector; candidate order chooses a winner; retry changes scan identity; the barrier clears on indeterminate fanout; or the lane admits the profile or exposes public publication before scan completeness is green.
+Stop if acceptance lacks a future-result reservation; a refused Update consumes an ordinal or ledger record; command id alone deduplicates different address or payload content; retry changes ordinal; queue order selects a semantic winner; a later command scans before the current ordinal settles; or the lane exposes a public API, admits the profile, matches, or delivers before admission order is green.

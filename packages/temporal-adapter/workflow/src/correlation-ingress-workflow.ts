@@ -21,6 +21,13 @@ import {
   emptyCorrelationCandidateRegistrationState,
   registerCorrelationCandidateRegistrationHandlers,
 } from "./correlation-candidate-registration.js";
+import {
+  resolveBpmnCorrelationCandidateScan,
+} from "./correlation-candidate-scan-activity.js";
+import {
+  CorrelationCandidateScanCoordinator,
+  registerCorrelationCandidateScanHandlers,
+} from "./correlation-ingress-scan.js";
 
 export const bpmnCorrelationIngressConfigurationQuery = defineQuery<
   CorrelationIngressEcho
@@ -42,6 +49,17 @@ export async function runBpmnCorrelationIngress(
     (successor) => {
       registrationState = successor;
     },
+  );
+  registerCorrelationCandidateScanHandlers(
+    new CorrelationCandidateScanCoordinator({
+      address,
+      configuration,
+      currentState: () => registrationState,
+      replaceState: (successor) => {
+        registrationState = successor;
+      },
+      resolve: resolveBpmnCorrelationCandidateScan,
+    }),
   );
   await condition(() => false);
 }

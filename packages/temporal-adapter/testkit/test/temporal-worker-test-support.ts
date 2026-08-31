@@ -12,6 +12,7 @@ import {
   bpmnOpenUserTasksQueryName,
   bpmnSemanticTaskQueue,
   boundEffectActivities,
+  createCorrelationCandidateScanActivities,
   createCorrelationRegistrationActivities,
 } from "@bpmn-lean/temporal-testkit";
 import type { EffectActivityImplementations } from "@bpmn-lean/temporal-testkit";
@@ -53,6 +54,9 @@ export async function startBpmnTestWorker(
         ...createCorrelationRegistrationActivities(
           environment.client.workflow as never,
           bpmnSemanticTaskQueue,
+        ),
+        ...createCorrelationCandidateScanActivities(
+          environment.client.workflow as never,
         ),
       },
     }),

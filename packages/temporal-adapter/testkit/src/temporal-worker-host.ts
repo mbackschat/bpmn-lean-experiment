@@ -41,6 +41,7 @@ import type {
 } from "@bpmn-lean/temporal-worker";
 import {
   boundEffectActivities,
+  createCorrelationCandidateScanActivities,
   createCorrelationRegistrationActivities,
 } from "@bpmn-lean/temporal-worker";
 
@@ -211,6 +212,9 @@ async function createWorker(
         ...createCorrelationRegistrationActivities(
           environment.client.workflow as never,
           bpmnSemanticTaskQueue,
+        ),
+        ...createCorrelationCandidateScanActivities(
+          environment.client.workflow as never,
         ),
       },
     }),
