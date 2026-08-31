@@ -48,7 +48,7 @@ The [interrupting Activity boundary Message specification](capsules/ACTIVITY-BOU
 
 Active work ID: `EVENT-SUBSCRIPTIONS`.
 
-Next action: commit the three bounded corrections required by the `approved-with-required-edits` proposal verdict for target `850f7c37`, then have the same isolated reviewer audit only that correction target before recording approval or starting implementation.
+Next action: have the same isolated reviewer audit only the committed corrections required by the `approved-with-required-edits` proposal verdict for target `850f7c37`, then record the result in the capsule's [independent cold-review receipt](capsules/MESSAGE-KEY-CORRELATION-PROPOSAL.md#independent-cold-review-receipt) before starting implementation.
 
 Separate open changes: Internal Commutation closure, Activity issuing-discipline graduation, cross-family Activity wait withdrawal, PostgreSQL migration evidence, and Engine `v0.3` workload isolation. Host load no longer blocks this lane; [`implementation-status-owner:TEMPORAL-HOSTING`](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md) owns that evidence.
 
