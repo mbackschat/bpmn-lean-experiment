@@ -24,6 +24,7 @@ const experimentTree = "BpmnSemantics/Experiments/";
 const decidedUnions: ReadonlyArray<Readonly<{ name: string; owner: string }>> = [
   { name: "CheckedNode", owner: "BpmnSemantics/SemanticProcessContract.lean" },
   { name: "SemanticOperation", owner: "BpmnSemantics/SemanticProcessContract.lean" },
+  { name: "Stimulus", owner: "BpmnSemantics/Scenario.lean" },
 ];
 
 /** Constructor names of one project-owned union, in declaration order. */
