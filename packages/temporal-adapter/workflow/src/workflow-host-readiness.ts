@@ -91,6 +91,11 @@ export async function waitForHostReadiness(
         "Pre-start host admission allowed another managed wait beside a Message-bounded Activity",
       );
     }
+    // ABMSG-REFUSE-01 sends callbacks outside the exact pair through semantic admission; waiting
+    // only on the managed scheduler here would hide that already queued refusal indefinitely.
+    if (pendingStimuli.length > 0) {
+      return HostReadinessAction.DrainSemanticQueue;
+    }
     for (
       const stimulus of await messageBoundedActivityScheduler.waitForReadiness(
         state,

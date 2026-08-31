@@ -11,7 +11,7 @@ What is the smallest standards-only slice in which one payload-free interrupting
 
 ## Implementation checkpoint
 
-The first green source, checked-graph, Semantic Process IL, Lean, and independently written TypeScript-core checkpoint is implemented and independently approved. Product profile registration, scenario and differential evidence, occurrence publication, and the Temporal Message/Update scheduler may now proceed under the reviewed account; closure remains unreached.
+The first green source, checked-graph, Semantic Process IL, Lean, and independently written TypeScript-core checkpoint is implemented and independently approved. Occurrence publication and the Temporal Message/Update scheduler are now implemented: the real-service witness covers both winners after forced Continue-As-New and Worker replacement, stale Signal refusal with stable published state, exact typed coalescence failure, history mechanism exclusions, and replay of every Run. Final profile registration, answer-free scenario and differential evidence, retained-corpus binding, Product 2 capability disclosure, and closure review remain unreached.
 
 ## Selection basis
 
@@ -303,8 +303,8 @@ The reviewability threshold is 800 nonblank lines. Each figure is the mechanical
 | [`SemanticProcessJson/Program.lean`](../../BpmnSemantics/SemanticProcessJson/Program.lean) | 129 | decode the new operation and migrated handler-family state; extract the operation decoder before an edit that would cross 800 |
 | [`contracts.ts`](../../packages/temporal-adapter/protocol/src/contracts.ts) | 574 | add the exact nonretryable failure identity; extract first only if the edit would cross 800 |
 | [`workflow-continuation.ts`](../../packages/temporal-adapter/protocol/src/workflow-continuation.ts) | 276 | validate carried handler-family runtime state and profile identity; extract first only if the edit would cross 800 |
-| [`workflow-command-ingress.ts`](../../packages/temporal-adapter/workflow/src/workflow-command-ingress.ts) | 405 | route exact Signal/Update callbacks to the new scheduler; extract first only if the edit would cross 800 |
-| [`workflow-host-readiness.ts`](../../packages/temporal-adapter/workflow/src/workflow-host-readiness.ts) | 531 | register the new host-readiness owner; extract first only if the edit would cross 800 |
+| [`workflow-command-ingress.ts`](../../packages/temporal-adapter/workflow/src/workflow-command-ingress.ts) | 403 | route exact Signal/Update callbacks to the new scheduler; extract first only if the edit would cross 800 |
+| [`workflow-host-readiness.ts`](../../packages/temporal-adapter/workflow/src/workflow-host-readiness.ts) | 526 | register the new host-readiness owner; extract first only if the edit would cross 800 |
 | [`activation-tagged-readiness.ts`](../../packages/temporal-adapter/workflow/src/activation-tagged-readiness.ts) | 723 | reuse without semantic-family logic; it grows only if the generic contract proves insufficient, which is a redesign stop |
 | [`runner.ts`](../../packages/temporal-adapter/testkit/src/runner.ts) | 260 | drive both winner schedules, both stale refusals, and the coalescing witness; extract the family runner before an edit that would cross 800 |
 
@@ -345,7 +345,7 @@ No closure cost is claimed at proposal time. At closure, [`capsule-cost.ts`](../
 
 The first green Lean and semantic-core target is a mandatory semantic checkpoint because this capsule adds a transition family, changes Activity ownership representation, and changes a proof boundary. No Temporal or publication implementation may cross that checkpoint before its independent review is approved.
 
-That first green target has now been reached. The implemented Temporal changes are limited to carrying the tagged handler representation and rejecting this admission-only profile with `MessageBoundedActivitySchedulerUnavailable`; they add no scheduler or publication meaning.
+That first green target has now been reached and independently approved. The later Temporal tranche implements the reviewed readiness account without selecting a winner from SDK callback order: exact pair members participate in co-readiness detection, while inexact Message and completion callbacks still wake the managed wait and return to semantic admission for a settled refusal. The [direct-VM witness](../../packages/temporal-adapter/testkit/test/activity-boundary-message-temporal-witness.ts) covers both sequential winners and shared-activation failure, and the [real-service witness](../../packages/temporal-adapter/testkit/test/activity-boundary-message-refinement.temporal-test.ts) covers forced continuation, Worker replacement, stable publication, typed history failure, and replay.
 
 Closure requires every evidence lane and guard named above, the complete applicable gate on a clean committed target, an exact reflection/cost record, and an independent closure review. The proposal may graduate to `-SPEC` only after the reviewed current contract and all evidence owners agree.
 

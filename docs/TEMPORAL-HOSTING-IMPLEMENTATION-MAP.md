@@ -10,7 +10,7 @@ The implemented bounded Workflow-chain contract owns project Event History, payl
 
 Product 1 privately traverses paired E1 and occurrence-publication segments across Continue-As-New through SHA-bound descriptors and immutable latest-Run selection. Recovery, RuntimeState, paired publication, stimulus, Update, accepted-input queue, effect Activity, retained per-Run trace/publication, pending-Timer, Query-response, terminal-result, Event History, aggregate continuation, and 128-Run bounds are active before speculative exposure, scheduling, or return. Retry and conflict precede lifetime capacity, semantic terminal state and accepted-handler draining precede terminal-envelope capacity, and no public contract or host identity changes.
 
-Activity boundary Message adds isolated admission, E1/E2 validation, and direct-VM Signal/Update scheduling; real-service evidence remains open.
+Activity boundary Message has isolated admission, E1/E2 validation, direct-VM scheduling, and real-service Signal/Update refinement through forced Continue-As-New, Worker replacement, typed coalescence failure, exact history assertions, and replay.
 
 ## Implemented
 
@@ -24,7 +24,7 @@ Activity boundary Message adds isolated admission, E1/E2 validation, and direct-
 - durable hosting for every closed family named in [`implementation-status-owner:ENGINE-RUNTIME-PROOF`](ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md#current-boundary), keeping embedded and called Process work inside one Workflow rather than assigning BPMN meaning to Child Workflows
 - passive `mergeExclusive` host admission; the finite cycle witness reuses User Task Update, survives replacement, recovers one result, refuses a stale occurrence, takes both back-edges and the default exit, observes no rollover suggestion, and replays without a new host mechanism
 - family-parameterized boundary-deadline scheduling with distinct typed shared-activation refusals, plus the managed Event-Based Gateway race and passive Message subscription class
-- isolated payload-free Activity boundary Message admission, E1/E2 validation, and activation-tagged Signal/Update scheduling with typed co-readiness refusal and pending-callback rollover fencing; direct-VM winner and refusal evidence is green
+- isolated payload-free Activity boundary Message admission, E1/E2 validation, and activation-tagged Signal/Update scheduling with typed co-readiness refusal and pending-callback rollover fencing; every Message-delivery or completion callback wakes an exact-pair wait so semantic admission can settle wrong-channel, payload-bearing, non-empty, or stale inputs instead of hiding them behind the scheduler; direct-VM evidence covers both winners and shared-activation refusal, while the real service covers both winners after forced continuation and Worker replacement, exact stale-Signal rejection with stable published state, both coalesced callers settling, the nonretryable failure type in the Workflow result and Event History, host-mechanism exclusions, and replay of every Run
 - a registered sequential Multi-Instance managed-deadline class with its own typed refusal, exact isolated admission, program-aware operation/owner/controller/Activity/User-Task/one-Timer binding, stable semantic deadline identity through inner-task turnover, zero-item absence, and a chain-level prohibition on Continue-As-New while any managed boundary-deadline Timer is armed; the private exact-version real-service capacity owner retains and replays the maximal natural and interrupted topologies, proves exact-16 fit and count-only exact-17 refusal, classifies every final History Event, and measures maxima of 87 Events, 568,902 deterministic conservative History-envelope bytes, 10 activation Events, and 246,799 canonical activation payload bytes; raw service History-size observations are monotone and bounded rather than exact retained facts
 - program-aware E1 validation for the optional sequential Multi-Instance progress field, including its exact recursive identities, count equations, task binding, canonical order, old-program absence, and terminal emptiness; transport validation remains representation-only, while producer validation requires the field exactly when the Program declares the operation
 - program-aware E2 binding for the exact generated task and lifetime boundary Event under their declaring scope, including one unique sequential-operation successor after completion and explicit exclusion of the synthetic outer/controller occurrence; iteration cardinality and identity remain independently decided by semantic completeness
@@ -76,7 +76,7 @@ Activity boundary Message adds isolated admission, E1/E2 validation, and direct-
 
 ### Temporal adapter
 
-- Activity boundary Message real-service replacement, forced continuation, live history, replay, and scenario integration
+- Activity boundary Message final profile registration, differential target, retained corpus binding, and Product 2 capability disclosure
 - retained result beyond Temporal retention
 - production canonical-observation API
 - protocol that imposes caller order on concurrent distinct commands

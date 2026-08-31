@@ -52,13 +52,22 @@ type PairIdentity = Readonly<{
 export type MessageBoundedActivityReadiness =
   | Readonly<{
     kind: typeof StimulusKind.DeliverMessage;
-    pair: PairIdentity;
+    pair: PairIdentity | null;
     stimulus: DeliverMessageStimulus;
     submitToCore: boolean;
   }>
   | Readonly<{
+    kind: typeof StimulusKind.DeliverPayloadMessage;
+    pair: null;
+    stimulus: Extract<
+      MessageDeliveryStimulus,
+      { kind: typeof StimulusKind.DeliverPayloadMessage }
+    >;
+    submitToCore: boolean;
+  }>
+  | Readonly<{
     kind: typeof StimulusKind.CompleteUserTaskInstance;
-    pair: PairIdentity;
+    pair: PairIdentity | null;
     stimulus: CompleteUserTaskInstanceStimulus;
   }>;
 
@@ -110,7 +119,10 @@ export function createMessageBoundedActivityReadinessScheduler(
         stimulus,
         submitToCore,
       );
-      if (callback?.kind !== StimulusKind.DeliverMessage) {
+      if (
+        callback?.kind !== StimulusKind.DeliverMessage &&
+        callback?.kind !== StimulusKind.DeliverPayloadMessage
+      ) {
         return false;
       }
       readiness.record(callback);
@@ -145,7 +157,7 @@ export function createMessageBoundedActivityReadinessScheduler(
   };
 }
 
-/** Classifies only a callback belonging to the state's one exact committed Message-bounded pair. */
+/** Classifies every callback family the managed wait must wake for, tagging only exact pair members. */
 export function classifyMessageBoundedActivityCallback(
   semanticProcess: SemanticProcessProgram,
   state: RuntimeState,
@@ -158,27 +170,34 @@ export function classifyMessageBoundedActivityCallback(
   }
   switch (stimulus.kind) {
     case StimulusKind.DeliverMessage:
-      return sameOccurrenceId(stimulus.subscriptionId, pair.message.id) &&
-          sameMessageChannel(
-            stimulus.channel,
-            pair.definition.boundaryMessage.channel,
-          )
-        ? {
-          kind: StimulusKind.DeliverMessage,
-          pair: pairIdentity(pair),
-          stimulus,
-          submitToCore,
-        }
-        : undefined;
+      return {
+        kind: StimulusKind.DeliverMessage,
+        pair: sameOccurrenceId(stimulus.subscriptionId, pair.message.id) &&
+            sameMessageChannel(
+              stimulus.channel,
+              pair.definition.boundaryMessage.channel,
+            )
+          ? pairIdentity(pair)
+          : null,
+        stimulus,
+        submitToCore,
+      };
+    case StimulusKind.DeliverPayloadMessage:
+      return {
+        kind: StimulusKind.DeliverPayloadMessage,
+        pair: null,
+        stimulus,
+        submitToCore,
+      };
     case StimulusKind.CompleteUserTaskInstance:
-      return stimulus.submittedValues.length === 0 &&
-          sameOccurrenceId(stimulus.taskId, pair.task.id)
-        ? {
-          kind: StimulusKind.CompleteUserTaskInstance,
-          pair: pairIdentity(pair),
-          stimulus,
-        }
-        : undefined;
+      return {
+        kind: StimulusKind.CompleteUserTaskInstance,
+        pair: stimulus.submittedValues.length === 0 &&
+            sameOccurrenceId(stimulus.taskId, pair.task.id)
+          ? pairIdentity(pair)
+          : null,
+        stimulus,
+      };
     default:
       return undefined;
   }
@@ -192,13 +211,16 @@ export function selectMessageBoundedActivityStimuli(
     (callback): callback is Extract<
       MessageBoundedActivityReadiness,
       { kind: typeof StimulusKind.DeliverMessage }
-    > => callback.kind === StimulusKind.DeliverMessage,
+    > & Readonly<{ pair: PairIdentity }> =>
+      callback.kind === StimulusKind.DeliverMessage && callback.pair !== null,
   );
   const completions = batch.filter(
     (callback): callback is Extract<
       MessageBoundedActivityReadiness,
       { kind: typeof StimulusKind.CompleteUserTaskInstance }
-    > => callback.kind === StimulusKind.CompleteUserTaskInstance,
+    > & Readonly<{ pair: PairIdentity }> =>
+      callback.kind === StimulusKind.CompleteUserTaskInstance &&
+      callback.pair !== null,
   );
   if (messages.some((message) =>
     completions.some((completion) => samePair(message.pair, completion.pair))
@@ -213,6 +235,7 @@ export function selectMessageBoundedActivityStimuli(
   for (const callback of batch) {
     switch (callback.kind) {
       case StimulusKind.DeliverMessage:
+      case StimulusKind.DeliverPayloadMessage:
         if (callback.submitToCore) {
           stimuli.push(callback.stimulus);
         }

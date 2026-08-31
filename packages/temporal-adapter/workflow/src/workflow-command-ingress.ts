@@ -159,17 +159,19 @@ export function registerWorkflowCommandIngress(
       accepted,
     );
     const state = currentState();
-    const scheduledByManagedRace = stimulus.kind === StimulusKind.DeliverMessage
-      ? messageBoundedActivityScheduler.recordMessageCallback(
-          state,
-          stimulus,
-          acceptance.enqueue,
-        ) || eventRaceScheduler.recordMessageCallback(
+    const scheduledByManagedRace =
+      messageBoundedActivityScheduler.recordMessageCallback(
+        state,
+        stimulus,
+        acceptance.enqueue,
+      ) || (
+        stimulus.kind === StimulusKind.DeliverMessage &&
+        eventRaceScheduler.recordMessageCallback(
           state,
           stimulus,
           acceptance.enqueue,
         )
-      : false;
+      );
     if (acceptance.enqueue) {
       acceptedStimuli.push(stimulus);
       if (!scheduledByManagedRace) {

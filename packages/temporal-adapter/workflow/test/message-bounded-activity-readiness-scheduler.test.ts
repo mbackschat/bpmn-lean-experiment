@@ -32,8 +32,19 @@ import {
 import {
   classifyMessageBoundedActivityCallback,
   createMessageBoundedActivityReadinessScheduler,
+  legacyEffectActivityPolicy,
   selectMessageBoundedActivityStimuli,
 } from "../dist/index.js";
+import {
+  HostReadinessAction,
+  waitForHostReadiness,
+} from "../dist/workflow-host-readiness.js";
+import type {
+  EventRaceReadinessScheduler,
+} from "../dist/event-race-readiness-scheduler.js";
+import type {
+  MessageBoundedActivityReadinessScheduler,
+} from "../dist/message-bounded-activity-readiness-scheduler.js";
 
 const started = applyStimulus(program, initialState, start);
 assert.equal(started.outcome, CommandOutcome.Committed);
@@ -100,7 +111,7 @@ test("preserves callback order and omits only a ledger-suppressed Message", () =
   assert.deepEqual(selectMessageBoundedActivityStimuli([suppressed]), []);
 });
 
-test("owns only exact payload-free Message and exact empty completion callbacks", () => {
+test("tags only exact pair members while forwarding every refusal callback", () => {
   const wrongTask = { ...completeReview, taskId: { ...taskId, activation: 2 } };
   const nonEmpty = {
     ...completeReview,
@@ -134,9 +145,16 @@ test("owns only exact payload-free Message and exact empty completion callbacks"
       payloadBearing,
     ] satisfies ReadonlyArray<Stimulus>
   ) {
-    assert.equal(
-      classifyMessageBoundedActivityCallback(program, armed, stimulus),
-      undefined,
+    const callback = classifyMessageBoundedActivityCallback(
+      program,
+      armed,
+      stimulus,
+    );
+    assert.ok(callback !== undefined, stimulus.commandId);
+    assert.equal(callback.pair, null, stimulus.commandId);
+    assert.deepEqual(
+      selectMessageBoundedActivityStimuli([callback]),
+      [stimulus],
       stimulus.commandId,
     );
   }
@@ -220,4 +238,61 @@ test("does not absorb Timer or ordinary runtime families", () => {
     classifyMessageBoundedActivityCallback(program, initialState, completeReview),
     undefined,
   );
+});
+
+test("drains both wrong Message and wrong completion refusals before waiting on the pair", async () => {
+  const wrongChannel = {
+    ...deliverWithdrawal,
+    channel: { ...withdrawalChannel, messageId: "Message_Other" },
+  };
+  const nonEmptyCompletion = {
+    ...completeReview,
+    submittedValues: [{
+      name: "decision",
+      value: { kind: VariableValueKind.String, value: "approved" },
+    }],
+  };
+  let managedWaits = 0;
+  const eventRaceScheduler = {
+    recordMessageCallback: () => false,
+    waitForReadiness: async () => [],
+    reconcileCommittedState: () => undefined,
+  } satisfies EventRaceReadinessScheduler;
+  const messageBoundedActivityScheduler = {
+    hasPendingCallbacks: () => false,
+    ownsCommittedPair: () => true,
+    recordMessageCallback: () => false,
+    recordCompletionCallback: () => false,
+    waitForReadiness: async () => {
+      managedWaits += 1;
+      throw new Error("managed scheduler must not hide a queued refusal");
+    },
+  } satisfies MessageBoundedActivityReadinessScheduler;
+
+  for (const stimulus of [wrongChannel, nonEmptyCompletion]) {
+    assert.equal(
+      await waitForHostReadiness(
+        armed,
+        program,
+        [stimulus],
+        [],
+        eventRaceScheduler,
+        messageBoundedActivityScheduler,
+        [],
+        async () => undefined,
+        async () => {
+          throw new Error("effect must not execute");
+        },
+        legacyEffectActivityPolicy,
+        () => {
+          throw new Error("capacity must not fail");
+        },
+        () => true,
+        () => false,
+      ),
+      HostReadinessAction.DrainSemanticQueue,
+      stimulus.commandId,
+    );
+  }
+  assert.equal(managedWaits, 0);
 });

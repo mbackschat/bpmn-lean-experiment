@@ -1,21 +1,8 @@
 /** Direct-VM witness for one interrupting Message boundary racing its host task's completion. */
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
-
-import {
-  BpmnCompilationStatus,
-  compileBpmnToSemanticProcess,
-} from "@bpmn-lean/bpmn-source";
-import {
-  ACTIVITY_BOUNDARY_MESSAGE_CHECKPOINT_PROFILE_ID,
-  SemanticOperationKind,
-  StimulusKind,
-} from "@bpmn-lean/semantic-core";
 import type {
   CompleteUserTaskInstanceStimulus,
   DeliverMessageStimulus,
-  SemanticProcessProgram,
-  StartProcessStimulus,
 } from "@bpmn-lean/semantic-core";
 import { parseWorkflowCode } from "@temporalio/worker/lib/worker.js";
 import { defaultPayloadConverter } from "@temporalio/workflow";
@@ -36,13 +23,12 @@ import type {
   Activation,
   Completion,
 } from "./direct-vm-activation-harness.ts";
+import {
+  activityBoundaryMessageFixture,
+  compileActivityBoundaryMessageProgram,
+} from "./activity-boundary-message-temporal-support.ts";
 
-const fixtureUrl = new URL(
-  "../../../../scenarios/activity-boundary-message/process.bpmn",
-  import.meta.url,
-);
 const taskQueue = "activity-boundary-message-readiness";
-const instanceId = "ActivityBoundaryMessage_readiness-witness";
 
 export type ActivityBoundaryMessageTemporalWitness = Readonly<{
   taskVictoryCompletions: ReadonlyArray<Completion>;
@@ -51,8 +37,10 @@ export type ActivityBoundaryMessageTemporalWitness = Readonly<{
 }>;
 
 export async function runActivityBoundaryMessageTemporalWitness(): Promise<ActivityBoundaryMessageTemporalWitness> {
-  const program = await compileProgram();
-  const fixture = createFixture(program);
+  const program = await compileActivityBoundaryMessageProgram(
+    "activity-boundary-message-temporal-readiness",
+  );
+  const fixture = activityBoundaryMessageFixture(program, "readiness-witness");
   const bundle = parseWorkflowCode((await loadBpmnWorkflowBundle()).code);
   const activate = async (
     readyJobs: NonNullable<Activation["jobs"]>,
@@ -89,61 +77,14 @@ export async function runActivityBoundaryMessageTemporalWitness(): Promise<Activ
   return {
     taskVictoryCompletions: await activate(
       [completionUpdateJob(fixture.completion)],
-      [[followOnCompletionJob(fixture.start.instanceId, "RecordReviewCompletion")]],
+      [[completionUpdateJob(fixture.normalFollowOn)]],
     ),
     messageVictoryCompletions: await activate(
       [messageSignalJob(fixture.delivery)],
-      [[followOnCompletionJob(fixture.start.instanceId, "HandleWithdrawal")]],
+      [[completionUpdateJob(fixture.boundaryFollowOn)]],
     ),
     sharedActivationCompletion,
   };
-}
-
-function createFixture(program: SemanticProcessProgram) {
-  const bounded = program.operations.find(
-    ({ kind }) => kind === SemanticOperationKind.AwaitMessageBoundedUserTask,
-  );
-  assert.ok(bounded?.kind === SemanticOperationKind.AwaitMessageBoundedUserTask);
-  const start: StartProcessStimulus = {
-    kind: StimulusKind.StartProcess,
-    commandId: "start-activity-boundary-message-readiness",
-    processId: program.processId,
-    instanceId,
-    initialVariables: [],
-  };
-  const completion: CompleteUserTaskInstanceStimulus = {
-    kind: StimulusKind.CompleteUserTaskInstance,
-    commandId: "complete-review-activity",
-    taskId: {
-      processInstanceId: instanceId,
-      elementId: bounded.task.elementId,
-      activation: 1,
-    },
-    submittedValues: [],
-  };
-  const delivery: DeliverMessageStimulus = {
-    kind: StimulusKind.DeliverMessage,
-    commandId: "deliver-application-withdrawal",
-    subscriptionId: {
-      processInstanceId: instanceId,
-      elementId: bounded.boundaryMessage.elementId,
-      activation: 1,
-    },
-    channel: bounded.boundaryMessage.channel,
-  };
-  return { start, completion, delivery } as const;
-}
-
-function followOnCompletionJob(
-  processInstanceId: string,
-  elementId: string,
-): NonNullable<Activation["jobs"]>[number] {
-  return completionUpdateJob({
-    kind: StimulusKind.CompleteUserTaskInstance,
-    commandId: `complete-${elementId}`,
-    taskId: { processInstanceId, elementId, activation: 1 },
-    submittedValues: [],
-  });
 }
 
 function completionUpdateJob(
@@ -169,20 +110,4 @@ function messageSignalJob(
       input: [defaultPayloadConverter.toPayload(stimulus)],
     },
   };
-}
-
-async function compileProgram(): Promise<SemanticProcessProgram> {
-  const compilation = await compileBpmnToSemanticProcess({
-    bytes: await readFile(fixtureUrl),
-    sourceId: "activity-boundary-message-temporal-readiness",
-    expectedSha256: undefined,
-    sourceOverlay: null,
-    semanticProfile: ACTIVITY_BOUNDARY_MESSAGE_CHECKPOINT_PROFILE_ID,
-    limits: { maxBytes: 1024 * 1024, parserDeadlineMs: 1_000 },
-  });
-  assert.equal(compilation.status, BpmnCompilationStatus.Accepted);
-  if (compilation.status !== BpmnCompilationStatus.Accepted) {
-    throw new Error("Activity boundary Message fixture was rejected");
-  }
-  return compilation.semanticProcess;
 }
