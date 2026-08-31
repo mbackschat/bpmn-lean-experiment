@@ -210,7 +210,7 @@ Host admission must continue to reject an unsupported mixed-wait profile even wh
 
 ## Implemented checkpoint boundary
 
-The Message key-correlation semantic checkpoint extends the implemented ordinary-wait preparation contract with the correlated arm, its Process-property read, complete candidate-publication atom, exhaustive TypeScript and Lean census classification, exact-pair preservation, and commutation witnesses. This extension is implemented and green but does not approve Temporal discovery, ingress, profile registration, or final Internal Commutation closure; its independent semantic-checkpoint review remains the stage gate.
+The Message key-correlation semantic checkpoint extends the implemented ordinary-wait preparation contract with the correlated arm, its Process-property read, complete candidate-publication atom, exhaustive TypeScript and Lean census classification, exact-pair preservation, and commutation witnesses. This extension is implemented and independently approved at correction target `1ce28ed5`, but it does not approve Temporal discovery, ingress, profile registration, or final Internal Commutation closure.
 
 The implemented checkpoint required:
 

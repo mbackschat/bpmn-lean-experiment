@@ -12,7 +12,7 @@ Product 1 privately traverses paired E1 and occurrence-publication segments acro
 
 Activity boundary Message has isolated admission, E1/E2 validation, direct-VM scheduling, and real-service Signal/Update refinement through forced Continue-As-New, Worker replacement, typed coalescence failure, exact history assertions, and replay.
 
-The Message key-correlation semantic checkpoint extends protocol and validation types only far enough to preserve the complete global address, correlated interaction, candidate facts, and target delivery across shared boundaries. Host admission still rejects the checkpoint identity, and no Workflow, public client, global candidate discovery, ingress, routing, registration, or result lifecycle exists. This is fail-closed forward compatibility, not durable correlation capability.
+The independently approved Message key-correlation semantic checkpoint extends protocol and validation types only far enough to preserve the complete global address, correlated interaction, candidate facts, and target delivery across shared boundaries. Correction target `1ce28ed5` is the approved boundary. Host admission still rejects the checkpoint identity, and no Workflow, public client, global candidate discovery, ingress, routing, registration, or result lifecycle exists; the shared canonical ensure-ingress mechanism is the next durable lane. This is fail-closed forward compatibility, not durable correlation capability.
 
 ## Implemented
 

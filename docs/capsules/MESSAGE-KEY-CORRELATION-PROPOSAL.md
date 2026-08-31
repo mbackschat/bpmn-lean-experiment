@@ -320,7 +320,7 @@ No closure cost is claimed at proposal time. At closure, [`capsule-cost.ts`](../
 
 The first green source/checked/IL plus Lean/core finite-matcher, per-instance transition, complete-address contract, and internal-commutation census/footprint target is a mandatory semantic checkpoint. No Temporal correlation-ingress, engine API/global client, Product 2 binding, retained corpus registration, or closure status may cross that checkpoint before its independent review is approved.
 
-The current implementation target has reached that boundary with focused source, contract, Lean, core, and fail-closed Temporal-protocol gates green. It remains an unapproved semantic checkpoint until the receipt below records the independent verdict; the prohibited downstream lanes remain absent.
+The current implementation target has reached that boundary with focused source, contract, Lean, core, and fail-closed Temporal-protocol gates green. The independent review approved target `77ecd9bc` with required exhaustive-Stimulus corrections audited at `1ce28ed5`; the prohibited downstream lanes remain absent, and the approved Temporal correlation-ingress lane may now begin.
 
 Closure requires the unique, zero, ambiguous, cross-definition, pending-registration, failed-fanout, exact-capacity, concurrent, stale/quarantine, same-target recovery, continuation, replay, and mutation evidence named above; complete applicable gates on a clean committed target; reflection and cost records; and independent closure review. The proposal graduates to `-SPEC` only after those owners agree.
 
@@ -329,5 +329,5 @@ Closure requires the unique, zero, ambiguous, cross-definition, pending-registra
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
 | Proposal | `850f7c37` | `fork-turns-none` | `approve-with-required-edits` | `3b83a717, f8497474` |
-| Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Semantic checkpoint | `77ecd9bc` | `fork-turns-none` | `approve-with-required-edits` | `1ce28ed5` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
