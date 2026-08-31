@@ -6,7 +6,10 @@ import {
 import type {
   OccurrenceId,
 } from "./contract.js";
-import { ActivityHandlerKind } from "./activity-occurrence.js";
+import {
+  ActivityHandlerKind,
+  sameOccurrenceId,
+} from "./activity-occurrence.js";
 import type { ActivityHandlerOccurrence } from "./activity-occurrence.js";
 import {
   FlowNodeOccurrenceTerminalKind,
@@ -282,9 +285,7 @@ function sameOccurrenceAnchor(
   id: OccurrenceId,
 ): boolean {
   return anchor.kind === SemanticFlowNodeOccurrenceAnchorKind.Wait &&
-    anchor.id.processInstanceId === id.processInstanceId &&
-    anchor.id.elementId === id.elementId &&
-    anchor.id.activation === id.activation;
+    sameOccurrenceId(anchor.id, id);
 }
 
 /**
