@@ -12,6 +12,58 @@ import {
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 const planPath = path.join(projectRoot, "docs/PLAN.md");
 
+const muePreviewBetaCriticalPath = [
+  ["SEQUENTIAL-MULTI-INSTANCE", "satisfied"],
+  ["INTERNAL-COMMUTATION", "satisfied"],
+  ["PARALLEL-MULTI-INSTANCE", "satisfied"],
+  ["MECHANISM-MATURITY-EVIDENCE", "satisfied"],
+  ["DATA-AND-TASK-MECHANISMS", "satisfied"],
+  ["EVENT-SUBSCRIPTIONS", "active"],
+  ["COMPENSATION-TRANSACTIONS", "queued"],
+] as const;
+
+function muePreviewBetaSection(plan: string): string {
+  const marker = "### MUE Preview Beta critical path\n";
+  const start = plan.indexOf(marker);
+  assert.notEqual(start, -1, `missing ${marker.trim()}`);
+  const bodyStart = start + marker.length;
+  const remainder = plan.slice(bodyStart);
+  const nextHeading = remainder.search(/\n##(?:#)? /u);
+  return remainder.slice(0, nextHeading === -1 ? undefined : nextHeading).trim();
+}
+
+function assertMuePreviewBetaCriticalPath(plan: string): void {
+  const section = muePreviewBetaSection(plan);
+  assert.match(
+    section,
+    /^\| Content ID \| State \| Exact Beta boundary \| Evidence or next-gate owner \|$/mu,
+    "the MUE Preview Beta table needs its stable four-column contract",
+  );
+  const rows = section.split("\n").filter((line) => line.startsWith("| `")).map((line) => {
+    const match = /^\| `([A-Z][A-Z0-9-]*)` \| `(satisfied|active|queued)` \| (\S.+) \| (\S.+) \|$/u.exec(line);
+    assert.ok(match !== null, `every MUE Preview Beta content row must use the stable row contract: ${line}`);
+    const [, id, state, boundary, evidence] = match;
+    assert.ok(id !== undefined && state !== undefined && boundary !== undefined && evidence !== undefined);
+    assert.ok(boundary.trim().length > 0, `${id} needs an exact Beta boundary`);
+    assert.match(evidence, /\[[^\]]+\]\([^)]+\)/u, `${id} needs an evidence or next-gate owner`);
+    return { id, state };
+  });
+  assert.equal(new Set(rows.map(({ id }) => id)).size, rows.length, "duplicate MUE Preview Beta content ID");
+  assert.doesNotMatch(
+    rows.map(({ id }) => id).join("\n"),
+    /^(?:H3-WORKLOAD-ISOLATION|MUE-PREVIEW-BETA)$/mu,
+    "delivery checkpoints and Engine v0.3 work are not MUE Beta content",
+  );
+  assert.deepEqual(
+    rows.map(({ id, state }) => [id, state]),
+    muePreviewBetaCriticalPath,
+    "the MUE Preview Beta table must retain all seven authoritative content IDs and their current states",
+  );
+  const orderedActive = parseOrderedWork(plan).find(({ state }) => state === "active");
+  assert.equal(rows.find(({ state }) => state === "active")?.id, orderedActive?.id, "the Beta path must identify the active ordered work ID");
+  assert.match(section, /^Integration state: `blocked`\.$/mu, "Beta integration must remain blocked while a content row is active or queued");
+}
+
 test("keeps the plan as one compact execution control document", async () => {
   const plan = await readFile(planPath, "utf8");
   assert.doesNotThrow(() => assertPlanControlPlane(plan));
@@ -51,6 +103,26 @@ test("rejects multiple active items, malformed states, duplicate IDs, and a dang
       "Active work ID: `UNKNOWN-WORK`.",
     )),
     /resume work ID/u,
+  );
+});
+
+test("makes the complete MUE Preview Beta critical path executable", async () => {
+  const plan = await readFile(planPath, "utf8");
+  assert.doesNotThrow(() => assertMuePreviewBetaCriticalPath(plan));
+  assert.throws(
+    () => assertMuePreviewBetaCriticalPath(plan.replace(/^\| `MECHANISM-MATURITY-EVIDENCE` \|.*\n/mu, "")),
+    /seven authoritative content IDs/u,
+  );
+  assert.throws(
+    () => assertMuePreviewBetaCriticalPath(plan.replace(
+      "| `EVENT-SUBSCRIPTIONS` |",
+      "| `H3-WORKLOAD-ISOLATION` | `queued` | Engine v0.3 only. | [Maturity ladder](PROJECT-DESIGN.md#engine-maturity-roadmap-labels) |\n| `EVENT-SUBSCRIPTIONS` |",
+    )),
+    /Engine v0\.3 work/u,
+  );
+  assert.throws(
+    () => assertMuePreviewBetaCriticalPath(plan.replace("Integration state: `blocked`.", "Integration state: `ready`.")),
+    /must remain blocked/u,
   );
 });
 
