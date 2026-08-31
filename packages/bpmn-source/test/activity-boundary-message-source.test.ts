@@ -1,7 +1,7 @@
 /**
  * Locks exact source admission and lowering for the interrupting Activity boundary Message profile.
  *
- * The oracle is the approved Activity boundary Message proposal: the omission-only interrupting
+ * The oracle is the approved Activity boundary Message specification: the omission-only interrupting
  * Boundary Event and its host User Task lower to one Activity-owned operation whose two outputs
  * remain distinct and whose Message channel is derived from the resolved root definition chain.
  */

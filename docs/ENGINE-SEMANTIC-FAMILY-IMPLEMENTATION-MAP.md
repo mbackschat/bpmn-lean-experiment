@@ -28,11 +28,11 @@ Reading these sections together supports no cross-family theorem. A mechanism tw
 
 ## Interrupting Activity boundary Message
 
-The [interrupting Activity boundary Message proposal](capsules/ACTIVITY-BOUNDARY-MESSAGE-PROPOSAL.md) is implemented for one payload-free, operation-addressed interrupting Message Boundary Event on one User Task. Its mandatory semantic checkpoint is independently approved; closure review and lifecycle graduation remain open.
+The [interrupting Activity boundary Message specification](capsules/ACTIVITY-BOUNDARY-MESSAGE-SPEC.md) is implemented, independently closure-reviewed, evidence-closed, and graduated for one payload-free, operation-addressed interrupting Message Boundary Event on one User Task.
 
 **Implemented.** Omission-only source admission, strict checked `messageBoundaryEvent`, IL `awaitMessageBoundedUserTask`, shared schemas, deterministic lowering, Lean and independently written TypeScript execution, tagged Activity-handler ownership, atomic task/subscription arming, exact task and Message victories, wrong-family/channel/identity/payload/premature/stale refusal, exact E1/E2 publication, and durable Signal/Update scheduling are green. The registered standards-only profile supplies both answer-free winner schedules with `cib: null`, seeded loser-retention mutations, one retained whole model, and Product 2 capability disclosure.
 
-**Absent.** Independent closure review, evidence-closed lifecycle graduation, and a general CIB or BPMN conformance claim remain open. Payload, key/global correlation, buffering, modeled throw, Message Flow routing, another Activity host, multiple handlers, nested or repeated boundaries, and non-interrupting Message behavior remain outside this family.
+**Absent.** A general CIB or BPMN conformance claim remains open. Payload, key/global correlation, buffering, modeled throw, Message Flow routing, another Activity host, multiple handlers, nested or repeated boundaries, and non-interrupting Message behavior remain outside this family.
 
 ## Interrupting Activity boundary Timer
 
