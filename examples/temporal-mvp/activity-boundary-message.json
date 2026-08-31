@@ -1,0 +1,42 @@
+{
+  "kind": "runnableTemporalMvp",
+  "bpmn": {
+    "file": "../../scenarios/activity-boundary-message/process.bpmn",
+    "sourceId": "activity-boundary-message",
+    "semanticProfile": "bpmn-2.0.2-activity-boundary-message-draft",
+    "limits": {
+      "maxBytes": 1048576,
+      "parserDeadlineMs": 1000
+    }
+  },
+  "process": {
+    "instanceId": "MvpExample_activity_boundary_message_1",
+    "initialVariables": []
+  },
+  "temporal": {
+    "address": "localhost:7233",
+    "namespace": "default",
+    "taskQueue": "bpmn-mvp",
+    "identity": "bpmn-mvp-command"
+  },
+  "interactions": [
+    {
+      "kind": "deliverMessage",
+      "channel": {
+        "kind": "operationMessage",
+        "interfaceId": "Interface_ApplicationMessages",
+        "interfaceOperationId": "Operation_ReceiveApplicationWithdrawal",
+        "messageId": "Message_ApplicationWithdrawal"
+      },
+      "delayMs": 250
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "elementId": "HandleWithdrawal",
+      "delayMs": 250,
+      "inputVariableNames": [],
+      "submittedValues": []
+    }
+  ],
+  "effectHandlers": []
+}
