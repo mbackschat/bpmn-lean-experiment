@@ -5,6 +5,7 @@ export * from "./command-publication-integration.js";
 export * from "./correlation-candidate-registration.js";
 export * from "./correlation-candidate-scan-activity.js";
 export * from "./correlation-ingress-scan.js";
+export * from "./correlation-publication-admission.js";
 export * from "./correlation-ingress-workflow.js";
 export * from "./correlation-registration-activities.js";
 export * from "./process-correlation-registration.js";
