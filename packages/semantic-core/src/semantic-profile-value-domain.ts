@@ -7,7 +7,6 @@ import type {
   VariableBinding,
 } from "./contract.js";
 import {
-  ACTIVITY_BOUNDARY_MESSAGE_CHECKPOINT_PROFILE_ID,
   SemanticProfileId,
 } from "./semantic-profile-catalog.js";
 import { isVariablePatch } from "./variable-value.js";
@@ -19,8 +18,7 @@ export enum VariableWriteSurface {
 }
 
 type SemanticProfile =
-  | typeof SemanticProfileId[keyof typeof SemanticProfileId]
-  | typeof ACTIVITY_BOUNDARY_MESSAGE_CHECKPOINT_PROFILE_ID;
+  typeof SemanticProfileId[keyof typeof SemanticProfileId];
 
 const emptyValueDomain: ReadonlyArray<VariableValueKind> = Object.freeze([]);
 const stringValueDomain = Object.freeze([VariableValueKind.String]);
@@ -50,10 +48,7 @@ const scalarValueDomain = Object.freeze([
 ]);
 
 const admittedSemanticProfiles: ReadonlySet<string> = new Set(
-  [
-    ...Object.values(SemanticProfileId),
-    ACTIVITY_BOUNDARY_MESSAGE_CHECKPOINT_PROFILE_ID,
-  ],
+  Object.values(SemanticProfileId),
 );
 
 /** Selects which typed Process-data values one profile admits at one external write surface. */
@@ -182,7 +177,7 @@ function profileValueDomain(
         structuredHumanWorkValueDomain,
       );
     case SemanticProfileId.ActivityBoundaryTimer:
-    case ACTIVITY_BOUNDARY_MESSAGE_CHECKPOINT_PROFILE_ID:
+    case SemanticProfileId.ActivityBoundaryMessage:
     case SemanticProfileId.CalledProcessCallActivity:
     case SemanticProfileId.ConfiguredTask:
     case SemanticProfileId.EmbeddedSubProcessCompletion:

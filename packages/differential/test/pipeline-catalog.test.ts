@@ -183,6 +183,26 @@ test("registers the three Message payload scenarios in the full pipeline", () =>
   );
 });
 
+test("registers both Activity boundary Message winners without a CIB target", () => {
+  assert.deepEqual(
+    pipelineCases.filter(({ scenarioRelativePath }) =>
+      scenarioRelativePath.startsWith("scenarios/activity-boundary-message/")
+    ).map(({ id, cib, temporalRelation }) => ({ id, cib, temporalRelation })),
+    [
+      {
+        id: "activity-boundary-message-task-wins",
+        cib: null,
+        temporalRelation: TemporalCaseRelation.ExactSemantic,
+      },
+      {
+        id: "activity-boundary-message-message-wins",
+        cib: null,
+        temporalRelation: TemporalCaseRelation.ExactSemantic,
+      },
+    ],
+  );
+});
+
 test("rejects an omitted, duplicated, or unprotected Message payload case", () => {
   const [payloadCase] = messagePayloadCatchPipelineCases;
   assert.ok(payloadCase !== undefined);

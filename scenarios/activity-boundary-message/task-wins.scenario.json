@@ -1,0 +1,82 @@
+{
+  "kind": "scenario",
+  "id": "activity-boundary-message-task-wins",
+  "profile": "bpmn-2.0.2-activity-boundary-message-draft",
+  "bpmn": {
+    "id": "activity-boundary-message",
+    "relativePath": "scenarios/activity-boundary-message/process.bpmn",
+    "sha256": "5481e9dd1639c9bdf5b640b7cbeff7b6d44c6b6b661756c743b50efa7319fd16",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "startProcess",
+      "commandId": "start-activity-boundary-message-task-wins",
+      "processId": "Process_ActivityBoundaryMessage",
+      "instanceId": "ActivityBoundaryMessageTaskWins",
+      "initialVariables": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-review-application",
+      "taskId": {
+        "processInstanceId": "ActivityBoundaryMessageTaskWins",
+        "elementId": "ReviewApplication",
+        "activation": 1
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "deliverMessage",
+      "commandId": "deliver-stale-application-withdrawal",
+      "subscriptionId": {
+        "processInstanceId": "ActivityBoundaryMessageTaskWins",
+        "elementId": "Withdrawal",
+        "activation": 1
+      },
+      "channel": {
+        "kind": "operationMessage",
+        "interfaceId": "Interface_ApplicationMessages",
+        "interfaceOperationId": "Operation_ReceiveApplicationWithdrawal",
+        "messageId": "Message_ApplicationWithdrawal"
+      }
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-record-review",
+      "taskId": {
+        "processInstanceId": "ActivityBoundaryMessageTaskWins",
+        "elementId": "RecordReviewCompletion",
+        "activation": 1
+      },
+      "submittedValues": []
+    }
+  ],
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 8.4.2",
+      "BPMN 2.0.2 Clause 10.5.6",
+      "BPMN 2.0.2 Clause 13.3.2",
+      "BPMN 2.0.2 Clause 13.5.3",
+      "BPMN 2.0.2 Table 10.91",
+      "BPMN 2.0.2 Table 10.92",
+      "BPMN 2.0.2 Table 10.99"
+    ],
+    "cibRevision": "5a45b47ea22688d774de97277c3ff7013f54fdd2",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/UserTaskActivityBehavior.java"
+    ]
+  }
+}

@@ -31,6 +31,8 @@ export const pipelineCaseIdRegistry = Object.freeze([
   "event-based-gateway-timer-wins",
   "activity-boundary-timer-activity-wins",
   "activity-boundary-timer-deadline-wins",
+  "activity-boundary-message-task-wins",
+  "activity-boundary-message-message-wins",
   "subprocess-boundary-timer-scope-completes",
   "subprocess-boundary-timer-deadline-wins",
   "non-interrupting-boundary-timer-deadline-then-both-branches",

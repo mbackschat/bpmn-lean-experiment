@@ -76,7 +76,6 @@ Activity boundary Message has isolated admission, E1/E2 validation, direct-VM sc
 
 ### Temporal adapter
 
-- Activity boundary Message final profile registration, differential target, retained corpus binding, and Product 2 capability disclosure
 - retained result beyond Temporal retention
 - production canonical-observation API
 - protocol that imposes caller order on concurrent distinct commands

@@ -288,6 +288,15 @@ function addBoundaryCapability(
       return;
     }
   }
+  if (definition === "messageEventDefinition" && attachedTo === "userTask") {
+    if (event.attributes.cancelActivity === "false") {
+      throw new TypeError(
+        "unclassified executable BPMN non-interrupting User Task boundary Message",
+      );
+    }
+    capabilities.add("interruptingUserTaskBoundaryMessageEvent");
+    return;
+  }
   throw new TypeError(
     `unclassified executable BPMN Boundary Event variant ${definition ?? "none"} on ${attachedTo}`,
   );

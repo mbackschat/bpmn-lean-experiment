@@ -108,10 +108,6 @@ export function validateExecutionOptions(
     throw new TypeError(
       "Worker-down-at-due scheduling requires one timer stimulus",
     );
-  } else if (
-    options.executionSchedule === TemporalExecutionSchedule.StimulusOrder
-  ) {
-    throw new TypeError("Stimulus-order scheduling requires one timer stimulus");
   }
   if (
     options.executionSchedule ===

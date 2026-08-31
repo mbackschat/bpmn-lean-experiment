@@ -15,6 +15,13 @@ const surfaces = [
   "effectCompletion",
 ] as const;
 
+test("registers Activity boundary Message for ordinary product admission", () => {
+  assert.equal(
+    Reflect.get(SemanticProfileId, "ActivityBoundaryMessage"),
+    "bpmn-2.0.2-activity-boundary-message-draft",
+  );
+});
+
 type VariableWriteSurface = typeof surfaces[number];
 
 type CompiledValueDomain = Readonly<{

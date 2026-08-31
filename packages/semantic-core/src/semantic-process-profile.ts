@@ -11,7 +11,6 @@ import {
   requiredProgramShape,
 } from "./semantic-program-profile-shape.js";
 import {
-  ACTIVITY_BOUNDARY_MESSAGE_CHECKPOINT_PROFILE_ID,
   SemanticProfileId,
 } from "./semantic-profile-catalog.js";
 import {
@@ -25,7 +24,6 @@ import {
 } from "./user-task-metadata.js";
 
 export {
-  ACTIVITY_BOUNDARY_MESSAGE_CHECKPOINT_PROFILE_ID,
   SERVICE_TASK_INCIDENT_CHECKPOINT_PROFILE_ID,
   SemanticProfileId,
 } from "./semantic-profile-catalog.js";
@@ -82,7 +80,7 @@ function profileAllowsProgramOperationDetails(
           operation.kind !== SemanticOperationKind.MergeExclusive ||
           operation.inputs.length === 3,
       );
-    case ACTIVITY_BOUNDARY_MESSAGE_CHECKPOINT_PROFILE_ID:
+    case SemanticProfileId.ActivityBoundaryMessage:
       return hasExactActivityBoundaryMessageProgram(operations);
     case SemanticProfileId.ConfiguredTask:
     case SemanticProfileId.ServiceTaskIncident:

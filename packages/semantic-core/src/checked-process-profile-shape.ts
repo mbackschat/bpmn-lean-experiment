@@ -4,7 +4,6 @@ import {
   CheckedNodeKind,
 } from "./checked-process-contract.js";
 import {
-  ACTIVITY_BOUNDARY_MESSAGE_CHECKPOINT_PROFILE_ID,
   SemanticProfileId,
 } from "./semantic-profile-catalog.js";
 import {
@@ -161,7 +160,7 @@ export function requiredCheckedProcessShape(
         end,
         end,
       ], BoundaryInterruption.Interrupting);
-    case ACTIVITY_BOUNDARY_MESSAGE_CHECKPOINT_PROFILE_ID:
+    case SemanticProfileId.ActivityBoundaryMessage:
       return rootChecked([
         start,
         CheckedNodeKind.UserTask,

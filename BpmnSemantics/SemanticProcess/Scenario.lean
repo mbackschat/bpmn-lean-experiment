@@ -61,7 +61,11 @@ private def ownedWaitDefinitions : SemanticOperation → OwnedWaitDefinitions
         timers :=
           [{ elementId := boundaryTimer.elementId
              durationMs := boundaryTimer.durationMs }] }
-  | .awaitMessageBoundedUserTask .. => {}
+  | .awaitMessageBoundedUserTask _ _ _ task boundaryMessage =>
+      { tasks := [{ id := task.id, name := task.name }]
+        messages :=
+          [{ elementId := boundaryMessage.elementId
+             channel := boundaryMessage.channel }] }
   | .awaitSequentialMultiInstanceUserTask _ _ _ task _ _ boundaryTimer _ =>
       { tasks := [{ id := task.id, name := task.name }]
         timers :=
@@ -383,7 +387,8 @@ private def messageEnabledInteraction? (program : Program)
   match messageWaitDeclarers program ⟨subscription.id.elementId.value⟩ with
   | [.awaitPayloadMessage ..] =>
       some (.deliverPayloadMessage subscription.id subscription.channel)
-  | [.awaitMessage ..] | [.awaitEventRace ..] =>
+  | [.awaitMessage ..] | [.awaitEventRace ..]
+  | [.awaitMessageBoundedUserTask ..] =>
       some (.deliverMessage subscription.id subscription.channel)
   | _ => none
 
@@ -499,7 +504,22 @@ private def executeStimuli (closureLimit : Nat) (program : Program) :
         | .rolledBack =>
             terminalExecution program .rolledBack result.state observation
         | .rejected =>
-            terminalExecution program .rejected result.state observation
+            match remaining with
+            | [] => terminalExecution program .rejected result.state observation
+            | _ =>
+                -- ABMSG-REFUSE-01 observes the stale loser before completing the still-live
+                -- follow-on, so an intermediate rejection preserves state and the schedule proceeds.
+                match observeStableState program result.state with
+                | none =>
+                    { outcome := .harnessFailure
+                      state := result.state
+                      trace := [] }
+                | some snapshot =>
+                    let rest :=
+                      executeStimuli closureLimit program result.state remaining
+                    { outcome := rest.outcome
+                      state := rest.state
+                      trace := observation :: .state snapshot :: rest.trace }
         | .semanticFailure =>
             terminalExecution program .semanticFailure result.state observation
         | .unsupported =>

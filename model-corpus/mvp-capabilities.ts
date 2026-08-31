@@ -260,6 +260,14 @@ export const mvpBpmnCapabilities = Object.freeze([
     cibEvidence: notSelected,
   },
   {
+    id: "interruptingUserTaskBoundaryMessageEvent",
+    family: "Boundary Events",
+    element: "Interrupting Message Boundary Event on User Task",
+    support: BpmnCapabilitySupport.BoundedStandard,
+    restriction: "One operation-addressed, payload-free withdrawal Message withdraws the active User Task; exact task completion withdraws the subscription, and either stale loser is refused.",
+    cibEvidence: notSelected,
+  },
+  {
     id: "interruptingSequentialMultiInstanceBoundaryTimerEvent",
     family: "Boundary Events",
     element: "Interrupting Timer Boundary Event on sequential Multi-Instance User Task",

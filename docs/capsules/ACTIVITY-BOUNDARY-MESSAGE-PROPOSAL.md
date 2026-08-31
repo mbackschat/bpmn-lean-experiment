@@ -11,7 +11,7 @@ What is the smallest standards-only slice in which one payload-free interrupting
 
 ## Implementation checkpoint
 
-The first green source, checked-graph, Semantic Process IL, Lean, and independently written TypeScript-core checkpoint is implemented and independently approved. Occurrence publication and the Temporal Message/Update scheduler are now implemented: the real-service witness covers both winners after forced Continue-As-New and Worker replacement, stale Signal refusal with stable published state, exact typed coalescence failure, history mechanism exclusions, and replay of every Run. Final profile registration, answer-free scenario and differential evidence, retained-corpus binding, Product 2 capability disclosure, and closure review remain unreached.
+The first green source, checked-graph, Semantic Process IL, Lean, and independently written TypeScript-core checkpoint is implemented and independently approved. Occurrence publication and the Temporal Message/Update scheduler are implemented: the real-service witness covers both winners after forced Continue-As-New and Worker replacement, stale Signal refusal with stable published state, exact typed coalescence failure, history mechanism exclusions, and replay of every Run. The immutable profile identity, both answer-free Lean/core/Temporal schedules, retained-corpus binding, capability disclosure, and Product 2 About row are registered. The exact closure cost, clean complete gate, independent closure review, and lifecycle graduation remain open.
 
 ## Selection basis
 
@@ -36,7 +36,7 @@ CMOF and XSD make `attachedToRef` an Activity reference and make `cancelActivity
 
 [OMG issue BPMN2-223](https://issues.omg.org/issues/BPMN2-223) leaves pre-wait Message persistence outside the standard's settled semantics. This profile does not buffer a Message delivered before the Activity subscription exists: the delivery is rejected with exact state preservation. That is a bounded profile choice and not a claim that BPMN generally loses such Messages.
 
-The new ledger requirement is `BPMN-BOUNDARY-MESSAGE-01`. It remains `unsupported` while this proposal is unimplemented and must advance only with the closure evidence required below. The broad `BPMN-MECH-EVENT-01` family remains unsupported after this bounded slice.
+The new ledger requirement is `BPMN-BOUNDARY-MESSAGE-01`. It remains `unsupported` until this capsule's clean complete gate, exact closure cost, and independent closure review are recorded; only then may the bounded row advance. The broad `BPMN-MECH-EVENT-01` family remains unsupported after this bounded slice.
 
 ## Selected source profile
 
@@ -279,9 +279,9 @@ The reviewability threshold is 800 nonblank lines. Each figure is the mechanical
 | [`compilation-dispatch.ts`](../../packages/bpmn-source/src/compilation-dispatch.ts) | 496 | register exact source compilation for the new profile; extract first only if the edit would cross 800 |
 | [`semantic-process-lowering.ts`](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 166 | add one lowering dispatch and keep family logic outside this owner if the edit would cross 800 |
 | [`semantic-process-contract.ts`](../../packages/semantic-core/src/semantic-process-contract.ts) | 236 | add one operation kind and union arm; extract first only if the edit would cross 800 |
-| [`semantic-profile-catalog.ts`](../../packages/semantic-core/src/semantic-profile-catalog.ts) | 726 | add the exact registered profile identity; extract first only if the edit would cross 800 |
-| [`checked-process-profile-shape.ts`](../../packages/semantic-core/src/checked-process-profile-shape.ts) | 505 | add the exact checked-node multiset; extract first only if the edit would cross 800 |
-| [`semantic-program-profile-shape.ts`](../../packages/semantic-core/src/semantic-program-profile-shape.ts) | 488 | add the exact operation multiset; extract first only if the edit would cross 800 |
+| [`semantic-profile-catalog.ts`](../../packages/semantic-core/src/semantic-profile-catalog.ts) | 727 | add the exact registered profile identity; extract first only if the edit would cross 800 |
+| [`checked-process-profile-shape.ts`](../../packages/semantic-core/src/checked-process-profile-shape.ts) | 506 | add the exact checked-node multiset; extract first only if the edit would cross 800 |
+| [`semantic-program-profile-shape.ts`](../../packages/semantic-core/src/semantic-program-profile-shape.ts) | 489 | add the exact operation multiset; extract first only if the edit would cross 800 |
 | [`semantic-process-operation-admission.ts`](../../packages/semantic-core/src/semantic-process-operation-admission.ts) | 86 | add exact operation well-formedness; extract family validation before an edit that would cross 800 |
 | [`semantic-process-graph-admission.ts`](../../packages/semantic-core/src/semantic-process-graph-admission.ts) | 208 | classify the new operation's input and outputs generically; extract first only if the edit would cross 800 |
 | [`activity-occurrence.ts`](../../packages/semantic-core/src/activity-occurrence.ts) | 568 | replace Timer-only attachment helpers with handler-family helpers; extract first only if the edit would cross 800 |
@@ -296,7 +296,7 @@ The reviewability threshold is 800 nonblank lines. Each figure is the mechanical
 | [`ProgramStructuralValidation.lean`](../../BpmnSemantics/SemanticProcess/ProgramStructuralValidation.lean) | 180 | add exact operation structural validation; extract first only if the edit would cross 800 |
 | [`GraphValidation.lean`](../../BpmnSemantics/SemanticProcess/GraphValidation.lean) | 55 | add only dispatcher coverage; extract the family graph rules before any edit that would cross 800 |
 | [`RuntimeStateWellFormed.lean`](../../BpmnSemantics/SemanticProcess/RuntimeStateWellFormed.lean) | 109 | resolve handler-family ownership; extract the new handler predicates before an edit that would cross 800 |
-| [`Scenario.lean`](../../BpmnSemantics/SemanticProcess/Scenario.lean) | 274 | decode and execute the two answer-free schedules; extract first only if the edit would cross 800 |
+| [`Scenario.lean`](../../BpmnSemantics/SemanticProcess/Scenario.lean) | 254 | decode and execute the two answer-free schedules; extract first only if the edit would cross 800 |
 | [`TransitionTrace.lean`](../../BpmnSemantics/SemanticProcess/TransitionTrace.lean) | 229 | classify the new operation and transition traces; extract first only if the edit would cross 800 |
 | [`FlowNodeOccurrenceLifecycle.lean`](../../BpmnSemantics/SemanticProcess/FlowNodeOccurrenceLifecycle.lean) | 56 | add the matching Lean occurrence lifecycle; extract first only if the edit would cross 800 |
 | [`Transition.lean`](../../BpmnSemantics/SemanticProcess/Transition.lean) | 343 | add the new dispatcher arm; family relations and laws belong in new modules if this owner would cross 800 |
@@ -306,7 +306,7 @@ The reviewability threshold is 800 nonblank lines. Each figure is the mechanical
 | [`workflow-command-ingress.ts`](../../packages/temporal-adapter/workflow/src/workflow-command-ingress.ts) | 403 | route exact Signal/Update callbacks to the new scheduler; extract first only if the edit would cross 800 |
 | [`workflow-host-readiness.ts`](../../packages/temporal-adapter/workflow/src/workflow-host-readiness.ts) | 526 | register the new host-readiness owner; extract first only if the edit would cross 800 |
 | [`activation-tagged-readiness.ts`](../../packages/temporal-adapter/workflow/src/activation-tagged-readiness.ts) | 723 | reuse without semantic-family logic; it grows only if the generic contract proves insufficient, which is a redesign stop |
-| [`runner.ts`](../../packages/temporal-adapter/testkit/src/runner.ts) | 260 | drive both winner schedules, both stale refusals, and the coalescing witness; extract the family runner before an edit that would cross 800 |
+| [`runner.ts`](../../packages/temporal-adapter/testkit/src/runner.ts) | 255 | drive both winner schedules, both stale refusals, and the coalescing witness; extract the family runner before an edit that would cross 800 |
 
 ### Complete `attachedTimers` migration census
 
@@ -327,7 +327,7 @@ New family-specific runtime, Lean relation/law, source-admission helper, and Tem
 
 Established before implementation: BPMN admits an interrupting Message Boundary Event on an Activity; omitted `cancelActivity` resolves to true; Message Boundary correlation shares the Receive Task account; direct subscription addressing, existing task completion, and Activity-owned Timer cancellation already exist as separate reviewed mechanisms.
 
-Not established: the selected source is admitted, the new operation is well formed, handler-family migration preserves every Timer family, Lean/core transitions implement the rules, public occurrence projection is exact, the Temporal host can fail closed while settling both callers, or the registered targets agree. Those remain evidence obligations, not inferred feasibility.
+Established by implementation: the selected source is admitted, the new operation is well formed, the handler-family migration preserves every Timer family, Lean/core transitions implement the rules, public occurrence projection is exact, the Temporal host fails closed while settling both co-ready callers, and both registered schedules agree across Lean, the core, and Temporal. The clean complete gate, exact closure cost, independent closure review, and evidence-closed lifecycle remain open rather than inferred from those focused results.
 
 The nearest unsupported claim is key-based Message correlation across Process instances. This capsule must not make its direct address look like a BPMN correlation key or a global Message broker.
 

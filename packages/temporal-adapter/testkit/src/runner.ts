@@ -303,16 +303,21 @@ export class TemporalScenarioRunner {
       "Workflow wait-state observation",
     );
 
-    await deliverScenarioMessages(
-      this.environment.client.workflow,
-      handle.workflowId,
-      start.instanceId,
-      scenario,
-      operationDeadlineMs,
-    );
+    if (
+      options.executionSchedule !== TemporalExecutionSchedule.StimulusOrder
+    ) {
+      await deliverScenarioMessages(
+        this.environment.client.workflow,
+        handle.workflowId,
+        start.instanceId,
+        scenario,
+        operationDeadlineMs,
+      );
+    }
     const completions = requireCompletionStimuli(scenario);
     const firstCompletion = completions[0];
     if (
+      options.executionSchedule !== TemporalExecutionSchedule.StimulusOrder &&
       firstCompletion !== undefined &&
       requiresHostProgressBeforeCompletion(scenario, firstCompletion)
     ) {

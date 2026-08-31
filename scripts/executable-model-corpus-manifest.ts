@@ -90,6 +90,7 @@ const corpusMechanisms = new Set([
   "externalEffect",
   "genericTask",
   "inclusiveSplitJoin",
+  "interruptingBoundaryMessage",
   "interruptingBoundaryTimer",
   "lanePresentation",
   "literalUserTaskAssignmentAndGeneratedForm",

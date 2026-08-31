@@ -7,7 +7,6 @@ import {
   compileBpmnToSemanticProcess,
 } from "@bpmn-lean/bpmn-source";
 import {
-  ACTIVITY_BOUNDARY_MESSAGE_CHECKPOINT_PROFILE_ID,
   EffectOperation,
   EffectProtocol,
   MessageChannelKind,
@@ -142,7 +141,7 @@ test("admits only the exact isolated operation-addressed Message-bounded Activit
   const program = await compileFixture(
     "../../../../scenarios/activity-boundary-message/process.bpmn",
     "activity-boundary-message-host-admission",
-    ACTIVITY_BOUNDARY_MESSAGE_CHECKPOINT_PROFILE_ID,
+    SemanticProfileId.ActivityBoundaryMessage,
   );
 
   assert.deepEqual(assessTemporalHostCapability(program), {

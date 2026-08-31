@@ -610,6 +610,42 @@
       }
     },
     {
+      "id": "application-withdrawal-during-review",
+      "title": "Withdraw an application during review",
+      "businessPurpose": "Let an applicant withdraw an application while its human review is active and route the case to withdrawal handling.",
+      "cloneFamily": "interrupting-task-withdrawal-message",
+      "constructs": [
+        "boundaryEvent",
+        "endEvent",
+        "process",
+        "sequenceFlow",
+        "startEvent",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "interruptingBoundaryMessage",
+        "messageWait",
+        "userTaskWait",
+        "userTaskCompletion"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/activity-boundary-message/process.bpmn",
+        "sha256": "5481e9dd1639c9bdf5b640b7cbeff7b6d44c6b6b661756c743b50efa7319fd16",
+        "scenarioRelativePath": "scenarios/activity-boundary-message/message-wins.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "bpmn-2.0.2-activity-boundary-message-draft",
+      "admission": { "kind": "accepted" },
+      "pipelineCaseId": "activity-boundary-message-message-wins",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "Withdrawal delivery and the interruption route are not yet one production browser journey."
+      }
+    },
+    {
       "id": "work-package-deadline-escalation",
       "title": "Escalate a bounded work package",
       "businessPurpose": "Cancel overdue work inside a bounded package and continue through its escalation route.",

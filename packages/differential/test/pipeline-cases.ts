@@ -51,6 +51,9 @@ import {
   activityBoundaryTimerPipelineCases,
 } from "./activity-boundary-timer-pipeline-cases.ts";
 import {
+  activityBoundaryMessagePipelineCases,
+} from "./activity-boundary-message-pipeline-cases.ts";
+import {
   subprocessBoundaryTimerPipelineCases,
 } from "./subprocess-boundary-timer-pipeline-cases.ts";
 import {
@@ -566,6 +569,7 @@ export const pipelineCases = Object.freeze([
   ...inclusiveGatewayPipelineCases,
   ...eventBasedGatewayPipelineCases,
   ...activityBoundaryTimerPipelineCases,
+  ...activityBoundaryMessagePipelineCases,
   ...subprocessBoundaryTimerPipelineCases,
   ...nonInterruptingBoundaryTimerPipelineCases,
   ...callActivityPipelineCases,

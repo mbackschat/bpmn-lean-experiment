@@ -65,6 +65,14 @@ test("presents versioned BPMN and CIB capability boundaries from the canonical c
     html,
     /Interrupting Timer Boundary Event on sequential Multi-Instance User Task/u,
   );
+  assert.match(
+    html,
+    /Interrupting Message Boundary Event on User Task/u,
+  );
+  assert.match(
+    html,
+    /payload-free withdrawal Message withdraws the active User Task/iu,
+  );
   assert.match(html, /publishes no partial output/iu);
   assert.match(html, /No CIB target selected/u);
   assert.deepEqual(

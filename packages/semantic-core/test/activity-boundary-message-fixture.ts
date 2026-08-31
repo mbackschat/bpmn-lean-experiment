@@ -1,8 +1,8 @@
 import {
-  ACTIVITY_BOUNDARY_MESSAGE_CHECKPOINT_PROFILE_ID,
   MessageChannelKind,
   SemanticOperationKind,
   SemanticOriginKind,
+  SemanticProfileId,
   SemanticProcessCompilerId,
   SemanticProcessKind,
   StimulusKind,
@@ -24,7 +24,7 @@ export const program = rootScopedProgram({
   kind: SemanticProcessKind.SemanticProcess,
   identity: {
     compiler: SemanticProcessCompilerId.BpmnSourceSemanticProcess,
-    semanticProfile: ACTIVITY_BOUNDARY_MESSAGE_CHECKPOINT_PROFILE_ID,
+    semanticProfile: SemanticProfileId.ActivityBoundaryMessage,
     sourceId: "activity-boundary-message",
     sourceOverlay: null,
     sourceSha256:

@@ -216,7 +216,7 @@ def serviceTaskIncidentCancellationCheckpointProfileId : ProfileId :=
   ⟨"cibseven-2.2.0-service-task-incident-cancellation-draft"⟩
 
 /-- Runtime-frozen identity of the Activity boundary Message checkpoint. -/
-def activityBoundaryMessageCheckpointProfileId : ProfileId :=
+def activityBoundaryMessageProfileId : ProfileId :=
   ⟨"bpmn-2.0.2-activity-boundary-message-draft"⟩
 
 private def checkedShape? (profile : String) : Option (Nat × ShapeCardinalities) :=
@@ -307,7 +307,7 @@ private def checkedShape? (profile : String) : Option (Nat × ShapeCardinalities
   else if profile = "bpmn-2.0.2-activity-boundary-timer-draft" then
     some (1,
       { starts := 1, boundaryTimers := 1, userTasks := 3, ends := 2 })
-  else if profile = activityBoundaryMessageCheckpointProfileId.value then
+  else if profile = activityBoundaryMessageProfileId.value then
     some (1,
       { starts := 1, boundaryMessages := 1, userTasks := 3, ends := 2 })
   else if profile = "bpmn-2.0.2-non-interrupting-boundary-timer-draft" then
@@ -420,7 +420,7 @@ private def programShape? (profile : String) : Option (Nat × ShapeCardinalities
   else if profile = "bpmn-2.0.2-activity-boundary-timer-draft" then
     some (1, withScopeCompletions 1
       { initiates := 1, boundedUserTasks := 1, userTasks := 2, ends := 2 })
-  else if profile = activityBoundaryMessageCheckpointProfileId.value then
+  else if profile = activityBoundaryMessageProfileId.value then
     some (1, withScopeCompletions 1
       { initiates := 1, messageBoundedUserTasks := 1, userTasks := 2, ends := 2 })
   else if profile = "bpmn-2.0.2-non-interrupting-boundary-timer-draft" then
@@ -522,7 +522,7 @@ private def checkedOnlyOutgoingFlow? (source : CheckedProcess) (nodeId : NodeId)
   | _ => none
 
 private def checkedActivityBoundaryMessageTopologyValid (source : CheckedProcess) : Bool :=
-  if source.identity.semanticProfile = activityBoundaryMessageCheckpointProfileId then
+  if source.identity.semanticProfile = activityBoundaryMessageProfileId then
     match source.nodes.filterMap (fun | .noneStartEvent id => some id | _ => none),
         source.nodes.filterMap (fun
           | .messageBoundaryEvent id host _ _ output => some (id, host, output)
@@ -617,7 +617,7 @@ private def programParallelTopologyValid (program : Program) : Bool :=
   else true
 
 private def programActivityBoundaryMessageTopologyValid (program : Program) : Bool :=
-  if program.identity.semanticProfile = activityBoundaryMessageCheckpointProfileId then
+  if program.identity.semanticProfile = activityBoundaryMessageProfileId then
     match program.operations.filterMap (fun | .initiate _ _ output => some output | _ => none),
         program.operations.filterMap (fun
           | .awaitMessageBoundedUserTask _ _ input task handler =>
@@ -719,7 +719,7 @@ private def operationPayloadCapabilitiesValid (profile : String)
                   decide (directOutput.sourceDataOutputName ≠ some "")
             | .directMessage .. => false
       | _ => true
-  else if profile = activityBoundaryMessageCheckpointProfileId.value then
+  else if profile = activityBoundaryMessageProfileId.value then
     operations.all fun
       | .awaitMessageBoundedUserTask _ origin _ task boundaryMessage =>
           origin.elementId.value = task.id.value &&

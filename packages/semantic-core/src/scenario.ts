@@ -527,7 +527,7 @@ function executeStimuli(
   let state = initialState;
   const trace: CanonicalObservation[] = [];
 
-  for (const stimulus of stimuli) {
+  for (const [index, stimulus] of stimuli.entries()) {
     const step = advanceScenario(program, state, stimulus, closureLimit);
     switch (step.kind) {
       case ScenarioStepKind.Committed:
@@ -535,6 +535,22 @@ function executeStimuli(
         state = step.state;
         break;
       case ScenarioStepKind.Terminal:
+        // ABMSG-REFUSE-01 requires a stale loser to prove state preservation before the still-live
+        // follow-on is completed; an intermediate rejection is therefore an observation, not the
+        // end of the answer-free schedule.
+        if (
+          step.outcome.kind === ScenarioOutcomeKind.Semantic &&
+          step.outcome.outcome === CommandOutcome.Rejected &&
+          index + 1 < stimuli.length
+        ) {
+          trace.push(...step.observations);
+          state = step.state;
+          break;
+        }
+        return {
+          outcome: step.outcome,
+          trace: [...trace, ...step.observations],
+        };
       case ScenarioStepKind.HarnessFailure:
         return {
           outcome: step.outcome,

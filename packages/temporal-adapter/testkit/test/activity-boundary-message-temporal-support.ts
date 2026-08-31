@@ -7,7 +7,7 @@ import {
   compileBpmnToSemanticProcess,
 } from "@bpmn-lean/bpmn-source";
 import {
-  ACTIVITY_BOUNDARY_MESSAGE_CHECKPOINT_PROFILE_ID,
+  SemanticProfileId,
   SemanticOperationKind,
   StimulusKind,
 } from "@bpmn-lean/semantic-core";
@@ -46,7 +46,7 @@ export async function compileActivityBoundaryMessageProgram(
     sourceId,
     expectedSha256: undefined,
     sourceOverlay: null,
-    semanticProfile: ACTIVITY_BOUNDARY_MESSAGE_CHECKPOINT_PROFILE_ID,
+    semanticProfile: SemanticProfileId.ActivityBoundaryMessage,
     limits: { maxBytes: 1024 * 1024, parserDeadlineMs: 1_000 },
   });
   assert.equal(compilation.status, BpmnCompilationStatus.Accepted);

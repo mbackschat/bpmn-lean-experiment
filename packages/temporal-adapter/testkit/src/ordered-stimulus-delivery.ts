@@ -1,4 +1,4 @@
-/** Delivers a retained completion/Timer scenario in its declared stimulus order. */
+/** Delivers a retained completion, Message, or Timer scenario in its declared stimulus order. */
 import {
   CanonicalObservationKind,
   StimulusKind,
@@ -13,7 +13,10 @@ import type {
   WorkflowHandle,
 } from "@temporalio/client";
 
-import { submitUserTaskCompletionAtWorkflowId } from "@bpmn-lean/temporal-client";
+import {
+  submitMessageDeliveryAtWorkflowId,
+  submitUserTaskCompletionAtWorkflowId,
+} from "@bpmn-lean/temporal-client";
 import {
   bpmnOpenUserTasksQueryName,
   TemporalCompletionDelivery,
@@ -98,6 +101,26 @@ export async function deliverStimuliInOrder(
         break;
       case StimulusKind.DeliverMessage:
       case StimulusKind.DeliverPayloadMessage:
+        requireSemanticOutcome(
+          await withDeadline(
+            submitMessageDeliveryAtWorkflowId(
+              client,
+              handle.workflowId,
+              processInstanceId,
+              stimulus,
+            ),
+            operationDeadlineMs,
+            `Workflow ordered Message delivery ${stimulus.commandId}`,
+          ),
+        );
+        expectedTraceLength += 2;
+        await requireCommandAtTraceBoundary(
+          handle,
+          expectedTraceLength,
+          stimulus.commandId,
+          waitForTrace,
+        );
+        break;
       case StimulusKind.CompleteEffect:
       case StimulusKind.ReportEffectFailure:
       case StimulusKind.RetryIncident:

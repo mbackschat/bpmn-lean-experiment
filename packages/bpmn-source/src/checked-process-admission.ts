@@ -1,5 +1,4 @@
 import {
-  ACTIVITY_BOUNDARY_MESSAGE_CHECKPOINT_PROFILE_ID,
   BoundaryInterruption,
   CheckedNodeKind,
   GatewayDirection,
@@ -341,7 +340,7 @@ function hasSelectedActivityBoundaryMessageTopology(
   semanticProfile: string,
   graph: CheckedProcessGraph,
 ): boolean {
-  if (semanticProfile !== ACTIVITY_BOUNDARY_MESSAGE_CHECKPOINT_PROFILE_ID) {
+  if (semanticProfile !== SemanticProfileId.ActivityBoundaryMessage) {
     return true;
   }
   const starts = graph.nodes.filter(

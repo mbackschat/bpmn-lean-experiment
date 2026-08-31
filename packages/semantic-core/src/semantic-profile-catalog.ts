@@ -1,5 +1,7 @@
 /** Product-registered semantic profiles available to ordinary execution admission. */
 export const SemanticProfileId = Object.freeze({
+  ActivityBoundaryMessage:
+    "bpmn-2.0.2-activity-boundary-message-draft",
   ActivityBoundaryTimer:
     "bpmn-2.0.2-activity-boundary-timer-draft",
   ActivityDataInputUserTask:
@@ -66,10 +68,6 @@ export const SemanticProfileId = Object.freeze({
   StructuredHumanWork:
     "bpmn-2.0.2-bpmn-lean-structured-human-work-draft",
 } as const);
-
-/** Admission-only identity held outside the product registry until its host lane is reviewed. */
-export const ACTIVITY_BOUNDARY_MESSAGE_CHECKPOINT_PROFILE_ID =
-  "bpmn-2.0.2-activity-boundary-message-draft" as const;
 
 /** Transition alias retained while closure lanes migrate to the registered catalog member. */
 export const SERVICE_TASK_INCIDENT_CHECKPOINT_PROFILE_ID =

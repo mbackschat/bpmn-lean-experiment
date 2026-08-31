@@ -1,0 +1,93 @@
+{
+  "kind": "semanticProfile",
+  "id": "bpmn-2.0.2-activity-boundary-message-draft",
+  "status": "draft",
+  "claim": "bpmn-2.0.2-interrupting-payload-free-message-boundary-event-on-one-user-task",
+  "normativeAuthority": {
+    "name": "OMG Business Process Model and Notation",
+    "version": "2.0.2",
+    "references": [
+      "Clause 8.4.2",
+      "Clause 8.4.11",
+      "Clause 8.5",
+      "Clause 10.5.5",
+      "Clause 10.5.6",
+      "Clause 13.3.2",
+      "Clause 13.5.3",
+      "Table 10.90",
+      "Table 10.91",
+      "Table 10.92",
+      "Table 10.99"
+    ]
+  },
+  "bpmn": {
+    "process": "private-executable",
+    "features": [
+      "none-start-event",
+      "user-task",
+      "user-task-discovery",
+      "user-task-instance-completion",
+      "interrupting-message-boundary-event",
+      "default-cancel-activity-true",
+      "payload-free-message",
+      "interface-operation-input-message",
+      "direct-subscription-addressing",
+      "atomic-activity-and-boundary-arming",
+      "activity-completion-withdraws-boundary-subscription",
+      "boundary-message-delivery-abandons-activity",
+      "boundary-output-sequence-flow",
+      "none-end-event",
+      "sequence-flow",
+      "process-completion"
+    ],
+    "extensions": [
+      "direct-subscription-addressing"
+    ],
+    "relationships": [
+      "CIB-AGR-0001",
+      "CIB-OP-0001"
+    ]
+  },
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "comparison": {
+    "trace": "exact-after-canonical-projection",
+    "semanticConcurrency": true
+  },
+  "excluded": [
+    "cib-boundary-message-compatibility-claim",
+    "message-payload",
+    "message-name-routing",
+    "business-key-correlation",
+    "bpmn-correlation-key",
+    "pre-wait-message-buffering",
+    "modeled-message-throw",
+    "message-flow",
+    "collaboration",
+    "non-interrupting-boundary-event",
+    "boundary-events-on-any-other-activity-type",
+    "more-than-one-boundary-event-per-activity",
+    "error-signal-timer-conditional-escalation-and-compensation-boundaries",
+    "boundary-attachment-exactness-beyond-a-unique-same-scope-user-task-host",
+    "which-none-end-event-each-route-reaches",
+    "portable-physical-simultaneity-order",
+    "coalesced-completion-and-message-winner",
+    "repeated-and-nested-boundaries",
+    "loops",
+    "multi-instance",
+    "event-subprocesses",
+    "general-cancellation",
+    "bpmn-process-execution-conformance",
+    "production-history-compatibility"
+  ]
+}

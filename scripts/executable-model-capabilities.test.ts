@@ -94,6 +94,39 @@ test("distinguishes boundary variants by interruption and attached element", () 
   assert.ok(!capabilities.includes("interruptingUserTaskBoundaryTimerEvent"));
 });
 
+test("classifies only an interrupting Message Boundary Event on a User Task", () => {
+  const interrupting = detectExecutableBpmnCapabilities(`
+    <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL">
+      <bpmn:process id="Process_Withdrawal" isExecutable="true">
+        <bpmn:userTask id="Review" />
+        <bpmn:boundaryEvent id="Withdrawal" attachedToRef="Review">
+          <bpmn:messageEventDefinition />
+        </bpmn:boundaryEvent>
+      </bpmn:process>
+    </bpmn:definitions>
+  `);
+
+  assert.ok(
+    interrupting.includes("interruptingUserTaskBoundaryMessageEvent"),
+  );
+  assert.throws(
+    () => detectExecutableBpmnCapabilities(`
+      <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL">
+        <bpmn:process id="Process_Reminder" isExecutable="true">
+          <bpmn:userTask id="Review" />
+          <bpmn:boundaryEvent
+            id="Reminder"
+            attachedToRef="Review"
+            cancelActivity="false">
+            <bpmn:messageEventDefinition />
+          </bpmn:boundaryEvent>
+        </bpmn:process>
+      </bpmn:definitions>
+    `),
+    /unclassified executable BPMN non-interrupting User Task boundary Message/u,
+  );
+});
+
 test("classifies only an explicitly declared Multi-Instance User Task mode", () => {
   const sequential = detectExecutableBpmnCapabilities(`
     <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL">

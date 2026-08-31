@@ -205,6 +205,14 @@ export const normativeArtifactCases = Object.freeze([
   }),
   Object.freeze({
     scenarioRelativePath:
+      "scenarios/activity-boundary-message/task-wins.scenario.json",
+  }),
+  Object.freeze({
+    scenarioRelativePath:
+      "scenarios/activity-boundary-message/message-wins.scenario.json",
+  }),
+  Object.freeze({
+    scenarioRelativePath:
       "scenarios/subprocess-boundary-timer/scope-completes.scenario.json",
   }),
   Object.freeze({
