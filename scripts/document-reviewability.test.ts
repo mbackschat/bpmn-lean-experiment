@@ -269,7 +269,13 @@ test("keeps the routed implementation maps reviewable", async () => {
   }
 });
 
-test("keeps the owner-approved Temporal map budget scoped to that map", () => {
+test("keeps the two owner-approved 5,000-word map budgets exactly scoped", () => {
+  assert.equal(
+    reviewedDetailMapWordBudget(
+      "docs/ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md",
+    ),
+    5000,
+  );
   assert.equal(
     reviewedDetailMapWordBudget(
       "docs/TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md",
@@ -279,6 +285,12 @@ test("keeps the owner-approved Temporal map budget scoped to that map", () => {
   assert.equal(
     reviewedDetailMapWordBudget(
       "docs/ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md",
+    ),
+    4000,
+  );
+  assert.equal(
+    reviewedDetailMapWordBudget(
+      "docs/ENGINE-CONTRACTS-AND-SOURCE-IMPLEMENTATION-MAP.md",
     ),
     4000,
   );

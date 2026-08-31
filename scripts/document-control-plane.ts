@@ -271,18 +271,19 @@ export function assertDetailImplementationMap(
  * the second reached its limit again, at which point landing a correction required tightening wording,
  * which is the limit changing what the status owner asserts rather than the map being reviewed.
  *
- * Splitting on the family axis retired both raises: per-family status moved to its own area and both
- * maps came back under this default, so a newly closed family grows the family map instead of pushing
- * a shared one past a threshold. The repository owner approved the exact Temporal-hosting map at
- * 5,000 words on 2026-08-31; every other map retains the default, and neither value is unilaterally
- * agent-adjustable. An owner-authorized change must update this executable value and its documented
- * basis together.
+ * Splitting on the family axis retired both old raises: per-family status moved to its own area, so a
+ * newly closed family grows the family map instead of pushing the shared runtime/proof owner. On
+ * 2026-08-31 the repository owner approved 5,000 words for the exact Temporal-hosting map and, after
+ * an accurate closure update moved the cross-cutting runtime/proof map from 3,993 to 4,011 words, for
+ * that exact map. Every other map retains the default. Neither value is unilaterally agent-adjustable;
+ * an owner-authorized change must update this executable value and its documented basis together.
  * The deciding authority is recorded by its owner, [the documentation
  * discipline](../docs/DOC-DISCIPLINE.md#reviewed-detail-map-word-budgets), because a threshold whose
  * only justification is its own comment is not reviewable as a decision.
  */
 export function reviewedDetailMapWordBudget(file: string): number {
   switch (file) {
+    case "docs/ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md":
     case "docs/TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md":
       return 5000;
     default:
