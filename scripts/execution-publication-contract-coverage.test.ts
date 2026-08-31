@@ -9,7 +9,12 @@ import {
   canonicalExportFixture,
   publicationPage,
 } from "../packages/temporal-adapter/protocol/test/semantic-publication-fixture.ts";
-import { declaredEnumMembers, declaredEnumValues } from "./schema-structure.ts";
+import {
+  declaredConstObjectValues,
+  declaredEnumMembers,
+  declaredEnumValues,
+  isRecord,
+} from "./schema-structure.ts";
 
 /**
  * Operation kinds the publication contract deliberately cannot carry.
@@ -154,6 +159,36 @@ test("covers every stimulus, operation, result, and safe-integer branch", async 
   }
 });
 
+test("keeps the Product 2 operation-kind copy synchronized in the shared gate", async () => {
+  const [schema, platformSource] = await Promise.all([
+    readSchema("semantic-publication.schema.json"),
+    readFile(
+      `${projectRoot}/platform/contracts/src/execution-publications.ts`,
+      "utf8",
+    ),
+  ]);
+  const producerValues = internalOperationKindValues(schema);
+  const copiedValues = declaredConstObjectValues(platformSource, "SemanticOperationKind");
+  assert.ok(copiedValues.length >= 20, "Product 2 operation-kind extraction lost current variants");
+  assert.deepEqual(operationKindDrift(producerValues, copiedValues), {
+    missing: [],
+    extra: [],
+  });
+
+  const omitted = platformSource.replace(
+    '  AwaitCorrelatedPayloadMessage: "awaitCorrelatedPayloadMessage",\n',
+    "",
+  );
+  assert.notEqual(omitted, platformSource, "operation-kind mutation did not apply");
+  assert.deepEqual(
+    operationKindDrift(
+      producerValues,
+      declaredConstObjectValues(omitted, "SemanticOperationKind"),
+    ),
+    { missing: ["awaitCorrelatedPayloadMessage"], extra: [] },
+  );
+});
+
 async function publicationValidator() {
   const [scenario, program, publication] = await Promise.all([
     readSchema("scenario.schema.json"),
@@ -170,6 +205,32 @@ async function readSchema(name: string): Promise<Record<string, unknown>> {
   return JSON.parse(
     await readFile(`${projectRoot}/contracts/schemas/${name}`, "utf8"),
   ) as Record<string, unknown>;
+}
+
+function internalOperationKindValues(
+  schema: Readonly<Record<string, unknown>>,
+): ReadonlyArray<string> {
+  assert.ok(isRecord(schema.$defs));
+  const internalTransition = schema.$defs.internalTransition;
+  assert.ok(isRecord(internalTransition));
+  assert.ok(isRecord(internalTransition.properties));
+  const operationKind = internalTransition.properties.operationKind;
+  assert.ok(isRecord(operationKind));
+  assert.ok(Array.isArray(operationKind.enum));
+  assert.ok(operationKind.enum.every((value) => typeof value === "string"));
+  return operationKind.enum;
+}
+
+function operationKindDrift(
+  producerValues: ReadonlyArray<string>,
+  copiedValues: ReadonlyArray<string>,
+): Readonly<{ missing: ReadonlyArray<string>; extra: ReadonlyArray<string> }> {
+  const producer = new Set(producerValues);
+  const copied = new Set(copiedValues);
+  return {
+    missing: producerValues.filter((value) => !copied.has(value)).toSorted(),
+    extra: copiedValues.filter((value) => !producer.has(value)).toSorted(),
+  };
 }
 
 function collectIntegerSchemas(value: unknown): Array<{ maximum?: unknown }> {

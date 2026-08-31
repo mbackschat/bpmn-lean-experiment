@@ -128,3 +128,29 @@ export function declaredEnumMembers(
 export function declaredEnumValues(source: string, enumName: string): ReadonlyArray<string> {
   return declaredEnumMembers(source, enumName).map(({ value }) => value);
 }
+
+/**
+ * Reads one exported string-valued `as const` object without resolving built package output.
+ *
+ * Product boundaries deliberately copy some closed wire vocabularies instead of importing engine
+ * internals. Reading their source form lets the shared build-free gate compare those copies with the
+ * producer schema before the separately built downstream package runs.
+ */
+export function declaredConstObjectValues(
+  source: string,
+  objectName: string,
+): ReadonlyArray<string> {
+  const start = source.indexOf(`export const ${objectName} = {`);
+  assert.notEqual(start, -1, `${objectName} is not declared as a const object`);
+  const end = source.indexOf("\n} as const;", start);
+  assert.notEqual(end, -1, `${objectName} has no const-object closing brace`);
+  return [
+    ...source.slice(start, end).matchAll(
+      /^\s+[A-Za-z0-9_]+: "([a-zA-Z0-9_]+)",$/gmu,
+    ),
+  ].map((match) => {
+    const value = match[1];
+    assert.ok(value !== undefined);
+    return value;
+  });
+}
