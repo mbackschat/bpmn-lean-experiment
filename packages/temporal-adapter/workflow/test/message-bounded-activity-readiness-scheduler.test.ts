@@ -29,7 +29,11 @@ import {
 import {
   bpmnMessageBoundedActivitySchedulerUnavailableFailureType,
 } from "../../protocol/dist/index.js";
+import type {
+  MessageDeliveryResolution,
+} from "../../protocol/dist/index.js";
 import {
+  acceptMessageDelivery,
   classifyMessageBoundedActivityCallback,
   createMessageBoundedActivityReadinessScheduler,
   legacyEffectActivityPolicy,
@@ -109,6 +113,60 @@ test("preserves callback order and omits only a ledger-suppressed Message", () =
     [secondDelivery, deliverWithdrawal],
   );
   assert.deepEqual(selectMessageBoundedActivityStimuli([suppressed]), []);
+});
+
+test("excludes ledger-suppressed identity conflicts from completion contention", () => {
+  const antecedents = [
+    {
+      label: "wrong channel",
+      stimulus: {
+        ...deliverWithdrawal,
+        channel: { ...withdrawalChannel, messageId: "Message_Other" },
+      },
+    },
+    {
+      label: "wrong subscription",
+      stimulus: {
+        ...deliverWithdrawal,
+        subscriptionId: { ...subscriptionId, activation: 2 },
+      },
+    },
+  ] as const;
+  const completion = classifyMessageBoundedActivityCallback(
+    program,
+    armed,
+    completeReview,
+  );
+  assert.ok(completion !== undefined);
+
+  for (const { label, stimulus: antecedent } of antecedents) {
+    const resolutions: MessageDeliveryResolution[] = [];
+    assert.deepEqual(
+      acceptMessageDelivery(resolutions, antecedent),
+      { enqueue: true },
+      label,
+    );
+    const acceptance = acceptMessageDelivery(
+      resolutions,
+      deliverWithdrawal,
+    );
+    assert.deepEqual(acceptance, { enqueue: false }, label);
+    const suppressed = classifyMessageBoundedActivityCallback(
+      program,
+      armed,
+      deliverWithdrawal,
+      acceptance.enqueue,
+    );
+    assert.ok(suppressed !== undefined, label);
+
+    for (const batch of [[suppressed, completion], [completion, suppressed]]) {
+      assert.deepEqual(
+        selectMessageBoundedActivityStimuli(batch),
+        [completeReview],
+        label,
+      );
+    }
+  }
 });
 
 test("tags only exact pair members while forwarding every refusal callback", () => {

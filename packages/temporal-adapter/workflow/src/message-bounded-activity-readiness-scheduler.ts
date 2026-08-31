@@ -212,7 +212,9 @@ export function selectMessageBoundedActivityStimuli(
       MessageBoundedActivityReadiness,
       { kind: typeof StimulusKind.DeliverMessage }
     > & Readonly<{ pair: PairIdentity }> =>
-      callback.kind === StimulusKind.DeliverMessage && callback.pair !== null,
+      callback.kind === StimulusKind.DeliverMessage &&
+      callback.submitToCore &&
+      callback.pair !== null,
   );
   const completions = batch.filter(
     (callback): callback is Extract<
