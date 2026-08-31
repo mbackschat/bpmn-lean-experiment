@@ -48,7 +48,7 @@ The [interrupting Activity boundary Message specification](capsules/ACTIVITY-BOU
 
 Active work ID: `EVENT-SUBSCRIPTIONS`.
 
-Next action: generate a complete neutral packet for redesigned proposal target `850f7c37`, including the shared wire evolution policy, affected IL and lifecycle sections, and the semantic-core and Temporal source-map ownership sections, and obtain a new context-cold independent verdict before implementation.
+Next action: commit the three bounded corrections required by the `approved-with-required-edits` proposal verdict for target `850f7c37`, then have the same isolated reviewer audit only that correction target before recording approval or starting implementation.
 
 Separate open changes: Internal Commutation closure, Activity issuing-discipline graduation, cross-family Activity wait withdrawal, PostgreSQL migration evidence, and Engine `v0.3` workload isolation. Host load no longer blocks this lane; [`implementation-status-owner:TEMPORAL-HOSTING`](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md) owns that evidence.
 
