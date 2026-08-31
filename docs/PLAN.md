@@ -48,7 +48,7 @@ The [interrupting Activity boundary Message specification](capsules/ACTIVITY-BOU
 
 Active work ID: `EVENT-SUBSCRIPTIONS`.
 
-Next action: have the same isolated reviewer audit only the committed corrections required by the `approved-with-required-edits` proposal verdict for target `850f7c37`, then record the result in the capsule's [independent cold-review receipt](capsules/MESSAGE-KEY-CORRELATION-PROPOSAL.md#independent-cold-review-receipt) before starting implementation.
+Next action: begin the approved Message key-correlation slice with red/green source-reader admission and checked/IL lowering, then stop at the mandatory [semantic checkpoint](capsules/MESSAGE-KEY-CORRELATION-PROPOSAL.md#stage-boundary) once source, complete-address contracts, finite matching, per-instance transition, and internal-commutation classification are green; do not start Temporal ingress or downstream integration before that independent checkpoint review.
 
 Separate open changes: Internal Commutation closure, Activity issuing-discipline graduation, cross-family Activity wait withdrawal, PostgreSQL migration evidence, and Engine `v0.3` workload isolation. Host load no longer blocks this lane; [`implementation-status-owner:TEMPORAL-HOSTING`](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md) owns that evidence.
 

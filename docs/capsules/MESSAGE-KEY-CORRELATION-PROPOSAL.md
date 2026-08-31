@@ -2,8 +2,8 @@
 
 ## Status
 
-Lifecycle: draft
-Review: pending
+Lifecycle: owner-approved
+Review: approved-with-required-edits
 
 ## Prior review
 
@@ -326,6 +326,6 @@ Closure requires the unique, zero, ambiguous, cross-definition, pending-registra
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `850f7c37` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `850f7c37` | `fork-turns-none` | `approve-with-required-edits` | `3b83a717, f8497474` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
