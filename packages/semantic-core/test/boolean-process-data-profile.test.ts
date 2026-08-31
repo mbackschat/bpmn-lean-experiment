@@ -96,6 +96,7 @@ function completeBoolean(value: boolean): CompleteUserTaskInstanceStimulus {
 
 test("registers the Boolean profile with the exact sequential User Task shape", () => {
   assert.deepEqual(Object.values(SemanticProfileId), [
+    "bpmn-2.0.2-activity-boundary-message-draft",
     "bpmn-2.0.2-activity-boundary-timer-draft",
     "bpmn-2.0.2-activity-data-input-user-task-draft",
     "bpmn-2.0.2-activity-data-output-user-task-draft",
