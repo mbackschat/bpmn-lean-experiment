@@ -18,6 +18,7 @@ export type ExternallyRetryableStimulus = Extract<Stimulus, {
     | StimulusKind.CompleteUserTaskInstance
     | StimulusKind.DeliverMessage
     | StimulusKind.DeliverPayloadMessage
+    | StimulusKind.DeliverCorrelatedPayloadMessage
     | StimulusKind.RetryIncident
     | StimulusKind.CancelIncidentProcess;
 }>;
@@ -43,6 +44,7 @@ export function buildWorkflowChainRecoveryRequest(
       break;
     case StimulusKind.DeliverMessage:
     case StimulusKind.DeliverPayloadMessage:
+    case StimulusKind.DeliverCorrelatedPayloadMessage:
       requireProcessInstanceIdentity(
         processInstanceId,
         stimulus.subscriptionId.processInstanceId,
@@ -64,7 +66,6 @@ export function buildWorkflowChainRecoveryRequest(
     case StimulusKind.StartProcess:
     case StimulusKind.TriggerMessageStart:
     case StimulusKind.TriggerTimerStart:
-    case StimulusKind.DeliverCorrelatedPayloadMessage:
     case StimulusKind.FireTimer:
     case StimulusKind.CompleteEffect:
     case StimulusKind.ReportEffectFailure:

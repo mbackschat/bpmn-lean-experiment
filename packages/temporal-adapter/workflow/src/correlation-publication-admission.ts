@@ -42,6 +42,7 @@ import type {
   CorrelationPublicationAdmissionResult,
   CorrelationPublicationCapacityFailure,
   CorrelationPublicationCommand,
+  CorrelationPublicationInFlightRecord,
   CorrelationPublicationLedgerRecord,
   CorrelationPublicationOrderResult,
   CorrelationPublicationSettlement,
@@ -112,6 +113,7 @@ export function admitCorrelationPublication(
   address: CorrelatedMessageAddress,
   configuration: CorrelationIngressConfiguration,
   commandValue: CorrelationPublicationCommand,
+  quarantinedTargetValue: CorrelationPublicationTarget | null = null,
 ): CorrelationPublicationAdmissionTransition {
   requireCorrelationPublicationState(state, configuration);
   const command = requireAddressedCommand(commandValue, address);
@@ -132,6 +134,16 @@ export function admitCorrelationPublication(
         CorrelationPublicationAdmissionResultKind.Retained,
         retained,
       ),
+    };
+  }
+  if (quarantinedTargetValue !== null) {
+    return {
+      state,
+      result: {
+        kind: CorrelationPublicationAdmissionResultKind.AddressQuarantined,
+        commandId: command.commandId,
+        target: requireCorrelationPublicationTarget(quarantinedTargetValue),
+      },
     };
   }
 
@@ -329,6 +341,29 @@ export function reserveCorrelationPublicationTarget(
   };
 }
 
+export function requireCorrelationPublicationSelectedTarget(
+  state: CorrelationPublicationState,
+  address: CorrelatedMessageAddress,
+  configuration: CorrelationIngressConfiguration,
+): CorrelationPublicationInFlightRecord & Readonly<{
+  target: CorrelationPublicationTarget;
+}> {
+  requireCorrelationPublicationState(state, configuration);
+  const inFlight = state.inFlight;
+  if (inFlight === null || inFlight.target === null) {
+    invalidState("Correlation publication has no selected in-flight target");
+  }
+  const command = requireAddressedCommand({
+    commandId: inFlight.commandId,
+    address,
+    payload: inFlight.payload,
+  }, address);
+  if (correlationPublicationContentSha256(command) !== inFlight.contentSha256) {
+    invalidState("Selected correlation publication changed content identity");
+  }
+  return { ...inFlight, target: inFlight.target };
+}
+
 export function settleCorrelationPublication(
   state: CorrelationPublicationState,
   address: CorrelatedMessageAddress,
@@ -441,6 +476,7 @@ export function registerCorrelationPublicationHandlers(
   configuration: CorrelationIngressConfiguration,
   currentState: () => CorrelationPublicationState,
   replaceState: (state: CorrelationPublicationState) => void,
+  currentQuarantinedTarget: () => CorrelationPublicationTarget | null = () => null,
 ): void {
   setHandler(
     bpmnAdmitCorrelationPublicationUpdate,
@@ -451,6 +487,7 @@ export function registerCorrelationPublicationHandlers(
           address,
           configuration,
           command,
+          currentQuarantinedTarget(),
         )
       );
       replaceState(transition.state);
@@ -464,6 +501,7 @@ export function registerCorrelationPublicationHandlers(
             address,
             configuration,
             command,
+            currentQuarantinedTarget(),
           )
         );
       },
@@ -690,7 +728,9 @@ function sameCorrelationPublicationTarget(
 }
 
 function admissionResult(
-  kind: CorrelationPublicationAdmissionResultKind,
+  kind:
+    | CorrelationPublicationAdmissionResultKind.Admitted
+    | CorrelationPublicationAdmissionResultKind.Retained,
   record: CorrelationPublicationLedgerRecord,
 ): CorrelationPublicationAdmissionResult {
   return {

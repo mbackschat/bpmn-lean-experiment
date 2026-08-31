@@ -14,6 +14,7 @@ import {
   boundEffectActivities,
   createCorrelationCandidateScanActivities,
   createCorrelationRegistrationActivities,
+  createCorrelationTargetDeliveryActivities,
 } from "@bpmn-lean/temporal-testkit";
 import type { EffectActivityImplementations } from "@bpmn-lean/temporal-testkit";
 import { withDeadline } from "./temporal-test-support.ts";
@@ -37,11 +38,17 @@ export type WorkerLease = Readonly<{
   failure: () => unknown;
 }>;
 
+export type TestActivityOverrides = Readonly<Record<
+  string,
+  (...args: unknown[]) => unknown
+>>;
+
 export async function startBpmnTestWorker(
   environment: TestWorkflowEnvironment,
   workflowBundle: WorkflowBundleWithSourceMap,
   identity: string,
   activities?: EffectActivityImplementations,
+  activityOverrides: TestActivityOverrides = {},
 ): Promise<WorkerLease> {
   const worker = await withDeadline(
     Worker.create({
@@ -58,6 +65,10 @@ export async function startBpmnTestWorker(
         ...createCorrelationCandidateScanActivities(
           environment.client.workflow as never,
         ),
+        ...createCorrelationTargetDeliveryActivities(
+          environment.client.workflow as never,
+        ),
+        ...activityOverrides,
       },
     }),
     operationDeadlineMs,

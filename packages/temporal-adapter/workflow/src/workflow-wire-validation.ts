@@ -22,6 +22,7 @@ import {
 } from "@bpmn-lean/semantic-core";
 import type {
   CompleteUserTaskInstanceStimulus,
+  DeliverCorrelatedPayloadMessageStimulus,
   Stimulus,
 } from "@bpmn-lean/semantic-core";
 import type {
@@ -43,6 +44,26 @@ export function validateCompleteUserTaskUpdate(
   ) {
     throw new TypeError(
       "Completion Update must contain one well-formed task-instance stimulus",
+    );
+  }
+  const accepted = acceptedStimulus(acceptedStimuli, stimulusCommandId(value));
+  if (accepted !== undefined) {
+    requireSameCommandStimulus(accepted, value);
+  }
+}
+
+/** Validates the private globally selected delivery before it enters Process state. */
+export function validateDeliverCorrelatedMessageUpdate(
+  acceptedStimuli: ReadonlyArray<Stimulus>,
+  processInstanceId: string,
+  stimulus: DeliverCorrelatedPayloadMessageStimulus,
+): void {
+  const value = stimulus as unknown;
+  if (!isWellFormedStimulus(value) ||
+    value.kind !== StimulusKind.DeliverCorrelatedPayloadMessage ||
+    value.subscriptionId.processInstanceId !== processInstanceId) {
+    throw new TypeError(
+      "Correlated Message Update must contain one well-formed selected target",
     );
   }
   const accepted = acceptedStimulus(acceptedStimuli, stimulusCommandId(value));

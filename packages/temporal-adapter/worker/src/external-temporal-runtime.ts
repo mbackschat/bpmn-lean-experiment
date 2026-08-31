@@ -28,6 +28,7 @@ import type { EffectActivityImplementations } from "@bpmn-lean/temporal-protocol
 import { boundEffectActivities } from "./bounded-effect-activities.js";
 import { createCorrelationCandidateScanActivities } from "./correlation-candidate-scan-activity.js";
 import { createCorrelationRegistrationActivities } from "./correlation-registration-activities.js";
+import { createCorrelationTargetDeliveryActivities } from "./correlation-target-delivery-activity.js";
 import type { BpmnWorkflowBundle } from "./workflow-bundle.js";
 import { loadBpmnWorkflowBundle } from "./workflow-bundle.js";
 import {
@@ -114,6 +115,7 @@ export class ExternalTemporalRuntime {
               options.taskQueue,
             ),
             ...createCorrelationCandidateScanActivities(workflowClient),
+            ...createCorrelationTargetDeliveryActivities(workflowClient),
           },
         }),
         workerStartupDeadlineMs,

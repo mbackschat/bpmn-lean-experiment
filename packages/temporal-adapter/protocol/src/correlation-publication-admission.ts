@@ -37,6 +37,7 @@ const maximumCorrelationPublicationPayloadCanonicalBytes = 20 * 1024;
 export enum CorrelationPublicationAdmissionResultKind {
   Admitted = "admitted",
   Retained = "retained",
+  AddressQuarantined = "addressQuarantined",
 }
 
 export enum CorrelationPublicationLedgerPhase {
@@ -146,15 +147,21 @@ export type CorrelationPublicationState = DeepReadonly<{
   inFlight: CorrelationPublicationInFlightRecord | null;
 }>;
 
-export type CorrelationPublicationAdmissionResult = DeepReadonly<{
-  kind:
-    | CorrelationPublicationAdmissionResultKind.Admitted
-    | CorrelationPublicationAdmissionResultKind.Retained;
-  commandId: string;
-  contentSha256: string;
-  phase: CorrelationPublicationLedgerPhase;
-  ordinal: number | null;
-}>;
+export type CorrelationPublicationAdmissionResult =
+  | DeepReadonly<{
+      kind:
+        | CorrelationPublicationAdmissionResultKind.Admitted
+        | CorrelationPublicationAdmissionResultKind.Retained;
+      commandId: string;
+      contentSha256: string;
+      phase: CorrelationPublicationLedgerPhase;
+      ordinal: number | null;
+    }>
+  | DeepReadonly<{
+      kind: CorrelationPublicationAdmissionResultKind.AddressQuarantined;
+      commandId: string;
+      target: CorrelationPublicationTarget;
+    }>;
 
 export type CorrelationPublicationCapacityFailure = DeepReadonly<{
   kind: CorrelationPublicationCapacityKind;

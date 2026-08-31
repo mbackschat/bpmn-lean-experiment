@@ -233,6 +233,32 @@ test("builds recovery identity only for externally retryable stimuli", () => {
       channel: { kind: "directMessage", messageId: "Message" },
     },
     {
+      kind: StimulusKind.DeliverCorrelatedPayloadMessage,
+      commandId: "CorrelatedMessage_1",
+      address: {
+        definition: {
+          compiler: "bpmn-source-semantic-process",
+          semanticProfile: "message-key-correlation-checkpoint",
+          sourceId: "settlement-confirmation",
+          sourceSha256: "a".repeat(64),
+          sourceOverlay: null,
+        },
+        processId: "Process_SettlementConfirmation",
+        channel: {
+          kind: "operationMessage",
+          interfaceId: "Interface_Settlement",
+          interfaceOperationId: "Operation_ConfirmSettlement",
+          messageId: "Message_SettlementConfirmed",
+        },
+        correlationKeyId: "CorrelationKey_Settlement",
+      },
+      ingressOrdinal: 1,
+      subscriptionId: occurrence,
+      correlationPropertyId: "CorrelationProperty_SettlementReference",
+      processPropertyId: "Property_SettlementReference",
+      payload: { kind: "string", value: "settlement-42" },
+    },
+    {
       kind: StimulusKind.RetryIncident,
       commandId: "Retry_1",
       incidentId: { effectId: occurrence, generation: 1 },

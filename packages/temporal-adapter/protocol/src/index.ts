@@ -4,6 +4,7 @@ export * from "./command-identity.js";
 export * from "./correlation-candidate-registration.js";
 export * from "./correlation-candidate-scan.js";
 export * from "./correlation-publication-admission.js";
+export * from "./correlation-target-delivery.js";
 export * from "./correlation-ingress.js";
 export * from "./contracts.js";
 export * from "./deterministic-sha256.js";

@@ -24,6 +24,7 @@ import type {
 } from "@bpmn-lean/temporal-protocol";
 
 import {
+  correlationQuarantinedTarget,
   emptyCorrelationCandidateRegistrationState,
   registerCorrelationCandidateRegistrationHandlers,
 } from "./correlation-candidate-registration.js";
@@ -42,6 +43,13 @@ import {
 import {
   resolveCorrelationPublicationScan,
 } from "./correlation-publication-settlement.js";
+import {
+  resolveBpmnCorrelationTargetDelivery,
+} from "./correlation-target-delivery-activity.js";
+import {
+  correlationTargetDeliveryActivityRequest,
+  settleCorrelationTargetDelivery,
+} from "./correlation-target-settlement.js";
 
 export const bpmnCorrelationIngressConfigurationQuery = defineQuery<
   CorrelationIngressEcho
@@ -83,6 +91,11 @@ export async function runBpmnCorrelationIngress(
     (successor) => {
       publicationState = successor;
     },
+    () => correlationQuarantinedTarget(
+      registrationState,
+      address,
+      configuration,
+    ),
   );
   for (;;) {
     await condition(() =>
@@ -113,12 +126,40 @@ export async function runBpmnCorrelationIngress(
           switch (resolution.result.kind) {
             case CorrelationPublicationScanResolutionKind.RejectedNoMatch:
             case CorrelationPublicationScanResolutionKind.RejectedAmbiguous:
-              scanCoordinator.finish(scan);
+              scanCoordinator.settle(scan, resolution.registrationState);
               publicationState = resolution.publicationState;
               break scan;
-            case CorrelationPublicationScanResolutionKind.TargetSelected:
+            case CorrelationPublicationScanResolutionKind.TargetSelected: {
               publicationState = resolution.publicationState;
+              for (;;) {
+                try {
+                  const delivery = await resolveBpmnCorrelationTargetDelivery(
+                    correlationTargetDeliveryActivityRequest(
+                      publicationState,
+                      registrationState,
+                      address,
+                      configuration,
+                    ),
+                  );
+                  const settled = settleCorrelationTargetDelivery(
+                    publicationState,
+                    registrationState,
+                    address,
+                    configuration,
+                    delivery,
+                  );
+                  scanCoordinator.settle(scan, settled.registrationState);
+                  publicationState = settled.publicationState;
+                  break;
+                } catch (error: unknown) {
+                  if (!(error instanceof ActivityFailure)) {
+                    throw error;
+                  }
+                  await sleep("1s");
+                }
+              }
               break scan;
+            }
             default:
               assertNever(resolution.result);
           }

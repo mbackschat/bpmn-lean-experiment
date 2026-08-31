@@ -149,6 +149,31 @@ export class CorrelationCandidateScanCoordinator {
     };
   }
 
+  /** Installs one validated semantic successor while consuming this exact completed barrier. */
+  settle(
+    value: unknown,
+    successor: CorrelationCandidateRegistrationState,
+  ): CorrelationCandidateScanFinishResult {
+    const completion = this.validateFinish(value);
+    const current = this.options.currentState();
+    const finished = finishCorrelationCandidateScan(
+      current,
+      this.options.address,
+      this.options.configuration,
+      completion.scanId,
+    );
+    if (finished.result.kind !== CorrelationCandidateScanResultKind.Finished ||
+      successor.scanBarrier !== null) {
+      throw new TypeError("Correlation semantic settlement changed its scan barrier");
+    }
+    this.options.replaceState(successor);
+    this.completed = null;
+    return {
+      kind: CorrelationCandidateScanResultKind.Finished,
+      scanId: completion.scanId,
+    };
+  }
+
   private resolve(
     request: CorrelationCandidateScanActivityRequest,
   ): Promise<CorrelationCandidateScanCompletion> {

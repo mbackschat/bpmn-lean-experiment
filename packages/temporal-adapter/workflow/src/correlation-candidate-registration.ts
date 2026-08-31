@@ -1,6 +1,7 @@
 import {
   isWellFormedWireString,
   sameCorrelatedMessageAddress,
+  sameOccurrenceId,
   utf8ByteLength,
 } from "@bpmn-lean/semantic-core";
 import type {
@@ -42,6 +43,9 @@ import type {
   CorrelationCandidateScanResult,
   CorrelationIngressConfiguration,
 } from "@bpmn-lean/temporal-protocol";
+import type {
+  CorrelationPublicationTarget,
+} from "@bpmn-lean/temporal-protocol";
 
 export enum CorrelationCandidateRegistrationFaultCode {
   IdentityConflict = "identityConflict",
@@ -71,6 +75,11 @@ export type CorrelationCandidateScanTransition = Readonly<{
   state: CorrelationCandidateRegistrationState;
   result: CorrelationCandidateScanResult;
 }>;
+
+export enum CorrelationCandidateTargetDisposition {
+  Removed = "removed",
+  Quarantined = "quarantined",
+}
 
 export const bpmnPrepareCorrelationCandidateUpdate: ReturnType<
   typeof defineUpdate<
@@ -316,6 +325,84 @@ export function finishCorrelationCandidateScan(
   };
 }
 
+export function requireCorrelationActiveTargetRegistration(
+  state: CorrelationCandidateRegistrationState,
+  address: CorrelatedMessageAddress,
+  configuration: CorrelationIngressConfiguration,
+  target: CorrelationPublicationTarget,
+): CorrelationCandidateRegistrationRecord {
+  requireCorrelationCandidateRegistrationState(state, address, configuration);
+  const matches = state.records.filter((record) =>
+    record.phase === CorrelationCandidateRegistrationPhase.Active &&
+    record.candidate.processInstanceId === target.processInstanceId &&
+    sameOccurrenceId(record.candidate.subscriptionId, target.subscriptionId)
+  );
+  if (matches.length !== 1) {
+    invalidState("The selected correlation target has no unique active locator");
+  }
+  return matches[0]!;
+}
+
+export function settleCorrelationCandidateTarget(
+  state: CorrelationCandidateRegistrationState,
+  address: CorrelatedMessageAddress,
+  configuration: CorrelationIngressConfiguration,
+  scanId: string,
+  target: CorrelationPublicationTarget,
+  disposition: CorrelationCandidateTargetDisposition,
+): CorrelationCandidateRegistrationState {
+  requireCorrelationCandidateRegistrationState(state, address, configuration);
+  if (state.scanBarrier === null || state.scanBarrier.scanId !== scanId) {
+    invalidState("Correlation target settlement does not own the exact scan barrier");
+  }
+  const selected = requireCorrelationActiveTargetRegistration(
+    state,
+    address,
+    configuration,
+    target,
+  );
+  const records = state.records.flatMap((record) => {
+    if (record !== selected) {
+      return [record];
+    }
+    switch (disposition) {
+      case CorrelationCandidateTargetDisposition.Removed:
+        return [];
+      case CorrelationCandidateTargetDisposition.Quarantined:
+        return [{
+          ...record,
+          phase: CorrelationCandidateRegistrationPhase.Quarantined,
+        }];
+      default:
+        return assertNever(disposition);
+    }
+  });
+  const next = { records, scanBarrier: null };
+  requireCorrelationCandidateRegistrationState(next, address, configuration);
+  return next;
+}
+
+export function correlationQuarantinedTarget(
+  state: CorrelationCandidateRegistrationState,
+  address: CorrelatedMessageAddress,
+  configuration: CorrelationIngressConfiguration,
+): CorrelationPublicationTarget | null {
+  requireCorrelationCandidateRegistrationState(state, address, configuration);
+  const quarantined = state.records.filter((record) =>
+    record.phase === CorrelationCandidateRegistrationPhase.Quarantined
+  );
+  if (quarantined.length > 1) {
+    invalidState("Correlation address retained more than one quarantined locator");
+  }
+  const record = quarantined[0];
+  return record === undefined
+    ? null
+    : {
+        processInstanceId: record.candidate.processInstanceId,
+        subscriptionId: record.candidate.subscriptionId,
+      };
+}
+
 export function registerCorrelationCandidateRegistrationHandlers(
   address: CorrelatedMessageAddress,
   configuration: CorrelationIngressConfiguration,
@@ -533,6 +620,10 @@ function invalidState(message: string): never {
     CorrelationCandidateRegistrationFaultCode.Invalid,
     message,
   );
+}
+
+function assertNever(value: never): never {
+  throw new TypeError(`Unsupported correlation target disposition: ${String(value)}`);
 }
 
 function runOrApplicationFailure<Result>(run: () => Result): Result {

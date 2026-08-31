@@ -496,13 +496,13 @@ function requireExternallyRetryableStimulus(stimulus: Stimulus): void {
     case StimulusKind.CompleteUserTaskInstance:
     case StimulusKind.DeliverMessage:
     case StimulusKind.DeliverPayloadMessage:
+    case StimulusKind.DeliverCorrelatedPayloadMessage:
     case StimulusKind.RetryIncident:
     case StimulusKind.CancelIncidentProcess:
       return;
     case StimulusKind.StartProcess:
     case StimulusKind.TriggerMessageStart:
     case StimulusKind.TriggerTimerStart:
-    case StimulusKind.DeliverCorrelatedPayloadMessage:
     case StimulusKind.FireTimer:
     case StimulusKind.CompleteEffect:
     case StimulusKind.ReportEffectFailure:

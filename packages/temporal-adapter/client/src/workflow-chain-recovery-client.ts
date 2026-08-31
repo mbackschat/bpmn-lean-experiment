@@ -107,6 +107,7 @@ export type WorkflowChainUpdateResolution = Readonly<{
   stimulus: WorkflowChainUpdateStimulus;
   updateName: string;
   operation: string;
+  deadlineMs?: number;
 }>;
 
 /** Executes one content-bound Update and resolves every indeterminate Run boundary by Workflow ID. */
@@ -117,7 +118,7 @@ export async function resolveWorkflowChainUpdate(
     WorkflowChainBudgetKind.SemanticStimulusBytes,
     resolution.stimulus,
   );
-  const deadline = Date.now() + operationDeadlineMs;
+  const deadline = Date.now() + requireOperationDeadlineMs(resolution.deadlineMs);
   const handle = resolution.client.getHandle<BpmnProcessWorkflow>(
     resolution.workflowId,
   );
@@ -570,6 +571,14 @@ async function beforeDeadline<Value>(
     throw new Error(`${operation} exceeded the client deadline`);
   }
   return withDeadline(invoke(), remaining, operation);
+}
+
+function requireOperationDeadlineMs(value: number | undefined): number {
+  const deadlineMs = value ?? operationDeadlineMs;
+  if (!Number.isSafeInteger(deadlineMs) || deadlineMs < 1) {
+    throw new TypeError("Workflow-chain command deadline must be a positive integer");
+  }
+  return deadlineMs;
 }
 
 async function pollDelay(deadline: number): Promise<void> {

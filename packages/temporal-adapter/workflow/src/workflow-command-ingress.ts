@@ -5,6 +5,7 @@ import {
 } from "@bpmn-lean/semantic-core";
 import type {
   CancelIncidentProcessStimulus,
+  DeliverCorrelatedPayloadMessageStimulus,
   RetryIncidentStimulus,
   RuntimeState,
   Stimulus,
@@ -17,11 +18,13 @@ import {
 } from "@temporalio/workflow";
 import {
   bpmnCompleteUserTaskUpdateName,
+  bpmnDeliverCorrelatedMessageUpdateName,
   bpmnDeliverMessageSignalName,
   bpmnWorkflowRolloverInProgressFailureType,
 } from "@bpmn-lean/temporal-protocol";
 import type {
   BpmnCompleteUserTaskUpdateArguments,
+  BpmnDeliverCorrelatedMessageUpdateArguments,
   BpmnDeliverMessageSignalArguments,
   MessageDeliveryResolution,
   MessageDeliveryStimulus,
@@ -72,6 +75,7 @@ import { enqueueStimulus } from "./workflow-host-readiness.js";
 import {
   acceptedStimulus,
   validateCompleteUserTaskUpdate,
+  validateDeliverCorrelatedMessageUpdate,
   validateDeliverMessageSignal,
 } from "./workflow-wire-validation.js";
 
@@ -84,6 +88,15 @@ export const bpmnCompleteUserTaskUpdate: ReturnType<
 export const bpmnDeliverMessageSignal = defineSignal<
   BpmnDeliverMessageSignalArguments
 >(bpmnDeliverMessageSignalName);
+
+export const bpmnDeliverCorrelatedMessageUpdate: ReturnType<
+  typeof defineUpdate<
+    CommandOutcome,
+    BpmnDeliverCorrelatedMessageUpdateArguments
+  >
+> = defineUpdate<CommandOutcome, BpmnDeliverCorrelatedMessageUpdateArguments>(
+  bpmnDeliverCorrelatedMessageUpdateName,
+);
 
 type WorkflowCommandIngressOptions = Readonly<{
   processInstanceId: string;
@@ -220,6 +233,50 @@ export function registerWorkflowCommandIngress(
     {
       validator: (stimulus) => {
         validateCompleteUserTaskUpdate(acceptedStimuli, stimulus);
+        validateWorkflowChainUpdate(
+          workflowChain,
+          currentFence(),
+          stimulus,
+          currentPublication().execution.headRevision,
+        );
+        validateWorkflowUpdateCapacity(
+          workflowChain,
+          stimulus,
+          currentPublication().execution.headRevision,
+        );
+      },
+    },
+  );
+
+  setHandler(
+    bpmnDeliverCorrelatedMessageUpdate,
+    async (stimulus: DeliverCorrelatedPayloadMessageStimulus) => {
+      return await runWorkflowUpdate(
+        workflowChain,
+        stimulus,
+        currentPublication().execution.headRevision,
+        async () => {
+          enqueueStimulus(
+            acceptedStimuli,
+            pendingStimuli,
+            stimulus,
+            reserveStimulus,
+          );
+          return await awaitWorkflowCommandOutcome(
+            stimulus.commandId,
+            () => commandOutcome(currentPublication(), stimulus.commandId),
+            workflowChain?.capacity ?? null,
+          );
+        },
+      );
+    },
+    {
+      validator: (stimulus) => {
+        validateDeliverCorrelatedMessageUpdate(
+          acceptedStimuli,
+          processInstanceId,
+          stimulus,
+        );
         validateWorkflowChainUpdate(
           workflowChain,
           currentFence(),
