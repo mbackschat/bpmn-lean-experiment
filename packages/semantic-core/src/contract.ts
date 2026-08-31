@@ -2,6 +2,12 @@ import type { ActivityOccurrenceId } from "./activity-occurrence.js";
 import type { DeepReadonly } from "./deep-readonly.js";
 import type { UserTaskMetadata } from "./user-task-metadata.js";
 import type { SourceOverlayIdentity } from "./source-overlay-identity.js";
+import {
+  CorrelatedMessageInteractionKind,
+} from "./message-key-correlation.js";
+import type {
+  CorrelatedMessageAddress,
+} from "./message-key-correlation.js";
 import { MessageChannelKind } from "./semantic-value-contract.js";
 import type { MessageChannel } from "./semantic-value-contract.js";
 
@@ -42,6 +48,7 @@ export enum StimulusKind {
   CompleteUserTaskInstance = "completeUserTaskInstance",
   DeliverMessage = "deliverMessage",
   DeliverPayloadMessage = "deliverPayloadMessage",
+  DeliverCorrelatedPayloadMessage = "deliverCorrelatedPayloadMessage",
   FireTimer = "fireTimer",
   CompleteEffect = "completeEffect",
   ReportEffectFailure = "reportEffectFailure",
@@ -126,6 +133,18 @@ export type DeliverPayloadMessageStimulus = DeepReadonly<{
   subscriptionId: MessageSubscriptionId;
   channel: import("./semantic-value-contract.js").MessageChannel;
   payload: VariableValue;
+}>;
+
+/** Private target delivery selected by the global pure matcher and fixed durable ingress ordinal. */
+export type DeliverCorrelatedPayloadMessageStimulus = DeepReadonly<{
+  kind: StimulusKind.DeliverCorrelatedPayloadMessage;
+  commandId: string;
+  address: CorrelatedMessageAddress;
+  ingressOrdinal: number;
+  subscriptionId: MessageSubscriptionId;
+  correlationPropertyId: string;
+  processPropertyId: string;
+  payload: Extract<VariableValue, { kind: VariableValueKind.String }>;
 }>;
 
 export type TimerOccurrenceId = OccurrenceId;
@@ -230,6 +249,7 @@ export type Stimulus =
   | CompleteUserTaskInstanceStimulus
   | DeliverMessageStimulus
   | DeliverPayloadMessageStimulus
+  | DeliverCorrelatedPayloadMessageStimulus
   | FireTimerStimulus
   | CompleteEffectStimulus
   | ReportEffectFailureStimulus
@@ -325,6 +345,12 @@ export type DeliverPayloadMessageInteraction = DeepReadonly<{
   channel: import("./semantic-value-contract.js").MessageChannel;
 }>;
 
+/** Global definition-addressed interaction; the caller supplies no Process-instance target. */
+export type PublishCorrelatedPayloadMessageInteraction = DeepReadonly<{
+  kind: typeof CorrelatedMessageInteractionKind.PublishCorrelatedPayloadMessage;
+  address: CorrelatedMessageAddress;
+}>;
+
 export type RetryIncidentInteraction = DeepReadonly<{
   kind: StimulusKind.RetryIncident;
   incidentId: EffectIncidentId;
@@ -340,6 +366,7 @@ export type EnabledInteraction =
   | CompleteUserTaskInstanceInteraction
   | DeliverMessageInteraction
   | DeliverPayloadMessageInteraction
+  | PublishCorrelatedPayloadMessageInteraction
   | RetryIncidentInteraction
   | CancelIncidentProcessInteraction;
 

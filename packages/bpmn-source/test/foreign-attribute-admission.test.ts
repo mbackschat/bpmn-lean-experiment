@@ -359,6 +359,16 @@ const dispatchFixtures = {
     semanticProfile: SemanticProfileId.MessagePayloadCatch,
     find: '<bpmn:startEvent id="StartEvent_PaymentInstructed"',
   },
+  messageKeyCorrelation: {
+    path: "the Message key correlation reader",
+    source: new URL(
+      "../../../scenarios/message-key-correlation/process.bpmn",
+      import.meta.url,
+    ),
+    sourceId: "message-key-correlation-process",
+    semanticProfile: SemanticProfileId.MessageKeyCorrelation,
+    find: '<bpmn:startEvent id="StartEvent_PaymentInstructed"',
+  },
 } as const satisfies Record<CompilationDispatchId, DispatchFixture>;
 
 test("applies foreign-attribute admission through every registered compilation dispatch", async () => {

@@ -89,6 +89,7 @@ function operationWaitDeclarations(
       }];
     case SemanticOperationKind.AwaitMessage:
     case SemanticOperationKind.AwaitPayloadMessage:
+    case SemanticOperationKind.AwaitCorrelatedPayloadMessage:
       return [{
         family: InternalOccurrenceKind.Message,
         elementId: operation.message.elementId,

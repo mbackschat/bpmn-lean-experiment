@@ -417,11 +417,43 @@ function publicationAtomParts(
       ];
     case InternalTransitionPublicationAtomKind.FlowNodeLifecycle:
       return [atom.kind, ...occurrenceParts(atom.occurrence)];
+    case InternalTransitionPublicationAtomKind.CorrelationCandidate:
+      return [
+        atom.kind,
+        ...correlatedMessageAddressParts(atom.address),
+        ...occurrenceParts(atom.subscriptionOccurrence),
+        atom.correlationPropertyId,
+        atom.processPropertyId,
+      ];
     case InternalTransitionPublicationAtomKind.PublicationPair:
       return [atom.kind, atom.operationId, ...internalOccurrenceParts(atom.occurrence)];
     default:
       return assertNever(atom);
   }
+}
+
+function correlatedMessageAddressParts(
+  address: Extract<
+    InternalTransitionPublicationAtom,
+    { kind: InternalTransitionPublicationAtomKind.CorrelationCandidate }
+  >["address"],
+): ReadonlyArray<string> {
+  const overlay = address.definition.sourceOverlay;
+  return [
+    address.definition.compiler,
+    address.definition.semanticProfile,
+    address.definition.sourceId,
+    address.definition.sourceSha256,
+    ...(overlay === null
+      ? ["no-source-overlay"]
+      : [overlay.id, overlay.sha256]),
+    address.processId,
+    address.channel.kind,
+    address.channel.interfaceId,
+    address.channel.interfaceOperationId,
+    address.channel.messageId,
+    address.correlationKeyId,
+  ];
 }
 
 function positionDeltaParts(

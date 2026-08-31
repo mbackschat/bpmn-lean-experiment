@@ -1,5 +1,6 @@
 import { BpmnModdle } from "bpmn-moddle";
 
+import { bpmn202ModdleDescriptor } from "./bpmn-2.0.2-moddle-descriptor.js";
 import configuredTaskModdle from "./bpmn-lean-configured-task-moddle.json" with {
   type: "json",
 };
@@ -32,7 +33,10 @@ export async function importBpmnGraph(
   xml: string,
   deadlineMs: number,
 ): Promise<ImportedBpmnGraph> {
-  const moddle = new BpmnModdle({ bpmnLean: configuredTaskModdle });
+  const moddle = new BpmnModdle({
+    bpmn: bpmn202ModdleDescriptor,
+    bpmnLean: configuredTaskModdle,
+  });
   const result = await withDeadline(
     () => moddle.fromXML(xml),
     deadlineMs,

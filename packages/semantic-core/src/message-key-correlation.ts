@@ -1,16 +1,26 @@
-import { VariableValueKind } from "./contract.js";
 import type {
   MessageSubscriptionId,
   VariableValue,
 } from "./contract.js";
 import type { DeepReadonly } from "./deep-readonly.js";
+import {
+  operationIsSelectedFromProgram,
+} from "./flow-node-occurrence-candidates.js";
 import { isMessageChannel, sameMessageChannel } from "./message-channel.js";
 import {
+  SemanticOperationKind,
   SemanticProcessCompilerId,
 } from "./semantic-process-contract.js";
 import type {
   SemanticProcessIdentity,
+  SemanticProcessProgram,
 } from "./semantic-process-contract.js";
+import {
+  addToken,
+  ControlStateKind,
+  sameOccurrence,
+} from "./semantic-process-state.js";
+import type { RuntimeState } from "./semantic-process-state.js";
 import { MessageChannelKind } from "./semantic-value-contract.js";
 import type { MessageChannel } from "./semantic-value-contract.js";
 import {
@@ -37,13 +47,17 @@ export type CorrelatedMessageCandidate = DeepReadonly<{
   subscriptionId: MessageSubscriptionId;
   correlationPropertyId: string;
   processPropertyId: string;
-  key: Extract<VariableValue, { kind: typeof VariableValueKind.String }>;
+  key: Extract<VariableValue, { kind: "string" }>;
 }>;
 
 export const CorrelatedMessageMatchKind = Object.freeze({
   NoMatch: "noMatch",
   Unique: "unique",
   Ambiguous: "ambiguous",
+} as const);
+
+export const CorrelatedMessageInteractionKind = Object.freeze({
+  PublishCorrelatedPayloadMessage: "publishCorrelatedPayloadMessage",
 } as const);
 
 export type CorrelatedMessageMatch =
@@ -62,7 +76,7 @@ export function matchCorrelatedMessageCandidates(
 ): CorrelatedMessageMatch | null {
   if (
     !isCorrelatedMessageAddress(address) ||
-    payload.kind !== VariableValueKind.String ||
+    payload.kind !== "string" ||
     payload.value.length === 0 ||
     !isWellFormedWireString(payload.value) ||
     candidates.some((candidate) => !isCorrelatedMessageCandidate(candidate))
@@ -164,8 +178,90 @@ export function isCorrelatedMessageCandidate(
     nonemptyWireString(value.correlationPropertyId) &&
     nonemptyWireString(value.processPropertyId) &&
     isRecordWithKeys(key, ["kind", "value"]) &&
-    key.kind === VariableValueKind.String &&
+    key.kind === "string" &&
     nonemptyWireString(key.value);
+}
+
+/** Projects the sole complete candidate represented by one committed correlated Message wait. */
+export function projectCorrelatedMessageCandidate(
+  program: SemanticProcessProgram,
+  state: RuntimeState,
+): CorrelatedMessageCandidate | null {
+  if (state.control.kind !== ControlStateKind.Running) {
+    return null;
+  }
+  const instanceId = state.control.instanceId;
+  const operations = program.operations.filter(
+    (operation) =>
+      operation.kind === SemanticOperationKind.AwaitCorrelatedPayloadMessage,
+  );
+  const operation = operations.length === 1 ? operations[0] : undefined;
+  if (
+    operation?.kind !== SemanticOperationKind.AwaitCorrelatedPayloadMessage
+  ) {
+    return null;
+  }
+  const waits = state.messageWaits.filter((wait) =>
+    wait.id.processInstanceId === instanceId &&
+    wait.id.elementId === operation.message.elementId &&
+    wait.output === operation.output &&
+    sameMessageChannel(wait.channel, operation.message.channel) &&
+    operationIsSelectedFromProgram(program, operation, wait.owner)
+  );
+  const wait = waits.length === 1 ? waits[0] : undefined;
+  const bindings = state.variables.process.bindings.filter(
+    ({ name }) => name === operation.processPropertySelector.propertyId,
+  );
+  const binding = bindings.length === 1 ? bindings[0] : undefined;
+  if (
+    wait === undefined ||
+    binding?.value.kind !== "string" ||
+    !nonemptyWireString(binding.value.value)
+  ) {
+    return null;
+  }
+  return {
+    address: {
+      definition: program.identity,
+      processId: program.processId,
+      channel: operation.message.channel,
+      correlationKeyId: operation.correlationKeyId,
+    },
+    processInstanceId: instanceId,
+    subscriptionId: wait.id,
+    correlationPropertyId: operation.correlationPropertyId,
+    processPropertyId: operation.processPropertySelector.propertyId,
+    key: binding.value,
+  };
+}
+
+/** Rechecks the globally selected candidate and commits only that exact target delivery. */
+export function deliverCorrelatedPayloadMessage(
+  program: SemanticProcessProgram,
+  state: RuntimeState,
+  stimulus: import("./contract.js").DeliverCorrelatedPayloadMessageStimulus,
+): RuntimeState | null {
+  const candidate = projectCorrelatedMessageCandidate(program, state);
+  if (
+    candidate === null ||
+    !sameCorrelatedMessageAddress(candidate.address, stimulus.address) ||
+    !sameOccurrence(candidate.subscriptionId, stimulus.subscriptionId) ||
+    candidate.correlationPropertyId !== stimulus.correlationPropertyId ||
+    candidate.processPropertyId !== stimulus.processPropertyId ||
+    candidate.key.value !== stimulus.payload.value
+  ) {
+    return null;
+  }
+  const wait = state.messageWaits.find((entry) =>
+    sameOccurrence(entry.id, candidate.subscriptionId)
+  );
+  return wait === undefined
+    ? null
+    : {
+        ...state,
+        controlTokens: addToken(state.controlTokens, wait.output, wait.owner),
+        messageWaits: state.messageWaits.filter((entry) => entry !== wait),
+      };
 }
 
 function nonemptyWireString(value: unknown): value is string {

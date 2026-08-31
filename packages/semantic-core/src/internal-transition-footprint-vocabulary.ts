@@ -30,6 +30,7 @@ export enum InternalTransitionStateAtomKind {
 
 export enum InternalTransitionPublicationAtomKind {
   CommittedTransition = "committedTransition",
+  CorrelationCandidate = "correlationCandidate",
   FlowNodeLifecycle = "flowNodeLifecycle",
   PublicationPair = "publicationPair",
 }

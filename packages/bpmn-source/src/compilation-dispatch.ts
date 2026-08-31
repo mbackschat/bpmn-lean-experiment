@@ -52,6 +52,9 @@ import {
 import {
   compileMessagePayloadCatchCheckedProcess,
 } from "./message-payload-catch-source.js";
+import {
+  compileMessageKeyCorrelationCheckedProcess,
+} from "./message-key-correlation-source.js";
 
 export const CompilationDispatchId = Object.freeze({
   Generic: "generic",
@@ -64,6 +67,7 @@ export const CompilationDispatchId = Object.freeze({
   ActivityDataInputUserTask: "activityDataInputUserTask",
   ActivityDataOutputUserTask: "activityDataOutputUserTask",
   MessagePayloadCatch: "messagePayloadCatch",
+  MessageKeyCorrelation: "messageKeyCorrelation",
 } as const);
 
 export type CompilationDispatchId =
@@ -193,6 +197,16 @@ export const compilationDispatches: ReadonlyArray<CompilationDispatch> =
               "The Message payload catch profile does not admit a source overlay.",
             ),
     },
+    {
+      id: CompilationDispatchId.MessageKeyCorrelation,
+      semanticProfile: SemanticProfileId.MessageKeyCorrelation,
+      reader: (rootElement, source, overlay) =>
+        overlay === null
+          ? compileMessageKeyCorrelationCheckedProcess(rootElement, source, null)
+          : unsupported(
+              "The Message key correlation profile does not admit a source overlay.",
+            ),
+    },
   ]);
 
 export function compileDispatchedCheckedProcess(
@@ -239,6 +253,7 @@ export function compileDispatchedCheckedProcess(
     case CompilationDispatchId.ActivityDataInputUserTask:
     case CompilationDispatchId.ActivityDataOutputUserTask:
     case CompilationDispatchId.MessagePayloadCatch:
+    case CompilationDispatchId.MessageKeyCorrelation:
       return dispatch.reader(rootElement, source, overlay);
     default:
       return assertNever(dispatch);

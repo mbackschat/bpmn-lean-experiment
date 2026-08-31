@@ -122,6 +122,7 @@ export function sequentialMultiInstanceStimulusDataAdmitted(
     case StimulusKind.TriggerTimerStart:
     case StimulusKind.DeliverMessage:
     case StimulusKind.DeliverPayloadMessage:
+    case StimulusKind.DeliverCorrelatedPayloadMessage:
     case StimulusKind.FireTimer:
     case StimulusKind.CompleteEffect:
     case StimulusKind.ReportEffectFailure:

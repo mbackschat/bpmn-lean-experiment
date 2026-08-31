@@ -9,6 +9,10 @@
 import type { DirectActivityDataInput } from "./activity-data-input-contract.js";
 import type { DirectActivityDataOutput } from "./activity-data-output-contract.js";
 import type { DirectCatchEventPayloadOutput } from "./catch-event-payload-contract.js";
+import type {
+  CorrelationMessagePath,
+  CorrelationProcessPropertyPath,
+} from "./correlation-scalar-path.js";
 import type { DeepReadonly } from "./deep-readonly.js";
 import type { SourceOverlayIdentity } from "./source-overlay-identity.js";
 import type { UserTaskMetadata } from "./user-task-metadata.js";
@@ -48,6 +52,7 @@ export enum CheckedNodeKind {
   IntermediateCatchTimerEvent = "intermediateCatchTimerEvent",
   IntermediateCatchMessageEvent = "intermediateCatchMessageEvent",
   PayloadMessageCatchEvent = "payloadMessageCatchEvent",
+  CorrelatedPayloadMessageCatchEvent = "correlatedPayloadMessageCatchEvent",
   ReceiveTask = "receiveTask",
   ServiceTask = "serviceTask",
   ConfiguredTask = "configuredTask",
@@ -269,6 +274,18 @@ export type CheckedNode =
         { kind: typeof MessageChannelKind.OperationMessage }
       >;
       directOutput: DirectCatchEventPayloadOutput;
+    }>
+  | DeepReadonly<{
+      kind: CheckedNodeKind.CorrelatedPayloadMessageCatchEvent;
+      id: string;
+      channel: Extract<
+        MessageChannel,
+        { kind: typeof MessageChannelKind.OperationMessage }
+      >;
+      correlationKeyId: string;
+      correlationPropertyId: string;
+      payloadSelector: CorrelationMessagePath;
+      processPropertySelector: CorrelationProcessPropertyPath;
     }>
   | DeepReadonly<{
       kind: CheckedNodeKind.ReceiveTask;

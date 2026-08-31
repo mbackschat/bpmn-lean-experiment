@@ -46,6 +46,9 @@ import {
   isWellFormedCompleteParallelMultiInstanceUserTaskOperation,
   isWellFormedAwaitParallelMultiInstanceUserTaskOperation,
 } from "./parallel-multi-instance-admission.js";
+import {
+  CorrelationScalarPathLanguage,
+} from "./correlation-scalar-path.js";
 
 /**
  * The direct Data Input Association arm of one data-bearing User Task entry operation.
@@ -250,6 +253,61 @@ function isWellFormedAwaitPayloadMessageOperation(
   return new Set(identities).size === identities.length;
 }
 
+function isWellFormedAwaitCorrelatedPayloadMessageOperation(
+  value: Record<string, unknown>,
+  placeIds: ReadonlySet<string>,
+): boolean {
+  if (
+    !hasOnlyKeys(value, [
+      "id",
+      "kind",
+      "origin",
+      "input",
+      "output",
+      "message",
+      "correlationKeyId",
+      "correlationPropertyId",
+      "payloadSelector",
+      "processPropertySelector",
+    ]) ||
+    !isPlaceReference(value.input, placeIds) ||
+    !isPlaceReference(value.output, placeIds) ||
+    value.input === value.output ||
+    !isRecord(value.origin) ||
+    !isRecord(value.message) ||
+    !hasOnlyKeys(value.message, ["elementId", "channel"]) ||
+    !isNonEmptyString(value.message.elementId) ||
+    value.message.elementId !== value.origin.elementId ||
+    !isMessageChannel(value.message.channel) ||
+    value.message.channel.kind !== MessageChannelKind.OperationMessage ||
+    !isNonEmptyString(value.correlationKeyId) ||
+    !isNonEmptyString(value.correlationPropertyId) ||
+    !isRecord(value.payloadSelector) ||
+    !hasOnlyKeys(value.payloadSelector, ["language", "body"]) ||
+    value.payloadSelector.language !== CorrelationScalarPathLanguage ||
+    value.payloadSelector.body !== "payload" ||
+    !isRecord(value.processPropertySelector) ||
+    !hasOnlyKeys(value.processPropertySelector, [
+      "language",
+      "body",
+      "propertyId",
+    ]) ||
+    value.processPropertySelector.language !== CorrelationScalarPathLanguage ||
+    !isNonEmptyString(value.processPropertySelector.propertyId) ||
+    value.processPropertySelector.body !==
+      `property:${value.processPropertySelector.propertyId}`
+  ) {
+    return false;
+  }
+  return new Set([
+    value.message.elementId,
+    value.message.channel.messageId,
+    value.correlationKeyId,
+    value.correlationPropertyId,
+    value.processPropertySelector.propertyId,
+  ]).size === 5;
+}
+
 /** A BPMN `name` this profile admits: physically absent as `null`, or a nonempty string. */
 function isOptionalName(value: unknown): boolean {
   return value === null || isNonEmptyString(value);
@@ -389,6 +447,11 @@ export function isWellFormedSemanticOperation(
       );
     case SemanticOperationKind.AwaitPayloadMessage:
       return isWellFormedAwaitPayloadMessageOperation(value, placeIds);
+    case SemanticOperationKind.AwaitCorrelatedPayloadMessage:
+      return isWellFormedAwaitCorrelatedPayloadMessageOperation(
+        value,
+        placeIds,
+      );
     case SemanticOperationKind.AwaitEffect:
       return (
         hasOnlyKeys(value, [

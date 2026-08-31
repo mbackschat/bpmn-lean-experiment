@@ -286,6 +286,7 @@ function externalLifecycle(
         ]);
     }
     case StimulusKind.DeliverPayloadMessage:
+    case StimulusKind.DeliverCorrelatedPayloadMessage:
       return completed(stimulus.subscriptionId);
     case StimulusKind.FireTimer: {
       const race = only(before.eventRaces.filter(({ timerOccurrenceId }) => sameOccurrence(timerOccurrenceId, stimulus.timerId)));
@@ -385,6 +386,7 @@ function internalLifecycle(
     case SemanticOperationKind.AwaitParallelMultiInstanceUserTask:
     case SemanticOperationKind.AwaitMessage:
     case SemanticOperationKind.AwaitPayloadMessage:
+    case SemanticOperationKind.AwaitCorrelatedPayloadMessage:
     case SemanticOperationKind.AwaitTimer:
     case SemanticOperationKind.AwaitEffect: {
       const starts = candidateLongLivedStarts(program, after, operation, owner);

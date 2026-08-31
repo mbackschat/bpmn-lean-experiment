@@ -36,7 +36,8 @@ export function createMessageWait(
     {
       kind:
         | SemanticOperationKind.AwaitMessage
-        | SemanticOperationKind.AwaitPayloadMessage;
+        | SemanticOperationKind.AwaitPayloadMessage
+        | SemanticOperationKind.AwaitCorrelatedPayloadMessage;
     }
   >,
   state: RuntimeState,
@@ -47,11 +48,17 @@ export function createMessageWait(
 }
 
 /** Resolves the immutable Program arm that decides which delivery interaction one Message wait publishes. */
-export function messageWaitRequiresPayload(
+export enum MessageWaitDeliveryKind {
+  Direct = "direct",
+  DirectPayload = "directPayload",
+  CorrelatedPayload = "correlatedPayload",
+}
+
+export function messageWaitDeliveryKind(
   program: SemanticProcessProgram,
   state: RuntimeState,
   wait: RuntimeState["messageWaits"][number],
-): boolean | null {
+): MessageWaitDeliveryKind | null {
   const declarers = program.operations.filter((operation) => {
     if (!operationIsSelectedFromProgram(program, operation, wait.owner)) {
       return false;
@@ -59,6 +66,7 @@ export function messageWaitRequiresPayload(
     switch (operation.kind) {
       case SemanticOperationKind.AwaitMessage:
       case SemanticOperationKind.AwaitPayloadMessage:
+      case SemanticOperationKind.AwaitCorrelatedPayloadMessage:
         return operation.message.elementId === wait.id.elementId &&
           operation.output === wait.output &&
           sameMessageChannel(operation.message.channel, wait.channel);
@@ -82,9 +90,21 @@ export function messageWaitRequiresPayload(
         return false;
     }
   });
-  return declarers.length !== 1
-    ? null
-    : declarers[0]?.kind === SemanticOperationKind.AwaitPayloadMessage;
+  if (declarers.length !== 1) {
+    return null;
+  }
+  switch (declarers[0]?.kind) {
+    case SemanticOperationKind.AwaitPayloadMessage:
+      return MessageWaitDeliveryKind.DirectPayload;
+    case SemanticOperationKind.AwaitCorrelatedPayloadMessage:
+      return MessageWaitDeliveryKind.CorrelatedPayload;
+    case SemanticOperationKind.AwaitMessage:
+    case SemanticOperationKind.AwaitMessageBoundedUserTask:
+    case SemanticOperationKind.AwaitEventRace:
+      return MessageWaitDeliveryKind.Direct;
+    default:
+      return null;
+  }
 }
 
 export function deliverMessage(

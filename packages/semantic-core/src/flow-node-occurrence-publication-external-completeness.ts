@@ -156,6 +156,12 @@ export function expectedExternalLifecycle(
         lifecycleEnd(message, FlowNodeOccurrenceTerminalKind.Completed),
       ]);
     }
+    case StimulusKind.DeliverCorrelatedPayloadMessage: {
+      const message = requireWait(open, stimulus.subscriptionId);
+      return lifecycleDelta([], [
+        lifecycleEnd(message, FlowNodeOccurrenceTerminalKind.Completed),
+      ]);
+    }
     case StimulusKind.FireTimer: {
       const timer = findWait(open, stimulus.timerId);
       if (timer !== null) {

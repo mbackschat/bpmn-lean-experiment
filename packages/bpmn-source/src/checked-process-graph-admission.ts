@@ -156,6 +156,7 @@ function hasSelectedArity(
     case CheckedNodeKind.IntermediateCatchTimerEvent:
     case CheckedNodeKind.IntermediateCatchMessageEvent:
     case CheckedNodeKind.PayloadMessageCatchEvent:
+    case CheckedNodeKind.CorrelatedPayloadMessageCatchEvent:
     case CheckedNodeKind.ReceiveTask:
     case CheckedNodeKind.ServiceTask:
     case CheckedNodeKind.ConfiguredTask:

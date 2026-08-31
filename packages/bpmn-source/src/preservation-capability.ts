@@ -123,6 +123,7 @@ function preservationCapabilityKind(
     case SemanticProfileId.InclusiveGatewaySelectedBranches:
     case SemanticProfileId.IntermediateCatchMessage:
     case SemanticProfileId.MessagePayloadCatch:
+    case SemanticProfileId.MessageKeyCorrelation:
     case SemanticProfileId.IntermediateCatchTimer:
     case SemanticProfileId.MappedBoundaryErrorServiceTask:
     case SemanticProfileId.MappedSuccessServiceTask:

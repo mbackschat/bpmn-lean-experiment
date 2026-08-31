@@ -33,7 +33,6 @@ import {
   supportsSemanticProcessScenario,
 } from "./semantic-process-admission.js";
 import type { SemanticProcessProgram } from "./semantic-process-contract.js";
-import { SemanticProfileId } from "./semantic-profile-catalog.js";
 import {
   incidentStateAllowsDispatch,
   openEffectIncidentAssociationIsValid,
@@ -42,8 +41,13 @@ import {
   incidentCancellationEligibility,
 } from "./semantic-process-incident-cancellation.js";
 import {
-  messageWaitRequiresPayload,
+  MessageWaitDeliveryKind,
+  messageWaitDeliveryKind,
 } from "./semantic-process-message.js";
+import {
+  CorrelatedMessageInteractionKind,
+  projectCorrelatedMessageCandidate,
+} from "./message-key-correlation.js";
 import {
   ControlStateKind,
   initialState,
@@ -260,20 +264,44 @@ function projectEnabledMessageInteractions(
 ): ReadonlyArray<EnabledInteraction> | null {
   const interactions: EnabledInteraction[] = [];
   for (const wait of state.messageWaits) {
-    const requiresPayload = program.identity.semanticProfile ===
-        SemanticProfileId.MessagePayloadCatch
-      ? messageWaitRequiresPayload(program, state, wait)
-      : false;
-    if (requiresPayload === null) {
-      return null;
+    const deliveryKind = messageWaitDeliveryKind(program, state, wait);
+    switch (deliveryKind) {
+      case MessageWaitDeliveryKind.Direct:
+        interactions.push({
+          kind: StimulusKind.DeliverMessage,
+          subscriptionId: wait.id,
+          channel: wait.channel,
+        });
+        break;
+      case MessageWaitDeliveryKind.DirectPayload:
+        interactions.push({
+          kind: StimulusKind.DeliverPayloadMessage,
+          subscriptionId: wait.id,
+          channel: wait.channel,
+        });
+        break;
+      case MessageWaitDeliveryKind.CorrelatedPayload: {
+        const candidate = projectCorrelatedMessageCandidate(program, state);
+        if (
+          candidate === null ||
+          candidate.subscriptionId.processInstanceId !==
+            wait.id.processInstanceId ||
+          candidate.subscriptionId.elementId !== wait.id.elementId ||
+          candidate.subscriptionId.activation !== wait.id.activation
+        ) {
+          return null;
+        }
+        interactions.push({
+          kind: CorrelatedMessageInteractionKind.PublishCorrelatedPayloadMessage,
+          address: candidate.address,
+        });
+        break;
+      }
+      case null:
+        return null;
+      default:
+        return assertNever(deliveryKind);
     }
-    interactions.push({
-      kind: requiresPayload
-        ? StimulusKind.DeliverPayloadMessage
-        : StimulusKind.DeliverMessage,
-      subscriptionId: wait.id,
-      channel: wait.channel,
-    });
   }
   return interactions;
 }

@@ -105,6 +105,15 @@ export function requiredProgramShape(
         SemanticOperationKind.ReachNoneEnd,
         SemanticOperationKind.CompleteScope,
       ]);
+    case SemanticProfileId.MessageKeyCorrelation:
+      return rootProgram([
+        SemanticOperationKind.Initiate,
+        SemanticOperationKind.AwaitPayloadMessage,
+        SemanticOperationKind.AwaitCorrelatedPayloadMessage,
+        SemanticOperationKind.AwaitUserTask,
+        SemanticOperationKind.ReachNoneEnd,
+        SemanticOperationKind.CompleteScope,
+      ]);
     case SemanticProfileId.MessageAddressedReceiveTask:
       return rootProgram([
         SemanticOperationKind.Initiate,

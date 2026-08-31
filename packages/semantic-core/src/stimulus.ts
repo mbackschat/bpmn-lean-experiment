@@ -10,6 +10,10 @@ import {
   isMessageChannel,
   sameMessageChannel,
 } from "./message-channel.js";
+import {
+  isCorrelatedMessageAddress,
+  sameCorrelatedMessageAddress,
+} from "./message-key-correlation.js";
 import { MessageChannelKind } from "./semantic-value-contract.js";
 import {
   isVariablePatch,
@@ -26,6 +30,7 @@ export function stimulusCommandId(stimulus: Stimulus): string {
     case StimulusKind.CompleteUserTaskInstance:
     case StimulusKind.DeliverMessage:
     case StimulusKind.DeliverPayloadMessage:
+    case StimulusKind.DeliverCorrelatedPayloadMessage:
     case StimulusKind.FireTimer:
     case StimulusKind.CompleteEffect:
     case StimulusKind.ReportEffectFailure:
@@ -86,6 +91,17 @@ export function sameStimulus(left: Stimulus, right: Stimulus): boolean {
         left.commandId === right.commandId &&
         sameOccurrenceId(left.subscriptionId, right.subscriptionId) &&
         sameMessageChannel(left.channel, right.channel) &&
+        sameVariableValue(left.payload, right.payload)
+      );
+    case StimulusKind.DeliverCorrelatedPayloadMessage:
+      return (
+        right.kind === StimulusKind.DeliverCorrelatedPayloadMessage &&
+        left.commandId === right.commandId &&
+        sameCorrelatedMessageAddress(left.address, right.address) &&
+        left.ingressOrdinal === right.ingressOrdinal &&
+        sameOccurrenceId(left.subscriptionId, right.subscriptionId) &&
+        left.correlationPropertyId === right.correlationPropertyId &&
+        left.processPropertyId === right.processPropertyId &&
         sameVariableValue(left.payload, right.payload)
       );
     case StimulusKind.FireTimer:
@@ -228,6 +244,29 @@ export function isWellFormedStimulus(value: unknown): value is Stimulus {
         isOccurrenceId(value.subscriptionId) &&
         isMessageChannel(value.channel) &&
         isVariableValue(value.payload)
+      );
+    case StimulusKind.DeliverCorrelatedPayloadMessage:
+      return (
+        hasOnlyKeys(value, [
+          "kind",
+          "commandId",
+          "address",
+          "ingressOrdinal",
+          "subscriptionId",
+          "correlationPropertyId",
+          "processPropertyId",
+          "payload",
+        ]) &&
+        isNonEmptyString(value.commandId) &&
+        isCorrelatedMessageAddress(value.address) &&
+        Number.isSafeInteger(value.ingressOrdinal) &&
+        Number(value.ingressOrdinal) >= 1 &&
+        isOccurrenceId(value.subscriptionId) &&
+        isNonEmptyString(value.correlationPropertyId) &&
+        isNonEmptyString(value.processPropertyId) &&
+        isVariableValue(value.payload) &&
+        value.payload.kind === "string" &&
+        isNonEmptyString(value.payload.value)
       );
     case StimulusKind.FireTimer:
       return (

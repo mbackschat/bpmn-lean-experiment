@@ -212,6 +212,7 @@ function internalDelta(
       ]);
     case SemanticOperationKind.AwaitMessage:
     case SemanticOperationKind.AwaitPayloadMessage:
+    case SemanticOperationKind.AwaitCorrelatedPayloadMessage:
       return lifecycleDelta([
         requireWaitStart(supplied, processId, operation.message.elementId, owner),
       ]);

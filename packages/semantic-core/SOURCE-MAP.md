@@ -56,7 +56,7 @@ This contributor map assigns source-file responsibilities inside `@bpmn-lean/sem
 | [activity-data-output-contract.ts](src/activity-data-output-contract.ts) | The Task-neutral value describing one direct Data Output Association |
 | [catch-event-payload-contract.ts](src/catch-event-payload-contract.ts) | The Event-owned output and direct association identities for one payload-bearing catch Event |
 | [correlation-scalar-path.ts](src/correlation-scalar-path.ts) | Closed decoded Message-payload and Process-property selector values for key correlation |
-| [message-key-correlation.ts](src/message-key-correlation.ts) | Complete immutable definition address, exact candidate facts, and pure cardinality matcher for correlated Message publication |
+| [message-key-correlation.ts](src/message-key-correlation.ts) | Complete immutable definition address, exact candidate projection and matching, and content-bound per-instance correlated Message delivery |
 | [event-race-admission.ts](src/event-race-admission.ts) | Well-formedness of the event-race await operation |
 | [semantic-process-event-race-runtime.ts](src/semantic-process-event-race-runtime.ts) | Atomic replacement of one Gateway token with both waits and their ownership record |
 | [inclusive-gateway-admission.ts](src/inclusive-gateway-admission.ts) | Standalone contract and pairing admission for selected-branch synchronization |

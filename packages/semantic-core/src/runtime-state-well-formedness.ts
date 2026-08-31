@@ -143,6 +143,7 @@ function declaredElementIds(
         break;
       case SemanticOperationKind.AwaitMessage:
       case SemanticOperationKind.AwaitPayloadMessage:
+      case SemanticOperationKind.AwaitCorrelatedPayloadMessage:
         message.add(operation.message.elementId);
         break;
       case SemanticOperationKind.AwaitEventRace:

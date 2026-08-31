@@ -48,6 +48,9 @@ import {
   messagePayloadCatchContainmentCardinalities,
 } from "./message-payload-catch-source.js";
 import {
+  messageKeyCorrelationContainmentCardinalities,
+} from "./message-key-correlation-source.js";
+import {
   carriesDuplicateCandidateGroupsAttribute,
   isUserTaskMetadataProfile,
   userTaskMetadataBindingValid,
@@ -201,6 +204,7 @@ export async function compileBpmnToSemanticProcess(
     [
       ...terminateEndContainmentCardinalities(request.semanticProfile),
       ...messagePayloadCatchContainmentCardinalities(request.semanticProfile),
+      ...messageKeyCorrelationContainmentCardinalities(request.semanticProfile),
     ],
   );
   if (cardinalityMismatch !== undefined) {

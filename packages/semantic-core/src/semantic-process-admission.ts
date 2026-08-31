@@ -295,6 +295,7 @@ function isSupportedScenario(value: unknown): value is Scenario {
           stimulus.kind === StimulusKind.CompleteUserTaskInstance ||
           stimulus.kind === StimulusKind.DeliverMessage ||
           stimulus.kind === StimulusKind.DeliverPayloadMessage ||
+          stimulus.kind === StimulusKind.DeliverCorrelatedPayloadMessage ||
           stimulus.kind === StimulusKind.FireTimer ||
           stimulus.kind === StimulusKind.CompleteEffect ||
           stimulus.kind === StimulusKind.ReportEffectFailure ||
@@ -320,6 +321,7 @@ function isProcessStartStimulus(
     case StimulusKind.CompleteUserTaskInstance:
     case StimulusKind.DeliverMessage:
     case StimulusKind.DeliverPayloadMessage:
+    case StimulusKind.DeliverCorrelatedPayloadMessage:
     case StimulusKind.FireTimer:
     case StimulusKind.CompleteEffect:
     case StimulusKind.ReportEffectFailure:

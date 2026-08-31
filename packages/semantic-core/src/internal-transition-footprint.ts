@@ -4,6 +4,7 @@ import type {
   ActivityOccurrenceId,
 } from "./activity-occurrence.js";
 import type { PublicControlPositionDelta } from "./control-position-projection.js";
+import type { CorrelatedMessageAddress } from "./message-key-correlation.js";
 import { candidateProcessId, operationIsSelectedFromProgram } from "./flow-node-occurrence-candidates.js";
 import {
   canonicalUniquePublicationAtoms,
@@ -44,6 +45,7 @@ import type {
 } from "./semantic-process-state.js";
 import { MappingExpressionKind } from "./semantic-value-contract.js";
 import { matchesEffectLocalDataOwner } from "./local-data-owner.js";
+import { isWellFormedWireString } from "./wire.js";
 
 export type InternalOccurrence = Readonly<{
   kind: InternalOccurrenceKind;
@@ -169,6 +171,13 @@ export type InternalTransitionPublicationAtom = Readonly<
       occurrence: OccurrenceId;
     }
   | {
+      kind: InternalTransitionPublicationAtomKind.CorrelationCandidate;
+      address: CorrelatedMessageAddress;
+      subscriptionOccurrence: OccurrenceId;
+      correlationPropertyId: string;
+      processPropertyId: string;
+    }
+  | {
       kind: InternalTransitionPublicationAtomKind.PublicationPair;
       operationId: string;
       occurrence: InternalOccurrence;
@@ -245,6 +254,21 @@ export function deriveInternalTransitionFootprint(
         operation.message.elementId,
         state.messageActivations,
         state.messageWaits.map(({ id }) => id),
+      );
+    case SemanticOperationKind.AwaitCorrelatedPayloadMessage:
+      return waitFootprint(
+        program,
+        state,
+        operation,
+        owner,
+        state.control.instanceId,
+        InternalOccurrenceKind.Message,
+        operation.message.elementId,
+        state.messageActivations,
+        state.messageWaits.map(({ id }) => id),
+        owner.processInstanceId,
+        [],
+        operation.processPropertySelector.propertyId,
       );
     case SemanticOperationKind.AwaitTimer:
       return waitFootprint(
@@ -394,6 +418,7 @@ function waitFootprint(
         | SemanticOperationKind.AwaitUserTask
         | SemanticOperationKind.AwaitMessage
         | SemanticOperationKind.AwaitPayloadMessage
+        | SemanticOperationKind.AwaitCorrelatedPayloadMessage
         | SemanticOperationKind.AwaitTimer
         | SemanticOperationKind.AwaitEffect;
     }
@@ -406,6 +431,7 @@ function waitFootprint(
   waits: ReadonlyArray<OccurrenceId>,
   processInstanceId: string = owner.processInstanceId,
   activityVariableNames: ReadonlyArray<string> = [],
+  processVariableName: string | null = null,
 ): InternalTransitionFootprint | null {
   const matchingTokens = state.controlTokens.filter(({ placeId, multiplicity }) =>
     placeId === operation.input && multiplicity > 0
@@ -458,6 +484,19 @@ function waitFootprint(
   ) {
     return null;
   }
+  if (processVariableName !== null) {
+    const bindings = state.variables.process.bindings.filter(
+      ({ name }) => name === processVariableName,
+    );
+    const value = bindings.length === 1 ? bindings[0]?.value : undefined;
+    if (
+      value?.kind !== "string" ||
+      value.value.length === 0 ||
+      !isWellFormedWireString(value.value)
+    ) {
+      return null;
+    }
+  }
 
   const controlToken = {
     kind: InternalTransitionStateAtomKind.ControlToken,
@@ -503,6 +542,12 @@ function waitFootprint(
     openWaitAnchor,
     { kind: InternalTransitionStateAtomKind.LogicalTime },
     ...(occurrenceKind === InternalOccurrenceKind.Effect ? [activityScope] : []),
+    ...(processVariableName === null
+      ? []
+      : [{
+          kind: InternalTransitionStateAtomKind.ProcessVariable,
+          name: processVariableName,
+        } as const]),
   ]);
   const writes = canonicalUniqueStateAtoms([
     controlToken,
@@ -540,6 +585,21 @@ function waitFootprint(
       operationId: operation.id,
       occurrence,
     },
+    ...(operation.kind ===
+        SemanticOperationKind.AwaitCorrelatedPayloadMessage
+      ? [{
+          kind: InternalTransitionPublicationAtomKind.CorrelationCandidate,
+          address: {
+            definition: program.identity,
+            processId: program.processId,
+            channel: operation.message.channel,
+            correlationKeyId: operation.correlationKeyId,
+          },
+          subscriptionOccurrence: occurrence.id,
+          correlationPropertyId: operation.correlationPropertyId,
+          processPropertyId: operation.processPropertySelector.propertyId,
+        } as const]
+      : []),
   ]);
   return reads === null || writes === null || publications === null
     ? null

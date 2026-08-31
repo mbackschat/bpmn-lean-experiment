@@ -98,7 +98,8 @@ export function candidateLongLivedStarts(
     case SemanticOperationKind.AwaitParallelMultiInstanceUserTask:
       return parallelMultiInstanceEntryStarts(after, operation, owner, processId);
     case SemanticOperationKind.AwaitMessage:
-    case SemanticOperationKind.AwaitPayloadMessage: {
+    case SemanticOperationKind.AwaitPayloadMessage:
+    case SemanticOperationKind.AwaitCorrelatedPayloadMessage: {
       const wait = only(after.messageWaits.filter((candidate) =>
         candidate.id.elementId === operation.message.elementId &&
         candidate.output === operation.output &&

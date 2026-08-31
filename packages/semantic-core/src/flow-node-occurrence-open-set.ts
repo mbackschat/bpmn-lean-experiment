@@ -395,6 +395,7 @@ function waitMatchesUserTask(
       case SemanticOperationKind.CompleteParallelMultiInstanceUserTask:
       case SemanticOperationKind.AwaitMessage:
       case SemanticOperationKind.AwaitPayloadMessage:
+      case SemanticOperationKind.AwaitCorrelatedPayloadMessage:
       case SemanticOperationKind.AwaitTimer:
       case SemanticOperationKind.AwaitEffect:
       case SemanticOperationKind.AwaitEventRace:
@@ -423,7 +424,8 @@ function waitMatchesMessage(
   if (!ownerExists(state, wait.owner)) return false;
   const ordinary = program.operations.filter((operation) =>
     (operation.kind === SemanticOperationKind.AwaitMessage ||
-      operation.kind === SemanticOperationKind.AwaitPayloadMessage) &&
+      operation.kind === SemanticOperationKind.AwaitPayloadMessage ||
+      operation.kind === SemanticOperationKind.AwaitCorrelatedPayloadMessage) &&
     operation.message.elementId === wait.id.elementId &&
     operation.output === wait.output &&
     sameMessageChannel(operation.message.channel, wait.channel) &&

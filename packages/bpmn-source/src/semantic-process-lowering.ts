@@ -285,6 +285,18 @@ function lowerNode(
         message: { elementId: node.id, channel: node.channel },
         directOutput: node.directOutput,
       });
+    case CheckedNodeKind.CorrelatedPayloadMessageCatchEvent:
+      return scoped({
+        ...base,
+        kind: SemanticOperationKind.AwaitCorrelatedPayloadMessage,
+        input: requireOnly(incoming, node.id, "incoming"),
+        output: requireOnly(outgoing, node.id, "outgoing"),
+        message: { elementId: node.id, channel: node.channel },
+        correlationKeyId: node.correlationKeyId,
+        correlationPropertyId: node.correlationPropertyId,
+        payloadSelector: node.payloadSelector,
+        processPropertySelector: node.processPropertySelector,
+      });
     case CheckedNodeKind.ReceiveTask:
       return scoped({
         ...base,

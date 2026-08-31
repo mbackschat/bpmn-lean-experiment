@@ -143,6 +143,7 @@ function ordinaryArmingOperation(
     case SemanticOperationKind.AwaitUserTask:
     case SemanticOperationKind.AwaitMessage:
     case SemanticOperationKind.AwaitPayloadMessage:
+    case SemanticOperationKind.AwaitCorrelatedPayloadMessage:
     case SemanticOperationKind.AwaitTimer:
     case SemanticOperationKind.AwaitEffect:
       return operation;
@@ -159,6 +160,7 @@ function occurrenceKind(
       return InternalOccurrenceKind.UserTask;
     case SemanticOperationKind.AwaitMessage:
     case SemanticOperationKind.AwaitPayloadMessage:
+    case SemanticOperationKind.AwaitCorrelatedPayloadMessage:
       return InternalOccurrenceKind.Message;
     case SemanticOperationKind.AwaitTimer:
       return InternalOccurrenceKind.Timer;

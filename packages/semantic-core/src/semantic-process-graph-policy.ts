@@ -62,6 +62,7 @@ export function semanticGraphPolicyForProfile(
     case SemanticProfileId.IntermediateCatchTimer:
     case SemanticProfileId.IntermediateCatchMessage:
     case SemanticProfileId.MessagePayloadCatch:
+    case SemanticProfileId.MessageKeyCorrelation:
     case SemanticProfileId.MessageAddressedReceiveTask:
     case SemanticProfileId.NonInterruptingBoundaryTimer:
     case SemanticProfileId.ParallelForkJoin:

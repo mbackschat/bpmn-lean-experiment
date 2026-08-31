@@ -63,6 +63,9 @@ import {
   deliverPayloadMessage,
 } from "./semantic-process-message.js";
 import {
+  deliverCorrelatedPayloadMessage,
+} from "./message-key-correlation.js";
+import {
   admitMessageStart,
 } from "./semantic-process-message-start.js";
 import {
@@ -261,6 +264,12 @@ export function admit(
     }
     case StimulusKind.DeliverPayloadMessage: {
       const next = deliverPayloadMessage(program, state, stimulus);
+      return next === null
+        ? { outcome: CommandOutcome.Rejected, state }
+        : { outcome: CommandOutcome.Committed, state: next };
+    }
+    case StimulusKind.DeliverCorrelatedPayloadMessage: {
+      const next = deliverCorrelatedPayloadMessage(program, state, stimulus);
       return next === null
         ? { outcome: CommandOutcome.Rejected, state }
         : { outcome: CommandOutcome.Committed, state: next };

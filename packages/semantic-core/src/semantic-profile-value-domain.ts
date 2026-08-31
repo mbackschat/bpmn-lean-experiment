@@ -184,6 +184,7 @@ function profileValueDomain(
     case SemanticProfileId.EventBasedGatewayMessageTimer:
     case SemanticProfileId.IntermediateCatchMessage:
     case SemanticProfileId.MessagePayloadCatch:
+    case SemanticProfileId.MessageKeyCorrelation:
     case SemanticProfileId.IntermediateCatchTimer:
     case SemanticProfileId.MessageAddressedReceiveTask:
     case SemanticProfileId.MessageStart:
@@ -241,8 +242,12 @@ export function profileAllowsStimulusValueDomain(
     case StimulusKind.FireTimer:
       return true;
     case StimulusKind.DeliverPayloadMessage:
-      return semanticProfile === SemanticProfileId.MessagePayloadCatch &&
+      return (semanticProfile === SemanticProfileId.MessagePayloadCatch ||
+        semanticProfile === SemanticProfileId.MessageKeyCorrelation) &&
         scalarValueDomain.includes(stimulus.payload.kind);
+    case StimulusKind.DeliverCorrelatedPayloadMessage:
+      return semanticProfile === SemanticProfileId.MessageKeyCorrelation &&
+        stimulus.payload.kind === VariableValueKind.String;
     default:
       return assertNever(stimulus);
   }

@@ -12,6 +12,10 @@
 import type { DirectActivityDataInput } from "./activity-data-input-contract.js";
 import type { DirectActivityDataOutput } from "./activity-data-output-contract.js";
 import type { DirectCatchEventPayloadOutput } from "./catch-event-payload-contract.js";
+import type {
+  CorrelationMessagePath,
+  CorrelationProcessPropertyPath,
+} from "./correlation-scalar-path.js";
 import type { DeepReadonly } from "./deep-readonly.js";
 import type { SourceOverlayIdentity } from "./source-overlay-identity.js";
 import type { UserTaskMetadata } from "./user-task-metadata.js";
@@ -66,6 +70,7 @@ export enum SemanticOperationKind {
   AwaitMonitoredUserTask = "awaitMonitoredUserTask",
   AwaitMessage = "awaitMessage",
   AwaitPayloadMessage = "awaitPayloadMessage",
+  AwaitCorrelatedPayloadMessage = "awaitCorrelatedPayloadMessage",
   AwaitTimer = "awaitTimer",
   AwaitEffect = "awaitEffect",
   Duplicate = "duplicate",
@@ -392,6 +397,25 @@ export type AwaitPayloadMessageOperation = OperationBase &
     directOutput: DirectCatchEventPayloadOutput;
   }>;
 
+/** Arms one context-backed Message candidate whose global delivery rechecks every selected identity. */
+export type AwaitCorrelatedPayloadMessageOperation = OperationBase &
+  DeepReadonly<{
+    kind: SemanticOperationKind.AwaitCorrelatedPayloadMessage;
+    input: string;
+    output: string;
+    message: {
+      elementId: string;
+      channel: Extract<
+        MessageChannel,
+        { kind: typeof MessageChannelKind.OperationMessage }
+      >;
+    };
+    correlationKeyId: string;
+    correlationPropertyId: string;
+    payloadSelector: CorrelationMessagePath;
+    processPropertySelector: CorrelationProcessPropertyPath;
+  }>;
+
 export type AwaitSequentialMultiInstanceUserTaskOperation = OperationBase &
   DeepReadonly<{
     kind: SemanticOperationKind.AwaitSequentialMultiInstanceUserTask;
@@ -534,6 +558,7 @@ export type SemanticOperation =
         };
       }>)
   | AwaitPayloadMessageOperation
+  | AwaitCorrelatedPayloadMessageOperation
   | (OperationBase &
       DeepReadonly<{
         kind: SemanticOperationKind.AwaitEffect;
