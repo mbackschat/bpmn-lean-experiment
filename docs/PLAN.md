@@ -48,7 +48,7 @@ The [interrupting Activity boundary Message specification](capsules/ACTIVITY-BOU
 
 Active work ID: `EVENT-SUBSCRIPTIONS`.
 
-Next action: run the focused proposal guards, commit the draft [Message key correlation proposal](capsules/MESSAGE-KEY-CORRELATION-PROPOSAL.md), record that exact proposal target in its receipt, generate the neutral proposal-review packet, and obtain the required context-cold independent verdict before implementation.
+Next action: commit the material redesign of the [Message key correlation proposal](capsules/MESSAGE-KEY-CORRELATION-PROPOSAL.md) required by the rejected first review, bind that exact new target in its receipt, generate a complete neutral packet including the global result/retry, internal-commutation census, and Temporal command-ingress owners, and obtain a new context-cold independent verdict before implementation.
 
 Separate open changes: Internal Commutation closure, Activity issuing-discipline graduation, cross-family Activity wait withdrawal, PostgreSQL migration evidence, and Engine `v0.3` workload isolation. Host load no longer blocks this lane; [`implementation-status-owner:TEMPORAL-HOSTING`](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md) owns that evidence.
 
