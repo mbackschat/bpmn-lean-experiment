@@ -5,13 +5,16 @@
  * `bpmn-moddle` exposes a defaulted attribute through the element descriptor when the source omits
  * it, and as an own key when the source writes it. A reader that decides admission from own keys
  * therefore sees two different shapes for one meaning, and the `xs:boolean` or `xs:string` default
- * is exactly the case where writing the attribute changes nothing a profile could care about.
+ * is exactly the case where writing the attribute changes nothing a profile could care about unless
+ * that profile expressly selects an omission-only source lexeme.
  *
  * The oracle is every registered scenario paired with the profile its own scenario document names,
  * so a new scenario or profile joins this guard without being listed here. For each defaulted
  * property the metamodel manifest declares, the corresponding element is rewritten to carry that
- * property's default explicitly; admission must not move. A property the fixture already writes is
- * skipped, because injecting it would duplicate the attribute and test XML well-formedness instead.
+ * property's default explicitly; admission must not move unless the profile declares the generated
+ * `explicit-<attribute-name>-lexeme` exclusion, in which case the same mutation must be refused. A
+ * property the fixture already writes is skipped, because injecting it would duplicate the attribute
+ * and test XML well-formedness instead.
  *
  * Only `Boolean` defaults are in scope, excluded here by declared type rather than by name and from
  * the same recorded fact [the resolver](../src/metamodel-defaults.ts) reads, so neither side can
@@ -53,6 +56,7 @@ type RegisteredScenario = Readonly<{
   id: string;
   profile: string;
   relativePath: string;
+  excluded: ReadonlyArray<string>;
 }>;
 
 const manifest: MetamodelManifest = JSON.parse(
@@ -110,10 +114,17 @@ async function registeredScenarios(): Promise<ReadonlyArray<RegisteredScenario>>
       const document = JSON.parse(
         await readFile(path.join(scenarioRoot, directory.name, file), "utf8"),
       );
+      const profile = JSON.parse(
+        await readFile(
+          path.join(projectRoot, "profiles", document.profile, "profile.json"),
+          "utf8",
+        ),
+      );
       collected.push({
         id: document.id,
         profile: document.profile,
         relativePath: document.bpmn.relativePath,
+        excluded: profile.excluded,
       });
     }
   }
@@ -137,6 +148,14 @@ function startTags(xml: string, tag: string): RegExp {
   return new RegExp(`<${tag}\\b[^>]*?\\s*/?>`, "gu");
 }
 
+function explicitLexemeExclusion(attributeName: string): string {
+  const kebabName = attributeName.replace(
+    /[A-Z]/gu,
+    (letter) => `-${letter.toLowerCase()}`,
+  );
+  return `explicit-${kebabName}-lexeme`;
+}
+
 const scenarios = await registeredScenarios();
 
 test("the registry reaches every profile this guard claims to cover", () => {
@@ -147,9 +166,11 @@ test("the registry reaches every profile this guard claims to cover", () => {
   );
 });
 
-for (const { id, profile, relativePath } of scenarios) {
+for (const { id, profile, relativePath, excluded } of scenarios) {
   for (const attribute of defaultedAttributes) {
-    test(`admits ${id} with an explicit ${attribute.name}`, async () => {
+    const exclusion = explicitLexemeExclusion(attribute.name);
+    const expected = !excluded.includes(exclusion);
+    test(`${expected ? "admits" : "refuses"} ${id} with an explicit ${attribute.name}`, async () => {
       const source = await readFile(path.join(projectRoot, relativePath), "utf8");
       const present = attribute.tags.filter((tag) =>
         startTags(source, tag).test(source),
@@ -175,7 +196,11 @@ for (const { id, profile, relativePath } of scenarios) {
       );
 
       assert.equal(await admits(source, profile), true, "baseline");
-      assert.equal(await admits(injected, profile), true, "explicit default");
+      assert.equal(
+        await admits(injected, profile),
+        expected,
+        expected ? "explicit default" : `declared ${exclusion}`,
+      );
     });
   }
 }

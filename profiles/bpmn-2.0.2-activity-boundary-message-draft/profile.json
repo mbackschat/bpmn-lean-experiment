@@ -74,6 +74,7 @@
     "modeled-message-throw",
     "message-flow",
     "collaboration",
+    "explicit-cancel-activity-lexeme",
     "non-interrupting-boundary-event",
     "boundary-events-on-any-other-activity-type",
     "more-than-one-boundary-event-per-activity",
