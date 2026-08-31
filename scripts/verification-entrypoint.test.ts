@@ -190,6 +190,19 @@ test("the semantic package gate builds the complete Lean library before its test
   );
 });
 
+test("the hosted Lean lane retains a cold-build job ceiling", async () => {
+  const workflow = await readFile(verificationWorkflowPath, "utf8");
+  const job = workflow.match(
+    /verify_lean:[\s\S]*?timeout-minutes: (\d+)/u,
+  );
+  assert.notEqual(job, null, "verify_lean timeout is absent");
+  const timeoutMinutes = Number(job?.[1]);
+  assert.ok(
+    timeoutMinutes >= 30,
+    `verify_lean ${timeoutMinutes}-minute ceiling cannot contain the observed progressing cold build with 50% headroom`,
+  );
+});
+
 test("hosted warm-pipeline budget has real headroom and the runner derives its deadline", async () => {
   const [pipelineTest, pipelineRunner, workflow] = await Promise.all([
     readFile(pipelineTestPath, "utf8"),

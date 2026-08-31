@@ -46,6 +46,7 @@ import type {
 } from "./pipeline-types.ts";
 
 const leanExecutable = "emitSemanticProcessResults";
+const leanCommand = "./scripts/lake.sh";
 
 function leanDefinitionRecords<Case extends SemanticDifferentialCase>(
   contexts: ReadonlyArray<PipelineContext<Case>>,
@@ -85,7 +86,7 @@ export async function runLeanTargets<Case extends SemanticDifferentialCase>(
   const started = performance.now();
   await writeJsonLines(inputPath, leanDefinitionRecords(contexts));
   const execution = await runProcess(
-    "lake",
+    leanCommand,
     [
       "exe",
       leanExecutable,
@@ -155,7 +156,7 @@ export async function requireLeanDefinitionMutationRejection(
   await writeJsonLines(inputPath, records);
   try {
     await runProcess(
-      "lake",
+      leanCommand,
       [
         "exe",
         leanExecutable,
@@ -203,7 +204,7 @@ export async function requireLeanScenarioMutationRejection(
   scenarioPaths[0] = scenarioPath;
   try {
     await runProcess(
-      "lake",
+      leanCommand,
       ["exe", leanExecutable, inputPath, ...scenarioPaths],
       10_000,
     );
@@ -242,7 +243,7 @@ export async function requireLeanProvenanceErasureRejection(
   await writeJsonLines(inputPath, records);
   try {
     await runProcess(
-      "lake",
+      leanCommand,
       [
         "exe",
         leanExecutable,

@@ -82,7 +82,8 @@ jobs:
     needs: changes
     if: needs.changes.outputs.product1 == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # Run 33447135471 was still making module-level progress at 19m43s on 2026-08-31; 30 minutes preserves 50% cold-build headroom.
+    timeout-minutes: 30
     env:
       # One decision for the Lean build cache, announced by the first step so
       # every run records which mode produced its result. The weekly schedule

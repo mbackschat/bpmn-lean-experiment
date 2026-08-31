@@ -34,13 +34,13 @@ verify_runtime() {
   ./scripts/pnpm.sh run test:bpmn-source:built
   ./scripts/test-cibseven-oracle.sh
   ./scripts/pnpm.sh run test:differential:built
-  ./scripts/pnpm.sh run test:message-payload-lean-core:built
-  ./scripts/pnpm.sh run test:activity-boundary-message-lean-core:built
   ./scripts/pnpm.sh run test:temporal:built
 }
 
 verify_pipeline() {
   ./scripts/pnpm.sh run test:committed-execution-publication-parity:built
+  ./scripts/pnpm.sh run test:message-payload-lean-core:built
+  ./scripts/pnpm.sh run test:activity-boundary-message-lean-core:built
   env BPMN_PIPELINE_PREBUILT=1 ./scripts/pnpm.sh run test:pipeline
   git diff --check
 }
