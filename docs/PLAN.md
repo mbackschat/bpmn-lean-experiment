@@ -48,7 +48,7 @@ The [interrupting Activity boundary Message specification](capsules/ACTIVITY-BOU
 
 Active work ID: `EVENT-SUBSCRIPTIONS`.
 
-Next action: generate a complete neutral packet for redesigned proposal target `ad2ff360`, including the shared wire evolution policy, affected Message/commutation/well-formedness IL sections, Workflow lifetime and command-ingress contracts, and Temporal adapter source map, and obtain a new context-cold independent verdict before implementation.
+Next action: commit the level-two routing structure required to include the existing Temporal adapter source map in the redesigned correlation proposal's neutral packet, bind that exact target in the receipt, then obtain a new context-cold independent verdict before implementation.
 
 Separate open changes: Internal Commutation closure, Activity issuing-discipline graduation, cross-family Activity wait withdrawal, PostgreSQL migration evidence, and Engine `v0.3` workload isolation. Host load no longer blocks this lane; [`implementation-status-owner:TEMPORAL-HOSTING`](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md) owns that evidence.
 
