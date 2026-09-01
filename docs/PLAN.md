@@ -79,7 +79,7 @@ Risk band: Compensation retention and lifetime.
 
 Checkpoint: the [compensation retention proposal](capsules/COMPENSATION-RETENTION-PROPOSAL.md) is drafted from the additive-feasibility experiment and complete applicable BPMN account. It selects a flat root-Process register, exact ordinary/per-index identity, immutable input/output snapshots, chronology, count plus canonical-byte refusal, and exact scope-close disposal, but remains unapproved and unimplemented.
 
-Next action: commit the bounded draft and its registry/ledger routing after focused documentation guards, generate the immutable proposal review packet, and obtain the required context-cold verdict. Apply only an audited correction if required; do not begin the green representation checkpoint before the proposal is owner-approved by that review.
+Next action: generate the immutable review packet for proposal target `033a7552` and obtain the required context-cold verdict. Apply only an audited correction if required; do not begin the green representation checkpoint before the proposal is owner-approved by that review.
 
 Oracle: every completion the bounded global form could later compensate has one immutable identity-bound snapshot and explicit order until its scope closes; existing no-compensation profiles remain byte-identical. Capacity refuses before speculative commit and does not rely on Continue-As-New.
 
