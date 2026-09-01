@@ -158,6 +158,23 @@ The selected root mechanism was proof ownership, not file size or host capacity.
 
 The repaired complete Lean test passed in 5.18 seconds at 939,468 KiB GNU RSS and 1,266,122,752 bytes cgroup peak; the complete Lean build passed in 18.18 seconds at 2,308,556 KiB and 1,988,366,336 bytes. Both reported zero for `high`, `max`, `oom`, `oom_kill`, and `oom_group_kill`. These warm whole-graph times are not compared with the earlier multi-minute runs because their cache state differed and the host was active; the material result is the absence of pressure with more than 1 GiB of cgroup margin. The ceiling remains 3 GiB. Increasing it would have hidden four independently reproduced ownership defects and removed the oracle that forced their common structural correction.
 
+#### Snapshot invariant and cgroup acceptance correction
+
+The second semantic-checkpoint correction audit found that the child-entry, bounded-child-entry, and scope-completion lifecycle theorems established only the expected snapshot collection shape, not the quantified aggregate state invariant of every applied successor. Commit `7b3ca41f` adds a fail-closed `applyValidSnapshotSuccessor` boundary and separate `attemptInternalOperation_enterScope_applied_stateValid`, `attemptInternalOperation_enterBoundedScope_applied_stateValid`, and `attemptInternalOperation_completeScope_applied_stateValid` theorems. Extracting that boundary into `InternalOperationAttempt.lean` was required when `Transition.lean` reached 811 nonblank lines; the transition owner returned to 777 without weakening the 800-line review target.
+
+The same audit exposed a control-plane gap: GNU RSS rows alone could not reject a command that exited zero at the exact cgroup ceiling. [`lean-memory-acceptance.ts`](../scripts/lean-memory-acceptance.ts) now rejects a nonzero command exit, `memory.peak` greater than or equal to 3,221,225,472 bytes, or any nonzero `high`, `max`, `oom`, `oom_kill`, or `oom_group_kill` event. Its tests include the exact-bound, exit-zero adversary. A 13:28.92 diagnostic full test is retained as rejected evidence: it exited zero at 3,157,844 KiB GNU RSS but reached the exact cgroup ceiling with `max=103`.
+
+The unchanged-limit isolation pass then exercised every cold consumer implicated by that diagnostic result. Elapsed time is reported but not compared because other host processes were active; the cgroup peaks and zero-event results decide acceptance.
+
+| Diagnostic target | Elapsed | GNU maximum RSS | Cgroup peak | Memory events |
+|---|---:|---:|---:|---|
+| `TerminateEndEventConformance` | 36.54 s | 2,928,144 KiB | 2,793,156,608 bytes | All zero |
+| `SequentialMultiInstanceProgramBindingConformance` | 33.46 s | 3,013,432 KiB | 2,875,363,328 bytes | All zero |
+| `CallActivityConformance` | 27.19 s | 3,294,196 KiB | 3,091,030,016 bytes | All zero |
+| `TimerStartConformance` | 24.65 s | 3,079,472 KiB | 2,874,978,304 bytes | All zero |
+
+The accepted complete receipts are immutable at `7b3ca41f`. The warm-closure test ran in 0.65 seconds at 120,048 KiB GNU RSS and 136,794,112 bytes cgroup peak; its log SHA-256 is `aaec15959030baf4dae2b0327c50fdb5b8a765e3f80ad93b82629f4339833d58`. The warm-closure build ran in 0.45 seconds at 119,768 KiB and 36,450,304 bytes; its log SHA-256 is `748a58696eab89272da962e2f88d514187abf2aab87a66985dfedc4e14ee0a13`. Both exited zero with every controlled memory event zero. The validator binds these receipts as closure evidence while the rejected cold diagnostic and isolated cold-consumer rows remain visible; no larger limit or exit-code-only exception was introduced.
+
 | Increment | Boundary | Code | Documentation | Elapsed | Comparison consequence |
 |---|---|---:|---:|---|---|
 | [Scoped runtime data](capsules/SCOPED-DATA-SPEC.md) | `08d8b84..3b2e44d` | `+540/-73` | `+134/-11` | Unknown | First atomic runtime-representation replacement; later scope work should not be compared as if it were a small local semantic clause. |

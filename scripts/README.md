@@ -56,7 +56,7 @@ The report names the required implementation detail maps, guards, this registry,
 | Create or push project tags | [`project-tags.ts`](project-tags.ts) | Use `tag:create` and `tag:push` so tag identity and preconditions stay centralized. |
 | Refresh browser walkthrough screenshots | [`refresh-browser-walkthrough-screenshots.ts`](refresh-browser-walkthrough-screenshots.ts) | Use `walkthrough:screenshots:refresh` for the controlled documentation-capture project. |
 | Update normative labels | [`update-bpmn-normative-labels.ts`](update-bpmn-normative-labels.ts) | Maintainer-only regeneration after a reviewed normative-source change. |
-| Record per-module Lean cost | [`lean-module-cost.ts`](lean-module-cost.ts) | Add, rename, remove, or change a conformance module's measured peak-resident-memory row here in the same increment as the module. [`lean-module-cost.test.ts`](lean-module-cost.test.ts) derives the tracked set from Git, binds each row to the exact measured source bytes, rejects peak changes without a new measurement target, and requires every module at or above 90% of the measured bound to be disclosed explicitly. |
+| Record and accept Lean memory evidence | [`lean-module-cost.ts`](lean-module-cost.ts) and [`lean-memory-acceptance.ts`](lean-memory-acceptance.ts) | Add, rename, remove, or change a conformance module's measured peak-resident-memory row in the cost record in the same increment as the module. [`lean-module-cost.test.ts`](lean-module-cost.test.ts) derives the tracked set from Git, binds each row to the exact measured source bytes, requires disclosure at or above 90% of the bound, and rejects complete receipts that exit nonzero, reach the exact cgroup bound, or record any controlled pressure/OOM event. |
 
 ## Libraries and tests
 

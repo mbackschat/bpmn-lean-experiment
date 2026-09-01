@@ -44,6 +44,7 @@ Registered answer-free scenarios run their declared Lean, TypeScript, Temporal, 
 - responsibility-owned Lean semantics, Temporal lifecycle, differential pipeline, contract verification, and CIB runner collaborators
 - focused and full gates
 - durable long-command receipts with atomic completion markers and a separate exact-status assertion required before a green claim
+- immutable cgroup-controlled complete Lean acceptance receipts with a fail-closed validator over command exit, strict below-bound process-tree peak, and every controlled pressure/OOM event; an exit-zero command at the exact 3 GiB ceiling is rejected
 - one ordered differential pipeline identifier registry whose closed identifier type fails the build-free harness check on an unregistered case and whose fast catalog test rejects omission, duplication, or reordering before target execution
 - one closed full semantic catalog for registered answer-free cases; the temporary Message payload staged catalog was retired once its cases acquired exact Temporal refinement, so registered cases cannot remain outside release-bound target execution
 - one build-free cross-product publication-vocabulary guard that derives the producer schema and Product 2's intentionally copied operation-kind values, rejects every missing or extra entry in both contract and infrastructure gates, and proves omission sensitivity with a planted mutation
