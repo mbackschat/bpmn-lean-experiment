@@ -235,7 +235,7 @@ The 800-nonblank-line soft target is the extraction threshold and 1,200 lines th
 | [TypeScript called-Process runtime](../../packages/semantic-core/src/semantic-process-call-runtime.ts) | 396 | remove owner-keyed records with a called-instance subtree even though declaring Programs exclude Call operations |
 | [TypeScript scope cancellation](../../packages/semantic-core/src/semantic-process-scope-cancellation.ts) | 604 | remove owner-keyed records with a cancelled region even though declaring Programs exclude cancellation |
 | [TypeScript command admission](../../packages/semantic-core/src/semantic-command-admission.ts) | 382 | no producer integration at the first checkpoint |
-| [TypeScript triggered start](../../packages/semantic-core/src/semantic-process-triggered-start.ts) | 631 | initialize one root register only |
+| [TypeScript triggered start](../../packages/semantic-core/src/semantic-process-triggered-start.ts) | 588 | initialize root-owned retention state before any start mutation |
 | [Lean Program contract](../../BpmnSemantics/SemanticProcessContract.lean) | 93 | add the optional declaration reference; extract before crossing 800 |
 | [Lean RuntimeState](../../BpmnSemantics/SemanticProcess/RuntimeState.lean) | 201 | add only the collection reference and its root-owned invariant; new structures live elsewhere |
 | [Lean well-formedness](../../BpmnSemantics/SemanticProcess/RuntimeStateWellFormed.lean) | 98 | add one delegated predicate; extract before crossing 800 |

@@ -4,6 +4,7 @@ import type {
   InternalTransitionCandidate,
   InternalTransitionStateFootprint,
 } from "./internal-transition-footprint.js";
+import { compensationSnapshotPurgeAtoms } from "./internal-transition-footprint.js";
 import { InternalTransitionStateAtomKind } from "./internal-transition-footprint-vocabulary.js";
 import { deriveInternalOccurrenceRegion } from "./internal-transition-region.js";
 import { SemanticOperationKind } from "./semantic-process-contract.js";
@@ -48,6 +49,7 @@ export function deriveInternalThrowErrorStateFootprint(
     kind: InternalTransitionStateAtomKind.OccurrenceRegion,
     region,
   } as const;
+  const snapshotAtoms = compensationSnapshotPurgeAtoms(state, region, false);
   const input = {
     kind: InternalTransitionStateAtomKind.ControlToken,
     owner,
@@ -77,11 +79,13 @@ export function deriveInternalThrowErrorStateFootprint(
     parentOutput,
     { kind: InternalTransitionStateAtomKind.LogicalTime },
     regionAtom,
+    ...snapshotAtoms,
   ]);
   const writes = canonicalUniqueStateAtoms([
     input,
     parentOutput,
     regionAtom,
+    ...snapshotAtoms,
   ]);
   return reads === null || writes === null ? null : { reads, writes };
 }

@@ -12,6 +12,7 @@ import type {
   InternalTransitionStateAtom,
   InternalTransitionStateFootprint,
 } from "./internal-transition-footprint.js";
+import { compensationSnapshotReservationAtoms } from "./internal-transition-footprint.js";
 import { InternalTransitionStateAtomKind } from "./internal-transition-footprint-vocabulary.js";
 import {
   affectedTokenBucketsAreExact,
@@ -125,6 +126,10 @@ export function deriveInternalBoundedScopePreparation(
       operation.boundaryTimer.elementId,
     ),
   ];
+  const snapshotAtoms = compensationSnapshotReservationAtoms(
+    program,
+    selected.child,
+  );
   const writes = canonicalUniqueStateAtoms([
     inputToken,
     childEntryToken,
@@ -134,6 +139,7 @@ export function deriveInternalBoundedScopePreparation(
     wait,
     anchor,
     ...activationAtoms,
+    ...snapshotAtoms,
   ]);
   const reads = canonicalUniqueStateAtoms([
     {
@@ -155,6 +161,7 @@ export function deriveInternalBoundedScopePreparation(
     wait,
     anchor,
     ...activationAtoms,
+    ...snapshotAtoms,
   ]);
   return reads === null || writes === null
     ? null

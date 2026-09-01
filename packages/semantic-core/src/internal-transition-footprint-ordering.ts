@@ -118,6 +118,16 @@ function stateAtomParts(
       return [atom.kind, ...callAssociationParts(atom.record)];
     case InternalTransitionStateAtomKind.CompensationActivityRetention:
       return [atom.kind, ...scopeParts(atom.owner)];
+    case InternalTransitionStateAtomKind.CompensationParentContextCapacity:
+      return [atom.kind];
+    case InternalTransitionStateAtomKind.CompensationParentContextRetention:
+      return [
+        atom.kind,
+        ...scopeParts(atom.parent.id),
+        ...(atom.parent.parent === null
+          ? ["no-parent"]
+          : scopeParts(atom.parent.parent)),
+      ];
     case InternalTransitionStateAtomKind.EventRaceAssociation:
       return [atom.kind, ...eventRaceAssociationParts(atom.record)];
     case InternalTransitionStateAtomKind.OccurrenceRegion:
@@ -262,6 +272,10 @@ function occurrenceRegionConflictsWithAtom(
       return internalOccurrenceRegionOwnsCall(region, atom.record);
     case InternalTransitionStateAtomKind.EventRaceAssociation:
       return internalOccurrenceRegionContains(region, atom.record.owner);
+    case InternalTransitionStateAtomKind.CompensationParentContextRetention:
+      return internalOccurrenceRegionContains(region, atom.parent.id) ||
+        (atom.parent.parent !== null &&
+          internalOccurrenceRegionContains(region, atom.parent.parent));
     case InternalTransitionStateAtomKind.ScopeParent:
       return internalOccurrenceRegionContains(region, atom.occurrence) ||
         (atom.parent !== null &&
@@ -287,6 +301,7 @@ function occurrenceRegionConflictsWithAtom(
     case InternalTransitionStateAtomKind.InitiationPending:
     case InternalTransitionStateAtomKind.LogicalTime:
     case InternalTransitionStateAtomKind.ParallelControllersPresence:
+    case InternalTransitionStateAtomKind.CompensationParentContextCapacity:
     case InternalTransitionStateAtomKind.ProcessVariable:
     case InternalTransitionStateAtomKind.RuntimeControl:
     case InternalTransitionStateAtomKind.SequentialControllersPresence:

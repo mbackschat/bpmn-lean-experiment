@@ -7,7 +7,7 @@ import { internalOperationFrontierIsPairwiseIndependent } from "./internal-trans
 import { applyInternalInitiationPatch } from "./internal-transition-initiation-patch.js";
 import { SemanticOperationKind } from "./semantic-process-contract.js";
 import type { SemanticOperation, SemanticProcessProgram } from "./semantic-process-contract.js";
-import { closeSupportedInternalOperations } from "./semantic-process-closure.js";
+import { closeRefusableInternalOperations } from "./semantic-process-closure.js";
 import {
   calledProcessAssociationsAreValid,
   invokeCalledProcess,
@@ -82,6 +82,16 @@ import {
   createUserTaskWait,
 } from "./semantic-process-wait-runtime.js";
 import { compareCanonicalStrings } from "./wire.js";
+import {
+  type CompensationParentContextRefusal,
+} from "./compensation-event-sub-process-snapshot-contract.js";
+import {
+  purgeCompensationParentContextForRoot,
+} from "./compensation-event-sub-process-snapshot.js";
+import {
+  CompensationSnapshotPreparationKind,
+  prepareCompensationSnapshotOperation,
+} from "./internal-transition-attempt.js";
 
 export {
   ControlStateKind,
@@ -118,6 +128,22 @@ export type AppliedInternalOperationStep = DeepReadonly<{
   successor: RuntimeState;
 }>;
 
+enum InternalOperationAttemptKind {
+  Disabled = "disabled",
+  Applied = "applied",
+  Refused = "refused",
+}
+
+type InternalOperationAttempt = Readonly<
+  | { kind: InternalOperationAttemptKind.Disabled; operation: SemanticOperation }
+  | { kind: InternalOperationAttemptKind.Applied; step: AppliedInternalOperationStep }
+  | {
+      kind: InternalOperationAttemptKind.Refused;
+      operation: SemanticOperation;
+      detail: CompensationParentContextRefusal;
+    }
+>;
+
 export type StimulusEvaluationResult = DeepReadonly<{
   result: CommandResult;
   ambiguousInternalChoice: boolean;
@@ -141,16 +167,43 @@ function enabledInternalOperations(
   program: SemanticProcessProgram,
   state: RuntimeState,
 ): ReadonlyArray<AppliedInternalOperationStep> {
-  return program.operations
-    .map((operation) => applyInternalOperationStep(program, operation, state))
-    .filter(
-      (
-        candidate,
-      ): candidate is AppliedInternalOperationStep => candidate !== null,
-    )
-    .sort(({ operation: left }, { operation: right }) =>
-      compareCanonicalStrings(left.id, right.id)
+  return internalOperationFrontier(program, state).steps;
+}
+
+function internalOperationFrontier(
+  program: SemanticProcessProgram,
+  state: RuntimeState,
+): Readonly<{
+  steps: ReadonlyArray<AppliedInternalOperationStep>;
+  refusal: CompensationParentContextRefusal | null;
+}> {
+  const attempts = program.operations
+    .map((operation) => attemptInternalOperationStep(program, operation, state))
+    .sort((left, right) =>
+      compareCanonicalStrings(attemptOperationId(left), attemptOperationId(right))
     );
+  const refusal = attempts.find(
+    (attempt) => attempt.kind === InternalOperationAttemptKind.Refused,
+  );
+  return {
+    steps: attempts.flatMap((attempt) =>
+      attempt.kind === InternalOperationAttemptKind.Applied ? [attempt.step] : []
+    ),
+    refusal: refusal?.kind === InternalOperationAttemptKind.Refused
+      ? refusal.detail
+      : null,
+  };
+}
+
+function attemptOperationId(attempt: InternalOperationAttempt): string {
+  switch (attempt.kind) {
+    case InternalOperationAttemptKind.Disabled:
+      return attempt.operation.id;
+    case InternalOperationAttemptKind.Applied:
+      return attempt.step.operation.id;
+    case InternalOperationAttemptKind.Refused:
+      return attempt.operation.id;
+  }
 }
 
 export function enabledInternalOperationCount(
@@ -233,24 +286,58 @@ export function applyInternalOperationStep(
   operation: SemanticOperation,
   state: RuntimeState,
 ): AppliedInternalOperationStep | null {
+  const attempt = attemptInternalOperationStep(program, operation, state);
+  return attempt.kind === InternalOperationAttemptKind.Applied
+    ? attempt.step
+    : null;
+}
+
+function attemptInternalOperationStep(
+  program: SemanticProcessProgram,
+  operation: SemanticOperation,
+  state: RuntimeState,
+): InternalOperationAttempt {
+  const preparation = prepareCompensationSnapshotOperation(
+    program,
+    operation,
+    state,
+  );
+  if (preparation.kind === CompensationSnapshotPreparationKind.Refused) {
+    return {
+      kind: InternalOperationAttemptKind.Refused,
+      operation,
+      detail: preparation.detail,
+    };
+  }
   let selectedOwner: ScopeOccurrenceId | null = null;
   const successor = applyInternalOperationState(
     program,
     operation,
-    state,
+    preparation.state,
     (owner) => {
       selectedOwner = owner;
     },
   );
-  return successor === null
-    ? null
-    : {
-        operation,
-        owner: operationOwnerMatchesProgram(program, operation, selectedOwner)
-          ? selectedOwner
-          : null,
-        successor,
-      };
+  if (successor === null) {
+    return { kind: InternalOperationAttemptKind.Disabled, operation };
+  }
+  const finalized = preparation.rootCompletion === null
+    ? successor
+    : purgeCompensationParentContextForRoot(
+      successor,
+      preparation.rootCompletion.root,
+      preparation.rootCompletion.disposition,
+    );
+  return {
+    kind: InternalOperationAttemptKind.Applied,
+    step: {
+      operation,
+      owner: operationOwnerMatchesProgram(program, operation, selectedOwner)
+        ? selectedOwner
+        : null,
+      successor: finalized,
+    },
+  };
 }
 
 function applyInternalOperationState(
@@ -619,10 +706,10 @@ export function evaluateStimulusWithSelectedSteps(
           selectedInternalBatches: [],
         };
       }
-      const closure = closeSupportedInternalOperations(
+      const closure = closeRefusableInternalOperations(
         admission.state,
         closureLimit,
-        (current) => enabledInternalOperations(program, current),
+        (current) => internalOperationFrontier(program, current),
         (current, enabled) =>
           internalOperationFrontierIsPairwiseIndependent(
             program,
@@ -630,6 +717,19 @@ export function evaluateStimulusWithSelectedSteps(
             enabled,
           ),
       );
+      if (closure.refusal !== null) {
+        return {
+          result: {
+            outcome: CommandOutcome.Rejected,
+            state,
+            internalStepBoundExceeded: false,
+          },
+          ambiguousInternalChoice: false,
+          admittedState: null,
+          selectedInternalSteps: [],
+          selectedInternalBatches: [],
+        };
+      }
       return {
         result: {
           outcome: CommandOutcome.Committed,

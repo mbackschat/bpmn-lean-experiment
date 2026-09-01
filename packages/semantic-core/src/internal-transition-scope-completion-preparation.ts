@@ -5,6 +5,7 @@ import type {
   InternalTransitionStateAtom,
   InternalTransitionStateFootprint,
 } from "./internal-transition-footprint.js";
+import { compensationSnapshotPromotionAtoms } from "./internal-transition-footprint.js";
 import { InternalTransitionStateAtomKind } from "./internal-transition-footprint-vocabulary.js";
 import { deriveInternalOccurrenceRegion } from "./internal-transition-region.js";
 import { InternalOccurrenceKind } from "./internal-transition-wait-census.js";
@@ -77,6 +78,13 @@ export function deriveInternalCompleteScopeStateFootprint(
     regionAtom,
   ];
   const writes: InternalTransitionStateAtom[] = [regionAtom];
+  const snapshot = compensationSnapshotPromotionAtoms(
+    program,
+    state,
+    selected.occurrence,
+  );
+  reads.push(...snapshot.reads);
+  writes.push(...snapshot.writes);
 
   switch (selected.kind) {
     case ScopeCompletionSelectionKind.Root:

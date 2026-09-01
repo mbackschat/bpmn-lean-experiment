@@ -233,22 +233,23 @@ The complete `what-binds` inventory requires [`implementation-status-owner:ENGIN
 | [TS runtime-state defect](../../packages/semantic-core/src/runtime-state-defect.ts) | 762 | preserve the closed malformed-state classification or record a proved no-change mapping |
 | [TS well-formedness](../../packages/semantic-core/src/runtime-state-well-formedness.ts) | 73 | delegate before 800 |
 | [TS preservation oracle](../../packages/semantic-core/test/runtime-state-preservation.test.ts) | 604 | exact new-field preservation and malformed-state refusal |
-| [TS root start](../../packages/semantic-core/src/semantic-process-triggered-start.ts) | 631 | pre-mutation reservation |
+| [TS root start](../../packages/semantic-core/src/semantic-process-triggered-start.ts) | 588 | pre-mutation reservation |
 | [TS scope runtime](../../packages/semantic-core/src/semantic-process-scope-runtime.ts) | 556 | unbounded entry/promotion |
 | [TS bounded scope](../../packages/semantic-core/src/semantic-process-bounded-scope-runtime.ts) | 446 | bounded entry/promotion |
 | [TS cancellation](../../packages/semantic-core/src/semantic-process-scope-cancellation.ts) | 604 | regional filtering |
 | [TS Call cleanup](../../packages/semantic-core/src/semantic-process-call-runtime.ts) | 396 | structural filtering only |
-| [TS evaluator](../../packages/semantic-core/src/semantic-process-runtime.ts) | 157 | three-arm result; extract before planned growth consumes 157 |
-| [TS closure](../../packages/semantic-core/src/semantic-process-closure.ts) | 685 | refusal precedence/rollback |
+| [TS evaluator](../../packages/semantic-core/src/semantic-process-runtime.ts) | 62 | three-arm dispatch only; snapshot staging is extracted |
+| [TS closure](../../packages/semantic-core/src/semantic-process-closure.ts) | 616 | refusal precedence/rollback |
+| [TS snapshot staging](../../packages/semantic-core/src/internal-transition-attempt.ts) | 668 | pre-mutation reservation/promotion selection |
 | [TS census](../../packages/semantic-core/src/internal-commutation-census.ts) | 666 | new state field |
-| [TS footprint vocabulary](../../packages/semantic-core/src/internal-transition-footprint-vocabulary.ts) | 764 | snapshot atom |
-| [TS footprint union](../../packages/semantic-core/src/internal-transition-footprint.ts) | 190 | dispatch/preparation |
-| [TS footprint order](../../packages/semantic-core/src/internal-transition-footprint-ordering.ts) | 260 | snapshot atom order |
-| [TS scope-entry preparation](../../packages/semantic-core/src/internal-transition-scope-creation-preparation.ts) | 569 | retention read/write |
-| [TS bounded-entry preparation](../../packages/semantic-core/src/internal-transition-bounded-scope-preparation.ts) | 613 | retention read/write |
-| [TS completion preparation](../../packages/semantic-core/src/internal-transition-scope-completion-preparation.ts) | 665 | context/retention footprint |
-| [TS Error preparation](../../packages/semantic-core/src/internal-transition-error-preparation.ts) | 715 | purge footprint |
-| [TS termination preparation](../../packages/semantic-core/src/internal-transition-termination-preparation.ts) | 723 | purge footprint |
+| [TS footprint vocabulary](../../packages/semantic-core/src/internal-transition-footprint-vocabulary.ts) | 762 | snapshot atoms |
+| [TS footprint union](../../packages/semantic-core/src/internal-transition-footprint.ts) | 121 | retention/capacity/context helpers |
+| [TS footprint order](../../packages/semantic-core/src/internal-transition-footprint-ordering.ts) | 245 | snapshot atom order and region overlap |
+| [TS scope-entry preparation](../../packages/semantic-core/src/internal-transition-scope-creation-preparation.ts) | 564 | retention read/write |
+| [TS bounded-entry preparation](../../packages/semantic-core/src/internal-transition-bounded-scope-preparation.ts) | 606 | retention read/write |
+| [TS completion preparation](../../packages/semantic-core/src/internal-transition-scope-completion-preparation.ts) | 657 | context/retention footprint |
+| [TS Error preparation](../../packages/semantic-core/src/internal-transition-error-preparation.ts) | 711 | purge footprint |
+| [TS termination preparation](../../packages/semantic-core/src/internal-transition-termination-preparation.ts) | 719 | purge footprint |
 | [Lean Program](../../BpmnSemantics/SemanticProcessContract.lean) | 93 | declaration reference only |
 | [Lean structural admission](../../BpmnSemantics/SemanticProcess/ProgramStructuralValidation.lean) | 146 | declaration hook |
 | [Lean graph admission](../../BpmnSemantics/SemanticProcess/GraphValidation.lean) | 97 | lifecycle helper extracted; preserve the recovered headroom |
@@ -275,7 +276,7 @@ The complete `what-binds` inventory requires [`implementation-status-owner:ENGIN
 | [Lean MI progress preservation](../../BpmnSemantics/SemanticProcess/ParallelMultiInstanceRuntimeStateClosingProgressPreservation.lean) | 247 | frame new invariant |
 | [Lean MI terminal preservation](../../BpmnSemantics/SemanticProcess/ParallelMultiInstanceRuntimeStateClosingTerminalPreservation.lean) | 23 | extract the frame proof before further growth |
 
-Every headroom figure is the measured number of nonblank lines remaining below the 800-line review target. An owner must extract before this checkpoint's planned growth consumes that figure; a row with insufficient headroom may not grow first. No size exception is requested. Planned bounded owners are `packages/semantic-core/src/compensation-event-sub-process-snapshot-contract.ts`, `packages/semantic-core/src/compensation-event-sub-process-snapshot.ts`, `packages/semantic-core/src/compensation-event-sub-process-snapshot-state-validation.ts`, `packages/semantic-core/test/compensation-event-sub-process-snapshot.test.ts`, `BpmnSemantics/SemanticProcess/CompensationEventSubProcessSnapshotDeclaration.lean`, `BpmnSemantics/SemanticProcess/CompensationEventSubProcessSnapshot.lean`, its JSON decoder, and its conformance target. Root integration owns shared contracts, closure, schema, registries, status, and receipts.
+Every headroom figure is the measured number of nonblank lines remaining below the 800-line review target. An owner must extract before this checkpoint's planned growth consumes that figure; a row with insufficient headroom may not grow first. No size exception is requested. Planned bounded owners are `packages/semantic-core/src/compensation-event-sub-process-snapshot-contract.ts`, `packages/semantic-core/src/compensation-event-sub-process-snapshot.ts`, `packages/semantic-core/src/compensation-event-sub-process-snapshot-state-validation.ts`, `packages/semantic-core/test/compensation-event-sub-process-snapshot.test.ts`, `packages/semantic-core/test/compensation-event-sub-process-snapshot-integration.test.ts`, `BpmnSemantics/SemanticProcess/CompensationEventSubProcessSnapshotDeclaration.lean`, `BpmnSemantics/SemanticProcess/CompensationEventSubProcessSnapshot.lean`, its JSON decoder, and its conformance target. Root integration owns shared contracts, closure, schema, registries, status, and receipts.
 
 ## Epistemic closure and reopen conditions
 

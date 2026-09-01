@@ -41,6 +41,7 @@ import type {
   CalledProcessOccurrence,
   EventRace,
   RuntimeState,
+  RuntimeScopeOccurrence,
   ScopeOccurrenceId,
 } from "./semantic-process-state.js";
 import { MappingExpressionKind } from "./semantic-value-contract.js";
@@ -80,6 +81,11 @@ export type InternalTransitionStateAtom = Readonly<
   | {
       kind: InternalTransitionStateAtomKind.CompensationActivityRetention;
       owner: ScopeOccurrenceId;
+    }
+  | { kind: InternalTransitionStateAtomKind.CompensationParentContextCapacity }
+  | {
+      kind: InternalTransitionStateAtomKind.CompensationParentContextRetention;
+      parent: RuntimeScopeOccurrence;
     }
   | {
       kind: InternalTransitionStateAtomKind.ControlToken;
@@ -212,6 +218,72 @@ export type InternalTransitionCandidate = Readonly<{
   operation: SemanticOperation;
   owner: ScopeOccurrenceId | null;
 }>;
+
+/** Exact reservation atoms, including the shared measure that makes concurrent capacity observable. */
+export function compensationSnapshotReservationAtoms(
+  program: SemanticProcessProgram,
+  parent: RuntimeScopeOccurrence,
+): ReadonlyArray<InternalTransitionStateAtom> {
+  return program.compensationEventSubProcessSnapshots?.targets.some(
+      ({ parentScopeId }) => parentScopeId === parent.id.definitionScopeId,
+    )
+    ? [
+        { kind: InternalTransitionStateAtomKind.CompensationParentContextCapacity },
+        {
+          kind: InternalTransitionStateAtomKind.CompensationParentContextRetention,
+          parent,
+        },
+      ]
+    : [];
+}
+
+/** Promotion reads the complete captured Process context and rewrites the exact reservation. */
+export function compensationSnapshotPromotionAtoms(
+  program: SemanticProcessProgram,
+  state: RuntimeState,
+  parent: RuntimeScopeOccurrence,
+): Readonly<{
+  reads: ReadonlyArray<InternalTransitionStateAtom>;
+  writes: ReadonlyArray<InternalTransitionStateAtom>;
+}> {
+  const snapshotAtoms = compensationSnapshotReservationAtoms(program, parent);
+  return snapshotAtoms.length === 0
+    ? { reads: [], writes: [] }
+    : {
+        reads: [
+          ...snapshotAtoms,
+          ...state.variables.process.bindings.map(({ name }) => ({
+            kind: InternalTransitionStateAtomKind.ProcessVariable,
+            name,
+          } as const)),
+        ],
+        writes: snapshotAtoms,
+      };
+}
+
+/** Purge owns every retained parent whose identity or containing root lies in the removed region. */
+export function compensationSnapshotPurgeAtoms(
+  state: RuntimeState,
+  region: InternalOccurrenceRegion,
+  retainRoot: boolean,
+): ReadonlyArray<InternalTransitionStateAtom> {
+  const retentions = state.compensationParentContextRetentions?.filter(({ parent }) =>
+    region.members.some((member) =>
+      (!retainRoot || !sameScopeOccurrence(member, region.root)) &&
+        (sameScopeOccurrence(member, parent.id) ||
+          (parent.parent !== null && sameScopeOccurrence(member, parent.parent)))
+    )
+  ) ?? [];
+  return retentions.length === 0
+    ? []
+    : [
+        { kind: InternalTransitionStateAtomKind.CompensationParentContextCapacity },
+        ...retentions.map(({ parent }) => ({
+          kind: InternalTransitionStateAtomKind.CompensationParentContextRetention,
+          parent,
+        } as const)),
+      ];
+}
 
 /** Derives the reviewed semantic footprint without consulting any successor state. */
 export function deriveInternalTransitionFootprint(

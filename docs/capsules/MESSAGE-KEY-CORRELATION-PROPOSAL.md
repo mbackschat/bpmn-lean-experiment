@@ -278,7 +278,7 @@ The 800-nonblank-line soft target is the extraction threshold and 1,200 lines is
 |---|---:|---|
 | [Lean ProfileAdmission](../../BpmnSemantics/SemanticProcess/ProfileAdmission.lean) | 4 | extract the profile-family predicate before adding this profile because the complete arm cannot safely fit the measured margin |
 | [Lean SemanticProcessContract](../../BpmnSemantics/SemanticProcessContract.lean) | 93 | add only closed contract arms; extract correlation support types first if the edit would cross 800 |
-| [TypeScript semantic runtime dispatch](../../packages/semantic-core/src/semantic-process-runtime.ts) | 157 | add dispatch only; correlation behavior belongs in a new family owner |
+| [TypeScript semantic runtime dispatch](../../packages/semantic-core/src/semantic-process-runtime.ts) | 62 | add dispatch only; correlation behavior belongs in a new family owner |
 | [TypeScript lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 154 | add dispatch and construction only; source correlation validation belongs in a new owner |
 | [TypeScript scenario projection](../../packages/semantic-core/src/scenario.ts) | 185 | add the correlated interaction projection only; engine-population execution belongs in a new owner |
 | [TypeScript Semantic Process contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 208 | add one operation arm and referenced correlation contract; extract first if the edit would cross 800 |

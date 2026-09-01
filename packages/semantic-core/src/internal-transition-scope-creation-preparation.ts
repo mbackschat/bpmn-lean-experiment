@@ -9,6 +9,7 @@ import type {
   InternalTransitionStateAtom,
   InternalTransitionStateFootprint,
 } from "./internal-transition-footprint.js";
+import { compensationSnapshotReservationAtoms } from "./internal-transition-footprint.js";
 import { InternalTransitionStateAtomKind } from "./internal-transition-footprint-vocabulary.js";
 import {
   affectedTokenBucketsAreExact,
@@ -81,6 +82,10 @@ export function deriveInternalEnterScopePreparation(
   ) {
     return null;
   }
+  const snapshotAtoms = compensationSnapshotReservationAtoms(program, {
+    id: selected.child,
+    parent: owner,
+  });
   return prepareScopeCreation(
     program,
     state,
@@ -97,7 +102,7 @@ export function deriveInternalEnterScopePreparation(
       kind: InternalTransitionStateAtomKind.Activation,
       occurrenceKind: InternalOccurrenceKind.Scope,
       elementId: operation.childScopeId,
-    }],
+    }, ...snapshotAtoms],
   );
 }
 

@@ -15,6 +15,12 @@ import {
 } from "./semantic-process-state.js";
 import type { RuntimeState } from "./semantic-process-state.js";
 import { initializeCompensationActivityRetention } from "./compensation-activity-retention.js";
+import {
+  CompensationParentContextAttemptKind,
+} from "./compensation-event-sub-process-snapshot-contract.js";
+import {
+  reserveCompensationParentContext,
+} from "./compensation-event-sub-process-snapshot.js";
 
 /** Pairs each public start-command kind with exactly one corresponding IL initiation kind. */
 export function processStartMatchesProgram(
@@ -76,8 +82,16 @@ export function admitProcessStart(
     definitionScopeId: rootScope.id,
     activation: 1,
   };
+  const reserved = reserveRootCompensationParentContext(
+    program,
+    state,
+    rootOccurrence,
+  );
+  if (reserved === null) {
+    return null;
+  }
   return initializeCompensationActivityRetention(program, {
-    ...state,
+    ...reserved,
     ...(program.identity.semanticProfile ===
         SemanticProfileId.SequentialMultiInstanceUserTask
       ? { sequentialMultiInstanceControllers: [] }
@@ -132,8 +146,16 @@ export function admitTriggeredStartRoot(
     definitionScopeId: rootScope.id,
     activation: 1,
   };
+  const reserved = reserveRootCompensationParentContext(
+    program,
+    state,
+    rootOccurrence,
+  );
+  if (reserved === null) {
+    return null;
+  }
   return initializeCompensationActivityRetention(program, {
-    ...state,
+    ...reserved,
     control: {
       kind: ControlStateKind.Running,
       instanceId,
@@ -150,6 +172,28 @@ export function admitTriggeredStartRoot(
       activities: [],
     },
   }, rootOccurrence);
+}
+
+function reserveRootCompensationParentContext(
+  program: SemanticProcessProgram,
+  state: RuntimeState,
+  rootId: RuntimeState["scopeOccurrences"][number]["id"],
+): RuntimeState | null {
+  const prepared = program.compensationEventSubProcessSnapshots === undefined ||
+      state.compensationParentContextRetentions !== undefined
+    ? state
+    : { ...state, compensationParentContextRetentions: [] };
+  const attempt = reserveCompensationParentContext(program, prepared, {
+    id: rootId,
+    parent: null,
+  });
+  switch (attempt.kind) {
+    case CompensationParentContextAttemptKind.Disabled:
+    case CompensationParentContextAttemptKind.Applied:
+      return attempt.state;
+    case CompensationParentContextAttemptKind.Refused:
+      return null;
+  }
 }
 
 /** Clears one admitted triggered start and emits its root-owned outgoing tokens. */

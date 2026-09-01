@@ -84,6 +84,7 @@ This contributor map assigns source-file responsibilities inside `@bpmn-lean/sem
 | [runtime-state-collection-ordering.ts](src/runtime-state-collection-ordering.ts) | Internal canonical ordering for commutation-affected RuntimeState collections |
 | [internal-commutation-census.ts](src/internal-commutation-census.ts) | Exhaustive operation-family and cross-language RuntimeState atom-domain classification without enabling a transition |
 | [internal-transition-alternative.ts](src/internal-transition-alternative.ts) | Exact operation and Exclusive Gateway merge-input alternative keys with canonical discriminator-first ordering |
+| [internal-transition-attempt.ts](src/internal-transition-attempt.ts) | Pre-mutation Compensation Event Sub-Process reservation and promotion staging for the evaluator's private three-arm attempt |
 | [internal-transition-activity-association.ts](src/internal-transition-activity-association.ts) | Private conflict predicate over Activity identity, body-member ownership, and attached-Timer ownership |
 | [internal-transition-activity-arming-preparation.ts](src/internal-transition-activity-arming-preparation.ts) | Exact boundary-task Activity, body wait, attached Timer, activation, public-anchor, association, and token footprint without applying the transition |
 | [internal-transition-bounded-scope-preparation.ts](src/internal-transition-bounded-scope-preparation.ts) | Exact bounded Sub-Process child, parent relation, Activity, deadline, activation, public-anchor, and token footprint without applying the transition |
@@ -109,8 +110,8 @@ This contributor map assigns source-file responsibilities inside `@bpmn-lean/sem
 | [internal-publication-template.ts](src/internal-publication-template.ts) | Private numbering-free transition and lifecycle templates with canonical alternative sorting and late command, transition, and local-index instantiation |
 | [internal-transition-ordinary-arming-preparation.ts](src/internal-transition-ordinary-arming-preparation.ts) | Exact ordinary User Task, Message, Timer, and Effect arming footprints plus numbering-free transition and wait-lifecycle publications derived from the pre-state |
 | [internal-transition-ordinary-arming-patch.ts](src/internal-transition-ordinary-arming-patch.ts) | Exact local edits for ordinary wait arming, shared by pre-frontier preparation and the existing evaluator without whole-state replacement or successor-state inference |
-| [semantic-process-closure.ts](src/semantic-process-closure.ts) | Bounded closure over single-enabled and reviewed exact-two internal frontiers |
-| [semantic-process-runtime.ts](src/semantic-process-runtime.ts) | Runtime state, stimulus admission, operation dispatch, closure, and `applyStimulus` |
+| [semantic-process-closure.ts](src/semantic-process-closure.ts) | Bounded closure over single-enabled and reviewed exact-two internal frontiers with whole-batch refusal precedence |
+| [semantic-process-runtime.ts](src/semantic-process-runtime.ts) | Runtime state, three-arm internal-operation dispatch, whole-stimulus rollback, and `applyStimulus` |
 | [semantic-transition-trace.ts](src/semantic-transition-trace.ts) | Committed transition facts and trace replay validation |
 | [flow-node-occurrence-candidates.ts](src/flow-node-occurrence-candidates.ts) | Program-selected element and Process resolution for occurrence owners |
 | [flow-node-occurrence-lifecycle.ts](src/flow-node-occurrence-lifecycle.ts) | Flow-node lifecycle derivation and fold validation |
