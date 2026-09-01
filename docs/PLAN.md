@@ -80,7 +80,7 @@ Risk band: Compensation retention and lifetime.
 
 Checkpoint: the corrected [boundary-handler retention proposal](capsules/COMPENSATION-BOUNDARY-HANDLER-RETENTION-PROPOSAL.md) replaces the scope-wide snapshot account. Tables 10.88 and 10.89 make explicit handler definition the eligibility boundary; Clause 13.3.7 makes current Multi-Instance User Task early-completion and Timer-interruption paths non-retaining; Clause 13.5.5 assigns parent-scope snapshots only to the separate Compensation Event Sub-Process family. Clause 10.7.2's distinct Multi-Instance Sub-Process handler multiplicity remains explicitly excluded.
 
-Next action: gate and commit the redesigned proposal, corrected experiment, ledger, and routing; record its immutable target; then obtain a new context-cold proposal verdict. Do not begin the green representation checkpoint before that review approves the corrected account.
+Next action: generate the immutable packet for proposal target `15acd871`, obtain a new context-cold proposal verdict, and record its receipt. Do not begin the green representation checkpoint before that review approves the corrected account.
 
 Oracle: every explicitly boundary-handler-eligible outer Activity that completes successfully has one immutable identity and chronology record until normal root close. Handler-free, early-completed, and interrupted Activities create none; existing profiles remain byte-identical. Capacity refuses before speculative completion mutation and does not rely on Continue-As-New.
 
