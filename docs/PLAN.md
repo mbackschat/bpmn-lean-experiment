@@ -69,7 +69,7 @@ The [interrupting Activity boundary Message specification](capsules/ACTIVITY-BOU
 
 ## Current evidence
 
-- Compensation retention Lean costs. Command: `docker run --network=none --memory=3g --memory-swap=3g --cpus=1 … ./scripts/lake.sh build <target>`. Status: `exit 0`. Date: `2026-09-01`. Commit: `c5bad315`, clean read-only source target. `CompensationActivityRetentionConformance` recorded 1,833,740 KiB/8.63 seconds. `ActivityIssuingDisciplineConformance` conservatively records the higher contention-bracketed peak, 626,648 KiB/1.24 seconds; its retry recorded 623,532 KiB/1.23 seconds. Neither reaches the near-cap threshold; [`lean-module-cost.ts`](../scripts/lean-module-cost.ts) owns the figures and provenance.
+- Compensation retention Lean costs. Command: `docker run --network=none --memory=3g --memory-swap=3g --cpus=1 … ./scripts/lake.sh build <target>`. Status: `exit 0`. Date: `2026-09-01`. Commit: `2532ebda`, clean read-only source target. `CompensationActivityRetentionConformance` conservatively records the higher contention-bracketed peak, 1,928,340 KiB, with the 96%-CPU retry's 8.27-second elapsed time. `ActivityIssuingDisciplineConformance` records 626,648 KiB/1.24 seconds; its retry recorded 623,532 KiB/1.23 seconds. Neither reaches the near-cap threshold; [`lean-module-cost.ts`](../scripts/lean-module-cost.ts) owns the figures and provenance.
 
 ## Exact resume point
 
