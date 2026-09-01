@@ -12,6 +12,7 @@ import path from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
+import { transientReviewStateFindings } from "./independent-review-receipt.ts";
 import { markdownTableRows, withoutBackticks } from "./markdown-tables.ts";
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
@@ -52,16 +53,6 @@ const capsuleDispositions: ReadonlySet<string> = new Set([
   "optional",
   "excluded",
 ]);
-const transientReviewState = /\breview-pending\b|\bawaiting (?:its )?(?:mandatory )?(?:independent )?review\b|\bpending checkpoint approval\b/iu;
-
-function transientReviewStateFindings(markdown: string): ReadonlyArray<string> {
-  return markdown.split("\n").flatMap((line, index) =>
-    transientReviewState.test(line)
-      ? [`line ${index + 1}: ${line.trim()}`]
-      : []
-  );
-}
-
 /** Requirement identifiers a passage cites, excluding the mechanism-family identifiers themselves. */
 function citedRequirementIds(text: string): ReadonlyArray<string> {
   return [...text.matchAll(/`(BPMN-[A-Z0-9-]+)`/gu)]

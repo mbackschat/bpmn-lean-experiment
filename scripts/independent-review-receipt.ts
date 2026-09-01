@@ -25,6 +25,23 @@ export type ReviewReceipt = Readonly<{
 const receiptHeading = "## Independent cold-review receipt";
 const commitPattern = /^[0-9a-f]{7,40}$/u;
 const approvedVerdicts = new Set(["approve", "approve-with-required-edits"]);
+const transientReviewState = /\breview-pending\b|\bawaiting (?:its )?(?:mandatory )?(?:independent )?review\b|\bpending checkpoint approval\b/iu;
+
+export type TransientReviewStateFinding = Readonly<{
+  line: number;
+  text: string;
+}>;
+
+/** Finds mutable review-state prose whose authority belongs to the governed receipt. */
+export function transientReviewStateFindings(
+  document: string,
+): ReadonlyArray<TransientReviewStateFinding> {
+  return document.split("\n").flatMap((line, index) =>
+    transientReviewState.test(line)
+      ? [{ line: index + 1, text: line.trim() }]
+      : []
+  );
+}
 
 /** The standing per-stage correction-audit bound. Exceeding it takes an owner authorization. */
 const standingCorrectionAuditBound = 2;

@@ -17,6 +17,7 @@ import {
   receiptRow,
   ReviewStage,
   subagentReviewPolicyBaseline,
+  transientReviewStateFindings,
   type ReviewReceipt,
 } from "./independent-review-receipt.ts";
 
@@ -129,6 +130,27 @@ test("requires review receipts for active proposals and post-policy specificatio
       );
     }
   }
+});
+
+// A specification owns a stable implemented contract; the governing proposal receipt owns mutable
+// review lifecycle. The snapshot checkpoint was independently approved while the Semantic Process IL
+// specification kept nine copied "review-pending" statements, so both ordinary receipt validation and
+// the complete infrastructure gate remained green against contradictory owners.
+test("keeps receipt-owned pending review state out of active specifications", async () => {
+  const specificationPaths = (await activeReviewDocumentPaths()).filter((relativePath) =>
+    relativePath.endsWith("-SPEC.md")
+  );
+  const findings = (
+    await Promise.all(
+      specificationPaths.map(async (relativePath) =>
+        transientReviewStateFindings(
+          await readFile(path.join(projectRoot, relativePath), "utf8"),
+        ).map((finding) => `${relativePath}:${finding.line}: ${finding.text}`)
+      ),
+    )
+  ).flat();
+
+  assert.deepEqual(findings, []);
 });
 
 test("recognizes owner approval only through the closed proposal Status contract", () => {
