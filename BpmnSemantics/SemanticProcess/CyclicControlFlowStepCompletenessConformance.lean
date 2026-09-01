@@ -112,7 +112,8 @@ theorem actual_selected_internal_action_is_complete
                 cyclicPostChooseWithBindings, cyclicPostCompletionWithBindings,
                 cyclicWaitingWithBindings, cyclicScopedVariables,
                 CyclicRouteValue.output, CyclicRouteValue.bindings,
-                singletonWaitingState, initialState, fire?, chooseState?,
+                singletonWaitingState, initialState,
+                cyclic_program_has_no_snapshot_declaration, chooseState?,
                 onlyTokenOwner?, tokenOwners, isRepeat, rework] at execution
     all_goals
       change none = some after at execution
@@ -141,7 +142,8 @@ theorem actual_selected_internal_action_is_complete
                 cyclicPostChooseWithBindings, cyclicPostCompletionWithBindings,
                 cyclicWaitingWithBindings, cyclicScopedVariables,
                 CyclicRouteValue.output, CyclicRouteValue.bindings,
-                singletonWaitingState, initialState, fire?,
+                singletonWaitingState, initialState,
+                cyclic_program_has_no_snapshot_declaration,
                 reachNoneEndState?, onlyTokenOwner?, tokenOwners] at execution
             · by_cases rework : value = "rework"
               · subst value
@@ -151,7 +153,8 @@ theorem actual_selected_internal_action_is_complete
                   cyclicPostChooseWithBindings, cyclicPostCompletionWithBindings,
                   cyclicWaitingWithBindings, cyclicScopedVariables,
                   CyclicRouteValue.output, CyclicRouteValue.bindings,
-                  singletonWaitingState, initialState, fire?,
+                  singletonWaitingState, initialState,
+                  cyclic_program_has_no_snapshot_declaration,
                   reachNoneEndState?, onlyTokenOwner?, tokenOwners] at execution
               · have defaultSelected :
                     (CyclicRouteValue.stringValue value).output =
@@ -280,7 +283,8 @@ theorem actual_selected_internal_action_is_complete
                 cyclicPostCompletionWithBindings, cyclicWaitingWithBindings,
                 cyclicScopedVariables, CyclicRouteValue.output,
                 CyclicRouteValue.bindings, singletonWaitingState,
-                initialState, fire?, awaitUserTaskState?, onlyTokenOwner?,
+                initialState, cyclic_program_has_no_snapshot_declaration,
+                awaitUserTaskState?, onlyTokenOwner?,
                 tokenOwners, isRepeat, rework] at execution
     all_goals
       change none = some after at execution

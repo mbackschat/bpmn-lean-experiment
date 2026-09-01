@@ -122,6 +122,11 @@ def cyclicProgram : Program :=
       CheckedSequenceFlow.toControlPlace
     operations := cyclicOperations }
 
+/-- The selected cyclic fixture remains outside the snapshot-declaration profile. -/
+@[simp] theorem cyclic_program_has_no_snapshot_declaration :
+    cyclicProgram.compensationEventSubProcessSnapshots = none := by
+  rfl
+
 def cyclicStartStimulus : Stimulus :=
   .startProcess ⟨"start-cycle"⟩ ⟨cyclicProcessId.value⟩ cyclicInstanceId []
 

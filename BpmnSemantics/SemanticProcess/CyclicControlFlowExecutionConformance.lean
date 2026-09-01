@@ -64,7 +64,8 @@ theorem representative_initial_merge_is_exact :
       some cyclicInitialPostMergeState := by
   unfold step
   rw [cyclic_execution_merge_lookup]
-  simp only [fire?, cyclicMergeOperation]
+  simp only [fire_mergeExclusive_withoutSnapshotDeclaration,
+    cyclic_program_has_no_snapshot_declaration, cyclicMergeOperation]
   simpa [cyclicPostStartState, cyclicInitialPostMergeState] using
     (mergeExclusiveState_singleton_offer cyclicPostStartState
       cyclicMergeInputs ⟨"place:Flow_Merge_Review"⟩

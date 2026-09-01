@@ -249,7 +249,7 @@ theorem representative_choice_selects_repeat_for_every_activation
         ⟨"place:Flow_Repeat"⟩) := by
   unfold step
   rw [cyclic_choice_lookup]
-  simp [cyclicChoiceOperation, fire?, chooseState?,
+  simp [cyclicChoiceOperation, cyclic_program_has_no_snapshot_declaration, chooseState?,
     cyclicPostCompletionState, cyclicPostChooseState, cyclicWaitingState,
     cyclicVariables, singletonWaitingState, chooseToken, onlyTokenOwner?,
     tokenOwners, selectConditionalOutput, evaluateSimpleBooleanExpression,
@@ -263,7 +263,7 @@ theorem representative_choice_selects_rework_for_every_activation
         ⟨"place:Flow_Rework"⟩) := by
   unfold step
   rw [cyclic_choice_lookup]
-  simp [cyclicChoiceOperation, fire?, chooseState?,
+  simp [cyclicChoiceOperation, cyclic_program_has_no_snapshot_declaration, chooseState?,
     cyclicPostCompletionState, cyclicPostChooseState, cyclicWaitingState,
     cyclicVariables, singletonWaitingState, chooseToken, onlyTokenOwner?,
     tokenOwners, selectConditionalOutput, evaluateSimpleBooleanExpression,
@@ -279,7 +279,8 @@ theorem representative_merge_passes_selected_branch_for_every_activation
   rcases selected with rfl | rfl
   · unfold step
     rw [cyclic_merge_lookup]
-    simp only [fire?, cyclicMergeOperation]
+    simp only [fire_mergeExclusive_withoutSnapshotDeclaration,
+      cyclic_program_has_no_snapshot_declaration, cyclicMergeOperation]
     simpa [cyclicPostChooseState, cyclicPostMergeState] using
       (mergeExclusiveState_singleton_offer
         (cyclicPostChooseState activation route ⟨"place:Flow_Repeat"⟩)
@@ -288,7 +289,8 @@ theorem representative_merge_passes_selected_branch_for_every_activation
         rfl (by simp [cyclicMergeInputs]))
   · unfold step
     rw [cyclic_merge_lookup]
-    simp only [fire?, cyclicMergeOperation]
+    simp only [fire_mergeExclusive_withoutSnapshotDeclaration,
+      cyclic_program_has_no_snapshot_declaration, cyclicMergeOperation]
     simpa [cyclicPostChooseState, cyclicPostMergeState] using
       (mergeExclusiveState_singleton_offer
         (cyclicPostChooseState activation route ⟨"place:Flow_Rework"⟩)
@@ -316,7 +318,7 @@ theorem representative_choice_selects_exit_for_every_activation
         ⟨"place:Flow_Exit"⟩) := by
   unfold step
   rw [cyclic_choice_lookup]
-  simp [cyclicChoiceOperation, fire?, chooseState?,
+  simp [cyclicChoiceOperation, cyclic_program_has_no_snapshot_declaration, chooseState?,
     cyclicPostCompletionState, cyclicPostChooseState, cyclicWaitingState,
     cyclicVariables, singletonWaitingState, chooseToken, onlyTokenOwner?,
     tokenOwners, selectConditionalOutput, evaluateSimpleBooleanExpression,

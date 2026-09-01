@@ -638,6 +638,31 @@ theorem fire_withSnapshotDeclaration_is_disabled (program : Program)
     fire? program operation state = none := by
   simp [fire?, declared]
 
+@[simp] theorem fire_mergeExclusive_withoutSnapshotDeclaration (program : Program)
+    (state : RuntimeState) (id : OperationId) (origin : BpmnElementOrigin)
+    (inputs : List ControlPlaceId) (output : ControlPlaceId)
+    (absent : program.compensationEventSubProcessSnapshots = none) :
+    fire? program (.mergeExclusive id origin inputs output) state =
+      mergeExclusiveState? state inputs output := by
+  simp [fire?, absent, fireWithoutCompensationSnapshots?]
+
+@[simp] theorem fire_choose_withoutSnapshotDeclaration (program : Program)
+    (state : RuntimeState) (id : OperationId) (origin : BpmnElementOrigin)
+    (input : ControlPlaceId) (candidates : List ConditionalCandidate)
+    (defaultOutput : ControlPlaceId) (defaultOrigin : BpmnSequenceFlowOrigin)
+    (absent : program.compensationEventSubProcessSnapshots = none) :
+    fire? program (.choose id origin input candidates defaultOutput defaultOrigin) state =
+      chooseState? state input candidates defaultOutput := by
+  simp [fire?, absent, fireWithoutCompensationSnapshots?]
+
+@[simp] theorem fire_reachNoneEnd_withoutSnapshotDeclaration (program : Program)
+    (state : RuntimeState) (id : OperationId) (origin : BpmnElementOrigin)
+    (input : ControlPlaceId)
+    (absent : program.compensationEventSubProcessSnapshots = none) :
+    fire? program (.reachNoneEnd id origin input) state =
+      reachNoneEndState? state input := by
+  simp [fire?, absent, fireWithoutCompensationSnapshots?]
+
 @[simp] theorem fire_awaitUserTask_withoutSnapshotDeclaration (program : Program)
     (state : RuntimeState) (id : OperationId) (origin : BpmnElementOrigin)
     (input output : ControlPlaceId) (task : UserTaskDefinition)
