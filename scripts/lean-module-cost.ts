@@ -246,6 +246,12 @@ export const leanModuleCostRecord = {
       measuredAtCommit: "b9c1c586",
     },
     {
+      module: "BpmnSemantics.CompensationActivityRetentionConformance",
+      peakResidentKib: 1833740,
+      elapsedSeconds: 8.63,
+      measuredAtCommit: "c5bad315",
+    },
+    {
       module: "BpmnSemantics.UserTaskMetadataConformance",
       peakResidentKib: 1782132,
       elapsedSeconds: 23.74,
@@ -304,7 +310,12 @@ export const leanModuleCostRecord = {
       measuredAtCommit: "741d7f6d",
     },
     { module: "BpmnSemantics.ExclusiveGatewaySimpleBooleanConformance", peakResidentKib: 646452, elapsedSeconds: 0.7 },
-    { module: "BpmnSemantics.ActivityIssuingDisciplineConformance", peakResidentKib: 614068, elapsedSeconds: 0.8 },
+    {
+      module: "BpmnSemantics.ActivityIssuingDisciplineConformance",
+      peakResidentKib: 626648,
+      elapsedSeconds: 1.24,
+      measuredAtCommit: "c5bad315",
+    },
     { module: "BpmnSemantics.Conformance", peakResidentKib: 508576, elapsedSeconds: 0.3 },
     { module: "BpmnSemantics.ParallelForkJoinConformance", peakResidentKib: 500536, elapsedSeconds: 0.3 },
   ],
