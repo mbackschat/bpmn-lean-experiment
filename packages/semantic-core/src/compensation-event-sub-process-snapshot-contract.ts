@@ -59,3 +59,58 @@ export enum CompensationEventSubProcessSnapshotStateDefect {
   ProgramPresenceMismatch = "programPresenceMismatch",
   InvalidRetention = "invalidRetention",
 }
+
+export enum CompensationParentContextAttemptKind {
+  Disabled = "disabled",
+  Applied = "applied",
+  Refused = "refused",
+}
+
+export enum CompensationParentContextRefusalReason {
+  InvalidProgram = "invalidProgram",
+  InvalidState = "invalidState",
+  MissingRetention = "missingRetention",
+  DuplicateRetention = "duplicateRetention",
+  BrokenAncestry = "brokenAncestry",
+  IncompleteContext = "incompleteContext",
+  RecordCapacity = "recordCapacity",
+  CanonicalByteCapacity = "canonicalByteCapacity",
+}
+
+export enum CompensationParentContextRootDisposition {
+  Discard = "discard",
+  RetainPromoted = "retainPromoted",
+}
+
+export type CompensationParentContextRefusal =
+  | DeepReadonly<{
+      reason:
+        | CompensationParentContextRefusalReason.InvalidProgram
+        | CompensationParentContextRefusalReason.InvalidState
+        | CompensationParentContextRefusalReason.MissingRetention
+        | CompensationParentContextRefusalReason.DuplicateRetention
+        | CompensationParentContextRefusalReason.BrokenAncestry
+        | CompensationParentContextRefusalReason.IncompleteContext;
+    }>
+  | DeepReadonly<{
+      reason:
+        | CompensationParentContextRefusalReason.RecordCapacity
+        | CompensationParentContextRefusalReason.CanonicalByteCapacity;
+      bound: number;
+      prospective: number;
+    }>;
+
+export type CompensationParentContextAttempt =
+  | DeepReadonly<{
+      kind: CompensationParentContextAttemptKind.Disabled;
+      state: import("./semantic-process-state.js").RuntimeState;
+    }>
+  | DeepReadonly<{
+      kind: CompensationParentContextAttemptKind.Applied;
+      state: import("./semantic-process-state.js").RuntimeState;
+    }>
+  | DeepReadonly<{
+      kind: CompensationParentContextAttemptKind.Refused;
+      state: import("./semantic-process-state.js").RuntimeState;
+      detail: CompensationParentContextRefusal;
+    }>;

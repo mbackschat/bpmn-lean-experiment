@@ -13,6 +13,7 @@ export * from "./compensation-activity-retention-contract.js";
 export * from "./compensation-activity-retention.js";
 export * from "./compensation-activity-retention-state-validation.js";
 export * from "./compensation-event-sub-process-snapshot-contract.js";
+export * from "./compensation-event-sub-process-snapshot.js";
 export * from "./compensation-event-sub-process-snapshot-state-validation.js";
 export * from "./correlation-scalar-path.js";
 export * from "./message-key-correlation.js";
