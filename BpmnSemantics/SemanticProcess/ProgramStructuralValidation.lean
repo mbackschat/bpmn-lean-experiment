@@ -546,7 +546,7 @@ def programWellFormed (program : Program) : Bool :=
     inclusiveOperationsPaired program.operations &&
     callOperationsPaired program &&
     (program.operations.filter isInitiate).length = 1 &&
-    programGraphWellFormed program &&
+    programGraphWellFormedForProgram program &&
     programWaitDeclarersUnique program.operations &&
     compensationActivityRetentionDeclarationValid program
 
@@ -573,7 +573,7 @@ theorem programWellFormed_operations (program : Program)
 
 /-- Structural admission includes the complete graph invariant. -/
 theorem programWellFormed_graph (program : Program) (valid : programWellFormed program = true) :
-    programGraphWellFormed program = true := by
+    programGraphWellFormedForProgram program = true := by
   simp only [programWellFormed, Bool.and_eq_true] at valid
   grind
 

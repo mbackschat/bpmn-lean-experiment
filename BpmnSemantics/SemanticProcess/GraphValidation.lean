@@ -1,5 +1,6 @@
 import BpmnSemantics.SemanticProcessContract
 import BpmnSemantics.SemanticProcess.CallActivityAdmission
+import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotDeclaration
 import BpmnSemantics.SemanticProcess.ProfileAdmission
 
 /-! # Fuel-bounded graph validation
@@ -333,67 +334,6 @@ private def scopedOwnershipComplete (program : Program)
       program.controlPlaces.map (·.id) &&
     program.operations.all (operationRespectsScopes program entryRootId)
 
-/-- The child definition scope this operation enters, for every family that enters one.
-
-Listed exhaustively rather than behind a wildcard. A scope-entering family omitted from a wildcard
-match contributes nothing instead of failing to compile, and the rules below read that silence as a
-child scope nobody enters — which is a *validation pass* for the sibling arm and a rejection for the
-entering one, so the omission surfaces as an unexplained well-formedness failure rather than as a
-missing case. -/
-private def enteredChildScopeId? : SemanticOperation → Option DefinitionScopeId
-  | .enterScope _ _ _ _ childScopeId
-  | .enterBoundedScope _ _ _ _ childScopeId _ => some childScopeId
-  | .initiate .. | .initiateMessage .. | .initiateTimer .. | .invokeProcess .. | .returnProcess .. | .awaitUserTask ..
-  | .awaitDataInputUserTask ..
-  | .awaitDataOutputUserTask ..
-  | .awaitSequentialMultiInstanceUserTask ..
-  | .awaitParallelMultiInstanceUserTask ..
-  | .completeParallelMultiInstanceUserTask ..
-  | .awaitTimer .. | .awaitMessage .. | .awaitPayloadMessage ..
-  | .awaitCorrelatedPayloadMessage .. | .awaitEventRace ..
-  | .awaitBoundedUserTask .. | .awaitMonitoredUserTask ..
-  | .awaitMessageBoundedUserTask ..
-  | .awaitEffect .. | .duplicate ..
-  | .synchronize .. | .mergeExclusive .. | .choose .. | .selectMany ..
-  | .synchronizeSelected ..
-  | .throwError .. | .reachNoneEnd .. | .terminateScope ..
-  | .completeScope .. => none
-
-private def oneCompletionStrategyPerScope (program : Program)
-    (entryRootId : DefinitionScopeId) : Bool :=
-  program.definitionScopes.all fun scope =>
-    (match scope.parentScopeId with
-    | none =>
-        if scope.id = entryRootId then
-          (program.operations.filter fun
-            | .completeScope _ _ scopeId _ => scopeId = scope.id
-            | _ => false).length = 1 &&
-          (program.operations.filter fun operation =>
-            match operation with
-            | .returnProcess id _ _ _ _ =>
-                operationScope? program id = some scope.id
-            | _ => false).isEmpty
-        else
-          (program.operations.filter fun
-            | .completeScope _ _ scopeId _ => scopeId = scope.id
-            | _ => false).isEmpty &&
-          (program.operations.filter fun operation =>
-            match operation with
-            | .returnProcess id _ _ _ _ =>
-                operationScope? program id = some scope.id
-            | _ => false).length = 1
-    | some _ =>
-        (program.operations.filter fun
-          | .completeScope _ _ scopeId _ => scopeId = scope.id
-          | _ => false).length = 1) &&
-    match scope.parentScopeId with
-    | none =>
-        program.operations.all fun operation =>
-          enteredChildScopeId? operation ≠ some scope.id
-    | some _ =>
-        (program.operations.filter fun operation =>
-          enteredChildScopeId? operation = some scope.id).length = 1
-
 private def completionId? (program : Program) (scopeId : DefinitionScopeId) :
     Option OperationId :=
   program.operations.findSome? fun
@@ -496,15 +436,8 @@ private def initiateIds (operations : List SemanticOperation) :
     | .initiateTimer id _ _ _ => some id
     | _ => none
 
-private def rootScope? (program : Program) : Option DefinitionScopeId :=
-  match program.definitionScopes.filter fun scope =>
-      scope.parentScopeId.isNone &&
-        scope.originElementId.value = program.processId.value with
-  | [scope] => some scope.id
-  | _ => none
-
 private def rootCompletionIds (program : Program) : List OperationId :=
-  match rootScope? program with
+  match programEntryRootScopeId? program with
   | none => []
   | some root => program.operations.filterMap fun
       | .completeScope id _ scopeId none =>
@@ -538,14 +471,14 @@ private def parallelMultiInstancePairsShareScope (program : Program) : Bool :=
         | some completion => operationScope? program completion.id = operationScope? program entry.id
         | none => false
 
-/-- Standalone graph backstop for decoded programs, independent of lowering equality. -/
-def programGraphWellFormed (program : Program) : Bool :=
+private def programGraphWellFormedWithScopeLifecycle (program : Program)
+    (scopeLifecycle : Program → DefinitionScopeId → Bool) : Bool :=
   let operationIds := program.operations.map (·.id)
   let starts := initiateIds program.operations
   let ends := rootCompletionIds program
   match starts with
   | [start] =>
-      match rootScope? program with
+      match programEntryRootScopeId? program with
       | some entryRoot =>
           let edges := programEdges program
           let fuel := operationIds.length
@@ -554,7 +487,7 @@ def programGraphWellFormed (program : Program) : Bool :=
             scopedOwnershipComplete program entryRoot &&
             parallelMultiInstancePairsShareScope program &&
             boundedScopeEntryOriginsOwnTheirScopes program &&
-            oneCompletionStrategyPerScope program entryRoot &&
+            scopeLifecycle program entryRoot &&
             program.controlPlaces.all (fun place =>
             (producers program.operations place.id).length = 1 &&
               (consumers program.operations place.id).length = 1) &&
@@ -563,6 +496,15 @@ def programGraphWellFormed (program : Program) : Bool :=
             programGraphPolicyValid program edges fuel
       | none => false
   | _ => false
+
+/-- Standalone raw-graph backstop for decoded programs, independent of hidden Program declarations. -/
+def programGraphWellFormed (program : Program) : Bool :=
+  programGraphWellFormedWithScopeLifecycle program ordinaryScopeLifecycleWellFormed
+
+/-- Complete Program graph admission may derive the narrow dormant-handler lifecycle from a valid hidden declaration. -/
+def programGraphWellFormedForProgram (program : Program) : Bool :=
+  programGraphWellFormedWithScopeLifecycle program
+    compensationEventSubProcessSnapshotScopeLifecycleWellFormed
 
 private theorem filter_eq_singleton_of_key_nodup [DecidableEq β]
     (values : List α) (key : α → β) (value : α)
@@ -603,7 +545,7 @@ scope as the operation itself. Key uniqueness is supplied by the structural vali
 theorem owns the graph-to-scope consequence. -/
 theorem programGraphWellFormed_operationControlPlaceScope (program : Program)
     (operation : SemanticOperation) (place : ControlPlaceId)
-    (graphValid : programGraphWellFormed program = true)
+    (graphValid : programGraphWellFormedForProgram program = true)
     (operationIdsUnique : (program.operations.map (fun candidate => candidate.id)).Nodup)
     (placeIdsUnique : (program.controlPlaces.map (fun candidate => candidate.id)).Nodup)
     (operationMember : operation ∈ program.operations)
@@ -618,7 +560,7 @@ theorem programGraphWellFormed_operationControlPlaceScope (program : Program)
           [{ controlPlaceId := place, scopeId := owner }] ∧
       program.controlPlaces.filter (fun candidate => decide (candidate.id = place)) =
         [declared] := by
-  unfold programGraphWellFormed at graphValid
+  unfold programGraphWellFormedForProgram programGraphWellFormedWithScopeLifecycle at graphValid
   generalize startsEq : initiateIds program.operations = starts at graphValid
   cases starts with
   | nil => simp at graphValid
@@ -626,7 +568,7 @@ theorem programGraphWellFormed_operationControlPlaceScope (program : Program)
       cases rest with
       | cons next tail => simp at graphValid
       | nil =>
-          generalize rootEq : rootScope? program = root at graphValid
+          generalize rootEq : programEntryRootScopeId? program = root at graphValid
           cases root with
           | none => simp at graphValid
           | some root =>
@@ -709,7 +651,7 @@ theorem programGraphWellFormed_operationControlPlaceScope (program : Program)
 same-scope token ports therefore share that exact singleton static owner. -/
 theorem programGraphWellFormed_pairedOperationControlPlaceScopes (program : Program)
     (entry completion : SemanticOperation) (arm : ParallelMultiInstanceArm)
-    (graphValid : programGraphWellFormed program = true)
+    (graphValid : programGraphWellFormedForProgram program = true)
     (operationIdsUnique : (program.operations.map (fun candidate => candidate.id)).Nodup)
     (placeIdsUnique : (program.controlPlaces.map (fun candidate => candidate.id)).Nodup)
     (entryMember : entry ∈ program.operations) (completionMember : completion ∈ program.operations)
@@ -768,7 +710,7 @@ theorem programGraphWellFormed_pairedOperationControlPlaceScopes (program : Prog
       completionPlaceDeclaration⟩ :=
     programGraphWellFormed_operationControlPlaceScope program completion arm.normalOutput graphValid
       operationIdsUnique placeIdsUnique completionMember completionSameScope completionPlaceMember
-  unfold programGraphWellFormed at graphValid
+  unfold programGraphWellFormedForProgram programGraphWellFormedWithScopeLifecycle at graphValid
   generalize startsEq : initiateIds program.operations = starts at graphValid
   cases starts with
   | nil => simp at graphValid
@@ -776,7 +718,7 @@ theorem programGraphWellFormed_pairedOperationControlPlaceScopes (program : Prog
       cases rest with
       | cons next tail => simp at graphValid
       | nil =>
-          generalize rootEq : rootScope? program = root at graphValid
+          generalize rootEq : programEntryRootScopeId? program = root at graphValid
           cases root with
           | none => simp at graphValid
           | some root =>
@@ -801,9 +743,9 @@ theorem programGraphWellFormed_pairedOperationControlPlaceScopes (program : Prog
 
 /-- Whole-Program graph admission includes the definition-scope forest check. -/
 theorem programGraphWellFormed_scopeForest (program : Program)
-    (valid : programGraphWellFormed program = true) :
+    (valid : programGraphWellFormedForProgram program = true) :
     scopeForestWellFormed program = true := by
-  unfold programGraphWellFormed at valid
+  unfold programGraphWellFormedForProgram programGraphWellFormedWithScopeLifecycle at valid
   generalize startsEq : initiateIds program.operations = starts at valid
   cases starts with
   | nil => simp at valid
@@ -811,7 +753,7 @@ theorem programGraphWellFormed_scopeForest (program : Program)
       cases rest with
       | cons other tail => simp at valid
       | nil =>
-          generalize rootEq : rootScope? program = root at valid
+          generalize rootEq : programEntryRootScopeId? program = root at valid
           cases root with
           | none => simp at valid
           | some root =>
