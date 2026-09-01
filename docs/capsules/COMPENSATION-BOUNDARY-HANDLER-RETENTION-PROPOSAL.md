@@ -2,8 +2,8 @@
 
 ## Status
 
-Lifecycle: draft
-Review: pending
+Lifecycle: owner-approved
+Review: approved-with-required-edits
 
 ## Prior review
 
@@ -268,6 +268,6 @@ That target is a mandatory semantic checkpoint. After approval, the next high-ri
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `15acd871` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `15acd871` | `fork-turns-none` | `approve-with-required-edits` | `9f4e535b` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
