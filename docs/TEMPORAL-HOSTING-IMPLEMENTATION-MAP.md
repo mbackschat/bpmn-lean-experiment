@@ -28,7 +28,7 @@ The seventh slice sends one content-bound correlated-delivery Update through a b
 
 Both registration phases survive the bounded seventh continuation argument under a new Workflow patch, and unpatched histories reject it. Worker Activities verify the exact candidate before finalize, while live success plus deferred/capacity refusal histories replay. Host admission still rejects this profile, and ingress continuation, public engine routing, and profile admission remain absent. These are private durable prerequisites, not end-to-end correlation capability.
 
-The boundary Compensation retention representation checkpoint changes only the optional Semantic Process Program and committed `RuntimeState` bytes that the Workflow already carries. No admitted hosted profile declares the field, no Workflow ingress or Activity derives a completion fact, and no Signal, Update, Query, publication, effect, retry, Continue-As-New, or public-client branch gives it host behavior. Live refinement of retention and complete-state capacity remains open until producer integration passes the semantic checkpoint.
+The independently approved boundary Compensation retention representation checkpoint changes only the optional Semantic Process Program and committed `RuntimeState` bytes that the Workflow already carries. No admitted hosted profile declares the field, no Workflow ingress or Activity derives a completion fact, and no Signal, Update, Query, publication, effect, retry, Continue-As-New, or public-client branch gives it host behavior. Live refinement of retention and complete-state capacity remains open pending completion-producer integration.
 
 ## Implemented
 

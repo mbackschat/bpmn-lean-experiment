@@ -261,7 +261,7 @@ Same-change owners are this capsule, [the requirement ledger](../BPMN-REQUIREMEN
 
 Established: handlers decide eligibility; scope decides visibility/lifetime; the admitted Multi-Instance User Task handler triggers once after all-success, including zero and one-item-first; chronology is not dependency order; retention charges committed-state capacity and survives Continue-As-New.
 
-Established before semantic-checkpoint review: the approved representation is implemented in strict shared and Lean Program readers, independently written Lean and TypeScript declaration/state validation and pure retention accounts, root-register lifecycle, exact capacity and adversarial conformance tests, and the internal-commutation census. Not established: checkpoint approval, completion-producer integration, source handler admission, Compensation Event Sub-Process snapshots, throw selection, handler execution, order, cancellation, Transactions, CIB agreement, Temporal refinement, public capability, or closure evidence.
+Established at the approved semantic checkpoint: the representation is implemented in strict shared and Lean Program readers, independently written Lean and TypeScript declaration/state validation and pure retention accounts, root-register lifecycle, exact capacity and adversarial conformance tests, and the internal-commutation census. The context-cold reviewer required aggregate running-root validation and validation-before-nonretention precedence; correction target `2532ebda` supplied both, and the same reviewer approved audit target `246d3a78`. Not established: completion-producer integration, source handler admission, Compensation Event Sub-Process snapshots, throw selection, handler execution, order, cancellation, Transactions, CIB agreement, Temporal refinement, public capability, or closure evidence.
 
 Common-mode risks are global-throw-derived eligibility and treating every `completionPolicy="first"` alike; explicit targets and zero/one/many mutations separate them. The nearest unsupported claim is Multi-Instance Sub-Process compensation: Clause 10.7.2 needs a multiplicity account, while its Compensation Event Sub-Process also needs provisional complete per-instance parent snapshots and exact purge on failed, early, or interrupted completion.
 
@@ -282,5 +282,5 @@ That target is a mandatory semantic checkpoint. After approval, the next high-ri
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
 | Proposal | `15acd871` | `fork-turns-none` | `approve-with-required-edits` | `9f4e535b` |
-| Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Semantic checkpoint | `df895efc` | `fork-turns-none` | `approve-with-required-edits` | `246d3a78` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
