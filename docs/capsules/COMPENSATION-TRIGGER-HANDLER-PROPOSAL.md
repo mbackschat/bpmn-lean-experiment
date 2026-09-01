@@ -2,12 +2,12 @@
 
 ## Status
 
-Lifecycle: draft
-Review: pending
+Lifecycle: owner-approved
+Review: approved-with-required-edits
 
 ## Prior review
 
-Cold review rejected `21f83fa9`: the handler join was prose, failure had no Process lifecycle or receipt, Continue-As-New carried an already scheduled Activity, and the migration inventory omitted decisive owners. This material redesign requires a new cold review, not a correction audit.
+Cold review rejected `21f83fa9`: the handler join was prose, failure had no Process lifecycle or receipt, Continue-As-New carried an already scheduled Activity, and the migration inventory omitted decisive owners. Review target `59a2d3e1` accepted the material redesign with required edits; the same reviewer approved corrections `af15fa2f` and `f1a7db62` with every original finding closed.
 
 ## Question and bounded outcome
 
@@ -454,7 +454,7 @@ Reopen before implementation if review finds the fail-fast rule incompatible wit
 
 ## Stage boundary
 
-The immutable draft requires a context-cold proposal review before implementation. A green proposal verdict is the approval; any required edits must be audited by the same reviewer and recorded below.
+The immutable proposal target and both correction audits are green and recorded below. That verdict approves implementation only within the first checkpoint boundary.
 
 After approval, the first implementation stage stops when the complete Program/Runtime/observation representation and independent Lean/TypeScript semantics named above are green. That checkpoint requires independent review before source, profile, shared scenario, CIB, Temporal hosting, Product 1 publication, corpus, or Product 2 work begins.
 
@@ -462,6 +462,6 @@ After approval, the first implementation stage stops when the complete Program/R
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `59a2d3e1` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `59a2d3e1` | `fork-turns-none` | `approve-with-required-edits` | `af15fa2f, f1a7db62` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
