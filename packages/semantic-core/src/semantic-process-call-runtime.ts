@@ -362,6 +362,15 @@ function removeCalledProcessTree(
             ({ owner }) => !removedOwner(owner),
           ),
       }),
+    ...(state.compensationParentContextRetentions === undefined
+      ? {}
+      : {
+        compensationParentContextRetentions:
+          state.compensationParentContextRetentions.filter(({ parent }) =>
+            !removedOwner(parent.id) &&
+            (parent.parent === null || !removedOwner(parent.parent))
+          ),
+      }),
     controlTokens: state.controlTokens.filter(({ owner }) => !removedOwner(owner)),
     userTaskWaits: state.userTaskWaits.filter(({ owner }) => !removedOwner(owner)),
     messageWaits: state.messageWaits.filter(({ owner }) => !removedOwner(owner)),

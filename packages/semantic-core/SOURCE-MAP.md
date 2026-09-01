@@ -17,8 +17,8 @@ This contributor map assigns source-file responsibilities inside `@bpmn-lean/sem
 | [compensation-activity-retention-state-validation.ts](src/compensation-activity-retention-state-validation.ts) | Exact declaration and hidden-register validity plus canonical retained-record byte measurement |
 | [compensation-activity-retention.ts](src/compensation-activity-retention.ts) | Pure bounded eligibility classification, append-only retention, and root-register initialization |
 | [compensation-activity-retention-producers.ts](src/compensation-activity-retention-producers.ts) | Pre-mutation retention staging for exact ordinary and current Multi-Instance completion producers, including zero-item outer identity issuance |
-| [compensation-event-sub-process-snapshot-contract.ts](src/compensation-event-sub-process-snapshot-contract.ts) | Hidden Compensation Event Sub-Process snapshot declaration and Program-defect contracts |
-| [compensation-event-sub-process-snapshot-state-validation.ts](src/compensation-event-sub-process-snapshot-state-validation.ts) | Exact declaration validity and declaration-derived dormant-handler admission facts |
+| [compensation-event-sub-process-snapshot-contract.ts](src/compensation-event-sub-process-snapshot-contract.ts) | Hidden Compensation Event Sub-Process snapshot declaration, runtime retention, and defect contracts |
+| [compensation-event-sub-process-snapshot-state-validation.ts](src/compensation-event-sub-process-snapshot-state-validation.ts) | Exact declaration validity, declaration-derived dormant-handler facts, and Program-bound runtime presence |
 | [semantic-process-admission.ts](src/semantic-process-admission.ts) | Structural scenario and program validation plus identity admission |
 | [semantic-process-operation-admission.ts](src/semantic-process-operation-admission.ts) | Closed operation-shape, payload, reference, and origin validation |
 | [semantic-command-admission.ts](src/semantic-command-admission.ts) | Whether one submitted external command commits, and to which successor state |

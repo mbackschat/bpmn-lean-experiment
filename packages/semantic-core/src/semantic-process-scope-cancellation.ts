@@ -60,6 +60,9 @@ function removeScopeOccurrenceRegion(
   const interrupted = scopeOccurrenceSubtree(state.scopeOccurrences, attached);
   const isInterrupted = (owner: ScopeOccurrenceId): boolean =>
     interrupted.some(({ id }) => sameScopeOccurrence(id, owner));
+  const isRemovedSnapshotOwner = (owner: ScopeOccurrenceId): boolean =>
+    isInterrupted(owner) &&
+    !(retainRoot && sameScopeOccurrence(owner, attached.id));
   // A record is in the region when either end of it is: its owner, or its body. The two differ, and
   // the difference is the whole defect this closes. A boundary handler is owned by the scope holding
   // the Activity, so an owner-only rule leaves a deadline whose body has just been removed alive and
@@ -135,6 +138,15 @@ function removeScopeOccurrenceRegion(
         compensationActivityRetentions:
           withoutCalledProcesses.compensationActivityRetentions.filter(
             ({ owner }) => !isInterrupted(owner),
+          ),
+      }),
+    ...(withoutCalledProcesses.compensationParentContextRetentions === undefined
+      ? {}
+      : {
+        compensationParentContextRetentions:
+          withoutCalledProcesses.compensationParentContextRetentions.filter(({ parent }) =>
+            !isRemovedSnapshotOwner(parent.id) &&
+            (parent.parent === null || !isRemovedSnapshotOwner(parent.parent))
           ),
       }),
     effectWaits: withoutCalledProcesses.effectWaits.filter(

@@ -151,12 +151,18 @@ function admissibleCommittedState(
           state.parallelMultiInstanceControllers === undefined
       ? { ...state, parallelMultiInstanceControllers: [] }
       : state;
-  const gateState =
+  const compensationGateState =
     program.compensationActivityRetention !== undefined &&
       multiInstanceGateState.control.kind === ControlStateKind.NotStarted &&
       multiInstanceGateState.compensationActivityRetentions === undefined
       ? { ...multiInstanceGateState, compensationActivityRetentions: [] }
       : multiInstanceGateState;
+  const gateState =
+    program.compensationEventSubProcessSnapshots !== undefined &&
+      compensationGateState.control.kind === ControlStateKind.NotStarted &&
+      compensationGateState.compensationParentContextRetentions === undefined
+      ? { ...compensationGateState, compensationParentContextRetentions: [] }
+      : compensationGateState;
   return gateState.control.kind === ControlStateKind.NotStarted
     ? isGateAdmissibleRuntimeState(program, "", gateState)
     : isGateAdmissibleRuntimeState(

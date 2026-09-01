@@ -29,6 +29,10 @@ export const RuntimeStateDefect = {
   CompensationActivityRetentionProfileMismatch:
     "compensationActivityRetentionProfileMismatch",
   CompensationActivityRetentionInvalid: "compensationActivityRetentionInvalid",
+  CompensationEventSubProcessSnapshotProfileMismatch:
+    "compensationEventSubProcessSnapshotProfileMismatch",
+  CompensationEventSubProcessSnapshotInvalid:
+    "compensationEventSubProcessSnapshotInvalid",
 } as const;
 
 export type RuntimeStateDefect =

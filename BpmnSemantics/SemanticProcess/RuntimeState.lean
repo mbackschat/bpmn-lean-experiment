@@ -228,9 +228,26 @@ structure CompensationActivityRetention where
   records : List CompletedCompensableActivity
   deriving Repr, DecidableEq
 
+/-- One immutable Process/Sub-Process context frame captured at successful completion. -/
+structure CompensationParentContextFrame where
+  owner : ScopeOccurrenceId
+  bindings : List VariableBinding
+  deriving Repr, DecidableEq
+
+structure CompensationParentContextSnapshot where
+  frames : List CompensationParentContextFrame
+  deriving Repr, DecidableEq
+
+/-- A reserved parent occurrence, or its promoted immutable completion-time context. -/
+inductive CompensationParentContextRetention where
+  | provisional (parent : RuntimeScopeOccurrence) (handlerScopeId : DefinitionScopeId)
+  | promoted (parent : RuntimeScopeOccurrence) (handlerScopeId : DefinitionScopeId)
+      (snapshot : CompensationParentContextSnapshot)
+  deriving Repr, DecidableEq
+
 /-! ## Runtime representation invariant
 
-In an admitted reachable state, every token, wait, incident-owned suspended wait, selected-branch record, and event-race record is owned by one live `ScopeOccurrenceId` for the same semantic Process instance, and child occurrences form a parent-linked tree rooted at the Process occurrence. An effect occurrence appears in exactly one of `effectWaits` or `effectIncidents`; an incident retains the complete wait and exactly one matching Activity-local scope. A declared compensation-retention register is owned by that live root, does not affect quiescence, and is removed with the root. User Task waits, User Task activation counters, selected-branch records, and event-race records use canonical identifier order so independent activation order is not retained as semantic state. Task, Message, Timer, effect, event-race, and scope activation counts are monotonic high-water marks: removing a wait or occurrence never makes an identity reusable. Interrupting profiles admit no incident-bearing state in this capsule. Normal scope completion may remove an occurrence only after its owned tokens, waits, incidents, selected-branch records, event-race records, and child occurrences are absent; a child then emits exactly one parent-owned continuation, while root completion clears the root occurrence.
+In an admitted reachable state, every token, wait, incident-owned suspended wait, selected-branch record, and event-race record is owned by one live `ScopeOccurrenceId` for the same semantic Process instance, and child occurrences form a parent-linked tree rooted at the Process occurrence. An effect occurrence appears in exactly one of `effectWaits` or `effectIncidents`; an incident retains the complete wait and exactly one matching Activity-local scope. A declared compensation-retention register is owned by that live root, does not affect quiescence, and is removed with the root. A Compensation Event Sub-Process context record is keyed by its exact parent occurrence and remains provisional until successful completion promotes an immutable root-to-parent frame sequence. User Task waits, User Task activation counters, selected-branch records, and event-race records use canonical identifier order so independent activation order is not retained as semantic state. Task, Message, Timer, effect, event-race, and scope activation counts are monotonic high-water marks: removing a wait or occurrence never makes an identity reusable. Interrupting profiles admit no incident-bearing state in this capsule. Normal scope completion may remove an occurrence only after its owned tokens, waits, incidents, selected-branch records, event-race records, and child occurrences are absent; a child then emits exactly one parent-owned continuation, while root completion clears the root occurrence.
 -/
 
 structure RuntimeState where
@@ -253,6 +270,7 @@ structure RuntimeState where
   sequentialMultiInstanceControllers : List SequentialMultiInstanceController := []
   parallelMultiInstanceControllers : List ParallelMultiInstanceController := []
   compensationActivityRetentions : List CompensationActivityRetention := []
+  compensationParentContextRetentions : List CompensationParentContextRetention := []
   variables : ScopedVariables
   activations : List TaskActivation
   messageActivations : List MessageActivation
@@ -283,6 +301,7 @@ def initialState : RuntimeState :=
     sequentialMultiInstanceControllers := []
     parallelMultiInstanceControllers := []
     compensationActivityRetentions := []
+    compensationParentContextRetentions := []
     variables := emptyScopedVariables
     activations := []
     messageActivations := []

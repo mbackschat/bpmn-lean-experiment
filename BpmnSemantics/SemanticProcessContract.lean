@@ -720,6 +720,19 @@ structure CompensationActivityRetentionDeclaration where
   maxCanonicalBytes : Nat
   deriving Repr, DecidableEq
 
+/-- One declared Compensation Event Sub-Process snapshot target. -/
+structure CompensationEventSubProcessSnapshotTarget where
+  parentScopeId : DefinitionScopeId
+  handlerScopeId : DefinitionScopeId
+  deriving Repr, DecidableEq
+
+/-- Bounded hidden parent-context snapshots selected before source admission exists. -/
+structure CompensationEventSubProcessSnapshotDeclaration where
+  targets : List CompensationEventSubProcessSnapshotTarget
+  maxRecords : Nat
+  maxCanonicalBytes : Nat
+  deriving Repr, DecidableEq
+
 structure Program where
   identity : ProgramIdentity
   internalSchedulingMode : InternalSchedulingMode
@@ -730,6 +743,8 @@ structure Program where
   controlPlaces : List ControlPlace
   operations : List SemanticOperation
   compensationActivityRetention : Option CompensationActivityRetentionDeclaration := none
+  compensationEventSubProcessSnapshots :
+    Option CompensationEventSubProcessSnapshotDeclaration := none
   deriving Repr, DecidableEq
 
 namespace Obligations

@@ -2,9 +2,13 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
+  RuntimeStateDefect,
   compensationEventSubProcessSnapshotProgramDefects,
+  initialState,
   isWellFormedSemanticProcessGraph,
   isWellFormedSemanticProcessProgram,
+  runtimeStateDefects,
+  type RuntimeState,
   type SemanticProcessGraph,
   type SemanticProcessProgram,
 } from "@bpmn-lean/semantic-core";
@@ -90,4 +94,39 @@ test("the exported raw validator accepts no caller-supplied exemption", () => {
 
   // @ts-expect-error The declaration-derived exception belongs only to strict Program admission.
   assert.equal(isWellFormedSemanticProcessGraph(graph, [handlerScopeId]), false);
+});
+
+test("binds optional retention collection presence to the Program declaration", () => {
+  const declaredInitial = {
+    ...initialState,
+    compensationParentContextRetentions: [],
+  } satisfies RuntimeState;
+  const { compensationEventSubProcessSnapshots: _declaration, ...legacyProgram } = program;
+  const injectedLegacyState = {
+    ...initialState,
+    compensationParentContextRetentions: [],
+  } satisfies RuntimeState;
+
+  assert.equal(
+    runtimeStateDefects(program, "", initialState).includes(
+      RuntimeStateDefect.CompensationEventSubProcessSnapshotProfileMismatch,
+    ),
+    true,
+  );
+  assert.equal(
+    runtimeStateDefects(program, "", declaredInitial).includes(
+      RuntimeStateDefect.CompensationEventSubProcessSnapshotProfileMismatch,
+    ),
+    false,
+  );
+  assert.equal(
+    Object.hasOwn(initialState, "compensationParentContextRetentions"),
+    false,
+  );
+  assert.equal(
+    runtimeStateDefects(legacyProgram, "", injectedLegacyState).includes(
+      RuntimeStateDefect.CompensationEventSubProcessSnapshotProfileMismatch,
+    ),
+    true,
+  );
 });

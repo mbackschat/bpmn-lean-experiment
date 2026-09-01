@@ -1,6 +1,7 @@
 import BpmnSemantics.SemanticProcess.JsonSupport
 import BpmnSemantics.SemanticProcessJson.Elements
 import BpmnSemantics.SemanticProcessJson.CompensationActivityRetention
+import BpmnSemantics.SemanticProcessJson.CompensationEventSubProcessSnapshot
 
 /-! # Strict Semantic Process program wire decoding
 
@@ -693,15 +694,16 @@ private def decodeControlPlaceScopeOwnership (json : Json) :
 def decodeProgram (json : Json) : Except String Program := do
   let compensationActivityRetention ←
     decodeCompensationActivityRetentionField json
+  let compensationEventSubProcessSnapshots ←
+    decodeCompensationEventSubProcessSnapshotsField json
+  let optionalKeys :=
+    (if compensationActivityRetention.isSome then ["compensationActivityRetention"] else []) ++
+    (if compensationEventSubProcessSnapshots.isSome then
+      ["compensationEventSubProcessSnapshots"] else [])
   requireObjectShape json
-    (if compensationActivityRetention.isSome then
-      ["compensationActivityRetention", "controlPlaceScopes", "controlPlaces",
-        "definitionScopes", "identity", "internalSchedulingMode", "kind",
-        "operationScopes", "operations", "processId"]
-    else
+    (optionalKeys ++
       ["controlPlaceScopes", "controlPlaces", "definitionScopes", "identity",
-        "internalSchedulingMode", "kind", "operationScopes", "operations",
-        "processId"])
+        "internalSchedulingMode", "kind", "operationScopes", "operations", "processId"])
   expectStringField json "kind" "semanticProcess"
   pure
     { identity := ← decodeProgramIdentity (← field json "identity")
@@ -719,6 +721,7 @@ def decodeProgram (json : Json) : Except String Program := do
       controlPlaces :=
         ← decodeArray decodeControlPlace (← field json "controlPlaces")
       operations := ← decodeArray decodeOperation (← field json "operations")
-      compensationActivityRetention }
+      compensationActivityRetention
+      compensationEventSubProcessSnapshots }
 
 end BpmnSemantics.SemanticProcessJson

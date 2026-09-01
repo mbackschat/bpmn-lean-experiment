@@ -9,6 +9,7 @@ import type {
 } from "./contract.js";
 import type { DeepReadonly } from "./deep-readonly.js";
 import type { CompensationActivityRetention } from "./compensation-activity-retention-contract.js";
+import type { CompensationParentContextRetention } from "./compensation-event-sub-process-snapshot-contract.js";
 import type {
   EffectDescriptor,
   MessageChannel,
@@ -181,6 +182,8 @@ export type RuntimeState = DeepReadonly<{
   parallelMultiInstanceControllers?: ParallelMultiInstanceController[];
   /** Present exactly for Programs declaring boundary-handler compensation retention. */
   compensationActivityRetentions?: CompensationActivityRetention[];
+  /** Present exactly for Programs declaring Compensation Event Sub-Process snapshots. */
+  compensationParentContextRetentions?: CompensationParentContextRetention[];
   variables: ScopedVariables;
   taskActivations: ActivationCounter[];
   messageActivations: ActivationCounter[];

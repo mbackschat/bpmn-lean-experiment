@@ -1,5 +1,6 @@
 import {
   CompensationEventSubProcessSnapshotProgramDefect,
+  CompensationEventSubProcessSnapshotStateDefect,
   type CompensationEventSubProcessSnapshotDeclaration,
   type CompensationEventSubProcessSnapshotTarget,
 } from "./compensation-event-sub-process-snapshot-contract.js";
@@ -7,6 +8,7 @@ import {
   SemanticOperationKind,
   type SemanticProcessProgram,
 } from "./semantic-process-contract.js";
+import type { RuntimeState } from "./semantic-process-state.js";
 import {
   compareCanonicalStrings,
   isWellFormedWireString,
@@ -115,6 +117,17 @@ export function compensationEventSubProcessSnapshotProgramDefects(
     defects.push(CompensationEventSubProcessSnapshotProgramDefect.ParentEntryMismatch);
   }
   return defects;
+}
+
+export function compensationEventSubProcessSnapshotStateDefects(
+  program: SemanticProcessProgram,
+  state: RuntimeState,
+): ReadonlyArray<CompensationEventSubProcessSnapshotStateDefect> {
+  const declaration = program.compensationEventSubProcessSnapshots;
+  const retentions = state.compensationParentContextRetentions;
+  return (declaration === undefined) === (retentions === undefined)
+    ? []
+    : [CompensationEventSubProcessSnapshotStateDefect.ProgramPresenceMismatch];
 }
 
 function isSnapshotTarget(value: unknown): value is CompensationEventSubProcessSnapshotTarget {
