@@ -271,6 +271,12 @@ export const leanModuleCostRecord = {
     },
     { module: "BpmnSemantics.ReceiveTaskConformance", peakResidentKib: 1679876, elapsedSeconds: 19.3 },
     { module: "BpmnSemantics.RuntimeStateIdentityBoundConformance", peakResidentKib: 1676016, elapsedSeconds: 10.7 },
+    {
+      module: "BpmnSemantics.CompensationEventSubProcessSnapshotAdmissionConformance",
+      peakResidentKib: 1620120,
+      elapsedSeconds: 7.63,
+      measuredAtCommit: "b37566ea",
+    },
     { module: "BpmnSemantics.UserTaskInteractionConformance", peakResidentKib: 1592552, elapsedSeconds: 7.3 },
     { module: "BpmnSemantics.ConfiguredTaskConformance", peakResidentKib: 1501936, elapsedSeconds: 7.7 },
     { module: "BpmnSemantics.MappedBoundaryErrorConformance", peakResidentKib: 1463248, elapsedSeconds: 7.2 },

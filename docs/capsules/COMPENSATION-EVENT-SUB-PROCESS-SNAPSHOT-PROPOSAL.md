@@ -251,7 +251,7 @@ The complete `what-binds` inventory requires [`implementation-status-owner:ENGIN
 | [TS termination preparation](../../packages/semantic-core/src/internal-transition-termination-preparation.ts) | 723 | purge footprint |
 | [Lean Program](../../BpmnSemantics/SemanticProcessContract.lean) | 93 | declaration reference only |
 | [Lean structural admission](../../BpmnSemantics/SemanticProcess/ProgramStructuralValidation.lean) | 146 | declaration hook |
-| [Lean graph admission](../../BpmnSemantics/SemanticProcess/GraphValidation.lean) | 41 | extract exception helper before 800 |
+| [Lean graph admission](../../BpmnSemantics/SemanticProcess/GraphValidation.lean) | 97 | lifecycle helper extracted; preserve the recovered headroom |
 | [Lean RuntimeState](../../BpmnSemantics/SemanticProcess/RuntimeState.lean) | 201 | collection reference only |
 | [Lean well-formedness](../../BpmnSemantics/SemanticProcess/RuntimeStateWellFormed.lean) | 101 | delegated predicate |
 | [Lean initialization preservation](../../BpmnSemantics/SemanticProcess/RuntimeStateWellFormedInitialization.lean) | 709 | preserve the new invariant from the exact initialized state |
