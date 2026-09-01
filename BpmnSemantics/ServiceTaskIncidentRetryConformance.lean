@@ -344,9 +344,14 @@ theorem incident_bearing_non_successor_program_rejects_before_closure
         state := incidentState
         internalStepBoundExceeded := false
         ambiguousInternalChoice := false } := by
-  simp [applyStimulus, admitStimulus, incidentStateAdmitted,
-    serviceTaskIncidentProfileAdmitted, incidentState, incident,
-    profileMismatch, cancellationProfileMismatch]
+  cases declared : candidate.compensationEventSubProcessSnapshots with
+  | none =>
+      simp [applyStimulus, admitStimulus, declared, incidentStateAdmitted,
+        serviceTaskIncidentProfileAdmitted, incidentState, incident,
+        profileMismatch, cancellationProfileMismatch]
+  | some declaration =>
+      exact applyStimulus_withSnapshotDeclaration_rejects closureLimit candidate incidentState
+        (.retryIncident commandId incidentId) declaration declared
 
 theorem predecessor_profile_rejects_injected_incident_unchanged :
     applyStimulus 0 ServiceTaskEffectConformance.program incidentState

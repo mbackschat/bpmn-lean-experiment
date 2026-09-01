@@ -1,4 +1,5 @@
 import BpmnSemantics.CompensationEventSubProcessSnapshotConformance
+import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotLifecycleLaws
 import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotInternalCommutation
 import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotTransitionTrace
 
@@ -61,6 +62,24 @@ def timerInterruptionResult : StimulusResult :=
         activation := 1 }
       1000)
 
+def timerInterruptionAdmission : ExternalAdmission :=
+  admitStimulusWithCompensationSnapshots
+    CompensationEventSubProcessSnapshotAdmissionConformance.program startResult.state
+    (.fireTimer ⟨"interrupt-snapshot-child-before-closure"⟩
+      { processInstanceId := CompensationEventSubProcessSnapshotConformance.instanceId
+        elementId := ⟨"Deadline"⟩
+        activation := 1 }
+      1000)
+
+/-- The external Timer transition itself purges the unsuccessful parent; closure cannot repair admission. -/
+theorem timer_admission_purges_before_closure :
+    timerInterruptionAdmission.outcome = .committed ∧
+      timerInterruptionAdmission.state.compensationParentContextRetentions = [] ∧
+      compensationEventSubProcessSnapshotStateValid
+          CompensationEventSubProcessSnapshotAdmissionConformance.program
+          timerInterruptionAdmission.state = true := by
+  decide +kernel
+
 /-- Timer interruption removes the failed child's reservation in the same regional transition. -/
 theorem timer_interruption_purges_without_promotion :
     timerInterruptionResult.outcome = .committed ∧
@@ -83,6 +102,15 @@ theorem same_definition_occurrences_do_not_alias_during_purge :
       oneOfTwoSameDefinitionPurged.scopeOccurrences.any (fun occurrence =>
         occurrence.id ==
           CompensationEventSubProcessSnapshotConformance.secondChildOccurrence.id) = true := by
+  decide +kernel
+
+def removedRootWithPromotedChild : RuntimeState :=
+  cancelScopeSubtree CompensationEventSubProcessSnapshotConformance.settledChildState
+    CompensationEventSubProcessSnapshotConformance.rootOccurrence.id .remove
+
+/-- Removing the owning root purges promoted children even though their completed occurrences are already absent. -/
+theorem root_removal_purges_promoted_child_snapshots :
+    removedRootWithPromotedChild.compensationParentContextRetentions = [] := by
   decide +kernel
 
 /-- The footprint vocabulary names capacity, exact retention identity, captured Process data, and purge ownership. -/

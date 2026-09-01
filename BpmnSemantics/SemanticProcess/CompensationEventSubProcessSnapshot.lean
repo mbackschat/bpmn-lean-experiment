@@ -463,6 +463,15 @@ theorem reserveCompensationParentContext_refusal_preserves_state
     returned = state := by
   grind [reserveCompensationParentContext]
 
+theorem reserveCompensationParentContext_disabled_shape
+    (program : Program) (state returned : RuntimeState)
+    (parent : RuntimeScopeOccurrence)
+    (disabled : reserveCompensationParentContext program state parent = .disabled returned) :
+    returned = state ∧
+      (program.compensationEventSubProcessSnapshots = none ∨
+        targetForParent? program parent.id.definitionScopeId = none) := by
+  grind [reserveCompensationParentContext]
+
 theorem reserveCompensationParentContext_applied_shape
     (program : Program) (state after : RuntimeState)
     (parent : RuntimeScopeOccurrence)
@@ -640,6 +649,33 @@ private theorem promoteSelectedCompensationParentContext_refusal_preserves_state
                         simp_all [promoteSelectedCompensationParentContext, prospective]
               · simp_all [promoteSelectedCompensationParentContext]
 
+private theorem promoteSelectedCompensationParentContext_ne_disabled
+    (program : Program) (state returned : RuntimeState)
+    (parent : RuntimeScopeOccurrence)
+    (declaration : CompensationEventSubProcessSnapshotDeclaration)
+    (target : CompensationEventSubProcessSnapshotTarget)
+    (selected : List CompensationParentContextRetention) :
+    promoteSelectedCompensationParentContext program state parent declaration target selected ≠
+      .disabled returned := by
+  cases selected with
+  | nil => simp [promoteSelectedCompensationParentContext]
+  | cons retention rest =>
+      cases rest with
+      | cons _ _ => simp [promoteSelectedCompensationParentContext]
+      | nil =>
+          cases retention with
+          | promoted => simp [promoteSelectedCompensationParentContext]
+          | provisional retainedParent _ =>
+              by_cases same : retainedParent = parent
+              · cases captured : captureCompensationParentContext? program state parent with
+                | none => simp [promoteSelectedCompensationParentContext, same, captured]
+                | some snapshot =>
+                    cases capacity : capacityRefusal? declaration
+                        (state.compensationParentContextRetentions.map
+                          (promoteMatchingRetention parent target snapshot)) <;>
+                      simp [promoteSelectedCompensationParentContext, same, captured, capacity]
+              · simp [promoteSelectedCompensationParentContext, same]
+
 /-- Promote one exact provisional record using the pre-completion Process/Sub-Process context. -/
 def promoteCompensationParentContext (program : Program) (state : RuntimeState)
     (parent : RuntimeScopeOccurrence) : CompensationParentContextResult :=
@@ -667,6 +703,16 @@ theorem promoteCompensationParentContext_refusal_preserves_state
     returned = state := by
   grind (gen := 16) [promoteCompensationParentContext,
     promoteSelectedCompensationParentContext_refusal_preserves_state]
+
+theorem promoteCompensationParentContext_disabled_shape
+    (program : Program) (state returned : RuntimeState)
+    (parent : RuntimeScopeOccurrence)
+    (disabled : promoteCompensationParentContext program state parent = .disabled returned) :
+    returned = state ∧
+      (program.compensationEventSubProcessSnapshots = none ∨
+        targetForParent? program parent.id.definitionScopeId = none) := by
+  grind (gen := 16) [promoteCompensationParentContext,
+    promoteSelectedCompensationParentContext_ne_disabled]
 
 theorem promoteCompensationParentContext_applied_shape
     (program : Program) (state after : RuntimeState)

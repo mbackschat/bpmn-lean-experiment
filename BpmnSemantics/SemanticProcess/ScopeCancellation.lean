@@ -1,14 +1,16 @@
 import BpmnSemantics.SemanticProcess.ActivityOccurrence
+import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshot
 import BpmnSemantics.SemanticProcess.RuntimeState
 import BpmnSemantics.SemanticProcess.SequentialMultiInstance
 
 /-! # Scope-subtree cancellation
 
 This module owns classification and removal of every represented live runtime owner in one selected
-scope-occurrence subtree, including transitively called Process instances and Activity-local effect
-state. The selected occurrence may be retained for immediate normal completion or removed for an
-interrupting boundary route. Activation counters, Process variables, End history, and logical time are
-never cancellation targets.
+scope-occurrence subtree, including transitively called Process instances, Activity-local effect
+state, and Compensation parent-context records whose owning occurrences are removed. The
+selected occurrence may be retained for immediate normal completion or removed for an interrupting
+boundary route. Activation counters, Process variables, End history, and logical time are never
+cancellation targets.
 -/
 
 namespace BpmnSemantics.SemanticProcess
@@ -74,6 +76,24 @@ private def keepScopeOccurrence (disposition : SelectedScopeDisposition)
   | .retain => occurrence.id = root || !cancelled occurrence.id
   | .remove => !cancelled occurrence.id
 
+/-- Whether a hidden Compensation parent-context record's exact parent occurrence survives one regional cancellation. -/
+def compensationParentContextRetentionSurvivesScopeCancellation
+    (state : RuntimeState) (root : ScopeOccurrenceId)
+    (disposition : SelectedScopeDisposition)
+    (retention : CompensationParentContextRetention) : Bool :=
+  let calledInstances := calledInstanceClosure state root
+  let cancelled := fun owner =>
+    occurrenceInSubtree state.scopeOccurrences root owner ||
+      calledInstances.contains owner.processInstanceId
+  match retention with
+  | .provisional parent _ => keepScopeOccurrence disposition root cancelled parent
+  | .promoted parent _ _ =>
+      match parent.parent with
+      | none => keepScopeOccurrence disposition root cancelled parent
+      | some ownerRoot =>
+          if ownerRoot = root then disposition == .retain
+          else !cancelled ownerRoot
+
 /-- Remove all represented live owners in the selected occurrence subtree while independently choosing whether the selected occurrence itself remains for a following completion step. -/
 def cancelScopeSubtree (state : RuntimeState) (root : ScopeOccurrenceId)
     (disposition : SelectedScopeDisposition) : RuntimeState :=
@@ -115,6 +135,10 @@ def cancelScopeSubtree (state : RuntimeState) (root : ScopeOccurrenceId)
     selectedBranchSets :=
       state.selectedBranchSets.filter fun record => !cancelled record.owner
     eventRaces := state.eventRaces.filter fun race => !cancelled race.owner
+    compensationParentContextRetentions :=
+      state.compensationParentContextRetentions.filter
+        (compensationParentContextRetentionSurvivesScopeCancellation
+          state root disposition)
     calledProcessOccurrences :=
       state.calledProcessOccurrences.filter fun record =>
         !cancelled record.caller && !cancelled record.calledRoot
@@ -126,6 +150,18 @@ def cancelScopeSubtree (state : RuntimeState) (root : ScopeOccurrenceId)
               activityScopeMatches (effectOccurrenceId wait) activity) &&
             !(cancelledIncidents.any fun incident =>
               activityScopeMatches incident.id.effectId activity) } }
+
+/-- Regional cancellation preserves exactly the snapshot records whose complete parent occurrences survive its selected disposition. -/
+theorem mem_cancelScopeSubtree_compensationParentContextRetentions_iff
+    (state : RuntimeState) (root : ScopeOccurrenceId)
+    (disposition : SelectedScopeDisposition)
+    (retention : CompensationParentContextRetention) :
+    retention ∈
+        (cancelScopeSubtree state root disposition).compensationParentContextRetentions ↔
+      retention ∈ state.compensationParentContextRetentions ∧
+        compensationParentContextRetentionSurvivesScopeCancellation
+          state root disposition retention = true := by
+  simp [cancelScopeSubtree]
 
 /-! ## Withdrawal completeness
 

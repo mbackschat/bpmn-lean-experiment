@@ -427,6 +427,31 @@ def reserveRootCompensationParentContextBeforeStart (program : Program)
           | .refused reason _ => .refused reason before
       | _ => .refused .invalidState before
 
+theorem reserveRootCompensationParentContextBeforeStart_refusal_preserves_before
+    (program : Program) (before started returned : RuntimeState)
+    (reason : CompensationParentContextRefusal)
+    (refused : reserveRootCompensationParentContextBeforeStart program before started =
+      .refused reason returned) :
+    returned = before := by
+  grind [reserveRootCompensationParentContextBeforeStart,
+    reserveCompensationParentContext_refusal_preserves_state]
+
+theorem reserveRootCompensationParentContextBeforeStart_applied_shape
+    (program : Program) (before started after : RuntimeState)
+    (applied : reserveRootCompensationParentContextBeforeStart program before started =
+      .applied after) :
+    ∃ root declaration target,
+      started.scopeOccurrences.filter (fun occurrence => occurrence.parent.isNone) = [root] ∧
+        program.compensationEventSubProcessSnapshots = some declaration ∧
+        targetForParent? program root.id.definitionScopeId = some target ∧
+        ∃ reserved,
+          reserveCompensationParentContext program before root = .applied reserved ∧
+            after = { started with
+              compensationParentContextRetentions :=
+                reserved.compensationParentContextRetentions } := by
+  grind (gen := 16) [reserveRootCompensationParentContextBeforeStart,
+    reserveCompensationParentContext_applied_shape]
+
 /-- A declaration-free Program preserves the original start state exactly when no hidden snapshot state has been injected. This is both the byte-compatibility rule and the fast path that keeps old kernel-decided fixtures out of the snapshot validator. -/
 theorem reserveRootCompensationParentContextBeforeStart_withoutDeclaration
     (program : Program) (before started : RuntimeState)
@@ -436,7 +461,7 @@ theorem reserveRootCompensationParentContextBeforeStart_withoutDeclaration
       .disabled started := by
   simp [reserveRootCompensationParentContextBeforeStart, absent, empty]
 
-private def prepareStartedSnapshotState (program : Program) (before : RuntimeState)
+def prepareStartedSnapshotState (program : Program) (before : RuntimeState)
     (admission : ExternalAdmission) : ExternalAdmission :=
   match admission.outcome with
   | .committed =>
@@ -444,6 +469,18 @@ private def prepareStartedSnapshotState (program : Program) (before : RuntimeSta
       | .disabled successor | .applied successor =>
           { outcome := .committed, state := successor }
       | .refused _ _ => { outcome := .rejected, state := before }
+  | .rolledBack | .rejected | .semanticFailure | .unsupported => admission
+
+/- A committed command with invalid hidden state would make the next command reject a state this
+dispatcher itself exposed. `COMPENSATION-EVENT-SUB-PROCESS-SNAPSHOT-PROPOSAL.md` § Reservation,
+promotion, purge, and capacity therefore makes the post-state check part of admission, while the
+transition-specific laws still prove why valid commands remain committed. -/
+private def retainValidSnapshotAdmission (program : Program) (before : RuntimeState)
+    (admission : ExternalAdmission) : ExternalAdmission :=
+  match admission.outcome with
+  | .committed =>
+      if compensationEventSubProcessSnapshotStateValid program admission.state then admission
+      else { outcome := .rejected, state := before }
   | .rolledBack | .rejected | .semanticFailure | .unsupported => admission
 
 /-- Validate the optional hidden snapshot state once per command and stage root reservation after ordinary start admission but before internal closure. -/
@@ -456,12 +493,48 @@ def admitStimulusWithCompensationSnapshots (program : Program) (state : RuntimeS
         { outcome := .rejected, state }
       else
         let admission := admitStimulusWithoutCompensationSnapshots program state stimulus
+        let prepared :=
+          match stimulus with
+          | .startProcess .. | .triggerMessageStart .. | .triggerTimerStart .. =>
+              prepareStartedSnapshotState program state admission
+          | .completeUserTaskInstance .. | .deliverMessage .. | .deliverPayloadMessage ..
+          | .deliverCorrelatedPayloadMessage .. | .fireTimer .. | .completeEffect ..
+          | .reportEffectFailure .. | .retryIncident .. | .cancelIncidentProcess .. => admission
+        retainValidSnapshotAdmission program state prepared
+
+/-- Every committed snapshot-aware admission carries a valid hidden lifecycle into closure. -/
+theorem admitStimulusWithCompensationSnapshots_committed_stateValid
+    (program : Program) (state : RuntimeState) (stimulus : Stimulus)
+    (declaration : CompensationEventSubProcessSnapshotDeclaration)
+    (declared : program.compensationEventSubProcessSnapshots = some declaration)
+    (committed :
+      (admitStimulusWithCompensationSnapshots program state stimulus).outcome = .committed) :
+    compensationEventSubProcessSnapshotStateValid program
+      (admitStimulusWithCompensationSnapshots program state stimulus).state = true := by
+  simp only [admitStimulusWithCompensationSnapshots, declared] at committed ⊢
+  cases beforeValid : compensationEventSubProcessSnapshotStateValid program state with
+  | false => simp [beforeValid] at committed
+  | true =>
+    simp only [beforeValid, Bool.not_true, Bool.false_eq_true, if_false] at committed ⊢
+    generalize preparedEq : (let admission :=
+          admitStimulusWithoutCompensationSnapshots program state stimulus
         match stimulus with
         | .startProcess .. | .triggerMessageStart .. | .triggerTimerStart .. =>
             prepareStartedSnapshotState program state admission
         | .completeUserTaskInstance .. | .deliverMessage .. | .deliverPayloadMessage ..
         | .deliverCorrelatedPayloadMessage .. | .fireTimer .. | .completeEffect ..
-        | .reportEffectFailure .. | .retryIncident .. | .cancelIncidentProcess .. => admission
+        | .reportEffectFailure .. | .retryIncident .. | .cancelIncidentProcess .. => admission) =
+        prepared at committed ⊢
+    cases outcome : prepared.outcome with
+    | committed =>
+        simp only [retainValidSnapshotAdmission, outcome] at committed ⊢
+        by_cases afterValid :
+            compensationEventSubProcessSnapshotStateValid program prepared.state = true
+        · simp only [if_pos afterValid]
+          exact afterValid
+        · simp [if_neg afterValid] at committed
+    | rolledBack | rejected | semanticFailure | unsupported =>
+        simp [retainValidSnapshotAdmission, outcome] at committed
 
 /-- The legacy admission surface is mechanically restricted to declaration-free Programs. -/
 def admitStimulus (program : Program) (state : RuntimeState)

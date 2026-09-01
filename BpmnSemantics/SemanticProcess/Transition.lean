@@ -478,7 +478,8 @@ def InternalOperationAttempt.operation : InternalOperationAttempt → SemanticOp
   | .disabled operation | .refused operation _ => operation
   | .applied step => step.operation
 
-private def childOccurrenceAfterEntry? (state : RuntimeState)
+/-- Recover the exact child occurrence created by one successful scope-entry preflight. -/
+def childOccurrenceAfterEntry? (state : RuntimeState)
     (input : ControlPlaceId) (childScopeId : DefinitionScopeId)
     (entered : RuntimeState) : Option RuntimeScopeOccurrence := do
   let parent ← onlyTokenOwner? state input
@@ -488,7 +489,8 @@ private def childOccurrenceAfterEntry? (state : RuntimeState)
   | [child] => some child
   | _ => none
 
-private def applyPreparedReservation (program : Program)
+/-- Apply child entry only after its selected snapshot reservation has been decided. -/
+def applyPreparedReservation (program : Program)
     (operation : SemanticOperation) (state : RuntimeState)
     (child : RuntimeScopeOccurrence)
     (apply : RuntimeState → Option RuntimeState) : InternalOperationAttempt :=
@@ -499,7 +501,8 @@ private def applyPreparedReservation (program : Program)
       | none => .disabled operation
       | some successor => .applied { operation, successor }
 
-private def attemptEnterScope (program : Program) (operation : SemanticOperation)
+/-- Compose ordinary child entry with its exact snapshot reservation. -/
+def attemptEnterScope (program : Program) (operation : SemanticOperation)
     (state : RuntimeState) (input childEntry : ControlPlaceId)
     (childScopeId : DefinitionScopeId) : InternalOperationAttempt :=
   match enterScopeState? state input childEntry childScopeId with
@@ -511,7 +514,8 @@ private def attemptEnterScope (program : Program) (operation : SemanticOperation
           applyPreparedReservation program operation state child fun prepared =>
             enterScopeState? prepared input childEntry childScopeId
 
-private def attemptEnterBoundedScope (program : Program)
+/-- Compose bounded child entry and arming with its exact snapshot reservation. -/
+def attemptEnterBoundedScope (program : Program)
     (operation : SemanticOperation) (state : RuntimeState)
     (input childEntry : ControlPlaceId) (childScopeId : DefinitionScopeId)
     (boundaryTimer : BoundaryTimerArm) : InternalOperationAttempt :=
@@ -524,14 +528,16 @@ private def attemptEnterBoundedScope (program : Program)
           applyPreparedReservation program operation state child fun prepared =>
             armBoundedScopeState? prepared input childEntry childScopeId boundaryTimer
 
-private def selectedCompletionOccurrence? (state : RuntimeState)
+/-- Resolve the sole live occurrence whose completion is being decided. -/
+def selectedCompletionOccurrence? (state : RuntimeState)
     (scopeId : DefinitionScopeId) : Option RuntimeScopeOccurrence :=
   match state.scopeOccurrences.filter fun occurrence =>
       occurrence.id.definitionScopeId == scopeId with
   | [occurrence] => some occurrence
   | _ => none
 
-private def finishRootCompletion (successor : RuntimeState)
+/-- Apply the selected root disposition after the completion transition succeeds. -/
+def finishRootCompletion (successor : RuntimeState)
     (occurrence : RuntimeScopeOccurrence)
     (disposition : CompensationParentContextRootDisposition) : RuntimeState :=
   match occurrence.parent with
@@ -555,7 +561,9 @@ private def keepAfterUnsuccessfulScopeRemoval (successor : RuntimeState)
       | none => scopeOccurrenceIsLive successor parent.id
       | some root => scopeOccurrenceIsLive successor root
 
-/- Base regional cancellation deliberately knows nothing about snapshots. The snapshot-aware attempt applies this filter to the same successor before exposing it, so unsuccessful removal and hidden-state purge remain one atomic semantic result without increasing every legacy cancellation reduction. -/
+/- Regional scope cancellation already removes records owned by the occurrences it withdraws. This
+fallback covers other operation families whose successful transition removes a parent or its owning
+root without going through that shared cancellation primitive. -/
 /-- Purge provisional parents and whole collections whose owning root disappeared unsuccessfully. -/
 def purgeCompensationParentContextsAfterUnsuccessfulScopeRemoval
     (successor : RuntimeState) : RuntimeState :=
@@ -564,7 +572,8 @@ def purgeCompensationParentContextsAfterUnsuccessfulScopeRemoval
       successor.compensationParentContextRetentions.filter
         (keepAfterUnsuccessfulScopeRemoval successor) }
 
-private def attemptCompleteScope (program : Program)
+/-- Promote the deciding pre-completion context before completing the selected scope. -/
+def attemptCompleteScope (program : Program)
     (operation : SemanticOperation) (state : RuntimeState)
     (scopeId : DefinitionScopeId) (parentOutput : Option ControlPlaceId) :
     InternalOperationAttempt :=

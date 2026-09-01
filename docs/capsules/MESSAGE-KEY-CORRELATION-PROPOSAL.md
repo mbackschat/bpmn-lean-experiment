@@ -284,7 +284,7 @@ The 800-nonblank-line soft target is the extraction threshold and 1,200 lines is
 | [TypeScript Semantic Process contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 208 | add one operation arm and referenced correlation contract; extract first if the edit would cross 800 |
 | [TypeScript public contract](../../packages/semantic-core/src/contract.ts) | 338 | add closed public arms without changing existing direct Message shapes |
 | [Workflow command ingress](../../packages/temporal-adapter/workflow/src/workflow-command-ingress.ts) | 348 | route target delivery only; global correlation ingress belongs in new Workflow owners |
-| [Lean Transition](../../BpmnSemantics/SemanticProcess/Transition.lean) | 60 | add one dispatcher constructor; matcher and laws belong in new modules |
+| [Lean Transition](../../BpmnSemantics/SemanticProcess/Transition.lean) | 51 | add one dispatcher constructor; matcher and laws belong in new modules |
 | [TypeScript checked graph contract](../../packages/semantic-core/src/checked-process-contract.ts) | 440 | add one correlated catch arm and referenced correlation contract |
 | [TypeScript compilation dispatch](../../packages/bpmn-source/src/compilation-dispatch.ts) | 480 | dispatch to a new exact source reader; do not place validation logic here |
 | [TypeScript internal-commutation census](../../packages/semantic-core/src/internal-commutation-census.ts) | 666 | add the exact ordinary-wait classification only; footprint logic belongs in the correlated family owner |
