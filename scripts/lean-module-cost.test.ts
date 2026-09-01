@@ -19,6 +19,12 @@ import {
   type LeanModuleCostViolation,
   type LeanModuleMeasurementSourceMismatch,
 } from "./lean-module-cost.ts";
+import {
+  formatLeanMemoryAcceptanceViolation,
+  leanMemoryAcceptanceRecord,
+  leanMemoryAcceptanceViolations,
+  type LeanMemoryAcceptanceRecord,
+} from "./lean-memory-acceptance.ts";
 
 const recordPath = "scripts/lean-module-cost.ts";
 
@@ -150,6 +156,10 @@ async function committedBaseline(): Promise<LeanModuleCostBaseline | null> {
 
 function messages(violations: readonly LeanModuleCostViolation[]): string[] {
   return violations.map((violation) => formatLeanModuleCostViolation(violation));
+}
+
+function acceptanceMessages(record: LeanMemoryAcceptanceRecord): string[] {
+  return leanMemoryAcceptanceViolations(record).map(formatLeanMemoryAcceptanceViolation);
 }
 
 function withRows(
@@ -341,5 +351,44 @@ test("an empty provenance field fails completeness of the measurement account", 
       }),
     ),
     ["provenance field containerImageId is empty"],
+  );
+});
+
+test("the repaired complete Lean receipts satisfy cgroup acceptance", () => {
+  assert.deepEqual(acceptanceMessages(leanMemoryAcceptanceRecord), []);
+});
+
+test("an exit-zero receipt at the exact cgroup bound fails acceptance", () => {
+  const receipt = leanMemoryAcceptanceRecord.receipts[0];
+  assert.ok(receipt !== undefined);
+  assert.deepEqual(
+    acceptanceMessages({
+      ...leanMemoryAcceptanceRecord,
+      receipts: [{ ...receipt, cgroupPeakBytes: leanMemoryAcceptanceRecord.memoryBoundBytes }],
+    }),
+    [`${receipt.command} reached cgroup peak ${leanMemoryAcceptanceRecord.memoryBoundBytes} at or above bound ${leanMemoryAcceptanceRecord.memoryBoundBytes}`],
+  );
+});
+
+test("every nonzero cgroup pressure event and command failure fails acceptance", () => {
+  const receipt = leanMemoryAcceptanceRecord.receipts[0];
+  assert.ok(receipt !== undefined);
+  assert.deepEqual(
+    acceptanceMessages({
+      ...leanMemoryAcceptanceRecord,
+      receipts: [{
+        ...receipt,
+        exitStatus: 137,
+        memoryEvents: { high: 1, max: 2, oom: 3, oom_kill: 4, oom_group_kill: 5 },
+      }],
+    }),
+    [
+      `${receipt.command} exited 137`,
+      `${receipt.command} recorded memory.events high=1`,
+      `${receipt.command} recorded memory.events max=2`,
+      `${receipt.command} recorded memory.events oom=3`,
+      `${receipt.command} recorded memory.events oom_kill=4`,
+      `${receipt.command} recorded memory.events oom_group_kill=5`,
+    ],
   );
 });

@@ -18,7 +18,7 @@ import BpmnSemantics.SemanticProcess.SequentialMultiInstanceTransition
 import BpmnSemantics.SemanticProcess.ParallelMultiInstanceTransition
 import BpmnSemantics.SemanticProcess.MessageBoundedTask
 import BpmnSemantics.SemanticProcess.CompensationActivityRetentionProducers
-import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshot
+import BpmnSemantics.SemanticProcess.InternalOperationAttempt
 
 /-! # Semantic Process internal transitions
 
@@ -462,22 +462,6 @@ private theorem fireWithoutCompensationSnapshots_sound (program : Program)
         (terminateScopeState_sound program before after _ _ _ _ result)
     | exact .completeScope _ _ _ _ before after result
 
-structure AppliedInternalOperation where
-  operation : SemanticOperation
-  successor : RuntimeState
-  deriving Repr, DecidableEq
-
-inductive InternalOperationAttempt where
-  | disabled (operation : SemanticOperation)
-  | applied (step : AppliedInternalOperation)
-  | refused (operation : SemanticOperation)
-      (reason : CompensationParentContextRefusal)
-  deriving Repr, DecidableEq
-
-def InternalOperationAttempt.operation : InternalOperationAttempt → SemanticOperation
-  | .disabled operation | .refused operation _ => operation
-  | .applied step => step.operation
-
 /-- Recover the exact child occurrence created by one successful scope-entry preflight. -/
 def childOccurrenceAfterEntry? (state : RuntimeState)
     (input : ControlPlaceId) (childScopeId : DefinitionScopeId)
@@ -499,7 +483,29 @@ def applyPreparedReservation (program : Program)
   | .disabled prepared | .applied prepared =>
       match apply prepared with
       | none => .disabled operation
-      | some successor => .applied { operation, successor }
+      | some successor => applyValidSnapshotSuccessor program operation successor
+
+theorem applyPreparedReservation_applied_stateValid
+    (program : Program) (operation : SemanticOperation) (state : RuntimeState)
+    (child : RuntimeScopeOccurrence) (apply : RuntimeState → Option RuntimeState)
+    (step : AppliedInternalOperation)
+    (applied : applyPreparedReservation program operation state child apply = .applied step) :
+    compensationEventSubProcessSnapshotStateValid program step.successor = true := by
+  unfold applyPreparedReservation at applied
+  cases reserved : reserveCompensationParentContext program state child with
+  | refused reason returned => simp [reserved] at applied
+  | disabled prepared =>
+      cases successor : apply prepared with
+      | none => simp [reserved, successor] at applied
+      | some after =>
+          exact applyValidSnapshotSuccessor_applied_stateValid program operation after step
+            (by simpa [reserved, successor] using applied)
+  | applied prepared =>
+      cases successor : apply prepared with
+      | none => simp [reserved, successor] at applied
+      | some after =>
+          exact applyValidSnapshotSuccessor_applied_stateValid program operation after step
+            (by simpa [reserved, successor] using applied)
 
 /-- Compose ordinary child entry with its exact snapshot reservation. -/
 def attemptEnterScope (program : Program) (operation : SemanticOperation)
@@ -586,16 +592,14 @@ def attemptCompleteScope (program : Program)
           match completeBoundedScope? program prepared scopeId parentOutput with
           | none => .disabled operation
           | some successor =>
-              .applied
-                { operation
-                  successor := finishRootCompletion successor occurrence .discard }
+              applyValidSnapshotSuccessor program operation
+                (finishRootCompletion successor occurrence .discard)
       | .applied prepared =>
           match completeBoundedScope? program prepared scopeId parentOutput with
           | none => .disabled operation
           | some successor =>
-              .applied
-                { operation
-                  successor := finishRootCompletion successor occurrence .retainPromoted }
+              applyValidSnapshotSuccessor program operation
+                (finishRootCompletion successor occurrence .retainPromoted)
   | _, _ => .disabled operation
 
 /-- Evaluate one exact Program operation through the closed snapshot-aware attempt boundary. -/

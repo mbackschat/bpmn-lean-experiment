@@ -109,9 +109,12 @@ theorem applyPreparedReservation_applied_selected_shape
       cases successor : apply prepared with
       | none => simp [reserved, successor] at applied
       | some after =>
-          simp [reserved, successor] at applied
-          subst step
-          exact ⟨rfl, prepared, rfl, successor⟩
+          have validated : applyValidSnapshotSuccessor program operation after = .applied step :=
+            by simpa [reserved, successor] using applied
+          obtain ⟨stepOperation, stepSuccessor⟩ :=
+            applyValidSnapshotSuccessor_applied_shape program operation after step validated
+          refine ⟨stepOperation, prepared, rfl, ?_⟩
+          simpa [stepSuccessor] using successor
 
 /-- Every applied selected ordinary child entry reserves that exact entered occurrence before exposing its successor. -/
 theorem attemptInternalOperation_enterScope_applied_shape
@@ -148,6 +151,29 @@ theorem attemptInternalOperation_enterScope_applied_shape
               (fun prepared => enterScopeState? prepared input childEntry childScopeId)
               step declaration target declared childSelected (by simpa [enteredResult, childResult] using applied)
           exact ⟨operation, entered, child, prepared, rfl, childResult, reserved, successor⟩
+
+/-- Every applied ordinary child entry leaves the complete snapshot collection valid. -/
+theorem attemptInternalOperation_enterScope_applied_stateValid
+    (program : Program) (state : RuntimeState) (id : OperationId)
+    (origin : BpmnElementOrigin) (input childEntry : ControlPlaceId)
+    (childScopeId : DefinitionScopeId) (step : AppliedInternalOperation)
+    (declaration : CompensationEventSubProcessSnapshotDeclaration)
+    (declared : program.compensationEventSubProcessSnapshots = some declaration)
+    (applied : attemptInternalOperation program
+      (.enterScope id origin input childEntry childScopeId) state = .applied step) :
+    compensationEventSubProcessSnapshotStateValid program step.successor = true := by
+  rw [attemptInternalOperation, declared] at applied
+  unfold attemptEnterScope at applied
+  cases enteredResult : enterScopeState? state input childEntry childScopeId with
+  | none => simp [enteredResult] at applied
+  | some entered =>
+      cases childResult : childOccurrenceAfterEntry? state input childScopeId entered with
+      | none => simp [enteredResult, childResult] at applied
+      | some child =>
+          exact applyPreparedReservation_applied_stateValid program
+            (.enterScope id origin input childEntry childScopeId) state child
+            (fun prepared => enterScopeState? prepared input childEntry childScopeId) step
+            (by simpa [enteredResult, childResult] using applied)
 
 /-- Every applied selected bounded child entry reserves that exact entered occurrence before arming and exposing its successor. -/
 theorem attemptInternalOperation_enterBoundedScope_applied_shape
@@ -187,6 +213,31 @@ theorem attemptInternalOperation_enterBoundedScope_applied_shape
               (fun prepared => armBoundedScopeState? prepared input childEntry childScopeId boundaryTimer)
               step declaration target declared childSelected (by simpa [enteredResult, childResult] using applied)
           exact ⟨operation, entered, child, prepared, rfl, childResult, reserved, successor⟩
+
+/-- Every applied bounded child entry leaves the complete snapshot collection valid. -/
+theorem attemptInternalOperation_enterBoundedScope_applied_stateValid
+    (program : Program) (state : RuntimeState) (id : OperationId)
+    (origin : BpmnElementOrigin) (input childEntry : ControlPlaceId)
+    (childScopeId : DefinitionScopeId) (boundaryTimer : BoundaryTimerArm)
+    (step : AppliedInternalOperation)
+    (declaration : CompensationEventSubProcessSnapshotDeclaration)
+    (declared : program.compensationEventSubProcessSnapshots = some declaration)
+    (applied : attemptInternalOperation program
+      (.enterBoundedScope id origin input childEntry childScopeId boundaryTimer) state =
+        .applied step) :
+    compensationEventSubProcessSnapshotStateValid program step.successor = true := by
+  rw [attemptInternalOperation, declared] at applied
+  unfold attemptEnterBoundedScope at applied
+  cases enteredResult : armBoundedScopeState? state input childEntry childScopeId boundaryTimer with
+  | none => simp [enteredResult] at applied
+  | some entered =>
+      cases childResult : childOccurrenceAfterEntry? state input childScopeId entered with
+      | none => simp [enteredResult, childResult] at applied
+      | some child =>
+          exact applyPreparedReservation_applied_stateValid program
+            (.enterBoundedScope id origin input childEntry childScopeId boundaryTimer) state child
+            (fun prepared => armBoundedScopeState? prepared input childEntry childScopeId boundaryTimer)
+            step (by simpa [enteredResult, childResult] using applied)
 
 /-- Every applied selected completion promotes the deciding pre-state before it removes the occurrence or applies the root disposition. -/
 theorem attemptInternalOperation_completeScope_applied_shape
@@ -233,12 +284,52 @@ theorem attemptInternalOperation_completeScope_applied_shape
           cases completedResult : completeBoundedScope? program prepared scopeId parentOutput with
           | none => simp [promotion, completedResult] at applied
           | some completed =>
-              simp [promotion, completedResult] at applied
-              subst step
+              have validated := applyValidSnapshotSuccessor_applied_shape program
+                (.completeScope id origin scopeId parentOutput)
+                (finishRootCompletion completed occurrence .retainPromoted) step
+                (by simpa [promotion, completedResult] using applied)
               obtain ⟨_, _, snapshot, _, _, captured, _, _⟩ :=
                 promoteCompensationParentContext_applied_shape program state prepared occurrence
                   promotion
-              exact ⟨rfl, prepared, completed, snapshot, rfl, captured, completedResult, rfl⟩
+              exact ⟨validated.1, prepared, completed, snapshot, rfl, captured,
+                completedResult, validated.2⟩
+
+/-- Every applied scope completion leaves the complete snapshot collection valid. -/
+theorem attemptInternalOperation_completeScope_applied_stateValid
+    (program : Program) (state : RuntimeState) (id : OperationId)
+    (origin : BpmnElementOrigin) (scopeId : DefinitionScopeId)
+    (parentOutput : Option ControlPlaceId) (step : AppliedInternalOperation)
+    (declaration : CompensationEventSubProcessSnapshotDeclaration)
+    (declared : program.compensationEventSubProcessSnapshots = some declaration)
+    (applied : attemptInternalOperation program
+      (.completeScope id origin scopeId parentOutput) state = .applied step) :
+    compensationEventSubProcessSnapshotStateValid program step.successor = true := by
+  rw [attemptInternalOperation, declared] at applied
+  unfold attemptCompleteScope at applied
+  cases completedBefore : completeBoundedScope? program state scopeId parentOutput with
+  | none => simp [completedBefore] at applied
+  | some firstCompletion =>
+      cases selected : selectedCompletionOccurrence? state scopeId with
+      | none => simp [completedBefore, selected] at applied
+      | some occurrence =>
+          cases promotion : promoteCompensationParentContext program state occurrence with
+          | refused reason returned => simp [completedBefore, selected, promotion] at applied
+          | disabled prepared =>
+              cases completed : completeBoundedScope? program prepared scopeId parentOutput with
+              | none => simp [completedBefore, selected, promotion, completed] at applied
+              | some successor =>
+                  exact applyValidSnapshotSuccessor_applied_stateValid program
+                    (.completeScope id origin scopeId parentOutput)
+                    (finishRootCompletion successor occurrence .discard) step
+                    (by simpa [completedBefore, selected, promotion, completed] using applied)
+          | applied prepared =>
+              cases completed : completeBoundedScope? program prepared scopeId parentOutput with
+              | none => simp [completedBefore, selected, promotion, completed] at applied
+              | some successor =>
+                  exact applyValidSnapshotSuccessor_applied_stateValid program
+                    (.completeScope id origin scopeId parentOutput)
+                    (finishRootCompletion successor occurrence .retainPromoted) step
+                    (by simpa [completedBefore, selected, promotion, completed] using applied)
 
 /-- Every committed bounded Timer interruption exposes exactly the snapshot survivors decided by the same regional cancellation. -/
 theorem interruptBoundedScope_compensationParentContextRetentions_iff
