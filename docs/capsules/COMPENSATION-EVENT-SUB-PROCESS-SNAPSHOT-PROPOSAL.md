@@ -253,7 +253,7 @@ The complete `what-binds` inventory requires [`implementation-status-owner:ENGIN
 | [Lean structural admission](../../BpmnSemantics/SemanticProcess/ProgramStructuralValidation.lean) | 146 | declaration hook |
 | [Lean graph admission](../../BpmnSemantics/SemanticProcess/GraphValidation.lean) | 97 | lifecycle helper extracted; preserve the recovered headroom |
 | [Lean RuntimeState](../../BpmnSemantics/SemanticProcess/RuntimeState.lean) | 201 | collection reference only |
-| [Lean well-formedness](../../BpmnSemantics/SemanticProcess/RuntimeStateWellFormed.lean) | 101 | delegated predicate |
+| [Lean well-formedness](../../BpmnSemantics/SemanticProcess/RuntimeStateWellFormed.lean) | 98 | delegated predicate |
 | [Lean initialization preservation](../../BpmnSemantics/SemanticProcess/RuntimeStateWellFormedInitialization.lean) | 709 | preserve the new invariant from the exact initialized state |
 | [Lean completion](../../BpmnSemantics/SemanticProcess/ScopeCompletion.lean) | 694 | promotion/frame |
 | [Lean cancellation](../../BpmnSemantics/SemanticProcess/ScopeCancellation.lean) | 646 | regional filtering |
@@ -263,17 +263,17 @@ The complete `what-binds` inventory requires [`implementation-status-owner:ENGIN
 | [Lean census](../../BpmnSemantics/SemanticProcess/InternalCommutationCensus.lean) | 661 | new state field |
 | [Lean footprint core](../../BpmnSemantics/SemanticProcess/InternalCommutationCore.lean) | 338 | snapshot atom/footprint |
 | [Lean Program decoder](../../BpmnSemantics/SemanticProcessJson/Program.lean) | 113 | focused decoder |
-| [Lean commutation preservation](../../BpmnSemantics/SemanticProcess/InternalCommutationRuntimePreservation.lean) | 27 | extract the snapshot frame before planned growth consumes 27 |
-| [Lean correlation preservation](../../BpmnSemantics/SemanticProcess/MessageKeyCorrelationPreservation.lean) | 365 | frame new invariant |
-| [Lean payload preservation](../../BpmnSemantics/SemanticProcess/MessagePayloadPreservation.lean) | 468 | frame new invariant |
-| [Lean turnover preservation](../../BpmnSemantics/SemanticProcess/ActivityBodyTurnoverPreservation.lean) | 598 | frame new invariant |
+| [Lean commutation preservation](../../BpmnSemantics/SemanticProcess/InternalCommutationRuntimePreservation.lean) | 16 | extract the snapshot frame before further growth |
+| [Lean correlation preservation](../../BpmnSemantics/SemanticProcess/MessageKeyCorrelationPreservation.lean) | 360 | frame new invariant |
+| [Lean payload preservation](../../BpmnSemantics/SemanticProcess/MessagePayloadPreservation.lean) | 463 | frame new invariant |
+| [Lean turnover preservation](../../BpmnSemantics/SemanticProcess/ActivityBodyTurnoverPreservation.lean) | 589 | frame new invariant |
 | [Lean issuing conformance](../../BpmnSemantics/ActivityIssuingDisciplineConformance.lean) | 578 | synchronize close witness |
-| [Lean MI entry preservation](../../BpmnSemantics/SemanticProcess/ParallelMultiInstanceRuntimeStateEntryPreservation.lean) | 3 | extract before any growth |
-| [Lean MI closing selection](../../BpmnSemantics/SemanticProcess/ParallelMultiInstanceRuntimeStateClosingSelection.lean) | 204 | frame new invariant |
+| [Lean MI entry preservation](../../BpmnSemantics/SemanticProcess/ParallelMultiInstanceRuntimeStateEntryPreservation.lean) | 12 | order fact extracted; frame new invariant |
+| [Lean MI closing selection](../../BpmnSemantics/SemanticProcess/ParallelMultiInstanceRuntimeStateClosingSelection.lean) | 202 | frame new invariant |
 | [Lean commutation publication](../../BpmnSemantics/SemanticProcess/InternalCommutationPublication.lean) | 485 | carry aggregate fact |
 | [Lean MI empty preservation](../../BpmnSemantics/SemanticProcess/ParallelMultiInstanceRuntimeStateEmptyPreservation.lean) | 711 | carry aggregate fact |
-| [Lean MI progress preservation](../../BpmnSemantics/SemanticProcess/ParallelMultiInstanceRuntimeStateClosingProgressPreservation.lean) | 252 | frame new invariant |
-| [Lean MI terminal preservation](../../BpmnSemantics/SemanticProcess/ParallelMultiInstanceRuntimeStateClosingTerminalPreservation.lean) | 28 | extract the frame proof before planned growth consumes 28 |
+| [Lean MI progress preservation](../../BpmnSemantics/SemanticProcess/ParallelMultiInstanceRuntimeStateClosingProgressPreservation.lean) | 247 | frame new invariant |
+| [Lean MI terminal preservation](../../BpmnSemantics/SemanticProcess/ParallelMultiInstanceRuntimeStateClosingTerminalPreservation.lean) | 23 | extract the frame proof before further growth |
 
 Every headroom figure is the measured number of nonblank lines remaining below the 800-line review target. An owner must extract before this checkpoint's planned growth consumes that figure; a row with insufficient headroom may not grow first. No size exception is requested. Planned bounded owners are `packages/semantic-core/src/compensation-event-sub-process-snapshot-contract.ts`, `packages/semantic-core/src/compensation-event-sub-process-snapshot.ts`, `packages/semantic-core/src/compensation-event-sub-process-snapshot-state-validation.ts`, `packages/semantic-core/test/compensation-event-sub-process-snapshot.test.ts`, `BpmnSemantics/SemanticProcess/CompensationEventSubProcessSnapshotDeclaration.lean`, `BpmnSemantics/SemanticProcess/CompensationEventSubProcessSnapshot.lean`, its JSON decoder, and its conformance target. Root integration owns shared contracts, closure, schema, registries, status, and receipts.
 
