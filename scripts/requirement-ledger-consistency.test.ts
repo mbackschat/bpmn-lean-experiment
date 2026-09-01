@@ -52,6 +52,15 @@ const capsuleDispositions: ReadonlySet<string> = new Set([
   "optional",
   "excluded",
 ]);
+const transientReviewState = /\breview-pending\b|\bawaiting (?:its )?(?:mandatory )?(?:independent )?review\b|\bpending checkpoint approval\b/iu;
+
+function transientReviewStateFindings(markdown: string): ReadonlyArray<string> {
+  return markdown.split("\n").flatMap((line, index) =>
+    transientReviewState.test(line)
+      ? [`line ${index + 1}: ${line.trim()}`]
+      : []
+  );
+}
 
 /** Requirement identifiers a passage cites, excluding the mechanism-family identifiers themselves. */
 function citedRequirementIds(text: string): ReadonlyArray<string> {
@@ -220,6 +229,17 @@ test("keeps every closed reviewed slice consistent with its requirement disposit
       unknownRequirementIds: [],
       undecidedClosedSlices: [],
     },
+  );
+});
+
+// Review receipts own mutable review lifecycle state. Copying a pending verdict into the requirement
+// ledger made two compensation rows stale when the independently reviewed correction closed, even
+// though the receipt guard and complete infrastructure gate were green. The ledger may link the
+// receipt and describe implemented evidence, but it must not carry a transient pending-review copy.
+test("keeps receipt-owned pending review state out of the requirement ledger", async () => {
+  assert.deepEqual(
+    transientReviewStateFindings(await readFile(ledgerPath, "utf8")),
+    [],
   );
 });
 
@@ -424,4 +444,15 @@ test("rejects one rule obligation classified as both required and excluded", () 
   assert.deepEqual(capsuleDispositionFindings(markdown), [
     "ABTIMER-REFUSE-01/pre-due-core-and-lean: obligation has 2 dispositions",
   ]);
+});
+
+test("rejects each transient pending-review spelling", () => {
+  assert.deepEqual(
+    [
+      "A green, review-pending semantic checkpoint.",
+      "The checkpoint is awaiting its mandatory independent review.",
+      "Temporal work remains open pending checkpoint approval.",
+    ].map((line) => transientReviewStateFindings(line).length),
+    [1, 1, 1],
+  );
 });
