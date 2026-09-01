@@ -51,6 +51,14 @@ Excluded are targeted/asynchronous throws, Compensation End Events, Transactions
 The Program gains one `triggerCompensation` operation and one optional `compensationExecution` declaration. Reaching the operation's input consumes no token until the complete trigger transition has passed Program, RuntimeState, dependency, and capacity checks.
 
 ```ts
+const CompensationSingleEffectOperation =
+  "urn:bpmn-lean:effect-operation:compensation-single-effect-v1" as const;
+
+type CompensationSingleEffectDescriptor = Readonly<{
+  protocol: typeof EffectProtocol.Activity;
+  operation: typeof CompensationSingleEffectOperation;
+}>;
+
 type TriggerCompensationOperation = Readonly<{
   kind: "triggerCompensation";
   id: string;
@@ -64,7 +72,7 @@ type SingleEffectCompensationHandlerBody = Readonly<{
   kind: "singleEffect";
   handlerElementId: string;
   effectElementId: string;
-  descriptor: EffectDescriptor;
+  descriptor: CompensationSingleEffectDescriptor;
   input:
     | Readonly<{ kind: "empty" }>
     | Readonly<{
@@ -108,9 +116,9 @@ type CompensationExecutionDeclaration = Readonly<{
 }>;
 ```
 
-The declaration-owned `singleEffect` is neither an ordinary operation nor a control place. Snapshot handler scopes stay operation/control-place-free. Arbitrary handler flow must add a body-union arm and graph admission without reinterpreting `singleEffect`.
+The declaration-owned `singleEffect` is neither an ordinary operation nor a control place. Its descriptor is the exact `EffectProtocol.Activity` and `CompensationSingleEffectOperation` pair above; the implementation adds that operation literal to the shared `EffectOperation` catalog but no existing profile admits it. Snapshot handler scopes stay operation/control-place-free. Arbitrary handler flow must add a body-union arm and graph admission without reinterpreting `singleEffect`.
 
-Validation requires agreement with retention targets, snapshot pairs, trigger origin, handler/effect identities, input disposition, canonical order, uniqueness, and acyclicity. Boundary bodies require `empty` and equal handler/effect elements; B requires `restoredProcessBinding` and a distinct effect element owned only by its handler scope. Declared elements are unavailable to ordinary operations.
+Validation requires agreement with retention targets, snapshot pairs, trigger origin, handler/effect identities, the exact compensation descriptor, input disposition, canonical order, uniqueness, and acyclicity. Boundary bodies require `empty` and equal handler/effect elements; B requires `restoredProcessBinding` with nonempty distinct source and argument names and a distinct effect element owned only by its handler scope. Declared elements are unavailable to ordinary operations.
 
 The first Program has one occurrence per subject, so Sequence Flow lifts unambiguously to occurrence dependencies. The stored identity still permits later completion-time loop/Multi-Instance edges without reinterpretation.
 
@@ -158,9 +166,30 @@ type CompensationHandlerEffectWait = Readonly<{
   id: EffectOccurrenceId;
   triggerId: OccurrenceId;
   handlerId: OccurrenceId;
-  descriptor: EffectDescriptor;
-  arguments: VariableBinding[];
+  descriptor: CompensationSingleEffectDescriptor;
+  arguments: readonly [] | readonly [VariableBinding];
 }>;
+
+type CompensationEffectTransportMaterial = Readonly<{
+  definition: SemanticProcessIdentity;
+  triggerId: OccurrenceId;
+  handlerId: OccurrenceId;
+  effectId: EffectOccurrenceId;
+  descriptor: CompensationSingleEffectDescriptor;
+  arguments: readonly [] | readonly [VariableBinding];
+}>;
+
+type CompensationSingleEffectResult =
+  | Readonly<{
+      kind: EffectExecutionResultKind.Success;
+      localPatch: readonly [];
+    }>
+  | Readonly<{
+      kind: EffectExecutionResultKind.BpmnError;
+      code: string;
+      message: string | null;
+      localPatch: readonly [];
+    }>;
 
 type CompensationHandlerFailure = Readonly<{
   kind: "compensationHandlerFailure";
@@ -170,9 +199,68 @@ type CompensationHandlerFailure = Readonly<{
   code: string;
   message: string | null;
 }>;
+
+type FailedControl = Readonly<{
+  kind: ControlStateKind.Failed;
+  instanceId: string;
+  failure: CompensationHandlerFailure;
+}>;
+
+type StateObservationFields = Readonly<{
+  kind: CanonicalObservationKind.State;
+  instanceId: string;
+  activeWaits: readonly ActiveWait[];
+  openUserTasks: readonly OpenUserTask[];
+  openMessageSubscriptions: readonly OpenMessageSubscription[];
+  openTimers: readonly OpenTimer[];
+  openEffects: readonly OpenEffect[];
+  openIncidents: readonly OpenEffectIncident[];
+  openMultiInstances?: readonly OpenMultiInstance[];
+  variables: readonly VariableBinding[];
+  enabledInteractions: readonly EnabledInteraction[];
+  logicalTimeMs: number;
+}>;
+
+type ExistingStateObservation = StateObservationFields & Readonly<{
+  status:
+    | ProcessStatus.Running
+    | ProcessStatus.Completed
+    | ProcessStatus.Cancelled;
+  failure?: never;
+}>;
+
+type FailedStateObservation = StateObservationFields & Readonly<{
+  status: ProcessStatus.Failed;
+  failure: CompensationHandlerFailure;
+  activeWaits: readonly [];
+  openUserTasks: readonly [];
+  openMessageSubscriptions: readonly [];
+  openTimers: readonly [];
+  openEffects: readonly [];
+  openIncidents: readonly [];
+  openMultiInstances?: readonly [];
+  enabledInteractions: readonly [];
+}>;
+
+type StateObservation =
+  | ExistingStateObservation
+  | FailedStateObservation;
+
+type FailedProcessReceipt = Readonly<{
+  format: typeof processTerminalReceiptFormatV1;
+  definition: SemanticProcessIdentity;
+  processId: string;
+  processInstanceId: string;
+  finalState: FailedStateObservation;
+}>;
+
+type TerminalProcessReceipt =
+  | CompletedProcessReceipt
+  | CancelledProcessReceipt
+  | FailedProcessReceipt;
 ```
 
-`ControlStateKind` and `ProcessStatus` gain `Failed`; its control arm carries `instanceId` and the typed failure. `StateObservation` becomes status-discriminated: existing arms retain exact bytes, while `failed` requires the same failure. V1 gains `FailedProcessReceipt` with that final state. It is terminal, accepts no command or continuation, and is not Workflow failure.
+`ControlStateKind` and `ProcessStatus` gain `Failed`; `ControlState` adds exactly `FailedControl` while its existing instanced arm remains byte-identical. `StateObservation` becomes the union above: existing arms forbid `failure` and retain exact bytes, while `failed` requires it and every public wait, incident, interaction, and optional Multi-Instance collection is empty. Presence of `openMultiInstances` remains the existing Program-owned rule. V1 adds the exact `FailedProcessReceipt` arm above. It is terminal, accepts no command or continuation, and is not Workflow failure.
 
 Each trigger has an identity distinct from its throw Event, owns the withheld token, and contains canonical handlers and occurrence dependencies. Each handler identifies one consumed retention or snapshot. Restored context and `effectId` exist only while an Event Sub-Process handler compensates.
 
@@ -196,11 +284,13 @@ For A → B with independent C, the initial frontier is B and C. If B succeeds f
 
 `COMPH-RESTORE-01`: Starting the Event Sub-Process handler for B copies its promoted completion-time frames into handler-private restored context. The handler reads that frozen context even if the enclosing root's current Process bindings differ. It never reconstructs context from Task I/O, public observation, current scope bindings, or host history.
 
-B derives its input from the restored Process frame; A and C use empty inputs and claim no boundary-data visibility. Compensation waits project as existing `OpenEffect`/`CompleteEffect` transport but remain separate. IDs are globally unique. Admission searches both collections, refuses ambiguity, dispatches compensation first, and otherwise preserves ordinary completion. Compensation requires `localPatch: []`; success invokes `COMPH-SUCCEED-01`, `bpmnError` invokes `COMPH-FAIL-01`, and incident commands reject these IDs.
+B derives exactly one argument from the restored Process frame: its binding name equals the declaration's `argumentName` and its value is the frozen value at `sourceName`. A and C use `arguments: []` and claim no boundary-data visibility. Any missing source, duplicate or extra argument, wrong binding name, or non-compensation descriptor is invalid before the wait is created. Compensation waits project as existing `OpenEffect`/`CompleteEffect` transport but remain separate. IDs are globally unique. Admission searches both collections, refuses ambiguity, dispatches compensation first, and otherwise preserves ordinary completion.
+
+The Activity request uses the ordinary `EffectRequest` envelope, but its validator narrows it to the exact compensation descriptor and the zero-or-one argument contract above. Its existing `effect-transport-sha256:` key prefix hashes a compensation-specific canonical tuple containing definition identity, complete trigger ID, handler ID, effect ID, descriptor, and arguments. An exact retry therefore repeats the same key and request. The testkit Worker registry has one explicit compensation-operation implementation and may return only `CompensationSingleEffectResult`; the production bounded Worker wrapper remains generic and must prove no change. Semantic completion revalidates the descriptor, arguments, and mandatory `localPatch: []`; `success` invokes `COMPH-SUCCEED-01`, `bpmnError` invokes `COMPH-FAIL-01`, and incident or technical-failure commands reject these IDs.
 
 `COMPH-SUCCEED-01`: A successful exact handler effect removes its wait and private restored context, changes that subject from `compensating` to `compensated`, and atomically starts the newly maximal complete frontier. When every subject is `compensated`, the trigger becomes successful, releases the withheld output token once, and retains only terminal lifecycle tombstones until root disposal.
 
-`COMPH-LIFECYCLE-01`: Private anchor arms identify the long-lived throw and handlers. Trigger creation starts the throw plus every frontier handler and, for B only, its distinct body effect in one transition batch. Success ends them `completed`. Failure and sibling termination retain exact internal `failed`/`terminated` tombstones but end their public occurrences with the existing coarse `cancelled` terminal; Process failure supplies the public discriminator. Pending handlers never start. Compensation waits bypass ordinary `awaitEffect` lifecycle projection, preventing duplicate occurrences. Handler success emits no control token; only trigger success emits the throw output.
+`COMPH-LIFECYCLE-01`: `SemanticFlowNodeOccurrenceAnchorKind` adds `CompensationTrigger = "compensationTrigger"` and `CompensationHandler = "compensationHandler"`; their exact private arms are `{ kind: CompensationTrigger; id: OccurrenceId }` and `{ kind: CompensationHandler; id: OccurrenceId }`. Trigger creation starts the throw plus every frontier handler and, for B only, its distinct body effect in one transition batch. Success ends them `completed`. Failure and sibling termination retain exact internal `failed`/`terminated` tombstones but end their public occurrences with the existing coarse `cancelled` terminal; Process failure supplies the public discriminator. Pending handlers never start. Compensation waits bypass ordinary `awaitEffect` lifecycle projection, preventing duplicate occurrences. Handler success emits no control token; only trigger success emits the throw output.
 
 An exact handler carries no BPMN Error route. Its `CompleteEffect` result with kind `bpmnError` is therefore interpreted as the compensation Activity throwing an uncaught exception and invokes `COMPH-FAIL-01`. Temporal Activity failure, retry, timeout, cancellation acknowledgement, and response loss remain transport facts and never directly select this semantic outcome.
 
@@ -220,9 +310,9 @@ This fail-fast interpretation prevents continued independent work, abandoned wor
 
 The declaration bounds simultaneous triggers, total subjects, and canonical UTF-8 bytes of the ordered `(compensationTriggers, compensationHandlerEffectWaits)` pair. Bounds are positive safe integers; bytes are at most 65,536. The complete RuntimeState limit remains secondary.
 
-`COMPH-CAPACITY-01`: Trigger creation preflights the complete trigger, occurrence identities, restored contexts, first-frontier waits, lifecycle records, and prospective canonical bytes before consuming the input token or retention records. Refusal changes no state, trace, lifecycle, or publication.
+`COMPH-CAPACITY-01`: Trigger creation preflights the complete trigger, occurrence identities, restored contexts, first-frontier waits, lifecycle records, and prospective canonical bytes before consuming the input token or retention records. Because trigger creation is a refusable internal operation reached only inside one enclosing stimulus evaluation, refusal returns that stimulus as `CommandOutcome.Rejected` with the exact pre-command RuntimeState and empty transition trace, lifecycle, and publication. It is not `RolledBack`, `SemanticFailure`, or a partially admitted command.
 
-`COMPH-CAPACITY-02`: A successful handler completion that would start another frontier preflights the complete successor before consuming the current effect wait. Capacity refusal preserves the pre-command state and exposes no speculative `compensated` lifecycle.
+`COMPH-CAPACITY-02`: A successful handler completion that would start another frontier preflights the complete successor before consuming the current effect wait. Refusal returns the enclosing `CompleteEffect` as `CommandOutcome.Rejected` with the exact pre-command RuntimeState and empty transition trace, lifecycle, and publication; it consumes neither the effect wait nor the handler result and exposes no speculative `compensated` lifecycle. It is not the committed handler-failure outcome, `RolledBack`, or `SemanticFailure`.
 
 ## Separating witnesses
 
@@ -250,7 +340,7 @@ At a committed frontier the main loop first evaluates the existing rollover fenc
 
 The trigger, handler lifecycles, consumed-record fact, occurrence dependencies, restored frames, and effect identities survive Worker replacement, replay, and the pre-schedule continuation boundary. Activity attempts and retries remain transport state and never create a handler occurrence or change dependency order.
 
-When C reports `bpmnError`, the Workflow first commits and publishes semantic `failed`, then requests cancellation of B's Activity, drains accepted handlers, and returns the failed v1 receipt only after the cancellation acknowledgement. A racing late B result is reconciled against the terminal semantic identity and cannot change the receipt. A Temporal Activity failure, timeout, retry exhaustion, cancellation-delivery failure, or malformed result remains an infrastructure failure rather than a semantic `failed` state.
+When C reports `bpmnError`, the Workflow first commits and publishes semantic `failed`, then requests cancellation of B's Activity with `WAIT_CANCELLATION_COMPLETED` and drains accepted handlers. That SDK mode resolves when B ends successfully, unsuccessfully, or as cancelled, so receipt readiness requires B's final Activity resolution rather than a cancellation-labelled acknowledgement: the Workflow returns the failed v1 receipt only after every scheduled handler Activity has reached one of those resolutions and no in-flight Activity remains. A racing successful or unsuccessful B result is reconciled against the terminal semantic identity and cannot change the receipt. A Temporal Activity failure, timeout, retry exhaustion, cancellation-delivery failure, or malformed result remains an infrastructure failure rather than a semantic `failed` state.
 
 The smallest later durable witnesses are: successful B/C concurrency with restored B input and A-after-B order; response loss after one handler completion; Worker replacement before and during the trigger; forced Continue-As-New at the committed-but-unscheduled B/C frontier with Activities only in the successor Run; C semantic failure cancelling B while A is pending; same-activation callback-order mutation, sequential-scheduling mutation, rematching mutation, failed-receipt substitution, and replay of every Run.
 
@@ -288,20 +378,27 @@ The operation census must classify trigger creation and frontier activation as o
 
 | Boundary | Required disposition |
 |---|---|
-| [TS Program](../../packages/semantic-core/src/semantic-process-contract.ts), [operation admission](../../packages/semantic-core/src/semantic-process-operation-admission.ts), and [graph admission](../../packages/semantic-core/src/semantic-process-graph-admission.ts) | Add the closed declaration; ordinary reachability stays exact. |
+| [shared effect values](../../packages/semantic-core/src/semantic-value-contract.ts), [TS Program](../../packages/semantic-core/src/semantic-process-contract.ts), [operation admission](../../packages/semantic-core/src/semantic-process-operation-admission.ts), and [graph admission](../../packages/semantic-core/src/semantic-process-graph-admission.ts) | Add the exact compensation operation literal and closed declaration; admit only the exact descriptor/input pairing while ordinary reachability and existing profile descriptors stay exact. |
 | [snapshot Program/state validation](../../packages/semantic-core/src/compensation-event-sub-process-snapshot-state-validation.ts), [snapshot tests](../../packages/semantic-core/test/compensation-event-sub-process-snapshot.test.ts), and [Lean snapshot declaration](../../BpmnSemantics/SemanticProcess/CompensationEventSubProcessSnapshotDeclaration.lean) | Prove no change: handler scopes remain operation/control-place-free and snapshot bytes exact. |
 | [TS RuntimeState](../../packages/semantic-core/src/semantic-process-state.ts), [runtime validity](../../packages/semantic-core/src/runtime-state-well-formedness.ts), [runtime defects](../../packages/semantic-core/src/runtime-state-defect.ts), and [collection-removal guard](../../scripts/runtime-collection-removal-completeness.test.ts) | Add collections, global effect-ID uniqueness, `Failed`, tombstones, and complete live-region removal. |
-| [TS command admission](../../packages/semantic-core/src/semantic-command-admission.ts) and [Lean effect completion](../../BpmnSemantics/SemanticProcess/EffectCompletion.lean) | Dispatch compensation IDs before unchanged ordinary completion; reject patches, ambiguity, incidents, and stale results. |
-| [transition trace](../../packages/semantic-core/src/semantic-transition-trace.ts), [flow-node lifecycle](../../packages/semantic-core/src/flow-node-occurrence-lifecycle.ts), [E2 protocol](../../packages/temporal-adapter/protocol/src/flow-node-occurrence-publication.ts), and [Workflow projection](../../packages/temporal-adapter/workflow/src/flow-node-occurrence-publication-state.ts) | Add private trigger/handler anchors and one projection; prove the public completed/cancelled union and platform consumers unchanged. |
-| [canonical contract](../../packages/semantic-core/src/contract.ts), [contract registry](../../contracts/README.md), [definition artifacts](../../scripts/contract-definition-artifacts.test.ts), and [schema coverage](../../scripts/contract-schema-coverage.test.ts) | Add exact Program/Runtime/failed observation arms to TS and Lean wires. |
-| [terminal protocol](../../packages/temporal-adapter/protocol/src/contracts.ts), [receipt construction](../../packages/temporal-adapter/workflow/src/terminal-process-receipt.ts), and [terminal envelope](../../packages/temporal-adapter/workflow/src/workflow-terminal-completion.ts) | Widen v1 to failed, require control/observation equality, drain handlers, and preserve `processClosed`. |
-| [continuation](../../packages/temporal-adapter/protocol/src/workflow-continuation.ts), [Workflow loop](../../packages/temporal-adapter/workflow/src/workflow-implementation.ts), [host readiness](../../packages/temporal-adapter/workflow/src/workflow-host-readiness.ts), and [effect host](../../packages/temporal-adapter/workflow/src/effect-execution-host.ts) | Carry only running unscheduled waits; add frontier scheduling and the in-flight rollover fence; failed never continues. |
+| [TS evaluator](../../packages/semantic-core/src/semantic-process-runtime.ts), [scenario observation producer](../../packages/semantic-core/src/scenario.ts), [control-position projection](../../packages/semantic-core/src/control-position-projection.ts), and [snapshot control-state validator](../../packages/semantic-core/src/compensation-event-sub-process-snapshot-state-validation.ts) | Handle `Failed` in every current exhaustive control switch and terminal-empty predicate; failed is sound, non-resumable, terminal, observable, and has no control positions, while snapshot state refuses failed roots as a capture source. |
+| [TS command admission](../../packages/semantic-core/src/semantic-command-admission.ts), [TS transition trace](../../packages/semantic-core/src/semantic-transition-trace.ts), and [Lean effect completion](../../BpmnSemantics/SemanticProcess/EffectCompletion.lean) | Dispatch compensation IDs before unchanged ordinary completion; require the exact result union, reject patches, ambiguity, incidents, and stale results, and map both capacity refusals to whole-command `Rejected` with no trace. |
+| [effect request contract](../../packages/temporal-adapter/protocol/src/effect-contract.ts), [effect Activity result decoder](../../packages/temporal-adapter/protocol/src/effect-activity-result.ts), [content-bound transport](../../packages/temporal-adapter/protocol/src/effect-transport.ts), [testkit Worker registry](../../packages/temporal-adapter/testkit/src/effect-probe.ts), [effect mutation workflows](../../packages/temporal-adapter/testkit/src/effect-bypass-mutation-workflows.ts), and [bounded production Worker](../../packages/temporal-adapter/worker/src/bounded-effect-activities.ts) | Add the compensation request/result narrowing, definition/trigger/handler/effect-bound key material, and one registered test implementation; prove the generic envelope, capacity wrapper, technical-failure arm, and mutations for existing operations unchanged. |
+| [flow-node lifecycle](../../packages/semantic-core/src/flow-node-occurrence-lifecycle.ts), [boundary-start pairing](../../packages/semantic-core/src/flow-node-occurrence-boundary-starts.ts), [open-set projection](../../packages/semantic-core/src/flow-node-occurrence-open-set.ts), [retained pairing](../../packages/semantic-core/src/flow-node-occurrence-retained-pairing.ts), [publication completeness](../../packages/semantic-core/src/flow-node-occurrence-publication-completeness.ts), [external completeness](../../packages/semantic-core/src/flow-node-occurrence-publication-external-completeness.ts), and [internal publication templates](../../packages/semantic-core/src/internal-publication-template.ts) | Add the two exact private anchor arms and compensation projection; audit every anchor consumer, change only the exhaustive consumers that receive those arms, and prove existing wait/scope/call/transition pairing and public completed/cancelled terminals unchanged. |
+| [E2 protocol](../../packages/temporal-adapter/protocol/src/flow-node-occurrence-publication.ts), [publication segments](../../packages/temporal-adapter/protocol/src/workflow-publication-segments.ts), and [Workflow projection](../../packages/temporal-adapter/workflow/src/flow-node-occurrence-publication-state.ts) | Accept the projected compensation lifecycle units without exposing private anchors; preserve exact public occurrence bytes and platform consumers. |
+| [canonical contract](../../packages/semantic-core/src/contract.ts), [TS observation producer](../../packages/semantic-core/src/scenario.ts), [Lean wire contract](../../BpmnSemantics/Scenario.lean), [Lean observation consumer](../../BpmnSemantics/SemanticProcess/Scenario.lean), [Lean JSON](../../BpmnSemantics/SemanticProcessJsonMain.lean), [contract registry](../../contracts/README.md), [definition artifacts](../../scripts/contract-definition-artifacts.test.ts), and [schema coverage](../../scripts/contract-schema-coverage.test.ts) | Add the exact failed control, observation, and receipt fields to both languages; update every producer/encoder/decoder and preserve existing observation bytes. |
+| [publication validator](../../packages/temporal-adapter/protocol/src/semantic-publication-validation.ts), [receipt validators](../../packages/temporal-adapter/protocol/src/lifecycle-results.ts), and [incident-operation protocol](../../packages/temporal-adapter/protocol/src/incident-operation.ts) | Add `Failed` to the strict allowlists and discriminated validators, require the typed failure only on failed state/receipt, require every terminal collection empty, and expose failed as terminal with no incident operation. |
+| [terminal protocol](../../packages/temporal-adapter/protocol/src/contracts.ts), [receipt construction](../../packages/temporal-adapter/workflow/src/terminal-process-receipt.ts), [terminal envelope](../../packages/temporal-adapter/workflow/src/workflow-terminal-completion.ts), and [terminal-result decoder](../../packages/temporal-adapter/protocol/src/workflow-terminal-result.ts) | Widen v1 to failed, require control/observation/failure equality, drain handlers before the envelope, preserve `processClosed`, and keep the legacy completed/cancelled decoder exact. |
+| [Workflow-chain decoder](../../packages/temporal-adapter/protocol/src/workflow-chain.ts), [correlation delivery decoder](../../packages/temporal-adapter/protocol/src/correlation-target-delivery.ts), [Workflow command recovery](../../packages/temporal-adapter/workflow/src/workflow-command-recovery.ts), [chain capacity](../../packages/temporal-adapter/workflow/src/workflow-chain-capacity.ts), and [chain recovery client](../../packages/temporal-adapter/client/src/workflow-chain-recovery-client.ts) | Propagate the widened terminal union generically or record a proved no-change; no component may reconstruct, erase, or translate the failed discriminator. |
+| [process operations client](../../packages/temporal-adapter/client/src/process-operations-client.ts) and [incident query handler](../../packages/temporal-adapter/workflow/src/incident-operations-query-handler.ts) | Add the failed exhaustive status case as terminal, corroborate the failed receipt, and return no live incidents; completed/cancelled behavior stays byte-identical. |
+| [continuation](../../packages/temporal-adapter/protocol/src/workflow-continuation.ts), [Workflow loop](../../packages/temporal-adapter/workflow/src/workflow-implementation.ts), [host readiness](../../packages/temporal-adapter/workflow/src/workflow-host-readiness.ts), [effect host](../../packages/temporal-adapter/workflow/src/effect-execution-host.ts), and [effect Activity selection](../../packages/temporal-adapter/workflow/src/effect-activities.ts) | Carry only running unscheduled waits; add compensation key construction, result dispatch, frontier scheduling, `WAIT_CANCELLATION_COMPLETED`, and the in-flight rollover fence; failed never continues and receipt readiness requires final resolution of every scheduled Activity. |
 | [commutation census](../../scripts/internal-commutation-census.test.ts) and [Semantic Process IL](../SEMANTIC-PROCESS-IL-SPEC.md) | Classify internal atomicity, external-result footprints, simultaneous frontier, and failure observation. |
 
 ### Owners this implementation grows
 
 | Existing owner | Current headroom | Growth condition |
 |---|---:|---|
+| [shared effect values](../../packages/semantic-core/src/semantic-value-contract.ts) | 705 | one operation literal and exact descriptor type only |
 | [TS Program](../../packages/semantic-core/src/semantic-process-contract.ts) | 208 | references only |
 | [TS operation admission](../../packages/semantic-core/src/semantic-process-operation-admission.ts) | 24 | extract declaration validation first |
 | [TS graph admission](../../packages/semantic-core/src/semantic-process-graph-admission.ts) | 178 | declaration delegation only |
@@ -314,6 +411,8 @@ The operation census must classify trigger creation and frontier activation as o
 | [TS lifecycle completeness](../../packages/semantic-core/src/flow-node-occurrence-publication-external-completeness.ts) | 91 | delegate compensation oracle |
 | [TS canonical contract](../../packages/semantic-core/src/contract.ts) | 338 | failed union references only |
 | [TS evaluator](../../packages/semantic-core/src/semantic-process-runtime.ts) | 62 | dispatch only; extract all trigger and handler logic before growth |
+| [TS observation producer](../../packages/semantic-core/src/scenario.ts) | 185 | failed projection and exhaustive switch only |
+| [TS control-position projection](../../packages/semantic-core/src/control-position-projection.ts) | 384 | failed terminal-empty arm only |
 | [TS internal attempt](../../packages/semantic-core/src/internal-transition-attempt.ts) | 668 | trigger-attempt delegation only |
 | [Lean Program](../../BpmnSemantics/SemanticProcessContract.lean) | 93 | declaration reference only; extract the contract first if the reference cannot fit |
 | [Lean RuntimeState](../../BpmnSemantics/SemanticProcess/RuntimeState.lean) | 201 | trigger collection reference only |
@@ -322,10 +421,17 @@ The operation census must classify trigger creation and frontier activation as o
 | [Lean transition](../../BpmnSemantics/SemanticProcess/Transition.lean) | 23 | extract before adding the new dispatcher arm |
 | [Lean internal attempt](../../BpmnSemantics/SemanticProcess/InternalOperationAttempt.lean) | 757 | trigger-attempt delegation only |
 | [Lean scenario contract](../../BpmnSemantics/Scenario.lean) | 453 | failed union only |
+| [Lean observation consumer](../../BpmnSemantics/SemanticProcess/Scenario.lean) | 245 | failed projection and agreement only |
 | [Lean JSON](../../BpmnSemantics/SemanticProcessJsonMain.lean) | 244 | failed encoding only |
 | [Temporal protocol](../../packages/temporal-adapter/protocol/src/contracts.ts) | 556 | failed receipt arm only |
+| [effect transport](../../packages/temporal-adapter/protocol/src/effect-transport.ts) | 655 | compensation key material and canonical tuple only |
+| [receipt validators](../../packages/temporal-adapter/protocol/src/lifecycle-results.ts) | 495 | failed receipt decoder only |
+| [publication validator](../../packages/temporal-adapter/protocol/src/semantic-publication-validation.ts) | 97 | failed discriminator only; extract state validation before other growth |
+| [testkit Worker registry](../../packages/temporal-adapter/testkit/src/effect-probe.ts) | 554 | one exact operation and result registration only |
+| [process operations client](../../packages/temporal-adapter/client/src/process-operations-client.ts) | 602 | failed terminal case only |
 | [terminal receipt](../../packages/temporal-adapter/workflow/src/terminal-process-receipt.ts) | 709 | failed construction only |
 | [terminal envelope](../../packages/temporal-adapter/workflow/src/workflow-terminal-completion.ts) | 559 | failed validation only |
+| [incident query handler](../../packages/temporal-adapter/workflow/src/incident-operations-query-handler.ts) | 581 | failed terminal projection only |
 | [continuation](../../packages/temporal-adapter/protocol/src/workflow-continuation.ts) | 263 | new collections and failed refusal |
 | [Workflow loop](../../packages/temporal-adapter/workflow/src/workflow-implementation.ts) | 79 | extract frontier scheduler before integration |
 | [host readiness](../../packages/temporal-adapter/workflow/src/workflow-host-readiness.ts) | 526 | scheduler delegation only |
