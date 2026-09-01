@@ -10,6 +10,10 @@ import {
 } from "./internal-transition-activity-association.js";
 import { internalOperationAlternative } from "./internal-transition-alternative.js";
 import type { InternalOperationAlternative } from "./internal-transition-alternative.js";
+import {
+  stageZeroItemCompensationRetention,
+  ZeroItemCompensationRetentionStageKind,
+} from "./compensation-activity-retention-producers.js";
 import { canonicalUniqueStateAtoms } from "./internal-transition-footprint-ordering.js";
 import type {
   InternalTransitionStateAtom,
@@ -123,6 +127,8 @@ export function deriveInternalSequentialMultiInstancePreparation(
   switch (selected.kind) {
     case SequentialMultiInstanceEntryKind.Empty:
       return prepareEmptyEntry(
+        program,
+        state,
         operation,
         selected,
         commonReads,
@@ -146,6 +152,8 @@ export function deriveInternalSequentialMultiInstancePreparation(
 }
 
 function prepareEmptyEntry(
+  program: SemanticProcessProgram,
+  state: RuntimeState,
   operation: AwaitSequentialMultiInstanceUserTaskOperation,
   selected: Extract<
     SelectedSequentialMultiInstanceEntry,
@@ -154,20 +162,44 @@ function prepareEmptyEntry(
   commonReads: ReadonlyArray<InternalTransitionStateAtom>,
   presenceWrites: ReadonlyArray<InternalTransitionStateAtom>,
 ): PreparedInternalSequentialMultiInstanceEntry | null {
+  const staged = stageZeroItemCompensationRetention(
+    program,
+    state,
+    selected.owner,
+    operation.task.elementId,
+  );
+  if (staged === null) {
+    return null;
+  }
   const outputToken = tokenAtom(selected.owner, operation.normalOutput);
   const outputVariable = {
     kind: InternalTransitionStateAtomKind.ProcessVariable,
     name: operation.data.output.dataObjectReferenceId,
   } as const;
+  const retentionAtoms: ReadonlyArray<InternalTransitionStateAtom> =
+    staged.kind === ZeroItemCompensationRetentionStageKind.Staged
+      ? [
+          activationAtom(
+            InternalOccurrenceKind.Activity,
+            staged.activity.activityElementId,
+          ),
+          {
+            kind: InternalTransitionStateAtomKind.CompensationActivityRetention,
+            owner: staged.retentionOwner,
+          },
+        ]
+      : [];
   const reads = canonicalUniqueStateAtoms([
     ...commonReads,
     outputToken,
     outputVariable,
+    ...retentionAtoms,
   ]);
   const writes = canonicalUniqueStateAtoms([
     tokenAtom(selected.owner, operation.input),
     outputToken,
     outputVariable,
+    ...retentionAtoms,
     ...presenceWrites,
   ]);
   return reads === null || writes === null

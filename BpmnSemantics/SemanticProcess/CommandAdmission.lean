@@ -11,6 +11,7 @@ import BpmnSemantics.SemanticProcess.ActivityDataOutput
 import BpmnSemantics.SemanticProcess.MessagePayload
 import BpmnSemantics.SemanticProcess.MessageBoundedTask
 import BpmnSemantics.SemanticProcess.MessageKeyCorrelation
+import BpmnSemantics.SemanticProcess.CompensationActivityRetentionProducers
 
 /-! # Semantic Process external command admission
 
@@ -146,7 +147,8 @@ def dispatchStimulus (program : Program) (state : RuntimeState) :
               ({ value := taskId.elementId.value } : TaskDefinitionId) then
             match ParallelMultiInstanceArm.ofOperation? operation with
             | some arm =>
-                match completeSharedParallelMultiInstance? arm state taskId submittedValues with
+                match completeParallelMultiInstanceWithCompensation? program arm state taskId
+                    submittedValues with
                 | some successor =>
                     if parallelMultiInstanceProgramAdmitted program &&
                         taskId.processInstanceId = instanceId then
@@ -158,7 +160,8 @@ def dispatchStimulus (program : Program) (state : RuntimeState) :
               ({ value := taskId.elementId.value } : TaskDefinitionId) then
             match SequentialMultiInstanceArm.ofOperation? operation with
             | some arm =>
-                match completeSequentialMultiInstanceInnerTask? arm state taskId submittedValues with
+                match completeSequentialMultiInstanceWithCompensation? program arm state taskId
+                    submittedValues with
                 | some successor =>
                     if sequentialMultiInstanceProgramAdmitted program &&
                         taskId.processInstanceId = instanceId then
@@ -218,8 +221,7 @@ def dispatchStimulus (program : Program) (state : RuntimeState) :
                   { outcome := .rejected, state }
             | none => { outcome := .rejected, state }
           else
-          match completeUserTask state taskId.processInstanceId
-              ⟨taskId.elementId.value⟩ taskId.activation with
+          match completeOrdinaryUserTaskWithCompensation? completeUserTask program state taskId with
           | some successor =>
               if taskId.processInstanceId = instanceId &&
                   !isCallActivityProgram program &&
@@ -282,7 +284,8 @@ def dispatchStimulus (program : Program) (state : RuntimeState) :
               ({ value := timerId.elementId.value } : NodeId) then
             match ParallelMultiInstanceArm.ofOperation? operation with
             | some arm =>
-                match interruptSharedParallelMultiInstance? arm state timerId logicalTimeMs with
+                match interruptParallelMultiInstanceWithCompensation? program arm state timerId
+                    logicalTimeMs with
                 | some successor =>
                     if parallelMultiInstanceProgramAdmitted program &&
                         timerId.processInstanceId = instanceId then
@@ -294,7 +297,8 @@ def dispatchStimulus (program : Program) (state : RuntimeState) :
               ({ value := timerId.elementId.value } : NodeId) then
             match SequentialMultiInstanceArm.ofOperation? operation with
             | some arm =>
-                match interruptSequentialMultiInstance? arm state timerId logicalTimeMs with
+                match interruptSequentialMultiInstanceWithCompensation? program arm state timerId
+                    logicalTimeMs with
                 | some successor =>
                     if sequentialMultiInstanceProgramAdmitted program &&
                         timerId.processInstanceId = instanceId then

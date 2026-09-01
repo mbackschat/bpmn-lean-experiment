@@ -8,6 +8,7 @@ import {
   VariableValueKind,
   applyStimulus,
   attachedTimerOccurrences,
+  compareCanonicalStrings,
   initialState,
 } from "@bpmn-lean/semantic-core";
 import type {
@@ -128,6 +129,7 @@ test("prepares the complete parallel controller, children, deadline, and snapsho
   ), 1);
 
   const entered = enterParallelMultiInstanceUserTask(
+    parallelProgram,
     operation,
     beforeEntry,
     prepared.owner,
@@ -168,6 +170,87 @@ test("prepares zero items without a controller, deadline, or logical-time depend
     prepared.footprint,
     InternalTransitionStateAtomKind.ParallelController,
   ), 0);
+});
+
+test("owns zero-item compensation identity and retention before preparing entry", () => {
+  const sibling = siblingOperation();
+  const program = withCompensationTargets(
+    withSibling(parallelProgram, sibling),
+    [operation, sibling],
+  );
+  const state = withEmptyCompensationRetention(
+    withSiblingToken(beforeEmptyEntry, sibling),
+  );
+  const first = requirePrepared(
+    deriveInternalParallelMultiInstancePreparation(program, state, operation),
+  );
+  const second = requirePrepared(
+    deriveInternalParallelMultiInstancePreparation(program, state, sibling),
+  );
+
+  assert.deepEqual(activationWrites(first.footprint), [{
+    occurrenceKind: InternalOccurrenceKind.Activity,
+    elementId: operation.task.elementId,
+  }]);
+  assert.deepEqual(activationReads(first.footprint), [{
+    occurrenceKind: InternalOccurrenceKind.Activity,
+    elementId: operation.task.elementId,
+  }]);
+  const retentionAtom = {
+    kind: InternalTransitionStateAtomKind.CompensationActivityRetention,
+    owner: first.owner,
+  } as const;
+  assert.deepEqual(
+    first.footprint.reads.filter(({ kind }) =>
+      kind === InternalTransitionStateAtomKind.CompensationActivityRetention
+    ),
+    [retentionAtom],
+  );
+  assert.deepEqual(
+    first.footprint.writes.filter(({ kind }) =>
+      kind === InternalTransitionStateAtomKind.CompensationActivityRetention
+    ),
+    [retentionAtom],
+  );
+  assert.equal(independent(first.footprint, second.footprint), false);
+
+  const siblingOnlyProgram = withCompensationTargets(
+    withSibling(parallelProgram, sibling),
+    [sibling],
+  );
+  const legacyProgram = withSibling(parallelProgram, sibling);
+  assert.deepEqual(
+    requirePrepared(
+      deriveInternalParallelMultiInstancePreparation(
+        siblingOnlyProgram,
+        state,
+        operation,
+      ),
+    ).footprint,
+    requirePrepared(
+      deriveInternalParallelMultiInstancePreparation(
+        legacyProgram,
+        withSiblingToken(beforeEmptyEntry, sibling),
+        operation,
+      ),
+    ).footprint,
+  );
+
+  const capacityProgram = withCompensationTargets(parallelProgram, [operation], 1);
+  const capacityState = withFullCompensationRetention(
+    beforeEmptyEntry,
+    operation.task.elementId,
+  );
+  const snapshot = structuredClone(capacityState);
+  assert.equal(
+    deriveInternalParallelMultiInstancePreparation(
+      capacityProgram,
+      capacityState,
+      operation,
+    ),
+    null,
+  );
+  assert.deepEqual(capacityState, snapshot);
 });
 
 test("composes disjoint entries and conflicts on one empty-arm Process output", () => {
@@ -487,6 +570,72 @@ function withSiblingToken(
   };
 }
 
+function withCompensationTargets(
+  source: SemanticProcessProgram,
+  operations: ReadonlyArray<ReturnType<typeof siblingOperation>>,
+  maxRecords = 4,
+): SemanticProcessProgram {
+  const root = source.definitionScopes.find(({ parentScopeId }) => parentScopeId === null);
+  if (root === undefined) {
+    throw new Error("expected a root scope");
+  }
+  return {
+    ...source,
+    compensationActivityRetention: {
+      definitionScopeId: root.id,
+      targets: operations.map(({ task }) => ({
+        activityElementId: task.elementId,
+        boundaryEventElementId: `Boundary_Compensation_${task.elementId}`,
+        compensationActivityElementId: `Undo_${task.elementId}`,
+      })).sort((left, right) =>
+        compareCanonicalStrings(left.activityElementId, right.activityElementId)
+      ),
+      limits: { maxRecords, maxCanonicalBytes: 65_536 },
+    },
+  };
+}
+
+function withEmptyCompensationRetention(state: RuntimeState): RuntimeState {
+  const owner = state.scopeOccurrences[0]?.id;
+  if (owner === undefined) {
+    throw new Error("expected the root occurrence");
+  }
+  return {
+    ...state,
+    compensationActivityRetentions: [{
+      owner,
+      nextCompletionOrdinal: 1,
+      records: [],
+    }],
+  };
+}
+
+function withFullCompensationRetention(
+  state: RuntimeState,
+  activityElementId: string,
+): RuntimeState {
+  const owner = state.scopeOccurrences[0]?.id;
+  if (owner === undefined) {
+    throw new Error("expected the root occurrence");
+  }
+  return {
+    ...state,
+    activityActivations: [{ elementId: activityElementId, count: 1 }],
+    compensationActivityRetentions: [{
+      owner,
+      nextCompletionOrdinal: 2,
+      records: [{
+        id: {
+          processInstanceId: owner.processInstanceId,
+          activityElementId,
+          activation: 1,
+        },
+        completionOrdinal: 1,
+      }],
+    }],
+  };
+}
+
 function calledParallelOperation(): ReturnType<typeof siblingOperation> {
   const calledTask = callActivityProgram.operations.find(({ origin }) =>
     origin.elementId === "Task_Called"
@@ -537,6 +686,14 @@ function requirePrepared<Prepared>(prepared: Prepared | null): Prepared {
 
 function activationWrites(footprint: InternalTransitionStateFootprint) {
   return footprint.writes.flatMap((atom) =>
+    atom.kind === InternalTransitionStateAtomKind.Activation
+      ? [{ occurrenceKind: atom.occurrenceKind, elementId: atom.elementId }]
+      : []
+  );
+}
+
+function activationReads(footprint: InternalTransitionStateFootprint) {
+  return footprint.reads.flatMap((atom) =>
     atom.kind === InternalTransitionStateAtomKind.Activation
       ? [{ occurrenceKind: atom.occurrenceKind, elementId: atom.elementId }]
       : []

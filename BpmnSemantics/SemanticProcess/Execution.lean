@@ -161,7 +161,8 @@ theorem effect_result_route_failure_is_rejected
     rw [noCompletion]
   simp [applyStimulus, rejectedAdmission]
 
-/-- Matching ordinary User Task completions are equal when admission and the semantic successor agree. -/
+/-- Matching non-compensation-target ordinary User Task completions are equal when admission and the
+semantic successor agree. -/
 theorem user_task_completion_with_same_successor_is_equal
     (closureLimit : Nat) (program : Program)
     (leftState rightState successor : RuntimeState)
@@ -184,6 +185,8 @@ theorem user_task_completion_with_same_successor_is_equal
     (noDataOutputTask : isDataOutputTaskDefinition program
       ⟨submittedTaskId.elementId.value⟩ = false)
     (ordinaryProgram : isCallActivityProgram program = false)
+    (nonCompensationTarget : compensationTargetDeclaredForFamily program
+      ⟨submittedTaskId.elementId.value⟩ .ordinaryUserTask = false)
     (leftNoIncidents : leftState.effectIncidents = [])
     (rightNoIncidents : rightState.effectIncidents = [])
     (valuesAdmitted : processDataBindingsAdmitted program.identity.semanticProfile
@@ -200,7 +203,8 @@ theorem user_task_completion_with_same_successor_is_equal
     rightNoIncidents, leftRunning, rightRunning,
     ordinaryTask.1, ordinaryTask.2, noSequentialMultiInstance, noParallelMultiInstance,
     noMessageBoundedTask, noDataInputTask, noDataOutputTask, ordinaryProgram, valuesAdmitted,
-    leftCompletion, rightCompletion]
+    completeOrdinaryUserTaskWithCompensation?, nonCompensationTarget, leftCompletion,
+    rightCompletion]
 
 /-- Any ordinary-family mismatch in the full semantic task-occurrence identity rejects completion with exact state preservation. -/
 theorem task_identity_mismatch_is_rejected
@@ -233,7 +237,9 @@ theorem task_identity_mismatch_is_rejected
         wait.activation = submittedTaskId.activation) := by
       intro exactMatch
       exact processMismatch exactMatch.1.1.symm
-    simp [applyStimulus, admitStimulus, dispatchStimulus, completeUserTask, initialState,
+    simp [applyStimulus, admitStimulus, dispatchStimulus,
+      completeOrdinaryUserTaskWithCompensation?, matchingOrdinaryUserTaskWait?, completeUserTask,
+      initialState,
       completeBoundedUserTask?, completeMonitoredUserTask?, completeDataInputUserTask?,
       completeDataOutputUserTask?, isDataOutputTaskDefinition, dataOutputAssociation?,
       dataOutputTaskOperations, dataOutputTaskWait?, dataInputTaskWait?,
@@ -247,7 +253,9 @@ theorem task_identity_mismatch_is_rejected
         intro exactMatch
         exact elementMismatch
           (congrArg TaskDefinitionId.value exactMatch.1.2).symm
-      simp [applyStimulus, admitStimulus, dispatchStimulus, completeUserTask, initialState,
+      simp [applyStimulus, admitStimulus, dispatchStimulus,
+        completeOrdinaryUserTaskWithCompensation?, matchingOrdinaryUserTaskWait?, completeUserTask,
+        initialState,
         completeBoundedUserTask?, completeMonitoredUserTask?, completeDataInputUserTask?,
       completeDataOutputUserTask?, isDataOutputTaskDefinition, dataOutputAssociation?,
       dataOutputTaskOperations, dataOutputTaskWait?, dataInputTaskWait?,
@@ -259,7 +267,9 @@ theorem task_identity_mismatch_is_rejected
           wait.activation = submittedTaskId.activation) := by
         intro exactMatch
         exact activationMismatch exactMatch.2.symm
-      simp [applyStimulus, admitStimulus, dispatchStimulus, completeUserTask, initialState,
+      simp [applyStimulus, admitStimulus, dispatchStimulus,
+        completeOrdinaryUserTaskWithCompensation?, matchingOrdinaryUserTaskWait?, completeUserTask,
+        initialState,
         completeBoundedUserTask?, completeMonitoredUserTask?, completeDataInputUserTask?,
       completeDataOutputUserTask?, isDataOutputTaskDefinition, dataOutputAssociation?,
       dataOutputTaskOperations, dataOutputTaskWait?, dataInputTaskWait?,

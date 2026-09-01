@@ -6,6 +6,13 @@ import type {
   SemanticProcessProgram,
 } from "./semantic-process-contract.js";
 import {
+  CompensationCompletionFactKind,
+} from "./compensation-activity-retention-contract.js";
+import {
+  isCompensationRetentionTarget,
+  stageCompensationActivityRetention,
+} from "./compensation-activity-retention-producers.js";
+import {
   mergeProcessVariableBindings,
 } from "./semantic-process-data.js";
 import {
@@ -15,6 +22,7 @@ import {
   ControlStateKind,
   addToken,
   sameOccurrence,
+  setActivationCount,
 } from "./semantic-process-state.js";
 import type {
   RuntimeState,
@@ -36,21 +44,49 @@ export function completeOrdinaryUserTask(
   ) {
     return null;
   }
+  const previousActivityActivation = state.activityActivations.find(
+    ({ elementId }) => elementId === wait.id.elementId,
+  )?.count ?? 0;
+  const retentionInput = isCompensationRetentionTarget(program, wait.id.elementId)
+    ? {
+      ...state,
+      activityActivations: setActivationCount(
+        state.activityActivations,
+        wait.id.elementId,
+        Math.max(previousActivityActivation, wait.id.activation),
+      ),
+    }
+    : state;
+  const staged = stageCompensationActivityRetention(
+    program,
+    retentionInput,
+    {
+      kind: CompensationCompletionFactKind.OrdinaryUserTask,
+      activity: {
+        processInstanceId: wait.id.processInstanceId,
+        activityElementId: wait.id.elementId,
+        activation: wait.id.activation,
+      },
+    },
+  );
+  if (staged === null) {
+    return null;
+  }
   return {
-    ...state,
+    ...staged,
     controlTokens: addToken(
-      state.controlTokens,
+      staged.controlTokens,
       wait.output,
       wait.owner,
     ),
-    userTaskWaits: state.userTaskWaits.filter(
+    userTaskWaits: staged.userTaskWaits.filter(
       (candidate) => candidate !== wait,
     ),
     variables: {
-      ...state.variables,
+      ...staged.variables,
       process: {
         bindings: mergeProcessVariableBindings(
-          state.variables.process.bindings,
+          staged.variables.process.bindings,
           stimulus.submittedValues,
         ),
       },

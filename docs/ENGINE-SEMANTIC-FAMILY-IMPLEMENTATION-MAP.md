@@ -12,7 +12,7 @@ The union of these sections is not a coverage figure. BPMN requirement coverage,
 
 ## Implemented
 
-The families with a section here are the three boundary-Timer loci, the two Multi-Instance User Tasks, the two direct Activity data User Tasks, the Message payload Catch Event, and the Activity boundary Message Event. Each section names its own rules, evidence lanes, and absences, and is the authority for that family rather than a summary of one.
+The families with a section here are the three boundary-Timer loci, the two Multi-Instance User Tasks, the two direct Activity data User Tasks, the Message payload Catch Event, the Activity boundary Message Event, and the in-progress boundary Compensation retention family. Each section names its own rules, evidence lanes, and absences, and is the authority for that family rather than a summary of one.
 
 ## Explicitly absent
 
@@ -25,6 +25,14 @@ The [capsule registry](capsules/README.md), the Lean modules under [`BpmnSemanti
 ## Nearest unsupported claims
 
 Reading these sections together supports no cross-family theorem. A mechanism two families share is established only where each section says so independently, and this map is where such a split becomes visible rather than where it is resolved. A mechanism recorded in the invariant map is likewise established for a family only where that family's section says so.
+
+## Boundary Compensation Activity retention
+
+The independently approved [boundary-handler retention proposal](capsules/COMPENSATION-BOUNDARY-HANDLER-RETENTION-PROPOSAL.md) is implemented through its hidden representation checkpoint and exact completion-producer slice. This is an in-progress standards-only family, not an admitted BPMN capability.
+
+**Implemented.** Independent Lean and TypeScript accounts retain one immutable outer Activity identity for an explicitly targeted exact ordinary User Task or current sequential/parallel Multi-Instance User Task only after successful completion. They include zero-item outer issuance, one-item-first all-success priority, non-retaining actual early completion and Timer interruption, pre-mutation count/byte refusal, normal-root lifetime, and owner-keyed zero-entry commutation footprints without enabling Multi-Instance batching.
+
+**Absent.** Source attachment/Association admission, `isForCompensation`, a registered profile, Multi-Instance Sub-Process multiplicity, Compensation Event Sub-Process snapshots, throw selection, handler execution, dependency/reverse order, failure, cancellation, Transactions, CIB evidence, Temporal refinement, public projection, corpus evidence, and Product 2 capability remain outside the family.
 
 ## Interrupting Activity boundary Message
 
@@ -78,7 +86,7 @@ The [Parallel Multi-Instance specification](capsules/PARALLEL-MULTI-INSTANCE-SPE
 
 **Implemented.** Source admission and lowering preserve the complete role graph and exact Simple Boolean completion expression. Lean and the independently written TypeScript core own one indexed controller, atomic bounded child generation, progress, final aggregation, early sibling termination, Timer interruption, exact refusal, and public progress. Lean proves evaluator soundness, complete runtime-state preservation on every route, all-policy commutation for distinct child completions, index-ordered aggregation, and the first-policy trace non-law. Complete permutation and mutation matrices bind the TypeScript realization and three answer-free scenarios agree across Lean, core, E1/E2 publication, and Temporal. The production Workflow chain preserves FIFO accepted stimulus order, handles pre-arming rollover and Worker replacement, recovers results, keeps task-first and Timer-first schedules explicit, fails closed on coalesced readiness, fits all maximal sixteen-item topologies, and replays every Run.
 
-**Absent.** Another Activity body, data graph or value type, arbitrary completion expression, partial output, Complex behavior, repeated or nested controllers, compensation, another Boundary Event or Timer form, host-priority semantics, and CIB parallel Multi-Instance compatibility remain outside the exact registered slice.
+**Absent.** Another Activity body, data graph or value type, arbitrary completion expression, partial output, Complex behavior, repeated or nested controllers, compensation beyond the separate hidden retention producer account, another Boundary Event or Timer form, host-priority semantics, and CIB parallel Multi-Instance compatibility remain outside the exact registered slice.
 
 ## Activity data-input User Task
 

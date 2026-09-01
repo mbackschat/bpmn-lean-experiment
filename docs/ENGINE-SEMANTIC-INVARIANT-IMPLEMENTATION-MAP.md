@@ -8,11 +8,11 @@ This map exists because the family map's size scaled with BPMN element families 
 
 Each section below states the exact implemented and absent status of one cross-cutting invariant or ownership mechanism. A section asserts nothing about any BPMN element family, and a family's use of a mechanism recorded here is established only where that family's own section says so.
 
-These mechanisms constrain how runtime state is admitted, who owns an Activity occurrence, and how a body is replaced. None of them adds a BPMN capability, so none of them is a conformance or CIB compatibility claim.
+These mechanisms constrain how runtime state is admitted, who owns an Activity occurrence, how completed compensable Activity identities are retained, and how a body is replaced. None of them adds a BPMN capability, so none of them is a conformance or CIB compatibility claim.
 
 ## Implemented
 
-The mechanisms with a section here are the runtime-state well-formedness predicate, Activity occurrence ownership, and Activity body turnover. Each section names its own rules, evidence lanes, and absences, and is the authority for that mechanism rather than a summary of one.
+The mechanisms with a section here are the runtime-state well-formedness predicate, Activity occurrence ownership, Compensation Activity retention, and Activity body turnover. Each section names its own rules, evidence lanes, and absences, and is the authority for that mechanism rather than a summary of one.
 
 ## Explicitly absent
 
@@ -37,6 +37,16 @@ It consumes lifecycle agreement, occurrence uniqueness, scope and token binding,
 **Absent.** Quantified Lean preservation and monotonicity, `RSI-OBL-03` through `RSI-OBL-06`: a **deliberately open** lane under [the assurance-lane rule](PROJECT-DESIGN.md#lean-assurance-lane). Reason, measured: preservation of the uniqueness conjunct alone reaches ninety-one wait-collection assignment sites across fifteen semantic modules. Activity issuing is the bounded exception, discharged over its guarded current writers; every other identity family still owes an issuing discipline above the pre-state count. Body turnover also derives its local User Task freshness consequence from the identity bound and its next-count definition, without establishing general non-reissue. For arms beyond the standing consumers, proving without a consumer buys no falsifiability. Reopen trigger: a consumer needing a stated conjunct discharged, which both boundary-Timer deferrals already are and which is therefore unmet demand rather than a future event; a capsule needing a fact the list lacks; or a new operation kind or stimulus.
 
 General Lean laws consuming `waitIdentitiesUnique` still assume it; the Activity body-turnover preservation theorem is the bounded exception that derives its freshness premise from `RSI-BOUND-01`. Execution witnesses for pre-existing conjuncts remain absent for the effect wait and effect incident branches, which no schedule reaches, and for instance scoping on declaration, whose only witness is a hand-built incident state. The Message, Timer, event-race, selected-branch, and called-record branches are reached by the registered schedules. `RSI-BOUND-01` is itself implemented narrower than stated: User Task, Timer, and Activity are decided, while Message, Effect, Event race, Call, and ordinary Scope remain absent and called roots remain excluded. `RSI-BIND-04` still filters to hosting-instance waits, `RSI-BIND-05`'s called-record clause is decided nowhere, and the issuing discipline remains unstated outside Activity.
+
+## Compensation Activity retention
+
+The [boundary-handler retention proposal](capsules/COMPENSATION-BOUNDARY-HANDLER-RETENTION-PROPOSAL.md) owns one hidden root-scoped completed-Activity register. It adds no source shape, operation kind, profile, scenario, or public field.
+
+**Implemented.** Strict declaration and state validation bind one flat-root owner, exact handler target, admitted operation family, unique outer Activity identity, contiguous completion ordinal, canonical order, and independent count/canonical-byte limits. Exact ordinary and current sequential/parallel Multi-Instance producers derive their facts from the live wait/controller or zero-entry pre-state and stage retention before their existing completion mutation. Zero-item entry advances the Activity high-water mark; actual early completion and interruption validate but retain nothing. The zero-entry footprint reads and writes that Activity activation and owner-keyed register, preventing two same-owner preparations from being classified independent.
+
+**Absent.** The mechanism has no source/profile provenance, snapshot payload, trigger, record consumption, handler order, host refinement, or public observation. Multi-Instance Sub-Process identities and per-parent Compensation Event Sub-Process snapshots require separate reviewed representations. General internal batching remains disabled even though the exact zero-entry preparations now carry complete footprints.
+
+**Absent in evidence.** The executable matrices are private Lean/core integration witnesses, not source-to-host scenarios. Capacity and legacy-equality tests prove exact local refusal and omission, while continuation, Worker replacement, replay, differential agreement, retained whole models, and Product 2 disclosure remain unclaimed.
 
 ## Activity occurrence ownership
 

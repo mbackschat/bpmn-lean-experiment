@@ -9,6 +9,14 @@ import {
   sameActivityOccurrence,
 } from "./activity-occurrence.js";
 import type { ActivityOccurrence } from "./activity-occurrence.js";
+import {
+  CompensationCompletionFactKind,
+  MultiInstanceCompensationCompletionOutcome,
+} from "./compensation-activity-retention-contract.js";
+import {
+  stageCompensationActivityRetention,
+  stageZeroItemCompensationRetention,
+} from "./compensation-activity-retention-producers.js";
 import { VariableValueKind } from "./contract.js";
 import type {
   CompleteUserTaskInstanceStimulus,
@@ -183,6 +191,7 @@ export function selectParallelMultiInstanceEntry(
 }
 
 export function enterParallelMultiInstanceUserTask(
+  program: SemanticProcessProgram,
   operation: AwaitParallelMultiInstanceUserTaskOperation,
   state: RuntimeState,
   owner: ScopeOccurrenceId,
@@ -192,18 +201,28 @@ export function enterParallelMultiInstanceUserTask(
     return null;
   }
   switch (selected.kind) {
-    case ParallelMultiInstanceEntryKind.Empty:
+    case ParallelMultiInstanceEntryKind.Empty: {
+      const staged = stageZeroItemCompensationRetention(
+        program,
+        state,
+        owner,
+        operation.task.elementId,
+      );
+      if (staged === null) {
+        return null;
+      }
       return {
-        ...state,
+        ...staged.state,
         controlTokens: selected.resultingTokens,
         parallelMultiInstanceControllers: [
-          ...(state.parallelMultiInstanceControllers ?? []),
+          ...(staged.state.parallelMultiInstanceControllers ?? []),
         ],
         variables: {
-          ...state.variables,
+          ...staged.state.variables,
           process: { bindings: selected.processBindings },
         },
       };
+    }
     case ParallelMultiInstanceEntryKind.Armed: {
       const finalTask = selected.taskWaits.at(-1);
       if (finalTask === undefined) {
@@ -316,8 +335,20 @@ export function completeParallelMultiInstanceChild(
     const completedResults = slots.flatMap((slot) =>
       slot.kind === ParallelMultiInstanceSlotKind.Completed ? [slot.result] : []
     );
+    const staged = stageCompensationActivityRetention(program, state, {
+      kind: CompensationCompletionFactKind.MultiInstanceUserTask,
+      activity: record.id,
+      plannedInstances: controller.snapshot.length,
+      successfullyCompletedInstances: completedResults.length,
+      outcome: remaining === 0
+        ? MultiInstanceCompensationCompletionOutcome.AllSuccessfulCompletion
+        : MultiInstanceCompensationCompletionOutcome.EarlyCompletion,
+    });
+    if (staged === null) {
+      return null;
+    }
     return closeParallelMultiInstance(
-      state,
+      staged,
       record,
       controller,
       pair.completion.normalOutput,
@@ -398,9 +429,21 @@ export function interruptParallelMultiInstance(
   ) {
     return null;
   }
+  const staged = stageCompensationActivityRetention(program, state, {
+    kind: CompensationCompletionFactKind.MultiInstanceUserTask,
+    activity: record.id,
+    plannedInstances: controller.snapshot.length,
+    successfullyCompletedInstances: controller.slots.filter(
+      ({ kind }) => kind === ParallelMultiInstanceSlotKind.Completed,
+    ).length,
+    outcome: MultiInstanceCompensationCompletionOutcome.Interrupted,
+  });
+  if (staged === null) {
+    return null;
+  }
   return {
     ...closeParallelMultiInstance(
-      state,
+      staged,
       record,
       controller,
       entry.boundaryTimer.output,

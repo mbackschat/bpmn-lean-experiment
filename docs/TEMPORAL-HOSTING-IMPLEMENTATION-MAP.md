@@ -28,7 +28,7 @@ The seventh slice sends one content-bound correlated-delivery Update through a b
 
 Both registration phases survive the bounded seventh continuation argument under a new Workflow patch, and unpatched histories reject it. Worker Activities verify the exact candidate before finalize, while live success plus deferred/capacity refusal histories replay. Host admission still rejects this profile, and ingress continuation, public engine routing, and profile admission remain absent. These are private durable prerequisites, not end-to-end correlation capability.
 
-The independently approved boundary Compensation retention representation checkpoint changes only the optional Semantic Process Program and committed `RuntimeState` bytes that the Workflow already carries. No admitted hosted profile declares the field, no Workflow ingress or Activity derives a completion fact, and no Signal, Update, Query, publication, effect, retry, Continue-As-New, or public-client branch gives it host behavior. Live refinement of retention and complete-state capacity remains open pending completion-producer integration.
+The independently approved boundary Compensation retention checkpoint changes the optional Semantic Process Program and committed `RuntimeState` bytes that the Workflow already carries. Exact core command/entry producers now derive private completion facts and retention refusal, but no admitted hosted profile declares the field and no Signal, Update, Query, publication, effect, retry, Continue-As-New, or public-client branch gives it dedicated host behavior. Live refinement of retained-state continuity and the separate complete-state capacity class remains open pending source/profile admission and the dedicated continuation, replacement, and replay witness.
 
 ## Implemented
 
@@ -108,7 +108,7 @@ The independently approved boundary Compensation retention representation checkp
 - Message ingress broker/router, definition-version fanout, or multi-target publication receipt
 - committed Event History fixtures
 - engine-global task discovery through Search Attributes; Product 2 instead owns its current-task projection from published engine facts
-- hosted Compensation completion-fact production, retention rejection mapping, triggering, handler execution, retry/continuation/replay refinement, or public projection; the optional hidden Program/RuntimeState representation is only carried by existing generic committed-state transport
+- admitted hosted Compensation retention, triggering, handler execution, retry/continuation/replay refinement, or public projection; exact facts and semantic rejection now arise in the core, while the optional hidden Program/RuntimeState representation is only carried by existing generic committed-state transport
 - any new Temporal primitive for User Task metadata
 - a second semantic incident, arbitrary retry count or backoff, exception/cause projection, cancellation beyond the exact incident-gated root command, or Product 2 incident ingress
 - any patch branch other than the exact `bpmn-workflow-chain-v1` checkpoint enrollment

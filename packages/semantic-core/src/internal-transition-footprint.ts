@@ -78,6 +78,10 @@ export type InternalTransitionStateAtom = Readonly<
       record: CalledProcessOccurrence;
     }
   | {
+      kind: InternalTransitionStateAtomKind.CompensationActivityRetention;
+      owner: ScopeOccurrenceId;
+    }
+  | {
       kind: InternalTransitionStateAtomKind.ControlToken;
       owner: ScopeOccurrenceId;
       placeId: string;

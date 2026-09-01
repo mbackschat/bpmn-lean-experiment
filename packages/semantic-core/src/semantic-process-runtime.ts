@@ -351,7 +351,7 @@ function applyInternalOperationState(
       const multiInstanceOwner = onlyTokenOwner(state, operation.input);
       return applyOwnedOperation(
         multiInstanceOwner,
-        (owner) => enterSequentialMultiInstanceUserTask(operation, state, owner),
+        (owner) => enterSequentialMultiInstanceUserTask(program, operation, state, owner),
         captureOwner,
       );
     }
@@ -359,7 +359,7 @@ function applyInternalOperationState(
       const multiInstanceOwner = onlyTokenOwner(state, operation.input);
       return applyOwnedOperation(
         multiInstanceOwner,
-        (owner) => enterParallelMultiInstanceUserTask(operation, state, owner),
+        (owner) => enterParallelMultiInstanceUserTask(program, operation, state, owner),
         captureOwner,
       );
     }

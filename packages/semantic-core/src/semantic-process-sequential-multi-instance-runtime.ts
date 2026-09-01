@@ -19,6 +19,14 @@ import {
 } from "./activity-occurrence.js";
 import type { ActivityOccurrence } from "./activity-occurrence.js";
 import { replaceActivityBodyTask } from "./activity-body-turnover.js";
+import {
+  CompensationCompletionFactKind,
+  MultiInstanceCompensationCompletionOutcome,
+} from "./compensation-activity-retention-contract.js";
+import {
+  stageCompensationActivityRetention,
+  stageZeroItemCompensationRetention,
+} from "./compensation-activity-retention-producers.js";
 import { VariableValueKind } from "./contract.js";
 import type {
   CompleteUserTaskInstanceStimulus,
@@ -208,6 +216,7 @@ export function selectSequentialMultiInstanceEntry(
 }
 
 export function enterSequentialMultiInstanceUserTask(
+  program: SemanticProcessProgram,
   operation: AwaitSequentialMultiInstanceUserTaskOperation,
   state: RuntimeState,
   owner: ScopeOccurrenceId,
@@ -217,18 +226,28 @@ export function enterSequentialMultiInstanceUserTask(
     return null;
   }
   switch (selected.kind) {
-    case SequentialMultiInstanceEntryKind.Empty:
+    case SequentialMultiInstanceEntryKind.Empty: {
+      const staged = stageZeroItemCompensationRetention(
+        program,
+        state,
+        owner,
+        operation.task.elementId,
+      );
+      if (staged === null) {
+        return null;
+      }
       return {
-        ...state,
+        ...staged.state,
         controlTokens: selected.resultingTokens,
         sequentialMultiInstanceControllers: [
-          ...(state.sequentialMultiInstanceControllers ?? []),
+          ...(staged.state.sequentialMultiInstanceControllers ?? []),
         ],
         variables: {
-          ...state.variables,
+          ...staged.state.variables,
           process: { bindings: selected.processBindings },
         },
       };
+    }
     case SequentialMultiInstanceEntryKind.Armed:
       return {
         ...state,
@@ -340,32 +359,43 @@ export function completeSequentialMultiInstanceIteration(
     };
   }
 
+  const staged = stageCompensationActivityRetention(program, state, {
+    kind: CompensationCompletionFactKind.MultiInstanceUserTask,
+    activity: record.id,
+    plannedInstances: controller.snapshot.length,
+    successfullyCompletedInstances: outputSlots.length,
+    outcome: MultiInstanceCompensationCompletionOutcome.AllSuccessfulCompletion,
+  });
+  if (staged === null) {
+    return null;
+  }
+
   return {
-    ...state,
+    ...staged,
     controlTokens: addToken(
-      state.controlTokens,
+      staged.controlTokens,
       operation.normalOutput,
       record.owner,
     ),
-    userTaskWaits: state.userTaskWaits.filter(({ id }) =>
+    userTaskWaits: staged.userTaskWaits.filter(({ id }) =>
       !sameOccurrence(id, stimulus.taskId)
     ),
     // Every Timer the record lists leaves with it. The record's attached-wait conjuncts admit more
     // than one live attached Timer, and a deadline whose Activity occurrence is gone has nothing left
     // that identifies it, so a head-only withdrawal would strand it; Lean's `finalCompletionState`
     // filters this same whole list.
-    timerWaits: state.timerWaits.filter(({ id }) =>
+    timerWaits: staged.timerWaits.filter(({ id }) =>
       !attachedTimerOccurrences(record).some((timerId) => sameOccurrence(id, timerId))
     ),
-    activityOccurrences: state.activityOccurrences.filter((candidate) =>
+    activityOccurrences: staged.activityOccurrences.filter((candidate) =>
       !sameActivityOccurrence(candidate.id, record.id)
     ),
     sequentialMultiInstanceControllers: others,
     variables: {
-      ...state.variables,
+      ...staged.variables,
       process: {
         bindings: publishedCollection(
-          state.variables.process.bindings,
+          staged.variables.process.bindings,
           operation.data.output.dataObjectReferenceId,
           outputSlots,
         ),
@@ -452,29 +482,39 @@ export function interruptSequentialMultiInstance(
   if (stimulus.logicalTimeMs !== deadline.deadlineMs) {
     return null;
   }
+  const staged = stageCompensationActivityRetention(program, state, {
+    kind: CompensationCompletionFactKind.MultiInstanceUserTask,
+    activity: record.id,
+    plannedInstances: controller.snapshot.length,
+    successfullyCompletedInstances: controller.outputSlots.length,
+    outcome: MultiInstanceCompensationCompletionOutcome.Interrupted,
+  });
+  if (staged === null) {
+    return null;
+  }
   return {
-    ...state,
+    ...staged,
     logicalTimeMs: deadline.deadlineMs,
     controlTokens: addToken(
-      state.controlTokens,
+      staged.controlTokens,
       operation.boundaryTimer.output,
       record.owner,
     ),
-    userTaskWaits: state.userTaskWaits.filter(({ id }) =>
+    userTaskWaits: staged.userTaskWaits.filter(({ id }) =>
       !sameOccurrence(id, activeTask)
     ),
     // Every Timer the record lists leaves with it, the fired one included: removing an Activity
     // occurrence record must leave no wait that record named still live, and the record's conjuncts
     // admit more than one live attached Timer. The fired deadline is a member of this list by
     // construction, since the record was located through it.
-    timerWaits: state.timerWaits.filter(({ id }) =>
+    timerWaits: staged.timerWaits.filter(({ id }) =>
       !attachedTimerOccurrences(record).some((timerId) => sameOccurrence(id, timerId))
     ),
-    activityOccurrences: state.activityOccurrences.filter((candidate) =>
+    activityOccurrences: staged.activityOccurrences.filter((candidate) =>
       !sameActivityOccurrence(candidate.id, record.id)
     ),
     sequentialMultiInstanceControllers:
-      (state.sequentialMultiInstanceControllers ?? []).filter(
+      (staged.sequentialMultiInstanceControllers ?? []).filter(
         (candidate) => candidate !== controller,
       ),
   };

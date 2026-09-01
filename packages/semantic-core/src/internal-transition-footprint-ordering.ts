@@ -116,6 +116,8 @@ function stateAtomParts(
       return [atom.kind, ...internalOccurrenceParts(atom.occurrence)];
     case InternalTransitionStateAtomKind.CallAssociation:
       return [atom.kind, ...callAssociationParts(atom.record)];
+    case InternalTransitionStateAtomKind.CompensationActivityRetention:
+      return [atom.kind, ...scopeParts(atom.owner)];
     case InternalTransitionStateAtomKind.EventRaceAssociation:
       return [atom.kind, ...eventRaceAssociationParts(atom.record)];
     case InternalTransitionStateAtomKind.OccurrenceRegion:
@@ -266,6 +268,7 @@ function occurrenceRegionConflictsWithAtom(
           internalOccurrenceRegionContains(region, atom.parent));
     case InternalTransitionStateAtomKind.ActivityVariable:
     case InternalTransitionStateAtomKind.ActivityVariableScope:
+    case InternalTransitionStateAtomKind.CompensationActivityRetention:
     case InternalTransitionStateAtomKind.ControlToken:
     case InternalTransitionStateAtomKind.OpenWaitAnchor:
     case InternalTransitionStateAtomKind.ParallelController:

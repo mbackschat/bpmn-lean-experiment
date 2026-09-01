@@ -4,6 +4,7 @@ export enum InternalTransitionStateAtomKind {
   ActivityVariable = "activityVariable",
   ActivityVariableScope = "activityVariableScope",
   CallAssociation = "callAssociation",
+  CompensationActivityRetention = "compensationActivityRetention",
   ControlToken = "controlToken",
   EndCount = "endCount",
   EndIncrement = "endIncrement",

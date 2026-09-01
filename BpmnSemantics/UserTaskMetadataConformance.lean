@@ -355,6 +355,7 @@ theorem completion_is_metadata_irrelevant
   · rfl
   · rfl
   · rfl
+  · rfl
   · simpa [programFor, checkedProcessFor, lowerCheckedProcess] using valuesAdmitted
   · simp [completeUserTask, waitingStateFor, waitFor, taskDefinitionFor,
       SequentialUserTask.exactWait, SequentialUserTask.exactTaskInstanceId,
