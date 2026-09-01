@@ -231,22 +231,47 @@ theorem replayInternalTransition_sound (program : Program) (before after : Runti
         · simp [kindMatches, originMatches] at replayed
       · simp [kindMatches] at replayed
 
-def replayInternalTransitions (program : Program) :
+private def replayInternalTransitionsWithoutCompensationSnapshots (program : Program) :
     RuntimeState → List CommittedTransition → Option RuntimeState
   | state, [] => some state
   | state, .internalOperation record :: rest => do
       let successor ← replayInternalTransition? program state record
-      replayInternalTransitions program successor rest
+      replayInternalTransitionsWithoutCompensationSnapshots program successor rest
   | _, .externalStimulus _ :: _ => none
 
-/-- Strict replay requires exactly one leading external stimulus and only internal records afterward. -/
-def replayCommittedTransitions (program : Program) (initial : RuntimeState) :
+/-- Legacy internal replay is mechanically restricted to declaration-free Programs. -/
+def replayInternalTransitions (program : Program) (state : RuntimeState)
+    (transitions : List CommittedTransition) : Option RuntimeState :=
+  match program.compensationEventSubProcessSnapshots with
+  | none =>
+      replayInternalTransitionsWithoutCompensationSnapshots program state transitions
+  | some _ => none
+
+/-- Declaration-free strict replay requires one leading external stimulus and only internal records afterward. -/
+private def replayCommittedTransitionsWithoutCompensationSnapshots
+    (program : Program) (initial : RuntimeState) :
     List CommittedTransition → Option RuntimeState
   | .externalStimulus stimulus :: rest =>
       let admission := admitStimulus program initial stimulus
       if admission.outcome = .committed then replayInternalTransitions program admission.state rest
       else none
   | [] | .internalOperation _ :: _ => none
+
+/-- Legacy committed replay is mechanically restricted to declaration-free Programs. -/
+def replayCommittedTransitions (program : Program) (initial : RuntimeState)
+    (transitions : List CommittedTransition) : Option RuntimeState :=
+  match program.compensationEventSubProcessSnapshots with
+  | none =>
+      replayCommittedTransitionsWithoutCompensationSnapshots program initial transitions
+  | some _ => none
+
+theorem replayCommittedTransitions_withSnapshotDeclaration_is_disabled
+    (program : Program) (initial : RuntimeState)
+    (transitions : List CommittedTransition)
+    (declaration : CompensationEventSubProcessSnapshotDeclaration)
+    (declared : program.compensationEventSubProcessSnapshots = some declaration) :
+    replayCommittedTransitions program initial transitions = none := by
+  simp [replayCommittedTransitions, declared]
 
 private def enabledTransitions (program : Program) (state : RuntimeState) :
     List (SemanticOperation × RuntimeState) :=
@@ -540,6 +565,34 @@ def applyStimulus (closureLimit : Nat) (program : Program)
         state := admission.state
         internalStepBoundExceeded := false
         ambiguousInternalChoice := false }
+
+theorem applyStimulus_withSnapshotDeclaration_rejects
+    (closureLimit : Nat) (program : Program) (state : RuntimeState)
+    (stimulus : Stimulus)
+    (declaration : CompensationEventSubProcessSnapshotDeclaration)
+    (declared : program.compensationEventSubProcessSnapshots = some declaration) :
+    applyStimulus closureLimit program state stimulus =
+      { outcome := .rejected
+        state
+        internalStepBoundExceeded := false
+        ambiguousInternalChoice := false } := by
+  simp [applyStimulus, admitStimulus, declared]
+
+theorem applyStimulusTraced_withSnapshotDeclaration_rejects
+    (closureLimit : Nat) (program : Program) (state : RuntimeState)
+    (stimulus : Stimulus)
+    (declaration : CompensationEventSubProcessSnapshotDeclaration)
+    (declared : program.compensationEventSubProcessSnapshots = some declaration) :
+    (applyStimulusTraced closureLimit program state stimulus).result =
+        { outcome := .rejected
+          state
+          internalStepBoundExceeded := false
+          ambiguousInternalChoice := false } ∧
+      (applyStimulusTraced closureLimit program state stimulus).committedTransitions = [] ∧
+      (applyStimulusTraced closureLimit program state stimulus).flowNodeOccurrenceLifecycles =
+        [] := by
+  simp [applyStimulusTraced, evaluateStimulus, admitStimulus, declared,
+    publishEvaluatedTransitions, publishEvaluatedLifecycles]
 
 def scenarioClosureLimit : Nat := 8
 

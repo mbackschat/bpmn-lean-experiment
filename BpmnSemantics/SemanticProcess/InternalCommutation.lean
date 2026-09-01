@@ -308,6 +308,8 @@ theorem classified_internal_pair_commutes (program : Program) (state : RuntimeSt
       canonicalCollectionOrder final = true := by
   simp only [internalOperationPairIndependent?, Bool.and_eq_true] at classified
   obtain ⟨⟨⟨_, leftEnabled⟩, rightEnabled⟩, separated⟩ := classified
+  have snapshotAbsent := fire_isSome_snapshotDeclaration_is_absent
+    program left state leftEnabled
   unfold internalTransitionFootprint? at separated
   generalize leftPrepared : prepareInternalArm? program state left = leftPatch at separated
   generalize rightPrepared : prepareInternalArm? program state right = rightPatch at separated
@@ -319,8 +321,10 @@ theorem classified_internal_pair_commutes (program : Program) (state : RuntimeSt
       | some rightPatch =>
           simp only [Option.map_some, Bool.and_eq_true] at separated
           have canonical := runtimeStateWellFormed_canonicalCollectionOrder program instanceId state stateAdmitted
-          have leftApplied := prepareInternalArm_applies program state left leftPatch leftPrepared
-          have rightApplied := prepareInternalArm_applies program state right rightPatch rightPrepared
+          have leftApplied := prepareInternalArm_applies program state left leftPatch
+            snapshotAbsent leftPrepared
+          have rightApplied := prepareInternalArm_applies program state right rightPatch
+            snapshotAbsent rightPrepared
           have leftPreserved := prepared_arm_preserves_runtime_and_open_set program state left
             leftPatch instanceId programAdmitted stateAdmitted openBefore leftPrepared
           have rightPreserved := prepared_arm_preserves_runtime_and_open_set program state right
@@ -329,14 +333,15 @@ theorem classified_internal_pair_commutes (program : Program) (state : RuntimeSt
             leftPrepared rightPrepared separated.1
           have leftFrame := prepared_patch_frame program state right left rightPatch leftPatch
             rightPrepared leftPrepared separated.2
-          have finalPreserved := prepared_arm_preserves_runtime_and_open_set program (applyInternalArmingPatch state leftPatch) right rightPatch instanceId programAdmitted leftPreserved.1 leftPreserved.2.1 rightFrame
+          have finalPreserved := prepared_arm_preserves_runtime_and_open_set program (applyInternalArmingPatch state leftPatch) right rightPatch instanceId programAdmitted leftPreserved.1 leftPreserved.2 rightFrame
           let final := applyInternalArmingPatch (applyInternalArmingPatch state leftPatch) rightPatch
           refine ⟨applyInternalArmingPatch state leftPatch,
             applyInternalArmingPatch state rightPatch, final, leftApplied, rightApplied,
-            leftPreserved.1, rightPreserved.1, leftPreserved.2.1, rightPreserved.2.1, ?_, ?_, ?_⟩
+            leftPreserved.1, rightPreserved.1, leftPreserved.2, rightPreserved.2, ?_, ?_, ?_⟩
           · simpa [final] using prepareInternalArm_applies program
-              (applyInternalArmingPatch state leftPatch) right rightPatch rightFrame
-          · have fired := prepareInternalArm_applies program (applyInternalArmingPatch state rightPatch) left leftPatch leftFrame
+              (applyInternalArmingPatch state leftPatch) right rightPatch snapshotAbsent rightFrame
+          · have fired := prepareInternalArm_applies program
+              (applyInternalArmingPatch state rightPatch) left leftPatch snapshotAbsent leftFrame
             rw [← applyInternalArmingPatches_commute state leftPatch rightPatch canonical separated.1] at fired
             simpa [final] using fired
           · exact runtimeStateWellFormed_canonicalCollectionOrder program instanceId final finalPreserved.1

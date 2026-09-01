@@ -104,6 +104,26 @@ test("does not widen the dormant-handler exception", () => {
   assert.equal(isWellFormedSemanticProcessProgram(nonEmptyHandler), false);
 });
 
+test("rejects a declaring Program with an additional parentless root", () => {
+  const additionalParentlessRoot = {
+    ...program,
+    definitionScopes: [
+      ...program.definitionScopes,
+      {
+        id: "scope:Called_Process",
+        parentScopeId: null,
+        originElementId: "Called_Process",
+      },
+    ],
+  } satisfies SemanticProcessProgram;
+
+  assert.notDeepEqual(
+    compensationEventSubProcessSnapshotProgramDefects(additionalParentlessRoot),
+    [],
+  );
+  assert.equal(isWellFormedSemanticProcessProgram(additionalParentlessRoot), false);
+});
+
 test("the exported raw validator accepts no caller-supplied exemption", () => {
   const graph = rawGraph(program);
 

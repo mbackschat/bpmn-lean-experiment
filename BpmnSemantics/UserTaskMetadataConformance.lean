@@ -338,6 +338,7 @@ theorem completion_is_metadata_irrelevant
         SequentialUserTask.exactWait.output SequentialUserTask.exactWait.owner }
   apply user_task_completion_with_same_successor_is_equal
     (successor := successor)
+  · rfl
   · simpa [waitingStateFor] using
       (show BooleanProcessDataConformance.waitingState.control =
         .running SequentialUserTask.exactTaskInstanceId.processInstanceId by

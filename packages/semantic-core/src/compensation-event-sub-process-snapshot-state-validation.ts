@@ -77,18 +77,25 @@ export function compensationEventSubProcessSnapshotProgramDefects(
   const root = program.definitionScopes.find(({ parentScopeId, originElementId }) =>
     parentScopeId === null && originElementId === program.processId
   );
+  const parentlessScopes = program.definitionScopes.filter(
+    ({ parentScopeId }) => parentScopeId === null,
+  );
   const operationsByScope = ownedCountByScope(
     program.operationScopes.map(({ scopeId }) => scopeId),
   );
   const placesByScope = ownedCountByScope(
     program.controlPlaceScopes.map(({ scopeId }) => scopeId),
   );
-  if (declaration.targets.some((target) => {
-    const parent = program.definitionScopes.find(({ id }) => id === target.parentScopeId);
-    return root === undefined ||
-      parent === undefined ||
-      (parent.id !== root.id && parent.parentScopeId !== root.id);
-  })) {
+  if (
+    parentlessScopes.length !== 1 ||
+    parentlessScopes[0]?.id !== root?.id ||
+    declaration.targets.some((target) => {
+      const parent = program.definitionScopes.find(({ id }) => id === target.parentScopeId);
+      return root === undefined ||
+        parent === undefined ||
+        (parent.id !== root.id && parent.parentScopeId !== root.id);
+    })
+  ) {
     defects.push(CompensationEventSubProcessSnapshotProgramDefect.ParentScopeMismatch);
   }
   if (declaration.targets.some((target) => {

@@ -83,6 +83,12 @@ def programEntryRootScopeId? (program : Program) : Option DefinitionScopeId :=
   | [scope] => some scope.id
   | _ => none
 
+private def entryRootIsOnlyParentlessScope (program : Program)
+    (entryRootId : DefinitionScopeId) : Bool :=
+  match program.definitionScopes.filter fun scope => scope.parentScopeId.isNone with
+  | [scope] => scope.id == entryRootId
+  | _ => false
+
 private def uniqueScope? (program : Program) (scopeId : DefinitionScopeId) :
     Option DefinitionScope :=
   match program.definitionScopes.filter fun scope => scope.id == scopeId with
@@ -145,7 +151,8 @@ def compensationEventSubProcessSnapshotDeclarationValid (program : Program) : Bo
       match programEntryRootScopeId? program with
       | none => false
       | some entryRootId =>
-          !declaration.targets.isEmpty &&
+          entryRootIsOnlyParentlessScope program entryRootId &&
+            !declaration.targets.isEmpty &&
             declaration.targets.all targetIdentityValid &&
             declaration.targets.all (targetParentUnique declaration.targets) &&
             declaration.targets.all (targetHandlerUnique declaration.targets) &&

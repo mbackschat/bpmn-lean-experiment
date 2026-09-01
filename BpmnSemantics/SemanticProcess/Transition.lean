@@ -18,6 +18,7 @@ import BpmnSemantics.SemanticProcess.SequentialMultiInstanceTransition
 import BpmnSemantics.SemanticProcess.ParallelMultiInstanceTransition
 import BpmnSemantics.SemanticProcess.MessageBoundedTask
 import BpmnSemantics.SemanticProcess.CompensationActivityRetentionProducers
+import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshot
 
 /-! # Semantic Process internal transitions
 
@@ -309,8 +310,8 @@ inductive OperationStep (program : Program) :
       OperationStep program
         (.completeScope id origin scopeId parentOutput) before after
 
-/-- Executable transition for one operation. It performs no operation selection. -/
-def fire? (program : Program) (operation : SemanticOperation)
+private def fireWithoutCompensationSnapshots? (program : Program)
+    (operation : SemanticOperation)
     (state : RuntimeState) :
     Option RuntimeState :=
   match operation with
@@ -384,9 +385,10 @@ This is worth having and it is not evidence about BPMN meaning. It fails if an o
 routed to the wrong transformation or added without a matching arm; it cannot fail because a
 transformation is semantically wrong, for every arm meeting the criterion documented on
 `OperationStep`. No capsule may cite it as a semantic evidence lane. -/
-theorem fire_sound (program : Program) (operation : SemanticOperation)
+private theorem fireWithoutCompensationSnapshots_sound (program : Program)
+    (operation : SemanticOperation)
     (before after : RuntimeState)
-    (result : fire? program operation before = some after) :
+    (result : fireWithoutCompensationSnapshots? program operation before = some after) :
     OperationStep program operation before after := by
   cases operation <;> first
     | exact .initiate _ _ _ before after result
@@ -397,7 +399,7 @@ theorem fire_sound (program : Program) (operation : SemanticOperation)
     | exact .enterScope _ _ _ _ _ before after result
     | exact OperationStep.enterBoundedScope _ _ _ _ _ _ before after
         (armBoundedScopeState_sound before after _ _ _ _
-          (by simpa [fire?] using result))
+          (by simpa [fireWithoutCompensationSnapshots?] using result))
     | exact .invokeProcess _ _ _ _ _ _ _ before after
         (invokeProcessState_sound _ _ _ _ _ _ _ _ result)
     | exact .returnProcess _ _ _ _ _ before after
@@ -419,29 +421,31 @@ theorem fire_sound (program : Program) (operation : SemanticOperation)
           limits }
       exact OperationStep.awaitSequentialMultiInstanceUserTask
         id origin input task data normalOutput boundaryTimer limits before after arm rfl
-        (by simpa [fire?, SequentialMultiInstanceArm.ofOperation?, arm] using result)
+        (by simpa [fireWithoutCompensationSnapshots?,
+          SequentialMultiInstanceArm.ofOperation?, arm] using result)
     | rename_i id origin input taskId taskName data normalOutput boundaryTimer completionCondition limits
       exact OperationStep.awaitParallelMultiInstanceUserTask
         id origin input taskId taskName data normalOutput boundaryTimer completionCondition limits
-        before after (by simpa [fire?, ParallelMultiInstanceArm.ofOperation?] using result)
+        before after (by simpa [fireWithoutCompensationSnapshots?,
+          ParallelMultiInstanceArm.ofOperation?] using result)
     | case completeParallelMultiInstanceUserTask =>
-        exact False.elim (by simp [fire?] at result)
+        exact False.elim (by simp [fireWithoutCompensationSnapshots?] at result)
     | exact .awaitTimer _ _ _ _ _ before after result
     | exact .awaitMessage _ _ _ _ _ before after result
     | exact .awaitPayloadMessage _ _ _ _ _ _ before after result
     | exact .awaitCorrelatedPayloadMessage _ _ _ _ _ _ _ _ _ before after result
     | exact OperationStep.awaitEventRace _ _ _ _ _ before after
         (armEventRaceState_sound before after _ _ _ _
-          (by simpa [fire?, awaitEventRaceState?] using result))
+          (by simpa [fireWithoutCompensationSnapshots?, awaitEventRaceState?] using result))
     | exact OperationStep.awaitBoundedUserTask _ _ _ _ _ before after
         (armBoundedUserTaskState_sound before after _ _ _
-          (by simpa [fire?] using result))
+          (by simpa [fireWithoutCompensationSnapshots?] using result))
     | exact OperationStep.awaitMessageBoundedUserTask _ _ _ _ _ before after
         (armMessageBoundedUserTaskState_sound before after _ _ _
-          (by simpa [fire?] using result))
+          (by simpa [fireWithoutCompensationSnapshots?] using result))
     | exact OperationStep.awaitMonitoredUserTask _ _ _ _ _ before after
         (armMonitoredUserTaskState_sound before after _ _ _
-          (by simpa [fire?] using result))
+          (by simpa [fireWithoutCompensationSnapshots?] using result))
     | exact .awaitEffect _ _ _ _ _ _ before after result
     | exact .duplicate _ _ _ _ before after result
     | exact .synchronize _ _ _ _ before after result
@@ -457,6 +461,256 @@ theorem fire_sound (program : Program) (operation : SemanticOperation)
     | exact .terminateScope _ _ _ _ before after
         (terminateScopeState_sound program before after _ _ _ _ result)
     | exact .completeScope _ _ _ _ before after result
+
+structure AppliedInternalOperation where
+  operation : SemanticOperation
+  successor : RuntimeState
+  deriving Repr, DecidableEq
+
+inductive InternalOperationAttempt where
+  | disabled (operation : SemanticOperation)
+  | applied (step : AppliedInternalOperation)
+  | refused (operation : SemanticOperation)
+      (reason : CompensationParentContextRefusal)
+  deriving Repr, DecidableEq
+
+def InternalOperationAttempt.operation : InternalOperationAttempt → SemanticOperation
+  | .disabled operation | .refused operation _ => operation
+  | .applied step => step.operation
+
+private def childOccurrenceAfterEntry? (state : RuntimeState)
+    (input : ControlPlaceId) (childScopeId : DefinitionScopeId)
+    (entered : RuntimeState) : Option RuntimeScopeOccurrence := do
+  let parent ← onlyTokenOwner? state input
+  match entered.scopeOccurrences.filter fun occurrence =>
+      occurrence.parent == some parent &&
+        occurrence.id.definitionScopeId == childScopeId with
+  | [child] => some child
+  | _ => none
+
+private def applyPreparedReservation (program : Program)
+    (operation : SemanticOperation) (state : RuntimeState)
+    (child : RuntimeScopeOccurrence)
+    (apply : RuntimeState → Option RuntimeState) : InternalOperationAttempt :=
+  match reserveCompensationParentContext program state child with
+  | .refused reason _ => .refused operation reason
+  | .disabled prepared | .applied prepared =>
+      match apply prepared with
+      | none => .disabled operation
+      | some successor => .applied { operation, successor }
+
+private def attemptEnterScope (program : Program) (operation : SemanticOperation)
+    (state : RuntimeState) (input childEntry : ControlPlaceId)
+    (childScopeId : DefinitionScopeId) : InternalOperationAttempt :=
+  match enterScopeState? state input childEntry childScopeId with
+  | none => .disabled operation
+  | some entered =>
+      match childOccurrenceAfterEntry? state input childScopeId entered with
+      | none => .disabled operation
+      | some child =>
+          applyPreparedReservation program operation state child fun prepared =>
+            enterScopeState? prepared input childEntry childScopeId
+
+private def attemptEnterBoundedScope (program : Program)
+    (operation : SemanticOperation) (state : RuntimeState)
+    (input childEntry : ControlPlaceId) (childScopeId : DefinitionScopeId)
+    (boundaryTimer : BoundaryTimerArm) : InternalOperationAttempt :=
+  match armBoundedScopeState? state input childEntry childScopeId boundaryTimer with
+  | none => .disabled operation
+  | some entered =>
+      match childOccurrenceAfterEntry? state input childScopeId entered with
+      | none => .disabled operation
+      | some child =>
+          applyPreparedReservation program operation state child fun prepared =>
+            armBoundedScopeState? prepared input childEntry childScopeId boundaryTimer
+
+private def selectedCompletionOccurrence? (state : RuntimeState)
+    (scopeId : DefinitionScopeId) : Option RuntimeScopeOccurrence :=
+  match state.scopeOccurrences.filter fun occurrence =>
+      occurrence.id.definitionScopeId == scopeId with
+  | [occurrence] => some occurrence
+  | _ => none
+
+private def finishRootCompletion (successor : RuntimeState)
+    (occurrence : RuntimeScopeOccurrence)
+    (disposition : CompensationParentContextRootDisposition) : RuntimeState :=
+  match occurrence.parent with
+  | none => purgeCompensationParentContextForRoot successor occurrence disposition
+  | some _ => successor
+
+private def scopeOccurrenceIsLive (state : RuntimeState)
+    (owner : ScopeOccurrenceId) : Bool :=
+  state.scopeOccurrences.any fun occurrence => occurrence.id == owner
+
+private def keepAfterUnsuccessfulScopeRemoval (successor : RuntimeState)
+    (retention : CompensationParentContextRetention) : Bool :=
+  match retention with
+  | .provisional parent _ =>
+      scopeOccurrenceIsLive successor parent.id &&
+        match parent.parent with
+        | none => true
+        | some root => scopeOccurrenceIsLive successor root
+  | .promoted parent _ _ =>
+      match parent.parent with
+      | none => scopeOccurrenceIsLive successor parent.id
+      | some root => scopeOccurrenceIsLive successor root
+
+/- Base regional cancellation deliberately knows nothing about snapshots. The snapshot-aware attempt applies this filter to the same successor before exposing it, so unsuccessful removal and hidden-state purge remain one atomic semantic result without increasing every legacy cancellation reduction. -/
+/-- Purge provisional parents and whole collections whose owning root disappeared unsuccessfully. -/
+def purgeCompensationParentContextsAfterUnsuccessfulScopeRemoval
+    (successor : RuntimeState) : RuntimeState :=
+  { successor with
+    compensationParentContextRetentions :=
+      successor.compensationParentContextRetentions.filter
+        (keepAfterUnsuccessfulScopeRemoval successor) }
+
+private def attemptCompleteScope (program : Program)
+    (operation : SemanticOperation) (state : RuntimeState)
+    (scopeId : DefinitionScopeId) (parentOutput : Option ControlPlaceId) :
+    InternalOperationAttempt :=
+  match completeBoundedScope? program state scopeId parentOutput,
+      selectedCompletionOccurrence? state scopeId with
+  | some _, some occurrence =>
+      match promoteCompensationParentContext program state occurrence with
+      | .refused reason _ => .refused operation reason
+      | .disabled prepared =>
+          match completeBoundedScope? program prepared scopeId parentOutput with
+          | none => .disabled operation
+          | some successor =>
+              .applied
+                { operation
+                  successor := finishRootCompletion successor occurrence .discard }
+      | .applied prepared =>
+          match completeBoundedScope? program prepared scopeId parentOutput with
+          | none => .disabled operation
+          | some successor =>
+              .applied
+                { operation
+                  successor := finishRootCompletion successor occurrence .retainPromoted }
+  | _, _ => .disabled operation
+
+/-- Evaluate one exact Program operation through the closed snapshot-aware attempt boundary. -/
+def attemptInternalOperation (program : Program) (operation : SemanticOperation)
+    (state : RuntimeState) : InternalOperationAttempt :=
+  match program.compensationEventSubProcessSnapshots with
+  | none =>
+      match fireWithoutCompensationSnapshots? program operation state with
+      | none => .disabled operation
+      | some successor => .applied { operation, successor }
+  | some _ =>
+      match operation with
+      | .enterScope _ _ input childEntry childScopeId =>
+          attemptEnterScope program operation state input childEntry childScopeId
+      | .enterBoundedScope _ _ input childEntry childScopeId boundaryTimer =>
+          attemptEnterBoundedScope program operation state input childEntry childScopeId
+            boundaryTimer
+      | .completeScope _ _ scopeId parentOutput =>
+          attemptCompleteScope program operation state scopeId parentOutput
+      | _ =>
+          match fireWithoutCompensationSnapshots? program operation state with
+          | none => .disabled operation
+          | some successor =>
+              .applied
+                { operation
+                  successor :=
+                    purgeCompensationParentContextsAfterUnsuccessfulScopeRemoval successor }
+
+/-- The legacy operation evaluator is mechanically restricted to declaration-free Programs. -/
+def fire? (program : Program) (operation : SemanticOperation)
+    (state : RuntimeState) : Option RuntimeState :=
+  match program.compensationEventSubProcessSnapshots with
+  | none => fireWithoutCompensationSnapshots? program operation state
+  | some _ => none
+
+theorem fire_withSnapshotDeclaration_is_disabled (program : Program)
+    (operation : SemanticOperation) (state : RuntimeState)
+    (declaration : CompensationEventSubProcessSnapshotDeclaration)
+    (declared : program.compensationEventSubProcessSnapshots = some declaration) :
+    fire? program operation state = none := by
+  simp [fire?, declared]
+
+@[simp] theorem fire_awaitUserTask_withoutSnapshotDeclaration (program : Program)
+    (state : RuntimeState) (id : OperationId) (origin : BpmnElementOrigin)
+    (input output : ControlPlaceId) (task : UserTaskDefinition)
+    (absent : program.compensationEventSubProcessSnapshots = none) :
+    fire? program (.awaitUserTask id origin input output task) state =
+      awaitUserTaskState? state input output task := by
+  simp [fire?, absent, fireWithoutCompensationSnapshots?]
+
+@[simp] theorem fire_awaitMessage_withoutSnapshotDeclaration (program : Program)
+    (state : RuntimeState) (id : OperationId) (origin : BpmnElementOrigin)
+    (input output : ControlPlaceId) (message : MessageDefinition)
+    (absent : program.compensationEventSubProcessSnapshots = none) :
+    fire? program (.awaitMessage id origin input output message) state =
+      awaitMessageState? state input output message := by
+  simp [fire?, absent, fireWithoutCompensationSnapshots?]
+
+@[simp] theorem fire_awaitPayloadMessage_withoutSnapshotDeclaration (program : Program)
+    (state : RuntimeState) (id : OperationId) (origin : BpmnElementOrigin)
+    (input output : ControlPlaceId) (message : MessageDefinition)
+    (directOutput : DirectCatchEventPayloadOutput)
+    (absent : program.compensationEventSubProcessSnapshots = none) :
+    fire? program (.awaitPayloadMessage id origin input output message directOutput) state =
+      awaitMessageState? state input output message := by
+  simp [fire?, absent, fireWithoutCompensationSnapshots?]
+
+@[simp] theorem fire_awaitCorrelatedPayloadMessage_withoutSnapshotDeclaration
+    (program : Program) (state : RuntimeState) (id : OperationId)
+    (origin : BpmnElementOrigin) (input output : ControlPlaceId)
+    (message : MessageDefinition) (correlationKeyId correlationPropertyId : String)
+    (payloadSelector : CorrelationMessagePath)
+    (processPropertySelector : CorrelationProcessPropertyPath)
+    (absent : program.compensationEventSubProcessSnapshots = none) :
+    fire? program
+        (.awaitCorrelatedPayloadMessage id origin input output message correlationKeyId
+          correlationPropertyId payloadSelector processPropertySelector) state =
+      awaitCorrelatedPayloadMessageState? state input output message := by
+  simp [fire?, absent, fireWithoutCompensationSnapshots?]
+
+@[simp] theorem fire_awaitTimer_withoutSnapshotDeclaration (program : Program)
+    (state : RuntimeState) (id : OperationId) (origin : BpmnElementOrigin)
+    (input output : ControlPlaceId) (timer : TimerDefinition)
+    (absent : program.compensationEventSubProcessSnapshots = none) :
+    fire? program (.awaitTimer id origin input output timer) state =
+      awaitTimerState? state input output timer := by
+  simp [fire?, absent, fireWithoutCompensationSnapshots?]
+
+@[simp] theorem fire_awaitEffect_withoutSnapshotDeclaration (program : Program)
+    (state : RuntimeState) (id : OperationId) (origin : BpmnElementOrigin)
+    (input output : ControlPlaceId) (effect : EffectDefinition)
+    (route : Option BpmnErrorRoute)
+    (absent : program.compensationEventSubProcessSnapshots = none) :
+    fire? program (.awaitEffect id origin input output effect route) state =
+      awaitEffectState? state input output effect route := by
+  simp [fire?, absent, fireWithoutCompensationSnapshots?]
+
+theorem fire_isSome_snapshotDeclaration_is_absent (program : Program)
+    (operation : SemanticOperation) (state : RuntimeState)
+    (enabled : (fire? program operation state).isSome = true) :
+    program.compensationEventSubProcessSnapshots = none := by
+  cases declared : program.compensationEventSubProcessSnapshots with
+  | none => rfl
+  | some _ => simp [fire?, declared] at enabled
+
+theorem fire_sound (program : Program) (operation : SemanticOperation)
+    (before after : RuntimeState)
+    (result : fire? program operation before = some after) :
+    OperationStep program operation before after := by
+  cases declared : program.compensationEventSubProcessSnapshots with
+  | none =>
+      exact fireWithoutCompensationSnapshots_sound program operation before after
+        (by simpa [fire?, declared] using result)
+  | some _ => simp [fire?, declared] at result
+
+/-- Snapshot-free Programs use the original two-arm evaluator without reducing snapshot validation. This equality is semantic compatibility and a resource invariant because legacy kernel fixtures reduce the dispatcher repeatedly. -/
+theorem attemptInternalOperation_withoutSnapshotDeclaration
+    (program : Program) (operation : SemanticOperation) (state : RuntimeState)
+    (absent : program.compensationEventSubProcessSnapshots = none) :
+    attemptInternalOperation program operation state =
+      match fire? program operation state with
+      | none => .disabled operation
+      | some successor => .applied { operation, successor } := by
+  simp [attemptInternalOperation, fire?, absent]
 
 /-- Program relation keeps the explicit selected operation identity as semantic input. -/
 def ProgramStep (program : Program) (before : RuntimeState)
@@ -496,5 +750,48 @@ theorem step_sound :
             selectedEq
         exact of_decide_eq_true selectedMatches
       · exact fire_sound program operation state successor result
+
+/-- Program relation for the exact snapshot-aware three-arm evaluator. -/
+def AttemptProgramStep (program : Program) (before : RuntimeState)
+    (choice : OperationId) (after : RuntimeState) : Prop :=
+  ∃ operation step,
+    operation ∈ program.operations ∧
+      operation.id = choice ∧
+        attemptInternalOperation program operation before = .applied step ∧
+          step.successor = after
+
+theorem attemptInternalOperation_sound (program : Program)
+    (operation : SemanticOperation) (before : RuntimeState)
+    (step : AppliedInternalOperation)
+    (result : attemptInternalOperation program operation before = .applied step)
+    (present : operation ∈ program.operations) :
+    AttemptProgramStep program before operation.id step.successor := by
+  exact ⟨operation, step, present, rfl, result, rfl⟩
+
+/-- A successful attempt for a declaration-free Program remains an ordinary Program step. -/
+theorem attemptProgramStep_withoutSnapshotDeclaration
+    (program : Program) (before : RuntimeState) (choice : OperationId)
+    (after : RuntimeState)
+    (absent : program.compensationEventSubProcessSnapshots = none)
+    (attempted : AttemptProgramStep program before choice after) :
+    ProgramStep program before choice after := by
+  rcases attempted with
+    ⟨operation, step, present, selected, evaluated, successor⟩
+  cases fired : fire? program operation before with
+  | none =>
+      rw [attemptInternalOperation_withoutSnapshotDeclaration
+        program operation before absent, fired] at evaluated
+      contradiction
+  | some firedSuccessor =>
+      rw [attemptInternalOperation_withoutSnapshotDeclaration
+        program operation before absent, fired] at evaluated
+      have stepEq :
+          { operation := operation, successor := firedSuccessor } = step :=
+        InternalOperationAttempt.applied.inj evaluated
+      have firedSuccessorEq : firedSuccessor = step.successor :=
+        congrArg AppliedInternalOperation.successor stepEq
+      exact ⟨operation, present, selected,
+        fire_sound program operation before after
+          (by simpa [firedSuccessorEq.trans successor] using fired)⟩
 
 end BpmnSemantics.SemanticProcess

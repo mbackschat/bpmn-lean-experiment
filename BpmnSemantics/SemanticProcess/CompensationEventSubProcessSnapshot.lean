@@ -156,7 +156,7 @@ def compensationParentContextBindingsValid (bindings : List VariableBinding) : B
         BpmnSemantics.SemanticProcessJson.variableValueWellFormed binding.value) &&
     BpmnSemantics.SemanticProcessJson.bindingNamesStrictlyIncrease bindings
 
-private def targetForParent? (program : Program) (parentScopeId : DefinitionScopeId) :
+def targetForParent? (program : Program) (parentScopeId : DefinitionScopeId) :
     Option CompensationEventSubProcessSnapshotTarget :=
   match program.compensationEventSubProcessSnapshots with
   | none => none
@@ -280,7 +280,7 @@ private def completedLifecycleValid (program : Program) (instanceId : SemanticId
       roots.length == (if rootSelected then 1 else 0) &&
         retentions.all (completedRetentionValid roots)
 
-private def retentionLifecycleValid (program : Program) (state : RuntimeState)
+def retentionLifecycleValid (program : Program) (state : RuntimeState)
     (retentions : List CompensationParentContextRetention) : Bool :=
   match state.control with
   | .notStarted | .cancelled _ => retentions.isEmpty
@@ -308,6 +308,28 @@ def compensationEventSubProcessSnapshotStateValid (program : Program)
           canonicalCompensationParentContextRetentionsUtf8Bytes retentions ≤
             declaration.maxCanonicalBytes &&
           retentionLifecycleValid program state retentions
+
+theorem compensationEventSubProcessSnapshotStateValid_implies_declarationValid
+    (program : Program) (state : RuntimeState)
+    (valid : compensationEventSubProcessSnapshotStateValid program state = true) :
+    compensationEventSubProcessSnapshotDeclarationValid program = true := by
+  simp only [compensationEventSubProcessSnapshotStateValid, Bool.and_eq_true] at valid
+  exact valid.1
+
+theorem compensationEventSubProcessSnapshotStateValid_implies_bounds_and_lifecycle
+    (program : Program) (state : RuntimeState)
+    (declaration : CompensationEventSubProcessSnapshotDeclaration)
+    (declared : program.compensationEventSubProcessSnapshots = some declaration)
+    (valid : compensationEventSubProcessSnapshotStateValid program state = true) :
+    state.compensationParentContextRetentions.length ≤ declaration.maxRecords ∧
+      canonicalCompensationParentContextRetentionsUtf8Bytes
+          state.compensationParentContextRetentions ≤ declaration.maxCanonicalBytes ∧
+      retentionLifecycleValid program state
+          state.compensationParentContextRetentions = true := by
+  simp only [compensationEventSubProcessSnapshotStateValid, declared,
+    Bool.and_eq_true] at valid
+  exact ⟨of_decide_eq_true valid.2.1.1.2,
+    of_decide_eq_true valid.2.1.2, valid.2.2⟩
 
 /-! ## Reservation, promotion, and purge -/
 
@@ -358,7 +380,7 @@ private def prospectiveParentValid (program : Program) (state : RuntimeState)
                 exactOccurrenceIdAbsent state parent.id
           | _, _ => false
 
-private def capacityRefusal? (declaration : CompensationEventSubProcessSnapshotDeclaration)
+def capacityRefusal? (declaration : CompensationEventSubProcessSnapshotDeclaration)
     (retentions : List CompensationParentContextRetention) :
     Option CompensationParentContextRefusal :=
   if retentions.length > declaration.maxRecords then
@@ -369,35 +391,93 @@ private def capacityRefusal? (declaration : CompensationEventSubProcessSnapshotD
       some (.capacity .canonicalBytes declaration.maxCanonicalBytes observed)
     else none
 
+theorem capacityRefusal_records (declaration : CompensationEventSubProcessSnapshotDeclaration)
+    (retentions : List CompensationParentContextRetention)
+    (overflow : retentions.length > declaration.maxRecords) :
+    capacityRefusal? declaration retentions =
+      some (.capacity .records declaration.maxRecords retentions.length) := by
+  simp [capacityRefusal?, overflow]
+
+theorem capacityRefusal_canonicalBytes
+    (declaration : CompensationEventSubProcessSnapshotDeclaration)
+    (retentions : List CompensationParentContextRetention)
+    (recordsFit : retentions.length ≤ declaration.maxRecords)
+    (overflow : canonicalCompensationParentContextRetentionsUtf8Bytes retentions >
+      declaration.maxCanonicalBytes) :
+    capacityRefusal? declaration retentions =
+      some (.capacity .canonicalBytes declaration.maxCanonicalBytes
+        (canonicalCompensationParentContextRetentionsUtf8Bytes retentions)) := by
+  simp [capacityRefusal?, Nat.not_lt.mpr recordsFit, overflow]
+
+theorem capacityRefusal_none_iff
+    (declaration : CompensationEventSubProcessSnapshotDeclaration)
+    (retentions : List CompensationParentContextRetention) :
+    capacityRefusal? declaration retentions = none ↔
+      retentions.length ≤ declaration.maxRecords ∧
+        canonicalCompensationParentContextRetentionsUtf8Bytes retentions ≤
+          declaration.maxCanonicalBytes := by
+  unfold capacityRefusal?
+  by_cases recordsOverflow : retentions.length > declaration.maxRecords
+  · have recordsDoNotFit := Nat.not_le_of_lt recordsOverflow
+    simp [recordsOverflow, recordsDoNotFit]
+  · have recordsFit := Nat.le_of_not_gt recordsOverflow
+    by_cases bytesOverflow :
+        canonicalCompensationParentContextRetentionsUtf8Bytes retentions >
+          declaration.maxCanonicalBytes
+    · have bytesDoNotFit := Nat.not_le_of_lt bytesOverflow
+      simp [recordsOverflow, bytesOverflow, bytesDoNotFit]
+    · have bytesFit := Nat.le_of_not_gt bytesOverflow
+      simp [recordsOverflow, bytesOverflow, recordsFit, bytesFit]
+
 /-- Reserve one exact parent occurrence before root start or direct-child entry. -/
 def reserveCompensationParentContext (program : Program) (state : RuntimeState)
     (parent : RuntimeScopeOccurrence) : CompensationParentContextResult :=
-  if !compensationEventSubProcessSnapshotDeclarationValid program then
-    .refused .invalidProgram state
-  else if !compensationEventSubProcessSnapshotStateValid program state then
-    .refused .invalidState state
-  else
-    match program.compensationEventSubProcessSnapshots,
-        targetForParent? program parent.id.definitionScopeId with
-    | none, _ | _, none => .disabled state
-    | some declaration, some target =>
-        if !prospectiveParentValid program state parent then
-          .refused .invalidState state
-        else
-          let reservation := .provisional parent target.handlerScopeId
-          if state.compensationParentContextRetentions.any
-              (retentionKeyMatches reservation) then
-            .refused .duplicateRetention state
-          else
-            let prospective := canonicalInsertBy
-              compensationParentContextRetentionBefore reservation
-              state.compensationParentContextRetentions
-            match capacityRefusal? declaration prospective with
-            | some reason => .refused reason state
-            | none =>
-                .applied { state with compensationParentContextRetentions := prospective }
+  if compensationEventSubProcessSnapshotDeclarationValid program then
+    if compensationEventSubProcessSnapshotStateValid program state then
+      match program.compensationEventSubProcessSnapshots,
+          targetForParent? program parent.id.definitionScopeId with
+      | none, _ | _, none => .disabled state
+      | some declaration, some target =>
+          if prospectiveParentValid program state parent then
+            let reservation := .provisional parent target.handlerScopeId
+            if state.compensationParentContextRetentions.any
+                (retentionKeyMatches reservation) then
+              .refused .duplicateRetention state
+            else
+              let prospective := canonicalInsertBy
+                compensationParentContextRetentionBefore reservation
+                state.compensationParentContextRetentions
+              match capacityRefusal? declaration prospective with
+              | some reason => .refused reason state
+              | none =>
+                  .applied { state with compensationParentContextRetentions := prospective }
+          else .refused .invalidState state
+    else .refused .invalidState state
+  else .refused .invalidProgram state
 
-private def captureCompensationParentContext? (program : Program)
+theorem reserveCompensationParentContext_refusal_preserves_state
+    (program : Program) (state : RuntimeState) (parent : RuntimeScopeOccurrence)
+    (reason : CompensationParentContextRefusal) (returned : RuntimeState)
+    (refused : reserveCompensationParentContext program state parent =
+      .refused reason returned) :
+    returned = state := by
+  grind [reserveCompensationParentContext]
+
+theorem reserveCompensationParentContext_applied_shape
+    (program : Program) (state after : RuntimeState)
+    (parent : RuntimeScopeOccurrence)
+    (applied : reserveCompensationParentContext program state parent = .applied after) :
+    ∃ declaration target,
+      program.compensationEventSubProcessSnapshots = some declaration ∧
+        targetForParent? program parent.id.definitionScopeId = some target ∧
+        let prospective := canonicalInsertBy compensationParentContextRetentionBefore
+          (.provisional parent target.handlerScopeId)
+          state.compensationParentContextRetentions
+        capacityRefusal? declaration prospective = none ∧
+          after = { state with compensationParentContextRetentions := prospective } := by
+  grind (gen := 16) [reserveCompensationParentContext]
+
+def captureCompensationParentContext? (program : Program)
     (state : RuntimeState) (parent : RuntimeScopeOccurrence) :
     Option CompensationParentContextSnapshot :=
   if !exactRuntimeOccurrenceLive state parent then none
@@ -420,7 +500,36 @@ private def captureCompensationParentContext? (program : Program)
         | _ => none
     | none, _ => none
 
-private def promoteMatchingRetention (parent : RuntimeScopeOccurrence)
+theorem captureCompensationParentContext_root_shape (program : Program)
+    (state : RuntimeState) (parent : RuntimeScopeOccurrence)
+    (snapshot : CompensationParentContextSnapshot)
+    (root : parent.parent = none)
+    (captured : captureCompensationParentContext? program state parent = some snapshot) :
+    snapshot.frames =
+      [{ owner := parent.id, bindings := state.variables.process.bindings }] := by
+  cases snapshot
+  unfold captureCompensationParentContext? at captured
+  simp [root] at captured
+  split at captured <;> simp_all
+
+theorem captureCompensationParentContext_child_shape (program : Program)
+    (state : RuntimeState) (parent : RuntimeScopeOccurrence)
+    (rootId : ScopeOccurrenceId) (snapshot : CompensationParentContextSnapshot)
+    (child : parent.parent = some rootId)
+    (captured : captureCompensationParentContext? program state parent = some snapshot) :
+    ∃ root,
+      state.scopeOccurrences.filter (fun occurrence =>
+          occurrence.parent.isNone && occurrence.id == rootId) = [root] ∧
+        snapshot.frames =
+          [ { owner := root.id, bindings := state.variables.process.bindings }
+          , { owner := parent.id, bindings := [] } ] := by
+  cases snapshot
+  unfold captureCompensationParentContext? at captured
+  simp [child] at captured
+  split at captured <;> simp_all
+  split at captured <;> simp_all
+
+def promoteMatchingRetention (parent : RuntimeScopeOccurrence)
     (target : CompensationEventSubProcessSnapshotTarget)
     (snapshot : CompensationParentContextSnapshot) :
     CompensationParentContextRetention → CompensationParentContextRetention
@@ -430,45 +539,149 @@ private def promoteMatchingRetention (parent : RuntimeScopeOccurrence)
       else current
   | current@(.promoted ..) => current
 
+private def promoteSelectedCompensationParentContext
+    (program : Program) (state : RuntimeState) (parent : RuntimeScopeOccurrence)
+    (declaration : CompensationEventSubProcessSnapshotDeclaration)
+    (target : CompensationEventSubProcessSnapshotTarget)
+    (selected : List CompensationParentContextRetention) :
+    CompensationParentContextResult :=
+  match selected with
+  | [] => .refused .missingRetention state
+  | _first :: _second :: _ => .refused .duplicateRetention state
+  | [.promoted ..] => .refused .invalidState state
+  | [.provisional retainedParent _] =>
+      if retainedParent = parent then
+        match captureCompensationParentContext? program state parent with
+        | none => .refused .brokenAncestry state
+        | some snapshot =>
+            let prospective := state.compensationParentContextRetentions.map
+              (promoteMatchingRetention parent target snapshot)
+            match capacityRefusal? declaration prospective with
+            | some reason => .refused reason state
+            | none => .applied
+                { state with compensationParentContextRetentions := prospective }
+      else .refused .invalidState state
+
+private theorem promoteSelectedCompensationParentContext_applied_shape
+    (program : Program) (state after : RuntimeState)
+    (parent : RuntimeScopeOccurrence)
+    (declaration : CompensationEventSubProcessSnapshotDeclaration)
+    (target : CompensationEventSubProcessSnapshotTarget)
+    (selected : List CompensationParentContextRetention)
+    (applied : promoteSelectedCompensationParentContext program state parent declaration
+      target selected = .applied after) :
+    ∃ snapshot,
+      captureCompensationParentContext? program state parent = some snapshot ∧
+        let prospective := state.compensationParentContextRetentions.map
+          (promoteMatchingRetention parent target snapshot)
+        capacityRefusal? declaration prospective = none ∧
+          after = { state with compensationParentContextRetentions := prospective } := by
+  cases selected with
+  | nil => simp [promoteSelectedCompensationParentContext] at applied
+  | cons retention rest =>
+      cases rest with
+      | cons _ _ => simp [promoteSelectedCompensationParentContext] at applied
+      | nil =>
+          cases retention with
+          | promoted => simp [promoteSelectedCompensationParentContext] at applied
+          | provisional retainedParent _ =>
+              by_cases same : retainedParent = parent
+              · cases captured : captureCompensationParentContext? program state parent with
+                | none =>
+                    simp [promoteSelectedCompensationParentContext, same, captured] at applied
+                | some snapshot =>
+                    let prospective := state.compensationParentContextRetentions.map
+                      (promoteMatchingRetention parent target snapshot)
+                    cases capacity : capacityRefusal? declaration prospective with
+                    | some reason =>
+                        simp [promoteSelectedCompensationParentContext, same, captured,
+                          prospective, capacity] at applied
+                    | none =>
+                        refine ⟨snapshot, rfl, capacity, ?_⟩
+                        have exactApplied :
+                            CompensationParentContextResult.applied
+                                { state with
+                                  compensationParentContextRetentions := prospective } =
+                              .applied after := by
+                          simpa [promoteSelectedCompensationParentContext, same, captured,
+                            prospective, capacity] using applied
+                        exact (CompensationParentContextResult.applied.inj exactApplied).symm
+              · simp [promoteSelectedCompensationParentContext, same] at applied
+
+private theorem promoteSelectedCompensationParentContext_refusal_preserves_state
+    (program : Program) (state : RuntimeState) (parent : RuntimeScopeOccurrence)
+    (declaration : CompensationEventSubProcessSnapshotDeclaration)
+    (target : CompensationEventSubProcessSnapshotTarget)
+    (selected : List CompensationParentContextRetention)
+    (reason : CompensationParentContextRefusal) (returned : RuntimeState)
+    (refused : promoteSelectedCompensationParentContext program state parent declaration
+      target selected = .refused reason returned) :
+    returned = state := by
+  cases selected with
+  | nil => simp_all [promoteSelectedCompensationParentContext]
+  | cons retention rest =>
+      cases rest with
+      | cons _ _ => simp_all [promoteSelectedCompensationParentContext]
+      | nil =>
+          cases retention with
+          | promoted => simp_all [promoteSelectedCompensationParentContext]
+          | provisional retainedParent _ =>
+              by_cases same : retainedParent = parent
+              · cases captured : captureCompensationParentContext? program state parent with
+                | none =>
+                    simp_all [promoteSelectedCompensationParentContext]
+                | some snapshot =>
+                    let prospective := state.compensationParentContextRetentions.map
+                      (promoteMatchingRetention parent target snapshot)
+                    cases capacity : capacityRefusal? declaration prospective with
+                    | some capacityReason =>
+                        simp_all [promoteSelectedCompensationParentContext, prospective]
+                    | none =>
+                        simp_all [promoteSelectedCompensationParentContext, prospective]
+              · simp_all [promoteSelectedCompensationParentContext]
+
 /-- Promote one exact provisional record using the pre-completion Process/Sub-Process context. -/
 def promoteCompensationParentContext (program : Program) (state : RuntimeState)
     (parent : RuntimeScopeOccurrence) : CompensationParentContextResult :=
-  if !compensationEventSubProcessSnapshotDeclarationValid program then
-    .refused .invalidProgram state
-  else if !compensationEventSubProcessSnapshotStateValid program state then
-    .refused .invalidState state
-  else
-    match program.compensationEventSubProcessSnapshots,
-        targetForParent? program parent.id.definitionScopeId with
-    | none, _ | _, none => .disabled state
-    | some declaration, some target =>
-        if !compensationParentContextBindingsValid state.variables.process.bindings then
-          .refused .incompleteContext state
-        else
-          let selected := state.compensationParentContextRetentions.filter fun retention =>
-            retention.parent.id == parent.id &&
-              retention.handlerScopeId == target.handlerScopeId
-          match selected with
-          | [] => .refused .missingRetention state
-          | _first :: _second :: _ =>
-              .refused .duplicateRetention state
-          | [retention] =>
-              match retention with
-              | .promoted .. => .refused .invalidState state
-              | .provisional retainedParent _ =>
-                  if retainedParent != parent then .refused .invalidState state
-                  else
-                    match captureCompensationParentContext? program state parent with
-                    | none => .refused .brokenAncestry state
-                    | some snapshot =>
-                        let prospective :=
-                          state.compensationParentContextRetentions.map
-                            (promoteMatchingRetention parent target snapshot)
-                        match capacityRefusal? declaration prospective with
-                        | some reason => .refused reason state
-                        | none => .applied
-                            { state with
-                              compensationParentContextRetentions := prospective }
+  if compensationEventSubProcessSnapshotDeclarationValid program then
+    if compensationEventSubProcessSnapshotStateValid program state then
+      match program.compensationEventSubProcessSnapshots,
+          targetForParent? program parent.id.definitionScopeId with
+      | none, _ | _, none => .disabled state
+      | some declaration, some target =>
+          if compensationParentContextBindingsValid state.variables.process.bindings then
+            let selected := state.compensationParentContextRetentions.filter fun retention =>
+              retention.parent.id == parent.id &&
+                retention.handlerScopeId == target.handlerScopeId
+            promoteSelectedCompensationParentContext program state parent declaration target
+              selected
+          else .refused .incompleteContext state
+    else .refused .invalidState state
+  else .refused .invalidProgram state
+
+theorem promoteCompensationParentContext_refusal_preserves_state
+    (program : Program) (state : RuntimeState) (parent : RuntimeScopeOccurrence)
+    (reason : CompensationParentContextRefusal) (returned : RuntimeState)
+    (refused : promoteCompensationParentContext program state parent =
+      .refused reason returned) :
+    returned = state := by
+  grind (gen := 16) [promoteCompensationParentContext,
+    promoteSelectedCompensationParentContext_refusal_preserves_state]
+
+theorem promoteCompensationParentContext_applied_shape
+    (program : Program) (state after : RuntimeState)
+    (parent : RuntimeScopeOccurrence)
+    (applied : promoteCompensationParentContext program state parent = .applied after) :
+    ∃ declaration target snapshot,
+      program.compensationEventSubProcessSnapshots = some declaration ∧
+        targetForParent? program parent.id.definitionScopeId = some target ∧
+        captureCompensationParentContext? program state parent = some snapshot ∧
+        let prospective := state.compensationParentContextRetentions.map
+          (promoteMatchingRetention parent target snapshot)
+        capacityRefusal? declaration prospective = none ∧
+          after = { state with compensationParentContextRetentions := prospective } := by
+  grind (gen := 16) (splits := 10) [promoteCompensationParentContext,
+    promoteSelectedCompensationParentContext_applied_shape]
 
 /-- Remove only an unsuccessful parent's provisional reservation; completed snapshots survive. -/
 def purgeCompensationParentContextForParent (state : RuntimeState)
@@ -480,7 +693,18 @@ def purgeCompensationParentContextForParent (state : RuntimeState)
         | .provisional retainedParent _ => retainedParent.id != parent.id
         | .promoted .. => true }
 
-private def retentionOwnedByRoot (root : RuntimeScopeOccurrence)
+theorem mem_purgeCompensationParentContextForParent_iff
+    (state : RuntimeState) (parent : RuntimeScopeOccurrence)
+    (retention : CompensationParentContextRetention) :
+    retention ∈
+        (purgeCompensationParentContextForParent state parent).compensationParentContextRetentions ↔
+      retention ∈ state.compensationParentContextRetentions ∧
+        match retention with
+        | .provisional retainedParent _ => retainedParent.id ≠ parent.id
+        | .promoted .. => True := by
+  cases retention <;> simp [purgeCompensationParentContextForParent]
+
+def retentionOwnedByRoot (root : RuntimeScopeOccurrence)
     (retention : CompensationParentContextRetention) : Bool :=
   retention.parent.id == root.id || retention.parent.parent == some root.id
 
@@ -493,5 +717,17 @@ def purgeCompensationParentContextForRoot (state : RuntimeState)
       state.compensationParentContextRetentions.filter fun retention =>
         !retentionOwnedByRoot root retention ||
           (disposition == .retainPromoted && retention.isPromoted) }
+
+theorem mem_purgeCompensationParentContextForRoot_iff
+    (state : RuntimeState) (root : RuntimeScopeOccurrence)
+    (disposition : CompensationParentContextRootDisposition)
+    (retention : CompensationParentContextRetention) :
+    retention ∈
+        (purgeCompensationParentContextForRoot state root disposition).compensationParentContextRetentions ↔
+      retention ∈ state.compensationParentContextRetentions ∧
+        (retentionOwnedByRoot root retention = false ∨
+          disposition = .retainPromoted ∧ retention.isPromoted = true) := by
+  cases disposition <;> cases retention <;>
+    simp [purgeCompensationParentContextForRoot, retentionOwnedByRoot]
 
 end BpmnSemantics.SemanticProcess

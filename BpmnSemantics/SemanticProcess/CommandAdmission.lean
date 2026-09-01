@@ -12,6 +12,7 @@ import BpmnSemantics.SemanticProcess.MessagePayload
 import BpmnSemantics.SemanticProcess.MessageBoundedTask
 import BpmnSemantics.SemanticProcess.MessageKeyCorrelation
 import BpmnSemantics.SemanticProcess.CompensationActivityRetentionProducers
+import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshot
 
 /-! # Semantic Process external command admission
 
@@ -26,8 +27,9 @@ structure ExternalAdmission where
   outcome : CommandOutcome
   state : RuntimeState
 
-/-- Closed dispatch for the globally selected, content-bound correlation target. -/
-def dispatchCorrelatedPayloadMessage (program : Program) (state : RuntimeState)
+/-! Closed raw dispatchers remain private because they do not enforce snapshot declaration admission. -/
+
+private def dispatchCorrelatedPayloadMessage (program : Program) (state : RuntimeState)
     (delivery : DeliverCorrelatedPayloadMessageStimulus) : ExternalAdmission :=
   match state.control with
   | .running instanceId =>
@@ -40,9 +42,7 @@ def dispatchCorrelatedPayloadMessage (program : Program) (state : RuntimeState)
   | .notStarted | .completed _ | .cancelled _ =>
       { outcome := .rejected, state }
 
-/-- Correlation delivery is admitted only for the exact reviewed profile, structural program, and
-incident-free committed state. Refusal preserves the submitted state. -/
-def admitCorrelatedPayloadMessage (program : Program) (state : RuntimeState)
+private def admitCorrelatedPayloadMessage (program : Program) (state : RuntimeState)
     (delivery : DeliverCorrelatedPayloadMessageStimulus) : ExternalAdmission :=
   if program.identity.semanticProfile = messageKeyCorrelationProfileId &&
       programWellFormed program && programProfileCapabilitiesValid program &&
@@ -106,7 +106,8 @@ private def sequentialMultiInstanceStartBindingsAdmitted (program : Program)
         | _ => false
   | _, _ => false
 
-def dispatchStimulus (program : Program) (state : RuntimeState) :
+@[simp] private def dispatchStimulusWithoutCompensationSnapshots (program : Program)
+    (state : RuntimeState) :
     Stimulus → ExternalAdmission
   | .startProcess _ processId instanceId initialVariables =>
       match state.control with
@@ -366,15 +367,30 @@ def dispatchStimulus (program : Program) (state : RuntimeState) :
       | some successor => { outcome := .committed, state := successor }
       | none => { outcome := .rejected, state }
 
-/-- Apply the fail-closed incident/program association gate before any external command dispatch. Refusal preserves the exact submitted state and never enters internal closure. -/
-def admitStimulus (program : Program) (state : RuntimeState)
+/-- Direct dispatch is a legacy surface and therefore rejects every snapshot-declaring Program. -/
+def dispatchStimulus (program : Program) (state : RuntimeState)
+    (stimulus : Stimulus) : ExternalAdmission :=
+  match program.compensationEventSubProcessSnapshots with
+  | none => dispatchStimulusWithoutCompensationSnapshots program state stimulus
+  | some _ => { outcome := .rejected, state }
+
+theorem dispatchStimulus_withSnapshotDeclaration_rejects (program : Program)
+    (state : RuntimeState) (stimulus : Stimulus)
+    (declaration : CompensationEventSubProcessSnapshotDeclaration)
+    (declared : program.compensationEventSubProcessSnapshots = some declaration) :
+    (dispatchStimulus program state stimulus).outcome = .rejected ∧
+      (dispatchStimulus program state stimulus).state = state := by
+  simp [dispatchStimulus, declared]
+
+@[simp] private def admitStimulusWithoutCompensationSnapshots (program : Program)
+    (state : RuntimeState)
     (stimulus : Stimulus) : ExternalAdmission :=
   match stimulus with
   | .deliverCorrelatedPayloadMessage delivery =>
       admitCorrelatedPayloadMessage program state delivery
   | .cancelIncidentProcess _ processInstanceId incidentId =>
       if (incidentProcessCancellationRoot? program state processInstanceId incidentId).isSome then
-        dispatchStimulus program state stimulus
+        dispatchStimulusWithoutCompensationSnapshots program state stimulus
       else
         { outcome := .rejected, state }
   | .startProcess .. | .triggerMessageStart .. | .triggerTimerStart ..
@@ -382,11 +398,91 @@ def admitStimulus (program : Program) (state : RuntimeState)
   | .fireTimer ..
   | .completeEffect .. | .reportEffectFailure .. | .retryIncident .. =>
       match state.effectIncidents with
-      | [] => dispatchStimulus program state stimulus
+      | [] => dispatchStimulusWithoutCompensationSnapshots program state stimulus
       | _ :: _ =>
           if incidentStateAdmitted program state then
-            dispatchStimulus program state stimulus
+            dispatchStimulusWithoutCompensationSnapshots program state stimulus
           else
             { outcome := .rejected, state }
+
+/-- Carry a pre-start root reservation into the independently constructed running state.
+
+The reservation is decided against the submitted not-started state because start mutation must not precede capacity refusal. The running-state builder remains the authority for every other field. -/
+def reserveRootCompensationParentContextBeforeStart (program : Program)
+    (before started : RuntimeState) : CompensationParentContextResult :=
+  match program.compensationEventSubProcessSnapshots with
+  | none =>
+      if before.compensationParentContextRetentions.isEmpty then .disabled started
+      else .refused .invalidState before
+  | some _ =>
+      match started.scopeOccurrences.filter fun occurrence => occurrence.parent.isNone with
+      | [root] =>
+          match reserveCompensationParentContext program before root with
+          | .disabled _ => .disabled started
+          | .applied reserved =>
+              .applied
+                { started with
+                  compensationParentContextRetentions :=
+                    reserved.compensationParentContextRetentions }
+          | .refused reason _ => .refused reason before
+      | _ => .refused .invalidState before
+
+/-- A declaration-free Program preserves the original start state exactly when no hidden snapshot state has been injected. This is both the byte-compatibility rule and the fast path that keeps old kernel-decided fixtures out of the snapshot validator. -/
+theorem reserveRootCompensationParentContextBeforeStart_withoutDeclaration
+    (program : Program) (before started : RuntimeState)
+    (absent : program.compensationEventSubProcessSnapshots = none)
+    (empty : before.compensationParentContextRetentions = []) :
+    reserveRootCompensationParentContextBeforeStart program before started =
+      .disabled started := by
+  simp [reserveRootCompensationParentContextBeforeStart, absent, empty]
+
+private def prepareStartedSnapshotState (program : Program) (before : RuntimeState)
+    (admission : ExternalAdmission) : ExternalAdmission :=
+  match admission.outcome with
+  | .committed =>
+      match reserveRootCompensationParentContextBeforeStart program before admission.state with
+      | .disabled successor | .applied successor =>
+          { outcome := .committed, state := successor }
+      | .refused _ _ => { outcome := .rejected, state := before }
+  | .rolledBack | .rejected | .semanticFailure | .unsupported => admission
+
+/-- Validate the optional hidden snapshot state once per command and stage root reservation after ordinary start admission but before internal closure. -/
+def admitStimulusWithCompensationSnapshots (program : Program) (state : RuntimeState)
+    (stimulus : Stimulus) : ExternalAdmission :=
+  match program.compensationEventSubProcessSnapshots with
+  | none => admitStimulusWithoutCompensationSnapshots program state stimulus
+  | some _ =>
+      if !compensationEventSubProcessSnapshotStateValid program state then
+        { outcome := .rejected, state }
+      else
+        let admission := admitStimulusWithoutCompensationSnapshots program state stimulus
+        match stimulus with
+        | .startProcess .. | .triggerMessageStart .. | .triggerTimerStart .. =>
+            prepareStartedSnapshotState program state admission
+        | .completeUserTaskInstance .. | .deliverMessage .. | .deliverPayloadMessage ..
+        | .deliverCorrelatedPayloadMessage .. | .fireTimer .. | .completeEffect ..
+        | .reportEffectFailure .. | .retryIncident .. | .cancelIncidentProcess .. => admission
+
+/-- The legacy admission surface is mechanically restricted to declaration-free Programs. -/
+def admitStimulus (program : Program) (state : RuntimeState)
+    (stimulus : Stimulus) : ExternalAdmission :=
+  match program.compensationEventSubProcessSnapshots with
+  | none => admitStimulusWithoutCompensationSnapshots program state stimulus
+  | some _ => { outcome := .rejected, state }
+
+theorem admitStimulus_withSnapshotDeclaration_rejects (program : Program)
+    (state : RuntimeState) (stimulus : Stimulus)
+    (declaration : CompensationEventSubProcessSnapshotDeclaration)
+    (declared : program.compensationEventSubProcessSnapshots = some declaration) :
+    (admitStimulus program state stimulus).outcome = .rejected ∧
+      (admitStimulus program state stimulus).state = state := by
+  simp [admitStimulus, declared]
+
+theorem admitStimulusWithCompensationSnapshots_withoutDeclaration
+    (program : Program) (state : RuntimeState) (stimulus : Stimulus)
+    (absent : program.compensationEventSubProcessSnapshots = none) :
+    admitStimulusWithCompensationSnapshots program state stimulus =
+      admitStimulus program state stimulus := by
+  simp [admitStimulusWithCompensationSnapshots, admitStimulus, absent]
 
 end BpmnSemantics.SemanticProcess

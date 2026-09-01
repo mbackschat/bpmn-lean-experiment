@@ -183,8 +183,7 @@ theorem prepared_arm_preserves_runtime_and_open_projection_exact
         patch.write.occurrence.activation = some newStart ∧
       projectOpenFlowNodeOccurrences? program after = some next ∧
       next = sortFlowNodeOccurrenceStarts (newStart :: current) ∧
-      runtimeStateWellFormed program expectedInstanceId after = true ∧
-      fire? program operation state = some after := by
+      runtimeStateWellFormed program expectedInstanceId after = true := by
   let after := applyInternalArmingPatch state patch
   obtain ⟨liveOwner, instanceId, running⟩ :=
     prepared_arm_live_running program state operation patch prepared
@@ -269,8 +268,7 @@ theorem prepared_arm_preserves_runtime_and_open_projection_exact
             (incidentsValid := incidentsAfter)
             (messagePairsValid := messagePairsAfter)
           exact ⟨current, newStart, openAfter.choose, rfl, rfl, openAfter.choose_spec.1,
-            openAfter.choose_spec.2, wellAfter,
-            prepareInternalArm_applies program state operation patch prepared⟩
+            openAfter.choose_spec.2, wellAfter⟩
 
 theorem prepared_arm_preserves_runtime_and_open_set (program : Program) (state : RuntimeState)
     (operation : SemanticOperation) (patch : InternalArmingPatch)
@@ -280,12 +278,11 @@ theorem prepared_arm_preserves_runtime_and_open_set (program : Program) (state :
     (prepared : prepareInternalArm? program state operation = some patch) :
     let after := applyInternalArmingPatch state patch
     runtimeStateWellFormed program expectedInstanceId after = true ∧
-      (projectOpenFlowNodeOccurrences? program after).isSome = true ∧
-      fire? program operation state = some after := by
-  obtain ⟨current, newStart, next, beforeEq, started, afterEq, nextEq, wellAfter, fired⟩ :=
+      (projectOpenFlowNodeOccurrences? program after).isSome = true := by
+  obtain ⟨current, newStart, next, beforeEq, started, afterEq, nextEq, wellAfter⟩ :=
     prepared_arm_preserves_runtime_and_open_projection_exact program state operation patch
       expectedInstanceId programAdmitted stateAdmitted openBefore prepared
-  exact ⟨wellAfter, by simp [afterEq], fired⟩
+  exact ⟨wellAfter, by simp [afterEq]⟩
 
 private theorem filter_canonicalInsertBy_eq_singleton (before : α → α → Bool)
     (predicate : α → Bool) (inserted : α) (values : List α)
@@ -723,7 +720,7 @@ theorem prepared_arm_lifecycle_singleton (program : Program) (state : RuntimeSta
       flowNodeOccurrenceDeltaForOperation? program state
           (applyInternalArmingPatch state patch) operation commandId 0 =
         some (canonicalFlowNodeOccurrenceDelta [newStart] []) := by
-  obtain ⟨current, newStart, next, beforeEq, started, afterEq, nextEq, _, _⟩ :=
+  obtain ⟨current, newStart, next, beforeEq, started, afterEq, nextEq, _⟩ :=
     prepared_arm_preserves_runtime_and_open_projection_exact program state operation patch
       expectedInstanceId programAdmitted stateAdmitted openBefore prepared
   obtain ⟨_, instanceId, running⟩ :=

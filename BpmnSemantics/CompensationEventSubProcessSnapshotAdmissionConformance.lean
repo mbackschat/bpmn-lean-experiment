@@ -61,6 +61,19 @@ theorem an_undeclared_dormant_scope_is_rejected :
     programGraphWellFormedForProgram extraDormantProgram = false := by
   decide +kernel
 
+def additionalParentlessRootProgram : Program :=
+  { program with
+    definitionScopes := program.definitionScopes ++
+      [ { id := ⟨"scope:CalledProcess"⟩
+          parentScopeId := none
+          originElementId := ⟨"CalledProcess"⟩ } ] }
+
+/-- The snapshot checkpoint excludes called Processes even though ordinary graph admission supports them. -/
+theorem an_additional_parentless_root_is_rejected :
+    compensationEventSubProcessSnapshotDeclarationValid additionalParentlessRootProgram =
+      false := by
+  decide +kernel
+
 def parentMismatchProgram : Program :=
   { program with
     compensationEventSubProcessSnapshots := some

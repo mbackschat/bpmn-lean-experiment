@@ -46,10 +46,11 @@ private theorem correlated_prepared_state_frame_facts (program : Program)
     (prepared : prepareInternalArm? program state
       (.awaitCorrelatedPayloadMessage id origin input output message correlationKeyId
         correlationPropertyId payloadSelector processPropertySelector) = some patch) :
-    fire? program
-        (.awaitCorrelatedPayloadMessage id origin input output message correlationKeyId
-          correlationPropertyId payloadSelector processPropertySelector) state =
-        some (applyInternalArmingPatch state patch) ∧
+    (program.compensationEventSubProcessSnapshots = none →
+      fire? program
+          (.awaitCorrelatedPayloadMessage id origin input output message correlationKeyId
+            correlationPropertyId payloadSelector processPropertySelector) state =
+        some (applyInternalArmingPatch state patch)) ∧
       patch.operation =
         .awaitCorrelatedPayloadMessage id origin input output message correlationKeyId
           correlationPropertyId payloadSelector processPropertySelector ∧
@@ -85,7 +86,7 @@ private theorem correlated_prepared_state_frame_facts (program : Program)
           · simp_all
           · simp_all
             obtain ⟨_, _, _, _, patchEq⟩ := prepared
-            simp_all [fire?, awaitCorrelatedPayloadMessageState?, awaitMessageState_eq,
+            simp_all [awaitCorrelatedPayloadMessageState?, awaitMessageState_eq,
               runningStateInstance?, activateMessage, applyInternalArmingPatch,
               InternalArmingWrite.kind, InternalArmingWrite.elementId,
               InternalArmingWrite.owner]
@@ -94,17 +95,20 @@ private theorem correlated_prepared_state_frame_facts (program : Program)
         | stringList _ => simp_all
         | null => simp_all
 
-theorem prepareInternalArm_applies (program : Program) (state : RuntimeState) (operation : SemanticOperation) (patch : InternalArmingPatch) (prepared : prepareInternalArm? program state operation = some patch) :
+theorem prepareInternalArm_applies (program : Program) (state : RuntimeState)
+    (operation : SemanticOperation) (patch : InternalArmingPatch)
+    (snapshotAbsent : program.compensationEventSubProcessSnapshots = none)
+    (prepared : prepareInternalArm? program state operation = some patch) :
     fire? program operation state = some (applyInternalArmingPatch state patch) := by
   cases operation
   case awaitCorrelatedPayloadMessage id origin input output message correlationKeyId
       correlationPropertyId payloadSelector processPropertySelector =>
     exact (correlated_prepared_state_frame_facts program state id origin input output message
       correlationKeyId correlationPropertyId payloadSelector processPropertySelector patch
-      prepared).1
+      prepared).1 snapshotAbsent
   all_goals
     simp_all [prepareInternalArm?, internalArmInput?, internalArmOrigin?,
-      applyInternalArmingPatch, fire?, awaitUserTaskState_eq, awaitMessageState_eq,
+      applyInternalArmingPatch, awaitUserTaskState_eq, awaitMessageState_eq,
       awaitTimerState_eq, awaitEffectState_eq, runningStateInstance?, activateUserTask, activateMessage,
       activateTimer, activateEffect, addActivityVariableScope]
   all_goals

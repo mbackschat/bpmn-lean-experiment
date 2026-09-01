@@ -165,6 +165,8 @@ Lane shape: **proved** for the representation, validation, reservation, capture,
 
 Lean defines the same declaration, records, encoder, validator, lifecycle functions, three-arm internal attempt, closure refusal, and lifecycle integrations. Laws prove census closure, identity separation, frame ancestry/immutability, success-only promotion, unsuccessful purge, count/byte and whole-stimulus refusal preservation, old-byte omission, and integration frame properties.
 
+The proved lane is not inferred from the concrete fixtures. Reusable quantified laws are `compensationEventSubProcessSnapshotStateValid_implies_declarationValid` and `compensationEventSubProcessSnapshotStateValid_implies_bounds_and_lifecycle` for representation/validation; `capacityRefusal_records`, `capacityRefusal_canonicalBytes`, and `capacityRefusal_none_iff` for exact capacity; `reserveCompensationParentContext_refusal_preserves_state` and `reserveCompensationParentContext_applied_shape` for reservation; `captureCompensationParentContext_root_shape` and `captureCompensationParentContext_child_shape` for context shape; `promoteCompensationParentContext_refusal_preserves_state` and `promoteCompensationParentContext_applied_shape` for promotion; `mem_purgeCompensationParentContextForParent_iff` and `mem_purgeCompensationParentContextForRoot_iff` for purge; and `applyStimulusWithCompensationSnapshots_closure_refusal_rejects_atomically`, `applyStimulusTracedWithCompensationSnapshots_emitted_trace_replays`, `dispatchStimulus_withSnapshotDeclaration_rejects`, `admitStimulus_withSnapshotDeclaration_rejects`, `fire_withSnapshotDeclaration_is_disabled`, `applyStimulus_withSnapshotDeclaration_rejects`, `applyStimulusTraced_withSnapshotDeclaration_rejects`, and `replayCommittedTransitions_withSnapshotDeclaration_is_disabled` for lifecycle, rollback, replay, and mechanical legacy-surface exclusion. Each theorem quantifies over its Program, RuntimeState, occurrence, declaration, capacity, or transition inputs and exposes the hypotheses needed by later composition.
+
 Kernel-decided witnesses cover two differently valued parent occurrences, unrelated concurrent Activity-local data, Error failure, Timer interruption, exact capacity boundaries, running-root lifetime, selected-root terminal ownership, terminal orphan refusal, and wrong-root refusal. Lean contains no Multi-Instance early-completion relation or claim in this checkpoint.
 
 If the Lean account cannot express the same canonical frame order and byte measure, or if promotion cannot be composed with scope completion without duplicating quiescence, the proposal returns to review. Implementation may not weaken the claim to a finite fixture or caller-supplied snapshot.
@@ -258,9 +260,9 @@ The complete `what-binds` inventory requires [`implementation-status-owner:ENGIN
 | [Lean initialization preservation](../../BpmnSemantics/SemanticProcess/RuntimeStateWellFormedInitialization.lean) | 709 | preserve the new invariant from the exact initialized state |
 | [Lean completion](../../BpmnSemantics/SemanticProcess/ScopeCompletion.lean) | 694 | promotion/frame |
 | [Lean cancellation](../../BpmnSemantics/SemanticProcess/ScopeCancellation.lean) | 646 | regional filtering |
-| [Lean transition](../../BpmnSemantics/SemanticProcess/Transition.lean) | 329 | three-arm attempt |
-| [Lean trace closure](../../BpmnSemantics/SemanticProcess/TransitionTrace.lean) | 226 | refusal rollback/no trace |
-| [Lean command admission](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean) | 426 | map root-capacity refusal to `Rejected`, never `semanticFailure` |
+| [Lean transition](../../BpmnSemantics/SemanticProcess/Transition.lean) | 60 | three-arm attempt |
+| [Lean trace closure](../../BpmnSemantics/SemanticProcess/TransitionTrace.lean) | 178 | refusal rollback/no trace |
+| [Lean command admission](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean) | 341 | map root-capacity refusal to `Rejected`, never `semanticFailure` |
 | [Lean census](../../BpmnSemantics/SemanticProcess/InternalCommutationCensus.lean) | 661 | new state field |
 | [Lean footprint core](../../BpmnSemantics/SemanticProcess/InternalCommutationCore.lean) | 338 | snapshot atom/footprint |
 | [Lean Program decoder](../../BpmnSemantics/SemanticProcessJson/Program.lean) | 113 | focused decoder |
@@ -271,7 +273,7 @@ The complete `what-binds` inventory requires [`implementation-status-owner:ENGIN
 | [Lean issuing conformance](../../BpmnSemantics/ActivityIssuingDisciplineConformance.lean) | 578 | synchronize close witness |
 | [Lean MI entry preservation](../../BpmnSemantics/SemanticProcess/ParallelMultiInstanceRuntimeStateEntryPreservation.lean) | 12 | order fact extracted; frame new invariant |
 | [Lean MI closing selection](../../BpmnSemantics/SemanticProcess/ParallelMultiInstanceRuntimeStateClosingSelection.lean) | 202 | frame new invariant |
-| [Lean commutation publication](../../BpmnSemantics/SemanticProcess/InternalCommutationPublication.lean) | 485 | carry aggregate fact |
+| [Lean commutation publication](../../BpmnSemantics/SemanticProcess/InternalCommutationPublication.lean) | 481 | carry aggregate fact |
 | [Lean MI empty preservation](../../BpmnSemantics/SemanticProcess/ParallelMultiInstanceRuntimeStateEmptyPreservation.lean) | 711 | carry aggregate fact |
 | [Lean MI progress preservation](../../BpmnSemantics/SemanticProcess/ParallelMultiInstanceRuntimeStateClosingProgressPreservation.lean) | 247 | frame new invariant |
 | [Lean MI terminal preservation](../../BpmnSemantics/SemanticProcess/ParallelMultiInstanceRuntimeStateClosingTerminalPreservation.lean) | 23 | extract the frame proof before further growth |

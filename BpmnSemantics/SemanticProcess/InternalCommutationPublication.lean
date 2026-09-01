@@ -183,7 +183,9 @@ theorem classified_internal_pair_publication_commutes
           firstTransitionIndex = some publication := by
   have classification := classified
   simp only [internalOperationPairIndependent?, Bool.and_eq_true] at classification
-  obtain ⟨⟨⟨operationIdsDifferent, _⟩, _⟩, separated⟩ := classification
+  obtain ⟨⟨⟨operationIdsDifferent, leftEnabled⟩, _⟩, separated⟩ := classification
+  have snapshotAbsent := fire_isSome_snapshotDeclaration_is_absent
+    program left state leftEnabled
   unfold internalTransitionFootprint? at separated
   generalize leftPrepared : prepareInternalArm? program state left = leftPatch at separated
   generalize rightPrepared : prepareInternalArm? program state right = rightPatch at separated
@@ -219,13 +221,13 @@ theorem classified_internal_pair_publication_commutes
               rightPatch programAdmitted stateAdmitted openBefore rightPrepared rightPrepared
           obtain ⟨rightStartAfterLeft, rightStartedAfterLeft, rightAcceptedAfterLeft⟩ :=
             acceptedInternalPublicationPair_prepared program instanceId commandId state leftAfter
-              right rightPatch programAdmitted leftPreserved.1 leftPreserved.2.1 rightPrepared
+              right rightPatch programAdmitted leftPreserved.1 leftPreserved.2 rightPrepared
               (by simpa [leftAfter] using rightFrame)
           rw [armingWaitStart_frame program state leftPatch, rightStarted] at rightStartedAfterLeft
           cases rightStartedAfterLeft
           obtain ⟨leftStartAfterRight, leftStartedAfterRight, leftAcceptedAfterRight⟩ :=
             acceptedInternalPublicationPair_prepared program instanceId commandId state rightAfter
-              left leftPatch programAdmitted rightPreserved.1 rightPreserved.2.1 leftPrepared
+              left leftPatch programAdmitted rightPreserved.1 rightPreserved.2 leftPrepared
               (by simpa [rightAfter] using leftFrame)
           rw [armingWaitStart_frame program state rightPatch, leftStarted] at leftStartedAfterRight
           cases leftStartedAfterRight
@@ -283,16 +285,18 @@ theorem classified_internal_pair_publication_commutes
             leftPublication rightPublication (by
               change leftPatch.operation.id ≠ rightPatch.operation.id
               exact patchIdsDifferent)
-          have leftStep := prepareInternalArm_applies program state left leftPatch leftPrepared
-          have rightStep := prepareInternalArm_applies program state right rightPatch rightPrepared
+          have leftStep := prepareInternalArm_applies program state left leftPatch
+            snapshotAbsent leftPrepared
+          have rightStep := prepareInternalArm_applies program state right rightPatch
+            snapshotAbsent rightPrepared
           have rightSecond : fire? program right (applyInternalArmingPatch state leftPatch) =
               some final := by
             simpa [leftAfter, final] using prepareInternalArm_applies program leftAfter right
-              rightPatch (by simpa [leftAfter] using rightFrame)
+              rightPatch snapshotAbsent (by simpa [leftAfter] using rightFrame)
           have leftSecond : fire? program left (applyInternalArmingPatch state rightPatch) =
               some final := by
-            have fired := prepareInternalArm_applies program rightAfter left leftPatch (by
-              simpa [rightAfter] using leftFrame)
+            have fired := prepareInternalArm_applies program rightAfter left leftPatch
+              snapshotAbsent (by simpa [rightAfter] using leftFrame)
             rw [reverseFinal] at fired
             simpa [rightAfter] using fired
           let publication :=
