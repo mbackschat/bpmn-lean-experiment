@@ -9,13 +9,15 @@ Review: pending
 
 The context-cold review rejected `c0370350`: its dormant handler could not satisfy the entry/completion graph rule, its outer `earlyCompletion` purge contradicted Clauses 10.7.2, 13.3.7, and 13.5.5, and its live-root invariant failed after root completion. This redesign gives a declared handler an operation-free/control-place-free graph exception, removes Multi-Instance early completion, and makes a promoted root own terminal child records.
 
+The fresh cold review of `10e8fb2d` found that account sound and required closure-facing capacity refusal, the complete owner inventory, and a public raw-graph negative. This correction supplies those bounded obligations; approval remains blocked until the same reviewer audits it.
+
 ## Question and bounded outcome
 
 What is the smallest standards-only hidden-state account that preserves the complete completion-time data context of one Process or embedded Sub-Process occurrence for its declared Compensation Event Sub-Process, distinguishes provisional ownership from a usable completed snapshot, purges every unsuccessful parent occurrence, and refuses bounded growth before changing semantic state?
 
 This proposal selects parent-context representation, complete parent-occurrence identity, reservation, successful-completion promotion, unsuccessful disposal, capacity, and containing-scope lifetime. It selects no throw Compensation Event, handler activation, context restoration, handler completion or failure, dependency order, recursive compensation, Transaction, Cancel Event, source profile, CIB behavior, public command, or Temporal effect.
 
-The reviewed requirement will be `BPMN-COMPENSATION-EVENT-SUB-PROCESS-SNAPSHOT-01`. It remains `unsupported` until a source profile, trigger/handler semantics, differential evidence, durable refinement, and public capability close an end-to-end slice.
+Requirement `BPMN-COMPENSATION-EVENT-SUB-PROCESS-SNAPSHOT-01` remains `unsupported` until source, handler, differential, durable, and public lanes close.
 
 ## Normative account and selected interpretation
 
@@ -69,7 +71,7 @@ type SemanticProcessProgram = DeepReadonly<{
 
 Targets are non-empty, canonically ordered by `parentScopeId` then `handlerScopeId`, and unique by both parent and handler. Each identity is a non-empty well-formed wire string. `parentScopeId` resolves to the unique root or one immediate child of it. `handlerScopeId` resolves to one distinct immediate child of the selected parent, owns no operation or control place, and has no entry or completion operation. A non-root parent has exactly one ordinary entry operation, restricted to the current `enterScope` or `enterBoundedScope` families. The root is identified by its null parent and `originElementId === processId`, never by array position.
 
-Strict Program admission validates the declaration and derives the dormant-handler set before graph admission checks ancestry, ownership, reachability, entry, and completion. A declared handler is accepted only with no owned operation/control place and no targeted entry/completion; every other scope keeps the ordinary graph rule. Callers cannot supply exemptions, and mislabeling an ordinary scope fails the zero-owned-vertex rule. This semantic declaration does not prove BPMN source provenance. A later compiler must prove `triggeredByEvent=true`, a Compensation Start Event, exact containment, and the parent-data restriction. Handler activation requires a reviewed executable graph replacement; no operation may be added under this exemption.
+Strict Program admission validates the declaration and derives the dormant-handler set before graph admission checks ancestry, ownership, reachability, entry, and completion. A declared handler is accepted only with no owned operation/control place and no targeted entry/completion; every other scope keeps the ordinary graph rule. The exported raw graph validator retains its current signature and rejects every operation-free child scope. Only a non-exported helper may receive the validated declaration-derived set; tests reject extra, mismatched, non-empty, and caller-supplied exemptions. This semantic declaration does not prove source provenance. A later compiler must prove `triggeredByEvent=true`, a Compensation Start Event, containment, and the parent-data restriction. Handler activation requires a reviewed executable graph replacement.
 
 `maxRecords` is a positive safe integer and counts provisional plus promoted records. `maxCanonicalBytes` is a safe integer from two through 65,536 inclusive and bounds the exact canonical JSON encoding of the complete record collection. A profile may select a smaller maximum to reserve headroom. The existing 65,536-byte complete `RuntimeState` limit remains a separate secondary bound; neither number is inferred from Temporal Event History or the two-mebibyte trace budget.
 
@@ -131,7 +133,7 @@ Root removal purges every provisional descendant and promoted child naming it. N
 
 Canonical bytes are the UTF-8 length of the complete canonical JSON record array, including tags, identities, frames, bindings, punctuation, and escaping. Object keys use Unicode scalar-value order and arrays use the orders above. Cached, caller-, host-, or publication-supplied sizes are invalid.
 
-Capacity refusal is a typed private semantic rejection naming measure, bound, and prospective value, staged before complete-state mutation. Existing whole-state host capacity remains separate.
+Capacity refusal is a typed private semantic rejection naming measure, bound, and prospective value. Closure-facing evaluation in both semantic accounts uses a closed `disabled | applied | refused(detail)` result; existing operations lift their current `null`/`Option` behavior into the first two arms, while snapshot reservation and promotion can return `refused`. At each closure iteration and batch re-evaluation, refusal takes precedence over zero-enabled, ambiguity, and batch commit. Any refusal aborts the complete stimulus, returns public `CommandOutcome.Rejected` with the exact state supplied to `applyStimulus`/Lean evaluation before admission, and emits no admitted state, internal step, batch, transition record, lifecycle delta, or publication. If several operations refuse together, canonical operation-ID order selects the private detail; the public outcome exposes no detail. Existing whole-state host capacity remains separate.
 
 ## Stable semantic rules and separating witnesses
 
@@ -151,17 +153,17 @@ Capacity refusal is a typed private semantic rejection naming measure, bound, an
 
 `CESPS-COMPAT-01`: every Program without the declaration and every state under it omit the optional field, preserving existing canonical bytes and behavior.
 
-The context discriminator runs two direct child parents under one root while an unrelated Activity-local scope remains live in the root. The first parent completes with Process binding `amount=A`; the binding then changes to `amount=B` before the second completes. Their snapshots retain `A` and `B` respectively and contain no unrelated Activity scope. Mutations that copy live `ScopedVariables`, capture at entry, retain a reference to Process bindings, or key by definition all fail.
+The context discriminator completes two direct children around a Process-binding change from `A` to `B` while unrelated Activity-local data remains live. Snapshots retain `A` and `B` without that local data; live aliases, entry capture, or definition-only keys fail.
 
 The lifecycle discriminator covers root reservation, child reservation, ordinary promotion, direct Error failure, and bounded-scope Timer interruption. Adversarial same-definition occurrences prove that purging one cannot remove or promote the other. The root-close cases distinguish unselected-root disposal from selected-root terminal retention and reject a terminal child with no promoted root or the wrong promoted root. Multi-Instance completion-condition behavior is absent rather than modeled by an invalid outer disposition.
 
-Capacity covers empty minimum, exact-fit and one-over reservation, exact-fit and one-over promotion, escaped and non-ASCII values, and whole-state equality after refusal. A mutation that checks after token, activation, deadline, Activity-record, occurrence, context, or control mutation must fail.
+Capacity covers empty minimum, exact-fit/one-over reservation and promotion, escaping, non-ASCII, child-entry overflow, and completion overflow after earlier admitted/internal work. Every refusal returns the original pre-stimulus state with empty trace/publication; a disabled-operation or committed-stall mutation must fail.
 
 ## Lean assurance lane
 
 Lane shape: **proved** for the representation, validation, reservation, capture, promotion, purge, capacity, and exact first-checkpoint lifecycle integrations.
 
-Lean defines the same declaration, targets, context frames, record union, canonical order and encoder, state validator, reservation/promotion/purge results, root start, ordinary child/root completion composition, and regional cancellation filtering. Required laws prove declaration and state census closure; complete-identity separation; root-to-parent frame ancestry; snapshot immutability; no Activity-local capture; success-only promotion; exact unsuccessful purge; count/byte refusal with complete-state preservation; old-byte omission at the strict JSON boundary; and start, completion, and cancellation frame properties.
+Lean defines the same declaration, records, encoder, validator, lifecycle functions, three-arm internal attempt, closure refusal, and lifecycle integrations. Laws prove census closure, identity separation, frame ancestry/immutability, success-only promotion, unsuccessful purge, count/byte and whole-stimulus refusal preservation, old-byte omission, and integration frame properties.
 
 Kernel-decided witnesses cover two differently valued parent occurrences, unrelated concurrent Activity-local data, Error failure, Timer interruption, exact capacity boundaries, running-root lifetime, selected-root terminal ownership, terminal orphan refusal, and wrong-root refusal. Lean contains no Multi-Instance early-completion relation or claim in this checkpoint.
 
@@ -169,9 +171,9 @@ If the Lean account cannot express the same canonical frame order and byte measu
 
 ## Internal operation-family classification
 
-Root start is external initiation and current child entry/completion routes are internal operations. Reservation adds a write to the complete parent-occurrence retention atom; promotion reads the parent occurrence, context path, Process bindings, and exact retention record and writes that record. Regional purge writes every retention record owned by the removed region. The internal-commutation census must classify the new optional RuntimeState collection and the preparation footprints must prevent a batch from commuting parent entry, completion, data mutation, or cancellation across a shared context or retention owner.
+Root start is external; child entry/completion is internal. Reservation writes the parent-occurrence retention atom; promotion reads parent/context/bindings/record and writes the record; purge writes every region-owned record. The commutation census and preparations prevent entry, completion, data mutation, or cancellation commuting across shared context/ownership.
 
-No snapshot record enables an operation, affects quiescence, or enters public publication. A future trigger operation will reopen both the enabled-frontier and footprint accounts.
+Snapshots do not enable operations, affect quiescence, or enter publication. A trigger reopens frontier and footprint accounts.
 
 ## CIB Seven relationship boundary
 
@@ -195,62 +197,89 @@ The smallest later executable refinement witness starts a selected direct child,
 | Complete context | Root-to-parent frame derivation and capture laws | Canonical frame capture from pre-state | Carried only | A/B completion with unrelated local scope |
 | Success-only promotion | Completion composition and preservation | Exact `completeScope` staging | Carried only | Entry-copy and live-alias mutations |
 | Unsuccessful purge | Regional-removal laws for failure, interruption, and cancellation | Error, Timer, and cancellation filters | Carried only | Promote-on-failure/interruption; outer early-disposition mutation |
-| Atomic capacity | Exact count/byte refusal theorems | Escaped/non-ASCII fit and overflow with whole-state equality | Complete-state class remains separate | Any pre-refusal state mutation |
+| Atomic capacity | Three-arm attempt and whole-stimulus rollback laws | Entry/completion refusal with empty trace/publication | Complete-state class remains separate | Disabled/stalled or partial-commit mutation |
 | Lifetime | Running-owner and terminal promoted-root laws | Selected/unselected root-close plus terminal orphan/wrong-root refusal | Continuation witness later | Continue-As-New disposal or terminal orphan mutation |
 | Compatibility | Omitted declaration and strict-decoder fixtures | Exact old Program/state bytes | Existing histories unchanged | Emitted empty field under old Program |
 
-The first green semantic checkpoint contains optional Program/RuntimeState contracts, strict shared and Lean readers, declaration-first graph validation with the exact dormant-handler exception, state validation, pure reservation/capture/promotion/purge, exact byte measurement, old-byte omission, root start, exact current `enterScope`/`enterBoundedScope`, ordinary completion, Error and Timer regional removal integration, commutation census/footprints, and the proved Lean laws. It contains no source shape, registered profile, scenario, corpus, CIB runner, handler operation, Multi-Instance early-completion disposition, Temporal behavior, public capability, or Product 2 claim.
+The first green checkpoint contains the optional contracts/readers, exact dormant-handler admission, state/lifecycle validation, three-arm closure refusal and rollback, byte measurement/omission, current start/entry/completion/Error/Timer integration, commutation census/footprints, and Lean laws. It adds no source/profile/scenario/CIB/handler/Multi-Instance/Temporal/public/Product 2 claim.
 
 ## Runtime-only inventory and layer ownership
 
 | Construct | Derivation and owner | Public projection | Lifecycle |
 |---|---|---|---|
-| Snapshot target | Immutable Program declaration; later source compiler proves Compensation Event Sub-Process provenance | None | Program lifetime |
-| Provisional record | Exact parent occurrence created by root or child entry | None | Entry until success promotion or unsuccessful purge |
-| Context frame | Exact live root-to-parent scope occurrence plus bindings captured from pre-state | None | Immutable inside promoted snapshot |
-| Promoted snapshot | Exact parent/handler record owned by containing root or terminal selected root | None | Successful completion until containing lifetime or later handler consumption |
-| Capacity detail | Pure staged result | Existing semantic rejection only | Never retained |
+| Snapshot target | Program declaration; source later proves provenance | None | Program |
+| Provisional record | Exact parent occurrence | None | Entry to promotion/purge |
+| Context frame | Pre-state scope occurrence and bindings | None | Immutable |
+| Promoted snapshot | Parent/handler record under live or promoted root | None | Completion to disposal/consumption |
+| Capacity detail | Pure refusal | Rejected only | Never retained |
 
-The BPMN/profile layer owns handler provenance, parent-data admission, and limits. Lean owns the formal account; TypeScript independently realizes it. Temporal carries committed state without deriving semantic facts. Publication and Product 2 own nothing here.
+The profile owns provenance/data admission/limits; Lean and TypeScript own independent semantic accounts; Temporal only carries state. Publication and Product 2 own nothing here.
 
 ## Versioning consequences
 
-This is a pre-release additive Program/RuntimeState contract. No current source profile emits it, so existing source, checked graphs, Programs, states, commands, observations, scenarios, histories, and public bytes remain unchanged. Strict Program/state readers and exhaustive RuntimeState consumers change only after approval.
+This pre-release change adds optional Program/RuntimeState fields and replaces the closure-facing two-arm internal evaluator with a three-arm private result. No profile emits the declaration, and public wire outcomes remain unchanged.
 
-The `what-binds` inventory requires [contract schema coverage](../../scripts/contract-schema-coverage.test.ts), [contract definition artifacts](../../scripts/contract-definition-artifacts.test.ts), [internal-commutation census](../../scripts/internal-commutation-census.test.ts), [runtime collection-removal completeness](../../scripts/runtime-collection-removal-completeness.test.ts), [source hygiene](../../scripts/source-hygiene.test.ts), [document reviewability](../../scripts/document-reviewability.test.ts), and the applicable registries. The table below inventories every existing owner this checkpoint grows; focused new TypeScript and Lean modules own the representation, transitions, JSON, tests, and proofs.
+The complete `what-binds` inventory requires [Program schema](../../contracts/schemas/semantic-process.schema.json), [Semantic Process IL](../SEMANTIC-PROCESS-IL-SPEC.md), [Internal Commutation](../INTERNAL-COMMUTATION-PROPOSAL.md), [contract registry](../../contracts/README.md), [package guide](../../packages/semantic-core/README.md), [source map](../../packages/semantic-core/SOURCE-MAP.md), [schema coverage](../../scripts/contract-schema-coverage.test.ts), [definition artifacts](../../scripts/contract-definition-artifacts.test.ts), [commutation census](../../scripts/internal-commutation-census.test.ts), [collection removal](../../scripts/runtime-collection-removal-completeness.test.ts), [source hygiene](../../scripts/source-hygiene.test.ts), and [reviewability](../../scripts/document-reviewability.test.ts). Trace/replay consumers [TypeScript trace](../../packages/semantic-core/src/semantic-transition-trace.ts), [Lean command admission](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean), [Lean Scenario](../../BpmnSemantics/SemanticProcess/Scenario.lean), and [Lean publication](../../BpmnSemantics/SemanticProcessJson/Publication.lean) must preserve rejected/no-publication behavior even when they need no source change.
 
 ### Owners this implementation grows
 
-| Existing owner | Current headroom | Structural condition |
+| Existing owner | Current headroom | Growth condition |
 |---|---:|---|
-| [TypeScript Program contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 210 | add only the optional declaration reference; extract before crossing 800 |
-| [Strict TypeScript Program admission](../../packages/semantic-core/src/semantic-process-admission.ts) | 412 | validate the declaration before graph admission and pass only its derived dormant-handler set |
-| [TypeScript graph admission](../../packages/semantic-core/src/semantic-process-graph-admission.ts) | 206 | exempt exactly derived dormant handlers from entry/completion while enforcing zero owned operations and control places |
-| [TypeScript command admission](../../packages/semantic-core/src/semantic-command-admission.ts) | 388 | preserve strict optional-field normalization in not-started runtime states |
-| [TypeScript RuntimeState](../../packages/semantic-core/src/semantic-process-state.ts) | 381 | add only the optional collection reference; new types live elsewhere |
-| [TypeScript well-formedness](../../packages/semantic-core/src/runtime-state-well-formedness.ts) | 95 | add one delegated validator hook; extract before crossing 800 |
-| [TypeScript root start](../../packages/semantic-core/src/semantic-process-triggered-start.ts) | 631 | stage root reservation before the first root mutation |
-| [TypeScript scope runtime](../../packages/semantic-core/src/semantic-process-scope-runtime.ts) | 556 | compose unbounded reservation/promotion without duplicating scope selection or quiescence |
-| [TypeScript bounded-scope runtime](../../packages/semantic-core/src/semantic-process-bounded-scope-runtime.ts) | 446 | compose bounded reservation before activation, deadline, and wait mutation |
-| [TypeScript scope cancellation](../../packages/semantic-core/src/semantic-process-scope-cancellation.ts) | 616 | delegate region-owned snapshot filtering |
-| [TypeScript called-Process runtime](../../packages/semantic-core/src/semantic-process-call-runtime.ts) | 405 | structurally preserve the optional collection through existing runtime-state filtering even though called ownership is excluded |
-| [Lean Program contract](../../BpmnSemantics/SemanticProcessContract.lean) | 106 | add only the optional declaration reference; extract before crossing 800 |
-| [Lean graph validation](../../BpmnSemantics/SemanticProcess/GraphValidation.lean) | 41 | import a focused declaration predicate and change only the one-entry/one-completion call; extract before crossing 800 |
-| [Lean RuntimeState](../../BpmnSemantics/SemanticProcess/RuntimeState.lean) | 217 | add only the collection reference and focused initialization hook |
-| [Lean well-formedness](../../BpmnSemantics/SemanticProcess/RuntimeStateWellFormed.lean) | 101 | add one delegated predicate; extract before crossing 800 |
-| [Lean scope completion](../../BpmnSemantics/SemanticProcess/ScopeCompletion.lean) | 694 | compose promotion and update frame laws |
-| [Lean scope cancellation](../../BpmnSemantics/SemanticProcess/ScopeCancellation.lean) | 646 | delegate record filtering and prove regional ownership |
-| [Strict Lean Program decoder](../../BpmnSemantics/SemanticProcessJson/Program.lean) | 116 | delegate the optional field to a focused decoder; extract before crossing 800 |
+| [TS Program](../../packages/semantic-core/src/semantic-process-contract.ts) | 210 | declaration reference only |
+| [TS Program admission](../../packages/semantic-core/src/semantic-process-admission.ts) | 412 | declaration before graph |
+| [TS graph admission](../../packages/semantic-core/src/semantic-process-graph-admission.ts) | 206 | private exact exemption |
+| [TS command admission](../../packages/semantic-core/src/semantic-command-admission.ts) | 388 | optional-field normalization |
+| [TS RuntimeState](../../packages/semantic-core/src/semantic-process-state.ts) | 381 | collection reference only |
+| [TS well-formedness](../../packages/semantic-core/src/runtime-state-well-formedness.ts) | 95 | delegate before 800 |
+| [TS root start](../../packages/semantic-core/src/semantic-process-triggered-start.ts) | 631 | pre-mutation reservation |
+| [TS scope runtime](../../packages/semantic-core/src/semantic-process-scope-runtime.ts) | 556 | unbounded entry/promotion |
+| [TS bounded scope](../../packages/semantic-core/src/semantic-process-bounded-scope-runtime.ts) | 446 | bounded entry/promotion |
+| [TS cancellation](../../packages/semantic-core/src/semantic-process-scope-cancellation.ts) | 616 | regional filtering |
+| [TS Call cleanup](../../packages/semantic-core/src/semantic-process-call-runtime.ts) | 405 | structural filtering only |
+| [TS evaluator](../../packages/semantic-core/src/semantic-process-runtime.ts) | 157 | three-arm result; extract first if needed |
+| [TS closure](../../packages/semantic-core/src/semantic-process-closure.ts) | 685 | refusal precedence/rollback |
+| [TS census](../../packages/semantic-core/src/internal-commutation-census.ts) | 668 | new state field |
+| [TS footprint vocabulary](../../packages/semantic-core/src/internal-transition-footprint-vocabulary.ts) | 764 | snapshot atom |
+| [TS footprint union](../../packages/semantic-core/src/internal-transition-footprint.ts) | 190 | dispatch/preparation |
+| [TS footprint order](../../packages/semantic-core/src/internal-transition-footprint-ordering.ts) | 260 | snapshot atom order |
+| [TS scope-entry preparation](../../packages/semantic-core/src/internal-transition-scope-creation-preparation.ts) | 569 | retention read/write |
+| [TS bounded-entry preparation](../../packages/semantic-core/src/internal-transition-bounded-scope-preparation.ts) | 613 | retention read/write |
+| [TS completion preparation](../../packages/semantic-core/src/internal-transition-scope-completion-preparation.ts) | 665 | context/retention footprint |
+| [TS Error preparation](../../packages/semantic-core/src/internal-transition-error-preparation.ts) | 715 | purge footprint |
+| [TS termination preparation](../../packages/semantic-core/src/internal-transition-termination-preparation.ts) | 723 | purge footprint |
+| [Lean Program](../../BpmnSemantics/SemanticProcessContract.lean) | 106 | declaration reference only |
+| [Lean structural admission](../../BpmnSemantics/SemanticProcess/ProgramStructuralValidation.lean) | 146 | declaration hook |
+| [Lean graph admission](../../BpmnSemantics/SemanticProcess/GraphValidation.lean) | 41 | extract exception helper before 800 |
+| [Lean RuntimeState](../../BpmnSemantics/SemanticProcess/RuntimeState.lean) | 217 | collection reference only |
+| [Lean well-formedness](../../BpmnSemantics/SemanticProcess/RuntimeStateWellFormed.lean) | 101 | delegated predicate |
+| [Lean completion](../../BpmnSemantics/SemanticProcess/ScopeCompletion.lean) | 694 | promotion/frame |
+| [Lean cancellation](../../BpmnSemantics/SemanticProcess/ScopeCancellation.lean) | 646 | regional filtering |
+| [Lean transition](../../BpmnSemantics/SemanticProcess/Transition.lean) | 329 | three-arm attempt |
+| [Lean trace closure](../../BpmnSemantics/SemanticProcess/TransitionTrace.lean) | 226 | refusal rollback/no trace |
+| [Lean census](../../BpmnSemantics/SemanticProcess/InternalCommutationCensus.lean) | 664 | new state field |
+| [Lean footprint core](../../BpmnSemantics/SemanticProcess/InternalCommutationCore.lean) | 338 | snapshot atom/footprint |
+| [Lean Program decoder](../../BpmnSemantics/SemanticProcessJson/Program.lean) | 116 | focused decoder |
+| [Lean commutation preservation](../../BpmnSemantics/SemanticProcess/InternalCommutationRuntimePreservation.lean) | 27 | extract snapshot frame first |
+| [Lean correlation preservation](../../BpmnSemantics/SemanticProcess/MessageKeyCorrelationPreservation.lean) | 365 | frame new invariant |
+| [Lean payload preservation](../../BpmnSemantics/SemanticProcess/MessagePayloadPreservation.lean) | 468 | frame new invariant |
+| [Lean turnover preservation](../../BpmnSemantics/SemanticProcess/ActivityBodyTurnoverPreservation.lean) | 598 | frame new invariant |
+| [Lean issuing conformance](../../BpmnSemantics/ActivityIssuingDisciplineConformance.lean) | 578 | synchronize close witness |
+| [Lean MI entry preservation](../../BpmnSemantics/SemanticProcess/ParallelMultiInstanceRuntimeStateEntryPreservation.lean) | 3 | extract before any growth |
+| [Lean MI closing selection](../../BpmnSemantics/SemanticProcess/ParallelMultiInstanceRuntimeStateClosingSelection.lean) | 204 | frame new invariant |
+| [Lean commutation publication](../../BpmnSemantics/SemanticProcess/InternalCommutationPublication.lean) | 485 | carry aggregate fact |
+| [Lean MI empty preservation](../../BpmnSemantics/SemanticProcess/ParallelMultiInstanceRuntimeStateEmptyPreservation.lean) | 711 | carry aggregate fact |
+| [Lean MI progress preservation](../../BpmnSemantics/SemanticProcess/ParallelMultiInstanceRuntimeStateClosingProgressPreservation.lean) | 252 | frame new invariant |
+| [Lean MI terminal preservation](../../BpmnSemantics/SemanticProcess/ParallelMultiInstanceRuntimeStateClosingTerminalPreservation.lean) | 28 | extract frame proof first |
 
-No size exception is requested. Expected focused owners are `packages/semantic-core/src/compensation-event-sub-process-snapshot-contract.ts`, `packages/semantic-core/src/compensation-event-sub-process-snapshot.ts`, `packages/semantic-core/src/compensation-event-sub-process-snapshot-state-validation.ts`, their tests, `BpmnSemantics/SemanticProcess/CompensationEventSubProcessSnapshotDeclaration.lean`, `BpmnSemantics/SemanticProcess/CompensationEventSubProcessSnapshot.lean`, a focused JSON decoder, and one conformance target. Root integration owns shared contracts, state, schema, lifecycle composition, registries, maps, PLAN, and review receipts.
+No size exception is requested. Planned bounded owners are `compensation-event-sub-process-snapshot-contract.ts`, `compensation-event-sub-process-snapshot.ts`, `compensation-event-sub-process-snapshot-state-validation.ts`, their focused test, `CompensationEventSubProcessSnapshotDeclaration.lean`, `CompensationEventSubProcessSnapshot.lean`, its JSON decoder, and its conformance target. Root integration owns shared contracts, closure, schema, registries, status, and receipts.
 
 ## Epistemic closure and reopen conditions
 
-Selected here: exact occurrence identity, explicit handler provenance, the operation-free/control-place-free dormant handler graph, completion-time rather than entry-time capture, root-to-parent context frames, provisional reservation, success-only promotion, failed/interrupted/cancelled purge, running-root and terminal promoted-root lifetime, canonical byte capacity, old-byte omission, and Temporal carry-only refinement.
+Selected: exact occurrence/provenance, dormant graph, completion-time frames, reservation/promotion/purge, root lifetime, capacity/omission, and carry-only hosting.
 
-Still open: executable source provenance; Sub-Process-local data representation; loop and Multi-Instance Sub-Process multiplicity; nested and called ownership; trigger target selection; restoration semantics; handler identity, scheduling, order, failure, cancellation, and consumption; implicit/default compensation; Transactions; CIB agreement; live host refinement; public capability; and closure evidence.
+Open: source provenance; Sub-Process data; repetition/multiplicity; nested/called ownership; trigger/restoration/handler lifecycle and order; implicit compensation; Transactions; CIB; live refinement; public capability; closure.
 
-Reopen before admitting a second handler for one parent, a selected parent below one direct child, repeated/loop/Multi-Instance parent activation or an early-completion disposition, called Process transfer, any non-empty Sub-Process data frame, ordinary Event Sub-Process state reuse, any handler-owned operation or control place, handler triggering/restoration, or a capacity encoder that differs between Lean and TypeScript.
+Reopen for a second handler, deeper/repeated/MI parent, early disposition, Call transfer, Sub-Process data, ordinary Event Sub-Process reuse, handler-owned graph content, triggering/restoration, or encoder divergence.
 
 ## Stage boundary
 
