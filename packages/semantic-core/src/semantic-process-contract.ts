@@ -13,6 +13,7 @@ import type { DirectActivityDataInput } from "./activity-data-input-contract.js"
 import type { DirectActivityDataOutput } from "./activity-data-output-contract.js";
 import type { DirectCatchEventPayloadOutput } from "./catch-event-payload-contract.js";
 import type { CompensationActivityRetentionDeclaration } from "./compensation-activity-retention-contract.js";
+import type { CompensationEventSubProcessSnapshotDeclaration } from "./compensation-event-sub-process-snapshot-contract.js";
 import type {
   CorrelationMessagePath,
   CorrelationProcessPropertyPath,
@@ -628,4 +629,5 @@ export type SemanticProcessProgram = DeepReadonly<{
   controlPlaces: ControlPlace[];
   operations: SemanticOperation[];
   compensationActivityRetention?: CompensationActivityRetentionDeclaration;
+  compensationEventSubProcessSnapshots?: CompensationEventSubProcessSnapshotDeclaration;
 }>;

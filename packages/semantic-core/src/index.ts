@@ -12,6 +12,8 @@ export * from "./catch-event-payload-contract.js";
 export * from "./compensation-activity-retention-contract.js";
 export * from "./compensation-activity-retention.js";
 export * from "./compensation-activity-retention-state-validation.js";
+export * from "./compensation-event-sub-process-snapshot-contract.js";
+export * from "./compensation-event-sub-process-snapshot-state-validation.js";
 export * from "./correlation-scalar-path.js";
 export * from "./message-key-correlation.js";
 export {
@@ -78,7 +80,10 @@ export * from "./semantic-value-contract.js";
 export * from "./checked-process-contract.js";
 export * from "./semantic-process-contract.js";
 export * from "./semantic-process-data.js";
-export * from "./semantic-process-graph-admission.js";
+export {
+  isWellFormedSemanticProcessGraph,
+  type SemanticProcessGraph,
+} from "./semantic-process-graph-admission.js";
 export * from "./semantic-process-graph-policy.js";
 export * from "./semantic-process-profile.js";
 export * from "./semantic-profile-observations.js";

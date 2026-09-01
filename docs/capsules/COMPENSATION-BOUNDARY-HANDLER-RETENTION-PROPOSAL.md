@@ -228,7 +228,7 @@ The 800-nonblank-line soft target is the extraction threshold and 1,200 lines th
 
 | Owner | Current headroom | Structural condition |
 |---|---:|---|
-| [TypeScript Program contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 210 | add only the optional declaration reference; extract before crossing 800 |
+| [TypeScript Program contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 208 | add only the optional declaration reference; extract before crossing 800 |
 | [TypeScript RuntimeState](../../packages/semantic-core/src/semantic-process-state.ts) | 381 | add only the optional collection reference; new types live elsewhere |
 | [TypeScript well-formedness](../../packages/semantic-core/src/runtime-state-well-formedness.ts) | 95 | add one delegated validator hook; extract before crossing 800 |
 | [TypeScript scope runtime](../../packages/semantic-core/src/semantic-process-scope-runtime.ts) | 556 | route normal root disposal only |

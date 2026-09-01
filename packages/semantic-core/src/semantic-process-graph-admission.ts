@@ -1,4 +1,5 @@
 import { SemanticOperationKind } from "./semantic-process-contract.js";
+import type { CompensationEventSubProcessSnapshotTarget } from "./compensation-event-sub-process-snapshot-contract.js";
 import type { DefinitionScope } from "./semantic-value-contract.js";
 import type {
   ControlPlaceScopeOwnership,
@@ -31,6 +32,24 @@ export type SemanticProcessGraph = Readonly<{
 /** Validates generic scoped ownership, producer, consumer, progress, and cycle facts. */
 export function isWellFormedSemanticProcessGraph(
   graph: SemanticProcessGraph,
+): boolean {
+  return isWellFormedSemanticProcessGraphWithDormantHandlers(graph, new Set());
+}
+
+/** Internal Program-composition seam; the package entry point deliberately does not export it. */
+export function isWellFormedSemanticProcessProgramGraph(
+  graph: SemanticProcessGraph,
+  targets: ReadonlyArray<CompensationEventSubProcessSnapshotTarget>,
+): boolean {
+  return isWellFormedSemanticProcessGraphWithDormantHandlers(
+    graph,
+    new Set(targets.map(({ handlerScopeId }) => handlerScopeId)),
+  );
+}
+
+function isWellFormedSemanticProcessGraphWithDormantHandlers(
+  graph: SemanticProcessGraph,
+  dormantHandlerScopeIds: ReadonlySet<string>,
 ): boolean {
   const graphPolicy = semanticGraphPolicyForProfile(graph.semanticProfile);
   if (graphPolicy === undefined) {
@@ -130,7 +149,12 @@ export function isWellFormedSemanticProcessGraph(
     operationScope.get(start.id) !== root.id ||
     rootCompletions.length !== 1 ||
     end === undefined ||
-    !hasOneCompletionStrategyPerScope(graph, root.id, operationScope)
+    !hasOneCompletionStrategyPerScope(
+      graph,
+      root.id,
+      operationScope,
+      dormantHandlerScopeIds,
+    )
   ) {
     return false;
   }
@@ -312,6 +336,7 @@ function hasOneCompletionStrategyPerScope(
   graph: SemanticProcessGraph,
   entryRootId: string,
   operationScope: ReadonlyMap<string, string>,
+  dormantHandlerScopeIds: ReadonlySet<string>,
 ): boolean {
   const completions = operationsOfKind(
     graph,
@@ -325,8 +350,13 @@ function hasOneCompletionStrategyPerScope(
     ...operationsOfKind(graph, SemanticOperationKind.EnterBoundedScope),
   ];
   const returns = operationsOfKind(graph, SemanticOperationKind.ReturnProcess);
-  return graph.definitionScopes.every(({ id, parentScopeId }) =>
-    (parentScopeId === null
+  return graph.definitionScopes.every(({ id, parentScopeId }) => {
+    if (dormantHandlerScopeIds.has(id)) {
+      return parentScopeId !== null &&
+        completions.every(({ scopeId }) => scopeId !== id) &&
+        entries.every(({ childScopeId }) => childScopeId !== id);
+    }
+    return (parentScopeId === null
       ? id === entryRootId
         ? completions.filter(({ scopeId }) => scopeId === id).length === 1 &&
           returns.every(({ id: operationId }) =>
@@ -339,8 +369,8 @@ function hasOneCompletionStrategyPerScope(
       : completions.filter(({ scopeId }) => scopeId === id).length === 1) &&
     (parentScopeId === null
       ? entries.every(({ childScopeId }) => childScopeId !== id)
-      : entries.filter(({ childScopeId }) => childScopeId === id).length === 1)
-  );
+      : entries.filter(({ childScopeId }) => childScopeId === id).length === 1);
+  });
 }
 
 function isWellFormedScopeForest(

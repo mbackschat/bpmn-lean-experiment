@@ -281,7 +281,7 @@ The 800-nonblank-line soft target is the extraction threshold and 1,200 lines is
 | [TypeScript semantic runtime dispatch](../../packages/semantic-core/src/semantic-process-runtime.ts) | 157 | add dispatch only; correlation behavior belongs in a new family owner |
 | [TypeScript lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 154 | add dispatch and construction only; source correlation validation belongs in a new owner |
 | [TypeScript scenario projection](../../packages/semantic-core/src/scenario.ts) | 185 | add the correlated interaction projection only; engine-population execution belongs in a new owner |
-| [TypeScript Semantic Process contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 210 | add one operation arm and referenced correlation contract; extract first if the edit would cross 800 |
+| [TypeScript Semantic Process contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 208 | add one operation arm and referenced correlation contract; extract first if the edit would cross 800 |
 | [TypeScript public contract](../../packages/semantic-core/src/contract.ts) | 338 | add closed public arms without changing existing direct Message shapes |
 | [Workflow command ingress](../../packages/temporal-adapter/workflow/src/workflow-command-ingress.ts) | 348 | route target delivery only; global correlation ingress belongs in new Workflow owners |
 | [Lean Transition](../../BpmnSemantics/SemanticProcess/Transition.lean) | 329 | add one dispatcher constructor; matcher and laws belong in new modules |

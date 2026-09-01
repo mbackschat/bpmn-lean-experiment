@@ -22,6 +22,7 @@ import type {
 } from "./semantic-process-contract.js";
 import {
   isWellFormedSemanticProcessGraph,
+  isWellFormedSemanticProcessProgramGraph,
 } from "./semantic-process-graph-admission.js";
 import {
   isWellFormedSemanticOperation,
@@ -56,6 +57,10 @@ import {
   compensationRetentionProgramDefects,
   isCompensationActivityRetentionDeclaration,
 } from "./compensation-activity-retention-state-validation.js";
+import {
+  compensationEventSubProcessSnapshotProgramDefects,
+  isCompensationEventSubProcessSnapshotDeclaration,
+} from "./compensation-event-sub-process-snapshot-state-validation.js";
 
 export function supportsSemanticProcessScenario(
   scenario: Scenario,
@@ -131,6 +136,10 @@ export function isWellFormedSemanticProcessProgram(
     value,
     "compensationActivityRetention",
   );
+  const hasCompensationEventSubProcessSnapshots = Object.prototype.hasOwnProperty.call(
+    value,
+    "compensationEventSubProcessSnapshots",
+  );
   if (
     !hasOnlyKeys(value, [
       "kind",
@@ -144,6 +153,9 @@ export function isWellFormedSemanticProcessProgram(
       "operations",
       ...(hasCompensationActivityRetention
         ? ["compensationActivityRetention"]
+        : []),
+      ...(hasCompensationEventSubProcessSnapshots
+        ? ["compensationEventSubProcessSnapshots"]
         : []),
     ]) ||
     value.kind !== SemanticProcessKind.SemanticProcess ||
@@ -185,6 +197,10 @@ export function isWellFormedSemanticProcessProgram(
       !isCompensationActivityRetentionDeclaration(
         value.compensationActivityRetention,
       )) ||
+    (hasCompensationEventSubProcessSnapshots &&
+      !isCompensationEventSubProcessSnapshotDeclaration(
+        value.compensationEventSubProcessSnapshots,
+      )) ||
     !isSortedById(controlPlaces) ||
     !isSortedById(operations)
   ) {
@@ -224,10 +240,23 @@ export function isWellFormedSemanticProcessProgram(
     }
     checkedOperations.push(operation);
   }
+  const program = value as unknown as SemanticProcessProgram;
+  const snapshotTargets = program.compensationEventSubProcessSnapshots?.targets;
   return inclusiveOperationsArePaired(checkedOperations) &&
     programWaitDeclarersAreUnique(checkedOperations) &&
-    compensationRetentionProgramDefects(value as SemanticProcessProgram).length === 0 &&
-    isWellFormedSemanticProcessGraph({
+    compensationRetentionProgramDefects(program).length === 0 &&
+    compensationEventSubProcessSnapshotProgramDefects(program).length === 0 &&
+    (snapshotTargets === undefined
+      ? isWellFormedSemanticProcessGraph({
+        semanticProfile: identity.semanticProfile,
+        processId: value.processId,
+        definitionScopes,
+        operationScopes,
+        controlPlaceScopes,
+        controlPlaceIds: [...placeIds],
+        operations: checkedOperations,
+      })
+      : isWellFormedSemanticProcessProgramGraph({
       semanticProfile: identity.semanticProfile,
       processId: value.processId,
       definitionScopes,
@@ -235,7 +264,7 @@ export function isWellFormedSemanticProcessProgram(
       controlPlaceScopes,
       controlPlaceIds: [...placeIds],
       operations: checkedOperations,
-    });
+    }, snapshotTargets));
 }
 
 function isWellFormedDefinitionScope(
