@@ -28,13 +28,13 @@ Clause 13.5.5 also distinguishes associated boundary Compensation Activities fro
 
 The membership witness has two successfully completed Activities in one visible scope. Only one has a boundary Compensation Event associated to a Compensation Activity. A global throw without `activityRef` can select the handler-bearing Activity and cannot make the other eligible. Optional target syntax controls selection among eligible Activities, not eligibility itself.
 
-The Multi-Instance User Task witness separates outer completion from compensation eligibility. Natural completion after every planned instance succeeds enables one associated handler and needs one outer record. A true `completionCondition` can complete the outer Activity after canceling siblings, and an interrupting boundary Timer cancels it; Clause 13.3.7 makes neither all-success, so neither retains an outer compensable completion.
+The Multi-Instance User Task witness separates all-success from actual early cancellation. Zero items complete normally and the standard supplies no positive-cardinality exception, so compensation needs a fresh outer identity even though current execution creates no inner instance. One planned parallel item under `completionPolicy="first"` fills every slot and is all-success; more than one planned item causes the same policy to cancel siblings and is not. An interrupting boundary Timer is likewise not all-success.
 
 The snapshot witness is a Multi-Instance Sub-Process containing a Compensation Event Sub-Process. Each parent instance can carry different scope data. A generic record of current User Task DataInput/DataOutput bindings cannot restore that parent scope and therefore cannot stand in for its snapshot.
 
 ## Scope and exclusions
 
-In scope: hidden-state versus publication ownership; handler eligibility versus scope visibility/lifetime; associated-handler multiplicity for the admitted Multi-Instance User Task witness; and the committed-state budget retention charges.
+In scope: hidden-state versus publication ownership; handler eligibility versus scope visibility/lifetime; outer identity and associated-handler multiplicity for zero-, one-, and many-item Multi-Instance User Task witnesses; and the committed-state budget retention charges.
 
 Excluded: an executable handler, throw Event, source profile, exact parent-scope snapshot representation, Multi-Instance Sub-Process handler multiplicity, dependency ordering, cancellation consequences, Transactions, CIB behavior, and production implementation.
 
@@ -60,7 +60,7 @@ The original inference from optional `activityRef` to handler-free eligibility w
 
 ### Boundary-handler and Event Sub-Process retention are different
 
-An associated boundary handler needs one completed outer Activity identity and chronology; an admitted Multi-Instance User Task becomes eligible only after all instances succeed, and its handler later triggers once. No generic Task-data snapshot is assigned to that handler by the selected clauses. Multi-Instance Sub-Process handler multiplicity remains open with its distinct Clause 10.7.2 wording.
+An associated boundary handler needs one completed outer Activity identity and chronology; an admitted Multi-Instance User Task becomes eligible only after all instances succeed, and its handler later triggers once. Equality includes a zero-item normal completion, which still needs an outer identity, and a one-item `completionPolicy="first"` completion; a larger sibling-canceling first-completion path is not all-success. No generic Task-data snapshot is assigned to that handler by the selected clauses. Multi-Instance Sub-Process handler multiplicity remains open with its distinct Clause 10.7.2 wording.
 
 A Compensation Event Sub-Process instead needs complete data from its Process/Sub-Process parent at completion. A loop or Multi-Instance parent can require one dedicated snapshot per instance. That mechanism needs provisional per-instance state and exact purge on failed, early, or interrupted completion; it is a separate immediately following risk band.
 
@@ -72,11 +72,11 @@ The registered sixteen-item Sequential Multi-Instance witness peaked at 2,626 by
 
 ### No current representation correction is required
 
-Current disposal laws are profile-local and current profiles declare no compensation handler. A future Program can add optional retention without invalidating existing semantics or bytes. The revised boundary-handler proposal must nevertheless refuse capacity before any completion mutation and distinguish all-success Multi-Instance User Task completion from early completion and interruption.
+Current disposal laws are profile-local and current profiles declare no compensation handler. A future Program can add optional retention without invalidating existing Program or state bytes. The revised boundary-handler proposal must nevertheless mint a zero-item outer identity, distinguish one-item all-success from larger sibling-canceling early completion, and refuse capacity before any completion mutation.
 
 ## Recorded for the compensation capsules
 
-The [boundary-handler retention proposal](../capsules/COMPENSATION-BOUNDARY-HANDLER-RETENTION-PROPOSAL.md) owns explicit target eligibility, one outer all-success record, chronology, bounds, and normal scope-close disposal.
+The [boundary-handler retention proposal](../capsules/COMPENSATION-BOUNDARY-HANDLER-RETENTION-PROPOSAL.md) owns explicit target eligibility for one closed ordinary User Task family and both current Multi-Instance User Task families, one outer all-success record including zero-item identity, chronology, bounds, and normal scope-close disposal.
 
 The immediately following Compensation Event Sub-Process proposal must own complete Process/Sub-Process parent context, per-instance provisional snapshots where applicable, exact promotion on successful parent completion, exact purge on failure/early completion/interruption, and snapshot-byte bounds. Neither proposal may treat Continue-As-New as disposal.
 

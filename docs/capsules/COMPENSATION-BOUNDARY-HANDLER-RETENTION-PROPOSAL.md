@@ -7,7 +7,7 @@ Review: pending
 
 ## Prior review
 
-The first immutable proposal target `033a7552` received a context-cold `rejected` verdict. It incorrectly made every completed Activity retention-eligible from the global throw form despite Tables 10.88 and 10.89 requiring a compensation handler, retained one record per inner Multi-Instance instance without resolving early completion or interruption, and treated ordinary Task input/output bindings as the parent-scope snapshot restored for a Compensation Event Sub-Process. This target replaces that account: explicit boundary handlers decide eligibility, one all-success outer Multi-Instance User Task completion creates one record, and Compensation Event Sub-Process snapshots move to a separate immediately following risk band.
+The context-cold review rejected target `033a7552`: it inferred handler-free eligibility from global throw syntax, retained per-inner-instance records without resolving early completion, and substituted Task I/O for a Compensation Event Sub-Process parent snapshot. This target instead uses explicit-handler eligibility, one all-success outer Multi-Instance User Task record, and a separate next snapshot risk band.
 
 ## Question and bounded outcome
 
@@ -23,23 +23,25 @@ BPMN 2.0.2 Tables 10.88 and 10.89 say a successfully completed Activity can be c
 
 Clause 13.5.5 distinguishes the two handler families. An associated boundary Compensation Activity becomes enabled when its Activity completes and is triggered once for a loop or Multi-Instance Activity. A Compensation Event Sub-Process instead restores its Process/Sub-Process parent's completion-time context and can require one snapshot per loop or Multi-Instance parent instance. This proposal selects only the first family and therefore retains no generic Task-data snapshot.
 
-Clause 13.3.7 states that a Multi-Instance Activity is compensated only if all its instances complete successfully. A `completionCondition` may complete the outer Activity after canceling remaining instances, and an interrupting boundary Timer may cancel the outer Activity. Neither path is retention-eligible. For the admitted sequential and parallel Multi-Instance User Tasks, natural completion after every planned instance succeeds creates one outer record, because Clause 13.5.5 triggers the associated handler once for that Multi-Instance Activity rather than once per inner instance.
+Clause 13.3.7 requires every Multi-Instance instance to complete successfully. A `completionCondition` is non-retaining only when it cancels a pending instance. The current parallel evaluator gives all-slots-filled priority: one-item `completionPolicy="first"` is all-success, while the same policy over a larger set cancels siblings. An interrupting boundary Timer is also ineligible.
 
-Clause 10.7.2 separately says that a boundary compensation handler on a Multi-Instance Sub-Process is invoked once for each Sub-Process instance, while Clause 13.5.5 says that an associated Compensation Activity for a Multi-Instance Activity is triggered only once. This proposal does not silently choose between those texts for Multi-Instance Sub-Processes: it excludes that host family and admits only the already implemented sequential and parallel Multi-Instance User Tasks. Supporting a Multi-Instance Sub-Process requires a reviewed account for its handler multiplicity together with its per-instance parent-scope snapshots.
+The standard does not exempt normal zero-instance completion. Because the current empty path mints no outer `ActivityOccurrenceId`, producer integration must allocate that identity and high-water mark before atomic completion, then retain it with planned/successful zero. It creates no inner instance or controller. Clause 13.5.5 still triggers the associated handler once for the outer User Task.
+
+Clause 10.7.2 assigns per-instance boundary-handler invocation to a Multi-Instance Sub-Process, while Clause 13.5.5 says a Multi-Instance Activity's associated handler triggers once. This proposal excludes Multi-Instance Sub-Processes instead of choosing between those texts. Their support requires a reviewed multiplicity account and per-instance parent snapshots.
 
 The machine-readable anchors are `CompensateEventDefinition.activityRef`, `BoundaryEvent.attachedToRef`, `Association.sourceRef`/`targetRef`, `Activity.isForCompensation`, and `MultiInstanceLoopCharacteristics`, with their corresponding XSD declarations. The prose-only `SubProcess.compensable` inconsistency in [BPMN21-167](https://issues.omg.org/issues/BPMN21-167), implicit-compensation contradiction in [BPMN21-403](https://issues.omg.org/issues/BPMN21-403), and cancellation terminology in [BPMN21-404](https://issues.omg.org/issues/BPMN21-404) are excluded rather than resolved.
 
 ## Required, optional, and excluded scope
 
-**Required representation:** one optional Program declaration selecting one flat root definition scope and at least one explicit boundary-handler target; one runtime register owned by that live root occurrence; one immutable record per successfully completed eligible outer Activity occurrence; positive contiguous chronology; canonical order; exact normal scope-close disposal; and count plus canonical-byte refusal before any completion mutation.
+**Required representation:** one optional flat-root Program declaration with explicit boundary-handler targets; one live-root-owned register; one immutable record per eligible successful outer occurrence; contiguous chronology, canonical order, normal-close disposal, and count/byte refusal before completion mutation.
 
-**Required completion families:** an ordinary single Activity, a sequential Multi-Instance User Task, and a parallel Multi-Instance User Task. The first checkpoint represents and classifies all three. The later producer slice must prove that natural all-success Multi-Instance User Task completion retains once, `completionPolicy="first"` retains nothing, and interrupting Activity Timer completion paths retain nothing.
+**Required completion families:** one exact `awaitUserTask` ordinary User Task operation, one `awaitSequentialMultiInstanceUserTask`, and one `awaitParallelMultiInstanceUserTask`. The first checkpoint represents and classifies only those three. The later producer slice must prove that exact ordinary User Task success retains once; zero-item and positive all-success Multi-Instance completion retain once; one-item `completionPolicy="first"` retains once; a greater-than-one `completionPolicy="first"` completion that cancels siblings retains nothing; and both interrupting Activity Timer paths retain nothing.
 
-**Required forward-compatible boundary:** a declaring Program has exactly one parentless definition scope, no nested definition scope, called Process, `terminateScope` operation, or profile-enabled root cancellation. Every handler target belongs to that root scope and names one supported Activity family. This prevents an excluded terminal path from bypassing normal register disposal.
+**Required forward-compatible boundary:** a declaring Program has one parentless scope and no nested scope, called Process, `terminateScope`, or profile-enabled root cancellation. Each root-owned target names exactly one supported operation whose origin and task identities equal `activityElementId`, closing the validator census and preventing excluded terminal paths from bypassing disposal.
 
-**Optional:** the Program declaration and RuntimeState collection are optional at the shared wire boundary. Programs without the declaration require absence. Declaring Programs require the state collection, including an empty array before start and after normal root completion.
+**Optional:** the declaration and RuntimeState collection are optional. Programs without the declaration require absence. Byte-compatible shared `initialState` also omits it; command admission validates that sentinel through a non-mutating program-aware empty view. Accepted start materializes the root register, and every later declaring state carries the collection, empty after normal close.
 
-**Excluded:** Compensation Event Sub-Processes and parent-scope snapshots; Multi-Instance Sub-Processes and their handler-multiplicity account; handler-free or implicit eligibility; more than one compensation handler per Activity; source admission; registered profiles; throw Events; `activityRef`; `waitForCompletion`; handler execution or failure; dependency ordering; recursive compensation; standard loops; nested or called scopes; root termination/cancellation; Transaction and Cancel semantics; public projection; CIB compatibility; Product 2; and live Temporal hosting.
+**Excluded:** every ordinary Activity operation except exact `awaitUserTask`, including data-input/output, bounded, message-bounded, monitored, effect, and Sub-Process families and all their success, business-error, failure, interrupting, and non-interrupting exits; Compensation Event Sub-Processes and parent-scope snapshots; Multi-Instance Sub-Processes and their handler-multiplicity account; handler-free or implicit eligibility; more than one compensation handler per Activity; source admission; registered profiles; throw Events; `activityRef`; `waitForCompletion`; handler execution or failure; dependency ordering; recursive compensation; standard loops; nested or called scopes; root termination/cancellation; Transaction and Cancel semantics; public projection; CIB compatibility; Product 2; and live Temporal hosting.
 
 ## Program and runtime contract
 
@@ -67,9 +69,9 @@ type SemanticProcessProgram = DeepReadonly<{
 }>;
 ```
 
-`definitionScopeId` resolves to the unique parentless scope whose origin equals `processId`. Targets are non-empty, canonically ordered by complete three-part identity, and unique by `activityElementId`. Each element id is non-empty and distinct within a target. `activityElementId` must be the origin of exactly one supported Activity family in the declared scope: an admitted single Activity or an admitted sequential/parallel Multi-Instance User Task, never a Sub-Process. At this representation checkpoint the declaration is a proposal-defined semantic Program fact; its validator proves internal shape and Activity-family consistency, not provenance from arbitrary BPMN XML. Later source admission may emit a target only after resolving the boundary Event attachment and the Association to one `isForCompensation=true` Activity.
+`definitionScopeId` resolves to the unique parentless scope whose origin equals `processId`. Targets are non-empty, canonically ordered by complete three-part identity, and unique by `activityElementId`. Each element id is non-empty and distinct within a target. `activityElementId` must identify exactly one operation in the declared scope, restricted to `awaitUserTask`, `awaitSequentialMultiInstanceUserTask`, or `awaitParallelMultiInstanceUserTask`; that operation's `origin.elementId` and `task.elementId` must both equal the target. At this representation checkpoint the declaration is a proposal-defined semantic Program fact; its validator proves internal shape and this closed operation-family consistency, not provenance from arbitrary BPMN XML. Later source admission may emit a target only after resolving the boundary Event attachment and the Association to one `isForCompensation=true` Activity.
 
-Both limits are positive safe integers. `maxCanonicalBytes` cannot exceed 65,536, but a profile must select a lower value when other maximum state components need headroom. The existing 65,536-byte complete-`RuntimeState` host bound remains an independent secondary check.
+`maxRecords` is a positive safe integer. `maxCanonicalBytes` is a safe integer from 2 through 65,536 inclusive because the canonical empty `records` array is exactly two UTF-8 bytes. A profile must select a lower maximum when other maximum state components need headroom. The existing 65,536-byte complete-`RuntimeState` host bound remains an independent secondary check.
 
 Runtime state gains one optional collection:
 
@@ -91,7 +93,7 @@ type RuntimeState = DeepReadonly<{
 }>;
 ```
 
-The existing `ActivityOccurrenceId` distinguishes element, Process instance, and repeated outer activation. It deliberately has no inner index: for an admitted Multi-Instance User Task, Clause 13.5.5 enables and later triggers the associated Compensation Activity once for the completed outer Activity. Equal input values, completion order, task activations, Workflow identity, and host attempts have no retention identity authority. This identity choice makes no claim about the excluded per-instance behavior that Clause 10.7.2 assigns to Multi-Instance Sub-Processes.
+The existing `ActivityOccurrenceId` distinguishes element, Process instance, and repeated outer activation. It deliberately has no inner index: for an admitted Multi-Instance User Task, Clause 13.5.5 enables and later triggers the associated Compensation Activity once for the completed outer Activity. A zero-item entry still mints that outer identity and advances `activityActivations` before completing atomically; it creates no inner task activation. Equal input values, completion order, task activations, Workflow identity, and host attempts have no retention identity authority. This identity choice makes no claim about the excluded per-instance behavior that Clause 10.7.2 assigns to Multi-Instance Sub-Processes.
 
 `nextCompletionOrdinal` starts at one and advances exactly once per accepted outer record. It is independent of `records.length` so later handler consumption cannot reuse chronology. At this checkpoint, records are ascending with ordinals exactly `1 .. nextCompletionOrdinal - 1`.
 
@@ -102,22 +104,21 @@ A pure closed classifier receives facts derived from one selected Activity compl
 ```ts
 type CompensationCompletionFacts =
   | DeepReadonly<{
-      kind: "single";
+      kind: "ordinaryUserTask";
       activity: ActivityOccurrenceId;
-      outcome: "completed" | "interrupted";
     }>
   | DeepReadonly<{
-      kind: "multiInstance";
+      kind: "multiInstanceUserTask";
       activity: ActivityOccurrenceId;
       plannedInstances: number;
       successfullyCompletedInstances: number;
-      outcome: "naturalCompletion" | "earlyCompletion" | "interrupted";
+      outcome: "allSuccessfulCompletion" | "earlyCompletion" | "interrupted";
     }>;
 ```
 
-The selector returns the outer identity only when its element is one declared target and either the single outcome is `completed`, or the Multi-Instance outcome is `naturalCompletion` with equal positive planned and successful counts. Early completion, interruption, missing target, malformed counts, wrong scope, duplicate identity, and a second record for one outer occurrence are refused with exact pre-state preservation.
+The selector returns the outer identity only when its element is one declared target and either the facts name the exact ordinary `awaitUserTask` success family, or the Multi-Instance outcome is `allSuccessfulCompletion` with equal non-negative safe planned and successful counts. Equality includes zero. `earlyCompletion` and `interrupted` are valid only with non-negative safe `successfullyCompletedInstances < plannedInstances`; both are non-retaining. A one-item `completionPolicy="first"` producer emits `allSuccessfulCompletion`, while the greater-than-one sibling-canceling path emits `earlyCompletion`. Missing target, malformed counts/outcome combinations, wrong scope, duplicate identity, and a second record for one outer occurrence are refused with exact pre-state preservation.
 
-The facts are an internal evaluator boundary, not a new wire or stored structure. The later producer slice derives them from the exact pre-state and selected transition: current sequential and parallel controllers own planned/success counts, the completion policy distinguishes natural from early completion, and boundary victory distinguishes interruption. No producer may construct a successful summary after it has discarded the deciding controller.
+The facts are an internal evaluator boundary, not a new wire or stored structure. The exact ordinary `awaitUserTask` command producer emits its arm only after resolving the live wait and before removing it. Positive-cardinality sequential and parallel producers derive counts from the exact controller pre-state; all-slots-filled takes priority over completion policy, and boundary victory distinguishes interruption. The zero-cardinality entry derives planned/successful zero from the admitted collection, allocates its fresh outer identity and high-water mark, and stages retention before applying its normal output. No producer may construct a successful summary after it has discarded the deciding wait, controller, or zero-entry facts.
 
 ## Retention transition, capacity, and refusal
 
@@ -137,9 +138,9 @@ Record order is completion chronology only. Future default compensation must der
 
 `CBRET-ELIGIBLE-01`: only an Activity named by one explicit boundary-handler target can enter the register; global throw syntax does not widen eligibility.
 
-`CBRET-SINGLE-01`: one successful eligible ordinary outer Activity creates one immutable identity record and one ordinal; interruption creates none.
+`CBRET-SINGLE-01`: one successful eligible `awaitUserTask` creates one immutable identity record and one ordinal; no other ordinary operation kind can produce completion facts.
 
-`CBRET-MI-01`: one eligible sequential or parallel Multi-Instance User Task creates exactly one outer record only after all planned instances complete successfully; early completion and interruption create none.
+`CBRET-MI-01`: one eligible sequential or parallel Multi-Instance User Task creates exactly one outer record after all planned instances complete successfully, including zero items and one-item `completionPolicy="first"`; sibling-canceling early completion and interruption create none.
 
 `CBRET-ORDER-01`: accepted outer records receive positive contiguous never-reused completion ordinals and remain in ascending order; chronology is not dependency order.
 
@@ -149,11 +150,11 @@ Record order is completion chronology only. Future default compensation must der
 
 `CBRET-COMPAT-01`: every Program without the declaration and every state under it omit the optional fields, preserving existing canonical bytes.
 
-The eligibility discriminator uses two completed ordinary Activities in one root: one has a declared boundary handler and one does not. A later global throw can see only the retained declared target. A mutation that retains the handler-free Activity reproduces the first rejected proposal's error.
+The eligibility discriminator uses two completed exact `awaitUserTask` operations in one root: one has a declared boundary handler and one does not. A later global throw can see only the retained declared target. A mutation that retains the handler-free task reproduces the first rejected proposal's error. A closed-census validator mutation that accepts one excluded data, bounded, monitored, effect, or scope operation must also fail.
 
-The Multi-Instance discriminator covers the admitted User Task families: sequential all-success, parallel all-success with adversarial completion order, parallel `completionPolicy="first"`, and both current interrupting Timer paths. The successful cases create one outer record each; early completion and interruption preserve the prior register. A mutation that inserts on the first inner success or on outer early completion must fail.
+The Multi-Instance discriminator covers zero-item normal completion with a fresh outer identity, one-item `completionPolicy="first"` as all-success, greater-than-one `completionPolicy="first"` as sibling-canceling early completion, sequential positive all-success, parallel positive all-success with adversarial completion order, and both current interrupting Timer paths. The all-success cases create one outer record each; actual early completion and interruption preserve the prior register. A mutation that omits the zero-item outer activation, classifies the one-item case as early, inserts on the first inner success of a larger set, or inserts after sibling cancellation must fail.
 
-Capacity uses exact-fit and one-over count cases plus escaped/non-ASCII exact-fit and one-byte-over identity fixtures. Disposal holds records through unrelated work and then proves they disappear only with the exact root close. The nearest checked non-law is that every completed outer Multi-Instance User Task is retention-eligible: early completion is `Completed` control behavior but fails Clause 13.3.7's all-instances-success condition.
+Capacity rejects `maxCanonicalBytes = 1`, then uses empty-array minimum, exact-fit and one-over count cases plus escaped/non-ASCII exact-fit and one-byte-over identity fixtures. Disposal holds records through unrelated work and then proves they disappear only with the exact root close. The nearest checked non-law is that every completed outer Multi-Instance User Task is retention-eligible: actual sibling-canceling early completion is `Completed` control behavior but fails Clause 13.3.7's all-instances-success condition.
 
 ## Lean assurance lane
 
@@ -161,7 +162,7 @@ Lane shape: **proved** for the representation and eligibility propositions in th
 
 Lean defines the same declaration, target validation, completion facts, classifier, record/register, exact canonical-byte measure, insertion result, start initialization, and root disposal. The evaluator has a declarative relation and constructor-selection soundness bridge.
 
-Required laws prove handler-free, early-completion, interrupted, duplicate, count, and byte refusal preserve exact state; successful insertion adds exactly one unique outer identity at the prior ordinal while preserving earlier records; natural Multi-Instance User Task completion is eligible exactly under positive planned/success equality; start creates the declared root register; and close removes exactly the matching register while preserving unrelated state.
+Required laws prove handler-free, excluded-operation, actual early-completion, interrupted, malformed-count, duplicate, count, and byte refusal preserve exact state; successful insertion adds exactly one unique outer identity at the prior ordinal while preserving earlier records; Multi-Instance User Task completion is eligible exactly under non-negative planned/success equality, including zero and the one-item-first case; zero entry issues one fresh outer identity without an inner identity; program-aware not-started normalization is observationally omitted; start creates the declared root register; and close removes exactly the matching register while preserving unrelated state.
 
 If Lean cannot match the canonical encoder for the admitted identity strings, the proposal returns to review; implementation may not substitute an escape-blind or caller-supplied measure. Trigger selection, handler execution, dependency order, liveness, TypeScript equivalence, and Temporal refinement are not implied.
 
@@ -179,30 +180,34 @@ This standards-only hidden representation selects no CIB behavior, probe, profil
 
 The first checkpoint adds no ingress, wait, timer, Activity effect, cancellation action, Query, Signal, Update, public projection, or host scheduler. The production Workflow main loop remains the only committed-state owner. Ordering comes from the semantic ordinal, never Workflow Task order, Event History, Run identity, or Worker timing.
 
+The refinement relation pairs live host state with the byte-identical latest committed core `RuntimeState`. Workflow Tasks, Worker replacement, retries, Timer bookkeeping, recovery, and other hidden steps stutter on it; Continue-As-New changes only the Run-local envelope. Publication, recovery, Event History, Workflow/Run identity, and host-capacity records are erased and cannot derive eligibility.
+
+Retention count/byte overflow is core `CommandOutcome.Rejected` with exact pre-state and no candidate publication. A passing successor may still exceed the complete-state ceiling: existing `WorkflowSemanticCandidatePreflightKind.CapacityExceeded` for `CommittedRuntimeStateBytes` preserves the prior committed state and remains a host result, never semantic rejection.
+
 Continuation validation must bind field presence to the Program declaration and preserve the register byte-for-byte across Continue-As-New. Continue-As-New cannot dispose or compact it. The existing committed-state and aggregate continuation bounds remain independent. Worker replacement and replay recover the register only from committed Workflow state.
 
-The smallest later host witness keeps the Process open after two eligible completions, forces Continue-As-New and Worker replacement, confirms the unchanged test-private register, completes the root, and replays every Run. Required mutations omit or change identity/ordinal, retain an early-completed or interrupted Multi-Instance User Task, and dispose before root close. No live host claim is made before source/profile and producer integration.
+The smallest later host witness keeps the Process open after zero-item and positive eligible completions, forces Continue-As-New and Worker replacement, confirms the unchanged test-private register, completes the root, and replays every Run. Exact retry of an already accepted closing command still recovers its semantic result; a distinct command first addressed after close returns the existing adapter `processClosed` result and never reaches the disposed core register. Required mutations omit or change identity/ordinal, retain an actually early-completed or interrupted Multi-Instance User Task, alter state in one hidden host step, convert one capacity class into the other, or dispose before root close. No live host claim is made before source/profile and producer integration.
 
 ## Evidence strategy
 
 | Claim | Lean | TypeScript core | Temporal | Discriminator |
 |---|---|---|---|---|
 | Explicit handler eligibility | Target validation and refusal law | Strict declaration and classifier | Carried only | Handler-free Activity mutation |
-| Ordinary outer identity | Insertion and uniqueness law | Pure insertion and state validation | Carried only | Repeated activation and duplicate identity |
-| Multi-Instance User Task all-success | Exact classifier laws | Sequential/parallel facts and producer census later | Carried only | First-inner, early-completion, and Timer mutations |
+| Ordinary `awaitUserTask` identity | Insertion, uniqueness, and closed-family law | Pure insertion and exact-operation validation | Carried only | Repeated activation, duplicate identity, and excluded-operation mutations |
+| Multi-Instance User Task all-success | Exact zero/one/many classifier and identity laws | Sequential/parallel facts and producer census later | Carried only | Missing zero identity, one-item-first, first-inner, sibling-cancel, and Timer mutations |
 | Chronology | Insertion preservation laws | Adversarial completion order | Carried only | Sort by element or reuse `records.length` |
 | Atomic capacity | Count/byte refusal laws | Exact fit/overflow and whole-state equality | Complete-state bound remains separate | Any pre-refusal mutation |
-| Root lifetime | Start/close frame laws | Quiescence and disposal tests | Continuation witness later | Premature or missing disposal |
-| Old-byte compatibility | Omitted declaration fixture | Schema and exact artifact bytes | Existing history replay later | Emitted empty field under old Program |
+| Root lifetime | Start/close frame laws | Quiescence and disposal tests | Continuation and `processClosed` witness later | Premature or missing disposal |
+| Old-byte compatibility | Omitted declaration and not-started normalization fixture | Schema and exact artifact bytes | Existing history replay later | Emitted empty field under old Program |
 
-The representation checkpoint covers strict shared and Lean Program wires, state validation, pure eligibility/insertion, exact byte fixtures, start/close lifecycle, internal-commutation census, collection-removal completeness, and the complete affected semantic-core package gate. It claims no source, scenario, CIB, differential, Temporal, corpus, Product 2, or public capability evidence.
+The representation checkpoint covers strict shared and Lean Program wires, closed exact-operation validation, state validation, pure eligibility/insertion, zero/one/many and exact-byte fixtures, program-aware not-started normalization, start/close lifecycle, internal-commutation census, collection-removal completeness, and the complete affected semantic-core package gate. It claims no source, scenario, CIB, differential, Temporal, corpus, Product 2, or public capability evidence.
 
 ## Runtime-only inventory and layer ownership
 
 | Construct | Derivation and owner | Public projection | Lifecycle |
 |---|---|---|---|
 | Boundary-handler target | Program definition; later compiler must resolve attachment and Association | None | Immutable and root-scoped |
-| Completion facts | Derived from exact selected pre-state and transition | None | Ephemeral evaluator input only |
+| Completion facts | Derived from the exact ordinary wait, positive MI controller, or zero-item entry pre-state and transition | None | Ephemeral evaluator input only |
 | Completed outer record | Exact eligible `ActivityOccurrenceId` plus ordinal | None | Immutable until root close or later handler consumption |
 | Retention register | Runtime state owned by root scope occurrence | None | Start, carry, quiescence-ignore, normal-close disposal |
 | Capacity detail | Pure insertion result | Existing semantic rejection only | Never retained |
@@ -241,11 +246,11 @@ Same-change owners are this capsule, [the requirement ledger](../BPMN-REQUIREMEN
 
 ## Epistemic closure and reopen conditions
 
-Established by the basis: handler existence decides eligibility; scope decides visibility and lifetime; an associated handler is enabled only by successful Activity completion; the admitted Multi-Instance User Task handler triggers once only after all instances succeed; chronology cannot replace dependency order; retention charges committed-state capacity; and Continue-As-New carries it.
+Established: handlers decide eligibility; scope decides visibility/lifetime; the admitted Multi-Instance User Task handler triggers once after all-success, including zero and one-item-first; chronology is not dependency order; retention charges committed-state capacity and survives Continue-As-New.
 
 Not established: approved representation, implementation, source handler admission, Compensation Event Sub-Process snapshots, throw selection, handler execution, order, cancellation, Transactions, CIB agreement, Temporal refinement, public capability, or closure evidence.
 
-The main common-mode risk is deriving eligibility from global throw syntax; explicit targets and the handler-free mutation prevent it. The second is treating outer `Completed` as all-success under early completion; the outcome/count classifier and existing `completionPolicy="first"` path separate them. The nearest unsupported claim is compensation for a Multi-Instance Sub-Process: Clause 10.7.2 requires a separate handler-multiplicity account, and a Compensation Event Sub-Process additionally needs provisional complete parent-scope snapshots per instance plus exact purge on failed, early, or interrupted outer completion. Neither fits this boundary-handler record.
+Common-mode risks are global-throw-derived eligibility and treating every `completionPolicy="first"` alike; explicit targets and zero/one/many mutations separate them. The nearest unsupported claim is Multi-Instance Sub-Process compensation: Clause 10.7.2 needs a multiplicity account, while its Compensation Event Sub-Process also needs provisional complete per-instance parent snapshots and exact purge on failed, early, or interrupted completion.
 
 Reopen before another handler per Activity, Event Sub-Process, standard loops, nested scopes, source profile, throw/trigger, record consumption, root cancellation, or a string identity arm without exact canonical-byte coverage.
 
@@ -255,9 +260,9 @@ No closure cost is claimed at proposal time. Closure must measure one immutable 
 
 ## Stage boundary
 
-The first green representation checkpoint contains optional Program/RuntimeState contracts, strict readers, exact handler-target and completion-fact validation, pure all-success classifier, insertion/capacity, start/normal-close lifecycle, old-byte compatibility, ordinary/natural-MI/early-MI/interruption witnesses, and the proved Lean laws. It includes no existing completion producer, source profile, throw, handler, snapshot, host behavior, public capability, scenario, corpus, or Product 2 claim.
+The first green representation checkpoint contains optional Program/RuntimeState contracts, strict readers, exact three-operation handler-target and completion-fact validation, pure all-success classifier, insertion/capacity, program-aware not-started normalization, start/normal-close lifecycle, old-byte compatibility, exact ordinary and zero/one/many MI/interruption witnesses, and the proved Lean laws. It includes no existing completion producer, source profile, throw, handler, snapshot, host behavior, public capability, scenario, corpus, or Product 2 claim.
 
-That target is a mandatory semantic checkpoint. After approval, the next high-risk producer slice must enumerate every relevant ordinary, sequential, and parallel completion/interruption path, reproduce an omitted-family mutation, and prove retention is staged before every existing completion mutation. Compensation Event Sub-Process parent-scope snapshots remain the immediately following risk band, before handler ordering or capability closure.
+That target is a mandatory semantic checkpoint. After approval, the next high-risk producer slice must enumerate the exact `awaitUserTask`, sequential, and parallel completion/interruption paths; mint the zero-item outer identity before atomic completion; reproduce excluded-operation and omitted-family mutations; and prove retention is staged before every existing completion mutation. Compensation Event Sub-Process parent-scope snapshots remain the immediately following risk band, before handler ordering or capability closure.
 
 ## Independent cold-review receipt
 
