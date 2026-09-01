@@ -246,6 +246,12 @@ export const leanModuleCostRecord = {
       measuredAtCommit: "b9c1c586",
     },
     {
+      module: "BpmnSemantics.CompensationActivityRetentionProducerConformance",
+      peakResidentKib: 2332716,
+      elapsedSeconds: 8.4,
+      measuredAtCommit: "cb7fd54e",
+    },
+    {
       module: "BpmnSemantics.CompensationActivityRetentionConformance",
       peakResidentKib: 1928340,
       elapsedSeconds: 8.27,
@@ -253,9 +259,9 @@ export const leanModuleCostRecord = {
     },
     {
       module: "BpmnSemantics.UserTaskMetadataConformance",
-      peakResidentKib: 1782132,
-      elapsedSeconds: 23.74,
-      measuredAtCommit: "519c7c5e",
+      peakResidentKib: 1822324,
+      elapsedSeconds: 7.49,
+      measuredAtCommit: "cb7fd54e",
     },
     {
       module: "BpmnSemantics.ActivityDataOutputConformance",
