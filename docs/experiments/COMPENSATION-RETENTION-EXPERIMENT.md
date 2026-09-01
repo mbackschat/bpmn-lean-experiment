@@ -2,86 +2,84 @@
 
 ## Status
 
-**Status:** Executed 2026-08-29; both halves answered; no representation correction required, and two bounds are recorded for the compensation capsule
+**Status:** Executed 2026-08-29; layering and capacity answered. The first handler-free eligibility inference was corrected after the context-cold review of proposal target `033a7552` resolved Tables 10.88 and 10.89 against the global-throw prose.
 
-**Question:** Can a completed Activity occurrence's context be retained for later compensation without inverting the engine's layering and without invalidating the disposal rule every current Activity family relies on?
+**Question:** Can a completed Activity occurrence's compensation context be retained without inverting the engine's layering, and which existing committed-state budget does that retention charge?
 
-**Claim boundary:** This experiment decides retention feasibility and its cost boundary. It selects no compensation semantics, handler model, triggering rule, ordering rule, Transaction behavior, profile, or CIB relationship, and it closes no part of `BPMN-MECH-COMPENSATION-01`. Its outcome is an input to that family's eventual capsule, not a substitute for it.
+**Claim boundary:** This experiment decides hidden-state feasibility, records the normative separation between handler eligibility and scope lifetime, and identifies the applicable budget. It owns no executable retention contract, handler, trigger, ordering, snapshot representation, Transaction, profile, or CIB relationship and closes no part of `BPMN-MECH-COMPENSATION-01`.
 
 ## Why now rather than with compensation
 
-Compensation is the only unimplemented family whose normative obligation contradicts a rule the engine already depends on, and that rule is being written into a specification while this experiment is opened.
+Compensation requires completed semantic facts after current Activity families dispose their open occurrence state. Publication-derived reconstruction would make a projection semantically load-bearing, while hidden runtime retention can preserve dependency direction. Sequential and Parallel Multi-Instance make the timing risk concrete because inner and outer state are removed on completion or interruption.
 
-Clause 13.5.5's operational semantics require that when an Activity transitions into state Completed, "a snapshot of the data associated with the parent Activity is taken and kept for later usage," that a multi-instance or loop parent take "for each instance a separate data snapshot," and that default compensation run "in reverse order of the execution of the original Activities." Only completed Activities are compensable; a failed one compensates to an empty operation.
-
-The current representation discards exactly that at exactly that moment. `RuntimeState.activityOccurrences` holds what each **open** Activity occurrence owns, [`completeActivityVariableScope`](../../BpmnSemantics/SemanticProcess/Data.lean) removes the completing occurrence's local scope, and the in-flight [Activity data-input capsule](../capsules/ACTIVITY-DATA-INPUT-MEDIATION-SPEC.md) locks the three-way disposal as `([], [], [])` while describing it as the representation for a "no-output, no-compensation Activity context." Nothing retains a completed occurrence's context anywhere in either semantic account.
-
-[The forward-compatible restriction rule](../../CLAUDE.md#forward-compatible-semantic-restrictions) requires verifying before approval that later coverage can broaden without invalidating the representation, and redesigning before implementation when it would foreclose. That verification has not been performed for compensation, and its cost rises with every family that adopts unconditional disposal. Sequential and Parallel Multi-Instance are already closed and already dispose per-instance context, which is the case Clause 13.5.5 singles out for a separate snapshot each.
+Clause 13.5.5 also distinguishes associated boundary Compensation Activities from Compensation Event Sub-Processes. The former becomes enabled on successful outer Activity completion and triggers once for an outer Multi-Instance Activity. The latter restores its Process/Sub-Process parent's completion-time data and can need one snapshot per loop or Multi-Instance parent instance. Treating those as one generic Task snapshot would be both overbroad and insufficient. Clause 10.7.2 separately assigns per-instance boundary-handler invocation to a Multi-Instance Sub-Process, so the corrected proposal admits current Multi-Instance User Tasks and excludes Multi-Instance Sub-Processes instead of choosing silently across those texts.
 
 ## Competing accounts
 
-1. **Retained completion register.** Runtime state gains a compensation-eligible completion record per completed Activity occurrence: its identity, its completion ordinal, and the snapshot of the data associated with it. Disposal moves from Activity completion to the close of the owning scope. Canonically ordered and never publicly projected, as `activityOccurrences` already is. Its exposure is monotone growth of runtime state and of every Temporal continuation payload with the number of executed Activities, against budgets this repository has already measured.
+1. **Handler-eligible completion register.** Runtime state retains the identity and chronology of a successfully completed Activity whose Program declares an explicit compensation handler. Scope owns visibility and lifetime; handler definition owns eligibility.
 
-2. **Publication-derived reconstruction.** Completed work is recovered from committed-execution publication or flow-node occurrence records rather than retained in semantic state. This account is stated in order to be refuted rather than measured: [flow-node occurrence lifecycle facts are derived at the evaluator boundary](../../packages/semantic-core/src/flow-node-occurrence-lifecycle.ts) and published, so reading them back would make a projection semantically load-bearing and invert the dependency direction the [non-negotiable boundaries](../../CLAUDE.md#non-negotiable-boundaries) fix. It is retained here because it is the account a reader reaches for first, and because refuting it explicitly is cheaper than refuting it again later.
+2. **Publication-derived reconstruction.** Committed execution or flow-node publication is read back to recover completed work. This is refuted on layering: publication is derived after semantic evaluation and cannot become semantic input.
 
-3. **Program-declared retention scope.** Only what the program declares compensable is retained, making retention a program property exactly as `activityOccurrences` presence already is, and bounding growth to models that use compensation. This is the account the experiment expects to adopt, and the separating witness below is the case that decides whether it can be stated locally at all.
+3. **Scope-wide handler-free register.** Every completed Activity in a scope is retained because a global throw omits `activityRef`. This was the experiment's original expected account and is refuted by Tables 10.88 and 10.89, which require the Activity to have a boundary Compensation Event or contain a Compensation Event Sub-Process.
 
-## Separating witness
+4. **Compensation Event Sub-Process snapshot register.** Complete parent Process/Sub-Process context is retained, provisionally per parent instance when necessary, and restored only for that handler family. This is feasible as hidden state but cannot be sized or specified from the current Task-I/O fixtures.
 
-BPMN admits compensation an Activity does not declare. Clauses 10.7.2 and 13.5.5 make a throw Compensation Event that specifies no Activity compensate "all completed Activities in the Process," and the metamodel admits exactly that form because `CompensateEventDefinition-activityRef` carries `lower="0"`.
+## Separating witnesses
 
-The witness is therefore one Process compensated through the global form, containing at least one ordinary Activity that declares nothing about compensation. Account 3 stated as "retain where a handler is attached" retains nothing for that Activity, so it cannot produce the snapshot Clause 13.5.5 requires; the accounts separate on whether retention is decidable from an Activity's own declaration or only from its enclosing scope's.
+The membership witness has two successfully completed Activities in one visible scope. Only one has a boundary Compensation Event associated to a Compensation Activity. A global throw without `activityRef` can select the handler-bearing Activity and cannot make the other eligible. Optional target syntax controls selection among eligible Activities, not eligibility itself.
 
-Two further paths would widen the same conclusion and are checked rather than assumed, because a witness resting on an inadmissible attribute is not a witness. The prose `compensable` Sub-Process attribute and the Clause 13.5.5 unhandled-error default are examined in the result below.
+The Multi-Instance User Task witness separates outer completion from compensation eligibility. Natural completion after every planned instance succeeds enables one associated handler and needs one outer record. A true `completionCondition` can complete the outer Activity after canceling siblings, and an interrupting boundary Timer cancels it; Clause 13.3.7 makes neither all-success, so neither retains an outer compensable completion.
 
-The cost half measures the largest retention the closed corpus can already demand, which is the registered Sequential Multi-Instance program at its admitted sixteen-item maximum, against the budget a retained record actually charges.
+The snapshot witness is a Multi-Instance Sub-Process containing a Compensation Event Sub-Process. Each parent instance can carry different scope data. A generic record of current User Task DataInput/DataOutput bindings cannot restore that parent scope and therefore cannot stand in for its snapshot.
 
 ## Scope and exclusions
 
-In scope: whether the retention set is decidable from an Activity's own declaration or only from its enclosing scope; whether retained snapshots for the largest already-admissible model fit the measured Temporal continuation budget; and whether the disposal rule the current families and the in-flight data-input capsule state is a restriction that later broadens or a general rule that forecloses.
+In scope: hidden-state versus publication ownership; handler eligibility versus scope visibility/lifetime; associated-handler multiplicity for the admitted Multi-Instance User Task witness; and the committed-state budget retention charges.
 
-Excluded: compensation handlers, Compensation Event Sub-Processes, Compensation Activities, throw events, `waitForCompletion`, Transactions and cancel, reverse-order execution, dependency analysis, recursive triggering, snapshot restoration, any profile or admitted source shape, any CIB relationship, and any production implementation in Lean or the semantic core.
+Excluded: an executable handler, throw Event, source profile, exact parent-scope snapshot representation, Multi-Instance Sub-Process handler multiplicity, dependency ordering, cancellation consequences, Transactions, CIB behavior, and production implementation.
 
 ## Executable location and focused command
 
-No production surface changes, and no retained probe. The normative half is answered from the pinned OMG corpus and its machine-readable CMOF and XSD, cited in the result. The cost half was measured by driving the registered Sequential Multi-Instance program through the semantic core at its admitted sixteen-item maximum and sizing each committed state, using `JSON.stringify`, whose output differs from the adapter's sorted-key canonical encoder only in key order and therefore not in byte count. The figures are recorded below rather than kept as a gate, because nothing in the production surface changed and a retained probe would assert a bound no admitted profile yet has.
+No production surface changed and no retained probe exists. The normative correction comes from the pinned BPMN corpus and machine-readable artifacts. The capacity measurement drove the registered Sequential Multi-Instance program through the semantic core at sixteen items and sized each committed state with `JSON.stringify`; key order changes no byte count for the measured fixed structure.
 
 ## Stop conditions
 
-The experiment stops at one bounded increment. If the cost half cannot be answered without first building retention, that is an unresolved boundary to record, not a licence to build it. If the normative half shows the retention set is scope-decided, the finding is recorded and the eventual capsule inherits it; the experiment does not itself amend the data-input capsule.
-
-An outcome that corrects a current representation is material and opens the ordinary review path before any such correction is implemented.
+The experiment stops at representation and budget feasibility. An exact handler-eligibility, outer-completion, or parent-scope snapshot account belongs in a reviewed capsule. The experiment must not silently choose among the open implicit-compensation or cancellation interpretations.
 
 ## Result
 
-### Retention is scope-decided, not declaration-decided
+### Hidden semantic state is required
 
-Account 3 stated as "retain where a compensation handler is attached" is unsound. `CompensateEventDefinition-activityRef` carries `lower="0"` in the CMOF, so a throw event that names no Activity is metamodel-admissible, and Clauses 10.7.2 and 13.5.5 make that global form compensate every completed Activity in the Process. An Activity that declares nothing about compensation is still compensable, so the retention set is a property of the enclosing scope.
+Publication-derived reconstruction is unsound because it inverts the semantic-core-to-publication dependency. A Program-specific optional runtime collection is additive and follows the established optional-state pattern without changing current no-compensation Programs or states.
 
-Two of the three paths that would have widened it further turn out not to. The `compensable` Sub-Process attribute exists only in prose at Clauses 10.7.1 and 13.5.5 and appears **nowhere** in `BPMN20.cmof` or `BPMN20.xsd`; `SubProcess` owns only `triggeredByEvent` and `artifacts` beyond `Activity`. No conforming document can set it, so that default-compensation path is a BPMN prose-to-metamodel inconsistency for the requirement ledger's compensation row to classify when that family is taken up, not a retention obligation. The Clause 13.5.5 "presumed abort" default, where an unhandled error compensates all contained Activities, is real but presently inert: no admitted profile can declare a compensation handler, so it compensates nothing observable. That qualifier is what keeps the closed Error capsules sound, and it expires the moment a profile admits a handler.
+### Eligibility is handler-decided; lifetime is scope-decided
 
-Account 2 is refuted as stated, on layering rather than on cost.
+Tables 10.88 and 10.89 require a boundary Compensation Event or contained Compensation Event Sub-Process. A global throw broadcasts only across visible successfully completed eligible Activities. Scope therefore decides visibility and how long an enabled handler remains available, while explicit handler definition decides which completions enter the register.
 
-### The budget retention charges is 64 KiB, not 2 MiB
+The original inference from optional `activityRef` to handler-free eligibility was wrong and shared the unresolved contradiction tracked by [BPMN21-403](https://issues.omg.org/issues/BPMN21-403). The prose-only `SubProcess.compensable` path remains unusable because no such CMOF or XSD property exists, as tracked by [BPMN21-167](https://issues.omg.org/issues/BPMN21-167).
 
-Retention lives in committed runtime state, so it charges `CommittedRuntimeStateBytes`, a hard per-commit bound of 64 KiB checked before mutation, and not the 2 MiB retained trace and publication budget. Continue-As-New carries the whole `RuntimeState` forward, so rollover bounds Event History but cannot shed retention.
+### Boundary-handler and Event Sub-Process retention are different
 
-Measured on the registered Sequential Multi-Instance program at its admitted sixteen-item maximum: peak committed state 2,626 bytes of the 65,536-byte bound, leaving 62,910 bytes; the state falls to 1,308 bytes at completion, and that fall is exactly what a retention account removes. One completion record carrying occurrence identity, owner, completion ordinal, and a single scalar snapshot binding encodes to 356 bytes. The ceiling is therefore about 176 retained records, against a normative requirement to retain every completed Activity in a compensable Process.
+An associated boundary handler needs one completed outer Activity identity and chronology; an admitted Multi-Instance User Task becomes eligible only after all instances succeed, and its handler later triggers once. No generic Task-data snapshot is assigned to that handler by the selected clauses. Multi-Instance Sub-Process handler multiplicity remains open with its distinct Clause 10.7.2 wording.
 
-### No representation correction is required now
+A Compensation Event Sub-Process instead needs complete data from its Process/Sub-Process parent at completion. A loop or Multi-Instance parent can require one dedicated snapshot per instance. That mechanism needs provisional per-instance state and exact purge on failed, early, or interrupted completion; it is a separate immediately following risk band.
 
-The current disposal facts are family- and profile-local rather than general laws, so a compensation-admitting profile can state a conditional rule without invalidating `completeActivityVariableScope`'s contract or the retained conformance results that lock disposal. Retention is also expressible additively rather than by redesign: `sequentialMultiInstanceControllers` already retains a whole input collection in runtime state for its controller's lifetime, which is the same shape of obligation, and optional program-specific state fields are an established pattern.
+### Retention charges the 64 KiB committed-state budget
 
-The disposal rule the in-flight [Activity data-input capsule](../capsules/ACTIVITY-DATA-INPUT-MEDIATION-SPEC.md) states may therefore close as written, because it is scoped to a no-compensation Activity context rather than asserted as the meaning of Activity completion.
+Retention lives in committed RuntimeState, so it charges `CommittedRuntimeStateBytes`, a hard 65,536-byte per-candidate bound, not the 2 MiB trace/publication budget. Continue-As-New carries the complete state and cannot shed retention.
 
-### Recorded for the compensation capsule
+The registered sixteen-item Sequential Multi-Instance witness peaked at 2,626 bytes and ended at 1,308 bytes, leaving 62,910 bytes at peak. The earlier 356-byte sample included one speculative scalar snapshot binding; it remains a cost observation, not the selected associated-handler record shape or a bound for complete parent-scope snapshots.
 
-Retention disposal attaches to scope close rather than Activity completion, because compensation remains possible for as long as the enclosing scope is open.
+### No current representation correction is required
 
-The profile must admit an explicit retained-record bound, the way Multi-Instance admits its sixteen-item bound, and must state it against the 64 KiB committed-state budget rather than assume rollover absorbs it. A compensable Process whose completed-Activity count exceeds that bound is a refusal the profile owes, not a capacity surprise at run time.
+Current disposal laws are profile-local and current profiles declare no compensation handler. A future Program can add optional retention without invalidating existing semantics or bytes. The revised boundary-handler proposal must nevertheless refuse capacity before any completion mutation and distinguish all-success Multi-Instance User Task completion from early completion and interruption.
+
+## Recorded for the compensation capsules
+
+The [boundary-handler retention proposal](../capsules/COMPENSATION-BOUNDARY-HANDLER-RETENTION-PROPOSAL.md) owns explicit target eligibility, one outer all-success record, chronology, bounds, and normal scope-close disposal.
+
+The immediately following Compensation Event Sub-Process proposal must own complete Process/Sub-Process parent context, per-instance provisional snapshots where applicable, exact promotion on successful parent completion, exact purge on failure/early completion/interruption, and snapshot-byte bounds. Neither proposal may treat Continue-As-New as disposal.
 
 ## What remains undecided
 
-The 356-byte record measures one scalar snapshot binding. Clause 13.5.5 gives a Compensation Event Sub-Process access to its parent's data at completion, so a realistic snapshot is the parent scope's bindings rather than one value, and the per-record figure grows with that scope's data. Sizing it needs an admitted compensation profile to exist, which is the compensation capsule's work rather than this experiment's.
-
-Whether a Multi-Instance Sub-Process, which Clause 13.5.5 requires to snapshot per instance, multiplies that figure by its instance count is unanswerable here for the same reason: no Multi-Instance Sub-Process is admitted today.
+The exact parent-scope data representation is not implemented for nested Sub-Processes, so its snapshot cannot be sized honestly yet. Trigger visibility, target selection, dependency order, handler consumption/failure, cancellation, Transaction semantics, and CIB compatibility also remain undecided.
