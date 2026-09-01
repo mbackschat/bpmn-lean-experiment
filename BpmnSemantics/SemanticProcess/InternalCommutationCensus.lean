@@ -68,6 +68,7 @@ inductive InternalRuntimeStateAtomDomain where
   | activityOccurrence
   | sequentialController
   | parallelController
+  | compensationActivityRetention
   | variable
   | userTaskActivation
   | messageActivation
@@ -97,6 +98,7 @@ inductive InternalRuntimeStateField where
   | activityOccurrences
   | sequentialMultiInstanceControllers
   | parallelMultiInstanceControllers
+  | compensationActivityRetentions
   | variables
   | activations
   | messageActivations
@@ -127,6 +129,7 @@ def internalRuntimeStateFieldAtomDomain :
   | .activityOccurrences => .activityOccurrence
   | .sequentialMultiInstanceControllers => .sequentialController
   | .parallelMultiInstanceControllers => .parallelController
+  | .compensationActivityRetentions => .compensationActivityRetention
   | .variables => .variable
   | .activations => .userTaskActivation
   | .messageActivations => .messageActivation

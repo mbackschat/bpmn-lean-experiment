@@ -48,6 +48,12 @@ import { sequentialMultiInstanceBindingsForState } from "./sequential-multi-inst
 import { compareCanonicalStrings } from "./wire.js";
 import { runtimeStateIdentityBound } from "./runtime-state-identity-bound.js";
 import { compareActivityVariableScopes } from "./runtime-state-collection-ordering.js";
+import {
+  compensationRetentionStateDefects,
+} from "./compensation-activity-retention-state-validation.js";
+import {
+  CompensationRetentionStateDefect,
+} from "./compensation-activity-retention-contract.js";
 
 /**
  * Which committed runtime states this account admits, and how a successor may contradict its
@@ -260,6 +266,19 @@ export function runtimeStateDefects(
       stateHasParallelMultiInstanceControllers
   ) {
     defects.push(RuntimeStateDefect.ParallelMultiInstanceControllerProfileMismatch);
+  }
+  const compensationDefects = compensationRetentionStateDefects(program, state);
+  if (
+    compensationDefects.includes(
+      CompensationRetentionStateDefect.ProgramPresenceMismatch,
+    )
+  ) {
+    defects.push(RuntimeStateDefect.CompensationActivityRetentionProfileMismatch);
+  }
+  if (compensationDefects.some((defect) =>
+    defect !== CompensationRetentionStateDefect.ProgramPresenceMismatch
+  )) {
+    defects.push(RuntimeStateDefect.CompensationActivityRetentionInvalid);
   }
 
   if (state.control.kind === ControlStateKind.NotStarted) {
@@ -699,6 +718,8 @@ const GATED_DEFECTS: ReadonlySet<RuntimeStateDefect> = new Set([
   RuntimeStateDefect.ParallelMultiInstanceControllerBindingMismatch,
   RuntimeStateDefect.DuplicateParallelMultiInstanceController,
   RuntimeStateDefect.ParallelMultiInstanceExhausted,
+  RuntimeStateDefect.CompensationActivityRetentionProfileMismatch,
+  RuntimeStateDefect.CompensationActivityRetentionInvalid,
 ]);
 
 /**

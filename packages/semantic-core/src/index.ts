@@ -9,6 +9,9 @@ export {
 } from "./semantic-process-activity-data-input-runtime.js";
 export * from "./activity-data-output-contract.js";
 export * from "./catch-event-payload-contract.js";
+export * from "./compensation-activity-retention-contract.js";
+export * from "./compensation-activity-retention.js";
+export * from "./compensation-activity-retention-state-validation.js";
 export * from "./correlation-scalar-path.js";
 export * from "./message-key-correlation.js";
 export {

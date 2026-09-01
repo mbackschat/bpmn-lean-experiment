@@ -10,6 +10,7 @@ import BpmnSemantics.SemanticProcess.ValueDomain
 import BpmnSemantics.SemanticProcess.Data
 import BpmnSemantics.SemanticProcess.ScopeCancellation
 import BpmnSemantics.SemanticProcess.ScopeCompletion
+import BpmnSemantics.SemanticProcess.CompensationActivityRetention
 import BpmnSemantics.SemanticProcess.TerminateEnd
 import BpmnSemantics.SemanticProcess.TerminateEndLowering
 import BpmnSemantics.SemanticProcess.CyclicControlFlow

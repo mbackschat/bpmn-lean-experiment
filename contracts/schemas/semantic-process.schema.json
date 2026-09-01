@@ -65,12 +65,76 @@
       "items": {
         "$ref": "#/$defs/operation"
       }
+    },
+    "compensationActivityRetention": {
+      "$ref": "#/$defs/compensationActivityRetentionDeclaration"
     }
   },
   "$defs": {
     "nonemptyString": {
       "type": "string",
       "minLength": 1
+    },
+    "boundaryCompensationTarget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "activityElementId",
+        "boundaryEventElementId",
+        "compensationActivityElementId"
+      ],
+      "properties": {
+        "activityElementId": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "boundaryEventElementId": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "compensationActivityElementId": {
+          "$ref": "#/$defs/nonemptyString"
+        }
+      }
+    },
+    "compensationActivityRetentionDeclaration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "definitionScopeId",
+        "targets",
+        "limits"
+      ],
+      "properties": {
+        "definitionScopeId": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "targets": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/boundaryCompensationTarget"
+          }
+        },
+        "limits": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "maxRecords",
+            "maxCanonicalBytes"
+          ],
+          "properties": {
+            "maxRecords": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            },
+            "maxCanonicalBytes": {
+              "type": "integer",
+              "minimum": 2,
+              "maximum": 65536
+            }
+          }
+        }
+      }
     },
     "userTaskMetadataIdentity": {
       "type": "string",

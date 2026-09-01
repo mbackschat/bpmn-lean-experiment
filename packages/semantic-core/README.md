@@ -38,5 +38,6 @@ Run the focused package gate:
 - [Sequential Multi-Instance specification](../../docs/capsules/SEQUENTIAL-MULTI-INSTANCE-SPEC.md) owns the exact registered controller, transition, observation, and exclusion boundary.
 - [Interrupting Activity boundary Message specification](../../docs/capsules/ACTIVITY-BOUNDARY-MESSAGE-SPEC.md) owns the tagged handler representation and the exact task-versus-Message semantic transition boundary.
 - [Message payload catch mediation specification](../../docs/capsules/MESSAGE-PAYLOAD-CATCH-MEDIATION-SPEC.md) owns the distinct payload-delivery stimulus, Event-owned direct-output contract, pure-core routed delivery, proved Lean account, strict wires, full differential cases, and Temporal refinement.
+- [Boundary-handler retention proposal](../../docs/capsules/COMPENSATION-BOUNDARY-HANDLER-RETENTION-PROPOSAL.md) owns the representation-only hidden register for explicitly handler-eligible completed Activities; producer integration, Compensation triggering, and public behavior remain excluded at this checkpoint.
 - [`implementation-status-owner:ENGINE-RUNTIME-PROOF`](../../docs/ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md) records the exact implemented and absent surface.
 - [Testing specification](../../docs/TESTING-SPEC.md) owns the verification and evidence boundaries.

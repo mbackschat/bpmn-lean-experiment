@@ -93,7 +93,10 @@ private theorem completeScopeState_preserves_activity_occurrences
                 else some
                   { state with
                     control := .completed instanceId
-                    scopeOccurrences := [] }
+                    scopeOccurrences := []
+                    compensationActivityRetentions :=
+                      state.compensationActivityRetentions.filter fun retention =>
+                        decide (retention.owner ≠ occurrence.id) }
             | some parent, some output, .running _ =>
                 if state.scopeOccurrences.any fun candidate => candidate.id == parent then
                   some

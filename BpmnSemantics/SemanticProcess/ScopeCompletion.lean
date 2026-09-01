@@ -39,7 +39,10 @@ private def completeQuiescentScope? (state : RuntimeState)
       if state.initiationPending then none
       else some ({ state with
           control := .completed instanceId
-          scopeOccurrences := [] })
+          scopeOccurrences := []
+          compensationActivityRetentions :=
+            state.compensationActivityRetentions.filter fun retention =>
+              decide (retention.owner ≠ occurrence.id) })
   | some parent, some output, .running _ =>
       if state.scopeOccurrences.any fun candidate => candidate.id == parent then
         some ({ state with

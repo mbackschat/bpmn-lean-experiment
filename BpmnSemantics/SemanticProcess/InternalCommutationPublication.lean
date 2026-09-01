@@ -68,7 +68,7 @@ private theorem runtimeStateWellFormed_position (program : Program) (instanceId 
     (wellFormed : runtimeStateWellFormed program instanceId state = true) :
     runtimePositionValid program instanceId state = true := by
   simp only [runtimeStateWellFormed, Bool.and_eq_true] at wellFormed
-  obtain ⟨existing, _claimsUnique⟩ := wellFormed
+  obtain ⟨existing, _claimsUnique, _retentionValid⟩ := wellFormed
   obtain ⟨h17, _lifecycle⟩ := existing
   obtain ⟨h16, _notExhausted⟩ := h17
   obtain ⟨h15, _controllerIds⟩ := h16

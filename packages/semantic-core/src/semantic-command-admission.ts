@@ -139,7 +139,7 @@ function admissibleCommittedState(
   program: SemanticProcessProgram,
   state: RuntimeState,
 ): boolean {
-  const gateState =
+  const multiInstanceGateState =
     program.identity.semanticProfile ===
         SemanticProfileId.SequentialMultiInstanceUserTask &&
       state.control.kind === ControlStateKind.NotStarted &&
@@ -151,6 +151,12 @@ function admissibleCommittedState(
           state.parallelMultiInstanceControllers === undefined
       ? { ...state, parallelMultiInstanceControllers: [] }
       : state;
+  const gateState =
+    program.compensationActivityRetention !== undefined &&
+      multiInstanceGateState.control.kind === ControlStateKind.NotStarted &&
+      multiInstanceGateState.compensationActivityRetentions === undefined
+      ? { ...multiInstanceGateState, compensationActivityRetentions: [] }
+      : multiInstanceGateState;
   return gateState.control.kind === ControlStateKind.NotStarted
     ? isGateAdmissibleRuntimeState(program, "", gateState)
     : isGateAdmissibleRuntimeState(

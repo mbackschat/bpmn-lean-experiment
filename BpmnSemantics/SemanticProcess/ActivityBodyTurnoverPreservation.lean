@@ -51,7 +51,7 @@ theorem replacedState_preserves_wellFormed (program : Program) (instanceId : Sem
   have waitMem : wait ∈ state.waits := (List.mem_filter.mp waitInFilter).1
   have namesWait : taskIdNamesWait body wait = true := (List.mem_filter.mp waitInFilter).2
   simp only [runtimeStateWellFormed, Bool.and_eq_true] at wellFormed ⊢
-  obtain ⟨existing, claimsUnique⟩ := wellFormed
+  obtain ⟨existing, claimsUnique, retentionValid⟩ := wellFormed
   obtain ⟨h17, lifecycle⟩ := existing
   obtain ⟨h16, notExhausted⟩ := h17
   obtain ⟨h15, controllerIds⟩ := h16
@@ -157,7 +157,18 @@ theorem replacedState_preserves_wellFormed (program : Program) (instanceId : Sem
       exfalso
       rw [hc] at lifecycle
       simp only [notStartedStateEmpty, Bool.and_eq_true, List.isEmpty_iff] at lifecycle
-      exact List.ne_nil_of_mem waitMem lifecycle.1.1.1.1.1.1.1.1.1.1
+      obtain ⟨lifecycle, _notPending⟩ := lifecycle
+      obtain ⟨lifecycle, _retentionsEmpty⟩ := lifecycle
+      obtain ⟨lifecycle, _parallelEmpty⟩ := lifecycle
+      obtain ⟨lifecycle, _activitiesEmpty⟩ := lifecycle
+      obtain ⟨lifecycle, _callsEmpty⟩ := lifecycle
+      obtain ⟨lifecycle, _racesEmpty⟩ := lifecycle
+      obtain ⟨lifecycle, _selectionsEmpty⟩ := lifecycle
+      obtain ⟨lifecycle, _incidentsEmpty⟩ := lifecycle
+      obtain ⟨lifecycle, _effectsEmpty⟩ := lifecycle
+      obtain ⟨lifecycle, _timersEmpty⟩ := lifecycle
+      obtain ⟨waitsEmpty, _messagesEmpty⟩ := lifecycle
+      exact List.ne_nil_of_mem waitMem waitsEmpty
     | running _ => rfl
     | completed _ => rfl
     | cancelled _ => rfl
@@ -178,7 +189,11 @@ theorem replacedState_preserves_wellFormed (program : Program) (instanceId : Sem
   have after16 := And.intro after15 parallelBindingPreserved
   have after17 := And.intro after16 controllerIdsAfter
   have after18 := And.intro after17 notExhaustedAfter
-  exact ⟨⟨after18, lifecycleAfter⟩, claimsAfter⟩
+  have retentionAfter : compensationActivityRetentionStateValid program
+      (replacedState state record wait body) = true := by
+    change compensationActivityRetentionStateValid program state = true
+    exact retentionValid
+  exact ⟨⟨after18, lifecycleAfter⟩, ⟨claimsAfter, retentionAfter⟩⟩
 
 /-- The resolver answers with the state rewrite exactly when the state holds a record naming a unique
 live body.

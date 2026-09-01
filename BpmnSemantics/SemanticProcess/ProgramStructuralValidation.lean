@@ -7,6 +7,7 @@ import BpmnSemantics.SemanticProcess.MessageStart
 import BpmnSemantics.SemanticProcess.TimerStart
 import BpmnSemantics.SemanticProcess.SimpleBooleanExpression
 import BpmnSemantics.SemanticProcess.CallActivityAdmission
+import BpmnSemantics.SemanticProcess.CompensationActivityRetentionDeclaration
 
 /-! # Semantic Process program structural validation
 
@@ -546,7 +547,8 @@ def programWellFormed (program : Program) : Bool :=
     callOperationsPaired program &&
     (program.operations.filter isInitiate).length = 1 &&
     programGraphWellFormed program &&
-    programWaitDeclarersUnique program.operations
+    programWaitDeclarersUnique program.operations &&
+    compensationActivityRetentionDeclarationValid program
 
 /-- Structural admission keeps control-place identifiers in canonical duplicate-free order. -/
 theorem programWellFormed_controlPlaceIdsSorted (program : Program)

@@ -14,6 +14,7 @@ import {
   setActivationCount,
 } from "./semantic-process-state.js";
 import type { RuntimeState } from "./semantic-process-state.js";
+import { initializeCompensationActivityRetention } from "./compensation-activity-retention.js";
 
 /** Pairs each public start-command kind with exactly one corresponding IL initiation kind. */
 export function processStartMatchesProgram(
@@ -75,7 +76,7 @@ export function admitProcessStart(
     definitionScopeId: rootScope.id,
     activation: 1,
   };
-  return {
+  return initializeCompensationActivityRetention(program, {
     ...state,
     ...(program.identity.semanticProfile ===
         SemanticProfileId.SequentialMultiInstanceUserTask
@@ -99,7 +100,7 @@ export function admitProcessStart(
       ...state.variables,
       process: { bindings: stimulus.initialVariables },
     },
-  };
+  }, rootOccurrence);
 }
 
 /** Creates the empty root occurrence shared by payload-free resolved Process starts. */
@@ -131,7 +132,7 @@ export function admitTriggeredStartRoot(
     definitionScopeId: rootScope.id,
     activation: 1,
   };
-  return {
+  return initializeCompensationActivityRetention(program, {
     ...state,
     control: {
       kind: ControlStateKind.Running,
@@ -148,7 +149,7 @@ export function admitTriggeredStartRoot(
       process: { bindings: [] },
       activities: [],
     },
-  };
+  }, rootOccurrence);
 }
 
 /** Clears one admitted triggered start and emits its root-owned outgoing tokens. */

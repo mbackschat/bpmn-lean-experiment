@@ -705,6 +705,21 @@ structure ControlPlaceScopeOwnership where
   scopeId : DefinitionScopeId
   deriving Repr, DecidableEq
 
+/-- One Activity made eligible by one associated boundary Compensation handler. -/
+structure BoundaryCompensationTarget where
+  activityElementId : NodeId
+  boundaryEventElementId : NodeId
+  compensationActivityElementId : NodeId
+  deriving Repr, DecidableEq
+
+/-- Bounded hidden retention selected for one flat Process definition. -/
+structure CompensationActivityRetentionDeclaration where
+  definitionScopeId : DefinitionScopeId
+  targets : List BoundaryCompensationTarget
+  maxRecords : Nat
+  maxCanonicalBytes : Nat
+  deriving Repr, DecidableEq
+
 structure Program where
   identity : ProgramIdentity
   internalSchedulingMode : InternalSchedulingMode
@@ -714,6 +729,7 @@ structure Program where
   controlPlaceScopes : List ControlPlaceScopeOwnership
   controlPlaces : List ControlPlace
   operations : List SemanticOperation
+  compensationActivityRetention : Option CompensationActivityRetentionDeclaration := none
   deriving Repr, DecidableEq
 
 namespace Obligations

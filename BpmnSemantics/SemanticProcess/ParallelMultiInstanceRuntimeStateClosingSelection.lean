@@ -337,7 +337,7 @@ theorem completionControllers_singleton (program : Program)
     (wellFormed : runtimeStateWellFormed program expectedInstanceId state = true) :
     state.parallelMultiInstanceControllers = [controller] := by
   simp only [runtimeStateWellFormed, Bool.and_eq_true] at wellFormed
-  obtain ⟨existing, claims⟩ := wellFormed
+  obtain ⟨existing, claims, _retention⟩ := wellFormed
   obtain ⟨h17, _lifecycle⟩ := existing
   obtain ⟨h16, _notExhausted⟩ := h17
   obtain ⟨h15, _controllerIds⟩ := h16
@@ -456,7 +456,7 @@ theorem timerControllers_singleton (program : Program)
     (wellFormed : runtimeStateWellFormed program expectedInstanceId state = true) :
     state.parallelMultiInstanceControllers = [controller] := by
   simp only [runtimeStateWellFormed, Bool.and_eq_true] at wellFormed
-  obtain ⟨existing, claims⟩ := wellFormed
+  obtain ⟨existing, claims, _retention⟩ := wellFormed
   obtain ⟨h17, _lifecycle⟩ := existing
   obtain ⟨h16, _notExhausted⟩ := h17
   obtain ⟨h15, _controllerIds⟩ := h16

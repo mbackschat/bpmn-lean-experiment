@@ -83,7 +83,7 @@ theorem sharedParallelEntry_preserves_runtimeStateWellFormed (program : Program)
             activityActivation }
       change runtimeStateWellFormed program expectedInstanceId successor = true
       simp only [runtimeStateWellFormed, Bool.and_eq_true] at wellFormed
-      obtain ⟨existing, claims⟩ := wellFormed
+      obtain ⟨existing, claims, retention⟩ := wellFormed
       obtain ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨position, races⟩, incidents⟩, owners⟩, identities⟩,
         bounds⟩, declarations⟩, hidden⟩, order⟩, bodies⟩, timersUnambiguous⟩,
         messagesUnambiguous⟩, activityIds⟩, controllers⟩, sequentialBindings⟩,
@@ -307,6 +307,9 @@ theorem sharedParallelEntry_preserves_runtimeStateWellFormed (program : Program)
         simpa [successor, record, slots] using
           insertPendingParallelActivity_preserves_activityBodyClaimsUnique before arm instanceId
             taskHighWater items record firstTask restTasks pendingIds taskWaitAbsent bodies claims
+      have retentionAfter : compensationActivityRetentionStateValid program successor = true := by
+        change compensationActivityRetentionStateValid program before = true
+        exact retention
       have recordBodyLive : activityBodyLive timerState record = true := by
         simp only [activityBodyLive, record, List.all_eq_true, decide_eq_true_eq]
         intro task taskMember
@@ -796,5 +799,5 @@ theorem sharedParallelEntry_preserves_runtimeStateWellFormed (program : Program)
         identitiesAfter⟩, boundsAfter⟩, declarationsAfter⟩, hiddenAfter⟩, orderAfter⟩, bodiesAfter⟩,
         attachedAfter⟩, messagesUnambiguousAfter⟩, activityIdsAfter⟩, controllersAfter⟩,
         sequentialBindingsAfter⟩, parallelBindingsAfter⟩, controllerIdsAfter⟩, notExhaustedAfter⟩,
-        lifecycleAfter⟩, claimsAfter⟩
+        lifecycleAfter⟩, ⟨claimsAfter, retentionAfter⟩⟩
 end BpmnSemantics.SemanticProcess

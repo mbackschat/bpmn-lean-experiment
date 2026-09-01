@@ -8,6 +8,7 @@ import type {
   VariableBinding,
 } from "./contract.js";
 import type { DeepReadonly } from "./deep-readonly.js";
+import type { CompensationActivityRetention } from "./compensation-activity-retention-contract.js";
 import type {
   EffectDescriptor,
   MessageChannel,
@@ -178,6 +179,8 @@ export type RuntimeState = DeepReadonly<{
   sequentialMultiInstanceControllers?: SequentialMultiInstanceController[];
   /** Present exactly for programs declaring the parallel Multi-Instance operation. */
   parallelMultiInstanceControllers?: ParallelMultiInstanceController[];
+  /** Present exactly for Programs declaring boundary-handler compensation retention. */
+  compensationActivityRetentions?: CompensationActivityRetention[];
   variables: ScopedVariables;
   taskActivations: ActivationCounter[];
   messageActivations: ActivationCounter[];

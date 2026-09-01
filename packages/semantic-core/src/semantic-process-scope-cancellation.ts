@@ -129,6 +129,14 @@ function removeScopeOccurrenceRegion(
             ),
           ),
       }),
+    ...(withoutCalledProcesses.compensationActivityRetentions === undefined
+      ? {}
+      : {
+        compensationActivityRetentions:
+          withoutCalledProcesses.compensationActivityRetentions.filter(
+            ({ owner }) => !isInterrupted(owner),
+          ),
+      }),
     effectWaits: withoutCalledProcesses.effectWaits.filter(
       ({ owner }) => !isInterrupted(owner),
     ),

@@ -52,6 +52,10 @@ import {
   sequentialMultiInstanceStimulusDataAdmitted,
 } from "./sequential-multi-instance-command-data-admission.js";
 import { programWaitDeclarersAreUnique } from "./internal-transition-wait-census.js";
+import {
+  compensationRetentionProgramDefects,
+  isCompensationActivityRetentionDeclaration,
+} from "./compensation-activity-retention-state-validation.js";
 
 export function supportsSemanticProcessScenario(
   scenario: Scenario,
@@ -123,6 +127,10 @@ export function isWellFormedSemanticProcessProgram(
   const operations = Array.isArray(value.operations)
     ? value.operations
     : undefined;
+  const hasCompensationActivityRetention = Object.prototype.hasOwnProperty.call(
+    value,
+    "compensationActivityRetention",
+  );
   if (
     !hasOnlyKeys(value, [
       "kind",
@@ -134,6 +142,9 @@ export function isWellFormedSemanticProcessProgram(
       "controlPlaceScopes",
       "controlPlaces",
       "operations",
+      ...(hasCompensationActivityRetention
+        ? ["compensationActivityRetention"]
+        : []),
     ]) ||
     value.kind !== SemanticProcessKind.SemanticProcess ||
     identity === undefined ||
@@ -170,6 +181,10 @@ export function isWellFormedSemanticProcessProgram(
     controlPlaces.length === 0 ||
     operations === undefined ||
     operations.length === 0 ||
+    (hasCompensationActivityRetention &&
+      !isCompensationActivityRetentionDeclaration(
+        value.compensationActivityRetention,
+      )) ||
     !isSortedById(controlPlaces) ||
     !isSortedById(operations)
   ) {
@@ -211,6 +226,7 @@ export function isWellFormedSemanticProcessProgram(
   }
   return inclusiveOperationsArePaired(checkedOperations) &&
     programWaitDeclarersAreUnique(checkedOperations) &&
+    compensationRetentionProgramDefects(value as SemanticProcessProgram).length === 0 &&
     isWellFormedSemanticProcessGraph({
       semanticProfile: identity.semanticProfile,
       processId: value.processId,

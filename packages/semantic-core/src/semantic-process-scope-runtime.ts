@@ -145,6 +145,14 @@ export function completeScope(
           instanceId: selected.instanceId,
         },
         scopeOccurrences: [],
+        ...(state.compensationActivityRetentions === undefined
+          ? {}
+          : {
+              compensationActivityRetentions:
+                state.compensationActivityRetentions.filter(
+                  ({ owner }) => !sameScopeOccurrence(owner, selected.occurrence.id),
+                ),
+            }),
       };
     case ScopeCompletionSelectionKind.Child:
       return {

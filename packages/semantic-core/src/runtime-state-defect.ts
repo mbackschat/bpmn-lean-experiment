@@ -26,6 +26,9 @@ export const RuntimeStateDefect = {
     "parallelMultiInstanceControllerBindingMismatch",
   DuplicateParallelMultiInstanceController: "duplicateParallelMultiInstanceController",
   ParallelMultiInstanceExhausted: "parallelMultiInstanceExhausted",
+  CompensationActivityRetentionProfileMismatch:
+    "compensationActivityRetentionProfileMismatch",
+  CompensationActivityRetentionInvalid: "compensationActivityRetentionInvalid",
 } as const;
 
 export type RuntimeStateDefect =

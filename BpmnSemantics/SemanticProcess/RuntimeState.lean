@@ -215,9 +215,22 @@ structure SelectedBranchSet where
   expectedInputs : List ControlPlaceId
   deriving Repr, DecidableEq
 
+/-- One successfully completed outer Activity retained for later compensation. -/
+structure CompletedCompensableActivity where
+  id : ActivityOccurrenceId
+  completionOrdinal : Nat
+  deriving Repr, DecidableEq
+
+/-- Root-owned chronology of boundary-handler-eligible completed Activities. -/
+structure CompensationActivityRetention where
+  owner : ScopeOccurrenceId
+  nextCompletionOrdinal : Nat
+  records : List CompletedCompensableActivity
+  deriving Repr, DecidableEq
+
 /-! ## Runtime representation invariant
 
-In an admitted reachable state, every token, wait, incident-owned suspended wait, selected-branch record, and event-race record is owned by one live `ScopeOccurrenceId` for the same semantic Process instance, and child occurrences form a parent-linked tree rooted at the Process occurrence. An effect occurrence appears in exactly one of `effectWaits` or `effectIncidents`; an incident retains the complete wait and exactly one matching Activity-local scope. User Task waits, User Task activation counters, selected-branch records, and event-race records use canonical identifier order so independent activation order is not retained as semantic state. Task, Message, Timer, effect, event-race, and scope activation counts are monotonic high-water marks: removing a wait or occurrence never makes an identity reusable. Interrupting profiles admit no incident-bearing state in this capsule. Normal scope completion may remove an occurrence only after its owned tokens, waits, incidents, selected-branch records, event-race records, and child occurrences are absent; a child then emits exactly one parent-owned continuation, while root completion clears the root occurrence.
+In an admitted reachable state, every token, wait, incident-owned suspended wait, selected-branch record, and event-race record is owned by one live `ScopeOccurrenceId` for the same semantic Process instance, and child occurrences form a parent-linked tree rooted at the Process occurrence. An effect occurrence appears in exactly one of `effectWaits` or `effectIncidents`; an incident retains the complete wait and exactly one matching Activity-local scope. A declared compensation-retention register is owned by that live root, does not affect quiescence, and is removed with the root. User Task waits, User Task activation counters, selected-branch records, and event-race records use canonical identifier order so independent activation order is not retained as semantic state. Task, Message, Timer, effect, event-race, and scope activation counts are monotonic high-water marks: removing a wait or occurrence never makes an identity reusable. Interrupting profiles admit no incident-bearing state in this capsule. Normal scope completion may remove an occurrence only after its owned tokens, waits, incidents, selected-branch records, event-race records, and child occurrences are absent; a child then emits exactly one parent-owned continuation, while root completion clears the root occurrence.
 -/
 
 structure RuntimeState where
@@ -239,6 +252,7 @@ structure RuntimeState where
   or transition in either language distinguishes a missing collection from an empty one. -/
   sequentialMultiInstanceControllers : List SequentialMultiInstanceController := []
   parallelMultiInstanceControllers : List ParallelMultiInstanceController := []
+  compensationActivityRetentions : List CompensationActivityRetention := []
   variables : ScopedVariables
   activations : List TaskActivation
   messageActivations : List MessageActivation
@@ -268,6 +282,7 @@ def initialState : RuntimeState :=
     activityOccurrences := []
     sequentialMultiInstanceControllers := []
     parallelMultiInstanceControllers := []
+    compensationActivityRetentions := []
     variables := emptyScopedVariables
     activations := []
     messageActivations := []
@@ -306,7 +321,11 @@ def runningProgramStartState? (program : Program) (instanceId : SemanticId)
   pure
     { runningStartState instanceId initialVariables with
       scopeOccurrences := [{ id := owner, parent := none }]
-      scopeActivations := [{ scopeId := root.id, count := 1 }] }
+      scopeActivations := [{ scopeId := root.id, count := 1 }]
+      compensationActivityRetentions :=
+        match program.compensationActivityRetention with
+        | none => []
+        | some _ => [{ owner, nextCompletionOrdinal := 1, records := [] }] }
 
 def tokenMultiplicity (state : RuntimeState) (place : ControlPlaceId) : Nat :=
   (state.tokens.filter fun token => decide (token.placeId = place)).length
