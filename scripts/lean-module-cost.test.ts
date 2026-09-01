@@ -364,9 +364,16 @@ test("an exit-zero receipt at the exact cgroup bound fails acceptance", () => {
   assert.deepEqual(
     acceptanceMessages({
       ...leanMemoryAcceptanceRecord,
-      receipts: [{ ...receipt, cgroupPeakBytes: leanMemoryAcceptanceRecord.memoryBoundBytes }],
+      receipts: leanMemoryAcceptanceRecord.receipts.map((candidate) =>
+        candidate.command === receipt.command
+          ? { ...candidate, cgroupPeakBytes: leanMemoryAcceptanceRecord.memoryBoundBytes }
+          : candidate,
+      ),
     }),
-    [`${receipt.command} reached cgroup peak ${leanMemoryAcceptanceRecord.memoryBoundBytes} at or above bound ${leanMemoryAcceptanceRecord.memoryBoundBytes}`],
+    [
+      `${receipt.command} reached cgroup peak ${leanMemoryAcceptanceRecord.memoryBoundBytes} at or above bound ${leanMemoryAcceptanceRecord.memoryBoundBytes}`,
+      `${receipt.command} measurement tuple changed without a new commit and output digest`,
+    ],
   );
 });
 
@@ -376,11 +383,15 @@ test("every nonzero cgroup pressure event and command failure fails acceptance",
   assert.deepEqual(
     acceptanceMessages({
       ...leanMemoryAcceptanceRecord,
-      receipts: [{
-        ...receipt,
-        exitStatus: 137,
-        memoryEvents: { high: 1, max: 2, oom: 3, oom_kill: 4, oom_group_kill: 5 },
-      }],
+      receipts: leanMemoryAcceptanceRecord.receipts.map((candidate) =>
+        candidate.command === receipt.command
+          ? {
+              ...candidate,
+              exitStatus: 137,
+              memoryEvents: { high: 1, max: 2, oom: 3, oom_kill: 4, oom_group_kill: 5 },
+            }
+          : candidate,
+      ),
     }),
     [
       `${receipt.command} exited 137`,
@@ -389,6 +400,65 @@ test("every nonzero cgroup pressure event and command failure fails acceptance",
       `${receipt.command} recorded memory.events oom=3`,
       `${receipt.command} recorded memory.events oom_kill=4`,
       `${receipt.command} recorded memory.events oom_group_kill=5`,
+      `${receipt.command} measurement tuple changed without a new commit and output digest`,
     ],
+  );
+});
+
+test("complete Lean acceptance rejects an empty or incomplete receipt set", () => {
+  const [testReceipt] = leanMemoryAcceptanceRecord.receipts;
+  assert.ok(testReceipt !== undefined);
+  assert.deepEqual(
+    acceptanceMessages({ ...leanMemoryAcceptanceRecord, receipts: [] }),
+    [
+      "missing required Lean memory receipt for ./scripts/lake.sh test",
+      "missing required Lean memory receipt for ./scripts/lake.sh build",
+    ],
+  );
+  assert.deepEqual(
+    acceptanceMessages({ ...leanMemoryAcceptanceRecord, receipts: [testReceipt] }),
+    ["missing required Lean memory receipt for ./scripts/lake.sh build"],
+  );
+});
+
+test("complete Lean acceptance rejects duplicate and unknown commands", () => {
+  const [testReceipt] = leanMemoryAcceptanceRecord.receipts;
+  assert.ok(testReceipt !== undefined);
+  assert.deepEqual(
+    acceptanceMessages({
+      ...leanMemoryAcceptanceRecord,
+      receipts: [...leanMemoryAcceptanceRecord.receipts, testReceipt],
+    }),
+    [`duplicate Lean memory receipt for ${testReceipt.command}`],
+  );
+  assert.deepEqual(
+    acceptanceMessages({
+      ...leanMemoryAcceptanceRecord,
+      receipts: [
+        ...leanMemoryAcceptanceRecord.receipts,
+        { ...testReceipt, command: "./scripts/lake.sh unknown" },
+      ],
+    }),
+    ["unknown Lean memory receipt command ./scripts/lake.sh unknown"],
+  );
+});
+
+test("complete Lean acceptance fixes the ceiling and ratchets values by identity", () => {
+  const [testReceipt] = leanMemoryAcceptanceRecord.receipts;
+  assert.ok(testReceipt !== undefined);
+  assert.deepEqual(
+    acceptanceMessages({ ...leanMemoryAcceptanceRecord, memoryBoundBytes: 4_294_967_296 }),
+    ["Lean memory bound 4294967296 differs from fixed bound 3221225472"],
+  );
+  assert.deepEqual(
+    acceptanceMessages({
+      ...leanMemoryAcceptanceRecord,
+      receipts: leanMemoryAcceptanceRecord.receipts.map((candidate) =>
+        candidate.command === testReceipt.command
+          ? { ...candidate, cgroupPeakBytes: candidate.cgroupPeakBytes - 1 }
+          : candidate,
+      ),
+    }),
+    [`${testReceipt.command} measurement tuple changed without a new commit and output digest`],
   );
 });
