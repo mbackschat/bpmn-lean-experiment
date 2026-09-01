@@ -35,7 +35,9 @@ export type LeanMemoryAcceptanceViolation = Readonly<
   | { kind: "missing-command"; command: string }
   | { kind: "duplicate-command"; command: string }
   | { kind: "unknown-command"; command: string }
-  | { kind: "measurement-identity"; command: string }
+  | { kind: "baseline-missing-command"; command: string }
+  | { kind: "baseline-duplicate-command"; command: string }
+  | { kind: "baseline-unknown-command"; command: string }
   | { kind: "measurement-ratchet"; command: string }
   | { kind: "nonzero-exit"; command: string; exitStatus: number }
   | { kind: "cgroup-bound"; command: string; peakBytes: number; boundBytes: number }
@@ -44,44 +46,61 @@ export type LeanMemoryAcceptanceViolation = Readonly<
 
 export const leanMemoryBoundBytes = 3_221_225_472;
 
-const acceptedLeanMemoryReceipts = [
-  {
-    command: "./scripts/lake.sh test",
-    measuredAtCommit: "7b3ca41f",
-    outputSha256: "aaec15959030baf4dae2b0327c50fdb5b8a765e3f80ad93b82629f4339833d58",
-    exitStatus: 0,
-    cgroupPeakBytes: 136_794_112,
-    memoryEvents: { high: 0, max: 0, oom: 0, oom_kill: 0, oom_group_kill: 0 },
-  },
-  {
-    command: "./scripts/lake.sh build",
-    measuredAtCommit: "7b3ca41f",
-    outputSha256: "748a58696eab89272da962e2f88d514187abf2aab87a66985dfedc4e14ee0a13",
-    exitStatus: 0,
-    cgroupPeakBytes: 36_450_304,
-    memoryEvents: { high: 0, max: 0, oom: 0, oom_kill: 0, oom_group_kill: 0 },
-  },
-] as const satisfies readonly LeanMemoryAcceptanceReceipt[];
+export const leanMemoryRequiredCommands = [
+  "./scripts/lake.sh test",
+  "./scripts/lake.sh build",
+] as const;
 
 export const leanMemoryAcceptanceRecord = {
   memoryBoundBytes: leanMemoryBoundBytes,
-  receipts: acceptedLeanMemoryReceipts,
+  receipts: [
+    {
+      command: "./scripts/lake.sh test",
+      measuredAtCommit: "7b3ca41f",
+      outputSha256: "aaec15959030baf4dae2b0327c50fdb5b8a765e3f80ad93b82629f4339833d58",
+      exitStatus: 0,
+      cgroupPeakBytes: 136_794_112,
+      memoryEvents: { high: 0, max: 0, oom: 0, oom_kill: 0, oom_group_kill: 0 },
+    },
+    {
+      command: "./scripts/lake.sh build",
+      measuredAtCommit: "7b3ca41f",
+      outputSha256: "748a58696eab89272da962e2f88d514187abf2aab87a66985dfedc4e14ee0a13",
+      exitStatus: 0,
+      cgroupPeakBytes: 36_450_304,
+      memoryEvents: { high: 0, max: 0, oom: 0, oom_kill: 0, oom_group_kill: 0 },
+    },
+  ],
 } as const satisfies LeanMemoryAcceptanceRecord;
 
-function hasAcceptedMeasurementTuple(
+function hasSameMeasurementIdentity(
   receipt: LeanMemoryAcceptanceReceipt,
-  accepted: LeanMemoryAcceptanceReceipt,
+  baseline: LeanMemoryAcceptanceReceipt,
 ): boolean {
-  return receipt.exitStatus === accepted.exitStatus &&
-    receipt.cgroupPeakBytes === accepted.cgroupPeakBytes &&
+  return receipt.measuredAtCommit === baseline.measuredAtCommit &&
+    receipt.outputSha256 === baseline.outputSha256;
+}
+
+function hasSameMeasurementTuple(
+  receipt: LeanMemoryAcceptanceReceipt,
+  baseline: LeanMemoryAcceptanceReceipt,
+): boolean {
+  return receipt.exitStatus === baseline.exitStatus &&
+    receipt.cgroupPeakBytes === baseline.cgroupPeakBytes &&
     leanMemoryEventNames.every(
-      (event) => receipt.memoryEvents[event] === accepted.memoryEvents[event],
+      (event) => receipt.memoryEvents[event] === baseline.memoryEvents[event],
     );
 }
 
-/** Rejects incomplete, reconfigured, or mutated evidence as well as pressure. */
+/**
+ * Rejects incomplete, reconfigured, or mutated evidence as well as pressure.
+ *
+ * The caller supplies the preceding committed record. A current record cannot
+ * serve as that baseline because changing both together would hide the drift.
+ */
 export function leanMemoryAcceptanceViolations(
   record: LeanMemoryAcceptanceRecord,
+  baseline: LeanMemoryAcceptanceRecord,
 ): LeanMemoryAcceptanceViolation[] {
   const violations: LeanMemoryAcceptanceViolation[] = [];
   if (record.memoryBoundBytes !== leanMemoryBoundBytes) {
@@ -91,14 +110,22 @@ export function leanMemoryAcceptanceViolations(
       expectedBytes: leanMemoryBoundBytes,
     });
   }
-  for (const accepted of acceptedLeanMemoryReceipts) {
-    const matching = record.receipts.filter((receipt) => receipt.command === accepted.command);
+  for (const command of leanMemoryRequiredCommands) {
+    const matching = record.receipts.filter((receipt) => receipt.command === command);
+    const baselineMatching = baseline.receipts.filter(
+      (receipt) => receipt.command === command,
+    );
+    if (baselineMatching.length === 0) {
+      violations.push({ kind: "baseline-missing-command", command });
+    } else if (baselineMatching.length > 1) {
+      violations.push({ kind: "baseline-duplicate-command", command });
+    }
     if (matching.length === 0) {
-      violations.push({ kind: "missing-command", command: accepted.command });
+      violations.push({ kind: "missing-command", command });
       continue;
     }
     if (matching.length > 1) {
-      violations.push({ kind: "duplicate-command", command: accepted.command });
+      violations.push({ kind: "duplicate-command", command });
       continue;
     }
     const [receipt] = matching;
@@ -120,21 +147,26 @@ export function leanMemoryAcceptanceViolations(
         violations.push({ kind: "memory-event", command: receipt.command, event, count });
       }
     }
+    const [baselineReceipt] = baselineMatching;
     if (
-      receipt.measuredAtCommit !== accepted.measuredAtCommit ||
-      receipt.outputSha256 !== accepted.outputSha256
+      baselineReceipt !== undefined &&
+      hasSameMeasurementIdentity(receipt, baselineReceipt) &&
+      !hasSameMeasurementTuple(receipt, baselineReceipt)
     ) {
-      violations.push({ kind: "measurement-identity", command: receipt.command });
-    } else if (!hasAcceptedMeasurementTuple(receipt, accepted)) {
       violations.push({ kind: "measurement-ratchet", command: receipt.command });
     }
   }
   const acceptedCommands = new Set<string>(
-    acceptedLeanMemoryReceipts.map(({ command }) => command),
+    leanMemoryRequiredCommands,
   );
   for (const receipt of record.receipts) {
     if (!acceptedCommands.has(receipt.command)) {
       violations.push({ kind: "unknown-command", command: receipt.command });
+    }
+  }
+  for (const receipt of baseline.receipts) {
+    if (!acceptedCommands.has(receipt.command)) {
+      violations.push({ kind: "baseline-unknown-command", command: receipt.command });
     }
   }
   return violations;
@@ -152,8 +184,12 @@ export function formatLeanMemoryAcceptanceViolation(
       return `duplicate Lean memory receipt for ${violation.command}`;
     case "unknown-command":
       return `unknown Lean memory receipt command ${violation.command}`;
-    case "measurement-identity":
-      return `${violation.command} measurement identity is not the accepted commit and output digest`;
+    case "baseline-missing-command":
+      return `prior committed Lean memory record is missing ${violation.command}`;
+    case "baseline-duplicate-command":
+      return `prior committed Lean memory record duplicates ${violation.command}`;
+    case "baseline-unknown-command":
+      return `prior committed Lean memory record has unknown command ${violation.command}`;
     case "measurement-ratchet":
       return `${violation.command} measurement tuple changed without a new commit and output digest`;
     case "nonzero-exit":

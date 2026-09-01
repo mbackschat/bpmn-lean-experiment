@@ -27,6 +27,7 @@ import {
 } from "./lean-memory-acceptance.ts";
 
 const recordPath = "scripts/lean-module-cost.ts";
+const acceptanceRecordPath = "scripts/lean-memory-acceptance.ts";
 
 /**
  * Conformance modules the repository currently carries, derived rather than written.
@@ -154,12 +155,90 @@ async function committedBaseline(): Promise<LeanModuleCostBaseline | null> {
   }
 }
 
+function acceptanceBaselineRef(): string {
+  const status = execFileSync(
+    "git",
+    ["status", "--porcelain=v1", "--", acceptanceRecordPath],
+    { encoding: "utf8" },
+  ).trim();
+  return status.length === 0 ? "HEAD^" : "HEAD";
+}
+
+/**
+ * Loads the receipt record from the revision immediately before the candidate.
+ *
+ * A dirty receipt file is a candidate against `HEAD`; a clean committed file is
+ * a candidate against `HEAD^`. This keeps local pre-commit and hosted clean-tree
+ * execution on the same comparison instead of letting either use itself.
+ */
+async function committedAcceptanceBaseline(): Promise<LeanMemoryAcceptanceRecord> {
+  const ref = acceptanceBaselineRef();
+  const source = execFileSync("git", ["show", `${ref}:${acceptanceRecordPath}`], {
+    encoding: "utf8",
+    maxBuffer: 8 * 1024 * 1024,
+  });
+  const directory = mkdtempSync(join(tmpdir(), "lean-memory-acceptance-baseline-"));
+  try {
+    const file = join(directory, "baseline.mts");
+    writeFileSync(file, source, "utf8");
+    const loaded: unknown = await import(pathToFileURL(file).href);
+    if (
+      loaded === null ||
+      typeof loaded !== "object" ||
+      !("leanMemoryAcceptanceRecord" in loaded)
+    ) {
+      throw new TypeError(
+        `${acceptanceRecordPath} at ${ref} exports no leanMemoryAcceptanceRecord`,
+      );
+    }
+    return loaded.leanMemoryAcceptanceRecord as LeanMemoryAcceptanceRecord;
+  } finally {
+    rmSync(directory, { force: true, recursive: true });
+  }
+}
+
 function messages(violations: readonly LeanModuleCostViolation[]): string[] {
   return violations.map((violation) => formatLeanModuleCostViolation(violation));
 }
 
-function acceptanceMessages(record: LeanMemoryAcceptanceRecord): string[] {
-  return leanMemoryAcceptanceViolations(record).map(formatLeanMemoryAcceptanceViolation);
+function acceptanceMessages(
+  record: LeanMemoryAcceptanceRecord,
+  baseline: LeanMemoryAcceptanceRecord = leanMemoryAcceptanceRecord,
+): string[] {
+  return leanMemoryAcceptanceViolations(record, baseline).map(
+    formatLeanMemoryAcceptanceViolation,
+  );
+}
+
+async function mutatedCanonicalAcceptanceModule(): Promise<{
+  leanMemoryAcceptanceRecord: LeanMemoryAcceptanceRecord;
+  leanMemoryAcceptanceViolations: typeof leanMemoryAcceptanceViolations;
+  formatLeanMemoryAcceptanceViolation: typeof formatLeanMemoryAcceptanceViolation;
+}> {
+  const source = readFileSync(acceptanceRecordPath, "utf8");
+  const original = "cgroupPeakBytes: 136_794_112,";
+  const mutated = source.replace(original, "cgroupPeakBytes: 136_794_111,");
+  assert.notEqual(mutated, source, "canonical receipt mutation did not match its source tuple");
+  const directory = mkdtempSync(join(tmpdir(), "lean-memory-acceptance-mutation-"));
+  const file = join(directory, "mutated.mts");
+  writeFileSync(file, mutated, "utf8");
+  const loaded: unknown = await import(pathToFileURL(file).href);
+  if (
+    loaded === null ||
+    typeof loaded !== "object" ||
+    !("leanMemoryAcceptanceRecord" in loaded) ||
+    !("leanMemoryAcceptanceViolations" in loaded) ||
+    !("formatLeanMemoryAcceptanceViolation" in loaded) ||
+    typeof loaded.leanMemoryAcceptanceViolations !== "function" ||
+    typeof loaded.formatLeanMemoryAcceptanceViolation !== "function"
+  ) {
+    throw new TypeError(`${acceptanceRecordPath} mutation exports no readable acceptance module`);
+  }
+  return loaded as {
+    leanMemoryAcceptanceRecord: LeanMemoryAcceptanceRecord;
+    leanMemoryAcceptanceViolations: typeof leanMemoryAcceptanceViolations;
+    formatLeanMemoryAcceptanceViolation: typeof formatLeanMemoryAcceptanceViolation;
+  };
 }
 
 function withRows(
@@ -354,8 +433,11 @@ test("an empty provenance field fails completeness of the measurement account", 
   );
 });
 
-test("the repaired complete Lean receipts satisfy cgroup acceptance", () => {
-  assert.deepEqual(acceptanceMessages(leanMemoryAcceptanceRecord), []);
+test("the repaired complete Lean receipts satisfy cgroup acceptance", async () => {
+  assert.deepEqual(
+    acceptanceMessages(leanMemoryAcceptanceRecord, await committedAcceptanceBaseline()),
+    [],
+  );
 });
 
 test("an exit-zero receipt at the exact cgroup bound fails acceptance", () => {
@@ -421,6 +503,18 @@ test("complete Lean acceptance rejects an empty or incomplete receipt set", () =
   );
 });
 
+test("complete Lean acceptance rejects an incomplete prior committed record", () => {
+  const [testReceipt] = leanMemoryAcceptanceRecord.receipts;
+  assert.ok(testReceipt !== undefined);
+  assert.deepEqual(
+    acceptanceMessages(leanMemoryAcceptanceRecord, {
+      ...leanMemoryAcceptanceRecord,
+      receipts: [testReceipt],
+    }),
+    ["prior committed Lean memory record is missing ./scripts/lake.sh build"],
+  );
+});
+
 test("complete Lean acceptance rejects duplicate and unknown commands", () => {
   const [testReceipt] = leanMemoryAcceptanceRecord.receipts;
   assert.ok(testReceipt !== undefined);
@@ -460,5 +554,18 @@ test("complete Lean acceptance fixes the ceiling and ratchets values by identity
       ),
     }),
     [`${testReceipt.command} measurement tuple changed without a new commit and output digest`],
+  );
+});
+
+test("a canonical receipt tuple changed under an unchanged identity fails the ratchet", async () => {
+  const mutated = await mutatedCanonicalAcceptanceModule();
+  assert.deepEqual(
+    mutated
+      .leanMemoryAcceptanceViolations(
+        mutated.leanMemoryAcceptanceRecord,
+        await committedAcceptanceBaseline(),
+      )
+      .map(mutated.formatLeanMemoryAcceptanceViolation),
+    ["./scripts/lake.sh test measurement tuple changed without a new commit and output digest"],
   );
 });
