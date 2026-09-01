@@ -260,7 +260,7 @@ The complete `what-binds` inventory requires [`implementation-status-owner:ENGIN
 | [Lean initialization preservation](../../BpmnSemantics/SemanticProcess/RuntimeStateWellFormedInitialization.lean) | 709 | preserve the new invariant from the exact initialized state |
 | [Lean completion](../../BpmnSemantics/SemanticProcess/ScopeCompletion.lean) | 694 | promotion/frame |
 | [Lean cancellation](../../BpmnSemantics/SemanticProcess/ScopeCancellation.lean) | 612 | regional filtering |
-| [Lean transition](../../BpmnSemantics/SemanticProcess/Transition.lean) | 51 | three-arm attempt and extracted proof-facing composition helpers |
+| [Lean transition](../../BpmnSemantics/SemanticProcess/Transition.lean) | 29 | three-arm attempt and extracted proof-facing composition helpers |
 | [Lean trace closure](../../BpmnSemantics/SemanticProcess/TransitionTrace.lean) | 178 | refusal rollback/no trace |
 | [Lean command admission](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean) | 272 | map root-capacity refusal to `Rejected`, never `semanticFailure`, and reject an invalid committed post-state |
 | [Lean census](../../BpmnSemantics/SemanticProcess/InternalCommutationCensus.lean) | 661 | new state field |

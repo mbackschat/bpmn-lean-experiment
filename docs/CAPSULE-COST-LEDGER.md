@@ -91,6 +91,73 @@ The full-library probe's Message Start kill was reproducible enough to reject as
 
 These immutable rows are the acceptance evidence. The root-closure target retains about 493 MiB of cgroup headroom even though its GNU-RSS figure crosses the record's conservative 90% disclosure threshold; every other new snapshot owner is below that threshold. The first three checkpoint-review correction measurements and both second-audit remeasurements used their own commit-specific Linux cache after each named target had been prewarmed and only its own generated artifacts removed. All five reported `memory.events` values of zero for `high`, `max`, `oom`, `oom_kill`, and `oom_group_kill`. Their elapsed figures were plausible for the unchanged one-CPU lane, so host-contention retries were not needed. The later lifecycle measurement covers the quantified root/child/completion and regional-cancellation laws plus the pre-closure Timer discriminator; the Service Task incident measurement binds the exhaustive proof repair forced by declaration-aware admission. The governing correction is therefore structural rather than a larger allowance: focused snapshot admission, transition, trace, and commutation owners; exact declaration-free delegation laws; explicit validated predecessor states; and split proof owners. Raising the ceiling by 0.5 GiB would make the rejected generic-sort, compound-fixture, or zero-margin monolith designs appear green without removing their amplification, so the 3 GiB bound remains unchanged.
 
+#### Parallel metadata and cyclic-consumer continuation
+
+The first post-checkpoint full-library repair did not end with the snapshot owners. `ParallelUserTaskMetadataCompositionConformance` was killed under the same 3 GiB controller after the full-library probe made its accumulated exact-composition laws cold. An unchanged-limit isolated retry again ended with Lean code 137 after 46 seconds. The correction split admission, runtime, and closure laws into independent owners and made the original module an import-only aggregate; all 19 public theorem names were preserved. The first focused rows were already bounded—1,770,820 KiB for admission, 1,991,556 KiB for runtime, 2,530,968 KiB for closure, and 619,796 KiB for the aggregate—but the first complete build still touched the exact cgroup ceiling with `memory.events max=1940`, so the repair was not accepted on those focused exits alone.
+
+That complete build exposed a second mechanism rather than another memory limit: four cyclic-control-flow consumers depended on the concrete shape of a private snapshot-bypassing evaluator. Splitting the parallel owner changed elaboration enough to expose the hidden dependency. The first correction failed because `fireWithoutCompensationSnapshots?` was private; the second chose `List ConditionalOutput` where the public contract requires `List ConditionalCandidate`; the third used `BpmnElementOrigin` where the route requires `BpmnSequenceFlowOrigin`. The accepted repair expressed the cyclic fixtures through public declaration-free constructor laws. The base cyclic target then passed, a complete test predicted and exposed the same issue in `CyclicControlFlowExecutionConformance`, and the same public-law correction repaired execution, reachability, and step-completeness without publishing or duplicating the private evaluator.
+
+| Boundary | Exact target | Elapsed | GNU maximum RSS | Cgroup peak | Verdict |
+|---|---|---:|---:|---:|---|
+| Diagnostic split | `BpmnSemantics.ParallelUserTaskMetadataCompositionAdmissionConformance` | 13.17 s | 1,770,820 KiB | 2,125,529,088 bytes | Exit 0 |
+| Diagnostic split | `BpmnSemantics.ParallelUserTaskMetadataCompositionRuntimeConformance` | 13.32 s | 1,991,556 KiB | 1,679,495,168 bytes | Exit 0 |
+| Diagnostic split | `BpmnSemantics.ParallelUserTaskMetadataCompositionClosureConformance` | 19.02 s | 2,530,968 KiB | 2,274,824,192 bytes | Exit 0 |
+| Diagnostic split | `BpmnSemantics.ParallelUserTaskMetadataCompositionConformance` | 0.67 s | 619,796 KiB | 213,323,776 bytes | Exit 0; import-only aggregate |
+| Diagnostic cyclic repair | `BpmnSemantics.SemanticProcess.CyclicControlFlowConformance` | 3:19.41 | 2,040,052 KiB | 1,744,367,616 bytes | Exit 0 after three failed type/private-boundary attempts |
+| Diagnostic cyclic family | base, execution, reachability, and step-completeness | 3:38.32 | 1,986,988 KiB | 1,733,664,768 bytes | Exit 0 |
+| `223486be` | `BpmnSemantics.ParallelUserTaskMetadataCompositionAdmissionConformance` | 11.73 s | 1,802,080 KiB | 1,496,846,336 bytes | Exit 0; no pressure event |
+| `223486be` | `BpmnSemantics.ParallelUserTaskMetadataCompositionRuntimeConformance` | 13.87 s | 2,076,884 KiB | 1,778,135,040 bytes | Exit 0; no pressure event |
+| `223486be` | `BpmnSemantics.ParallelUserTaskMetadataCompositionClosureConformance` | 24.56 s | 2,439,560 KiB | 2,213,457,920 bytes | Exit 0; no pressure event |
+| `223486be` | `BpmnSemantics.ParallelUserTaskMetadataCompositionConformance` | 1.41 s | 615,444 KiB | 211,906,560 bytes | Exit 0; import-only aggregate |
+| `223486be` | `BpmnSemantics.SemanticProcess.CyclicControlFlowConformance` | 16.19 s | 2,087,352 KiB | 1,810,960,384 bytes | Exit 0; no pressure event |
+| `223486be` | `BpmnSemantics.SemanticProcess.CyclicControlFlowExecutionConformance` | 5.53 s | 790,732 KiB | 394,293,248 bytes | Exit 0; no pressure event |
+| `223486be` | `BpmnSemantics.SemanticProcess.CyclicControlFlowReachabilityConformance` | 3.99 s | 775,300 KiB | 390,721,536 bytes | Exit 0; no pressure event |
+| `223486be` | `BpmnSemantics.SemanticProcess.CyclicControlFlowStepCompletenessConformance` | 3.44 s | 825,916 KiB | 441,712,640 bytes | Exit 0; no pressure event |
+
+After those repairs, a complete Lean build passed in 6:01.61 at 3,128,672 KiB GNU RSS and 3,030,597,632 bytes cgroup peak with no pressure event. The complete Lean test also exited zero, but it reached the exact 3,221,225,472-byte cgroup ceiling and recorded `memory.events max=32353`; an exit-zero test at zero process-tree margin was treated as a design failure, not as closure evidence.
+
+#### Whole-library near-cap audit and exact-pressure repair
+
+The zero-margin complete test triggered an isolated census of every disclosed near-cap conformance target under the unchanged controller. Elapsed time was treated as noisy because unrelated host processes were active; cgroup ceiling events were not. Every suspicious exact-cap result was retried before selecting a structural change.
+
+| Exact target | First GNU RSS / cgroup peak | Retry GNU RSS / cgroup peak | Classification |
+|---|---:|---:|---|
+| `SequentialMultiInstanceConformance` | 3,343,496 KiB / 3,121,868,800 bytes | 3,303,628 KiB / exact ceiling, `max=43` | Unsafe proof monolith |
+| `FlowNodeOccurrenceLifecycleConformance` | 3,335,824 KiB / exact ceiling, `max=441` | 3,243,788 KiB / exact ceiling, `max=358` | Unsafe proof monolith |
+| `RuntimeStateWellFormedConformance` | 3,106,528 KiB / 3,180,548,096 bytes | 3,133,532 KiB / exact ceiling, `max=33` | Unsafe proof monolith |
+| `RuntimeStateActivityConformance` | 3,202,508 KiB / 3,112,075,264 bytes | 2,974,532 KiB / 2,994,561,024 bytes | Initially variable; exact ceiling with `max=120` after fixture narrowing proved it unsafe |
+| `TimerStartConformance` | 2,953,420 KiB / 2,797,490,176 bytes | Not required | Retained near-cap disclosure |
+| `MessagePayloadCatchConformance` | 3,070,632 KiB / 2,805,493,760 bytes | Not required | Retained near-cap disclosure |
+| `SequentialMultiInstanceProgramBindingConformance` | 2,963,568 KiB / 2,795,372,544 bytes | Not required | Retained near-cap disclosure |
+| `CallActivityConformance` | 3,200,492 KiB / 2,976,841,728 bytes | Not required | Retained near-cap disclosure |
+| `CompensationEventSubProcessSnapshotRootClosureConformance` | 2,926,744 KiB / 2,950,213,632 bytes | 2,923,776 KiB / 2,715,987,968 bytes | Retained near-cap disclosure; unchanged-limit retry restored about 482 MiB cgroup margin |
+| `TerminateEndEventConformance` | 2,813,976 KiB / 2,662,846,464 bytes | Not required | Retained near-cap disclosure |
+
+The selected root mechanism was proof ownership, not file size or host capacity. Sequential Multi-Instance mixed runtime/lifecycle, refusal/bound, and canonical-JSON reductions around one shared lifecycle chain. Runtime well-formedness mixed ordinary invariant, Event-Based Gateway, and successor reductions, while its Activity owner still mixed boundary-Activity and sequential-controller reductions. Flow-node lifecycle imported thirteen semantic owners and evaluated every happy-path, projection-validity, cancellation, and rejection family in one target. Commit `da6e6477` moved unchanged declarations into sibling proof owners, preserved the original namespaces and import paths as declaration-free aggregates, and registered every aggregate in the import-only source guard. The only compile correction added the exact `TransitionTrace` import required by the moved `TracedStimulusResult` helpers.
+
+| Immutable commit | Exact target | Elapsed | GNU maximum RSS | Cgroup peak | Verdict |
+|---|---|---:|---:|---:|---|
+| `da6e6477` | `BpmnSemantics.SequentialMultiInstanceRuntimeConformance` | 20.11 s | 2,509,372 KiB | 2,238,963,712 bytes | Exit 0; no pressure event |
+| `da6e6477` | `BpmnSemantics.SequentialMultiInstanceRefusalConformance` | 10.21 s | 1,791,356 KiB | 1,443,962,880 bytes | Exit 0; no pressure event |
+| `da6e6477` | `BpmnSemantics.SequentialMultiInstanceCanonicalJsonConformance` | 1.91 s | 833,720 KiB | 430,080,000 bytes | Exit 0; no pressure event |
+| `da6e6477` | `BpmnSemantics.SequentialMultiInstanceConformance` | 0.65 s | 619,012 KiB | 213,352,448 bytes | Exit 0; import-only aggregate |
+| `da6e6477` | `BpmnSemantics.RuntimeStateActivityOccurrenceConformance` | 18.29 s | 2,116,976 KiB | 1,838,526,464 bytes | Exit 0; no pressure event |
+| `da6e6477` | `BpmnSemantics.RuntimeStateControllerConformance` | 16.00 s | 2,089,244 KiB | 1,793,007,616 bytes | Exit 0; no pressure event |
+| `da6e6477` | `BpmnSemantics.RuntimeStateActivityConformance` | 0.55 s | 618,664 KiB | 213,245,952 bytes | Exit 0; import-only aggregate |
+| `da6e6477` | `BpmnSemantics.RuntimeStateWellFormedInvariantConformance` | 14.62 s | 2,048,816 KiB | 1,740,648,448 bytes | Exit 0; no pressure event |
+| `da6e6477` | `BpmnSemantics.RuntimeStateWellFormedEventRaceConformance` | 5.49 s | 1,390,688 KiB | 1,026,326,528 bytes | Exit 0; no pressure event |
+| `da6e6477` | `BpmnSemantics.RuntimeStateWellFormedSuccessorConformance` | 14.57 s | 1,832,044 KiB | 1,526,501,376 bytes | Exit 0; no pressure event |
+| `da6e6477` | `BpmnSemantics.RuntimeStateWellFormedConformance` | 0.55 s | 619,360 KiB | 214,175,744 bytes | Exit 0; import-only aggregate |
+| `da6e6477` | `BpmnSemantics.FlowNodeOccurrenceLifecycleDeltaConformance` | 2.21 s | 639,644 KiB | 234,483,712 bytes | Exit 0; no pressure event |
+| `da6e6477` | `BpmnSemantics.FlowNodeOccurrenceLifecycleHappyPathConformance` | 13.87 s | 2,172,304 KiB | 1,850,167,296 bytes | Exit 0; no pressure event |
+| `da6e6477` | `BpmnSemantics.FlowNodeOccurrenceLifecycleProjectionConformance` | 9.89 s | 1,699,276 KiB | 1,362,251,776 bytes | Exit 0; no pressure event |
+| `da6e6477` | `BpmnSemantics.FlowNodeOccurrenceLifecycleProgramValidityConformance` | 16.10 s | 2,333,280 KiB | 2,064,138,240 bytes | Exit 0; no pressure event |
+| `da6e6477` | `BpmnSemantics.FlowNodeOccurrenceLifecycleCancellationConformance` | 14.06 s | 2,086,828 KiB | 1,787,998,208 bytes | Exit 0; no pressure event |
+| `da6e6477` | `BpmnSemantics.FlowNodeOccurrenceLifecycleRejectionConformance` | 1.07 s | 751,784 KiB | 346,161,152 bytes | Exit 0; no pressure event |
+| `da6e6477` | `BpmnSemantics.FlowNodeOccurrenceLifecycleConformance` | 0.66 s | 620,612 KiB | 214,188,032 bytes | Exit 0; import-only aggregate |
+
+The repaired complete Lean test passed in 5.18 seconds at 939,468 KiB GNU RSS and 1,266,122,752 bytes cgroup peak; the complete Lean build passed in 18.18 seconds at 2,308,556 KiB and 1,988,366,336 bytes. Both reported zero for `high`, `max`, `oom`, `oom_kill`, and `oom_group_kill`. These warm whole-graph times are not compared with the earlier multi-minute runs because their cache state differed and the host was active; the material result is the absence of pressure with more than 1 GiB of cgroup margin. The ceiling remains 3 GiB. Increasing it would have hidden four independently reproduced ownership defects and removed the oracle that forced their common structural correction.
+
 | Increment | Boundary | Code | Documentation | Elapsed | Comparison consequence |
 |---|---|---:|---:|---|---|
 | [Scoped runtime data](capsules/SCOPED-DATA-SPEC.md) | `08d8b84..3b2e44d` | `+540/-73` | `+134/-11` | Unknown | First atomic runtime-representation replacement; later scope work should not be compared as if it were a small local semantic clause. |
