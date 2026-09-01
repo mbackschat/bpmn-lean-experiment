@@ -244,7 +244,12 @@ export const leanModuleCostRecord = {
       measuredAtCommit: "519c7c5e",
     },
     { module: "BpmnSemantics.SemanticProcessConformance", peakResidentKib: 2203824, elapsedSeconds: 8.9 },
-    { module: "BpmnSemantics.ServiceTaskIncidentRetryConformance", peakResidentKib: 2179620, elapsedSeconds: 13.8 },
+    {
+      module: "BpmnSemantics.ServiceTaskIncidentRetryConformance",
+      peakResidentKib: 2432344,
+      elapsedSeconds: 23.34,
+      measuredAtCommit: "6208f2e4",
+    },
     { module: "BpmnSemantics.NonInterruptingBoundaryTimerConformance", peakResidentKib: 2176108, elapsedSeconds: 13.9 },
     {
       module: "BpmnSemantics.ActivityDataInputConformance",
@@ -309,9 +314,9 @@ export const leanModuleCostRecord = {
     },
     {
       module: "BpmnSemantics.CompensationEventSubProcessSnapshotLifecycleIntegrationConformance",
-      peakResidentKib: 2050248,
-      elapsedSeconds: 19.33,
-      measuredAtCommit: "bd2bef03",
+      peakResidentKib: 2126608,
+      elapsedSeconds: 20.52,
+      measuredAtCommit: "6208f2e4",
     },
     {
       module: "BpmnSemantics.CompensationEventSubProcessSnapshotRootClosureConformance",
