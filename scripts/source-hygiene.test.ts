@@ -34,8 +34,13 @@ import {
 
 const leanUmbrellaModules = [
   "BpmnSemantics.lean",
+  "BpmnSemantics/FlowNodeOccurrenceLifecycleConformance.lean",
+  "BpmnSemantics/ParallelUserTaskMetadataCompositionConformance.lean",
+  "BpmnSemantics/RuntimeStateActivityConformance.lean",
+  "BpmnSemantics/RuntimeStateWellFormedConformance.lean",
   "BpmnSemantics/SemanticProcess.lean",
   "BpmnSemantics/SemanticProcessJson.lean",
+  "BpmnSemantics/SequentialMultiInstanceConformance.lean",
 ] as const;
 
 test("the source-hygiene thresholds match the owner-approved limits", () => {
