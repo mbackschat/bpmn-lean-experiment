@@ -85,15 +85,16 @@ export function retainCompletedCompensableActivity(
   if (!factsMatchTargetOperation(program, facts)) {
     return refused(state, CompensationRetentionRefusalKind.InvalidCompletionFacts);
   }
+
+  if (retention.records.some(({ id }) => sameActivityOccurrence(id, facts.activity))) {
+    return refused(state, CompensationRetentionRefusalKind.DuplicateActivity);
+  }
+
   if (
     facts.kind === CompensationCompletionFactKind.MultiInstanceUserTask &&
     facts.outcome !== MultiInstanceCompensationCompletionOutcome.AllSuccessfulCompletion
   ) {
     return { kind: CompensationRetentionResultKind.NotEligible, state };
-  }
-
-  if (retention.records.some(({ id }) => sameActivityOccurrence(id, facts.activity))) {
-    return refused(state, CompensationRetentionRefusalKind.DuplicateActivity);
   }
 
   const prospectiveRecords = [

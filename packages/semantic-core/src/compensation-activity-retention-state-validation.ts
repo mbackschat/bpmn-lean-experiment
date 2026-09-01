@@ -153,7 +153,8 @@ export function compensationRetentionStateDefects(
   if (
     root[0] === undefined ||
     !sameScopeOccurrence(retention.owner, root[0].id) ||
-    retention.owner.definitionScopeId !== declaration.definitionScopeId
+    retention.owner.definitionScopeId !== declaration.definitionScopeId ||
+    retention.owner.activation !== 1
   ) {
     defects.push(CompensationRetentionStateDefect.RegisterOwnerMismatch);
   }

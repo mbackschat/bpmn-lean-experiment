@@ -261,6 +261,18 @@ theorem duplicate_identity_is_refused_without_state_change :
     retainCompletedCompensableActivity retentionProgram owner ordinaryFacts stateAfterFirst =
       .refused .duplicateActivity stateAfterFirst := by decide +kernel
 
+def multiInstanceStateAfterFirst : RuntimeState :=
+  { multiInstanceStartState with compensationActivityRetentions := [firstRetention] }
+
+theorem duplicate_identity_is_refused_before_early_or_interrupted_classification :
+    retainCompletedCompensableActivity multiInstanceProgram owner
+        (miFacts 3 1 .earlyCompletion) multiInstanceStateAfterFirst =
+          .refused .duplicateActivity multiInstanceStateAfterFirst ∧
+      retainCompletedCompensableActivity multiInstanceProgram owner
+        (miFacts 3 1 .interrupted) multiInstanceStateAfterFirst =
+          .refused .duplicateActivity multiInstanceStateAfterFirst := by
+  decide +kernel
+
 def secondActivity : ActivityOccurrenceId := activity 2
 
 def insertionAcceptedAs

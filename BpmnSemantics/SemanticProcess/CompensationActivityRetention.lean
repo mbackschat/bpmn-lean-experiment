@@ -236,22 +236,27 @@ def retainCompletedCompensableActivity (program : Program)
             | some family =>
               if family != facts.operationFamily then
                 .refused .malformedCompletion state
-              else match candidate with
-              | some none => .notRetained state
-              | some (some activity) =>
-                match state.compensationActivityRetentions.filter
-                    (fun retention => retention.owner == owner) with
-                | [retention] =>
-                    match insertCompletedCompensableActivity declaration activity retention with
-                    | .error reason => .refused reason state
-                    | .ok (updated, record) =>
-                        .retained
-                          { state with compensationActivityRetentions :=
-                              (replaceRetentionRegister retention updated
-                                state.compensationActivityRetentions) }
-                          record
-                | _ => .refused .registerAbsent state
-              | none => .refused .malformedCompletion state
+              else
+                let selectedRetentions := state.compensationActivityRetentions.filter
+                  (fun retention => retention.owner == owner)
+                if selectedRetentions.any fun retention =>
+                    retention.records.any fun record => record.id == activity then
+                  .refused .duplicateActivity state
+                else match candidate with
+                | some none => .notRetained state
+                | some (some activity) =>
+                    match selectedRetentions with
+                    | [retention] =>
+                        match insertCompletedCompensableActivity declaration activity retention with
+                        | .error reason => .refused reason state
+                        | .ok (updated, record) =>
+                            .retained
+                              { state with compensationActivityRetentions :=
+                                  (replaceRetentionRegister retention updated
+                                    state.compensationActivityRetentions) }
+                              record
+                    | _ => .refused .registerAbsent state
+                | none => .refused .malformedCompletion state
 
 /-- Declarative selection of the same pure retention result. -/
 inductive CompensationRetentionStep (program : Program) (owner : ScopeOccurrenceId)
