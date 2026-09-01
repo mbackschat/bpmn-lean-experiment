@@ -298,5 +298,5 @@ The mandatory first green semantic checkpoint is the complete representation and
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
 | Proposal | `10e8fb2d` | `fork-turns-none` | `approve-with-required-edits` | `dee98809` |
-| Semantic checkpoint | `58fe635c` | `not-recorded` | `pending` | `not-applicable` |
+| Semantic checkpoint | `58fe635c` | `fork-turns-none` | `approve-with-required-edits` | `b281291c, 82d6ec04, 587cafdf, 99dd5744, 993a8b95, owner-authorized` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
