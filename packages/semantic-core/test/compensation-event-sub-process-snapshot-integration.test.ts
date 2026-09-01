@@ -17,6 +17,7 @@ import {
   compensationEventSubProcessSnapshotProgramDefects,
   initialState,
   isWellFormedSemanticProcessProgram,
+  type RuntimeState,
   type SemanticProcessProgram,
 } from "@bpmn-lean/semantic-core";
 import type {
@@ -282,7 +283,7 @@ test("entry and completion footprints bind capacity, exact parent, and captured 
     1,
   );
   assert.equal(completionReady.outcome, CommandOutcome.Committed);
-  const decidingState = {
+  const decidingState: RuntimeState = {
     ...completionReady.state,
     variables: {
       ...completionReady.state.variables,
@@ -370,7 +371,7 @@ test("Error interruption footprint writes the purged parent reservation", () => 
     id.definitionScopeId === terminateChildScopeId
   );
   assert.ok(owner !== undefined);
-  const snapshotReady = {
+  const snapshotReady: RuntimeState = {
     ...ready.state,
     compensationParentContextRetentions: [{
       kind: CompensationParentContextRetentionKind.Provisional,
