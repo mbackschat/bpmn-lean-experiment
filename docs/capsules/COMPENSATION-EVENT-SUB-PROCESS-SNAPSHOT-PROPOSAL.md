@@ -2,14 +2,14 @@
 
 ## Status
 
-Lifecycle: draft
-Review: pending
+Lifecycle: owner-approved
+Review: approved-with-required-edits
 
 ## Prior review
 
 Cold review rejected `c0370350`: its dormant handler violated the entry/completion graph rule, its outer `earlyCompletion` purge contradicted Clauses 10.7.2, 13.3.7, and 13.5.5, and its live-root invariant failed after root completion. The redesign adds an operation-free/control-place-free declared-handler exception, removes Multi-Instance early completion, and gives terminal child records a promoted-root owner.
 
-Review of `10e8fb2d` accepted that account but required closure-facing refusal, a complete owner inventory, and a raw-graph negative. Its first correction audit at `25e3e5d7` closed the semantic findings but found omitted consumers, non-executable extraction conditions, and no paired Program/raw-graph assertion. This final correction supplies them; approval remains blocked pending the same reviewer.
+Review of `10e8fb2d` accepted that account but required closure-facing refusal, a complete owner inventory, and a raw-graph negative. Its first correction audit at `25e3e5d7` closed the semantic findings but found omitted consumers, non-executable extraction conditions, and no paired Program/raw-graph assertion. The same reviewer approved final correction `dee98809` with every original finding closed.
 
 ## Question and bounded outcome
 
@@ -293,6 +293,6 @@ The mandatory first green semantic checkpoint is the complete representation and
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `10e8fb2d` | `fork-turns-none` | `approve-with-required-edits` | `dee98809` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
