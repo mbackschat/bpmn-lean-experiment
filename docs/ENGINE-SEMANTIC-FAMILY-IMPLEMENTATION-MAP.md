@@ -12,7 +12,7 @@ The union of these sections is not a coverage figure. BPMN requirement coverage,
 
 ## Implemented
 
-The families with a section here are the three boundary-Timer loci, the two Multi-Instance User Tasks, the two direct Activity data User Tasks, the Message payload Catch Event, the Activity boundary Message Event, and the in-progress boundary Compensation retention family. Each section names its own rules, evidence lanes, and absences, and is the authority for that family rather than a summary of one.
+The families with a section here are the three boundary-Timer loci, the two Multi-Instance User Tasks, the two direct Activity data User Tasks, the Message payload Catch Event, the Activity boundary Message Event, and the in-progress Compensation retention and parent-snapshot family. Each section names its own rules, evidence lanes, and absences, and is the authority for that family rather than a summary of one.
 
 ## Explicitly absent
 
@@ -26,13 +26,13 @@ The [capsule registry](capsules/README.md), the Lean modules under [`BpmnSemanti
 
 Reading these sections together supports no cross-family theorem. A mechanism two families share is established only where each section says so independently, and this map is where such a split becomes visible rather than where it is resolved. A mechanism recorded in the invariant map is likewise established for a family only where that family's section says so.
 
-## Boundary Compensation Activity retention
+## Compensation retention and Event Sub-Process parent snapshots
 
-The independently approved [boundary-handler retention proposal](capsules/COMPENSATION-BOUNDARY-HANDLER-RETENTION-PROPOSAL.md) is implemented through its hidden representation checkpoint and exact completion-producer slice. This is an in-progress standards-only family, not an admitted BPMN capability.
+The independently approved [boundary-handler retention proposal](capsules/COMPENSATION-BOUNDARY-HANDLER-RETENTION-PROPOSAL.md) is implemented through its hidden representation checkpoint and exact completion-producer slice. The [Compensation Event Sub-Process snapshot proposal](capsules/COMPENSATION-EVENT-SUB-PROCESS-SNAPSHOT-PROPOSAL.md) has a complete first green semantic checkpoint awaiting mandatory independent review. This remains an in-progress standards-only family, not an admitted BPMN capability.
 
-**Implemented.** Independent Lean and TypeScript accounts retain one immutable outer Activity identity for an explicitly targeted exact ordinary User Task or current sequential/parallel Multi-Instance User Task only after successful completion. They include zero-item outer issuance, one-item-first all-success priority, non-retaining actual early completion and Timer interruption, pre-mutation count/byte refusal, normal-root lifetime, and owner-keyed zero-entry commutation footprints without enabling Multi-Instance batching.
+**Implemented.** Independent Lean and TypeScript accounts retain one immutable outer Activity identity for an explicitly targeted exact ordinary User Task or current sequential/parallel Multi-Instance User Task only after successful completion. They include zero-item outer issuance, one-item-first all-success priority, non-retaining actual early completion and Timer interruption, pre-mutation count/byte refusal, normal-root lifetime, and owner-keyed zero-entry commutation footprints without enabling Multi-Instance batching. The review-pending snapshot checkpoint separately validates canonical parent/handler targets and hidden provisional/promoted records, reserves at root or direct-child entry, captures the complete root-to-parent context only on success, purges Error/Timer/unselected-root exits, retains exact selected-root terminal ownership, refuses overflow atomically, replays emitted traces, delegates declaration-free Programs exactly, and classifies snapshot-specific context, retention, and regional-purge footprints.
 
-**Absent.** Source attachment/Association admission, `isForCompensation`, a registered profile, Multi-Instance Sub-Process multiplicity, Compensation Event Sub-Process snapshots, throw selection, handler execution, dependency/reverse order, failure, cancellation, Transactions, CIB evidence, Temporal refinement, public projection, corpus evidence, and Product 2 capability remain outside the family.
+**Absent.** Source attachment/Association admission, `isForCompensation`, a registered profile, Multi-Instance Sub-Process multiplicity, compensation throw selection, snapshot restoration, handler execution, dependency/reverse order, handler failure and cancellation, Transactions, CIB evidence, dedicated Temporal refinement, public projection, corpus evidence, and Product 2 capability remain outside the family.
 
 ## Interrupting Activity boundary Message
 
