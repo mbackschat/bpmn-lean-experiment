@@ -216,7 +216,8 @@ theorem sharedParallelProgress_preserves_runtimeStateWellFormed
     ownerScope account before taskId controller record running selectedController selectedRecord
     regionValid wellFormed
   simp only [runtimeStateWellFormed, Bool.and_eq_true] at wellFormed
-  obtain ⟨existing, claims, retention⟩ := wellFormed
+  obtain ⟨existing, claimsAndRetention, snapshots⟩ := wellFormed
+  obtain ⟨claims, retention⟩ := claimsAndRetention
   obtain ⟨h17, _lifecycle⟩ := existing
   obtain ⟨h16, _notExhausted⟩ := h17
   obtain ⟨h15, _controllerIds⟩ := h16
@@ -554,12 +555,16 @@ theorem sharedParallelProgress_preserves_runtimeStateWellFormed
   have retentionAfter : compensationActivityRetentionStateValid program after = true := by
     change compensationActivityRetentionStateValid program before = true
     exact retention
+  have snapshotsAfter : compensationEventSubProcessSnapshotStateValid program after = true := by
+    change compensationEventSubProcessSnapshotStateValid program before = true
+    exact snapshots
   simp only [runtimeStateWellFormed, Bool.and_eq_true]
   exact ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨positionAfter, racesAfter⟩, incidentsAfter⟩,
     ownersAfter⟩, identitiesAfter⟩, boundsAfter⟩, declarationsAfter⟩, hiddenAfter⟩,
     orderAfter⟩, bodiesAfter⟩, attachedAfter⟩, messagesUnambiguousAfter⟩,
     activityIdsAfter⟩, controllersAfter⟩,
     sequentialBindingsAfter⟩, parallelBindingsAfter⟩, controllerIdsAfter⟩,
-    notExhaustedAfter⟩, lifecycleAfter⟩, ⟨claimsAfter, retentionAfter⟩⟩
+    notExhaustedAfter⟩, lifecycleAfter⟩,
+    ⟨⟨claimsAfter, retentionAfter⟩, snapshotsAfter⟩⟩
 
 end BpmnSemantics.SemanticProcess

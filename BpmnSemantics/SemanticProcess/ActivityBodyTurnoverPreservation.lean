@@ -51,7 +51,10 @@ theorem replacedState_preserves_wellFormed (program : Program) (instanceId : Sem
   have waitMem : wait ∈ state.waits := (List.mem_filter.mp waitInFilter).1
   have namesWait : taskIdNamesWait body wait = true := (List.mem_filter.mp waitInFilter).2
   simp only [runtimeStateWellFormed, Bool.and_eq_true] at wellFormed ⊢
-  obtain ⟨existing, claimsUnique, retentionValid⟩ := wellFormed
+  have existing := wellFormed.1
+  have claimsUnique := wellFormed.2.1.1
+  have retentionValid := wellFormed.2.1.2
+  have snapshotValid := wellFormed.2.2
   obtain ⟨h17, lifecycle⟩ := existing
   obtain ⟨h16, notExhausted⟩ := h17
   obtain ⟨h15, controllerIds⟩ := h16
@@ -158,6 +161,7 @@ theorem replacedState_preserves_wellFormed (program : Program) (instanceId : Sem
       rw [hc] at lifecycle
       simp only [notStartedStateEmpty, Bool.and_eq_true, List.isEmpty_iff] at lifecycle
       obtain ⟨lifecycle, _notPending⟩ := lifecycle
+      obtain ⟨lifecycle, _snapshotRetentionsEmpty⟩ := lifecycle
       obtain ⟨lifecycle, _retentionsEmpty⟩ := lifecycle
       obtain ⟨lifecycle, _parallelEmpty⟩ := lifecycle
       obtain ⟨lifecycle, _activitiesEmpty⟩ := lifecycle
@@ -193,7 +197,12 @@ theorem replacedState_preserves_wellFormed (program : Program) (instanceId : Sem
       (replacedState state record wait body) = true := by
     change compensationActivityRetentionStateValid program state = true
     exact retentionValid
-  exact ⟨⟨after18, lifecycleAfter⟩, ⟨claimsAfter, retentionAfter⟩⟩
+  have snapshotAfter : compensationEventSubProcessSnapshotStateValid program
+      (replacedState state record wait body) = true := by
+    change compensationEventSubProcessSnapshotStateValid program state = true
+    exact snapshotValid
+  exact ⟨⟨after18, lifecycleAfter⟩,
+    ⟨⟨claimsAfter, retentionAfter⟩, snapshotAfter⟩⟩
 
 /-- The resolver answers with the state rewrite exactly when the state holds a record naming a unique
 live body.

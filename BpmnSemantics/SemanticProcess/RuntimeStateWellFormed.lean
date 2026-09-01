@@ -1,6 +1,7 @@
 import BpmnSemantics.SemanticProcess.ActivityBodyClaimUniqueness
 import BpmnSemantics.SemanticProcess.CallActivity
 import BpmnSemantics.SemanticProcess.CompensationActivityRetention
+import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshot
 import BpmnSemantics.SemanticProcess.EventBasedGateway
 import BpmnSemantics.SemanticProcess.Incident
 import BpmnSemantics.SemanticProcess.InclusiveGateway
@@ -79,6 +80,7 @@ def notStartedStateEmpty (state : RuntimeState) : Bool :=
     state.calledProcessOccurrences.isEmpty && state.activityOccurrences.isEmpty &&
     state.parallelMultiInstanceControllers.isEmpty &&
     state.compensationActivityRetentions.isEmpty &&
+    state.compensationParentContextRetentions.isEmpty &&
     !state.initiationPending
 
 /-- `RSI-OWN-01`. Every wait, hidden record, and incident-retained wait names exactly one live scope
@@ -692,14 +694,15 @@ def runtimeStateWellFormed (program : Program) (instanceId : SemanticId)
      | .notStarted => notStartedStateEmpty state
      | _ => true) &&
     (activityBodyClaimsUnique state.activityOccurrences &&
-      compensationActivityRetentionStateValid program state)
+      compensationActivityRetentionStateValid program state &&
+      compensationEventSubProcessSnapshotStateValid program state)
 
 theorem runtimeStateWellFormed_canonicalCollectionOrder (program : Program)
     (instanceId : SemanticId) (state : RuntimeState)
     (wellFormed : runtimeStateWellFormed program instanceId state = true) :
     canonicalCollectionOrder state = true := by
   simp only [runtimeStateWellFormed, Bool.and_eq_true] at wellFormed
-  obtain ⟨existing, _claims, _retention⟩ := wellFormed
+  have existing := wellFormed.1
   exact existing.1.1.1.1.1.1.1.1.1.1.2
 
 /-- Association facts exposed by the composite runtime invariant. Consumers use this named
@@ -709,7 +712,7 @@ theorem runtimeStateWellFormed_associationValidities (program : Program)
     (wellFormed : runtimeStateWellFormed program instanceId state = true) :
     eventRaceAssociationsValid state = true ∧ effectIncidentAssociationsValid state = true := by
   simp only [runtimeStateWellFormed, Bool.and_eq_true] at wellFormed
-  obtain ⟨existing, _claims, _retention⟩ := wellFormed
+  have existing := wellFormed.1
   have associations := existing.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1
   exact ⟨associations.1.2, associations.2⟩
 

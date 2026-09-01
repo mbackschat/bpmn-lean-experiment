@@ -263,7 +263,9 @@ theorem deliverCorrelatedPayloadMessage_preserves_runtimeStateWellFormed
         { framed with tokens := addToken framed.tokens wait.output wait.owner }
       change runtimeStateWellFormed program expectedInstanceId settled = true
       simp only [runtimeStateWellFormed, Bool.and_eq_true] at wellFormed
-      obtain ⟨claims, retention⟩ := wellFormed.2
+      have claims := wellFormed.2.1.1
+      have retention := wellFormed.2.1.2
+      have snapshots := wellFormed.2.2
       have capabilities := _capabilities
       simp only [programProfileCapabilitiesValid, Bool.and_eq_true] at capabilities
       have parallelFamily := capabilities.1.2
@@ -428,8 +430,11 @@ theorem deliverCorrelatedPayloadMessage_preserves_runtimeStateWellFormed
       have retentionAfter : compensationActivityRetentionStateValid program settled = true := by
         change compensationActivityRetentionStateValid program before = true
         exact retention
+      have snapshotsAfter : compensationEventSubProcessSnapshotStateValid program settled = true := by
+        change compensationEventSubProcessSnapshotStateValid program before = true
+        exact snapshots
       simp only [runtimeStateWellFormed, Bool.and_eq_true]
-      refine ⟨?_, ⟨claimsAfter, retentionAfter⟩⟩
+      refine ⟨?_, ⟨⟨claimsAfter, retentionAfter⟩, snapshotsAfter⟩⟩
       refine ⟨?_, lifecycleAfter⟩
       refine ⟨?_, notExhaustedAfter⟩
       refine ⟨?_, controllerIdsAfter⟩

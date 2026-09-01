@@ -1,4 +1,4 @@
-import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStateEmptyPreservation
+import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStateEntryOrder
 
 /-! # Parallel Multi-Instance shared runtime-state entry preservation
 
@@ -9,18 +9,6 @@ corollary and closing preservation remain downstream and are not imported here.
 namespace BpmnSemantics.SemanticProcess
 
 open BpmnSemantics
-
-private theorem activityOccurrenceBefore_asymm (left right : ActivityOccurrence) :
-    activityOccurrenceBefore left right = true →
-      activityOccurrenceBefore right left = false := by
-  by_cases processEq : left.processInstanceId.value = right.processInstanceId.value
-  · by_cases activityEq : left.activityElementId.value = right.activityElementId.value
-    · simp [activityOccurrenceBefore, processEq, activityEq]
-      exact Nat.le_of_lt
-    · simp [activityOccurrenceBefore, processEq, activityEq, Ne.symm activityEq]
-      exact Std.le_of_lt
-  · simp [activityOccurrenceBefore, processEq, Ne.symm processEq]
-    exact Std.le_of_lt
 
 theorem sharedParallelEntry_preserves_runtimeStateWellFormed (program : Program)
     (expectedInstanceId : SemanticId) (arm : ParallelMultiInstanceArm)
@@ -83,7 +71,8 @@ theorem sharedParallelEntry_preserves_runtimeStateWellFormed (program : Program)
             activityActivation }
       change runtimeStateWellFormed program expectedInstanceId successor = true
       simp only [runtimeStateWellFormed, Bool.and_eq_true] at wellFormed
-      obtain ⟨existing, claims, retention⟩ := wellFormed
+      obtain ⟨existing, claimsAndRetention, snapshots⟩ := wellFormed
+      obtain ⟨claims, retention⟩ := claimsAndRetention
       obtain ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨position, races⟩, incidents⟩, owners⟩, identities⟩,
         bounds⟩, declarations⟩, hidden⟩, order⟩, bodies⟩, timersUnambiguous⟩,
         messagesUnambiguous⟩, activityIds⟩, controllers⟩, sequentialBindings⟩,
@@ -310,6 +299,7 @@ theorem sharedParallelEntry_preserves_runtimeStateWellFormed (program : Program)
       have retentionAfter : compensationActivityRetentionStateValid program successor = true := by
         change compensationActivityRetentionStateValid program before = true
         exact retention
+      have snapshotsAfter : compensationEventSubProcessSnapshotStateValid program successor = true := by change compensationEventSubProcessSnapshotStateValid program before = true; exact snapshots
       have recordBodyLive : activityBodyLive timerState record = true := by
         simp only [activityBodyLive, record, List.all_eq_true, decide_eq_true_eq]
         intro task taskMember
@@ -799,5 +789,5 @@ theorem sharedParallelEntry_preserves_runtimeStateWellFormed (program : Program)
         identitiesAfter⟩, boundsAfter⟩, declarationsAfter⟩, hiddenAfter⟩, orderAfter⟩, bodiesAfter⟩,
         attachedAfter⟩, messagesUnambiguousAfter⟩, activityIdsAfter⟩, controllersAfter⟩,
         sequentialBindingsAfter⟩, parallelBindingsAfter⟩, controllerIdsAfter⟩, notExhaustedAfter⟩,
-        lifecycleAfter⟩, ⟨claimsAfter, retentionAfter⟩⟩
+        lifecycleAfter⟩, ⟨⟨claimsAfter, retentionAfter⟩, snapshotsAfter⟩⟩
 end BpmnSemantics.SemanticProcess

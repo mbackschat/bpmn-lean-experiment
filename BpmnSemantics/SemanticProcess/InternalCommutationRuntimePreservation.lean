@@ -533,8 +533,10 @@ theorem prepared_arm_preserves_runtime (program : Program) (state : RuntimeState
     (prepared : prepareInternalArm? program state operation = some patch) :
     runtimeStateWellFormed program expectedInstanceId (applyInternalArmingPatch state patch) = true := by
   simp only [runtimeStateWellFormed, Bool.and_eq_true] at stateAdmitted
-  obtain ⟨existing, claims⟩ := stateAdmitted
-  obtain ⟨claims, retentionValid⟩ := claims
+  have existing := stateAdmitted.1
+  have claims := stateAdmitted.2.1.1
+  have retentionValid := stateAdmitted.2.1.2
+  have snapshotValid := stateAdmitted.2.2
   obtain ⟨h17, terminal⟩ := existing
   obtain ⟨h16, exhausted⟩ := h17
   obtain ⟨h15, controllerIdentities⟩ := h16
@@ -767,6 +769,14 @@ theorem prepared_arm_preserves_runtime (program : Program) (state : RuntimeState
       cases patch with | mk _ _ _ _ _ _ _ _ _ write => cases write <;> rfl
     rw [retentionFrame]
     exact retentionValid
+  have snapshotAfter : compensationEventSubProcessSnapshotStateValid program
+      (applyInternalArmingPatch state patch) = true := by
+    have snapshotFrame : compensationEventSubProcessSnapshotStateValid program
+        (applyInternalArmingPatch state patch) =
+          compensationEventSubProcessSnapshotStateValid program state := by
+      cases patch with | mk _ _ _ _ _ _ _ _ _ write => cases write <;> rfl
+    rw [snapshotFrame]
+    exact snapshotValid
   have after2 := And.intro positionAfter eventAfter
   have after3 := And.intro after2 incidentAfter
   have after4 := And.intro after3 ownersAfter
@@ -785,7 +795,8 @@ theorem prepared_arm_preserves_runtime (program : Program) (state : RuntimeState
   have after17 := And.intro after16 unchangedAfter.2.2.2.1
   have after18 := And.intro after17 unchangedAfter.2.2.2.2
   simp only [runtimeStateWellFormed, Bool.and_eq_true]
-  exact ⟨⟨after18, terminalAfter⟩, ⟨claimsAfter, retentionAfter⟩⟩
+  exact ⟨⟨after18, terminalAfter⟩,
+    ⟨⟨claimsAfter, retentionAfter⟩, snapshotAfter⟩⟩
 
 end InternalCommutation
 
