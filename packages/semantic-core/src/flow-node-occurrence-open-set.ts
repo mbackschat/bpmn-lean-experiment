@@ -406,6 +406,7 @@ function waitMatchesUserTask(
       case SemanticOperationKind.SelectMany:
       case SemanticOperationKind.SynchronizeSelected:
       case SemanticOperationKind.ThrowError:
+      case SemanticOperationKind.TriggerCompensation:
       case SemanticOperationKind.TerminateScope:
       case SemanticOperationKind.ReachNoneEnd:
       case SemanticOperationKind.CompleteScope:

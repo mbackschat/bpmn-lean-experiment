@@ -408,6 +408,7 @@ export function deriveInternalTransitionFootprint(
     case SemanticOperationKind.SynchronizeSelected:
     case SemanticOperationKind.AwaitEventRace:
     case SemanticOperationKind.ThrowError:
+    case SemanticOperationKind.TriggerCompensation:
     case SemanticOperationKind.TerminateScope:
     case SemanticOperationKind.ReachNoneEnd:
     case SemanticOperationKind.CompleteScope:

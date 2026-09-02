@@ -228,19 +228,19 @@ The 800-nonblank-line soft target is the extraction threshold and 1,200 lines th
 
 | Owner | Current headroom | Structural condition |
 |---|---:|---|
-| [TypeScript Program contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 208 | add only the optional declaration reference; extract before crossing 800 |
+| [TypeScript Program contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 197 | add only the optional declaration reference; extract before crossing 800 |
 | [TypeScript RuntimeState](../../packages/semantic-core/src/semantic-process-state.ts) | 378 | add only the optional collection reference; new types live elsewhere |
-| [TypeScript well-formedness](../../packages/semantic-core/src/runtime-state-well-formedness.ts) | 73 | add one delegated validator hook; extract before crossing 800 |
+| [TypeScript well-formedness](../../packages/semantic-core/src/runtime-state-well-formedness.ts) | 72 | add one delegated validator hook; extract before crossing 800 |
 | [TypeScript scope runtime](../../packages/semantic-core/src/semantic-process-scope-runtime.ts) | 556 | route normal root disposal only |
 | [TypeScript called-Process runtime](../../packages/semantic-core/src/semantic-process-call-runtime.ts) | 396 | remove owner-keyed records with a called-instance subtree even though declaring Programs exclude Call operations |
 | [TypeScript scope cancellation](../../packages/semantic-core/src/semantic-process-scope-cancellation.ts) | 604 | remove owner-keyed records with a cancelled region even though declaring Programs exclude cancellation |
 | [TypeScript command admission](../../packages/semantic-core/src/semantic-command-admission.ts) | 382 | no producer integration at the first checkpoint |
 | [TypeScript triggered start](../../packages/semantic-core/src/semantic-process-triggered-start.ts) | 588 | initialize root-owned retention state before any start mutation |
-| [Lean Program contract](../../BpmnSemantics/SemanticProcessContract.lean) | 93 | add the optional declaration reference; extract before crossing 800 |
+| [Lean Program contract](../../BpmnSemantics/SemanticProcessContract.lean) | 54 | add the optional declaration reference; extract before crossing 800 |
 | [Lean RuntimeState](../../BpmnSemantics/SemanticProcess/RuntimeState.lean) | 201 | add only the collection reference and its root-owned invariant; new structures live elsewhere |
 | [Lean well-formedness](../../BpmnSemantics/SemanticProcess/RuntimeStateWellFormed.lean) | 98 | add one delegated predicate; extract before crossing 800 |
 | [Lean scope completion](../../BpmnSemantics/SemanticProcess/ScopeCompletion.lean) | 694 | add exact register disposal and update its frame theorem |
-| [Strict Lean Program decoder](../../BpmnSemantics/SemanticProcessJson/Program.lean) | 113 | delegate the optional field to a focused decoder; extract before crossing 800 |
+| [Strict Lean Program decoder](../../BpmnSemantics/SemanticProcessJson/Program.lean) | 102 | delegate the optional field to a focused decoder; extract before crossing 800 |
 | [Lean internal-commutation runtime preservation](../../BpmnSemantics/SemanticProcess/InternalCommutationRuntimePreservation.lean) | 16 | prove the new aggregate invariant conjunct is framed; any further growth extracts the compensation frame proof |
 | [Lean message-key correlation preservation](../../BpmnSemantics/SemanticProcess/MessageKeyCorrelationPreservation.lean) | 360 | reconstruct the strengthened aggregate invariant while framing the compensation register exactly |
 | [Lean message-payload preservation](../../BpmnSemantics/SemanticProcess/MessagePayloadPreservation.lean) | 463 | reconstruct the strengthened aggregate invariant while framing the compensation register exactly |

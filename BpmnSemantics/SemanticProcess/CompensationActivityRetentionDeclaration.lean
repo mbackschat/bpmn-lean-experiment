@@ -92,10 +92,11 @@ private def targetOperationValid (program : Program)
 
 private def declarationHasFlatRoot (program : Program)
     (declaration : CompensationActivityRetentionDeclaration) : Bool :=
-  match program.definitionScopes with
+  match program.definitionScopes.filter (·.parentScopeId.isNone) with
   | [scope] =>
       scope.id == declaration.definitionScopeId && scope.parentScopeId.isNone &&
-        scope.originElementId.value == program.processId.value
+        scope.originElementId.value == program.processId.value &&
+        (program.compensationExecution.isSome || program.definitionScopes.length = 1)
   | _ => false
 
 private def forbiddenRetentionOperation : SemanticOperation → Bool

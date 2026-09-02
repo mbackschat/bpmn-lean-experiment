@@ -49,6 +49,9 @@ import {
 import {
   CorrelationScalarPathLanguage,
 } from "./correlation-scalar-path.js";
+import {
+  isWellFormedTriggerCompensationOperation,
+} from "./compensation-trigger-handler-program-admission.js";
 
 /**
  * The direct Data Input Association arm of one data-bearing User Task entry operation.
@@ -551,6 +554,12 @@ export function isWellFormedSemanticOperation(
         value,
         placeIds,
         placeOrigins,
+        scopeOrigins,
+      );
+    case SemanticOperationKind.TriggerCompensation:
+      return isWellFormedTriggerCompensationOperation(
+        value,
+        placeIds,
         scopeOrigins,
       );
     case SemanticOperationKind.TerminateScope:

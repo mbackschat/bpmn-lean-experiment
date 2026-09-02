@@ -94,6 +94,7 @@ const HostOperationClass = {
   SequentialMultiInstanceActivityWait: "sequentialMultiInstanceActivityWait",
   ParallelMultiInstanceActivityWait: "parallelMultiInstanceActivityWait",
   CorrelatedMessageWait: "correlatedMessageWait",
+  CompensationTrigger: "compensationTrigger",
 } as const;
 
 type HostOperationClass =
@@ -113,6 +114,15 @@ type ManagedHostClass = Readonly<{
 }>;
 
 const managedClasses: ReadonlyArray<ManagedHostClass> = [
+  {
+    operationClass: HostOperationClass.CompensationTrigger,
+    isAdmissibleIsolatedForm: () => false,
+    failure: {
+      code: TemporalHostAdmissionFailureCode.CompensationSchedulerUnavailable,
+      evidence:
+        "The Temporal host does not yet provide the concurrent compensation-frontier scheduler required by triggerCompensation.",
+    },
+  },
   {
     operationClass: HostOperationClass.CorrelatedMessageWait,
     isAdmissibleIsolatedForm: () => false,
@@ -264,6 +274,8 @@ function classifyHostOperation(
       return HostOperationClass.ParallelMultiInstanceActivityWait;
     case SemanticOperationKind.CompleteParallelMultiInstanceUserTask:
       return HostOperationClass.Passive;
+    case SemanticOperationKind.TriggerCompensation:
+      return HostOperationClass.CompensationTrigger;
     default:
       return assertNever(kind);
   }

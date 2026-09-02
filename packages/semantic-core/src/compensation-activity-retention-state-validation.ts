@@ -75,7 +75,8 @@ export function compensationRetentionProgramDefects(
   const defects: CompensationRetentionProgramDefect[] = [];
   const root = program.definitionScopes.filter(({ parentScopeId }) => parentScopeId === null);
   if (
-    program.definitionScopes.length !== 1 ||
+    (program.compensationExecution === undefined &&
+      program.definitionScopes.length !== 1) ||
     root.length !== 1 ||
     root[0]?.id !== declaration.definitionScopeId ||
     root[0]?.originElementId !== program.processId

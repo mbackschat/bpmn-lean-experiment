@@ -403,6 +403,8 @@ function internalLifecycle(
     }
     case SemanticOperationKind.CompleteParallelMultiInstanceUserTask:
       return null;
+    case SemanticOperationKind.TriggerCompensation:
+      return null;
     case SemanticOperationKind.AwaitEventRace: {
       const starts = candidateLongLivedStarts(program, after, operation, owner);
       const gateway = instant();

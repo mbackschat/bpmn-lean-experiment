@@ -400,32 +400,32 @@ The operation census must classify trigger creation and frontier activation as o
 
 | Existing owner | Current headroom | Growth condition |
 |---|---:|---|
-| [shared effect values](../../packages/semantic-core/src/semantic-value-contract.ts) | 705 | one operation literal and exact descriptor type only |
-| [TS Program](../../packages/semantic-core/src/semantic-process-contract.ts) | 208 | references only |
-| [TS operation admission](../../packages/semantic-core/src/semantic-process-operation-admission.ts) | 24 | extract declaration validation first |
-| [TS graph admission](../../packages/semantic-core/src/semantic-process-graph-admission.ts) | 178 | declaration delegation only |
+| [shared effect values](../../packages/semantic-core/src/semantic-value-contract.ts) | 703 | one operation literal and exact descriptor type only |
+| [TS Program](../../packages/semantic-core/src/semantic-process-contract.ts) | 197 | references only |
+| [TS operation admission](../../packages/semantic-core/src/semantic-process-operation-admission.ts) | 15 | extract declaration validation first |
+| [TS graph admission](../../packages/semantic-core/src/semantic-process-graph-admission.ts) | 169 | declaration delegation only |
 | [TS RuntimeState](../../packages/semantic-core/src/semantic-process-state.ts) | 378 | collection/control references only |
-| [TS runtime validity](../../packages/semantic-core/src/runtime-state-well-formedness.ts) | 73 | extract compensation validity first |
+| [TS runtime validity](../../packages/semantic-core/src/runtime-state-well-formedness.ts) | 72 | extract compensation validity first |
 | [TS runtime defects](../../packages/semantic-core/src/runtime-state-defect.ts) | 762 | new defect arms only |
 | [TS command admission](../../packages/semantic-core/src/semantic-command-admission.ts) | 382 | result dispatch only |
 | [TS transition trace](../../packages/semantic-core/src/semantic-transition-trace.ts) | 426 | failed arm only |
-| [TS lifecycle](../../packages/semantic-core/src/flow-node-occurrence-lifecycle.ts) | 105 | delegate compensation projection |
+| [TS lifecycle](../../packages/semantic-core/src/flow-node-occurrence-lifecycle.ts) | 103 | delegate compensation projection |
 | [TS lifecycle completeness](../../packages/semantic-core/src/flow-node-occurrence-publication-external-completeness.ts) | 91 | delegate compensation oracle |
 | [TS canonical contract](../../packages/semantic-core/src/contract.ts) | 338 | failed union references only |
-| [TS evaluator](../../packages/semantic-core/src/semantic-process-runtime.ts) | 62 | dispatch only; extract all trigger and handler logic before growth |
+| [TS evaluator](../../packages/semantic-core/src/semantic-process-runtime.ts) | 60 | dispatch only; extract all trigger and handler logic before growth |
 | [TS observation producer](../../packages/semantic-core/src/scenario.ts) | 185 | failed projection and exhaustive switch only |
 | [TS control-position projection](../../packages/semantic-core/src/control-position-projection.ts) | 384 | failed terminal-empty arm only |
 | [TS internal attempt](../../packages/semantic-core/src/internal-transition-attempt.ts) | 668 | trigger-attempt delegation only |
-| [Lean Program](../../BpmnSemantics/SemanticProcessContract.lean) | 93 | declaration reference only; extract the contract first if the reference cannot fit |
+| [Lean Program](../../BpmnSemantics/SemanticProcessContract.lean) | 54 | declaration reference only; extract the contract first if the reference cannot fit |
 | [Lean RuntimeState](../../BpmnSemantics/SemanticProcess/RuntimeState.lean) | 201 | trigger collection reference only |
 | [Lean effect completion](../../BpmnSemantics/SemanticProcess/EffectCompletion.lean) | 721 | compensation relation only |
 | [Lean command admission](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean) | 272 | result dispatch only |
-| [Lean transition](../../BpmnSemantics/SemanticProcess/Transition.lean) | 23 | extract before adding the new dispatcher arm |
+| [Lean transition](../../BpmnSemantics/SemanticProcess/Transition.lean) | 20 | extract before adding the new dispatcher arm |
 | [Lean internal attempt](../../BpmnSemantics/SemanticProcess/InternalOperationAttempt.lean) | 757 | trigger-attempt delegation only |
 | [Lean scenario contract](../../BpmnSemantics/Scenario.lean) | 453 | failed union only |
-| [Lean observation consumer](../../BpmnSemantics/SemanticProcess/Scenario.lean) | 245 | failed projection and agreement only |
+| [Lean observation consumer](../../BpmnSemantics/SemanticProcess/Scenario.lean) | 244 | failed projection and agreement only |
 | [Lean JSON](../../BpmnSemantics/SemanticProcessJsonMain.lean) | 244 | failed encoding only |
-| [Temporal protocol](../../packages/temporal-adapter/protocol/src/contracts.ts) | 556 | failed receipt arm only |
+| [Temporal protocol](../../packages/temporal-adapter/protocol/src/contracts.ts) | 555 | failed receipt arm only |
 | [effect transport](../../packages/temporal-adapter/protocol/src/effect-transport.ts) | 655 | compensation key material and canonical tuple only |
 | [receipt validators](../../packages/temporal-adapter/protocol/src/lifecycle-results.ts) | 495 | failed receipt decoder only |
 | [publication validator](../../packages/temporal-adapter/protocol/src/semantic-publication-validation.ts) | 97 | failed discriminator only; extract state validation before other growth |

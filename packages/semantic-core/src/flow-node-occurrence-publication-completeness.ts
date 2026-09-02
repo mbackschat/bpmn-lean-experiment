@@ -195,6 +195,8 @@ function internalDelta(
       ));
     case SemanticOperationKind.CompleteParallelMultiInstanceUserTask:
       return failCompleteness();
+    case SemanticOperationKind.TriggerCompensation:
+      return failCompleteness();
     case SemanticOperationKind.AwaitMessageBoundedUserTask:
       return lifecycleDelta([
         requireWaitStart(supplied, processId, operation.task.elementId, owner),

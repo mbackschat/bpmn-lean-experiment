@@ -16,6 +16,7 @@ inductive InternalOperationFamily where
   | mergeAndOrdinaryEnd
   | scopeReturnCompletionAndInterruption
   | externallyAddressedCompletion
+  | compensationTriggerAndFrontierActivation
   deriving Repr, DecidableEq
 
 def semanticOperationInternalFamily : SemanticOperation → InternalOperationFamily
@@ -51,6 +52,7 @@ def semanticOperationInternalFamily : SemanticOperation → InternalOperationFam
   | .throwError _ _ _ _ _
   | .terminateScope _ _ _ _ => .scopeReturnCompletionAndInterruption
   | .completeParallelMultiInstanceUserTask _ _ _ _ _ => .externallyAddressedCompletion
+  | .triggerCompensation _ _ _ _ _ => .compensationTriggerAndFrontierActivation
 
 inductive InternalRuntimeStateAtomDomain where
   | runtimeControl

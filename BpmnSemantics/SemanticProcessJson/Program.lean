@@ -2,6 +2,7 @@ import BpmnSemantics.SemanticProcess.JsonSupport
 import BpmnSemantics.SemanticProcessJson.Elements
 import BpmnSemantics.SemanticProcessJson.CompensationActivityRetention
 import BpmnSemantics.SemanticProcessJson.CompensationEventSubProcessSnapshot
+import BpmnSemantics.SemanticProcessJson.CompensationTriggerHandler
 
 /-! # Strict Semantic Process program wire decoding
 
@@ -674,6 +675,13 @@ private def decodeOperation (json : Json) :
           ⟨← stringField json "scopeId"⟩
           ((← decodeOptionalString (← field json "parentOutput")).map
             ControlPlaceId.mk))
+  | "triggerCompensation" =>
+      requireObjectShape json
+        ["definitionScopeId", "id", "input", "kind", "origin", "output"]
+      pure (.triggerCompensation id origin
+        ⟨← decodeNonemptyStringField json "definitionScopeId"⟩
+        ⟨← decodeNonemptyStringField json "input"⟩
+        ⟨← decodeNonemptyStringField json "output"⟩)
   | _ => throw s!"unsupported Semantic Process operation {kind}"
 
 private def decodeOperationScopeOwnership (json : Json) :
@@ -696,10 +704,12 @@ def decodeProgram (json : Json) : Except String Program := do
     decodeCompensationActivityRetentionField json
   let compensationEventSubProcessSnapshots ←
     decodeCompensationEventSubProcessSnapshotsField json
+  let compensationExecution ← decodeCompensationExecutionField json
   let optionalKeys :=
     (if compensationActivityRetention.isSome then ["compensationActivityRetention"] else []) ++
     (if compensationEventSubProcessSnapshots.isSome then
-      ["compensationEventSubProcessSnapshots"] else [])
+      ["compensationEventSubProcessSnapshots"] else []) ++
+    (if compensationExecution.isSome then ["compensationExecution"] else [])
   requireObjectShape json
     (optionalKeys ++
       ["controlPlaceScopes", "controlPlaces", "definitionScopes", "identity",
@@ -722,6 +732,7 @@ def decodeProgram (json : Json) : Except String Program := do
         ← decodeArray decodeControlPlace (← field json "controlPlaces")
       operations := ← decodeArray decodeOperation (← field json "operations")
       compensationActivityRetention
-      compensationEventSubProcessSnapshots }
+      compensationEventSubProcessSnapshots
+      compensationExecution }
 
 end BpmnSemantics.SemanticProcessJson

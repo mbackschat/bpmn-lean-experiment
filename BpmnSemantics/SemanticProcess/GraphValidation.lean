@@ -131,6 +131,7 @@ private def operationInputs : SemanticOperation → List ControlPlaceId
   | .throwError _ _ input _ _
   | .reachNoneEnd _ _ input
   | .terminateScope _ _ input _ => [input]
+  | .triggerCompensation _ _ _ input _ => [input]
   | .synchronize _ _ inputs _
   | .mergeExclusive _ _ inputs _
   | .synchronizeSelected _ _ inputs _ _ => inputs
@@ -178,6 +179,7 @@ private def operationOutputs : SemanticOperation → List ControlPlaceId
   | .completeScope _ _ _ parentOutput => parentOutput.toList
   | .initiateMessage _ _ _ outputs => outputs
   | .initiateTimer _ _ _ outputs => outputs
+  | .triggerCompensation _ _ _ _ output => [output]
 
 /-- All token-carrying ports read or produced by one operation. -/
 def operationControlPlaces (operation : SemanticOperation) : List ControlPlaceId :=
@@ -383,7 +385,8 @@ def semanticOperationIsResumptionCut : SemanticOperation → Bool
   | .synchronize .. | .mergeExclusive .. | .choose .. | .selectMany ..
   | .synchronizeSelected .. | .throwError .. | .reachNoneEnd ..
   | .terminateScope ..
-  | .completeScope .. => false
+  | .completeScope ..
+  | .triggerCompensation .. => false
 
 /-- Independently classify Semantic Process graph edges removed after an `awaitUserTask` producer. -/
 def programEdgeIsResumptionContinuation (program : Program)

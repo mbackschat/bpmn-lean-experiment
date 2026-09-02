@@ -13,6 +13,7 @@ import {
   MessageChannelKind,
   SemanticProfileId,
   SemanticOperationKind,
+  SemanticOriginKind,
   StimulusKind,
 } from "@bpmn-lean/semantic-core";
 import type {
@@ -105,6 +106,45 @@ test("admits each reachable wait set of the new linear composition", async () =>
         },
       }),
     /semanticProcessUnsupported/u,
+  );
+});
+
+test("rejects compensation trigger Programs until the frontier scheduler exists", async () => {
+  const program = await compileFixture(
+    "../../../../scenarios/timer-user-task-composition/process.bpmn",
+    "compensation-trigger-host-refusal",
+    "bpmn-2.0.2-timer-user-task-composition-draft",
+  );
+  const root = program.definitionScopes.find(({ parentScopeId }) =>
+    parentScopeId === null
+  );
+  const [input, output] = program.controlPlaces;
+  assert.ok(root !== undefined && input !== undefined && output !== undefined);
+  const trigger: SemanticOperation = {
+    id: "operation:compensation-trigger-host-refusal",
+    kind: SemanticOperationKind.TriggerCompensation,
+    origin: {
+      kind: SemanticOriginKind.BpmnElement,
+      elementId: "CompensationThrow",
+    },
+    definitionScopeId: root.id,
+    input: input.id,
+    output: output.id,
+  };
+
+  assert.deepEqual(
+    assessTemporalHostCapability({
+      ...program,
+      operations: [...program.operations, trigger],
+    }),
+    {
+      kind: TemporalHostCapabilityResultKind.Rejected,
+      failure: {
+        code: TemporalHostAdmissionFailureCode.CompensationSchedulerUnavailable,
+        evidence:
+          "The Temporal host does not yet provide the concurrent compensation-frontier scheduler required by triggerCompensation.",
+      },
+    },
   );
 });
 

@@ -8,6 +8,7 @@ import BpmnSemantics.SemanticProcess.TimerStart
 import BpmnSemantics.SemanticProcess.SimpleBooleanExpression
 import BpmnSemantics.SemanticProcess.CallActivityAdmission
 import BpmnSemantics.SemanticProcess.CompensationActivityRetentionDeclaration
+import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerDeclaration
 
 /-! # Semantic Process program structural validation
 
@@ -135,7 +136,8 @@ def operationWaitDeclarationKeys : SemanticOperation → List WaitDeclarationKey
   | .throwError ..
   | .reachNoneEnd ..
   | .terminateScope ..
-  | .completeScope .. => []
+  | .completeScope ..
+  | .triggerCompensation .. => []
 
 def operationDeclaresWaitKey (operation : SemanticOperation)
     (key : WaitDeclarationKey) : Bool :=
@@ -496,6 +498,10 @@ private def operationWellFormed (program : Program) (places : List ControlPlace)
         nonempty origin.elementId.value &&
         nonempty scopeId.value &&
         parentOutput.all (placeExists places)
+  | .triggerCompensation id origin definitionScopeId input output =>
+      nonempty id.value && nonempty origin.elementId.value &&
+        nonempty definitionScopeId.value && input != output &&
+        placeExists places input && placeExists places output
 
 private def isInitiate : SemanticOperation → Bool
   | .initiate .. => true
@@ -548,7 +554,8 @@ def programWellFormed (program : Program) : Bool :=
     (program.operations.filter isInitiate).length = 1 &&
     programGraphWellFormedForProgram program &&
     programWaitDeclarersUnique program.operations &&
-    compensationActivityRetentionDeclarationValid program
+    compensationActivityRetentionDeclarationValid program &&
+    compensationExecutionDeclarationValid program
 
 /-- Structural admission keeps control-place identifiers in canonical duplicate-free order. -/
 theorem programWellFormed_controlPlaceIdsSorted (program : Program)

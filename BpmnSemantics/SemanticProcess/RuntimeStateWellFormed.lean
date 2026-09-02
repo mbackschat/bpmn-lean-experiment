@@ -458,7 +458,7 @@ def timerWaitDeclarers (program : Program) (elementId : NodeId) : List SemanticO
     | .duplicate .. | .synchronize .. | .mergeExclusive ..
     | .choose .. | .selectMany .. | .synchronizeSelected ..
     | .throwError .. | .reachNoneEnd .. | .terminateScope ..
-    | .completeScope .. => false
+    | .completeScope .. | .triggerCompensation .. => false
 
 /-- The operations that may declare a Message wait for `elementId`. The Event-Based Gateway profile
 carries no separate `awaitMessage` operation for its configured catch, so `awaitEventRace` is a
@@ -482,7 +482,7 @@ def messageWaitDeclarers (program : Program) (elementId : NodeId) : List Semanti
     | .duplicate .. | .synchronize .. | .mergeExclusive ..
     | .choose .. | .selectMany .. | .synchronizeSelected ..
     | .throwError .. | .reachNoneEnd .. | .terminateScope ..
-    | .completeScope .. => false
+    | .completeScope .. | .triggerCompensation .. => false
 
 /-- The operations that may declare a User Task wait for `taskId`. -/
 def userTaskWaitDeclarers (program : Program) (taskId : TaskDefinitionId) :
@@ -507,7 +507,7 @@ def userTaskWaitDeclarers (program : Program) (taskId : TaskDefinitionId) :
     | .duplicate .. | .synchronize .. | .mergeExclusive ..
     | .choose .. | .selectMany .. | .synchronizeSelected ..
     | .throwError .. | .reachNoneEnd .. | .terminateScope ..
-    | .completeScope .. => false
+    | .completeScope .. | .triggerCompensation .. => false
 
 /-- The operations that may declare an effect wait for `elementId`. -/
 def effectWaitDeclarers (program : Program) (elementId : NodeId) : List SemanticOperation :=
@@ -525,7 +525,7 @@ def effectWaitDeclarers (program : Program) (elementId : NodeId) : List Semantic
     | .duplicate .. | .synchronize .. | .mergeExclusive ..
     | .choose .. | .selectMany .. | .synchronizeSelected ..
     | .throwError .. | .reachNoneEnd .. | .terminateScope ..
-    | .completeScope .. => false
+    | .completeScope .. | .triggerCompensation .. => false
 
 private theorem nodeId_eq_iff_value_eq (left right : NodeId) :
     left = right ↔ left.value = right.value := by

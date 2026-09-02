@@ -148,6 +148,7 @@ function internalOperationStarts(
       );
     case SemanticOperationKind.ReturnProcess:
     case SemanticOperationKind.CompleteScope:
+    case SemanticOperationKind.TriggerCompensation:
       return false;
     default:
       return assertNever(operation);
@@ -394,6 +395,7 @@ function operationPublishesNestedElement(
     case SemanticOperationKind.TerminateScope:
     case SemanticOperationKind.ReachNoneEnd:
     case SemanticOperationKind.CompleteScope:
+    case SemanticOperationKind.TriggerCompensation:
       return false;
     default:
       return assertNever(operation);

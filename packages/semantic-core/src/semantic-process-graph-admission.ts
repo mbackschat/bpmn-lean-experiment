@@ -312,6 +312,12 @@ function operationRespectsScopes(
         referencesOwnedBy([operation.input], owner) &&
         referencesOwnedBy([operation.handler.output], attached.parentScopeId);
     }
+    case SemanticOperationKind.TriggerCompensation:
+      return operation.definitionScopeId === owner &&
+        graph.definitionScopes.some(
+          ({ id, parentScopeId }) => id === owner && parentScopeId === null,
+        ) &&
+        referencesOwnedBy([operation.input, operation.output], owner);
     case SemanticOperationKind.TerminateScope:
       return operation.scopeId === owner &&
         referencesOwnedBy([operation.input], owner);
@@ -504,6 +510,7 @@ function operationInputs(
     case SemanticOperationKind.Choose:
     case SemanticOperationKind.SelectMany:
     case SemanticOperationKind.ThrowError:
+    case SemanticOperationKind.TriggerCompensation:
     case SemanticOperationKind.TerminateScope:
     case SemanticOperationKind.ReachNoneEnd:
       return [operation.input];
@@ -583,6 +590,8 @@ function operationOutputs(
       return [operation.output];
     case SemanticOperationKind.ThrowError:
       return [operation.handler.output];
+    case SemanticOperationKind.TriggerCompensation:
+      return [operation.output];
     case SemanticOperationKind.TerminateScope:
     case SemanticOperationKind.ReachNoneEnd:
       return [];

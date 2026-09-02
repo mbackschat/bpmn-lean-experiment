@@ -581,6 +581,8 @@ function applyInternalOperationState(
         captureOwner,
       );
     }
+    case SemanticOperationKind.TriggerCompensation:
+      return null;
     case SemanticOperationKind.TerminateScope: {
       const terminatedOwner = onlyTokenOwner(state, operation.input);
       return applyOwnedOperation(

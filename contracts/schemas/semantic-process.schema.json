@@ -71,6 +71,9 @@
     },
     "compensationEventSubProcessSnapshots": {
       "$ref": "#/$defs/compensationEventSubProcessSnapshotDeclaration"
+    },
+    "compensationExecution": {
+      "$ref": "#/$defs/compensationExecutionDeclaration"
     }
   },
   "$defs": {
@@ -189,6 +192,214 @@
               "maximum": 65536
             }
           }
+        }
+      }
+    },
+    "compensationSingleEffectDescriptor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "protocol",
+        "operation"
+      ],
+      "properties": {
+        "protocol": {
+          "const": "urn:bpmn-lean:effect-protocol:activity-v1"
+        },
+        "operation": {
+          "const": "urn:bpmn-lean:effect-operation:compensation-single-effect-v1"
+        }
+      }
+    },
+    "compensationHandlerInput": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind"
+          ],
+          "properties": {
+            "kind": {
+              "const": "empty"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "sourceName",
+            "argumentName"
+          ],
+          "properties": {
+            "kind": {
+              "const": "restoredProcessBinding"
+            },
+            "sourceName": {
+              "$ref": "#/$defs/nonemptyString"
+            },
+            "argumentName": {
+              "$ref": "#/$defs/nonemptyString"
+            }
+          }
+        }
+      ]
+    },
+    "singleEffectCompensationHandlerBody": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "handlerElementId",
+        "effectElementId",
+        "descriptor",
+        "input"
+      ],
+      "properties": {
+        "kind": {
+          "const": "singleEffect"
+        },
+        "handlerElementId": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "effectElementId": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "descriptor": {
+          "$ref": "#/$defs/compensationSingleEffectDescriptor"
+        },
+        "input": {
+          "$ref": "#/$defs/compensationHandlerInput"
+        }
+      }
+    },
+    "compensationSubjectDefinition": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "subjectElementId",
+            "body"
+          ],
+          "properties": {
+            "kind": {
+              "const": "boundaryActivity"
+            },
+            "subjectElementId": {
+              "$ref": "#/$defs/nonemptyString"
+            },
+            "body": {
+              "$ref": "#/$defs/singleEffectCompensationHandlerBody"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "parentScopeId",
+            "handlerScopeId",
+            "body"
+          ],
+          "properties": {
+            "kind": {
+              "const": "eventSubProcess"
+            },
+            "parentScopeId": {
+              "$ref": "#/$defs/nonemptyString"
+            },
+            "handlerScopeId": {
+              "$ref": "#/$defs/nonemptyString"
+            },
+            "body": {
+              "$ref": "#/$defs/singleEffectCompensationHandlerBody"
+            }
+          }
+        }
+      ]
+    },
+    "compensationDependency": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "predecessorElementId",
+        "successorElementId",
+        "reason"
+      ],
+      "properties": {
+        "predecessorElementId": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "successorElementId": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "reason": {
+          "const": "sequenceFlow"
+        }
+      }
+    },
+    "compensationTriggerLimits": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "maxTriggers",
+        "maxHandlers",
+        "maxCanonicalBytes"
+      ],
+      "properties": {
+        "maxTriggers": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "maxHandlers": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "maxCanonicalBytes": {
+          "type": "integer",
+          "minimum": 2,
+          "maximum": 65536
+        }
+      }
+    },
+    "compensationExecutionDeclaration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "definitionScopeId",
+        "triggerOperationId",
+        "subjects",
+        "dependencies",
+        "limits"
+      ],
+      "properties": {
+        "definitionScopeId": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "triggerOperationId": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "subjects": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/compensationSubjectDefinition"
+          }
+        },
+        "dependencies": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/compensationDependency"
+          }
+        },
+        "limits": {
+          "$ref": "#/$defs/compensationTriggerLimits"
         }
       }
     },
@@ -2164,6 +2375,38 @@
         }
       }
     },
+    "triggerCompensation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "origin",
+        "definitionScopeId",
+        "input",
+        "output"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "kind": {
+          "const": "triggerCompensation"
+        },
+        "origin": {
+          "$ref": "#/$defs/bpmnElementOrigin"
+        },
+        "definitionScopeId": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "input": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "output": {
+          "$ref": "#/$defs/nonemptyString"
+        }
+      }
+    },
     "operation": {
       "oneOf": [
         {
@@ -2261,6 +2504,9 @@
         },
         {
           "$ref": "#/$defs/completeScope"
+        },
+        {
+          "$ref": "#/$defs/triggerCompensation"
         }
       ]
     },

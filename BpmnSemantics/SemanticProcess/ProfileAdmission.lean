@@ -177,6 +177,7 @@ private def addOperationCardinality (counts : ShapeCardinalities)
         { counts with scopeTerminations := counts.scopeTerminations + 1 }
     | .completeScope .. =>
         { counts with scopeCompletions := counts.scopeCompletions + 1 }
+    | .triggerCompensation .. => counts
 
 private def operationCardinalities (operations : List SemanticOperation) :
     ShapeCardinalities :=

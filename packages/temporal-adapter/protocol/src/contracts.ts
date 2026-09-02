@@ -78,6 +78,7 @@ export enum TemporalHostCapabilityResultKind {
 
 export enum TemporalHostAdmissionFailureCode {
   ConcurrentHostDrivenWaits = "concurrentHostDrivenWaits",
+  CompensationSchedulerUnavailable = "compensationSchedulerUnavailable",
   EventRaceSchedulerUnavailable = "eventRaceSchedulerUnavailable",
   /**
    * Deliberately distinct from `EventRaceSchedulerUnavailable`.

@@ -14,6 +14,7 @@ import type { DirectActivityDataOutput } from "./activity-data-output-contract.j
 import type { DirectCatchEventPayloadOutput } from "./catch-event-payload-contract.js";
 import type { CompensationActivityRetentionDeclaration } from "./compensation-activity-retention-contract.js";
 import type { CompensationEventSubProcessSnapshotDeclaration } from "./compensation-event-sub-process-snapshot-contract.js";
+import type { CompensationExecutionDeclaration } from "./compensation-trigger-handler-contract.js";
 import type {
   CorrelationMessagePath,
   CorrelationProcessPropertyPath,
@@ -83,6 +84,7 @@ export enum SemanticOperationKind {
   SynchronizeSelected = "synchronizeSelected",
   AwaitEventRace = "awaitEventRace",
   ThrowError = "throwError",
+  TriggerCompensation = "triggerCompensation",
   TerminateScope = "terminateScope",
   ReachNoneEnd = "reachNoneEnd",
   CompleteScope = "completeScope",
@@ -502,6 +504,14 @@ export type TerminateScopeOperation = OperationBase &
     scopeId: string;
   }>;
 
+export type TriggerCompensationOperation = OperationBase &
+  DeepReadonly<{
+    kind: SemanticOperationKind.TriggerCompensation;
+    definitionScopeId: string;
+    input: string;
+    output: string;
+  }>;
+
 export type SemanticOperation =
   | (OperationBase &
       DeepReadonly<{
@@ -605,6 +615,7 @@ export type SemanticOperation =
         error: ErrorReference;
         handler: InterruptingErrorHandler;
       }>)
+  | TriggerCompensationOperation
   | TerminateScopeOperation
   | (OperationBase &
       DeepReadonly<{
@@ -630,4 +641,5 @@ export type SemanticProcessProgram = DeepReadonly<{
   operations: SemanticOperation[];
   compensationActivityRetention?: CompensationActivityRetentionDeclaration;
   compensationEventSubProcessSnapshots?: CompensationEventSubProcessSnapshotDeclaration;
+  compensationExecution?: CompensationExecutionDeclaration;
 }>;

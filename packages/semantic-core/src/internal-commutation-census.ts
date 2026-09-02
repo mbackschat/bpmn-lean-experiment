@@ -14,6 +14,7 @@ export enum InternalOperationFamily {
   MergeAndOrdinaryEnd = "mergeAndOrdinaryEnd",
   ScopeReturnCompletionAndInterruption = "scopeReturnCompletionAndInterruption",
   ExternallyAddressedCompletion = "externallyAddressedCompletion",
+  CompensationTriggerAndFrontierActivation = "compensationTriggerAndFrontierActivation",
 }
 
 /** Exhaustive classification only. Preparation remains unavailable until the selected family owner exists. */
@@ -61,6 +62,8 @@ export function semanticOperationInternalFamily(
       return InternalOperationFamily.ScopeReturnCompletionAndInterruption;
     case SemanticOperationKind.CompleteParallelMultiInstanceUserTask:
       return InternalOperationFamily.ExternallyAddressedCompletion;
+    case SemanticOperationKind.TriggerCompensation:
+      return InternalOperationFamily.CompensationTriggerAndFrontierActivation;
     default:
       return assertNever(operation);
   }

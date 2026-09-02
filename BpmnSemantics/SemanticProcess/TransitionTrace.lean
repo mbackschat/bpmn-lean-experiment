@@ -44,6 +44,7 @@ inductive SemanticOperationKind where
   | reachNoneEnd
   | terminateScope
   | completeScope
+  | triggerCompensation
   deriving Repr, DecidableEq
 
 def SemanticOperation.kind : SemanticOperation → SemanticOperationKind
@@ -79,6 +80,7 @@ def SemanticOperation.kind : SemanticOperation → SemanticOperationKind
   | .reachNoneEnd .. => .reachNoneEnd
   | .terminateScope .. => .terminateScope
   | .completeScope .. => .completeScope
+  | .triggerCompensation .. => .triggerCompensation
 
 def SemanticOperation.origin : SemanticOperation → BpmnElementOrigin
   | .initiate _ origin _
@@ -112,7 +114,8 @@ def SemanticOperation.origin : SemanticOperation → BpmnElementOrigin
   | .throwError _ origin _ _ _
   | .reachNoneEnd _ origin _
   | .terminateScope _ origin _ _
-  | .completeScope _ origin _ _ => origin
+  | .completeScope _ origin _ _
+  | .triggerCompensation _ origin _ _ _ => origin
 
 /-- Public metadata of one actually selected internal operation. -/
 structure InternalTransitionRecord where

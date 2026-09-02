@@ -377,6 +377,7 @@ private def fireWithoutCompensationSnapshots? (program : Program)
       terminateScopeState? program state id origin input scopeId
   | .completeScope _ _ scopeId parentOutput =>
       completeBoundedScope? program state scopeId parentOutput
+  | .triggerCompensation .. => none
 
 /-- Dispatcher and constructor-selection check: `fire?` routes every operation kind to the state
 transformation its relation arm names, and the constructor match is exhaustive.
@@ -461,6 +462,8 @@ private theorem fireWithoutCompensationSnapshots_sound (program : Program)
     | exact .terminateScope _ _ _ _ before after
         (terminateScopeState_sound program before after _ _ _ _ result)
     | exact .completeScope _ _ _ _ before after result
+    | case triggerCompensation =>
+        exact False.elim (by simp [fireWithoutCompensationSnapshots?] at result)
 
 /-- Recover the exact child occurrence created by one successful scope-entry preflight. -/
 def childOccurrenceAfterEntry? (state : RuntimeState)

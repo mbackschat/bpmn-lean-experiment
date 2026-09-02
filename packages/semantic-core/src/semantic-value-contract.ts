@@ -50,6 +50,8 @@ export const EffectOperation = {
   MappedSuccess: "urn:bpmn-lean:effect-operation:mapped-success-v1",
   MappedBoundaryError:
     "urn:bpmn-lean:effect-operation:mapped-boundary-error-v1",
+  CompensationSingleEffect:
+    "urn:bpmn-lean:effect-operation:compensation-single-effect-v1",
 } as const;
 
 export type EffectDescriptor = DeepReadonly<{

@@ -659,6 +659,11 @@ inductive SemanticOperation where
       (origin : BpmnElementOrigin)
       (scopeId : DefinitionScopeId)
       (parentOutput : Option ControlPlaceId)
+  | triggerCompensation
+      (id : OperationId)
+      (origin : BpmnElementOrigin)
+      (definitionScopeId : DefinitionScopeId)
+      (input output : ControlPlaceId)
   deriving Repr, DecidableEq
 
 def SemanticOperation.id : SemanticOperation → OperationId
@@ -693,7 +698,8 @@ def SemanticOperation.id : SemanticOperation → OperationId
   | .throwError id _ _ _ _
   | .reachNoneEnd id _ _
   | .terminateScope id _ _ _
-  | .completeScope id _ _ _ => id
+  | .completeScope id _ _ _
+  | .triggerCompensation id _ _ _ _ => id
 
 structure OperationScopeOwnership where
   operationId : OperationId
@@ -733,6 +739,44 @@ structure CompensationEventSubProcessSnapshotDeclaration where
   maxCanonicalBytes : Nat
   deriving Repr, DecidableEq
 
+inductive CompensationHandlerInput where
+  | empty
+  | restoredProcessBinding (sourceName argumentName : String)
+  deriving Repr, DecidableEq
+
+structure SingleEffectCompensationHandlerBody where
+  handlerElementId : NodeId
+  effectElementId : NodeId
+  descriptor : EffectDescriptor
+  input : CompensationHandlerInput
+  deriving Repr, DecidableEq
+
+inductive CompensationSubjectDefinition where
+  | boundaryActivity (subjectElementId : NodeId)
+      (body : SingleEffectCompensationHandlerBody)
+  | eventSubProcess (parentScopeId handlerScopeId : DefinitionScopeId)
+      (body : SingleEffectCompensationHandlerBody)
+  deriving Repr, DecidableEq
+
+structure CompensationDependency where
+  predecessorElementId : NodeId
+  successorElementId : NodeId
+  deriving Repr, DecidableEq
+
+structure CompensationTriggerLimits where
+  maxTriggers : Nat
+  maxHandlers : Nat
+  maxCanonicalBytes : Nat
+  deriving Repr, DecidableEq
+
+structure CompensationExecutionDeclaration where
+  definitionScopeId : DefinitionScopeId
+  triggerOperationId : OperationId
+  subjects : List CompensationSubjectDefinition
+  dependencies : List CompensationDependency
+  limits : CompensationTriggerLimits
+  deriving Repr, DecidableEq
+
 structure Program where
   identity : ProgramIdentity
   internalSchedulingMode : InternalSchedulingMode
@@ -745,6 +789,7 @@ structure Program where
   compensationActivityRetention : Option CompensationActivityRetentionDeclaration := none
   compensationEventSubProcessSnapshots :
     Option CompensationEventSubProcessSnapshotDeclaration := none
+  compensationExecution : Option CompensationExecutionDeclaration := none
   deriving Repr, DecidableEq
 
 namespace Obligations
