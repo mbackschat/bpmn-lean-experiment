@@ -163,7 +163,7 @@ function candidateProjectionReuseViolations(
 
 const evaluatorIndependentRelations = Object.freeze([
   Object.freeze({
-    path: "BpmnSemantics/SemanticProcess/CompensationTriggerHandlerTransition.lean",
+    path: "BpmnSemantics/SemanticProcess/CompensationTriggerHandlerFrontier.lean",
     relation: "CompensationFrontierStep",
     evaluator: "activateCompensationFrontier",
   }),
@@ -360,7 +360,7 @@ def candidateWaitStart? := waitStart?
 
 test("declarative compensation relations cannot delegate meaning to their evaluators", () => {
   const path =
-    "BpmnSemantics/SemanticProcess/CompensationTriggerHandlerTransition.lean";
+    "BpmnSemantics/SemanticProcess/CompensationTriggerHandlerFrontier.lean";
   const delegated = `/-! Compensation frontier. -/
 
 inductive CompensationFrontierStep : Nat \u2192 Prop where
