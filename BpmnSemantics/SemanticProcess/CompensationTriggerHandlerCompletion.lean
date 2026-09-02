@@ -1,4 +1,5 @@
 import BpmnSemantics.SemanticProcess.ActivityOccurrence
+import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerCancellation
 import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerTransition
 
 /-! # Compensation handler completion and fail-fast Process failure -/
@@ -165,6 +166,64 @@ def compensationFailureSuccessor (state : RuntimeState)
       compensationHandlerEffectWaits := []
       variables := { state.variables with activities := [] } }
   successor
+
+private theorem failOtherHandler_sound (failed candidate : CompensationHandlerExecution) :
+    CompensationHandlerFailureDisposition failed.identity.id candidate
+      (failOtherHandler failed candidate) := by
+  cases candidate with
+  | mk identity lifecycle =>
+      cases selectedEq : identity.id == failed.identity.id with
+      | true =>
+          simpa [failOtherHandler, terminalHandler, selectedEq] using
+            (CompensationHandlerFailureDisposition.failed identity lifecycle selectedEq)
+      | false =>
+          cases lifecycle with
+          | pending restoredContext =>
+              simpa [failOtherHandler, terminalHandler, selectedEq] using
+                (CompensationHandlerFailureDisposition.terminatedPending identity restoredContext
+                  selectedEq)
+          | compensating restoredContext effectId =>
+              simpa [failOtherHandler, terminalHandler, selectedEq] using
+                (CompensationHandlerFailureDisposition.terminatedCompensating identity
+                  restoredContext effectId selectedEq)
+          | compensated =>
+              simpa [failOtherHandler, selectedEq] using
+                (CompensationHandlerFailureDisposition.preserveCompensated identity selectedEq)
+          | failed =>
+              simpa [failOtherHandler, selectedEq] using
+                (CompensationHandlerFailureDisposition.preserveFailed identity selectedEq)
+          | terminated =>
+              simpa [failOtherHandler, selectedEq] using
+                (CompensationHandlerFailureDisposition.preserveTerminated identity selectedEq)
+
+private theorem failOtherHandlers_sound (failed : CompensationHandlerExecution)
+    (handlers : List CompensationHandlerExecution) :
+    CompensationHandlerFailureDispositions failed.identity.id handlers
+      (handlers.map (failOtherHandler failed)) := by
+  induction handlers with
+  | nil => exact .nil
+  | cons candidate tail ih =>
+      exact .cons candidate (failOtherHandler failed candidate) tail
+        (tail.map (failOtherHandler failed)) (failOtherHandler_sound failed candidate) ih
+
+/-- The executable failure successor realizes the independent `COMPH-CANCEL-01` relation. -/
+theorem compensationFailureSuccessor_cancellation_sound (state : RuntimeState)
+    (selected : SelectedCompensationHandler) (code : String) (message : Option String) :
+    CompensationHandlerFailureCancellationStep state selected.wait selected.trigger
+      selected.handler code message (compensationFailureSuccessor state selected code message) := by
+  let handlers := selected.trigger.handlers.map (failOtherHandler selected.handler)
+  let failedTrigger : CompensationTriggerExecution :=
+    { selected.trigger with lifecycle := .failed, handlers }
+  let failure : CompensationHandlerFailure :=
+    { kind := .compensationHandlerFailure
+      triggerId := selected.trigger.id
+      handlerId := selected.handler.identity.id
+      effectId := selected.wait.id
+      code
+      message }
+  exact .cancel handlers failedTrigger failure
+    (compensationFailureSuccessor state selected code message)
+    (failOtherHandlers_sound selected.handler selected.trigger.handlers) rfl rfl rfl
 
 /-- Evaluates the fail-fast Process successor for one selected handler error. -/
 def completeFailure (program : Program) (state : RuntimeState)
@@ -345,7 +404,8 @@ inductive CompensationHandlerCompletionStep (program : Program) (before : Runtim
       (ready : CompensationHandlerCompletionReady program before effectId result
         declaration selected)
       (resultShape : result = .bpmnError code message patch)
-      (afterShape : after = compensationFailureSuccessor before selected code message)
+      (cancelled : CompensationHandlerFailureCancellationStep before selected.wait
+        selected.trigger selected.handler code message after)
       (afterValid : compensationTriggerHandlerStateValid program after = true) :
       CompensationHandlerCompletionStep program before effectId result after
 
@@ -430,7 +490,8 @@ inductive CompensationHandlerCompletionRefusalStep (program : Program)
       (ready : CompensationHandlerCompletionReady program before effectId result
         declaration selected)
       (resultShape : result = .bpmnError code message patch)
-      (afterShape : after = compensationFailureSuccessor before selected code message)
+      (cancelled : CompensationHandlerFailureCancellationStep before selected.wait
+        selected.trigger selected.handler code message after)
       (rejected : compensationTriggerHandlerStateValid program after = false) :
       CompensationHandlerCompletionRefusalStep program before effectId result .invalidState
 

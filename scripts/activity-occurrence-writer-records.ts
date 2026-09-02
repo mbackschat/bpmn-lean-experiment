@@ -109,6 +109,14 @@ export const writerRecords = new Map<string, WriterRecord>([
       markers: ["theorem compensationFailureSuccessor_activity_identity_discipline"],
     },
   }],
+  ["BpmnSemantics/SemanticProcess/CompensationTriggerHandlerCancellation.lean#CompensationHandlerFailureCancellationStep@1", {
+    classification: WriterClassification.IdentityRemoving,
+    claimPreservation: ClaimPreservation.Removal,
+    evidence: {
+      relativePath: "BpmnSemantics/SemanticProcess/CompensationTriggerHandlerCancellation.lean",
+      markers: ["theorem CompensationHandlerFailureCancellationStep.activity_identity_discipline"],
+    },
+  }],
   ["BpmnSemantics/SemanticProcess/BoundedScope.lean#BoundedScopeVictoryStep@1", {
     classification: WriterClassification.IdentityRemoving,
     claimPreservation: ClaimPreservation.Removal,

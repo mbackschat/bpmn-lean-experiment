@@ -227,7 +227,8 @@ private theorem completeFailure_sound (program : Program)
   | true =>
       simp [completeFailure, successor, validEq] at applied
       cases applied
-      exact .failure declaration selected code message patch successor ready resultShape rfl validEq
+      exact .failure declaration selected code message patch successor ready resultShape
+        (compensationFailureSuccessor_cancellation_sound before selected code message) validEq
 
 private theorem completeFailure_refusal_sound (program : Program)
     (declaration : CompensationExecutionDeclaration) (before : RuntimeState)
@@ -246,7 +247,8 @@ private theorem completeFailure_refusal_sound (program : Program)
       have reasonEq : reason = .invalidState := by simpa using refused.symm
       subst reason
       exact .invalidFailureSuccessor declaration selected code message patch successor ready
-        resultShape rfl validEq
+        resultShape (compensationFailureSuccessor_cancellation_sound before selected code message)
+        validEq
   | true => simp [completeFailure, successor, validEq] at refused
 
 theorem attemptCompensationHandlerEffectCompletion_sound (program : Program)

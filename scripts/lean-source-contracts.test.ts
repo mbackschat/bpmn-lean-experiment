@@ -194,6 +194,11 @@ const evaluatorIndependentRelations = Object.freeze([
   }),
   Object.freeze({
     path: "BpmnSemantics/SemanticProcess/CompensationTriggerHandlerCompletion.lean",
+    relation: "CompensationHandlerCompletionStep",
+    evaluator: "compensationFailureSuccessor",
+  }),
+  Object.freeze({
+    path: "BpmnSemantics/SemanticProcess/CompensationTriggerHandlerCompletion.lean",
     relation: "CompensationHandlerCompletionRefusalStep",
     evaluator: "attemptCompensationHandlerEffectCompletion",
   }),
