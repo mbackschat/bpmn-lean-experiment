@@ -346,6 +346,7 @@ theorem interruptBoundedScope_compensationParentContextRetentions_iff
   | notStarted => simp [running] at success
   | completed => simp [running] at success
   | cancelled => simp [running] at success
+  | failed => simp [running] at success
   | running instanceId =>
       cases deadlineFound : boundedScopeDeadlineWait? before timerId with
       | none => simp [running, deadlineFound] at success

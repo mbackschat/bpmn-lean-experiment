@@ -257,6 +257,7 @@ private theorem enterScopeState_success_preserves_activities_and_excludes_defini
       | notStarted => simp [owned, running] at success
       | completed instanceId => simp [owned, running] at success
       | cancelled instanceId => simp [owned, running] at success
+      | failed instanceId failure => simp [owned, running] at success
       | running instanceId =>
           simp [owned, running] at success
           obtain ⟨admitted, enteredEq⟩ := success

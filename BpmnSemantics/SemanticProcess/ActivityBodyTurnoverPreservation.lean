@@ -176,6 +176,7 @@ theorem replacedState_preserves_wellFormed (program : Program) (instanceId : Sem
     | running _ => rfl
     | completed _ => rfl
     | cancelled _ => rfl
+    | failed _ _ => rfl
   have after2 := And.intro positionAfter racesAfter
   have after3 := And.intro after2 incidentsAfter
   have after4 := And.intro after3 ownersAfter

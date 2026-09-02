@@ -16,11 +16,14 @@ private def instanceId : SemanticId := ⟨"compensation-runtime-instance"⟩
 private def occurrence (elementId : String) : OccurrenceId :=
   { processInstanceId := instanceId, elementId := ⟨elementId⟩, activation := 1 }
 
+private def occurrenceAt (elementId : String) (activation : Nat) : OccurrenceId :=
+  { processInstanceId := instanceId, elementId := ⟨elementId⟩, activation }
+
 private def failure : CompensationHandlerFailure :=
   { kind := .compensationHandlerFailure
     triggerId := occurrence "trigger"
     handlerId := occurrence "handler"
-    effectId := occurrence "effect"
+    effectId := occurrence "handler"
     code := "COMPENSATION_FAILED"
     message := some "handler failed" }
 
@@ -68,12 +71,34 @@ private def failedTrigger : CompensationTriggerExecution :=
     handlers := [failedHandler]
     dependencies := [] }
 
+private def succeededTrigger : CompensationTriggerExecution :=
+  { failedTrigger with
+    id := occurrenceAt "trigger" 2
+    lifecycle := .succeeded
+    handlers := [{ failedHandler with
+      identity := { failedHandler.identity with id := occurrenceAt "handler" 2 }
+      lifecycle := .compensated }] }
+
+private def secondFailedTrigger : CompensationTriggerExecution :=
+  { succeededTrigger with
+    lifecycle := .failed
+    handlers := succeededTrigger.handlers.map fun handler =>
+      { handler with lifecycle := .failed } }
+
+private def handlerBody : SingleEffectCompensationHandlerBody :=
+  { handlerElementId := ⟨"handler"⟩
+    effectElementId := ⟨"handler"⟩
+    descriptor :=
+      { protocol := "urn:bpmn-lean:effect-protocol:activity-v1"
+        operation := "urn:bpmn-lean:effect-operation:compensation-single-effect-v1" }
+    input := .empty }
+
 private def declaration : CompensationExecutionDeclaration :=
   { definitionScopeId := owner.definitionScopeId
     triggerOperationId := ⟨"trigger"⟩
-    subjects := []
+    subjects := [.boundaryActivity ⟨"activity"⟩ handlerBody]
     dependencies := []
-    limits := { maxTriggers := 1, maxHandlers := 1, maxCanonicalBytes := 4096 } }
+    limits := { maxTriggers := 2, maxHandlers := 1, maxCanonicalBytes := 4096 } }
 
 private def program : Program :=
   { identity :=
@@ -93,10 +118,39 @@ private def program : Program :=
 private def failedState : RuntimeState :=
   { initialState with
     control := .failed instanceId failure
-    compensationTriggers := [failedTrigger] }
+    compensationTriggers := [failedTrigger]
+    effectActivations := [{ elementId := ⟨"handler"⟩, count := 1 }] }
+
+private def failedStateWithSucceededTombstone : RuntimeState :=
+  { failedState with compensationTriggers := [failedTrigger, succeededTrigger] }
+
+private def failedStateWithSecondFailedTrigger : RuntimeState :=
+  { failedState with compensationTriggers := [failedTrigger, secondFailedTrigger] }
+
+private def activeTrigger : CompensationTriggerExecution :=
+  { failedTrigger with
+    lifecycle := .active
+    handlers := [{ failedHandler with lifecycle := .pending none }] }
+
+private def secondActiveTrigger : CompensationTriggerExecution :=
+  { activeTrigger with
+    id := occurrenceAt "trigger" 2
+    handlers := [{ failedHandler with
+      identity := { failedHandler.identity with id := occurrenceAt "handler" 2 }
+      lifecycle := .pending none }] }
+
+private def oneActiveTriggerState : RuntimeState :=
+  { initialState with
+    control := .running instanceId
+    scopeOccurrences := [{ id := owner, parent := none }]
+    compensationTriggers := [activeTrigger] }
+
+private def twoActiveTriggerState : RuntimeState :=
+  { oneActiveTriggerState with
+    compensationTriggers := [activeTrigger, secondActiveTrigger] }
 
 private def liveHandlerWait : CompensationHandlerEffectWait :=
-  { id := occurrence "effect"
+  { id := occurrence "handler"
     triggerId := occurrence "trigger"
     handlerId := occurrence "handler"
     descriptor :=
@@ -175,6 +229,17 @@ private def expectedCompletedJson : Json :=
 
 private def failedStateWithLiveScope : RuntimeState :=
   { failedState with scopeOccurrences := [{ id := owner, parent := none }] }
+
+theorem failed_control_requires_exactly_one_failed_trigger :
+    failedCompensationStateValid program failedState = true ∧
+      failedCompensationStateValid program failedStateWithSucceededTombstone = true ∧
+      failedCompensationStateValid program failedStateWithSecondFailedTrigger = false := by
+  exact ⟨rfl, rfl, rfl⟩
+
+theorem one_active_trigger_per_root_is_exact :
+    activeCompensationTriggerOwnersUnique oneActiveTriggerState = true ∧
+      activeCompensationTriggerOwnersUnique twoActiveTriggerState = false := by
+  exact ⟨rfl, rfl⟩
 
 theorem failed_projection_requires_closed_state_and_matching_tombstones_while_existing_json_omits_failure :
     observeStableState program failedState = some expectedFailedObservation ∧

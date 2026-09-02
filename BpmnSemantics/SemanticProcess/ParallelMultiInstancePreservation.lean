@@ -79,6 +79,7 @@ theorem enterSharedParallelMultiInstance_sound (arm : ParallelMultiInstanceArm)
   | notStarted => simp [running] at success
   | completed instanceId => simp [running] at success
   | cancelled instanceId => simp [running] at success
+  | failed instanceId failure => simp [running] at success
   | running instanceId =>
     cases ownerEq : onlyTokenOwner? before arm.input with
     | none => simp [running, ownerEq] at success
@@ -142,6 +143,7 @@ theorem completeSharedParallelMultiInstance_sound (arm : ParallelMultiInstanceAr
   | notStarted => simp [running] at success
   | completed instanceId => simp [running] at success
   | cancelled instanceId => simp [running] at success
+  | failed instanceId failure => simp [running] at success
   | running instanceId =>
     by_cases same : taskId.processInstanceId = instanceId
     ·
@@ -210,6 +212,7 @@ theorem interruptSharedParallelMultiInstance_sound (arm : ParallelMultiInstanceA
   | notStarted => simp [running] at success
   | completed instanceId => simp [running] at success
   | cancelled instanceId => simp [running] at success
+  | failed instanceId failure => simp [running] at success
   | running instanceId =>
     by_cases same : timerId.processInstanceId = instanceId
     ·

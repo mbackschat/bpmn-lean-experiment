@@ -395,16 +395,51 @@ private def failedCompensationLiveRegionEmpty (state : RuntimeState) : Bool :=
     state.compensationParentContextRetentions.isEmpty &&
     state.compensationHandlerEffectWaits.isEmpty && state.variables.activities.isEmpty
 
-private def compensationFailureMatchesTrigger (instanceId : SemanticId)
-    (failure : CompensationHandlerFailure) (trigger : CompensationTriggerExecution) : Bool :=
+private def compensationSubjectOwnsEffect (program : Program)
+    (occurrence : CompensationSubjectOccurrence) (effectElementId : SemanticId) : Bool :=
+  match program.compensationExecution with
+  | none => false
+  | some declaration =>
+      match declaration.subjects.filter (fun subject =>
+        match subject, occurrence with
+        | .boundaryActivity subjectElementId _, .boundaryActivity activity =>
+            subjectElementId.value == activity.activityElementId.value
+        | .eventSubProcess parentScopeId _ _, .eventSubProcess parent =>
+            parentScopeId == parent.definitionScopeId
+        | _, _ => false) with
+      | [.boundaryActivity _ body] | [.eventSubProcess _ _ body] =>
+          body.effectElementId.value == effectElementId.value
+      | _ => false
+
+private def compensationFailureEffectActivationMatches (state : RuntimeState)
+    (effectId : EffectOccurrenceId) : Bool :=
+  match state.effectActivations.filter fun activation =>
+      activation.elementId.value == effectId.elementId.value with
+  | [activation] => activation.count == effectId.activation
+  | _ => false
+
+private def compensationFailureMatchesTrigger (program : Program) (state : RuntimeState)
+    (instanceId : SemanticId) (failure : CompensationHandlerFailure)
+    (trigger : CompensationTriggerExecution) : Bool :=
   trigger.id == failure.triggerId && trigger.lifecycle == .failed &&
     trigger.id.processInstanceId == instanceId &&
     match trigger.handlers.filter fun handler =>
         handler.identity.id == failure.handlerId && handler.lifecycle == .failed with
     | [handler] =>
         handler.identity.id.processInstanceId == instanceId &&
-          failure.effectId.processInstanceId == instanceId
+          failure.effectId.processInstanceId == instanceId &&
+          compensationSubjectOwnsEffect program handler.identity.subject
+            failure.effectId.elementId &&
+          compensationFailureEffectActivationMatches state failure.effectId
     | _ => false
+
+/-- The checkpoint admits at most one live Compensation trigger for any exact root occurrence. -/
+def activeCompensationTriggerOwnersUnique (state : RuntimeState) : Bool :=
+  state.compensationTriggers.all fun trigger =>
+    if trigger.lifecycle == .active then
+      (state.compensationTriggers.filter fun candidate =>
+        candidate.lifecycle == .active && candidate.owner == trigger.owner).length = 1
+    else true
 
 /-- Exact failed-control closure: one declared failed trigger owns one matching failed-handler tombstone and no live execution region survives. -/
 def failedCompensationStateValid (program : Program) (state : RuntimeState) : Bool :=
@@ -412,9 +447,12 @@ def failedCompensationStateValid (program : Program) (state : RuntimeState) : Bo
   | .failed instanceId failure =>
       program.compensationExecution.isSome &&
         failedCompensationLiveRegionEmpty state &&
+        (state.compensationTriggers.filter fun trigger =>
+          trigger.lifecycle == .failed).length = 1 &&
         (state.compensationTriggers.filter
-          (compensationFailureMatchesTrigger instanceId failure)).length = 1 &&
-        state.compensationTriggers.all fun trigger => trigger.lifecycle != .active
+          (compensationFailureMatchesTrigger program state instanceId failure)).length = 1 &&
+        state.compensationTriggers.all fun trigger =>
+          trigger.lifecycle == .succeeded || trigger.lifecycle == .failed
   | _ => false
 
 def runningStartState (instanceId : SemanticId)
