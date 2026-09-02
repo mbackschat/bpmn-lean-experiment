@@ -402,9 +402,9 @@ export const leanModuleCostRecord = {
     },
     {
       module: "BpmnSemantics.CompensationTriggerHandlerTransitionConformance",
-      peakResidentKib: 1844180,
-      elapsedSeconds: 9.28,
-      measuredAtCommit: "ef739572",
+      peakResidentKib: 1892392,
+      elapsedSeconds: 11.19,
+      measuredAtCommit: "7126d5db",
     },
     {
       module: "BpmnSemantics.CompensationTriggerHandlerCompletionConformance",

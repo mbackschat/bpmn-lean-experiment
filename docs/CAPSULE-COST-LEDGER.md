@@ -183,7 +183,7 @@ The compensation trigger-handler proof owners were measured from immutable commi
 |---|---:|---:|---:|
 | `CompensationTriggerHandlerRuntimeContractConformance` | 0.68 s | 705,308 KiB | 176,893,952 bytes |
 | `CompensationTriggerHandlerRuntimeConformance` | 2.93 s | 1,086,024 KiB | 710,311,936 bytes |
-| `CompensationTriggerHandlerTransitionConformance` | 9.28 s | 1,844,180 KiB | 1,409,675,264 bytes |
+| `CompensationTriggerHandlerTransitionConformance` | 11.19 s | 1,892,392 KiB | 1,473,748,992 bytes |
 | `CompensationTriggerHandlerCompletionConformance` | 27.28 s | 2,966,900 KiB | 2,705,903,616 bytes |
 | `CompensationActivityRetentionConformance` | 6.68 s | 1,916,172 KiB | 1,468,231,680 bytes |
 | `CompensationEventSubProcessSnapshotAtomicityConformance` | 6.55 s | 1,977,500 KiB | 1,534,824,448 bytes |
@@ -191,6 +191,8 @@ The compensation trigger-handler proof owners were measured from immutable commi
 The completion owner crosses the conservative 90% GNU-RSS disclosure threshold and is therefore listed in the executable near-cap registry. Its cgroup peak retained 515,321,856 bytes of hard-limit headroom with no pressure event. The fixed 3 GiB ceiling remains unchanged; the owner is viable but must not absorb another proof family without remeasurement or structural separation.
 
 Commit `3020899b` added the separate cancellation conformance owner. Its immutable cold-target measurement passed in 0.58 seconds at 614,680 KiB GNU RSS and 175,321,088 bytes cgroup peak. Because the changed relation became a dependency of the near-cap completion owner, that target was remeasured rather than treated as unchanged: the first run passed in 27.48 seconds at 2,787,884 KiB and 2,478,338,048 bytes, but crossed below the disclosure threshold relative to the preceding record, so it was repeated. The conservative retained run passed in 27.07 seconds at 2,938,028 KiB and 2,623,070,208 bytes. Both completion runs and the cancellation run had no swap or controlled pressure/OOM event. The completion owner therefore remains disclosed and retains 598,155,264 bytes of cgroup headroom under the unchanged ceiling.
+
+Correction commit `7126d5db` added the nonempty-trigger validity witness to `CompensationTriggerHandlerTransitionConformance`, so that target was remeasured against the immutable source revision. The first cold-target run passed in 11.89 seconds at 1,833,352 KiB GNU RSS and 2,024,046,592 bytes cgroup peak, with 90% CPU allocation and 1,570 major page faults. The identical retry passed in 11.19 seconds at 1,892,392 KiB and 1,473,748,992 bytes, with 98% CPU allocation and no major page fault; that more comparable retry supplies the executable row, while this paragraph retains the first run's higher process-tree charge. Both runs had no swap and zero `high`, `max`, `oom`, `oom_kill`, and `oom_group_kill` events. The target remains below the near-cap threshold under the unchanged 3 GiB ceiling.
 
 | Increment | Boundary | Code | Documentation | Elapsed | Comparison consequence |
 |---|---|---:|---:|---|---|
