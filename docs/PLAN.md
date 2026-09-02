@@ -78,9 +78,9 @@ Active work ID: `COMPENSATION-TRANSACTIONS`.
 
 Risk band: Compensation order/cancellation.
 
-Checkpoint: cold review of the [trigger/handler proposal](capsules/COMPENSATION-TRIGGER-HANDLER-PROPOSAL.md) amendment target `56ac774a` returned required edits for exact failed-trigger multiplicity, positive succeeded-tombstone and retained-count witnesses, and the mirrored TS/Lean common-mode inventory. The corrections are being prepared for same-reviewer audit; earlier approved proposal and pending-context amendment evidence remain preserved.
+Checkpoint: cold review of the [trigger/handler proposal](capsules/COMPENSATION-TRIGGER-HANDLER-PROPOSAL.md) amendment target `56ac774a` returned required edits for exact failed-trigger multiplicity, positive succeeded-tombstone and retained-count witnesses, and the mirrored TS/Lean common-mode inventory. Correction target `f0468446` closes those findings and is under same-reviewer audit; earlier approved proposal and pending-context amendment evidence remain preserved.
 
-Next action: commit the required proposal corrections and obtain their same-reviewer audit. After approval, complete the TypeScript exclusivity and terminal-multiplicity correction plus the [proposal's](capsules/COMPENSATION-TRIGGER-HANDLER-PROPOSAL.md) proved Lean lane, then stop at the first green semantic checkpoint for independent review before source/profile/scenario/CIB, live Temporal hosting, Product 1 compensation capability, corpus, or Product 2 persistence/API/UI/journey work.
+Next action: obtain the same-reviewer audit of correction target `f0468446`. After approval, complete the TypeScript exclusivity and terminal-multiplicity correction plus the [proposal's](capsules/COMPENSATION-TRIGGER-HANDLER-PROPOSAL.md) proved Lean lane, then stop at the first green semantic checkpoint for independent review before source/profile/scenario/CIB, live Temporal hosting, Product 1 compensation capability, corpus, or Product 2 persistence/API/UI/journey work.
 
 Oracle: every selected transition and order derives from named authority, consumes only eligible retentions and approved snapshots, preserves identity, types the complete handler/effect join, and separates semantic Process failure from host failure. Continue-As-New precedes Activity scheduling; an in-flight Activity never crosses a Run.
 
