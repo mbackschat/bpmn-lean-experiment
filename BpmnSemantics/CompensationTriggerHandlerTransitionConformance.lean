@@ -1,6 +1,6 @@
 import BpmnSemantics.CompensationTriggerHandlerSemanticFixtures
 import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotTransitionTrace
-import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerTransition
+import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerRefusalSoundness
 import BpmnSemantics.SemanticProcess.Transition
 
 /-! # Compensation trigger construction and frontier conformance -/
@@ -49,6 +49,12 @@ theorem active_trigger_refusal_precedes_both_empty_and_eligible_source_selection
         .refused .activeTriggerExists := by
   decide +kernel
 
+theorem active_trigger_refusal_is_covered_by_the_declarative_relation :
+    CompensationTriggerRefusalStep program triggerOperation secondTriggerEmptySourceState
+      .activeTriggerExists := by
+  apply attemptCompensationTrigger_refusal_sound
+  exact active_trigger_refusal_precedes_both_empty_and_eligible_source_selection.1
+
 private def programBelowFirstFrontierBytes : Program :=
   { program with
     compensationExecution := some
@@ -59,6 +65,12 @@ theorem first_frontier_capacity_refusal_precedes_every_source_mutation :
     attemptCompensationTrigger programBelowFirstFrontierBytes triggerOperation preTriggerState =
       .refused (.capacity .canonicalBytes 3030 3031) := by
   decide +kernel
+
+theorem first_frontier_capacity_refusal_is_covered_by_the_declarative_relation :
+    CompensationTriggerRefusalStep programBelowFirstFrontierBytes triggerOperation
+      preTriggerState (.capacity .canonicalBytes 3030 3031) := by
+  apply attemptCompensationTrigger_refusal_sound
+  exact first_frontier_capacity_refusal_precedes_every_source_mutation
 
 theorem zero_subject_throw_uses_no_retained_trigger_capacity_and_releases_one_continuation :
     compensationExecutionStateValid zeroSubjectProgram zeroSubjectAtRetainedLimitState = true ∧

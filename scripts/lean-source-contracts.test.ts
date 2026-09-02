@@ -172,6 +172,21 @@ const evaluatorIndependentRelations = Object.freeze([
     relation: "CompensationFrontierRefusalStep",
     evaluator: "activateCompensationFrontier",
   }),
+  Object.freeze({
+    path: "BpmnSemantics/SemanticProcess/CompensationTriggerHandlerTransition.lean",
+    relation: "CompensationTriggerStep",
+    evaluator: "attemptCompensationTrigger",
+  }),
+  Object.freeze({
+    path: "BpmnSemantics/SemanticProcess/CompensationTriggerHandlerTransition.lean",
+    relation: "CompensationTriggerDisabledStep",
+    evaluator: "attemptCompensationTrigger",
+  }),
+  Object.freeze({
+    path: "BpmnSemantics/SemanticProcess/CompensationTriggerHandlerTransition.lean",
+    relation: "CompensationTriggerRefusalStep",
+    evaluator: "attemptCompensationTrigger",
+  }),
 ]);
 
 function evaluatorDelegationViolations(
