@@ -78,7 +78,7 @@ Active work ID: `COMPENSATION-TRANSACTIONS`.
 
 Risk band: Compensation order/cancellation.
 
-Checkpoint: TypeScript execution exposed that the generic Runtime admitted two active triggers for one root even though terminal Process failure has no valid sibling-trigger disposition. The [trigger/handler proposal](capsules/COMPENSATION-TRIGGER-HANDLER-PROPOSAL.md) is reopened around a bounded one-active-trigger restriction; earlier approved proposal and pending-context amendment evidence remain preserved.
+Checkpoint: TypeScript execution exposed that the generic Runtime admitted two active triggers for one root even though terminal Process failure has no valid sibling-trigger disposition. The [trigger/handler proposal](capsules/COMPENSATION-TRIGGER-HANDLER-PROPOSAL.md) is reopened at amendment target `56ac774a`; earlier approved proposal and pending-context amendment evidence remain preserved.
 
 Next action: obtain the required cold proposal verdict for one-active-trigger-per-root validation and atomic second-trigger refusal. After approval, complete that TypeScript correction and the [proposal's](capsules/COMPENSATION-TRIGGER-HANDLER-PROPOSAL.md) proved Lean lane, then stop at the first green semantic checkpoint for independent review before source/profile/scenario/CIB, live Temporal hosting, Product 1 compensation capability, corpus, or Product 2 persistence/API/UI/journey work.
 
