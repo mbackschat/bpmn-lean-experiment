@@ -2,8 +2,8 @@
 
 ## Status
 
-Lifecycle: implementation-in-progress
-Review: approved-with-required-edits
+Lifecycle: draft
+Review: pending
 
 ## Prior review
 
@@ -13,11 +13,13 @@ The post-approval checkpoint-boundary review accepted `540e0b2d` with required e
 
 Implementation preflight then exposed one representation defect before either semantic evaluator was written: trigger creation consumes a promoted Event Sub-Process snapshot, but the approved `pending` handler arm had nowhere to retain it when that subject was not in the first maximal frontier. The fixed B/C witness concealed the defect because its Event Sub-Process handler starts immediately, while the admitted acyclic declaration also permits an Event Sub-Process predecessor that starts only after its successor completes. This amendment places the already-selected frozen context in the exact pending handler that owns the consumed subject. Cold review accepted target `5b45b845` with required edits to complete the four-collection continuation inventory and make pending-context capacity, continuation, and cancellation evidence explicit; the same reviewer approved correction target `00d0db3b` with both findings closed and no semantic drift.
 
+TypeScript execution then exposed a second bounded-design defect: the declaration and Runtime validator admitted two active triggers for one root, but `COMPH-FAIL-01` makes the whole Process terminal and therefore permits no surviving active trigger, while the reviewed trigger lifecycle has no honest terminal value for an unaffected sibling trigger. The fixed acyclic Program cannot reach this state, but accepting it in the generic Runtime contract would make the first failure either reject or invent an unreviewed sibling-trigger disposition. This amendment restricts the checkpoint to one active trigger per root, keeps `maxTriggers` as the bound on the complete retained trigger collection, and leaves concurrent global throws for a later lifecycle design. Implementation remains stopped until a new cold proposal verdict approves or rejects that restriction.
+
 ## Question and bounded outcome
 
 What is the smallest standards-only account that can consume the two approved compensation-retention forms, trigger synchronous global compensation, restore a Compensation Event Sub-Process snapshot, execute dependency-aware handlers, and make handler failure and cancellation explicit?
 
-This proposal selects one root-scoped Intermediate Throw Compensation Event with omitted `activityRef`, synchronous `waitForCompletion=true`, one handler-body shape, occurrence dependencies, concurrent maximal frontiers, success continuation, and fail-fast typed Process failure.
+This proposal selects one root-scoped Intermediate Throw Compensation Event with omitted `activityRef`, synchronous `waitForCompletion=true`, at most one active trigger for that root, one handler-body shape, occurrence dependencies, concurrent maximal handler frontiers, success continuation, and fail-fast typed Process failure.
 
 The first checkpoint uses manual Programs before source, shared scenarios, or Temporal. `BPMN-COMPENSATION-TRIGGER-HANDLER-01` remains `unsupported` until every selected lane closes.
 
@@ -36,6 +38,7 @@ Pinned CIB Seven uses descending subscription creation time and synchronous invo
 Required for the first checkpoint:
 
 - one root-scope global synchronous throw reached after three eligible subjects complete;
+- at most one active compensation trigger for the root, with a second active-trigger attempt refused before mutation;
 - boundary-handler records for exact subjects A and C from the approved retention representation;
 - one promoted Event Sub-Process snapshot for completed embedded Sub-Process subject B;
 - one forward Sequence Flow dependency A → B and no dependency involving C;
@@ -48,7 +51,7 @@ Required for the first checkpoint:
 
 Optional after checkpoint approval: source admission, a standards-only profile, answer-free scenarios, differential evidence, and the bounded Temporal witness.
 
-Excluded are targeted/asynchronous throws, Compensation End Events, Transactions/Cancel Events, implicit or recursive compensation, active/unsuccessful work, loops, Multi-Instance Sub-Processes, general handler graphs/data, boundary context, other dependency sources, failure recovery, CIB, Product 2 persistence/API/UI/journey support for failed Processes, and general conformance.
+Excluded are targeted/asynchronous throws, concurrent global triggers for one root, Compensation End Events, Transactions/Cancel Events, implicit or recursive compensation, active/unsuccessful work, loops, Multi-Instance Sub-Processes, general handler graphs/data, boundary context, other dependency sources, failure recovery, CIB, Product 2 persistence/API/UI/journey support for failed Processes, and general conformance.
 
 ## Program contract
 
@@ -274,6 +277,8 @@ The pending and compensating arms both own `restoredContext`. It is `null` for e
 
 Each trigger has an identity distinct from its throw Event, owns the withheld token, and contains canonical handlers and occurrence dependencies. Each handler identifies one consumed retention or snapshot. Restored context exists while an Event Sub-Process handler is pending or compensating, while `effectId` exists only while any handler compensates.
 
+At most one trigger with lifecycle `active` may have a given root owner. Succeeded and failed triggers remain in the canonical collection as tombstones, so `maxTriggers` bounds all retained records rather than concurrent active executions. This is a bounded checkpoint restriction, not the general BPMN meaning: a later concurrent-throw account may add an explicit sibling-trigger terminal lifecycle without reinterpreting any state admitted here.
+
 Trigger creation atomically removes every eligible root-owned retention or promoted snapshot into sole trigger ownership, preventing retrigger.
 
 Declared source collections remain present when empty, and trigger tombstones survive Process termination. Success releases one output token. Failure releases none, changes root control to `failed`, retains failure/tombstones, and permits no token, wait, incident, live scope, restored frame, or Activity-local binding.
@@ -283,6 +288,8 @@ Trigger, handler, Activity, effect, and existing Process counters are separate a
 ## Trigger selection and dependency order
 
 `COMPH-TRIGGER-01`: The throw selects exactly unclaimed eligible root-owned retentions and promoted snapshots. Invalid ownership, provisional state, duplication, undeclared handlers, ambiguous dependency lifting, cycles, or capacity excess refuses before mutation.
+
+`COMPH-EXCLUSIVE-01`: Trigger creation refuses before selection or mutation when the same root already owns an active trigger, including when no new eligible subject exists. The exact pre-command RuntimeState and empty transition trace, lifecycle, and publication are preserved. A succeeded tombstone does not block a later trigger, subject to `maxTriggers` and the other capacity bounds; a failed trigger belongs to a terminal Process that admits no later command.
 
 `COMPH-ORDER-01`: The forward dependency graph must be acyclic. A pending subject is maximal when none of its uncompensated forward successors remains `pending` or `compensating`. One transition starts the complete canonical set of maximal pending subjects; canonical order governs representation only, while all members become `compensating` together.
 
@@ -306,7 +313,7 @@ An exact handler carries no BPMN Error route. Its `CompleteEffect` result with k
 
 ## Failure and nested cancellation
 
-`COMPH-FAIL-01`: The first admitted compensation `bpmnError` changes its active handler to `failed`, changes every other `pending` or `compensating` handler in the same trigger to `terminated`, preserves already `compensated` handlers, removes all handler and remaining root live regions, records the exact failure in control, and changes the Process to terminal `failed`. No continuation token is emitted and no later handler starts.
+`COMPH-FAIL-01`: The first admitted compensation `bpmnError` changes its active handler to `failed`, changes every other `pending` or `compensating` handler in the same trigger to `terminated`, preserves already `compensated` handlers, removes all handler and remaining root live regions, records the exact failure in control, and changes the Process to terminal `failed`. `COMPH-EXCLUSIVE-01` guarantees that no second active sibling trigger requires an invented terminal disposition. No continuation token is emitted and no later handler starts.
 
 The deciding `CompleteEffect` returns `CommandOutcome.Committed`: `failed` is its committed semantic successor, not `CommandOutcome.SemanticFailure` or a host exception.
 
@@ -318,7 +325,7 @@ This fail-fast interpretation prevents continued independent work, abandoned wor
 
 ## Capacity and atomicity
 
-The declaration bounds simultaneous triggers, total subjects, and canonical UTF-8 bytes of the ordered `(compensationTriggers, compensationHandlerEffectWaits)` pair. Bounds are positive safe integers; bytes are at most 65,536. The complete RuntimeState limit remains secondary.
+The declaration bounds retained trigger records, subjects per trigger, and canonical UTF-8 bytes of the ordered `(compensationTriggers, compensationHandlerEffectWaits)` pair. Bounds are positive safe integers; bytes are at most 65,536. `maxTriggers` does not authorize two active triggers for one root. The complete RuntimeState limit remains secondary.
 
 `COMPH-CAPACITY-01`: Trigger creation preflights the complete trigger, occurrence identities, every pending and active restored context, first-frontier waits, lifecycle records, and prospective canonical bytes before consuming the input token or retention records. Because trigger creation is a refusable internal operation reached only inside one enclosing stimulus evaluation, refusal returns that stimulus as `CommandOutcome.Rejected` with the exact pre-command RuntimeState and empty transition trace, lifecycle, and publication. It is not `RolledBack`, `SemanticFailure`, or a partially admitted command.
 
@@ -334,13 +341,15 @@ A separate delayed-restoration witness makes the Event Sub-Process subject a non
 
 The failure witness reports C's exception from the B/C frontier and observes C `failed`, B/A `terminated`, no B wait/context or continuation, exact failed Process observation and v1 receipt. Late B completion rejects byte-preservingly before hosting and resolves `processClosed` after closure.
 
+The active-trigger exclusivity witness presents a valid state whose root already owns one active trigger and whose trigger input and eligible sources would otherwise permit another. The second attempt must reject before source selection, preserve every token, source, trigger, wait, counter, trace, lifecycle event, and publication byte, and remain rejected even when its prospective subject set is empty. A Runtime mutation containing two active triggers for the same root must fail strict validation.
+
 The capacity witness sets the exact bound one unit below the prospective first frontier and requires whole-transition refusal. The bound accounts for the complete pending Event Sub-Process context; a mutation that omits those bytes must fail. A second witness permits trigger creation but makes A's unlocked frontier exceed its prospective bound, requiring the `CompleteEffect` command to reject byte-preservingly.
 
 ## Lean assurance lane
 
 The first checkpoint is a proved lane. Lean defines the declarative trigger, frontier, success, failure, cancellation, and refusal relations separately from executable evaluators, then checks evaluator soundness for every constructor-producing arm.
 
-Required results are acyclic-frontier existence for the finite exact graph, maximal-frontier correctness, A-after-B safety, independent B/C simultaneous enablement, immediate and delayed successful restoration, pending-context preservation until activation, pending-context disposal on sibling failure, single continuation, source-record consumption, typed terminal Process failure, complete root/handler-region cancellation, stale-result preservation, capacity atomicity including pending-context bytes, observation agreement, and RuntimeState validity preservation.
+Required results are acyclic-frontier existence for the finite exact graph, maximal-frontier correctness, A-after-B safety, independent B/C simultaneous enablement, one-active-trigger-per-root preservation and second-trigger atomic refusal, immediate and delayed successful restoration, pending-context preservation until activation, pending-context disposal on sibling failure, single continuation, source-record consumption, typed terminal Process failure, complete root/handler-region cancellation, stale-result preservation, capacity atomicity including pending-context bytes, observation agreement, and RuntimeState validity preservation.
 
 Checked non-laws reject preserved source retentions, chronology order, universal serialization, surviving failed waits, and surviving cancelled context. No general topological completeness or fixture-derived Lean/TS correspondence is claimed.
 
@@ -368,6 +377,7 @@ No live Temporal implementation begins at the first semantic checkpoint. An uncl
 | Handler success advances the next frontier | Required | Required | Later | Later | missing/duplicate frontier activation |
 | Semantic failure produces one typed terminal Process | Required | Required | Later | Later | zombie wait, pending-A, status, and receipt substitutions |
 | Capacity refusal is whole-transition atomic | Required | Required | Later | Later | first-frontier and unlocked-frontier bounds |
+| One active trigger per root is preserved | Required | Required | Later | Later | second active trigger and empty-subject retrigger mutations |
 | CIB compatibility | Not claimed | Not claimed | Not selected | Not claimed | timestamp-order observation only |
 
 The first green checkpoint consists only of the complete Program/Runtime/observation representation, both independent semantic accounts, their focused validity and adversarial suites, exact cross-language invariant matrix, strict continuation round-trip of one populated pending Event Sub-Process handler, applicable schema/definition artifacts, and focused documentation gates. It adds no source profile, shared scenario, CIB case, live host capability, corpus row, or Product 2 persistence/API/UI/journey support; Product 2 changes only by locking the explicit failed-value ingress rejection below.
@@ -463,13 +473,13 @@ Every headroom figure is the measured nonblank-line remainder below the 800-line
 
 Selected: root-global synchronous triggering, exact eligible-source consumption, occurrence-level dependencies, reverse dependency order, concurrent maximal frontiers, declaration-owned one-effect bodies, snapshot restoration, typed terminal Process failure, complete region cancellation, stale-result refusal, capacity, a failed v1 receipt, and future hosting obligations.
 
-Open: source admission, shared scenario wires, Product 1 compensation capability, targeted/asynchronous throws, general handler graphs and data, other dependencies, loops and Multi-Instance Sub-Processes, recursive compensation, Transactions/Cancel Events, failure recovery, CIB profile behavior, live refinement, whole models, corpus, Product 2 persistence/API/UI/journey support, and conformance.
+Open: source admission, shared scenario wires, Product 1 compensation capability, targeted/asynchronous throws, concurrent global triggers and their sibling-trigger terminal lifecycle, general handler graphs and data, other dependencies, loops and Multi-Instance Sub-Processes, recursive compensation, Transactions/Cancel Events, failure recovery, CIB profile behavior, live refinement, whole models, corpus, Product 2 persistence/API/UI/journey support, and conformance.
 
 Reopen before implementation if review finds the fail-fast rule incompatible with BPMN lifecycle, the body union cannot widen without reinterpretation, restored context cannot reach the exact effect, the frontier cannot be hosted without observable serialization, failed Process publication collapses into infrastructure failure, or cancellation cannot drain Activities while preserving identity.
 
 ## Stage boundary
 
-The earlier proposal target and its correction audits remain immutable evidence for the unchanged account they reviewed. The pending-handler snapshot-ownership amendment changes the Runtime representation needed to realize that account and therefore reopens proposal review before implementation resumes.
+The earlier proposal and pending-handler amendment targets and their correction audits remain immutable evidence for the account they reviewed. The one-active-trigger restriction changes the admitted Runtime states and refusal boundary needed to keep terminal failure total, so proposal review is reopened before implementation resumes.
 
 After approval, the first implementation stage stops when the complete Program/Runtime/observation/receipt representation, its mandatory strict-reader and terminal-value propagation, and the independent Lean/TypeScript semantics named above are green. Temporal and Product 1 may only decode, preserve, reject continuation of, or terminally classify the exact widened value; Product 2 must strictly reject failed ingress before rejected-page application or persistence and must not expose it. The checkpoint must not admit the compensation profile, schedule or execute a handler, or publish a compensation capability. Independent review is required before source, profile, shared scenario, CIB, live Temporal hosting, Product 1 compensation capability, corpus, or Product 2 persistence/API/UI/journey work begins.
 
@@ -477,6 +487,6 @@ After approval, the first implementation stage stops when the complete Program/R
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `5b45b845c5890b89188c2e0bf024946237021106` | `fork-turns-none` | `approve-with-required-edits` | `00d0db3bd6d3` |
+| Proposal | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
