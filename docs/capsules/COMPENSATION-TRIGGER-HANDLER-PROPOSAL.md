@@ -2,14 +2,16 @@
 
 ## Status
 
-Lifecycle: owner-approved
-Review: approved-with-required-edits
+Lifecycle: draft
+Review: pending
 
 ## Prior review
 
 Cold review rejected `21f83fa9`: the handler join was prose, failure had no Process lifecycle or receipt, Continue-As-New carried an already scheduled Activity, and the migration inventory omitted decisive owners. Review target `59a2d3e1` accepted the material redesign with required edits; the same reviewer approved corrections `af15fa2f` and `f1a7db62` with every original finding closed.
 
 The post-approval checkpoint-boundary review accepted `540e0b2d` with required edits; the same reviewer approved corrections `e4dd8430` and `010a686c`, closing preservation of `notStarted`, Product 2 failed-value rejection, and the live-hosting exclusion without changing the selected semantic account.
+
+Implementation preflight then exposed one representation defect before either semantic evaluator was written: trigger creation consumes a promoted Event Sub-Process snapshot, but the approved `pending` handler arm had nowhere to retain it when that subject was not in the first maximal frontier. The fixed B/C witness concealed the defect because its Event Sub-Process handler starts immediately, while the admitted acyclic declaration also permits an Event Sub-Process predecessor that starts only after its successor completes. This amendment places the already-selected frozen context in the exact pending handler that owns the consumed subject; implementation remains stopped until a new cold proposal verdict approves or rejects that account.
 
 ## Question and bounded outcome
 
@@ -140,7 +142,10 @@ type CompensationHandlerIdentity = Readonly<{
 }>;
 
 type CompensationHandlerExecution = CompensationHandlerIdentity & (
-  | Readonly<{ lifecycle: "pending" }>
+  | Readonly<{
+      lifecycle: "pending";
+      restoredContext: CompensationParentContextSnapshot | null;
+    }>
   | Readonly<{
       lifecycle: "compensating";
       restoredContext: CompensationParentContextSnapshot | null;
@@ -265,7 +270,9 @@ type TerminalProcessReceipt =
 
 `ControlStateKind` and `ProcessStatus` gain `Failed`; `ControlState` adds exactly `FailedControl` while its existing instanced arm remains byte-identical. `StateObservation` becomes the union above: `notStarted`, `running`, `completed`, and `cancelled` forbid `failure` and retain exact bytes, while `failed` requires it and every public wait, incident, interaction, and optional Multi-Instance collection is empty. Presence of `openMultiInstances` remains the existing Program-owned rule. The scenario schema and [observation-contract suite](../../packages/semantic-core/test/sequential-multi-instance-observation-contract.test.ts) retain an explicit old-byte `notStarted` witness. V1 adds the exact `FailedProcessReceipt` arm above. It is terminal, accepts no command or continuation, and is not Workflow failure.
 
-Each trigger has an identity distinct from its throw Event, owns the withheld token, and contains canonical handlers and occurrence dependencies. Each handler identifies one consumed retention or snapshot. Restored context and `effectId` exist only while an Event Sub-Process handler compensates.
+The pending and compensating arms both own `restoredContext`. It is `null` for every boundary handler and the exact consumed promoted snapshot for every Event Sub-Process handler. Frontier activation carries that value unchanged from `pending` to `compensating`; it does not read the current Process binding, reconstruct a snapshot, or retain a second source record. Every terminal handler arm drops the context. Keeping the value on the handler is smaller than a trigger-level selected-snapshot collection: the handler already owns the exact consumed subject, while another collection would duplicate that join and add independent ordering, uniqueness, capacity, validation, cancellation, and continuation obligations.
+
+Each trigger has an identity distinct from its throw Event, owns the withheld token, and contains canonical handlers and occurrence dependencies. Each handler identifies one consumed retention or snapshot. Restored context exists while an Event Sub-Process handler is pending or compensating, while `effectId` exists only while any handler compensates.
 
 Trigger creation atomically removes every eligible root-owned retention or promoted snapshot into sole trigger ownership, preventing retrigger.
 
@@ -281,11 +288,11 @@ Trigger, handler, Activity, effect, and existing Process counters are separate a
 
 For A → B with independent C, the initial frontier is B and C. If B succeeds first, A starts even while C remains active. If C succeeds first, A remains pending until B succeeds. No evaluator iteration order, completion chronology, Temporal task order, or Event History order may add an edge or serialize C.
 
-`COMPH-CONSUME-01`: Trigger creation consumes the input token and eligible source records atomically only after it has constructed a valid complete trigger and its first frontier. A zero-subject global throw is a successful no-op that moves the token directly to the output and creates no retained trigger.
+`COMPH-CONSUME-01`: Trigger creation consumes the input token and eligible source records atomically only after it has constructed a valid complete trigger and its first frontier. Every consumed promoted snapshot moves into the exact selected Event Sub-Process handler even when that handler is pending; no source record or second trigger-level snapshot copy remains. A zero-subject global throw is a successful no-op that moves the token directly to the output and creates no retained trigger.
 
 ## Snapshot restoration and handler execution
 
-`COMPH-RESTORE-01`: Starting the Event Sub-Process handler for B copies its promoted completion-time frames into handler-private restored context. The handler reads that frozen context even if the enclosing root's current Process bindings differ. It never reconstructs context from Task I/O, public observation, current scope bindings, or host history.
+`COMPH-RESTORE-01`: Trigger creation copies each selected Event Sub-Process subject's promoted completion-time frames into handler-private restored context before consuming the source record. Starting that handler, whether in the first or a later frontier, carries the exact stored frames unchanged and reads them even if the enclosing root's current Process bindings differ. It never reconstructs context from Task I/O, public observation, current scope bindings, or host history.
 
 B derives exactly one argument from the restored Process frame: its binding name equals the declaration's `argumentName` and its value is the frozen value at `sourceName`. A and C use `arguments: []` and claim no boundary-data visibility. Any missing source, duplicate or extra argument, wrong binding name, or non-compensation descriptor is invalid before the wait is created. Compensation waits project as existing `OpenEffect`/`CompleteEffect` transport but remain separate. IDs are globally unique. Admission searches both collections, refuses ambiguity, dispatches compensation first, and otherwise preserves ordinary completion.
 
@@ -305,7 +312,7 @@ The deciding `CompleteEffect` returns `CommandOutcome.Committed`: `failed` is it
 
 This fail-fast interpretation prevents continued independent work, abandoned work, zombie waits, or a nonterminal dead end. Recovery requires a later explicit arm; this Process is never completed, cancelled, running, or host-failed.
 
-`COMPH-CANCEL-01`: Handler-region cancellation removes active effect waits, Activity-local bindings, restored frames, handler-owned Task/Message/Timer waits, incidents, and nested scopes if later admitted, while preserving terminal lifecycle records and monotonic counters. The first checkpoint's adversarial case has B and C active, C fail, B's nested effect wait disappear, B become `terminated`, and pending A become `terminated`.
+`COMPH-CANCEL-01`: Handler-region cancellation removes active effect waits, Activity-local bindings, pending or active restored frames, handler-owned Task/Message/Timer waits, incidents, and nested scopes if later admitted, while preserving terminal lifecycle records and monotonic counters. The first checkpoint's adversarial case has B and C active, C fail, B's nested effect wait disappear, B become `terminated`, and pending A become `terminated`.
 
 `COMPH-STALE-01`: A late completion or failure report for a cancelled handler-owned effect is rejected by exact occurrence identity and leaves the terminal trigger byte-identical. Host cancellation acknowledgement cannot reopen the handler or change semantic failure order.
 
@@ -313,7 +320,7 @@ This fail-fast interpretation prevents continued independent work, abandoned wor
 
 The declaration bounds simultaneous triggers, total subjects, and canonical UTF-8 bytes of the ordered `(compensationTriggers, compensationHandlerEffectWaits)` pair. Bounds are positive safe integers; bytes are at most 65,536. The complete RuntimeState limit remains secondary.
 
-`COMPH-CAPACITY-01`: Trigger creation preflights the complete trigger, occurrence identities, restored contexts, first-frontier waits, lifecycle records, and prospective canonical bytes before consuming the input token or retention records. Because trigger creation is a refusable internal operation reached only inside one enclosing stimulus evaluation, refusal returns that stimulus as `CommandOutcome.Rejected` with the exact pre-command RuntimeState and empty transition trace, lifecycle, and publication. It is not `RolledBack`, `SemanticFailure`, or a partially admitted command.
+`COMPH-CAPACITY-01`: Trigger creation preflights the complete trigger, occurrence identities, every pending and active restored context, first-frontier waits, lifecycle records, and prospective canonical bytes before consuming the input token or retention records. Because trigger creation is a refusable internal operation reached only inside one enclosing stimulus evaluation, refusal returns that stimulus as `CommandOutcome.Rejected` with the exact pre-command RuntimeState and empty transition trace, lifecycle, and publication. It is not `RolledBack`, `SemanticFailure`, or a partially admitted command.
 
 `COMPH-CAPACITY-02`: A successful handler completion that would start another frontier preflights the complete successor before consuming the current effect wait. Refusal returns the enclosing `CompleteEffect` as `CommandOutcome.Rejected` with the exact pre-command RuntimeState and empty transition trace, lifecycle, and publication; it consumes neither the effect wait nor the handler result and exposes no speculative `compensated` lifecycle. It is not the committed handler-failure outcome, `RolledBack`, or `SemanticFailure`.
 
@@ -323,6 +330,8 @@ The positive witness completes A, embedded Sub-Process B, and C, mutates the cur
 
 The order mutation serializes C behind B and must fail because it removes a legal independent active handler. The reverse-order mutation starts A with B and must fail because it violates A → B. The restoration mutation reads the root's newer value and must fail. The consumption mutation leaves a claimed source record and must fail by enabling retrigger.
 
+A separate delayed-restoration witness makes the Event Sub-Process subject a non-maximal predecessor. Trigger creation must empty the promoted-snapshot source collection while retaining the exact frozen frames on that pending handler; after its successor completes, activation must carry those same frames into the effect argument despite a newer current Process value. Dropping the pending context, leaving the promoted source record in place, or reconstructing from current state must each fail.
+
 The failure witness reports C's exception from the B/C frontier and observes C `failed`, B/A `terminated`, no B wait/context or continuation, exact failed Process observation and v1 receipt. Late B completion rejects byte-preservingly before hosting and resolves `processClosed` after closure.
 
 The capacity witness sets the exact bound one unit below the prospective first frontier and requires whole-transition refusal. A second witness permits trigger creation but makes A's unlocked frontier exceed its prospective bound, requiring the `CompleteEffect` command to reject byte-preservingly.
@@ -331,7 +340,7 @@ The capacity witness sets the exact bound one unit below the prospective first f
 
 The first checkpoint is a proved lane. Lean defines the declarative trigger, frontier, success, failure, cancellation, and refusal relations separately from executable evaluators, then checks evaluator soundness for every constructor-producing arm.
 
-Required results are acyclic-frontier existence for the finite exact graph, maximal-frontier correctness, A-after-B safety, independent B/C simultaneous enablement, successful restoration, single continuation, source-record consumption, typed terminal Process failure, complete root/handler-region cancellation, stale-result preservation, capacity atomicity, observation agreement, and RuntimeState validity preservation.
+Required results are acyclic-frontier existence for the finite exact graph, maximal-frontier correctness, A-after-B safety, independent B/C simultaneous enablement, immediate and delayed successful restoration, single continuation, source-record consumption, typed terminal Process failure, complete root/handler-region cancellation, stale-result preservation, capacity atomicity, observation agreement, and RuntimeState validity preservation.
 
 Checked non-laws reject preserved source retentions, chronology order, universal serialization, surviving failed waits, and surviving cancelled context. No general topological completeness or fixture-derived Lean/TS correspondence is claimed.
 
@@ -355,7 +364,7 @@ No live Temporal implementation begins at the first semantic checkpoint. An uncl
 |---|---|---|---|---|---|
 | Eligible records are atomically claimed once | Required | Required | Later | Later | retained-record retrigger mutation |
 | A → B reverses while C stays independent | Required | Required | Later | Later | A-early and C-serialization mutations |
-| B receives its frozen snapshot | Required | Required | Later | Later | current-context substitution |
+| B retains and receives its frozen snapshot whether initially active or pending | Required | Required | Later | Later | pending-context loss, retained-source, and current-context substitutions |
 | Handler success advances the next frontier | Required | Required | Later | Later | missing/duplicate frontier activation |
 | Semantic failure produces one typed terminal Process | Required | Required | Later | Later | zombie wait, pending-A, status, and receipt substitutions |
 | Capacity refusal is whole-transition atomic | Required | Required | Later | Later | first-frontier and unlocked-frontier bounds |
@@ -460,7 +469,7 @@ Reopen before implementation if review finds the fail-fast rule incompatible wit
 
 ## Stage boundary
 
-The immutable proposal target and both correction audits are green and recorded below. That verdict approves implementation only within the first checkpoint boundary.
+The earlier proposal target and its correction audits remain immutable evidence for the unchanged account they reviewed. The pending-handler snapshot-ownership amendment changes the Runtime representation needed to realize that account and therefore reopens proposal review before implementation resumes.
 
 After approval, the first implementation stage stops when the complete Program/Runtime/observation/receipt representation, its mandatory strict-reader and terminal-value propagation, and the independent Lean/TypeScript semantics named above are green. Temporal and Product 1 may only decode, preserve, reject continuation of, or terminally classify the exact widened value; Product 2 must strictly reject failed ingress before rejected-page application or persistence and must not expose it. The checkpoint must not admit the compensation profile, schedule or execute a handler, or publish a compensation capability. Independent review is required before source, profile, shared scenario, CIB, live Temporal hosting, Product 1 compensation capability, corpus, or Product 2 persistence/API/UI/journey work begins.
 
@@ -468,6 +477,6 @@ After approval, the first implementation stage stops when the complete Program/R
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `59a2d3e1` | `fork-turns-none` | `approve-with-required-edits` | `af15fa2f, f1a7db62` |
+| Proposal | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
