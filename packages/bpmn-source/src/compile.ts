@@ -374,11 +374,12 @@ function diagnostic(
  * rule and applying it here would mean decoding XML outside the parser.
  *
  * The attribute set is derived from the metamodel manifest's `Boolean`-typed properties rather than
- * listed, so it spans exactly the boolean attributes this compiler admits — the class its readers can
- * be fooled by — and a boolean added to the manifest is covered when it is added. The coercion itself
- * applies to every `xsd:boolean` in the full parser descriptor, which is wider than this manifest's
- * declared partial coverage. Enumerating attribute names here would be the same value-not-position
- * mistake that left `cancelActivity='1'` admitted.
+ * listed, so it spans exactly the boolean attributes in the bounded metamodel calibration. A
+ * calibration may deliberately precede its source reader, which arms this guard before a new reader
+ * can depend on the parser's coerced value. The coercion itself applies to every `xsd:boolean` in the
+ * full parser descriptor, which is wider than this manifest's declared partial coverage. Enumerating
+ * attribute names here would be the same value-not-position mistake that left
+ * `cancelActivity='1'` admitted.
  *
  * Deliberately conservative and markup-blind: it rejects the whole source when any occurrence is
  * ambiguous, rather than resolving which element carries it — or whether an element carries it at

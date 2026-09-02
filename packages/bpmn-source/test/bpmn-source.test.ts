@@ -492,8 +492,10 @@ test("derives the guarded boolean attributes from the metamodel manifest", () =>
     "cancelActivity",
     "instantiate",
     "isExecutable",
+    "isForCompensation",
     "isInterrupting",
     "triggeredByEvent",
+    "waitForCompletion",
   ]);
 });
 

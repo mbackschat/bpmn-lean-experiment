@@ -16,7 +16,7 @@
     "consumer": "bpmn-source-semantic-process",
     "included": [
       "Definitions and executable Process identity",
-      "StartEvent, IntermediateCatchEvent, TimerEventDefinition, BoundaryEvent, ErrorEventDefinition, TerminateEventDefinition, Error, Task, UserTask, Rendering, ReceiveTask, ServiceTask, CallActivity, SubProcess, ParallelGateway, ExclusiveGateway, InclusiveGateway, EventBasedGateway, EndEvent, ExtensionElements, and SequenceFlow type identity",
+      "StartEvent, IntermediateCatchEvent, IntermediateThrowEvent, TimerEventDefinition, BoundaryEvent, ErrorEventDefinition, TerminateEventDefinition, CompensateEventDefinition, Error, Task, UserTask, Rendering, ReceiveTask, ServiceTask, CallActivity, SubProcess, ParallelGateway, ExclusiveGateway, InclusiveGateway, EventBasedGateway, EndEvent, Association, ExtensionElements, and SequenceFlow type identity",
       "MessageEventDefinition, Message, Interface, Operation, and ReceiveTask type identity plus messageRef, operationRef, inMessageRef, payload, implementation, instantiate, and collection bounds used by Message admission",
       "direct generalizations needed by the first compiler",
       "FlowElementsContainer.flowElements containment",
@@ -32,7 +32,8 @@
       "CallActivity.calledElementRef target and bounds",
       "BoundaryEvent attachment and interrupting default",
       "SubProcess FlowElementsContainer generalization and triggeredByEvent default",
-      "ErrorEventDefinition.errorRef and Error name/code identity"
+      "ErrorEventDefinition.errorRef and Error name/code identity",
+      "Process artifact containment, Compensation event definition activity/wait references, Activity compensation marker, and Association endpoints/direction"
     ],
     "absent": [
       "complete BPMN20 metamodel",
@@ -47,6 +48,7 @@
     "callActivityType": "bpmn:CallActivity",
     "startEventType": "bpmn:StartEvent",
     "intermediateCatchEventType": "bpmn:IntermediateCatchEvent",
+    "intermediateThrowEventType": "bpmn:IntermediateThrowEvent",
     "timerEventDefinitionType": "bpmn:TimerEventDefinition",
     "messageEventDefinitionType": "bpmn:MessageEventDefinition",
     "messageType": "bpmn:Message",
@@ -55,6 +57,7 @@
     "boundaryEventType": "bpmn:BoundaryEvent",
     "errorEventDefinitionType": "bpmn:ErrorEventDefinition",
     "terminateEventDefinitionType": "bpmn:TerminateEventDefinition",
+    "compensateEventDefinitionType": "bpmn:CompensateEventDefinition",
     "errorType": "bpmn:Error",
     "formalExpressionType": "bpmn:FormalExpression",
     "taskType": "bpmn:Task",
@@ -69,6 +72,7 @@
     "inclusiveGatewayType": "bpmn:InclusiveGateway",
     "eventBasedGatewayType": "bpmn:EventBasedGateway",
     "endEventType": "bpmn:EndEvent",
+    "associationType": "bpmn:Association",
     "sequenceFlowType": "bpmn:SequenceFlow"
   },
   "classes": [
@@ -101,6 +105,12 @@
       "name": "IntermediateCatchEvent",
       "directSuperClasses": [
         "CatchEvent"
+      ]
+    },
+    {
+      "name": "IntermediateThrowEvent",
+      "directSuperClasses": [
+        "ThrowEvent"
       ]
     },
     {
@@ -147,6 +157,12 @@
     },
     {
       "name": "TerminateEventDefinition",
+      "directSuperClasses": [
+        "EventDefinition"
+      ]
+    },
+    {
+      "name": "CompensateEventDefinition",
       "directSuperClasses": [
         "EventDefinition"
       ]
@@ -216,6 +232,12 @@
       "name": "SequenceFlow",
       "directSuperClasses": [
         "FlowElement"
+      ]
+    },
+    {
+      "name": "Association",
+      "directSuperClasses": [
+        "Artifact"
       ]
     },
     {
@@ -330,6 +352,14 @@
       "containment": false
     },
     {
+      "owner": "Process",
+      "name": "artifacts",
+      "type": "Artifact",
+      "lower": 0,
+      "upper": "*",
+      "containment": true
+    },
+    {
       "owner": "FlowElementsContainer",
       "name": "flowElements",
       "type": "FlowElement",
@@ -421,6 +451,22 @@
       "owner": "MessageEventDefinition",
       "name": "operationRef",
       "type": "Operation",
+      "lower": 0,
+      "upper": 1,
+      "containment": false
+    },
+    {
+      "owner": "CompensateEventDefinition",
+      "name": "waitForCompletion",
+      "type": "Boolean",
+      "lower": 1,
+      "upper": 1,
+      "containment": false
+    },
+    {
+      "owner": "CompensateEventDefinition",
+      "name": "activityRef",
+      "type": "Activity",
       "lower": 0,
       "upper": 1,
       "containment": false
@@ -556,6 +602,15 @@
       "default": true
     },
     {
+      "owner": "Activity",
+      "name": "isForCompensation",
+      "type": "Boolean",
+      "lower": 1,
+      "upper": 1,
+      "containment": false,
+      "default": false
+    },
+    {
       "owner": "BoundaryEvent",
       "name": "cancelActivity",
       "type": "Boolean",
@@ -654,6 +709,30 @@
       "upper": 1,
       "containment": false,
       "default": false
+    },
+    {
+      "owner": "Association",
+      "name": "associationDirection",
+      "type": "AssociationDirection",
+      "lower": 1,
+      "upper": 1,
+      "containment": false
+    },
+    {
+      "owner": "Association",
+      "name": "sourceRef",
+      "type": "BaseElement",
+      "lower": 1,
+      "upper": 1,
+      "containment": false
+    },
+    {
+      "owner": "Association",
+      "name": "targetRef",
+      "type": "BaseElement",
+      "lower": 1,
+      "upper": 1,
+      "containment": false
     }
   ]
 }

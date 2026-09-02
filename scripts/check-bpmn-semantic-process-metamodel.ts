@@ -31,7 +31,10 @@ type MetamodelManifest = Readonly<{
   schemaSource: Readonly<{ sha256: string }>;
   coverage: Readonly<{ status: string }>;
   compilerProjection: Readonly<{
+    intermediateThrowEventType: string;
     terminateEventDefinitionType: string;
+    compensateEventDefinitionType: string;
+    associationType: string;
     userTaskType: string;
     renderingType: string;
   }>;
@@ -171,12 +174,36 @@ function decodeMetamodelManifest(text: string): MetamodelManifest {
       ),
     },
     compilerProjection: {
+      intermediateThrowEventType: requiredMember(
+        requireRecord(
+          record["compilerProjection"],
+          "manifest.compilerProjection",
+        ),
+        "intermediateThrowEventType",
+        "manifest.compilerProjection",
+      ),
       terminateEventDefinitionType: requiredMember(
         requireRecord(
           record["compilerProjection"],
           "manifest.compilerProjection",
         ),
         "terminateEventDefinitionType",
+        "manifest.compilerProjection",
+      ),
+      compensateEventDefinitionType: requiredMember(
+        requireRecord(
+          record["compilerProjection"],
+          "manifest.compilerProjection",
+        ),
+        "compensateEventDefinitionType",
+        "manifest.compilerProjection",
+      ),
+      associationType: requiredMember(
+        requireRecord(
+          record["compilerProjection"],
+          "manifest.compilerProjection",
+        ),
+        "associationType",
         "manifest.compilerProjection",
       ),
       userTaskType: requiredMember(
@@ -280,6 +307,50 @@ assert.equal(
   `bpmn:${terminateEventDefinitionFacts[0]?.name}`,
   "the compiler Terminate Event Definition type must derive from the calibrated CMOF class",
 );
+
+const compensationProjectionFacts = [
+  [
+    "intermediateThrowEventType",
+    "IntermediateThrowEvent",
+    "intermediateThrowEvent",
+    "flowElement",
+  ],
+  [
+    "compensateEventDefinitionType",
+    "CompensateEventDefinition",
+    "compensateEventDefinition",
+    "eventDefinition",
+  ],
+  ["associationType", "Association", "association", "artifact"],
+] as const;
+
+for (
+  const [projection, className, elementName, substitutionGroup]
+    of compensationProjectionFacts
+) {
+  assert.equal(
+    manifest.classes.filter(({ name }) => name === className).length,
+    1,
+    `the bounded manifest must contain one calibrated ${className} class`,
+  );
+  assert.equal(
+    manifest.compilerProjection[projection],
+    `bpmn:${className}`,
+    `the compiler ${className} type must derive from the calibrated CMOF class`,
+  );
+  const schemaElement =
+    `//*[local-name()="element" and @name="${elementName}"]`;
+  assert.equal(
+    xpathIn(semanticXsdPath, `string(${schemaElement}/@type)`),
+    `t${className}`,
+    `Semantic XSD type changed for ${className}`,
+  );
+  assert.equal(
+    xpathIn(semanticXsdPath, `string(${schemaElement}/@substitutionGroup)`),
+    substitutionGroup,
+    `Semantic XSD substitution group changed for ${className}`,
+  );
+}
 
 const renderingFacts = manifest.classes.filter(
   ({ name }) => name === "Rendering",
