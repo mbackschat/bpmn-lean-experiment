@@ -1,6 +1,7 @@
 import BpmnSemantics.CompensationTriggerHandlerSemanticFixtures
 import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerCompletion
 import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotCommandAdmission
+import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotTransitionTrace
 
 /-! # Compensation handler completion and failure conformance -/
 
@@ -112,5 +113,79 @@ theorem cross_family_effect_identity_collision_rejects_the_exact_submitted_state
       (admitStimulusWithCompensationSnapshots program effectCollisionState
         completeBStimulus).state = effectCollisionState := by
   decide +kernel
+
+private def occurrenceStart (anchor : SemanticFlowNodeOccurrenceAnchor)
+    (elementId : String) : UnnumberedFlowNodeOccurrenceStart :=
+  { anchor
+    processId := program.processId
+    elementId := ⟨elementId⟩
+    owner := rootOwner }
+
+private def expectedTriggerLifecycle : UnnumberedFlowNodeOccurrenceDelta :=
+  { started :=
+      [occurrenceStart (.wait waitB.id) "EB",
+       occurrenceStart (.compensationTrigger activeTrigger.id) "throw",
+       occurrenceStart (.compensationHandler compensatingHandlerB.identity.id) "HB",
+       occurrenceStart (.compensationHandler compensatingHandlerC.identity.id) "HC"]
+    ended := [] }
+
+private def expectedBSuccessLifecycle : UnnumberedFlowNodeOccurrenceDelta :=
+  { started :=
+      [occurrenceStart (.compensationHandler compensatingHandlerA.identity.id) "HA"]
+    ended :=
+      [{ anchor := .wait waitB.id, terminal := .completed },
+       { anchor := .compensationHandler compensatingHandlerB.identity.id,
+         terminal := .completed }] }
+
+private def expectedCFailureLifecycle : UnnumberedFlowNodeOccurrenceDelta :=
+  { started := []
+    ended :=
+      [{ anchor := .wait waitB.id, terminal := .cancelled },
+       { anchor := .compensationTrigger activeTrigger.id, terminal := .cancelled },
+       { anchor := .compensationHandler compensatingHandlerB.identity.id,
+         terminal := .cancelled },
+       { anchor := .compensationHandler compensatingHandlerC.identity.id,
+         terminal := .cancelled }] }
+
+theorem trigger_and_completion_lifecycles_preserve_private_pairing_and_public_terminals :
+    flowNodeOccurrenceDeltaForOperationWithCompensation? program preTriggerState triggeredState
+        triggerOperation ⟨"trigger-command"⟩ 1 = some expectedTriggerLifecycle ∧
+      flowNodeOccurrenceDeltaForStimulusWithCompensation? program triggeredState afterBState
+        completeBStimulus 0 = some expectedBSuccessLifecycle ∧
+      flowNodeOccurrenceDeltaForStimulusWithCompensation? program triggeredState failedState
+        failCStimulus 0 = some expectedCFailureLifecycle := by
+  decide +kernel
+
+private def completeBTrace :=
+  applyStimulusTracedWithCompensationSnapshots 1 program triggeredState completeBStimulus
+
+private def failCTrace :=
+  applyStimulusTracedWithCompensationSnapshots 1 program triggeredState failCStimulus
+
+private theorem complete_b_trace_has_exact_publication :
+    completeBTrace.committedTransitions = [.externalStimulus completeBStimulus] ∧
+      completeBTrace.flowNodeOccurrenceLifecycles = [expectedBSuccessLifecycle] := by
+  decide +kernel
+
+private theorem fail_c_trace_has_exact_state : failCTrace.result.state = failedState := by
+  decide +kernel
+
+private theorem fail_c_trace_has_exact_transition :
+    failCTrace.committedTransitions = [.externalStimulus failCStimulus] := by
+  decide +kernel
+
+private theorem fail_c_trace_has_exact_lifecycle :
+    failCTrace.flowNodeOccurrenceLifecycles = [expectedCFailureLifecycle] := by
+  decide +kernel
+
+theorem traced_completion_publishes_success_or_failure_without_an_internal_phantom_step :
+    completeBTrace.committedTransitions = [.externalStimulus completeBStimulus] ∧
+      completeBTrace.flowNodeOccurrenceLifecycles = [expectedBSuccessLifecycle] ∧
+      failCTrace.result.state = failedState ∧
+      failCTrace.committedTransitions = [.externalStimulus failCStimulus] ∧
+      failCTrace.flowNodeOccurrenceLifecycles = [expectedCFailureLifecycle] :=
+  ⟨complete_b_trace_has_exact_publication.1, complete_b_trace_has_exact_publication.2,
+    fail_c_trace_has_exact_state, fail_c_trace_has_exact_transition,
+    fail_c_trace_has_exact_lifecycle⟩
 
 end BpmnSemantics.CompensationTriggerHandlerCompletionConformance

@@ -337,6 +337,24 @@ def zeroSubjectDeclaration : CompensationExecutionDeclaration :=
 
 def zeroSubjectProgram : Program :=
   { program with
+    operationScopes :=
+      [{ operationId := ⟨"op:A"⟩, scopeId := ⟨"scope:process"⟩ },
+       { operationId := ⟨"op:C"⟩, scopeId := ⟨"scope:process"⟩ },
+       { operationId := ⟨"op:End"⟩, scopeId := ⟨"scope:process"⟩ },
+       { operationId := ⟨"op:complete-root"⟩, scopeId := ⟨"scope:process"⟩ },
+       { operationId := ⟨"op:enter-B"⟩, scopeId := ⟨"scope:process"⟩ },
+       { operationId := ⟨"trigger"⟩, scopeId := ⟨"scope:process"⟩ }]
+    operations :=
+      [.awaitUserTask ⟨"op:A"⟩ ⟨⟨"A"⟩⟩ ⟨"place:a-in"⟩ ⟨"place:a-out"⟩
+        { id := ⟨"A"⟩, name := none },
+       .awaitUserTask ⟨"op:C"⟩ ⟨⟨"C"⟩⟩ ⟨"place:c-in"⟩ ⟨"place:trigger"⟩
+        { id := ⟨"C"⟩, name := none },
+       .reachNoneEnd ⟨"op:End"⟩ ⟨⟨"End"⟩⟩ ⟨"place:done"⟩,
+       .completeScope ⟨"op:complete-root"⟩ ⟨⟨"process"⟩⟩
+         ⟨"scope:process"⟩ none,
+       .enterScope ⟨"op:enter-B"⟩ ⟨⟨"B"⟩⟩ ⟨"place:b-in"⟩ ⟨"place:b-entry"⟩
+        ⟨"scope:B"⟩,
+       triggerOperation]
     compensationActivityRetention := none
     compensationEventSubProcessSnapshots := none
     compensationExecution := some zeroSubjectDeclaration }
@@ -359,6 +377,30 @@ def zeroSubjectAtRetainedLimitState : RuntimeState :=
 def zeroSubjectAtRetainedLimitSuccessor : RuntimeState :=
   { zeroSubjectAtRetainedLimitState with
     tokens := [{ placeId := ⟨"place:done"⟩, owner := rootOwner }] }
+
+def zeroSubjectWakeWait : UserTaskWait :=
+  { processInstanceId := instanceId
+    owner := rootOwner
+    task := { id := ⟨"C"⟩, name := none }
+    activation := 1
+    output := ⟨"place:trigger"⟩ }
+
+def zeroSubjectWakeState : RuntimeState :=
+  { zeroSubjectAtRetainedLimitState with
+    tokens := []
+    waits := [zeroSubjectWakeWait]
+    activations := [{ taskId := ⟨"C"⟩, count := 1 }] }
+
+def zeroSubjectWakeStimulus : Stimulus :=
+  .completeUserTaskInstance ⟨"complete-before-zero-subject-trigger"⟩
+    (occurrence "C") []
+
+def zeroSubjectWakeSuccessor : RuntimeState :=
+  { zeroSubjectWakeState with
+    control := .completed instanceId
+    scopeOccurrences := []
+    waits := []
+    endOccurrences := 1 }
 
 def dependencyDriftState : RuntimeState :=
   { activeState with

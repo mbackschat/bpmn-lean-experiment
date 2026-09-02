@@ -45,8 +45,17 @@ def flowNodeOccurrenceAnchorBefore (left right : SemanticFlowNodeOccurrenceAncho
   | .scope _, .wait _ => false
   | .scope _, _ => true
   | .callActivity left, .callActivity right => occurrenceBefore left right
+  | .callActivity _, .compensationTrigger _
+  | .callActivity _, .compensationHandler _
   | .callActivity _, .transition .. => true
   | .callActivity _, _ => false
+  | .compensationTrigger left, .compensationTrigger right => occurrenceBefore left right
+  | .compensationTrigger _, .compensationHandler _
+  | .compensationTrigger _, .transition .. => true
+  | .compensationTrigger _, _ => false
+  | .compensationHandler left, .compensationHandler right => occurrenceBefore left right
+  | .compensationHandler _, .transition .. => true
+  | .compensationHandler _, _ => false
   | .transition leftCommand leftTransition leftLocal, .transition rightCommand rightTransition rightLocal =>
       if leftCommand ≠ rightCommand then
         scalarBefore leftCommand.value rightCommand.value
@@ -311,7 +320,8 @@ def projectOpenFlowNodeOccurrences? (program : Program) (state : RuntimeState) :
 
 def transitionAnchor : SemanticFlowNodeOccurrenceAnchor → Bool
   | .transition .. => true
-  | .wait _ | .scope _ | .callActivity _ => false
+  | .wait _ | .scope _ | .callActivity _
+  | .compensationTrigger _ | .compensationHandler _ => false
 
 def availableAfterStarts (current : List OpenSemanticFlowNodeOccurrence)
     (delta : UnnumberedFlowNodeOccurrenceDelta) : List OpenSemanticFlowNodeOccurrence :=
@@ -406,7 +416,8 @@ def flowNodeOccurrenceOwnedBySubtree (state : RuntimeState) (root : ScopeOccurre
   match occurrence.anchor with
   | .scope scopeId => occurrenceInSubtree state.scopeOccurrences root scopeId ||
       called.contains scopeId.processInstanceId
-  | .wait _ | .callActivity _ => occurrenceInSubtree state.scopeOccurrences root occurrence.owner ||
+  | .wait _ | .callActivity _ | .compensationTrigger _ | .compensationHandler _ =>
+      occurrenceInSubtree state.scopeOccurrences root occurrence.owner ||
       called.contains occurrence.owner.processInstanceId
   | .transition .. => false
 

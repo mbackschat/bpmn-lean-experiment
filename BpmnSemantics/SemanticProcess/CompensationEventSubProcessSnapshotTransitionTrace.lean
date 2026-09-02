@@ -1,12 +1,14 @@
 import BpmnSemantics.SemanticProcess.TransitionTrace
 import BpmnSemantics.SemanticProcess.TransitionAttempt
 import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotCommandAdmission
+import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerFlowNodeOccurrence
 
-/-! # Compensation Event Sub-Process snapshot transition trace
+/-! # Compensation attempt-aware transition trace
 
-This module is the focused three-arm closure lane for Programs that declare Compensation Event
-Sub-Process snapshots. The base trace module remains the exact declaration-free evaluator so legacy
-kernel fixtures do not import the snapshot runtime or pay its reduction cost.
+This module is the focused attempt-aware closure lane for Programs that declare Compensation Event
+Sub-Process snapshots or compensation execution. The base trace module remains the exact
+declaration-free evaluator so legacy kernel fixtures do not import the compensation runtime or pay
+its reduction cost.
 -/
 
 namespace BpmnSemantics.SemanticProcess
@@ -49,13 +51,13 @@ private def replayCommittedTransitionsForDeclaredCompensationSnapshots (program 
       else none
   | [] | .internalOperation _ :: _ => none
 
-/-- Replay uses the base mechanism exactly unless the Program declares the focused snapshot family. -/
+/-- Replay uses the base mechanism exactly unless the Program declares either focused compensation family. -/
 def replayCommittedTransitionsWithCompensationSnapshots (program : Program)
     (initial : RuntimeState) (transitions : List CommittedTransition) : Option RuntimeState :=
-  match program.compensationEventSubProcessSnapshots with
-  | none => replayCommittedTransitions program initial transitions
-  | some _ =>
-      replayCommittedTransitionsForDeclaredCompensationSnapshots program initial transitions
+  if program.compensationEventSubProcessSnapshots.isSome ||
+      program.compensationExecution.isSome then
+    replayCommittedTransitionsForDeclaredCompensationSnapshots program initial transitions
+  else replayCommittedTransitions program initial transitions
 
 private def internalOperationAttemptBefore
     (left right : InternalOperationAttempt) : Bool :=
@@ -114,6 +116,15 @@ private inductive SnapshotInternalBatchAttempt where
   | applied (result : SnapshotInternalBatchResult)
   | refused (reason : InternalOperationRefusal)
 
+private def internalPublicationPairWithCompensation? (program : Program)
+    (footprintState before after : RuntimeState) (operation : SemanticOperation)
+    (commandId : SemanticId) : Option InternalPublicationPair := do
+  let footprint ← internalTransitionFootprint? program footprintState operation
+  let record ← internalTransitionRecord? program before operation
+  let lifecycle ← flowNodeOccurrenceDeltaForOperationWithCompensation? program before after
+    operation commandId 0
+  pure { footprint, record, lifecycle }
+
 private def fireSnapshotInternalBatch (program : Program) (footprintState : RuntimeState)
     (commandId : SemanticId) :
     RuntimeState → List SemanticOperation → SnapshotInternalBatchAttempt
@@ -126,7 +137,7 @@ private def fireSnapshotInternalBatch (program : Program) (footprintState : Runt
           match frontier.transitions.filter fun candidate =>
               candidate.1.id == operation.id with
           | [(selected, successor)] =>
-              match internalPublicationPair? program footprintState state successor
+              match internalPublicationPairWithCompensation? program footprintState state successor
                   selected commandId with
               | none => .disabled
               | some publication =>
@@ -187,7 +198,7 @@ private def closeSupportedTracedWithCompensationSnapshots :
                 records := prependSnapshotRecord
                   (internalTransitionRecord? program state operation) closed.records
                 lifecycles := prependSnapshotLifecycle
-                  (flowNodeOccurrenceDeltaForOperation? program state successor operation
+                  (flowNodeOccurrenceDeltaForOperationWithCompensation? program state successor operation
                     commandId transitionIndex) closed.lifecycles }
           | first :: second :: remaining =>
               let transitions := first :: second :: remaining
@@ -231,7 +242,7 @@ private def evaluateStimulusWithCompensationSnapshots (closureLimit : Nat)
   match admission.outcome with
   | .committed =>
       let commandId := stimulusCommandId stimulus
-      let externalLifecycle := flowNodeOccurrenceDeltaForStimulus? program state
+      let externalLifecycle := flowNodeOccurrenceDeltaForStimulusWithCompensation? program state
         admission.state stimulus 0
       let closure := closeSupportedTracedWithCompensationSnapshots closureLimit program
         commandId 1 admission.state
@@ -306,46 +317,46 @@ private def publishSnapshotLifecycles (program : Program) (initial : RuntimeStat
   | some lifecycles => if transitions.length = lifecycles.length then lifecycles else []
   | none => []
 
-/-- Snapshot-aware command evaluation with exact declaration-free delegation. -/
+/-- Compensation-aware command evaluation with exact declaration-free delegation. -/
 def applyStimulusWithCompensationSnapshots (closureLimit : Nat) (program : Program)
     (state : RuntimeState) (stimulus : Stimulus) : StimulusResult :=
-  match program.compensationEventSubProcessSnapshots with
-  | none => applyStimulus closureLimit program state stimulus
-  | some _ =>
-      (evaluateStimulusWithCompensationSnapshots closureLimit program state stimulus).result
+  if program.compensationEventSubProcessSnapshots.isSome ||
+      program.compensationExecution.isSome then
+    (evaluateStimulusWithCompensationSnapshots closureLimit program state stimulus).result
+  else applyStimulus closureLimit program state stimulus
 
-/-- Snapshot-aware trace evaluation with empty publication on semantic refusal. -/
+/-- Compensation-aware trace evaluation with empty publication on semantic refusal. -/
 def applyStimulusTracedWithCompensationSnapshots (closureLimit : Nat)
     (program : Program) (state : RuntimeState) (stimulus : Stimulus) : TracedStimulusResult :=
-  match program.compensationEventSubProcessSnapshots with
-  | none => applyStimulusTraced closureLimit program state stimulus
-  | some _ =>
-      let evaluated := evaluateStimulusWithCompensationSnapshots closureLimit program state stimulus
-      { result := evaluated.result
-        committedTransitions := publishSnapshotTransitions program state evaluated
-        flowNodeOccurrenceLifecycles := publishSnapshotLifecycles program state evaluated }
+  if program.compensationEventSubProcessSnapshots.isSome ||
+      program.compensationExecution.isSome then
+    let evaluated := evaluateStimulusWithCompensationSnapshots closureLimit program state stimulus
+    { result := evaluated.result
+      committedTransitions := publishSnapshotTransitions program state evaluated
+      flowNodeOccurrenceLifecycles := publishSnapshotLifecycles program state evaluated }
+  else applyStimulusTraced closureLimit program state stimulus
 
 /-- Declaration-free Programs preserve the exact base evaluator. -/
 theorem applyStimulusWithCompensationSnapshots_withoutDeclaration
     (closureLimit : Nat) (program : Program) (state : RuntimeState) (stimulus : Stimulus)
-    (absent : program.compensationEventSubProcessSnapshots = none) :
+    (snapshotsAbsent : program.compensationEventSubProcessSnapshots = none)
+    (executionAbsent : program.compensationExecution = none) :
     applyStimulusWithCompensationSnapshots closureLimit program state stimulus =
       applyStimulus closureLimit program state stimulus := by
-  simp [applyStimulusWithCompensationSnapshots, absent]
+  simp [applyStimulusWithCompensationSnapshots, snapshotsAbsent, executionAbsent]
 
 /-- Erasing focused trace publication yields the exact focused result-only evaluation. -/
 theorem applyStimulusTracedWithCompensationSnapshots_erases_to_result
     (closureLimit : Nat) (program : Program) (state : RuntimeState) (stimulus : Stimulus) :
     (applyStimulusTracedWithCompensationSnapshots closureLimit program state stimulus).result =
       applyStimulusWithCompensationSnapshots closureLimit program state stimulus := by
-  cases declared : program.compensationEventSubProcessSnapshots with
-  | none =>
-      simpa [applyStimulusTracedWithCompensationSnapshots,
-        applyStimulusWithCompensationSnapshots, declared] using
-        applyStimulusTraced_erases_to_applyStimulus closureLimit program state stimulus
-  | some _ =>
-      simp [applyStimulusTracedWithCompensationSnapshots,
-        applyStimulusWithCompensationSnapshots, declared]
+  by_cases focused : program.compensationEventSubProcessSnapshots.isSome ||
+      program.compensationExecution.isSome
+  · simp [applyStimulusTracedWithCompensationSnapshots,
+      applyStimulusWithCompensationSnapshots, focused]
+  · simpa [applyStimulusTracedWithCompensationSnapshots,
+      applyStimulusWithCompensationSnapshots, focused] using
+      applyStimulusTraced_erases_to_applyStimulus closureLimit program state stimulus
 
 /-- Every nonempty focused publication replays to the exact focused committed result state. -/
 theorem applyStimulusTracedWithCompensationSnapshots_emitted_trace_replays
@@ -357,24 +368,23 @@ theorem applyStimulusTracedWithCompensationSnapshots_emitted_trace_replays
         (applyStimulusTracedWithCompensationSnapshots closureLimit program state
           stimulus).committedTransitions =
       some (applyStimulusWithCompensationSnapshots closureLimit program state stimulus).state := by
-  cases declared : program.compensationEventSubProcessSnapshots with
-  | none =>
-      simpa [applyStimulusTracedWithCompensationSnapshots,
-        applyStimulusWithCompensationSnapshots,
-        replayCommittedTransitionsWithCompensationSnapshots, declared] using
-        applyStimulusTraced_emitted_trace_replays closureLimit program state stimulus
-          (by simpa [applyStimulusTracedWithCompensationSnapshots, declared] using published)
-  | some _ =>
-      simp only [applyStimulusTracedWithCompensationSnapshots,
-        applyStimulusWithCompensationSnapshots, declared] at published ⊢
-      unfold publishSnapshotTransitions at published ⊢
-      split at *
-      · exact replayCheckedSnapshotTransitions_sound program state
-          (evaluateStimulusWithCompensationSnapshots closureLimit program state stimulus).result.state
-          (evaluateStimulusWithCompensationSnapshots closureLimit program state
-            stimulus).candidateTransitions
-          published
-      all_goals simp at published
+  by_cases focused : program.compensationEventSubProcessSnapshots.isSome ||
+      program.compensationExecution.isSome
+  · simp only [applyStimulusTracedWithCompensationSnapshots,
+      applyStimulusWithCompensationSnapshots, focused, if_true] at published ⊢
+    unfold publishSnapshotTransitions at published ⊢
+    split at *
+    · exact replayCheckedSnapshotTransitions_sound program state
+        (evaluateStimulusWithCompensationSnapshots closureLimit program state stimulus).result.state
+        (evaluateStimulusWithCompensationSnapshots closureLimit program state
+          stimulus).candidateTransitions
+        published
+    all_goals simp at published
+  · simpa [applyStimulusTracedWithCompensationSnapshots,
+      applyStimulusWithCompensationSnapshots,
+      replayCommittedTransitionsWithCompensationSnapshots, focused] using
+      applyStimulusTraced_emitted_trace_replays closureLimit program state stimulus
+        (by simpa [applyStimulusTracedWithCompensationSnapshots, focused] using published)
 
 /-- Every non-committed focused outcome has no public transition trace. -/
 theorem applyStimulusTracedWithCompensationSnapshots_noncommitted_has_no_trace
@@ -384,16 +394,15 @@ theorem applyStimulusTracedWithCompensationSnapshots_noncommitted_has_no_trace
         .committed) :
     (applyStimulusTracedWithCompensationSnapshots closureLimit program state
       stimulus).committedTransitions = [] := by
-  cases declared : program.compensationEventSubProcessSnapshots with
-  | none =>
-      simpa [applyStimulusTracedWithCompensationSnapshots, declared] using
-        applyStimulusTraced_noncommitted_has_no_trace closureLimit program state stimulus
-          (by simpa [applyStimulusWithCompensationSnapshots, declared] using notCommitted)
-  | some _ =>
-      simp only [applyStimulusTracedWithCompensationSnapshots,
-        applyStimulusWithCompensationSnapshots, declared] at notCommitted ⊢
-      unfold publishSnapshotTransitions
-      split <;> simp_all
+  by_cases focused : program.compensationEventSubProcessSnapshots.isSome ||
+      program.compensationExecution.isSome
+  · simp only [applyStimulusTracedWithCompensationSnapshots,
+      applyStimulusWithCompensationSnapshots, focused, if_true] at notCommitted ⊢
+    unfold publishSnapshotTransitions
+    split <;> simp_all
+  · simpa [applyStimulusTracedWithCompensationSnapshots, focused] using
+      applyStimulusTraced_noncommitted_has_no_trace closureLimit program state stimulus
+        (by simpa [applyStimulusWithCompensationSnapshots, focused] using notCommitted)
 
 /-- Focused lifecycle publication is empty whenever its aligned transition trace is empty. -/
 theorem applyStimulusTracedWithCompensationSnapshots_no_trace_has_no_lifecycle
@@ -403,21 +412,20 @@ theorem applyStimulusTracedWithCompensationSnapshots_no_trace_has_no_lifecycle
         stimulus).committedTransitions = []) :
     (applyStimulusTracedWithCompensationSnapshots closureLimit program state
       stimulus).flowNodeOccurrenceLifecycles = [] := by
-  cases declared : program.compensationEventSubProcessSnapshots with
-  | none =>
-      simpa [applyStimulusTracedWithCompensationSnapshots, declared] using
-        applyStimulusTraced_no_trace_has_no_lifecycle closureLimit program state stimulus
-          (by simpa [applyStimulusTracedWithCompensationSnapshots, declared] using noTrace)
-  | some _ =>
-      simp only [applyStimulusTracedWithCompensationSnapshots, declared] at noTrace ⊢
-      unfold publishSnapshotLifecycles
-      simp only [noTrace, List.length_nil]
-      generalize candidateEq :
-        (evaluateStimulusWithCompensationSnapshots closureLimit program state
-          stimulus).candidateLifecycles = candidate
-      cases candidate with
-      | none => rfl
-      | some lifecycles => cases lifecycles <;> simp
+  by_cases focused : program.compensationEventSubProcessSnapshots.isSome ||
+      program.compensationExecution.isSome
+  · simp only [applyStimulusTracedWithCompensationSnapshots, focused, if_true] at noTrace ⊢
+    unfold publishSnapshotLifecycles
+    simp only [noTrace, List.length_nil]
+    generalize candidateEq :
+      (evaluateStimulusWithCompensationSnapshots closureLimit program state
+        stimulus).candidateLifecycles = candidate
+    cases candidate with
+    | none => rfl
+    | some lifecycles => cases lifecycles <;> simp
+  · simpa [applyStimulusTracedWithCompensationSnapshots, focused] using
+      applyStimulusTraced_no_trace_has_no_lifecycle closureLimit program state stimulus
+        (by simpa [applyStimulusTracedWithCompensationSnapshots, focused] using noTrace)
 
 /-- Any snapshot closure refusal rejects the complete command against its submitted pre-state. -/
 theorem applyStimulusWithCompensationSnapshots_closure_refusal_rejects_atomically
@@ -434,7 +442,8 @@ theorem applyStimulusWithCompensationSnapshots_closure_refusal_rejects_atomicall
         state
         internalStepBoundExceeded := false
         ambiguousInternalChoice := false } := by
-  simp only [applyStimulusWithCompensationSnapshots, declared]
+  simp only [applyStimulusWithCompensationSnapshots, declared, Option.isSome_some,
+    Bool.true_or, if_true]
   unfold evaluateStimulusWithCompensationSnapshots
   rw [admitted]
   simp only

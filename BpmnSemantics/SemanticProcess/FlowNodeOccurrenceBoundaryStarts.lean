@@ -20,6 +20,8 @@ inductive SemanticFlowNodeOccurrenceAnchor where
   | wait (id : OccurrenceId)
   | scope (id : ScopeOccurrenceId)
   | callActivity (id : OccurrenceId)
+  | compensationTrigger (id : OccurrenceId)
+  | compensationHandler (id : OccurrenceId)
   | transition (commandId : SemanticId) (transitionIndex localIndex : Nat)
   deriving Repr, DecidableEq
 

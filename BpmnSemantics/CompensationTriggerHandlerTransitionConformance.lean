@@ -1,4 +1,5 @@
 import BpmnSemantics.CompensationTriggerHandlerSemanticFixtures
+import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotTransitionTrace
 import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerTransition
 import BpmnSemantics.SemanticProcess.Transition
 
@@ -63,6 +64,82 @@ theorem zero_subject_throw_uses_no_retained_trigger_capacity_and_releases_one_co
     compensationExecutionStateValid zeroSubjectProgram zeroSubjectAtRetainedLimitState = true ∧
       attemptCompensationTrigger zeroSubjectProgram triggerOperation
         zeroSubjectAtRetainedLimitState = .applied zeroSubjectAtRetainedLimitSuccessor := by
+  decide +kernel
+
+theorem compensation_execution_without_snapshots_uses_the_attempt_aware_whole_stimulus_closure :
+    applyStimulusWithCompensationSnapshots 3 zeroSubjectProgram zeroSubjectWakeState
+        zeroSubjectWakeStimulus =
+      { outcome := .committed
+        state := zeroSubjectWakeSuccessor
+        internalStepBoundExceeded := false
+        ambiguousInternalChoice := false } := by
+  decide +kernel
+
+def zeroSubjectWakeTrace : TracedStimulusResult :=
+  applyStimulusTracedWithCompensationSnapshots 3 zeroSubjectProgram zeroSubjectWakeState
+    zeroSubjectWakeStimulus
+
+def zeroSubjectTriggerRecord : InternalTransitionRecord :=
+  { operationId := triggerOperation.id
+    operationKind := .triggerCompensation
+    origin := triggerOperation.origin
+    owner := rootOwner }
+
+def zeroSubjectEndRecord : InternalTransitionRecord :=
+  { operationId := ⟨"op:End"⟩
+    operationKind := .reachNoneEnd
+    origin := ⟨⟨"End"⟩⟩
+    owner := rootOwner }
+
+def zeroSubjectRootCompletionRecord : InternalTransitionRecord :=
+  { operationId := ⟨"op:complete-root"⟩
+    operationKind := .completeScope
+    origin := ⟨⟨"process"⟩⟩
+    owner := rootOwner }
+
+def zeroSubjectExternalLifecycle : UnnumberedFlowNodeOccurrenceDelta :=
+  { started := []
+    ended :=
+      [{ anchor := .wait (occurrence "C"), terminal := .completed }] }
+
+def zeroSubjectTriggerLifecycle : UnnumberedFlowNodeOccurrenceDelta :=
+  { started :=
+      [{ anchor := .transition ⟨"complete-before-zero-subject-trigger"⟩ 1 0
+         processId := zeroSubjectProgram.processId
+         elementId := ⟨"throw"⟩
+         owner := rootOwner }]
+    ended :=
+      [{ anchor := .transition ⟨"complete-before-zero-subject-trigger"⟩ 1 0
+         terminal := .completed }] }
+
+def zeroSubjectEndLifecycle : UnnumberedFlowNodeOccurrenceDelta :=
+  { started :=
+      [{ anchor := .transition ⟨"complete-before-zero-subject-trigger"⟩ 2 0
+         processId := zeroSubjectProgram.processId
+         elementId := ⟨"End"⟩
+         owner := rootOwner }]
+    ended :=
+      [{ anchor := .transition ⟨"complete-before-zero-subject-trigger"⟩ 2 0
+         terminal := .completed }] }
+
+def zeroSubjectRootCompletionLifecycle : UnnumberedFlowNodeOccurrenceDelta :=
+  { started := [], ended := [] }
+
+theorem compensation_execution_only_whole_stimulus_trace_records_the_trigger_once :
+    zeroSubjectWakeTrace.result.state = zeroSubjectWakeSuccessor ∧
+      zeroSubjectWakeTrace.committedTransitions =
+        [.externalStimulus zeroSubjectWakeStimulus,
+         .internalOperation zeroSubjectTriggerRecord,
+         .internalOperation zeroSubjectEndRecord,
+         .internalOperation zeroSubjectRootCompletionRecord] ∧
+      zeroSubjectWakeTrace.flowNodeOccurrenceLifecycles =
+        [zeroSubjectExternalLifecycle, zeroSubjectTriggerLifecycle,
+         zeroSubjectEndLifecycle, zeroSubjectRootCompletionLifecycle] := by
+  decide +kernel
+
+theorem compensation_execution_only_trace_replays_to_the_committed_successor :
+    replayCommittedTransitionsWithCompensationSnapshots zeroSubjectProgram zeroSubjectWakeState
+        zeroSubjectWakeTrace.committedTransitions = some zeroSubjectWakeSuccessor := by
   decide +kernel
 
 end BpmnSemantics.CompensationTriggerHandlerTransitionConformance
