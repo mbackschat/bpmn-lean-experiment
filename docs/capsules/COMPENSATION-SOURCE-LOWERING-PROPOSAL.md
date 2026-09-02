@@ -153,7 +153,7 @@ This is standards-only source correspondence. No CIB behavior, extension, probe,
 
 This capsule adds no durable ingress, wait, timer, Activity execution, cancellation action, Signal, Update, Query, public projection, host state, or replay branch. It changes only how an already-reviewed Program is constructed. The semantic state relation and every delivery, ordering, concurrency, deduplication, retry, cancellation, and replay obligation remain exactly those of the trigger and handler proposal.
 
-The checkpoint Program contains `triggerCompensation`, but Product 1 reaches host capability only after `supportsSemanticProcessExecution`. The checkpoint identity therefore selects the existing acyclic graph policy and the exact string-only Process-start value domain so the full admission path reaches the intended host refusal. A focused negative witness supplies the newly lowered Program to `assessBpmnProcessAdmission` and to `startBpmnProcess` with a fake client, observes exactly `compensationSchedulerUnavailable`, and proves zero `client.start` calls and therefore no Workflow id, Run id, Event History, or adapter state. This is the smallest executable refinement witness for this stage.
+The checkpoint Program contains `triggerCompensation`, but Product 1 reaches host capability only after `supportsSemanticProcessExecution`. The checkpoint identity therefore selects the existing acyclic graph policy and an empty Process-start value domain in both semantic accounts so the full admission path reaches the intended host refusal without adding data semantics. A focused negative witness supplies the newly lowered Program with `initialVariables: []` to `assessBpmnProcessAdmission` and to `startBpmnProcess` with a fake client, observes exactly `compensationSchedulerUnavailable`, and proves zero `client.start` calls and therefore no Workflow id, Run id, Event History, or adapter state. This is the smallest executable refinement witness for this stage.
 
 Live compensation hosting remains the next separate stage. Its pre-schedule Continue-As-New fence, same-handler retry identity, in-flight Run boundary, concurrent frontier, cancellation drain, failure receipt, Worker replacement, and replay obligations cannot be inferred from source-to-Program equality.
 
@@ -167,7 +167,7 @@ Live compensation hosting remains the next separate stage. Its pre-schedule Cont
 | Checked graph | Independent expected artifact, strict closed decoder in TypeScript and Lean, canonical order permutations, dormant-scope negatives, and old-profile physical omission |
 | Lowering | Independently authored expected Program in TypeScript and Lean plus target, scope, body, binding, dependency, limit, and throw-flow mutations |
 | Runtime preservation | Existing Program/runtime Compensation suites run unchanged; no new transition or public value is introduced |
-| Host isolation | Acyclic graph-policy and string-only Process-start value-domain witnesses, then `assessBpmnProcessAdmission` and fake-client `startBpmnProcess` over the lowered Program, with exact `compensationSchedulerUnavailable`, zero `client.start` calls, and no capability row |
+| Host isolation | Acyclic graph-policy and cross-account empty Process-start value-domain witnesses using `initialVariables: []`, then `assessBpmnProcessAdmission` and fake-client `startBpmnProcess` over the lowered Program, with exact `compensationSchedulerUnavailable`, zero `client.start` calls, and no capability row |
 
 ## Runtime-only inventory and layer ownership
 
