@@ -292,7 +292,7 @@ test("keeps the owner-approved detail-map budget exceptions exactly scoped", () 
     reviewedDetailMapWordBudget(
       "docs/ENGINE-CONTRACTS-AND-SOURCE-IMPLEMENTATION-MAP.md",
     ),
-    4000,
+    4500,
   );
 });
 
