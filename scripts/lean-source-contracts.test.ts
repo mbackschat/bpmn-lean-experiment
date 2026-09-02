@@ -161,6 +161,60 @@ function candidateProjectionReuseViolations(
   );
 }
 
+const evaluatorIndependentRelations = Object.freeze([
+  Object.freeze({
+    path: "BpmnSemantics/SemanticProcess/CompensationTriggerHandlerTransition.lean",
+    relation: "CompensationFrontierStep",
+    evaluator: "activateCompensationFrontier",
+  }),
+]);
+
+function evaluatorDelegationViolations(
+  sourcePath: string,
+  source: string,
+): SourceViolation[] {
+  const normalized = sourcePath.replaceAll(path.sep, "/");
+  const contracts = evaluatorIndependentRelations.filter(
+    (contract) => contract.path === normalized,
+  );
+  if (contracts.length === 0) {
+    return [];
+  }
+
+  const lines = analyzeLeanSource(source).code.split(/\r?\n/u);
+  return contracts.flatMap(({ relation, evaluator }) => {
+    const start = lines.findIndex((line) =>
+      new RegExp(`^inductive\\s+${relation}(?=\\s|$)`, "u").test(line),
+    );
+    if (start < 0) {
+      throw new Error(`${relation} is absent; the guard must be retargeted`);
+    }
+    const rest = lines.slice(start + 1);
+    const relativeEnd = rest.findIndex((line) =>
+      /^(?:@\[|\/-|private\s+)?(?:def|theorem|structure|inductive|abbrev|end)\b/u
+        .test(line),
+    );
+    const end = relativeEnd < 0 ? lines.length : start + relativeEnd + 1;
+    const escapedEvaluator = evaluator.replace(/[?]/gu, "\\?");
+    const evaluatorReference = new RegExp(
+      `(?:^|[^A-Za-z0-9_])${escapedEvaluator}(?![A-Za-z0-9_?'])`,
+      "u",
+    );
+    const delegatedLine = lines
+      .slice(start, end)
+      .findIndex((line) => evaluatorReference.test(line));
+    return delegatedLine < 0
+      ? []
+      : [
+          {
+            path: sourcePath,
+            line: start + delegatedLine + 1,
+            message: `declarative relation \`${relation}\` delegates its meaning to evaluator \`${evaluator}\``,
+          },
+        ];
+  });
+}
+
 export function leanSourceViolations(
   sourcePath: string,
   source: string,
@@ -170,6 +224,7 @@ export function leanSourceViolations(
     ...(moduleViolation === null ? [] : [moduleViolation]),
     ...anonymousExampleViolations(sourcePath, source),
     ...candidateProjectionReuseViolations(sourcePath, source),
+    ...evaluatorDelegationViolations(sourcePath, source),
   ];
 }
 
@@ -301,6 +356,31 @@ def candidateWaitStart? := waitStart?
       "BpmnSemantics/SemanticProcess/FlowNodeOccurrenceBoundaryStarts.lean:5: candidate lifecycle construction reuses open-projection helper `waitStart?`",
     ],
   );
+});
+
+test("declarative compensation relations cannot delegate meaning to their evaluators", () => {
+  const path =
+    "BpmnSemantics/SemanticProcess/CompensationTriggerHandlerTransition.lean";
+  const delegated = `/-! Compensation frontier. -/
+
+inductive CompensationFrontierStep : Nat \u2192 Prop where
+  | activate (selected : activateCompensationFrontier = some 1) :
+      CompensationFrontierStep 1
+`;
+  assert.deepEqual(
+    leanSourceViolations(path, delegated).map(formatViolation),
+    [
+      `${path}:4: declarative relation \`CompensationFrontierStep\` delegates its meaning to evaluator \`activateCompensationFrontier\``,
+    ],
+  );
+
+  const independent = `/-! Compensation frontier. -/
+
+inductive CompensationFrontierStep : Nat \u2192 Prop where
+  | activate (selected : activateHandlers = some 1) :
+      CompensationFrontierStep 1
+`;
+  assert.deepEqual(leanSourceViolations(path, independent), []);
 });
 
 test("Lean literals preserve delimiters, primes, and exact character tokens", () => {
