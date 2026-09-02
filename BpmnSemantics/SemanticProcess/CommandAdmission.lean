@@ -13,6 +13,7 @@ import BpmnSemantics.SemanticProcess.MessageBoundedTask
 import BpmnSemantics.SemanticProcess.MessageKeyCorrelation
 import BpmnSemantics.SemanticProcess.CompensationActivityRetentionProducers
 import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshot
+import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerCompletion
 
 /-! # Semantic Process external command admission
 
@@ -327,13 +328,27 @@ private def sequentialMultiInstanceStartBindingsAdmitted (program : Program)
   | .completeEffect _ effectId result =>
       match state.control with
       | .running instanceId =>
-          match completeEffect state effectId result with
-          | some successor =>
-              if effectId.processInstanceId = instanceId then
-                { outcome := .committed, state := successor }
-              else
-                { outcome := .rejected, state }
-          | none => { outcome := .rejected, state }
+          let compensationMatches := state.compensationHandlerEffectWaits.filter fun wait =>
+            wait.id == effectId
+          let ordinaryMatches := state.effectWaits.filter (effectOccurrenceMatches effectId)
+          match compensationMatches, ordinaryMatches with
+          | [_], [] =>
+              match attemptCompensationHandlerEffectCompletion program state effectId result with
+              | .applied successor =>
+                  if effectId.processInstanceId = instanceId then
+                    { outcome := .committed, state := successor }
+                  else
+                    { outcome := .rejected, state }
+              | .refused _ => { outcome := .rejected, state }
+          | [], [_] =>
+              match completeEffect state effectId result with
+              | some successor =>
+                  if effectId.processInstanceId = instanceId then
+                    { outcome := .committed, state := successor }
+                  else
+                    { outcome := .rejected, state }
+              | none => { outcome := .rejected, state }
+          | _, _ => { outcome := .rejected, state }
       | .notStarted
       | .completed _
       | .cancelled _

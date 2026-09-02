@@ -129,9 +129,14 @@ theorem effect_result_mapping_failure_is_rejected
         { outcome := .rejected, state } := by
     have noIncidents : state.effectIncidents = [] := rfl
     have running : state.control = .running wait.processInstanceId := rfl
+    have noCompensationWaits : state.compensationHandlerEffectWaits = [] := rfl
+    have exactOrdinaryWaits :
+        state.effectWaits.filter (effectOccurrenceMatches effectId) = [wait] := by
+      simp [state, singletonEffectWaitingState, effectId, effectOccurrenceMatches]
     cases declared : program.compensationEventSubProcessSnapshots with
     | none =>
-        simp [admitStimulus, declared, noIncidents, running, noCompletion]
+        simp [admitStimulus, declared, noIncidents, running, noCompensationWaits,
+          exactOrdinaryWaits, noCompletion]
     | some _ => simp [admitStimulus, declared]
   simp [applyStimulus, rejectedAdmission]
 
@@ -173,9 +178,14 @@ theorem effect_result_route_failure_is_rejected
         { outcome := .rejected, state } := by
     have noIncidents : state.effectIncidents = [] := rfl
     have running : state.control = .running wait.processInstanceId := rfl
+    have noCompensationWaits : state.compensationHandlerEffectWaits = [] := rfl
+    have exactOrdinaryWaits :
+        state.effectWaits.filter (effectOccurrenceMatches effectId) = [wait] := by
+      simp [state, singletonEffectWaitingState, effectId, effectOccurrenceMatches]
     cases declared : program.compensationEventSubProcessSnapshots with
     | none =>
-        simp [admitStimulus, declared, noIncidents, running, noCompletion]
+        simp [admitStimulus, declared, noIncidents, running, noCompensationWaits,
+          exactOrdinaryWaits, noCompletion]
     | some _ => simp [admitStimulus, declared]
   simp [applyStimulus, rejectedAdmission]
 
@@ -451,7 +461,7 @@ theorem effect_identity_mismatch_is_rejected
       simp [effectOccurrenceMatches, noMatch]
     apply applyStimulus_rejected_of_admission
     cases declared : program.compensationEventSubProcessSnapshots <;>
-      simp [admitStimulus, declared, completeEffect, initialState,
+      simp [admitStimulus, declared, initialState,
         singletonEffectWaitingState, noOccurrence]
   · rcases remainingMismatch with elementMismatch | activationMismatch
     · have noMatch : ¬ (
@@ -465,7 +475,7 @@ theorem effect_identity_mismatch_is_rejected
         simp [effectOccurrenceMatches, noMatch]
       apply applyStimulus_rejected_of_admission
       cases declared : program.compensationEventSubProcessSnapshots <;>
-        simp [admitStimulus, declared, completeEffect, initialState,
+        simp [admitStimulus, declared, initialState,
           singletonEffectWaitingState, noOccurrence]
     · have noMatch : ¬ (
           (wait.processInstanceId = submittedEffectId.processInstanceId ∧
@@ -478,7 +488,7 @@ theorem effect_identity_mismatch_is_rejected
         simp [effectOccurrenceMatches, noMatch]
       apply applyStimulus_rejected_of_admission
       cases declared : program.compensationEventSubProcessSnapshots <;>
-        simp [admitStimulus, declared, completeEffect, initialState,
+        simp [admitStimulus, declared, initialState,
           singletonEffectWaitingState, noOccurrence]
 
 end BpmnSemantics.SemanticProcess

@@ -1,5 +1,6 @@
 import BpmnSemantics.CompensationTriggerHandlerSemanticFixtures
 import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerCompletion
+import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotCommandAdmission
 
 /-! # Compensation handler completion and failure conformance -/
 
@@ -86,6 +87,30 @@ theorem completion_evaluator_is_sound_for_the_declarative_relation :
     CompensationHandlerCompletionStep program triggeredState waitB.id (.success [])
       afterBState := by
   apply attemptCompensationHandlerEffectCompletion_sound
+  decide +kernel
+
+private def completeBStimulus : Stimulus :=
+  .completeEffect ⟨"complete-b"⟩ waitB.id (.success [])
+
+private def failCStimulus : Stimulus :=
+  .completeEffect ⟨"fail-c"⟩ waitC.id failureResult
+
+theorem command_admission_dispatches_exact_compensation_success_and_failure :
+    (admitStimulusWithCompensationSnapshots program triggeredState
+        completeBStimulus).outcome = .committed ∧
+      (admitStimulusWithCompensationSnapshots program triggeredState
+        completeBStimulus).state = afterBState ∧
+      (admitStimulusWithCompensationSnapshots program triggeredState
+        failCStimulus).outcome = .committed ∧
+      (admitStimulusWithCompensationSnapshots program triggeredState
+        failCStimulus).state = failedState := by
+  decide +kernel
+
+theorem cross_family_effect_identity_collision_rejects_the_exact_submitted_state :
+    (admitStimulusWithCompensationSnapshots program effectCollisionState
+        completeBStimulus).outcome = .rejected ∧
+      (admitStimulusWithCompensationSnapshots program effectCollisionState
+        completeBStimulus).state = effectCollisionState := by
   decide +kernel
 
 end BpmnSemantics.CompensationTriggerHandlerCompletionConformance
