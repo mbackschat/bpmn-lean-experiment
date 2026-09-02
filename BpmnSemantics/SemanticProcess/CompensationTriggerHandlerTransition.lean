@@ -134,7 +134,7 @@ private def insertTrigger (trigger : CompensationTriggerExecution)
     (triggers : List CompensationTriggerExecution) : List CompensationTriggerExecution :=
   canonicalInsertBy triggerBefore trigger triggers
 
-private def insertWait (wait : CompensationHandlerEffectWait)
+def insertCompensationHandlerEffectWait (wait : CompensationHandlerEffectWait)
     (waits : List CompensationHandlerEffectWait) : List CompensationHandlerEffectWait :=
   canonicalInsertBy waitBefore wait waits
 
@@ -240,7 +240,8 @@ private def activateHandlers (program : Program) (trigger : CompensationTriggerE
             handlerId := handler.identity.id
             descriptor := definition.body.descriptor
             arguments }
-        pure (updated :: handlers, insertWait wait waits, finalActivations)
+        pure (updated :: handlers,
+          insertCompensationHandlerEffectWait wait waits, finalActivations)
       else do
         let (handlers, waits, finalActivations) ←
           activateHandlers program trigger rest activations
@@ -263,7 +264,7 @@ inductive CompensationFrontierStep (program : Program) (state : RuntimeState)
       (selected : activateCompensationFrontier program state trigger = some activation) :
       CompensationFrontierStep program state trigger activation
 
-private def compensationExecutionCapacityRefusal?
+def compensationExecutionCapacityRefusal?
     (declaration : CompensationExecutionDeclaration)
     (triggers : List CompensationTriggerExecution)
     (waits : List CompensationHandlerEffectWait) : Option CompensationTriggerRefusal :=
@@ -287,7 +288,7 @@ private def clearClaimedActivityRecords (owner : ScopeOccurrenceId) :
       (if retention.owner = owner then { retention with records := [] } else retention) ::
         clearClaimedActivityRecords owner rest
 
-private def completeTriggerStateValid (program : Program) (state : RuntimeState) : Bool :=
+def compensationTriggerHandlerStateValid (program : Program) (state : RuntimeState) : Bool :=
   compensationActivityRetentionStateValid program state &&
     compensationEventSubProcessSnapshotStateValid program state &&
     compensationExecutionStateValid program state
@@ -307,7 +308,7 @@ def attemptCompensationTrigger (program : Program) (operation : SemanticOperatio
                 (state.scopeOccurrences.filter fun occurrence =>
                   occurrence.id == owner && occurrence.parent.isNone).length != 1 then
               .disabled state
-            else if !completeTriggerStateValid program state then
+            else if !compensationTriggerHandlerStateValid program state then
               .refused .invalidState
             else if state.compensationTriggers.any fun trigger =>
                 trigger.lifecycle == .active && trigger.owner == owner then
@@ -318,7 +319,7 @@ def attemptCompensationTrigger (program : Program) (operation : SemanticOperatio
                   let successor :=
                     { state with
                       tokens := addToken (removeToken state.tokens input owner) output owner }
-                  if completeTriggerStateValid program successor then .applied successor
+                  if compensationTriggerHandlerStateValid program successor then .applied successor
                   else .refused .invalidState
               | some selected =>
                   let triggerId := nextOccurrence owner.processInstanceId operationId.value
@@ -336,7 +337,8 @@ def attemptCompensationTrigger (program : Program) (operation : SemanticOperatio
                   | some activated =>
                       let triggers := insertTrigger activated.trigger state.compensationTriggers
                       let waits := activated.waits.foldl (fun current wait =>
-                        insertWait wait current) state.compensationHandlerEffectWaits
+                        insertCompensationHandlerEffectWait wait current)
+                        state.compensationHandlerEffectWaits
                       match compensationExecutionCapacityRefusal? declaration triggers waits with
                       | some reason => .refused reason
                       | none =>
@@ -352,7 +354,8 @@ def attemptCompensationTrigger (program : Program) (operation : SemanticOperatio
                               compensationTriggers := triggers
                               compensationHandlerEffectWaits := waits
                               effectActivations := activated.effectActivations }
-                          if completeTriggerStateValid program successor then .applied successor
+                          if compensationTriggerHandlerStateValid program successor then
+                            .applied successor
                           else .refused .invalidState
         | _, _ => .disabled state
   | _, _ => .refused .invalidProgram

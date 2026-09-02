@@ -130,6 +130,28 @@ def compensatingHandlerC : CompensationHandlerExecution :=
   { identity := { id := occurrence "HC", subject := subjectC, handlerElementId := ⟨"HC"⟩ }
     lifecycle := .compensating none (occurrence "HC") }
 
+def compensatingHandlerA : CompensationHandlerExecution :=
+  { identity := pendingHandlerA.identity
+    lifecycle := .compensating none (occurrence "HA") }
+
+def compensatedHandlerA : CompensationHandlerExecution :=
+  { identity := pendingHandlerA.identity, lifecycle := .compensated }
+
+def compensatedHandlerB : CompensationHandlerExecution :=
+  { identity := compensatingHandlerB.identity, lifecycle := .compensated }
+
+def compensatedHandlerC : CompensationHandlerExecution :=
+  { identity := compensatingHandlerC.identity, lifecycle := .compensated }
+
+def failedHandlerC : CompensationHandlerExecution :=
+  { identity := compensatingHandlerC.identity, lifecycle := .failed }
+
+def terminatedHandlerA : CompensationHandlerExecution :=
+  { identity := pendingHandlerA.identity, lifecycle := .terminated }
+
+def terminatedHandlerB : CompensationHandlerExecution :=
+  { identity := compensatingHandlerB.identity, lifecycle := .terminated }
+
 def activeTrigger : CompensationTriggerExecution :=
   { id := occurrence "trigger"
     owner := rootOwner
@@ -150,6 +172,13 @@ def waitC : CompensationHandlerEffectWait :=
   { id := occurrence "HC"
     triggerId := activeTrigger.id
     handlerId := compensatingHandlerC.identity.id
+    descriptor := compensationDescriptor
+    arguments := [] }
+
+def waitA : CompensationHandlerEffectWait :=
+  { id := occurrence "HA"
+    triggerId := activeTrigger.id
+    handlerId := compensatingHandlerA.identity.id
     descriptor := compensationDescriptor
     arguments := [] }
 
@@ -180,6 +209,115 @@ def triggeredState : RuntimeState :=
   { activeState with
     compensationActivityRetentions :=
       [{ owner := rootOwner, nextCompletionOrdinal := 3, records := [] }] }
+
+def afterBTrigger : CompensationTriggerExecution :=
+  { activeTrigger with
+    handlers := [compensatingHandlerA, compensatedHandlerB, compensatingHandlerC] }
+
+def afterBState : RuntimeState :=
+  { triggeredState with
+    compensationTriggers := [afterBTrigger]
+    compensationHandlerEffectWaits := [waitA, waitC]
+    effectActivations :=
+      [{ elementId := ⟨"EB"⟩, count := 1 }, { elementId := ⟨"HA"⟩, count := 1 },
+       { elementId := ⟨"HC"⟩, count := 1 }] }
+
+def afterBThenATrigger : CompensationTriggerExecution :=
+  { activeTrigger with
+    handlers := [compensatedHandlerA, compensatedHandlerB, compensatingHandlerC] }
+
+def afterBThenAState : RuntimeState :=
+  { afterBState with
+    compensationTriggers := [afterBThenATrigger]
+    compensationHandlerEffectWaits := [waitC] }
+
+def succeededTrigger : CompensationTriggerExecution :=
+  { activeTrigger with
+    lifecycle := .succeeded
+    handlers := [compensatedHandlerA, compensatedHandlerB, compensatedHandlerC] }
+
+def allSucceededState : RuntimeState :=
+  { afterBThenAState with
+    tokens := [{ placeId := ⟨"place:done"⟩, owner := rootOwner }]
+    compensationTriggers := [succeededTrigger]
+    compensationHandlerEffectWaits := [] }
+
+def afterCFirstTrigger : CompensationTriggerExecution :=
+  { activeTrigger with
+    handlers := [pendingHandlerA, compensatingHandlerB, compensatedHandlerC] }
+
+def afterCFirstState : RuntimeState :=
+  { triggeredState with
+    compensationTriggers := [afterCFirstTrigger]
+    compensationHandlerEffectWaits := [waitB] }
+
+def failureResult : EffectExecutionResult :=
+  .bpmnError "compensation-rejected" (some "downstream rejected the reversal") []
+
+def handlerFailure : CompensationHandlerFailure :=
+  { kind := .compensationHandlerFailure
+    triggerId := activeTrigger.id
+    handlerId := compensatingHandlerC.identity.id
+    effectId := waitC.id
+    code := "compensation-rejected"
+    message := some "downstream rejected the reversal" }
+
+def failedTrigger : CompensationTriggerExecution :=
+  { activeTrigger with
+    lifecycle := .failed
+    handlers := [terminatedHandlerA, terminatedHandlerB, failedHandlerC] }
+
+def failedState : RuntimeState :=
+  { triggeredState with
+    control := .failed instanceId handlerFailure
+    scopeOccurrences := []
+    compensationActivityRetentions := []
+    compensationTriggers := [failedTrigger]
+    compensationHandlerEffectWaits := [] }
+
+def delayedExecutionDeclaration : CompensationExecutionDeclaration :=
+  { executionDeclaration with
+    dependencies :=
+      [{ predecessorElementId := ⟨"B"⟩, successorElementId := ⟨"C"⟩ }] }
+
+def delayedProgram : Program :=
+  { program with compensationExecution := some delayedExecutionDeclaration }
+
+def delayedActiveTrigger : CompensationTriggerExecution :=
+  { activeTrigger with
+    handlers := [compensatingHandlerA,
+      { compensatingHandlerB with lifecycle := .pending (some restoredContext) },
+      compensatingHandlerC]
+    dependencies :=
+      [{ predecessor := subjectB, successor := subjectC, reason := .sequenceFlow }] }
+
+def delayedWaitA : CompensationHandlerEffectWait :=
+  { waitA with triggerId := delayedActiveTrigger.id }
+
+def delayedWaitC : CompensationHandlerEffectWait :=
+  { waitC with triggerId := delayedActiveTrigger.id }
+
+def delayedTriggeredState : RuntimeState :=
+  { triggeredState with
+    compensationTriggers := [delayedActiveTrigger]
+    compensationHandlerEffectWaits := [delayedWaitA, delayedWaitC]
+    effectActivations :=
+      [{ elementId := ⟨"HA"⟩, count := 1 }, { elementId := ⟨"HC"⟩, count := 1 }] }
+
+def delayedAfterCTrigger : CompensationTriggerExecution :=
+  { delayedActiveTrigger with
+    handlers := [compensatingHandlerA, compensatingHandlerB, compensatedHandlerC] }
+
+def delayedAfterCWaitB : CompensationHandlerEffectWait :=
+  { waitB with triggerId := delayedActiveTrigger.id }
+
+def delayedAfterCState : RuntimeState :=
+  { delayedTriggeredState with
+    compensationTriggers := [delayedAfterCTrigger]
+    compensationHandlerEffectWaits := [delayedAfterCWaitB, delayedWaitA]
+    effectActivations :=
+      [{ elementId := ⟨"EB"⟩, count := 1 }, { elementId := ⟨"HA"⟩, count := 1 },
+       { elementId := ⟨"HC"⟩, count := 1 }] }
 
 def secondTriggerEmptySourceState : RuntimeState :=
   { triggeredState with
