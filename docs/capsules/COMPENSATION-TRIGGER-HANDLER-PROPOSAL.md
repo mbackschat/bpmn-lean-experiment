@@ -364,7 +364,7 @@ The first green checkpoint consists only of the complete Program/Runtime/observa
 
 The Program owns the closed single-effect handler bodies, trigger operation identity, exact dependency declarations, and limits. RuntimeState owns trigger/handler occurrences, occurrence dependencies, restored private context, dedicated handler effect waits, lifecycle, source-record consumption, and terminal failure. The pure semantic core and Lean independently own transition meaning; the canonical semantic observation owns the public failure discriminator.
 
-Source later owns exact XML provenance and checked lowering. Temporal later owns durable scheduling, Activity execution, transport retries, cancellation delivery, continuation, and replay without adding BPMN facts. Publication and Product 2 own no field in this checkpoint.
+Source later owns exact XML provenance and checked lowering. Temporal later owns durable scheduling, Activity execution, transport retries, cancellation delivery, continuation, and replay without adding BPMN facts. Publication, Product 1, and Product 2 own no new semantic field in this checkpoint; their strict readers must nevertheless preserve, reject, or classify the exact widened terminal value so the closed-union migration cannot leave mixed contracts.
 
 ## Versioning consequences
 
@@ -448,7 +448,7 @@ Every headroom figure is the measured nonblank-line remainder below the 800-line
 
 Selected: root-global synchronous triggering, exact eligible-source consumption, occurrence-level dependencies, reverse dependency order, concurrent maximal frontiers, declaration-owned one-effect bodies, snapshot restoration, typed terminal Process failure, complete region cancellation, stale-result refusal, capacity, a failed v1 receipt, and future hosting obligations.
 
-Open: source admission, shared scenario wires, Product 1 publication, targeted/asynchronous throws, general handler graphs and data, other dependencies, loops and Multi-Instance Sub-Processes, recursive compensation, Transactions/Cancel Events, failure recovery, CIB profile behavior, live refinement, whole models, corpus, Product 2, and conformance.
+Open: source admission, shared scenario wires, Product 1 compensation capability, targeted/asynchronous throws, general handler graphs and data, other dependencies, loops and Multi-Instance Sub-Processes, recursive compensation, Transactions/Cancel Events, failure recovery, CIB profile behavior, live refinement, whole models, corpus, Product 2 UI/journey behavior, and conformance.
 
 Reopen before implementation if review finds the fail-fast rule incompatible with BPMN lifecycle, the body union cannot widen without reinterpretation, restored context cannot reach the exact effect, the frontier cannot be hosted without observable serialization, failed Process publication collapses into infrastructure failure, or cancellation cannot drain Activities while preserving identity.
 
@@ -456,7 +456,7 @@ Reopen before implementation if review finds the fail-fast rule incompatible wit
 
 The immutable proposal target and both correction audits are green and recorded below. That verdict approves implementation only within the first checkpoint boundary.
 
-After approval, the first implementation stage stops when the complete Program/Runtime/observation representation and independent Lean/TypeScript semantics named above are green. That checkpoint requires independent review before source, profile, shared scenario, CIB, Temporal hosting, Product 1 publication, corpus, or Product 2 work begins.
+After approval, the first implementation stage stops when the complete Program/Runtime/observation/receipt representation, its mandatory strict-reader and terminal-value propagation, and the independent Lean/TypeScript semantics named above are green. The propagation may touch Temporal, Product 1, and Product 2 only to decode, preserve, reject continuation of, or terminally classify the exact widened value; it must not admit the compensation profile, schedule or execute a handler, publish a compensation capability, or add UI/journey behavior. That checkpoint requires independent review before source, profile, shared scenario, CIB, live Temporal hosting, Product 1 compensation capability, corpus, or Product 2 UI/journey work begins.
 
 ## Independent cold-review receipt
 
