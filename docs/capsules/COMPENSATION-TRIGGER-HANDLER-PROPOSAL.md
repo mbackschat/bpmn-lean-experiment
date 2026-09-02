@@ -449,11 +449,11 @@ The operation census must classify trigger creation and frontier activation as o
 | [TS control-position projection](../../packages/semantic-core/src/control-position-projection.ts) | 383 | failed terminal-empty arm only |
 | [TS internal attempt](../../packages/semantic-core/src/internal-transition-attempt.ts) | 668 | trigger-attempt delegation only |
 | [Lean Program](../../BpmnSemantics/SemanticProcessContract.lean) | 54 | declaration reference only; extract the contract first if the reference cannot fit |
-| [Lean RuntimeState](../../BpmnSemantics/SemanticProcess/RuntimeState.lean) | 110 | trigger collection reference only |
+| [Lean RuntimeState](../../BpmnSemantics/SemanticProcess/RuntimeState.lean) | 75 | trigger collection reference only |
 | [Lean effect completion](../../BpmnSemantics/SemanticProcess/EffectCompletion.lean) | 721 | compensation relation only |
-| [Lean command admission](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean) | 264 | result dispatch only |
-| [Lean transition](../../BpmnSemantics/SemanticProcess/Transition.lean) | 20 | extract before adding the new dispatcher arm |
-| [Lean internal attempt](../../BpmnSemantics/SemanticProcess/InternalOperationAttempt.lean) | 757 | trigger-attempt delegation only |
+| [Lean command admission](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean) | 249 | result dispatch only |
+| [Lean transition](../../BpmnSemantics/SemanticProcess/Transition.lean) | 139 | extract before adding the new dispatcher arm |
+| [Lean internal attempt](../../BpmnSemantics/SemanticProcess/InternalOperationAttempt.lean) | 752 | trigger-attempt delegation only |
 | [Lean scenario contract](../../BpmnSemantics/Scenario.lean) | 437 | failed union only |
 | [Lean observation consumer](../../BpmnSemantics/SemanticProcess/Scenario.lean) | 227 | failed projection and agreement only |
 | [Lean JSON](../../BpmnSemantics/SemanticProcessJsonMain.lean) | 229 | failed encoding only |
