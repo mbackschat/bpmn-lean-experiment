@@ -74,12 +74,11 @@ def canonicalCompensationRecordsUtf8Bytes : List CompletedCompensableActivity �
         total + canonicalCompletedCompensableActivityUtf8Bytes record + 1)
         (canonicalCompletedCompensableActivityUtf8Bytes first) + 2
 
-private def recordsHaveContiguousOrdinals :
-    Nat → List CompletedCompensableActivity → Bool
-  | _, [] => true
-  | expected, record :: rest =>
-      record.completionOrdinal == expected &&
-        recordsHaveContiguousOrdinals (expected + 1) rest
+private def recordsHaveIncreasingOrdinals : List CompletedCompensableActivity → Bool
+  | [] | [_] => true
+  | left :: right :: rest =>
+      left.completionOrdinal < right.completionOrdinal &&
+        recordsHaveIncreasingOrdinals (right :: rest)
 
 private def recordIdentityUnique (records : List CompletedCompensableActivity)
     (record : CompletedCompensableActivity) : Bool :=
@@ -95,8 +94,7 @@ private def retentionRegisterValid
     (state.scopeOccurrences.filter fun occurrence =>
       occurrence.id == retention.owner) = [{ id := retention.owner, parent := none }] &&
     retention.nextCompletionOrdinal > 0 && safeNat retention.nextCompletionOrdinal &&
-    recordsHaveContiguousOrdinals 1 retention.records &&
-    retention.nextCompletionOrdinal == retention.records.length + 1 &&
+    recordsHaveIncreasingOrdinals retention.records &&
     retention.records.length ≤ declaration.maxRecords &&
     canonicalCompensationRecordsUtf8Bytes retention.records ≤
       declaration.maxCanonicalBytes &&
@@ -105,6 +103,8 @@ private def retentionRegisterValid
         record.id.processInstanceId == retention.owner.processInstanceId &&
         declarationTargetsActivity declaration record.id &&
         recordIdentityUnique retention.records record &&
+        record.completionOrdinal > 0 &&
+        record.completionOrdinal < retention.nextCompletionOrdinal &&
         safeNat record.completionOrdinal
 
 /-- Program-aware state validity. Lean's list represents both physical omission and empty collection;

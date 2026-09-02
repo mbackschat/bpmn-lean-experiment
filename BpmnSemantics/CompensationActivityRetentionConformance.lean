@@ -338,17 +338,28 @@ def extraRegisterState : RuntimeState :=
         [{ owner := { owner with activation := 2 }, nextCompletionOrdinal := 1,
            records := [] }] }
 
-def noncontiguousState : RuntimeState :=
+def consumedPrefixState : RuntimeState :=
   { startState with
     compensationActivityRetentions :=
       [{ owner, nextCompletionOrdinal := 3,
          records := [{ id := activity, completionOrdinal := 2 }] }] }
 
-theorem malformed_prior_registers_are_refused_without_mutation :
+def nextAfterConsumedPrefix : CompletedCompensableActivity :=
+  { id := activity 2, completionOrdinal := 3 }
+
+def stateAfterConsumedPrefixInsertion : RuntimeState :=
+  { startState with
+    compensationActivityRetentions :=
+      [{ owner, nextCompletionOrdinal := 4,
+         records :=
+          [{ id := activity, completionOrdinal := 2 }, nextAfterConsumedPrefix] }] }
+
+theorem malformed_extra_register_is_refused_while_consumed_prefix_remains_appendable :
     retainCompletedCompensableActivity retentionProgram owner ordinaryFacts extraRegisterState =
         .refused .invalidState extraRegisterState ∧
-      retainCompletedCompensableActivity retentionProgram owner ordinaryFacts noncontiguousState =
-        .refused .invalidState noncontiguousState := by
+      retainCompletedCompensableActivity retentionProgram owner
+          (.ordinaryUserTask (activity 2)) consumedPrefixState =
+        .retained stateAfterConsumedPrefixInsertion nextAfterConsumedPrefix := by
   decide +kernel
 
 def unrelatedOwner : ScopeOccurrenceId :=
