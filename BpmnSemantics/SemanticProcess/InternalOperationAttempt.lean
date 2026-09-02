@@ -1,4 +1,5 @@
 import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshot
+import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerTransition
 
 /-! # Refusable internal operation attempts
 
@@ -16,11 +17,16 @@ structure AppliedInternalOperation where
   successor : RuntimeState
   deriving Repr, DecidableEq
 
+inductive InternalOperationRefusal where
+  | parentContext (detail : CompensationParentContextRefusal)
+  | compensationTrigger (detail : CompensationTriggerRefusal)
+  deriving Repr, DecidableEq
+
 inductive InternalOperationAttempt where
   | disabled (operation : SemanticOperation)
   | applied (step : AppliedInternalOperation)
   | refused (operation : SemanticOperation)
-      (reason : CompensationParentContextRefusal)
+      (reason : InternalOperationRefusal)
   deriving Repr, DecidableEq
 
 def InternalOperationAttempt.operation : InternalOperationAttempt → SemanticOperation
@@ -34,7 +40,7 @@ def applyValidSnapshotSuccessor (program : Program)
   if compensationEventSubProcessSnapshotStateValid program successor then
     .applied { operation, successor }
   else
-    .refused operation .invalidState
+    .refused operation (.parentContext .invalidState)
 
 /-- An applied snapshot-aware successor has passed the complete aggregate-state invariant. -/
 theorem applyValidSnapshotSuccessor_applied_stateValid

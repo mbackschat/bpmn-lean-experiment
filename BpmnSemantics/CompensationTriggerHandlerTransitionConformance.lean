@@ -1,5 +1,6 @@
 import BpmnSemantics.CompensationTriggerHandlerSemanticFixtures
 import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerTransition
+import BpmnSemantics.SemanticProcess.Transition
 
 /-! # Compensation trigger construction and frontier conformance -/
 
@@ -23,6 +24,11 @@ theorem trigger_atomically_consumes_sources_and_starts_the_complete_maximal_fron
 theorem trigger_evaluator_is_sound_for_the_declarative_relation :
     CompensationTriggerStep program triggerOperation preTriggerState triggeredState := by
   apply attemptCompensationTrigger_sound
+  decide +kernel
+
+theorem internal_dispatch_commits_the_same_atomic_trigger_successor :
+    attemptInternalOperation program triggerOperation preTriggerState =
+      .applied { operation := triggerOperation, successor := triggeredState } := by
   decide +kernel
 
 theorem frontier_keeps_a_pending_while_b_and_c_start_from_the_frozen_snapshot :

@@ -64,14 +64,14 @@ private def internalOperationAttemptBefore
 /-- Select the private refusal detail from the lowest canonical operation ID. -/
 def canonicalInternalOperationRefusal?
     (attempts : List InternalOperationAttempt) :
-    Option CompensationParentContextRefusal :=
+    Option InternalOperationRefusal :=
   (InternalCommutation.sortBy internalOperationAttemptBefore attempts).findSome? fun
     | .refused _ reason => some reason
     | .disabled _ | .applied _ => none
 
 private structure SnapshotInternalTransitionFrontier where
   transitions : List (SemanticOperation × RuntimeState)
-  refusal : Option CompensationParentContextRefusal
+  refusal : Option InternalOperationRefusal
 
 private def snapshotInternalTransitionFrontier (program : Program)
     (state : RuntimeState) : SnapshotInternalTransitionFrontier :=
@@ -94,7 +94,7 @@ private structure SnapshotClosureTraceResult where
   ambiguousChoice : Bool
   records : Option (List InternalTransitionRecord)
   lifecycles : Option (List UnnumberedFlowNodeOccurrenceDelta)
-  refusal : Option CompensationParentContextRefusal
+  refusal : Option InternalOperationRefusal
 
 private def prependSnapshotRecord (head : Option InternalTransitionRecord)
     (tail : Option (List InternalTransitionRecord)) : Option (List InternalTransitionRecord) := do
@@ -112,7 +112,7 @@ private structure SnapshotInternalBatchResult where
 private inductive SnapshotInternalBatchAttempt where
   | disabled
   | applied (result : SnapshotInternalBatchResult)
-  | refused (reason : CompensationParentContextRefusal)
+  | refused (reason : InternalOperationRefusal)
 
 private def fireSnapshotInternalBatch (program : Program) (footprintState : RuntimeState)
     (commandId : SemanticId) :
@@ -422,7 +422,7 @@ theorem applyStimulusTracedWithCompensationSnapshots_no_trace_has_no_lifecycle
 /-- Any snapshot closure refusal rejects the complete command against its submitted pre-state. -/
 theorem applyStimulusWithCompensationSnapshots_closure_refusal_rejects_atomically
     (closureLimit : Nat) (program : Program) (state admittedState : RuntimeState)
-    (stimulus : Stimulus) (reason : CompensationParentContextRefusal)
+    (stimulus : Stimulus) (reason : InternalOperationRefusal)
     (declaration : CompensationEventSubProcessSnapshotDeclaration)
     (declared : program.compensationEventSubProcessSnapshots = some declaration)
     (admitted : admitStimulusWithCompensationSnapshots program state stimulus =

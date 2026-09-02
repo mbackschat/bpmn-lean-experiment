@@ -133,7 +133,7 @@ theorem attemptInternalOperation_enterScope_applied_shape
         childOccurrenceAfterEntry? state input childScopeId entered = some child ∧
         reserveCompensationParentContext program state child = .applied prepared ∧
         enterScopeState? prepared input childEntry childScopeId = some step.successor := by
-  rw [attemptInternalOperation, declared] at applied
+  simp only [attemptInternalOperation, declared] at applied
   unfold attemptEnterScope at applied
   cases enteredResult : enterScopeState? state input childEntry childScopeId with
   | none => simp [enteredResult] at applied
@@ -162,7 +162,7 @@ theorem attemptInternalOperation_enterScope_applied_stateValid
     (applied : attemptInternalOperation program
       (.enterScope id origin input childEntry childScopeId) state = .applied step) :
     compensationEventSubProcessSnapshotStateValid program step.successor = true := by
-  rw [attemptInternalOperation, declared] at applied
+  simp only [attemptInternalOperation, declared] at applied
   unfold attemptEnterScope at applied
   cases enteredResult : enterScopeState? state input childEntry childScopeId with
   | none => simp [enteredResult] at applied
@@ -195,7 +195,7 @@ theorem attemptInternalOperation_enterBoundedScope_applied_shape
         reserveCompensationParentContext program state child = .applied prepared ∧
         armBoundedScopeState? prepared input childEntry childScopeId boundaryTimer =
           some step.successor := by
-  rw [attemptInternalOperation, declared] at applied
+  simp only [attemptInternalOperation, declared] at applied
   unfold attemptEnterBoundedScope at applied
   cases enteredResult : armBoundedScopeState? state input childEntry childScopeId boundaryTimer with
   | none => simp [enteredResult] at applied
@@ -226,7 +226,7 @@ theorem attemptInternalOperation_enterBoundedScope_applied_stateValid
       (.enterBoundedScope id origin input childEntry childScopeId boundaryTimer) state =
         .applied step) :
     compensationEventSubProcessSnapshotStateValid program step.successor = true := by
-  rw [attemptInternalOperation, declared] at applied
+  simp only [attemptInternalOperation, declared] at applied
   unfold attemptEnterBoundedScope at applied
   cases enteredResult : armBoundedScopeState? state input childEntry childScopeId boundaryTimer with
   | none => simp [enteredResult] at applied
@@ -259,7 +259,7 @@ theorem attemptInternalOperation_completeScope_applied_shape
         captureCompensationParentContext? program state occurrence = some snapshot ∧
         completeBoundedScope? program prepared scopeId parentOutput = some completed ∧
         step.successor = finishRootCompletion completed occurrence .retainPromoted := by
-  rw [attemptInternalOperation, declared] at applied
+  simp only [attemptInternalOperation, declared] at applied
   unfold attemptCompleteScope at applied
   have occurrenceFound : selectedCompletionOccurrence? state scopeId = some occurrence := by
     simp [selectedCompletionOccurrence?, selectedOccurrence]
@@ -304,7 +304,7 @@ theorem attemptInternalOperation_completeScope_applied_stateValid
     (applied : attemptInternalOperation program
       (.completeScope id origin scopeId parentOutput) state = .applied step) :
     compensationEventSubProcessSnapshotStateValid program step.successor = true := by
-  rw [attemptInternalOperation, declared] at applied
+  simp only [attemptInternalOperation, declared] at applied
   unfold attemptCompleteScope at applied
   cases completedBefore : completeBoundedScope? program state scopeId parentOutput with
   | none => simp [completedBefore] at applied

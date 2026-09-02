@@ -25,7 +25,7 @@ def applyPreparedReservation (program : Program)
     (child : RuntimeScopeOccurrence)
     (apply : RuntimeState → Option RuntimeState) : InternalOperationAttempt :=
   match reserveCompensationParentContext program state child with
-  | .refused reason _ => .refused operation reason
+  | .refused reason _ => .refused operation (.parentContext reason)
   | .disabled prepared | .applied prepared =>
       match apply prepared with
       | none => .disabled operation
@@ -133,7 +133,7 @@ def attemptCompleteScope (program : Program)
       selectedCompletionOccurrence? state scopeId with
   | some _, some occurrence =>
       match promoteCompensationParentContext program state occurrence with
-      | .refused reason _ => .refused operation reason
+      | .refused reason _ => .refused operation (.parentContext reason)
       | .disabled prepared =>
           match completeBoundedScope? program prepared scopeId parentOutput with
           | none => .disabled operation

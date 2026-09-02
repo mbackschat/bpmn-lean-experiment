@@ -131,8 +131,9 @@ def higherRefusalOperation : SemanticOperation :=
 /-- Simultaneous refusals select the detail attached to the lowest canonical operation ID. -/
 theorem refusal_detail_selection_is_canonical_not_list_ordered :
     canonicalInternalOperationRefusal?
-      [ .refused higherRefusalOperation .invalidProgram
-      , .refused lowerRefusalOperation .invalidState ] = some .invalidState := by
+      [ .refused higherRefusalOperation (.parentContext .invalidProgram)
+      , .refused lowerRefusalOperation (.parentContext .invalidState) ] =
+        some (.parentContext .invalidState) := by
   decide +kernel
 
 end BpmnSemantics.CompensationEventSubProcessSnapshotIntegrationConformance

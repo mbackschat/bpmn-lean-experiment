@@ -19,6 +19,7 @@ import BpmnSemantics.SemanticProcess.ParallelMultiInstanceTransition
 import BpmnSemantics.SemanticProcess.MessageBoundedTask
 import BpmnSemantics.SemanticProcess.CompensationActivityRetentionProducers
 import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotTransition
+import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerTransition
 
 /-! # Semantic Process internal transitions
 
@@ -468,28 +469,35 @@ private theorem fireWithoutCompensationSnapshots_sound (program : Program)
 /-- Evaluate one exact Program operation through the closed snapshot-aware attempt boundary. -/
 def attemptInternalOperation (program : Program) (operation : SemanticOperation)
     (state : RuntimeState) : InternalOperationAttempt :=
-  match program.compensationEventSubProcessSnapshots with
-  | none =>
-      match fireWithoutCompensationSnapshots? program operation state with
-      | none => .disabled operation
-      | some successor => .applied { operation, successor }
-  | some _ =>
-      match operation with
-      | .enterScope _ _ input childEntry childScopeId =>
-          attemptEnterScope program operation state input childEntry childScopeId
-      | .enterBoundedScope _ _ input childEntry childScopeId boundaryTimer =>
-          attemptEnterBoundedScope program operation state input childEntry childScopeId
-            boundaryTimer
-      | .completeScope _ _ scopeId parentOutput =>
-          attemptCompleteScope program operation state scopeId parentOutput
-      | _ =>
+  match program.compensationExecution, operation with
+  | some _, .triggerCompensation .. =>
+      match attemptCompensationTrigger program operation state with
+      | .disabled _ => .disabled operation
+      | .applied successor => .applied { operation, successor }
+      | .refused reason => .refused operation (.compensationTrigger reason)
+  | _, _ =>
+      match program.compensationEventSubProcessSnapshots with
+      | none =>
           match fireWithoutCompensationSnapshots? program operation state with
           | none => .disabled operation
-          | some successor =>
-              .applied
-                { operation
-                  successor :=
-                    purgeCompensationParentContextsAfterUnsuccessfulScopeRemoval successor }
+          | some successor => .applied { operation, successor }
+      | some _ =>
+          match operation with
+          | .enterScope _ _ input childEntry childScopeId =>
+              attemptEnterScope program operation state input childEntry childScopeId
+          | .enterBoundedScope _ _ input childEntry childScopeId boundaryTimer =>
+              attemptEnterBoundedScope program operation state input childEntry childScopeId
+                boundaryTimer
+          | .completeScope _ _ scopeId parentOutput =>
+              attemptCompleteScope program operation state scopeId parentOutput
+          | _ =>
+              match fireWithoutCompensationSnapshots? program operation state with
+              | none => .disabled operation
+              | some successor =>
+                  .applied
+                    { operation
+                      successor :=
+                        purgeCompensationParentContextsAfterUnsuccessfulScopeRemoval successor }
 
 /-- The legacy operation evaluator is mechanically restricted to declaration-free Programs. -/
 def fire? (program : Program) (operation : SemanticOperation)
@@ -606,12 +614,13 @@ theorem fire_sound (program : Program) (operation : SemanticOperation)
 /-- Snapshot-free Programs use the original two-arm evaluator without reducing snapshot validation. This equality is semantic compatibility and a resource invariant because legacy kernel fixtures reduce the dispatcher repeatedly. -/
 theorem attemptInternalOperation_withoutSnapshotDeclaration
     (program : Program) (operation : SemanticOperation) (state : RuntimeState)
-    (absent : program.compensationEventSubProcessSnapshots = none) :
+    (absent : program.compensationEventSubProcessSnapshots = none)
+    (executionAbsent : program.compensationExecution = none) :
     attemptInternalOperation program operation state =
       match fire? program operation state with
       | none => .disabled operation
       | some successor => .applied { operation, successor } := by
-  simp [attemptInternalOperation, fire?, absent]
+  simp [attemptInternalOperation, fire?, absent, executionAbsent]
 
 /-- Program relation keeps the explicit selected operation identity as semantic input. -/
 def ProgramStep (program : Program) (before : RuntimeState)
@@ -674,6 +683,7 @@ theorem attemptProgramStep_withoutSnapshotDeclaration
     (program : Program) (before : RuntimeState) (choice : OperationId)
     (after : RuntimeState)
     (absent : program.compensationEventSubProcessSnapshots = none)
+    (executionAbsent : program.compensationExecution = none)
     (attempted : AttemptProgramStep program before choice after) :
     ProgramStep program before choice after := by
   rcases attempted with
@@ -681,11 +691,11 @@ theorem attemptProgramStep_withoutSnapshotDeclaration
   cases fired : fire? program operation before with
   | none =>
       rw [attemptInternalOperation_withoutSnapshotDeclaration
-        program operation before absent, fired] at evaluated
+        program operation before absent executionAbsent, fired] at evaluated
       contradiction
   | some firedSuccessor =>
       rw [attemptInternalOperation_withoutSnapshotDeclaration
-        program operation before absent, fired] at evaluated
+        program operation before absent executionAbsent, fired] at evaluated
       have stepEq :
           { operation := operation, successor := firedSuccessor } = step :=
         InternalOperationAttempt.applied.inj evaluated
