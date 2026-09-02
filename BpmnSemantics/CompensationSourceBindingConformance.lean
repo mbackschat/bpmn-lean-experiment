@@ -1,0 +1,11 @@
+import BpmnSemantics.CompensationSourceBindingExecutionLimitConformance
+import BpmnSemantics.CompensationSourceBindingReferenceConformance
+import BpmnSemantics.CompensationSourceBindingStorageLimitConformance
+import BpmnSemantics.CompensationSourceBindingTriggerConformance
+import BpmnSemantics.CompensationSourceBindingValidProgramConformance
+
+/-! # Compensation source definition-binding conformance
+
+Aggregate for the responsibility-split valid-near-miss, reference, trigger, dormancy, and fixed-limit
+definition-binding checks.
+-/
