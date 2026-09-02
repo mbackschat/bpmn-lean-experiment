@@ -9,6 +9,7 @@ import {
   VariableValueKind,
   applyStimulus,
   canonicalCompensationExecutionStateUtf8Bytes,
+  compensationExecutionStateDefects,
   type CompensationTriggerExecution,
   type EffectOccurrenceId,
   type RuntimeState,
@@ -160,27 +161,21 @@ test("rejects a later nonempty trigger byte-preservingly at the retained-record 
 });
 
 test("moves a zero-subject throw at retained-record capacity without adding a tombstone", () => {
-  const program = zeroSubjectProgram(1);
+  const program = singleSubjectProgram(1);
+  const tombstone = succeededSingleSubjectTombstone(program);
   const ready = triggerReadyFixture(program);
-  const owner = ready.state.scopeOccurrences.find(({ parent }) => parent === null)?.id;
-  assert.ok(owner);
-  const tombstone = {
-    id: {
-      processInstanceId: owner.processInstanceId,
-      elementId: "operation:Trigger",
-      activation: 1,
-    },
-    owner,
-    output: "place:Trigger_To_End",
-    lifecycle: "succeeded",
-    handlers: [],
-    dependencies: [],
-  } as const satisfies CompensationTriggerExecution;
+  const retentions = ready.state.compensationActivityRetentions;
+  assert.ok(retentions);
   const state = {
     ...ready.state,
+    compensationActivityRetentions: retentions.map((retention) => ({
+      ...retention,
+      records: [],
+    })),
     compensationTriggers: [tombstone],
     compensationHandlerEffectWaits: [],
   } satisfies RuntimeState;
+  assert.deepEqual(compensationExecutionStateDefects(program, state), []);
 
   const result = applyStimulus(program, state, ready.completion);
 
@@ -219,6 +214,56 @@ function zeroSubjectProgram(maxTriggers: number): SemanticProcessProgram {
       },
     },
   };
+}
+
+function singleSubjectProgram(maxTriggers: number): SemanticProcessProgram {
+  const {
+    compensationEventSubProcessSnapshots: _snapshots,
+    ...withoutSnapshots
+  } = compensationSemanticProgram;
+  void _snapshots;
+  const target = withoutSnapshots.compensationActivityRetention.targets[0];
+  const subject = withoutSnapshots.compensationExecution.subjects[0];
+  if (target === undefined || subject === undefined) {
+    throw new TypeError("missing single-subject compensation fixture");
+  }
+  return {
+    ...withoutSnapshots,
+    compensationActivityRetention: {
+      ...withoutSnapshots.compensationActivityRetention,
+      targets: [target],
+    },
+    compensationExecution: {
+      ...withoutSnapshots.compensationExecution,
+      subjects: [subject],
+      dependencies: [],
+      limits: {
+        ...withoutSnapshots.compensationExecution.limits,
+        maxTriggers,
+        maxHandlers: 1,
+      },
+    },
+  };
+}
+
+function succeededSingleSubjectTombstone(
+  program: SemanticProcessProgram,
+): CompensationTriggerExecution {
+  const ready = triggerReadyFixture(program);
+  const triggered = applyStimulus(program, ready.state, ready.completion).state;
+  const wait = triggered.compensationHandlerEffectWaits?.[0];
+  if (wait === undefined) throw new TypeError("missing single-subject compensation wait");
+  const succeeded = applyStimulus(program, triggered, {
+    kind: StimulusKind.CompleteEffect,
+    commandId: "complete-single-subject-compensation",
+    effectId: wait.id,
+    result: { kind: EffectExecutionResultKind.Success, localPatch: [] },
+  }).state;
+  const tombstone = succeeded.compensationTriggers?.[0];
+  if (tombstone?.lifecycle !== "succeeded") {
+    throw new TypeError("single-subject compensation did not succeed");
+  }
+  return tombstone;
 }
 
 function succeededTombstone(): CompensationTriggerExecution {

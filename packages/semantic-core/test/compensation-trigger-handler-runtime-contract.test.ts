@@ -253,6 +253,27 @@ test("rejects two active triggers owned by the same root", () => {
   );
 });
 
+test("rejects a retained trigger that selected no compensation subject", () => {
+  const emptySucceededTrigger = {
+    ...terminalTrigger(1, "succeeded"),
+    handlers: [],
+    dependencies: [],
+  } as const satisfies CompensationTriggerExecution;
+  const state = {
+    ...initialState,
+    control: { kind: ControlStateKind.Running, instanceId: processInstanceId },
+    compensationTriggers: [emptySucceededTrigger],
+    compensationHandlerEffectWaits: [],
+  } as const satisfies RuntimeState;
+
+  assert.equal(
+    compensationExecutionStateDefects(program, state).includes(
+      CompensationExecutionStateDefect.InvalidTrigger,
+    ),
+    true,
+  );
+});
+
 test("requires exactly one failed trigger and only succeeded trigger tombstones beside it", () => {
   const firstFailed = terminalTrigger(1, "failed");
   const secondFailed = terminalTrigger(2, "failed");

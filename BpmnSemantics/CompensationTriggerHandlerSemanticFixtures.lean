@@ -367,15 +367,49 @@ def succeededEmptyTrigger : CompensationTriggerExecution :=
     handlers := []
     dependencies := [] }
 
-def zeroSubjectAtRetainedLimitState : RuntimeState :=
+def emptySucceededTriggerState : RuntimeState :=
   { initialState with
     control := .running instanceId
     scopeOccurrences := [{ id := rootOwner, parent := none }]
     tokens := [{ placeId := ⟨"place:trigger"⟩, owner := rootOwner }]
     compensationTriggers := [succeededEmptyTrigger] }
 
-def zeroSubjectAtRetainedLimitSuccessor : RuntimeState :=
-  { zeroSubjectAtRetainedLimitState with
+def singleSubjectDeclaration : CompensationExecutionDeclaration :=
+  { executionDeclaration with
+    subjects := [.boundaryActivity ⟨"A"⟩ (boundaryBody "HA")]
+    dependencies := []
+    limits := { maxTriggers := 1, maxHandlers := 1, maxCanonicalBytes := 4096 } }
+
+def singleSubjectProgram : Program :=
+  { zeroSubjectProgram with
+    compensationActivityRetention := some
+      { definitionScopeId := ⟨"scope:process"⟩
+        targets :=
+          [{ activityElementId := ⟨"A"⟩, boundaryEventElementId := ⟨"BA"⟩,
+             compensationActivityElementId := ⟨"HA"⟩ }]
+        maxRecords := 1
+        maxCanonicalBytes := 4096 }
+    compensationExecution := some singleSubjectDeclaration }
+
+def succeededSingleSubjectTrigger : CompensationTriggerExecution :=
+  { id := occurrence "trigger"
+    owner := rootOwner
+    output := ⟨"place:done"⟩
+    lifecycle := .succeeded
+    handlers := [compensatedHandlerA]
+    dependencies := [] }
+
+def singleSubjectAtRetainedLimitState : RuntimeState :=
+  { initialState with
+    control := .running instanceId
+    scopeOccurrences := [{ id := rootOwner, parent := none }]
+    tokens := [{ placeId := ⟨"place:trigger"⟩, owner := rootOwner }]
+    compensationActivityRetentions :=
+      [{ owner := rootOwner, nextCompletionOrdinal := 2, records := [] }]
+    compensationTriggers := [succeededSingleSubjectTrigger] }
+
+def singleSubjectAtRetainedLimitSuccessor : RuntimeState :=
+  { singleSubjectAtRetainedLimitState with
     tokens := [{ placeId := ⟨"place:done"⟩, owner := rootOwner }] }
 
 def zeroSubjectWakeWait : UserTaskWait :=
@@ -386,8 +420,9 @@ def zeroSubjectWakeWait : UserTaskWait :=
     output := ⟨"place:trigger"⟩ }
 
 def zeroSubjectWakeState : RuntimeState :=
-  { zeroSubjectAtRetainedLimitState with
-    tokens := []
+  { initialState with
+    control := .running instanceId
+    scopeOccurrences := [{ id := rootOwner, parent := none }]
     waits := [zeroSubjectWakeWait]
     activations := [{ taskId := ⟨"C"⟩, count := 1 }] }
 

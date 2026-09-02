@@ -260,6 +260,7 @@ private def triggerMatchesDeclaration (program : Program) (state : RuntimeState)
   match program.operations.filter fun operation => operation.id == declaration.triggerOperationId with
   | [.triggerCompensation _ _ _ _ output] =>
       occurrenceIdValid trigger.id && scopeOccurrenceIdValid trigger.owner &&
+        !trigger.handlers.isEmpty &&
         trigger.id.elementId.value == declaration.triggerOperationId.value &&
         trigger.id.processInstanceId == trigger.owner.processInstanceId &&
         trigger.owner.definitionScopeId == declaration.definitionScopeId &&

@@ -73,9 +73,13 @@ theorem first_frontier_capacity_refusal_is_covered_by_the_declarative_relation :
   exact first_frontier_capacity_refusal_precedes_every_source_mutation
 
 theorem zero_subject_throw_uses_no_retained_trigger_capacity_and_releases_one_continuation :
-    compensationExecutionStateValid zeroSubjectProgram zeroSubjectAtRetainedLimitState = true ∧
-      attemptCompensationTrigger zeroSubjectProgram triggerOperation
-        zeroSubjectAtRetainedLimitState = .applied zeroSubjectAtRetainedLimitSuccessor := by
+    compensationExecutionStateValid singleSubjectProgram singleSubjectAtRetainedLimitState = true ∧
+      attemptCompensationTrigger singleSubjectProgram triggerOperation
+        singleSubjectAtRetainedLimitState = .applied singleSubjectAtRetainedLimitSuccessor := by
+  decide +kernel
+
+theorem retained_trigger_requires_at_least_one_selected_subject :
+    compensationExecutionStateValid zeroSubjectProgram emptySucceededTriggerState = false := by
   decide +kernel
 
 theorem compensation_execution_without_snapshots_uses_the_attempt_aware_whole_stimulus_closure :

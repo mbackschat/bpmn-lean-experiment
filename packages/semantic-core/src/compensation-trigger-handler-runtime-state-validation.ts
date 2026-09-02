@@ -256,6 +256,7 @@ function triggerMatchesDeclaration(
   if (
     declaration === undefined ||
     operation === undefined ||
+    trigger.handlers.length === 0 ||
     trigger.id.elementId !== declaration.triggerOperationId ||
     trigger.id.processInstanceId !== trigger.owner.processInstanceId ||
     trigger.owner.definitionScopeId !== declaration.definitionScopeId ||
