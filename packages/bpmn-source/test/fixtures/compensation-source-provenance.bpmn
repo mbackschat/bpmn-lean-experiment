@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  id="Definitions_Compensation_Provenance"
+  targetNamespace="https://bpmn-lean.org/test/compensation-source-provenance">
+  <bpmn:process id="Process_Compensation_Provenance" isExecutable="true">
+    <bpmn:startEvent id="Start">
+      <bpmn:outgoing>Flow_Start_Split</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:parallelGateway id="Split">
+      <bpmn:incoming>Flow_Start_Split</bpmn:incoming>
+      <bpmn:outgoing>Flow_Split_Zeta</bpmn:outgoing>
+      <bpmn:outgoing>Flow_Split_Beta</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:subProcess id="Activity_Alpha">
+      <bpmn:incoming>Flow_Zeta_Alpha</bpmn:incoming>
+      <bpmn:outgoing>Flow_Alpha_Join</bpmn:outgoing>
+      <bpmn:startEvent id="Start_Alpha">
+        <bpmn:outgoing>Flow_Alpha_Start_Work</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:userTask id="Work_Alpha">
+        <bpmn:incoming>Flow_Alpha_Start_Work</bpmn:incoming>
+        <bpmn:outgoing>Flow_Alpha_Work_End</bpmn:outgoing>
+      </bpmn:userTask>
+      <bpmn:endEvent id="End_Alpha">
+        <bpmn:incoming>Flow_Alpha_Work_End</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:subProcess id="Handler_Alpha" triggeredByEvent="true">
+        <bpmn:startEvent id="Compensation_Start_Alpha">
+          <bpmn:outgoing>Flow_Handler_Alpha_Start_Work</bpmn:outgoing>
+          <bpmn:compensateEventDefinition id="Compensate_Start_Alpha" />
+        </bpmn:startEvent>
+        <bpmn:task id="Undo_Alpha">
+          <bpmn:incoming>Flow_Handler_Alpha_Start_Work</bpmn:incoming>
+          <bpmn:outgoing>Flow_Handler_Alpha_Work_End</bpmn:outgoing>
+        </bpmn:task>
+        <bpmn:endEvent id="End_Handler_Alpha">
+          <bpmn:incoming>Flow_Handler_Alpha_Work_End</bpmn:incoming>
+        </bpmn:endEvent>
+        <bpmn:sequenceFlow id="Flow_Handler_Alpha_Start_Work" sourceRef="Compensation_Start_Alpha" targetRef="Undo_Alpha" />
+        <bpmn:sequenceFlow id="Flow_Handler_Alpha_Work_End" sourceRef="Undo_Alpha" targetRef="End_Handler_Alpha" />
+      </bpmn:subProcess>
+      <bpmn:sequenceFlow id="Flow_Alpha_Start_Work" sourceRef="Start_Alpha" targetRef="Work_Alpha" />
+      <bpmn:sequenceFlow id="Flow_Alpha_Work_End" sourceRef="Work_Alpha" targetRef="End_Alpha" />
+    </bpmn:subProcess>
+    <bpmn:userTask id="Activity_Beta">
+      <bpmn:incoming>Flow_Split_Beta</bpmn:incoming>
+      <bpmn:outgoing>Flow_Beta_Join</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="Activity_Zeta">
+      <bpmn:incoming>Flow_Split_Zeta</bpmn:incoming>
+      <bpmn:outgoing>Flow_Zeta_Alpha</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:boundaryEvent id="Boundary_Beta" attachedToRef="Activity_Beta">
+      <bpmn:compensateEventDefinition id="Compensate_Beta" />
+    </bpmn:boundaryEvent>
+    <bpmn:task id="Undo_Beta" isForCompensation="true" />
+    <bpmn:boundaryEvent id="Boundary_Zeta" attachedToRef="Activity_Zeta">
+      <bpmn:compensateEventDefinition id="Compensate_Zeta" />
+    </bpmn:boundaryEvent>
+    <bpmn:task id="Undo_Zeta" isForCompensation="true" />
+    <bpmn:parallelGateway id="Join">
+      <bpmn:incoming>Flow_Alpha_Join</bpmn:incoming>
+      <bpmn:incoming>Flow_Beta_Join</bpmn:incoming>
+      <bpmn:outgoing>Flow_Join_Trigger</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:intermediateThrowEvent id="Trigger_Compensation">
+      <bpmn:incoming>Flow_Join_Trigger</bpmn:incoming>
+      <bpmn:outgoing>Flow_Trigger_End</bpmn:outgoing>
+      <bpmn:compensateEventDefinition id="Compensate_Global" />
+    </bpmn:intermediateThrowEvent>
+    <bpmn:endEvent id="End">
+      <bpmn:incoming>Flow_Trigger_End</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_Alpha_Join" sourceRef="Activity_Alpha" targetRef="Join" />
+    <bpmn:sequenceFlow id="Flow_Beta_Join" sourceRef="Activity_Beta" targetRef="Join" />
+    <bpmn:sequenceFlow id="Flow_Join_Trigger" sourceRef="Join" targetRef="Trigger_Compensation" />
+    <bpmn:sequenceFlow id="Flow_Split_Beta" sourceRef="Split" targetRef="Activity_Beta" />
+    <bpmn:sequenceFlow id="Flow_Start_Split" sourceRef="Start" targetRef="Split" />
+    <bpmn:sequenceFlow id="Flow_Trigger_End" sourceRef="Trigger_Compensation" targetRef="End" />
+    <bpmn:sequenceFlow id="Flow_Zeta_Alpha" sourceRef="Activity_Zeta" targetRef="Activity_Alpha" />
+    <bpmn:sequenceFlow id="Flow_Split_Zeta" sourceRef="Split" targetRef="Activity_Zeta" />
+    <bpmn:association id="Association_Beta" associationDirection="None" sourceRef="Boundary_Beta" targetRef="Undo_Beta" />
+    <bpmn:association id="Association_Zeta" associationDirection="One" sourceRef="Boundary_Zeta" targetRef="Undo_Zeta" />
+  </bpmn:process>
+</bpmn:definitions>

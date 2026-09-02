@@ -38,6 +38,7 @@ Run the focused compiler gate:
 - [Interrupting Activity boundary Message specification](../../docs/capsules/ACTIVITY-BOUNDARY-MESSAGE-SPEC.md) owns the omission-only Message handler source shape and its atomic Activity lowering.
 - [Message payload catch mediation specification](../../docs/capsules/MESSAGE-PAYLOAD-CATCH-MEDIATION-SPEC.md) owns the exact Event DataOutput source chain, checked node, and lowered IL boundary.
 - [Message key correlation proposal](../../docs/capsules/MESSAGE-KEY-CORRELATION-PROPOSAL.md) owns the exact definitional Collaboration, context-backed key source graph, correlated checked node, and lowered IL boundary.
+- [Compensation trigger and handler proposal](../../docs/capsules/COMPENSATION-TRIGGER-HANDLER-PROPOSAL.md), [Event Sub-Process snapshot proposal](../../docs/capsules/COMPENSATION-EVENT-SUB-PROCESS-SNAPSHOT-PROPOSAL.md), and [boundary-handler retention proposal](../../docs/capsules/COMPENSATION-BOUNDARY-HANDLER-RETENTION-PROPOSAL.md) bound the private non-admitting Compensation provenance reader; checked representation, profile admission, and lowering remain separate reviewed work.
 - [`implementation-status-owner:ENGINE-CONTRACTS-SOURCE`](../../docs/ENGINE-CONTRACTS-AND-SOURCE-IMPLEMENTATION-MAP.md) records the exact accepted and rejected surface.
 - [Executable model corpus](../../model-corpus/README.md) exercises this production compiler against retained and external whole models.
 
