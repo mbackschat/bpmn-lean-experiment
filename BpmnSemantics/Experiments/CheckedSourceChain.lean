@@ -18,6 +18,7 @@ def isWaitNode : CheckedNode → Bool
   | .correlatedPayloadMessageCatchEvent .. => false
   | .receiveTask .. => false
   | .configuredTask .. => false
+  | .globalSynchronousCompensationThrowEvent .. => false
   | .userTask _ _ (some _) => false
   | _ => false
 
@@ -214,6 +215,8 @@ theorem parseFrom_sound (source : CheckedProcess) (fuel : Nat)
         | inclusiveGatewayConverging id pairedGatewayId =>
             simp [parseFrom, nodeResult] at result
         | eventBasedGateway id =>
+            simp [parseFrom, nodeResult] at result
+        | globalSynchronousCompensationThrowEvent id =>
             simp [parseFrom, nodeResult] at result
         | parallelGateway gatewayNode direction =>
             cases direction with

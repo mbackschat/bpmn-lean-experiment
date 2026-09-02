@@ -252,7 +252,7 @@ The complete `what-binds` inventory requires [`implementation-status-owner:ENGIN
 | [TS completion preparation](../../packages/semantic-core/src/internal-transition-scope-completion-preparation.ts) | 657 | context/retention footprint |
 | [TS Error preparation](../../packages/semantic-core/src/internal-transition-error-preparation.ts) | 711 | purge footprint |
 | [TS termination preparation](../../packages/semantic-core/src/internal-transition-termination-preparation.ts) | 719 | purge footprint |
-| [Lean Program](../../BpmnSemantics/SemanticProcessContract.lean) | 54 | declaration reference only |
+| [Lean Program](../../BpmnSemantics/SemanticProcessContract.lean) | 5 | no further contract growth without extracting another bounded owner |
 | [Lean structural admission](../../BpmnSemantics/SemanticProcess/ProgramStructuralValidation.lean) | 139 | declaration hook |
 | [Lean graph admission](../../BpmnSemantics/SemanticProcess/GraphValidation.lean) | 94 | lifecycle helper extracted; preserve the recovered headroom |
 | [Lean RuntimeState](../../BpmnSemantics/SemanticProcess/RuntimeState.lean) | 75 | collection reference only |

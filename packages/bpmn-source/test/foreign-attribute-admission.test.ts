@@ -21,6 +21,7 @@ import { test } from "node:test";
 import {
   BpmnCompilationStatus,
   BpmnSourceDiagnosticCode,
+  COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID,
   mappedBoundaryErrorServiceTaskProfile,
   mappedSuccessServiceTaskProfile,
   compileBpmnToSemanticProcess,
@@ -369,6 +370,16 @@ const dispatchFixtures = {
     sourceId: "message-key-correlation-process",
     semanticProfile: MESSAGE_KEY_CORRELATION_CHECKPOINT_PROFILE_ID,
     find: '<bpmn:startEvent id="StartEvent_PaymentInstructed"',
+  },
+  compensationSource: {
+    path: "the Compensation source reader",
+    source: new URL(
+      "./fixtures/compensation-source-checkpoint.bpmn",
+      import.meta.url,
+    ),
+    sourceId: "compensation-source-checkpoint",
+    semanticProfile: COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID,
+    find: '<bpmn:startEvent id="Start_Travel"',
   },
 } as const satisfies Record<CompilationDispatchId, DispatchFixture>;
 

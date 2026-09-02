@@ -276,17 +276,17 @@ The 800-nonblank-line soft target is the extraction threshold and 1,200 lines is
 
 | Owner | Current headroom | Structural condition |
 |---|---:|---|
-| [Lean ProfileAdmission](../../BpmnSemantics/SemanticProcess/ProfileAdmission.lean) | 3 | extract the profile-family predicate before adding this profile because the complete arm cannot safely fit the measured margin |
-| [Lean SemanticProcessContract](../../BpmnSemantics/SemanticProcessContract.lean) | 54 | add only closed contract arms; extract correlation support types first if the edit would cross 800 |
+| [Lean ProfileAdmission](../../BpmnSemantics/SemanticProcess/ProfileAdmission.lean) | 754 | profile-shape catalog extracted; keep this owner as dispatch only |
+| [Lean SemanticProcessContract](../../BpmnSemantics/SemanticProcessContract.lean) | 5 | no further contract growth without extracting another bounded owner |
 | [TypeScript semantic runtime dispatch](../../packages/semantic-core/src/semantic-process-runtime.ts) | 18 | add dispatch only; correlation behavior belongs in a new family owner |
-| [TypeScript lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 154 | add dispatch and construction only; source correlation validation belongs in a new owner |
+| [TypeScript lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 144 | retain dispatch and composition only; family construction stays in bounded owners |
 | [TypeScript scenario projection](../../packages/semantic-core/src/scenario.ts) | 153 | add the correlated interaction projection only; engine-population execution belongs in a new owner |
 | [TypeScript Semantic Process contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 197 | add one operation arm and referenced correlation contract; extract first if the edit would cross 800 |
 | [TypeScript public contract](../../packages/semantic-core/src/contract.ts) | 311 | add closed public arms without changing existing direct Message shapes |
 | [Workflow command ingress](../../packages/temporal-adapter/workflow/src/workflow-command-ingress.ts) | 348 | route target delivery only; global correlation ingress belongs in new Workflow owners |
 | [Lean Transition](../../BpmnSemantics/SemanticProcess/Transition.lean) | 139 | add one dispatcher constructor; matcher and laws belong in new modules |
-| [TypeScript checked graph contract](../../packages/semantic-core/src/checked-process-contract.ts) | 440 | add one correlated catch arm and referenced correlation contract |
-| [TypeScript compilation dispatch](../../packages/bpmn-source/src/compilation-dispatch.ts) | 480 | dispatch to a new exact source reader; do not place validation logic here |
+| [TypeScript checked graph contract](../../packages/semantic-core/src/checked-process-contract.ts) | 432 | keep Compensation support in its bounded contract owner |
+| [TypeScript compilation dispatch](../../packages/bpmn-source/src/compilation-dispatch.ts) | 464 | dispatch only; source-family validation stays in bounded readers |
 | [TypeScript internal-commutation census](../../packages/semantic-core/src/internal-commutation-census.ts) | 659 | add the exact ordinary-wait classification only; footprint logic belongs in the correlated family owner |
 | [Lean internal-commutation census](../../BpmnSemantics/SemanticProcess/InternalCommutationCensus.lean) | 653 | add the matching exhaustive constructor classification only |
 | [Engine API index](../../packages/engine-api/src/index.ts) | 673 | export new bounded definition-correlation and publication owners only |

@@ -4,6 +4,7 @@ import {
   CheckedNodeKind,
 } from "./checked-process-contract.js";
 import {
+  COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID,
   MESSAGE_KEY_CORRELATION_CHECKPOINT_PROFILE_ID,
   SemanticProfileId,
 } from "./semantic-profile-catalog.js";
@@ -93,6 +94,24 @@ export function requiredCheckedProcessShape(
         CheckedNodeKind.UserTask,
         end,
       ]);
+    case COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID:
+      return {
+        definitionScopeCount: 3,
+        nodeKinds: [
+          start,
+          CheckedNodeKind.ParallelGateway,
+          CheckedNodeKind.UserTask,
+          CheckedNodeKind.EmbeddedSubProcess,
+          CheckedNodeKind.UserTask,
+          CheckedNodeKind.ParallelGateway,
+          CheckedNodeKind.GlobalSynchronousCompensationThrowEvent,
+          end,
+          start,
+          CheckedNodeKind.UserTask,
+          end,
+        ],
+        boundaryInterruption: undefined,
+      };
     case SemanticProfileId.MessageAddressedReceiveTask:
       return rootChecked([
         start,

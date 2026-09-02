@@ -115,6 +115,7 @@ def parseFrom (source : CheckedProcess) :
       | some (.inclusiveGatewayDiverging ..)
       | some (.inclusiveGatewayConverging ..)
       | some (.eventBasedGateway ..)
+      | some (.globalSynchronousCompensationThrowEvent ..)
       | none => none
 
 def coversEveryNode (source : CheckedProcess)
@@ -178,6 +179,7 @@ def composedNodeSurfaceValid : CheckedNode → Bool
   | .inclusiveGatewayDiverging .. => false
   | .inclusiveGatewayConverging .. => false
   | .eventBasedGateway .. => false
+  | .globalSynchronousCompensationThrowEvent .. => false
   | .messageStartEvent .. => false
   | .timerStartEvent .. => false
 

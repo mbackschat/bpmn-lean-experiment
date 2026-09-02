@@ -3,6 +3,7 @@ import BpmnSemantics.SemanticProcess.Data
 import BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
 import BpmnSemantics.SemanticProcess.ErrorDefinition
 import BpmnSemantics.SemanticProcess.ProfileAdmission
+import BpmnSemantics.SemanticProcess.CompensationSourceProfileAdmission
 import BpmnSemantics.SemanticProcess.SimpleBooleanExpression
 
 /-! # Checked-process structural admission
@@ -57,13 +58,13 @@ private def checkedDefinitionScopesValid (source : CheckedProcess) : Bool :=
     | some parentScopeId =>
         decide (scope.id ≠ parentScopeId) &&
           scopeExists source.definitionScopes parentScopeId &&
-          source.nodes.any fun
+          (source.nodes.any fun
             | .embeddedSubProcess id childScopeId =>
                 decide (
                   childScopeId = scope.id &&
                   scope.originElementId = id &&
                   checkedNodeScopeId? source id = some parentScopeId)
-            | _ => false
+            | _ => false) || compensationDormantDefinitionScopeValid source scope
   strictlySortedStrings (source.definitionScopes.map fun scope => scope.id.value) &&
     nestedValid &&
     if source.identity.semanticProfile.value =
@@ -349,6 +350,8 @@ private def checkedNodeArityValid (flows : List CheckedSequenceFlow) :
         incomingCount flows id = 3 && outgoingCount flows id = 1
   | .eventBasedGateway id =>
       incomingCount flows id = 1 && outgoingCount flows id = 2
+  | .globalSynchronousCompensationThrowEvent id =>
+      incomingCount flows id = 1 && outgoingCount flows id = 1
   | .errorEndEvent id error =>
       errorReferenceValid error &&
         incomingCount flows id = 1 && outgoingCount flows id = 0
@@ -436,6 +439,9 @@ def checkedWellFormed (source : CheckedProcess) : Bool :=
     checkedBoundaryTimerAttachmentValid source &&
     checkedBoundaryMessageAttachmentValid source &&
     checkedProfileCapabilitiesValid source &&
-    checkedProcessGraphWellFormed source
+    if source.identity.semanticProfile = compensationSourceCheckpointProfileId then
+      checkedProcessGraphWellFormed
+        (checkedProcessWithoutCompensationDormantScope source)
+    else checkedProcessGraphWellFormed source
 
 end BpmnSemantics.SemanticProcess

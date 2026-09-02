@@ -58,6 +58,9 @@
       "items": {
         "$ref": "#/$defs/sequenceFlow"
       }
+    },
+    "compensation": {
+      "$ref": "#/$defs/checkedCompensation"
     }
   },
   "$defs": {
@@ -598,6 +601,252 @@
         }
       }
     },
+    "checkedCompensationInput": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind"
+          ],
+          "properties": {
+            "kind": {
+              "const": "empty"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "sourcePropertyId",
+            "targetDataInputId"
+          ],
+          "properties": {
+            "kind": {
+              "const": "directRestoredProcessBinding"
+            },
+            "sourcePropertyId": {
+              "$ref": "#/$defs/nonemptyString"
+            },
+            "targetDataInputId": {
+              "$ref": "#/$defs/nonemptyString"
+            }
+          }
+        }
+      ]
+    },
+    "checkedCompensationSingleEffectDescriptor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "protocol",
+        "operation"
+      ],
+      "properties": {
+        "protocol": {
+          "const": "urn:bpmn-lean:effect-protocol:activity-v1"
+        },
+        "operation": {
+          "const": "urn:bpmn-lean:effect-operation:compensation-single-effect-v1"
+        }
+      }
+    },
+    "checkedCompensationBody": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "handlerElementId",
+        "effectElementId",
+        "descriptor",
+        "input"
+      ],
+      "properties": {
+        "kind": {
+          "const": "singleEffect"
+        },
+        "handlerElementId": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "effectElementId": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "descriptor": {
+          "$ref": "#/$defs/checkedCompensationSingleEffectDescriptor"
+        },
+        "input": {
+          "$ref": "#/$defs/checkedCompensationInput"
+        }
+      }
+    },
+    "checkedCompensationSubject": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "subjectElementId",
+            "boundaryEventElementId",
+            "body"
+          ],
+          "properties": {
+            "kind": {
+              "const": "boundaryActivity"
+            },
+            "subjectElementId": {
+              "$ref": "#/$defs/nonemptyString"
+            },
+            "boundaryEventElementId": {
+              "$ref": "#/$defs/nonemptyString"
+            },
+            "body": {
+              "$ref": "#/$defs/checkedCompensationBody"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "parentElementId",
+            "parentScopeId",
+            "handlerScopeId",
+            "body"
+          ],
+          "properties": {
+            "kind": {
+              "const": "eventSubProcess"
+            },
+            "parentElementId": {
+              "$ref": "#/$defs/nonemptyString"
+            },
+            "parentScopeId": {
+              "$ref": "#/$defs/nonemptyString"
+            },
+            "handlerScopeId": {
+              "$ref": "#/$defs/nonemptyString"
+            },
+            "body": {
+              "$ref": "#/$defs/checkedCompensationBody"
+            }
+          }
+        }
+      ]
+    },
+    "checkedCompensationDependency": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "predecessorElementId",
+        "successorElementId",
+        "reason"
+      ],
+      "properties": {
+        "predecessorElementId": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "successorElementId": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "reason": {
+          "const": "sequenceFlow"
+        }
+      }
+    },
+    "checkedCompensationRetentionLimits": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "maxRecords",
+        "maxCanonicalBytes"
+      ],
+      "properties": {
+        "maxRecords": {
+          "const": 2
+        },
+        "maxCanonicalBytes": {
+          "const": 4096
+        }
+      }
+    },
+    "checkedCompensationSnapshotLimits": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "maxRecords",
+        "maxCanonicalBytes"
+      ],
+      "properties": {
+        "maxRecords": {
+          "const": 1
+        },
+        "maxCanonicalBytes": {
+          "const": 8192
+        }
+      }
+    },
+    "checkedCompensationExecutionLimits": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "maxTriggers",
+        "maxHandlers",
+        "maxCanonicalBytes"
+      ],
+      "properties": {
+        "maxTriggers": {
+          "const": 1
+        },
+        "maxHandlers": {
+          "const": 3
+        },
+        "maxCanonicalBytes": {
+          "const": 20480
+        }
+      }
+    },
+    "checkedCompensation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "triggerElementId",
+        "subjects",
+        "dependencies",
+        "retentionLimits",
+        "snapshotLimits",
+        "executionLimits"
+      ],
+      "properties": {
+        "triggerElementId": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "subjects": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/checkedCompensationSubject"
+          }
+        },
+        "dependencies": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/checkedCompensationDependency"
+          }
+        },
+        "retentionLimits": {
+          "$ref": "#/$defs/checkedCompensationRetentionLimits"
+        },
+        "snapshotLimits": {
+          "$ref": "#/$defs/checkedCompensationSnapshotLimits"
+        },
+        "executionLimits": {
+          "$ref": "#/$defs/checkedCompensationExecutionLimits"
+        }
+      }
+    },
     "node": {
       "oneOf": [
         {
@@ -610,6 +859,22 @@
           "properties": {
             "kind": {
               "const": "noneStartEvent"
+            },
+            "id": {
+              "$ref": "#/$defs/nonemptyString"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "id"
+          ],
+          "properties": {
+            "kind": {
+              "const": "globalSynchronousCompensationThrowEvent"
             },
             "id": {
               "$ref": "#/$defs/nonemptyString"

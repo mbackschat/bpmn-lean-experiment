@@ -1,6 +1,7 @@
 /** Exact Semantic Process operation multisets admitted by reviewed semantic profiles. */
 import { SemanticOperationKind } from "./semantic-process-contract.js";
 import {
+  COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID,
   MESSAGE_KEY_CORRELATION_CHECKPOINT_PROFILE_ID,
   SemanticProfileId,
 } from "./semantic-profile-catalog.js";
@@ -115,6 +116,24 @@ export function requiredProgramShape(
         SemanticOperationKind.ReachNoneEnd,
         SemanticOperationKind.CompleteScope,
       ]);
+    case COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID:
+      return {
+        definitionScopeCount: 3,
+        operationKinds: [
+          SemanticOperationKind.Initiate,
+          SemanticOperationKind.Duplicate,
+          SemanticOperationKind.AwaitUserTask,
+          SemanticOperationKind.AwaitUserTask,
+          SemanticOperationKind.AwaitUserTask,
+          SemanticOperationKind.EnterScope,
+          SemanticOperationKind.Synchronize,
+          SemanticOperationKind.TriggerCompensation,
+          SemanticOperationKind.ReachNoneEnd,
+          SemanticOperationKind.ReachNoneEnd,
+          SemanticOperationKind.CompleteScope,
+          SemanticOperationKind.CompleteScope,
+        ],
+      };
     case SemanticProfileId.MessageAddressedReceiveTask:
       return rootProgram([
         SemanticOperationKind.Initiate,

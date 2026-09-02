@@ -73,6 +73,10 @@ export const SemanticProfileId = Object.freeze({
 export const MESSAGE_KEY_CORRELATION_CHECKPOINT_PROFILE_ID =
   "bpmn-2.0.2-message-key-correlation-draft" as const;
 
+/** Admission-only identity held outside the product registry until live Compensation hosting is reviewed. */
+export const COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID =
+  "bpmn-2.0.2-compensation-source-checkpoint-draft" as const;
+
 /** Transition alias retained while closure lanes migrate to the registered catalog member. */
 export const SERVICE_TASK_INCIDENT_CHECKPOINT_PROFILE_ID =
   SemanticProfileId.ServiceTaskIncident;

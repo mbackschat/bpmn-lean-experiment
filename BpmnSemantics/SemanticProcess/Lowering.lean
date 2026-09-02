@@ -7,6 +7,7 @@ import BpmnSemantics.SemanticProcess.ParallelMultiInstanceLowering
 import BpmnSemantics.SemanticProcess.ConfiguredTaskLowering
 import BpmnSemantics.SemanticProcess.TimerStartLowering
 import BpmnSemantics.SemanticProcess.TerminateEndLowering
+import BpmnSemantics.SemanticProcess.CompensationSourceLowering
 
 /-! # Canonical checked-process lowering
 
@@ -530,6 +531,11 @@ private def lowerNode (source : CheckedProcess) :
         (firstPlace (incomingPlaces source id))
         (eventRaceMessageArm source id)
         (eventRaceTimerArm source id), scopeId)
+  | .globalSynchronousCompensationThrowEvent id =>
+      checkedNodeScopeId? source id |>.map fun scopeId =>
+      (lowerGlobalSynchronousCompensationThrow source id
+        (firstPlace (incomingPlaces source id))
+        (firstPlace (outgoingPlaces source id)), scopeId)
   | .errorEndEvent id error =>
       checkedNodeScopeId? source id |>.map fun scopeId =>
       (.throwError
@@ -580,7 +586,8 @@ theorem lowering_preserves_user_task_resumption_cut
 
 private def lowerScopeCompletion (source : CheckedProcess)
     (scope : DefinitionScope) : Option (SemanticOperation × DefinitionScopeId) :=
-  if scope.parentScopeId.isNone &&
+  if checkedScopeIsCompensationDormant source scope then none
+  else if scope.parentScopeId.isNone &&
       scope.originElementId.value ≠ source.processId.value then
     match source.nodes.filter fun
         | .callActivity _ calledProcessId =>
@@ -659,7 +666,12 @@ def lowerCheckedProcess (source : CheckedProcess) : Program :=
       (source.sequenceFlows.filter fun flow =>
         !eventRaceConfigurationFlow source flow).map
           CheckedSequenceFlow.toControlPlace
-    operations := scopedOperations.map (·.1) }
+    operations := scopedOperations.map (·.1)
+    compensationActivityRetention :=
+      lowerCheckedCompensationActivityRetention source
+    compensationEventSubProcessSnapshots :=
+      lowerCheckedCompensationSnapshots source
+    compensationExecution := lowerCheckedCompensationExecution source }
 
 theorem lower_preserves_definition_identity (source : CheckedProcess) :
     (lowerCheckedProcess source).identity.semanticProfile =

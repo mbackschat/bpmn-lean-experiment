@@ -1,6 +1,7 @@
 import {
   BoundaryInterruption,
   CheckedNodeKind,
+  COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID,
   GatewayDirection,
   SemanticProfileId,
   SimpleBooleanExpressionKind,
@@ -24,6 +25,9 @@ import type {
 import {
   hasSelectedConfiguredTaskTopology,
 } from "./configured-task-checked-admission.js";
+import {
+  hasSelectedCompensationCheckpoint,
+} from "./compensation-checked-admission.js";
 import { parseSimpleBooleanExpression } from "./simple-boolean-expression.js";
 
 const bpmnDefaultExpressionLanguage = "http://www.w3.org/1999/XPath";
@@ -62,6 +66,7 @@ export function isAdmittedCheckedProcess(
     hasSelectedInclusivePairing(semanticProfile, graph) &&
     hasSelectedEventRaceTopology(semanticProfile, graph) &&
     hasSelectedConfiguredTaskTopology(semanticProfile, graph) &&
+    hasSelectedCompensationCheckpoint(semanticProfile, graph) &&
     hasSelectedTerminateTopology(
       semanticProfile,
       graph,
@@ -468,6 +473,12 @@ function embeddedNodesOwnChildScopes(
   );
   const expectedRootCount =
     semanticProfile === SemanticProfileId.CalledProcessCallActivity ? 2 : 1;
+  const compensationHandlers = semanticProfile ===
+      COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID
+    ? graph.compensation?.subjects.flatMap((subject) =>
+        subject.kind === "eventSubProcess" ? [subject] : []
+      ) ?? []
+    : [];
   return roots.length === expectedRootCount &&
     embedded.every((node) =>
       graph.definitionScopes.some(
@@ -480,6 +491,10 @@ function embeddedNodesOwnChildScopes(
     graph.definitionScopes.every(({ id, parentScopeId, originElementId }) =>
       parentScopeId === null || embedded.some(
         (node) => node.id === originElementId && node.childScopeId === id,
+      ) || compensationHandlers.some(
+        (subject) => subject.handlerScopeId === id &&
+          subject.parentScopeId === parentScopeId &&
+          subject.body.handlerElementId === originElementId,
       )
     );
 }

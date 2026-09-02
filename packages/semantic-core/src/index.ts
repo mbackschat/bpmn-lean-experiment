@@ -15,6 +15,7 @@ export * from "./compensation-activity-retention-state-validation.js";
 export * from "./compensation-event-sub-process-snapshot-contract.js";
 export * from "./compensation-event-sub-process-snapshot.js";
 export * from "./compensation-event-sub-process-snapshot-state-validation.js";
+export * from "./compensation-source-contract.js";
 export * from "./compensation-trigger-handler-contract.js";
 export * from "./compensation-trigger-handler-program-admission.js";
 export * from "./compensation-trigger-handler-runtime-contract.js";

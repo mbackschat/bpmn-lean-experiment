@@ -4,6 +4,7 @@ import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 
 import {
+  COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID,
   SemanticProfileId,
   VariableValueKind,
 } from "@bpmn-lean/semantic-core";
@@ -397,6 +398,31 @@ test("closes every registered profile and write surface over the exact typed val
           `${profile} ${surface} ${kind}`,
         );
       }
+    }
+  }
+});
+
+test("keeps the unregistered Compensation source checkpoint empty on every write surface", async () => {
+  const compiled = await importCompiledValueDomain();
+  for (const surface of surfaces) {
+    assert.equal(
+      compiled.profileAllowsVariableBindings(
+        COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID,
+        surface,
+        [],
+      ),
+      true,
+    );
+    for (const binding of bindings.values()) {
+      assert.equal(
+        compiled.profileAllowsVariableBindings(
+          COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID,
+          surface,
+          [binding],
+        ),
+        false,
+        `${surface} ${binding.value.kind}`,
+      );
     }
   }
 });

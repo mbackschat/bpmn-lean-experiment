@@ -77,6 +77,7 @@ def nodeArityValid (source : CheckedProcess) :
   | .inclusiveGatewayDiverging _ _ _
   | .inclusiveGatewayConverging _ _ => false
   | .eventBasedGateway _ => false
+  | .globalSynchronousCompensationThrowEvent _ => false
 
 def startIds (source : CheckedProcess) : List NodeId :=
   source.nodes.filterMap fun

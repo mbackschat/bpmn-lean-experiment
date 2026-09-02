@@ -1,11 +1,13 @@
 import {
   CheckedNodeKind,
+  COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID,
   GatewayDirection,
   SemanticGraphPolicyKind,
   SemanticProfileId,
   semanticGraphPolicyForProfile,
 } from "@bpmn-lean/semantic-core";
 import type {
+  CheckedCompensation,
   CheckedNode,
   CheckedSequenceFlow,
   DefinitionScope,
@@ -21,6 +23,7 @@ export type CheckedProcessGraph = Readonly<{
   sequenceFlowScopes: ReadonlyArray<SequenceFlowScopeOwnership>;
   nodes: ReadonlyArray<CheckedNode>;
   flows: ReadonlyArray<CheckedSequenceFlow>;
+  compensation?: CheckedCompensation;
 }>;
 
 type AdmittedCheckedProcessGraph = Readonly<{
@@ -46,6 +49,14 @@ export function resolveAdmittedCheckedProcessGraph(
     graph.flows.map(({ id }) => id),
     graph.definitionScopes,
   );
+  const dormantScopeIds = semanticProfile ===
+      COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID
+    ? new Set(
+        graph.compensation?.subjects.flatMap((subject) =>
+          subject.kind === "eventSubProcess" ? [subject.handlerScopeId] : []
+        ) ?? [],
+      )
+    : new Set<string>();
   if (
     nodeScopes === undefined ||
     flowScopes === undefined ||
@@ -58,6 +69,7 @@ export function resolveAdmittedCheckedProcessGraph(
         nodeScopes,
         flowScopes,
         graphPolicy,
+        dormantScopeIds,
       )
     )
   ) {
@@ -72,6 +84,7 @@ function isAdmittedDefinitionScope(
   nodeScopes: ReadonlyMap<string, string>,
   flowScopes: ReadonlyMap<string, string>,
   graphPolicy: SemanticGraphPolicy,
+  dormantScopeIds: ReadonlySet<string>,
 ): boolean {
   const nodes = graph.nodes.filter(({ id }) => nodeScopes.get(id) === scopeId);
   const flows = graph.flows.filter(({ id }) => flowScopes.get(id) === scopeId);
@@ -81,6 +94,9 @@ function isAdmittedDefinitionScope(
     nodeScopes,
     scopeId,
   );
+  if (dormantScopeIds.has(scopeId)) {
+    return nodes.length === 0 && flows.length === 0;
+  }
   return nodes.every((node) => hasSelectedArity(node, flows)) &&
     flows.every((flow) =>
       nodeIds.has(flow.targetId) &&
@@ -160,6 +176,7 @@ function hasSelectedArity(
     case CheckedNodeKind.ReceiveTask:
     case CheckedNodeKind.ServiceTask:
     case CheckedNodeKind.ConfiguredTask:
+    case CheckedNodeKind.GlobalSynchronousCompensationThrowEvent:
       return incoming === 1 && outgoing === 1;
     case CheckedNodeKind.BoundaryErrorEvent:
     case CheckedNodeKind.TimerBoundaryEvent:

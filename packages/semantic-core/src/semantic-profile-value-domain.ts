@@ -7,6 +7,7 @@ import type {
   VariableBinding,
 } from "./contract.js";
 import {
+  COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID,
   MESSAGE_KEY_CORRELATION_CHECKPOINT_PROFILE_ID,
   SemanticProfileId,
 } from "./semantic-profile-catalog.js";
@@ -20,6 +21,7 @@ export enum VariableWriteSurface {
 
 type SemanticProfile =
   | typeof SemanticProfileId[keyof typeof SemanticProfileId]
+  | typeof COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID
   | typeof MESSAGE_KEY_CORRELATION_CHECKPOINT_PROFILE_ID;
 
 const emptyValueDomain: ReadonlyArray<VariableValueKind> = Object.freeze([]);
@@ -52,6 +54,7 @@ const scalarValueDomain = Object.freeze([
 const admittedSemanticProfiles: ReadonlySet<string> = new Set(
   [
     ...Object.values(SemanticProfileId),
+    COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID,
     MESSAGE_KEY_CORRELATION_CHECKPOINT_PROFILE_ID,
   ],
 );
@@ -189,6 +192,7 @@ function profileValueDomain(
     case SemanticProfileId.EventBasedGatewayMessageTimer:
     case SemanticProfileId.IntermediateCatchMessage:
     case SemanticProfileId.MessagePayloadCatch:
+    case COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID:
     case MESSAGE_KEY_CORRELATION_CHECKPOINT_PROFILE_ID:
     case SemanticProfileId.IntermediateCatchTimer:
     case SemanticProfileId.MessageAddressedReceiveTask:

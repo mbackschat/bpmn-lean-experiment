@@ -448,7 +448,7 @@ The operation census must classify trigger creation and frontier activation as o
 | [TS observation producer](../../packages/semantic-core/src/scenario.ts) | 153 | failed projection and exhaustive switch only |
 | [TS control-position projection](../../packages/semantic-core/src/control-position-projection.ts) | 383 | failed terminal-empty arm only |
 | [TS internal attempt](../../packages/semantic-core/src/internal-transition-attempt.ts) | 668 | trigger-attempt delegation only |
-| [Lean Program](../../BpmnSemantics/SemanticProcessContract.lean) | 54 | declaration reference only; extract the contract first if the reference cannot fit |
+| [Lean Program](../../BpmnSemantics/SemanticProcessContract.lean) | 5 | no further contract growth without extracting another bounded owner |
 | [Lean RuntimeState](../../BpmnSemantics/SemanticProcess/RuntimeState.lean) | 75 | trigger collection reference only |
 | [Lean effect completion](../../BpmnSemantics/SemanticProcess/EffectCompletion.lean) | 721 | compensation relation only |
 | [Lean command admission](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean) | 249 | result dispatch only |

@@ -51,5 +51,11 @@ export {
   userTaskMetadataBindingValid,
 } from "./user-task-metadata-source.js";
 export {
+  COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID,
+} from "./compensation-source-profile.js";
+export {
+  compensationSourceDefinitionBindingValid,
+} from "./compensation-source-lowering.js";
+export {
   parseSimpleBooleanExpression,
 } from "./simple-boolean-expression.js";

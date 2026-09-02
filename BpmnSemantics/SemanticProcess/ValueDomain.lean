@@ -33,6 +33,10 @@ abbrev activityDataOutputUserTaskProfileId : ProfileId :=
 abbrev messagePayloadCatchProfileId : ProfileId :=
   ⟨"bpmn-2.0.2-message-payload-catch-draft"⟩
 
+/-- Runtime-frozen identity of the owner-approved Compensation source checkpoint. -/
+abbrev compensationSourceCheckpointProfileId : ProfileId :=
+  ⟨"bpmn-2.0.2-compensation-source-checkpoint-draft"⟩
+
 /-- Runtime-frozen identity for the owner-approved structured Human Work profile. -/
 abbrev structuredHumanWorkProfileId : ProfileId :=
   ⟨"bpmn-2.0.2-bpmn-lean-structured-human-work-draft"⟩
@@ -64,7 +68,9 @@ private inductive ProcessDataValueDomain where
 @[simp] private abbrev profileValueDomain (profile : ProfileId) :
     ProcessDataIngress → ProcessDataValueDomain
   | .processStart =>
-      if profile.value =
+      if profile = compensationSourceCheckpointProfileId then
+        .empty
+      else if profile.value =
           "bpmn-2.0.2-sequential-multi-instance-user-task-draft" then
         .stringListOnly
       else if profile.value =

@@ -1,4 +1,5 @@
 import {
+  COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID,
   MESSAGE_KEY_CORRELATION_CHECKPOINT_PROFILE_ID,
   PARALLEL_MULTI_INSTANCE_USER_TASK_PROFILE_ID,
   SEQUENTIAL_MULTI_INSTANCE_USER_TASK_PROFILE_ID,
@@ -56,6 +57,9 @@ import {
 import {
   compileMessageKeyCorrelationCheckedProcess,
 } from "./message-key-correlation-source.js";
+import {
+  compileCompensationSourceCheckedProcess,
+} from "./compensation-source.js";
 
 export const CompilationDispatchId = Object.freeze({
   Generic: "generic",
@@ -69,6 +73,7 @@ export const CompilationDispatchId = Object.freeze({
   ActivityDataOutputUserTask: "activityDataOutputUserTask",
   MessagePayloadCatch: "messagePayloadCatch",
   MessageKeyCorrelation: "messageKeyCorrelation",
+  CompensationSource: "compensationSource",
 } as const);
 
 export type CompilationDispatchId =
@@ -208,6 +213,16 @@ export const compilationDispatches: ReadonlyArray<CompilationDispatch> =
               "The Message key correlation profile does not admit a source overlay.",
             ),
     },
+    {
+      id: CompilationDispatchId.CompensationSource,
+      semanticProfile: COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID,
+      reader: (rootElement, source, overlay) =>
+        overlay === null
+          ? compileCompensationSourceCheckedProcess(rootElement, source, null)
+          : unsupported(
+              "The Compensation source checkpoint does not admit a source overlay.",
+            ),
+    },
   ]);
 
 export function compileDispatchedCheckedProcess(
@@ -255,6 +270,7 @@ export function compileDispatchedCheckedProcess(
     case CompilationDispatchId.ActivityDataOutputUserTask:
     case CompilationDispatchId.MessagePayloadCatch:
     case CompilationDispatchId.MessageKeyCorrelation:
+    case CompilationDispatchId.CompensationSource:
       return dispatch.reader(rootElement, source, overlay);
     default:
       return assertNever(dispatch);

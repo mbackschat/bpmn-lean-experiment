@@ -12,6 +12,7 @@ This contributor map assigns source-file responsibilities inside `@bpmn-lean/sem
 | [deep-readonly.ts](src/deep-readonly.ts) | The project-owned deeply immutable contract utility |
 | [semantic-process-state.ts](src/semantic-process-state.ts) | Committed runtime-state shape: control tokens, scopes, waits, and occurrence records |
 | [checked-process-contract.ts](src/checked-process-contract.ts) | Project-owned checked BPMN graph contract |
+| [compensation-source-contract.ts](src/compensation-source-contract.ts) | Checkpoint-only checked Compensation subjects, bodies, dependencies, restored binding, and fixed limits |
 | [semantic-process-contract.ts](src/semantic-process-contract.ts) | Immutable Semantic Process IL contract |
 | [compensation-activity-retention-contract.ts](src/compensation-activity-retention-contract.ts) | Hidden boundary Compensation declaration, completion facts, retained-record, and refusal contracts |
 | [compensation-activity-retention-state-validation.ts](src/compensation-activity-retention-state-validation.ts) | Exact declaration and hidden-register validity plus canonical retained-record byte measurement |

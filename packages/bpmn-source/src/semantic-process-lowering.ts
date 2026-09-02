@@ -47,6 +47,11 @@ import {
 import {
   lowerParallelMultiInstanceUserTaskOperations,
 } from "./parallel-multi-instance-lowering.js";
+import {
+  isDormantCompensationScope,
+  lowerCompensationSourceDeclarations,
+  lowerGlobalCompensationThrow,
+} from "./compensation-source-lowering.js";
 
 type ScopedOperation = Readonly<{
   operation: SemanticOperation;
@@ -59,8 +64,10 @@ export function lowerCheckedProcess(
   const nodeOperations = source.nodes.flatMap((node) =>
     lowerNode(node, source)
   );
-  const completionOperations = source.definitionScopes.map((scope) =>
-    lowerCalledProcessReturn(scope, source) ?? lowerScopeCompletion(scope, source)
+  const completionOperations = source.definitionScopes.flatMap((scope) =>
+    isDormantCompensationScope(source, scope.id)
+      ? []
+      : [lowerCalledProcessReturn(scope, source) ?? lowerScopeCompletion(scope, source)]
   );
   const scopedOperations = [...nodeOperations, ...completionOperations];
   const configurationFlows = eventRaceConfigurationFlowIds(source);
@@ -99,6 +106,7 @@ export function lowerCheckedProcess(
     operations: scopedOperations
       .map(({ operation }) => operation)
       .sort(compareIds),
+    ...lowerCompensationSourceDeclarations(source),
   };
   return program;
 }
@@ -406,6 +414,8 @@ function lowerNode(
       }
     case CheckedNodeKind.EventBasedGateway:
       return scoped(lowerEventRaceOperation(node, source));
+    case CheckedNodeKind.GlobalSynchronousCompensationThrowEvent:
+      return scoped(lowerGlobalCompensationThrow(node, source));
     case CheckedNodeKind.TerminateEndEvent:
       return [lowerTerminateEndEvent(node, source)];
     case CheckedNodeKind.ErrorEndEvent: {

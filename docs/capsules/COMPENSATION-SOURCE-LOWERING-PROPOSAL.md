@@ -13,6 +13,8 @@ The non-admitting reader at `4c5d6145` established parser-graph identity for the
 
 Cold review of target `fb4ff27c` found that the proposed 16,384-byte execution limit could not contain its own 8,192-byte snapshot contract, the full Product 1 admission path was incomplete, and the source-type, Boolean, identity, and normative boundaries were not yet closed. Correction target `50d2525f` records the runtime-canonical 17,808-byte complete frontier and a 20,480-byte bound, closes those contracts, and requires the real no-start host witness. The same reviewer then found that its string-valued Process start would widen the checkpoint asymmetrically; correction target `140510d2` selects the existing empty domain in both semantic accounts and was approved with no remaining finding.
 
+Implementation progress: the first green semantic checkpoint is implemented. The exact source fixture compiles to independently authored checked and Program expectations; strict TypeScript and Lean admission preserve the trigger, dormant handler, restored binding, dependency, and fixed-limit joins; old checked artifacts omit the new field; and both Product 1 admission paths return `compensationSchedulerUnavailable` before any Workflow start. Product registration, live scheduling, scenarios, capability, corpus, and Product 2 remain untouched pending the required checkpoint review.
+
 ## Question and bounded outcome
 
 What is the smallest standards-only BPMN source and checked representation that deterministically lowers one root-global synchronous Compensation throw, two boundary handlers, one Compensation Event Sub-Process handler, and one direct subject dependency into the already-approved retention, snapshot, and execution declarations?
@@ -195,16 +197,16 @@ The 800-nonblank-line review target is the extraction threshold. These headroom 
 
 | Owner | Current headroom | Structural condition |
 |---|---:|---|
-| [Lean ProfileAdmission](../../BpmnSemantics/SemanticProcess/ProfileAdmission.lean) | 3 | move the checkpoint predicate to a bounded sibling owner before adding the dispatch arm |
-| [Lean SemanticProcessContract](../../BpmnSemantics/SemanticProcessContract.lean) | 54 | extract the checked Compensation support contract before adding references if the complete edit cannot remain below 800 |
-| [TypeScript profile admission](../../packages/bpmn-source/src/checked-process-admission.ts) | 147 | delegate the complete checkpoint shape to a new bounded owner; keep only dispatch here |
-| [Lean Lowering](../../BpmnSemantics/SemanticProcess/Lowering.lean) | 153 | put Compensation construction in a bounded sibling module and add only canonical dispatch |
-| [TypeScript lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 154 | put Compensation construction in a bounded sibling module and add only dispatch/field composition |
-| [TypeScript compilation dispatch](../../packages/bpmn-source/src/compilation-dispatch.ts) | 480 | dispatch to a new exact source compiler; no Compensation validation belongs here |
-| [TypeScript checked graph contract](../../packages/semantic-core/src/checked-process-contract.ts) | 440 | add one node arm and reference a bounded Compensation checked-contract owner |
-| [TypeScript graph admission](../../packages/bpmn-source/src/checked-process-graph-admission.ts) | 444 | delegate only the declaration-derived dormant-scope exception |
-| [Lean checked JSON](../../BpmnSemantics/SemanticProcessJson/CheckedProcess.lean) | 393 | decode the optional field through a bounded sibling decoder and preserve omission |
-| [Lean checked admission](../../BpmnSemantics/SemanticProcess/CheckedProcessAdmission.lean) | 383 | delegate exact Compensation declaration validation; no lowering logic belongs here |
+| [Lean ProfileAdmission](../../BpmnSemantics/SemanticProcess/ProfileAdmission.lean) | 754 | profile-shape catalog extracted; keep this owner as dispatch only |
+| [Lean SemanticProcessContract](../../BpmnSemantics/SemanticProcessContract.lean) | 5 | checked Compensation support is extracted; no further growth without another bounded owner |
+| [TypeScript profile admission](../../packages/bpmn-source/src/checked-process-admission.ts) | 132 | keep complete checkpoint validation in its bounded owner |
+| [Lean Lowering](../../BpmnSemantics/SemanticProcess/Lowering.lean) | 141 | keep Compensation construction in its bounded sibling module |
+| [TypeScript lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 144 | keep Compensation construction in its bounded sibling module |
+| [TypeScript compilation dispatch](../../packages/bpmn-source/src/compilation-dispatch.ts) | 464 | dispatch only; no Compensation validation belongs here |
+| [TypeScript checked graph contract](../../packages/semantic-core/src/checked-process-contract.ts) | 432 | keep the closed Compensation shape in its bounded contract owner |
+| [TypeScript graph admission](../../packages/bpmn-source/src/checked-process-graph-admission.ts) | 427 | keep only the declaration-derived dormant-scope composition seam |
+| [Lean checked JSON](../../BpmnSemantics/SemanticProcessJson/CheckedProcess.lean) | 382 | keep optional-field decoding in the bounded Compensation decoder |
+| [Lean checked admission](../../BpmnSemantics/SemanticProcess/CheckedProcessAdmission.lean) | 377 | keep exact Compensation validation in its bounded sibling owner |
 
 New bounded owners hold the Compensation checked contract, exact source compiler, TypeScript lowering, Lean decoder/admission/lowering, and focused evidence. Existing package indexes and module graphs receive exports/imports only. Same-change documentation owners are this capsule, [shared wire contracts](../../contracts/README.md), [Semantic Process IL](../SEMANTIC-PROCESS-IL-SPEC.md), applicable detail maps routed by [`implementation-status-router`](../IMPLEMENTATION-MAP.md), package READMEs, the capsule cost ledger, and [PLAN](../PLAN.md).
 

@@ -1,5 +1,6 @@
 import BpmnSemantics.SemanticProcess.JsonSupport
 import BpmnSemantics.SemanticProcessJson.Elements
+import BpmnSemantics.SemanticProcessJson.CompensationSource
 
 /-! # Strict checked-process wire decoding
 
@@ -368,6 +369,10 @@ private def decodeCheckedNode (json : Json) : Except String CheckedNode := do
       requireObjectShape json ["direction", "id", "kind"]
       expectStringField json "direction" "diverging"
       pure (.eventBasedGateway ⟨← stringField json "id"⟩)
+  | "globalSynchronousCompensationThrowEvent" =>
+      requireObjectShape json ["id", "kind"]
+      pure (.globalSynchronousCompensationThrowEvent
+        ⟨← decodeNonemptyStringField json "id"⟩)
   | "noneEndEvent" =>
       requireObjectShape json ["id", "kind"]
       pure (.noneEndEvent ⟨← stringField json "id"⟩)
@@ -407,9 +412,14 @@ private def decodeSequenceFlowScopeOwnership (json : Json) :
 
 /-- Decode the exact current checked-process wire shape without admitting it structurally. Required nullable fields such as a User Task name must be present even when their value is `null`. -/
 def decodeCheckedProcess (json : Json) : Except String CheckedProcess := do
+  let compensation ← decodeOptionalCheckedCompensationField json
   requireObjectShape json
-    ["definitionScopes", "identity", "kind", "nodeScopes", "nodes",
-      "processId", "sequenceFlowScopes", "sequenceFlows"]
+    (if compensation.isSome then
+      ["compensation", "definitionScopes", "identity", "kind", "nodeScopes", "nodes",
+        "processId", "sequenceFlowScopes", "sequenceFlows"]
+    else
+      ["definitionScopes", "identity", "kind", "nodeScopes", "nodes",
+        "processId", "sequenceFlowScopes", "sequenceFlows"])
   expectStringField json "kind" "checkedProcess"
   pure
     { identity := ← decodeSourceIdentity (← field json "identity")
@@ -424,6 +434,7 @@ def decodeCheckedProcess (json : Json) : Except String CheckedProcess := do
       nodes := ← decodeArray decodeCheckedNode (← field json "nodes")
       sequenceFlows :=
         ← decodeArray decodeCheckedSequenceFlow
-          (← field json "sequenceFlows") }
+          (← field json "sequenceFlows")
+      compensation }
 
 end BpmnSemantics.SemanticProcessJson

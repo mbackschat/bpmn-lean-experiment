@@ -232,6 +232,8 @@ theorem nodeDisabled (source : CheckedProcess) (state : SourceRuntimeState)
       simp [nodeArityValid] at candidateArity
   | eventBasedGateway id =>
       simp [nodeArityValid] at candidateArity
+  | globalSynchronousCompensationThrowEvent id =>
+      simp [nodeArityValid] at candidateArity
   | userTask id name metadata =>
       cases metadata with
       | none =>

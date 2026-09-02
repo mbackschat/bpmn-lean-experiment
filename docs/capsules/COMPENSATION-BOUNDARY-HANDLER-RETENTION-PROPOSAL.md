@@ -236,7 +236,7 @@ The 800-nonblank-line soft target is the extraction threshold and 1,200 lines th
 | [TypeScript scope cancellation](../../packages/semantic-core/src/semantic-process-scope-cancellation.ts) | 584 | remove owner-keyed records with a cancelled region even though declaring Programs exclude cancellation |
 | [TypeScript command admission](../../packages/semantic-core/src/semantic-command-admission.ts) | 364 | no producer integration at the first checkpoint |
 | [TypeScript triggered start](../../packages/semantic-core/src/semantic-process-triggered-start.ts) | 583 | initialize root-owned retention state before any start mutation |
-| [Lean Program contract](../../BpmnSemantics/SemanticProcessContract.lean) | 54 | add the optional declaration reference; extract before crossing 800 |
+| [Lean Program contract](../../BpmnSemantics/SemanticProcessContract.lean) | 5 | no further contract growth without extracting another bounded owner |
 | [Lean RuntimeState](../../BpmnSemantics/SemanticProcess/RuntimeState.lean) | 75 | add only the collection reference and its root-owned invariant; new structures live elsewhere |
 | [Lean well-formedness](../../BpmnSemantics/SemanticProcess/RuntimeStateWellFormed.lean) | 98 | add one delegated predicate; extract before crossing 800 |
 | [Lean scope completion](../../BpmnSemantics/SemanticProcess/ScopeCompletion.lean) | 694 | add exact register disposal and update its frame theorem |

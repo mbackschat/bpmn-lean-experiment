@@ -35,6 +35,7 @@ private def checkedNodeId : CheckedNode → NodeId
   | .inclusiveGatewayDiverging id _ _
   | .inclusiveGatewayConverging id _
   | .eventBasedGateway id
+  | .globalSynchronousCompensationThrowEvent id
   | .errorEndEvent id _
   | .terminateEndEvent id
   | .noneEndEvent id => id
@@ -98,7 +99,8 @@ private def attachedBoundaryHost? : CheckedNode → Option (GraphEdge NodeId)
   | .parallelGateway .. | .exclusiveGateway ..
   | .exclusiveMerge ..
   | .inclusiveGatewayDiverging .. | .inclusiveGatewayConverging ..
-  | .eventBasedGateway .. | .errorEndEvent .. | .terminateEndEvent ..
+  | .eventBasedGateway .. | .globalSynchronousCompensationThrowEvent ..
+  | .errorEndEvent .. | .terminateEndEvent ..
   | .noneEndEvent .. => none
 
 private def exceptionalEdges (nodes : List CheckedNode) : List (GraphEdge NodeId) :=
@@ -133,7 +135,8 @@ def checkedNodeIsResumptionCut : CheckedNode → Bool
   | .receiveTask .. | .configuredTask .. | .serviceTask .. | .parallelGateway ..
   | .exclusiveMerge .. | .exclusiveGateway ..
   | .inclusiveGatewayDiverging .. | .inclusiveGatewayConverging ..
-  | .eventBasedGateway .. | .errorEndEvent .. | .terminateEndEvent ..
+  | .eventBasedGateway .. | .globalSynchronousCompensationThrowEvent ..
+  | .errorEndEvent .. | .terminateEndEvent ..
   | .noneEndEvent .. => false
 
 /-- Independently classify checked graph edges removed after a selected User Task resumption boundary. -/

@@ -29,6 +29,7 @@ import {
   lowerCheckedProcess,
 } from "./semantic-process-lowering.js";
 import {
+  COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID,
   SemanticProfileId,
   isWellFormedSemanticProcessProgram,
 } from "@bpmn-lean/semantic-core";
@@ -50,6 +51,12 @@ import {
 import {
   messageKeyCorrelationContainmentCardinalities,
 } from "./message-key-correlation-source.js";
+import {
+  compensationSourceContainmentCardinalities,
+} from "./compensation-source.js";
+import {
+  compensationSourceDefinitionBindingValid,
+} from "./compensation-source-lowering.js";
 import {
   carriesDuplicateCandidateGroupsAttribute,
   isUserTaskMetadataProfile,
@@ -205,6 +212,7 @@ export async function compileBpmnToSemanticProcess(
       ...terminateEndContainmentCardinalities(request.semanticProfile),
       ...messagePayloadCatchContainmentCardinalities(request.semanticProfile),
       ...messageKeyCorrelationContainmentCardinalities(request.semanticProfile),
+      ...compensationSourceContainmentCardinalities(request.semanticProfile),
     ],
   );
   if (cardinalityMismatch !== undefined) {
@@ -263,6 +271,21 @@ export async function compileBpmnToSemanticProcess(
       diagnostic(
         BpmnSourceDiagnosticCode.UnsupportedModel,
         "The lowered Call Activity definition forest is not structurally bound to its checked source.",
+      ),
+    ]);
+  }
+  if (
+    request.semanticProfile === COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID &&
+    (!isWellFormedSemanticProcessProgram(semanticProcess) ||
+      !compensationSourceDefinitionBindingValid(
+        projection.checkedProcess,
+        semanticProcess,
+      ))
+  ) {
+    return reject([
+      diagnostic(
+        BpmnSourceDiagnosticCode.UnsupportedModel,
+        "The lowered Compensation trigger and declarations are not exactly bound to checked source.",
       ),
     ]);
   }

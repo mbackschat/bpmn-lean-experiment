@@ -181,6 +181,61 @@ structure SequentialMultiInstanceLimits where
   maximumCanonicalCollectionUtf8Bytes : Nat
   deriving Repr, DecidableEq
 
+inductive CheckedCompensationInput where
+  | empty
+  | directRestoredProcessBinding (sourcePropertyId targetDataInputId : String)
+  deriving Repr, DecidableEq
+
+structure CheckedCompensationBody where
+  handlerElementId : NodeId
+  effectElementId : NodeId
+  descriptor : EffectDescriptor
+  input : CheckedCompensationInput
+  deriving Repr, DecidableEq
+
+inductive CheckedCompensationSubject where
+  | boundaryActivity (subjectElementId boundaryEventElementId : NodeId)
+      (body : CheckedCompensationBody)
+  | eventSubProcess (parentElementId : NodeId)
+      (parentScopeId handlerScopeId : DefinitionScopeId)
+      (body : CheckedCompensationBody)
+  deriving Repr, DecidableEq
+
+inductive CheckedCompensationDependencyReason where
+  | sequenceFlow
+  deriving Repr, DecidableEq
+
+structure CheckedCompensationDependency where
+  predecessorElementId : NodeId
+  successorElementId : NodeId
+  reason : CheckedCompensationDependencyReason
+  deriving Repr, DecidableEq
+
+structure CheckedCompensationRetentionLimits where
+  maxRecords : Nat
+  maxCanonicalBytes : Nat
+  deriving Repr, DecidableEq
+
+structure CheckedCompensationSnapshotLimits where
+  maxRecords : Nat
+  maxCanonicalBytes : Nat
+  deriving Repr, DecidableEq
+
+structure CheckedCompensationExecutionLimits where
+  maxTriggers : Nat
+  maxHandlers : Nat
+  maxCanonicalBytes : Nat
+  deriving Repr, DecidableEq
+
+structure CheckedCompensation where
+  triggerElementId : NodeId
+  subjects : List CheckedCompensationSubject
+  dependencies : List CheckedCompensationDependency
+  retentionLimits : CheckedCompensationRetentionLimits
+  snapshotLimits : CheckedCompensationSnapshotLimits
+  executionLimits : CheckedCompensationExecutionLimits
+  deriving Repr, DecidableEq
+
 inductive CheckedNode where
   | noneStartEvent (id : NodeId)
   | messageStartEvent (id : NodeId) (channel : MessageChannel)
@@ -253,6 +308,7 @@ inductive CheckedNode where
       (id : NodeId)
       (pairedGatewayId : NodeId)
   | eventBasedGateway (id : NodeId)
+  | globalSynchronousCompensationThrowEvent (id : NodeId)
   | errorEndEvent (id : NodeId) (error : ErrorReference)
   | terminateEndEvent (id : NodeId)
   | noneEndEvent (id : NodeId)
@@ -285,6 +341,7 @@ def CheckedNode.id : CheckedNode → NodeId
   | .inclusiveGatewayDiverging id _ _
   | .inclusiveGatewayConverging id _
   | .eventBasedGateway id
+  | .globalSynchronousCompensationThrowEvent id
   | .errorEndEvent id _
   | .terminateEndEvent id
   | .noneEndEvent id => id
@@ -320,6 +377,7 @@ structure CheckedProcess where
   sequenceFlowScopes : List SequenceFlowScopeOwnership
   nodes : List CheckedNode
   sequenceFlows : List CheckedSequenceFlow
+  compensation : Option CheckedCompensation := none
   deriving Repr, DecidableEq
 
 structure BpmnSequenceFlowOrigin where
