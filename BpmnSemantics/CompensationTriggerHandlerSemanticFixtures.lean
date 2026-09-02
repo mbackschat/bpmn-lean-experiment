@@ -1,0 +1,211 @@
+import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerDeclaration
+import BpmnSemantics.SemanticProcess.RuntimeState
+
+/-! # Shared compensation trigger and handler semantic fixtures -/
+
+namespace BpmnSemantics.CompensationTriggerHandlerSemanticFixtures
+
+open BpmnSemantics
+open BpmnSemantics.SemanticProcess
+
+def instanceId : SemanticId := ⟨"compensation-semantic-instance"⟩
+
+def rootOwner : ScopeOccurrenceId :=
+  { processInstanceId := instanceId
+    definitionScopeId := ⟨"scope:process"⟩
+    activation := 1 }
+
+def parentB : ScopeOccurrenceId :=
+  { processInstanceId := instanceId
+    definitionScopeId := ⟨"scope:B"⟩
+    activation := 1 }
+
+def occurrence (elementId : String) (activation : Nat := 1) : OccurrenceId :=
+  { processInstanceId := instanceId, elementId := ⟨elementId⟩, activation }
+
+def activityOccurrence (elementId : String) : ActivityOccurrenceId :=
+  { processInstanceId := instanceId
+    activityElementId := ⟨elementId⟩
+    activation := 1 }
+
+def compensationDescriptor : EffectDescriptor :=
+  { protocol := "urn:bpmn-lean:effect-protocol:activity-v1"
+    operation := "urn:bpmn-lean:effect-operation:compensation-single-effect-v1" }
+
+def boundaryBody (handler : String) : SingleEffectCompensationHandlerBody :=
+  { handlerElementId := ⟨handler⟩
+    effectElementId := ⟨handler⟩
+    descriptor := compensationDescriptor
+    input := .empty }
+
+def eventBody : SingleEffectCompensationHandlerBody :=
+  { handlerElementId := ⟨"HB"⟩
+    effectElementId := ⟨"EB"⟩
+    descriptor := compensationDescriptor
+    input := .restoredProcessBinding "frozen" "argument" }
+
+def subjectDefinitions : List CompensationSubjectDefinition :=
+  [ .boundaryActivity ⟨"A"⟩ (boundaryBody "HA")
+  , .eventSubProcess ⟨"scope:B"⟩ ⟨"scope:HB"⟩ eventBody
+  , .boundaryActivity ⟨"C"⟩ (boundaryBody "HC") ]
+
+def executionDeclaration : CompensationExecutionDeclaration :=
+  { definitionScopeId := rootOwner.definitionScopeId
+    triggerOperationId := ⟨"trigger"⟩
+    subjects := subjectDefinitions
+    dependencies :=
+      [{ predecessorElementId := ⟨"A"⟩, successorElementId := ⟨"B"⟩ }]
+    limits := { maxTriggers := 2, maxHandlers := 3, maxCanonicalBytes := 65536 } }
+
+def program : Program :=
+  { identity :=
+      { compiler := .bpmnSourceSemanticProcess
+        semanticProfile := ⟨"compensation-semantic-checkpoint"⟩
+        sourceId := ⟨"manual-program"⟩
+        sourceSha256 := "manual-program-sha256" }
+    internalSchedulingMode := .rejectObservableChoice
+    processId := ⟨"process"⟩
+    definitionScopes :=
+      [{ id := ⟨"scope:process"⟩, parentScopeId := none, originElementId := ⟨"process"⟩ },
+       { id := ⟨"scope:B"⟩, parentScopeId := some ⟨"scope:process"⟩,
+         originElementId := ⟨"B"⟩ },
+       { id := ⟨"scope:HB"⟩, parentScopeId := some ⟨"scope:B"⟩,
+         originElementId := ⟨"HB"⟩ }]
+    operationScopes := [{ operationId := ⟨"trigger"⟩, scopeId := ⟨"scope:process"⟩ }]
+    controlPlaceScopes :=
+      [{ controlPlaceId := ⟨"place:trigger"⟩, scopeId := ⟨"scope:process"⟩ },
+       { controlPlaceId := ⟨"place:done"⟩, scopeId := ⟨"scope:process"⟩ }]
+    controlPlaces :=
+      [{ id := ⟨"place:trigger"⟩, origin := ⟨⟨"flow:trigger"⟩⟩ },
+       { id := ⟨"place:done"⟩, origin := ⟨⟨"flow:done"⟩⟩ }]
+    operations :=
+      [.triggerCompensation ⟨"trigger"⟩ ⟨⟨"throw"⟩⟩ ⟨"scope:process"⟩
+        ⟨"place:trigger"⟩ ⟨"place:done"⟩]
+    compensationActivityRetention := some
+      { definitionScopeId := ⟨"scope:process"⟩
+        targets :=
+          [{ activityElementId := ⟨"A"⟩, boundaryEventElementId := ⟨"BA"⟩,
+             compensationActivityElementId := ⟨"HA"⟩ },
+           { activityElementId := ⟨"C"⟩, boundaryEventElementId := ⟨"BC"⟩,
+             compensationActivityElementId := ⟨"HC"⟩ }]
+        maxRecords := 2
+        maxCanonicalBytes := 4096 }
+    compensationEventSubProcessSnapshots := some
+      { targets := [{ parentScopeId := ⟨"scope:B"⟩, handlerScopeId := ⟨"scope:HB"⟩ }]
+        maxRecords := 1
+        maxCanonicalBytes := 4096 }
+    compensationExecution := some executionDeclaration }
+
+def restoredContext : CompensationParentContextSnapshot :=
+  { frames :=
+      [{ owner := rootOwner, bindings := [{ name := "frozen", value := .string "old" }] },
+       { owner := parentB, bindings := [] }] }
+
+def subjectA : CompensationSubjectOccurrence := .boundaryActivity (activityOccurrence "A")
+def subjectB : CompensationSubjectOccurrence := .eventSubProcess parentB
+def subjectC : CompensationSubjectOccurrence := .boundaryActivity (activityOccurrence "C")
+
+def pendingHandlerA : CompensationHandlerExecution :=
+  { identity := { id := occurrence "HA", subject := subjectA, handlerElementId := ⟨"HA"⟩ }
+    lifecycle := .pending none }
+
+def compensatingHandlerB : CompensationHandlerExecution :=
+  { identity := { id := occurrence "HB", subject := subjectB, handlerElementId := ⟨"HB"⟩ }
+    lifecycle := .compensating (some restoredContext) (occurrence "EB") }
+
+def compensatingHandlerC : CompensationHandlerExecution :=
+  { identity := { id := occurrence "HC", subject := subjectC, handlerElementId := ⟨"HC"⟩ }
+    lifecycle := .compensating none (occurrence "HC") }
+
+def activeTrigger : CompensationTriggerExecution :=
+  { id := occurrence "trigger"
+    owner := rootOwner
+    output := ⟨"place:done"⟩
+    lifecycle := .active
+    handlers := [pendingHandlerA, compensatingHandlerB, compensatingHandlerC]
+    dependencies :=
+      [{ predecessor := subjectA, successor := subjectB, reason := .sequenceFlow }] }
+
+def waitB : CompensationHandlerEffectWait :=
+  { id := occurrence "EB"
+    triggerId := activeTrigger.id
+    handlerId := compensatingHandlerB.identity.id
+    descriptor := compensationDescriptor
+    arguments := [{ name := "argument", value := .string "old" }] }
+
+def waitC : CompensationHandlerEffectWait :=
+  { id := occurrence "HC"
+    triggerId := activeTrigger.id
+    handlerId := compensatingHandlerC.identity.id
+    descriptor := compensationDescriptor
+    arguments := [] }
+
+def activeState : RuntimeState :=
+  { initialState with
+    control := .running instanceId
+    scopeOccurrences := [{ id := rootOwner, parent := none }]
+    compensationTriggers := [activeTrigger]
+    compensationHandlerEffectWaits := [waitB, waitC]
+    effectActivations :=
+      [{ elementId := ⟨"EB"⟩, count := 1 }, { elementId := ⟨"HC"⟩, count := 1 }] }
+
+def dependencyDriftState : RuntimeState :=
+  { activeState with
+    compensationTriggers := [{ activeTrigger with dependencies := [] }] }
+
+def contextDriftState : RuntimeState :=
+  { activeState with
+    compensationTriggers :=
+      [{ activeTrigger with handlers :=
+          [pendingHandlerA,
+           { compensatingHandlerB with
+             lifecycle := .compensating
+               (some { restoredContext with frames :=
+                 [{ owner := rootOwner,
+                    bindings := [{ name := "frozen", value := .string "new" }] },
+                  { owner := parentB, bindings := [] }] })
+               (occurrence "EB") },
+           compensatingHandlerC] }] }
+
+def effectCollisionState : RuntimeState :=
+  { activeState with
+    effectWaits :=
+      [{ processInstanceId := instanceId
+         owner := rootOwner
+         elementId := ⟨"EB"⟩
+         activation := 1
+         descriptor := compensationDescriptor
+         arguments := []
+         outputMappings := []
+         output := ⟨"place:done"⟩
+         bpmnErrorRoute := none }] }
+
+def secondPendingHandlerA : CompensationHandlerExecution :=
+  { identity :=
+      { id := occurrence "HA" 2, subject := subjectA, handlerElementId := ⟨"HA"⟩ }
+    lifecycle := .pending none }
+
+def secondCompensatingHandlerB : CompensationHandlerExecution :=
+  { identity :=
+      { id := occurrence "HB" 2, subject := subjectB, handlerElementId := ⟨"HB"⟩ }
+    lifecycle := .compensating (some restoredContext) (occurrence "EB" 2) }
+
+def secondCompensatingHandlerC : CompensationHandlerExecution :=
+  { identity :=
+      { id := occurrence "HC" 2, subject := subjectC, handlerElementId := ⟨"HC"⟩ }
+    lifecycle := .compensating none (occurrence "HC" 2) }
+
+def secondActiveTrigger : CompensationTriggerExecution :=
+  { id := occurrence "trigger" 2
+    owner := rootOwner
+    output := ⟨"place:done"⟩
+    lifecycle := .active
+    handlers :=
+      [secondPendingHandlerA, secondCompensatingHandlerB, secondCompensatingHandlerC]
+    dependencies :=
+      [{ predecessor := subjectA, successor := subjectB, reason := .sequenceFlow }] }
+
+def secondActiveTriggerState : RuntimeState :=
+  { activeState with compensationTriggers := [activeTrigger, secondActiveTrigger] }
+
+end BpmnSemantics.CompensationTriggerHandlerSemanticFixtures
