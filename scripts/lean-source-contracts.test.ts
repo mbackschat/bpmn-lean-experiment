@@ -167,6 +167,11 @@ const evaluatorIndependentRelations = Object.freeze([
     relation: "CompensationFrontierStep",
     evaluator: "activateCompensationFrontier",
   }),
+  Object.freeze({
+    path: "BpmnSemantics/SemanticProcess/CompensationTriggerHandlerFrontier.lean",
+    relation: "CompensationFrontierRefusalStep",
+    evaluator: "activateCompensationFrontier",
+  }),
 ]);
 
 function evaluatorDelegationViolations(
@@ -366,6 +371,9 @@ test("declarative compensation relations cannot delegate meaning to their evalua
 inductive CompensationFrontierStep : Nat \u2192 Prop where
   | activate (selected : activateCompensationFrontier = some 1) :
       CompensationFrontierStep 1
+
+inductive CompensationFrontierRefusalStep : Prop where
+  | refused : CompensationFrontierRefusalStep
 `;
   assert.deepEqual(
     leanSourceViolations(path, delegated).map(formatViolation),
@@ -379,6 +387,9 @@ inductive CompensationFrontierStep : Nat \u2192 Prop where
 inductive CompensationFrontierStep : Nat \u2192 Prop where
   | activate (selected : activateHandlers = some 1) :
       CompensationFrontierStep 1
+
+inductive CompensationFrontierRefusalStep : Prop where
+  | refused : CompensationFrontierRefusalStep
 `;
   assert.deepEqual(leanSourceViolations(path, independent), []);
 });

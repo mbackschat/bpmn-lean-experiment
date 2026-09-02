@@ -93,6 +93,30 @@ inductive CompensationHandlerActivationStep (program : Program)
           arguments }
         (setEffectActivationCount activations definition.body.effectElementId activation)
 
+/-- Declarative reasons why one maximal handler cannot enter its compensation effect. -/
+inductive CompensationHandlerActivationRefusal (program : Program)
+    (trigger : CompensationTriggerExecution) (handler : CompensationHandlerExecution)
+    (activations : List EffectActivation) : Prop where
+  | missingDefinition
+      (maximal : compensationHandlerIsMaximal trigger handler = true)
+      (absent : compensationSubjectDefinitionForOccurrence?
+        program handler.identity.subject = none) :
+      CompensationHandlerActivationRefusal program trigger handler activations
+  | nonpending (definition : CompensationSubjectDefinition)
+      (maximal : compensationHandlerIsMaximal trigger handler = true)
+      (declared : compensationSubjectDefinitionForOccurrence?
+        program handler.identity.subject = some definition)
+      (nonpending : match handler.lifecycle with | .pending _ => false | _ => true) :
+      CompensationHandlerActivationRefusal program trigger handler activations
+  | invalidArguments (definition : CompensationSubjectDefinition)
+      (restoredContext : Option CompensationParentContextSnapshot)
+      (maximal : compensationHandlerIsMaximal trigger handler = true)
+      (declared : compensationSubjectDefinitionForOccurrence?
+        program handler.identity.subject = some definition)
+      (pending : handler.lifecycle = .pending restoredContext)
+      (unmapped : compensationHandlerArguments? definition.body restoredContext = none) :
+      CompensationHandlerActivationRefusal program trigger handler activations
+
 /-- Declarative maximal-frontier traversal; nonmaximal handlers are preserved exactly. -/
 inductive CompensationFrontierHandlersStep (program : Program)
     (trigger : CompensationTriggerExecution) :
@@ -122,6 +146,36 @@ inductive CompensationFrontierHandlersStep (program : Program)
         handlers waits finalActivations) :
       CompensationFrontierHandlersStep program trigger (handler :: rest) activations
         (handler :: handlers) waits finalActivations
+
+/-- Declarative failure of a maximal-frontier traversal. -/
+inductive CompensationFrontierHandlersRefusal (program : Program)
+    (trigger : CompensationTriggerExecution) :
+    List CompensationHandlerExecution → List EffectActivation → Prop where
+  | head (handler : CompensationHandlerExecution)
+      (rest : List CompensationHandlerExecution)
+      (activations : List EffectActivation)
+      (refusal : CompensationHandlerActivationRefusal
+        program trigger handler activations) :
+      CompensationFrontierHandlersRefusal program trigger
+        (handler :: rest) activations
+  | activatedTail (handler updated : CompensationHandlerExecution)
+      (rest : List CompensationHandlerExecution)
+      (activations nextActivations : List EffectActivation)
+      (wait : CompensationHandlerEffectWait)
+      (head : CompensationHandlerActivationStep program trigger handler activations
+        updated wait nextActivations)
+      (tail : CompensationFrontierHandlersRefusal
+        program trigger rest nextActivations) :
+      CompensationFrontierHandlersRefusal program trigger
+        (handler :: rest) activations
+  | preservedTail (handler : CompensationHandlerExecution)
+      (rest : List CompensationHandlerExecution)
+      (activations : List EffectActivation)
+      (notMaximal : compensationHandlerIsMaximal trigger handler = false)
+      (tail : CompensationFrontierHandlersRefusal
+        program trigger rest activations) :
+      CompensationFrontierHandlersRefusal program trigger
+        (handler :: rest) activations
 
 private def activateHandlers (program : Program) (trigger : CompensationTriggerExecution) :
     List CompensationHandlerExecution → List EffectActivation →
@@ -242,6 +296,76 @@ private theorem activateHandlers_sound (program : Program)
               | terminated =>
                   simp [activateHandlers, maximalEq, declaredEq, lifecycleEq] at selected
 
+private theorem activateHandlers_refusal_sound (program : Program)
+    (trigger : CompensationTriggerExecution)
+    (handlers : List CompensationHandlerExecution)
+    (activations : List EffectActivation)
+    (refused : activateHandlers program trigger handlers activations = none) :
+    CompensationFrontierHandlersRefusal program trigger handlers activations := by
+  induction handlers generalizing activations with
+  | nil => simp [activateHandlers] at refused
+  | cons handler rest ih =>
+      cases maximalEq : compensationHandlerIsMaximal trigger handler with
+      | false =>
+          cases tailEq : activateHandlers program trigger rest activations with
+          | none =>
+              exact .preservedTail handler rest activations maximalEq
+                (ih activations tailEq)
+          | some result => simp [activateHandlers, maximalEq, tailEq] at refused
+      | true =>
+          cases declaredEq : compensationSubjectDefinitionForOccurrence?
+              program handler.identity.subject with
+          | none => exact .head handler rest activations (.missingDefinition maximalEq declaredEq)
+          | some definition =>
+              cases lifecycleEq : handler.lifecycle with
+              | pending restoredContext =>
+                  cases mappedEq : compensationHandlerArguments?
+                      definition.body restoredContext with
+                  | none =>
+                      exact .head handler rest activations
+                        (.invalidArguments definition restoredContext maximalEq declaredEq
+                          lifecycleEq mappedEq)
+                  | some arguments =>
+                      let activation := compensationEffectActivationCountIn activations
+                        definition.body.effectElementId + 1
+                      let nextActivations := setEffectActivationCount activations
+                        definition.body.effectElementId activation
+                      cases tailEq : activateHandlers program trigger rest nextActivations with
+                      | none =>
+                          exact .activatedTail handler
+                            { identity := handler.identity
+                              lifecycle := .compensating restoredContext
+                                { processInstanceId := trigger.id.processInstanceId
+                                  elementId := ⟨definition.body.effectElementId.value⟩
+                                  activation } }
+                            rest activations nextActivations
+                            { id :=
+                                { processInstanceId := trigger.id.processInstanceId
+                                  elementId := ⟨definition.body.effectElementId.value⟩
+                                  activation }
+                              triggerId := trigger.id
+                              handlerId := handler.identity.id
+                              descriptor := definition.body.descriptor
+                              arguments }
+                            (.activate handler activations definition restoredContext
+                              arguments activation maximalEq declaredEq lifecycleEq mappedEq rfl)
+                            (ih nextActivations tailEq)
+                      | some result =>
+                          simp [activateHandlers, maximalEq, declaredEq, lifecycleEq,
+                            mappedEq, activation, nextActivations, tailEq] at refused
+              | compensating restoredContext effectId =>
+                  exact .head handler rest activations
+                    (.nonpending definition maximalEq declaredEq (by simp [lifecycleEq]))
+              | compensated =>
+                  exact .head handler rest activations
+                    (.nonpending definition maximalEq declaredEq (by simp [lifecycleEq]))
+              | failed =>
+                  exact .head handler rest activations
+                    (.nonpending definition maximalEq declaredEq (by simp [lifecycleEq]))
+              | terminated =>
+                  exact .head handler rest activations
+                    (.nonpending definition maximalEq declaredEq (by simp [lifecycleEq]))
+
 /-- Activates the complete maximal frontier against one immutable pre-frontier trigger. -/
 def activateCompensationFrontier (program : Program) (state : RuntimeState)
     (trigger : CompensationTriggerExecution) : Option CompensationFrontierActivation := do
@@ -262,6 +386,17 @@ inductive CompensationFrontierStep (program : Program) (state : RuntimeState)
       CompensationFrontierStep program state trigger
         { trigger := { trigger with handlers }, waits, effectActivations }
 
+/-- Declarative refusal before any frontier state is committed. -/
+inductive CompensationFrontierRefusalStep (program : Program) (state : RuntimeState)
+    (trigger : CompensationTriggerExecution) : Prop where
+  | inactive (inactive : (trigger.lifecycle != .active) = true) :
+      CompensationFrontierRefusalStep program state trigger
+  | handlers
+      (active : trigger.lifecycle = .active)
+      (refusal : CompensationFrontierHandlersRefusal
+        program trigger trigger.handlers state.effectActivations) :
+      CompensationFrontierRefusalStep program state trigger
+
 theorem activateCompensationFrontier_sound (program : Program) (state : RuntimeState)
     (trigger : CompensationTriggerExecution) (activation : CompensationFrontierActivation)
     (selected : activateCompensationFrontier program state trigger = some activation) :
@@ -279,5 +414,22 @@ theorem activateCompensationFrontier_sound (program : Program) (state : RuntimeS
           exact .activate handlers waits effectActivations (by simpa using activeEq)
             (activateHandlers_sound program trigger trigger.handlers handlers
               state.effectActivations effectActivations waits handlersEq)
+
+theorem activateCompensationFrontier_refusal_sound (program : Program)
+    (state : RuntimeState) (trigger : CompensationTriggerExecution)
+    (refused : activateCompensationFrontier program state trigger = none) :
+    CompensationFrontierRefusalStep program state trigger := by
+  cases activeEq : trigger.lifecycle != .active with
+  | true => exact .inactive activeEq
+  | false =>
+      cases handlersEq : activateHandlers program trigger trigger.handlers
+          state.effectActivations with
+      | none =>
+          exact .handlers (by simpa using activeEq)
+            (activateHandlers_refusal_sound program trigger trigger.handlers
+              state.effectActivations handlersEq)
+      | some result =>
+          rcases result with ⟨handlers, waits, effectActivations⟩
+          simp [activateCompensationFrontier, activeEq, handlersEq] at refused
 
 end BpmnSemantics.SemanticProcess
