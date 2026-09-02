@@ -2,8 +2,8 @@
 
 ## Status
 
-Lifecycle: draft
-Review: pending
+Lifecycle: implementation-in-progress
+Review: approved-with-required-edits
 
 ## Prior review
 
@@ -11,7 +11,7 @@ Cold review rejected `21f83fa9`: the handler join was prose, failure had no Proc
 
 The post-approval checkpoint-boundary review accepted `540e0b2d` with required edits; the same reviewer approved corrections `e4dd8430` and `010a686c`, closing preservation of `notStarted`, Product 2 failed-value rejection, and the live-hosting exclusion without changing the selected semantic account.
 
-Implementation preflight then exposed one representation defect before either semantic evaluator was written: trigger creation consumes a promoted Event Sub-Process snapshot, but the approved `pending` handler arm had nowhere to retain it when that subject was not in the first maximal frontier. The fixed B/C witness concealed the defect because its Event Sub-Process handler starts immediately, while the admitted acyclic declaration also permits an Event Sub-Process predecessor that starts only after its successor completes. This amendment places the already-selected frozen context in the exact pending handler that owns the consumed subject. Cold review accepted target `5b45b845` with required edits to complete the four-collection continuation inventory and make pending-context capacity, continuation, and cancellation evidence explicit; implementation remains stopped until the same reviewer audits those corrections.
+Implementation preflight then exposed one representation defect before either semantic evaluator was written: trigger creation consumes a promoted Event Sub-Process snapshot, but the approved `pending` handler arm had nowhere to retain it when that subject was not in the first maximal frontier. The fixed B/C witness concealed the defect because its Event Sub-Process handler starts immediately, while the admitted acyclic declaration also permits an Event Sub-Process predecessor that starts only after its successor completes. This amendment places the already-selected frozen context in the exact pending handler that owns the consumed subject. Cold review accepted target `5b45b845` with required edits to complete the four-collection continuation inventory and make pending-context capacity, continuation, and cancellation evidence explicit; the same reviewer approved correction target `00d0db3b` with both findings closed and no semantic drift.
 
 ## Question and bounded outcome
 
@@ -477,6 +477,6 @@ After approval, the first implementation stage stops when the complete Program/R
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `5b45b845c5890b89188c2e0bf024946237021106` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `5b45b845c5890b89188c2e0bf024946237021106` | `fork-turns-none` | `approve-with-required-edits` | `00d0db3bd6d3` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
