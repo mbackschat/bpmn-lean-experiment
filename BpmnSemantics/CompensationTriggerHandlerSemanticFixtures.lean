@@ -57,6 +57,10 @@ def executionDeclaration : CompensationExecutionDeclaration :=
       [{ predecessorElementId := ⟨"A"⟩, successorElementId := ⟨"B"⟩ }]
     limits := { maxTriggers := 2, maxHandlers := 3, maxCanonicalBytes := 65536 } }
 
+def triggerOperation : SemanticOperation :=
+  .triggerCompensation ⟨"trigger"⟩ ⟨⟨"throw"⟩⟩ ⟨"scope:process"⟩
+    ⟨"place:trigger"⟩ ⟨"place:done"⟩
+
 def program : Program :=
   { identity :=
       { compiler := .bpmnSourceSemanticProcess
@@ -71,7 +75,11 @@ def program : Program :=
          originElementId := ⟨"B"⟩ },
        { id := ⟨"scope:HB"⟩, parentScopeId := some ⟨"scope:B"⟩,
          originElementId := ⟨"HB"⟩ }]
-    operationScopes := [{ operationId := ⟨"trigger"⟩, scopeId := ⟨"scope:process"⟩ }]
+    operationScopes :=
+      [{ operationId := ⟨"op:A"⟩, scopeId := ⟨"scope:process"⟩ },
+       { operationId := ⟨"op:C"⟩, scopeId := ⟨"scope:process"⟩ },
+       { operationId := ⟨"op:enter-B"⟩, scopeId := ⟨"scope:process"⟩ },
+       { operationId := ⟨"trigger"⟩, scopeId := ⟨"scope:process"⟩ }]
     controlPlaceScopes :=
       [{ controlPlaceId := ⟨"place:trigger"⟩, scopeId := ⟨"scope:process"⟩ },
        { controlPlaceId := ⟨"place:done"⟩, scopeId := ⟨"scope:process"⟩ }]
@@ -79,8 +87,13 @@ def program : Program :=
       [{ id := ⟨"place:trigger"⟩, origin := ⟨⟨"flow:trigger"⟩⟩ },
        { id := ⟨"place:done"⟩, origin := ⟨⟨"flow:done"⟩⟩ }]
     operations :=
-      [.triggerCompensation ⟨"trigger"⟩ ⟨⟨"throw"⟩⟩ ⟨"scope:process"⟩
-        ⟨"place:trigger"⟩ ⟨"place:done"⟩]
+      [.awaitUserTask ⟨"op:A"⟩ ⟨⟨"A"⟩⟩ ⟨"place:a-in"⟩ ⟨"place:a-out"⟩
+        { id := ⟨"A"⟩, name := none },
+       .awaitUserTask ⟨"op:C"⟩ ⟨⟨"C"⟩⟩ ⟨"place:c-in"⟩ ⟨"place:c-out"⟩
+        { id := ⟨"C"⟩, name := none },
+       .enterScope ⟨"op:enter-B"⟩ ⟨⟨"B"⟩⟩ ⟨"place:b-in"⟩ ⟨"place:b-entry"⟩
+        ⟨"scope:B"⟩,
+       triggerOperation]
     compensationActivityRetention := some
       { definitionScopeId := ⟨"scope:process"⟩
         targets :=
@@ -148,6 +161,66 @@ def activeState : RuntimeState :=
     compensationHandlerEffectWaits := [waitB, waitC]
     effectActivations :=
       [{ elementId := ⟨"EB"⟩, count := 1 }, { elementId := ⟨"HC"⟩, count := 1 }] }
+
+def preTriggerState : RuntimeState :=
+  { initialState with
+    control := .running instanceId
+    scopeOccurrences := [{ id := rootOwner, parent := none }]
+    tokens := [{ placeId := ⟨"place:trigger"⟩, owner := rootOwner }]
+    compensationActivityRetentions :=
+      [{ owner := rootOwner
+         nextCompletionOrdinal := 3
+         records :=
+           [{ id := activityOccurrence "A", completionOrdinal := 1 },
+            { id := activityOccurrence "C", completionOrdinal := 2 }] }]
+    compensationParentContextRetentions :=
+      [.promoted { id := parentB, parent := some rootOwner } ⟨"scope:HB"⟩ restoredContext] }
+
+def triggeredState : RuntimeState :=
+  { activeState with
+    compensationActivityRetentions :=
+      [{ owner := rootOwner, nextCompletionOrdinal := 3, records := [] }] }
+
+def secondTriggerEmptySourceState : RuntimeState :=
+  { triggeredState with
+    tokens := [{ placeId := ⟨"place:trigger"⟩, owner := rootOwner }] }
+
+def secondTriggerEligibleSourceState : RuntimeState :=
+  { preTriggerState with
+    compensationTriggers := [activeTrigger]
+    compensationHandlerEffectWaits := [waitB, waitC]
+    effectActivations := activeState.effectActivations }
+
+def zeroSubjectDeclaration : CompensationExecutionDeclaration :=
+  { executionDeclaration with
+    subjects := []
+    dependencies := []
+    limits := { maxTriggers := 1, maxHandlers := 1, maxCanonicalBytes := 4096 } }
+
+def zeroSubjectProgram : Program :=
+  { program with
+    compensationActivityRetention := none
+    compensationEventSubProcessSnapshots := none
+    compensationExecution := some zeroSubjectDeclaration }
+
+def succeededEmptyTrigger : CompensationTriggerExecution :=
+  { id := occurrence "trigger"
+    owner := rootOwner
+    output := ⟨"place:done"⟩
+    lifecycle := .succeeded
+    handlers := []
+    dependencies := [] }
+
+def zeroSubjectAtRetainedLimitState : RuntimeState :=
+  { initialState with
+    control := .running instanceId
+    scopeOccurrences := [{ id := rootOwner, parent := none }]
+    tokens := [{ placeId := ⟨"place:trigger"⟩, owner := rootOwner }]
+    compensationTriggers := [succeededEmptyTrigger] }
+
+def zeroSubjectAtRetainedLimitSuccessor : RuntimeState :=
+  { zeroSubjectAtRetainedLimitState with
+    tokens := [{ placeId := ⟨"place:done"⟩, owner := rootOwner }] }
 
 def dependencyDriftState : RuntimeState :=
   { activeState with
