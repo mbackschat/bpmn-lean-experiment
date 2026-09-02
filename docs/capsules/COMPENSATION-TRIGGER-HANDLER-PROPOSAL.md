@@ -9,6 +9,8 @@ Review: approved-with-required-edits
 
 Cold review rejected `21f83fa9`: the handler join was prose, failure had no Process lifecycle or receipt, Continue-As-New carried an already scheduled Activity, and the migration inventory omitted decisive owners. Review target `59a2d3e1` accepted the material redesign with required edits; the same reviewer approved corrections `af15fa2f` and `f1a7db62` with every original finding closed.
 
+The post-approval checkpoint-boundary review accepted `540e0b2d` with required edits; the same reviewer approved corrections `e4dd8430` and `010a686c`, closing preservation of `notStarted`, Product 2 failed-value rejection, and the live-hosting exclusion without changing the selected semantic account.
+
 ## Question and bounded outcome
 
 What is the smallest standards-only account that can consume the two approved compensation-retention forms, trigger synchronous global compensation, restore a Compensation Event Sub-Process snapshot, execute dependency-aware handlers, and make handler failure and cancellation explicit?
