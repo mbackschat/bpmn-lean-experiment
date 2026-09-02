@@ -175,6 +175,21 @@ The unchanged-limit isolation pass then exercised every cold consumer implicated
 
 The accepted complete receipts are immutable at `7b3ca41f`. The warm-closure test ran in 0.65 seconds at 120,048 KiB GNU RSS and 136,794,112 bytes cgroup peak; its log SHA-256 is `aaec15959030baf4dae2b0327c50fdb5b8a765e3f80ad93b82629f4339833d58`. The warm-closure build ran in 0.45 seconds at 119,768 KiB and 36,450,304 bytes; its log SHA-256 is `748a58696eab89272da962e2f88d514187abf2aab87a66985dfedc4e14ee0a13`. Both exited zero with every controlled memory event zero. The validator binds these receipts as closure evidence while the rejected cold diagnostic and isolated cold-consumer rows remain visible; no larger limit or exit-code-only exception was introduced.
 
+#### Compensation trigger-handler module-cost binding
+
+The compensation trigger-handler proof owners were measured from immutable commit `ef739572` with a warm dependency closure and only each measured target's own generated artifacts removed. Other host processes were active, so elapsed time is recorded but not compared; every command exited zero without swap, and every cgroup `high`, `max`, `oom`, `oom_kill`, and `oom_group_kill` event remained zero.
+
+| Target | Elapsed | GNU maximum RSS | Cgroup peak |
+|---|---:|---:|---:|
+| `CompensationTriggerHandlerRuntimeContractConformance` | 0.68 s | 705,308 KiB | 176,893,952 bytes |
+| `CompensationTriggerHandlerRuntimeConformance` | 2.93 s | 1,086,024 KiB | 710,311,936 bytes |
+| `CompensationTriggerHandlerTransitionConformance` | 9.28 s | 1,844,180 KiB | 1,409,675,264 bytes |
+| `CompensationTriggerHandlerCompletionConformance` | 27.28 s | 2,966,900 KiB | 2,705,903,616 bytes |
+| `CompensationActivityRetentionConformance` | 6.68 s | 1,916,172 KiB | 1,468,231,680 bytes |
+| `CompensationEventSubProcessSnapshotAtomicityConformance` | 6.55 s | 1,977,500 KiB | 1,534,824,448 bytes |
+
+The completion owner crosses the conservative 90% GNU-RSS disclosure threshold and is therefore listed in the executable near-cap registry. Its cgroup peak retained 515,321,856 bytes of hard-limit headroom with no pressure event. The fixed 3 GiB ceiling remains unchanged; the owner is viable but must not absorb another proof family without remeasurement or structural separation.
+
 | Increment | Boundary | Code | Documentation | Elapsed | Comparison consequence |
 |---|---|---:|---:|---|---|
 | [Scoped runtime data](capsules/SCOPED-DATA-SPEC.md) | `08d8b84..3b2e44d` | `+540/-73` | `+134/-11` | Unknown | First atomic runtime-representation replacement; later scope work should not be compared as if it were a small local semantic clause. |

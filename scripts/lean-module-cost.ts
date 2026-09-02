@@ -132,6 +132,7 @@ export const leanModuleCostRecord = {
     "BpmnSemantics.SequentialMultiInstanceProgramBindingConformance",
     "BpmnSemantics.CallActivityConformance",
     "BpmnSemantics.CompensationEventSubProcessSnapshotRootClosureConformance",
+    "BpmnSemantics.CompensationTriggerHandlerCompletionConformance",
     "BpmnSemantics.TerminateEndEventConformance",
     "BpmnSemantics.TimerStartConformance",
   ],
@@ -389,9 +390,27 @@ export const leanModuleCostRecord = {
     },
     {
       module: "BpmnSemantics.CompensationTriggerHandlerRuntimeContractConformance",
-      peakResidentKib: 662884,
-      elapsedSeconds: 1.17,
-      measuredAtCommit: "713aab69",
+      peakResidentKib: 705308,
+      elapsedSeconds: 0.68,
+      measuredAtCommit: "ef739572",
+    },
+    {
+      module: "BpmnSemantics.CompensationTriggerHandlerRuntimeConformance",
+      peakResidentKib: 1086024,
+      elapsedSeconds: 2.93,
+      measuredAtCommit: "ef739572",
+    },
+    {
+      module: "BpmnSemantics.CompensationTriggerHandlerTransitionConformance",
+      peakResidentKib: 1844180,
+      elapsedSeconds: 9.28,
+      measuredAtCommit: "ef739572",
+    },
+    {
+      module: "BpmnSemantics.CompensationTriggerHandlerCompletionConformance",
+      peakResidentKib: 2966900,
+      elapsedSeconds: 27.28,
+      measuredAtCommit: "ef739572",
     },
     {
       module: "BpmnSemantics.CompensationActivityRetentionProducerConformance",
@@ -401,9 +420,9 @@ export const leanModuleCostRecord = {
     },
     {
       module: "BpmnSemantics.CompensationActivityRetentionConformance",
-      peakResidentKib: 1928340,
-      elapsedSeconds: 8.27,
-      measuredAtCommit: "2532ebda",
+      peakResidentKib: 1916172,
+      elapsedSeconds: 6.68,
+      measuredAtCommit: "ef739572",
     },
     {
       module: "BpmnSemantics.UserTaskMetadataConformance",
@@ -475,9 +494,9 @@ export const leanModuleCostRecord = {
     },
     {
       module: "BpmnSemantics.CompensationEventSubProcessSnapshotAtomicityConformance",
-      peakResidentKib: 1847580,
-      elapsedSeconds: 11.81,
-      measuredAtCommit: "1fda9213",
+      peakResidentKib: 1977500,
+      elapsedSeconds: 6.55,
+      measuredAtCommit: "ef739572",
     },
     {
       module: "BpmnSemantics.CompensationEventSubProcessSnapshotErrorInterruptionConformance",
