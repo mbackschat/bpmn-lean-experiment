@@ -2,14 +2,16 @@
 
 ## Status
 
-Lifecycle: draft
-Review: pending
+Lifecycle: owner-approved
+Review: approved-with-required-edits
 
 ## Prior review
 
 The independently approved [boundary-handler retention proposal](COMPENSATION-BOUNDARY-HANDLER-RETENTION-PROPOSAL.md), [Event Sub-Process snapshot proposal](COMPENSATION-EVENT-SUB-PROCESS-SNAPSHOT-PROPOSAL.md), and [trigger and handler proposal](COMPENSATION-TRIGGER-HANDLER-PROPOSAL.md) own the runtime meaning this capsule must preserve. Their source-admission exclusions are intentional. This companion proposal selects only the source, checked-graph, and lowering facts needed to construct their existing Program declarations without reopening eligibility, ordering, restoration, failure, cancellation, or hosting semantics.
 
 The non-admitting reader at `4c5d6145` established parser-graph identity for the global throw, boundary handlers, Event Sub-Process handler, and direct subject dependencies. It deliberately selected no handler body, restored binding, checked representation, limits, profile, or capability. Those remaining choices are material and require this new cold proposal review.
+
+Cold review of target `fb4ff27c` found that the proposed 16,384-byte execution limit could not contain its own 8,192-byte snapshot contract, the full Product 1 admission path was incomplete, and the source-type, Boolean, identity, and normative boundaries were not yet closed. Correction target `50d2525f` records the runtime-canonical 17,808-byte complete frontier and a 20,480-byte bound, closes those contracts, and requires the real no-start host witness. The same reviewer then found that its string-valued Process start would widen the checkpoint asymmetrically; correction target `140510d2` selects the existing empty domain in both semantic accounts and was approved with no remaining finding.
 
 ## Question and bounded outcome
 
@@ -230,6 +232,6 @@ That checkpoint requires independent cold review before profile registration, an
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `fb4ff27cc14dd735ce7e59a74594269dbfbeeeaa` | `fork-turns-none` | `approve-with-required-edits` | `50d2525fd65926f3d72192301cab0046d02a5cbc, 140510d221764f2164a0c6da216241a7972a38f3` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
