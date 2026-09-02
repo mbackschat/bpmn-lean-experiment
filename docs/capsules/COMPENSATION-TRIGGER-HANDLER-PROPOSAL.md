@@ -439,13 +439,13 @@ The operation census must classify trigger creation and frontier activation as o
 | [TS RuntimeState](../../packages/semantic-core/src/semantic-process-state.ts) | 363 | collection/control references only |
 | [TS runtime validity](../../packages/semantic-core/src/runtime-state-well-formedness.ts) | 51 | extract compensation validity first |
 | [TS runtime defects](../../packages/semantic-core/src/runtime-state-defect.ts) | 760 | new defect arms only |
-| [TS command admission](../../packages/semantic-core/src/semantic-command-admission.ts) | 380 | result dispatch only |
+| [TS command admission](../../packages/semantic-core/src/semantic-command-admission.ts) | 364 | result dispatch only |
 | [TS transition trace](../../packages/semantic-core/src/semantic-transition-trace.ts) | 426 | failed arm only |
-| [TS lifecycle](../../packages/semantic-core/src/flow-node-occurrence-lifecycle.ts) | 103 | delegate compensation projection |
-| [TS lifecycle completeness](../../packages/semantic-core/src/flow-node-occurrence-publication-external-completeness.ts) | 91 | delegate compensation oracle |
+| [TS lifecycle](../../packages/semantic-core/src/flow-node-occurrence-lifecycle.ts) | 61 | delegate compensation projection |
+| [TS lifecycle completeness](../../packages/semantic-core/src/flow-node-occurrence-publication-external-completeness.ts) | 87 | delegate compensation oracle |
 | [TS canonical contract](../../packages/semantic-core/src/contract.ts) | 311 | failed union references only |
-| [TS evaluator](../../packages/semantic-core/src/semantic-process-runtime.ts) | 54 | dispatch only; extract all trigger and handler logic before growth |
-| [TS observation producer](../../packages/semantic-core/src/scenario.ts) | 159 | failed projection and exhaustive switch only |
+| [TS evaluator](../../packages/semantic-core/src/semantic-process-runtime.ts) | 18 | dispatch only; extract all trigger and handler logic before growth |
+| [TS observation producer](../../packages/semantic-core/src/scenario.ts) | 153 | failed projection and exhaustive switch only |
 | [TS control-position projection](../../packages/semantic-core/src/control-position-projection.ts) | 383 | failed terminal-empty arm only |
 | [TS internal attempt](../../packages/semantic-core/src/internal-transition-attempt.ts) | 668 | trigger-attempt delegation only |
 | [Lean Program](../../BpmnSemantics/SemanticProcessContract.lean) | 54 | declaration reference only; extract the contract first if the reference cannot fit |
@@ -493,6 +493,8 @@ Reopen before implementation if review finds the fail-fast rule incompatible wit
 The earlier proposal and pending-handler amendment targets and their correction audits remain immutable evidence for the account they reviewed. The one-active-trigger restriction changes the admitted Runtime states and refusal boundary needed to keep terminal failure total, so proposal review is reopened before implementation resumes.
 
 After approval, the first implementation stage stops when the complete Program/Runtime/observation/receipt representation, its mandatory strict-reader and terminal-value propagation, and the independent Lean/TypeScript semantics named above are green. Temporal and Product 1 may only decode, preserve, reject continuation of, or terminally classify the exact widened value; Product 2 must strictly reject failed ingress before rejected-page application or persistence and must not expose it. The checkpoint must not admit the compensation profile, schedule or execute a handler, or publish a compensation capability. Independent review is required before source, profile, shared scenario, CIB, live Temporal hosting, Product 1 compensation capability, corpus, or Product 2 persistence/API/UI/journey work begins.
+
+Implementation progress: the independent TypeScript account is green through atomic source selection and consumption, restored-context trigger construction, complete maximal-frontier activation, success and fail-fast failure, sibling cancellation, stale-result and successor-capacity refusal, retained tombstones, zero-subject continuation, one-active-trigger exclusion, exact failed-trigger multiplicity, and private occurrence lifecycle. The proved Lean transition account is the remaining semantic-checkpoint lane; none of the excluded downstream capability work has begun.
 
 ## Independent cold-review receipt
 

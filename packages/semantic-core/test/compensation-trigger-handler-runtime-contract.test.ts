@@ -234,3 +234,102 @@ test("retains and accounts for a deferred Event Sub-Process handler context", ()
     true,
   );
 });
+
+test("rejects two active triggers owned by the same root", () => {
+  const first = pendingTrigger(1);
+  const second = pendingTrigger(2);
+  const state = {
+    ...initialState,
+    control: { kind: ControlStateKind.Running, instanceId: processInstanceId },
+    compensationTriggers: [first, second],
+    compensationHandlerEffectWaits: [],
+  } as const satisfies RuntimeState;
+
+  assert.equal(
+    compensationExecutionStateDefects(program, state).includes(
+      CompensationExecutionStateDefect.InvalidTrigger,
+    ),
+    true,
+  );
+});
+
+test("requires exactly one failed trigger and only succeeded trigger tombstones beside it", () => {
+  const firstFailed = terminalTrigger(1, "failed");
+  const secondFailed = terminalTrigger(2, "failed");
+  const twiceFailed = failedState([firstFailed, secondFailed], 1);
+  assert.equal(
+    compensationExecutionStateDefects(program, twiceFailed).includes(
+      CompensationExecutionStateDefect.FailedLifecycleMismatch,
+    ),
+    true,
+  );
+
+  const succeededThenFailed = failedState([
+    terminalTrigger(1, "succeeded"),
+    secondFailed,
+  ], 2);
+  assert.equal(
+    compensationExecutionStateDefects(program, succeededThenFailed).includes(
+      CompensationExecutionStateDefect.FailedLifecycleMismatch,
+    ),
+    false,
+  );
+});
+
+function pendingTrigger(activation: number): CompensationTriggerExecution {
+  return {
+    ...trigger,
+    id: { ...trigger.id, activation },
+    handlers: [{
+      id: { ...handlerId, activation },
+      subject,
+      handlerElementId: "Undo_B",
+      lifecycle: "pending",
+      restoredContext,
+    }],
+  };
+}
+
+function terminalTrigger(
+  activation: number,
+  lifecycle: "succeeded" | "failed",
+): CompensationTriggerExecution {
+  return {
+    ...trigger,
+    id: { ...trigger.id, activation },
+    lifecycle,
+    handlers: [{
+      id: { ...handlerId, activation },
+      subject,
+      handlerElementId: "Undo_B",
+      lifecycle: lifecycle === "succeeded" ? "compensated" : "failed",
+    }],
+  };
+}
+
+function failedState(
+  triggers: CompensationTriggerExecution[],
+  failureActivation: number,
+): RuntimeState {
+  return {
+    ...initialState,
+    control: {
+      kind: ControlStateKind.Failed,
+      instanceId: processInstanceId,
+      failure: {
+        kind: "compensationHandlerFailure",
+        triggerId: { ...triggerId, activation: failureActivation },
+        handlerId: { ...handlerId, activation: failureActivation },
+        effectId: { ...effectId, activation: failureActivation },
+        code: "compensation-failed",
+        message: null,
+      },
+    },
+    compensationTriggers: triggers,
+    compensationHandlerEffectWaits: [],
+    effectActivations: [{
+      elementId: effectId.elementId,
+      count: failureActivation,
+    }],
+  };
+}

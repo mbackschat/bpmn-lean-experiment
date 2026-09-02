@@ -250,6 +250,9 @@ export function isScopeOccurrenceQuiescent(
     !state.selectedBranchSets.some(({ owner }) => owned(owner)) &&
     !state.eventRaces.some(({ owner }) => owned(owner)) &&
     !state.calledProcessOccurrences.some(({ caller }) => owned(caller)) &&
+    !(state.compensationTriggers ?? []).some((trigger) =>
+      trigger.lifecycle === "active" && owned(trigger.owner)
+    ) &&
     !state.scopeOccurrences.some(({ parent }) =>
       parent !== null && owned(parent)
     );

@@ -230,17 +230,17 @@ The complete `what-binds` inventory requires [`implementation-status-owner:ENGIN
 | [TS Program](../../packages/semantic-core/src/semantic-process-contract.ts) | 197 | declaration reference only |
 | [TS Program admission](../../packages/semantic-core/src/semantic-process-admission.ts) | 371 | declaration before graph |
 | [TS graph admission](../../packages/semantic-core/src/semantic-process-graph-admission.ts) | 169 | private exact exemption |
-| [TS command admission](../../packages/semantic-core/src/semantic-command-admission.ts) | 380 | optional-field normalization |
+| [TS command admission](../../packages/semantic-core/src/semantic-command-admission.ts) | 364 | optional-field normalization |
 | [TS RuntimeState](../../packages/semantic-core/src/semantic-process-state.ts) | 363 | collection reference only |
 | [TS runtime-state defect](../../packages/semantic-core/src/runtime-state-defect.ts) | 760 | preserve the closed malformed-state classification or record a proved no-change mapping |
 | [TS well-formedness](../../packages/semantic-core/src/runtime-state-well-formedness.ts) | 51 | delegate before 800 |
 | [TS preservation oracle](../../packages/semantic-core/test/runtime-state-preservation.test.ts) | 604 | exact new-field preservation and malformed-state refusal |
 | [TS root start](../../packages/semantic-core/src/semantic-process-triggered-start.ts) | 583 | pre-mutation reservation |
-| [TS scope runtime](../../packages/semantic-core/src/semantic-process-scope-runtime.ts) | 556 | unbounded entry/promotion |
+| [TS scope runtime](../../packages/semantic-core/src/semantic-process-scope-runtime.ts) | 553 | unbounded entry/promotion |
 | [TS bounded scope](../../packages/semantic-core/src/semantic-process-bounded-scope-runtime.ts) | 446 | bounded entry/promotion |
 | [TS cancellation](../../packages/semantic-core/src/semantic-process-scope-cancellation.ts) | 584 | regional filtering |
 | [TS Call cleanup](../../packages/semantic-core/src/semantic-process-call-runtime.ts) | 378 | structural filtering only |
-| [TS evaluator](../../packages/semantic-core/src/semantic-process-runtime.ts) | 54 | three-arm dispatch only; snapshot staging is extracted |
+| [TS evaluator](../../packages/semantic-core/src/semantic-process-runtime.ts) | 18 | three-arm dispatch only; snapshot staging is extracted |
 | [TS closure](../../packages/semantic-core/src/semantic-process-closure.ts) | 616 | refusal precedence/rollback |
 | [TS snapshot staging](../../packages/semantic-core/src/internal-transition-attempt.ts) | 668 | pre-mutation reservation/promotion selection |
 | [TS census](../../packages/semantic-core/src/internal-commutation-census.ts) | 659 | new state field |

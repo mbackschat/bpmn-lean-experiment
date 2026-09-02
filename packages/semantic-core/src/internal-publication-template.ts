@@ -32,6 +32,8 @@ export enum InternalPublicationTemplateAnchorKind {
   Wait = "wait",
   Scope = "scope",
   CallActivity = "callActivity",
+  CompensationTrigger = "compensationTrigger",
+  CompensationHandler = "compensationHandler",
   TransitionTemplate = "transitionTemplate",
 }
 
@@ -46,6 +48,14 @@ export type InternalPublicationTemplateAnchor = Readonly<
     }
   | {
       kind: InternalPublicationTemplateAnchorKind.CallActivity;
+      id: OccurrenceId;
+    }
+  | {
+      kind: InternalPublicationTemplateAnchorKind.CompensationTrigger;
+      id: OccurrenceId;
+    }
+  | {
+      kind: InternalPublicationTemplateAnchorKind.CompensationHandler;
       id: OccurrenceId;
     }
   | {
@@ -280,6 +290,16 @@ function instantiateDurableAnchor(
         kind: SemanticFlowNodeOccurrenceAnchorKind.CallActivity,
         id: anchor.id,
       };
+    case InternalPublicationTemplateAnchorKind.CompensationTrigger:
+      return {
+        kind: SemanticFlowNodeOccurrenceAnchorKind.CompensationTrigger,
+        id: anchor.id,
+      };
+    case InternalPublicationTemplateAnchorKind.CompensationHandler:
+      return {
+        kind: SemanticFlowNodeOccurrenceAnchorKind.CompensationHandler,
+        id: anchor.id,
+      };
     case InternalPublicationTemplateAnchorKind.TransitionTemplate:
       return null;
     default:
@@ -329,6 +349,8 @@ function compareTemplateAnchors(
   switch (left.kind) {
     case InternalPublicationTemplateAnchorKind.Wait:
     case InternalPublicationTemplateAnchorKind.CallActivity:
+    case InternalPublicationTemplateAnchorKind.CompensationTrigger:
+    case InternalPublicationTemplateAnchorKind.CompensationHandler:
       return right.kind === left.kind ? compareOccurrences(left.id, right.id) : 0;
     case InternalPublicationTemplateAnchorKind.Scope:
       return right.kind === left.kind
@@ -375,6 +397,8 @@ function compareInstantiatedAnchors(
   switch (left.kind) {
     case SemanticFlowNodeOccurrenceAnchorKind.Wait:
     case SemanticFlowNodeOccurrenceAnchorKind.CallActivity:
+    case SemanticFlowNodeOccurrenceAnchorKind.CompensationTrigger:
+    case SemanticFlowNodeOccurrenceAnchorKind.CompensationHandler:
       return right.kind === left.kind ? compareOccurrences(left.id, right.id) : 0;
     case SemanticFlowNodeOccurrenceAnchorKind.Scope:
       return right.kind === left.kind
@@ -399,9 +423,13 @@ function templateAnchorKey(anchor: InternalPublicationTemplateAnchor): string {
       return JSON.stringify([1, ...scopeParts(anchor.id)]);
     case InternalPublicationTemplateAnchorKind.CallActivity:
       return JSON.stringify([2, ...occurrenceParts(anchor.id)]);
+    case InternalPublicationTemplateAnchorKind.CompensationTrigger:
+      return JSON.stringify([3, ...occurrenceParts(anchor.id)]);
+    case InternalPublicationTemplateAnchorKind.CompensationHandler:
+      return JSON.stringify([4, ...occurrenceParts(anchor.id)]);
     case InternalPublicationTemplateAnchorKind.TransitionTemplate:
       return JSON.stringify([
-        3,
+        5,
         anchor.processId,
         anchor.elementId,
         ...scopeParts(anchor.owner),
@@ -421,9 +449,13 @@ function instantiatedAnchorKey(
       return JSON.stringify([1, ...scopeParts(anchor.id)]);
     case SemanticFlowNodeOccurrenceAnchorKind.CallActivity:
       return JSON.stringify([2, ...occurrenceParts(anchor.id)]);
+    case SemanticFlowNodeOccurrenceAnchorKind.CompensationTrigger:
+      return JSON.stringify([3, ...occurrenceParts(anchor.id)]);
+    case SemanticFlowNodeOccurrenceAnchorKind.CompensationHandler:
+      return JSON.stringify([4, ...occurrenceParts(anchor.id)]);
     case SemanticFlowNodeOccurrenceAnchorKind.Transition:
       return JSON.stringify([
-        3,
+        5,
         anchor.commandId,
         anchor.transitionIndex,
         anchor.localIndex,
@@ -462,8 +494,12 @@ function templateAnchorRank(kind: InternalPublicationTemplateAnchorKind): number
       return 1;
     case InternalPublicationTemplateAnchorKind.CallActivity:
       return 2;
-    case InternalPublicationTemplateAnchorKind.TransitionTemplate:
+    case InternalPublicationTemplateAnchorKind.CompensationTrigger:
       return 3;
+    case InternalPublicationTemplateAnchorKind.CompensationHandler:
+      return 4;
+    case InternalPublicationTemplateAnchorKind.TransitionTemplate:
+      return 5;
     default:
       return assertNever(kind);
   }
@@ -477,8 +513,12 @@ function instantiatedAnchorRank(kind: SemanticFlowNodeOccurrenceAnchorKind): num
       return 1;
     case SemanticFlowNodeOccurrenceAnchorKind.CallActivity:
       return 2;
-    case SemanticFlowNodeOccurrenceAnchorKind.Transition:
+    case SemanticFlowNodeOccurrenceAnchorKind.CompensationTrigger:
       return 3;
+    case SemanticFlowNodeOccurrenceAnchorKind.CompensationHandler:
+      return 4;
+    case SemanticFlowNodeOccurrenceAnchorKind.Transition:
+      return 5;
     default:
       return assertNever(kind);
   }

@@ -327,24 +327,29 @@ function writerMatchesClassification(site: WriterSite, classification: WriterCla
     const expression = site.typeScriptExpression ?? [];
     switch (classification) {
       case WriterClassification.Initializer:
-        return expression.length === 2 && expression[0] === "[" && expression[1] === "]";
+        return site.owner === "initialState" &&
+          expression.length === 2 && expression[0] === "[" && expression[1] === "]";
       case WriterClassification.Issuer:
         return isTypeScriptIssuingArray(expression);
       case WriterClassification.IdentityPreserving:
         return isPureTypeScriptCollectionTransform(expression, "map");
       case WriterClassification.IdentityRemoving:
-        return isPureTypeScriptCollectionTransform(expression, "filter");
+        return isPureTypeScriptCollectionTransform(expression, "filter") ||
+          (site.owner !== "initialState" && expression.length === 2 &&
+            expression[0] === "[" && expression[1] === "]");
     }
   }
   switch (classification) {
     case WriterClassification.Initializer:
-      return /activityOccurrences\s*:=\s*\[\]/su.test(site.source);
+      return site.owner === "initialState" &&
+        /activityOccurrences\s*:=\s*\[\]/su.test(site.source);
     case WriterClassification.Issuer:
       return /activityOccurrences\s*:=\s*insertActivityOccurrence/su.test(site.source);
     case WriterClassification.IdentityPreserving:
       return /activityOccurrences\s*:=\s*(?:replaceBodyIn|replaceParallelRecordBody)/su.test(site.source);
     case WriterClassification.IdentityRemoving:
-      return /activityOccurrences\s*:=.*(?:\.filter|\.erase|filter\s|retainedByRegion|removeParallelRecord)/su.test(site.source);
+      return /activityOccurrences\s*:=.*(?:\.filter|\.erase|filter\s|retainedByRegion|removeParallelRecord)/su.test(site.source) ||
+        (site.owner !== "initialState" && /activityOccurrences\s*:=\s*\[\]/su.test(site.source));
   }
 }
 
@@ -448,6 +453,23 @@ test("an identity-removing classification rejects a mixed remove-and-issue rewri
   };
   assert.equal(writerMatchesClassification(mixedRewrite, WriterClassification.IdentityRemoving), false);
   assert.equal(writerMatchesClassification(mixedRewrite, WriterClassification.Issuer), true);
+});
+
+test("direct terminal clearing is removal rather than initialization in both languages", () => {
+  const [typeScriptClear] = writerSitesFromSource("seeded.ts", SourceLanguage.TypeScript, [
+    "export function clear(state: State): State {",
+    "  return { ...state, activityOccurrences: [] };",
+    "}",
+  ].join("\n"));
+  const [leanClear] = writerSitesFromSource("Seeded.lean", SourceLanguage.Lean, [
+    "def clear (state : RuntimeState) : RuntimeState :=",
+    "  { state with activityOccurrences := [] }",
+  ].join("\n"));
+  for (const site of [typeScriptClear, leanClear]) {
+    assert.ok(site !== undefined);
+    assert.equal(writerMatchesClassification(site, WriterClassification.Initializer), false);
+    assert.equal(writerMatchesClassification(site, WriterClassification.IdentityRemoving), true);
+  }
 });
 
 test("the census parser sees independent writer forms without treating declarations as writers", () => {

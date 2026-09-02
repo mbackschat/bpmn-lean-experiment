@@ -273,6 +273,17 @@ export const writerRecords = new Map<string, WriterRecord>([
       markers: ["RuntimeStateDefect.DuplicateActivityBodyClaim", "body replacement preserves unique Activity body claims"],
     },
   }],
+  ["packages/semantic-core/src/compensation-trigger-handler-completion.ts#completeFailure@1", {
+    classification: WriterClassification.IdentityRemoving,
+    claimPreservation: ClaimPreservation.Removal,
+    evidence: {
+      relativePath: "packages/semantic-core/test/compensation-trigger-handler-completion.test.ts",
+      markers: [
+        "assert.deepEqual(failed.state.activityOccurrences, []);",
+        "assert.deepEqual(failed.state.variables.activities, []);",
+      ],
+    },
+  }],
   ["packages/semantic-core/src/semantic-process-bounded-scope-runtime.ts#armBoundedScope@1", {
     classification: WriterClassification.Issuer,
     claimPreservation: ClaimPreservation.DisjointInsertion,

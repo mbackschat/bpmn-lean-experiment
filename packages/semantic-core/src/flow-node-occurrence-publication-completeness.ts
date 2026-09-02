@@ -531,8 +531,19 @@ function retainedAnchorMatchesOccurrence(
   switch (anchor.kind) {
     case SemanticFlowNodeOccurrenceAnchorKind.Wait:
     case SemanticFlowNodeOccurrenceAnchorKind.CallActivity:
+    case SemanticFlowNodeOccurrenceAnchorKind.CompensationHandler:
       return anchor.id.processInstanceId === owner.processInstanceId &&
         anchor.id.elementId === elementId && safePositive(anchor.id.activation);
+    case SemanticFlowNodeOccurrenceAnchorKind.CompensationTrigger: {
+      const trigger = program.operations.filter((operation) =>
+        operation.kind === SemanticOperationKind.TriggerCompensation &&
+        operation.id === anchor.id.elementId &&
+        operation.origin.elementId === elementId
+      );
+      return trigger.length === 1 &&
+        anchor.id.processInstanceId === owner.processInstanceId &&
+        safePositive(anchor.id.activation);
+    }
     case SemanticFlowNodeOccurrenceAnchorKind.Scope: {
       const definition = uniqueDefinition(program, anchor.id.definitionScopeId);
       return definition !== null &&

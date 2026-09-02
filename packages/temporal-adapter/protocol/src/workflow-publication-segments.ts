@@ -381,6 +381,8 @@ function isAnchor(value: unknown): value is SemanticFlowNodeOccurrenceAnchor {
   switch (value.kind) {
     case SemanticFlowNodeOccurrenceAnchorKind.Wait:
     case SemanticFlowNodeOccurrenceAnchorKind.CallActivity:
+    case SemanticFlowNodeOccurrenceAnchorKind.CompensationTrigger:
+    case SemanticFlowNodeOccurrenceAnchorKind.CompensationHandler:
       return hasOnlyKeys(value, ["kind", "id"]) && isOccurrenceId(value.id);
     case SemanticFlowNodeOccurrenceAnchorKind.Scope:
       return hasOnlyKeys(value, ["kind", "id"]) && isScopeId(value.id);

@@ -168,7 +168,10 @@ export function projectOpenMessageSubscriptions(
 export function projectOpenEffects(
   state: RuntimeState,
 ): ReadonlyArray<OpenEffect> {
-  return state.effectWaits
+  return [
+    ...state.effectWaits,
+    ...(state.compensationHandlerEffectWaits ?? []),
+  ]
     .map(({ id, descriptor, arguments: arguments_ }) => ({
       id,
       descriptor,
@@ -373,7 +376,10 @@ function projectActiveWaits(state: RuntimeState): ReadonlyArray<ActiveWait> {
     );
   }
   const effectMultiplicities = new Map<string, number>();
-  for (const wait of state.effectWaits) {
+  for (const wait of [
+    ...state.effectWaits,
+    ...(state.compensationHandlerEffectWaits ?? []),
+  ]) {
     effectMultiplicities.set(
       wait.id.elementId,
       (effectMultiplicities.get(wait.id.elementId) ?? 0) + 1,

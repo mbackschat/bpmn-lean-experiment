@@ -62,6 +62,10 @@ import type {
   MessageBoundedPair,
 } from "./semantic-process-message-bounded-task-runtime.js";
 import { sameMessageChannel } from "./message-channel.js";
+import {
+  projectCompensationCompletionLifecycle,
+  projectCompensationTriggerLifecycle,
+} from "./flow-node-occurrence-compensation.js";
 
 export enum FlowNodeOccurrenceTerminalKind {
   Completed = "completed",
@@ -72,6 +76,8 @@ export enum SemanticFlowNodeOccurrenceAnchorKind {
   Wait = "wait",
   Scope = "scope",
   CallActivity = "callActivity",
+  CompensationTrigger = "compensationTrigger",
+  CompensationHandler = "compensationHandler",
   Transition = "transition",
 }
 
@@ -79,6 +85,8 @@ export type SemanticFlowNodeOccurrenceAnchor = DeepReadonly<
   | { kind: SemanticFlowNodeOccurrenceAnchorKind.Wait; id: OccurrenceId }
   | { kind: SemanticFlowNodeOccurrenceAnchorKind.Scope; id: ScopeOccurrenceId }
   | { kind: SemanticFlowNodeOccurrenceAnchorKind.CallActivity; id: OccurrenceId }
+  | { kind: SemanticFlowNodeOccurrenceAnchorKind.CompensationTrigger; id: OccurrenceId }
+  | { kind: SemanticFlowNodeOccurrenceAnchorKind.CompensationHandler; id: OccurrenceId }
   | {
       kind: SemanticFlowNodeOccurrenceAnchorKind.Transition;
       commandId: string;
@@ -333,6 +341,13 @@ function externalLifecycle(
       }
     }
     case StimulusKind.CompleteEffect: {
+      const compensationWaits = (before.compensationHandlerEffectWaits ?? []).filter(({ id }) =>
+        sameOccurrence(id, stimulus.effectId)
+      );
+      if (compensationWaits.length === 1) {
+        return projectCompensationCompletionLifecycle(program, before, after, stimulus);
+      }
+      if (compensationWaits.length > 1) return null;
       const wait = only(before.effectWaits.filter(({ id }) => sameOccurrence(id, stimulus.effectId)));
       if (wait === undefined) return null;
       if (stimulus.result.kind === EffectExecutionResultKind.Success) return completed(stimulus.effectId);
@@ -404,7 +419,7 @@ function internalLifecycle(
     case SemanticOperationKind.CompleteParallelMultiInstanceUserTask:
       return null;
     case SemanticOperationKind.TriggerCompensation:
-      return null;
+      return projectCompensationTriggerLifecycle(program, before, after, operation, owner);
     case SemanticOperationKind.AwaitEventRace: {
       const starts = candidateLongLivedStarts(program, after, operation, owner);
       const gateway = instant();
@@ -561,6 +576,23 @@ function openAnchorCandidates(
   state.timerWaits.filter((wait) => resolveBoundaryTimerBinding(program, state, wait) === null).forEach(addWait);
   state.effectWaits.forEach(addWait);
   state.effectIncidents.forEach(({ wait }) => addWait(wait));
+  for (const trigger of state.compensationTriggers ?? []) {
+    if (trigger.lifecycle !== "active") continue;
+    candidates.push({
+      anchor: { kind: SemanticFlowNodeOccurrenceAnchorKind.CompensationTrigger, id: trigger.id },
+      owner: trigger.owner,
+    });
+    for (const handler of trigger.handlers) {
+      if (handler.lifecycle !== "compensating") continue;
+      candidates.push({
+        anchor: { kind: SemanticFlowNodeOccurrenceAnchorKind.CompensationHandler, id: handler.id },
+        owner: trigger.owner,
+      });
+      if (handler.effectId.elementId !== handler.handlerElementId) {
+        candidates.push({ anchor: waitAnchor(handler.effectId), owner: trigger.owner });
+      }
+    }
+  }
   for (const occurrence of state.scopeOccurrences) {
     if (occurrence.parent !== null) {
       candidates.push({
@@ -599,6 +631,8 @@ function validAnchor(anchor: SemanticFlowNodeOccurrenceAnchor): boolean {
   switch (anchor.kind) {
     case SemanticFlowNodeOccurrenceAnchorKind.Wait:
     case SemanticFlowNodeOccurrenceAnchorKind.CallActivity:
+    case SemanticFlowNodeOccurrenceAnchorKind.CompensationTrigger:
+    case SemanticFlowNodeOccurrenceAnchorKind.CompensationHandler:
       return validOccurrence(anchor.id);
     case SemanticFlowNodeOccurrenceAnchorKind.Scope:
       return validScopeId(anchor.id);
@@ -633,8 +667,12 @@ function anchorKey(anchor: SemanticFlowNodeOccurrenceAnchor): string {
       return JSON.stringify([1, anchor.id.processInstanceId, anchor.id.definitionScopeId, anchor.id.activation]);
     case SemanticFlowNodeOccurrenceAnchorKind.CallActivity:
       return JSON.stringify([2, anchor.id.processInstanceId, anchor.id.elementId, anchor.id.activation]);
+    case SemanticFlowNodeOccurrenceAnchorKind.CompensationTrigger:
+      return JSON.stringify([3, anchor.id.processInstanceId, anchor.id.elementId, anchor.id.activation]);
+    case SemanticFlowNodeOccurrenceAnchorKind.CompensationHandler:
+      return JSON.stringify([4, anchor.id.processInstanceId, anchor.id.elementId, anchor.id.activation]);
     case SemanticFlowNodeOccurrenceAnchorKind.Transition:
-      return JSON.stringify([3, anchor.commandId, anchor.transitionIndex, anchor.localIndex]);
+      return JSON.stringify([5, anchor.commandId, anchor.transitionIndex, anchor.localIndex]);
     default:
       return assertNever(anchor);
   }
@@ -663,6 +701,8 @@ function compareAnchors(
   switch (left.kind) {
     case SemanticFlowNodeOccurrenceAnchorKind.Wait:
     case SemanticFlowNodeOccurrenceAnchorKind.CallActivity:
+    case SemanticFlowNodeOccurrenceAnchorKind.CompensationTrigger:
+    case SemanticFlowNodeOccurrenceAnchorKind.CompensationHandler:
       return right.kind === left.kind ? compareOccurrenceIds(left.id, right.id) : 0;
     case SemanticFlowNodeOccurrenceAnchorKind.Scope:
       return right.kind === left.kind ? compareScopeIds(left.id, right.id) : 0;
@@ -682,7 +722,9 @@ function anchorKindOrder(kind: SemanticFlowNodeOccurrenceAnchorKind): number {
     case SemanticFlowNodeOccurrenceAnchorKind.Wait: return 0;
     case SemanticFlowNodeOccurrenceAnchorKind.Scope: return 1;
     case SemanticFlowNodeOccurrenceAnchorKind.CallActivity: return 2;
-    case SemanticFlowNodeOccurrenceAnchorKind.Transition: return 3;
+    case SemanticFlowNodeOccurrenceAnchorKind.CompensationTrigger: return 3;
+    case SemanticFlowNodeOccurrenceAnchorKind.CompensationHandler: return 4;
+    case SemanticFlowNodeOccurrenceAnchorKind.Transition: return 5;
     default: return assertNever(kind);
   }
 }

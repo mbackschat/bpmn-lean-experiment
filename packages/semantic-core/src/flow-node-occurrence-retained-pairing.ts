@@ -38,6 +38,8 @@ export function attachedHandlersForBodyAnchor(
       return activityOccurrenceForScopeBody(state.activityOccurrences, anchor.id)
         ?.attachedHandlers ?? [];
     case SemanticFlowNodeOccurrenceAnchorKind.CallActivity:
+    case SemanticFlowNodeOccurrenceAnchorKind.CompensationTrigger:
+    case SemanticFlowNodeOccurrenceAnchorKind.CompensationHandler:
     case SemanticFlowNodeOccurrenceAnchorKind.Transition:
       return [];
   }

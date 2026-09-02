@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {
   ControlStateKind,
+  EffectExecutionResultKind,
   EffectOperation,
   EffectProtocol,
   InternalSchedulingMode,
@@ -10,13 +11,18 @@ import {
   SemanticOriginKind,
   SemanticProcessCompilerId,
   SemanticProcessKind,
+  SemanticTransitionKind,
   StimulusKind,
   VariableValueKind,
   admitProcessStart,
   applyInternalOperation,
+  attachedHandlersForBodyAnchor,
   compareCanonicalStrings,
   initialState,
   isWellFormedSemanticProcessProgram,
+  observeStableState,
+  projectCurrentControlPositions,
+  projectOpenFlowNodeOccurrences,
 } from "@bpmn-lean/semantic-core";
 import type {
   RuntimeState,
@@ -25,8 +31,14 @@ import type {
 } from "@bpmn-lean/semantic-core";
 
 import {
+  programOccurrenceFactIsValid,
+  programOccurrenceStartMatchesTransition,
+} from "../dist/flow-node-occurrence-publication-program-validation.js";
+import {
+  requireBpmnWorkflowContinuationPublicationV1,
   requireBpmnWorkflowContinuationStateV1,
 } from "../dist/index.js";
+import type { CommittedTransitionRecord } from "../src/semantic-publication.js";
 
 const processId = "Process_CompensationContinuation";
 const instanceId = "Instance_CompensationContinuation";
@@ -73,7 +85,7 @@ test("decodes only the paired declaration-owned compensation collections", () =>
       program,
       instanceId,
     ),
-    /Malformed committed RuntimeState continuation|representable committed state/u,
+    /Malformed committed RuntimeState continuation|resumable stable checkpoint|representable committed state/u,
   );
 
   const {
@@ -87,7 +99,7 @@ test("decodes only the paired declaration-owned compensation collections", () =>
       program,
       instanceId,
     ),
-    /Malformed committed RuntimeState continuation|representable committed state/u,
+    /Malformed committed RuntimeState continuation|resumable stable checkpoint|representable committed state/u,
   );
 
   const {
@@ -101,7 +113,7 @@ test("decodes only the paired declaration-owned compensation collections", () =>
       undeclaredProgram,
       instanceId,
     ),
-    /representable committed state/u,
+    /resumable stable checkpoint|representable committed state/u,
   );
 
   assert.throws(
@@ -288,9 +300,204 @@ test("round-trips all four compensation collections with deferred restored conte
         program,
         instanceId,
       ),
-      /Malformed committed RuntimeState continuation|representable committed state/u,
+      /Malformed committed RuntimeState continuation|resumable stable checkpoint|representable committed state/u,
     );
   }
+
+  const handlerId = trigger.id.elementId === "operation:Trigger"
+    ? handler.id
+    : assert.fail("unexpected trigger fixture");
+  const effectId = {
+    processInstanceId: instanceId,
+    elementId: "Effect_Undo_B",
+    activation: 1,
+  } as const;
+  const activeState = {
+    ...state,
+    effectActivations: [{ elementId: effectId.elementId, count: 1 }],
+    compensationTriggers: [{
+      ...trigger,
+      handlers: [{ ...handler, lifecycle: "compensating", effectId }],
+    }],
+    compensationHandlerEffectWaits: [{
+      id: effectId,
+      triggerId: trigger.id,
+      handlerId,
+      descriptor: {
+        protocol: EffectProtocol.Activity,
+        operation: EffectOperation.CompensationSingleEffect,
+      },
+      arguments: [{
+        name: "archivedContext",
+        value: { kind: VariableValueKind.String, value: "frozen" },
+      }],
+    }],
+  } as const satisfies RuntimeState;
+  assert.deepEqual(
+    requireBpmnWorkflowContinuationStateV1(activeState, program, instanceId),
+    activeState,
+  );
+  const triggerOperation = requiredOperation(program, "operation:Trigger");
+  assert.equal(triggerOperation.kind, SemanticOperationKind.TriggerCompensation);
+  if (triggerOperation.kind !== SemanticOperationKind.TriggerCompensation) {
+    assert.fail("fixture trigger operation changed kind");
+  }
+  const triggerTransition = {
+    revision: 1,
+    logicalTimeMs: 0,
+    transition: {
+      kind: SemanticTransitionKind.InternalOperation,
+      operationId: triggerOperation.id,
+      operationKind: triggerOperation.kind,
+      origin: triggerOperation.origin,
+      owner,
+    },
+    positionDelta: {
+      consumedTokens: [],
+      producedTokens: [],
+      enteredScopes: [],
+      exitedScopes: [],
+    },
+  } as const satisfies CommittedTransitionRecord;
+  const occurrenceFact = (elementId: string) => ({ processId, elementId, owner });
+  for (const elementId of ["Trigger", "Undo_B", "Effect_Undo_B"]) {
+    assert.equal(programOccurrenceFactIsValid(occurrenceFact(elementId), program), true);
+    assert.equal(programOccurrenceStartMatchesTransition(
+      occurrenceFact(elementId),
+      program,
+      triggerTransition,
+    ), true);
+  }
+  assert.equal(programOccurrenceStartMatchesTransition(
+    occurrenceFact("not-a-compensation-element"),
+    program,
+    triggerTransition,
+  ), false);
+  const dependencyProgram = {
+    ...program,
+    compensationExecution: {
+      ...program.compensationExecution,
+      dependencies: [{
+        predecessorElementId: "Task",
+        successorElementId: "B",
+        reason: "sequenceFlow",
+      }],
+    },
+  } as const satisfies SemanticProcessProgram;
+  const completionTransition = {
+    revision: 2,
+    logicalTimeMs: 0,
+    transition: {
+      kind: SemanticTransitionKind.ExternalStimulus,
+      stimulus: {
+        kind: StimulusKind.CompleteEffect,
+        commandId: "complete-b-compensation",
+        effectId,
+        result: { kind: EffectExecutionResultKind.Success, localPatch: [] },
+      },
+    },
+    positionDelta: {
+      consumedTokens: [],
+      producedTokens: [],
+      enteredScopes: [],
+      exitedScopes: [],
+    },
+  } as const satisfies CommittedTransitionRecord;
+  assert.equal(programOccurrenceStartMatchesTransition(
+    occurrenceFact("Undo_Task"),
+    dependencyProgram,
+    completionTransition,
+  ), true);
+  assert.equal(programOccurrenceStartMatchesTransition(
+    occurrenceFact("Undo_B"),
+    dependencyProgram,
+    completionTransition,
+  ), false);
+  const projected = projectOpenFlowNodeOccurrences(program, activeState);
+  const observation = observeStableState(program, activeState);
+  const positions = projectCurrentControlPositions(program, activeState);
+  assert.ok(projected !== null && observation !== null && positions !== null);
+  const currentOpen = projected.map(({ processId: projectedProcessId, elementId, owner }, index) => ({
+    id: { processInstanceId: instanceId, startRevision: 1, startIndex: index },
+    processId: projectedProcessId,
+    elementId,
+    owner,
+    startedAtEpochMs: 1_000,
+  }));
+  const publication = {
+    execution: {
+      definition: program.identity,
+      processId,
+      processInstanceId: instanceId,
+      headRevision: 1,
+      current: {
+        revision: 1,
+        state: observation,
+        controlTokens: positions.controlTokens,
+        scopes: positions.scopes,
+      },
+    },
+    flowNodeOccurrences: {
+      definition: program.identity,
+      processId,
+      processInstanceId: instanceId,
+      headRevision: 1,
+      currentOpen,
+      retainedOpen: projected.map((entry, index) => ({
+        anchor: entry.anchor,
+        occurrence: currentOpen[index]!,
+        attachedHandlers: attachedHandlersForBodyAnchor(activeState, entry.anchor),
+      })),
+      lastCommittedAtEpochMs: 1_000,
+    },
+    segmentDirectory: {
+      format: "bpmn-lean.workflow-publication-segment-directory.v1",
+      segments: [{
+        format: "bpmn-lean.workflow-publication-segment.v1",
+        runId: "run-1",
+        runOrdinal: 1,
+        fromRevision: 0,
+        throughRevision: 1,
+        sha256: "a".repeat(64),
+      }],
+    },
+  } as const;
+  assert.deepEqual(
+    requireBpmnWorkflowContinuationPublicationV1(
+      publication,
+      program,
+      activeState,
+      instanceId,
+      { firstExecutionRunId: "run-1", successorRunOrdinal: 2 },
+    ),
+    publication,
+  );
+  const retainedKinds = publication.flowNodeOccurrences.retainedOpen.map(
+    ({ anchor }) => anchor.kind,
+  );
+  assert.ok(retainedKinds.includes("compensationTrigger"));
+  assert.ok(retainedKinds.includes("compensationHandler"));
+
+  const malformed = structuredClone(publication) as unknown as {
+    flowNodeOccurrences: {
+      retainedOpen: Array<{ anchor: Record<string, unknown> }>;
+    };
+  };
+  const compensationHandler = malformed.flowNodeOccurrences.retainedOpen.find(
+    (entry) => entry.anchor.kind === "compensationHandler",
+  );
+  assert.ok(compensationHandler !== undefined);
+  compensationHandler.anchor.unexpected = true;
+  assert.throws(
+    () => requireBpmnWorkflowContinuationPublicationV1(
+      malformed,
+      program,
+      activeState,
+      instanceId,
+      { firstExecutionRunId: "run-1", successorRunOrdinal: 2 },
+    ),
+    /Publication open occurrences do not match RuntimeState/u,
+  );
 });
 
 function requiredOperation(

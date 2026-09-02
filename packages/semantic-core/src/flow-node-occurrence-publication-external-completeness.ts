@@ -682,6 +682,8 @@ function compareAnchors(
   switch (left.kind) {
     case SemanticFlowNodeOccurrenceAnchorKind.Wait:
     case SemanticFlowNodeOccurrenceAnchorKind.CallActivity:
+    case SemanticFlowNodeOccurrenceAnchorKind.CompensationTrigger:
+    case SemanticFlowNodeOccurrenceAnchorKind.CompensationHandler:
       return right.kind === left.kind ? compareOccurrences(left.id, right.id) : kindOrder;
     case SemanticFlowNodeOccurrenceAnchorKind.Scope:
       return right.kind === left.kind ? compareScopes(left.id, right.id) : kindOrder;
@@ -700,7 +702,9 @@ function anchorRank(anchor: SemanticFlowNodeOccurrenceAnchor): number {
     case SemanticFlowNodeOccurrenceAnchorKind.Wait: return 0;
     case SemanticFlowNodeOccurrenceAnchorKind.Scope: return 1;
     case SemanticFlowNodeOccurrenceAnchorKind.CallActivity: return 2;
-    case SemanticFlowNodeOccurrenceAnchorKind.Transition: return 3;
+    case SemanticFlowNodeOccurrenceAnchorKind.CompensationTrigger: return 3;
+    case SemanticFlowNodeOccurrenceAnchorKind.CompensationHandler: return 4;
+    case SemanticFlowNodeOccurrenceAnchorKind.Transition: return 5;
     default: return assertNever(anchor);
   }
 }

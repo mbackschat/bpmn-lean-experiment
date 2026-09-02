@@ -92,6 +92,10 @@ import {
   CompensationSnapshotPreparationKind,
   prepareCompensationSnapshotOperation,
 } from "./internal-transition-attempt.js";
+import {
+  CompensationTriggerAttemptKind,
+  attemptCompensationTrigger,
+} from "./compensation-trigger-handler-transition.js";
 
 export {
   ControlStateKind,
@@ -140,9 +144,14 @@ type InternalOperationAttempt = Readonly<
   | {
       kind: InternalOperationAttemptKind.Refused;
       operation: SemanticOperation;
-      detail: CompensationParentContextRefusal;
+      detail: CompensationParentContextRefusal | { readonly reason: "compensationTrigger" };
     }
 >;
+
+type InternalOperationRefusal = Extract<
+  InternalOperationAttempt,
+  { kind: InternalOperationAttemptKind.Refused }
+>["detail"];
 
 export type StimulusEvaluationResult = DeepReadonly<{
   result: CommandResult;
@@ -175,7 +184,7 @@ function internalOperationFrontier(
   state: RuntimeState,
 ): Readonly<{
   steps: ReadonlyArray<AppliedInternalOperationStep>;
-  refusal: CompensationParentContextRefusal | null;
+  refusal: InternalOperationRefusal | null;
 }> {
   const attempts = program.operations
     .map((operation) => attemptInternalOperationStep(program, operation, state))
@@ -257,6 +266,7 @@ export function isStableStateResumable(state: RuntimeState): boolean {
         state.messageWaits.length > 0 ||
         state.timerWaits.length > 0 ||
         state.effectWaits.length > 0 ||
+        (state.compensationHandlerEffectWaits?.length ?? 0) > 0 ||
         state.effectIncidents.length > 0;
     case ControlStateKind.Completed:
     case ControlStateKind.Cancelled:
@@ -311,6 +321,33 @@ function attemptInternalOperationStep(
       operation,
       detail: preparation.detail,
     };
+  }
+  if (operation.kind === SemanticOperationKind.TriggerCompensation) {
+    const triggered = attemptCompensationTrigger(
+      program,
+      operation,
+      preparation.state,
+      onlyTokenOwner(preparation.state, operation.input),
+    );
+    switch (triggered.kind) {
+      case CompensationTriggerAttemptKind.Disabled:
+        return { kind: InternalOperationAttemptKind.Disabled, operation };
+      case CompensationTriggerAttemptKind.Refused:
+        return {
+          kind: InternalOperationAttemptKind.Refused,
+          operation,
+          detail: { reason: "compensationTrigger" },
+        };
+      case CompensationTriggerAttemptKind.Applied:
+        return {
+          kind: InternalOperationAttemptKind.Applied,
+          step: {
+            operation,
+            owner: onlyTokenOwner(preparation.state, operation.input) ?? null,
+            successor: triggered.state,
+          },
+        };
+    }
   }
   let selectedOwner: ScopeOccurrenceId | null = null;
   const successor = applyInternalOperationState(

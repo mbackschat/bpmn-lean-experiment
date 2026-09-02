@@ -19,6 +19,8 @@ export * from "./compensation-trigger-handler-contract.js";
 export * from "./compensation-trigger-handler-program-admission.js";
 export * from "./compensation-trigger-handler-runtime-contract.js";
 export * from "./compensation-trigger-handler-runtime-state-validation.js";
+export * from "./compensation-trigger-handler-completion.js";
+export * from "./compensation-trigger-handler-transition.js";
 export * from "./correlation-scalar-path.js";
 export * from "./message-key-correlation.js";
 export {

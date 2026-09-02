@@ -71,6 +71,7 @@ export function compensationExecutionStateDefects(
     !triggerShapeValid ||
     !isStrictlySorted(triggers, (left, right) => compareOccurrences(left.id, right.id)) ||
     hasDuplicateOccurrence(triggers) ||
+    hasDuplicateActiveTriggerOwner(triggers) ||
     triggers.some(({ handlers }) =>
       !isStrictlySorted(handlers, (left, right) => compareOccurrences(left.id, right.id)) ||
       hasDuplicateOccurrence(handlers) ||
@@ -382,11 +383,24 @@ function controlLifecycleIsValid(
       return waits.length === 0 && triggers.every(({ lifecycle }) => lifecycle !== "active");
     case ControlStateKind.Failed: {
       const failure = state.control.failure;
+      const failedTriggers = triggers.filter(({ lifecycle }) => lifecycle === "failed");
       return failedStateIsClosed(state) && waits.length === 0 &&
-        triggers.filter((trigger) => failureMatchesTrigger(program, failure, trigger)).length === 1 &&
-        triggers.every(({ lifecycle }) => lifecycle !== "active");
+        failedTriggers.length === 1 &&
+        triggers.filter((trigger) => failureMatchesTrigger(program, state, failure, trigger)).length === 1 &&
+        triggers.every(({ lifecycle }) => lifecycle === "succeeded" || lifecycle === "failed");
     }
   }
+}
+
+function hasDuplicateActiveTriggerOwner(
+  triggers: ReadonlyArray<CompensationTriggerExecution>,
+): boolean {
+  const active = triggers.filter(({ lifecycle }) => lifecycle === "active");
+  return active.some((trigger, index) =>
+    active.some((other, otherIndex) =>
+      index !== otherIndex && sameScopeOccurrence(trigger.owner, other.owner)
+    )
+  );
 }
 
 function failedStateIsClosed(state: RuntimeState): boolean {
@@ -411,6 +425,7 @@ function failedStateIsClosed(state: RuntimeState): boolean {
 
 function failureMatchesTrigger(
   program: SemanticProcessProgram,
+  state: RuntimeState,
   failure: CompensationHandlerFailure,
   trigger: CompensationTriggerExecution,
 ): boolean {
@@ -423,7 +438,10 @@ function failureMatchesTrigger(
     handler?.lifecycle === "failed" &&
     subject !== undefined &&
     failure.effectId.processInstanceId === handler.id.processInstanceId &&
-    failure.effectId.elementId === subject.body.effectElementId;
+    failure.effectId.elementId === subject.body.effectElementId &&
+    state.effectActivations.find(({ elementId }) =>
+      elementId === failure.effectId.elementId
+    )?.count === failure.effectId.activation;
 }
 
 function subjectDefinitionForOccurrence(

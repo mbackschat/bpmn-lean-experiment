@@ -148,8 +148,9 @@ function internalOperationStarts(
       );
     case SemanticOperationKind.ReturnProcess:
     case SemanticOperationKind.CompleteScope:
-    case SemanticOperationKind.TriggerCompensation:
       return false;
+    case SemanticOperationKind.TriggerCompensation:
+      return compensationTriggerStarts(operation, transitionOwner, value, program);
     default:
       return assertNever(operation);
   }
@@ -169,13 +170,15 @@ function externalStimulusStarts(
           operationOwnsScope(operation, owner.definitionScopeId, program) &&
           boundaryTimerElement(operation) === value.elementId);
     case StimulusKind.CompleteEffect:
-      return stimulus.result.kind === EffectExecutionResultKind.BpmnError &&
+      return (stimulus.result.kind === EffectExecutionResultKind.BpmnError &&
         stimulus.effectId.processInstanceId === owner.processInstanceId &&
         program.operations.some((operation) =>
           operation.kind === SemanticOperationKind.AwaitEffect &&
           operation.effect.elementId === stimulus.effectId.elementId &&
           operation.bpmnErrorRoute?.origin.boundaryEventId === value.elementId &&
-          operationOwnsScope(operation, owner.definitionScopeId, program));
+          operationOwnsScope(operation, owner.definitionScopeId, program))) ||
+        (stimulus.result.kind === EffectExecutionResultKind.Success &&
+          compensationCompletionStarts(stimulus.effectId, value, program));
     case StimulusKind.StartProcess:
     case StimulusKind.TriggerMessageStart:
     case StimulusKind.TriggerTimerStart:
@@ -302,6 +305,9 @@ function elementBelongsToProgram(
     parentScopeId === null && originElementId === elementId)) {
     return false;
   }
+  if (compensationElementBelongsToProgram(elementId, ownerScopeId, program)) {
+    return true;
+  }
   return program.operations.some((operation) => {
     const ownership = program.operationScopes.find(({ operationId }) =>
       operationId === operation.id);
@@ -319,6 +325,76 @@ function elementBelongsToProgram(
       )
     );
   });
+}
+
+function compensationTriggerStarts(
+  operation: Extract<SemanticOperation, { kind: SemanticOperationKind.TriggerCompensation }>,
+  transitionOwner: ScopeOccurrenceId,
+  value: OccurrenceFact,
+  program: SemanticProcessProgram,
+): boolean {
+  const owner = value.owner as ScopeOccurrenceId;
+  const declaration = program.compensationExecution;
+  return declaration?.triggerOperationId === operation.id &&
+    declaration.definitionScopeId === owner.definitionScopeId &&
+    sameScope(owner, transitionOwner) && (
+      operation.origin.elementId === value.elementId ||
+      declaration.subjects.some(({ body }) =>
+        body.handlerElementId === value.elementId ||
+        body.effectElementId === value.elementId)
+    );
+}
+
+function compensationCompletionStarts(
+  completedEffectId: { processInstanceId: string; elementId: string },
+  value: OccurrenceFact,
+  program: SemanticProcessProgram,
+): boolean {
+  const owner = value.owner as ScopeOccurrenceId;
+  const declaration = program.compensationExecution;
+  if (declaration === undefined ||
+    completedEffectId.processInstanceId !== owner.processInstanceId ||
+    declaration.definitionScopeId !== owner.definitionScopeId) return false;
+  const completedSubjects = declaration.subjects.filter(({ body }) =>
+    body.effectElementId === completedEffectId.elementId
+  ).map((subject) => compensationSubjectElementId(subject, program));
+  const candidateSubjects = declaration.subjects.filter(({ body }) =>
+    body.handlerElementId === value.elementId || body.effectElementId === value.elementId
+  ).map((subject) => compensationSubjectElementId(subject, program));
+  return candidateSubjects.some((candidate) =>
+    candidate !== null && completedSubjects.some((completed) =>
+      completed !== null && declaration.dependencies.some((dependency) =>
+        dependency.predecessorElementId === candidate &&
+        dependency.successorElementId === completed)
+    )
+  );
+}
+
+function compensationElementBelongsToProgram(
+  elementId: string,
+  ownerScopeId: string,
+  program: SemanticProcessProgram,
+): boolean {
+  const declaration = program.compensationExecution;
+  return declaration !== undefined &&
+    declaration.definitionScopeId === ownerScopeId &&
+    declaration.subjects.some(({ body }) =>
+      body.handlerElementId === elementId || body.effectElementId === elementId);
+}
+
+function compensationSubjectElementId(
+  subject: NonNullable<SemanticProcessProgram["compensationExecution"]>["subjects"][number],
+  program: SemanticProcessProgram,
+): string | null {
+  switch (subject.kind) {
+    case "boundaryActivity":
+      return subject.subjectElementId;
+    case "eventSubProcess":
+      return program.definitionScopes.find(({ id }) => id === subject.parentScopeId)
+        ?.originElementId ?? null;
+    default:
+      return assertNever(subject);
+  }
 }
 
 function operationPublishesNestedElement(

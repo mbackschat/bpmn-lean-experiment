@@ -79,6 +79,8 @@ enum SemanticFlowNodeOccurrenceAnchorKind {
   Wait = "wait",
   Scope = "scope",
   CallActivity = "callActivity",
+  CompensationTrigger = "compensationTrigger",
+  CompensationHandler = "compensationHandler",
   Transition = "transition",
 }
 
@@ -93,6 +95,14 @@ type SemanticFlowNodeOccurrenceAnchor =
     }>
   | DeepReadonly<{
       kind: SemanticFlowNodeOccurrenceAnchorKind.CallActivity;
+      id: OccurrenceId;
+    }>
+  | DeepReadonly<{
+      kind: SemanticFlowNodeOccurrenceAnchorKind.CompensationTrigger;
+      id: OccurrenceId;
+    }>
+  | DeepReadonly<{
+      kind: SemanticFlowNodeOccurrenceAnchorKind.CompensationHandler;
       id: OccurrenceId;
     }>
   | DeepReadonly<{
@@ -120,7 +130,7 @@ type UnnumberedFlowNodeOccurrenceDelta = DeepReadonly<{
 }>;
 ```
 
-The four tags are disjoint collision namespaces. Their total order is `wait`, `scope`, `callActivity`, then `transition`; within a tag, comparison is lexicographic over every scalar field of the complete nested identity in declaration order. `transitionIndex` is the zero-based position in the command's unnumbered semantic trace. `localIndex` is assigned after instantaneous starts in that transition are ordered by Process ID, element ID, and complete owner identity. A transition anchor is legal only for one start and one terminal in the same delta and is never retained. Duplicate complete anchors, a reused open anchor, two terminals for one anchor, or a transition anchor that crosses a delta make publication fail closed.
+The six tags are disjoint collision namespaces. Their total order is `wait`, `scope`, `callActivity`, `compensationTrigger`, `compensationHandler`, then `transition`; within a tag, comparison is lexicographic over every scalar field of the complete nested identity in declaration order. The two Compensation tags are private durable pairing identities for the throw Event and handler Activity lifetimes selected by the separately reviewed Compensation account; a distinct handler-body effect continues to use its ordinary wait anchor. `transitionIndex` is the zero-based position in the command's unnumbered semantic trace. `localIndex` is assigned after instantaneous starts in that transition are ordered by Process ID, element ID, and complete owner identity. A transition anchor is legal only for one start and one terminal in the same delta and is never retained. Duplicate complete anchors, a reused open anchor, two terminals for one anchor, or a transition anchor that crosses a delta make publication fail closed.
 
 The evaluator derives this delta at the same boundary where it already owns the exact selected external stimulus or internal operation and both RuntimeStates. It does not replay the evaluator and does not infer lifecycle from a later state difference. The public projection fails closed unless every ended anchor resolves to exactly one currently open occurrence, every start anchor is new, every element and owner are exact, and the resulting open set agrees with an independent projection of the committed RuntimeState.
 
@@ -260,6 +270,9 @@ The lifecycle mapping is exhaustive over the currently admitted operation and co
 | ordinary None End | The End Event starts and completes without cancelling unrelated live occurrences. |
 | admitted embedded Sub-Process `throwError` propagation | The Error End Event and its exact matching parent Boundary Error Event each start and complete atomically; the embedded Sub-Process occurrence and every open child occurrence removed with that scope cancel. |
 | Terminate End | The End Event starts and completes; every other open occurrence in the removed terminating region cancels. |
+| root-global Compensation throw and maximal-frontier activation | A zero-subject throw Event starts and completes in the trigger transition. A nonempty trigger starts the throw Event and every maximal handler Compensation Activity together; a distinct effect-body flow node starts under its ordinary wait anchor. |
+| successful Compensation handler effect completion | The exact handler Activity and its distinct effect-body occurrence complete. Every newly maximal predecessor handler and distinct body starts atomically. When the final handler succeeds, the retained throw Event occurrence completes and the continuation becomes available. |
+| failed Compensation handler effect completion | The retained throw Event, every active handler Activity, and every distinct active effect-body occurrence cancel. Pending handlers never start, and no continuation becomes available. |
 | root incident cancellation | Every open flow-node occurrence in the removed root region cancels; no synthetic cancellation flow node is created. |
 
 Within one delta, all canonically ordered starts are applied before any terminal. This makes an instantaneous occurrence a valid same-transition start followed by its one terminal. A rejected, rolled-back, semantic-failure, unsupported, closure-bound, or ambiguous command publishes no lifecycle delta or commit time.

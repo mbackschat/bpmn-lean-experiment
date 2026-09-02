@@ -111,6 +111,7 @@ import {
 import type { RuntimeState } from "./semantic-process-state.js";
 import { isGateAdmissibleRuntimeState } from "./runtime-state-well-formedness.js";
 import { initializeCompensationExecutionState } from "./compensation-trigger-handler-runtime-state-validation.js";
+import { completeCompensationHandlerEffect } from "./compensation-trigger-handler-completion.js";
 
 export type SemanticCommandOutcome =
   | CommandOutcome.Committed
@@ -352,11 +353,26 @@ export function admit(
       };
     }
     case StimulusKind.CompleteEffect: {
-      const wait = state.effectWaits.find((candidate) =>
+      const compensationWaits = (state.compensationHandlerEffectWaits ?? []).filter((candidate) =>
         sameOccurrence(candidate.id, stimulus.effectId)
       );
+      const ordinaryWaits = state.effectWaits.filter((candidate) =>
+        sameOccurrence(candidate.id, stimulus.effectId)
+      );
+      if (compensationWaits.length > 1 ||
+        (compensationWaits.length === 1 && ordinaryWaits.length > 0)) {
+        return { outcome: CommandOutcome.Rejected, state };
+      }
+      if (compensationWaits.length === 1) {
+        const next = completeCompensationHandlerEffect(program, state, stimulus);
+        return next === null
+          ? { outcome: CommandOutcome.Rejected, state }
+          : { outcome: CommandOutcome.Committed, state: next };
+      }
+      const wait = ordinaryWaits[0];
       if (
         state.control.kind !== ControlStateKind.Running ||
+        ordinaryWaits.length !== 1 ||
         wait === undefined
       ) {
         return { outcome: CommandOutcome.Rejected, state };

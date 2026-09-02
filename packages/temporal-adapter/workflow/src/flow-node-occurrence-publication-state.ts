@@ -365,7 +365,9 @@ function compareAnchors(
     [SemanticFlowNodeOccurrenceAnchorKind.Wait]: 0,
     [SemanticFlowNodeOccurrenceAnchorKind.Scope]: 1,
     [SemanticFlowNodeOccurrenceAnchorKind.CallActivity]: 2,
-    [SemanticFlowNodeOccurrenceAnchorKind.Transition]: 3,
+    [SemanticFlowNodeOccurrenceAnchorKind.CompensationTrigger]: 3,
+    [SemanticFlowNodeOccurrenceAnchorKind.CompensationHandler]: 4,
+    [SemanticFlowNodeOccurrenceAnchorKind.Transition]: 5,
   } as const;
   const kindOrder = order[left.kind] - order[right.kind];
   if (kindOrder !== 0 || left.kind !== right.kind) {
@@ -379,6 +381,16 @@ function compareAnchors(
       return compareOccurrences(left.id, right.id);
     case SemanticFlowNodeOccurrenceAnchorKind.CallActivity:
       if (right.kind !== SemanticFlowNodeOccurrenceAnchorKind.CallActivity) {
+        return kindOrder;
+      }
+      return compareOccurrences(left.id, right.id);
+    case SemanticFlowNodeOccurrenceAnchorKind.CompensationTrigger:
+      if (right.kind !== SemanticFlowNodeOccurrenceAnchorKind.CompensationTrigger) {
+        return kindOrder;
+      }
+      return compareOccurrences(left.id, right.id);
+    case SemanticFlowNodeOccurrenceAnchorKind.CompensationHandler:
+      if (right.kind !== SemanticFlowNodeOccurrenceAnchorKind.CompensationHandler) {
         return kindOrder;
       }
       return compareOccurrences(left.id, right.id);
@@ -523,6 +535,8 @@ function cloneAnchor(
   switch (value.kind) {
     case SemanticFlowNodeOccurrenceAnchorKind.Wait:
     case SemanticFlowNodeOccurrenceAnchorKind.CallActivity:
+    case SemanticFlowNodeOccurrenceAnchorKind.CompensationTrigger:
+    case SemanticFlowNodeOccurrenceAnchorKind.CompensationHandler:
       return { kind: value.kind, id: { ...value.id } };
     case SemanticFlowNodeOccurrenceAnchorKind.Scope:
       return { kind: value.kind, id: cloneScope(value.id) };

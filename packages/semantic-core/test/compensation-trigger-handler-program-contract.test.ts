@@ -596,7 +596,7 @@ test("keeps the compensation effect descriptor outside ordinary awaitEffect admi
   assert.equal(isWellFormedSemanticProcessProgram(ordinaryEffectProgram), false);
 });
 
-test("keeps the dormant trigger out of the ordinary internal transition families", () => {
+test("refuses a trigger state missing its declaration-owned execution collections", () => {
   const trigger = validProgram.operations.find(({ id }) => id === triggerOperationId);
   assert.ok(trigger?.kind === SemanticOperationKind.TriggerCompensation);
   const owner = {
@@ -778,6 +778,7 @@ test("projects a typed failed Process without live public work", () => {
       dependencies: [],
     }],
     compensationHandlerEffectWaits: [],
+    effectActivations: [{ elementId: "Undo_C", count: 1 }],
   } as const satisfies RuntimeState;
 
   assert.deepEqual(observeStableState(validProgram, failed), {

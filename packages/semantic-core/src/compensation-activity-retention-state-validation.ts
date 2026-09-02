@@ -306,9 +306,12 @@ function validChronology(
 ): boolean {
   return Number.isSafeInteger(nextCompletionOrdinal) &&
     nextCompletionOrdinal > 0 &&
-    records.length === nextCompletionOrdinal - 1 &&
+    // COMPH-CONSUME-01 removes claimed records while the producer's ordinal remains monotonic.
     records.every(({ completionOrdinal }, index) =>
-      completionOrdinal === index + 1
+      completionOrdinal > 0 &&
+      completionOrdinal < nextCompletionOrdinal &&
+      (index === 0 ||
+        records[index - 1]!.completionOrdinal < completionOrdinal)
     );
 }
 

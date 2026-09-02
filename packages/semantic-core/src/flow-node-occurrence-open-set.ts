@@ -58,6 +58,7 @@ import {
   LocalDataOwnerKind,
   matchesEffectLocalDataOwner,
 } from "./local-data-owner.js";
+import { projectOpenCompensationOccurrences } from "./flow-node-occurrence-compensation.js";
 
 const WaitAnchorKind = "wait" as SemanticFlowNodeOccurrenceAnchorKind.Wait;
 const ScopeAnchorKind = "scope" as SemanticFlowNodeOccurrenceAnchorKind.Scope;
@@ -142,6 +143,9 @@ export function projectOpenFlowNodeOccurrences(
     if (!waitMatchesEffect(program, state, wait)) return null;
     if (!pushWait(projected, program, state, wait.id, wait.owner)) return null;
   }
+  const compensation = projectOpenCompensationOccurrences(program, state);
+  if (compensation === null) return null;
+  projected.push(...compensation);
   if (!projectEmbeddedScopes(projected, program, state)) return null;
   if (!projectCallActivities(projected, program, state)) return null;
   return canonicalOpenSet(projected);
@@ -633,6 +637,8 @@ function runtimeHasNoLiveOwners(state: RuntimeState): boolean {
     state.selectedBranchSets.length === 0 &&
     state.eventRaces.length === 0 &&
     state.calledProcessOccurrences.length === 0 &&
+    !(state.compensationTriggers ?? []).some(({ lifecycle }) => lifecycle === "active") &&
+    (state.compensationHandlerEffectWaits?.length ?? 0) === 0 &&
     state.variables.activities.length === 0;
 }
 
@@ -658,6 +664,8 @@ function validAnchor(anchor: SemanticFlowNodeOccurrenceAnchor): boolean {
   switch (anchor.kind) {
     case "wait":
     case "callActivity":
+    case "compensationTrigger":
+    case "compensationHandler":
       return validOccurrence(anchor.id);
     case "scope":
       return validScopeId(anchor.id);
@@ -701,6 +709,8 @@ function compareAnchors(
   switch (left.kind) {
     case "wait":
     case "callActivity":
+    case "compensationTrigger":
+    case "compensationHandler":
       return right.kind === left.kind ? compareOccurrenceIds(left.id, right.id) : 0;
     case "scope":
       return right.kind === left.kind ? compareScopeIds(left.id, right.id) : 0;
@@ -720,8 +730,10 @@ function anchorKindOrder(kind: SemanticFlowNodeOccurrenceAnchor["kind"]): number
     case "wait": return 0;
     case "scope": return 1;
     case "callActivity": return 2;
-    case "transition": return 3;
-    default: return 4;
+    case "compensationTrigger": return 3;
+    case "compensationHandler": return 4;
+    case "transition": return 5;
+    default: return 6;
   }
 }
 
@@ -745,8 +757,12 @@ function anchorKey(anchor: SemanticFlowNodeOccurrenceAnchor): string {
       return JSON.stringify([1, anchor.id.processInstanceId, anchor.id.definitionScopeId, anchor.id.activation]);
     case "callActivity":
       return JSON.stringify([2, anchor.id.processInstanceId, anchor.id.elementId, anchor.id.activation]);
+    case "compensationTrigger":
+      return JSON.stringify([3, anchor.id.processInstanceId, anchor.id.elementId, anchor.id.activation]);
+    case "compensationHandler":
+      return JSON.stringify([4, anchor.id.processInstanceId, anchor.id.elementId, anchor.id.activation]);
     case "transition":
-      return JSON.stringify([3, anchor.commandId, anchor.transitionIndex, anchor.localIndex]);
+      return JSON.stringify([5, anchor.commandId, anchor.transitionIndex, anchor.localIndex]);
     default:
       return "";
   }

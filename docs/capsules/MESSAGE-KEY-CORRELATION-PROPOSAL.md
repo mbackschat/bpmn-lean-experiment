@@ -278,9 +278,9 @@ The 800-nonblank-line soft target is the extraction threshold and 1,200 lines is
 |---|---:|---|
 | [Lean ProfileAdmission](../../BpmnSemantics/SemanticProcess/ProfileAdmission.lean) | 3 | extract the profile-family predicate before adding this profile because the complete arm cannot safely fit the measured margin |
 | [Lean SemanticProcessContract](../../BpmnSemantics/SemanticProcessContract.lean) | 54 | add only closed contract arms; extract correlation support types first if the edit would cross 800 |
-| [TypeScript semantic runtime dispatch](../../packages/semantic-core/src/semantic-process-runtime.ts) | 54 | add dispatch only; correlation behavior belongs in a new family owner |
+| [TypeScript semantic runtime dispatch](../../packages/semantic-core/src/semantic-process-runtime.ts) | 18 | add dispatch only; correlation behavior belongs in a new family owner |
 | [TypeScript lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 154 | add dispatch and construction only; source correlation validation belongs in a new owner |
-| [TypeScript scenario projection](../../packages/semantic-core/src/scenario.ts) | 159 | add the correlated interaction projection only; engine-population execution belongs in a new owner |
+| [TypeScript scenario projection](../../packages/semantic-core/src/scenario.ts) | 153 | add the correlated interaction projection only; engine-population execution belongs in a new owner |
 | [TypeScript Semantic Process contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 197 | add one operation arm and referenced correlation contract; extract first if the edit would cross 800 |
 | [TypeScript public contract](../../packages/semantic-core/src/contract.ts) | 311 | add closed public arms without changing existing direct Message shapes |
 | [Workflow command ingress](../../packages/temporal-adapter/workflow/src/workflow-command-ingress.ts) | 348 | route target delivery only; global correlation ingress belongs in new Workflow owners |

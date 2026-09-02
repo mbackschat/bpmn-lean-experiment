@@ -21,12 +21,14 @@ This contributor map assigns source-file responsibilities inside `@bpmn-lean/sem
 | [compensation-event-sub-process-snapshot.ts](src/compensation-event-sub-process-snapshot.ts) | Pure bounded reservation, completion-time promotion, unsuccessful-parent purge, and containing-root disposition |
 | [compensation-event-sub-process-snapshot-state-validation.ts](src/compensation-event-sub-process-snapshot-state-validation.ts) | Exact declaration and lifecycle validity, declaration-derived dormant-handler facts, and canonical retention byte measurement |
 | [compensation-trigger-handler-contract.ts](src/compensation-trigger-handler-contract.ts) | Closed Program declaration for Compensation subjects, single-effect handler bodies, dependencies, and trigger limits |
-| [compensation-trigger-handler-program-admission.ts](src/compensation-trigger-handler-program-admission.ts) | Exact Program-only root, trigger, retention/snapshot coverage, identity, dependency, and limit admission while execution remains dormant |
+| [compensation-trigger-handler-program-admission.ts](src/compensation-trigger-handler-program-admission.ts) | Exact Program-only root, trigger, retention/snapshot coverage, identity, dependency, and limit admission |
 | [compensation-trigger-handler-runtime-contract.ts](src/compensation-trigger-handler-runtime-contract.ts) | Closed trigger, handler-lifecycle, dependency, effect-wait, and restored-context RuntimeState shapes plus exact transport material |
-| [compensation-trigger-handler-runtime-state-validation.ts](src/compensation-trigger-handler-runtime-state-validation.ts) | Declaration-bound lifecycle, join, identity, ordering, capacity, failed-state, and canonical-byte validity without enabling transitions |
+| [compensation-trigger-handler-runtime-state-validation.ts](src/compensation-trigger-handler-runtime-state-validation.ts) | Declaration-bound lifecycle, join, identity, one-active-trigger, exact failed-trigger, ordering, retained-count capacity, and canonical-byte validity |
+| [compensation-trigger-handler-transition.ts](src/compensation-trigger-handler-transition.ts) | Atomic root-global source selection and consumption, frozen-context restoration, trigger creation, maximal-frontier activation, capacity refusal, and zero-subject continuation |
+| [compensation-trigger-handler-completion.ts](src/compensation-trigger-handler-completion.ts) | Exact compensation effect completion, predecessor-frontier activation, final continuation, fail-fast terminalization, regional cleanup, and successor-capacity preflight |
 | [semantic-process-admission.ts](src/semantic-process-admission.ts) | Structural scenario and program validation plus identity admission |
 | [semantic-process-operation-admission.ts](src/semantic-process-operation-admission.ts) | Closed operation-shape, payload, reference, and origin validation |
-| [semantic-command-admission.ts](src/semantic-command-admission.ts) | Whether one submitted external command commits, and to which successor state |
+| [semantic-command-admission.ts](src/semantic-command-admission.ts) | Whether one submitted external command commits, including compensation-effect dispatch and exact stale/capacity refusal, and to which successor state |
 | [semantic-process-graph-admission.ts](src/semantic-process-graph-admission.ts) | Producer and consumer consistency, reachability, co-reachability, cycle-policy validation, and the private declaration-derived dormant-handler composition seam |
 | [semantic-process-graph-policy.ts](src/semantic-process-graph-policy.ts) | Profile-owned graph policy shared by checked-source and Semantic Process admission |
 | [semantic-process-profile.ts](src/semantic-process-profile.ts) | Profile-selected operation capabilities |
@@ -115,10 +117,11 @@ This contributor map assigns source-file responsibilities inside `@bpmn-lean/sem
 | [internal-transition-ordinary-arming-preparation.ts](src/internal-transition-ordinary-arming-preparation.ts) | Exact ordinary User Task, Message, Timer, and Effect arming footprints plus numbering-free transition and wait-lifecycle publications derived from the pre-state |
 | [internal-transition-ordinary-arming-patch.ts](src/internal-transition-ordinary-arming-patch.ts) | Exact local edits for ordinary wait arming, shared by pre-frontier preparation and the existing evaluator without whole-state replacement or successor-state inference |
 | [semantic-process-closure.ts](src/semantic-process-closure.ts) | Bounded closure over single-enabled and reviewed exact-two internal frontiers with whole-batch refusal precedence |
-| [semantic-process-runtime.ts](src/semantic-process-runtime.ts) | Runtime state, three-arm internal-operation dispatch, whole-stimulus rollback, and `applyStimulus` |
+| [semantic-process-runtime.ts](src/semantic-process-runtime.ts) | Runtime state, ordinary and compensation internal-operation dispatch, whole-stimulus rollback, and `applyStimulus` |
 | [semantic-transition-trace.ts](src/semantic-transition-trace.ts) | Committed transition facts and trace replay validation |
 | [flow-node-occurrence-candidates.ts](src/flow-node-occurrence-candidates.ts) | Program-selected element and Process resolution for occurrence owners |
-| [flow-node-occurrence-lifecycle.ts](src/flow-node-occurrence-lifecycle.ts) | Flow-node lifecycle derivation and fold validation |
+| [flow-node-occurrence-lifecycle.ts](src/flow-node-occurrence-lifecycle.ts) | Flow-node lifecycle derivation, compensation dispatch, and fold validation |
+| [flow-node-occurrence-compensation.ts](src/flow-node-occurrence-compensation.ts) | Exact open and transition-local Compensation throw, handler, and distinct handler-body occurrence projection |
 | [flow-node-occurrence-open-set.ts](src/flow-node-occurrence-open-set.ts) | Open flow-node occurrence projection |
 | [flow-node-occurrence-publication-completeness.ts](src/flow-node-occurrence-publication-completeness.ts) | Internal-transition publication completeness |
 | [flow-node-occurrence-publication-external-completeness.ts](src/flow-node-occurrence-publication-external-completeness.ts) | External-stimulus and cancellation publication completeness |
