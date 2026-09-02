@@ -177,7 +177,7 @@ The accepted complete receipts are immutable at `7b3ca41f`. The warm-closure tes
 
 #### Compensation trigger-handler module-cost binding
 
-The compensation trigger-handler proof owners were measured from immutable commit `ef739572` with a warm dependency closure and only each measured target's own generated artifacts removed. Other host processes were active, so elapsed time is recorded but not compared; every command exited zero without swap, and every cgroup `high`, `max`, `oom`, `oom_kill`, and `oom_group_kill` event remained zero.
+The compensation trigger-handler proof owners were initially measured from immutable commit `ef739572` with a warm dependency closure and only each measured target's own generated artifacts removed. Other host processes were active, so elapsed time is recorded but not compared; every command exited zero without swap, and every cgroup `high`, `max`, `oom`, `oom_kill`, and `oom_group_kill` event remained zero.
 
 | Target | Elapsed | GNU maximum RSS | Cgroup peak |
 |---|---:|---:|---:|
