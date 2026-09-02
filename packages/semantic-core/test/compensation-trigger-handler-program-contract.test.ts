@@ -2,20 +2,30 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
+  CanonicalObservationKind,
+  CompensationExecutionStateDefect,
   ControlStateKind,
   EffectOperation,
   EffectProtocol,
   InternalSchedulingMode,
+  ProcessStatus,
+  RuntimeStateDefect,
   SemanticOperationKind,
   SemanticOriginKind,
   SemanticProcessCompilerId,
   SemanticProcessKind,
   SemanticProfileId,
   StimulusKind,
+  admitProcessStart,
   applyInternalOperation,
   compareCanonicalStrings,
+  compensationExecutionStateDefects,
   initialState,
   isWellFormedSemanticProcessProgram,
+  isWellFormedRuntimeState,
+  initializeCompensationExecutionState,
+  observeStableState,
+  runtimeStateDefects,
   supportsSemanticProcessExecution,
   type CompensationDependency,
   type CompensationExecutionDeclaration,
@@ -608,4 +618,209 @@ test("keeps the dormant trigger out of the ordinary internal transition families
   } as const satisfies RuntimeState;
 
   assert.equal(applyInternalOperation(validProgram, trigger, state), null);
+});
+
+test("binds both compensation execution collections to the declaring Program", () => {
+  assert.equal(Object.hasOwn(initialState, "compensationTriggers"), false);
+  assert.equal(Object.hasOwn(initialState, "compensationHandlerEffectWaits"), false);
+  assert.equal(
+    runtimeStateDefects(validProgram, "", initialState).includes(
+      RuntimeStateDefect.CompensationExecutionProfileMismatch,
+    ),
+    true,
+  );
+
+  const started = admitProcessStart(validProgram, initialState, start);
+  assert.ok(started !== null);
+  assert.deepEqual(started.compensationTriggers, []);
+  assert.deepEqual(started.compensationHandlerEffectWaits, []);
+  assert.equal(isWellFormedRuntimeState(validProgram, start.instanceId, started), true);
+
+  const { compensationHandlerEffectWaits: _waits, ...missingWaitCollection } = started;
+  void _waits;
+  assert.equal(
+    runtimeStateDefects(validProgram, start.instanceId, missingWaitCollection).includes(
+      RuntimeStateDefect.CompensationExecutionProfileMismatch,
+    ),
+    true,
+  );
+
+  const malformedRunning = {
+    ...initialState,
+    control: { kind: ControlStateKind.Running, instanceId: start.instanceId },
+  } as const satisfies RuntimeState;
+  assert.strictEqual(
+    initializeCompensationExecutionState(validProgram, malformedRunning),
+    malformedRunning,
+  );
+});
+
+test("requires the exact lifted dependency relation between selected handlers", () => {
+  const owner = {
+    processInstanceId: start.instanceId,
+    definitionScopeId: rootScopeId,
+    activation: 1,
+  } as const;
+  const subjectAOccurrence = {
+    kind: "boundaryActivity",
+    activity: {
+      processInstanceId: start.instanceId,
+      activityElementId: "A",
+      activation: 1,
+    },
+  } as const;
+  const subjectBOccurrence = {
+    kind: "eventSubProcess",
+    parent: {
+      processInstanceId: start.instanceId,
+      definitionScopeId: subjectBScopeId,
+      activation: 1,
+    },
+  } as const;
+  const trigger = {
+    id: { processInstanceId: start.instanceId, elementId: triggerOperationId, activation: 1 },
+    owner,
+    output: "place:Trigger_To_End",
+    lifecycle: "succeeded",
+    handlers: [
+      {
+        id: { processInstanceId: start.instanceId, elementId: "Undo_A", activation: 1 },
+        subject: subjectAOccurrence,
+        handlerElementId: "Undo_A",
+        lifecycle: "compensated",
+      },
+      {
+        id: { processInstanceId: start.instanceId, elementId: "Undo_B", activation: 1 },
+        subject: subjectBOccurrence,
+        handlerElementId: "Undo_B",
+        lifecycle: "compensated",
+      },
+    ],
+    dependencies: [{
+      predecessor: subjectAOccurrence,
+      successor: subjectBOccurrence,
+      reason: "sequenceFlow",
+    }],
+  } as const;
+  const state = {
+    ...initialState,
+    control: { kind: ControlStateKind.Running, instanceId: start.instanceId },
+    compensationTriggers: [trigger],
+    compensationHandlerEffectWaits: [],
+  } as const satisfies RuntimeState;
+
+  assert.equal(
+    compensationExecutionStateDefects(validProgram, state).includes(
+      CompensationExecutionStateDefect.InvalidTrigger,
+    ),
+    false,
+  );
+  assert.equal(
+    compensationExecutionStateDefects(validProgram, {
+      ...state,
+      compensationTriggers: [{ ...trigger, dependencies: [] }],
+    }).includes(CompensationExecutionStateDefect.InvalidTrigger),
+    true,
+  );
+});
+
+test("projects a typed failed Process without live public work", () => {
+  const triggerId = {
+    processInstanceId: start.instanceId,
+    elementId: triggerOperationId,
+    activation: 1,
+  } as const;
+  const handlerId = {
+    processInstanceId: start.instanceId,
+    elementId: "Undo_C",
+    activation: 1,
+  } as const;
+  const effectId = handlerId;
+  const failure = {
+    kind: "compensationHandlerFailure",
+    triggerId,
+    handlerId,
+    effectId,
+    code: "compensation-rejected",
+    message: "downstream rejected the reversal",
+  } as const;
+  const failed = {
+    ...initialState,
+    control: {
+      kind: ControlStateKind.Failed,
+      instanceId: start.instanceId,
+      failure,
+    },
+    compensationActivityRetentions: [],
+    compensationParentContextRetentions: [],
+    compensationTriggers: [{
+      id: triggerId,
+      owner: {
+        processInstanceId: start.instanceId,
+        definitionScopeId: rootScopeId,
+        activation: 1,
+      },
+      output: "place:Trigger_To_End",
+      lifecycle: "failed",
+      handlers: [{
+        id: handlerId,
+        subject: {
+          kind: "boundaryActivity",
+          activity: {
+            processInstanceId: start.instanceId,
+            activityElementId: "C",
+            activation: 1,
+          },
+        },
+        handlerElementId: "Undo_C",
+        lifecycle: "failed",
+      }],
+      dependencies: [],
+    }],
+    compensationHandlerEffectWaits: [],
+  } as const satisfies RuntimeState;
+
+  assert.deepEqual(observeStableState(validProgram, failed), {
+    kind: CanonicalObservationKind.State,
+    instanceId: start.instanceId,
+    status: ProcessStatus.Failed,
+    failure,
+    activeWaits: [],
+    openUserTasks: [],
+    openMessageSubscriptions: [],
+    openTimers: [],
+    openEffects: [],
+    openIncidents: [],
+    variables: [],
+    enabledInteractions: [],
+    logicalTimeMs: 0,
+  });
+  assert.equal(observeStableState(validProgram, { ...failed, compensationTriggers: [] }), null);
+  assert.equal(observeStableState(validProgram, {
+    ...failed,
+    control: {
+      ...failed.control,
+      failure: { ...failure, effectId: { ...effectId, elementId: "wrong-effect" } },
+    },
+  }), null);
+  assert.equal(
+    observeStableState(validProgram, {
+      ...failed,
+      timerWaits: [{
+        id: {
+          processInstanceId: start.instanceId,
+          elementId: "late-timer",
+          activation: 1,
+        },
+        owner: {
+          processInstanceId: start.instanceId,
+          definitionScopeId: rootScopeId,
+          activation: 1,
+        },
+        deadlineMs: 0,
+        output: "place:Trigger_To_End",
+      }],
+    }),
+    null,
+  );
 });

@@ -61,6 +61,6 @@ def admitMessageStart? (program : Program) (state : RuntimeState)
           channel then
         runningProgramStartState? program instanceId []
       else none
-  | .running _ | .completed _ | .cancelled _ => none
+  | .running _ | .completed _ | .cancelled _ | .failed .. => none
 
 end BpmnSemantics.SemanticProcess

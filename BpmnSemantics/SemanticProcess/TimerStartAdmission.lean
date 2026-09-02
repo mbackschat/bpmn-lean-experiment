@@ -36,6 +36,6 @@ def admitTimerStart? (program : Program) (state : RuntimeState)
       if timerStartTargetMatchesProgram program processId startEventId then
         runningProgramStartState? program instanceId []
       else none
-  | .running _ | .completed _ | .cancelled _ => none
+  | .running _ | .completed _ | .cancelled _ | .failed .. => none
 
 end BpmnSemantics.SemanticProcess

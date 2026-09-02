@@ -400,6 +400,7 @@ theorem projectCorrelatedMessageCandidate_correct (program : Program) (state : R
   | notStarted => simp [controlEq] at projected
   | completed _ => simp [controlEq] at projected
   | cancelled _ => simp [controlEq] at projected
+  | failed _ _ => simp [controlEq] at projected
   | running instanceId =>
       cases operationEq : soleCorrelatedPayloadMessageOperation? program with
       | none => simp [controlEq, operationEq] at projected

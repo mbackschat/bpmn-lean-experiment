@@ -1,6 +1,7 @@
 import type {
   CanonicalObservation,
   CommandOutcome,
+  CompensationHandlerFailure,
   CompleteUserTaskInstanceStimulus,
   DeepReadonly,
   DeliverMessageStimulus,
@@ -150,9 +151,21 @@ export type CancelledProcessReceipt = DeepReadonly<{
   };
 }>;
 
+export type FailedProcessReceipt = DeepReadonly<{
+  format: typeof processTerminalReceiptFormatV1;
+  definition: SemanticProcessIdentity;
+  processId: string;
+  processInstanceId: string;
+  finalState: StateObservation & {
+    status: ProcessStatus.Failed;
+    failure: CompensationHandlerFailure;
+  };
+}>;
+
 export type TerminalProcessReceipt =
   | CompletedProcessReceipt
-  | CancelledProcessReceipt;
+  | CancelledProcessReceipt
+  | FailedProcessReceipt;
 
 /** Caller-selected detail for one exact currently open semantic User Task. */
 export type UserTaskDetailRequest = DeepReadonly<{

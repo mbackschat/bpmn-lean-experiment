@@ -228,6 +228,11 @@ if (baseUrl === undefined) {
         kind: PostgresqlOperateRecoveryStepKind.Fail,
         detail: PostgresqlOperateRecoveryFailureCode.DecoderDivergence,
       },
+      {
+        value: { kind: ExecutionPublicationResultKind.Available, page: failedProducerPage() },
+        kind: PostgresqlOperateRecoveryStepKind.Fail,
+        detail: PostgresqlOperateRecoveryFailureCode.DecoderDivergence,
+      },
     ] as const;
     for (const expected of outcomes) {
       const result = await new PostgresqlExecutionRecoveryStep({
@@ -487,6 +492,35 @@ async function register(
     locator: registration.locator,
   });
   return { ...registration, ordinal };
+}
+
+function failedProducerPage(): unknown {
+  const page = firstPage();
+  assert.ok(page.current);
+  const handlerId = {
+    processInstanceId: "Instance_1",
+    elementId: "UndoCharge",
+    activation: 1,
+  };
+  return {
+    ...page,
+    current: {
+      ...page.current,
+      controlTokens: [],
+      state: {
+        ...page.current.state,
+        status: "failed",
+        failure: {
+          kind: "compensationHandlerFailure",
+          triggerId: { ...handlerId, elementId: "ThrowCompensation" },
+          handlerId,
+          effectId: { ...handlerId, elementId: "Effect_UndoCharge" },
+          code: "compensation-rejected",
+          message: null,
+        },
+      },
+    },
+  };
 }
 
 async function closeRegistration(

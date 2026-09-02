@@ -98,6 +98,11 @@ export function terminalWorkflowResult(
     trace,
   );
   if (recovery === null) {
+    if (receipt.finalState.status === ProcessStatus.Failed) {
+      throw new TypeError(
+        "Retained legacy terminal result cannot encode a failed Process",
+      );
+    }
     // This exact property set and order is replay data for retained two-argument histories. It is
     // intentionally private rather than a second public receipt contract.
     return {

@@ -116,7 +116,7 @@ def compensationActivityRetentionStateValid (program : Program)
     | none => state.compensationActivityRetentions.isEmpty
     | some declaration =>
         match state.control with
-        | .notStarted | .completed _ | .cancelled _ =>
+        | .notStarted | .completed _ | .cancelled _ | .failed .. =>
             state.compensationActivityRetentions.isEmpty
         | .running instanceId =>
             match state.compensationActivityRetentions with

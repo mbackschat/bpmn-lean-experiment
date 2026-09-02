@@ -29,7 +29,7 @@ def effectWaitOwnerAssociationValid (state : RuntimeState)
           wait.owner.processInstanceId = instanceId) &&
         (state.scopeOccurrences.filter fun occurrence =>
           occurrence.id == wait.owner).length = 1
-  | .notStarted | .completed _ | .cancelled _ => false
+  | .notStarted | .completed _ | .cancelled _ | .failed .. => false
 
 /-- One incident is well associated exactly when it retains its named wait, live scope owner, and unique Activity-local scope while the same occurrence is absent from the open-effect collection. -/
 def effectIncidentAssociationValid (state : RuntimeState)

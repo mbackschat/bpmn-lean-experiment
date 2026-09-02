@@ -1,4 +1,5 @@
 import type {
+  CompensationHandlerFailure,
   EffectIncidentId,
   EffectOccurrenceId,
   MessageSubscriptionId,
@@ -10,6 +11,10 @@ import type {
 import type { DeepReadonly } from "./deep-readonly.js";
 import type { CompensationActivityRetention } from "./compensation-activity-retention-contract.js";
 import type { CompensationParentContextRetention } from "./compensation-event-sub-process-snapshot-contract.js";
+import type {
+  CompensationHandlerEffectWait,
+  CompensationTriggerExecution,
+} from "./compensation-trigger-handler-runtime-contract.js";
 import type {
   EffectDescriptor,
   MessageChannel,
@@ -28,6 +33,7 @@ export enum ControlStateKind {
   Running = "running",
   Completed = "completed",
   Cancelled = "cancelled",
+  Failed = "failed",
 }
 
 type NotStartedControl = DeepReadonly<{
@@ -42,7 +48,13 @@ type InstancedControl = DeepReadonly<{
   instanceId: string;
 }>;
 
-export type ControlState = NotStartedControl | InstancedControl;
+export type FailedControl = DeepReadonly<{
+  kind: ControlStateKind.Failed;
+  instanceId: string;
+  failure: CompensationHandlerFailure;
+}>;
+
+export type ControlState = NotStartedControl | InstancedControl | FailedControl;
 
 export type ControlPlaceTokens = DeepReadonly<{
   placeId: string;
@@ -184,6 +196,10 @@ export type RuntimeState = DeepReadonly<{
   compensationActivityRetentions?: CompensationActivityRetention[];
   /** Present exactly for Programs declaring Compensation Event Sub-Process snapshots. */
   compensationParentContextRetentions?: CompensationParentContextRetention[];
+  /** Present exactly for Programs declaring compensation trigger execution. */
+  compensationTriggers?: CompensationTriggerExecution[];
+  /** Present exactly for Programs declaring compensation trigger execution. */
+  compensationHandlerEffectWaits?: CompensationHandlerEffectWait[];
   variables: ScopedVariables;
   taskActivations: ActivationCounter[];
   messageActivations: ActivationCounter[];

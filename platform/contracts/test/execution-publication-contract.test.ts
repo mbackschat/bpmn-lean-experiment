@@ -9,6 +9,7 @@ import {
   executionPublicationIdentityForPublicProcessInstance,
   executionPublicationStateAcceptedKeys,
   ExecutionPublicationResultKind,
+  ProcessStatus,
   SemanticOperationKind,
 } from "@bpmn-lean/platform-contracts";
 
@@ -131,7 +132,44 @@ test("accepts the exact sequential Multi-Instance progress publication", () => {
   );
 });
 
-test("keeps the strict state-key decoder synchronized with the producer schema", async () => {
+test("rejects failed producer state with or without its mandatory failure", () => {
+  assert.deepEqual(Object.values(ProcessStatus), ["running", "completed", "cancelled"]);
+  const page = executionPublicationPage();
+  const failedState = { ...page.current!.state, status: "failed" };
+  const failure = {
+    kind: "compensationHandlerFailure",
+    triggerId: {
+      processInstanceId: publicationIdentity.processInstanceId,
+      elementId: "ThrowCompensation",
+      activation: 1,
+    },
+    handlerId: {
+      processInstanceId: publicationIdentity.processInstanceId,
+      elementId: "UndoCharge",
+      activation: 1,
+    },
+    effectId: {
+      processInstanceId: publicationIdentity.processInstanceId,
+      elementId: "Effect_UndoCharge",
+      activation: 1,
+    },
+    code: "compensation-rejected",
+    message: null,
+  };
+
+  for (const state of [{ ...failedState, failure }, failedState]) {
+    assert.throws(() => decodeExecutionPublicationPage({
+      ...page,
+      current: { ...page.current!, state, controlTokens: [] },
+    }, {
+      ...publicationIdentity,
+      afterRevision: 0,
+      limit: 1,
+    }), /public fields|status/u);
+  }
+});
+
+test("keeps the strict state-key decoder at the exact Product 2 producer subset", async () => {
   const schema = JSON.parse(await readFile(
     new URL("../../../contracts/schemas/scenario.schema.json", import.meta.url),
     "utf8",
@@ -139,8 +177,10 @@ test("keeps the strict state-key decoder synchronized with the producer schema",
     $defs: { stateObservation: { required: string[]; properties: Record<string, unknown> } };
   };
   const producer = schema.$defs.stateObservation;
+  const { failure: producerFailure, ...product2Properties } = producer.properties;
+  assert.ok(producerFailure);
   assert.deepEqual(
-    Object.keys(producer.properties).toSorted(),
+    Object.keys(product2Properties).toSorted(),
     [...executionPublicationStateAcceptedKeys].toSorted(),
   );
   assert.equal(producer.required.includes("openMultiInstances"), false);

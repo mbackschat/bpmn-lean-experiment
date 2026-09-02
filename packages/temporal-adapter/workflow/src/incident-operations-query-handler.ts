@@ -9,6 +9,7 @@ import {
 } from "@bpmn-lean/semantic-core";
 import type {
   CancelIncidentProcessInteraction,
+  CompensationHandlerFailure,
   EnabledInteraction,
   OpenEffectIncident,
   RetryIncidentInteraction,
@@ -21,6 +22,7 @@ import {
 } from "@temporalio/workflow";
 import {
   bpmnIncidentOperationsQueryName,
+  canonicalWorkflowChainJson,
 } from "@bpmn-lean/temporal-protocol";
 import type {
   TemporalIncidentOperationsIncident,
@@ -60,7 +62,7 @@ export function projectIncidentOperationsSnapshot(
         state,
         observation,
         state.control.instanceId,
-        "completed",
+        ProcessStatus.Completed,
       );
       return terminalSnapshot(state.control.instanceId, ProcessStatus.Completed);
     case ControlStateKind.Cancelled:
@@ -68,9 +70,18 @@ export function projectIncidentOperationsSnapshot(
         state,
         observation,
         state.control.instanceId,
-        "cancelled",
+        ProcessStatus.Cancelled,
       );
       return terminalSnapshot(state.control.instanceId, ProcessStatus.Cancelled);
+    case ControlStateKind.Failed:
+      requireTerminalState(
+        state,
+        observation,
+        state.control.instanceId,
+        ProcessStatus.Failed,
+        state.control.failure,
+      );
+      return terminalSnapshot(state.control.instanceId, ProcessStatus.Failed);
     case ControlStateKind.Running:
       if (
         observation?.kind !== CanonicalObservationKind.State ||
@@ -131,7 +142,10 @@ export function pairIncidentOperations(
 
 function terminalSnapshot(
   instanceId: string,
-  status: ProcessStatus.Completed | ProcessStatus.Cancelled,
+  status:
+    | ProcessStatus.Completed
+    | ProcessStatus.Cancelled
+    | ProcessStatus.Failed,
 ): Exclude<TemporalIncidentOperationsSnapshot, null> {
   return { instanceId, status, incidents: [] };
 }
@@ -149,11 +163,20 @@ function requireTerminalState(
   state: RuntimeState,
   observation: ReturnType<typeof observeStableState>,
   expectedInstanceId: string,
-  status: string,
+  status:
+    | ProcessStatus.Completed
+    | ProcessStatus.Cancelled
+    | ProcessStatus.Failed,
+  expectedFailure?: CompensationHandlerFailure,
 ): void {
   if (
     observation?.kind !== CanonicalObservationKind.State ||
-    observation.instanceId !== expectedInstanceId
+    observation.instanceId !== expectedInstanceId ||
+    observation.status !== status ||
+    (expectedFailure !== undefined &&
+      (observation.status !== ProcessStatus.Failed ||
+        canonicalWorkflowChainJson(observation.failure) !==
+          canonicalWorkflowChainJson(expectedFailure)))
   ) {
     throw invalidIncidentProjection(`${status} state has no exact observation`);
   }

@@ -33,12 +33,22 @@ export const RunnableMvpExitCode = {
   InfrastructureFailure: 1,
   AdmissionRejected: 2,
   ExecutionRefused: 3,
+  ProcessFailed: 4,
   ConfigurationRejected: 64,
 } as const;
+
+export type RunnableMvpCommandDependencies = Readonly<{
+  run: typeof runRunnableTemporalMvp;
+}>;
+
+const productionDependencies: RunnableMvpCommandDependencies = {
+  run: runRunnableTemporalMvp,
+};
 
 export async function runRunnableMvpCommand(
   args: ReadonlyArray<string>,
   writeLine: (line: string) => void = (line) => process.stdout.write(`${line}\n`),
+  dependencies: RunnableMvpCommandDependencies = productionDependencies,
 ): Promise<number> {
   const operands = args[0] === "--" ? args.slice(1) : args;
   if (operands.length !== 1 || operands[0] === undefined) {
@@ -67,7 +77,7 @@ export async function runRunnableMvpCommand(
   }
 
   try {
-    const result = await runRunnableTemporalMvp(
+    const result = await dependencies.run(
       config,
       (event) => emit(event, writeLine),
     );
@@ -75,6 +85,8 @@ export async function runRunnableMvpCommand(
       case RunnableMvpResultKind.Completed:
       case RunnableMvpResultKind.Cancelled:
         return RunnableMvpExitCode.Completed;
+      case RunnableMvpResultKind.Failed:
+        return RunnableMvpExitCode.ProcessFailed;
       case RunnableMvpResultKind.SourceAdmissionRejected:
       case RunnableMvpResultKind.ProcessAdmissionRejected:
         return RunnableMvpExitCode.AdmissionRejected;

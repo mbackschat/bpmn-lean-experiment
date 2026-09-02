@@ -6,13 +6,16 @@ import { Ajv2020 } from "ajv/dist/2020.js";
 
 import {
   BASELINE_SCENARIO_OBSERVATIONS,
+  CanonicalObservationKind,
   ObservationRequestKind,
+  ProcessStatus,
   ScenarioDocumentKind,
   SEQUENTIAL_MULTI_INSTANCE_SCENARIO_OBSERVATIONS,
   scenarioObservationsForProfile,
   supportsSemanticProcessScenario,
 } from "@bpmn-lean/semantic-core";
 import type {
+  ExistingStateObservation,
   Scenario,
 } from "@bpmn-lean/semantic-core";
 
@@ -196,6 +199,52 @@ test("the state schema recursively closes the Multi-Instance projection", async 
   )[0]!.activeIterations[0]!;
   activeIteration.privateSnapshot = ["must-not-publish"];
   assert.equal(validate(surplusNestedField), false);
+});
+
+test("the state schema discriminates failed Process observations", async () => {
+  const validate = await stateObservationValidator();
+  const existing = validStateObservation();
+  const occurrence = {
+    processInstanceId: existing.instanceId,
+    elementId: "Undo_Activity",
+    activation: 1,
+  };
+  const failure = {
+    kind: "compensationHandlerFailure",
+    triggerId: { ...occurrence, elementId: "operation:Trigger" },
+    handlerId: occurrence,
+    effectId: occurrence,
+    code: "compensation-rejected",
+    message: null,
+  };
+  const failed = {
+    ...existing,
+    status: "failed",
+    failure,
+    activeWaits: [],
+    openMultiInstances: [],
+  };
+
+  assert.equal(validate(failed), true, JSON.stringify(validate.errors));
+  assert.equal(validate({ ...failed, failure: undefined }), false);
+  assert.equal(validate({ ...failed, activeWaits: existing.activeWaits }), false);
+  assert.equal(validate({ ...failed, openMultiInstances: existing.openMultiInstances }), false);
+  assert.equal(validate({ ...existing, failure }), false);
+  const notStarted = {
+    ...existing,
+    kind: CanonicalObservationKind.State,
+    status: ProcessStatus.NotStarted,
+    activeWaits: [],
+    openUserTasks: [],
+    openMessageSubscriptions: [],
+    openTimers: [],
+    openEffects: [],
+    openIncidents: [],
+    openMultiInstances: [],
+    enabledInteractions: [],
+  } satisfies ExistingStateObservation;
+  assert.equal(validate(notStarted), true, JSON.stringify(validate.errors));
+  assert.equal(validate({ ...notStarted, failure }), false);
 });
 
 async function scenarioValidator() {

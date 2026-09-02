@@ -98,6 +98,7 @@ export async function observeTemporalProcessIncidents(
         };
       case ProcessStatus.Completed:
       case ProcessStatus.Cancelled:
+      case ProcessStatus.Failed:
         return await corroborateTerminalObservation(
           handle,
           snapshot.hostingProcessInstanceId,
@@ -148,7 +149,10 @@ export function submitTemporalIncidentOperation(
 async function corroborateTerminalObservation(
   handle: WorkflowHandle<BpmnProcessWorkflow>,
   hostingProcessInstanceId: string,
-  status: ProcessStatus.Completed | ProcessStatus.Cancelled,
+  status:
+    | ProcessStatus.Completed
+    | ProcessStatus.Cancelled
+    | ProcessStatus.Failed,
 ): Promise<TemporalProcessOperationsObservationResult> {
   try {
     const { receipt } = decodeWorkflowTerminalResult(await withDeadline(

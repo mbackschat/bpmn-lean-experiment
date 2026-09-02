@@ -156,6 +156,10 @@ test("corroborates terminal Query status with the exact retained receipt", async
       ProcessStatus.Completed,
       terminalResult(hostingProcessInstanceId, ProcessStatus.Completed),
     ),
+    failed: terminalHandle(
+      ProcessStatus.Failed,
+      terminalResult(hostingProcessInstanceId, ProcessStatus.Failed),
+    ),
     identityMismatch: terminalHandle(
       ProcessStatus.Completed,
       terminalResult("different-host", ProcessStatus.Completed),
@@ -175,6 +179,10 @@ test("corroborates terminal Query status with the exact retained receipt", async
 
   assert.deepEqual(
     await observeTemporalProcessIncidents(client, "completed", hostingProcessInstanceId),
+    { status: TemporalProcessOperationsObservationStatus.Closed },
+  );
+  assert.deepEqual(
+    await observeTemporalProcessIncidents(client, "failed", hostingProcessInstanceId),
     { status: TemporalProcessOperationsObservationStatus.Closed },
   );
   assert.deepEqual(
@@ -305,7 +313,10 @@ function fakeClient(handles: Readonly<Record<string, FakeHandle>>): never {
 }
 
 function terminalHandle(
-  status: ProcessStatus.Completed | ProcessStatus.Cancelled,
+  status:
+    | ProcessStatus.Completed
+    | ProcessStatus.Cancelled
+    | ProcessStatus.Failed,
   receipt: unknown,
 ): FakeHandle {
   return {
@@ -324,8 +335,16 @@ function notFound(workflowId: string): WorkflowNotFoundError {
 
 function terminalReceipt(
   processInstanceId: string,
-  status: ProcessStatus.Completed | ProcessStatus.Cancelled,
+  status:
+    | ProcessStatus.Completed
+    | ProcessStatus.Cancelled
+    | ProcessStatus.Failed,
 ): unknown {
+  const handlerId = {
+    processInstanceId,
+    elementId: "Undo_Activity",
+    activation: 1,
+  } as const;
   return {
     format: processTerminalReceiptFormatV1,
     definition: {
@@ -341,6 +360,22 @@ function terminalReceipt(
       kind: "state",
       instanceId: processInstanceId,
       status,
+      ...(status === ProcessStatus.Failed
+        ? {
+            failure: {
+              kind: "compensationHandlerFailure",
+              triggerId: {
+                processInstanceId,
+                elementId: "operation:ThrowCompensation",
+                activation: 1,
+              },
+              handlerId,
+              effectId: { ...handlerId, elementId: "Effect_Undo_Activity" },
+              code: "compensation-rejected",
+              message: null,
+            },
+          }
+        : {}),
       activeWaits: [],
       openUserTasks: [],
       openMessageSubscriptions: [],
@@ -356,8 +391,18 @@ function terminalReceipt(
 
 function terminalResult(
   processInstanceId: string,
-  status: ProcessStatus.Completed | ProcessStatus.Cancelled,
+  status:
+    | ProcessStatus.Completed
+    | ProcessStatus.Cancelled
+    | ProcessStatus.Failed,
 ): unknown {
+  if (status === ProcessStatus.Failed) {
+    return {
+      format: "bpmn-lean.workflow-terminal-result.v1",
+      receipt: terminalReceipt(processInstanceId, status),
+      entries: [],
+    };
+  }
   const { format: _format, ...receipt } = terminalReceipt(
     processInstanceId,
     status,

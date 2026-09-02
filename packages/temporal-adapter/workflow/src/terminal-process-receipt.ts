@@ -9,6 +9,7 @@ import {
 } from "@bpmn-lean/semantic-core";
 import type {
   CanonicalObservation,
+  CompensationHandlerFailure,
   RuntimeState,
   SemanticProcessProgram,
   StateObservation,
@@ -17,12 +18,15 @@ import type {
   TerminalProcessReceipt,
 } from "@bpmn-lean/temporal-protocol";
 import {
+  canonicalWorkflowChainJson,
   processTerminalReceiptFormatV1,
+  requireTerminalProcessReceipt,
 } from "@bpmn-lean/temporal-protocol";
 
 export function isTerminalProcessState(state: RuntimeState): boolean {
   return state.control.kind === ControlStateKind.Completed ||
-    state.control.kind === ControlStateKind.Cancelled;
+    state.control.kind === ControlStateKind.Cancelled ||
+    state.control.kind === ControlStateKind.Failed;
 }
 
 export function terminalProcessReceipt(
@@ -31,6 +35,10 @@ export function terminalProcessReceipt(
   state: RuntimeState,
   trace: ReadonlyArray<CanonicalObservation>,
 ): TerminalProcessReceipt {
+  if (state.control.kind !== ControlStateKind.NotStarted &&
+    state.control.instanceId !== processInstanceId) {
+    throw terminalReceiptFailure();
+  }
   switch (state.control.kind) {
     case ControlStateKind.Completed:
       return {
@@ -48,10 +56,42 @@ export function terminalProcessReceipt(
         processInstanceId,
         finalState: requireCancelledState(trace, processInstanceId),
       };
+    case ControlStateKind.Failed:
+      return requireTerminalProcessReceipt({
+        format: processTerminalReceiptFormatV1,
+        definition: semanticProcess.identity,
+        processId: semanticProcess.processId,
+        processInstanceId,
+        finalState: requireFailedState(
+          trace,
+          processInstanceId,
+          state.control.failure,
+        ),
+      });
     case ControlStateKind.NotStarted:
     case ControlStateKind.Running:
       throw terminalReceiptFailure();
   }
+}
+
+function requireFailedState(
+  trace: ReadonlyArray<CanonicalObservation>,
+  processInstanceId: string,
+  failure: CompensationHandlerFailure,
+): StateObservation & { status: ProcessStatus.Failed } {
+  const finalState = trace.findLast(
+    (observation): observation is StateObservation & {
+      status: ProcessStatus.Failed;
+    } =>
+      observation.kind === CanonicalObservationKind.State &&
+      observation.status === ProcessStatus.Failed,
+  );
+  if (finalState === undefined || finalState.instanceId !== processInstanceId ||
+    canonicalWorkflowChainJson(finalState.failure) !==
+      canonicalWorkflowChainJson(failure)) {
+    throw terminalReceiptFailure();
+  }
+  return finalState;
 }
 
 function requireCompletedState(

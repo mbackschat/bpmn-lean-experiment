@@ -388,6 +388,7 @@ theorem enterSequentialMultiInstance_sound (arm : SequentialMultiInstanceArm)
   | notStarted => simp [running] at success
   | completed _ => simp [running] at success
   | cancelled _ => simp [running] at success
+  | failed _ _ => simp [running] at success
   | running instanceId =>
       cases owned : onlyTokenOwner? before arm.input with
       | none => simp [running, owned] at success
@@ -426,6 +427,7 @@ theorem completeSequentialMultiInstanceInnerTask_sound (arm : SequentialMultiIns
   | notStarted => simp [running] at success
   | completed _ => simp [running] at success
   | cancelled _ => simp [running] at success
+  | failed _ _ => simp [running] at success
   | running instanceId =>
       cases found : activityOccurrenceForTask? before.activityOccurrences body with
       | none => simp [running, found] at success
@@ -479,6 +481,7 @@ theorem interruptSequentialMultiInstance_sound (arm : SequentialMultiInstanceArm
   | notStarted => simp [running] at success
   | completed _ => simp [running] at success
   | cancelled _ => simp [running] at success
+  | failed _ _ => simp [running] at success
   | running instanceId =>
       cases live : before.timerWaits.find? (timerIdNamesWait timer) with
       | none => simp [running, live] at success

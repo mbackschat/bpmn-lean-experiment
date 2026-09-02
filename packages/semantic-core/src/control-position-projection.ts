@@ -193,7 +193,8 @@ function runtimeScopeForestIsValid(
   }
   if (
     (state.control.kind === ControlStateKind.Completed ||
-      state.control.kind === ControlStateKind.Cancelled) &&
+      state.control.kind === ControlStateKind.Cancelled ||
+      state.control.kind === ControlStateKind.Failed) &&
     (state.scopeOccurrences.length !== 0 || state.controlTokens.length !== 0)
   ) {
     return false;

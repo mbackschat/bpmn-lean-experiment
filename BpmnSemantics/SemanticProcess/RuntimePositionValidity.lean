@@ -124,6 +124,9 @@ private def lifecyclePositionValid (program : Program) (expectedInstanceId : Sem
   | .completed instanceId | .cancelled instanceId =>
       instanceId = expectedInstanceId &&
         state.scopeOccurrences.isEmpty && state.tokens.isEmpty
+  | .failed instanceId _ =>
+      instanceId = expectedInstanceId &&
+        state.scopeOccurrences.isEmpty && state.tokens.isEmpty
 
 /-- Independent lifecycle, scope-forest, call-association, and token-binding validity. -/
 def runtimePositionValid (program : Program) (expectedInstanceId : SemanticId)
@@ -183,6 +186,9 @@ theorem runtimePositionValid_removeToken_frame (program : Program) (expectedInst
       simp [controlEq, scopesFrame, tokensFrame] at valid ⊢
       exact ⟨valid.2.1, by rw [valid.2.2]; rfl⟩
   | cancelled instanceId =>
+      simp [controlEq, scopesFrame, tokensFrame] at valid ⊢
+      exact ⟨valid.2.1, by rw [valid.2.2]; rfl⟩
+  | failed instanceId failure =>
       simp [controlEq, scopesFrame, tokensFrame] at valid ⊢
       exact ⟨valid.2.1, by rw [valid.2.2]; rfl⟩
   | running instanceId =>
@@ -282,6 +288,11 @@ theorem runtimePositionValid_addToken (program : Program) (expectedInstanceId : 
       unfold exactLiveOccurrence at live
       rw [valid.2.1.2] at live
       simp at live
+  | failed instanceId failure =>
+      simp [controlEq] at valid
+      unfold exactLiveOccurrence at live
+      rw [valid.2.1.2] at live
+      simp at live
   | running instanceId =>
       simp only [controlEq, runningPositionValid, Bool.and_eq_true] at valid ⊢
       obtain ⟨⟨⟨⟨identity, roots⟩, calls⟩, scopes⟩, tokens⟩ := valid.2
@@ -322,6 +333,7 @@ theorem runtimePositionValid_token_uniqueControlPlace (program : Program)
   | notStarted => simp [controlEq] at valid; simp_all
   | completed instanceId => simp [controlEq] at valid; simp_all
   | cancelled instanceId => simp [controlEq] at valid; simp_all
+  | failed instanceId failure => simp [controlEq] at valid; simp_all
   | running instanceId =>
       simp only [controlEq, runningPositionValid, Bool.and_eq_true] at valid
       have tokenValid := List.all_eq_true.mp valid.2.2 token member
@@ -359,6 +371,7 @@ theorem runtimePositionValid_onlyTokenOwner_live_and_scope (program : Program)
       | notStarted => rw [controlEq] at valid; simp only at valid; simp_all
       | completed instanceId => rw [controlEq] at valid; simp only at valid; simp_all
       | cancelled instanceId => rw [controlEq] at valid; simp only at valid; simp_all
+      | failed instanceId failure => rw [controlEq] at valid; simp only at valid; simp_all
       | running instanceId =>
           simp only [controlEq, runningPositionValid, Bool.and_eq_true] at valid
           have tokenValid := List.all_eq_true.mp valid.2.2 token tokenMember

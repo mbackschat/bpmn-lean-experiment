@@ -128,6 +128,30 @@ test("maps a missing confirmed producer to unavailable rather than public absenc
   );
 });
 
+test("rejects failed producer pages without applying or replacing them", async () => {
+  for (const method of ["reconcile", "rebuild"] as const) {
+    await withService(
+      [{ kind: "available", page: failedProducerPage() }],
+      async ({ service, publications, applyCalls, replaceCalls }) => {
+        assert.deepEqual(
+          await service[method]("Instance_1"),
+          { kind: ExecutionPublicationReconciliationKind.Gap },
+          method,
+        );
+        const marker = await publications.get("Instance_1");
+        assert.equal(marker?.status, ExecutionPublicationProjectionStatus.Gap, method);
+        assert.equal(marker?.headRevision, 0, method);
+        assert.deepEqual(marker?.batches, [], method);
+        assert.equal(marker?.current, null, method);
+        assert.deepEqual(applyCalls, [], method);
+        assert.deepEqual(replaceCalls, [], method);
+        assert.equal(await publications.page("Instance_1", { afterRevision: 0 }), null, method);
+        assert.equal(await publications.export("Instance_1"), null, method);
+      },
+    );
+  }
+});
+
 test("rebuild ignores retained state and replaces it only after the authoritative head is complete", async () => {
   const stalePage = changedFirstPage("stale-command");
   await withService(
@@ -284,6 +308,7 @@ async function withService(
     publications: SqliteExecutionPublicationRepository;
     registered: NonNullable<Awaited<ReturnType<SqliteProcessInstanceRepository["getRegistration"]>>>;
     calls: unknown[];
+    applyCalls: ExecutionPublicationPage[];
     replaceCalls: ExecutionPublicationPage[][];
     retryAttempts: number[];
     setBeforeObserve: (callback: () => Promise<void>) => void;
@@ -294,6 +319,7 @@ async function withService(
   const instances = new SqliteProcessInstanceRepository(databaseFile);
   const publications = new SqliteExecutionPublicationRepository(databaseFile);
   const calls: unknown[] = [];
+  const applyCalls: ExecutionPublicationPage[] = [];
   const replaceCalls: ExecutionPublicationPage[][] = [];
   const retryAttempts: number[] = [];
   let beforeObserve: (() => Promise<void>) | undefined;
@@ -309,7 +335,10 @@ async function withService(
       registrations: instances,
       publications: {
         get: (processInstanceId) => publications.get(processInstanceId),
-        applyPage: (value, page) => publications.applyPage(value, page),
+        applyPage: (value, page) => {
+          applyCalls.push(structuredClone(page));
+          return publications.applyPage(value, page);
+        },
         replaceFromPages: (value, pages) => {
           replaceCalls.push([...structuredClone(pages)]);
           return publications.replaceFromPages(value, pages);
@@ -338,6 +367,7 @@ async function withService(
       publications,
       registered,
       calls,
+      applyCalls,
       replaceCalls,
       retryAttempts,
       setBeforeObserve(callback) {
@@ -349,6 +379,35 @@ async function withService(
     instances.close();
     await rm(root, { recursive: true, force: true });
   }
+}
+
+function failedProducerPage(): unknown {
+  const page = firstPage();
+  assert.ok(page.current);
+  const handlerId = {
+    processInstanceId: "Instance_1",
+    elementId: "UndoCharge",
+    activation: 1,
+  };
+  return {
+    ...page,
+    current: {
+      ...page.current,
+      controlTokens: [],
+      state: {
+        ...page.current.state,
+        status: "failed",
+        failure: {
+          kind: "compensationHandlerFailure",
+          triggerId: { ...handlerId, elementId: "ThrowCompensation" },
+          handlerId,
+          effectId: { ...handlerId, elementId: "Effect_UndoCharge" },
+          code: "compensation-rejected",
+          message: null,
+        },
+      },
+    },
+  };
 }
 
 function changedFirstPage(operationId: string): ExecutionPublicationPage {

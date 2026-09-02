@@ -6,7 +6,11 @@ import {
   MappingExpressionKind,
   SemanticOriginKind,
   enabledInternalOperationCount,
+  isCompensationActivityRetention,
   isGateAdmissibleRuntimeState,
+  isCompensationHandlerEffectWait,
+  isCompensationParentContextRetention,
+  isCompensationTriggerExecution,
   isMessageChannel,
   isStableStateResumable,
   isUserTaskMetadata,
@@ -267,6 +271,19 @@ export function workflowContinuationBudgetViolation(
 
 function isRuntimeState(value: unknown): value is RuntimeState {
   if (!isRecord(value)) return false;
+  const hasCompensationActivityRetentions = Object.hasOwn(
+    value,
+    "compensationActivityRetentions",
+  );
+  const hasCompensationParentContextRetentions = Object.hasOwn(
+    value,
+    "compensationParentContextRetentions",
+  );
+  const hasCompensationTriggers = Object.hasOwn(value, "compensationTriggers");
+  const hasCompensationHandlerEffectWaits = Object.hasOwn(
+    value,
+    "compensationHandlerEffectWaits",
+  );
   const keys = [
     "control", "initiationPending", "scopeOccurrences", "controlTokens",
     "userTaskWaits", "messageWaits", "timerWaits", "effectWaits",
@@ -277,6 +294,14 @@ function isRuntimeState(value: unknown): value is RuntimeState {
       : []),
     ...(Object.hasOwn(value, "parallelMultiInstanceControllers")
       ? ["parallelMultiInstanceControllers"]
+      : []),
+    ...(hasCompensationActivityRetentions ? ["compensationActivityRetentions"] : []),
+    ...(hasCompensationParentContextRetentions
+      ? ["compensationParentContextRetentions"]
+      : []),
+    ...(hasCompensationTriggers ? ["compensationTriggers"] : []),
+    ...(hasCompensationHandlerEffectWaits
+      ? ["compensationHandlerEffectWaits"]
       : []),
     "variables",
     "taskActivations", "messageActivations", "timerActivations",
@@ -304,6 +329,20 @@ function isRuntimeState(value: unknown): value is RuntimeState {
       !isList(value.sequentialMultiInstanceControllers, isSequentialMultiInstanceController)) ||
     (Object.hasOwn(value, "parallelMultiInstanceControllers") &&
       !isList(value.parallelMultiInstanceControllers, isParallelMultiInstanceController)) ||
+    (hasCompensationActivityRetentions &&
+      !isList(value.compensationActivityRetentions, isCompensationActivityRetention)) ||
+    (hasCompensationParentContextRetentions &&
+      !isList(
+        value.compensationParentContextRetentions,
+        isCompensationParentContextRetention,
+      )) ||
+    (hasCompensationTriggers &&
+      !isList(value.compensationTriggers, isCompensationTriggerExecution)) ||
+    (hasCompensationHandlerEffectWaits &&
+      !isList(
+        value.compensationHandlerEffectWaits,
+        isCompensationHandlerEffectWait,
+      )) ||
     !isScopedVariables(value.variables) ||
     !isList(value.taskActivations, isActivationCounter) ||
     !isList(value.messageActivations, isActivationCounter) ||

@@ -346,6 +346,7 @@ theorem completeBoundedUserTask_sound (program : Program)
                 pair.taskOutput pair.timerOutput running taskLive timerMem pairing
           | completed => simp [running] at success
           | cancelled => simp [running] at success
+          | failed => simp [running] at success
           | notStarted => simp [running] at success
 
 /-- Every deadline victory the evaluator produces is permitted by the declarative relation. -/
@@ -382,6 +383,7 @@ theorem interruptBoundedUserTask_sound (program : Program)
                 pairing
           | completed => rw [running] at success; simp at success
           | cancelled => rw [running] at success; simp at success
+          | failed => rw [running] at success; simp at success
           | notStarted => rw [running] at success; simp at success
 
 /-- The deadline arm refuses every firing that is not exactly due, for any state and any timer.

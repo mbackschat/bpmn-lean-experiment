@@ -69,6 +69,53 @@ test("accepts only terminal-empty sequential Multi-Instance progress", () => {
   );
 });
 
+test("accepts only an exact terminal-empty failed v1 receipt", () => {
+  const receipt = failedTerminalReceipt();
+  assert.deepEqual(requireTerminalProcessReceipt(receipt), receipt);
+  assert.deepEqual(
+    decodeWorkflowTerminalResult(workflowResult(receipt)).receipt,
+    receipt,
+  );
+
+  const { failure: _failure, ...missingFailureState } = receipt.finalState;
+  void _failure;
+  for (const malformed of [
+    { ...receipt, finalState: missingFailureState },
+    {
+      ...receipt,
+      finalState: {
+        ...receipt.finalState,
+        activeWaits: [{ elementId: "Undo_Activity", kind: "effect", multiplicity: 1 }],
+      },
+    },
+    {
+      ...receipt,
+      finalState: {
+        ...receipt.finalState,
+        failure: {
+          ...receipt.finalState.failure,
+          handlerId: {
+            ...receipt.finalState.failure.handlerId,
+            processInstanceId: "Instance_2",
+          },
+        },
+      },
+    },
+    {
+      ...terminalReceipt(ProcessStatus.Completed),
+      finalState: {
+        ...terminalReceipt(ProcessStatus.Completed).finalState,
+        failure: receipt.finalState.failure,
+      },
+    },
+  ]) {
+    assert.throws(
+      () => requireTerminalProcessReceipt(malformed),
+      /malformed terminal Process receipt/u,
+    );
+  }
+});
+
 test("rejects substituted receipt identity and duplicate recovery command IDs", () => {
   const receipt = terminalReceipt(ProcessStatus.Completed);
   const result = workflowResult(receipt);
@@ -153,6 +200,16 @@ test("normalizes exact legacy completed and cancelled receipts without exposing 
     () => decodeWorkflowTerminalResult({
       ...legacyReceipt(ProcessStatus.Completed),
       runId: "private-run",
+    }),
+    /malformed|legacy/u,
+  );
+
+  const { format: _format, ...failed } = failedTerminalReceipt();
+  void _format;
+  assert.throws(
+    () => decodeWorkflowTerminalResult({
+      ...failed,
+      messageDeliveryRecords: [],
     }),
     /malformed|legacy/u,
   );
@@ -362,6 +419,33 @@ function terminalReceipt(status: ProcessStatus) {
       logicalTimeMs: 0,
     },
   };
+}
+
+function failedTerminalReceipt() {
+  const receipt = terminalReceipt(ProcessStatus.Failed);
+  const handlerId = {
+    processInstanceId,
+    elementId: "Undo_Activity",
+    activation: 1,
+  } as const;
+  return {
+    ...receipt,
+    finalState: {
+      ...receipt.finalState,
+      failure: {
+        kind: "compensationHandlerFailure",
+        triggerId: {
+          processInstanceId,
+          elementId: "operation:ThrowCompensation",
+          activation: 1,
+        },
+        handlerId,
+        effectId: { ...handlerId, elementId: "Effect_Undo_Activity" },
+        code: "compensation-rejected",
+        message: null,
+      },
+    },
+  } as const;
 }
 
 function legacyReceipt(status: ProcessStatus) {

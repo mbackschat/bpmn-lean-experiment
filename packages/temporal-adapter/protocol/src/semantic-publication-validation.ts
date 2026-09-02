@@ -41,6 +41,7 @@ import type {
   ExecutionPublicationValidationContext,
 } from "./semantic-publication.js";
 import { isMultiInstanceProgress } from "./parallel-multi-instance-publication-validation.js";
+import { isCompensationHandlerFailure } from "./lifecycle-results.js";
 import { isCanonicalPublicationVariablePatch } from "./semantic-publication-variable-validation.js";
 
 export type ExecutionPublicationValidationAuthority =
@@ -287,7 +288,9 @@ function isCurrent(
   return scopes.every(({ id, bpmnElementId }) =>
     bpmnElementId !== processId || id.processInstanceId === page.processInstanceId) &&
     (value.controlTokens as PublicControlTokenPosition[]).every(({ owner }) =>
-      scopes.some(({ id }) => sameScope(id, owner)));
+      scopes.some(({ id }) => sameScope(id, owner))) &&
+    ((value.state as StateObservation).status !== ProcessStatus.Failed ||
+      (scopes.length === 0 && value.controlTokens.length === 0));
 }
 
 function isState(
@@ -298,6 +301,7 @@ function isState(
 ): value is StateObservation {
   const hasMultiInstances = isRecord(value) &&
     Object.hasOwn(value, "openMultiInstances");
+  const failed = isRecord(value) && value.status === ProcessStatus.Failed;
   const programDeclaresMultiInstances = program?.operations.some(({ kind }) =>
     kind === SemanticOperationKind.AwaitSequentialMultiInstanceUserTask ||
     kind === SemanticOperationKind.AwaitParallelMultiInstanceUserTask
@@ -307,11 +311,18 @@ function isState(
     "openMessageSubscriptions", "openTimers", "openEffects", "openIncidents",
     ...(hasMultiInstances ? ["openMultiInstances"] : []),
     "variables", "enabledInteractions", "logicalTimeMs",
+    ...(failed ? ["failure"] : []),
   ]) || value.kind !== CanonicalObservationKind.State || value.instanceId !== instanceId ||
     (program !== null && hasMultiInstances !== programDeclaresMultiInstances) ||
     !isSafe(value.logicalTimeMs, 0) ||
-    ![ProcessStatus.Running, ProcessStatus.Completed, ProcessStatus.Cancelled]
+    ![
+      ProcessStatus.Running,
+      ProcessStatus.Completed,
+      ProcessStatus.Cancelled,
+      ProcessStatus.Failed,
+    ]
       .includes(value.status as ProcessStatus) ||
+    (failed && !isCompensationHandlerFailure(value.failure, String(instanceId))) ||
     !Array.isArray(value.openUserTasks) || !value.openUserTasks.every(isOpenUserTask) ||
     !canonical(value.openUserTasks, compareOpenOccurrence) ||
     !Array.isArray(value.openMessageSubscriptions) ||

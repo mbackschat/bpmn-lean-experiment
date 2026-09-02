@@ -1,6 +1,7 @@
 import {
   CanonicalObservationKind,
   CommandOutcome,
+  ProcessStatus,
   ScenarioStepKind,
   StimulusKind,
   advanceScenario,
@@ -117,6 +118,7 @@ function fabricateRecoveryState(
   const waiting = trace.at(-1);
   if (
     waiting?.kind !== CanonicalObservationKind.State ||
+    waiting.status !== ProcessStatus.Running ||
     waiting.openUserTasks.length !== 2
   ) {
     throw new TypeError("Error bypass requires both child User Tasks");

@@ -60,6 +60,7 @@ import type {
 import {
   applyStimulusWithTrace,
 } from "./semantic-transition-trace.js";
+import { isWellFormedRuntimeState } from "./runtime-state-well-formedness.js";
 import type {
   TracedCommandResult,
   UnnumberedCommittedExecutionPublication,
@@ -251,6 +252,31 @@ export function observeStableState(
         logicalTimeMs: state.logicalTimeMs,
       };
     }
+    case ControlStateKind.Failed: {
+      if (!isWellFormedRuntimeState(program, state.control.instanceId, state)) {
+        return null;
+      }
+      const multiInstances = projectOpenMultiInstances(program, state);
+      if (multiInstances === null || (multiInstances?.length ?? 0) !== 0) {
+        return null;
+      }
+      return {
+        kind: CanonicalObservationKind.State,
+        instanceId: state.control.instanceId,
+        status: ProcessStatus.Failed,
+        failure: state.control.failure,
+        activeWaits: [],
+        openUserTasks: [],
+        openMessageSubscriptions: [],
+        openTimers: [],
+        openEffects: [],
+        openIncidents: [],
+        ...(multiInstances === undefined ? {} : { openMultiInstances: [] }),
+        variables: state.variables.process.bindings,
+        enabledInteractions: [],
+        logicalTimeMs: state.logicalTimeMs,
+      };
+    }
     case ControlStateKind.NotStarted:
       return null;
     default:
@@ -311,7 +337,7 @@ function processStatus(
     | ControlStateKind.Running
     | ControlStateKind.Completed
     | ControlStateKind.Cancelled,
-): ProcessStatus {
+): ProcessStatus.Running | ProcessStatus.Completed | ProcessStatus.Cancelled {
   switch (kind) {
     case ControlStateKind.Running:
       return ProcessStatus.Running;

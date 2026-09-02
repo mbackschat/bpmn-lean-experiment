@@ -465,6 +465,23 @@ def observeStableState (program : Program) (state : RuntimeState) :
           variables := state.variables.process.bindings
           enabledInteractions := []
           logicalTimeMs := state.logicalTimeMs }
+  | .failed instanceId failure =>
+      if !failedCompensationStateValid program state then none
+      else
+        some
+          { instanceId
+            status := .failed
+            failure := some failure
+            activeWaits := []
+            openUserTasks := []
+            openMessageSubscriptions := []
+            openTimers := []
+            openEffects := []
+            openIncidents := []
+            openMultiInstances := openMultiInstances program state
+            variables := state.variables.process.bindings
+            enabledInteractions := []
+            logicalTimeMs := state.logicalTimeMs }
 
 private structure ScenarioExecution where
   outcome : ScenarioOutcome

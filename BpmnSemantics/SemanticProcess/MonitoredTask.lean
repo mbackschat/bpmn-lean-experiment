@@ -346,6 +346,7 @@ theorem spawnFromMonitoredUserTask_sound (program : Program)
                 timerLive joined pairing
           | completed => rw [running] at success; simp at success
           | cancelled => rw [running] at success; simp at success
+          | failed => rw [running] at success; simp at success
           | notStarted => rw [running] at success; simp at success
 
 /-- Every completion the evaluator produces is permitted by the declarative relation, in whichever deadline state it found. -/
@@ -392,6 +393,7 @@ theorem completeMonitoredUserTask_sound (program : Program)
                     timerLive joined (elementEq ▸ pairing)
           | completed => rw [running] at success; simp at success
           | cancelled => rw [running] at success; simp at success
+          | failed => rw [running] at success; simp at success
           | notStarted => rw [running] at success; simp at success
 
 /-- **The law that separates this family from its sibling.** Every spawn leaves the host's task collection exactly as it was, so no monitored firing can end the Activity it monitors.

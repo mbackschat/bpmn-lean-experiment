@@ -232,6 +232,7 @@ export function isStableStateSound(state: RuntimeState): boolean {
         effectIncidentAssociationsAreValid(state);
     case ControlStateKind.Completed:
     case ControlStateKind.Cancelled:
+    case ControlStateKind.Failed:
       return true;
     default:
       return assertNever(state.control);
@@ -260,6 +261,8 @@ export function isStableStateResumable(state: RuntimeState): boolean {
     case ControlStateKind.Completed:
     case ControlStateKind.Cancelled:
       return true;
+    case ControlStateKind.Failed:
+      return false;
     default:
       return assertNever(state.control);
   }
@@ -695,7 +698,10 @@ export function evaluateStimulusWithSelectedSteps(
   const admission = admit(program, state, stimulus);
   switch (admission.outcome) {
     case CommandOutcome.Committed: {
-      if (admission.state.control.kind === ControlStateKind.Cancelled) {
+      if (
+        admission.state.control.kind === ControlStateKind.Cancelled ||
+        admission.state.control.kind === ControlStateKind.Failed
+      ) {
         return {
           result: {
             outcome: CommandOutcome.Committed,

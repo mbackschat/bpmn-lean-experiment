@@ -110,6 +110,7 @@ import {
 } from "./semantic-process-state.js";
 import type { RuntimeState } from "./semantic-process-state.js";
 import { isGateAdmissibleRuntimeState } from "./runtime-state-well-formedness.js";
+import { initializeCompensationExecutionState } from "./compensation-trigger-handler-runtime-state-validation.js";
 
 export type SemanticCommandOutcome =
   | CommandOutcome.Committed
@@ -157,12 +158,13 @@ function admissibleCommittedState(
       multiInstanceGateState.compensationActivityRetentions === undefined
       ? { ...multiInstanceGateState, compensationActivityRetentions: [] }
       : multiInstanceGateState;
-  const gateState =
+  const snapshotGateState =
     program.compensationEventSubProcessSnapshots !== undefined &&
       compensationGateState.control.kind === ControlStateKind.NotStarted &&
       compensationGateState.compensationParentContextRetentions === undefined
       ? { ...compensationGateState, compensationParentContextRetentions: [] }
       : compensationGateState;
+  const gateState = initializeCompensationExecutionState(program, snapshotGateState);
   return gateState.control.kind === ControlStateKind.NotStarted
     ? isGateAdmissibleRuntimeState(program, "", gateState)
     : isGateAdmissibleRuntimeState(

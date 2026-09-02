@@ -371,6 +371,24 @@ function removeCalledProcessTree(
             (parent.parent === null || !removedOwner(parent.parent))
           ),
       }),
+    ...(state.compensationTriggers === undefined
+      ? {}
+      : {
+        compensationTriggers: state.compensationTriggers.filter(
+          ({ owner }) => !removedOwner(owner),
+        ),
+      }),
+    ...(state.compensationHandlerEffectWaits === undefined
+      ? {}
+      : {
+        compensationHandlerEffectWaits:
+          state.compensationHandlerEffectWaits.filter(
+            ({ id, triggerId, handlerId }) =>
+              !removedInstanceIds.has(id.processInstanceId) &&
+              !removedInstanceIds.has(triggerId.processInstanceId) &&
+              !removedInstanceIds.has(handlerId.processInstanceId),
+          ),
+      }),
     controlTokens: state.controlTokens.filter(({ owner }) => !removedOwner(owner)),
     userTaskWaits: state.userTaskWaits.filter(({ owner }) => !removedOwner(owner)),
     messageWaits: state.messageWaits.filter(({ owner }) => !removedOwner(owner)),

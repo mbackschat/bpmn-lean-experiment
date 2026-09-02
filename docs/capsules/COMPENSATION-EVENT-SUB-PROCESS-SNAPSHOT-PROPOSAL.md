@@ -230,20 +230,20 @@ The complete `what-binds` inventory requires [`implementation-status-owner:ENGIN
 | [TS Program](../../packages/semantic-core/src/semantic-process-contract.ts) | 197 | declaration reference only |
 | [TS Program admission](../../packages/semantic-core/src/semantic-process-admission.ts) | 371 | declaration before graph |
 | [TS graph admission](../../packages/semantic-core/src/semantic-process-graph-admission.ts) | 169 | private exact exemption |
-| [TS command admission](../../packages/semantic-core/src/semantic-command-admission.ts) | 382 | optional-field normalization |
-| [TS RuntimeState](../../packages/semantic-core/src/semantic-process-state.ts) | 378 | collection reference only |
-| [TS runtime-state defect](../../packages/semantic-core/src/runtime-state-defect.ts) | 762 | preserve the closed malformed-state classification or record a proved no-change mapping |
-| [TS well-formedness](../../packages/semantic-core/src/runtime-state-well-formedness.ts) | 72 | delegate before 800 |
+| [TS command admission](../../packages/semantic-core/src/semantic-command-admission.ts) | 380 | optional-field normalization |
+| [TS RuntimeState](../../packages/semantic-core/src/semantic-process-state.ts) | 363 | collection reference only |
+| [TS runtime-state defect](../../packages/semantic-core/src/runtime-state-defect.ts) | 760 | preserve the closed malformed-state classification or record a proved no-change mapping |
+| [TS well-formedness](../../packages/semantic-core/src/runtime-state-well-formedness.ts) | 51 | delegate before 800 |
 | [TS preservation oracle](../../packages/semantic-core/test/runtime-state-preservation.test.ts) | 604 | exact new-field preservation and malformed-state refusal |
-| [TS root start](../../packages/semantic-core/src/semantic-process-triggered-start.ts) | 588 | pre-mutation reservation |
+| [TS root start](../../packages/semantic-core/src/semantic-process-triggered-start.ts) | 583 | pre-mutation reservation |
 | [TS scope runtime](../../packages/semantic-core/src/semantic-process-scope-runtime.ts) | 556 | unbounded entry/promotion |
 | [TS bounded scope](../../packages/semantic-core/src/semantic-process-bounded-scope-runtime.ts) | 446 | bounded entry/promotion |
-| [TS cancellation](../../packages/semantic-core/src/semantic-process-scope-cancellation.ts) | 604 | regional filtering |
-| [TS Call cleanup](../../packages/semantic-core/src/semantic-process-call-runtime.ts) | 396 | structural filtering only |
-| [TS evaluator](../../packages/semantic-core/src/semantic-process-runtime.ts) | 60 | three-arm dispatch only; snapshot staging is extracted |
+| [TS cancellation](../../packages/semantic-core/src/semantic-process-scope-cancellation.ts) | 584 | regional filtering |
+| [TS Call cleanup](../../packages/semantic-core/src/semantic-process-call-runtime.ts) | 378 | structural filtering only |
+| [TS evaluator](../../packages/semantic-core/src/semantic-process-runtime.ts) | 54 | three-arm dispatch only; snapshot staging is extracted |
 | [TS closure](../../packages/semantic-core/src/semantic-process-closure.ts) | 616 | refusal precedence/rollback |
 | [TS snapshot staging](../../packages/semantic-core/src/internal-transition-attempt.ts) | 668 | pre-mutation reservation/promotion selection |
-| [TS census](../../packages/semantic-core/src/internal-commutation-census.ts) | 663 | new state field |
+| [TS census](../../packages/semantic-core/src/internal-commutation-census.ts) | 659 | new state field |
 | [TS footprint vocabulary](../../packages/semantic-core/src/internal-transition-footprint-vocabulary.ts) | 762 | snapshot atoms |
 | [TS footprint union](../../packages/semantic-core/src/internal-transition-footprint.ts) | 120 | retention/capacity/context helpers |
 | [TS footprint order](../../packages/semantic-core/src/internal-transition-footprint-ordering.ts) | 245 | snapshot atom order and region overlap |
@@ -255,16 +255,16 @@ The complete `what-binds` inventory requires [`implementation-status-owner:ENGIN
 | [Lean Program](../../BpmnSemantics/SemanticProcessContract.lean) | 54 | declaration reference only |
 | [Lean structural admission](../../BpmnSemantics/SemanticProcess/ProgramStructuralValidation.lean) | 139 | declaration hook |
 | [Lean graph admission](../../BpmnSemantics/SemanticProcess/GraphValidation.lean) | 94 | lifecycle helper extracted; preserve the recovered headroom |
-| [Lean RuntimeState](../../BpmnSemantics/SemanticProcess/RuntimeState.lean) | 201 | collection reference only |
+| [Lean RuntimeState](../../BpmnSemantics/SemanticProcess/RuntimeState.lean) | 110 | collection reference only |
 | [Lean well-formedness](../../BpmnSemantics/SemanticProcess/RuntimeStateWellFormed.lean) | 98 | delegated predicate |
 | [Lean initialization preservation](../../BpmnSemantics/SemanticProcess/RuntimeStateWellFormedInitialization.lean) | 709 | preserve the new invariant from the exact initialized state |
 | [Lean completion](../../BpmnSemantics/SemanticProcess/ScopeCompletion.lean) | 694 | promotion/frame |
 | [Lean cancellation](../../BpmnSemantics/SemanticProcess/ScopeCancellation.lean) | 612 | regional filtering |
 | [Lean transition](../../BpmnSemantics/SemanticProcess/Transition.lean) | 20 | dispatch only; the applied-result contract is extracted |
 | [Lean internal-operation attempt](../../BpmnSemantics/SemanticProcess/InternalOperationAttempt.lean) | 757 | validate every applied snapshot-aware successor before exposure |
-| [Lean trace closure](../../BpmnSemantics/SemanticProcess/TransitionTrace.lean) | 175 | refusal rollback/no trace |
-| [Lean command admission](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean) | 272 | map root-capacity refusal to `Rejected`, never `semanticFailure`, and reject an invalid committed post-state |
-| [Lean census](../../BpmnSemantics/SemanticProcess/InternalCommutationCensus.lean) | 659 | new state field |
+| [Lean trace closure](../../BpmnSemantics/SemanticProcess/TransitionTrace.lean) | 174 | refusal rollback/no trace |
+| [Lean command admission](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean) | 264 | map root-capacity refusal to `Rejected`, never `semanticFailure`, and reject an invalid committed post-state |
+| [Lean census](../../BpmnSemantics/SemanticProcess/InternalCommutationCensus.lean) | 653 | new state field |
 | [Lean footprint core](../../BpmnSemantics/SemanticProcess/InternalCommutationCore.lean) | 338 | snapshot atom/footprint |
 | [Lean Program decoder](../../BpmnSemantics/SemanticProcessJson/Program.lean) | 102 | focused decoder |
 | [Lean commutation preservation](../../BpmnSemantics/SemanticProcess/InternalCommutationRuntimePreservation.lean) | 16 | extract the snapshot frame before further growth |

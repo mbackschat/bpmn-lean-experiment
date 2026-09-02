@@ -72,6 +72,8 @@ inductive InternalRuntimeStateAtomDomain where
   | parallelController
   | compensationActivityRetention
   | compensationParentContextRetention
+  | compensationTrigger
+  | compensationHandlerEffectWait
   | variable
   | userTaskActivation
   | messageActivation
@@ -103,6 +105,8 @@ inductive InternalRuntimeStateField where
   | parallelMultiInstanceControllers
   | compensationActivityRetentions
   | compensationParentContextRetentions
+  | compensationTriggers
+  | compensationHandlerEffectWaits
   | variables
   | activations
   | messageActivations
@@ -135,6 +139,8 @@ def internalRuntimeStateFieldAtomDomain :
   | .parallelMultiInstanceControllers => .parallelController
   | .compensationActivityRetentions => .compensationActivityRetention
   | .compensationParentContextRetentions => .compensationParentContextRetention
+  | .compensationTriggers => .compensationTrigger
+  | .compensationHandlerEffectWaits => .compensationHandlerEffectWait
   | .variables => .variable
   | .activations => .userTaskActivation
   | .messageActivations => .messageActivation

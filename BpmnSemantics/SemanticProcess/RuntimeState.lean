@@ -15,6 +15,7 @@ inductive ProcessControl where
   | running (instanceId : SemanticId)
   | completed (instanceId : SemanticId)
   | cancelled (instanceId : SemanticId)
+  | failed (instanceId : SemanticId) (failure : CompensationHandlerFailure)
   deriving Repr, DecidableEq
 
 structure ScopeOccurrenceId where
@@ -245,6 +246,69 @@ inductive CompensationParentContextRetention where
       (snapshot : CompensationParentContextSnapshot)
   deriving Repr, DecidableEq
 
+/-- The exact retained occurrence whose declared compensation handler belongs to one trigger. -/
+inductive CompensationSubjectOccurrence where
+  | boundaryActivity (activity : ActivityOccurrenceId)
+  | eventSubProcess (parent : ScopeOccurrenceId)
+  deriving Repr, DecidableEq
+
+/-- Stable occurrence identity shared by every lifecycle of one compensation handler. -/
+structure CompensationHandlerIdentity where
+  id : OccurrenceId
+  subject : CompensationSubjectOccurrence
+  handlerElementId : NodeId
+  deriving Repr, DecidableEq
+
+/-- Closed lifecycle of one compensation handler; deferred and active handlers preserve restored context, while only the active arm owns an effect identity. -/
+inductive CompensationHandlerLifecycle where
+  | pending (restoredContext : Option CompensationParentContextSnapshot)
+  | compensating
+      (restoredContext : Option CompensationParentContextSnapshot)
+      (effectId : EffectOccurrenceId)
+  | compensated
+  | failed
+  | terminated
+  deriving Repr, DecidableEq
+
+structure CompensationHandlerExecution where
+  identity : CompensationHandlerIdentity
+  lifecycle : CompensationHandlerLifecycle
+  deriving Repr, DecidableEq
+
+inductive CompensationTriggerLifecycle where
+  | active
+  | succeeded
+  | failed
+  deriving Repr, DecidableEq
+
+inductive CompensationDependencyReason where
+  | sequenceFlow
+  deriving Repr, DecidableEq
+
+structure CompensationOccurrenceDependency where
+  predecessor : CompensationSubjectOccurrence
+  successor : CompensationSubjectOccurrence
+  reason : CompensationDependencyReason
+  deriving Repr, DecidableEq
+
+structure CompensationTriggerExecution where
+  id : OccurrenceId
+  owner : ScopeOccurrenceId
+  output : ControlPlaceId
+  lifecycle : CompensationTriggerLifecycle
+  handlers : List CompensationHandlerExecution
+  dependencies : List CompensationOccurrenceDependency
+  deriving Repr, DecidableEq
+
+/-- Dedicated compensation effect wait; ordinary effects and incidents retain their existing shapes. -/
+structure CompensationHandlerEffectWait where
+  id : EffectOccurrenceId
+  triggerId : OccurrenceId
+  handlerId : OccurrenceId
+  descriptor : EffectDescriptor
+  arguments : List VariableBinding
+  deriving Repr, DecidableEq
+
 /-! ## Runtime representation invariant
 
 In an admitted reachable state, every token, wait, incident-owned suspended wait, selected-branch record, and event-race record is owned by one live `ScopeOccurrenceId` for the same semantic Process instance, and child occurrences form a parent-linked tree rooted at the Process occurrence. An effect occurrence appears in exactly one of `effectWaits` or `effectIncidents`; an incident retains the complete wait and exactly one matching Activity-local scope. A declared compensation-retention register is owned by that live root, does not affect quiescence, and is removed with the root. A Compensation Event Sub-Process context record is keyed by its exact parent occurrence and remains provisional until successful completion promotes an immutable root-to-parent frame sequence. User Task waits, User Task activation counters, selected-branch records, and event-race records use canonical identifier order so independent activation order is not retained as semantic state. Task, Message, Timer, effect, event-race, and scope activation counts are monotonic high-water marks: removing a wait or occurrence never makes an identity reusable. Interrupting profiles admit no incident-bearing state in this capsule. Normal scope completion may remove an occurrence only after its owned tokens, waits, incidents, selected-branch records, event-race records, and child occurrences are absent; a child then emits exactly one parent-owned continuation, while root completion clears the root occurrence.
@@ -271,6 +335,8 @@ structure RuntimeState where
   parallelMultiInstanceControllers : List ParallelMultiInstanceController := []
   compensationActivityRetentions : List CompensationActivityRetention := []
   compensationParentContextRetentions : List CompensationParentContextRetention := []
+  compensationTriggers : List CompensationTriggerExecution := []
+  compensationHandlerEffectWaits : List CompensationHandlerEffectWait := []
   variables : ScopedVariables
   activations : List TaskActivation
   messageActivations : List MessageActivation
@@ -302,6 +368,8 @@ def initialState : RuntimeState :=
     parallelMultiInstanceControllers := []
     compensationActivityRetentions := []
     compensationParentContextRetentions := []
+    compensationTriggers := []
+    compensationHandlerEffectWaits := []
     variables := emptyScopedVariables
     activations := []
     messageActivations := []
@@ -313,6 +381,41 @@ def initialState : RuntimeState :=
     activityActivations := []
     endOccurrences := 0
     logicalTimeMs := 0 }
+
+/-- A terminal failed Process retains only Process variables, monotonic identity history, and trigger tombstones. -/
+private def failedCompensationLiveRegionEmpty (state : RuntimeState) : Bool :=
+  !state.initiationPending && state.scopeOccurrences.isEmpty && state.tokens.isEmpty &&
+    state.waits.isEmpty && state.messageWaits.isEmpty && state.timerWaits.isEmpty &&
+    state.effectWaits.isEmpty && state.effectIncidents.isEmpty &&
+    state.selectedBranchSets.isEmpty && state.eventRaces.isEmpty &&
+    state.calledProcessOccurrences.isEmpty && state.activityOccurrences.isEmpty &&
+    state.sequentialMultiInstanceControllers.isEmpty &&
+    state.parallelMultiInstanceControllers.isEmpty &&
+    state.compensationActivityRetentions.isEmpty &&
+    state.compensationParentContextRetentions.isEmpty &&
+    state.compensationHandlerEffectWaits.isEmpty && state.variables.activities.isEmpty
+
+private def compensationFailureMatchesTrigger (instanceId : SemanticId)
+    (failure : CompensationHandlerFailure) (trigger : CompensationTriggerExecution) : Bool :=
+  trigger.id == failure.triggerId && trigger.lifecycle == .failed &&
+    trigger.id.processInstanceId == instanceId &&
+    match trigger.handlers.filter fun handler =>
+        handler.identity.id == failure.handlerId && handler.lifecycle == .failed with
+    | [handler] =>
+        handler.identity.id.processInstanceId == instanceId &&
+          failure.effectId.processInstanceId == instanceId
+    | _ => false
+
+/-- Exact failed-control closure: one declared failed trigger owns one matching failed-handler tombstone and no live execution region survives. -/
+def failedCompensationStateValid (program : Program) (state : RuntimeState) : Bool :=
+  match state.control with
+  | .failed instanceId failure =>
+      program.compensationExecution.isSome &&
+        failedCompensationLiveRegionEmpty state &&
+        (state.compensationTriggers.filter
+          (compensationFailureMatchesTrigger instanceId failure)).length = 1 &&
+        state.compensationTriggers.all fun trigger => trigger.lifecycle != .active
+  | _ => false
 
 def runningStartState (instanceId : SemanticId)
     (initialVariables : List VariableBinding) : RuntimeState :=

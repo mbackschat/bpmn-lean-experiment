@@ -30,6 +30,7 @@ import {
   driveHostInteractions,
   isCancelledProcessReceipt,
   isCompletedProcessReceipt,
+  isFailedProcessReceipt,
   isTerminalProcessReceipt,
   processWorkflowId,
   readBpmnProcessTrace,
@@ -45,6 +46,7 @@ import type {
   CancelledProcessReceipt,
   CompletedProcessReceipt,
   ExternalTemporalRuntimeOptions,
+  FailedProcessReceipt,
   HostInteractionEvent,
   HostInteractionResult,
 } from "@bpmn-lean/temporal-runner";
@@ -69,6 +71,7 @@ export const RunnableMvpEventKind = {
   InteractionRefused: "interactionRefused",
   ProcessCompleted: "processCompleted",
   ProcessCancelled: "processCancelled",
+  ProcessFailed: "processFailed",
 } as const;
 
 export type RunnableMvpEvent = DeepReadonly<
@@ -120,11 +123,16 @@ export type RunnableMvpEvent = DeepReadonly<
       kind: typeof RunnableMvpEventKind.ProcessCancelled;
       receipt: CancelledProcessReceipt;
     }
+  | {
+      kind: typeof RunnableMvpEventKind.ProcessFailed;
+      receipt: FailedProcessReceipt;
+    }
 >;
 
 export const RunnableMvpResultKind = {
   Completed: "completed",
   Cancelled: "cancelled",
+  Failed: "failed",
   SourceAdmissionRejected: "sourceAdmissionRejected",
   ProcessAdmissionRejected: "processAdmissionRejected",
   InteractionRefused: "interactionRefused",
@@ -138,6 +146,10 @@ export type RunnableMvpResult = DeepReadonly<
   | {
       kind: typeof RunnableMvpResultKind.Cancelled;
       receipt: CancelledProcessReceipt;
+    }
+  | {
+      kind: typeof RunnableMvpResultKind.Failed;
+      receipt: FailedProcessReceipt;
     }
   | {
       kind: typeof RunnableMvpResultKind.SourceAdmissionRejected;
@@ -334,6 +346,10 @@ export async function runRunnableTemporalMvp(
     if (isCancelledProcessReceipt(receipt)) {
       observe({ kind: RunnableMvpEventKind.ProcessCancelled, receipt });
       return { kind: RunnableMvpResultKind.Cancelled, receipt };
+    }
+    if (isFailedProcessReceipt(receipt)) {
+      observe({ kind: RunnableMvpEventKind.ProcessFailed, receipt });
+      return { kind: RunnableMvpResultKind.Failed, receipt };
     }
     throw new TypeError("Terminal receipt status was not recognized");
   } finally {

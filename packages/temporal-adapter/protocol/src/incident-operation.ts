@@ -46,7 +46,10 @@ export type TemporalIncidentOperationsSnapshot =
     }>
   | DeepReadonly<{
       instanceId: string;
-      status: ProcessStatus.Completed | ProcessStatus.Cancelled;
+      status:
+        | ProcessStatus.Completed
+        | ProcessStatus.Cancelled
+        | ProcessStatus.Failed;
       incidents: [];
     }>;
 
@@ -68,6 +71,7 @@ export function isTemporalIncidentOperationsSnapshot(
   switch (value.status) {
     case ProcessStatus.Completed:
     case ProcessStatus.Cancelled:
+    case ProcessStatus.Failed:
       return value.incidents.length === 0;
     case ProcessStatus.Running:
       return isCanonicalIncidentOperations(

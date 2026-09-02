@@ -434,6 +434,7 @@ theorem completeMessageBoundedUserTask_sound (program : Program)
                   recordLive pairing
             | completed => simp [running] at success
             | cancelled => simp [running] at success
+            | failed => simp [running] at success
             | notStarted => simp [running] at success
   · simp [empty] at success
 
@@ -460,6 +461,7 @@ theorem interruptMessageBoundedUserTask_sound (program : Program)
             exact .message before instanceId pair running taskLive messageLive recordLive pairing
         | completed => simp [running] at success
         | cancelled => simp [running] at success
+        | failed => simp [running] at success
         | notStarted => simp [running] at success
       · simp [pairFound, exactChannel] at success
 

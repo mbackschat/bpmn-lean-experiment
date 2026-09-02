@@ -170,7 +170,7 @@ def flowNodeSelectedOperationOwner? (state : RuntimeState) :
 def hostingInstanceId? (state : RuntimeState) : Option SemanticId :=
   match state.control with
   | .running instanceId | .completed instanceId | .cancelled instanceId => some instanceId
-  | .notStarted => none
+  | .notStarted | .failed .. => none
 
 def processIdForOwner? (program : Program) (state : RuntimeState)
     (owner : ScopeOccurrenceId) : Option ProcessId := do
@@ -297,6 +297,7 @@ def projectOpenFlowNodeOccurrences? (program : Program) (state : RuntimeState) :
   match state.control with
   | .notStarted => if runtimeExecutionEmpty state then some [] else none
   | .completed _ | .cancelled _ => if runtimeExecutionEmpty state then some [] else none
+  | .failed .. => if runtimeExecutionEmpty state then some [] else none
   | .running _ => do
       if !programWellFormed program || !flowNodeOccurrenceProgramValidity program state ||
           !eventRaceAssociationsValid state || !calledProcessAssociationsValid state ||

@@ -11,6 +11,7 @@ import {
 } from "@bpmn-lean/semantic-core";
 import type {
   CommandOutcome,
+  CompensationHandlerFailure,
 } from "@bpmn-lean/semantic-core";
 
 import {
@@ -22,6 +23,7 @@ import {
 import type {
   CancelledProcessReceipt,
   CompletedProcessReceipt,
+  FailedProcessReceipt,
   MessageDeliveryRecord,
   ProcessCommandResult,
   TerminalProcessReceipt,
@@ -89,15 +91,25 @@ export function isCancelledProcessReceipt(
   return isProcessReceiptWithStatus(value, ProcessStatus.Cancelled);
 }
 
+export function isFailedProcessReceipt(
+  value: unknown,
+): value is FailedProcessReceipt {
+  return isProcessReceiptWithStatus(value, ProcessStatus.Failed);
+}
+
 export function isTerminalProcessReceipt(
   value: unknown,
 ): value is TerminalProcessReceipt {
-  return isCompletedProcessReceipt(value) || isCancelledProcessReceipt(value);
+  return isCompletedProcessReceipt(value) || isCancelledProcessReceipt(value) ||
+    isFailedProcessReceipt(value);
 }
 
 function isProcessReceiptWithStatus(
   value: unknown,
-  status: ProcessStatus.Completed | ProcessStatus.Cancelled,
+  status:
+    | ProcessStatus.Completed
+    | ProcessStatus.Cancelled
+    | ProcessStatus.Failed,
 ): boolean {
   if (!isPlainDataTree(value) || !isRecord(value) || !hasOnlyKeys(value, [
     "format",
@@ -112,6 +124,7 @@ function isProcessReceiptWithStatus(
   const finalState = value.finalState;
   const hasMultiInstances = isRecord(finalState) &&
     Object.hasOwn(finalState, "openMultiInstances");
+  const failed = status === ProcessStatus.Failed;
   return (
     isRecord(definition) &&
     hasOnlyKeys(definition, [
@@ -145,10 +158,15 @@ function isProcessReceiptWithStatus(
       "variables",
       "enabledInteractions",
       "logicalTimeMs",
+      ...(failed ? ["failure"] : []),
     ]) &&
     finalState.kind === CanonicalObservationKind.State &&
     finalState.instanceId === value.processInstanceId &&
     finalState.status === status &&
+    (!failed || isCompensationHandlerFailure(
+      finalState.failure,
+      value.processInstanceId,
+    )) &&
     Array.isArray(finalState.activeWaits) &&
     finalState.activeWaits.length === 0 &&
     Array.isArray(finalState.openUserTasks) &&
@@ -170,6 +188,28 @@ function isProcessReceiptWithStatus(
     Number.isSafeInteger(finalState.logicalTimeMs) &&
     Number(finalState.logicalTimeMs) >= 0
   );
+}
+
+export function isCompensationHandlerFailure(
+  value: unknown,
+  processInstanceId: string,
+): value is CompensationHandlerFailure {
+  if (!isRecord(value) || !hasOnlyKeys(value, [
+    "kind",
+    "triggerId",
+    "handlerId",
+    "effectId",
+    "code",
+    "message",
+  ]) || value.kind !== "compensationHandlerFailure" ||
+    !isOccurrenceId(value.triggerId, processInstanceId) ||
+    !isOccurrenceId(value.handlerId, processInstanceId) ||
+    !isOccurrenceId(value.effectId, processInstanceId) ||
+    !isNonEmptyString(value.code) ||
+    (value.message !== null && !isWellFormedWireString(value.message))) {
+    return false;
+  }
+  return true;
 }
 
 export type LegacyTerminalProcessReceiptNormalization = Readonly<{
@@ -198,7 +238,8 @@ export function normalizeLegacyTerminalProcessReceipt(
     processInstanceId: value.processInstanceId,
     finalState: value.finalState,
   };
-  if (!isTerminalProcessReceipt(candidate)) {
+  if (!isCompletedProcessReceipt(candidate) &&
+    !isCancelledProcessReceipt(candidate)) {
     return null;
   }
   return {
@@ -255,6 +296,19 @@ function hasOnlyKeys(
 
 function isNonEmptyString(value: unknown): value is string {
   return isWellFormedWireString(value) && value.length > 0;
+}
+
+function isOccurrenceId(
+  value: unknown,
+  processInstanceId: string,
+): value is CompensationHandlerFailure["effectId"] {
+  return isRecord(value) && hasOnlyKeys(value, [
+    "processInstanceId",
+    "elementId",
+    "activation",
+  ]) && value.processInstanceId === processInstanceId &&
+    isNonEmptyString(value.elementId) && Number.isSafeInteger(value.activation) &&
+    Number(value.activation) >= 1;
 }
 
 function isPlainDataTree(

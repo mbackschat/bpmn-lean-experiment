@@ -50,7 +50,7 @@ private def rootInstanceId? (state : RuntimeState) : Option SemanticId :=
   | .running instanceId
   | .completed instanceId
   | .cancelled instanceId => some instanceId
-  | .notStarted => none
+  | .notStarted | .failed .. => none
 
 private def sameCallIdentity (record : CalledProcessOccurrence)
     (caller : ScopeOccurrenceId) (elementId : NodeId) : Bool :=

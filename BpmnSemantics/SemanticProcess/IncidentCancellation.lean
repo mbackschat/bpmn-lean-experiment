@@ -78,7 +78,7 @@ def incidentProcessCancellationEligibility? (program : Program)
                 else none
               else none
           | _, _ => none
-    | .notStarted | .completed _ | .cancelled _ => none
+    | .notStarted | .completed _ | .cancelled _ | .failed .. => none
 
 /-- Project only the root from the exact cancellation eligibility result. -/
 def incidentProcessCancellationRoot? (program : Program) (state : RuntimeState)

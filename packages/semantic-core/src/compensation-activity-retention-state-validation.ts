@@ -7,6 +7,7 @@ import {
   CompensationRetentionStateDefect,
   type BoundaryCompensationTarget,
   type CompletedCompensableActivity,
+  type CompensationActivityRetention,
   type CompensationActivityRetentionDeclaration,
 } from "./compensation-activity-retention-contract.js";
 import {
@@ -65,6 +66,25 @@ export function isCompensationActivityRetentionDeclaration(
     Number.isSafeInteger(value.limits.maxCanonicalBytes) &&
     Number(value.limits.maxCanonicalBytes) >= 2 &&
     Number(value.limits.maxCanonicalBytes) <= 65_536;
+}
+
+/** Establishes the closed retained-state shape before Program-specific ownership is checked. */
+export function isCompensationActivityRetention(
+  value: unknown,
+): value is CompensationActivityRetention {
+  return isRecord(value) &&
+    hasOnlyKeys(value, ["owner", "nextCompletionOrdinal", "records"]) &&
+    isScopeOccurrenceId(value.owner) &&
+    Number.isSafeInteger(value.nextCompletionOrdinal) &&
+    Number(value.nextCompletionOrdinal) > 0 &&
+    isDenseArray(value.records) &&
+    value.records.every((record) =>
+      isRecord(record) &&
+      hasOnlyKeys(record, ["id", "completionOrdinal"]) &&
+      isActivityOccurrenceId(record.id) &&
+      Number.isSafeInteger(record.completionOrdinal) &&
+      Number(record.completionOrdinal) > 0
+    );
 }
 
 export function compensationRetentionProgramDefects(
@@ -299,4 +319,23 @@ function validActivityOccurrence(id: ActivityOccurrenceId): boolean {
     id.activityElementId.length > 0 &&
     Number.isSafeInteger(id.activation) &&
     id.activation > 0;
+}
+
+function isActivityOccurrenceId(value: unknown): value is ActivityOccurrenceId {
+  return isRecord(value) &&
+    hasOnlyKeys(value, ["processInstanceId", "activityElementId", "activation"]) &&
+    validActivityOccurrence(value as ActivityOccurrenceId);
+}
+
+function isScopeOccurrenceId(value: unknown): boolean {
+  return isRecord(value) &&
+    hasOnlyKeys(value, ["processInstanceId", "definitionScopeId", "activation"]) &&
+    isNonEmptyWireString(value.processInstanceId) &&
+    isNonEmptyWireString(value.definitionScopeId) &&
+    Number.isSafeInteger(value.activation) &&
+    Number(value.activation) > 0;
+}
+
+function isDenseArray(value: unknown): value is unknown[] {
+  return Array.isArray(value) && Object.keys(value).length === value.length;
 }

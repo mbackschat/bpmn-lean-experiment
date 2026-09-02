@@ -163,7 +163,8 @@ export async function driveHostInteractions(
     observe({ kind: HostInteractionEventKind.StateObserved, state });
     if (
       state.status === ProcessStatus.Completed ||
-      state.status === ProcessStatus.Cancelled
+      state.status === ProcessStatus.Cancelled ||
+      state.status === ProcessStatus.Failed
     ) {
       const unconsumed = pending.filter(({ consumed }) => !consumed).length;
       if (unconsumed > 0) {

@@ -188,6 +188,7 @@ theorem prepared_patch_frame (program : Program) (state : RuntimeState) (leftOpe
       | notStarted => simp [controlEq] at prepared
       | completed _ => simp [controlEq] at prepared
       | cancelled _ => simp [controlEq] at prepared
+      | failed _ _ => simp [controlEq] at prepared
       | running instanceId =>
         simp only [controlEq] at prepared
         cases filteredEq : state.variables.process.bindings.filter fun candidate =>

@@ -79,6 +79,46 @@ function state(
   } as StateObservation;
 }
 
+function failedState(): Extract<
+  StateObservation,
+  { status: ProcessStatus.Failed }
+> {
+  return {
+    kind: CanonicalObservationKind.State,
+    instanceId,
+    status: ProcessStatus.Failed,
+    activeWaits: [],
+    openUserTasks: [],
+    openMessageSubscriptions: [],
+    openTimers: [],
+    openEffects: [],
+    openIncidents: [],
+    variables: [],
+    enabledInteractions: [],
+    logicalTimeMs: 0,
+    failure: {
+      kind: "compensationHandlerFailure",
+      triggerId: {
+        processInstanceId: instanceId,
+        elementId: "CompensationThrow",
+        activation: 1,
+      },
+      handlerId: {
+        processInstanceId: instanceId,
+        elementId: "CompensationHandler",
+        activation: 1,
+      },
+      effectId: {
+        processInstanceId: instanceId,
+        elementId: "CompensationEffect",
+        activation: 1,
+      },
+      code: "handler-failed",
+      message: null,
+    },
+  };
+}
+
 function taskInteraction(elementId: string, activation = 1) {
   return {
     kind: StimulusKind.CompleteUserTaskInstance,
@@ -508,6 +548,42 @@ test("refuses a terminal Process that left responses unconsumed", async () => {
     result.kind === HostInteractionResultKind.Refused ? result.code : null,
     HostInteractionRefusalCode.UnconsumedResponses,
   );
+});
+
+test("treats a failed Process with no configured responses as terminal", async () => {
+  const { port, completions, deliveries, cancellations } = scriptedPort([
+    failedState(),
+  ]);
+
+  const result = await driveHostInteractions([], port, noWait);
+
+  assert.deepEqual(result, {
+    kind: HostInteractionResultKind.Driven,
+    submitted: 0,
+  });
+  assert.deepEqual(completions, []);
+  assert.deepEqual(deliveries, []);
+  assert.deepEqual(cancellations, []);
+});
+
+test("applies the existing unconsumed-response rule to a failed Process", async () => {
+  const { port, completions, deliveries, cancellations } = scriptedPort([
+    failedState(),
+  ]);
+
+  const result = await driveHostInteractions(
+    [completeResponse("UserTask_A")],
+    port,
+    noWait,
+  );
+
+  assert.equal(
+    result.kind === HostInteractionResultKind.Refused ? result.code : null,
+    HostInteractionRefusalCode.UnconsumedResponses,
+  );
+  assert.deepEqual(completions, []);
+  assert.deepEqual(deliveries, []);
+  assert.deepEqual(cancellations, []);
 });
 
 test("reports an uncommitted interaction with its typed result unchanged", async () => {

@@ -28,6 +28,7 @@ private def processStatusJson : ProcessStatus → Json
   | .running => toJson "running"
   | .completed => toJson "completed"
   | .cancelled => toJson "cancelled"
+  | .failed => toJson "failed"
 
 private def waitKindJson : WaitKind → Json
   | .userTask => toJson "userTask"
@@ -41,6 +42,16 @@ private def occurrenceIdJson (occurrenceId : OccurrenceId) : Json :=
     [ ("processInstanceId", toJson occurrenceId.processInstanceId.value)
     , ("elementId", toJson occurrenceId.elementId.value)
     , ("activation", toJson occurrenceId.activation) ]
+
+private def compensationHandlerFailureJson
+    (failure : CompensationHandlerFailure) : Json :=
+  Json.mkObj
+    [ ("kind", toJson "compensationHandlerFailure")
+    , ("triggerId", occurrenceIdJson failure.triggerId)
+    , ("handlerId", occurrenceIdJson failure.handlerId)
+    , ("effectId", occurrenceIdJson failure.effectId)
+    , ("code", toJson failure.code)
+    , ("message", toJson failure.message) ]
 
 private def activeWaitJson (wait : ActiveWait) : Json :=
   Json.mkObj
@@ -239,11 +250,16 @@ def enabledInteractionJson : EnabledInteraction → Json
         , ("incidentId", effectIncidentIdJson incidentId) ]
 
 def stateObservationJson (state : StateObservation) : Json :=
-  let beforeMultiInstance :=
+  let identityAndStatus :=
     [ ("kind", toJson "state")
     , ("instanceId", toJson state.instanceId.value)
-    , ("status", processStatusJson state.status)
-    , ("activeWaits", jsonArray (state.activeWaits.map activeWaitJson))
+    , ("status", processStatusJson state.status) ]
+  let failure := match state.status, state.failure with
+    | .failed, some failure =>
+        [("failure", compensationHandlerFailureJson failure)]
+    | _, _ => []
+  let beforeMultiInstance := identityAndStatus ++ failure ++
+    [ ("activeWaits", jsonArray (state.activeWaits.map activeWaitJson))
     , ("openUserTasks", jsonArray (state.openUserTasks.map encodeOpenUserTask))
     , ("openMessageSubscriptions",
         jsonArray

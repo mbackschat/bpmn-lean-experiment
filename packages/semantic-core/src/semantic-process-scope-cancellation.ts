@@ -85,6 +85,9 @@ function removeScopeOccurrenceRegion(
         .filter(({ wait }) => isInterrupted(wait.owner))
         .map(({ id }) => id.effectId),
     );
+  const interruptedCompensationTriggers = state.compensationTriggers?.filter(
+    ({ owner }) => isInterrupted(owner),
+  ) ?? [];
   const withoutCalledProcesses = removeCalledProcessSubtreesForCallers(
     state,
     interrupted.map(({ id }) => id),
@@ -147,6 +150,23 @@ function removeScopeOccurrenceRegion(
           withoutCalledProcesses.compensationParentContextRetentions.filter(({ parent }) =>
             !isRemovedSnapshotOwner(parent.id) &&
             (parent.parent === null || !isRemovedSnapshotOwner(parent.parent))
+          ),
+      }),
+    ...(withoutCalledProcesses.compensationTriggers === undefined
+      ? {}
+      : {
+        compensationTriggers: withoutCalledProcesses.compensationTriggers.filter(
+          ({ owner }) => !isInterrupted(owner),
+        ),
+      }),
+    ...(withoutCalledProcesses.compensationHandlerEffectWaits === undefined
+      ? {}
+      : {
+        compensationHandlerEffectWaits:
+          withoutCalledProcesses.compensationHandlerEffectWaits.filter(
+            ({ triggerId }) => !interruptedCompensationTriggers.some(
+              ({ id }) => sameOccurrence(id, triggerId),
+            ),
           ),
       }),
     effectWaits: withoutCalledProcesses.effectWaits.filter(

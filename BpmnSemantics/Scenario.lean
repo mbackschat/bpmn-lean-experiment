@@ -98,6 +98,21 @@ inductive EffectExecutionResult where
       (localPatch : List VariableBinding)
   deriving Repr, DecidableEq
 
+/-- Closed discriminator for the one terminal semantic failure admitted by the compensation handler contract. -/
+inductive CompensationFailureKind where
+  | compensationHandlerFailure
+  deriving Repr, DecidableEq
+
+/-- Public identity and payload of one terminal compensation handler failure. -/
+structure CompensationHandlerFailure where
+  kind : CompensationFailureKind
+  triggerId : OccurrenceId
+  handlerId : OccurrenceId
+  effectId : EffectOccurrenceId
+  code : String
+  message : Option String
+  deriving Repr, DecidableEq
+
 /-- User Task lifecycle states exposed by the current bounded interaction capsule. -/
 inductive UserTaskLifecycleState where
   | active
@@ -232,6 +247,7 @@ inductive ProcessStatus where
   | running
   | completed
   | cancelled
+  | failed
   deriving Repr, DecidableEq
 
 /-- Semantic wait categories supported by the current milestone contract. -/
@@ -329,6 +345,8 @@ structure OpenEffectIncident where
 structure StateObservation where
   instanceId : SemanticId
   status : ProcessStatus
+  /-- Present only for `failed`; projection and JSON conformance enforce the status discriminator. -/
+  failure : Option CompensationHandlerFailure := none
   activeWaits : List ActiveWait
   openUserTasks : List OpenUserTask
   openMessageSubscriptions : List OpenMessageSubscription

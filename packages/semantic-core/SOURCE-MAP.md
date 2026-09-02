@@ -22,6 +22,8 @@ This contributor map assigns source-file responsibilities inside `@bpmn-lean/sem
 | [compensation-event-sub-process-snapshot-state-validation.ts](src/compensation-event-sub-process-snapshot-state-validation.ts) | Exact declaration and lifecycle validity, declaration-derived dormant-handler facts, and canonical retention byte measurement |
 | [compensation-trigger-handler-contract.ts](src/compensation-trigger-handler-contract.ts) | Closed Program declaration for Compensation subjects, single-effect handler bodies, dependencies, and trigger limits |
 | [compensation-trigger-handler-program-admission.ts](src/compensation-trigger-handler-program-admission.ts) | Exact Program-only root, trigger, retention/snapshot coverage, identity, dependency, and limit admission while execution remains dormant |
+| [compensation-trigger-handler-runtime-contract.ts](src/compensation-trigger-handler-runtime-contract.ts) | Closed trigger, handler-lifecycle, dependency, effect-wait, and restored-context RuntimeState shapes plus exact transport material |
+| [compensation-trigger-handler-runtime-state-validation.ts](src/compensation-trigger-handler-runtime-state-validation.ts) | Declaration-bound lifecycle, join, identity, ordering, capacity, failed-state, and canonical-byte validity without enabling transitions |
 | [semantic-process-admission.ts](src/semantic-process-admission.ts) | Structural scenario and program validation plus identity admission |
 | [semantic-process-operation-admission.ts](src/semantic-process-operation-admission.ts) | Closed operation-shape, payload, reference, and origin validation |
 | [semantic-command-admission.ts](src/semantic-command-admission.ts) | Whether one submitted external command commits, and to which successor state |

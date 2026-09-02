@@ -229,15 +229,15 @@ The 800-nonblank-line soft target is the extraction threshold and 1,200 lines th
 | Owner | Current headroom | Structural condition |
 |---|---:|---|
 | [TypeScript Program contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 197 | add only the optional declaration reference; extract before crossing 800 |
-| [TypeScript RuntimeState](../../packages/semantic-core/src/semantic-process-state.ts) | 378 | add only the optional collection reference; new types live elsewhere |
-| [TypeScript well-formedness](../../packages/semantic-core/src/runtime-state-well-formedness.ts) | 72 | add one delegated validator hook; extract before crossing 800 |
+| [TypeScript RuntimeState](../../packages/semantic-core/src/semantic-process-state.ts) | 363 | add only the optional collection reference; new types live elsewhere |
+| [TypeScript well-formedness](../../packages/semantic-core/src/runtime-state-well-formedness.ts) | 51 | add one delegated validator hook; extract before crossing 800 |
 | [TypeScript scope runtime](../../packages/semantic-core/src/semantic-process-scope-runtime.ts) | 556 | route normal root disposal only |
-| [TypeScript called-Process runtime](../../packages/semantic-core/src/semantic-process-call-runtime.ts) | 396 | remove owner-keyed records with a called-instance subtree even though declaring Programs exclude Call operations |
-| [TypeScript scope cancellation](../../packages/semantic-core/src/semantic-process-scope-cancellation.ts) | 604 | remove owner-keyed records with a cancelled region even though declaring Programs exclude cancellation |
-| [TypeScript command admission](../../packages/semantic-core/src/semantic-command-admission.ts) | 382 | no producer integration at the first checkpoint |
-| [TypeScript triggered start](../../packages/semantic-core/src/semantic-process-triggered-start.ts) | 588 | initialize root-owned retention state before any start mutation |
+| [TypeScript called-Process runtime](../../packages/semantic-core/src/semantic-process-call-runtime.ts) | 378 | remove owner-keyed records with a called-instance subtree even though declaring Programs exclude Call operations |
+| [TypeScript scope cancellation](../../packages/semantic-core/src/semantic-process-scope-cancellation.ts) | 584 | remove owner-keyed records with a cancelled region even though declaring Programs exclude cancellation |
+| [TypeScript command admission](../../packages/semantic-core/src/semantic-command-admission.ts) | 380 | no producer integration at the first checkpoint |
+| [TypeScript triggered start](../../packages/semantic-core/src/semantic-process-triggered-start.ts) | 583 | initialize root-owned retention state before any start mutation |
 | [Lean Program contract](../../BpmnSemantics/SemanticProcessContract.lean) | 54 | add the optional declaration reference; extract before crossing 800 |
-| [Lean RuntimeState](../../BpmnSemantics/SemanticProcess/RuntimeState.lean) | 201 | add only the collection reference and its root-owned invariant; new structures live elsewhere |
+| [Lean RuntimeState](../../BpmnSemantics/SemanticProcess/RuntimeState.lean) | 110 | add only the collection reference and its root-owned invariant; new structures live elsewhere |
 | [Lean well-formedness](../../BpmnSemantics/SemanticProcess/RuntimeStateWellFormed.lean) | 98 | add one delegated predicate; extract before crossing 800 |
 | [Lean scope completion](../../BpmnSemantics/SemanticProcess/ScopeCompletion.lean) | 694 | add exact register disposal and update its frame theorem |
 | [Strict Lean Program decoder](../../BpmnSemantics/SemanticProcessJson/Program.lean) | 102 | delegate the optional field to a focused decoder; extract before crossing 800 |

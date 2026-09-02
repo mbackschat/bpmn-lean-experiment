@@ -377,6 +377,22 @@ This table classifies every current top-level and recursively reachable field of
 | `kind` | `not-claimed` | Canonical wire discriminator |
 | `instanceId` | `not-claimed` | Scenario-supplied semantic identity, never a generated CIB Process-instance ID |
 | `status` | `adapter-derived` | `running` or `completed` comes from retained Process-instance state, while the cancellation successor requires zero live state plus one exact `EXTERNALLY_TERMINATED` historic root before projecting `cancelled` |
+| `failure` | `not-claimed` | Compensation-only terminal detail; no registered CIB profile admits the trigger that could produce it |
+| `failure.kind` | `not-claimed` | Project-owned closed failure discriminator |
+| `failure.triggerId` | `not-claimed` | Project-owned Compensation trigger occurrence identity |
+| `failure.triggerId.processInstanceId` | `not-claimed` | Scenario-supplied semantic identity |
+| `failure.triggerId.elementId` | `not-claimed` | No registered CIB trigger profile supplies this semantic element identity |
+| `failure.triggerId.activation` | `not-claimed` | No registered CIB trigger profile supplies this semantic ordinal |
+| `failure.handlerId` | `not-claimed` | Project-owned Compensation handler occurrence identity |
+| `failure.handlerId.processInstanceId` | `not-claimed` | Scenario-supplied semantic identity |
+| `failure.handlerId.elementId` | `not-claimed` | No registered CIB trigger profile supplies this semantic element identity |
+| `failure.handlerId.activation` | `not-claimed` | No registered CIB trigger profile supplies this semantic ordinal |
+| `failure.effectId` | `not-claimed` | Project-owned Compensation handler effect occurrence identity |
+| `failure.effectId.processInstanceId` | `not-claimed` | Scenario-supplied semantic identity |
+| `failure.effectId.elementId` | `not-claimed` | No registered CIB trigger profile supplies this semantic element identity |
+| `failure.effectId.activation` | `not-claimed` | No registered CIB trigger profile supplies this semantic ordinal |
+| `failure.code` | `not-claimed` | Semantic handler-failure code returned by the future host effect boundary |
+| `failure.message` | `not-claimed` | Semantic handler-failure message returned by the future host effect boundary |
 | `activeWaits` | `adapter-derived` | Merge, semantic-kind rank, and Unicode element-ID sort over retained task/subscription/timer/effect facts |
 | `activeWaits[].elementId` | `engine-observed` | Task definition key, Message-subscription Activity ID, or job-definition Activity ID |
 | `activeWaits[].kind` | `adapter-derived` | Classification by the engine collection and admitted host relation |

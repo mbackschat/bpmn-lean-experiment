@@ -158,6 +158,15 @@ export type FireTimerStimulus = DeepReadonly<{
 
 export type EffectOccurrenceId = OccurrenceId;
 
+export type CompensationHandlerFailure = DeepReadonly<{
+  kind: "compensationHandlerFailure";
+  triggerId: OccurrenceId;
+  handlerId: OccurrenceId;
+  effectId: EffectOccurrenceId;
+  code: string;
+  message: string | null;
+}>;
+
 export enum VariableValueKind {
   Boolean = "boolean",
   Integer = "integer",
@@ -261,6 +270,7 @@ export enum ProcessStatus {
   Running = "running",
   Completed = "completed",
   Cancelled = "cancelled",
+  Failed = "failed",
 }
 
 export enum WaitKind {
@@ -453,10 +463,14 @@ export type OpenMultiInstance =
   | OpenSequentialMultiInstance
   | OpenParallelMultiInstance;
 
-export type StateObservation = DeepReadonly<{
+type StateObservationBase = DeepReadonly<{
   kind: CanonicalObservationKind.State;
   instanceId: string;
-  status: ProcessStatus;
+  variables: VariableBinding[];
+  logicalTimeMs: number;
+}>;
+
+type ExistingStateObservationCollections = DeepReadonly<{
   activeWaits: ActiveWait[];
   openUserTasks: OpenUserTask[];
   openMessageSubscriptions: OpenMessageSubscription[];
@@ -476,10 +490,28 @@ export type StateObservation = DeepReadonly<{
    * `openUserTasks`, `openTimers`, occurrence history, or a difference between two states.
    */
   openMultiInstances?: OpenMultiInstance[];
-  variables: VariableBinding[];
   enabledInteractions: EnabledInteraction[];
-  logicalTimeMs: number;
 }>;
+
+export type ExistingStateObservation = StateObservationBase &
+  ExistingStateObservationCollections & DeepReadonly<{
+  status:
+    | ProcessStatus.NotStarted
+    | ProcessStatus.Running
+    | ProcessStatus.Completed
+    | ProcessStatus.Cancelled;
+  failure?: never;
+}>;
+
+export type FailedStateObservation = StateObservationBase &
+  ExistingStateObservationCollections & DeepReadonly<{
+  status: ProcessStatus.Failed;
+  failure: CompensationHandlerFailure;
+}>;
+
+export type StateObservation =
+  | ExistingStateObservation
+  | FailedStateObservation;
 
 export type CanonicalObservation =
   | DeepReadonly<{

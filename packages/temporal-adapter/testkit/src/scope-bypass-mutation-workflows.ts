@@ -1,6 +1,7 @@
 import {
   CanonicalObservationKind,
   CommandOutcome,
+  ProcessStatus,
   ScenarioStepKind,
   StimulusKind,
   advanceScenario,
@@ -106,6 +107,7 @@ function fabricatePrematureExit(
   const interaction = state?.enabledInteractions[0];
   if (
     state === undefined ||
+    state.status !== ProcessStatus.Running ||
     state.openUserTasks.length !== 1 ||
     sibling === undefined ||
     activeWait === undefined ||

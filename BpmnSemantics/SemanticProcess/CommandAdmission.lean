@@ -39,7 +39,7 @@ private def dispatchCorrelatedPayloadMessage (program : Program) (state : Runtim
             { outcome := .committed, state := successor }
           else { outcome := .rejected, state }
       | none => { outcome := .rejected, state }
-  | .notStarted | .completed _ | .cancelled _ =>
+  | .notStarted | .completed _ | .cancelled _ | .failed .. =>
       { outcome := .rejected, state }
 
 private def admitCorrelatedPayloadMessage (program : Program) (state : RuntimeState)
@@ -131,7 +131,8 @@ private def sequentialMultiInstanceStartBindingsAdmitted (program : Program)
             { outcome := .rejected, state }
       | .running _
       | .completed _
-      | .cancelled _ => { outcome := .rejected, state }
+      | .cancelled _
+      | .failed .. => { outcome := .rejected, state }
   | .triggerMessageStart _ processId instanceId startEventId channel =>
       match admitMessageStart? program state processId instanceId startEventId
           channel with
@@ -244,7 +245,8 @@ private def sequentialMultiInstanceStartBindingsAdmitted (program : Program)
           | none => { outcome := .rejected, state }
       | .notStarted
       | .completed _
-      | .cancelled _ => { outcome := .rejected, state }
+      | .cancelled _
+      | .failed .. => { outcome := .rejected, state }
   | .deliverMessage _ subscriptionId channel =>
       match state.control with
       | .running instanceId =>
@@ -262,7 +264,8 @@ private def sequentialMultiInstanceStartBindingsAdmitted (program : Program)
           | none => { outcome := .rejected, state }
       | .notStarted
       | .completed _
-      | .cancelled _ => { outcome := .rejected, state }
+      | .cancelled _
+      | .failed .. => { outcome := .rejected, state }
   | .deliverPayloadMessage _ subscriptionId channel payload =>
       match state.control with
       | .running instanceId =>
@@ -275,7 +278,8 @@ private def sequentialMultiInstanceStartBindingsAdmitted (program : Program)
           | none => { outcome := .rejected, state }
       | .notStarted
       | .completed _
-      | .cancelled _ => { outcome := .rejected, state }
+      | .cancelled _
+      | .failed .. => { outcome := .rejected, state }
   | .deliverCorrelatedPayloadMessage delivery =>
       dispatchCorrelatedPayloadMessage program state delivery
   | .fireTimer _ timerId logicalTimeMs =>
@@ -318,7 +322,8 @@ private def sequentialMultiInstanceStartBindingsAdmitted (program : Program)
             | none => { outcome := .rejected, state }
       | .notStarted
       | .completed _
-      | .cancelled _ => { outcome := .rejected, state }
+      | .cancelled _
+      | .failed .. => { outcome := .rejected, state }
   | .completeEffect _ effectId result =>
       match state.control with
       | .running instanceId =>
@@ -331,7 +336,8 @@ private def sequentialMultiInstanceStartBindingsAdmitted (program : Program)
           | none => { outcome := .rejected, state }
       | .notStarted
       | .completed _
-      | .cancelled _ => { outcome := .rejected, state }
+      | .cancelled _
+      | .failed .. => { outcome := .rejected, state }
   | .reportEffectFailure _ effectId generation =>
       match state.control with
       | .running instanceId =>
@@ -348,7 +354,8 @@ private def sequentialMultiInstanceStartBindingsAdmitted (program : Program)
           | none => { outcome := .rejected, state }
       | .notStarted
       | .completed _
-      | .cancelled _ => { outcome := .rejected, state }
+      | .cancelled _
+      | .failed .. => { outcome := .rejected, state }
   | .retryIncident _ incidentId =>
       match state.control with
       | .running instanceId =>
@@ -361,7 +368,8 @@ private def sequentialMultiInstanceStartBindingsAdmitted (program : Program)
           | none => { outcome := .rejected, state }
       | .notStarted
       | .completed _
-      | .cancelled _ => { outcome := .rejected, state }
+      | .cancelled _
+      | .failed .. => { outcome := .rejected, state }
   | .cancelIncidentProcess _ processInstanceId incidentId =>
       match cancelIncidentProcess program state processInstanceId incidentId with
       | some successor => { outcome := .committed, state := successor }

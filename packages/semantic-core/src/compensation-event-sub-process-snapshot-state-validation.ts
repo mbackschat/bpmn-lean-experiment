@@ -207,6 +207,7 @@ function validLifecycle(
   switch (state.control.kind) {
     case ControlStateKind.NotStarted:
     case ControlStateKind.Cancelled:
+    case ControlStateKind.Failed:
       return retentions.length === 0;
     case ControlStateKind.Running:
       return validRunningLifecycle(program, state, retentions);
@@ -324,22 +325,23 @@ function validSnapshotFrames(
   );
 }
 
-function isCompensationParentContextRetention(
-  value: CompensationParentContextRetention,
-): boolean {
+export function isCompensationParentContextRetention(
+  value: unknown,
+): value is CompensationParentContextRetention {
   if (!isRecord(value)) return false;
-  const common = validRuntimeScopeOccurrence(value.parent) &&
-    isNonEmptyWireString(value.handlerScopeId);
-  switch (value.kind) {
+  const retention = value as CompensationParentContextRetention;
+  const common = validRuntimeScopeOccurrence(retention.parent) &&
+    isNonEmptyWireString(retention.handlerScopeId);
+  switch (retention.kind) {
     case CompensationParentContextRetentionKind.Provisional:
-      return common && isExactRecord(value, ["kind", "parent", "handlerScopeId"]);
+      return common && isExactRecord(retention, ["kind", "parent", "handlerScopeId"]);
     case CompensationParentContextRetentionKind.Promoted:
       return common &&
-        isExactRecord(value, ["kind", "parent", "handlerScopeId", "snapshot"]) &&
-        isRecord(value.snapshot) &&
-        isExactRecord(value.snapshot, ["frames"]) &&
-        isDenseArray(value.snapshot.frames) &&
-        value.snapshot.frames.every(isCompensationParentContextFrame);
+        isExactRecord(retention, ["kind", "parent", "handlerScopeId", "snapshot"]) &&
+        isRecord(retention.snapshot) &&
+        isExactRecord(retention.snapshot, ["frames"]) &&
+        isDenseArray(retention.snapshot.frames) &&
+        retention.snapshot.frames.every(isCompensationParentContextFrame);
     default:
       return false;
   }

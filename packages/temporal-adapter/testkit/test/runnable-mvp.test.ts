@@ -7,11 +7,22 @@ import { fileURLToPath } from "node:url";
 import test from "node:test";
 
 import {
+  CanonicalObservationKind,
   MessageChannelKind,
+  ProcessStatus,
+  SemanticProcessCompilerId,
   SemanticProfileId,
   StimulusKind,
   VariableValueKind,
 } from "@bpmn-lean/semantic-core";
+
+import {
+  processTerminalReceiptFormatV1,
+  workflowTerminalResultFormatV1,
+} from "@bpmn-lean/temporal-testkit";
+import type {
+  FailedProcessReceipt,
+} from "@bpmn-lean/temporal-testkit";
 
 import {
   loadRunnableMvpConfig,
@@ -63,6 +74,54 @@ const timerStartProcess = {
   instanceId: "Timer_Start_Mvp_1",
   startEventId: "TimerStart_PT1S",
 } as const;
+
+const failedReceipt: FailedProcessReceipt = {
+  format: processTerminalReceiptFormatV1,
+  definition: {
+    compiler: SemanticProcessCompilerId.BpmnSourceSemanticProcess,
+    semanticProfile: profile,
+    sourceId: "sequential-user-task-process",
+    sourceSha256:
+      "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    sourceOverlay: null,
+  },
+  processId: "Process_UserTask",
+  processInstanceId: "Mvp_Test_1",
+  finalState: {
+    kind: CanonicalObservationKind.State,
+    instanceId: "Mvp_Test_1",
+    status: ProcessStatus.Failed,
+    activeWaits: [],
+    openUserTasks: [],
+    openMessageSubscriptions: [],
+    openTimers: [],
+    openEffects: [],
+    openIncidents: [],
+    variables: [],
+    enabledInteractions: [],
+    logicalTimeMs: 0,
+    failure: {
+      kind: "compensationHandlerFailure",
+      triggerId: {
+        processInstanceId: "Mvp_Test_1",
+        elementId: "CompensationThrow",
+        activation: 1,
+      },
+      handlerId: {
+        processInstanceId: "Mvp_Test_1",
+        elementId: "CompensationHandler",
+        activation: 1,
+      },
+      effectId: {
+        processInstanceId: "Mvp_Test_1",
+        elementId: "CompensationEffect",
+        activation: 1,
+      },
+      code: "handler-failed",
+      message: "Compensation handler failed",
+    },
+  },
+};
 
 const config = {
   kind: "runnableTemporalMvp",
@@ -320,6 +379,85 @@ test("reports an unsupported model before opening a Temporal connection", async 
   assert.equal(result.kind, RunnableMvpResultKind.SourceAdmissionRejected);
   assert.equal(events[0]?.kind, RunnableMvpEventKind.SourceAdmissionRejected);
   assert.equal(attemptedConnection, false);
+});
+
+test("preserves a valid failed Workflow receipt as a distinct product result", async () => {
+  const events: Array<{ readonly kind: string }> = [];
+  let shutdowns = 0;
+  const workflowClient = {
+    start: async () => undefined,
+    getHandle: () => ({
+      query: async () => [failedReceipt.finalState],
+      result: async () => ({
+        format: workflowTerminalResultFormatV1,
+        receipt: failedReceipt,
+        entries: [],
+      }),
+    }),
+  };
+
+  const result = await runRunnableTemporalMvp(
+    { ...config, interactions: [] },
+    (event) => events.push(event),
+    {
+      connect: async () => ({
+        assertHealthy: () => undefined,
+        workflowClient,
+        shutdown: async () => {
+          shutdowns += 1;
+        },
+      }) as never,
+    },
+  );
+
+  assert.deepEqual(result, {
+    kind: RunnableMvpResultKind.Failed,
+    receipt: failedReceipt,
+  });
+  assert.deepEqual(events.at(-1), {
+    kind: RunnableMvpEventKind.ProcessFailed,
+    receipt: failedReceipt,
+  });
+  assert.equal(shutdowns, 1);
+});
+
+test("the command maps only a failed Process result to exit code 4", async () => {
+  const directory = await mkdtemp(path.join(tmpdir(), "bpmn-mvp-command-"));
+  const configPath = path.join(directory, "failed.json");
+  await writeFile(configPath, `${JSON.stringify(config)}\n`, "utf8");
+  const lines: string[] = [];
+
+  const exitCode = await runRunnableMvpCommand(
+    [configPath],
+    (line) => lines.push(line),
+    {
+      run: async (_config, observe) => {
+        observe?.({
+          kind: RunnableMvpEventKind.ProcessFailed,
+          receipt: failedReceipt,
+        });
+        return {
+          kind: RunnableMvpResultKind.Failed,
+          receipt: failedReceipt,
+        };
+      },
+    },
+  );
+
+  assert.equal(exitCode, RunnableMvpExitCode.ProcessFailed);
+  assert.equal(exitCode, 4);
+  assert.deepEqual(JSON.parse(lines[0] ?? "null"), {
+    kind: RunnableMvpEventKind.ProcessFailed,
+    receipt: failedReceipt,
+  });
+  assert.deepEqual(RunnableMvpExitCode, {
+    Completed: 0,
+    InfrastructureFailure: 1,
+    AdmissionRejected: 2,
+    ExecutionRefused: 3,
+    ProcessFailed: 4,
+    ConfigurationRejected: 64,
+  });
 });
 
 test("rejects wrong Message-start identity before opening a Temporal connection", async () => {

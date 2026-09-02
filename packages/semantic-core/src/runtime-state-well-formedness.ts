@@ -60,6 +60,10 @@ import {
 import {
   compensationEventSubProcessSnapshotStateDefects,
 } from "./compensation-event-sub-process-snapshot-state-validation.js";
+import {
+  CompensationExecutionStateDefect,
+  compensationExecutionStateDefects,
+} from "./compensation-trigger-handler-runtime-state-validation.js";
 
 /**
  * Which committed runtime states this account admits, and how a successor may contradict its
@@ -300,6 +304,19 @@ export function runtimeStateDefects(
   )) {
     defects.push(RuntimeStateDefect.CompensationEventSubProcessSnapshotInvalid);
   }
+  const compensationExecutionDefects = compensationExecutionStateDefects(program, state);
+  if (
+    compensationExecutionDefects.includes(
+      CompensationExecutionStateDefect.ProgramPresenceMismatch,
+    )
+  ) {
+    defects.push(RuntimeStateDefect.CompensationExecutionProfileMismatch);
+  }
+  if (compensationExecutionDefects.some((defect) =>
+    defect !== CompensationExecutionStateDefect.ProgramPresenceMismatch
+  )) {
+    defects.push(RuntimeStateDefect.CompensationExecutionInvalid);
+  }
 
   if (state.control.kind === ControlStateKind.NotStarted) {
     const started =
@@ -317,7 +334,9 @@ export function runtimeStateDefects(
       state.activityOccurrences.length > 0 ||
       (state.sequentialMultiInstanceControllers?.length ?? 0) > 0 ||
       (state.parallelMultiInstanceControllers?.length ?? 0) > 0 ||
-      (state.compensationParentContextRetentions?.length ?? 0) > 0;
+      (state.compensationParentContextRetentions?.length ?? 0) > 0 ||
+      (state.compensationTriggers?.length ?? 0) > 0 ||
+      (state.compensationHandlerEffectWaits?.length ?? 0) > 0;
     return started
       ? [...defects, RuntimeStateDefect.NotStartedWithWork]
       : defects;
@@ -743,6 +762,8 @@ const GATED_DEFECTS: ReadonlySet<RuntimeStateDefect> = new Set([
   RuntimeStateDefect.CompensationActivityRetentionInvalid,
   RuntimeStateDefect.CompensationEventSubProcessSnapshotProfileMismatch,
   RuntimeStateDefect.CompensationEventSubProcessSnapshotInvalid,
+  RuntimeStateDefect.CompensationExecutionProfileMismatch,
+  RuntimeStateDefect.CompensationExecutionInvalid,
 ]);
 
 /**

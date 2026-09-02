@@ -299,6 +299,7 @@ def stableStateResumable (state : RuntimeState) : Bool :=
           !state.timerWaits.isEmpty || !state.effectWaits.isEmpty ||
           !state.effectIncidents.isEmpty)
   | .completed _ | .cancelled _ => true
+  | .failed .. => false
 
 private structure ClosureTraceResult where
   state : RuntimeState

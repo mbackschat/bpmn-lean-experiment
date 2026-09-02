@@ -77,6 +77,71 @@ test("builds an exact new terminal envelope from the recovery ledger", () => {
   assert.deepEqual(findKeys(result, "messageDeliveryRecords"), []);
 });
 
+test("packages an exact failed v1 receipt but refuses the retained legacy result", () => {
+  const recovery = resolvedRecoveryLedger();
+  const failure = compensationFailure();
+  const failedState = {
+    control: {
+      kind: ControlStateKind.Failed,
+      instanceId: processInstanceId,
+      failure,
+    },
+  };
+  const failedObservation = {
+    ...finalObservation,
+    status: ProcessStatus.Failed,
+    failure,
+  };
+
+  const result = terminalWorkflowResult(
+    semanticProcess as never,
+    processInstanceId,
+    failedState as never,
+    [failedObservation] as never,
+    [],
+    recovery,
+  );
+  assert.equal(result.receipt.finalState.status, ProcessStatus.Failed);
+  assert.deepEqual(result.receipt.finalState.failure, failure);
+
+  assert.throws(
+    () => terminalWorkflowResult(
+      semanticProcess as never,
+      processInstanceId,
+      failedState as never,
+      [failedObservation] as never,
+      [],
+      null,
+    ),
+    /legacy.*failed|failed.*legacy/iu,
+  );
+});
+
+test("rejects a failed control and observation with different failure bytes", () => {
+  const failure = compensationFailure();
+  assert.throws(
+    () => terminalWorkflowResult(
+      semanticProcess as never,
+      processInstanceId,
+      {
+        control: {
+          kind: ControlStateKind.Failed,
+          instanceId: processInstanceId,
+          failure,
+        },
+      } as never,
+      [{
+        ...finalObservation,
+        status: ProcessStatus.Failed,
+        failure: { ...failure, code: "different-code" },
+      }] as never,
+      [],
+      resolvedRecoveryLedger(),
+    ),
+    /matching final observation/u,
+  );
+});
+
 test("rejects terminal envelopes that drift from execution identity or recovery", () => {
   const recovery = resolvedRecoveryLedger();
   const result = terminalWorkflowResult(
@@ -382,6 +447,26 @@ function resolvedRecoveryLedger(): WorkflowCommandRecoveryLedger {
   }
   recovery.record(preflight.admission, CommandOutcome.Committed);
   return recovery;
+}
+
+function compensationFailure() {
+  const handlerId = {
+    processInstanceId,
+    elementId: "Undo_Activity",
+    activation: 1,
+  } as const;
+  return {
+    kind: "compensationHandlerFailure",
+    triggerId: {
+      processInstanceId,
+      elementId: "operation:ThrowCompensation",
+      activation: 1,
+    },
+    handlerId,
+    effectId: { ...handlerId, elementId: "Effect_Undo_Activity" },
+    code: "compensation-rejected",
+    message: null,
+  } as const;
 }
 
 function findKeys(value: unknown, target: string): string[] {

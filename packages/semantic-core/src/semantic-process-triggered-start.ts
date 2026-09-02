@@ -21,6 +21,9 @@ import {
 import {
   reserveCompensationParentContext,
 } from "./compensation-event-sub-process-snapshot.js";
+import {
+  initializeCompensationExecutionState,
+} from "./compensation-trigger-handler-runtime-state-validation.js";
 
 /** Pairs each public start-command kind with exactly one corresponding IL initiation kind. */
 export function processStartMatchesProgram(
@@ -82,9 +85,10 @@ export function admitProcessStart(
     definitionScopeId: rootScope.id,
     activation: 1,
   };
+  const prepared = initializeCompensationExecutionState(program, state);
   const reserved = reserveRootCompensationParentContext(
     program,
-    state,
+    prepared,
     rootOccurrence,
   );
   if (reserved === null) {
@@ -146,9 +150,10 @@ export function admitTriggeredStartRoot(
     definitionScopeId: rootScope.id,
     activation: 1,
   };
+  const prepared = initializeCompensationExecutionState(program, state);
   const reserved = reserveRootCompensationParentContext(
     program,
-    state,
+    prepared,
     rootOccurrence,
   );
   if (reserved === null) {

@@ -139,6 +139,70 @@ test("accepts notReady at head zero for a nonzero requested cursor", () => {
   );
 });
 
+test("strictly discriminates a terminal-empty failed current state", () => {
+  const complete = twoBatchPublicationPage();
+  const handlerId = {
+    processInstanceId: "Instance_1",
+    elementId: "Undo_Activity",
+    activation: 1,
+  } as const;
+  const failure = {
+    kind: "compensationHandlerFailure",
+    triggerId: {
+      processInstanceId: "Instance_1",
+      elementId: "operation:ThrowCompensation",
+      activation: 1,
+    },
+    handlerId,
+    effectId: handlerId,
+    code: "compensation-rejected",
+    message: null,
+  } as const;
+  const failed = {
+    ...complete,
+    requestedAfterRevision: 3,
+    batches: [],
+    current: {
+      revision: 3,
+      state: {
+        ...complete.current.state,
+        status: "failed",
+        failure,
+      },
+      controlTokens: [],
+      scopes: [],
+    },
+  } as const;
+  const context = { ...transportContext, afterRevision: 3 };
+
+  assert.deepEqual(
+    requireExecutionPublicationTransportResult(
+      { kind: "available", page: failed },
+      context,
+    ),
+    { kind: "available", page: failed },
+  );
+  for (const state of [
+    { ...failed.current.state, failure: undefined },
+    {
+      ...failed.current.state,
+      activeWaits: [{ elementId: "Undo_Activity", kind: "effect", multiplicity: 1 }],
+    },
+    { ...complete.current.state, failure },
+  ]) {
+    assert.throws(
+      () => requireExecutionPublicationTransportResult(
+        {
+          kind: "available",
+          page: { ...failed, current: { ...failed.current, state } },
+        },
+        context,
+      ),
+      /malformed execution publication transport result/u,
+    );
+  }
+});
+
 test("rejects a type-valid page whose complete-batch count exceeds the requested limit", () => {
   const valid = twoBatchPublicationPage();
   assert.deepEqual(

@@ -62,11 +62,17 @@ test("publishes one closed current-incident Query contract", () => {
     status: ProcessStatus.Completed,
     incidents: [],
   } as const satisfies Exclude<TemporalIncidentOperationsSnapshot, null>;
+  const failed = {
+    instanceId: "Instance_1",
+    status: ProcessStatus.Failed,
+    incidents: [],
+  } as const satisfies Exclude<TemporalIncidentOperationsSnapshot, null>;
 
   assert.equal(running.incidents[0].interactions[0].kind, "retryIncident");
   assert.deepEqual(completed.incidents, []);
   assert.deepEqual(requireTemporalIncidentOperationsSnapshot(running), running);
   assert.deepEqual(requireTemporalIncidentOperationsSnapshot(completed), completed);
+  assert.deepEqual(requireTemporalIncidentOperationsSnapshot(failed), failed);
   assert.equal(isTemporalIncidentOperationsSnapshot(null), true);
   assert.equal(isTemporalIncidentOperationsSnapshot({
     instanceId: "Instance_1",
