@@ -1,3 +1,4 @@
+import BpmnSemantics.SemanticProcess.ActivityOccurrence
 import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerTransition
 
 /-! # Compensation handler completion and fail-fast Process failure -/
@@ -117,9 +118,9 @@ private def failOtherHandler (failed : CompensationHandlerExecution)
     | .pending _ | .compensating _ _ => terminalHandler candidate .terminated
     | .compensated | .failed | .terminated => candidate
 
-private def completeFailure (program : Program) (state : RuntimeState)
+private def compensationFailureSuccessor (state : RuntimeState)
     (selected : SelectedCompensationHandler) (code : String) (message : Option String) :
-    CompensationHandlerCompletionAttempt :=
+    RuntimeState :=
   let failedTrigger : CompensationTriggerExecution :=
     { selected.trigger with
       lifecycle := .failed
@@ -154,8 +155,23 @@ private def completeFailure (program : Program) (state : RuntimeState)
         replaceTrigger selected.trigger failedTrigger state.compensationTriggers
       compensationHandlerEffectWaits := []
       variables := { state.variables with activities := [] } }
+  successor
+
+private def completeFailure (program : Program) (state : RuntimeState)
+    (selected : SelectedCompensationHandler) (code : String) (message : Option String) :
+    CompensationHandlerCompletionAttempt :=
+  let successor := compensationFailureSuccessor state selected code message
   if compensationTriggerHandlerStateValid program successor then .applied successor
   else .refused .invalidState
+
+private theorem compensationFailureSuccessor_activity_identity_discipline
+    (state : RuntimeState) (selected : SelectedCompensationHandler)
+    (code : String) (message : Option String) :
+    activityIdentityIssuingDiscipline state
+      (compensationFailureSuccessor state selected code message) = true := by
+  apply activityIdentityIssuingDiscipline_of_subset
+  intro record present
+  simp [compensationFailureSuccessor] at present
 
 private def resultHasEmptyPatch : EffectExecutionResult → Bool
   | .success patch | .bpmnError _ _ patch => patch.isEmpty

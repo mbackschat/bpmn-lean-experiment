@@ -39,6 +39,7 @@ theorem handler_error_fails_the_process_and_removes_every_live_compensation_regi
       failedState.compensationParentContextRetentions = [] ∧
       failedState.compensationHandlerEffectWaits = [] ∧
       failedState.tokens = [] ∧
+      failedState.activityOccurrences = [] ∧
       failedState.variables.activities = [] := by
   decide +kernel
 
