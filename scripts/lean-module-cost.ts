@@ -408,9 +408,15 @@ export const leanModuleCostRecord = {
     },
     {
       module: "BpmnSemantics.CompensationTriggerHandlerCompletionConformance",
-      peakResidentKib: 2966900,
-      elapsedSeconds: 27.28,
-      measuredAtCommit: "ef739572",
+      peakResidentKib: 2938028,
+      elapsedSeconds: 27.07,
+      measuredAtCommit: "3020899b",
+    },
+    {
+      module: "BpmnSemantics.CompensationTriggerHandlerCancellationConformance",
+      peakResidentKib: 614680,
+      elapsedSeconds: 0.58,
+      measuredAtCommit: "3020899b",
     },
     {
       module: "BpmnSemantics.CompensationActivityRetentionProducerConformance",

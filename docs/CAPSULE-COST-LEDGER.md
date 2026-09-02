@@ -190,6 +190,8 @@ The compensation trigger-handler proof owners were measured from immutable commi
 
 The completion owner crosses the conservative 90% GNU-RSS disclosure threshold and is therefore listed in the executable near-cap registry. Its cgroup peak retained 515,321,856 bytes of hard-limit headroom with no pressure event. The fixed 3 GiB ceiling remains unchanged; the owner is viable but must not absorb another proof family without remeasurement or structural separation.
 
+Commit `3020899b` added the separate cancellation conformance owner. Its immutable cold-target measurement passed in 0.58 seconds at 614,680 KiB GNU RSS and 175,321,088 bytes cgroup peak. Because the changed relation became a dependency of the near-cap completion owner, that target was remeasured rather than treated as unchanged: the first run passed in 27.48 seconds at 2,787,884 KiB and 2,478,338,048 bytes, but crossed below the disclosure threshold relative to the preceding record, so it was repeated. The conservative retained run passed in 27.07 seconds at 2,938,028 KiB and 2,623,070,208 bytes. Both completion runs and the cancellation run had no swap or controlled pressure/OOM event. The completion owner therefore remains disclosed and retains 598,155,264 bytes of cgroup headroom under the unchanged ceiling.
+
 | Increment | Boundary | Code | Documentation | Elapsed | Comparison consequence |
 |---|---|---:|---:|---|---|
 | [Scoped runtime data](capsules/SCOPED-DATA-SPEC.md) | `08d8b84..3b2e44d` | `+540/-73` | `+134/-11` | Unknown | First atomic runtime-representation replacement; later scope work should not be compared as if it were a small local semantic clause. |
