@@ -2,8 +2,8 @@
 
 ## Status
 
-Lifecycle: draft
-Review: pending
+Lifecycle: implementation-in-progress
+Review: approved-with-required-edits
 
 ## Prior review
 
@@ -13,7 +13,7 @@ The post-approval checkpoint-boundary review accepted `540e0b2d` with required e
 
 Implementation preflight then exposed one representation defect before either semantic evaluator was written: trigger creation consumes a promoted Event Sub-Process snapshot, but the approved `pending` handler arm had nowhere to retain it when that subject was not in the first maximal frontier. The fixed B/C witness concealed the defect because its Event Sub-Process handler starts immediately, while the admitted acyclic declaration also permits an Event Sub-Process predecessor that starts only after its successor completes. This amendment places the already-selected frozen context in the exact pending handler that owns the consumed subject. Cold review accepted target `5b45b845` with required edits to complete the four-collection continuation inventory and make pending-context capacity, continuation, and cancellation evidence explicit; the same reviewer approved correction target `00d0db3b` with both findings closed and no semantic drift.
 
-TypeScript execution then exposed a second bounded-design defect: the declaration and Runtime validator admitted two active triggers for one root, but `COMPH-FAIL-01` makes the whole Process terminal and therefore permits no surviving active trigger, while the reviewed trigger lifecycle has no honest terminal value for an unaffected sibling trigger. The fixed acyclic Program cannot reach this state, but accepting it in the generic Runtime contract would make the first failure either reject or invent an unreviewed sibling-trigger disposition. This amendment restricts the checkpoint to one active trigger per root, keeps `maxTriggers` as the bound on the complete retained trigger collection, and leaves concurrent global throws for a later lifecycle design. Cold review of target `56ac774a` returned `approve-with-required-edits`: failed-state multiplicity must exclude a hidden second failed trigger, retained-tombstone capacity needs positive and boundary witnesses, and the mirrored TS/Lean validation risk and exact owners must be explicit. Those corrections are under same-reviewer audit, so implementation remains stopped.
+TypeScript execution then exposed a second bounded-design defect: the declaration and Runtime validator admitted two active triggers for one root, but `COMPH-FAIL-01` makes the whole Process terminal and therefore permits no surviving active trigger, while the reviewed trigger lifecycle has no honest terminal value for an unaffected sibling trigger. The fixed acyclic Program cannot reach this state, but accepting it in the generic Runtime contract would make the first failure either reject or invent an unreviewed sibling-trigger disposition. This amendment restricts the checkpoint to one active trigger per root, keeps `maxTriggers` as the bound on the complete retained trigger collection, and leaves concurrent global throws for a later lifecycle design. Cold review of target `56ac774a` returned `approve-with-required-edits`; the same reviewer approved correction targets `f0468446` and `174968e6`, closing exact failed-trigger multiplicity, retained-tombstone capacity witnesses, mirrored TS/Lean validation risk and owner inventory, and the correction target's PLAN resume point without semantic drift.
 
 ## Question and bounded outcome
 
@@ -498,6 +498,6 @@ After approval, the first implementation stage stops when the complete Program/R
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `56ac774a4be21b9ed5a7e863d05e477625599364` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `56ac774a4be21b9ed5a7e863d05e477625599364` | `fork-turns-none` | `approve-with-required-edits` | `f0468446b37f39f773d3fcc94aaca66127237312, 174968e69455db544314de63d0dac067230f733b` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
