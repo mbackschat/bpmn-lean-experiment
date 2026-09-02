@@ -22,7 +22,8 @@ inductive CompensationHandlerCompletionAttempt where
   | refused (reason : CompensationHandlerCompletionRefusal)
   deriving Repr, DecidableEq
 
-private structure SelectedCompensationHandler where
+/-- The unique submitted wait, active trigger, and compensating handler selected by an effect id. -/
+structure SelectedCompensationHandler where
   wait : CompensationHandlerEffectWait
   trigger : CompensationTriggerExecution
   handler : CompensationHandlerExecution
@@ -32,7 +33,8 @@ private def findUnique? (candidates : List α) : Option α :=
   | [candidate] => some candidate
   | _ => none
 
-private def selectCompensationHandler? (state : RuntimeState)
+/-- Selects the unique active compensation handler owning the submitted effect occurrence. -/
+def selectCompensationHandler? (state : RuntimeState)
     (effectId : EffectOccurrenceId) : Option SelectedCompensationHandler := do
   let wait ← findUnique? (state.compensationHandlerEffectWaits.filter fun candidate =>
     candidate.id == effectId)
@@ -47,24 +49,29 @@ private def selectCompensationHandler? (state : RuntimeState)
         if activeEffectId == effectId then some { wait, trigger, handler } else none
     | _ => none
 
-private def terminalHandler (handler : CompensationHandlerExecution)
+/-- Preserves handler identity while assigning a terminal lifecycle. -/
+def terminalHandler (handler : CompensationHandlerExecution)
     (lifecycle : CompensationHandlerLifecycle) : CompensationHandlerExecution :=
   { identity := handler.identity, lifecycle }
 
-private def replaceHandler (selected replacement : CompensationHandlerExecution) :
+/-- Replaces exactly the selected handler identity. -/
+def replaceHandler (selected replacement : CompensationHandlerExecution) :
     List CompensationHandlerExecution → List CompensationHandlerExecution :=
   List.map fun candidate =>
     if candidate.identity.id == selected.identity.id then replacement else candidate
 
-private def replaceTrigger (selected replacement : CompensationTriggerExecution) :
+/-- Replaces exactly the selected trigger identity. -/
+def replaceTrigger (selected replacement : CompensationTriggerExecution) :
     List CompensationTriggerExecution → List CompensationTriggerExecution :=
   List.map fun candidate =>
     if candidate.id == selected.id then replacement else candidate
 
-private def allHandlersCompensated (handlers : List CompensationHandlerExecution) : Bool :=
+/-- Decides whether every handler has completed compensation. -/
+def allHandlersCompensated (handlers : List CompensationHandlerExecution) : Bool :=
   handlers.all fun handler => handler.lifecycle == .compensated
 
-private def completionCapacityRefusal? (declaration : CompensationExecutionDeclaration)
+/-- Maps the shared compensation capacity check into the completion refusal contract. -/
+def completionCapacityRefusal? (declaration : CompensationExecutionDeclaration)
     (triggers : List CompensationTriggerExecution)
     (waits : List CompensationHandlerEffectWait) :
     Option CompensationHandlerCompletionRefusal :=
@@ -73,7 +80,8 @@ private def completionCapacityRefusal? (declaration : CompensationExecutionDecla
   | some _ => some .invalidState
   | none => none
 
-private def completeSuccess (program : Program)
+/-- Evaluates the prospective success path for one selected compensation handler. -/
+def completeSuccess (program : Program)
     (declaration : CompensationExecutionDeclaration) (state : RuntimeState)
     (selected : SelectedCompensationHandler) : CompensationHandlerCompletionAttempt :=
   let completed := terminalHandler selected.handler .compensated
@@ -118,7 +126,8 @@ private def failOtherHandler (failed : CompensationHandlerExecution)
     | .pending _ | .compensating _ _ => terminalHandler candidate .terminated
     | .compensated | .failed | .terminated => candidate
 
-private def compensationFailureSuccessor (state : RuntimeState)
+/-- Builds the fail-fast Process successor for one compensation handler error. -/
+def compensationFailureSuccessor (state : RuntimeState)
     (selected : SelectedCompensationHandler) (code : String) (message : Option String) :
     RuntimeState :=
   let failedTrigger : CompensationTriggerExecution :=
@@ -157,7 +166,8 @@ private def compensationFailureSuccessor (state : RuntimeState)
       variables := { state.variables with activities := [] } }
   successor
 
-private def completeFailure (program : Program) (state : RuntimeState)
+/-- Evaluates the fail-fast Process successor for one selected handler error. -/
+def completeFailure (program : Program) (state : RuntimeState)
     (selected : SelectedCompensationHandler) (code : String) (message : Option String) :
     CompensationHandlerCompletionAttempt :=
   let successor := compensationFailureSuccessor state selected code message
@@ -173,8 +183,19 @@ private theorem compensationFailureSuccessor_activity_identity_discipline
   intro record present
   simp [compensationFailureSuccessor] at present
 
-private def resultHasEmptyPatch : EffectExecutionResult → Bool
+/-- Compensation handlers admit only empty effect-result patches. -/
+def resultHasEmptyPatch : EffectExecutionResult → Bool
   | .success patch | .bpmnError _ _ patch => patch.isEmpty
+
+/-- Decides whether the current Process state can accept a compensation completion. -/
+def compensationHandlerCompletionStateRejected (program : Program)
+    (state : RuntimeState) : Bool :=
+  !compensationTriggerHandlerStateValid program state ||
+    (match state.control with | .running _ => false | _ => true)
+
+/-- Decides whether a completion attempts a forbidden variable mutation. -/
+def compensationHandlerCompletionPatchRejected (result : EffectExecutionResult) : Bool :=
+  !resultHasEmptyPatch result
 
 /-- Completes one exact compensation effect, with prospective frontier checks before mutation. -/
 def attemptCompensationHandlerEffectCompletion (program : Program) (state : RuntimeState)
@@ -184,10 +205,9 @@ def attemptCompensationHandlerEffectCompletion (program : Program) (state : Runt
   | none => .refused .invalidProgram
   | some declaration =>
       if !compensationExecutionDeclarationValid program then .refused .invalidProgram
-      else if !compensationTriggerHandlerStateValid program state ||
-          (match state.control with | .running _ => false | _ => true) then
+      else if compensationHandlerCompletionStateRejected program state then
         .refused .invalidState
-      else if !resultHasEmptyPatch result then .refused .nonemptyPatch
+      else if compensationHandlerCompletionPatchRejected result then .refused .nonemptyPatch
       else match selectCompensationHandler? state effectId with
         | none => .refused .staleEffect
         | some selected =>
@@ -195,19 +215,223 @@ def attemptCompensationHandlerEffectCompletion (program : Program) (state : Runt
             | .success _ => completeSuccess program declaration state selected
             | .bpmnError code message _ => completeFailure program state selected code message
 
+/-- The Process declares a valid compensation execution contract. -/
+inductive CompensationHandlerCompletionProgramReady (program : Program) :
+    CompensationExecutionDeclaration → Prop where
+  | ready (declaration : CompensationExecutionDeclaration)
+      (selected : program.compensationExecution = some declaration)
+      (accepted : (!compensationExecutionDeclarationValid program) = false) :
+      CompensationHandlerCompletionProgramReady program declaration
+
+/-- The submitted state is a valid running compensation state. -/
+inductive CompensationHandlerCompletionStateReady (program : Program)
+    (before : RuntimeState) : CompensationExecutionDeclaration → Prop where
+  | ready (declaration : CompensationExecutionDeclaration)
+      (programReady : CompensationHandlerCompletionProgramReady program declaration)
+      (accepted : compensationHandlerCompletionStateRejected program before = false) :
+      CompensationHandlerCompletionStateReady program before declaration
+
+/-- The submitted completion carries the empty patch required by compensation handlers. -/
+inductive CompensationHandlerCompletionInputReady (program : Program)
+    (before : RuntimeState) (result : EffectExecutionResult) :
+    CompensationExecutionDeclaration → Prop where
+  | ready (declaration : CompensationExecutionDeclaration)
+      (stateReady : CompensationHandlerCompletionStateReady program before declaration)
+      (accepted : compensationHandlerCompletionPatchRejected result = false) :
+      CompensationHandlerCompletionInputReady program before result declaration
+
+/-- The submitted effect identifies one unique active compensating handler. -/
+inductive CompensationHandlerCompletionReady (program : Program) (before : RuntimeState)
+    (effectId : EffectOccurrenceId) (result : EffectExecutionResult) :
+    CompensationExecutionDeclaration → SelectedCompensationHandler → Prop where
+  | ready (declaration : CompensationExecutionDeclaration)
+      (selected : SelectedCompensationHandler)
+      (inputReady : CompensationHandlerCompletionInputReady program before result declaration)
+      (handlerSelected : selectCompensationHandler? before effectId = some selected) :
+      CompensationHandlerCompletionReady program before effectId result declaration selected
+
+/-- Declarative prospective state shared by successful final and advancing completions. -/
+inductive CompensationHandlerSuccessCandidate (program : Program) (before : RuntimeState)
+    (selected : SelectedCompensationHandler) : Bool → CompensationFrontierActivation →
+      List CompensationTriggerExecution → List CompensationHandlerEffectWait → Prop where
+  | final (completed : CompensationHandlerExecution)
+      (handlers : List CompensationHandlerExecution)
+      (progressed : CompensationTriggerExecution)
+      (remainingWaits : List CompensationHandlerEffectWait)
+      (activated : CompensationFrontierActivation)
+      (triggers : List CompensationTriggerExecution)
+      (waits : List CompensationHandlerEffectWait)
+      (completedShape : completed = terminalHandler selected.handler .compensated)
+      (handlersShape : handlers =
+        replaceHandler selected.handler completed selected.trigger.handlers)
+      (allCompensated : allHandlersCompensated handlers = true)
+      (progressedShape : progressed =
+        { selected.trigger with lifecycle := .succeeded, handlers })
+      (remainingShape : remainingWaits =
+        before.compensationHandlerEffectWaits.filter fun wait => wait.id != selected.wait.id)
+      (activatedShape : activated =
+        { trigger := progressed, waits := [], effectActivations := before.effectActivations })
+      (triggersShape : triggers =
+        replaceTrigger selected.trigger activated.trigger before.compensationTriggers)
+      (waitsShape : waits = remainingWaits) :
+      CompensationHandlerSuccessCandidate program before selected true activated triggers waits
+  | advance (completed : CompensationHandlerExecution)
+      (handlers : List CompensationHandlerExecution)
+      (progressed : CompensationTriggerExecution)
+      (remainingWaits : List CompensationHandlerEffectWait)
+      (activated : CompensationFrontierActivation)
+      (triggers : List CompensationTriggerExecution)
+      (waits : List CompensationHandlerEffectWait)
+      (completedShape : completed = terminalHandler selected.handler .compensated)
+      (handlersShape : handlers =
+        replaceHandler selected.handler completed selected.trigger.handlers)
+      (unfinished : allHandlersCompensated handlers = false)
+      (progressedShape : progressed =
+        { selected.trigger with lifecycle := .active, handlers })
+      (remainingShape : remainingWaits =
+        before.compensationHandlerEffectWaits.filter fun wait => wait.id != selected.wait.id)
+      (frontier : CompensationFrontierStep program
+        { before with compensationHandlerEffectWaits := remainingWaits }
+        progressed activated)
+      (triggersShape : triggers =
+        replaceTrigger selected.trigger activated.trigger before.compensationTriggers)
+      (waitsShape : waits = activated.waits.foldl (fun current wait =>
+        insertCompensationHandlerEffectWait wait current) remainingWaits) :
+      CompensationHandlerSuccessCandidate program before selected false activated triggers waits
+
+/-- Declarative successful compensation-handler completion. -/
 inductive CompensationHandlerCompletionStep (program : Program) (before : RuntimeState)
     (effectId : EffectOccurrenceId) (result : EffectExecutionResult) : RuntimeState → Prop where
-  | applied (after : RuntimeState)
-      (selected : attemptCompensationHandlerEffectCompletion program before effectId result =
-        .applied after) :
+  | successFinal (declaration : CompensationExecutionDeclaration)
+      (selected : SelectedCompensationHandler) (patch : List VariableBinding)
+      (activated : CompensationFrontierActivation)
+      (triggers : List CompensationTriggerExecution)
+      (waits : List CompensationHandlerEffectWait) (after : RuntimeState)
+      (ready : CompensationHandlerCompletionReady program before effectId result
+        declaration selected)
+      (resultShape : result = .success patch)
+      (candidate : CompensationHandlerSuccessCandidate program before selected true
+        activated triggers waits)
+      (withinCapacity : completionCapacityRefusal? declaration triggers waits = none)
+      (afterShape : after =
+        { before with
+          tokens := addToken before.tokens selected.trigger.output selected.trigger.owner
+          compensationTriggers := triggers
+          compensationHandlerEffectWaits := waits
+          effectActivations := activated.effectActivations })
+      (afterValid : compensationTriggerHandlerStateValid program after = true) :
+      CompensationHandlerCompletionStep program before effectId result after
+  | successAdvance (declaration : CompensationExecutionDeclaration)
+      (selected : SelectedCompensationHandler) (patch : List VariableBinding)
+      (activated : CompensationFrontierActivation)
+      (triggers : List CompensationTriggerExecution)
+      (waits : List CompensationHandlerEffectWait) (after : RuntimeState)
+      (ready : CompensationHandlerCompletionReady program before effectId result
+        declaration selected)
+      (resultShape : result = .success patch)
+      (candidate : CompensationHandlerSuccessCandidate program before selected false
+        activated triggers waits)
+      (withinCapacity : completionCapacityRefusal? declaration triggers waits = none)
+      (afterShape : after =
+        { before with
+          compensationTriggers := triggers
+          compensationHandlerEffectWaits := waits
+          effectActivations := activated.effectActivations })
+      (afterValid : compensationTriggerHandlerStateValid program after = true) :
+      CompensationHandlerCompletionStep program before effectId result after
+  | failure (declaration : CompensationExecutionDeclaration)
+      (selected : SelectedCompensationHandler) (code : String) (message : Option String)
+      (patch : List VariableBinding) (after : RuntimeState)
+      (ready : CompensationHandlerCompletionReady program before effectId result
+        declaration selected)
+      (resultShape : result = .bpmnError code message patch)
+      (afterShape : after = compensationFailureSuccessor before selected code message)
+      (afterValid : compensationTriggerHandlerStateValid program after = true) :
       CompensationHandlerCompletionStep program before effectId result after
 
-theorem attemptCompensationHandlerEffectCompletion_sound (program : Program)
-    (before after : RuntimeState) (effectId : EffectOccurrenceId)
-    (result : EffectExecutionResult)
-    (selected : attemptCompensationHandlerEffectCompletion program before effectId result =
-      .applied after) :
-    CompensationHandlerCompletionStep program before effectId result after :=
-  .applied after selected
+/-- Declarative refusal of a compensation-handler completion before any mutation is committed. -/
+inductive CompensationHandlerCompletionRefusalStep (program : Program)
+    (before : RuntimeState) (effectId : EffectOccurrenceId)
+    (result : EffectExecutionResult) : CompensationHandlerCompletionRefusal → Prop where
+  | invalidProgram
+      (rejected : match program.compensationExecution with
+        | none => true
+        | some _ => !compensationExecutionDeclarationValid program) :
+      CompensationHandlerCompletionRefusalStep program before effectId result .invalidProgram
+  | invalidState (declaration : CompensationExecutionDeclaration)
+      (programReady : CompensationHandlerCompletionProgramReady program declaration)
+      (rejected : compensationHandlerCompletionStateRejected program before = true) :
+      CompensationHandlerCompletionRefusalStep program before effectId result .invalidState
+  | nonemptyPatch (declaration : CompensationExecutionDeclaration)
+      (stateReady : CompensationHandlerCompletionStateReady program before declaration)
+      (rejected : compensationHandlerCompletionPatchRejected result = true) :
+      CompensationHandlerCompletionRefusalStep program before effectId result .nonemptyPatch
+  | staleEffect (declaration : CompensationExecutionDeclaration)
+      (inputReady : CompensationHandlerCompletionInputReady program before result declaration)
+      (absent : selectCompensationHandler? before effectId = none) :
+      CompensationHandlerCompletionRefusalStep program before effectId result .staleEffect
+  | invalidFrontier (declaration : CompensationExecutionDeclaration)
+      (selected : SelectedCompensationHandler) (patch : List VariableBinding)
+      (completed : CompensationHandlerExecution)
+      (handlers : List CompensationHandlerExecution)
+      (progressed : CompensationTriggerExecution)
+      (remainingWaits : List CompensationHandlerEffectWait)
+      (ready : CompensationHandlerCompletionReady program before effectId result
+        declaration selected)
+      (resultShape : result = .success patch)
+      (completedShape : completed = terminalHandler selected.handler .compensated)
+      (handlersShape : handlers =
+        replaceHandler selected.handler completed selected.trigger.handlers)
+      (unfinished : allHandlersCompensated handlers = false)
+      (progressedShape : progressed =
+        { selected.trigger with lifecycle := .active, handlers })
+      (remainingShape : remainingWaits =
+        before.compensationHandlerEffectWaits.filter fun wait => wait.id != selected.wait.id)
+      (frontier : CompensationFrontierRefusalStep program
+        { before with compensationHandlerEffectWaits := remainingWaits } progressed) :
+      CompensationHandlerCompletionRefusalStep program before effectId result .invalidState
+  | capacity (declaration : CompensationExecutionDeclaration)
+      (selected : SelectedCompensationHandler) (patch : List VariableBinding)
+      (allCompensated : Bool) (activated : CompensationFrontierActivation)
+      (triggers : List CompensationTriggerExecution)
+      (waits : List CompensationHandlerEffectWait)
+      (reason : CompensationHandlerCompletionRefusal)
+      (ready : CompensationHandlerCompletionReady program before effectId result
+        declaration selected)
+      (resultShape : result = .success patch)
+      (candidate : CompensationHandlerSuccessCandidate program before selected
+        allCompensated activated triggers waits)
+      (exceeded : completionCapacityRefusal? declaration triggers waits = some reason) :
+      CompensationHandlerCompletionRefusalStep program before effectId result reason
+  | invalidSuccessor (declaration : CompensationExecutionDeclaration)
+      (selected : SelectedCompensationHandler) (patch : List VariableBinding)
+      (allCompensated : Bool) (activated : CompensationFrontierActivation)
+      (triggers : List CompensationTriggerExecution)
+      (waits : List CompensationHandlerEffectWait) (after : RuntimeState)
+      (ready : CompensationHandlerCompletionReady program before effectId result
+        declaration selected)
+      (resultShape : result = .success patch)
+      (candidate : CompensationHandlerSuccessCandidate program before selected
+        allCompensated activated triggers waits)
+      (withinCapacity : completionCapacityRefusal? declaration triggers waits = none)
+      (afterShape : after =
+        { before with
+          tokens := if allCompensated then
+              addToken before.tokens selected.trigger.output selected.trigger.owner
+            else before.tokens
+          compensationTriggers := triggers
+          compensationHandlerEffectWaits := waits
+          effectActivations := activated.effectActivations })
+      (rejected : compensationTriggerHandlerStateValid program after = false) :
+      CompensationHandlerCompletionRefusalStep program before effectId result .invalidState
+  | invalidFailureSuccessor (declaration : CompensationExecutionDeclaration)
+      (selected : SelectedCompensationHandler) (code : String) (message : Option String)
+      (patch : List VariableBinding) (after : RuntimeState)
+      (ready : CompensationHandlerCompletionReady program before effectId result
+        declaration selected)
+      (resultShape : result = .bpmnError code message patch)
+      (afterShape : after = compensationFailureSuccessor before selected code message)
+      (rejected : compensationTriggerHandlerStateValid program after = false) :
+      CompensationHandlerCompletionRefusalStep program before effectId result .invalidState
 
 end BpmnSemantics.SemanticProcess

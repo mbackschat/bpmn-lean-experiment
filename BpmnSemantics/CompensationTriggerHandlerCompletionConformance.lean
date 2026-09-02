@@ -1,5 +1,5 @@
 import BpmnSemantics.CompensationTriggerHandlerSemanticFixtures
-import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerCompletion
+import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerCompletionSoundness
 import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotCommandAdmission
 import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotTransitionTrace
 
@@ -51,6 +51,17 @@ theorem terminal_stale_result_and_nonempty_patch_are_refused_without_a_successor
         .refused .nonemptyPatch := by
   decide +kernel
 
+theorem terminal_and_nonempty_patch_refusals_are_declarative :
+    CompensationHandlerCompletionRefusalStep program failedState waitB.id (.success [])
+        .invalidState ∧
+      CompensationHandlerCompletionRefusalStep program triggeredState waitB.id
+        (.success [{ name := "forbidden", value := .string "mutation" }]) .nonemptyPatch := by
+  constructor
+  · apply attemptCompensationHandlerEffectCompletion_refusal_sound
+    exact terminal_stale_result_and_nonempty_patch_are_refused_without_a_successor.1
+  · apply attemptCompensationHandlerEffectCompletion_refusal_sound
+    exact terminal_stale_result_and_nonempty_patch_are_refused_without_a_successor.2
+
 theorem delayed_event_subprocess_context_reaches_the_new_frontier_unchanged :
     attemptCompensationTrigger delayedProgram triggerOperation preTriggerState =
         .applied delayedTriggeredState ∧
@@ -85,11 +96,24 @@ theorem prospective_frontier_capacity_refusal_precedes_wait_or_context_mutation 
           delayedSuccessorBytes) := by
   decide +kernel
 
+theorem prospective_frontier_capacity_refusal_is_declarative :
+    CompensationHandlerCompletionRefusalStep delayedProgramBelowSuccessor
+      delayedTriggeredState delayedWaitC.id (.success [])
+      (.capacity .canonicalBytes (delayedSuccessorBytes - 1) delayedSuccessorBytes) := by
+  apply attemptCompensationHandlerEffectCompletion_refusal_sound
+  exact prospective_frontier_capacity_refusal_precedes_wait_or_context_mutation.2.2
+
 theorem completion_evaluator_is_sound_for_the_declarative_relation :
     CompensationHandlerCompletionStep program triggeredState waitB.id (.success [])
       afterBState := by
   apply attemptCompensationHandlerEffectCompletion_sound
   decide +kernel
+
+theorem handler_failure_is_sound_for_the_declarative_relation :
+    CompensationHandlerCompletionStep program triggeredState waitC.id failureResult
+      failedState := by
+  apply attemptCompensationHandlerEffectCompletion_sound
+  exact handler_error_fails_the_process_and_removes_every_live_compensation_region.1
 
 private def completeBStimulus : Stimulus :=
   .completeEffect ⟨"complete-b"⟩ waitB.id (.success [])
