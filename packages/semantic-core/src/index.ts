@@ -25,6 +25,7 @@ export * from "./compensation-trigger-handler-completion.js";
 export * from "./compensation-trigger-handler-transition.js";
 export * from "./correlation-scalar-path.js";
 export * from "./message-key-correlation.js";
+export * from "./engine-population-scenario.js";
 export {
   isDataOutputTaskDefinition,
 } from "./semantic-process-activity-data-output-runtime.js";

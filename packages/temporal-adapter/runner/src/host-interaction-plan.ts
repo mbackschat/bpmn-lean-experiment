@@ -8,14 +8,18 @@
  * semantic command.
  */
 import {
+  CorrelatedMessageInteractionKind,
   StimulusKind,
+  VariableValueKind,
   compareCanonicalStrings,
+  isCorrelatedMessageAddress,
   isMessageChannel,
   isWellFormedStimulus,
   isWellFormedWireString,
 } from "@bpmn-lean/semantic-core";
 import type {
   DeepReadonly,
+  CorrelatedMessageAddress,
   MessageChannel,
   UserTaskCompletionBinding,
   VariableValue,
@@ -51,6 +55,13 @@ export type HostInteractionResponse = DeepReadonly<
       kind: StimulusKind.DeliverPayloadMessage;
       channel: MessageChannel;
       payload: VariableValue;
+      delayMs: number;
+    }
+  | {
+      kind: typeof CorrelatedMessageInteractionKind.PublishCorrelatedPayloadMessage;
+      commandId: string;
+      address: CorrelatedMessageAddress;
+      payload: Extract<VariableValue, { kind: VariableValueKind.String }>;
       delayMs: number;
     }
   | {
@@ -129,6 +140,9 @@ function validateHostInteractionResponse(
     case StimulusKind.DeliverPayloadMessage:
       validateDeliveryResponse(value, value.kind);
       return;
+    case CorrelatedMessageInteractionKind.PublishCorrelatedPayloadMessage:
+      validateCorrelatedPublicationResponse(value);
+      return;
     case StimulusKind.CancelIncidentProcess:
       validateCancellationResponse(value);
       return;
@@ -137,6 +151,43 @@ function validateHostInteractionResponse(
         `Interaction response kind must be a canonical stimulus kind: ${String(value.kind)}`,
       );
   }
+}
+
+function validateCorrelatedPublicationResponse(
+  value: Record<string, unknown>,
+): void {
+  const record = requireExactObject(
+    value,
+    ["kind", "commandId", "address", "payload", "delayMs"],
+    "Correlated Message publication response",
+  );
+  requireNonemptyWireString(
+    record.commandId,
+    "Correlated Message publication commandId",
+  );
+  requirePositiveSafeInteger(
+    record.delayMs,
+    "Correlated Message publication delayMs",
+  );
+  if (!isCorrelatedMessageAddress(record.address)) {
+    throw new TypeError(
+      "Correlated Message publication address must be complete and well-formed",
+    );
+  }
+  const payload = requireExactObject(
+    record.payload,
+    ["kind", "value"],
+    "Correlated Message publication payload",
+  );
+  if (payload.kind !== VariableValueKind.String) {
+    throw new TypeError(
+      "Correlated Message publication payload must be a string value",
+    );
+  }
+  requireNonemptyWireString(
+    payload.value,
+    "Correlated Message publication payload value",
+  );
 }
 
 function validateCancellationResponse(value: Record<string, unknown>): void {

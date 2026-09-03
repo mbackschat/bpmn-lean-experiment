@@ -11,8 +11,10 @@ import test from "node:test";
 import {
   CanonicalObservationKind,
   CommandOutcome,
+  CorrelatedMessageInteractionKind,
   MessageChannelKind,
   ProcessStatus,
+  SemanticProcessCompilerId,
   StimulusKind,
   UserTaskLifecycleState,
   VariableValueKind,
@@ -20,9 +22,14 @@ import {
 import type {
   CancelIncidentProcessStimulus,
   CompleteUserTaskInstanceStimulus,
+  CorrelatedMessageAddress,
   StateObservation,
 } from "@bpmn-lean/semantic-core";
 
+import {
+  EngineCorrelatedMessagePublishResolutionKind,
+  EngineCorrelatedMessageSemanticOutcomeKind,
+} from "@bpmn-lean/engine-api";
 import {
   HostInteractionRefusalCode,
   HostInteractionResultKind,
@@ -32,11 +39,30 @@ import {
 import type {
   HostInteractionPort,
   HostInteractionResponse,
+  HostCorrelatedMessagePublication,
   MessageDeliveryStimulus,
   ProcessCommandResult,
 } from "@bpmn-lean/temporal-testkit";
 
 const instanceId = "Driver_Test_1";
+
+const correlatedAddress: CorrelatedMessageAddress = {
+  definition: {
+    compiler: SemanticProcessCompilerId.BpmnSourceSemanticProcess,
+    semanticProfile: "bpmn-2.0.2-message-key-correlation-draft",
+    sourceId: "settlement-confirmation",
+    sourceSha256: "a".repeat(64),
+    sourceOverlay: null,
+  },
+  processId: "Process_SettlementConfirmation",
+  channel: {
+    kind: MessageChannelKind.OperationMessage,
+    interfaceId: "Interface_Settlement",
+    interfaceOperationId: "Operation_ConfirmSettlement",
+    messageId: "Message_SettlementConfirmed",
+  },
+  correlationKeyId: "CorrelationKey_Settlement",
+};
 
 const committed: ProcessCommandResult = {
   kind: ProcessCommandResultKind.Semantic,
@@ -150,6 +176,13 @@ function payloadMessageInteraction(messageId: string, activation = 1) {
   } as const;
 }
 
+function correlatedMessageInteraction() {
+  return {
+    kind: CorrelatedMessageInteractionKind.PublishCorrelatedPayloadMessage,
+    address: correlatedAddress,
+  } as const;
+}
+
 function completeResponse(
   elementId: string,
 ): HostInteractionResponse {
@@ -187,6 +220,16 @@ function deliverPayloadResponse(messageId: string): HostInteractionResponse {
   };
 }
 
+function publishCorrelatedResponse(): HostInteractionResponse {
+  return {
+    kind: CorrelatedMessageInteractionKind.PublishCorrelatedPayloadMessage,
+    commandId: "publish-settlement-confirmation",
+    address: correlatedAddress,
+    payload: { kind: VariableValueKind.String, value: "settlement-123" },
+    delayMs: 1,
+  };
+}
+
 function cancellationInteraction(activation = 7) {
   return {
     kind: StimulusKind.CancelIncidentProcess,
@@ -213,15 +256,18 @@ function scriptedPort(
   readonly port: HostInteractionPort;
   readonly completions: CompleteUserTaskInstanceStimulus[];
   readonly deliveries: MessageDeliveryStimulus[];
+  readonly publications: HostCorrelatedMessagePublication[];
   readonly cancellations: CancelIncidentProcessStimulus[];
 } {
   const completions: CompleteUserTaskInstanceStimulus[] = [];
   const deliveries: MessageDeliveryStimulus[] = [];
+  const publications: HostCorrelatedMessagePublication[] = [];
   const cancellations: CancelIncidentProcessStimulus[] = [];
   let index = 0;
   return {
     completions,
     deliveries,
+    publications,
     cancellations,
     port: {
       readState: async () => {
@@ -243,6 +289,26 @@ function scriptedPort(
       submitMessage: async (stimulus) => {
         deliveries.push(stimulus);
         return committed;
+      },
+      publishCorrelated: async (publication) => {
+        publications.push(publication);
+        return {
+          kind: EngineCorrelatedMessagePublishResolutionKind.Semantic,
+          commandId: publication.commandId,
+          address: publication.address,
+          ingressOrdinal: 1,
+          outcome: {
+            kind: EngineCorrelatedMessageSemanticOutcomeKind.Committed,
+            target: {
+              processInstanceId: instanceId,
+              subscriptionId: {
+                processInstanceId: instanceId,
+                elementId: "Catch_SettlementConfirmed",
+                activation: 1,
+              },
+            },
+          },
+        };
       },
       submitCancellation: async (stimulus) => {
         cancellations.push(stimulus);
@@ -472,6 +538,26 @@ test("preserves a payload while answering the published payload Message interact
   }]);
 });
 
+test("publishes a correlated Message without constructing a Process target", async () => {
+  const { port, publications } = scriptedPort([
+    state({ enabledInteractions: [correlatedMessageInteraction()] }),
+    state({ status: ProcessStatus.Completed }),
+  ]);
+
+  const result = await driveHostInteractions(
+    [publishCorrelatedResponse()],
+    port,
+    noWait,
+  );
+
+  assert.equal(result.kind, HostInteractionResultKind.Driven);
+  assert.deepEqual(publications, [{
+    commandId: "publish-settlement-confirmation",
+    address: correlatedAddress,
+    payload: { kind: VariableValueKind.String, value: "settlement-123" },
+  }]);
+});
+
 test("does not recast a payload-free Message interaction as payload-bearing", async () => {
   const { port, deliveries } = scriptedPort([
     state({ enabledInteractions: [messageInteraction("raceMessage")] }),
@@ -614,6 +700,9 @@ test("reports an uncommitted interaction with its typed result unchanged", async
     }),
     submitCompletion: async () => rejected,
     submitMessage: async () => rejected,
+    publishCorrelated: async () => {
+      throw new Error("correlated publication is not expected");
+    },
     submitCancellation: async () => rejected,
   };
 

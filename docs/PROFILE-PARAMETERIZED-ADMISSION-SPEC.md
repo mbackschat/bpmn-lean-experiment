@@ -53,6 +53,7 @@ The closest unsupported claim is arbitrary serial composition. Admission does no
 | BPMN Timer/User Task composition (`bpmn-2.0.2-timer-user-task-composition-draft`) | 1 | one `initiate`, one `awaitTimer`, one `awaitUserTask`, one `reachNoneEnd`, one `completeScope` |
 | BPMN Intermediate Catch Message (`bpmn-2.0.2-intermediate-catch-message-draft`) | 1 | one `initiate`, one `awaitMessage`, one `awaitUserTask`, one `reachNoneEnd`, one `completeScope` |
 | BPMN Message payload catch (`bpmn-2.0.2-message-payload-catch-draft`) | 1 | one `initiate`, one `awaitPayloadMessage`, one `awaitUserTask`, one `reachNoneEnd`, one `completeScope` |
+| BPMN Message key correlation (`bpmn-2.0.2-message-key-correlation-draft`) | 1 | one `initiate`, one `awaitPayloadMessage`, one `awaitCorrelatedPayloadMessage`, one `awaitUserTask`, one `reachNoneEnd`, one `completeScope` |
 | BPMN Message Start Event (`bpmn-2.0.2-message-start-event-draft`) | 1 | one `initiateMessage`, one `awaitUserTask`, one `reachNoneEnd`, one `completeScope` |
 | BPMN Timer Start Event (`bpmn-2.0.2-timer-start-event-draft`) | 1 | one `initiateTimer`, one `awaitUserTask`, one `reachNoneEnd`, one `completeScope` |
 | BPMN nested Terminate End Event (`bpmn-2.0.2-terminate-end-event-draft`) | 2 | one `initiate`, one `enterScope`, one `duplicate`, three `awaitUserTask`, one `terminateScope`, two `reachNoneEnd`, two `completeScope` |

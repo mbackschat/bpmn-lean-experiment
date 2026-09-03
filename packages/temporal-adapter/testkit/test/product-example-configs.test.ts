@@ -54,6 +54,8 @@ const sequentialMultiInstanceProfileId =
   "bpmn-2.0.2-sequential-multi-instance-user-task-draft";
 const messagePayloadCatchProfileId =
   "bpmn-2.0.2-message-payload-catch-draft";
+const messageKeyCorrelationProfileId =
+  "bpmn-2.0.2-message-key-correlation-draft";
 
 /** The rejection example deliberately pairs a real model with a profile that excludes it. */
 const admissionRejectionExample = "unsupported.json";
@@ -217,6 +219,57 @@ test("registers Message payload catch through the existing Message driver", asyn
         },
       ],
       effectHandlers: [],
+    },
+  );
+});
+
+test("registers Message-key correlation through the definition-scoped publisher", async () => {
+  assert.equal(registeredProfiles.includes(messageKeyCorrelationProfileId), true);
+  const [config] = await Promise.all(
+    (await exampleConfigPaths())
+      .filter((file) => path.basename(file) === "message-key-correlation.json")
+      .map((file) => loadRunnableMvpConfig(file)),
+  );
+  assert.ok(config !== undefined);
+  const publication = config.interactions[1];
+  assert.deepEqual(
+    {
+      source: config.bpmn.file,
+      sourceId: config.bpmn.sourceId,
+      semanticProfile: config.bpmn.semanticProfile,
+      publication,
+    },
+    {
+      source: path.join(
+        projectRoot,
+        "scenarios/message-key-correlation/process.bpmn",
+      ),
+      sourceId: "message-key-correlation-process",
+      semanticProfile: messageKeyCorrelationProfileId,
+      publication: {
+        kind: "publishCorrelatedPayloadMessage",
+        commandId: "mvp-publish-correlation:MvpExample_message_key_correlation_1",
+        address: {
+          definition: {
+            compiler: "bpmn-source-semantic-process",
+            semanticProfile: messageKeyCorrelationProfileId,
+            sourceId: "message-key-correlation-process",
+            sourceSha256:
+              "8d16faca66b00378d4ab02189cdd3270143076a46086b46dff68729d90dba086",
+            sourceOverlay: null,
+          },
+          processId: "Process_SettlementCorrelation",
+          channel: {
+            kind: "operationMessage",
+            interfaceId: "Interface_ClearingHouse",
+            interfaceOperationId: "Operation_ConfirmSettlement",
+            messageId: "Message_SettlementConfirmed",
+          },
+          correlationKeyId: "CorrelationKey_SettlementReference",
+        },
+        payload: { kind: "string", value: "settlement-42" },
+        delayMs: 250,
+      },
     },
   );
 });

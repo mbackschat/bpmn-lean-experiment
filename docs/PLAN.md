@@ -79,9 +79,9 @@ Active work ID: `EVENT-SUBSCRIPTIONS`.
 
 Risk band: Capability and evidence closure.
 
-Checkpoint: [Message key correlation](capsules/MESSAGE-KEY-CORRELATION-PROPOSAL.md) has an approved semantic checkpoint, eight green private hosting slices, and an independently approved public operation at correction `f627d06e`. Private hosting preserves complete discovery, FIFO reservation, same-target recovery, quarantine, continuation, and replay. The public operation adds status-first retry and keeps an unsettled target private. Profile/scenario registration, complete cross-Workflow refinement, retained model, corpus, Product 2, cost/reflection, and closure remain.
+Checkpoint: [Message key correlation](capsules/MESSAGE-KEY-CORRELATION-PROPOSAL.md) has an approved semantic checkpoint, eight green private hosting slices, and an independently approved public operation at correction `f627d06e`. The registered profile and answer-free population contract now cover unique, zero, ambiguous, and cross-definition schedules in Lean and the independently written core. The real-service witness drives that same public target-free operation through Worker replacement, identical same-target retry after post-commit response loss, complete state comparison, and replay. Retained whole-model corpus coverage, Product 2, cost/reflection, complete gates, and closure remain.
 
-Next action: add the failing registered-profile and engine-population scenario for `correlated-settlement-confirmation`, then drive the public operation through real-service unique, zero, ambiguous, and cross-definition schedules with recovery and replay. Commit this high-risk refinement slice before corpus, disclosure, Product 2, cost, or closure bookkeeping.
+Next action: register one credible retained whole model through the exact compiler path and update its corpus map, capability disclosure, and Product 2 About-page row before binding the Product 2 journey.
 
 Oracle: one definition-scoped command supplies no target. Unique correlation advances only its matching Process; zero and ambiguity preserve every Process; equal local ids in another source remain isolated. Recovery and replay cannot allocate, rematch, or retarget, and CIB remains absent.
 

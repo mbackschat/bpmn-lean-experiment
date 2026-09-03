@@ -23,6 +23,18 @@ test("discovers every profile, scenario, and evidence artifact through the regis
       normativeArtifactCases,
     ),
   );
+  assert.equal(
+    inventory.referencedProfileRelativePaths.includes(
+      "profiles/bpmn-2.0.2-message-key-correlation-draft/profile.json",
+    ),
+    true,
+  );
+  assert.equal(
+    inventory.scenarioRelativePaths.some((relativePath) =>
+      relativePath.endsWith(".population-scenario.json")
+    ),
+    false,
+  );
 });
 
 test("rejects an artifact that exists outside the registry", () => {

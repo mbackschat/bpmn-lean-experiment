@@ -1,4 +1,5 @@
 import BpmnSemantics.SemanticProcess.JsonSupport
+import BpmnSemantics.SemanticProcess.MessageKeyCorrelationProfileAdmission
 
 /-! # Semantic Process value-domain admission
 
@@ -111,7 +112,8 @@ private inductive ProcessDataValueDomain where
       else
         .empty
   | .messagePayload =>
-      if profile = messagePayloadCatchProfileId then .scalar else .empty
+      if profile = messagePayloadCatchProfileId ||
+          profile = messageKeyCorrelationProfileId then .scalar else .empty
 
 /-- Decide whether one typed value is admitted at an external Process-data surface under an exact profile. -/
 def variableValueAdmitted (profile : ProfileId) (surface : ProcessDataIngress)

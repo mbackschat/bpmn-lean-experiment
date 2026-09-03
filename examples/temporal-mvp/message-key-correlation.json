@@ -1,0 +1,72 @@
+{
+  "kind": "runnableTemporalMvp",
+  "bpmn": {
+    "file": "../../scenarios/message-key-correlation/process.bpmn",
+    "sourceId": "message-key-correlation-process",
+    "semanticProfile": "bpmn-2.0.2-message-key-correlation-draft",
+    "limits": {
+      "maxBytes": 1048576,
+      "parserDeadlineMs": 1000
+    }
+  },
+  "process": {
+    "instanceId": "MvpExample_message_key_correlation_1",
+    "initialVariables": []
+  },
+  "temporal": {
+    "address": "localhost:7233",
+    "namespace": "default",
+    "taskQueue": "bpmn-mvp",
+    "identity": "bpmn-mvp-command"
+  },
+  "interactions": [
+    {
+      "kind": "deliverPayloadMessage",
+      "channel": {
+        "kind": "operationMessage",
+        "interfaceId": "Interface_ClearingHouse",
+        "interfaceOperationId": "Operation_ConfirmSettlement",
+        "messageId": "Message_SettlementConfirmed"
+      },
+      "payload": {
+        "kind": "string",
+        "value": "settlement-42"
+      },
+      "delayMs": 250
+    },
+    {
+      "kind": "publishCorrelatedPayloadMessage",
+      "commandId": "mvp-publish-correlation:MvpExample_message_key_correlation_1",
+      "address": {
+        "definition": {
+          "compiler": "bpmn-source-semantic-process",
+          "semanticProfile": "bpmn-2.0.2-message-key-correlation-draft",
+          "sourceId": "message-key-correlation-process",
+          "sourceSha256": "8d16faca66b00378d4ab02189cdd3270143076a46086b46dff68729d90dba086",
+          "sourceOverlay": null
+        },
+        "processId": "Process_SettlementCorrelation",
+        "channel": {
+          "kind": "operationMessage",
+          "interfaceId": "Interface_ClearingHouse",
+          "interfaceOperationId": "Operation_ConfirmSettlement",
+          "messageId": "Message_SettlementConfirmed"
+        },
+        "correlationKeyId": "CorrelationKey_SettlementReference"
+      },
+      "payload": {
+        "kind": "string",
+        "value": "settlement-42"
+      },
+      "delayMs": 250
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "elementId": "UserTask_ReviewSettlement",
+      "delayMs": 250,
+      "inputVariableNames": [],
+      "submittedValues": []
+    }
+  ],
+  "effectHandlers": []
+}

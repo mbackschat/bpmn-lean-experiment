@@ -98,6 +98,9 @@ importers:
       '@bpmn-lean/bpmn-source':
         specifier: workspace:*
         version: link:../../bpmn-source
+      '@bpmn-lean/engine-api':
+        specifier: workspace:*
+        version: link:../../engine-api
       '@bpmn-lean/semantic-core':
         specifier: workspace:*
         version: link:../../semantic-core
@@ -116,6 +119,9 @@ importers:
       '@bpmn-lean/bpmn-source':
         specifier: workspace:*
         version: link:../../bpmn-source
+      '@bpmn-lean/engine-api':
+        specifier: workspace:*
+        version: link:../../engine-api
       '@bpmn-lean/semantic-core':
         specifier: workspace:*
         version: link:../../semantic-core

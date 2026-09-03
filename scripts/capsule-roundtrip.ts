@@ -119,8 +119,14 @@ export async function discoverArtifactInventory(
     relativePath.endsWith("/scenario.json") ||
       relativePath.endsWith(".scenario.json")
   );
+  const populationScenarioRelativePaths = scenarioFiles.filter((relativePath) =>
+    relativePath.endsWith(".population-scenario.json")
+  );
   const referencedProfiles = new Set<string>();
-  for (const scenarioRelativePath of scenarioRelativePaths) {
+  for (const scenarioRelativePath of [
+    ...scenarioRelativePaths,
+    ...populationScenarioRelativePaths,
+  ]) {
     const document: unknown = JSON.parse(
       await readFile(path.join(projectRoot, scenarioRelativePath), "utf8"),
     );

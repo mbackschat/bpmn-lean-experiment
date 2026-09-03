@@ -123,3 +123,37 @@ test("keeps correlated Message definition identity standalone and exact", async 
     programDocument.$defs.sourceOverlayIdentity,
   );
 });
+
+test("keeps engine-population input closed and separate from single-instance scenarios", async () => {
+  const [scenarioDocument, populationDocument] = await Promise.all([
+    readFile(`${projectRoot}/contracts/schemas/scenario.schema.json`, "utf8"),
+    readFile(
+      `${projectRoot}/contracts/schemas/engine-population-scenario.schema.json`,
+      "utf8",
+    ),
+  ]).then((documents) => documents.map((document) => JSON.parse(document) as unknown));
+  assert.ok(isRecord(scenarioDocument));
+  assert.ok(isRecord(populationDocument));
+  assert.ok(isRecord(populationDocument.properties));
+  assert.deepEqual(populationDocument.properties.kind, {
+    const: "enginePopulationScenario",
+  });
+  assert.equal(JSON.stringify(scenarioDocument).includes("enginePopulationScenario"), false);
+
+  const serialized = JSON.stringify(populationDocument);
+  for (const definition of [
+    "bpmnResource",
+    "startProcess",
+    "deliverPayloadMessage",
+    "correlatedMessageAddress",
+    "provenance",
+  ]) {
+    assert.equal(
+      serialized.includes(
+        `https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/${definition}`,
+      ),
+      true,
+      `population schema lost scenario definition ${definition}`,
+    );
+  }
+});

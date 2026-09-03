@@ -22,7 +22,7 @@ private def decodeEffectIncidentId (json : Json) : Except String EffectIncidentI
     { effectId := ← decodeOccurrenceId (← field json "effectId")
       generation }
 
-private def decodeStimulus (json : Json) : Except String Stimulus := do
+def decodeStimulus (json : Json) : Except String Stimulus := do
   let kind ← stringField json "kind"
   match kind with
   | "startProcess" =>
@@ -159,7 +159,7 @@ private def decodeObservationKind (json : Json) :
   | "logicalTime" => pure .logicalTime
   | kind => throw s!"unsupported scenario observation {kind}"
 
-private def decodeScenarioProvenance (json : Json) :
+def decodeScenarioProvenance (json : Json) :
     Except String ScenarioProvenance := do
   requireObjectShape json ["cibRefs", "cibRevision", "normativeRefs"]
   pure

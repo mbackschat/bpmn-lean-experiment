@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  id="Definitions_MessageKeyCorrelation"
+  targetNamespace="https://bpmn-lean.org/scenarios/message-key-correlation">
+  <bpmn:itemDefinition id="ItemDefinition_SettlementReference" />
+  <bpmn:message
+    id="Message_SettlementConfirmed"
+    name="Settlement confirmed"
+    itemRef="ItemDefinition_SettlementReference" />
+  <bpmn:interface id="Interface_ClearingHouse" name="Clearing house">
+    <bpmn:operation id="Operation_ConfirmSettlement" name="Confirm settlement">
+      <bpmn:inMessageRef>Message_SettlementConfirmed</bpmn:inMessageRef>
+    </bpmn:operation>
+  </bpmn:interface>
+  <bpmn:correlationProperty
+    id="CorrelationProperty_SettlementReference"
+    name="Settlement reference">
+    <bpmn:correlationPropertyRetrievalExpression
+      id="RetrievalExpression_SettlementReference"
+      messageRef="Message_SettlementConfirmed">
+      <bpmn:messagePath
+        id="MessagePath_SettlementReference"
+        language="urn:bpmn-lean:correlation-scalar-path:v1">payload</bpmn:messagePath>
+    </bpmn:correlationPropertyRetrievalExpression>
+  </bpmn:correlationProperty>
+  <bpmn:process
+    id="Process_SettlementCorrelation"
+    isExecutable="true"
+    definitionalCollaborationRef="Collaboration_SettlementCorrelation">
+    <bpmn:property id="Property_SettlementReference" />
+
+    <bpmn:startEvent id="StartEvent_PaymentInstructed">
+      <bpmn:outgoing>Flow_Instructed_InitialSettlement</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow
+      id="Flow_Instructed_InitialSettlement"
+      sourceRef="StartEvent_PaymentInstructed"
+      targetRef="MessageCatch_InitialSettlement" />
+
+    <bpmn:intermediateCatchEvent id="MessageCatch_InitialSettlement">
+      <bpmn:incoming>Flow_Instructed_InitialSettlement</bpmn:incoming>
+      <bpmn:outgoing>Flow_Initial_Correlated</bpmn:outgoing>
+      <bpmn:dataOutput
+        id="DataOutput_InitialSettlementReference"
+        name="Initial settlement reference"
+        itemSubjectRef="ItemDefinition_SettlementReference" />
+      <bpmn:dataOutputAssociation id="DataOutputAssociation_SettlementReference">
+        <bpmn:sourceRef>DataOutput_InitialSettlementReference</bpmn:sourceRef>
+        <bpmn:targetRef>Property_SettlementReference</bpmn:targetRef>
+      </bpmn:dataOutputAssociation>
+      <bpmn:outputSet id="OutputSet_InitialSettlement">
+        <bpmn:dataOutputRefs>DataOutput_InitialSettlementReference</bpmn:dataOutputRefs>
+      </bpmn:outputSet>
+      <bpmn:messageEventDefinition
+        id="MessageEventDefinition_InitialSettlement"
+        messageRef="Message_SettlementConfirmed">
+        <bpmn:operationRef>Operation_ConfirmSettlement</bpmn:operationRef>
+      </bpmn:messageEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:sequenceFlow
+      id="Flow_Initial_Correlated"
+      sourceRef="MessageCatch_InitialSettlement"
+      targetRef="MessageCatch_CorrelatedSettlement" />
+
+    <bpmn:intermediateCatchEvent id="MessageCatch_CorrelatedSettlement">
+      <bpmn:incoming>Flow_Initial_Correlated</bpmn:incoming>
+      <bpmn:outgoing>Flow_Correlated_Review</bpmn:outgoing>
+      <bpmn:messageEventDefinition
+        id="MessageEventDefinition_CorrelatedSettlement"
+        messageRef="Message_SettlementConfirmed">
+        <bpmn:operationRef>Operation_ConfirmSettlement</bpmn:operationRef>
+      </bpmn:messageEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:sequenceFlow
+      id="Flow_Correlated_Review"
+      sourceRef="MessageCatch_CorrelatedSettlement"
+      targetRef="UserTask_ReviewSettlement" />
+
+    <bpmn:userTask id="UserTask_ReviewSettlement" name="Review secondary settlement">
+      <bpmn:incoming>Flow_Correlated_Review</bpmn:incoming>
+      <bpmn:outgoing>Flow_Review_Recorded</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow
+      id="Flow_Review_Recorded"
+      sourceRef="UserTask_ReviewSettlement"
+      targetRef="EndEvent_SettlementRecorded" />
+
+    <bpmn:endEvent id="EndEvent_SettlementRecorded">
+      <bpmn:incoming>Flow_Review_Recorded</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <bpmn:correlationSubscription
+      id="CorrelationSubscription_SettlementReference"
+      correlationKeyRef="CorrelationKey_SettlementReference">
+      <bpmn:correlationPropertyBinding
+        id="CorrelationPropertyBinding_SettlementReference"
+        correlationPropertyRef="CorrelationProperty_SettlementReference">
+        <bpmn:dataPath
+          id="DataPath_SettlementReference"
+          language="urn:bpmn-lean:correlation-scalar-path:v1">property:Property_SettlementReference</bpmn:dataPath>
+      </bpmn:correlationPropertyBinding>
+    </bpmn:correlationSubscription>
+  </bpmn:process>
+  <bpmn:collaboration id="Collaboration_SettlementCorrelation">
+    <bpmn:participant
+      id="Participant_ExternalClearingHouse"
+      name="External clearing house" />
+    <bpmn:participant
+      id="Participant_SettlementProcess"
+      name="Settlement process"
+      processRef="Process_SettlementCorrelation" />
+    <bpmn:messageFlow
+      id="MessageFlow_InitialSettlement"
+      sourceRef="Participant_ExternalClearingHouse"
+      targetRef="MessageCatch_InitialSettlement"
+      messageRef="Message_SettlementConfirmed" />
+    <bpmn:messageFlow
+      id="MessageFlow_CorrelatedSettlement"
+      sourceRef="Participant_ExternalClearingHouse"
+      targetRef="MessageCatch_CorrelatedSettlement"
+      messageRef="Message_SettlementConfirmed" />
+    <bpmn:conversation id="Conversation_Settlement">
+      <bpmn:participantRef>Participant_ExternalClearingHouse</bpmn:participantRef>
+      <bpmn:participantRef>Participant_SettlementProcess</bpmn:participantRef>
+      <bpmn:messageFlowRef>MessageFlow_InitialSettlement</bpmn:messageFlowRef>
+      <bpmn:messageFlowRef>MessageFlow_CorrelatedSettlement</bpmn:messageFlowRef>
+      <bpmn:correlationKey
+        id="CorrelationKey_SettlementReference"
+        name="Settlement reference">
+        <bpmn:correlationPropertyRef>CorrelationProperty_SettlementReference</bpmn:correlationPropertyRef>
+      </bpmn:correlationKey>
+    </bpmn:conversation>
+  </bpmn:collaboration>
+</bpmn:definitions>

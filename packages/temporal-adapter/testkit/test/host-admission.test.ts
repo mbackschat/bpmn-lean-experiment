@@ -178,7 +178,7 @@ test("classifies Message and User Task as passive ingress in either operation or
   );
 });
 
-test("rejects correlated Message waits until their durable ingress is hosted", async () => {
+test("admits only the registered isolated correlated Message wait", async () => {
   const program = await compileFixture(
     "../../../../scenarios/message-key-correlation/process.bpmn",
     "message-key-correlation-host-admission",
@@ -191,13 +191,34 @@ test("rejects correlated Message waits until their durable ingress is hosted", a
     ),
   );
   assert.deepEqual(assessTemporalHostCapability(program), {
+    kind: TemporalHostCapabilityResultKind.Admitted,
+  });
+  const wait = program.operations.find(
+    ({ kind }) => kind === SemanticOperationKind.AwaitCorrelatedPayloadMessage,
+  );
+  assert.ok(wait?.kind === SemanticOperationKind.AwaitCorrelatedPayloadMessage);
+  const refusal = {
     kind: TemporalHostCapabilityResultKind.Rejected,
     failure: {
       code: TemporalHostAdmissionFailureCode.CorrelatedMessageIngressUnavailable,
       evidence:
-        "The Temporal host does not yet provide the definition-addressed correlation ingress required by a correlated Message wait.",
+        "The Temporal host admits only one isolated correlated payload Message wait under the registered Message-key correlation profile.",
     },
-  });
+  } as const;
+  assert.deepEqual(
+    assessTemporalHostCapability({
+      ...program,
+      identity: { ...program.identity, semanticProfile: "unknown-profile" },
+    }),
+    refusal,
+  );
+  assert.deepEqual(
+    assessTemporalHostCapability({
+      ...program,
+      operations: [...program.operations, { ...wait, id: `${wait.id}:second` }],
+    }),
+    refusal,
+  );
 });
 
 test("admits only the exact isolated operation-addressed Message-bounded Activity", async () => {

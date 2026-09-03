@@ -1,0 +1,9 @@
+# BPMN 2.0.2 Message key correlation draft profile
+
+This standards profile selects one context-backed, single-property BPMN `CorrelationKey` for one non-instantiating Intermediate Catch Message Event. One directly addressed payload Message initializes a non-empty String in a Process `Property`; one later definition-scoped publication extracts the same scalar value from its payload and advances a Process instance only when exactly one current candidate in that immutable semantic definition matches.
+
+The [profile artifact](profile.json) names BPMN 2.0.2 Clause 8.4.2, Clause 9, and the applicable correlation, Collaboration, Process, Message, Event, and data-mediation tables as semantic authority. Relationships `CIB-AGR-0001` and `CIB-OP-0001` govern only the reused User Task boundary, while `CIB-LIM-0002` records that pinned CIB Seven does not execute the modeled key and context paths. This profile selects no CIB execution target.
+
+The public publication supplies one complete content-bound semantic-definition address and one non-empty String payload. It supplies no Process instance, Workflow, subscription, locator, or selected target. Zero matches and more than one match are semantic refusals with exact Process-state preservation; candidate order never chooses a winner, and equal local ids in a second source definition remain isolated by the complete definition identity.
+
+The exact source shape, scalar-path language, required and excluded meaning, Temporal hosting boundary, evidence obligations, and reopen conditions belong to the [Message key correlation proposal](../../docs/capsules/MESSAGE-KEY-CORRELATION-PROPOSAL.md). Status remains `draft`; this profile makes no claim about composite, empty, null, non-String, wildcard, or mutable-context keys; other Message loci; buffering, broadcast, Message Flow execution, CIB correlation behavior, Product 2 routing, production history compatibility, or BPMN Process Execution Conformance.

@@ -24,17 +24,29 @@ import { setTimeout as hostDelay } from "node:timers/promises";
 
 import {
   CommandOutcome,
+  CorrelatedMessageInteractionKind,
   ProcessStatus,
   StimulusKind,
+  sameCorrelatedMessageAddress,
   sameMessageChannel,
 } from "@bpmn-lean/semantic-core";
 import type {
   CancelIncidentProcessStimulus,
   CompleteUserTaskInstanceStimulus,
+  CorrelatedMessageAddress,
   DeepReadonly,
   EnabledInteraction,
   StateObservation,
+  VariableValue,
 } from "@bpmn-lean/semantic-core";
+
+import {
+  EngineCorrelatedMessagePublishResolutionKind,
+  EngineCorrelatedMessageSemanticOutcomeKind,
+} from "@bpmn-lean/engine-api";
+import type {
+  EngineCorrelatedMessagePublishResolution,
+} from "@bpmn-lean/engine-api";
 
 import {
   ProcessCommandResultKind,
@@ -58,10 +70,23 @@ export type HostInteractionPort = Readonly<{
   submitMessage: (
     stimulus: MessageDeliveryStimulus,
   ) => Promise<ProcessCommandResult>;
+  publishCorrelated: (
+    publication: HostCorrelatedMessagePublication,
+  ) => Promise<EngineCorrelatedMessagePublishResolution>;
   submitCancellation: (
     stimulus: CancelIncidentProcessStimulus,
   ) => Promise<ProcessCommandResult>;
 }>;
+
+export type HostCorrelatedMessagePublication = DeepReadonly<{
+  commandId: string;
+  address: CorrelatedMessageAddress;
+  payload: Extract<VariableValue, { kind: "string" }>;
+}>;
+
+export type HostInteractionResolution =
+  | ProcessCommandResult
+  | EngineCorrelatedMessagePublishResolution;
 
 export const HostInteractionEventKind = {
   StateObserved: "stateObserved",
@@ -92,7 +117,7 @@ export type HostInteractionEvent = DeepReadonly<
     }
   | {
       kind: typeof HostInteractionEventKind.InteractionResolved;
-      result: ProcessCommandResult;
+      result: HostInteractionResolution;
     }
   | {
       kind: typeof HostInteractionEventKind.HostWaitObserved;
@@ -128,7 +153,7 @@ export type HostInteractionResult = DeepReadonly<
       kind: typeof HostInteractionResultKind.Refused;
       code: HostInteractionRefusalCode;
       evidence: string;
-      result?: ProcessCommandResult;
+      result?: HostInteractionResolution;
     }
 >;
 
@@ -283,6 +308,10 @@ function answersInteraction(
     case StimulusKind.DeliverPayloadMessage:
       return interaction.kind === StimulusKind.DeliverPayloadMessage &&
         sameMessageChannel(interaction.channel, response.channel);
+    case CorrelatedMessageInteractionKind.PublishCorrelatedPayloadMessage:
+      return interaction.kind ===
+          CorrelatedMessageInteractionKind.PublishCorrelatedPayloadMessage &&
+        sameCorrelatedMessageAddress(interaction.address, response.address);
     case StimulusKind.CancelIncidentProcess:
       return interaction.kind === StimulusKind.CancelIncidentProcess;
     default:
@@ -354,7 +383,19 @@ async function submitAnswer(
   interaction: EnabledInteraction,
   response: HostInteractionResponse,
   port: HostInteractionPort,
-): Promise<ProcessCommandResult> {
+): Promise<HostInteractionResolution> {
+  if (
+    interaction.kind ===
+      CorrelatedMessageInteractionKind.PublishCorrelatedPayloadMessage &&
+    response.kind ===
+      CorrelatedMessageInteractionKind.PublishCorrelatedPayloadMessage
+  ) {
+    return port.publishCorrelated({
+      commandId: response.commandId,
+      address: interaction.address,
+      payload: response.payload,
+    });
+  }
   if (
     interaction.kind === StimulusKind.CompleteUserTaskInstance &&
     response.kind === StimulusKind.CompleteUserTaskInstance
@@ -409,7 +450,12 @@ async function submitAnswer(
   );
 }
 
-function isCommitted(result: ProcessCommandResult): boolean {
+function isCommitted(result: HostInteractionResolution): boolean {
+  if ("ingressOrdinal" in result) {
+    return result.kind === EngineCorrelatedMessagePublishResolutionKind.Semantic &&
+      result.outcome.kind ===
+        EngineCorrelatedMessageSemanticOutcomeKind.Committed;
+  }
   return result.kind === ProcessCommandResultKind.Semantic &&
     result.outcome === CommandOutcome.Committed;
 }

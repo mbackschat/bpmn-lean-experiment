@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "@bpmn-lean/bpmn-source": "workspace:*",
+    "@bpmn-lean/engine-api": "workspace:*",
     "@bpmn-lean/semantic-core": "workspace:*",
     "@bpmn-lean/temporal-client": "workspace:*",
     "@bpmn-lean/temporal-protocol": "workspace:*",

@@ -24,5 +24,9 @@ name = "emitSemanticProcessResults"
 root = "BpmnSemantics.SemanticProcessJsonMain"
 
 [[lean_exe]]
+name = "emitEnginePopulationResults"
+root = "BpmnSemantics.EnginePopulationScenarioJsonMain"
+
+[[lean_exe]]
 name = "emitCommittedExecutionPublication"
 root = "BpmnSemantics.CommittedExecutionPublicationJsonMain"

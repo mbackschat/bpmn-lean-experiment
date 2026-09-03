@@ -9,8 +9,10 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  CorrelatedMessageInteractionKind,
   EffectExecutionResultKind,
   MessageChannelKind,
+  SemanticProcessCompilerId,
   StimulusKind,
   VariableValueKind,
 } from "@bpmn-lean/semantic-core";
@@ -46,6 +48,30 @@ const cancellation = {
   delayMs: 250,
 } as const;
 
+const publication = {
+  kind: CorrelatedMessageInteractionKind.PublishCorrelatedPayloadMessage,
+  commandId: "publish-settlement-confirmation",
+  address: {
+    definition: {
+      compiler: SemanticProcessCompilerId.BpmnSourceSemanticProcess,
+      semanticProfile: "bpmn-2.0.2-message-key-correlation-draft",
+      sourceId: "settlement-confirmation",
+      sourceSha256: "a".repeat(64),
+      sourceOverlay: null,
+    },
+    processId: "Process_SettlementConfirmation",
+    channel: {
+      kind: MessageChannelKind.OperationMessage,
+      interfaceId: "Interface_Settlement",
+      interfaceOperationId: "Operation_ConfirmSettlement",
+      messageId: "Message_SettlementConfirmed",
+    },
+    correlationKeyId: "CorrelationKey_Settlement",
+  },
+  payload: { kind: VariableValueKind.String, value: "settlement-123" },
+  delayMs: 1,
+} as const;
+
 const handler = {
   protocol: "activity",
   operation: "probe",
@@ -59,7 +85,14 @@ test("accepts an empty plan, which a pure timer model requires", () => {
 
 test("accepts every canonical response variant together", () => {
   assert.doesNotThrow(() =>
-    validateHostInteractionPlan([completion, delivery, cancellation])
+    validateHostInteractionPlan([completion, delivery, publication, cancellation])
+  );
+});
+
+test("keeps a correlated publication target out of runnable configuration", () => {
+  assert.throws(
+    () => validateHostInteractionPlan([{ ...publication, target: "invented" }]),
+    /unknown field target/u,
   );
 });
 

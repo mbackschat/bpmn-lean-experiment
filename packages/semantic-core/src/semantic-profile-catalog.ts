@@ -39,6 +39,8 @@ export const SemanticProfileId = Object.freeze({
     "bpmn-2.0.2-intermediate-catch-message-draft",
   MessagePayloadCatch:
     "bpmn-2.0.2-message-payload-catch-draft",
+  MessageKeyCorrelation:
+    "bpmn-2.0.2-message-key-correlation-draft",
   MessageAddressedReceiveTask:
     "cibseven-2.2.0-message-addressed-receive-task-draft",
   NonInterruptingBoundaryTimer:
@@ -69,9 +71,9 @@ export const SemanticProfileId = Object.freeze({
     "bpmn-2.0.2-bpmn-lean-structured-human-work-draft",
 } as const);
 
-/** Admission-only identity held outside the product registry until its host lane is reviewed. */
+/** Transition alias retained while correlation closure lanes migrate to the registered catalog member. */
 export const MESSAGE_KEY_CORRELATION_CHECKPOINT_PROFILE_ID =
-  "bpmn-2.0.2-message-key-correlation-draft" as const;
+  SemanticProfileId.MessageKeyCorrelation;
 
 /** Admission-only identity held outside the product registry until live Compensation hosting is reviewed. */
 export const COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID =

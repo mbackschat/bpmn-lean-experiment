@@ -1,0 +1,134 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bpmn-lean.local/schemas/engine-population-scenario.schema.json",
+  "title": "BPMN Lean engine-population scenario",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "kind",
+    "id",
+    "profile",
+    "definitions",
+    "instances",
+    "publications",
+    "observations",
+    "executionTargets",
+    "provenance"
+  ],
+  "properties": {
+    "kind": {
+      "const": "enginePopulationScenario"
+    },
+    "id": {
+      "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonEmptyString"
+    },
+    "profile": {
+      "const": "bpmn-2.0.2-message-key-correlation-draft"
+    },
+    "definitions": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 2,
+      "items": {
+        "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/bpmnResource"
+      }
+    },
+    "instances": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "definitionId",
+          "stimuli"
+        ],
+        "properties": {
+          "definitionId": {
+            "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonEmptyString"
+          },
+          "stimuli": {
+            "type": "array",
+            "minItems": 2,
+            "maxItems": 2,
+            "prefixItems": [
+              {
+                "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/startProcess"
+              },
+              {
+                "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/deliverPayloadMessage"
+              }
+            ],
+            "items": false
+          }
+        }
+      }
+    },
+    "publications": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "commandId",
+          "address",
+          "payload"
+        ],
+        "properties": {
+          "kind": {
+            "const": "publishCorrelatedPayloadMessage"
+          },
+          "commandId": {
+            "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/commandId"
+          },
+          "address": {
+            "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/correlatedMessageAddress"
+          },
+          "payload": {
+            "$ref": "#/$defs/nonemptyStringValue"
+          }
+        }
+      }
+    },
+    "observations": {
+      "const": [
+        "publicationResults",
+        "processStates",
+        "ingressOrdinals"
+      ]
+    },
+    "executionTargets": {
+      "const": {
+        "lean": true,
+        "typeScriptCore": true,
+        "temporal": true,
+        "cib": null
+      }
+    },
+    "provenance": {
+      "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/provenance"
+    }
+  },
+  "$defs": {
+    "nonemptyStringValue": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "value"
+      ],
+      "properties": {
+        "kind": {
+          "const": "string"
+        },
+        "value": {
+          "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonEmptyString"
+        }
+      }
+    }
+  }
+}

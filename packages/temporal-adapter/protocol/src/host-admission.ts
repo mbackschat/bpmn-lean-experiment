@@ -1,5 +1,6 @@
 import {
   COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID,
+  MESSAGE_KEY_CORRELATION_CHECKPOINT_PROFILE_ID,
   MessageChannelKind,
   SemanticOperationKind,
   isWellFormedSemanticProcessProgram,
@@ -147,11 +148,20 @@ const managedClasses: ReadonlyArray<ManagedHostClass> = [
   },
   {
     operationClass: HostOperationClass.CorrelatedMessageWait,
-    isAdmissibleProgramForm: () => false,
+    isAdmissibleProgramForm: (operation, program) =>
+      operation.kind === SemanticOperationKind.AwaitCorrelatedPayloadMessage &&
+      program.identity.semanticProfile ===
+        MESSAGE_KEY_CORRELATION_CHECKPOINT_PROFILE_ID &&
+      isWellFormedSemanticProcessProgram(program) &&
+      profileAllowsProgramShape(
+        program.identity.semanticProfile,
+        program.operations,
+        program.definitionScopes.length,
+      ),
     failure: {
       code: TemporalHostAdmissionFailureCode.CorrelatedMessageIngressUnavailable,
       evidence:
-        "The Temporal host does not yet provide the definition-addressed correlation ingress required by a correlated Message wait.",
+        "The Temporal host admits only one isolated correlated payload Message wait under the registered Message-key correlation profile.",
     },
   },
   {

@@ -20,6 +20,8 @@ The Message payload catch scenarios are registered in the full Lean/core/Tempora
 ./scripts/pnpm.sh run test:message-payload-lean-core
 ```
 
+Message key correlation uses a separate engine-population catalog because one answer-free publication observes two Process instances and may span two immutable definitions. Its focused catalog gate compiles every declared definition and runs the pure semantic-core population evaluator without widening the ordinary single-instance pipeline contract.
+
 ## Learn more
 
 - [Testing specification](../../docs/TESTING-SPEC.md) owns the complete pipeline, target isolation, and evidence rules.

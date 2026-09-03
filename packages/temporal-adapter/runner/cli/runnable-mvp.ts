@@ -10,6 +10,12 @@ import type {
   BpmnSourceIdentity,
 } from "@bpmn-lean/bpmn-source";
 import {
+  publishBpmnDefinitionCorrelatedMessage,
+} from "@bpmn-lean/engine-api";
+import type {
+  TemporalCorrelatedMessageClient,
+} from "@bpmn-lean/temporal-client/correlation-publication";
+import {
   CanonicalObservationKind,
   CommandOutcome,
   ProcessStatus,
@@ -301,6 +307,13 @@ export async function runRunnableTemporalMvp(
           start.instanceId,
           stimulus,
         ),
+        publishCorrelated: (publication) =>
+          publishBpmnDefinitionCorrelatedMessage({
+            temporalClient: runtime.workflowClient as unknown as
+              TemporalCorrelatedMessageClient,
+            taskQueue: config.temporal.taskQueue,
+            ...publication,
+          }),
         submitCancellation: (stimulus) =>
           submitIncidentProcessCancellation(
             runtime.workflowClient,

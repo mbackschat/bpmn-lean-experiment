@@ -1,0 +1,130 @@
+{
+  "kind": "enginePopulationScenario",
+  "id": "message-key-correlation-zero",
+  "profile": "bpmn-2.0.2-message-key-correlation-draft",
+  "definitions": [
+    {
+      "id": "message-key-correlation-process",
+      "relativePath": "scenarios/message-key-correlation/process.bpmn",
+      "sha256": "8d16faca66b00378d4ab02189cdd3270143076a46086b46dff68729d90dba086",
+      "sourceOverlay": null
+    }
+  ],
+  "instances": [
+    {
+      "definitionId": "message-key-correlation-process",
+      "stimuli": [
+        {
+          "kind": "startProcess",
+          "commandId": "start-correlation-zero-a",
+          "processId": "Process_SettlementCorrelation",
+          "instanceId": "CorrelationZeroA",
+          "initialVariables": []
+        },
+        {
+          "kind": "deliverPayloadMessage",
+          "commandId": "initialize-correlation-zero-a",
+          "subscriptionId": {
+            "processInstanceId": "CorrelationZeroA",
+            "elementId": "MessageCatch_InitialSettlement",
+            "activation": 1
+          },
+          "channel": {
+            "kind": "operationMessage",
+            "interfaceId": "Interface_ClearingHouse",
+            "interfaceOperationId": "Operation_ConfirmSettlement",
+            "messageId": "Message_SettlementConfirmed"
+          },
+          "payload": {
+            "kind": "string",
+            "value": "settlement-42"
+          }
+        }
+      ]
+    },
+    {
+      "definitionId": "message-key-correlation-process",
+      "stimuli": [
+        {
+          "kind": "startProcess",
+          "commandId": "start-correlation-zero-b",
+          "processId": "Process_SettlementCorrelation",
+          "instanceId": "CorrelationZeroB",
+          "initialVariables": []
+        },
+        {
+          "kind": "deliverPayloadMessage",
+          "commandId": "initialize-correlation-zero-b",
+          "subscriptionId": {
+            "processInstanceId": "CorrelationZeroB",
+            "elementId": "MessageCatch_InitialSettlement",
+            "activation": 1
+          },
+          "channel": {
+            "kind": "operationMessage",
+            "interfaceId": "Interface_ClearingHouse",
+            "interfaceOperationId": "Operation_ConfirmSettlement",
+            "messageId": "Message_SettlementConfirmed"
+          },
+          "payload": {
+            "kind": "string",
+            "value": "settlement-99"
+          }
+        }
+      ]
+    }
+  ],
+  "publications": [
+    {
+      "kind": "publishCorrelatedPayloadMessage",
+      "commandId": "publish-correlation-zero",
+      "address": {
+        "definition": {
+          "compiler": "bpmn-source-semantic-process",
+          "semanticProfile": "bpmn-2.0.2-message-key-correlation-draft",
+          "sourceOverlay": null,
+          "sourceId": "message-key-correlation-process",
+          "sourceSha256": "8d16faca66b00378d4ab02189cdd3270143076a46086b46dff68729d90dba086"
+        },
+        "processId": "Process_SettlementCorrelation",
+        "channel": {
+          "kind": "operationMessage",
+          "interfaceId": "Interface_ClearingHouse",
+          "interfaceOperationId": "Operation_ConfirmSettlement",
+          "messageId": "Message_SettlementConfirmed"
+        },
+        "correlationKeyId": "CorrelationKey_SettlementReference"
+      },
+      "payload": {
+        "kind": "string",
+        "value": "settlement-missing"
+      }
+    }
+  ],
+  "observations": [
+    "publicationResults",
+    "processStates",
+    "ingressOrdinals"
+  ],
+  "executionTargets": {
+    "lean": true,
+    "typeScriptCore": true,
+    "temporal": true,
+    "cib": null
+  },
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 8.4.2",
+      "BPMN 2.0.2 Clause 9",
+      "BPMN 2.0.2 Table 8.31",
+      "BPMN 2.0.2 Table 8.35",
+      "BPMN 2.0.2 Table 9.10",
+      "BPMN 2.0.2 Table 10.1"
+    ],
+    "cibRevision": "5a45b47ea22688d774de97277c3ff7013f54fdd2",
+    "cibRefs": [
+      "model-api/bpmn-model/src/main/java/org/cibseven/bpm/model/bpmn/Bpmn.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/runtime/DefaultCorrelationHandler.java"
+    ]
+  }
+}
