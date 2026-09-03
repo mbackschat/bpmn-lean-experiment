@@ -19,6 +19,8 @@ import {
 import {
   ConfirmedProcessInstancePublicationService,
   ConfirmedProcessInstanceState,
+  DefinitionCorrelatedMessageHttpRoutes,
+  DefinitionCorrelatedMessageService,
   DefinitionDeploymentService,
   DefinitionHttpRoutes,
   DefinitionPresentationService,
@@ -240,6 +242,11 @@ function composeSharedPlatformServer(
     confirmedInstances,
     locators: engine.processWork,
   });
+  const correlatedMessageService = new DefinitionCorrelatedMessageService({
+    repository: definitions,
+    artifacts,
+    host: engine.correlatedMessageHost,
+  });
 
   const incidentReader = new PostgresqlIncidentSnapshotReader({
     runtime: database,
@@ -323,6 +330,7 @@ function composeSharedPlatformServer(
     presentationService,
     scheduleService,
     messageStartService,
+    correlatedMessageService,
     processInstances,
     incidentSnapshot,
     incidentMutations,
@@ -355,6 +363,7 @@ type SharedRouteDependencies = Readonly<Record<string, unknown>> & Readonly<{
   presentationService: DefinitionPresentationService;
   scheduleService: DefinitionScheduleService;
   messageStartService: MessageStartPublicationService;
+  correlatedMessageService: DefinitionCorrelatedMessageService;
   processInstances: ProcessInstanceSearchService;
   incidentSnapshot: PostgresqlIncidentSnapshotService;
   incidentMutations: IncidentMutationService;
@@ -389,6 +398,9 @@ function createSharedRoutes(dependencies: SharedRouteDependencies) {
   );
   const messageStartRoutes = new MessageStartPublicationHttpRoutes(
     dependencies.messageStartService,
+  );
+  const correlatedMessageRoutes = new DefinitionCorrelatedMessageHttpRoutes(
+    dependencies.correlatedMessageService,
   );
   const processRoutes = new ProcessInstanceHttpRoutes(dependencies.processInstances);
   const executionRoutes = new ExecutionPublicationHttpRoutes({
@@ -478,6 +490,7 @@ function createSharedRoutes(dependencies: SharedRouteDependencies) {
     (request: Request) => metricsRoutes.handle(request),
     (request: Request) => processRoutes.handle(request),
     (request: Request) => messageStartRoutes.handle(request),
+    (request: Request) => correlatedMessageRoutes.handle(request),
     (request: Request) => scheduleRoutes.handle(request),
     (request: Request) => definitionRoutes.handle(request),
     ...(config.webAssetDirectory === null

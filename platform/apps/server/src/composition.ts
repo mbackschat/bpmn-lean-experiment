@@ -24,6 +24,8 @@ import {
   ConfirmedProcessInstanceOperateBootstrap,
   ConfirmedProcessInstancePublicationService,
   ConfirmedProcessInstanceState,
+  DefinitionCorrelatedMessageHttpRoutes,
+  DefinitionCorrelatedMessageService,
   DefinitionDeploymentService,
   DefinitionHttpRoutes,
   DefinitionScheduleHttpRoutes,
@@ -316,6 +318,11 @@ async function createLocalPlatformServer(
       locators: engineRuntime.processWork,
     });
     await publicationService.reconcileAll();
+    const correlatedMessageService = new DefinitionCorrelatedMessageService({
+      repository,
+      artifacts,
+      host: engineRuntime.correlatedMessageHost,
+    });
     const definitionRoutes = new DefinitionHttpRoutes(
       service,
       startService,
@@ -328,6 +335,9 @@ async function createLocalPlatformServer(
     );
     const publicationRoutes = new MessageStartPublicationHttpRoutes(
       publicationService,
+    );
+    const correlatedMessageRoutes = new DefinitionCorrelatedMessageHttpRoutes(
+      correlatedMessageService,
     );
     const processInstanceRoutes = new ProcessInstanceHttpRoutes(
       processInstances,
@@ -437,6 +447,7 @@ async function createLocalPlatformServer(
         (request) => flowNodeMetricsRoutes.handle(request),
         (request) => processInstanceRoutes.handle(request),
         (request) => publicationRoutes.handle(request),
+        (request) => correlatedMessageRoutes.handle(request),
         (request) => scheduleRoutes.handle(request),
         (request) => definitionRoutes.handle(request),
         ...(snapshot.webAssetDirectory === null

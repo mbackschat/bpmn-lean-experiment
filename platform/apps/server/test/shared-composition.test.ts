@@ -64,6 +64,9 @@ test("shared composition contains no local owner, startup scan, or request-time 
     "PostgresqlExecutionProjectionReader",
     "PostgresqlFlowNodeMetricsReader",
     "IncidentMutationDeliveryMode.BackgroundRecovery",
+    "DefinitionCorrelatedMessageService",
+    "DefinitionCorrelatedMessageHttpRoutes",
+    "engine.correlatedMessageHost",
   ]) {
     assert.equal(source.includes(required), true, required);
   }
