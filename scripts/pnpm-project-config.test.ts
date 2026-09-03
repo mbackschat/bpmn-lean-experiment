@@ -1,9 +1,11 @@
 import assert from "node:assert/strict";
-import { chmod, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { chmod, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import { isBuiltin } from "node:module";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
+import { typeScriptModuleSpecifiersFromSource } from "./platform-product-boundary.ts";
 import { runCommand } from "./run-command.ts";
 
 const projectRoot = fileURLToPath(new URL("..", import.meta.url));
@@ -42,7 +44,11 @@ type WorkspacePackage = Readonly<{
 }>;
 
 type PackageManifest = Readonly<{
+  dependencies?: Readonly<Record<string, string>>;
+  devDependencies?: Readonly<Record<string, string>>;
   files?: ReadonlyArray<string>;
+  optionalDependencies?: Readonly<Record<string, string>>;
+  peerDependencies?: Readonly<Record<string, string>>;
   scripts?: Readonly<Record<string, string>>;
 }>;
 
@@ -130,6 +136,46 @@ test("derives workspace build order from package manifests", async () => {
   }
 });
 
+test("declares every direct package import in its owning workspace manifest", async () => {
+  const packages = JSON.parse(await runPnpm(
+    ["list", "--recursive", "--depth", "-1", "--json"],
+    pnpmEnvironment("true"),
+  )) as ReadonlyArray<WorkspacePackage>;
+  const findings: string[] = [];
+
+  for (const workspacePackage of packages) {
+    if (path.resolve(workspacePackage.path) === path.resolve(projectRoot)) continue;
+    const manifest = JSON.parse(await readFile(
+      path.join(workspacePackage.path, "package.json"),
+      "utf8",
+    )) as PackageManifest;
+    const declared = new Set([
+      workspacePackage.name,
+      ...Object.keys(manifest.dependencies ?? {}),
+      ...Object.keys(manifest.devDependencies ?? {}),
+      ...Object.keys(manifest.optionalDependencies ?? {}),
+      ...Object.keys(manifest.peerDependencies ?? {}),
+    ]);
+    for (const sourcePath of await typeScriptSources(workspacePackage.path)) {
+      const source = await readFile(sourcePath, "utf8");
+      for (const specifier of new Set(typeScriptModuleSpecifiersFromSource(source))) {
+        const importedPackage = importedPackageName(specifier);
+        if (
+          importedPackage !== null &&
+          !isBuiltin(specifier) &&
+          !declared.has(importedPackage)
+        ) {
+          findings.push(
+            `${path.relative(projectRoot, sourcePath)}: ${importedPackage} is not declared by ${workspacePackage.name}`,
+          );
+        }
+      }
+    }
+  }
+
+  assert.deepEqual(findings.sort(), []);
+});
+
 test("disables pnpm CLI self-switching for version discovery and dispatch", async (context) => {
   // The stub must satisfy the wrapper's exact version check, so it answers with the
   // pin resolved from package.json rather than a literal that a bump would strand.
@@ -176,3 +222,24 @@ printf 'dispatched:%s\\n' "$*"
     "dispatched:config get sentinel",
   );
 });
+
+async function typeScriptSources(directory: string): Promise<ReadonlyArray<string>> {
+  const entries = await readdir(directory, { withFileTypes: true });
+  const nested = await Promise.all(entries.map(async (entry) => {
+    if (entry.name === "dist" || entry.name === "node_modules") return [];
+    const entryPath = path.join(directory, entry.name);
+    if (entry.isDirectory()) return typeScriptSources(entryPath);
+    return entry.isFile() && /\.(?:cts|mts|tsx?)$/u.test(entry.name)
+      ? [entryPath]
+      : [];
+  }));
+  return nested.flat();
+}
+
+function importedPackageName(specifier: string): string | null {
+  if (specifier.startsWith(".") || specifier.startsWith("/")) return null;
+  const segments = specifier.split("/");
+  return specifier.startsWith("@")
+    ? segments.length >= 2 ? `${segments[0]}/${segments[1]}` : specifier
+    : segments[0] ?? null;
+}

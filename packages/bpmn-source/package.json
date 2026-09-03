@@ -20,5 +20,9 @@
   "dependencies": {
     "@bpmn-lean/semantic-core": "workspace:*",
     "bpmn-moddle": "10.0.0"
+  },
+  "devDependencies": {
+    "ajv": "8.20.0",
+    "typescript": "7.0.2"
   }
 }
