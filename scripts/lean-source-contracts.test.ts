@@ -1,10 +1,14 @@
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
 import {
   existsSync,
+  mkdtempSync,
   readFileSync,
+  rmSync,
   unlinkSync,
   writeFileSync,
 } from "node:fs";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
@@ -440,8 +444,10 @@ theorem after_literals : True := by trivial
   assert.equal(analysis.moduleDocuments.length, 1);
 });
 
-test("a worktree scan survives a source deleted between enumeration and read", () => {
-  const vanished = ".worktree-source-read-vanishing-probe.lean";
+test("a worktree scan survives a source deleted between enumeration and read", (context) => {
+  const directory = mkdtempSync(path.join(tmpdir(), "bpmn-lean-vanishing-source-"));
+  context.after(() => rmSync(directory, { force: true, recursive: true }));
+  const vanished = path.join(directory, "vanishing-probe.lean");
   assert.equal(existsSync(vanished), false);
 
   // The enumerate-then-read split is what makes this reachable: guards list paths in one step and
@@ -462,15 +468,18 @@ test("a worktree scan survives a source deleted between enumeration and read", (
   assert.deepEqual(readWorktreeSources([vanished]), []);
 });
 
-test("maintained Lean discovery includes a non-ignored pending source", () => {
-  const pendingSource = ".lean-source-contract-pending-probe.lean";
-  assert.equal(existsSync(pendingSource), false);
-  writeFileSync(pendingSource, "/-! Pending contract. -/\n", "utf8");
-  try {
-    assert.equal(worktreeLeanSourceFiles().includes(pendingSource), true);
-  } finally {
-    unlinkSync(pendingSource);
-  }
+test("maintained Lean discovery includes a non-ignored pending source", (context) => {
+  const worktree = mkdtempSync(path.join(tmpdir(), "bpmn-lean-pending-source-"));
+  context.after(() => rmSync(worktree, { force: true, recursive: true }));
+  execFileSync("git", ["init", "--quiet"], { cwd: worktree });
+  const pendingSource = "pending-probe.lean";
+  writeFileSync(
+    path.join(worktree, pendingSource),
+    "/-! Pending contract. -/\n",
+    "utf8",
+  );
+
+  assert.equal(worktreeLeanSourceFiles(worktree).includes(pendingSource), true);
 });
 
 test("a ratio-discriminating sparse module remains valid", () => {

@@ -4,10 +4,13 @@ import {
 } from "node:child_process";
 import {
   existsSync,
+  mkdtempSync,
   readFileSync,
-  unlinkSync,
+  rmSync,
   writeFileSync,
 } from "node:fs";
+import { tmpdir } from "node:os";
+import { join, relative, resolve } from "node:path";
 import { readWorktreeSource, readWorktreeSources } from "./worktree-source-read.ts";
 import test from "node:test";
 
@@ -48,20 +51,23 @@ test("the source-hygiene thresholds match the owner-approved limits", () => {
   assert.equal(hardCeiling, 1_200);
 });
 
-function worktreeSourceFiles(): string[] {
+function worktreeSourceFiles(worktree = "."): string[] {
   const paths = execFileSync(
     "git",
     ["ls-files", "--cached", "--others", "--exclude-standard"],
-    { encoding: "utf8" },
+    { cwd: worktree, encoding: "utf8" },
   ).split("\n");
-  return presentSourceFiles(paths);
+  return presentSourceFiles(paths, worktree);
 }
 
-function presentSourceFiles(paths: ReadonlyArray<string>): string[] {
+function presentSourceFiles(
+  paths: ReadonlyArray<string>,
+  worktree = ".",
+): string[] {
   return paths
     .filter(isHandWrittenSourcePath)
     .filter((path) => !path.includes("/dist/"))
-    .filter((path) => existsSync(path));
+    .filter((path) => existsSync(resolve(worktree, path)));
 }
 
 /**
@@ -205,19 +211,14 @@ test("binds large-source exceptions to the owner-approved baseline", () => {
   );
 });
 
-test("source enumeration includes non-ignored files before commit", () => {
-  const pendingSource = ".source-hygiene-pending-probe.tsx";
-  assert.equal(
-    existsSync(pendingSource),
-    false,
-    `${pendingSource} is reserved for the source-hygiene self-test`,
-  );
-  writeFileSync(pendingSource, "export {};\n", "utf8");
-  try {
-    assert.equal(worktreeSourceFiles().includes(pendingSource), true);
-  } finally {
-    unlinkSync(pendingSource);
-  }
+test("source enumeration includes non-ignored files before commit", (context) => {
+  const worktree = mkdtempSync(join(tmpdir(), "bpmn-lean-source-hygiene-"));
+  context.after(() => rmSync(worktree, { force: true, recursive: true }));
+  execFileSync("git", ["init", "--quiet"], { cwd: worktree });
+  const pendingSource = "pending-probe.tsx";
+  writeFileSync(join(worktree, pendingSource), "export {};\n", "utf8");
+
+  assert.equal(worktreeSourceFiles(worktree).includes(pendingSource), true);
 });
 
 test("source enumeration excludes files deleted from the worktree", () => {
@@ -278,49 +279,45 @@ test("Lean umbrellas reject executable declarations", () => {
   );
 });
 
-test("direct TypeScript rejects syntax that Node cannot erase", () => {
-  const pendingSource = ".erasable-syntax-pending-probe.ts";
-  assert.equal(existsSync(pendingSource), false);
+test("direct TypeScript rejects syntax that Node cannot erase", (context) => {
+  const directory = mkdtempSync(join(tmpdir(), "bpmn-lean-erasable-syntax-"));
+  context.after(() => rmSync(directory, { force: true, recursive: true }));
+  const pendingSource = join(directory, "pending-probe.ts");
   writeFileSync(
     pendingSource,
     "enum InvalidDirectSyntax { Value = 'value' }\n",
     "utf8",
   );
-  try {
-    assert.deepEqual(
-      erasableSyntaxDiagnostics([pendingSource]),
-      [
-        `${pendingSource}(1,6): error TS1294: This syntax is not allowed when 'erasableSyntaxOnly' is enabled.`,
-      ],
-    );
-  } finally {
-    unlinkSync(pendingSource);
-  }
+
+  assert.deepEqual(
+    erasableSyntaxDiagnostics([pendingSource]),
+    [
+      `${relative(process.cwd(), pendingSource)}(1,6): error TS1294: This syntax is not allowed when 'erasableSyntaxOnly' is enabled.`,
+    ],
+  );
 });
 
-test("direct TypeScript syntax rejection is color-independent", () => {
-  const pendingSource = ".erasable-syntax-color-pending-probe.ts";
+test("direct TypeScript syntax rejection is color-independent", (context) => {
+  const directory = mkdtempSync(join(tmpdir(), "bpmn-lean-erasable-color-"));
+  context.after(() => rmSync(directory, { force: true, recursive: true }));
+  const pendingSource = join(directory, "pending-probe.ts");
   const colorEnvironment: NodeJS.ProcessEnv = {
     ...process.env,
     FORCE_COLOR: "3",
   };
   delete colorEnvironment.NO_COLOR;
-  assert.equal(existsSync(pendingSource), false);
   writeFileSync(
     pendingSource,
     "enum InvalidDirectSyntax { Value = 'value' }\n",
     "utf8",
   );
-  try {
-    assert.deepEqual(
-      erasableSyntaxDiagnostics([pendingSource], colorEnvironment),
-      [
-        `${pendingSource}(1,6): error TS1294: This syntax is not allowed when 'erasableSyntaxOnly' is enabled.`,
-      ],
-    );
-  } finally {
-    unlinkSync(pendingSource);
-  }
+
+  assert.deepEqual(
+    erasableSyntaxDiagnostics([pendingSource], colorEnvironment),
+    [
+      `${relative(process.cwd(), pendingSource)}(1,6): error TS1294: This syntax is not allowed when 'erasableSyntaxOnly' is enabled.`,
+    ],
+  );
 });
 
 test("the build-output policy separates static specifiers from runtime paths", () => {

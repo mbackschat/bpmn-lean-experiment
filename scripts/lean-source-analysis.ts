@@ -1,5 +1,6 @@
 import { execFileSync } from "node:child_process";
 import { existsSync } from "node:fs";
+import { join } from "node:path";
 
 export type LeanModuleDocument = Readonly<{
   offset: number;
@@ -166,13 +167,13 @@ export function analyzeLeanSource(source: string): LeanSourceAnalysis {
 }
 
 /** Tracked and non-ignored pending Lean sources that still exist in the worktree. */
-export function worktreeLeanSourceFiles(): string[] {
+export function worktreeLeanSourceFiles(worktree = "."): string[] {
   return execFileSync(
     "git",
     ["ls-files", "--cached", "--others", "--exclude-standard"],
-    { encoding: "utf8" },
+    { cwd: worktree, encoding: "utf8" },
   )
     .split("\n")
     .filter((sourcePath) => sourcePath.endsWith(".lean"))
-    .filter((sourcePath) => existsSync(sourcePath));
+    .filter((sourcePath) => existsSync(join(worktree, sourcePath)));
 }
