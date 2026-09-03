@@ -661,5 +661,5 @@ function compareProductionInventoryEntry(
   left: Readonly<{ owner: string }>,
   right: Readonly<{ owner: string }>,
 ): number {
-  return left.owner.localeCompare(right.owner, "en");
+  return left.owner < right.owner ? -1 : left.owner > right.owner ? 1 : 0;
 }
