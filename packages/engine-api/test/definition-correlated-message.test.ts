@@ -102,6 +102,11 @@ test("keeps Process locators and Temporal identity out of the public declaration
     ) ?? [],
     [],
   );
+  assert.match(declaration, /target: null;/u);
+  assert.doesNotMatch(
+    declaration,
+    /target: EngineCorrelatedMessageTarget \| null;/u,
+  );
 });
 
 function fakeClient(

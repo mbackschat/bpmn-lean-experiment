@@ -99,10 +99,9 @@ export type TemporalCorrelatedMessagePublishResolution =
         | "candidateFanout"
         | "targetDelivery"
         | "resultRecovery";
-      target: CorrelationPublicationTarget | null;
+      target: null;
       failure:
         | { kind: "unconfirmed" }
-        | { kind: "targetInconsistent" }
         | {
             kind: "capacity";
             boundary:
@@ -118,6 +117,15 @@ export type TemporalCorrelatedMessagePublishResolution =
             configuredBound: number;
             observedValue: number;
           };
+    }>
+  | DeepReadonly<{
+      kind: TemporalCorrelatedMessagePublishResolutionKind.InfrastructureIndeterminate;
+      commandId: string;
+      address: CorrelatedMessageAddress;
+      ingressOrdinal: number | null;
+      phase: "targetDelivery";
+      target: CorrelationPublicationTarget;
+      failure: { kind: "targetInconsistent" };
     }>;
 
 export class BpmnCorrelatedMessageIngressInvalid extends Error {
@@ -142,13 +150,13 @@ export async function publishTemporalCorrelatedMessage(
     taskQueue,
   });
   if (ensured.kind === CorrelationIngressEnsureResultKind.Unavailable) {
-    return indeterminate(command, "ingressResolution", null, null);
+    return indeterminate(command, "ingressResolution", null);
   }
 
   const handle = workflowClientOf(client).getHandle(ensured.workflowId);
   const initial = await queryStatus(handle, command, deadline);
   if (initial === null) {
-    return indeterminate(command, "resultRecovery", null, null);
+    return indeterminate(command, "resultRecovery", null);
   }
   if (initial.kind === CorrelationPublicationStatusKind.IdentityConflict) {
     throw identityConflict(command.commandId);
@@ -182,32 +190,30 @@ export async function publishTemporalCorrelatedMessage(
     if (recovered?.kind === CorrelationPublicationStatusKind.Accepted) {
       return resolveAccepted(handle, command, recovered.record, deadline);
     }
-    return indeterminate(command, "resultRecovery", null, null);
+    return indeterminate(command, "resultRecovery", null);
   }
 
   let acceptedAdmission;
   try {
     acceptedAdmission = requireCorrelationPublicationAdmissionResult(admission);
   } catch {
-    return indeterminate(command, "resultRecovery", null, null);
+    return indeterminate(command, "resultRecovery", null);
   }
   if (acceptedAdmission.commandId !== command.commandId) {
-    return indeterminate(command, "resultRecovery", null, null);
+    return indeterminate(command, "resultRecovery", null);
   }
   switch (acceptedAdmission.kind) {
     case CorrelationPublicationAdmissionResultKind.AddressQuarantined:
-      return indeterminate(
+      return targetInconsistent(
         command,
-        "targetDelivery",
         null,
         acceptedAdmission.target,
-        { kind: "targetInconsistent" },
       );
     case CorrelationPublicationAdmissionResultKind.Admitted:
     case CorrelationPublicationAdmissionResultKind.Retained:
       if (acceptedAdmission.contentSha256 !==
         correlationPublicationContentSha256(command)) {
-        return indeterminate(command, "resultRecovery", null, null);
+        return indeterminate(command, "resultRecovery", null);
       }
       return pollAccepted(
         handle,
@@ -226,13 +232,13 @@ async function resolveAccepted(
   deadline: number,
 ): Promise<TemporalCorrelatedMessagePublishResolution> {
   if (!recordMatches(command, record)) {
-    return indeterminate(command, "resultRecovery", null, null);
+    return indeterminate(command, "resultRecovery", null);
   }
   if (record.phase !== CorrelationPublicationLedgerPhase.Settled) {
     return pollAccepted(handle, command, record.ordinal, record.target, deadline);
   }
   if (record.ordinal === null || record.resolution === null) {
-    return indeterminate(command, "resultRecovery", null, null);
+    return indeterminate(command, "resultRecovery", null);
   }
   switch (record.resolution.kind) {
     case CorrelationPublicationStoredResolutionKind.Semantic:
@@ -244,12 +250,10 @@ async function resolveAccepted(
         outcome: record.resolution.outcome,
       };
     case CorrelationPublicationStoredResolutionKind.TargetInconsistent:
-      return indeterminate(
+      return targetInconsistent(
         command,
-        "targetDelivery",
         record.ordinal,
         record.resolution.target,
-        { kind: "targetInconsistent" },
       );
   }
 }
@@ -272,10 +276,10 @@ async function pollAccepted(
       throw identityConflict(command.commandId);
     }
     if (status === null || status.kind === CorrelationPublicationStatusKind.Absent) {
-      return indeterminate(command, "resultRecovery", ordinal, target);
+      return indeterminate(command, "resultRecovery", ordinal);
     }
     if (!recordMatches(command, status.record)) {
-      return indeterminate(command, "resultRecovery", ordinal, target);
+      return indeterminate(command, "resultRecovery", ordinal);
     }
     ordinal = status.record.ordinal;
     target = status.record.target;
@@ -285,7 +289,7 @@ async function pollAccepted(
     }
     await pollDelay(deadline);
   }
-  return indeterminate(command, phase, ordinal, target);
+  return indeterminate(command, phase, ordinal);
 }
 
 async function queryStatus(
@@ -345,7 +349,7 @@ function knownUpdateFailure(
           failure: capacity,
         };
       } catch {
-        return indeterminate(command, "resultRecovery", null, null);
+        return indeterminate(command, "resultRecovery", null);
       }
     default:
       return null;
@@ -374,10 +378,6 @@ function indeterminate(
   command: CorrelationPublicationCommand,
   phase: "ingressResolution" | "candidateFanout" | "targetDelivery" | "resultRecovery",
   ingressOrdinal: number | null,
-  target: CorrelationPublicationTarget | null,
-  failure: Readonly<{ kind: "unconfirmed" | "targetInconsistent" }> = {
-    kind: "unconfirmed",
-  },
 ): TemporalCorrelatedMessagePublishResolution {
   return {
     kind: TemporalCorrelatedMessagePublishResolutionKind.InfrastructureIndeterminate,
@@ -385,8 +385,24 @@ function indeterminate(
     address: command.address,
     ingressOrdinal,
     phase,
+    target: null,
+    failure: { kind: "unconfirmed" },
+  };
+}
+
+function targetInconsistent(
+  command: CorrelationPublicationCommand,
+  ingressOrdinal: number | null,
+  target: CorrelationPublicationTarget,
+): TemporalCorrelatedMessagePublishResolution {
+  return {
+    kind: TemporalCorrelatedMessagePublishResolutionKind.InfrastructureIndeterminate,
+    commandId: command.commandId,
+    address: command.address,
+    ingressOrdinal,
+    phase: "targetDelivery",
     target,
-    failure,
+    failure: { kind: "targetInconsistent" },
   };
 }
 

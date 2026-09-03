@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 
 import {
@@ -126,6 +127,72 @@ test("resolves an already accepted command without allocating or rematching", as
   assert.equal(calls.some(isUpdateCall), false);
 });
 
+test("keeps an unsettled retained target private when later status is unavailable", async () => {
+  for (const unavailable of [absentStatus(), { kind: "malformed" }]) {
+    const calls: unknown[] = [];
+    const result = await publishTemporalCorrelatedMessage(fakeClient(calls, {
+      statuses: [inFlightStatus(target), unavailable],
+    }), { command, taskQueue: "correlation-ingress" });
+
+    assert.deepEqual(result, {
+      kind: TemporalCorrelatedMessagePublishResolutionKind.InfrastructureIndeterminate,
+      commandId: command.commandId,
+      address,
+      ingressOrdinal: 1,
+      phase: "resultRecovery",
+      target: null,
+      failure: { kind: "unconfirmed" },
+    });
+    assert.equal(calls.some(isUpdateCall), false);
+  }
+});
+
+test("keeps an unsettled retained target private when polling reaches its deadline", async () => {
+  const calls: unknown[] = [];
+  const actualDateNow = Date.now;
+  let currentTime = 0;
+  Date.now = () => currentTime;
+  let result: Awaited<ReturnType<typeof publishTemporalCorrelatedMessage>>;
+  try {
+    result = await publishTemporalCorrelatedMessage(fakeClient(calls, {
+      statuses: [inFlightStatus(target)],
+      afterStatusQuery: () => {
+        currentTime = 5_000;
+      },
+    }), {
+      command,
+      taskQueue: "correlation-ingress",
+      deadlineMs: 5_000,
+    });
+  } finally {
+    Date.now = actualDateNow;
+  }
+
+  assert.deepEqual(result, {
+    kind: TemporalCorrelatedMessagePublishResolutionKind.InfrastructureIndeterminate,
+    commandId: command.commandId,
+    address,
+    ingressOrdinal: 1,
+    phase: "targetDelivery",
+    target: null,
+    failure: { kind: "unconfirmed" },
+  });
+  assert.equal(calls.some(isUpdateCall), false);
+});
+
+test("reserves a public infrastructure target for target inconsistency", async () => {
+  const declaration = await readFile(
+    new URL("../dist/correlation-publication-client.d.ts", import.meta.url),
+    "utf8",
+  );
+
+  assert.match(declaration, /target: null;/u);
+  assert.doesNotMatch(
+    declaration,
+    /target: CorrelationPublicationTarget \| null;/u,
+  );
+});
+
 test("keeps semantic rejection distinct from admission capacity", async () => {
   for (const outcome of [
     CorrelationPublicationSemanticOutcomeKind.RejectedNoMatch,
@@ -243,6 +310,7 @@ function fakeClient(
     statuses: unknown[];
     admission?: unknown;
     updateError?: Error;
+    afterStatusQuery?: () => void;
   }>,
 ): never {
   let statusIndex = 0;
@@ -267,6 +335,7 @@ function fakeClient(
           options.statuses.length - 1,
         )];
         statusIndex += 1;
+        options.afterStatusQuery?.();
         return result;
       },
       executeUpdate: async (name: string, updateOptions: unknown) => {

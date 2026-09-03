@@ -79,10 +79,9 @@ export type EngineCorrelatedMessagePublishResolution =
         | "candidateFanout"
         | "targetDelivery"
         | "resultRecovery";
-      target: EngineCorrelatedMessageTarget | null;
+      target: null;
       failure:
         | { kind: "unconfirmed" }
-        | { kind: "targetInconsistent" }
         | {
             kind: "capacity";
             boundary:
@@ -98,6 +97,15 @@ export type EngineCorrelatedMessagePublishResolution =
             configuredBound: number;
             observedValue: number;
           };
+    }>
+  | DeepReadonly<{
+      kind: EngineCorrelatedMessagePublishResolutionKind.InfrastructureIndeterminate;
+      commandId: string;
+      address: CorrelatedMessageAddress;
+      ingressOrdinal: number | null;
+      phase: "targetDelivery";
+      target: EngineCorrelatedMessageTarget;
+      failure: { kind: "targetInconsistent" };
     }>;
 
 /** Publishes one content-bound command without accepting a Process locator or target. */
@@ -133,15 +141,35 @@ export async function publishBpmnDefinitionCorrelatedMessage(
         failure: result.failure,
       };
     case TemporalCorrelatedMessagePublishResolutionKind.InfrastructureIndeterminate:
-      return {
-        kind: EngineCorrelatedMessagePublishResolutionKind.InfrastructureIndeterminate,
-        commandId: result.commandId,
-        address: result.address,
-        ingressOrdinal: result.ingressOrdinal,
-        phase: result.phase,
-        target: result.target,
-        failure: result.failure,
-      };
+      switch (result.failure.kind) {
+        case "targetInconsistent":
+          if (result.target === null) {
+            throw new TypeError(
+              "Target-inconsistent correlated Message result lost its target",
+            );
+          }
+          return {
+            kind: EngineCorrelatedMessagePublishResolutionKind.InfrastructureIndeterminate,
+            commandId: result.commandId,
+            address: result.address,
+            ingressOrdinal: result.ingressOrdinal,
+            phase: "targetDelivery",
+            target: result.target,
+            failure: result.failure,
+          };
+        case "unconfirmed":
+        case "capacity":
+        case "runCapacity":
+          return {
+            kind: EngineCorrelatedMessagePublishResolutionKind.InfrastructureIndeterminate,
+            commandId: result.commandId,
+            address: result.address,
+            ingressOrdinal: result.ingressOrdinal,
+            phase: result.phase,
+            target: null,
+            failure: result.failure,
+          };
+      }
   }
 }
 

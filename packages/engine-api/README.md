@@ -1,10 +1,10 @@
 # Engine API
 
-`@bpmn-lean/engine-api` is Product 1's narrow entry point for Product 2. It exposes compilation, start preparation and recovery, committed observation, scheduling, Message Start, definition-scoped correlated Message publication, human-work commands, and incident operations without exposing Semantic Process programs or Temporal SDK identities.
+`@bpmn-lean/engine-api` is Product 1's narrow entry point for Product 2. It exposes compilation, start preparation and recovery, committed observation, scheduling, Message Start, human-work commands, and incident operations without exposing Semantic Process programs or Temporal SDK identities. Its definition-scoped correlated Message operation is a candidate slice pending independent approval and complete public refinement; profile admission and Product 2 binding remain unavailable.
 
 ## What you can do
 
-Use the API from the Product 2 engine gateway to compile exact source, start an exact deployed definition, observe published engine facts, and submit content-bound commands. Process-local commands use opaque Process locators; definition-scoped correlation accepts only the complete semantic definition address and payload, then returns a closed semantic, capacity, or infrastructure result. Callers never supply a candidate locator or target and receive no Workflow handle, Run ID, Event History, or private semantic anchor.
+Use the approved API from the Product 2 engine gateway to compile exact source, start an exact deployed definition, observe published engine facts, and submit content-bound commands. Process-local commands use opaque Process locators. The candidate definition-scoped correlation operation accepts only the complete semantic definition address and payload and projects a closed semantic, capacity, or infrastructure result, but it is not yet a registered Product 1 capability or Product 2 integration. Callers never supply a candidate locator or target and receive no Workflow handle, Run ID, Event History, or private semantic anchor.
 
 ## Quick start
 

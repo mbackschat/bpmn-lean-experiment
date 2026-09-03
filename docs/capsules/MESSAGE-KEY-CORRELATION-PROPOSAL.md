@@ -132,10 +132,9 @@ type CorrelatedMessagePublishResolution =
         | "candidateFanout"
         | "targetDelivery"
         | "resultRecovery";
-      target: CorrelatedMessageTarget | null;
+      target: null;
       failure:
         | { kind: "unconfirmed" }
-        | { kind: "targetInconsistent" }
         | {
             kind: "capacity";
             boundary:
@@ -151,10 +150,19 @@ type CorrelatedMessagePublishResolution =
             configuredBound: number;
             observedValue: number;
           };
+    }>
+  | DeepReadonly<{
+      kind: "infrastructureIndeterminate";
+      commandId: string;
+      address: CorrelatedMessageAddress;
+      ingressOrdinal: number | null;
+      phase: "targetDelivery";
+      target: CorrelatedMessageTarget;
+      failure: { kind: "targetInconsistent" };
     }>;
 ```
 
-Every previously unseen, well-formed publication accepted by the ingress Update has one publication-ledger slot reserved atomically before the handler's first await and receives exactly one positive safe-integer ordinal in the main loop before candidate acquisition; every semantic result carries it. Publication-queue or publication-ledger capacity is a synchronous nonsemantic Update-validator refusal before Temporal accepts the Update, before any Workflow state is written, and before ordinal allocation. It therefore consumes neither command identity nor a ledger slot; a later call is a fresh admission attempt. If the capacity response is lost, the client returns `infrastructureIndeterminate` with a null ordinal, and querying before an exact retry distinguishes an accepted record from an unaccepted attempt. Malformed address, payload, or bounded command identity throws `BpmnCorrelatedMessageIngressInvalid` before Update submission. Reuse of one command id with different address or payload produces a different content-bound Update id; the validator compares it with the durable first record, throws nonretryable `BpmnCorrelatedMessageIdentityConflict`, allocates no new ordinal, and leaves that record unchanged. Query, Worker, Activity, transport, failed-ingress-Workflow, and client-deadline failures return `infrastructureIndeterminate`, never a semantic outcome. That arm reports the already assigned ordinal and selected target only when the private status Query has established them; exact retry continues the same retained command, ordinal, phase, and target and may later return its final semantic result. Candidate-registration capacity remains a separately typed Process-command host failure because it occurs before the global publication operation exists.
+Every previously unseen, well-formed publication accepted by the ingress Update has one publication-ledger slot reserved atomically before the handler's first await and receives exactly one positive safe-integer ordinal in the main loop before candidate acquisition; every semantic result carries it. Publication-queue or publication-ledger capacity is a synchronous nonsemantic Update-validator refusal before Temporal accepts the Update, before any Workflow state is written, and before ordinal allocation. It therefore consumes neither command identity nor a ledger slot; a later call is a fresh admission attempt. If the capacity response is lost, the client returns `infrastructureIndeterminate` with a null ordinal, and querying before an exact retry distinguishes an accepted record from an unaccepted attempt. Malformed address, payload, or bounded command identity throws `BpmnCorrelatedMessageIngressInvalid` before Update submission. Reuse of one command id with different address or payload produces a different content-bound Update id; the validator compares it with the durable first record, throws nonretryable `BpmnCorrelatedMessageIdentityConflict`, allocates no new ordinal, and leaves that record unchanged. Query, Worker, Activity, transport, failed-ingress-Workflow, and client-deadline failures return `infrastructureIndeterminate`, never a semantic outcome. That arm reports an already assigned ordinal when private status establishes it, but an unsettled selected target remains private; exact retry continues the same retained command, ordinal, phase, and target and may later return its final semantic result. Candidate-registration capacity remains a separately typed Process-command host failure because it occurs before the global publication operation exists.
 
 `failure.kind: "unconfirmed"` means the host cannot yet establish whether the retained phase completed and therefore leaves an accepted command pending. `capacity` and `runCapacity` carry the exact violated host boundary. `targetInconsistent` is terminal infrastructure resolution, requires a non-null target, and is legal only when target delivery contradicted the barrier-held fact or ingress preflight found that retained quarantine. The selected command stores it in its reserved record; a later quarantined-address preflight returns it without accepting that later command or consuming another slot. It is never a semantic result and never permission to rematch.
 
