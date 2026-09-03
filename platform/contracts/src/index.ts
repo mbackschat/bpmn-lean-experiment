@@ -1,3 +1,6 @@
+export * from "./correlated-message-publication-decoders.js";
+export * from "./correlated-message-publication-routes.js";
+export * from "./correlated-message-publications.js";
 export * from "./definition-decoders.js";
 export * from "./definition-presentation-decoders.js";
 export * from "./definition-presentation.js";

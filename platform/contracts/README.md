@@ -4,7 +4,7 @@
 
 ## What you can do
 
-Build or decode public definition, start, schedule, Message publication, Process search, human-work, incident, committed-execution, flow-node-metrics, and operator-audit requests and results. Human Work includes the exact-source-bound catalog, six-kind structured form detail, closed legacy/structured completion union, and typed validation issues. The decoders fail closed on malformed JSON, duplicate keys, unknown fields, noncanonical identities or ordering, and private host facts.
+Build or decode public definition, start, schedule, Message Start publication, definition-scoped correlated Message publication, Process search, human-work, incident, committed-execution, flow-node-metrics, and operator-audit requests and results. The correlated Message contract publishes no Process locator: a route-selected capability and one string payload produce a typed committed, no-match, ambiguous, capacity, or infrastructure-indeterminate resolution. Human Work includes the exact-source-bound catalog, six-kind structured form detail, closed legacy/structured completion union, and typed validation issues. The decoders fail closed on malformed JSON, duplicate keys, unknown fields, noncanonical identities or ordering, and private host facts.
 
 ## Quick start
 
