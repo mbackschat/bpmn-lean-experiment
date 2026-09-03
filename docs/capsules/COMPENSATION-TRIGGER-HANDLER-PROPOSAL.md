@@ -470,8 +470,8 @@ The operation census must classify trigger creation and frontier activation as o
 | [terminal receipt](../../packages/temporal-adapter/workflow/src/terminal-process-receipt.ts) | 670 | failed construction only |
 | [terminal envelope](../../packages/temporal-adapter/workflow/src/workflow-terminal-completion.ts) | 554 | failed validation only |
 | [incident query handler](../../packages/temporal-adapter/workflow/src/incident-operations-query-handler.ts) | 558 | failed terminal projection only |
-| [continuation](../../packages/temporal-adapter/protocol/src/workflow-continuation.ts) | 224 | new collections and failed refusal |
-| [Workflow loop](../../packages/temporal-adapter/workflow/src/workflow-implementation.ts) | 48 | extract frontier scheduler before integration |
+| [continuation](../../packages/temporal-adapter/protocol/src/workflow-continuation.ts) | 211 | new collections and failed refusal |
+| [Workflow loop](../../packages/temporal-adapter/workflow/src/workflow-implementation.ts) | 47 | extract frontier scheduler before integration |
 | [host readiness](../../packages/temporal-adapter/workflow/src/workflow-host-readiness.ts) | 494 | scheduler delegation only |
 | [effect host](../../packages/temporal-adapter/workflow/src/effect-execution-host.ts) | 630 | compensation result dispatch only |
 
