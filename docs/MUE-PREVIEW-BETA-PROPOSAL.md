@@ -2,8 +2,8 @@
 
 ## Status
 
-Lifecycle: draft
-Review: pending
+Lifecycle: owner-approved
+Review: approved-with-required-edits
 
 ## Decision
 
@@ -106,6 +106,6 @@ Reopen before changing the seven-item denominator or order, reclassifying an ite
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `37020ccc3f5ca58a3118b55427a87d7bb484cbfb` | `fork-turns-none` | `approve-with-required-edits` | `3f846c9101c3e86610370fd3f4fea5e53ab087a7` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-required` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
