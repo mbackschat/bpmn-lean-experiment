@@ -4,7 +4,7 @@ This is the browser application for the BPM platform. It is a static React app t
 
 ## What you can do
 
-- **Definitions:** upload BPMN XML, review admission diagnostics, inspect versions, view or download a diagram, and start an exact version.
+- **Definitions:** upload BPMN XML, review admission diagnostics, inspect versions, view or download a diagram, start an exact version, manage start triggers, and publish a target-free correlated Message with distinct unique, zero-match, ambiguous, capacity, and infrastructure outcomes.
 - **Work:** find priority-ordered tasks visible to the current actor, claim one, complete either its legacy typed field or its exact-catalog-bound structured form, choose among declared resolution actions, and inspect its Process context. An unclaimed task exposes Claim but cannot enter the completion flow.
 - **Operations:** search Process instances, inspect committed execution history and current diagram positions, view conditional MUE Preview Alpha progress from exact published Sequential Multi-Instance state, review and download the independently ordered operator audit for one confirmed instance, retry or cancel incidents, review incident audit events, and view definition-version flow-node metrics.
 - **About:** inspect the exact build version and all currently registered executable BPMN element variants, their restrictions, and their separately classified CIB Seven evidence.

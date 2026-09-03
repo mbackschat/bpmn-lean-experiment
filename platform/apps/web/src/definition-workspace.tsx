@@ -8,6 +8,8 @@ import { useState } from "react";
 import type { FormEvent } from "react";
 
 import { DefinitionDiagram } from "./definition-diagram";
+import type { CorrelatedMessageApi } from "./correlated-message-api.ts";
+import { CorrelatedMessagePanel } from "./correlated-message-panel.tsx";
 import { DefinitionSchedulePanel } from "./definition-schedule-panel";
 import { DefinitionStartPanel } from "./definition-start-panel";
 import type { DefinitionScheduleApiClient } from "./definition-schedule-api";
@@ -20,6 +22,7 @@ import styles from "./definition-workspace.module.css";
 
 export type DefinitionWorkspaceProps = Readonly<{
   api: DefinitionApiClient;
+  correlatedMessageApi: CorrelatedMessageApi;
   definitions: ReadonlyArray<DeployedDefinitionVersion>;
   deployment: DefinitionDeployResult | null;
   error: string | null;
@@ -36,6 +39,7 @@ export type DefinitionWorkspaceProps = Readonly<{
 
 export function DefinitionWorkspace({
   api,
+  correlatedMessageApi,
   definitions,
   deployment,
   error,
@@ -115,6 +119,7 @@ export function DefinitionWorkspace({
       ) : (
         <DefinitionDetails
           api={api}
+          correlatedMessageApi={correlatedMessageApi}
           definition={selected}
           messageStartPublicationApi={messageStartPublicationApi}
           metricsApi={metricsApi}
@@ -127,12 +132,14 @@ export function DefinitionWorkspace({
 
 function DefinitionDetails({
   api,
+  correlatedMessageApi,
   definition,
   messageStartPublicationApi,
   metricsApi,
   scheduleApi,
 }: Readonly<{
   api: DefinitionApiClient;
+  correlatedMessageApi: CorrelatedMessageApi;
   definition: DeployedDefinitionVersion;
   messageStartPublicationApi: MessageStartPublicationApiClient;
   metricsApi: FlowNodeMetricsApi;
@@ -163,6 +170,11 @@ function DefinitionDetails({
     label: "Triggers",
     content: (
       <div className={styles.triggerPanels}>
+        <CorrelatedMessagePanel
+          key={`correlated-message:${definition.processId}:${definition.version}`}
+          api={correlatedMessageApi}
+          definition={definition}
+        />
         <MessageStartPublicationPanel
           key={`message-publication:${definition.processId}:${definition.version}`}
           api={messageStartPublicationApi}

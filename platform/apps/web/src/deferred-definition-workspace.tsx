@@ -8,6 +8,7 @@ import type {
 } from "@bpmn-lean/platform-contracts";
 
 import { DefinitionApiClient } from "./definitions-api.ts";
+import { CorrelatedMessageApiClient } from "./correlated-message-api.ts";
 import { DefinitionScheduleApiClient } from "./definition-schedule-api.ts";
 import {
   DefinitionWorkspace,
@@ -21,6 +22,10 @@ export function DeferredDefinitionWorkspace({
   origin,
 }: DeferredDefinitionWorkspaceProps) {
   const api = useMemo(() => new DefinitionApiClient(origin), [origin]);
+  const correlatedMessageApi = useMemo(
+    () => new CorrelatedMessageApiClient(origin),
+    [origin],
+  );
   const messageStartPublicationApi = useMemo(
     () => new MessageStartPublicationApiClient(origin),
     [origin],
@@ -107,6 +112,7 @@ export function DeferredDefinitionWorkspace({
   return (
     <DefinitionWorkspace
       api={api}
+      correlatedMessageApi={correlatedMessageApi}
       definitions={definitions}
       deployment={deployment}
       error={error}
