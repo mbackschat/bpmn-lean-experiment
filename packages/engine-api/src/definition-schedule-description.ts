@@ -6,6 +6,7 @@ import type {
   TemporalDefinitionScheduleDescription,
 } from "@bpmn-lean/temporal-client/definition-schedule";
 import {
+  temporalDefinitionScheduleInitialHostInput,
   temporalDefinitionScheduleWorkflowType,
 } from "@bpmn-lean/temporal-client/definition-schedule";
 
@@ -65,7 +66,11 @@ function immutableDrift(
     action.workflowType !== temporalDefinitionScheduleWorkflowType ||
     action.taskQueue !== expected.taskQueue ||
     action.workflowId !== expected.configuredWorkflowId ||
-    !sameJsonValue(action.args, [expected.start, expected.semanticProcess]) ||
+    !sameJsonValue(action.args, [
+      expected.start,
+      expected.semanticProcess,
+      temporalDefinitionScheduleInitialHostInput(),
+    ]) ||
     !sameRetryPolicy(action.retry)
   ) {
     return "Temporal Schedule Workflow action drifted.";

@@ -112,26 +112,34 @@ export function assertWorkerAbsentHistory(history: TemporalHistory): void {
   assert.equal(historyEvents(history, "workflowTaskStartedEventAttributes").length, 0);
 }
 
-export function workflowStartArguments(history: TemporalHistory): readonly [unknown, unknown] {
+export function workflowStartArguments(
+  history: TemporalHistory,
+): readonly [unknown, unknown, unknown] {
   const started = historyEvents(history, "workflowExecutionStartedEventAttributes");
   assert.equal(started.length, 1);
   const attributes = started[0]?.attributes;
   const input = requireRecord(attributes?.input, "Workflow start input");
-  if (!Array.isArray(input.payloads) || input.payloads.length !== 2) {
-    throw new TypeError("Workflow start must retain exactly two argument payloads");
+  if (!Array.isArray(input.payloads) || input.payloads.length !== 3) {
+    throw new TypeError("production Workflow start must retain exactly three argument payloads");
   }
   return [
     decodeJsonPayload(input.payloads[0], "Workflow start stimulus"),
     decodeJsonPayload(input.payloads[1], "Workflow start semantic program"),
+    decodeJsonPayload(input.payloads[2], "Workflow start host input"),
   ];
 }
 
 export function assertCompletedMessageStartHistory(history: TemporalHistory): void {
-  assert.equal(history.events.length, 10);
+  assert.equal(history.events.length, 14);
   assert.equal(historyEvents(history, "workflowExecutionStartedEventAttributes").length, 1);
   assert.equal(historyEvents(history, "workflowExecutionCompletedEventAttributes").length, 1);
   assert.equal(historyEvents(history, "workflowExecutionUpdateAcceptedEventAttributes").length, 1);
   assert.equal(historyEvents(history, "workflowExecutionUpdateCompletedEventAttributes").length, 1);
+  assert.equal(historyEvents(history, "markerRecordedEventAttributes").length, 2);
+  assert.equal(
+    historyEvents(history, "upsertWorkflowSearchAttributesEventAttributes").length,
+    2,
+  );
   for (const attributes of [
     "workflowExecutionSignaledEventAttributes",
     "signalExternalWorkflowExecutionInitiatedEventAttributes",

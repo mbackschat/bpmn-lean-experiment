@@ -15,6 +15,7 @@ import {
   canonicalTypedTupleEncoding,
   deterministicSha256Hex,
   processWorkflowId,
+  productionBpmnWorkflowInitialHostInput,
   withDeadline,
 } from "@bpmn-lean/temporal-protocol";
 
@@ -175,7 +176,7 @@ export async function startTemporalMessageStart(
         workflowId: snapshot.workflowId,
         workflowIdReusePolicy: "REJECT_DUPLICATE",
         workflowIdConflictPolicy: "FAIL",
-        args: [snapshot.start, snapshot.semanticProcess],
+        args: [snapshot.start, snapshot.semanticProcess, snapshot.hostInput],
         memo: { [messageStartMemoKey]: preparation.intent },
       },
     ),
@@ -217,6 +218,7 @@ export async function describeTemporalMessageStart(
 type MessageStartSnapshot = Readonly<{
   start: TriggerMessageStartStimulus;
   semanticProcess: SemanticProcessProgram;
+  hostInput: ReturnType<typeof productionBpmnWorkflowInitialHostInput>;
   workflowId: string;
   taskQueue: string;
 }>;
@@ -229,6 +231,7 @@ function snapshotRequest(
   return {
     start: structuredClone(request.start),
     semanticProcess: structuredClone(request.semanticProcess),
+    hostInput: productionBpmnWorkflowInitialHostInput(),
     workflowId: request.workflowId,
     taskQueue: request.taskQueue,
   };
@@ -266,6 +269,10 @@ function deriveIntent(snapshot: MessageStartSnapshot): TemporalMessageStartInten
     "REJECT_DUPLICATE",
     "FAIL",
     "workflowRetry:absent",
+    snapshot.hostInput.protocol,
+    snapshot.hostInput.kind,
+    snapshot.hostInput.eventHistoryEventLimit,
+    snapshot.hostInput.eventHistoryByteLimit,
     semanticProcess.identity.sourceId,
     semanticProcess.identity.sourceSha256,
     semanticProcess.identity.semanticProfile,

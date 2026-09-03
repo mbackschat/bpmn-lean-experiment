@@ -18,6 +18,10 @@ import type {
 import { WorkflowNotFoundError } from "@temporalio/client";
 
 import {
+  productionBpmnWorkflowInitialHostInput,
+} from "@bpmn-lean/temporal-protocol";
+
+import {
   TemporalMessageStartDescriptionResultKind,
   TemporalMessageStartPreparationResultKind,
   TemporalMessageStartResultKind,
@@ -341,7 +345,7 @@ function assertExactStartCall(
       workflowIdConflictPolicy: "FAIL",
       hasRetry: false,
       retry: undefined,
-      args: [start, program],
+      args: [start, program, productionBpmnWorkflowInitialHostInput()],
       memo: { bpmnMessageStartIntent: intent },
     },
     "expected exact Message Start request",
@@ -369,6 +373,12 @@ function correctMemoMutations(
     mutate("wrong program", (candidate) => {
       (candidate.options.args![1] as Mutable<SemanticProcessProgram>).processId =
         "Wrong_Process";
+    }),
+    mutate("wrong host input", (candidate) => {
+      const hostInput = candidate.options.args![2] as Mutable<
+        ReturnType<typeof productionBpmnWorkflowInitialHostInput>
+      >;
+      hostInput.eventHistoryEventLimit -= 1;
     }),
     mutate("wrong retry", (candidate) => {
       candidate.options.retry = { maximumAttempts: 2 };

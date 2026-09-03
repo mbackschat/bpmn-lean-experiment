@@ -19,6 +19,7 @@ import {
   canonicalTypedTupleEncoding,
   deterministicSha256Hex,
   processWorkflowId,
+  productionBpmnWorkflowInitialHostInput,
   withDeadline,
 } from "@bpmn-lean/temporal-protocol";
 
@@ -183,6 +184,8 @@ export type TemporalDefinitionScheduleDescription = Readonly<{
 
 export const temporalDefinitionScheduleWorkflowType =
   bpmnProcessWorkflowType;
+export const temporalDefinitionScheduleInitialHostInput =
+  productionBpmnWorkflowInitialHostInput;
 
 export async function createTemporalDefinitionSchedule(
   client: TemporalDefinitionScheduleClient,
@@ -219,7 +222,11 @@ export async function createTemporalDefinitionSchedule(
           workflowType: temporalDefinitionScheduleWorkflowType,
           taskQueue: request.taskQueue,
           workflowId: request.configuredWorkflowId,
-          args: [request.start, request.semanticProcess],
+          args: [
+            request.start,
+            request.semanticProcess,
+            temporalDefinitionScheduleInitialHostInput(),
+          ],
           retry: {
             maximumAttempts: 1,
             initialInterval: 1_000,

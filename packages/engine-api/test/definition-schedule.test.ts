@@ -15,6 +15,9 @@ import {
 import type {
   EngineDefinitionScheduleBindingRequest,
 } from "@bpmn-lean/engine-api";
+import {
+  productionBpmnWorkflowInitialHostInput,
+} from "@bpmn-lean/temporal-protocol";
 
 const sourceUrl = new URL(
   "../../../scenarios/timer-start-event/process.bpmn",
@@ -78,9 +81,10 @@ test("creates the exact one-action policy for arbitrary admitted identities", as
     backoffCoefficient: 2,
     nonRetryableErrorTypes: [],
   });
-  const [start, program] = action.args as readonly [
+  const [start, program, hostInput] = action.args as readonly [
     Readonly<Record<string, unknown>>,
     Readonly<Record<string, unknown>>,
+    unknown,
   ];
   assert.deepEqual(start, {
     kind: "triggerTimerStart",
@@ -90,6 +94,7 @@ test("creates the exact one-action policy for arbitrary admitted identities", as
     startEventId,
   });
   assert.equal(program.processId, processId);
+  assert.deepEqual(hostInput, productionBpmnWorkflowInitialHostInput());
 });
 
 test("wrong stored Timer Start identity creates neither Schedule nor Workflow", async () => {

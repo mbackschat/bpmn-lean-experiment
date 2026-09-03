@@ -113,7 +113,7 @@ export async function waitForExactScheduleAction(
       assert.equal(latest.action.type, "startWorkflow");
       const actionArgs = latest.action.args;
       assert.ok(Array.isArray(actionArgs));
-      assert.equal(actionArgs.length, 2);
+      assert.equal(actionArgs.length, 3);
       return {
         hostScheduleId,
         workflowId: execution.workflowId,
@@ -180,11 +180,16 @@ export function assertWorkerAbsentHistory(history: TemporalHistory): void {
 }
 
 export function assertCompletedTimerStartHistory(history: TemporalHistory): void {
-  assert.equal(history.events.length, 10);
+  assert.equal(history.events.length, 14);
   assert.equal(historyEvents(history, "workflowExecutionStartedEventAttributes").length, 1);
   assert.equal(historyEvents(history, "workflowExecutionCompletedEventAttributes").length, 1);
   assert.equal(historyEvents(history, "workflowExecutionUpdateAcceptedEventAttributes").length, 1);
   assert.equal(historyEvents(history, "workflowExecutionUpdateCompletedEventAttributes").length, 1);
+  assert.equal(historyEvents(history, "markerRecordedEventAttributes").length, 2);
+  assert.equal(
+    historyEvents(history, "upsertWorkflowSearchAttributesEventAttributes").length,
+    2,
+  );
   assert.equal(historyEvents(history, "timerStartedEventAttributes").length, 0);
   assert.equal(historyEvents(history, "workflowExecutionSignaledEventAttributes").length, 0);
 }

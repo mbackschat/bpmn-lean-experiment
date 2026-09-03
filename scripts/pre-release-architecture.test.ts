@@ -11,6 +11,12 @@ const workflowChainPatchIdentityOwner =
   "packages/temporal-adapter/protocol/src/workflow-continuation.ts";
 const processCorrelationPatchIdentityOwner =
   "packages/temporal-adapter/protocol/src/process-correlation-registration.ts";
+const productionProcessStartOwners = [
+  "packages/temporal-adapter/client/src/definition-schedule-client.ts",
+  "packages/temporal-adapter/client/src/definition-start-client.ts",
+  "packages/temporal-adapter/client/src/message-start-client.ts",
+  "packages/temporal-adapter/client/src/process-client.ts",
+];
 
 const temporalSourceRoots = [
   "packages/temporal-adapter/client/src",
@@ -323,4 +329,21 @@ test("keeps pre-release Temporal replay evidence and patch enrollment exact", as
     /export const bpmnProcessCorrelationRegistrationPatchId =\s+"bpmn-process-correlation-registration-v1";/u,
     "the reviewed Process-correlation patch identity must remain stable",
   );
+});
+
+test("enrolls every production Process start constructor in Workflow-chain hosting", async () => {
+  const clientSources = await sourceFiles("packages/temporal-adapter/client/src");
+  const actualOwners: string[] = [];
+  for (const relativePath of clientSources) {
+    const source = await readFile(path.join(projectRoot, relativePath), "utf8");
+    if (!source.includes("bpmnProcessWorkflowType")) {
+      continue;
+    }
+    actualOwners.push(relativePath);
+    assert.ok(
+      (source.match(/productionBpmnWorkflowInitialHostInput/gu)?.length ?? 0) >= 2,
+      `${relativePath} must construct the production Workflow-chain host input`,
+    );
+  }
+  assert.deepEqual(actualOwners.sort(), productionProcessStartOwners);
 });

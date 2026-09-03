@@ -331,7 +331,7 @@ test("M2 publishes one exact Message Start after response loss and replays", asy
         taskQueue,
         workflowId: fanoutWorkflowId,
         workflowIdReusePolicy: "REJECT_DUPLICATE",
-        args: [fanoutStimulus, versionTwoArguments[1]],
+        args: [fanoutStimulus, versionTwoArguments[1], versionTwoArguments[2]],
       }),
       operationDeadlineMs,
       "additional matching-version Workflow-start mutation",
@@ -348,7 +348,11 @@ test("M2 publishes one exact Message Start after response loss and replays", asy
       "additional matching-version Workflow history",
     ) as TemporalHistory;
     const recordedFanoutArguments = workflowStartArguments(fanoutHistory);
-    assert.deepEqual(recordedFanoutArguments, [fanoutStimulus, versionTwoArguments[1]]);
+    assert.deepEqual(recordedFanoutArguments, [
+      fanoutStimulus,
+      versionTwoArguments[1],
+      versionTwoArguments[2],
+    ]);
     assert.throws(
       () => assertNoSemanticInstanceFanout([startArguments, recordedFanoutArguments]),
       /semantic Process instance fanout/u,
@@ -362,7 +366,11 @@ test("M2 publishes one exact Message Start after response loss and replays", asy
         taskQueue,
         workflowId: directWorkflowId,
         workflowIdReusePolicy: "REJECT_DUPLICATE",
-        args: [directStartInput(startArguments[0], directPublicationId), startArguments[1]],
+        args: [
+          directStartInput(startArguments[0], directPublicationId),
+          startArguments[1],
+          startArguments[2],
+        ],
       }),
       operationDeadlineMs,
       "publication-linked direct Workflow-start mutation",
@@ -498,7 +506,7 @@ function sourceRevision(
 }
 
 function assertVersionStart(
-  args: readonly [unknown, unknown],
+  args: readonly [unknown, unknown, unknown],
   sourceSha256: string,
   interfaceOperationId: string,
 ): void {
@@ -512,7 +520,7 @@ function assertVersionStart(
 }
 
 function assertNoSemanticInstanceFanout(
-  starts: readonly (readonly [unknown, unknown])[],
+  starts: readonly (readonly [unknown, unknown, unknown])[],
 ): void {
   const instances = new Set<string>();
   for (const [stimulus] of starts) {

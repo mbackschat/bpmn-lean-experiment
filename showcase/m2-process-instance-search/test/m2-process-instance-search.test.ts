@@ -346,14 +346,15 @@ async function startOutsideProductTwo(
   assert.equal(started.length, 1);
   const attributes = started[0]?.attributes;
   const input = requireRecord(attributes?.input, "Workflow start input");
-  if (!Array.isArray(input.payloads) || input.payloads.length !== 2) {
-    throw new TypeError("Workflow start must retain exactly two argument payloads");
+  if (!Array.isArray(input.payloads) || input.payloads.length !== 3) {
+    throw new TypeError("production Workflow start must retain exactly three argument payloads");
   }
   const start = requireRecord(
     decodeJsonPayload(input.payloads[0], "Workflow start stimulus"),
     "Workflow start stimulus",
   );
   const program = decodeJsonPayload(input.payloads[1], "Workflow start semantic program");
+  const hostInput = decodeJsonPayload(input.payloads[2], "Workflow start host input");
   const before = await listWorkflowExecutions(client);
   await withDeadline(
     client.workflow.start(bpmnProcessWorkflowType, {
@@ -364,7 +365,7 @@ async function startOutsideProductTwo(
         ...start,
         commandId: `outside-product-two-command-${process.pid}`,
         instanceId: processInstanceId,
-      }, program],
+      }, program, hostInput],
     }),
     operationDeadlineMs,
     "outside-Product-2 direct Workflow start",

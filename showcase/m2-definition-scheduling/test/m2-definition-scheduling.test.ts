@@ -293,7 +293,7 @@ test("M2 schedules exact version 1, decides cancellation races, and replays", as
         taskQueue,
         workflowId: directWorkflowId,
         workflowIdReusePolicy: "REJECT_DUPLICATE",
-        args: [directInput, action.actionArgs[1]],
+        args: [directInput, action.actionArgs[1], action.actionArgs[2]],
       }),
       operationDeadlineMs,
       "direct Workflow-start mutation",
