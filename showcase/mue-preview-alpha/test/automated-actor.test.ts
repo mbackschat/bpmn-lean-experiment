@@ -242,6 +242,7 @@ function sequencedPort(states: StateObservation[], advanceHostWait = false) {
       };
     },
     submitMessage: async () => { throw new Error("Alpha actor must not submit Message stimuli"); },
+    publishCorrelated: async () => { throw new Error("Alpha actor must not publish correlated Message stimuli"); },
     submitCancellation: async () => { throw new Error("Alpha actor must not submit cancellation stimuli"); },
   };
   return { port, submitted };
@@ -260,6 +261,7 @@ function staticPort(state: StateObservation, onSubmit: () => void): HostInteract
       };
     },
     submitMessage: async () => { throw new Error("unexpected Message submission"); },
+    publishCorrelated: async () => { throw new Error("unexpected correlated Message publication"); },
     submitCancellation: async () => { throw new Error("unexpected cancellation submission"); },
   };
 }
@@ -332,7 +334,7 @@ function alphaTerminalState(
 
 function baseState(
   processInstanceId: string,
-  overrides: Partial<StateObservation>,
+  overrides: Partial<Exclude<StateObservation, { readonly status: ProcessStatus.Failed }>>,
 ): StateObservation {
   return {
     kind: CanonicalObservationKind.State,

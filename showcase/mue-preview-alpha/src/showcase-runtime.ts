@@ -204,6 +204,9 @@ export class MuePreviewAlphaShowcaseRuntime {
       submitMessage: async () => {
         throw new Error("MUE Preview Alpha actor must not submit Message stimuli");
       },
+      publishCorrelated: async () => {
+        throw new Error("MUE Preview Alpha actor must not publish correlated Message stimuli");
+      },
       submitCancellation: async () => {
         throw new Error("MUE Preview Alpha actor must not submit cancellation stimuli");
       },
