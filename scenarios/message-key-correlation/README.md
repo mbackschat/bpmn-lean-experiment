@@ -1,6 +1,6 @@
 # Message key-correlation population scenarios
 
-This directory holds the exact settlement-confirmation source and the answer-free engine-population inputs selected by the [Message key-correlation proposal](../../docs/capsules/MESSAGE-KEY-CORRELATION-PROPOSAL.md). Each Process instance starts and receives one directly addressed non-empty String payload before one definition-scoped correlated publication. The public publication contains no Process instance, Workflow, subscription, locator, selected target, expected outcome, or trace.
+This directory holds the exact settlement-confirmation source and the answer-free engine-population inputs selected by the [Message key-correlation specification](../../docs/capsules/MESSAGE-KEY-CORRELATION-SPEC.md). Each Process instance starts and receives one directly addressed non-empty String payload before one definition-scoped correlated publication. The public publication contains no Process instance, Workflow, subscription, locator, selected target, expected outcome, or trace.
 
 - [unique.population-scenario.json](unique.population-scenario.json) initializes two distinct references and publishes one of them.
 - [zero.population-scenario.json](zero.population-scenario.json) publishes a third reference absent from both instances.

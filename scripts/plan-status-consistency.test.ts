@@ -18,7 +18,7 @@ const muePreviewBetaCriticalPath = [
   ["PARALLEL-MULTI-INSTANCE", "satisfied"],
   ["MECHANISM-MATURITY-EVIDENCE", "satisfied"],
   ["DATA-AND-TASK-MECHANISMS", "satisfied"],
-  ["EVENT-SUBSCRIPTIONS", "active"],
+  ["EVENT-SUBSCRIPTIONS", "satisfied"],
   ["COMPENSATION-TRANSACTIONS", "satisfied"],
 ] as const;
 
@@ -29,8 +29,8 @@ const muePreviewBetaRiskBands = [
   ["Event Sub-Process snapshots", "satisfied"],
   ["Compensation order/cancellation", "satisfied"],
   ["Cross-Workflow durability", "satisfied"],
-  ["Capability and evidence closure", "active"],
-  ["Beta integration", "queued"],
+  ["Capability and evidence closure", "satisfied"],
+  ["Beta integration", "active"],
 ] as const;
 
 function muePreviewBetaSection(plan: string): string {
@@ -71,8 +71,9 @@ function assertMuePreviewBetaCriticalPath(plan: string): void {
     "the MUE Preview Beta table must retain all seven authoritative content IDs and their current states",
   );
   const orderedActive = parseOrderedWork(plan).find(({ state }) => state === "active");
-  assert.equal(rows.find(({ state }) => state === "active")?.id, orderedActive?.id, "the Beta path must identify the active ordered work ID");
-  assert.match(section, /^Integration state: `blocked`\.$/mu, "Beta integration must remain blocked while a content row is active or queued");
+  assert.ok(rows.every(({ state }) => state === "satisfied"), "every Beta content boundary must be satisfied before integration");
+  assert.equal(orderedActive?.id, "MUE-PREVIEW-BETA", "Beta integration must be the active ordered work after content closure");
+  assert.match(section, /^Integration state: `active`\.$/mu, "Beta integration must be active after every content row is satisfied");
 
   const riskMarker = "#### Risk-first execution bands\n";
   const riskStart = section.indexOf(riskMarker);
@@ -158,19 +159,19 @@ test("makes the complete MUE Preview Beta critical path executable", async () =>
     /Engine v0\.3 work/u,
   );
   assert.throws(
-    () => assertMuePreviewBetaCriticalPath(plan.replace("Integration state: `blocked`.", "Integration state: `ready`.")),
-    /must remain blocked/u,
+    () => assertMuePreviewBetaCriticalPath(plan.replace("Integration state: `active`.", "Integration state: `blocked`.")),
+    /must be active/u,
   );
   assert.throws(
     () => assertMuePreviewBetaCriticalPath(plan.replace(
-      "| 7 | `active` | Capability and evidence closure |",
-      "| 7 | `queued` | Capability and evidence closure |",
+      "| 8 | `active` | Beta integration |",
+      "| 8 | `queued` | Beta integration |",
     )),
     /risk-first handoff/u,
   );
   assert.throws(
     () => assertMuePreviewBetaCriticalPath(plan.replace(
-      "Risk band: Capability and evidence closure.",
+      "Risk band: Beta integration.",
       "Risk band: Cross-Workflow durability.",
     )),
     /active risk band/u,

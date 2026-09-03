@@ -76,7 +76,7 @@ export async function ensureCorrelationIngress(
       "Correlation ingress Workflow creation",
     );
   } catch {
-    // MESSAGE-KEY-CORRELATION-PROPOSAL.md § Registration and candidate-completeness barrier makes the exact Query authoritative across collision and lost-response recovery.
+    // MESSAGE-KEY-CORRELATION-SPEC.md § Registration and candidate-completeness barrier makes the exact Query authoritative across collision and lost-response recovery.
   }
 
   let observed: unknown;
