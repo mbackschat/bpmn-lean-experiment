@@ -8,6 +8,8 @@ import type {
   MessageSubscriptionId,
 } from "@bpmn-lean/semantic-core";
 import {
+  BpmnCorrelatedMessageIdentityConflict,
+  BpmnCorrelatedMessageIngressInvalid,
   TemporalCorrelatedMessagePublishResolutionKind,
   publishTemporalCorrelatedMessage,
 } from "@bpmn-lean/temporal-client/correlation-publication";
@@ -108,21 +110,46 @@ export type EngineCorrelatedMessagePublishResolution =
       failure: { kind: "targetInconsistent" };
     }>;
 
+export class EngineCorrelatedMessageIngressInvalid extends Error {
+  override readonly name = "EngineCorrelatedMessageIngressInvalid";
+}
+
+export class EngineCorrelatedMessageIdentityConflict extends Error {
+  override readonly name = "EngineCorrelatedMessageIdentityConflict";
+}
+
 /** Publishes one content-bound command without accepting a Process locator or target. */
 export async function publishBpmnDefinitionCorrelatedMessage(
   request: EngineCorrelatedMessagePublishRequest,
 ): Promise<EngineCorrelatedMessagePublishResolution> {
-  const result = await publishTemporalCorrelatedMessage(
-    request.temporalClient,
-    {
-      command: {
-        commandId: request.commandId,
-        address: request.address,
-        payload: request.payload,
+  let result;
+  try {
+    result = await publishTemporalCorrelatedMessage(
+      request.temporalClient,
+      {
+        command: {
+          commandId: request.commandId,
+          address: request.address,
+          payload: request.payload,
+        },
+        taskQueue: request.taskQueue,
       },
-      taskQueue: request.taskQueue,
-    },
-  );
+    );
+  } catch (error: unknown) {
+    if (error instanceof BpmnCorrelatedMessageIdentityConflict) {
+      throw new EngineCorrelatedMessageIdentityConflict(
+        "Correlated Message command identity conflicts with retained content",
+        { cause: error },
+      );
+    }
+    if (error instanceof BpmnCorrelatedMessageIngressInvalid) {
+      throw new EngineCorrelatedMessageIngressInvalid(
+        "Correlated Message command is invalid",
+        { cause: error },
+      );
+    }
+    throw error;
+  }
   switch (result.kind) {
     case TemporalCorrelatedMessagePublishResolutionKind.Semantic:
       return {

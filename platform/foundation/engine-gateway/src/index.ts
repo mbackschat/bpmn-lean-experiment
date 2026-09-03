@@ -40,6 +40,12 @@ import type {
   DefinitionStartCapabilities,
 } from "./definition-capabilities.js";
 import {
+  BpmnDefinitionCorrelatedMessageGateway,
+} from "./definition-correlated-message-gateway.js";
+import type {
+  BpmnDefinitionCorrelatedMessageGatewayOptions,
+} from "./definition-correlated-message-gateway.js";
+import {
   BpmnDefinitionMessageStartGateway,
 } from "./definition-message-start-gateway.js";
 import type {
@@ -291,6 +297,7 @@ export class BpmnEngineGatewayRuntime {
   readonly gateway: BpmnEngineGateway;
   readonly scheduleHost: BpmnDefinitionScheduleGateway;
   readonly messageStartHost: BpmnDefinitionMessageStartGateway;
+  readonly correlatedMessageHost: BpmnDefinitionCorrelatedMessageGateway;
   readonly processWork: BpmnProcessWorkGateway;
   readonly processOperations: BpmnProcessOperationsGateway;
   readonly processExecution: BpmnProcessExecutionPublicationGateway;
@@ -325,6 +332,13 @@ export class BpmnEngineGatewayRuntime {
       parserDeadlineMs: snapshot.parserDeadlineMs,
       temporalClient: this.#temporalRuntime.client as unknown as
         BpmnDefinitionMessageStartGatewayOptions["temporalClient"],
+      temporalTaskQueue: snapshot.temporalTaskQueue,
+    });
+    this.correlatedMessageHost = new BpmnDefinitionCorrelatedMessageGateway({
+      maxSourceBytes: snapshot.maxSourceBytes,
+      parserDeadlineMs: snapshot.parserDeadlineMs,
+      temporalClient: this.#temporalRuntime.client as unknown as
+        BpmnDefinitionCorrelatedMessageGatewayOptions["temporalClient"],
       temporalTaskQueue: snapshot.temporalTaskQueue,
     });
     this.processWork = new BpmnProcessWorkGateway(
@@ -365,6 +379,7 @@ export * from "./definition-schedule-gateway.js";
 export * from "./definition-schedule-address.js";
 export * from "./definition-capabilities.js";
 export * from "./definition-message-start-gateway.js";
+export * from "./definition-correlated-message-gateway.js";
 export * from "./message-start-publication-address.js";
 export * from "./process-work-gateway.js";
 export * from "./process-operations-gateway.js";

@@ -8,6 +8,7 @@ import {
   VariableValueKind,
 } from "@bpmn-lean/semantic-core";
 import {
+  EngineCorrelatedMessageIngressInvalid,
   EngineCorrelatedMessagePublishResolutionKind,
   publishBpmnDefinitionCorrelatedMessage,
 } from "@bpmn-lean/engine-api";
@@ -22,24 +23,25 @@ import {
   productionCorrelationIngressConfiguration,
 } from "@bpmn-lean/temporal-protocol";
 
+const address = {
+  definition: {
+    compiler: SemanticProcessCompilerId.BpmnSourceSemanticProcess,
+    semanticProfile: "message-key-correlation-checkpoint",
+    sourceId: "settlement-confirmation",
+    sourceSha256: "a".repeat(64),
+    sourceOverlay: null,
+  },
+  processId: "Process_SettlementConfirmation",
+  channel: {
+    kind: MessageChannelKind.OperationMessage,
+    interfaceId: "Interface_Settlement",
+    interfaceOperationId: "Operation_ConfirmSettlement",
+    messageId: "Message_SettlementConfirmed",
+  },
+  correlationKeyId: "CorrelationKey_Settlement",
+} as const;
+
 test("projects the closed definition-scoped correlation result without a host locator", async () => {
-  const address = {
-    definition: {
-      compiler: SemanticProcessCompilerId.BpmnSourceSemanticProcess,
-      semanticProfile: "message-key-correlation-checkpoint",
-      sourceId: "settlement-confirmation",
-      sourceSha256: "a".repeat(64),
-      sourceOverlay: null,
-    },
-    processId: "Process_SettlementConfirmation",
-    channel: {
-      kind: MessageChannelKind.OperationMessage,
-      interfaceId: "Interface_Settlement",
-      interfaceOperationId: "Operation_ConfirmSettlement",
-      messageId: "Message_SettlementConfirmed",
-    },
-    correlationKeyId: "CorrelationKey_Settlement",
-  } as const;
   const calls: unknown[] = [];
   const command = {
     commandId: "Publication_1",
@@ -89,6 +91,23 @@ test("projects the closed definition-scoped correlation result without a host lo
   assert.deepEqual(update?.options.args, [command]);
   assert.equal(JSON.stringify(result).includes("workflowId"), false);
   assert.equal(JSON.stringify(result).includes("processLocator"), false);
+});
+
+test("translates malformed publication failures at the Product 1 boundary", async () => {
+  const command = {
+    commandId: "",
+    address,
+    payload: { kind: VariableValueKind.String, value: "settlement-42" },
+  } as const;
+
+  await assert.rejects(
+    publishBpmnDefinitionCorrelatedMessage({
+      temporalClient: fakeClient([], command, () => null),
+      ...command,
+      taskQueue: "correlation-ingress",
+    }),
+    EngineCorrelatedMessageIngressInvalid,
+  );
 });
 
 test("keeps Process locators and Temporal identity out of the public declaration", async () => {

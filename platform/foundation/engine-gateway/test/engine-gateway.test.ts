@@ -215,6 +215,8 @@ test("constructs a close-idempotent gateway runtime without connecting", async (
   assert.equal(typeof runtime.messageStartHost.prepare, "function");
   assert.equal(typeof runtime.messageStartHost.start, "function");
   assert.equal(typeof runtime.messageStartHost.describe, "function");
+  assert.equal(typeof runtime.correlatedMessageHost.describe, "function");
+  assert.equal(typeof runtime.correlatedMessageHost.publish, "function");
   assert.equal(typeof runtime.ensureConnected, "function");
   const firstClose = runtime.close();
   assert.strictEqual(runtime.close(), firstClose);
