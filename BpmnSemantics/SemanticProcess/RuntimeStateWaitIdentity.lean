@@ -70,7 +70,7 @@ private theorem key_absent_after_erase {α : Type} [DecidableEq α]
           rw [List.filter_cons_of_neg (by simp [headUnselected])] at counted
           exact counted
         have eraseCons : (head :: tail).erase value = head :: tail.erase value := by
-          simp [List.erase_cons, sameHead]
+          simp [sameHead]
         rw [eraseCons] at remaining
         cases List.mem_cons.mp remaining with
         | inl headEq => rw [headEq]; exact headUnselected
