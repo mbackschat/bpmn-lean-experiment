@@ -2,6 +2,8 @@ import {
   EffectOperation,
   EffectProtocol,
   EffectExecutionResultKind,
+  isDenseArray,
+  isVariableBinding,
   VariableValueKind,
 } from "@bpmn-lean/semantic-core";
 import type {
@@ -178,6 +180,9 @@ function requireEffectRequest(
     case EffectOperation.MappedBoundaryError:
       requireArguments(hasMappedBoundaryErrorArguments(request.arguments));
       break;
+    case EffectOperation.CompensationSingleEffect:
+      requireArguments(hasCompensationSingleEffectArguments(request.arguments));
+      break;
     default:
       throw new TypeError(
         "Effect request must contain one admitted protocol, operation, and argument contract",
@@ -230,6 +235,32 @@ function effectResultFor(
     kind: EffectExecutionResultKind.Success,
     localPatch: [],
   };
+}
+
+function hasCompensationSingleEffectArguments(
+  arguments_: unknown,
+): arguments_ is [] | [VariableBinding] {
+  if (!isDenseArray(arguments_) || arguments_.length > 1) {
+    return false;
+  }
+  const binding = arguments_[0];
+  if (binding === undefined) {
+    return true;
+  }
+  if (!isVariableBinding(binding)) {
+    return false;
+  }
+  switch (binding.value.kind) {
+    case VariableValueKind.Boolean:
+    case VariableValueKind.String:
+    case VariableValueKind.Null:
+      return true;
+    case VariableValueKind.Integer:
+    case VariableValueKind.StringList:
+      return false;
+    default:
+      return assertNever(binding.value);
+  }
 }
 
 function hasMappedBoundaryErrorArguments(

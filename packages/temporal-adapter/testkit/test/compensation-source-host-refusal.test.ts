@@ -8,6 +8,7 @@ import {
   compileBpmnToSemanticProcess,
 } from "@bpmn-lean/bpmn-source";
 import {
+  SemanticOperationKind,
   StimulusKind,
   VariableValueKind,
   canonicalCompensationExecutionStateUtf8Bytes,
@@ -16,6 +17,7 @@ import {
   supportsSemanticProcessExecution,
 } from "@bpmn-lean/semantic-core";
 import type {
+  SemanticOperation,
   SemanticProcessProgram,
   StartProcessStimulus,
 } from "@bpmn-lean/semantic-core";
@@ -37,13 +39,13 @@ const limits = Object.freeze({
   parserDeadlineMs: 1_000,
 });
 
-test("rejects malformed and unhosted Compensation starts before Workflow creation", async () => {
+test("admits only the exact Compensation checkpoint through both Product 1 start paths", async () => {
   const compilation = await compileBpmnToSemanticProcess({
     bytes: await readFile(new URL(
       "../../../bpmn-source/test/fixtures/compensation-source-checkpoint.bpmn",
       import.meta.url,
     )),
-    sourceId: "compensation-source-host-refusal",
+    sourceId: "compensation-source-host-admission",
     expectedSha256: undefined,
     sourceOverlay: null,
     semanticProfile: COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID,
@@ -54,12 +56,18 @@ test("rejects malformed and unhosted Compensation starts before Workflow creatio
     throw new Error("Compensation source checkpoint was not admitted");
   }
   const program = compilation.semanticProcess;
-  const valid = start(program, "CompensationSourceHostRefusal_1", "frozen itinerary");
-  const compensationFailure = {
-    code: TemporalHostAdmissionFailureCode.CompensationSchedulerUnavailable,
-    evidence:
-      "The Temporal host does not yet provide the concurrent compensation-frontier scheduler required by triggerCompensation.",
-  } as const;
+  const valid = start(program, "CompensationSourceHostAdmission_1", "frozen itinerary");
+  const trigger = program.operations.find(
+    (operation) => operation.kind === SemanticOperationKind.TriggerCompensation,
+  );
+  assert.equal(trigger?.kind, SemanticOperationKind.TriggerCompensation);
+  if (trigger?.kind !== SemanticOperationKind.TriggerCompensation) {
+    throw new Error("Compensation source checkpoint lost its trigger");
+  }
+  assert.equal(
+    program.operations.filter(({ kind }) => kind === SemanticOperationKind.Duplicate).length,
+    1,
+  );
   const unsupportedFailure = {
     code: BpmnProcessAdmissionFailureCode.SemanticProcessUnsupported,
     evidence: "Workflow start requires one admitted Semantic Process execution.",
@@ -67,12 +75,10 @@ test("rejects malformed and unhosted Compensation starts before Workflow creatio
 
   assert.equal(supportsSemanticProcessExecution(valid, program), true);
   assert.deepEqual(assessTemporalHostCapability(program), {
-    kind: TemporalHostCapabilityResultKind.Rejected,
-    failure: compensationFailure,
+    kind: TemporalHostCapabilityResultKind.Admitted,
   });
   assert.deepEqual(assessBpmnProcessAdmission(valid, program), {
-    kind: BpmnProcessAdmissionResultKind.Rejected,
-    failure: compensationFailure,
+    kind: BpmnProcessAdmissionResultKind.Admitted,
   });
 
   const snapshotLimit = program.compensationEventSubProcessSnapshots?.limits.maxCanonicalBytes;
@@ -140,13 +146,17 @@ test("rejects malformed and unhosted Compensation starts before Workflow creatio
   const client = {
     start: async (...arguments_: unknown[]) => {
       starts.push(arguments_);
-      return Object.freeze({ workflowId: "unexpected-compensation-workflow" });
+      return Object.freeze({ workflowId: "recorded-compensation-workflow" });
     },
   } as never;
   assert.deepEqual(
-    await startBpmnProcess(client, valid, program, { taskQueue: "compensation-source-host-refusal" }),
-    { kind: BpmnProcessStartResultKind.Rejected, failure: compensationFailure },
+    await startBpmnProcess(client, valid, program, { taskQueue: "compensation-source-host-admission" }),
+    {
+      kind: BpmnProcessStartResultKind.Started,
+      processInstanceId: valid.instanceId,
+    },
   );
+  assert.equal(starts.length, 1);
   for (const candidate of malformed) {
     assert.equal(supportsSemanticProcessExecution(candidate, program), false);
     assert.deepEqual(assessBpmnProcessAdmission(candidate, program), {
@@ -158,12 +168,62 @@ test("rejects malformed and unhosted Compensation starts before Workflow creatio
         client,
         candidate,
         program,
-        { taskQueue: "compensation-source-host-refusal" },
+        { taskQueue: "compensation-source-host-admission" },
       ),
       { kind: BpmnProcessStartResultKind.Rejected, failure: unsupportedFailure },
     );
   }
-  assert.deepEqual(starts, []);
+  assert.equal(starts.length, 1);
+
+  const compensationFailure = {
+    kind: TemporalHostCapabilityResultKind.Rejected,
+    failure: {
+      code: TemporalHostAdmissionFailureCode.CompensationSchedulerUnavailable,
+      evidence:
+        "The Temporal host admits Compensation scheduling only for the exact well-formed source checkpoint without another host-driven wait.",
+    },
+  } as const;
+  const declaration = program.compensationExecution;
+  assert.ok(declaration !== undefined);
+  const passive = program.operations.find(
+    ({ kind }) => kind === SemanticOperationKind.AwaitUserTask,
+  );
+  assert.ok(passive !== undefined);
+  const malformedEffect = {
+    ...passive,
+    id: `${passive.id}:ordinary-wait`,
+    kind: SemanticOperationKind.AwaitEffect,
+  } as unknown as SemanticOperation;
+  const malformedManagedRace = {
+    ...passive,
+    id: `${passive.id}:managed-race`,
+    kind: SemanticOperationKind.AwaitEventRace,
+  } as unknown as SemanticOperation;
+  const { compensationExecution: _missing, ...withoutDeclaration } = program;
+  const adversarial: ReadonlyArray<readonly [string, SemanticProcessProgram]> = [
+    ["ordinary host wait", withOperations(program, [...program.operations, malformedEffect])],
+    ["another managed claimant", withOperations(program, [...program.operations, malformedManagedRace])],
+    ["second trigger", withOperations(program, [
+      ...program.operations,
+      { ...trigger, id: `${trigger.id}:second` },
+    ])],
+    ["wrong profile", {
+      ...program,
+      identity: { ...program.identity, semanticProfile: "wrong-profile" },
+    }],
+    ["missing declaration", withoutDeclaration as SemanticProcessProgram],
+    ["mismatched declaration", {
+      ...program,
+      compensationExecution: {
+        ...declaration,
+        triggerOperationId: `${declaration.triggerOperationId}:mismatch`,
+      },
+    }],
+  ];
+  for (const [name, candidate] of adversarial) {
+    assert.equal(supportsSemanticProcessExecution(valid, candidate), false, name);
+    assert.deepEqual(assessTemporalHostCapability(candidate), compensationFailure, name);
+  }
 });
 
 function start(
@@ -227,4 +287,11 @@ function executionBytes(
     canonicalCompensationExecutionStateUtf8Bytes([projection.trigger], projection.waits),
   );
   return projection.executionCanonicalBytes;
+}
+
+function withOperations(
+  program: SemanticProcessProgram,
+  operations: ReadonlyArray<SemanticOperation>,
+): SemanticProcessProgram {
+  return { ...program, operations: [...operations] };
 }

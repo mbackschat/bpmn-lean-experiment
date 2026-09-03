@@ -16,6 +16,7 @@ import {
   compensationExecutionStateDefects,
   initialState,
   isCompensationTriggerExecution,
+  projectCompensationEffectTransportMaterial,
   type CompensationHandlerEffectWait,
   type CompensationTriggerExecution,
   type RuntimeState,
@@ -117,6 +118,26 @@ const wait = {
   descriptor,
   arguments: [{ name: "archivedContext", value: frozenValue }],
 } as const satisfies CompensationHandlerEffectWait;
+
+test("projects compensation effect transport material from admitted definition and committed wait", () => {
+  assert.deepEqual(
+    projectCompensationEffectTransportMaterial(program, wait),
+    {
+      definition: {
+        semanticProfile: program.identity.semanticProfile,
+        sourceId: program.identity.sourceId,
+        sourceSha256: program.identity.sourceSha256,
+        sourceOverlay: program.identity.sourceOverlay,
+        processId: program.processId,
+      },
+      triggerId,
+      handlerId,
+      effectId,
+      descriptor,
+      arguments: wait.arguments,
+    },
+  );
+});
 
 test("sizes the canonical ordered execution pair independently of object insertion order", () => {
   const reordered = {

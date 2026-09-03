@@ -27,6 +27,9 @@ import {
 } from "@temporalio/workflow";
 
 import type { BoundedDeadlineScheduler } from "./bounded-deadline-scheduler.js";
+import type {
+  CompensationFrontierScheduler,
+} from "./compensation-frontier-scheduler.js";
 import type { EffectActivityPolicy } from "./effect-activity-policy.js";
 import {
   effectActivityResultCommand,
@@ -59,21 +62,39 @@ export enum HostReadinessAction {
   RecheckMainLoop = "recheckMainLoop",
 }
 
-export async function waitForHostReadiness(
-  state: RuntimeState,
-  semanticProcess: SemanticProcessProgram,
-  pendingStimuli: Stimulus[],
-  acceptedStimuli: Stimulus[],
-  eventRaceScheduler: EventRaceReadinessScheduler,
-  messageBoundedActivityScheduler: MessageBoundedActivityReadinessScheduler,
-  boundedDeadlineSchedulers: ReadonlyArray<BoundedDeadlineScheduler>,
-  waitForTimer: (durationMs: number) => Promise<void>,
-  executeEffect: (request: EffectRequest) => Promise<EffectActivityResult>,
-  effectActivityPolicy: EffectActivityPolicy,
-  failCapacity: (failure: WorkflowChainObservedCapacityBound) => never,
-  reserveStimulus: (stimulus: Stimulus) => boolean,
-  hostRecheckRequested: () => boolean,
-): Promise<HostReadinessAction> {
+export type HostReadinessInput = Readonly<{
+  state: RuntimeState;
+  semanticProcess: SemanticProcessProgram;
+  pendingStimuli: Stimulus[];
+  acceptedStimuli: Stimulus[];
+  eventRaceScheduler: EventRaceReadinessScheduler;
+  messageBoundedActivityScheduler: MessageBoundedActivityReadinessScheduler;
+  boundedDeadlineSchedulers: ReadonlyArray<BoundedDeadlineScheduler>;
+  compensationScheduler: CompensationFrontierScheduler;
+  waitForTimer: (durationMs: number) => Promise<void>;
+  executeEffect: (request: EffectRequest) => Promise<EffectActivityResult>;
+  effectActivityPolicy: EffectActivityPolicy;
+  failCapacity: (failure: WorkflowChainObservedCapacityBound) => never;
+  reserveStimulus: (stimulus: Stimulus) => boolean;
+  hostRecheckRequested: () => boolean;
+}>;
+
+export async function waitForHostReadiness({
+  state,
+  semanticProcess,
+  pendingStimuli,
+  acceptedStimuli,
+  eventRaceScheduler,
+  messageBoundedActivityScheduler,
+  boundedDeadlineSchedulers,
+  compensationScheduler,
+  waitForTimer,
+  executeEffect,
+  effectActivityPolicy,
+  failCapacity,
+  reserveStimulus,
+  hostRecheckRequested,
+}: HostReadinessInput): Promise<HostReadinessAction> {
   const timers = projectOpenTimers(state);
   const effects = projectOpenEffects(state);
   const timerCapacity = preflightPendingWorkflowTimers(timers.length);
@@ -81,9 +102,21 @@ export async function waitForHostReadiness(
     case WorkflowTimerCapacityPreflightKind.Ready:
       break;
     case WorkflowTimerCapacityPreflightKind.CapacityExceeded:
-      failCapacity(timerCapacity.failure);
+      return failCapacity(timerCapacity.failure);
     default:
       return assertNever(timerCapacity);
+  }
+  if (compensationScheduler.ownsCommittedFrontier(state)) {
+    if (pendingStimuli.length > 0) {
+      return HostReadinessAction.DrainSemanticQueue;
+    }
+    enqueueStimulus(
+      acceptedStimuli,
+      pendingStimuli,
+      await compensationScheduler.waitForReadiness(state),
+      reserveStimulus,
+    );
+    return HostReadinessAction.DrainSemanticQueue;
   }
   if (messageBoundedActivityScheduler.ownsCommittedPair(state)) {
     if (state.eventRaces.length > 0 || timers.length > 0 || effects.length > 0) {

@@ -129,28 +129,37 @@ test("fails a malformed sixty-five-Timer state before a managed Timer is armed",
   } satisfies MessageBoundedActivityReadinessScheduler;
 
   await assert.rejects(
-    waitForHostReadiness(
+    waitForHostReadiness({
       state,
-      publicationProgram,
-      [],
-      [],
+      semanticProcess: publicationProgram,
+      pendingStimuli: [],
+      acceptedStimuli: [],
       eventRaceScheduler,
       messageBoundedActivityScheduler,
-      [],
-      async () => {
+      boundedDeadlineSchedulers: [],
+      compensationScheduler: {
+        ownsCommittedFrontier: () => false,
+        waitForReadiness: async () => {
+          throw new Error("Compensation scheduler must not run");
+        },
+        reconcileCommittedState: () => undefined,
+        hasUnreconciledActivities: () => false,
+        waitForIdle: async () => undefined,
+      },
+      waitForTimer: async () => {
         timerCalls += 1;
       },
-      async () => {
+      executeEffect: async () => {
         throw new Error("effect must not execute");
       },
-      legacyEffectActivityPolicy,
-      (failure) => {
+      effectActivityPolicy: legacyEffectActivityPolicy,
+      failCapacity: (failure) => {
         observedFailure = failure;
         throw new Error("pending Timer capacity exceeded");
       },
-      () => true,
-      () => false,
-    ),
+      reserveStimulus: () => true,
+      hostRecheckRequested: () => false,
+    }),
     /pending Timer capacity exceeded/u,
   );
   assert.deepEqual(observedFailure, {

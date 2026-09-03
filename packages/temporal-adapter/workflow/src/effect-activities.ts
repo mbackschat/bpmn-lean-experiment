@@ -4,6 +4,7 @@ import { proxyActivities } from "@temporalio/workflow";
 import type { EffectActivities } from "@bpmn-lean/temporal-protocol";
 import {
   EffectActivityPolicyKind,
+  compensationEffectActivityPolicy,
   effectActivityPolicyForProfile,
   legacyEffectActivityPolicy,
   serviceTaskIncidentEffectActivityPolicy,
@@ -34,6 +35,15 @@ const incidentActivities = proxyActivities<EffectActivities>({
   },
 });
 
+const compensationActivities = proxyActivities<EffectActivities>({
+  ...commonOptions,
+  cancellationType: compensationEffectActivityPolicy.cancellationType,
+  retry: {
+    ...commonOptions.retry,
+    maximumAttempts: compensationEffectActivityPolicy.maximumAttempts,
+  },
+});
+
 export function executeEffectForProfile(
   semanticProfile: string,
 ): EffectActivities["executeBpmnEffect"] {
@@ -43,8 +53,10 @@ export function executeEffectForProfile(
       return legacyActivities.executeBpmnEffect;
     case EffectActivityPolicyKind.ServiceTaskIncident:
       return incidentActivities.executeBpmnEffect;
+    case EffectActivityPolicyKind.Compensation:
+      return compensationActivities.executeBpmnEffect;
     default:
-      return assertNever(policy.kind);
+      return assertNever(policy);
   }
 }
 

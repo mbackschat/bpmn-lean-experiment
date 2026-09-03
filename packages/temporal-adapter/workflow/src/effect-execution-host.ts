@@ -8,6 +8,7 @@ import {
   reportEffectFailureStimulus,
 } from "@bpmn-lean/temporal-protocol";
 import type {
+  CompensationHandlerEffectWait,
   CompleteEffectStimulus,
   OpenEffect,
   RuntimeState,
@@ -29,6 +30,40 @@ export enum EffectHostFailureKind {
 export type EffectHostCommand =
   | Readonly<{ kind: "command"; stimulus: Stimulus }>
   | Readonly<{ kind: "failure"; failure: EffectHostFailureKind }>;
+
+export type CompensationEffectHostCommand =
+  | Readonly<{ kind: "command"; stimulus: CompleteEffectStimulus }>
+  | Readonly<{ kind: "failure"; failure: EffectHostFailureKind }>;
+
+/** Compensation narrows the shared result union without redefining BPMN failure. */
+export function compensationEffectActivityResultCommand(
+  effect: CompensationHandlerEffectWait,
+  result: unknown,
+): CompensationEffectHostCommand {
+  if (
+    !isWellFormedEffectActivityResult(result) ||
+    isEffectActivityCapacityExceeded(result)
+  ) {
+    return { kind: "failure", failure: EffectHostFailureKind.InvalidResult };
+  }
+  switch (result.kind) {
+    case EffectActivityResultKind.TechnicalFailure:
+      return {
+        kind: "failure",
+        failure: EffectHostFailureKind.TechnicalFailureUnsupported,
+      };
+    case EffectExecutionResultKind.Success:
+    case EffectExecutionResultKind.BpmnError:
+      return result.localPatch.length === 0
+        ? {
+            kind: "command",
+            stimulus: completeEffectStimulus(effect.id, result),
+          }
+        : { kind: "failure", failure: EffectHostFailureKind.InvalidResult };
+    default:
+      return assertNever(result);
+  }
+}
 
 export function effectActivityResultCommand(
   policy: EffectActivityPolicy,
@@ -73,8 +108,13 @@ export function effectActivityResultCommand(
         stimulus: reportEffectFailureStimulus(effect.id),
       };
     }
+    case EffectActivityPolicyKind.Compensation:
+      return {
+        kind: "failure",
+        failure: EffectHostFailureKind.TechnicalFailureUnsupported,
+      };
     default:
-      return assertNever(policy.kind);
+      return assertNever(policy);
   }
 }
 

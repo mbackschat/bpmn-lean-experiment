@@ -4,6 +4,7 @@ import type {
   VariableBinding,
 } from "./contract.js";
 import type { DeepReadonly } from "./deep-readonly.js";
+import type { EffectDefinitionKey } from "./effect-transport-material.js";
 import type { ActivityOccurrenceId } from "./activity-occurrence.js";
 import type { CompensationParentContextSnapshot } from "./compensation-event-sub-process-snapshot-contract.js";
 import type { CompensationSingleEffectDescriptor } from "./compensation-trigger-handler-contract.js";
@@ -65,10 +66,31 @@ export type CompensationHandlerEffectWait = DeepReadonly<{
 }>;
 
 export type CompensationEffectTransportMaterial = DeepReadonly<{
-  definition: import("./semantic-process-contract.js").SemanticProcessIdentity;
+  definition: EffectDefinitionKey;
   triggerId: OccurrenceId;
   handlerId: OccurrenceId;
   effectId: EffectOccurrenceId;
   descriptor: CompensationSingleEffectDescriptor;
   arguments: [] | [VariableBinding];
 }>;
+
+/** Projects definition identity and one committed Compensation handler effect wait. */
+export function projectCompensationEffectTransportMaterial(
+  program: import("./semantic-process-contract.js").SemanticProcessProgram,
+  wait: CompensationHandlerEffectWait,
+): CompensationEffectTransportMaterial {
+  return {
+    definition: {
+      semanticProfile: program.identity.semanticProfile,
+      sourceId: program.identity.sourceId,
+      sourceSha256: program.identity.sourceSha256,
+      sourceOverlay: program.identity.sourceOverlay,
+      processId: program.processId,
+    },
+    triggerId: wait.triggerId,
+    handlerId: wait.handlerId,
+    effectId: wait.id,
+    descriptor: wait.descriptor,
+    arguments: wait.arguments,
+  };
+}

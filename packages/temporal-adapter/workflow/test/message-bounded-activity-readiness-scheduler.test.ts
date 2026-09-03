@@ -329,25 +329,34 @@ test("drains both wrong Message and wrong completion refusals before waiting on 
 
   for (const stimulus of [wrongChannel, nonEmptyCompletion]) {
     assert.equal(
-      await waitForHostReadiness(
-        armed,
-        program,
-        [stimulus],
-        [],
+      await waitForHostReadiness({
+        state: armed,
+        semanticProcess: program,
+        pendingStimuli: [stimulus],
+        acceptedStimuli: [],
         eventRaceScheduler,
         messageBoundedActivityScheduler,
-        [],
-        async () => undefined,
-        async () => {
+        boundedDeadlineSchedulers: [],
+        compensationScheduler: {
+          ownsCommittedFrontier: () => false,
+          waitForReadiness: async () => {
+            throw new Error("Compensation scheduler must not run");
+          },
+          reconcileCommittedState: () => undefined,
+          hasUnreconciledActivities: () => false,
+          waitForIdle: async () => undefined,
+        },
+        waitForTimer: async () => undefined,
+        executeEffect: async () => {
           throw new Error("effect must not execute");
         },
-        legacyEffectActivityPolicy,
-        () => {
+        effectActivityPolicy: legacyEffectActivityPolicy,
+        failCapacity: () => {
           throw new Error("capacity must not fail");
         },
-        () => true,
-        () => false,
-      ),
+        reserveStimulus: () => true,
+        hostRecheckRequested: () => false,
+      }),
       HostReadinessAction.DrainSemanticQueue,
       stimulus.commandId,
     );

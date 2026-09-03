@@ -1,6 +1,9 @@
 import {
+  COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID,
   MessageChannelKind,
   SemanticOperationKind,
+  isWellFormedSemanticProcessProgram,
+  profileAllowsProgramShape,
 } from "@bpmn-lean/semantic-core";
 import type {
   SemanticOperation,
@@ -30,6 +33,8 @@ import type {
  * family whose outer deadline survives inner-task turnover. The host admits at
  * most one managed operation across all classes, so any composition needing a
  * second host-driven branch or scheduler is rejected before Workflow start.
+ * The exact Compensation source checkpoint may retain its historical Parallel
+ * split because semantic admission proves that it synchronizes before the throw.
  */
 export function assessTemporalHostCapability(
   program: SemanticProcessProgram,
@@ -57,10 +62,11 @@ export function assessTemporalHostCapability(
   const claimed = claimants.find(({ operations }) => operations.length > 0);
   if (claimed !== undefined) {
     const [operation] = claimed.operations;
-    return managedTotal === 1 &&
+    const isAdmissibleProgramForm = managedTotal === 1 &&
         operation !== undefined &&
-        claimed.managed.isAdmissibleIsolatedForm(operation) &&
-        !canSplitTokens &&
+        claimed.managed.isAdmissibleProgramForm(operation, program);
+    return isAdmissibleProgramForm &&
+        (!canSplitTokens || claimed.managed.allowsSynchronizedTokenSplit === true) &&
         !hasHostDrivenWait
       ? { kind: TemporalHostCapabilityResultKind.Admitted }
       : {
@@ -109,23 +115,39 @@ type HostOperationClass =
  */
 type ManagedHostClass = Readonly<{
   operationClass: HostOperationClass;
-  isAdmissibleIsolatedForm: (operation: SemanticOperation) => boolean;
+  isAdmissibleProgramForm: (
+    operation: SemanticOperation,
+    program: SemanticProcessProgram,
+  ) => boolean;
+  allowsSynchronizedTokenSplit?: true;
   failure: TemporalHostAdmissionFailure;
 }>;
 
 const managedClasses: ReadonlyArray<ManagedHostClass> = [
   {
     operationClass: HostOperationClass.CompensationTrigger,
-    isAdmissibleIsolatedForm: () => false,
+    isAdmissibleProgramForm: (operation, program) =>
+      operation.kind === SemanticOperationKind.TriggerCompensation &&
+      program.identity.semanticProfile ===
+        COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID &&
+      isWellFormedSemanticProcessProgram(program) &&
+      profileAllowsProgramShape(
+        program.identity.semanticProfile,
+        program.operations,
+        program.definitionScopes.length,
+      ),
+    // The approved hosting preflight permits this one historical split only because the exact
+    // checkpoint Program synchronizes it before the throw; see COMPENSATION-TRIGGER-HANDLER-PROPOSAL.md.
+    allowsSynchronizedTokenSplit: true,
     failure: {
       code: TemporalHostAdmissionFailureCode.CompensationSchedulerUnavailable,
       evidence:
-        "The Temporal host does not yet provide the concurrent compensation-frontier scheduler required by triggerCompensation.",
+        "The Temporal host admits Compensation scheduling only for the exact well-formed source checkpoint without another host-driven wait.",
     },
   },
   {
     operationClass: HostOperationClass.CorrelatedMessageWait,
-    isAdmissibleIsolatedForm: () => false,
+    isAdmissibleProgramForm: () => false,
     failure: {
       code: TemporalHostAdmissionFailureCode.CorrelatedMessageIngressUnavailable,
       evidence:
@@ -134,7 +156,7 @@ const managedClasses: ReadonlyArray<ManagedHostClass> = [
   },
   {
     operationClass: HostOperationClass.ManagedEventRace,
-    isAdmissibleIsolatedForm: (operation) =>
+    isAdmissibleProgramForm: (operation) =>
       operation.kind === SemanticOperationKind.AwaitEventRace &&
       operation.message.channel.kind === MessageChannelKind.OperationMessage &&
       operation.timer.durationMs === 1_000,
@@ -146,7 +168,7 @@ const managedClasses: ReadonlyArray<ManagedHostClass> = [
   },
   {
     operationClass: HostOperationClass.BoundedActivityWait,
-    isAdmissibleIsolatedForm: (operation) =>
+    isAdmissibleProgramForm: (operation) =>
       operation.kind === SemanticOperationKind.AwaitBoundedUserTask &&
       operation.boundaryTimer.durationMs === 1_000,
     failure: {
@@ -157,7 +179,7 @@ const managedClasses: ReadonlyArray<ManagedHostClass> = [
   },
   {
     operationClass: HostOperationClass.MessageBoundedActivityWait,
-    isAdmissibleIsolatedForm: (operation) =>
+    isAdmissibleProgramForm: (operation) =>
       operation.kind === SemanticOperationKind.AwaitMessageBoundedUserTask &&
       operation.boundaryMessage.channel.kind ===
         MessageChannelKind.OperationMessage,
@@ -170,7 +192,7 @@ const managedClasses: ReadonlyArray<ManagedHostClass> = [
   },
   {
     operationClass: HostOperationClass.BoundedScopeWait,
-    isAdmissibleIsolatedForm: (operation) =>
+    isAdmissibleProgramForm: (operation) =>
       operation.kind === SemanticOperationKind.EnterBoundedScope &&
       operation.boundaryTimer.durationMs === 1_000,
     failure: {
@@ -181,7 +203,7 @@ const managedClasses: ReadonlyArray<ManagedHostClass> = [
   },
   {
     operationClass: HostOperationClass.MonitoredActivityWait,
-    isAdmissibleIsolatedForm: (operation) =>
+    isAdmissibleProgramForm: (operation) =>
       operation.kind === SemanticOperationKind.AwaitMonitoredUserTask &&
       operation.boundaryTimer.durationMs === 1_000,
     failure: {
@@ -192,7 +214,7 @@ const managedClasses: ReadonlyArray<ManagedHostClass> = [
   },
   {
     operationClass: HostOperationClass.SequentialMultiInstanceActivityWait,
-    isAdmissibleIsolatedForm: (operation) =>
+    isAdmissibleProgramForm: (operation) =>
       operation.kind ===
         SemanticOperationKind.AwaitSequentialMultiInstanceUserTask &&
       operation.boundaryTimer.durationMs === 5_000,
@@ -205,7 +227,7 @@ const managedClasses: ReadonlyArray<ManagedHostClass> = [
   },
   {
     operationClass: HostOperationClass.ParallelMultiInstanceActivityWait,
-    isAdmissibleIsolatedForm: (operation) =>
+    isAdmissibleProgramForm: (operation) =>
       operation.kind ===
         SemanticOperationKind.AwaitParallelMultiInstanceUserTask &&
       operation.boundaryTimer.durationMs === 5_000,

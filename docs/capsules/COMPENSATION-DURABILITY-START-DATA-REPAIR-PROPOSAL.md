@@ -115,7 +115,7 @@ Mechanically routed guards include [documentation reviewability](../../scripts/d
 | [TypeScript start admission](../../packages/semantic-core/src/compensation-start-data-admission.ts) | 573 | exact Program-derived binding and shared prospective-capacity construction only |
 | [TypeScript start-admission witness](../../packages/semantic-core/test/compensation-start-data-admission.test.ts) | 510 | direct predicate and command preservation, Program-name, canonical-boundary, escaping, and identity discriminators only |
 | [Compiled-source runtime witness](../../packages/bpmn-source/test/compensation-source-runtime.test.ts) | 579 | exact compiled-source opposite-order, exhaustive successor-frontier, and frozen-value discriminators only |
-| [Product 1 source witness](../../packages/temporal-adapter/testkit/test/compensation-source-host-refusal.test.ts) | 581 | exact assessment/start and malformed or over-cap pre-start cases only |
+| [Product 1 source witness](../../packages/temporal-adapter/testkit/test/compensation-source-host-refusal.test.ts) | 516 | exact assessment/start and malformed or over-cap pre-start cases only |
 
 The new TypeScript predicate starts in its own bounded owner. Every figure is the measured nonblank-line remainder below the 800-line review target. If these measured conditions change before implementation, rerun `what-binds` and redesign before crossing the threshold; no size-limit exception is selected.
 

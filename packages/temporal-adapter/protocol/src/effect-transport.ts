@@ -5,9 +5,11 @@ import {
 } from "@bpmn-lean/semantic-core";
 import type {
   CompleteEffectStimulus,
+  CompensationEffectTransportMaterial,
   EffectExecutionResult,
   EffectOccurrenceId,
   EffectTransportMaterial,
+  OccurrenceId,
   VariableBinding,
 } from "@bpmn-lean/semantic-core";
 
@@ -24,24 +26,8 @@ export function canonicalEffectTransportEncoding(
 ): string {
   return canonicalTypedTupleEncoding([
     "effectTransport",
-    [
-      material.definition.semanticProfile,
-      material.definition.sourceId,
-      material.definition.sourceSha256,
-      material.definition.sourceOverlay === null
-        ? ["none"]
-        : [
-            "some",
-            material.definition.sourceOverlay.id,
-            material.definition.sourceOverlay.sha256,
-          ],
-      material.definition.processId,
-    ],
-    [
-      material.occurrence.processInstanceId,
-      material.occurrence.elementId,
-      material.occurrence.activation,
-    ],
+    effectDefinitionTuple(material.definition),
+    occurrenceTuple(material.occurrence),
     [
       material.descriptor.protocol,
       material.descriptor.operation,
@@ -55,6 +41,33 @@ export function effectTransportKey(
 ): string {
   return `effect-transport-sha256:${
     deterministicSha256Hex(canonicalEffectTransportEncoding(material))
+  }`;
+}
+
+export function canonicalCompensationEffectTransportEncoding(
+  material: CompensationEffectTransportMaterial,
+): string {
+  return canonicalTypedTupleEncoding([
+    "compensationEffectTransport",
+    effectDefinitionTuple(material.definition),
+    occurrenceTuple(material.triggerId),
+    occurrenceTuple(material.handlerId),
+    occurrenceTuple(material.effectId),
+    [
+      material.descriptor.protocol,
+      material.descriptor.operation,
+    ],
+    material.arguments.map(variableBindingTuple),
+  ]);
+}
+
+export function compensationEffectTransportKey(
+  material: CompensationEffectTransportMaterial,
+): string {
+  return `effect-transport-sha256:${
+    deterministicSha256Hex(
+      canonicalCompensationEffectTransportEncoding(material),
+    )
   }`;
 }
 
@@ -125,6 +138,34 @@ function variableBindingTuple(
   return [
     binding.name,
     variableValueTuple(binding),
+  ];
+}
+
+function effectDefinitionTuple(
+  definition: EffectTransportMaterial["definition"],
+): ReadonlyArray<CanonicalTupleValue> {
+  return [
+    definition.semanticProfile,
+    definition.sourceId,
+    definition.sourceSha256,
+    definition.sourceOverlay === null
+      ? ["none"]
+      : [
+          "some",
+          definition.sourceOverlay.id,
+          definition.sourceOverlay.sha256,
+        ],
+    definition.processId,
+  ];
+}
+
+function occurrenceTuple(
+  occurrence: OccurrenceId,
+): ReadonlyArray<CanonicalTupleValue> {
+  return [
+    occurrence.processInstanceId,
+    occurrence.elementId,
+    occurrence.activation,
   ];
 }
 

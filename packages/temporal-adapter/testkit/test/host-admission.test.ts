@@ -109,7 +109,7 @@ test("admits each reachable wait set of the new linear composition", async () =>
   );
 });
 
-test("rejects compensation trigger Programs until the frontier scheduler exists", async () => {
+test("rejects a compensation trigger outside the exact hosted checkpoint", async () => {
   const program = await compileFixture(
     "../../../../scenarios/timer-user-task-composition/process.bpmn",
     "compensation-trigger-host-refusal",
@@ -142,7 +142,7 @@ test("rejects compensation trigger Programs until the frontier scheduler exists"
       failure: {
         code: TemporalHostAdmissionFailureCode.CompensationSchedulerUnavailable,
         evidence:
-          "The Temporal host does not yet provide the concurrent compensation-frontier scheduler required by triggerCompensation.",
+          "The Temporal host admits Compensation scheduling only for the exact well-formed source checkpoint without another host-driven wait.",
       },
     },
   );

@@ -181,7 +181,7 @@ type CompensationHandlerEffectWait = Readonly<{
 }>;
 
 type CompensationEffectTransportMaterial = Readonly<{
-  definition: SemanticProcessIdentity;
+  definition: EffectDefinitionKey;
   triggerId: OccurrenceId;
   handlerId: OccurrenceId;
   effectId: EffectOccurrenceId;
@@ -458,10 +458,10 @@ The operation census must classify trigger creation and frontier activation as o
 | [Lean observation consumer](../../BpmnSemantics/SemanticProcess/Scenario.lean) | 227 | failed projection and agreement only |
 | [Lean JSON](../../BpmnSemantics/SemanticProcessJsonMain.lean) | 229 | failed encoding only |
 | [Temporal protocol](../../packages/temporal-adapter/protocol/src/contracts.ts) | 543 | failed receipt arm only |
-| [effect transport](../../packages/temporal-adapter/protocol/src/effect-transport.ts) | 655 | compensation key material and canonical tuple only |
+| [effect transport](../../packages/temporal-adapter/protocol/src/effect-transport.ts) | 618 | compensation key material and canonical tuple only |
 | [receipt validators](../../packages/temporal-adapter/protocol/src/lifecycle-results.ts) | 444 | failed receipt decoder only |
 | [publication validator](../../packages/temporal-adapter/protocol/src/semantic-publication-validation.ts) | 86 | failed discriminator only; extract state validation before other growth |
-| [testkit Worker registry](../../packages/temporal-adapter/testkit/src/effect-probe.ts) | 554 | one exact operation and result registration only |
+| [testkit Worker registry](../../packages/temporal-adapter/testkit/src/effect-probe.ts) | 524 | one exact operation and result registration only |
 | [process operations client](../../packages/temporal-adapter/client/src/process-operations-client.ts) | 598 | failed terminal case only |
 | [product interaction driver](../../packages/temporal-adapter/runner/src/host-interaction-driver.ts) | 397 | failed terminal predicate only |
 | [runnable Product 1 result](../../packages/temporal-adapter/runner/cli/runnable-mvp.ts) | 407 | failed receipt event/result arms only |
@@ -470,9 +470,9 @@ The operation census must classify trigger creation and frontier activation as o
 | [terminal envelope](../../packages/temporal-adapter/workflow/src/workflow-terminal-completion.ts) | 554 | failed validation only |
 | [incident query handler](../../packages/temporal-adapter/workflow/src/incident-operations-query-handler.ts) | 558 | failed terminal projection only |
 | [continuation](../../packages/temporal-adapter/protocol/src/workflow-continuation.ts) | 224 | new collections and failed refusal |
-| [Workflow loop](../../packages/temporal-adapter/workflow/src/workflow-implementation.ts) | 79 | extract frontier scheduler before integration |
-| [host readiness](../../packages/temporal-adapter/workflow/src/workflow-host-readiness.ts) | 526 | scheduler delegation only |
-| [effect host](../../packages/temporal-adapter/workflow/src/effect-execution-host.ts) | 668 | compensation result dispatch only |
+| [Workflow loop](../../packages/temporal-adapter/workflow/src/workflow-implementation.ts) | 48 | extract frontier scheduler before integration |
+| [host readiness](../../packages/temporal-adapter/workflow/src/workflow-host-readiness.ts) | 494 | scheduler delegation only |
+| [effect host](../../packages/temporal-adapter/workflow/src/effect-execution-host.ts) | 630 | compensation result dispatch only |
 
 Every headroom figure is the measured nonblank-line remainder below the 800-line review target. No size exception is requested. New bounded owners should contain the compensation execution contract, trigger construction, frontier selection, handler completion, cancellation, validity, and focused tests/proofs; shared integration owners receive references or dispatch only.
 
@@ -480,7 +480,7 @@ Every headroom figure is the measured nonblank-line remainder below the 800-line
 
 Selected: root-global synchronous triggering, one active trigger per root, exact failed-trigger multiplicity, retained-tombstone capacity, exact eligible-source consumption, occurrence-level dependencies, reverse dependency order, concurrent maximal handler frontiers, declaration-owned one-effect bodies, snapshot restoration, typed terminal Process failure, complete region cancellation, stale-result refusal, capacity, a failed v1 receipt, and future hosting obligations.
 
-Open: source admission, shared scenario wires, Product 1 compensation capability, targeted/asynchronous throws, concurrent global triggers and their sibling-trigger terminal lifecycle, general handler graphs and data, other dependencies, loops and Multi-Instance Sub-Processes, recursive compensation, Transactions/Cancel Events, failure recovery, CIB profile behavior, live refinement, whole models, corpus, Product 2 persistence/API/UI/journey support, and conformance.
+Open: shared scenario wires, public Product 1 compensation capability, targeted/asynchronous throws, concurrent global triggers and their sibling-trigger terminal lifecycle, general handler graphs and data, other dependencies, loops and Multi-Instance Sub-Processes, recursive compensation, Transactions/Cancel Events, failure recovery, CIB profile behavior, live refinement evidence, corpus, Product 2 persistence/API/UI/journey support, and conformance.
 
 Nearest unsupported claim: concurrent global triggers for one root and the explicit sibling-trigger lifecycle needed when one of them fails.
 
@@ -494,7 +494,7 @@ The earlier proposal and pending-handler amendment targets and their correction 
 
 After approval, the first implementation stage stops when the complete Program/Runtime/observation/receipt representation, its mandatory strict-reader and terminal-value propagation, and the independent Lean/TypeScript semantics named above are green. Temporal and Product 1 may only decode, preserve, reject continuation of, or terminally classify the exact widened value; Product 2 must strictly reject failed ingress before rejected-page application or persistence and must not expose it. The checkpoint must not admit the compensation profile, schedule or execute a handler, or publish a compensation capability. Independent review is required before source, profile, shared scenario, CIB, live Temporal hosting, Product 1 compensation capability, corpus, or Product 2 persistence/API/UI/journey work begins.
 
-Implementation progress: the independent TypeScript and proved Lean accounts are green through atomic source selection and consumption, restored-context trigger construction, complete maximal-frontier activation, success and fail-fast failure, sibling cancellation, stale-result and successor-capacity refusal, retained nonempty tombstones, zero-subject continuation without a trigger, one-active-trigger exclusion, exact failed-trigger multiplicity, evaluator soundness, trace/replay, and private occurrence lifecycle. The semantic-checkpoint cold review found that both validators had admitted an impossible empty succeeded tombstone and that status owners still described the Lean lane as open; the code, matched negative witnesses, real retained-tombstone capacity witnesses, and status corrections are implemented, and the same reviewer approved correction target `b581614a`. None of the excluded downstream capability work has begun.
+Implementation progress: the independent TypeScript and proved Lean accounts are green through atomic source selection and consumption, restored-context trigger construction, complete maximal-frontier activation, success and fail-fast failure, sibling cancellation, stale-result and successor-capacity refusal, retained nonempty tombstones, zero-subject continuation without a trigger, one-active-trigger exclusion, exact failed-trigger multiplicity, evaluator soundness, trace/replay, and private occurrence lifecycle. The semantic-checkpoint cold review found that both validators had admitted an impossible empty succeeded tombstone and that status owners still described the Lean lane as open; the code, matched negative witnesses, real retained-tombstone capacity witnesses, and status corrections are implemented, and the same reviewer approved correction target `b581614a`. Source lowering and the Program-derived start-capacity repair are independently approved. The exact draft profile now passes Product 1 admission into a dedicated scheduler that preflights and starts complete frontiers, content-binds each Activity, orders same-activation callbacks canonically, fences rollover while an Activity is unreconciled, and drains sibling cancellation before terminal return. Live Continue-As-New, replacement, retry, failure, and replay evidence remains required before closure, registration, or public capability.
 
 ## Independent cold-review receipt
 

@@ -2,6 +2,10 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  ActivityCancellationType,
+} from "@temporalio/workflow";
+import {
+  COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID,
   ControlStateKind,
   SERVICE_TASK_INCIDENT_CHECKPOINT_PROFILE_ID,
   SemanticProfileId,
@@ -67,5 +71,16 @@ test("both incident profiles share one-attempt reporting while unrelated profile
       effect,
       { kind: EffectActivityResultKind.TechnicalFailure },
     ),
+  );
+});
+
+test("compensation uses two attempts without inheriting the legacy result policy", () => {
+  assert.deepEqual(
+    effectActivityPolicyForProfile(COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID),
+    {
+      kind: EffectActivityPolicyKind.Compensation,
+      maximumAttempts: 2,
+      cancellationType: ActivityCancellationType.WAIT_CANCELLATION_COMPLETED,
+    },
   );
 });
