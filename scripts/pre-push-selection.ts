@@ -68,6 +68,10 @@ function compareScalars(left: string, right: string): number {
   return left < right ? -1 : left > right ? 1 : 0;
 }
 
+export function isGitHubWorkflowFileName(name: string): boolean {
+  return /\.(?:ya?ml)$/u.test(name);
+}
+
 export function discoverProduct2PrePushWorkflowGates(
   workflowSources: ReadonlyMap<string, string>,
   packageScripts: Readonly<Record<string, string>>,
@@ -122,7 +126,7 @@ function loadProduct2PrePushWorkflowGates(): readonly PrePushWorkflowGate[] {
   const workflowsDirectory = path.join(projectRoot, ".github/workflows");
   const workflowSources = new Map(
     readdirSync(workflowsDirectory, { withFileTypes: true })
-      .filter((entry) => entry.isFile() && entry.name.endsWith(".yml"))
+      .filter((entry) => entry.isFile() && isGitHubWorkflowFileName(entry.name))
       .map((entry) => {
         const workflow = `.github/workflows/${entry.name}`;
         return [

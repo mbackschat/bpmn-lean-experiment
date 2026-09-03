@@ -4,6 +4,7 @@ import { test } from "node:test";
 
 import {
   discoverProduct2PrePushWorkflowGates,
+  isGitHubWorkflowFileName,
   parsePushPathFilters,
   prePushWorkflowGates,
   selectedPrePushGates,
@@ -12,6 +13,12 @@ import {
 function pathFilteredWorkflow(gate: string): string {
   return `on:\n  push:\n    branches:\n      - main\n    paths:\n      - "package.json"\njobs:\n  quality:\n    steps:\n      - run: ./scripts/pnpm.sh run ${gate}\n`;
 }
+
+test("discovers both GitHub workflow filename extensions", () => {
+  assert.equal(isGitHubWorkflowFileName("platform-quality.yml"), true);
+  assert.equal(isGitHubWorkflowFileName("fifth-quality.yaml"), true);
+  assert.equal(isGitHubWorkflowFileName("workflow.yml.disabled"), false);
+});
 
 const workflowSources = new Map(
   await Promise.all(
