@@ -302,6 +302,18 @@ test("keeps the owner-approved detail-map budget exceptions exactly scoped", () 
   );
 });
 
+test("keeps the testing overview aligned with the reviewed detail-map budgets", async () => {
+  const testingSpec = await readFile(path.join(projectRoot, "docs/TESTING-SPEC.md"), "utf8");
+  assert.match(
+    testingSpec,
+    /4,500 for contracts\/source, 5,400 for engine runtime\/proof, 7,000 for Temporal hosting, and 4,300 for assurance\/adoption/u,
+  );
+  assert.doesNotMatch(
+    testingSpec,
+    /5,000 for the exact Temporal-hosting and engine-runtime\/proof owners/u,
+  );
+});
+
 test("covers every registered semantic profile in the admission capability table", async () => {
   const admissionSpecification = await readFile(
     path.join(projectRoot, "docs/PROFILE-PARAMETERIZED-ADMISSION-SPEC.md"),

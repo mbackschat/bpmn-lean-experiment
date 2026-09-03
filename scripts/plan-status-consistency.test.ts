@@ -178,6 +178,20 @@ test("makes the complete MUE Preview Beta critical path executable", async () =>
   );
 });
 
+test("keeps the MUE Preview Beta testing contract aligned with the active integration handoff", async () => {
+  const testingSpec = await readFile(path.join(projectRoot, "docs/TESTING-SPEC.md"), "utf8");
+  assert.match(
+    testingSpec,
+    /activates integration only after all seven content boundaries are satisfied/u,
+    "the testing owner must retain the content-to-integration handoff",
+  );
+  assert.doesNotMatch(
+    testingSpec,
+    /blocked integration while Event Subscriptions or Compensation and Transactions remain open/u,
+    "the testing owner must not retain the completed content-stage condition",
+  );
+});
+
 test("keeps the binding showcase ladder in its decision owner", async () => {
   const ladder = await readFile(
     path.join(projectRoot, "docs/SHOWCASE-MILESTONE-LADDER-DECISION.md"),
