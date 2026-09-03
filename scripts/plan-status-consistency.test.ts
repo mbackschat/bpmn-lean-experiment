@@ -18,8 +18,8 @@ const muePreviewBetaCriticalPath = [
   ["PARALLEL-MULTI-INSTANCE", "satisfied"],
   ["MECHANISM-MATURITY-EVIDENCE", "satisfied"],
   ["DATA-AND-TASK-MECHANISMS", "satisfied"],
-  ["EVENT-SUBSCRIPTIONS", "queued"],
-  ["COMPENSATION-TRANSACTIONS", "active"],
+  ["EVENT-SUBSCRIPTIONS", "active"],
+  ["COMPENSATION-TRANSACTIONS", "satisfied"],
 ] as const;
 
 function muePreviewBetaSection(plan: string): string {
