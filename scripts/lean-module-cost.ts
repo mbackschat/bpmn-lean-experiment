@@ -385,7 +385,7 @@ export const leanModuleCostRecord = {
     },
     { module: "BpmnSemantics.CompensationSourceAdmissionConformance", peakResidentKib: 2863952, elapsedSeconds: 20.54, measuredAtCommit: "b4544cf6" },
     { module: "BpmnSemantics.CompensationSourceJsonConformance", peakResidentKib: 2326880, elapsedSeconds: 12.15, measuredAtCommit: "b4544cf6" },
-    { module: "BpmnSemantics.CompensationSourceCompatibilityConformance", peakResidentKib: 667864, elapsedSeconds: 0.69, measuredAtCommit: "b4544cf6" },
+    { module: "BpmnSemantics.CompensationSourceCompatibilityConformance", peakResidentKib: 1938140, elapsedSeconds: 15, measuredAtCommit: "8ab3ba5f" },
     { module: "BpmnSemantics.CompensationSourceBindingReferenceConformance", peakResidentKib: 2725808, elapsedSeconds: 31.89, measuredAtCommit: "b4544cf6" },
     { module: "BpmnSemantics.CompensationSourceBindingTriggerConformance", peakResidentKib: 2379680, elapsedSeconds: 20.36, measuredAtCommit: "b4544cf6" },
     { module: "BpmnSemantics.CompensationSourceBindingStorageLimitConformance", peakResidentKib: 2701156, elapsedSeconds: 33.68, measuredAtCommit: "b4544cf6" },

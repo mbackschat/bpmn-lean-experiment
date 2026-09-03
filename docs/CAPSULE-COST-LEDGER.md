@@ -219,6 +219,16 @@ All ten accepted measurements below use immutable commit `b4544cf6`, the pinned 
 
 Every accepted target exited zero with zero swap and every controlled `low`, `high`, `max`, `oom`, `oom_kill`, `oom_group_kill`, and `sock_throttled` event at zero. `CompensationSourceAdmissionConformance` alone crosses the GNU-RSS 90% disclosure threshold and is now ratcheted as near-cap; its cgroup peak retains exactly 735,010,816 bytes of headroom. The two failed layouts remain part of the evidence because the hard ceiling exposed proof-reduction ownership, not source-file length or missing memory.
 
+#### Compensation start-capacity assurance
+
+Commit `8ab3ba5f` extends `CompensationSourceCompatibilityConformance` with Program-derived start admission and changes its source bytes, so the old 667,864 KiB row at `b4544cf6` cannot remain its executable ratchet. The replacement uses the same pinned image, one CPU, no network, warm dependency closure, exact-target artifact removal, 3,221,225,472-byte memory limit, and zero additional swap.
+
+The first concrete boundary used 7,510 and 7,511 ASCII value bytes. Production encoders produced snapshot/execution pairs of 8,192/18,257 and 8,193/18,259 bytes; the target exited `137` at `memory.peak=3,221,225,472`, with `oom=1` and `oom_kill=1`. Removing that value case and retaining the 875/876-byte identity boundary, whose pairs were 4,131/20,467 and 4,135/20,487 bytes, reproduced the same exact-ceiling OOM. A compact literal representation and then a single exact-side proposition each reproduced the exact-ceiling OOM, excluding source generation, conjunction size, and the rejected half as causes.
+
+Removing both long concrete reductions passed under the unchanged limit in 10.80 seconds at cgroup peak 2,082,803,712 bytes with every controlled pressure/OOM event zero. The accepted design retains the universal arbitrary-start implication, production encoders, ordinary command-path state preservation, and escaped/multibyte decisions in Lean; independently written TypeScript and Product 1 witnesses own the full inherited-limit exact-fit/+1 cases. Neither a larger limit nor `native_decide` is selected.
+
+The final cold-target build with short exact/one-under representative decisions passed in 15.00 seconds at 1,938,140 KiB GNU RSS and 2,324,123,648 cgroup bytes. `memory.max=3,221,225,472`, `memory.swap.max=0`, and every controlled event was zero. The output SHA-256 is `9f4d36fbf9c61fcb1a3525478c8c4a557b7752dce4a47af3a2c46af4cd24fb76`; this immutable-source measurement supplies the replacement executable row and remains below the near-cap threshold. The [start-data proposal](capsules/COMPENSATION-DURABILITY-START-DATA-REPAIR-PROPOSAL.md#lean-assurance-correction-after-the-hard-ceiling) owns the semantic assurance split.
+
 | Increment | Boundary | Code | Documentation | Elapsed | Comparison consequence |
 |---|---|---:|---:|---|---|
 | [Scoped runtime data](capsules/SCOPED-DATA-SPEC.md) | `08d8b84..3b2e44d` | `+540/-73` | `+134/-11` | Unknown | First atomic runtime-representation replacement; later scope work should not be compared as if it were a small local semantic clause. |
