@@ -60,6 +60,10 @@ importers:
       '@bpmn-lean/temporal-client':
         specifier: workspace:*
         version: link:../temporal-adapter/client
+    devDependencies:
+      '@bpmn-lean/temporal-protocol':
+        specifier: workspace:*
+        version: link:../temporal-adapter/protocol
 
   packages/semantic-core:
     dependencies:

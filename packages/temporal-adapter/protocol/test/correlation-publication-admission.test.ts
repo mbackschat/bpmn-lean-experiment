@@ -8,10 +8,14 @@ import {
 } from "@bpmn-lean/semantic-core";
 import {
   canonicalCorrelationPublicationCommandEncoding,
+  CorrelationPublicationLedgerPhase,
+  CorrelationPublicationStatusKind,
   correlationPublicationContentSha256,
   correlationPublicationUpdateId,
   productionCorrelationIngressConfiguration,
+  requireCorrelationPublicationAdmissionResult,
   requireCorrelationPublicationCommand,
+  requireCorrelationPublicationStatus,
 } from "@bpmn-lean/temporal-protocol";
 import type {
   CorrelationPublicationCommand,
@@ -62,6 +66,86 @@ test("rejects malformed and over-bound publication content before admission", ()
     { ...command, unexpected: true },
   ]) {
     assert.throws(() => requireCorrelationPublicationCommand(malformed));
+  }
+});
+
+test("admits only closed admission and phase-consistent status responses", () => {
+  const contentSha256 = correlationPublicationContentSha256(command);
+  assert.deepEqual(requireCorrelationPublicationAdmissionResult({
+    kind: "admitted",
+    commandId: command.commandId,
+    contentSha256,
+    phase: CorrelationPublicationLedgerPhase.Queued,
+    ordinal: null,
+  }), {
+    kind: "admitted",
+    commandId: command.commandId,
+    contentSha256,
+    phase: CorrelationPublicationLedgerPhase.Queued,
+    ordinal: null,
+  });
+  assert.deepEqual(requireCorrelationPublicationStatus({
+    kind: CorrelationPublicationStatusKind.Accepted,
+    record: {
+      commandId: command.commandId,
+      contentSha256,
+      phase: CorrelationPublicationLedgerPhase.Settled,
+      ordinal: 1,
+      target: null,
+      resolution: {
+        kind: "semantic",
+        outcome: { kind: "rejectedNoMatch" },
+      },
+    },
+  }).kind, CorrelationPublicationStatusKind.Accepted);
+  assert.deepEqual(requireCorrelationPublicationStatus({
+    kind: CorrelationPublicationStatusKind.IdentityConflict,
+    commandId: command.commandId,
+    requestedContentSha256: contentSha256,
+  }), {
+    kind: CorrelationPublicationStatusKind.IdentityConflict,
+    commandId: command.commandId,
+    requestedContentSha256: contentSha256,
+  });
+
+  for (const malformed of [
+    {
+      kind: "admitted",
+      commandId: command.commandId,
+      contentSha256,
+      phase: CorrelationPublicationLedgerPhase.Queued,
+      ordinal: 1,
+    },
+    {
+      kind: "admitted",
+      commandId: command.commandId,
+      contentSha256,
+      phase: CorrelationPublicationLedgerPhase.Settled,
+      ordinal: 1,
+    },
+    {
+      kind: CorrelationPublicationStatusKind.Accepted,
+      record: {
+        commandId: command.commandId,
+        contentSha256,
+        phase: CorrelationPublicationLedgerPhase.Settled,
+        ordinal: 1,
+        target: null,
+        resolution: null,
+      },
+    },
+    {
+      kind: CorrelationPublicationStatusKind.Absent,
+      commandId: command.commandId,
+      contentSha256,
+      privateLocator: "must-not-cross",
+    },
+  ]) {
+    assert.throws(() =>
+      "record" in malformed || malformed.kind === CorrelationPublicationStatusKind.Absent
+        ? requireCorrelationPublicationStatus(malformed)
+        : requireCorrelationPublicationAdmissionResult(malformed)
+    );
   }
 });
 

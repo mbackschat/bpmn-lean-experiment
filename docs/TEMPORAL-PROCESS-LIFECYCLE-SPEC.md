@@ -209,6 +209,8 @@ An exact repeated Signal is coalesced to the original record and never causes a 
 
 If the Workflow closes before the client receives its Query result, the private terminal envelope's ordered content-bound recovery entries recover the exact semantic outcome or identity conflict. The closed v1 public receipt contains no host ledger. Exact pre-v1 results normalize through the decode-only legacy seam and preserve their private Message records. If no matching entry or legacy record exists, the ordinary `processClosed`/`processUnknown` lifecycle classification applies. Signal transport acceptance alone never implies BPMN Message consumption.
 
+The definition-scoped correlation client uses a separate complete-address ingress and never accepts a Process locator or selected target. It checks the retained content-bound status before Update submission, treats explicit retained conflict as command identity failure, and polls only the accepted record's reserved result. A received validator-capacity failure remains nonsemantic; lost Update or Query evidence remains infrastructure-indeterminate and cannot trigger a blind retry. The public projection may expose a target only after semantic commit or retained target inconsistency, never while discovery or matching is unconfirmed.
+
 ## Conformance evidence extraction
 
 The differential runner may transport a replay-reconstructed canonical trace through a post-completion Query. This is a harness-only evidence-extraction contract, not the production canonical-observation API.

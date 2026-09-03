@@ -12,9 +12,11 @@ import {
   CorrelationPublicationLedgerPhase,
   CorrelationPublicationOrderResultKind,
   CorrelationPublicationSemanticOutcomeKind,
+  CorrelationPublicationStatusKind,
   CorrelationPublicationStoredResolutionKind,
   canonicalCorrelationPublicationLedgerRecordEncoding,
   canonicalCorrelationPublicationQueueEncoding,
+  correlationPublicationContentSha256,
   productionCorrelationIngressConfiguration,
 } from "@bpmn-lean/temporal-protocol";
 import type {
@@ -25,6 +27,7 @@ import {
   CorrelationPublicationFault,
   CorrelationPublicationFaultCode,
   admitCorrelationPublication,
+  correlationPublicationStatus,
   emptyCorrelationPublicationState,
   settleCorrelationPublication,
   startNextCorrelationPublication,
@@ -71,6 +74,31 @@ test("atomically installs one queue record and one fixed future-result reservati
     ),
     (error: unknown) => error instanceof CorrelationPublicationFault &&
       error.code === CorrelationPublicationFaultCode.IdentityConflict,
+  );
+});
+
+test("reports changed retained content as an explicit status conflict", () => {
+  const admitted = admitCorrelationPublication(
+    emptyCorrelationPublicationState(),
+    address,
+    productionCorrelationIngressConfiguration,
+    first,
+  );
+
+  assert.deepEqual(
+    correlationPublicationStatus(
+      admitted.state,
+      address,
+      productionCorrelationIngressConfiguration,
+      { ...first, payload: second.payload },
+    ),
+    {
+      kind: CorrelationPublicationStatusKind.IdentityConflict,
+      commandId: first.commandId,
+      requestedContentSha256: correlationPublicationContentSha256(
+        { ...first, payload: second.payload },
+      ),
+    },
   );
 });
 

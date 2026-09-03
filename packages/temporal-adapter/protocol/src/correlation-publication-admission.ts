@@ -77,6 +77,7 @@ export enum CorrelationPublicationSemanticOutcomeKind {
 export enum CorrelationPublicationStatusKind {
   Absent = "absent",
   Accepted = "accepted",
+  IdentityConflict = "identityConflict",
 }
 
 export enum CorrelationPublicationScanResolutionKind {
@@ -208,6 +209,11 @@ export type CorrelationPublicationStatus =
   | DeepReadonly<{
       kind: CorrelationPublicationStatusKind.Accepted;
       record: CorrelationPublicationLedgerRecord;
+    }>
+  | DeepReadonly<{
+      kind: CorrelationPublicationStatusKind.IdentityConflict;
+      commandId: string;
+      requestedContentSha256: string;
     }>;
 
 export type BpmnAdmitCorrelationPublicationUpdateArguments = [
@@ -406,6 +412,84 @@ export function requireCorrelationPublicationCapacityFailure(
   return value as CorrelationPublicationCapacityFailure;
 }
 
+export function requireCorrelationPublicationAdmissionResult(
+  value: unknown,
+): CorrelationPublicationAdmissionResult {
+  if (!isRecord(value) || !Object.hasOwn(value, "kind")) {
+    throw new TypeError("Correlation publication admission result is malformed");
+  }
+  switch (value.kind) {
+    case CorrelationPublicationAdmissionResultKind.Admitted:
+    case CorrelationPublicationAdmissionResultKind.Retained:
+      if (isRecordWithExactKeys(value, [
+        "kind",
+        "commandId",
+        "contentSha256",
+        "phase",
+        "ordinal",
+      ]) &&
+        nonemptyBoundedCommandId(value.commandId) &&
+        isSha256(value.contentSha256) &&
+        Object.values(CorrelationPublicationLedgerPhase).includes(
+          value.phase as CorrelationPublicationLedgerPhase,
+        ) &&
+        (value.kind !== CorrelationPublicationAdmissionResultKind.Admitted ||
+          value.phase === CorrelationPublicationLedgerPhase.Queued) &&
+        validPublicationPhaseOrdinal(value.phase, value.ordinal)) {
+        return value as CorrelationPublicationAdmissionResult;
+      }
+      break;
+    case CorrelationPublicationAdmissionResultKind.AddressQuarantined:
+      if (isRecordWithExactKeys(value, ["kind", "commandId", "target"]) &&
+        nonemptyBoundedCommandId(value.commandId) &&
+        isCorrelationPublicationTarget(value.target)) {
+        return value as CorrelationPublicationAdmissionResult;
+      }
+      break;
+  }
+  throw new TypeError("Correlation publication admission result is malformed");
+}
+
+export function requireCorrelationPublicationStatus(
+  value: unknown,
+): CorrelationPublicationStatus {
+  if (!isRecord(value) || !Object.hasOwn(value, "kind")) {
+    throw new TypeError("Correlation publication status is malformed");
+  }
+  switch (value.kind) {
+    case CorrelationPublicationStatusKind.Absent:
+      if (isRecordWithExactKeys(value, [
+        "kind",
+        "commandId",
+        "contentSha256",
+      ]) &&
+        nonemptyBoundedCommandId(value.commandId) &&
+        isSha256(value.contentSha256)) {
+        return value as CorrelationPublicationStatus;
+      }
+      break;
+    case CorrelationPublicationStatusKind.Accepted:
+      if (isRecordWithExactKeys(value, ["kind", "record"])) {
+        const record = requireCorrelationPublicationLedgerRecord(value.record);
+        requireCorrelationPublicationRecordPhase(record);
+        return value as CorrelationPublicationStatus;
+      }
+      break;
+    case CorrelationPublicationStatusKind.IdentityConflict:
+      if (isRecordWithExactKeys(value, [
+        "kind",
+        "commandId",
+        "requestedContentSha256",
+      ]) &&
+        nonemptyBoundedCommandId(value.commandId) &&
+        isSha256(value.requestedContentSha256)) {
+        return value as CorrelationPublicationStatus;
+      }
+      break;
+  }
+  throw new TypeError("Correlation publication status is malformed");
+}
+
 export function sameCorrelationPublicationCommand(
   left: CorrelationPublicationCommand,
   right: CorrelationPublicationCommand,
@@ -514,6 +598,82 @@ function isCorrelationPublicationTarget(
   return value.subscriptionId.processInstanceId === value.processInstanceId &&
     nonemptyWireString(value.subscriptionId.elementId) &&
     isPositiveSafeInteger(value.subscriptionId.activation);
+}
+
+function validPublicationPhaseOrdinal(
+  phase: unknown,
+  ordinal: unknown,
+): boolean {
+  switch (phase) {
+    case CorrelationPublicationLedgerPhase.Queued:
+      return ordinal === null;
+    case CorrelationPublicationLedgerPhase.InFlight:
+    case CorrelationPublicationLedgerPhase.Settled:
+      return isPositiveSafeInteger(ordinal);
+    default:
+      return false;
+  }
+}
+
+function requireCorrelationPublicationRecordPhase(
+  record: CorrelationPublicationLedgerRecord,
+): void {
+  switch (record.phase) {
+    case CorrelationPublicationLedgerPhase.Queued:
+      if (record.ordinal === null && record.target === null &&
+        record.resolution === null) {
+        return;
+      }
+      break;
+    case CorrelationPublicationLedgerPhase.InFlight:
+      if (isPositiveSafeInteger(record.ordinal) && record.resolution === null) {
+        return;
+      }
+      break;
+    case CorrelationPublicationLedgerPhase.Settled:
+      if (isPositiveSafeInteger(record.ordinal) && record.resolution !== null &&
+        settledTargetMatches(record.target, record.resolution)) {
+        return;
+      }
+      break;
+  }
+  throw new TypeError("Correlation publication status phase is malformed");
+}
+
+function settledTargetMatches(
+  target: CorrelationPublicationTarget | null,
+  resolution: CorrelationPublicationStoredResolution,
+): boolean {
+  switch (resolution.kind) {
+    case CorrelationPublicationStoredResolutionKind.Semantic:
+      switch (resolution.outcome.kind) {
+        case CorrelationPublicationSemanticOutcomeKind.RejectedNoMatch:
+        case CorrelationPublicationSemanticOutcomeKind.RejectedAmbiguous:
+          return target === null;
+        case CorrelationPublicationSemanticOutcomeKind.Committed:
+          return target !== null && sameCorrelationPublicationTarget(
+            target,
+            resolution.outcome.target,
+          );
+      }
+      break;
+    case CorrelationPublicationStoredResolutionKind.TargetInconsistent:
+      return target !== null && sameCorrelationPublicationTarget(
+        target,
+        resolution.target,
+      );
+  }
+}
+
+function sameCorrelationPublicationTarget(
+  left: CorrelationPublicationTarget,
+  right: CorrelationPublicationTarget,
+): boolean {
+  return left.processInstanceId === right.processInstanceId &&
+    left.subscriptionId.processInstanceId ===
+      right.subscriptionId.processInstanceId &&
+    left.subscriptionId.elementId === right.subscriptionId.elementId &&
+    left.subscriptionId.activation === right.subscriptionId.activation;
 }
 
 function nonemptyBoundedCommandId(value: unknown): value is string {

@@ -22,5 +22,8 @@
     "@bpmn-lean/bpmn-source": "workspace:*",
     "@bpmn-lean/semantic-core": "workspace:*",
     "@bpmn-lean/temporal-client": "workspace:*"
+  },
+  "devDependencies": {
+    "@bpmn-lean/temporal-protocol": "workspace:*"
   }
 }

@@ -464,10 +464,11 @@ export function correlationPublicationStatus(
     };
   }
   if (record.contentSha256 !== contentSha256) {
-    throw new CorrelationPublicationFault(
-      CorrelationPublicationFaultCode.IdentityConflict,
-      `Correlation publication ${command.commandId} was reused with different content`,
-    );
+    return {
+      kind: CorrelationPublicationStatusKind.IdentityConflict,
+      commandId: command.commandId,
+      requestedContentSha256: contentSha256,
+    };
   }
   return {
     kind: CorrelationPublicationStatusKind.Accepted,

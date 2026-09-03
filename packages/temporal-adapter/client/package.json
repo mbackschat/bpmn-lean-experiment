@@ -18,6 +18,10 @@
       "types": "./dist/correlation-ingress-client.d.ts",
       "import": "./dist/correlation-ingress-client.js"
     },
+    "./correlation-publication": {
+      "types": "./dist/correlation-publication-client.d.ts",
+      "import": "./dist/correlation-publication-client.js"
+    },
     "./message-start": {
       "types": "./dist/message-start-client.d.ts",
       "import": "./dist/message-start-client.js"
