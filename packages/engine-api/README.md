@@ -1,10 +1,10 @@
 # Engine API
 
-`@bpmn-lean/engine-api` is Product 1's narrow entry point for Product 2. It exposes compilation, start preparation and recovery, committed observation, scheduling, Message Start, human-work commands, and incident operations without exposing Semantic Process programs or Temporal SDK identities. Its definition-scoped correlated Message operation is an independently approved candidate slice pending complete public refinement; profile admission and Product 2 binding remain unavailable.
+`@bpmn-lean/engine-api` is Product 1's narrow entry point for Product 2. It exposes compilation, start preparation and recovery, committed observation, scheduling, Message Start, human-work commands, and incident operations without exposing Semantic Process programs or Temporal SDK identities. Accepted compilation projects complete target-free correlated Message capabilities from the immutable program, and the independently approved definition-scoped publication operation retains semantic, capacity, and infrastructure outcomes without exposing candidate or host identity.
 
 ## What you can do
 
-Use the approved API from the Product 2 engine gateway to compile exact source, start an exact deployed definition, observe published engine facts, and submit content-bound commands. Process-local commands use opaque Process locators. The candidate definition-scoped correlation operation accepts only the complete semantic definition address and payload and projects a closed semantic, capacity, or infrastructure result, but it is not yet a registered Product 1 capability or Product 2 integration. Callers never supply a candidate locator or target and receive no Workflow handle, Run ID, Event History, or private semantic anchor.
+Use the approved API from the Product 2 engine gateway to compile exact source, start an exact deployed definition, observe published engine facts, and submit content-bound commands. Process-local commands use opaque Process locators. Definition-scoped correlation accepts only an engine-projected complete semantic definition address, a caller-owned command identity, and payload; callers never supply a candidate locator or target and receive no Workflow handle, Run ID, Event History, or private semantic anchor. Product 2 binding remains pending.
 
 ## Quick start
 

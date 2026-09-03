@@ -50,6 +50,7 @@ test("compiles exact third-party bytes through the only product-2 engine boundar
     messageStarts: [],
     timerStarts: [],
   });
+  assert.equal("correlationCapabilities" in result, false);
 });
 
 test("maps the Timer Start capability into a platform-owned gateway value", async () => {

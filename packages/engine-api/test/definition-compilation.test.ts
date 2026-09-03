@@ -23,6 +23,10 @@ const messageStartSource = new URL(
   "../../../scenarios/message-start-event/process.bpmn",
   import.meta.url,
 );
+const messageCorrelationSource = new URL(
+  "../../../scenarios/message-key-correlation/process.bpmn",
+  import.meta.url,
+);
 const limits = {
   maxBytes: 1_048_576,
   parserDeadlineMs: 1_000,
@@ -102,6 +106,42 @@ test("projects the exact complete operation-addressed Message Start capability",
     })),
   };
   assert.notDeepEqual(changedOperation, result.startCapabilities);
+});
+
+test("projects the complete target-free correlated Message capability", async () => {
+  const result = await compileBpmnDefinition({
+    bytes: await readFile(messageCorrelationSource),
+    sourceId: "message-key-correlation-process",
+    semanticProfile: "bpmn-2.0.2-message-key-correlation-draft",
+    expectedSha256: undefined,
+    limits,
+  });
+
+  assert.equal(result.status, EngineDefinitionCompilationStatus.Accepted);
+  assert.deepEqual(result.correlationCapabilities, {
+    messages: [{
+      catchEventId: "MessageCatch_CorrelatedSettlement",
+      address: {
+        definition: {
+          compiler: "bpmn-source-semantic-process",
+          semanticProfile: "bpmn-2.0.2-message-key-correlation-draft",
+          sourceId: "message-key-correlation-process",
+          sourceSha256: "8d16faca66b00378d4ab02189cdd3270143076a46086b46dff68729d90dba086",
+          sourceOverlay: null,
+        },
+        processId: "Process_SettlementCorrelation",
+        channel: {
+          kind: "operationMessage",
+          interfaceId: "Interface_ClearingHouse",
+          interfaceOperationId: "Operation_ConfirmSettlement",
+          messageId: "Message_SettlementConfirmed",
+        },
+        correlationKeyId: "CorrelationKey_SettlementReference",
+      },
+    }],
+  });
+  assert.equal(JSON.stringify(result).includes("processInstanceId"), false);
+  assert.equal(JSON.stringify(result).includes("subscriptionId"), false);
 });
 
 test("retains every located rejection while keeping engine representations private", async () => {

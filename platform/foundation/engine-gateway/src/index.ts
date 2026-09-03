@@ -62,7 +62,7 @@ export const DefinitionCompilationStatus = EngineDefinitionCompilationStatus;
 export type DefinitionCompilationResult =
   | (Omit<
       Extract<EngineDefinitionCompilationResult, { status: "accepted" }>,
-      "startCapabilities"
+      "correlationCapabilities" | "startCapabilities"
     > & Readonly<{ startCapabilities: DefinitionStartCapabilities }>)
   | Extract<EngineDefinitionCompilationResult, { status: "rejected" }>;
 
@@ -182,8 +182,10 @@ export class BpmnEngineGateway
     });
     switch (result.status) {
       case EngineDefinitionCompilationStatus.Accepted:
+        const { correlationCapabilities: _correlationCapabilities, ...accepted } =
+          result;
         return {
-          ...result,
+          ...accepted,
           startCapabilities: mapDefinitionStartCapabilities(
             result.startCapabilities,
           ),

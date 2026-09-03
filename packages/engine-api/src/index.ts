@@ -17,9 +17,11 @@ import type {
 import type { DeepReadonly } from "@bpmn-lean/semantic-core";
 
 import {
+  engineDefinitionCorrelationCapabilities,
   engineDefinitionStartCapabilities,
 } from "./definition-capabilities.js";
 import type {
+  EngineDefinitionCorrelationCapabilities,
   EngineDefinitionStartCapabilities,
 } from "./definition-capabilities.js";
 
@@ -53,6 +55,7 @@ export type EngineAcceptedDefinitionCompilation = DeepReadonly<{
   diagnostics: readonly [];
   definition: EngineDefinitionIdentity;
   startCapabilities: EngineDefinitionStartCapabilities;
+  correlationCapabilities: EngineDefinitionCorrelationCapabilities;
 }>;
 
 export type EngineRejectedDefinitionCompilation = DeepReadonly<{
@@ -98,6 +101,9 @@ export async function compileBpmnDefinition(
           semanticProfile: compilation.semanticProcess.identity.semanticProfile,
         },
         startCapabilities: engineDefinitionStartCapabilities(
+          compilation.semanticProcess,
+        ),
+        correlationCapabilities: engineDefinitionCorrelationCapabilities(
           compilation.semanticProcess,
         ),
       };
