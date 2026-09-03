@@ -13,6 +13,12 @@ import {
   startPreparedTemporalDefinition,
 } from "@bpmn-lean/temporal-client/definition-start";
 import {
+  BpmnWorkflowHostInputKind,
+  WorkflowChainBudgetKind,
+  bpmnWorkflowContinuationV1,
+  workflowChainProductionLimit,
+} from "@bpmn-lean/temporal-protocol";
+import {
   processProgramFixture as program,
   processStartFixture as start,
 } from "./process-start-fixture.ts";
@@ -51,7 +57,16 @@ test("prepares immutable admitted intent with zero SDK calls and starts one exac
   assert.equal(call.options.workflowIdReusePolicy, "REJECT_DUPLICATE");
   assert.equal(call.options.workflowIdConflictPolicy, "FAIL");
   assert.equal("retry" in call.options, false);
-  assert.deepEqual(call.options.args, [start, program]);
+  assert.deepEqual(call.options.args, [start, program, {
+    protocol: bpmnWorkflowContinuationV1,
+    kind: BpmnWorkflowHostInputKind.Initial,
+    eventHistoryEventLimit: workflowChainProductionLimit(
+      WorkflowChainBudgetKind.EventHistoryEvents,
+    ),
+    eventHistoryByteLimit: workflowChainProductionLimit(
+      WorkflowChainBudgetKind.EventHistoryBytes,
+    ),
+  }]);
   assert.deepEqual(call.options.memo, {
     bpmnLeanDirectStartIntentSha256: prepared.intent.intentSha256,
   });

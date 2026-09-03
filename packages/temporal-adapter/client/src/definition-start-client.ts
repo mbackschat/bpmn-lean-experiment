@@ -21,6 +21,7 @@ import {
 import type { WorkflowClient } from "@temporalio/client";
 
 import {
+  productionBpmnWorkflowInitialHostInput,
   bpmnProcessWorkflowType,
   canonicalTypedTupleEncoding,
   deterministicSha256Hex,
@@ -239,7 +240,7 @@ export async function startPreparedTemporalDefinition(
       workflowId: snapshot.workflowId,
       workflowIdReusePolicy: "REJECT_DUPLICATE",
       workflowIdConflictPolicy: "FAIL",
-      args: [snapshot.start, snapshot.semanticProcess],
+      args: [snapshot.start, snapshot.semanticProcess, snapshot.hostInput],
       memo: { [directStartMemoKey]: prepared.intent.intentSha256 },
     }),
     operationDeadlineMs,
@@ -319,6 +320,7 @@ function workflowClientOf(
 type DirectStartSnapshot = Readonly<{
   start: StartProcessStimulus;
   semanticProcess: SemanticProcessProgram;
+  hostInput: ReturnType<typeof productionBpmnWorkflowInitialHostInput>;
   workflowId: string;
   taskQueue: string;
 }>;
@@ -331,6 +333,7 @@ function snapshotDirectStartRequest(
   return {
     start: structuredClone(request.start),
     semanticProcess: structuredClone(request.semanticProcess),
+    hostInput: productionBpmnWorkflowInitialHostInput(),
     workflowId: request.workflowId,
     taskQueue: request.taskQueue,
   };
@@ -371,6 +374,7 @@ function deriveDirectStartIntent(
     "workflowRetry:absent",
     canonicalJson(snapshot.start),
     canonicalJson(snapshot.semanticProcess),
+    canonicalJson(snapshot.hostInput),
   ]);
   return {
     protocol: directStartIntentProtocol,

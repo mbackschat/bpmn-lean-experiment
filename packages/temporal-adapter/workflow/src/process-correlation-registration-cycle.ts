@@ -11,7 +11,6 @@ import {
   CorrelationRegistrationFailureKind,
   ProcessCorrelationRegistrationPhase,
   ProcessCorrelationRegistrationResolutionKind,
-  bpmnSemanticTaskQueue,
   productionCorrelationIngressConfiguration,
   requireProcessCorrelationRegistrationResolution,
 } from "@bpmn-lean/temporal-protocol";
@@ -72,6 +71,7 @@ export type ProcessCorrelationRegistrationCycleInput = Readonly<{
   publication: CommandPublicationState;
   traceEntries: number;
   retention: WorkflowRunRetentionState;
+  taskQueue: string;
   resolve: (request: ProcessCorrelationRegistrationActivityRequest) => Promise<unknown>;
   retryDelay: () => Promise<void>;
 }>;
@@ -80,7 +80,7 @@ export type ProcessCorrelationRegistrationCycleInput = Readonly<{
 export async function runProcessCorrelationRegistrationCycle(
   input: ProcessCorrelationRegistrationCycleInput,
 ): Promise<ProcessCorrelationRegistrationCycle> {
-  const request = activityRequest(input.stage);
+  const request = activityRequest(input.stage, input.taskQueue);
   let resolution;
   try {
     resolution = requireProcessCorrelationRegistrationResolution(
@@ -187,10 +187,11 @@ function preparedCycle(
 
 function activityRequest(
   stage: ProcessCorrelationRegistrationStage,
+  taskQueue: string,
 ): ProcessCorrelationRegistrationActivityRequest {
   return {
     phase: stage.phase,
-    taskQueue: bpmnSemanticTaskQueue,
+    taskQueue,
     configuration: productionCorrelationIngressConfiguration,
     registration: stage.registration,
   };

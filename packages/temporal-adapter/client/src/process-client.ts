@@ -20,9 +20,7 @@ import type {
 } from "@temporalio/client";
 
 import {
-  BpmnWorkflowHostInputKind,
   TemporalHostCapabilityResultKind,
-  WorkflowChainBudgetKind,
   bpmnTraceQueryName,
   bpmnCompleteUserTaskUpdateName,
   bpmnDeliverMessageSignalName,
@@ -30,9 +28,8 @@ import {
   bpmnOpenUserTasksQueryName,
   bpmnUserTaskDetailQueryName,
   bpmnProcessWorkflowType,
-  bpmnWorkflowContinuationV1,
+  productionBpmnWorkflowInitialHostInput,
   requireWorkflowChainInitialArgumentBudgets,
-  workflowChainProductionLimit,
 } from "@bpmn-lean/temporal-protocol";
 import type {
   BpmnProcessWorkflow,
@@ -209,16 +206,11 @@ export async function startBpmnProcess(
         taskQueue: options.taskQueue,
         workflowId: processWorkflowId(processInstanceId),
         workflowIdReusePolicy: "REJECT_DUPLICATE",
-        args: [start, semanticProcess, {
-          protocol: bpmnWorkflowContinuationV1,
-          kind: BpmnWorkflowHostInputKind.Initial,
-          eventHistoryEventLimit: workflowChainProductionLimit(
-            WorkflowChainBudgetKind.EventHistoryEvents,
-          ),
-          eventHistoryByteLimit: workflowChainProductionLimit(
-            WorkflowChainBudgetKind.EventHistoryBytes,
-          ),
-        }],
+        args: [
+          start,
+          semanticProcess,
+          productionBpmnWorkflowInitialHostInput(),
+        ],
       },
     ),
     operationDeadlineMs,

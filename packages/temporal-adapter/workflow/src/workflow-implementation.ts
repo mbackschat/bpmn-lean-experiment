@@ -376,6 +376,7 @@ export async function runBpmnProcessWithHostEffects(
         publication: commandPublication,
         traceEntries: trace.length,
         retention: runRetention,
+        taskQueue: workflowInfo().taskQueue,
         resolve: resolveBpmnCorrelationCandidateRegistration,
         retryDelay: () => sleep("1s"),
       });

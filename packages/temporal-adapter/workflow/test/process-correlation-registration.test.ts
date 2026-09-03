@@ -56,6 +56,7 @@ import type {
 const processId = "Process_SettlementCorrelation";
 const processInstanceId = "ProcessInstance_Selected";
 const processWorkflowId = "bpmn-process-sha256:selected";
+const taskQueue = "configured-process-queue";
 const channel = {
   kind: MessageChannelKind.OperationMessage,
   interfaceId: "Interface_Settlement",
@@ -299,11 +300,15 @@ test("installs the staged successor only after prepare and publishes its outcome
     publication: fixture.publication,
     traceEntries: fixture.started.observations.length,
     retention: retained,
-    resolve: async (request) => ({
-      kind: ProcessCorrelationRegistrationResolutionKind.Prepared,
-      transactionId: request.registration.transactionId,
-      phase: CorrelationCandidateRegistrationPhase.Pending,
-    }),
+    taskQueue,
+    resolve: async (request) => {
+      assert.equal(request.taskQueue, taskQueue);
+      return {
+        kind: ProcessCorrelationRegistrationResolutionKind.Prepared,
+        transactionId: request.registration.transactionId,
+        phase: CorrelationCandidateRegistrationPhase.Pending,
+      };
+    },
     retryDelay: async () => assert.fail("prepare did not require a retry"),
   });
   assert.equal(
@@ -326,6 +331,7 @@ test("installs the staged successor only after prepare and publishes its outcome
     traceEntries:
       fixture.started.observations.length + prepared.observations.length,
     retention: prepared.retention,
+    taskQueue,
     resolve: async (request) => ({
       kind: ProcessCorrelationRegistrationResolutionKind.Finalized,
       transactionId: request.registration.transactionId,
@@ -360,6 +366,7 @@ test("retains the exact pre-commit stage when a scan defers prepare", async () =
       fixture.started.observations,
       fixture.publication,
     ),
+    taskQueue,
     resolve: async (request) => ({
       kind: ProcessCorrelationRegistrationResolutionKind.DeferredByScan,
       transactionId: request.registration.transactionId,

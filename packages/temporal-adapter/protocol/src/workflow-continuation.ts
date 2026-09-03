@@ -65,13 +65,27 @@ export enum BpmnWorkflowHostInputKind {
   Continuation = "continuation",
 }
 
-/** Explicit initial input used only by the direct first-green host witness. */
+/** Explicit initial input for every new production Process Workflow chain. */
 export type BpmnWorkflowInitialHostInputV1 = DeepReadonly<{
   protocol: typeof bpmnWorkflowContinuationV1;
   kind: BpmnWorkflowHostInputKind.Initial;
   eventHistoryEventLimit: number;
   eventHistoryByteLimit: number;
 }>;
+
+/** Constructs the one production-bounded initial host input shared by every Process start path. */
+export function productionBpmnWorkflowInitialHostInput(): BpmnWorkflowInitialHostInputV1 {
+  return {
+    protocol: bpmnWorkflowContinuationV1,
+    kind: BpmnWorkflowHostInputKind.Initial,
+    eventHistoryEventLimit: workflowChainProductionLimit(
+      WorkflowChainBudgetKind.EventHistoryEvents,
+    ),
+    eventHistoryByteLimit: workflowChainProductionLimit(
+      WorkflowChainBudgetKind.EventHistoryBytes,
+    ),
+  };
+}
 
 /** Private chain metadata. Run identity remains absent from every public engine contract. */
 export type BpmnWorkflowContinuationHostInputV1 = DeepReadonly<{
