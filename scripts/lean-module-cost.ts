@@ -586,6 +586,12 @@ export const leanModuleCostRecord = {
       elapsedSeconds: 1.38,
       measuredAtCommit: "741d7f6d",
     },
+    {
+      module: "BpmnSemantics.EnginePopulationScenarioConformance",
+      peakResidentKib: 669784,
+      elapsedSeconds: 0.85,
+      measuredAtCommit: "b3903102",
+    },
     { module: "BpmnSemantics.ExclusiveGatewaySimpleBooleanConformance", peakResidentKib: 646452, elapsedSeconds: 0.7 },
     {
       module: "BpmnSemantics.ActivityIssuingDisciplineConformance",
