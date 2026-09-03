@@ -4,19 +4,94 @@ import path from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
+import { API } from "typescript/unstable/sync";
+import * as ast from "typescript/unstable/ast";
+import type {
+  Expression,
+  Node,
+  ObjectLiteralExpression,
+  SourceFile,
+} from "typescript/unstable/ast";
+
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
+const temporalClientTsconfig = path.join(
+  projectRoot,
+  "packages/temporal-adapter/client/tsconfig.json",
+);
 const workflowChainPatchOwner =
   "packages/temporal-adapter/workflow/src/workflow-implementation.ts";
 const workflowChainPatchIdentityOwner =
   "packages/temporal-adapter/protocol/src/workflow-continuation.ts";
 const processCorrelationPatchIdentityOwner =
   "packages/temporal-adapter/protocol/src/process-correlation-registration.ts";
-const productionProcessStartOwners = [
-  "packages/temporal-adapter/client/src/definition-schedule-client.ts",
-  "packages/temporal-adapter/client/src/definition-start-client.ts",
-  "packages/temporal-adapter/client/src/message-start-client.ts",
-  "packages/temporal-adapter/client/src/process-client.ts",
-];
+const productionProcessStartSites = [
+  {
+    owner: "packages/temporal-adapter/client/src/definition-schedule-client.ts",
+    kind: "scheduled",
+    workflowType: "temporalDefinitionScheduleWorkflowType",
+    hostInput: "temporalDefinitionScheduleInitialHostInput()",
+  },
+  {
+    owner: "packages/temporal-adapter/client/src/definition-start-client.ts",
+    kind: "direct",
+    workflowType: "bpmnProcessWorkflowType",
+    hostInput: "snapshot.hostInput",
+  },
+  {
+    owner: "packages/temporal-adapter/client/src/message-start-client.ts",
+    kind: "direct",
+    workflowType: "bpmnProcessWorkflowType",
+    hostInput: "snapshot.hostInput",
+  },
+  {
+    owner: "packages/temporal-adapter/client/src/process-client.ts",
+    kind: "direct",
+    workflowType: "bpmnProcessWorkflowType",
+    hostInput: "productionBpmnWorkflowInitialHostInput()",
+  },
+] as const;
+
+const productionProcessHostInputProducers = [
+  {
+    owner: "packages/temporal-adapter/client/src/definition-schedule-client.ts",
+    producer:
+      "temporalDefinitionScheduleInitialHostInput=productionBpmnWorkflowInitialHostInput",
+  },
+  {
+    owner: "packages/temporal-adapter/client/src/definition-start-client.ts",
+    producer: "hostInput=productionBpmnWorkflowInitialHostInput()",
+  },
+  {
+    owner: "packages/temporal-adapter/client/src/message-start-client.ts",
+    producer: "hostInput=productionBpmnWorkflowInitialHostInput()",
+  },
+] as const;
+
+const productionProcessStartHostArgumentMutations = [
+  {
+    owner: "packages/temporal-adapter/client/src/definition-schedule-client.ts",
+    hostArgument: "            temporalDefinitionScheduleInitialHostInput(),\n",
+  },
+  {
+    owner: "packages/temporal-adapter/client/src/definition-start-client.ts",
+    hostArgument: ", snapshot.hostInput",
+  },
+  {
+    owner: "packages/temporal-adapter/client/src/message-start-client.ts",
+    hostArgument: ", snapshot.hostInput",
+  },
+  {
+    owner: "packages/temporal-adapter/client/src/process-client.ts",
+    hostArgument: "          productionBpmnWorkflowInitialHostInput(),\n",
+  },
+] as const;
+
+type ProductionProcessStartSite = Readonly<{
+  owner: string;
+  kind: "direct" | "scheduled";
+  workflowType: string;
+  hostInput: string;
+}>;
 
 const temporalSourceRoots = [
   "packages/temporal-adapter/client/src",
@@ -331,19 +406,260 @@ test("keeps pre-release Temporal replay evidence and patch enrollment exact", as
   );
 });
 
-test("enrolls every production Process start constructor in Workflow-chain hosting", async () => {
-  const clientSources = await sourceFiles("packages/temporal-adapter/client/src");
-  const actualOwners: string[] = [];
-  for (const relativePath of clientSources) {
-    const source = await readFile(path.join(projectRoot, relativePath), "utf8");
-    if (!source.includes("bpmnProcessWorkflowType")) {
-      continue;
-    }
-    actualOwners.push(relativePath);
-    assert.ok(
-      (source.match(/productionBpmnWorkflowInitialHostInput/gu)?.length ?? 0) >= 2,
-      `${relativePath} must construct the production Workflow-chain host input`,
-    );
+test("enrolls every production Process start constructor in Workflow-chain hosting", () => {
+  const api = new API({ cwd: projectRoot });
+  try {
+    const snapshot = api.updateSnapshot({ openProjects: [temporalClientTsconfig] });
+    assertProductionProcessStartConstructors(projectClientSources(snapshot));
+    snapshot.dispose();
+  } finally {
+    api.close();
   }
-  assert.deepEqual(actualOwners.sort(), productionProcessStartOwners);
 });
+
+test("rejects every production Process start when its Workflow-chain host argument is deleted", async () => {
+  for (const mutationCase of productionProcessStartHostArgumentMutations) {
+    const ownerPath = path.join(projectRoot, mutationCase.owner);
+    const original = await readFile(ownerPath, "utf8");
+    const mutation = original.replace(mutationCase.hostArgument, "");
+    assert.notEqual(
+      mutation,
+      original,
+      `${mutationCase.owner} host-argument mutation matched nothing`,
+    );
+
+    const api = new API({
+      cwd: projectRoot,
+      fs: {
+        readFile(fileName) {
+          return path.resolve(fileName) === ownerPath ? mutation : undefined;
+        },
+      },
+    });
+    try {
+      const snapshot = api.updateSnapshot({ openProjects: [temporalClientTsconfig] });
+      assert.throws(
+        () => assertProductionProcessStartConstructors(projectClientSources(snapshot)),
+        /production Process start constructor inventory/u,
+        mutationCase.owner,
+      );
+      snapshot.dispose();
+    } finally {
+      api.close();
+    }
+  }
+});
+
+function projectClientSources(
+  snapshot: ReturnType<API["updateSnapshot"]>,
+): ReadonlyMap<string, SourceFile> {
+  const project = snapshot.getProjects().find((candidate) =>
+    path.resolve(candidate.configFileName) === temporalClientTsconfig
+  );
+  assert.ok(project, "the Temporal client TypeScript project must be loaded");
+  const clientSourceRoot = path.join(
+    projectRoot,
+    "packages/temporal-adapter/client/src",
+  );
+  return new Map(project.program.getSourceFileNames().flatMap((fileName) => {
+    const sourceRelativePath = path.relative(clientSourceRoot, fileName);
+    if (
+      sourceRelativePath.startsWith(`..${path.sep}`) ||
+      path.isAbsolute(sourceRelativePath) ||
+      !sourceRelativePath.endsWith(".ts") ||
+      sourceRelativePath.endsWith(".d.ts")
+    ) {
+      return [];
+    }
+    const relativePath = path.relative(projectRoot, fileName);
+    const file = project.program.getSourceFile(fileName);
+    return file === undefined ? [] : [[relativePath, file] as const];
+  }));
+}
+
+function assertProductionProcessStartConstructors(
+  clientSources: ReadonlyMap<string, SourceFile>,
+): void {
+  const actualSites: ProductionProcessStartSite[] = [];
+  const actualProducers: Array<{ owner: string; producer: string }> = [];
+  for (const [relativePath, file] of clientSources) {
+    collectProductionProcessStartSites(relativePath, file, actualSites);
+    collectProductionHostInputProducers(relativePath, file, actualProducers);
+  }
+  actualSites.sort(compareProductionInventoryEntry);
+  actualProducers.sort(compareProductionInventoryEntry);
+  assert.deepEqual(
+    actualSites,
+    [...productionProcessStartSites],
+    "production Process start constructor inventory must bind every actual start to its Workflow-chain host argument",
+  );
+  assert.deepEqual(
+    actualProducers,
+    [...productionProcessHostInputProducers],
+    "production Process start host-input producer inventory must remain content-bound",
+  );
+}
+
+function collectProductionProcessStartSites(
+  owner: string,
+  file: SourceFile,
+  sites: ProductionProcessStartSite[],
+): void {
+  const workflowTypes = identifierAliases(file, "bpmnProcessWorkflowType");
+  visit(file, (node) => {
+    if (ast.isCallExpression(node) && isStartMethod(node.expression)) {
+      const workflowType = compactExpression(node.arguments[0], file);
+      const options = unwrapObjectLiteral(node.arguments[1]);
+      if (workflowTypes.has(workflowType) && options !== undefined) {
+        sites.push({
+          owner,
+          kind: "direct",
+          workflowType,
+          hostInput: thirdWorkflowArgument(options, file),
+        });
+      }
+    }
+    if (!ast.isObjectLiteralExpression(node)) return;
+    const type = objectProperty(node, "type");
+    const workflowType = compactExpression(
+      objectProperty(node, "workflowType"),
+      file,
+    );
+    if (
+      type === undefined ||
+      !ast.isStringLiteral(type) ||
+      type.text !== "startWorkflow" ||
+      !workflowTypes.has(workflowType)
+    ) {
+      return;
+    }
+    sites.push({
+      owner,
+      kind: "scheduled",
+      workflowType,
+      hostInput: thirdWorkflowArgument(node, file),
+    });
+  });
+}
+
+function identifierAliases(file: SourceFile, root: string): ReadonlySet<string> {
+  const aliases = new Set([root]);
+  let changed = true;
+  while (changed) {
+    changed = false;
+    visit(file, (node) => {
+      if (!ast.isVariableDeclaration(node)) return;
+      const name = identifierText(node.name);
+      const initializer = compactExpression(node.initializer, file);
+      if (name !== undefined && aliases.has(initializer) && !aliases.has(name)) {
+        aliases.add(name);
+        changed = true;
+      }
+    });
+  }
+  return aliases;
+}
+
+function isStartMethod(expression: Expression): boolean {
+  return ast.isPropertyAccessExpression(expression) &&
+    identifierText(expression.name) === "start";
+}
+
+function collectProductionHostInputProducers(
+  owner: string,
+  file: SourceFile,
+  producers: Array<{ owner: string; producer: string }>,
+): void {
+  visit(file, (node) => {
+    if (
+      ast.isVariableDeclaration(node) &&
+      identifierText(node.name) === "temporalDefinitionScheduleInitialHostInput" &&
+      compactExpression(node.initializer, file) ===
+        "productionBpmnWorkflowInitialHostInput"
+    ) {
+      producers.push({
+        owner,
+        producer:
+          "temporalDefinitionScheduleInitialHostInput=productionBpmnWorkflowInitialHostInput",
+      });
+    }
+    if (
+      ast.isPropertyAssignment(node) &&
+      propertyName(node.name) === "hostInput" &&
+      compactExpression(node.initializer, file) ===
+        "productionBpmnWorkflowInitialHostInput()"
+    ) {
+      producers.push({
+        owner,
+        producer: "hostInput=productionBpmnWorkflowInitialHostInput()",
+      });
+    }
+  });
+}
+
+function thirdWorkflowArgument(
+  options: ObjectLiteralExpression,
+  file: SourceFile,
+): string {
+  const arguments_ = objectProperty(options, "args");
+  return arguments_ !== undefined && ast.isArrayLiteralExpression(arguments_)
+    ? compactExpression(arguments_.elements[2], file)
+    : "<missing>";
+}
+
+function objectProperty(
+  object: ObjectLiteralExpression,
+  name: string,
+): Expression | undefined {
+  const matches = object.properties.filter((property) =>
+    ast.isPropertyAssignment(property) && propertyName(property.name) === name
+  );
+  assert.ok(matches.length <= 1, `object repeats ${name}`);
+  const match = matches[0];
+  return match !== undefined && ast.isPropertyAssignment(match)
+    ? match.initializer
+    : undefined;
+}
+
+function unwrapObjectLiteral(
+  expression: Expression | undefined,
+): ObjectLiteralExpression | undefined {
+  if (expression === undefined) return undefined;
+  if (
+    ast.isParenthesizedExpression(expression) ||
+    ast.isAsExpression(expression) ||
+    ast.isSatisfiesExpression(expression)
+  ) {
+    return unwrapObjectLiteral(expression.expression);
+  }
+  return ast.isObjectLiteralExpression(expression) ? expression : undefined;
+}
+
+function compactExpression(
+  expression: Node | undefined,
+  file: SourceFile,
+): string {
+  return expression?.getText(file).replaceAll(/\s/gu, "") ?? "<missing>";
+}
+
+function identifierText(node: Node | undefined): string | undefined {
+  return node !== undefined && ast.isIdentifier(node) ? node.text : undefined;
+}
+
+function propertyName(node: Node): string | undefined {
+  return ast.isIdentifier(node) || ast.isStringLiteral(node)
+    ? node.text
+    : undefined;
+}
+
+function visit(node: Node, inspect: (candidate: Node) => void): void {
+  inspect(node);
+  node.forEachChild((child) => visit(child, inspect));
+}
+
+function compareProductionInventoryEntry(
+  left: Readonly<{ owner: string }>,
+  right: Readonly<{ owner: string }>,
+): number {
+  return left.owner.localeCompare(right.owner, "en");
+}
