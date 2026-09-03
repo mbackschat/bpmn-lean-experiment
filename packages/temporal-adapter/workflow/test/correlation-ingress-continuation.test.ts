@@ -11,8 +11,15 @@ import type {
   CorrelatedMessageCandidate,
 } from "@bpmn-lean/semantic-core";
 import {
+  CorrelationCandidateRegistrationPhase,
   CorrelationIngressInFlightPhase,
+  CorrelationPublicationLedgerPhase,
   CorrelationPublicationOrderResultKind,
+  CorrelationPublicationSemanticOutcomeKind,
+  CorrelationPublicationStoredResolutionKind,
+  bpmnCorrelationIngressContinuationV1,
+  correlationCandidateRegistrationContentSha256,
+  correlationIngressContinuationArgumentBytes,
   correlationIngressContinuationBudgetViolation,
   productionCorrelationIngressConfiguration,
   workflowChainCanonicalUtf8ByteLength,
@@ -68,6 +75,25 @@ test("accepts the exact separately encoded ingress aggregate and refuses one byt
     configuredBound: configuration.maxContinuationArgumentBytes,
     observedValue: configuration.maxContinuationArgumentBytes + 1,
   });
+});
+
+test("restores the exact ingress aggregate and rejects one byte over", () => {
+  const exact = restorableAggregateArguments(
+    configuration.maxContinuationArgumentBytes,
+  );
+  assert.equal(
+    correlationIngressContinuationArgumentBytes(...exact),
+    configuration.maxContinuationArgumentBytes,
+  );
+  assert.deepEqual(
+    restoreCorrelationIngressState(...exact),
+    { ...stableRuntime(), runOrdinal: 2 },
+  );
+
+  const oneOver = restorableAggregateArguments(
+    configuration.maxContinuationArgumentBytes + 1,
+  );
+  assertInvalidContinuationFor(...oneOver);
 });
 
 test("builds required Run 128 and refuses Run 129 before reading retained state", () => {
@@ -133,6 +159,8 @@ test("restores a failed fanout only when the barrier and reservation remain exac
     },
   };
   assertInvalidContinuation(wrongBarrier);
+
+  assertInvalidContinuation(withQuarantinedRegistration(successor[2]));
 
   const changedQueuePayload = queuedSuccessor();
   changedQueuePayload.publicationState.queue[0]!.payload = {
@@ -203,7 +231,62 @@ test("rejects either half of a selected target and never permits a rematch", () 
   inFlightTargetRemoved.publicationState.inFlight.target = null;
   assertInvalidContinuation(inFlightTargetRemoved);
 
+  assertInvalidContinuation(withQuarantinedRegistration(successor[2]));
+
   assertInvalidContinuation({ ...successor[2], unexpected: true });
+});
+
+test("rejects a settled ordinal after an earlier in-flight reservation", () => {
+  let publicationState = admittedPublicationState(
+    "Publication_InFlight",
+    "settlement-42",
+  );
+  publicationState = admitCorrelationPublication(
+    publicationState,
+    address,
+    configuration,
+    {
+      commandId: "Publication_ImproperlySettled",
+      address,
+      payload: { kind: VariableValueKind.String, value: "settlement-43" },
+    },
+  ).state;
+  publicationState = admitCorrelationPublication(
+    publicationState,
+    address,
+    configuration,
+    {
+      commandId: "Publication_Queued",
+      address,
+      payload: { kind: VariableValueKind.String, value: "settlement-44" },
+    },
+  ).state;
+  const started = startNextCorrelationPublication(
+    publicationState,
+    address,
+    configuration,
+  );
+  assert.equal(started.result.kind, CorrelationPublicationOrderResultKind.Started);
+  const runtime = candidateFanoutRuntimeWithPublicationState(started.state);
+  const impossible = structuredClone(buildCorrelationIngressSuccessor(
+    address,
+    configuration,
+    runtime,
+  )[2]);
+  const later = impossible.publicationState.ledger[1];
+  assert.ok(later !== undefined);
+  later.phase = CorrelationPublicationLedgerPhase.Settled;
+  later.ordinal = 2;
+  later.resolution = {
+    kind: CorrelationPublicationStoredResolutionKind.Semantic,
+    outcome: {
+      kind: CorrelationPublicationSemanticOutcomeKind.RejectedNoMatch,
+    },
+  };
+  impossible.publicationState.nextOrdinal = 3;
+  impossible.publicationState.queue.splice(0, 1);
+
+  assertInvalidContinuation(impossible);
 });
 
 test("rejects a forged incoming Run 129 as continuation-invalid", () => {
@@ -225,7 +308,6 @@ function stableRuntime() {
 }
 
 function candidateFanoutRuntime() {
-  let registrationState = activeRegistrationState();
   let publicationState = admittedPublicationState("Publication_1", "settlement-42");
   const started = startNextCorrelationPublication(
     publicationState,
@@ -237,11 +319,19 @@ function candidateFanoutRuntime() {
     assert.fail("publication did not start");
   }
   publicationState = started.state;
+  return candidateFanoutRuntimeWithPublicationState(publicationState);
+}
+
+function candidateFanoutRuntimeWithPublicationState(
+  publicationState: CorrelationPublicationState,
+) {
+  let registrationState = activeRegistrationState();
+  assert.ok(publicationState.inFlight !== null);
   registrationState = beginCorrelationCandidateScan(
     registrationState,
     address,
     configuration,
-    started.result.contentSha256,
+    publicationState.inFlight.contentSha256,
   ).state;
   return {
     runOrdinal: 1,
@@ -349,13 +439,82 @@ function candidate(): CorrelatedMessageCandidate {
 }
 
 function assertInvalidContinuation(value: unknown): void {
+  assertInvalidContinuationFor(address, configuration, value);
+}
+
+function assertInvalidContinuationFor(
+  selectedAddress: CorrelatedMessageAddress,
+  selectedConfiguration: CorrelationIngressConfiguration,
+  value: unknown,
+): void {
   assert.throws(
-    () => restoreCorrelationIngressState(address, configuration, value),
+    () => restoreCorrelationIngressState(
+      selectedAddress,
+      selectedConfiguration,
+      value,
+    ),
     (error: unknown) =>
       error instanceof ApplicationFailure &&
       error.type === "BpmnCorrelationIngressContinuationInvalid" &&
       error.nonRetryable === true,
   );
+}
+
+function restorableAggregateArguments(
+  aggregateBytes: number,
+): readonly [
+  CorrelatedMessageAddress,
+  CorrelationIngressConfiguration,
+  CorrelationIngressContinuationV1,
+] {
+  const continuation: CorrelationIngressContinuationV1 = {
+    protocol: bpmnCorrelationIngressContinuationV1,
+    runOrdinal: 2,
+    registrationState: emptyCorrelationCandidateRegistrationState(),
+    publicationState: emptyCorrelationPublicationState(),
+    inFlightPhase: null,
+  };
+  const baseBytes = correlationIngressContinuationArgumentBytes(
+    address,
+    configuration,
+    continuation,
+  );
+  assert.ok(aggregateBytes >= baseBytes);
+  return [
+    {
+      ...address,
+      processId: address.processId + "x".repeat(aggregateBytes - baseBytes),
+    },
+    configuration,
+    continuation,
+  ];
+}
+
+function withQuarantinedRegistration(
+  continuation: CorrelationIngressContinuationV1,
+): CorrelationIngressContinuationV1 {
+  const quarantinedRequest = {
+    ...registrationRequest(),
+    transactionId: "Registration_Quarantined",
+  };
+  return {
+    ...continuation,
+    registrationState: {
+      ...continuation.registrationState,
+      records: [
+        ...continuation.registrationState.records,
+        {
+          transactionId: quarantinedRequest.transactionId,
+          contentSha256: correlationCandidateRegistrationContentSha256(
+            quarantinedRequest,
+          ),
+          phase: CorrelationCandidateRegistrationPhase.Quarantined,
+          candidate: quarantinedRequest.candidate,
+          processLocator: quarantinedRequest.processLocator,
+        },
+      ],
+    },
+  };
 }
 
 function aggregateArguments(

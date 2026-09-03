@@ -77,6 +77,16 @@ export function restoreCorrelationIngressState(
       configuration,
       continuationValue,
     );
+    const violation = correlationIngressContinuationBudgetViolation(
+      address,
+      configuration,
+      continuation,
+    );
+    if (violation !== null) {
+      throw new RangeError(
+        `Correlation ingress continuation exceeds ${violation.configuredBound} bytes: ${violation.observedValue}`,
+      );
+    }
     return {
       runOrdinal: continuation.runOrdinal,
       registrationState: continuation.registrationState,
@@ -217,6 +227,12 @@ function requirePhaseRelation(
 ): void {
   const inFlight = publicationState.inFlight;
   const barrier = registrationState.scanBarrier;
+  if (phase !== null && registrationState.records.some(
+    ({ phase: registrationPhase }) =>
+      registrationPhase === CorrelationCandidateRegistrationPhase.Quarantined,
+  )) {
+    throw new TypeError("In-flight ingress continuation retains address quarantine");
+  }
   switch (phase) {
     case null:
       if (inFlight !== null || barrier !== null) {
@@ -228,8 +244,6 @@ function requirePhaseRelation(
         (barrier === null
           ? !registrationState.records.some(({ phase: registrationPhase }) =>
               registrationPhase === CorrelationCandidateRegistrationPhase.Pending
-            ) || registrationState.records.some(({ phase: registrationPhase }) =>
-              registrationPhase === CorrelationCandidateRegistrationPhase.Quarantined
             )
           : barrier.scanId !== inFlight.contentSha256)) {
         throw new TypeError("Candidate-fanout continuation lost its exact barrier");

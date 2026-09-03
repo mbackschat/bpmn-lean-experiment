@@ -17,6 +17,12 @@ import type {
   CorrelationPublicationTarget,
 } from "@bpmn-lean/temporal-protocol";
 
+enum CorrelationPublicationLedgerSequencePhase {
+  SettledPrefix = "settledPrefix",
+  InFlight = "inFlight",
+  QueuedSuffix = "queuedSuffix",
+}
+
 /** Validates the complete durable publication ledger, FIFO projection, and in-flight binding. */
 export function requireCorrelationPublicationState(
   stateValue: unknown,
@@ -54,7 +60,7 @@ export function requireCorrelationPublicationState(
 
   const commandIds = new Set<string>();
   let expectedOrdinal = 1;
-  let reachedQueuedSuffix = false;
+  let sequencePhase = CorrelationPublicationLedgerSequencePhase.SettledPrefix;
   for (const recordValue of state.ledger) {
     const record = requireCorrelationPublicationLedgerRecord(recordValue);
     if (commandIds.has(record.commandId)) {
@@ -72,15 +78,17 @@ export function requireCorrelationPublicationState(
           record.resolution !== null) {
           invalidState("A queued publication already has an ordinal, target, or resolution");
         }
-        reachedQueuedSuffix = true;
+        sequencePhase = CorrelationPublicationLedgerSequencePhase.QueuedSuffix;
         break;
       case CorrelationPublicationLedgerPhase.InFlight:
         if (record.ordinal === null || record.resolution !== null) {
           invalidState("An in-flight publication has no reserved ordinal");
         }
-        if (reachedQueuedSuffix || record.ordinal !== expectedOrdinal) {
-          invalidState("In-flight publication order is not the ledger prefix");
+        if (sequencePhase !== CorrelationPublicationLedgerSequencePhase.SettledPrefix ||
+          record.ordinal !== expectedOrdinal) {
+          invalidState("In-flight publication does not follow the settled ledger prefix");
         }
+        sequencePhase = CorrelationPublicationLedgerSequencePhase.InFlight;
         expectedOrdinal += 1;
         break;
       case CorrelationPublicationLedgerPhase.Settled:
@@ -93,7 +101,8 @@ export function requireCorrelationPublicationState(
         )) {
           invalidState("A settled publication resolution disagrees with its target");
         }
-        if (reachedQueuedSuffix || record.ordinal !== expectedOrdinal) {
+        if (sequencePhase !== CorrelationPublicationLedgerSequencePhase.SettledPrefix ||
+          record.ordinal !== expectedOrdinal) {
           invalidState("Settled publication order is not the ledger prefix");
         }
         expectedOrdinal += 1;
