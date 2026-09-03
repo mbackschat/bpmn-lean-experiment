@@ -18,6 +18,7 @@ import {
   createCachedLocalEnvironment,
   isCompletedProcessReceipt,
   loadBpmnWorkflowBundle,
+  processTerminalReceiptFormatV1,
   readTestProcessTerminalResult,
   requireDurableEffectActivityHistory,
 } from "@bpmn-lean/temporal-testkit";
@@ -217,13 +218,20 @@ test("Compensation crosses a pre-schedule rollover and survives replacement plus
       "Compensation durability terminal result",
     );
     assert.equal(isCompletedProcessReceipt(terminal.receipt), true);
-    assert.deepEqual(terminal.receipt.finalState, fixture.expectedFinalState);
+    assert.deepEqual(terminal.receipt, {
+      format: processTerminalReceiptFormatV1,
+      definition: program.identity,
+      processId: program.processId,
+      processInstanceId: fixture.start.instanceId,
+      finalState: fixture.expectedFinalState,
+    });
     assert.deepEqual(completed, ["C", "B", "A"]);
 
     const evidence = await compensationWorkflowEvidence(
       environment,
       firstHandle.workflowId,
     );
+    assert.equal(evidence.runs.length, 6);
     const firstActivityRun = evidence.histories.findIndex(
       (history) => historyEvents(
         history,

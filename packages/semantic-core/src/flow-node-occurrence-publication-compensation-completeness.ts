@@ -20,7 +20,10 @@ import type {
 import {
   COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID,
 } from "./semantic-profile-catalog.js";
-import { sameScopeOccurrence } from "./semantic-process-state.js";
+import {
+  sameOccurrence,
+  sameScopeOccurrence,
+} from "./semantic-process-state.js";
 import type { ScopeOccurrenceId } from "./semantic-process-state.js";
 
 export type CompensationCompletenessPieces = Readonly<{
@@ -121,7 +124,12 @@ export function compensationCompletionCompletenessPieces(
     entry.anchor.kind === SemanticFlowNodeOccurrenceAnchorKind.CompensationTrigger &&
     sameScopeOccurrence(entry.owner, handler.owner)
   ));
-  const selectedEnds = handlerEnds(open, handler, subject);
+  const selectedEnds = handlerEnds(
+    open,
+    handler,
+    subject,
+    stimulus.effectId,
+  );
 
   if (stimulus.result.kind === EffectExecutionResultKind.BpmnError) {
     const activeHandlers = open.filter((entry) =>
@@ -239,15 +247,25 @@ function handlerEnds(
   open: readonly OpenOccurrence[],
   handler: OpenOccurrence,
   subject: CompensationSubjectDefinition,
+  effectId?: OccurrenceId,
 ): UnnumberedFlowNodeOccurrenceEnd[] {
   const terminals = [end(handler, FlowNodeOccurrenceTerminalKind.Completed)];
   if (subject.body.effectElementId === subject.body.handlerElementId) {
+    if (
+      effectId !== undefined &&
+      (
+        handler.anchor.kind !==
+          SemanticFlowNodeOccurrenceAnchorKind.CompensationHandler ||
+        !sameOccurrence(handler.anchor.id, effectId)
+      )
+    ) failCompleteness();
     return terminals;
   }
   const wait = requireUnique(open.filter((entry) =>
     entry.anchor.kind === SemanticFlowNodeOccurrenceAnchorKind.Wait &&
     entry.elementId === subject.body.effectElementId &&
-    sameScopeOccurrence(entry.owner, handler.owner)
+    sameScopeOccurrence(entry.owner, handler.owner) &&
+    (effectId === undefined || sameOccurrence(entry.anchor.id, effectId))
   ));
   return [...terminals, end(wait, FlowNodeOccurrenceTerminalKind.Completed)];
 }

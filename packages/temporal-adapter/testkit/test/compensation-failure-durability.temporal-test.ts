@@ -14,6 +14,7 @@ import {
   createCachedLocalEnvironment,
   isFailedProcessReceipt,
   loadBpmnWorkflowBundle,
+  processTerminalReceiptFormatV1,
   readTestProcessTerminalResult,
   requireDurableEffectActivityHistory,
 } from "@bpmn-lean/temporal-testkit";
@@ -186,13 +187,20 @@ test("Compensation failure cancels a live sibling and drains it before terminal 
     if (terminalOutcome.kind === "failure") throw terminalOutcome.error;
     const terminal = terminalOutcome.terminal;
     assert.ok(isFailedProcessReceipt(terminal.receipt));
-    assert.deepEqual(terminal.receipt.finalState, fixture.expectedFailedState);
+    assert.deepEqual(terminal.receipt, {
+      format: processTerminalReceiptFormatV1,
+      definition: program.identity,
+      processId: program.processId,
+      processInstanceId: fixture.start.instanceId,
+      finalState: fixture.expectedFailedState,
+    });
     aStore.requireEmpty();
 
     const evidence = await compensationWorkflowEvidence(
       environment,
       firstHandle.workflowId,
     );
+    assert.equal(evidence.runs.length, 5);
     const cHistory = compensationActivityHistory(
       evidence.histories,
       fixture.requests.c,

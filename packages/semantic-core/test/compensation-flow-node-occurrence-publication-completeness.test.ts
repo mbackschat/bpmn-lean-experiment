@@ -30,9 +30,6 @@ import {
   compensationSemanticProgram,
   triggerReadyFixture,
 } from "./compensation-trigger-handler-semantic-fixtures.ts";
-import {
-  compensationTriggerCompletenessPieces,
-} from "../src/flow-node-occurrence-publication-compensation-completeness.ts";
 
 const program = {
   ...compensationSemanticProgram,
@@ -66,6 +63,12 @@ test("admits the complete Compensation trigger and C-before-B-before-A success l
     triggered.result.state,
     c,
   );
+  assertIncomplete(
+    retained,
+    c.commandId,
+    withForgedEffectActivation(afterC, c),
+    afterC.flowNodeOccurrenceLifecycles,
+  );
   retained = requireAndFold(retained, c.commandId, afterC);
   const b = compensationCompletion(
     afterC.result.state,
@@ -76,6 +79,12 @@ test("admits the complete Compensation trigger and C-before-B-before-A success l
     program,
     afterC.result.state,
     b,
+  );
+  assertIncomplete(
+    retained,
+    b.commandId,
+    withForgedEffectActivation(afterB, b),
+    afterB.flowNodeOccurrenceLifecycles,
   );
   retained = requireAndFold(retained, b.commandId, afterB);
   const a = compensationCompletion(
@@ -143,14 +152,6 @@ test("admits the complete Compensation trigger and C-before-B-before-A success l
   assert.ok(
     triggerOperation?.kind === SemanticOperationKind.TriggerCompensation,
   );
-  const openBeforeTrigger = retainedFromState(ready.state);
-  assert.throws(() => compensationTriggerCompletenessPieces(
-    program,
-    openBeforeTrigger,
-    triggerOperation,
-    triggerTransition.owner,
-    { started: [] },
-  ), /complete lifecycle/u);
   const forgedAnchor = {
     kind: SemanticFlowNodeOccurrenceAnchorKind.Transition,
     commandId: ready.completion.commandId,
@@ -297,6 +298,34 @@ function assertIncomplete(
     traced.committedTransitions,
     lifecycles,
   ), /complete lifecycle/u);
+}
+
+function withForgedEffectActivation(
+  traced: TracedCommandResult,
+  expectedStimulus: CompleteEffectStimulus,
+): TracedCommandResult {
+  const first = traced.committedTransitions[0];
+  assert.ok(
+    first?.transition.kind === SemanticTransitionKind.ExternalStimulus &&
+      first.transition.stimulus.kind === StimulusKind.CompleteEffect,
+  );
+  assert.deepEqual(first.transition.stimulus, expectedStimulus);
+  return {
+    ...traced,
+    committedTransitions: [{
+      ...first,
+      transition: {
+        ...first.transition,
+        stimulus: {
+          ...first.transition.stimulus,
+          effectId: {
+            ...first.transition.stimulus.effectId,
+            activation: first.transition.stimulus.effectId.activation + 1,
+          },
+        },
+      },
+    }, ...traced.committedTransitions.slice(1)],
+  };
 }
 
 function replaceLifecycle(
