@@ -234,7 +234,7 @@ The 800-nonblank-line soft target is the extraction threshold and 1,200 lines th
 | [TypeScript scope runtime](../../packages/semantic-core/src/semantic-process-scope-runtime.ts) | 553 | route normal root disposal only |
 | [TypeScript called-Process runtime](../../packages/semantic-core/src/semantic-process-call-runtime.ts) | 378 | remove owner-keyed records with a called-instance subtree even though declaring Programs exclude Call operations |
 | [TypeScript scope cancellation](../../packages/semantic-core/src/semantic-process-scope-cancellation.ts) | 584 | remove owner-keyed records with a cancelled region even though declaring Programs exclude cancellation |
-| [TypeScript command admission](../../packages/semantic-core/src/semantic-command-admission.ts) | 364 | no producer integration at the first checkpoint |
+| [TypeScript command admission](../../packages/semantic-core/src/semantic-command-admission.ts) | 361 | no producer integration at the first checkpoint |
 | [TypeScript triggered start](../../packages/semantic-core/src/semantic-process-triggered-start.ts) | 583 | initialize root-owned retention state before any start mutation |
 | [Lean Program contract](../../BpmnSemantics/SemanticProcessContract.lean) | 5 | no further contract growth without extracting another bounded owner |
 | [Lean RuntimeState](../../BpmnSemantics/SemanticProcess/RuntimeState.lean) | 75 | add only the collection reference and its root-owned invariant; new structures live elsewhere |

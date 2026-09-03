@@ -112,6 +112,7 @@ import type { RuntimeState } from "./semantic-process-state.js";
 import { isGateAdmissibleRuntimeState } from "./runtime-state-well-formedness.js";
 import { initializeCompensationExecutionState } from "./compensation-trigger-handler-runtime-state-validation.js";
 import { completeCompensationHandlerEffect } from "./compensation-trigger-handler-completion.js";
+import { compensationStartDataAdmitted } from "./compensation-start-data-admission.js";
 
 export type SemanticCommandOutcome =
   | CommandOutcome.Committed
@@ -185,6 +186,8 @@ export function admit(
     !admissibleCommittedState(program, state) ||
     !sequentialMultiInstanceStimulusDataAdmitted(program, stimulus) ||
     !parallelMultiInstanceStimulusDataAdmitted(program, stimulus) ||
+    (stimulus.kind === StimulusKind.StartProcess &&
+      !compensationStartDataAdmitted(program, stimulus)) ||
     !profileAllowsStimulusValueDomain(
       program.identity.semanticProfile,
       stimulus,

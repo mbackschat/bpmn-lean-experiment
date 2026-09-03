@@ -192,7 +192,6 @@ function profileValueDomain(
     case SemanticProfileId.EventBasedGatewayMessageTimer:
     case SemanticProfileId.IntermediateCatchMessage:
     case SemanticProfileId.MessagePayloadCatch:
-    case COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID:
     case MESSAGE_KEY_CORRELATION_CHECKPOINT_PROFILE_ID:
     case SemanticProfileId.IntermediateCatchTimer:
     case SemanticProfileId.MessageAddressedReceiveTask:
@@ -208,6 +207,8 @@ function profileValueDomain(
     case SemanticProfileId.TimerUserTaskComposition:
     case SemanticProfileId.UserTaskPreservedNotation:
       return surfaceValueDomain(surface);
+    case COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID:
+      return surfaceValueDomain(surface, stringValueDomain);
     default:
       return assertNever(semanticProfile);
   }

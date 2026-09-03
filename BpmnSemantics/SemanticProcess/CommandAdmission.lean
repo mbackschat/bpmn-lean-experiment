@@ -14,6 +14,7 @@ import BpmnSemantics.SemanticProcess.MessageKeyCorrelation
 import BpmnSemantics.SemanticProcess.CompensationActivityRetentionProducers
 import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshot
 import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerCompletion
+import BpmnSemantics.SemanticProcess.CompensationStartDataAdmission
 
 /-! # Semantic Process external command admission
 
@@ -114,7 +115,9 @@ private def sequentialMultiInstanceStartBindingsAdmitted (program : Program)
       match state.control with
       | .notStarted =>
           let bindingsAdmitted :=
-            if parallelMultiInstanceProgramAdmitted program then
+            if program.identity.semanticProfile = compensationSourceCheckpointProfileId then
+              compensationStartDataAdmitted program instanceId initialVariables
+            else if parallelMultiInstanceProgramAdmitted program then
               parallelMultiInstanceStartBindingsAdmitted program initialVariables
             else if sequentialMultiInstanceProgramAdmitted program then
               sequentialMultiInstanceStartBindingsAdmitted program initialVariables

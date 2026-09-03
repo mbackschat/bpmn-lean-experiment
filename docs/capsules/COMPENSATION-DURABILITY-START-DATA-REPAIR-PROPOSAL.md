@@ -106,15 +106,15 @@ Mechanically routed guards include [documentation reviewability](../../scripts/d
 
 | Owner | Current headroom | Structural condition |
 |---|---:|---|
-| [Semantic profile value domain](../../packages/semantic-core/src/semantic-profile-value-domain.ts) | 541 | value-kind dispatch only |
-| [Semantic execution admission](../../packages/semantic-core/src/semantic-process-admission.ts) | 371 | one predicate call only |
-| [Semantic command admission](../../packages/semantic-core/src/semantic-command-admission.ts) | 364 | one predicate call only |
+| [Semantic profile value domain](../../packages/semantic-core/src/semantic-profile-value-domain.ts) | 540 | value-kind dispatch only |
+| [Semantic execution admission](../../packages/semantic-core/src/semantic-process-admission.ts) | 368 | one predicate call only |
+| [Semantic command admission](../../packages/semantic-core/src/semantic-command-admission.ts) | 361 | one predicate call only |
 | [Lean value domain](../../BpmnSemantics/SemanticProcess/ValueDomain.lean) | 675 | value-kind dispatch only |
-| [Lean command admission](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean) | 249 | predicate definition and one dispatch branch only |
-| [Lean checkpoint conformance](../../BpmnSemantics/CompensationSourceCompatibilityConformance.lean) | 773 | exact positive and negative decisions only |
-| `packages/semantic-core/src/compensation-start-data-admission.ts` | 800 | exact Program-derived binding and shared prospective-capacity construction only |
-| `packages/semantic-core/test/compensation-start-data-admission.test.ts` | 800 | direct predicate and command preservation, Program-name, canonical-boundary, escaping, and identity discriminators only |
-| `packages/bpmn-source/test/compensation-source-runtime.test.ts` | 800 | exact compiled-source opposite-order and frozen-value discriminators only |
+| [Lean command admission](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean) | 246 | predicate definition and one dispatch branch only |
+| [Lean checkpoint conformance](../../BpmnSemantics/CompensationSourceCompatibilityConformance.lean) | 705 | exact positive and negative decisions only |
+| [TypeScript start admission](../../packages/semantic-core/src/compensation-start-data-admission.ts) | 573 | exact Program-derived binding and shared prospective-capacity construction only |
+| [TypeScript start-admission witness](../../packages/semantic-core/test/compensation-start-data-admission.test.ts) | 556 | direct predicate and command preservation, Program-name, canonical-boundary, escaping, and identity discriminators only |
+| [Compiled-source runtime witness](../../packages/bpmn-source/test/compensation-source-runtime.test.ts) | 634 | exact compiled-source opposite-order and frozen-value discriminators only |
 | [Product 1 source witness](../../packages/temporal-adapter/testkit/test/compensation-source-host-refusal.test.ts) | 720 | correction-target count; exact assessment/start and malformed or over-cap pre-start cases only |
 
 The new TypeScript predicate starts in its own bounded owner. Every figure is the measured nonblank-line remainder below the 800-line review target. If these measured conditions change before implementation, rerun `what-binds` and redesign before crossing the threshold; no size-limit exception is selected.

@@ -228,9 +228,9 @@ The complete `what-binds` inventory requires [`implementation-status-owner:ENGIN
 | Existing owner | Current headroom | Growth condition |
 |---|---:|---|
 | [TS Program](../../packages/semantic-core/src/semantic-process-contract.ts) | 197 | declaration reference only |
-| [TS Program admission](../../packages/semantic-core/src/semantic-process-admission.ts) | 371 | declaration before graph |
+| [TS Program admission](../../packages/semantic-core/src/semantic-process-admission.ts) | 368 | declaration before graph |
 | [TS graph admission](../../packages/semantic-core/src/semantic-process-graph-admission.ts) | 169 | private exact exemption |
-| [TS command admission](../../packages/semantic-core/src/semantic-command-admission.ts) | 364 | optional-field normalization |
+| [TS command admission](../../packages/semantic-core/src/semantic-command-admission.ts) | 361 | optional-field normalization |
 | [TS RuntimeState](../../packages/semantic-core/src/semantic-process-state.ts) | 363 | collection reference only |
 | [TS runtime-state defect](../../packages/semantic-core/src/runtime-state-defect.ts) | 760 | preserve the closed malformed-state classification or record a proved no-change mapping |
 | [TS well-formedness](../../packages/semantic-core/src/runtime-state-well-formedness.ts) | 51 | delegate before 800 |
@@ -263,7 +263,7 @@ The complete `what-binds` inventory requires [`implementation-status-owner:ENGIN
 | [Lean transition](../../BpmnSemantics/SemanticProcess/Transition.lean) | 139 | dispatch only; the applied-result contract is extracted |
 | [Lean internal-operation attempt](../../BpmnSemantics/SemanticProcess/InternalOperationAttempt.lean) | 752 | validate every applied snapshot-aware successor before exposure |
 | [Lean trace closure](../../BpmnSemantics/SemanticProcess/TransitionTrace.lean) | 174 | refusal rollback/no trace |
-| [Lean command admission](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean) | 249 | map root-capacity refusal to `Rejected`, never `semanticFailure`, and reject an invalid committed post-state |
+| [Lean command admission](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean) | 246 | map root-capacity refusal to `Rejected`, never `semanticFailure`, and reject an invalid committed post-state |
 | [Lean census](../../BpmnSemantics/SemanticProcess/InternalCommutationCensus.lean) | 653 | new state field |
 | [Lean footprint core](../../BpmnSemantics/SemanticProcess/InternalCommutationCore.lean) | 338 | snapshot atom/footprint |
 | [Lean Program decoder](../../BpmnSemantics/SemanticProcessJson/Program.lean) | 102 | focused decoder |

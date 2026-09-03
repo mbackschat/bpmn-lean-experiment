@@ -62,13 +62,13 @@ export type CompensationTriggerAttempt = Readonly<
     }
 >;
 
-type FrontierActivation = Readonly<{
+export type CompensationFrontierActivation = Readonly<{
   trigger: CompensationTriggerExecution;
   waits: CompensationHandlerEffectWait[];
   effectActivations: RuntimeState["effectActivations"];
 }>;
 
-type SelectedSubject = Readonly<{
+export type SelectedCompensationSubject = Readonly<{
   definition: CompensationSubjectDefinition;
   occurrence: CompensationSubjectOccurrence;
   restoredContext: CompensationParentContextSnapshot | null;
@@ -134,42 +134,13 @@ export function attemptCompensationTrigger(
     };
   }
 
-  const triggerId = nextExecutionOccurrence(
-    owner.processInstanceId,
-    operation.id,
-    triggers.map(({ id }) => id),
-  );
-  const handlers = selected.map(({ definition, occurrence, restoredContext }) => ({
-    id: nextExecutionOccurrence(
-      owner.processInstanceId,
-      definition.body.handlerElementId,
-      triggers.flatMap((trigger) => trigger.handlers.map(({ id }) => id)),
-    ),
-    subject: occurrence,
-    handlerElementId: definition.body.handlerElementId,
-    lifecycle: "pending",
-    restoredContext,
-  } as const)).sort(compareHandlers);
-  const dependencies = program.compensationExecution.dependencies.flatMap((dependency) => {
-    const predecessor = handlerByDefinitionId(program, handlers, dependency.predecessorElementId);
-    const successor = handlerByDefinitionId(program, handlers, dependency.successorElementId);
-    return predecessor === undefined || successor === undefined
-      ? []
-      : [{
-          predecessor: predecessor.subject,
-          successor: successor.subject,
-          reason: dependency.reason,
-        } as const];
-  });
-  const pending = {
-    id: triggerId,
+  const activated = constructCompensationTriggerFrontier(
+    program,
+    state,
+    operation,
     owner,
-    output: operation.output,
-    lifecycle: "active",
-    handlers,
-    dependencies,
-  } as const satisfies CompensationTriggerExecution;
-  const activated = activateCompensationFrontier(program, state, pending);
+    selected,
+  );
   if (activated === null) {
     return refused(state, CompensationTriggerRefusalReason.InvalidSources);
   }
@@ -212,7 +183,7 @@ export function activateCompensationFrontier(
   program: SemanticProcessProgram,
   state: RuntimeState,
   trigger: CompensationTriggerExecution,
-): FrontierActivation | null {
+): CompensationFrontierActivation | null {
   const declaration = program.compensationExecution;
   if (declaration === undefined || trigger.lifecycle !== "active") return null;
   const frontier = trigger.handlers.filter((handler) =>
@@ -272,6 +243,56 @@ export function activateCompensationFrontier(
     : null;
 }
 
+/** Constructs the production trigger and activates its first maximal frontier atomically. */
+export function constructCompensationTriggerFrontier(
+  program: SemanticProcessProgram,
+  state: RuntimeState,
+  operation: TriggerCompensationOperation,
+  owner: ScopeOccurrenceId,
+  selected: ReadonlyArray<SelectedCompensationSubject>,
+): CompensationFrontierActivation | null {
+  const declaration = program.compensationExecution;
+  if (declaration === undefined || declaration.triggerOperationId !== operation.id) {
+    return null;
+  }
+  const existing = state.compensationTriggers ?? [];
+  const triggerId = nextExecutionOccurrence(
+    owner.processInstanceId,
+    operation.id,
+    existing.map(({ id }) => id),
+  );
+  const handlers = selected.map(({ definition, occurrence, restoredContext }) => ({
+    id: nextExecutionOccurrence(
+      owner.processInstanceId,
+      definition.body.handlerElementId,
+      existing.flatMap((trigger) => trigger.handlers.map(({ id }) => id)),
+    ),
+    subject: occurrence,
+    handlerElementId: definition.body.handlerElementId,
+    lifecycle: "pending",
+    restoredContext,
+  } as const)).sort(compareHandlers);
+  const dependencies = declaration.dependencies.flatMap((dependency) => {
+    const predecessor = handlerByDefinitionId(program, handlers, dependency.predecessorElementId);
+    const successor = handlerByDefinitionId(program, handlers, dependency.successorElementId);
+    return predecessor === undefined || successor === undefined
+      ? []
+      : [{
+          predecessor: predecessor.subject,
+          successor: successor.subject,
+          reason: dependency.reason,
+        } as const];
+  });
+  return activateCompensationFrontier(program, state, {
+    id: triggerId,
+    owner,
+    output: operation.output,
+    lifecycle: "active",
+    handlers,
+    dependencies,
+  });
+}
+
 export function executionFits(
   program: SemanticProcessProgram,
   triggers: ReadonlyArray<CompensationTriggerExecution>,
@@ -289,7 +310,7 @@ function selectedSubjects(
   program: SemanticProcessProgram,
   owner: ScopeOccurrenceId,
   state: RuntimeState,
-): ReadonlyArray<SelectedSubject> | null {
+): ReadonlyArray<SelectedCompensationSubject> | null {
   const declaration = program.compensationExecution;
   if (declaration === undefined) return null;
   const activityRetentions = state.compensationActivityRetentions ?? [];
@@ -302,7 +323,7 @@ function selectedSubjects(
       (program.compensationActivityRetention === undefined ? 0 : 1)
   ) return null;
   const activityRecords = activityRegister[0]?.records ?? [];
-  const selected: SelectedSubject[] = activityRecords.flatMap((record) => {
+  const selected: SelectedCompensationSubject[] = activityRecords.flatMap((record) => {
     const definitions = declaration.subjects.filter((definition) =>
       definition.kind === "boundaryActivity" &&
       definition.subjectElementId === record.id.activityElementId

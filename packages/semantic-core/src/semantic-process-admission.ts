@@ -65,6 +65,7 @@ import {
   compensationExecutionMatchesProgram,
   isCompensationExecutionDeclaration,
 } from "./compensation-trigger-handler-program-admission.js";
+import { compensationStartDataAdmitted } from "./compensation-start-data-admission.js";
 
 export function supportsSemanticProcessScenario(
   scenario: Scenario,
@@ -91,6 +92,7 @@ export function supportsSemanticProcessScenario(
       program.identity.sourceOverlay,
       scenario.bpmn.sourceOverlay,
     ) &&
+    compensationStartDataAdmitted(program, start) &&
     processStartMatchesProgram(start, program)
   );
 }
@@ -110,6 +112,7 @@ export function supportsSemanticProcessExecution(
     ) &&
     profileAllowsStimulusValueDomain(program.identity.semanticProfile, start) &&
     sequentialMultiInstanceStimulusDataAdmitted(program, start) &&
+    compensationStartDataAdmitted(program, start) &&
     processStartMatchesProgram(start, program)
   );
 }

@@ -402,7 +402,7 @@ test("closes every registered profile and write surface over the exact typed val
   }
 });
 
-test("keeps the unregistered Compensation source checkpoint empty on every write surface", async () => {
+test("admits only String values at the Compensation checkpoint Process-start surface", async () => {
   const compiled = await importCompiledValueDomain();
   for (const surface of surfaces) {
     assert.equal(
@@ -420,7 +420,7 @@ test("keeps the unregistered Compensation source checkpoint empty on every write
           surface,
           [binding],
         ),
-        false,
+        surface === "processStart" && binding.value.kind === VariableValueKind.String,
         `${surface} ${binding.value.kind}`,
       );
     }

@@ -6,6 +6,7 @@ import {
   type CompensationParentContextAttempt,
   type CompensationParentContextRetention,
 } from "./compensation-event-sub-process-snapshot-contract.js";
+import type { VariableBinding } from "./contract.js";
 import type { SemanticProcessProgram } from "./semantic-process-contract.js";
 import {
   ControlStateKind,
@@ -108,18 +109,17 @@ export function promoteCompensationParentContext(
   ) {
     return refused(state, CompensationParentContextRefusalReason.InvalidState);
   }
-  const frames = captureFrames(program, state, parent);
-  if (frames === undefined) {
+  const promoted = constructPromotedCompensationParentContextRetention(
+    program,
+    parent,
+    state.variables.process.bindings,
+  );
+  if (promoted === null) {
     return refused(state, CompensationParentContextRefusalReason.BrokenAncestry);
   }
   const prospective = retentions.map((retention, index) =>
     index === match.index
-      ? {
-          kind: CompensationParentContextRetentionKind.Promoted,
-          parent: cloneRuntimeScopeOccurrence(parent),
-          handlerScopeId: target.handlerScopeId,
-          snapshot: { frames },
-        } as const
+      ? promoted
       : retention
   );
   const capacity = capacityRefusal(program, prospective);
@@ -177,42 +177,45 @@ function prevalidate(
     : CompensationParentContextRefusalReason.InvalidState;
 }
 
-function captureFrames(
+/** Constructs the same promoted retention used by the runtime transition from immutable inputs. */
+export function constructPromotedCompensationParentContextRetention(
   program: SemanticProcessProgram,
-  state: RuntimeState,
   parent: RuntimeScopeOccurrence,
-) {
-  const current = state.scopeOccurrences.filter((occurrence) =>
-    sameRuntimeScopeOccurrence(occurrence, parent)
+  processBindings: ReadonlyArray<VariableBinding>,
+): CompensationParentContextRetention | null {
+  const target = program.compensationEventSubProcessSnapshots?.targets.find(
+    ({ parentScopeId }) => parentScopeId === parent.id.definitionScopeId,
   );
-  if (current.length !== 1) return undefined;
   const rootScope = program.definitionScopes.find(({ parentScopeId, originElementId }) =>
     parentScopeId === null && originElementId === program.processId
   );
-  if (rootScope === undefined) return undefined;
-  if (parent.parent === null) {
-    if (parent.id.definitionScopeId !== rootScope.id) return undefined;
-    return [{
+  if (target === undefined || rootScope === undefined || !isVariablePatch(processBindings)) {
+    return null;
+  }
+  if (parent.parent === null && parent.id.definitionScopeId !== rootScope.id) {
+    return null;
+  }
+  if (parent.parent !== null && parent.parent.definitionScopeId !== rootScope.id) {
+    return null;
+  }
+  const frames = parent.parent === null
+    ? [{
       owner: { ...parent.id },
-      bindings: state.variables.process.bindings.map(cloneVariableBinding),
-    }];
-  }
-  const roots = state.scopeOccurrences.filter((occurrence) =>
-    occurrence.parent === null &&
-    parent.parent !== null &&
-    sameScopeOccurrence(occurrence.id, parent.parent)
-  );
-  const root = roots[0];
-  if (roots.length !== 1 || root === undefined || root.id.definitionScopeId !== rootScope.id) {
-    return undefined;
-  }
-  return [
-    {
-      owner: { ...root.id },
-      bindings: state.variables.process.bindings.map(cloneVariableBinding),
-    },
-    { owner: { ...parent.id }, bindings: [] },
-  ];
+      bindings: processBindings.map(cloneVariableBinding),
+    }]
+    : [
+      {
+        owner: { ...parent.parent },
+        bindings: processBindings.map(cloneVariableBinding),
+      },
+      { owner: { ...parent.id }, bindings: [] },
+    ];
+  return {
+    kind: CompensationParentContextRetentionKind.Promoted,
+    parent: cloneRuntimeScopeOccurrence(parent),
+    handlerScopeId: target.handlerScopeId,
+    snapshot: { frames },
+  };
 }
 
 type CapacityRefusal = {

@@ -209,6 +209,25 @@ def compensationTriggerOwnerRejected (state : RuntimeState)
     (state.scopeOccurrences.filter fun occurrence =>
       occurrence.id == owner && occurrence.parent.isNone).length != 1
 
+/-- Constructs the production trigger and activates its first maximal frontier atomically. -/
+def constructCompensationTriggerFrontier (program : Program) (state : RuntimeState)
+    (operation : SemanticOperation) (owner : ScopeOccurrenceId)
+    (selected : List SelectedCompensationSubject) : Option CompensationFrontierActivation :=
+  match program.compensationExecution, operation with
+  | some declaration, .triggerCompensation operationId _ _ _ output =>
+      if declaration.triggerOperationId != operationId then none
+      else
+        let handlers := selectedHandlers state owner selected
+        activateCompensationFrontier program state
+          { id := nextOccurrence owner.processInstanceId operationId.value
+              (state.compensationTriggers.map (·.id))
+            owner
+            output
+            lifecycle := .active
+            handlers
+            dependencies := occurrenceDependencies program declaration handlers }
+  | _, _ => none
+
 /-- Constructs every prospective record before consuming the throw token or eligible sources. -/
 def attemptCompensationTrigger (program : Program) (operation : SemanticOperation)
     (state : RuntimeState) : CompensationTriggerAttempt :=
@@ -235,17 +254,8 @@ def attemptCompensationTrigger (program : Program) (operation : SemanticOperatio
                   if compensationTriggerHandlerStateValid program successor then .applied successor
                   else .refused .invalidState
               | some selected =>
-                  let triggerId := nextOccurrence owner.processInstanceId operationId.value
-                    (state.compensationTriggers.map (·.id))
-                  let handlers := selectedHandlers state owner selected
-                  let pending : CompensationTriggerExecution :=
-                    { id := triggerId
-                      owner
-                      output
-                      lifecycle := .active
-                      handlers
-                      dependencies := occurrenceDependencies program declaration handlers }
-                  match activateCompensationFrontier program state pending with
+                  match constructCompensationTriggerFrontier program state operation owner
+                      selected with
                   | none => .refused .invalidSources
                   | some activated =>
                       let triggers := insertTrigger activated.trigger state.compensationTriggers
@@ -562,6 +572,13 @@ theorem attemptCompensationTrigger_sound (program : Program)
                               simp [ownerEq, ownerRejectedEq, stateRejectedEq, activeEq]
                                 at selected
                           | false =>
+                              have operationMatches :
+                                  declaration.triggerOperationId = operationId := by
+                                by_cases same :
+                                    declaration.triggerOperationId = operationId
+                                · exact same
+                                · simp [compensationTriggerProgramRejected, same]
+                                    at programRejectedEq
                               let programReady : CompensationTriggerProgramReady program
                                   (.triggerCompensation operationId origin definitionScopeId
                                     input output)
@@ -628,12 +645,21 @@ theorem attemptCompensationTrigger_sound (program : Program)
                                           handlers := selectedHandlers before owner (first :: rest)
                                           dependencies := occurrenceDependencies program declaration
                                             (selectedHandlers before owner (first :: rest)) }
-                                      cases frontierEq :
-                                          activateCompensationFrontier program before pending with
+                                      cases frontierEq : constructCompensationTriggerFrontier
+                                          program before
+                                            (.triggerCompensation operationId origin
+                                              definitionScopeId input output)
+                                            owner (first :: rest) with
                                       | none =>
                                           simp [ownerEq, ownerRejectedEq, stateRejectedEq, activeEq,
-                                            sourcesEq, pending, frontierEq] at selected
+                                            sourcesEq, frontierEq] at selected
                                       | some activated =>
+                                          have activatedEq :
+                                              activateCompensationFrontier program before pending =
+                                                some activated := by
+                                            simpa [constructCompensationTriggerFrontier,
+                                              declarationEq, operationMatches, pending]
+                                              using frontierEq
                                           let triggers :=
                                             insertTrigger activated.trigger
                                               before.compensationTriggers
@@ -645,7 +671,7 @@ theorem attemptCompensationTrigger_sound (program : Program)
                                                 declaration triggers waits with
                                           | some reason =>
                                               simp [ownerEq, ownerRejectedEq, stateRejectedEq,
-                                                activeEq, sourcesEq, pending, frontierEq, triggers,
+                                                activeEq, sourcesEq, frontierEq, triggers,
                                                 waits, capacityEq] at selected
                                           | none =>
                                               let successor : RuntimeState :=
@@ -684,7 +710,7 @@ theorem attemptCompensationTrigger_sound (program : Program)
                                                             activated.effectActivations } = false := by
                                                     simpa [successor, controlEq] using validEq
                                                   simp [ownerEq, ownerRejectedEq, stateRejectedEq,
-                                                    activeEq, sourcesEq, pending, frontierEq,
+                                                    activeEq, sourcesEq, frontierEq,
                                                     triggers, waits, capacityEq, evaluatorValidEq]
                                                     at selected
                                               | true =>
@@ -707,7 +733,7 @@ theorem attemptCompensationTrigger_sound (program : Program)
                                                             activated.effectActivations } = true := by
                                                     simpa [successor, controlEq] using validEq
                                                   simp [ownerEq, ownerRejectedEq, stateRejectedEq,
-                                                    activeEq, sourcesEq, pending, frontierEq,
+                                                    activeEq, sourcesEq, frontierEq,
                                                     triggers, waits, capacityEq, evaluatorValidEq]
                                                     at selected
                                                   cases selected
@@ -716,7 +742,7 @@ theorem attemptCompensationTrigger_sound (program : Program)
                                                     pending activated triggers waits _ ready
                                                     sourcesEq rfl
                                                     (activateCompensationFrontier_sound program before
-                                                      pending activated frontierEq)
+                                                      pending activated activatedEq)
                                                     rfl rfl capacityEq
                                                     (by simp [controlEq, triggers, waits])
                                                     evaluatorValidEq

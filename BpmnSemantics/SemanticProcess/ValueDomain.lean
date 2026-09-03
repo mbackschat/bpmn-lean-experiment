@@ -69,7 +69,7 @@ private inductive ProcessDataValueDomain where
     ProcessDataIngress → ProcessDataValueDomain
   | .processStart =>
       if profile = compensationSourceCheckpointProfileId then
-        .empty
+        .stringOnly
       else if profile.value =
           "bpmn-2.0.2-sequential-multi-instance-user-task-draft" then
         .stringListOnly

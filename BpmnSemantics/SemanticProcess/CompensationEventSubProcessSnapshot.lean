@@ -486,28 +486,38 @@ theorem reserveCompensationParentContext_applied_shape
           after = { state with compensationParentContextRetentions := prospective } := by
   grind (gen := 16) [reserveCompensationParentContext]
 
+/-- Constructs the same immutable parent-context snapshot used by promotion from its settled ancestry and Process bindings. Live-occurrence checks remain the transition's responsibility. -/
+def constructCompensationParentContextSnapshot? (program : Program)
+    (root : ScopeOccurrenceId) (parent : RuntimeScopeOccurrence)
+    (processBindings : List VariableBinding) :
+    Option CompensationParentContextSnapshot :=
+  match programEntryRootScopeId? program, parent.parent with
+  | some rootScopeId, none =>
+      if parent.id = root && root.definitionScopeId = rootScopeId then
+        some { frames := [{ owner := root, bindings := processBindings }] }
+      else none
+  | some rootScopeId, some parentRoot =>
+      if parentRoot = root && root.definitionScopeId = rootScopeId then
+        some { frames :=
+          [ { owner := root, bindings := processBindings }
+          , { owner := parent.id, bindings := [] } ] }
+      else none
+  | none, _ => none
+
 private def captureCompensationParentContextWhileNotFailed? (program : Program)
     (state : RuntimeState) (parent : RuntimeScopeOccurrence) :
     Option CompensationParentContextSnapshot :=
   if !exactRuntimeOccurrenceLive state parent then none
   else
-    match programEntryRootScopeId? program, parent.parent with
-    | some rootScopeId, none =>
-        if parent.id.definitionScopeId = rootScopeId then
-          some { frames :=
-            [{ owner := parent.id, bindings := state.variables.process.bindings }] }
-        else none
-    | some rootScopeId, some rootId =>
+    match parent.parent with
+    | none => constructCompensationParentContextSnapshot? program parent.id parent
+        state.variables.process.bindings
+    | some rootId =>
         match state.scopeOccurrences.filter fun occurrence =>
             occurrence.parent.isNone && occurrence.id == rootId with
-        | [root] =>
-            if root.id.definitionScopeId = rootScopeId then
-              some { frames :=
-                [ { owner := root.id, bindings := state.variables.process.bindings }
-                , { owner := parent.id, bindings := [] } ] }
-            else none
+        | [root] => constructCompensationParentContextSnapshot? program root.id parent
+            state.variables.process.bindings
         | _ => none
-    | none, _ => none
 
 def captureCompensationParentContext? (program : Program)
     (state : RuntimeState) (parent : RuntimeScopeOccurrence) :
@@ -523,16 +533,9 @@ theorem captureCompensationParentContext_root_shape (program : Program)
     (captured : captureCompensationParentContext? program state parent = some snapshot) :
     snapshot.frames =
       [{ owner := parent.id, bindings := state.variables.process.bindings }] := by
-  have capturedWhileNotFailed :
-      captureCompensationParentContextWhileNotFailed? program state parent =
-        some snapshot := by
-    cases control : state.control <;>
-      simp [captureCompensationParentContext?, control] at captured
-    all_goals exact captured
-  cases snapshot
-  unfold captureCompensationParentContextWhileNotFailed? at capturedWhileNotFailed
-  simp [root] at capturedWhileNotFailed
-  split at capturedWhileNotFailed <;> simp_all
+  grind [captureCompensationParentContext?,
+    captureCompensationParentContextWhileNotFailed?,
+    constructCompensationParentContextSnapshot?]
 
 theorem captureCompensationParentContext_child_shape (program : Program)
     (state : RuntimeState) (parent : RuntimeScopeOccurrence)
@@ -545,17 +548,9 @@ theorem captureCompensationParentContext_child_shape (program : Program)
         snapshot.frames =
           [ { owner := root.id, bindings := state.variables.process.bindings }
           , { owner := parent.id, bindings := [] } ] := by
-  have capturedWhileNotFailed :
-      captureCompensationParentContextWhileNotFailed? program state parent =
-        some snapshot := by
-    cases control : state.control <;>
-      simp [captureCompensationParentContext?, control] at captured
-    all_goals exact captured
-  cases snapshot
-  unfold captureCompensationParentContextWhileNotFailed? at capturedWhileNotFailed
-  simp [child] at capturedWhileNotFailed
-  split at capturedWhileNotFailed <;> simp_all
-  split at capturedWhileNotFailed <;> simp_all
+  grind (gen := 16) [captureCompensationParentContext?,
+    captureCompensationParentContextWhileNotFailed?,
+    constructCompensationParentContextSnapshot?]
 
 def promoteMatchingRetention (parent : RuntimeScopeOccurrence)
     (target : CompensationEventSubProcessSnapshotTarget)
