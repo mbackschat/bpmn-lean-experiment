@@ -3,7 +3,7 @@
 ## Status
 
 Lifecycle: implementation-in-progress
-Review: pending
+Review: approved
 
 ## Prior authority and defect
 
@@ -136,6 +136,6 @@ After this assurance correction is independently approved, implementation first 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
 | Proposal | `af387881fea17c9db040874e759c9189e8d164dc` | `fork-turns-none` | `approve-with-required-edits` | `f1609d7a6370ea73b059085e55454ab15fac4423` |
-| Lean assurance correction | `pending` | `fork-turns-none` | `pending` | `not-applicable` |
+| Lean assurance correction | `099cca872adbecb659401129210adcbc500ca92d` | `fork-turns-none` | `approve` | `not-applicable` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
