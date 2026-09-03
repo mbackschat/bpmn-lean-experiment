@@ -1,6 +1,6 @@
 # Engine API
 
-`@bpmn-lean/engine-api` is Product 1's narrow entry point for Product 2. It exposes compilation, start preparation and recovery, committed observation, scheduling, Message Start, human-work commands, and incident operations without exposing Semantic Process programs or Temporal SDK identities. Its definition-scoped correlated Message operation is a candidate slice pending independent approval and complete public refinement; profile admission and Product 2 binding remain unavailable.
+`@bpmn-lean/engine-api` is Product 1's narrow entry point for Product 2. It exposes compilation, start preparation and recovery, committed observation, scheduling, Message Start, human-work commands, and incident operations without exposing Semantic Process programs or Temporal SDK identities. Its definition-scoped correlated Message operation is an independently approved candidate slice pending complete public refinement; profile admission and Product 2 binding remain unavailable.
 
 ## What you can do
 
