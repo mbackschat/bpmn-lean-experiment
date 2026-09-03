@@ -475,6 +475,27 @@ importers:
         specifier: 1.62.1
         version: 1.62.1
 
+  showcase/m2-correlated-message-ingress:
+    devDependencies:
+      '@bpmn-lean/platform-contracts':
+        specifier: workspace:*
+        version: link:../../platform/contracts
+      '@bpmn-lean/platform-server':
+        specifier: workspace:*
+        version: link:../../platform/apps/server
+      '@bpmn-lean/platform-web':
+        specifier: workspace:*
+        version: link:../../platform/apps/web
+      '@bpmn-lean/semantic-core':
+        specifier: workspace:*
+        version: link:../../packages/semantic-core
+      '@bpmn-lean/temporal-testkit':
+        specifier: workspace:*
+        version: link:../../packages/temporal-adapter/testkit
+      '@playwright/test':
+        specifier: 1.62.1
+        version: 1.62.1
+
   showcase/m2-definition-scheduling:
     devDependencies:
       '@bpmn-lean/platform-contracts':

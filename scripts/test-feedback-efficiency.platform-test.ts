@@ -77,6 +77,7 @@ test("builds feedback graphs once and keeps independent lanes parallel", async (
   assert.doesNotMatch(showcaseWorkflow, /playwright|chromium|test:ui-quality/iu);
   assert.match(showcaseWorkflow, /showcase\/m1-definition-deployment\/\*\*/u);
   assert.match(showcaseWorkflow, /showcase\/m2-definition-scheduling\/\*\*/u);
+  assert.match(showcaseWorkflow, /showcase\/m2-correlated-message-ingress\/\*\*/u);
   assert.match(showcaseWorkflow, /showcase\/m2-message-start-ingress\/\*\*/u);
   assert.match(showcaseWorkflow, /showcase\/m2-process-instance-search\/\*\*/u);
   assert.match(showcaseWorkflow, /showcase\/m3-human-work\/\*\*/u);
@@ -132,6 +133,7 @@ test("builds feedback graphs once and keeps independent lanes parallel", async (
   for (const name of [
     "test:showcase:m1",
     "test:showcase:m2",
+    "test:showcase:m2-correlated-message-ingress",
     "test:showcase:m2-message-start-ingress",
     "test:showcase:m2-process-instance-search",
     "test:showcase:m3-human-work",
@@ -145,7 +147,8 @@ test("builds feedback graphs once and keeps independent lanes parallel", async (
   assert.equal(matches(root["test:release:product2"] ?? "", /\bbuild:/gu), 1);
   const prebuiltShowcaseCommands = new Map([
     ["test:showcase:m1:built", 1],
-    ["test:showcase:m2:built", 3],
+    ["test:showcase:m2:built", 4],
+    ["test:showcase:m2-correlated-message-ingress:built", 1],
     ["test:showcase:m2-message-start-ingress:built", 1],
     ["test:showcase:m2-process-instance-search:built", 1],
     ["test:showcase:m3-human-work:built", 1],
@@ -211,6 +214,7 @@ test("serves every real-host showcase from the production web build", async () =
   const configPaths = [
     "showcase/m1-definition-deployment/playwright.config.ts",
     "showcase/m2-definition-scheduling/playwright.config.ts",
+    "showcase/m2-correlated-message-ingress/playwright.config.ts",
     "showcase/m2-message-start-ingress/playwright.config.ts",
     "showcase/m2-process-instance-search/playwright.config.ts",
     "showcase/m3-human-work/playwright.config.ts",

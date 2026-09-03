@@ -1,0 +1,20 @@
+{
+  "name": "@bpmn-lean/showcase-m2-correlated-message-ingress",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "scripts": {
+    "type-test": "tsc -p tsconfig.json",
+    "test:e2e:built": "playwright test",
+    "test:e2e": "pnpm run type-test && pnpm run test:e2e:built"
+  },
+  "devDependencies": {
+    "@bpmn-lean/platform-contracts": "workspace:*",
+    "@bpmn-lean/platform-server": "workspace:*",
+    "@bpmn-lean/platform-web": "workspace:*",
+    "@bpmn-lean/semantic-core": "workspace:*",
+    "@bpmn-lean/temporal-testkit": "workspace:*",
+    "@playwright/test": "1.62.1"
+  }
+}
