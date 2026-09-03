@@ -22,6 +22,17 @@ const muePreviewBetaCriticalPath = [
   ["COMPENSATION-TRANSACTIONS", "satisfied"],
 ] as const;
 
+const muePreviewBetaRiskBands = [
+  ["Subscription population/concurrency", "satisfied"],
+  ["Subscription delivery/recovery", "satisfied"],
+  ["Boundary-handler eligibility/lifetime", "satisfied"],
+  ["Event Sub-Process snapshots", "satisfied"],
+  ["Compensation order/cancellation", "satisfied"],
+  ["Cross-Workflow durability", "satisfied"],
+  ["Capability and evidence closure", "active"],
+  ["Beta integration", "queued"],
+] as const;
+
 function muePreviewBetaSection(plan: string): string {
   const marker = "### MUE Preview Beta critical path\n";
   const start = plan.indexOf(marker);
@@ -62,6 +73,32 @@ function assertMuePreviewBetaCriticalPath(plan: string): void {
   const orderedActive = parseOrderedWork(plan).find(({ state }) => state === "active");
   assert.equal(rows.find(({ state }) => state === "active")?.id, orderedActive?.id, "the Beta path must identify the active ordered work ID");
   assert.match(section, /^Integration state: `blocked`\.$/mu, "Beta integration must remain blocked while a content row is active or queued");
+
+  const riskMarker = "#### Risk-first execution bands\n";
+  const riskStart = section.indexOf(riskMarker);
+  assert.notEqual(riskStart, -1, `missing ${riskMarker.trim()}`);
+  const riskRows = section.slice(riskStart + riskMarker.length)
+    .split("\n")
+    .filter((line) => /^\| \d+ \|/u.test(line))
+    .map((line, index) => {
+      const match = /^\| (\d+) \| `(satisfied|active|queued)` \| ([^|]+) \| \S.+ \|$/u.exec(line);
+      assert.ok(match !== null, `every risk band must use the stable four-column contract: ${line}`);
+      const [, order, state, band] = match;
+      assert.equal(Number(order), index + 1, "risk bands must retain contiguous priority order");
+      assert.ok(state !== undefined && band !== undefined);
+      return [band.trim(), state] as const;
+    });
+  assert.deepEqual(
+    riskRows,
+    muePreviewBetaRiskBands,
+    "the MUE Preview Beta risk bands must retain their current risk-first handoff",
+  );
+  const activeRiskBand = riskRows.find(([, state]) => state === "active");
+  assert.equal(
+    `Risk band: ${activeRiskBand?.[0]}.`,
+    /^Risk band: .+\.$/mu.exec(plan)?.[0],
+    "the exact resume point must name the active risk band",
+  );
 }
 
 test("keeps the plan as one compact execution control document", async () => {
@@ -123,6 +160,20 @@ test("makes the complete MUE Preview Beta critical path executable", async () =>
   assert.throws(
     () => assertMuePreviewBetaCriticalPath(plan.replace("Integration state: `blocked`.", "Integration state: `ready`.")),
     /must remain blocked/u,
+  );
+  assert.throws(
+    () => assertMuePreviewBetaCriticalPath(plan.replace(
+      "| 7 | `active` | Capability and evidence closure |",
+      "| 7 | `queued` | Capability and evidence closure |",
+    )),
+    /risk-first handoff/u,
+  );
+  assert.throws(
+    () => assertMuePreviewBetaCriticalPath(plan.replace(
+      "Risk band: Capability and evidence closure.",
+      "Risk band: Cross-Workflow durability.",
+    )),
+    /active risk band/u,
   );
 });
 
