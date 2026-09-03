@@ -56,6 +56,10 @@ Camunda 8 provides the useful independent comparison. Its public BPMN coverage r
 
 The capability page is a read-only project-status surface. It consumes no engine runtime state and creates no new BPMN meaning. Its canonical row data belongs to the executable corpus contract so the retained models and the UI fail together when support changes. The applicable detail maps routed by [`implementation-status-router`](../IMPLEMENTATION-MAP.md) remain the complete human-readable claim boundary, and the [requirement ledger](../BPMN-REQUIREMENT-LEDGER.md) remains the BPMN disposition authority.
 
+### MUE Preview Beta integration preflight
+
+Beta reuses the capability-disclosure precedent rather than selecting a new operational interaction. CIB Seven's inspected system-settings surface still provides no execution-checkpoint matrix, and its modeling palette remains an invalid proxy for executable support. Camunda 8's separately grouped coverage matrix remains the useful independent precedent for keeping evidence categories explicit. The project adopts another native read-only table in About, deliberately separates production journeys, registered capabilities, generated evidence, and private reviewed checkpoints, and keeps one remaining-limit statement per row. It excludes dashboard cards, a new navigation destination, runtime-derived status, a combined completion percentage, and links that imply a checkpoint-only item is executable. [The Beta proposal](../MUE-PREVIEW-BETA-PROPOSAL.md) owns the exact seven-row contract; the existing capability catalog remains the sole executable-variant disclosure.
+
 ## Pattern 2: collection first, then substantial detail
 
 Task products consistently begin with a queue or list and open one exact item into a detail surface. CIB Seven uses filters, results, and a task view. Camunda 8 uses a task queue and selected task details. Flowable describes an inbox plus a details panel with a header, navigation, and main area. Bonita documents both master/detail and a full-width expansion for large forms. ServiceNow list pages open records and allow only optional preview in a side panel.
