@@ -2,8 +2,8 @@
 
 ## Status
 
-Lifecycle: owner-approved
-Review: approved-with-required-edits
+Lifecycle: implementation-in-progress
+Review: pending
 
 ## Prior authority and defect
 
@@ -23,7 +23,7 @@ The BPMN source bytes, checked graph, Semantic Process Program, trigger transiti
 
 ## Required, optional, and excluded functionality
 
-**Required:** the checkpoint profile's Process-start value-kind cell changes from empty to String-only in TypeScript and Lean; a Program-sensitive admission predicate derives the complete required source-name set from `compensationExecution.subjects` whose body input is `restoredProcessBinding`; for the exact checkpoint it admits one and only one canonical binding with that name and a String value; the predicate constructs the exact one-activation promoted snapshot and maximum-sized first compensation frontier from immutable Program data plus the supplied start identity and binding, and admits them only when the existing canonical encoders place them within the Program's inherited 8,192-byte snapshot and 20,480-byte execution limits; TypeScript execution admission, direct TypeScript and Lean command admission, and Product 1 pre-start assessment call the same rule for their account; two real-source traces complete the parallel branches in opposite orders and reach the same B/C compensation frontier with the exact frozen argument; Product 1 assessment and start reject every malformed or capacity-exceeding start before `client.start` and admit the exact start once.
+**Required:** the checkpoint profile's Process-start value-kind cell changes from empty to String-only in TypeScript and Lean; a Program-sensitive admission predicate derives the complete required source-name set from `compensationExecution.subjects` whose body input is `restoredProcessBinding`; for the exact checkpoint it admits one and only one canonical binding with that name and a String value; the predicate constructs the exact one-activation promoted snapshot and maximum-sized first compensation frontier from immutable Program data plus the supplied start identity and binding, and admits them only when the existing canonical encoders place them within the Program's inherited 8,192-byte snapshot and 20,480-byte execution limits; TypeScript execution admission, direct TypeScript and Lean command admission, and Product 1 pre-start assessment call the same rule for their account; Lean proves for arbitrary admitted start identity and binding that both canonical-byte inequalities hold; TypeScript retains concrete inherited-limit exact-fit and one-input-byte-over value and identity discriminators, and Product 1 repeats both over-cap cases with zero Workflow starts; two real-source traces complete the parallel branches in opposite orders and reach the same B/C compensation frontier with the exact frozen argument; Product 1 assessment and start reject every malformed or capacity-exceeding start before `client.start` and admit the exact start once.
 
 **Optional:** the positive witnesses may use different nonempty String contents to prove that the value is transported rather than hard-coded.
 
@@ -58,13 +58,19 @@ After correction, the empty start must reject before runtime creation. The posit
 
 Mutations replace the binding name with `DataInput_TravelDetails`, add an unrelated String binding, duplicate the source binding, remove it, or change only its value kind. Each must reject with exact state preservation. A Program mutation changing the restored source name changes the required start name rather than continuing to accept the fixture literal, proving Program-derived identity.
 
-Capacity mutations find the exact-fit ASCII String for the ordinary short instance identity from the production canonical encoders, then add one byte; a second pair finds the exact-fit ASCII instance identity for a short String, then adds one byte. The exact-fit starts are admitted and both one-byte-over starts are rejected with exact state preservation by direct command admission. Product 1 repeats both over-cap cases and records zero `client.start` calls. Escaped and multi-byte String cases compare the prospective byte count with the encoder result so character-count or unescaped-length substitutions cannot pass.
+Capacity mutations in TypeScript find the exact-fit ASCII String for the ordinary short instance identity from the production canonical encoders, then add one byte; a second pair finds the exact-fit ASCII instance identity for a short String, then adds one byte. The exact-fit starts are admitted and both one-byte-over starts are rejected with exact state preservation by direct command admission. Product 1 repeats both over-cap cases and records zero `client.start` calls. Lean proves the stronger quantified safety direction—every arbitrary admitted start fits both inherited bounds—and decides an exact short representative against limits set to its production-encoder byte counts and one byte below them. Escaped and multi-byte String cases compare the prospective byte count with the encoder result in both accounts so character-count or unescaped-length substitutions cannot pass.
 
 The longest internal closure does not change: the same Program topology and operations execute after start, and this proposal adds only a pre-transition predicate. Existing closure-bound, multiple-enabled parallel-state, compensation-frontier, stable-resumption, and terminal-completeness evidence therefore remains applicable. The real-source positive trace is the new discriminator that the formerly unreachable stable path now reaches its explicit effect resumption surface.
 
 ## Lean assurance lane
 
-The Lean lane is **checked** for the exact admission correction. Lean changes the checkpoint Process-start domain to String-only, adds the same Program-derived exact binding and prospective-capacity predicate to command admission, proves that an admitted start satisfies both inherited canonical-byte inequalities, decides the positive binding and the empty, wrong-name, extra, duplicate, wrong-kind, exact-fit, one-byte-over-value, and one-byte-over-identity cases, and keeps the existing source lowering and Compensation runtime proofs unchanged. No new `native_decide` exception is selected. The first changed target build stays root-owned under the unchanged 3 GiB memory ceiling.
+The Lean lane is **checked** for the exact admission correction. Lean changes the checkpoint Process-start domain to String-only, adds the same Program-derived exact binding and prospective-capacity predicate to command admission, proves for arbitrary admitted identity and binding that both inherited canonical-byte inequalities hold, decides the positive binding and the empty, wrong-name, extra, duplicate, and wrong-kind cases, and decides exact short representative projections against each production-encoder byte count and one byte below it. Escaped and multi-byte values bind the canonical encoder. The full inherited-limit exact-fit and one-input-byte-over value and identity searches remain executable TypeScript and Product 1 discriminators rather than concrete Lean reductions; this changes proof shape, not semantic admission or the two bounds. No new `native_decide` exception is selected. Every changed kernel-decided target build stays root-owned under the unchanged 3 GiB memory ceiling.
+
+### Lean assurance correction after the hard ceiling
+
+The initial implementation attempted the approved concrete Lean boundary decisions with a 7,510-byte repeated ASCII value and an 876-byte repeated ASCII identity. The first hard-bounded build was OOM-killed at `memory.peak=3221225472`, `oom=1`, and `oom_kill=1`; removing only the value case left the identity case and reproduced the same exact-bound OOM. Replacing the generated value with a compact String literal and reducing the assertion to one exact-side proposition also reproduced the exact-bound OOM. Those results separate the mechanism from host contention, conjunction size, source representation, or the TypeScript production rule: kernel reduction retains the complete promoted snapshot and duplicated first-frontier context while scanning the long concrete String.
+
+The unchanged-limit build with both long concrete reductions removed completed in 10.80 seconds at cgroup peak 2,082,803,712 bytes, with `max=0`, `oom=0`, and `oom_kill=0`. It retained the Program-derived admission decisions, direct command state-preservation witness, escaped/multi-byte canonical-byte decisions, and the quantified Lean theorem that admitted starts fit both inherited bounds. The correction therefore removes no safety proposition: the universal implication establishes the formal capacity guarantee for every length, the independently written TypeScript core exercises exact fit and one-input-byte-over at both inherited limits, and Product 1 verifies that both over-cap cases create no Workflow. Raising the memory limit or adding `native_decide` would weaken the repository's established assurance policy without increasing the semantic claim and is rejected.
 
 ## BPMN and CIB boundary
 
@@ -86,7 +92,7 @@ The smallest live witness starts the exact compiled source with one valid bindin
 |---|---|
 | Root mechanism | Opposite parallel completion orders both fail at the final join before correction and both reach the same compensation frontier after it |
 | Exact start contract | TypeScript and Lean accept one Program-derived String binding and reject empty, wrong, extra, duplicate, wrong-kind, or downstream-capacity-exceeding starts |
-| Capacity-total reachability | Exact-fit and one-byte-over String and instance-identity pairs bind both canonical limits before runtime creation; admitted starts imply both downstream bounds |
+| Capacity-total reachability | TypeScript exact-fit and one-input-byte-over String and instance-identity pairs bind both inherited limits; Product 1 repeats both over-cap cases before Workflow creation; Lean proves every admitted start satisfies both inequalities and decides exact short representative encoder boundaries |
 | Source/Program preservation | Existing exact checked and Program fixtures and source SHA remain byte-identical |
 | Frozen restoration | The real compiled source produces the exact B argument from the completion-time snapshot, with a current-value mutation unable to replace it |
 | Product 1 pre-start safety | Assessment and client tests reject malformed starts with zero `client.start` calls and admit the exact start once |
@@ -123,12 +129,13 @@ Implementation stops if the correction requires source XML changes, a default va
 
 ## Stage boundary
 
-After proposal approval, implementation first makes the TypeScript and Lean exact start predicate red then green, including both downstream bounds, proves both real-source completion orders reach the same compensation frontier, and updates Product 1 pre-start refusal. Only then may the in-progress durability scheduler count the exact source as live evidence. The repair is committed as its own coherent unregistered semantic checkpoint before scheduler integration so its capacity-total admission claim receives an independent review boundary. Closure still requires the trigger proposal's complete live Temporal, replacement, continuation, retry, cancellation, receipt, replay, documentation, and independent review obligations.
+After this assurance correction is independently approved, implementation first makes the TypeScript and Lean exact start predicate red then green, including both downstream bounds under the corrected evidence split, proves both real-source completion orders reach the same compensation frontier, and updates Product 1 pre-start refusal. Only then may the in-progress durability scheduler count the exact source as live evidence. The repair is committed as its own coherent unregistered semantic checkpoint before scheduler integration so its capacity-total admission claim receives an independent review boundary. Closure still requires the trigger proposal's complete live Temporal, replacement, continuation, retry, cancellation, receipt, replay, documentation, and independent review obligations.
 
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
 | Proposal | `af387881fea17c9db040874e759c9189e8d164dc` | `fork-turns-none` | `approve-with-required-edits` | `f1609d7a6370ea73b059085e55454ab15fac4423` |
+| Lean assurance correction | `pending` | `fork-turns-none` | `pending` | `not-applicable` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
