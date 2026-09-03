@@ -21,11 +21,14 @@ verify_common() {
     "$activity_boundary_message_bpmn_path"
 }
 
-verify_lean() {
-  ./scripts/lake.sh build
+verify_lean_library() {
   ./scripts/lake.sh test
-  ./scripts/lake.sh exe checkCheckedSourceRelationExperiment
-  ./scripts/lake.sh build emitSemanticProcessResults
+}
+
+verify_lean_checks() {
+  ./scripts/lake.sh build BpmnSemantics.Experiments.CheckedSourceRelationMain BpmnSemantics.SemanticProcessJsonMain BpmnSemantics.EnginePopulationScenarioJsonMain BpmnSemantics.CommittedExecutionPublicationJsonMain
+  ./scripts/lake.sh run BpmnSemantics/Experiments/CheckedSourceRelationMain.lean
+  ./scripts/lake.sh run BpmnSemantics/CommittedExecutionPublicationJsonMain.lean
 }
 
 verify_runtime() {
@@ -39,6 +42,7 @@ verify_runtime() {
 
 verify_pipeline() {
   ./scripts/pnpm.sh run test:committed-execution-publication-parity:built
+  ./scripts/pnpm.sh run test:message-key-correlation-population-lean-core:built
   ./scripts/pnpm.sh run test:message-payload-lean-core:built
   ./scripts/pnpm.sh run test:activity-boundary-message-lean-core:built
   env BPMN_PIPELINE_PREBUILT=1 ./scripts/pnpm.sh run test:pipeline
@@ -48,12 +52,14 @@ verify_pipeline() {
 case "${1:-all}" in
   all)
     verify_common
-    verify_lean
+    verify_lean_library
+    verify_lean_checks
     verify_runtime
     verify_pipeline
     ;;
-  lean) verify_lean ;;
+  lean-library) verify_lean_library ;;
+  lean-checks) verify_lean_checks ;;
   runtime) verify_common; verify_runtime ;;
   pipeline) verify_pipeline ;;
-  *) echo "usage: $0 [all|lean|runtime|pipeline]" >&2; exit 2 ;;
+  *) echo "usage: $0 [all|lean-library|lean-checks|runtime|pipeline]" >&2; exit 2 ;;
 esac

@@ -78,11 +78,13 @@ jobs:
           git diff --name-only "$base" "$GITHUB_SHA" | node scripts/ci-change-selection.ts >> "$GITHUB_OUTPUT"
 
   verify_lean:
-    name: verify Lean
+    name: verify Lean library
     needs: changes
     if: needs.changes.outputs.product1 == 'true'
     runs-on: ubuntu-latest
-    # Run 33447135471 was still making module-level progress at 19m43s on 2026-08-31; 30 minutes preserves 50% cold-build headroom.
+    # Run 33748926595 completed the library build in 25m47s on 2026-09-03 from a
+    # fallback cache. Executable checks are separated below so this unchanged
+    # ceiling measures proof elaboration rather than duplicate native codegen.
     timeout-minutes: 30
     env:
       # One decision for the Lean build cache, announced by the first step so
@@ -137,14 +139,66 @@ jobs:
       - name: Require clean committed HEAD
         run: node scripts/clean-committed-head.ts
 
-      - name: Verify Lean
-        run: ./scripts/verify.sh lean
+      - name: Verify Lean library
+        run: ./scripts/verify.sh lean-library
 
-      - name: Stage Lean output for the integration lane
+      - name: Stage Lean library output
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: .lake
-          key: verify-lean-${{ runner.os }}-${{ github.run_id }}-${{ github.run_attempt }}
+          key: verify-lean-library-${{ runner.os }}-${{ github.run_id }}-${{ github.run_attempt }}
+
+  verify_lean_checks:
+    name: verify Lean executable checks
+    needs:
+      - changes
+      - verify_lean
+    if: needs.changes.outputs.product1 == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Resolve pinned Node version
+        id: pins
+        run: |
+          eval "$(./scripts/pinned-toolchain.sh)"
+          printf 'node=%s\n' "$required_node_version" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ steps.pins.outputs.node }}
+
+      - name: Set up Lean
+        uses: leanprover/lean-action@38fbc41a8c28c4cbaec22d7f7de508ec2e7c0dd9 # v1.5.0
+        with:
+          auto-config: false
+          build: false
+          test: false
+          use-mathlib-cache: false
+
+      - name: Restore Lean library output
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .lake
+          key: verify-lean-library-${{ runner.os }}-${{ github.run_id }}-${{ github.run_attempt }}
+          fail-on-cache-miss: true
+
+      - name: Require clean committed HEAD
+        run: node scripts/clean-committed-head.ts
+
+      - name: Verify Lean executable checks
+        run: ./scripts/verify.sh lean-checks
+
+      - name: Stage checked Lean output for the integration lane
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .lake
+          key: verify-lean-checks-${{ runner.os }}-${{ github.run_id }}-${{ github.run_attempt }}
 
   verify_runtime:
     name: verify runtime
@@ -237,7 +291,7 @@ jobs:
     name: verify integration pipeline
     needs:
       - changes
-      - verify_lean
+      - verify_lean_checks
       - verify_runtime
     if: needs.changes.outputs.product1 == 'true'
     runs-on: ubuntu-latest
@@ -291,7 +345,7 @@ jobs:
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: .lake
-          key: verify-lean-${{ runner.os }}-${{ github.run_id }}-${{ github.run_attempt }}
+          key: verify-lean-checks-${{ runner.os }}-${{ github.run_id }}-${{ github.run_attempt }}
           fail-on-cache-miss: true
 
       - name: Restore runtime output
@@ -323,6 +377,7 @@ jobs:
     needs:
       - changes
       - verify_lean
+      - verify_lean_checks
       - verify_runtime
       - verify_pipeline
     if: always()
@@ -332,11 +387,13 @@ jobs:
       - name: Require selected verification to have succeeded
         run: |
           echo "Product 1 selected: ${{ needs.changes.outputs.product1 }}"
-          echo "Lean verification result: ${{ needs.verify_lean.result }}"
+          echo "Lean library result: ${{ needs.verify_lean.result }}"
+          echo "Lean executable checks result: ${{ needs.verify_lean_checks.result }}"
           echo "runtime verification result: ${{ needs.verify_runtime.result }}"
           echo "integration verification result: ${{ needs.verify_pipeline.result }}"
           test "${{ needs.changes.outputs.product1 }}" = "false" || {
             test "${{ needs.verify_lean.result }}" = "success"
+            test "${{ needs.verify_lean_checks.result }}" = "success"
             test "${{ needs.verify_runtime.result }}" = "success"
             test "${{ needs.verify_pipeline.result }}" = "success"
           }

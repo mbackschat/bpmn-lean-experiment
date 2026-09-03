@@ -25,6 +25,15 @@ export function programmaticBareLeanInvocationFindings(
     .map(({ relativePath }) => relativePath);
 }
 
+export function programmaticNativeLeanInvocationFindings(
+  surfaces: ReadonlyArray<CommandSurface>,
+): ReadonlyArray<string> {
+  return surfaces
+    .filter(({ source }) => hasProgrammaticLeanInvocation(source))
+    .filter(({ source }) => /\[\s*["']exe["']/u.test(source))
+    .map(({ relativePath }) => relativePath);
+}
+
 function importedTypescriptPaths(
   relativePath: string,
   source: string,

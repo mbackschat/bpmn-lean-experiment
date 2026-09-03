@@ -361,7 +361,7 @@ The Lean toolchain is pinned in [lean-toolchain](lean-toolchain) and currently h
 
 In a managed sandbox, agents must request host port-binding authorization before the first attempt to run `./scripts/verify.sh`, `./scripts/pnpm.sh run test:infrastructure`, `./scripts/pnpm.sh run test:temporal`, `./scripts/pnpm.sh run test:pipeline`, or `./scripts/pnpm.sh run test:timer-time-skipping`. Do not probe by running one of these commands inside the restricted sandbox first. A loopback-listener error containing `Operation not permitted` or `EPERM` means the sandbox denied local binding; it is not evidence of a port collision or a failing infrastructure or semantic test.
 
-**Never invoke `lake` or `lean` directly. Use [the Lean wrapper](scripts/lake.sh): `./scripts/lake.sh build`, `./scripts/lake.sh test`, `./scripts/lake.sh exe <target>`, `./scripts/lake.sh env lean <file>`.** It is the single owner of Lean's build parallelism; [package.json](package.json)'s `config.leanBuildThreads` owns the value, and the wrapper derives it through [the pin reader](scripts/pinned-toolchain.sh), replaces any inherited `LEAN_NUM_THREADS`, and exports the fixed value. The wrapper also holds one fail-closed host lock, so a second repository Lean process tree refuses to start. An explicit `BpmnSemantics` target is forbidden because `./scripts/lake.sh build` already owns the root-integrator-only full gate; a focused command must name only its narrow targets. Never override the thread pin or start another Lean command while one has yielded. A sub-agent runs Lean only under the narrow-target conditions in [the delegated implementation rules](#delegated-implementation).
+**Never invoke `lake` or `lean` directly. Use [the Lean wrapper](scripts/lake.sh): `./scripts/lake.sh build`, `./scripts/lake.sh test`, `./scripts/lake.sh run <source.lean> [arguments...]`, `./scripts/lake.sh exe <target>`, `./scripts/lake.sh env lean <file>`.** It is the single owner of Lean's build parallelism; [package.json](package.json)'s `config.leanBuildThreads` owns the value, and the wrapper derives it through [the pin reader](scripts/pinned-toolchain.sh), replaces any inherited `LEAN_NUM_THREADS`, and exports the fixed value. The wrapper also holds one fail-closed host lock, so a second repository Lean process tree refuses to start. An explicit `BpmnSemantics` target is forbidden because `./scripts/lake.sh build` already owns the root-integrator-only full gate; a focused command must name only its narrow targets. Build a runnable module explicitly and use `run` when a verification witness needs its `main`; programmatic `exe` invocations are forbidden because they regenerate and native-compile an already elaborated dependency closure. Never override the thread pin or start another Lean command while one has yielded. A sub-agent runs Lean only under the narrow-target conditions in [the delegated implementation rules](#delegated-implementation).
 
 The pin exists because this repository decides finite fixtures in the kernel and kernel reduction holds its terms in resident memory. Lake sizes its build pool from that variable or from the logical processor count and offers no `--jobs` option, so an unpinned build scales its peak with core count: on an 8-core host it ran four concurrent `lean` processes above 2 GB each and peaked at 7978 MB, against 2411 MB at one thread and 4699 MB at two, at roughly double the wall time. The default is the most conservative value on purpose, because the peak grows with the number of kernel-decided fixtures and that number grows with every capsule; a GitHub-hosted runner for a private repository has 7 GB and the lightweight tier 5 GB, so an unpinned build already exceeds them. The wrapper exists rather than an exported pin on each gate because that earlier arrangement pinned the gates and nothing else: the documented experiment commands and every Lean build typed directly stayed at the host's core count behind a prose caveat asking the reader to remember. [The infrastructure guard](scripts/verification-entrypoint.test.ts) dynamically rejects a bare `lake` subcommand in every present tracked or pending command surface, including scripts, package manifests, CI workflows, and shell wrappers, plus the maintained instruction documents. Historical records such as [PLAN.md](docs/PLAN.md) and the ledgers can therefore retain an unpinned command as a measured fact without weakening executable coverage.
 
@@ -519,24 +519,20 @@ Product 2 fixed-fixture responsive, focus, reduced-motion, and interaction gate 
 ./scripts/pnpm.sh run test:ui-quality
 ```
 
-After committing a Product 1 or shared-repository change, require a clean worktree and run the exact ordinary GitHub verification entry point against that committed `HEAD`:
+After committing every intended change, require a clean worktree and let the repository derive every local GitHub-workflow equivalent selected by the committed diff:
+
+```sh
+./scripts/pnpm.sh run test:pre-push
+```
+
+The selector reads the Product 2 workflows' actual `push.paths`, adds Product 1 verification through the same path classifier as GitHub, fails closed on malformed or missing filters, and uses a disposable local PostgreSQL 18 cluster when no explicit `BPMN_TEST_POSTGRES_URL` is supplied. The individual clean-commit commands remain the exact workflow equivalents for focused diagnosis:
 
 ```sh
 ./scripts/pnpm.sh run test:pre-push:verify
-```
-
-After committing a Product 2 UI-facing change, require a clean worktree and run the same composed entry point used by the ordinary path-filtered GitHub workflow:
-
-```sh
-./scripts/pnpm.sh run test:pre-push:ui
-```
-
-Product 2 backend and showcase-compatibility changes have separate clean-commit entry points so neither becomes a serial prerequisite of the browser lane:
-
-```sh
 ./scripts/pnpm.sh run test:pre-push:platform
 ./scripts/pnpm.sh run test:pre-push:platform-postgresql
 ./scripts/pnpm.sh run test:pre-push:showcase
+./scripts/pnpm.sh run test:pre-push:ui
 ```
 
 The optional manually reviewed wide-Diagram screenshot has no blocking CI or release role:

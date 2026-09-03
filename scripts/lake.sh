@@ -18,11 +18,24 @@
 # inherited LEAN_NUM_THREADS value: an ambient or agent-supplied override must never turn an ordinary
 # project command into an unbounded host build. The host-wide lock prevents two repository Lean
 # process trees from multiplying that bounded peak.
+#
+# `run <source.lean> [args...]` deliberately uses Lean's interpreter after the owning gate has built
+# that source module. Runtime witnesses need their `main`; they do not need Lake to regenerate and
+# compile the same transitive closure as native C merely to execute it.
 
 set -eu
 
 script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 eval "$("$script_dir/pinned-toolchain.sh")"
+
+if [ "${1:-}" = "run" ]; then
+  shift
+  if [ "$#" -eq 0 ]; then
+    echo "LEAN_BUILD_REFUSED run requires one Lean source path" >&2
+    exit 64
+  fi
+  set -- env lean --run "$@"
+fi
 
 if [ "${1:-}" = "build" ]; then
   for target in "$@"; do

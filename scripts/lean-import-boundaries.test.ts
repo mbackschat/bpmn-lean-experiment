@@ -10,6 +10,7 @@ import {
 } from "./lean-source-analysis.ts";
 
 const semanticProcessUmbrella = "BpmnSemantics/SemanticProcess.lean";
+const semanticLibraryRoot = "BpmnSemantics.lean";
 const externalA12ResearchTree = "adoption/a12/legacy/source-tree/";
 const experimentTree = "BpmnSemantics/Experiments/";
 
@@ -121,6 +122,47 @@ export function broadSemanticProcessImports(
     );
 }
 
+function moduleName(sourcePath: string): string {
+  return sourcePath.replace(/\.lean$/u, "").replaceAll("/", ".");
+}
+
+export function unreachableMaintainedConformanceModules(
+  sources: ReadonlyArray<Readonly<{ path: string; source: string }>>,
+): readonly string[] {
+  const normalized = sources.map(({ path: sourcePath, source }) => ({
+    module: moduleName(sourcePath.replaceAll(path.sep, "/")),
+    path: sourcePath.replaceAll(path.sep, "/"),
+    imports: analyzeLeanSource(source).code
+      .split(/\r?\n/u)
+      .flatMap((line) => {
+        const match = /^\s*import\s+([A-Za-z0-9_.]+)\s*$/u.exec(line);
+        return match?.[1] === undefined ? [] : [match[1]];
+      }),
+  }));
+  const importsByModule = new Map(
+    normalized.map(({ module, imports }) => [module, imports] as const),
+  );
+  const reachable = new Set<string>();
+  const pending = [moduleName(semanticLibraryRoot)];
+  while (pending.length > 0) {
+    const module = pending.pop();
+    if (module === undefined || reachable.has(module)) {
+      continue;
+    }
+    reachable.add(module);
+    pending.push(...(importsByModule.get(module) ?? []));
+  }
+  return normalized
+    .filter(({ path: sourcePath }) =>
+      sourcePath.startsWith("BpmnSemantics/") &&
+      !sourcePath.startsWith(experimentTree) &&
+      path.posix.basename(sourcePath).endsWith("Conformance.lean")
+    )
+    .map(({ module }) => module)
+    .filter((module) => !reachable.has(module))
+    .sort();
+}
+
 test("detects the aggregate import without matching comments or the umbrella owner", () => {
   const source = [
     "import BpmnSemantics.SemanticProcess",
@@ -210,6 +252,36 @@ test("separates a checked-node matcher from a fixture that only builds nodes", (
     ),
     [],
     "production owners are compiled by the default target and answer to the compiler",
+  );
+});
+
+test("the default semantic library reaches every maintained conformance module", () => {
+  assert.deepEqual(
+    unreachableMaintainedConformanceModules(
+      readWorktreeSources(worktreeLeanSourceFiles()),
+    ),
+    [],
+    "a maintained conformance module outside the default library can remain broken while the primary Lean build is green",
+  );
+});
+
+test("the maintained-conformance import guard derives omissions instead of trusting a registry", () => {
+  assert.deepEqual(
+    unreachableMaintainedConformanceModules([
+      {
+        path: "BpmnSemantics.lean",
+        source: "import BpmnSemantics.Suite\n-- import BpmnSemantics.MissingConformance\n",
+      },
+      {
+        path: "BpmnSemantics/Suite.lean",
+        source: "import BpmnSemantics.AlreadyConformance\n",
+      },
+      { path: "BpmnSemantics/AlreadyConformance.lean", source: "" },
+      { path: "BpmnSemantics/MissingConformance.lean", source: "" },
+      { path: "BpmnSemantics/Experiments/ExcludedConformance.lean", source: "" },
+      { path: "BpmnSemantics/Ordinary.lean", source: "" },
+    ]),
+    ["BpmnSemantics.MissingConformance"],
   );
 });
 

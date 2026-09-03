@@ -9,6 +9,7 @@ import {
   leanDependentEntrypoints,
   manifestTestEntrypoints,
   programmaticBareLeanInvocationFindings,
+  programmaticNativeLeanInvocationFindings,
   verificationFunctionBody,
 } from "./lean-test-lane-policy.ts";
 
@@ -59,6 +60,26 @@ test("the programmatic Lean guard reaches a helper outside the scripts directory
       "packages/example/test/direct-lean-targets.ts",
       "packages/example/test/declared-lean-targets.ts",
     ],
+  );
+});
+
+test("programmatic Lean witnesses use the interpreter instead of rebuilding native closures", async () => {
+  const surfaces = (await codeSurfaces(worktreePaths()))
+    .filter(({ relativePath }) => !relativePath.endsWith(".test.ts"));
+  assert.deepEqual(
+    programmaticNativeLeanInvocationFindings(surfaces),
+    [],
+    "a programmatic `lake exe` duplicates already elaborated Lean modules as generated C and native objects",
+  );
+});
+
+test("the native-codegen guard reaches an indirect wrapper invocation", () => {
+  assert.deepEqual(
+    programmaticNativeLeanInvocationFindings([{
+      relativePath: "packages/example/test/lean-targets.ts",
+      source: 'const leanCommand = "./scripts/lake.sh";\nrunProcess(leanCommand, ["exe", "emitter"], 10_000);',
+    }]),
+    ["packages/example/test/lean-targets.ts"],
   );
 });
 

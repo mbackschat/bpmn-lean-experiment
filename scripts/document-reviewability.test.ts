@@ -294,6 +294,12 @@ test("keeps the owner-approved detail-map budget exceptions exactly scoped", () 
     ),
     4500,
   );
+  assert.equal(
+    reviewedDetailMapWordBudget(
+      "docs/ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md",
+    ),
+    4300,
+  );
 });
 
 test("covers every registered semantic profile in the admission capability table", async () => {

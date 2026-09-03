@@ -65,6 +65,10 @@ test("makes clean committed HEAD the shared local and GitHub pre-push boundary",
     "node scripts/clean-committed-head.ts",
   );
   assert.equal(
+    manifest.scripts?.["test:pre-push"],
+    "node scripts/pre-push-selection.ts",
+  );
+  assert.equal(
     manifest.scripts?.["test:pre-push:verify"],
     "pnpm check:clean-head && ./scripts/verify.sh",
   );
@@ -86,10 +90,11 @@ test("makes clean committed HEAD the shared local and GitHub pre-push boundary",
   );
   assert.equal(
     verifyWorkflow.match(/run: node scripts\/clean-committed-head\.ts/gu)?.length,
-    3,
+    4,
     "every hosted Product 1 slice must bind itself to the exact checkout",
   );
-  assert.match(verifyWorkflow, /run: \.\/scripts\/verify\.sh lean/u);
+  assert.match(verifyWorkflow, /run: \.\/scripts\/verify\.sh lean-library/u);
+  assert.match(verifyWorkflow, /run: \.\/scripts\/verify\.sh lean-checks/u);
   assert.match(verifyWorkflow, /run: \.\/scripts\/verify\.sh runtime/u);
   assert.match(verifyWorkflow, /run: \.\/scripts\/verify\.sh pipeline/u);
   assert.doesNotMatch(verifyWorkflow, /run: \.\/scripts\/pnpm\.sh run test:pre-push:verify/u);

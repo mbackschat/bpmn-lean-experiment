@@ -45,8 +45,8 @@ import type {
   TargetBatch,
 } from "./pipeline-types.ts";
 
-const leanExecutable = "emitSemanticProcessResults";
 const leanCommand = "./scripts/lake.sh";
+const leanProgram = "BpmnSemantics/SemanticProcessJsonMain.lean";
 
 function leanDefinitionRecords<Case extends SemanticDifferentialCase>(
   contexts: ReadonlyArray<PipelineContext<Case>>,
@@ -88,8 +88,8 @@ export async function runLeanTargets<Case extends SemanticDifferentialCase>(
   const execution = await runProcess(
     leanCommand,
     [
-      "exe",
-      leanExecutable,
+      "run",
+      leanProgram,
       inputPath,
       ...leanScenarioPaths(contexts),
     ],
@@ -158,8 +158,8 @@ export async function requireLeanDefinitionMutationRejection(
     await runProcess(
       leanCommand,
       [
-        "exe",
-        leanExecutable,
+        "run",
+        leanProgram,
         inputPath,
         ...leanScenarioPaths(contexts),
       ],
@@ -205,7 +205,7 @@ export async function requireLeanScenarioMutationRejection(
   try {
     await runProcess(
       leanCommand,
-      ["exe", leanExecutable, inputPath, ...scenarioPaths],
+      ["run", leanProgram, inputPath, ...scenarioPaths],
       10_000,
     );
   } catch (error) {
@@ -245,8 +245,8 @@ export async function requireLeanProvenanceErasureRejection(
     await runProcess(
       leanCommand,
       [
-        "exe",
-        leanExecutable,
+        "run",
+        leanProgram,
         inputPath,
         ...leanScenarioPaths(contexts),
       ],

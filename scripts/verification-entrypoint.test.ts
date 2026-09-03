@@ -180,26 +180,48 @@ test("the Temporal source gate typechecks directly executed harnesses first", as
   );
 });
 
-test("the semantic package gate builds the complete Lean library before its test driver", async () => {
+test("the semantic package gate uses the library test driver without a duplicate build", async () => {
   const manifest = JSON.parse(
     await readFile(rootPackageManifestPath, "utf8"),
   ) as { scripts?: Record<string, string> };
   assert.equal(
     manifest.scripts?.["test:semantic"],
-    "./scripts/lake.sh build && ./scripts/lake.sh test && pnpm build:semantic-core && tsc -p packages/semantic-core/tsconfig.type-test.json && node --test --test-concurrency=1 packages/semantic-core/test/*.test.ts",
+    "./scripts/lake.sh test && pnpm build:semantic-core && tsc -p packages/semantic-core/tsconfig.type-test.json && node --test --test-concurrency=1 packages/semantic-core/test/*.test.ts",
   );
 });
 
-test("the hosted Lean lane retains a cold-build job ceiling", async () => {
+test("Lake testing builds the semantic library instead of a native executable", async () => {
+  const lakefile = await readFile(
+    fileURLToPath(new URL("../lakefile.toml", import.meta.url)),
+    "utf8",
+  );
+  assert.match(lakefile, /^testDriver = "BpmnSemantics"$/mu);
+  assert.doesNotMatch(lakefile, /name = "checkConformance"/u);
+});
+
+test("the hosted Lean library lane retains its unchanged cold-build ceiling", async () => {
   const workflow = await readFile(verificationWorkflowPath, "utf8");
   const job = workflow.match(
     /verify_lean:[\s\S]*?timeout-minutes: (\d+)/u,
   );
   assert.notEqual(job, null, "verify_lean timeout is absent");
   const timeoutMinutes = Number(job?.[1]);
-  assert.ok(
-    timeoutMinutes >= 30,
-    `verify_lean ${timeoutMinutes}-minute ceiling cannot contain the observed progressing cold build with 50% headroom`,
+  assert.equal(timeoutMinutes, 30, "the hard ceiling must not be raised to hide duplicated work");
+});
+
+test("hosted Lean checks consume the completed library output in a separate bounded job", async () => {
+  const workflow = await readFile(verificationWorkflowPath, "utf8");
+  assert.match(
+    workflow,
+    /verify_lean_checks:[\s\S]*?needs:\n      - changes\n      - verify_lean[\s\S]*?timeout-minutes: 10/u,
+  );
+  assert.match(
+    workflow,
+    /verify_lean_checks:[\s\S]*?key: verify-lean-library-\$\{\{ runner\.os \}\}-\$\{\{ github\.run_id \}\}-\$\{\{ github\.run_attempt \}\}[\s\S]*?run: \.\/scripts\/verify\.sh lean-checks/u,
+  );
+  assert.match(
+    workflow,
+    /verify_pipeline:[\s\S]*?needs:\n      - changes\n      - verify_lean_checks\n      - verify_runtime/u,
   );
 });
 
@@ -303,6 +325,23 @@ test("committed-publication parity runs in the restored-output integration lane"
   );
 });
 
+test("Message-correlation population parity runs in the restored-output integration lane", async () => {
+  const [manifest, verifyScript] = await Promise.all([
+    readFile(fileURLToPath(new URL("../package.json", import.meta.url)), "utf8"),
+    readFile(verifyScriptPath, "utf8"),
+  ]);
+  assert.match(
+    manifest,
+    /"test:message-key-correlation-population-lean-core:built": "node --test --test-concurrency=1 packages\/differential\/test\/message-key-correlation-population-lean-core\.integration-test\.ts"/u,
+  );
+  assert.equal(
+    verifyScript.split("\n").filter((line) =>
+      line.trim() === "./scripts/pnpm.sh run test:message-key-correlation-population-lean-core:built"
+    ).length,
+    1,
+  );
+});
+
 test("the runtime-import guard reaches helper and URL wrapped build paths", () => {
   assert.deepEqual(
     generatedOutputRuntimeImportFindings([{
@@ -386,13 +425,22 @@ test("default verification XSD-validates the Activity boundary Message source", 
   );
 });
 
-test("default verification executes the self-building checked-source proof experiment once", async () => {
+test("Lean checks elaborate executable roots and interpret them without native code generation", async () => {
   const source = await readFile(verifyScriptPath, "utf8");
   await assertLineOccursOnce(
     verifyScriptPath,
-    "./scripts/lake.sh exe checkCheckedSourceRelationExperiment",
+    "./scripts/lake.sh build BpmnSemantics.Experiments.CheckedSourceRelationMain BpmnSemantics.SemanticProcessJsonMain BpmnSemantics.EnginePopulationScenarioJsonMain BpmnSemantics.CommittedExecutionPublicationJsonMain",
   );
-  assert.doesNotMatch(source, /lake\.sh build checkCheckedSourceRelationExperiment/u);
+  for (const path of [
+    "BpmnSemantics/Experiments/CheckedSourceRelationMain.lean",
+    "BpmnSemantics/CommittedExecutionPublicationJsonMain.lean",
+  ]) {
+    await assertLineOccursOnce(
+      verifyScriptPath,
+      `./scripts/lake.sh run ${path}`,
+    );
+  }
+  assert.doesNotMatch(source, /lake\.sh (?:exe|build emitSemanticProcessResults)/u);
 });
 
 test("the checked-source proof target imports both Stage 3a frontier modules", async () => {
@@ -456,7 +504,7 @@ test("the Lean wrapper clamps concurrency, rejects umbrella mixing, and refuses 
   const lockPath = `/tmp/bpmn-lean-experiment-${process.getuid?.() ?? 0}.lake-build.lock`;
   await writeFile(
     fakeLake,
-    "#!/bin/sh\nprintf '%s\\n' \"$LEAN_NUM_THREADS\"\n",
+    "#!/bin/sh\nprintf '%s\\n%s\\n' \"$LEAN_NUM_THREADS\" \"$*\"\n",
     { mode: 0o755 },
   );
   const environment = {
@@ -471,7 +519,18 @@ test("the Lean wrapper clamps concurrency, rejects umbrella mixing, and refuses 
       env: environment,
     });
     assert.equal(ordinary.status, 0, ordinary.stderr);
-    assert.equal(ordinary.stdout.trim(), "1");
+    assert.equal(ordinary.stdout.trim(), "1\n--version");
+
+    const interpreted = spawnSync(
+      lakeWrapperPath,
+      ["run", "BpmnSemantics/SemanticProcessJsonMain.lean", "input.jsonl"],
+      { encoding: "utf8", env: environment },
+    );
+    assert.equal(interpreted.status, 0, interpreted.stderr);
+    assert.equal(
+      interpreted.stdout.trim(),
+      "1\nenv lean --run BpmnSemantics/SemanticProcessJsonMain.lean input.jsonl",
+    );
 
     const broadFocused = spawnSync(
       lakeWrapperPath,

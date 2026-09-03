@@ -282,9 +282,11 @@ export function assertDetailImplementationMap(
  * the owner approved 7,000 words for the Temporal-hosting map after exact Event Subscriptions
  * continuation and accepted-before-quarantine evidence exhausted its 6,000-word allowance, then
  * approved 5,400 words for the runtime/proof map when the registered Message-correlation population
- * and refinement account brought its accurate total to 5,215 words. Every other map retains the
- * default. No value is unilaterally agent-adjustable; an owner-authorized change must update this
- * executable value and its documented basis together.
+ * and refinement account brought its accurate total to 5,215 words. The owner then approved 4,300
+ * words for the assurance/adoption map when a complete CI hard-ceiling incident record brought its
+ * accurate total to 4,019 words. Every other map retains the default. No value is unilaterally
+ * agent-adjustable; an owner-authorized change must update this executable value and its documented
+ * basis together.
  * The deciding authority is recorded by its owner, [the documentation
  * discipline](../docs/DOC-DISCIPLINE.md#reviewed-detail-map-word-budgets), because a threshold whose
  * only justification is its own comment is not reviewable as a decision.
@@ -297,6 +299,8 @@ export function reviewedDetailMapWordBudget(file: string): number {
       return 5400;
     case "docs/TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md":
       return 7000;
+    case "docs/ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md":
+      return 4300;
     default:
       return 4000;
   }

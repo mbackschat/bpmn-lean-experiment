@@ -17,6 +17,7 @@ The report names the required implementation detail maps, guards, this registry,
 | Check local prerequisites | [`doctor.sh`](doctor.sh) | Run `./scripts/doctor.sh verify` at session start. Use its explicit `research`, `adoption`, or `all` scope only when the work needs those external inputs. |
 | Run pnpm reproducibly | [`pnpm.sh`](pnpm.sh) | Use this wrapper for project pnpm commands so the pinned toolchain and workspace policy apply. |
 | Run complete verification | [`verify.sh`](verify.sh) | Run the repository gate required by [TESTING-SPEC.md](../docs/TESTING-SPEC.md). Its stage arguments are CI-internal; contributors run the bare complete gate and do not compose it with a command that masks its exit status. |
+| Run every selected pre-push gate | [`pre-push-selection.ts`](pre-push-selection.ts) | After committing, derive the Product 1 and Product 2 workflow equivalents from the clean committed diff and the workflows' live path filters. |
 | Run a focused Lean command | [`lake.sh`](lake.sh) | Root-integrator-only Lean wrapper with the repository lock, fixed environment, and target checks. |
 | Discover change constraints | [`what-binds.ts`](what-binds.ts) | Report required implementation detail maps, executable guards, directory registries, and source-owner headroom before planning an edit; unknown implementation paths fail closed. |
 | Preserve long-command evidence | [`run-with-receipt.sh`](run-with-receipt.sh) | Capture output and the real exit status atomically when the testing specification requires a retained receipt. |

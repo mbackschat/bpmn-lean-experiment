@@ -2,14 +2,10 @@ name = "bpmn-lean-experiment"
 version = "0.1.0"
 license = "MIT"
 defaultTargets = ["BpmnSemantics"]
-testDriver = "checkConformance"
+testDriver = "BpmnSemantics"
 
 [[lean_lib]]
 name = "BpmnSemantics"
-
-[[lean_exe]]
-name = "checkConformance"
-root = "BpmnSemantics.ConformanceMain"
 
 [[lean_exe]]
 name = "checkSemanticRepresentationSpike"

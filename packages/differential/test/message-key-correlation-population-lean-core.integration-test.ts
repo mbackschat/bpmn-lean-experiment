@@ -48,8 +48,8 @@ test("compares all Message-correlation population schedules between Lean and the
     const execution = await runProcess(
       "./scripts/lake.sh",
       [
-        "exe",
-        "emitEnginePopulationResults",
+        "run",
+        "BpmnSemantics/EnginePopulationScenarioJsonMain.lean",
         definitionsPath,
         ...contexts.map(({ populationCase }) =>
           path.join(projectRoot, populationCase.scenarioRelativePath)

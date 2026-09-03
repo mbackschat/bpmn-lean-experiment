@@ -28,7 +28,7 @@ async function buildPipeline() {
     runProjectCommand("./scripts/pnpm.sh", ["run", "build:verification-typescript"], {
       timeoutMs: 120_000,
     }),
-    runProjectCommand("./scripts/lake.sh", ["build", "emitSemanticProcessResults"], {
+    runProjectCommand("./scripts/lake.sh", ["build", "BpmnSemantics.SemanticProcessJsonMain"], {
       timeoutMs: 120_000,
     }),
     runProjectCommand(
