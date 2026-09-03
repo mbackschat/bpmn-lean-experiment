@@ -32,6 +32,7 @@ This contributor map assigns source-file responsibilities inside `@bpmn-lean/sem
 | [semantic-process-operation-admission.ts](src/semantic-process-operation-admission.ts) | Closed operation-shape, payload, reference, and origin validation |
 | [semantic-command-admission.ts](src/semantic-command-admission.ts) | Whether one submitted external command commits, including compensation-effect dispatch and exact stale/capacity refusal, and to which successor state |
 | [semantic-process-graph-admission.ts](src/semantic-process-graph-admission.ts) | Producer and consumer consistency, reachability, co-reachability, cycle-policy validation, and the private declaration-derived dormant-handler composition seam |
+| [compensation-source-checkpoint-topology.ts](src/compensation-source-checkpoint-topology.ts) | Exact split, nested-scope, synchronization, trigger, and completion topology admitted by the source-bound Compensation hosting checkpoint |
 | [semantic-process-graph-policy.ts](src/semantic-process-graph-policy.ts) | Profile-owned graph policy shared by checked-source and Semantic Process admission |
 | [semantic-process-profile.ts](src/semantic-process-profile.ts) | Profile-selected operation capabilities |
 | [checked-process-profile-shape.ts](src/checked-process-profile-shape.ts) | Profile-selected checked-node shapes |

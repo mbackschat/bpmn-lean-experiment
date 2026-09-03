@@ -229,7 +229,7 @@ The complete `what-binds` inventory requires [`implementation-status-owner:ENGIN
 |---|---:|---|
 | [TS Program](../../packages/semantic-core/src/semantic-process-contract.ts) | 197 | declaration reference only |
 | [TS Program admission](../../packages/semantic-core/src/semantic-process-admission.ts) | 368 | declaration before graph |
-| [TS graph admission](../../packages/semantic-core/src/semantic-process-graph-admission.ts) | 169 | private exact exemption |
+| [TS graph admission](../../packages/semantic-core/src/semantic-process-graph-admission.ts) | 155 | private exact exemption plus later checkpoint-topology delegation |
 | [TS command admission](../../packages/semantic-core/src/semantic-command-admission.ts) | 361 | optional-field normalization |
 | [TS RuntimeState](../../packages/semantic-core/src/semantic-process-state.ts) | 363 | collection reference only |
 | [TS runtime-state defect](../../packages/semantic-core/src/runtime-state-defect.ts) | 760 | preserve the closed malformed-state classification or record a proved no-change mapping |

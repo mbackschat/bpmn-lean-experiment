@@ -200,6 +200,7 @@ test("admits only the exact Compensation checkpoint through both Product 1 start
     kind: SemanticOperationKind.AwaitEventRace,
   } as unknown as SemanticOperation;
   const { compensationExecution: _missing, ...withoutDeclaration } = program;
+  const triggerBeforeSynchronization = rewireTriggerBeforeSynchronization(program);
   const adversarial: ReadonlyArray<readonly [string, SemanticProcessProgram]> = [
     ["ordinary host wait", withOperations(program, [...program.operations, malformedEffect])],
     ["another managed claimant", withOperations(program, [...program.operations, malformedManagedRace])],
@@ -207,6 +208,7 @@ test("admits only the exact Compensation checkpoint through both Product 1 start
       ...program.operations,
       { ...trigger, id: `${trigger.id}:second` },
     ])],
+    ["trigger before synchronization", triggerBeforeSynchronization],
     ["wrong profile", {
       ...program,
       identity: { ...program.identity, semanticProfile: "wrong-profile" },
@@ -223,7 +225,22 @@ test("admits only the exact Compensation checkpoint through both Product 1 start
   for (const [name, candidate] of adversarial) {
     assert.equal(supportsSemanticProcessExecution(valid, candidate), false, name);
     assert.deepEqual(assessTemporalHostCapability(candidate), compensationFailure, name);
+    assert.deepEqual(assessBpmnProcessAdmission(valid, candidate), {
+      kind: BpmnProcessAdmissionResultKind.Rejected,
+      failure: unsupportedFailure,
+    }, name);
+    assert.deepEqual(
+      await startBpmnProcess(
+        client,
+        valid,
+        candidate,
+        { taskQueue: "compensation-source-host-admission" },
+      ),
+      { kind: BpmnProcessStartResultKind.Rejected, failure: unsupportedFailure },
+      name,
+    );
   }
+  assert.equal(starts.length, 1);
 });
 
 function start(
@@ -294,4 +311,46 @@ function withOperations(
   operations: ReadonlyArray<SemanticOperation>,
 ): SemanticProcessProgram {
   return { ...program, operations: [...operations] };
+}
+
+function rewireTriggerBeforeSynchronization(
+  program: SemanticProcessProgram,
+): SemanticProcessProgram {
+  const trigger = program.operations.find(
+    (operation) => operation.kind === SemanticOperationKind.TriggerCompensation,
+  );
+  const synchronize = program.operations.find(
+    (operation) => operation.kind === SemanticOperationKind.Synchronize,
+  );
+  const insurance = program.operations.find(
+    (operation) =>
+      operation.kind === SemanticOperationKind.AwaitUserTask &&
+      operation.task.elementId === "Task_IssueInsurance",
+  );
+  assert.ok(
+    trigger?.kind === SemanticOperationKind.TriggerCompensation &&
+      synchronize?.kind === SemanticOperationKind.Synchronize &&
+      insurance?.kind === SemanticOperationKind.AwaitUserTask &&
+      synchronize.inputs.includes(insurance.output),
+  );
+  return withOperations(program, program.operations.map((operation) => {
+    switch (operation.kind) {
+      case SemanticOperationKind.TriggerCompensation:
+        return {
+          ...operation,
+          input: insurance.output,
+          output: synchronize.output,
+        };
+      case SemanticOperationKind.Synchronize:
+        return {
+          ...operation,
+          inputs: operation.inputs.map((input) =>
+            input === insurance.output ? synchronize.output : input
+          ),
+          output: trigger.output,
+        };
+      default:
+        return operation;
+    }
+  }));
 }

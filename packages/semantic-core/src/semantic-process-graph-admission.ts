@@ -14,10 +14,15 @@ import {
   SemanticGraphPolicyKind,
   semanticGraphPolicyForProfile,
 } from "./semantic-process-graph-policy.js";
-import { SemanticProfileId } from "./semantic-profile-catalog.js";
+import {
+  SemanticProfileId,
+} from "./semantic-profile-catalog.js";
 import {
   hasExactBalancedTwoBranchControlTopology,
 } from "./exact-balanced-two-branch-topology.js";
+import {
+  compensationSourceCheckpointTopologyAdmitted,
+} from "./compensation-source-checkpoint-topology.js";
 
 export type SemanticProcessGraph = Readonly<{
   semanticProfile: string;
@@ -197,6 +202,15 @@ function isWellFormedSemanticProcessGraphWithDormantHandlers(
     return false;
   }
   if (!hasSelectedParallelTopology(graph, placeEdges)) {
+    return false;
+  }
+  if (!compensationSourceCheckpointTopologyAdmitted({
+    semanticProfile: graph.semanticProfile,
+    operations: graph.operations,
+    edges,
+    operationScope,
+    rootScopeId: root.id,
+  })) {
     return false;
   }
   switch (graphPolicy.kind) {
