@@ -72,6 +72,7 @@ const packagePolicies: Readonly<Record<PackageRole, PackagePolicy>> = {
     ],
     requiredSdkDependencies: ["@temporalio/testing"],
     allowedSdkDependencies: [
+      "@temporalio/activity",
       "@temporalio/client",
       "@temporalio/testing",
       "@temporalio/worker",

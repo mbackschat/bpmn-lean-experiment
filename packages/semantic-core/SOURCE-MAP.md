@@ -128,6 +128,7 @@ This contributor map assigns source-file responsibilities inside `@bpmn-lean/sem
 | [flow-node-occurrence-open-set.ts](src/flow-node-occurrence-open-set.ts) | Open flow-node occurrence projection |
 | [flow-node-occurrence-publication-completeness.ts](src/flow-node-occurrence-publication-completeness.ts) | Internal-transition publication completeness |
 | [flow-node-occurrence-publication-external-completeness.ts](src/flow-node-occurrence-publication-external-completeness.ts) | External-stimulus and cancellation publication completeness |
+| [flow-node-occurrence-publication-compensation-completeness.ts](src/flow-node-occurrence-publication-compensation-completeness.ts) | Exact source-checkpoint Compensation trigger, frontier, completion, and failure lifecycle completeness from the Program and retained anchors |
 | [flow-node-occurrence-sequential-multi-instance.ts](src/flow-node-occurrence-sequential-multi-instance.ts) | Sequential Multi-Instance inner-instance occurrence accounting |
 | [flow-node-occurrence-boundary-starts.ts](src/flow-node-occurrence-boundary-starts.ts) | Candidate lifecycle starts derived independently at one evaluator transition boundary |
 | [flow-node-occurrence-retained-pairing.ts](src/flow-node-occurrence-retained-pairing.ts) | The retained half of the Activity occurrence record for state-free consumers |

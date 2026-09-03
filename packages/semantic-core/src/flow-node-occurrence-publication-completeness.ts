@@ -52,6 +52,9 @@ import {
 import type {
   OpenOccurrence,
 } from "./flow-node-occurrence-publication-external-completeness.js";
+import {
+  compensationTriggerCompletenessPieces,
+} from "./flow-node-occurrence-publication-compensation-completeness.js";
 
 export type RetainedFlowNodeOccurrence = DeepReadonly<{
   anchor: SemanticFlowNodeOccurrenceAnchor;
@@ -195,8 +198,22 @@ function internalDelta(
       ));
     case SemanticOperationKind.CompleteParallelMultiInstanceUserTask:
       return failCompleteness();
-    case SemanticOperationKind.TriggerCompensation:
-      return failCompleteness();
+    case SemanticOperationKind.TriggerCompensation: {
+      const pieces = compensationTriggerCompletenessPieces(
+        program,
+        open,
+        operation,
+        owner,
+        supplied,
+      );
+      return lifecycleDelta(
+        pieces.starts,
+        pieces.ends,
+        pieces.instants,
+        commandId,
+        transitionIndex,
+      );
+    }
     case SemanticOperationKind.AwaitMessageBoundedUserTask:
       return lifecycleDelta([
         requireWaitStart(supplied, processId, operation.task.elementId, owner),

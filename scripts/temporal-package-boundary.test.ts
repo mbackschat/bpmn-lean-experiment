@@ -71,6 +71,42 @@ test("leaves SDK version resolution to package manifests and the lockfile", asyn
   assert.deepEqual(await assessTemporalPackageBoundary(root), []);
 });
 
+test("permits Activity Context only in testkit Activity implementations", async () => {
+  const root = await createValidBoundaryFixture();
+  await writeManifest(
+    path.join(root, "packages", "temporal-adapter", "testkit", "package.json"),
+    {
+      name: "@bpmn-lean/temporal-testkit",
+      private: true,
+      dependencies: {
+        "@bpmn-lean/temporal-protocol": "workspace:*",
+        "@bpmn-lean/temporal-client": "workspace:*",
+        "@bpmn-lean/temporal-workflow": "workspace:*",
+        "@bpmn-lean/temporal-worker": "workspace:*",
+        "@bpmn-lean/temporal-runner": "workspace:*",
+        "@temporalio/activity": fixtureSdkVersion,
+        "@temporalio/testing": fixtureSdkVersion,
+      },
+    },
+  );
+  await writeManifest(
+    path.join(root, "packages", "temporal-adapter", "client", "package.json"),
+    {
+      name: "@bpmn-lean/temporal-client",
+      private: true,
+      dependencies: {
+        "@bpmn-lean/temporal-protocol": "workspace:*",
+        "@temporalio/activity": fixtureSdkVersion,
+        "@temporalio/client": fixtureSdkVersion,
+      },
+    },
+  );
+
+  assert.deepEqual(await assessTemporalPackageBoundary(root), [
+    "packages/temporal-adapter/client/package.json: forbidden Temporal SDK dependency @temporalio/activity",
+  ]);
+});
+
 test("still requires each execution environment's SDK dependency", async () => {
   const root = await createValidBoundaryFixture();
   await writeManifest(

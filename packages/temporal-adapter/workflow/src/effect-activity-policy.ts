@@ -25,6 +25,7 @@ export type EffectActivityPolicy =
   | DeepReadonly<{
       kind: EffectActivityPolicyKind.Compensation;
       maximumAttempts: 2;
+      heartbeatTimeout: "1s";
       cancellationType:
         typeof ActivityCancellationType.WAIT_CANCELLATION_COMPLETED;
     }>;
@@ -42,6 +43,7 @@ export const serviceTaskIncidentEffectActivityPolicy = {
 export const compensationEffectActivityPolicy = {
   kind: EffectActivityPolicyKind.Compensation,
   maximumAttempts: 2,
+  heartbeatTimeout: "1s",
   cancellationType: ActivityCancellationType.WAIT_CANCELLATION_COMPLETED,
 } as const satisfies EffectActivityPolicy;
 

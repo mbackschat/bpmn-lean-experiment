@@ -130,6 +130,9 @@ importers:
       '@bpmn-lean/temporal-workflow':
         specifier: workspace:*
         version: link:../workflow
+      '@temporalio/activity':
+        specifier: 1.21.0
+        version: 1.21.0
       '@temporalio/client':
         specifier: 1.21.0
         version: 1.21.0

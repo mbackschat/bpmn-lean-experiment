@@ -183,7 +183,8 @@
             "throwError",
             "terminateScope",
             "reachNoneEnd",
-            "completeScope"
+            "completeScope",
+            "triggerCompensation"
           ]
         },
         "origin": {

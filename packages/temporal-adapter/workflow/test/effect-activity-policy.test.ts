@@ -80,6 +80,7 @@ test("compensation uses two attempts without inheriting the legacy result policy
     {
       kind: EffectActivityPolicyKind.Compensation,
       maximumAttempts: 2,
+      heartbeatTimeout: "1s",
       cancellationType: ActivityCancellationType.WAIT_CANCELLATION_COMPLETED,
     },
   );

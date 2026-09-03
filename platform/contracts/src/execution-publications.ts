@@ -247,6 +247,7 @@ export const SemanticOperationKind = {
   TerminateScope: "terminateScope",
   ReachNoneEnd: "reachNoneEnd",
   CompleteScope: "completeScope",
+  TriggerCompensation: "triggerCompensation",
 } as const;
 
 export type SemanticOperationKind =

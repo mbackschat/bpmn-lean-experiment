@@ -35,6 +35,9 @@ import {
   parallelMultiInstanceBoundaryHosts,
   parallelMultiInstanceCompletionEnds,
 } from "./flow-node-occurrence-parallel-multi-instance-publication.js";
+import {
+  compensationCompletionCompletenessPieces,
+} from "./flow-node-occurrence-publication-compensation-completeness.js";
 
 /**
  * One open flow-node occurrence as this relation sees it.
@@ -182,6 +185,21 @@ export function expectedExternalLifecycle(
       );
     }
     case StimulusKind.CompleteEffect: {
+      const compensation = compensationCompletionCompletenessPieces(
+        program,
+        open,
+        stimulus,
+        supplied,
+      );
+      if (compensation !== null) {
+        return lifecycleDelta(
+          compensation.starts,
+          compensation.ends,
+          compensation.instants,
+          commandId,
+          transitionIndex,
+        );
+      }
       const effect = requireWait(open, stimulus.effectId);
       if (stimulus.result.kind === EffectExecutionResultKind.Success) {
         return lifecycleDelta([], [lifecycleEnd(

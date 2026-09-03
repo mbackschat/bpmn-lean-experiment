@@ -177,6 +177,7 @@ export function requireDurableEffectActivityHistory(
     kind: EffectExecutionResultKind.Success,
     localPatch: [],
   },
+  expectedPolicy: Readonly<{ heartbeatTimeoutMs?: number }> = {},
 ): void {
   if (
     !Number.isSafeInteger(expectedAttempts) ||
@@ -222,6 +223,8 @@ export function requireDurableEffectActivityHistory(
   const scheduledEventId = requireEffectActivitySchedule(
     scheduledEvent,
     expectedRequest,
+    2,
+    expectedPolicy.heartbeatTimeoutMs ?? 0,
   );
   requireFinalEffectAttempt(
     started[0],
@@ -409,7 +412,16 @@ function requireEffectActivitySchedule(
   scheduledEvent: HistoryEvent,
   expectedRequest: EffectRequest,
   expectedMaximumAttempts = 2,
+  expectedHeartbeatTimeoutMs = 0,
 ): string {
+  if (
+    !Number.isSafeInteger(expectedHeartbeatTimeoutMs) ||
+    expectedHeartbeatTimeoutMs < 0
+  ) {
+    throw new TypeError(
+      "Effect Activity expected heartbeat timeout must be a non-negative safe integer",
+    );
+  }
   const activityType = asRecord(
     scheduledEvent.attributes.activityType,
     "Effect Activity type",
@@ -455,15 +467,12 @@ function requireEffectActivitySchedule(
   const heartbeat = optionalRecord(
     scheduledEvent.attributes.heartbeatTimeout,
   );
-  if (
-    heartbeat !== undefined &&
-    durationMilliseconds(
-        heartbeat,
-        "Effect Activity heartbeat timeout",
-      ) !== 0n
-  ) {
+  const heartbeatTimeoutMs = heartbeat === undefined
+    ? 0n
+    : durationMilliseconds(heartbeat, "Effect Activity heartbeat timeout");
+  if (heartbeatTimeoutMs !== BigInt(expectedHeartbeatTimeoutMs)) {
     throw new TypeError(
-      "Effect Activity history unexpectedly configures a heartbeat",
+      "Temporal history does not carry the exact effect Activity heartbeat policy",
     );
   }
   const retryPolicy = asRecord(

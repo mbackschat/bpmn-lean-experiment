@@ -37,6 +37,7 @@ const incidentActivities = proxyActivities<EffectActivities>({
 
 const compensationActivities = proxyActivities<EffectActivities>({
   ...commonOptions,
+  heartbeatTimeout: compensationEffectActivityPolicy.heartbeatTimeout,
   cancellationType: compensationEffectActivityPolicy.cancellationType,
   retry: {
     ...commonOptions.retry,
