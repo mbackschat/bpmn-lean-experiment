@@ -22,11 +22,13 @@ import type {
 
 import {
   CorrelationCandidateTargetDisposition,
+  correlationQuarantinedTarget,
   requireCorrelationActiveTargetRegistration,
   settleCorrelationCandidateTarget,
 } from "./correlation-candidate-registration.js";
 import {
   requireCorrelationPublicationSelectedTarget,
+  reserveCorrelationPublicationTarget,
   settleCorrelationPublication,
 } from "./correlation-publication-admission.js";
 
@@ -45,6 +47,47 @@ export type CorrelationTargetSettlementTransition = Readonly<{
     target: CorrelationPublicationTarget;
   }>;
 }>;
+
+/** Settles a pre-accepted publication against the address quarantine that now blocks matching. */
+export function settleCorrelationPublicationAtQuarantinedAddress(
+  publicationState: CorrelationPublicationState,
+  registrationState: CorrelationCandidateRegistrationState,
+  address: CorrelatedMessageAddress,
+  configuration: CorrelationIngressConfiguration,
+): CorrelationPublicationState {
+  const target = correlationQuarantinedTarget(
+    registrationState,
+    address,
+    configuration,
+  );
+  const inFlight = publicationState.inFlight;
+  if (target === null || inFlight === null || inFlight.target !== null) {
+    throw new TypeError(
+      "Quarantine settlement requires one unselected publication and exact quarantined target",
+    );
+  }
+  const selected = reserveCorrelationPublicationTarget(
+    publicationState,
+    address,
+    configuration,
+    inFlight.commandId,
+    inFlight.ordinal,
+    target,
+  );
+  return settleCorrelationPublication(
+    selected,
+    address,
+    configuration,
+    {
+      commandId: inFlight.commandId,
+      ordinal: inFlight.ordinal,
+      resolution: {
+        kind: CorrelationPublicationStoredResolutionKind.TargetInconsistent,
+        target,
+      },
+    },
+  ).state;
+}
 
 export function correlationTargetDeliveryActivityRequest(
   publicationState: CorrelationPublicationState,

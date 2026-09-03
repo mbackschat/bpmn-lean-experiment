@@ -278,9 +278,11 @@ export function assertDetailImplementationMap(
  * that exact map. On 2026-09-02 the owner approved proportionate demonstrated increases: 4,500 words
  * for the contracts/source map after its Compensation provenance prerequisite moved the accurate
  * owner from 3,984 to 4,134 words, and 5,200 words for the runtime/proof map when a Compensation
- * cold-review correction brought its accurate cross-cutting account to 5,042 words. Every other map
- * retains the default. No value is unilaterally agent-adjustable; an owner-authorized change must
- * update this executable value and its documented basis together.
+ * cold-review correction brought its accurate cross-cutting account to 5,042 words. On 2026-09-03
+ * the owner approved 7,000 words for the Temporal-hosting map after exact Event Subscriptions
+ * continuation and accepted-before-quarantine evidence exhausted its 6,000-word allowance. Every
+ * other map retains the default. No value is unilaterally agent-adjustable; an owner-authorized change
+ * must update this executable value and its documented basis together.
  * The deciding authority is recorded by its owner, [the documentation
  * discipline](../docs/DOC-DISCIPLINE.md#reviewed-detail-map-word-budgets), because a threshold whose
  * only justification is its own comment is not reviewable as a decision.
@@ -292,7 +294,7 @@ export function reviewedDetailMapWordBudget(file: string): number {
     case "docs/ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md":
       return 5200;
     case "docs/TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md":
-      return 6000;
+      return 7000;
     default:
       return 4000;
   }

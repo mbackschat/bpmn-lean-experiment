@@ -15,9 +15,7 @@ import {
   CorrelationPublicationCapacityMeasure,
   CorrelationPublicationLedgerPhase,
   CorrelationPublicationOrderResultKind,
-  CorrelationPublicationSemanticOutcomeKind,
   CorrelationPublicationStatusKind,
-  CorrelationPublicationStoredResolutionKind,
   bpmnAdmitCorrelationPublicationUpdateName,
   bpmnCorrelationPublicationCapacityFailureType,
   bpmnCorrelationPublicationIdentityConflictFailureType,
@@ -27,8 +25,6 @@ import {
   canonicalCorrelationPublicationQueueEncoding,
   correlationPublicationContentSha256,
   requireCorrelationPublicationCommand,
-  requireCorrelationPublicationLedgerRecord,
-  requireCorrelationPublicationQueueRecord,
   requireCorrelationPublicationStoredResolution,
   requireCorrelationPublicationTarget,
 } from "@bpmn-lean/temporal-protocol";
@@ -48,9 +44,14 @@ import type {
   CorrelationPublicationSettlement,
   CorrelationPublicationState,
   CorrelationPublicationStatus,
-  CorrelationPublicationStoredResolution,
   CorrelationPublicationTarget,
 } from "@bpmn-lean/temporal-protocol";
+import {
+  correlationPublicationResolutionMatchesTarget,
+  requireCorrelationPublicationState,
+  sameCorrelationPublicationTarget,
+  sameNullableCorrelationPublicationTarget,
+} from "./correlation-publication-state.js";
 
 export enum CorrelationPublicationFaultCode {
   IdentityConflict = "identityConflict",
@@ -405,7 +406,10 @@ export function settleCorrelationPublication(
     current.resolution !== null) {
     invalidState("The in-flight publication has no exact reserved ledger record");
   }
-  if (!resolutionMatchesTarget(resolution, inFlight.target)) {
+  if (!correlationPublicationResolutionMatchesTarget(
+    resolution,
+    inFlight.target,
+  )) {
     throw new CorrelationPublicationFault(
       CorrelationPublicationFaultCode.Invalid,
       "Correlation publication resolution disagrees with its selected target",
@@ -564,167 +568,6 @@ function correlationPublicationCapacityFailure(
     };
   }
   return null;
-}
-
-function requireCorrelationPublicationState(
-  state: CorrelationPublicationState,
-  configuration: CorrelationIngressConfiguration,
-): void {
-  if (!Number.isSafeInteger(state.nextOrdinal) || state.nextOrdinal < 1 ||
-    !Array.isArray(state.queue) ||
-    !Array.isArray(state.ledger) ||
-    state.inFlight === undefined) {
-    invalidState("Correlation publication state is malformed");
-  }
-  if (state.queue.length > configuration.maxQueuedPublicationRecords ||
-    utf8ByteLength(canonicalCorrelationPublicationQueueEncoding(state.queue)) >
-      configuration.maxQueuedPublicationCanonicalBytes ||
-    state.ledger.length > configuration.maxPublicationLedgerRecords ||
-    state.ledger.length * configuration.publicationLedgerRecordBytes >
-      configuration.maxPublicationLedgerChargedBytes) {
-    invalidState("Retained correlation publication state exceeds capacity");
-  }
-
-  const commandIds = new Set<string>();
-  let expectedOrdinal = 1;
-  let reachedQueuedSuffix = false;
-  for (const recordValue of state.ledger) {
-    const record = requireCorrelationPublicationLedgerRecord(recordValue);
-    if (commandIds.has(record.commandId)) {
-      invalidState("Correlation publication command identity is duplicated");
-    }
-    commandIds.add(record.commandId);
-    if (utf8ByteLength(canonicalCorrelationPublicationLedgerRecordEncoding(record)) >
-      configuration.publicationLedgerRecordBytes) {
-      invalidState("A publication exceeds its fixed ledger reservation");
-    }
-    switch (record.phase) {
-      case CorrelationPublicationLedgerPhase.Queued:
-        if (record.ordinal !== null ||
-          record.target !== null ||
-          record.resolution !== null) {
-          invalidState("A queued publication already has an ordinal, target, or resolution");
-        }
-        reachedQueuedSuffix = true;
-        break;
-      case CorrelationPublicationLedgerPhase.InFlight:
-        if (record.ordinal === null || record.resolution !== null) {
-          invalidState("An in-flight publication has no reserved ordinal");
-        }
-        if (reachedQueuedSuffix || record.ordinal !== expectedOrdinal) {
-          invalidState("In-flight publication order is not the ledger prefix");
-        }
-        expectedOrdinal += 1;
-        break;
-      case CorrelationPublicationLedgerPhase.Settled:
-        if (record.ordinal === null || record.resolution === null) {
-          invalidState("A settled publication retained no resolution");
-        }
-        if (!resolutionMatchesTarget(record.resolution, record.target)) {
-          invalidState("A settled publication resolution disagrees with its target");
-        }
-        if (reachedQueuedSuffix || record.ordinal !== expectedOrdinal) {
-          invalidState("Settled publication order is not the ledger prefix");
-        }
-        expectedOrdinal += 1;
-        break;
-      default:
-        assertNever(record.phase);
-    }
-  }
-  if (state.nextOrdinal !== expectedOrdinal) {
-    invalidState("Correlation publication ordinals are not contiguous");
-  }
-
-  const queuedLedger = state.ledger.filter(
-    (record) => record.phase === CorrelationPublicationLedgerPhase.Queued,
-  );
-  if (queuedLedger.length !== state.queue.length ||
-    state.queue.some((queueRecordValue, index) => {
-      const queueRecord = requireCorrelationPublicationQueueRecord(queueRecordValue);
-      const ledgerRecord = queuedLedger[index];
-      return ledgerRecord === undefined ||
-        queueRecord.commandId !== ledgerRecord.commandId ||
-        queueRecord.contentSha256 !== ledgerRecord.contentSha256;
-    })) {
-    invalidState("Correlation publication queue is not the ledger's FIFO projection");
-  }
-
-  const inFlightLedger = state.ledger.filter(
-    (record) => record.phase === CorrelationPublicationLedgerPhase.InFlight,
-  );
-  if (state.inFlight === null) {
-    if (inFlightLedger.length !== 0) {
-      invalidState("An in-flight ledger reservation has no payload record");
-    }
-    return;
-  }
-  if (configuration.maxInFlightPublications !== 1 ||
-    inFlightLedger.length !== 1) {
-    invalidState("Correlation publication state exceeds its in-flight bound");
-  }
-  const inFlight = state.inFlight;
-  requireCorrelationPublicationQueueRecord({
-    commandId: inFlight.commandId,
-    contentSha256: inFlight.contentSha256,
-    payload: inFlight.payload,
-  });
-  const ledgerRecord = inFlightLedger[0];
-  if (ledgerRecord === undefined ||
-    ledgerRecord.commandId !== inFlight.commandId ||
-    ledgerRecord.contentSha256 !== inFlight.contentSha256 ||
-    ledgerRecord.ordinal !== inFlight.ordinal ||
-    !sameNullableCorrelationPublicationTarget(
-      ledgerRecord.target,
-      inFlight.target,
-    )) {
-    invalidState("The in-flight payload is not bound to its ledger reservation");
-  }
-}
-
-function resolutionMatchesTarget(
-  resolution: CorrelationPublicationStoredResolution,
-  target: CorrelationPublicationTarget | null,
-): boolean {
-  switch (resolution.kind) {
-    case CorrelationPublicationStoredResolutionKind.Semantic:
-      switch (resolution.outcome.kind) {
-        case CorrelationPublicationSemanticOutcomeKind.RejectedNoMatch:
-        case CorrelationPublicationSemanticOutcomeKind.RejectedAmbiguous:
-          return target === null;
-        case CorrelationPublicationSemanticOutcomeKind.Committed:
-          return target !== null && sameCorrelationPublicationTarget(
-            resolution.outcome.target,
-            target,
-          );
-      }
-      break;
-    case CorrelationPublicationStoredResolutionKind.TargetInconsistent:
-      return target !== null && sameCorrelationPublicationTarget(
-        resolution.target,
-        target,
-      );
-  }
-}
-
-function sameNullableCorrelationPublicationTarget(
-  left: CorrelationPublicationTarget | null,
-  right: CorrelationPublicationTarget | null,
-): boolean {
-  return left === null
-    ? right === null
-    : right !== null && sameCorrelationPublicationTarget(left, right);
-}
-
-function sameCorrelationPublicationTarget(
-  left: CorrelationPublicationTarget,
-  right: CorrelationPublicationTarget,
-): boolean {
-  return left.processInstanceId === right.processInstanceId &&
-    left.subscriptionId.processInstanceId ===
-      right.subscriptionId.processInstanceId &&
-    left.subscriptionId.elementId === right.subscriptionId.elementId &&
-    left.subscriptionId.activation === right.subscriptionId.activation;
 }
 
 function admissionResult(

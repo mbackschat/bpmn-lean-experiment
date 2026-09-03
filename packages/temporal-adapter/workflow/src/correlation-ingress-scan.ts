@@ -77,6 +77,11 @@ export class CorrelationCandidateScanCoordinator {
     private readonly options: CorrelationCandidateScanCoordinatorOptions,
   ) {}
 
+  /** A continuation may carry only durable state, never an Activity promise or unconsumed result. */
+  isIdleForContinuation(): boolean {
+    return this.resolving === null && this.completed === null;
+  }
+
   validateBegin(value: unknown): CorrelationCandidateScanRequest {
     return requireCorrelationCandidateScanRequest(
       value,
@@ -172,6 +177,30 @@ export class CorrelationCandidateScanCoordinator {
       kind: CorrelationCandidateScanResultKind.Finished,
       scanId: completion.scanId,
     };
+  }
+
+  /** Selection consumes the fanout result while the durable barrier advances to target delivery. */
+  consumeCompletionForTarget(value: unknown): void {
+    this.validateFinish(value);
+    this.completed = null;
+  }
+
+  /** Releases the retained barrier after target delivery, including after a Run-boundary restore. */
+  settleRetainedBarrier(
+    scanId: string,
+    successor: CorrelationCandidateRegistrationState,
+  ): void {
+    if (this.resolving !== null ||
+      (this.completed !== null && this.completed.scanId !== scanId)) {
+      throw new TypeError("Correlation target settlement crossed active scan work");
+    }
+    const barrier = this.options.currentState().scanBarrier;
+    if (barrier === null || barrier.scanId !== scanId ||
+      successor.scanBarrier !== null) {
+      throw new TypeError("Correlation target settlement changed its retained barrier");
+    }
+    this.options.replaceState(successor);
+    this.completed = null;
   }
 
   private resolve(

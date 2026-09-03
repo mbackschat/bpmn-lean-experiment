@@ -280,7 +280,7 @@ test("keeps the owner-approved detail-map budget exceptions exactly scoped", () 
     reviewedDetailMapWordBudget(
       "docs/TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md",
     ),
-    6000,
+    7000,
   );
   assert.equal(
     reviewedDetailMapWordBudget(

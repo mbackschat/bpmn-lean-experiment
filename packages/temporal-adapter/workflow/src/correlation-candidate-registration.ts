@@ -465,16 +465,30 @@ export function registerCorrelationCandidateRegistrationHandlers(
   );
 }
 
-function requireCorrelationCandidateRegistrationState(
-  state: CorrelationCandidateRegistrationState,
+export function requireCorrelationCandidateRegistrationState(
+  stateValue: unknown,
   address: CorrelatedMessageAddress,
   configuration: CorrelationIngressConfiguration,
-): void {
-  if (!Array.isArray(state.records) || state.scanBarrier === undefined) {
+): CorrelationCandidateRegistrationState {
+  if (!isRecordWithExactKeys(stateValue, ["records", "scanBarrier"]) ||
+    !Array.isArray(stateValue.records) ||
+    !(stateValue.scanBarrier === null ||
+      isRecordWithExactKeys(stateValue.scanBarrier, ["scanId", "candidates"]) &&
+      Array.isArray(stateValue.scanBarrier.candidates))) {
     invalidState("Correlation candidate registration state is malformed");
   }
+  const state = stateValue as CorrelationCandidateRegistrationState;
   const transactionIds = new Set<string>();
   for (const record of state.records) {
+    if (!isRecordWithExactKeys(record, [
+      "transactionId",
+      "contentSha256",
+      "phase",
+      "candidate",
+      "processLocator",
+    ])) {
+      invalidState("Correlation candidate registration record is malformed");
+    }
     const request = correlationCandidateRegistrationRequestFromRecord(record);
     requireAddressedRegistration(request, address);
     if (
@@ -489,7 +503,18 @@ function requireCorrelationCandidateRegistrationState(
   }
   requireRetainedCapacity(state.records, configuration);
   if (state.scanBarrier === null) {
-    return;
+    return state;
+  }
+  if (state.scanBarrier.candidates.some((record) =>
+    !isRecordWithExactKeys(record, [
+      "transactionId",
+      "contentSha256",
+      "phase",
+      "candidate",
+      "processLocator",
+    ])
+  )) {
+    invalidState("Correlation candidate scan barrier record is malformed");
   }
   requireScanId(state.scanBarrier.scanId, configuration);
   if (state.records.some(
@@ -508,6 +533,7 @@ function requireCorrelationCandidateRegistrationState(
   ) {
     invalidState("A scan barrier must retain the complete active candidate vector");
   }
+  return state;
 }
 
 function requireRetainedCapacity(
@@ -620,6 +646,18 @@ function invalidState(message: string): never {
     CorrelationCandidateRegistrationFaultCode.Invalid,
     message,
   );
+}
+
+function isRecordWithExactKeys<const Key extends string>(
+  value: unknown,
+  keys: ReadonlyArray<Key>,
+): value is Record<Key, unknown> {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    return false;
+  }
+  const actual = Object.keys(value);
+  return actual.length === keys.length &&
+    keys.every((key) => Object.prototype.hasOwnProperty.call(value, key));
 }
 
 function assertNever(value: never): never {

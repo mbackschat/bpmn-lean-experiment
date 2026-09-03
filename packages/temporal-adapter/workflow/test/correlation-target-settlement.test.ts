@@ -11,6 +11,7 @@ import {
   CorrelationCandidateRegistrationPhase,
   CorrelationPublicationAdmissionResultKind,
   CorrelationPublicationLedgerPhase,
+  CorrelationPublicationOrderResultKind,
   CorrelationPublicationSemanticOutcomeKind,
   CorrelationPublicationStoredResolutionKind,
   ProcessCommandResultKind,
@@ -30,7 +31,9 @@ import {
   admitCorrelationPublication,
   correlationQuarantinedTarget,
   correlationTargetDeliveryActivityRequest,
+  settleCorrelationPublicationAtQuarantinedAddress,
   settleCorrelationTargetDelivery,
+  startNextCorrelationPublication,
 } from "../dist/index.js";
 
 const configuration = productionCorrelationIngressConfiguration;
@@ -139,6 +142,61 @@ test("semantic refusal quarantines in place and later admission consumes no slot
     kind: CorrelationPublicationAdmissionResultKind.AddressQuarantined,
     commandId: "Publication_later",
     target,
+  });
+});
+
+test("settles an already accepted queued publication when an earlier target quarantines the address", () => {
+  const states = selectedStates();
+  const queuedCommand = { ...command, commandId: "Publication_already_queued" };
+  const withQueued = admitCorrelationPublication(
+    states.publications,
+    command.address,
+    configuration,
+    queuedCommand,
+  ).state;
+  const request = correlationTargetDeliveryActivityRequest(
+    withQueued,
+    states.registrations,
+    command.address,
+    configuration,
+  );
+  const quarantined = settleCorrelationTargetDelivery(
+    withQueued,
+    states.registrations,
+    command.address,
+    configuration,
+    {
+      stimulus: correlationTargetDeliveryStimulus(request),
+      result: {
+        kind: ProcessCommandResultKind.Semantic,
+        commandId: command.commandId,
+        outcome: CommandOutcome.Rejected,
+      },
+    },
+  );
+  const started = startNextCorrelationPublication(
+    quarantined.publicationState,
+    command.address,
+    configuration,
+  );
+  assert.equal(started.result.kind, CorrelationPublicationOrderResultKind.Started);
+
+  const settled = settleCorrelationPublicationAtQuarantinedAddress(
+    started.state,
+    quarantined.registrationState,
+    command.address,
+    configuration,
+  );
+  assert.equal(settled.inFlight, null);
+  assert.deepEqual(settled.ledger[1], {
+    ...started.state.ledger[1],
+    phase: CorrelationPublicationLedgerPhase.Settled,
+    ordinal: 2,
+    target,
+    resolution: {
+      kind: CorrelationPublicationStoredResolutionKind.TargetInconsistent,
+      target,
+    },
   });
 });
 

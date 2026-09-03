@@ -120,6 +120,14 @@ test("delivers one selected publication after Worker replacement and replays bot
   let inconsistentProcessHistory: Awaited<
     ReturnType<WorkflowHandle["fetchHistory"]>
   > | undefined;
+  let announceInconsistentDelivery!: () => void;
+  let releaseInconsistentDelivery!: () => void;
+  const inconsistentDeliveryReached = new Promise<void>((resolve) => {
+    announceInconsistentDelivery = resolve;
+  });
+  const inconsistentDeliveryMayComplete = new Promise<void>((resolve) => {
+    releaseInconsistentDelivery = resolve;
+  });
   try {
     worker = await startBpmnTestWorker(
       environment,
@@ -246,6 +254,8 @@ test("delivers one selected publication after Worker replacement and replays bot
       {
         [bpmnResolveCorrelationTargetDeliveryActivityName]: async (...args) => {
           const request = requireCorrelationTargetDeliveryActivityRequest(args[0]);
+          announceInconsistentDelivery();
+          await inconsistentDeliveryMayComplete;
           return {
             stimulus: correlationTargetDeliveryStimulus(request),
             result: {
@@ -269,11 +279,43 @@ test("delivers one selected publication after Worker replacement and replays bot
         updateId: correlationPublicationUpdateId(inconsistentPublication),
       },
     );
+    await withDeadline(
+      inconsistentDeliveryReached,
+      operationDeadlineMs,
+      "inconsistent target delivery start",
+    );
+    const acceptedBeforeQuarantine: CorrelationPublicationCommand = {
+      ...inconsistentPublication,
+      commandId: "publish-queued-before-target-quarantine",
+    };
+    assert.equal(
+      (await ingress.executeUpdate<
+        CorrelationPublicationAdmissionResult,
+        [CorrelationPublicationCommand]
+      >(bpmnAdmitCorrelationPublicationUpdateName, {
+        args: [acceptedBeforeQuarantine],
+        updateId: correlationPublicationUpdateId(acceptedBeforeQuarantine),
+      })).kind,
+      CorrelationPublicationAdmissionResultKind.Admitted,
+    );
+    releaseInconsistentDelivery();
     const inconsistentStatus = await waitForSettled(
       ingress,
       inconsistentPublication,
     );
     assert.deepEqual(inconsistentStatus.record.resolution, {
+      kind: CorrelationPublicationStoredResolutionKind.TargetInconsistent,
+      target: {
+        processInstanceId: inconsistent.instanceId,
+        subscriptionId: inconsistent.candidate.subscriptionId,
+      },
+    });
+    const acceptedBeforeQuarantineStatus = await waitForSettled(
+      ingress,
+      acceptedBeforeQuarantine,
+    );
+    assert.equal(acceptedBeforeQuarantineStatus.record.ordinal, 3);
+    assert.deepEqual(acceptedBeforeQuarantineStatus.record.resolution, {
       kind: CorrelationPublicationStoredResolutionKind.TargetInconsistent,
       target: {
         processInstanceId: inconsistent.instanceId,
@@ -317,6 +359,7 @@ test("delivers one selected publication after Worker replacement and replays bot
     inconsistentProcessHistory = await inconsistentProcess.fetchHistory();
     ingressHistory = await ingress.fetchHistory();
   } finally {
+    releaseInconsistentDelivery();
     await process?.terminate("correlation target-delivery cleanup")
       .catch(() => undefined);
     await inconsistentProcess?.terminate("correlation target-inconsistent cleanup")
