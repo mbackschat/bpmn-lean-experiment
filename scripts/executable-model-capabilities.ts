@@ -107,7 +107,44 @@ export function detectExecutableBpmnCapabilities(
         rejectUnknownExecutableElement(element);
     }
   }
+  addMessageCorrelationCapability(elements, capabilities);
   return Object.freeze([...capabilities].sort());
+}
+
+function addMessageCorrelationCapability(
+  elements: ReadonlyArray<XmlElement>,
+  capabilities: Set<MvpBpmnCapabilityId>,
+): void {
+  const requiredCounts = new Map<string, number>([
+    ["correlationKey", 1],
+    ["correlationProperty", 1],
+    ["correlationPropertyBinding", 1],
+    ["correlationPropertyRetrievalExpression", 1],
+    ["correlationSubscription", 1],
+    ["dataPath", 1],
+    ["messagePath", 1],
+  ] as const);
+  const actualCounts = new Map<string, number>();
+  for (const element of elements) {
+    if (requiredCounts.has(element.name)) {
+      actualCounts.set(element.name, (actualCounts.get(element.name) ?? 0) + 1);
+    }
+  }
+  if (actualCounts.size === 0) return;
+  if (
+    [...requiredCounts].some(([name, count]) =>
+      actualCounts.get(name) !== count
+    ) ||
+    elements.filter((element) =>
+      element.name === "intermediateCatchEvent" &&
+      eventDefinition(element) === "messageEventDefinition"
+    ).length !== 2
+  ) {
+    throw new TypeError(
+      "unclassified executable BPMN Message key-correlation shape",
+    );
+  }
+  capabilities.add("messageKeyCorrelation");
 }
 
 function addUserTaskCapability(

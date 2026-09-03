@@ -28,9 +28,15 @@ async function buildPipeline() {
     runProjectCommand("./scripts/pnpm.sh", ["run", "build:verification-typescript"], {
       timeoutMs: 120_000,
     }),
-    runProjectCommand("./scripts/lake.sh", ["build", "BpmnSemantics.SemanticProcessJsonMain"], {
-      timeoutMs: 120_000,
-    }),
+    runProjectCommand(
+      "./scripts/lake.sh",
+      [
+        "build",
+        "BpmnSemantics.SemanticProcessJsonMain",
+        "BpmnSemantics.EnginePopulationScenarioJsonMain",
+      ],
+      { timeoutMs: 120_000 },
+    ),
     runProjectCommand(
       "runners/cibseven/mvnw",
       [
@@ -70,12 +76,15 @@ const testFiles = modelCorpusOnly
   ? [
       "model-corpus/test/executable-model-corpus.test.ts",
       "packages/differential/test/executable-model-corpus.test.ts",
+      "packages/differential/test/message-key-correlation-population-lean-core.integration-test.ts",
+      "packages/temporal-adapter/testkit/test/message-key-correlation-refinement.temporal-serial-test.ts",
     ]
   : ["packages/differential/test/pipeline.test.ts"];
 
 const testRun = await runProjectCommand(
   process.execPath,
   [
+    "--no-parallel-scavenge",
     "--test",
     "--test-concurrency=1",
     ...testFiles,

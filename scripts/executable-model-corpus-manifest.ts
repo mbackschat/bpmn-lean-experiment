@@ -98,6 +98,7 @@ const corpusMechanisms = new Set([
   "mappedData",
   "messageStart",
   "messagePayloadCatchMediation",
+  "messageKeyCorrelation",
   "messageWait",
   "nonInterruptingBoundaryTimer",
   "orderedCollectionData",

@@ -44,6 +44,11 @@ type PipelineCase = Readonly<{
   injectMutation: unknown;
 }>;
 
+type PopulationCase = Readonly<{
+  id: string;
+  scenarioRelativePath: string;
+}>;
+
 export type CorpusCompilerDiagnostic = Readonly<{
   code: string;
   element: Readonly<{
@@ -190,49 +195,111 @@ function detectedConstructs(xml: string): ReadonlyArray<string> {
   return [...names].sort();
 }
 
-type ScenarioBinding = Readonly<{
-  profile: string;
-  bpmn: Readonly<{
-    relativePath: string;
-    sha256: string;
-  }>;
+type BpmnBinding = Readonly<{
+  relativePath: string;
+  sha256: string;
 }>;
+
+type ScenarioBinding =
+  | Readonly<{
+    kind: "scenario";
+    id: string;
+    profile: string;
+    bpmn: BpmnBinding;
+  }>
+  | Readonly<{
+    kind: "enginePopulationScenario";
+    id: string;
+    profile: string;
+    definitions: ReadonlyArray<BpmnBinding>;
+    executionTargets: Readonly<{
+      lean: true;
+      typeScriptCore: true;
+      temporal: true;
+      cib: null;
+    }>;
+  }>;
+
+function bpmnBinding(value: unknown, label: string): BpmnBinding {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    throw new TypeError(`${label} must be an object`);
+  }
+  const bpmn = value as Record<string, unknown>;
+  const relativePath = bpmn.relativePath;
+  const sha256 = bpmn.sha256;
+  if (typeof relativePath !== "string" || relativePath.length === 0) {
+    throw new TypeError(`${label}.relativePath must be a nonempty string`);
+  }
+  if (typeof sha256 !== "string" || !/^[a-f0-9]{64}$/u.test(sha256)) {
+    throw new TypeError(`${label}.sha256 must be a lowercase SHA-256 digest`);
+  }
+  return { relativePath, sha256 };
+}
+
+function populationExecutionTargets(
+  value: unknown,
+  label: string,
+): Extract<ScenarioBinding, { kind: "enginePopulationScenario" }>["executionTargets"] {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    throw new TypeError(`${label} must be an object`);
+  }
+  const targets = value as Record<string, unknown>;
+  if (
+    targets.lean !== true ||
+    targets.typeScriptCore !== true ||
+    targets.temporal !== true ||
+    targets.cib !== null
+  ) {
+    throw new TypeError(
+      `${label} must select Lean, TypeScript, and Temporal with CIB absent`,
+    );
+  }
+  return { lean: true, typeScriptCore: true, temporal: true, cib: null };
+}
 
 function scenarioBinding(value: unknown, relativePath: string): ScenarioBinding {
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
     throw new TypeError(`scenario ${relativePath} must be an object`);
   }
   const scenario = value as Record<string, unknown>;
-  if (
-    typeof scenario.bpmn !== "object" ||
-    scenario.bpmn === null ||
-    Array.isArray(scenario.bpmn)
-  ) {
-    throw new TypeError(`scenario ${relativePath}.bpmn must be an object`);
-  }
-  const bpmn = scenario.bpmn as Record<string, unknown>;
+  const id = scenario.id;
   const profile = scenario.profile;
-  const relativeBpmnPath = bpmn.relativePath;
-  const bpmnSha256 = bpmn.sha256;
+  if (typeof id !== "string" || id.length === 0) {
+    throw new TypeError(`scenario ${relativePath}.id must be a nonempty string`);
+  }
   if (typeof profile !== "string" || profile.length === 0) {
     throw new TypeError(`scenario ${relativePath}.profile must be a nonempty string`);
   }
-  if (typeof relativeBpmnPath !== "string" || relativeBpmnPath.length === 0) {
-    throw new TypeError(
-      `scenario ${relativePath}.bpmn.relativePath must be a nonempty string`,
-    );
+  if (scenario.kind === "enginePopulationScenario") {
+    if (!Array.isArray(scenario.definitions) || scenario.definitions.length === 0) {
+      throw new TypeError(
+        `scenario ${relativePath}.definitions must be a nonempty array`,
+      );
+    }
+    return {
+      kind: "enginePopulationScenario",
+      id,
+      profile,
+      definitions: scenario.definitions.map((definition, index) =>
+        bpmnBinding(
+          definition,
+          `scenario ${relativePath}.definitions[${index}]`,
+        )
+      ),
+      executionTargets: populationExecutionTargets(
+        scenario.executionTargets,
+        `scenario ${relativePath}.executionTargets`,
+      ),
+    };
   }
-  if (typeof bpmnSha256 !== "string" || !/^[a-f0-9]{64}$/u.test(bpmnSha256)) {
-    throw new TypeError(
-      `scenario ${relativePath}.bpmn.sha256 must be a lowercase SHA-256 digest`,
-    );
+  if (scenario.kind !== "scenario") {
+    throw new TypeError(`scenario ${relativePath}.kind is unsupported`);
   }
   return {
+    kind: "scenario",
+    id,
     profile,
-    bpmn: {
-      relativePath: relativeBpmnPath,
-      sha256: bpmnSha256,
-    },
+    bpmn: bpmnBinding(scenario.bpmn, `scenario ${relativePath}.bpmn`),
   };
 }
 
@@ -242,6 +309,7 @@ export async function inspectExecutableModelCorpus(
     projectRoot: string;
     externalRoot: string;
     pipelineCases: ReadonlyArray<PipelineCase>;
+    populationCases: ReadonlyArray<PopulationCase>;
     compileModel: CorpusCompiler;
   }>,
 ): Promise<ExecutableModelCorpusReport> {
@@ -252,9 +320,46 @@ export async function inspectExecutableModelCorpus(
     await verifyExternalCorpusSource(source, options.externalRoot);
   }
 
+  const ordinaryCaseIds = new Set(options.pipelineCases.map(({ id }) => id));
+  const populationBindings = new Map<
+    string,
+    Extract<ScenarioBinding, { kind: "enginePopulationScenario" }>
+  >();
+  for (const populationCase of options.populationCases) {
+    if (
+      ordinaryCaseIds.has(populationCase.id) ||
+      populationBindings.has(populationCase.id)
+    ) {
+      throw new Error(`duplicate protected pipeline case ${populationCase.id}`);
+    }
+    const binding = scenarioBinding(
+      JSON.parse(
+        await readFile(
+          path.join(options.projectRoot, populationCase.scenarioRelativePath),
+          "utf8",
+        ),
+      ),
+      populationCase.scenarioRelativePath,
+    );
+    if (
+      binding.kind !== "enginePopulationScenario" ||
+      binding.id !== populationCase.id
+    ) {
+      throw new Error(
+        `population case ${populationCase.id} has no exact population scenario`,
+      );
+    }
+    populationBindings.set(populationCase.id, binding);
+  }
+
   const supportedCapabilities = new Set<MvpBpmnCapabilityId>();
   for (const relativePath of new Set(
-    options.pipelineCases.map(({ bpmnRelativePath }) => bpmnRelativePath),
+    [
+      ...options.pipelineCases.map(({ bpmnRelativePath }) => bpmnRelativePath),
+      ...[...populationBindings.values()].flatMap(({ definitions }) =>
+        definitions.map(({ relativePath }) => relativePath)
+      ),
+    ],
   )) {
     const xml = await readFile(path.join(options.projectRoot, relativePath), "utf8");
     for (const capability of detectExecutableBpmnCapabilities(xml)) {
@@ -323,34 +428,69 @@ export async function inspectExecutableModelCorpus(
       : [];
 
     let pipelineCase: PipelineCase | undefined;
+    let populationCase: PopulationCase | undefined;
     let license: string;
     if (model.source.kind === "retainedScenario") {
-      license = model.source.license;
+      const retainedSource = model.source;
+      license = retainedSource.license;
       const scenario = scenarioBinding(
         JSON.parse(
           await readFile(
-            path.join(options.projectRoot, model.source.scenarioRelativePath),
+            path.join(options.projectRoot, retainedSource.scenarioRelativePath),
             "utf8",
           ),
         ),
-        model.source.scenarioRelativePath,
+        retainedSource.scenarioRelativePath,
       );
+      const evidenceCaseId = model.pipelineCaseId;
       if (
+        evidenceCaseId === null ||
         scenario.profile !== model.profile ||
-        scenario.bpmn.relativePath !== model.source.bpmnRelativePath ||
-        scenario.bpmn.sha256 !== model.source.sha256
+        scenario.id !== evidenceCaseId
       ) {
         throw new Error(`model ${model.id} differs from its retained scenario binding`);
       }
-      pipelineCase = options.pipelineCases.find(({ id }) => id === model.pipelineCaseId);
-      if (
-        pipelineCase === undefined ||
-        pipelineCase.scenarioRelativePath !== model.source.scenarioRelativePath ||
-        pipelineCase.bpmnRelativePath !== model.source.bpmnRelativePath ||
-        typeof pipelineCase.injectMutation !== "function" ||
-        pipelineCase.temporalRelation.length === 0
-      ) {
-        throw new Error(`model ${model.id} has no exact protected pipeline route`);
+      switch (scenario.kind) {
+        case "scenario":
+          pipelineCase = options.pipelineCases.find(
+            ({ id }) => id === evidenceCaseId,
+          );
+          if (
+            scenario.bpmn.relativePath !== retainedSource.bpmnRelativePath ||
+            scenario.bpmn.sha256 !== retainedSource.sha256 ||
+            pipelineCase === undefined ||
+            pipelineCase.scenarioRelativePath !==
+              retainedSource.scenarioRelativePath ||
+            pipelineCase.bpmnRelativePath !== retainedSource.bpmnRelativePath ||
+            typeof pipelineCase.injectMutation !== "function" ||
+            pipelineCase.temporalRelation.length === 0
+          ) {
+            throw new Error(`model ${model.id} has no exact protected pipeline route`);
+          }
+          break;
+        case "enginePopulationScenario": {
+          populationCase = options.populationCases.find(
+            ({ id }) => id === evidenceCaseId,
+          );
+          const registeredBinding = populationBindings.get(evidenceCaseId);
+          const matchingDefinitions = scenario.definitions.filter(
+            (definition) =>
+              definition.relativePath === retainedSource.bpmnRelativePath &&
+              definition.sha256 === retainedSource.sha256,
+          );
+          if (
+            populationCase === undefined ||
+            populationCase.scenarioRelativePath !==
+              retainedSource.scenarioRelativePath ||
+            registeredBinding?.profile !== scenario.profile ||
+            matchingDefinitions.length !== 1
+          ) {
+            throw new Error(
+              `model ${model.id} has no exact protected population route`,
+            );
+          }
+          break;
+        }
       }
     } else {
       const external = externalById.get(model.source.externalSourceId);
@@ -413,7 +553,9 @@ export async function inspectExecutableModelCorpus(
       profile: model.profile,
       admission: model.admission.kind,
       pipelineCaseId: model.pipelineCaseId,
-      cibRelation: pipelineCase === undefined
+      cibRelation: populationCase !== undefined
+        ? "notSelected"
+        : pipelineCase === undefined
         ? "notApplicable"
         : pipelineCase.cib === null ? "notSelected" : "pipeline",
       product2: model.product2.kind,
@@ -521,7 +663,7 @@ export function renderExecutableModelCorpusMap(
     "## Current result",
     "",
     `The first tranche contains ${report.retainedModels} retained executable models and ${report.externalModels} exact external candidates. ${report.acceptedModels} are admitted, ${report.rejectedModels} are rejected, and ${report.catalogReadyModels} ${report.catalogReadyModels === 1 ? "is" : "are"} eligible for the browser catalog.`,
-    `The retained MVP suite covers all ${report.mvpCapabilities.length} registered executable BPMN element variants.`,
+    `The retained MVP suite covers all ${report.mvpCapabilities.length} registered executable BPMN element or semantic variants.`,
     "",
     "## Models",
     "",

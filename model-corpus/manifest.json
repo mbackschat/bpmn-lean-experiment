@@ -468,6 +468,45 @@
       }
     },
     {
+      "id": "correlated-settlement-confirmation",
+      "title": "Correlate a settlement confirmation to its waiting case",
+      "businessPurpose": "Route a clearing-house settlement confirmation to the one waiting settlement case whose recorded reference matches the incoming message.",
+      "cloneFamily": "message-key-correlated-settlement-review",
+      "constructs": [
+        "collaboration",
+        "endEvent",
+        "intermediateCatchEvent",
+        "participant",
+        "process",
+        "sequenceFlow",
+        "startEvent",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "messageWait",
+        "messagePayloadCatchMediation",
+        "messageKeyCorrelation",
+        "userTaskWait",
+        "userTaskCompletion"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/message-key-correlation/process.bpmn",
+        "sha256": "8d16faca66b00378d4ab02189cdd3270143076a46086b46dff68729d90dba086",
+        "scenarioRelativePath": "scenarios/message-key-correlation/unique.population-scenario.json",
+        "license": "MIT"
+      },
+      "profile": "bpmn-2.0.2-message-key-correlation-draft",
+      "admission": { "kind": "accepted" },
+      "pipelineCaseId": "message-key-correlation-unique",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "Global Message publication and the metadata-free follow-up User Task are not yet one production browser journey."
+      }
+    },
+    {
       "id": "invoice-receipt-wait",
       "title": "Wait for an invoice receipt",
       "businessPurpose": "Keep an invoice case waiting until the expected addressed receipt message arrives.",

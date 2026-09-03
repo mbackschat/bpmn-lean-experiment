@@ -244,6 +244,14 @@ export const mvpBpmnCapabilities = Object.freeze([
     cibEvidence: notSelected,
   },
   {
+    id: "messageKeyCorrelation",
+    family: "Message correlation",
+    element: "Definition-scoped Message key correlation",
+    support: BpmnCapabilitySupport.BoundedStandard,
+    restriction: "One complete definition-scoped address and one non-empty String key derived from the incoming payload and a Process Property; a publication advances exactly one matching Process instance and preserves every instance on zero or ambiguous matches.",
+    cibEvidence: notSelected,
+  },
+  {
     id: "intermediateCatchTimerEvent",
     family: "Intermediate Catch Events",
     element: "Timer Intermediate Catch Event",

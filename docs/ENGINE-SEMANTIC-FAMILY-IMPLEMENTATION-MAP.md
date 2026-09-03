@@ -12,7 +12,7 @@ The union of these sections is not a coverage figure. BPMN requirement coverage,
 
 ## Implemented
 
-The families with a section here are the three boundary-Timer loci, the two Multi-Instance User Tasks, the two direct Activity data User Tasks, the Message payload Catch Event, the Activity boundary Message Event, and the in-progress Compensation retention and parent-snapshot family. Each section names its own rules, evidence lanes, and absences, and is the authority for that family rather than a summary of one.
+The families with a section here are the three boundary-Timer loci, the two Multi-Instance User Tasks, the two direct Activity data User Tasks, the Message payload Catch Event, Message key correlation, the Activity boundary Message Event, and the in-progress Compensation retention and parent-snapshot family. Each section names its own rules, evidence lanes, and absences, and is the authority for that family rather than a summary of one.
 
 ## Explicitly absent
 
@@ -41,6 +41,14 @@ The [interrupting Activity boundary Message specification](capsules/ACTIVITY-BOU
 **Implemented.** Omission-only source admission, strict checked `messageBoundaryEvent`, IL `awaitMessageBoundedUserTask`, shared schemas, deterministic lowering, Lean and independently written TypeScript execution, tagged Activity-handler ownership, atomic task/subscription arming, exact task and Message victories, wrong-family/channel/identity/payload/premature/stale refusal, exact E1/E2 publication, and durable Signal/Update scheduling are green. The registered standards-only profile supplies both answer-free winner schedules with `cib: null`, seeded loser-retention mutations, one retained whole model, and Product 2 capability disclosure.
 
 **Absent.** A general CIB or BPMN conformance claim remains open. Payload, key/global correlation, buffering, modeled throw, Message Flow routing, another Activity host, multiple handlers, nested or repeated boundaries, and non-interrupting Message behavior remain outside this family.
+
+## Message key correlation
+
+The owner-approved [Message key correlation proposal](capsules/MESSAGE-KEY-CORRELATION-PROPOSAL.md) is implementation-in-progress after independent semantic-checkpoint, continuation, and public-boundary reviews. Its exact registered single-property profile adds definition-scoped target-free correlation without changing the older direct-address Message profiles.
+
+**Implemented.** Exact source/checked/IL preservation resolves one Collaboration, Conversation, CorrelationKey, CorrelationProperty, Process subscription and binding, two Message catches, and the payload/Process-property scalar paths by source identity. Independent Lean and TypeScript accounts own finite exact-cardinality matching, committed candidate projection, per-instance revalidation and delivery, non-target preservation, no payload write on the correlated catch, and the complete-address commutation footprint. Four answer-free population schedules cover unique, zero, ambiguous, and equal-local-id cross-definition cases with CIB absent. The public Product 1 command contains no Process target; the Temporal ingress preserves registration, barrier, reservation, ordinal, selected-target privacy, same-target recovery, continuation, capacity, Worker replacement, and replay. The unique population input binds one retained correlated-settlement whole model through the exact compiler path, first-class population corpus route, generated map, canonical capability row, and Product 2 About disclosure.
+
+**Absent.** The Product 2 operational journey, cost/reflection, complete closure gate, and independent closure review remain open, so the requirement ledger remains `unsupported`. A second key, property, binding, retrieval expression, Message type, Conversation, or correlated catch; composite or non-String keys; wildcard or uninitialized matching; Process-context changes while waiting; payload flow from the correlated catch; Message Start, Receive Task, boundary, throw, or End correlation; executable Message Flow transport; buffering, broadcast, multi-target results, cross-definition matching, tenant/version/business-key selection, CIB correlation compatibility, and repair of a quarantined target remain outside the profile.
 
 ## Interrupting Activity boundary Timer
 

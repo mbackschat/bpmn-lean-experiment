@@ -12,6 +12,9 @@ import {
   runPipelineCases,
 } from "./pipeline-harness.ts";
 import {
+  messageKeyCorrelationPopulationCases,
+} from "./message-key-correlation-population-cases.ts";
+import {
   warmPipelineTestTimeoutMs,
 } from "../../../scripts/pipeline-budget.ts";
 
@@ -23,10 +26,19 @@ const manifest = requireExecutableModelCorpusManifest(
     ),
   ),
 );
-const selectedIds = manifest.models
+const retainedCaseIds = manifest.models
   .filter(({ source }) => source.kind === "retainedScenario")
   .map(({ pipelineCaseId }) => pipelineCaseId);
-const selectedCases = selectedIds.map((id) => {
+const populationCaseIds = new Set<string>(
+  messageKeyCorrelationPopulationCases.map(({ id }) => id),
+);
+const selectedPopulationIds = retainedCaseIds.filter(
+  (id): id is string => id !== null && populationCaseIds.has(id),
+);
+const selectedPipelineIds = retainedCaseIds.filter(
+  (id): id is string => id !== null && !populationCaseIds.has(id),
+);
+const selectedCases = selectedPipelineIds.map((id) => {
   const pipelineCase = pipelineCases.find((candidate) => candidate.id === id);
   if (pipelineCase === undefined) {
     throw new Error(`corpus pipeline case is absent: ${id}`);
@@ -45,16 +57,17 @@ test(
   "executes every retained corpus model through every claimed pipeline target",
   { timeout: warmPipelineTestTimeoutMs(process.env) },
   async () => {
-    assert.equal(new Set(selectedIds).size, selectedIds.length);
+    assert.equal(new Set(retainedCaseIds).size, retainedCaseIds.length);
+    assert.deepEqual(selectedPopulationIds, ["message-key-correlation-unique"]);
     const { report, evidence } = await runPipelineCases(selectedCases);
 
     assert.deepEqual(
       report.cases.map(({ scenario }) => scenario.id),
-      selectedIds,
+      selectedPipelineIds,
     );
     assert.deepEqual(
       evidence.map(({ scenarioId }) => scenarioId),
-      selectedIds,
+      selectedPipelineIds,
     );
     for (const caseReport of report.cases) {
       assert.equal(

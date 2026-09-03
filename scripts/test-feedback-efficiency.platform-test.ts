@@ -191,6 +191,19 @@ test("builds feedback graphs once and keeps independent lanes parallel", async (
   assert.match(verifyScript, /runtime\) verify_common; verify_runtime ;;/u);
   assert.match(verifyScript, /pipeline\) verify_pipeline ;;/u);
   assert.match(pipelineScript, /build:verification-typescript/u);
+  assert.match(
+    pipelineScript,
+    /BpmnSemantics\.EnginePopulationScenarioJsonMain/u,
+  );
+  assert.match(
+    pipelineScript,
+    /message-key-correlation-population-lean-core\.integration-test\.ts/u,
+  );
+  assert.match(
+    pipelineScript,
+    /message-key-correlation-refinement\.temporal-serial-test\.ts/u,
+  );
+  assert.match(pipelineScript, /--no-parallel-scavenge/u);
   assert.doesNotMatch(pipelineScript, /runProjectCommand\("tsc"/u);
 });
 

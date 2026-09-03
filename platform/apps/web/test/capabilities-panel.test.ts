@@ -61,6 +61,11 @@ test("presents versioned BPMN and CIB capability boundaries from the canonical c
     html,
     /absent payload is refused and leaves the subscription live/iu,
   );
+  assert.match(html, /Definition-scoped Message key correlation/u);
+  assert.match(
+    html,
+    /exactly one matching Process instance and preserves every instance on zero or ambiguous matches/iu,
+  );
   assert.match(
     html,
     /Interrupting Timer Boundary Event on sequential Multi-Instance User Task/u,

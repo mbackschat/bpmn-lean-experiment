@@ -73,6 +73,75 @@ test("distinguishes a payload-bearing Message catch from a payload-free catch", 
   );
 });
 
+test("classifies the complete single-key Message correlation shape", () => {
+  const capabilities = detectExecutableBpmnCapabilities(`
+    <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL">
+      <bpmn:correlationProperty id="CorrelationProperty_Reference">
+        <bpmn:correlationPropertyRetrievalExpression messageRef="Message_Confirmed">
+          <bpmn:messagePath>payload</bpmn:messagePath>
+        </bpmn:correlationPropertyRetrievalExpression>
+      </bpmn:correlationProperty>
+      <bpmn:process id="Process_Correlation" isExecutable="true">
+        <bpmn:intermediateCatchEvent id="Catch_Initial">
+          <bpmn:messageEventDefinition messageRef="Message_Confirmed" />
+        </bpmn:intermediateCatchEvent>
+        <bpmn:intermediateCatchEvent id="Catch_Confirmed">
+          <bpmn:messageEventDefinition messageRef="Message_Confirmed" />
+        </bpmn:intermediateCatchEvent>
+        <bpmn:correlationSubscription correlationKeyRef="CorrelationKey_Reference">
+          <bpmn:correlationPropertyBinding correlationPropertyRef="CorrelationProperty_Reference">
+            <bpmn:dataPath>property:Property_Reference</bpmn:dataPath>
+          </bpmn:correlationPropertyBinding>
+        </bpmn:correlationSubscription>
+      </bpmn:process>
+      <bpmn:collaboration id="Collaboration_Correlation">
+        <bpmn:conversation id="Conversation_Correlation">
+          <bpmn:correlationKey id="CorrelationKey_Reference">
+            <bpmn:correlationPropertyRef>CorrelationProperty_Reference</bpmn:correlationPropertyRef>
+          </bpmn:correlationKey>
+        </bpmn:conversation>
+      </bpmn:collaboration>
+    </bpmn:definitions>
+  `);
+
+  assert.equal(capabilities.includes("messageKeyCorrelation"), true);
+  assert.throws(
+    () => detectExecutableBpmnCapabilities(`
+      <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL">
+        <bpmn:correlationProperty id="CorrelationProperty_Reference" />
+        <bpmn:process id="Process_PartialCorrelation" isExecutable="true" />
+      </bpmn:definitions>
+    `),
+    /unclassified executable BPMN Message key-correlation shape/u,
+  );
+  assert.throws(
+    () => detectExecutableBpmnCapabilities(`
+      <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL">
+        <bpmn:correlationProperty id="CorrelationProperty_Reference">
+          <bpmn:correlationPropertyRetrievalExpression messageRef="Message_Confirmed">
+            <bpmn:messagePath>payload</bpmn:messagePath>
+          </bpmn:correlationPropertyRetrievalExpression>
+        </bpmn:correlationProperty>
+        <bpmn:process id="Process_Correlation" isExecutable="true">
+          <bpmn:correlationSubscription correlationKeyRef="CorrelationKey_Reference">
+            <bpmn:correlationPropertyBinding correlationPropertyRef="CorrelationProperty_Reference">
+              <bpmn:dataPath>property:Property_Reference</bpmn:dataPath>
+            </bpmn:correlationPropertyBinding>
+          </bpmn:correlationSubscription>
+        </bpmn:process>
+        <bpmn:collaboration id="Collaboration_Correlation">
+          <bpmn:conversation id="Conversation_Correlation">
+            <bpmn:correlationKey id="CorrelationKey_Reference">
+              <bpmn:correlationPropertyRef>CorrelationProperty_Reference</bpmn:correlationPropertyRef>
+            </bpmn:correlationKey>
+          </bpmn:conversation>
+        </bpmn:collaboration>
+      </bpmn:definitions>
+    `),
+    /unclassified executable BPMN Message key-correlation shape/u,
+  );
+});
+
 test("distinguishes boundary variants by interruption and attached element", () => {
   const capabilities = detectExecutableBpmnCapabilities(`
     <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL">

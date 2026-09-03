@@ -6,6 +6,9 @@ import { fileURLToPath } from "node:url";
 
 import { pipelineCases } from "../../packages/differential/test/pipeline-cases.ts";
 import {
+  messageKeyCorrelationPopulationCases,
+} from "../../packages/differential/test/message-key-correlation-population-cases.ts";
+import {
   compileCorpusModel,
 } from "../../packages/bpmn-source/test/executable-model-corpus-compiler.ts";
 import {
@@ -32,16 +35,17 @@ test("binds every retained and external model to exact local evidence", async ()
     externalRoot: process.env["BPMN_EXTERNAL_ROOT"] ??
       path.resolve(projectRoot, "../oss"),
     pipelineCases,
+    populationCases: messageKeyCorrelationPopulationCases,
     compileModel: compileCorpusModel,
   });
 
-  assert.equal(report.models.length, 40);
-  assert.equal(report.retainedModels, 33);
+  assert.equal(report.models.length, 41);
+  assert.equal(report.retainedModels, 34);
   assert.equal(report.externalModels, 7);
-  assert.equal(report.acceptedModels, 33);
+  assert.equal(report.acceptedModels, 34);
   assert.equal(report.rejectedModels, 7);
   assert.equal(report.catalogReadyModels, 3);
-  assert.equal(report.mvpCapabilities.length, 33);
+  assert.equal(report.mvpCapabilities.length, 34);
   assert.deepEqual(report.uncoveredMvpCapabilities, []);
   assert.equal(report.models[0]?.product2, "journeyBacked");
   assert.deepEqual(
@@ -60,6 +64,7 @@ test("binds every retained and external model to exact local evidence", async ()
       "timer-user-task-composition",
       "intermediate-catch-message",
       "message-payload-catch-supplied-scalar",
+      "message-key-correlation-unique",
       "message-addressed-receive-task",
       "inclusive-gateway-both-true-a-then-b",
       "event-based-gateway-message-wins",
@@ -103,6 +108,7 @@ test("reclassifies external CIB models under the closest interchange profile", a
     externalRoot: process.env["BPMN_EXTERNAL_ROOT"] ??
       path.resolve(projectRoot, "../oss"),
     pipelineCases,
+    populationCases: messageKeyCorrelationPopulationCases,
     compileModel: compileCorpusModel,
   });
   const reportsById = new Map(report.models.map((model) => [model.id, model]));
@@ -147,6 +153,25 @@ test("requires every retained model to state a business purpose", async () => {
   }
 });
 
+test("rejects a retained population model without its protected population route", async () => {
+  const manifest = requireExecutableModelCorpusManifest(await loadManifest());
+  const populationCases = messageKeyCorrelationPopulationCases.filter(
+    ({ id }) => id !== "message-key-correlation-unique",
+  );
+
+  await assert.rejects(
+    inspectExecutableModelCorpus(manifest, {
+      projectRoot,
+      externalRoot: process.env["BPMN_EXTERNAL_ROOT"] ??
+        path.resolve(projectRoot, "../oss"),
+      pipelineCases,
+      populationCases,
+      compileModel: compileCorpusModel,
+    }),
+    /model correlated-settlement-confirmation has no exact protected population route/u,
+  );
+});
+
 test("rejects a supported element variant without a retained MVP model", async () => {
   const manifest = structuredClone(
     requireExecutableModelCorpusManifest(await loadManifest()),
@@ -161,6 +186,7 @@ test("rejects a supported element variant without a retained MVP model", async (
       externalRoot: process.env["BPMN_EXTERNAL_ROOT"] ??
         path.resolve(projectRoot, "../oss"),
       pipelineCases,
+      populationCases: messageKeyCorrelationPopulationCases,
       compileModel: compileCorpusModel,
     }),
     /retained MVP models do not cover timerStartEvent/u,
@@ -174,6 +200,7 @@ test("keeps the generated corpus map exact", async () => {
     externalRoot: process.env["BPMN_EXTERNAL_ROOT"] ??
       path.resolve(projectRoot, "../oss"),
     pipelineCases,
+    populationCases: messageKeyCorrelationPopulationCases,
     compileModel: compileCorpusModel,
   });
 
@@ -197,6 +224,7 @@ test("rejects source clones split across different clone families", async () => 
       projectRoot,
       externalRoot: path.resolve(projectRoot, "../oss"),
       pipelineCases,
+      populationCases: messageKeyCorrelationPopulationCases,
       compileModel: compileCorpusModel,
     }),
     /identical source bytes use different clone families/u,
@@ -343,6 +371,7 @@ test("rejects external archive or entry byte drift before admission", async () =
       projectRoot,
       externalRoot: path.resolve(projectRoot, "../oss"),
       pipelineCases,
+      populationCases: messageKeyCorrelationPopulationCases,
       compileModel: compileCorpusModel,
     }),
     /external archive .* expected SHA-256/u,
@@ -361,6 +390,7 @@ test("rejects external archive or entry byte drift before admission", async () =
       projectRoot,
       externalRoot: path.resolve(projectRoot, "../oss"),
       pipelineCases,
+      populationCases: messageKeyCorrelationPopulationCases,
       compileModel: compileCorpusModel,
     }),
     /model .* expected source SHA-256/u,
@@ -388,6 +418,7 @@ test("deduplicates blocker ranks by clone family rather than file count", async 
     externalRoot: process.env["BPMN_EXTERNAL_ROOT"] ??
       path.resolve(projectRoot, "../oss"),
     pipelineCases,
+    populationCases: messageKeyCorrelationPopulationCases,
     compileModel: compileCorpusModel,
   });
   const versionTag = report.blockers.find(
@@ -406,6 +437,7 @@ test("ranks reusable mechanism gaps by independent model family", async () => {
     externalRoot: process.env["BPMN_EXTERNAL_ROOT"] ??
       path.resolve(projectRoot, "../oss"),
     pipelineCases,
+    populationCases: messageKeyCorrelationPopulationCases,
     compileModel: compileCorpusModel,
   });
   const vendorMetadata = report.unsupportedMechanisms.find(
