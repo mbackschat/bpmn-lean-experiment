@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -8,27 +8,13 @@ import { assertCleanCommittedHead } from "./clean-committed-head.ts";
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 
-export const prePushWorkflowGates = Object.freeze([
-  {
-    workflow: ".github/workflows/platform-quality.yml",
-    gate: "test:pre-push:platform",
-  },
-  {
-    workflow: ".github/workflows/platform-postgresql-quality.yml",
-    gate: "test:pre-push:platform-postgresql",
-  },
-  {
-    workflow: ".github/workflows/showcase-quality.yml",
-    gate: "test:pre-push:showcase",
-  },
-  {
-    workflow: ".github/workflows/ui-quality.yml",
-    gate: "test:pre-push:ui",
-  },
-] as const);
+type Product2PrePushGate = `test:pre-push:${string}`;
+type PrePushGate = Product2PrePushGate | "test:pre-push:verify";
 
-type PrePushGate = typeof prePushWorkflowGates[number]["gate"] |
-  "test:pre-push:verify";
+type PrePushWorkflowGate = Readonly<{
+  workflow: string;
+  gate: Product2PrePushGate;
+}>;
 
 type WorkflowSelection = Readonly<{
   gate: PrePushGate;
@@ -42,7 +28,7 @@ export function parsePushPathFilters(source: string): readonly string[] {
     throw new TypeError("workflow has no push path filters");
   }
   const pushEndOffset = lines.slice(pushIndex + 1)
-    .findIndex((line) => /^  [A-Za-z_][\w-]*:\s*/u.test(line));
+    .findIndex((line) => /^(?:[A-Za-z_][\w-]*|  [A-Za-z_][\w-]*):\s*/u.test(line));
   const pushEnd = pushEndOffset < 0 ? lines.length : pushIndex + 1 + pushEndOffset;
   const pathsIndex = lines.findIndex(
     (line, index) => index > pushIndex && index < pushEnd && /^    paths:\s*$/u.test(line),
@@ -73,6 +59,90 @@ export function parsePushPathFilters(source: string): readonly string[] {
   }
   return filters;
 }
+
+function hasWorkflowPathBoundary(source: string): boolean {
+  return /(?:^|\s)paths(?:-ignore)?:/u.test(source);
+}
+
+function compareScalars(left: string, right: string): number {
+  return left < right ? -1 : left > right ? 1 : 0;
+}
+
+export function discoverProduct2PrePushWorkflowGates(
+  workflowSources: ReadonlyMap<string, string>,
+  packageScripts: Readonly<Record<string, string>>,
+): readonly PrePushWorkflowGate[] {
+  const discovered = [...workflowSources]
+    .filter(([, source]) => hasWorkflowPathBoundary(source))
+    .map(([workflow, source]) => {
+      parsePushPathFilters(source);
+      const matches = [...source.matchAll(
+        /^\s*(?:-\s+)?run:\s+\.\/scripts\/pnpm\.sh run (test:pre-push:[a-z0-9][a-z0-9:-]*)\s*$/gmu,
+      )];
+      const gate = matches[0]?.[1];
+      if (
+        matches.length !== 1 || gate === undefined ||
+        gate === "test:pre-push:verify"
+      ) {
+        throw new TypeError(
+          `${workflow} must invoke exactly one Product 2 pre-push gate`,
+        );
+      }
+      return {
+        workflow,
+        gate: gate as Product2PrePushGate,
+      };
+    })
+    .sort((left, right) =>
+      compareScalars(left.gate, right.gate) || compareScalars(left.workflow, right.workflow)
+    );
+
+  const discoveredGateNames = discovered.map(({ gate }) => gate).sort(compareScalars);
+  if (new Set(discoveredGateNames).size !== discoveredGateNames.length) {
+    throw new TypeError("each Product 2 workflow must own a distinct pre-push gate");
+  }
+  const registeredGateNames = Object.keys(packageScripts)
+    .filter((name): name is Product2PrePushGate =>
+      name.startsWith("test:pre-push:") && name !== "test:pre-push:verify"
+    )
+    .sort(compareScalars);
+  if (
+    discoveredGateNames.length !== registeredGateNames.length ||
+    discoveredGateNames.some((gate, index) => gate !== registeredGateNames[index])
+  ) {
+    throw new TypeError(
+      `Product 2 workflow and package-script gate inventories differ: workflows=${discoveredGateNames.join(",")} scripts=${registeredGateNames.join(",")}`,
+    );
+  }
+
+  return discovered;
+}
+
+function loadProduct2PrePushWorkflowGates(): readonly PrePushWorkflowGate[] {
+  const workflowsDirectory = path.join(projectRoot, ".github/workflows");
+  const workflowSources = new Map(
+    readdirSync(workflowsDirectory, { withFileTypes: true })
+      .filter((entry) => entry.isFile() && entry.name.endsWith(".yml"))
+      .map((entry) => {
+        const workflow = `.github/workflows/${entry.name}`;
+        return [
+          workflow,
+          readFileSync(path.join(projectRoot, workflow), "utf8"),
+        ] as const;
+      }),
+  );
+  const manifest = JSON.parse(
+    readFileSync(path.join(projectRoot, "package.json"), "utf8"),
+  ) as { scripts?: Record<string, string> };
+  return discoverProduct2PrePushWorkflowGates(
+    workflowSources,
+    manifest.scripts ?? {},
+  );
+}
+
+export const prePushWorkflowGates = Object.freeze(
+  loadProduct2PrePushWorkflowGates(),
+);
 
 export function selectedPrePushGates(
   changedPaths: readonly string[],

@@ -209,6 +209,14 @@ test("the hosted Lean library lane retains its unchanged cold-build ceiling", as
   assert.equal(timeoutMinutes, 30, "the hard ceiling must not be raised to hide duplicated work");
 });
 
+test("the hosted Lean cache identity includes the root import closure and nested sources", async () => {
+  const workflow = await readFile(verificationWorkflowPath, "utf8");
+  assert.match(
+    workflow,
+    /hashFiles\('lean-toolchain', 'lakefile\.toml', 'lake-manifest\.json', 'BpmnSemantics\.lean', 'BpmnSemantics\/\*\*\/\*\.lean'\)/u,
+  );
+});
+
 test("hosted Lean checks consume the completed library output in a separate bounded job", async () => {
   const workflow = await readFile(verificationWorkflowPath, "utf8");
   assert.match(
