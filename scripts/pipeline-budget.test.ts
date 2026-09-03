@@ -3,6 +3,7 @@ import { test } from "node:test";
 
 import {
   defaultWarmBudgetMs,
+  leanInterpreterBatchTimeoutMsFor,
   warmBudgetMs,
   warmPipelineCommandTimeoutMs,
   warmPipelineTestTimeoutMs,
@@ -26,12 +27,22 @@ test("keeps the portable budget and both process deadlines ordered", () => {
   );
 });
 
-test("derives both process deadlines from a hosted budget", () => {
-  const environment = { BPMN_PIPELINE_WARM_BUDGET_MS: "130000" };
+test("scales the Lean interpreter deadline with its scenario batch", () => {
+  assert.equal(leanInterpreterBatchTimeoutMsFor(1), 10_000);
+  assert.equal(leanInterpreterBatchTimeoutMsFor(8), 10_400);
+  assert.equal(leanInterpreterBatchTimeoutMsFor(68), defaultWarmBudgetMs);
 
-  assert.equal(warmBudgetMs(environment), 130_000);
-  assert.equal(warmPipelineTestTimeoutMs(environment), 135_000);
-  assert.equal(warmPipelineCommandTimeoutMs(environment), 140_000);
+  for (const count of [0, -1, 1.5, Number.NaN]) {
+    assert.throws(() => leanInterpreterBatchTimeoutMsFor(count), TypeError);
+  }
+});
+
+test("derives both process deadlines from a hosted budget", () => {
+  const environment = { BPMN_PIPELINE_WARM_BUDGET_MS: "135000" };
+
+  assert.equal(warmBudgetMs(environment), 135_000);
+  assert.equal(warmPipelineTestTimeoutMs(environment), 140_000);
+  assert.equal(warmPipelineCommandTimeoutMs(environment), 145_000);
 });
 
 test("rejects malformed warm-pipeline budgets", () => {

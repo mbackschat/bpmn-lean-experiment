@@ -17,8 +17,8 @@ import {
 import {
   indexExactRecords,
   projectRoot,
-  runProcess,
 } from "./pipeline-target-support.ts";
+import { runLeanInterpreter } from "./semantic-differential-targets.ts";
 
 type LeanPopulationResultRecord = Readonly<{
   scenarioId: string;
@@ -45,17 +45,15 @@ test("compares all Message-correlation population schedules between Lean and the
       ).join("\n")}\n`,
       "utf8",
     );
-    const execution = await runProcess(
-      "./scripts/lake.sh",
+    const execution = await runLeanInterpreter(
+      "BpmnSemantics/EnginePopulationScenarioJsonMain.lean",
       [
-        "run",
-        "BpmnSemantics/EnginePopulationScenarioJsonMain.lean",
         definitionsPath,
         ...contexts.map(({ populationCase }) =>
           path.join(projectRoot, populationCase.scenarioRelativePath)
         ),
       ],
-      10_000,
+      contexts.length,
     );
     const records = execution.stdout
       .split("\n")

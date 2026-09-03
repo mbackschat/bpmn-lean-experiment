@@ -8,6 +8,7 @@ import {
   invokedPnpmGates,
   leanDependentEntrypoints,
   manifestTestEntrypoints,
+  programmaticLeanInvocationFindings,
   programmaticBareLeanInvocationFindings,
   programmaticNativeLeanInvocationFindings,
   verificationFunctionBody,
@@ -70,6 +71,27 @@ test("programmatic Lean witnesses use the interpreter instead of rebuilding nati
     programmaticNativeLeanInvocationFindings(surfaces),
     [],
     "a programmatic `lake exe` duplicates already elaborated Lean modules as generated C and native objects",
+  );
+});
+
+test("differential Lean batches cannot bypass the catalog-scaled interpreter helper", async () => {
+  const surfaces = (await codeSurfaces(worktreePaths()))
+    .filter(({ relativePath }) =>
+      relativePath.startsWith("packages/differential/test/") &&
+      !relativePath.endsWith(".test.ts")
+    );
+  assert.deepEqual(
+    programmaticLeanInvocationFindings(surfaces),
+    ["packages/differential/test/semantic-differential-targets.ts"],
+    "all differential Lean batches must pass through the one catalog-scaled interpreter helper",
+  );
+  const interpreterTarget = surfaces.find(({ relativePath }) =>
+    relativePath === "packages/differential/test/semantic-differential-targets.ts"
+  );
+  assert.match(
+    interpreterTarget?.source ?? "",
+    /leanInterpreterBatchTimeoutMsFor\(caseCount\)/u,
+    "the shared interpreter helper must derive its timeout from the batch size",
   );
 });
 

@@ -14,6 +14,14 @@ function hasProgrammaticLeanInvocation(source: string): boolean {
     indirectProgrammaticLeanInvocation.test(source);
 }
 
+export function programmaticLeanInvocationFindings(
+  surfaces: ReadonlyArray<CommandSurface>,
+): ReadonlyArray<string> {
+  return surfaces
+    .filter(({ source }) => hasProgrammaticLeanInvocation(source))
+    .map(({ relativePath }) => relativePath);
+}
+
 export function programmaticBareLeanInvocationFindings(
   surfaces: ReadonlyArray<CommandSurface>,
 ): ReadonlyArray<string> {

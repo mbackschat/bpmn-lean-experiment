@@ -43,6 +43,23 @@ export function warmSoftTargetMsFor(caseCount: number): number {
 export const warmBudgetPerCaseMs = 1_300;
 
 /**
+ * Deadline for one Lean interpreter batch.
+ *
+ * The interpreter receives the whole selected scenario batch in one process, so its deadline must
+ * scale with the same portable per-case rate as the enclosing warm pipeline. The 10-second floor
+ * preserves useful hang detection for focused parity batches without making a growing catalog race
+ * a fixed deadline.
+ */
+export function leanInterpreterBatchTimeoutMsFor(caseCount: number): number {
+  if (!Number.isSafeInteger(caseCount) || caseCount <= 0) {
+    throw new TypeError(
+      `Lean interpreter batch count must be a positive safe integer, received ${JSON.stringify(caseCount)}`,
+    );
+  }
+  return Math.max(10_000, caseCount * warmBudgetPerCaseMs);
+}
+
+/**
  * The portable ceiling for the current catalog.
  *
  * Stated as a total because the process deadlines below and the hosted-budget guard both read it

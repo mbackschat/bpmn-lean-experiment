@@ -26,6 +26,7 @@ import {
   requireScenarioBinding,
 } from "@bpmn-lean/differential";
 
+import { leanInterpreterBatchTimeoutMsFor } from "../../../scripts/pipeline-budget.ts";
 import { parseStrictJson } from "../../../scripts/strict-json.ts";
 import {
   elapsedMs,
@@ -47,6 +48,18 @@ import type {
 
 const leanCommand = "./scripts/lake.sh";
 const leanProgram = "BpmnSemantics/SemanticProcessJsonMain.lean";
+
+export function runLeanInterpreter(
+  program: string,
+  args: ReadonlyArray<string>,
+  caseCount: number,
+) {
+  return runProcess(
+    leanCommand,
+    ["run", program, ...args],
+    leanInterpreterBatchTimeoutMsFor(caseCount),
+  );
+}
 
 function leanDefinitionRecords<Case extends SemanticDifferentialCase>(
   contexts: ReadonlyArray<PipelineContext<Case>>,
@@ -85,15 +98,13 @@ export async function runLeanTargets<Case extends SemanticDifferentialCase>(
 ): Promise<TargetBatch<ScenarioResult>> {
   const started = performance.now();
   await writeJsonLines(inputPath, leanDefinitionRecords(contexts));
-  const execution = await runProcess(
-    leanCommand,
+  const execution = await runLeanInterpreter(
+    leanProgram,
     [
-      "run",
-      leanProgram,
       inputPath,
       ...leanScenarioPaths(contexts),
     ],
-    10_000,
+    contexts.length,
   );
   const records = execution.stdout
     .split("\n")
@@ -155,15 +166,13 @@ export async function requireLeanDefinitionMutationRejection(
   firstOperation.origin.elementId = `${firstOperation.origin.elementId}_mutated`;
   await writeJsonLines(inputPath, records);
   try {
-    await runProcess(
-      leanCommand,
+    await runLeanInterpreter(
+      leanProgram,
       [
-        "run",
-        leanProgram,
         inputPath,
         ...leanScenarioPaths(contexts),
       ],
-      10_000,
+      contexts.length,
     );
   } catch (error) {
     if (
@@ -203,10 +212,10 @@ export async function requireLeanScenarioMutationRejection(
   const scenarioPaths = leanScenarioPaths(contexts);
   scenarioPaths[0] = scenarioPath;
   try {
-    await runProcess(
-      leanCommand,
-      ["run", leanProgram, inputPath, ...scenarioPaths],
-      10_000,
+    await runLeanInterpreter(
+      leanProgram,
+      [inputPath, ...scenarioPaths],
+      contexts.length,
     );
   } catch (error) {
     if (
@@ -242,15 +251,13 @@ export async function requireLeanProvenanceErasureRejection(
   }
   await writeJsonLines(inputPath, records);
   try {
-    await runProcess(
-      leanCommand,
+    await runLeanInterpreter(
+      leanProgram,
       [
-        "run",
-        leanProgram,
         inputPath,
         ...leanScenarioPaths(contexts),
       ],
-      10_000,
+      contexts.length,
     );
   } catch (error) {
     if (
