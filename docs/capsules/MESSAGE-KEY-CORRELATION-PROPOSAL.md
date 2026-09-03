@@ -348,4 +348,4 @@ Closure requires the unique, zero, ambiguous, cross-definition, pending-registra
 |---|---|---|---|---|
 | Proposal | `850f7c37` | `fork-turns-none` | `approve-with-required-edits` | `3b83a717, f8497474` |
 | Semantic checkpoint | `77ecd9bc` | `fork-turns-none` | `approve-with-required-edits` | `1ce28ed5` |
-| Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Closure | `a4acf21d` | `not-recorded` | `pending` | `not-applicable` |
