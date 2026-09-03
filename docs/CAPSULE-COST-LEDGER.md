@@ -194,6 +194,31 @@ Commit `3020899b` added the separate cancellation conformance owner. Its immutab
 
 Correction commit `7126d5db` added the nonempty-trigger validity witness to `CompensationTriggerHandlerTransitionConformance`, so that target was remeasured against the immutable source revision. The first cold-target run passed in 11.89 seconds at 1,833,352 KiB GNU RSS and 2,024,046,592 bytes cgroup peak, with 90% CPU allocation and 1,570 major page faults. The identical retry passed in 11.19 seconds at 1,892,392 KiB and 1,473,748,992 bytes, with 98% CPU allocation and no major page fault; that more comparable retry supplies the executable row, while this paragraph retains the first run's higher process-tree charge. Both runs had no swap and zero `high`, `max`, `oom`, `oom_kill`, and `oom_group_kill` events. The target remains below the near-cap threshold under the unchanged 3 GiB ceiling.
 
+#### Compensation source checkpoint proof-owner repair
+
+The first compensation source checkpoint implementation at immutable commit `02cf3d3a` placed all kernel-reduced admission, JSON, compatibility, and definition-binding assertions in `BpmnSemantics.CompensationSourceLoweringConformance`. Its first bounded container build also had to warm stale dependencies, so it is not an accepted cold-target cost row, but the target's own elaboration then ran for 734 seconds and exited `137` under the fixed 3 GiB process-tree ceiling. The last observation before termination recorded `memory.current=3,220,975,616`, `memory.peak=3,221,225,472`, and `memory.events max=4,108,930`; `high`, `oom`, and `oom_kill` were zero at that observation, but the final event file was not captured and is not inferred.
+
+The first repair separated shared fixtures, admission, JSON, compatibility, and binding owners. The admission, JSON, compatibility, and import-only aggregate targets passed, but the binding owner still collected fifteen independent kernel decisions in one file and exited `137` after 197 seconds. Splitting conjunctions into named theorems had therefore not repaired the mechanism: the reduction work still accumulated under one proof owner.
+
+Commit `b4544cf6` splits the binding obligations again by invariant family: valid Program shape, exact parser-graph references, trigger and restored-binding identity, storage-limit joins, and execution-limit joins. Every original obligation remains kernel checked, while the binding and checkpoint aggregates become import-only. Raising the memory ceiling was rejected because it would hide proof-ownership coupling and remove the existing pressure signal without creating a stable bound.
+
+All ten accepted measurements below use immutable commit `b4544cf6`, the pinned `bpmn-lean-audit:v4.31.0-arm64` image with image ID `sha256:4df22c7a1ec8ba8c4c2795fdea1269d7b9cadade4e65b22e595047509aa27950`, one CPU, no network, the unchanged 3 GiB memory and no-additional-swap bounds, a warm dependency closure, and removal only of the named target's generated artifacts. Other machine processes were active, so elapsed time is retained as context rather than treated as a regression signal; CPU allocation remained between 86% and 99%, and no retry was required.
+
+| Target | Elapsed | GNU maximum RSS | Cgroup peak |
+|---|---:|---:|---:|
+| `CompensationSourceAdmissionConformance` | 20.54 s | 2,863,952 KiB | 2,486,214,656 bytes |
+| `CompensationSourceJsonConformance` | 12.15 s | 2,326,880 KiB | 1,910,824,960 bytes |
+| `CompensationSourceCompatibilityConformance` | 0.69 s | 667,864 KiB | 156,762,112 bytes |
+| `CompensationSourceBindingReferenceConformance` | 31.89 s | 2,725,808 KiB | 2,412,118,016 bytes |
+| `CompensationSourceBindingTriggerConformance` | 20.36 s | 2,379,680 KiB | 2,019,799,040 bytes |
+| `CompensationSourceBindingStorageLimitConformance` | 33.68 s | 2,701,156 KiB | 2,419,683,328 bytes |
+| `CompensationSourceBindingExecutionLimitConformance` | 25.21 s | 2,574,272 KiB | 2,271,854,592 bytes |
+| `CompensationSourceBindingValidProgramConformance` | 11.43 s | 1,833,660 KiB | 1,414,615,040 bytes |
+| `CompensationSourceBindingConformance` | 0.50 s | 635,228 KiB | 127,651,840 bytes |
+| `CompensationSourceLoweringConformance` | 0.59 s | 635,272 KiB | 129,077,248 bytes |
+
+Every accepted target exited zero with zero swap and every controlled `low`, `high`, `max`, `oom`, `oom_kill`, `oom_group_kill`, and `sock_throttled` event at zero. `CompensationSourceAdmissionConformance` alone crosses the GNU-RSS 90% disclosure threshold and is now ratcheted as near-cap; its cgroup peak retains exactly 735,010,816 bytes of headroom. The two failed layouts remain part of the evidence because the hard ceiling exposed proof-reduction ownership, not source-file length or missing memory.
+
 | Increment | Boundary | Code | Documentation | Elapsed | Comparison consequence |
 |---|---|---:|---:|---|---|
 | [Scoped runtime data](capsules/SCOPED-DATA-SPEC.md) | `08d8b84..3b2e44d` | `+540/-73` | `+134/-11` | Unknown | First atomic runtime-representation replacement; later scope work should not be compared as if it were a small local semantic clause. |
