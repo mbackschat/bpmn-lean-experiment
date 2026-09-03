@@ -2,8 +2,8 @@
 
 ## Status
 
-Lifecycle: draft
-Review: pending
+Lifecycle: owner-approved
+Review: approved-with-required-edits
 
 ## Prior authority and defect
 
@@ -129,6 +129,6 @@ After proposal approval, implementation first makes the TypeScript and Lean exac
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `af387881fea17c9db040874e759c9189e8d164dc` | `fork-turns-none` | `approve-with-required-edits` | `f1609d7a6370ea73b059085e55454ab15fac4423` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
