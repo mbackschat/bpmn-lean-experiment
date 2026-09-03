@@ -1,10 +1,10 @@
 # Definitions module
 
-`@bpmn-lean/platform-definitions` owns Product 2 definition deployment, exact-version source and diagram retrieval, direct start, one-shot Timer Start scheduling, Message Start publication, and durable confirmed-start delivery to downstream modules.
+`@bpmn-lean/platform-definitions` owns Product 2 definition deployment, exact-version source and diagram retrieval, direct start, one-shot Timer Start scheduling, Message Start publication, definition-scoped correlated Message publication, and durable confirmed-start delivery to downstream modules.
 
 ## What you can do
 
-Deploy exact BPMN bytes, list and inspect versioned definitions, retrieve source or presentation, start an exact version, manage one-shot schedules, publish an addressed Message Start, and recover confirmed starts without redispatching uncertain host work. For the structured Human Work profile, deployment also projects and atomically retains the exact-source-bound Human Task catalog after engine admission.
+Deploy exact BPMN bytes, list and inspect versioned definitions, retrieve source or presentation, start an exact version, manage one-shot schedules, publish an addressed Message Start, publish a target-free correlated Message through exact-byte capability reconstruction, and recover confirmed starts without redispatching uncertain host work. Correlation capability is not persisted or reconstructed by Product 2: the engine gateway recompiles the immutable admitted source for discovery and again for content-bound publication. For the structured Human Work profile, deployment also projects and atomically retains the exact-source-bound Human Task catalog after engine admission.
 
 The module reaches Product 1 only through the [engine gateway](../../foundation/engine-gateway/README.md) and stores exact bytes only through the [artifact store](../../foundation/artifact-store/README.md).
 

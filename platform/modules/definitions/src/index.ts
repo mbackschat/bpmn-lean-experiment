@@ -30,6 +30,22 @@ export { DefinitionDeploymentService } from "./definition-deployment-service.js"
 export { DefinitionStartService } from "./definition-start-service.js";
 export type { ProcessInstanceIdGenerator } from "./definition-start-service.js";
 export {
+  DefinitionCorrelatedMessageIntegrityError,
+  DefinitionCorrelatedMessagePublishStatus,
+} from "./definition-correlated-message-contracts.js";
+export type {
+  DefinitionCorrelatedMessageOperations,
+  DefinitionCorrelatedMessagePublishCommand,
+  DefinitionCorrelatedMessagePublishResult,
+  DefinitionCorrelatedMessageServiceDependencies,
+} from "./definition-correlated-message-contracts.js";
+export {
+  DefinitionCorrelatedMessageService,
+} from "./definition-correlated-message-service.js";
+export {
+  DefinitionCorrelatedMessageHttpRoutes,
+} from "./definition-correlated-message-http-routes.js";
+export {
   ConfirmedProcessInstanceIntegrityError,
   ConfirmedProcessInstanceState,
   ConfirmedProcessInstanceStoredValueError,
