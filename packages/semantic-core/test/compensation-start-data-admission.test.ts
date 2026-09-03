@@ -111,32 +111,52 @@ test("derives the required name from the Program rather than a checkpoint litera
   );
 });
 
-test("admits the largest fitting String and rejects one input byte more", () => {
+test("binds inherited snapshot capacity independently of execution capacity", () => {
   const instanceId = "ValueCapacity_1";
-  const largest = largestAdmittedLength((length) =>
-    start(instanceId, [stringBinding(sourceName, "v".repeat(length))])
+  const candidate = (length: number) =>
+    start(instanceId, [stringBinding(sourceName, "v".repeat(length))]);
+  const snapshotLimit = program.compensationEventSubProcessSnapshots.limits.maxCanonicalBytes;
+  const executionLimit = program.compensationExecution.limits.maxCanonicalBytes;
+  const largest = largestFittingLength(
+    candidate,
+    (stimulus) => canonicalSnapshotBytes(stimulus),
+    snapshotLimit,
   );
-  const exact = start(instanceId, [stringBinding(sourceName, "v".repeat(largest))]);
-  const over = start(instanceId, [stringBinding(sourceName, "v".repeat(largest + 1))]);
-  assert.equal(compensationStartDataAdmitted(program, exact), true);
-  assert.equal(compensationStartDataAdmitted(program, over), false);
+  const exact = candidate(largest);
+  const over = candidate(largest + 1);
+  const exactProjection = requiredProjection(exact);
+  const overProjection = requiredProjection(over);
+
+  assert.equal(exactProjection.snapshotCanonicalBytes, snapshotLimit);
+  assert.equal(overProjection.snapshotCanonicalBytes, snapshotLimit + 1);
+  assert.ok(overProjection.executionCanonicalBytes <= executionLimit);
+  assertProjectionUsesCanonicalEncoders(exact);
+  assertProjectionUsesCanonicalEncoders(over);
+  assertCommittedWithIdentity(exact);
   assertRejectedWithIdentity(over);
 });
 
-test("admits the largest fitting instance identity and rejects one input byte more", () => {
-  const largest = largestAdmittedLength((length) =>
-    start(`I${"d".repeat(length)}`, [stringBinding(sourceName, "short")])
+test("binds inherited execution capacity independently of snapshot capacity", () => {
+  const candidate = (length: number) =>
+    start(`I${"d".repeat(length)}`, [stringBinding(sourceName, "short")]);
+  const snapshotLimit = program.compensationEventSubProcessSnapshots.limits.maxCanonicalBytes;
+  const executionLimit = program.compensationExecution.limits.maxCanonicalBytes;
+  const largest = largestFittingLength(
+    candidate,
+    (stimulus) => canonicalExecutionBytes(stimulus),
+    executionLimit,
   );
-  const exact = start(
-    `I${"d".repeat(largest)}`,
-    [stringBinding(sourceName, "short")],
-  );
-  const over = start(
-    `I${"d".repeat(largest + 1)}`,
-    [stringBinding(sourceName, "short")],
-  );
-  assert.equal(compensationStartDataAdmitted(program, exact), true);
-  assert.equal(compensationStartDataAdmitted(program, over), false);
+  const exact = candidate(largest);
+  const over = candidate(largest + 1);
+  const exactProjection = requiredProjection(exact);
+  const overProjection = requiredProjection(over);
+
+  assert.ok(exactProjection.executionCanonicalBytes <= executionLimit);
+  assert.ok(overProjection.executionCanonicalBytes > executionLimit);
+  assert.ok(overProjection.snapshotCanonicalBytes <= snapshotLimit);
+  assertProjectionUsesCanonicalEncoders(exact);
+  assertProjectionUsesCanonicalEncoders(over);
+  assertCommittedWithIdentity(exact);
   assertRejectedWithIdentity(over);
 });
 
@@ -217,22 +237,55 @@ test("preserves every non-checkpoint profile", () => {
   assert.equal(compensationStartDataAdmitted(ordinary, start("Ordinary_1", [])), true);
 });
 
-function largestAdmittedLength(
+function largestFittingLength(
   candidate: (length: number) => StartProcessStimulus,
+  canonicalBytes: (candidate: StartProcessStimulus) => number,
+  limit: number,
 ): number {
   let low = 0;
   let high = 30_000;
-  assert.equal(compensationStartDataAdmitted(program, candidate(low)), true);
-  assert.equal(compensationStartDataAdmitted(program, candidate(high)), false);
+  assert.ok(canonicalBytes(candidate(low)) <= limit);
+  assert.ok(canonicalBytes(candidate(high)) > limit);
   while (low + 1 < high) {
     const middle = Math.floor((low + high) / 2);
-    if (compensationStartDataAdmitted(program, candidate(middle))) {
+    if (canonicalBytes(candidate(middle)) <= limit) {
       low = middle;
     } else {
       high = middle;
     }
   }
   return low;
+}
+
+function requiredProjection(candidate: StartProcessStimulus) {
+  const projection = projectCompensationStartCapacity(program, candidate);
+  assert.ok(projection !== null);
+  return projection;
+}
+
+function canonicalSnapshotBytes(candidate: StartProcessStimulus): number {
+  const projection = requiredProjection(candidate);
+  return canonicalCompensationParentContextRetentionsUtf8Bytes(projection.retentions);
+}
+
+function canonicalExecutionBytes(candidate: StartProcessStimulus): number {
+  const projection = requiredProjection(candidate);
+  return canonicalCompensationExecutionStateUtf8Bytes(
+    [projection.trigger],
+    projection.waits,
+  );
+}
+
+function assertProjectionUsesCanonicalEncoders(candidate: StartProcessStimulus): void {
+  const projection = requiredProjection(candidate);
+  assert.equal(projection.snapshotCanonicalBytes, canonicalSnapshotBytes(candidate));
+  assert.equal(projection.executionCanonicalBytes, canonicalExecutionBytes(candidate));
+}
+
+function assertCommittedWithIdentity(candidate: StartProcessStimulus): void {
+  const result = applyStimulus(program, initialState, candidate);
+  assert.equal(result.outcome, CommandOutcome.Committed);
+  assert.notStrictEqual(result.state, initialState);
 }
 
 function assertRejectedWithIdentity(candidate: StartProcessStimulus): void {

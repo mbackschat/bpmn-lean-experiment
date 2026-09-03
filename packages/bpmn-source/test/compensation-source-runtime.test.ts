@@ -9,9 +9,11 @@ import {
 } from "@bpmn-lean/bpmn-source";
 import {
   CommandOutcome,
+  EffectExecutionResultKind,
   StimulusKind,
   VariableValueKind,
   applyStimulus,
+  canonicalCompensationExecutionStateUtf8Bytes,
   initialState,
   projectCompensationStartCapacity,
   type RuntimeState,
@@ -58,6 +60,27 @@ test("both exact-source branch orders reach the same B/C compensation frontier",
   assert.ok(projection !== null);
   assert.deepEqual(reserveFirst.compensationTriggers, [projection.trigger]);
   assert.deepEqual(reserveFirst.compensationHandlerEffectWaits, projection.waits);
+});
+
+test("the B/C first frontier is larger than every later legal success frontier", async () => {
+  const program = await compensationProgram();
+  const firstFrontier = runToFrontier(program, [
+    "Task_ReserveHotel",
+    "Task_ArrangeGroundTravel",
+    "Task_IssueInsurance",
+  ]);
+  const firstFrontierBytes = compensationExecutionBytes(firstFrontier);
+  const orders = successfulCompensationOrders(
+    program,
+    firstFrontier,
+    firstFrontierBytes,
+  );
+
+  assert.deepEqual(orders, [
+    ["Task_UndoGroundTravel", "Task_UndoInsurance", "Task_UndoReserveHotel"],
+    ["Task_UndoGroundTravel", "Task_UndoReserveHotel", "Task_UndoInsurance"],
+    ["Task_UndoInsurance", "Task_UndoGroundTravel", "Task_UndoReserveHotel"],
+  ]);
 });
 
 test("the promoted snapshot, not a later Process value, supplies B's argument", async () => {
@@ -156,6 +179,42 @@ function frontierProjection(state: RuntimeState) {
       arguments_,
     ]),
   };
+}
+
+function successfulCompensationOrders(
+  program: SemanticProcessProgram,
+  state: RuntimeState,
+  firstFrontierBytes: number,
+  completed: ReadonlyArray<string> = [],
+): ReadonlyArray<ReadonlyArray<string>> {
+  const waits = state.compensationHandlerEffectWaits ?? [];
+  if (waits.length === 0) return [completed];
+  return waits.flatMap((wait) => {
+    const result = applyStimulus(program, state, {
+      kind: StimulusKind.CompleteEffect,
+      commandId: `complete-compensation:${[...completed, wait.id.elementId].join(":")}`,
+      effectId: wait.id,
+      result: { kind: EffectExecutionResultKind.Success, localPatch: [] },
+    });
+    assert.equal(result.outcome, CommandOutcome.Committed, wait.id.elementId);
+    assert.ok(
+      compensationExecutionBytes(result.state) < firstFrontierBytes,
+      `${wait.id.elementId} successor must be smaller than the first frontier`,
+    );
+    return successfulCompensationOrders(
+      program,
+      result.state,
+      firstFrontierBytes,
+      [...completed, wait.id.elementId],
+    );
+  });
+}
+
+function compensationExecutionBytes(state: RuntimeState): number {
+  return canonicalCompensationExecutionStateUtf8Bytes(
+    state.compensationTriggers ?? [],
+    state.compensationHandlerEffectWaits ?? [],
+  );
 }
 
 async function compensationProgram(): Promise<SemanticProcessProgram> {

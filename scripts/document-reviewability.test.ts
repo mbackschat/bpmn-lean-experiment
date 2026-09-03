@@ -274,7 +274,7 @@ test("keeps the owner-approved detail-map budget exceptions exactly scoped", () 
     reviewedDetailMapWordBudget(
       "docs/ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md",
     ),
-    5000,
+    5200,
   );
   assert.equal(
     reviewedDetailMapWordBudget(

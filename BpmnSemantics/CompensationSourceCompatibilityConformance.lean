@@ -65,26 +65,32 @@ def withStartCapacityLimits (snapshotBytes executionBytes : Nat) : Program :=
           { declaration with
             limits := { declaration.limits with maxCanonicalBytes := executionBytes } } }
 
+def checkpointStart (instanceId : SemanticId) (bindings : List VariableBinding) : Stimulus :=
+  .startProcess ⟨"start-command"⟩ ⟨processId.value⟩ instanceId bindings
+
 theorem checkpoint_start_capacity_accepts_exact_encoder_counts_and_rejects_one_under :
     let bytes := startCapacityBytes ⟨"ShortCapacity_1"⟩ "short value"
-    compensationStartDataAdmitted (withStartCapacityLimits bytes.1 bytes.2)
-        ⟨"ShortCapacity_1"⟩
-        [{ name := "Property_TravelDetails", value := .string "short value" }] = true ∧
-      compensationStartDataAdmitted (withStartCapacityLimits (bytes.1 - 1) bytes.2)
-        ⟨"ShortCapacity_1"⟩
-        [{ name := "Property_TravelDetails", value := .string "short value" }] = false ∧
-      compensationStartDataAdmitted (withStartCapacityLimits bytes.1 (bytes.2 - 1))
-        ⟨"ShortCapacity_1"⟩
-        [{ name := "Property_TravelDetails", value := .string "short value" }] = false := by
+    let bindings :=
+      [{ name := "Property_TravelDetails", value := .string "short value" }]
+    let stimulus := checkpointStart ⟨"ShortCapacity_1"⟩ bindings
+    let exact := admitStimulusWithCompensationSnapshots
+      (withStartCapacityLimits bytes.1 bytes.2) initialState stimulus
+    let snapshotOneUnder := admitStimulusWithCompensationSnapshots
+      (withStartCapacityLimits (bytes.1 - 1) bytes.2) initialState stimulus
+    let executionOneUnder := admitStimulusWithCompensationSnapshots
+      (withStartCapacityLimits bytes.1 (bytes.2 - 1)) initialState stimulus
+    exact.outcome = .committed ∧
+      exact.state.variables.process.bindings = bindings ∧
+      snapshotOneUnder.outcome = .rejected ∧
+      snapshotOneUnder.state = initialState ∧
+      executionOneUnder.outcome = .rejected ∧
+      executionOneUnder.state = initialState := by
   decide +kernel
 
 theorem checkpoint_start_capacity_uses_escaped_and_multibyte_canonical_json_bytes :
     startCapacityBytes ⟨"Escaped_\"\\_1"⟩ "quote=\" slash=\\ newline=\n" = (706, 3273) ∧
       startCapacityBytes ⟨"Multibyte_雪_1"⟩ "旅程-雪-🚆" = (697, 3267) := by
   decide +kernel
-
-def checkpointStart (instanceId : SemanticId) (bindings : List VariableBinding) : Stimulus :=
-  .startProcess ⟨"start-command"⟩ ⟨processId.value⟩ instanceId bindings
 
 theorem direct_command_admission_installs_the_exact_patch_and_preserves_empty_refusal :
     (admitStimulusWithCompensationSnapshots expectedProgram initialState

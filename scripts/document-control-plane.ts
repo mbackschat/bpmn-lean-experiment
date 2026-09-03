@@ -275,10 +275,12 @@ export function assertDetailImplementationMap(
  * newly closed family grows the family map instead of pushing the shared runtime/proof owner. On
  * 2026-08-31 the repository owner approved 5,000 words for the exact Temporal-hosting map and, after
  * an accurate closure update moved the cross-cutting runtime/proof map from 3,993 to 4,011 words, for
- * that exact map. On 2026-09-02 the owner approved 4,500 words for the contracts/source map after its
- * Compensation provenance prerequisite moved the accurate owner from 3,984 to 4,134 words. Every
- * other map retains the default. No value is unilaterally agent-adjustable; an owner-authorized change
- * must update this executable value and its documented basis together.
+ * that exact map. On 2026-09-02 the owner approved proportionate demonstrated increases: 4,500 words
+ * for the contracts/source map after its Compensation provenance prerequisite moved the accurate
+ * owner from 3,984 to 4,134 words, and 5,200 words for the runtime/proof map when a Compensation
+ * cold-review correction brought its accurate cross-cutting account to 5,042 words. Every other map
+ * retains the default. No value is unilaterally agent-adjustable; an owner-authorized change must
+ * update this executable value and its documented basis together.
  * The deciding authority is recorded by its owner, [the documentation
  * discipline](../docs/DOC-DISCIPLINE.md#reviewed-detail-map-word-budgets), because a threshold whose
  * only justification is its own comment is not reviewable as a decision.
@@ -288,7 +290,7 @@ export function reviewedDetailMapWordBudget(file: string): number {
     case "docs/ENGINE-CONTRACTS-AND-SOURCE-IMPLEMENTATION-MAP.md":
       return 4500;
     case "docs/ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md":
-      return 5000;
+      return 5200;
     case "docs/TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md":
       return 6000;
     default:
