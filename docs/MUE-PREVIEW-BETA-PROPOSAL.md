@@ -102,6 +102,14 @@ Reopen before changing the seven-item denominator or order, reclassifying an ite
 
 At approved proposal target `37020ccc3f5ca58a3118b55427a87d7bb484cbfb`, `node scripts/what-binds.ts` routed this proposal through all seven detail maps and 49 documentation guards. The bounded implementation owners were the new checkpoint catalog, the 93-nonblank-line About panel with 707 lines before its review target, the 82-line component test with 718 lines before its target, the 299-line UI-quality test with 501 lines before its target, a new integration guard, the 263-line feedback-efficiency guard with 537 lines before its target, and root `package.json`. No size exception or dependency change was proposed.
 
+## Implemented closure boundary
+
+Implementation target `b7ac924d1bfde62ef1f2bd4b96443e40652d3713` contains the separate immutable seven-row Product 2 catalog, native responsive About table, exact component and two-width browser assertions, cross-owner integration guard, and build-once release composition. The existing executable-capability catalog remains unchanged, no Beta showcase package or runtime data source exists, and every checkpoint-only or deferred boundary remains explicit. The exact release acceptance passed with output SHA-256 `8b6a3ead0f3afb7a6f62be80ba6b5dbd23b74b47caf4cd8a97d6211c3ec978c5`; the complete path-selected clean-commit pre-push boundary passed Product 1, Product 2 including PostgreSQL 18, showcase compatibility, and all 83 responsive UI tests with output SHA-256 `544621b97eb5a840db18068c69e6d9eef1f9f504de41a764250302f151fc4cd9`.
+
+The implementation adds no BPMN meaning, semantic profile, checked-source or IL shape, runtime transition, Temporal hosting mechanism, public engine operation, persistence record, interactive Product 2 workflow, package release, or tag push. The local `phase/mue-preview-beta` tag remains absent until the closure review is green.
+
+The reproducible implementation range is `553adfb3..b7ac924d`: `+391/-14` nonblank code lines and `+30/-15` nonblank documentation lines, with elapsed implementation time unknown. The nearest same-layer comparator is MUE Preview Alpha at `+4182/-168` code and `+181/-168` documentation because both integrate already-reviewed engine behavior into a Product 2 preview and a production release gate. Beta additions fell by 3,791 code lines and 151 documentation lines because it composes the existing Alpha and correlated-Message journeys and adds only a static disclosure surface rather than another transport, actor, host, or replay boundary. Both addition measures fell, so the reflection requires no manufactured process-weight removal. The [capsule-cost ledger](CAPSULE-COST-LEDGER.md) owns the reproducible row.
+
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
