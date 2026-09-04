@@ -4,6 +4,10 @@
 
 **Implemented, closure-reviewed, evidence-closed, and graduated.** This specification owns one configured CIB-profile Service Task incident, literal generation 1, and one exact retry of the same effect occurrence across the strict wire, TypeScript semantic core, proved Lean lane, configured CIB execution and projection, four-target differential evidence, runnable configuration, and Temporal Worker-replacement/history/replay evidence. A second semantic incident, generalized retry policy, cancellation, Product 2 incident operations, host causes, and retry counts remain excluded.
 
+## Lean assurance lane
+
+Lane shape: proved
+
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |

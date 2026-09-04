@@ -16,6 +16,10 @@ The semantic core owns activation of the timer occurrence, its logical deadline,
 
 Temporal elapsed time is evidence that the physical minimum delay occurred. It is not BPMN state. Physical delivery latency after the deadline is refinement stutter: the adapter supplies the semantic deadline, not Workflow wall-clock arrival time, as the firing stimulus's logical time.
 
+## Lean assurance lane
+
+Lane shape: proved
+
 ## Claim boundary
 
 The capsule establishes only this proposition:

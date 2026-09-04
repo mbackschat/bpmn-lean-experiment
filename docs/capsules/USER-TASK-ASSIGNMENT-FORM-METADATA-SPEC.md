@@ -4,6 +4,10 @@
 
 **Implemented, evidence-closed, owner-accepted, and graduated on 2026-08-12.** Exact source admission, checked and Semantic Process representation, committed wait and public observation, strict wire shapes, the proved Lean lane, profile/scenario registration, retained public-service CIB evidence, differential comparison, runnable configuration, and live Temporal Worker-replacement/replay evidence are green. The owner accepted final administrative correction `264add2` without another audit after the owner-authorized fourth closure audit closed its carried finding and retained only stale sibling status in the plan. Product 2 may consume this specification's public metadata without changing its passive engine meaning.
 
+## Lean assurance lane
+
+Lane shape: proved
+
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |

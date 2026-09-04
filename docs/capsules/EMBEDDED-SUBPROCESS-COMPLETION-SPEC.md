@@ -6,6 +6,10 @@
 
 This specification owns the first normal nested-execution-scope capsule: one ordinary embedded Sub-Process at one child level, two concurrent child User Tasks, normal child End Events, quiescent child-scope completion, and one outer User Task after the Sub-Process.
 
+## Lean assurance lane
+
+Lane shape: proved
+
 ## Established product question
 
 May the project implement the smallest reusable execution-scope foundation in which entering one ordinary embedded Sub-Process creates a child scope, two child User Tasks remain owned by it, completing only one branch cannot exit it, completing both branches removes the child occurrence and activates exactly one outer User Task, and Temporal preserves that lifecycle through Worker replacement and replay?

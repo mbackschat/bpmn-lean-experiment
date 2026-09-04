@@ -10,6 +10,10 @@ This paragraph previously carried a per-lane inventory of what Lean and the evid
 
 Implemented and absent scope is owned by [`implementation-status-delegation:ENGINE-SEMANTIC-FAMILY`](../ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md#interrupting-sub-process-boundary-timer) and deliberately not restated here; immediate sequencing is owned by [PLAN.md](../PLAN.md#exact-resume-point).
 
+## Lean assurance lane
+
+Lane shape: proved
+
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |

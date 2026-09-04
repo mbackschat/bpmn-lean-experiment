@@ -4,6 +4,10 @@
 
 **Implemented, closure-reviewed, evidence-closed, and graduated.** This specification defines one top-level Timer Start Event with the exact relative-duration expression `PT1S`, one resolved timer occurrence, one fresh private executable Process instance, and one-action Temporal Schedule refinement through the service-returned execution identity. Product 2 schedule management, deployment activation policy, recurring schedules, calendar expressions, catch-up, overlap, pause/resume, payload, multiple Start Events, Event Sub-Process start, CIB Seven Timer Start compatibility, and a public scheduling API remain excluded.
 
+## Lean assurance lane
+
+Lane shape: proved
+
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |

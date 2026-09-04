@@ -4,6 +4,10 @@
 
 **Implemented and evidence-closed for the exact structured selected-branch profile. Proposal correction audit `0b52d15`, semantic-checkpoint correction audit `ea8b019`, and closure correction audit `15ebadc` passed without a material redesign. General Inclusive Gateway reachability remains unsupported.**
 
+## Lean assurance lane
+
+Lane shape: proved
+
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |

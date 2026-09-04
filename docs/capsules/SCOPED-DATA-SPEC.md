@@ -4,6 +4,10 @@
 
 **Implemented current pre-release contract.**
 
+## Lean assurance lane
+
+Lane shape: proved
+
 ## Role
 
 This capsule owns the implemented atomic replacement of the flat Semantic Process runtime-variable representation with explicit Process and Activity-local scope ownership. Activity-local owners use one closed discriminated identity type so an effect occurrence and an Activity occurrence with equal coordinates remain distinct. This capsule's mapping account continues to use only the effect-occurrence arm; the [Activity data-input mediation specification](ACTIVITY-DATA-INPUT-MEDIATION-SPEC.md) owns the separate Activity-occurrence consumer and the one local projection that consumer publishes. The representation change itself changes no BPMN source admission, mapping language, canonical observation, effect result, or CIB profile meaning.

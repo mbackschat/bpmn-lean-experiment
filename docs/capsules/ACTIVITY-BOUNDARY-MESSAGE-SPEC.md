@@ -5,6 +5,10 @@
 Lifecycle: implemented
 Review: closure-approved
 
+## Lean assurance lane
+
+Lane shape: proved
+
 ## Question and bounded outcome
 
 What is the smallest standards-only slice in which one payload-free interrupting Message Boundary Event is attached to one User Task, the task and Message subscription are armed as one Activity occurrence, and whichever exact input wins withdraws the losing wait and follows only its own route?

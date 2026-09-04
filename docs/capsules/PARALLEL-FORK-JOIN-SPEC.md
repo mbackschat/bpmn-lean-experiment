@@ -6,6 +6,10 @@
 
 This capsule defines the observable contract for one private executable `None Start Event → Parallel Gateway fork → two distinct User Tasks → Parallel Gateway join → None End Event` Process. The approved account follows normative per-incoming-Sequence-Flow BPMN behavior. The current CIB User Task profile is not expanded to claim parallel compatibility; observed pinned-CIB count behavior may be retained later only in an explicitly separate compatibility profile.
 
+## Lean assurance lane
+
+Lane shape: proved
+
 ## Question
 
 What must be observable when one Parallel Gateway creates two concurrent User Task occurrences and a second Parallel Gateway synchronizes them, without prescribing an implementation's hidden token representation, evaluator visit order, or internal microstep count?

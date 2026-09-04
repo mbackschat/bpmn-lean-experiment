@@ -158,7 +158,9 @@ Capacity rejects `maxCanonicalBytes = 1`, then uses empty-array minimum, exact-f
 
 ## Lean assurance lane
 
-Lane shape: **proved** for the representation and eligibility propositions in the first checkpoint.
+Lane shape: proved
+
+The proved lane covers the representation and eligibility propositions in the first checkpoint.
 
 Lean defines the same declaration, target validation, completion facts, classifier, record/register, exact canonical-byte measure, insertion result, start initialization, root disposal, and exact ordinary and current Multi-Instance producer wrappers. The evaluator has a declarative relation and constructor-selection soundness bridge for the retention transition, while kernel-decided integration witnesses close the producer matrix without claiming source or host behavior.
 

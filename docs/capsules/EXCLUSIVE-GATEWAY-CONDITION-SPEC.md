@@ -4,6 +4,10 @@
 
 **Evidence-closed draft implemented on 2026-07-31 under the standards-first Simple Boolean expression profile. The former JUEL-first Activity account is deferred to a separate CIB compatibility slice.**
 
+## Lean assurance lane
+
+Lane shape: proved
+
 ## Question
 
 What is the smallest complete divergent Exclusive Gateway mechanism that executes admitted BPMN `FormalExpression` source, proves first-true/default routing independently in Lean and TypeScript, and advances BPMN structure without making a vendor expression runtime a prerequisite?

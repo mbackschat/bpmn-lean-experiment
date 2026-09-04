@@ -4,6 +4,10 @@
 
 **Implemented and evidence-closed draft specification on 2026-07-31; not an immutable compatibility profile.**
 
+## Lean assurance lane
+
+Lane shape: proved
+
 ## Question
 
 For the existing exact User Task occurrence, how should an executable CIB Seven compatibility profile expose selected form input and apply simulated user-entered string/null values on completion without claiming general BPMN data association, form, or human-resource semantics?

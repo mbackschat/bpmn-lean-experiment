@@ -89,6 +89,8 @@ A second witness separates `ADOUTPUT-ENTRY-01` from the input capsule: this mode
 
 ## Lean assurance lane
 
+Lane shape: proved
+
 The lane is declared **proved** for the bounded transition family, matching the input capsule rather than weakening below it.
 
 Required theorems cover data-independent activation; exact-id fill and the refusal of every other submitted name; association-decided write with Process-binding preservation elsewhere; single-scope disposal; wrong and stale identity refusal; runtime-state invariant preservation for the completion transition; and the routed-versus-named non-law that fixes `ADOUTPUT-ROUTE-01` as a real discriminator.

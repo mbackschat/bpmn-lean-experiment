@@ -4,6 +4,10 @@
 
 **Implemented, registered, evidence-closed, independently closure-reviewed, and graduated on 2026-08-12.** The registered profile, answer-free scenario, retained CIB evidence, runnable example, differential stringify mutation, and live Temporal Worker-replacement/refusal/history/replay witness establish the selected Boolean completion claim without changing Process Start, effects, mappings, expressions, Product 2, E2, or any old profile.
 
+## Lean assurance lane
+
+Lane shape: proved
+
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |

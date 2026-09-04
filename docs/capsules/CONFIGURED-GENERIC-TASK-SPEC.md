@@ -4,6 +4,10 @@
 
 **Implemented, closure-reviewed, evidence-closed, and graduated.** The registered profile selects one exact versioned Task extension that binds a BPMN Task to the existing external-effect mechanism. Exact source, checked/IL binding, Lean/core execution, answer-free artifacts, differential mutation, live Temporal Worker-replacement/history/replay evidence, and the retained CIB pass-through exclusion trace are green. Plain Abstract Task execution, another Task extension, Service Task reinterpretation, data mappings, BPMN Error routing, Product 2 work queues, CIB compatibility, and a new Temporal host primitive remain excluded.
 
+## Lean assurance lane
+
+Lane shape: proved
+
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |

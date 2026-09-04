@@ -103,6 +103,9 @@ function registeredSemanticProfileIds(source: string): ReadonlyArray<string> {
 const bindingInventoryHeading = "## Versioning consequences";
 /** Subsection whose rows pair one source owner with its measured remaining headroom. */
 const ownerInventoryHeading = "### Owners this implementation grows";
+const leanAssuranceHeading = "## Lean assurance lane";
+const leanAssuranceShapes = ["proved", "checked", "deliberately open"] as const;
+const runtimeProofMap = "docs/ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md";
 /** Closed disposition set of the process-assessment ledger, with the dispositions prose may use once. */
 const processDispositions = [
   "executable guard",
@@ -498,6 +501,82 @@ test("the maintained process-assessment ledger satisfies its own escalation rule
   assert.deepEqual(
     { rowCount: rows.length > 0, findings: assessProcessFindings(rows) },
     { rowCount: true, findings: [] },
+  );
+});
+
+function leanAssuranceFindings(markdown: string, entry: string): ReadonlyArray<string> {
+  const headings = markdown.split("\n").filter((line) => line === leanAssuranceHeading);
+  if (headings.length !== 1) {
+    return [`${entry}: expected one ${leanAssuranceHeading}, found ${headings.length}`];
+  }
+  const section = headingSection(markdown, leanAssuranceHeading);
+  if (section === null) {
+    return [`${entry}: ${leanAssuranceHeading} has no readable section`];
+  }
+  const laneLines = section.split("\n").filter((line) =>
+    line.startsWith("Lane shape:")
+  );
+  if (laneLines.length !== 1) {
+    return [`${entry}: expected one Lane shape field, found ${laneLines.length}`];
+  }
+  const firstContentLine = section
+    .slice(leanAssuranceHeading.length)
+    .split("\n")
+    .find((line) => line.length > 0);
+  const match = /^Lane shape: (proved|checked|deliberately open)$/u.exec(firstContentLine ?? "");
+  if (match === null) {
+    return [`${entry}: invalid first Lean assurance line ${JSON.stringify(firstContentLine)}`];
+  }
+  const shape = match[1];
+  assert.ok(leanAssuranceShapes.includes(shape as typeof leanAssuranceShapes[number]));
+  if (
+    shape === "deliberately open"
+    && !linkedPaths(section, "docs/capsules").includes(runtimeProofMap)
+  ) {
+    return [`${entry}: deliberately open lane does not link ${runtimeProofMap}`];
+  }
+  return [];
+}
+
+test("every capsule declares one canonical Lean assurance lane", async () => {
+  const capsuleRoot = path.join(projectRoot, "docs/capsules");
+  const capsules = (await readdir(capsuleRoot)).filter((entry) =>
+    entry.endsWith("-PROPOSAL.md") || entry.endsWith("-SPEC.md")
+  );
+  const findings: string[] = [];
+  for (const capsule of capsules) {
+    const markdown = await readFile(path.join(capsuleRoot, capsule), "utf8");
+    findings.push(...leanAssuranceFindings(markdown, capsule));
+  }
+  assert.ok(capsules.length > 40, `capsule enumeration returned ${capsules.length} files`);
+  assert.deepEqual(findings, []);
+});
+
+test("Lean assurance parsing rejects absent, invalid, and unowned open lanes", () => {
+  assert.deepEqual(leanAssuranceFindings("## Status\n\nclosed\n", "missing.md"), [
+    "missing.md: expected one ## Lean assurance lane, found 0",
+  ]);
+  assert.deepEqual(
+    leanAssuranceFindings("## Lean assurance lane\n\nLane shape: finite\n", "invalid.md"),
+    ['invalid.md: invalid first Lean assurance line "Lane shape: finite"'],
+  );
+  assert.deepEqual(
+    leanAssuranceFindings("## Lean assurance lane\n\nLane shape: deliberately open\n", "open.md"),
+    [`open.md: deliberately open lane does not link ${runtimeProofMap}`],
+  );
+  assert.deepEqual(
+    leanAssuranceFindings(
+      "## Lean assurance lane\n\nLane shape: proved\n\nLane shape: **proved** for fixtures.\n",
+      "duplicate.md",
+    ),
+    ["duplicate.md: expected one Lane shape field, found 2"],
+  );
+  assert.deepEqual(
+    leanAssuranceFindings(
+      "## Lean assurance lane\n\nLane shape: deliberately open\n\n[owner](../ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md)\n",
+      "owned-open.md",
+    ),
+    [],
   );
 });
 

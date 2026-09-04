@@ -4,6 +4,10 @@
 
 **Implemented, evidence-closed, and graduated on 2026-08-10.** The registered answer-free schedule traverses both back-edges and the default exit, and the live witness adds Worker replacement, accepted-result recovery, stale-occurrence refusal, finite history inspection, mutation discrimination, and replay. This specification owns the first closed M2 semantic increment after the Lean admission-lane split. It does not claim BPMN Process Execution Conformance, CIB Seven cycle compatibility, unbounded Temporal history, or Continue-As-New.
 
+## Lean assurance lane
+
+Lane shape: proved
+
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |

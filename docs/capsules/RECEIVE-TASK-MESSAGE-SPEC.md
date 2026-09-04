@@ -4,6 +4,10 @@
 
 **Implemented and evidence-closed after independent proposal, semantic-checkpoint, closure, and correction-audit review. This specification owns the exact direct-Message Receive Task source, semantic, CIB, differential, and Temporal boundary below.**
 
+## Lean assurance lane
+
+Lane shape: proved
+
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |

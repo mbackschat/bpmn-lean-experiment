@@ -4,6 +4,10 @@
 
 **Implemented and evidence-closed draft specification on 2026-07-31; not an immutable compatibility profile.**
 
+## Lean assurance lane
+
+Lane shape: proved
+
 ## Question and authority
 
 For the bounded CIB Seven User Task profile, how does a caller supply initial Process data so the first active User Task can read selected form inputs without claiming BPMN Data Association, form, or human-resource semantics?

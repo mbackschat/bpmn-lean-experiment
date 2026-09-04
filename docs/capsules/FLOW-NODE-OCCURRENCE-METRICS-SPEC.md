@@ -8,6 +8,10 @@ The implemented [Product 2 shared-persistence addendum](../BPM-PLATFORM-SHARED-P
 
 The later implemented [Workflow-chain production contract](../TEMPORAL-PROCESS-LIFECYCLE-SPEC.md#workflow-chain-production-contract) extends only Temporal retention. Chain-enrolled Runs close E2 together with E1 in private digest-bound segments, carry the exact open-occurrence anchors across Run boundaries, and let Product 1 traverse retained Runs without changing the public occurrence wire, aggregation, UI, or any BPMN meaning. Run identity remains private and post-retention reconstruction remains excluded.
 
+## Lean assurance lane
+
+Lane shape: proved
+
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |

@@ -6,6 +6,10 @@
 
 The conditional semantic-checkpoint review that this capsule required at its first green Lean and semantic-core checkpoint has been performed and its corrections audited, and the closure review is complete; the receipt below records every stage. This document graduated from `-PROPOSAL` to `-SPEC` on the approved closure, so it is now the implemented current contract for this family rather than approved intent.
 
+## Lean assurance lane
+
+Lane shape: proved
+
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |

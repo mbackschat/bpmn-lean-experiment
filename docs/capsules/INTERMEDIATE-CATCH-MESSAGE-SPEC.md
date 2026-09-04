@@ -15,6 +15,10 @@ None Start Event
 
 The trailing User Task is an already implemented mechanism. It keeps the semantic Process and Temporal Workflow live after the message is consumed so a second command with a fresh command ID can establish semantic stale refusal rather than only a post-closure transport result.
 
+## Lean assurance lane
+
+Lane shape: proved
+
 ## Exact claim
 
 In product terms, the capsule establishes:

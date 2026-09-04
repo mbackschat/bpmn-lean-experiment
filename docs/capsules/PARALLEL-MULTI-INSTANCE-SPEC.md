@@ -107,6 +107,8 @@ Timer firing withdraws the controller, every remaining child task, the outer Act
 
 ## Lean assurance lane
 
+Lane shape: proved
+
 The Lean lane is **proved** for the bounded transition family. It defines the parallel controller, indexed-slot partition, batch-entry relation, child-completion relation, Timer-interruption relation, and evaluator clauses independently of TypeScript.
 
 Required theorems cover entry well-formedness; task-identity freshness and pairwise uniqueness; progress accounting; exact-slot preservation; all-complete commutation for two distinct pending tasks; index-ordered final aggregation; early-completion sibling withdrawal and output absence; Timer regional withdrawal and output absence; stale/duplicate refusal; evaluator soundness for every new relation arm; and preservation of the applicable runtime-state invariant.

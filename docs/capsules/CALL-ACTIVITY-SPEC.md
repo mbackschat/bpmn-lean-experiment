@@ -4,6 +4,10 @@
 
 **Implemented and evidence-closed for the exact namespace-qualified in-document called-Process profile. Proposal correction audit `3e17a05`, semantic-checkpoint correction audit `0148592`, and closure correction audit `bb66c8c` passed without a material redesign. Repeated invocation and general Call Activity lifecycle remain unsupported.**
 
+## Lean assurance lane
+
+Lane shape: proved
+
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |

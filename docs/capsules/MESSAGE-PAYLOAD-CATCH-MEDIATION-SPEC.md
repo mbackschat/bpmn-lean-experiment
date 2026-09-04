@@ -98,6 +98,8 @@ The decisive separating witness inside this capsule is the Account P1 pair: two 
 
 ## Lean assurance lane
 
+Lane shape: proved
+
 The lane is declared **proved** for the bounded transition family, matching both data capsules rather than weakening below them.
 
 Required theorems cover payload assignment and association as one step; association-decided write with Process-binding preservation elsewhere; subscription withdrawal finality; refusal of an absent payload, an out-of-domain payload, a wrong channel, and a stale subscription with exact state preservation; runtime-state invariant preservation across the delivery transition; and the routed-versus-named non-law that fixes `MPAYLOAD-ROUTE-01` as a real discriminator rather than a coincidence of the registered ids.

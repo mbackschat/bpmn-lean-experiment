@@ -4,6 +4,10 @@
 
 **Implemented, closure-reviewed, evidence-closed, and graduated.** This specification owns one successor CIB compatibility profile and one incident-gated external root Process cancellation command across the strict wire, TypeScript semantic core, proved Lean lane, configured CIB external-termination projection, exact four-target differential evidence, and live Temporal Worker-replacement, retained-Update, history, replay, and mutation evidence. General BPMN cancellation, arbitrary in-flight cancellation, Transaction Cancel, compensation, modeled Terminate behavior, Temporal Workflow cancellation, and Product 2 operations remain excluded.
 
+## Lean assurance lane
+
+Lane shape: proved
+
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |

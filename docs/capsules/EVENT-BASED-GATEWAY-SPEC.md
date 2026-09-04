@@ -4,6 +4,10 @@
 
 **Implemented and evidence-closed for the exact operation-addressed Message-versus-`PT1S` Timer profile. Proposal correction audit `acff781`, semantic-checkpoint correction audit `b7c52ca`, and closure correction audit `a62a51a` passed without a material redesign. Coalesced readiness has only the specified fail-closed adapter outcome; a portable winner and general Event-Based Gateway trigger sets remain unsupported.**
 
+## Lean assurance lane
+
+Lane shape: proved
+
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |

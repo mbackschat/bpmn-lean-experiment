@@ -8,6 +8,10 @@
 
 Every evidence lane is closed: source admission and lowering, Lean, the independent semantic core, two registered answer-free schedules with seeded mutations, and the Temporal refinement, replay, Worker-absence, and shared-activation lanes. The exact implemented and absent boundary is owned by [`implementation-status-owner:ENGINE-SEMANTIC-FAMILY`](../ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md#non-interrupting-boundary-timer) and is not restated here. The selection this capsule rests on was first a scheduling decision owned by [the breadth research](../research/CIB-SEVEN-BPMN-BREADTH-RESEARCH.md#priority-decision-after-the-interrupting-sub-process-boundary-timer), which approves no semantic account; decision 1 is what made it a semantic commitment.
 
+## Lean assurance lane
+
+Lane shape: proved
+
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |

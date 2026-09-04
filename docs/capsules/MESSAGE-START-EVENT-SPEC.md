@@ -4,6 +4,10 @@
 
 **Implemented, evidence-closed, and graduated on 2026-08-10.** The standards-only profile, answer-free scenario, differential case, runnable example, direct Temporal Worker-absence/history/replay witness, and required mutations are implemented. Closure review of `d118481` required lifecycle, maintained-evidence, and malformed-source corrections; the same reviewer approved final correction target `1b3ed1b` with all findings closed. This specification owns one top-level, payload-free Message Start Event that instantiates one private executable Process through one exact resolved Message, Interface, and Operation channel. It does not select Message broker routing, buffering, correlation keys, payload mapping, multiple Start Events, Message Flow execution, Event Sub-Process start, CIB Seven Message Start compatibility, or the BPM platform's public message-ingress API.
 
+## Lean assurance lane
+
+Lane shape: proved
+
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |

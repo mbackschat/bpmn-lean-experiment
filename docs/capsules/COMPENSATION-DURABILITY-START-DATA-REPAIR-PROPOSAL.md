@@ -64,6 +64,8 @@ The longest internal closure does not change: the same Program topology and oper
 
 ## Lean assurance lane
 
+Lane shape: checked
+
 The Lean lane is **checked** for the exact admission correction. Lean changes the checkpoint Process-start domain to String-only, adds the same Program-derived exact binding and prospective-capacity predicate to command admission, proves for arbitrary admitted identity and binding that both inherited canonical-byte inequalities hold, decides the positive binding and the empty, wrong-name, extra, duplicate, and wrong-kind cases, and decides exact short representative projections against each production-encoder byte count and one byte below it. Escaped and multi-byte values bind the canonical encoder. The full inherited-limit exact-fit and one-input-byte-over value and identity searches remain executable TypeScript and Product 1 discriminators rather than concrete Lean reductions; this changes proof shape, not semantic admission or the two bounds. No new `native_decide` exception is selected. Every changed kernel-decided target build stays root-owned under the unchanged 3 GiB memory ceiling.
 
 ### Lean assurance correction after the hard ceiling

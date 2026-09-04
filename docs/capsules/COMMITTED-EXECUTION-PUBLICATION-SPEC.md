@@ -246,6 +246,8 @@ The existing Operations actor resolver and exact configured-group policy authori
 
 ## Lean assurance lane
 
+Lane shape: proved
+
 The M5 Lean question is **proved**: the published transition list is sufficient to reconstruct the exact RuntimeState reached by the existing evaluator under the exact Program.
 
 A new cohesive publication module will define the traced evaluator, trace replay, control-position projection, and a declarative committed-step relation that reuses existing external admission and `ProgramStep`. Its public theorems will establish:

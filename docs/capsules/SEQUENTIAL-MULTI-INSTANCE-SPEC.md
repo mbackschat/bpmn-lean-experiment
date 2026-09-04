@@ -212,6 +212,8 @@ The coalesced evidence reuses only the reviewed activation-tag and drain-barrier
 
 ## Lean assurance lane
 
+Lane shape: proved
+
 The lane is **proved**. Lean defines declarative relations for outer entry, nonfinal iteration completion, final natural completion, and timer interruption, then proves every evaluator-produced transition belongs to the corresponding relation.
 
 The minimum laws are:

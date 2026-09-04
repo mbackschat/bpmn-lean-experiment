@@ -4,6 +4,10 @@
 
 Implemented current capsule contract; exact evidence status belongs in the applicable detail maps routed by [`implementation-status-router`](../IMPLEMENTATION-MAP.md).
 
+## Lean assurance lane
+
+Lane shape: proved
+
 ## Role
 
 This specification owns the approved bounded meaning, host-refinement contract, witnesses, and exclusions for one extension-bound Service Task effect. Exact current implementation and evidence status belongs in the applicable detail maps routed by [`implementation-status-router`](../IMPLEMENTATION-MAP.md), and immediate sequencing belongs in [PLAN.md](../PLAN.md).

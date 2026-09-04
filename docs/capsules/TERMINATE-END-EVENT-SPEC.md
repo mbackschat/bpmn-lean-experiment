@@ -4,6 +4,10 @@
 
 **Implemented, closure-reviewed, evidence-closed, and graduated.** This specification defines one exact Terminate End Event in one ordinary embedded Sub-Process and the reusable containing-scope termination operation required by that witness. Omitted and parser-safe XSD-false `false` and `0` are structurally equivalent ordinary embedded Sub-Process inputs with distinct exact source identities. Event Sub-Process termination, Transaction cancellation, compensation, Call Activity propagation, terminate-all extension behavior, Product 2 cancellation, CIB compatibility evidence, and every other BPMN End Event family remain excluded.
 
+## Lean assurance lane
+
+Lane shape: proved
+
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |

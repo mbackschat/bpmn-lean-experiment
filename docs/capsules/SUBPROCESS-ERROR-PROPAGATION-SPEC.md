@@ -8,6 +8,10 @@ This is the first exceptional-exit follow-on after the implemented [ordinary emb
 
 `DefinitionScope`, `enterScope`, `reachNoneEnd`, `completeScope`, operation/control-place ownership, scope occurrences, scope-owned tokens and waits, quiescent normal completion, and multiple passive User Task hosting remain implemented prerequisites rather than Error-specific mechanisms.
 
+## Lean assurance lane
+
+Lane shape: proved
+
 ## Product boundary
 
 This specification owns the smallest standards-only nested-scope discriminator in which completing one child User Task reaches an Error End Event, propagation selects the exact matching boundary Error on the directly enclosing embedded Sub-Process, interruption removes a still-active sibling User Task and every other runtime owner inside that scope occurrence, and only an outer recovery User Task remains observable.

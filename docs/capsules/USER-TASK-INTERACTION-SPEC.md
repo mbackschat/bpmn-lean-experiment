@@ -6,6 +6,10 @@
 
 This project-owned semantic specification closes only the interaction boundary around the existing sequential `None Start Event → User Task → None End Event` model. It does not approve general human-task lifecycle semantics, people assignment, authorization, forms, variables, Search Attributes, a task inbox, multi-instance execution, or a broader CIB compatibility claim.
 
+## Lean assurance lane
+
+Lane shape: proved
+
 ## Question
 
 How can an application discover the exact active User Task of a known Process instance and submit a completion command through Temporal without treating Temporal messaging, Visibility, CIB-generated task IDs, or a UI read model as BPMN semantic authority?

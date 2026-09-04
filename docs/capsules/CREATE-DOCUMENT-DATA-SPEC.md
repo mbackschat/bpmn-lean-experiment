@@ -4,6 +4,10 @@
 
 Implemented current capsule contract; exact evidence status belongs in the applicable detail maps routed by [`implementation-status-router`](../IMPLEMENTATION-MAP.md).
 
+## Lean assurance lane
+
+Lane shape: proved
+
 ## Role
 
 This specification owns the approved bounded source, data, mapping, effect-result, host-refinement, evidence, and exclusion contract for the A12-shaped `CreateDocument` slice. Exact current implementation and evidence status belongs in the applicable detail maps routed by [`implementation-status-router`](../IMPLEMENTATION-MAP.md), and immediate sequencing belongs in [PLAN.md](../PLAN.md).
