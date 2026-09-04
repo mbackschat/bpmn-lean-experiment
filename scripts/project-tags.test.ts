@@ -13,6 +13,7 @@ import {
 } from "./project-tags.ts";
 
 const projectRoot = path.resolve(import.meta.dirname, "..");
+const receiptRunner = path.join(projectRoot, "scripts/run-with-receipt.sh");
 
 function git(repository: string, ...arguments_: ReadonlyArray<string>): string {
   const result = spawnSync("git", arguments_, {
@@ -63,6 +64,17 @@ async function initializeRepository(repository: string, version = "0.2.0"): Prom
   return git(repository, "rev-parse", "HEAD");
 }
 
+function successfulReceipt(repository: string, name: string): string {
+  const receipt = path.join(repository, ".git", "test-receipts", name);
+  const result = spawnSync(
+    receiptRunner,
+    [receipt, "--", process.execPath, "-e", "process.exit(0)"],
+    { cwd: repository, encoding: "utf8" },
+  );
+  assert.equal(result.status, 0, result.stderr);
+  return receipt;
+}
+
 test("keeps phase and release tags in distinct conventional namespaces", () => {
   assert.equal(
     projectTagName({ kind: ProjectTagKind.Phase, identifier: "horizon-1" }),
@@ -99,6 +111,7 @@ test("creates an immutable annotated phase tag at one clean committed HEAD", asy
       kind: ProjectTagKind.Phase,
       identifier: "horizon-1",
       message: "Horizon 1: shared persistence and projections",
+      receiptDirectories: [successfulReceipt(repository, "horizon-1")],
     } as const;
 
     assert.deepEqual(createProjectTag(repository, request), {
@@ -120,6 +133,7 @@ test("creates an immutable annotated phase tag at one clean committed HEAD", asy
         kind: ProjectTagKind.Phase,
         identifier: "horizon-2",
         message: "Horizon 2 complete",
+        receiptDirectories: [request.receiptDirectories[0]],
       }),
       /clean committed HEAD/u,
     );
@@ -136,6 +150,7 @@ test("binds release tags to the committed package version and refuses collisions
       kind: ProjectTagKind.Release,
       identifier: "0.2.0-rc.1",
       message: "Release 0.2.0-rc.1",
+      receiptDirectories: [successfulReceipt(repository, "release")],
     } as const;
     assert.deepEqual(createProjectTag(repository, request), {
       name: "v0.2.0-rc.1",
@@ -170,11 +185,13 @@ test("refuses phase and release tags without current publication statistics", as
     );
     git(repository, "add", "publication-statistics.status");
     git(repository, "commit", "--quiet", "-m", "make statistics stale");
+    const staleReceipt = successfulReceipt(repository, "stale");
     assert.throws(
       () => createProjectTag(repository, {
         kind: ProjectTagKind.Phase,
         identifier: "stale-statistics",
         message: "Stale statistics must block publication",
+        receiptDirectories: [staleReceipt],
       }),
       /PUBLICATION_STATISTICS_STALE/u,
     );
@@ -186,11 +203,13 @@ test("refuses phase and release tags without current publication statistics", as
     );
     git(repository, "add", "publication-statistics.status");
     git(repository, "commit", "--quiet", "-m", "make Tokei unavailable");
+    const missingToolReceipt = successfulReceipt(repository, "missing-tool");
     assert.throws(
       () => createProjectTag(repository, {
         kind: ProjectTagKind.Release,
         identifier: "0.2.0",
         message: "Release 0.2.0",
+        receiptDirectories: [missingToolReceipt],
       }),
       /publication statistics require Tokei/u,
     );
@@ -212,6 +231,7 @@ test("pushes one exact tag without overwriting a remote collision", async () => 
       kind: ProjectTagKind.Phase,
       identifier: "horizon-1",
       message: "Horizon 1 complete",
+      receiptDirectories: [successfulReceipt(repository, "push")],
     } as const;
     const created = createProjectTag(repository, request);
 
@@ -233,6 +253,61 @@ test("pushes one exact tag without overwriting a remote collision", async () => 
   }
 });
 
+test("requires successful verification receipts for the exact tagged HEAD", async () => {
+  const repository = await mkdtemp(path.join(os.tmpdir(), "project-tag-receipts-"));
+  try {
+    await initializeRepository(repository);
+    const request = {
+      kind: ProjectTagKind.Phase,
+      identifier: "receipt-boundary",
+      message: "Receipt boundary complete",
+    } as const;
+
+    assert.throws(
+      () => createProjectTag(repository, { ...request, receiptDirectories: [] }),
+      /at least one verification receipt/u,
+    );
+
+    const oldReceipt = successfulReceipt(repository, "old-head");
+    await writeFile(path.join(repository, "next.txt"), "next\n", "utf8");
+    git(repository, "add", "next.txt");
+    git(repository, "commit", "--quiet", "-m", "advance head");
+    assert.throws(
+      () => createProjectTag(repository, {
+        ...request,
+        receiptDirectories: [oldReceipt],
+      }),
+      /receipt.*does not match HEAD/iu,
+    );
+
+    const failedReceipt = path.join(repository, ".git", "test-receipts", "failed");
+    const failed = spawnSync(
+      receiptRunner,
+      [failedReceipt, "--", process.execPath, "-e", "process.exit(7)"],
+      { cwd: repository, encoding: "utf8" },
+    );
+    assert.equal(failed.status, 7);
+    assert.throws(
+      () => createProjectTag(repository, {
+        ...request,
+        receiptDirectories: [failedReceipt],
+      }),
+      /receipt.*exit status 7/iu,
+    );
+
+    const currentReceipt = successfulReceipt(repository, "current-head");
+    assert.equal(
+      createProjectTag(repository, {
+        ...request,
+        receiptDirectories: [currentReceipt],
+      }).status,
+      "created",
+    );
+  } finally {
+    await rm(repository, { recursive: true, force: true });
+  }
+});
+
 test("publishes the maintained commands and convention", async () => {
   const [manifestSource, guidance] = await Promise.all([
     readFile(path.join(projectRoot, "package.json"), "utf8"),
@@ -247,5 +322,7 @@ test("publishes the maintained commands and convention", async () => {
   assert.match(guidance, /`vMAJOR\.MINOR\.PATCH\[-prerelease\]`/u);
   assert.match(guidance, /project-tags\.ts create/u);
   assert.match(guidance, /project-tags\.ts push/u);
+  assert.match(guidance, /--receipt <absolute-receipt-directory>/u);
+  assert.match(guidance, /exact target commit/u);
   assert.match(guidance, /never force or move/iu);
 });

@@ -628,13 +628,13 @@ git diff --check
 
 ### Project tags
 
-The published `M1` through `M6` and `MVP` names are the closed functional-MVP history. For later non-release completion points, use annotated `phase/<kebab-case>` tags with descriptive names. For releases, use annotated `vMAJOR.MINOR.PATCH[-prerelease]` tags following Semantic Versioning; the version must equal the committed root `package.json` version, and build metadata is excluded from tag names. Create tags only at a clean, completely verified committed `HEAD`. Never force or move a published tag, never reuse the historical milestone namespace, and push only the exact intended tag rather than every local tag.
+The published `M1` through `M6` and `MVP` names are the closed functional-MVP history. For later non-release completion points, use annotated `phase/<kebab-case>` tags with descriptive names. For releases, use annotated `vMAJOR.MINOR.PATCH[-prerelease]` tags following Semantic Versioning; the version must equal the committed root `package.json` version, and build metadata is excluded from tag names. Create tags only at a clean, completely verified committed `HEAD`. Pass one `--receipt <absolute-receipt-directory>` for every applicable gate named by the owning checkpoint or release specification, and require each receipt to name the exact target commit; creation refuses an empty receipt set or any failed, malformed, or wrong-commit receipt. Never force or move a published tag, never reuse the historical milestone namespace, and push only the exact intended tag rather than every local tag.
 
 Create a local tag, optionally pushing it in the same invocation:
 
 ```sh
-node scripts/project-tags.ts create phase shared-persistence --message "Shared persistence phase complete"
-node scripts/project-tags.ts create release 0.2.0-rc.1 --message "Release 0.2.0-rc.1" --push
+node scripts/project-tags.ts create phase shared-persistence --message "Shared persistence phase complete" --receipt <absolute-receipt-directory>
+node scripts/project-tags.ts create release 0.2.0-rc.1 --message "Release 0.2.0-rc.1" --receipt <absolute-pre-push-receipt-directory> --receipt <absolute-release-receipt-directory> --push
 ```
 
 If creation succeeded but the push did not, retry only that exact tag:

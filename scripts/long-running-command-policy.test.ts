@@ -90,6 +90,14 @@ test("receipt runner preserves combined output and the exact command exit", asyn
     );
     assert.equal(await readFile(path.join(successReceipt, "exit-status"), "utf8"), "0\n");
     assert.equal(await readFile(path.join(successReceipt, "output.log"), "utf8"), "out\nerr\n");
+    const head = spawnSync("git", ["rev-parse", "--verify", "HEAD^{commit}"], {
+      encoding: "utf8",
+    });
+    assert.equal(head.status, 0, head.stderr);
+    assert.equal(
+      await readFile(path.join(successReceipt, "git-head"), "utf8"),
+      head.stdout,
+    );
 
     const failure = spawnSync(
       receiptScriptPath,
@@ -154,7 +162,7 @@ test("receipt assertion is the sole machine verdict for a completed long command
     assert.equal(success.status, 0, success.stderr);
     assert.equal(
       success.stdout,
-      `COMMAND_RECEIPT_VERDICT=success exitStatus=0 receipt=${successReceipt}\n`,
+      `COMMAND_RECEIPT_VERDICT=success exitStatus=0 gitHead=${(await readFile(path.join(successReceipt, "git-head"), "utf8")).trim()} receipt=${successReceipt}\n`,
     );
 
     const failure = spawnSync(process.execPath, [receiptAssertionPath, failureReceipt], {
@@ -163,7 +171,7 @@ test("receipt assertion is the sole machine verdict for a completed long command
     assert.equal(failure.status, 1);
     assert.equal(
       failure.stderr,
-      `COMMAND_RECEIPT_VERDICT=failure exitStatus=7 receipt=${failureReceipt}\n`,
+      `COMMAND_RECEIPT_VERDICT=failure exitStatus=7 gitHead=${(await readFile(path.join(failureReceipt, "git-head"), "utf8")).trim()} receipt=${failureReceipt}\n`,
     );
 
     for (const receipt of [pendingReceipt, malformedReceipt]) {

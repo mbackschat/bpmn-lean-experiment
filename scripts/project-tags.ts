@@ -4,6 +4,10 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { assertCleanCommittedHead } from "./clean-committed-head.ts";
+import {
+  InvalidCommandReceiptError,
+  readCommandReceipt,
+} from "./assert-command-receipt.ts";
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 
@@ -21,6 +25,7 @@ export type ProjectTagIdentity = Readonly<{
 
 export type ProjectTagRequest = ProjectTagIdentity & Readonly<{
   message: string;
+  receiptDirectories: ReadonlyArray<string>;
 }>;
 
 export type ProjectTagResult = Readonly<{
@@ -136,6 +141,42 @@ function assertPublicationStatistics(repository: string): void {
   }
 }
 
+function assertVerificationReceipts(
+  receiptDirectories: ReadonlyArray<string>,
+  target: string,
+): void {
+  if (receiptDirectories.length === 0) {
+    throw new Error("project tag requires at least one verification receipt");
+  }
+  const distinctReceipts = new Set(receiptDirectories.map((receipt) => path.resolve(receipt)));
+  if (distinctReceipts.size !== receiptDirectories.length) {
+    throw new Error("project tag verification receipts must be distinct");
+  }
+  for (const receiptDirectory of distinctReceipts) {
+    let receipt: ReturnType<typeof readCommandReceipt>;
+    try {
+      receipt = readCommandReceipt(receiptDirectory);
+    } catch (error) {
+      if (error instanceof InvalidCommandReceiptError) {
+        throw new Error(
+          `project tag verification receipt ${receiptDirectory} is invalid: ${error.reason}`,
+        );
+      }
+      throw error;
+    }
+    if (receipt.exitStatus !== 0) {
+      throw new Error(
+        `project tag verification receipt ${receipt.receipt} has exit status ${receipt.exitStatus}`,
+      );
+    }
+    if (receipt.gitHead !== target) {
+      throw new Error(
+        `project tag verification receipt ${receipt.receipt} at ${receipt.gitHead} does not match HEAD ${target}`,
+      );
+    }
+  }
+}
+
 function assertAnnotatedTag(
   repository: string,
   name: string,
@@ -172,8 +213,9 @@ export function createProjectTag(
   const name = projectTagName(request);
   assertMessage(request.message);
   assertReleaseVersion(repository, request);
-  assertPublicationStatistics(repository);
   const target = git(repository, ["rev-parse", "--verify", "HEAD^{commit}"]);
+  assertVerificationReceipts(request.receiptDirectories, target);
+  assertPublicationStatistics(repository);
   const reference = `refs/tags/${name}`;
   const existing = gitResult(repository, ["show-ref", "--verify", "--quiet", reference]);
   if (existing.status === 0) {
@@ -258,28 +300,54 @@ function runCli(): void {
   const name = projectTagName({ kind, identifier });
   switch (operation) {
     case "create": {
-      const messageIndex = options.indexOf("--message");
-      const message = options[messageIndex + 1];
-      const push = options.includes("--push");
-      const allowedLength = push ? 3 : 2;
-      if (
-        messageIndex === -1
-        || message === undefined
-        || options.length !== allowedLength
-        || options.some((option, index) =>
-          index !== messageIndex
-          && index !== messageIndex + 1
-          && option !== "--push"
-        )
-      ) {
+      let message: string | undefined;
+      let push = false;
+      const receiptDirectories: string[] = [];
+      let valid = true;
+      for (let index = 0; index < options.length; index += 1) {
+        const option = options[index];
+        switch (option) {
+          case "--message": {
+            const value = options[index + 1];
+            if (message !== undefined || value === undefined) {
+              valid = false;
+            } else {
+              message = value;
+              index += 1;
+            }
+            break;
+          }
+          case "--receipt": {
+            const value = options[index + 1];
+            if (value === undefined) {
+              valid = false;
+            } else {
+              receiptDirectories.push(value);
+              index += 1;
+            }
+            break;
+          }
+          case "--push": {
+            if (push) {
+              valid = false;
+            }
+            push = true;
+            break;
+          }
+          default:
+            valid = false;
+        }
+      }
+      if (!valid || message === undefined || receiptDirectories.length === 0) {
         throw new Error(
-          "usage: node scripts/project-tags.ts create <phase|release> <identifier> --message <message> [--push]",
+          "usage: node scripts/project-tags.ts create <phase|release> <identifier> --message <message> --receipt <directory> [--receipt <directory> ...] [--push]",
         );
       }
       const result = createProjectTag(projectRoot, {
         kind,
         identifier,
         message,
+        receiptDirectories,
       });
       process.stdout.write(
         `PROJECT_TAG status=${result.status} name=${result.name} target=${result.target}\n`,
