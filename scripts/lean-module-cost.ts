@@ -3,9 +3,9 @@
  * comparison that keeps that record complete, ratcheted, and disclosed.
  *
  * Every conformance module kernel-decides fixtures, and kernel reduction holds
- * its terms in resident memory, so the corpus carries a host-memory cost that
- * grows with every capsule. [`lean-module-cost.test.ts`](lean-module-cost.test.ts)
- * is the guard that enforces this record.
+ * its terms in resident memory, so reduction depth and proof ownership carry a
+ * host-memory cost. [`lean-module-cost.test.ts`](lean-module-cost.test.ts) is the
+ * guard that enforces this record.
  *
  * Keep this module free of import-time side effects and of runtime imports that
  * need the workspace path mapping. The ratchet obtains its baseline by loading

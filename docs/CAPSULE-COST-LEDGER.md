@@ -173,6 +173,10 @@ The unchanged-limit isolation pass then exercised every cold consumer implicated
 | `CallActivityConformance` | 27.19 s | 3,294,196 KiB | 3,091,030,016 bytes | All zero |
 | `TimerStartConformance` | 24.65 s | 3,079,472 KiB | 2,874,978,304 bytes | All zero |
 
+| Standing watch set | Remeasurement trigger | Required response |
+|---|---|---|
+| `CallActivityConformance`, `SequentialMultiInstanceProgramBindingConformance`, `TimerStartConformance`, and `TerminateEndEventConformance` | A capsule adds or changes a reduction family consumed by any listed target | Remeasure each affected exact target under the unchanged 3 GiB ceiling with every controlled memory event zero. If a target reaches the ceiling or loses safe margin, split it by proof ownership as in `da6e6477`; do not budget fixture sites or raise the limit to make the target pass. |
+
 The accepted complete receipts are immutable at `7b3ca41f`. The warm-closure test ran in 0.65 seconds at 120,048 KiB GNU RSS and 136,794,112 bytes cgroup peak; its log SHA-256 is `aaec15959030baf4dae2b0327c50fdb5b8a765e3f80ad93b82629f4339833d58`. The warm-closure build ran in 0.45 seconds at 119,768 KiB and 36,450,304 bytes; its log SHA-256 is `748a58696eab89272da962e2f88d514187abf2aab87a66985dfedc4e14ee0a13`. Both exited zero with every controlled memory event zero. The validator binds these receipts as closure evidence while the rejected cold diagnostic and isolated cold-consumer rows remain visible; no larger limit or exit-code-only exception was introduced.
 
 #### Compensation trigger-handler module-cost binding
