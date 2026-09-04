@@ -1,7 +1,6 @@
 import { expect, test } from "@playwright/test";
 
 import { mvpCapabilityCatalog } from "../../../model-corpus/mvp-capabilities.ts";
-import { muePreviewBetaCheckpoints } from "../../../platform/apps/web/src/mue-preview-beta-checkpoints.ts";
 
 import {
   assertOwnedActionsFit,
@@ -17,6 +16,58 @@ import {
   waitForStableUi,
 } from "./fixtures.ts";
 import type { PublicApiFixtureOptions } from "./fixtures.ts";
+
+const betaCheckpointExpectations = [
+  {
+    id: "SEQUENTIAL-MULTI-INSTANCE",
+    title: "Sequential Multi-Instance",
+    evidence: "Production journey",
+    productSurface: "Operations",
+    boundary: "Closure-reviewed bounded natural and Timer-interrupted Sequential Multi-Instance journey; broader Multi-Instance behavior remains outside the slice.",
+  },
+  {
+    id: "INTERNAL-COMMUTATION",
+    title: "Internal Commutation",
+    evidence: "Reviewed checkpoint only",
+    productSurface: "No Product 2 executable surface",
+    boundary: "Approved first green final-implementation semantic checkpoint; scheduled-mode admission, region footprints, and arbitrary-batch theorem remain open.",
+  },
+  {
+    id: "PARALLEL-MULTI-INSTANCE",
+    title: "Parallel Multi-Instance",
+    evidence: "Registered executable capability",
+    productSurface: "About",
+    boundary: "Closure-reviewed bounded parallel User Task capability; no dedicated Product 2 journey is claimed.",
+  },
+  {
+    id: "MECHANISM-MATURITY-EVIDENCE",
+    title: "Mechanism Maturity Evidence",
+    evidence: "Generated evidence",
+    productSurface: "About",
+    boundary: "Complete generated family vector with separate dimensions; it is not a support percentage or semantic capability.",
+  },
+  {
+    id: "DATA-AND-TASK-MECHANISMS",
+    title: "Data and Task Mechanisms",
+    evidence: "Registered executable capability",
+    productSurface: "About",
+    boundary: "Closure-reviewed direct Activity input and output slices; no Work form or browser data-editing workflow is claimed.",
+  },
+  {
+    id: "EVENT-SUBSCRIPTIONS",
+    title: "Event Subscriptions",
+    evidence: "Production journey",
+    productSurface: "Definitions / Triggers",
+    boundary: "Closure-reviewed one-key definition-scoped Message correlation; composite keys, buffering, broadcast, and other Message loci remain open.",
+  },
+  {
+    id: "COMPENSATION-TRANSACTIONS",
+    title: "Compensation and Transactions",
+    evidence: "Reviewed checkpoint only",
+    productSurface: "No Product 2 executable surface",
+    boundary: "First reviewed end-to-end private Compensation checkpoint; profile registration, public commands, corpus, and Product 2 capability remain absent.",
+  },
+] as const;
 
 test.beforeEach(async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
@@ -120,12 +171,18 @@ test("About exposes the versioned capability boundary without overflow @responsi
     name: "MUE Preview Beta checkpoint boundaries",
   });
   await expect(betaTable.locator("tbody tr")).toHaveCount(
-    muePreviewBetaCheckpoints.length,
+    betaCheckpointExpectations.length,
   );
   expect(await betaTable.locator("tbody tr").evaluateAll((rows) =>
     rows.map((row) => row.getAttribute("data-beta-content-id"))
-  )).toEqual(muePreviewBetaCheckpoints.map(({ id }) => id));
-  await expect(betaTable.getByText("No Product 2 executable surface", { exact: true })).toHaveCount(2);
+  )).toEqual(betaCheckpointExpectations.map(({ id }) => id));
+  for (const expectation of betaCheckpointExpectations) {
+    const row = betaTable.locator(`[data-beta-content-id="${expectation.id}"]`);
+    await expect(row.getByRole("rowheader")).toHaveText(expectation.title);
+    await expect(row.locator('td[data-label="Evidence"]')).toHaveText(expectation.evidence);
+    await expect(row.locator('td[data-label="Product surface"]')).toHaveText(expectation.productSurface);
+    await expect(row.locator('td[data-label="Remaining limit"]')).toHaveText(expectation.boundary);
+  }
   const capabilityTable = page.getByRole("table", {
     name: "Executable BPMN element and semantic-variant overview",
   });

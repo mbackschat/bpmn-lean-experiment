@@ -8,7 +8,58 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { build } from "vite";
 
 import { mvpCapabilityCatalog } from "../../../../model-corpus/mvp-capabilities.ts";
-import { muePreviewBetaCheckpoints } from "../src/mue-preview-beta-checkpoints.ts";
+
+const betaCheckpointExpectations = [
+  {
+    id: "SEQUENTIAL-MULTI-INSTANCE",
+    title: "Sequential Multi-Instance",
+    evidence: "Production journey",
+    productSurface: "Operations",
+    boundary: "Closure-reviewed bounded natural and Timer-interrupted Sequential Multi-Instance journey; broader Multi-Instance behavior remains outside the slice.",
+  },
+  {
+    id: "INTERNAL-COMMUTATION",
+    title: "Internal Commutation",
+    evidence: "Reviewed checkpoint only",
+    productSurface: "No Product 2 executable surface",
+    boundary: "Approved first green final-implementation semantic checkpoint; scheduled-mode admission, region footprints, and arbitrary-batch theorem remain open.",
+  },
+  {
+    id: "PARALLEL-MULTI-INSTANCE",
+    title: "Parallel Multi-Instance",
+    evidence: "Registered executable capability",
+    productSurface: "About",
+    boundary: "Closure-reviewed bounded parallel User Task capability; no dedicated Product 2 journey is claimed.",
+  },
+  {
+    id: "MECHANISM-MATURITY-EVIDENCE",
+    title: "Mechanism Maturity Evidence",
+    evidence: "Generated evidence",
+    productSurface: "About",
+    boundary: "Complete generated family vector with separate dimensions; it is not a support percentage or semantic capability.",
+  },
+  {
+    id: "DATA-AND-TASK-MECHANISMS",
+    title: "Data and Task Mechanisms",
+    evidence: "Registered executable capability",
+    productSurface: "About",
+    boundary: "Closure-reviewed direct Activity input and output slices; no Work form or browser data-editing workflow is claimed.",
+  },
+  {
+    id: "EVENT-SUBSCRIPTIONS",
+    title: "Event Subscriptions",
+    evidence: "Production journey",
+    productSurface: "Definitions / Triggers",
+    boundary: "Closure-reviewed one-key definition-scoped Message correlation; composite keys, buffering, broadcast, and other Message loci remain open.",
+  },
+  {
+    id: "COMPENSATION-TRANSACTIONS",
+    title: "Compensation and Transactions",
+    evidence: "Reviewed checkpoint only",
+    productSurface: "No Product 2 executable surface",
+    boundary: "First reviewed end-to-end private Compensation checkpoint; profile registration, public commands, corpus, and Product 2 capability remain absent.",
+  },
+] as const;
 
 const dependencies = ["react/jsx-runtime", "react"] as const;
 const built = await build({
@@ -96,16 +147,25 @@ test("presents the exact Beta checkpoint matrix without changing the capability 
   assert.match(html, /not full MUE closure or BPMN conformance/iu);
   assert.deepEqual(
     [...html.matchAll(/data-beta-content-id="([^"]+)"/gu)].map((match) => match[1]),
-    muePreviewBetaCheckpoints.map(({ id }) => id),
+    betaCheckpointExpectations.map(({ id }) => id),
   );
-  for (const label of [
-    "Production journey",
-    "Registered executable capability",
-    "Generated evidence",
-    "Reviewed checkpoint only",
-    "No Product 2 executable surface",
-  ]) {
-    assert.match(html, new RegExp(label, "u"));
+  for (const expectation of betaCheckpointExpectations) {
+    const rowStart = html.indexOf(`data-beta-content-id="${expectation.id}"`);
+    assert.notEqual(rowStart, -1, `missing Beta row ${expectation.id}`);
+    const rowEnd = html.indexOf("</tr>", rowStart);
+    assert.notEqual(rowEnd, -1, `unterminated Beta row ${expectation.id}`);
+    const row = html.slice(rowStart, rowEnd);
+    for (const expectedText of [
+      expectation.title,
+      expectation.evidence,
+      expectation.productSurface,
+      expectation.boundary,
+    ]) {
+      assert.ok(
+        row.includes(expectedText),
+        `Beta row ${expectation.id} must render ${JSON.stringify(expectedText)}`,
+      );
+    }
   }
   assert.equal(
     [...html.matchAll(/data-capability-id="([^"]+)"/gu)].length,
