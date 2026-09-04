@@ -130,34 +130,26 @@ test("keeps Beta acceptance build-once, reuse-only, and aligned across its owner
   );
   assert.equal(existsSync(path.join(projectRoot, "showcase/mue-preview-beta")), false);
 
-  for (const [owner, source] of [
-    ["web guide", webGuide],
-    ["showcase registry", showcaseRegistry],
-    ["UI-quality guide", uiQualityGuide],
-    ["testing specification", testingSpec],
-    ["contributor setup", contributorGuide],
-    ["architecture", architecture],
-    ["root contributor guidance", rootGuide],
-    ["platform map", platformMap],
-    ["assurance map", assuranceMap],
-    ["documentation registry", docsRegistry],
-    ["PLAN", plan],
-  ] as const) {
-    assert.match(source, /MUE Preview Beta/u, `${owner} must name the Beta checkpoint`);
-  }
-  for (const [owner, source] of [
-    ["UI-quality guide", uiQualityGuide],
-    ["testing specification", testingSpec],
-    ["contributor setup", contributorGuide],
-    ["architecture", architecture],
-    ["root contributor guidance", rootGuide],
-    ["assurance map", assuranceMap],
-  ] as const) {
-    assert.match(source, /test:release:mue-preview-beta/u, `${owner} must name the executable Beta gate`);
-  }
+  assert.match(headingSection(webGuide, "## What you can do"), /\*\*About:\*\*[^\n]+MUE Preview Beta/u);
+  assert.match(showcaseRegistry, /^\[MUE Preview Beta\]\(\.\.\/docs\/MUE-PREVIEW-BETA-SPEC\.md\)/mu);
+  assert.match(headingSection(uiQualityGuide, "## Scope"), /exact seven MUE Preview Beta rows/u);
+  assert.match(headingSection(uiQualityGuide, "## Commands"), /^\.\/scripts\/pnpm\.sh run test:release:mue-preview-beta$/mu);
+  assert.match(headingSection(testingSpec, "## Focused gate matrix"), /^\| Complete MUE Preview Beta release acceptance \|[^\n]+`\.\/scripts\/pnpm\.sh run test:release:mue-preview-beta`/mu);
+  assert.match(headingSection(contributorGuide, "## Clean-clone path"), /^\.\/scripts\/pnpm\.sh run test:release:mue-preview-beta$/mu);
+  assert.match(headingSection(architecture, "## Showcases"), /MUE Preview Beta is a release composition/u);
+  assert.match(headingSection(rootGuide, "## Verification"), /^\.\/scripts\/pnpm\.sh run test:release:mue-preview-beta$/mu);
+  assert.match(headingSection(platformMap, "### BPM platform"), /A separate immutable MUE Preview Beta About catalog/u);
+  assert.match(headingSection(assuranceMap, "### Project foundation"), /one exact MUE Preview Beta integration guard[^\n]+`test:release:mue-preview-beta`/u);
+  assert.match(headingSection(docsRegistry, "## Fast navigation"), /^\| Understand or run the MUE Preview Beta integration \| \[MUE Preview Beta integration specification\]\(MUE-PREVIEW-BETA-SPEC\.md\)/mu);
   assert.match(webSourceMap, /mue-preview-beta-checkpoints\.ts/u);
   assert.match(webGuide, /not full MUE closure or BPMN conformance/u);
   assert.match(platformMap, /seven reviewed checkpoint boundaries/u);
+});
+
+test("does not accept Beta wording moved outside its owning section", () => {
+  const moved = "# Guide\n\n## What you can do\n\nNo release checkpoint is owned here.\n\n## Notes\n\nMUE Preview Beta\n";
+
+  assert.doesNotMatch(headingSection(moved, "## What you can do"), /MUE Preview Beta/u);
 });
 
 function betaContentIds(plan: string): ReadonlyArray<string> {
@@ -191,6 +183,19 @@ function scripts(source: string): Readonly<Record<string, string>> {
 
 function commandLegs(command: string | undefined): ReadonlyArray<string> {
   return command?.split(" && ") ?? [];
+}
+
+function headingSection(markdown: string, heading: string): string {
+  const start = markdown.indexOf(`${heading}\n`);
+  assert.notEqual(start, -1, `missing ${heading}`);
+  const level = heading.indexOf(" ");
+  const followingHeading = new RegExp(`^#{1,${level}} `, "mu").exec(
+    markdown.slice(start + heading.length + 1),
+  );
+  const end = followingHeading === null
+    ? markdown.length
+    : start + heading.length + 1 + followingHeading.index;
+  return markdown.slice(start, end);
 }
 
 async function read(relativePath: string): Promise<string> {
