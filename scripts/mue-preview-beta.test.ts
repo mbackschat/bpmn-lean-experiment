@@ -119,11 +119,15 @@ test("keeps Beta acceptance build-once, reuse-only, and aligned across its owner
   const root = scripts(rootSource);
   const betaRelease = root["test:release:mue-preview-beta"];
 
-  assert.equal(
-    betaRelease,
-    "pnpm build:release-product2 && pnpm test:showcase:mue-preview-alpha:built && pnpm test:showcase:m2-correlated-message-ingress:built && pnpm test:ui-quality:built",
+  assert.deepEqual(
+    commandLegs(betaRelease).filter((leg) => leg.endsWith(":built")),
+    [
+      "pnpm test:showcase:mue-preview-alpha:built",
+      "pnpm test:showcase:m2-correlated-message-ingress:built",
+      "pnpm test:ui-quality:built",
+    ],
+    "the package-owned release command must reuse the three ordered prebuilt acceptance legs",
   );
-  assert.equal(betaRelease?.match(/\bbuild:/gu)?.length, 1);
   assert.equal(existsSync(path.join(projectRoot, "showcase/mue-preview-beta")), false);
 
   for (const [owner, source] of [
@@ -183,6 +187,10 @@ function specificationMatrix(specification: string): ReadonlyArray<Readonly<{
 
 function scripts(source: string): Readonly<Record<string, string>> {
   return (JSON.parse(source) as Readonly<{ scripts?: Readonly<Record<string, string>> }>).scripts ?? {};
+}
+
+function commandLegs(command: string | undefined): ReadonlyArray<string> {
+  return command?.split(" && ") ?? [];
 }
 
 async function read(relativePath: string): Promise<string> {

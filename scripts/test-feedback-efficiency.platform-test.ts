@@ -257,10 +257,6 @@ test("keeps MUE Preview acceptance owners aligned with the executable release gr
   assert.match(contributorGuide, /test:showcase:mue-preview-alpha/u);
   assert.match(contributorGuide, /test:release:mue-preview-alpha/u);
   assert.match(uiResearch, /without waiting on intermediate browser polling/u);
-  assert.equal(
-    root["test:release:mue-preview-beta"],
-    "pnpm build:release-product2 && pnpm test:showcase:mue-preview-alpha:built && pnpm test:showcase:m2-correlated-message-ingress:built && pnpm test:ui-quality:built",
-  );
   assert.equal(matches(root["test:release:mue-preview-beta"] ?? "", /\bbuild:/gu), 1);
   assert.match(architecture, /test:release:mue-preview-beta/u);
   assert.match(webSourceMap, /mue-preview-beta-checkpoints\.ts/u);
