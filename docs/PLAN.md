@@ -78,7 +78,7 @@ Risk band: Beta integration.
 
 Checkpoint: all seven exact Beta content boundaries are independently green, and the Product 2 integration at `b7ac924d` presents them in their required order without changing the executable-capability denominator. The exact Beta release acceptance and complete clean path-selected pre-push boundary are green. This satisfies only the seven Beta boundary rows, not full closure of the underlying content families.
 
-Next action: commit the closure-ready evidence boundary, rerun the exact release acceptance and clean path-selected complete gate on that immutable target, obtain cold closure review, graduate the proposal, then create the immutable local Beta tag.
+Next action: rerun the exact release acceptance and clean path-selected complete gate on the immutable closure-ready target, obtain cold closure review for the [MUE Preview Beta proposal](MUE-PREVIEW-BETA-PROPOSAL.md), graduate it, then create the immutable local Beta tag.
 
 Oracle: Product 2 presents exactly the seven reviewed Beta boundaries, preserves separate BPMN, CIB, and platform denominators, reuses the existing real-Temporal journeys, discloses checkpoint-only and deferred breadth, and reaches a clean complete gate, governed review, and immutable tag without turning Beta integration into new semantic evidence.
 
