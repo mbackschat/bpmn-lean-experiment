@@ -247,7 +247,7 @@ The complete `what-binds` inventory requires [`implementation-status-owner:ENGIN
 | [TS snapshot staging](../../packages/semantic-core/src/internal-transition-attempt.ts) | 668 | pre-mutation reservation/promotion selection |
 | [TS census](../../packages/semantic-core/src/internal-commutation-census.ts) | 659 | new state field |
 | [TS footprint vocabulary](../../packages/semantic-core/src/internal-transition-footprint-vocabulary.ts) | 762 | snapshot atoms |
-| [TS footprint union](../../packages/semantic-core/src/internal-transition-footprint.ts) | 120 | retention/capacity/context helpers |
+| [TS footprint union](../../packages/semantic-core/src/internal-transition-footprint.ts) | 116 | retention/capacity/context helpers |
 | [TS footprint order](../../packages/semantic-core/src/internal-transition-footprint-ordering.ts) | 245 | snapshot atom order and region overlap |
 | [TS scope-entry preparation](../../packages/semantic-core/src/internal-transition-scope-creation-preparation.ts) | 564 | retention read/write |
 | [TS bounded-entry preparation](../../packages/semantic-core/src/internal-transition-bounded-scope-preparation.ts) | 606 | retention read/write |
