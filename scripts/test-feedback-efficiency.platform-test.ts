@@ -232,13 +232,14 @@ test("serves every real-host showcase from the production web build", async () =
   assert.deepEqual(nonProductionConfigs, []);
 });
 
-test("keeps MUE Preview Alpha acceptance owners aligned with the executable release graph", async () => {
-  const [rootSource, architecture, webSourceMap, uiQualityGuide, contributorGuide, uiResearch] = await Promise.all([
+test("keeps MUE Preview acceptance owners aligned with the executable release graph", async () => {
+  const [rootSource, architecture, webSourceMap, uiQualityGuide, contributorGuide, rootGuide, uiResearch] = await Promise.all([
     read("package.json"),
     read("docs/ARCHITECTURE.md"),
     read("platform/apps/web/SOURCE-MAP.md"),
     read("showcase/platform-ui-quality/README.md"),
     read("docs/CONTRIBUTOR-SETUP-GUIDE.md"),
+    read("CLAUDE.md"),
     read("docs/research/BPM-PLATFORM-UI-UX-INFORMATION-ARCHITECTURE-RESEARCH.md"),
   ]);
   const root = scripts(rootSource);
@@ -256,6 +257,16 @@ test("keeps MUE Preview Alpha acceptance owners aligned with the executable rele
   assert.match(contributorGuide, /test:showcase:mue-preview-alpha/u);
   assert.match(contributorGuide, /test:release:mue-preview-alpha/u);
   assert.match(uiResearch, /without waiting on intermediate browser polling/u);
+  assert.equal(
+    root["test:release:mue-preview-beta"],
+    "pnpm build:release-product2 && pnpm test:showcase:mue-preview-alpha:built && pnpm test:showcase:m2-correlated-message-ingress:built && pnpm test:ui-quality:built",
+  );
+  assert.equal(matches(root["test:release:mue-preview-beta"] ?? "", /\bbuild:/gu), 1);
+  assert.match(architecture, /test:release:mue-preview-beta/u);
+  assert.match(webSourceMap, /mue-preview-beta-checkpoints\.ts/u);
+  assert.match(uiQualityGuide, /test:release:mue-preview-beta/u);
+  assert.match(contributorGuide, /test:release:mue-preview-beta/u);
+  assert.match(rootGuide, /test:release:mue-preview-beta/u);
 });
 
 function scripts(source: string): Readonly<Record<string, string>> {

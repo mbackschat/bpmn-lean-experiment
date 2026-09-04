@@ -148,6 +148,7 @@
     "test:release:m3": "pnpm build:release-product2 && pnpm test:showcase:m3-human-work:built && pnpm test:ui-quality:built",
     "test:release:m4": "pnpm build:release-product2 && pnpm test:showcase:m4-incident-operations:built && pnpm test:ui-quality:built",
     "test:release:mue-preview-alpha": "pnpm build:release-product2 && pnpm test:showcase:mue-preview-alpha:built && pnpm test:ui-quality:built",
+    "test:release:mue-preview-beta": "pnpm build:release-product2 && pnpm test:showcase:mue-preview-alpha:built && pnpm test:showcase:m2-correlated-message-ingress:built && pnpm test:ui-quality:built",
     "test:release:product2": "pnpm build:release-product2 && pnpm test:showcase:m1:built && pnpm test:showcase:m2:built && pnpm test:showcase:m3-human-work:built && pnpm test:showcase:m4-incident-operations:built && pnpm test:showcase:mue-preview-alpha:built && pnpm test:ui-quality:built",
     "test:platform-ui-kit": "pnpm --filter @bpmn-lean/platform-ui-kit test",
     "test:platform-web": "pnpm build:platform-web && pnpm test:platform-web:built",

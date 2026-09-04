@@ -513,6 +513,12 @@ Complete MUE Preview Alpha release acceptance, composing the production-backed s
 ./scripts/pnpm.sh run test:release:mue-preview-alpha
 ```
 
+Complete MUE Preview Beta release acceptance, building the Product 2 graph once and reusing the Alpha, definition-scoped correlated Message, and deterministic UI-quality gates:
+
+```sh
+./scripts/pnpm.sh run test:release:mue-preview-beta
+```
+
 Product 2 fixed-fixture responsive, focus, reduced-motion, and interaction gate at the supported 1280-pixel and 1600-pixel desktop widths:
 
 ```sh

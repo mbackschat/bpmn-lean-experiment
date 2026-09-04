@@ -33,7 +33,10 @@ Registered real-host milestone and preview browser acceptance additionally need 
 ./scripts/pnpm.sh run test:showcase:m4-incident-operations
 ./scripts/pnpm.sh run test:showcase:mue-preview-alpha
 ./scripts/pnpm.sh run test:release:mue-preview-alpha
+./scripts/pnpm.sh run test:release:mue-preview-beta
 ```
+
+The MUE Preview Beta command builds the Product 2 graph once, then reuses the Alpha and definition-scoped correlated Message real-host journeys plus the deterministic UI-quality lane. It creates no separate Beta showcase package.
 
 Hosted Linux CI uses `playwright install --with-deps chromium` to provision both that browser revision and its image-specific shared libraries before running the same acceptance commands. The Playwright packages, browser binary, and host libraries do not enter the static web distribution or reachable production package graph.
 

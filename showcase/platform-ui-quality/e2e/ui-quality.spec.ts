@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 import { mvpCapabilityCatalog } from "../../../model-corpus/mvp-capabilities.ts";
+import { muePreviewBetaCheckpoints } from "../../../platform/apps/web/src/mue-preview-beta-checkpoints.ts";
 
 import {
   assertOwnedActionsFit,
@@ -115,23 +116,34 @@ test("About exposes the versioned capability boundary without overflow @responsi
   await expect(page.getByRole("heading", { name: "BPMN Lean 0.1.0" })).toBeVisible();
   await expect(page.getByText("Not a conformance claim.", { exact: true })).toBeVisible();
   await expect(page.getByText("CIB Seven 2.2.0", { exact: true })).toBeVisible();
-  const table = page.getByRole("table", {
+  const betaTable = page.getByRole("table", {
+    name: "MUE Preview Beta checkpoint boundaries",
+  });
+  await expect(betaTable.locator("tbody tr")).toHaveCount(
+    muePreviewBetaCheckpoints.length,
+  );
+  expect(await betaTable.locator("tbody tr").evaluateAll((rows) =>
+    rows.map((row) => row.getAttribute("data-beta-content-id"))
+  )).toEqual(muePreviewBetaCheckpoints.map(({ id }) => id));
+  await expect(betaTable.getByText("No Product 2 executable surface", { exact: true })).toHaveCount(2);
+  const capabilityTable = page.getByRole("table", {
     name: "Executable BPMN element and semantic-variant overview",
   });
-  await expect(table.locator("tbody tr")).toHaveCount(
+  await expect(capabilityTable.locator("tbody tr")).toHaveCount(
     mvpCapabilityCatalog.capabilities.length,
   );
-  expect(await table.locator("tbody tr").evaluateAll((rows) =>
+  expect(await capabilityTable.locator("tbody tr").evaluateAll((rows) =>
     rows.map((row) => row.getAttribute("data-capability-id"))
   )).toEqual(mvpCapabilityCatalog.capabilities.map(({ id }) => id));
-  const timerStart = table.locator('[data-capability-id="timerStartEvent"]');
+  const timerStart = capabilityTable.locator('[data-capability-id="timerStartEvent"]');
   await expect(timerStart).toContainText("Timer Start Event");
   await expect(timerStart).toContainText("no recurrence or calendar form");
   await expect(timerStart).toContainText("No CIB target selected");
 
   await assertNoOverflow(page.locator("html"), "About document");
   await assertNoOverflow(page.locator("main"), "About workspace");
-  await assertNoOverflow(table, "capability table");
+  await assertNoOverflow(betaTable, "Beta checkpoint table");
+  await assertNoOverflow(capabilityTable, "capability table");
 });
 
 test("reduced motion is active and task-detail diagram stays contained @responsive", async ({ page }) => {

@@ -7,9 +7,9 @@ This is the browser application for the BPM platform. It is a static React app t
 - **Definitions:** upload BPMN XML, review admission diagnostics, inspect versions, view or download a diagram, start an exact version, manage start triggers, and publish a target-free correlated Message with distinct unique, zero-match, ambiguous, capacity, and infrastructure outcomes.
 - **Work:** find priority-ordered tasks visible to the current actor, claim one, complete either its legacy typed field or its exact-catalog-bound structured form, choose among declared resolution actions, and inspect its Process context. An unclaimed task exposes Claim but cannot enter the completion flow.
 - **Operations:** search Process instances, inspect committed execution history and current diagram positions, view conditional MUE Preview Alpha progress from exact published Sequential Multi-Instance state, review and download the independently ordered operator audit for one confirmed instance, retry or cancel incidents, review incident audit events, and view definition-version flow-node metrics.
-- **About:** inspect the exact build version and all currently registered executable BPMN element variants, their restrictions, and their separately classified CIB Seven evidence.
+- **About:** inspect the exact build version, all currently registered executable BPMN element variants and their separately classified CIB Seven evidence, and the exact seven MUE Preview Beta checkpoint boundaries with their Product 2 surfaces and remaining limits.
 
-The About table is built from the same canonical capability catalog that the retained-model guard checks against registered pipeline XML. It is a bounded evidence disclosure, not a BPMN conformance percentage or a claim that every CIB Seven behavior is compatible. The UI never receives Temporal Workflow IDs, Run IDs, Task Queues, Event History, or private engine locators. Diagrams are presentation only and never decide whether a model is executable.
+The About destination keeps two denominators separate. Its executable-capability table is built from the same canonical capability catalog that the retained-model guard checks against registered pipeline XML. Its MUE Preview Beta table is built from a separate immutable seven-checkpoint catalog and distinguishes production journeys, registered executable capabilities, generated evidence, and reviewed checkpoints with no Product 2 executable surface. Beta is not full MUE closure or BPMN conformance. The UI never receives Temporal Workflow IDs, Run IDs, Task Queues, Event History, or private engine locators. Diagrams are presentation only and never decide whether a model is executable.
 
 The production bundle loads the complete Work inbox first. Definitions, Operations, About, their workspace-only HTTP clients, and Work task detail load at navigation or task-selection boundaries. The structured form loads with a structured task detail, while the bpmn-js viewer runtime and styles load only when a Diagram surface mounts. The production-bundle guard measures the complete default Work static-import graph, keeps it below 500 kB, and rejects an eager bpmn-js runtime.
 
@@ -36,6 +36,12 @@ Run the production-built headless-Chromium functional journeys at 1280 and 1600 
 
 ```sh
 ./scripts/pnpm.sh run test:ui-quality
+```
+
+Run the complete MUE Preview Beta acceptance only after its constituent Alpha and Message-correlation journeys are ready to execute against real Temporal:
+
+```sh
+./scripts/pnpm.sh run test:release:mue-preview-beta
 ```
 
 Before pushing a UI-facing commit, run the exact local GitHub entry point described by the [three-level verification policy](../../../docs/TESTING-SPEC.md#three-level-verification-policy).

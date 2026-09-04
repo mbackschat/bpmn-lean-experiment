@@ -68,6 +68,25 @@
   color: var(--ui-color-warning);
 }
 
+.beta {
+  display: grid;
+  gap: var(--ui-space-3);
+}
+
+.beta h3,
+.beta p {
+  margin: 0;
+}
+
+.beta h3 {
+  font: var(--ui-font-section);
+}
+
+.beta p {
+  max-width: 64rem;
+  color: var(--ui-color-muted);
+}
+
 .tableOwner {
   min-width: 0;
   overflow: hidden;
@@ -108,11 +127,16 @@
   font: var(--ui-font-label);
 }
 
-.tableOwner thead th:nth-child(1) { width: 12%; }
-.tableOwner thead th:nth-child(2) { width: 18%; }
-.tableOwner thead th:nth-child(3) { width: 16%; }
-.tableOwner thead th:nth-child(4) { width: 34%; }
-.tableOwner thead th:nth-child(5) { width: 20%; }
+.capabilityTable thead th:nth-child(1) { width: 12%; }
+.capabilityTable thead th:nth-child(2) { width: 18%; }
+.capabilityTable thead th:nth-child(3) { width: 16%; }
+.capabilityTable thead th:nth-child(4) { width: 34%; }
+.capabilityTable thead th:nth-child(5) { width: 20%; }
+
+.betaTable thead th:nth-child(1) { width: 22%; }
+.betaTable thead th:nth-child(2) { width: 20%; }
+.betaTable thead th:nth-child(3) { width: 18%; }
+.betaTable thead th:nth-child(4) { width: 40%; }
 
 @container (max-width: 68rem) {
   .summary {

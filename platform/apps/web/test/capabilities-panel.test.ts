@@ -8,6 +8,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { build } from "vite";
 
 import { mvpCapabilityCatalog } from "../../../../model-corpus/mvp-capabilities.ts";
+import { muePreviewBetaCheckpoints } from "../src/mue-preview-beta-checkpoints.ts";
 
 const dependencies = ["react/jsx-runtime", "react"] as const;
 const built = await build({
@@ -83,5 +84,32 @@ test("presents versioned BPMN and CIB capability boundaries from the canonical c
   assert.deepEqual(
     [...html.matchAll(/data-capability-id="([^"]+)"/gu)].map((match) => match[1]),
     mvpCapabilityCatalog.capabilities.map(({ id }) => id),
+  );
+});
+
+test("presents the exact Beta checkpoint matrix without changing the capability catalog", () => {
+  const html = renderToStaticMarkup(createElement(module.CapabilitiesPanel, {
+    productVersion: "0.1.0",
+  }));
+
+  assert.match(html, /MUE Preview Beta/u);
+  assert.match(html, /not full MUE closure or BPMN conformance/iu);
+  assert.deepEqual(
+    [...html.matchAll(/data-beta-content-id="([^"]+)"/gu)].map((match) => match[1]),
+    muePreviewBetaCheckpoints.map(({ id }) => id),
+  );
+  for (const label of [
+    "Production journey",
+    "Registered executable capability",
+    "Generated evidence",
+    "Reviewed checkpoint only",
+    "No Product 2 executable surface",
+  ]) {
+    assert.match(html, new RegExp(label, "u"));
+  }
+  assert.equal(
+    [...html.matchAll(/data-capability-id="([^"]+)"/gu)].length,
+    mvpCapabilityCatalog.capabilities.length,
+    "Beta checkpoint rows must not change the executable-capability denominator",
   );
 });

@@ -7,6 +7,15 @@ import type {
   BpmnCapabilitySupport as BpmnCapabilitySupportValue,
   CibCapabilityEvidence,
 } from "../../../../model-corpus/mvp-capabilities.ts";
+import {
+  MuePreviewBetaEvidenceKind,
+  MuePreviewBetaProductSurface,
+  muePreviewBetaCheckpoints,
+} from "./mue-preview-beta-checkpoints.ts";
+import type {
+  MuePreviewBetaEvidenceKind as MuePreviewBetaEvidenceKindValue,
+  MuePreviewBetaProductSurface as MuePreviewBetaProductSurfaceValue,
+} from "./mue-preview-beta-checkpoints.ts";
 
 import styles from "./capabilities-panel.module.css";
 
@@ -45,7 +54,34 @@ export function CapabilitiesPanel({ productVersion }: CapabilitiesPanelProps) {
       <aside className={styles.boundary} aria-label="Coverage boundary">
         <strong>Not a conformance claim.</strong> Each row is an exact, restricted executable profile. BPMN coverage, selected CIB compatibility evidence, and platform journey coverage remain separate measures.
       </aside>
-      <div className={styles.tableOwner}>
+      <div className={styles.beta}>
+        <h3>MUE Preview Beta</h3>
+        <p>All seven reviewed checkpoint boundaries are integrated. This delivery checkpoint is not full MUE closure or BPMN conformance; each evidence kind and remaining limit stays explicit.</p>
+        <div className={`${styles.tableOwner} ${styles.betaTable}`}>
+          <table>
+            <caption>MUE Preview Beta checkpoint boundaries</caption>
+            <thead>
+              <tr>
+                <th scope="col">Checkpoint</th>
+                <th scope="col">Evidence</th>
+                <th scope="col">Product surface</th>
+                <th scope="col">Remaining limit</th>
+              </tr>
+            </thead>
+            <tbody>
+              {muePreviewBetaCheckpoints.map((checkpoint) => (
+                <tr key={checkpoint.id} data-beta-content-id={checkpoint.id}>
+                  <th scope="row" data-label="Checkpoint">{checkpoint.title}</th>
+                  <td data-label="Evidence">{betaEvidenceLabel(checkpoint.evidenceKind)}</td>
+                  <td data-label="Product surface">{betaSurfaceLabel(checkpoint.productSurface)}</td>
+                  <td data-label="Remaining limit">{checkpoint.boundary}; {checkpoint.remainingLimit}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div className={`${styles.tableOwner} ${styles.capabilityTable}`}>
         <table>
           <caption>Executable BPMN element and semantic-variant overview</caption>
           <thead>
@@ -94,5 +130,29 @@ function cibEvidenceLabel(evidence: CibCapabilityEvidence): string {
       return "No CIB target selected";
     case CibCapabilityEvidenceKind.NotApplicable:
       return "Not a CIB compatibility claim";
+  }
+}
+
+function betaEvidenceLabel(evidenceKind: MuePreviewBetaEvidenceKindValue): string {
+  switch (evidenceKind) {
+    case MuePreviewBetaEvidenceKind.GeneratedEvidence:
+      return "Generated evidence";
+    case MuePreviewBetaEvidenceKind.ProductionJourney:
+      return "Production journey";
+    case MuePreviewBetaEvidenceKind.RegisteredExecutableCapability:
+      return "Registered executable capability";
+    case MuePreviewBetaEvidenceKind.ReviewedCheckpointOnly:
+      return "Reviewed checkpoint only";
+  }
+}
+
+function betaSurfaceLabel(surface: MuePreviewBetaProductSurfaceValue): string {
+  switch (surface) {
+    case MuePreviewBetaProductSurface.None:
+      return "No Product 2 executable surface";
+    case MuePreviewBetaProductSurface.About:
+    case MuePreviewBetaProductSurface.DefinitionsAndTriggers:
+    case MuePreviewBetaProductSurface.Operations:
+      return surface;
   }
 }

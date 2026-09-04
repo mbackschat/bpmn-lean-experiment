@@ -2,7 +2,7 @@
 
 ## Status
 
-Lifecycle: owner-approved
+Lifecycle: implemented-awaiting-closure
 Review: approved-with-required-edits
 
 ## Decision
@@ -100,7 +100,7 @@ Reopen before changing the seven-item denominator or order, reclassifying an ite
 
 ## Guard and owner preflight
 
-`node scripts/what-binds.ts` routes this proposal through all seven detail maps and 49 documentation guards. The bounded implementation owners are the new checkpoint catalog, the 93-nonblank-line About panel with 707 lines before its review target, the 82-line component test with 718 lines before its target, the 299-line UI-quality test with 501 lines before its target, a new integration guard, the 263-line feedback-efficiency guard with 537 lines before its target, and root `package.json`. No size exception or dependency change is proposed.
+At approved proposal target `37020ccc3f5ca58a3118b55427a87d7bb484cbfb`, `node scripts/what-binds.ts` routed this proposal through all seven detail maps and 49 documentation guards. The bounded implementation owners were the new checkpoint catalog, the 93-nonblank-line About panel with 707 lines before its review target, the 82-line component test with 718 lines before its target, the 299-line UI-quality test with 501 lines before its target, a new integration guard, the 263-line feedback-efficiency guard with 537 lines before its target, and root `package.json`. No size exception or dependency change was proposed.
 
 ## Independent cold-review receipt
 

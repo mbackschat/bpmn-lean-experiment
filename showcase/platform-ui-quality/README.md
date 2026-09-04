@@ -16,7 +16,7 @@ The M5 Flow-node metrics fixture adds two exact definition versions, aggregate m
 
 The M5 operator-audit fixture adds one exact canonical `bpmn-lean.operator-audit.v1` attachment with independently ordered Work and incident-action streams, equal and regressing timestamp witnesses, separate source-local counts and heads, independent execution and audit failure controls, empty streams, and a hostile private-host-field response. It proves keyboard selection of Operator history, non-interleaved accessible collections, all-or-unavailable audit rendering, independence from committed execution availability, focused audit failure, recursive private-host-fact exclusion, retained exact download bytes and filename, and document, detail, section, collection, row, and action containment at both desktop widths.
 
-The About fixture proves that the package-bound product version, BPMN 2.0.2 target, complete canonical executable-capability identity set, row-level restrictions, separate CIB Seven evidence, and explicit non-conformance warning remain visible, keyboard-reachable, and free of horizontal overflow at both desktop widths.
+The About fixture proves that the package-bound product version, BPMN 2.0.2 target, complete canonical executable-capability identity set, row-level restrictions, separate CIB Seven evidence, and explicit non-conformance warning remain visible, keyboard-reachable, and free of horizontal overflow at both desktop widths. It separately proves the exact seven MUE Preview Beta rows, their evidence classifications and checkpoint-only absences, their separation from the executable-capability denominator, and their responsive containment.
 
 The geometry oracle checks each named owner directly, including its `scrollWidth <= clientWidth` invariant, so a clipped inner overflow cannot pass merely because the document itself does not scroll. The fixtures deliberately include multiple tasks and long task, process, actor, candidate-group, and occurrence identities.
 
@@ -52,12 +52,13 @@ Before pushing a change that also affects Product 2 platform packages or showcas
 
 The optional screenshot is reviewed in the digest-pinned `mcr.microsoft.com/playwright:v1.62.1-noble` container declared by [the Product 2 UI-quality workflow](../../.github/workflows/ui-quality.yml). Start that workflow manually with `regenerate_baselines` enabled to run the one explicit screenshot with Playwright's `--update-snapshots` option. The workflow uploads one candidate without modifying the repository. Review it before copying it into a normal pull request. Ordinary local and CI commands neither compare nor update pixels.
 
-Each registered release acceptance composes its real Temporal-backed showcase with this deterministic UI-quality lane. The current Human Work, Incident Operations, and MUE Preview Alpha entry points are:
+Each registered release acceptance composes its real Temporal-backed showcase with this deterministic UI-quality lane. MUE Preview Beta reuses the existing Alpha and definition-scoped correlated Message journeys instead of adding another host harness. The current Human Work, Incident Operations, Alpha, and Beta entry points are:
 
 ```sh
 ./scripts/pnpm.sh run test:release:m3
 ./scripts/pnpm.sh run test:release:m4
 ./scripts/pnpm.sh run test:release:mue-preview-alpha
+./scripts/pnpm.sh run test:release:mue-preview-beta
 ```
 
 This lane is intentionally absent from `scripts/verify.sh` and Product 1 feedback loops. A UI-quality failure does not slow or redefine semantic work, and semantic verification does not need a browser. The [three-level verification policy](../../docs/TESTING-SPEC.md#three-level-verification-policy) defines focused commit checks, exact pre-push workflow checks, and milestone/tag gates.
