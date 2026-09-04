@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import { ArtifactPutStatus } from "@bpmn-lean/platform-artifact-store";
 import {
   DefinitionCorrelatedMessageCapabilityStatus,
   DefinitionCorrelatedMessagePublicationStatus,
@@ -240,7 +241,7 @@ function createFixture(options: FixtureOptions = {}) {
     ),
   } satisfies DefinitionRepository;
   const artifacts = {
-    put: async () => ({ inserted: true }) as const,
+    put: async () => ({ status: ArtifactPutStatus.Stored }),
     get: async () => {
       const artifact = options.artifact === undefined ? bytes : options.artifact;
       return artifact === null ? null : Uint8Array.from(artifact);

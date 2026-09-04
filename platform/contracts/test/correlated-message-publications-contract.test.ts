@@ -56,11 +56,10 @@ const request = {
 } as const satisfies PutDefinitionCorrelatedMessagePublicationRequest;
 
 function semanticPublication(
-  outcome: DefinitionCorrelatedMessagePublication["resolution"] extends infer Resolution
-    ? Resolution extends { kind: "semantic" }
-      ? Resolution["outcome"]
-      : never
-    : never,
+  outcome: Extract<
+    DefinitionCorrelatedMessagePublication["resolution"],
+    { kind: "semantic" }
+  >["outcome"],
 ): DefinitionCorrelatedMessagePublication {
   return {
     definition,
