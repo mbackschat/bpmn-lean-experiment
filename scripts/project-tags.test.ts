@@ -32,12 +32,33 @@ async function initializeRepository(repository: string, version = "0.2.0"): Prom
   git(repository, "init", "--quiet");
   git(repository, "config", "user.name", "Project Tag Test");
   git(repository, "config", "user.email", "project-tags@example.invalid");
+  await mkdir(path.join(repository, "scripts"), { recursive: true });
   await writeFile(
     path.join(repository, "package.json"),
     `${JSON.stringify({ version }, null, 2)}\n`,
     "utf8",
   );
-  git(repository, "add", "package.json");
+  await writeFile(
+    path.join(repository, "publication-statistics.status"),
+    "ok\n",
+    "utf8",
+  );
+  await writeFile(
+    path.join(repository, "scripts/publication-statistics.ts"),
+    [
+      'import { readFileSync } from "node:fs";',
+      'const status = readFileSync(new URL("../publication-statistics.status", import.meta.url), "utf8").trim();',
+      'if (status === "ok") {',
+      '  process.stdout.write("PUBLICATION_STATISTICS_OK\\n");',
+      '} else {',
+      '  process.stderr.write(`${status}\\n`);',
+      '  process.exitCode = 1;',
+      '}',
+      "",
+    ].join("\n"),
+    "utf8",
+  );
+  git(repository, "add", "package.json", "publication-statistics.status", "scripts/publication-statistics.ts");
   git(repository, "commit", "--quiet", "-m", "baseline");
   return git(repository, "rev-parse", "HEAD");
 }
@@ -132,6 +153,47 @@ test("binds release tags to the committed package version and refuses collisions
     git(repository, "tag", "--delete", "v0.2.0-rc.1");
     git(repository, "tag", "v0.2.0-rc.1", head);
     assert.throws(() => createProjectTag(repository, request), /annotated/u);
+  } finally {
+    await rm(repository, { recursive: true, force: true });
+  }
+});
+
+test("refuses phase and release tags without current publication statistics", async () => {
+  const repository = await mkdtemp(path.join(os.tmpdir(), "project-tag-publication-"));
+  try {
+    await initializeRepository(repository);
+
+    await writeFile(
+      path.join(repository, "publication-statistics.status"),
+      "PUBLICATION_STATISTICS_STALE",
+      "utf8",
+    );
+    git(repository, "add", "publication-statistics.status");
+    git(repository, "commit", "--quiet", "-m", "make statistics stale");
+    assert.throws(
+      () => createProjectTag(repository, {
+        kind: ProjectTagKind.Phase,
+        identifier: "stale-statistics",
+        message: "Stale statistics must block publication",
+      }),
+      /PUBLICATION_STATISTICS_STALE/u,
+    );
+
+    await writeFile(
+      path.join(repository, "publication-statistics.status"),
+      "publication statistics require Tokei on the maintainer's machine",
+      "utf8",
+    );
+    git(repository, "add", "publication-statistics.status");
+    git(repository, "commit", "--quiet", "-m", "make Tokei unavailable");
+    assert.throws(
+      () => createProjectTag(repository, {
+        kind: ProjectTagKind.Release,
+        identifier: "0.2.0",
+        message: "Release 0.2.0",
+      }),
+      /publication statistics require Tokei/u,
+    );
   } finally {
     await rm(repository, { recursive: true, force: true });
   }

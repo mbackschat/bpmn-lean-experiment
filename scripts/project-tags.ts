@@ -114,6 +114,28 @@ function assertReleaseVersion(repository: string, request: ProjectTagRequest): v
   }
 }
 
+function assertPublicationStatistics(repository: string): void {
+  const result = spawnSync(
+    process.execPath,
+    [path.join(repository, "scripts/publication-statistics.ts"), "--check"],
+    {
+      cwd: repository,
+      encoding: "utf8",
+    },
+  );
+  if (result.status === null) {
+    throw result.error ?? new Error("publication statistics check did not exit");
+  }
+  if (result.status !== 0) {
+    const detail = [result.stderr.trim(), result.stdout.trim()]
+      .filter((value) => value.length > 0)
+      .join("\n");
+    throw new Error(
+      `publication statistics check failed with exit ${result.status}${detail.length === 0 ? "" : `: ${detail}`}`,
+    );
+  }
+}
+
 function assertAnnotatedTag(
   repository: string,
   name: string,
@@ -141,7 +163,7 @@ function assertAnnotatedTag(
   return target;
 }
 
-/** Creates or verifies one immutable annotated tag at a clean committed HEAD. */
+/** Creates or verifies one immutable annotated tag at a clean, publication-ready committed HEAD. */
 export function createProjectTag(
   repository: string,
   request: ProjectTagRequest,
@@ -150,6 +172,7 @@ export function createProjectTag(
   const name = projectTagName(request);
   assertMessage(request.message);
   assertReleaseVersion(repository, request);
+  assertPublicationStatistics(repository);
   const target = git(repository, ["rev-parse", "--verify", "HEAD^{commit}"]);
   const reference = `refs/tags/${name}`;
   const existing = gitResult(repository, ["show-ref", "--verify", "--quiet", reference]);
