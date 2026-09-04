@@ -92,6 +92,15 @@ async function writeJsonLines(
   );
 }
 
+/**
+ * Runs the Lean interpreter for one compiled differential batch.
+ *
+ * Before Lean prints any result record,
+ * [validateDefinitionInput](../../../BpmnSemantics/SemanticProcessJson/DefinitionInput.lean)
+ * independently recomputes `lowerCheckedProcess` from the checked graph and refuses an unequal
+ * supplied Semantic Process program. The returned `programMatchesLeanLowering` flag therefore
+ * records a completed fail-fast check; this function does not establish equality from that flag alone.
+ */
 export async function runLeanTargets<Case extends SemanticDifferentialCase>(
   contexts: ReadonlyArray<PipelineContext<Case>>,
   inputPath: string,
