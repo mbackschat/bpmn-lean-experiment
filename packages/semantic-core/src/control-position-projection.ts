@@ -240,13 +240,14 @@ function scopeOccurrenceIsValid(
     return false;
   }
 
-  if (occurrence.parent !== null) {
+  const parent = occurrence.parent;
+  if (parent !== null) {
     const parents = state.scopeOccurrences.filter(({ id }) =>
-      sameScopeOccurrence(id, occurrence.parent!)
+      sameScopeOccurrence(id, parent)
     );
     return parents.length === 1 &&
-      definitionParent === occurrence.parent.definitionScopeId &&
-      occurrence.id.processInstanceId === occurrence.parent.processInstanceId;
+      definitionParent === parent.definitionScopeId &&
+      occurrence.id.processInstanceId === parent.processInstanceId;
   }
   if (definitionParent !== null) {
     return false;

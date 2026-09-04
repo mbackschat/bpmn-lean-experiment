@@ -19,6 +19,11 @@ import {
 } from "./semantic-process-state.js";
 import { compareCanonicalStrings } from "./wire.js";
 
+type CompensationTriggers = NonNullable<RuntimeState["compensationTriggers"]>;
+type CompensationHandlerEffectWaits = NonNullable<
+  RuntimeState["compensationHandlerEffectWaits"]
+>;
+
 /** Commits one exact semantic compensation result or refuses without consuming its wait. */
 export function completeCompensationHandlerEffect(
   program: SemanticProcessProgram,
@@ -52,16 +57,18 @@ export function completeCompensationHandlerEffect(
 
   switch (stimulus.result.kind) {
     case EffectExecutionResultKind.Success:
-      return completeSuccess(program, state, trigger, handler);
+      return completeSuccess(program, state, triggers, waits, trigger, handler);
     case EffectExecutionResultKind.BpmnError:
-      return completeFailure(program, state, trigger, handler, stimulus);
+      return completeFailure(program, state, triggers, trigger, handler, stimulus);
   }
 }
 
 function completeSuccess(
   program: SemanticProcessProgram,
   state: RuntimeState,
-  trigger: NonNullable<RuntimeState["compensationTriggers"]>[number],
+  triggers: CompensationTriggers,
+  waits: CompensationHandlerEffectWaits,
+  trigger: CompensationTriggers[number],
   handler: Extract<CompensationHandlerExecution, { readonly lifecycle: "compensating" }>,
 ): RuntimeState | null {
   const completedHandler = terminalHandler(handler, "compensated");
@@ -74,7 +81,7 @@ function completeSuccess(
     lifecycle: allCompensated ? "succeeded" : "active",
     handlers,
   } as const;
-  const remainingWaits = state.compensationHandlerEffectWaits!.filter(({ id }) =>
+  const remainingWaits = waits.filter(({ id }) =>
     !sameOccurrence(id, handler.effectId)
   );
   const activated = allCompensated
@@ -84,18 +91,18 @@ function completeSuccess(
         compensationHandlerEffectWaits: remainingWaits,
       }, progressed);
   if (activated === null) return null;
-  const triggers = state.compensationTriggers!.map((candidate) =>
+  const progressedTriggers = triggers.map((candidate) =>
     candidate === trigger ? activated.trigger : candidate
   ).sort(compareTriggers);
-  const waits = [...remainingWaits, ...activated.waits].sort(compareWaits);
-  if (!executionFits(program, triggers, waits)) return null;
+  const progressedWaits = [...remainingWaits, ...activated.waits].sort(compareWaits);
+  if (!executionFits(program, progressedTriggers, progressedWaits)) return null;
   const prospective = {
     ...state,
     controlTokens: allCompensated
       ? addToken(state.controlTokens, trigger.output, trigger.owner)
       : state.controlTokens,
-    compensationTriggers: triggers,
-    compensationHandlerEffectWaits: waits,
+    compensationTriggers: progressedTriggers,
+    compensationHandlerEffectWaits: progressedWaits,
     effectActivations: activated.effectActivations,
   };
   return compensationExecutionStateDefects(program, prospective).length === 0
@@ -106,7 +113,8 @@ function completeSuccess(
 function completeFailure(
   program: SemanticProcessProgram,
   state: RuntimeState,
-  trigger: NonNullable<RuntimeState["compensationTriggers"]>[number],
+  triggers: CompensationTriggers,
+  trigger: CompensationTriggers[number],
   handler: Extract<CompensationHandlerExecution, { readonly lifecycle: "compensating" }>,
   stimulus: CompleteEffectStimulus,
 ): RuntimeState | null {
@@ -160,7 +168,7 @@ function completeFailure(
     ...(state.compensationParentContextRetentions === undefined
       ? {}
       : { compensationParentContextRetentions: [] }),
-    compensationTriggers: state.compensationTriggers!.map((candidate) =>
+    compensationTriggers: triggers.map((candidate) =>
       candidate === trigger ? failedTrigger : candidate
     ).sort(compareTriggers),
     compensationHandlerEffectWaits: [],
@@ -184,22 +192,22 @@ function terminalHandler(
 }
 
 function compareTriggers(
-  left: NonNullable<RuntimeState["compensationTriggers"]>[number],
-  right: NonNullable<RuntimeState["compensationTriggers"]>[number],
+  left: CompensationTriggers[number],
+  right: CompensationTriggers[number],
 ): number {
   return compareOccurrences(left.id, right.id);
 }
 
 function compareWaits(
-  left: NonNullable<RuntimeState["compensationHandlerEffectWaits"]>[number],
-  right: NonNullable<RuntimeState["compensationHandlerEffectWaits"]>[number],
+  left: CompensationHandlerEffectWaits[number],
+  right: CompensationHandlerEffectWaits[number],
 ): number {
   return compareOccurrences(left.id, right.id);
 }
 
 function compareOccurrences(
-  left: NonNullable<RuntimeState["compensationTriggers"]>[number]["id"],
-  right: NonNullable<RuntimeState["compensationTriggers"]>[number]["id"],
+  left: CompensationTriggers[number]["id"],
+  right: CompensationTriggers[number]["id"],
 ): number {
   return compareCanonicalStrings(left.processInstanceId, right.processInstanceId) ||
     compareCanonicalStrings(left.elementId, right.elementId) ||

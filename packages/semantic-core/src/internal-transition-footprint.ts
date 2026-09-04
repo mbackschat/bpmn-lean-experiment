@@ -513,9 +513,11 @@ function waitFootprint(
   const matchingTokens = state.controlTokens.filter(({ placeId, multiplicity }) =>
     placeId === operation.input && multiplicity > 0
   );
+  const matchingToken = matchingTokens[0];
   const inputPlaces = program.controlPlaces.filter(({ id }) =>
     id === operation.input
   );
+  const inputPlace = inputPlaces[0];
   const inputOwners = program.controlPlaceScopes.filter(({ controlPlaceId }) =>
     controlPlaceId === operation.input
   );
@@ -523,8 +525,10 @@ function waitFootprint(
     (counters.find((counter) => counter.elementId === elementId)?.count ?? 0) + 1;
   if (
     matchingTokens.length !== 1 ||
-    !sameScopeOccurrence(matchingTokens[0]!.owner, owner) ||
+    matchingToken === undefined ||
+    !sameScopeOccurrence(matchingToken.owner, owner) ||
     inputPlaces.length !== 1 ||
+    inputPlace === undefined ||
     inputOwners.length !== 1 ||
     inputOwners[0]?.scopeId !== owner.definitionScopeId ||
     !Number.isSafeInteger(activation) ||
@@ -635,7 +639,7 @@ function waitFootprint(
   ]);
   const positionDelta: PublicControlPositionDelta = {
     consumedTokens: [{
-      sequenceFlowId: inputPlaces[0]!.origin.elementId,
+      sequenceFlowId: inputPlace.origin.elementId,
       owner,
       multiplicity: 1,
     }],

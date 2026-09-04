@@ -92,28 +92,32 @@ export function candidateProcessId(
   owner: ScopeOccurrenceId,
 ): string | null {
   if (state.control.kind === ControlStateKind.NotStarted) return null;
-  let record = only(state.scopeOccurrences.filter(({ id }) => sameScopeOccurrence(id, owner)));
+  const record = only(state.scopeOccurrences.filter(({ id }) => sameScopeOccurrence(id, owner)));
   const seen = new Set<string>();
   if (record === undefined) return null;
-  while (record.parent !== null) {
-    if (seen.has(scopeKey(record.id))) return null;
-    seen.add(scopeKey(record.id));
-    const definition = only(program.definitionScopes.filter(({ id }) => id === record!.id.definitionScopeId));
-    const parent = only(state.scopeOccurrences.filter(({ id }) => sameScopeOccurrence(id, record!.parent!)));
+  let current = record;
+  while (true) {
+    const child = current;
+    const parentId = child.parent;
+    if (parentId === null) break;
+    if (seen.has(scopeKey(child.id))) return null;
+    seen.add(scopeKey(child.id));
+    const definition = only(program.definitionScopes.filter(({ id }) => id === child.id.definitionScopeId));
+    const parent = only(state.scopeOccurrences.filter(({ id }) => sameScopeOccurrence(id, parentId)));
     if (definition === undefined || parent === undefined ||
         definition.parentScopeId !== parent.id.definitionScopeId ||
-        parent.id.processInstanceId !== record.id.processInstanceId) return null;
-    record = parent;
+        parent.id.processInstanceId !== child.id.processInstanceId) return null;
+    current = parent;
   }
   const root = only(program.definitionScopes.filter(({ id, parentScopeId }) =>
-    id === record!.id.definitionScopeId && parentScopeId === null
+    id === current.id.definitionScopeId && parentScopeId === null
   ));
   if (root === undefined) return null;
-  if (record.id.processInstanceId === state.control.instanceId) {
+  if (current.id.processInstanceId === state.control.instanceId) {
     return root.originElementId === program.processId ? program.processId : null;
   }
   const call = only(state.calledProcessOccurrences.filter(({ calledRoot }) =>
-    sameScopeOccurrence(calledRoot, record!.id)
+    sameScopeOccurrence(calledRoot, current.id)
   ));
   return call !== undefined && call.calledProcessId === root.originElementId
     ? call.calledProcessId

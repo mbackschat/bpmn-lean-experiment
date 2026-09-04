@@ -30,6 +30,8 @@ function activeIterations(
         name: binding.operation.data.input.taskDataInputId,
         value: {
           kind: VariableValueKind.String,
+          // parallelMultiInstanceBindingsForState admits a binding only when slots and snapshot
+          // have equal length, so every slot index names one frozen input value.
           value: binding.controller.snapshot[loopCounter]!,
         },
       },

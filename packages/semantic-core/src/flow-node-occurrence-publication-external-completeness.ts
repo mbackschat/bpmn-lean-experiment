@@ -375,7 +375,7 @@ function boundaryTimerLifecycle(
         timerId,
       );
       if (hosts === null) failCompleteness();
-      const host = hosts[0]!;
+      const host = hosts[0] ?? failCompleteness();
       return lifecycleDelta(
         [],
         hosts.map((entry) => lifecycleEnd(
