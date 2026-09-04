@@ -8,19 +8,10 @@ import {
   assertPlanControlPlane,
   parseOrderedWork,
 } from "./document-control-plane.ts";
+import { muePreviewBetaTestOracle } from "./mue-preview-beta-test-oracle.ts";
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 const planPath = path.join(projectRoot, "docs/PLAN.md");
-
-const muePreviewBetaCriticalPath = [
-  ["SEQUENTIAL-MULTI-INSTANCE", "satisfied"],
-  ["INTERNAL-COMMUTATION", "satisfied"],
-  ["PARALLEL-MULTI-INSTANCE", "satisfied"],
-  ["MECHANISM-MATURITY-EVIDENCE", "satisfied"],
-  ["DATA-AND-TASK-MECHANISMS", "satisfied"],
-  ["EVENT-SUBSCRIPTIONS", "satisfied"],
-  ["COMPENSATION-TRANSACTIONS", "satisfied"],
-] as const;
 
 const muePreviewBetaRiskBands = [
   ["Subscription population/concurrency", "satisfied"],
@@ -67,7 +58,7 @@ function assertMuePreviewBetaCriticalPath(plan: string): void {
   );
   assert.deepEqual(
     rows.map(({ id, state }) => [id, state]),
-    muePreviewBetaCriticalPath,
+    muePreviewBetaTestOracle.map(({ id }) => [id, "satisfied"]),
     "the MUE Preview Beta table must retain all seven authoritative content IDs and their current states",
   );
   const orderedActive = parseOrderedWork(plan).find(({ state }) => state === "active");

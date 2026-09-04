@@ -8,67 +8,9 @@ import { fileURLToPath } from "node:url";
 import {
   muePreviewBetaCheckpoints,
 } from "../platform/apps/web/src/mue-preview-beta-checkpoints.ts";
+import { muePreviewBetaTestOracle } from "./mue-preview-beta-test-oracle.ts";
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
-
-const expectedCheckpoints = [
-  {
-    id: "SEQUENTIAL-MULTI-INSTANCE",
-    title: "Sequential Multi-Instance",
-    evidenceKind: "productionJourney",
-    productSurface: "Operations",
-    boundary: "Closure-reviewed bounded natural and Timer-interrupted Sequential Multi-Instance journey",
-    remainingLimit: "broader Multi-Instance behavior remains outside the slice.",
-  },
-  {
-    id: "INTERNAL-COMMUTATION",
-    title: "Internal Commutation",
-    evidenceKind: "reviewedCheckpointOnly",
-    productSurface: "None",
-    boundary: "Approved first green final-implementation semantic checkpoint",
-    remainingLimit: "scheduled-mode admission, region footprints, and arbitrary-batch theorem remain open.",
-  },
-  {
-    id: "PARALLEL-MULTI-INSTANCE",
-    title: "Parallel Multi-Instance",
-    evidenceKind: "registeredExecutableCapability",
-    productSurface: "About",
-    boundary: "Closure-reviewed bounded parallel User Task capability",
-    remainingLimit: "no dedicated Product 2 journey is claimed.",
-  },
-  {
-    id: "MECHANISM-MATURITY-EVIDENCE",
-    title: "Mechanism Maturity Evidence",
-    evidenceKind: "generatedEvidence",
-    productSurface: "About",
-    boundary: "Complete generated family vector with separate dimensions",
-    remainingLimit: "it is not a support percentage or semantic capability.",
-  },
-  {
-    id: "DATA-AND-TASK-MECHANISMS",
-    title: "Data and Task Mechanisms",
-    evidenceKind: "registeredExecutableCapability",
-    productSurface: "About",
-    boundary: "Closure-reviewed direct Activity input and output slices",
-    remainingLimit: "no Work form or browser data-editing workflow is claimed.",
-  },
-  {
-    id: "EVENT-SUBSCRIPTIONS",
-    title: "Event Subscriptions",
-    evidenceKind: "productionJourney",
-    productSurface: "Definitions / Triggers",
-    boundary: "Closure-reviewed one-key definition-scoped Message correlation",
-    remainingLimit: "composite keys, buffering, broadcast, and other Message loci remain open.",
-  },
-  {
-    id: "COMPENSATION-TRANSACTIONS",
-    title: "Compensation and Transactions",
-    evidenceKind: "reviewedCheckpointOnly",
-    productSurface: "None",
-    boundary: "First reviewed end-to-end private Compensation checkpoint",
-    remainingLimit: "profile registration, public commands, corpus, and Product 2 capability remain absent.",
-  },
-] as const;
 
 test("binds the Product 2 Beta catalog to the exact PLAN denominator and reviewed matrix", async () => {
   const [plan, specification] = await Promise.all([
@@ -78,10 +20,17 @@ test("binds the Product 2 Beta catalog to the exact PLAN denominator and reviewe
 
   assert.deepEqual(
     betaContentIds(plan),
-    expectedCheckpoints.map(({ id }) => id),
+    muePreviewBetaTestOracle.map(({ id }) => id),
     "PLAN owns the exhaustive Beta content IDs and order",
   );
-  assert.deepEqual(muePreviewBetaCheckpoints, expectedCheckpoints);
+  assert.deepEqual(muePreviewBetaCheckpoints, muePreviewBetaTestOracle.map((checkpoint) => ({
+    id: checkpoint.id,
+    title: checkpoint.title,
+    evidenceKind: checkpoint.evidenceKind,
+    productSurface: checkpoint.productSurface,
+    boundary: checkpoint.boundary,
+    remainingLimit: checkpoint.remainingLimit,
+  })));
   assert.equal(Object.isFrozen(muePreviewBetaCheckpoints), true);
   assert.equal(
     muePreviewBetaCheckpoints.every((checkpoint) => Object.isFrozen(checkpoint)),
@@ -90,7 +39,7 @@ test("binds the Product 2 Beta catalog to the exact PLAN denominator and reviewe
   );
   assert.deepEqual(
     specificationMatrix(specification),
-    expectedCheckpoints.map(({ id, evidenceKind, productSurface, boundary, remainingLimit }) => ({
+    muePreviewBetaTestOracle.map(({ id, evidenceKind, productSurface, boundary, remainingLimit }) => ({
       id,
       evidenceKind,
       productSurface,
