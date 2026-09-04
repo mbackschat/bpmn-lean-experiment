@@ -71,9 +71,9 @@ const expectedCheckpoints = [
 ] as const;
 
 test("binds the Product 2 Beta catalog to the exact PLAN denominator and reviewed matrix", async () => {
-  const [plan, proposal] = await Promise.all([
+  const [plan, specification] = await Promise.all([
     read("docs/PLAN.md"),
-    read("docs/MUE-PREVIEW-BETA-PROPOSAL.md"),
+    read("docs/MUE-PREVIEW-BETA-SPEC.md"),
   ]);
 
   assert.deepEqual(
@@ -89,14 +89,14 @@ test("binds the Product 2 Beta catalog to the exact PLAN denominator and reviewe
     "the static catalog must also be immutable at runtime",
   );
   assert.deepEqual(
-    proposalMatrix(proposal),
+    specificationMatrix(specification),
     expectedCheckpoints.map(({ id, evidenceKind, productSurface, boundary, remainingLimit }) => ({
       id,
       evidenceKind,
       productSurface,
       boundary: `${boundary}; ${remainingLimit}`,
     })),
-    "the approved proposal and Product 2 catalog must retain one matrix",
+    "the implemented specification and Product 2 catalog must retain one matrix",
   );
 });
 
@@ -166,13 +166,13 @@ function betaContentIds(plan: string): ReadonlyArray<string> {
     .filter((id): id is string => id !== undefined);
 }
 
-function proposalMatrix(proposal: string): ReadonlyArray<Readonly<{
+function specificationMatrix(specification: string): ReadonlyArray<Readonly<{
   id: string;
   evidenceKind: string;
   productSurface: string;
   boundary: string;
 }>> {
-  return [...proposal.matchAll(
+  return [...specification.matchAll(
     /^\| `([A-Z][A-Z0-9-]*)` \| `([^`]+)` \| ([^|]+) \| (.+) \|$/gmu,
   )].map((match) => {
     const [, id, evidenceKind, productSurface, boundary] = match;

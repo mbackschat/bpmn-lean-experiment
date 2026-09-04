@@ -30,7 +30,7 @@ const muePreviewBetaRiskBands = [
   ["Compensation order/cancellation", "satisfied"],
   ["Cross-Workflow durability", "satisfied"],
   ["Capability and evidence closure", "satisfied"],
-  ["Beta integration", "active"],
+  ["Beta integration", "satisfied"],
 ] as const;
 
 function muePreviewBetaSection(plan: string): string {
@@ -72,8 +72,8 @@ function assertMuePreviewBetaCriticalPath(plan: string): void {
   );
   const orderedActive = parseOrderedWork(plan).find(({ state }) => state === "active");
   assert.ok(rows.every(({ state }) => state === "satisfied"), "every Beta content boundary must be satisfied before integration");
-  assert.equal(orderedActive?.id, "MUE-PREVIEW-BETA", "Beta integration must be the active ordered work after content closure");
-  assert.match(section, /^Integration state: `active`\.$/mu, "Beta integration must be active after every content row is satisfied");
+  assert.equal(orderedActive?.id, "DATA-AND-TASK-MECHANISMS", "closed Beta must hand active work to standard data and Task breadth");
+  assert.match(section, /^Integration state: `satisfied`\.$/mu, "Beta integration must remain closed after every content row is satisfied");
 
   const riskMarker = "#### Risk-first execution bands\n";
   const riskStart = section.indexOf(riskMarker);
@@ -94,12 +94,8 @@ function assertMuePreviewBetaCriticalPath(plan: string): void {
     muePreviewBetaRiskBands,
     "the MUE Preview Beta risk bands must retain their current risk-first handoff",
   );
-  const activeRiskBand = riskRows.find(([, state]) => state === "active");
-  assert.equal(
-    `Risk band: ${activeRiskBand?.[0]}.`,
-    /^Risk band: .+\.$/mu.exec(plan)?.[0],
-    "the exact resume point must name the active risk band",
-  );
+  assert.ok(riskRows.every(([, state]) => state === "satisfied"), "every Beta risk band must remain satisfied after closure");
+  assert.doesNotMatch(plan, /^Risk band: Beta integration\.$/mu, "the exact resume point must leave the closed Beta risk band");
 }
 
 test("keeps the plan as one compact execution control document", async () => {
@@ -159,26 +155,19 @@ test("makes the complete MUE Preview Beta critical path executable", async () =>
     /Engine v0\.3 work/u,
   );
   assert.throws(
-    () => assertMuePreviewBetaCriticalPath(plan.replace("Integration state: `active`.", "Integration state: `blocked`.")),
-    /must be active/u,
+    () => assertMuePreviewBetaCriticalPath(plan.replace("Integration state: `satisfied`.", "Integration state: `blocked`.")),
+    /must remain closed/u,
   );
   assert.throws(
     () => assertMuePreviewBetaCriticalPath(plan.replace(
-      "| 8 | `active` | Beta integration |",
+      "| 8 | `satisfied` | Beta integration |",
       "| 8 | `queued` | Beta integration |",
     )),
     /risk-first handoff/u,
   );
-  assert.throws(
-    () => assertMuePreviewBetaCriticalPath(plan.replace(
-      "Risk band: Beta integration.",
-      "Risk band: Cross-Workflow durability.",
-    )),
-    /active risk band/u,
-  );
 });
 
-test("keeps the MUE Preview Beta testing contract aligned with the active integration handoff", async () => {
+test("keeps the MUE Preview Beta testing contract aligned with the closed integration handoff", async () => {
   const testingSpec = await readFile(path.join(projectRoot, "docs/TESTING-SPEC.md"), "utf8");
   assert.match(
     testingSpec,

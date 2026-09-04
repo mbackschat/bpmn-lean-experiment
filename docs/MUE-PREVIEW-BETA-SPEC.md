@@ -1,19 +1,18 @@
-# MUE Preview Beta integration proposal
+# MUE Preview Beta integration specification
 
 ## Status
 
-Lifecycle: implemented-awaiting-closure
-Review: approved-with-required-edits
+Implemented, independently closure-reviewed, and evidence-closed. The exact implemented and absent Product 2 boundary is maintained by [`implementation-status-owner:BPM-PLATFORM`](BPM-PLATFORM-IMPLEMENTATION-MAP.md), the release-assurance boundary by [`implementation-status-owner:ASSURANCE-ADOPTION`](ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md), and the governed review history is retained in the receipt below.
 
-## Decision
+## Implemented boundary
 
-MUE Preview Beta is one Product 2 delivery checkpoint over seven already reviewed content boundaries. It adds a read-only seven-row checkpoint disclosure to the existing About destination and one release-acceptance command that composes the existing production-backed Sequential Multi-Instance and definition-scoped Message-correlation journeys with the existing responsive UI-quality lane. It adds no BPMN meaning, semantic profile, source admission, runtime transition, Temporal hosting mechanism, public engine operation, or new interactive product workflow.
+MUE Preview Beta is one Product 2 delivery checkpoint over seven already reviewed content boundaries. It provides a read-only seven-row checkpoint disclosure in the existing About destination and one release-acceptance command that composes the existing production-backed Sequential Multi-Instance and definition-scoped Message-correlation journeys with the existing responsive UI-quality lane. It adds no BPMN meaning, semantic profile, source admission, runtime transition, Temporal hosting mechanism, public engine operation, or new interactive product workflow.
 
 The checkpoint catalog is separate from the canonical executable-capability catalog. Its purpose is to state which exact evidence boundary Beta consumes, how that boundary is visible in Product 2, and what remains open. It must not change the executable-capability count, turn a proof checkpoint into a product capability, or combine BPMN, CIB, platform, and assurance evidence into one percentage.
 
-## Required, optional, and excluded
+## Contract and exclusions
 
-Required:
+The implemented contract requires:
 
 - exactly the seven content IDs and order owned by [PLAN.md](PLAN.md#mue-preview-beta-critical-path);
 - a closed evidence classification that distinguishes a production journey, a registered executable capability disclosed in About, generated evidence, and a reviewed checkpoint with no Product 2 executable surface;
@@ -23,11 +22,11 @@ Required:
 - one build-once Beta release command that reuses the existing Alpha, correlated-Message, and UI-quality gates;
 - a clean committed target, governed closure review, and immutable annotated `phase/mue-preview-beta` tag.
 
-Optional:
+The presentation may use:
 
 - compact status styling that reuses existing tokens and keeps every classification available as text.
 
-Excluded:
+The following remain excluded:
 
 - a new navigation destination, dashboard, workflow, engine API, server route, persistence record, runtime query, or Temporal service;
 - another real-Temporal showcase package or duplicated actor/runtime harness;
@@ -88,25 +87,23 @@ The existing [version and capability disclosure preflight](research/BPM-PLATFORM
 
 `test:release:mue-preview-beta` builds the Product 2 release graph once, then runs the prebuilt MUE Preview Alpha real-Temporal browser gate, the prebuilt M2 correlated-Message real-Temporal browser gate, and the prebuilt UI-quality gate. It does not rerun all seven content programmes: their immutable review receipts are Beta inputs, while this command verifies only the new integration and the two public production journeys Beta presents.
 
-The platform-web component test and UI-quality browser test require the exact seven-row order, text classifications, checkpoint-only absences, capability-catalog separation, and responsive containment. The cross-owner integration guard requires the build-once release command, the PLAN denominator, this proposal's evidence matrix, the web catalog, and the relevant documentation owners to agree.
+The platform-web component test and UI-quality browser test require the exact seven-row order, text classifications, checkpoint-only absences, capability-catalog separation, and responsive containment. The cross-owner integration guard requires the build-once release command, the PLAN denominator, this specification's evidence matrix, the web catalog, and the relevant documentation owners to agree.
 
-After implementation and documentation are committed, the complete path-selected clean-commit pre-push gate and `test:release:mue-preview-beta` must pass. Closure review must approve that immutable target before `node scripts/project-tags.ts create phase mue-preview-beta --message "MUE Preview Beta"` creates or verifies the local annotated tag. Tag creation never implies a push.
+Release acceptance requires a clean committed target to pass the complete path-selected pre-push gate and `test:release:mue-preview-beta`. Independent closure review must approve that immutable target before `node scripts/project-tags.ts create phase mue-preview-beta --message "MUE Preview Beta"` creates or verifies the local annotated tag. Tag creation never implies a push.
 
-## Same-change owners and reopen conditions
+## Owners and reopen conditions
 
-Implementation updates the Product 2 web catalog, About panel and CSS, component and browser tests, root release graph, feedback-efficiency guard, [web source map](../platform/apps/web/SOURCE-MAP.md), [web guide](../platform/apps/web/README.md), [showcase registry](../showcase/README.md), [UI-quality acceptance guide](../showcase/platform-ui-quality/README.md), [testing specification](TESTING-SPEC.md), [contributor setup guide](CONTRIBUTOR-SETUP-GUIDE.md), [architecture](ARCHITECTURE.md), [root contributor guidance](../CLAUDE.md), [`implementation-status-owner:BPM-PLATFORM`](BPM-PLATFORM-IMPLEMENTATION-MAP.md), [`implementation-status-owner:ASSURANCE-ADOPTION`](ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md), [documentation registry](README.md), and [PLAN.md](PLAN.md). The other five routed detail maps change only if implementation evidence invalidates one of their current claims.
+Changes to this boundary update the Product 2 web catalog, About panel and CSS, component and browser tests, root release graph, feedback-efficiency guard, [web source map](../platform/apps/web/SOURCE-MAP.md), [web guide](../platform/apps/web/README.md), [showcase registry](../showcase/README.md), [UI-quality acceptance guide](../showcase/platform-ui-quality/README.md), [testing specification](TESTING-SPEC.md), [contributor setup guide](CONTRIBUTOR-SETUP-GUIDE.md), [architecture](ARCHITECTURE.md), [root contributor guidance](../CLAUDE.md), [`implementation-status-owner:BPM-PLATFORM`](BPM-PLATFORM-IMPLEMENTATION-MAP.md), [`implementation-status-owner:ASSURANCE-ADOPTION`](ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md), [documentation registry](README.md), and [PLAN.md](PLAN.md). The other five routed detail maps change only if implementation evidence invalidates one of their current claims.
 
 Reopen before changing the seven-item denominator or order, reclassifying an item, adding an interactive Beta workflow, using runtime state to populate the catalog, adding another production journey, changing a content boundary, replacing the existing capability catalog, making a release-version claim, or pushing the tag.
 
-## Guard and owner preflight
+## Closure evidence
 
-At approved proposal target `37020ccc3f5ca58a3118b55427a87d7bb484cbfb`, `node scripts/what-binds.ts` routed this proposal through all seven detail maps and 49 documentation guards. The bounded implementation owners were the new checkpoint catalog, the 93-nonblank-line About panel with 707 lines before its review target, the 82-line component test with 718 lines before its target, the 299-line UI-quality test with 501 lines before its target, a new integration guard, the 263-line feedback-efficiency guard with 537 lines before its target, and root `package.json`. No size exception or dependency change was proposed.
+Closure-review target `361911b874ddc50472554c7d5dd6c7d7f9e9978e` contains the separate immutable seven-row Product 2 catalog, native responsive About table, cross-owner integration guard, and build-once release composition first implemented at `b7ac924d1bfde62ef1f2bd4b96443e40652d3713`. The existing executable-capability catalog remains unchanged, no Beta showcase package or runtime data source exists, and every checkpoint-only or deferred boundary remains explicit. The exact release acceptance passed with output SHA-256 `1ad1246cbe240837141ac0f7e0f758fffbe4f625cdca78aad420f32fdb83abfa`; the complete path-selected clean-commit pre-push boundary passed Product 1, Product 2 including PostgreSQL 18, showcase compatibility, and all 83 responsive UI tests with output SHA-256 `f342fad26f5055a5d5c098e1819eb5c2097ae20b4c55203fa0b71e65efab4469`.
 
-## Implemented closure boundary
+The closure reviewer found that both presentation tests derived row identities from the production checkpoint catalog and asserted labels only globally, so a label-to-row swap could pass. Correction `8bcd8746` gives both the component test and the two-width browser test an independent seven-row oracle and scopes each exact title, evidence label, Product 2 surface, and combined boundary/limit assertion to its content ID. A planted evidence-label swap failed at `SEQUENTIAL-MULTI-INSTANCE`; after reversion, the same reviewer approved the correction with no remaining findings.
 
-Implementation target `b7ac924d1bfde62ef1f2bd4b96443e40652d3713` contains the separate immutable seven-row Product 2 catalog, native responsive About table, exact component and two-width browser assertions, cross-owner integration guard, and build-once release composition. The existing executable-capability catalog remains unchanged, no Beta showcase package or runtime data source exists, and every checkpoint-only or deferred boundary remains explicit. The exact release acceptance passed with output SHA-256 `8b6a3ead0f3afb7a6f62be80ba6b5dbd23b74b47caf4cd8a97d6211c3ec978c5`; the complete path-selected clean-commit pre-push boundary passed Product 1, Product 2 including PostgreSQL 18, showcase compatibility, and all 83 responsive UI tests with output SHA-256 `544621b97eb5a840db18068c69e6d9eef1f9f504de41a764250302f151fc4cd9`.
-
-The implementation adds no BPMN meaning, semantic profile, checked-source or IL shape, runtime transition, Temporal hosting mechanism, public engine operation, persistence record, interactive Product 2 workflow, package release, or tag push. The local `phase/mue-preview-beta` tag remains absent until the closure review is green.
+The implementation adds no BPMN meaning, semantic profile, checked-source or IL shape, runtime transition, Temporal hosting mechanism, public engine operation, persistence record, interactive Product 2 workflow, package release, or tag push. The immutable phase tag is local by contract and never implies a push.
 
 The reproducible implementation range is `553adfb3..b7ac924d`: `+391/-14` nonblank code lines and `+30/-15` nonblank documentation lines, with elapsed implementation time unknown. The nearest same-layer comparator is MUE Preview Alpha at `+4182/-168` code and `+181/-168` documentation because both integrate already-reviewed engine behavior into a Product 2 preview and a production release gate. Beta additions fell by 3,791 code lines and 151 documentation lines because it composes the existing Alpha and correlated-Message journeys and adds only a static disclosure surface rather than another transport, actor, host, or replay boundary. Both addition measures fell, so the reflection requires no manufactured process-weight removal. The [capsule-cost ledger](CAPSULE-COST-LEDGER.md) owns the reproducible row.
 
@@ -116,4 +113,4 @@ The reproducible implementation range is `553adfb3..b7ac924d`: `+391/-14` nonbla
 |---|---|---|---|---|
 | Proposal | `37020ccc3f5ca58a3118b55427a87d7bb484cbfb` | `fork-turns-none` | `approve-with-required-edits` | `3f846c9101c3e86610370fd3f4fea5e53ab087a7` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-required` | `not-applicable` |
-| Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Closure | `361911b874ddc50472554c7d5dd6c7d7f9e9978e` | `fork-turns-none` | `approve-with-required-edits` | `8bcd8746` |

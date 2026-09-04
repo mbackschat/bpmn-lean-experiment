@@ -161,7 +161,7 @@ Show Product 2 as one coherent operator and worker journey over the engine's pub
 
 ### Maturity ribbon copy
 
-`MUE Preview Alpha ✓` → `MUE Preview Beta ◐` → `Release Candidate ○` → `MUE ○`
+`MUE Preview Alpha ✓` → `MUE Preview Beta ✓` → `Release Candidate ○` → `MUE ○`
 
 ### Boundary callout copy
 
