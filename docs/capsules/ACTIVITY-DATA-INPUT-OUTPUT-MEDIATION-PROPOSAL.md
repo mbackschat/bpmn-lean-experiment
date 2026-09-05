@@ -2,8 +2,8 @@
 
 ## Status
 
-Lifecycle: draft
-Review: pending
+Lifecycle: owner-approved
+Review: approved-with-required-edits
 
 ## Question and bounded outcome
 
@@ -257,6 +257,6 @@ That checkpoint requires independent cold review before registered answer-free s
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `559faf0f734e24b8edfc3c16803b43f8d322ecbc` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `559faf0f734e24b8edfc3c16803b43f8d322ecbc` | `fork-turns-none` | `approve-with-required-edits` | `78b9ca0c, c161ef74` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
