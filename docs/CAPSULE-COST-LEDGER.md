@@ -30,6 +30,14 @@ The next composed-input correction at `305b5893702c7999430c5b2ed62882eeba6aff30`
 
 The diagnostic correction separates unchanged admission, malformed-state refusal, and successful-lifetime decisions while keeping their exact source and runtime fixture definitions in one shared owner. Merely separating admission first still left only 64,397,312 bytes of cgroup margin. The completed separation passed in 17.57 seconds at 1,965,732 KiB GNU RSS and 2,293,329,920 cgroup bytes with every controlled event and pressure total zero. These are working-tree diagnostics, not immutable cost rows. The conservation check compares all 55 declaration bodies and all 24 theorem statements/proofs against `305b5893`; only shared conformance-fixture visibility changes. No semantic rule, proof proposition, kernel-decision obligation, or memory limit changes.
 
+The separated proof owners were each rebuilt cold at immutable commit `8a16c7a2b06074b91ea714a995e9dd6112b82712` on 2026-09-05 against the warm dependency closure under the identical pinned, network-disabled, one-CPU, 3 GiB/no-additional-swap protocol. All three exited zero with zero swaps, zero cgroup memory-event counters, and zero pressure totals before and after the build. None reaches the 90% GNU-RSS disclosure threshold; the highest cgroup peak leaves 1,641,037,824 bytes below the unchanged hard ceiling. These exact-target measurements replace the composed owner's near-cap executable row; the failed unsplit and intermediate diagnostic evidence above remains retained.
+
+| Separated target at `8a16c7a2` | User / system / elapsed | GNU maximum RSS | Cgroup peak | Output SHA-256 |
+|---|---|---:|---:|---|
+| `BpmnSemantics.ActivityDataInputOutputAdmissionConformance` | 4.53 s / 0.49 s / 5.48 s | 1,422,344 KiB | 1,063,088,128 bytes | `426303799d9f52f7b7211a0b9cabb9cf35d7ab24b0c37febe511bec7b526b85d` |
+| `BpmnSemantics.ActivityDataInputOutputRefusalConformance` | 6.05 s / 0.35 s / 6.79 s | 1,918,280 KiB | 1,580,187,648 bytes | `27c0c1ee960ef4e828863426225f272768e14f1cfb3f25456dc254f2b90d709d` |
+| `BpmnSemantics.ActivityDataInputOutputConformance` | 5.32 s / 0.17 s / 5.87 s | 1,847,624 KiB | 1,501,843,456 bytes | `89927f70db8174aa90ba17afbf58b58c124e72137f6d00d2a3d52021cd7180f4` |
+
 | Commit | Exact target | Cache state | User / system / elapsed | GNU maximum RSS | Cgroup peak | Verdict | Output SHA-256 |
 |---|---|---|---|---:|---:|---|---|
 | `67503432ed56769fe7ad61fe1a3a5e7e8ae6cf1d` | `BpmnSemantics.RuntimeStateWellFormedConformance` | Warm dependency closure; exact target artifacts removed after successful prewarm | 30.04 s / 2.27 s / 33.20 s | 3,269,656 KiB | 3,221,225,472 bytes | Lake exit 1 after Lean child exit 137 at the hard memory limit | `10260f0e3b8e36da6c83cc4ebf31d259c6ab4811f2f22de427e53afbb7ee362a` |
