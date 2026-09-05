@@ -185,7 +185,7 @@ Headroom is measured as nonblank lines remaining under the 800-line review targe
 | [TypeScript lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 144 | Change |
 | [TypeScript checked contract](../../packages/semantic-core/src/checked-process-contract.ts) | 432 | Change |
 | [TypeScript Semantic Process contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 197 | Change |
-| [TypeScript operation admission](../../packages/semantic-core/src/semantic-process-operation-admission.ts) | 15 | Extract first |
+| [TypeScript operation admission](../../packages/semantic-core/src/semantic-process-operation-admission.ts) | 116 | Extracted before implementation growth |
 | [TypeScript graph admission](../../packages/semantic-core/src/semantic-process-graph-admission.ts) | 155 | Change |
 | [TypeScript runtime dispatch](../../packages/semantic-core/src/semantic-process-runtime.ts) | 18 | Extract first |
 | [TypeScript command admission](../../packages/semantic-core/src/semantic-command-admission.ts) | 361 | Change |
