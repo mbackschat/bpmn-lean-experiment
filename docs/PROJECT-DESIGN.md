@@ -58,7 +58,7 @@ The current MUE programme uses three non-release delivery checkpoints before the
 | MUE Release Candidate | All MUE content IDs in the owner-selected boundary are fully implemented, governed closure is complete, and the feature surface is frozen. Only cross-family stabilization, final evidence reconciliation, and release qualification may remain. | `phase/mue-release-candidate` |
 | Minimum Useful Engine | Every MUE semantic, durability, evidence, integration, and release-acceptance obligation is closed by explicit owner decision. | `engine/v0.2` with annotation `Engine v0.2: Minimum Useful Engine` |
 
-Alpha, Beta, and Release Candidate tags never move when later checkpoints close. A repository SemVer release remains a separate decision and uses the `vMAJOR.MINOR.PATCH[-prerelease]` namespace only when the committed root package version matches.
+Once published, Alpha, Beta, and Release Candidate tags never move when later checkpoints close. Before first publication only, an owner-directed correction may replace a local checkpoint tag after the exact remote reference is proved absent and every applicable gate is rerun into receipts bound to the replacement target; the correction must close an evidence-record defect and must not make the tag follow later work. A repository SemVer release remains a separate decision and uses the `vMAJOR.MINOR.PATCH[-prerelease]` namespace only when the committed root package version matches.
 
 ### One repository for products 1 and 2
 
