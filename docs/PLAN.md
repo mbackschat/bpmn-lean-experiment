@@ -68,6 +68,21 @@ For the current MUE programme, the owner authorizes pushes at the triggers in [t
 
 Exactly one stable work ID is active. Required maps are part of the routing contract, not descriptive tags.
 
+### External-review correction checklist
+
+Owner instruction on 2026-09-05: resolve the supplied six reviews before resuming RC implementation. `R1`–`R6` identify those reports. Confirm each finding against source; close defects with separating evidence and the required review. Intentional exclusions require an accurate contract, not new feature admission.
+
+- [ ] Validate and classify every finding; reconcile conflicting recommendations.
+- [ ] Correct assurance and deployment overclaims (`R1`, `R2`, `R5`, `R6`).
+- [ ] Repair regional cancellation, quiescence, and Lean removal completeness (`R2`, `R6`).
+- [ ] Measure E1; remove demonstrated fixture-reduction amplification (`R4`).
+- [ ] Close runtime-invariant binding and preservation gaps (`R1`, `R2`, `R6`).
+- [ ] Repair footprint, preparation, rollback, commutation, and publication guarantees (`R3`).
+- [ ] Resolve Compensation dependency, cancellation, ownership, and failure gaps (`R6`).
+- [ ] Repair Temporal deployment/recovery and complete omitted hosting checks (`R5`).
+- [ ] Bind source-order and fixture/scenario evidence independently (`R1`).
+- [ ] Complete correction audits, consumer measurements, and full verification; then resume RC.
+
 Within the dependency order below, prioritize high-risk work before packaging and acceptance work. Treat likely broad Lean changes—shared representations, quantified proof dependencies, and kernel-reduction consumers—as an explicit risk signal, and establish those checkpoints before lower-risk profile registration, corpus/disclosure, or UI integration.
 
 1. `DATA-AND-TASK-MECHANISMS` · **active** · Owner: [composed Activity data proposal](capsules/ACTIVITY-DATA-INPUT-OUTPUT-MEDIATION-PROPOSAL.md), [requirement ledger](BPMN-REQUIREMENT-LEDGER.md) · Maps: [contracts/source](ENGINE-CONTRACTS-AND-SOURCE-IMPLEMENTATION-MAP.md), [runtime/proof](ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md), [Temporal](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md), [assurance/adoption](ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md) · Action: Implement the bounded composed Activity input/output lifetime before any new Task subclass or host effect.
@@ -87,11 +102,11 @@ Within the dependency order below, prioritize high-risk work before packaging an
 
 Active work ID: `DATA-AND-TASK-MECHANISMS`.
 
-Risk band: standard data lifetime and mappings.
+Risk band: external-review corrections; RC implementation is held.
 
 Checkpoint: `305b5893` commits both review corrections with complete Lean/core gates green. The subsequent proof-owner split preserves every theorem and passes the fixed 3 GiB diagnostic without pressure/OOM events. The [cost ledger](CAPSULE-COST-LEDGER.md#measurements) retains the preceding failures. Closure lanes remain untouched.
 
-Next action: pause for owner-led external reviews; resume only on owner instruction. Then address findings, finish standing-watch Lean consumer measurements, and obtain the same checkpoint reviewer's first correction audit with the complete verifier running concurrently. Closure requires a green audit.
+Next action: work through the correction checklist above before resuming RC. Obtain the required correction audit for the [composed Activity-data checkpoint](capsules/ACTIVITY-DATA-INPUT-OUTPUT-MEDIATION-PROPOSAL.md#independent-cold-review-receipt) with the complete verifier running concurrently. Closure requires a green audit.
 
 Oracle: one User Task activation copies the required Process input into its occurrence-owned local scope, and one accepted completion atomically routes its required output to Process scope and disposes that same local scope across source, Lean, the semantic core, publication, and Temporal refinement.
 
