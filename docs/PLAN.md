@@ -75,13 +75,15 @@ Owner instruction on 2026-09-05: resolve the supplied six reviews before resumin
 - [ ] Validate and classify every finding; reconcile conflicting recommendations.
 - [ ] Correct assurance and deployment overclaims (`R1`, `R2`, `R5`, `R6`).
 - [ ] Repair regional cancellation, quiescence, and Lean removal completeness (`R2`, `R6`).
-- [ ] Measure E1; remove demonstrated fixture-reduction amplification (`R4`).
+- [x] Measure E1; remove demonstrated fixture-reduction amplification (`R4`).
 - [ ] Close runtime-invariant binding and preservation gaps (`R1`, `R2`, `R6`).
 - [ ] Repair footprint, preparation, rollback, commutation, and publication guarantees (`R3`).
 - [ ] Resolve Compensation dependency, cancellation, ownership, and failure gaps (`R6`).
 - [ ] Repair Temporal deployment/recovery and complete omitted hosting checks (`R5`).
 - [ ] Bind source-order and fixture/scenario evidence independently (`R1`).
 - [ ] Complete correction audits, consumer measurements, and full verification; then resume RC.
+
+Two-byte and six-byte Compensation limits admit no valid empty runtime state. The [seven-byte capacity correction](capsules/COMPENSATION-EMPTY-STATE-CAPACITY-REPAIR-PROPOSAL.md) requires cold approval before admission changes or the complete Compensation predicate enters the Lean aggregate; initialization theorem weakening and capacity exceptions are excluded.
 
 Within the dependency order below, prioritize high-risk work before packaging and acceptance work. Treat likely broad Lean changes—shared representations, quantified proof dependencies, and kernel-reduction consumers—as an explicit risk signal, and establish those checkpoints before lower-risk profile registration, corpus/disclosure, or UI integration.
 
