@@ -108,7 +108,7 @@ Risk band: external-review corrections; RC implementation is held.
 
 Checkpoint: `305b5893` commits both review corrections with complete Lean/core gates green. The subsequent proof-owner split preserves every theorem and passes the fixed 3 GiB diagnostic without pressure/OOM events. The [cost ledger](CAPSULE-COST-LEDGER.md#measurements) retains the preceding failures. Closure lanes remain untouched.
 
-Next action: integrate runtime-invariant and regional-lifetime corrections, then implement the [closure atomicity repair](capsules/INTERNAL-CLOSURE-ATOMICITY-REPAIR-PROPOSAL.md); finish the checklist and [composed Activity-data correction audit](capsules/ACTIVITY-DATA-INPUT-OUTPUT-MEDIATION-PROPOSAL.md#independent-cold-review-receipt) before resuming RC.
+Next action: review the [committed initialization and runtime-invariant checkpoint](capsules/RUNTIME-INITIALIZATION-ASSURANCE-REPAIR-PROPOSAL.md#independent-cold-review-receipt) alongside the complete Product 1 verifier, then implement the [closure atomicity repair](capsules/INTERNAL-CLOSURE-ATOMICITY-REPAIR-PROPOSAL.md); finish the checklist and [composed Activity-data correction audit](capsules/ACTIVITY-DATA-INPUT-OUTPUT-MEDIATION-PROPOSAL.md#independent-cold-review-receipt) before resuming RC.
 
 Oracle: one User Task activation copies the required Process input into its occurrence-owned local scope, and one accepted completion atomically routes its required output to Process scope and disposes that same local scope across source, Lean, the semantic core, publication, and Temporal refinement.
 

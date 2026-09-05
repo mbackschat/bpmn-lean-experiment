@@ -98,5 +98,5 @@ The source-derived import guard now requires default-root reachability for named
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
 | Proposal | `fa7c01ffb69681286241e9127ae5e75b03ff5ef8` | `fork-turns-none` | `approve` | `not-required` |
-| Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Semantic checkpoint | `d7469e19d90811bf1b1de99adb5942cc8f3d4470` | `not-recorded` | `pending` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
