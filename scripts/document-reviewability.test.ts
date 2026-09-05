@@ -6,7 +6,7 @@ import path from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
-import { markdownTableRows, withoutBackticks } from "./markdown-tables.ts";
+import { withoutBackticks } from "./markdown-tables.ts";
 import { reviewedDetailMapWordBudget } from "./document-control-plane.ts";
 import {
   headroom,
@@ -122,6 +122,37 @@ type ProcessFinding = Readonly<{
   disposition: string;
   evidence: string;
 }>;
+
+function processFindingSections(markdown: string): ReadonlyArray<ProcessFinding> {
+  const findingsHeading = "## Findings\n";
+  const updateHeading = "\n## Update rule";
+  const start = markdown.indexOf(findingsHeading);
+  const end = markdown.indexOf(updateHeading, start + findingsHeading.length);
+  if (start === -1 || end === -1) {
+    throw new TypeError("process-assessment ledger has no bounded Findings section");
+  }
+  const content = markdown.slice(start + findingsHeading.length, end).trim();
+  const blocks = content.split(/\n(?=### Finding \d+\n)/u);
+  return blocks.map((rawBlock, index) => {
+    const block = rawBlock.trim();
+    const match = /^### Finding (\d+)\n\n([^\n]+)\n\nInstances\n: ([^\n]+)\n\nDisposition\n: ([^\n]+)\n\nEvidence\n: ([^\n]+)\n\n\*\*First observed:\*\* [^\n]+(?:\n\n[\s\S]+)?$/u.exec(block);
+    if (match === null) {
+      throw new TypeError(`process-assessment finding ${index + 1} has malformed structure`);
+    }
+    const [, ordinal, finding, instances, disposition, evidence] = match;
+    if (Number(ordinal) !== index + 1) {
+      throw new TypeError(
+        `process-assessment finding ${index + 1} carries ordinal ${JSON.stringify(ordinal)}`,
+      );
+    }
+    return {
+      finding: finding ?? "",
+      instances: instances ?? "",
+      disposition: disposition ?? "",
+      evidence: evidence ?? "",
+    };
+  });
+}
 
 function isExecutableLink(target: string): boolean {
   return target.endsWith(".test.ts") ||
@@ -489,14 +520,7 @@ test("the maintained process-assessment ledger satisfies its own escalation rule
     path.join(projectRoot, "docs/PROCESS-ASSESSMENT-LEDGER.md"),
     "utf8",
   );
-  const rows = markdownTableRows(ledger, "## Findings", "## Update rule", 5).map(
-    (cells) => ({
-      finding: cells[0] ?? "",
-      instances: cells[2] ?? "",
-      disposition: cells[3] ?? "",
-      evidence: cells[4] ?? "",
-    }),
-  );
+  const rows = processFindingSections(ledger);
 
   assert.deepEqual(
     { rowCount: rows.length > 0, findings: assessProcessFindings(rows) },
