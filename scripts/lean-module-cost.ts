@@ -528,7 +528,7 @@ export const leanModuleCostRecord = {
       measuredAtCommit: "bd2bef03",
     },
     { module: "BpmnSemantics.UserTaskInteractionConformance", peakResidentKib: 1592552, elapsedSeconds: 7.3 },
-    { module: "BpmnSemantics.ConfiguredTaskConformance", peakResidentKib: 1501936, elapsedSeconds: 7.7 },
+    { module: "BpmnSemantics.ConfiguredTaskConformance", peakResidentKib: 1661596, elapsedSeconds: 9.48, measuredAtCommit: "24d92a7c" },
     { module: "BpmnSemantics.MappedBoundaryErrorConformance", peakResidentKib: 1463248, elapsedSeconds: 7.2 },
     { module: "BpmnSemantics.BooleanProcessDataConformance", peakResidentKib: 1405164, elapsedSeconds: 3.8 },
     { module: "BpmnSemantics.ActivityBodyTurnoverConformance", peakResidentKib: 1382440, elapsedSeconds: 3.8 },
