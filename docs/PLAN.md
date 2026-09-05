@@ -87,9 +87,9 @@ Active work ID: `DATA-AND-TASK-MECHANISMS`.
 
 Risk band: standard data lifetime and mappings.
 
-Checkpoint: all seven exact Beta content boundaries and the Product 2 integration are independently closure-reviewed, the row evidence is bound to an independent renderer oracle, and the local `phase/mue-preview-beta` tag records the delivery checkpoint. This closes Beta only; the underlying data, Task, Internal Commutation, Compensation, and broader event-subscription families retain the explicit limits in the [Beta specification](MUE-PREVIEW-BETA-SPEC.md).
+Checkpoint: the composed Activity-data source, checked graph, Program, runtime, observation, and proved Lean account are green at `1326f543`; immutable proof-cost evidence at `fc15f78c` binds the new conformance owner and its changed User Task metadata consumer below the unchanged 3 GiB ceiling with zero pressure/OOM events. Profile registration, answer-free scenarios, differential and Temporal refinement, retained corpus/disclosure, Product 2 propagation, and closure remain untouched.
 
-Next action: implement the [composed Activity data proposal](capsules/ACTIVITY-DATA-INPUT-OUTPUT-MEDIATION-PROPOSAL.md) through its first green source/checked/IL/runtime/proof checkpoint, then pause for semantic-checkpoint review.
+Next action: generate the neutral packet for the [composed Activity data proposal](capsules/ACTIVITY-DATA-INPUT-OUTPUT-MEDIATION-PROPOSAL.md) at immutable target `fc15f78c`, perform the required context-cold semantic-checkpoint review, and do not enter any closure lane before its green verdict and any required correction audit.
 
 Oracle: one User Task activation copies the required Process input into its occurrence-owned local scope, and one accepted completion atomically routes its required output to Process scope and disposes that same local scope across source, Lean, the semantic core, publication, and Temporal refinement.
 
