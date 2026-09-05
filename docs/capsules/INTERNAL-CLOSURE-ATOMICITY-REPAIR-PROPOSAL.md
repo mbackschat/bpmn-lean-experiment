@@ -2,8 +2,8 @@
 
 ## Status
 
-Lifecycle: draft
-Review: pending
+Lifecycle: implementation-in-progress
+Review: approved-with-required-edits
 
 ## Question and bounded outcome
 
@@ -104,6 +104,6 @@ Cold proposal approval precedes implementation of the changed result contract. T
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `72a50a4cd8c76892bab7daff44a01b9b50050b2e` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `72a50a4cd8c76892bab7daff44a01b9b50050b2e` | `fork-turns-none` | `approve-with-required-edits` | `bb57973955b0948c17d7d3ea0f36238c21b21b25` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |

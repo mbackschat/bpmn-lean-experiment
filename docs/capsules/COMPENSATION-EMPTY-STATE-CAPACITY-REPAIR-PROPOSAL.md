@@ -2,7 +2,7 @@
 
 ## Status
 
-Lifecycle: implementation-in-progress
+Lifecycle: implemented-awaiting-closure
 Review: approved-with-required-edits
 
 ## Question and bounded outcome
@@ -86,12 +86,12 @@ Reopen if the fix requires a different encoding, a weaker theorem, any changed r
 
 All three declaration readers implement the reviewed minimum. The [TypeScript boundary tests](../../packages/semantic-core/test/compensation-empty-state-capacity.test.ts) and [Lean conformance owner](../../BpmnSemantics/CompensationTriggerHandlerProgramContractConformance.lean) independently separate undersized execution declarations, valid empty states, upper/integer bounds, and unchanged retention/snapshot minima. The declaration-validity theorem implies that the independently measured canonical empty pair fits; every pre-existing theorem statement is unchanged.
 
-On 2026-09-05, the complete semantic-core gate passed 726 tests, and complete Lean verification passed all 296 targets under the unchanged 3 GiB/no-swap controller. The kernel-decided boundary witnesses passed; full-gate peak usage was 3,006,087,168 cgroup bytes with zero limit-hit/OOM events and zero swaps. The [immutable consumer calibration](../CAPSULE-COST-LEDGER.md#measurements) binds the changed conformance owner to source commit `4b2a304f`. Product 1 verification and independent checkpoint/closure review remain outstanding. Dependent runtime-invariant integration stays blocked at that review boundary.
+On 2026-09-05, the complete semantic-core gate passed 726 tests, and candidate-source Lean verification passed all 296 targets under the unchanged 3 GiB/no-swap controller. The kernel-decided boundary witnesses passed; full-gate peak usage was 3,006,087,168 cgroup bytes with zero limit-hit/OOM events and zero swaps. The [immutable consumer calibration](../CAPSULE-COST-LEDGER.md#measurements) binds the changed conformance owner to source commit `4b2a304f`; the full candidate run has no immutable whole-tree receipt. The independent checkpoint review approved the implementation and permits dependent runtime-invariant integration. Complete Product 1 verification, reflection, and closure review remain outstanding.
 
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
 | Proposal | `ef22297c16836f445ca88bbed91727970d44f8cc` | `fork-turns-none` | `approve-with-required-edits` | `3b091a3e8f55c5b7b25fa60fe5a3fe2f592b34f5` |
-| Semantic checkpoint | `ec66bc7a25445e05c0b69d21fef599874ed27262` | `not-recorded` | `pending` | `not-applicable` |
+| Semantic checkpoint | `ec66bc7a25445e05c0b69d21fef599874ed27262` | `fork-turns-none` | `approve` | `not-required` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
