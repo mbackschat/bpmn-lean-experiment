@@ -81,6 +81,26 @@ export const writerRecords = new Map<string, WriterRecord>([
       markers: ["theorem completeDataInputUserTask_activity_identity_discipline"],
     },
   }],
+  ["BpmnSemantics/SemanticProcess/ActivityDataInputOutput.lean#activateDataInputOutputUserTask?@1", {
+    classification: WriterClassification.Issuer,
+    claimPreservation: ClaimPreservation.DisjointInsertion,
+    evidence: {
+      relativePath: "BpmnSemantics/SemanticProcess/ActivityDataInputOutput.lean",
+      markers: ["theorem activateDataInputOutputUserTask_issuesFreshActivity"],
+    },
+    claimEvidence: {
+      relativePath: "BpmnSemantics/SemanticProcess/ActivityDataInputOutput.lean",
+      markers: ["theorem activateDataInputOutputUserTask_preserves_activityBodyClaimsUnique"],
+    },
+  }],
+  ["BpmnSemantics/SemanticProcess/ActivityDataInputOutput.lean#completeDataInputOutputUserTask?@1", {
+    classification: WriterClassification.IdentityRemoving,
+    claimPreservation: ClaimPreservation.Removal,
+    evidence: {
+      relativePath: "BpmnSemantics/SemanticProcess/ActivityDataInputOutput.lean",
+      markers: ["theorem completeDataInputOutputUserTask_activityIdentityDiscipline"],
+    },
+  }],
   ["BpmnSemantics/SemanticProcess/ActivityDataOutput.lean#activateDataOutputUserTask?@1", {
     classification: WriterClassification.Issuer,
     claimPreservation: ClaimPreservation.DisjointInsertion,
@@ -347,6 +367,28 @@ export const writerRecords = new Map<string, WriterRecord>([
     },
   }],
   ["packages/semantic-core/src/semantic-process-activity-data-input-runtime.ts#completeDataInputUserTask@1", {
+    classification: WriterClassification.IdentityRemoving,
+    claimPreservation: ClaimPreservation.Removal,
+  }],
+  ["packages/semantic-core/src/semantic-process-activity-data-input-output-runtime.ts#armDataInputOutputUserTask@1", {
+    classification: WriterClassification.Issuer,
+    claimPreservation: ClaimPreservation.DisjointInsertion,
+    evidence: {
+      relativePath: "packages/semantic-core/test/activity-data-input-output.test.ts",
+      markers: [
+        "runtimeStateRegressions(initialState, active)",
+        "RuntimeStateRegression.ActivityOccurrenceIssue",
+      ],
+    },
+    claimEvidence: {
+      relativePath: "packages/semantic-core/test/activity-data-input-output.test.ts",
+      markers: [
+        "RuntimeStateDefect.DuplicateActivityBodyClaim",
+        "composed data arming inserts a disjoint Activity body claim",
+      ],
+    },
+  }],
+  ["packages/semantic-core/src/semantic-process-activity-data-input-output-runtime.ts#completeDataInputOutputUserTask@1", {
     classification: WriterClassification.IdentityRemoving,
     claimPreservation: ClaimPreservation.Removal,
   }],

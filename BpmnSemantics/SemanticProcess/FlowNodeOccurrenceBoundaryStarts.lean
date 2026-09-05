@@ -166,6 +166,7 @@ def candidateUserTaskStart? (program : Program) (operation : SemanticOperation)
           candidateWaitStart? program operation owner wait.processInstanceId
             (⟨wait.task.id.value⟩ : NodeId) wait.activation
     | .awaitDataInputUserTask _ _ _ output taskId taskName _
+    | .awaitDataInputOutputUserTask _ _ _ output taskId taskName _ _
     | .awaitDataOutputUserTask _ _ _ output taskId taskName _ =>
         if wait.task.id ≠ taskId || wait.task.name ≠ taskName || wait.output ≠ output ||
             wait.task.metadata.isSome || wait.metadata.isSome then none

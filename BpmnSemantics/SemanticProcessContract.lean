@@ -233,6 +233,10 @@ inductive CheckedNode where
   readiness select different lowering clauses. -/
   | dataInputUserTask (id : NodeId) (name : Option String)
       (directInput : DirectActivityDataInput)
+  /-- A distinct arm because both associations share one Activity lifetime without widening either predecessor profile. -/
+  | dataInputOutputUserTask (id : NodeId) (name : Option String)
+      (directInput : DirectActivityDataInput)
+      (directOutput : DirectActivityDataOutput)
   /-- A User Task whose one required DataOutput is written by one direct Data Output Association. A
   distinct node rather than a flag on `userTask`, because a declared OutputSet constrains completion
   where the input node's InputSet constrains entry. -/
@@ -300,6 +304,7 @@ def CheckedNode.id : CheckedNode → NodeId
   | .messageBoundaryEvent id _ _ _ _
   | .userTask id _ _
   | .dataInputUserTask id _ _
+  | .dataInputOutputUserTask id _ _ _
   | .dataOutputUserTask id _ _
   | .sequentialMultiInstanceUserTask id _ _ _ _ _
   | .parallelMultiInstanceUserTask id _ _ _ _ _ _
@@ -536,6 +541,15 @@ inductive SemanticOperation where
       (taskId : TaskDefinitionId)
       (taskName : Option String)
       (directInput : DirectActivityDataInput)
+  /-- One Activity lifetime whose input gates entry and whose required output gates completion, kept distinct so field presence cannot reinterpret either predecessor. -/
+  | awaitDataInputOutputUserTask
+      (id : OperationId)
+      (origin : BpmnElementOrigin)
+      (input output : ControlPlaceId)
+      (taskId : TaskDefinitionId)
+      (taskName : Option String)
+      (directInput : DirectActivityDataInput)
+      (directOutput : DirectActivityDataOutput)
   /-- One User Task occurrence whose accepted completion writes one Activity data output. Separate
   from `awaitDataInputUserTask` because the two constrain opposite ends: entry here is token-only,
   and the declared output becomes an obligation only at completion. -/
@@ -709,6 +723,7 @@ def SemanticOperation.id : SemanticOperation → OperationId
   | .returnProcess id _ _ _ _
   | .awaitUserTask id _ _ _ _
   | .awaitDataInputUserTask id _ _ _ _ _ _
+  | .awaitDataInputOutputUserTask id _ _ _ _ _ _ _
   | .awaitDataOutputUserTask id _ _ _ _ _ _
   | .awaitSequentialMultiInstanceUserTask id _ _ _ _ _ _ _
   | .awaitParallelMultiInstanceUserTask id _ _ _ _ _ _ _ _ _

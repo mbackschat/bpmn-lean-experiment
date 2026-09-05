@@ -230,6 +230,14 @@ private def decodeCheckedNode (json : Json) : Except String CheckedNode := do
           ⟨← stringField json "id"⟩
           (← decodeOptionalString (← field json "name"))
           (← decodeDirectActivityDataInput (← field json "directInput")))
+  | "dataInputOutputUserTask" =>
+      requireObjectShape json ["directInput", "directOutput", "id", "kind", "name"]
+      pure
+        (.dataInputOutputUserTask
+          ⟨← stringField json "id"⟩
+          (← decodeOptionalString (← field json "name"))
+          (← decodeDirectActivityDataInput (← field json "directInput"))
+          (← decodeDirectActivityDataOutput (← field json "directOutput")))
   | "dataOutputUserTask" =>
       requireObjectShape json ["directOutput", "id", "kind", "name"]
       pure

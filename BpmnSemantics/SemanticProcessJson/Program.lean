@@ -426,6 +426,21 @@ private def decodeOperation (json : Json) :
           taskId
           taskName
           (← decodeDirectActivityDataInput (← field json "directInput")))
+  | "awaitDataInputOutputUserTask" =>
+      requireObjectShape json
+        ["directInput", "directOutput", "id", "input", "kind", "origin", "output", "task"]
+      let (taskId, taskName) ←
+        decodeDataInputTaskDefinition (← field json "task")
+      pure
+        (.awaitDataInputOutputUserTask
+          id
+          origin
+          ⟨← stringField json "input"⟩
+          ⟨← stringField json "output"⟩
+          taskId
+          taskName
+          (← decodeDirectActivityDataInput (← field json "directInput"))
+          (← decodeDirectActivityDataOutput (← field json "directOutput")))
   | "awaitDataOutputUserTask" =>
       requireObjectShape json
         ["directOutput", "id", "input", "kind", "origin", "output", "task"]

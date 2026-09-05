@@ -454,6 +454,7 @@ function applyInternalOperationState(
       );
     }
     case SemanticOperationKind.AwaitDataInputUserTask:
+    case SemanticOperationKind.AwaitDataInputOutputUserTask:
     case SemanticOperationKind.AwaitDataOutputUserTask:
       return applyActivityDataOperation(operation, state, captureOwner);
     case SemanticOperationKind.AwaitSequentialMultiInstanceUserTask: {

@@ -90,7 +90,7 @@ The nearest checked non-law is that input and output are symmetric in time. They
 
 Lane shape: proved
 
-Evidence: planned module `BpmnSemantics/SemanticProcess/ActivityDataInputOutput.lean` will own the declarative activation and completion relations plus evaluator soundness, one-scope composition, exact input copying, association-routed output, cleanup, refusal, and family-local runtime well-formedness preservation. Planned module `BpmnSemantics/ActivityDataInputOutputConformance.lean` will check only the bounded claim-assessment witnesses. The existing [Semantic Process contract](../../BpmnSemantics/SemanticProcessContract.lean) remains the operation carrier and selector owner; it does not own the new relations.
+Evidence: module `BpmnSemantics/SemanticProcess/ActivityDataInputOutput.lean` owns the declarative activation and completion relations plus evaluator soundness, one-scope composition, exact input copying, association-routed output, cleanup, refusal, and family-local runtime well-formedness preservation. Module `BpmnSemantics/ActivityDataInputOutputConformance.lean` checks only the bounded claim-assessment witnesses. The existing [Semantic Process contract](../../BpmnSemantics/SemanticProcessContract.lean) remains the operation carrier and selector owner; it does not own the new relations.
 
 The quantified laws range over arbitrary Programs and RuntimeStates satisfying the composed operation's exact program and runtime hypotheses. They prove absent-source refusal; present string and null activation; fresh task and Activity issuance; exactly one input-bearing local owner; Process-binding preservation; exact-id output fill; association-decided write; atomic disposal and outgoing route; wrong and stale completion refusal; and runtime well-formedness preservation for both successful transitions.
 
@@ -153,9 +153,9 @@ The matrix is the closed current census for a new checked-node and Semantic-oper
 
 | Boundary | Existing owners | Disposition |
 |---|---|---|
-| Profile identity, value domain, and shape | [TypeScript profile catalog](../../packages/semantic-core/src/semantic-profile-catalog.ts), [value domain](../../packages/semantic-core/src/semantic-profile-value-domain.ts), [checked shape](../../packages/semantic-core/src/checked-process-profile-shape.ts), [program shape](../../packages/semantic-core/src/semantic-program-profile-shape.ts), [graph policy](../../packages/semantic-core/src/semantic-process-graph-policy.ts), [source preservation classification](../../packages/bpmn-source/src/preservation-capability.ts), [Lean value domain](../../BpmnSemantics/SemanticProcess/ValueDomain.lean), and [Lean shape catalog](../../BpmnSemantics/SemanticProcess/ProfileShapeCatalog.lean) | Change: register the exact profile and one composed checked/program count. |
+| Profile identity, value domain, and shape | [TypeScript profile catalog](../../packages/semantic-core/src/semantic-profile-catalog.ts), [value domain](../../packages/semantic-core/src/semantic-profile-value-domain.ts), [checked shape](../../packages/semantic-core/src/checked-process-profile-shape.ts), [program shape](../../packages/semantic-core/src/semantic-program-profile-shape.ts), [graph policy](../../packages/semantic-core/src/semantic-process-graph-policy.ts), [source preservation classification](../../packages/bpmn-source/src/preservation-capability.ts), [Lean value domain](../../BpmnSemantics/SemanticProcess/ValueDomain.lean), and [Lean shape catalog](../../BpmnSemantics/SemanticProcess/ProfileShapeCatalog.lean) | Change: admit the checkpoint identity and one composed checked/program count; register the profile atomically with closure scenarios. |
 | Checked graph carrier, admission, and JSON | [TypeScript checked contract](../../packages/semantic-core/src/checked-process-contract.ts), [checked graph admission](../../packages/bpmn-source/src/checked-process-graph-admission.ts), [source admission wrapper](../../packages/bpmn-source/src/checked-process-admission.ts), [Lean contract](../../BpmnSemantics/SemanticProcessContract.lean), [Lean Activity-data carriers](../../BpmnSemantics/SemanticProcess/ActivityDataContract.lean), [Lean checked admission](../../BpmnSemantics/SemanticProcess/CheckedProcessAdmission.lean), [Lean checked graph validation](../../BpmnSemantics/SemanticProcess/CheckedGraphValidation.lean), and [Lean checked JSON](../../BpmnSemantics/SemanticProcessJson/CheckedProcess.lean) | Change except the source admission wrapper: it must prove no change because the new reader supplies the checked graph through its existing generic boundary. |
-| Compilation and lowering | [Compilation dispatch](../../packages/bpmn-source/src/compilation-dispatch.ts), [TypeScript lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts), and [Lean lowering](../../BpmnSemantics/SemanticProcess/Lowering.lean) | Change: route the exact profile and emit one composed arm. |
+| Compilation and lowering | [Compilation dispatch](../../packages/bpmn-source/src/compilation-dispatch.ts), [TypeScript lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts), and [Lean lowering](../../BpmnSemantics/SemanticProcess/Lowering.lean) | Change: route the exact checkpoint identity and emit one composed arm. |
 | Program carrier, validation, graph, and JSON | [TypeScript Semantic Process contract](../../packages/semantic-core/src/semantic-process-contract.ts), [operation admission](../../packages/semantic-core/src/semantic-process-operation-admission.ts), [graph admission](../../packages/semantic-core/src/semantic-process-graph-admission.ts), [Lean contract](../../BpmnSemantics/SemanticProcessContract.lean), [Lean structural validation](../../BpmnSemantics/SemanticProcess/ProgramStructuralValidation.lean), [Lean graph validation](../../BpmnSemantics/SemanticProcess/GraphValidation.lean), and [Lean Program JSON](../../BpmnSemantics/SemanticProcessJson/Program.lean) | Change: carry and validate all seven mutually distinct BPMN IDs plus the existing operation/control graph identities. |
 | Runtime transition and command admission | [TypeScript runtime dispatch](../../packages/semantic-core/src/semantic-process-runtime.ts), [Activity-data operation runtime](../../packages/semantic-core/src/activity-data-operation-runtime.ts), [command admission](../../packages/semantic-core/src/semantic-command-admission.ts), [runtime well-formedness](../../packages/semantic-core/src/runtime-state-well-formedness.ts), [Lean transition](../../BpmnSemantics/SemanticProcess/Transition.lean), [Lean command admission](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean), [Lean execution assembly](../../BpmnSemantics/SemanticProcess/Execution.lean), and [Lean runtime well-formedness](../../BpmnSemantics/SemanticProcess/RuntimeStateWellFormed.lean) | Change: dispatch the new evaluators, recognize its exact task definition, and preserve the current global predicate while proving the stronger family-local exact-one-scope invariant. |
 | Wait, lifecycle, open-set, boundary, and publication classifiers | [TypeScript boundary starts](../../packages/semantic-core/src/flow-node-occurrence-boundary-starts.ts), [lifecycle](../../packages/semantic-core/src/flow-node-occurrence-lifecycle.ts), [open set](../../packages/semantic-core/src/flow-node-occurrence-open-set.ts), [publication completeness](../../packages/semantic-core/src/flow-node-occurrence-publication-completeness.ts), [Lean boundary starts](../../BpmnSemantics/SemanticProcess/FlowNodeOccurrenceBoundaryStarts.lean), [Lean lifecycle](../../BpmnSemantics/SemanticProcess/FlowNodeOccurrenceLifecycle.lean), [Lean wait validity](../../BpmnSemantics/SemanticProcess/FlowNodeOccurrenceWaitProgramValidity.lean), [Lean scenario projection](../../BpmnSemantics/SemanticProcess/Scenario.lean), [Lean transition trace](../../BpmnSemantics/SemanticProcess/TransitionTrace.lean), and [Lean publication JSON](../../BpmnSemantics/SemanticProcessJson/Publication.lean) | Change: classify the composed arm as one passive User Task/Activity occurrence with the existing publication surface. |
@@ -174,57 +174,57 @@ Headroom is measured as nonblank lines remaining under the 800-line review targe
 
 | Owner | Current headroom | Treatment |
 |---|---:|---|
-| [TypeScript profile catalog](../../packages/semantic-core/src/semantic-profile-catalog.ts) | 719 | Change |
-| [TypeScript value domain](../../packages/semantic-core/src/semantic-profile-value-domain.ts) | 540 | Change |
-| [TypeScript checked shape](../../packages/semantic-core/src/checked-process-profile-shape.ts) | 478 | Change |
-| [TypeScript Program shape](../../packages/semantic-core/src/semantic-program-profile-shape.ts) | 460 | Change |
-| [TypeScript graph policy](../../packages/semantic-core/src/semantic-process-graph-policy.ts) | 714 | Change |
-| [Source preservation classification](../../packages/bpmn-source/src/preservation-capability.ts) | 649 | Change |
-| [Compilation dispatch](../../packages/bpmn-source/src/compilation-dispatch.ts) | 464 | Change |
-| [Checked graph admission](../../packages/bpmn-source/src/checked-process-graph-admission.ts) | 427 | Change |
-| [TypeScript lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 144 | Change |
-| [TypeScript checked contract](../../packages/semantic-core/src/checked-process-contract.ts) | 432 | Change |
-| [TypeScript Semantic Process contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 197 | Change |
-| [TypeScript operation admission](../../packages/semantic-core/src/semantic-process-operation-admission.ts) | 116 | Extracted before implementation growth |
-| [TypeScript graph admission](../../packages/semantic-core/src/semantic-process-graph-admission.ts) | 155 | Change |
-| [TypeScript runtime dispatch](../../packages/semantic-core/src/semantic-process-runtime.ts) | 36 | Extracted before implementation growth |
-| [TypeScript command admission](../../packages/semantic-core/src/semantic-command-admission.ts) | 361 | Change |
-| [TypeScript runtime well-formedness](../../packages/semantic-core/src/runtime-state-well-formedness.ts) | 54 | Change |
-| [TypeScript boundary starts](../../packages/semantic-core/src/flow-node-occurrence-boundary-starts.ts) | 481 | Change |
-| [TypeScript lifecycle](../../packages/semantic-core/src/flow-node-occurrence-lifecycle.ts) | 61 | Change |
-| [TypeScript open set](../../packages/semantic-core/src/flow-node-occurrence-open-set.ts) | 49 | Change |
-| [TypeScript publication completeness](../../packages/semantic-core/src/flow-node-occurrence-publication-completeness.ts) | 232 | Change |
-| [TypeScript internal census](../../packages/semantic-core/src/internal-commutation-census.ts) | 659 | Change |
-| [TypeScript wait census](../../packages/semantic-core/src/internal-transition-wait-census.ts) | 634 | Change |
-| [TypeScript footprint](../../packages/semantic-core/src/internal-transition-footprint.ts) | 116 | Change |
-| [Lean Semantic Process contract](../../BpmnSemantics/SemanticProcessContract.lean) | 26 | Activity-data carriers extracted before implementation growth |
-| [Lean value domain](../../BpmnSemantics/SemanticProcess/ValueDomain.lean) | 673 | Change |
-| [Lean shape catalog](../../BpmnSemantics/SemanticProcess/ProfileShapeCatalog.lean) | 29 | Change |
-| [Lean checked admission](../../BpmnSemantics/SemanticProcess/CheckedProcessAdmission.lean) | 377 | Change |
-| [Lean checked graph validation](../../BpmnSemantics/SemanticProcess/CheckedGraphValidation.lean) | 638 | Change |
-| [Lean checked JSON](../../BpmnSemantics/SemanticProcessJson/CheckedProcess.lean) | 382 | Change |
-| [Lean lowering](../../BpmnSemantics/SemanticProcess/Lowering.lean) | 141 | Change |
-| [Lean structural validation](../../BpmnSemantics/SemanticProcess/ProgramStructuralValidation.lean) | 139 | Change |
-| [Lean graph validation](../../BpmnSemantics/SemanticProcess/GraphValidation.lean) | 94 | Change |
-| [Lean Program JSON](../../BpmnSemantics/SemanticProcessJson/Program.lean) | 102 | Change |
-| [Lean transition](../../BpmnSemantics/SemanticProcess/Transition.lean) | 139 | Change |
-| [Lean command admission](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean) | 246 | Change |
-| [Lean execution assembly](../../BpmnSemantics/SemanticProcess/Execution.lean) | 322 | Change |
-| [Lean runtime well-formedness](../../BpmnSemantics/SemanticProcess/RuntimeStateWellFormed.lean) | 98 | Change |
-| [Lean boundary starts](../../BpmnSemantics/SemanticProcess/FlowNodeOccurrenceBoundaryStarts.lean) | 507 | Change |
-| [Lean lifecycle](../../BpmnSemantics/SemanticProcess/FlowNodeOccurrenceLifecycle.lean) | 21 | Change |
-| [Lean wait validity](../../BpmnSemantics/SemanticProcess/FlowNodeOccurrenceWaitProgramValidity.lean) | 50 | Change |
-| [Lean scenario projection](../../BpmnSemantics/SemanticProcess/Scenario.lean) | 227 | Change |
-| [Lean transition trace](../../BpmnSemantics/SemanticProcess/TransitionTrace.lean) | 174 | Change |
-| [Lean publication JSON](../../BpmnSemantics/SemanticProcessJson/Publication.lean) | 623 | Change |
-| [Lean internal census](../../BpmnSemantics/SemanticProcess/InternalCommutationCensus.lean) | 653 | Change |
-| [Lean snapshot declaration](../../BpmnSemantics/SemanticProcess/CompensationEventSubProcessSnapshotDeclaration.lean) | 636 | Change |
-| [Lean trigger-handler declaration](../../BpmnSemantics/SemanticProcess/CompensationTriggerHandlerDeclaration.lean) | 611 | Change |
-| [Maintained Lean library root](../../BpmnSemantics.lean) | 725 | Change |
-| [Temporal host admission](../../packages/temporal-adapter/protocol/src/host-admission.ts) | 488 | Change |
-| [Temporal publication validation](../../packages/temporal-adapter/protocol/src/flow-node-occurrence-publication-program-validation.ts) | 335 | Change |
-| [Product 2 publication contract](../../platform/contracts/src/execution-publications.ts) | 346 | Change |
-| [Activity writer records](../../scripts/activity-occurrence-writer-records.ts) | 325 | Change |
+| [TypeScript profile catalog](../../packages/semantic-core/src/semantic-profile-catalog.ts) | 716 | Change |
+| [TypeScript value domain](../../packages/semantic-core/src/semantic-profile-value-domain.ts) | 531 | Change |
+| [TypeScript checked shape](../../packages/semantic-core/src/checked-process-profile-shape.ts) | 471 | Change |
+| [TypeScript Program shape](../../packages/semantic-core/src/semantic-program-profile-shape.ts) | 452 | Change |
+| [TypeScript graph policy](../../packages/semantic-core/src/semantic-process-graph-policy.ts) | 712 | Change |
+| [Source preservation classification](../../packages/bpmn-source/src/preservation-capability.ts) | 645 | Change |
+| [Compilation dispatch](../../packages/bpmn-source/src/compilation-dispatch.ts) | 444 | Change |
+| [Checked graph admission](../../packages/bpmn-source/src/checked-process-graph-admission.ts) | 426 | Change |
+| [TypeScript lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 134 | Change |
+| [TypeScript checked contract](../../packages/semantic-core/src/checked-process-contract.ts) | 423 | Change |
+| [TypeScript Semantic Process contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 178 | Change |
+| [TypeScript operation admission](../../packages/semantic-core/src/semantic-process-operation-admission.ts) | 113 | Extracted before implementation growth |
+| [TypeScript graph admission](../../packages/semantic-core/src/semantic-process-graph-admission.ts) | 153 | Change |
+| [TypeScript runtime dispatch](../../packages/semantic-core/src/semantic-process-runtime.ts) | 35 | Extracted before implementation growth |
+| [TypeScript command admission](../../packages/semantic-core/src/semantic-command-admission.ts) | 351 | Change |
+| [TypeScript runtime well-formedness](../../packages/semantic-core/src/runtime-state-well-formedness.ts) | 53 | Change |
+| [TypeScript boundary starts](../../packages/semantic-core/src/flow-node-occurrence-boundary-starts.ts) | 480 | Change |
+| [TypeScript lifecycle](../../packages/semantic-core/src/flow-node-occurrence-lifecycle.ts) | 60 | Change |
+| [TypeScript open set](../../packages/semantic-core/src/flow-node-occurrence-open-set.ts) | 48 | Change |
+| [TypeScript publication completeness](../../packages/semantic-core/src/flow-node-occurrence-publication-completeness.ts) | 231 | Change |
+| [TypeScript internal census](../../packages/semantic-core/src/internal-commutation-census.ts) | 658 | Change |
+| [TypeScript wait census](../../packages/semantic-core/src/internal-transition-wait-census.ts) | 633 | Change |
+| [TypeScript footprint](../../packages/semantic-core/src/internal-transition-footprint.ts) | 115 | Change |
+| [Lean Semantic Process contract](../../BpmnSemantics/SemanticProcessContract.lean) | 11 | Activity-data carriers extracted before implementation growth |
+| [Lean value domain](../../BpmnSemantics/SemanticProcess/ValueDomain.lean) | 668 | Change |
+| [Lean shape catalog](../../BpmnSemantics/SemanticProcess/ProfileShapeCatalog.lean) | 19 | Change |
+| [Lean checked admission](../../BpmnSemantics/SemanticProcess/CheckedProcessAdmission.lean) | 369 | Change |
+| [Lean checked graph validation](../../BpmnSemantics/SemanticProcess/CheckedGraphValidation.lean) | 636 | Change |
+| [Lean checked JSON](../../BpmnSemantics/SemanticProcessJson/CheckedProcess.lean) | 374 | Change |
+| [Lean lowering](../../BpmnSemantics/SemanticProcess/Lowering.lean) | 130 | Change |
+| [Lean structural validation](../../BpmnSemantics/SemanticProcess/ProgramStructuralValidation.lean) | 120 | Change |
+| [Lean graph validation](../../BpmnSemantics/SemanticProcess/GraphValidation.lean) | 91 | Change |
+| [Lean Program JSON](../../BpmnSemantics/SemanticProcessJson/Program.lean) | 87 | Change |
+| [Lean transition](../../BpmnSemantics/SemanticProcess/Transition.lean) | 127 | Change |
+| [Lean command admission](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean) | 233 | Change |
+| [Lean execution assembly](../../BpmnSemantics/SemanticProcess/Execution.lean) | 313 | Change |
+| [Lean runtime well-formedness](../../BpmnSemantics/SemanticProcess/RuntimeStateWellFormed.lean) | 94 | Change |
+| [Lean boundary starts](../../BpmnSemantics/SemanticProcess/FlowNodeOccurrenceBoundaryStarts.lean) | 506 | Change |
+| [Lean lifecycle](../../BpmnSemantics/SemanticProcess/FlowNodeOccurrenceLifecycle.lean) | 19 | Change |
+| [Lean wait validity](../../BpmnSemantics/SemanticProcess/FlowNodeOccurrenceWaitProgramValidity.lean) | 41 | Change |
+| [Lean scenario projection](../../BpmnSemantics/SemanticProcess/Scenario.lean) | 226 | Change |
+| [Lean transition trace](../../BpmnSemantics/SemanticProcess/TransitionTrace.lean) | 171 | Change |
+| [Lean publication JSON](../../BpmnSemantics/SemanticProcessJson/Publication.lean) | 622 | Change |
+| [Lean internal census](../../BpmnSemantics/SemanticProcess/InternalCommutationCensus.lean) | 652 | Change |
+| [Lean snapshot declaration](../../BpmnSemantics/SemanticProcess/CompensationEventSubProcessSnapshotDeclaration.lean) | 635 | Change |
+| [Lean trigger-handler declaration](../../BpmnSemantics/SemanticProcess/CompensationTriggerHandlerDeclaration.lean) | 610 | Change |
+| [Maintained Lean library root](../../BpmnSemantics.lean) | 724 | Change |
+| [Temporal host admission](../../packages/temporal-adapter/protocol/src/host-admission.ts) | 485 | Change |
+| [Temporal publication validation](../../packages/temporal-adapter/protocol/src/flow-node-occurrence-publication-program-validation.ts) | 333 | Change |
+| [Product 2 publication contract](../../platform/contracts/src/execution-publications.ts) | 345 | Change |
+| [Activity writer records](../../scripts/activity-occurrence-writer-records.ts) | 283 | Change |
 | [Contract artifact cases](../../scripts/contract-artifact-cases.ts) | 477 | Change |
 | [Capability extractor](../../scripts/executable-model-capabilities.ts) | 443 | Change |
 | [Capability catalog](../../model-corpus/mvp-capabilities.ts) | 468 | Change |

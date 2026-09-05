@@ -23,6 +23,7 @@ def enteredChildScopeId? : SemanticOperation → Option DefinitionScopeId
   | .enterBoundedScope _ _ _ _ childScopeId _ => some childScopeId
   | .initiate .. | .initiateMessage .. | .initiateTimer .. | .invokeProcess .. | .returnProcess .. | .awaitUserTask ..
   | .awaitDataInputUserTask ..
+  | .awaitDataInputOutputUserTask ..
   | .awaitDataOutputUserTask ..
   | .awaitSequentialMultiInstanceUserTask ..
   | .awaitParallelMultiInstanceUserTask ..

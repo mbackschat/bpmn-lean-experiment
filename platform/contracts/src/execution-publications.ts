@@ -225,6 +225,7 @@ export const SemanticOperationKind = {
   ReturnProcess: "returnProcess",
   AwaitUserTask: "awaitUserTask",
   AwaitDataInputUserTask: "awaitDataInputUserTask",
+  AwaitDataInputOutputUserTask: "awaitDataInputOutputUserTask",
   AwaitDataOutputUserTask: "awaitDataOutputUserTask",
   AwaitBoundedUserTask: "awaitBoundedUserTask",
   AwaitMessageBoundedUserTask: "awaitMessageBoundedUserTask",

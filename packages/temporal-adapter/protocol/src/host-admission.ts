@@ -287,6 +287,9 @@ function classifyHostOperation(
     // Passive because the host schedules nothing for it: its readiness is decided entirely inside the
     // semantic core from committed Process data, and it arms no deadline or host-visible effect.
     case SemanticOperationKind.AwaitDataInputUserTask:
+    // The composed arm has the same host boundary: the core decides input readiness and the later
+    // completion's output routing, while Temporal supplies only the existing passive Update ingress.
+    case SemanticOperationKind.AwaitDataInputOutputUserTask:
     case SemanticOperationKind.AwaitMessage:
     case SemanticOperationKind.AwaitPayloadMessage:
     case SemanticOperationKind.MergeExclusive:

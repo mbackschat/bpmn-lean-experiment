@@ -244,6 +244,16 @@ function lowerNode(
         task: { elementId: node.id, name: node.name },
         directInput: node.directInput,
       });
+    case CheckedNodeKind.DataInputOutputUserTask:
+      return scoped({
+        ...base,
+        kind: SemanticOperationKind.AwaitDataInputOutputUserTask,
+        input: requireOnly(incoming, node.id, "incoming"),
+        output: requireOnly(outgoing, node.id, "outgoing"),
+        task: { elementId: node.id, name: node.name },
+        directInput: node.directInput,
+        directOutput: node.directOutput,
+      });
     case CheckedNodeKind.DataOutputUserTask:
       return scoped({
         ...base,

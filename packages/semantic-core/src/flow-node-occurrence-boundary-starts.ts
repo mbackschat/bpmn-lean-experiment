@@ -65,6 +65,7 @@ export function candidateLongLivedStarts(
       return oneWaitStart(processId, operation.task.elementId, owner, wait?.id);
     }
     case SemanticOperationKind.AwaitDataInputUserTask:
+    case SemanticOperationKind.AwaitDataInputOutputUserTask:
     case SemanticOperationKind.AwaitDataOutputUserTask: {
       const wait = only(after.userTaskWaits.filter((candidate) =>
         candidate.id.elementId === operation.task.elementId &&

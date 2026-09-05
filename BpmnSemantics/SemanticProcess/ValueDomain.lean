@@ -26,6 +26,10 @@ abbrev parallelUserTaskMetadataCheckpointProfileId : ProfileId :=
 abbrev activityDataInputUserTaskProfileId : ProfileId :=
   ⟨"bpmn-2.0.2-activity-data-input-user-task-draft"⟩
 
+/-- Runtime-frozen identity of the approved composed Activity data checkpoint. -/
+abbrev activityDataInputOutputUserTaskProfileId : ProfileId :=
+  ⟨"bpmn-2.0.2-activity-data-input-output-user-task-draft"⟩
+
 /-- Runtime-frozen identity of the owner-approved Activity data-output checkpoint. -/
 abbrev activityDataOutputUserTaskProfileId : ProfileId :=
   ⟨"bpmn-2.0.2-activity-data-output-user-task-draft"⟩
@@ -88,6 +92,7 @@ private inductive ProcessDataValueDomain where
           -- required Data Input, and the completion surface stays empty because this profile's
           -- OutputSet selects no output mediation at all.
           , activityDataInputUserTaskProfileId.value
+          , activityDataInputOutputUserTaskProfileId.value
           , structuredHumanWorkProfileId.value ] then
         .stringNull
       else
@@ -100,6 +105,7 @@ private inductive ProcessDataValueDomain where
           -- String does, and the start surface stays empty because this profile declares no input
           -- mediation at all.
           , activityDataOutputUserTaskProfileId.value
+          , activityDataInputOutputUserTaskProfileId.value
           , "bpmn-2.0.2-user-task-cycle-draft" ] then
         .stringNull
       else if profileIsOneOf profile

@@ -92,6 +92,7 @@ def parseFrom (source : CheckedProcess) :
       | some (.noneStartEvent _)
       | some (.userTask _ _ (some _))
       | some (.dataInputUserTask ..)
+      | some (.dataInputOutputUserTask ..)
       | some (.dataOutputUserTask ..)
       | some (.sequentialMultiInstanceUserTask ..)
       | some (.parallelMultiInstanceUserTask ..)
@@ -149,6 +150,7 @@ def composedNodeSurfaceValid : CheckedNode → Bool
   | .parallelGateway .. => true
   | .userTask _ _ (some _) => false
   | .dataInputUserTask .. => false
+  | .dataInputOutputUserTask .. => false
   | .dataOutputUserTask .. => false
   | .sequentialMultiInstanceUserTask .. => false
   | .parallelMultiInstanceUserTask .. => false

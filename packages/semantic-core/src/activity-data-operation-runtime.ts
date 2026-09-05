@@ -4,6 +4,9 @@ import {
   armDataInputUserTask,
 } from "./semantic-process-activity-data-input-runtime.js";
 import {
+  armDataInputOutputUserTask,
+} from "./semantic-process-activity-data-input-output-runtime.js";
+import {
   armDataOutputUserTask,
 } from "./semantic-process-activity-data-output-runtime.js";
 import { onlyTokenOwner } from "./semantic-process-scope-runtime.js";
@@ -17,6 +20,7 @@ type ActivityDataOperation = Extract<
   {
     kind:
       | SemanticOperationKind.AwaitDataInputUserTask
+      | SemanticOperationKind.AwaitDataInputOutputUserTask
       | SemanticOperationKind.AwaitDataOutputUserTask;
   }
 >;
@@ -46,6 +50,8 @@ function applySelectedActivityDataOperation(
   switch (operation.kind) {
     case SemanticOperationKind.AwaitDataInputUserTask:
       return armDataInputUserTask(operation, state, owner);
+    case SemanticOperationKind.AwaitDataInputOutputUserTask:
+      return armDataInputOutputUserTask(operation, state, owner);
     case SemanticOperationKind.AwaitDataOutputUserTask:
       return armDataOutputUserTask(operation, state, owner);
   }

@@ -54,6 +54,65 @@ export function isWellFormedAwaitDataInputUserTaskOperation(
 }
 
 /**
+ * Admits both direct associations only when they describe one unambiguous Activity lifetime.
+ *
+ * The predecessor validators remain the owners of each directional contract. The composition adds
+ * the cross-half identity rule from the approved Activity data input/output proposal: all seven
+ * BPMN element identities must differ, especially the two association ids that a hand-built Program
+ * can alias even though an XML document cannot repeat an `xsd:ID`.
+ */
+export function isWellFormedAwaitDataInputOutputUserTaskOperation(
+  value: Record<string, unknown>,
+  placeIds: ReadonlySet<string>,
+): boolean {
+  if (
+    !hasOnlyKeys(value, [
+      "id",
+      "kind",
+      "origin",
+      "input",
+      "output",
+      "task",
+      "directInput",
+      "directOutput",
+    ]) ||
+    !isRecord(value.task) ||
+    !isRecord(value.directInput) ||
+    !isRecord(value.directOutput) ||
+    !isWellFormedAwaitDataInputUserTaskOperation({
+      id: value.id,
+      kind: value.kind,
+      origin: value.origin,
+      input: value.input,
+      output: value.output,
+      task: value.task,
+      directInput: value.directInput,
+    }, placeIds) ||
+    !isWellFormedAwaitDataOutputUserTaskOperation({
+      id: value.id,
+      kind: value.kind,
+      origin: value.origin,
+      input: value.input,
+      output: value.output,
+      task: value.task,
+      directOutput: value.directOutput,
+    }, placeIds)
+  ) {
+    return false;
+  }
+  const identities = [
+    value.task.elementId,
+    value.directInput.associationId,
+    value.directInput.sourcePropertyId,
+    value.directInput.targetDataInputId,
+    value.directOutput.associationId,
+    value.directOutput.sourceDataOutputId,
+    value.directOutput.targetPropertyId,
+  ];
+  return new Set(identities).size === identities.length;
+}
+
+/**
  * The direct Data Output Association arm of one output-bearing User Task entry operation.
  *
  * The four identities are the exact source identities the completion resolves by, so they must be

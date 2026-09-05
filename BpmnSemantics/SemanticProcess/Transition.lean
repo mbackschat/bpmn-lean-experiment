@@ -9,6 +9,7 @@ import BpmnSemantics.SemanticProcess.TimerStart
 import BpmnSemantics.SemanticProcess.TerminateEnd
 import BpmnSemantics.SemanticProcess.MonitoredTask
 import BpmnSemantics.SemanticProcess.ActivityDataInput
+import BpmnSemantics.SemanticProcess.ActivityDataInputOutput
 import BpmnSemantics.SemanticProcess.ActivityDataOutput
 import BpmnSemantics.SemanticProcess.CallActivity
 import BpmnSemantics.SemanticProcess.CyclicControlFlow
@@ -189,6 +190,14 @@ inductive OperationStep (program : Program) :
       OperationStep program
         (.awaitDataInputUserTask id origin input output taskId taskName directInput)
         before after
+  | awaitDataInputOutputUserTask
+      (id origin input output taskId taskName directInput directOutput)
+      (before after : RuntimeState)
+      (transition : activateDataInputOutputUserTask? before input output taskId taskName
+        directInput = some after) :
+      OperationStep program
+        (.awaitDataInputOutputUserTask id origin input output taskId taskName directInput
+          directOutput) before after
   | awaitDataOutputUserTask (id origin input output taskId taskName directOutput)
       (before after : RuntimeState)
       (transition : activateDataOutputUserTask? before input output taskId taskName
@@ -334,6 +343,8 @@ private def fireWithoutCompensationSnapshots? (program : Program)
       awaitUserTaskState? state input output task
   | .awaitDataInputUserTask _ _ input output taskId taskName directInput =>
       activateDataInputUserTask? state input output taskId taskName directInput
+  | .awaitDataInputOutputUserTask _ _ input output taskId taskName directInput _ =>
+      activateDataInputOutputUserTask? state input output taskId taskName directInput
   | .awaitDataOutputUserTask _ _ input output taskId taskName _ =>
       activateDataOutputUserTask? state input output taskId taskName
   | operation@(.awaitSequentialMultiInstanceUserTask ..) => do
@@ -408,6 +419,7 @@ private theorem fireWithoutCompensationSnapshots_sound (program : Program)
         (returnProcessState_sound _ _ _ _ _ _ _ result)
     | exact .awaitUserTask _ _ _ _ _ before after result
     | exact .awaitDataInputUserTask _ _ _ _ _ _ _ before after result
+    | exact .awaitDataInputOutputUserTask _ _ _ _ _ _ _ _ before after result
     | exact .awaitDataOutputUserTask _ _ _ _ _ _ _ before after result
     | rename_i id origin input task data normalOutput boundaryTimer limits
       let arm : SequentialMultiInstanceArm :=

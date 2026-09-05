@@ -7,6 +7,7 @@ import BpmnSemantics.SemanticProcess.ParallelMultiInstanceTransition
 import BpmnSemantics.SemanticProcess.ValueDomain
 import BpmnSemantics.SemanticProcess.WaitCompletion
 import BpmnSemantics.SemanticProcess.ActivityDataInput
+import BpmnSemantics.SemanticProcess.ActivityDataInputOutput
 import BpmnSemantics.SemanticProcess.ActivityDataOutput
 import BpmnSemantics.SemanticProcess.MessagePayload
 import BpmnSemantics.SemanticProcess.MessageBoundedTask
@@ -190,6 +191,18 @@ private def sequentialMultiInstanceStartBindingsAdmitted (program : Program)
                 ⟨taskId.elementId.value⟩ taskId.activation with
             | some successor =>
                 if taskId.processInstanceId = instanceId && submittedValues.isEmpty then
+                  { outcome := .committed, state := successor }
+                else
+                  { outcome := .rejected, state }
+            | none => { outcome := .rejected, state }
+          else if isDataInputOutputTaskDefinition program ⟨taskId.elementId.value⟩ then
+            match completeDataInputOutputUserTask? program state
+                taskId.processInstanceId ⟨taskId.elementId.value⟩
+                taskId.activation submittedValues with
+            | some successor =>
+                if taskId.processInstanceId = instanceId &&
+                    processDataBindingsAdmitted program.identity.semanticProfile
+                      .userTaskCompletion submittedValues then
                   { outcome := .committed, state := successor }
                 else
                   { outcome := .rejected, state }

@@ -114,6 +114,7 @@ private def operationInputs : SemanticOperation → List ControlPlaceId
   | .invokeProcess _ _ input _ _ _ _
   | .awaitUserTask _ _ input _ _
   | .awaitDataInputUserTask _ _ input _ _ _ _
+  | .awaitDataInputOutputUserTask _ _ input _ _ _ _ _
   | .awaitDataOutputUserTask _ _ input _ _ _ _
   | .awaitSequentialMultiInstanceUserTask _ _ input _ _ _ _ _
   | .awaitParallelMultiInstanceUserTask _ _ input _ _ _ _ _ _ _
@@ -142,6 +143,7 @@ private def operationOutputs : SemanticOperation → List ControlPlaceId
   | .returnProcess _ _ _ _ output
   | .awaitUserTask _ _ _ output _
   | .awaitDataInputUserTask _ _ _ output _ _ _
+  | .awaitDataInputOutputUserTask _ _ _ output _ _ _ _
   | .awaitDataOutputUserTask _ _ _ output _ _ _
   | .awaitTimer _ _ _ output _
   | .awaitMessage _ _ _ output _ | .awaitPayloadMessage _ _ _ output _ _
@@ -373,6 +375,7 @@ private def programEdges (program : Program) : List (GraphEdge OperationId) :=
 def semanticOperationIsResumptionCut : SemanticOperation → Bool
   | .awaitUserTask .. => true
   | .awaitDataInputUserTask .. => true
+  | .awaitDataInputOutputUserTask .. => true
   | .awaitDataOutputUserTask .. => true
   | .awaitSequentialMultiInstanceUserTask .. => true
   | .awaitParallelMultiInstanceUserTask .. => true

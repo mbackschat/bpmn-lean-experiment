@@ -27,6 +27,7 @@ import {
   compileBpmnToSemanticProcess,
 } from "@bpmn-lean/bpmn-source";
 import {
+  ACTIVITY_DATA_INPUT_OUTPUT_CHECKPOINT_PROFILE_ID,
   MESSAGE_KEY_CORRELATION_CHECKPOINT_PROFILE_ID,
   SEQUENTIAL_MULTI_INSTANCE_USER_TASK_PROFILE_ID,
   SemanticProfileId,
@@ -340,6 +341,16 @@ const dispatchFixtures = {
     sourceId: "activity-data-input-user-task",
     semanticProfile: SemanticProfileId.ActivityDataInputUserTask,
     find: '<bpmn:startEvent id="StartEvent_Review"',
+  },
+  activityDataInputOutputUserTask: {
+    path: "the composed Activity data-input/output reader",
+    source: new URL(
+      "../../../scenarios/activity-data-input-output-user-task/process.bpmn",
+      import.meta.url,
+    ),
+    sourceId: "activity-data-input-output-user-task",
+    semanticProfile: ACTIVITY_DATA_INPUT_OUTPUT_CHECKPOINT_PROFILE_ID,
+    find: '<bpmn:startEvent id="StartEvent_ClaimReceived"',
   },
   activityDataOutputUserTask: {
     path: "the Activity data-output reader",

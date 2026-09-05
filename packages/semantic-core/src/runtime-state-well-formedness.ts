@@ -134,6 +134,7 @@ function declaredElementIds(
       // Both direct data families arm an ordinary task wait; their own Activity record owns local
       // data rather than a deadline, so neither declares a Timer element.
       case SemanticOperationKind.AwaitDataInputUserTask:
+      case SemanticOperationKind.AwaitDataInputOutputUserTask:
       case SemanticOperationKind.AwaitDataOutputUserTask:
         userTask.add(operation.task.elementId);
         break;

@@ -571,6 +571,62 @@ test("binds the Call Activity node and exact invocation pair", async () => {
   assert.equal(operation({ ...returned, returnOperationId: invoke.returnOperationId }), false);
 });
 
+test("binds composed Activity data input/output as one closed checked and Program arm", async () => {
+  const checkedSchema = JSON.parse(
+    await readFile(`${projectRoot}/contracts/schemas/checked-process.schema.json`, "utf8"),
+  ) as { readonly $defs: Readonly<Record<string, unknown>> };
+  const semanticSchema = JSON.parse(
+    await readFile(`${projectRoot}/contracts/schemas/semantic-process.schema.json`, "utf8"),
+  ) as { readonly $defs: Readonly<Record<string, unknown>> };
+  const ajv = new Ajv2020({ strict: true });
+  const node = ajv.compile({
+    $schema: "https://json-schema.org/draft/2020-12/schema",
+    $defs: checkedSchema.$defs,
+    $ref: "#/$defs/node",
+  });
+  const operation = ajv.compile({
+    $schema: "https://json-schema.org/draft/2020-12/schema",
+    $defs: semanticSchema.$defs,
+    $ref: "#/$defs/operation",
+  });
+  const directInput = {
+    associationId: "InputAssociation",
+    sourcePropertyId: "InputProperty",
+    targetDataInputId: "DataInput",
+    targetDataInputName: null,
+  };
+  const directOutput = {
+    associationId: "OutputAssociation",
+    sourceDataOutputId: "DataOutput",
+    sourceDataOutputName: null,
+    targetPropertyId: "OutputProperty",
+  };
+  const composedNode = {
+    kind: "dataInputOutputUserTask",
+    id: "Review",
+    name: "Review",
+    directInput,
+    directOutput,
+  };
+  const composedOperation = {
+    id: "operation:Review",
+    kind: "awaitDataInputOutputUserTask",
+    origin: { kind: "bpmnElement", elementId: "Review" },
+    input: "place:Input",
+    output: "place:Output",
+    task: { elementId: "Review", name: "Review" },
+    directInput,
+    directOutput,
+  };
+
+  assert.equal(node(composedNode), true);
+  assert.equal(operation(composedOperation), true);
+  assert.equal(node({ ...composedNode, directOutput: undefined }), false);
+  assert.equal(operation({ ...composedOperation, directInput: undefined }), false);
+  assert.equal(operation({ ...composedOperation, kind: "awaitDataInputUserTask" }), false);
+  assert.equal(operation({ ...composedOperation, kind: "awaitDataOutputUserTask" }), false);
+});
+
 /**
  * Covers both closed definition schemas, not only the checked graph.
  *

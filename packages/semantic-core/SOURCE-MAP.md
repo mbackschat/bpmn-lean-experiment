@@ -30,7 +30,7 @@ This contributor map assigns source-file responsibilities inside `@bpmn-lean/sem
 | [compensation-trigger-handler-completion.ts](src/compensation-trigger-handler-completion.ts) | Exact compensation effect completion, predecessor-frontier activation, final continuation, fail-fast terminalization, regional cleanup, and successor-capacity preflight |
 | [semantic-process-admission.ts](src/semantic-process-admission.ts) | Structural scenario and program validation plus identity admission |
 | [semantic-process-operation-admission.ts](src/semantic-process-operation-admission.ts) | Closed operation dispatch plus shared payload, reference, and origin validation |
-| [activity-data-operation-admission.ts](src/activity-data-operation-admission.ts) | Direct Activity data-input and data-output operation validation |
+| [activity-data-operation-admission.ts](src/activity-data-operation-admission.ts) | Direct Activity data-input, data-output, and composed input/output operation validation |
 | [semantic-command-admission.ts](src/semantic-command-admission.ts) | Whether one submitted external command commits, including compensation-effect dispatch and exact stale/capacity refusal, and to which successor state |
 | [semantic-process-graph-admission.ts](src/semantic-process-graph-admission.ts) | Producer and consumer consistency, reachability, co-reachability, cycle-policy validation, and the private declaration-derived dormant-handler composition seam |
 | [compensation-source-checkpoint-topology.ts](src/compensation-source-checkpoint-topology.ts) | Exact split, nested-scope, synchronization, trigger, and completion topology admitted by the source-bound Compensation hosting checkpoint |
@@ -67,11 +67,12 @@ This contributor map assigns source-file responsibilities inside `@bpmn-lean/sem
 | [semantic-process-message-bounded-task-runtime.ts](src/semantic-process-message-bounded-task-runtime.ts) | A User Task occurrence owning an interrupting boundary Message subscription |
 | [semantic-process-monitored-task-runtime.ts](src/semantic-process-monitored-task-runtime.ts) | A User Task occurrence owning a non-interrupting boundary Timer |
 | [semantic-process-activity-data-input-runtime.ts](src/semantic-process-activity-data-input-runtime.ts) | A User Task occurrence whose entry waits on one Process binding and copies it into the Activity's own scope |
+| [semantic-process-activity-data-input-output-runtime.ts](src/semantic-process-activity-data-input-output-runtime.ts) | One User Task occurrence whose input-dependent activation and exact output completion share the same input-bearing Activity-local scope |
 | [activity-data-input-contract.ts](src/activity-data-input-contract.ts) | The Task-neutral value describing one direct Data Input Association |
 | [activity-data-input-observation.ts](src/activity-data-input-observation.ts) | The one-element selected-input collection an open task publishes |
 | [semantic-process-activity-data-output-runtime.ts](src/semantic-process-activity-data-output-runtime.ts) | A User Task occurrence whose accepted completion fills one declared output and writes it through the association |
 | [activity-data-output-contract.ts](src/activity-data-output-contract.ts) | The Task-neutral value describing one direct Data Output Association |
-| [activity-data-operation-runtime.ts](src/activity-data-operation-runtime.ts) | Runtime dispatch shared by the direct Activity data-input and data-output operation families |
+| [activity-data-operation-runtime.ts](src/activity-data-operation-runtime.ts) | Runtime dispatch shared by the direct Activity data-input, data-output, and composed operation families |
 | [catch-event-payload-contract.ts](src/catch-event-payload-contract.ts) | The Event-owned output and direct association identities for one payload-bearing catch Event |
 | [correlation-scalar-path.ts](src/correlation-scalar-path.ts) | Closed decoded Message-payload and Process-property selector values for key correlation |
 | [message-key-correlation.ts](src/message-key-correlation.ts) | Complete immutable definition address, exact candidate projection and matching, and content-bound per-instance correlated Message delivery |

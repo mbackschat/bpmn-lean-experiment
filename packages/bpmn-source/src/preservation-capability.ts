@@ -1,5 +1,6 @@
 /** Closed profile selection for material retained in exact BPMN source without execution meaning. */
 import {
+  ACTIVITY_DATA_INPUT_OUTPUT_CHECKPOINT_PROFILE_ID,
   MESSAGE_KEY_CORRELATION_CHECKPOINT_PROFILE_ID,
   SemanticProfileId,
 } from "@bpmn-lean/semantic-core";
@@ -29,11 +30,13 @@ enum PreservationCapabilityKind {
 
 type SemanticProfile =
   | typeof SemanticProfileId[keyof typeof SemanticProfileId]
+  | typeof ACTIVITY_DATA_INPUT_OUTPUT_CHECKPOINT_PROFILE_ID
   | typeof MESSAGE_KEY_CORRELATION_CHECKPOINT_PROFILE_ID;
 
 const admittedSemanticProfiles: ReadonlySet<string> = new Set(
   [
     ...Object.values(SemanticProfileId),
+    ACTIVITY_DATA_INPUT_OUTPUT_CHECKPOINT_PROFILE_ID,
     MESSAGE_KEY_CORRELATION_CHECKPOINT_PROFILE_ID,
   ],
 );
@@ -119,6 +122,7 @@ function preservationCapabilityKind(
     case SemanticProfileId.ActivityBoundaryTimer:
     case SemanticProfileId.ActivityBoundaryMessage:
     case SemanticProfileId.ActivityDataInputUserTask:
+    case ACTIVITY_DATA_INPUT_OUTPUT_CHECKPOINT_PROFILE_ID:
     case SemanticProfileId.ActivityDataOutputUserTask:
     case SemanticProfileId.CalledProcessCallActivity:
     case SemanticProfileId.ConfiguredTask:

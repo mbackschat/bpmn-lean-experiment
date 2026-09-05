@@ -43,6 +43,7 @@ private def operationKindJson : SemanticOperationKind → Option Json
   | .returnProcess => some (toJson "returnProcess")
   | .awaitUserTask => some (toJson "awaitUserTask")
   | .awaitDataInputUserTask => some (toJson "awaitDataInputUserTask")
+  | .awaitDataInputOutputUserTask => some (toJson "awaitDataInputOutputUserTask")
   | .awaitDataOutputUserTask => some (toJson "awaitDataOutputUserTask")
   | .awaitSequentialMultiInstanceUserTask =>
       some (toJson "awaitSequentialMultiInstanceUserTask")

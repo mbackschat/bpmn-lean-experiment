@@ -1219,6 +1219,46 @@
         }
       }
     },
+    "awaitDataInputOutputUserTask": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "origin",
+        "input",
+        "output",
+        "task",
+        "directInput",
+        "directOutput"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "kind": {
+          "const": "awaitDataInputOutputUserTask"
+        },
+        "origin": {
+          "$ref": "#/$defs/bpmnElementOrigin"
+        },
+        "input": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "output": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "task": {
+          "$ref": "#/$defs/dataTaskDefinition"
+        },
+        "directInput": {
+          "$ref": "#/$defs/directActivityDataInput"
+        },
+        "directOutput": {
+          "$ref": "#/$defs/directActivityDataOutput"
+        }
+      }
+    },
     "awaitDataOutputUserTask": {
       "type": "object",
       "additionalProperties": false,
@@ -2435,6 +2475,9 @@
         },
         {
           "$ref": "#/$defs/awaitDataInputUserTask"
+        },
+        {
+          "$ref": "#/$defs/awaitDataInputOutputUserTask"
         },
         {
           "$ref": "#/$defs/awaitDataOutputUserTask"

@@ -108,11 +108,11 @@ Mechanically routed guards include [documentation reviewability](../../scripts/d
 
 | Owner | Current headroom | Structural condition |
 |---|---:|---|
-| [Semantic profile value domain](../../packages/semantic-core/src/semantic-profile-value-domain.ts) | 540 | value-kind dispatch only |
+| [Semantic profile value domain](../../packages/semantic-core/src/semantic-profile-value-domain.ts) | 531 | value-kind dispatch only |
 | [Semantic execution admission](../../packages/semantic-core/src/semantic-process-admission.ts) | 368 | one predicate call only |
-| [Semantic command admission](../../packages/semantic-core/src/semantic-command-admission.ts) | 361 | one predicate call only |
-| [Lean value domain](../../BpmnSemantics/SemanticProcess/ValueDomain.lean) | 673 | value-kind dispatch only |
-| [Lean command admission](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean) | 246 | predicate definition and one dispatch branch only |
+| [Semantic command admission](../../packages/semantic-core/src/semantic-command-admission.ts) | 351 | one predicate call only |
+| [Lean value domain](../../BpmnSemantics/SemanticProcess/ValueDomain.lean) | 668 | value-kind dispatch only |
+| [Lean command admission](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean) | 233 | predicate definition and one dispatch branch only |
 | [Lean checkpoint conformance](../../BpmnSemantics/CompensationSourceCompatibilityConformance.lean) | 699 | exact positive and negative decisions only |
 | [TypeScript start admission](../../packages/semantic-core/src/compensation-start-data-admission.ts) | 573 | exact Program-derived binding and shared prospective-capacity construction only |
 | [TypeScript start-admission witness](../../packages/semantic-core/test/compensation-start-data-admission.test.ts) | 510 | direct predicate and command preservation, Program-name, canonical-boundary, escaping, and identity discriminators only |

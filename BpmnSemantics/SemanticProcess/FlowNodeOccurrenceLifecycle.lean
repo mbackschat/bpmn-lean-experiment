@@ -147,6 +147,7 @@ def flowNodeSelectedOperationOwner? (state : RuntimeState) :
   | .invokeProcess _ _ input _ _ _ _
   | .awaitUserTask _ _ input _ _
   | .awaitDataInputUserTask _ _ input _ _ _ _
+  | .awaitDataInputOutputUserTask _ _ input _ _ _ _ _
   | .awaitDataOutputUserTask _ _ input _ _ _ _
   | .awaitSequentialMultiInstanceUserTask _ _ input _ _ _ _ _
   | .awaitParallelMultiInstanceUserTask _ _ input _ _ _ _ _ _ _
@@ -686,6 +687,7 @@ def candidateFlowNodeOccurrenceDeltaForOperation? (program : Program) (before af
         | _ => none
       pure (canonicalFlowNodeOccurrenceDelta [← candidateUserTaskStart? program operation owner wait] [])
   | .awaitDataInputUserTask _ _ _ _ taskId _ _
+  | .awaitDataInputOutputUserTask _ _ _ _ taskId _ _ _
   | .awaitDataOutputUserTask _ _ _ _ taskId _ _ =>
       let activation := activationForTask before taskId + 1
       let wait ← match after.waits.filter fun wait => decide

@@ -162,6 +162,7 @@
             "returnProcess",
             "awaitUserTask",
             "awaitDataInputUserTask",
+            "awaitDataInputOutputUserTask",
             "awaitDataOutputUserTask",
             "awaitBoundedUserTask",
             "awaitMessageBoundedUserTask",

@@ -450,7 +450,8 @@ def timerWaitDeclarers (program : Program) (elementId : NodeId) : List SemanticO
     | .awaitEventRace _ _ _ _ timer => decide (timer.elementId = elementId)
     | .initiate .. | .initiateMessage .. | .initiateTimer ..
     | .enterScope .. | .invokeProcess .. | .returnProcess ..
-    | .awaitUserTask .. | .awaitDataInputUserTask .. | .awaitDataOutputUserTask ..
+    | .awaitUserTask .. | .awaitDataInputUserTask .. | .awaitDataInputOutputUserTask ..
+    | .awaitDataOutputUserTask ..
     | .completeParallelMultiInstanceUserTask ..
     | .awaitMessage .. | .awaitPayloadMessage .. | .awaitCorrelatedPayloadMessage ..
     | .awaitEffect ..
@@ -475,7 +476,8 @@ def messageWaitDeclarers (program : Program) (elementId : NodeId) : List Semanti
         decide (boundaryMessage.elementId = elementId)
     | .initiate .. | .initiateMessage .. | .initiateTimer ..
     | .enterScope .. | .enterBoundedScope .. | .invokeProcess .. | .returnProcess ..
-    | .awaitUserTask .. | .awaitDataInputUserTask .. | .awaitDataOutputUserTask ..
+    | .awaitUserTask .. | .awaitDataInputUserTask .. | .awaitDataInputOutputUserTask ..
+    | .awaitDataOutputUserTask ..
     | .awaitSequentialMultiInstanceUserTask .. | .awaitParallelMultiInstanceUserTask ..
     | .completeParallelMultiInstanceUserTask .. | .awaitTimer ..
     | .awaitBoundedUserTask .. | .awaitMonitoredUserTask .. | .awaitEffect ..
@@ -497,6 +499,7 @@ def userTaskWaitDeclarers (program : Program) (taskId : TaskDefinitionId) :
     | .awaitParallelMultiInstanceUserTask _ _ _ candidateTaskId _ _ _ _ _ _ =>
         decide (candidateTaskId = taskId)
     | .awaitDataInputUserTask _ _ _ _ candidateTaskId _ _
+    | .awaitDataInputOutputUserTask _ _ _ _ candidateTaskId _ _ _
     | .awaitDataOutputUserTask _ _ _ _ candidateTaskId _ _ =>
         decide (candidateTaskId = taskId)
     | .initiate .. | .initiateMessage .. | .initiateTimer ..
@@ -515,7 +518,8 @@ def effectWaitDeclarers (program : Program) (elementId : NodeId) : List Semantic
     | .awaitEffect _ origin _ _ _ _ => decide (origin.elementId = elementId)
     | .initiate .. | .initiateMessage .. | .initiateTimer ..
     | .enterScope .. | .enterBoundedScope .. | .invokeProcess .. | .returnProcess ..
-    | .awaitUserTask .. | .awaitDataInputUserTask .. | .awaitDataOutputUserTask ..
+    | .awaitUserTask .. | .awaitDataInputUserTask .. | .awaitDataInputOutputUserTask ..
+    | .awaitDataOutputUserTask ..
     | .awaitSequentialMultiInstanceUserTask .. | .awaitParallelMultiInstanceUserTask ..
     | .completeParallelMultiInstanceUserTask .. | .awaitTimer ..
     | .awaitMessage .. | .awaitPayloadMessage .. | .awaitCorrelatedPayloadMessage ..

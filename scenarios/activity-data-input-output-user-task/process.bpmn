@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  id="Definitions_ActivityDataInputOutputClaimAssessment"
+  targetNamespace="https://bpmn-lean.org/scenarios/activity-data-input-output-claim-assessment">
+  <bpmn:process id="Process_ClaimAssessment" isExecutable="true">
+    <bpmn:property id="Property_ClaimSummary" />
+    <bpmn:property id="Property_ClaimDecision" />
+
+    <bpmn:startEvent id="StartEvent_ClaimReceived">
+      <bpmn:outgoing>Flow_ClaimReceived_Assess</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow
+      id="Flow_ClaimReceived_Assess"
+      sourceRef="StartEvent_ClaimReceived"
+      targetRef="UserTask_AssessClaim" />
+
+    <bpmn:userTask id="UserTask_AssessClaim" name="Assess claim">
+      <bpmn:incoming>Flow_ClaimReceived_Assess</bpmn:incoming>
+      <bpmn:outgoing>Flow_AssessClaim_Recorded</bpmn:outgoing>
+      <bpmn:ioSpecification id="IoSpecification_AssessClaim">
+        <bpmn:dataInput id="DataInput_ClaimSummary" name="Claim summary" />
+        <bpmn:dataOutput id="DataOutput_ClaimDecision" name="Claim decision" />
+        <bpmn:inputSet id="InputSet_AssessClaim">
+          <bpmn:dataInputRefs>DataInput_ClaimSummary</bpmn:dataInputRefs>
+        </bpmn:inputSet>
+        <bpmn:outputSet id="OutputSet_AssessClaim">
+          <bpmn:dataOutputRefs>DataOutput_ClaimDecision</bpmn:dataOutputRefs>
+        </bpmn:outputSet>
+      </bpmn:ioSpecification>
+      <bpmn:dataInputAssociation id="DataInputAssociation_ClaimSummary">
+        <bpmn:sourceRef>Property_ClaimSummary</bpmn:sourceRef>
+        <bpmn:targetRef>DataInput_ClaimSummary</bpmn:targetRef>
+      </bpmn:dataInputAssociation>
+      <bpmn:dataOutputAssociation id="DataOutputAssociation_ClaimDecision">
+        <bpmn:sourceRef>DataOutput_ClaimDecision</bpmn:sourceRef>
+        <bpmn:targetRef>Property_ClaimDecision</bpmn:targetRef>
+      </bpmn:dataOutputAssociation>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow
+      id="Flow_AssessClaim_Recorded"
+      sourceRef="UserTask_AssessClaim"
+      targetRef="EndEvent_Recorded" />
+    <bpmn:endEvent id="EndEvent_Recorded">
+      <bpmn:incoming>Flow_AssessClaim_Recorded</bpmn:incoming>
+    </bpmn:endEvent>
+  </bpmn:process>
+</bpmn:definitions>

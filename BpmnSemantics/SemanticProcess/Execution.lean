@@ -211,6 +211,8 @@ theorem user_task_completion_with_same_successor_is_equal
       ⟨submittedTaskId.elementId.value⟩ = none)
     (noDataInputTask : isDataInputTaskDefinition program
       ⟨submittedTaskId.elementId.value⟩ = false)
+    (noDataInputOutputTask : isDataInputOutputTaskDefinition program
+      ⟨submittedTaskId.elementId.value⟩ = false)
     (noDataOutputTask : isDataOutputTaskDefinition program
       ⟨submittedTaskId.elementId.value⟩ = false)
     (ordinaryProgram : isCallActivityProgram program = false)
@@ -231,7 +233,8 @@ theorem user_task_completion_with_same_successor_is_equal
   simp [applyStimulus, admitStimulus, snapshotAbsent, leftNoIncidents,
     rightNoIncidents, leftRunning, rightRunning,
     ordinaryTask.1, ordinaryTask.2, noSequentialMultiInstance, noParallelMultiInstance,
-    noMessageBoundedTask, noDataInputTask, noDataOutputTask, ordinaryProgram, valuesAdmitted,
+    noMessageBoundedTask, noDataInputOutputTask, noDataInputTask, noDataOutputTask,
+    ordinaryProgram, valuesAdmitted,
     completeOrdinaryUserTaskWithCompensation?, nonCompensationTarget, leftCompletion,
     rightCompletion]
 
@@ -271,7 +274,9 @@ theorem task_identity_mismatch_is_rejected
       simp [admitStimulus, declared,
         completeOrdinaryUserTaskWithCompensation?, matchingOrdinaryUserTaskWait?, completeUserTask,
         initialState,
-        completeBoundedUserTask?, completeMonitoredUserTask?, completeDataInputUserTask?,
+        completeBoundedUserTask?, completeMonitoredUserTask?, completeDataInputOutputUserTask?,
+        isDataInputOutputTaskDefinition, dataInputOutputTaskContract?,
+        dataInputOutputTaskContracts, dataInputOutputTaskWait?, completeDataInputUserTask?,
         completeDataOutputUserTask?, isDataOutputTaskDefinition, dataOutputAssociation?,
         dataOutputTaskOperations, dataOutputTaskWait?, dataInputTaskWait?,
         completeMessageBoundedUserTask?, messageBoundedPairForTask?,
@@ -289,7 +294,9 @@ theorem task_identity_mismatch_is_rejected
         simp [admitStimulus, declared,
           completeOrdinaryUserTaskWithCompensation?, matchingOrdinaryUserTaskWait?, completeUserTask,
           initialState,
-          completeBoundedUserTask?, completeMonitoredUserTask?, completeDataInputUserTask?,
+          completeBoundedUserTask?, completeMonitoredUserTask?, completeDataInputOutputUserTask?,
+          isDataInputOutputTaskDefinition, dataInputOutputTaskContract?,
+          dataInputOutputTaskContracts, dataInputOutputTaskWait?, completeDataInputUserTask?,
           completeDataOutputUserTask?, isDataOutputTaskDefinition, dataOutputAssociation?,
           dataOutputTaskOperations, dataOutputTaskWait?, dataInputTaskWait?,
           completeMessageBoundedUserTask?, messageBoundedPairForTask?,
@@ -305,7 +312,9 @@ theorem task_identity_mismatch_is_rejected
         simp [admitStimulus, declared,
           completeOrdinaryUserTaskWithCompensation?, matchingOrdinaryUserTaskWait?, completeUserTask,
           initialState,
-          completeBoundedUserTask?, completeMonitoredUserTask?, completeDataInputUserTask?,
+          completeBoundedUserTask?, completeMonitoredUserTask?, completeDataInputOutputUserTask?,
+          isDataInputOutputTaskDefinition, dataInputOutputTaskContract?,
+          dataInputOutputTaskContracts, dataInputOutputTaskWait?, completeDataInputUserTask?,
           completeDataOutputUserTask?, isDataOutputTaskDefinition, dataOutputAssociation?,
           dataOutputTaskOperations, dataOutputTaskWait?, dataInputTaskWait?,
           completeMessageBoundedUserTask?, messageBoundedPairForTask?,

@@ -368,6 +368,17 @@ private def lowerNode (source : CheckedProcess) :
         ⟨id.value⟩
         name
         directInput, scopeId)
+  | .dataInputOutputUserTask id name directInput directOutput =>
+      checkedNodeScopeId? source id |>.map fun scopeId =>
+      (.awaitDataInputOutputUserTask
+        (nodeOperationId id)
+        { elementId := id }
+        (firstPlace (incomingPlaces source id))
+        (firstPlace (outgoingPlaces source id))
+        ⟨id.value⟩
+        name
+        directInput
+        directOutput, scopeId)
   | .dataOutputUserTask id name directOutput =>
       checkedNodeScopeId? source id |>.map fun scopeId =>
       (.awaitDataOutputUserTask

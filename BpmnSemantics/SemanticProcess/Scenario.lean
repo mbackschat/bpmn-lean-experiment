@@ -46,6 +46,7 @@ private structure OwnedWaitDefinitions where
 private def ownedWaitDefinitions : SemanticOperation → OwnedWaitDefinitions
   | .awaitUserTask _ _ _ _ task => { tasks := [task] }
   | .awaitDataInputUserTask _ _ _ _ taskId taskName _
+  | .awaitDataInputOutputUserTask _ _ _ _ taskId taskName _ _
   | .awaitDataOutputUserTask _ _ _ _ taskId taskName _ =>
       { tasks := [{ id := taskId, name := taskName }] }
   | .awaitTimer _ _ _ _ timer => { timers := [timer] }

@@ -3,6 +3,7 @@ import { CheckedNodeKind } from "./checked-process-contract.js";
 import type { DeepReadonly } from "./deep-readonly.js";
 import { SemanticOperationKind } from "./semantic-process-contract.js";
 import {
+  ACTIVITY_DATA_INPUT_OUTPUT_CHECKPOINT_PROFILE_ID,
   COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID,
   MESSAGE_KEY_CORRELATION_CHECKPOINT_PROFILE_ID,
   SemanticProfileId,
@@ -51,6 +52,7 @@ export function semanticGraphPolicyForProfile(
     case SemanticProfileId.ActivityBoundaryTimer:
     case SemanticProfileId.ActivityBoundaryMessage:
     case SemanticProfileId.ActivityDataInputUserTask:
+    case ACTIVITY_DATA_INPUT_OUTPUT_CHECKPOINT_PROFILE_ID:
     case SemanticProfileId.ActivityDataOutputUserTask:
     case SemanticProfileId.MappedBoundaryErrorServiceTask:
     case SemanticProfileId.CalledProcessCallActivity:

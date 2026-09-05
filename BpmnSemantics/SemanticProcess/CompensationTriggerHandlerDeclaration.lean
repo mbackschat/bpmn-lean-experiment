@@ -110,6 +110,7 @@ private def operationOriginElementId : SemanticOperation → Option NodeId
   | .enterScope _ origin _ _ _ | .enterBoundedScope _ origin _ _ _ _
   | .invokeProcess _ origin _ _ _ _ _ | .returnProcess _ origin _ _ _
   | .awaitUserTask _ origin _ _ _ | .awaitDataInputUserTask _ origin _ _ _ _ _
+  | .awaitDataInputOutputUserTask _ origin _ _ _ _ _ _
   | .awaitDataOutputUserTask _ origin _ _ _ _ _
   | .awaitSequentialMultiInstanceUserTask _ origin _ _ _ _ _ _
   | .awaitParallelMultiInstanceUserTask _ origin _ _ _ _ _ _ _ _

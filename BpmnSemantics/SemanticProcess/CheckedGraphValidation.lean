@@ -19,6 +19,7 @@ private def checkedNodeId : CheckedNode → NodeId
   | .messageBoundaryEvent id _ _ _ _
   | .userTask id _ _
   | .dataInputUserTask id _ _
+  | .dataInputOutputUserTask id _ _ _
   | .dataOutputUserTask id _ _
   | .sequentialMultiInstanceUserTask id _ _ _ _ _
   | .parallelMultiInstanceUserTask id _ _ _ _ _ _
@@ -88,7 +89,7 @@ private def attachedBoundaryHost? : CheckedNode → Option (GraphEdge NodeId)
   | .messageBoundaryEvent id attachedToRef _ _ _ =>
       some { source := attachedToRef, target := id }
   | .noneStartEvent .. | .messageStartEvent .. | .timerStartEvent .. | .embeddedSubProcess .. | .callActivity ..
-  | .userTask .. | .dataInputUserTask .. | .dataOutputUserTask ..
+  | .userTask .. | .dataInputUserTask .. | .dataInputOutputUserTask .. | .dataOutputUserTask ..
   | .intermediateCatchTimerEvent ..
   | .sequentialMultiInstanceUserTask ..
   | .parallelMultiInstanceUserTask ..
@@ -124,6 +125,7 @@ private def checkedEndIds (nodes : List CheckedNode) : List NodeId :=
 def checkedNodeIsResumptionCut : CheckedNode → Bool
   | .userTask .. => true
   | .dataInputUserTask .. => true
+  | .dataInputOutputUserTask .. => true
   | .dataOutputUserTask .. => true
   | .sequentialMultiInstanceUserTask .. => true
   | .parallelMultiInstanceUserTask .. => true

@@ -64,6 +64,7 @@ export enum SemanticOperationKind {
   ReturnProcess = "returnProcess",
   AwaitUserTask = "awaitUserTask",
   AwaitDataInputUserTask = "awaitDataInputUserTask",
+  AwaitDataInputOutputUserTask = "awaitDataInputOutputUserTask",
   AwaitDataOutputUserTask = "awaitDataOutputUserTask",
   AwaitSequentialMultiInstanceUserTask = "awaitSequentialMultiInstanceUserTask",
   AwaitParallelMultiInstanceUserTask = "awaitParallelMultiInstanceUserTask",
@@ -353,6 +354,24 @@ export type AwaitDataInputUserTaskOperation = OperationBase &
   }>;
 
 /**
+ * One Activity lifetime whose required input gates activation and whose required output gates
+ * completion. A distinct arm prevents a field-presence flag from changing either predecessor's
+ * already-closed transition boundary.
+ */
+export type AwaitDataInputOutputUserTaskOperation = OperationBase &
+  DeepReadonly<{
+    kind: SemanticOperationKind.AwaitDataInputOutputUserTask;
+    input: string;
+    output: string;
+    task: {
+      elementId: string;
+      name: string | null;
+    };
+    directInput: DirectActivityDataInput;
+    directOutput: DirectActivityDataOutput;
+  }>;
+
+/**
  * One User Task occurrence whose accepted completion writes one declared Activity data output.
  *
  * Separate from `awaitDataInputUserTask` because the two constrain opposite ends of the occurrence:
@@ -552,6 +571,7 @@ export type SemanticOperation =
         };
       }>)
   | AwaitDataInputUserTaskOperation
+  | AwaitDataInputOutputUserTaskOperation
   | AwaitDataOutputUserTaskOperation
   | AwaitBoundedUserTaskOperation
   | AwaitMessageBoundedUserTaskOperation

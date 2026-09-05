@@ -93,6 +93,7 @@ key per family because runtime well-formedness validates each wait family indepe
 def operationWaitDeclarationKeys : SemanticOperation → List WaitDeclarationKey
   | .awaitUserTask _ _ _ _ task => [userTaskWaitDeclarationKey task.id]
   | .awaitDataInputUserTask _ _ _ _ taskId _ _
+  | .awaitDataInputOutputUserTask _ _ _ _ taskId _ _ _
   | .awaitDataOutputUserTask _ _ _ _ taskId _ _ =>
       [userTaskWaitDeclarationKey taskId]
   | .awaitBoundedUserTask _ _ _ task boundaryTimer
@@ -224,6 +225,23 @@ private def operationWellFormed (program : Program) (places : List ControlPlace)
         decide (origin.elementId.value = taskId.value) &&
         decide (taskName ≠ some "") &&
         decide (directInput.targetDataInputName ≠ some "") &&
+        decide (input ≠ output) &&
+        placeExists places input &&
+        placeExists places output
+  | .awaitDataInputOutputUserTask id origin input output taskId taskName directInput
+      directOutput =>
+      let identities :=
+        [taskId.value, directInput.associationId, directInput.sourcePropertyId,
+          directInput.targetDataInputId, directOutput.associationId,
+          directOutput.sourceDataOutputId, directOutput.targetPropertyId]
+      nonempty id.value &&
+        nonempty origin.elementId.value &&
+        identities.all nonempty &&
+        identities.eraseDups.length = identities.length &&
+        decide (origin.elementId.value = taskId.value) &&
+        decide (taskName ≠ some "") &&
+        decide (directInput.targetDataInputName ≠ some "") &&
+        decide (directOutput.sourceDataOutputName ≠ some "") &&
         decide (input ≠ output) &&
         placeExists places input &&
         placeExists places output
@@ -653,6 +671,7 @@ theorem programWellFormed_internalArm_element_nonempty (program : Program)
     (match operation with
     | .awaitUserTask _ _ _ _ task => !task.id.value.isEmpty
     | .awaitDataInputUserTask _ _ _ _ taskId _ _ => !taskId.value.isEmpty
+    | .awaitDataInputOutputUserTask _ _ _ _ taskId _ _ _ => !taskId.value.isEmpty
     | .awaitDataOutputUserTask _ _ _ _ taskId _ _ => !taskId.value.isEmpty
     | .awaitMessage _ _ _ _ message => !message.elementId.value.isEmpty
     | .awaitPayloadMessage _ _ _ _ message _ => !message.elementId.value.isEmpty

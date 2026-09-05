@@ -54,6 +54,7 @@ import {
 } from "./compensation-trigger-handler-program-admission.js";
 import {
   isWellFormedAwaitDataInputUserTaskOperation,
+  isWellFormedAwaitDataInputOutputUserTaskOperation,
   isWellFormedAwaitDataOutputUserTaskOperation,
 } from "./activity-data-operation-admission.js";
 
@@ -291,6 +292,8 @@ export function isWellFormedSemanticOperation(
       );
     case SemanticOperationKind.AwaitDataInputUserTask:
       return isWellFormedAwaitDataInputUserTaskOperation(value, placeIds);
+    case SemanticOperationKind.AwaitDataInputOutputUserTask:
+      return isWellFormedAwaitDataInputOutputUserTaskOperation(value, placeIds);
     case SemanticOperationKind.AwaitDataOutputUserTask:
       return isWellFormedAwaitDataOutputUserTaskOperation(value, placeIds);
     case SemanticOperationKind.AwaitSequentialMultiInstanceUserTask:

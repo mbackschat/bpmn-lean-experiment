@@ -1,4 +1,5 @@
 import {
+  ACTIVITY_DATA_INPUT_OUTPUT_CHECKPOINT_PROFILE_ID,
   COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID,
   MESSAGE_KEY_CORRELATION_CHECKPOINT_PROFILE_ID,
   PARALLEL_MULTI_INSTANCE_USER_TASK_PROFILE_ID,
@@ -49,6 +50,9 @@ import {
   compileActivityDataInputCheckedProcess,
 } from "./activity-data-input-source.js";
 import {
+  compileActivityDataInputOutputCheckedProcess,
+} from "./activity-data-input-output-source.js";
+import {
   compileActivityDataOutputCheckedProcess,
 } from "./activity-data-output-source.js";
 import {
@@ -70,6 +74,7 @@ export const CompilationDispatchId = Object.freeze({
   SequentialMultiInstanceUserTask: "sequentialMultiInstanceUserTask",
   ParallelMultiInstanceUserTask: "parallelMultiInstanceUserTask",
   ActivityDataInputUserTask: "activityDataInputUserTask",
+  ActivityDataInputOutputUserTask: "activityDataInputOutputUserTask",
   ActivityDataOutputUserTask: "activityDataOutputUserTask",
   MessagePayloadCatch: "messagePayloadCatch",
   MessageKeyCorrelation: "messageKeyCorrelation",
@@ -184,6 +189,20 @@ export const compilationDispatches: ReadonlyArray<CompilationDispatch> =
             ),
     },
     {
+      id: CompilationDispatchId.ActivityDataInputOutputUserTask,
+      semanticProfile: ACTIVITY_DATA_INPUT_OUTPUT_CHECKPOINT_PROFILE_ID,
+      reader: (rootElement, source, overlay) =>
+        overlay === null
+          ? compileActivityDataInputOutputCheckedProcess(
+              rootElement,
+              source,
+              null,
+            )
+          : unsupported(
+              "The Activity data input/output profile does not admit a source overlay.",
+            ),
+    },
+    {
       id: CompilationDispatchId.ActivityDataOutputUserTask,
       semanticProfile: SemanticProfileId.ActivityDataOutputUserTask,
       reader: (rootElement, source, overlay) =>
@@ -267,6 +286,7 @@ export function compileDispatchedCheckedProcess(
     case CompilationDispatchId.SequentialMultiInstanceUserTask:
     case CompilationDispatchId.ParallelMultiInstanceUserTask:
     case CompilationDispatchId.ActivityDataInputUserTask:
+    case CompilationDispatchId.ActivityDataInputOutputUserTask:
     case CompilationDispatchId.ActivityDataOutputUserTask:
     case CompilationDispatchId.MessagePayloadCatch:
     case CompilationDispatchId.MessageKeyCorrelation:

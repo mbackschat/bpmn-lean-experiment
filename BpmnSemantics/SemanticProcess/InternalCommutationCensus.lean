@@ -31,6 +31,7 @@ def semanticOperationInternalFamily : SemanticOperation → InternalOperationFam
   | .awaitEffect _ _ _ _ _ _ => .ordinaryWaitArming
   | .enterBoundedScope _ _ _ _ _ _
   | .awaitDataInputUserTask _ _ _ _ _ _ _
+  | .awaitDataInputOutputUserTask _ _ _ _ _ _ _ _
   | .awaitDataOutputUserTask _ _ _ _ _ _ _
   | .awaitBoundedUserTask _ _ _ _ _
   | .awaitMessageBoundedUserTask _ _ _ _ _

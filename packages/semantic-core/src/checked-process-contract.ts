@@ -47,6 +47,7 @@ export enum CheckedNodeKind {
   MessageBoundaryEvent = "messageBoundaryEvent",
   UserTask = "userTask",
   DataInputUserTask = "dataInputUserTask",
+  DataInputOutputUserTask = "dataInputOutputUserTask",
   DataOutputUserTask = "dataOutputUserTask",
   SequentialMultiInstanceUserTask = "sequentialMultiInstanceUserTask",
   ParallelMultiInstanceUserTask = "parallelMultiInstanceUserTask",
@@ -205,6 +206,14 @@ export type CheckedNode =
       id: string;
       name: string | null;
       directInput: DirectActivityDataInput;
+    }>
+  /** A distinct checked arm because both associations share one Activity lifetime without widening either predecessor profile. */
+  | DeepReadonly<{
+      kind: CheckedNodeKind.DataInputOutputUserTask;
+      id: string;
+      name: string | null;
+      directInput: DirectActivityDataInput;
+      directOutput: DirectActivityDataOutput;
     }>
   /**
    * A User Task whose one required DataOutput is written back by one direct Data Output Association.

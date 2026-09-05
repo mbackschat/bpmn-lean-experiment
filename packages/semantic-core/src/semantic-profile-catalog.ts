@@ -71,6 +71,10 @@ export const SemanticProfileId = Object.freeze({
     "bpmn-2.0.2-bpmn-lean-structured-human-work-draft",
 } as const);
 
+/** Admission-only identity held outside the product registry until composed Activity-data closure. */
+export const ACTIVITY_DATA_INPUT_OUTPUT_CHECKPOINT_PROFILE_ID =
+  "bpmn-2.0.2-activity-data-input-output-user-task-draft" as const;
+
 /** Transition alias retained while correlation closure lanes migrate to the registered catalog member. */
 export const MESSAGE_KEY_CORRELATION_CHECKPOINT_PROFILE_ID =
   SemanticProfileId.MessageKeyCorrelation;
