@@ -11,6 +11,8 @@ The checked fixture preserves the complete reviewed data-role graph and lowers i
 lowering, public command dispatch, strict trace replay, and the reference identities used at runtime.
 -/
 
+set_option Elab.async false
+
 namespace BpmnSemantics.SequentialMultiInstanceProgramBindingConformance
 
 open BpmnSemantics

@@ -7,6 +7,8 @@ import BpmnSemantics.SemanticProcess.Scenario
 This module owns the exact standards-only Timer Start fixture and its proved admission, lowering, transition, identity-refusal, closure, observation, and scenario-ordering laws. It covers one top-level `PT1S` Timer Start Event followed by one User Task and one None End Event. Schedule lifecycle, recurring timers, time-date and time-cycle forms, payload, Event Sub-Process starts, and host identity remain outside this account.
 -/
 
+set_option Elab.async false
+
 namespace BpmnSemantics.TimerStartConformance
 
 open BpmnSemantics

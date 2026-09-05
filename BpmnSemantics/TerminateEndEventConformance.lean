@@ -7,6 +7,8 @@ parent work live while removing the selected child region, and the root witness 
 operation shape without a parent continuation.
 -/
 
+set_option Elab.async false
+
 namespace BpmnSemantics.TerminateEndEventConformance
 
 open BpmnSemantics
