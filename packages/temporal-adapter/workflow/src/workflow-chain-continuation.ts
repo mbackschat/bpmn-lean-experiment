@@ -21,7 +21,6 @@ import {
   MessageDeliveryResolutionKind,
   WorkflowChainBudgetKind,
   bpmnProcessCorrelationRegistrationContinuationV1,
-  bpmnWorkflowChainCapacityExhaustedFailureType,
   bpmnWorkflowContinuationV1,
   bpmnWorkflowRolloverInProgressFailureType,
   canonicalWorkflowChainJson,
@@ -301,14 +300,15 @@ export function buildWorkflowChainSuccessor(
     !Number.isSafeInteger(runOrdinal) ||
     runOrdinal > workflowChainProductionLimit(WorkflowChainBudgetKind.WorkflowChainRuns)
   ) {
-    throw capacityFailure(
-      WorkflowChainBudgetKind.WorkflowChainRuns,
-      runOrdinal,
-      workflowChainProductionLimit(WorkflowChainBudgetKind.WorkflowChainRuns),
-      start.instanceId,
+    runtime.capacity.retainObservedCapacity(
+      {
+        budget: WorkflowChainBudgetKind.WorkflowChainRuns,
+        observedValue: runOrdinal,
+        configuredBound: workflowChainProductionLimit(WorkflowChainBudgetKind.WorkflowChainRuns),
+      },
       publication.execution.headRevision,
-      runtime.runOrdinal,
     );
+    throw runtime.capacity.applicationFailure();
   }
   const closedPublication = snapshotWorkflowPublicationForSuccessor(
     publication,
@@ -670,37 +670,12 @@ function requireSuccessorArgumentBudgets(
     start, program, host, state, recovery, publication, correlation,
   );
   if (violation !== null) {
-    throw capacityFailure(
-      violation.budget,
-      violation.observedValue,
-      violation.configuredBound,
-      start.instanceId,
+    runtime.capacity.retainObservedCapacity(
+      violation,
       publication.execution.headRevision,
-      runtime.runOrdinal,
     );
+    throw runtime.capacity.applicationFailure();
   }
-}
-
-function capacityFailure(
-  budget: WorkflowChainBudgetKind,
-  observedValue: number,
-  configuredBound: number,
-  processInstanceId: string,
-  publicRevision: number,
-  runOrdinal: number,
-): ApplicationFailure {
-  return ApplicationFailure.nonRetryable(
-    "Workflow-chain capacity is exhausted",
-    bpmnWorkflowChainCapacityExhaustedFailureType,
-    {
-      budget,
-      configuredBound,
-      observedValue,
-      processInstanceId,
-      publicRevision,
-      runOrdinal,
-    },
-  );
 }
 
 function invalidContinuation(message: string, cause?: unknown): ApplicationFailure {

@@ -17,6 +17,8 @@ import type {
 import {
   MessageDeliveryResolutionKind,
   WorkflowChainBudgetKind,
+  WorkflowChainCommandRecoveryResponseKind,
+  bpmnWorkflowChainProtocolV1,
   workflowChainCanonicalUtf8ByteLength,
   workflowChainProductionLimit,
 } from "@bpmn-lean/temporal-protocol";
@@ -36,6 +38,7 @@ import {
   terminalProcessReceipt,
   validateIncomingWorkflowContinuation,
   validateWorkflowChainUpdate,
+  workflowCommandStimulusSha256,
 } from "../dist/index.js";
 import type {
   CommandPublicationState,
@@ -436,6 +439,7 @@ test("classifies an oversized successor RuntimeState as exact capacity exhaustio
     WorkflowChainBudgetKind.CommittedRuntimeStateBytes,
     observedValue,
     base.publication.execution.headRevision,
+    base.runtime,
   );
 });
 
@@ -458,6 +462,7 @@ test("measures successor host metadata under the publication-continuation bound"
     WorkflowChainBudgetKind.PublicationContinuationAndSegmentDirectoryBytes,
     undefined,
     base.publication.execution.headRevision,
+    base.runtime,
   );
 });
 
@@ -480,8 +485,60 @@ test("classifies an oversized publication segment directory before continuation"
     WorkflowChainBudgetKind.PublicationContinuationAndSegmentDirectoryBytes,
     undefined,
     base.publication.execution.headRevision,
+    base.runtime,
   );
 });
+
+test("retains required Run 129 capacity for content-bound recovery", () => {
+  const base = successorFixture(128);
+  assertCapacityFailure(
+    () => buildWorkflowChainSuccessor(
+      base.runtime, publicationStart, publicationProgram,
+      base.state, base.publication, [],
+    ),
+    WorkflowChainBudgetKind.WorkflowChainRuns,
+    129,
+    base.publication.execution.headRevision,
+    base.runtime,
+  );
+});
+
+test("ordinary successor construction leaves capacity recovery inactive", () => {
+  const base = successorFixture();
+  const args = buildWorkflowChainSuccessor(
+    base.runtime, publicationStart, publicationProgram,
+    base.state, base.publication, [],
+  );
+  assert.equal(args[2].runOrdinal, 2);
+  assert.equal(base.runtime.capacity.pendingFailure(), null);
+  const request = recoveryRequest(publicationCompletion("UserTask_B"));
+  assert.deepEqual(base.runtime.capacity.projectRecoveryResponse(
+    base.runtime.recovery, publicationStart.instanceId, request, null,
+  ), { ...request, kind: WorkflowChainCommandRecoveryResponseKind.UnknownWhileActive });
+});
+
+for (const runOrdinal of [1, 128]) {
+  test(`outgoing failure preserves an earlier capacity fact in Run ${runOrdinal}`, () => {
+    const base = successorFixture(runOrdinal);
+    const first = base.runtime.capacity.retainObservedCapacity({
+      budget: WorkflowChainBudgetKind.CommittedRuntimeStateBytes,
+      configuredBound: 65_536,
+      observedValue: 65_537,
+    }, 1);
+    assert.throws(() => buildWorkflowChainSuccessor(
+      base.runtime, publicationStart, publicationProgram,
+      base.state, base.publication,
+      [messageRecord(publicationStart.instanceId, "m".repeat(70 * 1_024))],
+    ), (error: unknown) => {
+      assert.ok(error instanceof ApplicationFailure);
+      assert.equal(error.type, "BPMN_WORKFLOW_CHAIN_CAPACITY_EXHAUSTED");
+      assert.equal(error.nonRetryable, true);
+      assert.deepEqual(error.details, [first]);
+      return true;
+    });
+    assert.deepEqual(base.runtime.capacity.pendingFailure(), first);
+  });
+}
 
 function successorArguments(
   messageDeliveryRecords: ReadonlyArray<MessageDeliveryRecord> = [],
@@ -497,7 +554,7 @@ function successorArguments(
   );
 }
 
-function successorFixture() {
+function successorFixture(runOrdinal = 1) {
   const step = advanceScenario(publicationProgram, initialState, publicationStart);
   assert.equal(step.kind, ScenarioStepKind.Committed);
   if (step.kind !== ScenarioStepKind.Committed) {
@@ -524,7 +581,7 @@ function successorFixture() {
       WorkflowChainBudgetKind.EventHistoryBytes,
     ),
     runId: firstExecutionRunId,
-    runOrdinal: 1,
+    runOrdinal,
     firstExecutionRunId,
     segmentDirectory: {
       format: "bpmn-lean.workflow-publication-segment-directory.v1",
@@ -533,7 +590,7 @@ function successorFixture() {
     recovery: new WorkflowCommandRecoveryLedger(),
     capacity: new WorkflowChainCapacityState({
       processInstanceId: publicationStart.instanceId,
-      runOrdinal: 1,
+      runOrdinal,
     }),
     commandCapacity: new WorkflowCommandCapacityState(),
   };
@@ -596,7 +653,15 @@ function assertCapacityFailure(
   budget: WorkflowChainBudgetKind,
   observedValue: number | undefined,
   publicRevision: number,
+  runtime: WorkflowChainRuntime,
 ): void {
+  const resolved = publicationCompletion("UserTask_A");
+  const admission = runtime.recovery.preflight(resolved);
+  assert.equal(admission.kind, WorkflowCommandRecoveryPreflightKind.Admitted);
+  if (admission.kind !== WorkflowCommandRecoveryPreflightKind.Admitted) {
+    assert.fail("expected recovery admission before outgoing capacity failure");
+  }
+  runtime.recovery.record(admission.admission, CommandOutcome.Committed);
   assert.throws(operation, (error: unknown) => {
     if (
       !(error instanceof ApplicationFailure) ||
@@ -605,6 +670,7 @@ function assertCapacityFailure(
       return false;
     }
     assert.equal(error.details?.length, 1);
+    assert.equal(error.nonRetryable, true);
     const details = error.details?.[0] as Record<string, unknown>;
     assert.equal(details["budget"], budget);
     assert.equal(
@@ -622,9 +688,52 @@ function assertCapacityFailure(
     }
     assert.equal(details["processInstanceId"], publicationStart.instanceId);
     assert.equal(details["publicRevision"], publicRevision);
-    assert.equal(details["runOrdinal"], 1);
+    assert.equal(details["runOrdinal"], runtime.runOrdinal);
+    assert.deepEqual(runtime.capacity.pendingFailure(), details);
     return true;
   });
+  const terminal = terminalFixture();
+  const receipt = terminalProcessReceipt(
+    publicationProgram, publicationStart.instanceId, terminal.state, terminal.trace,
+  );
+  const conflicting = {
+    ...resolved, taskId: { ...resolved.taskId, activation: 2 },
+  };
+  const unseen = recoveryRequest(publicationCompletion("UserTask_B"));
+  for (const terminalReceipt of [null, receipt]) {
+    for (const [stimulus, result] of [
+      [resolved, {
+        kind: WorkflowChainCommandRecoveryResponseKind.Resolved,
+        outcome: CommandOutcome.Committed,
+      }],
+      [conflicting, { kind: WorkflowChainCommandRecoveryResponseKind.IdentityConflict }],
+    ] as const) {
+      const request = recoveryRequest(stimulus);
+      assert.deepEqual(runtime.capacity.projectRecoveryResponse(
+        runtime.recovery, publicationStart.instanceId, request, terminalReceipt,
+      ), { ...request, ...result });
+    }
+    assert.deepEqual(runtime.capacity.projectRecoveryResponse(
+      runtime.recovery, publicationStart.instanceId, unseen, terminalReceipt,
+    ), terminalReceipt === null ? {
+      ...unseen,
+      kind: WorkflowChainCommandRecoveryResponseKind.CapacityFailedWithoutEntry,
+      failure: runtime.capacity.pendingFailure(),
+    } : {
+      ...unseen,
+      kind: WorkflowChainCommandRecoveryResponseKind.TerminalWithoutEntry,
+      receipt,
+    });
+  }
+}
+
+function recoveryRequest(stimulus: ReturnType<typeof publicationCompletion>) {
+  return {
+    protocol: bpmnWorkflowChainProtocolV1,
+    processInstanceId: publicationStart.instanceId,
+    commandId: stimulus.commandId,
+    stimulusSha256: workflowCommandStimulusSha256(stimulus),
+  } as const;
 }
 
 function messageRecord(
