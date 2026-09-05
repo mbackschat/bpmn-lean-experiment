@@ -656,6 +656,8 @@ test("Lean assurance parsing rejects absent, invalid, unsupported, and fragmente
     [],
   );
   assert.deepEqual(leanAssuranceFindings("```md\n## Lean assurance lane\n```\n", "fenced-only.md"), ["fenced-only.md: expected one ## Lean assurance lane, found 0"]);
+  assert.deepEqual(leanAssuranceFindings("## Lean assurance lane\n\nLane shape: proved\n\nEvidence: [owner](../../BpmnSemantics/Proved.lean) proves the law.\n\n    ## Lean laws\n", "indented.md"), []);
+  assert.deepEqual(leanAssuranceFindings("    ## Lean assurance lane\n", "indented-only.md"), ["indented-only.md: expected one ## Lean assurance lane, found 0"]);
   assert.deepEqual(
     leanAssuranceFindings(
       "## Lean assurance lane\n\nLane shape: proved\n\nEvidence: [owner](../../BpmnSemantics/Proved.lean) proves the quantified law.\n",
