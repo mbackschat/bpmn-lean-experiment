@@ -188,7 +188,7 @@ Headroom is measured as nonblank lines remaining under the 800-line review targe
 | [TypeScript operation admission](../../packages/semantic-core/src/semantic-process-operation-admission.ts) | 113 | Extracted before implementation growth |
 | [TypeScript graph admission](../../packages/semantic-core/src/semantic-process-graph-admission.ts) | 153 | Change |
 | [TypeScript runtime dispatch](../../packages/semantic-core/src/semantic-process-runtime.ts) | 35 | Extracted before implementation growth |
-| [TypeScript command admission](../../packages/semantic-core/src/semantic-command-admission.ts) | 351 | Change |
+| [TypeScript command admission](../../packages/semantic-core/src/semantic-command-admission.ts) | 330 | Change |
 | [TypeScript runtime well-formedness](../../packages/semantic-core/src/runtime-state-well-formedness.ts) | 53 | Change |
 | [TypeScript boundary starts](../../packages/semantic-core/src/flow-node-occurrence-boundary-starts.ts) | 480 | Change |
 | [TypeScript lifecycle](../../packages/semantic-core/src/flow-node-occurrence-lifecycle.ts) | 60 | Change |
@@ -208,7 +208,7 @@ Headroom is measured as nonblank lines remaining under the 800-line review targe
 | [Lean graph validation](../../BpmnSemantics/SemanticProcess/GraphValidation.lean) | 91 | Change |
 | [Lean Program JSON](../../BpmnSemantics/SemanticProcessJson/Program.lean) | 87 | Change |
 | [Lean transition](../../BpmnSemantics/SemanticProcess/Transition.lean) | 127 | Change |
-| [Lean command admission](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean) | 233 | Change |
+| [Lean command admission](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean) | 221 | Change |
 | [Lean execution assembly](../../BpmnSemantics/SemanticProcess/Execution.lean) | 313 | Change |
 | [Lean runtime well-formedness](../../BpmnSemantics/SemanticProcess/RuntimeStateWellFormed.lean) | 94 | Change |
 | [Lean boundary starts](../../BpmnSemantics/SemanticProcess/FlowNodeOccurrenceBoundaryStarts.lean) | 506 | Change |

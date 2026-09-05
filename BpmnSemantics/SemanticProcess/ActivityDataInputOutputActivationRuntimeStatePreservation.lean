@@ -87,7 +87,7 @@ theorem dataInputOutputActivationStep_preserves_runtimeStateWellFormed
       cases selected : onlyTokenOwner? before input with
       | none => simp [selected] at success
       | some owner =>
-          cases available : dataInputSourceBinding? before directInput with
+          cases available : dataInputOutputSourceBinding? before directInput with
           | none => simp [selected, running, available] at success
           | some binding =>
               let insertedWait : UserTaskWait :=

@@ -7,9 +7,9 @@ import BpmnSemantics.SemanticProcess.Scenario
 /-! # Composed Activity data-input/output conformance
 
 Finite claim-assessment witnesses for the composed one-Activity account. The quantified activation,
-copy, completion, routing, cleanup, refusal, and family-local well-formedness laws remain in
-[ActivityDataInputOutput](SemanticProcess/ActivityDataInputOutput.lean); these checks bind those laws
-to the approved source identities and observable business path.
+copy, completion, routing, cleanup, and refusal laws remain in
+[ActivityDataInputOutput](SemanticProcess/ActivityDataInputOutput.lean); the two imported preservation
+owners prove aggregate runtime well-formedness. These checks bind the laws to the source identities.
 -/
 
 namespace BpmnSemantics.ActivityDataInputOutputConformance
@@ -73,7 +73,7 @@ private def startClaim (commandId : String) (bindings : List VariableBinding) : 
   .startProcess ⟨commandId⟩ ⟨claimProcessId.value⟩ claimInstanceId bindings
 
 private def startWithSummary : Stimulus :=
-  startClaim "start-claim" [summary, unrelated]
+  startClaim "start-claim" [summary]
 
 private def startWithNullSummary : Stimulus :=
   startClaim "start-null-claim" [nullSummary]
@@ -84,7 +84,14 @@ private def startWithoutSummary : Stimulus :=
 private def runStart (stimulus : Stimulus) : StimulusResult :=
   applyStimulus scenarioClosureLimit claimProgram initialState stimulus
 
-private def active : RuntimeState := (runStart startWithSummary).state
+private def seededReady : RuntimeState :=
+  let ready := (runStart startWithoutSummary).state
+  { ready with variables := { ready.variables with process := { bindings := [summary, unrelated] } } }
+
+private def active : RuntimeState :=
+  (activateDataInputOutputUserTask? seededReady
+    ⟨"place:Flow_ClaimReceived_Assess"⟩ ⟨"place:Flow_AssessClaim_Recorded"⟩
+    ⟨"UserTask_AssessClaim"⟩ (some "Assess claim") claimDirectInput).getD initialState
 
 private def claimTaskInstanceId : UserTaskInstanceId :=
   { processInstanceId := claimInstanceId
@@ -113,12 +120,41 @@ private def refused (state : RuntimeState) : StimulusResult :=
     internalStepBoundExceeded := false
     ambiguousInternalChoice := false }
 
+theorem outputPropertyStartRefusesWithExactStatePreservation :
+    runStart (startClaim "start-output-property"
+      [{ name := claimDirectOutput.targetPropertyId, value := .string "seed" }]) =
+      refused initialState := by
+  decide +kernel
+
+theorem extraStartBindingRefusesWithExactStatePreservation :
+    runStart (startClaim "start-extra-binding" [summary, unrelated]) =
+      refused initialState := by
+  decide +kernel
+
+private def readyWithInput (value : VariableValue) : RuntimeState :=
+  let ready := (runStart startWithoutSummary).state
+  { ready with
+    variables := { ready.variables with process :=
+      { bindings := [{ name := claimDirectInput.sourcePropertyId, value }] } } }
+
+theorem unsupportedReadyInputStatesRemainRuntimeWellFormed :
+    [.boolean true, .integer 1, .stringList ["item"]].all (fun value =>
+      runtimeStateWellFormed claimProgram claimInstanceId (readyWithInput value)) = true := by
+  decide +kernel
+
+theorem unsupportedReadyInputsRefuseComposedActivation :
+    [.boolean true, .integer 1, .stringList ["item"]].any (fun value =>
+      (activateDataInputOutputUserTask? (readyWithInput value)
+        ⟨"place:Flow_ClaimReceived_Assess"⟩ ⟨"place:Flow_AssessClaim_Recorded"⟩
+        ⟨"UserTask_AssessClaim"⟩ (some "Assess claim") claimDirectInput).isSome) = false := by
+  decide +kernel
+
 /-- `ADIO-READY-01`: a present String activates the task and leaves the Process source unchanged. -/
 theorem presentSummaryActivatesOneTask :
     ((runStart startWithSummary).outcome,
       (runStart startWithSummary).state.waits.map (·.task.id),
       (runStart startWithSummary).state.variables.process.bindings) =
-      (CommandOutcome.committed, [⟨"UserTask_AssessClaim"⟩], [summary, unrelated]) := by
+      (CommandOutcome.committed, [⟨"UserTask_AssessClaim"⟩], [summary]) := by
   decide +kernel
 
 /-- `ADIO-SCOPE-01`: the active occurrence owns one scope containing only the copied DataInput. -/

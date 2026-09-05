@@ -109,6 +109,17 @@ private def sequentialMultiInstanceStartBindingsAdmitted (program : Program)
         | _ => false
   | _, _ => false
 
+/-- The composed profile's start payload is absent or exactly its declared input Property.
+The shared value-domain table cannot settle declaration-bound identity and cardinality. -/
+private def dataInputOutputStartBindingsAdmitted (program : Program)
+    (bindings : List VariableBinding) : Bool :=
+  match dataInputOutputTaskContracts program, bindings with
+  | [_], [] => true
+  | [contract], [binding] =>
+      binding.name == contract.directInput.sourcePropertyId &&
+        processDataBindingsAdmitted program.identity.semanticProfile .processStart bindings
+  | _, _ => false
+
 @[simp] private def dispatchStimulusWithoutCompensationSnapshots (program : Program)
     (state : RuntimeState) :
     Stimulus → ExternalAdmission
@@ -122,6 +133,8 @@ private def sequentialMultiInstanceStartBindingsAdmitted (program : Program)
               parallelMultiInstanceStartBindingsAdmitted program initialVariables
             else if sequentialMultiInstanceProgramAdmitted program then
               sequentialMultiInstanceStartBindingsAdmitted program initialVariables
+            else if program.identity.semanticProfile = activityDataInputOutputUserTaskProfileId then
+              dataInputOutputStartBindingsAdmitted program initialVariables
             else
               processDataBindingsAdmitted program.identity.semanticProfile
                 .processStart initialVariables

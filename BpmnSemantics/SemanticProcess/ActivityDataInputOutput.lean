@@ -23,6 +23,16 @@ private def dataInputOutputRunningInstance? (state : RuntimeState) : Option Sema
   | .running instanceId => some instanceId
   | _ => none
 
+/-- The composed profile admits only String/null at activation, including injected ready states;
+`runtimeStateWellFormed` does not constrain the Process binding value domain. -/
+def dataInputOutputSourceBinding? (state : RuntimeState)
+    (directInput : DirectActivityDataInput) : Option VariableBinding := do
+  let binding ← dataInputSourceBinding? state directInput
+  if variableValueAdmitted activityDataInputOutputUserTaskProfileId .processStart binding.value then
+    some binding
+  else
+    none
+
 /-- `ADIO-READY-01` and `ADIO-SCOPE-01`. Activate one composed Activity only after selecting one
 exact Process input binding, and create its wait, record, and sole input-bearing local scope
 atomically. -/
@@ -32,7 +42,7 @@ def activateDataInputOutputUserTask? (state : RuntimeState)
     Option RuntimeState := do
   let owner ← onlyTokenOwner? state input
   let instanceId ← dataInputOutputRunningInstance? state
-  let source ← dataInputSourceBinding? state directInput
+  let source ← dataInputOutputSourceBinding? state directInput
   let taskActivation := activationCount state taskId + 1
   let activityActivation := activityActivationCount state taskId + 1
   let activityOwner : ActivityOccurrenceId :=
@@ -236,7 +246,7 @@ inductive DataInputOutputActivationStep (program : Program) :
       (declared : SemanticOperation.awaitDataInputOutputUserTask id origin input output
         taskId taskName directInput directOutput ∈ program.operations)
       (running : before.control = .running instanceId)
-      (source : (dataInputSourceBinding? before directInput).isSome = true)
+      (source : (dataInputOutputSourceBinding? before directInput).isSome = true)
       (after : RuntimeState)
       (step : activateDataInputOutputUserTask? before input output taskId taskName
         directInput = some after) :
@@ -276,11 +286,11 @@ theorem dataInputOutputRunningInstance_of_running {state : RuntimeState}
     dataInputOutputRunningInstance? state = some instanceId := by
   simp [dataInputOutputRunningInstance?, running]
 
-/-- `ADIO-READY-01`. Missing or ambiguous required Process input universally refuses activation. -/
+/-- `ADIO-READY-01`. Missing, ambiguous, or unsupported required Process input refuses activation. -/
 theorem dataInputOutputUnavailableSourceRefusesActivation (state : RuntimeState)
     (input output : ControlPlaceId) (taskId : TaskDefinitionId)
     (taskName : Option String) (directInput : DirectActivityDataInput)
-    (unavailable : dataInputSourceBinding? state directInput = none) :
+    (unavailable : dataInputOutputSourceBinding? state directInput = none) :
     activateDataInputOutputUserTask? state input output taskId taskName directInput = none := by
   unfold activateDataInputOutputUserTask?
   simp [unavailable]
@@ -296,8 +306,8 @@ theorem activateDataInputOutputUserTask_sound (program : Program)
     (success : activateDataInputOutputUserTask? before input output taskId taskName
       directInput = some after) :
     DataInputOutputActivationStep program before after := by
-  have available : (dataInputSourceBinding? before directInput).isSome = true := by
-    cases source : dataInputSourceBinding? before directInput with
+  have available : (dataInputOutputSourceBinding? before directInput).isSome = true := by
+    cases source : dataInputOutputSourceBinding? before directInput with
     | none =>
         rw [dataInputOutputUnavailableSourceRefusesActivation before input output taskId taskName
           directInput source] at success
@@ -329,7 +339,7 @@ theorem dataInputOutputActivationPreservesProcessScope {state after : RuntimeSta
       cases running : dataInputOutputRunningInstance? state with
       | none => simp [owned, running] at step
       | some instanceId =>
-          cases source : dataInputSourceBinding? state directInput with
+          cases source : dataInputOutputSourceBinding? state directInput with
           | none => simp [owned, running, source] at step
           | some binding =>
               simp [owned, running, source] at step
@@ -357,7 +367,7 @@ theorem dataInputOutputExistingLocalOwnerRefusesActivation (state : RuntimeState
   cases owned : onlyTokenOwner? state input with
   | none => simp
   | some owner =>
-      cases source : dataInputSourceBinding? state directInput with
+      cases source : dataInputOutputSourceBinding? state directInput with
       | none => simp [hosted]
       | some binding =>
           have present' : state.variables.activities.any (activityOccurrenceScopeMatches
@@ -383,7 +393,7 @@ theorem activateDataInputOutputUserTask_localOwnerFresh {state after : RuntimeSt
   cases owned : onlyTokenOwner? state input with
   | none => simp [owned] at step
   | some owner =>
-      cases source : dataInputSourceBinding? state directInput with
+      cases source : dataInputOutputSourceBinding? state directInput with
       | none => simp [owned, hosted, source] at step
       | some binding =>
           simp [owned, hosted, source] at step
@@ -409,7 +419,7 @@ theorem dataInputOutputActivationCopiesSelectedSourceExactly {state after : Runt
     {taskId : TaskDefinitionId} {taskName : Option String}
     {directInput : DirectActivityDataInput} {source : VariableBinding}
     (running : state.control = .running instanceId)
-    (available : dataInputSourceBinding? state directInput = some source)
+    (available : dataInputOutputSourceBinding? state directInput = some source)
     (fresh : ∀ scope ∈ state.variables.activities,
       activityOccurrenceScopeMatches (dataInputOutputActivityOwner state instanceId taskId)
         scope = false)
@@ -448,7 +458,7 @@ theorem dataInputOutputActivationEstablishesExactOneScope {state after : Runtime
     {taskId : TaskDefinitionId} {taskName : Option String}
     {directInput : DirectActivityDataInput} {source : VariableBinding}
     (running : state.control = .running instanceId)
-    (available : dataInputSourceBinding? state directInput = some source)
+    (available : dataInputOutputSourceBinding? state directInput = some source)
     (fresh : ∀ scope ∈ state.variables.activities,
       activityOccurrenceScopeMatches (dataInputOutputActivityOwner state instanceId taskId)
         scope = false)
@@ -679,7 +689,7 @@ theorem activateDataInputOutputUserTask_activityOccurrences {state after : Runti
     {taskName : Option String} {directInput : DirectActivityDataInput}
     (owned : onlyTokenOwner? state input = some owner)
     (running : state.control = .running instanceId)
-    (available : (dataInputSourceBinding? state directInput).isSome = true)
+    (available : (dataInputOutputSourceBinding? state directInput).isSome = true)
     (step : activateDataInputOutputUserTask? state input output taskId taskName directInput =
       some after) :
     after.activityOccurrences =
@@ -688,7 +698,7 @@ theorem activateDataInputOutputUserTask_activityOccurrences {state after : Runti
   have hosted : dataInputOutputRunningInstance? state = some instanceId := by
     simp [dataInputOutputRunningInstance?, running]
   unfold activateDataInputOutputUserTask? at step
-  cases source : dataInputSourceBinding? state directInput with
+  cases source : dataInputOutputSourceBinding? state directInput with
   | none => rw [source] at available; simp at available
   | some binding =>
       simp [owned, hosted, source] at step
@@ -709,7 +719,7 @@ theorem activateDataInputOutputUserTask_issuesFreshActivity {state after : Runti
       cases running : dataInputOutputRunningInstance? state with
       | none => simp [owned, running] at step
       | some instanceId =>
-          cases source : dataInputSourceBinding? state directInput with
+          cases source : dataInputOutputSourceBinding? state directInput with
           | none => simp [owned, running, source] at step
           | some binding =>
               simp [owned, running, source] at step
@@ -741,7 +751,7 @@ theorem activateDataInputOutputUserTask_preserves_activityBodyClaimsUnique
     {taskName : Option String} {directInput : DirectActivityDataInput}
     (owned : onlyTokenOwner? state input = some owner)
     (running : state.control = .running instanceId)
-    (available : (dataInputSourceBinding? state directInput).isSome = true)
+    (available : (dataInputOutputSourceBinding? state directInput).isSome = true)
     (recordsOwn : activityRecordsOwnLiveWork state = true)
     (bounds : runtimeStateIdentityBound state = true)
     (claimsUnique : activityBodyClaimsUnique state.activityOccurrences = true)

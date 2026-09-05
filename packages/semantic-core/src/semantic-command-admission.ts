@@ -12,8 +12,9 @@ import {
   EffectExecutionResultKind,
   StimulusKind,
 } from "./contract.js";
-import type { Stimulus } from "./contract.js";
+import type { StartProcessStimulus, Stimulus } from "./contract.js";
 import type { DeepReadonly } from "./deep-readonly.js";
+import { SemanticOperationKind } from "./semantic-process-contract.js";
 import type { SemanticProcessProgram } from "./semantic-process-contract.js";
 import {
   interruptBoundedScope,
@@ -100,7 +101,10 @@ import {
 import {
   profileAllowsStimulusValueDomain,
 } from "./semantic-profile-value-domain.js";
-import { SemanticProfileId } from "./semantic-profile-catalog.js";
+import {
+  ACTIVITY_DATA_INPUT_OUTPUT_CHECKPOINT_PROFILE_ID,
+  SemanticProfileId,
+} from "./semantic-profile-catalog.js";
 import {
   parallelMultiInstanceStimulusDataAdmitted,
 } from "./parallel-multi-instance-command-data-admission.js";
@@ -180,6 +184,23 @@ function admissibleCommittedState(
     );
 }
 
+function activityDataInputOutputStartDataAdmitted(
+  program: SemanticProcessProgram,
+  stimulus: StartProcessStimulus,
+): boolean {
+  if (program.identity.semanticProfile !== ACTIVITY_DATA_INPUT_OUTPUT_CHECKPOINT_PROFILE_ID) {
+    return true;
+  }
+  const declarations = program.operations.filter((operation) =>
+    operation.kind === SemanticOperationKind.AwaitDataInputOutputUserTask
+  );
+  const declaration = declarations[0];
+  return declarations.length === 1 && declaration !== undefined &&
+    (stimulus.initialVariables.length === 0 ||
+      (stimulus.initialVariables.length === 1 &&
+        stimulus.initialVariables[0]?.name === declaration.directInput.sourcePropertyId));
+}
+
 export function admit(
   program: SemanticProcessProgram,
   state: RuntimeState,
@@ -191,7 +212,8 @@ export function admit(
     !sequentialMultiInstanceStimulusDataAdmitted(program, stimulus) ||
     !parallelMultiInstanceStimulusDataAdmitted(program, stimulus) ||
     (stimulus.kind === StimulusKind.StartProcess &&
-      !compensationStartDataAdmitted(program, stimulus)) ||
+      (!compensationStartDataAdmitted(program, stimulus) ||
+        !activityDataInputOutputStartDataAdmitted(program, stimulus))) ||
     !profileAllowsStimulusValueDomain(
       program.identity.semanticProfile,
       stimulus,

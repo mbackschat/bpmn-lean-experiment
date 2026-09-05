@@ -111,10 +111,13 @@ const activityId = {
   activityElementId: taskElementId,
   activation: 1,
 } as const;
-const operation = program.operations.find(
+const selectedOperation = program.operations.find(
   (candidate) => candidate.kind === SemanticOperationKind.AwaitDataInputOutputUserTask,
 );
-assert.ok(operation?.kind === SemanticOperationKind.AwaitDataInputOutputUserTask);
+assert.ok(selectedOperation?.kind === SemanticOperationKind.AwaitDataInputOutputUserTask);
+const operation = selectedOperation;
+const inputDisplayName = operation.directInput.targetDataInputName;
+assert.ok(inputDisplayName !== null);
 
 function start(
   commandId: string,
@@ -158,8 +161,109 @@ function committed(
 }
 
 function startedWithApplication(): RuntimeState {
-  return committed(initialState, start("start-with-application", [application, unrelated]));
+  const ready = committed(initialState, start("start-ready-for-injected-bindings", []));
+  const active = armDataInputOutputUserTask(operation, {
+    ...ready,
+    variables: {
+      ...ready.variables,
+      process: { bindings: [application, unrelated] },
+    },
+  }, owner);
+  assert.ok(active !== null);
+  return active;
 }
+
+test("Process start admits only absence or the declared input Property with String or null", () => {
+  for (const initialVariables of [
+    [],
+    [application],
+    [{ name: sourcePropertyId, value: { kind: VariableValueKind.Null } }],
+  ] as const) {
+    const active = committed(initialState, start("start-admitted", initialVariables));
+    assert.deepEqual(active.variables.process.bindings, initialVariables);
+    assert.equal(active.userTaskWaits.length, initialVariables.length);
+  }
+});
+
+for (const [label, initialVariables] of [
+  ["output Property", [{ ...application, name: targetPropertyId }]],
+  ["input and unrelated Property", [application, unrelated]],
+  ["input item", [{ ...application, name: targetDataInputId }]],
+  ["output item", [{ ...application, name: sourceDataOutputId }]],
+  ["unrelated Property", [unrelated]],
+  ["input display name", [{ ...application, name: inputDisplayName }]],
+  ["duplicate input Property", [application, { ...application }]],
+  ["input and output Properties", [application, { ...application, name: targetPropertyId }]],
+] as const) {
+  test(`Process start refuses ${label} with the entire received state unchanged`, () => {
+    const before = structuredClone(initialState);
+    const result = applyStimulus(program, before, start(`start-${label}`, initialVariables));
+    assert.equal(result.outcome, CommandOutcome.Rejected);
+    assert.deepEqual(result.state, initialState);
+    assert.deepEqual(before, initialState);
+  });
+}
+
+test("Process start derives the input Property from the sole declaration", () => {
+  const renamedSourcePropertyId = "Property_RenamedInput";
+  const renamed = {
+    ...program,
+    operations: program.operations.map((candidate) =>
+      candidate.kind === SemanticOperationKind.AwaitDataInputOutputUserTask
+        ? {
+            ...candidate,
+            directInput: { ...candidate.directInput, sourcePropertyId: renamedSourcePropertyId },
+          }
+        : candidate
+    ),
+  };
+  const admitted = applyStimulus(renamed, initialState, start("renamed-input", [{
+    ...application,
+    name: renamedSourcePropertyId,
+  }]));
+  assert.equal(admitted.outcome, CommandOutcome.Committed);
+  assert.equal(admitted.state.userTaskWaits.length, 1);
+  const refused = applyStimulus(renamed, initialState, start("stale-input-name", [application]));
+  assert.equal(refused.outcome, CommandOutcome.Rejected);
+  assert.deepEqual(refused.state, initialState);
+});
+
+test("Process start refuses missing or multiple composed declarations before state creation", () => {
+  for (const operations of [
+    program.operations.filter((candidate) =>
+      candidate.kind !== SemanticOperationKind.AwaitDataInputOutputUserTask
+    ),
+    [...program.operations, operation],
+  ]) {
+    for (const bindings of [[], [application]]) {
+      const result = applyStimulus({ ...program, operations }, initialState,
+        start("invalid-declaration-count", bindings));
+      assert.equal(result.outcome, CommandOutcome.Rejected);
+      assert.deepEqual(result.state, initialState);
+    }
+  }
+});
+
+test("unsupported input values cannot start or arm a ready Activity", () => {
+  const ready = committed(initialState, start("start-ready-for-invalid-value", []));
+  for (const value of [
+    { kind: VariableValueKind.Boolean, value: true },
+    { kind: VariableValueKind.Integer, value: 7 },
+    { kind: VariableValueKind.StringList, value: ["application-4711"] },
+  ] as const) {
+    const binding = { name: sourcePropertyId, value };
+    const rejected = applyStimulus(program, initialState, start("unsupported-start-value", [binding]));
+    assert.equal(rejected.outcome, CommandOutcome.Rejected);
+    assert.deepEqual(rejected.state, initialState);
+    const contaminated: RuntimeState = {
+      ...ready,
+      variables: { ...ready.variables, process: { bindings: [binding, unrelated] } },
+    };
+    const before = structuredClone(contaminated);
+    assert.equal(armDataInputOutputUserTask(operation, contaminated, owner), null);
+    assert.deepEqual(contaminated, before);
+  }
+});
 
 test("the required input gates one Activity lifetime and copies only the selected binding", () => {
   const absent = committed(initialState, start("start-without-application", []));
