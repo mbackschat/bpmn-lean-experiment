@@ -393,11 +393,12 @@ export const leanModuleCostRecord = {
     { module: "BpmnSemantics.CompensationSourceBindingValidProgramConformance", peakResidentKib: 1833660, elapsedSeconds: 11.43, measuredAtCommit: "b4544cf6" },
     { module: "BpmnSemantics.CompensationSourceBindingConformance", peakResidentKib: 635228, elapsedSeconds: 0.5, measuredAtCommit: "b4544cf6" },
     { module: "BpmnSemantics.CompensationSourceLoweringConformance", peakResidentKib: 635272, elapsedSeconds: 0.59, measuredAtCommit: "b4544cf6" },
+    { module: "BpmnSemantics.CompensationTriggerHandlerAmbiguityConformance", peakResidentKib: 821532, elapsedSeconds: 5.14, measuredAtCommit: "7b0b5151" },
     {
       module: "BpmnSemantics.CompensationTriggerHandlerProgramContractConformance",
-      peakResidentKib: 588956,
-      elapsedSeconds: 0.44,
-      measuredAtCommit: "694b2cb2",
+      peakResidentKib: 889480,
+      elapsedSeconds: 2.60,
+      measuredAtCommit: "4b2a304f",
     },
     {
       module: "BpmnSemantics.CompensationTriggerHandlerRuntimeContractConformance",
@@ -447,9 +448,9 @@ export const leanModuleCostRecord = {
       elapsedSeconds: 8.78,
       measuredAtCommit: "64d0cb86",
     },
-    { module: "BpmnSemantics.ActivityDataInputOutputAdmissionConformance", peakResidentKib: 1422344, elapsedSeconds: 5.48, measuredAtCommit: "8a16c7a2" },
-    { module: "BpmnSemantics.ActivityDataInputOutputRefusalConformance", peakResidentKib: 1918280, elapsedSeconds: 6.79, measuredAtCommit: "8a16c7a2" },
-    { module: "BpmnSemantics.ActivityDataInputOutputConformance", peakResidentKib: 1847624, elapsedSeconds: 5.87, measuredAtCommit: "8a16c7a2" },
+    { module: "BpmnSemantics.ActivityDataInputOutputAdmissionConformance", peakResidentKib: 967732, elapsedSeconds: 3.88, measuredAtCommit: "c6aeb583" },
+    { module: "BpmnSemantics.ActivityDataInputOutputRefusalConformance", peakResidentKib: 736440, elapsedSeconds: 3.18, measuredAtCommit: "c6aeb583" },
+    { module: "BpmnSemantics.ActivityDataInputOutputConformance", peakResidentKib: 967484, elapsedSeconds: 2.03, measuredAtCommit: "c6aeb583" },
     {
       module: "BpmnSemantics.ActivityDataOutputConformance",
       peakResidentKib: 1873984,
