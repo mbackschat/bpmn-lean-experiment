@@ -7,6 +7,8 @@ import BpmnSemantics.SemanticProcess.RuntimeStateWellFormedInitialization
 `RINIT-START-01` is checked against actual admission, beside the false selected-root raw-constructor claim. These compact structural Programs exercise the theorem's admission domain; an ordinary start does not establish full profile-capability admission. Message and Timer positives use their exact one-task profiles. Their declaration-bearing controls retain those profiles' refusal rather than inventing a new admitted shape.
 -/
 
+set_option Elab.async false
+
 namespace BpmnSemantics.RuntimeStateInitializationConformance
 
 open BpmnSemantics.SemanticProcess
