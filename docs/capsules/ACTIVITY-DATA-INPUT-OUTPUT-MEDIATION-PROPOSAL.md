@@ -1,0 +1,195 @@
+# Activity data input/output mediation proposal
+
+## Status
+
+Lifecycle: draft
+Review: pending
+
+## Question and bounded outcome
+
+What is the smallest standards-only composition that lets one ordinary User Task consume one required Process value, keep that selected input visible throughout its active occurrence, accept one required output on completion, and route the output into a different Process Property without creating two Activity-local lifetimes or selecting another Task host?
+
+This proposal composes the implemented [Activity data-input](ACTIVITY-DATA-INPUT-MEDIATION-SPEC.md) and [Activity data-output](ACTIVITY-DATA-OUTPUT-MEDIATION-SPEC.md) accounts on one User Task occurrence. One direct input association copies a present Process Property into the Activity before activation. One direct output association routes the completion value from the declared DataOutput into another Process Property. The one occurrence owns one local scope, one Activity record, and one User Task wait from activation through accepted completion.
+
+The bounded slice reuses `BPMN-ACTIVITY-DATA-INPUT-01` and `BPMN-ACTIVITY-DATA-OUTPUT-01`; it proves their composition but does not close the broad `BPMN-MECH-DATA-01`, `BPMN-MECH-ACTIVITY-01`, or `BPMN-MECH-TASK-01` families.
+
+## Normative account and selected interpretation
+
+BPMN 2.0.2 Clauses 10.4.1–10.4.2 and 13.3.2 define the two ends of one Activity lifecycle. When the Activity is ready, InputSets are considered in declaration order and the first available set is copied into Activity DataInputs before activation. When the Activity finishes, an available OutputSet is selected and the Data Associations sourced by its outputs copy those values back to the containing context. A Process-owned Property is accessible to contained elements and is a permitted endpoint in both directions.
+
+The machine-readable composition is direct: `Activity-ioSpecification` owns both `InputOutputSpecification-dataInputs` and `InputOutputSpecification-dataOutputs`; the Activity separately owns `Activity-dataInputAssociations` and `Activity-dataOutputAssociations`. `InputSet-outputSetRefs` and `OutputSet-inputSetRefs` are optional associations. This slice leaves both empty, so it composes one independently selected required InputSet and one required OutputSet without selecting an input/output pairing rule.
+
+The selected unavailable-value and output-destination interpretations remain those of the two specifications. A missing canonical Process binding is unavailable while a present explicit null is available. Completion must carry the required output or is refused with exact state preservation. The output association targets the containing Process Property, following Clause 10.4.2's explicit write-back account rather than treating Clause 13.3.2's looser Activity-context wording as a second destination.
+
+The existing output account's forward-compatible representation also remains binding. The Activity owns one occurrence-local scope, but this bounded profile commits no intermediate output state: the completion fill and association are one atomic transition. Later while-executing output, multiple outputs, or Multi-Instance output may make a local DataOutput stable and must reopen the input projection rule before doing so.
+
+## Required, optional, and excluded scope
+
+**Required:** one private executable Process; two distinct Process-owned Properties; one ordinary User Task with exactly one incoming and one outgoing Sequence Flow; one `InputOutputSpecification`; one required scalar DataInput in one InputSet; one required scalar DataOutput in one OutputSet; one direct DataInputAssociation from the first Property to the DataInput; one direct DataOutputAssociation from the DataOutput to the second Property; no transformation or assignment; and string/null values within the existing canonical bounds.
+
+**Optional:** the Process-start payload is either empty for the unavailable-input negative or exactly one canonical binding for the input Property whose value is a string or explicit null. The accepted completion value is a string or explicit null. The DataInput and DataOutput may each carry an optional display name, which never participates in resolution.
+
+**Excluded:** a second input, output, InputSet, or OutputSet; optional or while-executing inputs or outputs; InputSet/OutputSet pairing; collection values; ItemDefinition; DataObject, DataObjectReference, DataStore, or DataStoreReference; transformation, Assignment, or FormalExpression; later input availability or reevaluation ingress; Activity-local mutation while active; another Activity or Task type; boundary Events; looping or Multi-Instance reuse; Sub-Process scope; Call Activity mappings; form schema, validation, authorization, Tasklist behavior, or Product 2 presentation; Service Task effects; DMN, JUEL, scripts, or outbound transport; a new CIB relationship; and general BPMN Process Execution Conformance.
+
+This restriction is forward-compatible because later profiles can widen the admitted interface without reinterpreting this exact profile. Widening to any stable second local binding must first replace the current exact-one-input public projection with a reviewed discriminator that cannot confuse a DataOutput with a selected task input.
+
+## Competing composition accounts
+
+**Account A — widen an existing arm.** Add the missing direction as an optional field on `dataInputUserTask` or `dataOutputUserTask`. This is rejected because the resulting shape would make one old operation's enabledness or completion contract depend on field presence, weakening the existing profile distinction and letting malformed mixed shapes reach shared dispatch.
+
+**Account B — two operations for one Activity.** Lower the same User Task into one input operation and one output operation. This is rejected because each current operation arms its own task, Activity record, and local scope. Coordinating them would require a new hidden join or allow duplicate occurrence owners; neither is BPMN meaning carried by the source.
+
+**Account C — one distinct composed arm.** Add one checked node and one Semantic Process operation carrying both existing direct-association contracts. This proposal selects Account C. Its activation has the input arm's data-dependent enabledness, its completion has the output arm's exact submitted-value obligation, and both transitions share one occurrence identity and one local scope. The old input-only and output-only arms remain closed and byte-identical.
+
+## Exact source, checked graph, and Semantic Process contract
+
+The profile ID is `bpmn-2.0.2-activity-data-input-output-user-task-draft`. Its exact source is a claim-assessment Process with `Property_ClaimSummary`, `Property_ClaimDecision`, `UserTask_AssessClaim`, `DataInput_ClaimSummary`, `DataOutput_ClaimDecision`, `InputSet_AssessClaim`, `OutputSet_AssessClaim`, `DataInputAssociation_ClaimSummary`, and `DataOutputAssociation_ClaimDecision`. Every ID is distinct, and the two associations resolve by parser-object identity rather than display name.
+
+The InputSet references exactly the DataInput and has empty optional, while-executing, and OutputSet references. The OutputSet references exactly the DataOutput and has empty optional, while-executing, and InputSet references. Both data items are scalar by the machine-readable default `isCollection = false`, omit `itemSubjectRef` and DataState, and belong to the User Task's one interface. The source reader rejects foreign Process ownership, reversed or unresolved endpoints, cross-Activity endpoints, extra executable children, and every excluded cardinality or mapping feature.
+
+The checked graph adds `dataInputOutputUserTask`, carrying `directInput: DirectActivityDataInput` and `directOutput: DirectActivityDataOutput`. The Semantic Process adds `awaitDataInputOutputUserTask` with the same two immutable values, input and output control places, BPMN origin, and task identity/name. No combined wrapper duplicates the association fields: the two existing task-neutral contracts remain their single owners.
+
+The composed operation is one arm because its transition boundary is one Activity occurrence. Its operation admission requires every association, Property, DataInput, DataOutput, task, operation, and control-place identity to be nonempty and requires the four data endpoint IDs to be pairwise distinct. Descriptive names remain optional and non-authoritative.
+
+The implemented checkpoint classifies `awaitDataInputOutputUserTask` as `compositeWaitAndActivityArming`. Its internal-transition footprint remains unavailable until the immediately following `INTERNAL-COMMUTATION` RC unit proves the complete read/write and region account. Any frontier containing the new operation therefore fails closed rather than entering a batch by analogy with either predecessor.
+
+## Runtime, command, stable-state, and observation contract
+
+With one incoming token and no input Property binding, the operation makes no transition. The stable Process remains Running with the token retained, no User Task wait, no Activity occurrence, no local scope, no enabled task interaction, and no started Activity publication.
+
+With exactly one present input Property binding, including explicit null, activation atomically consumes the token; mints one Activity occurrence and one task occurrence; creates one Activity record and one User Task wait; creates exactly one Activity-occurrence-owned local scope containing exactly the DataInput binding; preserves both Process Properties and every unrelated binding; and publishes the normal started lifecycle and `openUserTasks[].inputs` facts.
+
+The active stable state contains exactly one local scope for the Activity occurrence. Its one binding is the copied DataInput, and the public open-task input collection contains exactly that binding. No empty output scope or second scope is armed. The DataOutput is not published and has no stable runtime binding in this slice.
+
+The existing content-bound `completeUserTaskInstance` command addresses the exact task occurrence and carries exactly one binding named by the DataOutput ID. Zero bindings, more than one binding, a different name, an unsupported value, a stale occurrence, or inconsistent task/Activity/scope ownership refuses with exact state preservation. A refusal leaves the copied input and its public task projection intact.
+
+Accepted completion atomically matches the submitted value by DataOutput ID; routes it through the output association to the output Property; preserves the input Property and unrelated Process bindings; removes the task wait, Activity record, and the same one-binding local scope; adds the outgoing token; and publishes the normal completed lifecycle. There is no committed state between output fill, association, disposal, and control continuation.
+
+Canonical observation changes at the two stable boundaries only. Activation adds the open task with its exact input collection while Process variables remain unchanged. Completion removes that task and adds the association-targeted Process variable. No new observation field, command kind, result arm, RuntimeState collection, or effect lifecycle is introduced.
+
+## Stable semantic rules and separating witnesses
+
+| Rule | Proposition | Smallest discriminator |
+|---|---|---|
+| `ADIO-READY-01` | The composed Activity activates only when the one required input source is present; explicit null is present and absence is unavailable. | Empty start stays ready with no occurrence, while an explicit-null start opens the task. |
+| `ADIO-SCOPE-01` | One Activity occurrence owns exactly one local scope containing the copied DataInput throughout the active wait; no second output scope exists. | A mutation that runs both predecessor arming paths produces two scopes and fails well-formedness plus observation. |
+| `ADIO-OBSERVE-01` | The open task publishes exactly the copied DataInput and never publishes the DataOutput before accepted completion. | The positive trace checks the input collection while the target Property is absent. |
+| `ADIO-FILL-01` | Completion requires exactly one supported binding named by the declared DataOutput ID. | Empty, extra, and target-Property-named submissions refuse while preserving the active input. |
+| `ADIO-ROUTE-01` | The output association, not the submitted name or either display name, selects the Process Property written on completion. | Distinct DataOutput and Property IDs make a name-based write visible in canonical variables. |
+| `ADIO-ATOMIC-01` | Output fill, association, same-scope disposal, record/wait removal, and outgoing-token production are one transition. | A mutation that writes the Property but retains the input scope fails the runtime join and cleanup guards. |
+| `ADIO-PRESERVE-01` | Activation and completion preserve the input Property and every unrelated Process binding; completion changes only the associated output Property. | A seeded pre-state with an unrelated binding exposes broad patch replacement or input deletion. |
+| `ADIO-REFUSE-01` | Wrong, stale, duplicate, absent, or structurally inconsistent identities and values commit no change. | Each refusal compares the complete before and after RuntimeState, including the still-published input. |
+
+The positive whole model represents a claims reviewer reading a claim summary and recording a decision. It starts with `Property_ClaimSummary = "claim-4711"`, reaches one open task publishing `DataInput_ClaimSummary = "claim-4711"`, completes with `DataOutput_ClaimDecision = "approve"`, and reaches the None End with `Property_ClaimDecision = "approve"` while the original summary remains unchanged.
+
+The nearest common-mode error is composing the two existing evaluators sequentially and accepting their agreement as evidence. Both would create an Activity lifetime, so shared fixture expectations could miss the duplicate owner. Independent expected states must count scopes, Activity records, waits, and lifecycle facts, not only compare final variables.
+
+The nearest checked non-law is that input and output are symmetric in time. They are not: input availability gates activation and remains observable while active, while output availability gates accepted completion and becomes observable only after the association writes Process scope.
+
+## Lean assurance lane
+
+Lane shape: proved
+
+Evidence: a new [Activity data input/output semantic owner](../../BpmnSemantics/SemanticProcessContract.lean) will define the declarative activation and completion relations and prove evaluator soundness, one-scope composition, exact input copying, association-routed output, cleanup, refusal, and family-local runtime well-formedness preservation; a new conformance module will check only the bounded claim-assessment witnesses.
+
+The quantified laws range over arbitrary Programs and RuntimeStates satisfying the composed operation's exact program and runtime hypotheses. They prove absent-source refusal; present string and null activation; fresh task and Activity issuance; exactly one input-bearing local owner; Process-binding preservation; exact-id output fill; association-decided write; atomic disposal and outgoing route; wrong and stale completion refusal; and runtime well-formedness preservation for both successful transitions.
+
+Finite `decide` witnesses may check the concrete source and trace but may not replace those laws. No new `native_decide` exception is selected. The first build of any module adding kernel-decided fixtures stays root-owned under the repository memory wrapper, and an anomalous timing or memory observation is retried before it is treated as cost evidence because other machine processes may be active.
+
+## CIB Seven relationship boundary
+
+No CIB relationship is selected for the data composition. BPMN defines both associations and the Activity lifecycle points at which they execute. The source carries no `camunda:*` extension, no CIB probe is needed to choose meaning, and no vendor persistence or task-form representation enters the checked graph or semantic core.
+
+The registered profile artifact must still name `CIB-AGR-0001` and `CIB-OP-0001` because it reuses the already reviewed User Task lifecycle and exact occurrence-addressed completion boundary. Those identifiers provide no evidence for input/output mediation and must remain classified as inherited lifecycle facts only.
+
+## Temporal hosting and refinement preflight
+
+Durable ingress is the existing content-bound Process-start command followed by the existing exact User Task completion Update. The pure semantic core decides input readiness, copying, the active observation, output admission, routing, and cleanup. Temporal persists the committed Program and RuntimeState and transports the already published interaction; it does not read BPMN XML, synthesize a missing input, rename an output, or split the atomic completion.
+
+The durable wait is the existing passive User Task wait. No Signal, Timer, Temporal Activity, Child Workflow, outbound effect, new acknowledgement, or host cancellation mechanism is introduced. A missing input has no later wakeup in this profile and may remain durably Running; this is an explicit liveness restriction.
+
+FIFO accepted-Update order, content-bound recovery, and semantic stale-command refusal remain the ordering and deduplication account. Transport retry cannot create another output write because the command result is bound to exact content and the semantic transition consumes the one live task occurrence. Workflow retry and replay reproduce the same committed state rather than becoming Activity execution attempts.
+
+Continue-As-New may occur only at an existing stable host boundary. Its carried state must keep the task wait, Activity record, one input-bearing local scope, Process bindings, publication heads, and command recovery together. A pending accepted handler blocks rollover under the existing fence. Workflow cancellation or nonretryable failure remains a host outcome and fabricates neither output, Activity cleanup, nor BPMN lifecycle completion after the last committed semantic state.
+
+The smallest executable refinement witness starts the real model with a non-null summary, reaches and queries the exact open task input, forces one stable rollover while that task remains open, replaces the Worker, completes with the distinct DataOutput ID, observes only the association-targeted Property in canonical variables, obtains the terminal receipt, recovers the same completion result, and replays both Runs. A refused completion before the accepted one must retain the active input and produce no target Property; terminating a never-completed Run must fabricate neither write nor cleanup.
+
+## Evidence strategy
+
+| Claim | Independent evidence |
+|---|---|
+| Normative composition | BPMN 2.0.2 Clauses 10.4.1–10.4.2 and 13.3.2 plus the pinned CMOF/XSD Activity, InputOutputSpecification, InputSet, OutputSet, and association anchors; no CIB semantic vote |
+| Exact source and admission | Schema-valid whole-model source, independently authored checked artifact, parser-object-identity assertions, old-profile refusal, and one-field direction, cardinality, ownership, set-membership, collection, transformation, and assignment mutations |
+| Checked graph and lowering | One distinct composed node and operation in TypeScript and Lean, exact definition binding, byte-identical predecessor profiles, and mutations that drop, swap, duplicate, or merge either direction |
+| Declarative meaning | Lean activation and completion relations, dispatcher and constructor-selection soundness bridges, quantified one-scope, copy, route, preservation, cleanup, refusal, and well-formedness laws |
+| TypeScript realization | Independently written composed runtime owner with complete-state assertions; neither predecessor evaluator is used as its oracle |
+| Cross-language behavior | Answer-free present-string/output-string, present-null/output-null, absent-input, and omitted-output scenarios compared through canonical results |
+| Runtime ownership and observation | Activity-writer census, Activity/task/scope join, collection-removal completeness, exact input projection, output non-projection, and canonical ordering |
+| Durable refinement | Real-service active-task rollover, Worker replacement, refused then accepted Update recovery, target-routed variables, host termination without fabricated semantics, terminal receipt, and replay of every Run |
+| Whole-model reach | One project-owned claim-assessment model, exact pipeline binding, capability/restriction row, generated corpus map, and Product 2 About-page disclosure |
+| Product 2 compatibility | Additive copied operation enum plus existing optional input collection and canonical variables; no new UI surface or locally derived fact |
+
+Required source mutations reverse either association, cross their endpoints, leave a reference unresolved, move a Property outside the Process, add another input/output/set/source, make either data item optional, while-executing, or a collection, add a set-pairing reference, transformation, or assignment, or reuse one endpoint ID. Required semantic mutations activate without input, erase explicit null, arm two local scopes, hide or misname the input projection, require the output Property at entry, accept zero/two/wrong-name outputs, write under the submitted name, remove the input Property, retain the scope after completion, or duplicate the write across retry, rollover, or replay.
+
+## Runtime-only inventory and layer ownership
+
+| Construct | Derivation and owner | Public projection | Lifecycle invariant |
+|---|---|---|---|
+| Composed Activity-local scope | Semantic operation and Activity occurrence; contains the selected input only | Its one input is projected through the open task | Exactly one scope from activation through accepted completion; removed with the occurrence |
+| Data-bearing Activity record | Semantic operation and existing Activity occurrence issuance | Existing Activity lifecycle facts only | Owns the exact task body and same local scope; no attached handler exists |
+| Completion output fill | Accepted command plus immutable direct-output association | Only the resulting Process Property is stable and public | Exists only inside the atomic completion relation; never a stable local binding in this slice |
+
+The BPMN account owns when inputs and outputs execute. The profile owns the exact one-each source shape, value subset, missing-input wait, and malformed-output refusal. The checked graph and IL own immutable identities. Lean and TypeScript independently realize the same reviewed transition account. Temporal owns durable transport and replay only. Product 2 consumes the published contract and derives nothing from definition XML or Event History.
+
+## Versioning consequences
+
+This is a pre-release additive profile. It adds one profile artifact, one checked-node arm, one Semantic Process operation arm, one source reader, declarative and executable transition cases, scenarios, one retained model, pipeline entries, and documentation. Existing input-only and output-only checked bytes, Programs, RuntimeStates, commands, and observations remain byte-identical. No compatibility reader, version switch, parallel RuntimeState shape, or durable-history interpretation is permitted under the [contract evolution policy](../../contracts/README.md#evolution-policy) and [pre-release evolution policy](../PROJECT-DESIGN.md#pre-release-evolution-policy).
+
+The mechanically resolved constraints include [contract schema coverage](../../scripts/contract-schema-coverage.test.ts), [definition artifacts](../../scripts/contract-definition-artifacts.test.ts), [execution-publication coverage](../../scripts/execution-publication-contract-coverage.test.ts), [internal-commutation census](../../scripts/internal-commutation-census.test.ts), [Activity occurrence writer census](../../scripts/activity-occurrence-writer-census.test.ts), [Activity/task/scope join](../../scripts/activity-occurrence-join.test.ts), [runtime collection removal](../../scripts/runtime-collection-removal-completeness.test.ts), [canonical ordering](../../scripts/canonical-ordering.test.ts), [Lean source contracts](../../scripts/lean-source-contracts.test.ts), [model-corpus policy](../../scripts/bpmn-corpus-policy.test.ts), [requirement-ledger consistency](../../scripts/requirement-ledger-consistency.test.ts), [source hygiene](../../scripts/source-hygiene.test.ts), [test selection](../../scripts/test-selection-coverage.test.ts), and [document reviewability](../../scripts/document-reviewability.test.ts). Focused oracles include the existing [input source test](../../packages/bpmn-source/test/activity-data-input-source.test.ts), [output source test](../../packages/bpmn-source/test/activity-data-output-source.test.ts), [input core test](../../packages/semantic-core/test/activity-data-input.test.ts), [output core test](../../packages/semantic-core/test/activity-data-output.test.ts), and [Temporal input](../../packages/temporal-adapter/testkit/test/activity-data-input-temporal.test.ts) and [output](../../packages/temporal-adapter/testkit/test/activity-data-output-temporal.test.ts) witnesses, all of which must remain green.
+
+Production owners that must change or prove no change include [compilation dispatch](../../packages/bpmn-source/src/compilation-dispatch.ts), [checked admission](../../packages/bpmn-source/src/checked-process-admission.ts), [lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts), [checked contract](../../packages/semantic-core/src/checked-process-contract.ts), [Semantic Process contract](../../packages/semantic-core/src/semantic-process-contract.ts), [operation admission](../../packages/semantic-core/src/semantic-process-operation-admission.ts), [runtime dispatch](../../packages/semantic-core/src/semantic-process-runtime.ts), [input observation](../../packages/semantic-core/src/activity-data-input-observation.ts), [Lean contract](../../BpmnSemantics/SemanticProcessContract.lean), [Lean transition dispatch](../../BpmnSemantics/SemanticProcess/Transition.lean), and [Product 2's copied publication contract](../../platform/contracts/src/execution-publications.ts). The new source, runtime, Lean relation, conformance, fixture, and scenario owners remain bounded single-purpose files.
+
+### Owners this implementation grows
+
+The review target is 800 nonblank lines. Headroom is measured before proposal implementation; each structural condition says when extraction becomes mandatory.
+
+| Owner | Current headroom | Structural condition |
+|---|---:|---|
+| [Lean Semantic Process contract](../../BpmnSemantics/SemanticProcessContract.lean) | 5 | Extract the existing direct Activity data carriers into one imported bounded contract before adding the composed node and operation; five lines cannot contain both arms and their exhaustive selectors. |
+| [TypeScript operation admission](../../packages/semantic-core/src/semantic-process-operation-admission.ts) | 15 | Extract the existing Activity-data validators into a bounded sibling before adding composed validation; the new arm must not compress or omit endpoint checks to fit. |
+| [TypeScript runtime dispatch](../../packages/semantic-core/src/semantic-process-runtime.ts) | 18 | Keep only import and enum dispatch here; if the measured composed dispatch does not fit, extract the existing Activity-data dispatch before adding behavior. |
+| [Lean transition dispatch](../../BpmnSemantics/SemanticProcess/Transition.lean) | 139 | Add constructor selection and dispatch only; the composed relations and laws belong in the new bounded semantic owner. |
+| [TypeScript lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 144 | Add the closed checked-node case only; source validation belongs in the new reader. |
+| [TypeScript Semantic Process contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 197 | Add the composed enum and type arm without changing either predecessor arm. |
+| [TypeScript checked contract](../../packages/semantic-core/src/checked-process-contract.ts) | 432 | Add the composed node arm without optionalizing the existing data nodes. |
+| [Compilation dispatch](../../packages/bpmn-source/src/compilation-dispatch.ts) | 464 | Register and route the new exact profile only; no source-shape validation belongs in dispatch. |
+
+Same-change registries and status owners are [the capsule registry](README.md), [documentation registry](../README.md), [shared wire contracts](../../contracts/README.md), applicable detail maps routed by [`implementation-status-router`](../IMPLEMENTATION-MAP.md), package READMEs and source maps, the [requirement ledger](../BPMN-REQUIREMENT-LEDGER.md), [PLAN](../PLAN.md), Product 2 capability disclosure, and the [capsule cost ledger](../CAPSULE-COST-LEDGER.md).
+
+## Epistemic closure and reopen conditions
+
+Selected here are the one-each direct association shape, no InputSet/OutputSet pairing, one composed checked and IL arm, one occurrence-local scope, input-dependent activation, active input publication, exact output completion, association-routed write, atomic disposal, and existing passive-Update durability.
+
+Not selected are a general Activity data interface, another Task host, multiple or optional sets, while-executing data, collections, expressions, later input reevaluation, stable local outputs, output-set runtime exception semantics, boundary handling, Multi-Instance, Call Activity mapping, CIB data behavior, a new public field, or Product 2 UI work.
+
+Reopen before implementation if one operation cannot preserve the existing input-only and output-only byte contracts, if the same Activity occurrence cannot own exactly one input-bearing scope, if output completion would require a stable second binding that withdraws the input projection, if current command admission cannot distinguish the DataOutput ID from the target Property, or if the active-task state cannot cross the existing stable Continue-As-New boundary without host-derived reconstruction.
+
+The nearest unsupported data claim is two alternative InputSets or OutputSets with availability and pairing. The nearest unsupported Task claim is reusing the data interface on a Service Task whose effect request/result must mediate those values. The nearest durability counterexample is a rollover that carries the wait but drops the local input scope, producing a completable task whose published input disappears.
+
+## Closure cost
+
+At closure, record the commit-bounded code and documentation churn in the [capsule cost ledger](../CAPSULE-COST-LEDGER.md), compared with the output capsule because it changed the same source, checked, IL, Lean/core, differential, Temporal, corpus, and Product 2 contract layers. Record observed wall time only if exact timestamps exist; do not reconstruct it from commits.
+
+## Stage boundary
+
+After proposal approval, implementation stops at the first green semantic checkpoint where the exact source compiles to an independently expected composed checked graph and Program; TypeScript and Lean admit the same closed arm; both successful transitions and their runtime well-formedness laws are green; the pure TypeScript core passes the positive, absent/null, wrong-output, duplicate-owner, routed-write, cleanup, and refusal discriminators; and every predecessor profile remains byte-identical.
+
+That checkpoint requires independent cold review before registered answer-free scenarios, differential evidence, Temporal hosting, retained corpus/disclosure, Product 2 propagation, cost closure, or proposal graduation. A green checkpoint review authorizes those closure lanes; it does not satisfy `DATA-AND-TASK-MECHANISMS` by itself.
+
+## Independent cold-review receipt
+
+| Stage | Review target | Isolation | Verdict | Correction audit |
+|---|---|---|---|---|
+| Proposal | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
+| Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
