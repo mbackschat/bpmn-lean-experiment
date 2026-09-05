@@ -62,7 +62,7 @@ def singletonEffectWaitingState (wait : EffectWait)
       [{ scopeId := wait.owner.definitionScopeId, count := wait.owner.activation }]
     logicalTimeMs }
 
-private theorem applyStimulus_rejected_of_admission
+theorem applyStimulus_rejected_of_admission
     (closureLimit : Nat) (program : Program) (state : RuntimeState)
     (stimulus : Stimulus)
     (rejected : admitStimulus program state stimulus =

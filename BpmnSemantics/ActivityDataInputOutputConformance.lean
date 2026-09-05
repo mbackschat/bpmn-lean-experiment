@@ -11,6 +11,8 @@ copy, completion, routing, cleanup, and refusal laws remain in
 owners prove aggregate runtime well-formedness. These checks bind the laws to the source identities.
 -/
 
+set_option Elab.async false
+
 namespace BpmnSemantics.ActivityDataInputOutputConformance
 
 open BpmnSemantics
@@ -65,7 +67,7 @@ theorem quantifiedActivationRuntimeWellFormedPreservationIsAvailable
     (transition : DataInputOutputActivationStep claimProgram before after) :
     runtimeStateWellFormed claimProgram claimInstanceId after = true := by
   exact dataInputOutputActivationStep_preserves_runtimeStateWellFormed
-    claimProgram claimInstanceId before after (by decide +kernel) (by decide +kernel) wellFormed
+    claimProgram claimInstanceId before after claimProgram_profile claimProgram_capabilities wellFormed
       transition
 
 /-- The composed completion preservation law is quantified over its predecessor and successor. -/
@@ -75,7 +77,7 @@ theorem quantifiedCompletionRuntimeWellFormedPreservationIsAvailable
     (transition : DataInputOutputCompletionStep claimProgram before after) :
     runtimeStateWellFormed claimProgram claimInstanceId after = true := by
   exact dataInputOutputCompletionStep_preserves_runtimeStateWellFormed
-    claimProgram claimInstanceId before after (by decide +kernel) (by decide +kernel) wellFormed
+    claimProgram claimInstanceId before after claimProgram_profile claimProgram_capabilities wellFormed
       transition
 
 /-- The bounded positive active and completed states remain admitted by the aggregate runtime

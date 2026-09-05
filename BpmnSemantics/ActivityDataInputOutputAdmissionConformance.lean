@@ -6,6 +6,8 @@ Exact start-binding and ready-input decisions for the claim-assessment profile. 
 separate from completion and lifetime reductions to preserve the fixed build-memory boundary.
 -/
 
+set_option Elab.async false
+
 namespace BpmnSemantics.ActivityDataInputOutputConformance
 
 open BpmnSemantics
@@ -15,12 +17,12 @@ theorem outputPropertyStartRefusesWithExactStatePreservation :
     runStart (startClaim "start-output-property"
       [{ name := claimDirectOutput.targetPropertyId, value := .string "seed" }]) =
       refused initialState := by
-  decide +kernel
+  exact applyStimulus_rejected_of_admission _ _ _ _ rfl
 
 theorem extraStartBindingRefusesWithExactStatePreservation :
     runStart (startClaim "start-extra-binding" [summary, unrelated]) =
       refused initialState := by
-  decide +kernel
+  exact applyStimulus_rejected_of_admission _ _ _ _ rfl
 
 private def readyWithInput (value : VariableValue) : RuntimeState :=
   let ready := (runStart startWithoutSummary).state

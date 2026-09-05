@@ -6,6 +6,8 @@ Whole-state and direct-transition refusal decisions over the shared claim fixtur
 owner prevents malformed-state reductions from accumulating with successful lifetime proofs.
 -/
 
+set_option Elab.async false
+
 namespace BpmnSemantics.ActivityDataInputOutputConformance
 
 open BpmnSemantics
@@ -15,7 +17,7 @@ open BpmnSemantics.SemanticProcess
 theorem zeroOutputsRefuseWithExactStatePreservation :
     applyStimulus scenarioClosureLimit claimProgram active
         (completeClaim "complete-without-decision" []) = refused active := by
-  decide +kernel
+  exact applyStimulus_rejected_of_admission _ _ _ _ rfl
 
 /-- `ADIO-FILL-01`: the association target is not a declared DataOutput name. -/
 theorem targetPropertyNamedOutputRefusesWithExactStatePreservation :
@@ -23,7 +25,7 @@ theorem targetPropertyNamedOutputRefusesWithExactStatePreservation :
         (completeClaim "complete-under-target"
           [{ name := claimDirectOutput.targetPropertyId, value := .string "approve" }]) =
       refused active := by
-  decide +kernel
+  exact applyStimulus_rejected_of_admission _ _ _ _ rfl
 
 /-- `ADIO-FILL-01`: a second submitted output is not silently discarded. -/
 theorem twoOutputsRefuseWithExactStatePreservation :
@@ -32,7 +34,7 @@ theorem twoOutputsRefuseWithExactStatePreservation :
           [decision (.string "approve"),
            { name := "DataOutput_Unadmitted", value := .string "second" }]) =
       refused active := by
-  decide +kernel
+  exact applyStimulus_rejected_of_admission _ _ _ _ rfl
 
 private def copiedScope : ActivityVariableScope :=
   { owner := .activityOccurrence claimActivityOwner
@@ -47,7 +49,7 @@ theorem duplicateActivityOwnerRefusesWithExactStatePreservation :
         (withLocalScopes [copiedScope, copiedScope])
         (completeClaim "complete-duplicate-owner" [decision (.string "approve")]) =
       refused (withLocalScopes [copiedScope, copiedScope]) := by
-  decide +kernel
+  exact applyStimulus_rejected_of_admission _ _ _ _ rfl
 
 /-- `ADIO-REFUSE-01`: one scope with the wrong local binding is not the activation-time input. -/
 theorem wrongLocalContentRefusesWithExactStatePreservation :
@@ -56,7 +58,7 @@ theorem wrongLocalContentRefusesWithExactStatePreservation :
     applyStimulus scenarioClosureLimit claimProgram (withLocalScopes [malformed])
         (completeClaim "complete-wrong-local" [decision (.string "approve")]) =
       refused (withLocalScopes [malformed]) := by
-  decide +kernel
+  exact applyStimulus_rejected_of_admission _ _ _ _ rfl
 
 /-- `ADIO-REFUSE-01`: the copied local value remains in the composed profile's String-or-Null
 domain even when an otherwise valid state is injected directly below Process-data admission. -/
@@ -68,7 +70,7 @@ theorem booleanLocalValueRefusesWithExactStatePreservation :
     applyStimulus scenarioClosureLimit claimProgram (withLocalScopes [malformed])
         (completeClaim "complete-boolean-local" [decision (.string "approve")]) =
       refused (withLocalScopes [malformed]) := by
-  decide +kernel
+  exact applyStimulus_rejected_of_admission _ _ _ _ rfl
 
 private def foreignClaimInstanceId : SemanticId := ⟨"ClaimAssessmentInstance_foreign"⟩
 
