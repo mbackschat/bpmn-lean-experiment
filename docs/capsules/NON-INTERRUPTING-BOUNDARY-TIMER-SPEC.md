@@ -14,6 +14,44 @@ Lane shape: proved
 
 Evidence: [The non-interrupting boundary Timer conformance owner](../../BpmnSemantics/NonInterruptingBoundaryTimerConformance.lean) proves exact disposition admission, atomic arming, host-preserving deadline firing, live-or-consumed-deadline completion, refusal, and two-branch quiescence for the admitted one-shot profile; repetition and Multi-Instance remain outside the proof.
 
+### Laws, non-laws, and separating witnesses
+
+Required Lean content, all with exact hypotheses. This list is the single owner of the Lean obligation; the rule-to-evidence matrix below carries evidence pointers only, and no other section restates it.
+
+- a declarative arming relation and a declarative spawn relation, both distinct from the evaluator, plus a declarative completion relation with both the deadline-live and deadline-consumed constructors;
+- soundness from every evaluator-produced arming, spawn, and completion transition to its relation;
+- a quantified **host-preservation** law: every spawn transition leaves the monitored task wait, its activation ordinal, and every activation counter exactly as they were. This is the law that separates this family from its sibling, whose corresponding transition removes the task;
+- a quantified single-token law per transition: the spawn adds exactly one token owned by the deadline's scope and advances logical time to that deadline, and completion adds exactly one token owned by the task's scope and leaves logical time alone. Which place each token lands on is bound by the relation's constructors and carried to the evaluator by the soundness bridges, not restated as a conclusion of these two theorems, so neither may be cited as a routing law on its own;
+- a quantified withdrawal law: completion while the deadline is live removes it, so no later firing of that occurrence can commit;
+- a quantified off-deadline refusal and a quantified wrong-identity state-preservation law, matching the sibling capsule's forms;
+- the nearest **checked non-law**: it is *not* a law that the boundary branch reaching its None End Event completes the Process, because the monitored task may still be active and the scope is therefore not quiescent. This is the proposition an interrupting implementation satisfies vacuously, so the witness must exhibit the two-branch state rather than assert the non-law in prose. A second checked non-law records that reaching logical time `1000` does not always spawn, because an earlier committed completion has already withdrawn the deadline.
+
+Two registered schedules over one definition:
+
+| Case | Stimulus order | Required stable states | Required follow-up check |
+|---|---|---|---|
+| Deadline then both branches | exact Timer firing at deadline `1000`, then the handler task, then the monitored task, then its normal follow-on | after firing: **two** open User Tasks, no Timer, logical time `1000`; after the handler task completes: still `running` with the monitored task open | a stale exact firing of the consumed Timer rejects and preserves that state |
+| Completion before the deadline | exact monitored-task completion before `1000`, then the normal follow-on task | after completion: exactly one open User Task and no Timer, logical time `0` | a stale exact Timer firing rejects and preserves that state |
+
+**Neither follow-up check is a registered stimulus, for the same structural reason as the pre-due firing below.** The host derives its firing from the wait's own committed deadline, so once that deadline is consumed or withdrawn no target can present a second one, and the runner admits exactly one firing per schedule. Both checks are witnessed instead in [the focused semantic-core test](../../packages/semantic-core/test/non-interrupting-boundary-timer.test.ts), which asserts the refusal *and* state preservation for a consumed deadline and for a withdrawn one. Each schedule ends by completing its remaining branch, because the host's refinement evidence requires a terminal state.
+
+**Only the first schedule separates this family from its sibling, and the pairing must not be read as if both did.** Schedule 2's public trace — one open User Task, no Timer, logical time `0` — is identical under both interruption dispositions, because a completion before the deadline withdraws it either way. Its discriminating power is against the retained-deadline mutation, not against interruption.
+
+The first schedule deliberately completes the **handler** branch first. That is the order in which an implementation completing the Process at the first End Event is publicly wrong, and it is the state `NBTIMER-QUIESCE-01` exists for. The reverse order is covered in the focused semantic-core test rather than as a third registered scenario, because quiescent completion over two concurrent branches in both orders is already closed evidence in the ordinary Sub-Process capsule and a third pipeline case would re-run that mechanism rather than this family's proposition.
+
+The pre-due firing is required as a **witness** and cannot be a registered scenario, for the structural reason the sibling capsule records: the Temporal host derives its firing instant from the wait's own committed deadline, so no scenario can drive that target to an off-deadline instant. It lives in the quantified Lean refusal law plus the focused semantic-core test, checked against both seeded defect directions.
+
+Start closure is exactly two internal steps, `initiate` and `awaitMonitoredUserTask`. The armed state is resumable through its published task interaction. Firing closes through exactly one `awaitUserTask`; each task completion closes through one `reachNoneEnd`; the second completion additionally closes through root `completeScope`. Every newly reachable stable state publishes at least one User Task or Timer, so none is stranded, and the capsule must executable-check that every newly reachable closure stays inside `semanticProcessClosureLimit`.
+
+Required negative content. Each entry names the form its witness takes and the boundary it is detected at, because those boundaries differ: the first three reach the public observation, the lowering lock is an IL-level fact whose collapsed output is separately rejected by bounded-wait admission, and the source-admission negatives are rejected before any program exists.
+
+- a seeded mutation for an implementation that **cancels the monitored task on firing**, which is the interrupting defect and is detected immediately after firing by the open-task count;
+- a seeded mutation for an implementation that **retains the withdrawn deadline** after completion;
+- a checked non-law plus a focused core case for an implementation that **completes the Process at the first End Event** while the sibling branch is live;
+- a positive lowering lock against erasure of the boundary Sequence Flow identity;
+- a quantified Lean law plus an independent core test for a firing before the deadline;
+- a source-admission negative for `cancelActivity` omitted and for lexical `true`, both of which must be rejected by this profile.
+
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
@@ -185,44 +223,6 @@ A second firing of the consumed Timer occurrence, a firing after the task comple
 ### `NBTIMER-OBSERVE-01` — project only the existing wait surfaces
 
 The armed state publishes exactly one open User Task and one open Timer through the existing four-kind canonical ordering, with exactly one enabled completion interaction. After firing it publishes **two** open User Tasks and no Timer, with two enabled completion interactions. The capsule adds no observation field, no wait kind, and no stimulus kind.
-
-## Laws, non-laws, and separating witnesses
-
-Required Lean content, all with exact hypotheses. This list is the single owner of the Lean obligation; the rule-to-evidence matrix below carries evidence pointers only, and no other section restates it.
-
-- a declarative arming relation and a declarative spawn relation, both distinct from the evaluator, plus a declarative completion relation with both the deadline-live and deadline-consumed constructors;
-- soundness from every evaluator-produced arming, spawn, and completion transition to its relation;
-- a quantified **host-preservation** law: every spawn transition leaves the monitored task wait, its activation ordinal, and every activation counter exactly as they were. This is the law that separates this family from its sibling, whose corresponding transition removes the task;
-- a quantified single-token law per transition: the spawn adds exactly one token owned by the deadline's scope and advances logical time to that deadline, and completion adds exactly one token owned by the task's scope and leaves logical time alone. Which place each token lands on is bound by the relation's constructors and carried to the evaluator by the soundness bridges, not restated as a conclusion of these two theorems, so neither may be cited as a routing law on its own;
-- a quantified withdrawal law: completion while the deadline is live removes it, so no later firing of that occurrence can commit;
-- a quantified off-deadline refusal and a quantified wrong-identity state-preservation law, matching the sibling capsule's forms;
-- the nearest **checked non-law**: it is *not* a law that the boundary branch reaching its None End Event completes the Process, because the monitored task may still be active and the scope is therefore not quiescent. This is the proposition an interrupting implementation satisfies vacuously, so the witness must exhibit the two-branch state rather than assert the non-law in prose. A second checked non-law records that reaching logical time `1000` does not always spawn, because an earlier committed completion has already withdrawn the deadline.
-
-Two registered schedules over one definition:
-
-| Case | Stimulus order | Required stable states | Required follow-up check |
-|---|---|---|---|
-| Deadline then both branches | exact Timer firing at deadline `1000`, then the handler task, then the monitored task, then its normal follow-on | after firing: **two** open User Tasks, no Timer, logical time `1000`; after the handler task completes: still `running` with the monitored task open | a stale exact firing of the consumed Timer rejects and preserves that state |
-| Completion before the deadline | exact monitored-task completion before `1000`, then the normal follow-on task | after completion: exactly one open User Task and no Timer, logical time `0` | a stale exact Timer firing rejects and preserves that state |
-
-**Neither follow-up check is a registered stimulus, for the same structural reason as the pre-due firing below.** The host derives its firing from the wait's own committed deadline, so once that deadline is consumed or withdrawn no target can present a second one, and the runner admits exactly one firing per schedule. Both checks are witnessed instead in [the focused semantic-core test](../../packages/semantic-core/test/non-interrupting-boundary-timer.test.ts), which asserts the refusal *and* state preservation for a consumed deadline and for a withdrawn one. Each schedule ends by completing its remaining branch, because the host's refinement evidence requires a terminal state.
-
-**Only the first schedule separates this family from its sibling, and the pairing must not be read as if both did.** Schedule 2's public trace — one open User Task, no Timer, logical time `0` — is identical under both interruption dispositions, because a completion before the deadline withdraws it either way. Its discriminating power is against the retained-deadline mutation, not against interruption.
-
-The first schedule deliberately completes the **handler** branch first. That is the order in which an implementation completing the Process at the first End Event is publicly wrong, and it is the state `NBTIMER-QUIESCE-01` exists for. The reverse order is covered in the focused semantic-core test rather than as a third registered scenario, because quiescent completion over two concurrent branches in both orders is already closed evidence in the ordinary Sub-Process capsule and a third pipeline case would re-run that mechanism rather than this family's proposition.
-
-The pre-due firing is required as a **witness** and cannot be a registered scenario, for the structural reason the sibling capsule records: the Temporal host derives its firing instant from the wait's own committed deadline, so no scenario can drive that target to an off-deadline instant. It lives in the quantified Lean refusal law plus the focused semantic-core test, checked against both seeded defect directions.
-
-Start closure is exactly two internal steps, `initiate` and `awaitMonitoredUserTask`. The armed state is resumable through its published task interaction. Firing closes through exactly one `awaitUserTask`; each task completion closes through one `reachNoneEnd`; the second completion additionally closes through root `completeScope`. Every newly reachable stable state publishes at least one User Task or Timer, so none is stranded, and the capsule must executable-check that every newly reachable closure stays inside `semanticProcessClosureLimit`.
-
-Required negative content. Each entry names the form its witness takes and the boundary it is detected at, because those boundaries differ: the first three reach the public observation, the lowering lock is an IL-level fact whose collapsed output is separately rejected by bounded-wait admission, and the source-admission negatives are rejected before any program exists.
-
-- a seeded mutation for an implementation that **cancels the monitored task on firing**, which is the interrupting defect and is detected immediately after firing by the open-task count;
-- a seeded mutation for an implementation that **retains the withdrawn deadline** after completion;
-- a checked non-law plus a focused core case for an implementation that **completes the Process at the first End Event** while the sibling branch is live;
-- a positive lowering lock against erasure of the boundary Sequence Flow identity;
-- a quantified Lean law plus an independent core test for a firing before the deadline;
-- a source-admission negative for `cancelActivity` omitted and for lexical `true`, both of which must be rejected by this profile.
 
 ## Temporal hosting and refinement preflight
 

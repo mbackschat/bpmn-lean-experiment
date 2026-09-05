@@ -10,6 +10,22 @@ Lane shape: proved
 
 Evidence: [ReceiveTaskConformance.lean](../../BpmnSemantics/ReceiveTaskConformance.lean) proves the selected Receive Task's exact source and program admission, direct-Message wait, delivery and refusal laws, and bounded closure witnesses. The result reuses the proved Message transition family without claiming general Receive Task transport or instantiation.
 
+### Declarative relation, evaluator, and laws
+
+This capsule introduces no runtime-transition family. Lean's existing `MessageDeliveryStep`, executable `deliverMessage`, and `deliverMessage_sound` theorem remain the owning relation, evaluator, and soundness bridge. The internal `awaitMessage` activation case likewise remains owned by Semantic Process transition semantics. Implementation specializes those definitions to the `directMessage` arm; it does not add renamed duplicate relations.
+
+The Lean lane provides specialized laws with exact hypotheses:
+
+- admitted Receive Task lowering preserves the direct Message arm;
+- start closure reaches exactly the direct Receive Task subscription;
+- exact direct delivery reaches the terminal result;
+- changing only the channel kind or Message ID preserves state through refusal;
+- the existing `deliverMessage_sound` theorem applies to the successful direct arm.
+
+The nearest checked non-law is that equal `messageId` does not make `operationMessage` and `directMessage` equal. A synthetic active direct subscription paired with an operation-addressed delivery carrying the same Message ID must reject. This catches an implementation that erases the discriminant and matches only `messageId`.
+
+Concrete fixture theorems and `by decide` checks do not establish general Receive Task liveness, source-to-run preservation, or completeness of the delivery relation.
+
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
@@ -203,22 +219,6 @@ Identical-command replay and command-ID/content conflicts retain their existing 
 The stable Receive Task wait projects one `activeWait` with semantic kind `message`, one `openMessageSubscriptions` entry, and one enabled `deliverMessage` interaction with the complete occurrence and `directMessage` channel. User Task, Timer, and effect waits are empty. After exact delivery the selected Process is completed and the Message surfaces are empty.
 
 The eleven top-level canonical observation fields, wait-kind enum, occurrence identity, command result, and Process status are unchanged. Only the nested closed Message channel acquires its required discriminant.
-
-## Declarative relation, evaluator, and laws
-
-This capsule introduces no runtime-transition family. Lean's existing `MessageDeliveryStep`, executable `deliverMessage`, and `deliverMessage_sound` theorem remain the owning relation, evaluator, and soundness bridge. The internal `awaitMessage` activation case likewise remains owned by Semantic Process transition semantics. Implementation specializes those definitions to the `directMessage` arm; it does not add renamed duplicate relations.
-
-The Lean lane provides specialized laws with exact hypotheses:
-
-- admitted Receive Task lowering preserves the direct Message arm;
-- start closure reaches exactly the direct Receive Task subscription;
-- exact direct delivery reaches the terminal result;
-- changing only the channel kind or Message ID preserves state through refusal;
-- the existing `deliverMessage_sound` theorem applies to the successful direct arm.
-
-The nearest checked non-law is that equal `messageId` does not make `operationMessage` and `directMessage` equal. A synthetic active direct subscription paired with an operation-addressed delivery carrying the same Message ID must reject. This catches an implementation that erases the discriminant and matches only `messageId`.
-
-Concrete fixture theorems and `by decide` checks do not establish general Receive Task liveness, source-to-run preservation, or completeness of the delivery relation.
 
 ## Runtime-only and synthetic constructs
 

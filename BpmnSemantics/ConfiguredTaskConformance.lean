@@ -4,7 +4,7 @@ import BpmnSemantics.SemanticProcess.Scenario
 
 /-! # Configured Task conformance
 
-This module owns the proved checkpoint for one configured Task lowered to the existing effect wait.
+This module owns the checked checkpoint for one configured Task lowered to the existing effect wait.
 It preserves a distinct checked-source constructor while keeping the runtime operation, stimulus,
 state, and observation contracts unchanged.
 -/

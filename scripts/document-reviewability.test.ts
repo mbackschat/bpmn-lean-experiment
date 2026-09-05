@@ -7,6 +7,7 @@ import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
 import { withoutBackticks } from "./markdown-tables.ts";
+import { maskMarkdownIgnoredRegions } from "./markdown-link-lexer.ts";
 import { reviewedDetailMapWordBudget } from "./document-control-plane.ts";
 import {
   headroom,
@@ -529,18 +530,19 @@ test("the maintained process-assessment ledger satisfies its own escalation rule
 });
 
 function leanAssuranceFindings(markdown: string, entry: string): ReadonlyArray<string> {
-  const headings = markdown.split("\n").filter((line) => line === leanAssuranceHeading);
+  const visibleMarkdown = maskMarkdownIgnoredRegions(markdown);
+  const headings = visibleMarkdown.split("\n").filter((line) => line === leanAssuranceHeading);
   if (headings.length !== 1) {
     return [`${entry}: expected one ${leanAssuranceHeading}, found ${headings.length}`];
   }
-  const competingHeadings = markdown.split("\n").filter((line) =>
-    /^## .*(?:\bLean\b|\bassurance\b|proof boundary)/iu.test(line)
+  const competingHeadings = visibleMarkdown.split("\n").filter((line) =>
+    /^## .*(?:\bLean\b|\bassurance\b|proof[- ]boundar(?:y|ies)|\blaws?\b|\bdeclarative relation\b)/iu.test(line)
       && line !== leanAssuranceHeading
   );
   if (competingHeadings.length > 0) {
     return [`${entry}: noncanonical Lean assurance heading ${JSON.stringify(competingHeadings[0])}`];
   }
-  const section = headingSection(markdown, leanAssuranceHeading);
+  const section = headingSection(visibleMarkdown, leanAssuranceHeading);
   if (section === null) {
     return [`${entry}: ${leanAssuranceHeading} has no readable section`];
   }
@@ -640,7 +642,7 @@ test("Lean assurance parsing rejects absent, invalid, unsupported, and fragmente
     ),
     ["unsupported.md: proved lane does not link a Lean evidence owner"],
   );
-  for (const heading of ["## Lean laws", "## Assurance boundary", "## Separating witnesses and proof boundary"]) {
+  for (const heading of ["## Lean laws", "## Assurance boundary", "## Separating witnesses and proof boundary", "## Laws, non-laws, and separating witnesses", "## Closure, enabledness, laws, and witnesses", "## Declarative relation, evaluator, and laws", "## Proof-boundaries and witnesses"]) {
     assert.deepEqual(
       leanAssuranceFindings(
         `## Lean assurance lane\n\nLane shape: checked\n\nEvidence: [owner](../../BpmnSemantics/Checked.lean) checks the finite case.\n\n${heading}\n`,
@@ -649,6 +651,11 @@ test("Lean assurance parsing rejects absent, invalid, unsupported, and fragmente
       [`fragmented.md: noncanonical Lean assurance heading ${JSON.stringify(heading)}`],
     );
   }
+  assert.deepEqual(
+    leanAssuranceFindings("## Lean assurance lane\n\nLane shape: proved\n\nEvidence: [owner](../../BpmnSemantics/Proved.lean) proves the law.\n\n```md\n## Lean laws\n```\n", "fenced.md"),
+    [],
+  );
+  assert.deepEqual(leanAssuranceFindings("```md\n## Lean assurance lane\n```\n", "fenced-only.md"), ["fenced-only.md: expected one ## Lean assurance lane, found 0"]);
   assert.deepEqual(
     leanAssuranceFindings(
       "## Lean assurance lane\n\nLane shape: proved\n\nEvidence: [owner](../../BpmnSemantics/Proved.lean) proves the quantified law.\n",

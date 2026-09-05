@@ -10,6 +10,25 @@ Lane shape: proved
 
 Evidence: [The Event-Based Gateway conformance owner](../../BpmnSemantics/EventBasedGatewayConformance.lean) proves the selected two-member race's arming relation, evaluator soundness, exact membership and ownership, winner exclusivity, and mismatch preservation; it explicitly excludes general trigger sets, repeated races, and simultaneous host readiness.
 
+### Closure, enabledness, laws, and witnesses
+
+Start closure is exactly two internal steps: `initiate` and `awaitEventRace`. Closure under limit `2` succeeds below `semanticProcessClosureLimit = 8`, while the same start under limit `1` reports closure-bound exhaustion and publishes no stable state. Each winning external stimulus enables exactly one selected `awaitUserTask`, so winner closure is one step. Completing that task closes through exactly `reachNoneEnd` and root `completeScope`, two internal steps.
+
+No newly reachable multiple-enabled internal state exists. The armed state has no internal transition and is resumable through its two public waits. The winner state has exactly one internal User Task activation, and the stable continuation has exactly one public User Task interaction. A hidden race record alone remains non-resumable and non-quiescent.
+
+The Lean lane requires a declarative arming relation and a declarative two-constructor winner relation distinct from the evaluator; soundness for every successful executable arming and winner transition; a quantified exact-membership/ownership law; a quantified exclusivity law proving that one winner removes both waits and makes the sibling stimulus ineligible; and exact state-preservation laws for wrong and stale identities. Existing standalone Message and Timer relations remain valid and must not acquire race behavior without explicit premises.
+
+The answer-free scenario family uses one definition and two strict schedules:
+
+| Case | First matching stimulus | Armed stable state | Required winner state | Required loser check |
+|---|---|---|---|---|
+| Message wins | exact Message delivery before deadline | Message subscription plus Timer deadline `1000` | only Message-path User Task; logical time `0` | stale exact Timer firing rejects and preserves that state |
+| Timer wins | exact Timer firing at deadline `1000` before Message delivery | Message subscription plus Timer deadline `1000` | only Timer-path User Task; logical time `1000` | stale exact Message delivery rejects and preserves that state |
+
+Both schedules then complete their selected User Task and reach the same empty completed wait, task, subscription, Timer, effect, variable, and interaction surfaces. Canonical logical time intentionally remains `0` after Message victory and `1000` after Timer victory. A declaration-order-permuted source must preserve each schedule's complete observation trace. A candidate-order implementation, a partial arming implementation, a winner that leaves its sibling, and a second-winner implementation all diverge at the approved public observation or command-outcome boundary.
+
+Finite fixtures establish only these bounded traces. They do not establish fairness, liveness, physical-event ordering, a simultaneous-trigger tie-break, arbitrary candidate count, or general Event semantics.
+
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
@@ -135,25 +154,6 @@ The race ID uses the Event-Based Gateway element ID and its activation count. Ar
 The record is derived only by `awaitEventRace`, belongs to one live scope occurrence, refers to exactly one live Message wait and one live Timer wait with the same owner, and is removed only by a matching winner or existing owner-scope interruption. A live record blocks scope quiescence independently of its member waits. Scope interruption removes the record and both member waits while retaining all monotonic activation counters. A synthetic otherwise-quiescent state with one record must remain non-quiescent, and a record without both members is invalid rather than a resumption surface.
 
 The race record and activation counter are not BPMN source objects and are not projected into canonical observation. They preserve the event-race ownership and occurrence identity that separate wait arrays otherwise erase.
-
-## Closure, enabledness, laws, and witnesses
-
-Start closure is exactly two internal steps: `initiate` and `awaitEventRace`. Closure under limit `2` succeeds below `semanticProcessClosureLimit = 8`, while the same start under limit `1` reports closure-bound exhaustion and publishes no stable state. Each winning external stimulus enables exactly one selected `awaitUserTask`, so winner closure is one step. Completing that task closes through exactly `reachNoneEnd` and root `completeScope`, two internal steps.
-
-No newly reachable multiple-enabled internal state exists. The armed state has no internal transition and is resumable through its two public waits. The winner state has exactly one internal User Task activation, and the stable continuation has exactly one public User Task interaction. A hidden race record alone remains non-resumable and non-quiescent.
-
-The Lean lane requires a declarative arming relation and a declarative two-constructor winner relation distinct from the evaluator; soundness for every successful executable arming and winner transition; a quantified exact-membership/ownership law; a quantified exclusivity law proving that one winner removes both waits and makes the sibling stimulus ineligible; and exact state-preservation laws for wrong and stale identities. Existing standalone Message and Timer relations remain valid and must not acquire race behavior without explicit premises.
-
-The answer-free scenario family uses one definition and two strict schedules:
-
-| Case | First matching stimulus | Armed stable state | Required winner state | Required loser check |
-|---|---|---|---|---|
-| Message wins | exact Message delivery before deadline | Message subscription plus Timer deadline `1000` | only Message-path User Task; logical time `0` | stale exact Timer firing rejects and preserves that state |
-| Timer wins | exact Timer firing at deadline `1000` before Message delivery | Message subscription plus Timer deadline `1000` | only Timer-path User Task; logical time `1000` | stale exact Message delivery rejects and preserves that state |
-
-Both schedules then complete their selected User Task and reach the same empty completed wait, task, subscription, Timer, effect, variable, and interaction surfaces. Canonical logical time intentionally remains `0` after Message victory and `1000` after Timer victory. A declaration-order-permuted source must preserve each schedule's complete observation trace. A candidate-order implementation, a partial arming implementation, a winner that leaves its sibling, and a second-winner implementation all diverge at the approved public observation or command-outcome boundary.
-
-Finite fixtures establish only these bounded traces. They do not establish fairness, liveness, physical-event ordering, a simultaneous-trigger tie-break, arbitrary candidate count, or general Event semantics.
 
 ## Temporal hosting and refinement preflight
 

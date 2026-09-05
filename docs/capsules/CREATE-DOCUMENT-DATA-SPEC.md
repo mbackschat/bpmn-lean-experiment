@@ -8,7 +8,7 @@ Implemented current capsule contract; exact evidence status belongs in the appli
 
 Lane shape: proved
 
-Evidence: [the Service Task effect conformance module](../../BpmnSemantics/ServiceTaskEffectConformance.lean) proves the bounded declarative effect relation, evaluator soundness, exact mapping and Activity-local scope behavior, refusal preservation, and separating direct-patch non-law used by this CreateDocument profile; it does not independently derive the A12 source binding or CIB host behavior.
+Evidence: [the generic effect-completion owner](../../BpmnSemantics/SemanticProcess/EffectCompletion.lean) proves the declarative effect relation and evaluator soundness, while [the mapped-success conformance owner](../../BpmnSemantics/MappedSuccessConformance.lean) proves the exact mapping, Activity-local scope behavior, refusal preservation, and separating direct-patch non-law used by this CreateDocument profile; neither independently derives the A12 source binding or CIB host behavior.
 
 ## Role
 

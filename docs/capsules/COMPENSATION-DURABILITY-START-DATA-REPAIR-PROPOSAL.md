@@ -50,7 +50,13 @@ This rule changes only external start admission. On success the existing start t
 | Snapshot and argument value | Existing transitions freeze and restore the supplied value | Existing relations freeze and restore the supplied value | Existing `sourceName`/`argumentName` lowering unchanged | Schedules only the resulting committed wait |
 | Explicit non-requirements | No general start-data or handler-data widening | No new general theorem beyond this exact admission | No XML, checked, Program, or digest change | No public profile registration or capability claim |
 
-## Separating witnesses and laws
+## Lean assurance lane
+
+Lane shape: checked
+
+Evidence: [the Compensation source compatibility conformance module](../../BpmnSemantics/CompensationSourceCompatibilityConformance.lean) checks the exact admission correction and proves the arbitrary-admitted-start capacity implication, while the full inherited-limit exact-fit and one-input-byte-over searches remain executable TypeScript and Product 1 discriminators rather than concrete Lean reductions. Lean changes the checkpoint Process-start domain to String-only, adds the same Program-derived exact binding and prospective-capacity predicate to command admission, decides the positive binding and the empty, wrong-name, extra, duplicate, and wrong-kind cases, and decides exact short representative projections against each production-encoder byte count and one byte below it. Escaped and multi-byte values bind the canonical encoder. This changes proof shape, not semantic admission or the two bounds. No new `native_decide` exception is selected. Every changed kernel-decided target build stays root-owned under the unchanged 3 GiB memory ceiling.
+
+### Separating witnesses and laws
 
 The primary red witness compiles the exact BPMN source, starts it with the formerly admitted empty patch, completes `ReserveHotel`, `ArrangeGroundTravel`, then `IssueInsurance`, and observes that the last completion is rejected with no compensation wait. The independent second instance completes `IssueInsurance` first and `ArrangeGroundTravel` last and observes the same final rejection. These traces predict the same mechanism because whichever branch arrives last fires the join and trigger over the same missing snapshot binding.
 
@@ -61,12 +67,6 @@ Mutations replace the binding name with `DataInput_TravelDetails`, add an unrela
 Capacity mutations in TypeScript find the exact-fit ASCII String for the ordinary short instance identity from the production canonical encoders, then add one byte; a second pair finds the exact-fit ASCII instance identity for a short String, then adds one byte. The exact-fit starts are admitted and both one-byte-over starts are rejected with exact state preservation by direct command admission. Product 1 repeats both over-cap cases and records zero `client.start` calls. Lean proves the stronger quantified safety direction—every arbitrary admitted start fits both inherited bounds—and decides an exact short representative against limits set to its production-encoder byte counts and one byte below them. Escaped and multi-byte String cases compare the prospective byte count with the encoder result in both accounts so character-count or unescaped-length substitutions cannot pass.
 
 The longest internal closure does not change: the same Program topology and operations execute after start, and this proposal adds only a pre-transition predicate. Existing closure-bound, multiple-enabled parallel-state, compensation-frontier, stable-resumption, and terminal-completeness evidence therefore remains applicable. The real-source positive trace is the new discriminator that the formerly unreachable stable path now reaches its explicit effect resumption surface.
-
-## Lean assurance lane
-
-Lane shape: checked
-
-Evidence: [the Compensation source compatibility conformance module](../../BpmnSemantics/CompensationSourceCompatibilityConformance.lean) checks the exact admission correction and proves the arbitrary-admitted-start capacity implication, while the full inherited-limit exact-fit and one-input-byte-over searches remain executable TypeScript and Product 1 discriminators rather than concrete Lean reductions. Lean changes the checkpoint Process-start domain to String-only, adds the same Program-derived exact binding and prospective-capacity predicate to command admission, decides the positive binding and the empty, wrong-name, extra, duplicate, and wrong-kind cases, and decides exact short representative projections against each production-encoder byte count and one byte below it. Escaped and multi-byte values bind the canonical encoder. This changes proof shape, not semantic admission or the two bounds. No new `native_decide` exception is selected. Every changed kernel-decided target build stays root-owned under the unchanged 3 GiB memory ceiling.
 
 ### Lean assurance correction after the hard ceiling
 
