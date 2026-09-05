@@ -8,6 +8,8 @@
 
 Lane shape: proved
 
+Evidence: [ProcessStartDataConformance.lean](../../BpmnSemantics/ProcessStartDataConformance.lean) proves the bounded fresh-start installation and wrong-Process refusal laws, including exact Process-scope visibility and the absence of an Activity-local scope. This family-local basis does not claim BPMN data modeling or general start semantics.
+
 ## Question and authority
 
 For the bounded CIB Seven User Task profile, how does a caller supply initial Process data so the first active User Task can read selected form inputs without claiming BPMN Data Association, form, or human-resource semantics?

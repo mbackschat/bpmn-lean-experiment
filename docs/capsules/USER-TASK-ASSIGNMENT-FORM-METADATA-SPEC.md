@@ -4,10 +4,6 @@
 
 **Implemented, evidence-closed, owner-accepted, and graduated on 2026-08-12.** Exact source admission, checked and Semantic Process representation, committed wait and public observation, strict wire shapes, the proved Lean lane, profile/scenario registration, retained public-service CIB evidence, differential comparison, runnable configuration, and live Temporal Worker-replacement/replay evidence are green. The owner accepted final administrative correction `264add2` without another audit after the owner-authorized fourth closure audit closed its carried finding and retained only stale sibling status in the plan. Product 2 may consume this specification's public metadata without changing its passive engine meaning.
 
-## Lean assurance lane
-
-Lane shape: proved
-
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
@@ -100,9 +96,13 @@ The canonical CIB lane must obtain candidate links through public `TaskService` 
 | `UTMETA-CIB-01` | Public CIB identity links and Form Service expose the selected candidate group and exact `string` or `boolean` field type; canonical projection does not infer them from source. | CIB evidence |
 | `UTMETA-HOST-01` | The existing core-owned User Task wait, Query, completion Update, Worker replacement, history, and replay preserve metadata without a new Temporal primitive or host-owned semantic write. | Temporal refinement |
 
-## Lean lane
+## Lean assurance lane
 
-The Lean lane is **proved**. It adds the same immutable metadata type and optional field to the checked User Task, `awaitUserTask`, runtime wait, and open-task observation. The narrow conformance module proves:
+Lane shape: proved
+
+Evidence: [UserTaskMetadataConformance.lean](../../BpmnSemantics/UserTaskMetadataConformance.lean) proves exact metadata preservation through lowering, waiting, projection and strict JSON, metadata-free shape preservation, passive completion behavior, refusal, and bounded closure. It does not add a transition family or prove identity-provider, assignment, form-rendering, or submitted-value semantics.
+
+The Lean account adds the same immutable metadata type and optional field to the checked User Task, `awaitUserTask`, runtime wait, and open-task observation. The narrow conformance module proves:
 
 - exact metadata survives checked-to-IL lowering, wait creation, public projection, strict JSON decode, and strict JSON encode;
 - candidate, field key, and field type mutations remain structurally unequal;

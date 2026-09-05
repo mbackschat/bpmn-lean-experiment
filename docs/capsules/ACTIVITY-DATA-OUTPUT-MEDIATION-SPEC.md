@@ -91,7 +91,7 @@ A second witness separates `ADOUTPUT-ENTRY-01` from the input capsule: this mode
 
 Lane shape: proved
 
-The lane is declared **proved** for the bounded transition family, matching the input capsule rather than weakening below it.
+Evidence: [the Activity data-output conformance module](../../BpmnSemantics/ActivityDataOutputConformance.lean) proves this bounded transition family's data-independent activation, association-routed write, atomic cleanup, and refusal laws; the claim does not extend to a general Activity data interface.
 
 Required theorems cover data-independent activation; exact-id fill and the refusal of every other submitted name; association-decided write with Process-binding preservation elsewhere; single-scope disposal; wrong and stale identity refusal; runtime-state invariant preservation for the completion transition; and the routed-versus-named non-law that fixes `ADOUTPUT-ROUTE-01` as a real discriminator.
 

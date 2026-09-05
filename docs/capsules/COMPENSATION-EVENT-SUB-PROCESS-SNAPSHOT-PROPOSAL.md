@@ -163,7 +163,7 @@ Capacity covers empty minimum, exact-fit/one-over reservation and promotion, esc
 
 Lane shape: proved
 
-The proved lane covers the representation, validation, reservation, capture, promotion, purge, capacity, and exact first-checkpoint lifecycle integrations.
+Evidence: [the Compensation Event Sub-Process snapshot lifecycle integration module](../../BpmnSemantics/CompensationEventSubProcessSnapshotLifecycleIntegrationConformance.lean) proves the bounded representation, validation, reservation, capture, promotion, purge, capacity, and first-checkpoint lifecycle integrations; it does not claim source provenance, Multi-Instance behavior, trigger execution, or live hosting.
 
 Lean defines the same declaration, records, encoder, validator, lifecycle functions, three-arm internal attempt, closure refusal, and lifecycle integrations. Laws prove census closure, identity separation, frame ancestry/immutability, selected-root start reservation, ordinary and bounded child-entry composition, deciding-pre-state promotion, exact regional and Timer-interruption survivor membership, committed admission validity, success-only promotion, unsuccessful purge, count/byte and whole-stimulus refusal preservation, old-byte omission, and integration frame properties.
 

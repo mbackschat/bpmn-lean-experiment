@@ -4,10 +4,6 @@
 
 **Implemented, registered, evidence-closed, independently closure-reviewed, and graduated on 2026-08-12.** The registered profile, answer-free scenario, retained CIB evidence, runnable example, differential stringify mutation, and live Temporal Worker-replacement/refusal/history/replay witness establish the selected Boolean completion claim without changing Process Start, effects, mappings, expressions, Product 2, E2, or any old profile.
 
-## Lean assurance lane
-
-Lane shape: proved
-
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
@@ -93,9 +89,11 @@ The new profile's source bytes, checked graph, Semantic Process operations, cont
 | `BVAL-LAW-01` | Value-parametric merge, occurrence, refusal, closure, and projection laws survive the widened type; value-specific effect and expression laws retain explicit string/null hypotheses or exclusions. | Lean and independent TypeScript semantics |
 | `BVAL-HOST-01` | The existing content-bound User Task Update durably carries, commits, replays, and returns the tagged Boolean without a new Workflow command or host-owned write. | Temporal refinement |
 
-## Lean lane and M3 research question
+## Lean assurance lane
 
-The Lean lane is **proved**. It answers M3's named question, whether the current law set survives a widened value domain or needs explicit value hypotheses.
+Lane shape: proved
+
+Evidence: [the Boolean Process-data conformance module](../../BpmnSemantics/BooleanProcessDataConformance.lean) proves the bounded widened-value-domain laws and the exact Boolean create, replace, refusal, and closure results while retaining explicit hypotheses for string/null-only consumers; it answers M3's named question without claiming Boolean admission on excluded surfaces.
 
 The shared `VariableValue` inductive gains `.boolean (value : Bool)`. Value-parametric definitions and laws remain quantified over the widened type: canonical patch merge, exact completion, mismatch preservation, occurrence identity, Process-scope projection, and finite closure. The new conformance module proves at least one exact Boolean create/replace witness, full-state refusal preservation, and the existing closure result under the new profile.
 

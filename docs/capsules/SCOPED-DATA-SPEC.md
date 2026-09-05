@@ -4,10 +4,6 @@
 
 **Implemented current pre-release contract.**
 
-## Lean assurance lane
-
-Lane shape: proved
-
 ## Role
 
 This capsule owns the implemented atomic replacement of the flat Semantic Process runtime-variable representation with explicit Process and Activity-local scope ownership. Activity-local owners use one closed discriminated identity type so an effect occurrence and an Activity occurrence with equal coordinates remain distinct. This capsule's mapping account continues to use only the effect-occurrence arm; the [Activity data-input mediation specification](ACTIVITY-DATA-INPUT-MEDIATION-SPEC.md) owns the separate Activity-occurrence consumer and the one local projection that consumer publishes. The representation change itself changes no BPMN source admission, mapping language, canonical observation, effect result, or CIB profile meaning.
@@ -106,7 +102,11 @@ This identifier replaces the second half of the original `SDATA-OBSERVE-01`, who
 
 An absent, duplicate, or mismatched Activity-local owner prevents effect completion with exact runtime-state preservation. A patch cannot fall back to Process scope or another occurrence's local scope.
 
-## Lean migration inventory
+## Lean assurance lane
+
+Lane shape: proved
+
+Evidence: [MappedSuccessConformance.lean](../../BpmnSemantics/MappedSuccessConformance.lean) proves the effect-occurrence-owned scope's activation, exact completion and cleanup, Process-only observation, and refusal laws, while [ActivityDataInputConformance.lean](../../BpmnSemantics/ActivityDataInputConformance.lean) proves that the distinct Activity-occurrence owner cannot alias that scope and governs its selected projection and cleanup. These family-local results do not close the broader quantified runtime-preservation obligation.
 
 The pre-replacement census contains 48 production theorems and 66 production examples. Thirty-seven theorems and all 66 examples depend directly or transitively on `RuntimeState`, its fixtures, evaluator results, or exact observations and therefore must continue to elaborate against the replacement type. The migration may discharge unchanged propositions by recompilation, but it may not insert a root-only conversion or restate a variable proposition without explicit Process or Activity-local ownership.
 

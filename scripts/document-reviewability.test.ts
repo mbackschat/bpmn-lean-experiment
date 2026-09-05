@@ -533,6 +533,13 @@ function leanAssuranceFindings(markdown: string, entry: string): ReadonlyArray<s
   if (headings.length !== 1) {
     return [`${entry}: expected one ${leanAssuranceHeading}, found ${headings.length}`];
   }
+  const competingHeadings = markdown.split("\n").filter((line) =>
+    /^## .*(?:\bLean\b|\bassurance\b|proof boundary)/iu.test(line)
+      && line !== leanAssuranceHeading
+  );
+  if (competingHeadings.length > 0) {
+    return [`${entry}: noncanonical Lean assurance heading ${JSON.stringify(competingHeadings[0])}`];
+  }
   const section = headingSection(markdown, leanAssuranceHeading);
   if (section === null) {
     return [`${entry}: ${leanAssuranceHeading} has no readable section`];
@@ -543,21 +550,38 @@ function leanAssuranceFindings(markdown: string, entry: string): ReadonlyArray<s
   if (laneLines.length !== 1) {
     return [`${entry}: expected one Lane shape field, found ${laneLines.length}`];
   }
-  const firstContentLine = section
+  const contentLines = section
     .slice(leanAssuranceHeading.length)
     .split("\n")
-    .find((line) => line.length > 0);
+    .filter((line) => line.length > 0);
+  const firstContentLine = contentLines[0];
   const match = /^Lane shape: (proved|checked|deliberately open)$/u.exec(firstContentLine ?? "");
   if (match === null) {
     return [`${entry}: invalid first Lean assurance line ${JSON.stringify(firstContentLine)}`];
   }
   const shape = match[1];
   assert.ok(leanAssuranceShapes.includes(shape as typeof leanAssuranceShapes[number]));
+  const evidenceLines = section.split("\n").filter((line) => line.startsWith("Evidence: "));
+  if (evidenceLines.length !== 1) {
+    return [`${entry}: expected one Lean Evidence statement, found ${evidenceLines.length}`];
+  }
+  const evidence = evidenceLines[0] ?? "";
+  if (contentLines[1] !== evidence) {
+    return [`${entry}: Lean Evidence statement must immediately follow the Lane shape field`];
+  }
   if (
     shape === "deliberately open"
-    && !linkedPaths(section, "docs/capsules").includes(runtimeProofMap)
+    && !linkedPaths(evidence, "docs/capsules").includes(runtimeProofMap)
   ) {
     return [`${entry}: deliberately open lane does not link ${runtimeProofMap}`];
+  }
+  if (
+    shape !== "deliberately open"
+    && !linkedPaths(evidence, "docs/capsules").some((target) =>
+      target.startsWith("BpmnSemantics/") && target.endsWith(".lean")
+    )
+  ) {
+    return [`${entry}: ${shape} lane does not link a Lean evidence owner`];
   }
   return [];
 }
@@ -576,7 +600,7 @@ test("every capsule declares one canonical Lean assurance lane", async () => {
   assert.deepEqual(findings, []);
 });
 
-test("Lean assurance parsing rejects absent, invalid, and unowned open lanes", () => {
+test("Lean assurance parsing rejects absent, invalid, unsupported, and fragmented lanes", () => {
   assert.deepEqual(leanAssuranceFindings("## Status\n\nclosed\n", "missing.md"), [
     "missing.md: expected one ## Lean assurance lane, found 0",
   ]);
@@ -585,7 +609,10 @@ test("Lean assurance parsing rejects absent, invalid, and unowned open lanes", (
     ['invalid.md: invalid first Lean assurance line "Lane shape: finite"'],
   );
   assert.deepEqual(
-    leanAssuranceFindings("## Lean assurance lane\n\nLane shape: deliberately open\n", "open.md"),
+    leanAssuranceFindings(
+      "## Lean assurance lane\n\nLane shape: deliberately open\n\nEvidence: unresolved.\n",
+      "open.md",
+    ),
     [`open.md: deliberately open lane does not link ${runtimeProofMap}`],
   );
   assert.deepEqual(
@@ -596,8 +623,42 @@ test("Lean assurance parsing rejects absent, invalid, and unowned open lanes", (
     ["duplicate.md: expected one Lane shape field, found 2"],
   );
   assert.deepEqual(
+    leanAssuranceFindings("## Lean assurance lane\n\nLane shape: proved\n", "stub.md"),
+    ["stub.md: expected one Lean Evidence statement, found 0"],
+  );
+  assert.deepEqual(
     leanAssuranceFindings(
-      "## Lean assurance lane\n\nLane shape: deliberately open\n\n[owner](../ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md)\n",
+      "## Lean assurance lane\n\nLane shape: proved\n\nThe basis appears later.\n\nEvidence: [owner](../../BpmnSemantics/Proved.lean) proves the law.\n",
+      "detached.md",
+    ),
+    ["detached.md: Lean Evidence statement must immediately follow the Lane shape field"],
+  );
+  assert.deepEqual(
+    leanAssuranceFindings(
+      "## Lean assurance lane\n\nLane shape: proved\n\nEvidence: asserted without an owner.\n",
+      "unsupported.md",
+    ),
+    ["unsupported.md: proved lane does not link a Lean evidence owner"],
+  );
+  for (const heading of ["## Lean laws", "## Assurance boundary", "## Separating witnesses and proof boundary"]) {
+    assert.deepEqual(
+      leanAssuranceFindings(
+        `## Lean assurance lane\n\nLane shape: checked\n\nEvidence: [owner](../../BpmnSemantics/Checked.lean) checks the finite case.\n\n${heading}\n`,
+        "fragmented.md",
+      ),
+      [`fragmented.md: noncanonical Lean assurance heading ${JSON.stringify(heading)}`],
+    );
+  }
+  assert.deepEqual(
+    leanAssuranceFindings(
+      "## Lean assurance lane\n\nLane shape: proved\n\nEvidence: [owner](../../BpmnSemantics/Proved.lean) proves the quantified law.\n",
+      "proved.md",
+    ),
+    [],
+  );
+  assert.deepEqual(
+    leanAssuranceFindings(
+      "## Lean assurance lane\n\nLane shape: deliberately open\n\nEvidence: [owner](../ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md) records the reopen trigger.\n",
       "owned-open.md",
     ),
     [],

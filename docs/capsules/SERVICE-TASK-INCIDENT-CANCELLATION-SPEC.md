@@ -4,10 +4,6 @@
 
 **Implemented, closure-reviewed, evidence-closed, and graduated.** This specification owns one successor CIB compatibility profile and one incident-gated external root Process cancellation command across the strict wire, TypeScript semantic core, proved Lean lane, configured CIB external-termination projection, exact four-target differential evidence, and live Temporal Worker-replacement, retained-Update, history, replay, and mutation evidence. General BPMN cancellation, arbitrary in-flight cancellation, Transaction Cancel, compensation, modeled Terminate behavior, Temporal Workflow cancellation, and Product 2 operations remain excluded.
 
-## Lean assurance lane
-
-Lane shape: proved
-
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
@@ -135,9 +131,13 @@ The probe establishes that live Process, job, incident, execution, and task coun
 
 The registered CIB evidence adds successor-only raw historic-state diagnostics bound to the command after which they were observed. Canonical projection requires the existing exact job/incident partners before deletion and the exact externally terminated historic root afterward. It uses the scenario's stable semantic Process identity and never exports raw CIB identity or delete reason. Existing CIB evidence files and old raw producer arms remain byte-identical.
 
-## Lean lane
+## Lean assurance lane
 
-The Lean lane is **proved**. A new `IncidentCancellation.lean` module owns the declarative cancellation relation and executable evaluator. A new conformance module proves:
+Lane shape: proved
+
+Evidence: [ServiceTaskIncidentCancellationConformance.lean](../../BpmnSemantics/ServiceTaskIncidentCancellationConformance.lean) proves the selected incident-gated root cancellation relation, evaluator soundness, complete owned-region cleanup, preserved state, terminal projection, refusal, and the two specified queue orders. It does not claim retry/cancel order independence or general BPMN cancellation.
+
+A new `IncidentCancellation.lean` module owns the declarative cancellation relation and executable evaluator. A new conformance module proves:
 
 - exact evaluator soundness against the relation;
 - unique-root derivation from the submitted public identity;

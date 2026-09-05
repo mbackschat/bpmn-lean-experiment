@@ -8,6 +8,8 @@
 
 Lane shape: proved
 
+Evidence: [ReceiveTaskConformance.lean](../../BpmnSemantics/ReceiveTaskConformance.lean) proves the selected Receive Task's exact source and program admission, direct-Message wait, delivery and refusal laws, and bounded closure witnesses. The result reuses the proved Message transition family without claiming general Receive Task transport or instantiation.
+
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |

@@ -4,10 +4,6 @@
 
 **Implemented, closure-reviewed, and evidence-closed on 2026-08-15.** This specification selects one bounded successor profile that composes the already implemented balanced two-branch Parallel Gateway account with the already implemented passive User Task assignment and form metadata account. The registered profile, two answer-free completion orders, combined retained CIB observations, four-target differential cases, live Temporal replacement/replay witness, executable corpus entry, and production-preview Product 2 journey are complete. It widens profile admission and CIB calibration evidence, but adds no BPMN meaning, Semantic Process operation, runtime collection, command, public field, Temporal primitive, or Product 2 contract.
 
-## Lean assurance lane
-
-Lane shape: proved
-
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
@@ -61,7 +57,7 @@ All source-shape, namespace, Unicode-identity, parser-warning, graph, arity, low
 5. Keep the existing public and command contracts unchanged. Start exposes two canonically ordered `OpenUserTask` values with distinct occurrence identities and exact metadata. Completing one removes only that occurrence and preserves the sibling and its metadata. Completing both permits the existing join and terminal closure.
 6. Preserve accepted command order for Process-variable writes. The catalog journey submits the two distinct declared Boolean keys, so its final variables agree in either task order. The profile does not claim order independence for arbitrary overlapping completion patches and does not bind engine completion payloads to form metadata.
 7. Keep every relationship in the exact composed set under [Authority and classification](#authority-and-classification) separate, including lifecycle, completion data, Boolean value, metadata, identity mapping, oracle configuration, and unresolved `CIB-DEV-0001` claims. Add one combined raw-service observation instead of inferring composition from separate fixtures.
-8. Use a proved Lean composition lane and independently written TypeScript evidence. Prove metadata preservation and control-state equivalence after metadata erasure, and state disjoint submitted keys as an explicit hypothesis for final-data order equivalence. Add no evaluator clause or topology-specific runtime path.
+8. Use a checked Lean composition lane and independently written TypeScript evidence. Check metadata preservation and control-state equivalence after metadata erasure for the exact composed program, and state disjoint submitted keys as an explicit hypothesis for final-data order equivalence. Add no evaluator clause or topology-specific runtime path.
 9. Make catalog eligibility depend on one local production-preview Chromium journey through deploy, exact-version start, two visible unclaimed tasks, two claims, both task details and Boolean forms, one intermediate sibling state, both completion orders across bounded evidence, terminal Operations History, and exact per-occurrence Work audit. No successful engine-only case is advertised in the browser.
 
 ## Public contract and example
@@ -110,9 +106,13 @@ The two form submissions in the catalog journey are `{ contentApproved: true }` 
 | `PARMETA-HOST-01` | Semantic/profile admission rejects programs outside the exact selected shape; the host-capability gate accepts the two passive User Task waits while retaining its refusals for unsupported host-driven scheduler compositions. Existing Update ingress, committed semantic state, Query, Worker replacement, replay, and terminal receipt add no Temporal primitive or host-owned meaning. | Semantic admission and Temporal adapter |
 | `PARMETA-JOURNEY-01` | The exact model becomes catalog-visible only after its complete local production-preview Chromium journey proves two claims, two form completions, intermediate state, terminal history, and per-occurrence audit. | Product 2 acceptance |
 
-## Lean lane and semantic evidence
+## Lean assurance lane
 
-The Lean lane is **proved**. A new focused conformance owner imports the existing parallel and metadata contracts rather than growing either existing conformance fixture. It proves:
+Lane shape: checked
+
+Evidence: [The composition conformance aggregate](../../BpmnSemantics/ParallelUserTaskMetadataCompositionConformance.lean) collects kernel-checked admission, runtime, erasure, closure, and data-order facts over the exact `compositionProgram`; those fixed fixtures do not prove the same claims for arbitrary metadata-bearing parallel programs.
+
+The Lean lane is **checked**. Focused conformance owners import the existing parallel and metadata contracts rather than growing either existing conformance fixture. They check:
 
 - start closure creates exactly the two distinct metadata-bearing waits;
 - changing either candidate, field key, or field type changes only the selected metadata fact and remains observable;
@@ -147,8 +147,8 @@ This journey is one sequential user story. Do not duplicate the whole story at b
 |---|---|---|---|---|---|---|
 | `PARMETA-SOURCE-01` | exact new profile and source plus old-profile refusal controls | exact checked/program fixture | source/compiler admission and binding mutations | exact deployment source echo | pre-start host capability | upload and admission verdict |
 | `PARMETA-PROJECT-01` | two source-local metadata blocks | exact preservation and inequality | two-task checked/IL/runtime/public equality | per-task public identity-link and form-service rows | Query before and after replacement | two task details and forms |
-| `PARMETA-PASSIVE-01` | no new semantic feature | erasure and control-state theorems | old/new control projection equality | not a CIB semantic claim | unchanged Workflow mechanism | no platform-derived control fact |
-| `PARMETA-SIBLING-01` | distinct task and Flow identities | symmetric completion laws | A-then-B, B-then-A, stale, sibling-drop mutation | both orders plus live sibling | intermediate Query and replay | intermediate running instance and one task |
+| `PARMETA-PASSIVE-01` | no new semantic feature | fixed-program erasure and control-state checks | old/new control projection equality | not a CIB semantic claim | unchanged Workflow mechanism | no platform-derived control fact |
+| `PARMETA-SIBLING-01` | distinct task and Flow identities | fixed-program symmetric completion checks | A-then-B, B-then-A, stale, sibling-drop mutation | both orders plus live sibling | intermediate Query and replay | intermediate running instance and one task |
 | `PARMETA-DATA-01` | distinct declared fields in exact model | disjoint-key hypothesis | accepted-order and disjoint-commutation tests | `CIB-EXT-0005/0010` raw intermediate and final variables | exact command order | exact form submissions |
 | `PARMETA-CIB-01` | exact composed relationship set | not a CIB theorem | raw-to-canonical comparison | combined lifecycle, task, identity-link, form-field, and variable observation | not a host fact | no CIB IDs exposed |
 | `PARMETA-HOST-01` | non-null Temporal relation | no host machinery | core-owned wait-set projection | not applicable | Worker replacement, duplicate recovery, replay | public routes only |
@@ -167,7 +167,7 @@ Required:
 - the exact profile, exact independently authored BPMN source, answer-free schedules, and profile/scenario registries;
 - strict two-task metadata source admission and checked-to-IL identity binding by element ID, not array position;
 - unchanged public shapes carrying two exact task occurrences and metadata blocks;
-- proved Lean composition, independent TypeScript tests, combined pinned-CIB evidence for the exact selected relationship set, four-target differential comparison, live Temporal replacement/replay, and the complete Chromium journey;
+- checked Lean composition, independent TypeScript tests, combined pinned-CIB evidence for the exact selected relationship set, four-target differential comparison, live Temporal replacement/replay, and the complete Chromium journey;
 - old parallel and old sequential metadata profile byte and behavior controls;
 - a conditional semantic checkpoint cold review after source, checked graph, IL, Lean, core, and host-capability gates are green, before Product 2 catalog integration.
 

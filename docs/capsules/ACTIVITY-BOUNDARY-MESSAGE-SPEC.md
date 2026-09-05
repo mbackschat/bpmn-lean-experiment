@@ -5,10 +5,6 @@
 Lifecycle: implemented
 Review: closure-approved
 
-## Lean assurance lane
-
-Lane shape: proved
-
 ## Question and bounded outcome
 
 What is the smallest standards-only slice in which one payload-free interrupting Message Boundary Event is attached to one User Task, the task and Message subscription are armed as one Activity occurrence, and whichever exact input wins withdraws the losing wait and follows only its own route?
@@ -164,9 +160,11 @@ The Boundary Event is a Flow Node but an armed subscription is not a running Bou
 
 The distinct normal and boundary follow-on User Tasks are the public route discriminator. End Event identity is not used as the only discriminator because terminal element identity is absent from the canonical stable observation.
 
-## Declarative Lean account
+## Lean assurance lane
 
-The Lean lane is `proved`. It adds a declarative arming relation and a two-constructor victory relation independently of the executable evaluator.
+Lane shape: proved
+
+Evidence: [the Activity boundary Message conformance module](../../BpmnSemantics/ActivityBoundaryMessageConformance.lean) proves the bounded declarative arming and two-constructor victory account, including evaluator soundness and conditional final withdrawal; it does not prove the wider reachable-state uniqueness and well-formedness preservation obligation.
 
 The arming relation states the consumed input token, exact task/subscription/Activity records, owner equality, distinct outputs, and counter successors. The victory relation has one completion constructor and one Message-delivery constructor; each names the exact losing wait withdrawal and selected route.
 

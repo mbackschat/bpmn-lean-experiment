@@ -8,6 +8,8 @@
 
 Lane shape: proved
 
+Evidence: [UserTaskCompletionDataConformance.lean](../../BpmnSemantics/UserTaskCompletionDataConformance.lean) proves exact string/null Process-binding merge, full scoped-state preservation on mismatched completion, and the capsule's bounded completion-data observations. It does not claim BPMN Data Association, task-local output mapping, or a wider value domain.
+
 ## Question
 
 For the existing exact User Task occurrence, how should an executable CIB Seven compatibility profile expose selected form input and apply simulated user-entered string/null values on completion without claiming general BPMN data association, form, or human-resource semantics?

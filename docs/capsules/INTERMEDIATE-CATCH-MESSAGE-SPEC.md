@@ -15,10 +15,6 @@ None Start Event
 
 The trailing User Task is an already implemented mechanism. It keeps the semantic Process and Temporal Workflow live after the message is consumed so a second command with a fresh command ID can establish semantic stale refusal rather than only a post-closure transport result.
 
-## Lean assurance lane
-
-Lane shape: proved
-
 ## Exact claim
 
 In product terms, the capsule establishes:
@@ -229,11 +225,15 @@ The synthetic Lean and TypeScript projection fixture must contain one wait of ea
 
 No global subscription registry, broker queue, correlation index, or outbound-message intent is introduced.
 
-## Lean and executable obligations
+## Lean assurance lane
+
+Lane shape: checked
+
+Evidence: [The Intermediate Catch Message conformance owner](../../BpmnSemantics/IntermediateCatchMessageConformance.lean) kernel-checks the exact Message-first and reverse-order programs, their bounded closures, direct-address refusals, and retained public observations; the six enumerated mismatch fixtures do not quantify over a seventh address outside `mismatchedDeliveries`.
 
 The new runtime family requires a declarative `ProgramStep` case distinct from the executable evaluator. Every evaluator-produced subscription activation and delivery transition must have a checked soundness proof into that relation.
 
-The minimum useful laws are:
+The checked evidence covers:
 
 - exact `awaitMessage` activation creates one subscription and preserves its complete channel;
 - exact matching delivery consumes that one subscription and opens the trailing User Task;
@@ -361,7 +361,7 @@ Pre-activation delivery also adds no CIB question: pure semantic delivery with n
 |---|---|---|---|---|---|---|
 | `MSG-WAIT-01` | Clauses 10.5.1 and 10.5.4 plus exact source profile | Declarative activation, evaluator, soundness, and exact wait law | Independent activation and projection | Not claimed | Query observes the core-owned wait before delivery | Mutation drops or changes the projected channel and the comparator must disagree |
 | `MSG-DELIVER-01` | Clause 8.4.2 plus direct-address and definition-consistency profile restriction | Exact-address relation, channel-consistency invariant, evaluator, and consumption law | Independent exact address/definition check and consumption | Not claimed | Durable Signal reaches only the core queue; restart and result resolution preserve the committed result | Wrong-channel Signal is transport-accepted but semantically rejected |
-| `MSG-REFUSE-01` | Direct-address and one-consumption profile | Quantified mismatch/pre-activation/stale state-preservation law | Full mismatch, pre-activation, stale, duplicate-content, and identity-conflict cases | Not claimed | Message result Query/private recovery distinguishes semantic refusal; malformed and identity-conflicting inputs retain adapter classifications | Mutation matches by Message ID alone and must accept a case the real account rejects |
+| `MSG-REFUSE-01` | Direct-address and one-consumption profile | Enumerated mismatch plus exact pre-activation and stale state-preservation fixtures | Full mismatch, pre-activation, stale, duplicate-content, and identity-conflict cases | Not claimed | Message result Query/private recovery distinguishes semantic refusal; malformed and identity-conflicting inputs retain adapter classifications | Mutation matches by Message ID alone and must accept a case the real account rejects |
 | `MSG-OBSERVE-01` | Observation profile plus `PAR-PROJECT-01` | Exact canonical subscription/interaction projection and four-kind element-sorted lock | Independent canonical projection and ordering | Not claimed | Query/history/result reconciliation and replay | Comparator mutation removes the subscription, leaves it visible after consumption, or globally sorts waits by element ID |
 
 Lean, TypeScript, and Temporal all consume the one TypeScript-produced checked graph and Semantic Process program. Lean independently recomputes checked-graph-to-program lowering but does not parse BPMN XML, so agreement cannot detect a shared XML-to-checked-channel defect. Source mutation tests must separately reject an inconsistent `operationRef`, inconsistent `inMessageRef`, added `itemRef`, unresolved QName, and extra root-definition chain. The paired valid-chain discriminator must additionally prove that checked projection and lowering preserve the resolved replacement triple rather than a fixture-constant value.
@@ -387,7 +387,7 @@ Maintained requirements:
 - node-kind/profile-multiset admission plus generic graph validation for both legal mechanism orders, with exact source admission and lowering for the payload-free catch;
 - complete occurrence identity, caller-supplied definition consistency, operation-payload element identity, and the reference-selection lowering discriminator;
 - one-consumption, wrong/stale refusal, duplicate-content behavior, and public subscription projection;
-- declarative Lean relation, evaluator soundness, useful laws, and checked non-law;
+- declarative Lean relation, evaluator soundness bridge, fixed-program kernel checks, and checked non-law;
 - independent TypeScript behavior;
 - targeted both-order closure, multiple-enabledness, resumability, stranded-state, four-kind ordering, and passive-ingress host-admission checks;
 - durable Signal ingress, malformed/conflicting request classification, result Query/receipt recovery, Worker absence, live stale refusal, duplicate delivery, exact Signal history, replay, cleanup, and meaningful semantic/history mutations;

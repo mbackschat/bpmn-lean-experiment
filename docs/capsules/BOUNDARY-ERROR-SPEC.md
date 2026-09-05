@@ -4,10 +4,6 @@
 
 Implemented current capsule contract; exact evidence status belongs in the [`implementation-status-owner:ENGINE-RUNTIME-PROOF`](../ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md).
 
-## Lean assurance lane
-
-Lane shape: proved
-
 ## Role
 
 This specification owns the implemented semantic contract and retained decision record for one bounded typed business-error result and one matching interrupting BPMN Error boundary route. Exact implementation status belongs in the [`implementation-status-owner:ENGINE-RUNTIME-PROOF`](../ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md), immediate sequencing belongs in [PLAN.md](../PLAN.md), and the A12 product denominator belongs in the [A12 Workflows compatibility ledger](../research/A12-WORKFLOWS-COMPATIBILITY-LEDGER.md).
@@ -237,9 +233,11 @@ An occurrence-identity mismatch, inactive or consumed occurrence, or non-matchin
 
 The committed Error route remains definition-only. The active waiting projection retains the existing `openEffects` shape and exposes neither the configured Error code nor any future result message. After a matching result, canonical state exposes the boundary User Task and the Process variables produced by the committed mapping; code and message remain command/evidence data rather than canonical state.
 
-## Declarative Lean account
+## Lean assurance lane
 
-The declarative `EffectCompletionStep` relation gains one constructor for a matching business-error route. The executable evaluator gains the corresponding branch, and a soundness theorem proves that every evaluator-produced business-error transition is permitted by the relation.
+Lane shape: proved
+
+Evidence: [the mapped boundary Error conformance module](../../BpmnSemantics/MappedBoundaryErrorConformance.lean) proves the bounded matching business-error route, exact mapping and cleanup trace, optional-message independence, mismatch refusal, and evaluator soundness; it does not establish the excluded unhandled or nested-scope Error accounts.
 
 Checked laws:
 

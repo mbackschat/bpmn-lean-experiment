@@ -184,6 +184,8 @@ The nearest realistic wrong implementation filters by Message channel and takes 
 
 Lane shape: proved
 
+Evidence: [The pure Message-correlation owner](../../BpmnSemantics/SemanticProcess/MessageKeyCorrelation.lean) proves complete-address isolation, permutation-invariant finite matching, exact no/unique/ambiguous classification, candidate projection, and target-delivery soundness, while [the preservation owner](../../BpmnSemantics/SemanticProcess/MessageKeyCorrelationPreservation.lean) proves the selected target and non-target state frames; Temporal discovery completeness remains outside both proofs.
+
 The lane is declared **proved** for the bounded per-instance transition and finite-population matcher. The pure matcher theorems cover complete-address isolation, permutation invariance, exact no-match, unique-match soundness and completeness, ambiguous preservation, and the non-law that lexical candidate order may select a winner. The per-instance theorems cover exact path evaluation, candidate-projection correctness, target revalidation, subscription withdrawal finality, no payload write, outgoing-token production, refusal preservation, runtime-state well-formedness, and unchanged non-target instances.
 
 The evaluator-soundness bridge remains a bridge rather than a separate evidence lane. The global proof ranges over a finite list of published candidate facts and Process states; it does not claim discovery completeness for Temporal. Discovery completeness is the distinct host-refinement obligation below.

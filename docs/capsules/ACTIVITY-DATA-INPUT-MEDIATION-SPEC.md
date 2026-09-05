@@ -96,7 +96,7 @@ The useful quantified laws are exact Process-binding preservation across activat
 
 Lane shape: proved
 
-The Lean lane is **proved** for this bounded transition family. It adds a declarative activation relation, a declarative completion relation, separately executable evaluator clauses, and a soundness bridge for each evaluator-produced arm.
+Evidence: [the Activity data-input conformance module](../../BpmnSemantics/ActivityDataInputConformance.lean) proves the bounded declarative activation and completion relations, evaluator soundness, exact copying, ownership, cleanup, and refusal laws; it does not claim the deliberately open global runtime-invariant preservation lane.
 
 The required theorems establish absent-source refusal with exact state preservation; present string and present null activation; exact-copy and Process-binding preservation; fresh Activity and task issuance; local-owner uniqueness and the Activity/task/scope ownership join; completion cleanup and outgoing-route preservation; wrong and stale identity refusal; runtime-state invariant preservation for both successful transitions; and the absence-versus-null non-law.
 

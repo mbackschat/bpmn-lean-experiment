@@ -12,6 +12,8 @@ Every evidence lane is closed: source admission and lowering, Lean, the independ
 
 Lane shape: proved
 
+Evidence: [The non-interrupting boundary Timer conformance owner](../../BpmnSemantics/NonInterruptingBoundaryTimerConformance.lean) proves exact disposition admission, atomic arming, host-preserving deadline firing, live-or-consumed-deadline completion, refusal, and two-branch quiescence for the admitted one-shot profile; repetition and Multi-Instance remain outside the proof.
+
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |

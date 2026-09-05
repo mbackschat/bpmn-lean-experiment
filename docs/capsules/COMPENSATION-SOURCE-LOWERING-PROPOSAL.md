@@ -147,7 +147,7 @@ The nearest plausible common-mode error is a compiler and Lean checker that both
 
 Lane shape: checked
 
-The Lean lane is **checked**, not a new runtime relation. Lean adds the exact checked contract and decoder, validates the checkpoint shape and dormant scope, lowers it independently, and proves or decides the expected checked-to-Program equality plus representative refusal mutations. Existing Compensation runtime relations, evaluators, soundness bridges, and laws are imported as unchanged authorities rather than copied.
+Evidence: [the Compensation source-lowering conformance module](../../BpmnSemantics/CompensationSourceLoweringConformance.lean) checks exact checked-to-Program equality and representative refusal mutations for this bounded source/lowering checkpoint; it does not claim a quantified theorem over arbitrary checked graphs or Programs. Lean adds the exact checked contract and decoder, validates the checkpoint shape and dormant scope, and lowers it independently, while existing Compensation runtime relations, evaluators, soundness bridges, and laws remain imported authorities.
 
 No new `native_decide` exception is selected. The first build of any kernel-decided fixture remains root-owned under the repository memory wrapper. If an exact fixture cannot close within the existing resource ceiling, the lane records the precise open equality or decomposes the witness; it must not weaken admission or convert the claim into an unchecked example.
 

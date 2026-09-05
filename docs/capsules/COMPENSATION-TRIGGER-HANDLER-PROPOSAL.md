@@ -355,7 +355,7 @@ The capacity witness sets the exact bound one unit below the prospective first f
 
 Lane shape: proved
 
-The first checkpoint is a proved lane. Lean defines the declarative trigger, frontier, success, failure, cancellation, and refusal relations separately from executable evaluators, then checks evaluator soundness for every constructor-producing arm.
+Evidence: [the Compensation trigger/handler transition conformance module](../../BpmnSemantics/CompensationTriggerHandlerTransitionConformance.lean) proves the bounded atomic trigger, maximal-frontier, exclusivity, capacity-refusal, continuation, and evaluator-soundness results, while the wider excluded trigger and handler families remain outside this lane. Lean defines the declarative trigger, frontier, success, failure, cancellation, and refusal relations separately from executable evaluators, then checks evaluator soundness for every constructor-producing arm.
 
 Required results are acyclic-frontier existence for the finite exact graph, maximal-frontier correctness, A-after-B safety, independent B/C simultaneous enablement, one-active-trigger-per-root preservation and second-trigger atomic refusal, immediate and delayed successful restoration, pending-context preservation until activation, pending-context disposal on sibling failure, single continuation, source-record consumption, typed terminal Process failure, complete root/handler-region cancellation, stale-result preservation, capacity atomicity including pending-context bytes, observation agreement, and RuntimeState validity preservation.
 

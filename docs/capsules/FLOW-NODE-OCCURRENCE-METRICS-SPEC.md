@@ -8,10 +8,6 @@ The implemented [Product 2 shared-persistence addendum](../BPM-PLATFORM-SHARED-P
 
 The later implemented [Workflow-chain production contract](../TEMPORAL-PROCESS-LIFECYCLE-SPEC.md#workflow-chain-production-contract) extends only Temporal retention. Chain-enrolled Runs close E2 together with E1 in private digest-bound segments, carry the exact open-occurrence anchors across Run boundaries, and let Product 1 traverse retained Runs without changing the public occurrence wire, aggregation, UI, or any BPMN meaning. Run identity remains private and post-retention reconstruction remains excluded.
 
-## Lean assurance lane
-
-Lane shape: proved
-
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
@@ -22,7 +18,11 @@ Lane shape: proved
 
 The semantic checkpoint required one same-reviewer correction audit. Closure required two same-reviewer correction-audit rounds; the first target was `20e3781` and the final target recorded in the table is `8323c6f`. Neither stage changed the selected account or public contract.
 
-## Lean assurance selection
+## Lean assurance lane
+
+Lane shape: proved
+
+Evidence: [The lifecycle conformance aggregate](../../BpmnSemantics/FlowNodeOccurrenceLifecycleConformance.lean) imports the bounded proof owners for fresh/unique starts, exact terminal resolution, independently projected open-set agreement, and owned-subtree cancellation across every currently admitted family; wall-clock sampling, aggregation, and future transition families remain outside that proof.
 
 The Lean lane is **proved**. Under the existing valid-Program and valid-RuntimeState hypotheses, it must prove that applying one accepted lifecycle delta creates each fresh anchor once, consumes each terminal anchor once, and yields exactly the independently projected open-anchor set. Separate quantified laws cover exact owned-subtree cancellation for interruption, error propagation, termination, and incident-root cancellation, plus preservation of occurrences outside the removed subtree. The proof effort is bounded to every operation and stimulus family admitted when this capsule is approved; a future admitted family must extend the exhaustive relation before it can publish occurrences. If exact fold soundness or owned-subtree cancellation cannot be proved without assuming the desired open set, implementation stops and records that precise boundary rather than weakening the lane to checked fixtures.
 

@@ -10,10 +10,6 @@ This paragraph previously carried a per-lane inventory of what Lean and the evid
 
 Implemented and absent scope is owned by [`implementation-status-delegation:ENGINE-SEMANTIC-FAMILY`](../ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md#interrupting-sub-process-boundary-timer) and deliberately not restated here; immediate sequencing is owned by [PLAN.md](../PLAN.md#exact-resume-point).
 
-## Lean assurance lane
-
-Lane shape: proved
-
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
@@ -204,9 +200,13 @@ After either victory the sibling stimulus is ineligible and is rejected with exa
 
 The armed state publishes exactly one open child User Task and one open Timer through the existing four-kind canonical ordering, and exactly one enabled completion interaction for the child task. After quiescent completion the published follow-on is After Scope; after interruption it is the Escalation Task, and the child task wait and its interaction are absent. The capsule adds no observation field, no wait kind, and no stimulus kind.
 
-## Laws, non-laws, and separating witnesses
+## Lean assurance lane
 
-Required Lean content:
+Lane shape: proved
+
+Evidence: [SubProcessBoundaryTimerConformance.lean](../../BpmnSemantics/SubProcessBoundaryTimerConformance.lean) proves the selected quiescence/deadline victory relation, evaluator soundness, atomic child-scope-and-timer withdrawal, preservation, exact-time refusal, closure, and separating schedules. The result does not assume the still-open generic preservation of wait-key uniqueness or claim liveness outside the bounded schedules.
+
+The proved Lean content is:
 
 - a declarative two-constructor victory relation over the quiescence arm and the deadline arm, requiring both the live child scope occurrence and the live deadline and pairing them through the committed bounded-scope operation;
 - an evaluator-soundness bridge for each victory arm and for arming, so every evaluator-produced transition is permitted by the relation;
@@ -216,13 +216,13 @@ Required Lean content:
 - that no victory half-withdraws the triple, so neither the child scope nor the deadline can be spent alone;
 - that a victory removes its own Timer occurrence, so the same pair cannot win twice.
 
-Required checked non-laws and negative witnesses:
+The checked non-laws and negative witnesses are:
 
 - a checked non-law that interruption does **not** preserve child-scope-owned runtime state, which is the exact converse of the Error capsule's regional-cancellation claim and prevents the two from being stated as one over-general preservation law;
 - an executable witness that the normal Sub-Process output is unreachable on the deadline arm, which is the analogue of `SUBERR-NORMAL-01`;
 - an executable witness that a firing one millisecond early leaves the armed triple and its deadline exactly intact and still able to win at the exact instant.
 
-Two facts are expected to be stated rather than assumed, for the same reason the sibling states them: `erase` removes one occurrence, so removing one does not by itself establish that no copy remains, and the stronger claim that no later lookup *by key* can rediscover a withdrawn deadline needs uniqueness of the occurrence key. Both remain explicit here, the first as the reason the law is stated over the arm's own pending list and the second as a claim the law does not make. The uniqueness fact is now **stated** elsewhere, as the `waitIdentitiesUnique` conjunct of the runtime-state invariant, but its preservation is unproved and this capsule's own consequence has not been specialized from the generic withdrawal-finality lemma, so nothing here may assume it holds of a reachable state. The residue is recorded in the [`implementation-status-owner:ENGINE-RUNTIME-PROOF`](../ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md#nearest-unsupported-claims).
+Two facts are stated rather than assumed, for the same reason the sibling states them: `erase` removes one occurrence, so removing one does not by itself establish that no copy remains, and the stronger claim that no later lookup *by key* can rediscover a withdrawn deadline needs uniqueness of the occurrence key. Both remain explicit here, the first as the reason the law is stated over the arm's own pending list and the second as a claim the law does not make. The uniqueness fact is now **stated** elsewhere, as the `waitIdentitiesUnique` conjunct of the runtime-state invariant, but its preservation is unproved and this capsule's own consequence has not been specialized from the generic withdrawal-finality lemma, so nothing here may assume it holds of a reachable state. The residue is recorded in the [`implementation-status-owner:ENGINE-RUNTIME-PROOF`](../ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md#nearest-unsupported-claims).
 
 The separating witness is the follow-on User Task identity at the approved public boundary. A hidden microstep, storage order, or evaluator choice is not a discriminator.
 
@@ -260,7 +260,7 @@ Two registered answer-free schedules exist, one per victory route, each with a m
 
 ## Required, optional, and excluded
 
-**Required.** The source profile; the checked graph and lowering with the host-domain decision applied; the one new bounded-scope operation; the five rules with their evidence rows; [the Lean content and the negative content](#laws-non-laws-and-separating-witnesses) exactly as those two lists state them; the independent TypeScript core with its own focused test; the new host refusal identity; one registered answer-free scenario per route with seeded mutations; and the deadline-victory, quiescence-victory, and Worker-absence histories.
+**Required.** The source profile; the checked graph and lowering with the host-domain decision applied; the one new bounded-scope operation; the five rules with their evidence rows; [the Lean content and the negative content](#lean-assurance-lane) exactly as those two lists state them; the independent TypeScript core with its own focused test; the new host refusal identity; one registered answer-free scenario per route with seeded mutations; and the deadline-victory, quiescence-victory, and Worker-absence histories.
 
 **Optional.** Time-skipping calibration, as for its two predecessors; the full local-server witness remains the mandatory refinement gate.
 

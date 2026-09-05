@@ -6,10 +6,6 @@
 
 This specification owns the first normal nested-execution-scope capsule: one ordinary embedded Sub-Process at one child level, two concurrent child User Tasks, normal child End Events, quiescent child-scope completion, and one outer User Task after the Sub-Process.
 
-## Lean assurance lane
-
-Lane shape: proved
-
 ## Established product question
 
 May the project implement the smallest reusable execution-scope foundation in which entering one ordinary embedded Sub-Process creates a child scope, two child User Tasks remain owned by it, completing only one branch cannot exit it, completing both branches removes the child occurrence and activates exactly one outer User Task, and Temporal preserves that lifecycle through Worker replacement and replay?
@@ -154,7 +150,11 @@ The four answer-free schedules divide the lifecycle at the existing rule that a 
 
 Canonical Process status, variables, active waits, enabled interactions, command outcomes, and trace records retain their current shapes. Definition and runtime scope trees are internal evidence, not public observations. The public discriminator is the absence of After Scope after the first child End and its unique presence after the second.
 
-## Lean account
+## Lean assurance lane
+
+Lane shape: proved
+
+Evidence: [The embedded Sub-Process conformance owner](../../BpmnSemantics/EmbeddedSubProcessCompletionConformance.lean) proves entry, two-child retention, refusal of premature completion, order-independent child quiescence, stale-child refusal, and exact parent continuation for the one-child-scope profile; it does not claim arbitrary nesting or general graph liveness.
 
 Lean defines declarative operation steps for scope entry, None-End consumption, and scope completion separately from executable firing. General theorem `fire_sound` proves every evaluator-produced operation transition belongs to that relation, while `completeScopeState_refuses_nonquiescent` proves a uniquely identified live scope cannot complete when it still owns runtime work.
 

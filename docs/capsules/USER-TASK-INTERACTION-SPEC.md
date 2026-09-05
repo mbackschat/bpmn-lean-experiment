@@ -6,10 +6,6 @@
 
 This project-owned semantic specification closes only the interaction boundary around the existing sequential `None Start Event → User Task → None End Event` model. It does not approve general human-task lifecycle semantics, people assignment, authorization, forms, variables, Search Attributes, a task inbox, multi-instance execution, or a broader CIB compatibility claim.
 
-## Lean assurance lane
-
-Lane shape: proved
-
 ## Question
 
 How can an application discover the exact active User Task of a known Process instance and submit a completion command through Temporal without treating Temporal messaging, Visibility, CIB-generated task IDs, or a UI read model as BPMN semantic authority?
@@ -145,7 +141,11 @@ The nearest checked non-law is: “matching the BPMN User Task element ID is suf
 
 Claiming, delegation, assignment, actor identity, authorization, BPMN form semantics, task-local variables, BPMN data associations, and task output mapping are excluded. The selected completion patch must not be read as support for any of those broader features.
 
-## IR and Lean consequence
+## Lean assurance lane
+
+Lane shape: proved
+
+Evidence: [UserTaskInteractionConformance.lean](../../BpmnSemantics/UserTaskInteractionConformance.lean) proves the bounded stable observation, full-occurrence refusal, stale-completion preservation, and exact scenario trace, while [SequentialUserTask.lean](../../BpmnSemantics/SequentialUserTask.lean) proves activation and exact completion for the admitted sequential model. These results do not prove occurrence allocation across loops, multi-instance execution, nested scopes, migration, or Continue-As-New.
 
 The bounded XML compiler uses the CMOF-derived `FlowElement.name` property by preserving the optional BPMN User Task name through the checked graph and current Semantic Process program. This does not generalize the partial CMOF manifest or introduce a universal BPMN IL.
 
@@ -161,7 +161,7 @@ The capsule must retain separate Lean claim lanes:
 
 These theorems are properties of the Lean account. CIB correspondence and Temporal refinement remain separately tested.
 
-## Declarative relation and executable evaluator
+### Declarative relation and executable evaluator
 
 The Lean account defines `OperationStep` as the declarative relation for each Semantic Process operation and `ProgramStep` as the operation-identified relation over an admitted program. The executable `step` receives an explicit operation ID rather than selecting by collection order. The universal `step_sound` theorem proves that every state transition returned by `step` is admitted by `ProgramStep`; [SemanticProcessConformance.lean](../../BpmnSemantics/SemanticProcessConformance.lean) requires that bridge to elaborate.
 

@@ -8,6 +8,8 @@ Implemented current capsule contract; exact evidence status belongs in the appli
 
 Lane shape: proved
 
+Evidence: [the Service Task effect conformance module](../../BpmnSemantics/ServiceTaskEffectConformance.lean) proves the bounded declarative effect relation, evaluator soundness, exact mapping and Activity-local scope behavior, refusal preservation, and separating direct-patch non-law used by this CreateDocument profile; it does not independently derive the A12 source binding or CIB host behavior.
+
 ## Role
 
 This specification owns the approved bounded source, data, mapping, effect-result, host-refinement, evidence, and exclusion contract for the A12-shaped `CreateDocument` slice. Exact current implementation and evidence status belongs in the applicable detail maps routed by [`implementation-status-router`](../IMPLEMENTATION-MAP.md), and immediate sequencing belongs in [PLAN.md](../PLAN.md).

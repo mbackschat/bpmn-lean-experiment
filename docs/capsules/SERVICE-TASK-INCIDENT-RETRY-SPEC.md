@@ -4,10 +4,6 @@
 
 **Implemented, closure-reviewed, evidence-closed, and graduated.** This specification owns one configured CIB-profile Service Task incident, literal generation 1, and one exact retry of the same effect occurrence across the strict wire, TypeScript semantic core, proved Lean lane, configured CIB execution and projection, four-target differential evidence, runnable configuration, and Temporal Worker-replacement/history/replay evidence. A second semantic incident, generalized retry policy, cancellation, Product 2 incident operations, host causes, and retry counts remain excluded.
 
-## Lean assurance lane
-
-Lane shape: proved
-
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
@@ -162,9 +158,13 @@ The successor profile adds machine-readable `environment.createIncidentOnFailedJ
 
 Raw incident evidence adds one optional incident-specific diagnostics snapshot containing the public job ID, retries, executability, due-date presence, Process and element associations, incident ID and type, configuration job ID, and self-rooted cause/root IDs. Existing `EffectJob` and every old raw producer arm remain byte-identical. The successor profile requires the diagnostics snapshot through the CIB fidelity validator. `CibSevenIncidentProjector` consumes and partitions the same public job list as the existing effect projector: its one matching retries-zero job becomes one incident active wait, one `openIncidents` value, and one retry interaction, and is absent from `openEffects`. Canonical projection requires exactly one matching retries-zero job and incident partner, constructs the literal `EffectIncidentId`, and enforces equality with the nested effect identity. It refuses the disabled configuration, missing or duplicate partners, wrong type, wrong job configuration, wrong Process or element, nonzero retries with an incident, zero retries without an incident, and old-profile leakage.
 
-## Lean lane
+## Lean assurance lane
 
-The Lean lane is **proved**. A new `Incident.lean` module owns the report/retry relations and executable clauses. A new conformance module proves:
+Lane shape: proved
+
+Evidence: [ServiceTaskIncidentRetryConformance.lean](../../BpmnSemantics/ServiceTaskIncidentRetryConformance.lean) proves the selected generation-1 report/retry relations, evaluator soundness, exact wait/incident restoration, state preservation, refusal, and strict wire identity. It does not prove cancellation or incident cleanup beyond retry restoration.
+
+A new `Incident.lean` module owns the report/retry relations and executable clauses. A new conformance module proves:
 
 - report relation existence and evaluator soundness for literal generation 1;
 - exact wait-to-incident projection and one exact incident-to-wait restoration;

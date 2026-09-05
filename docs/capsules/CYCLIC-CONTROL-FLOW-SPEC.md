@@ -4,10 +4,6 @@
 
 **Implemented, evidence-closed, and graduated on 2026-08-10.** The registered answer-free schedule traverses both back-edges and the default exit, and the live witness adds Worker replacement, accepted-result recovery, stale-occurrence refusal, finite history inspection, mutation discrimination, and replay. This specification owns the first closed M2 semantic increment after the Lean admission-lane split. It does not claim BPMN Process Execution Conformance, CIB Seven cycle compatibility, unbounded Temporal history, or Continue-As-New.
 
-## Lean assurance lane
-
-Lane shape: proved
-
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
@@ -162,7 +158,11 @@ The selected profile has an at-most-one active-unit invariant over control token
 
 `CYCLE-REPEAT-01` and `CYCLE-EXIT-01` are fixture/program laws, not laws of every graph admitted by the structural profile. `CYCLE-EXIT-01` is quantified over a finite repeat count and does not assert unconditional termination. A schedule that keeps choosing a repeat edge is permitted to keep the Process running.
 
-## Lean lane, laws, non-laws, and witnesses
+## Lean assurance lane
+
+Lane shape: proved
+
+Evidence: [The cyclic-control-flow conformance owner](../../BpmnSemantics/SemanticProcess/CyclicControlFlowConformance.lean) proves the selected resumption cut, per-occurrence merge relation and evaluator bridge, reachable at-most-one invariant, repeat/exit laws, stale refusal, and closure bound while excluding general termination and concurrent-arrival selection.
 
 The Lean lane is **proved**. It adds a cohesive `CyclicControlFlow` semantic module and a narrow conformance module rather than growing the admission umbrella with fixture bodies.
 

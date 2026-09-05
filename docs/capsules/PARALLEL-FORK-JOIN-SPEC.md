@@ -6,10 +6,6 @@
 
 This capsule defines the observable contract for one private executable `None Start Event → Parallel Gateway fork → two distinct User Tasks → Parallel Gateway join → None End Event` Process. The approved account follows normative per-incoming-Sequence-Flow BPMN behavior. The current CIB User Task profile is not expanded to claim parallel compatibility; observed pinned-CIB count behavior may be retained later only in an explicitly separate compatibility profile.
 
-## Lean assurance lane
-
-Lane shape: proved
-
 ## Question
 
 What must be observable when one Parallel Gateway creates two concurrent User Task occurrences and a second Parallel Gateway synchronizes them, without prescribing an implementation's hidden token representation, evaluator visit order, or internal microstep count?
@@ -137,11 +133,15 @@ Lean consumes the exact admitted checked graph and Semantic Process program prod
 
 The same Semantic Process program must be supplied to the TypeScript semantic core and each isolated Temporal execution. CIB continues to execute the exact source bytes, with source/profile binding checked by the surrounding evidence pipeline.
 
-## Lean laws and evidence plan
+## Lean assurance lane
+
+Lane shape: checked
+
+Evidence: [The parallel fixture owner](../../BpmnSemantics/SemanticProcess/Fixtures.lean) kernel-checks the exact two-branch start, per-input join, excess-offer, completion-order, projection, and duplicate-left/no-right witnesses; those fixed programs do not prove an arbitrary three-branch fork or general parallel topology.
 
 This runtime-transition family maintains a declarative relation separate from the executable evaluator and a theorem that every evaluator-produced transition is admitted by that relation. That soundness bridge does not establish completeness, determinism, BPMN fidelity, TypeScript correspondence, or CIB compatibility.
 
-The checked Lean laws and independent TypeScript witnesses establish:
+The kernel-checked Lean fixtures and independent TypeScript witnesses establish:
 
 - start closure creates exactly the two branch waits and no other public wait;
 - before both incoming-flow conditions hold, no evaluator step crosses the join;
@@ -150,7 +150,7 @@ The checked Lean laws and independent TypeScript witnesses establish:
 - A-then-B and B-then-A terminate in equivalent final stable state under exact distinct-task hypotheses;
 - canonical projection is invariant under permutation of internal task/token storage.
 
-The executable Lean scenario closure resolves the only admitted multiple-enabled internal state after the fork by selecting the canonical first operation only when the enabled pair consists of distinct User Task operations with distinct inputs, outputs, and task identities. A checked theorem requires both activation orders to have the same stable public observation, and the exact start-closure theorem locks the resulting two-task waiting state. Every other multiple-enabled state remains a harness failure requiring an explicit semantic choice.
+The executable Lean scenario closure resolves the only admitted multiple-enabled internal state after the fork by selecting the canonical first operation only when the enabled pair consists of distinct User Task operations with distinct inputs, outputs, and task identities. One kernel-checked fixture requires both activation orders to have the same stable public observation, and the exact start-closure fixture locks the resulting two-task waiting state. Every other multiple-enabled state remains a harness failure requiring an explicit semantic choice.
 
 Maintained negative and mutation evidence includes:
 
@@ -176,7 +176,7 @@ The cells below remain distinct claims. CIB's balanced positive cases do not est
 | `PAR-PROJECT-01` | [Canonical projection contract](#observable-contract) | Storage-permutation and activation-order observation laws plus the synthetic three-kind order lock | Raw query order is non-semantic; independent projection sorts and preserves per-element multiplicity | Task-storage and operation-order permutations preserve canonical projection; a synthetic mixed-kind state locks kind-first ordering | Query exposes core-owned semantic order before and between Updates | Raw-order reversal passes, while dropped raw task and omitted canonical task fail |
 | `UTASK-REFUSE-02` | [User Task completion rule](USER-TASK-INTERACTION-SPEC.md#completion-command), `CIB-AGR-0002`, and `CIB-OP-0001` | `staleAWhileBActiveScenario` in [ParallelForkJoinConformance.lean](../../BpmnSemantics/ParallelForkJoinConformance.lean) | Content-bound live-sibling evidence observes A absent and B still active after stale A refusal | Live-sibling scenario rejects stale A with exact state preservation | Ordinary ordered Update ingress returns semantic rejection while B keeps the Workflow active | Dropping B from the post-stale evidence projection fails; sequential post-terminal `processClosed` remains a separate adapter lane |
 
-## Assurance boundary
+## Evidence boundary
 
 The exact established claim is: for the admitted content-addressed balanced two-branch Process, the two answer-free completion orders and live-sibling stale witness reach simultaneous distinct User Task waits, expose the specified stable intermediate observations, reject stale A while B remains active, synchronize only after both branch completions, and reach the same completed observation across the definition-bound Lean interpreter, pinned CIB positive calibration, independent TypeScript core, and replayed semantic-lifetime Temporal host.
 

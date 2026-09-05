@@ -4,10 +4,6 @@
 
 **Implemented, closure-reviewed, evidence-closed, and graduated.** This specification defines one top-level Timer Start Event with the exact relative-duration expression `PT1S`, one resolved timer occurrence, one fresh private executable Process instance, and one-action Temporal Schedule refinement through the service-returned execution identity. Product 2 schedule management, deployment activation policy, recurring schedules, calendar expressions, catch-up, overlap, pause/resume, payload, multiple Start Events, Event Sub-Process start, CIB Seven Timer Start compatibility, and a public scheduling API remain excluded.
 
-## Lean assurance lane
-
-Lane shape: proved
-
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
@@ -158,9 +154,13 @@ Canonical observation publishes the existing Process status, root-owned control 
 
 `TSTART-TRIGGER-01` and `TSTART-FLOW-01` are vendor-neutral BPMN rules. `TSTART-SCHEDULE-01` is a refinement constraint, not BPMN meaning.
 
-## Lean lane, laws, non-laws, and witnesses
+## Lean assurance lane
 
-The Lean lane is **proved**. New cohesive owners hold Timer Start admission, transition, and conformance facts. Existing near-limit execution and lowering owners receive only exhaustive dispatch or extracted shared mechanics.
+Lane shape: proved
+
+Evidence: [TimerStartConformance.lean](../../BpmnSemantics/TimerStartConformance.lean) proves the selected Timer Start admission, lowering, evaluator soundness, cross-kind refusal, instance separation, exact closure, and normalized downstream-observation account. It does not prove general Timer expressions, recurrence, deployment scheduling, fairness, or exactly-once product delivery.
+
+New cohesive owners hold Timer Start admission, transition, and conformance facts. Existing near-limit execution and lowering owners receive only exhaustive dispatch or extracted shared mechanics.
 
 The required proved facts are:
 

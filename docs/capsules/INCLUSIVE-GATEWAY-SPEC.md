@@ -4,10 +4,6 @@
 
 **Implemented and evidence-closed for the exact structured selected-branch profile. Proposal correction audit `0b52d15`, semantic-checkpoint correction audit `ea8b019`, and closure correction audit `15ebadc` passed without a material redesign. General Inclusive Gateway reachability remains unsupported.**
 
-## Lean assurance lane
-
-Lane shape: proved
-
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
@@ -143,7 +139,11 @@ A live selected-branch record blocks quiescence of its owner scope. Both Lean an
 
 Public stable observation remains unchanged. It exposes the resulting User Task waits, not the hidden split record or partial join tokens. Stable-state resumability continues to depend on the remaining public wait; a hidden selection record alone is never progress evidence.
 
-## Separating witnesses and proof boundary
+## Lean assurance lane
+
+Lane shape: proved
+
+Evidence: [The Inclusive Gateway conformance owner](../../BpmnSemantics/InclusiveGatewayConformance.lean) proves exact branch selection, selected-input readiness and consumption, quiescence blocking, and both completion orders for the admitted structured split/task/join region; it does not prove general Inclusive Gateway reachability.
 
 The answer-free scenario family uses one definition and three initial-binding cases:
 
@@ -194,7 +194,7 @@ Optional future work is a separately registered CIB Seven agreement probe over a
 
 Excluded are general Table 13.3 graph analysis; arbitrary, unstructured, nested, mixed, or repeated Inclusive Gateways; Inclusive merge without its paired admitted split; more or fewer candidates; no-default exception; conditional default; expression languages beyond Simple Boolean v1; data writes; loops and Multi-Instance; scopes, boundary Events, compensation, or cancellation; Message/Timer/effect races; CIB compatibility; A12 adoption; BPMN conformance; and production history compatibility.
 
-## Versioning and assurance boundary
+## Versioning and evidence boundary
 
 The pre-release additive contract replaced the one current checked-node, Semantic Process operation, runtime-state, decoder, schema, semantic and host admission, exhaustive-switch, artifact-registry, and differential-catalog representations atomically. The profile, answer-free scenarios, evidence routes, and seeded mutations participate in the complete registry/catalog roundtrip. No optional mode bag, legacy reader, format counter, compatibility branch, Workflow patch, migration function, or retained Event History is permitted. Histories created by the gate are replayed and discarded in that gate.
 

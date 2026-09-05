@@ -4,10 +4,6 @@
 
 **Implemented, closure-reviewed, evidence-closed, and graduated.** This specification defines one exact Terminate End Event in one ordinary embedded Sub-Process and the reusable containing-scope termination operation required by that witness. Omitted and parser-safe XSD-false `false` and `0` are structurally equivalent ordinary embedded Sub-Process inputs with distinct exact source identities. Event Sub-Process termination, Transaction cancellation, compensation, Call Activity propagation, terminate-all extension behavior, Product 2 cancellation, CIB compatibility evidence, and every other BPMN End Event family remain excluded.
 
-## Lean assurance lane
-
-Lane shape: proved
-
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
@@ -168,9 +164,13 @@ Canonical observation publishes only the resulting existing state: Trigger and S
 
 All rules are vendor-neutral BPMN rules except `TEND-HOST-01`, which is a refinement constraint.
 
-## Lean lane, laws, non-laws, and witnesses
+## Lean assurance lane
 
-The Lean lane is **proved**. New cohesive owners hold termination state transformation, transition semantics, fixtures, and conformance facts. Existing near-limit runtime, execution, lowering, and umbrella owners receive only extracted shared mechanics, exhaustive dispatch, or imports.
+Lane shape: proved
+
+Evidence: [TerminateEndEventConformance.lean](../../BpmnSemantics/TerminateEndEventConformance.lean) proves the selected nested and root termination transitions, evaluator soundness, owned-region removal, preservation, refusal, closure bounds, and stable-resumption witnesses. The bounded result does not claim arbitrary nesting, every concurrent topology, delivery fairness, or Temporal cancellation semantics.
+
+New cohesive owners hold termination state transformation, transition semantics, fixtures, and conformance facts. Existing near-limit runtime, execution, lowering, and umbrella owners receive only extracted shared mechanics, exhaustive dispatch, or imports.
 
 Required proved facts are:
 

@@ -20,6 +20,8 @@ Temporal elapsed time is evidence that the physical minimum delay occurred. It i
 
 Lane shape: proved
 
+Evidence: [The Intermediate Catch Timer conformance owner](../../BpmnSemantics/IntermediateCatchTimerConformance.lean) establishes the admitted `PT1S` lowering, exact-deadline transition, declarative early-firing non-law, full occurrence/time refusal, and canonical observation boundary; other duration forms, competing timers, and general timer semantics remain excluded.
+
 ## Claim boundary
 
 The capsule establishes only this proposition:

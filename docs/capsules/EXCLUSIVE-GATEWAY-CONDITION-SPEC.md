@@ -8,6 +8,8 @@
 
 Lane shape: proved
 
+Evidence: [The Simple Boolean gateway conformance owner](../../BpmnSemantics/ExclusiveGatewaySimpleBooleanConformance.lean) proves exact parsing/evaluation laws, first-true tail irrelevance, default selection, and selected-output ownership for the admitted choice account; XPath, JUEL, broader expressions, and other gateway cardinalities remain outside the proof.
+
 ## Question
 
 What is the smallest complete divergent Exclusive Gateway mechanism that executes admitted BPMN `FormalExpression` source, proves first-true/default routing independently in Lean and TypeScript, and advances BPMN structure without making a vendor expression runtime a prerequisite?
@@ -176,7 +178,7 @@ This capsule excludes XPath, JUEL, FEEL, scripts, expression composition, coerci
 
 The closest unsupported claim is a divergent Exclusive Gateway under another expression language or source cardinality. General BPMN expression support, Common Executable XPath support, general Exclusive Gateway behavior, and BPMN Process Execution Conformance remain unsupported.
 
-## Assurance boundary
+## Evidence boundary
 
 The checked BPMN graph and Semantic Process program have one TypeScript producer. Lean independently parses the retained expression bodies and checks graph-to-program lowering equality, but it does not independently parse BPMN XML; a shared XML-to-checked-graph defect could therefore reach Lean, the TypeScript core, and Temporal together. CIB's JUEL probes can separate declaration-order and first-true/default structure, but not truth in the project language.
 

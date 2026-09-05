@@ -4,10 +4,6 @@
 
 **Implemented, closure-reviewed, evidence-closed, and graduated.** The registered profile selects one exact versioned Task extension that binds a BPMN Task to the existing external-effect mechanism. Exact source, checked/IL binding, Lean/core execution, answer-free artifacts, differential mutation, live Temporal Worker-replacement/history/replay evidence, and the retained CIB pass-through exclusion trace are green. Plain Abstract Task execution, another Task extension, Service Task reinterpretation, data mappings, BPMN Error routing, Product 2 work queues, CIB compatibility, and a new Temporal host primitive remain excluded.
 
-## Lean assurance lane
-
-Lane shape: proved
-
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
@@ -173,11 +169,13 @@ Canonical observation uses the existing `openEffects`, `enabledInteractions`, `o
 
 All rules except `CTASK-HOST-01` are standards-plus-profile rules. `CTASK-HOST-01` is a refinement constraint.
 
-## Lean lane, laws, non-laws, and witnesses
+## Lean assurance lane
 
-The Lean lane is **proved** and introduces no new transition relation. A new configured checked node, strict decoder arm, profile cardinality, graph arity, and lowering clause specialize the existing `awaitEffect` relation, evaluator, soundness, refusal, and observation laws.
+Lane shape: checked
 
-Required proved facts are:
+Evidence: [the configured Task conformance module](../../BpmnSemantics/ConfiguredTaskConformance.lean) checks the exact configured-node admission, lowering, decoder, closure, and refusal matrix with fixed kernel-decided fixtures; the imported generic effect evaluator and soundness laws establish routing into the selected relation but do not prove configured lowering for arbitrary checked graphs or Programs.
+
+Required checked facts are:
 
 - exact checked admission, descriptor binding, `1 -> 1` arity, endpoint-only lowering, empty mappings, and absent Error route;
 - configured Task and Service Task remain distinct checked constructors;
@@ -239,7 +237,7 @@ Required:
 - the exact versioned source extension, one standard `bpmn-moddle` extension descriptor, and closed machine-readable profile binding;
 - prefix-independent projection plus raw duplicate-container refusal before parser-erased source is discarded;
 - distinct configured checked node, strict schema/decoders, graph admission, and endpoint-only lowering to existing `awaitEffect`;
-- proved Lean specialization and independent TypeScript source/lowering evidence;
+- checked Lean specialization and independent TypeScript source/lowering evidence;
 - one registered answer-free standards scenario with `cib: null`, one runnable example, one differential case, and meaningful source/descriptor/pass-through mutations;
 - one focused live Temporal Activity/Worker-replacement/history/replay witness using existing effect hosting;
 - one bounded retained CIB pass-through trace used only as an exclusion oracle;

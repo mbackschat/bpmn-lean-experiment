@@ -6,10 +6,6 @@
 
 The conditional semantic-checkpoint review that this capsule required at its first green Lean and semantic-core checkpoint has been performed and its corrections audited, and the closure review is complete; the receipt below records every stage. This document graduated from `-PROPOSAL` to `-SPEC` on the approved closure, so it is now the implemented current contract for this family rather than approved intent.
 
-## Lean assurance lane
-
-Lane shape: proved
-
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
@@ -185,9 +181,11 @@ After either victory, the sibling stimulus is ineligible and rejected with exact
 
 The armed state publishes exactly one open User Task and one open Timer through the existing four-kind canonical ordering, and exactly one enabled completion interaction for the bounded task. After either victory the published follow-on task identity distinguishes the route. The capsule adds no observation field, no wait kind, and no stimulus kind.
 
-## Laws, non-laws, and separating witnesses
+## Lean assurance lane
 
-Required Lean content, all with exact hypotheses. This list is the single owner of the Lean obligation; the rule-to-evidence matrix below carries evidence pointers only, and no other section restates it.
+Lane shape: proved
+
+Evidence: [the Activity boundary Timer conformance module](../../BpmnSemantics/ActivityBoundaryTimerConformance.lean) proves the bounded arming, victory, off-deadline, wrong-identity, and conditional withdrawal-finality laws under their exact hypotheses; the unproved preservation of wait-identity uniqueness remains the explicit deferral below. This list is the single owner of the Lean obligation; the rule-to-evidence matrix below carries evidence pointers only, and no other section restates it.
 
 - a declarative arming relation and a two-constructor victory relation, both distinct from the evaluator;
 - soundness from every evaluator-produced arming and victory transition to that relation;

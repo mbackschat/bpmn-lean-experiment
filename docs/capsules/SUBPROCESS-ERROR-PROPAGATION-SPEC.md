@@ -8,10 +8,6 @@ This is the first exceptional-exit follow-on after the implemented [ordinary emb
 
 `DefinitionScope`, `enterScope`, `reachNoneEnd`, `completeScope`, operation/control-place ownership, scope occurrences, scope-owned tokens and waits, quiescent normal completion, and multiple passive User Task hosting remain implemented prerequisites rather than Error-specific mechanisms.
 
-## Lean assurance lane
-
-Lane shape: proved
-
 ## Product boundary
 
 This specification owns the smallest standards-only nested-scope discriminator in which completing one child User Task reaches an Error End Event, propagation selects the exact matching boundary Error on the directly enclosing embedded Sub-Process, interruption removes a still-active sibling User Task and every other runtime owner inside that scope occurrence, and only an outer recovery User Task remains observable.
@@ -189,7 +185,11 @@ Three answer-free schedules divide the lifecycle at the existing rule that a sce
 
 Canonical Process status, variables, active waits, and enabled interactions retain their current shapes. The public cancellation discriminator is the removal of Sibling Work and its later exact refusal, not a new host-cancellation flag or trace field.
 
-## Lean account
+## Lean assurance lane
+
+Lane shape: proved
+
+Evidence: [SubProcessErrorPropagationConformance.lean](../../BpmnSemantics/SubProcessErrorPropagationConformance.lean) proves the bounded direct-parent exact-code Error propagation, evaluator soundness, regional User Task cancellation and unrelated-task preservation, refusal, and exact schedule witnesses. The finite cross-kind inventory and checked source permutations remain finite evidence, not quantified global cancellation or compiler-correspondence theorems.
 
 Lean extends the existing declarative `OperationStep` relation with Error propagation separately from the executable evaluator. The existing scope-entry and normal-completion clauses remain unchanged. Every evaluator-produced `throwError` transition requires a checked soundness theorem with exact scope, occurrence ownership, attachment, and code hypotheses.
 

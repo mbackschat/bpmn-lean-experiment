@@ -4,10 +4,6 @@
 
 **Implemented and evidence-closed for the exact namespace-qualified in-document called-Process profile. Proposal correction audit `3e17a05`, semantic-checkpoint correction audit `0148592`, and closure correction audit `bb66c8c` passed without a material redesign. Repeated invocation and general Call Activity lifecycle remain unsupported.**
 
-## Lean assurance lane
-
-Lane shape: proved
-
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
@@ -153,7 +149,11 @@ Canonical `StateObservation` remains unchanged. `StateObservation.instanceId` an
 
 Temporal Workflow address and semantic task address become explicitly separate inputs at the client boundary. The caller/root ID selects the one hosting Workflow; the completion stimulus retains the called task's distinct semantic Process-instance ID. The client may validate both shapes but must not require their equality. The core remains the authority that accepts only the exact live task occurrence, so an unrelated instance ID reaches semantic rejection rather than another Workflow.
 
-## Separating witnesses and proof boundary
+## Lean assurance lane
+
+Lane shape: proved
+
+Evidence: [the Call Activity conformance module](../../BpmnSemantics/CallActivityConformance.lean) proves the bounded invoke/return relations, derived-identity properties, ownership, quiescence, and exactly-once return under their stated hypotheses; finite fixtures remain evidence only for the exact admitted traces and refusals.
 
 One answer-free schedule starts with empty variables, completes the called User Task by its derived ID, completes the caller User Task by the original caller ID, and reaches terminal state. The two intermediate observations separate this account from embedded-scope identity, early caller continuation, and terminal-only agreement.
 

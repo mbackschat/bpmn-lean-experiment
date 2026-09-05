@@ -8,6 +8,8 @@
 
 Lane shape: proved
 
+Evidence: [The Event-Based Gateway conformance owner](../../BpmnSemantics/EventBasedGatewayConformance.lean) proves the selected two-member race's arming relation, evaluator soundness, exact membership and ownership, winner exclusivity, and mismatch preservation; it explicitly excludes general trigger sets, repeated races, and simultaneous host readiness.
+
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |

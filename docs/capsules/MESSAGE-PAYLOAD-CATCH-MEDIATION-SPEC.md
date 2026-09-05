@@ -87,7 +87,7 @@ The public observation changes in exactly two places. Canonical `variables` gain
 |---|---|---|
 | `MPAYLOAD-DELIVER-01` | The trigger assigns the delivered payload to the Event's declared `DataOutput`; the channel decides which Event is triggered and the `DataOutput` decides nothing about addressing | Lean relation and evaluator-soundness bridge for the payload delivery step; a checked witness whose channel matches and whose payload differs from every id in the model |
 | `MPAYLOAD-ROUTE-01` | The `dataOutputAssociation`, not the `DataOutput` id and not the Message name, decides which Process `Property` receives the value | A registered model whose `DataOutput`, `Message`, and target `Property` ids are pairwise distinct; a seeded mutation writing under the `DataOutput` id; a program-admission negative refusing a merged identity |
-| `MPAYLOAD-ATOMIC-01` | Assignment, association, subscription withdrawal, and token production are one atomic transition, and the assignment is not separately committed | Lean disposal-and-write law; a core one-transition case; the runtime-collection-removal guard |
+| `MPAYLOAD-ATOMIC-01` | Assignment, association, subscription withdrawal, and token production are one atomic transition, and the assignment is not separately committed | Lean fixed-program disposal-and-write check; a core one-transition case; the runtime-collection-removal guard |
 | `MPAYLOAD-REQUIRE-01` | A delivery carrying no payload against a payload-declaring subscription is refused with exact state preservation, and the subscription stays live | The Account P1 versus P2 separating witness at the public boundary; a checked refusal; a retained scenario |
 | `MPAYLOAD-EQUIV-01` | Admission requires the `DataOutput`'s `itemSubjectRef` and the `Message`'s `itemRef` to resolve to the same `ItemDefinition` | Source mutations pointing them at two distinct `ItemDefinition` roots and at an unresolved one |
 | `MPAYLOAD-PUBLISH-01` | A payload-declaring subscription publishes the payload-bearing enabled interaction, so a caller learns the requirement from the published contract rather than from a refusal | An observation test requiring the payload-bearing arm for this profile and the payload-free arm for the closed one on the same wait shape |
@@ -98,11 +98,13 @@ The decisive separating witness inside this capsule is the Account P1 pair: two 
 
 ## Lean assurance lane
 
-Lane shape: proved
+Lane shape: checked
 
-The lane is declared **proved** for the bounded transition family, matching both data capsules rather than weakening below them.
+Evidence: [The Message payload Catch Event conformance owner](../../BpmnSemantics/MessagePayloadCatchConformance.lean) kernel-checks the exact settlement program's admission, atomic routed write, preservation, refusal, and public observations; generic evaluator soundness and runtime well-formedness do not prove that an arbitrary payload association writes the intended target.
 
-Required theorems cover payload assignment and association as one step; association-decided write with Process-binding preservation elsewhere; subscription withdrawal finality; refusal of an absent payload, an out-of-domain payload, a wrong channel, and a stale subscription with exact state preservation; runtime-state invariant preservation across the delivery transition; and the routed-versus-named non-law that fixes `MPAYLOAD-ROUTE-01` as a real discriminator rather than a coincidence of the registered ids.
+The lane is declared **checked** for the bounded transition family because its risk-deciding routing facts are fixed-program kernel-checked fixtures.
+
+Required checked facts cover payload assignment and association as one step; association-decided write with Process-binding preservation elsewhere; subscription withdrawal finality; refusal of an absent payload, an out-of-domain payload, a wrong channel, and a stale subscription with exact state preservation; runtime-state invariant preservation across the delivery transition; and the routed-versus-named non-law that fixes `MPAYLOAD-ROUTE-01` as a real discriminator rather than a coincidence of the registered ids.
 
 ## CIB Seven relationship boundary
 
@@ -122,7 +124,7 @@ The executable refinement witness starts the model, forces Continue-As-New while
 |---|---|
 | Normative account | BPMN 2.0.2 Clause 10.5.1 and Table 10.82 with the CMOF and XSD anchors quoted above; no CIB semantic vote |
 | Exact source and profile admission | Source compiler tests with independently authored checked-graph expectations, old-profile refusal, and mutations covering association direction, reference resolution, cardinality, item equivalence, and each excluded attribute |
-| Declarative meaning and laws | Lean delivery relation, evaluator-soundness bridge, and quantified write, withdrawal, preservation, and refusal laws plus the routed-versus-named non-law |
+| Declarative meaning and checked facts | Lean delivery relation, evaluator-soundness bridge, fixed-program write, withdrawal, preservation, and refusal checks, plus the routed-versus-named non-law |
 | TypeScript realization | Separately written admission, assignment, routing, withdrawal, and refusal logic with focused state-preservation and negative tests |
 | Cross-language behavior | Answer-free supplied-scalar, supplied-null, and absent-payload scenarios compared through exact canonical results |
 | Selected-account realization | The P1-versus-P2 witness at the public boundary, which locks the selected refusal and detects drift to the lenient account. It does not evidence which account the standard requires, because Clause 10.5.1 governs the model rather than the occurrence; the selection's justification is the argument recorded above |

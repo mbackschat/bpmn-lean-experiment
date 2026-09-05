@@ -214,6 +214,8 @@ The coalesced evidence reuses only the reviewed activation-tag and drain-barrier
 
 Lane shape: proved
 
+Evidence: [SequentialMultiInstanceConformance.lean](../../BpmnSemantics/SequentialMultiInstanceConformance.lean) proves the bounded controller, iteration, interruption, refusal, and conditional finite-progress account, while [SequentialMultiInstancePreservation.lean](../../BpmnSemantics/SemanticProcess/SequentialMultiInstancePreservation.lean) proves the family rewrites preserve controller ownership of the live Activity. The result leaves the separately named program-binding preservation premise and unconditional delivery liveness open.
+
 The lane is **proved**. Lean defines declarative relations for outer entry, nonfinal iteration completion, final natural completion, and timer interruption, then proves every evaluator-produced transition belongs to the corresponding relation.
 
 The minimum laws are:

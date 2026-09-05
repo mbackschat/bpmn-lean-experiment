@@ -8,6 +8,8 @@ Implemented current capsule contract; exact evidence status belongs in the appli
 
 Lane shape: proved
 
+Evidence: [ServiceTaskEffectConformance.lean](../../BpmnSemantics/ServiceTaskEffectConformance.lean) proves the selected effect activation, exact-result completion, refusal, observation, and evaluator-soundness laws. This family-local result does not turn Temporal Activity execution or CIB host behavior into Lean semantics.
+
 ## Role
 
 This specification owns the approved bounded meaning, host-refinement contract, witnesses, and exclusions for one extension-bound Service Task effect. Exact current implementation and evidence status belongs in the applicable detail maps routed by [`implementation-status-router`](../IMPLEMENTATION-MAP.md), and immediate sequencing belongs in [PLAN.md](../PLAN.md).

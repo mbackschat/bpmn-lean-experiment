@@ -248,7 +248,7 @@ The existing Operations actor resolver and exact configured-group policy authori
 
 Lane shape: proved
 
-The M5 Lean question is **proved**: the published transition list is sufficient to reconstruct the exact RuntimeState reached by the existing evaluator under the exact Program.
+Evidence: [the committed-execution publication conformance module](../../BpmnSemantics/CommittedExecutionPublicationConformance.lean) proves that the bounded published transition list reconstructs the exact RuntimeState reached by the existing evaluator under the exact Program, including trace erasure, replay, corruption, and projection laws; it does not claim Product 2 store correctness or global ordering across instances.
 
 A new cohesive publication module will define the traced evaluator, trace replay, control-position projection, and a declarative committed-step relation that reuses existing external admission and `ProgramStep`. Its public theorems will establish:
 
