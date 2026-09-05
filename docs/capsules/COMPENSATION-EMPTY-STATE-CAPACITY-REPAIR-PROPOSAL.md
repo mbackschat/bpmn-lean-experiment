@@ -2,8 +2,8 @@
 
 ## Status
 
-Lifecycle: draft
-Review: pending
+Lifecycle: implementation-in-progress
+Review: approved-with-required-edits
 
 ## Question and bounded outcome
 
@@ -86,6 +86,6 @@ Reopen if the fix requires a different encoding, a weaker theorem, any changed r
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `ef22297c16836f445ca88bbed91727970d44f8cc` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `ef22297c16836f445ca88bbed91727970d44f8cc` | `fork-turns-none` | `approve-with-required-edits` | `3b091a3e8f55c5b7b25fa60fe5a3fe2f592b34f5` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
