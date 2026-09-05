@@ -89,9 +89,9 @@ Active work ID: `DATA-AND-TASK-MECHANISMS`.
 
 Risk band: standard data lifetime and mappings.
 
-Checkpoint: cold semantic-checkpoint review of `fe0c4a4d` returned `approve-with-required-edits`; the complete verifier passed at receipt-bound `fa8aca44`. Both required corrections now have red/green witnesses: Process-start data is empty or exactly the unique composed operation's declared input binding, and Lean activation refuses Boolean, Integer, and String-list Process inputs just as TypeScript does. The quantified aggregate runtime-state laws and predecessor profiles remain unchanged. All closure lanes remain untouched.
+Checkpoint: `305b5893` commits both review corrections with complete Lean/core gates green. The subsequent proof-owner split preserves every theorem and passes the fixed 3 GiB diagnostic without pressure/OOM events. The [cost ledger](CAPSULE-COST-LEDGER.md#measurements) retains the preceding failures. Closure lanes remain untouched.
 
-Next action: complete the affected gates, commit the paired corrections, and remeasure the changed Lean conformance target under the unchanged 3 GiB limit. Return the immutable correction target to the same checkpoint reviewer for its first correction audit, running the complete verifier concurrently. Do not enter any closure lane before a green audit.
+Next action: pause for owner-led external reviews; resume only on owner instruction. Then address findings, finish standing-watch Lean consumer measurements, and obtain the same checkpoint reviewer's first correction audit with the complete verifier running concurrently. Closure requires a green audit.
 
 Oracle: one User Task activation copies the required Process input into its occurrence-owned local scope, and one accepted completion atomically routes its required output to Process scope and disposes that same local scope across source, Lean, the semantic core, publication, and Temporal refinement.
 
