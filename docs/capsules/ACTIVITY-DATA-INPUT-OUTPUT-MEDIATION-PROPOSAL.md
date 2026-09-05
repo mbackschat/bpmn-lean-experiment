@@ -258,5 +258,5 @@ That checkpoint requires independent cold review before registered answer-free s
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
 | Proposal | `559faf0f734e24b8edfc3c16803b43f8d322ecbc` | `fork-turns-none` | `approve-with-required-edits` | `78b9ca0c, c161ef74` |
-| Semantic checkpoint | `fc15f78c50817a0e0968aea5a59a46faf02cd5ff` | `fork-turns-none` | `reject` | `not-required` |
+| Semantic checkpoint | `fe0c4a4d` | `not-recorded` | `pending` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
