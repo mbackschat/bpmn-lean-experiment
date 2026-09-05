@@ -14,6 +14,8 @@ Run the pure comparator gate:
 ./scripts/pnpm.sh run test:differential
 ```
 
+That gate also compiles every registered single-instance pipeline program and checks runtime-state well-formedness and monotonicity after every replayed committed transition. Rejected commands must preserve the exact received state and emit no committed transition.
+
 The Message payload catch scenarios are registered in the full Lean/core/Temporal pipeline. Run the narrower Lean/core diagnostic when the change cannot affect hosting:
 
 ```sh
@@ -26,6 +28,7 @@ Message key correlation uses a separate engine-population catalog because one an
 
 - [Testing specification](../../docs/TESTING-SPEC.md) owns the complete pipeline, target isolation, and evidence rules.
 - [Pipeline case identifier registry](test/pipeline-case-id-registry.ts) owns the exact ordered identifier contract checked before target execution.
+- [Runtime-state preservation lane](test/runtime-state-preservation.test.ts) derives its programs and schedules from that registered catalog; it is finite executable evidence, not the open general Lean preservation theorem.
 - [`implementation-status-owner:ASSURANCE-ADOPTION`](../../docs/ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md) records the exact current target matrix and evidence boundary.
 - [Shared wire contracts](../../contracts/README.md) owns the canonical result shape.
 - [Parallel User Task metadata composition specification](../../docs/capsules/PARALLEL-USER-TASK-METADATA-COMPOSITION-SPEC.md) owns the two closure-reviewed composed schedules and their selected mutations.

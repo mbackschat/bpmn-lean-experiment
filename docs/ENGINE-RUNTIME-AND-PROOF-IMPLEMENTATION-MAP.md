@@ -113,6 +113,7 @@ Product 1 rejects malformed and over-cap starts as semantic-process unsupported,
 - pure exhaustive execution of the closed Semantic Process operation union, with operation-ID-stable internal closure independent of program collection order
 - explicit scope-occurrence ownership over token multiplicity, child and called instances, selected branches, and canonical task, Message, timer, effect, and variable projections
 - an independently structured `runtimeStateIdentityBound` over User Task, Timer, and Activity identities, reported as the gated `LiveIdentityAboveCounter` defect and exercised by command-admission and Workflow-continuation refusals
+- registry-driven finite preservation evidence that compiles every registered single-instance pipeline program, replays every committed transition prefix, checks runtime-state well-formedness and monotonicity, and requires rejected commands to preserve exact state without a committed trace
 - an operation-kind-independent `ActivityOccurrenceIssue` oracle over every current issuer, exact reissue/rearm controls, and a writer census that rejects missing classification or evidence
 - a distinct gated `DuplicateActivityBodyClaim` defect over exact cross-record task and child-scope aliases
 - independent evaluation, exact refusal, hidden-state non-projection, and bounded closure for every closed family named in [the current boundary](#current-boundary), including both data mappings and both Error routes

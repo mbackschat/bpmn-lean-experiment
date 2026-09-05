@@ -159,4 +159,4 @@ This contributor map assigns source-file responsibilities inside `@bpmn-lean/sem
 
 ## Test ownership
 
-Tests under [`test/`](test/) mirror these owners by contract or semantic family. The [testing specification](../../docs/TESTING-SPEC.md) selects the applicable focused and repository gates.
+Tests under [`test/`](test/) mirror these owners by contract or semantic family. The registry-driven [runtime-state preservation lane](../differential/test/runtime-state-preservation.test.ts) sits at the differential composition boundary so compiling every registered program does not add parser or catalog dependencies to this package. The [testing specification](../../docs/TESTING-SPEC.md) selects the applicable focused and repository gates.

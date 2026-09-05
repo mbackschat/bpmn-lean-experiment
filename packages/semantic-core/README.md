@@ -28,6 +28,8 @@ Run the focused package gate:
 ./scripts/pnpm.sh run test:semantic-core
 ```
 
+The registry-driven preservation lane lives in the [differential package](../differential/test/runtime-state-preservation.test.ts), because compiling registered BPMN sources requires the parser and pipeline catalog that this dependency-free package must not import. Run `./scripts/pnpm.sh run test:differential` for that integration evidence.
+
 ## Learn more
 
 - [Source map](SOURCE-MAP.md) maps implementation responsibilities to files.

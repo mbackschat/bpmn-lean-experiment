@@ -240,12 +240,10 @@ function isSorted<T>(
  * consistent injected state. Both installed call sites pass an identity that cannot disagree, so
  * that conjunct is inert today and no witness claims otherwise.
  *
- * The result is empty for every state the five schedules in the preservation lane reach, including
- * the microsteps inside each stimulus closure. It is not established for every reachable state, and
- * the gap is narrower than the schedule list suggests: those schedules do reach Message waits, Timer
- * waits, event races, selected-branch sets, and called-process records. What they never hold is an
- * effect wait or effect incident, and none exercises the instance scoping on declaration. The
- * quantified Lean obligation is open regardless. Refusing a state here changes no BPMN meaning.
+ * The result is empty for every transition-produced state reached by the registered single-instance
+ * differential catalog, including the microsteps inside each stimulus closure. That finite lane does
+ * not establish the result for every reachable state or replace the open quantified Lean obligation.
+ * Refusing a state here changes no BPMN meaning.
  */
 export function runtimeStateDefects(
   program: SemanticProcessProgram,
@@ -769,12 +767,11 @@ const GATED_DEFECTS: ReadonlySet<RuntimeStateDefect> = new Set([
 /**
  * Whether the fail-closed command boundary admits this committed state.
  *
- * Preservation before enforcement is the rule this follows, and its evidence is the core's own
- * preservation lane over five schedules, which asserts both directions: that no successor is refused
- * and that every stimulus commits, the second being what catches a conjunct that wrongly refuses a
- * reachable state. The gate was nonetheless wired before that lane existed, inverting the order the
- * owner decision requires. Treat a newly refused state as a defect in this owner until the state is
- * shown unreachable.
+ * Preservation before enforcement is the rule this follows. The registry-driven differential lane
+ * checks every committed transition prefix and requires every rejected command to preserve the exact
+ * received state with no committed trace. The gate was nonetheless wired before a dedicated lane
+ * existed, inverting the order the owner decision requires. Treat a newly refused state as a defect
+ * in this owner until the state is shown unreachable.
  */
 export function isGateAdmissibleRuntimeState(
   program: SemanticProcessProgram,

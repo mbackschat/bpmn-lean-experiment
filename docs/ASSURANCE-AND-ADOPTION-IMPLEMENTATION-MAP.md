@@ -92,6 +92,7 @@ Registered answer-free scenarios run their declared Lean, TypeScript, Temporal, 
 - exact-release grouping for CIB-backed cases, explicit standards-only cases, and one raw-only Service Task retry execution
 - one generic Lean result emitter
 - one core batch
+- one registry-driven runtime-state preservation lane over every compiled single-instance program, every committed transition prefix, and exact no-trace state preservation for rejected commands
 - two isolated Temporal executions per registered scenario
 - exact case-specific relations across every implemented family, with retained-CIB comparison only where the selected profile declares a CIB target
 - separate synchronous CIB host relations for the two product-neutral mapped Service Task slices
