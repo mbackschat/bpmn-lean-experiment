@@ -216,8 +216,11 @@ async function mutatedCanonicalAcceptanceModule(): Promise<{
   formatLeanMemoryAcceptanceViolation: typeof formatLeanMemoryAcceptanceViolation;
 }> {
   const source = readFileSync(acceptanceRecordPath, "utf8");
-  const original = "cgroupPeakBytes: 136_794_112,";
-  const mutated = source.replace(original, "cgroupPeakBytes: 136_794_111,");
+  const [receipt] = leanMemoryAcceptanceRecord.receipts;
+  const mutated = source.replace(/cgroupPeakBytes: ([\d_]+),/u, (_field, value: string) => {
+    assert.equal(Number(value.replaceAll("_", "")), receipt.cgroupPeakBytes);
+    return `cgroupPeakBytes: ${receipt.cgroupPeakBytes - 1},`;
+  });
   assert.notEqual(mutated, source, "canonical receipt mutation did not match its source tuple");
   const directory = mkdtempSync(join(tmpdir(), "lean-memory-acceptance-mutation-"));
   const file = join(directory, "mutated.mts");
@@ -563,7 +566,7 @@ test("a canonical receipt tuple changed under an unchanged identity fails the ra
     mutated
       .leanMemoryAcceptanceViolations(
         mutated.leanMemoryAcceptanceRecord,
-        await committedAcceptanceBaseline(),
+        leanMemoryAcceptanceRecord,
       )
       .map(mutated.formatLeanMemoryAcceptanceViolation),
     ["./scripts/lake.sh test measurement tuple changed without a new commit and output digest"],
