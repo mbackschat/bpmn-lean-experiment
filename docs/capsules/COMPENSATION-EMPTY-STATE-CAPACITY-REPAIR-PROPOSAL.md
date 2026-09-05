@@ -93,5 +93,5 @@ On 2026-09-05, the complete semantic-core gate passed 726 tests, and complete Le
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
 | Proposal | `ef22297c16836f445ca88bbed91727970d44f8cc` | `fork-turns-none` | `approve-with-required-edits` | `3b091a3e8f55c5b7b25fa60fe5a3fe2f592b34f5` |
-| Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Semantic checkpoint | `ec66bc7a25445e05c0b69d21fef599874ed27262` | `not-recorded` | `pending` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
