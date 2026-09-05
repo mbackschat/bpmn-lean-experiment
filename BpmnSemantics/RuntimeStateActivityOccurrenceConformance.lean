@@ -7,6 +7,8 @@ Multi-Instance controller reductions so the independent proof families do not ac
 kernel target under the repository's hard 3 GiB Lean measurement bound.
 -/
 
+set_option Elab.async false
+
 namespace BpmnSemantics.RuntimeStateWellFormedConformance
 
 open BpmnSemantics
@@ -79,6 +81,56 @@ def disagreeingActivityCounterState : RuntimeState :=
 
 theorem disagreeing_activity_counter_is_admitted :
     runtimeStateWellFormed program instanceId disagreeingActivityCounterState = true := by
+  decide +kernel
+
+private def ownerA : ScopeOccurrenceId :=
+  { processInstanceId := instanceId, definitionScopeId := ⟨"scope:A"⟩, activation := 1 }
+
+private def ownerB : ScopeOccurrenceId :=
+  { processInstanceId := instanceId, definitionScopeId := ⟨"scope:B"⟩, activation := 1 }
+
+private def ownedTaskId : OccurrenceId :=
+  { processInstanceId := instanceId, elementId := ⟨"Task"⟩, activation := 1 }
+
+private def ownedTaskWait (owner : ScopeOccurrenceId) : UserTaskWait :=
+  { processInstanceId := instanceId, task := { id := ⟨"Task"⟩, name := none }
+    activation := 1, owner, output := ⟨"out"⟩ }
+
+private def ownershipState (body : ActivityBody) (waits : List UserTaskWait) : RuntimeState :=
+  { initialState with
+    control := .running instanceId
+    scopeOccurrences := [{ id := ownerA, parent := none }, { id := ownerB, parent := some ownerA }]
+    waits
+    activityOccurrences :=
+      [{ processInstanceId := instanceId, activityElementId := ⟨"Activity"⟩, activation := 1
+         owner := ownerA, body, attachedHandlers := [] }] }
+
+theorem task_body_owner_must_agree_for_singular_and_parallel_bodies :
+    activityRecordsOwnLiveWork
+      (ownershipState (.userTask ownedTaskId) [ownedTaskWait ownerB]) = false ∧
+      activityRecordsOwnLiveWork
+        (ownershipState (.parallelUserTasks ownedTaskId []) [ownedTaskWait ownerB]) = false ∧
+      activityRecordsOwnLiveWork
+        (ownershipState (.parallelUserTasks ownedTaskId [{ ownedTaskId with activation := 2 }])
+          [ownedTaskWait ownerA, { ownedTaskWait ownerB with activation := 2 }]) = false ∧
+      waitOwnersLive (ownershipState (.userTask ownedTaskId) [ownedTaskWait ownerB]) = true ∧
+      waitIdentitiesUnique (ownershipState (.userTask ownedTaskId) [ownedTaskWait ownerB]) = true := by
+  decide +kernel
+
+theorem owner_filter_cannot_hide_a_duplicate_task_identity :
+    activityRecordsOwnLiveWork (ownershipState (.userTask ownedTaskId)
+      [ownedTaskWait ownerA, ownedTaskWait ownerB]) = false ∧
+      activityRecordsOwnLiveWork (ownershipState (.parallelUserTasks ownedTaskId [])
+        [ownedTaskWait ownerA, ownedTaskWait ownerB]) = false := by
+  decide +kernel
+
+theorem task_owner_agreement_preserves_child_scope_identity :
+    activityRecordsOwnLiveWork
+      (ownershipState (.userTask ownedTaskId) [ownedTaskWait ownerA]) = true ∧
+      activityRecordsOwnLiveWork
+        (ownershipState (.parallelUserTasks ownedTaskId []) [ownedTaskWait ownerA]) = true ∧
+      activityRecordsOwnLiveWork (ownershipState (.childScope ownerB) []) = true ∧
+      decide (ownerA = ownerB) = false := by
   decide +kernel
 
 end BpmnSemantics.RuntimeStateWellFormedConformance

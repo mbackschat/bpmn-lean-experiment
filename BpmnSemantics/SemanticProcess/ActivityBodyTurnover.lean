@@ -563,10 +563,10 @@ theorem activityBodyTaskClaim_has_live_wait (state : RuntimeState)
         subst body
         rw [activityBodyLive_userTask state record task bodyShape, decide_eq_true_eq]
           at recordLive
-        exact recordLive.1.1
+        exact recordLive.1.1.1
     | parallelUserTasks first rest =>
         simp only [activityBodyLive, bodyShape, List.all_eq_true] at recordLive
-        have live := recordLive.1.1 task
+        have live := recordLive.1.1.1 task
           (by simpa [activityBodyTaskClaims, bodyShape] using claimMem)
         rw [taskIdNamesWait_filter_eq]
         exact of_decide_eq_true live
@@ -671,14 +671,9 @@ private theorem taskBodyLive_replacedState (state : RuntimeState)
       simp [bodyMiss]
   rw [List.countP_filter, List.countP_congr keep, List.countP_eq_length_filter, prior]
 
-/-- `AOO-BODY-01` and `AOO-OWN-01` under the hypothesis that no other record shares the outgoing body.
-
-That second hypothesis is **not** a state invariant, and this proof is where that shows. Nothing in
-`runtimeStateWellFormed` refuses two records naming one body, so a well-formed pre-state can have a
-second record whose body is the wait this transition withdraws; after the withdrawal that record's
-body is gone and the conjunct fails. The parent account already carries the same premise explicitly
-for its body-side lookup determinism, and this is the same premise reappearing as a transition
-obligation rather than a lookup one. -/
+/-- `AOO-BODY-01` and `AOO-OWN-01` survive when the outgoing body is exclusive and the selected
+record owns the incoming wait. The whole-state theorem derives both from its existing invariants;
+this subordinate law does not assume record membership or identity uniqueness. -/
 theorem activityRecordsOwnLiveWork_replacedState (state : RuntimeState)
     (record : ActivityOccurrence) (wait : UserTaskWait) (body : OccurrenceId)
     (unique : state.waits.filter (taskIdNamesWait body) = [wait])
@@ -687,12 +682,15 @@ theorem activityRecordsOwnLiveWork_replacedState (state : RuntimeState)
         (turnoverWait state wait) candidate = false)
     (soleBody : ∀ other ∈ state.activityOccurrences,
       sameActivityOccurrence other record = false → recordBodyExcludesWait wait other = true)
+    (selectedOwner : ∀ chosen ∈ state.activityOccurrences,
+      sameActivityOccurrence chosen record = true → wait.owner = chosen.owner)
     (holds : activityRecordsOwnLiveWork state = true) :
     activityRecordsOwnLiveWork (replacedState state record wait body) = true := by
   have waitInFilter : wait ∈ state.waits.filter (taskIdNamesWait body) := by
     rw [unique]; simp
   have waitMem : wait ∈ state.waits := (List.mem_filter.mp waitInFilter).1
   have namesWait : taskIdNamesWait body wait = true := (List.mem_filter.mp waitInFilter).2
+  have recordsOwn := holds
   simp only [activityRecordsOwnLiveWork, List.all_eq_true] at holds ⊢
   intro candidate mem
   obtain ⟨other, memOther, rebuilt⟩ := List.mem_map.mp mem
@@ -721,11 +719,11 @@ theorem activityRecordsOwnLiveWork_replacedState (state : RuntimeState)
       subst same
       cases bodyShape : candidate.body with
       | childScope scope =>
-        have prior := priorHolds.1.1
+        have prior := priorHolds.1.1.1
         simp only [activityBodyLive, bodyShape] at prior ⊢
         exact prior
       | userTask task =>
-        have prior := priorHolds.1.1
+        have prior := priorHolds.1.1.1
         rw [activityBodyLive_userTask _ _ _ bodyShape, decide_eq_true_eq] at prior
         rw [activityBodyLive_userTask _ _ _ bodyShape]
         simp only [decide_eq_true_eq]
@@ -733,7 +731,7 @@ theorem activityRecordsOwnLiveWork_replacedState (state : RuntimeState)
         simp only [recordBodyExcludesWait, bodyShape, beq_iff_eq] at excluded
         exact taskBodyLive_replacedState state record wait body task unique fresh excluded prior
       | parallelUserTasks first rest =>
-        have prior := priorHolds.1.1
+        have prior := priorHolds.1.1.1
         simp only [activityBodyLive, bodyShape, List.all_eq_true] at prior ⊢
         intro task taskMem
         have excluded := soleBody candidate memOther h
@@ -745,6 +743,49 @@ theorem activityRecordsOwnLiveWork_replacedState (state : RuntimeState)
         rw [← taskIdNamesWait_filter_eq]
         exact taskBodyLive_replacedState state record wait body task unique fresh
           (excluded task taskMem) priorTask
+  have ownersAfter : activityTaskBodyOwnersAgree
+      (replacedState state record wait body) candidate = true := by
+    by_cases selected : sameActivityOccurrence other record = true
+    · rw [← rebuilt]
+      simp only [selected, ↓reduceIte, activityTaskBodyOwnersAgree,
+        List.all_eq_true, decide_eq_true_eq]
+      intro incoming incomingMem
+      obtain ⟨live, hit⟩ := List.mem_filter.mp incomingMem
+      rcases (mem_insertUserTaskWait _ _ _).mp live with rfl | retained
+      · exact selectedOwner other memOther selected
+      · have keyed := turnoverBodyId_hit_is_turnover_key state wait body namesWait incoming hit
+        rw [fresh incoming (List.mem_filter.mp retained).1] at keyed
+        exact Bool.noConfusion keyed
+    · simp only [Bool.not_eq_true] at selected
+      have unchanged : candidate = other := by rw [← rebuilt]; simp [selected]
+      rw [unchanged]
+      have taskOwners (task : OccurrenceId) (claim : task ∈ activityBodyTaskClaims other.body)
+          (prior : (state.waits.filter (taskIdNamesWait task)).all
+            (fun incoming => decide (incoming.owner = other.owner)) = true) :
+          ((replacedState state record wait body).waits.filter (taskIdNamesWait task)).all
+            (fun incoming => decide (incoming.owner = other.owner)) = true := by
+        simp only [List.all_eq_true] at prior ⊢
+        intro incoming incomingMem
+        obtain ⟨live, hit⟩ := List.mem_filter.mp incomingMem
+        rcases (mem_insertUserTaskWait _ _ _).mp live with rfl | retained
+        · obtain ⟨witness, witnessMem, witnessHit⟩ :=
+            activityBodyTaskClaim_has_live_wait state other task recordsOwn memOther claim
+          have keyed := turnoverWait_hit_transfers state wait task hit witness witnessHit
+          rw [fresh witness witnessMem] at keyed
+          exact Bool.noConfusion keyed
+        · exact prior incoming (List.mem_filter.mpr ⟨(List.mem_filter.mp retained).1, hit⟩)
+      have priorOwners := priorHolds.1.1.2
+      cases shape : other.body with
+      | childScope scope => simp [activityTaskBodyOwnersAgree, shape]
+      | userTask task =>
+          simp only [activityTaskBodyOwnersAgree, shape] at priorOwners ⊢
+          exact taskOwners task (by simp [activityBodyTaskClaims, shape]) priorOwners
+      | parallelUserTasks first rest =>
+          simp only [activityTaskBodyOwnersAgree, shape] at priorOwners ⊢
+          apply List.all_eq_true.mpr
+          intro task member
+          exact taskOwners task (by simpa [activityBodyTaskClaims, shape] using member)
+            (List.all_eq_true.mp priorOwners task member)
   have timerAfter : candidate.timerHandlerOccurrences.all (fun timer =>
       (replacedState state record wait body).timerWaits.any fun timerWait =>
         timerIdNamesWait timer timerWait && decide (timerWait.owner = candidate.owner)) = true := by
@@ -767,6 +808,6 @@ theorem activityRecordsOwnLiveWork_replacedState (state : RuntimeState)
     rw [frameEq.1, frameEq.2]
     exact priorHolds.2
   simp only [Bool.and_eq_true]
-  exact ⟨⟨bodyAfter, timerAfter⟩, messageAfter⟩
+  exact ⟨⟨⟨bodyAfter, ownersAfter⟩, timerAfter⟩, messageAfter⟩
 
 end BpmnSemantics.SemanticProcess

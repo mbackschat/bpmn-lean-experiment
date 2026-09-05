@@ -435,8 +435,7 @@ theorem sharedParallelTerminal_preserves_runtimeStateWellFormed
   let after := closeSharedParallelRegion before controller record output variables
   change runtimeStateWellFormed program expectedInstanceId after = true
   simp only [runtimeStateWellFormed, Bool.and_eq_true] at wellFormed
-  obtain ⟨existing, claimsAndRetention, snapshots⟩ := wellFormed
-  obtain ⟨claims, retention⟩ := claimsAndRetention
+  obtain ⟨existing, ⟨⟨claims, retention⟩, snapshots⟩, execution⟩ := wellFormed
   obtain ⟨h17, _lifecycle⟩ := existing
   obtain ⟨h16, _notExhausted⟩ := h17
   obtain ⟨h15, _controllerIds⟩ := h16
@@ -658,10 +657,13 @@ theorem sharedParallelTerminal_preserves_runtimeStateWellFormed
         (by rw [oldClaims]; exact removed)
     constructor
     · constructor
-      · cases shape : candidate.body with
+      · refine ⟨?_, activityTaskOwnersAgree_of_subsets before after candidate candidate
+          prior.1.1.2 rfl (fun _ member => member)
+          (fun _ member => (List.mem_filter.mp member).1)⟩
+        cases shape : candidate.body with
         | childScope scope =>
             simpa [activityBodyLive, shape, after, closeSharedParallelRegion,
-              exactLiveOccurrence] using prior.1.1
+              exactLiveOccurrence] using prior.1.1.1
         | userTask task =>
             simp only [activityBodyTaskClaims, shape, List.mem_singleton] at claimNotRemoved
             simp only [activityBodyLive, shape, decide_eq_true_eq] at prior ⊢
@@ -676,7 +678,7 @@ theorem sharedParallelTerminal_preserves_runtimeStateWellFormed
             rw [removeParallelChildWaits_lookup_of_not_mem before.waits _ task
               (claimNotRemoved task (by simp))]
             rw [activityBodyWaitFilter_eq before.waits task]
-            exact prior.1.1
+            exact prior.1.1.1
         | parallelUserTasks first rest =>
             simp only [activityBodyLive, shape, List.all_eq_true,
               decide_eq_true_eq] at prior ⊢
@@ -688,7 +690,7 @@ theorem sharedParallelTerminal_preserves_runtimeStateWellFormed
             rw [removeParallelChildWaits_lookup_of_not_mem before.waits _ task
               (claimNotRemoved task (by simpa [activityBodyTaskClaims, shape] using taskMember))]
             rw [activityBodyWaitFilter_eq before.waits task]
-            exact prior.1.1 task taskMember
+            exact prior.1.1.1 task taskMember
       · simp only [List.all_eq_true] at prior ⊢
         intro candidateTimer candidateTimerMember
         obtain ⟨wait, waitMember, candidateBinding⟩ :=
@@ -801,6 +803,10 @@ theorem sharedParallelTerminal_preserves_runtimeStateWellFormed
   have snapshotsAfter : compensationEventSubProcessSnapshotStateValid program after = true := by
     change compensationEventSubProcessSnapshotStateValid program before = true
     exact snapshots
+  have executionAfter : compensationExecutionStateValid program after = true := by
+    rw [compensationExecutionStateValid_running_frame program before after instanceId
+      running rfl rfl rfl rfl rfl rfl]
+    exact execution
   simp only [runtimeStateWellFormed, Bool.and_eq_true]
   exact ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨positionAfter, racesAfter⟩, incidentsAfter⟩,
     ownersAfter⟩, identitiesAfter⟩, boundsAfter⟩, declarationsAfter⟩, hiddenAfter⟩,
@@ -808,6 +814,6 @@ theorem sharedParallelTerminal_preserves_runtimeStateWellFormed
     activityIdsAfter⟩, controllersAfter⟩,
     sequentialBindingsAfter⟩, parallelBindingsAfter⟩, controllerIdsAfter⟩,
     notExhaustedAfter⟩, lifecycleAfter⟩,
-    ⟨⟨claimsAfter, retentionAfter⟩, snapshotsAfter⟩⟩
+    ⟨⟨⟨claimsAfter, retentionAfter⟩, snapshotsAfter⟩, executionAfter⟩⟩
 
 end BpmnSemantics.SemanticProcess

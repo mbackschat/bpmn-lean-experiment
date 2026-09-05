@@ -3,8 +3,10 @@ import { test } from "node:test";
 
 import {
   applyStimulus,
+  ActivityBodyKind,
   CommandOutcome,
   createEffectLocalDataOwner,
+  createActivityLocalDataOwner,
   initialState,
   projectCurrentControlPositions,
   RuntimeStateDefect,
@@ -29,6 +31,7 @@ import {
   configuredTaskProgram,
   startFor,
 } from "./flow-node-occurrence-lifecycle-fixture.ts";
+import { parallelProgram, parallelStart } from "./parallel-multi-instance-fixture.ts";
 
 /**
  * Well-formedness of committed runtime state, and the malformed states the account refuses.
@@ -186,6 +189,62 @@ test("a not-started state holding runtime work is refused", () => {
     [RuntimeStateDefect.NotStartedWithWork],
   );
 });
+
+test("a not-started state holding a canonical Activity local-data scope is refused", () => {
+  const pending: RuntimeState = {
+    ...initialState,
+    variables: {
+      ...initialState.variables,
+      activities: [{
+        owner: createActivityLocalDataOwner({
+          processInstanceId: instanceId(), activityElementId: "Review", activation: 1,
+        }),
+        bindings: [],
+      }],
+    },
+  };
+  assert.deepEqual(runtimeStateDefects(eventRaceProgram, instanceId(), pending), [
+    RuntimeStateDefect.NotStartedWithWork,
+  ]);
+});
+
+for (const [name, program, start] of [
+  ["singular", boundedProgram, boundedStart],
+  ["parallel", parallelProgram, parallelStart],
+] as const) {
+  test(`${name} Activity task bodies must share their live owner's scope`, () => {
+    const accepted = applyStimulus(program, initialState, start);
+    assert.equal(accepted.outcome, CommandOutcome.Committed);
+    const state = accepted.state;
+    const [record] = state.activityOccurrences;
+    const [scope] = state.scopeOccurrences;
+    assert.ok(record !== undefined && state.userTaskWaits.length > 0 && scope !== undefined);
+    assert.notEqual(record.body.kind, ActivityBodyKind.ChildScope);
+    assert.deepEqual(runtimeStateDefects(program, start.instanceId, state), []);
+    const secondScope = {
+      ...scope, id: { ...scope.id, activation: scope.id.activation + 1 },
+    };
+    for (const wait of state.userTaskWaits) {
+      const movedWait = { ...wait, owner: secondScope.id };
+      const wrongOwner: RuntimeState = {
+        ...state,
+        scopeOccurrences: [...state.scopeOccurrences, secondScope],
+        userTaskWaits: state.userTaskWaits.map((candidate) => candidate === wait ? movedWait : candidate),
+      };
+      const defects = runtimeStateDefects(program, start.instanceId, wrongOwner);
+      assert.equal(defects.includes(RuntimeStateDefect.DanglingWaitOwner), false);
+      assert.equal(defects.includes(RuntimeStateDefect.DuplicateWaitIdentity), false);
+      assert.ok(defects.includes(RuntimeStateDefect.ActivityOccurrenceBodyAbsent));
+
+      const duplicateAcrossOwners: RuntimeState = {
+        ...wrongOwner, userTaskWaits: state.userTaskWaits.flatMap((candidate) =>
+          candidate === wait ? [wait, movedWait] : [candidate]),
+      };
+      assert.ok(runtimeStateDefects(program, start.instanceId, duplicateAcrossOwners)
+        .includes(RuntimeStateDefect.ActivityOccurrenceBodyAbsent));
+    }
+  });
+}
 
 test("a malformed state is refused instead of transitioned from", () => {
   const [strandedTimer] = armed.timerWaits;

@@ -119,9 +119,10 @@ theorem dataInputOutputActivationStep_preserves_runtimeStateWellFormed
               obtain ⟨localOwnerFresh, rfl⟩ := prepared
               change runtimeStateWellFormed program expectedInstanceId successor = true
               simp only [runtimeStateWellFormed, Bool.and_eq_true] at wellFormed
-              have claims := wellFormed.2.1.1
-              have retention := wellFormed.2.1.2
-              have snapshots := wellFormed.2.2
+              have claims := wellFormed.2.1.1.1
+              have retention := wellFormed.2.1.1.2
+              have snapshots := wellFormed.2.1.2
+              have execution := wellFormed.2.2
               obtain ⟨aggregate, lifecycle⟩ := wellFormed.1
               obtain ⟨aggregate, notExhausted⟩ := aggregate
               obtain ⟨aggregate, controllerIds⟩ := aggregate
@@ -361,7 +362,23 @@ theorem dataInputOutputActivationStep_preserves_runtimeStateWellFormed
                   have insertedUnique := List.all_eq_true.mp identitiesAfter.1.1.1 insertedWait
                     insertedMember
                   simp only [occursOnce, decide_eq_true_eq] at insertedUnique
-                  refine ⟨⟨?_, by simp [record, dataInputOutputActivityRecord,
+                  have insertedOwners : activityTaskBodyOwnersAgree successor record = true := by
+                    simp only [activityTaskBodyOwnersAgree, record, dataInputOutputActivityRecord,
+                      List.all_eq_true, decide_eq_true_eq]
+                    intro wait member
+                    obtain ⟨waitMember, matched⟩ := List.mem_filter.mp member
+                    change wait ∈ insertUserTaskWait insertedWait before.waits at waitMember
+                    rw [insertUserTaskWait_eq_canonicalInsertBy] at waitMember
+                    rcases (mem_canonicalInsertBy userTaskWaitBefore insertedWait wait
+                      before.waits).mp waitMember with new | old
+                    · subst wait
+                      rfl
+                    · have keyed : userTaskWaitKeyMatches insertedWait wait = true := by
+                        simpa [taskIdNamesWait, userTaskWaitKeyMatches, insertedWait,
+                          taskDefinitionId_eq_iff_value_eq] using matched
+                      rw [(waitFresh wait old).1] at keyed
+                      contradiction
+                  refine ⟨⟨⟨?_, insertedOwners⟩, by simp [record, dataInputOutputActivityRecord,
                     ActivityOccurrence.timerHandlerOccurrences]⟩,
                     by simp [record, dataInputOutputActivityRecord,
                       ActivityOccurrence.messageHandlerOccurrences]⟩
@@ -383,6 +400,7 @@ theorem dataInputOutputActivationStep_preserves_runtimeStateWellFormed
                   exact insertedUnique
                 · have prior := List.all_eq_true.mp oldBodies candidate old
                   simpa [successor, activityRecordsOwnLiveWork, activityBodyLive,
+                    activityTaskBodyOwnersAgree,
                     exactLiveOccurrence] using prior
               have attachedTimersAfter : attachedTimersUnambiguous successor = true := by
                 simp only [attachedTimersUnambiguous, List.all_eq_true] at attachedTimers ⊢
@@ -520,6 +538,10 @@ theorem dataInputOutputActivationStep_preserves_runtimeStateWellFormed
                   compensationEventSubProcessSnapshotStateValid program successor = true := by
                 change compensationEventSubProcessSnapshotStateValid program before = true
                 exact snapshots
+              have executionAfter : compensationExecutionStateValid program successor = true := by
+                rw [compensationExecutionStateValid_running_frame program before successor
+                  instanceId running rfl rfl rfl rfl rfl rfl]
+                exact execution
               simp only [runtimeStateWellFormed, Bool.and_eq_true]
               exact ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨positionAfter, racesAfter⟩, incidentsAfter⟩,
                 ownersAfter⟩, identitiesAfter⟩, boundsAfter⟩, declarationsAfter⟩,
@@ -527,6 +549,6 @@ theorem dataInputOutputActivationStep_preserves_runtimeStateWellFormed
                 attachedMessagesAfter⟩, activityIdsAfter⟩, controllersAfter⟩,
                 sequentialBindingsAfter⟩, parallelBindingsAfter⟩, controllerIdsAfter⟩,
                 notExhaustedAfter⟩, lifecycleAfter⟩,
-                ⟨⟨claimsAfter, retentionAfter⟩, snapshotsAfter⟩⟩
+                ⟨⟨⟨claimsAfter, retentionAfter⟩, snapshotsAfter⟩, executionAfter⟩⟩
 
 end BpmnSemantics.SemanticProcess

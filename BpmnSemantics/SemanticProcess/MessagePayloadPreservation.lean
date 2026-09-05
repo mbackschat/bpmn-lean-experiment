@@ -153,9 +153,10 @@ theorem deliverPayloadMessage_preserves_runtimeStateWellFormed
         { framed with tokens := addToken framed.tokens wait.output wait.owner }
       change runtimeStateWellFormed program expectedInstanceId settled = true
       simp only [runtimeStateWellFormed, Bool.and_eq_true] at wellFormed
-      have claims := wellFormed.2.1.1
-      have retention := wellFormed.2.1.2
-      have snapshots := wellFormed.2.2
+      have claims := wellFormed.2.1.1.1
+      have retention := wellFormed.2.1.1.2
+      have snapshots := wellFormed.2.1.2
+      have execution := wellFormed.2.2
       have capabilities := _capabilities
       simp only [programProfileCapabilitiesValid, Bool.and_eq_true] at capabilities
       have parallelFamily := capabilities.1.2
@@ -254,8 +255,8 @@ theorem deliverPayloadMessage_preserves_runtimeStateWellFormed
         simp only [settled, framed, activityRecordsOwnLiveWork, List.all_eq_true,
           Bool.and_eq_true, List.any_eq_true, decide_eq_true_eq] at bodies ⊢
         intro record recordMember
-        obtain ⟨⟨bodyLive, timersLive⟩, messagesLive⟩ := bodies record recordMember
-        refine ⟨⟨bodyLive, timersLive⟩, ?_⟩
+        obtain ⟨⟨bodyOwned, timersLive⟩, messagesLive⟩ := bodies record recordMember
+        refine ⟨⟨bodyOwned, timersLive⟩, ?_⟩
         intro message messageMember
         obtain ⟨candidate, candidateMember, candidateNames, candidateOwner⟩ :=
           messagesLive message messageMember
@@ -323,8 +324,14 @@ theorem deliverPayloadMessage_preserves_runtimeStateWellFormed
       have snapshotsAfter : compensationEventSubProcessSnapshotStateValid program settled = true := by
         change compensationEventSubProcessSnapshotStateValid program before = true
         exact snapshots
+      have executionAfter : compensationExecutionStateValid program settled = true := by
+        obtain ⟨instanceId, running⟩ := runtimePositionValid_liveOccurrence_running
+          program expectedInstanceId before wait.owner position ownerLive
+        rw [compensationExecutionStateValid_running_frame program before settled instanceId
+          running rfl rfl rfl rfl rfl rfl]
+        exact execution
       simp only [runtimeStateWellFormed, Bool.and_eq_true]
-      refine ⟨?_, ⟨⟨claimsAfter, retentionAfter⟩, snapshotsAfter⟩⟩
+      refine ⟨?_, ⟨⟨⟨claimsAfter, retentionAfter⟩, snapshotsAfter⟩, executionAfter⟩⟩
       refine ⟨?_, lifecycleAfter⟩
       refine ⟨?_, notExhaustedAfter⟩
       refine ⟨?_, controllerIdsAfter⟩

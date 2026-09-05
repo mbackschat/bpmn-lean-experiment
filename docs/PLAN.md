@@ -83,7 +83,7 @@ Owner instruction on 2026-09-05: resolve the supplied six reviews before resumin
 - [ ] Bind source-order and fixture/scenario evidence independently (`R1`).
 - [ ] Complete correction audits, consumer measurements, and full verification; then resume RC.
 
-Two-byte and six-byte Compensation limits admit no valid empty runtime state. The [seven-byte capacity correction](capsules/COMPENSATION-EMPTY-STATE-CAPACITY-REPAIR-PROPOSAL.md) requires cold approval before admission changes or the complete Compensation predicate enters the Lean aggregate; initialization theorem weakening and capacity exceptions are excluded.
+The [seven-byte capacity correction](capsules/COMPENSATION-EMPTY-STATE-CAPACITY-REPAIR-PROPOSAL.md) is checkpoint-approved. The approved [initialization repair](capsules/RUNTIME-INITIALIZATION-ASSURANCE-REPAIR-PROPOSAL.md) now has focused kernel evidence for the unchanged empty-state theorem and actual committed starts. Integration, cost evidence, and correction reviews remain open; no capacity exception or weaker aggregate is selected.
 
 Within the dependency order below, prioritize high-risk work before packaging and acceptance work. Treat likely broad Lean changes—shared representations, quantified proof dependencies, and kernel-reduction consumers—as an explicit risk signal, and establish those checkpoints before lower-risk profile registration, corpus/disclosure, or UI integration.
 

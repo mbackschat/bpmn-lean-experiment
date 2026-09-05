@@ -610,4 +610,131 @@ theorem admitStimulusWithCompensationSnapshots_withoutDeclaration
       admitStimulus program state stimulus := by
   simp [admitStimulusWithCompensationSnapshots, admitStimulus, absent]
 
+private theorem rawCommittedStart_shape (program : Program) (stimulus : Stimulus)
+    (instanceId : SemanticId)
+    (startKind : match stimulus with
+      | .startProcess _ _ requested _ | .triggerMessageStart _ _ requested _ _
+      | .triggerTimerStart _ _ requested _ => requested = instanceId
+      | _ => False)
+    (committed : (admitStimulusWithoutCompensationSnapshots program initialState
+      stimulus).outcome = .committed) :
+    ∃ variables, runningProgramStartState? program instanceId variables =
+      some (admitStimulusWithoutCompensationSnapshots program initialState stimulus).state := by
+  cases stimulus <;> simp only at startKind <;> try contradiction
+  all_goals subst instanceId
+  all_goals
+    simp only [admitStimulusWithoutCompensationSnapshots, initialState,
+      dispatchStimulusWithoutCompensationSnapshots] at committed ⊢
+  case startProcess commandId processId requested variables =>
+    refine ⟨variables, ?_⟩
+    cases built : runningProgramStartState? program requested variables <;> grind
+  case triggerMessageStart commandId processId requested eventId channel =>
+    split at committed
+    · rename_i started built
+      refine ⟨[], ?_⟩
+      simp only [admitMessageStart?] at built
+      split at built
+      · simp_all
+      · contradiction
+    · contradiction
+  case triggerTimerStart commandId processId requested eventId =>
+    split at committed
+    · rename_i started built
+      refine ⟨[], ?_⟩
+      simp only [admitTimerStart?] at built
+      split at built
+      · simp_all
+      · contradiction
+    · contradiction
+
+private theorem preparedCommittedStart_shape (program : Program)
+    (before : RuntimeState) (admission : ExternalAdmission)
+    (committed : (prepareStartedSnapshotState program before admission).outcome = .committed) :
+    admission.outcome = .committed ∧ ∃ retentions,
+      (prepareStartedSnapshotState program before admission).state =
+        { admission.state with compensationParentContextRetentions := retentions } := by
+  cases outcome : admission.outcome <;>
+    simp only [prepareStartedSnapshotState, outcome] at committed ⊢ <;>
+    try contradiction
+  constructor
+  · trivial
+  cases reserved : reserveRootCompensationParentContextBeforeStart program before admission.state
+    with
+  | disabled successor =>
+    simp only []
+    have same : successor = admission.state := by
+      grind [reserveRootCompensationParentContextBeforeStart]
+    subst successor
+    exact ⟨admission.state.compensationParentContextRetentions, rfl⟩
+  | applied successor =>
+    simp only []
+    obtain ⟨_, _, _, _, _, _, _, _, same⟩ :=
+      reserveRootCompensationParentContextBeforeStart_applied_shape
+        program before admission.state successor reserved
+    exact ⟨_, same⟩
+  | refused reason returned => simp [reserved] at committed
+
+/-- Legacy committed starts have no snapshot declaration and return the unchanged raw builder result. -/
+theorem admitStimulus_committed_start_shape (program : Program) (stimulus : Stimulus)
+    (instanceId : SemanticId)
+    (startKind : match stimulus with
+      | .startProcess _ _ requested _ | .triggerMessageStart _ _ requested _ _
+      | .triggerTimerStart _ _ requested _ => requested = instanceId
+      | _ => False)
+    (committed : (admitStimulus program initialState stimulus).outcome = .committed) :
+    program.compensationEventSubProcessSnapshots = none ∧
+      ∃ variables, runningProgramStartState? program instanceId variables =
+        some (admitStimulus program initialState stimulus).state := by
+  cases present : program.compensationEventSubProcessSnapshots with
+  | none =>
+      simp only [admitStimulus, present] at committed ⊢
+      exact ⟨by trivial, rawCommittedStart_shape program stimulus instanceId startKind committed⟩
+  | some declaration => simp [admitStimulus, present] at committed
+
+private theorem retainedCommitted_eq (program : Program) (before : RuntimeState)
+    (admission : ExternalAdmission)
+    (committed : (retainValidSnapshotAdmission program before admission).outcome = .committed) :
+    retainValidSnapshotAdmission program before admission = admission := by
+  cases outcome : admission.outcome with
+  | committed =>
+      by_cases valid : compensationEventSubProcessSnapshotStateValid program admission.state = true
+      · simp [retainValidSnapshotAdmission, outcome, valid]
+      · simp [retainValidSnapshotAdmission, outcome, valid] at committed
+  | rolledBack | rejected | semanticFailure | unsupported =>
+      simp [retainValidSnapshotAdmission, outcome]
+
+/-- `RINIT-START-01`: actual committed starts retain the raw builder's complete frame; root reservation changes only the snapshot collection. -/
+theorem admitStimulusWithCompensationSnapshots_committed_start_shape
+    (program : Program) (stimulus : Stimulus) (instanceId : SemanticId)
+    (startKind : match stimulus with
+      | .startProcess _ _ requested _ | .triggerMessageStart _ _ requested _ _
+      | .triggerTimerStart _ _ requested _ => requested = instanceId
+      | _ => False)
+    (committed : (admitStimulusWithCompensationSnapshots program initialState
+      stimulus).outcome = .committed) :
+    ∃ variables raw retentions,
+      runningProgramStartState? program instanceId variables = some raw ∧
+      (admitStimulusWithCompensationSnapshots program initialState stimulus).state =
+        { raw with compensationParentContextRetentions := retentions } := by
+  cases stimulus <;> simp only at startKind <;> try contradiction
+  all_goals
+    cases declaration : program.compensationEventSubProcessSnapshots with
+    | none =>
+        simp only [admitStimulusWithCompensationSnapshots, declaration] at committed ⊢
+        obtain ⟨variables, built⟩ := rawCommittedStart_shape program _ instanceId startKind committed
+        exact ⟨variables, _, _, built, rfl⟩
+    | some declaration =>
+        simp only [admitStimulusWithCompensationSnapshots, declaration] at committed ⊢
+        split at committed
+        · contradiction
+        · rename_i beforeValid
+          simp only [if_neg beforeValid]
+          have retained := retainedCommitted_eq program initialState _ committed
+          rw [retained] at committed ⊢
+          obtain ⟨rawCommitted, retentions, same⟩ :=
+            preparedCommittedStart_shape program initialState _ committed
+          obtain ⟨variables, built⟩ := rawCommittedStart_shape program _ instanceId
+            startKind rawCommitted
+          exact ⟨variables, _, retentions, built, same⟩
+
 end BpmnSemantics.SemanticProcess

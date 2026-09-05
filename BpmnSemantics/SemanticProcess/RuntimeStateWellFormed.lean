@@ -2,6 +2,7 @@ import BpmnSemantics.SemanticProcess.ActivityBodyClaimUniqueness
 import BpmnSemantics.SemanticProcess.CallActivity
 import BpmnSemantics.SemanticProcess.CompensationActivityRetention
 import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshot
+import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerRuntime
 import BpmnSemantics.SemanticProcess.EventBasedGateway
 import BpmnSemantics.SemanticProcess.Incident
 import BpmnSemantics.SemanticProcess.InclusiveGateway
@@ -81,6 +82,8 @@ def notStartedStateEmpty (state : RuntimeState) : Bool :=
     state.parallelMultiInstanceControllers.isEmpty &&
     state.compensationActivityRetentions.isEmpty &&
     state.compensationParentContextRetentions.isEmpty &&
+    state.compensationTriggers.isEmpty && state.compensationHandlerEffectWaits.isEmpty &&
+    state.variables.activities.isEmpty &&
     !state.initiationPending
 
 /-- `RSI-OWN-01`. Every wait, hidden record, and incident-retained wait names exactly one live scope
@@ -160,11 +163,21 @@ def activityBodyLive (state : RuntimeState) (record : ActivityOccurrence) : Bool
             decide (wait.activation = task.activation)).length = 1
   | .childScope scope => exactLiveOccurrence state scope
 
+/-- `AOO-OWN-01` compares task owners after body identity resolution; child scopes retain their own identity. -/
+def activityTaskBodyOwnersAgree (state : RuntimeState) (record : ActivityOccurrence) : Bool :=
+  let taskOwned := fun (task : OccurrenceId) =>
+    (state.waits.filter fun wait => taskIdNamesWait task wait).all fun wait =>
+      decide (wait.owner = record.owner)
+  match record.body with
+  | .userTask task => taskOwned task
+  | .parallelUserTasks first rest => (first :: rest).all taskOwned
+  | .childScope _ => true
+
 /-- `AOO-BODY-01` and `AOO-OWN-01`. Every record has exactly one live body, and each attached handler
 resolves only in its tagged wait family under the record's own owner. -/
 def activityRecordsOwnLiveWork (state : RuntimeState) : Bool :=
   state.activityOccurrences.all fun record =>
-    activityBodyLive state record &&
+    activityBodyLive state record && activityTaskBodyOwnersAgree state record &&
       record.timerHandlerOccurrences.all (fun timer =>
         state.timerWaits.any fun wait =>
           timerIdNamesWait timer wait && decide (wait.owner = record.owner)) &&
@@ -196,7 +209,7 @@ theorem activityRecordsOwnLiveWork_frame (before after : RuntimeState)
     (timers : after.timerWaits = before.timerWaits)
     (records : after.activityOccurrences = before.activityOccurrences) :
     activityRecordsOwnLiveWork after = activityRecordsOwnLiveWork before := by
-  simp [activityRecordsOwnLiveWork, activityBodyLive, exactLiveOccurrence,
+  simp [activityRecordsOwnLiveWork, activityBodyLive, activityTaskBodyOwnersAgree, exactLiveOccurrence,
     scopes, tasks, messages, timers, records]
 
 theorem attachedTimersUnambiguous_frame (before after : RuntimeState)
@@ -209,6 +222,31 @@ theorem attachedTimersUnambiguous_frame (before after : RuntimeState)
 def activityIdentitiesUnique (state : RuntimeState) : Bool :=
   state.activityOccurrences.all
     (occursOnce sameActivityOccurrence state.activityOccurrences)
+
+/-- `AOO-ID-01` turns an identity match between live records into equality of the complete record. -/
+theorem activityIdentitiesUnique_member_eq (state : RuntimeState)
+    (target candidate : ActivityOccurrence)
+    (identitiesUnique : activityIdentitiesUnique state = true)
+    (targetMem : target ∈ state.activityOccurrences)
+    (candidateMem : candidate ∈ state.activityOccurrences)
+    (same : sameActivityOccurrence candidate target = true) : candidate = target := by
+  have once := List.all_eq_true.mp identitiesUnique target targetMem
+  simp only [occursOnce] at once
+  obtain ⟨only, singleton⟩ := List.length_eq_one_iff.mp (of_decide_eq_true once)
+  have targetFiltered : target ∈ state.activityOccurrences.filter (sameActivityOccurrence target) :=
+    List.mem_filter.mpr ⟨targetMem, by simp [sameActivityOccurrence]⟩
+  have symmetric : sameActivityOccurrence target candidate =
+      sameActivityOccurrence candidate target := by
+    simp only [sameActivityOccurrence]
+    congr 1
+    · congr 1 <;> exact decide_eq_decide.mpr eq_comm
+    · exact decide_eq_decide.mpr eq_comm
+  have candidateFiltered : candidate ∈
+      state.activityOccurrences.filter (sameActivityOccurrence target) :=
+    List.mem_filter.mpr ⟨candidateMem, symmetric.trans same⟩
+  have targetEq : target = only := by simpa [singleton] using targetFiltered
+  have candidateEq : candidate = only := by simpa [singleton] using candidateFiltered
+  exact candidateEq.trans targetEq.symm
 
 /-! ## Lookup determinism
 
@@ -699,7 +737,8 @@ def runtimeStateWellFormed (program : Program) (instanceId : SemanticId)
      | _ => true) &&
     (activityBodyClaimsUnique state.activityOccurrences &&
       compensationActivityRetentionStateValid program state &&
-      compensationEventSubProcessSnapshotStateValid program state)
+      compensationEventSubProcessSnapshotStateValid program state &&
+      compensationExecutionStateValid program state)
 
 theorem runtimeStateWellFormed_canonicalCollectionOrder (program : Program)
     (instanceId : SemanticId) (state : RuntimeState)

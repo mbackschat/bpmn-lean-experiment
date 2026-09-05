@@ -227,4 +227,27 @@ theorem compensationExecutionDeclarationValid_minimumBytes (program : Program)
     decide_eq_true_eq] at valid
   exact valid.1.1.2
 
+theorem compensationExecutionDeclarationValid_awaitEffect_body_disjoint (program : Program)
+    (declaration : CompensationExecutionDeclaration)
+    (present : program.compensationExecution = some declaration)
+    (valid : compensationExecutionDeclarationValid program = true)
+    (id : OperationId) (origin : BpmnElementOrigin) (input output : ControlPlaceId)
+    (effect : EffectDefinition) (route : Option BpmnErrorRoute)
+    (operationMember : .awaitEffect id origin input output effect route ∈ program.operations)
+    (subject : CompensationSubjectDefinition) (subjectMember : subject ∈ declaration.subjects) :
+    origin.elementId ∉ (match subject with
+      | .boundaryActivity _ body | .eventSubProcess _ _ body =>
+          [body.handlerElementId, body.effectElementId]) := by
+  have unavailable : bodyElementsUnavailableToOperations program declaration.subjects = true := by
+    simp only [compensationExecutionDeclarationValid, present, Bool.and_eq_true] at valid
+    exact valid.1.1.1.1.1.1.1.1.2
+  simp only [bodyElementsUnavailableToOperations, List.all_eq_true] at unavailable
+  have excluded := unavailable (.awaitEffect id origin input output effect route) operationMember
+  simp only [operationOriginElementId, Bool.not_eq_true', List.contains_eq_mem,
+    decide_eq_false_iff_not] at excluded
+  intro member
+  apply excluded
+  exact List.mem_flatMap.mpr ⟨subject, subjectMember, by
+    cases subject <;> exact member⟩
+
 end BpmnSemantics.SemanticProcess

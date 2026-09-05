@@ -71,8 +71,7 @@ theorem sharedParallelEntry_preserves_runtimeStateWellFormed (program : Program)
             activityActivation }
       change runtimeStateWellFormed program expectedInstanceId successor = true
       simp only [runtimeStateWellFormed, Bool.and_eq_true] at wellFormed
-      obtain ⟨existing, claimsAndRetention, snapshots⟩ := wellFormed
-      obtain ⟨claims, retention⟩ := claimsAndRetention
+      obtain ⟨existing, ⟨⟨claims, retention⟩, snapshots⟩, execution⟩ := wellFormed
       obtain ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨position, races⟩, incidents⟩, owners⟩, identities⟩,
         bounds⟩, declarations⟩, hidden⟩, order⟩, bodies⟩, timersUnambiguous⟩,
         messagesUnambiguous⟩, activityIds⟩, controllers⟩, sequentialBindings⟩,
@@ -300,6 +299,12 @@ theorem sharedParallelEntry_preserves_runtimeStateWellFormed (program : Program)
         change compensationActivityRetentionStateValid program before = true
         exact retention
       have snapshotsAfter : compensationEventSubProcessSnapshotStateValid program successor = true := by change compensationEventSubProcessSnapshotStateValid program before = true; exact snapshots
+      have executionAfter : compensationExecutionStateValid program successor = true := by
+        rw [compensationExecutionStateValid_running_frame program before successor instanceId
+          running rfl rfl rfl rfl rfl rfl]
+        exact execution
+      have recordOwners := pendingParallelActivity_taskOwnersAgree before successor arm owner
+        instanceId taskHighWater items record firstTask restTasks pendingIds rfl rfl rfl oldTaskDifferent
       have recordBodyLive : activityBodyLive timerState record = true := by
         simp only [activityBodyLive, record, List.all_eq_true, decide_eq_true_eq]
         intro task taskMember
@@ -353,13 +358,14 @@ theorem sharedParallelEntry_preserves_runtimeStateWellFormed (program : Program)
         rcases (mem_canonicalInsertBy activityOccurrenceBefore record candidate
           before.activityOccurrences).mp member with new | old
         · subst candidate
-          exact ⟨⟨by simpa [activityBodyLive, successor, timerState, childState]
-              using recordBodyLive,
+          exact ⟨⟨⟨by simpa [activityBodyLive, successor, timerState, childState]
+              using recordBodyLive, recordOwners⟩,
             by simpa [successor, timerState, childState] using recordTimersLive⟩,
             by simp [record, ActivityOccurrence.messageHandlerOccurrences]⟩
         · have prior := List.all_eq_true.mp timerSemantic.1 candidate (by
             simpa [timerState, childState] using old)
-          simpa [activityBodyLive, successor, timerState, childState, exactLiveOccurrence] using prior
+          simpa [activityBodyLive, activityTaskBodyOwnersAgree, successor, timerState, childState,
+            exactLiveOccurrence] using prior
       have insertedTimerUnclaimed : ∀ old ∈ before.activityOccurrences,
           anyTimerIdNamesWait old.timerHandlerOccurrences timerWait = false := by
         intro old oldMember
@@ -789,5 +795,5 @@ theorem sharedParallelEntry_preserves_runtimeStateWellFormed (program : Program)
         identitiesAfter⟩, boundsAfter⟩, declarationsAfter⟩, hiddenAfter⟩, orderAfter⟩, bodiesAfter⟩,
         attachedAfter⟩, messagesUnambiguousAfter⟩, activityIdsAfter⟩, controllersAfter⟩,
         sequentialBindingsAfter⟩, parallelBindingsAfter⟩, controllerIdsAfter⟩, notExhaustedAfter⟩,
-        lifecycleAfter⟩, ⟨⟨claimsAfter, retentionAfter⟩, snapshotsAfter⟩⟩
+        lifecycleAfter⟩, ⟨⟨⟨claimsAfter, retentionAfter⟩, snapshotsAfter⟩, executionAfter⟩⟩
 end BpmnSemantics.SemanticProcess

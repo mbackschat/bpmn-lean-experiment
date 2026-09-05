@@ -52,9 +52,10 @@ theorem replacedState_preserves_wellFormed (program : Program) (instanceId : Sem
   have namesWait : taskIdNamesWait body wait = true := (List.mem_filter.mp waitInFilter).2
   simp only [runtimeStateWellFormed, Bool.and_eq_true] at wellFormed ⊢
   have existing := wellFormed.1
-  have claimsUnique := wellFormed.2.1.1
-  have retentionValid := wellFormed.2.1.2
-  have snapshotValid := wellFormed.2.2
+  have claimsUnique := wellFormed.2.1.1.1
+  have retentionValid := wellFormed.2.1.1.2
+  have snapshotValid := wellFormed.2.1.2
+  have executionValid := wellFormed.2.2
   obtain ⟨h17, lifecycle⟩ := existing
   obtain ⟨h16, notExhausted⟩ := h17
   obtain ⟨h15, controllerIds⟩ := h16
@@ -73,6 +74,24 @@ theorem replacedState_preserves_wellFormed (program : Program) (instanceId : Sem
   obtain ⟨h2, owners⟩ := h3
   obtain ⟨h1, incidents⟩ := h2
   obtain ⟨position, races⟩ := h1
+  have selectedOwner : ∀ chosen ∈ state.activityOccurrences,
+      sameActivityOccurrence chosen record = true → wait.owner = chosen.owner := by
+    intro chosen chosenMem selected
+    have equal := activityIdentitiesUnique_member_eq state record chosen activityIdentities
+      recordMem chosenMem selected
+    subst chosen
+    have recordValid := List.all_eq_true.mp bodies record recordMem
+    simp only [Bool.and_eq_true] at recordValid
+    have recordOwners := recordValid.1.1.2
+    cases shape : record.body with
+    | childScope scope => simp [activityBodyTask?, shape] at recordBody
+    | parallelUserTasks first rest => simp [activityBodyTask?, shape] at recordBody
+    | userTask task =>
+        simp only [activityBodyTask?, shape, Option.some.injEq] at recordBody
+        subst task
+        simp only [activityTaskBodyOwnersAgree, shape, List.all_eq_true,
+          decide_eq_true_eq] at recordOwners
+        exact recordOwners wait waitInFilter
   have fresh : ∀ candidate ∈ state.waits,
       userTaskWaitKeyMatches (turnoverWait state wait) candidate = false := by
     intro candidate mem
@@ -126,7 +145,7 @@ theorem replacedState_preserves_wellFormed (program : Program) (instanceId : Sem
     exact hidden
   have orderAfter := canonicalCollectionOrder_replacedState state record wait body order
   have bodiesAfter := activityRecordsOwnLiveWork_replacedState state record wait body unique
-    fresh soleBody bodies
+    fresh soleBody selectedOwner bodies
   have timersAfter : attachedTimersUnambiguous (replacedState state record wait body) = true := by
     rw [attachedTimersUnambiguous_replacedState]
     exact timersUnambiguous
@@ -161,6 +180,9 @@ theorem replacedState_preserves_wellFormed (program : Program) (instanceId : Sem
       rw [hc] at lifecycle
       simp only [notStartedStateEmpty, Bool.and_eq_true, List.isEmpty_iff] at lifecycle
       obtain ⟨lifecycle, _notPending⟩ := lifecycle
+      obtain ⟨lifecycle, _activityVariablesEmpty⟩ := lifecycle
+      obtain ⟨lifecycle, _handlerWaitsEmpty⟩ := lifecycle
+      obtain ⟨lifecycle, _triggersEmpty⟩ := lifecycle
       obtain ⟨lifecycle, _snapshotRetentionsEmpty⟩ := lifecycle
       obtain ⟨lifecycle, _retentionsEmpty⟩ := lifecycle
       obtain ⟨lifecycle, _parallelEmpty⟩ := lifecycle
@@ -202,8 +224,19 @@ theorem replacedState_preserves_wellFormed (program : Program) (instanceId : Sem
       (replacedState state record wait body) = true := by
     change compensationEventSubProcessSnapshotStateValid program state = true
     exact snapshotValid
+  have executionAfter : compensationExecutionStateValid program
+      (replacedState state record wait body) = true := by
+    have ownersParts := owners
+    simp only [waitOwnersLive, Bool.and_eq_true] at ownersParts
+    have ownerLive := List.all_eq_true.mp ownersParts.1.1.1.1.1.1.1.1 wait waitMem
+    obtain ⟨runningInstance, running⟩ :=
+      runtimePositionValid_liveOccurrence_running program instanceId state wait.owner
+        position ownerLive
+    rw [compensationExecutionStateValid_running_frame program state
+      (replacedState state record wait body) runningInstance running rfl rfl rfl rfl rfl rfl]
+    exact executionValid
   exact ⟨⟨after18, lifecycleAfter⟩,
-    ⟨⟨claimsAfter, retentionAfter⟩, snapshotAfter⟩⟩
+    ⟨⟨⟨claimsAfter, retentionAfter⟩, snapshotAfter⟩, executionAfter⟩⟩
 
 /-- The resolver answers with the state rewrite exactly when the state holds a record naming a unique
 live body.

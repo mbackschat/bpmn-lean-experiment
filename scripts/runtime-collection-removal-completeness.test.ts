@@ -37,6 +37,12 @@ const runtimeStateDeclaration = "export type RuntimeState = DeepReadonly<{";
 const calledRemoval = "function removeCalledProcessTree(";
 const regionRemoval = "function removeScopeOccurrenceRegion(";
 
+const leanRuntimeStateOwner = "BpmnSemantics/SemanticProcess/RuntimeState.lean";
+const leanRemovalOwners = [
+  ["BpmnSemantics/SemanticProcess/ScopeCancellation.lean", "def cancelScopeSubtree ("],
+  ["BpmnSemantics/SemanticProcess/CallActivity.lean", "private def removeCalledProcessTree ("],
+] as const;
+
 /**
  * The `RuntimeState` fields no removal route filters, each with the reason it is not an omission.
  *
@@ -165,6 +171,64 @@ function unfiltered(fields: ReadonlySet<string>, ...covered: ReadonlySet<string>
     !unfilteredFields.has(field) && !covered.some((keys) => keys.has(field))
   );
 }
+
+function leanRuntimeFields(source: string): ReadonlySet<string> {
+  const declaration = source.split("structure RuntimeState where\n")[1]?.split("\n  deriving")[0];
+  assert.ok(declaration !== undefined, "Lean RuntimeState declaration was not parsed");
+  return new Set([...declaration.matchAll(/^  (\w+) :/gm)].map((match) => match[1]!));
+}
+
+function leanRemovalLiteral(source: string, signature: string): string {
+  const body = source.split(signature)[1];
+  assert.ok(body !== undefined, `absent: ${signature}`);
+  return braceSpan(body, "{");
+}
+
+function leanAssignedFields(literal: string): ReadonlySet<string> {
+  return new Set([...literal.matchAll(/^    (\w+) :=/gm)].map((match) => match[1]!));
+}
+
+function leanUnfiltered(fields: ReadonlySet<string>, assigned: ReadonlySet<string>): string[] {
+  return [...fields].filter((field) =>
+    !unfilteredFields.has(field === "activations" ? "taskActivations" : field) &&
+    !assigned.has(field)
+  );
+}
+
+for (const [owner, signature] of leanRemovalOwners) {
+  test(`${owner} classifies every live RuntimeState collection`, () => {
+    const fields = leanRuntimeFields(read(leanRuntimeStateOwner));
+    assert.ok(fields.has("compensationHandlerEffectWaits") && fields.has("activityOccurrences"));
+    const assigned = leanAssignedFields(leanRemovalLiteral(read(owner), signature));
+    assert.deepEqual(leanUnfiltered(fields, assigned), [], owner);
+  });
+}
+
+test("Lean removal coverage discovers new fields and missing assignments independently", () => {
+  const fields = leanRuntimeFields(read(leanRuntimeStateOwner));
+  const extended = leanRuntimeFields(read(leanRuntimeStateOwner).replace(
+    "structure RuntimeState where\n",
+    "structure RuntimeState where\n  reviewOnlyLiveOwners : List ScopeOccurrenceId\n",
+  ));
+  for (const [owner, signature] of leanRemovalOwners) {
+    const literal = leanRemovalLiteral(read(owner), signature);
+    const assigned = leanAssignedFields(literal);
+    const existingOmissions = leanUnfiltered(fields, assigned);
+    assert.deepEqual(
+      leanUnfiltered(extended, assigned), ["reviewOnlyLiveOwners", ...existingOmissions], owner,
+    );
+    for (const field of assigned) {
+      if (!fields.has(field)) continue;
+      const mutated = literal.replace(new RegExp(`^(    )${field} :=`, "m"), "$1omitted :=");
+      assert.notEqual(mutated, literal, `${owner}: ${field}`);
+      assert.deepEqual(
+        leanUnfiltered(fields, leanAssignedFields(mutated)),
+        [...fields].filter((key) => key === field || existingOmissions.includes(key)),
+        `${owner}: ${field}`,
+      );
+    }
+  }
+});
 
 test("every live runtime collection is filtered by the called-instance removal", () => {
   const fields = topLevelKeys(braceSpan(read(runtimeStateOwner), runtimeStateDeclaration));

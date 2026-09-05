@@ -331,6 +331,7 @@ export function runtimeStateDefects(
       state.eventRaces.length > 0 ||
       state.calledProcessOccurrences.length > 0 ||
       state.activityOccurrences.length > 0 ||
+      state.variables.activities.length > 0 ||
       (state.sequentialMultiInstanceControllers?.length ?? 0) > 0 ||
       (state.parallelMultiInstanceControllers?.length ?? 0) > 0 ||
       (state.compensationParentContextRetentions?.length ?? 0) > 0 ||
@@ -569,15 +570,16 @@ function activityOwnershipDefects(
 ): ReadonlyArray<RuntimeStateDefect> {
   const defects: RuntimeStateDefect[] = [];
 
-  const bodyLive = ({ body }: ActivityOccurrence): boolean => {
+  const bodyLive = ({ body, owner }: ActivityOccurrence): boolean => {
+    const taskOwned = (task: OccurrenceId): boolean => {
+      const matches = state.userTaskWaits.filter(({ id }) => sameOccurrence(id, task));
+      return matches.length === 1 && matches.every((wait) => sameScopeOccurrence(wait.owner, owner));
+    };
     switch (body.kind) {
       case ActivityBodyKind.UserTask:
-        return state.userTaskWaits
-          .filter(({ id }) => sameOccurrence(id, body.task)).length === 1;
+        return taskOwned(body.task);
       case ActivityBodyKind.ParallelUserTasks:
-        return body.tasks.every((task) =>
-          state.userTaskWaits.filter(({ id }) => sameOccurrence(id, task)).length === 1
-        );
+        return body.tasks.every(taskOwned);
       case ActivityBodyKind.ChildScope:
         return state.scopeOccurrences
           .filter(({ id }) => sameScopeOccurrence(id, body.scope)).length === 1;

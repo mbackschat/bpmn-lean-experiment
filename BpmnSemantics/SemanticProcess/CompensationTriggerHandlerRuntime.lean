@@ -398,4 +398,185 @@ def compensationExecutionStateValid (program : Program) (state : RuntimeState) :
               state.compensationHandlerEffectWaits ≤ declaration.limits.maxCanonicalBytes &&
           controlLifecycleValid program state
 
+/-- COMPEMPTY-CAPACITY-01 makes empty compensation work valid before and immediately after start. -/
+theorem compensationExecutionStateValid_empty (program : Program) (state : RuntimeState)
+    (declarationValid : compensationExecutionDeclarationValid program = true)
+    (triggers : state.compensationTriggers = [])
+    (waits : state.compensationHandlerEffectWaits = [])
+    (control : state.control = .notStarted ∨ ∃ instanceId, state.control = .running instanceId) :
+    compensationExecutionStateValid program state = true := by
+  cases present : program.compensationExecution with
+  | none => simp [compensationExecutionStateValid, declarationValid, present, triggers, waits]
+  | some declaration =>
+      have capacity := compensationExecutionDeclarationValid_minimumBytes
+        program declaration present declarationValid
+      rcases control with notStarted | ⟨instanceId, running⟩ <;>
+        simp [compensationExecutionStateValid, strictlyOrdered, activeCompensationTriggerOwnersUnique,
+          canonicalCompensationExecutionStateUtf8Bytes, canonicalArrayUtf8Bytes,
+          controlLifecycleValid, *]
+
+/-- Running compensation validity reads no ordinary task body or Activity counter; callers frame its exact owners and effect collision census. -/
+theorem compensationExecutionStateValid_running_frame (program : Program)
+    (before after : RuntimeState) (instanceId : SemanticId)
+    (beforeRunning : before.control = .running instanceId)
+    (controlFrame : after.control = before.control)
+    (scopesFrame : after.scopeOccurrences = before.scopeOccurrences)
+    (triggersFrame : after.compensationTriggers = before.compensationTriggers)
+    (handlerWaitsFrame : after.compensationHandlerEffectWaits = before.compensationHandlerEffectWaits)
+    (effectsFrame : after.effectWaits = before.effectWaits)
+    (incidentsFrame : after.effectIncidents = before.effectIncidents) :
+    compensationExecutionStateValid program after =
+      compensationExecutionStateValid program before := by
+  have matching : triggerMatchesDeclaration program after =
+      triggerMatchesDeclaration program before := by
+    funext declaration trigger
+    simp [triggerMatchesDeclaration, triggerLifecycleValid, controlFrame, beforeRunning,
+      scopesFrame]
+  simp [compensationExecutionStateValid, activeCompensationTriggerOwnersUnique,
+    matching, waitCollidesWithOrdinaryState,
+    controlLifecycleValid, controlFrame, beforeRunning, triggersFrame,
+    handlerWaitsFrame, effectsFrame, incidentsFrame]
+
+private theorem compensationSubjectDefinitionForOccurrence?_member (program : Program)
+    (occurrence : CompensationSubjectOccurrence) (definition : CompensationSubjectDefinition)
+    (found : compensationSubjectDefinitionForOccurrence? program occurrence = some definition) :
+    ∃ declaration, program.compensationExecution = some declaration ∧
+      definition ∈ declaration.subjects := by
+  unfold compensationSubjectDefinitionForOccurrence? at found
+  cases present : program.compensationExecution with
+  | none => simp [present] at found
+  | some declaration =>
+      simp only [present] at found
+      dsimp only [Bind.bind, Option.bind] at found
+      split at found
+      · rename_i subject filtered
+        simp only [Option.some.injEq] at found
+        subst definition
+        exact ⟨declaration, rfl, (List.mem_filter.mp
+          (filtered.symm ▸ (by simp : subject ∈ [subject]))).1⟩
+      · contradiction
+
+private theorem waitMatchesHandler_effect_definition (program : Program)
+    (triggers : List CompensationTriggerExecution) (wait : CompensationHandlerEffectWait)
+    (matching : waitMatchesHandler program triggers wait = true) :
+    ∃ declaration definition, program.compensationExecution = some declaration ∧
+      definition ∈ declaration.subjects ∧
+      wait.id.elementId.value = definition.body.effectElementId.value := by
+  unfold waitMatchesHandler at matching
+  split at matching
+  · rename_i trigger triggersEq
+    split at matching
+    · rename_i handler handlersEq
+      split at matching
+      · rename_i restoredContext effectId definition lifecycleEq definitionEq
+        have declared := compensationSubjectDefinitionForOccurrence?_member program
+          handler.identity.subject definition definitionEq
+        obtain ⟨declaration, present, member⟩ := declared
+        simp only [Bool.and_eq_true, beq_iff_eq] at matching
+        exact ⟨declaration, definition, present, member, matching.1.1.2⟩
+      · contradiction
+    · contradiction
+  · contradiction
+
+theorem compensationExecutionStateValid_awaitEffect_disjoint (program : Program)
+    (state : RuntimeState) (valid : compensationExecutionStateValid program state = true)
+    (id : OperationId) (origin : BpmnElementOrigin) (input output : ControlPlaceId)
+    (effect : EffectDefinition) (route : Option BpmnErrorRoute)
+    (operationMember : .awaitEffect id origin input output effect route ∈ program.operations)
+    (elementId : NodeId) (aligned : origin.elementId = elementId)
+    (wait : CompensationHandlerEffectWait) (waitMember : wait ∈ state.compensationHandlerEffectWaits) :
+    elementId.value ≠ wait.id.elementId.value := by
+  have declarationValid : compensationExecutionDeclarationValid program = true :=
+    (Bool.and_eq_true_iff.mp valid).1
+  have matching : waitMatchesHandler program state.compensationTriggers wait = true := by
+    cases present : program.compensationExecution with
+    | none =>
+        simp [compensationExecutionStateValid, present] at valid
+        simp_all
+    | some declaration =>
+        simp only [compensationExecutionStateValid, present, Bool.and_eq_true] at valid
+        exact List.all_eq_true.mp valid.2.1.1.1.1.1.1.2 wait waitMember
+  obtain ⟨declaration, definition, present, member, elementEq⟩ :=
+    waitMatchesHandler_effect_definition program state.compensationTriggers wait matching
+  have excluded := compensationExecutionDeclarationValid_awaitEffect_body_disjoint
+    program declaration present declarationValid id origin input output effect route
+      operationMember definition member
+  intro same
+  have bodyEq : origin.elementId = definition.body.effectElementId := by
+    rw [aligned]
+    exact congrArg NodeId.mk (same.trans elementEq)
+  apply excluded
+  cases definition <;> simp_all [CompensationSubjectDefinition.body]
+
+theorem compensationExecutionStateValid_running_insertEffect_frame (program : Program)
+    (before after : RuntimeState) (instanceId : SemanticId) (inserted : EffectWait)
+    (beforeRunning : before.control = .running instanceId)
+    (controlFrame : after.control = before.control)
+    (scopesFrame : after.scopeOccurrences = before.scopeOccurrences)
+    (triggersFrame : after.compensationTriggers = before.compensationTriggers)
+    (handlerWaitsFrame : after.compensationHandlerEffectWaits = before.compensationHandlerEffectWaits)
+    (effectsFrame : after.effectWaits = insertEffectWait inserted before.effectWaits)
+    (incidentsFrame : after.effectIncidents = before.effectIncidents)
+    (disjoint : ∀ wait ∈ before.compensationHandlerEffectWaits,
+      inserted.elementId.value ≠ wait.id.elementId.value)
+    (incidentDisjoint : ∀ incident ∈ before.effectIncidents,
+      ∀ wait ∈ before.compensationHandlerEffectWaits,
+        incident.wait.elementId.value ≠ wait.id.elementId.value) :
+    compensationExecutionStateValid program after =
+      compensationExecutionStateValid program before := by
+  have matching : triggerMatchesDeclaration program after =
+      triggerMatchesDeclaration program before := by
+    funext declaration trigger
+    simp [triggerMatchesDeclaration, triggerLifecycleValid, controlFrame, beforeRunning,
+      scopesFrame]
+  have collisionFrame (wait : CompensationHandlerEffectWait)
+      (member : wait ∈ before.compensationHandlerEffectWaits) :
+      waitCollidesWithOrdinaryState after wait = waitCollidesWithOrdinaryState before wait := by
+    have rejected : (inserted.processInstanceId == wait.id.processInstanceId &&
+        inserted.elementId.value == wait.id.elementId.value &&
+        inserted.activation == wait.id.activation) = false := by
+      simp [disjoint wait member]
+    have incidentsAbsent : (before.effectIncidents.any fun incident =>
+        incident.wait.processInstanceId == wait.id.processInstanceId &&
+          incident.wait.elementId.value == wait.id.elementId.value &&
+          incident.wait.activation == wait.id.activation) = false := by
+      apply Bool.eq_false_iff.mpr
+      intro present
+      obtain ⟨incident, incidentMember, matched⟩ := List.any_eq_true.mp present
+      simp only [Bool.and_eq_true, beq_iff_eq] at matched
+      exact incidentDisjoint incident incidentMember wait member matched.1.2
+    have anyFrame : ∀ values : List EffectWait,
+        (canonicalInsertBy effectWaitBefore inserted values).any (fun ordinary =>
+          ordinary.processInstanceId == wait.id.processInstanceId &&
+            ordinary.elementId.value == wait.id.elementId.value &&
+            ordinary.activation == wait.id.activation) =
+        values.any (fun ordinary =>
+          ordinary.processInstanceId == wait.id.processInstanceId &&
+            ordinary.elementId.value == wait.id.elementId.value &&
+            ordinary.activation == wait.id.activation) := by
+      intro values
+      induction values with
+      | nil => simp [canonicalInsertBy, rejected]
+      | cons current rest ih =>
+          simp only [canonicalInsertBy]
+          split <;> simp [rejected, ih]
+    simp only [waitCollidesWithOrdinaryState, effectsFrame, incidentsFrame,
+      incidentsAbsent, Bool.or_false, insertEffectWait, anyFrame]
+  have collisions :
+      (after.compensationHandlerEffectWaits.all fun wait =>
+        !waitCollidesWithOrdinaryState after wait) =
+      (before.compensationHandlerEffectWaits.all fun wait =>
+        !waitCollidesWithOrdinaryState before wait) := by
+    rw [handlerWaitsFrame]
+    apply Bool.eq_iff_iff.mpr
+    simp only [List.all_eq_true]
+    constructor <;> intro valid wait member
+    · rw [← collisionFrame wait member]
+      exact valid wait member
+    · rw [collisionFrame wait member]
+      exact valid wait member
+  simp only [compensationExecutionStateValid, collisions]
+  simp [activeCompensationTriggerOwnersUnique, matching, controlLifecycleValid,
+    controlFrame, beforeRunning, triggersFrame, handlerWaitsFrame]
+
 end BpmnSemantics.SemanticProcess

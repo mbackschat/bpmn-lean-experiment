@@ -85,6 +85,7 @@ Product 1 rejects malformed and over-cap starts as semantic-process unsupported,
 - responsibility-split kernel-decided admission, profile, binding, lowering, runtime-closure, and evaluator conformance modules
 - a separate `runtimeStateIdentityBound` owner over User Task, Timer, and Activity identities, composed into `runtimeStateWellFormed`, with one kernel-decided negative per implemented family and the existing exact-attribution fixtures split into independently memory-bounded Activity and remaining-state owners
 - body-claim uniqueness and guarded writer preservation, consumed by unconditional Parallel Multi-Instance entry, progress, final, early, and Timer preservation
+- conditional initialization and task-owner/Compensation preservation; [`implementation-status-owner:ENGINE-SEMANTIC-INVARIANT`](ENGINE-SEMANTIC-INVARIANT-IMPLEMENTATION-MAP.md#runtime-state-well-formedness)
 - Activity-only `RSI-ISSUE-01` in `RuntimeStateMonotone`, independently checkpoint-approved with issuer-root freshness, predecessor-identity preservation/removal proofs, and a three-state exact-reissue negative
 - generic scope-owned token, occurrence, wait, selected-branch, called-Process, and scoped-variable runtime with canonical public projection
 - declarative execution relations with per-capsule evaluator soundness, plus proposal-bound cross-language operation-family and RuntimeState atom-domain classification that enables no transition or footprint

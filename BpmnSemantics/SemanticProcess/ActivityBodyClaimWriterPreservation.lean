@@ -30,25 +30,6 @@ private theorem sameActivityOccurrence_comm (left right : ActivityOccurrence) :
   · congr 1 <;> exact decide_eq_decide.mpr eq_comm
   · exact decide_eq_decide.mpr eq_comm
 
-private theorem sameActivityOccurrence_member_eq (state : RuntimeState)
-    (target candidate : ActivityOccurrence)
-    (identitiesUnique : activityIdentitiesUnique state = true)
-    (targetMem : target ∈ state.activityOccurrences)
-    (candidateMem : candidate ∈ state.activityOccurrences)
-    (same : sameActivityOccurrence candidate target = true) : candidate = target := by
-  have once := List.all_eq_true.mp identitiesUnique target targetMem
-  simp only [occursOnce] at once
-  have lengthOne := of_decide_eq_true once
-  obtain ⟨only, singleton⟩ := List.length_eq_one_iff.mp lengthOne
-  have targetFiltered : target ∈ state.activityOccurrences.filter (sameActivityOccurrence target) :=
-    List.mem_filter.mpr ⟨targetMem, by simp [sameActivityOccurrence]⟩
-  have candidateFiltered : candidate ∈
-      state.activityOccurrences.filter (sameActivityOccurrence target) :=
-    List.mem_filter.mpr ⟨candidateMem, by simpa [sameActivityOccurrence_comm] using same⟩
-  have targetEq : target = only := by simpa [singleton] using targetFiltered
-  have candidateEq : candidate = only := by simpa [singleton] using candidateFiltered
-  exact candidateEq.trans targetEq.symm
-
 private theorem activityIdentitySelectionAtMostOne (state : RuntimeState)
     (target : ActivityOccurrence) (identitiesUnique : activityIdentitiesUnique state = true)
     (targetMem : target ∈ state.activityOccurrences) :
@@ -296,7 +277,7 @@ private theorem activityBodyScopeClaim_is_live (state : RuntimeState)
     exactLiveOccurrence state child = true := by
   have owned := List.all_eq_true.mp recordsOwn record recordMem
   simp only [Bool.and_eq_true] at owned
-  have bodyLive := owned.1.1
+  have bodyLive := owned.1.1.1
   cases bodyEq : record.body with
   | userTask task => simp [bodyEq, activityBodyScopeClaims] at claimed
   | parallelUserTasks first rest => simp [bodyEq, activityBodyScopeClaims] at claimed
@@ -415,7 +396,7 @@ theorem replaceParallelRecordBody_preserves_activityBodyClaimsUnique (state : Ru
   · intro candidate notSelected
     simp [notSelected]
   · intro chosen chosenMem other otherMem chosenSelected otherUnselected
-    have chosenEq := sameActivityOccurrence_member_eq state record chosen identitiesUnique
+    have chosenEq := activityIdentitiesUnique_member_eq state record chosen identitiesUnique
       recordMem chosenMem chosenSelected
     subst chosen
     have different : record ≠ other := by

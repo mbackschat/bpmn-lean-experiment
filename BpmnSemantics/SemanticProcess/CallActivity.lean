@@ -183,6 +183,8 @@ private def removeCalledProcessTree (state : RuntimeState)
     messageWaits := state.messageWaits.filter fun wait => !removedOwner wait.owner
     timerWaits := state.timerWaits.filter fun wait => !removedOwner wait.owner
     effectWaits := state.effectWaits.filter fun wait => !removedOwner wait.owner
+    effectIncidents := state.effectIncidents.filter fun incident => !removedOwner incident.wait.owner
+    activityOccurrences := state.activityOccurrences.filter fun activity => !removedOwner activity.owner
     selectedBranchSets := state.selectedBranchSets.filter fun selected =>
       !removedOwner selected.owner
     eventRaces := state.eventRaces.filter fun race => !removedOwner race.owner
@@ -195,6 +197,19 @@ private def removeCalledProcessTree (state : RuntimeState)
     parallelMultiInstanceControllers :=
       state.parallelMultiInstanceControllers.filter fun controller =>
         !removed.contains controller.id.processInstanceId
+    compensationActivityRetentions :=
+      state.compensationActivityRetentions.filter fun retention => !removedOwner retention.owner
+    compensationParentContextRetentions :=
+      state.compensationParentContextRetentions.filter fun retention =>
+        let parent := match retention with
+          | .provisional parent _ | .promoted parent _ _ => parent
+        !removedOwner parent.id && parent.parent.all (fun owner => !removedOwner owner)
+    compensationTriggers := state.compensationTriggers.filter fun trigger =>
+      !removedOwner trigger.owner
+    compensationHandlerEffectWaits := state.compensationHandlerEffectWaits.filter fun wait =>
+      !removed.contains wait.id.processInstanceId &&
+        !removed.contains wait.triggerId.processInstanceId &&
+        !removed.contains wait.handlerId.processInstanceId
     variables :=
       { state.variables with
         activities := state.variables.activities.filter fun activity =>

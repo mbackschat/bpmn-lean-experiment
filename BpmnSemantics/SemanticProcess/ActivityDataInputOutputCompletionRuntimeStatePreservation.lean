@@ -286,9 +286,10 @@ theorem dataInputOutputCompletionStep_preserves_runtimeStateWellFormed
       obtain ⟨⟨⟨⟨⟨⟨outputEq, operationScopeEq⟩, taskOwnerIdentity⟩,
         recordOwnerEq⟩, recordOwnerIdentity⟩, recordElementEq⟩, taskNameEq⟩ := valid
       simp only [runtimeStateWellFormed, Bool.and_eq_true] at wellFormed
-      have claims := wellFormed.2.1.1
-      have retention := wellFormed.2.1.2
-      have snapshots := wellFormed.2.2
+      have claims := wellFormed.2.1.1.1
+      have retention := wellFormed.2.1.1.2
+      have snapshots := wellFormed.2.1.2
+      have execution := wellFormed.2.2
       obtain ⟨aggregate, lifecycle⟩ := wellFormed.1
       obtain ⟨aggregate, notExhausted⟩ := aggregate
       obtain ⟨aggregate, controllerIds⟩ := aggregate
@@ -474,11 +475,26 @@ theorem dataInputOutputCompletionStep_preserves_runtimeStateWellFormed
           rw [← List.erase_filter, List.erase_of_not_mem absent]
         have prior := List.all_eq_true.mp bodies candidate candidateMember
         simp only [Bool.and_eq_true] at prior ⊢
-        refine ⟨⟨?_, by simpa [successor] using prior.1.2⟩,
+        have taskOwnersAfter : activityTaskBodyOwnersAgree successor candidate = true := by
+          cases shape : candidate.body with
+          | childScope scope => simp [activityTaskBodyOwnersAgree, shape]
+          | userTask claimed =>
+              simp only [activityTaskBodyOwnersAgree, shape, successor]
+              rw [waitFrame claimed (by simp [activityBodyTaskClaims, shape])]
+              simpa [activityTaskBodyOwnersAgree, shape] using prior.1.1.2
+          | parallelUserTasks first rest =>
+              simp only [activityTaskBodyOwnersAgree, shape, List.all_eq_true] at ⊢
+              intro claimed claimedMember
+              simp only [successor]
+              rw [waitFrame claimed (by simpa [activityBodyTaskClaims, shape] using claimedMember)]
+              have priorOwners := prior.1.1.2
+              simp only [activityTaskBodyOwnersAgree, shape, List.all_eq_true] at priorOwners
+              exact priorOwners claimed claimedMember
+        refine ⟨⟨⟨?_, taskOwnersAfter⟩, by simpa [successor] using prior.1.2⟩,
           by simpa [successor] using prior.2⟩
         cases shape : candidate.body with
         | childScope scope =>
-            simpa [activityBodyLive, exactLiveOccurrence, successor, shape] using prior.1.1
+            simpa [activityBodyLive, exactLiveOccurrence, successor, shape] using prior.1.1.1
         | userTask claimed =>
             simp only [activityBodyLive, shape, decide_eq_true_eq] at prior ⊢
             simp only [successor]
@@ -494,7 +510,7 @@ theorem dataInputOutputCompletionStep_preserves_runtimeStateWellFormed
                   decide (wait.task.id.value = claimed.elementId.value) &&
                     decide (wait.activation = claimed.activation)) by
               funext wait; exact taskIdNamesWait_as_decisions claimed wait]
-            exact prior.1.1
+            exact prior.1.1.1
         | parallelUserTasks first rest =>
             simp only [activityBodyLive, shape, List.all_eq_true, decide_eq_true_eq] at prior ⊢
             intro claimed claimedMember
@@ -511,7 +527,7 @@ theorem dataInputOutputCompletionStep_preserves_runtimeStateWellFormed
                   decide (wait.task.id.value = claimed.elementId.value) &&
                     decide (wait.activation = claimed.activation)) by
               funext wait; exact taskIdNamesWait_as_decisions claimed wait]
-            exact prior.1.1 claimed claimedMember
+            exact prior.1.1.1 claimed claimedMember
       have attachedTimersAfter : attachedTimersUnambiguous successor = true := by
         simp only [attachedTimersUnambiguous, List.all_eq_true, decide_eq_true_eq] at attachedTimers ⊢
         intro wait waitMember
@@ -577,6 +593,10 @@ theorem dataInputOutputCompletionStep_preserves_runtimeStateWellFormed
           compensationEventSubProcessSnapshotStateValid program successor = true := by
         change compensationEventSubProcessSnapshotStateValid program before = true
         exact snapshots
+      have executionAfter : compensationExecutionStateValid program successor = true := by
+        rw [compensationExecutionStateValid_running_frame program before successor instanceId
+          running rfl rfl rfl rfl rfl rfl]
+        exact execution
       simp only [runtimeStateWellFormed, Bool.and_eq_true]
       exact ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨positionAfter, racesAfter⟩,
         incidentsAfter⟩, ownersAfter⟩, identitiesAfter⟩, boundsAfter⟩, declarationsAfter⟩,
@@ -585,6 +605,6 @@ theorem dataInputOutputCompletionStep_preserves_runtimeStateWellFormed
         sequentialBindingsAfter⟩, parallelBindingsAfter⟩,
         by simpa [successor, controllerIdentitiesUnique] using controllerIds⟩,
         by simpa [successor, controllersNotExhausted] using notExhausted⟩, lifecycleAfter⟩,
-        ⟨⟨claimsAfter, retentionAfter⟩, snapshotsAfter⟩⟩
+        ⟨⟨⟨claimsAfter, retentionAfter⟩, snapshotsAfter⟩, executionAfter⟩⟩
 
 end BpmnSemantics.SemanticProcess

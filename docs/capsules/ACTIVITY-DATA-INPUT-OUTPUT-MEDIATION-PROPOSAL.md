@@ -189,7 +189,7 @@ Headroom is measured as nonblank lines remaining under the 800-line review targe
 | [TypeScript graph admission](../../packages/semantic-core/src/semantic-process-graph-admission.ts) | 153 | Change |
 | [TypeScript runtime dispatch](../../packages/semantic-core/src/semantic-process-runtime.ts) | 35 | Extracted before implementation growth |
 | [TypeScript command admission](../../packages/semantic-core/src/semantic-command-admission.ts) | 330 | Change |
-| [TypeScript runtime well-formedness](../../packages/semantic-core/src/runtime-state-well-formedness.ts) | 53 | Change |
+| [TypeScript runtime well-formedness](../../packages/semantic-core/src/runtime-state-well-formedness.ts) | 51 | Change |
 | [TypeScript boundary starts](../../packages/semantic-core/src/flow-node-occurrence-boundary-starts.ts) | 480 | Change |
 | [TypeScript lifecycle](../../packages/semantic-core/src/flow-node-occurrence-lifecycle.ts) | 60 | Change |
 | [TypeScript open set](../../packages/semantic-core/src/flow-node-occurrence-open-set.ts) | 48 | Change |
@@ -208,9 +208,9 @@ Headroom is measured as nonblank lines remaining under the 800-line review targe
 | [Lean graph validation](../../BpmnSemantics/SemanticProcess/GraphValidation.lean) | 91 | Change |
 | [Lean Program JSON](../../BpmnSemantics/SemanticProcessJson/Program.lean) | 87 | Change |
 | [Lean transition](../../BpmnSemantics/SemanticProcess/Transition.lean) | 127 | Change |
-| [Lean command admission](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean) | 221 | Change |
+| [Lean command admission](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean) | 99 | Change |
 | [Lean execution assembly](../../BpmnSemantics/SemanticProcess/Execution.lean) | 313 | Change |
-| [Lean runtime well-formedness](../../BpmnSemantics/SemanticProcess/RuntimeStateWellFormed.lean) | 94 | Change |
+| [Lean runtime well-formedness](../../BpmnSemantics/SemanticProcess/RuntimeStateWellFormed.lean) | 57 | Change |
 | [Lean boundary starts](../../BpmnSemantics/SemanticProcess/FlowNodeOccurrenceBoundaryStarts.lean) | 506 | Change |
 | [Lean lifecycle](../../BpmnSemantics/SemanticProcess/FlowNodeOccurrenceLifecycle.lean) | 19 | Change |
 | [Lean wait validity](../../BpmnSemantics/SemanticProcess/FlowNodeOccurrenceWaitProgramValidity.lean) | 41 | Change |
@@ -219,12 +219,12 @@ Headroom is measured as nonblank lines remaining under the 800-line review targe
 | [Lean publication JSON](../../BpmnSemantics/SemanticProcessJson/Publication.lean) | 622 | Change |
 | [Lean internal census](../../BpmnSemantics/SemanticProcess/InternalCommutationCensus.lean) | 652 | Change |
 | [Lean snapshot declaration](../../BpmnSemantics/SemanticProcess/CompensationEventSubProcessSnapshotDeclaration.lean) | 635 | Change |
-| [Lean trigger-handler declaration](../../BpmnSemantics/SemanticProcess/CompensationTriggerHandlerDeclaration.lean) | 601 | Change |
-| [Maintained Lean library root](../../BpmnSemantics.lean) | 723 | Change |
+| [Lean trigger-handler declaration](../../BpmnSemantics/SemanticProcess/CompensationTriggerHandlerDeclaration.lean) | 579 | Change |
+| [Maintained Lean library root](../../BpmnSemantics.lean) | 716 | Change |
 | [Temporal host admission](../../packages/temporal-adapter/protocol/src/host-admission.ts) | 485 | Change |
 | [Temporal publication validation](../../packages/temporal-adapter/protocol/src/flow-node-occurrence-publication-program-validation.ts) | 333 | Change |
 | [Product 2 publication contract](../../platform/contracts/src/execution-publications.ts) | 345 | Change |
-| [Activity writer records](../../scripts/activity-occurrence-writer-records.ts) | 283 | Change |
+| [Activity writer records](../../scripts/activity-occurrence-writer-records.ts) | 275 | Change |
 | [Contract artifact cases](../../scripts/contract-artifact-cases.ts) | 477 | Change |
 | [Capability extractor](../../scripts/executable-model-capabilities.ts) | 443 | Change |
 | [Capability catalog](../../model-corpus/mvp-capabilities.ts) | 468 | Change |

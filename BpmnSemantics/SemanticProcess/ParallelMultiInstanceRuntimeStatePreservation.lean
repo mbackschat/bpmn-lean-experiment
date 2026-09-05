@@ -380,6 +380,67 @@ theorem mem_insertParallelChildWaits_shape (arm : ParallelMultiInstanceArm)
             constructor <;> rfl
           · exact Or.inl old
 
+theorem pendingParallelActivity_taskOwnersAgree (before after : RuntimeState)
+    (arm : ParallelMultiInstanceArm) (owner : ScopeOccurrenceId) (instanceId : SemanticId)
+    (highWater : Nat) (items : List String) (record : ActivityOccurrence)
+    (first : UserTaskInstanceId) (rest : List UserTaskInstanceId)
+    (pendingIds : parallelSlotTaskIds
+      (pendingParallelSlots instanceId arm.taskId highWater items) = first :: rest)
+    (body : record.body = .parallelUserTasks first rest) (recordOwner : record.owner = owner)
+    (waitFrame : after.waits = insertParallelChildWaits arm owner
+      (pendingParallelSlots instanceId arm.taskId highWater items) before.waits)
+    (oldDifferent : ∀ wait ∈ before.waits, wait.task.id ≠ arm.taskId) :
+    activityTaskBodyOwnersAgree after record = true := by
+  simp only [activityTaskBodyOwnersAgree, body, List.all_eq_true, decide_eq_true_eq]
+  intro task taskMember wait waitMember
+  obtain ⟨member, named⟩ := List.mem_filter.mp waitMember
+  rw [waitFrame] at member
+  rcases mem_insertParallelChildWaits_shape arm owner _ before.waits wait member with old | new
+  · have slotTask : task ∈ parallelSlotTaskIds
+        (pendingParallelSlots instanceId arm.taskId highWater items) := by
+      rw [pendingIds]
+      exact taskMember
+    obtain ⟨slot, slotMember, sameTask⟩ := List.mem_map.mp slotTask
+    have identity := pendingParallelSlotsFrom_identity instanceId arm.taskId highWater 0 items
+      slot (by simpa [pendingParallelSlots] using slotMember)
+    simp only [taskIdNamesWait, Bool.and_eq_true, beq_iff_eq] at named
+    have element : wait.task.id.value = arm.taskId.value :=
+      named.1.2.symm.trans ((congrArg (fun id => id.elementId.value) sameTask).symm.trans
+        identity.2.1)
+    exact False.elim (oldDifferent wait old
+      ((taskDefinitionId_eq_iff_value_eq _ _).mpr element))
+  · exact new.2.trans recordOwner.symm
+
+theorem activityTaskOwnersAgree_of_subsets (before after : RuntimeState)
+    (original retained : ActivityOccurrence)
+    (owners : activityTaskBodyOwnersAgree before original = true)
+    (ownerFrame : retained.owner = original.owner)
+    (claimsSubset : ∀ task ∈ activityBodyTaskClaims retained.body,
+      task ∈ activityBodyTaskClaims original.body)
+    (waitsSubset : ∀ wait ∈ after.waits, wait ∈ before.waits) :
+    activityTaskBodyOwnersAgree after retained = true := by
+  have originalOwners : ∀ task ∈ activityBodyTaskClaims original.body,
+      (before.waits.filter (taskIdNamesWait task)).all
+        (fun wait => decide (wait.owner = original.owner)) = true := by
+    cases shape : original.body with
+    | childScope => simp [activityBodyTaskClaims]
+    | userTask | parallelUserTasks =>
+        simpa [activityTaskBodyOwnersAgree, activityBodyTaskClaims, shape] using owners
+  have retainedOwners : ∀ task ∈ activityBodyTaskClaims retained.body,
+      (after.waits.filter (taskIdNamesWait task)).all
+        (fun wait => decide (wait.owner = retained.owner)) = true := by
+    intro task member
+    rw [List.all_eq_true]
+    intro wait waitMember
+    obtain ⟨present, named⟩ := List.mem_filter.mp waitMember
+    rw [ownerFrame]
+    exact List.all_eq_true.mp (originalOwners task (claimsSubset task member)) wait
+      (List.mem_filter.mpr ⟨waitsSubset wait present, named⟩)
+  cases shape : retained.body with
+  | childScope => simp [activityTaskBodyOwnersAgree, shape]
+  | userTask | parallelUserTasks =>
+      simpa [activityTaskBodyOwnersAgree, activityBodyTaskClaims, shape] using retainedOwners
+
 theorem pendingParallelChildWaits_unique_from (arm : ParallelMultiInstanceArm)
     (owner : ScopeOccurrenceId) (processInstanceId : SemanticId) (highWater : Nat)
     (snapshot : List String) (index : Nat) (waits : List UserTaskWait)

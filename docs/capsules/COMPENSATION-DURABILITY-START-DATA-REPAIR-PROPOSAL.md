@@ -112,7 +112,7 @@ Mechanically routed guards include [documentation reviewability](../../scripts/d
 | [Semantic execution admission](../../packages/semantic-core/src/semantic-process-admission.ts) | 368 | one predicate call only |
 | [Semantic command admission](../../packages/semantic-core/src/semantic-command-admission.ts) | 330 | one predicate call only |
 | [Lean value domain](../../BpmnSemantics/SemanticProcess/ValueDomain.lean) | 668 | value-kind dispatch only |
-| [Lean command admission](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean) | 221 | predicate definition and one dispatch branch only |
+| [Lean command admission](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean) | 99 | predicate definition and one dispatch branch only |
 | [Lean checkpoint conformance](../../BpmnSemantics/CompensationSourceCompatibilityConformance.lean) | 699 | exact positive and negative decisions only |
 | [TypeScript start admission](../../packages/semantic-core/src/compensation-start-data-admission.ts) | 573 | exact Program-derived binding and shared prospective-capacity construction only |
 | [TypeScript start-admission witness](../../packages/semantic-core/test/compensation-start-data-admission.test.ts) | 510 | direct predicate and command preservation, Program-name, canonical-boundary, escaping, and identity discriminators only |

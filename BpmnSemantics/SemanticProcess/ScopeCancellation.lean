@@ -105,6 +105,8 @@ def cancelScopeSubtree (state : RuntimeState) (root : ScopeOccurrenceId)
     cancelled wait.owner
   let cancelledIncidents := state.effectIncidents.filter fun incident =>
     cancelled incident.wait.owner
+  let cancelledTriggers := state.compensationTriggers.filter fun trigger =>
+    cancelled trigger.owner
   -- A handler attached to an Activity is owned by the scope *holding* that Activity, so an
   -- owner-only rule leaves a bounded Sub-Process deadline alive after its child region is gone. The
   -- records name what each Activity owns, and the withdrawn ones carry their attached waits out.
@@ -115,7 +117,8 @@ def cancelScopeSubtree (state : RuntimeState) (root : ScopeOccurrenceId)
     scopeOccurrences := state.scopeOccurrences.filter
       (keepScopeOccurrence disposition root cancelled)
     waits := state.waits.filter fun wait => !cancelled wait.owner
-    messageWaits := state.messageWaits.filter fun wait => !cancelled wait.owner
+    messageWaits := state.messageWaits.filter fun wait =>
+      !cancelled wait.owner && !activityRecordsAttachMessageWait withdrawnActivities wait
     timerWaits := state.timerWaits.filter fun wait =>
       !cancelled wait.owner && !anyTimerIdNamesWait withdrawnTimers wait
     activityOccurrences := retainedByRegion cancelled state.activityOccurrences
@@ -135,10 +138,16 @@ def cancelScopeSubtree (state : RuntimeState) (root : ScopeOccurrenceId)
     selectedBranchSets :=
       state.selectedBranchSets.filter fun record => !cancelled record.owner
     eventRaces := state.eventRaces.filter fun race => !cancelled race.owner
+    compensationActivityRetentions :=
+      state.compensationActivityRetentions.filter fun retention => !cancelled retention.owner
     compensationParentContextRetentions :=
       state.compensationParentContextRetentions.filter
         (compensationParentContextRetentionSurvivesScopeCancellation
           state root disposition)
+    compensationTriggers := state.compensationTriggers.filter fun trigger =>
+      !cancelled trigger.owner
+    compensationHandlerEffectWaits := state.compensationHandlerEffectWaits.filter fun wait =>
+      !(cancelledTriggers.any fun trigger => trigger.id == wait.triggerId)
     calledProcessOccurrences :=
       state.calledProcessOccurrences.filter fun record =>
         !cancelled record.caller && !cancelled record.calledRoot
@@ -146,6 +155,11 @@ def cancelScopeSubtree (state : RuntimeState) (root : ScopeOccurrenceId)
       { state.variables with
         activities := state.variables.activities.filter fun activity =>
           !calledInstances.contains activity.owner.processInstanceId &&
+            !(withdrawnActivities.any fun record =>
+              activityOccurrenceScopeMatches
+                { processInstanceId := record.processInstanceId
+                  activityElementId := ⟨record.activityElementId.value⟩
+                  activation := record.activation } activity) &&
             !(cancelledEffects.any fun wait =>
               activityScopeMatches (effectOccurrenceId wait) activity) &&
             !(cancelledIncidents.any fun incident =>
@@ -199,6 +213,39 @@ theorem cancelScopeSubtree_withdraws_listed_timers (state : RuntimeState)
   simp only [cancelScopeSubtree, List.mem_filter, Bool.and_eq_true,
     Bool.not_eq_true'] at survives
   exact survives.2.2
+
+/-- AOO-CANCEL-01 withdraws listed Message waits even when their scope owner survives. -/
+theorem cancelScopeSubtree_withdraws_listed_messages (state : RuntimeState)
+    (root : ScopeOccurrenceId) (disposition : SelectedScopeDisposition) :
+    ∀ wait ∈ (cancelScopeSubtree state root disposition).messageWaits,
+      activityRecordsAttachMessageWait
+        (withdrawnByRegion
+          (fun owner =>
+            occurrenceInSubtree state.scopeOccurrences root owner ||
+              (calledInstanceClosure state root).contains owner.processInstanceId)
+          state.activityOccurrences) wait = false := by
+  intro wait survives
+  simp only [cancelScopeSubtree, List.mem_filter, Bool.and_eq_true,
+    Bool.not_eq_true'] at survives
+  exact survives.2.2
+
+/-- The Activity-local data lifetime ends with the exact withdrawn Activity identity. -/
+theorem cancelScopeSubtree_withdraws_activity_local_data (state : RuntimeState)
+    (root : ScopeOccurrenceId) (disposition : SelectedScopeDisposition) :
+    ∀ scope ∈ (cancelScopeSubtree state root disposition).variables.activities,
+      (withdrawnByRegion
+        (fun owner =>
+          occurrenceInSubtree state.scopeOccurrences root owner ||
+            (calledInstanceClosure state root).contains owner.processInstanceId)
+        state.activityOccurrences).any (fun record =>
+          activityOccurrenceScopeMatches
+            { processInstanceId := record.processInstanceId
+              activityElementId := ⟨record.activityElementId.value⟩
+              activation := record.activation } scope) = false := by
+  intro scope survives
+  simp only [cancelScopeSubtree, List.mem_filter, Bool.and_eq_true,
+    Bool.not_eq_true'] at survives
+  exact survives.2.1.1.2
 
 /-- Regional interruption removes the selected occurrence and then emits the caught route token in its live parent. -/
 def interruptScope (state : RuntimeState) (root parent : ScopeOccurrenceId)

@@ -216,8 +216,7 @@ theorem sharedParallelProgress_preserves_runtimeStateWellFormed
     ownerScope account before taskId controller record running selectedController selectedRecord
     regionValid wellFormed
   simp only [runtimeStateWellFormed, Bool.and_eq_true] at wellFormed
-  obtain ⟨existing, claimsAndRetention, snapshots⟩ := wellFormed
-  obtain ⟨claims, retention⟩ := claimsAndRetention
+  obtain ⟨existing, ⟨⟨claims, retention⟩, snapshots⟩, execution⟩ := wellFormed
   obtain ⟨h17, _lifecycle⟩ := existing
   obtain ⟨h16, _notExhausted⟩ := h17
   obtain ⟨h15, _controllerIds⟩ := h16
@@ -280,7 +279,7 @@ theorem sharedParallelProgress_preserves_runtimeStateWellFormed
           simp only [activityBodyLive, shape, List.all_eq_true, decide_eq_true_eq] at recordLive
           have oldList : oldFirst :: oldRest = pendingParallelTaskIds controller.slots := by
             simpa [activityBodyParallelTasks?, shape] using oldBody
-          have oldCount := recordLive.1.1 task
+          have oldCount := recordLive.1.1.1 task
             (by rw [oldList]; exact (pendingFacts task member).1)
           rw [activityBodyWaitFilter_eq before.waits task]
           exact oldCount
@@ -292,6 +291,8 @@ theorem sharedParallelProgress_preserves_runtimeStateWellFormed
     exact oldCount
   have selectedLive : activityBodyLive after
         { record with body := .parallelUserTasks firstPending restPending } &&
+      activityTaskBodyOwnersAgree after
+        { record with body := .parallelUserTasks firstPending restPending } &&
       record.timerHandlerOccurrences.all (fun timer =>
         after.timerWaits.any fun wait =>
           timerIdNamesWait timer wait &&
@@ -301,7 +302,10 @@ theorem sharedParallelProgress_preserves_runtimeStateWellFormed
           messageIdNamesWait message wait &&
             decide (wait.owner = record.owner)) = true := by
     simp only [Bool.and_eq_true]
-    exact ⟨⟨selectedBodyLive, by simpa [after] using recordLive.1.2⟩,
+    have ownersAfter := activityTaskOwnersAgree_of_subsets before after record
+      { record with body := .parallelUserTasks firstPending restPending } recordLive.1.1.2 rfl
+      remainingClaims (fun _ member => (List.mem_filter.mp member).1)
+    exact ⟨⟨⟨selectedBodyLive, ownersAfter⟩, by simpa [after] using recordLive.1.2⟩,
       by simpa [after] using recordLive.2⟩
   have bodiesAfter : activityRecordsOwnLiveWork after = true := by
     simp only [activityRecordsOwnLiveWork, List.all_eq_true]
@@ -335,10 +339,10 @@ theorem sharedParallelProgress_preserves_runtimeStateWellFormed
         | childScope scope =>
             simp only [activityBodyLive, shape]
             change exactLiveOccurrence before scope = true
-            simpa [activityBodyLive, shape] using prior.1.1
+            simpa [activityBodyLive, shape] using prior.1.1.1
         | userTask task =>
             simp only [activityBodyTaskClaims, shape, List.mem_singleton] at excludesTarget
-            have priorBody := prior.1.1
+            have priorBody := prior.1.1.1
             simp only [activityBodyLive, shape, decide_eq_true_eq] at priorBody
             simp only [activityBodyLive, shape, decide_eq_true_eq]
             rw [← activityBodyWaitFilter_eq after.waits task]
@@ -357,8 +361,12 @@ theorem sharedParallelProgress_preserves_runtimeStateWellFormed
             rw [removeParallelChildWaits_lookup_of_ne before.waits taskId task
               (excludesTarget task (by simpa [activityBodyTaskClaims, shape] using taskMember))]
             rw [activityBodyWaitFilter_eq before.waits task]
-            exact prior.1.1 task taskMember
-      simp [selected, bodyAfter, after, prior.1.2, prior.2]
+            exact prior.1.1.1 task taskMember
+      have ownersAfter := activityTaskOwnersAgree_of_subsets before after original original
+        prior.1.1.2 rfl (fun _ member => member)
+        (fun _ member => (List.mem_filter.mp member).1)
+      simp only [selected, Bool.false_eq_true, ↓reduceIte, Bool.and_eq_true]
+      exact ⟨⟨⟨bodyAfter, ownersAfter⟩, prior.1.2⟩, prior.2⟩
   have positionAfter : runtimePositionValid program expectedInstanceId after = true := by
     change runtimePositionValid program expectedInstanceId before = true
     exact position
@@ -558,6 +566,10 @@ theorem sharedParallelProgress_preserves_runtimeStateWellFormed
   have snapshotsAfter : compensationEventSubProcessSnapshotStateValid program after = true := by
     change compensationEventSubProcessSnapshotStateValid program before = true
     exact snapshots
+  have executionAfter : compensationExecutionStateValid program after = true := by
+    rw [compensationExecutionStateValid_running_frame program before after instanceId
+      running rfl rfl rfl rfl rfl rfl]
+    exact execution
   simp only [runtimeStateWellFormed, Bool.and_eq_true]
   exact ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨positionAfter, racesAfter⟩, incidentsAfter⟩,
     ownersAfter⟩, identitiesAfter⟩, boundsAfter⟩, declarationsAfter⟩, hiddenAfter⟩,
@@ -565,6 +577,6 @@ theorem sharedParallelProgress_preserves_runtimeStateWellFormed
     activityIdsAfter⟩, controllersAfter⟩,
     sequentialBindingsAfter⟩, parallelBindingsAfter⟩, controllerIdsAfter⟩,
     notExhaustedAfter⟩, lifecycleAfter⟩,
-    ⟨⟨claimsAfter, retentionAfter⟩, snapshotsAfter⟩⟩
+    ⟨⟨⟨claimsAfter, retentionAfter⟩, snapshotsAfter⟩, executionAfter⟩⟩
 
 end BpmnSemantics.SemanticProcess

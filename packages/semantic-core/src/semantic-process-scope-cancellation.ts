@@ -13,6 +13,7 @@ import {
 } from "./semantic-process-call-runtime.js";
 import {
   ActivityBodyKind,
+  ActivityHandlerKind,
   attachedTimerOccurrences,
   sameActivityOccurrence,
 } from "./activity-occurrence.js";
@@ -106,7 +107,12 @@ function removeScopeOccurrenceRegion(
       ({ owner }) => !isInterrupted(owner),
     ),
     messageWaits: withoutCalledProcesses.messageWaits.filter(
-      ({ owner }) => !isInterrupted(owner),
+      ({ id, owner }) => !isInterrupted(owner) && !withdrawnRecords.some(
+        ({ attachedHandlers }) => attachedHandlers.some((handler) =>
+          handler.kind === ActivityHandlerKind.Message &&
+          sameOccurrence(handler.occurrence, id)
+        ),
+      ),
     ),
     timerWaits: withoutCalledProcesses.timerWaits.filter(({ id, owner }) =>
       !isInterrupted(owner) &&

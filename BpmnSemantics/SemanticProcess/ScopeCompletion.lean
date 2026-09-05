@@ -24,7 +24,21 @@ def scopeQuiescent (state : RuntimeState) (owner : ScopeOccurrenceId) : Bool :=
     !(state.selectedBranchSets.any fun record => record.owner == owner) &&
     !(state.eventRaces.any fun race => race.owner == owner) &&
     !(state.calledProcessOccurrences.any fun record => record.caller == owner) &&
+    !(state.compensationTriggers.any fun trigger =>
+      trigger.lifecycle == .active && trigger.owner == owner) &&
     !(state.scopeOccurrences.any fun occurrence => occurrence.parent == some owner)
+
+/-- An active Compensation trigger blocks its exact owner's normal completion independently of its frontier waits. -/
+theorem scopeQuiescent_refuses_active_compensation_trigger
+    (state : RuntimeState) (owner : ScopeOccurrenceId) (trigger : CompensationTriggerExecution)
+    (member : trigger ∈ state.compensationTriggers)
+    (active : trigger.lifecycle = .active) (owned : trigger.owner = owner) :
+    scopeQuiescent state owner = false := by
+  have present : (state.compensationTriggers.any fun candidate =>
+      candidate.lifecycle == .active && candidate.owner == owner) = true := by
+    apply List.any_eq_true.mpr
+    exact ⟨trigger, member, by simp [active, owned]⟩
+  simp [scopeQuiescent, present]
 
 /-- The completion rewrite for one already-quiescent occurrence, selected by whether it is the root.
 

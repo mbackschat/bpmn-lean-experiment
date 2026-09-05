@@ -126,19 +126,24 @@ function moduleName(sourcePath: string): string {
   return sourcePath.replace(/\.lean$/u, "").replaceAll("/", ".");
 }
 
-export function unreachableMaintainedConformanceModules(
+export function unreachableMaintainedAssuranceModules(
   sources: ReadonlyArray<Readonly<{ path: string; source: string }>>,
 ): readonly string[] {
-  const normalized = sources.map(({ path: sourcePath, source }) => ({
-    module: moduleName(sourcePath.replaceAll(path.sep, "/")),
-    path: sourcePath.replaceAll(path.sep, "/"),
-    imports: analyzeLeanSource(source).code
-      .split(/\r?\n/u)
-      .flatMap((line) => {
-        const match = /^\s*import\s+([A-Za-z0-9_.]+)\s*$/u.exec(line);
-        return match?.[1] === undefined ? [] : [match[1]];
-      }),
-  }));
+  const normalized = sources.map(({ path: sourcePath, source }) => {
+    const code = analyzeLeanSource(source).code;
+    const declarationCode = code.replace(/«[^»]*»/gu, "_quotedIdentifier");
+    return {
+      module: moduleName(sourcePath.replaceAll(path.sep, "/")),
+      path: sourcePath.replaceAll(path.sep, "/"),
+      hasNamedTheorem: /(?<![\p{L}\p{N}_'.?!])theorem\s+[\p{L}_][\p{L}\p{N}_'.?!]*/u.test(declarationCode),
+      imports: code
+        .split(/\r?\n/u)
+        .flatMap((line) => {
+          const match = /^\s*import\s+([A-Za-z0-9_.]+)\s*$/u.exec(line);
+          return match?.[1] === undefined ? [] : [match[1]];
+        }),
+    };
+  });
   const importsByModule = new Map(
     normalized.map(({ module, imports }) => [module, imports] as const),
   );
@@ -153,10 +158,10 @@ export function unreachableMaintainedConformanceModules(
     pending.push(...(importsByModule.get(module) ?? []));
   }
   return normalized
-    .filter(({ path: sourcePath }) =>
+    .filter(({ path: sourcePath, hasNamedTheorem }) =>
       sourcePath.startsWith("BpmnSemantics/") &&
       !sourcePath.startsWith(experimentTree) &&
-      path.posix.basename(sourcePath).endsWith("Conformance.lean")
+      (path.posix.basename(sourcePath).endsWith("Conformance.lean") || hasNamedTheorem)
     )
     .map(({ module }) => module)
     .filter((module) => !reachable.has(module))
@@ -255,19 +260,19 @@ test("separates a checked-node matcher from a fixture that only builds nodes", (
   );
 });
 
-test("the default semantic library reaches every maintained conformance module", () => {
+test("the default semantic library reaches every maintained assurance module", () => {
   assert.deepEqual(
-    unreachableMaintainedConformanceModules(
+    unreachableMaintainedAssuranceModules(
       readWorktreeSources(worktreeLeanSourceFiles()),
     ),
     [],
-    "a maintained conformance module outside the default library can remain broken while the primary Lean build is green",
+    "a maintained theorem or conformance owner outside the default library can remain broken while the primary Lean build is green",
   );
 });
 
 test("the maintained-conformance import guard derives omissions instead of trusting a registry", () => {
   assert.deepEqual(
-    unreachableMaintainedConformanceModules([
+    unreachableMaintainedAssuranceModules([
       {
         path: "BpmnSemantics.lean",
         source: "import BpmnSemantics.Suite\n-- import BpmnSemantics.MissingConformance\n",
@@ -282,6 +287,42 @@ test("the maintained-conformance import guard derives omissions instead of trust
       { path: "BpmnSemantics/Ordinary.lean", source: "" },
     ]),
     ["BpmnSemantics.MissingConformance"],
+  );
+});
+
+test("the assurance import guard reaches initialization and differently named theorem owners", () => {
+  const sources = [
+    { path: "BpmnSemantics.lean", source: "import BpmnSemantics.Suite\n" },
+    {
+      path: "BpmnSemantics/Suite.lean",
+      source: "import BpmnSemantics.AlreadyProved\n/- import BpmnSemantics.Initialization -/\ndef quoted := \"import BpmnSemantics.Preservation\"\n",
+    },
+    { path: "BpmnSemantics/AlreadyProved.lean", source: "theorem valid : True := by trivial\n" },
+    {
+      path: "BpmnSemantics/Initialization.lean",
+      source: "namespace Example\n  @[simp] private theorem initial_valid : True := by trivial\nend Example\n",
+    },
+    {
+      path: "BpmnSemantics/Preservation.lean",
+      source: "@[simp]\nprotected theorem «preserved claim» : True := by trivial\n",
+    },
+    {
+      path: "BpmnSemantics/OnlyProse.lean",
+      source: "-- theorem absent : True := by trivial\n/- theorem nested : True := by trivial -/\ndef quoted := \"theorem literal : True := by trivial\"\ndef αtheorem value := value\ndef «theorem named» := true\n",
+    },
+    { path: "BpmnSemantics/Experiments/OpenProof.lean", source: "theorem provisional : True := by trivial\n" },
+  ];
+  assert.deepEqual(unreachableMaintainedAssuranceModules(sources), [
+    "BpmnSemantics.Initialization",
+    "BpmnSemantics.Preservation",
+  ]);
+  assert.deepEqual(
+    unreachableMaintainedAssuranceModules(sources.map((source) =>
+      source.path === "BpmnSemantics/Suite.lean"
+        ? { ...source, source: `${source.source}import BpmnSemantics.Initialization\nimport BpmnSemantics.Preservation\n` }
+        : source,
+    )),
+    [],
   );
 });
 

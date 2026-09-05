@@ -70,7 +70,7 @@ The mechanically routed constraints include [Lean source contracts](../../script
 | Owner | Current headroom | Growth condition |
 |---|---:|---|
 | [TypeScript declaration admission](../../packages/semantic-core/src/compensation-trigger-handler-program-admission.ts) | 433 | Keep the correction local to execution-limit validation |
-| [Lean declaration validity](../../BpmnSemantics/SemanticProcess/CompensationTriggerHandlerDeclaration.lean) | 601 | Correct the bound and expose its validity consequence |
+| [Lean declaration validity](../../BpmnSemantics/SemanticProcess/CompensationTriggerHandlerDeclaration.lean) | 579 | Correct the bound and expose its validity consequence |
 | [Lean JSON reader](../../BpmnSemantics/SemanticProcessJson/CompensationTriggerHandler.lean) | 723 | Preserve strict shape and integer decoding |
 | [Lean Program conformance](../../BpmnSemantics/CompensationTriggerHandlerProgramContractConformance.lean) | 629 | Add compact independent boundary facts only |
 

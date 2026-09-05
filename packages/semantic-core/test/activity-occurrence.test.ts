@@ -189,6 +189,7 @@ test("the fail-closed command gate refuses an unconsulted record, one class at a
       state: withUnconsultedRecords(control, (template) => {
         const taskBody = {
           ...template,
+          owner: liveTask.owner,
           body: { kind: ActivityBodyKind.UserTask, task: liveTask.id },
         } as const;
         const scopeBody = {
@@ -592,6 +593,7 @@ test("a duplicated record identity is refused, and the admitted control is not",
   assert.ok(record !== undefined && task !== undefined);
   const sameIdentityWithDisjointBody: ActivityOccurrence = {
     ...record,
+    owner: task.owner,
     body: { kind: ActivityBodyKind.UserTask, task: task.id },
     attachedHandlers: [],
   };

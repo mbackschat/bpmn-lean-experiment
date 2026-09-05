@@ -134,6 +134,21 @@ def runtimePositionValid (program : Program) (expectedInstanceId : SemanticId)
   programWellFormed program && programProjectionBindingsValid program &&
     lifecyclePositionValid program expectedInstanceId state
 
+/-- The lifecycle position rule permits live scope ownership only while the instance is running. -/
+theorem runtimePositionValid_liveOccurrence_running (program : Program)
+    (expectedInstanceId : SemanticId) (state : RuntimeState) (owner : ScopeOccurrenceId)
+    (valid : runtimePositionValid program expectedInstanceId state = true)
+    (live : exactLiveOccurrence state owner = true) :
+    ∃ instanceId, state.control = .running instanceId := by
+  simp only [runtimePositionValid, Bool.and_eq_true] at valid
+  have lifecycle := valid.2
+  cases control : state.control with
+  | running instanceId => exact ⟨instanceId, rfl⟩
+  | notStarted | completed _ | cancelled _ | failed _ _ =>
+      simp [lifecyclePositionValid, control] at lifecycle
+      unfold exactLiveOccurrence at live
+      simp_all
+
 /-- A valid running position carries exactly the semantic instance identity it was checked against. -/
 theorem runtimePositionValid_running_instance
     (program : Program) (expectedInstanceId instanceId : SemanticId) (state : RuntimeState)
