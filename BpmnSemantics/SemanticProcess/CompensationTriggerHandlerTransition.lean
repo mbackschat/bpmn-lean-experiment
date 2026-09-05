@@ -144,27 +144,11 @@ def selectedHandlers (state : RuntimeState) (owner : ScopeOccurrenceId)
         lifecycle := .pending subject.restoredContext }
       handlers) []
 
-private def handlerForDefinition? (program : Program)
-    (handlers : List CompensationHandlerExecution) (elementId : NodeId) :
-    Option CompensationHandlerExecution :=
-  handlers.find? fun handler =>
-    match handler.identity.subject with
-    | .boundaryActivity activity => activity.activityElementId.value == elementId.value
-    | .eventSubProcess parent =>
-        (program.definitionScopes.find? fun scope => scope.id == parent.definitionScopeId).map
-          (·.originElementId) == some elementId
-
 /-- Lifts declaration dependencies to the selected occurrence identities. -/
 def occurrenceDependencies (program : Program)
     (declaration : CompensationExecutionDeclaration)
     (handlers : List CompensationHandlerExecution) : List CompensationOccurrenceDependency :=
-  declaration.dependencies.filterMap fun dependency => do
-    let predecessor ← handlerForDefinition? program handlers dependency.predecessorElementId
-    let successor ← handlerForDefinition? program handlers dependency.successorElementId
-    pure
-      { predecessor := predecessor.identity.subject
-        successor := successor.identity.subject
-        reason := .sequenceFlow }
+  expectedCompensationDependencies program declaration handlers
 
 def compensationExecutionCapacityRefusal?
     (declaration : CompensationExecutionDeclaration)
@@ -206,6 +190,9 @@ def compensationTriggerProgramRejected (program : Program)
 def compensationTriggerOwnerRejected (state : RuntimeState)
     (owner : ScopeOccurrenceId) (definitionScopeId : DefinitionScopeId) : Bool :=
   owner.definitionScopeId != definitionScopeId ||
+    (match state.control with
+      | .running instanceId => owner.processInstanceId != instanceId
+      | _ => true) ||
     (state.scopeOccurrences.filter fun occurrence =>
       occurrence.id == owner && occurrence.parent.isNone).length != 1
 
@@ -218,7 +205,8 @@ def constructCompensationTriggerFrontier (program : Program) (state : RuntimeSta
       if declaration.triggerOperationId != operationId then none
       else
         let handlers := selectedHandlers state owner selected
-        activateCompensationFrontier program state
+        if !compensationDependenciesUnambiguous program declaration handlers then none
+        else activateCompensationFrontier program state
           { id := nextOccurrence owner.processInstanceId operationId.value
               (state.compensationTriggers.map (·.id))
             owner
@@ -439,6 +427,16 @@ inductive CompensationTriggerRefusalStep (program : Program)
         definitionScopeId input output owner)
       (absent : selectedCompensationSubjects? program owner before = none) :
       CompensationTriggerRefusalStep program operation before .invalidSources
+  | ambiguousDependencies (declaration : CompensationExecutionDeclaration)
+      (operationId : OperationId) (definitionScopeId : DefinitionScopeId)
+      (input output : ControlPlaceId) (owner : ScopeOccurrenceId)
+      (first : SelectedCompensationSubject) (rest : List SelectedCompensationSubject)
+      (ready : CompensationTriggerReady program operation before declaration operationId
+        definitionScopeId input output owner)
+      (sources : selectedCompensationSubjects? program owner before = some (first :: rest))
+      (ambiguous : compensationDependenciesUnambiguous program declaration
+        (selectedHandlers before owner (first :: rest)) = false) :
+      CompensationTriggerRefusalStep program operation before .invalidSources
   | invalidFrontier (declaration : CompensationExecutionDeclaration)
       (operationId : OperationId) (definitionScopeId : DefinitionScopeId)
       (input output : ControlPlaceId) (owner : ScopeOccurrenceId)
@@ -657,9 +655,17 @@ theorem attemptCompensationTrigger_sound (program : Program)
                                           have activatedEq :
                                               activateCompensationFrontier program before pending =
                                                 some activated := by
-                                            simpa [constructCompensationTriggerFrontier,
-                                              declarationEq, operationMatches, pending]
-                                              using frontierEq
+                                            cases unambiguousEq : compensationDependenciesUnambiguous
+                                                program declaration (selectedHandlers before owner
+                                                  (first :: rest)) with
+                                            | false =>
+                                              simp [constructCompensationTriggerFrontier,
+                                                declarationEq, operationMatches, unambiguousEq]
+                                                at frontierEq
+                                            | true =>
+                                              simpa [constructCompensationTriggerFrontier,
+                                                declarationEq, operationMatches, pending,
+                                                unambiguousEq] using frontierEq
                                           let triggers :=
                                             insertTrigger activated.trigger
                                               before.compensationTriggers

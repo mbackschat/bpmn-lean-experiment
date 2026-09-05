@@ -20,6 +20,7 @@ import type {
 import {
   canonicalCompensationExecutionStateUtf8Bytes,
   compensationExecutionStateDefects,
+  liftCompensationOccurrenceDependencies,
 } from "./compensation-trigger-handler-runtime-state-validation.js";
 import type {
   SemanticProcessProgram,
@@ -95,9 +96,10 @@ export function attemptCompensationTrigger(
     state.control.kind !== ControlStateKind.Running ||
     owner === undefined ||
     owner.definitionScopeId !== operation.definitionScopeId ||
-    !state.scopeOccurrences.some(({ id, parent }) =>
+    owner.processInstanceId !== state.control.instanceId ||
+    state.scopeOccurrences.filter(({ id, parent }) =>
       parent === null && sameScopeOccurrence(id, owner)
-    ) ||
+    ).length !== 1 ||
     triggers === undefined ||
     waits === undefined
   ) {
@@ -272,17 +274,8 @@ export function constructCompensationTriggerFrontier(
     lifecycle: "pending",
     restoredContext,
   } as const)).sort(compareHandlers);
-  const dependencies = declaration.dependencies.flatMap((dependency) => {
-    const predecessor = handlerByDefinitionId(program, handlers, dependency.predecessorElementId);
-    const successor = handlerByDefinitionId(program, handlers, dependency.successorElementId);
-    return predecessor === undefined || successor === undefined
-      ? []
-      : [{
-          predecessor: predecessor.subject,
-          successor: successor.subject,
-          reason: dependency.reason,
-        } as const];
-  });
+  const dependencies = liftCompensationOccurrenceDependencies(program, handlers);
+  if (dependencies === null) return null;
   return activateCompensationFrontier(program, state, {
     id: triggerId,
     owner,
@@ -372,27 +365,6 @@ function handlerArguments(
   return sources.length === 1
     ? [{ name: input.argumentName, value: sources[0]!.value }]
     : null;
-}
-
-function handlerByDefinitionId(
-  program: SemanticProcessProgram,
-  handlers: ReadonlyArray<CompensationHandlerExecution>,
-  definitionId: string,
-): CompensationHandlerExecution | undefined {
-  return handlers.find((handler) =>
-    occurrenceDefinitionId(program, handler.subject) === definitionId
-  );
-}
-
-function occurrenceDefinitionId(
-  program: SemanticProcessProgram,
-  occurrence: CompensationSubjectOccurrence,
-): string | undefined {
-  return occurrence.kind === "boundaryActivity"
-    ? occurrence.activity.activityElementId
-    : program.definitionScopes.find(({ id }) =>
-      id === occurrence.parent.definitionScopeId
-    )?.originElementId;
 }
 
 function definitionForOccurrence(

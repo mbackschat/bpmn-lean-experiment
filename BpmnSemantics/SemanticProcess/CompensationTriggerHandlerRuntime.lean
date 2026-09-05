@@ -176,23 +176,33 @@ private def occurrenceDefinitionId? (program : Program) :
       (program.definitionScopes.find? fun scope =>
         scope.id == parent.definitionScopeId).map (·.originElementId)
 
-private def handlerForDefinition? (program : Program)
+private def handlersForDefinition (program : Program)
     (handlers : List CompensationHandlerExecution) (elementId : NodeId) :
-    Option CompensationHandlerExecution :=
-  handlers.find? fun handler =>
+    List CompensationHandlerExecution :=
+  handlers.filter fun handler =>
     occurrenceDefinitionId? program handler.identity.subject = some elementId
 
-private def expectedDependencies (program : Program)
+/-- COMPH-TRIGGER-01 forbids ambiguous endpoints even when the opposite endpoint is absent. -/
+def compensationDependenciesUnambiguous (program : Program)
+    (declaration : CompensationExecutionDeclaration)
+    (handlers : List CompensationHandlerExecution) : Bool :=
+  declaration.dependencies.all fun dependency =>
+    (handlersForDefinition program handlers dependency.predecessorElementId).length ≤ 1 &&
+      (handlersForDefinition program handlers dependency.successorElementId).length ≤ 1
+
+/-- Only singleton endpoint pairs lift to exact occurrence edges; missing endpoints add no edge. -/
+def expectedCompensationDependencies (program : Program)
     (declaration : CompensationExecutionDeclaration)
     (handlers : List CompensationHandlerExecution) :
     List CompensationOccurrenceDependency :=
-  declaration.dependencies.filterMap fun dependency => do
-    let predecessor ← handlerForDefinition? program handlers dependency.predecessorElementId
-    let successor ← handlerForDefinition? program handlers dependency.successorElementId
-    pure
-      { predecessor := predecessor.identity.subject
-        successor := successor.identity.subject
-        reason := .sequenceFlow }
+  declaration.dependencies.filterMap fun dependency =>
+    match handlersForDefinition program handlers dependency.predecessorElementId,
+        handlersForDefinition program handlers dependency.successorElementId with
+    | [predecessor], [successor] => some
+        { predecessor := predecessor.identity.subject
+          successor := successor.identity.subject
+          reason := .sequenceFlow }
+    | _, _ => none
 
 private def restoredContextMatchesInput (body : SingleEffectCompensationHandlerBody)
     (triggerOwner : ScopeOccurrenceId) (subject : CompensationSubjectOccurrence)
@@ -241,7 +251,11 @@ private def triggerLifecycleValid (state : RuntimeState)
     (trigger : CompensationTriggerExecution) : Bool :=
   match trigger.lifecycle with
   | .active =>
-      (match state.control with | .running _ => true | _ => false) &&
+      (match state.control with
+        | .running instanceId => trigger.owner.processInstanceId == instanceId
+        | _ => false) &&
+        (state.scopeOccurrences.filter fun occurrence =>
+          occurrence.id == trigger.owner && occurrence.parent.isNone).length = 1 &&
         (trigger.handlers.any fun handler =>
           match handler.lifecycle with | .pending _ | .compensating _ _ => true | _ => false) &&
         (trigger.handlers.all fun handler =>
@@ -269,7 +283,8 @@ private def triggerMatchesDeclaration (program : Program) (state : RuntimeState)
         trigger.handlers.all (handlerIdentityUnique trigger.handlers) &&
         trigger.handlers.all (handlerSubjectUnique trigger.handlers) &&
         trigger.handlers.all (handlerMatchesDeclaration program trigger.owner) &&
-        trigger.dependencies == expectedDependencies program declaration trigger.handlers &&
+        compensationDependenciesUnambiguous program declaration trigger.handlers &&
+        trigger.dependencies == expectedCompensationDependencies program declaration trigger.handlers &&
         triggerLifecycleValid state trigger
   | _ => false
 

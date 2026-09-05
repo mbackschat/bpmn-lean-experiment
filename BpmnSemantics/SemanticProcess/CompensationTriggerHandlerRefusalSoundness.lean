@@ -264,11 +264,24 @@ theorem attemptCompensationTrigger_refusal_sound (program : Program)
                                           simp [ownerEq, ownerRejectedEq, stateRejectedEq, activeEq,
                                             sourcesEq, frontierEq] at selected
                                           cases selected
+                                          by_cases ambiguous : compensationDependenciesUnambiguous
+                                              program declaration (selectedHandlers before owner
+                                                (first :: rest)) = false
+                                          · exact .ambiguousDependencies declaration operationId
+                                              definitionScopeId input output owner first rest
+                                              ready sourcesEq ambiguous
+                                          have unambiguousEq : compensationDependenciesUnambiguous
+                                              program declaration (selectedHandlers before owner
+                                                (first :: rest)) = true := by
+                                            cases valueEq : compensationDependenciesUnambiguous
+                                                program declaration (selectedHandlers before owner
+                                                  (first :: rest)) <;> simp_all
                                           have refusedEq :
                                               activateCompensationFrontier program before pending =
                                                 none := by
                                             simpa [constructCompensationTriggerFrontier,
-                                              declarationEq, operationMatches, pending]
+                                              declarationEq, operationMatches, pending,
+                                              unambiguousEq]
                                               using frontierEq
                                           exact .invalidFrontier declaration operationId
                                             definitionScopeId input output owner first rest pending
@@ -279,9 +292,17 @@ theorem attemptCompensationTrigger_refusal_sound (program : Program)
                                           have activatedEq :
                                               activateCompensationFrontier program before pending =
                                                 some activated := by
-                                            simpa [constructCompensationTriggerFrontier,
-                                              declarationEq, operationMatches, pending]
-                                              using frontierEq
+                                            cases unambiguousEq : compensationDependenciesUnambiguous
+                                                program declaration (selectedHandlers before owner
+                                                  (first :: rest)) with
+                                            | false =>
+                                              simp [constructCompensationTriggerFrontier,
+                                                declarationEq, operationMatches, unambiguousEq]
+                                                at frontierEq
+                                            | true =>
+                                              simpa [constructCompensationTriggerFrontier,
+                                                declarationEq, operationMatches, pending,
+                                                unambiguousEq] using frontierEq
                                           let triggers := insertTrigger activated.trigger
                                             before.compensationTriggers
                                           let waits := activated.waits.foldl (fun current wait =>

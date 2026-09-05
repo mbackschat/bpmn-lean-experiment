@@ -220,7 +220,7 @@ Headroom is measured as nonblank lines remaining under the 800-line review targe
 | [Lean internal census](../../BpmnSemantics/SemanticProcess/InternalCommutationCensus.lean) | 652 | Change |
 | [Lean snapshot declaration](../../BpmnSemantics/SemanticProcess/CompensationEventSubProcessSnapshotDeclaration.lean) | 635 | Change |
 | [Lean trigger-handler declaration](../../BpmnSemantics/SemanticProcess/CompensationTriggerHandlerDeclaration.lean) | 610 | Change |
-| [Maintained Lean library root](../../BpmnSemantics.lean) | 724 | Change |
+| [Maintained Lean library root](../../BpmnSemantics.lean) | 723 | Change |
 | [Temporal host admission](../../packages/temporal-adapter/protocol/src/host-admission.ts) | 485 | Change |
 | [Temporal publication validation](../../packages/temporal-adapter/protocol/src/flow-node-occurrence-publication-program-validation.ts) | 333 | Change |
 | [Product 2 publication contract](../../platform/contracts/src/execution-publications.ts) | 345 | Change |

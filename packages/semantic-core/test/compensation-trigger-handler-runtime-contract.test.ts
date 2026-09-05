@@ -158,6 +158,7 @@ test("binds the compensation argument to the frozen restored Process value", () 
   const state = {
     ...initialState,
     control: { kind: ControlStateKind.Running, instanceId: processInstanceId },
+    scopeOccurrences: [{ id: owner, parent: null }],
     compensationTriggers: [trigger],
     compensationHandlerEffectWaits: [wait],
   } as const satisfies RuntimeState;
@@ -196,6 +197,7 @@ test("retains and accounts for a deferred Event Sub-Process handler context", ()
   const pendingState = {
     ...initialState,
     control: { kind: ControlStateKind.Running, instanceId: processInstanceId },
+    scopeOccurrences: [{ id: owner, parent: null }],
     compensationTriggers: [pendingTrigger],
     compensationHandlerEffectWaits: [],
   } as unknown as RuntimeState;
@@ -262,6 +264,7 @@ test("rejects two active triggers owned by the same root", () => {
   const state = {
     ...initialState,
     control: { kind: ControlStateKind.Running, instanceId: processInstanceId },
+    scopeOccurrences: [{ id: owner, parent: null }],
     compensationTriggers: [first, second],
     compensationHandlerEffectWaits: [],
   } as const satisfies RuntimeState;
@@ -310,6 +313,7 @@ test("requires exactly one failed trigger and only succeeded trigger tombstones 
     terminalTrigger(1, "succeeded"),
     secondFailed,
   ], 2);
+  assert.deepEqual(compensationExecutionStateDefects(program, succeededThenFailed), []);
   assert.equal(
     compensationExecutionStateDefects(program, succeededThenFailed).includes(
       CompensationExecutionStateDefect.FailedLifecycleMismatch,

@@ -277,28 +277,8 @@ function dependenciesMatchDeclaration(
   program: SemanticProcessProgram,
   trigger: CompensationTriggerExecution,
 ): boolean {
-  const declaration = program.compensationExecution;
-  if (declaration === undefined) return false;
-  const selected = trigger.handlers.map((handler) => ({
-    handler,
-    elementId: subjectDefinitionId(
-      program,
-      subjectDefinitionForOccurrence(declaration.subjects, handler.subject),
-    ),
-  }));
-  if (selected.some(({ elementId }) => elementId === undefined)) return false;
-  const expected = declaration.dependencies.flatMap((dependency) => {
-    const predecessor = selected.find(({ elementId }) =>
-      elementId === dependency.predecessorElementId
-    )?.handler.subject;
-    const successor = selected.find(({ elementId }) =>
-      elementId === dependency.successorElementId
-    )?.handler.subject;
-    return predecessor === undefined || successor === undefined
-      ? []
-      : [{ predecessor, successor, reason: dependency.reason }];
-  });
-  return trigger.dependencies.length === expected.length &&
+  const expected = liftCompensationOccurrenceDependencies(program, trigger.handlers);
+  return expected !== null && trigger.dependencies.length === expected.length &&
     trigger.dependencies.every((dependency, index) => {
       const candidate = expected[index];
       return candidate !== undefined &&
@@ -306,6 +286,39 @@ function dependenciesMatchDeclaration(
         sameSubject(dependency.predecessor, candidate.predecessor) &&
         sameSubject(dependency.successor, candidate.successor);
     });
+}
+
+/** COMPH-TRIGGER-01 refuses ambiguous lifting even when the other endpoint is absent. */
+export function liftCompensationOccurrenceDependencies(
+  program: SemanticProcessProgram,
+  handlers: ReadonlyArray<CompensationHandlerExecution>,
+): CompensationTriggerExecution["dependencies"] | null {
+  const declaration = program.compensationExecution;
+  if (declaration === undefined) return null;
+  const selected = handlers.map((handler) => ({
+    handler,
+    elementId: subjectDefinitionId(
+      program,
+      subjectDefinitionForOccurrence(declaration.subjects, handler.subject),
+    ),
+  }));
+  if (selected.some(({ elementId }) => elementId === undefined)) return null;
+  const dependencies: CompensationTriggerExecution["dependencies"][number][] = [];
+  for (const dependency of declaration.dependencies) {
+    const predecessors = selected.filter(({ elementId }) =>
+      elementId === dependency.predecessorElementId
+    );
+    const successors = selected.filter(({ elementId }) =>
+      elementId === dependency.successorElementId
+    );
+    if (predecessors.length > 1 || successors.length > 1) return null;
+    const predecessor = predecessors[0]?.handler.subject;
+    const successor = successors[0]?.handler.subject;
+    if (predecessor !== undefined && successor !== undefined) {
+      dependencies.push({ predecessor, successor, reason: dependency.reason });
+    }
+  }
+  return dependencies;
 }
 
 function handlerMatchesDeclaration(
@@ -353,6 +366,10 @@ function triggerLifecycleIsValid(
   switch (trigger.lifecycle) {
     case "active":
       return state.control.kind === ControlStateKind.Running &&
+        trigger.owner.processInstanceId === state.control.instanceId &&
+        state.scopeOccurrences.filter(({ id, parent }) =>
+          parent === null && sameScopeOccurrence(id, trigger.owner)
+        ).length === 1 &&
         trigger.handlers.some(({ lifecycle }) =>
           lifecycle === "pending" || lifecycle === "compensating"
         ) &&
