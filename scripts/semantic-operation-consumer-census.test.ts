@@ -142,7 +142,8 @@ function classifiedConsumerPaths(source: string): ReadonlySet<string> {
 
 function isComposedActivityDataConsumer(source: ConsumerSource): boolean {
   if (source.path.endsWith(".lean")) {
-    return (
+    return source.source.includes(".awaitDataInputOutputUserTask") ||
+      source.source.includes(".dataInputOutputUserTask") || (
       source.source.includes(".awaitDataInputUserTask") &&
       source.source.includes(".awaitDataOutputUserTask")
     ) || (
@@ -150,7 +151,8 @@ function isComposedActivityDataConsumer(source: ConsumerSource): boolean {
       source.source.includes(".dataOutputUserTask")
     );
   }
-  return (
+  return source.source.includes("SemanticOperationKind.AwaitDataInputOutputUserTask") ||
+    source.source.includes("CheckedNodeKind.DataInputOutputUserTask") || (
     source.source.includes("SemanticOperationKind.AwaitDataInputUserTask") &&
     source.source.includes("SemanticOperationKind.AwaitDataOutputUserTask")
   ) || (
@@ -209,6 +211,25 @@ test("rejects a composed Activity-data consumer absent from the implementation m
       "unclassified composed Activity-data consumer: packages/semantic-core/src/synthetic-consumer.ts",
     ),
   );
+});
+
+test("rejects direct composed Activity-data consumers absent from the implementation matrix", () => {
+  const sources = liveSources();
+  const consumers = [...sources.consumers, {
+    path: "packages/semantic-core/src/synthetic-composed-consumer.ts",
+    source: "case SemanticOperationKind.AwaitDataInputOutputUserTask:\n",
+  }, {
+    path: "BpmnSemantics/SemanticProcess/SyntheticComposedConsumer.lean",
+    source: "| .dataInputOutputUserTask .. => true\n",
+  }];
+
+  const findings = consumerCensusFindings({ ...sources, consumers });
+  assert.ok(findings.includes(
+    "unclassified composed Activity-data consumer: packages/semantic-core/src/synthetic-composed-consumer.ts",
+  ));
+  assert.ok(findings.includes(
+    "unclassified composed Activity-data consumer: BpmnSemantics/SemanticProcess/SyntheticComposedConsumer.lean",
+  ));
 });
 
 test("rejects an operation added to both semantic accounts without family classification", () => {
