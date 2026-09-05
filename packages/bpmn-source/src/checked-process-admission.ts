@@ -14,6 +14,9 @@ import type {
   CheckedSequenceFlow,
 } from "@bpmn-lean/semantic-core";
 import {
+  hasValidDataInputOutputUserTaskIdentities,
+} from "./activity-data-input-output-checked-admission.js";
+import {
   hasSelectedCallActivityDefinitions,
 } from "./call-activity-checked-admission.js";
 import {
@@ -48,6 +51,7 @@ export function isAdmittedCheckedProcess(
       graph.definitionScopes.length,
     ) &&
     admittedGraph !== undefined &&
+    checkedNodeIdentitiesAreValid(graph.nodes) &&
     embeddedNodesOwnChildScopes(graph, admittedGraph.nodeScopes, semanticProfile) &&
     hasSelectedCallActivityDefinitions(
       semanticProfile,
@@ -72,6 +76,21 @@ export function isAdmittedCheckedProcess(
       graph,
       admittedGraph.nodeScopes,
     );
+}
+
+/** Keeps composed Activity-data roles distinguishable before lowering, matching Lean checked admission. */
+function checkedNodeIdentitiesAreValid(
+  nodes: ReadonlyArray<CheckedNode>,
+): boolean {
+  return nodes.every((node) => {
+    switch (node.kind) {
+      case CheckedNodeKind.DataInputOutputUserTask: {
+        return hasValidDataInputOutputUserTaskIdentities(node);
+      }
+      default:
+        return true;
+    }
+  });
 }
 
 function hasSelectedStructuredHumanWorkTopology(
