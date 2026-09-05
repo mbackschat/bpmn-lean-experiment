@@ -134,6 +134,17 @@ def runtimePositionValid (program : Program) (expectedInstanceId : SemanticId)
   programWellFormed program && programProjectionBindingsValid program &&
     lifecyclePositionValid program expectedInstanceId state
 
+/-- A valid running position carries exactly the semantic instance identity it was checked against. -/
+theorem runtimePositionValid_running_instance
+    (program : Program) (expectedInstanceId instanceId : SemanticId) (state : RuntimeState)
+    (valid : runtimePositionValid program expectedInstanceId state = true)
+    (running : state.control = .running instanceId) :
+    instanceId = expectedInstanceId := by
+  simp only [runtimePositionValid, Bool.and_eq_true] at valid
+  unfold lifecyclePositionValid at valid
+  simp [running, runningPositionValid] at valid
+  exact valid.2.1.1.1.1
+
 private theorem all_removeToken (tokens : List ControlToken) (place : ControlPlaceId)
     (owner : ScopeOccurrenceId) (predicate : ControlToken → Bool)
     (holds : tokens.all predicate = true) :
