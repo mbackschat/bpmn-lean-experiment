@@ -39,36 +39,42 @@ def activateDataInputOutputUserTask? (state : RuntimeState)
     { processInstanceId := instanceId
       activityElementId := ⟨taskId.value⟩
       activation := activityActivation }
-  pure
-    { state with
-      tokens := removeToken state.tokens input owner
-      waits := insertUserTaskWait
-        { processInstanceId := instanceId
-          owner
-          task := { id := taskId, name := taskName }
-          activation := taskActivation
-          output
-          metadata := none } state.waits
-      activations := setActivationCount state.activations taskId taskActivation
-      activityOccurrences := insertActivityOccurrence
-        { processInstanceId := instanceId
-          activityElementId := ⟨taskId.value⟩
-          activation := activityActivation
-          owner
-          body := .userTask
-            { processInstanceId := instanceId
-              elementId := ⟨taskId.value⟩
-              activation := taskActivation }
-          attachedHandlers := [] } state.activityOccurrences
-      activityActivations :=
-        { taskId, count := activityActivation } ::
-          state.activityActivations.filter fun value => decide (value.taskId ≠ taskId)
-      variables := addActivityOccurrenceVariableScope state.variables activityOwner
-        [{ name := directInput.targetDataInputId, value := source.value }] }
+  if state.variables.activities.any (activityOccurrenceScopeMatches activityOwner) then
+    none
+  else
+    pure
+      { state with
+        tokens := removeToken state.tokens input owner
+        waits := insertUserTaskWait
+          { processInstanceId := instanceId
+            owner
+            task := { id := taskId, name := taskName }
+            activation := taskActivation
+            output
+            metadata := none } state.waits
+        activations := setActivationCount state.activations taskId taskActivation
+        activityOccurrences := insertActivityOccurrence
+          { processInstanceId := instanceId
+            activityElementId := ⟨taskId.value⟩
+            activation := activityActivation
+            owner
+            body := .userTask
+              { processInstanceId := instanceId
+                elementId := ⟨taskId.value⟩
+                activation := taskActivation }
+            attachedHandlers := [] } state.activityOccurrences
+        activityActivations :=
+          setActivationCount state.activityActivations taskId activityActivation
+        variables := addActivityOccurrenceVariableScope state.variables activityOwner
+          [{ name := directInput.targetDataInputId, value := source.value }] }
 
 /-- Both immutable data contracts belonging to one composed task declaration. -/
 structure DataInputOutputTaskContract where
+  operationId : OperationId
+  input : ControlPlaceId
+  output : ControlPlaceId
   taskId : TaskDefinitionId
+  taskName : Option String
   directInput : DirectActivityDataInput
   directOutput : DirectActivityDataOutput
   deriving Repr, DecidableEq
@@ -77,8 +83,9 @@ structure DataInputOutputTaskContract where
 def dataInputOutputTaskContracts (program : Program) :
     List DataInputOutputTaskContract :=
   program.operations.filterMap fun
-    | .awaitDataInputOutputUserTask _ _ _ _ taskId _ directInput directOutput =>
-        some { taskId, directInput, directOutput }
+    | .awaitDataInputOutputUserTask operationId _ input output taskId taskName directInput
+        directOutput =>
+        some { operationId, input, output, taskId, taskName, directInput, directOutput }
     | _ => none
 
 /-- The unique composed declaration for one task, or `none` for absent or ambiguous definitions. -/
@@ -102,10 +109,70 @@ def dataInputOutputTaskWait? (state : RuntimeState) (processInstanceId : Semanti
   | [wait] => some wait
   | _ => none
 
-private def activityOwnerForRecord (record : ActivityOccurrence) : ActivityOccurrenceId :=
+/-- The exact composed-task lookup also fixes every queried occurrence-key component. -/
+theorem dataInputOutputTaskWait_facts {state : RuntimeState} {processInstanceId : SemanticId}
+    {taskId : TaskDefinitionId} {activation : Nat} {wait : UserTaskWait}
+    (found : dataInputOutputTaskWait? state processInstanceId taskId activation = some wait) :
+    wait ∈ state.waits ∧ wait.processInstanceId = processInstanceId ∧
+      wait.task.id = taskId ∧ wait.activation = activation := by
+  unfold dataInputOutputTaskWait? at found
+  split at found
+  · next singleton =>
+      cases found
+      have selected : wait ∈ state.waits.filter fun candidate =>
+          decide (candidate.processInstanceId = processInstanceId) &&
+            decide (candidate.task.id = taskId) && decide (candidate.activation = activation) := by
+        rw [singleton]
+        simp
+      obtain ⟨member, keyFacts⟩ := List.mem_filter.mp selected
+      simp only [Bool.and_eq_true, decide_eq_true_eq] at keyFacts
+      exact ⟨member, keyFacts.1.1, keyFacts.1.2, keyFacts.2⟩
+  · exact absurd found (by simp)
+
+/-- A contract returned by the unique composed-task lookup projects one actual declared operation. -/
+theorem dataInputOutputTaskContract_facts {program : Program} {taskId : TaskDefinitionId}
+    {contract : DataInputOutputTaskContract}
+    (found : dataInputOutputTaskContract? program taskId = some contract) :
+    contract.taskId = taskId ∧ ∃ origin,
+      SemanticOperation.awaitDataInputOutputUserTask contract.operationId origin contract.input
+          contract.output contract.taskId contract.taskName contract.directInput
+          contract.directOutput ∈ program.operations := by
+  unfold dataInputOutputTaskContract? at found
+  split at found
+  · next singleton =>
+      cases found
+      have selected : contract ∈ (dataInputOutputTaskContracts program).filter fun candidate =>
+          decide (candidate.taskId = taskId) := by
+        rw [singleton]
+        simp
+      obtain ⟨contractMember, taskEq⟩ := List.mem_filter.mp selected
+      simp only [decide_eq_true_eq] at taskEq
+      unfold dataInputOutputTaskContracts at contractMember
+      simp only [List.mem_filterMap] at contractMember
+      obtain ⟨operation, operationMember, projects⟩ := contractMember
+      cases operation <;> simp at projects
+      next id origin input output candidateTaskId taskName directInput directOutput =>
+        cases projects
+        exact ⟨taskEq, origin, operationMember⟩
+  · exact absurd found (by simp)
+
+def activityOwnerForRecord (record : ActivityOccurrence) : ActivityOccurrenceId :=
   { processInstanceId := record.processInstanceId
     activityElementId := ⟨record.activityElementId.value⟩
     activation := record.activation }
+
+/-- The exact dynamic and static join for the wait selected from one composed declaration. -/
+def dataInputOutputRuntimeJoinValid (program : Program)
+    (contract : DataInputOutputTaskContract) (task : UserTaskWait)
+    (record : ActivityOccurrence) : Bool :=
+  decide (task.output = contract.output) &&
+    decide (operationOwningScope? program contract.operationId =
+      some task.owner.definitionScopeId) &&
+    decide (task.processInstanceId = task.owner.processInstanceId) &&
+    decide (record.owner = task.owner) &&
+    decide (record.processInstanceId = task.owner.processInstanceId) &&
+    decide (record.activityElementId.value = contract.taskId.value) &&
+    decide (task.task.name = contract.taskName)
 
 /-- The one Activity-local scope a composed task may carry. The value is intentionally not compared
 with current Process data: the scope is the activation-time copy, while later independent Process
@@ -117,7 +184,12 @@ def dataInputOutputLocalScope? (state : RuntimeState) (record : ActivityOccurren
   | [scope] =>
       match scope.bindings with
       | [binding] =>
-          if binding.name = directInput.targetDataInputId then some scope else none
+          if binding.name = directInput.targetDataInputId &&
+              variableValueAdmitted activityDataInputOutputUserTaskProfileId
+                .processStart binding.value then
+            some scope
+          else
+            none
       | _ => none
   | _ => none
 
@@ -132,21 +204,24 @@ def completeDataInputOutputUserTask? (program : Program) (state : RuntimeState)
   let filled ← filledDeclaredOutput? contract.directOutput submittedValues
   let task ← dataInputOutputTaskWait? state processInstanceId taskId activation
   let record ← activityOccurrenceForTaskWait? state.activityOccurrences task
-  let _ ← dataInputOutputLocalScope? state record contract.directInput
-  let variables ← removeActivityOccurrenceVariableScope state.variables
-    (activityOwnerForRecord record)
-  if record.attachedHandlers.isEmpty then
-    pure
-      { state with
-        waits := state.waits.erase task
-        tokens := addToken state.tokens task.output task.owner
-        activityOccurrences := state.activityOccurrences.filter fun candidate =>
-          !sameActivityOccurrence candidate record
-        variables :=
-          { variables with
-            process :=
-              { bindings := mergeProcessVariableBindings variables.process.bindings
-                  [associatedProcessBinding contract.directOutput filled] } } }
+  if dataInputOutputRuntimeJoinValid program contract task record then
+    let _ ← dataInputOutputLocalScope? state record contract.directInput
+    let variables ← removeActivityOccurrenceVariableScope state.variables
+      (activityOwnerForRecord record)
+    if record.attachedHandlers.isEmpty then
+      pure
+        { state with
+          waits := state.waits.erase task
+          tokens := addToken state.tokens task.output task.owner
+          activityOccurrences := state.activityOccurrences.filter fun candidate =>
+            !sameActivityOccurrence candidate record
+          variables :=
+            { variables with
+              process :=
+                { bindings := mergeProcessVariableBindings variables.process.bindings
+                    [associatedProcessBinding contract.directOutput filled] } } }
+    else
+      none
   else
     none
 
@@ -195,6 +270,11 @@ private theorem dataInputOutputRunningInstance_sound {state : RuntimeState}
   split at found
   · next running => cases found; exact running
   · exact absurd found (by simp)
+
+theorem dataInputOutputRunningInstance_of_running {state : RuntimeState}
+    {instanceId : SemanticId} (running : state.control = .running instanceId) :
+    dataInputOutputRunningInstance? state = some instanceId := by
+  simp [dataInputOutputRunningInstance?, running]
 
 /-- `ADIO-READY-01`. Missing or ambiguous required Process input universally refuses activation. -/
 theorem dataInputOutputUnavailableSourceRefusesActivation (state : RuntimeState)
@@ -251,7 +331,10 @@ theorem dataInputOutputActivationPreservesProcessScope {state after : RuntimeSta
       | some instanceId =>
           cases source : dataInputSourceBinding? state directInput with
           | none => simp [owned, running, source] at step
-          | some binding => simp [owned, running, source] at step; cases step; rfl
+          | some binding =>
+              simp [owned, running, source] at step
+              obtain ⟨_, rfl⟩ := step
+              rfl
 
 /-- The complete Activity occurrence identity minted by one composed activation. -/
 def dataInputOutputActivityOwner (state : RuntimeState) (instanceId : SemanticId)
@@ -259,6 +342,52 @@ def dataInputOutputActivityOwner (state : RuntimeState) (instanceId : SemanticId
   { processInstanceId := instanceId
     activityElementId := ⟨taskId.value⟩
     activation := activityActivationCount state taskId + 1 }
+
+/-- An existing local scope for the next Activity identity refuses activation instead of creating an
+ambiguous second owner. -/
+theorem dataInputOutputExistingLocalOwnerRefusesActivation (state : RuntimeState)
+    (instanceId : SemanticId) (input output : ControlPlaceId) (taskId : TaskDefinitionId)
+    (taskName : Option String) (directInput : DirectActivityDataInput)
+    (running : state.control = .running instanceId)
+    (present : state.variables.activities.any
+      (activityOccurrenceScopeMatches (dataInputOutputActivityOwner state instanceId taskId)) = true) :
+    activateDataInputOutputUserTask? state input output taskId taskName directInput = none := by
+  unfold activateDataInputOutputUserTask?
+  have hosted := dataInputOutputRunningInstance_of_running running
+  cases owned : onlyTokenOwner? state input with
+  | none => simp
+  | some owner =>
+      cases source : dataInputSourceBinding? state directInput with
+      | none => simp [hosted]
+      | some binding =>
+          have present' : state.variables.activities.any (activityOccurrenceScopeMatches
+              { processInstanceId := instanceId
+                activityElementId := ⟨taskId.value⟩
+                activation := activityActivationCount state taskId + 1 }) = true := by
+            simpa [dataInputOutputActivityOwner] using present
+          simp [hosted]
+          exact List.any_eq_true.mp present'
+
+/-- Every successful activation obtains local-owner freshness from the evaluator's fail-closed join. -/
+theorem activateDataInputOutputUserTask_localOwnerFresh {state after : RuntimeState}
+    {instanceId : SemanticId} {input output : ControlPlaceId} {taskId : TaskDefinitionId}
+    {taskName : Option String} {directInput : DirectActivityDataInput}
+    (running : state.control = .running instanceId)
+    (step : activateDataInputOutputUserTask? state input output taskId taskName directInput =
+      some after) :
+    ∀ scope ∈ state.variables.activities,
+      activityOccurrenceScopeMatches
+        (dataInputOutputActivityOwner state instanceId taskId) scope = false := by
+  unfold activateDataInputOutputUserTask? at step
+  have hosted := dataInputOutputRunningInstance_of_running running
+  cases owned : onlyTokenOwner? state input with
+  | none => simp [owned] at step
+  | some owner =>
+      cases source : dataInputSourceBinding? state directInput with
+      | none => simp [owned, hosted, source] at step
+      | some binding =>
+          simp [owned, hosted, source] at step
+          exact step.1
 
 /-- The exact Activity record inserted by one composed activation. -/
 def dataInputOutputActivityRecord (state : RuntimeState) (instanceId : SemanticId)
@@ -296,7 +425,7 @@ theorem dataInputOutputActivationCopiesSelectedSourceExactly {state after : Runt
   | none => simp [owned] at step
   | some owner =>
       simp [owned, hosted, available] at step
-      cases step
+      obtain ⟨_, rfl⟩ := step
       simp only [dataInputOutputActivityOwner] at fresh
       simp only [activityOccurrenceVariableBindings, addActivityOccurrenceVariableScope,
         dataInputOutputActivityOwner]
@@ -335,13 +464,13 @@ theorem dataInputOutputActivationEstablishesExactOneScope {state after : Runtime
   | none => simp [owned] at step
   | some owner =>
       simp [owned, hosted, available] at step
-      cases step
+      obtain ⟨_, rfl⟩ := step
       simp only [dataInputOutputActivityOwner] at fresh
       simp only [addActivityOccurrenceVariableScope, dataInputOutputActivityOwner]
       exact filter_insertActivityVariableScope_eq_singleton _ _
         (by simp [activityOccurrenceScopeMatches, localDataOwnerMatches]) fresh
 
-private theorem dataInputOutputCompletionJoin {program : Program} {state after : RuntimeState}
+theorem dataInputOutputCompletionJoin {program : Program} {state after : RuntimeState}
     {processInstanceId : SemanticId} {taskId : TaskDefinitionId} {activation : Nat}
     {submittedValues : List VariableBinding}
     (step : completeDataInputOutputUserTask? program state processInstanceId taskId activation
@@ -381,23 +510,26 @@ private theorem dataInputOutputCompletionJoin {program : Program} {state after :
                   cases joined : activityOccurrenceForTaskWait? state.activityOccurrences task with
                   | none => simp [running, declared, live, joined] at step
                   | some record =>
-                      cases scopeFound : dataInputOutputLocalScope? state record contract.directInput with
-                      | none => simp [running, declared, available, live, joined, scopeFound] at step
-                      | some scope =>
-                          cases removed : removeActivityOccurrenceVariableScope state.variables
-                              (activityOwnerForRecord record) with
-                          | none =>
-                              simp [running, declared, live, joined, removed]
-                                at step
-                          | some variables =>
-                              simp [running, declared, available, live, joined, scopeFound, removed]
-                                at step
-                              obtain ⟨handlers, changed⟩ := step
-                              cases changed
-                              exact ⟨instanceId, contract, filled, task, record, scope, variables,
-                                rfl, rfl, available, rfl, joined, scopeFound, removed,
-                                (by simpa using handlers),
-                                rfl, rfl, rfl⟩
+                      cases joinValid : dataInputOutputRuntimeJoinValid program contract task record
+                      · simp [running, declared, live, joined, joinValid] at step
+                      · cases scopeFound : dataInputOutputLocalScope? state record
+                            contract.directInput with
+                        | none =>
+                            simp [running, declared, available, live, joined, joinValid, scopeFound]
+                              at step
+                        | some scope =>
+                            cases removed : removeActivityOccurrenceVariableScope state.variables
+                                (activityOwnerForRecord record) with
+                            | none =>
+                                simp [running, declared, live, joined, removed] at step
+                            | some variables =>
+                                simp [running, declared, available, live, joined, joinValid,
+                                  scopeFound, removed] at step
+                                obtain ⟨handlers, changed⟩ := step
+                                cases changed
+                                exact ⟨instanceId, contract, filled, task, record, scope, variables,
+                                  rfl, rfl, available, rfl, joined, scopeFound, removed,
+                                  (by simpa using handlers), rfl, rfl, rfl⟩
 
 /-- `ADIO-FILL-01`. A missing, extra, or wrongly named required output refuses universally. -/
 theorem dataInputOutputUnavailableOutputRefusesCompletion (program : Program)
@@ -558,7 +690,10 @@ theorem activateDataInputOutputUserTask_activityOccurrences {state after : Runti
   unfold activateDataInputOutputUserTask? at step
   cases source : dataInputSourceBinding? state directInput with
   | none => rw [source] at available; simp at available
-  | some binding => simp [owned, hosted, source] at step; cases step; rfl
+  | some binding =>
+      simp [owned, hosted, source] at step
+      obtain ⟨_, rfl⟩ := step
+      rfl
 
 /-- `RSI-ISSUE-01`. Composed activation issues above the Activity-element high-water mark. -/
 theorem activateDataInputOutputUserTask_issuesFreshActivity {state after : RuntimeState}
@@ -578,7 +713,7 @@ theorem activateDataInputOutputUserTask_issuesFreshActivity {state after : Runti
           | none => simp [owned, running, source] at step
           | some binding =>
               simp [owned, running, source] at step
-              cases step
+              obtain ⟨_, rfl⟩ := step
               exact activityIdentityIssuingDiscipline_insertActivityOccurrence state
                 (dataInputOutputActivityRecord state instanceId owner taskId)
                 (by simp [dataInputOutputActivityRecord])

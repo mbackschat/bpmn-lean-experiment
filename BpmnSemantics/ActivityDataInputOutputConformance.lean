@@ -1,3 +1,5 @@
+import BpmnSemantics.SemanticProcess.ActivityDataInputOutputActivationRuntimeStatePreservation
+import BpmnSemantics.SemanticProcess.ActivityDataInputOutputCompletionRuntimeStatePreservation
 import BpmnSemantics.SemanticProcess.Execution
 import BpmnSemantics.SemanticProcess.RootScopeFixtures
 import BpmnSemantics.SemanticProcess.Scenario
@@ -227,6 +229,101 @@ theorem wrongLocalContentRefusesWithExactStatePreservation :
         (completeClaim "complete-wrong-local" [decision (.string "approve")]) =
       refused (withLocalScopes [malformed]) := by
   decide +kernel
+
+/-- `ADIO-REFUSE-01`: the copied local value remains in the composed profile's String-or-Null
+domain even when an otherwise valid state is injected directly below Process-data admission. -/
+theorem booleanLocalValueRefusesWithExactStatePreservation :
+    let malformed : ActivityVariableScope :=
+      { copiedScope with
+          bindings :=
+            [{ name := claimDirectInput.targetDataInputId, value := .boolean true }] }
+    applyStimulus scenarioClosureLimit claimProgram (withLocalScopes [malformed])
+        (completeClaim "complete-boolean-local" [decision (.string "approve")]) =
+      refused (withLocalScopes [malformed]) := by
+  decide +kernel
+
+private def foreignClaimInstanceId : SemanticId := ⟨"ClaimAssessmentInstance_foreign"⟩
+
+private def wrongClaimScopeOwner : ScopeOccurrenceId :=
+  { processInstanceId := claimInstanceId
+    definitionScopeId := ⟨"scope:wrong"⟩
+    activation := 1 }
+
+private def wrongOutputActive : RuntimeState :=
+  { active with
+    waits := active.waits.map fun wait =>
+      { wait with output := ⟨"place:Flow_ClaimReceived_Assess"⟩ } }
+
+private def wrongStaticScopeActive : RuntimeState :=
+  { active with
+    waits := active.waits.map fun wait => { wait with owner := wrongClaimScopeOwner }
+    activityOccurrences := active.activityOccurrences.map fun record =>
+      { record with owner := wrongClaimScopeOwner } }
+
+private def wrongWaitProcessActive : RuntimeState :=
+  { active with
+    waits := active.waits.map fun wait => { wait with processInstanceId := foreignClaimInstanceId }
+    activityOccurrences := active.activityOccurrences.map fun record =>
+      { record with
+        body := .userTask
+          { processInstanceId := foreignClaimInstanceId
+            elementId := ⟨"UserTask_AssessClaim"⟩
+            activation := 1 } } }
+
+private def wrongRecordProcessActive : RuntimeState :=
+  { active with
+    activityOccurrences := active.activityOccurrences.map fun record =>
+      { record with processInstanceId := foreignClaimInstanceId }
+    variables :=
+      { active.variables with
+        activities :=
+          [{ copiedScope with
+             owner := .activityOccurrence
+               { claimActivityOwner with processInstanceId := foreignClaimInstanceId } }] } }
+
+/-- The live wait must route to the output declared by its exact composed operation. -/
+theorem wrongLiveWaitOutputRefusesBeforeMutation :
+    completeDataInputOutputUserTask? claimProgram wrongOutputActive claimInstanceId
+      ⟨"UserTask_AssessClaim"⟩ 1 [decision (.string "approve")] = none := by
+  decide +kernel
+
+/-- The wait and record owner cannot substitute a static scope outside the declaring operation. -/
+theorem wrongLiveWaitStaticScopeRefusesBeforeMutation :
+    completeDataInputOutputUserTask? claimProgram wrongStaticScopeActive claimInstanceId
+      ⟨"UserTask_AssessClaim"⟩ 1 [decision (.string "approve")] = none := by
+  decide +kernel
+
+/-- A wait occurrence cannot claim a process distinct from its live scope owner. -/
+theorem mismatchedLiveWaitProcessOwnerRefusesBeforeMutation :
+    completeDataInputOutputUserTask? claimProgram wrongWaitProcessActive foreignClaimInstanceId
+      ⟨"UserTask_AssessClaim"⟩ 1 [decision (.string "approve")] = none := by
+  decide +kernel
+
+/-- An Activity record cannot claim a process distinct from its live scope owner. -/
+theorem mismatchedActivityRecordProcessOwnerRefusesBeforeMutation :
+    completeDataInputOutputUserTask? claimProgram wrongRecordProcessActive claimInstanceId
+      ⟨"UserTask_AssessClaim"⟩ 1 [decision (.string "approve")] = none := by
+  decide +kernel
+
+/-- The composed activation preservation law is quantified over its predecessor and successor. -/
+theorem quantifiedActivationRuntimeWellFormedPreservationIsAvailable
+    (before after : RuntimeState)
+    (wellFormed : runtimeStateWellFormed claimProgram claimInstanceId before = true)
+    (transition : DataInputOutputActivationStep claimProgram before after) :
+    runtimeStateWellFormed claimProgram claimInstanceId after = true := by
+  exact dataInputOutputActivationStep_preserves_runtimeStateWellFormed
+    claimProgram claimInstanceId before after (by decide +kernel) (by decide +kernel) wellFormed
+      transition
+
+/-- The composed completion preservation law is quantified over its predecessor and successor. -/
+theorem quantifiedCompletionRuntimeWellFormedPreservationIsAvailable
+    (before after : RuntimeState)
+    (wellFormed : runtimeStateWellFormed claimProgram claimInstanceId before = true)
+    (transition : DataInputOutputCompletionStep claimProgram before after) :
+    runtimeStateWellFormed claimProgram claimInstanceId after = true := by
+  exact dataInputOutputCompletionStep_preserves_runtimeStateWellFormed
+    claimProgram claimInstanceId before after (by decide +kernel) (by decide +kernel) wellFormed
+      transition
 
 /-- The bounded positive active and completed states remain admitted by the aggregate runtime
 predicate; the quantified family laws separately establish the one-scope and writer obligations. -/
