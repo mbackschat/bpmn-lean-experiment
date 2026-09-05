@@ -2,8 +2,8 @@
 
 ## Status
 
-Lifecycle: draft
-Review: pending
+Lifecycle: owner-approved
+Review: approved
 
 ## Problem and bounded outcome
 
@@ -77,6 +77,6 @@ Document integration is governed by [documentation control](../scripts/document-
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `6f3e6c6bd156ab43cab5f111e26c3244fa39b4c9` | `fork-turns-none` | `approve` | `not-required` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
