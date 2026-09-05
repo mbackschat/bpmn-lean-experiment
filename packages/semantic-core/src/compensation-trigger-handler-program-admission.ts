@@ -368,7 +368,7 @@ function isPositiveSafeInteger(value: unknown): value is number {
 }
 
 function isCanonicalByteLimit(value: unknown): value is number {
-  return Number.isSafeInteger(value) && Number(value) >= 2 &&
+  return Number.isSafeInteger(value) && Number(value) >= 7 &&
     Number(value) <= 65_536;
 }
 

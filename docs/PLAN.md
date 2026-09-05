@@ -108,7 +108,7 @@ Risk band: external-review corrections; RC implementation is held.
 
 Checkpoint: `305b5893` commits both review corrections with complete Lean/core gates green. The subsequent proof-owner split preserves every theorem and passes the fixed 3 GiB diagnostic without pressure/OOM events. The [cost ledger](CAPSULE-COST-LEDGER.md#measurements) retains the preceding failures. Closure lanes remain untouched.
 
-Next action: work through the correction checklist above before resuming RC. Obtain the required correction audit for the [composed Activity-data checkpoint](capsules/ACTIVITY-DATA-INPUT-OUTPUT-MEDIATION-PROPOSAL.md#independent-cold-review-receipt) with the complete verifier running concurrently. Closure requires a green audit.
+Next action: verify and review the approved [empty-state capacity repair](capsules/COMPENSATION-EMPTY-STATE-CAPACITY-REPAIR-PROPOSAL.md) before runtime-invariant integration; finish the checklist and [composed Activity-data correction audit](capsules/ACTIVITY-DATA-INPUT-OUTPUT-MEDIATION-PROPOSAL.md#independent-cold-review-receipt) before resuming RC.
 
 Oracle: one User Task activation copies the required Process input into its occurrence-owned local scope, and one accepted completion atomically routes its required output to Process scope and disposes that same local scope across source, Lean, the semantic core, publication, and Temporal refinement.
 

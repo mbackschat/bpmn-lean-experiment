@@ -70,9 +70,9 @@ The mechanically routed constraints include [Lean source contracts](../../script
 | Owner | Current headroom | Growth condition |
 |---|---:|---|
 | [TypeScript declaration admission](../../packages/semantic-core/src/compensation-trigger-handler-program-admission.ts) | 433 | Keep the correction local to execution-limit validation |
-| [Lean declaration validity](../../BpmnSemantics/SemanticProcess/CompensationTriggerHandlerDeclaration.lean) | 610 | Correct the bound and expose its validity consequence |
+| [Lean declaration validity](../../BpmnSemantics/SemanticProcess/CompensationTriggerHandlerDeclaration.lean) | 601 | Correct the bound and expose its validity consequence |
 | [Lean JSON reader](../../BpmnSemantics/SemanticProcessJson/CompensationTriggerHandler.lean) | 723 | Preserve strict shape and integer decoding |
-| [Lean Program conformance](../../BpmnSemantics/CompensationTriggerHandlerProgramContractConformance.lean) | 716 | Add compact independent boundary facts only |
+| [Lean Program conformance](../../BpmnSemantics/CompensationTriggerHandlerProgramContractConformance.lean) | 629 | Add compact independent boundary facts only |
 
 These measurements are the nonblank-line remainder below the 800-line review target. Rerun the binding inventory before growth; if the correction cannot fit, redesign its owner boundary before editing.
 
@@ -81,6 +81,12 @@ These measurements are the nonblank-line remainder below the 800-line review tar
 Cold proposal approval precedes any production admission change. The first green implementation target closes the three-reader agreement, canonical-byte law, independent positive/negative evidence, affected gates, consumer calibration, documentation, cost, and complete verification; it may use the governed combined checkpoint/closure review only when all those obligations are present and no dependent runtime-invariant implementation has crossed the unreviewed boundary. Otherwise it stops for the ordinary semantic-checkpoint review before dependent integration.
 
 Reopen if the fix requires a different encoding, a weaker theorem, any changed registered profile or exact-source Program, a runtime exception, or a host policy. Closure establishes only that every admitted Compensation declaration can represent its empty execution pair; nonempty reachability and general runtime preservation remain separately owned.
+
+## Implementation checkpoint
+
+All three declaration readers implement the reviewed minimum. The [TypeScript boundary tests](../../packages/semantic-core/test/compensation-empty-state-capacity.test.ts) and [Lean conformance owner](../../BpmnSemantics/CompensationTriggerHandlerProgramContractConformance.lean) independently separate undersized execution declarations, valid empty states, upper/integer bounds, and unchanged retention/snapshot minima. The declaration-validity theorem implies that the independently measured canonical empty pair fits; every pre-existing theorem statement is unchanged.
+
+On 2026-09-05, the complete semantic-core gate passed 726 tests, and complete Lean verification passed all 296 targets under the unchanged 3 GiB/no-swap controller. The kernel-decided boundary witnesses passed; full-gate peak usage was 3,006,087,168 cgroup bytes with zero limit-hit/OOM events and zero swaps. Immutable consumer calibration, Product 1 verification, and independent checkpoint/closure review remain outstanding. Dependent runtime-invariant integration stays blocked at that review boundary.
 
 ## Independent cold-review receipt
 

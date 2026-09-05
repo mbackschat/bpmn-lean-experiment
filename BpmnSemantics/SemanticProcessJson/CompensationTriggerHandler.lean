@@ -65,7 +65,7 @@ private def decodeLimits (json : Json) : Except String CompensationTriggerLimits
       maxHandlers := ← decodeSafeNat (← field json "maxHandlers")
       maxCanonicalBytes := ← decodeSafeNat (← field json "maxCanonicalBytes") }
   if limits.maxTriggers = 0 || limits.maxHandlers = 0 ||
-      limits.maxCanonicalBytes < 2 || limits.maxCanonicalBytes > 65536 then
+      limits.maxCanonicalBytes < 7 || limits.maxCanonicalBytes > 65536 then
     throw "compensation limits are outside their admitted bounds"
   pure limits
 

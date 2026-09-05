@@ -213,8 +213,18 @@ def compensationExecutionDeclarationValid (program : Program) : Bool :=
         dependenciesValid program declaration.subjects declaration.dependencies &&
         declaration.limits.maxTriggers > 0 && safeNat declaration.limits.maxTriggers &&
         declaration.limits.maxHandlers > 0 && safeNat declaration.limits.maxHandlers &&
-        declaration.limits.maxCanonicalBytes ≥ 2 &&
+        declaration.limits.maxCanonicalBytes ≥ 7 &&
         declaration.limits.maxCanonicalBytes ≤ 65536 &&
         safeNat declaration.limits.maxCanonicalBytes
+
+/-- COMPEMPTY-CAPACITY-01 requires room for the unchanged empty execution pair. -/
+theorem compensationExecutionDeclarationValid_minimumBytes (program : Program)
+    (declaration : CompensationExecutionDeclaration)
+    (present : program.compensationExecution = some declaration)
+    (valid : compensationExecutionDeclarationValid program = true) :
+    7 ≤ declaration.limits.maxCanonicalBytes := by
+  simp only [compensationExecutionDeclarationValid, present, Bool.and_eq_true,
+    decide_eq_true_eq] at valid
+  exact valid.1.1.2
 
 end BpmnSemantics.SemanticProcess
