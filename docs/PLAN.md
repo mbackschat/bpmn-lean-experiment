@@ -87,9 +87,9 @@ Active work ID: `DATA-AND-TASK-MECHANISMS`.
 
 Risk band: standard data lifetime and mappings.
 
-Checkpoint: `1326f543` supplies the initial composed source, checked graph, Program, runtime, observation, and Lean account; `fc15f78c` binds its below-ceiling proof cost. Cold review rejected that target: the claimed quantified Lean preservation theorem was absent, Lean accepted local value types refused by TypeScript, and TypeScript checked admission omitted Lean's seven-way identity isolation. All closure lanes remain untouched.
+Checkpoint: `42f4b50c` and `2209a5f3` correct checked identity isolation, the Lean local value domain, and quantified aggregate runtime-state preservation; `b4236ec2` extends the direct-consumer census. The complete Lean library passed at `64d0cb86`. Both affected conformance targets were remeasured at that immutable source under the unchanged 3 GiB limit; the [cost ledger](CAPSULE-COST-LEDGER.md#measurements) retains the Activity IO near-cap result and repeat. All closure lanes remain untouched.
 
-Next action: correct all three rejected-review findings in the [composed Activity data proposal](capsules/ACTIVITY-DATA-INPUT-OUTPUT-MEDIATION-PROPOSAL.md) at their semantic owners, extend the consumer census to direct composed discriminants, remeasure every affected Lean target, and submit a new immutable semantic-checkpoint target to a context-cold review. Do not enter any closure lane before a green verdict.
+Next action: submit the corrected [composed Activity data proposal](capsules/ACTIVITY-DATA-INPUT-OUTPUT-MEDIATION-PROPOSAL.md) and implementation as a new immutable semantic-checkpoint target to context-cold review, running the complete verifier concurrently. Do not enter any closure lane before a green verdict.
 
 Oracle: one User Task activation copies the required Process input into its occurrence-owned local scope, and one accepted completion atomically routes its required output to Process scope and disposes that same local scope across source, Lean, the semantic core, publication, and Temporal refinement.
 

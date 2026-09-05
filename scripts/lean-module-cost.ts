@@ -128,6 +128,7 @@ export const leanModuleCostRecord = {
       "Two modules report ru_maxrss above the cgroup ceiling without being OOM-killed, because Docker Desktop on macOS runs a Linux VM and GNU time's resident-set accounting does not align exactly with cgroup charging, so these figures are comparable with each other but only approximately comparable to the ledger's exit-137 row.",
   },
   nearCapModules: [
+    "BpmnSemantics.ActivityDataInputOutputConformance",
     "BpmnSemantics.MessagePayloadCatchConformance",
     "BpmnSemantics.SequentialMultiInstanceProgramBindingConformance",
     "BpmnSemantics.CallActivityConformance",
@@ -443,11 +444,11 @@ export const leanModuleCostRecord = {
     },
     {
       module: "BpmnSemantics.UserTaskMetadataConformance",
-      peakResidentKib: 1741508,
-      elapsedSeconds: 7.82,
-      measuredAtCommit: "1326f543",
+      peakResidentKib: 1825220,
+      elapsedSeconds: 8.78,
+      measuredAtCommit: "64d0cb86",
     },
-    { module: "BpmnSemantics.ActivityDataInputOutputConformance", peakResidentKib: 2361096, elapsedSeconds: 9.26, measuredAtCommit: "1326f543" },
+    { module: "BpmnSemantics.ActivityDataInputOutputConformance", peakResidentKib: 2983524, elapsedSeconds: 15.20, measuredAtCommit: "64d0cb86" },
     {
       module: "BpmnSemantics.ActivityDataOutputConformance",
       peakResidentKib: 1873984,
