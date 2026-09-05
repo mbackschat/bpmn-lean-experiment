@@ -447,7 +447,7 @@ The operation census must classify trigger creation and frontier activation as o
 | [TS lifecycle](../../packages/semantic-core/src/flow-node-occurrence-lifecycle.ts) | 61 | delegate compensation projection |
 | [TS lifecycle completeness](../../packages/semantic-core/src/flow-node-occurrence-publication-external-completeness.ts) | 69 | delegate compensation oracle |
 | [TS canonical contract](../../packages/semantic-core/src/contract.ts) | 311 | failed union references only |
-| [TS evaluator](../../packages/semantic-core/src/semantic-process-runtime.ts) | 18 | dispatch only; extract all trigger and handler logic before growth |
+| [TS evaluator](../../packages/semantic-core/src/semantic-process-runtime.ts) | 36 | dispatch only; trigger, handler, and Activity-data logic stay extracted before growth |
 | [TS observation producer](../../packages/semantic-core/src/scenario.ts) | 153 | failed projection and exhaustive switch only |
 | [TS control-position projection](../../packages/semantic-core/src/control-position-projection.ts) | 382 | failed terminal-empty arm only |
 | [TS internal attempt](../../packages/semantic-core/src/internal-transition-attempt.ts) | 668 | trigger-attempt delegation only |

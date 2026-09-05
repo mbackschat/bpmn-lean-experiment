@@ -242,7 +242,7 @@ The complete `what-binds` inventory requires [`implementation-status-owner:ENGIN
 | [TS bounded scope](../../packages/semantic-core/src/semantic-process-bounded-scope-runtime.ts) | 446 | bounded entry/promotion |
 | [TS cancellation](../../packages/semantic-core/src/semantic-process-scope-cancellation.ts) | 584 | regional filtering |
 | [TS Call cleanup](../../packages/semantic-core/src/semantic-process-call-runtime.ts) | 378 | structural filtering only |
-| [TS evaluator](../../packages/semantic-core/src/semantic-process-runtime.ts) | 18 | three-arm dispatch only; snapshot staging is extracted |
+| [TS evaluator](../../packages/semantic-core/src/semantic-process-runtime.ts) | 36 | three-arm dispatch only; snapshot and Activity-data staging are extracted |
 | [TS closure](../../packages/semantic-core/src/semantic-process-closure.ts) | 616 | refusal precedence/rollback |
 | [TS snapshot staging](../../packages/semantic-core/src/internal-transition-attempt.ts) | 668 | pre-mutation reservation/promotion selection |
 | [TS census](../../packages/semantic-core/src/internal-commutation-census.ts) | 659 | new state field |

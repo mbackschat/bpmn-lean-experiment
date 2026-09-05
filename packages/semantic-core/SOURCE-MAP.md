@@ -71,6 +71,7 @@ This contributor map assigns source-file responsibilities inside `@bpmn-lean/sem
 | [activity-data-input-observation.ts](src/activity-data-input-observation.ts) | The one-element selected-input collection an open task publishes |
 | [semantic-process-activity-data-output-runtime.ts](src/semantic-process-activity-data-output-runtime.ts) | A User Task occurrence whose accepted completion fills one declared output and writes it through the association |
 | [activity-data-output-contract.ts](src/activity-data-output-contract.ts) | The Task-neutral value describing one direct Data Output Association |
+| [activity-data-operation-runtime.ts](src/activity-data-operation-runtime.ts) | Runtime dispatch shared by the direct Activity data-input and data-output operation families |
 | [catch-event-payload-contract.ts](src/catch-event-payload-contract.ts) | The Event-owned output and direct association identities for one payload-bearing catch Event |
 | [correlation-scalar-path.ts](src/correlation-scalar-path.ts) | Closed decoded Message-payload and Process-property selector values for key correlation |
 | [message-key-correlation.ts](src/message-key-correlation.ts) | Complete immutable definition address, exact candidate projection and matching, and content-bound per-instance correlated Message delivery |
