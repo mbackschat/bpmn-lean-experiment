@@ -2,7 +2,7 @@
 
 ## Status
 
-Lifecycle: implementation-in-progress
+Lifecycle: implemented-awaiting-closure
 Review: approved
 
 ## Question and current boundary
@@ -91,12 +91,12 @@ Closure records the exact corrected initialization domain and remaining position
 
 The unchanged empty-state theorem, generic actual-admission bridges, six named committed-start corollaries, and accurately restricted raw-start theorems pass their focused kernel gates. The retained witness checks the raw root-reservation counterexample beside successful actual admission, declaration-free ordinary/Message/Timer starts, child-only declaration behavior, capacity refusal, and existing declared-Message/Timer profile refusals. These are initialization facts under the specified position premise, not general execution preservation.
 
-The source-derived import guard now requires default-root reachability for named theorem owners as well as conformance files. Its separating cases cover omitted initialization and differently named preservation owners, transitive imports, declaration modifiers, and false declarations inside comments, strings, or quoted identifiers. The governing review stages remain in the receipt below; complete verification and commit-bound cost closure remain outstanding.
+The source-derived import guard now requires default-root reachability for named theorem owners as well as conformance files. Its separating cases cover omitted initialization and differently named preservation owners, transitive imports, declaration modifiers, and false declarations inside comments, strings, or quoted identifiers. The complete Product 1 verifier passed at `6577b488`; the subsequent terminal-claim and frame-comment corrections preserve executable Lean tokens. The governing review stages remain in the receipt below; commit-bound cost, reflection, and closure review remain outstanding.
 
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
 | Proposal | `fa7c01ffb69681286241e9127ae5e75b03ff5ef8` | `fork-turns-none` | `approve` | `not-required` |
-| Semantic checkpoint | `d7469e19d90811bf1b1de99adb5942cc8f3d4470` | `not-recorded` | `pending` | `not-applicable` |
+| Semantic checkpoint | `d7469e19d90811bf1b1de99adb5942cc8f3d4470` | `fork-turns-none` | `approve-with-required-edits` | `a3c9176e70388b2ac132e37fe1f3cd9b6cc848c7` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
