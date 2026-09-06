@@ -18,6 +18,8 @@ The [Workflow-chain recovery client](client/src/workflow-chain-recovery-client.t
 
 The [command-deadline witness](testkit/test/workflow-command-deadline.test.ts) binds native RPC expiry to same-command recovery after Worker replacement, one retained semantic commit, and replay. The recovery client captures command bytes once and owns one connection deadline for the entire resolution path.
 
+The [live fence-recovery witnesses](testkit/test/workflow-command-fence-recovery.test.ts) use [controlled probe Workflows](testkit/test/workflow-command-fence-probe.ts) with the production Update validator and recovery ledger. They bind the real SDK rollover/terminal refusal types to same-command successor recovery or validated `processClosed`, zero handler acceptance before release, exact retained-entry counts, and replay of every probe Run. The controlled boundary proves transport composition without claiming a production BPMN schedule.
+
 | Package | Responsibility | Temporal SDK ownership |
 |---|---|---|
 | [`protocol/`](protocol/) | Project-owned hosting contracts, identities, admission, transport, and lifecycle results | None |
