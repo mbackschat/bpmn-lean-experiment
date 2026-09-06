@@ -10,6 +10,14 @@ import {
   compileBpmnToSemanticProcess,
   parseSimpleBooleanExpression,
 } from "@bpmn-lean/bpmn-source";
+import {
+  CommandOutcome,
+  StimulusKind,
+  VariableValueKind,
+  applyStimulus,
+  initialState,
+  projectOpenUserTasks,
+} from "@bpmn-lean/semantic-core";
 
 const profile = "bpmn-2.0.2-simple-boolean-exclusive-gateway-draft";
 const language = "urn:bpmn-lean:expression:simple-boolean:v1";
@@ -193,6 +201,48 @@ test("retains declaration order and lowers the exact conditional choice", async 
       },
     },
   );
+});
+
+test("reversing only Sequence Flow declarations reverses the first-true branch", async () => {
+  const reversed = validSource.replace(
+    /(<bpmn:sequenceFlow id="Flow_First"[\s\S]*?<\/bpmn:sequenceFlow>)(\s*)(<bpmn:sequenceFlow id="Flow_Second"[\s\S]*?<\/bpmn:sequenceFlow>)/u,
+    "$3$2$1",
+  );
+  assert.notEqual(reversed, validSource);
+  assert.equal(
+    reversed.match(/<bpmn:exclusiveGateway[\s\S]*?<\/bpmn:exclusiveGateway>/u)?.[0],
+    validSource.match(/<bpmn:exclusiveGateway[\s\S]*?<\/bpmn:exclusiveGateway>/u)?.[0],
+  );
+  const original = await compile(validSource);
+  const swapped = await compile(reversed);
+  assert.equal(original.status, BpmnCompilationStatus.Accepted);
+  assert.equal(swapped.status, BpmnCompilationStatus.Accepted);
+  assert.deepEqual(swapped.checkedProcess.sequenceFlows, original.checkedProcess.sequenceFlows);
+  for (const [result, order, task] of [
+    [original, ["Flow_First", "Flow_Second"], "Task_First"],
+    [swapped, ["Flow_Second", "Flow_First"], "Task_Second"],
+  ] as const) {
+    const gateway = result.checkedProcess.nodes.find(({ kind }) =>
+      kind === CheckedNodeKind.ExclusiveGateway);
+    assert.ok(gateway?.kind === CheckedNodeKind.ExclusiveGateway);
+    assert.deepEqual(gateway.candidateFlowIds, order);
+    const choice = result.semanticProcess.operations.find(({ kind }) =>
+      kind === SemanticOperationKind.Choose);
+    assert.ok(choice?.kind === SemanticOperationKind.Choose);
+    assert.deepEqual(choice.candidates.map(({ origin }) => origin.elementId), order);
+    const started = applyStimulus(result.semanticProcess, initialState, {
+      kind: StimulusKind.StartProcess,
+      commandId: "start-choice",
+      processId: "Process_Choice",
+      instanceId: "choice-instance",
+      initialVariables: [{
+        name: "route",
+        value: { kind: VariableValueKind.String, value: "present" },
+      }],
+    });
+    assert.equal(started.outcome, CommandOutcome.Committed);
+    assert.deepEqual(projectOpenUserTasks(started.state).map(({ id }) => id.elementId), [task]);
+  }
 });
 
 test("compiles the content-bound standards-profile scenario", async () => {

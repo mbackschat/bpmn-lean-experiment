@@ -151,7 +151,7 @@ The minimum executable witnesses are:
 1. first candidate `true`, with a changed second candidate proving tail irrelevance;
 2. first `false` and second `true`;
 3. both candidates `false`, selecting the default;
-4. reversed gateway `<outgoing>` references with unchanged `sequenceFlow` declarations;
+4. reversed gateway `<outgoing>` references with unchanged `sequenceFlow` declarations, and reversed declarations with unchanged identities/references selecting the opposite first-true branch;
 5. `isPresent`, `isNull`, and `stringEquals` over present string, explicit null, and absent Process bindings;
 6. invalid syntax, overlength source, invalid identifier, invalid JSON string escape, and unpaired surrogate rejection;
 7. omitted XPath-default language, a different language URI, and a per-expression override rejection;
@@ -167,7 +167,7 @@ The current CIB JUEL probes remain calibration evidence for `CIB-AGR-0006` and `
 
 | Rule | Layer | Normative/profile basis | Lean | CIB Seven | TypeScript | Temporal | Negative or mutation |
 |---|---|---|---|---|---|---|---|
-| `XGW-EVALUATE-01` | BPMN rule plus project order interpretation | Clause 13.4.2, Table 13.2, `CIB-INT-0001` as separate compatibility fact | Independent parser, exact canonical-lowering check, and checked-order transition | Declaration-order calibration only | Strict source admission, typed lowering, and pure evaluation | Core-hosted closure | Reversed gateway references, body/AST inequality, and wrong-route mutation |
+| `XGW-EVALUATE-01` | BPMN rule plus project order interpretation | Clause 13.4.2, Table 13.2, `CIB-INT-0001` as separate compatibility fact | Independent expression parser, exact canonical-lowering check, and supplied checked-order transition | Declaration-order calibration only | Strict source admission, typed lowering, and pure evaluation | Core-hosted closure | Reversed references and declarations, body/AST inequality, and wrong-route mutation |
 | `XGW-SHORT-CIRCUIT-01` | BPMN-neutral | Clause 13.4.2 | `first_true_ignores_tail` | JUEL calibration only | Tail mutation leaves the route unchanged | Selected wait is stable on replay | Later-candidate mutation |
 | `XGW-DEFAULT-01` | BPMN-neutral | Clause 13.4.2, Table 13.2 | Executable all-false default witness | JUEL calibration only | Exact default selection | Pure closure uses the same default route | Conditional-default and default-reference mutations |
 | `XGW-ROUTE-01` | BPMN-neutral | Token-routing rule | Evaluator soundness plus `selected_output_owned` | Selected-branch calibration only | Pure consume-one/produce-one transition | Query/Update result, replay, and route-bypass discrimination | Duplicate output, source-origin, and Workflow route-substitution mutations |
@@ -182,6 +182,6 @@ The closest unsupported claim is a divergent Exclusive Gateway under another exp
 
 The checked BPMN graph and Semantic Process program have one TypeScript producer. Lean independently parses the retained expression bodies and checks graph-to-program lowering equality, but it does not independently parse BPMN XML; a shared XML-to-checked-graph defect could therefore reach Lean, the TypeScript core, and Temporal together. CIB's JUEL probes can separate declaration-order and first-true/default structure, but not truth in the project language.
 
-The nearest realistic counterexample is a source whose gateway references suggest one order while process-level Sequence Flow declarations establish another. The answer-free standards scenario contains that discriminator, and the compiler plus Lean lowering preserve declaration order. A schema-valid Workflow route substitution changes the observed User Task from `Task_First` to `Task_Second` and is detected at the differential boundary.
+The answer-free standards scenario makes gateway references disagree with process-level Sequence Flow declarations. The [compiler witness](../../packages/bpmn-source/test/simple-boolean-expression.test.ts) additionally swaps only the declarations while preserving identifiers and references: with both conditions true, the checked candidate order, IL order, and selected User Task must reverse together. This detects a compiler regression that sorts candidates by identity even when the same wrong order reaches both evaluators. Lean checks preservation of the supplied order, not its derivation from XML. A schema-valid Workflow route substitution changes the observed User Task from `Task_First` to `Task_Second` and is detected at the differential boundary.
 
 This capsule changes no canonical observation field and retains no CIB expected result. Its standards-only differential case declares Lean as the reference result and compares the independently implemented TypeScript core and Temporal host. CIB remains a calibration lane for the separately named relationship records, never an expression-truth oracle for Simple Boolean v1.
