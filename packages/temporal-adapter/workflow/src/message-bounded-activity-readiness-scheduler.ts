@@ -83,7 +83,7 @@ export type MessageBoundedActivityReadinessScheduler = Readonly<{
     state: RuntimeState,
     stimulus: CompleteUserTaskInstanceStimulus,
   ) => boolean;
-  waitForReadiness: (state: RuntimeState) => Promise<ReadonlyArray<Stimulus>>;
+  waitForReadiness: (state: RuntimeState, hostWakeRequested?: () => boolean) => Promise<ReadonlyArray<Stimulus>>;
 }>;
 
 /**
@@ -144,13 +144,13 @@ export function createMessageBoundedActivityReadinessScheduler(
       return true;
     },
 
-    async waitForReadiness(state) {
+    async waitForReadiness(state, hostWakeRequested) {
       if (managedPair(semanticProcess, state) === undefined) {
         throw hostInvariantFailure(
           "Managed Message-bounded Activity is not one exact task and Message pair",
         );
       }
-      const batch = await readiness.takeBatch();
+      const batch = await readiness.takeBatch(hostWakeRequested);
       pendingCallbackCount -= batch.length;
       return selectMessageBoundedActivityStimuli(batch);
     },

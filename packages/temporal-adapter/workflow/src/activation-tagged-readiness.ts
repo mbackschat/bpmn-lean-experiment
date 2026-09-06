@@ -1,7 +1,7 @@
 /**
  * A host scheduler's activation-tagged callback record, its wake condition, and its batch boundary.
  *
- * Two managed-wait families share exactly this much: tag each callback with the activation that
+ * Managed-wait families share exactly this much: tag each callback with the activation that
  * produced it, close that activation before classifying, and hand back one activation's worth. Which
  * callback kinds may not share an activation, and under which failure identity, deliberately stays
  * with each family — the mechanisms coincide, the semantic claims do not, and an operator must be able
@@ -25,8 +25,8 @@ export type ActivationDrain =
 export type ActivationTaggedReadiness<T> = Readonly<{
   record: (item: T) => void;
   recordFailure: (error: unknown) => void;
-  /** One activation's callbacks, or a rethrow of a failure recorded while waiting. */
-  takeBatch: () => Promise<ReadonlyArray<T>>;
+  /** One activation's callbacks, an empty host wake, or a rethrow of a retained failure. */
+  takeBatch: (hostWakeRequested?: () => boolean) => Promise<ReadonlyArray<T>>;
 }>;
 
 /**
@@ -52,8 +52,8 @@ export function createActivationTaggedReadiness<T>(
       failure = error;
     },
 
-    async takeBatch() {
-      await condition(() => recorded.length > 0 || failure !== undefined);
+    async takeBatch(hostWakeRequested = () => false) {
+      await condition(() => recorded.length > 0 || failure !== undefined || hostWakeRequested());
       if (failure !== undefined) {
         throw failure;
       }
@@ -73,6 +73,7 @@ export function createActivationTaggedReadiness<T>(
       }
       const classified = firstActivationBatch(recorded);
       if (classified === undefined) {
+        if (hostWakeRequested()) return [];
         throw hostInvariantFailure(emptyWakeMessage);
       }
       recorded = classified.remaining;

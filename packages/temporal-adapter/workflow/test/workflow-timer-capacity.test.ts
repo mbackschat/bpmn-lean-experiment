@@ -52,11 +52,11 @@ test("checks all committed Timers before entering any scheduler", async () => {
     projection,
   );
   const eventRace = source.indexOf(
-    "eventRaceScheduler.waitForReadiness(state)",
+    "eventRaceScheduler.waitForReadiness(state, hostWakeRequested)",
     projection,
   );
   const boundary = source.indexOf(
-    "boundedDeadlineScheduler.waitForReadiness(state)",
+    "boundedDeadlineScheduler.waitForReadiness(state, hostWakeRequested)",
     projection,
   );
   const durableTimer = source.indexOf("await waitForTimer(remainingMs)", projection);

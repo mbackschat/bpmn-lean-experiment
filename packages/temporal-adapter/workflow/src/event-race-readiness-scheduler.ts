@@ -56,7 +56,7 @@ export type EventRaceReadinessScheduler = Readonly<{
     stimulus: DeliverMessageStimulus,
     submitToCore: boolean,
   ) => boolean;
-  waitForReadiness: (state: RuntimeState) => Promise<ReadonlyArray<Stimulus>>;
+  waitForReadiness: (state: RuntimeState, hostWakeRequested?: () => boolean) => Promise<ReadonlyArray<Stimulus>>;
   reconcileCommittedState: (state: RuntimeState) => void;
 }>;
 
@@ -95,9 +95,9 @@ export function createEventRaceReadinessScheduler(
       return true;
     },
 
-    async waitForReadiness(state) {
+    async waitForReadiness(state, hostWakeRequested) {
       timer.ensureArmed(requireManagedRaceTimer(state));
-      const batch = await readiness.takeBatch();
+      const batch = await readiness.takeBatch(hostWakeRequested);
       if (
         batch.some(({ kind }) => kind === StimulusKind.DeliverMessage) &&
         batch.some(({ kind }) => kind === StimulusKind.FireTimer)

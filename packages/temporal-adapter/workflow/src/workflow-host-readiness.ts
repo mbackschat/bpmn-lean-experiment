@@ -95,6 +95,7 @@ export async function waitForHostReadiness({
   reserveStimulus,
   hostRecheckRequested,
 }: HostReadinessInput): Promise<HostReadinessAction> {
+  const hostWakeRequested = () => pendingStimuli.length > 0 || hostRecheckRequested();
   const timers = projectOpenTimers(state);
   const effects = projectOpenEffects(state);
   const timerCapacity = preflightPendingWorkflowTimers(timers.length);
@@ -110,12 +111,10 @@ export async function waitForHostReadiness({
     if (pendingStimuli.length > 0) {
       return HostReadinessAction.DrainSemanticQueue;
     }
-    enqueueStimulus(
-      acceptedStimuli,
-      pendingStimuli,
-      await compensationScheduler.waitForReadiness(state),
-      reserveStimulus,
-    );
+    const completion = await compensationScheduler.waitForReadiness(state, hostWakeRequested);
+    if (completion !== undefined) {
+      enqueueStimulus(acceptedStimuli, pendingStimuli, completion, reserveStimulus);
+    }
     return HostReadinessAction.DrainSemanticQueue;
   }
   if (messageBoundedActivityScheduler.ownsCommittedPair(state)) {
@@ -132,6 +131,7 @@ export async function waitForHostReadiness({
     for (
       const stimulus of await messageBoundedActivityScheduler.waitForReadiness(
         state,
+        hostWakeRequested,
       )
     ) {
       // Both Signal and Update handlers already accepted exact pair members before scheduling them.
@@ -145,7 +145,7 @@ export async function waitForHostReadiness({
         "Pre-start host admission allowed an effect beside a managed event race",
       );
     }
-    const readyStimuli = await eventRaceScheduler.waitForReadiness(state);
+    const readyStimuli = await eventRaceScheduler.waitForReadiness(state, hostWakeRequested);
     for (const stimulus of readyStimuli) {
       if (stimulus.kind === StimulusKind.DeliverMessage) {
         pendingStimuli.push(stimulus);
@@ -184,7 +184,7 @@ export async function waitForHostReadiness({
     );
     if (boundedDeadlineScheduler !== undefined) {
       for (
-        const stimulus of await boundedDeadlineScheduler.waitForReadiness(state)
+        const stimulus of await boundedDeadlineScheduler.waitForReadiness(state, hostWakeRequested)
       ) {
         if (stimulus.kind === StimulusKind.CompleteUserTaskInstance) {
           // Its Update handler already accepted it; re-accepting would drop it from the queue.

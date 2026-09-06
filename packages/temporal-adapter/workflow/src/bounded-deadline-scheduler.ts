@@ -226,7 +226,7 @@ export type BoundedDeadlineScheduler = Readonly<{
     state: RuntimeState,
     stimulus: CompleteUserTaskInstanceStimulus,
   ) => boolean;
-  waitForReadiness: (state: RuntimeState) => Promise<ReadonlyArray<Stimulus>>;
+  waitForReadiness: (state: RuntimeState, hostWakeRequested?: () => boolean) => Promise<ReadonlyArray<Stimulus>>;
   reconcileCommittedState: (state: RuntimeState) => void;
 }>;
 
@@ -284,11 +284,11 @@ export function createBoundedDeadlineScheduler(
       return true;
     },
 
-    async waitForReadiness(state) {
+    async waitForReadiness(state, hostWakeRequested) {
       deadline.ensureArmed(
         requireManagedDeadline(semanticProcess, state, family),
       );
-      const batch = await readiness.takeBatch();
+      const batch = await readiness.takeBatch(hostWakeRequested);
       if (
         batch.some(
           ({ kind }) => kind === StimulusKind.CompleteUserTaskInstance,

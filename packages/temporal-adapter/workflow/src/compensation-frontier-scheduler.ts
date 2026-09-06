@@ -75,7 +75,10 @@ export type CompensationFrontierSchedulerAdapters = Readonly<{
 
 export type CompensationFrontierScheduler = Readonly<{
   ownsCommittedFrontier: (state: RuntimeState) => boolean;
-  waitForReadiness: (state: RuntimeState) => Promise<CompleteEffectStimulus>;
+  waitForReadiness: {
+    (state: RuntimeState): Promise<CompleteEffectStimulus>;
+    (state: RuntimeState, hostWakeRequested: () => boolean): Promise<CompleteEffectStimulus | undefined>;
+  };
   reconcileCommittedState: (state: RuntimeState) => void;
   hasUnreconciledActivities: () => boolean;
   waitForIdle: () => Promise<void>;
@@ -227,9 +230,15 @@ export function createCompensationFrontierScheduler(
     return undefined;
   }
 
+  function waitForReadiness(state: RuntimeState): Promise<CompleteEffectStimulus>;
+  function waitForReadiness(
+    state: RuntimeState,
+    hostWakeRequested: () => boolean,
+  ): Promise<CompleteEffectStimulus | undefined>;
   async function waitForReadiness(
     state: RuntimeState,
-  ): Promise<CompleteEffectStimulus> {
+    hostWakeRequested?: () => boolean,
+  ): Promise<CompleteEffectStimulus | undefined> {
     if (terminalFailure !== undefined) throw terminalFailure;
     scheduleFrontier(state);
     for (;;) {
@@ -251,7 +260,8 @@ export function createCompensationFrontierScheduler(
             return assertNever(command);
         }
       }
-      const batch = await adapters.readiness.takeBatch();
+      const batch = await adapters.readiness.takeBatch(hostWakeRequested);
+      if (batch.length === 0 && hostWakeRequested?.()) return undefined;
       pendingCompletions = [
         ...pendingCompletions,
         ...batch.slice().sort(compareCompletions),
