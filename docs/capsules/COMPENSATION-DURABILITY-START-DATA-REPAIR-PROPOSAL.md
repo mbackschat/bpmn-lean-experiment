@@ -133,6 +133,10 @@ Implementation stops if the correction requires source XML changes, a default va
 
 After this assurance correction is independently approved, implementation first makes the TypeScript and Lean exact start predicate red then green, including both downstream bounds under the corrected evidence split, proves both real-source completion orders reach the same compensation frontier, and updates Product 1 pre-start refusal. Only then may the in-progress durability scheduler count the exact source as live evidence. The repair is committed as its own coherent unregistered semantic checkpoint before scheduler integration so its capacity-total admission claim receives an independent review boundary. Closure still requires the trigger proposal's complete live Temporal, replacement, continuation, retry, cancellation, receipt, replay, documentation, and independent review obligations.
 
+## Closure evidence preparation
+
+The exact-source success and failure witnesses required by the trigger proposal are implemented and closure-reviewed there, including frozen input, concurrent handlers, pre-schedule continuation, Worker replacement, same-key retry, cancellation drain, terminal receipts, and replay. Complete Product 1 verification subsequently passed at `ea5ca057`. The [cost ledger](../CAPSULE-COST-LEDGER.md#pending-repair-closure-costs) records this repair's implementation/correction range against the required source/lowering checkpoint; both addition measures fall. The separate trigger closure supplies composed evidence but does not replace this repair's own independent closure review, which remains open below.
+
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |

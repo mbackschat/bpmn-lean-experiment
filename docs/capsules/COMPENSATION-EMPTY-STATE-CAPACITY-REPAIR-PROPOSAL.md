@@ -88,6 +88,8 @@ All three declaration readers implement the reviewed minimum. The [TypeScript bo
 
 On 2026-09-05, the complete semantic-core gate passed 726 tests, and candidate-source Lean verification passed all 296 targets under the unchanged 3 GiB/no-swap controller. The kernel-decided boundary witnesses passed; full-gate peak usage was 3,006,087,168 cgroup bytes with zero limit-hit/OOM events and zero swaps. The [immutable consumer calibration](../CAPSULE-COST-LEDGER.md#measurements) binds the changed conformance owner to source commit `4b2a304f`; the full candidate run has no immutable whole-tree receipt. The independent checkpoint review approved the implementation and permits dependent runtime-invariant integration. Complete Product 1 verification, reflection, and closure review remain outstanding.
 
+Subsequent complete Product 1 verification passed at `6577b488` and `ea5ca057`, including this repair and its initialization consumer. The [commit-bound cost and reflection](../CAPSULE-COST-LEDGER.md#pending-repair-closure-costs) compare the implementation/calibration checkpoint with the preceding start-data repair. These facts complete the evidence preparation, not the independent closure decision; the receipt remains open.
+
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
