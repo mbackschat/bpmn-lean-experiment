@@ -1085,7 +1085,7 @@ Disposition
 Evidence
 : [whole-command rollback tests](../packages/semantic-core/test/closure-atomicity.test.ts), [late-ambiguity publication tests](../packages/semantic-core/test/semantic-transition-publication.test.ts), and [Workflow failure classification](../packages/temporal-adapter/workflow/test/closure-failure-classification.test.ts)
 
-**First observed:** external review of [internal closure atomicity](capsules/INTERNAL-CLOSURE-ATOMICITY-REPAIR-PROPOSAL.md)
+**First observed:** external review of [internal closure atomicity](capsules/INTERNAL-CLOSURE-ATOMICITY-REPAIR-SPEC.md)
 
 Fuel exhaustion and late ambiguity independently exposed the same broken command boundary after successful admission. The caller-visible result now restores the exact pre-admission state and removes speculative publication; quantified Lean laws cover both result producers. The Workflow checks infrastructure failure before its success-only publication and recovery processing. Its separating probe requires the intended failure type after recovery admission and keeps a successful recoverable completion as the positive control.
 

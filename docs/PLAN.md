@@ -77,7 +77,7 @@ Owner instruction on 2026-09-05: resolve the supplied six reviews before resumin
 - [ ] Repair regional cancellation, quiescence, and Lean removal completeness (`R2`, `R6`).
 - [x] Measure E1; remove demonstrated fixture-reduction amplification (`R4`).
 - [ ] Close runtime-invariant binding and preservation gaps (`R1`, `R2`, `R6`).
-- [ ] Repair footprint, preparation, rollback, commutation, and publication guarantees (`R3`).
+- [x] Repair footprint, preparation, rollback, commutation, and publication guarantees (`R3`).
 - [ ] Resolve Compensation dependency, cancellation, ownership, and failure gaps (`R6`).
 - [ ] Repair Temporal deployment/recovery and complete omitted hosting checks (`R5`).
 - [ ] Bind source-order and fixture/scenario evidence independently (`R1`).
@@ -106,9 +106,9 @@ Active work ID: `DATA-AND-TASK-MECHANISMS`.
 
 Risk band: external-review corrections; RC implementation is held.
 
-Checkpoint: the [closure atomicity repair](capsules/INTERNAL-CLOSURE-ATOMICITY-REPAIR-PROPOSAL.md) has complete Lean and semantic-core gates, cross-target rollback, publication discriminators, and corrected accounts at `e9c9db0f`. Its [consumer measurements](CAPSULE-COST-LEDGER.md#internal-closure-atomicity-correction) retain the fixed 3 GiB ceiling. The [review receipt](capsules/INTERNAL-CLOSURE-ATOMICITY-REPAIR-PROPOSAL.md#independent-cold-review-receipt) owns stage decisions.
+Checkpoint: the [closure atomicity specification](capsules/INTERNAL-CLOSURE-ATOMICITY-REPAIR-SPEC.md) has complete Product 1 verification at `37cfbfb9`, including Lean, cross-target rollback, canonical publication, recovery, live hosting, and replay. Its [consumer measurements](CAPSULE-COST-LEDGER.md#internal-closure-atomicity-correction) retain the fixed 3 GiB ceiling. The [review receipt](capsules/INTERNAL-CLOSURE-ATOMICITY-REPAIR-SPEC.md#independent-cold-review-receipt) owns stage decisions.
 
-Next action: verify the Temporal failure-classification correction and complete Product 1 integration; finish the checklist, remaining repair closures, and [composed Activity-data correction audit](capsules/ACTIVITY-DATA-INPUT-OUTPUT-MEDIATION-PROPOSAL.md#independent-cold-review-receipt) before resuming RC.
+Next action: repair the reproduced Temporal Update-capacity classification, managed-wait ingress wakeup, and event-race rollover defects; implement the [approved native deployment repair](TEMPORAL-WORKER-DEPLOYMENT-REPAIR-PROPOSAL.md), bind source/fixture evidence, and finish the checklist, remaining repair closures, and [composed Activity-data correction audit](capsules/ACTIVITY-DATA-INPUT-OUTPUT-MEDIATION-PROPOSAL.md#independent-cold-review-receipt) before resuming RC.
 
 Oracle: one User Task activation copies the required Process input into its occurrence-owned local scope, and one accepted completion atomically routes its required output to Process scope and disposes that same local scope across source, Lean, the semantic core, publication, and Temporal refinement.
 

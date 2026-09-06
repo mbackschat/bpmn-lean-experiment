@@ -20,7 +20,7 @@ const result = observeStableState(semanticProcess, started.state);
 
 Semantic Process programs normally come from the [BPMN source-ingestion package](../bpmn-source/README.md). Durable hosting uses the same incremental boundary through the [Temporal adapter](../temporal-adapter/README.md).
 
-If internal closure exhausts its step bound or encounters an unsupported observable choice, the evaluator returns `CommandOutcome.RolledBack`, the exact state supplied before command admission, and the actual `internalStepBoundExceeded` and `ambiguousInternalChoice` flags. Selected steps and all committed publication material are empty; scenario advancement classifies either flag as `HarnessFailure` before observation. The [closure atomicity repair](../../docs/capsules/INTERNAL-CLOSURE-ATOMICITY-REPAIR-PROPOSAL.md) owns this failure contract and the remaining cross-language and hosting checkpoint.
+If internal closure exhausts its step bound or encounters an unsupported observable choice, the evaluator returns `CommandOutcome.RolledBack`, the exact state supplied before command admission, and the actual `internalStepBoundExceeded` and `ambiguousInternalChoice` flags. Selected steps and all committed publication material are empty; scenario advancement classifies either flag as `HarnessFailure` before observation. The [closure atomicity specification](../../docs/capsules/INTERNAL-CLOSURE-ATOMICITY-REPAIR-SPEC.md) owns this failure contract and its cross-language and hosting evidence.
 
 ## Quick start
 

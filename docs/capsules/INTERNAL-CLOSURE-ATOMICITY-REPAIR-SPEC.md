@@ -1,23 +1,19 @@
-# Internal closure atomicity repair proposal
+# Internal closure atomicity repair specification
 
 ## Status
 
-Lifecycle: implementation-in-progress
-Review: approved-with-required-edits
+Lifecycle: implemented
+Review: closure-approved
 
 ## Question and bounded outcome
 
 What may a caller retain when external admission succeeds but internal closure exhausts fuel or encounters an unsupported observable choice?
 
-This correction returns `rolledBack`, the exact pre-command RuntimeState, both explicit closure flags, and no transition or lifecycle publication. It also corrects the publication replay discriminator and makes the already selected final commutation obligations explicit. It admits no additional batch, topology, scheduling input, or profile and does not resume RC implementation.
+Closure failure returns `rolledBack`, the exact pre-command RuntimeState, both explicit closure flags, and no transition or lifecycle publication. This contract distinguishes canonical publication from semantic replay and records the already selected final commutation obligations. It admits no additional batch, topology, scheduling input, or profile.
 
-## Existing contradiction
+## Rollback boundary
 
-At the proposal baseline, the [TypeScript evaluator](../../packages/semantic-core/src/semantic-process-runtime.ts) and [Lean evaluator](../../BpmnSemantics/SemanticProcess/TransitionTrace.lean) returned a committed partially closed state when closure failed. The traced boundaries suppressed publication, but the result-only TypeScript contract omitted the ambiguity flag. The [selected scheduling account](../INTERNAL-COMMUTATION-PROPOSAL.md#selected-final-closure-account) explicitly preserved that fuel behavior, conflicting with the [atomic publication rule](COMMITTED-EXECUTION-PUBLICATION-SPEC.md#epub-commit-01-atomic-publication).
-
-Two root probes on 2026-09-05 reproduce the mechanism through the public core API: starting the fork/join fixture with fuel two, and completing its final waiting task with fuel zero. Both return `committed` with no published transitions. The second case proves that rollback must undo external admission itself, including removal of the completed wait, rather than restoring only the last internal batch boundary.
-
-The production Workflow routes through [scenario advancement](../../packages/semantic-core/src/scenario.ts). Bound failure already becomes a harness failure; an ambiguous result either lacks a stable snapshot or is refused by publication integration before Workflow state assignment. For a recovery-admitted command, the [Workflow loop](../../packages/temporal-adapter/workflow/src/workflow-implementation.ts) currently processes publication and recovery before its harness-failure switch, so `BpmnCommandOutcomeMissing` can preempt `BpmnSemanticClosureFailure`. This correction does not claim demonstrated persistence of a partial semantic state; it requires explicit failure classification before publication and recovery processing.
+Rollback undoes external admission itself, including removal of a completed wait. Restoring only the last internal batch boundary can retain an admitted or partially closed successor that the [atomic publication rule](COMMITTED-EXECUTION-PUBLICATION-SPEC.md#epub-commit-01-atomic-publication) forbids exposing. Host failure classification precedes success-only publication and recovery processing so that a missing command outcome cannot mask the closure failure.
 
 ## Required, optional, and excluded functionality
 
@@ -33,7 +29,7 @@ Excluded: new command-admission outcomes, new public engine or scenario wire arm
 
 TypeScript keeps the command-admission union unchanged. Only the evaluator's result outcome gains the already defined `CommandOutcome.RolledBack` arm; its result always carries both Boolean flags, matching Lean. The internal evaluation and traced wrappers agree on those flags. A closure refusal classified as an admission rejection retains its existing rejected outcome and exact original state.
 
-The [scenario harness](../../packages/semantic-core/src/scenario.ts) must check both flags before calling observation or creating command observations. Either failure remains `HarnessFailure` with no observation or publication; it does not become a semantic terminal outcome. The [Workflow loop](../../packages/temporal-adapter/workflow/src/workflow-implementation.ts) must classify that result as `BpmnSemanticClosureFailure` before publication integration, recovery outcome lookup/recording, or candidate assignment, including when recovery admission is present. Semantic state, publication, and semantic command results remain unchanged. This proposal adds no public retry or semantic rollback receipt.
+The [scenario harness](../../packages/semantic-core/src/scenario.ts) must check both flags before calling observation or creating command observations. Either failure remains `HarnessFailure` with no observation or publication; it does not become a semantic terminal outcome. The [Workflow loop](../../packages/temporal-adapter/workflow/src/workflow-implementation.ts) must classify that result as `BpmnSemanticClosureFailure` before publication integration, recovery outcome lookup/recording, or candidate assignment, including when recovery admission is present. Semantic state, publication, and semantic command results remain unchanged. This contract adds no public retry or semantic rollback receipt.
 
 The future scheduled evaluator inherits whole-command rollback for fuel and reject-mode ambiguity. Fuel still precedes the next batch or directive; exhausted fuel does not become a schedule defect or an unused-directive failure. Existing directive-validation order and whole-command rollback remain selected but unimplemented obligations of the owning commutation proposal.
 
@@ -62,9 +58,9 @@ A future admitted topology that exposes an interrupting transition beside an una
 
 Lane shape: proved
 
-Evidence: the [evaluator and trace owner](../../BpmnSemantics/SemanticProcess/TransitionTrace.lean) must quantify the whole-command rollback and no-publication consequences over Program, input state, stimulus, and closure limit, while retaining traced-result erasure and emitted-trace replay. Compact kernel-decided witnesses separate fuel failure during start, fuel failure after accepted completion, late ambiguity after a successful prefix, and unchanged successful/rejected results. Existing negative fixtures that assert the former committed partial result must change explicitly under this reviewed contract; unrelated theorem statements and hypotheses remain unchanged.
+Evidence: the [evaluator and trace owner](../../BpmnSemantics/SemanticProcess/TransitionTrace.lean) proves the whole-command rollback and no-publication consequences over Program, input state, stimulus, and closure limit, while retaining traced-result erasure and emitted-trace replay. Compact kernel-decided witnesses separate fuel failure during start, fuel failure after accepted completion, late ambiguity after a successful prefix, and unchanged successful/rejected results.
 
-The [Compensation-aware evaluator](../../BpmnSemantics/SemanticProcess/CompensationEventSubProcessSnapshotTransitionTrace.lean) independently constructs declaration-bearing results. Its public `applyStimulusWithCompensationSnapshots` and `applyStimulusTracedWithCompensationSnapshots` wrappers owe the same quantified rollback, empty-publication, and erasure laws. A declaration-bearing closure-failure discriminator must reach that producer; declaration-free delegation and existing Compensation refusal behavior remain exact positives. Base-evaluator proofs alone cannot discharge this lane.
+The [Compensation-aware evaluator](../../BpmnSemantics/SemanticProcess/CompensationEventSubProcessSnapshotTransitionTrace.lean) independently constructs declaration-bearing results. Its public `applyStimulusWithCompensationSnapshots` and `applyStimulusTracedWithCompensationSnapshots` wrappers prove the same quantified rollback, empty-publication, and erasure laws. A declaration-bearing closure-failure discriminator reaches that producer; declaration-free delegation and existing Compensation refusal behavior remain exact positives. Base-evaluator proofs alone cannot discharge this lane.
 
 The nearest non-law is that every structurally admitted Program reaches a stable state within the configured fuel. This repair makes failure atomic; it does not establish termination or erase the diagnostic. The principal common-mode risk is restoring the post-admission or pre-batch state in both languages and calling it rollback. The completion witness independently requires the exact original wait, counters, variables, and state.
 
@@ -78,29 +74,13 @@ The smallest host-boundary witness drives both closure flags through scenario ad
 
 ## Versioning consequences
 
-The [pre-release evolution policy](../PROJECT-DESIGN.md#pre-release-evolution-policy) permits this atomic pure-result correction. It changes the lower-layer failure outcome and adds the missing TypeScript flag; it changes no Program, RuntimeState, registered semantic result, or public transport schema. The [scheduling proposal](../INTERNAL-COMMUTATION-PROPOSAL.md), [publication specification](COMMITTED-EXECUTION-PUBLICATION-SPEC.md), [IL scheduling contract](../SEMANTIC-PROCESS-IL-SPEC.md#internal-scheduling), [core README](../../packages/semantic-core/README.md), [core source map](../../packages/semantic-core/SOURCE-MAP.md), and [PLAN](../PLAN.md) must change with implementation.
+The [pre-release evolution policy](../PROJECT-DESIGN.md#pre-release-evolution-policy) permits this atomic pure-result correction. It changes the lower-layer failure outcome and adds the missing TypeScript flag; it changes no Program, RuntimeState, registered semantic result, or public transport schema. The [scheduling proposal](../INTERNAL-COMMUTATION-PROPOSAL.md), [publication specification](COMMITTED-EXECUTION-PUBLICATION-SPEC.md), and [IL scheduling contract](../SEMANTIC-PROCESS-IL-SPEC.md#internal-scheduling) consume this failure contract.
 
 [`implementation-status-owner:ENGINE-RUNTIME-PROOF`](../ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md)
 
 [`implementation-status-owner:TEMPORAL-HOSTING`](../TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md)
 
-The [closure documentation guard](../../scripts/semantic-closure-documentation.test.ts), [commutation census](../../scripts/internal-commutation-census.test.ts), [publication coverage guard](../../scripts/execution-publication-contract-coverage.test.ts), [Lean source contracts](../../scripts/lean-source-contracts.test.ts), [source hygiene](../../scripts/source-hygiene.test.ts), [review policy](../../scripts/independent-review-policy.test.ts), and [Markdown links](../../scripts/markdown-links.test.ts) bind this change. Complete affected core and Lean gates precede semantic checkpoint review; full Product 1 verification, immutable consumer calibration, cost comparison with the [empty-state capacity repair](COMPENSATION-EMPTY-STATE-CAPACITY-REPAIR-PROPOSAL.md), and closure review remain required.
-
-### Owners this implementation grows
-
-| Owner | Current headroom | Growth condition |
-|---|---:|---|
-| [TypeScript evaluator](../../packages/semantic-core/src/semantic-process-runtime.ts) | 29 | Keep outcome/flag correction local; use a bounded test owner |
-| [Scenario harness](../../packages/semantic-core/src/scenario.ts) | 150 | Check both flags before observation and handle the result union exhaustively |
-| [Lean evaluator](../../BpmnSemantics/SemanticProcess/TransitionTrace.lean) | 136 | Preserve the evaluator/trace boundary and existing general laws |
-| [Compensation-aware Lean evaluator](../../BpmnSemantics/SemanticProcess/CompensationEventSubProcessSnapshotTransitionTrace.lean) | 329 | Correct the independent declaration-bearing producer and prove both public wrappers |
-| [Production Workflow loop](../../packages/temporal-adapter/workflow/src/workflow-implementation.ts) | 47 | Classify closure failure before publication/recovery processing; preserve successful recovery |
-
-Rerun bindings for every concrete producer, consumer, and conformance owner before growth. New failure fixtures belong in bounded dedicated test owners rather than overflowing the existing commutation suites.
-
-## Stage boundary and closure
-
-Cold proposal approval precedes implementation of the changed result contract. The first green semantic checkpoint must contain cross-target rollback, trace erasure, paired publication discriminators, harness behavior, affected complete gates, and all same-change account corrections. It must be reviewed before dependent scheduling or host integration. Closure establishes atomic failure and accurate bounded commutation/publication claims only; RC families and the arbitrary-frontier theorem remain open in their existing owner.
+The [closure documentation guard](../../scripts/semantic-closure-documentation.test.ts), [commutation census](../../scripts/internal-commutation-census.test.ts), [publication coverage guard](../../scripts/execution-publication-contract-coverage.test.ts), [Lean source contracts](../../scripts/lean-source-contracts.test.ts), [source hygiene](../../scripts/source-hygiene.test.ts), [review policy](../../scripts/independent-review-policy.test.ts), and [Markdown links](../../scripts/markdown-links.test.ts) bind this contract. Closure establishes atomic failure and accurate bounded commutation/publication claims only; RC families and the arbitrary-frontier theorem remain open in their existing owner.
 
 ## Closure evidence and reflection
 
@@ -114,4 +94,4 @@ The correction reuses the existing failure type and moves its classification bef
 |---|---|---|---|---|
 | Proposal | `72a50a4cd8c76892bab7daff44a01b9b50050b2e` | `fork-turns-none` | `approve-with-required-edits` | `bb57973955b0948c17d7d3ea0f36238c21b21b25` |
 | Semantic checkpoint | `b3b7e7a300c225079e749fc8d83ca45ed9704856` | `fork-turns-none` | `approve-with-required-edits` | `7aa1b25c722618ec414b62f3ed1caceacd284744` |
-| Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Closure | `37cfbfb957bdb6e57e8dec805b07cea44c648713` | `checkpoint-reviewer-warm` | `approve` | `not-required` |
