@@ -520,10 +520,46 @@ test("one wrapper owns the Lean thread pin", async () => {
   );
 });
 
+test("the Lean wrapper witness preserves another build's lock", async (context) => {
+  for (const populated of [false, true]) {
+    await context.test(populated ? "lock with owner evidence" : "empty lock", async () => {
+      const fixture = await mkdtemp(path.join(tmpdir(), "bpmn-lean-foreign-lock-"));
+      const owner = path.basename(fixture);
+      const lockPath = `/tmp/bpmn-lean-experiment-${owner}.lake-build.lock`;
+      const preload = path.join(fixture, "identity.mjs");
+      await writeFile(preload, `process.getuid = () => ${JSON.stringify(owner)};\n`);
+      await writeFile(path.join(fixture, "id"), `#!/bin/sh\nprintf '%s\\n' '${owner}'\n`, { mode: 0o755 });
+      await mkdir(lockPath);
+      try {
+        if (populated) await writeFile(path.join(lockPath, "owner"), "another build");
+        const { NODE_TEST_CONTEXT: _runnerContext, ...environment } = process.env;
+        const witness = spawnSync(process.execPath, [
+          "--import", preload, "--test",
+          "--test-name-pattern=^the Lean wrapper clamps concurrency",
+          fileURLToPath(import.meta.url),
+        ], {
+          encoding: "utf8",
+          timeout: 10_000,
+          env: { ...environment, PATH: `${fixture}:${process.env.PATH ?? ""}` },
+        });
+        assert.match(witness.stdout, /the Lean wrapper clamps concurrency/u);
+        assert.equal(existsSync(lockPath), true, "the witness removed a lock it did not acquire");
+        if (populated) assert.equal(await readFile(path.join(lockPath, "owner"), "utf8"), "another build");
+        assert.equal(witness.status, 0, witness.stdout + witness.stderr);
+      } finally {
+        await rm(lockPath, { recursive: true, force: true });
+        await rm(fixture, { recursive: true, force: true });
+      }
+    });
+  }
+});
+
 test("the Lean wrapper clamps concurrency, rejects umbrella mixing, and refuses a second build tree", async () => {
   const fakeBin = await mkdtemp(path.join(tmpdir(), "bpmn-lean-fake-lake-"));
   const fakeLake = path.join(fakeBin, "lake");
-  const lockPath = `/tmp/bpmn-lean-experiment-${process.getuid?.() ?? 0}.lake-build.lock`;
+  const lockOwner = path.basename(fakeBin);
+  const lockPath = `/tmp/bpmn-lean-experiment-${lockOwner}.lake-build.lock`;
+  await writeFile(path.join(fakeBin, "id"), `#!/bin/sh\nprintf '%s\\n' '${lockOwner}'\n`, { mode: 0o755 });
   await writeFile(
     fakeLake,
     "#!/bin/sh\nprintf '%s\\n%s\\n' \"$LEAN_NUM_THREADS\" \"$*\"\n",
