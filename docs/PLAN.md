@@ -109,7 +109,7 @@ The [composed Activity-data specification](capsules/ACTIVITY-DATA-INPUT-OUTPUT-M
 
 Next action: resume the approved [Internal Commutation final-closure account](INTERNAL-COMMUTATION-PROPOSAL.md#selected-final-closure-account) from its existing reviewed checkpoint. Start with complete preparation and frame laws for the composed Activity-data arming family, including Process-binding reads, Activity/local-scope/wait issuance, counters, and publication. Retain the unavailable footprint until those obligations are proved; then close arbitrary finite independent batches, region families, and explicit scheduled choice in the approved dependency order.
 
-The prerequisite [Lean open-set projection correction](ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md#current-boundary) restores exact projection for the three existing Activity-data operation variants. Complete its affected gates and independent checkpoint review before beginning the preparation lane.
+The prerequisite [Lean open-set projection correction](INTERNAL-COMMUTATION-PROPOSAL.md#final-closure-evidence-and-adversarial-oracles) restores exact projection for the three existing Activity-data operation variants. Complete its affected gates and independent checkpoint review before beginning the preparation lane.
 
 Oracle: independent prepared operations preserve one another's complete preparation and commute in exact canonical RuntimeState and accepted publication; shared Process reads commute, conflicting writes and overlapping occurrence regions refuse batching, and a failed batch or schedule rolls back the complete command before publication.
 
