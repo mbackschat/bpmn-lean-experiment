@@ -49,7 +49,7 @@ import {
 } from "./temporal-worker-test-support.ts";
 import type { WorkerLease } from "./temporal-worker-test-support.ts";
 import {
-  waitForPublishedWorkflowChainState, waitForWorkflowChainRunCount,
+  waitForPublishedWorkflowChainState,
   workflowChainRuns,
 } from "./workflow-chain-test-support.ts";
 
@@ -122,17 +122,6 @@ async function runNaturalRecovery(
   // bounded; the margin assertion fails early rather than late.
   const armedAtMs = Date.now();
 
-  await waitForWorkflowChainRunCount(environment, workflowId, 2);
-  const preArmingRuns = await workflowChainRuns(environment, workflowId);
-  const firstRun = preArmingRuns[0];
-  assert.ok(firstRun !== undefined);
-  const firstHistory = await environment.client.workflow
-    .getHandle(workflowId, firstRun.runId).fetchHistory() as TemporalHistory;
-  assert.equal(
-    historyEvents(firstHistory, "workflowExecutionContinuedAsNewEventAttributes").length, 1,
-  );
-  assert.equal(historyEvents(firstHistory, "timerStartedEventAttributes").length, 0);
-
   const armed = await waitForParallelState(
     environment, workflowId, program, originalStart.instanceId, 0, [1, 2, 3],
   );
@@ -154,13 +143,6 @@ async function runNaturalRecovery(
     environment, workflowId, program, originalStart.instanceId, 1, [1, 2],
   );
   assert.deepEqual(requireLifetimeTimer(successor), lifetimeTimer);
-  const historyBeforeRecovery = await runHistoryLengths(environment, workflowId);
-  await submit(environment, originalStart.instanceId, outOfIndex, CommandOutcome.Committed);
-  assert.deepEqual(
-    await runHistoryLengths(environment, workflowId),
-    historyBeforeRecovery,
-    "content-bound recovery must not append Event History",
-  );
 
   for (const [index, completion] of completions.slice(1).entries()) {
     await submit(environment, originalStart.instanceId, completion, CommandOutcome.Committed);
@@ -201,9 +183,25 @@ async function runNaturalRecovery(
   assert.equal(recovered.length, 1);
   assert.equal(recovered[0]?.outcome, CommandOutcome.Committed);
 
+  // Verify run 34053514653 exposed insufficient timer margin. As in the sequential witness,
+  // retained-evidence inspection follows completion so its latency cannot delay the live tasks.
+  const historyBeforeRecovery = await runHistoryLengths(environment, workflowId);
+  await submit(environment, originalStart.instanceId, outOfIndex, CommandOutcome.Committed);
+  assert.deepEqual(
+    await runHistoryLengths(environment, workflowId),
+    historyBeforeRecovery,
+    "content-bound recovery must not append Event History",
+  );
+
   const closure = await closeProductionEvidence(
     environment, bundle, workflowId, program, originalStart.instanceId,
   );
+  const firstHistory = closure.histories[0];
+  assert.ok(firstHistory !== undefined);
+  assert.equal(
+    historyEvents(firstHistory, "workflowExecutionContinuedAsNewEventAttributes").length, 1,
+  );
+  assert.equal(historyEvents(firstHistory, "timerStartedEventAttributes").length, 0);
   assert.deepEqual(closure.trace, expected.trace);
   requirePublicFacts(closure, {
     commandIds: scenario.stimuli.map(({ commandId }) => commandId),
