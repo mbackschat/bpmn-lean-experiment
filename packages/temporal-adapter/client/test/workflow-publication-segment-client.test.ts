@@ -29,9 +29,23 @@ test("reselects the complete snapshot when the selected current segment changes"
   const second = selection(2, true);
   let selectionCount = 0;
   let segmentCount = 0;
+  const deadlines: number[] = [];
+  let rpcDeadline: number | undefined;
   const client = {
+    connection: {
+      withDeadline: async <Value>(deadline: number, invoke: () => Promise<Value>) => {
+        deadlines.push(deadline);
+        rpcDeadline = deadline;
+        try {
+          return await invoke();
+        } finally {
+          rpcDeadline = undefined;
+        }
+      },
+    },
     getHandle: (_workflowId: string, runId?: string) => ({
       query: async (name: string, request: unknown) => {
+        assert.equal(typeof rpcDeadline, "number");
         if (name === bpmnWorkflowPublicationSegmentSelectionQueryName) {
           selectionCount += 1;
           return selectionCount === 1 ? first : second;
@@ -69,6 +83,8 @@ test("reselects the complete snapshot when the selected current segment changes"
   assert.equal(result.kind, WorkflowPublicationObservationKind.Paired);
   assert.equal(selectionCount, 2);
   assert.equal(segmentCount, 2);
+  assert.equal(deadlines.length, 4);
+  assert.equal(new Set(deadlines).size, 1);
   assert.doesNotMatch(JSON.stringify(result), /run-1|run-2/u);
   assert.deepEqual(result, {
     kind: "paired",
@@ -80,6 +96,9 @@ test("reselects the complete snapshot when the selected current segment changes"
 test("rejects an oversized paired response before exposing public publication", async () => {
   const oversizedCommandId = "x".repeat(100 * 1_024);
   const client = {
+    connection: {
+      withDeadline: <Value>(_deadline: number, invoke: () => Promise<Value>) => invoke(),
+    },
     getHandle: (_workflowId: string, runId?: string) => ({
       query: async (name: string, request: unknown) => {
         if (name === bpmnWorkflowPublicationSegmentSelectionQueryName) {

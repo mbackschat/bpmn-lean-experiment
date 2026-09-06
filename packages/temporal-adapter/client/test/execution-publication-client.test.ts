@@ -429,6 +429,9 @@ type FakeHandle = Readonly<{
 
 function fakeClient(handles: Readonly<Record<string, FakeHandle>>): never {
   return {
+    connection: {
+      withDeadline: <Value>(_deadline: number, invoke: () => Promise<Value>) => invoke(),
+    },
     getHandle: (workflowId: string, runId?: string) => {
       const handle = handles[runId ?? workflowId];
       if (handle === undefined) return {

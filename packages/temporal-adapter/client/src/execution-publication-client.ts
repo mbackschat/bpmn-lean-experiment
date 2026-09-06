@@ -15,7 +15,6 @@ import {
   bpmnExecutionPublicationQueryName,
   requireExecutionPublicationRequest,
   requireExecutionPublicationTransportResult,
-  withDeadline,
 } from "@bpmn-lean/temporal-protocol";
 import type {
   BpmnProcessWorkflow,
@@ -81,14 +80,13 @@ export async function observeTemporalExecutionPublication(
   }
   let value: unknown;
   try {
-    value = await withDeadline(
-      workflowClient.getHandle<BpmnProcessWorkflow>(workflowId)
+    value = await workflowClient.connection.withDeadline(
+      Date.now() + operationDeadlineMs,
+      () => workflowClient.getHandle<BpmnProcessWorkflow>(workflowId)
         .query<unknown, [ExecutionPublicationRequest]>(
           bpmnExecutionPublicationQueryName,
           request,
         ),
-      operationDeadlineMs,
-      "execution publication Query",
     );
   } catch (error: unknown) {
     return error instanceof WorkflowNotFoundError

@@ -16,7 +16,6 @@ import {
   requireFlowNodeOccurrencePublicationTransportResult,
   requireWorkflowPublicationSegmentQueryResultV1,
   requireWorkflowPublicationSegmentSelectionResultV1,
-  withDeadline,
 } from "@bpmn-lean/temporal-protocol";
 import type {
   BpmnProcessWorkflow,
@@ -129,6 +128,7 @@ async function selectSegment(
   let candidate: unknown;
   try {
     candidate = await beforeDeadline(
+      client,
       deadline,
       "Workflow publication segment selection Query",
       () => client.getHandle<BpmnProcessWorkflow>(workflowId)
@@ -213,6 +213,7 @@ async function querySelectedSegment(
   let candidate: unknown;
   try {
     candidate = await beforeDeadline(
+      client,
       deadline,
       "selected Workflow publication segment Query",
       () => client.getHandle<BpmnProcessWorkflow>(
@@ -297,6 +298,7 @@ function transportContext(
 }
 
 async function beforeDeadline<Value>(
+  client: WorkflowClient,
   deadline: number,
   operation: string,
   invoke: () => Promise<Value>,
@@ -305,7 +307,7 @@ async function beforeDeadline<Value>(
   if (remaining <= 0) {
     throw new Error(`${operation} exceeded the client deadline`);
   }
-  return withDeadline(invoke(), remaining, operation);
+  return client.connection.withDeadline(deadline, invoke);
 }
 
 async function waitForChangedSegment(deadline: number): Promise<boolean> {

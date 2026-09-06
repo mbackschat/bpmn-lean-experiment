@@ -369,6 +369,9 @@ function fakeClient(
   addresses?: unknown[],
 ): never {
   return {
+    connection: {
+      withDeadline: <Value>(_deadline: number, invoke: () => Promise<Value>) => invoke(),
+    },
     getHandle: (workflowId: string, runId?: string) => {
       addresses?.push({ workflowId, runId });
       const handle = handles[runId ?? workflowId];

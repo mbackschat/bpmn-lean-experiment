@@ -137,12 +137,11 @@ export async function waitForOpenUserTaskIds(
   let latestTasks: ReadonlyArray<OpenUserTask> = [];
   while (scheduler.now() < deadlineMs) {
     try {
-      const tasks = await withDeadline(
-        handle.query<ReadonlyArray<OpenUserTask>>(
+      const tasks = await handle.client.connection.withDeadline(
+        Date.now() + Math.min(1_000, Math.max(1, deadlineMs - scheduler.now())),
+        () => handle.query<ReadonlyArray<OpenUserTask>>(
           bpmnOpenUserTasksQueryName,
         ),
-        Math.min(1_000, Math.max(1, deadlineMs - scheduler.now())),
-        "open-task Query",
       );
       latestError = undefined;
       latestTasks = tasks;

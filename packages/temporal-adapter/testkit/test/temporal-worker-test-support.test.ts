@@ -6,6 +6,50 @@ import type { WorkflowHandle } from "@temporalio/client";
 
 import { waitForOpenUserTaskIds } from "./temporal-worker-test-support.ts";
 
+test("settles a timed-out Query before retrying readiness", async (context) => {
+  context.mock.timers.enable({ apis: ["Date", "setTimeout"], now: 1_000 });
+  let deadline: number | undefined;
+  let pending = false;
+  let attempts = 0;
+  let settle: (() => void) | undefined;
+  let started: (() => void) | undefined;
+  const firstQuery = new Promise<void>((resolve) => { started = resolve; });
+  const handle = {
+    client: {
+      connection: {
+        withDeadline: async <Value>(value: number, invoke: () => Promise<Value>) => {
+          deadline = value;
+          try { return await invoke(); } finally { deadline = undefined; }
+        },
+      },
+    },
+    query: async () => {
+      attempts += 1;
+      if (attempts > 1) return [];
+      pending = true;
+      return new Promise<never>((_resolve, reject) => {
+        settle = () => { pending = false; reject(new Error("RPC deadline exceeded")); };
+        if (deadline !== undefined) setTimeout(settle, deadline - Date.now());
+        started?.();
+      });
+    },
+  } as unknown as WorkflowHandle;
+  const observation = waitForOpenUserTaskIds(handle, [], {
+    now: Date.now,
+    delay: async () => undefined,
+  });
+  await firstQuery;
+  context.mock.timers.tick(1_000);
+  try {
+    assert.deepEqual(await observation, []);
+    assert.equal(pending, false, "successful retry must leave no earlier Query running");
+    assert.equal(attempts, 2);
+  } finally {
+    settle?.();
+    await observation;
+  }
+});
+
 test("waits by elapsed deadline rather than a fixed query-attempt count", async () => {
   let attempts = 0;
   let nowMs = 0;
@@ -13,6 +57,7 @@ test("waits by elapsed deadline rather than a fixed query-attempt count", async 
     id: { elementId: "UserTask_Review" },
   } as unknown as OpenUserTask;
   const handle = {
+    client: immediateClient,
     query: async () => {
       attempts += 1;
       return attempts <= 100 ? [] : [expectedTask];
@@ -39,6 +84,7 @@ test("stops at the shared lifecycle deadline and reports the last observation", 
   let attempts = 0;
   let nowMs = 0;
   const handle = {
+    client: immediateClient,
     query: async () => {
       attempts += 1;
       return [];
@@ -74,6 +120,7 @@ test("adds an armed deadline to the poll allowance instead of spending it", asyn
   let nowMs = 0;
   const expectedTask = { id: { elementId: "UserTask_Escalation" } } as unknown as OpenUserTask;
   const handle = {
+    client: immediateClient,
     query: async () => (nowMs >= appearsAtMs ? [expectedTask] : []),
   } as unknown as WorkflowHandle;
   const scheduler = {
@@ -102,3 +149,9 @@ test("rejects a negative armed-deadline allowance", async () => {
     TypeError,
   );
 });
+
+const immediateClient = {
+  connection: {
+    withDeadline: <Value>(_deadline: number, invoke: () => Promise<Value>) => invoke(),
+  },
+};

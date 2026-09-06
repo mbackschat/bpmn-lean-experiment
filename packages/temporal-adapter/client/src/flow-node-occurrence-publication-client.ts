@@ -15,7 +15,6 @@ import {
   bpmnFlowNodeOccurrencesQueryName,
   requireFlowNodeOccurrencePublicationRequest,
   requireFlowNodeOccurrencePublicationTransportResult,
-  withDeadline,
 } from "@bpmn-lean/temporal-protocol";
 import type {
   BpmnProcessWorkflow,
@@ -84,14 +83,13 @@ export async function observeTemporalFlowNodeOccurrences(
   }
   let value: unknown;
   try {
-    value = await withDeadline(
-      workflowClient.getHandle<BpmnProcessWorkflow>(workflowId)
+    value = await workflowClient.connection.withDeadline(
+      Date.now() + operationDeadlineMs,
+      () => workflowClient.getHandle<BpmnProcessWorkflow>(workflowId)
         .query<unknown, [FlowNodeOccurrencePublicationRequest]>(
           bpmnFlowNodeOccurrencesQueryName,
           request,
         ),
-      operationDeadlineMs,
-      "flow-node occurrence publication Query",
     );
   } catch (error: unknown) {
     return error instanceof WorkflowNotFoundError

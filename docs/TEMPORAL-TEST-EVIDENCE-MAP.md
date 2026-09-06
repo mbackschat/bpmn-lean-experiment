@@ -8,6 +8,8 @@ This document is the feature-by-feature lookup for the witnesses, mutations, dur
 
 ## External-review question reconciliation
 
+The [publication deadline matrix](../packages/temporal-adapter/client/test/publication-rpc-deadline.test.ts) separates a returned timeout from an actually settled RPC for execution and occurrence reads, through both segment selection and legacy fallback. The [segment client controls](../packages/temporal-adapter/client/test/workflow-publication-segment-client.test.ts) require the same native absolute deadline on every selection and selected-Run retry. The [readiness guard](../packages/temporal-adapter/testkit/test/temporal-worker-test-support.test.ts) additionally rejects an earlier Query surviving a successful readiness retry. On 2026-09-06, the real Compensation failure witness reproduced that unfinished Query at connection close and passed with no unfinished RPC after native expiry replaced the helper's Promise-race timeout; its semantic assertions and all five replays remain the deciding Compensation evidence.
+
 The 2026-09-05 Temporal report covered Q1, Q4, Q5, and Q7. Its omitted questions have the bounded evidence below; this inventory is not an independent review verdict or a general refinement theorem.
 
 | Question | Deciding evidence | Remaining limit |
