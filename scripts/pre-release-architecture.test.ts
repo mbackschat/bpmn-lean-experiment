@@ -70,7 +70,7 @@ const productionProcessHostInputProducers = [
 const productionProcessStartHostArgumentMutations = [
   {
     owner: "packages/temporal-adapter/client/src/definition-schedule-client.ts",
-    hostArgument: "            temporalDefinitionScheduleInitialHostInput(),\n",
+    hostArgument: "temporalDefinitionScheduleInitialHostInput(),\n",
   },
   {
     owner: "packages/temporal-adapter/client/src/definition-start-client.ts",
