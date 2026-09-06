@@ -6,7 +6,7 @@ import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
-const matrixOwner = "docs/capsules/ACTIVITY-DATA-INPUT-OUTPUT-MEDIATION-PROPOSAL.md";
+const matrixOwner = "docs/capsules/ACTIVITY-DATA-INPUT-OUTPUT-MEDIATION-SPEC.md";
 const operationFamilyOwner = "docs/INTERNAL-COMMUTATION-PROPOSAL.md";
 const typeScriptOperationOwner = "packages/semantic-core/src/semantic-process-contract.ts";
 const leanOperationOwner = "BpmnSemantics/SemanticProcessContract.lean";

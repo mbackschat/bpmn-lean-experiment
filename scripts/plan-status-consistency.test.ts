@@ -63,7 +63,7 @@ function assertMuePreviewBetaCriticalPath(plan: string): void {
   );
   const orderedActive = parseOrderedWork(plan).find(({ state }) => state === "active");
   assert.ok(rows.every(({ state }) => state === "satisfied"), "every Beta content boundary must be satisfied before integration");
-  assert.equal(orderedActive?.id, "DATA-AND-TASK-MECHANISMS", "closed Beta must hand active work to standard data and Task breadth");
+  assert.equal(orderedActive?.id, "INTERNAL-COMMUTATION", "closed data lifetime must hand RC work to internal scheduling");
   assert.match(section, /^Integration state: `satisfied`\.$/mu, "Beta integration must remain closed after every content row is satisfied");
 
   const riskMarker = "#### Risk-first execution bands\n";

@@ -10,16 +10,15 @@ const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 
 const releaseCandidateContent = [
   ["SEQUENTIAL-MULTI-INSTANCE", "satisfied"],
-  ["INTERNAL-COMMUTATION", "queued"],
+  ["INTERNAL-COMMUTATION", "active"],
   ["PARALLEL-MULTI-INSTANCE", "satisfied"],
   ["MECHANISM-MATURITY-EVIDENCE", "queued"],
-  ["DATA-AND-TASK-MECHANISMS", "active"],
+  ["DATA-AND-TASK-MECHANISMS", "satisfied"],
   ["EVENT-SUBSCRIPTIONS", "queued"],
   ["COMPENSATION-TRANSACTIONS", "queued"],
 ] as const;
 
 const unfinishedExecutionOrder = [
-  "DATA-AND-TASK-MECHANISMS",
   "INTERNAL-COMMUTATION",
   "EVENT-SUBSCRIPTIONS",
   "COMPENSATION-TRANSACTIONS",
@@ -55,7 +54,7 @@ test("makes the MUE Release Candidate content and risk-first execution path expl
     .filter(({ id }) => unfinishedExecutionOrder.includes(id as typeof unfinishedExecutionOrder[number]))
     .map(({ id }) => id);
   assert.deepEqual(orderedIds, unfinishedExecutionOrder, "ordered work must carry the RC risk-first sequence");
-  assert.equal(parseOrderedWork(plan).find(({ state }) => state === "active")?.id, "DATA-AND-TASK-MECHANISMS");
+  assert.equal(parseOrderedWork(plan).find(({ state }) => state === "active")?.id, "INTERNAL-COMMUTATION");
 });
 
 test("rejects a chore-first RC path and a broader hidden denominator", async () => {
