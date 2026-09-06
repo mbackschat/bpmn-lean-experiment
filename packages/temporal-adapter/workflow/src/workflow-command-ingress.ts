@@ -141,15 +141,8 @@ export function registerWorkflowCommandIngress(
 
   setHandler(bpmnDeliverMessageSignal, (stimulus: MessageDeliveryStimulus) => {
     validateDeliverMessageSignal(stimulus);
-    if (!acceptWorkflowChainSignalCapacity(workflowChain, stimulus)) {
-      return;
-    }
-    const accepted = acceptedStimulus(
-      acceptedStimuli,
-      stimulus.commandId,
-    );
-    // A conflict record also retains the full Signal stimulus, so its byte bound must pass before
-    // either a pending or request-failure Message record can become Workflow state.
+    // The SemanticStimulusBytes bound must precede recovery's bounded identity encoder and any
+    // retained conflict record; oversized input is a typed host refusal, not a Workflow Task error.
     if (!acceptUnqueuedSignalCapacity(
       workflowChain,
       stimulus,
@@ -157,6 +150,13 @@ export function registerWorkflowCommandIngress(
     )) {
       return;
     }
+    if (!acceptWorkflowChainSignalCapacity(workflowChain, stimulus)) {
+      return;
+    }
+    const accepted = acceptedStimulus(
+      acceptedStimuli,
+      stimulus.commandId,
+    );
     if (
       messageDeliveryWillEnqueue(
         messageDeliveryResolutions,

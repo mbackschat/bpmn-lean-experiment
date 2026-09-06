@@ -56,7 +56,10 @@ import {
   WorkflowChainCapacityState,
   WorkflowChainRecoveryIngressKind,
 } from "./workflow-chain-capacity.js";
-import { WorkflowCommandCapacityState } from "./workflow-command-capacity.js";
+import {
+  WorkflowCommandCapacityPreflightKind,
+  WorkflowCommandCapacityState,
+} from "./workflow-command-capacity.js";
 import {
   bpmnWorkflowContinuationInvalidFailureType,
   emptyWorkflowPublicationSegmentDirectory,
@@ -428,6 +431,28 @@ export function validateWorkflowChainUpdate(
   if (workflowChain === null) {
     return;
   }
+  if (fenceState === WorkflowChainFenceState.Rollover) {
+    throw ApplicationFailure.retryable(
+      "Workflow rollover is in progress",
+      bpmnWorkflowRolloverInProgressFailureType,
+    );
+  }
+  // Recovery hashes even unknown commands. The SemanticStimulusBytes bound must classify larger
+  // input before that bounded encoder runs, without retaining failure from a read-only validator.
+  const preflight = workflowChain.commandCapacity.preflightStimulus(stimulus);
+  switch (preflight.kind) {
+    case WorkflowCommandCapacityPreflightKind.Ready:
+      break;
+    case WorkflowCommandCapacityPreflightKind.CapacityExceeded:
+      throw workflowChain.capacity.applicationFailureForObservedCapacity(
+        preflight.failure,
+        publicRevision,
+      );
+    case WorkflowCommandCapacityPreflightKind.Rollover:
+      throw new TypeError("Update stimulus preflight cannot request rollover");
+    default:
+      return assertNever(preflight);
+  }
   switch (fenceState) {
     case WorkflowChainFenceState.Terminal: {
       const recovered = workflowChain.recovery.lookup(stimulus);
@@ -447,11 +472,6 @@ export function validateWorkflowChainUpdate(
           return assertNever(recovered);
       }
     }
-    case WorkflowChainFenceState.Rollover:
-      throw ApplicationFailure.retryable(
-        "Workflow rollover is in progress",
-        bpmnWorkflowRolloverInProgressFailureType,
-      );
     case WorkflowChainFenceState.Active:
       break;
     default:
