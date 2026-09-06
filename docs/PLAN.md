@@ -83,7 +83,7 @@ Owner instruction on 2026-09-05: resolve the supplied six reviews before resumin
 - [ ] Bind source-order and fixture/scenario evidence independently (`R1`).
 - [ ] Complete correction audits, consumer measurements, and full verification; then resume RC.
 
-The [seven-byte capacity correction](capsules/COMPENSATION-EMPTY-STATE-CAPACITY-REPAIR-PROPOSAL.md) supplies the declaration minimum used by the [initialization repair](capsules/RUNTIME-INITIALIZATION-ASSURANCE-REPAIR-PROPOSAL.md). The unchanged empty-state theorem and actual committed-start guarantees now pass complete Product 1 integration. Cost evidence and closure reviews remain open; no capacity exception or weaker aggregate is selected.
+The [seven-byte capacity correction](capsules/COMPENSATION-EMPTY-STATE-CAPACITY-REPAIR-PROPOSAL.md) supplies the declaration minimum used by the closure-reviewed [initialization repair](capsules/RUNTIME-INITIALIZATION-ASSURANCE-REPAIR-SPEC.md). The unchanged empty-state theorem and actual committed-start guarantees passed complete Product 1 verification and initialization closure review at `64c524b7`. Comparative repair costs are recorded; capacity retains its own pending closure review, and no weaker aggregate is selected.
 
 Within the dependency order below, prioritize high-risk work before packaging and acceptance work. Treat likely broad Lean changes—shared representations, quantified proof dependencies, and kernel-reduction consumers—as an explicit risk signal, and establish those checkpoints before lower-risk profile registration, corpus/disclosure, or UI integration.
 

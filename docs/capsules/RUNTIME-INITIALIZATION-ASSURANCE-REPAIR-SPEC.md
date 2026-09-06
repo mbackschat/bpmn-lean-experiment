@@ -1,17 +1,17 @@
-# Runtime initialization assurance repair proposal
+# Runtime initialization assurance repair specification
 
 ## Status
 
-Lifecycle: implemented-awaiting-closure
-Review: approved
+Lifecycle: implemented
+Review: closure-approved
 
 ## Question and current boundary
 
 Which initialization boundary establishes the complete current runtime-state invariant when a Program declares a Compensation parent snapshot?
 
-The [initialization proof owner](../../BpmnSemantics/SemanticProcess/RuntimeStateWellFormedInitialization.lean) states a full-invariant theorem for the raw `runningProgramStartState?` result and derives raw Message Start and Timer Start corollaries from it. That quantified boundary is false: a structurally valid Program with a selected root snapshot can produce a raw running state satisfying `runtimePositionValid` while failing `compensationEventSubProcessSnapshotStateValid` and therefore `runtimeStateWellFormed`. The raw builder has not reserved the selected root context. [Command admission](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean) performs that reservation afterward and validates the prepared snapshot state before returning a committed admission.
+The [initialization proof owner](../../BpmnSemantics/SemanticProcess/RuntimeStateWellFormedInitialization.lean) establishes the complete invariant at actual committed start admission under the explicit output-position hypothesis. Its raw `runningProgramStartState?` theorem and raw Message/Timer corollaries require absence of a snapshot declaration: a structurally valid selected-root Program can produce a raw running state satisfying `runtimePositionValid` while failing the snapshot conjunct and therefore `runtimeStateWellFormed`. [Command admission](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean) reserves that root context afterward and validates the prepared snapshot state before returning a committed admission.
 
-The initialization module is also absent from the default root import closure. The existing [import guard](../../scripts/lean-import-boundaries.test.ts) derives that closure but requires reachability only for maintained `*Conformance.lean` files. An initialization theorem can therefore remain outside the build while the predicate it claims to establish grows. These are the proof-boundary and assurance-reachability defects addressed here under the external-review corrections `R1`, `R2`, and `R6` in [PLAN](../PLAN.md).
+The [import guard](../../scripts/lean-import-boundaries.test.ts) requires default-root reachability for maintained non-experimental named theorem owners as well as conformance files. This keeps initialization under the default kernel check when its predicate grows; filename-only enrollment cannot establish that assurance boundary.
 
 ## Required, optional, and excluded functionality
 
@@ -19,7 +19,7 @@ Required: preserve the exact `initialState_wellFormed` signature; establish the 
 
 Optional functionality: none.
 
-Excluded: changing the raw running-state builder, the aggregate runtime invariant or its conjuncts, source or Program admission, profile selection, RuntimeState representation, public observation, command outcomes, or any runtime transition. General initialization from arbitrary prior states, full-invariant preservation across internal closure or every transition, removal of the position hypothesis, new CIB behavior, and a Temporal refinement theorem are outside this repair. The separately approved [empty-state capacity correction](COMPENSATION-EMPTY-STATE-CAPACITY-REPAIR-PROPOSAL.md) supplies the execution-capacity prerequisite; this proposal neither revises that account nor licenses a capacity exception.
+Excluded: changing the raw running-state builder, the aggregate runtime invariant or its conjuncts, source or Program admission, profile selection, RuntimeState representation, public observation, command outcomes, or any runtime transition. General initialization from arbitrary prior states, full-invariant preservation across internal closure or every transition, removal of the position hypothesis, new CIB behavior, and a Temporal refinement theorem are outside this repair. The separately approved [empty-state capacity correction](COMPENSATION-EMPTY-STATE-CAPACITY-REPAIR-PROPOSAL.md) supplies the execution-capacity prerequisite; this repair neither revises that account nor licenses a capacity exception.
 
 ## Selected proof contract
 
@@ -43,7 +43,7 @@ Lane shape: proved
 
 Evidence: quantified initialization and committed-start laws in the [initialization owner](../../BpmnSemantics/SemanticProcess/RuntimeStateWellFormedInitialization.lean), using the [snapshot-aware admission guarantee](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean) and [kernel-decided raw-versus-reserved witnesses](../../BpmnSemantics/RuntimeStateInitializationConformance.lean). The successful-admission equation and explicit position hypothesis are the complete public premises; no full post-state well-formedness premise is added.
 
-The effort bound is one initialization proof stage, with at most two unsuccessful mathematical proof strategies before recording the precise remaining obligation and returning the boundary for review. A counterexample to the proposed committed-start proposition stops implementation immediately. Syntax correction is not a new strategy. If the quantified proof cannot close within that bound, the lane remains unresolved and cannot graduate or quietly become `checked` or a weaker theorem. The general preservation and other open obligations in the [existing specification](../RUNTIME-STATE-INVARIANT-SPEC.md#the-deliberately-open-lane) remain separately owned.
+The general preservation and other open obligations in the [existing specification](../RUNTIME-STATE-INVARIANT-SPEC.md#the-deliberately-open-lane) remain separately owned. This quantified initialization lane neither weakens their predicate nor supplies their missing transition induction.
 
 ## Evidence and cross-target matrix
 
@@ -56,42 +56,29 @@ The effort bound is one initialization proof stage, with at most two unsuccessfu
 | Build reachability | Default root includes the maintained initialization owner and every source-derived assurance owner | Omitted initialization and differently named preservation owners both reject; transitive imports pass and comment/string-only imports do not confer reachability | Reachability alone proves no theorem or semantic claim |
 | TypeScript, CIB, Temporal | Existing complete gates retain their current behavioral evidence | Exact unchanged runtime producers and registered results constrain accidental behavioral edits | No new correspondence, CIB, replay, or hosting evidence lane is claimed |
 
-The minimal raw-state counterexample is already kernel-confirmed in a root-owned diagnostic. Implementation retains a named project witness, rather than relying on a temporary receipt or a large source-checkpoint reduction. A child-only declaration is a separate control: absence of a selected root must not be mistaken for a requirement to manufacture a root reservation. Capacity refusal and positive reservation must execute the existing admission path, so the proof cannot appear useful only because its committed premise is never satisfied.
+The retained kernel witness separates the raw result from actual committed admission. A child-only declaration is a separate control: absence of a selected root must not be mistaken for a requirement to manufacture a root reservation. Capacity refusal and positive reservation execute the existing admission path, so the committed premise is demonstrably satisfiable.
 
 The Lean laws and their Lean fixtures share the same account and count as one lane. The build guard establishes kernel reachability rather than an independent semantic account. The nearest unsupported claim remains complete runtime-state preservation after arbitrary admitted execution, including internal closure after the start admission; this repair establishes only its initialization base.
 
 ## Temporal hosting and refinement preflight
 
-This assurance correction adds no durable ingress, wait, timer, effect, cancellation, lifecycle, projection, delivery, ordering, concurrency, deduplication, retry, or replay mechanism. Existing start admission, reservation, and committed-state transport remain byte-identical. The host continues to consume the actual committed state, and the state relation remains exact carriage of that state. The nearest host counterexample would be using the intermediate raw state as a committed publication; the existing complete verifier remains regression evidence, while this proposal proves no new Temporal proposition and requires no synthetic host capability.
+This assurance correction adds no durable ingress, wait, timer, effect, cancellation, lifecycle, projection, delivery, ordering, concurrency, deduplication, retry, or replay mechanism. Existing start admission, reservation, and committed-state transport remain byte-identical. The host continues to consume the actual committed state, and the state relation remains exact carriage of that state. The nearest host counterexample would be using the intermediate raw state as a committed publication; the existing complete verifier remains regression evidence, while this repair proves no new Temporal proposition and requires no synthetic host capability.
 
 ## Versioning consequences
 
 The [initialization owner](../../BpmnSemantics/SemanticProcess/RuntimeStateWellFormedInitialization.lean) changes theorem boundaries and proofs; [command admission](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean) may add only proof lemmas exposing its existing started-state frame. The [root library](../../BpmnSemantics.lean) imports the maintained assurance closure. The [import-boundary guard](../../scripts/lean-import-boundaries.test.ts) reuses its current import graph, [literal-aware Lean analysis](../../scripts/lean-source-analysis.ts), and tracked/pending source discovery: select non-experimental `BpmnSemantics/` files that either satisfy the existing conformance-name rule or contain a real named `theorem` declaration, then require root reachability. Declaration modifiers, attributes, indentation, comments, and literals must be separated by lexical analysis. An orphan with a different basename is still in the class. No exhaustive file registry or filename-only initialization exception is introduced.
 
-The [runtime invariant specification](../RUNTIME-STATE-INVARIANT-SPEC.md), [`implementation-status-owner:ENGINE-SEMANTIC-INVARIANT`](../ENGINE-SEMANTIC-INVARIANT-IMPLEMENTATION-MAP.md#runtime-state-well-formedness), [`implementation-status-owner:ENGINE-RUNTIME-PROOF`](../ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md), [`implementation-status-owner:ASSURANCE-ADOPTION`](../ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md), [testing specification](../TESTING-SPEC.md), [documentation registry](../README.md), [capsule registry](README.md), and [PLAN](../PLAN.md) must describe the corrected guarantee and its current evidence without retaining the unrestricted raw-state claim. Existing runtime bytes, profiles, schemas, public APIs, and histories need no version or migration; the pre-release policy supplies no exemption from accurate proof claims.
+The [runtime invariant specification](../RUNTIME-STATE-INVARIANT-SPEC.md), [`implementation-status-delegation:ENGINE-SEMANTIC-INVARIANT`](../ENGINE-SEMANTIC-INVARIANT-IMPLEMENTATION-MAP.md#runtime-state-well-formedness), [`implementation-status-owner:ENGINE-RUNTIME-PROOF`](../ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md), [`implementation-status-owner:ASSURANCE-ADOPTION`](../ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md), [testing specification](../TESTING-SPEC.md), [documentation registry](../README.md), [capsule registry](README.md), and [PLAN](../PLAN.md) must describe the corrected guarantee and its current evidence without retaining the unrestricted raw-state claim. Existing runtime bytes, profiles, schemas, public APIs, and histories need no version or migration; the pre-release policy supplies no exemption from accurate proof claims.
 
 Mechanically routed constraints include [source hygiene](../../scripts/source-hygiene.test.ts), [Lean source contracts](../../scripts/lean-source-contracts.test.ts), [import boundaries](../../scripts/lean-import-boundaries.test.ts), [module cost](../../scripts/lean-module-cost.test.ts), [verification entry points](../../scripts/verification-entrypoint.test.ts), [operation-consumer census](../../scripts/semantic-operation-consumer-census.test.ts), [Activity writer census](../../scripts/activity-occurrence-writer-census.test.ts), [internal-commutation census](../../scripts/internal-commutation-census.test.ts), [removal completeness](../../scripts/runtime-collection-removal-completeness.test.ts), [pre-release architecture](../../scripts/pre-release-architecture.test.ts), [document reviewability](../../scripts/document-reviewability.test.ts), [review receipts](../../scripts/independent-review-policy.test.ts), [document control plane](../../scripts/document-control-plane.test.ts), [map routes](../../scripts/structural-map-routes.test.ts), and [Markdown links](../../scripts/markdown-links.test.ts). The remaining tree-wide guards reported by [what-binds](../../scripts/what-binds.ts) remain constraints, not permission to change their separate product owners.
 
-### Owners this implementation grows
-
-- [Initialization proofs](../../BpmnSemantics/SemanticProcess/RuntimeStateWellFormedInitialization.lean): retain empty-state signature, restrict raw claims, and prove actual committed-start guarantees.
-- [Command admission](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean): only narrow proof facts about existing successful start results if the initialization owner cannot derive them through the public equations.
-- [Root library](../../BpmnSemantics.lean): import-only assurance reachability.
-- [Import guard](../../scripts/lean-import-boundaries.test.ts) and, only if its shared lexical responsibility requires it, [Lean analysis](../../scripts/lean-source-analysis.ts): extend the derived assurance class and its adversarial tests.
-
-The binding inventory measured the existing owners below the 800-nonblank-line review target. No volatile figure is duplicated while prerequisite proof corrections are in flight. Rerun the inventory before growth; if a proposed addition reaches the target, resolve the owner boundary before adding it. New compact witness owners receive the same routing and size check before creation; no existing reduction-heavy fixture graph is copied.
-
-## Stage boundary and closure
-
-Cold proposal approval precedes any change to the old theorem signatures. The root retains the red witness, checks the narrow proof and witness modules under the existing memory controller, runs the focused import/source/document guards, and integrates the complete affected Lean and infrastructure gates. The repository-wide verifier runs at the governed checkpoint or closure boundary. The first green proof target receives a cold semantic-checkpoint review before dependent assurance work; a combined checkpoint/closure review is permitted only if that target already includes every required gate, exact status, reflection, and cost obligation.
-
-Closure records the exact corrected initialization domain and remaining position hypothesis in the owning specification, verifies that the default build actually checks the theorem owner, and retains the separating raw/admitted, declaration, start-kind, and capacity cases. The [cost ledger](../CAPSULE-COST-LEDGER.md) records the reproducible commit-bounded change and compares it with the [empty-state capacity repair](COMPENSATION-EMPTY-STATE-CAPACITY-REPAIR-PROPOSAL.md). Any required change to runtime behavior, admission, invariant meaning, or the quantified domain beyond this proposal returns for review. Completion of this repair does not close the remaining external-review findings or the general preservation lane.
-
-## Implementation checkpoint
+## Closure evidence and reflection
 
 The unchanged empty-state theorem, generic actual-admission bridges, six named committed-start corollaries, and accurately restricted raw-start theorems pass their focused kernel gates. The retained witness checks the raw root-reservation counterexample beside successful actual admission, declaration-free ordinary/Message/Timer starts, child-only declaration behavior, capacity refusal, and existing declared-Message/Timer profile refusals. These are initialization facts under the specified position premise, not general execution preservation.
 
-The source-derived import guard now requires default-root reachability for named theorem owners as well as conformance files. Its separating cases cover omitted initialization and differently named preservation owners, transitive imports, declaration modifiers, and false declarations inside comments, strings, or quoted identifiers. The complete Product 1 verifier passed at `6577b488`; the subsequent terminal-claim and frame-comment corrections preserve executable Lean tokens. The [cost ledger](../CAPSULE-COST-LEDGER.md#pending-repair-closure-costs) now records the combined implementation range and comparison with empty-state capacity, alongside the immutable fixed-limit consumer measurements. Closure review remains outstanding and is owned by the receipt below.
+The source-derived import guard's separating cases cover omitted initialization and differently named preservation owners, transitive imports, declaration modifiers, and false declarations inside comments, strings, or quoted identifiers. Complete Product 1 verification passed at closure target `64c524b7`. The [cost ledger](../CAPSULE-COST-LEDGER.md#measurements) records the conservative combined initialization/runtime-ownership range, comparison with empty-state capacity, and immutable fixed-limit consumer measurements. Public admission-frame lemmas place the proof at the actual committed boundary; source-derived theorem discovery removes manual assurance enrollment without inventing another registry.
+
+Warm closure continues the approved checkpoint audit at `a3c9176e`. Its executable continuity manifest preserves the selected account, public contract, exclusions, and evidence strategy with digest `3f03bbebff45439c734225fa54bb4163bd414e7a6c3be4976813adb961a0f708`. The reviewer verified selector completeness, exact bytes, ancestry, cost reproduction, and the complete gate. Approval closes this initialization repair alone; capacity, start-data, native deployment, and general preservation retain their own boundaries.
 
 ## Independent cold-review receipt
 
@@ -99,4 +86,4 @@ The source-derived import guard now requires default-root reachability for named
 |---|---|---|---|---|
 | Proposal | `fa7c01ffb69681286241e9127ae5e75b03ff5ef8` | `fork-turns-none` | `approve` | `not-required` |
 | Semantic checkpoint | `d7469e19d90811bf1b1de99adb5942cc8f3d4470` | `fork-turns-none` | `approve-with-required-edits` | `a3c9176e70388b2ac132e37fe1f3cd9b6cc848c7` |
-| Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Closure | `64c524b797d341b001d2e8afddcc23830a3ab85f` | `checkpoint-reviewer-warm` | `approve` | `not-required` |
