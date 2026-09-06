@@ -112,6 +112,39 @@ test("requests rollover when the accepted-Update boundary is exactly filled", ()
   });
 });
 
+for (const queueBound of ["entries", "bytes"] as const) {
+  test(`draining exact queue ${queueBound} pressure reopens Update admission in the same Run`, () => {
+    const first = completion("Command_1", "approved");
+    const capacity = capacityState(queueBound === "entries"
+      ? { semanticInputQueueEntries: 1 }
+      : { semanticInputQueueBytes: workflowChainCanonicalUtf8ByteLength([first]) });
+    assert.equal(capacity.reserveStimulus(first).kind, WorkflowCommandCapacityPreflightKind.Ready);
+    assert.equal(capacity.rolloverRequested(), true);
+    capacity.releaseStimulus(first);
+    assert.deepEqual(capacity.snapshot(), emptySnapshot());
+    assert.equal(capacity.preflightUpdate(completion("Command_2", "approved")).kind,
+      WorkflowCommandCapacityPreflightKind.Ready);
+  });
+}
+
+test("draining a queue that filled with the last accepted Update preserves the Run cap", () => {
+  const first = completion("Command_1", "approved");
+  const capacity = capacityState({ semanticInputQueueEntries: 1, acceptedUpdatesPerRun: 1 });
+  assert.equal(capacity.beginUpdate(first).kind, WorkflowCommandCapacityPreflightKind.Ready);
+  capacity.releaseStimulus(first);
+  capacity.finishUpdate();
+  assert.equal(capacity.rolloverRequested(), true);
+  assert.deepEqual(capacity.preflightUpdate(completion("Command_2", "approved")), {
+    kind: WorkflowCommandCapacityPreflightKind.Rollover,
+    bound: { budget: WorkflowChainBudgetKind.AcceptedUpdatesPerRun, configuredBound: 1, observedValue: 1 },
+  });
+});
+
+test("an empty queue at its minimum encoding budget does not request rollover", () => {
+  const capacity = capacityState({ semanticInputQueueBytes: 2 });
+  assert.deepEqual(capacity.snapshot(), emptySnapshot());
+});
+
 test("fails closed when an accepted Signal or derived stimulus would cross the queue", () => {
   const first = completion("Command_1", "approved");
   const second = completion("Command_2", "approved");

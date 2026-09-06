@@ -74,7 +74,6 @@ export class WorkflowCommandCapacityState {
   #queuedCanonicalUtf8Bytes = 2;
   #acceptedUpdates = 0;
   #inFlightUpdates = 0;
-  #rolloverBound: WorkflowChainObservedCapacityBound | null = null;
 
   constructor(limits: WorkflowCommandCapacityLimits = productionLimits()) {
     this.#limits = requireLimits(limits);
@@ -86,12 +85,12 @@ export class WorkflowCommandCapacityState {
       inFlightUpdates: this.#inFlightUpdates,
       queuedStimuli: this.#queued.size,
       queuedCanonicalUtf8Bytes: this.#queuedCanonicalUtf8Bytes,
-      rolloverRequested: this.#rolloverBound !== null,
+      rolloverRequested: this.rolloverRequested(),
     };
   }
 
   rolloverRequested(): boolean {
-    return this.#rolloverBound !== null;
+    return this.#currentRolloverBound() !== null;
   }
 
   preflightStimulus(stimulus: Stimulus): WorkflowCommandCapacityPreflight {
@@ -113,19 +112,9 @@ export class WorkflowCommandCapacityState {
     stimulus: Stimulus,
     reserveQueue = true,
   ): WorkflowCommandCapacityPreflight {
-    if (this.#rolloverBound !== null) {
-      return {
-        kind: WorkflowCommandCapacityPreflightKind.Rollover,
-        bound: { ...this.#rolloverBound },
-      };
-    }
-    const accepted = countBound(
-      WorkflowChainBudgetKind.AcceptedUpdatesPerRun,
-      this.#limits.acceptedUpdatesPerRun,
-      this.#acceptedUpdates + 1,
-    );
-    if (accepted !== null) {
-      return rollover(accepted);
+    const bound = this.#currentRolloverBound();
+    if (bound !== null) {
+      return rollover(bound);
     }
     const inFlight = countBound(
       WorkflowChainBudgetKind.ConcurrentInFlightUpdates,
@@ -166,11 +155,6 @@ export class WorkflowCommandCapacityState {
         throw new TypeError("Update capacity changed after its synchronous preflight");
       }
     }
-    this.#requestRolloverAtExactBoundary(
-      WorkflowChainBudgetKind.AcceptedUpdatesPerRun,
-      this.#limits.acceptedUpdatesPerRun,
-      this.#acceptedUpdates,
-    );
     return ready;
   }
 
@@ -225,16 +209,6 @@ export class WorkflowCommandCapacityState {
     this.#queued.set(commandId, { encoding, canonicalUtf8Bytes });
     this.#queuedCanonicalUtf8Bytes += canonicalUtf8Bytes +
       (this.#queued.size === 1 ? 0 : 1);
-    this.#requestRolloverAtExactBoundary(
-      WorkflowChainBudgetKind.SemanticInputQueueEntries,
-      this.#limits.semanticInputQueueEntries,
-      this.#queued.size,
-    );
-    this.#requestRolloverAtExactBoundary(
-      WorkflowChainBudgetKind.SemanticInputQueueBytes,
-      this.#limits.semanticInputQueueBytes,
-      this.#queuedCanonicalUtf8Bytes,
-    );
     return null;
   }
 
@@ -274,14 +248,23 @@ export class WorkflowCommandCapacityState {
     );
   }
 
-  #requestRolloverAtExactBoundary(
-    budget: WorkflowChainBudgetKind,
-    configuredBound: number,
-    observedValue: number,
-  ): void {
-    if (this.#rolloverBound === null && observedValue === configuredBound) {
-      this.#rolloverBound = { budget, configuredBound, observedValue };
+  #currentRolloverBound(): WorkflowChainObservedCapacityBound | null {
+    // TEMPORAL-PROCESS-LIFECYCLE-SPEC.md defers rollover while a Timer is armed, so drained queue pressure must release ingress.
+    if (this.#acceptedUpdates >= this.#limits.acceptedUpdatesPerRun) {
+      return {
+        budget: WorkflowChainBudgetKind.AcceptedUpdatesPerRun,
+        configuredBound: this.#limits.acceptedUpdatesPerRun,
+        observedValue: this.#acceptedUpdates,
+      };
     }
+    if (this.#queued.size === 0) return null;
+    for (const [budget, configuredBound, observedValue] of [
+      [WorkflowChainBudgetKind.SemanticInputQueueEntries, this.#limits.semanticInputQueueEntries, this.#queued.size],
+      [WorkflowChainBudgetKind.SemanticInputQueueBytes, this.#limits.semanticInputQueueBytes, this.#queuedCanonicalUtf8Bytes],
+    ] as const) {
+      if (observedValue >= configuredBound) return { budget, configuredBound, observedValue };
+    }
+    return null;
   }
 }
 

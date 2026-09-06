@@ -6,13 +6,14 @@ import { BpmnCompilationStatus, compileBpmnToSemanticProcess } from "@bpmn-lean/
 import {
   CommandOutcome,
   EffectExecutionResultKind,
+  MessageChannelKind,
   ScenarioStepKind,
   StimulusKind,
   advanceScenario,
   deployProcess,
   initialState,
 } from "@bpmn-lean/semantic-core";
-import type { CanonicalObservation, SemanticProcessProgram, StartProcessStimulus, Stimulus } from "@bpmn-lean/semantic-core";
+import type { CanonicalObservation, DeliverMessageStimulus, SemanticProcessProgram, StartProcessStimulus, Stimulus } from "@bpmn-lean/semantic-core";
 import {
   bpmnCancelIncidentProcessUpdateName,
   bpmnCompleteUserTaskUpdateName,
@@ -24,6 +25,9 @@ import {
   completeEffectStimulus,
   productionBpmnWorkflowInitialHostInput,
   timerFiringStimulus,
+  WorkflowChainBudgetKind,
+  workflowChainCanonicalUtf8ByteLength,
+  workflowChainProductionLimit,
 } from "@bpmn-lean/temporal-protocol";
 import { loadBpmnWorkflowBundle } from "@bpmn-lean/temporal-testkit";
 import { parseWorkflowCode } from "@temporalio/worker/lib/worker.js";
@@ -155,6 +159,77 @@ test("Compensation yields to an unrelated Update and keeps both scheduled Activi
   assertNoOwnedCommands(completedC);
   assert.deepEqual(queryResult(trace), expectedTrace);
 });
+
+for (const queueBound of ["entries", "bytes"] as const) {
+  test(`an Activity completion remains admissible after exact queue ${queueBound} pressure drains beside its Timer`, async () => {
+    const program = await compileTimerProgram("activity-boundary-timer");
+    const start: StartProcessStimulus = {
+      kind: StimulusKind.StartProcess, commandId: `start-drained-${queueBound}`,
+      instanceId: `Drained_${queueBound}`, processId: program.processId, initialVariables: [],
+    };
+    const started = advanceScenario(program, initialState, start);
+    assert.equal(started.kind, ScenarioStepKind.Committed);
+    const task = started.state.userTaskWaits[0];
+    assert.ok(task);
+    const deliveries = queueFillingDeliveries(start.instanceId, queueBound);
+    const expectedTrace: CanonicalObservation[] = [deployProcess(start, program).observation, ...started.observations];
+    for (const delivery of deliveries) {
+      const rejected = advanceScenario(program, started.state, delivery);
+      assert.equal(rejected.kind, ScenarioStepKind.Terminal);
+      assert.deepEqual(rejected.state, started.state);
+      expectedTrace.push(...rejected.observations);
+    }
+    const completion = {
+      kind: StimulusKind.CompleteUserTaskInstance, commandId: `complete-drained-${queueBound}`,
+      taskId: task.id, submittedValues: [],
+    } as const;
+    const completed = advanceScenario(program, started.state, completion);
+    assert.equal(completed.kind, ScenarioStepKind.Committed);
+    assert.deepEqual(completed.state.timerWaits, []);
+    expectedTrace.push(...completed.observations);
+    const [drained, response, trace] = await activate(program, start,
+      deliveries.map((delivery) => ({ signalWorkflow: {
+        signalName: bpmnDeliverMessageSignalName, input: [defaultPayloadConverter.toPayload(delivery)],
+      } })), [[updateJob(completion)], [queryJob()]],
+      (initial) => assert.deepEqual(Array.from(commands(initial)).flatMap(({ startTimer }) => startTimer ? [startTimer.seq] : []), [1]));
+    requireSuccessful(drained);
+    assertNoOwnedCommands(drained);
+    assert.equal(commands(drained).some(({ continueAsNewWorkflowExecution }) => continueAsNewWorkflowExecution), false);
+    requireSuccessful(response);
+    assert.equal(commands(response).find(({ updateResponse }) => updateResponse?.rejected)?.updateResponse?.rejected, undefined);
+    assert.deepEqual(Array.from(commands(response)).flatMap(({ updateResponse }) =>
+      updateResponse?.completed ? [defaultPayloadConverter.fromPayload(updateResponse.completed)] : []), [CommandOutcome.Committed]);
+    assert.deepEqual(Array.from(commands(response)).flatMap(({ cancelTimer }) => cancelTimer ? [cancelTimer.seq] : []), [1]);
+    assert.deepEqual(queryResult(trace), expectedTrace);
+  });
+}
+
+function queueFillingDeliveries(instanceId: string, bound: "entries" | "bytes"): DeliverMessageStimulus[] {
+  const entries = workflowChainProductionLimit(WorkflowChainBudgetKind.SemanticInputQueueEntries);
+  const byteLimit = workflowChainProductionLimit(WorkflowChainBudgetKind.SemanticInputQueueBytes);
+  const count = bound === "entries" ? entries : 5;
+  const deliveries: DeliverMessageStimulus[] = Array.from({ length: count }, (_, index) => ({
+    kind: StimulusKind.DeliverMessage, commandId: `unrelated-${index}`,
+    subscriptionId: { processInstanceId: instanceId, elementId: "AbsentCatch", activation: 1 },
+    channel: { kind: MessageChannelKind.OperationMessage, interfaceId: "AbsentInterface", interfaceOperationId: "AbsentOperation", messageId: "AbsentMessage" },
+  }));
+  if (bound === "bytes") {
+    let remaining = byteLimit - workflowChainCanonicalUtf8ByteLength(deliveries);
+    for (const [index, delivery] of deliveries.entries()) {
+      const padding = Math.ceil(remaining / (deliveries.length - index));
+      deliveries[index] = { ...delivery, channel: { ...delivery.channel, messageId: `${delivery.channel.messageId}${"x".repeat(padding)}` } };
+      remaining -= padding;
+    }
+    assert.equal(workflowChainCanonicalUtf8ByteLength(deliveries), byteLimit);
+    assert.ok(deliveries.length < entries);
+  } else {
+    assert.equal(deliveries.length, entries);
+    assert.ok(workflowChainCanonicalUtf8ByteLength(deliveries) < byteLimit);
+  }
+  assert.ok(deliveries.every((delivery) => workflowChainCanonicalUtf8ByteLength(delivery)
+    <= workflowChainProductionLimit(WorkflowChainBudgetKind.SemanticStimulusBytes)));
+  return deliveries;
+}
 
 async function activate(
   program: SemanticProcessProgram,
