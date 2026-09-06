@@ -106,9 +106,9 @@ Active work ID: `DATA-AND-TASK-MECHANISMS`.
 
 Risk band: external-review corrections; RC implementation is held.
 
-Checkpoint: complete Product 1 verification passed at `6577b488`; the claim and comment corrections at `a3c9176e` preserve executable Lean tokens. The [initialization receipt](capsules/RUNTIME-INITIALIZATION-ASSURANCE-REPAIR-PROPOSAL.md#independent-cold-review-receipt) owns the checkpoint decision. The [cost ledger](CAPSULE-COST-LEDGER.md#runtime-invariant-and-committed-initialization-correction) retains the fixed 3 GiB acceptance and preceding failures.
+Checkpoint: the [closure atomicity repair](capsules/INTERNAL-CLOSURE-ATOMICITY-REPAIR-PROPOSAL.md) has complete Lean and semantic-core gates, cross-target rollback, publication discriminators, and corrected accounts at `e9c9db0f`. Its [consumer measurements](CAPSULE-COST-LEDGER.md#internal-closure-atomicity-correction) retain the fixed 3 GiB ceiling. The independent semantic checkpoint and complete Product 1 verification remain pending.
 
-Next action: implement the [closure atomicity repair](capsules/INTERNAL-CLOSURE-ATOMICITY-REPAIR-PROPOSAL.md); finish the checklist, remaining repair closures, and [composed Activity-data correction audit](capsules/ACTIVITY-DATA-INPUT-OUTPUT-MEDIATION-PROPOSAL.md#independent-cold-review-receipt) before resuming RC.
+Next action: review the atomicity checkpoint before correcting Temporal failure classification; finish the checklist, remaining repair closures, and [composed Activity-data correction audit](capsules/ACTIVITY-DATA-INPUT-OUTPUT-MEDIATION-PROPOSAL.md#independent-cold-review-receipt) before resuming RC.
 
 Oracle: one User Task activation copies the required Process input into its occurrence-owned local scope, and one accepted completion atomically routes its required output to Process scope and disposes that same local scope across source, Lean, the semantic core, publication, and Temporal refinement.
 

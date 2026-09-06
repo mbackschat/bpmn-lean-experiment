@@ -317,6 +317,32 @@ The standing-watch trigger above requires remeasurement of all four consumers of
 
 The four final measurements replace their executable module-cost rows and remove their near-cap disclosures; the standing-watch set and its trigger remain in force. A complete 304-module library pass on the final maintained Lean source bytes passed in 4:13.63 at 2,422,024 KiB GNU RSS and 2,182,316,032 cgroup bytes, with zero controlled memory events, pressure totals, and swap. The immutable `fe934e3c` archive then passed both complete commands after the four isolated cold-target runs, reusing their outputs: `./scripts/lake.sh test` took 0.75 seconds at 121,676 KiB and 41,410,560 cgroup bytes, output SHA-256 `6c53dad040c90367e6583c9a37d2c5280034e1adf837a205778b077b75139d40`; `./scripts/lake.sh build` took 0.44 seconds at 121,680 KiB and 41,287,680 cgroup bytes, output SHA-256 `bcbbf734a71ec4050d6aa326781f706485403162ed088573c5c34673008ff5b0`. Both warm complete receipts exited zero with all controlled memory events, pressure totals, and swap zero and replace the accepted tuples in [the cgroup acceptance record](../scripts/lean-memory-acceptance.ts). The rejected exact-ceiling result remains visible above; the fixed 3 GiB limit is unchanged.
 
+#### Internal closure atomicity correction
+
+On 2026-09-06, the [atomicity repair](capsules/INTERNAL-CLOSURE-ATOMICITY-REPAIR-PROPOSAL.md) was calibrated from immutable commit `e9c9db0fd20f3c969fc2783f3b3554797eeea5cc`. The ten changed conformance owners and all four standing-watch consumers were measured, with Timer Start counted once. The pinned image, one CPU, one Lean thread, no network, fixed 3 GiB ceiling, and no additional swap remain unchanged. Each measurement used a warm dependency closure and invalidated only the exact target's eight generated products.
+
+| Module | Elapsed | GNU RSS | Cgroup peak | Output SHA-256 |
+|---|---:|---:|---:|---|
+| `EventBasedGatewayConformance` | 17.19 s | 2,721,196 KiB | 2,460,598,272 bytes | `6b744ba0a8b9e813db4a1f26ca798b84eb362c37c467756d8feddbd4e1d97135` |
+| `InclusiveGatewayConformance` | 21.32 s | 2,813,784 KiB | 2,584,272,896 bytes | `c9404e25bc35a0d65ce1a2dca490af039909791c5f62689818a8ec654855a239` |
+| `InternalClosureAtomicityConformance` | 12.95 s | 1,217,720 KiB | 883,953,664 bytes | `9bec1eb0ee3b4178b0390457b539127fc8021fcb5aa57cf8c751f6da15f03757` |
+| `InternalCommutationConformance` | 8.73 s | 1,923,892 KiB | 1,592,741,888 bytes | `c0093d0e486dbe71c00a4ce082ff0bb57be12f630139e58fb3ed0bec354b5067` |
+| `MessageStartClosureConformance` | 6.92 s | 1,699,144 KiB | 1,361,661,952 bytes | `2419fea9731c936d1a2772abe0238d04deee80d171cfd746e9330029c1336dc4` |
+| `SemanticProcess.CyclicControlFlowConformance` | 9.87 s | 1,892,268 KiB | 1,614,888,960 bytes | `7697ee346c1ebcbfe91d3e052d50f43a30da4e28de7c07f34c14d833a363a064` |
+| `SemanticProcess.CyclicControlFlowExecutionConformance` | 1.90 s | 806,972 KiB | 421,711,872 bytes | `8c82281a4bf8e6761dbf398c6b50ac9ab40b786976493b4a11c259e37e0b18e9` |
+| `SemanticProcess.CyclicControlFlowReachabilityConformance` | 3.58 s | 842,656 KiB | 461,123,584 bytes | `c179480ff546575e49b236613b97c24b3e6bfe7135bd1648d51581f94e5e52b8` |
+| `TimerStartConformance` | 20.95 s | 1,416,564 KiB | 1,101,373,440 bytes | `e1bcd9937049ad1da7fd0b17536eb32e5507a417f96634dd7c78fdc2c079a901` |
+| `UserTaskMetadataConformance` | 8.91 s | 1,720,408 KiB | 1,392,812,032 bytes | `281dae39127f6a7950827ee708d96c385850dfdb883e65545d552c6989f50a4e` |
+| `CallActivityConformance` | 22.33 s | 1,350,512 KiB | 1,054,326,784 bytes | `90ff47c5dca30e9b9765f55ae9f75dcc79f16234e067837d29a130389f620d2d` |
+| `SequentialMultiInstanceProgramBindingConformance` | 26.90 s | 1,550,520 KiB | 1,193,320,448 bytes | `74a4ef07af87fe1b793ff7e84ee279e83012b35ced0e22a7e8fb6c679848f452` |
+| `TerminateEndEventConformance` | 30.44 s | 1,541,904 KiB | 1,260,503,040 bytes | `cf3b08d8dec637b59b1934438ef5e6aada8dc607c71bceae25f19e70a073cd93` |
+
+Every module exited zero with zero swap, controlled memory events, and pressure totals. The highest cgroup peak was 2,584,272,896 bytes, leaving 636,952,576 bytes below the unchanged ceiling; no measured module reaches the GNU-RSS disclosure threshold. These measurements replace the exact source-bound tuples in [the module-cost record](../scripts/lean-module-cost.ts). Elapsed readings remain host-load context.
+
+The preceding complete maintained-source library build passed in 18:58.10 at 2,988,396 KiB GNU RSS and 2,909,528,064 cgroup bytes, with zero controlled memory events and swap. Its pressure totals were 230,056 microseconds; that nonzero pressure is retained separately from the zero-pressure immutable measurements. This build used the candidate source that became `1c8510ea`, before the subsequent comment-only cleanup, and is not an isolated immutable module measurement.
+
+After calibration, the immutable archive passed both complete commands with warm outputs: `./scripts/lake.sh test` took 0.46 seconds at 121,408 KiB GNU RSS and 41,607,168 cgroup bytes, output SHA-256 `5fa968103e69ea2b59b487fccfe92da90795ac0ecb94a672aed7248f70e0f94a`; `./scripts/lake.sh build` took 0.34 seconds at 121,644 KiB and 41,705,472 cgroup bytes, output SHA-256 `9d79233d5ddf6e2906a58cd18d2425a18ea73a5549a691b59bdb4930ed76c96f`. Both exited zero with zero controlled memory events, pressure totals, and swap and replace [the cgroup acceptance record](../scripts/lean-memory-acceptance.ts). These are checkpoint resource receipts; Temporal classification, complete Product 1 integration, and governed review remain separate obligations.
+
 | Increment | Boundary | Code | Documentation | Elapsed | Comparison consequence |
 |---|---|---:|---:|---|---|
 | [Scoped runtime data](capsules/SCOPED-DATA-SPEC.md) | `08d8b84..3b2e44d` | `+540/-73` | `+134/-11` | Unknown | First atomic runtime-representation replacement; later scope work should not be compared as if it were a small local semantic clause. |
