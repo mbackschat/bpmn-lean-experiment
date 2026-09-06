@@ -50,6 +50,7 @@ type TimerReadiness = Readonly<{
 type EventRaceReadiness = MessageReadiness | TimerReadiness;
 
 export type EventRaceReadinessScheduler = Readonly<{
+  hasArmedTimer: () => boolean;
   recordMessageCallback: (
     state: RuntimeState,
     stimulus: DeliverMessageStimulus,
@@ -79,6 +80,8 @@ export function createEventRaceReadinessScheduler(
   });
 
   return {
+    hasArmedTimer: timer.hasArmedTimer,
+
     recordMessageCallback(state, stimulus, submitToCore) {
       if (state.eventRaces.length === 0) {
         return false;

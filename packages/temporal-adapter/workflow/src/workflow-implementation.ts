@@ -670,9 +670,8 @@ export async function runBpmnProcessWithHostEffects(
             workflowChain,
             runRetention !== null && runRetention.traceEntries > 0,
           ),
-        managedBoundaryDeadlineArmed: boundedDeadlineSchedulers.some((scheduler) =>
-          scheduler.hasArmedDeadline()
-        ),
+        managedBoundaryDeadlineArmed: eventRaceScheduler.hasArmedTimer() ||
+          boundedDeadlineSchedulers.some((scheduler) => scheduler.hasArmedDeadline()),
         managedReadinessCallbackPending:
           messageBoundedActivityScheduler.hasPendingCallbacks(),
         compensationActivityUnreconciled:
@@ -720,9 +719,8 @@ export async function runBpmnProcessWithHostEffects(
         workflowRolloverPermitted({
           requested:
             workflowChain?.commandCapacity.rolloverRequested() === true,
-          managedBoundaryDeadlineArmed: boundedDeadlineSchedulers.some((scheduler) =>
-            scheduler.hasArmedDeadline()
-          ),
+          managedBoundaryDeadlineArmed: eventRaceScheduler.hasArmedTimer() ||
+            boundedDeadlineSchedulers.some((scheduler) => scheduler.hasArmedDeadline()),
           managedReadinessCallbackPending:
             messageBoundedActivityScheduler.hasPendingCallbacks(),
           compensationActivityUnreconciled:
