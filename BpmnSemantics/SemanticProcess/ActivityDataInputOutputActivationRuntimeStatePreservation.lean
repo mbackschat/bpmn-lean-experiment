@@ -2,11 +2,13 @@ import BpmnSemantics.SemanticProcess.ActivityDataInputOutput
 import BpmnSemantics.SemanticProcess.InternalCommutationRuntimePreservation
 import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStateEntryOrder
 import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStatePreservation
+import BpmnSemantics.SemanticProcess.ActivityDataInputOutputMultiInstanceFrames
 
 /-! # Composed Activity-data activation runtime-state preservation
 
 Activating the composed User Task inserts one joined wait, Activity record, and Activity-local input
-scope while preserving the aggregate runtime-state predicate for its admitted profile.
+scope while preserving the aggregate runtime-state predicate. Exact declaration uniqueness keeps
+the inserted Activity disjoint from every existing Multi-Instance controller's binding.
 -/
 
 namespace BpmnSemantics.SemanticProcess
@@ -69,12 +71,10 @@ theorem activityDataInputOutput_parallelBindings_of_forbidden
   have absent := forbidden operation member
   cases operation <;> simp_all [ParallelMultiInstanceArm.ofOperation?]
 
-/-- Every successful composed activation preserves the complete runtime-state invariant. -/
-theorem dataInputOutputActivationStep_preserves_runtimeStateWellFormed
+/-- Exact declaration binding preserves unrelated Multi-Instance controllers during activation. -/
+theorem dataInputOutputActivationStep_preserves_runtimeStateWellFormed_general
     (program : Program) (expectedInstanceId : SemanticId)
     (before after : RuntimeState)
-    (profile : program.identity.semanticProfile = activityDataInputOutputUserTaskProfileId)
-    (capabilities : programProfileCapabilitiesValid program = true)
     (wellFormed : runtimeStateWellFormed program expectedInstanceId before = true)
     (transition : DataInputOutputActivationStep program before after) :
     runtimeStateWellFormed program expectedInstanceId after = true := by
@@ -454,39 +454,65 @@ theorem dataInputOutputActivationStep_preserves_runtimeStateWellFormed
                 exact InternalCommutation.occurrenceKeysUnique_canonicalInsertBy
                   activityOccurrenceBefore sameActivityOccurrence record before.activityOccurrences
                   activityIds activityFresh (by simp [sameActivityOccurrence])
-              have admitted := capabilities
-              simp only [programProfileCapabilitiesValid, Bool.and_eq_true] at admitted
-              have noSequentialOperation := admitted.1.1
-              simp [programSequentialMultiInstanceProfileMatches, profile,
-                activityDataInputOutputUserTaskProfileId,
-                sequentialMultiInstanceUserTaskProfileId] at noSequentialOperation
-              have noSequentialOperation' : ∀ operation ∈ program.operations,
-                  match operation with
-                  | .awaitSequentialMultiInstanceUserTask .. => False
+              have onlyDeclarer : userTaskWaitDeclarers program taskId = [operation] := by
+                rw [userTaskWaitDeclarers_eq_keyFilter,
+                  programWellFormed_waitDeclarer program operation _ structural declared
+                    (by simp [operation, operationDeclaresWaitKey,
+                      operationWaitDeclarationKeys, userTaskWaitDeclarationKey])]
+              have disjoint : ∀ candidate ∈ program.operations,
+                  match candidate with
+                  | .awaitSequentialMultiInstanceUserTask _ _ _ task _ _ _ _ => task.id ≠ taskId
+                  | .awaitParallelMultiInstanceUserTask _ _ _ task _ _ _ _ _ _ => task ≠ taskId
                   | _ => True := by
                 intro candidate member
-                have absent := noSequentialOperation candidate member
-                cases candidate <;> simp_all
-              have noSequentialControllers := sequential_controllers_absent program before
-                noSequentialOperation' sequentialBindings
+                cases candidate <;> try trivial
+                all_goals
+                  intro same
+                  have conflict : _ ∈ userTaskWaitDeclarers program taskId :=
+                    List.mem_filter.mpr ⟨member, by simp [same]⟩
+                  rw [onlyDeclarer] at conflict
+                  simp [operation] at conflict
+              have sequentialDisjoint : ∀ candidate ∈ program.operations,
+                  match candidate with
+                  | .awaitSequentialMultiInstanceUserTask _ _ _ task _ _ _ _ =>
+                      task.id.value ≠ record.activityElementId.value
+                  | _ => True := by
+                intro candidate member
+                have different := disjoint candidate member
+                cases candidate <;> try trivial
+                intro same
+                apply different
+                apply taskDefinitionId_eq_of_value_eq
+                exact same
               have controllersAfter : controllersOwnLiveActivity successor = true := by
-                simp [controllersOwnLiveActivity, successor, noSequentialControllers]
+                exact controllersOwnLiveActivity_insert_unrelated_activity program before record
+                  sequentialDisjoint sequentialBindings controllers
               have sequentialBindingsAfter :
                   sequentialMultiInstanceProgramBindingsValid program successor = true := by
-                apply sequential_bindings_of_no_sequential_operation program successor
-                  noSequentialOperation'
-                simp [successor, noSequentialControllers]
-              have parallelFamily := admitted.1.2
-              simp [programParallelMultiInstanceProfileMatches, profile,
-                activityDataInputOutputUserTaskProfileId,
-                parallelMultiInstanceUserTaskProfileId] at parallelFamily
-              have noParallelControllers :=
-                activityDataInputOutput_parallelControllers_absent_of_forbidden program before
-                parallelFamily parallelBindings
+                have waitBindings := InternalCommutation.smiBindings_insertUserTaskWait_frame
+                  program before insertedWait (by
+                    intro candidate member
+                    have different := disjoint candidate member
+                    cases candidate <;> trivial) sequentialBindings
+                exact sequentialBindings_insertActivityOccurrence_frame program
+                  { before with waits := insertUserTaskWait insertedWait before.waits } record
+                  sequentialDisjoint waitBindings
               have parallelBindingsAfter :
                   parallelMultiInstanceProgramBindingsValid program successor = true := by
-                exact activityDataInputOutput_parallelBindings_of_forbidden program successor parallelFamily
-                  (by simpa [successor] using noParallelControllers)
+                have waitBindings := parallelMultiInstanceProgramBindingsValid_insertUserTaskWait_frame
+                  program before insertedWait disjoint parallelBindings
+                have activityBindings := parallelBindings_insertActivityOccurrence_frame program
+                  { before with
+                    waits := insertUserTaskWait insertedWait before.waits
+                    activations := setActivationCount before.activations taskId insertedWait.activation }
+                  record (by
+                    intro candidate member arm projects
+                    have different := disjoint candidate member
+                    cases candidate <;> simp [ParallelMultiInstanceArm.ofOperation?] at projects
+                    cases projects
+                    intro same
+                    exact different (taskDefinitionId_eq_of_value_eq _ _ same)) waitBindings
+                exact activityBindings
               have controllerIdsAfter : controllerIdentitiesUnique successor = true := by
                 simpa [successor, controllerIdentitiesUnique] using controllerIds
               have notExhaustedAfter : controllersNotExhausted successor = true := by
@@ -550,5 +576,16 @@ theorem dataInputOutputActivationStep_preserves_runtimeStateWellFormed
                 sequentialBindingsAfter⟩, parallelBindingsAfter⟩, controllerIdsAfter⟩,
                 notExhaustedAfter⟩, lifecycleAfter⟩,
                 ⟨⟨⟨claimsAfter, retentionAfter⟩, snapshotsAfter⟩, executionAfter⟩⟩
+
+theorem dataInputOutputActivationStep_preserves_runtimeStateWellFormed
+    (program : Program) (expectedInstanceId : SemanticId)
+    (before after : RuntimeState)
+    (_profile : program.identity.semanticProfile = activityDataInputOutputUserTaskProfileId)
+    (_capabilities : programProfileCapabilitiesValid program = true)
+    (wellFormed : runtimeStateWellFormed program expectedInstanceId before = true)
+    (transition : DataInputOutputActivationStep program before after) :
+    runtimeStateWellFormed program expectedInstanceId after = true :=
+  dataInputOutputActivationStep_preserves_runtimeStateWellFormed_general program expectedInstanceId
+    before after wellFormed transition
 
 end BpmnSemantics.SemanticProcess

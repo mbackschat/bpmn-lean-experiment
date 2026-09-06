@@ -13,7 +13,7 @@ open BpmnSemantics
 
 namespace InternalCommutation
 
-private theorem one_wait_insert_open_projection_exact
+theorem one_wait_insert_open_projection_exact
     (program : Program) (before after : RuntimeState)
     (newStart : OpenSemanticFlowNodeOccurrence) (current : List OpenSemanticFlowNodeOccurrence)
     (beforeRunning : before.control = .running beforeInstance)
@@ -310,7 +310,7 @@ private theorem filter_canonicalInsertBy_eq_singleton (before : α → α → Bo
           have lengthEq := permutation.length_eq
           simp at lengthEq
 
-private theorem activationForTask_eq_activationCount (state : RuntimeState)
+theorem activationForTask_eq_activationCount (state : RuntimeState)
     (taskId : TaskDefinitionId) :
     activationForTask state taskId = activationCount state taskId := by
   unfold activationForTask activationCount
@@ -325,7 +325,7 @@ private theorem activationForNode_eq_elementActivationCount
     (values : List (NodeId × Nat)) (elementId : NodeId) :
     activationForNode values elementId = elementActivationCount values elementId := rfl
 
-private theorem filter_insertUserTaskWait_eq_singleton (inserted : UserTaskWait)
+theorem filter_insertUserTaskWait_eq_singleton (inserted : UserTaskWait)
     (values : List UserTaskWait)
     (insertedOwner : inserted.processInstanceId = inserted.owner.processInstanceId)
     (ownerIds : ∀ old ∈ values, old.processInstanceId = old.owner.processInstanceId)
@@ -429,7 +429,7 @@ private theorem filter_insertEffectWait_eq_singleton (inserted : EffectWait)
     rw [fresh old member] at keyed
     simp at keyed
 
-private theorem exactProgramSelection_parts (program : Program)
+theorem exactProgramSelection_parts (program : Program)
     (operation : SemanticOperation) (owner : ScopeOccurrenceId)
     (programValid : programWellFormed program = true)
     (selected : exactProgramSelection program operation owner = true) :
@@ -706,6 +706,46 @@ private theorem prepared_arm_candidate_singleton (program : Program) (state : Ru
         simp [candidate]
         rfl
 
+/-- Exact open projection and the candidate together settle singleton lifecycle acceptance. -/
+theorem single_start_candidate_accepted (program : Program) (state after : RuntimeState)
+    (operation : SemanticOperation) (commandId : SemanticId) (transitionIndex : Nat)
+    (current : List OpenSemanticFlowNodeOccurrence) (newStart : OpenSemanticFlowNodeOccurrence)
+    (next : List OpenSemanticFlowNodeOccurrence)
+    (beforeEq : projectOpenFlowNodeOccurrences? program state = some current)
+    (afterEq : projectOpenFlowNodeOccurrences? program after = some next)
+    (nextEq : next = sortFlowNodeOccurrenceStarts (newStart :: current))
+    (candidate : candidateFlowNodeOccurrenceDeltaForOperation? program state after operation
+      commandId transitionIndex = some (canonicalFlowNodeOccurrenceDelta [newStart] []))
+    (nonTransition : transitionAnchor newStart.anchor = false) :
+    flowNodeOccurrenceDeltaForOperation? program state after operation commandId transitionIndex =
+      some (canonicalFlowNodeOccurrenceDelta [newStart] []) := by
+  have nextNodup := projectOpenFlowNodeOccurrences_anchor_nodup program after next afterEq
+  rw [nextEq] at nextNodup
+  have consNodup : ((newStart :: current).map (·.anchor)).Nodup :=
+    ((sortFlowNodeOccurrenceStarts_perm (newStart :: current)).map (·.anchor)).nodup_iff.mp nextNodup
+  have appendNodup : ((current ++ [newStart]).map (·.anchor)).Nodup :=
+    ((List.perm_append_singleton newStart current).map (·.anchor)).nodup_iff.mpr consNodup
+  have availableEq : sortFlowNodeOccurrenceStarts (current ++ [newStart]) = next := by
+    rw [nextEq]; apply sortFlowNodeOccurrenceStarts_perm_eq
+    exact List.perm_append_singleton newStart current
+  have startSort : sortFlowNodeOccurrenceStarts [newStart] = [newStart] := by rfl
+  have endSort : sortFlowNodeOccurrenceEnds [] = [] := by rfl
+  have nextNonTransition := projectOpenFlowNodeOccurrences_transitionAnchor_false program
+    after next afterEq
+  simp only [List.map_append, List.map_cons, List.map_nil] at appendNodup
+  unfold flowNodeOccurrenceDeltaForOperation?
+  simp only [Option.bind_eq_bind]
+  rw [candidate]
+  unfold acceptFlowNodeOccurrenceCandidate?
+  simp only [Option.bind_eq_bind]
+  rw [beforeEq, afterEq]
+  simp only [Option.bind_some]
+  simp only [canonicalFlowNodeOccurrenceDelta]
+  unfold applyFlowNodeOccurrenceDelta?
+  rw [startSort, endSort]
+  simp [availableAfterStarts, removeEndedFlowNodeOccurrences, nonTransition, availableEq,
+    nextNonTransition, appendNodup]
+
 /-- A prepared ordinary arm publishes exactly its one accepted wait start. -/
 theorem prepared_arm_lifecycle_singleton (program : Program) (state : RuntimeState)
     (operation : SemanticOperation) (patch : InternalArmingPatch)
@@ -729,37 +769,10 @@ theorem prepared_arm_lifecycle_singleton (program : Program) (state : RuntimeSta
     instanceId running beforeEq
   have candidate := prepared_arm_candidate_singleton program state operation patch commandId
     newStart programAdmitted validities.1 prepared started
-  have nextNodup := projectOpenFlowNodeOccurrences_anchor_nodup program
-    (applyInternalArmingPatch state patch) next afterEq
-  rw [nextEq] at nextNodup
-  have consNodup : ((newStart :: current).map (·.anchor)).Nodup :=
-    ((sortFlowNodeOccurrenceStarts_perm (newStart :: current)).map (·.anchor)).nodup_iff.mp nextNodup
-  have appendNodup : ((current ++ [newStart]).map (·.anchor)).Nodup :=
-    ((List.perm_append_singleton newStart current).map (·.anchor)).nodup_iff.mpr consNodup
-  have availableEq : sortFlowNodeOccurrenceStarts (current ++ [newStart]) = next := by
-    rw [nextEq]; apply sortFlowNodeOccurrenceStarts_perm_eq
-    exact List.perm_append_singleton newStart current
-  have startSort : sortFlowNodeOccurrenceStarts [newStart] = [newStart] := by rfl
-  have endSort : sortFlowNodeOccurrenceEnds [] = [] := by rfl
-  have nonTransition : transitionAnchor newStart.anchor = false := by
-    rw [waitStart_anchor_of_eq program state _ _ _ _ started]
-    rfl
-  have nextNonTransition := projectOpenFlowNodeOccurrences_transitionAnchor_false program
-    (applyInternalArmingPatch state patch) next afterEq
-  simp only [List.map_append, List.map_cons, List.map_nil] at appendNodup
-  refine ⟨newStart, started, ?_⟩
-  unfold flowNodeOccurrenceDeltaForOperation?
-  simp only [Option.bind_eq_bind]
-  rw [candidate]
-  unfold acceptFlowNodeOccurrenceCandidate?
-  simp only [Option.bind_eq_bind]
-  rw [beforeEq, afterEq]
-  simp only [Option.bind_some]
-  simp only [canonicalFlowNodeOccurrenceDelta]
-  unfold applyFlowNodeOccurrenceDelta?
-  rw [startSort, endSort]
-  simp [availableAfterStarts, removeEndedFlowNodeOccurrences, nonTransition, availableEq,
-    nextNonTransition, appendNodup]
+  refine ⟨newStart, started, single_start_candidate_accepted program state _ operation commandId
+    0 current newStart next beforeEq afterEq nextEq candidate ?_⟩
+  rw [waitStart_anchor_of_eq program state _ _ _ _ started]
+  rfl
 
 end InternalCommutation
 

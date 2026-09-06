@@ -8,14 +8,11 @@
  * occurrences for one BPMN Activity.
  */
 import {
-  ActivityBodyKind,
   activityOccurrenceForTaskBody,
-  compareActivityOccurrences,
   sameActivityOccurrence,
 } from "./activity-occurrence.js";
 import type {
   ActivityOccurrence,
-  ActivityOccurrenceId,
 } from "./activity-occurrence.js";
 import { StimulusKind, VariableValueKind } from "./contract.js";
 import type {
@@ -23,14 +20,16 @@ import type {
   UserTaskInstanceId,
   VariableBinding,
 } from "./contract.js";
-import { matchesActivityLocalDataOwner } from "./local-data-owner.js";
+import {
+  applyInternalDataArmingPatch,
+  deriveInternalDataArmingPatch,
+} from "./internal-transition-data-arming-patch.js";
 import { SemanticOperationKind } from "./semantic-process-contract.js";
 import type {
   AwaitDataInputOutputUserTaskOperation,
   SemanticProcessProgram,
 } from "./semantic-process-contract.js";
 import {
-  addActivityOccurrenceVariableScope,
   activityOccurrenceVariableBindings,
   mergeProcessVariableBindings,
   removeActivityOccurrenceVariableScope,
@@ -38,12 +37,8 @@ import {
 import {
   ControlStateKind,
   addToken,
-  compareUserTaskWaits,
-  nextActivation,
-  removeToken,
   sameOccurrence,
   sameScopeOccurrence,
-  setActivationCount,
 } from "./semantic-process-state.js";
 import type {
   RuntimeState,
@@ -64,67 +59,8 @@ export function armDataInputOutputUserTask(
   state: RuntimeState,
   owner: ScopeOccurrenceId,
 ): RuntimeState | null {
-  if (state.control.kind !== ControlStateKind.Running) {
-    return null;
-  }
-  const source = availableSourceBinding(state, operation);
-  if (source === undefined) {
-    return null;
-  }
-  const taskId: UserTaskInstanceId = {
-    processInstanceId: owner.processInstanceId,
-    elementId: operation.task.elementId,
-    activation: nextActivation(state.taskActivations, operation.task.elementId),
-  };
-  const activityId: ActivityOccurrenceId = {
-    processInstanceId: owner.processInstanceId,
-    activityElementId: operation.task.elementId,
-    activation: nextActivation(
-      state.activityActivations,
-      operation.task.elementId,
-    ),
-  };
-  if (
-    state.variables.activities.some(({ owner: candidate }) =>
-      matchesActivityLocalDataOwner(candidate, activityId)
-    )
-  ) {
-    return null;
-  }
-  const record: ActivityOccurrence = {
-    id: activityId,
-    owner,
-    operationId: operation.id,
-    body: { kind: ActivityBodyKind.UserTask, task: taskId },
-    attachedHandlers: [],
-  };
-  const wait: SemanticUserTaskWait = {
-    id: taskId,
-    owner,
-    name: operation.task.name,
-    output: operation.output,
-  };
-  return {
-    ...state,
-    controlTokens: removeToken(state.controlTokens, operation.input, owner),
-    userTaskWaits: [...state.userTaskWaits, wait].sort(compareUserTaskWaits),
-    taskActivations: setActivationCount(
-      state.taskActivations,
-      taskId.elementId,
-      taskId.activation,
-    ),
-    activityOccurrences: [...state.activityOccurrences, record]
-      .sort(compareActivityOccurrences),
-    activityActivations: setActivationCount(
-      state.activityActivations,
-      activityId.activityElementId,
-      activityId.activation,
-    ),
-    variables: addActivityOccurrenceVariableScope(state.variables, activityId, [{
-      name: operation.directInput.targetDataInputId,
-      value: source.value,
-    }]),
-  };
+  const patch = deriveInternalDataArmingPatch(operation, state, owner);
+  return patch === null ? null : applyInternalDataArmingPatch(state, patch);
 }
 
 /** Whether any composed operation declares this task element for command-family routing. */
@@ -205,19 +141,6 @@ export function completeDataInputOutputUserTask(
       },
     },
   };
-}
-
-function availableSourceBinding(
-  state: RuntimeState,
-  operation: AwaitDataInputOutputUserTaskOperation,
-): VariableBinding | undefined {
-  const matching = state.variables.process.bindings.filter(
-    ({ name }) => name === operation.directInput.sourcePropertyId,
-  );
-  const binding = matching[0];
-  return matching.length === 1 && binding !== undefined && supported(binding)
-    ? cloneVariableBinding(binding)
-    : undefined;
 }
 
 function filledDeclaredOutput(

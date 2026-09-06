@@ -60,6 +60,23 @@ theorem flowNodeOccurrenceEffectProgramValidity_frame (program : Program)
     rw [waits, incidents, activities]
   simp [flowNodeOccurrenceEffectProgramValidity, waits, incidents, waitValidEq, localScopesEq]
 
+/-- Activity-tagged local owners do not enter the Effect bijection, including in malformed states. -/
+theorem flowNodeOccurrenceEffectProgramValidity_addActivityOccurrenceVariableScope
+    (program : Program) (state : RuntimeState) (owner : ActivityOccurrenceId)
+    (bindings : List VariableBinding) :
+    flowNodeOccurrenceEffectProgramValidity program
+      { state with variables := addActivityOccurrenceVariableScope state.variables owner bindings } =
+      flowNodeOccurrenceEffectProgramValidity program state := by
+  have rejected (effect : EffectOccurrenceId) : activityScopeMatches effect
+      { owner := .activityOccurrence owner, bindings } = false := by
+    simp [activityScopeMatches, localDataOwnerMatches]
+  simp only [flowNodeOccurrenceEffectProgramValidity, effectWaitValid,
+    occurrenceOwnerValid, flowNodeOccurrenceOwnerLiveUnique, effectLocalScopesExact,
+    addActivityOccurrenceVariableScope,
+    filter_insertActivityVariableScope_of_rejected _ _ (rejected _),
+    all_insertActivityVariableScope, Bool.true_and]
+  rfl
+
 /-- Every Effect wait and incident stores the same process identity as its live owner. -/
 theorem flowNodeOccurrenceEffectProgramValidity_wait_owner_ids (program : Program)
     (state : RuntimeState) (valid : flowNodeOccurrenceEffectProgramValidity program state = true) :

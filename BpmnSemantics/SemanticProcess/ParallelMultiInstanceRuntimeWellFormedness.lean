@@ -18,7 +18,7 @@ namespace BpmnSemantics.SemanticProcess
 
 open BpmnSemantics
 
-private def parallelRecordForController? (state : RuntimeState)
+def parallelRecordForController? (state : RuntimeState)
     (controller : ParallelMultiInstanceController) : Option ActivityOccurrence :=
   match state.activityOccurrences.filter fun record =>
       parallelControllerNamesIdentity controller record.processInstanceId
@@ -31,7 +31,7 @@ private def parallelWaitTaskId (wait : UserTaskWait) : UserTaskInstanceId :=
     elementId := ⟨wait.task.id.value⟩
     activation := wait.activation }
 
-private def parallelControllerProgramBindingValid (program : Program) (state : RuntimeState)
+def parallelControllerProgramBindingValid (program : Program) (state : RuntimeState)
     (controller : ParallelMultiInstanceController) : Bool :=
   match parallelRecordForController? state controller with
   | none => false
@@ -212,7 +212,7 @@ theorem parallelMultiInstanceProgramBindingsValid_singleton (program : Program)
   · rw [controllers] at operationCompleteness
     exact List.all_eq_true.mp operationCompleteness
 
-/-- Eliminate the private controller binding validator into the exact Program, Activity, child-wait,
+/-- Eliminate the controller binding validator into the exact Program, Activity, child-wait,
 and Timer-wait facts owned by one admitted controller. -/
 theorem parallelMultiInstanceProgramBindingsValid_controller_facts
     (program : Program) (state : RuntimeState)

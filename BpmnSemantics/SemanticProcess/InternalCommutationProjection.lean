@@ -443,23 +443,23 @@ theorem prepared_arm_projectWaits_insert (program : Program) (state : RuntimeSta
           incidents newStart effectPerm
   all_goals simp_all
 
-theorem prepared_arm_projectWaits_fresh (program : Program) (state : RuntimeState)
-    (operation : SemanticOperation) (patch : InternalArmingPatch)
-    (prepared : prepareInternalArm? program state operation = some patch)
+theorem absent_wait_anchor_projectWaits_fresh (program : Program) (state : RuntimeState)
+    (owner : ScopeOccurrenceId) (elementId : NodeId) (activation : Nat)
+    (absent : openWaitAnchorAbsent state
+      { processInstanceId := owner.processInstanceId, elementId := ⟨elementId.value⟩,
+        activation } = true)
     (occurrencesValid : flowNodeOccurrenceProgramValidity program state = true)
     (newStart : OpenSemanticFlowNodeOccurrence)
-    (started : waitStart? program state patch.owner patch.write.elementId
-      patch.write.occurrence.activation = some newStart) :
+    (started : waitStart? program state owner elementId activation = some newStart) :
     ∀ beforeWaits, projectWaits? program state = some beforeWaits →
       newStart.anchor ∉ beforeWaits.map (·.anchor) := by
   intro beforeWaits beforeProjected member
   let projectedOccurrence : OccurrenceId :=
-    { processInstanceId := patch.owner.processInstanceId,
-      elementId := ⟨patch.write.elementId.value⟩,
-      activation := patch.write.occurrence.activation }
+    { processInstanceId := owner.processInstanceId,
+      elementId := ⟨elementId.value⟩, activation }
   have anchorEq : newStart.anchor = .wait projectedOccurrence := by
-    simpa [projectedOccurrence] using waitStart_anchor_of_eq program state patch.owner
-      patch.write.elementId patch.write.occurrence.activation newStart started
+    simpa [projectedOccurrence] using waitStart_anchor_of_eq program state owner
+      elementId activation newStart started
   rw [anchorEq] at member
   have ownerRaw := projectWaits_wait_anchor_mem program state beforeWaits projectedOccurrence
     beforeProjected member
@@ -484,13 +484,25 @@ theorem prepared_arm_projectWaits_fresh (program : Program) (state : RuntimeStat
     · rcases raw with ⟨incident, incidentMember, same⟩
       exact Or.inr (Or.inr (Or.inr (Or.inr ⟨incident, incidentMember, by
         simpa [effectWaitOccurrence, incidentIds incident incidentMember] using same⟩)))
+  have notMember : projectedOccurrence ∉ openWaitAnchors state := by
+    simpa [openWaitAnchorAbsent, List.contains_eq_mem] using absent
+  exact notMember storedRaw
+
+theorem prepared_arm_projectWaits_fresh (program : Program) (state : RuntimeState)
+    (operation : SemanticOperation) (patch : InternalArmingPatch)
+    (prepared : prepareInternalArm? program state operation = some patch)
+    (occurrencesValid : flowNodeOccurrenceProgramValidity program state = true)
+    (newStart : OpenSemanticFlowNodeOccurrence)
+    (started : waitStart? program state patch.owner patch.write.elementId
+      patch.write.occurrence.activation = some newStart) :
+    ∀ beforeWaits, projectWaits? program state = some beforeWaits →
+      newStart.anchor ∉ beforeWaits.map (·.anchor) := by
   obtain ⟨occurrenceEq, absent⟩ :=
     prepared_arm_anchor_shape program state operation patch prepared
-  have notMember : patch.write.occurrence ∉ openWaitAnchors state := by
-    simpa [openWaitAnchorAbsent, List.contains_eq_mem] using absent
-  apply notMember
-  rw [occurrenceEq]
-  exact storedRaw
+  apply absent_wait_anchor_projectWaits_fresh program state patch.owner patch.write.elementId
+    patch.write.occurrence.activation _ occurrencesValid newStart started
+  rw [← occurrenceEq]
+  exact absent
 
 theorem prepared_arm_preserves_flowNodeOccurrenceProgramValidity (program : Program)
     (state : RuntimeState) (operation : SemanticOperation) (patch : InternalArmingPatch)

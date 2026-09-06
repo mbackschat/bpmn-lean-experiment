@@ -81,23 +81,37 @@ def flowNodeOccurrenceBoundaryTimerBound (program : Program) (state : RuntimeSta
     (wait : TimerWait) : Bool :=
   (program.operations.filter (boundaryTimerOperationMatches program state wait)).length = 1
 
-private theorem boundaryTimerOperationMatches_insertOrdinaryUserTask (program : Program)
-    (state : RuntimeState) (id : OperationId) (origin : BpmnElementOrigin)
-    (input output : ControlPlaceId) (wait : UserTaskWait)
-    (unique : userTaskWaitDeclarers program wait.task.id =
-      [.awaitUserTask id origin input output wait.task])
+private theorem boundaryTimerOperationMatches_insertUnboundedUserTask (program : Program)
+    (state : RuntimeState) (selected : SemanticOperation) (wait : UserTaskWait)
+    {anchor : UserTaskWait} (declaration : UnboundedUserTaskWaitDeclaration anchor selected)
+    (unique : userTaskWaitDeclarers program wait.task.id = [selected])
     (timer : TimerWait) (operation : SemanticOperation)
     (member : operation ∈ program.operations) :
     boundaryTimerOperationMatches program
         { state with waits := insertUserTaskWait wait state.waits } timer operation =
       boundaryTimerOperationMatches program state timer operation := by
-  have onlyOrdinary : operation ∈ userTaskWaitDeclarers program wait.task.id ↔
-      operation = .awaitUserTask id origin input output wait.task := by rw [unique]; simp
-  cases operation <;> try rfl
-  all_goals simp [userTaskWaitDeclarers, member] at onlyOrdinary
-  all_goals have reverse := Ne.symm onlyOrdinary
+  have onlyUnbounded : operation ∈ userTaskWaitDeclarers program wait.task.id ↔
+      operation = selected := by rw [unique]; simp
+  cases declaration <;> cases operation <;> try rfl
+  all_goals simp [userTaskWaitDeclarers, member] at onlyUnbounded
+  all_goals have reverse := Ne.symm onlyUnbounded
   all_goals simp_all [boundaryTimerOperationMatches, userTaskWaitDeclarers,
     ← List.countP_eq_length_filter, countP_insertUserTaskWait]
+
+/-- The complete declarer census excludes bounded Timer hosts for an unbounded User Task. -/
+theorem flowNodeOccurrenceBoundaryTimerBound_insertUnboundedUserTask (program : Program)
+    (state : RuntimeState) (selected : SemanticOperation) (wait : UserTaskWait)
+    {anchor : UserTaskWait} (declaration : UnboundedUserTaskWaitDeclaration anchor selected)
+    (unique : userTaskWaitDeclarers program wait.task.id = [selected]) (timer : TimerWait) :
+    flowNodeOccurrenceBoundaryTimerBound program
+      { state with waits := insertUserTaskWait wait state.waits } timer =
+        flowNodeOccurrenceBoundaryTimerBound program state timer := by
+  unfold flowNodeOccurrenceBoundaryTimerBound
+  congr 3
+  apply List.filter_congr
+  intro candidate candidateMem
+  exact boundaryTimerOperationMatches_insertUnboundedUserTask program state selected wait
+    declaration unique timer candidate candidateMem
 
 /-- An ordinary User Task cannot become the host of a private Boundary Timer. -/
 theorem flowNodeOccurrenceBoundaryTimerBound_insertOrdinaryUserTask (program : Program)
@@ -108,12 +122,43 @@ theorem flowNodeOccurrenceBoundaryTimerBound_insertOrdinaryUserTask (program : P
     flowNodeOccurrenceBoundaryTimerBound program
       { state with waits := insertUserTaskWait wait state.waits } timer =
         flowNodeOccurrenceBoundaryTimerBound program state timer := by
+  exact flowNodeOccurrenceBoundaryTimerBound_insertUnboundedUserTask program state _ wait
+    (anchor := { wait with output, metadata := wait.task.metadata })
+    (.ordinary id origin input rfl) unique timer
+
+private theorem filter_insertActivityOccurrence_of_rejected
+    (predicate : ActivityOccurrence → Bool) (record : ActivityOccurrence)
+    (rejected : predicate record = false) (records : List ActivityOccurrence) :
+    (insertActivityOccurrence record records).filter predicate = records.filter predicate := by
+  rw [insertActivityOccurrence_eq_canonicalInsertBy]
+  exact filter_canonicalInsertBy_rejected activityOccurrenceBefore predicate record records rejected
+
+private theorem boundaryTimerOperationMatches_insertUnattachedActivity (program : Program)
+    (state : RuntimeState) (record : ActivityOccurrence) (empty : record.attachedHandlers = [])
+    (timer : TimerWait) (operation : SemanticOperation) :
+    boundaryTimerOperationMatches program
+      { state with activityOccurrences := insertActivityOccurrence record state.activityOccurrences }
+      timer operation = boundaryTimerOperationMatches program state timer operation := by
+  have unattached : recordAttaches record (timerWaitId timer) = false := by
+    simp [recordAttaches, ActivityOccurrence.timerHandlerOccurrences, empty]
+  cases operation <;> try rfl
+  all_goals simp only [boundaryTimerOperationMatches]
+  all_goals rw [filter_insertActivityOccurrence_of_rejected _ record
+    (by simp only [unattached, Bool.and_false, Bool.false_and])]
+
+/-- Without attached handlers, an inserted Activity cannot join either Multi-Instance Timer filter. -/
+theorem flowNodeOccurrenceBoundaryTimerBound_insertUnattachedActivity (program : Program)
+    (state : RuntimeState) (record : ActivityOccurrence) (empty : record.attachedHandlers = [])
+    (timer : TimerWait) :
+    flowNodeOccurrenceBoundaryTimerBound program
+      { state with activityOccurrences := insertActivityOccurrence record state.activityOccurrences }
+      timer = flowNodeOccurrenceBoundaryTimerBound program state timer := by
   unfold flowNodeOccurrenceBoundaryTimerBound
   congr 3
   apply List.filter_congr
-  intro candidate candidateMem
-  exact boundaryTimerOperationMatches_insertOrdinaryUserTask program state id origin input
-    output wait unique timer candidate candidateMem
+  intro candidate _
+  exact boundaryTimerOperationMatches_insertUnattachedActivity program state record empty
+    timer candidate
 
 /-- A Timer with one exact ordinary declarer is not a private Boundary Timer. -/
 theorem flowNodeOccurrenceBoundaryTimerBound_ordinaryTimer_false (program : Program)
@@ -160,6 +205,41 @@ def flowNodeOccurrenceWaitProgramValidity (program : Program) (state : RuntimeSt
     state.messageWaits.all (messageWaitValid program state) &&
     state.timerWaits.all (timerWaitValid program state) &&
     flowNodeOccurrenceEffectProgramValidity program state
+
+/-- Empty attachment lists preserve the complete wait validator, including its false states. -/
+theorem flowNodeOccurrenceWaitProgramValidity_insertUnattachedActivity (program : Program)
+    (state : RuntimeState) (record : ActivityOccurrence) (empty : record.attachedHandlers = []) :
+    flowNodeOccurrenceWaitProgramValidity program
+      { state with activityOccurrences := insertActivityOccurrence record state.activityOccurrences } =
+      flowNodeOccurrenceWaitProgramValidity program state := by
+  let after : RuntimeState :=
+    { state with activityOccurrences := insertActivityOccurrence record state.activityOccurrences }
+  have timers : timerWaitValid program after = timerWaitValid program state := by
+    funext timer
+    unfold timerWaitValid
+    simp only [occurrenceOwnerValid, flowNodeOccurrenceOwnerLiveUnique, after]
+    congr 4
+    apply List.filter_congr
+    intro operation _
+    cases operation <;> try rfl
+    all_goals rw [boundaryTimerOperationMatches_insertUnattachedActivity program state record
+      empty timer]
+  change flowNodeOccurrenceWaitProgramValidity program after = _
+  simp only [flowNodeOccurrenceWaitProgramValidity, timers,
+    flowNodeOccurrenceUserTaskProgramValidity_frame program state after rfl rfl,
+    flowNodeOccurrenceEffectProgramValidity_frame program state after rfl rfl rfl rfl]
+  rfl
+
+/-- The local-owner discriminator preserves every Effect exactness obligation during Activity arming. -/
+theorem flowNodeOccurrenceWaitProgramValidity_addActivityOccurrenceVariableScope
+    (program : Program) (state : RuntimeState) (owner : ActivityOccurrenceId)
+    (bindings : List VariableBinding) :
+    flowNodeOccurrenceWaitProgramValidity program
+      { state with variables := addActivityOccurrenceVariableScope state.variables owner bindings } =
+      flowNodeOccurrenceWaitProgramValidity program state := by
+  simp only [flowNodeOccurrenceWaitProgramValidity,
+    flowNodeOccurrenceEffectProgramValidity_addActivityOccurrenceVariableScope]
+  rfl
 
 private theorem messageOperationCount_eq_one (program : Program) (eventRaces : List EventRace)
     (wait : MessageWait) (operation : SemanticOperation)
@@ -252,6 +332,50 @@ theorem flowNodeOccurrenceWaitProgramValidity_wait_owner_ids (program : Program)
     exact (flowNodeOccurrenceEffectProgramValidity_wait_owner_ids program state valid.2).2
       incident member
 
+theorem flowNodeOccurrenceWaitProgramValidity_insertUnboundedUserTask (program : Program)
+    (state : RuntimeState) (selected : SemanticOperation) (wait : UserTaskWait)
+    (declaration : UnboundedUserTaskWaitDeclaration wait selected)
+    (prior : flowNodeOccurrenceWaitProgramValidity program state = true)
+    (declarers : userTaskWaitDeclarers program wait.task.id = [selected])
+    (declared : declaredByExactlyOneOwnedOperation program
+      (userTaskWaitDeclarers program wait.task.id) wait.owner = true)
+    (live : flowNodeOccurrenceOwnerLiveUnique state wait.owner = true)
+    (ownerProcess : !wait.processInstanceId.value.isEmpty = true)
+    (taskId : !wait.task.id.value.isEmpty = true) (positive : wait.activation > 0)
+    (processOwner : wait.processInstanceId = wait.owner.processInstanceId) :
+    flowNodeOccurrenceWaitProgramValidity program
+      { state with waits := insertUserTaskWait wait state.waits } = true := by
+  let after : RuntimeState := { state with waits := insertUserTaskWait wait state.waits }
+  change flowNodeOccurrenceWaitProgramValidity program after = true
+  have timerFrame (timer : TimerWait) :
+      timerWaitValid program after timer = timerWaitValid program state timer := by
+    unfold timerWaitValid
+    simp only [occurrenceOwnerValid, flowNodeOccurrenceOwnerLiveUnique, after]
+    congr 4
+    apply List.filter_congr
+    intro operation member
+    cases operation <;> try rfl
+    all_goals rw [boundaryTimerOperationMatches_insertUnboundedUserTask program state selected
+      wait declaration declarers timer _ member]
+  simp only [flowNodeOccurrenceWaitProgramValidity, Bool.and_eq_true] at prior ⊢
+  obtain ⟨h2, effects⟩ := prior
+  obtain ⟨h1, timers⟩ := h2
+  obtain ⟨users, messages⟩ := h1
+  have usersAfter := flowNodeOccurrenceUserTaskProgramValidity_insertUnboundedUserTask
+    program state selected wait declaration users declarers declared live ownerProcess taskId
+    positive processOwner
+  have timersAfter : after.timerWaits.all (timerWaitValid program after) = true := by
+    simp only [List.all_eq_true] at timers ⊢
+    intro timer member
+    rw [timerFrame]
+    exact timers timer member
+  exact ⟨⟨⟨usersAfter, by simpa [messageWaitValid, occurrenceOwnerValid,
+      flowNodeOccurrenceOwnerLiveUnique, after] using messages⟩, timersAfter⟩,
+    by
+      rw [flowNodeOccurrenceEffectProgramValidity_frame program state after]
+      · exact effects
+      all_goals rfl⟩
+
 theorem flowNodeOccurrenceWaitProgramValidity_insertOrdinaryUserTask (program : Program)
     (state : RuntimeState) (id : OperationId) (origin : BpmnElementOrigin)
     (input : ControlPlaceId) (wait : UserTaskWait)
@@ -267,36 +391,9 @@ theorem flowNodeOccurrenceWaitProgramValidity_insertOrdinaryUserTask (program : 
     (metadata : wait.metadata = wait.task.metadata) :
     flowNodeOccurrenceWaitProgramValidity program
       { state with waits := insertUserTaskWait wait state.waits } = true := by
-  let after : RuntimeState := { state with waits := insertUserTaskWait wait state.waits }
-  change flowNodeOccurrenceWaitProgramValidity program after = true
-  have timerFrame (timer : TimerWait) :
-      timerWaitValid program after timer = timerWaitValid program state timer := by
-    unfold timerWaitValid
-    simp only [occurrenceOwnerValid, flowNodeOccurrenceOwnerLiveUnique, after]
-    congr 4
-    apply List.filter_congr
-    intro operation member
-    cases operation <;> try rfl
-    all_goals rw [boundaryTimerOperationMatches_insertOrdinaryUserTask program state id
-      origin input wait.output wait declarers timer _ member]
-  simp only [flowNodeOccurrenceWaitProgramValidity, Bool.and_eq_true] at prior ⊢
-  obtain ⟨h2, effects⟩ := prior
-  obtain ⟨h1, timers⟩ := h2
-  obtain ⟨users, messages⟩ := h1
-  have usersAfter := flowNodeOccurrenceUserTaskProgramValidity_insertOrdinaryUserTask
-    program state id origin input wait users declarers declared live ownerProcess taskId
-    positive processOwner metadata
-  have timersAfter : after.timerWaits.all (timerWaitValid program after) = true := by
-    simp only [List.all_eq_true] at timers ⊢
-    intro timer member
-    rw [timerFrame]
-    exact timers timer member
-  exact ⟨⟨⟨usersAfter, by simpa [messageWaitValid, occurrenceOwnerValid,
-      flowNodeOccurrenceOwnerLiveUnique, after] using messages⟩, timersAfter⟩,
-    by
-      rw [flowNodeOccurrenceEffectProgramValidity_frame program state after]
-      · exact effects
-      all_goals rfl⟩
+  exact flowNodeOccurrenceWaitProgramValidity_insertUnboundedUserTask program state _ wait
+    (.ordinary id origin input metadata) prior declarers declared live ownerProcess taskId positive
+    processOwner
 
 theorem flowNodeOccurrenceWaitProgramValidity_insertOrdinaryMessage (program : Program)
     (state : RuntimeState) (id : OperationId) (origin : BpmnElementOrigin)

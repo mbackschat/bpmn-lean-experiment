@@ -73,25 +73,42 @@ theorem flowNodeOccurrenceUserTaskProgramValidity_wait_owner_ids (program : Prog
   simp [userTaskWaitValid, occurrenceOwnerValid] at waitValid
   exact waitValid.1.1.2
 
-theorem flowNodeOccurrenceUserTaskProgramValidity_insertOrdinaryUserTask (program : Program)
-    (state : RuntimeState) (id : OperationId) (origin : BpmnElementOrigin)
-    (input : ControlPlaceId) (wait : UserTaskWait)
+/-- The four unbounded declaring families share one public User Task anchor; data arms carry no metadata. -/
+inductive UnboundedUserTaskWaitDeclaration (wait : UserTaskWait) : SemanticOperation → Prop
+  | ordinary (id origin input) (metadata : wait.metadata = wait.task.metadata) :
+      UnboundedUserTaskWaitDeclaration wait
+        (.awaitUserTask id origin input wait.output wait.task)
+  | dataInput (id origin input directInput)
+      (taskMetadata : wait.task.metadata = none) (metadata : wait.metadata = none) :
+      UnboundedUserTaskWaitDeclaration wait
+        (.awaitDataInputUserTask id origin input wait.output wait.task.id wait.task.name directInput)
+  | dataOutput (id origin input directOutput)
+      (taskMetadata : wait.task.metadata = none) (metadata : wait.metadata = none) :
+      UnboundedUserTaskWaitDeclaration wait
+        (.awaitDataOutputUserTask id origin input wait.output wait.task.id wait.task.name directOutput)
+  | dataInputOutput (id origin input directInput directOutput)
+      (taskMetadata : wait.task.metadata = none) (metadata : wait.metadata = none) :
+      UnboundedUserTaskWaitDeclaration wait
+        (.awaitDataInputOutputUserTask id origin input wait.output wait.task.id wait.task.name
+          directInput directOutput)
+
+theorem flowNodeOccurrenceUserTaskProgramValidity_insertUnboundedUserTask (program : Program)
+    (state : RuntimeState) (operation : SemanticOperation) (wait : UserTaskWait)
+    (declaration : UnboundedUserTaskWaitDeclaration wait operation)
     (prior : flowNodeOccurrenceUserTaskProgramValidity program state = true)
-    (declarers : userTaskWaitDeclarers program wait.task.id =
-      [.awaitUserTask id origin input wait.output wait.task])
+    (declarers : userTaskWaitDeclarers program wait.task.id = [operation])
     (declared : declaredByExactlyOneOwnedOperation program
       (userTaskWaitDeclarers program wait.task.id) wait.owner = true)
     (live : flowNodeOccurrenceOwnerLiveUnique state wait.owner = true)
     (ownerProcess : !wait.processInstanceId.value.isEmpty = true)
     (taskId : !wait.task.id.value.isEmpty = true) (positive : wait.activation > 0)
-    (processOwner : wait.processInstanceId = wait.owner.processInstanceId)
-    (metadata : wait.metadata = wait.task.metadata) :
+    (processOwner : wait.processInstanceId = wait.owner.processInstanceId) :
     flowNodeOccurrenceUserTaskProgramValidity program
       { state with waits := insertUserTaskWait wait state.waits } = true := by
   let after : RuntimeState := { state with waits := insertUserTaskWait wait state.waits }
   change flowNodeOccurrenceUserTaskProgramValidity program after = true
   have owned := operationOwnedBy_of_exact_declaration program
-    (.awaitUserTask id origin input wait.output wait.task) wait.owner _ declarers declared
+    operation wait.owner _ declarers declared
   have newValid : userTaskWaitValid program after wait = true := by
     simp_all [userTaskWaitValid, occurrenceOwnerValid, flowNodeOccurrenceOwnerLiveUnique,
       after]
@@ -100,16 +117,16 @@ theorem flowNodeOccurrenceUserTaskProgramValidity_insertOrdinaryUserTask (progra
         apply congrArg List.length
         unfold userTaskWaitDeclarers
         apply List.filter_congr
-        intro operation member
-        have only : operation ∈ userTaskWaitDeclarers program wait.task.id ↔
-            operation = .awaitUserTask id origin input wait.output wait.task := by
+        intro candidate member
+        have only : candidate ∈ userTaskWaitDeclarers program wait.task.id ↔
+            candidate = operation := by
           rw [declarers]
           simp
-        by_cases familyMember : operation ∈ userTaskWaitDeclarers program wait.task.id
+        by_cases familyMember : candidate ∈ userTaskWaitDeclarers program wait.task.id
         · have operationEq := only.mp familyMember
-          subst operation
-          simp [owned]
-        · cases operation with
+          subst candidate
+          cases declaration <;> simp_all
+        · cases candidate with
           | awaitUserTask candidateId candidateOrigin candidateInput candidateOutput candidateTask =>
               have different : candidateTask.id ≠ wait.task.id := by
                 intro same
@@ -189,5 +206,24 @@ theorem flowNodeOccurrenceUserTaskProgramValidity_insertOrdinaryUserTask (progra
   refine ⟨newValid, ?_⟩
   simpa [userTaskWaitValid, occurrenceOwnerValid, flowNodeOccurrenceOwnerLiveUnique,
     after] using prior
+
+theorem flowNodeOccurrenceUserTaskProgramValidity_insertOrdinaryUserTask (program : Program)
+    (state : RuntimeState) (id : OperationId) (origin : BpmnElementOrigin)
+    (input : ControlPlaceId) (wait : UserTaskWait)
+    (prior : flowNodeOccurrenceUserTaskProgramValidity program state = true)
+    (declarers : userTaskWaitDeclarers program wait.task.id =
+      [.awaitUserTask id origin input wait.output wait.task])
+    (declared : declaredByExactlyOneOwnedOperation program
+      (userTaskWaitDeclarers program wait.task.id) wait.owner = true)
+    (live : flowNodeOccurrenceOwnerLiveUnique state wait.owner = true)
+    (ownerProcess : !wait.processInstanceId.value.isEmpty = true)
+    (taskId : !wait.task.id.value.isEmpty = true) (positive : wait.activation > 0)
+    (processOwner : wait.processInstanceId = wait.owner.processInstanceId)
+    (metadata : wait.metadata = wait.task.metadata) :
+    flowNodeOccurrenceUserTaskProgramValidity program
+      { state with waits := insertUserTaskWait wait state.waits } = true := by
+  exact flowNodeOccurrenceUserTaskProgramValidity_insertUnboundedUserTask program state _ wait
+    (.ordinary id origin input metadata) prior declarers declared live ownerProcess taskId positive
+    processOwner
 
 end BpmnSemantics.SemanticProcess

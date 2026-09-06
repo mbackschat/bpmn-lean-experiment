@@ -93,6 +93,18 @@ export const writerRecords = new Map<string, WriterRecord>([
       markers: ["theorem activateDataInputOutputUserTask_preserves_activityBodyClaimsUnique"],
     },
   }],
+  ["BpmnSemantics/SemanticProcess/InternalDataArmingPreparation.lean#applyInternalDataArmingPatch@1", {
+    classification: WriterClassification.Issuer,
+    claimPreservation: ClaimPreservation.DisjointInsertion,
+    evidence: {
+      relativePath: "BpmnSemantics/SemanticProcess/InternalDataArmingPreparation.lean",
+      markers: ["theorem prepareInternalDataArmingContract_issuesFreshActivity"],
+    },
+    claimEvidence: {
+      relativePath: "BpmnSemantics/SemanticProcess/InternalDataArmingFrames.lean",
+      markers: ["theorem prepared_data_arm_preserves_runtime"],
+    },
+  }],
   ["BpmnSemantics/SemanticProcess/ActivityDataInputOutput.lean#completeDataInputOutputUserTask?@1", {
     classification: WriterClassification.IdentityRemoving,
     claimPreservation: ClaimPreservation.Removal,
@@ -378,7 +390,7 @@ export const writerRecords = new Map<string, WriterRecord>([
     classification: WriterClassification.IdentityRemoving,
     claimPreservation: ClaimPreservation.Removal,
   }],
-  ["packages/semantic-core/src/semantic-process-activity-data-input-output-runtime.ts#armDataInputOutputUserTask@1", {
+  ["packages/semantic-core/src/internal-transition-data-arming-patch.ts#applyInternalDataArmingPatch@1", {
     classification: WriterClassification.Issuer,
     claimPreservation: ClaimPreservation.DisjointInsertion,
     evidence: {
