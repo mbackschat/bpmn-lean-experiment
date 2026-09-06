@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { test } from "node:test";
+import { enrollmentFixture } from "./native-temporal-client-fixture.ts";
 
 import {
   BpmnDefinitionCorrelatedMessageGateway,
@@ -128,6 +129,7 @@ class UnavailableCorrelationClient {
   starts = 0;
   startArgs: readonly unknown[] | undefined;
   readonly client = {
+    ...enrollmentFixture("message-correlation-queue"),
     start: async (_workflowType: string, options: Readonly<{ args: readonly unknown[] }>) => {
       this.starts += 1;
       this.startArgs = options.args;

@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { test } from "node:test";
+import { enrollmentFixture } from "./native-temporal-client-fixture.ts";
 
 import {
   BpmnEngineGateway,
@@ -173,7 +174,7 @@ test("forwards exact Sequential Multi-Instance start data through the gateway", 
   const gateway = new BpmnEngineGateway({
     maxSourceBytes: 1_048_576,
     parserDeadlineMs: 1_000,
-    temporalClient: fakeClient(calls),
+    temporalClient: fakeClient(calls, {}, "mue-alpha-queue"),
     temporalTaskQueue: "mue-alpha-queue",
   });
   const initialVariables = [{
@@ -247,8 +248,10 @@ test("rejects invalid concrete Temporal runtime configuration synchronously", ()
 function fakeClient(
   calls: unknown[],
   handle: unknown = {},
+  taskQueue = "m1-start-queue",
 ): BpmnEngineGatewayOptions["temporalClient"] {
   return {
+    ...enrollmentFixture(taskQueue),
     start: async (_workflowType: unknown, options: unknown) => {
       calls.push({ options });
       return handle;

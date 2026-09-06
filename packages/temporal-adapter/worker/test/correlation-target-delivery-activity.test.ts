@@ -96,6 +96,7 @@ function client(input: Readonly<{
   query?: (name: string, request: unknown) => Promise<unknown>;
 }>) {
   return {
+    connection: { withDeadline: async (_deadline: number, invoke: () => Promise<unknown>) => invoke() },
     getHandle: (addressedWorkflowId: string) => ({
       executeUpdate: async (name: string, options: unknown) => {
         input.calls.push({ workflowId: addressedWorkflowId, name, options });

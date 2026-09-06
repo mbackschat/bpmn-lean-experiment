@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { test } from "node:test";
+import { enrollmentFixture } from "./native-temporal-client-fixture.ts";
 
 import {
   BpmnDefinitionMessageStartGateway,
@@ -114,6 +115,7 @@ class GatewayMessageStartClient {
   constructor(description: unknown = undefined) {
     this.#description = description;
     this.client = {
+      ...enrollmentFixture("message-start-queue"),
       start: async () => {
         this.starts += 1;
         return { privateHandle: true };

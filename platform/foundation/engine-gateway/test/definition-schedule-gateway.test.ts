@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { test } from "node:test";
+import { enrollmentFixture } from "./native-temporal-client-fixture.ts";
 
 import {
   BpmnDefinitionScheduleGateway,
@@ -99,6 +100,7 @@ class GatewayScheduleClient {
   options: unknown;
 
   readonly client = {
+    workflow: enrollmentFixture("definition-schedule-queue"),
     schedule: {
       create: async (options: unknown) => {
         this.creates += 1;

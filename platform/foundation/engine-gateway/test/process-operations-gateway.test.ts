@@ -78,6 +78,7 @@ test("rejects a noncanonical locator before an SDK lookup", async () => {
 test("submits the exact published action without returning its private address", async () => {
   const calls: unknown[] = [];
   const gateway = new BpmnProcessOperationsGateway({
+    connection: { withDeadline: async (_deadline: number, invoke: () => Promise<unknown>) => invoke() },
     getHandle: (workflowId: string) => ({
       executeUpdate: async (name: string, options: unknown) => {
         calls.push({ workflowId, name, options });
