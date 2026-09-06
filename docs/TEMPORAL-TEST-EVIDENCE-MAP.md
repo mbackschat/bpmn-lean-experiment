@@ -8,6 +8,8 @@ This document is the feature-by-feature lookup for the witnesses, mutations, dur
 
 ## Temporal witness and mutation inventory
 
+The [accepted-Update service probes](../packages/temporal-adapter/testkit/test/accepted-update-resolution-premise.test.ts) bind the exact `AcceptedUpdateCompletedWorkflow` failure type and exercise the production client across an accepted-but-unresolved Continue-As-New. The successor checks the complete stimulus and Update ID before answering. [Client controls](../packages/temporal-adapter/client/test/semantic-update-client.test.ts) separately prove retained-result recovery and refuse an unrelated failure with the same closure wording. These probe Workflows carry no BPMN meaning and do not replace production refinement or replay witnesses.
+
 The registered Terminate End profile is part of this gate through its exact source, passive User Task Update hosting, containing-scope cancellation, Worker replacement, history, mutation, and replay witnesses.
 
 The Message key-correlation witnesses cover eight private durable hosting primitives. The ensure lane derives one domain-separated Workflow ID from the complete definition address, starts the ingress with `REJECT_DUPLICATE`, and requires an unconditional Query to echo the exact address, protocol version, and every fixed production capacity setting. Unit matrices reject every changed capacity and a cross-definition digest, and recover both an SDK duplicate and a generic lost-response simulation through the same Query. Its real-service witness discards one actual start response, recovers the live ingress, repeats through the actual duplicate path, terminates the test-owned Workflow explicitly, and replays its history.

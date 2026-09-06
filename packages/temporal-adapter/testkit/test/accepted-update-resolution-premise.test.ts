@@ -14,8 +14,11 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
-import { WorkflowUpdateStage } from "@temporalio/client";
+import { ApplicationFailure, WorkflowUpdateFailedError, WorkflowUpdateStage } from "@temporalio/client";
 import { bundleWorkflowCode, DefaultLogger } from "@temporalio/worker";
+import { StimulusKind } from "@bpmn-lean/semantic-core";
+import { resolveSemanticUpdate } from "@bpmn-lean/temporal-client";
+import { contentBoundUpdateId } from "@bpmn-lean/temporal-protocol";
 
 import {
   bpmnSemanticTaskQueue,
@@ -95,10 +98,11 @@ test("an accepted Update is answered by its Workflow's failure, not left pending
     // The deadline is the assertion: a stranded Update would exhaust it instead of rejecting.
     const outcome = await withDeadline(
       updateHandle.result().then(
-        () => ({ answered: false, message: "" }),
+        () => ({ answered: false, message: "", error: undefined }),
         (error: unknown) => ({
           answered: true,
           message: causeChain(error),
+          error,
         }),
       ),
       operationDeadlineMs,
@@ -109,6 +113,9 @@ test("an accepted Update is answered by its Workflow's failure, not left pending
     assert.equal(outcome.answered, true);
     assert.match(outcome.message, /WorkflowUpdateFailedError/u);
     assert.match(outcome.message, /Workflow completed before the Update completed/u);
+    assert.ok(outcome.error instanceof WorkflowUpdateFailedError);
+    assert.ok(outcome.error.cause instanceof ApplicationFailure);
+    assert.equal(outcome.error.cause.type, "AcceptedUpdateCompletedWorkflow");
 
     // The limit, locked deliberately. The answer explains that the Workflow closed first and does
     // *not* carry the Workflow's own failure identity, so a caller awaiting a bounded completion
@@ -123,6 +130,54 @@ test("an accepted Update is answered by its Workflow's failure, not left pending
     if (workerLease !== undefined) {
       await stopBpmnTestWorker(workerLease);
     }
+    await environment.teardown();
+  }
+});
+
+test("client recovery retries the same accepted command after real Continue-As-New", async () => {
+  const workflowBundle = await bundleWorkflowCode({
+    workflowsPath: fileURLToPath(new URL("./accepted-update-resolution-workflows.ts", import.meta.url)),
+    logger: new DefaultLogger("ERROR"),
+  });
+  const environment = await withDeadline(createCachedLocalEnvironment({
+    identity: probeIdentity,
+    downloadDirectory: temporalCacheDirectory,
+  }), 40_000, "accepted-Update continuation probe startup");
+  let workerLease;
+  try {
+    workerLease = await startBpmnTestWorker(environment, workflowBundle, probeIdentity);
+    const workflowId = "accepted-update-continuation-probe";
+    const processInstanceId = "probe-instance";
+    const stimulus = {
+      kind: StimulusKind.RetryIncident,
+      commandId: "probe-command",
+      incidentId: {
+        effectId: { processInstanceId, elementId: "probe-task", activation: 1 },
+        generation: 1,
+      },
+    } as const;
+    const handle = await environment.client.workflow.start("acceptedThenContinuingWorkflow", {
+      workflowId,
+      taskQueue: bpmnSemanticTaskQueue,
+      args: [],
+    });
+    const result = await resolveSemanticUpdate({
+      client: environment.client.workflow,
+      workflowId,
+      processInstanceId,
+      stimulus,
+      updateName: acceptedUpdateName,
+      operation: "accepted-Update continuation probe",
+    });
+    assert.deepEqual(result, { kind: "semantic", commandId: stimulus.commandId, outcome: "committed" });
+    assert.deepEqual(await handle.query("acceptedCommandAudit"), {
+      retained: { stimulus, updateId: contentBoundUpdateId(stimulus) },
+      resolved: true,
+    });
+    const original = await environment.client.workflow.getHandle(workflowId, handle.firstExecutionRunId).describe();
+    assert.equal(original.status.name, "CONTINUED_AS_NEW");
+  } finally {
+    if (workerLease !== undefined) await stopBpmnTestWorker(workerLease);
     await environment.teardown();
   }
 });

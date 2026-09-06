@@ -173,6 +173,8 @@ For one well-formed Update command and known hosting Process address:
 
 This chain-relative Query closes the response-loss race without depending on one Run's SDK handle. Message ingress sends its Signal once, polls the existing result Query while active, and enters the same identity-bound recovery path only when latest-Run routing becomes indeterminate.
 
+An accepted Update interrupted by Workflow closure is indeterminate when the SDK returns `WorkflowUpdateFailedError` with an `ApplicationFailure` cause of exact type `AcceptedUpdateCompletedWorkflow`. The client resolves that command through the same recovery Query; the error alone supplies neither a semantic outcome nor the Workflow's own failure identity. Unrelated application failures remain infrastructure failures even when their message contains identical closure wording. The [service probe](../packages/temporal-adapter/testkit/test/accepted-update-resolution-premise.test.ts) binds the pinned SDK type and same-command recovery across actual Continue-As-New.
+
 The hosting/root Process-instance ID selects the Workflow and validates its retained receipt. The completion stimulus independently retains the semantic task occurrence ID, which may belong to a distinct called Process hosted inside that Workflow. Client admission validates both shapes but does not require those identities to match; the semantic core accepts only the exact live task occurrence and rejects an unrelated occurrence without routing to another Workflow.
 
 ## Committed execution publication

@@ -14,6 +14,8 @@ This contributor map assigns package responsibilities and Temporal SDK ownership
 
 ## Package ownership
 
+The [Workflow-chain recovery client](client/src/workflow-chain-recovery-client.ts) owns exact SDK closure-failure classification and content-bound retries. Its [client matrix](client/test/semantic-update-client.test.ts) separates recovery from unrelated application failures; the [service probes](testkit/test/accepted-update-resolution-premise.test.ts) and [probe Workflows](testkit/test/accepted-update-resolution-workflows.ts) bind the real accepted-Update failure and Continue-As-New behavior.
+
 | Package | Responsibility | Temporal SDK ownership |
 |---|---|---|
 | [`protocol/`](protocol/) | Project-owned hosting contracts, identities, admission, transport, and lifecycle results | None |

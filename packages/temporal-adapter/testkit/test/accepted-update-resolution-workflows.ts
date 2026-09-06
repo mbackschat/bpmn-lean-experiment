@@ -11,9 +11,21 @@
 import {
   ApplicationFailure,
   condition,
+  continueAsNew,
+  currentUpdateInfo,
+  defineQuery,
   defineUpdate,
   setHandler,
 } from "@temporalio/workflow";
+import { CommandOutcome, sameStimulus } from "@bpmn-lean/semantic-core";
+import {
+  bpmnWorkflowChainCommandRecoveryQueryName,
+  WorkflowChainCommandRecoveryResponseKind,
+} from "@bpmn-lean/temporal-protocol";
+import type {
+  ExternallyRetryableStimulus,
+  WorkflowChainCommandRecoveryRequest,
+} from "@bpmn-lean/temporal-protocol";
 
 export const acceptedUpdateName = "premiseAcceptedUpdate";
 export const acceptedUpdateFailureType = "BpmnPremiseAcceptedUpdateUnresolved";
@@ -37,4 +49,38 @@ export async function acceptedThenFailingWorkflow(): Promise<void> {
     "Workflow failed while one accepted Update remained unresolved",
     acceptedUpdateFailureType,
   );
+}
+
+type AcceptedCommand = Readonly<{ stimulus: ExternallyRetryableStimulus; updateId: string }>;
+
+/** Carries the accepted command through an unresolved Update's Continue-As-New boundary. */
+export async function acceptedThenContinuingWorkflow(retained?: AcceptedCommand): Promise<void> {
+  let accepted: AcceptedCommand | undefined;
+  let resolved = false;
+  setHandler(defineQuery("acceptedCommandAudit"), () => ({ retained, resolved }));
+  setHandler(defineQuery<unknown, [WorkflowChainCommandRecoveryRequest]>(
+    bpmnWorkflowChainCommandRecoveryQueryName,
+  ), (request) => ({
+    ...request,
+    kind: WorkflowChainCommandRecoveryResponseKind.UnknownWhileActive,
+  }));
+  setHandler(defineUpdate<CommandOutcome, [ExternallyRetryableStimulus]>(acceptedUpdateName), async (stimulus) => {
+    const updateId = currentUpdateInfo()!.id;
+    if (retained !== undefined) {
+      if (updateId !== retained.updateId || !sameStimulus(stimulus, retained.stimulus)) {
+        throw ApplicationFailure.nonRetryable("Retried command changed across Runs", "ProbeIdentityMismatch");
+      }
+      resolved = true;
+      return CommandOutcome.Committed;
+    }
+    accepted = { stimulus, updateId };
+    await condition(() => false);
+    throw new Error("unreachable accepted handler");
+  });
+  if (retained !== undefined) {
+    await condition(() => false);
+    return;
+  }
+  await condition(() => accepted !== undefined);
+  await continueAsNew<typeof acceptedThenContinuingWorkflow>(accepted);
 }

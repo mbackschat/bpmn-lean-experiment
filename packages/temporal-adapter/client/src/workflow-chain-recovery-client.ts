@@ -509,8 +509,10 @@ function isCorrelationRegistrationFailure(
 }
 
 function isIndeterminateUpdateFailure(error: unknown): boolean {
+  // SDK 1.21.0 test-integration-workflows-with-recorded-logs.ts locks this type for accepted Updates stranded by closure.
   return error instanceof WorkflowNotFoundError ||
     error instanceof WorkflowUpdateRPCTimeoutOrCancelledError ||
+    hasApplicationFailureType(error, "AcceptedUpdateCompletedWorkflow") ||
     hasApplicationFailureType(error, rolloverFailureType) ||
     hasApplicationFailureType(error, terminalReceiptPendingFailureType) ||
     hasApplicationFailureType(error, bpmnWorkflowChainCapacityExhaustedFailureType);

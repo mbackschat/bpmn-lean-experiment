@@ -124,6 +124,36 @@ test("recovers an old-Run response from the latest Workflow-ID Query", async () 
   assert.deepEqual(addresses, [[workflowId]]);
 });
 
+test("recovers an accepted Update stranded by Workflow closure using its exact SDK failure type", async () => {
+  const result = await resolveSemanticUpdate({
+    client: fakeClient({
+      executeUpdate: async () => { throw updateFailure("AcceptedUpdateCompletedWorkflow"); },
+      query: async () => recovery(WorkflowChainCommandRecoveryResponseKind.Resolved, {
+        outcome: "committed",
+      }),
+    }),
+    workflowId,
+    processInstanceId,
+    stimulus: retry,
+    updateName: "retry-update",
+    operation: "incident retry",
+  });
+  assert.deepEqual(result, { kind: "semantic", commandId: retry.commandId, outcome: "committed" });
+});
+
+test("does not recover an unrelated application failure with Workflow-closure wording", async () => {
+  const failure = new WorkflowUpdateFailedError("Workflow completed before the Update completed",
+    new ApplicationFailure("Workflow completed before the Update completed", "OtherFailure"));
+  await assert.rejects(resolveSemanticUpdate({
+    client: fakeClient({ executeUpdate: async () => { throw failure; } }),
+    workflowId,
+    processInstanceId,
+    stimulus: retry,
+    updateName: "retry-update",
+    operation: "incident retry",
+  }), (error: unknown) => error === failure);
+});
+
 test("rejects a substituted recovery identity", async () => {
   for (const substitution of [
     { processInstanceId: "substituted" },

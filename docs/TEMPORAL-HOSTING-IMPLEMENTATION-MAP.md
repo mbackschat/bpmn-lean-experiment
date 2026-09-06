@@ -4,6 +4,8 @@ This detail map owns exact current Product 1 protocol, client, Workflow, Worker,
 
 ## Current boundary
 
+Accepted Updates interrupted by Workflow closure enter content-bound recovery using the pinned SDK's exact `AcceptedUpdateCompletedWorkflow` cause type. The [service probe and client controls](TEMPORAL-TEST-EVIDENCE-MAP.md#temporal-witness-and-mutation-inventory) retain the complete command across actual Continue-As-New and keep unrelated application failures distinct. Native cancellation of expired client RPCs remains an open correction.
+
 One Temporal Workflow Execution chain durably hosts one semantic Process instance. Product starts are handle-free, Run identity stays private, public results are closed, and production chain enrollment enforces the implemented budgets before speculative exposure, scheduling, or terminal return. Forced payload-free and payload-bearing Intermediate Catch Message, Intermediate Catch Timer, and Service Task effect rollover are evidenced, and Horizon 2 is closure-reviewed.
 
 The implemented bounded Workflow-chain contract owns project Event History, payload, pending-operation, publication, chain, and recovery budgets; the safe rollover checkpoint; complete carried state; exact command-result and publication continuity; handle-free public start; and forced evidence. Native deployment preservation is the separate checkpoint below. Every later repeating BPMN mechanism inherits this host boundary rather than reopening it. Temporal Run identity remains private.
