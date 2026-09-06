@@ -450,7 +450,8 @@ export const leanModuleCostRecord = {
     },
     { module: "BpmnSemantics.ActivityDataInputOutputAdmissionConformance", peakResidentKib: 967732, elapsedSeconds: 3.88, measuredAtCommit: "c6aeb583" },
     { module: "BpmnSemantics.ActivityDataInputOutputRefusalConformance", peakResidentKib: 731312, elapsedSeconds: 2.41, measuredAtCommit: "8d3927f6" },
-    { module: "BpmnSemantics.ActivityDataInputOutputConformance", peakResidentKib: 967484, elapsedSeconds: 2.03, measuredAtCommit: "c6aeb583" },
+    { module: "BpmnSemantics.ActivityDataInputOutputConformance", peakResidentKib: 974464, elapsedSeconds: 2.22, measuredAtCommit: "ee17ed58" },
+    { module: "BpmnSemantics.ActivityDataInputOutputProjectionConformance", peakResidentKib: 1288416, elapsedSeconds: 9.54, measuredAtCommit: "ee17ed58" },
     {
       module: "BpmnSemantics.ActivityDataOutputConformance",
       peakResidentKib: 2335952,
