@@ -444,9 +444,9 @@ export const leanModuleCostRecord = {
     },
     {
       module: "BpmnSemantics.UserTaskMetadataConformance",
-      peakResidentKib: 1720408,
-      elapsedSeconds: 8.91,
-      measuredAtCommit: "e9c9db0f",
+      peakResidentKib: 1645712,
+      elapsedSeconds: 11.28,
+      measuredAtCommit: "4df4d9f2",
     },
     { module: "BpmnSemantics.ActivityDataInputOutputAdmissionConformance", peakResidentKib: 967732, elapsedSeconds: 3.88, measuredAtCommit: "c6aeb583" },
     { module: "BpmnSemantics.ActivityDataInputOutputRefusalConformance", peakResidentKib: 731312, elapsedSeconds: 2.41, measuredAtCommit: "8d3927f6" },
