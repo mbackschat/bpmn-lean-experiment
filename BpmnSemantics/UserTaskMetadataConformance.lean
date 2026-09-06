@@ -393,10 +393,6 @@ theorem completion_is_metadata_irrelevant
         ⟨SequentialUserTask.exactTaskInstanceId.elementId.value⟩ = false by decide +kernel,
       show isDataInputOutputTaskDefinition (programFor exactMetadata)
         ⟨SequentialUserTask.exactTaskInstanceId.elementId.value⟩ = false by decide +kernel,
-      show isDataInputTaskDefinition (programFor exactMetadata)
-        ⟨SequentialUserTask.exactTaskInstanceId.elementId.value⟩ = false by decide +kernel,
-      show isDataOutputTaskDefinition (programFor exactMetadata)
-        ⟨SequentialUserTask.exactTaskInstanceId.elementId.value⟩ = false by decide +kernel,
       completeOrdinaryUserTaskWithCompensation?,
       show compensationTargetDeclaredForFamily (programFor exactMetadata)
         ⟨SequentialUserTask.exactTaskInstanceId.elementId.value⟩ .ordinaryUserTask = false
