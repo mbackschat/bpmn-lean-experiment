@@ -135,7 +135,7 @@ After this assurance correction is independently approved, implementation first 
 
 ## Closure evidence preparation
 
-The exact-source success and failure witnesses required by the trigger proposal are implemented and closure-reviewed there, including frozen input, concurrent handlers, pre-schedule continuation, Worker replacement, same-key retry, cancellation drain, terminal receipts, and replay. Complete Product 1 verification subsequently passed at `ea5ca057`. The [cost ledger](../CAPSULE-COST-LEDGER.md#pending-repair-closure-costs) records this repair's implementation/correction range against the required source/lowering checkpoint; both addition measures fall. The separate trigger closure supplies composed evidence but does not replace this repair's own independent closure review, which remains open below.
+The exact-source success and failure witnesses required by the trigger proposal are implemented and closure-reviewed there, including frozen input, concurrent handlers, pre-schedule continuation, Worker replacement, same-key retry, cancellation drain, terminal receipts, and replay. Complete Product 1 verification subsequently passed at `ea5ca057`. The [cost ledger](../CAPSULE-COST-LEDGER.md#pending-repair-closure-costs) retains the implementation/correction attribution and measures the contiguous range through closure target `32b76106`, including intervening work without subtraction. The separate trigger closure supplies composed evidence but does not replace this repair's own complete target gate and correction audit.
 
 ## Independent cold-review receipt
 
@@ -144,4 +144,4 @@ The exact-source success and failure witnesses required by the trigger proposal 
 | Proposal | `af387881fea17c9db040874e759c9189e8d164dc` | `fork-turns-none` | `approve-with-required-edits` | `f1609d7a6370ea73b059085e55454ab15fac4423` |
 | Lean assurance correction | `099cca872adbecb659401129210adcbc500ca92d` | `fork-turns-none` | `approve` | `not-applicable` |
 | Semantic checkpoint | `b28103e99ca22cdb4c4b52994f37d87b63504ef4` | `fork-turns-none` | `approve-with-required-edits` | `29c35194441698a755dcc94fffa34f8aa376cde3` |
-| Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Closure | `32b761063c95bc2de33363a7b057377f8c9d89d6` | `not-recorded` | `pending` | `not-applicable` |

@@ -88,7 +88,7 @@ All three declaration readers implement the reviewed minimum. The [TypeScript bo
 
 On 2026-09-05, the complete semantic-core gate passed 726 tests, and candidate-source Lean verification passed all 296 targets under the unchanged 3 GiB/no-swap controller. The kernel-decided boundary witnesses passed; full-gate peak usage was 3,006,087,168 cgroup bytes with zero limit-hit/OOM events and zero swaps. The [immutable consumer calibration](../CAPSULE-COST-LEDGER.md#measurements) binds the changed conformance owner to source commit `4b2a304f`; the full candidate run has no immutable whole-tree receipt. The independent checkpoint review approved the implementation and permits dependent runtime-invariant integration. Complete Product 1 verification, reflection, and closure review remain outstanding.
 
-Subsequent complete Product 1 verification passed at `6577b488` and `ea5ca057`, including this repair and its initialization consumer. The [commit-bound cost and reflection](../CAPSULE-COST-LEDGER.md#pending-repair-closure-costs) compare the implementation/calibration checkpoint with the preceding start-data repair. These facts complete the evidence preparation, not the independent closure decision; the receipt remains open.
+Subsequent complete Product 1 verification passed at `6577b488` and `ea5ca057`, including this repair and its initialization consumer. The [commit-bound cost and reflection](../CAPSULE-COST-LEDGER.md#pending-repair-closure-costs) retain the implementation/calibration attribution and measure the contiguous range through closure target `32b76106`, including intervening work without subtraction. Closure remains held for the complete target gate and correction audit.
 
 ## Independent cold-review receipt
 
@@ -96,4 +96,4 @@ Subsequent complete Product 1 verification passed at `6577b488` and `ea5ca057`, 
 |---|---|---|---|---|
 | Proposal | `ef22297c16836f445ca88bbed91727970d44f8cc` | `fork-turns-none` | `approve-with-required-edits` | `3b091a3e8f55c5b7b25fa60fe5a3fe2f592b34f5` |
 | Semantic checkpoint | `ec66bc7a25445e05c0b69d21fef599874ed27262` | `fork-turns-none` | `approve` | `not-required` |
-| Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Closure | `32b761063c95bc2de33363a7b057377f8c9d89d6` | `not-recorded` | `pending` | `not-applicable` |

@@ -112,7 +112,7 @@ Temporal verification at `65862a36` exposed an unfinished readiness Query. Nativ
 
 Next action: complete [native deployment closure](TEMPORAL-WORKER-DEPLOYMENT-REPAIR-PROPOSAL.md#scope-review-and-closure), [capacity closure](capsules/COMPENSATION-EMPTY-STATE-CAPACITY-REPAIR-PROPOSAL.md#independent-cold-review-receipt), [start-data closure](capsules/COMPENSATION-DURABILITY-START-DATA-REPAIR-PROPOSAL.md#independent-cold-review-receipt), and the [composed Activity-data audit](capsules/ACTIVITY-DATA-INPUT-OUTPUT-MEDIATION-PROPOSAL.md#independent-cold-review-receipt). Their receipts own stage decisions. The [held-Task witness](TEMPORAL-TEST-EVIDENCE-MAP.md#temporal-witness-and-mutation-inventory) now settles the previously separate undelivered-Update case.
 
-Blockers: the session's agent-thread limit prevents further independent reviews; repeated host, IPv4, and container download failures block the pinned Docker smoke. Initialization alone reused its original reviewer. Resume in a fresh review session with package-download access; no self-approval or pin substitution.
+Reviews resumed; capacity/start-data audits and complete verification remain. At `32b76106`, PMI timing margin failed (3,250/5,000 ms); the unchanged isolated rerun passed. Docker project images build, but pinned Temporal-image CDN access fails from Docker and host IPv4.
 
 Oracle: one User Task activation copies the required Process input into its occurrence-owned local scope, and one accepted completion atomically routes its required output to Process scope and disposes that same local scope across source, Lean, the semantic core, publication, and Temporal refinement.
 
