@@ -234,6 +234,16 @@ The external-review corrections were remeasured at immutable commit `eed22392635
 | `UserTaskInteractionConformance` | 7.14 s | 1,516,764 KiB | 1,154,441,216 bytes | `ac68ba3162e016bb0893f29b7b19c45b039915b48fcf8532420a8140c4378002` |
 | `CompensationTriggerHandlerRuntimeConformance` | 4.78 s | 1,292,220 KiB | 909,676,544 bytes | `2d07cdd47b74a2bab9fed4dbf6c477cc49f67613e8784f97ca1f2b0815bf5303` |
 
+The composed declaration-dispatch correction was remeasured at immutable commit `8d3927f6bf7c1336ac69a6fb5c7e07d1af24194b` on 2026-09-06 under the same pinned image, one CPU, network isolation, and unchanged 3 GiB/no-additional-swap controller. After warming the dependency closure, each exact target's eight generated artifacts were moved aside and rebuilt alone. The changed refusal owner and all four standing-watch consumers exited zero with zero swaps, memory-event counters, and memory-pressure totals. The largest cgroup peak leaves 1,994,100,736 bytes below the limit. Elapsed time remains host-load context; no uncontended performance trend is claimed.
+
+| Dispatch-correction target at `8d3927f6` | Elapsed | GNU maximum RSS | Cgroup peak | Output SHA-256 |
+|---|---:|---:|---:|---|
+| `ActivityDataInputOutputRefusalConformance` | 2.41 s | 731,312 KiB | 328,609,792 bytes | `e88d8a55197363f4eac99e11aabc090f1ac44dd761782be5cc1115d7acda342f` |
+| `CallActivityConformance` | 23.17 s | 1,346,800 KiB | 1,040,437,248 bytes | `022df2035793221edf5a2b2d70bdb2fa5b1d1d5db3e6d4d0f77948d8a4e8eb48` |
+| `SequentialMultiInstanceProgramBindingConformance` | 29.75 s | 1,548,508 KiB | 1,195,859,968 bytes | `55e8c9f1b624321cc89a041c1afdbff63ca54cca6c209efb0698b5a7707674bf` |
+| `TimerStartConformance` | 22.32 s | 1,416,936 KiB | 1,103,904,768 bytes | `b9f654b21521188648308ae5e0028767eb161fe6b22fa999f96e9fbeb7a05b15` |
+| `TerminateEndEventConformance` | 31.07 s | 1,543,944 KiB | 1,227,124,736 bytes | `2a3ba7d46f11f2f67117cf66bbf993af57d1b1c2b5ba9b3e53a9a4b958691ea2` |
+
 #### Compensation trigger-handler module-cost binding
 
 The compensation trigger-handler proof owners were initially measured from immutable commit `ef739572` with a warm dependency closure and only each measured target's own generated artifacts removed. Other host processes were active, so elapsed time is recorded but not compared; every command exited zero without swap, and every cgroup `high`, `max`, `oom`, `oom_kill`, and `oom_group_kill` event remained zero.

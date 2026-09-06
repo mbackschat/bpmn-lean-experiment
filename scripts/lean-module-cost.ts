@@ -260,18 +260,18 @@ export const leanModuleCostRecord = {
       elapsedSeconds: 14.57,
       measuredAtCommit: "da6e6477",
     },
-    { module: "BpmnSemantics.CallActivityConformance", peakResidentKib: 1350512, elapsedSeconds: 22.33, measuredAtCommit: "e9c9db0f" },
+    { module: "BpmnSemantics.CallActivityConformance", peakResidentKib: 1346800, elapsedSeconds: 23.17, measuredAtCommit: "8d3927f6" },
     {
       module: "BpmnSemantics.SequentialMultiInstanceProgramBindingConformance",
-      peakResidentKib: 1550520,
-      elapsedSeconds: 26.90,
-      measuredAtCommit: "e9c9db0f",
+      peakResidentKib: 1548508,
+      elapsedSeconds: 29.75,
+      measuredAtCommit: "8d3927f6",
     },
     {
       module: "BpmnSemantics.TimerStartConformance",
-      peakResidentKib: 1416564,
-      elapsedSeconds: 20.95,
-      measuredAtCommit: "e9c9db0f",
+      peakResidentKib: 1416936,
+      elapsedSeconds: 22.32,
+      measuredAtCommit: "8d3927f6",
     },
     {
       module: "BpmnSemantics.ServiceTaskIncidentCancellationConformance",
@@ -342,9 +342,9 @@ export const leanModuleCostRecord = {
     { module: "BpmnSemantics.IntermediateCatchMessageConformance", peakResidentKib: 2225108, elapsedSeconds: 11.7 },
     {
       module: "BpmnSemantics.TerminateEndEventConformance",
-      peakResidentKib: 1541904,
-      elapsedSeconds: 30.44,
-      measuredAtCommit: "e9c9db0f",
+      peakResidentKib: 1543944,
+      elapsedSeconds: 31.07,
+      measuredAtCommit: "8d3927f6",
     },
     { module: "BpmnSemantics.SemanticProcessConformance", peakResidentKib: 2203824, elapsedSeconds: 8.9 },
     {
@@ -449,7 +449,7 @@ export const leanModuleCostRecord = {
       measuredAtCommit: "e9c9db0f",
     },
     { module: "BpmnSemantics.ActivityDataInputOutputAdmissionConformance", peakResidentKib: 967732, elapsedSeconds: 3.88, measuredAtCommit: "c6aeb583" },
-    { module: "BpmnSemantics.ActivityDataInputOutputRefusalConformance", peakResidentKib: 736440, elapsedSeconds: 3.18, measuredAtCommit: "c6aeb583" },
+    { module: "BpmnSemantics.ActivityDataInputOutputRefusalConformance", peakResidentKib: 731312, elapsedSeconds: 2.41, measuredAtCommit: "8d3927f6" },
     { module: "BpmnSemantics.ActivityDataInputOutputConformance", peakResidentKib: 967484, elapsedSeconds: 2.03, measuredAtCommit: "c6aeb583" },
     {
       module: "BpmnSemantics.ActivityDataOutputConformance",
