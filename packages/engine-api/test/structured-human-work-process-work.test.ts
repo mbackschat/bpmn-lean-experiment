@@ -10,6 +10,7 @@ import { VariableValueKind } from "@bpmn-lean/semantic-core";
 test("forwards detached integer and ordered-list completion values", async () => {
   const calls: unknown[] = [];
   const client = {
+    connection: { withDeadline: async (_deadline: number, invoke: () => Promise<unknown>) => invoke() },
     getHandle: () => ({
       executeUpdate: async (_name: string, options: unknown) => {
         calls.push(options);

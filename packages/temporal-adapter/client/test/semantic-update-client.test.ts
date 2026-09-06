@@ -462,6 +462,78 @@ test("keeps a non-retryable command identity conflict semantic", async () => {
   );
 });
 
+test("keeps every Update recovery RPC within one native absolute deadline", async () => {
+  let inScope = false;
+  let scopes = 0;
+  const assertScope = () => assert.equal(inScope, true, "RPC escaped the native deadline");
+  const client = fakeClient({
+    executeUpdate: async () => { assertScope(); throw notFound(); },
+    query: async () => { assertScope(); throw queryNotRegistered(); },
+    getUpdateResult: async () => { assertScope(); throw notFound(); },
+    result: async () => { assertScope(); return { ...legacyTerminalReceipt(), messageDeliveryRecords: [] }; },
+  });
+  const started = Date.now();
+  Object.assign(client, { connection: {
+    withDeadline: async (deadline: number, invoke: () => Promise<unknown>) => {
+      assert.ok(deadline >= started + 1_000 && deadline <= Date.now() + 1_000);
+      scopes += 1;
+      inScope = true;
+      try { return await invoke(); } finally { inScope = false; }
+    },
+  } });
+  const result = await resolveSemanticUpdate({
+    client, workflowId, processInstanceId, stimulus: retry,
+    updateName: "retry-update", operation: "deadline", deadlineMs: 1_000,
+  });
+  assert.equal(result.kind, "processClosed");
+  assert.equal(scopes, 1);
+});
+
+test("captures the complete Update stimulus before recovery can yield to its caller", async () => {
+  const stimulus = { ...retry, incidentId: { ...retry.incidentId, generation: 1 } };
+  const captured = structuredClone(stimulus);
+  const calls: unknown[] = [];
+  await resolveSemanticUpdate({
+    client: fakeClient({
+      executeUpdate: async (_name, options) => {
+        calls.push(structuredClone(options));
+        if (calls.length === 1) {
+          stimulus.incidentId.generation = 2;
+          throw notFound();
+        }
+        return "committed";
+      },
+      query: async () => recovery(WorkflowChainCommandRecoveryResponseKind.UnknownWhileActive),
+    }),
+    workflowId, processInstanceId, stimulus, updateName: "retry-update", operation: "captured retry",
+  });
+  assert.equal(calls.length, 2);
+  assert.deepEqual(calls[0], calls[1]);
+  assert.deepEqual((calls[1] as { args: unknown[] }).args, [captured]);
+});
+
+test("captures the complete Message stimulus before Signal acknowledgement and result polling", async () => {
+  const stimulus = { ...messageDelivery(), channel: { ...messageDelivery().channel } };
+  const captured = structuredClone(stimulus);
+  const client = fakeClient({
+    signal: async () => { stimulus.channel.messageId = "mutated-after-Signal"; },
+    query: async (_name, candidate) => {
+      assert.deepEqual(candidate, captured);
+      return { kind: "semantic", stimulus: captured, outcome: "committed" };
+    },
+  });
+  let scopes = 0;
+  Object.assign(client, { connection: {
+    withDeadline: async (_deadline: number, invoke: () => Promise<unknown>) => {
+      scopes += 1;
+      return invoke();
+    },
+  } });
+  const result = await submitMessageDeliveryAtWorkflowId(client, workflowId, processInstanceId, stimulus);
+  assert.equal(result.kind, "semantic");
+  assert.equal(scopes, 1);
+});
+
 type FakeHandle = Readonly<{
   query?: (name: string, request?: unknown) => Promise<unknown>;
   executeUpdate?: (name: string, options: unknown) => Promise<unknown>;
@@ -472,6 +544,7 @@ type FakeHandle = Readonly<{
 
 function fakeClient(handle: FakeHandle, addresses?: unknown[][]): never {
   return {
+    connection: { withDeadline: async (_deadline: number, invoke: () => Promise<unknown>) => invoke() },
     getHandle: (...args: unknown[]) => {
       addresses?.push(args);
       return {

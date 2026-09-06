@@ -305,6 +305,7 @@ type FakeHandle = Readonly<{
 
 function fakeClient(handles: Readonly<Record<string, FakeHandle>>): never {
   return {
+    connection: { withDeadline: async (_deadline: number, invoke: () => Promise<unknown>) => invoke() },
     getHandle: (workflowId: string) => handles[workflowId] ?? {
       query: async () => { throw notFound(workflowId); },
       result: async () => { throw notFound(workflowId); },

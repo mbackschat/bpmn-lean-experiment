@@ -24,6 +24,7 @@ const cancellation = {
 test("sends the exact content-bound cancellation Update", async () => {
   const calls: unknown[] = [];
   const client = {
+    connection: { withDeadline: async (_deadline: number, invoke: () => Promise<unknown>) => invoke() },
     getHandle: (workflowId: string) => ({
       executeUpdate: async (name: string, options: unknown) => {
         calls.push({ workflowId, name, options });

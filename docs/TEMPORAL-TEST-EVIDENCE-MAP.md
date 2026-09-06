@@ -8,6 +8,8 @@ This document is the feature-by-feature lookup for the witnesses, mutations, dur
 
 ## Temporal witness and mutation inventory
 
+The [command-deadline witness](../packages/temporal-adapter/testkit/test/workflow-command-deadline.test.ts) stops the Worker at an admitted User Task wait, requires the short Update deadline to surface the native SDK timeout, restores the same Worker bundle, and recovers the same command twice with one retained committed entry, exact core terminal state, and replay. The [client matrix](../packages/temporal-adapter/client/test/semantic-update-client.test.ts) requires a single native deadline around the complete Update/recovery/legacy-result path and rejects caller mutation of Update or Message content while transport is pending.
+
 The [accepted-Update service probes](../packages/temporal-adapter/testkit/test/accepted-update-resolution-premise.test.ts) bind the exact `AcceptedUpdateCompletedWorkflow` failure type and exercise the production client across an accepted-but-unresolved Continue-As-New. The successor checks the complete stimulus and Update ID before answering. [Client controls](../packages/temporal-adapter/client/test/semantic-update-client.test.ts) separately prove retained-result recovery and refuse an unrelated failure with the same closure wording. These probe Workflows carry no BPMN meaning and do not replace production refinement or replay witnesses.
 
 The registered Terminate End profile is part of this gate through its exact source, passive User Task Update hosting, containing-scope cancellation, Worker replacement, history, mutation, and replay witnesses.

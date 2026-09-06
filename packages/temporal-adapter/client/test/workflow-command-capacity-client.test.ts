@@ -128,6 +128,7 @@ function fakeClient(
   onGetHandle: () => void = () => undefined,
 ): never {
   return {
+    connection: { withDeadline: async (_deadline: number, invoke: () => Promise<unknown>) => invoke() },
     getHandle: () => {
       onGetHandle();
       return {

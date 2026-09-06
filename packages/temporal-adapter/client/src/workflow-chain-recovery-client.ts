@@ -32,7 +32,6 @@ import {
   requireWorkflowChainCommandRecoveryResponse,
   requireWorkflowChainCanonicalByteBudget,
   semanticCommandResult,
-  withDeadline,
 } from "@bpmn-lean/temporal-protocol";
 import type {
   BpmnProcessWorkflow,
@@ -119,6 +118,16 @@ export async function resolveWorkflowChainUpdate(
     resolution.stimulus,
   );
   const deadline = Date.now() + requireOperationDeadlineMs(resolution.deadlineMs);
+  const captured = { ...resolution, stimulus: structuredClone(resolution.stimulus) };
+  return resolution.client.connection.withDeadline(deadline, () =>
+    executeWorkflowChainUpdate(captured, deadline)
+  );
+}
+
+async function executeWorkflowChainUpdate(
+  resolution: WorkflowChainUpdateResolution,
+  deadline: number,
+): Promise<ProcessCommandResult> {
   const handle = resolution.client.getHandle<BpmnProcessWorkflow>(
     resolution.workflowId,
   );
@@ -143,7 +152,7 @@ export async function resolveWorkflowChainUpdate(
       if (hasApplicationFailureType(error, identityConflictFailureType)) {
         throw identityConflict(request.commandId);
       }
-      if (!isIndeterminateUpdateFailure(error)) {
+      if (!isIndeterminateUpdateFailure(error) || Date.now() >= deadline) {
         throw error;
       }
     }
@@ -182,6 +191,16 @@ export async function resolveWorkflowChainMessage(
     resolution.stimulus,
   );
   const deadline = Date.now() + operationDeadlineMs;
+  const captured = { ...resolution, stimulus: structuredClone(resolution.stimulus) };
+  return resolution.client.connection.withDeadline(deadline, () =>
+    executeWorkflowChainMessage(captured, deadline)
+  );
+}
+
+async function executeWorkflowChainMessage(
+  resolution: WorkflowChainMessageResolution,
+  deadline: number,
+): Promise<ProcessCommandResult> {
   const handle = resolution.client.getHandle<BpmnProcessWorkflow>(
     resolution.workflowId,
   );
@@ -570,9 +589,9 @@ async function beforeDeadline<Value>(
 ): Promise<Value> {
   const remaining = deadline - Date.now();
   if (remaining <= 0) {
-    throw new Error(`${operation} exceeded the client deadline`);
+    throw new DOMException(`${operation} exceeded the client deadline`, "TimeoutError");
   }
-  return withDeadline(invoke(), remaining, operation);
+  return invoke();
 }
 
 function requireOperationDeadlineMs(value: number | undefined): number {
@@ -586,7 +605,7 @@ function requireOperationDeadlineMs(value: number | undefined): number {
 async function pollDelay(deadline: number): Promise<void> {
   const remaining = deadline - Date.now();
   if (remaining <= 0) {
-    throw new Error("Workflow-chain command recovery exceeded the client deadline");
+    throw new DOMException("Workflow-chain command recovery exceeded the client deadline", "TimeoutError");
   }
   await new Promise<void>((resolve) =>
     setTimeout(resolve, Math.min(recoveryPollMs, remaining))
