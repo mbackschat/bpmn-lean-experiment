@@ -118,6 +118,8 @@ If ordinary work exposes a defect in the documentation control plane, surface it
 
 For Product 2 PostgreSQL runtime or migration work, keep the ordinary package loop database-free and run the explicit runtime witness with `./scripts/pnpm.sh run test:platform-postgresql:runtime:local`. Run the complete shared-mode witness with `./scripts/pnpm.sh run test:platform-postgresql:local`; after committing PostgreSQL-backed platform changes, run `./scripts/pnpm.sh run test:pre-push:platform-postgresql` against an explicit database or use the local disposable-cluster command.
 
+Preserve cached Docker images needed for future builds, tests, or demos, especially the pinned Temporal image. Clean up task-owned containers without deleting reusable images; broad image or system pruning must not discard those dependencies.
+
 ### Product 2 UI/UX source preflight
 
 For every material Product 2 UI/UX surface, inspect CIB Seven first when it has an analogous capability, using its current product documentation and the pristine pinned source rather than memory or screenshots alone. Run the `research` doctor scope and complete the [source-grounded design preflight](docs/BPM-PLATFORM-UI-DESIGN-SPEC.md#source-grounded-design-preflight) before production code. Use other established products to fill a gap or provide an independent comparison. Record what the project adopts, deliberately changes, and excludes, with the published engine or platform fact that justifies each deviation. This is design research, not permission to copy code, styling, assets, private data models, or product terminology.
