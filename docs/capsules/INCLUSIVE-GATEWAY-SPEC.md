@@ -177,6 +177,8 @@ A bypass that drops one expected input or advances the join after the first sele
 
 ## Evidence and layer ownership
 
+For both rule and evidence claims, [account/implementation independence](../PROJECT-DESIGN.md#two-kinds-of-independence) bounds what the [source witness](../../packages/bpmn-source/test/inclusive-gateway-source.test.ts) establishes: it asserts literal branch-local `expectedJoinInput` bindings and rejects topology mutations. CIB source supplied selection research; no Inclusive-specific execution lane is selected.
+
 | Rule | Normative/profile review | Lean | CIB Seven | Independent TypeScript | Temporal refinement | Negative or mutation guard |
 |---|---|---|---|---|---|---|
 | `IGW-EVALUATE-01` | Clauses 10.6.3 and 13.4.3 plus Simple Boolean v1 | quantified same-bindings/all-candidates law | deliberately absent | independent all-candidate evaluation | no host evaluation | first-true substitution changes both-true observation |

@@ -238,6 +238,8 @@ The smallest executable refinement witness starts two Process Workflows, lets th
 
 ## Evidence strategy
 
+For both rule and evidence claims, [account/implementation independence](../PROJECT-DESIGN.md#two-kinds-of-independence) bounds what the [source witness](../../packages/bpmn-source/test/message-key-correlation-source.test.ts) establishes: it asserts literal initial/correlated wait bindings and rejects duplicate or detached CorrelationProperties, reference/endpoint substitutions, and containment mutations. The `CIB-LIM-0002` phase-zero probe supplies the classified limitation below, not a CIB target verdict for this profile.
+
 | Claim | Independent evidence |
 |---|---|
 | Normative and source account | BPMN 2.0.2 Clause 8.4.2, Clause 9, Tables 8.31–8.35, 9.1, 9.10, and 10.1, plus exact CMOF/XSD anchors |

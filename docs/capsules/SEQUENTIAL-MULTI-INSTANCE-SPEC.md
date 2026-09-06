@@ -273,6 +273,8 @@ Temporal Event History, Workflow ID, Run ID, Activity attempts, and Continue-As-
 
 ## Evidence strategy
 
+For both rule and evidence claims, [account/implementation independence](../PROJECT-DESIGN.md#two-kinds-of-independence) bounds what the [source witness](../../packages/bpmn-source/test/sequential-multi-instance-source.test.ts) establishes: it asserts authored loop-role bindings and a literal aggregated result and rejects same-typed reference or association substitutions. The phase-zero CIB probes classify only `CIB-AGR-0011`, `CIB-INT-0002`, and `CIB-LIM-0001`; they are not a Multi-Instance semantic oracle and do not remove the account non-separability stated above.
+
 The first red is not merely an unsupported XML node. One independently authored three-item scenario must currently fail source admission, while a mutation that removes only Multi-Instance characteristics becomes an ordinary User Task graph and therefore cannot produce the required repeated task/progress/output trace. A second red uses the same command identity against two different loop iterations; current task-only identity handling must not be allowed to substitute one iteration for another.
 
 Answer-free scenario inputs cover zero items, three distinct items, duplicate items, natural completion, timer interruption after one completion, task-first and timer-first schedules, wrong outer/task/timer activation, stale prior task, binding substitution, reordered inputs, oversized item/count/canonical bytes, and a final candidate output that crosses the byte bound.

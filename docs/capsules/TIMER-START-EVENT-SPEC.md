@@ -219,6 +219,8 @@ The later Product 2 increment owns schedule persistence, API shape, idempotency 
 
 ## Rule-to-evidence matrix
 
+For both rule and evidence claims, [account/implementation independence](../PROJECT-DESIGN.md#two-kinds-of-independence) bounds what the [source witness](../../packages/bpmn-source/test/timer-start-event-source.test.ts) establishes: it asserts literal origin/output bindings after arbitrary source-ID renaming and rejects the excluded Timer expression and source shapes. No Timer-Start-specific CIB execution lane is selected.
+
 | Rule | BPMN/profile evidence | Lean | TypeScript | Temporal | Separating negative or mutation |
 |---|---|---|---|---|---|
 | `TSTART-SOURCE-01` | Exact XSD-valid BPMN plus source negatives | Checked admission and lowering equality | Independent source projection and lowering | Compiled program used by live witness | Timer kind, expression form, placement, arity, and explicit-property mutations |

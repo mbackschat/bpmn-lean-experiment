@@ -120,14 +120,14 @@ def throwErrorState? (state : RuntimeState) (input : ControlPlaceId)
 
 The arms are not uniform in what they claim, and the difference decides what may be cited as
 evidence. The test is a criterion rather than a count, because a census drifts from the tree in both
-directions: **an arm is the graph of the evaluator whenever passage cannot fail apart from it**, and
-that happens in two ways. Twelve arms state `f before ... = some after` for the same `f` that
-`fire?` calls, and `initiateMessage` and `initiateTimer` wrap that equation in a single-constructor
-inductive. Three arming arms reach the same place by a different route: `BoundedTaskArmingStep`,
-`MonitoredTaskArmingStep`, and `BoundedScopeArmingStep` bind their premises and then name the
-evaluator's own transformation as the successor, so a wrong `activateBoundedUserTask` or
-`armScopeDeadline` produces a wrong relation that the bridge still satisfies. For every arm meeting
-the criterion the bridge is one evidence lane, not two.
+directions: **shared transformation content is not independently validated by its bridge**.
+Equation premises and their wrappers, successors naming the evaluator's transformation, and
+successors restated with the same primitives establish dispatch or matching implementation.
+Examples include the `initiateMessage` and `initiateTimer` equation wrappers; the shared successors
+of `BoundedTaskArmingStep`, `MonitoredTaskArmingStep`, `BoundedScopeArmingStep`,
+`MessageBoundedTaskArmingStep`, and `TerminateScopeStep`; and the `completeScopeState?` equation in
+`BoundedScopeVictoryStep.quiescence`. A wrong shared transformation can produce a wrong relation
+that its bridge still satisfies despite separate enabling premises; the shared content is one lane.
 
 An arm earns an independent lane only by stating premises the evaluator does not supply.
 `MergeExclusiveStep` is the reference shape: it quantifies over an offered token with a membership

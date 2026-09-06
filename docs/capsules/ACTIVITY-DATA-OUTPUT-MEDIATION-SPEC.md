@@ -115,6 +115,8 @@ The smallest executable refinement witness starts the model, replaces the Worker
 
 ## Evidence strategy
 
+For both rule and evidence claims, [account/implementation independence](../PROJECT-DESIGN.md#two-kinds-of-independence) bounds what the [source witness](../../packages/bpmn-source/test/activity-data-output-source.test.ts) establishes: it asserts the literal distinct DataOutput-to-Property association and operation bindings and rejects the excluded reference and cardinality shapes. The positive assertions alone do not distinguish faulty reference resolution, as the admission row below records. No Activity-output CIB execution lane is selected.
+
 | Claim | Independent evidence |
 |---|---|
 | Normative write-back | BPMN 2.0.2 Clauses 10.4.2 and 13.3.2 and the pinned CMOF/XSD anchors above; no CIB semantic vote. OutputSet availability is not a separate lane here, because this slice makes it a function of command shape |

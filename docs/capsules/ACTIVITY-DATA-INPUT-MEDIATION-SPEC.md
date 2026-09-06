@@ -130,6 +130,8 @@ No Continue-As-New boundary may split the atomic activation transition. A permit
 
 ## Evidence strategy
 
+For both rule and evidence claims, [account/implementation independence](../PROJECT-DESIGN.md#two-kinds-of-independence) bounds what the [source witness](../../packages/bpmn-source/test/activity-data-input-source.test.ts) establishes: it asserts literal Property-to-DataInput association and operation bindings and rejects ownership, reference, and InputSet mutations. No Activity-input CIB execution lane is selected; the Temporal expected trace remains core-derived under the separately stated authored-input, absence, and no-transition termination checks.
+
 | Claim | Independent evidence |
 |---|---|
 | Normative input availability and direct copy | BPMN 2.0.2 Clauses 10.4.1 and 10.4.2, Tables 10.57, 10.58, 10.59, 10.61, 10.62, and 10.63, the direct-copy and unavailable-source prose, and the pinned CMOF/XSD anchors; no CIB semantic vote |

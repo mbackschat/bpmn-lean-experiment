@@ -149,6 +149,8 @@ Temporal Event History, Workflow ID, Run ID, Update protocol details, and Contin
 
 ## Evidence strategy
 
+For both rule and evidence claims, [account/implementation independence](../PROJECT-DESIGN.md#two-kinds-of-independence) bounds what the [source witness](../../packages/bpmn-source/test/parallel-multi-instance-source.test.ts) establishes: it asserts literal loop-role, completion-expression, and lifetime-Timer bindings and rejects the selected contract's near-miss shapes. No Parallel-Multi-Instance CIB execution lane is selected.
+
 The first Red is an exact parallel source rejected by current admission. Removing only the Multi-Instance characteristics yields an ordinary single User Task and cannot produce the required simultaneous task set. Further Reds distinguish all-complete order, first-complete cancellation, Timer-wide cancellation, empty input, batch identity freshness, stale identity refusal, and no partial output.
 
 The closed evidence set keeps the following lanes distinct:

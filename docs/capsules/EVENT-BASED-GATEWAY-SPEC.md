@@ -179,6 +179,8 @@ Message command deduplication, exact duplicate recovery, identity conflict, hand
 
 ## Evidence and layer ownership
 
+For both rule and evidence claims, [account/implementation independence](../PROJECT-DESIGN.md#two-kinds-of-independence) bounds what the [source witness](../../packages/bpmn-source/test/event-based-gateway-source.test.ts) establishes: it asserts literal Message/Timer configuration flows and outputs and rejects instantiating gateways, swapped trigger references, and cross-branch flows. CIB feasibility precedents do not execute this exact pair, and no Event-Based-Gateway CIB lane is selected.
+
 | Rule | Normative/profile review | Lean | CIB Seven | Independent TypeScript | Temporal refinement | Negative or mutation guard |
 |---|---|---|---|---|---|---|
 | `EBG-ARM-01` | Clauses 10.6.6 and 13.4.4; exact two-catch profile | arming relation, evaluator soundness, exact members and activation counters | deliberately absent | atomic wait/record creation | exact armed Query and one durable Timer | partial-arm, missing-member, and configuration-origin mutations |

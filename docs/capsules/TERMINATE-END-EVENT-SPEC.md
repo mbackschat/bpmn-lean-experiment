@@ -168,16 +168,15 @@ All rules are vendor-neutral BPMN rules except `TEND-HOST-01`, which is a refine
 
 Lane shape: proved
 
-Evidence: [TerminateEndEventConformance.lean](../../BpmnSemantics/TerminateEndEventConformance.lean) proves the selected nested and root termination transitions, evaluator soundness, owned-region removal, preservation, refusal, closure bounds, and stable-resumption witnesses. The bounded result does not claim arbitrary nesting, every concurrent topology, delivery fairness, or Temporal cancellation semantics.
+Evidence: [TerminateEndEventConformance.lean](../../BpmnSemantics/TerminateEndEventConformance.lean) kernel-checks finite nested/root transitions, exact selected-field removal and preservation inventories, refusals, closure bounds, and stable-resumption witnesses. The `TerminateScopeStep` constructor and `terminateScopeState?` evaluator share `commitTermination`; their soundness bridge checks that construction rather than an independent removal specification. The quantified `terminateScopeState_preserves_history` law assumes a successful evaluator result, and reused cancellation laws retain their stated hypotheses. Neither those laws nor the finite inventories establish quantified complete owner-family removal for arbitrary states. Arbitrary nesting, every concurrent topology, delivery fairness, and Temporal cancellation semantics remain unclaimed.
 
 New cohesive owners hold termination state transformation, transition semantics, fixtures, and conformance facts. Existing near-limit runtime, execution, lowering, and umbrella owners receive only extracted shared mechanics, exhaustive dispatch, or imports.
 
 Required proved facts are:
 
 - exact checked-node and program admission, `1 -> 0` arity, containing-scope binding, and endpoint-only lowering;
-- declarative `terminateScope` relation, executable evaluator, and evaluator soundness;
-- complete runtime-owner removal for the selected occurrence subtree, including called-Process descendants and Activity-local state, with selected-root retention;
-- preservation of unrelated parent owners, Process variables, activation counters, prior End occurrences, and parent links;
+- `terminateScope` relation, executable evaluator, and shared-successor helper-matching soundness bridge;
+- finite selected-subtree inventory and retained owner/link/Process-binding facts (`selected_subtree_inventory_is_exact`), plus activation-counter/logical-time equality (`nested_termination_preserves_unrelated_state`); the quantified history and reused cancellation laws retain their explicit hypotheses;
 - exact aggregate `endOccurrences + 1`, exact triggering identity in operation origin, and no continuation token from `terminateScope`;
 - quiescence of the retained occurrence and immediate enablement of its unique matching `completeScope`;
 - nested continuation exactly once and root completion with no parent output;
@@ -222,11 +221,13 @@ Because this capsule adds no host mechanism, it does not justify a second genera
 
 ## Rule-to-evidence matrix
 
+For both rule and evidence claims, [account/implementation independence](../PROJECT-DESIGN.md#two-kinds-of-independence) bounds what the [source witness](../../packages/bpmn-source/test/terminate-end-event-source.test.ts) establishes: it asserts literal End/input/scope bindings after source-ID renaming, distinguishes false-valued ordinary Sub-Processes from true-valued Event Sub-Processes, and rejects the excluded source shapes. No Terminate-End-specific CIB execution lane is selected.
+
 | Rule | BPMN/profile evidence | Lean | TypeScript | Temporal | Separating negative or mutation |
 |---|---|---|---|---|---|
 | `TEND-SOURCE-01` | Exact XSD-valid nested source, omitted/`false`/`0` default equivalence, and malformed-source matrix | Exact checked admission | Equal structural checked/IL projection with distinct source identities | Exact compiled program and bytes | Definition cardinality, reference, payload, placement, arity, canonical-true, and parser-hostile-`1` mutations |
 | `TEND-LOWER-01` | Validated endpoints and scope forest | Exact checked-to-IL equality | Independent lowering equality | Compiled program identity | Input, scope, origin, and synthetic-output drift |
-| `TEND-REGION-01` | Containing-scope normative account | Relation, evaluator soundness, owner-family removal and preservation laws | Independent state transformation and mutation | Query after committed Update | Global cancellation and incomplete-clearing mutations |
+| `TEND-REGION-01` | Containing-scope normative account | Shared-successor helper-matching bridge; finite exact owner-family removal/preservation inventories; quantified conditional history and reused cancellation laws | Independent state transformation and mutation | Query after committed Update | Global cancellation and incomplete-clearing mutations |
 | `TEND-NESTED-01` | Embedded Sub-Process continuation | Exact child completion and one parent token | Independent exact state | Only Outer after Worker replacement | Direct parent-output and double-completion mutations |
 | `TEND-ROOT-01` | Root Process termination | Synthetic root theorem | Independent root witness | Not a separate host mechanism | Nested-as-root and parent-token mutations |
 | `TEND-REFUSE-01` | Exact occurrence and scope identity | No-successor and state-identity theorems | No-successor and state-identity tests | Stale Sibling rejects after replacement | Wrong owner, scope, multiplicity, and activation independently varied |
@@ -264,7 +265,7 @@ Required:
 - exact nested Terminate End source admission and a reusable root-capable checked/IL representation;
 - one no-output `terminateScope` operation composed with unchanged `completeScope`;
 - complete selected-subtree owner removal, selected-occurrence retention, unrelated-state preservation, and End-history increment;
-- proved Lean relation, evaluator soundness, exact closures, order-invariance, refusal, and strict-wire facts;
+- Lean helper-matching relation/soundness bridge, finite exact inventory, closure, order-invariance, refusal, and strict-wire facts, plus the quantified conditional history and reused cancellation laws scoped above;
 - independent TypeScript semantics and meaningful global/incomplete cancellation mutations;
 - three registered answer-free standards scenarios with no CIB target;
 - one live Temporal Worker-replacement, stale-refusal, history, and replay witness;

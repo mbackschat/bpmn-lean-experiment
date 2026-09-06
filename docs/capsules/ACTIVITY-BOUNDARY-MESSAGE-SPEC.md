@@ -164,22 +164,22 @@ The distinct normal and boundary follow-on User Tasks are the public route discr
 
 Lane shape: proved
 
-Evidence: [the Activity boundary Message conformance module](../../BpmnSemantics/ActivityBoundaryMessageConformance.lean) proves the bounded declarative arming and two-constructor victory account, including evaluator soundness and conditional final withdrawal; it does not prove the wider reachable-state uniqueness and well-formedness preservation obligation.
+Evidence: [the Activity boundary Message conformance module](../../BpmnSemantics/ActivityBoundaryMessageConformance.lean) combines an arming helper-matching bridge, finite kernel-checked exact arming states, and the two-constructor victory account with evaluator soundness and conditional final withdrawal. It does not prove the wider reachable-state uniqueness and well-formedness preservation obligation.
 
-The arming relation states the consumed input token, exact task/subscription/Activity records, owner equality, distinct outputs, and counter successors. The victory relation has one completion constructor and one Message-delivery constructor; each names the exact losing wait withdrawal and selected route.
+The arming relation states enabling and definition premises and names `activateMessageBoundedUserTask` as its successor; it does not independently spell out that helper's collection changes. `message_bounded_arming_atomic_frames` gives quantified collection/frame equations using the same removal and insertion primitives as the construction, and the freshness/counter laws state their explicit successor and frame bounds. Exact atomic inventory and well-formedness are finite kernel-checked witnesses in `operation_arms_the_exact_atomic_state` and `armed_state_is_well_formed`. The victory relation has one completion constructor and one Message-delivery constructor; each names the exact losing wait withdrawal and selected route.
 
 Each evaluator arm requires a soundness bridge from the evaluator-produced successor to the corresponding relation constructor. Dispatcher selection and constructor selection are checked separately so “the evaluator returned this state” is not mistaken for the semantic proposition.
 
 Required laws are:
 
-- atomic arming creates exactly one task, one Message subscription, and one Activity record and preserves unrelated runtime collections;
+- finite exact-state witnesses check that atomic arming creates one task, one Message subscription, and one Activity record; quantified helper-based collection/frame equations check the construction and preservation of unrelated runtime collections;
 - task victory withdraws the complete owned pair and produces only the normal route;
 - Message victory withdraws the complete owned pair and produces only the boundary route;
 - every issued task, subscription, and Activity identity is above its predecessor high-water mark, and every untouched counter is preserved;
 - wrong task identity, non-empty task submission, wrong subscription identity, wrong channel, and payload-bearing delivery are refused with exact state preservation;
 - final owned-handler withdrawal is proved under the existing explicit wait-identity uniqueness and runtime-state well-formedness hypotheses.
 
-Preservation of those uniqueness and well-formedness hypotheses across every reachable transition remains outside this capsule and stays an open runtime-invariant obligation. The `proved` lane therefore claims the conditional final-withdrawal theorem and does not weaken it to an implementation-time alternative.
+The quantified `activateMessageBoundedUserTask_issues_fresh_activity` law establishes the Activity issuing discipline for this helper. `activateMessageBoundedUserTask_preserves_activityBodyClaimsUnique` assumes live-work ownership, runtime identity bounds, and pre-state body-claim uniqueness. Preservation of the wider uniqueness and well-formedness hypotheses across every reachable transition remains outside this capsule and stays an open runtime-invariant obligation. The `proved` lane therefore claims the conditional final-withdrawal theorem and does not weaken it to an implementation-time alternative.
 
 The nearest realistic checked non-law is commutation: completion followed by delivery and delivery followed by completion select different routes, so these inputs do not commute. In each sequential order the second stimulus is stale and must be rejected. No logical-time, fairness, liveness, or general correlation theorem is claimed.
 
@@ -222,9 +222,11 @@ Delivery ordering outside one coalesced activation remains server arrival order 
 
 ## Rule-to-evidence matrix
 
+For both rule and evidence claims, [account/implementation independence](../PROJECT-DESIGN.md#two-kinds-of-independence) bounds what the [source witness](../../packages/bpmn-source/test/activity-boundary-message-source.test.ts) establishes: it asserts literal distinct routes and a renamed resolved channel and rejects broken Message/Operation chains, late-arming topology, and misattachment. These source checks do not justify the reviewed arming instant. No Activity-boundary-Message CIB execution lane is selected.
+
 | Rule | BPMN/profile evidence | Lean evidence | TypeScript evidence | Temporal evidence | Negative or mutation evidence |
 |---|---|---|---|---|---|
-| `ABMSG-ARM-01` | exact source, resolved attachment, omitted-true default, checked/IL binding | declarative arming relation, evaluator soundness, atomicity and counter laws | independent arming evaluator and exact collection delta | stable Query after Worker replacement | premature delivery, wrong attachment, missing owner mutation |
+| `ABMSG-ARM-01` | exact source, resolved attachment, omitted-true default, checked/IL binding | helper-matching arming bridge; quantified collection/frame and counter equations; finite exact atomic-state and well-formedness witnesses | independent arming evaluator and exact collection delta | stable Query after Worker replacement | premature delivery, wrong attachment, missing owner mutation |
 | `ABMSG-COMPLETE-01` | User Task lifecycle plus handler lifetime | empty-submission completion constructor and complete-withdrawal law | task-victory evaluator admits only `submittedValues: []` | accepted empty Update, replacement Worker, stale later Signal | retained-subscription, boundary-route, and non-empty-submission mutations |
 | `ABMSG-INTERRUPT-01` | Clause 13.5.3 and distinct boundary Sequence Flow | Message-victory constructor and route law | delivery evaluator reusing `DeliverMessage` | accepted Signal, replacement Worker, replay | retained-task and normal-route mutations |
 | `ABMSG-REFUSE-01` | bounded direct-address and payload-free profile | quantified identity, channel, non-empty-submission, and payload-delivery refusal laws | wrong/stale identity, channel, completion-value, and `DeliverPayloadMessage` tests | stale and wrong-shape Signal/Update paths settle through the public host contract | state-changing refusal mutations |

@@ -293,6 +293,8 @@ Lean and the TypeScript semantic core are independent **transcriptions** of one 
 
 Account-level independence therefore comes only from the normative and profile review and from pinned CIB evidence, bounded by the oracle fidelity that the applicable capsule records. Claims must not present Lean-to-TypeScript agreement as independent confirmation of the selected account, and [TESTING-SPEC.md](TESTING-SPEC.md) owns the requirement that two evidence lanes count as two only when their failure modes are uncorrelated.
 
+For source-to-execution matrices, normative/profile review selects the account. Separately authored expected source facts and raw-XML negatives can reject a defective checked-graph producer for the properties they assert; they are neither a second XML parser nor an independent semantic account. Lean, the semantic core, and Temporal consume one compiled artifact in the differential pipeline, so their agreement checks transcription and hosting rather than independently establishing XML normalization: a producer defect shared by that artifact can make every downstream target agree. Each capsule's matrix names its actual source discriminator and its selected CIB execution evidence or absence; inherited relationship metadata and source inspection alone do not supply mechanism-specific execution corroboration.
+
 A capsule may deliberately buy account-level independence by specifying only the observable contract and letting each realization choose its own runtime representation. That is a per-capsule decision with a real cost, and it must be recorded in the capsule rather than assumed.
 
 Lean also forces architectural distinctions to become explicit:

@@ -225,6 +225,8 @@ The smallest live witness starts while the Worker is absent, then starts the Wor
 
 ## Rule-to-evidence matrix
 
+For both rule and evidence claims, [account/implementation independence](../PROJECT-DESIGN.md#two-kinds-of-independence) bounds what the [source witness](../../packages/bpmn-source/test/message-start-event-source.test.ts) establishes: it asserts literal channel/output bindings, changes the Operation identity through compilation, and rejects malformed reference and Start Event shapes. No Message-Start-specific CIB execution lane is selected.
+
 | Rule | Source/profile | Lean | TypeScript core | Temporal | Negative or mutation |
 |---|---|---|---|---|---|
 | `MSTART-SOURCE-01` | Exact BPMN fixture, strict reference closure, profile capability, XML validation | Exact decoder/admission and lowering facts | Independent compiler projection | Pre-start compiled artifact | Missing or unresolved Message or Operation reference; missing or mismatched Operation input Message; Operation output Message, implementation, or Error reference; catch data output, output set, or association; extra root or second definition; payload; explicit `isInterrupting`; referenced, repeated, or parallel Event Definition; incoming, zero, multiple, or conditional outgoing flow; non-top-level placement; multiple or mixed starts |

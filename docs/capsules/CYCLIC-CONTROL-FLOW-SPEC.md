@@ -207,6 +207,8 @@ Temporal is refinement evidence for durability only. It executes the TypeScript 
 
 ## Rule-to-evidence matrix
 
+For both rule and evidence claims, [account/implementation independence](../PROJECT-DESIGN.md#two-kinds-of-independence) bounds what the [source witness](../../packages/bpmn-source/test/cyclic-control-flow.test.ts) establishes: it asserts literal merge endpoints, canonicalizes unordered merge inputs while retaining conditional Choice declaration order, and rejects rewired or wrongly conditioned topology. No CIB cycle execution lane is selected.
+
 | Rule | BPMN/profile | Lean | CIB | TypeScript semantic core | Temporal | Negative and mutation evidence |
 |---|---|---|---|---|---|---|
 | `CYCLE-ADMIT-01` | New exact profile and both new ledger rows | Cut-cycle theorem, cut-preserving lowering, internal-cycle refusal | None | Independent checked and program graph validators | Pre-start rejection creates no Workflow | Old-profile cycle, internal-only cycle, and cut-classification mutation |

@@ -165,6 +165,8 @@ The current CIB JUEL probes remain calibration evidence for `CIB-AGR-0006` and `
 
 ## Rule-to-evidence matrix
 
+For both rule and evidence claims, [account/implementation independence](../PROJECT-DESIGN.md#two-kinds-of-independence) bounds what the [source witness](../../packages/bpmn-source/test/simple-boolean-expression.test.ts) establishes: it asserts literal candidate/output bindings and reverses only Sequence Flow declarations to separate XML order from identity and reference order. CIB JUEL probes calibrate first-true/order/default behavior only, not Simple Boolean execution.
+
 | Rule | Layer | Normative/profile basis | Lean | CIB Seven | TypeScript | Temporal | Negative or mutation |
 |---|---|---|---|---|---|---|---|
 | `XGW-EVALUATE-01` | BPMN rule plus project order interpretation | Clause 13.4.2, Table 13.2, `CIB-INT-0001` as separate compatibility fact | Independent expression parser, exact canonical-lowering check, and supplied checked-order transition | Declaration-order calibration only | Strict source admission, typed lowering, and pure evaluation | Core-hosted closure | Reversed references and declarations, body/AST inequality, and wrong-route mutation |

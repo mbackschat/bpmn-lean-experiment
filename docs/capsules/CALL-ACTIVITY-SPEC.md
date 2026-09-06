@@ -177,6 +177,8 @@ Pre-release policy remains in force: histories are produced, replayed, and disca
 
 ## Evidence and cross-target invariant matrix
 
+For both rule and evidence claims, [account/implementation independence](../PROJECT-DESIGN.md#two-kinds-of-independence) bounds what the [source witness](../../packages/bpmn-source/test/call-activity-source.test.ts) establishes: it changes the QName-derived called binding and rejects malformed or foreign-namespace QNames and cross-Process flows. Lean does not independently resolve lexical QNames or namespaces, and the inherited User Task CIB metadata supplies no Call-specific execution lane.
+
 | Rule | Normative/profile | Lean | CIB Seven | Independent TypeScript | Temporal | Negative or mutation |
 |---|---|---|---|---|---|---|
 | `CALL-RESOLVE-01` | Clauses 10.3.6/13.3.4, Table 10.23, CMOF/XSD QName | checked `calledProcessId`/root/entry binding and independent lowering equality | Call-specific lane deliberately absent; inherited User Task metadata only | namespace-aware source admission and exact binding | admitted definition forest is Workflow input | malformed QName, foreign namespace, self-call, target/root/entry permutation |

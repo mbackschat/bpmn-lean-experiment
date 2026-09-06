@@ -120,6 +120,8 @@ The executable refinement witness starts the model, forces Continue-As-New while
 
 ## Evidence strategy
 
+For both rule and evidence claims, [account/implementation independence](../PROJECT-DESIGN.md#two-kinds-of-independence) bounds what the [source witness](../../packages/bpmn-source/test/message-payload-catch-source.test.ts) establishes: it asserts literal payload-output bindings and rejects distinct or unresolved ItemDefinition references and the excluded association shapes. No payload-catch CIB execution lane is selected; the selected-account witness below does not settle the normative interpretation.
+
 | Claim | Independent evidence |
 |---|---|
 | Normative account | BPMN 2.0.2 Clause 10.5.1 and Table 10.82 with the CMOF and XSD anchors quoted above; no CIB semantic vote |

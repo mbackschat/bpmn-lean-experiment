@@ -250,6 +250,8 @@ No history may contain Activity, Child Workflow, effect, or Workflow-cancellatio
 
 ## Planned rule-to-evidence matrix
 
+For both rule and evidence claims, [account/implementation independence](../PROJECT-DESIGN.md#two-kinds-of-independence) bounds what the [source witness](../../packages/bpmn-source/test/activity-boundary-timer-source.test.ts) establishes: it asserts the literal combined bounded-task operation and distinct routes and rejects the opposite interruption disposition and wrong host. These source checks do not justify the reviewed arming instant. No Activity-boundary-Timer CIB execution lane is selected.
+
 The table below states the **planned** lanes per rule. Two lanes count as two only when their failure modes are uncorrelated, which is why the shared refusal predicate is marked once.
 
 Recorded results at the current closure target, stated per lane because they do not complete together. Every lane below is a claim about that target, not about the rejected `dee1a10`, which precedes the Lean victory relations, the reference guard, the Worker-absence witness, the real-service Update answer, and the semantic-core test:
@@ -264,7 +266,7 @@ The coalescing premise carries two lanes whose instrument is shared: both the so
 
 | Rule | BPMN/profile | Lean | Independent TypeScript | Temporal refinement | Negative witness or mutation |
 |---|---|---|---|---|---|
-| `ABTIMER-ARM-01` | Clause 13.3.2 for the Activity reaching Active; the arming instant itself is a project interpretation, since no clause fixes when a boundary Event's waiting begins (13.5.2's “reached” cannot apply to a Boundary Event) | declarative arming relation and evaluator soundness | atomic task-plus-timer creation | armed Query with one durable Timer started | partial-arm mutation creating one member without the other |
+| `ABTIMER-ARM-01` | Clause 13.3.2 for the Activity reaching Active; the arming instant itself is a project interpretation, since no clause fixes when a boundary Event's waiting begins (13.5.2's “reached” cannot apply to a Boundary Event) | shared-successor helper-matching arming relation and soundness bridge | atomic task-plus-timer creation | armed Query with one durable Timer started | partial-arm mutation creating one member without the other |
 | `ABTIMER-COMPLETE-01` | Clause 13.5.3 normal continuation | quantified exclusivity law | victory removes both waits | completion history: Timer canceled, never fired | mutation that leaves the Timer wait live |
 | `ABTIMER-INTERRUPT-01` | Clause 13.5.3 three-step order | quantified interruption law with counter preservation | boundary token only, no normal token | interruption history: Timer fired, no cancellation | mutation routing interruption to `task.output`, detected by the wrong published follow-on task |
 | `ABTIMER-REFUSE-01` | exact-occurrence and exact-time refusal | quantified off-deadline and wrong-identity refusal; stale identity as a checked witness under its recorded deferral, beside a quantified withdrawal-finality law that assumes key uniqueness | independent core refusal with both seeded defect directions rejected | no registered schedule can present an off-deadline firing | pre-due firing at `999` and its `1001` mirror; stale sibling after either victory |

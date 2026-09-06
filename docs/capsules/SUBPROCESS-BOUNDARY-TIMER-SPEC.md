@@ -246,9 +246,11 @@ Three preflight conclusions the implementation must honour:
 
 ## Planned rule-to-evidence matrix
 
+For both rule and evidence claims, [account/implementation independence](../PROJECT-DESIGN.md#two-kinds-of-independence) bounds what the [source witness](../../packages/bpmn-source/test/subprocess-boundary-timer-source.test.ts) establishes: it rejects attachment to the child task or an unsupported host, the wrong interruption disposition or duration, and true-valued Event Sub-Process hosts. These source checks do not justify the reviewed arming instant. No Sub-Process-boundary-Timer CIB execution lane is selected.
+
 | Rule | Normative or profile clause | Lean | Semantic core | Differential scenario | Temporal witness |
 |---|---|---|---|---|---|
-| `SPTIMER-ARM-01` | Clause 13.3.4 instantiation; arming instant is the inherited project interpretation | atomic-arming relation and soundness bridge | focused test asserting the armed triple | both schedules' first observation | armed history shows one timer started |
+| `SPTIMER-ARM-01` | Clause 13.3.4 instantiation; arming instant is the inherited project interpretation | shared-successor helper-matching arming relation and soundness bridge | focused test asserting the armed triple | both schedules' first observation | armed history shows one timer started |
 | `SPTIMER-QUIESCE-01` | Clause 13.3.4 completion | quiescence-arm law and withdrawal | focused test asserting deadline removal | quiescence schedule | history shows the timer cancelled, not fired |
 | `SPTIMER-INTERRUPT-01` | Clause 13.5.3 order; Clause 13.3.2 as resolved above | interruption-arm law, counter preservation, normal-output non-law | focused test asserting child wait removal | deadline schedule | history shows one timer fired and the boundary route taken |
 | `SPTIMER-REFUSE-01` | reuses existing identity and exact-time refusal | quantified off-deadline and wrong-identity refusal | focused test over both stale directions and four wrong identities | **none** — both refusal shapes are structurally unregisterable, see below | refused shared activation answered by the Workflow's failure |

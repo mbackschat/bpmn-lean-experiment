@@ -18,7 +18,7 @@ Evidence: [The non-interrupting boundary Timer conformance owner](../../BpmnSema
 
 Required Lean content, all with exact hypotheses. This list is the single owner of the Lean obligation; the rule-to-evidence matrix below carries evidence pointers only, and no other section restates it.
 
-- a declarative arming relation and a declarative spawn relation, both distinct from the evaluator, plus a declarative completion relation with both the deadline-live and deadline-consumed constructors;
+- an arming relation whose successor names the shared arming helper, a declarative spawn relation, and a declarative completion relation with both the deadline-live and deadline-consumed constructors; the arming bridge checks helper matching rather than independently specifying the helper's collection changes;
 - soundness from every evaluator-produced arming, spawn, and completion transition to its relation;
 - a quantified **host-preservation** law: every spawn transition leaves the monitored task wait, its activation ordinal, and every activation counter exactly as they were. This is the law that separates this family from its sibling, whose corresponding transition removes the task;
 - a quantified single-token law per transition: the spawn adds exactly one token owned by the deadline's scope and advances logical time to that deadline, and completion adds exactly one token owned by the task's scope and leaves logical time alone. Which place each token lands on is bound by the relation's constructors and carried to the evaluator by the soundness bridges, not restated as a conclusion of these two theorems, so neither may be cited as a routing law on its own;
@@ -255,11 +255,13 @@ The Worker-absence run belongs on the spawn arm specifically, because the fact a
 
 ## Planned rule-to-evidence matrix
 
+For both rule and evidence claims, [account/implementation independence](../PROJECT-DESIGN.md#two-kinds-of-independence) bounds what the [source witness](../../packages/bpmn-source/test/non-interrupting-boundary-timer-source.test.ts) establishes: it asserts the literal monitored-task operation and distinct routes and rejects the opposite interruption disposition and wrong host. These source checks do not justify the reviewed arming instant. No non-interrupting-boundary-Timer CIB execution lane is selected.
+
 The table states the **planned** lanes per rule. Two lanes count as two only when their failure modes are uncorrelated, which is why the shared refusal predicate is marked once.
 
 | Rule | BPMN/profile | Lean | Independent TypeScript | Temporal refinement | Negative witness or mutation |
 |---|---|---|---|---|---|
-| `NBTIMER-ARM-01` | Clause 13.3.2 for the Activity reaching Active; the arming instant is the sibling capsule's recorded project interpretation | declarative arming relation and evaluator soundness | atomic task-plus-timer creation | armed Query with one durable Timer started | partial-arm non-law in both directions |
+| `NBTIMER-ARM-01` | Clause 13.3.2 for the Activity reaching Active; the arming instant is the sibling capsule's recorded project interpretation | shared-successor helper-matching arming relation and soundness bridge | atomic task-plus-timer creation | armed Query with one durable Timer started | partial-arm non-law in both directions |
 | `NBTIMER-SPAWN-01` | Clause 10.5.6's continuing Activity and parallel boundary token; Clause 13.5.3's skipped cancel step | quantified host-preservation law | boundary token only, task wait byte-identical | spawn history across Worker absence | mutation cancelling the monitored task on firing, detected by the open-task count |
 | `NBTIMER-COMPLETE-01` | Clause 13.5.3 normal continuation | quantified withdrawal law over both the live and consumed deadline | one-sided join accepts completion after firing | withdrawal history: Timer cancelled, never fired | mutation retaining the withdrawn deadline |
 | `NBTIMER-QUIESCE-01` | Clause 10.5.6's own-End-Event recommendation; Clause 13.2's no-token-and-no-active-Activity completion condition | checked non-law that the first End does not complete the Process | quiescent completion over two branches | terminal receipt only after both branches | focused core case completing at the first End Event |
