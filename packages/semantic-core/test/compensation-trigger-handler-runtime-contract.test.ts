@@ -20,6 +20,7 @@ import {
   type CompensationHandlerEffectWait,
   type CompensationTriggerExecution,
   type RuntimeState,
+  type SemanticEffectWait,
   type SemanticProcessProgram,
 } from "@bpmn-lean/semantic-core";
 
@@ -182,6 +183,40 @@ test("binds the compensation argument to the frozen restored Process value", () 
     true,
   );
 });
+
+for (const collection of ["effectWaits", "effectIncidents"] as const) {
+  test(`checks compensation identity against ${collection} when the other collection is empty`, () => {
+    for (const collides of [false, true]) {
+      const ordinaryWait = {
+        id: collides ? effectId : { ...effectId, elementId: "Unrelated" },
+        owner,
+        descriptor,
+        arguments: [],
+        outputMappings: [],
+        bpmnErrorRoute: null,
+        output: "place:Ordinary_Out",
+        incidentAlreadyRetried: false,
+      } as const satisfies SemanticEffectWait;
+      const state = {
+        ...initialState,
+        control: { kind: ControlStateKind.Running, instanceId: processInstanceId },
+        scopeOccurrences: [{ id: owner, parent: null }],
+        compensationTriggers: [trigger],
+        compensationHandlerEffectWaits: [wait],
+        effectWaits: collection === "effectWaits" ? [ordinaryWait] : [],
+        effectIncidents: collection === "effectIncidents"
+          ? [{ id: { effectId: ordinaryWait.id, generation: 1 }, wait: ordinaryWait }]
+          : [],
+      } as const satisfies RuntimeState;
+      assert.equal(
+        compensationExecutionStateDefects(program, state).includes(
+          CompensationExecutionStateDefect.InvalidHandlerEffectWait,
+        ),
+        collides,
+      );
+    }
+  });
+}
 
 test("retains and accounts for a deferred Event Sub-Process handler context", () => {
   const pendingTrigger = {

@@ -352,9 +352,9 @@ private def handlerHasOneWait (waits : List CompensationHandlerEffectWait)
 
 private def waitCollidesWithOrdinaryState (state : RuntimeState)
     (wait : CompensationHandlerEffectWait) : Bool :=
-  state.effectWaits.any fun ordinary =>
+  (state.effectWaits.any fun ordinary =>
       ordinary.processInstanceId == wait.id.processInstanceId &&
-        ordinary.elementId.value == wait.id.elementId.value && ordinary.activation == wait.id.activation
+        ordinary.elementId.value == wait.id.elementId.value && ordinary.activation == wait.id.activation)
     || state.effectIncidents.any fun incident =>
       incident.wait.processInstanceId == wait.id.processInstanceId &&
         incident.wait.elementId.value == wait.id.elementId.value &&
