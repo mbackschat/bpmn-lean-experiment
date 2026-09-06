@@ -139,9 +139,9 @@ Lane shape: checked
 
 Evidence: [The parallel fixture owner](../../BpmnSemantics/SemanticProcess/Fixtures.lean) kernel-checks the exact two-branch start, per-input join, excess-offer, completion-order, projection, and duplicate-left/no-right witnesses; those fixed programs do not prove an arbitrary three-branch fork or general parallel topology.
 
-This runtime-transition family maintains a declarative relation separate from the executable evaluator and a theorem that every evaluator-produced transition is admitted by that relation. That soundness bridge does not establish completeness, determinism, BPMN fidelity, TypeScript correspondence, or CIB compatibility.
+This runtime-transition family maintains a declarative relation separate from the executable evaluator and a theorem that every evaluator-produced transition is admitted by that relation. The `duplicate` and `synchronize` arms name the evaluator's shared token transformations, so their bridges check dispatch into those transformations rather than independently validate the token rules. That soundness bridge does not establish completeness, determinism, BPMN fidelity, TypeScript correspondence, or CIB compatibility.
 
-The kernel-checked Lean fixtures and independent TypeScript witnesses establish:
+The kernel-decided finite Lean fixtures and independent TypeScript witnesses establish, for their retained states:
 
 - start closure creates exactly the two branch waits and no other public wait;
 - before both incoming-flow conditions hold, no evaluator step crosses the join;
@@ -164,7 +164,7 @@ Maintained negative and mutation evidence includes:
 
 ## Rule-to-evidence matrix
 
-The cells below remain distinct claims. CIB's balanced positive cases do not establish the per-incoming-flow negative rule, and Temporal is a refinement lane over the TypeScript core rather than a second semantic implementation.
+The cells below remain distinct claims. The Lean fork/join, excess-multiplicity, completion-order, and storage-permutation results are kernel-decided finite witnesses; the `duplicate` and `synchronize` bridges are dispatch checks. CIB's balanced positive cases do not establish the per-incoming-flow negative rule, and Temporal is a refinement lane over the TypeScript core rather than a second semantic implementation.
 
 | Rule | Normative/profile | Lean | Pinned CIB Seven | Independent TypeScript | Temporal refinement | Negative or mutation guard |
 |---|---|---|---|---|---|---|
@@ -181,6 +181,8 @@ The cells below remain distinct claims. CIB's balanced positive cases do not est
 The exact established claim is: for the admitted content-addressed balanced two-branch Process, the two answer-free completion orders and live-sibling stale witness reach simultaneous distinct User Task waits, expose the specified stable intermediate observations, reject stale A while B remains active, synchronize only after both branch completions, and reach the same completed observation across the definition-bound Lean interpreter, pinned CIB positive calibration, independent TypeScript core, and replayed semantic-lifetime Temporal host.
 
 The closest unsupported claims are repeated live occurrences of one User Task element, immutable negative CIB evidence for `CIB-DEV-0001`, production canonical-observation API design, and full observational checked-source-to-program-run preservation. None is implied by this capsule's draft closure.
+
+Reopen before admitting Parallel Gateway arity or topology outside the balanced two-branch slice, or reusing these finite results as generic token laws. That extension requires the applicable quantified multiplicity deltas, owner preservation, and unaffected-state preservation for `duplicateToken` and `synchronizeTokens`.
 
 The material common-mode risks remain explicit:
 

@@ -74,6 +74,8 @@ The existing content-bound `completeUserTaskInstance` command addresses the exac
 
 The missing-input stable state is Running with the incoming token retained, no open User Task, no Activity record, no local scope, no enabled external interaction for this Activity, and no started flow-node occurrence. The proposal makes no progress or fairness claim for a Process whose only required source remains unavailable and supplies no later-availability ingress.
 
+The retained incoming token represents this Activity's BPMN Ready state. That interval deliberately creates no published flow-node occurrence: E2 starts this User Task only when its input becomes available and it enters Active. E1 retains the committed control-position facts, not a separate Ready lifecycle event. Publishing Ready later requires an explicitly reviewed observation broadening.
+
 ## Stable semantic rules and separating witnesses
 
 - `ADINPUT-READY-01`: the data-bearing User Task can enter Active only when its one required direct source binding is present in Process scope.
