@@ -1,9 +1,8 @@
-# Compensation durability start-data repair proposal
+# Compensation durability start-data repair specification
 
 ## Status
 
-Lifecycle: implementation-in-progress
-Review: approved
+Implemented; independently closure-reviewed. The receipt below records the exact review and correction targets.
 
 ## Prior authority and defect
 
@@ -17,9 +16,9 @@ This is a semantic admission defect, not a Temporal scheduling defect. The exact
 
 What is the smallest correction that makes the exact lowered Compensation source Program executable through its approved trigger semantics without widening handler meaning, source shape, or public capability?
 
-This proposal selects one exact String-valued Process-start binding whose name is derived from the sole `restoredProcessBinding.sourceName` in the admitted Program. For the current source that is `Property_TravelDetails`. Both semantic accounts reject an empty patch, a wrong name, another binding, duplicate bindings, a non-String value, or a start identity/value pair whose exact prospective snapshot or first compensation frontier exceeds the already lowered canonical-byte limits before creating runtime state. The existing Process-start installation then places the admitted binding in Process scope, ordinary Sub-Process completion freezes it, and compensation activation copies that frozen value under the already lowered `argumentName`, `DataInput_TravelDetails`.
+The contract selects one exact String-valued Process-start binding whose name is derived from the sole `restoredProcessBinding.sourceName` in the admitted Program. For the current source that is `Property_TravelDetails`. Both semantic accounts reject an empty patch, a wrong name, another binding, duplicate bindings, a non-String value, or a start identity/value pair whose exact prospective snapshot or first compensation frontier exceeds the already lowered canonical-byte limits before creating runtime state. The existing Process-start installation then places the admitted binding in Process scope, ordinary Sub-Process completion freezes it, and compensation activation copies that frozen value under the already lowered `argumentName`, `DataInput_TravelDetails`.
 
-The BPMN source bytes, checked graph, Semantic Process Program, trigger transition, snapshot transition, Activity request, public observation, and terminal receipt do not change. The checkpoint profile remains unregistered and carries no public Product 1 capability. The repair permits only the already approved private durability witness to reach the scheduler that is being implemented under the trigger proposal's reviewed Temporal preflight.
+The BPMN source bytes, checked graph, Semantic Process Program, trigger transition, snapshot transition, Activity request, public observation, and terminal receipt do not change. The checkpoint profile remains unregistered and carries no public Product 1 capability. The repair permits only the approved private durability witness to reach the scheduler under the trigger proposal's reviewed Temporal preflight.
 
 ## Required, optional, and excluded functionality
 
@@ -66,7 +65,7 @@ Mutations replace the binding name with `DataInput_TravelDetails`, add an unrela
 
 Capacity mutations in TypeScript find the exact-fit ASCII String for the ordinary short instance identity from the production canonical encoders, then add one byte; a second pair finds the exact-fit ASCII instance identity for a short String, then adds one byte. The exact-fit starts are admitted and both one-byte-over starts are rejected with exact state preservation by direct command admission. Product 1 repeats both over-cap cases and records zero `client.start` calls. Lean proves the stronger quantified safety direction—every arbitrary admitted start fits both inherited bounds—and decides an exact short representative against limits set to its production-encoder byte counts and one byte below them. Escaped and multi-byte String cases compare the prospective byte count with the encoder result in both accounts so character-count or unescaped-length substitutions cannot pass.
 
-The longest internal closure does not change: the same Program topology and operations execute after start, and this proposal adds only a pre-transition predicate. Existing closure-bound, multiple-enabled parallel-state, compensation-frontier, stable-resumption, and terminal-completeness evidence therefore remains applicable. The real-source positive trace is the new discriminator that the formerly unreachable stable path now reaches its explicit effect resumption surface.
+The longest internal closure does not change: the same Program topology and operations execute after start, and this repair adds only a pre-transition predicate. Existing closure-bound, multiple-enabled parallel-state, compensation-frontier, stable-resumption, and terminal-completeness evidence therefore remains applicable. The real-source positive trace distinguishes reachability of the explicit effect resumption surface.
 
 ### Lean assurance correction after the hard ceiling
 
@@ -100,42 +99,21 @@ The smallest live witness starts the exact compiled source with one valid bindin
 | Product 1 pre-start safety | Assessment and client tests reject malformed starts with zero `client.start` calls and admit the exact start once |
 | Temporal refinement | Live exact-source concurrency, continuation, replacement, retry, cancellation-drain, terminal receipt, and replay evidence required by the trigger proposal |
 
-The implementation grows [semantic profile value-domain admission](../../packages/semantic-core/src/semantic-profile-value-domain.ts), [semantic execution admission](../../packages/semantic-core/src/semantic-process-admission.ts), [semantic command admission](../../packages/semantic-core/src/semantic-command-admission.ts), [Lean value-domain admission](../../BpmnSemantics/SemanticProcess/ValueDomain.lean), [Lean command admission](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean), [Lean checkpoint conformance](../../BpmnSemantics/CompensationSourceCompatibilityConformance.lean), and the [Product 1 source admission witness](../../packages/temporal-adapter/testkit/test/compensation-source-host-refusal.test.ts). The exact TypeScript predicate and shared prospective constructor belong in `packages/semantic-core/src/compensation-start-data-admission.ts`; direct predicate/command preservation belongs in `packages/semantic-core/test/compensation-start-data-admission.test.ts`; and both compiled-source completion orders plus the current-value substitution belong in `packages/bpmn-source/test/compensation-source-runtime.test.ts`. Product 1 assessment and zero-start evidence remain separate in the Temporal testkit witness, so a strong host wrapper cannot conceal weaker direct command admission.
+The [TypeScript predicate and shared prospective constructor](../../packages/semantic-core/src/compensation-start-data-admission.ts), [direct predicate/command witness](../../packages/semantic-core/test/compensation-start-data-admission.test.ts), and [compiled-source witness](../../packages/bpmn-source/test/compensation-source-runtime.test.ts) own the exact admission, preservation, opposite-order, and frozen-value evidence. The [Product 1 source admission witness](../../packages/temporal-adapter/testkit/test/compensation-source-host-refusal.test.ts) independently checks assessment and zero-start refusal, so a strong host wrapper cannot conceal weaker direct command admission.
 
 Mechanically routed guards include [documentation reviewability](../../scripts/document-reviewability.test.ts), [semantic review packets](../../scripts/semantic-review-packet.test.ts), [Lean source contracts](../../scripts/lean-source-contracts.test.ts), [test selection coverage](../../scripts/test-selection-coverage.test.ts), [pre-release architecture](../../scripts/pre-release-architecture.test.ts), and [source hygiene](../../scripts/source-hygiene.test.ts). The [semantic-core README](../../packages/semantic-core/README.md), [semantic-core source map](../../packages/semantic-core/SOURCE-MAP.md), [Temporal adapter README](../../packages/temporal-adapter/README.md), [Temporal source map](../../packages/temporal-adapter/SOURCE-MAP.md), routed implementation maps, and [PLAN](../PLAN.md) change only when implementation makes their current statements false.
-
-### Owners this implementation grows
-
-| Owner | Current headroom | Structural condition |
-|---|---:|---|
-| [Semantic profile value domain](../../packages/semantic-core/src/semantic-profile-value-domain.ts) | 531 | value-kind dispatch only |
-| [Semantic execution admission](../../packages/semantic-core/src/semantic-process-admission.ts) | 368 | one predicate call only |
-| [Semantic command admission](../../packages/semantic-core/src/semantic-command-admission.ts) | 330 | one predicate call only |
-| [Lean value domain](../../BpmnSemantics/SemanticProcess/ValueDomain.lean) | 668 | value-kind dispatch only |
-| [Lean command admission](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean) | 99 | predicate definition and one dispatch branch only |
-| [Lean checkpoint conformance](../../BpmnSemantics/CompensationSourceCompatibilityConformance.lean) | 699 | exact positive and negative decisions only |
-| [TypeScript start admission](../../packages/semantic-core/src/compensation-start-data-admission.ts) | 573 | exact Program-derived binding and shared prospective-capacity construction only |
-| [TypeScript start-admission witness](../../packages/semantic-core/test/compensation-start-data-admission.test.ts) | 510 | direct predicate and command preservation, Program-name, canonical-boundary, escaping, and identity discriminators only |
-| [Compiled-source runtime witness](../../packages/bpmn-source/test/compensation-source-runtime.test.ts) | 579 | exact compiled-source opposite-order, exhaustive successor-frontier, and frozen-value discriminators only |
-| [Product 1 source witness](../../packages/temporal-adapter/testkit/test/compensation-source-host-refusal.test.ts) | 456 | exact assessment/start and malformed, rewired, or over-cap pre-start cases only |
-
-The new TypeScript predicate starts in its own bounded owner. Every figure is the measured nonblank-line remainder below the 800-line review target. If these measured conditions change before implementation, rerun `what-binds` and redesign before crossing the threshold; no size-limit exception is selected.
 
 ### Pre-release contract consequence
 
 This is a pre-release correction to an unregistered checkpoint profile. Existing registered profile artifacts, source bytes, checked bytes, Program bytes, public protocol, and durable history schemas remain unchanged. Starts previously accepted only for this internal checkpoint with empty or otherwise String-only unrelated bindings become rejected; no supported external client loses a contract because the profile has no public registration or capability.
 
-The established claim after closure is exact-source reachability of the already approved Compensation semantics and their dedicated Temporal scheduler from one required String Process binding. The nearest unsupported claim is a registered or public Compensation profile. Principal common-mode risks are deriving the required name from the fixture in both implementations, testing only the hand-built seeded state, or letting host admission compensate for weaker semantic admission. Program-name mutation, both branch orders, independent Lean construction, and zero-start Product 1 evidence separate those accounts.
+The established claim is exact-source reachability of the approved Compensation semantics and their dedicated Temporal scheduler from one required String Process binding. The nearest unsupported claim is a registered or public Compensation profile. Principal common-mode risks are deriving the required name from the fixture in both implementations, testing only the hand-built seeded state, or letting host admission compensate for weaker semantic admission. Program-name mutation, both branch orders, independent Lean construction, and zero-start Product 1 evidence separate those accounts.
 
-Implementation stops if the correction requires source XML changes, a default value, optional data, another value kind, a general mapping rule, runtime argument synthesis, a new public surface, or any weakening of missing-source refusal. Closure records the commit-bounded cost against the source/lowering checkpoint because it changes the same TypeScript/Lean admission seam, then updates the original source proposal's obsolete empty-domain/host-refusal status as historical checkpoint scope without rewriting its approved rules.
+Reopen for source XML changes, a default value, optional data, another value kind, a general mapping rule, runtime argument synthesis, a new public surface, or any weakening of missing-source refusal. The original source proposal's empty-domain/host-refusal account remains explicitly historical without rewriting its approved rules.
 
-## Stage boundary
+## Closure evidence
 
-After this assurance correction is independently approved, implementation first makes the TypeScript and Lean exact start predicate red then green, including both downstream bounds under the corrected evidence split, proves both real-source completion orders reach the same compensation frontier, and updates Product 1 pre-start refusal. Only then may the in-progress durability scheduler count the exact source as live evidence. The repair is committed as its own coherent unregistered semantic checkpoint before scheduler integration so its capacity-total admission claim receives an independent review boundary. Closure still requires the trigger proposal's complete live Temporal, replacement, continuation, retry, cancellation, receipt, replay, documentation, and independent review obligations.
-
-## Closure evidence preparation
-
-The exact-source success and failure witnesses required by the trigger proposal are implemented and closure-reviewed there, including frozen input, concurrent handlers, pre-schedule continuation, Worker replacement, same-key retry, cancellation drain, terminal receipts, and replay. Complete Product 1 verification subsequently passed at `ea5ca057`. The [cost ledger](../CAPSULE-COST-LEDGER.md#pending-repair-closure-costs) retains the implementation/correction attribution and measures the contiguous range through closure target `32b76106`, including intervening work without subtraction. The separate trigger closure supplies composed evidence but does not replace this repair's own complete target gate and correction audit.
+The exact-source success and failure witnesses cover frozen input, concurrent handlers, pre-schedule continuation, Worker replacement, same-key retry, cancellation drain, terminal receipts, and replay. The [cost ledger](../CAPSULE-COST-LEDGER.md#repair-closure-costs) retains the contiguous implementation/correction attribution and comparison with the source/lowering checkpoint at the same TypeScript/Lean admission seam. The receipt below records this repair's own closure review; the trigger closure supplies the composed hosting evidence.
 
 ## Independent cold-review receipt
 
@@ -144,4 +122,4 @@ The exact-source success and failure witnesses required by the trigger proposal 
 | Proposal | `af387881fea17c9db040874e759c9189e8d164dc` | `fork-turns-none` | `approve-with-required-edits` | `f1609d7a6370ea73b059085e55454ab15fac4423` |
 | Lean assurance correction | `099cca872adbecb659401129210adcbc500ca92d` | `fork-turns-none` | `approve` | `not-applicable` |
 | Semantic checkpoint | `b28103e99ca22cdb4c4b52994f37d87b63504ef4` | `fork-turns-none` | `approve-with-required-edits` | `29c35194441698a755dcc94fffa34f8aa376cde3` |
-| Closure | `32b761063c95bc2de33363a7b057377f8c9d89d6` | `not-recorded` | `pending` | `not-applicable` |
+| Closure | `32b761063c95bc2de33363a7b057377f8c9d89d6` | `fork-turns-none` | `approve-with-required-edits` | `ca41ddff78f960adf3dd547d28f565dda60b728a` |

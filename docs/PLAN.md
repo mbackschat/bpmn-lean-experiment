@@ -73,17 +73,17 @@ Exactly one stable work ID is active. Required maps are part of the routing cont
 Owner instruction on 2026-09-05: resolve the supplied six reviews before resuming RC implementation. `R1`–`R6` identify those reports. Confirm each finding against source; close defects with separating evidence and the required review. Intentional exclusions require an accurate contract, not new feature admission.
 
 - [x] Validate and classify every finding; reconcile conflicting recommendations.
-- [ ] Correct assurance and deployment overclaims (`R1`, `R2`, `R5`, `R6`).
+- [x] Correct assurance and deployment overclaims (`R1`, `R2`, `R5`, `R6`).
 - [x] Repair regional cancellation, quiescence, and Lean removal completeness (`R2`, `R6`).
 - [x] Measure E1; remove demonstrated fixture-reduction amplification (`R4`).
-- [ ] Close runtime-invariant binding and preservation gaps (`R1`, `R2`, `R6`).
+- [x] Close runtime-invariant binding and preservation gaps (`R1`, `R2`, `R6`).
 - [x] Correct implemented scheduling, preparation, rollback, and publication claims (`R3`); broader proofs remain queued under `INTERNAL-COMMUTATION`.
 - [x] Correct Compensation dependency defects and disclose the bounded cancellation, ownership, and failure contract (`R6`).
-- [ ] Repair Temporal deployment/recovery and complete omitted hosting checks (`R5`).
+- [x] Repair Temporal deployment/recovery and complete omitted hosting checks (`R5`).
 - [x] Bind source-order and fixture/scenario evidence independently for the reported fixtures (`R1`).
-- [ ] Complete correction audits, consumer measurements, and full verification; then resume RC.
+- [x] Complete correction audits, consumer measurements, and full verification; resume RC.
 
-The [seven-byte capacity correction](capsules/COMPENSATION-EMPTY-STATE-CAPACITY-REPAIR-PROPOSAL.md) supplies the declaration minimum used by the closure-reviewed [initialization repair](capsules/RUNTIME-INITIALIZATION-ASSURANCE-REPAIR-SPEC.md). The unchanged empty-state theorem and actual committed-start guarantees passed complete Product 1 verification and initialization closure review at `64c524b7`. Comparative repair costs are recorded; capacity retains its own pending closure review, and no weaker aggregate is selected.
+The closure-reviewed [seven-byte capacity correction](capsules/COMPENSATION-EMPTY-STATE-CAPACITY-REPAIR-SPEC.md) supplies the declaration minimum used by the closure-reviewed [initialization repair](capsules/RUNTIME-INITIALIZATION-ASSURANCE-REPAIR-SPEC.md). The unchanged empty-state theorem and actual committed-start guarantees remain intact; no general all-transition preservation theorem is claimed. The [cost ledger](CAPSULE-COST-LEDGER.md#repair-closure-costs) owns contiguous measurements and comparisons.
 
 Within the dependency order below, prioritize high-risk work before packaging and acceptance work. Treat likely broad Lean changes—shared representations, quantified proof dependencies, and kernel-reduction consumers—as an explicit risk signal, and establish those checkpoints before lower-risk profile registration, corpus/disclosure, or UI integration.
 
@@ -97,22 +97,18 @@ Within the dependency order below, prioritize high-risk work before packaging an
 
 ## Current evidence
 
-- Retention and snapshot costs. Command: `docker run … ./scripts/lake.sh build <target>`. Status: `exit 0`. Date: `2026-09-01`. Commit: `cb7fd54e`, `6208f2e4`. Retention targets peak at 2,332,716 KiB; snapshot root closure is the sole new near-cap target at 2,929,256 KiB/33.59s, while current corrections have zero pressure/OOM events. Full measurements and acceptance chronology remain in the [snapshot incident](CAPSULE-COST-LEDGER.md#compensation-snapshot-resource-ceiling-incident), [continuation audit](CAPSULE-COST-LEDGER.md#parallel-metadata-and-cyclic-consumer-continuation), and [acceptance correction](CAPSULE-COST-LEDGER.md#snapshot-invariant-and-cgroup-acceptance-correction).
-- Start-capacity assurance. Command: `fixed-3-GiB docker run … ./scripts/lake.sh build BpmnSemantics.CompensationSourceCompatibilityConformance`. Status: `exit 0` after three exact-bound OOM reproductions. Date: `2026-09-03`. Commit: `8ab3ba5f`. The final target completed in 15.00s at 2,324,123,648 cgroup bytes and 1,938,140 KiB RSS with every pressure/OOM counter zero. The [proposal](capsules/COMPENSATION-DURABILITY-START-DATA-REPAIR-PROPOSAL.md#lean-assurance-correction-after-the-hard-ceiling) retains the exact 3,221,225,472-byte failures, full chronology, and rejected limit/native-decision alternatives.
+- Complete Product 1 correction gate. Command: `env CI=true ./scripts/pnpm.sh run test:pre-push:verify`. Status: `exit 0`, clean worktree. Date: `2026-09-06`. Commit: `ca41ddff`. Output SHA-256: `8c2a9e401ffc4cd0adde8486d5b6e86005ad1dcc64bc848ff3197fe6b615f979`. Includes the formerly failing PMI witness and both live Compensation schedules. The [native deployment specification](TEMPORAL-WORKER-DEPLOYMENT-REPAIR-SPEC.md#implemented-checkpoint-boundary) binds the successful container smoke.
+- Start-capacity assurance. Command: `fixed-3-GiB docker run … ./scripts/lake.sh build BpmnSemantics.CompensationSourceCompatibilityConformance`. Status: `exit 0` after three exact-bound OOM reproductions. Date: `2026-09-03`. Commit: `8ab3ba5f`. The final target completed in 15.00s at 2,324,123,648 cgroup bytes and 1,938,140 KiB RSS with every pressure/OOM counter zero. The [specification](capsules/COMPENSATION-DURABILITY-START-DATA-REPAIR-SPEC.md#lean-assurance-correction-after-the-hard-ceiling) retains the exact 3,221,225,472-byte failures, full chronology, and rejected limit/native-decision alternatives.
 
 ## Exact resume point
 
 Active work ID: `DATA-AND-TASK-MECHANISMS`.
 
-Risk band: external-review corrections; RC implementation is held.
+Risk band: RC composed data lifetime; the six external reviews are closed.
 
-Complete Product 1 verification passed at `64c524b7`. The [Temporal reconciliation](TEMPORAL-TEST-EVIDENCE-MAP.md#external-review-question-reconciliation), [runtime inventory](RUNTIME-STATE-INVARIANT-SPEC.md#collection-to-conjunct-inventory), and [Compensation contract](capsules/COMPENSATION-TRIGGER-HANDLER-PROPOSAL.md) own the exact evidence and remaining limits.
+The [Temporal reconciliation](TEMPORAL-TEST-EVIDENCE-MAP.md#external-review-question-reconciliation), [runtime inventory](RUNTIME-STATE-INVARIANT-SPEC.md#collection-to-conjunct-inventory), and [Compensation contract](capsules/COMPENSATION-TRIGGER-HANDLER-PROPOSAL.md) own the corrected evidence and explicit limits. Native deployment, empty-state capacity, and start-data closure reviews are approved; their specification receipts own the exact targets and audits.
 
-Temporal verification at `65862a36` exposed an unfinished readiness Query. Native expiry now covers the remaining bounded client RPCs. Complete client, platform gateway, and Temporal gates pass, with types and documentation guards green; R5 awaits closure review.
-
-Next action: complete [native deployment closure](TEMPORAL-WORKER-DEPLOYMENT-REPAIR-PROPOSAL.md#scope-review-and-closure), [capacity closure](capsules/COMPENSATION-EMPTY-STATE-CAPACITY-REPAIR-PROPOSAL.md#independent-cold-review-receipt), [start-data closure](capsules/COMPENSATION-DURABILITY-START-DATA-REPAIR-PROPOSAL.md#independent-cold-review-receipt), and the [composed Activity-data audit](capsules/ACTIVITY-DATA-INPUT-OUTPUT-MEDIATION-PROPOSAL.md#independent-cold-review-receipt). Their receipts own stage decisions. The [held-Task witness](TEMPORAL-TEST-EVIDENCE-MAP.md#temporal-witness-and-mutation-inventory) now settles the previously separate undelivered-Update case.
-
-Capacity/start-data findings are corrected; approval awaits complete verification. Composed refusal passes complete Lean and bounded consumer gates; audit remains. Container smoke passed at `9628d6fb`. Full-suite PMI previously failed timing margin, then publication availability; isolated runs pass. Complete verification and closure reviews remain.
+Next action: reproduce and correct the analogous duplicate-declaration dispatch in predecessor input-only/output-only User Tasks as its own change, then complete the approved [composed Activity-data checkpoint](capsules/ACTIVITY-DATA-INPUT-OUTPUT-MEDIATION-PROPOSAL.md#independent-cold-review-receipt) through registered scenarios, differential/Temporal evidence, retained corpus/disclosure, and closure review. The predecessor candidate arose during checkpoint review and is separate from the supplied six reports.
 
 Oracle: one User Task activation copies the required Process input into its occurrence-owned local scope, and one accepted completion atomically routes its required output to Process scope and disposes that same local scope across source, Lean, the semantic core, publication, and Temporal refinement.
 

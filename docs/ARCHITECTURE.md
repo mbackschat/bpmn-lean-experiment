@@ -112,7 +112,7 @@ The rules are:
 
 ## Worker deployment ownership
 
-The Product 1 Worker binds its loaded Workflow bundle to a native deployment Build ID and registers both production Workflow types as `PINNED`. Worker process liveness is distinct from enrollment readiness: the client checks Current and both Workflow/Activity queue registrations before creation. Explicit fresh-Namespace initialization owns initial native Current selection; ordinary connection cannot promote a candidate. Native administration owns later promotion, and original Workers plus their runtime/configuration remain required for retained Run Queries. [The deployment contract](TEMPORAL-WORKER-DEPLOYMENT-REPAIR-PROPOSAL.md) excludes conversion of existing unversioned environments and owns the remaining composition obligations.
+The Product 1 Worker binds its loaded Workflow bundle to a native deployment Build ID and registers both production Workflow types as `PINNED`. Worker process liveness is distinct from enrollment readiness: the client checks Current and both Workflow/Activity queue registrations before creation. Explicit fresh-Namespace initialization owns initial native Current selection; ordinary connection cannot promote a candidate. Native administration owns later promotion, and original Workers plus their runtime/configuration remain required for retained Run Queries. [The deployment contract](TEMPORAL-WORKER-DEPLOYMENT-REPAIR-SPEC.md) excludes conversion of existing unversioned environments and owns the bounded composition evidence.
 
 ## Applications
 

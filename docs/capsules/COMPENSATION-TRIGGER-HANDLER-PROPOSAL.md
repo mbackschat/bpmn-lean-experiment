@@ -333,7 +333,7 @@ External cancellation of the trigger owner's region is a separate, unselected ac
 
 ## Capacity and atomicity
 
-The declaration bounds retained trigger records, subjects per trigger, and canonical UTF-8 bytes of the ordered `(compensationTriggers, compensationHandlerEffectWaits)` pair. Bounds are positive safe integers; execution bytes range from seven through 65,536 so the empty pair fits, under the [empty-state capacity repair](COMPENSATION-EMPTY-STATE-CAPACITY-REPAIR-PROPOSAL.md). `maxTriggers` does not authorize two active triggers for one root. The complete RuntimeState limit remains secondary.
+The declaration bounds retained trigger records, subjects per trigger, and canonical UTF-8 bytes of the ordered `(compensationTriggers, compensationHandlerEffectWaits)` pair. Bounds are positive safe integers; execution bytes range from seven through 65,536 so the empty pair fits, under the [empty-state capacity repair](COMPENSATION-EMPTY-STATE-CAPACITY-REPAIR-SPEC.md). `maxTriggers` does not authorize two active triggers for one root. The complete RuntimeState limit remains secondary.
 
 A zero-subject throw creates no trigger record, so it does not consume retained-trigger capacity and may move directly to its continuation even when the retained collection is already at `maxTriggers`, provided no active trigger owns the root. Active-trigger exclusivity is checked first and still rejects that same zero-subject throw when an active trigger exists.
 

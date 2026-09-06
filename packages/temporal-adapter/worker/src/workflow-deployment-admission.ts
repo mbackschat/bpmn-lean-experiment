@@ -1,7 +1,7 @@
 /**
  * Retains the callback-sequencing diagnostic and exact executable bundle identities.
  *
- * DEPLOY-QUERY-01 in docs/TEMPORAL-WORKER-DEPLOYMENT-REPAIR-PROPOSAL.md requires native pinning:
+ * DEPLOY-QUERY-01 in docs/TEMPORAL-WORKER-DEPLOYMENT-REPAIR-SPEC.md requires native pinning:
  * replay cannot detect a changed Query projection. The callback helper is not production routing
  * or permission to convert retained unversioned histories.
  */

@@ -150,7 +150,7 @@ Live success crosses a pre-schedule Run boundary, replaces the Worker, retries B
 - any patch branch other than the exact `bpmn-workflow-chain-v1` checkpoint enrollment
 - legacy representation fallback beyond the exact decode-only pre-v1 terminal-receipt normalization seam
 - production history baseline
-- deployment closure: final complete verifier and independent closure review; legacy conversion, auto-upgrade, ramps, pin overrides, and retirement before retained-Run support ends
+- deployment exclusions: legacy conversion, auto-upgrade, ramps, pin overrides, and retirement before retained-Run support ends
 - expression evaluation beyond pure Simple Boolean v1
 - integer values outside exact M6 User Task completion, String-list values outside M6 completion and the exact profile-gated Multi-Instance Process-start bindings, nested or heterogeneous values, or general effect faults/Error propagation beyond the direct-parent internal slice
 - Activity heartbeats beyond the exact one-second Compensation cancellation-delivery policy

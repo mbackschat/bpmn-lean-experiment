@@ -19,7 +19,7 @@ Required: preserve the exact `initialState_wellFormed` signature; establish the 
 
 Optional functionality: none.
 
-Excluded: changing the raw running-state builder, the aggregate runtime invariant or its conjuncts, source or Program admission, profile selection, RuntimeState representation, public observation, command outcomes, or any runtime transition. General initialization from arbitrary prior states, full-invariant preservation across internal closure or every transition, removal of the position hypothesis, new CIB behavior, and a Temporal refinement theorem are outside this repair. The separately approved [empty-state capacity correction](COMPENSATION-EMPTY-STATE-CAPACITY-REPAIR-PROPOSAL.md) supplies the execution-capacity prerequisite; this repair neither revises that account nor licenses a capacity exception.
+Excluded: changing the raw running-state builder, the aggregate runtime invariant or its conjuncts, source or Program admission, profile selection, RuntimeState representation, public observation, command outcomes, or any runtime transition. General initialization from arbitrary prior states, full-invariant preservation across internal closure or every transition, removal of the position hypothesis, new CIB behavior, and a Temporal refinement theorem are outside this repair. The separately approved [empty-state capacity correction](COMPENSATION-EMPTY-STATE-CAPACITY-REPAIR-SPEC.md) supplies the execution-capacity prerequisite; this repair neither revises that account nor licenses a capacity exception.
 
 ## Selected proof contract
 
