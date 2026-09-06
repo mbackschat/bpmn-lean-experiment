@@ -260,7 +260,7 @@ The complete `what-binds` inventory requires [`implementation-status-owner:ENGIN
 | [Lean RuntimeState](../../BpmnSemantics/SemanticProcess/RuntimeState.lean) | 75 | collection reference only |
 | [Lean well-formedness](../../BpmnSemantics/SemanticProcess/RuntimeStateWellFormed.lean) | 57 | delegated predicate |
 | [Lean initialization preservation](../../BpmnSemantics/SemanticProcess/RuntimeStateWellFormedInitialization.lean) | 420 | preserve the new invariant from the exact initialized state |
-| [Lean completion](../../BpmnSemantics/SemanticProcess/ScopeCompletion.lean) | 681 | promotion/frame |
+| [Lean completion](../../BpmnSemantics/SemanticProcess/ScopeCompletion.lean) | 683 | promotion/frame |
 | [Lean cancellation](../../BpmnSemantics/SemanticProcess/ScopeCancellation.lean) | 567 | regional filtering |
 | [Lean transition](../../BpmnSemantics/SemanticProcess/Transition.lean) | 127 | dispatch only; the applied-result contract is extracted |
 | [Lean internal-operation attempt](../../BpmnSemantics/SemanticProcess/InternalOperationAttempt.lean) | 752 | validate every applied snapshot-aware successor before exposure |
