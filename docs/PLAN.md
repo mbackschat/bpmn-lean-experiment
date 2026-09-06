@@ -108,7 +108,7 @@ Risk band: external-review corrections; RC implementation is held.
 
 Checkpoint: the [closure atomicity repair](capsules/INTERNAL-CLOSURE-ATOMICITY-REPAIR-PROPOSAL.md) has complete Lean and semantic-core gates, cross-target rollback, publication discriminators, and corrected accounts at `e9c9db0f`. Its [consumer measurements](CAPSULE-COST-LEDGER.md#internal-closure-atomicity-correction) retain the fixed 3 GiB ceiling. The [review receipt](capsules/INTERNAL-CLOSURE-ATOMICITY-REPAIR-PROPOSAL.md#independent-cold-review-receipt) owns stage decisions.
 
-Next action: review the atomicity checkpoint before correcting Temporal failure classification; finish the checklist, remaining repair closures, and [composed Activity-data correction audit](capsules/ACTIVITY-DATA-INPUT-OUTPUT-MEDIATION-PROPOSAL.md#independent-cold-review-receipt) before resuming RC.
+Next action: complete Product 1 verification, then correct Temporal failure classification; finish the checklist, remaining repair closures, and [composed Activity-data correction audit](capsules/ACTIVITY-DATA-INPUT-OUTPUT-MEDIATION-PROPOSAL.md#independent-cold-review-receipt) before resuming RC.
 
 Oracle: one User Task activation copies the required Process input into its occurrence-owned local scope, and one accepted completion atomically routes its required output to Process scope and disposes that same local scope across source, Lean, the semantic core, publication, and Temporal refinement.
 

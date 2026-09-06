@@ -32,7 +32,7 @@ Four answer-free population schedules execute through separate Lean and TypeScri
 
 The family map owns the independently closure-reviewed Activity boundary Message slice; this map adds no general claim from that bounded family.
 
-`INTERNAL-COMMUTATION` implements reject mode and pairwise-independent ordinary User Task, Message, Timer, and effect frontiers in both evaluators. Lean proves exact pairs and checks all six three-task orders; arbitrary-batch proof, scheduled choice, region batching, and other families remain absent. The earlier checkpoint is independently approved. The [atomicity repair](capsules/INTERNAL-CLOSURE-ATOMICITY-REPAIR-PROPOSAL.md) adds quantified Lean rollback/no-publication laws, explicit flags, matching TypeScript behavior, and replay discriminators. Its complete semantic checkpoint review and Temporal classification remain pending.
+`INTERNAL-COMMUTATION` implements reject mode and pairwise-independent ordinary User Task, Message, Timer, and effect frontiers in both evaluators. Lean proves exact pairs and checks all six three-task orders; arbitrary-batch proof, scheduled choice, region batching, and other families remain absent. The earlier checkpoint is independently approved. The [atomicity repair](capsules/INTERNAL-CLOSURE-ATOMICITY-REPAIR-PROPOSAL.md) adds quantified Lean rollback/no-publication laws, explicit flags, matching TypeScript behavior, and replay discriminators. Its checkpoint is independently approved; Temporal classification remains absent.
 
 The independently approved first boundary Compensation retention checkpoint implements completed-Activity representation and pure transition preparation.
 
