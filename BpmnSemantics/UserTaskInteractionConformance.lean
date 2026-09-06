@@ -53,7 +53,8 @@ def wrongActivationScenario : Scenario :=
   interactionScenario "user-task-wrong-activation"
     [ startStimulus
     , .completeUserTaskInstance ⟨"wrong-activation"⟩
-        { exactTaskId with activation := 2 } submittedValues ]
+        { exactTaskId with activation := 2 }
+        [{ name := "decision", value := .string "approved" }] ]
 
 def staleCompletionScenario : Scenario :=
   interactionScenario "user-task-stale-completion"

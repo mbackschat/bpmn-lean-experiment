@@ -19,6 +19,8 @@ const compilation = await compileBpmnToSemanticProcess({
 
 The package also exposes an optional pinned MIWG observation lane for source-interchange research. External MIWG files remain outside the repository.
 
+[Concrete Lean fixture binding](test/lean-fixture-bindings.integration-test.ts) compiles the retained sequential, parallel, and cyclic sources and compares their complete checked graphs and Programs with the authored Lean fixtures. It also compares the six corresponding sequential and parallel Scenario documents, including stimuli, observations, and provenance. `test:lean-fixture-bindings:built` runs after restored Lean and TypeScript outputs in the complete verification gate; synthetic countermodels and arbitrary-schedule theorems have no corresponding Scenario binding.
+
 ## Quick start
 
 Run the focused compiler gate:

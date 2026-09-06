@@ -201,7 +201,7 @@ The exact sequential Multi-Instance User Task profile is implemented and executi
 
 ## Evidence owners
 
-The Lean modules under [`BpmnSemantics/`](../BpmnSemantics/), the pure core under [`packages/semantic-core/`](../packages/semantic-core/), the [capsule registry](capsules/README.md), registered scenarios, requirement ledger, and differential pipeline bind the current claims. [TESTING-SPEC.md](TESTING-SPEC.md) owns the gate contract.
+The [Lean modules](../BpmnSemantics/), [pure core](../packages/semantic-core/), [capsule registry](capsules/README.md), registered scenarios, [concrete fixture bindings](../packages/bpmn-source/README.md), requirement ledger, and differential pipeline bind current claims. [TESTING-SPEC.md](TESTING-SPEC.md) owns the gate contract.
 
 ## Nearest unsupported claims
 

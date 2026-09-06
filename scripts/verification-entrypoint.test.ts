@@ -316,6 +316,20 @@ test("the ordinary-package Lean guard reaches a second package", () => {
   );
 });
 
+test("concrete Lean fixture bindings run in the restored-output integration lane", async () => {
+  const [manifest, verifyScript] = await Promise.all([
+    readFile(fileURLToPath(new URL("../package.json", import.meta.url)), "utf8"),
+    readFile(verifyScriptPath, "utf8"),
+  ]);
+  const scripts = (JSON.parse(manifest) as { scripts: Record<string, string> }).scripts;
+  assert.equal(scripts["test:lean-fixture-bindings:built"],
+    "node --test --test-concurrency=1 packages/bpmn-source/test/lean-fixture-bindings.integration-test.ts");
+  assert.match(verifyScript,
+    /verify_lean_checks\(\) \{\n[^\n]*\.\/scripts\/lake\.sh build[^\n]* BpmnSemantics\.FixtureBindingJsonMain(?: |\n)/u);
+  assert.match(verifyScript,
+    /verify_pipeline\(\) \{[^}]*\.\/scripts\/pnpm\.sh run test:lean-fixture-bindings:built/u);
+});
+
 test("committed-publication parity runs in the restored-output integration lane", async () => {
   const [manifest, verifyScript] = await Promise.all([
     readFile(fileURLToPath(new URL("../package.json", import.meta.url)), "utf8"),
@@ -437,7 +451,7 @@ test("Lean checks elaborate executable roots and interpret them without native c
   const source = await readFile(verifyScriptPath, "utf8");
   await assertLineOccursOnce(
     verifyScriptPath,
-    "./scripts/lake.sh build BpmnSemantics.Experiments.CheckedSourceRelationMain BpmnSemantics.SemanticProcessJsonMain BpmnSemantics.EnginePopulationScenarioJsonMain BpmnSemantics.CommittedExecutionPublicationJsonMain",
+    "./scripts/lake.sh build BpmnSemantics.Experiments.CheckedSourceRelationMain BpmnSemantics.SemanticProcessJsonMain BpmnSemantics.EnginePopulationScenarioJsonMain BpmnSemantics.CommittedExecutionPublicationJsonMain BpmnSemantics.FixtureBindingJsonMain",
   );
   for (const path of [
     "BpmnSemantics/Experiments/CheckedSourceRelationMain.lean",
