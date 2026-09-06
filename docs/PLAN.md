@@ -72,15 +72,15 @@ Exactly one stable work ID is active. Required maps are part of the routing cont
 
 Owner instruction on 2026-09-05: resolve the supplied six reviews before resuming RC implementation. `R1`–`R6` identify those reports. Confirm each finding against source; close defects with separating evidence and the required review. Intentional exclusions require an accurate contract, not new feature admission.
 
-- [ ] Validate and classify every finding; reconcile conflicting recommendations.
+- [x] Validate and classify every finding; reconcile conflicting recommendations.
 - [ ] Correct assurance and deployment overclaims (`R1`, `R2`, `R5`, `R6`).
-- [ ] Repair regional cancellation, quiescence, and Lean removal completeness (`R2`, `R6`).
+- [x] Repair regional cancellation, quiescence, and Lean removal completeness (`R2`, `R6`).
 - [x] Measure E1; remove demonstrated fixture-reduction amplification (`R4`).
 - [ ] Close runtime-invariant binding and preservation gaps (`R1`, `R2`, `R6`).
 - [x] Repair footprint, preparation, rollback, commutation, and publication guarantees (`R3`).
-- [ ] Resolve Compensation dependency, cancellation, ownership, and failure gaps (`R6`).
+- [x] Correct Compensation dependency defects and disclose the bounded cancellation, ownership, and failure contract (`R6`).
 - [ ] Repair Temporal deployment/recovery and complete omitted hosting checks (`R5`).
-- [ ] Bind source-order and fixture/scenario evidence independently (`R1`).
+- [x] Bind source-order and fixture/scenario evidence independently for the reported fixtures (`R1`).
 - [ ] Complete correction audits, consumer measurements, and full verification; then resume RC.
 
 The [seven-byte capacity correction](capsules/COMPENSATION-EMPTY-STATE-CAPACITY-REPAIR-PROPOSAL.md) supplies the declaration minimum used by the closure-reviewed [initialization repair](capsules/RUNTIME-INITIALIZATION-ASSURANCE-REPAIR-SPEC.md). The unchanged empty-state theorem and actual committed-start guarantees passed complete Product 1 verification and initialization closure review at `64c524b7`. Comparative repair costs are recorded; capacity retains its own pending closure review, and no weaker aggregate is selected.
@@ -106,11 +106,11 @@ Active work ID: `DATA-AND-TASK-MECHANISMS`.
 
 Risk band: external-review corrections; RC implementation is held.
 
-Checkpoint: the [closure atomicity specification](capsules/INTERNAL-CLOSURE-ATOMICITY-REPAIR-SPEC.md) has complete Product 1 verification at `37cfbfb9`, including Lean, cross-target rollback, canonical publication, recovery, live hosting, and replay. Its [consumer measurements](CAPSULE-COST-LEDGER.md#internal-closure-atomicity-correction) retain the fixed 3 GiB ceiling. The [review receipt](capsules/INTERNAL-CLOSURE-ATOMICITY-REPAIR-SPEC.md#independent-cold-review-receipt) owns stage decisions.
+Complete Product 1 verification passed at `64c524b7`. The [Temporal reconciliation](TEMPORAL-TEST-EVIDENCE-MAP.md#external-review-question-reconciliation), [runtime inventory](RUNTIME-STATE-INVARIANT-SPEC.md#collection-to-conjunct-inventory), and [Compensation contract](capsules/COMPENSATION-TRIGGER-HANDLER-PROPOSAL.md) own the exact evidence and remaining limits.
 
-Complete verification passed at `ea5ca057`. Native A/B correlation and future Schedule dispatch have live witnesses; evaluation initialization/readiness composition has command and launcher guards. The [deployment repair](TEMPORAL-WORKER-DEPLOYMENT-REPAIR-PROPOSAL.md#implemented-checkpoint-boundary) records the Docker smoke infrastructure gap. Drained queue pressure releases deferred-rollover ingress. Accepted-Update closure recovery and native command deadlines now have live witnesses; remaining hosting checks and excluded/open contracts still need reconciliation.
+Next action: settle the server-admitted-but-undelivered closing-Task Update case in the [evidence map](TEMPORAL-TEST-EVIDENCE-MAP.md#temporal-witness-and-mutation-inventory); complete [native deployment closure](TEMPORAL-WORKER-DEPLOYMENT-REPAIR-PROPOSAL.md#scope-review-and-closure), [capacity closure](capsules/COMPENSATION-EMPTY-STATE-CAPACITY-REPAIR-PROPOSAL.md#independent-cold-review-receipt), [start-data closure](capsules/COMPENSATION-DURABILITY-START-DATA-REPAIR-PROPOSAL.md#independent-cold-review-receipt), and the [composed Activity-data audit](capsules/ACTIVITY-DATA-INPUT-OUTPUT-MEDIATION-PROPOSAL.md#independent-cold-review-receipt). Their receipts own stage decisions.
 
-Next action: finish [native deployment closure](TEMPORAL-WORKER-DEPLOYMENT-REPAIR-PROPOSAL.md#scope-review-and-closure), repair the remaining recovery mechanisms, reconcile excluded/open contracts and the correction checklist, then close the remaining repairs and [composed Activity-data correction audit](capsules/ACTIVITY-DATA-INPUT-OUTPUT-MEDIATION-PROPOSAL.md#independent-cold-review-receipt) before resuming RC. The [native review receipt](TEMPORAL-WORKER-DEPLOYMENT-REPAIR-PROPOSAL.md#independent-cold-review-receipt) owns its stage decisions.
+Blockers: the session's agent-thread limit prevents further independent reviews; repeated host, IPv4, and container download failures block the pinned Docker smoke. Initialization alone reused its original reviewer. Resume in a fresh review session with package-download access; no self-approval or pin substitution.
 
 Oracle: one User Task activation copies the required Process input into its occurrence-owned local scope, and one accepted completion atomically routes its required output to Process scope and disposes that same local scope across source, Lean, the semantic core, publication, and Temporal refinement.
 
