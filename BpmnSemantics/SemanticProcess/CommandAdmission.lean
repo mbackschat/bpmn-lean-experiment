@@ -220,7 +220,8 @@ private def dataInputOutputStartBindingsAdmitted (program : Program)
                 else
                   { outcome := .rejected, state }
             | none => { outcome := .rejected, state }
-          else if isDataInputTaskDefinition program ⟨taskId.elementId.value⟩ then
+          else if (dataInputTaskOperations program).any (fun entry =>
+              decide (entry.1 = ⟨taskId.elementId.value⟩)) then
             match completeDataInputUserTask? program state
                 taskId.processInstanceId ⟨taskId.elementId.value⟩
                 taskId.activation with
@@ -230,7 +231,8 @@ private def dataInputOutputStartBindingsAdmitted (program : Program)
                 else
                   { outcome := .rejected, state }
             | none => { outcome := .rejected, state }
-          else if isDataOutputTaskDefinition program ⟨taskId.elementId.value⟩ then
+          else if (dataOutputTaskOperations program).any (fun entry =>
+              decide (entry.1 = ⟨taskId.elementId.value⟩)) then
             match completeDataOutputUserTask? program state
                 taskId.processInstanceId ⟨taskId.elementId.value⟩
                 taskId.activation submittedValues with

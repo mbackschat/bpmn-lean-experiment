@@ -34,7 +34,6 @@ import {
 } from "./semantic-process-message-bounded-task-runtime.js";
 import {
   completeDataInputUserTask,
-  isDataInputTaskDefinition,
 } from "./semantic-process-activity-data-input-runtime.js";
 import {
   completeDataInputOutputUserTask,
@@ -42,7 +41,6 @@ import {
 } from "./semantic-process-activity-data-input-output-runtime.js";
 import {
   completeDataOutputUserTask,
-  isDataOutputTaskDefinition,
 } from "./semantic-process-activity-data-output-runtime.js";
 import {
   completeActivityVariableScope,
@@ -275,13 +273,20 @@ export function admit(
           ? { outcome: CommandOutcome.Rejected, state }
           : { outcome: CommandOutcome.Committed, state: next };
       }
-      if (isDataInputTaskDefinition(program, stimulus.taskId)) {
+      // ADINPUT-REFUSE-01 and ADOUTPUT-REFUSE-01 require ambiguous declarations to reach family refusal.
+      if (program.operations.some((operation) =>
+        operation.kind === SemanticOperationKind.AwaitDataInputUserTask &&
+        operation.task.elementId === stimulus.taskId.elementId
+      )) {
         const next = completeDataInputUserTask(program, state, stimulus);
         return next === null
           ? { outcome: CommandOutcome.Rejected, state }
           : { outcome: CommandOutcome.Committed, state: next };
       }
-      if (isDataOutputTaskDefinition(program, stimulus.taskId)) {
+      if (program.operations.some((operation) =>
+        operation.kind === SemanticOperationKind.AwaitDataOutputUserTask &&
+        operation.task.elementId === stimulus.taskId.elementId
+      )) {
         const next = completeDataOutputUserTask(program, state, stimulus);
         return next === null
           ? { outcome: CommandOutcome.Rejected, state }

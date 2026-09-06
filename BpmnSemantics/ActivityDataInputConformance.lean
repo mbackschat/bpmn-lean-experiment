@@ -303,4 +303,17 @@ theorem wrongActivationAgainstALiveWaitRefuses :
       refused activeState := by
   decide +kernel
 
+private def repeatedInputDeclarations (count : Nat) : Program :=
+  { reviewProgram with
+    operations := reviewProgram.operations.flatMap fun operation =>
+      match operation with
+      | .awaitDataInputUserTask .. => List.replicate count operation
+      | _ => [operation] }
+
+theorem multipleInputDeclarationsRefuseWithoutOrdinaryCompletion
+    (count : Nat) (duplicated : count = 2 ∨ count = 3) :
+    applyStimulus scenarioClosureLimit (repeatedInputDeclarations count)
+      activeState completeReview = refused activeState := by
+  rcases duplicated with rfl | rfl <;> decide +kernel
+
 end BpmnSemantics.ActivityDataInputConformance

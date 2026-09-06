@@ -233,10 +233,32 @@ theorem user_task_completion_with_same_successor_is_equal
         (.completeUserTaskInstance completionCommandId submittedTaskId submittedValues) =
       applyStimulus closureLimit program rightState
         (.completeUserTaskInstance completionCommandId submittedTaskId submittedValues) := by
+  have inputRefused (state : RuntimeState) :=
+    undeclaredTaskRefusesCompletion program state submittedTaskId.processInstanceId
+      ⟨submittedTaskId.elementId.value⟩ submittedTaskId.activation noDataInputTask
+  have noOutputAssociation : dataOutputAssociation? program
+      ⟨submittedTaskId.elementId.value⟩ = none := by
+    have notUnique : ((dataOutputTaskOperations program).filter fun entry =>
+        decide (entry.1 = ⟨submittedTaskId.elementId.value⟩)).length ≠ 1 := by
+      simpa [isDataOutputTaskDefinition, List.countP_eq_length_filter] using noDataOutputTask
+    unfold dataOutputAssociation?
+    split
+    · rename_i entry matching
+      simp [matching] at notUnique
+    · rfl
+  have outputRefused (state : RuntimeState) :=
+    dataOutputUndeclaredTaskRefusesCompletion program state
+      submittedTaskId.processInstanceId ⟨submittedTaskId.elementId.value⟩
+      submittedTaskId.activation submittedValues noOutputAssociation
+  cases inputPresent : (dataInputTaskOperations program).any (fun entry =>
+    decide (entry.1 = ⟨submittedTaskId.elementId.value⟩)) <;>
+    cases outputPresent : (dataOutputTaskOperations program).any (fun entry =>
+      decide (entry.1 = ⟨submittedTaskId.elementId.value⟩)) <;>
   simp [applyStimulus, StimulusResult.ofClosure, admitStimulus, snapshotAbsent, leftNoIncidents,
     rightNoIncidents, leftRunning, rightRunning,
     ordinaryTask.1, ordinaryTask.2, noSequentialMultiInstance, noParallelMultiInstance,
-    noMessageBoundedTask, noDataInputOutputTask, noDataInputTask, noDataOutputTask,
+    noMessageBoundedTask, noDataInputOutputTask, inputPresent, outputPresent,
+    inputRefused, outputRefused,
     ordinaryProgram, valuesAdmitted,
     completeOrdinaryUserTaskWithCompensation?, nonCompensationTarget, leftCompletion,
     rightCompletion] at committed ⊢
@@ -281,7 +303,7 @@ theorem task_identity_mismatch_is_rejected
         completeBoundedUserTask?, completeMonitoredUserTask?, completeDataInputOutputUserTask?,
         isDataInputOutputTaskDefinition, dataInputOutputTaskContract?,
         dataInputOutputTaskContracts, dataInputOutputTaskWait?, completeDataInputUserTask?,
-        completeDataOutputUserTask?, isDataOutputTaskDefinition, dataOutputAssociation?,
+        completeDataOutputUserTask?, dataOutputAssociation?,
         dataOutputTaskOperations, dataOutputTaskWait?, dataInputTaskWait?,
         completeMessageBoundedUserTask?, messageBoundedPairForTask?,
         singletonWaitingState, noSequentialMultiInstance, noParallelMultiInstance, noMatch]
@@ -301,7 +323,7 @@ theorem task_identity_mismatch_is_rejected
           completeBoundedUserTask?, completeMonitoredUserTask?, completeDataInputOutputUserTask?,
           isDataInputOutputTaskDefinition, dataInputOutputTaskContract?,
           dataInputOutputTaskContracts, dataInputOutputTaskWait?, completeDataInputUserTask?,
-          completeDataOutputUserTask?, isDataOutputTaskDefinition, dataOutputAssociation?,
+          completeDataOutputUserTask?, dataOutputAssociation?,
           dataOutputTaskOperations, dataOutputTaskWait?, dataInputTaskWait?,
           completeMessageBoundedUserTask?, messageBoundedPairForTask?,
           singletonWaitingState, noSequentialMultiInstance, noParallelMultiInstance, noMatch]
@@ -319,7 +341,7 @@ theorem task_identity_mismatch_is_rejected
           completeBoundedUserTask?, completeMonitoredUserTask?, completeDataInputOutputUserTask?,
           isDataInputOutputTaskDefinition, dataInputOutputTaskContract?,
           dataInputOutputTaskContracts, dataInputOutputTaskWait?, completeDataInputUserTask?,
-          completeDataOutputUserTask?, isDataOutputTaskDefinition, dataOutputAssociation?,
+          completeDataOutputUserTask?, dataOutputAssociation?,
           dataOutputTaskOperations, dataOutputTaskWait?, dataInputTaskWait?,
           completeMessageBoundedUserTask?, messageBoundedPairForTask?,
           singletonWaitingState, noSequentialMultiInstance, noParallelMultiInstance, noMatch]

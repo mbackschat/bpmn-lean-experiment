@@ -150,6 +150,32 @@ test("a completion that makes the required output unavailable is refused", () =>
   }
 });
 
+test("multiple output declarations reject supplied and omitted output without an ordinary write", () => {
+  const state = started();
+  const entry = dataOutputProgram.operations.find(
+    ({ kind }) => kind === SemanticOperationKind.AwaitDataOutputUserTask,
+  );
+  assert.ok(entry !== undefined);
+
+  for (const declarationCount of [2, 3]) {
+    const program = {
+      ...dataOutputProgram,
+      operations: [
+        ...dataOutputProgram.operations,
+        ...Array.from({ length: declarationCount - 1 }, (_, index) => ({
+          ...entry,
+          id: `${entry.id}:duplicate:${index}`,
+        })),
+      ],
+    };
+    for (const stimulus of [decideApproved, decideWithoutOutput]) {
+      const result = applyStimulus(program, state, stimulus);
+      assert.equal(result.outcome, CommandOutcome.Rejected, `${declarationCount} declarations: ${stimulus.commandId}`);
+      assert.deepEqual(result.state, state);
+    }
+  }
+});
+
 test("a stale completion after disposal preserves the committed state", () => {
   const completed = committed(started(), decideApproved);
 

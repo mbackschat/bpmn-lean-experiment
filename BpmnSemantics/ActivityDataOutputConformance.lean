@@ -250,4 +250,24 @@ theorem wrongActivationPreservesTheActiveState :
         ambiguousInternalChoice := false } := by
   decide +kernel
 
+private def repeatedOutputDeclarations (count : Nat) : Program :=
+  { underwritingProgram with
+    operations := underwritingProgram.operations.flatMap fun operation =>
+      match operation with
+      | .awaitDataOutputUserTask .. => List.replicate count operation
+      | _ => [operation] }
+
+theorem multipleOutputDeclarationsRefuseSuppliedAndOmittedOutput
+    (count : Nat) (duplicated : count = 2 ∨ count = 3)
+    (command : Stimulus)
+    (selected : command = decideApproved ∨ command = complete "decide-without-output" []) :
+    applyStimulus scenarioClosureLimit (repeatedOutputDeclarations count)
+      started.state command =
+      { outcome := .rejected
+        state := started.state
+        internalStepBoundExceeded := false
+        ambiguousInternalChoice := false } := by
+  rcases duplicated with rfl | rfl <;> rcases selected with rfl | rfl <;>
+    decide +kernel
+
 end BpmnSemantics.ActivityDataOutputConformance

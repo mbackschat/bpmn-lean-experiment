@@ -14,6 +14,7 @@ import {
   ProcessStatus,
   RuntimeStateDefect,
   RuntimeStateRegression,
+  SemanticOperationKind,
   VariableValueKind,
   applyStimulus,
   applyStimulusWithTrace,
@@ -178,6 +179,30 @@ test("empty completion disposes the task, its Activity record, and its local sco
   const observation = observeStableState(dataInputProgram, completed);
   assert.equal(observation?.status, ProcessStatus.Completed);
   assert.deepEqual(observation?.openUserTasks, []);
+});
+
+test("multiple input declarations reject completion without falling through to ordinary disposal", () => {
+  const started = committed(initialState, startWithReviewContext);
+  const entry = dataInputProgram.operations.find(
+    ({ kind }) => kind === SemanticOperationKind.AwaitDataInputUserTask,
+  );
+  assert.ok(entry !== undefined);
+
+  for (const declarationCount of [2, 3]) {
+    const program = {
+      ...dataInputProgram,
+      operations: [
+        ...dataInputProgram.operations,
+        ...Array.from({ length: declarationCount - 1 }, (_, index) => ({
+          ...entry,
+          id: `${entry.id}:duplicate:${index}`,
+        })),
+      ],
+    };
+    const result = applyStimulus(program, started, completeReview);
+    assert.equal(result.outcome, CommandOutcome.Rejected, `${declarationCount} declarations`);
+    assert.deepEqual(result.state, started);
+  }
 });
 
 test("a stale completion and a non-empty submission both preserve the committed state", () => {
