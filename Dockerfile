@@ -53,4 +53,5 @@ CMD ["node", "dist/main.js"]
 FROM runtime-base AS bpmn-worker
 WORKDIR /app/bpmn-worker
 COPY --from=packager --chown=node:node /out/bpmn-worker/ ./
-CMD ["node", "dist/evaluation-worker-main.js"]
+ENTRYPOINT ["node", "dist/evaluation-worker-main.js"]
+CMD []

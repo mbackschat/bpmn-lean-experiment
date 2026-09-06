@@ -181,14 +181,13 @@ brew install temporal
 temporal server start-dev --headless
 ```
 
-Run a maintained model in another:
+Install the workspace dependencies in another terminal:
 
 ```sh
 ./scripts/pnpm.sh install --frozen-lockfile
-./scripts/pnpm.sh run mvp:run -- examples/temporal-mvp/user-task-discovery-completion.json
 ```
 
-The examples expect `localhost:7233`, Namespace `default`, and a fresh semantic Process-instance ID. The [runner specification](docs/RUNNABLE-TEMPORAL-MVP-SPEC.md) owns inputs, outputs, exit codes, and supported interaction shapes.
+Follow the [engine quick start](packages/temporal-adapter/README.md#quick-start) to initialize a fresh Namespace and run a copied example configuration. The pre-created `default` Namespace is deliberately refused by fresh initialization. Existing unversioned environments retain their original Workers and data; this is not a migration path. The [runner specification](docs/RUNNABLE-TEMPORAL-MVP-SPEC.md) owns inputs, outputs, exit codes, and supported interaction shapes.
 
 ### Use the BPM platform in a browser
 
@@ -200,19 +199,24 @@ For a demo machine, use the zero-build `mue-preview-alpha-demo-<commit>` artifac
 
 Open the printed `LIVE_DEMO_READY` origin. The [browser walkthrough](docs/BPM-PLATFORM-BROWSER-WALKTHROUGH.md#zero-build-demo-machine) is the single owner for bundle acquisition, offline restart, the seven-minute presentation, examples, fallback visuals, and exact non-claims.
 
-Contributors working from source can instead start the complete evaluation distribution with:
+Contributors working from source can initialize a separate evaluation project once:
 
 ```sh
+export COMPOSE_PROJECT_NAME=bpmn-lean-evaluation-native
+export BPMN_EVALUATION_NAMESPACE=bpmn-evaluation
+docker compose build
+docker compose up --no-build --wait temporal
+docker compose run --rm --no-deps bpmn-worker initialize-fresh-namespace --retention-seconds 86400
 ./scripts/pnpm.sh run evaluation:start
 ```
 
-Open [http://localhost:3000](http://localhost:3000). This source path may build locally; PostgreSQL and Temporal state survive ordinary stops in named Docker volumes.
+Open [http://localhost:3000](http://localhost:3000). Keep those same two environment values for every lifecycle command. This source path may build locally; PostgreSQL and Temporal state survive ordinary stops in named Docker volumes. Restart with `evaluation:start` after initialization, without repeating the initializer.
 
 ```sh
 ./scripts/pnpm.sh run evaluation:stop
 ```
 
-Use `./scripts/pnpm.sh run evaluation:reset` only when you deliberately want to remove both evaluation volumes. This distribution is an evaluation path, not a production Temporal deployment or a capacity claim.
+Use `./scripts/pnpm.sh run evaluation:reset` only when you deliberately want to remove both selected evaluation volumes, then repeat fresh initialization before starting. The new project name keeps earlier unversioned evaluation volumes separate. This distribution is an evaluation path, not a production Temporal deployment or a capacity claim.
 
 ### Prepare a contributor environment
 

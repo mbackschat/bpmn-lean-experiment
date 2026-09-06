@@ -44,7 +44,7 @@ Download and unpack that artifact on a compatible Docker host. No repository che
 ./deploy/evaluation/demo status
 ```
 
-`prepare` pulls only the exact recorded digests, verifies every project image's source labels, removes only the bundle's demo volumes, and starts Compose with `--no-build`. The publishing workflow logs out of GHCR and executes this same command before offering the artifact, which proves anonymous pull and exact published-image startup rather than merely proving a separately built local image.
+`prepare` pulls only the exact recorded digests, verifies every project image's source labels, removes only the bundle's demo volumes, initializes its fresh `bpmn-evaluation` Namespace with one-day retention, and starts Compose with `--no-build`. The default project is `bpmn-lean-mue-preview-alpha-native`, separate from earlier unversioned demo volumes. The publishing workflow logs out of GHCR and executes this same command before offering the artifact, proving anonymous pull and exact published-image startup.
 
 After preparation, show-time restart performs no build, registry request, or pull:
 
@@ -64,7 +64,7 @@ Contributors may instead prepare the exact checked-out source before the audienc
 ./scripts/pnpm.sh run demo:status
 ```
 
-This source path is deliberately an online authoring boundary. It requires a clean committed worktree, rebuilds the four project images from that exact source, labels them with the full commit and a SHA-256 over the complete tracked source tree, and may contact Docker Hub and the pnpm registry when local caches are incomplete or need metadata. It is not the zero-build demo-machine path.
+This source path is deliberately an online authoring boundary. It requires a clean committed worktree, rebuilds the four project images from that exact source, labels them with the full commit and a SHA-256 over the complete tracked source tree, and may contact Docker Hub and the pnpm registry when local caches are incomplete or need metadata. It initializes a fresh `bpmn-evaluation` Namespace with one-day retention in project `bpmn-lean-live-demo-native`, preserving earlier unversioned demo projects.
 
 After a successful preparation, show-time execution needs no image build or pull. If Docker or the demo project was stopped, restart from the matching local images and preserved demo volumes with:
 
@@ -99,19 +99,28 @@ If the headline browser cannot start, continue from the retained [capability bou
 
 The published-bundle path requires Docker with Compose `2.24.4` or later and a browser only; that minimum is the first release supporting the `!reset` override that mechanically removes every build declaration. The source-checkout path additionally requires the frozen workspace dependencies. Neither path needs Lean, Java, the CIB Seven checkout, or host PostgreSQL or Temporal installations; only the author-side headed rehearsal needs Playwright. The ordinary evaluation commands below are contributor-oriented and may build or pull.
 
-Start the complete evaluation distribution:
+Initialize a separate source evaluation project once:
 
 ```sh
 ./scripts/pnpm.sh install --frozen-lockfile
+export COMPOSE_PROJECT_NAME=bpmn-lean-evaluation-native
+export BPMN_EVALUATION_NAMESPACE=bpmn-evaluation
+docker compose build
+docker compose up --no-build --wait temporal
+docker compose run --rm --no-deps bpmn-worker initialize-fresh-namespace --retention-seconds 86400
 ./scripts/pnpm.sh run evaluation:start
 ```
 
 Open [http://localhost:3000](http://localhost:3000). The shell should show Work, Definitions, Operations, and About, plus `Signed in as demo-user`.
 
-PostgreSQL and Temporal state survive an ordinary stop. If you previously used this distribution and want the exact version numbers and empty collections described below, deliberately remove that retained evaluation state before starting:
+Keep those two environment values for every lifecycle command. PostgreSQL and Temporal state survive an ordinary stop; restart with `evaluation:start` alone. Readiness requires native Current and complete Workflow/Activity queue registration. Fresh initialization refuses an existing Namespace and is never a restart or migration operation.
+
+To deliberately clear this selected evaluation project for the exact version numbers and empty collections described below, reset and initialize it again:
 
 ```sh
 ./scripts/pnpm.sh run evaluation:reset
+docker compose up --no-build --wait temporal
+docker compose run --rm --no-deps bpmn-worker initialize-fresh-namespace --retention-seconds 86400
 ./scripts/pnpm.sh run evaluation:start
 ```
 

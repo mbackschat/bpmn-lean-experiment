@@ -37,6 +37,7 @@ test("refreshes through an isolated Compose project and always removes its volum
     run: async (command, args, environment) => {
       assert.equal(environment.BPMN_EVALUATION_ORIGIN, "http://127.0.0.1:38421");
       assert.equal(environment.BPMN_EVALUATION_PORT, "38421");
+      assert.equal(environment.BPMN_EVALUATION_NAMESPACE, "bpmn-evaluation");
       assert.equal(environment.BPMN_EVALUATION_PROJECTION_MAX_AGE_MS, "30000");
       assert.equal(environment.BPMN_EVALUATION_PROJECTION_REFRESH_AFTER_MS, "5000");
       assert.equal(environment.BPMN_REFRESH_WALKTHROUGH_SCREENSHOTS, "true");
@@ -46,6 +47,9 @@ test("refreshes through an isolated Compose project and always removes its volum
   }), failure);
 
   assert.deepEqual(commands, [
+    { command: "docker", args: ["compose", "--project-name", "bpmn-lean-walkthrough-912", "build"] },
+    { command: "docker", args: ["compose", "--project-name", "bpmn-lean-walkthrough-912", "up", "--no-build", "--wait", "temporal"] },
+    { command: "docker", args: ["compose", "--project-name", "bpmn-lean-walkthrough-912", "run", "--rm", "--no-deps", "bpmn-worker", "initialize-fresh-namespace", "--retention-seconds", "86400"] },
     {
       command: "docker",
       args: [
@@ -53,7 +57,7 @@ test("refreshes through an isolated Compose project and always removes its volum
         "--project-name",
         "bpmn-lean-walkthrough-912",
         "up",
-        "--build",
+        "--no-build",
         "--wait",
       ],
     },

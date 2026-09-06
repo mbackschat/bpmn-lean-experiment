@@ -9,7 +9,9 @@ Review: approved
 
 The first implementation checkpoint contains immutable native Worker registration, explicit fresh-Namespace initialization, creation-readiness checks, Process and ingress pin inheritance, retained paired-publication/recovery Query isolation, and the Query-only replay discriminator. The complete Temporal package gate covers those live witnesses and the maintained product-start fixtures; the client gate separately covers every creation entry point. [The evidence map](TEMPORAL-TEST-EVIDENCE-MAP.md) identifies the deciding tests.
 
-Downstream witnesses now preserve one A ingress across A/B Process populations, same-B-target response-loss recovery, and exact A-created Schedule dispatch under B. Complete verification passed at `ea5ca057` before those witness additions. Evaluation initialization/readiness composition, the final complete verifier, and reflection/cost remain downstream obligations. Existing unversioned environments remain unchanged. The receipt below owns review decisions; this checkpoint makes no closure claim.
+Downstream witnesses now preserve one A ingress across A/B Process populations, same-B-target response-loss recovery, and exact A-created Schedule dispatch under B. Evaluation initialization/readiness composition passes its command, launcher, and Compose-configuration guards. Complete verification passed at `ea5ca057` before those additions. Current Docker smoke validation, the final complete verifier, and reflection/cost remain downstream obligations. Existing unversioned environments remain unchanged. The receipt below owns review decisions; this checkpoint makes no closure claim.
+
+The 2026-09-06 Docker smoke attempt stopped before project compilation because Corepack could not fetch the exact pinned pnpm archive. Independent host and container download checks also failed. This is an infrastructure evidence gap; the earlier real-service native routing witnesses and current launcher guards do not establish a successful current container build or startup.
 
 ## Problem and bounded outcome
 

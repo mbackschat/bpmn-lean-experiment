@@ -15,7 +15,7 @@ import { allocatePlaywrightLoopbackPort } from "./playwright-loopback-ports.ts";
 
 const repositoryRoot = fileURLToPath(new URL("../", import.meta.url));
 const sessionPath = resolve(repositoryRoot, ".cache/live-demo/session.json");
-const liveDemoProjectName = "bpmn-lean-live-demo";
+const liveDemoProjectName = "bpmn-lean-live-demo-native";
 const sourceRevisionLabel = "org.opencontainers.image.revision";
 const sourceTreeSha256Label = "io.bpmn-lean.evaluation.source-tree-sha256";
 const demoApplicationImages = Object.freeze([
@@ -100,7 +100,12 @@ export async function prepareLiveDemo(
   return startAndPublishLiveDemo({
     session,
     environment,
-    upArgs: [...composePrefix, "up", "--build", "--wait"],
+    beforeStart: async () => {
+      await run({ command: "docker", args: [...composePrefix, "build"], environment });
+      await run({ command: "docker", args: [...composePrefix, "up", "--no-build", "--wait", "temporal"], environment });
+      await run({ command: "docker", args: [...composePrefix, "run", "--rm", "--no-deps", "bpmn-worker", "initialize-fresh-namespace", "--retention-seconds", "86400"], environment });
+    },
+    upArgs: [...composePrefix, "up", "--no-build", "--wait"],
     cleanupArgs: [...composePrefix, "down", "--volumes", "--remove-orphans"],
     cleanupFailureMessage: "Live-demo preparation and cleanup both failed",
     mode: "prepared-online",
@@ -160,6 +165,7 @@ export async function startLiveDemo(
 }
 
 type StartAndPublishLiveDemoOptions = Readonly<{
+  beforeStart?: () => Promise<void>;
   afterStart?: () => Promise<void>;
   cleanupArgs: readonly string[];
   cleanupFailureMessage: string;
@@ -177,6 +183,7 @@ async function startAndPublishLiveDemo(
 ): Promise<LiveDemoSession> {
   let primaryFailure: unknown;
   try {
+    await input.beforeStart?.();
     await input.run({
       command: "docker",
       args: input.upArgs,
@@ -260,6 +267,7 @@ function liveDemoEnvironment(session: LiveDemoSession): NodeJS.ProcessEnv {
     ...process.env,
     BPMN_EVALUATION_ORIGIN: session.origin,
     BPMN_EVALUATION_PORT: String(session.port),
+    BPMN_EVALUATION_NAMESPACE: "bpmn-evaluation",
     BPMN_EVALUATION_PROJECTION_MAX_AGE_MS: "30000",
     BPMN_EVALUATION_PROJECTION_REFRESH_AFTER_MS: "5000",
     BPMN_EVALUATION_SOURCE_REVISION: session.sourceRevision,

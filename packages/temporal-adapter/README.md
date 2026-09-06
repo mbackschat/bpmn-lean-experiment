@@ -28,7 +28,7 @@ The Compensation semantic checkpoint extends strict Workflow continuation decodi
 
 The containerized evaluation distribution uses the `bpmn-evaluation-worker` entry point. It connects to the caller-selected Temporal address, Namespace, and Task Queue from `BPMN_TEMPORAL_ADDRESS`, `BPMN_TEMPORAL_NAMESPACE`, and `BPMN_TEMPORAL_TASK_QUEUE`; uses `BPMN_WORKER_IDENTITY` as the fleet instance component of an exact bundle-bound poller identity; and exposes internal `/healthz` liveness and `/readyz` native enrollment readiness on `BPMN_WORKER_HEALTH_PORT`. All five values are required. Readiness requires a live poller and the selected fleet's exact Current/no-ramp/queue-registration contract; it never promotes this Worker.
 
-The explicit `bpmn-evaluation-worker initialize-fresh-namespace --retention-seconds 86400` command creates the configured Namespace, registers the bundle, establishes its first Current, shuts down, and exits. An existing Namespace is refused without fallback or conversion. Run initialization only for fresh setup; ordinary startup and restart connect without selecting Current. Compose and demo initialization integration remains closure work under the [deployment repair](../../docs/TEMPORAL-WORKER-DEPLOYMENT-REPAIR-PROPOSAL.md).
+The explicit `bpmn-evaluation-worker initialize-fresh-namespace --retention-seconds 86400` command creates the configured Namespace, registers the bundle, establishes its first Current, shuts down, and exits. An existing Namespace is refused without fallback or conversion. Run initialization only for fresh setup; ordinary startup and restart connect without selecting Current. The [evaluation setup](../../README.md#use-the-bpm-platform-in-a-browser) and demo preparation invoke this command before starting the full Compose stack.
 
 For the evaluation incident journey only, that entry point supplies a process-local host simulation which reports one technical failure for the first Activity invocation of each exact effect idempotency key and succeeds with an empty local patch on later invocations. This exercises the existing retry and incident mechanism. It defines neither BPMN meaning nor a production integration contract, and it does not change the configured host-effect implementation used by the maintained engine example.
 
@@ -40,13 +40,27 @@ Start a local Temporal service in one terminal:
 temporal server start-dev --headless
 ```
 
-Run the maintained engine example in another:
+Build the runtime packages in another terminal:
 
 ```sh
-./scripts/pnpm.sh run mvp:run -- examples/temporal-mvp/user-task-discovery-completion.json
+./scripts/pnpm.sh run build:temporal-adapter
 ```
 
-The example expects `localhost:7233` and a fresh semantic Process-instance ID. Copy the configuration before changing its explicit address, Namespace, Task Queue, or instance identity.
+Copy [the maintained example](../../examples/temporal-mvp/user-task-discovery-completion.json) to `/tmp/bpmn-mvp.json`. In that copy, set `temporal.namespace` to the unused name `bpmn-mvp-fresh` and make `bpmn.file` the absolute path to [its BPMN model](../../scenarios/user-task-discovery-completion/process.bpmn). Preserve the other fields. The example selects `localhost:7233` and Task Queue `bpmn-mvp`.
+
+Initialize that fresh Namespace once, with the same queue and executable bundle:
+
+```sh
+BPMN_TEMPORAL_ADDRESS=localhost:7233 \
+BPMN_TEMPORAL_NAMESPACE=bpmn-mvp-fresh \
+BPMN_TEMPORAL_TASK_QUEUE=bpmn-mvp \
+BPMN_WORKER_IDENTITY=bpmn-mvp-initializer \
+BPMN_WORKER_HEALTH_PORT=8081 \
+node packages/temporal-adapter/runner/dist/evaluation-worker-main.js initialize-fresh-namespace --retention-seconds 86400
+./scripts/pnpm.sh run mvp:run -- /tmp/bpmn-mvp.json
+```
+
+An existing Namespace, including the development server's pre-created `default`, is refused. For later runs in this enrolled Namespace, retain its original Worker bundle, choose a fresh semantic Process-instance ID in the copied configuration, and run only `mvp:run`. Preserve existing unversioned environments with their original Workers; initialization performs no conversion.
 
 Run the focused adapter gate with:
 

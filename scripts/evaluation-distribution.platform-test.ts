@@ -122,6 +122,26 @@ test("runtime images contain only deployed production closures", async () => {
   }
 });
 
+test("evaluation readiness and fresh setup share one explicitly selected Namespace", async () => {
+  const [compose, dockerfile, launcher, workflow] = await Promise.all([
+    readFile(composePath, "utf8"), readFile(dockerfilePath, "utf8"),
+    readFile(publishedLauncherPath, "utf8"), readFile(workflowPath, "utf8"),
+  ]);
+  for (const service of ["bpmn-worker", "platform-api", "platform-recovery-worker"]) {
+    assert.match(serviceBlock(compose, service), /(?:BPMN|PLATFORM)_TEMPORAL_NAMESPACE: \$\{BPMN_EVALUATION_NAMESPACE:-default\}/u);
+  }
+  assert.match(serviceBlock(compose, "bpmn-worker"), /8080\/readyz/u);
+  assert.match(runtimeStage(dockerfile, "bpmn-worker"), /ENTRYPOINT \["node", "dist\/evaluation-worker-main\.js"\]\nCMD \[\]/u);
+  assert.match(launcher, /bpmn-lean-mue-preview-alpha-native/u);
+  assert.match(launcher, /export BPMN_EVALUATION_NAMESPACE/u);
+  const prepare = launcher.slice(launcher.indexOf("  prepare)"), launcher.indexOf("  start)"));
+  const start = launcher.slice(launcher.indexOf("  start)"), launcher.indexOf("  status)"));
+  assert.match(prepare, /compose up --no-build --pull never --wait temporal\n\s+compose run --rm --no-deps --pull never bpmn-worker initialize-fresh-namespace --retention-seconds 86400\n\s+compose up --no-build --pull never --wait/u);
+  assert.doesNotMatch(start, /initialize-fresh-namespace/u);
+  assert.match(workflow, /BPMN_EVALUATION_NAMESPACE: bpmn-evaluation/u);
+  assert.match(workflow, /docker compose run --rm --no-deps bpmn-worker initialize-fresh-namespace --retention-seconds 86400/u);
+});
+
 test("project images carry fail-closed demo source provenance", async () => {
   const [compose, dockerfile] = await Promise.all([
     readFile(composePath, "utf8"),

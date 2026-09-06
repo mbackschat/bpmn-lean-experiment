@@ -32,6 +32,7 @@ export async function refreshBrowserWalkthroughScreenshots(
     ...process.env,
     BPMN_EVALUATION_ORIGIN: `http://127.0.0.1:${port}`,
     BPMN_EVALUATION_PORT: String(port),
+    BPMN_EVALUATION_NAMESPACE: "bpmn-evaluation",
     BPMN_EVALUATION_PROJECTION_MAX_AGE_MS: "30000",
     BPMN_EVALUATION_PROJECTION_REFRESH_AFTER_MS: "5000",
     BPMN_REFRESH_WALKTHROUGH_SCREENSHOTS: "true",
@@ -40,7 +41,10 @@ export async function refreshBrowserWalkthroughScreenshots(
 
   let primaryFailure: unknown;
   try {
-    await run("docker", [...composePrefix, "up", "--build", "--wait"], environment);
+    await run("docker", [...composePrefix, "build"], environment);
+    await run("docker", [...composePrefix, "up", "--no-build", "--wait", "temporal"], environment);
+    await run("docker", [...composePrefix, "run", "--rm", "--no-deps", "bpmn-worker", "initialize-fresh-namespace", "--retention-seconds", "86400"], environment);
+    await run("docker", [...composePrefix, "up", "--no-build", "--wait"], environment);
     await run("./scripts/pnpm.sh", [
       "--filter",
       "@bpmn-lean/showcase-platform-browser-walkthrough",

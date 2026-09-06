@@ -30,12 +30,18 @@ jobs:
     name: Build and smoke-test evaluation distribution
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    env:
+      BPMN_EVALUATION_NAMESPACE: bpmn-evaluation
     steps:
       - name: Check out source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Build and start the evaluation distribution
-        run: docker compose up --build --wait
+        run: |
+          docker compose build
+          docker compose up --no-build --wait temporal
+          docker compose run --rm --no-deps bpmn-worker initialize-fresh-namespace --retention-seconds 86400
+          docker compose up --no-build --wait
 
       - name: Verify the public application origin
         run: |
@@ -190,7 +196,7 @@ jobs:
         if: failure() && (github.event_name == 'push' || inputs.publish_images == true)
         run: |
           .artifacts/mue-preview-alpha-demo/deploy/evaluation/demo status
-          docker compose --project-name bpmn-lean-mue-preview-alpha --env-file .artifacts/mue-preview-alpha-demo/deploy/evaluation/published-images.env -f .artifacts/mue-preview-alpha-demo/compose.yaml -f .artifacts/mue-preview-alpha-demo/deploy/evaluation/published-images.compose.yaml logs --no-color
+          docker compose --project-name bpmn-lean-mue-preview-alpha-native --env-file .artifacts/mue-preview-alpha-demo/deploy/evaluation/published-images.env -f .artifacts/mue-preview-alpha-demo/compose.yaml -f .artifacts/mue-preview-alpha-demo/deploy/evaluation/published-images.compose.yaml logs --no-color
 
       - name: Stop the published evaluation distribution
         if: always() && (github.event_name == 'push' || inputs.publish_images == true)

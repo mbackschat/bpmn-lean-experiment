@@ -24,7 +24,7 @@ const session: LiveDemoSession = Object.freeze({
   kind: "bpmnLeanLiveDemoSession",
   origin: "http://127.0.0.1:38121",
   port: 38121,
-  projectName: "bpmn-lean-live-demo",
+  projectName: "bpmn-lean-live-demo-native",
   sourceRevision: buildIdentity.revision,
   sourceTreeSha256: buildIdentity.sourceTreeSha256,
 });
@@ -80,12 +80,25 @@ test("prepares one fresh isolated evaluation stack and reports exact public demo
     },
     {
       command: "docker",
-      args: ["compose", "--project-name", session.projectName, "up", "--build", "--wait"],
+      args: ["compose", "--project-name", session.projectName, "build"],
+    },
+    {
+      command: "docker",
+      args: ["compose", "--project-name", session.projectName, "up", "--no-build", "--wait", "temporal"],
+    },
+    {
+      command: "docker",
+      args: ["compose", "--project-name", session.projectName, "run", "--rm", "--no-deps", "bpmn-worker", "initialize-fresh-namespace", "--retention-seconds", "86400"],
+    },
+    {
+      command: "docker",
+      args: ["compose", "--project-name", session.projectName, "up", "--no-build", "--wait"],
     },
   ]);
   for (const invocation of commands) {
     assert.equal(invocation.environment.BPMN_EVALUATION_ORIGIN, session.origin);
     assert.equal(invocation.environment.BPMN_EVALUATION_PORT, String(session.port));
+    assert.equal(invocation.environment.BPMN_EVALUATION_NAMESPACE, "bpmn-evaluation");
     assert.equal(invocation.environment.BPMN_EVALUATION_SOURCE_REVISION, buildIdentity.revision);
     assert.equal(invocation.environment.BPMN_EVALUATION_SOURCE_TREE_SHA256, buildIdentity.sourceTreeSha256);
   }
@@ -111,7 +124,7 @@ test("removes a partial isolated stack when public readiness fails", async () =>
     writeLine: () => {},
   }), failure);
 
-  assert.equal(commands.length, 4);
+  assert.equal(commands.length, 7);
   assert.deepEqual(commands.at(-1)?.args, [
     "compose",
     "--project-name",
@@ -159,6 +172,28 @@ test("starts only commit-bound cached images without build or pull", async () =>
     },
   ]);
   assert.equal(output.some((line) => line.includes("mode=started-offline")), true);
+  assert.ok(commands.every(({ args, environment }) =>
+    !args.includes("initialize-fresh-namespace") && environment.BPMN_EVALUATION_NAMESPACE === "bpmn-evaluation"));
+});
+
+test("failed fresh enrollment prevents serving or publishing a demo session", async () => {
+  const commands: LiveDemoCommandInvocation[] = [];
+  const failure = new Error("NamespaceAlreadyExists");
+  await assert.rejects(prepareLiveDemo({
+    allocatePort: async () => session.port,
+    resolveBuildIdentity: async () => buildIdentity,
+    readImageProvenance: matchingImageProvenance,
+    verifyFixtures: async () => {},
+    run: async (invocation) => {
+      commands.push(invocation);
+      if (invocation.args.includes("initialize-fresh-namespace")) throw failure;
+    },
+    probe: async () => assert.fail("failed enrollment must not reach the API"),
+    writeSession: async () => assert.fail("failed enrollment must not publish a session"),
+    writeLine: () => {},
+  }), failure);
+  assert.equal(commands.filter(({ args }) => args.includes("up")).length, 1);
+  assert.ok(commands.at(-1)?.args.includes("down"));
 });
 
 test("refuses a stale cached image before changing the Compose project", async () => {

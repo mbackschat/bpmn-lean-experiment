@@ -61,7 +61,7 @@ services:
       target: bpmn-worker
     environment:
       BPMN_TEMPORAL_ADDRESS: temporal:7233
-      BPMN_TEMPORAL_NAMESPACE: default
+      BPMN_TEMPORAL_NAMESPACE: ${BPMN_EVALUATION_NAMESPACE:-default}
       BPMN_TEMPORAL_TASK_QUEUE: bpmn-semantic
       BPMN_WORKER_HEALTH_PORT: "8080"
       BPMN_WORKER_IDENTITY: evaluation-bpmn-worker
@@ -69,7 +69,7 @@ services:
       temporal:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8080/healthz').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8080/readyz').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
       interval: 2s
       timeout: 3s
       retries: 30
@@ -89,7 +89,7 @@ services:
       PLATFORM_PUBLIC_ORIGIN: ${BPMN_EVALUATION_ORIGIN:-http://localhost:3000}
       PLATFORM_STORAGE_MODE: shared
       PLATFORM_TEMPORAL_ADDRESS: temporal:7233
-      PLATFORM_TEMPORAL_NAMESPACE: default
+      PLATFORM_TEMPORAL_NAMESPACE: ${BPMN_EVALUATION_NAMESPACE:-default}
       PLATFORM_TEMPORAL_TASK_QUEUE: bpmn-semantic
       PLATFORM_WEB_ASSET_DIRECTORY: /app/platform-web
     depends_on:
@@ -121,7 +121,7 @@ services:
       PLATFORM_PROJECTION_REFRESH_AFTER_MS: ${BPMN_EVALUATION_PROJECTION_REFRESH_AFTER_MS:-5000}
       PLATFORM_RECOVERY_WORKER_ID: evaluation-recovery-worker
       PLATFORM_TEMPORAL_ADDRESS: temporal:7233
-      PLATFORM_TEMPORAL_NAMESPACE: default
+      PLATFORM_TEMPORAL_NAMESPACE: ${BPMN_EVALUATION_NAMESPACE:-default}
       PLATFORM_TEMPORAL_TASK_QUEUE: bpmn-semantic
     depends_on:
       platform-migrate:

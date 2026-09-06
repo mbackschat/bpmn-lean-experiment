@@ -4,7 +4,9 @@ set -eu
 script_directory=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 bundle_root=$(CDPATH= cd -- "$script_directory/../.." && pwd)
 environment_file=${BPMN_EVALUATION_BUNDLE_ENV:-"$script_directory/published-images.env"}
-project_name=${BPMN_EVALUATION_PROJECT_NAME:-bpmn-lean-mue-preview-alpha}
+project_name=${BPMN_EVALUATION_PROJECT_NAME:-bpmn-lean-mue-preview-alpha-native}
+BPMN_EVALUATION_NAMESPACE=${BPMN_EVALUATION_NAMESPACE:-bpmn-evaluation}
+export BPMN_EVALUATION_NAMESPACE
 
 if [ ! -f "$environment_file" ]; then
   printf 'Published demo environment is missing: %s\n' "$environment_file" >&2
@@ -107,6 +109,8 @@ case "$command" in
     compose down --volumes --remove-orphans
     compose pull
     verify_project_images
+    compose up --no-build --pull never --wait temporal
+    compose run --rm --no-deps --pull never bpmn-worker initialize-fresh-namespace --retention-seconds 86400
     compose up --no-build --pull never --wait
     report_ready
     ;;
