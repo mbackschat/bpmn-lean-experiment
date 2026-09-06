@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import { setTimeout as delay } from "node:timers/promises";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
@@ -58,6 +57,7 @@ import { createCachedLocalEnvironment, readTestProcessTerminalResult } from "@bp
 
 import { compileExecutionInput, loadJson, temporalCacheDirectory, withDeadline } from "./temporal-test-support.ts";
 import { replayBpmnHistory, waitForOpenUserTaskIds } from "./temporal-worker-test-support.ts";
+import { eventually, requirePinned, selectCurrent } from "./native-worker-deployment-live-test-support.ts";
 
 const { VersioningBehavior, RoutingConfigUpdateState } = proto.temporal.api.enums.v1;
 const namespace = "native-pinning-fresh";
@@ -127,7 +127,7 @@ test("native pinning preserves retained A Queries while a replay-compatible Quer
     }, { executeBpmnEffect: async () => ({ kind: "technicalFailure" }) }, candidateBundle);
     await eventually(() => requireWorkerDeploymentRegistration(client, taskQueue, candidateVersion));
     assert.deepEqual(await requireWorkerDeploymentEnrollment(client, taskQueue), version, "candidate registration must not promote itself");
-    await selectCurrent(client, candidateVersion, version);
+    await selectCurrent(client, taskQueue, candidateVersion, version);
 
     const runningCompletion = cycleCompletion(scenario, 1, start.instanceId);
     await completeTask(client, runningCompletion);
@@ -258,7 +258,7 @@ test("native ingress continuation preserves its A pin and pending registration a
     }, { executeBpmnEffect: async () => ({ kind: "technicalFailure" }) }, candidateBundle);
     await eventually(() => requireWorkerDeploymentRegistration(client, taskQueue, candidateVersion));
     assert.deepEqual(await requireWorkerDeploymentEnrollment(client, taskQueue), version);
-    await selectCurrent(client, candidateVersion, version);
+    await selectCurrent(client, taskQueue, candidateVersion, version);
     const prepared = await client.connection.withDeadline(Date.now() + 5_000, () => handle.executeUpdate<CorrelationCandidateRegistrationResult, [CorrelationCandidateRegistrationRequest]>(
       bpmnPrepareCorrelationCandidateUpdateName,
       { args: [registration], updateId: prepareCorrelationCandidateRegistrationUpdateId(registration) },
@@ -377,30 +377,6 @@ test("candidate registration preserves legacy unversioned history and its pendin
   }
 });
 
-async function requirePinned(handle: WorkflowHandle, version: { deploymentName: string; buildId: string }): Promise<void> {
-  const described = await handle.describe();
-  const pinned = described.raw.workflowExecutionInfo?.versioningInfo;
-  assert.equal(pinned?.behavior, VersioningBehavior.VERSIONING_BEHAVIOR_PINNED);
-  assert.deepEqual(pinned?.deploymentVersion && {
-    deploymentName: pinned.deploymentVersion.deploymentName, buildId: pinned.deploymentVersion.buildId,
-  }, version);
-  assert.equal(pinned?.versioningOverride ?? null, null);
-  assert.equal(pinned?.versionTransition ?? null, null);
-}
-
-async function selectCurrent(client: WorkflowClient, version: { deploymentName: string; buildId: string }, previous: { deploymentName: string; buildId: string }): Promise<void> {
-  const described = await client.connection.withDeadline(Date.now() + 5_000, () => client.workflowService.describeWorkerDeployment({
-    namespace, deploymentName: bpmnWorkerDeploymentName,
-  }));
-  const current = described.workerDeploymentInfo?.routingConfig?.currentDeploymentVersion;
-  assert.deepEqual(current && { deploymentName: current.deploymentName, buildId: current.buildId }, previous);
-  await client.connection.withDeadline(Date.now() + 5_000, () => client.workflowService.setWorkerDeploymentCurrentVersion({
-    namespace, deploymentName: version.deploymentName, buildId: version.buildId,
-    conflictToken: described.conflictToken, identity: "native-pinning-promoter",
-  }));
-  await eventually(async () => assert.deepEqual(await requireWorkerDeploymentEnrollment(client, taskQueue), version));
-}
-
 async function startCycle(client: WorkflowClient, scenario: Scenario, program: SemanticProcessProgram, instanceId: string, forceContinuation = false) {
   const original = scenario.stimuli[0];
   assert.ok(original?.kind === StimulusKind.StartProcess);
@@ -460,14 +436,4 @@ async function queryPublication(client: WorkflowClient, handle: WorkflowHandle, 
 
 function hasCandidateProjection(publication: ExecutionPublicationResult): boolean {
   return publication.kind === ExecutionPublicationResultKind.Available && publication.page.current?.state.variables.some(({ name }) => name === "zzNativeQueryProjection") === true;
-}
-
-async function eventually(operation: () => Promise<void>): Promise<void> {
-  const deadline = Date.now() + 10_000;
-  let failure: unknown;
-  do {
-    try { await operation(); return; } catch (error: unknown) { failure = error; }
-    await delay(50);
-  } while (Date.now() < deadline);
-  throw failure;
 }
