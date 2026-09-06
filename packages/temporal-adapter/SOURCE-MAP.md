@@ -20,6 +20,8 @@ The [command-deadline witness](testkit/test/workflow-command-deadline.test.ts) b
 
 The [live fence-recovery witnesses](testkit/test/workflow-command-fence-recovery.test.ts) use [controlled probe Workflows](testkit/test/workflow-command-fence-probe.ts) with the production Update validator and recovery ledger. They bind the real SDK rollover/terminal refusal types to same-command successor recovery or validated `processClosed`, zero handler acceptance before release, exact retained-entry counts, and replay of every probe Run. The controlled boundary proves transport composition without claiming a production BPMN schedule.
 
+The [undelivered-Update witnesses](testkit/test/workflow-command-undelivered.test.ts) hold a Service-delivered Workflow Task before the Update reaches `ADMITTED`, then close that Task without delivering it. Completion exposes the existing SDK `WorkflowNotFoundError`; Continue-As-New carries the same Update to one successor commit. The production client recovers identical command content, first-Run audit stays empty, terminal work has no retained entry, and every controlled history replays under the probe bundle.
+
 | Package | Responsibility | Temporal SDK ownership |
 |---|---|---|
 | [`protocol/`](protocol/) | Project-owned hosting contracts, identities, admission, transport, and lifecycle results | None |

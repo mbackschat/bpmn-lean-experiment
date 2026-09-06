@@ -24,11 +24,12 @@ export type FenceProbeInput = Readonly<{
   stimulus: ExternallyRetryableStimulus;
   receipt: TerminalProcessReceipt;
   successor?: boolean;
+  closeWithoutDelivery?: boolean;
 }>;
 
 /** Uses the production validator and recovery ledger while the test controls the Run boundary. */
 export async function commandFenceProbe(input: FenceProbeInput): Promise<WorkflowTerminalResultV1> {
-  let released = false;
+  let released = input.closeWithoutDelivery === true && input.successor !== true;
   let commits = 0;
   const runtime: WorkflowChainRuntime = {
     eventHistoryEventLimit: workflowChainProductionLimit(WorkflowChainBudgetKind.EventHistoryEvents),
