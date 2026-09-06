@@ -1,0 +1,13 @@
+# BPMN 2.0.2 Activity data-input/output User Task draft profile
+
+This standards profile selects one ordinary User Task that copies one required scalar input from a Process Property before activation and routes one required scalar output into a distinct Process Property on accepted completion. Both associations belong to one Activity occurrence with one input-bearing local scope.
+
+The [profile artifact](profile.json) cites BPMN 2.0.2 Clause 10.4.1 for data modeling and the Activity interface, Clause 10.4.2 for availability and association execution, and Clause 13.3.2 for Activity completion. Clause 13.3.7 supplies the Multi-Instance context-retention rationale for the forward-compatible representation; Multi-Instance execution remains excluded. The selected account and exact exclusions belong to the [Activity data-input/output mediation proposal](../../docs/capsules/ACTIVITY-DATA-INPUT-OUTPUT-MEDIATION-PROPOSAL.md).
+
+Process Start carries either no values or exactly one String/null binding named by the input Property. Absence leaves the incoming token ready with no task, Activity occurrence, or local scope. Explicit null is available and activates the task. While active, the published input collection contains exactly the copied DataInput; the required DataOutput has no committed binding or publication.
+
+Completion carries exactly one String/null binding named by the DataOutput id. The output association selects the Process Property to write. The accepted transition preserves the original Process input, writes the target Property, and disposes the wait, Activity record, and same input-bearing local scope atomically. Missing, extra, wrongly named, unsupported, stale, or structurally inconsistent submissions are refused with exact state preservation.
+
+The [claim-assessment scenarios](../../scenarios/activity-data-input-output-user-task/README.md) use distinct Property, data-item, and association ids. Their present, explicit-null, absent-input, and omitted-output schedules distinguish input availability, input publication, exact output matching, and association routing without a CIB Data Association target. Relationships `CIB-AGR-0001` and `CIB-OP-0001` cover only the inherited User Task lifecycle and occurrence-addressed completion.
+
+Status remains `draft`. This profile selects no additional data items or sets, optional or while-executing data, set pairing, expressions, mappings, mutation while active, other Activity type, boundary Events, loops, Multi-Instance, nested scope, forms, authorization, effects, CIB Data Association compatibility, or BPMN Process Execution Conformance.

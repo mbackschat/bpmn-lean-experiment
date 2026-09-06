@@ -7,7 +7,6 @@ import type {
   VariableBinding,
 } from "./contract.js";
 import {
-  ACTIVITY_DATA_INPUT_OUTPUT_CHECKPOINT_PROFILE_ID,
   COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID,
   MESSAGE_KEY_CORRELATION_CHECKPOINT_PROFILE_ID,
   SemanticProfileId,
@@ -22,7 +21,6 @@ export enum VariableWriteSurface {
 
 type SemanticProfile =
   | typeof SemanticProfileId[keyof typeof SemanticProfileId]
-  | typeof ACTIVITY_DATA_INPUT_OUTPUT_CHECKPOINT_PROFILE_ID
   | typeof COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID
   | typeof MESSAGE_KEY_CORRELATION_CHECKPOINT_PROFILE_ID;
 
@@ -56,7 +54,6 @@ const scalarValueDomain = Object.freeze([
 const admittedSemanticProfiles: ReadonlySet<string> = new Set(
   [
     ...Object.values(SemanticProfileId),
-    ACTIVITY_DATA_INPUT_OUTPUT_CHECKPOINT_PROFILE_ID,
     COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID,
     MESSAGE_KEY_CORRELATION_CHECKPOINT_PROFILE_ID,
   ],
@@ -148,7 +145,7 @@ function profileValueDomain(
       // pre-states here, and the completion surface stays empty because this profile's OutputSet is
       // empty: it selects no output mediation at all.
       return surfaceValueDomain(surface, stringNullValueDomain);
-    case ACTIVITY_DATA_INPUT_OUTPUT_CHECKPOINT_PROFILE_ID:
+    case SemanticProfileId.ActivityDataInputOutputUserTask:
       return surfaceValueDomain(
         surface,
         stringNullValueDomain,

@@ -14,6 +14,8 @@ This contributor map assigns package responsibilities and Temporal SDK ownership
 
 ## Package ownership
 
+The [composed Activity-data fixture](testkit/test/activity-data-input-output-fixture.ts) compiles the registered claim-assessment source and independently derives core results. Its [production refinement witness](testkit/test/activity-data-input-output-refinement.temporal-test.ts) preserves the live input through Continue-As-New and Worker replacement, checks routed completion and exact command recovery, distinguishes absent input from null and omitted output, stitches E1/E2, and replays every retained Run.
+
 The [Workflow-chain recovery client](client/src/workflow-chain-recovery-client.ts) owns exact SDK closure-failure classification and content-bound retries. Its [client matrix](client/test/semantic-update-client.test.ts) separates recovery from unrelated application failures; the [service probes](testkit/test/accepted-update-resolution-premise.test.ts) and [probe Workflows](testkit/test/accepted-update-resolution-workflows.ts) bind the real accepted-Update failure and Continue-As-New behavior.
 
 The [command-deadline witness](testkit/test/workflow-command-deadline.test.ts) binds native RPC expiry to same-command recovery after Worker replacement, one retained semantic commit, and replay. The recovery client captures command bytes once and owns one connection deadline for the entire resolution path.

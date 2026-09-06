@@ -7,7 +7,7 @@
  * member, pairing reference, mapping child, loop characteristic, or executable child.
  */
 import {
-  ACTIVITY_DATA_INPUT_OUTPUT_CHECKPOINT_PROFILE_ID,
+  SemanticProfileId,
   CheckedNodeKind,
   CheckedProcessKind,
   compareCanonicalStrings,
@@ -131,7 +131,7 @@ export function compileActivityDataInputOutputCheckedProcess(
       },
       undefined,
       undefined,
-      ACTIVITY_DATA_INPUT_OUTPUT_CHECKPOINT_PROFILE_ID,
+      SemanticProfileId.ActivityDataInputOutputUserTask,
     );
   if (sequenceFlows === undefined || ordinaryNodes === undefined) {
     return unsupported(
@@ -162,7 +162,7 @@ export function compileActivityDataInputOutputCheckedProcess(
         flows,
       },
       exact.definitions.expressionLanguage,
-      ACTIVITY_DATA_INPUT_OUTPUT_CHECKPOINT_PROFILE_ID,
+      SemanticProfileId.ActivityDataInputOutputUserTask,
     )
   ) {
     return unsupported(
@@ -173,7 +173,7 @@ export function compileActivityDataInputOutputCheckedProcess(
     checkedProcess: {
       kind: CheckedProcessKind.CheckedProcess,
       identity: {
-        semanticProfile: ACTIVITY_DATA_INPUT_OUTPUT_CHECKPOINT_PROFILE_ID,
+        semanticProfile: SemanticProfileId.ActivityDataInputOutputUserTask,
         sourceId: source.id,
         sourceSha256: source.sha256,
         sourceOverlay,

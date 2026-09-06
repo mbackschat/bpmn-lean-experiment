@@ -4,7 +4,6 @@ import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 
 import {
-  ACTIVITY_DATA_INPUT_OUTPUT_CHECKPOINT_PROFILE_ID,
   COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID,
   SemanticProfileId,
   VariableValueKind,
@@ -125,6 +124,10 @@ const expectedCapabilities = new Map<string, ProfileCapabilities>([
   }],
   [SemanticProfileId.ActivityDataInputUserTask, {
     processStart: capability(stringNull, "process-start-string-null-data"),
+  }],
+  [SemanticProfileId.ActivityDataInputOutputUserTask, {
+    processStart: capability(stringNull, "process-start-string-null-data"),
+    userTaskCompletion: capability(stringNull, "user-task-string-null-completion-data"),
   }],
   [SemanticProfileId.ActivityDataOutputUserTask, {
     userTaskCompletion: capability(
@@ -422,33 +425,6 @@ test("admits only String values at the Compensation checkpoint Process-start sur
           [binding],
         ),
         surface === "processStart" && binding.value.kind === VariableValueKind.String,
-        `${surface} ${binding.value.kind}`,
-      );
-    }
-  }
-});
-
-test("admits String or null on both composed Activity-data checkpoint surfaces", async () => {
-  const compiled = await importCompiledValueDomain();
-  for (const surface of surfaces) {
-    assert.equal(
-      compiled.profileAllowsVariableBindings(
-        ACTIVITY_DATA_INPUT_OUTPUT_CHECKPOINT_PROFILE_ID,
-        surface,
-        [],
-      ),
-      true,
-      `${surface} empty patch`,
-    );
-    for (const binding of bindings.values()) {
-      assert.equal(
-        compiled.profileAllowsVariableBindings(
-          ACTIVITY_DATA_INPUT_OUTPUT_CHECKPOINT_PROFILE_ID,
-          surface,
-          [binding],
-        ),
-        surface !== "effectCompletion" &&
-          stringNull.includes(binding.value.kind as typeof stringNull[number]),
         `${surface} ${binding.value.kind}`,
       );
     }

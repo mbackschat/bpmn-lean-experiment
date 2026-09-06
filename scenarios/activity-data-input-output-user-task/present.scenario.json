@@ -1,0 +1,72 @@
+{
+  "kind": "scenario",
+  "id": "activity-data-input-output-present",
+  "profile": "bpmn-2.0.2-activity-data-input-output-user-task-draft",
+  "bpmn": {
+    "id": "activity-data-input-output-user-task",
+    "relativePath": "scenarios/activity-data-input-output-user-task/process.bpmn",
+    "sha256": "32a1fbbb0fe6035d0c80eeadd951e5f1f244e0f03417330cbb46c4904a666724",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "startProcess",
+      "commandId": "start-activity-data-input-output-present",
+      "processId": "Process_ClaimAssessment",
+      "instanceId": "ActivityDataInputOutputPresent",
+      "initialVariables": [
+        {
+          "name": "Property_ClaimSummary",
+          "value": {
+            "kind": "string",
+            "value": "claim-4711"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "assess-claim-present",
+      "taskId": {
+        "processInstanceId": "ActivityDataInputOutputPresent",
+        "elementId": "UserTask_AssessClaim",
+        "activation": 1
+      },
+      "submittedValues": [
+        {
+          "name": "DataOutput_ClaimDecision",
+          "value": {
+            "kind": "string",
+            "value": "approve"
+          }
+        }
+      ]
+    }
+  ],
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 10.4.1",
+      "BPMN 2.0.2 Clause 10.4.2",
+      "BPMN 2.0.2 Clause 13.3.2",
+      "BPMN 2.0.2 Table 10.57",
+      "BPMN 2.0.2 Table 10.61",
+      "BPMN 2.0.2 Table 10.64"
+    ],
+    "cibRevision": "5a45b47ea22688d774de97277c3ff7013f54fdd2",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/UserTaskActivityBehavior.java"
+    ]
+  }
+}

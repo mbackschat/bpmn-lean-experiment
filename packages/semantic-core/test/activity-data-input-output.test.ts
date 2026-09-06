@@ -6,7 +6,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
-  ACTIVITY_DATA_INPUT_OUTPUT_CHECKPOINT_PROFILE_ID,
+  SemanticProfileId,
   CommandOutcome,
   LocalDataOwnerKind,
   ProcessStatus,
@@ -57,7 +57,7 @@ const program = rootScopedProgram({
   kind: SemanticProcessKind.SemanticProcess,
   identity: {
     compiler: SemanticProcessCompilerId.BpmnSourceSemanticProcess,
-    semanticProfile: ACTIVITY_DATA_INPUT_OUTPUT_CHECKPOINT_PROFILE_ID,
+    semanticProfile: SemanticProfileId.ActivityDataInputOutputUserTask,
     sourceId: "activity-data-input-output-user-task",
     sourceOverlay: null,
     sourceSha256: "0000000000000000000000000000000000000000000000000000000000000000",

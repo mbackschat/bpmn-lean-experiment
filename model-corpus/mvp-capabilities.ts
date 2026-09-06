@@ -132,6 +132,14 @@ export const mvpBpmnCapabilities = Object.freeze([
     cibEvidence: notSelected,
   },
   {
+    id: "directDataInputOutputUserTask",
+    family: "Activities",
+    element: "User Task with direct Data Input and Output",
+    support: BpmnCapabilitySupport.BoundedStandard,
+    restriction: "One required scalar input copied from a Process Property and one required scalar output routed to a distinct Process Property on the same User Task occurrence; string/null values, one local input scope, and atomic output write and scope disposal on accepted completion.",
+    cibEvidence: notSelected,
+  },
+  {
     id: "directDataOutputUserTask",
     family: "Activities",
     element: "User Task with a direct Data Output",

@@ -1,5 +1,4 @@
 import {
-  ACTIVITY_DATA_INPUT_OUTPUT_CHECKPOINT_PROFILE_ID,
   COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID,
   MESSAGE_KEY_CORRELATION_CHECKPOINT_PROFILE_ID,
   PARALLEL_MULTI_INSTANCE_USER_TASK_PROFILE_ID,
@@ -190,7 +189,7 @@ export const compilationDispatches: ReadonlyArray<CompilationDispatch> =
     },
     {
       id: CompilationDispatchId.ActivityDataInputOutputUserTask,
-      semanticProfile: ACTIVITY_DATA_INPUT_OUTPUT_CHECKPOINT_PROFILE_ID,
+      semanticProfile: SemanticProfileId.ActivityDataInputOutputUserTask,
       reader: (rootElement, source, overlay) =>
         overlay === null
           ? compileActivityDataInputOutputCheckedProcess(

@@ -1,0 +1,101 @@
+{
+  "kind": "semanticProfile",
+  "id": "bpmn-2.0.2-activity-data-input-output-user-task-draft",
+  "status": "draft",
+  "claim": "bpmn-2.0.2-one-required-direct-input-and-output-on-one-user-task-occurrence",
+  "normativeAuthority": {
+    "name": "OMG Business Process Model and Notation",
+    "version": "2.0.2",
+    "references": [
+      "Clause 10.4.1",
+      "Clause 10.4.2",
+      "Clause 13.3.2",
+      "Clause 13.3.7",
+      "Table 10.57",
+      "Table 10.58",
+      "Table 10.59",
+      "Table 10.61",
+      "Table 10.62",
+      "Table 10.64"
+    ]
+  },
+  "bpmn": {
+    "process": "private-executable",
+    "features": [
+      "none-start-event",
+      "two-distinct-process-owned-properties",
+      "activity-data-input-output-user-task",
+      "one-required-scalar-data-input",
+      "one-required-scalar-data-output",
+      "one-input-set",
+      "one-output-set",
+      "direct-process-property-data-input-association",
+      "direct-process-property-data-output-association",
+      "input-availability-gated-activity-entry",
+      "activity-occurrence-owned-input-scope",
+      "open-user-task-selected-input-publication",
+      "association-routed-process-property-write",
+      "atomic-output-write-and-input-scope-disposal",
+      "unavailable-required-output-refuses-completion",
+      "process-start-string-null-data",
+      "user-task-string-null-completion-data",
+      "user-task-discovery",
+      "user-task-instance-completion",
+      "none-end-event",
+      "sequence-flow",
+      "process-completion"
+    ],
+    "extensions": [],
+    "relationships": [
+      "CIB-AGR-0001",
+      "CIB-OP-0001"
+    ]
+  },
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "comparison": {
+    "trace": "exact-after-canonical-projection",
+    "semanticConcurrency": false
+  },
+  "excluded": [
+    "multiple-data-inputs-or-data-outputs",
+    "multiple-input-sets-or-output-sets",
+    "optional-or-while-executing-inputs-or-outputs",
+    "input-set-output-set-pairing",
+    "collection-and-nested-values",
+    "item-definition",
+    "data-object",
+    "data-object-reference",
+    "data-store",
+    "data-store-reference",
+    "assignment",
+    "transformation",
+    "formal-expression",
+    "later-input-availability-or-reevaluation-ingress",
+    "activity-local-mutation-while-active",
+    "another-activity-or-task-type",
+    "boundary-events",
+    "looping",
+    "multi-instance",
+    "sub-process-scope",
+    "call-activity-mappings",
+    "form-schema",
+    "field-validation",
+    "authorization",
+    "service-task-effects",
+    "expression-evaluation",
+    "cib-data-association-compatibility-claim",
+    "production-history-compatibility",
+    "bpmn-process-execution-conformance"
+  ]
+}

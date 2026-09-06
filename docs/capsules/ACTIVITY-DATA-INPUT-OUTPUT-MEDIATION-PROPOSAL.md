@@ -174,13 +174,13 @@ Headroom is measured as nonblank lines remaining under the 800-line review targe
 
 | Owner | Current headroom | Treatment |
 |---|---:|---|
-| [TypeScript profile catalog](../../packages/semantic-core/src/semantic-profile-catalog.ts) | 716 | Change |
-| [TypeScript value domain](../../packages/semantic-core/src/semantic-profile-value-domain.ts) | 531 | Change |
-| [TypeScript checked shape](../../packages/semantic-core/src/checked-process-profile-shape.ts) | 471 | Change |
-| [TypeScript Program shape](../../packages/semantic-core/src/semantic-program-profile-shape.ts) | 452 | Change |
-| [TypeScript graph policy](../../packages/semantic-core/src/semantic-process-graph-policy.ts) | 712 | Change |
-| [Source preservation classification](../../packages/bpmn-source/src/preservation-capability.ts) | 645 | Change |
-| [Compilation dispatch](../../packages/bpmn-source/src/compilation-dispatch.ts) | 444 | Change |
+| [TypeScript profile catalog](../../packages/semantic-core/src/semantic-profile-catalog.ts) | 717 | Change |
+| [TypeScript value domain](../../packages/semantic-core/src/semantic-profile-value-domain.ts) | 534 | Change |
+| [TypeScript checked shape](../../packages/semantic-core/src/checked-process-profile-shape.ts) | 472 | Change |
+| [TypeScript Program shape](../../packages/semantic-core/src/semantic-program-profile-shape.ts) | 453 | Change |
+| [TypeScript graph policy](../../packages/semantic-core/src/semantic-process-graph-policy.ts) | 713 | Change |
+| [Source preservation classification](../../packages/bpmn-source/src/preservation-capability.ts) | 648 | Change |
+| [Compilation dispatch](../../packages/bpmn-source/src/compilation-dispatch.ts) | 445 | Change |
 | [Checked graph admission](../../packages/bpmn-source/src/checked-process-graph-admission.ts) | 426 | Change |
 | [TypeScript lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 134 | Change |
 | [TypeScript checked contract](../../packages/semantic-core/src/checked-process-contract.ts) | 423 | Change |
@@ -188,7 +188,7 @@ Headroom is measured as nonblank lines remaining under the 800-line review targe
 | [TypeScript operation admission](../../packages/semantic-core/src/semantic-process-operation-admission.ts) | 113 | Extracted before implementation growth |
 | [TypeScript graph admission](../../packages/semantic-core/src/semantic-process-graph-admission.ts) | 153 | Change |
 | [TypeScript runtime dispatch](../../packages/semantic-core/src/semantic-process-runtime.ts) | 29 | Extracted before implementation growth |
-| [TypeScript command admission](../../packages/semantic-core/src/semantic-command-admission.ts) | 325 | Change |
+| [TypeScript command admission](../../packages/semantic-core/src/semantic-command-admission.ts) | 326 | Change |
 | [TypeScript runtime well-formedness](../../packages/semantic-core/src/runtime-state-well-formedness.ts) | 51 | Change |
 | [TypeScript boundary starts](../../packages/semantic-core/src/flow-node-occurrence-boundary-starts.ts) | 480 | Change |
 | [TypeScript lifecycle](../../packages/semantic-core/src/flow-node-occurrence-lifecycle.ts) | 60 | Change |
@@ -225,9 +225,9 @@ Headroom is measured as nonblank lines remaining under the 800-line review targe
 | [Temporal publication validation](../../packages/temporal-adapter/protocol/src/flow-node-occurrence-publication-program-validation.ts) | 333 | Change |
 | [Product 2 publication contract](../../platform/contracts/src/execution-publications.ts) | 345 | Change |
 | [Activity writer records](../../scripts/activity-occurrence-writer-records.ts) | 275 | Change |
-| [Contract artifact cases](../../scripts/contract-artifact-cases.ts) | 477 | Change |
-| [Capability extractor](../../scripts/executable-model-capabilities.ts) | 443 | Change |
-| [Capability catalog](../../model-corpus/mvp-capabilities.ts) | 468 | Change |
+| [Contract artifact cases](../../scripts/contract-artifact-cases.ts) | 461 | Change |
+| [Capability extractor](../../scripts/executable-model-capabilities.ts) | 442 | Change |
+| [Capability catalog](../../model-corpus/mvp-capabilities.ts) | 460 | Change |
 
 The checked, Program, and publication JSON schemas are generated artifacts with no hand-maintained line budget; their exact-byte generator and schema gates decide them. The new consumer census, reader, runtime, Lean relation, conformance, fixture, scenario, and profile-artifact owners start bounded and single-purpose.
 
@@ -246,6 +246,17 @@ The nearest unsupported data claim is two alternative InputSets or OutputSets wi
 ## Closure cost
 
 At closure, record the commit-bounded code and documentation churn in the [capsule cost ledger](../CAPSULE-COST-LEDGER.md), compared with the output capsule because it changed the same source, checked, IL, Lean/core, differential, Temporal, corpus, and Product 2 contract layers. Record observed wall time only if exact timestamps exist; do not reconstruct it from commits.
+
+## Implemented closure evidence
+
+The [registered profile](../../profiles/bpmn-2.0.2-activity-data-input-output-user-task-draft/README.md) uses the same literal identity and semantic account as the approved checkpoint. Registration replaces the temporary TypeScript checkpoint constant with the product catalog member; it adds no runtime transition, public field, or Temporal orchestration rule.
+
+| Boundary | Executable evidence and limit |
+|---|---|
+| Source and semantic account | [Source admission](../../packages/bpmn-source/test/activity-data-input-output-source.test.ts), [core lifetime/refusal cases](../../packages/semantic-core/test/activity-data-input-output.test.ts), and the existing [Lean lifetime](../../BpmnSemantics/ActivityDataInputOutputConformance.lean) and [refusal](../../BpmnSemantics/ActivityDataInputOutputRefusalConformance.lean) laws preserve the reviewed one-occurrence account. Public registration is also checked against both predecessor capability shapes and the complete value-domain matrix. |
+| Registered differential evidence | The four [neutral schedules](../../scenarios/activity-data-input-output-user-task/README.md) run through Lean, the independently written core, and Temporal. The [pipeline owner](../../packages/differential/test/activity-data-input-output-pipeline-cases.ts) requires exact disagreement for submitted-name routing, erased null, activation without input, and a fabricated omitted-output write. No CIB Data Association execution target is selected. |
+| Production durability | The [live witness](../../packages/temporal-adapter/testkit/test/activity-data-input-output-refinement.temporal-test.ts), using the [exact-source fixture](../../packages/temporal-adapter/testkit/test/activity-data-input-output-fixture.ts), forces present-input continuation through a rejected Update, replaces the Worker, and checks the same E1 input and E2 occurrence before routed completion and same-command recovery. Present and null complete; absent and omitted cases retain their exact committed publications after host termination. All five Runs replay, and no Timer, effect Activity, Signal, or Child Workflow is introduced. The input-loss mutation checks the publication assertion; it is not a production defect or an independent semantic evaluator. |
+| Whole-model and product boundary | The [retained corpus](../../model-corpus/EXECUTABLE-MODEL-CORPUS-MAP.md) binds claim assessment to the present schedule. The [capability extractor guard](../../scripts/executable-model-capabilities.test.ts) distinguishes the composed task from each one-direction predecessor, whose opposite set must be empty. The canonical [capability catalog](../../model-corpus/mvp-capabilities.ts) feeds About disclosure, while the [Product 1 example](../../examples/temporal-mvp/activity-data-input-output-user-task.json) reuses the existing passive completion driver. Forms, assignment metadata, and browser-catalog eligibility remain excluded. |
 
 ## Stage boundary
 

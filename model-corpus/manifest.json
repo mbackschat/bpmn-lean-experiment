@@ -1271,6 +1271,41 @@
       }
     },
     {
+      "id": "claim-assessment-with-input-and-decision",
+      "title": "Assess a claim and record its decision",
+      "businessPurpose": "Give a claims reviewer the submitted claim summary and record the reviewer's decision on the claim, preserving the original summary throughout the review.",
+      "cloneFamily": "human-assessment-with-direct-data-input-output",
+      "constructs": [
+        "endEvent",
+        "process",
+        "sequenceFlow",
+        "startEvent",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "directActivityDataInput",
+        "directActivityDataOutput",
+        "userTaskWait",
+        "userTaskCompletion"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/activity-data-input-output-user-task/process.bpmn",
+        "sha256": "32a1fbbb0fe6035d0c80eeadd951e5f1f244e0f03417330cbb46c4904a666724",
+        "scenarioRelativePath": "scenarios/activity-data-input-output-user-task/present.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "bpmn-2.0.2-activity-data-input-output-user-task-draft",
+      "admission": { "kind": "accepted" },
+      "pipelineCaseId": "activity-data-input-output-present",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "The exact profile publishes the task input and accepts its required output but admits no assignment or form metadata; a complete production browser journey is not selected."
+      }
+    },
+    {
       "id": "cib-order-goods",
       "title": "CIB Seven order goods",
       "businessPurpose": null,

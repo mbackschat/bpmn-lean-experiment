@@ -79,6 +79,7 @@ Run the focused adapter gate with:
 - [Structured Human Work specification](../../docs/BPM-PLATFORM-STRUCTURED-HUMAN-WORK-SPEC.md) owns the M6 typed-value transport, content identity, replacement, conflict, history, and replay boundary.
 - [Sequential Multi-Instance specification](../../docs/capsules/SEQUENTIAL-MULTI-INSTANCE-SPEC.md) owns the exact managed-deadline and production-refinement boundary.
 - [Activity boundary Message specification](../../docs/capsules/ACTIVITY-BOUNDARY-MESSAGE-SPEC.md) owns the closure-reviewed exact Message/completion race and its real-service refinement evidence.
+- [Composed Activity-data witness](testkit/test/activity-data-input-output-refinement.temporal-test.ts) preserves the same input-bearing User Task through rollover, Worker replacement, routed completion, paired publication, and replay.
 - [`implementation-status-owner:TEMPORAL-HOSTING`](../../docs/TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md) records current hosting and replay evidence without turning Event History into BPMN state.
 
 The rejection demonstration `./scripts/pnpm.sh run mvp:run -- examples/temporal-mvp/unsupported.json` performs source admission without connecting to Temporal. The optional time-skipping lane is `./scripts/pnpm.sh run test:timer-time-skipping`.

@@ -6,6 +6,7 @@ import {
   ProcessStatus,
   VariableValueKind,
 } from "@bpmn-lean/semantic-core";
+import { activityDataInputOutputPipelineCases } from "./activity-data-input-output-pipeline-cases.ts";
 import {
   DisagreementKind,
 } from "@bpmn-lean/differential";
@@ -591,4 +592,5 @@ export const pipelineCases = Object.freeze([
   ...parallelMultiInstancePipelineCases,
   ...activityDataInputPipelineCases,
   ...activityDataOutputPipelineCases,
+  ...activityDataInputOutputPipelineCases,
 ]);

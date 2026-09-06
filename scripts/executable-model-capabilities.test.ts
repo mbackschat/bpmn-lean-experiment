@@ -1,9 +1,23 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 
 import {
   detectExecutableBpmnCapabilities,
 } from "./executable-model-capabilities.ts";
+
+test("distinguishes composed Activity data from each one-direction User Task profile", async () => {
+  for (const [family, expected] of [
+    ["activity-data-input-user-task", "directDataInputUserTask"],
+    ["activity-data-output-user-task", "directDataOutputUserTask"],
+    ["activity-data-input-output-user-task", "directDataInputOutputUserTask"],
+  ] as const) {
+    const xml = await readFile(new URL(`../scenarios/${family}/process.bpmn`, import.meta.url), "utf8");
+    const capabilities = detectExecutableBpmnCapabilities(xml);
+    assert.equal(capabilities.includes("userTask"), true);
+    assert.deepEqual(capabilities.filter((id) => id.startsWith("directData")), [expected]);
+  }
+});
 
 test("distinguishes Timer Start from an Intermediate Catch Timer", () => {
   const timerStart = detectExecutableBpmnCapabilities(`

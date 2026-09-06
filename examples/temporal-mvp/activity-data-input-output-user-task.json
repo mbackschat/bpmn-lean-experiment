@@ -1,0 +1,48 @@
+{
+  "kind": "runnableTemporalMvp",
+  "bpmn": {
+    "file": "../../scenarios/activity-data-input-output-user-task/process.bpmn",
+    "sourceId": "activity-data-input-output-user-task",
+    "semanticProfile": "bpmn-2.0.2-activity-data-input-output-user-task-draft",
+    "limits": {
+      "maxBytes": 1048576,
+      "parserDeadlineMs": 1000
+    }
+  },
+  "process": {
+    "instanceId": "MvpExample_activity_data_input_output_1",
+    "initialVariables": [
+      {
+        "name": "Property_ClaimSummary",
+        "value": {
+          "kind": "string",
+          "value": "claim-4711"
+        }
+      }
+    ]
+  },
+  "temporal": {
+    "address": "localhost:7233",
+    "namespace": "default",
+    "taskQueue": "bpmn-mvp",
+    "identity": "bpmn-mvp-command"
+  },
+  "interactions": [
+    {
+      "kind": "completeUserTaskInstance",
+      "elementId": "UserTask_AssessClaim",
+      "delayMs": 1,
+      "inputVariableNames": [],
+      "submittedValues": [
+        {
+          "name": "DataOutput_ClaimDecision",
+          "value": {
+            "kind": "string",
+            "value": "approve"
+          }
+        }
+      ]
+    }
+  ],
+  "effectHandlers": []
+}

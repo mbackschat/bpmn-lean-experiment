@@ -159,12 +159,13 @@ function addUserTaskCapability(
     ({ name }) => name === "multiInstanceLoopCharacteristics",
   );
   if (multiInstance === undefined) {
-    // A Multi-Instance task also carries Data Associations, but those feed its loop data item and
-    // belong to that capsule. Only a plain task's associations are the admitted direct mediation.
-    if (hasDirectChild(task, "dataInputAssociation")) {
+    const hasInput = hasDirectChild(task, "dataInputAssociation");
+    const hasOutput = hasDirectChild(task, "dataOutputAssociation");
+    if (hasInput && hasOutput) {
+      capabilities.add("directDataInputOutputUserTask");
+    } else if (hasInput) {
       capabilities.add("directDataInputUserTask");
-    }
-    if (hasDirectChild(task, "dataOutputAssociation")) {
+    } else if (hasOutput) {
       capabilities.add("directDataOutputUserTask");
     }
     return;

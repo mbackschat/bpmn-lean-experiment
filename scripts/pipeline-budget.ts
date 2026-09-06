@@ -10,9 +10,8 @@ const warmPipelineTimeoutMarginMs = 5_000;
  * rate is that original total divided by the catalog it was written for, so the intent is preserved
  * exactly while the total now tracks the catalog.
  *
- * This is deliberately not the hard ceiling. `defaultWarmBudgetMs` still bounds pathological runs at
- * a fixed total and is not breached today; deriving it too would also have to move the hosted CI
- * budget that `verification-entrypoint.test.ts` holds above it.
+ * The hard ceiling follows the separate `warmBudgetPerCaseMs` rate below. Its aggregate and hosted
+ * margin are bound to the registered catalog by the pipeline and verification-entrypoint guards.
  */
 export const warmSoftTargetPerCaseMs = 500;
 
@@ -68,7 +67,7 @@ export function leanInterpreterBatchTimeoutMsFor(caseCount: number): number {
  * silently outrunning this number. Raising it for a larger catalog keeps the declared per-case rate
  * intact and must keep the hosted CI budget at least 50% above it.
  */
-export const defaultWarmBudgetMs = 88_400;
+export const defaultWarmBudgetMs = 93_600;
 
 /**
  * Load per core above which a timing figure is not a comparable measurement.

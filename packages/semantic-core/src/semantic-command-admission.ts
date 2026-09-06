@@ -100,7 +100,6 @@ import {
   profileAllowsStimulusValueDomain,
 } from "./semantic-profile-value-domain.js";
 import {
-  ACTIVITY_DATA_INPUT_OUTPUT_CHECKPOINT_PROFILE_ID,
   SemanticProfileId,
 } from "./semantic-profile-catalog.js";
 import {
@@ -186,7 +185,7 @@ function activityDataInputOutputStartDataAdmitted(
   program: SemanticProcessProgram,
   stimulus: StartProcessStimulus,
 ): boolean {
-  if (program.identity.semanticProfile !== ACTIVITY_DATA_INPUT_OUTPUT_CHECKPOINT_PROFILE_ID) {
+  if (program.identity.semanticProfile !== SemanticProfileId.ActivityDataInputOutputUserTask) {
     return true;
   }
   const declarations = program.operations.filter((operation) =>

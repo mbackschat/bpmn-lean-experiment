@@ -8,6 +8,7 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { test } from "node:test";
+import { SemanticProfileId } from "@bpmn-lean/semantic-core";
 
 import {
   BpmnCompilationStatus,
@@ -21,6 +22,11 @@ import type {
 } from "@bpmn-lean/bpmn-source";
 
 const profile = "bpmn-2.0.2-activity-data-input-output-user-task-draft";
+
+test("registers the composed Activity-data profile for product execution", () => {
+  assert.equal(new Set<string>(Object.values(SemanticProfileId)).has(profile), true);
+});
+
 const sourceUrl = new URL(
   "../../../scenarios/activity-data-input-output-user-task/process.bpmn",
   import.meta.url,

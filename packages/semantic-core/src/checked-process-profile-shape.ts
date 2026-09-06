@@ -4,7 +4,6 @@ import {
   CheckedNodeKind,
 } from "./checked-process-contract.js";
 import {
-  ACTIVITY_DATA_INPUT_OUTPUT_CHECKPOINT_PROFILE_ID,
   COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID,
   MESSAGE_KEY_CORRELATION_CHECKPOINT_PROFILE_ID,
   SemanticProfileId,
@@ -40,7 +39,7 @@ export function requiredCheckedProcessShape(
         CheckedNodeKind.DataInputUserTask,
         end,
       ]);
-    case ACTIVITY_DATA_INPUT_OUTPUT_CHECKPOINT_PROFILE_ID:
+    case SemanticProfileId.ActivityDataInputOutputUserTask:
       return rootChecked([
         start,
         CheckedNodeKind.DataInputOutputUserTask,
