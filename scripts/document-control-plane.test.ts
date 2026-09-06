@@ -149,6 +149,25 @@ test("rejects a stale review state and a misplaced gate token", () => {
   ]);
 });
 
+test("binds pending state to review work rather than unrelated verification or runtime work", () => {
+  const settled = [{ path: "docs/EXAMPLE-PROPOSAL.md", verdict: "approve", target: "0123abc" }];
+  for (const resume of [
+    "Complete Temporal verification is pending. Next action: obtain the closure review.",
+    "A pending Timer survives replacement. The review receipt owns approval.",
+    "The review is approved and verification remains outstanding.",
+    "Awaiting package downloads before the cold review.",
+    "The pending invoice-review model needs a retained fixture.",
+  ]) assert.deepEqual(planReviewRestatementFindings(resume, settled), [], resume);
+  for (const resume of [
+    "The second audit round is outstanding.",
+    "The closure review is still pending.",
+    "Awaiting the required cold review.",
+    "A pending independent audit blocks closure.",
+    "Review: pending.",
+    "The proposal remains unreviewed.",
+  ]) assert.equal(planReviewRestatementFindings(resume, settled).length, 1, resume);
+});
+
 test("requires a governed owner only when the resume point names review work", () => {
   assert.deepEqual(
     planReviewRoutingFindings(

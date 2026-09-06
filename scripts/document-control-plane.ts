@@ -190,6 +190,18 @@ export function planReviewRoutingFindings(
 const settledReviewVerdicts = new Set(["approve", "approve-with-required-edits", "reject"]);
 const pendingReviewWords = ["outstanding", "pending", "awaiting", "unreviewed"];
 
+function restatesPendingReview(resume: string, word: string): boolean {
+  if (word === "unreviewed") return /(?<![\w-])unreviewed(?![\w-])/iu.test(resume);
+  const review = "(?:review|audit)(?:\\s+(?:round|stage|cycle))?";
+  const modifiers = "(?:(?:the|required|independent|cold|warm|proposal|checkpoint|closure|correction|second|final)\\s+)*";
+  const state = "(?:\\s+(?:is|are|remains?|still|currently))*\\s*:?\\s+";
+  // A whole-resume keyword match binds unrelated Timer or verification status to every receipt.
+  return new RegExp(
+    `(?<![\\w-])(?:${review}${state}${word}|${word}\\s+${modifiers}${review})(?![\\w-])`,
+    "iu",
+  ).test(resume);
+}
+
 /**
  * The plan may not describe a review stage that a receipt already owns.
  *
@@ -208,7 +220,7 @@ export function planReviewRestatementFindings(
     )
     .flatMap((owner) =>
       pendingReviewWords
-        .filter((word) => new RegExp(`\\b${word}\\b`, "u").test(resume))
+        .filter((word) => restatesPendingReview(resume, word))
         .map((word) =>
           `resume point calls review work "${word}" while ${owner.path} records \`${owner.verdict}\` at \`${owner.target}\``
         )
