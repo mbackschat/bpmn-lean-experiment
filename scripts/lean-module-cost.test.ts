@@ -223,25 +223,29 @@ async function mutatedCanonicalAcceptanceModule(): Promise<{
   });
   assert.notEqual(mutated, source, "canonical receipt mutation did not match its source tuple");
   const directory = mkdtempSync(join(tmpdir(), "lean-memory-acceptance-mutation-"));
-  const file = join(directory, "mutated.mts");
-  writeFileSync(file, mutated, "utf8");
-  const loaded: unknown = await import(pathToFileURL(file).href);
-  if (
-    loaded === null ||
-    typeof loaded !== "object" ||
-    !("leanMemoryAcceptanceRecord" in loaded) ||
-    !("leanMemoryAcceptanceViolations" in loaded) ||
-    !("formatLeanMemoryAcceptanceViolation" in loaded) ||
-    typeof loaded.leanMemoryAcceptanceViolations !== "function" ||
-    typeof loaded.formatLeanMemoryAcceptanceViolation !== "function"
-  ) {
-    throw new TypeError(`${acceptanceRecordPath} mutation exports no readable acceptance module`);
+  try {
+    const file = join(directory, "mutated.mts");
+    writeFileSync(file, mutated, "utf8");
+    const loaded: unknown = await import(pathToFileURL(file).href);
+    if (
+      loaded === null ||
+      typeof loaded !== "object" ||
+      !("leanMemoryAcceptanceRecord" in loaded) ||
+      !("leanMemoryAcceptanceViolations" in loaded) ||
+      !("formatLeanMemoryAcceptanceViolation" in loaded) ||
+      typeof loaded.leanMemoryAcceptanceViolations !== "function" ||
+      typeof loaded.formatLeanMemoryAcceptanceViolation !== "function"
+    ) {
+      throw new TypeError(`${acceptanceRecordPath} mutation exports no readable acceptance module`);
+    }
+    return loaded as {
+      leanMemoryAcceptanceRecord: LeanMemoryAcceptanceRecord;
+      leanMemoryAcceptanceViolations: typeof leanMemoryAcceptanceViolations;
+      formatLeanMemoryAcceptanceViolation: typeof formatLeanMemoryAcceptanceViolation;
+    };
+  } finally {
+    rmSync(directory, { force: true, recursive: true });
   }
-  return loaded as {
-    leanMemoryAcceptanceRecord: LeanMemoryAcceptanceRecord;
-    leanMemoryAcceptanceViolations: typeof leanMemoryAcceptanceViolations;
-    formatLeanMemoryAcceptanceViolation: typeof formatLeanMemoryAcceptanceViolation;
-  };
 }
 
 function withRows(
