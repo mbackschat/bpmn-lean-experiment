@@ -84,5 +84,5 @@ Document integration is governed by [documentation control](../scripts/document-
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
 | Proposal | `6f3e6c6bd156ab43cab5f111e26c3244fa39b4c9` | `fork-turns-none` | `approve` | `not-required` |
-| Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Semantic checkpoint | `eed22392635ba31cc485367a0a1bf460b6d1c8f4` | `fork-turns-none` | `approve-with-required-edits` | `23ce47f29c91ec444a90658a4dfcec563bfeabb9` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |

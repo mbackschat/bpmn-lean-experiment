@@ -110,7 +110,7 @@ Checkpoint: the [closure atomicity specification](capsules/INTERNAL-CLOSURE-ATOM
 
 Temporal capacity, wakeup, and event-race corrections are committed. Native pinning, fresh initialization, retained Queries, both continuation paths, and legacy preservation pass the complete Temporal gate. Existing unversioned environments remain intact. Evaluation readiness, A/B correlation, and future Schedule dispatch remain closure work.
 
-Next action: complete the [native deployment checkpoint review](TEMPORAL-WORKER-DEPLOYMENT-REPAIR-PROPOSAL.md#independent-cold-review-receipt) before its downstream composition; finish source/fixture evidence, the correction checklist, remaining repair closures, and the [composed Activity-data correction audit](capsules/ACTIVITY-DATA-INPUT-OUTPUT-MEDIATION-PROPOSAL.md#independent-cold-review-receipt) before resuming RC.
+Next action: refresh the corrected Lean fixture cost bindings and rerun complete verification, then finish the [native deployment closure](TEMPORAL-WORKER-DEPLOYMENT-REPAIR-PROPOSAL.md#scope-review-and-closure), source/fixture evidence, correction checklist, remaining repair closures, and [composed Activity-data correction audit](capsules/ACTIVITY-DATA-INPUT-OUTPUT-MEDIATION-PROPOSAL.md#independent-cold-review-receipt) before resuming RC. The [native review receipt](TEMPORAL-WORKER-DEPLOYMENT-REPAIR-PROPOSAL.md#independent-cold-review-receipt) owns its stage decisions.
 
 Oracle: one User Task activation copies the required Process input into its occurrence-owned local scope, and one accepted completion atomically routes its required output to Process scope and disposes that same local scope across source, Lean, the semantic core, publication, and Temporal refinement.
 
