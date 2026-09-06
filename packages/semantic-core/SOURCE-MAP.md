@@ -123,7 +123,7 @@ This contributor map assigns source-file responsibilities inside `@bpmn-lean/sem
 | [internal-publication-template.ts](src/internal-publication-template.ts) | Private numbering-free transition and lifecycle templates with canonical alternative sorting and late command, transition, and local-index instantiation |
 | [internal-transition-ordinary-arming-preparation.ts](src/internal-transition-ordinary-arming-preparation.ts) | Exact ordinary User Task, Message, Timer, and Effect arming footprints plus numbering-free transition and wait-lifecycle publications derived from the pre-state |
 | [internal-transition-ordinary-arming-patch.ts](src/internal-transition-ordinary-arming-patch.ts) | Exact local edits for ordinary wait arming, shared by pre-frontier preparation and the existing evaluator without whole-state replacement or successor-state inference |
-| [semantic-process-closure.ts](src/semantic-process-closure.ts) | Bounded closure over single-enabled and reviewed exact-two internal frontiers with whole-batch refusal precedence |
+| [semantic-process-closure.ts](src/semantic-process-closure.ts) | Bounded closure with complete-frontier pairwise independence for ordinary arming and whole-batch refusal precedence |
 | [semantic-process-runtime.ts](src/semantic-process-runtime.ts) | Runtime state, ordinary and compensation internal-operation dispatch, closure-failure rollback to the pre-admission state, and `applyStimulus` |
 | [semantic-transition-trace.ts](src/semantic-transition-trace.ts) | Committed transition facts and trace replay validation |
 | [flow-node-occurrence-candidates.ts](src/flow-node-occurrence-candidates.ts) | Program-selected element and Process resolution for occurrence owners |
