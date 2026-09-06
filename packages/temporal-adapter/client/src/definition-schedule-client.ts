@@ -30,6 +30,7 @@ import {
 import type {
   TemporalDefinitionStartClient,
 } from "./definition-start-client.js";
+import { requireWorkerDeploymentEnrollment } from "./worker-deployment-enrollment.js";
 
 const operationDeadlineMs = 5_000;
 
@@ -207,41 +208,44 @@ export async function createTemporalDefinitionSchedule(
   }
 
   const dueAt = new Date(request.dueAtEpochMs);
+  const createOptions: Parameters<Client["schedule"]["create"]>[0] = {
+    scheduleId: request.scheduleId,
+    spec: {
+      calendars: [utcCalendarAt(dueAt)],
+      startAt: dueAt,
+      endAt: dueAt,
+      timezone: "UTC",
+    },
+    action: {
+      type: "startWorkflow",
+      workflowType: temporalDefinitionScheduleWorkflowType,
+      taskQueue: request.taskQueue,
+      workflowId: request.configuredWorkflowId,
+      args: [
+        structuredClone(request.start),
+        structuredClone(request.semanticProcess),
+        temporalDefinitionScheduleInitialHostInput(),
+      ],
+      retry: {
+        maximumAttempts: 1,
+        initialInterval: 1_000,
+        maximumInterval: 100_000,
+        backoffCoefficient: 2,
+        nonRetryableErrorTypes: [],
+      },
+    },
+    policies: {
+      overlap: ScheduleOverlapPolicy.SKIP,
+      catchupWindow: 60_000,
+      pauseOnFailure: true,
+    },
+    state: { remainingActions: 1 },
+  };
+  const concreteClient = scheduleClientOf(client);
+  await requireWorkerDeploymentEnrollment(concreteClient.workflow, request.taskQueue);
   try {
     await withDeadline(
-      scheduleClientOf(client).schedule.create({
-        scheduleId: request.scheduleId,
-        spec: {
-          calendars: [utcCalendarAt(dueAt)],
-          startAt: dueAt,
-          endAt: dueAt,
-          timezone: "UTC",
-        },
-        action: {
-          type: "startWorkflow",
-          workflowType: temporalDefinitionScheduleWorkflowType,
-          taskQueue: request.taskQueue,
-          workflowId: request.configuredWorkflowId,
-          args: [
-            request.start,
-            request.semanticProcess,
-            temporalDefinitionScheduleInitialHostInput(),
-          ],
-          retry: {
-            maximumAttempts: 1,
-            initialInterval: 1_000,
-            maximumInterval: 100_000,
-            backoffCoefficient: 2,
-            nonRetryableErrorTypes: [],
-          },
-        },
-        policies: {
-          overlap: ScheduleOverlapPolicy.SKIP,
-          catchupWindow: 60_000,
-          pauseOnFailure: true,
-        },
-        state: { remainingActions: 1 },
-      }),
+      concreteClient.schedule.create(createOptions),
       operationDeadlineMs,
       "Timer Start Schedule creation",
     );
@@ -304,8 +308,8 @@ export async function deleteTemporalDefinitionSchedule(
 
 function scheduleClientOf(
   client: TemporalDefinitionScheduleClient,
-): Pick<Client, "schedule"> {
-  return client as unknown as Pick<Client, "schedule">;
+): Pick<Client, "schedule" | "workflow"> {
+  return client as unknown as Pick<Client, "schedule" | "workflow">;
 }
 
 function projectDescription(

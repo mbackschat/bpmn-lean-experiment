@@ -25,6 +25,7 @@ import type {
 import {
   createCorrelationRegistrationActivities,
 } from "../dist/index.js";
+import { enrollmentFixture } from "../../client/test/worker-deployment-enrollment-fixture.ts";
 
 const registration = candidateRegistration();
 const ingressWorkflowId = correlationIngressWorkflowId(
@@ -137,6 +138,7 @@ function client(input: Readonly<{
 }>) {
   return {
     workflow: {
+      ...enrollmentFixture("bpmn-semantic"),
       start: async () => {
         input.calls.push("start-ingress");
       },

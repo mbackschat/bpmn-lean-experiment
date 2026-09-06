@@ -19,6 +19,7 @@ import {
   WorkflowNotFoundError,
 } from "@temporalio/client";
 import type { WorkflowClient } from "@temporalio/client";
+import { requireWorkerDeploymentEnrollment } from "./worker-deployment-enrollment.js";
 
 import {
   productionBpmnWorkflowInitialHostInput,
@@ -234,8 +235,10 @@ export async function startPreparedTemporalDefinition(
       },
     };
   }
+  const workflowClient = workflowClientOf(client);
+  await requireWorkerDeploymentEnrollment(workflowClient, snapshot.taskQueue);
   await withDeadline(
-    workflowClientOf(client).start(bpmnProcessWorkflowType, {
+    workflowClient.start(bpmnProcessWorkflowType, {
       taskQueue: snapshot.taskQueue,
       workflowId: snapshot.workflowId,
       workflowIdReusePolicy: "REJECT_DUPLICATE",

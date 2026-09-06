@@ -76,6 +76,9 @@ test("recovers a lost start response and a duplicate through the live exact ingr
     );
     const realClient = environment.client.workflow;
     const responseLosingClient = {
+      connection: realClient.connection,
+      options: realClient.options,
+      workflowService: realClient.workflowService,
       start: async (workflowType: string, options: unknown) => {
         await realClient.start(workflowType, options as never);
         throw new Error("simulated lost start response");

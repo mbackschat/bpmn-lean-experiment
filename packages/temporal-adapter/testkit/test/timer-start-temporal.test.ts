@@ -133,6 +133,10 @@ test("one PT1S Schedule action durably starts and replays the exact Timer Start 
       );
     }
 
+    const bundle = await loadBpmnWorkflowBundle();
+    worker = await startBpmnTestWorker(environment, bundle, "timer-start-native-initializer");
+    await stopBpmnTestWorker(worker);
+    worker = undefined;
     const scheduleId = `timer-start-${start.instanceId}`;
     const scheduled = await createAdmittedTimerStartSchedule(
       environment.client,
@@ -197,7 +201,6 @@ test("one PT1S Schedule action durably starts and replays the exact Timer Start 
       "RUNNING",
     );
 
-    const bundle = await loadBpmnWorkflowBundle();
     worker = await startBpmnTestWorker(
       environment,
       bundle,

@@ -15,7 +15,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 
-import { createCachedLocalEnvironment } from "@bpmn-lean/temporal-testkit";
+import { ExternalTemporalRuntime, createCachedLocalEnvironment, createHostEffectActivities } from "@bpmn-lean/temporal-testkit";
 
 import { loadRunnableMvpConfig } from "../../runner/cli/runnable-mvp-config.ts";
 import {
@@ -82,6 +82,8 @@ test("runs every distinct host interaction mechanism live", async () => {
       const config = await loadRunnableMvpConfig(
         path.join(exampleRoot, `${example}.json`),
       );
+      const taskQueue = `bpmn-mvp-live-${index}`;
+      const namespace = await initializeLiveNamespace(environment.address, taskQueue);
       const events: RunnableMvpEvent[] = [];
       const result = await withDeadline(
         runRunnableTemporalMvp(
@@ -97,8 +99,8 @@ test("runs every distinct host interaction mechanism live", async () => {
             temporal: {
               ...config.temporal,
               address: environment.address,
-              namespace: environment.namespace ?? "default",
-              taskQueue: `bpmn-mvp-live-${index}`,
+              namespace,
+              taskQueue,
             },
           },
           (event) => events.push(event),
@@ -146,6 +148,8 @@ test("runs the exact incident-cancellation example to a cancelled product result
     const config = await loadRunnableMvpConfig(
       path.join(exampleRoot, "service-task-incident-cancellation.json"),
     );
+    const taskQueue = "bpmn-mvp-live-incident-cancellation";
+    const namespace = await initializeLiveNamespace(environment.address, taskQueue);
     const events: RunnableMvpEvent[] = [];
     const result = await withDeadline(
       runRunnableTemporalMvp({
@@ -161,8 +165,8 @@ test("runs the exact incident-cancellation example to a cancelled product result
         temporal: {
           ...config.temporal,
           address: environment.address,
-          namespace: environment.namespace ?? "default",
-          taskQueue: "bpmn-mvp-live-incident-cancellation",
+          namespace,
+          taskQueue,
         },
       }, (event) => events.push(event)),
       runDeadlineMs,
@@ -195,3 +199,12 @@ test("runs the exact incident-cancellation example to a cancelled product result
     );
   }
 });
+
+async function initializeLiveNamespace(address: string, taskQueue: string): Promise<string> {
+  const namespace = `${taskQueue}-native`;
+  const initializer = await ExternalTemporalRuntime.initializeFreshNamespace({
+    address, namespace, taskQueue, identity: `${taskQueue}-initializer`,
+  }, createHostEffectActivities([]), 86_400);
+  await initializer.shutdown();
+  return namespace;
+}

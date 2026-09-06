@@ -1,6 +1,7 @@
 /** The production Process start surface preserves semantic identity without exposing an SDK handle. */
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import { enrollmentFixture } from "./worker-deployment-enrollment-fixture.ts";
 
 import {
   BpmnProcessStartResultKind,
@@ -55,6 +56,7 @@ test("starts the exact Workflow request and returns only semantic Process identi
 
 function fakeClient(calls: unknown[]): never {
   return {
+    ...enrollmentFixture("process-task-queue"),
     start: async (workflowType: string, options: unknown) => {
       calls.push({ workflowType, options });
       return {

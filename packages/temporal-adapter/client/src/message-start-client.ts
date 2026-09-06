@@ -9,6 +9,7 @@ import {
 import type {
   WorkflowClient,
 } from "@temporalio/client";
+import { requireWorkerDeploymentEnrollment } from "./worker-deployment-enrollment.js";
 
 import {
   bpmnProcessWorkflowType,
@@ -168,8 +169,10 @@ export async function startTemporalMessageStart(
     };
   }
 
+  const workflowClient = workflowClientOf(client);
+  await requireWorkerDeploymentEnrollment(workflowClient, snapshot.taskQueue);
   await withDeadline(
-    workflowClientOf(client).start(
+    workflowClient.start(
       bpmnProcessWorkflowType,
       {
         taskQueue: snapshot.taskQueue,

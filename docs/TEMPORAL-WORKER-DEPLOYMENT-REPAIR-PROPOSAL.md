@@ -2,14 +2,20 @@
 
 ## Status
 
-Lifecycle: owner-approved
+Lifecycle: implementation-in-progress
 Review: approved
+
+## Implemented checkpoint boundary
+
+The first implementation checkpoint contains immutable native Worker registration, explicit fresh-Namespace initialization, creation-readiness checks, Process and ingress pin inheritance, retained paired-publication/recovery Query isolation, and the Query-only replay discriminator. The complete Temporal package gate covers those live witnesses and the maintained product-start fixtures; the client gate separately covers every creation entry point. [The evidence map](TEMPORAL-TEST-EVIDENCE-MAP.md) identifies the deciding tests.
+
+Cross-version shared correlation, future Schedule dispatch, evaluation initialization/readiness composition, complete-verifier closure, and reflection/cost remain downstream obligations. Existing unversioned environments remain unchanged. The receipt below owns review decisions; this checkpoint makes no closure claim.
 
 ## Problem and bounded outcome
 
-The current [deployment admission helper](../packages/temporal-adapter/worker/src/workflow-deployment-admission.ts) orders caller-supplied fencing, poller inventory, candidate replay, and Worker replacement. The maintained [external Worker startup](../packages/temporal-adapter/worker/src/external-temporal-runtime.ts) does not invoke that helper and starts an unversioned Worker. Its bundle-derived poller identity labels bytes but does not make the Temporal Service route a retained history to those bytes. The [current lifecycle contract](TEMPORAL-PROCESS-LIFECYCLE-SPEC.md#workflow-chain-production-contract) consequently overstates the enforced production deployment boundary.
+The original [deployment admission helper](../packages/temporal-adapter/worker/src/workflow-deployment-admission.ts) ordered caller-supplied fencing, poller inventory, candidate replay, and Worker replacement. The maintained [external Worker startup](../packages/temporal-adapter/worker/src/external-temporal-runtime.ts) did not invoke that helper and started an unversioned Worker. Its bundle-derived poller identity labelled bytes without making the Temporal Service route a retained history to those bytes. The [lifecycle contract](TEMPORAL-PROCESS-LIFECYCLE-SPEC.md#workflow-chain-production-contract) consequently overstated the enforced production deployment boundary.
 
-Candidate replay also cannot establish observation preservation: a candidate that changes only a Query's publication projection can emit the same Temporal Commands and pass replay while answering an old Run differently. The existing [deployment witness](../packages/temporal-adapter/testkit/test/workflow-deployment-admission.temporal-test.ts) separates patch-marker nondeterminism, not this counterexample. These are confirmed source defects; the separating live Query mutation remains required evidence, not an executed result of this proposal.
+Candidate replay also cannot establish observation preservation: a candidate that changes only a Query's publication projection can emit the same Temporal Commands and pass replay while answering an old Run differently. The retained [callback deployment witness](../packages/temporal-adapter/testkit/test/workflow-deployment-admission.temporal-test.ts) separates patch-marker nondeterminism; the checkpoint's [native routing witness](../packages/temporal-adapter/testkit/test/worker-deployment-pinning.temporal-serial-test.ts) supplies the distinct Query counterexample.
 
 Use native Worker Deployment Versioning with immutable bundle-derived Build IDs and `PINNED` Process and correlation-ingress Workflows. Each enrolled chain, including retained Run Queries, stays with its enrolled executable bytes. Explicit native Current selection controls new enrollment. This repairs hosting and public-observation preservation without changing BPMN meaning, source admission, profiles, Lean, or the semantic core.
 

@@ -47,6 +47,7 @@ import {
 } from "@bpmn-lean/temporal-protocol";
 import { withDeadline } from "@bpmn-lean/temporal-protocol";
 import { resolveSemanticUpdate } from "./semantic-update-client.js";
+import { requireWorkerDeploymentEnrollment } from "./worker-deployment-enrollment.js";
 import {
   BpmnCommandIdentityConflict,
   BpmnWorkflowChainCapacityExhausted,
@@ -199,16 +200,20 @@ export async function startBpmnProcess(
   }
   const processInstanceId = start.instanceId;
   requireWorkflowChainInitialArgumentBudgets(start, semanticProcess);
+  const startSnapshot = structuredClone(start);
+  const programSnapshot = structuredClone(semanticProcess);
+  const taskQueue = options.taskQueue;
+  await requireWorkerDeploymentEnrollment(client, taskQueue);
   await withDeadline(
     client.start<BpmnProcessWorkflow>(
       bpmnProcessWorkflowType,
       {
-        taskQueue: options.taskQueue,
+        taskQueue,
         workflowId: processWorkflowId(processInstanceId),
         workflowIdReusePolicy: "REJECT_DUPLICATE",
         args: [
-          start,
-          semanticProcess,
+          startSnapshot,
+          programSnapshot,
           productionBpmnWorkflowInitialHostInput(),
         ],
       },

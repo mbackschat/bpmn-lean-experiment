@@ -32,6 +32,7 @@ const temporalCacheDirectory = fileURLToPath(
   new URL("../../../../.cache/temporal-cli/", import.meta.url),
 );
 const taskQueue = "bpmn-mvp-external-runtime";
+const namespace = "bpmn-mvp-native";
 
 test("rejects an empty server address before attempting a connection", async () => {
   await assert.rejects(
@@ -62,6 +63,10 @@ test("connects to the supplied server and runs on the supplied Task Queue", asyn
     "MVP Temporal server startup",
   );
   try {
+    const initializer = await ExternalTemporalRuntime.initializeFreshNamespace({
+      address: environment.address, namespace, taskQueue, identity: "bpmn-mvp-initializer",
+    }, createHostEffectActivities([]), 86_400);
+    await initializer.shutdown();
     const events: RunnableMvpEvent[] = [];
     const result = await withDeadline(
       runRunnableTemporalMvp({
@@ -77,7 +82,7 @@ test("connects to the supplied server and runs on the supplied Task Queue", asyn
         temporal: {
           ...exampleConfig.temporal,
           address: environment.address,
-          namespace: environment.namespace ?? "default",
+          namespace,
           taskQueue,
         },
       }, (event) => events.push(event)),

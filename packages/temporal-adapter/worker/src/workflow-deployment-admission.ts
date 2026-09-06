@@ -1,9 +1,9 @@
 /**
- * Owns stop-the-world admission for one exact BPMN Workflow bundle replacement.
+ * Retains the callback-sequencing diagnostic and exact executable bundle identities.
  *
- * The caller owns the fleet and ingress implementations. This owner fixes their order and keeps
- * ingress fenced after every failure. It never restarts the old bundle or maps a deployment defect
- * to a BPMN result.
+ * DEPLOY-QUERY-01 in docs/TEMPORAL-WORKER-DEPLOYMENT-REPAIR-PROPOSAL.md requires native pinning:
+ * replay cannot detect a changed Query projection. The callback helper is not production routing
+ * or permission to convert retained unversioned histories.
  */
 import { createHash } from "node:crypto";
 
@@ -76,9 +76,13 @@ export interface WorkflowDeploymentAdmissionOperations {
 export function workflowBundleIdentity(
   bundle: BpmnWorkflowBundle,
 ): WorkflowBundleIdentity {
+  return `${bundleIdentityPrefix}${workflowBundleBuildId(bundle)}`;
+}
+
+/** Native deployment Build ID binds exactly the code bytes supplied to the Worker. */
+export function workflowBundleBuildId(bundle: BpmnWorkflowBundle): string {
   requireBundle(bundle);
-  const digest = createHash("sha256").update(bundle.code, "utf8").digest("hex");
-  return `${bundleIdentityPrefix}${digest}`;
+  return createHash("sha256").update(bundle.code, "utf8").digest("hex");
 }
 
 /** Binds one fleet-visible Worker identity to the exact executable bundle it polls with. */
@@ -96,7 +100,7 @@ export function workflowDeploymentPollerIdentity(
 }
 
 /**
- * Performs the only approved old-to-candidate transition.
+ * Exercises the retained caller-owned fencing and replay sequence.
  *
  * A failure after fencing intentionally has no automatic reopen or rollback path. If candidate
  * Workers were started, they are stopped before the original deployment error is rethrown.

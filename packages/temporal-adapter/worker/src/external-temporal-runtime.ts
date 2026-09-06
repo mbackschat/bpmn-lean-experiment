@@ -10,6 +10,7 @@ import type {
   DeepReadonly,
 } from "@bpmn-lean/semantic-core";
 import {
+  bpmnWorkerDeploymentName,
   createTemporalWorkflowClient,
 } from "@bpmn-lean/temporal-client";
 import type {
@@ -32,9 +33,14 @@ import { createCorrelationTargetDeliveryActivities } from "./correlation-target-
 import type { BpmnWorkflowBundle } from "./workflow-bundle.js";
 import { loadBpmnWorkflowBundle } from "./workflow-bundle.js";
 import {
+  workflowBundleBuildId,
   workflowBundleIdentity,
   workflowDeploymentPollerIdentity,
 } from "./workflow-deployment-admission.js";
+import {
+  initializeWorkerDeploymentCurrent,
+  registerFreshWorkflowNamespace,
+} from "./workflow-deployment-initialization.js";
 const connectionDeadlineMs = 10_000;
 const workerStartupDeadlineMs = 20_000;
 const shutdownDeadlineMs = 10_000;
@@ -48,6 +54,8 @@ export type ExternalTemporalRuntimeOptions = DeepReadonly<{
   taskQueue: string;
   /** Human-readable Worker and client identity. */
   identity: string;
+  /** Optional expected SHA-256 of the exact executable bundle bytes. */
+  expectedBundleSha256?: string;
 }>;
 
 /** One running Worker, its Workflow client, and their shared external-server connection. */
@@ -84,7 +92,34 @@ export class ExternalTemporalRuntime {
     activities: EffectActivityImplementations,
     workflowBundle: BpmnWorkflowBundle,
   ): Promise<ExternalTemporalRuntime> {
+    return this.startBundle(options, activities, workflowBundle, null);
+  }
+
+  /** Creates a fresh Namespace and selects its first Current only after both native queues register. */
+  static async initializeFreshNamespace(
+    options: ExternalTemporalRuntimeOptions,
+    activities: EffectActivityImplementations,
+    retentionSeconds: number,
+    workflowBundle?: BpmnWorkflowBundle,
+  ): Promise<ExternalTemporalRuntime> {
+    return this.startBundle(
+      options, activities, workflowBundle ?? await loadBpmnWorkflowBundle(), retentionSeconds,
+    );
+  }
+
+  private static async startBundle(
+    options: ExternalTemporalRuntimeOptions,
+    activities: EffectActivityImplementations,
+    workflowBundle: BpmnWorkflowBundle,
+    initializeRetentionSeconds: number | null,
+  ): Promise<ExternalTemporalRuntime> {
+    options = Object.freeze({ ...options });
     requireOptions(options);
+    workflowBundle = Object.freeze({ ...workflowBundle });
+    const buildId = workflowBundleBuildId(workflowBundle);
+    if (options.expectedBundleSha256 !== undefined && options.expectedBundleSha256 !== buildId) {
+      throw new TypeError("Expected Workflow bundle digest does not match its exact code bytes");
+    }
     const bundleIdentity = workflowBundleIdentity(workflowBundle);
     const workerIdentity = workflowDeploymentPollerIdentity(
       bundleIdentity,
@@ -95,12 +130,16 @@ export class ExternalTemporalRuntime {
       connectionDeadlineMs,
       `Temporal connection to ${options.address}`,
     );
+    let startedRuntime: ExternalTemporalRuntime | undefined;
     try {
       const workflowClient = createTemporalWorkflowClient({
         connection,
         namespace: options.namespace,
         identity: options.identity,
       });
+      if (initializeRetentionSeconds !== null) {
+        await registerFreshWorkflowNamespace(workflowClient, initializeRetentionSeconds);
+      }
       const worker = await withDeadline(
         Worker.create({
           connection,
@@ -108,6 +147,11 @@ export class ExternalTemporalRuntime {
           namespace: options.namespace,
           taskQueue: options.taskQueue,
           workflowBundle,
+          workerDeploymentOptions: {
+            version: { deploymentName: bpmnWorkerDeploymentName, buildId },
+            useWorkerVersioning: true,
+            defaultVersioningBehavior: "PINNED",
+          },
           activities: {
             ...boundEffectActivities(activities),
             ...createCorrelationRegistrationActivities(
@@ -136,11 +180,21 @@ export class ExternalTemporalRuntime {
         worker,
         workerRun,
       );
+      startedRuntime = runtime;
       await delay(0);
       runtime.assertHealthy();
+      if (initializeRetentionSeconds !== null) {
+        await initializeWorkerDeploymentCurrent(workflowClient, options.taskQueue, buildId);
+        runtime.assertHealthy();
+      }
       return runtime;
     } catch (error: unknown) {
-      await connection.close();
+      try {
+        if (startedRuntime === undefined) await connection.close();
+        else await startedRuntime.shutdown();
+      } catch (shutdownError: unknown) {
+        throw new AggregateError([error, shutdownError], "Worker startup and cleanup failed");
+      }
       throw error;
     }
   }

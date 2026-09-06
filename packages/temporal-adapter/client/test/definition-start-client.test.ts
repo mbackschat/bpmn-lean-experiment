@@ -1,6 +1,7 @@
 /** Direct definition starts bind preparation, one SDK request, and retained description. */
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import { enrollmentFixture } from "./worker-deployment-enrollment-fixture.ts";
 
 import { WorkflowNotFoundError } from "@temporalio/client";
 
@@ -121,6 +122,7 @@ test("classifies missing and unavailable descriptions", async () => {
 
 function fakeClient(calls: unknown[], description?: unknown, describeError?: Error): never {
   return {
+    ...enrollmentFixture(taskQueue),
     start: async (workflowType: string, options: unknown) => {
       calls.push({ workflowType, options });
       return { privateHandle: "must-not-escape" };

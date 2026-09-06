@@ -58,6 +58,7 @@ import {
   replayBpmnHistory,
   waitForOpenUserTaskIds,
 } from "./temporal-worker-test-support.ts";
+import { initializeTestOwnedDeployment, nativeTestWorkerDeploymentOptions } from "./native-worker-deployment-test-support.ts";
 
 const ordinaryWorkflowId = "configured-task-effect-worker-replacement";
 const bypassWorkflowId = "configured-task-effect-pass-through-mutation";
@@ -318,6 +319,7 @@ async function startConfiguredTaskWorker(
       identity,
       taskQueue: bpmnSemanticTaskQueue,
       workflowBundle: bundle,
+      workerDeploymentOptions: nativeTestWorkerDeploymentOptions(bundle),
       activities: registry.activities,
     }),
     operationDeadlineMs,
@@ -330,6 +332,13 @@ async function startConfiguredTaskWorker(
   await delay(0);
   if (failure !== undefined) {
     throw failure;
+  }
+  try {
+    await initializeTestOwnedDeployment(environment, bpmnSemanticTaskQueue, bundle);
+  } catch (error: unknown) {
+    worker.shutdown();
+    await completion;
+    throw error;
   }
   return { worker, completion, failure: () => failure };
 }

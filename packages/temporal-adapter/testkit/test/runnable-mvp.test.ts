@@ -41,6 +41,7 @@ import {
   RunnableMvpExitCode,
   runRunnableMvpCommand,
 } from "../../runner/cli/runnable-mvp-command.ts";
+import { enrollmentFixture } from "../../client/test/worker-deployment-enrollment-fixture.ts";
 
 const projectRoot = fileURLToPath(new URL("../../../../", import.meta.url));
 const acceptedBpmn = path.join(
@@ -385,6 +386,7 @@ test("preserves a valid failed Workflow receipt as a distinct product result", a
   const events: Array<{ readonly kind: string }> = [];
   let shutdowns = 0;
   const workflowClient = {
+    ...enrollmentFixture(config.temporal.taskQueue),
     start: async () => undefined,
     getHandle: () => ({
       query: async () => [failedReceipt.finalState],

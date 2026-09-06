@@ -1,6 +1,7 @@
 /** Message Start construction binds one exact semantic dispatch to one handle-free SDK request. */
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import { enrollmentFixture } from "./worker-deployment-enrollment-fixture.ts";
 
 import {
   InternalSchedulingMode,
@@ -300,6 +301,7 @@ function fakeClient(options: Readonly<{
   startError?: Error;
 }>): TemporalMessageStartClient {
   return {
+    ...enrollmentFixture(taskQueue),
     start: async (workflowType: unknown, startOptions: unknown) => {
       options.calls?.push({
         workflowType,

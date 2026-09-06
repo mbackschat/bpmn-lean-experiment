@@ -2,6 +2,12 @@
 
 This contributor map assigns package responsibilities and Temporal SDK ownership. Human orientation and commands start in the [README](README.md); lifecycle semantics and current evidence remain in the linked specifications and evidence map.
 
+## Native deployment boundaries
+
+- [External Worker runtime](worker/src/external-temporal-runtime.ts) binds exact loaded bytes to native `PINNED` options. [Fresh initialization](worker/src/workflow-deployment-initialization.ts) creates the Namespace before Worker registration and initial-Current selection; its [matrix](worker/test/workflow-deployment-initialization.test.ts) guards failure ordering and routing drift.
+- [Creation-readiness tests](client/test/worker-deployment-creation-readiness.test.ts) and the [native response fixture](client/test/worker-deployment-enrollment-fixture.ts) bind production creation paths to exact native queue registration without coupling existing Query/recovery to Current.
+- [Native pinning witness](testkit/test/worker-deployment-pinning.temporal-serial-test.ts), [Query mutation](testkit/test/worker-deployment-query-mutant-workflows.ts), and [forced ingress continuation](testkit/test/worker-deployment-continuation-workflows.ts) separate retained Query routing from replay compatibility. [Disposable-server support](testkit/test/native-worker-deployment-test-support.ts) establishes test-owned enrollment before starts and refuses replacement auto-promotion.
+
 ## Package ownership
 
 | Package | Responsibility | Temporal SDK ownership |

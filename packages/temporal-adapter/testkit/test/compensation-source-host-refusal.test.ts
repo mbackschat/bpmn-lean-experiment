@@ -33,6 +33,7 @@ import {
   TemporalHostCapabilityResultKind,
   assessTemporalHostCapability,
 } from "@bpmn-lean/temporal-protocol";
+import { enrollmentFixture } from "../../client/test/worker-deployment-enrollment-fixture.ts";
 
 const limits = Object.freeze({
   maxBytes: 1024 * 1024,
@@ -144,6 +145,7 @@ test("admits only the exact Compensation checkpoint through both Product 1 start
 
   const starts: unknown[] = [];
   const client = {
+    ...enrollmentFixture("compensation-source-host-admission"),
     start: async (...arguments_: unknown[]) => {
       starts.push(arguments_);
       return Object.freeze({ workflowId: "recorded-compensation-workflow" });

@@ -22,6 +22,7 @@ import type {
 import type {
   TemporalDefinitionStartClient,
 } from "./definition-start-client.js";
+import { requireWorkerDeploymentEnrollment } from "./worker-deployment-enrollment.js";
 
 const operationDeadlineMs = 5_000;
 
@@ -57,16 +58,18 @@ export async function ensureCorrelationIngress(
   request: EnsureCorrelationIngressRequest,
 ): Promise<CorrelationIngressEnsureResult> {
   requireNonempty(request.taskQueue, "taskQueue");
-  const expectedEcho = createCorrelationIngressEcho(
+  const expectedEcho = structuredClone(createCorrelationIngressEcho(
     request.address,
     request.configuration,
-  );
+  ));
   const workflowId = correlationIngressWorkflowId(expectedEcho.address);
   const workflowClient = workflowClientOf(client);
+  const taskQueue = request.taskQueue;
   try {
+    await requireWorkerDeploymentEnrollment(workflowClient, taskQueue);
     await withDeadline(
       workflowClient.start(bpmnCorrelationIngressWorkflowType, {
-        taskQueue: request.taskQueue,
+        taskQueue,
         workflowId,
         workflowIdReusePolicy: "REJECT_DUPLICATE",
         workflowIdConflictPolicy: "FAIL",

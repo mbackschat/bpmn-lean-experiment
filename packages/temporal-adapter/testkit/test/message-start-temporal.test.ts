@@ -84,6 +84,9 @@ test("Message Start survives Worker absence and replays without Signal ingress",
 
   try {
     const bundle = await loadBpmnWorkflowBundle();
+    worker = await startBpmnTestWorker(environment, bundle, `${expectedTemporalIdentity}-initializer`);
+    await stopBpmnTestWorker(worker);
+    worker = undefined;
     const started = await withDeadline(
       startBpmnProcess(
         environment.client.workflow,

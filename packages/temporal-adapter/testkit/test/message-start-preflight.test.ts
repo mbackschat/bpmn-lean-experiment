@@ -27,6 +27,7 @@ import {
   startBpmnProcess,
   workflowChainProductionLimit,
 } from "@bpmn-lean/temporal-testkit";
+import { enrollmentFixture } from "../../client/test/worker-deployment-enrollment-fixture.ts";
 
 const sourceUrl = new URL(
   "../../../bpmn-source/test/fixtures/message-start-event.bpmn",
@@ -134,6 +135,7 @@ function recordingClient(): Readonly<{
 }> {
   const starts: RecordedStart[] = [];
   const client = {
+    ...enrollmentFixture("message-start-task-queue"),
     start: async (workflowType: unknown, options: RecordedStart["options"]) => {
       starts.push({ workflowType, options });
       return Object.freeze({ workflowId: "recorded-workflow" });

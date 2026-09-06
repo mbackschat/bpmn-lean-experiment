@@ -50,6 +50,7 @@ import {
   historyEvents,
 } from "./temporal-history-facts.ts";
 import { withDeadline } from "./temporal-test-support.ts";
+import { startBpmnTestWorker } from "./temporal-worker-test-support.ts";
 
 export type MessageWorkerLease = Readonly<{
   worker: Worker;
@@ -147,25 +148,7 @@ export async function startMessageWorker(
   environment: TestWorkflowEnvironment,
   workflowBundle: WorkflowBundleWithSourceMap,
 ): Promise<MessageWorkerLease> {
-  const worker = await Worker.create({
-    connection: environment.nativeConnection,
-    identity: "bpmn-lean-message-probe",
-    taskQueue: bpmnSemanticTaskQueue,
-    workflowBundle,
-  });
-  let failure: unknown;
-  const completion = worker.run().catch((error: unknown) => {
-    failure = error;
-  });
-  await delay(0);
-  if (failure !== undefined) {
-    throw failure;
-  }
-  return {
-    worker,
-    completion,
-    failure: () => failure,
-  };
+  return startBpmnTestWorker(environment, workflowBundle, "bpmn-lean-message-probe");
 }
 
 export async function stopMessageWorker(

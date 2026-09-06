@@ -18,6 +18,7 @@ import {
 } from "@bpmn-lean/temporal-testkit";
 import type { EffectActivityImplementations } from "@bpmn-lean/temporal-testkit";
 import { withDeadline } from "./temporal-test-support.ts";
+import { initializeTestOwnedDeployment, nativeTestWorkerDeploymentOptions } from "./native-worker-deployment-test-support.ts";
 
 const operationDeadlineMs = 10_000;
 const openTaskPollIntervalMs = 25;
@@ -56,6 +57,7 @@ export async function startBpmnTestWorker(
       identity,
       taskQueue: bpmnSemanticTaskQueue,
       workflowBundle,
+      workerDeploymentOptions: nativeTestWorkerDeploymentOptions(workflowBundle),
       activities: {
         ...(activities === undefined ? {} : boundEffectActivities(activities)),
         ...createCorrelationRegistrationActivities(
@@ -81,6 +83,13 @@ export async function startBpmnTestWorker(
   await delay(0);
   if (failure !== undefined) {
     throw failure;
+  }
+  try {
+    await initializeTestOwnedDeployment(environment, bpmnSemanticTaskQueue, workflowBundle);
+  } catch (error: unknown) {
+    worker.shutdown();
+    await completion;
+    throw error;
   }
   return {
     worker,

@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import { enrollmentFixture } from "./worker-deployment-enrollment-fixture.ts";
+import type { EnrollmentFixtureOptions } from "./worker-deployment-enrollment-fixture.ts";
 
 import {
   MessageChannelKind,
@@ -136,8 +138,10 @@ function fakeClient(
   echo: unknown,
   startError?: Error,
   queryError?: Error,
+  enrollment: EnrollmentFixtureOptions = {},
 ): never {
   return {
+    ...enrollmentFixture(taskQueue, enrollment),
     start: async (workflowType: string, options: unknown) => {
       calls.push({ operation: "start", workflowType, options });
       if (startError !== undefined) {
@@ -157,3 +161,53 @@ function fakeClient(
     }),
   } as never;
 }
+
+test("an existing exact ingress stays ready without Current and no start is submitted", async () => {
+  const calls: unknown[] = [];
+  const nativeCalls: string[] = [];
+  const result = await ensureCorrelationIngress(
+    fakeClient(calls, exactEcho, undefined, undefined, { absentCurrent: "workflow", calls: nativeCalls }),
+    { address, configuration: productionCorrelationIngressConfiguration, taskQueue },
+  );
+  assert.deepEqual(result, { kind: "ready", workflowId: correlationIngressWorkflowId(address) });
+  assert.deepEqual(nativeCalls, ["current:workflow"]);
+  assert.deepEqual(calls, [{ operation: "query", workflowId: correlationIngressWorkflowId(address), query: bpmnCorrelationIngressConfigurationQueryName }]);
+});
+
+test("missing Current preserves unqueryable and mismatched ingress refusal without creation", async () => {
+  for (const queryError of [undefined, new Error("no retained ingress")]) {
+    const calls: unknown[] = [];
+    const result = await ensureCorrelationIngress(
+      fakeClient(calls, { ...exactEcho, protocolVersion: "wrong" }, undefined, queryError, { absentCurrent: "workflow" }),
+      { address, configuration: productionCorrelationIngressConfiguration, taskQueue },
+    );
+    assert.deepEqual(result, {
+      kind: "unavailable", workflowId: correlationIngressWorkflowId(address),
+      failure: { kind: queryError === undefined ? "echoMismatch" : "unqueryable" },
+    });
+    assert.equal(calls.length, 1);
+    assert.equal((calls[0] as { operation: string }).operation, "query");
+  }
+});
+
+test("ingress snapshots the address and queue before enrollment yields", async () => {
+  const calls: unknown[] = [];
+  const request = structuredClone({ address, configuration: productionCorrelationIngressConfiguration, taskQueue });
+  const pending = ensureCorrelationIngress(fakeClient(calls, exactEcho), request);
+  (request.address as { processId: string }).processId = "changed";
+  request.taskQueue = "changed";
+  assert.deepEqual(await pending, { kind: "ready", workflowId: correlationIngressWorkflowId(address) });
+  const startCall = calls[0] as { options: { taskQueue: string; args: unknown[] } };
+  assert.equal(startCall.options.taskQueue, taskQueue);
+  assert.deepEqual(startCall.options.args, [address, productionCorrelationIngressConfiguration]);
+});
+
+test("invalid ingress identity performs no native I/O", async () => {
+  const calls: unknown[] = [];
+  const nativeCalls: string[] = [];
+  await assert.rejects(ensureCorrelationIngress(fakeClient(calls, exactEcho, undefined, undefined, { calls: nativeCalls }), {
+    address: { ...address, processId: "" }, configuration: productionCorrelationIngressConfiguration, taskQueue,
+  }), TypeError);
+  assert.deepEqual(calls, []);
+  assert.deepEqual(nativeCalls, []);
+});
