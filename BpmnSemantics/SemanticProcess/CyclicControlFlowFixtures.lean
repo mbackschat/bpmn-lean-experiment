@@ -162,7 +162,7 @@ def cyclicCommittedResult (state : RuntimeState) : StimulusResult :=
     ambiguousInternalChoice := false }
 
 def cyclicBoundedResult (state : RuntimeState) : StimulusResult :=
-  { outcome := .committed
+  { outcome := .rolledBack
     state
     internalStepBoundExceeded := true
     ambiguousInternalChoice := false }

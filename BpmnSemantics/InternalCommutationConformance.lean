@@ -222,9 +222,12 @@ private def selectiveConflictTrace : TracedStimulusResult :=
   applyStimulusTraced scenarioClosureLimit selectiveConflictTraceProgram initialState
     selectiveConflictTraceStart
 
-/-- Refusal preserves the exact state at the conflicting frontier and publishes none of the command's prior internal selections. -/
-theorem selective_later_pair_conflict_preserves_batch_start_and_selects_nothing :
-    selectiveConflictTrace.result.state = selectiveConflictPreBatchState ∧
+/-- CLOSURE-ATOMIC-01 rolls back the full command even when a conflict follows successful internal steps. -/
+theorem selective_later_pair_conflict_restores_command_input_and_selects_nothing :
+    enabledInternalOperationCount selectiveConflictTraceProgram
+        selectiveConflictPreBatchState = 3 ∧
+      selectiveConflictTrace.result.outcome = .rolledBack ∧
+      selectiveConflictTrace.result.state = initialState ∧
       selectiveConflictTrace.result.ambiguousInternalChoice = true ∧
       selectiveConflictTrace.result.internalStepBoundExceeded = false ∧
       selectiveConflictTrace.committedTransitions = [] ∧
@@ -589,7 +592,8 @@ theorem complete_pair_publication_is_order_independent :
 /-- Zero fuel retains bound precedence and does not relabel the frontier as an ambiguous choice. -/
 theorem zero_fuel_bound_precedence_is_unchanged :
     let result := applyStimulus 0 parallelProgram initialState parallelStart
-    result.outcome = .committed ∧ result.internalStepBoundExceeded = true ∧
+    result.outcome = .rolledBack ∧ result.state = initialState ∧
+      result.internalStepBoundExceeded = true ∧
       result.ambiguousInternalChoice = false := by
   decide +kernel
 

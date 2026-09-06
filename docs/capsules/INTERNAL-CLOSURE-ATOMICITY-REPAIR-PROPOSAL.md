@@ -13,7 +13,7 @@ This correction returns `rolledBack`, the exact pre-command RuntimeState, both e
 
 ## Existing contradiction
 
-The [TypeScript evaluator](../../packages/semantic-core/src/semantic-process-runtime.ts) and [Lean evaluator](../../BpmnSemantics/SemanticProcess/TransitionTrace.lean) currently return a committed partially closed state when closure fails. The traced boundaries suppress publication, but the result-only TypeScript contract omits the ambiguity flag. The [selected scheduling account](../INTERNAL-COMMUTATION-PROPOSAL.md#selected-final-closure-account) explicitly preserves that fuel behavior, conflicting with the [atomic publication rule](COMMITTED-EXECUTION-PUBLICATION-SPEC.md#epub-commit-01-atomic-publication).
+At the proposal baseline, the [TypeScript evaluator](../../packages/semantic-core/src/semantic-process-runtime.ts) and [Lean evaluator](../../BpmnSemantics/SemanticProcess/TransitionTrace.lean) returned a committed partially closed state when closure failed. The traced boundaries suppressed publication, but the result-only TypeScript contract omitted the ambiguity flag. The [selected scheduling account](../INTERNAL-COMMUTATION-PROPOSAL.md#selected-final-closure-account) explicitly preserved that fuel behavior, conflicting with the [atomic publication rule](COMMITTED-EXECUTION-PUBLICATION-SPEC.md#epub-commit-01-atomic-publication).
 
 Two root probes on 2026-09-05 reproduce the mechanism through the public core API: starting the fork/join fixture with fuel two, and completing its final waiting task with fuel zero. Both return `committed` with no published transitions. The second case proves that rollback must undo external admission itself, including removal of the completed wait, rather than restoring only the last internal batch boundary.
 
@@ -68,6 +68,8 @@ The [Compensation-aware evaluator](../../BpmnSemantics/SemanticProcess/Compensat
 
 The nearest non-law is that every structurally admitted Program reaches a stable state within the configured fuel. This repair makes failure atomic; it does not establish termination or erase the diagnostic. The principal common-mode risk is restoring the post-admission or pre-batch state in both languages and calling it rollback. The completion witness independently requires the exact original wait, counters, variables, and state.
 
+The related [completion-equality law](../../BpmnSemantics/SemanticProcess/Execution.lean) now requires successful closure: equal admitted successors cannot equate rollback results that restore different inputs. The [atomicity witnesses](../../BpmnSemantics/InternalClosureAtomicityConformance.lean) separate that false stronger claim with two task labels erased by the same admitted completion. The [metadata completion theorem](../../BpmnSemantics/UserTaskMetadataConformance.lean) retains its statement for arbitrary admitted metadata and completion values; its proof discharges success for the fixed continuation. Cyclic reachability and gateway prefix fixtures now use admission and explicit internal steps, with successful-prefix controls, instead of retaining a failed public result as an intermediate state.
+
 ## Temporal hosting and refinement preflight
 
 Ingress, waits, timers, effects, cancellation, lifecycle, deduplication, concurrency, retries, continuation, and replay retain their current mechanisms. The relation remains exact committed semantic state plus committed publication; closure failure must leave both unchanged. The correction moves Workflow failure classification before publication/recovery processing and checks both flags in the harness before observation. No host scheduling primitive supplies an internal choice.
@@ -88,10 +90,10 @@ The [closure documentation guard](../../scripts/semantic-closure-documentation.t
 
 | Owner | Current headroom | Growth condition |
 |---|---:|---|
-| [TypeScript evaluator](../../packages/semantic-core/src/semantic-process-runtime.ts) | 35 | Keep outcome/flag correction local; use a bounded test owner |
-| [Scenario harness](../../packages/semantic-core/src/scenario.ts) | 153 | Check both flags before observation and handle the result union exhaustively |
-| [Lean evaluator](../../BpmnSemantics/SemanticProcess/TransitionTrace.lean) | 171 | Preserve the evaluator/trace boundary and existing general laws |
-| [Compensation-aware Lean evaluator](../../BpmnSemantics/SemanticProcess/CompensationEventSubProcessSnapshotTransitionTrace.lean) | 386 | Correct the independent declaration-bearing producer and prove both public wrappers |
+| [TypeScript evaluator](../../packages/semantic-core/src/semantic-process-runtime.ts) | 29 | Keep outcome/flag correction local; use a bounded test owner |
+| [Scenario harness](../../packages/semantic-core/src/scenario.ts) | 150 | Check both flags before observation and handle the result union exhaustively |
+| [Lean evaluator](../../BpmnSemantics/SemanticProcess/TransitionTrace.lean) | 136 | Preserve the evaluator/trace boundary and existing general laws |
+| [Compensation-aware Lean evaluator](../../BpmnSemantics/SemanticProcess/CompensationEventSubProcessSnapshotTransitionTrace.lean) | 329 | Correct the independent declaration-bearing producer and prove both public wrappers |
 | [Production Workflow loop](../../packages/temporal-adapter/workflow/src/workflow-implementation.ts) | 47 | Classify closure failure before publication/recovery processing; preserve successful recovery |
 
 Rerun bindings for every concrete producer, consumer, and conformance owner before growth. New failure fixtures belong in bounded dedicated test owners rather than overflowing the existing commutation suites.

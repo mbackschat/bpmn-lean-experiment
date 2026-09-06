@@ -297,8 +297,8 @@ inductive CyclicSelectedInternalAction :
 /-- One actual admitted selected-program action: exact start admission, an internal evaluator action, or one matching User Task completion with a valid route patch. -/
 inductive CyclicSelectedAction : RuntimeState → RuntimeState → Prop where
   | admitStart
-      (execution : applyStimulus 0 cyclicProgram initialState
-        cyclicStartStimulus = cyclicBoundedResult cyclicAdmittedStartState) :
+      (execution : admitStimulus cyclicProgram initialState cyclicStartStimulus =
+        { outcome := .committed, state := cyclicAdmittedStartState }) :
       CyclicSelectedAction initialState cyclicAdmittedStartState
   | internal (before after : RuntimeState) (operationId : OperationId)
       (execution : CyclicSelectedInternalAction before operationId after) :

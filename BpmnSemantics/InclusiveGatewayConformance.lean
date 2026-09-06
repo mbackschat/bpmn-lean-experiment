@@ -177,8 +177,9 @@ theorem longest_start_closure_is_four_steps :
   decide +kernel
 
 private def bothSplitState : RuntimeState :=
-  (applyStimulus 2 program initialState
-    (start [present "takeA", present "takeB"])).state
+  (runChoices program
+    (admitStimulus program initialState (start [present "takeA", present "takeB"])).state
+    [⟨"operation:Start"⟩, ⟨"operation:Split"⟩]).getD initialState
 
 private def activatedAThenB : RuntimeState :=
   (runChoices program bothSplitState
@@ -189,7 +190,12 @@ private def activatedBThenA : RuntimeState :=
     [⟨"operation:Task_B"⟩, ⟨"operation:Task_A"⟩]).getD initialState
 
 theorem both_task_activation_orders_have_equal_runtime_and_observation :
-    activatedAThenB = activatedBThenA ∧
+    (runChoices program bothSplitState
+        [⟨"operation:Task_A"⟩, ⟨"operation:Task_B"⟩]).isSome = true ∧
+      (runChoices program bothSplitState
+        [⟨"operation:Task_B"⟩, ⟨"operation:Task_A"⟩]).isSome = true ∧
+      activatedAThenB.waits.map (·.task.id.value) = ["Task_A", "Task_B"] ∧
+      activatedAThenB = activatedBThenA ∧
       observeStableState program activatedAThenB =
         observeStableState program activatedBThenA := by
   decide +kernel

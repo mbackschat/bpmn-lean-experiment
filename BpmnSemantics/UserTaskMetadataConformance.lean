@@ -366,6 +366,45 @@ theorem completion_is_metadata_irrelevant
       SequentialUserTask.exactWait, SequentialUserTask.exactTaskInstanceId,
       successor]
 
+  · have admitted : processDataBindingsAdmitted
+        (programFor exactMetadata).identity.semanticProfile
+        .userTaskCompletion submittedValues = true := by
+      simpa [programFor, checkedProcessFor, lowerCheckedProcess] using valuesAdmitted
+    have completed : completeUserTask (waitingStateFor leftMetadata)
+        SequentialUserTask.exactTaskInstanceId.processInstanceId
+        ⟨SequentialUserTask.exactTaskInstanceId.elementId.value⟩
+        SequentialUserTask.exactTaskInstanceId.activation = some successor := by
+      simp [completeUserTask, waitingStateFor, waitFor, taskDefinitionFor,
+        SequentialUserTask.exactWait, SequentialUserTask.exactTaskInstanceId, successor]
+    simp [applyStimulus, admitStimulus,
+      show (programFor exactMetadata).compensationEventSubProcessSnapshots = none from rfl,
+      show (waitingStateFor leftMetadata).effectIncidents = [] from rfl,
+      show (waitingStateFor leftMetadata).control =
+        .running SequentialUserTask.exactTaskInstanceId.processInstanceId from rfl,
+      show parallelMultiInstanceEntryForTask? (programFor exactMetadata)
+        ⟨SequentialUserTask.exactTaskInstanceId.elementId.value⟩ = none by decide +kernel,
+      show sequentialMultiInstanceOperationForTask? (programFor exactMetadata)
+        ⟨SequentialUserTask.exactTaskInstanceId.elementId.value⟩ = none by decide +kernel,
+      show isMessageBoundedTaskDefinition (programFor exactMetadata)
+        ⟨SequentialUserTask.exactTaskInstanceId.elementId.value⟩ = false by decide +kernel,
+      show isBoundedTaskDefinition (programFor exactMetadata)
+        ⟨SequentialUserTask.exactTaskInstanceId.elementId.value⟩ = false by decide +kernel,
+      show isMonitoredTaskDefinition (programFor exactMetadata)
+        ⟨SequentialUserTask.exactTaskInstanceId.elementId.value⟩ = false by decide +kernel,
+      show isDataInputOutputTaskDefinition (programFor exactMetadata)
+        ⟨SequentialUserTask.exactTaskInstanceId.elementId.value⟩ = false by decide +kernel,
+      show isDataInputTaskDefinition (programFor exactMetadata)
+        ⟨SequentialUserTask.exactTaskInstanceId.elementId.value⟩ = false by decide +kernel,
+      show isDataOutputTaskDefinition (programFor exactMetadata)
+        ⟨SequentialUserTask.exactTaskInstanceId.elementId.value⟩ = false by decide +kernel,
+      completeOrdinaryUserTaskWithCompensation?,
+      show compensationTargetDeclaredForFamily (programFor exactMetadata)
+        ⟨SequentialUserTask.exactTaskInstanceId.elementId.value⟩ .ordinaryUserTask = false
+          by decide +kernel,
+      show isCallActivityProgram (programFor exactMetadata) = false by decide +kernel,
+      completed, admitted]
+    with_unfolding_all rfl
+
 /-- A wrong occurrence preserves the complete metadata-bearing state. -/
 theorem wrong_occurrence_preserves_full_metadata_state :
     applyStimulus scenarioClosureLimit (programFor exactMetadata)

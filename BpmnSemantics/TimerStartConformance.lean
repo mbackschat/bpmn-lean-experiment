@@ -377,8 +377,8 @@ theorem exact_closure_and_overflow_boundary :
       enabledInternalOperationCount program waitingState = 0 ∧
       stableStateResumable waitingState = true ∧
       applyStimulus 1 program initialState trigger =
-        { outcome := .committed
-          state := initiatedState
+        { outcome := .rolledBack
+          state := initialState
           internalStepBoundExceeded := true
           ambiguousInternalChoice := false } := by
   decide +kernel

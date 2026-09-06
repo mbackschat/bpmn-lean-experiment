@@ -468,6 +468,21 @@ structure StimulusResult where
   ambiguousInternalChoice : Bool
   deriving Repr, DecidableEq
 
+/-- `CLOSURE-ATOMIC-01` restores the pre-admission state when bounded closure cannot commit. -/
+def StimulusResult.ofClosure (before successor : RuntimeState)
+    (hitBound ambiguous : Bool) : StimulusResult :=
+  { outcome := if hitBound || ambiguous then .rolledBack else .committed
+    state := if hitBound || ambiguous then before else successor
+    internalStepBoundExceeded := hitBound
+    ambiguousInternalChoice := ambiguous }
+
+theorem StimulusResult.ofClosure_failure_rolls_back
+    (before successor : RuntimeState) (hitBound ambiguous : Bool)
+    (failed : (hitBound || ambiguous) = true) :
+    (StimulusResult.ofClosure before successor hitBound ambiguous).outcome = .rolledBack ∧
+      (StimulusResult.ofClosure before successor hitBound ambiguous).state = before := by
+  simp [StimulusResult.ofClosure, failed]
+
 /-- Result plus an unnumbered trace. Empty is the only representation of unpublishability. -/
 structure TracedStimulusResult where
   result : StimulusResult
@@ -489,11 +504,8 @@ private def evaluateStimulus (closureLimit : Nat) (program : Program)
       let externalLifecycle := flowNodeOccurrenceDeltaForStimulus? program state
         admission.state stimulus 0
       let closure := closeSupportedTraced closureLimit program commandId 1 admission.state
-      let result : StimulusResult :=
-        { outcome := .committed
-          state := closure.state
-          internalStepBoundExceeded := closure.hitBound
-          ambiguousInternalChoice := closure.ambiguousChoice }
+      let result := StimulusResult.ofClosure state closure.state
+        closure.hitBound closure.ambiguousChoice
       if closure.hitBound || closure.ambiguousChoice then
         { result, candidateTransitions := none, candidateLifecycles := none }
       else
@@ -563,15 +575,26 @@ def applyStimulus (closureLimit : Nat) (program : Program)
   | .committed =>
       let closure := closeSupportedTraced closureLimit program (stimulusCommandId stimulus) 1
         admission.state
-      { outcome := .committed
-        state := closure.state
-        internalStepBoundExceeded := closure.hitBound
-        ambiguousInternalChoice := closure.ambiguousChoice }
+      StimulusResult.ofClosure state closure.state closure.hitBound closure.ambiguousChoice
   | outcome =>
       { outcome
         state := admission.state
         internalStepBoundExceeded := false
         ambiguousInternalChoice := false }
+
+theorem applyStimulus_closure_failure_rolls_back
+    (closureLimit : Nat) (program : Program) (state : RuntimeState) (stimulus : Stimulus)
+    (failed : ((applyStimulus closureLimit program state stimulus).internalStepBoundExceeded ||
+      (applyStimulus closureLimit program state stimulus).ambiguousInternalChoice) = true) :
+    (applyStimulus closureLimit program state stimulus).outcome = .rolledBack ∧
+      (applyStimulus closureLimit program state stimulus).state = state := by
+  unfold applyStimulus at failed ⊢
+  generalize admissionEq : admitStimulus program state stimulus = admission at failed ⊢
+  cases outcomeEq : admission.outcome
+  case committed =>
+    simp only [outcomeEq] at failed ⊢
+    exact StimulusResult.ofClosure_failure_rolls_back _ _ _ _ failed
+  all_goals simp [outcomeEq] at failed
 
 theorem applyStimulus_withSnapshotDeclaration_rejects
     (closureLimit : Nat) (program : Program) (state : RuntimeState)
@@ -654,7 +677,7 @@ theorem applyStimulusTraced_emitted_trace_replays
           (evaluateStimulus_result_eq_applyStimulus closureLimit program state stimulus)
   all_goals simp at published
 
-/-- Non-committed admission has no public trace. -/
+/-- Non-committed command results have no public trace. -/
 theorem applyStimulusTraced_noncommitted_has_no_trace
     (closureLimit : Nat) (program : Program) (state : RuntimeState) (stimulus : Stimulus)
     (notCommitted : (applyStimulus closureLimit program state stimulus).outcome ≠ .committed) :
@@ -681,5 +704,21 @@ theorem applyStimulusTraced_no_trace_has_no_lifecycle
   cases candidate with
   | none => rfl
   | some lifecycles => cases lifecycles <;> simp
+
+theorem applyStimulusTraced_closure_failure_is_atomic
+    (closureLimit : Nat) (program : Program) (state : RuntimeState) (stimulus : Stimulus)
+    (failed : ((applyStimulusTraced closureLimit program state stimulus).result.internalStepBoundExceeded ||
+      (applyStimulusTraced closureLimit program state stimulus).result.ambiguousInternalChoice) = true) :
+    (applyStimulusTraced closureLimit program state stimulus).result.outcome = .rolledBack ∧
+      (applyStimulusTraced closureLimit program state stimulus).result.state = state ∧
+      (applyStimulusTraced closureLimit program state stimulus).committedTransitions = [] ∧
+      (applyStimulusTraced closureLimit program state stimulus).flowNodeOccurrenceLifecycles = [] := by
+  rw [applyStimulusTraced_erases_to_applyStimulus] at failed
+  have rollback := applyStimulus_closure_failure_rolls_back closureLimit program state stimulus failed
+  have noTrace := applyStimulusTraced_noncommitted_has_no_trace closureLimit program state stimulus
+    (by rw [rollback.1]; decide +kernel)
+  exact ⟨by simpa [applyStimulusTraced_erases_to_applyStimulus] using rollback.1,
+    by simpa [applyStimulusTraced_erases_to_applyStimulus] using rollback.2,
+    noTrace, applyStimulusTraced_no_trace_has_no_lifecycle _ _ _ _ noTrace⟩
 
 end BpmnSemantics.SemanticProcess

@@ -120,13 +120,14 @@ def timerWon : StimulusResult :=
   applyStimulus scenarioClosureLimit program armed.state timerStimulus
 
 def beforeArming : RuntimeState :=
-  (applyStimulus 1 program initialState startStimulus).state
+  (runChoices program (admitStimulus program initialState startStimulus).state
+    [⟨"operation:Start"⟩]).getD initialState
 
 def messageCommittedBeforeClosure : RuntimeState :=
-  (applyStimulus 0 program armed.state messageStimulus).state
+  (admitStimulus program armed.state messageStimulus).state
 
 def timerCommittedBeforeClosure : RuntimeState :=
-  (applyStimulus 0 program armed.state timerStimulus).state
+  (admitStimulus program armed.state timerStimulus).state
 
 def messageCompleted : StimulusResult :=
   applyStimulus scenarioClosureLimit program messageWon.state completeMessageTask
@@ -322,6 +323,14 @@ theorem start_closure_arms_atomically_in_two_steps :
         false ∧
       armed.internalStepBoundExceeded = false ∧
       enabledInternalOperationCount program armed.state = 0 := by
+  decide +kernel
+
+theorem intermediate_prefixes_have_successful_admission_and_internal_steps :
+    (admitStimulus program initialState startStimulus).outcome = .committed ∧
+      runChoices program (admitStimulus program initialState startStimulus).state
+        [⟨"operation:Start"⟩] = some beforeArming ∧
+      (admitStimulus program armed.state messageStimulus).outcome = .committed ∧
+      (admitStimulus program armed.state timerStimulus).outcome = .committed := by
   decide +kernel
 
 theorem exact_arming_is_permitted_by_the_declarative_relation :

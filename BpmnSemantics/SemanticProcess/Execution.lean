@@ -189,8 +189,8 @@ theorem effect_result_route_failure_is_rejected
     | some _ => simp [admitStimulus, declared]
   simp [applyStimulus, rejectedAdmission]
 
-/-- Matching non-compensation-target ordinary User Task completions are equal when admission and the
-semantic successor agree. -/
+/-- Matching ordinary User Task completions with one admitted successor agree after successful closure.
+`CLOSURE-ATOMIC-01` retains each distinct input on rollback, so admitted-successor equality alone does not equate failed results. -/
 theorem user_task_completion_with_same_successor_is_equal
     (closureLimit : Nat) (program : Program)
     (leftState rightState successor : RuntimeState)
@@ -225,18 +225,22 @@ theorem user_task_completion_with_same_successor_is_equal
     (leftCompletion : completeUserTask leftState submittedTaskId.processInstanceId
       ⟨submittedTaskId.elementId.value⟩ submittedTaskId.activation = some successor)
     (rightCompletion : completeUserTask rightState submittedTaskId.processInstanceId
-      ⟨submittedTaskId.elementId.value⟩ submittedTaskId.activation = some successor) :
+      ⟨submittedTaskId.elementId.value⟩ submittedTaskId.activation = some successor)
+    (committed : (applyStimulus closureLimit program leftState
+      (.completeUserTaskInstance completionCommandId submittedTaskId submittedValues)).outcome =
+        .committed) :
     applyStimulus closureLimit program leftState
         (.completeUserTaskInstance completionCommandId submittedTaskId submittedValues) =
       applyStimulus closureLimit program rightState
         (.completeUserTaskInstance completionCommandId submittedTaskId submittedValues) := by
-  simp [applyStimulus, admitStimulus, snapshotAbsent, leftNoIncidents,
+  simp [applyStimulus, StimulusResult.ofClosure, admitStimulus, snapshotAbsent, leftNoIncidents,
     rightNoIncidents, leftRunning, rightRunning,
     ordinaryTask.1, ordinaryTask.2, noSequentialMultiInstance, noParallelMultiInstance,
     noMessageBoundedTask, noDataInputOutputTask, noDataInputTask, noDataOutputTask,
     ordinaryProgram, valuesAdmitted,
     completeOrdinaryUserTaskWithCompensation?, nonCompensationTarget, leftCompletion,
-    rightCompletion]
+    rightCompletion] at committed ⊢
+  simp_all
 
 /-- Any ordinary-family mismatch in the full semantic task-occurrence identity rejects completion with exact state preservation. -/
 theorem task_identity_mismatch_is_rejected

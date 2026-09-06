@@ -48,9 +48,9 @@ private theorem cyclic_execution_review_lookup :
   decide +kernel
 
 theorem representative_start_admission_is_exact :
-    applyStimulus 0 cyclicProgram initialState cyclicStartStimulus =
-      cyclicBoundedResult cyclicAdmittedStartState := by
-  decide +kernel
+    admitStimulus cyclicProgram initialState cyclicStartStimulus =
+      { outcome := .committed, state := cyclicAdmittedStartState } := by
+  rfl
 
 theorem representative_start_operation_is_exact :
     step cyclicProgram cyclicAdmittedStartState ⟨"operation:Start"⟩ =
@@ -200,8 +200,8 @@ def cyclicExitClosureTrace : List OperationId := cyclicExitChoices
 inductive CyclicReviewedThenExitExecution
     (choices : List CyclicReviewedChoice) (final : RuntimeState) : Prop where
   | performed (priorRoute : Option String)
-      (admission : applyStimulus 0 cyclicProgram initialState
-        cyclicStartStimulus = cyclicBoundedResult cyclicAdmittedStartState)
+      (admission : admitStimulus cyclicProgram initialState cyclicStartStimulus =
+        { outcome := .committed, state := cyclicAdmittedStartState })
       (initialClosure : runChoices cyclicProgram cyclicAdmittedStartState
         cyclicStartClosureTrace = some (cyclicWaitingState 1 none))
       (reviewed : CyclicReviewedExecution 1 none choices

@@ -100,7 +100,30 @@ test("one admitted start publishes its external stimulus and every selected clos
   );
 });
 
-test("replay rejects missing, reordered, duplicated, or independently substituted operation facts", () => {
+test("independent emitted task arming records replay to the same state in either order", () => {
+  const traced = applyStimulusWithTrace(
+    parallelProgram,
+    initialState,
+    startStimulus(),
+  );
+  const records = traced.committedTransitions;
+  assert.equal(requireInternal(records, 3).operationId, "operation:UserTask_A");
+  assert.equal(requireInternal(records, 4).operationId, "operation:UserTask_B");
+  const swapped = [
+    ...records.slice(0, 3),
+    records[4]!,
+    records[3]!,
+    ...records.slice(5),
+  ];
+
+  assert.notDeepEqual(swapped, records);
+  assert.deepEqual(
+    replayCommittedTransitions(parallelProgram, initialState, swapped),
+    traced.result.state,
+  );
+});
+
+test("replay rejects missing, dependency-reordered, duplicated, or independently substituted operation facts", () => {
   const traced = applyStimulusWithTrace(
     parallelProgram,
     initialState,
@@ -109,6 +132,8 @@ test("replay rejects missing, reordered, duplicated, or independently substitute
   const records = traced.committedTransitions;
   const firstInternal = requireInternal(records, 1);
   const secondInternal = requireInternal(records, 2);
+  assert.equal(firstInternal.operationId, "operation:StartEvent_1");
+  assert.equal(secondInternal.operationId, "operation:Gateway_Fork");
 
   const mutations: ReadonlyArray<ReadonlyArray<UnnumberedCommittedTransitionRecord>> = [
     records.filter((_, index) => index !== 2),
@@ -143,7 +168,7 @@ test("replay rejects missing, reordered, duplicated, or independently substitute
     );
     assert.ok(
       replayed === null || !sameJson(replayed, traced.result.state),
-      "a changed complete transition record must not replay to the committed result",
+      "a dependency or metadata mutation must not replay to the committed result",
     );
   }
 });

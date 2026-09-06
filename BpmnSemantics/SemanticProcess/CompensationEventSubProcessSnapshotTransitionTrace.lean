@@ -256,11 +256,8 @@ private def evaluateStimulusWithCompensationSnapshots (closureLimit : Nat)
             candidateTransitions := none
             candidateLifecycles := none }
       | none =>
-          let result : StimulusResult :=
-            { outcome := .committed
-              state := closure.state
-              internalStepBoundExceeded := closure.hitBound
-              ambiguousInternalChoice := closure.ambiguousChoice }
+          let result := StimulusResult.ofClosure state closure.state
+            closure.hitBound closure.ambiguousChoice
           if closure.hitBound || closure.ambiguousChoice then
             { result, candidateTransitions := none, candidateLifecycles := none }
           else
@@ -280,6 +277,30 @@ private def evaluateStimulusWithCompensationSnapshots (closureLimit : Nat)
             ambiguousInternalChoice := false }
         candidateTransitions := none
         candidateLifecycles := none }
+
+private theorem evaluateStimulusWithCompensationSnapshots_failure_rolls_back
+    (closureLimit : Nat) (program : Program) (state : RuntimeState) (stimulus : Stimulus)
+    (failed : ((evaluateStimulusWithCompensationSnapshots closureLimit program state
+      stimulus).result.internalStepBoundExceeded ||
+      (evaluateStimulusWithCompensationSnapshots closureLimit program state
+        stimulus).result.ambiguousInternalChoice) = true) :
+    (evaluateStimulusWithCompensationSnapshots closureLimit program state stimulus).result.outcome =
+        .rolledBack ∧
+      (evaluateStimulusWithCompensationSnapshots closureLimit program state stimulus).result.state =
+        state := by
+  unfold evaluateStimulusWithCompensationSnapshots at failed ⊢
+  generalize admissionEq : admitStimulusWithCompensationSnapshots program state stimulus =
+    admission at failed ⊢
+  cases outcomeEq : admission.outcome
+  case committed =>
+    simp only [outcomeEq] at failed ⊢
+    generalize closureEq : closeSupportedTracedWithCompensationSnapshots closureLimit program
+      (stimulusCommandId stimulus) 1 admission.state = closure at failed ⊢
+    cases closure with
+    | mk successor hitBound ambiguous records lifecycles refusal =>
+        cases refusal <;> cases hitBound <;> cases ambiguous <;>
+          simp_all [StimulusResult.ofClosure]
+  all_goals simp [outcomeEq] at failed
 
 private def replayCheckedSnapshotTransitions (program : Program)
     (initial result : RuntimeState) :
@@ -335,6 +356,22 @@ def applyStimulusTracedWithCompensationSnapshots (closureLimit : Nat)
       committedTransitions := publishSnapshotTransitions program state evaluated
       flowNodeOccurrenceLifecycles := publishSnapshotLifecycles program state evaluated }
   else applyStimulusTraced closureLimit program state stimulus
+
+theorem applyStimulusWithCompensationSnapshots_closure_failure_rolls_back
+    (closureLimit : Nat) (program : Program) (state : RuntimeState) (stimulus : Stimulus)
+    (failed : ((applyStimulusWithCompensationSnapshots closureLimit program state
+      stimulus).internalStepBoundExceeded ||
+      (applyStimulusWithCompensationSnapshots closureLimit program state
+        stimulus).ambiguousInternalChoice) = true) :
+    (applyStimulusWithCompensationSnapshots closureLimit program state stimulus).outcome =
+        .rolledBack ∧
+      (applyStimulusWithCompensationSnapshots closureLimit program state stimulus).state = state := by
+  by_cases focused : program.compensationEventSubProcessSnapshots.isSome ||
+      program.compensationExecution.isSome
+  · simp only [applyStimulusWithCompensationSnapshots, focused, if_true] at failed ⊢
+    exact evaluateStimulusWithCompensationSnapshots_failure_rolls_back _ _ _ _ failed
+  · simp only [applyStimulusWithCompensationSnapshots, focused] at failed ⊢
+    exact applyStimulus_closure_failure_rolls_back _ _ _ _ failed
 
 /-- Declaration-free Programs preserve the exact base evaluator. -/
 theorem applyStimulusWithCompensationSnapshots_withoutDeclaration
@@ -426,6 +463,29 @@ theorem applyStimulusTracedWithCompensationSnapshots_no_trace_has_no_lifecycle
   · simpa [applyStimulusTracedWithCompensationSnapshots, focused] using
       applyStimulusTraced_no_trace_has_no_lifecycle closureLimit program state stimulus
         (by simpa [applyStimulusTracedWithCompensationSnapshots, focused] using noTrace)
+
+theorem applyStimulusTracedWithCompensationSnapshots_closure_failure_is_atomic
+    (closureLimit : Nat) (program : Program) (state : RuntimeState) (stimulus : Stimulus)
+    (failed : ((applyStimulusTracedWithCompensationSnapshots closureLimit program state
+      stimulus).result.internalStepBoundExceeded ||
+      (applyStimulusTracedWithCompensationSnapshots closureLimit program state
+        stimulus).result.ambiguousInternalChoice) = true) :
+    (applyStimulusTracedWithCompensationSnapshots closureLimit program state stimulus).result.outcome =
+        .rolledBack ∧
+      (applyStimulusTracedWithCompensationSnapshots closureLimit program state stimulus).result.state =
+        state ∧
+      (applyStimulusTracedWithCompensationSnapshots closureLimit program state
+        stimulus).committedTransitions = [] ∧
+      (applyStimulusTracedWithCompensationSnapshots closureLimit program state
+        stimulus).flowNodeOccurrenceLifecycles = [] := by
+  rw [applyStimulusTracedWithCompensationSnapshots_erases_to_result] at failed
+  have rollback := applyStimulusWithCompensationSnapshots_closure_failure_rolls_back
+    closureLimit program state stimulus failed
+  have noTrace := applyStimulusTracedWithCompensationSnapshots_noncommitted_has_no_trace
+    closureLimit program state stimulus (by rw [rollback.1]; decide +kernel)
+  exact ⟨by simpa [applyStimulusTracedWithCompensationSnapshots_erases_to_result] using rollback.1,
+    by simpa [applyStimulusTracedWithCompensationSnapshots_erases_to_result] using rollback.2,
+    noTrace, applyStimulusTracedWithCompensationSnapshots_no_trace_has_no_lifecycle _ _ _ _ noTrace⟩
 
 /-- Any snapshot closure refusal rejects the complete command against its submitted pre-state. -/
 theorem applyStimulusWithCompensationSnapshots_closure_refusal_rejects_atomically

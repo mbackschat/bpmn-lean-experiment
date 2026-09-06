@@ -461,7 +461,7 @@ theorem start_closes_in_exactly_three_internal_steps :
 
 theorem start_fails_closed_at_internal_limit_two :
     applyStimulus 2 cyclicProgram initialState cyclicStartStimulus =
-      cyclicBoundedResult cyclicInitialPostMergeState := by
+      cyclicBoundedResult initialState := by
   decide +kernel
 
 theorem repeat_closes_in_exactly_three_internal_steps :
@@ -473,7 +473,7 @@ theorem repeat_closes_in_exactly_three_internal_steps :
 theorem repeat_fails_closed_at_internal_limit_two :
     applyStimulus 2 cyclicProgram (cyclicWaitingState 1 none)
       (cyclicCompletionStimulus 1 "repeat") =
-      cyclicBoundedResult (cyclicPostMergeState 1 "repeat") := by
+      cyclicBoundedResult (cyclicWaitingState 1 none) := by
   decide +kernel
 
 theorem exit_closes_in_exactly_three_internal_steps :
@@ -485,7 +485,7 @@ theorem exit_closes_in_exactly_three_internal_steps :
 theorem exit_fails_closed_at_internal_limit_two :
     applyStimulus 2 cyclicProgram (cyclicWaitingState 1 none)
       (cyclicCompletionStimulus 1 "exit") =
-      cyclicBoundedResult (cyclicPostEndState 1 "exit") := by
+      cyclicBoundedResult (cyclicWaitingState 1 none) := by
   decide +kernel
 
 /-- Stable reachability is generated only by exact executable command results, rather than by the phase inventory used for intermediate invariants. -/

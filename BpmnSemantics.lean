@@ -79,6 +79,7 @@ import BpmnSemantics.SemanticProcess.InternalCommutationCensus
 import BpmnSemantics.SemanticProcess.InternalCommutationRegion
 import BpmnSemantics.SemanticProcess.InternalCommutationPublication
 import BpmnSemantics.InternalCommutationConformance
+import BpmnSemantics.InternalClosureAtomicityConformance
 
 /-! Root of the BPMN semantic contract library.
 

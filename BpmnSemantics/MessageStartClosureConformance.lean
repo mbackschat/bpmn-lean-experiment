@@ -53,8 +53,8 @@ theorem exact_closure_length_fits_production_limit :
 /-- A one-step test limit reports the remaining enabled User Task operation. -/
 theorem one_step_limit_reports_overflow :
     applyStimulus 1 program initialState trigger =
-      { outcome := .committed
-        state := initiatedState
+      { outcome := .rolledBack
+        state := initialState
         internalStepBoundExceeded := true
         ambiguousInternalChoice := false } := by
   decide +kernel
