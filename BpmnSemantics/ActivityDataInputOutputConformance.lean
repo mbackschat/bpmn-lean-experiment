@@ -2,6 +2,7 @@ import BpmnSemantics.SemanticProcess.ActivityDataInputOutputActivationRuntimeSta
 import BpmnSemantics.SemanticProcess.ActivityDataInputOutputCompletionRuntimeStatePreservation
 import BpmnSemantics.ActivityDataInputOutputAdmissionConformance
 import BpmnSemantics.ActivityDataInputOutputRefusalConformance
+import BpmnSemantics.ActivityDataInputOutputProjectionConformance
 
 /-! # Composed Activity data-input/output conformance
 

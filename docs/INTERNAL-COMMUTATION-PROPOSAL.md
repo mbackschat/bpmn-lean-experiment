@@ -292,6 +292,8 @@ The focused TypeScript gate owns the closure classifier and both-order oracle. T
 
 ## Final-closure evidence and adversarial oracles
 
+The Activity-data preparation prerequisite retains [exact open-set projection witnesses](../BpmnSemantics/ActivityDataInputOutputProjectionConformance.lean) for admitted input-only, output-only, and composed states. The Lean User Task matcher classifies the closed operation union exhaustively, and Effect-local exactness applies only to the Effect owner arm of `LocalDataOwner`, preserving the existing TypeScript account. Wrong output, task name, live owner, either metadata field, and an orphan Effect scope remain rejected. These are projection regressions; they establish no Activity-data preparation, frame, or commutation law.
+
 The first final-closure Red was a three-arm ordinary User Task frontier whose complete pairwise-independent footprints reach one equal canonical state under all six permutations. Production before the first final-implementation checkpoint reported ambiguity solely because the frontier was larger than two. The second is a four-arm User Task, Message, Timer, and effect frontier. Removing any one family preparation, comparing only the first two candidates, or letting batch order affect publication must fail independently.
 
 The region separator uses two enabled operations in disjoint sibling occurrences and a second state that moves one operation into the other's descendant occurrence. The sibling case must batch; the ancestor/descendant case must conflict even when every concrete pre-existing collection key differs. A mutation that compares only region-root equality must accept the wrong case and fail the oracle.

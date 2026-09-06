@@ -2,7 +2,7 @@ import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidityCore
 
 /-! # Flow-node occurrence Effect Program validity
 
-This module owns immutable-Program correspondence for Effect waits and incidents together with the private exact bijection between Effect occurrences and Activity-local variable scopes. It does not define Effect execution or incident transitions.
+This module owns immutable-Program correspondence for Effect waits and incidents together with the private exact bijection between Effect occurrences and Effect-owned local variable scopes. It does not define Effect execution or incident transitions.
 -/
 
 namespace BpmnSemantics.SemanticProcess
@@ -32,7 +32,10 @@ private def effectLocalScopesExact (state : RuntimeState) : Bool :=
       | [activity] => activity.bindings = wait.arguments
       | _ => false) &&
     state.variables.activities.all fun activity =>
-      (waits.filter fun wait => activityScopeMatches (effectWaitOccurrenceId wait) activity).length = 1
+      match activity.owner with
+      | .effectOccurrence _ =>
+          (waits.filter fun wait => activityScopeMatches (effectWaitOccurrenceId wait) activity).length = 1
+      | .activityOccurrence _ => true
 
 /-- Program correspondence and exact Activity-local scope ownership for Effect waits and incidents. -/
 def flowNodeOccurrenceEffectProgramValidity (program : Program) (state : RuntimeState) : Bool :=
@@ -183,12 +186,16 @@ private theorem effectLocalScopesExact_insert (state : RuntimeState) (inserted :
         freshIncidents incident incidentMem, addActivityVariableScope,
         filter_insertActivityVariableScope_of_rejected _ _ rejected] using incidentPrior
   · change (insertActivityVariableScope insertedActivity state.variables.activities).all
-      (fun activity => decide ((afterWaits.filter fun wait =>
-        activityScopeMatches (effectWaitOccurrenceId wait) activity).length = 1)) = true
+      (fun activity => match activity.owner with
+        | .effectOccurrence _ => decide ((afterWaits.filter fun wait =>
+            activityScopeMatches (effectWaitOccurrenceId wait) activity).length = 1)
+        | .activityOccurrence _ => true) = true
     rw [all_insertActivityVariableScope]
     simp only [Bool.and_eq_true]
     refine ⟨?_, ?_⟩
-    · simp only [decide_eq_true_eq]
+    · change decide ((afterWaits.filter fun wait =>
+        activityScopeMatches (effectWaitOccurrenceId wait) insertedActivity).length = 1) = true
+      rw [decide_eq_true_eq]
       have selfMatch :
           activityScopeMatches (effectWaitOccurrenceId inserted) insertedActivity = true := by
         simp [insertedActivity, activityScopeMatches, localDataOwnerMatches]
@@ -202,8 +209,11 @@ private theorem effectLocalScopesExact_insert (state : RuntimeState) (inserted :
     · rw [List.all_eq_true]
       intro activity member
       have activityPrior := activitiesPrior activity member
-      simpa [afterWaits, beforeWaits, length_filter_insertEffectWait,
-        freshActivities activity member] using activityPrior
+      cases ownerEq : activity.owner with
+      | effectOccurrence _ =>
+        simpa [ownerEq, afterWaits, beforeWaits, length_filter_insertEffectWait,
+          freshActivities activity member] using activityPrior
+      | activityOccurrence _ => simp
 
 /-- Inserting one exact ordinary Effect wait and its matching Activity-local scope preserves the
 Effect-family Program correspondence. -/

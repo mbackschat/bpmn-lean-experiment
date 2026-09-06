@@ -36,6 +36,8 @@ The family map owns the independently closure-reviewed Activity boundary Message
 
 `INTERNAL-COMMUTATION` implements reject mode and pairwise-independent ordinary User Task, Message, Timer, and effect frontiers in both evaluators. Lean proves exact pairs and checks all six three-task orders; arbitrary-batch proof, scheduled choice, region batching, and other families remain absent. The earlier checkpoint is independently approved. The [atomicity repair](capsules/INTERNAL-CLOSURE-ATOMICITY-REPAIR-SPEC.md) adds quantified Lean rollback/no-publication laws, explicit flags, matching TypeScript behavior, and replay discriminators. Its checkpoint is independently approved; Temporal classifies failure before publication.
 
+Lean [data-task projection](../BpmnSemantics/ActivityDataInputOutputProjectionConformance.lean) is corrected.
+
 The independently approved first boundary Compensation retention checkpoint implements completed-Activity representation and pure transition preparation.
 
 The Compensation Event Sub-Process snapshot checkpoint is independently approved. Lean and the independently written TypeScript core validate canonical parent/handler declarations and hidden provisional/promoted context records, reserve on root/child entry, promote from the deciding pre-completion context, purge unsuccessful or unselected-root records, retain selected-root terminal ownership, and refuse count/byte overflow with exact pre-stimulus state and no trace or publication. Closure uses a focused three-arm attempt path with quantified exact delegation for declaration-free Programs; Lean separately proves aggregate state validity for every applied child entry, bounded-child entry, and scope completion successor.

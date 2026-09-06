@@ -18,6 +18,11 @@ private def userTaskWaitValid (program : Program) (state : RuntimeState)
       else match operation with
       | .awaitUserTask _ _ _ output task =>
           output = wait.output && task = wait.task && wait.metadata = task.metadata
+      | .awaitDataInputUserTask _ _ _ output taskId taskName _
+      | .awaitDataInputOutputUserTask _ _ _ output taskId taskName _ _
+      | .awaitDataOutputUserTask _ _ _ output taskId taskName _ =>
+          taskId = wait.task.id && taskName = wait.task.name && output = wait.output &&
+            wait.task.metadata.isNone && wait.metadata.isNone
       | .awaitBoundedUserTask _ _ _ task _
       | .awaitMessageBoundedUserTask _ _ _ task _
       | .awaitMonitoredUserTask _ _ _ task _ =>
@@ -29,7 +34,15 @@ private def userTaskWaitValid (program : Program) (state : RuntimeState)
       | .awaitParallelMultiInstanceUserTask _ _ _ taskId taskName _ normalOutput _ _ _ =>
           taskId = wait.task.id && taskName = wait.task.name && normalOutput = wait.output &&
             wait.task.metadata.isNone && wait.metadata.isNone
-      | _ => false).length = 1
+      | .initiate .. | .initiateMessage .. | .initiateTimer ..
+      | .enterScope .. | .enterBoundedScope .. | .invokeProcess .. | .returnProcess ..
+      | .completeParallelMultiInstanceUserTask .. | .awaitTimer ..
+      | .awaitMessage .. | .awaitPayloadMessage .. | .awaitCorrelatedPayloadMessage ..
+      | .awaitEventRace .. | .awaitEffect ..
+      | .duplicate .. | .synchronize .. | .mergeExclusive ..
+      | .choose .. | .selectMany .. | .synchronizeSelected ..
+      | .throwError .. | .reachNoneEnd .. | .terminateScope ..
+      | .completeScope .. | .triggerCompensation .. => false).length = 1
 
 private def messageWaitId (wait : MessageWait) : OccurrenceId :=
   { processInstanceId := wait.processInstanceId
