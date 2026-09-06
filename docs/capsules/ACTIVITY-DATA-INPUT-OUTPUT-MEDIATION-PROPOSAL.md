@@ -245,7 +245,7 @@ The nearest unsupported data claim is two alternative InputSets or OutputSets wi
 
 ## Closure cost
 
-At closure, record the commit-bounded code and documentation churn in the [capsule cost ledger](../CAPSULE-COST-LEDGER.md), compared with the output capsule because it changed the same source, checked, IL, Lean/core, differential, Temporal, corpus, and Product 2 contract layers. Record observed wall time only if exact timestamps exist; do not reconstruct it from commits.
+The [capsule cost ledger](../CAPSULE-COST-LEDGER.md#measurements) records the contiguous proposal-approval-to-implementation range and the separate registration/evidence slice. The former includes the six external-review repairs without subtraction and is a conservative programme bound, not pure attribution to this data composition. Activity data-output remains the nearest same-layer comparator. The closure removes the temporary checkpoint-profile enrollment from product consumers and reuses the existing passive Update host; it creates no second local-data shape or host runtime. Authoring wall time is unknown.
 
 ## Implemented closure evidence
 
