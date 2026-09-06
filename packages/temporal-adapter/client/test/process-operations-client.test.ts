@@ -304,12 +304,13 @@ type FakeHandle = Readonly<{
 }>;
 
 function fakeClient(handles: Readonly<Record<string, FakeHandle>>): never {
+  const connection = { withDeadline: async (_deadline: number, invoke: () => Promise<unknown>) => invoke() };
   return {
-    connection: { withDeadline: async (_deadline: number, invoke: () => Promise<unknown>) => invoke() },
-    getHandle: (workflowId: string) => handles[workflowId] ?? {
+    connection,
+    getHandle: (workflowId: string) => ({ client: { connection }, ...(handles[workflowId] ?? {
       query: async () => { throw notFound(workflowId); },
       result: async () => { throw notFound(workflowId); },
-    },
+    }) }),
   } as never;
 }
 

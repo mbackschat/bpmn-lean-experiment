@@ -68,13 +68,15 @@ export async function ensureCorrelationIngress(
   try {
     await requireWorkerDeploymentEnrollment(workflowClient, taskQueue);
     await withDeadline(
-      workflowClient.start(bpmnCorrelationIngressWorkflowType, {
-        taskQueue,
-        workflowId,
-        workflowIdReusePolicy: "REJECT_DUPLICATE",
-        workflowIdConflictPolicy: "FAIL",
-        args: [expectedEcho.address, expectedEcho.configuration],
-      }),
+      workflowClient.connection.withDeadline(Date.now() + operationDeadlineMs, () =>
+        workflowClient.start(bpmnCorrelationIngressWorkflowType, {
+          taskQueue,
+          workflowId,
+          workflowIdReusePolicy: "REJECT_DUPLICATE",
+          workflowIdConflictPolicy: "FAIL",
+          args: [expectedEcho.address, expectedEcho.configuration],
+        })
+      ),
       operationDeadlineMs,
       "Correlation ingress Workflow creation",
     );
@@ -85,8 +87,10 @@ export async function ensureCorrelationIngress(
   let observed: unknown;
   try {
     observed = await withDeadline(
-      workflowClient.getHandle(workflowId).query(
-        bpmnCorrelationIngressConfigurationQueryName,
+      workflowClient.connection.withDeadline(Date.now() + operationDeadlineMs, () =>
+        workflowClient.getHandle(workflowId).query(
+          bpmnCorrelationIngressConfigurationQueryName,
+        )
       ),
       operationDeadlineMs,
       "Correlation ingress configuration Query",

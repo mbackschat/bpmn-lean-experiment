@@ -238,14 +238,16 @@ export async function startPreparedTemporalDefinition(
   const workflowClient = workflowClientOf(client);
   await requireWorkerDeploymentEnrollment(workflowClient, snapshot.taskQueue);
   await withDeadline(
-    workflowClient.start(bpmnProcessWorkflowType, {
-      taskQueue: snapshot.taskQueue,
-      workflowId: snapshot.workflowId,
-      workflowIdReusePolicy: "REJECT_DUPLICATE",
-      workflowIdConflictPolicy: "FAIL",
-      args: [snapshot.start, snapshot.semanticProcess, snapshot.hostInput],
-      memo: { [directStartMemoKey]: prepared.intent.intentSha256 },
-    }),
+    workflowClientOf(client).connection.withDeadline(Date.now() + operationDeadlineMs, () =>
+      workflowClient.start(bpmnProcessWorkflowType, {
+        taskQueue: snapshot.taskQueue,
+        workflowId: snapshot.workflowId,
+        workflowIdReusePolicy: "REJECT_DUPLICATE",
+        workflowIdConflictPolicy: "FAIL",
+        args: [snapshot.start, snapshot.semanticProcess, snapshot.hostInput],
+        memo: { [directStartMemoKey]: prepared.intent.intentSha256 },
+      })
+    ),
     operationDeadlineMs,
     "Direct Start Workflow creation",
   );
@@ -260,7 +262,9 @@ export async function describeTemporalDefinitionStart(
   requireNonempty(workflowId, "workflowId");
   try {
     const description = await withDeadline(
-      workflowClientOf(client).getHandle(workflowId).describe(),
+      workflowClientOf(client).connection.withDeadline(Date.now() + operationDeadlineMs, () =>
+        workflowClientOf(client).getHandle(workflowId).describe()
+      ),
       operationDeadlineMs,
       "Direct Start Workflow description",
     );

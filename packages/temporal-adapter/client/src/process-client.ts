@@ -67,9 +67,11 @@ export async function readBpmnProcessTrace(
   processInstanceId: string,
 ): Promise<ReadonlyArray<CanonicalObservation>> {
   return withDeadline(
-    client.getHandle<BpmnProcessWorkflow>(
-      processWorkflowId(processInstanceId),
-    ).query<ReadonlyArray<CanonicalObservation>>(bpmnTraceQueryName),
+    client.connection.withDeadline(Date.now() + operationDeadlineMs, () =>
+      client.getHandle<BpmnProcessWorkflow>(
+        processWorkflowId(processInstanceId),
+      ).query<ReadonlyArray<CanonicalObservation>>(bpmnTraceQueryName)
+    ),
     operationDeadlineMs,
     "BPMN Process trace Query",
   );
@@ -80,9 +82,11 @@ export async function listOpenUserTasks(
   processInstanceId: string,
 ): Promise<ReadonlyArray<import("@bpmn-lean/semantic-core").OpenUserTask>> {
   return withDeadline(
-    client.getHandle<BpmnProcessWorkflow>(
-      processWorkflowId(processInstanceId),
-    ).query(bpmnOpenUserTasksQueryName),
+    client.connection.withDeadline(Date.now() + operationDeadlineMs, () =>
+      client.getHandle<BpmnProcessWorkflow>(
+        processWorkflowId(processInstanceId),
+      ).query(bpmnOpenUserTasksQueryName)
+    ),
     operationDeadlineMs,
     "open User Tasks Query",
   );
@@ -94,11 +98,13 @@ export async function readUserTaskDetail(
   request: UserTaskDetailRequest,
 ): Promise<UserTaskDetail | null> {
   return withDeadline(
-    client.getHandle<BpmnProcessWorkflow>(
-      processWorkflowId(processInstanceId),
-    ).query<UserTaskDetail | null, [UserTaskDetailRequest]>(
-      bpmnUserTaskDetailQueryName,
-      request,
+    client.connection.withDeadline(Date.now() + operationDeadlineMs, () =>
+      client.getHandle<BpmnProcessWorkflow>(
+        processWorkflowId(processInstanceId),
+      ).query<UserTaskDetail | null, [UserTaskDetailRequest]>(
+        bpmnUserTaskDetailQueryName,
+        request,
+      )
     ),
     operationDeadlineMs,
     "User Task detail Query",
@@ -205,18 +211,20 @@ export async function startBpmnProcess(
   const taskQueue = options.taskQueue;
   await requireWorkerDeploymentEnrollment(client, taskQueue);
   await withDeadline(
-    client.start<BpmnProcessWorkflow>(
-      bpmnProcessWorkflowType,
-      {
-        taskQueue,
-        workflowId: processWorkflowId(processInstanceId),
-        workflowIdReusePolicy: "REJECT_DUPLICATE",
-        args: [
-          startSnapshot,
-          programSnapshot,
-          productionBpmnWorkflowInitialHostInput(),
-        ],
-      },
+    client.connection.withDeadline(Date.now() + operationDeadlineMs, () =>
+      client.start<BpmnProcessWorkflow>(
+        bpmnProcessWorkflowType,
+        {
+          taskQueue,
+          workflowId: processWorkflowId(processInstanceId),
+          workflowIdReusePolicy: "REJECT_DUPLICATE",
+          args: [
+            startSnapshot,
+            programSnapshot,
+            productionBpmnWorkflowInitialHostInput(),
+          ],
+        },
+      )
     ),
     operationDeadlineMs,
     "Process Workflow start",

@@ -102,6 +102,7 @@ class GatewayScheduleClient {
   readonly client = {
     workflow: enrollmentFixture("definition-schedule-queue"),
     schedule: {
+      connection: enrollmentFixture("definition-schedule-queue").connection,
       create: async (options: unknown) => {
         this.creates += 1;
         this.options = options;

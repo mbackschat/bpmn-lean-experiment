@@ -79,7 +79,9 @@ export async function observeTemporalProcessIncidents(
   try {
     const observation = requireTemporalIncidentOperationsSnapshot(
       await withDeadline(
-        handle.query<unknown>(bpmnIncidentOperationsQueryName),
+        handle.client.connection.withDeadline(Date.now() + operationDeadlineMs, () =>
+          handle.query<unknown>(bpmnIncidentOperationsQueryName)
+        ),
         operationDeadlineMs,
         "incident operations Query",
       ),
@@ -156,7 +158,9 @@ async function corroborateTerminalObservation(
 ): Promise<TemporalProcessOperationsObservationResult> {
   try {
     const { receipt } = decodeWorkflowTerminalResult(await withDeadline(
-      handle.result(),
+      handle.client.connection.withDeadline(Date.now() + operationDeadlineMs, () =>
+        handle.result()
+      ),
       operationDeadlineMs,
       "retained terminal Process result",
     ));
@@ -175,7 +179,9 @@ async function resolveObservationAbsence(
 ): Promise<TemporalProcessOperationsObservationResult> {
   try {
     const { receipt } = decodeWorkflowTerminalResult(await withDeadline(
-      handle.result(),
+      handle.client.connection.withDeadline(Date.now() + operationDeadlineMs, () =>
+        handle.result()
+      ),
       operationDeadlineMs,
       "retained terminal Process result",
     ));

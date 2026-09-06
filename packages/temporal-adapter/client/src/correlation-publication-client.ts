@@ -168,6 +168,7 @@ export async function publishTemporalCorrelatedMessage(
   let admission: unknown;
   try {
     admission = await beforeDeadline(
+      handle.client,
       deadline,
       "Correlation publication Update",
       () => handle.executeUpdate(
@@ -299,6 +300,7 @@ async function queryStatus(
 ) {
   try {
     const value = await beforeDeadline(
+      handle.client,
       deadline,
       "Correlation publication status Query",
       () => handle.query(bpmnCorrelationPublicationStatusQueryName, command),
@@ -425,6 +427,7 @@ function workflowClientOf(client: TemporalCorrelatedMessageClient): WorkflowClie
 }
 
 async function beforeDeadline<Value>(
+  client: WorkflowClient,
   deadline: number,
   operation: string,
   invoke: () => Promise<Value>,
@@ -433,7 +436,7 @@ async function beforeDeadline<Value>(
   if (remaining <= 0) {
     throw new Error(`${operation} exceeded the client deadline`);
   }
-  return withDeadline(invoke(), remaining, operation);
+  return withDeadline(client.connection.withDeadline(deadline, invoke), remaining, operation);
 }
 
 async function pollDelay(deadline: number): Promise<void> {

@@ -245,7 +245,9 @@ export async function createTemporalDefinitionSchedule(
   await requireWorkerDeploymentEnrollment(concreteClient.workflow, request.taskQueue);
   try {
     await withDeadline(
-      concreteClient.schedule.create(createOptions),
+      concreteClient.schedule.connection.withDeadline(Date.now() + operationDeadlineMs, () =>
+        concreteClient.schedule.create(createOptions)
+      ),
       operationDeadlineMs,
       "Timer Start Schedule creation",
     );
@@ -266,7 +268,9 @@ export async function describeTemporalDefinitionSchedule(
 ): Promise<TemporalDefinitionScheduleDescription> {
   requireNonempty(scheduleId, "scheduleId");
   const description = await withDeadline(
-    scheduleClientOf(client).schedule.getHandle(scheduleId).describe(),
+    scheduleClientOf(client).schedule.connection.withDeadline(Date.now() + operationDeadlineMs, () =>
+      scheduleClientOf(client).schedule.getHandle(scheduleId).describe()
+    ),
     operationDeadlineMs,
     "Timer Start Schedule description",
   );
@@ -279,8 +283,10 @@ export function pauseTemporalDefinitionSchedule(
 ): Promise<void> {
   requireNonempty(scheduleId, "scheduleId");
   return withDeadline(
-    scheduleClientOf(client).schedule.getHandle(scheduleId).pause(
-      "Paused by BPM platform cancellation reconciliation",
+    scheduleClientOf(client).schedule.connection.withDeadline(Date.now() + operationDeadlineMs, () =>
+      scheduleClientOf(client).schedule.getHandle(scheduleId).pause(
+        "Paused by BPM platform cancellation reconciliation",
+      )
     ),
     operationDeadlineMs,
     "Timer Start Schedule pause",
@@ -294,7 +300,9 @@ export async function deleteTemporalDefinitionSchedule(
   requireNonempty(scheduleId, "scheduleId");
   try {
     await withDeadline(
-      scheduleClientOf(client).schedule.getHandle(scheduleId).delete(),
+      scheduleClientOf(client).schedule.connection.withDeadline(Date.now() + operationDeadlineMs, () =>
+        scheduleClientOf(client).schedule.getHandle(scheduleId).delete()
+      ),
       operationDeadlineMs,
       "Timer Start Schedule deletion",
     );

@@ -101,7 +101,9 @@ export async function observeTemporalProcessWork(
   );
   try {
     const openUserTasks = await withDeadline(
-      handle.query<readonly OpenUserTask[]>(bpmnOpenUserTasksQueryName),
+      handle.client.connection.withDeadline(Date.now() + operationDeadlineMs, () =>
+        handle.query<readonly OpenUserTask[]>(bpmnOpenUserTasksQueryName)
+      ),
       operationDeadlineMs,
       "open User Tasks Query",
     );
@@ -130,9 +132,11 @@ export async function readTemporalProcessWorkDetail(
   );
   try {
     const detail = await withDeadline(
-      handle.query<UserTaskDetail | null, [UserTaskDetailRequest]>(
-        bpmnUserTaskDetailQueryName,
-        detailRequest,
+      handle.client.connection.withDeadline(Date.now() + operationDeadlineMs, () =>
+        handle.query<UserTaskDetail | null, [UserTaskDetailRequest]>(
+          bpmnUserTaskDetailQueryName,
+          detailRequest,
+        )
       ),
       operationDeadlineMs,
       "User Task detail Query",
@@ -196,7 +200,9 @@ async function classifyAbsence(
 > {
   try {
     const { receipt } = decodeWorkflowTerminalResult(await withDeadline(
-      handle.result(),
+      handle.client.connection.withDeadline(Date.now() + operationDeadlineMs, () =>
+        handle.result()
+      ),
       operationDeadlineMs,
       "retained completed Process result",
     ));

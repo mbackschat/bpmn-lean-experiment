@@ -35,6 +35,7 @@ test("uses the retained locator and omits private address material from observat
     getHandle: (workflowId: string) => {
       calls.push(workflowId);
       return {
+        client: { connection: { withDeadline: async (_deadline: number, invoke: () => Promise<unknown>) => invoke() } },
         query: async () => ({
           instanceId,
           status: "running",

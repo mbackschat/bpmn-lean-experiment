@@ -61,6 +61,7 @@ function occurrenceResult(privateMutation = false): unknown {
 test("traverses one paired occurrence snapshot without returning its private locator", async () => {
   const calls: unknown[] = [];
   const gateway = new BpmnProcessFlowNodeOccurrenceGateway({
+    connection: { withDeadline: async (_deadline: number, invoke: () => Promise<unknown>) => invoke() },
     getHandle: (workflowId: string) => ({
       query: async (name: string, request: unknown) => {
         calls.push({ workflowId, name, request });
@@ -114,6 +115,7 @@ test("rejects a malformed opaque locator before lookup", () => {
 
 test("fails closed when the delegated result contains a private semantic anchor", async () => {
   const gateway = new BpmnProcessFlowNodeOccurrenceGateway({
+    connection: { withDeadline: async (_deadline: number, invoke: () => Promise<unknown>) => invoke() },
     getHandle: () => ({
       query: async (name: string, request: unknown) =>
         publicationSegmentResponse(

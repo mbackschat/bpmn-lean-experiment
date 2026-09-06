@@ -170,6 +170,6 @@ function creationClient(native: ReturnType<typeof enrollmentFixture>, calls: str
     },
     ...native,
     start: async (_type: unknown, options: unknown) => create(options),
-    schedule: { create },
+    schedule: { connection: native.connection, create },
   } as never;
 }

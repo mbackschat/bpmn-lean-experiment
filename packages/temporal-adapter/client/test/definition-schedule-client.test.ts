@@ -20,6 +20,7 @@ test("describes, pauses, and deletes by Schedule identity without returning a ha
   const privateHandleSentinel = "private-handle-must-not-escape";
   const client = {
     schedule: {
+      connection: { withDeadline: async (_deadline: number, invoke: () => Promise<unknown>) => invoke() },
       getHandle: (scheduleId: string) => ({
         privateHandleSentinel,
         describe: async () => {
@@ -60,6 +61,7 @@ test("describes, pauses, and deletes by Schedule identity without returning a ha
 test("treats an already-absent Schedule as completed idempotent deletion", async () => {
   const client = {
     schedule: {
+      connection: { withDeadline: async (_deadline: number, invoke: () => Promise<unknown>) => invoke() },
       getHandle: (scheduleId: string) => ({
         delete: async () => {
           throw new ScheduleNotFoundError("Schedule not found", scheduleId);

@@ -314,12 +314,15 @@ function fakeClient(
   }>,
 ): never {
   let statusIndex = 0;
+  const connection = { withDeadline: async (_deadline: number, invoke: () => Promise<unknown>) => invoke() };
   return {
+    connection,
     start: async (workflowType: string, startOptions: unknown) => {
       calls.push({ operation: "start", workflowType, options: startOptions });
       return {};
     },
     getHandle: (workflowId: string) => ({
+      client: { connection },
       query: async (name: string) => {
         calls.push({ operation: "query", workflowId, name });
         if (name === bpmnCorrelationIngressConfigurationQueryName) {

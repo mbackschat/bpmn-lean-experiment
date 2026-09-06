@@ -108,7 +108,7 @@ Risk band: external-review corrections; RC implementation is held.
 
 Complete Product 1 verification passed at `64c524b7`. The [Temporal reconciliation](TEMPORAL-TEST-EVIDENCE-MAP.md#external-review-question-reconciliation), [runtime inventory](RUNTIME-STATE-INVARIANT-SPEC.md#collection-to-conjunct-inventory), and [Compensation contract](capsules/COMPENSATION-TRIGGER-HANDLER-PROPOSAL.md) own the exact evidence and remaining limits.
 
-Temporal verification at `65862a36` exposed an unfinished readiness Query. Native expiry now passes focused publication/readiness guards, live replay, and the complete Temporal gate. Audit remaining client RPC deadlines before R5 closure.
+Temporal verification at `65862a36` exposed an unfinished readiness Query. Native expiry now covers the remaining bounded client RPCs. Complete client, platform gateway, and Temporal gates pass, with types and documentation guards green; R5 awaits closure review.
 
 Next action: complete [native deployment closure](TEMPORAL-WORKER-DEPLOYMENT-REPAIR-PROPOSAL.md#scope-review-and-closure), [capacity closure](capsules/COMPENSATION-EMPTY-STATE-CAPACITY-REPAIR-PROPOSAL.md#independent-cold-review-receipt), [start-data closure](capsules/COMPENSATION-DURABILITY-START-DATA-REPAIR-PROPOSAL.md#independent-cold-review-receipt), and the [composed Activity-data audit](capsules/ACTIVITY-DATA-INPUT-OUTPUT-MEDIATION-PROPOSAL.md#independent-cold-review-receipt). Their receipts own stage decisions. The [held-Task witness](TEMPORAL-TEST-EVIDENCE-MAP.md#temporal-witness-and-mutation-inventory) now settles the previously separate undelivered-Update case.
 

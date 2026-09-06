@@ -79,6 +79,7 @@ function fakeClient(options: FakeOptions = {}) {
     getHandle: (workflowId: string) => {
       options.onHandle?.(workflowId);
       return {
+        client: { connection: { withDeadline: async (_deadline: number, invoke: () => Promise<unknown>) => invoke() } },
         query: async () => structuredClone(options.tasks ?? []),
       };
     },

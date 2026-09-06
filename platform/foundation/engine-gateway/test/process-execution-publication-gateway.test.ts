@@ -26,6 +26,7 @@ test("traverses one paired segment snapshot without returning its private locato
   const processInstanceId = "instance";
   const execution = executionResult(processId, processInstanceId);
   const gateway = new BpmnProcessExecutionPublicationGateway({
+    connection: { withDeadline: async (_deadline: number, invoke: () => Promise<unknown>) => invoke() },
     getHandle: (workflowId: string) => ({
       query: async (name: string, request: unknown) => {
         calls.push({ workflowId, name, request });

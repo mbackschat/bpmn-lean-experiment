@@ -172,16 +172,18 @@ export async function startTemporalMessageStart(
   const workflowClient = workflowClientOf(client);
   await requireWorkerDeploymentEnrollment(workflowClient, snapshot.taskQueue);
   await withDeadline(
-    workflowClient.start(
-      bpmnProcessWorkflowType,
-      {
-        taskQueue: snapshot.taskQueue,
-        workflowId: snapshot.workflowId,
-        workflowIdReusePolicy: "REJECT_DUPLICATE",
-        workflowIdConflictPolicy: "FAIL",
-        args: [snapshot.start, snapshot.semanticProcess, snapshot.hostInput],
-        memo: { [messageStartMemoKey]: preparation.intent },
-      },
+    workflowClientOf(client).connection.withDeadline(Date.now() + operationDeadlineMs, () =>
+      workflowClient.start(
+        bpmnProcessWorkflowType,
+        {
+          taskQueue: snapshot.taskQueue,
+          workflowId: snapshot.workflowId,
+          workflowIdReusePolicy: "REJECT_DUPLICATE",
+          workflowIdConflictPolicy: "FAIL",
+          args: [snapshot.start, snapshot.semanticProcess, snapshot.hostInput],
+          memo: { [messageStartMemoKey]: preparation.intent },
+        },
+      )
     ),
     operationDeadlineMs,
     "Message Start Workflow creation",
@@ -197,7 +199,9 @@ export async function describeTemporalMessageStart(
   requireNonempty(workflowId, "workflowId");
   try {
     const description = await withDeadline(
-      workflowClientOf(client).getHandle(workflowId).describe(),
+      workflowClientOf(client).connection.withDeadline(Date.now() + operationDeadlineMs, () =>
+        workflowClientOf(client).getHandle(workflowId).describe()
+      ),
       operationDeadlineMs,
       "Message Start Workflow description",
     );
