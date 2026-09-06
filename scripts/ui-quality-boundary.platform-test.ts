@@ -7,6 +7,8 @@ import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
+import { processFindingSections } from "./process-assessment-ledger.ts";
+import { withoutBackticks } from "./markdown-tables.ts";
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 
@@ -33,16 +35,18 @@ test("requires source-grounded Product 2 UI/UX decisions before implementation",
   }), []);
 });
 
+const completeUiPreflight = {
+  guide: "Product 2 UI/UX source preflight. Inspect CIB Seven first before production code.",
+  processLedger: "## Findings\n\n### Finding 1\n\nUI/UX precedent was postponed until after implementation\n\nInstances\n: 2\n\nDisposition\n: `executable guard`\n\nEvidence\n: [preflight](../scripts/ui-quality-boundary.platform-test.ts)\n\n**First observed:** retained UI work\n\n## Update rule\n",
+  projectDesign: "## Source-grounded Product 2 interaction design\nBefore production code, inspect the pristine pinned source and current documentation. Record adopt, deliberately deviate, and exclude decisions. Do not copy source code.",
+  research: "Current 2.2 Process Definition View and Process Instance View. The matching implementation was inspected in the pristine pinned checkout recorded by SOURCES.md#cib-seven.",
+  sources: "CIB Seven Tasklist and Cockpit | Process Definition View | Process Instance View",
+  testingSpec: "The source-grounded UI/UX preflight runs ./scripts/doctor.sh research before the first production edit.",
+  uiDesign: "## Source-grounded design preflight\nBefore production code, inspect current documentation and the pinned source checkout. Record adopt, deliberately deviate, and exclude decisions, then name the acceptance oracle. Do not copy source code.",
+} as const;
+
 test("rejects a UI/UX process that postpones precedent research or leaves deviations unexplained", () => {
-  const complete = {
-    guide: "Product 2 UI/UX source preflight. Inspect CIB Seven first before production code.",
-    processLedger: "UI/UX precedent was postponed until after implementation | 2 | `executable guard` | ui-quality-boundary.platform-test.ts",
-    projectDesign: "## Source-grounded Product 2 interaction design\nBefore production code, inspect the pristine pinned source and current documentation. Record adopt, deliberately deviate, and exclude decisions. Do not copy source code.",
-    research: "Current 2.2 Process Definition View and Process Instance View. The matching implementation was inspected in the pristine pinned checkout recorded by SOURCES.md#cib-seven.",
-    sources: "CIB Seven Tasklist and Cockpit | Process Definition View | Process Instance View",
-    testingSpec: "The source-grounded UI/UX preflight runs ./scripts/doctor.sh research before the first production edit.",
-    uiDesign: "## Source-grounded design preflight\nBefore production code, inspect current documentation and the pinned source checkout. Record adopt, deliberately deviate, and exclude decisions, then name the acceptance oracle. Do not copy source code.",
-  } as const;
+  const complete = completeUiPreflight;
   assert.deepEqual(productUiPreflightViolations(complete), []);
   assert.deepEqual(productUiPreflightViolations({
     ...complete,
@@ -52,6 +56,33 @@ test("rejects a UI/UX process that postpones precedent research or leaves deviat
     "project-design-preflight",
     "ui-design-preflight",
   ]);
+});
+
+test("accepts further UI/UX recurrences without duplicating the ledger count", () => {
+  assert.deepEqual(productUiPreflightViolations({
+    ...completeUiPreflight,
+    processLedger: completeUiPreflight.processLedger.replace("Instances\n: 2", "Instances\n: 3"),
+  }), []);
+});
+
+test("binds UI/UX recurrence and executable evidence to the same finding", () => {
+  const ledger = completeUiPreflight.processLedger;
+  for (const invalid of [
+    ledger.replace("UI/UX precedent was postponed until after implementation", "Unrelated finding"),
+    ledger.replace("Instances\n: 2", "Instances\n: 1"),
+    ledger.replace("`executable guard`", "`accepted risk`"),
+    ledger.replace("ui-quality-boundary.platform-test.ts", "unrelated.test.ts"),
+    ledger.replace("[preflight](../scripts/ui-quality-boundary.platform-test.ts)",
+      "ui-quality-boundary.platform-test.ts"),
+    ledger.replace("[preflight](../scripts/ui-quality-boundary.platform-test.ts)",
+      "[unrelated](../scripts/unrelated.test.ts)")
+      .replace("\n## Update rule", "\n### Finding 2\n\nUnrelated finding\n\nInstances\n: 2\n\nDisposition\n: `executable guard`\n\nEvidence\n: [preflight](../scripts/ui-quality-boundary.platform-test.ts)\n\n**First observed:** unrelated work\n\nHistorical table: | 2 | `executable guard` | ui-quality-boundary.platform-test.ts\n\n## Update rule"),
+  ]) {
+    assert.deepEqual(productUiPreflightViolations({
+      ...completeUiPreflight,
+      processLedger: invalid,
+    }), ["process-finding"]);
+  }
 });
 
 test("requires two-sided mutation evidence inside production-backed user journeys", async () => {
@@ -584,7 +615,14 @@ function productUiPreflightViolations(documents: Readonly<{
   if (!/CIB Seven Tasklist and Cockpit[\s\S]*Process Definition View[\s\S]*Process Instance View/iu.test(documents.sources)) {
     violations.push("source-registry");
   }
-  if (!/UI\/UX precedent was postponed until after implementation[\s\S]*\| 2 \| `executable guard` \|[\s\S]*ui-quality-boundary\.platform-test\.ts/iu.test(documents.processLedger)) {
+  const findings = processFindingSections(documents.processLedger).filter(({ finding }) =>
+    finding.startsWith("UI/UX precedent was postponed until after implementation")
+  );
+  const finding = findings[0];
+  if (findings.length !== 1 || finding === undefined ||
+    !Number.isSafeInteger(Number(finding.instances)) || Number(finding.instances) < 2 ||
+    withoutBackticks(finding.disposition) !== "executable guard" ||
+    !finding.evidence.includes("](../scripts/ui-quality-boundary.platform-test.ts)")) {
     violations.push("process-finding");
   }
   return violations;
