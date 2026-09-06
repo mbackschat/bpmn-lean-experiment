@@ -95,6 +95,7 @@
     "packages/temporal-adapter/runner/cli/*.ts",
     "packages/temporal-adapter/testkit/calibration/*.ts",
     "packages/temporal-adapter/testkit/test/*.ts",
+    "packages/temporal-adapter/workflow/test/closure-failure-classification*.ts",
     "scripts/*.ts"
   ],
   "exclude": [

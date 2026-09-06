@@ -102,6 +102,12 @@ Rerun bindings for every concrete producer, consumer, and conformance owner befo
 
 Cold proposal approval precedes implementation of the changed result contract. The first green semantic checkpoint must contain cross-target rollback, trace erasure, paired publication discriminators, harness behavior, affected complete gates, and all same-change account corrections. It must be reviewed before dependent scheduling or host integration. Closure establishes atomic failure and accurate bounded commutation/publication claims only; RC families and the arbitrary-frontier theorem remain open in their existing owner.
 
+## Closure evidence and reflection
+
+The [host regression](../../packages/temporal-adapter/workflow/test/closure-failure-classification.test.ts) executes the production Workflow loop with real recovery, publication, and scenario evaluation. It injects fuel zero and a duplicate End operation only at the evaluator boundary after recovery admission; both reproduced `BpmnCommandOutcomeMissing` before the correction. Both now require nonretryable `BpmnSemanticClosureFailure`, exact retained RuntimeState and trace, unchanged recovery and paired publication, and no failed command outcome. The positive executes ordinary completion and compares its entire canonical publication with the semantic-core fold. This boundary probe uses Node's module mocks; live-host and replay evidence remain the complete Temporal and Product 1 gates.
+
+The correction reuses the existing failure type and moves its classification before success-only processing. No new production abstraction, persistence state, or transport arm is introduced. The new typed probe exposed pre-existing discriminant widening in two shared test fixtures; contextual `satisfies` checks preserve their exact values. The semantic checkpoint preceded this host integration. The [resource measurements](../CAPSULE-COST-LEDGER.md#internal-closure-atomicity-correction) retain every changed owner and standing-watch consumer under the unchanged fixed ceiling; they do not infer memory cost from a module's unchanged source bytes.
+
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |

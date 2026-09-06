@@ -1072,6 +1072,23 @@ Evidence
 
 The conditional semantic checkpoint fires at the first green implementation commit of a capsule that changes a wire contract, checked graph or IL, runtime observation, admission capability, transition family, or proof boundary; this capsule changed all six and went on to land a real-service Temporal witness, a Lean cost re-measurement, and a source-hygiene extraction before anyone noticed the boundary. The stage was recoverable only because none of those lanes was green either: the first commit at which every lane passed became the review target, and the reviewer returned three required findings against the implementation core, one of them an entire absent evidence lane that the closure stage is explicitly instructed not to re-derive. Nothing in the process announces the boundary — it is a conditional written in prose, evaluated by the author, against a capsule the author is in the middle of implementing — and the receipt guard accepts `not-reached` because it cannot evaluate that condition either
 
+### Finding 62
+
+A command result retained its success outcome and speculative successor after internal closure failed, while downstream publication withheld the corresponding semantic facts.
+
+Instances
+: 2
+
+Disposition
+: `executable guard`
+
+Evidence
+: [whole-command rollback tests](../packages/semantic-core/test/closure-atomicity.test.ts), [late-ambiguity publication tests](../packages/semantic-core/test/semantic-transition-publication.test.ts), and [Workflow failure classification](../packages/temporal-adapter/workflow/test/closure-failure-classification.test.ts)
+
+**First observed:** external review of [internal closure atomicity](capsules/INTERNAL-CLOSURE-ATOMICITY-REPAIR-PROPOSAL.md)
+
+Fuel exhaustion and late ambiguity independently exposed the same broken command boundary after successful admission. The caller-visible result now restores the exact pre-admission state and removes speculative publication; quantified Lean laws cover both result producers. The Workflow checks infrastructure failure before its success-only publication and recovery processing. Its separating probe requires the intended failure type after recovery admission and keeps a successful recoverable completion as the positive control.
+
 ## Update rule
 
 At each capsule closure and each session handoff, answer the questions above and either add a row or record that none applied. When a mechanism already has a row, increment its instance count instead of adding a near-duplicate — the count is the signal the escalation rule reads. Keep the finding text describing the mechanism, not the incident, so a second occurrence in different code still matches the same row.

@@ -474,6 +474,14 @@ export async function runBpmnProcessWithHostEffects(
         }
       }
       const step = advanceScenario(semanticProcess, state, stimulus);
+      // CLOSURE-ATOMIC-01: recovery-admitted failures have no semantic command outcome.
+      // Classify them before recovery can interpret the absent outcome as corruption.
+      if (step.kind === ScenarioStepKind.HarnessFailure) {
+        throw ApplicationFailure.nonRetryable(
+          "Semantic core exceeded its checked closure boundary",
+          "BpmnSemanticClosureFailure",
+        );
+      }
       const committedAtEpochMs = Date.now();
       const publicationCandidate = integrateCommandPublication(
         semanticProcess,
@@ -497,10 +505,7 @@ export async function runBpmnProcessWithHostEffects(
         WorkflowRunRetentionPreflight,
         { kind: WorkflowRunRetentionPreflightKind.Ready }
       > | null = null;
-      if (
-        workflowChain !== null &&
-        step.kind !== ScenarioStepKind.HarnessFailure
-      ) {
+      if (workflowChain !== null) {
         const preflight = preflightWorkflowSemanticCandidate({
           state: step.state,
           publicationBefore: commandPublication,
@@ -613,11 +618,6 @@ export async function runBpmnProcessWithHostEffects(
           }
           compensationScheduler.reconcileCommittedState(state);
           break;
-        case ScenarioStepKind.HarnessFailure:
-          throw ApplicationFailure.nonRetryable(
-            "Semantic core exceeded its checked closure boundary",
-            "BpmnSemanticClosureFailure",
-          );
         default:
           return assertNever(step);
       }

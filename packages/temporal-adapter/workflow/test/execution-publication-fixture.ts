@@ -47,7 +47,7 @@ const controlPlaces = [
   controlPlace("Flow_StartToFork"),
 ];
 
-const operations: SemanticOperation[] = [{
+const operations = ([{
   ...operationBase("EndEvent_1"),
   kind: SemanticOperationKind.ReachNoneEnd,
   input: "place:Flow_JoinToEnd",
@@ -86,7 +86,7 @@ const operations: SemanticOperation[] = [{
   },
   scopeId,
   parentOutput: null,
-}].sort((left, right) => compareCanonicalStrings(left.id, right.id));
+}] satisfies SemanticOperation[]).sort((left, right) => compareCanonicalStrings(left.id, right.id));
 
 export const publicationProgram: SemanticProcessProgram = {
   kind: SemanticProcessKind.SemanticProcess,
@@ -146,7 +146,7 @@ const timedControlPlaces = [
   controlPlace("Flow_TimedTimerToTask"),
   controlPlace("Flow_TimedTaskToEnd"),
 ];
-const timedOperations: SemanticOperation[] = [{
+const timedOperations = ([{
   ...operationBase("EndEvent_Timed"),
   kind: SemanticOperationKind.ReachNoneEnd,
   input: "place:Flow_TimedTaskToEnd",
@@ -175,7 +175,7 @@ const timedOperations: SemanticOperation[] = [{
   },
   scopeId: timedScopeId,
   parentOutput: null,
-}].sort((left, right) => compareCanonicalStrings(left.id, right.id));
+}] satisfies SemanticOperation[]).sort((left, right) => compareCanonicalStrings(left.id, right.id));
 
 export const timedPublicationProgram: SemanticProcessProgram = {
   kind: SemanticProcessKind.SemanticProcess,
