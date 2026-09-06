@@ -10,6 +10,7 @@ This contributor map assigns package responsibilities and Temporal SDK ownership
 - [Shared deployment assertions](testkit/test/native-worker-deployment-live-test-support.ts) check exact native pins and select Current through a conflict-bound native request in the caller's Namespace and Task Queue.
 - [Cross-version correlation](testkit/test/worker-deployment-correlation.temporal-serial-test.ts) keeps one A ingress over both versions' candidate population and recovers post-commit delivery response loss against the same B target.
 - [Future Schedule dispatch](testkit/test/worker-deployment-schedule.temporal-serial-test.ts) creates the admitted action under A, promotes B before its due time, and binds B enrollment to the exact stored Program, Timer input, opaque execution identity, terminal state, and replay.
+- [Evaluation Worker command](runner/src/evaluation-worker-main.ts) separates explicit fresh initialization from ordinary startup and checks native enrollment at `/readyz`; its [lifecycle tests](testkit/test/evaluation-worker.test.ts) preserve liveness, refusal-before-connection, exact retention, and shutdown ownership.
 
 ## Package ownership
 

@@ -6,6 +6,7 @@ import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
 import type { EffectActivityImplementations } from "@bpmn-lean/temporal-protocol";
+import { requireWorkerDeploymentEnrollment } from "@bpmn-lean/temporal-client";
 import {
   ExternalTemporalRuntime,
 } from "@bpmn-lean/temporal-worker";
@@ -20,6 +21,7 @@ const defaultHealthPollIntervalMs = 500;
 
 export interface EvaluationWorkerRuntime {
   assertHealthy(): void;
+  requireEnrollment(): Promise<void>;
   shutdown(): Promise<void>;
 }
 
@@ -78,22 +80,26 @@ export async function runEvaluationWorker(
   }
 }
 
-/** Starts the internal liveness endpoint after the Worker has connected. */
+/** Keeps poller liveness separate from DEPLOY-ENROLL-01 fleet readiness. */
 export async function startEvaluationWorkerHealthServer(
   port: number,
   runtime: EvaluationWorkerRuntime,
 ): Promise<EvaluationWorkerHealthServer> {
   const server = createServer((request, response) => {
-    if (request.method !== "GET" || request.url !== "/healthz") {
+    if (request.method !== "GET" || (request.url !== "/healthz" && request.url !== "/readyz")) {
       response.writeHead(404).end();
       return;
     }
-    try {
-      runtime.assertHealthy();
-      response.writeHead(204).end();
-    } catch {
-      response.writeHead(503).end();
-    }
+    void (async () => {
+      try {
+        runtime.assertHealthy();
+        if (request.url === "/readyz") await runtime.requireEnrollment();
+        runtime.assertHealthy();
+        response.writeHead(204).end();
+      } catch {
+        response.writeHead(503).end();
+      }
+    })();
   });
   await listen(server, port);
   let closePromise: Promise<void> | undefined;
@@ -107,17 +113,26 @@ export async function startEvaluationWorkerHealthServer(
 
 export async function runEvaluationWorkerCommand(
   environment: NodeJS.ProcessEnv = process.env,
+  args: readonly string[] = process.argv.slice(2),
 ): Promise<void> {
   const termination = new AbortController();
   const stop = (): void => termination.abort();
   process.once("SIGINT", stop);
   process.once("SIGTERM", stop);
   try {
-    await runEvaluationWorker(environment, {
-      connect: (options, activities) => ExternalTemporalRuntime.connect(
-        options,
-        activities,
-      ),
+    await executeEvaluationWorkerCommand(environment, args, {
+      connect: async (options, activities) => {
+        const runtime = await ExternalTemporalRuntime.connect(options, activities);
+        return {
+          assertHealthy: () => runtime.assertHealthy(),
+          shutdown: () => runtime.shutdown(),
+          async requireEnrollment() {
+            await requireWorkerDeploymentEnrollment(runtime.workflowClient, options.taskQueue);
+          },
+        };
+      },
+      initializeFreshNamespace: (options, activities, retentionSeconds) =>
+        ExternalTemporalRuntime.initializeFreshNamespace(options, activities, retentionSeconds),
       startHealthServer: startEvaluationWorkerHealthServer,
       terminationSignal: termination.signal,
       healthPollIntervalMs: defaultHealthPollIntervalMs,
@@ -125,6 +140,43 @@ export async function runEvaluationWorkerCommand(
   } finally {
     process.off("SIGINT", stop);
     process.off("SIGTERM", stop);
+  }
+}
+
+export type EvaluationWorkerCommandDependencies = EvaluationWorkerDependencies & Readonly<{
+  initializeFreshNamespace(
+    options: ExternalTemporalRuntimeOptions,
+    activities: EffectActivityImplementations,
+    retentionSeconds: number,
+  ): Promise<Pick<EvaluationWorkerRuntime, "shutdown">>;
+}>;
+
+/** Selects explicit fresh initialization without treating an existing Namespace as permission to promote. */
+export async function executeEvaluationWorkerCommand(
+  environment: NodeJS.ProcessEnv,
+  args: readonly string[],
+  dependencies: EvaluationWorkerCommandDependencies,
+): Promise<void> {
+  switch (args[0]) {
+    case undefined:
+      await runEvaluationWorker(environment, dependencies);
+      return;
+    case "initialize-fresh-namespace": {
+      const encoded = args[2];
+      if (args.length !== 3 || args[1] !== "--retention-seconds"
+        || encoded === undefined || !/^[1-9][0-9]*$/u.test(encoded)
+        || !Number.isSafeInteger(Number(encoded))) {
+        throw new TypeError("Initialization requires --retention-seconds with a positive safe decimal integer");
+      }
+      const config = loadEvaluationWorkerConfig(environment);
+      const runtime = await dependencies.initializeFreshNamespace(
+        config.temporal, createEvaluationEffectActivities(), Number(encoded),
+      );
+      await runtime.shutdown();
+      return;
+    }
+    default:
+      throw new TypeError("usage: bpmn-evaluation-worker [initialize-fresh-namespace --retention-seconds SECONDS]");
   }
 }
 
