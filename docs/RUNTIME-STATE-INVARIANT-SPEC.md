@@ -28,7 +28,7 @@ Two monotonicity facts are separate relations rather than conjuncts, because whe
 | `RSI-UNIQ-01` | the occurrence identity triple `(processInstanceId, definitionScopeId, activation)` appears exactly once in `scopeOccurrences` |
 | `RSI-UNIQ-02` | within each wait family the family's occurrence key appears at most once: User Task `(instance, element, activation)`, Message subscription identity, Timer occurrence identity, effect occurrence identity |
 | `RSI-DISJ-01` | one effect occurrence appears in `effectWaits` or in `effectIncidents`, never in both |
-| `RSI-ORDER-01` | the six collections that declare a canonical order hold it: `waits`, `activations`, `selectedBranchSets`, `eventRaces`, `calledProcessOccurrences`, and `activityOccurrences` |
+| `RSI-ORDER-01` | every collection selected by the canonical-insertion criterion below holds its declared order; the executable `canonicalCollectionOrder` owns membership |
 | `RSI-BOUND-01` | no live counter-minted identity exceeds its key's recorded count, with an absent counter read as zero. **Implemented narrower than stated:** the consumer-required User Task, Timer, and Activity families only. Message, Effect, Event race, Call, and ordinary Scope remain unstated, and called roots remain excluded from the general Scope account |
 
 ### Layer 2: program agreement
@@ -61,7 +61,36 @@ Two monotonicity facts are separate relations rather than conjuncts, because whe
 
 ### Facts the rules depend on
 
-**`RSI-ORDER-01` membership criterion.** A collection is listed when every one of its add sites canonically inserts, and excluded when its add sites disagree. `scopeOccurrences` is excluded because Call Activity inserts canonically while `enterScope` prepends. `variables` is excluded because `process.bindings` is merged canonically at User Task completion but takes submitted order at Process start, and `activities` is appended. The criterion decides whether a future collection joins the conjunct; a census does not, and this paragraph was written as a count and was wrong three times before it was written as a criterion.
+**`RSI-ORDER-01` membership criterion.** A collection is listed when every one of its add sites canonically inserts, and excluded when its add sites disagree. `scopeOccurrences` is excluded because Call Activity inserts canonically while `enterScope` prepends. Process bindings take submitted order at Process start, so no whole-`variables` order is claimed. The nested `variables.activities` collection is separately ordered by both current predicates. The criterion decides whether a future collection joins the conjunct; [the Lean aggregate](../BpmnSemantics/SemanticProcess/RuntimeStateWellFormed.lean) and [TypeScript defect owner](../packages/semantic-core/src/runtime-state-well-formedness.ts) decide the current membership.
+
+### Collection-to-conjunct inventory
+
+This inventory locates the current Lean aggregate's checks, including imported conjuncts. TypeScript's `runtimeStateDefects` is a narrower aggregate: it does not compose the existing position, event-race, called-process, or incident association predicates, and its hosted-wait declaration check tests existence without Lean's unique-declarer and scope agreement. A row is therefore not a claim of cross-language predicate equivalence.
+
+| Runtime collection (Lean name; TypeScript name where different) | Current conjunct or explicit gap |
+|---|---|
+| `scopeOccurrences` | `runtimePositionValid`: lifecycle, unique identity, definition/parent binding, and hosting/called-root association |
+| `tokens`; `controlTokens` | `runtimePositionValid`: multiplicity, live owner, and owning Program place |
+| `waits`; `userTaskWaits` | `waitOwnersLive`, `waitIdentitiesUnique`, `waitDeclarationsValid`, `canonicalCollectionOrder`, and the User Task branch of `runtimeStateIdentityBound` |
+| `messageWaits` | owner, identity, declaration, and order checks; event-race and attached-handler associations; counter bound open |
+| `timerWaits` | owner, identity, declaration, order, and Timer counter bound; event-race and attached-handler associations |
+| `effectWaits`, `effectIncidents` | owner and declaration checks; effect-wait uniqueness/order and imported `effectIncidentAssociationsValid`; Effect counter bound open |
+| `selectedBranchSets` | owner, order, and `hiddenRecordDeclarationsValid`; overlapping split-occurrence identity remains open |
+| `eventRaces` | owner, order, declaration, and `eventRaceAssociationsValid`; race counter bound open |
+| `calledProcessOccurrences` | caller liveness, order, and running-state `calledProcessAssociationsValid`; paired Program-operation binding open |
+| `activityOccurrences` | owner, body/handler liveness and owner agreement, body-claim and identity uniqueness, attached-handler unambiguity, order, and Activity counter bound |
+| `sequentialMultiInstanceControllers` | live Activity binding, unique controller identity, non-exhaustion, Program binding, and order |
+| `parallelMultiInstanceControllers` | `parallelMultiInstanceProgramBindingsValid` and order |
+| `compensationActivityRetentions` | `compensationActivityRetentionStateValid` |
+| `compensationParentContextRetentions` | `compensationEventSubProcessSnapshotStateValid` |
+| `compensationTriggers`, `compensationHandlerEffectWaits` | complete `compensationExecutionStateValid`, including terminal tombstone rules |
+| `variables.activities` | order and lifecycle emptiness; attachment to a live Activity/body occurrence is **open** |
+| `variables.process.bindings` | no general binding-content conjunct in this aggregate; declaration-specific snapshot/handler checks do not establish one |
+| activation-counter collections | `RuntimeStateMonotone` covers all eight families as a separate two-state relation; one-state bounds cover only User Task, Timer, and Activity; canonical order covers task, Message, Timer, and Effect counters |
+
+The Activity-local gap is distinct from the repaired cancellation path: withdrawal now removes affected local scopes, but an arbitrarily supplied running state can still contain an orphan local scope. `RSI-OWN-01` does not cover `variables.activities`, and ordering cannot establish attachment. Reopen with a consumer-specific ownership account and separating live/orphan witnesses before relying on that fact; this disclosure adds no predicate or preservation claim.
+
+Two representation constraints must be resolved before broader admission. The current Inclusive `SelectedBranchSet` identifies its owner and split selection key but has no split-occurrence ordinal; overlapping loop iterations need an occurrence identity so one iteration cannot consume another's selection. Event Sub-Process start subscriptions live in the enclosing parent before the handler scope exists, so their lowering must reconcile that parent ownership with `RSI-BIND-04`'s declaring-operation scope equation. Neither feature may inherit the current restriction as general BPMN meaning. [Semantic Process IL](SEMANTIC-PROCESS-IL-SPEC.md#runtime-state) owns the representation boundary.
 
 **`RSI-BOUND-01` membership criterion.** A counter family belongs when every site that writes one of its live-member collections leaves the member's activation at or below its key's count in that site's post-state and no site lowers the count. Minting sites satisfy the first condition by numbering from the counter and writing the advanced count in the same transition. Restore, retry, and reinsert sites satisfy it by preserving an activation that already satisfied the inequality. A family with any writer that leaves a live member above its key's post-state count is excluded.
 

@@ -53,6 +53,8 @@ Optional after checkpoint approval: source admission, a standards-only profile, 
 
 Excluded are targeted/asynchronous throws, concurrent global triggers for one root, Compensation End Events, Transactions/Cancel Events, implicit or recursive compensation, active/unsuccessful work, loops, Multi-Instance Sub-Processes, general handler graphs/data, boundary context, other dependency sources, failure recovery, CIB, Product 2 persistence/API/UI/journey support for failed Processes, and general conformance.
 
+The admitted trigger owner is the hosting root only. Terminate in that owner, external cancellation of its region, and a boundary Compensation handler plus a Compensation Event Sub-Process handler for the same subject element are excluded. General per-scope visibility, a second trigger source, deeper snapshot ancestry, and gateway-mediated dependencies remain open; the current direct Sequence Flow account supplies none of them.
+
 ## Program contract
 
 The Program gains one `triggerCompensation` operation and one optional `compensationExecution` declaration. Reaching the operation's input consumes no token until the complete trigger transition has passed Program, RuntimeState, dependency, and capacity checks.
@@ -313,15 +315,19 @@ The Activity request uses the ordinary `EffectRequest` envelope, but its validat
 
 An exact handler carries no BPMN Error route. Its `CompleteEffect` result with kind `bpmnError` is therefore interpreted as the compensation Activity throwing an uncaught exception and invokes `COMPH-FAIL-01`. Temporal Activity failure, retry, timeout, cancellation acknowledgement, and response loss remain transport facts and never directly select this semantic outcome.
 
+A permanent technical handler failure has no semantic incident or recovery arm in this capsule. It can leave the semantic handler compensating without eventual completion; the success witnesses establish no liveness result for that schedule. Selecting an incident or terminal semantic disposition requires a later reviewed account.
+
 ## Failure and nested cancellation
 
 `COMPH-FAIL-01`: The first admitted compensation `bpmnError` changes its active handler to `failed`, changes every other `pending` or `compensating` handler in the same trigger to `terminated`, preserves already `compensated` handlers, removes all handler and remaining root live regions, records the exact failure in control, and changes the Process to terminal `failed`. `COMPH-EXCLUSIVE-01` guarantees that no second active sibling trigger requires an invented terminal disposition. No continuation token is emitted and no later handler starts.
 
 The deciding `CompleteEffect` returns `CommandOutcome.Committed`: `failed` is its committed semantic successor, not `CommandOutcome.SemanticFailure` or a host exception.
 
-This fail-fast interpretation prevents continued independent work, abandoned work, zombie waits, or a nonterminal dead end. Recovery requires a later explicit arm; this Process is never completed, cancelled, running, or host-failed.
+This fail-fast interpretation applies only to the hosting-root trigger and an admitted semantic `bpmnError`. Its whole-Process failure arm is not a rule for a trigger in an embedded or called scope. Recovery requires a later explicit arm; this failed Process is never completed, cancelled, running, or host-failed.
 
-`COMPH-CANCEL-01`: Handler-region cancellation removes active effect waits, Activity-local bindings, pending or active restored frames, handler-owned Task/Message/Timer waits, incidents, and nested scopes if later admitted, while preserving terminal lifecycle records and monotonic counters. The first checkpoint's adversarial case has B and C active, C fail, B's nested effect wait disappear, B become `terminated`, and pending A become `terminated` with its restored Event Sub-Process context removed.
+`COMPH-CANCEL-01`: The fail-fast sibling cancellation selected by `COMPH-FAIL-01` removes active handler effect waits and pending or active restored frames while preserving the trigger's terminal lifecycle records and monotonic counters. The first checkpoint's adversarial case has B and C active, C fail, B's effect wait disappear, B become `terminated`, and pending A become `terminated` with its restored Event Sub-Process context removed. General handler graphs, local bindings, Task/Message/Timer waits, incidents, and nested scopes are excluded from the admitted single-effect body.
+
+External cancellation of the trigger owner's region is a separate, unselected account. The generic region-removal helpers delete cancelled-owner triggers and waits; they do not implement a retained terminated-trigger lifecycle or a Compensation Hazard outcome. Transactions/Cancel Events must review that disposition before external owner cancellation is admitted. `COMPH-CANCEL-01` claims no tombstone preservation for that excluded route.
 
 `COMPH-STALE-01`: A late completion or failure report for a cancelled handler-owned effect is rejected by exact occurrence identity and leaves the terminal trigger byte-identical. Host cancellation acknowledgement cannot reopen the handler or change semantic failure order.
 
@@ -488,6 +494,8 @@ Selected: root-global synchronous triggering, one active trigger per root, exact
 Open: shared scenario wires, public Product 1 compensation capability, targeted/asynchronous throws, concurrent global triggers and their sibling-trigger terminal lifecycle, general handler graphs and data, other dependencies, loops and Multi-Instance Sub-Processes, recursive compensation, Transactions/Cancel Events, failure recovery, CIB profile behavior, corpus, Product 2 persistence/API/UI/journey support, and conformance.
 
 Nearest unsupported claim: concurrent global triggers for one root and the explicit sibling-trigger lifecycle needed when one of them fails.
+
+Reopen before adding a non-root trigger owner, a second trigger source, deeper snapshot ancestry, or another handler form on an already selected subject. That review must define each scope's visible retention register, exact selection ownership, snapshot ancestry, and failure/cancellation disposition. Gateway-mediated dependency lifting remains an open requirement until it has its own occurrence-level account and separating witnesses; direct Sequence Flow edges are not a substitute.
 
 Common-mode risks: TypeScript and Lean currently mirror the permissive predicate “one failure match and no active trigger,” so agreement alone can retain the same hidden second-failed-trigger defect. The fixed acyclic one-root fixture cannot generate another trigger, so negative exclusivity witnesses alone can also let both accounts incorrectly forbid every later trigger behind a succeeded tombstone; the paired positive and retained-count witnesses above are mandatory.
 
