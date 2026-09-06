@@ -74,6 +74,7 @@ test("classifies retained type and Task Queue drift as divergent", async () => {
     ["runBpmnProcess", "wrong-queue", EngineDefinitionStartDescriptionStatus.Divergent],
   ] as const) {
     const temporalClient = {
+      connection: { withDeadline: async (_deadline: number, invoke: () => Promise<unknown>) => invoke() },
       getHandle: () => ({
         describe: async () => ({
           workflowId: decodeLocatorWorkflowId(serializeEngineProcessWorkLocator(prepared.locator)),

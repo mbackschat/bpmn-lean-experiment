@@ -18,6 +18,7 @@ const definition = {
 test("observes occurrences through one opaque locator without exposing host identity", async () => {
   const calls: unknown[] = [];
   const temporalClient = {
+    connection: { withDeadline: async (_deadline: number, invoke: () => Promise<unknown>) => invoke() },
     getHandle: (workflowId: string) => ({
       query: async (name: string, request: unknown) => {
         calls.push({ workflowId, name, request });
@@ -56,6 +57,7 @@ test("observes occurrences through one opaque locator without exposing host iden
 test("rejects malformed locators before delegation and keeps unavailability separate", async () => {
   let handled = 0;
   const temporalClient = {
+    connection: { withDeadline: async (_deadline: number, invoke: () => Promise<unknown>) => invoke() },
     getHandle: (workflowId: string) => {
       handled += 1;
       return {

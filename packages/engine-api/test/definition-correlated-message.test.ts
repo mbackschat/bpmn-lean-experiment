@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { test } from "node:test";
+import { enrollmentFixture } from "../../temporal-adapter/client/test/worker-deployment-enrollment-fixture.ts";
 
 import {
   MessageChannelKind,
@@ -133,9 +134,12 @@ function fakeClient(
   command: Readonly<Record<string, unknown>>,
   status: () => unknown,
 ): never {
+  const enrollment = enrollmentFixture("correlation-ingress");
   return {
+    ...enrollment,
     start: async () => ({}),
     getHandle: (workflowId: string) => ({
+      client: { connection: enrollment.connection },
       query: async (name: string) => {
         if (name === bpmnCorrelationIngressConfigurationQueryName) {
           return {

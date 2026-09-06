@@ -48,6 +48,9 @@ test("addresses Schedule work only through the service execution locator", async
   };
   const client = {
     getHandle: (workflowId: string) => ({
+      client: {
+        connection: { withDeadline: async (_deadline: number, invoke: () => Promise<unknown>) => invoke() },
+      },
       query: async () => {
         if (workflowId === "service-execution") return [task];
         throw Object.assign(new Error("not found"), { name: "WorkflowNotFoundError" });

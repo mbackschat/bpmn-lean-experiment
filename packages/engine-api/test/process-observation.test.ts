@@ -18,6 +18,7 @@ const definition = {
 test("observes through the opaque locator without exposing a Workflow address", async () => {
   const calls: unknown[] = [];
   const temporalClient = {
+    connection: { withDeadline: async (_deadline: number, invoke: () => Promise<unknown>) => invoke() },
     getHandle: (workflowId: string) => ({
       query: async (name: string, request: unknown) => {
         calls.push({ workflowId, name, request });

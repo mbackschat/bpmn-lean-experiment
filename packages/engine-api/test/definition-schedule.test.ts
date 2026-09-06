@@ -307,6 +307,7 @@ class FakeScheduleClient {
       },
     },
     schedule: {
+      connection: { withDeadline: async (_deadline: number, invoke: () => Promise<unknown>) => invoke() },
       create: async (options: unknown) => {
         this.scheduleCreates += 1;
         this.createdOptions = options;
