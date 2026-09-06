@@ -1,13 +1,13 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
+import { admittedInternalPrefix } from "./internal-operation-prefix-fixture.ts";
+
 import {
   ActivityBodyKind,
   ActivityHandlerKind,
-  CommandOutcome,
   SemanticOperationKind,
   SemanticOriginKind,
-  applyStimulus,
   initialState,
 } from "@bpmn-lean/semantic-core";
 import type {
@@ -237,14 +237,13 @@ test("refuses each bounded-scope counter at the safe-integer boundary", () => {
 });
 
 test("mints called-owner child, Activity, and deadline identities in the called instance", () => {
-  const calledEntered = applyStimulus(
+  const calledEntered = admittedInternalPrefix(
     callActivityProgram,
     initialState,
     callActivityStart(),
-    2,
+    ["operation:Start_Caller", "operation:Call:é"],
+    ["operation:Task_Called"],
   );
-  assert.equal(calledEntered.outcome, CommandOutcome.Committed);
-  assert.equal(calledEntered.internalStepBoundExceeded, true);
   const calledOperation = calledBoundedScopeOperation();
   const calledChildScopeId = calledOperation.childScopeId;
   const program: SemanticProcessProgram = {
@@ -274,7 +273,7 @@ test("mints called-owner child, Activity, and deadline identities in the called 
   };
   const prepared = requirePrepared(deriveInternalBoundedScopePreparation(
     program,
-    calledEntered.state,
+    calledEntered,
     calledOperation,
   ));
 
@@ -286,15 +285,14 @@ test("mints called-owner child, Activity, and deadline identities in the called 
 });
 
 function beforeArming(): RuntimeState {
-  const result = applyStimulus(
+  const result = admittedInternalPrefix(
     boundedScopeProgram,
     initialState,
     start,
-    1,
+    ["operation:Start"],
+    ["operation:Scope"],
   );
-  assert.equal(result.outcome, CommandOutcome.Committed);
-  assert.equal(result.internalStepBoundExceeded, true);
-  return result.state;
+  return result;
 }
 
 function siblingOperation(): Extract<

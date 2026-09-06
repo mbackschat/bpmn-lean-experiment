@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
+import { admittedInternalPrefix } from "./internal-operation-prefix-fixture.ts";
+
 import {
   CommandOutcome,
   SemanticOperationKind,
@@ -52,14 +54,13 @@ const started = applyStimulus(
   startFor(propagatedErrorProgram, terminateInstanceId),
 );
 assert.equal(started.outcome, CommandOutcome.Committed);
-const ready = applyStimulus(
+const ready = admittedInternalPrefix(
   propagatedErrorProgram,
   started.state,
   terminateCompletion("UserTask_Trigger"),
-  0,
+  [],
+  ["operation:EndEvent_Terminate"],
 );
-assert.equal(ready.outcome, CommandOutcome.Committed);
-assert.equal(ready.internalStepBoundExceeded, true);
 const operation = propagatedErrorProgram.operations.find(({ kind }) =>
   kind === SemanticOperationKind.ThrowError
 );
@@ -67,7 +68,7 @@ assert.ok(operation?.kind === SemanticOperationKind.ThrowError);
 const candidate = applyInternalOperationStep(
   propagatedErrorProgram,
   operation,
-  ready.state,
+  ready,
 );
 assert.ok(candidate !== null && candidate.owner !== null);
 
@@ -111,7 +112,7 @@ test("derives the exact interrupted region, throwing token, and parent output", 
 
 test("Error interruption conflicts with child work but not unrelated parent work", () => {
   const footprint = requireErrorFootprint(candidate);
-  const sibling = ready.state.userTaskWaits.find(({ id }) =>
+  const sibling = ready.userTaskWaits.find(({ id }) =>
     id.elementId === "UserTask_Sibling"
   );
   const root = scopeOccurrence(terminateRootScopeId);
@@ -149,8 +150,8 @@ test("preparation ignores the supplied successor and rejects inexact ownership",
     ...candidate,
     successor: {
       ...candidate.successor,
-      controlTokens: ready.state.controlTokens,
-      scopeOccurrences: ready.state.scopeOccurrences,
+      controlTokens: ready.controlTokens,
+      scopeOccurrences: ready.scopeOccurrences,
       userTaskWaits: [],
     },
   };
@@ -160,7 +161,7 @@ test("preparation ignores the supplied successor and rejects inexact ownership",
   assert.equal(
     deriveInternalThrowErrorStateFootprint(
       propagatedErrorProgram,
-      ready.state,
+      ready,
       { ...candidate, owner: root.id },
     ),
     null,
@@ -169,8 +170,8 @@ test("preparation ignores the supplied successor and rejects inexact ownership",
     deriveInternalThrowErrorStateFootprint(
       propagatedErrorProgram,
       {
-        ...ready.state,
-        scopeOccurrences: [...ready.state.scopeOccurrences, scopeOccurrence(terminateChildScopeId)],
+        ...ready,
+        scopeOccurrences: [...ready.scopeOccurrences, scopeOccurrence(terminateChildScopeId)],
       },
       candidate,
     ),
@@ -183,7 +184,7 @@ function requireErrorFootprint(
 ): InternalTransitionStateFootprint {
   const footprint = deriveInternalThrowErrorStateFootprint(
     propagatedErrorProgram,
-    ready.state,
+    ready,
     selected,
   );
   if (footprint === null) {
@@ -193,7 +194,7 @@ function requireErrorFootprint(
 }
 
 function scopeOccurrence(definitionScopeId: string) {
-  const occurrence = ready.state.scopeOccurrences.find(({ id }) =>
+  const occurrence = ready.scopeOccurrences.find(({ id }) =>
     id.definitionScopeId === definitionScopeId
   );
   if (occurrence === undefined) {

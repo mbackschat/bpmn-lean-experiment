@@ -1,14 +1,14 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
+import { admittedInternalPrefix } from "./internal-operation-prefix-fixture.ts";
+
 import {
-  CommandOutcome,
   InternalSchedulingMode,
   MessageChannelKind,
   SemanticOperationKind,
   SemanticOriginKind,
   StimulusKind,
-  applyStimulus,
   initialState,
 } from "@bpmn-lean/semantic-core";
 import type {
@@ -63,19 +63,18 @@ const rootOperation = requireOperation(
   eventRaceProgram,
   SemanticOperationKind.AwaitEventRace,
 );
-const beforeRootRace = applyStimulus(
+const beforeRootRace = admittedInternalPrefix(
   eventRaceProgram,
   initialState,
   eventRaceStart,
-  1,
+  ["operation:Start"],
+  ["operation:Race"],
 );
-assert.equal(beforeRootRace.outcome, CommandOutcome.Committed);
-assert.equal(beforeRootRace.internalStepBoundExceeded, true);
 
 test("prepares the race, both waits, counters, anchors, and input token", () => {
   const prepared = requirePrepared(deriveInternalEventRacePreparation(
     eventRaceProgram,
-    beforeRootRace.state,
+    beforeRootRace,
     rootOperation,
   ));
 
@@ -118,7 +117,7 @@ test("prepares the race, both waits, counters, anchors, and input token", () => 
 test("keeps counter families tagged and conflicts on each exact race association key", () => {
   const prepared = requirePrepared(deriveInternalEventRacePreparation(
     eventRaceProgram,
-    beforeRootRace.state,
+    beforeRootRace,
     rootOperation,
   ));
   const sameElementOtherFamily: InternalTransitionStateFootprint = {
@@ -192,11 +191,11 @@ test("keeps counter families tagged and conflicts on each exact race association
 test("refuses an existing public anchor or hidden race identity", () => {
   const prepared = requirePrepared(deriveInternalEventRacePreparation(
     eventRaceProgram,
-    beforeRootRace.state,
+    beforeRootRace,
     rootOperation,
   ));
   const occupiedAnchor: RuntimeState = {
-    ...beforeRootRace.state,
+    ...beforeRootRace,
     timerWaits: [{
       id: prepared.messageWait.id,
       owner: prepared.owner,
@@ -211,7 +210,7 @@ test("refuses an existing public anchor or hidden race identity", () => {
   ), null);
   assert.equal(deriveInternalEventRacePreparation(
     eventRaceProgram,
-    { ...beforeRootRace.state, eventRaces: [prepared.race] },
+    { ...beforeRootRace, eventRaces: [prepared.race] },
     rootOperation,
   ), null);
 });
@@ -224,7 +223,7 @@ test("refuses every race member when its next activation is not a safe integer",
   ] as const;
   for (const [family, elementId] of counterFamilies) {
     const unsafeState: RuntimeState = {
-      ...beforeRootRace.state,
+      ...beforeRootRace,
       [family]: [{
         elementId,
         count: Number.MAX_SAFE_INTEGER,
@@ -239,14 +238,13 @@ test("refuses every race member when its next activation is not a safe integer",
 });
 
 test("binds a called-owner race and both winners to the called semantic instance", () => {
-  const calledEntered = applyStimulus(
+  const calledEntered = admittedInternalPrefix(
     callActivityProgram,
     initialState,
     callActivityStart(),
-    2,
+    ["operation:Start_Caller", "operation:Call:é"],
+    ["operation:Task_Called"],
   );
-  assert.equal(calledEntered.outcome, CommandOutcome.Committed);
-  assert.equal(calledEntered.internalStepBoundExceeded, true);
   const calledOperation = calledEventRaceOperation();
   const calledProgram: SemanticProcessProgram = {
     ...callActivityProgram,
@@ -257,7 +255,7 @@ test("binds a called-owner race and both winners to the called semantic instance
   };
   const prepared = requirePrepared(deriveInternalEventRacePreparation(
     calledProgram,
-    calledEntered.state,
+    calledEntered,
     calledOperation,
   ));
   assert.equal(prepared.owner.processInstanceId, expectedCalledInstanceId);
@@ -270,7 +268,7 @@ test("binds a called-owner race and both winners to the called semantic instance
 
   const armed = armEventRace(
     calledOperation,
-    calledEntered.state,
+    calledEntered,
     prepared.owner,
   );
   assert.ok(armed !== null);

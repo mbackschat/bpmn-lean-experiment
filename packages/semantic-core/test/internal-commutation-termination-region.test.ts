@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
+import { admittedInternalPrefix } from "./internal-operation-prefix-fixture.ts";
+
 import {
   CommandOutcome,
   SemanticOperationKind,
@@ -48,14 +50,13 @@ const started = applyStimulus(
   terminateStartStimulus(),
 );
 assert.equal(started.outcome, CommandOutcome.Committed);
-const ready = applyStimulus(
+const ready = admittedInternalPrefix(
   terminateProgram,
   started.state,
   terminateCompletion("UserTask_Trigger"),
-  0,
+  [],
+  ["operation:EndEvent_Terminate"],
 );
-assert.equal(ready.outcome, CommandOutcome.Committed);
-assert.equal(ready.internalStepBoundExceeded, true);
 const operation = terminateProgram.operations.find(({ kind }) =>
   kind === SemanticOperationKind.TerminateScope
 );
@@ -63,13 +64,13 @@ assert.ok(operation?.kind === SemanticOperationKind.TerminateScope);
 const candidate = applyInternalOperationStep(
   terminateProgram,
   operation,
-  ready.state,
+  ready,
 );
 assert.ok(candidate !== null && candidate.owner !== null);
 
 test("derives the retained-root termination region, input, and End increment", () => {
   const footprint = requireTerminationFootprint(candidate);
-  const child = ready.state.scopeOccurrences.find(({ id }) =>
+  const child = ready.scopeOccurrences.find(({ id }) =>
     id.definitionScopeId === operation.scopeId
   );
   assert.ok(child !== undefined && child.parent !== null);
@@ -99,10 +100,10 @@ test("derives the retained-root termination region, input, and End increment", (
 
 test("termination conflicts with live work in its region but not parent work", () => {
   const footprint = requireTerminationFootprint(candidate);
-  const sibling = ready.state.userTaskWaits.find(({ id }) =>
+  const sibling = ready.userTaskWaits.find(({ id }) =>
     id.elementId === "UserTask_Sibling"
   );
-  const root = ready.state.scopeOccurrences.find(({ id }) =>
+  const root = ready.scopeOccurrences.find(({ id }) =>
     id.definitionScopeId === terminateRootScopeId
   );
   assert.ok(sibling !== undefined && root !== undefined);
@@ -147,18 +148,18 @@ test("preparation ignores the supplied successor and rejects another owner", () 
       ...candidate.successor,
       endOccurrences: 999,
       scopeOccurrences: [],
-      userTaskWaits: ready.state.userTaskWaits,
+      userTaskWaits: ready.userTaskWaits,
     },
   };
   assert.deepEqual(requireTerminationFootprint(poisoned), expected);
-  const root = ready.state.scopeOccurrences.find(({ id }) =>
+  const root = ready.scopeOccurrences.find(({ id }) =>
     id.definitionScopeId === terminateRootScopeId
   );
   assert.ok(root !== undefined);
   assert.equal(
     deriveInternalTerminateScopeStateFootprint(
       terminateProgram,
-      ready.state,
+      ready,
       { ...candidate, owner: root.id },
     ),
     null,
@@ -170,7 +171,7 @@ function requireTerminationFootprint(
 ): InternalTransitionStateFootprint {
   const footprint = deriveInternalTerminateScopeStateFootprint(
     terminateProgram,
-    ready.state,
+    ready,
     selected,
   );
   if (footprint === null) {

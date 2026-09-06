@@ -1,8 +1,9 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
+import { admittedInternalPrefix } from "./internal-operation-prefix-fixture.ts";
+
 import {
-  CommandOutcome,
   SemanticOperationKind,
   SemanticOriginKind,
   VariableValueKind,
@@ -431,14 +432,13 @@ test("indexes parallel controller arrays without conflating slots and snapshots"
 });
 
 test("mints every called-owner identity in the called semantic instance", () => {
-  const calledEntered = applyStimulus(
+  const calledEntered = admittedInternalPrefix(
     callActivityProgram,
     initialState,
     callActivityStart(),
-    2,
+    ["operation:Start_Caller", "operation:Call:é"],
+    ["operation:Task_Called"],
   );
-  assert.equal(calledEntered.outcome, CommandOutcome.Committed);
-  assert.equal(calledEntered.internalStepBoundExceeded, true);
   const calledOperation = calledParallelOperation();
   const program: SemanticProcessProgram = {
     ...callActivityProgram,
@@ -447,9 +447,9 @@ test("mints every called-owner identity in the called semantic instance", () => 
     ),
   };
   const state: RuntimeState = {
-    ...calledEntered.state,
+    ...calledEntered,
     variables: {
-      ...calledEntered.state.variables,
+      ...calledEntered.variables,
       process: {
         bindings: [{
           name: calledOperation.data.input.dataObjectReferenceId,
@@ -481,10 +481,14 @@ function beforeParallelEntry(
   program: SemanticProcessProgram,
   stimulus: Parameters<typeof applyStimulus>[2],
 ): RuntimeState {
-  const result = applyStimulus(program, initialState, stimulus, 1);
-  assert.equal(result.outcome, CommandOutcome.Committed);
-  assert.equal(result.internalStepBoundExceeded, true);
-  return result.state;
+  const result = admittedInternalPrefix(
+    program,
+    initialState,
+    stimulus,
+    ["operation:Start"],
+    ["operation:Review"],
+  );
+  return result;
 }
 
 function siblingOperation(): Extract<

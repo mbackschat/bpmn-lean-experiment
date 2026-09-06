@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
+import { admittedInternalPrefix } from "./internal-operation-prefix-fixture.ts";
+
 import {
   CommandOutcome,
   ActivityBodyKind,
@@ -35,7 +37,10 @@ test("start and command closures have the exact approved bounds", () => {
     terminateStartStimulus(),
     4,
   );
+  assert.equal(shortStart.outcome, CommandOutcome.RolledBack);
   assert.equal(shortStart.internalStepBoundExceeded, true);
+  assert.equal(shortStart.ambiguousInternalChoice, false);
+  assert.equal(shortStart.state, initialState);
 
   const waiting = applyStimulus(
     terminateProgram,
@@ -56,7 +61,10 @@ test("start and command closures have the exact approved bounds", () => {
     terminateCompletion("UserTask_Trigger"),
     2,
   );
+  assert.equal(shortTrigger.outcome, CommandOutcome.RolledBack);
   assert.equal(shortTrigger.internalStepBoundExceeded, true);
+  assert.equal(shortTrigger.ambiguousInternalChoice, false);
+  assert.equal(shortTrigger.state, waiting.state);
   const afterTrigger = applyStimulus(
     terminateProgram,
     waiting.state,
@@ -72,7 +80,10 @@ test("start and command closures have the exact approved bounds", () => {
     terminateCompletion("UserTask_Outer"),
     1,
   );
+  assert.equal(shortOuter.outcome, CommandOutcome.RolledBack);
   assert.equal(shortOuter.internalStepBoundExceeded, true);
+  assert.equal(shortOuter.ambiguousInternalChoice, false);
+  assert.equal(shortOuter.state, afterTrigger.state);
   const completed = applyStimulus(
     terminateProgram,
     afterTrigger.state,
@@ -130,19 +141,19 @@ test("sibling-first remains at Trigger and preserves its prior End occurrence", 
 
 test("termination and completion remain three distinct unique operations", () => {
   const waiting = start();
-  const committed = applyStimulus(
+  const committed = admittedInternalPrefix(
     terminateProgram,
     waiting,
     terminateCompletion("UserTask_Trigger"),
-    0,
+    [],
+    ["operation:EndEvent_Terminate"],
   );
-  assert.equal(committed.outcome, CommandOutcome.Committed);
-  assert.equal(enabledInternalOperationCount(terminateProgram, committed.state), 1);
+  assert.equal(enabledInternalOperationCount(terminateProgram, committed), 1);
 
   const terminated = applyInternalOperation(
     terminateProgram,
     terminateOperation(),
-    committed.state,
+    committed,
   );
   assert.ok(terminated !== null);
   assert.equal(enabledInternalOperationCount(terminateProgram, terminated), 1);
@@ -179,12 +190,13 @@ test("termination and completion remain three distinct unique operations", () =>
 });
 
 test("termination refuses zero, multiple, wrong-owner, and wrong-scope offers", () => {
-  const ready = applyStimulus(
+  const ready = admittedInternalPrefix(
     terminateProgram,
     start(),
     terminateCompletion("UserTask_Trigger"),
-    0,
-  ).state;
+    [],
+    ["operation:EndEvent_Terminate"],
+  );
   const offered = ready.controlTokens[0];
   const root = scope(ready, terminateRootScopeId);
   assert.ok(offered !== undefined);

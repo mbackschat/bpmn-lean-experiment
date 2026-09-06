@@ -13,6 +13,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
+import { admittedInternalPrefix } from "./internal-operation-prefix-fixture.ts";
+
 import {
   CommandOutcome,
   SemanticOperationKind,
@@ -146,27 +148,27 @@ test("refuses a frontier holding the data-input entry beside an independent armi
     startForked,
   );
 
-  assert.equal(evaluated.result.outcome, CommandOutcome.Committed);
+  assert.equal(evaluated.result.outcome, CommandOutcome.RolledBack);
+  assert.equal(evaluated.result.state, initialState);
+  assert.equal(evaluated.result.internalStepBoundExceeded, false);
+  assert.equal(evaluated.result.ambiguousInternalChoice, true);
   assert.equal(evaluated.ambiguousInternalChoice, true);
-  assert.deepEqual(
-    evaluated.selectedInternalBatches.map((batch) => batch.length),
-    [1, 1],
-  );
-  assert.deepEqual(
-    evaluated.selectedInternalSteps.map(({ operation }) => operation.id),
-    ["operation:StartEvent_Fork", "operation:Gateway_Fork"],
-  );
+  assert.equal(evaluated.admittedState, null);
+  assert.deepEqual(evaluated.selectedInternalBatches, []);
+  assert.deepEqual(evaluated.selectedInternalSteps, []);
 });
 
 test("derives no footprint for the data-input entry in that exact frontier state", () => {
-  const evaluated = evaluateStimulusWithSelectedSteps(
+  const frontier = admittedInternalPrefix(
     forkedProgram,
     initialState,
     startForked,
+    ["operation:StartEvent_Fork", "operation:Gateway_Fork"],
+    ["operation:UserTask_Other", "operation:UserTask_Review"],
   );
 
   assert.equal(
-    deriveInternalTransitionFootprint(forkedProgram, evaluated.result.state, {
+    deriveInternalTransitionFootprint(forkedProgram, frontier, {
       operation: dataInputOperation,
       owner: forkedOwner,
     }),

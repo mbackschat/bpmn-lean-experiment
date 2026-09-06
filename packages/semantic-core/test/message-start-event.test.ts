@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
+import { admittedInternalPrefix } from "./internal-operation-prefix-fixture.ts";
+
 import {
   CanonicalObservationKind,
   CheckedNodeKind,
@@ -148,10 +150,19 @@ test("admits an exact operation-addressed Message start and closes at one User T
   assert.equal(isWellFormedSemanticProcessProgram(program), true);
   assert.equal(supportsSemanticProcessExecution(trigger, program), true);
 
-  const beforeFirstStep = applyStimulus(program, initialState, trigger, 0);
-  assert.equal(beforeFirstStep.outcome, CommandOutcome.Committed);
-  assert.equal(beforeFirstStep.internalStepBoundExceeded, true);
-  assert.equal(enabledInternalOperationCount(program, beforeFirstStep.state), 1);
+  const beforeFirstStepRollback = applyStimulus(program, initialState, trigger, 0);
+  assert.equal(beforeFirstStepRollback.outcome, CommandOutcome.RolledBack);
+  assert.equal(beforeFirstStepRollback.internalStepBoundExceeded, true);
+  assert.equal(beforeFirstStepRollback.ambiguousInternalChoice, false);
+  assert.equal(beforeFirstStepRollback.state, initialState);
+  const beforeFirstStep = admittedInternalPrefix(
+    program,
+    initialState,
+    trigger,
+    [],
+    ["operation:StartEvent_Message"],
+  );
+  assert.equal(enabledInternalOperationCount(program, beforeFirstStep), 1);
 
   const messageStart = program.operations.find(
     ({ kind }) => kind === SemanticOperationKind.InitiateMessage,
@@ -163,7 +174,7 @@ test("admits an exact operation-addressed Message start and closes at one User T
   const beforeSecondStep = applyInternalOperation(
     program,
     messageStart,
-    beforeFirstStep.state,
+    beforeFirstStep,
   );
   assert.notEqual(beforeSecondStep, null);
   if (beforeSecondStep === null) {
@@ -172,7 +183,10 @@ test("admits an exact operation-addressed Message start and closes at one User T
   assert.equal(enabledInternalOperationCount(program, beforeSecondStep), 1);
 
   const oneStep = applyStimulus(program, initialState, trigger, 1);
+  assert.equal(oneStep.outcome, CommandOutcome.RolledBack);
   assert.equal(oneStep.internalStepBoundExceeded, true);
+  assert.equal(oneStep.ambiguousInternalChoice, false);
+  assert.equal(oneStep.state, initialState);
 
   const closed = applyStimulus(program, initialState, trigger);
   assert.equal(closed.outcome, CommandOutcome.Committed);
@@ -373,7 +387,13 @@ test("keeps generic Message initiation outputs canonical while the profile is ex
     outputs: ["place:Flow_A", "place:Flow_B"],
   } as const;
   const places = new Set(genericOperation.outputs);
-  const pending = applyStimulus(program, initialState, trigger, 0).state;
+  const pending = admittedInternalPrefix(
+    program,
+    initialState,
+    trigger,
+    [],
+    ["operation:StartEvent_Message"],
+  );
   const branched = applyInternalOperation(program, genericOperation, pending);
 
   assert.deepEqual(branched?.controlTokens, genericOperation.outputs.map(

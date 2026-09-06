@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
+import { admittedInternalPrefix } from "./internal-operation-prefix-fixture.ts";
+
 import {
   CommandOutcome,
   ControlStateKind,
@@ -34,8 +36,20 @@ test("invokes one distinct called Process and returns only after its task comple
   assert.equal(started.state.control.instanceId, instanceId);
   assert.equal(started.state.calledProcessOccurrences.length, 1);
   assert.equal(started.state.scopeOccurrences.filter(({ parent }) => parent === null).length, 2);
-  assert.equal(applyStimulus(program, initialState, start(), 2).internalStepBoundExceeded, true);
-  assertSingleEnabledClosure(applyStimulus(program, initialState, start(), 0).state);
+  const shortStart = applyStimulus(program, initialState, start(), 2);
+  assert.equal(shortStart.outcome, CommandOutcome.RolledBack);
+  assert.equal(shortStart.internalStepBoundExceeded, true);
+  assert.equal(shortStart.ambiguousInternalChoice, false);
+  assert.equal(shortStart.state, initialState);
+  assertSingleEnabledClosure(
+    admittedInternalPrefix(
+      program,
+      initialState,
+      start(),
+      [],
+      ["operation:Start_Caller"],
+    ),
+  );
 
   const calledCompleted = applyStimulus(
     program,
@@ -51,22 +65,24 @@ test("invokes one distinct called Process and returns only after its task comple
     calledCompleted.state.scopeOccurrences.map(({ id }) => id.processInstanceId),
     [instanceId],
   );
-  assert.equal(
-    applyStimulus(
-      program,
-      started.state,
-      completion(expectedCalledInstanceId, "Task_Called", "short-called"),
-      2,
-    ).internalStepBoundExceeded,
-    true,
+  const shortCalledCompletion = applyStimulus(
+    program,
+    started.state,
+    completion(expectedCalledInstanceId, "Task_Called", "short-called"),
+    2,
   );
+  assert.equal(shortCalledCompletion.outcome, CommandOutcome.RolledBack);
+  assert.equal(shortCalledCompletion.internalStepBoundExceeded, true);
+  assert.equal(shortCalledCompletion.ambiguousInternalChoice, false);
+  assert.equal(shortCalledCompletion.state, started.state);
   assertSingleEnabledClosure(
-    applyStimulus(
+    admittedInternalPrefix(
       program,
       started.state,
       completion(expectedCalledInstanceId, "Task_Called", "zero-called"),
-      0,
-    ).state,
+      [],
+      ["operation:End_Called"],
+    ),
   );
 
   const completed = applyStimulus(
@@ -80,22 +96,24 @@ test("invokes one distinct called Process and returns only after its task comple
     kind: ControlStateKind.Completed,
     instanceId,
   });
-  assert.equal(
-    applyStimulus(
-      program,
-      calledCompleted.state,
-      completion(instanceId, "Task_Caller", "short-caller"),
-      1,
-    ).internalStepBoundExceeded,
-    true,
+  const shortCallerCompletion = applyStimulus(
+    program,
+    calledCompleted.state,
+    completion(instanceId, "Task_Caller", "short-caller"),
+    1,
   );
+  assert.equal(shortCallerCompletion.outcome, CommandOutcome.RolledBack);
+  assert.equal(shortCallerCompletion.internalStepBoundExceeded, true);
+  assert.equal(shortCallerCompletion.ambiguousInternalChoice, false);
+  assert.equal(shortCallerCompletion.state, calledCompleted.state);
   assertSingleEnabledClosure(
-    applyStimulus(
+    admittedInternalPrefix(
       program,
       calledCompleted.state,
       completion(instanceId, "Task_Caller", "zero-caller"),
-      0,
-    ).state,
+      [],
+      ["operation:End_Caller"],
+    ),
   );
 });
 

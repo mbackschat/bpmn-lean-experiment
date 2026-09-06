@@ -1,13 +1,14 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
+import { admittedInternalPrefix } from "./internal-operation-prefix-fixture.ts";
+
 import {
   SemanticOperationKind,
   SemanticProfileId,
   SemanticTransitionKind,
   addActivityVariableScope,
   applyInternalOperationStep,
-  applyStimulus,
   applyStimulusWithTrace,
   createEffectLocalDataOwner,
   initialState,
@@ -71,16 +72,16 @@ test("derives complete positive User Task and mixed Timer footprints", () => {
     true,
   );
 
-  const beforeParallelTasks = applyStimulus(
+  const beforeParallelTasks = admittedInternalPrefix(
     parallelProgram,
     initialState,
     startStimulus(),
-    2,
+    ["operation:StartEvent_1", "operation:Gateway_Fork"],
+    ["operation:UserTask_A", "operation:UserTask_B"],
   );
-  assert.equal(beforeParallelTasks.internalStepBoundExceeded, true);
   const taskCandidates = enabledOperations(
     parallelProgram,
-    beforeParallelTasks.state,
+    beforeParallelTasks,
   );
   assert.deepEqual(
     taskCandidates.map(({ operation }) => operation.kind),
@@ -89,7 +90,7 @@ test("derives complete positive User Task and mixed Timer footprints", () => {
   assert.equal(
     internalOperationPairIsIndependent(
       parallelProgram,
-      beforeParallelTasks.state,
+      beforeParallelTasks,
       taskCandidates,
     ),
     true,
@@ -196,12 +197,13 @@ test("Program admission and the local footprint defense reject duplicate wait de
   };
 
   assert.equal(isWellFormedSemanticProcessProgram(duplicateProgram), false);
-  const beforeParallelTasks = applyStimulus(
+  const beforeParallelTasks = admittedInternalPrefix(
     parallelProgram,
     initialState,
     startStimulus(),
-    2,
-  ).state;
+    ["operation:StartEvent_1", "operation:Gateway_Fork"],
+    ["operation:UserTask_A", "operation:UserTask_B"],
+  );
   const selected = enabledOperations(duplicateProgram, beforeParallelTasks);
   assert.equal(selected.length, 2);
   assert.ok(selected.every((candidate) =>
@@ -222,12 +224,13 @@ test("cross-family lifecycle-anchor collision is refused before successor select
     },
     operations: parallelProgram.operations.map(crossFamilyTimerArm),
   };
-  const beforeParallelTasks = applyStimulus(
+  const beforeParallelTasks = admittedInternalPrefix(
     parallelProgram,
     initialState,
     startStimulus(),
-    2,
-  ).state;
+    ["operation:StartEvent_1", "operation:Gateway_Fork"],
+    ["operation:UserTask_A", "operation:UserTask_B"],
+  );
   const selected = requireTwo(
     enabledOperations(crossFamilyProgram, beforeParallelTasks),
   );

@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
+
+import { admittedInternalPrefix } from "./internal-operation-prefix-fixture.ts";
 import * as semanticCore from "@bpmn-lean/semantic-core";
 
 import {
@@ -73,23 +75,22 @@ test("called Message arming uses the selected owner's semantic instance", () => 
       operation.id === messageOperation.id ? messageOperation : operation
     ),
   };
-  const before = applyStimulus(
+  const before = admittedInternalPrefix(
     callActivityProgram,
     initialState,
     callActivityStart(),
-    2,
+    ["operation:Start_Caller", "operation:Call:é"],
+    ["operation:Task_Called"],
   );
-  assert.equal(before.outcome, CommandOutcome.Committed);
-  assert.equal(before.internalStepBoundExceeded, true);
   const step = applyInternalOperationStep(
     messageProgram,
     messageOperation,
-    before.state,
+    before,
   );
   assert.ok(step !== null && step.owner !== null);
   const footprint = deriveInternalTransitionFootprint(
     messageProgram,
-    before.state,
+    before,
     step,
   );
   assert.ok(footprint !== null);
@@ -102,7 +103,7 @@ test("called Message arming uses the selected owner's semantic instance", () => 
   );
   const actualLifecycle = projectFlowNodeOccurrenceLifecycleDelta(
     messageProgram,
-    before.state,
+    before,
     step.successor,
     {
       kind: "internal",
@@ -119,8 +120,8 @@ test("called Message arming uses the selected owner's semantic instance", () => 
   );
 
   assert.deepEqual({
-    runtimeInstanceId: before.state.control.kind === ControlStateKind.Running
-      ? before.state.control.instanceId
+    runtimeInstanceId: before.control.kind === ControlStateKind.Running
+      ? before.control.instanceId
       : null,
     ownerInstanceId: step.owner.processInstanceId,
     waitInstanceId: step.successor.messageWaits[0]?.id.processInstanceId,

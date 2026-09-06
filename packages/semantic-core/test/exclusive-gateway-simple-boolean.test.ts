@@ -27,10 +27,7 @@ import {
   controlPlace,
   operationBase,
 } from "./semantic-program-parts.ts";
-import {
-  rootScopedProgram,
-  rootScopeOccurrence,
-} from "./root-scope-fixture.ts";
+import { rootScopedProgram } from "./root-scope-fixture.ts";
 
 const literal = (value: boolean): SimpleBooleanExpression => ({
   kind: SimpleBooleanExpressionKind.Literal,
@@ -241,15 +238,12 @@ test("requires three start-closure steps and reports a smaller bound", () => {
   const short = applyStimulus(program, initialState, start, 2);
 
   assert.equal(exact.internalStepBoundExceeded, false);
+  assert.equal(short.outcome, CommandOutcome.RolledBack);
   assert.equal(short.internalStepBoundExceeded, true);
+  assert.equal(short.ambiguousInternalChoice, false);
+  assert.equal(short.state, initialState);
   assert.deepEqual(short.state.userTaskWaits, []);
-  assert.deepEqual(short.state.controlTokens, [
-    {
-      placeId: "place:Flow_First",
-      owner: rootScopeOccurrence(program.processId, start.instanceId),
-      multiplicity: 1,
-    },
-  ]);
+  assert.deepEqual(short.state.controlTokens, []);
 });
 
 test("rejects an extra initiation branch before it creates multiple-enabledness", () => {

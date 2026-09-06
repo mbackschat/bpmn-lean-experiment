@@ -1,8 +1,9 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
+import { admittedInternalPrefix } from "./internal-operation-prefix-fixture.ts";
+
 import {
-  CommandOutcome,
   SemanticOperationKind,
   SemanticOriginKind,
   VariableValueKind,
@@ -434,14 +435,13 @@ test("binds controller membership and slots to the containing occurrence region"
 });
 
 test("mints every called-owner identity in the called semantic instance", () => {
-  const calledEntered = applyStimulus(
+  const calledEntered = admittedInternalPrefix(
     callActivityProgram,
     initialState,
     callActivityStart(),
-    2,
+    ["operation:Start_Caller", "operation:Call:é"],
+    ["operation:Task_Called"],
   );
-  assert.equal(calledEntered.outcome, CommandOutcome.Committed);
-  assert.equal(calledEntered.internalStepBoundExceeded, true);
   const calledOperation = calledSequentialOperation();
   const program: SemanticProcessProgram = {
     ...callActivityProgram,
@@ -450,9 +450,9 @@ test("mints every called-owner identity in the called semantic instance", () => 
     ),
   };
   const state: RuntimeState = {
-    ...calledEntered.state,
+    ...calledEntered,
     variables: {
-      ...calledEntered.state.variables,
+      ...calledEntered.variables,
       process: {
         bindings: [{
           name: calledOperation.data.input.dataObjectReferenceId,
@@ -480,10 +480,14 @@ test("mints every called-owner identity in the called semantic instance", () => 
 function beforeSequentialEntry(
   stimulus: Parameters<typeof applyStimulus>[2],
 ): RuntimeState {
-  const result = applyStimulus(reviewProgram, initialState, stimulus, 1);
-  assert.equal(result.outcome, CommandOutcome.Committed);
-  assert.equal(result.internalStepBoundExceeded, true);
-  return result.state;
+  const result = admittedInternalPrefix(
+    reviewProgram,
+    initialState,
+    stimulus,
+    ["operation:Start"],
+    ["operation:Review"],
+  );
+  return result;
 }
 
 function siblingOperation(): Extract<

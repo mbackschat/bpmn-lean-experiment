@@ -4,6 +4,7 @@ import { test } from "node:test";
 import {
   CommandOutcome,
   ScenarioStepKind,
+  ScenarioOutcomeKind,
   SemanticOperationKind,
   SemanticOriginKind,
   SemanticTransitionKind,
@@ -19,7 +20,6 @@ import type {
   CommandResult,
   SemanticOperation,
   SemanticProcessProgram,
-  StimulusEvaluationResult,
   UnnumberedCommittedTransitionRecord,
 } from "@bpmn-lean/semantic-core";
 
@@ -48,13 +48,13 @@ test("one admitted start publishes its external stimulus and every selected clos
   );
 
   assert.deepEqual(traced.result, existing);
-  assertExactOldCommandResult(
+  assertExactCommandResult(
     traced.result,
     CommandOutcome.Committed,
     traced.result.state,
     false,
   );
-  assert.equal(internalAmbiguity(evaluated), false);
+  assert.equal(evaluated.ambiguousInternalChoice, false);
   assert.deepEqual(
     traced.committedTransitions.map(({ transition }) => transition.kind),
     [
@@ -212,19 +212,19 @@ test("rejected and closure-bound evaluations publish no committed facts", () => 
   );
 
   assert.equal(rejected.result.outcome, CommandOutcome.Rejected);
-  assertExactOldCommandResult(
+  assertExactCommandResult(
     rejected.result,
     CommandOutcome.Rejected,
-    rejected.result.state,
+    started.result.state,
     false,
   );
   assert.deepEqual(rejected.committedTransitions, []);
   assert.deepEqual(rejected.flowNodeOccurrenceLifecycles, []);
   assert.equal(rejected.currentPositions, null);
-  assertExactOldCommandResult(
+  assertExactCommandResult(
     bounded.result,
-    CommandOutcome.Committed,
-    bounded.result.state,
+    CommandOutcome.RolledBack,
+    initialState,
     true,
   );
   assert.deepEqual(bounded.committedTransitions, []);
@@ -232,7 +232,7 @@ test("rejected and closure-bound evaluations publish no committed facts", () => 
   assert.equal(bounded.currentPositions, null);
 });
 
-test("two enabled End operations stop at the exact pre-choice boundary without publication", () => {
+test("late End ambiguity rolls back completion and its successful join prefix", () => {
   const program = withAdditionalOperation({
     ...operationBase("EndEvent_Alternate"),
     kind: SemanticOperationKind.ReachNoneEnd,
@@ -266,32 +266,39 @@ test("two enabled End operations stop at the exact pre-choice boundary without p
     completionStimulus("UserTask_B"),
   );
 
-  assertExactOldCommandResult(
+  assert.equal(evaluated.result.outcome, CommandOutcome.RolledBack);
+  assert.equal(evaluated.ambiguousInternalChoice, true);
+  assertExactCommandResult(
     beforeEndChoice,
-    CommandOutcome.Committed,
-    beforeEndChoice.state,
+    CommandOutcome.RolledBack,
+    afterA.state,
     true,
   );
-  assert.deepEqual(evaluated.result.state, beforeEndChoice.state);
-  assert.deepEqual(
-    evaluated.selectedInternalSteps.map(({ operation }) => operation.id),
-    ["operation:Gateway_Join"],
-  );
-  assert.equal(internalAmbiguity(evaluated), true);
-  assertExactOldCommandResult(
+  assert.equal(evaluated.result.state, afterA.state);
+  assert.equal(evaluated.admittedState, null);
+  assert.deepEqual(evaluated.selectedInternalSteps, []);
+  assert.deepEqual(evaluated.selectedInternalBatches, []);
+  assert.equal(evaluated.ambiguousInternalChoice, true);
+  assertExactCommandResult(
     evaluated.result,
-    CommandOutcome.Committed,
-    evaluated.result.state,
+    CommandOutcome.RolledBack,
+    afterA.state,
     false,
+    true,
   );
   assert.deepEqual(traced.result, resultOnly);
   assert.deepEqual(evaluated.result, resultOnly);
   assert.deepEqual(traced.committedTransitions, []);
   assert.deepEqual(traced.flowNodeOccurrenceLifecycles, []);
   assert.equal(traced.currentPositions, null);
+  assert.deepEqual(advanceScenario(program, afterA.state, completionStimulus("UserTask_B")), {
+    kind: ScenarioStepKind.HarnessFailure,
+    outcome: { kind: ScenarioOutcomeKind.HarnessFailure },
+    observations: [],
+  });
 });
 
-test("two enabled Duplicate operations stop before either selector can fire", () => {
+test("ambiguous Duplicate choice rolls back start admission and its initiation prefix", () => {
   const program = withAdditionalOperation({
     ...operationBase("Gateway_Fork_Alternate"),
     kind: SemanticOperationKind.Duplicate,
@@ -316,32 +323,25 @@ test("two enabled Duplicate operations stop before either selector can fire", ()
   );
   const resultOnly = applyStimulus(program, initialState, startStimulus());
 
-  assertExactOldCommandResult(
+  assert.equal(evaluated.result.outcome, CommandOutcome.RolledBack);
+  assert.equal(evaluated.ambiguousInternalChoice, true);
+  assertExactCommandResult(
     beforeForkChoice,
-    CommandOutcome.Committed,
-    beforeForkChoice.state,
+    CommandOutcome.RolledBack,
+    initialState,
     true,
   );
-  assert.deepEqual(evaluated.result.state, beforeForkChoice.state);
-  assert.deepEqual(evaluated.result.state.controlTokens, [{
-    placeId: "place:Flow_StartToFork",
-    owner: {
-      processInstanceId: "Instance_1",
-      definitionScopeId: "scope:Process_ParallelForkJoin",
-      activation: 1,
-    },
-    multiplicity: 1,
-  }]);
-  assert.deepEqual(
-    evaluated.selectedInternalSteps.map(({ operation }) => operation.id),
-    ["operation:StartEvent_1"],
-  );
-  assert.equal(internalAmbiguity(evaluated), true);
-  assertExactOldCommandResult(
+  assert.equal(evaluated.result.state, initialState);
+  assert.equal(evaluated.admittedState, null);
+  assert.deepEqual(evaluated.selectedInternalSteps, []);
+  assert.deepEqual(evaluated.selectedInternalBatches, []);
+  assert.equal(evaluated.ambiguousInternalChoice, true);
+  assertExactCommandResult(
     evaluated.result,
-    CommandOutcome.Committed,
-    evaluated.result.state,
+    CommandOutcome.RolledBack,
+    initialState,
     false,
+    true,
   );
   assert.deepEqual(traced.result, resultOnly);
   assert.deepEqual(evaluated.result, resultOnly);
@@ -368,23 +368,18 @@ function withAdditionalOperation(
   return { ...parallelProgram, operations, operationScopes };
 }
 
-function assertExactOldCommandResult(
+function assertExactCommandResult(
   result: CommandResult,
   outcome: CommandResult["outcome"],
   state: CommandResult["state"],
   internalStepBoundExceeded: boolean,
+  ambiguousInternalChoice = false,
 ): void {
   assert.deepEqual(
     Object.keys(result).sort(),
-    ["internalStepBoundExceeded", "outcome", "state"],
+    ["ambiguousInternalChoice", "internalStepBoundExceeded", "outcome", "state"],
   );
-  assert.deepEqual(result, { outcome, state, internalStepBoundExceeded });
-}
-
-function internalAmbiguity(evaluation: StimulusEvaluationResult): unknown {
-  return (evaluation as StimulusEvaluationResult & {
-    ambiguousInternalChoice?: boolean;
-  }).ambiguousInternalChoice;
+  assert.deepEqual(result, { outcome, state, internalStepBoundExceeded, ambiguousInternalChoice });
 }
 
 function requireInternal(

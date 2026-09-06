@@ -337,7 +337,10 @@ test("start, both repeats, and default exit close in three internal steps", () =
 
 test("closure limit two fails at start, repeat, and exit boundaries", () => {
   const start = applyStimulus(cycleProgram, initialState, startStimulus(), 2);
+  assert.equal(start.outcome, CommandOutcome.RolledBack);
   assert.equal(start.internalStepBoundExceeded, true);
+  assert.equal(start.ambiguousInternalChoice, false);
+  assert.equal(start.state, initialState);
 
   const stableStart = applyStimulus(
     cycleProgram,
@@ -351,7 +354,10 @@ test("closure limit two fails at start, repeat, and exit boundaries", () => {
     completionStimulus(1, "repeat"),
     2,
   );
+  assert.equal(repeat.outcome, CommandOutcome.RolledBack);
   assert.equal(repeat.internalStepBoundExceeded, true);
+  assert.equal(repeat.ambiguousInternalChoice, false);
+  assert.equal(repeat.state, stableStart.state);
 
   const stableRepeat = applyStimulus(
     cycleProgram,
@@ -365,7 +371,10 @@ test("closure limit two fails at start, repeat, and exit boundaries", () => {
     completionStimulus(2, "exit"),
     2,
   );
+  assert.equal(exit.outcome, CommandOutcome.RolledBack);
   assert.equal(exit.internalStepBoundExceeded, true);
+  assert.equal(exit.ambiguousInternalChoice, false);
+  assert.equal(exit.state, stableRepeat.state);
 });
 
 function makeCycleProgram(): SemanticProcessProgram {

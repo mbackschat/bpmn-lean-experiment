@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
+import { admittedInternalPrefix } from "./internal-operation-prefix-fixture.ts";
+
 import {
   CommandOutcome,
   ControlStateKind,
@@ -310,31 +312,71 @@ test("rejects same-family wait declarer collisions without forbidding cross-fami
 });
 
 test("keeps closure bounded, single-enabled, and resumable at every new stable state", () => {
-  const admittedStart = applyStimulus(program, initialState, start, 0);
-  assert.equal(admittedStart.internalStepBoundExceeded, true);
-  assert.equal(enabledInternalOperationCount(program, admittedStart.state), 1);
+  const admittedStartRollback = applyStimulus(program, initialState, start, 0);
+  assert.equal(admittedStartRollback.outcome, CommandOutcome.RolledBack);
+  assert.equal(admittedStartRollback.internalStepBoundExceeded, true);
+  assert.equal(admittedStartRollback.ambiguousInternalChoice, false);
+  assert.equal(admittedStartRollback.state, initialState);
+  const admittedStart = admittedInternalPrefix(
+    program,
+    initialState,
+    start,
+    [],
+    ["operation:StartEvent_1"],
+  );
+  assert.equal(enabledInternalOperationCount(program, admittedStart), 1);
 
-  const afterInitiate = applyStimulus(program, initialState, start, 1);
-  assert.equal(afterInitiate.internalStepBoundExceeded, true);
-  assert.equal(enabledInternalOperationCount(program, afterInitiate.state), 1);
+  const afterInitiateRollback = applyStimulus(program, initialState, start, 1);
+  assert.equal(afterInitiateRollback.outcome, CommandOutcome.RolledBack);
+  assert.equal(afterInitiateRollback.internalStepBoundExceeded, true);
+  assert.equal(afterInitiateRollback.ambiguousInternalChoice, false);
+  assert.equal(afterInitiateRollback.state, initialState);
+  const afterInitiate = admittedInternalPrefix(
+    program,
+    initialState,
+    start,
+    ["operation:StartEvent_1"],
+    ["operation:TimerCatch_PT1S"],
+  );
+  assert.equal(enabledInternalOperationCount(program, afterInitiate), 1);
 
   const timerWait = applyStimulus(program, initialState, start);
   assert.equal(timerWait.internalStepBoundExceeded, false);
   assert.equal(enabledInternalOperationCount(program, timerWait.state), 0);
   assert.equal(isStableStateResumable(timerWait.state), true);
 
-  const beforeTask = applyStimulus(program, timerWait.state, fireTimer, 0);
-  assert.equal(beforeTask.internalStepBoundExceeded, true);
-  assert.equal(enabledInternalOperationCount(program, beforeTask.state), 1);
+  const beforeTaskRollback = applyStimulus(program, timerWait.state, fireTimer, 0);
+  assert.equal(beforeTaskRollback.outcome, CommandOutcome.RolledBack);
+  assert.equal(beforeTaskRollback.internalStepBoundExceeded, true);
+  assert.equal(beforeTaskRollback.ambiguousInternalChoice, false);
+  assert.equal(beforeTaskRollback.state, timerWait.state);
+  const beforeTask = admittedInternalPrefix(
+    program,
+    timerWait.state,
+    fireTimer,
+    [],
+    ["operation:UserTask_Approve"],
+  );
+  assert.equal(enabledInternalOperationCount(program, beforeTask), 1);
 
   const taskWait = applyStimulus(program, timerWait.state, fireTimer);
   assert.equal(taskWait.internalStepBoundExceeded, false);
   assert.equal(enabledInternalOperationCount(program, taskWait.state), 0);
   assert.equal(isStableStateResumable(taskWait.state), true);
 
-  const beforeEnd = applyStimulus(program, taskWait.state, completeTask, 0);
-  assert.equal(beforeEnd.internalStepBoundExceeded, true);
-  assert.equal(enabledInternalOperationCount(program, beforeEnd.state), 1);
+  const beforeEndRollback = applyStimulus(program, taskWait.state, completeTask, 0);
+  assert.equal(beforeEndRollback.outcome, CommandOutcome.RolledBack);
+  assert.equal(beforeEndRollback.internalStepBoundExceeded, true);
+  assert.equal(beforeEndRollback.ambiguousInternalChoice, false);
+  assert.equal(beforeEndRollback.state, taskWait.state);
+  const beforeEnd = admittedInternalPrefix(
+    program,
+    taskWait.state,
+    completeTask,
+    [],
+    ["operation:EndEvent_1"],
+  );
+  assert.equal(enabledInternalOperationCount(program, beforeEnd), 1);
 
   const completed = applyStimulus(program, taskWait.state, completeTask);
   assert.equal(completed.outcome, CommandOutcome.Committed);

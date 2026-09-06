@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
+import { admittedInternalPrefix } from "./internal-operation-prefix-fixture.ts";
+
 import {
   CommandOutcome,
   CompensationParentContextRetentionKind,
@@ -256,12 +258,17 @@ test("selected root completion retains one promoted terminal owner", () => {
 
 test("entry and completion footprints bind capacity, exact parent, and captured data", () => {
   const program = childSnapshotProgram();
-  const initiated = applyStimulus(program, initialState, start, 1);
-  assert.equal(initiated.outcome, CommandOutcome.Committed);
+  const initiated = admittedInternalPrefix(
+    program,
+    initialState,
+    start,
+    ["operation:Start"],
+    ["operation:Scope"],
+  );
   const entry = requireOperation(program, SemanticOperationKind.EnterBoundedScope);
   const preparedEntry = deriveInternalBoundedScopePreparation(
     program,
-    initiated.state,
+    initiated,
     entry,
   );
   assert.ok(preparedEntry !== null);
@@ -276,17 +283,17 @@ test("entry and completion footprints bind capacity, exact parent, and captured 
 
   const started = applyStimulus(program, initialState, start);
   assert.equal(started.outcome, CommandOutcome.Committed);
-  const completionReady = applyStimulus(
+  const completionReady = admittedInternalPrefix(
     program,
     started.state,
     completeChildTask,
-    1,
+    ["operation:ChildEnd"],
+    ["operation:complete-scope:scope:Scope"],
   );
-  assert.equal(completionReady.outcome, CommandOutcome.Committed);
   const decidingState: RuntimeState = {
-    ...completionReady.state,
+    ...completionReady,
     variables: {
-      ...completionReady.state.variables,
+      ...completionReady.variables,
       process: {
         bindings: [{
           name: "context",
@@ -356,23 +363,23 @@ test("Error interruption footprint writes the purged parent reservation", () => 
     startFor(propagatedErrorProgram, terminateInstanceId),
   );
   assert.equal(started.outcome, CommandOutcome.Committed);
-  const ready = applyStimulus(
+  const ready = admittedInternalPrefix(
     propagatedErrorProgram,
     started.state,
     terminateCompletion("UserTask_Trigger"),
-    0,
+    [],
+    ["operation:EndEvent_Terminate"],
   );
-  assert.equal(ready.outcome, CommandOutcome.Committed);
   const operation = requireOperation(
     errorSnapshotProgram,
     SemanticOperationKind.ThrowError,
   );
-  const owner = ready.state.scopeOccurrences.find(({ id }) =>
+  const owner = ready.scopeOccurrences.find(({ id }) =>
     id.definitionScopeId === terminateChildScopeId
   );
   assert.ok(owner !== undefined);
   const snapshotReady: RuntimeState = {
-    ...ready.state,
+    ...ready,
     compensationParentContextRetentions: [{
       kind: CompensationParentContextRetentionKind.Provisional,
       parent: owner,

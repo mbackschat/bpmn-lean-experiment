@@ -116,9 +116,10 @@ export type {
 } from "./semantic-process-state.js";
 
 export type CommandResult = DeepReadonly<{
-  outcome: SemanticCommandOutcome;
+  outcome: SemanticCommandOutcome | CommandOutcome.RolledBack;
   state: RuntimeState;
   internalStepBoundExceeded: boolean;
+  ambiguousInternalChoice: boolean;
 }>;
 
 export type AppliedInternalOperationStep = DeepReadonly<{
@@ -727,6 +728,7 @@ export function evaluateStimulusWithSelectedSteps(
             outcome: CommandOutcome.Committed,
             state: admission.state,
             internalStepBoundExceeded: false,
+            ambiguousInternalChoice: false,
           },
           ambiguousInternalChoice: false,
           admittedState: admission.state,
@@ -751,6 +753,7 @@ export function evaluateStimulusWithSelectedSteps(
             outcome: CommandOutcome.Rejected,
             state,
             internalStepBoundExceeded: false,
+            ambiguousInternalChoice: false,
           },
           ambiguousInternalChoice: false,
           admittedState: null,
@@ -758,16 +761,18 @@ export function evaluateStimulusWithSelectedSteps(
           selectedInternalBatches: [],
         };
       }
+      const failed = closure.hitBound || closure.ambiguousInternalChoice;
       return {
         result: {
-          outcome: CommandOutcome.Committed,
-          state: closure.state,
+          outcome: failed ? CommandOutcome.RolledBack : CommandOutcome.Committed,
+          state: failed ? state : closure.state,
           internalStepBoundExceeded: closure.hitBound,
+          ambiguousInternalChoice: closure.ambiguousInternalChoice,
         },
         ambiguousInternalChoice: closure.ambiguousInternalChoice,
-        admittedState: admission.state,
-        selectedInternalSteps: closure.steps,
-        selectedInternalBatches: closure.batches,
+        admittedState: failed ? null : admission.state,
+        selectedInternalSteps: failed ? [] : closure.steps,
+        selectedInternalBatches: failed ? [] : closure.batches,
       };
     }
     case CommandOutcome.Rejected:
@@ -776,6 +781,7 @@ export function evaluateStimulusWithSelectedSteps(
           outcome: CommandOutcome.Rejected,
           state: admission.state,
           internalStepBoundExceeded: false,
+          ambiguousInternalChoice: false,
         },
         ambiguousInternalChoice: false,
         admittedState: null,

@@ -417,11 +417,11 @@ test("does not add closure steps or make enabledness depend on scoped data", () 
       .internalStepBoundExceeded,
     false,
   );
-  assert.equal(
-    applyStimulus(program, initialState, start, 1)
-      .internalStepBoundExceeded,
-    true,
-  );
+  const shortStart = applyStimulus(program, initialState, start, 1);
+  assert.equal(shortStart.outcome, CommandOutcome.RolledBack);
+  assert.equal(shortStart.internalStepBoundExceeded, true);
+  assert.equal(shortStart.ambiguousInternalChoice, false);
+  assert.equal(shortStart.state, initialState);
 
   const beforeClosure: RuntimeState = {
     ...initialState,

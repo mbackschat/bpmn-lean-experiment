@@ -1,11 +1,11 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
+import { admittedInternalPrefix } from "./internal-operation-prefix-fixture.ts";
+
 import {
-  CommandOutcome,
   SemanticOperationKind,
   SemanticTransitionKind,
-  applyStimulus,
   initialState,
 } from "@bpmn-lean/semantic-core";
 import type {
@@ -69,8 +69,8 @@ test("prepares every ordinary wait family with publication-time and an exact wai
       state: frontier,
       candidate,
     })),
-    armedCandidate(receiveTaskProgram, "receive-preparation"),
-    armedCandidate(configuredTaskProgram, "effect-preparation"),
+    armedCandidate(receiveTaskProgram, "receive-preparation", "operation:ReceiveTask_Wait"),
+    armedCandidate(configuredTaskProgram, "effect-preparation", "operation:ConfiguredTask_Probe"),
     payloadMessageArmingCase(),
   ];
 
@@ -148,7 +148,7 @@ function payloadMessageArmingCase(): Readonly<{
   state: RuntimeState;
   candidate: AppliedInternalOperationStep;
 }> {
-  const ordinary = armedCandidate(receiveTaskProgram, "payload-preparation");
+  const ordinary = armedCandidate(receiveTaskProgram, "payload-preparation", "operation:ReceiveTask_Wait");
   assert.ok(
     ordinary.candidate.operation.kind === SemanticOperationKind.AwaitMessage,
   );
@@ -285,22 +285,22 @@ test("refuses unsupported operations without consulting their successor", () => 
 function armedCandidate(
   candidateProgram: SemanticProcessProgram,
   instanceId: string,
+  expectedOperationId: string,
 ): Readonly<{
   program: SemanticProcessProgram;
   state: RuntimeState;
   candidate: AppliedInternalOperationStep;
 }> {
-  const started = applyStimulus(
+  const started = admittedInternalPrefix(
     candidateProgram,
     initialState,
     startFor(candidateProgram, instanceId),
-    1,
+    ["operation:StartEvent_1"],
+    [expectedOperationId],
   );
-  assert.equal(started.outcome, CommandOutcome.Committed);
-  assert.equal(started.internalStepBoundExceeded, true);
-  const candidates = enabledOperations(candidateProgram, started.state);
+  const candidates = enabledOperations(candidateProgram, started);
   assert.equal(candidates.length, 1);
-  return { program: candidateProgram, state: started.state, candidate: candidates[0]! };
+  return { program: candidateProgram, state: started, candidate: candidates[0]! };
 }
 
 function requirePrepared(

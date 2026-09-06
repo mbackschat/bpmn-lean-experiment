@@ -124,7 +124,7 @@ This contributor map assigns source-file responsibilities inside `@bpmn-lean/sem
 | [internal-transition-ordinary-arming-preparation.ts](src/internal-transition-ordinary-arming-preparation.ts) | Exact ordinary User Task, Message, Timer, and Effect arming footprints plus numbering-free transition and wait-lifecycle publications derived from the pre-state |
 | [internal-transition-ordinary-arming-patch.ts](src/internal-transition-ordinary-arming-patch.ts) | Exact local edits for ordinary wait arming, shared by pre-frontier preparation and the existing evaluator without whole-state replacement or successor-state inference |
 | [semantic-process-closure.ts](src/semantic-process-closure.ts) | Bounded closure over single-enabled and reviewed exact-two internal frontiers with whole-batch refusal precedence |
-| [semantic-process-runtime.ts](src/semantic-process-runtime.ts) | Runtime state, ordinary and compensation internal-operation dispatch, whole-stimulus rollback, and `applyStimulus` |
+| [semantic-process-runtime.ts](src/semantic-process-runtime.ts) | Runtime state, ordinary and compensation internal-operation dispatch, closure-failure rollback to the pre-admission state, and `applyStimulus` |
 | [semantic-transition-trace.ts](src/semantic-transition-trace.ts) | Committed transition facts and trace replay validation |
 | [flow-node-occurrence-candidates.ts](src/flow-node-occurrence-candidates.ts) | Program-selected element and Process resolution for occurrence owners |
 | [flow-node-occurrence-lifecycle.ts](src/flow-node-occurrence-lifecycle.ts) | Flow-node lifecycle derivation, compensation dispatch, and fold validation |
@@ -163,3 +163,5 @@ This contributor map assigns source-file responsibilities inside `@bpmn-lean/sem
 ## Test ownership
 
 Tests under [`test/`](test/) mirror these owners by contract or semantic family. The registry-driven [runtime-state preservation lane](../differential/test/runtime-state-preservation.test.ts) sits at the differential composition boundary so compiling every registered program does not add parser or catalog dependencies to this package. The [testing specification](../../docs/TESTING-SPEC.md) selects the applicable focused and repository gates.
+
+The [closure atomicity tests](test/closure-atomicity.test.ts) and [publication tests](test/semantic-transition-publication.test.ts) check rollback and erasure at public result boundaries. Tests needing an intermediate internal state use the [private admission-and-prefix fixture](test/internal-operation-prefix-fixture.ts), whose [guards](test/internal-operation-prefix-fixture.test.ts) require a unique enabled operation at every consumed prefix step and the exact final frontier.

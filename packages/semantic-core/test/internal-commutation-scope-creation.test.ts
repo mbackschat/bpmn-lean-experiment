@@ -1,15 +1,15 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
+import { admittedInternalPrefix } from "./internal-operation-prefix-fixture.ts";
+
 import {
-  CommandOutcome,
   ControlStateKind,
   InternalSchedulingMode,
   SemanticOperationKind,
   SemanticOriginKind,
   SemanticProcessCompilerId,
   SemanticProcessKind,
-  applyStimulus,
   initialState,
 } from "@bpmn-lean/semantic-core";
 import type {
@@ -94,14 +94,13 @@ const callOperation = requireOperation(
   callActivityProgram,
   SemanticOperationKind.InvokeProcess,
 );
-const beforeCall = applyStimulus(
+const beforeCall = admittedInternalPrefix(
   callActivityProgram,
   initialState,
   callActivityStart(),
-  1,
+  ["operation:Start_Caller"],
+  ["operation:Call:é"],
 );
-assert.equal(beforeCall.outcome, CommandOutcome.Committed);
-assert.equal(beforeCall.internalStepBoundExceeded, true);
 
 test("prepares a fresh child scope with its exact parent and activation", () => {
   const prepared = deriveInternalEnterScopePreparation(
@@ -182,7 +181,7 @@ test("refuses a latent token under the child identity it is about to mint", () =
 test("prepares a called root, association, and call activation from one pre-state", () => {
   const prepared = deriveInternalInvokeProcessPreparation(
     callActivityProgram,
-    beforeCall.state,
+    beforeCall,
     callOperation,
   );
   if (prepared === null) {
@@ -231,7 +230,7 @@ test("prepares a called root, association, and call activation from one pre-stat
 test("call activation identity conflicts despite disjoint token places", () => {
   const prepared = requirePrepared(deriveInternalInvokeProcessPreparation(
     callActivityProgram,
-    beforeCall.state,
+    beforeCall,
     callOperation,
   ));
   const exactActivation: InternalTransitionStateAtom = {
@@ -250,14 +249,13 @@ test("call activation identity conflicts despite disjoint token places", () => {
 });
 
 test("mints a nested child in its called Process instance rather than the hosting root", () => {
-  const calledEntered = applyStimulus(
+  const calledEntered = admittedInternalPrefix(
     callActivityProgram,
     initialState,
     callActivityStart(),
-    2,
+    ["operation:Start_Caller", "operation:Call:é"],
+    ["operation:Task_Called"],
   );
-  assert.equal(calledEntered.outcome, CommandOutcome.Committed);
-  assert.equal(calledEntered.internalStepBoundExceeded, true);
   const calledRoot = {
     processInstanceId: expectedCalledInstanceId,
     definitionScopeId: calledScopeId,
@@ -265,7 +263,7 @@ test("mints a nested child in its called Process instance rather than the hostin
   };
 
   assert.deepEqual(selectChildScopeEntry(
-    calledEntered.state,
+    calledEntered,
     calledRoot,
     {
       input: "place:Called_Start",

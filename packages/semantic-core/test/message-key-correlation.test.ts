@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
+import { admittedInternalPrefix } from "./internal-operation-prefix-fixture.ts";
+
 import {
   ActivityBodyKind,
   ActivityHandlerKind,
@@ -501,14 +503,19 @@ test("footprints the Process-property read and exact candidate publication", () 
     instanceId,
     initialVariables: [],
   });
-  const beforeArming = applyStimulus(program, started.state, {
-    kind: StimulusKind.DeliverPayloadMessage,
-    commandId: "initialize-footprint",
-    subscriptionId: firstSubscriptionId,
-    channel,
-    payload: { kind: VariableValueKind.String, value: "settlement-42" },
-  }, 0);
-  assert.equal(beforeArming.outcome, CommandOutcome.Committed);
+  const beforeArming = admittedInternalPrefix(
+    program,
+    started.state,
+    {
+      kind: StimulusKind.DeliverPayloadMessage,
+      commandId: "initialize-footprint",
+      subscriptionId: firstSubscriptionId,
+      channel,
+      payload: { kind: VariableValueKind.String, value: "settlement-42" },
+    },
+    [],
+    ["operation:MessageCatch_CorrelatedSettlement"],
+  );
   const operation = program.operations.find(
     ({ kind }) => kind ===
       SemanticOperationKind.AwaitCorrelatedPayloadMessage,
@@ -517,14 +524,14 @@ test("footprints the Process-property read and exact candidate publication", () 
   if (operation === undefined) {
     return;
   }
-  const step = applyInternalOperationStep(program, operation, beforeArming.state);
+  const step = applyInternalOperationStep(program, operation, beforeArming);
   assert.ok(step?.owner !== null && step?.owner !== undefined);
   if (step?.owner === null || step?.owner === undefined) {
     return;
   }
   const footprint = deriveInternalTransitionFootprint(
     program,
-    beforeArming.state,
+    beforeArming,
     { operation, owner: step.owner },
   );
   assert.ok(footprint !== null);

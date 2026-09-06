@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
+import { admittedInternalPrefix } from "./internal-operation-prefix-fixture.ts";
+
 import {
   BASELINE_SCENARIO_OBSERVATIONS,
   CommandOutcome,
@@ -78,7 +80,10 @@ test("refuses a two-arm batch when only one closure step remains", () => {
 
   assert.equal(exact.internalStepBoundExceeded, false);
   assert.deepEqual(expectedTasks(exact.state), ["Task_A", "Task_B"]);
+  assert.equal(short.outcome, CommandOutcome.RolledBack);
   assert.equal(short.internalStepBoundExceeded, true);
+  assert.equal(short.ambiguousInternalChoice, false);
+  assert.equal(short.state, initialState);
   assert.deepEqual(expectedTasks(short.state), []);
 });
 
@@ -107,22 +112,22 @@ test("projects selected User Tasks without exposing the hidden branch record", (
 });
 
 test("exposes exactly the independent two-task activation set after both-true selection", () => {
-  const afterSelection = applyStimulus(
+  const afterSelection = admittedInternalPrefix(
     inclusiveProgram,
     initialState,
     inclusiveStart([present("takeA"), present("takeB")]),
-    2,
+    ["operation:Start", "operation:Split"],
+    ["operation:Task_A", "operation:Task_B"],
   );
-  assert.equal(afterSelection.internalStepBoundExceeded, true);
-  assert.equal(enabledInternalOperationCount(inclusiveProgram, afterSelection.state), 2);
+  assert.equal(enabledInternalOperationCount(inclusiveProgram, afterSelection), 2);
   const enabled = inclusiveProgram.operations.filter((operation) =>
-    applyInternalOperation(inclusiveProgram, operation, afterSelection.state) !== null
+    applyInternalOperation(inclusiveProgram, operation, afterSelection) !== null
   );
   assert.deepEqual(enabled.map(({ id }) => id), ["operation:Task_A", "operation:Task_B"]);
   const [taskA, taskB] = enabled;
   assert.ok(taskA !== undefined && taskB !== undefined);
-  const afterA = applyInternalOperation(inclusiveProgram, taskA, afterSelection.state);
-  const afterB = applyInternalOperation(inclusiveProgram, taskB, afterSelection.state);
+  const afterA = applyInternalOperation(inclusiveProgram, taskA, afterSelection);
+  const afterB = applyInternalOperation(inclusiveProgram, taskB, afterSelection);
   assert.ok(afterA !== null && afterB !== null);
   const aThenB = applyInternalOperation(inclusiveProgram, taskB, afterA);
   const bThenA = applyInternalOperation(inclusiveProgram, taskA, afterB);

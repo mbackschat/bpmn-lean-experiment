@@ -470,7 +470,10 @@ export function advanceScenario(
     closureLimit,
   );
   const result = traced.result;
-  if (result.internalStepBoundExceeded) {
+  if (
+    result.internalStepBoundExceeded || result.ambiguousInternalChoice ||
+    result.outcome === CommandOutcome.RolledBack
+  ) {
     return {
       kind: ScenarioStepKind.HarnessFailure,
       outcome: { kind: ScenarioOutcomeKind.HarnessFailure },

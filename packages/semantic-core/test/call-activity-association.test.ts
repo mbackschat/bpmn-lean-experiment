@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
+import { admittedInternalPrefix } from "./internal-operation-prefix-fixture.ts";
+
 import {
   CommandOutcome,
   SemanticOperationKind,
@@ -85,7 +87,13 @@ test("requires single-token invocation and a quiescent called Process", () => {
   assert.ok(returnOperation?.kind === SemanticOperationKind.ReturnProcess);
   assert.equal(applyInternalOperation(program, returnOperation, started.state), null);
 
-  const beforeInvoke = applyStimulus(program, initialState, start(), 1).state;
+  const beforeInvoke = admittedInternalPrefix(
+    program,
+    initialState,
+    start(),
+    ["operation:Start_Caller"],
+    ["operation:Call:é"],
+  );
   assert.equal(
     applyInternalOperation(program, invokeOperation, {
       ...beforeInvoke,
@@ -250,12 +258,13 @@ test("rejects a called root aliased to the hosting instance", () => {
 
 function returnReadyContext() {
   const started = applyStimulus(program, initialState, start());
-  const beforeReturn = applyStimulus(
+  const beforeReturn = admittedInternalPrefix(
     program,
     started.state,
     completion(expectedCalledInstanceId, "Task_Called", "one-step"),
-    1,
-  ).state;
+    ["operation:End_Called"],
+    ["operation:return-process:Call:é"],
+  );
   const returnOperation = program.operations.find(
     ({ kind }) => kind === SemanticOperationKind.ReturnProcess,
   );

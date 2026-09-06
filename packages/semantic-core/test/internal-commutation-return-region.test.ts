@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
+import { admittedInternalPrefix } from "./internal-operation-prefix-fixture.ts";
+
 import {
   SemanticOperationKind,
   applyInternalOperationStep,
@@ -46,7 +48,7 @@ const started = applyStimulus(
   callActivityStart(),
   3,
 );
-const returnReady = applyStimulus(
+const returnReady = admittedInternalPrefix(
   callActivityProgram,
   started.state,
   callActivityCompletion(
@@ -54,7 +56,8 @@ const returnReady = applyStimulus(
     "Task_Called",
     "prepare-return",
   ),
-  1,
+  ["operation:End_Called"],
+  ["operation:return-process:Call:é"],
 );
 const returnOperation = callActivityProgram.operations.find(({ kind }) =>
   kind === SemanticOperationKind.ReturnProcess
@@ -63,13 +66,13 @@ assert.ok(returnOperation?.kind === SemanticOperationKind.ReturnProcess);
 const returnCandidate = applyInternalOperationStep(
   callActivityProgram,
   returnOperation,
-  returnReady.state,
+  returnReady,
 );
 assert.ok(returnCandidate !== null && returnCandidate.owner !== null);
 
 test("derives the exact called region, Call association, and caller output", () => {
   const footprint = requireReturnFootprint(returnCandidate);
-  const association = returnReady.state.calledProcessOccurrences[0];
+  const association = returnReady.calledProcessOccurrences[0];
   assert.ok(association !== undefined);
   assert.deepEqual(
     footprint.writes.find(({ kind }) =>
@@ -106,7 +109,7 @@ test("derives the exact called region, Call association, and caller output", () 
 
 test("caller-output equality conflicts while another parent bucket composes", () => {
   const footprint = requireReturnFootprint(returnCandidate);
-  const association = returnReady.state.calledProcessOccurrences[0];
+  const association = returnReady.calledProcessOccurrences[0];
   assert.ok(association !== undefined);
   assert.equal(
     internalTransitionStateFootprintsAreIndependent(
@@ -146,8 +149,8 @@ test("preparation ignores a supplied successor and fails closed off the selected
   assert.equal(
     deriveInternalReturnProcessStateFootprint(
       callActivityProgram,
-      returnReady.state,
-      { ...returnCandidate, owner: returnReady.state.scopeOccurrences[0]!.id },
+      returnReady,
+      { ...returnCandidate, owner: returnReady.scopeOccurrences[0]!.id },
     ),
     null,
   );
@@ -158,7 +161,7 @@ function requireReturnFootprint(
 ): InternalTransitionStateFootprint {
   const footprint = deriveInternalReturnProcessStateFootprint(
     callActivityProgram,
-    returnReady.state,
+    returnReady,
     candidate,
   );
   assert.notEqual(footprint, null);

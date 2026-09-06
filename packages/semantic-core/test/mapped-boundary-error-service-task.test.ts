@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
+import { admittedInternalPrefix } from "./internal-operation-prefix-fixture.ts";
+
 import {
   BASELINE_SCENARIO_OBSERVATIONS,
   CommandOutcome,
@@ -364,10 +366,20 @@ test("contrasts the real Error branch with treating the result as success", () =
 test("keeps closure single-enabled and stable at both external waits", () => {
   assert.equal(isWellFormedSemanticProcessProgram(program), true);
 
-  const beforeEffectWait = applyStimulus(program, initialState, start, 1);
-  assert.equal(beforeEffectWait.internalStepBoundExceeded, true);
+  const beforeEffectWaitRollback = applyStimulus(program, initialState, start, 1);
+  assert.equal(beforeEffectWaitRollback.outcome, CommandOutcome.RolledBack);
+  assert.equal(beforeEffectWaitRollback.internalStepBoundExceeded, true);
+  assert.equal(beforeEffectWaitRollback.ambiguousInternalChoice, false);
+  assert.equal(beforeEffectWaitRollback.state, initialState);
+  const beforeEffectWait = admittedInternalPrefix(
+    program,
+    initialState,
+    start,
+    ["operation:StartEvent_MappedBoundaryError"],
+    ["operation:MappedBoundaryEffectTask"],
+  );
   assert.equal(
-    enabledInternalOperationCount(program, beforeEffectWait.state),
+    enabledInternalOperationCount(program, beforeEffectWait),
     1,
   );
 
@@ -376,7 +388,7 @@ test("keeps closure single-enabled and stable at both external waits", () => {
   assert.equal(enabledInternalOperationCount(program, effectWait.state), 0);
   assert.equal(isStableStateResumable(effectWait.state), true);
 
-  const beforeReviewWait = applyStimulus(
+  const beforeReviewWaitRollback = applyStimulus(
     program,
     effectWait.state,
     {
@@ -387,9 +399,24 @@ test("keeps closure single-enabled and stable at both external waits", () => {
     },
     0,
   );
-  assert.equal(beforeReviewWait.internalStepBoundExceeded, true);
+  assert.equal(beforeReviewWaitRollback.outcome, CommandOutcome.RolledBack);
+  assert.equal(beforeReviewWaitRollback.internalStepBoundExceeded, true);
+  assert.equal(beforeReviewWaitRollback.ambiguousInternalChoice, false);
+  assert.equal(beforeReviewWaitRollback.state, effectWait.state);
+  const beforeReviewWait = admittedInternalPrefix(
+    program,
+    effectWait.state,
+    {
+      kind: StimulusKind.CompleteEffect,
+      commandId: "before-review-wait",
+      effectId,
+      result,
+    },
+    [],
+    ["operation:ReviewMappedError"],
+  );
   assert.equal(
-    enabledInternalOperationCount(program, beforeReviewWait.state),
+    enabledInternalOperationCount(program, beforeReviewWait),
     1,
   );
 

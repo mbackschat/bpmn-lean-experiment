@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
+import { admittedInternalPrefix } from "./internal-operation-prefix-fixture.ts";
+
 import {
   CommandOutcome,
   SemanticOperationKind,
@@ -45,14 +47,13 @@ const { deriveInternalCompleteScopeStateFootprint } = preparationModule;
 
 const armed = applyStimulus(boundedScopeProgram, initialState, start);
 assert.equal(armed.outcome, CommandOutcome.Committed);
-const boundedReady = applyStimulus(
+const boundedReady = admittedInternalPrefix(
   boundedScopeProgram,
   armed.state,
   completeChildTask,
-  1,
+  ["operation:ChildEnd"],
+  ["operation:complete-scope:scope:Scope"],
 );
-assert.equal(boundedReady.outcome, CommandOutcome.Committed);
-assert.equal(boundedReady.internalStepBoundExceeded, true);
 const boundedOperation = completeOperation("scope:Scope");
 const boundedParentOutput = boundedOperation.parentOutput;
 if (boundedParentOutput === null) {
@@ -61,20 +62,20 @@ if (boundedParentOutput === null) {
 const boundedCandidate = applyInternalOperationStep(
   boundedScopeProgram,
   boundedOperation,
-  boundedReady.state,
+  boundedReady,
 );
 assert.ok(boundedCandidate !== null && boundedCandidate.owner !== null);
 
 test("derives the exact child region, parent continuation, Activity, and deadline", () => {
   const footprint = requireScopeCompletionFootprint(
-    boundedReady.state,
+    boundedReady,
     boundedCandidate,
   );
-  const child = boundedReady.state.scopeOccurrences.find(({ id }) =>
+  const child = boundedReady.scopeOccurrences.find(({ id }) =>
     id.definitionScopeId === boundedOperation.scopeId
   );
-  const activity = boundedReady.state.activityOccurrences[0];
-  const deadline = boundedReady.state.timerWaits[0];
+  const activity = boundedReady.activityOccurrences[0];
+  const deadline = boundedReady.timerWaits[0];
   assert.ok(child !== undefined && activity !== undefined && deadline !== undefined);
 
   assert.deepEqual(findWrite(footprint, InternalTransitionStateAtomKind.OccurrenceRegion), {
@@ -104,7 +105,7 @@ test("derives the exact child region, parent continuation, Activity, and deadlin
 
 test("the exact parent output conflicts while a different parent bucket composes", () => {
   const footprint = requireScopeCompletionFootprint(
-    boundedReady.state,
+    boundedReady,
     boundedCandidate,
   );
   assert.equal(
@@ -127,11 +128,11 @@ test("the exact parent output conflicts while a different parent bucket composes
 
 test("child removal conflicts with its bounded Activity association and deadline", () => {
   const footprint = requireScopeCompletionFootprint(
-    boundedReady.state,
+    boundedReady,
     boundedCandidate,
   );
-  const activity = boundedReady.state.activityOccurrences[0];
-  const deadline = boundedReady.state.timerWaits[0];
+  const activity = boundedReady.activityOccurrences[0];
+  const deadline = boundedReady.timerWaits[0];
   assert.ok(activity !== undefined && deadline !== undefined);
   assert.equal(
     independent(footprint, atomWrite({
@@ -152,26 +153,26 @@ test("child removal conflicts with its bounded Activity association and deadline
 
 test("preparation ignores the supplied successor and rejects malformed ownership", () => {
   const expected = requireScopeCompletionFootprint(
-    boundedReady.state,
+    boundedReady,
     boundedCandidate,
   );
   const poisoned = {
     ...boundedCandidate,
     successor: {
       ...boundedCandidate.successor,
-      activityOccurrences: boundedReady.state.activityOccurrences,
+      activityOccurrences: boundedReady.activityOccurrences,
       scopeOccurrences: [],
-      timerWaits: boundedReady.state.timerWaits,
+      timerWaits: boundedReady.timerWaits,
     },
   };
   assert.deepEqual(
-    requireScopeCompletionFootprint(boundedReady.state, poisoned),
+    requireScopeCompletionFootprint(boundedReady, poisoned),
     expected,
   );
   assert.equal(
     deriveInternalCompleteScopeStateFootprint(
       boundedScopeProgram,
-      boundedReady.state,
+      boundedReady,
       { ...boundedCandidate, owner: rootOccurrence },
     ),
     null,
@@ -179,7 +180,7 @@ test("preparation ignores the supplied successor and rejects malformed ownership
   assert.equal(
     deriveInternalCompleteScopeStateFootprint(
       boundedScopeProgram,
-      { ...boundedReady.state, timerWaits: [] },
+      { ...boundedReady, timerWaits: [] },
       boundedCandidate,
     ),
     null,
@@ -197,7 +198,7 @@ test("root completion writes runtime control and reads initiation state", () => 
     id.elementId === "AfterScope"
   );
   assert.ok(afterScopeTask !== undefined);
-  const rootReady = applyStimulus(
+  const rootReady = admittedInternalPrefix(
     boundedScopeProgram,
     afterChild.state,
     {
@@ -206,18 +207,17 @@ test("root completion writes runtime control and reads initiation state", () => 
       taskId: afterScopeTask.id,
       submittedValues: [],
     },
-    1,
+    ["operation:NormalEnd"],
+    ["operation:complete-scope:scope:Process_SubProcessBoundaryTimer"],
   );
-  assert.equal(rootReady.outcome, CommandOutcome.Committed);
-  assert.equal(rootReady.internalStepBoundExceeded, true);
   const operation = completeOperation("scope:Process_SubProcessBoundaryTimer");
   const candidate = applyInternalOperationStep(
     boundedScopeProgram,
     operation,
-    rootReady.state,
+    rootReady,
   );
   assert.ok(candidate !== null && candidate.owner !== null);
-  const footprint = requireScopeCompletionFootprint(rootReady.state, candidate);
+  const footprint = requireScopeCompletionFootprint(rootReady, candidate);
 
   assert.deepEqual(findWrite(footprint, InternalTransitionStateAtomKind.RuntimeControl), {
     kind: InternalTransitionStateAtomKind.RuntimeControl,
@@ -247,7 +247,7 @@ function completeOperation(scopeId: string) {
 }
 
 function requireScopeCompletionFootprint(
-  state: typeof boundedReady.state,
+  state: typeof boundedReady,
   candidate: InternalTransitionCandidate,
 ): InternalTransitionStateFootprint {
   const footprint = deriveInternalCompleteScopeStateFootprint(

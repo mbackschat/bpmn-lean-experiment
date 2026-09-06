@@ -1,10 +1,11 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
+import { admittedInternalPrefix } from "./internal-operation-prefix-fixture.ts";
+
 import {
   ActivityBodyKind,
   ActivityHandlerKind,
-  CommandOutcome,
   SemanticOperationKind,
   SemanticOriginKind,
   applyStimulus,
@@ -63,8 +64,8 @@ const {
 
 const boundedOperation = requireActivityArmingOperation(boundedProgram);
 const monitoredOperation = requireActivityArmingOperation(monitoredProgram);
-const beforeBounded = beforeArming(boundedProgram, boundedStart);
-const beforeMonitored = beforeArming(monitoredProgram, monitoredStart);
+const beforeBounded = beforeArming(boundedProgram, boundedStart, boundedOperation.id);
+const beforeMonitored = beforeArming(monitoredProgram, monitoredStart, monitoredOperation.id);
 
 test("prepares both boundary-task families through one complete Activity arming shape", () => {
   for (const [program, state, operation] of [
@@ -245,14 +246,13 @@ test("refuses every Activity arming counter at the safe-integer boundary", () =>
 });
 
 test("binds a called-owner Activity, task, and Timer to the called semantic instance", () => {
-  const calledEntered = applyStimulus(
+  const calledEntered = admittedInternalPrefix(
     callActivityProgram,
     initialState,
     callActivityStart(),
-    2,
+    ["operation:Start_Caller", "operation:Call:é"],
+    ["operation:Task_Called"],
   );
-  assert.equal(calledEntered.outcome, CommandOutcome.Committed);
-  assert.equal(calledEntered.internalStepBoundExceeded, true);
   const operation = calledActivityArmingOperation();
   const program: SemanticProcessProgram = {
     ...callActivityProgram,
@@ -262,7 +262,7 @@ test("binds a called-owner Activity, task, and Timer to the called semantic inst
   };
   const prepared = requirePrepared(deriveInternalActivityArmingPreparation(
     program,
-    calledEntered.state,
+    calledEntered,
     operation,
   ));
 
@@ -275,11 +275,16 @@ test("binds a called-owner Activity, task, and Timer to the called semantic inst
 function beforeArming(
   program: SemanticProcessProgram,
   start: Parameters<typeof applyStimulus>[2],
+  expectedOperationId: string,
 ): RuntimeState {
-  const result = applyStimulus(program, initialState, start, 1);
-  assert.equal(result.outcome, CommandOutcome.Committed);
-  assert.equal(result.internalStepBoundExceeded, true);
-  return result.state;
+  const result = admittedInternalPrefix(
+    program,
+    initialState,
+    start,
+    ["operation:Start"],
+    [expectedOperationId],
+  );
+  return result;
 }
 
 function calledActivityArmingOperation(): Extract<

@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
+import { admittedInternalPrefix } from "./internal-operation-prefix-fixture.ts";
+
 import {
   BASELINE_SCENARIO_OBSERVATIONS,
   CanonicalObservationKind,
@@ -159,17 +161,26 @@ test("closes an exact Timer Start occurrence in two unique internal steps", () =
   assert.equal(isWellFormedSemanticProcessProgram(timerProgram), true);
   assert.equal(supportsSemanticProcessExecution(timerTrigger, timerProgram), true);
 
-  const pending = applyStimulus(timerProgram, initialState, timerTrigger, 0);
-  assert.equal(pending.outcome, CommandOutcome.Committed);
-  assert.equal(pending.internalStepBoundExceeded, true);
-  assert.equal(pending.state.initiationPending, true);
-  assert.equal(enabledInternalOperationCount(timerProgram, pending.state), 1);
+  const pendingRollback = applyStimulus(timerProgram, initialState, timerTrigger, 0);
+  assert.equal(pendingRollback.outcome, CommandOutcome.RolledBack);
+  assert.equal(pendingRollback.internalStepBoundExceeded, true);
+  assert.equal(pendingRollback.ambiguousInternalChoice, false);
+  assert.equal(pendingRollback.state, initialState);
+  const pending = admittedInternalPrefix(
+    timerProgram,
+    initialState,
+    timerTrigger,
+    [],
+    ["operation:StartEvent_Timer"],
+  );
+  assert.equal(pending.initiationPending, true);
+  assert.equal(enabledInternalOperationCount(timerProgram, pending), 1);
 
   const initiation = requireOperation(
     timerProgram,
     SemanticOperationKind.InitiateTimer,
   );
-  const flowing = applyInternalOperation(timerProgram, initiation, pending.state);
+  const flowing = applyInternalOperation(timerProgram, initiation, pending);
   assert.notEqual(flowing, null);
   if (flowing === null) {
     throw new TypeError("Expected Timer initiation to advance");
@@ -197,8 +208,10 @@ test("closes an exact Timer Start occurrence in two unique internal steps", () =
   assert.equal(waiting.logicalTimeMs, 0);
 
   const oneStep = applyStimulus(timerProgram, initialState, timerTrigger, 1);
+  assert.equal(oneStep.outcome, CommandOutcome.RolledBack);
   assert.equal(oneStep.internalStepBoundExceeded, true);
-  assert.deepEqual(oneStep.state, flowing);
+  assert.equal(oneStep.ambiguousInternalChoice, false);
+  assert.equal(oneStep.state, initialState);
   const twoSteps = applyStimulus(timerProgram, initialState, timerTrigger, 2);
   assert.equal(twoSteps.internalStepBoundExceeded, false);
   assert.deepEqual(twoSteps.state, waiting);

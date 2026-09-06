@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
+import { admittedInternalPrefix } from "./internal-operation-prefix-fixture.ts";
+
 import {
   CommandOutcome,
   ControlStateKind,
@@ -59,14 +61,13 @@ const afterA = applyStimulus(
   completionStimulus("UserTask_A"),
 );
 assert.equal(afterA.outcome, CommandOutcome.Committed);
-const ready = applyStimulus(
+const ready = admittedInternalPrefix(
   parallelProgram,
   afterA.state,
   completionStimulus("UserTask_B"),
-  1,
+  ["operation:Gateway_Join"],
+  ["operation:EndEvent_1"],
 );
-assert.equal(ready.outcome, CommandOutcome.Committed);
-assert.equal(ready.internalStepBoundExceeded, true);
 const operation = parallelProgram.operations.find(({ kind }) =>
   kind === SemanticOperationKind.ReachNoneEnd
 );
@@ -74,7 +75,7 @@ assert.ok(operation?.kind === SemanticOperationKind.ReachNoneEnd);
 const candidate = applyInternalOperationStep(
   parallelProgram,
   operation,
-  ready.state,
+  ready,
 );
 if (candidate === null || candidate.owner === null) {
   throw new Error("expected an ordinary End candidate");
@@ -87,7 +88,7 @@ const callStarted = applyStimulus(
   callActivityStart(),
 );
 assert.equal(callStarted.outcome, CommandOutcome.Committed);
-const calledEndReady = applyStimulus(
+const calledEndReady = admittedInternalPrefix(
   callActivityProgram,
   callStarted.state,
   callActivityCompletion(
@@ -95,14 +96,13 @@ const calledEndReady = applyStimulus(
     "Task_Called",
     "complete-called-for-end-footprint",
   ),
-  0,
+  [],
+  ["operation:End_Called"],
 );
-assert.equal(calledEndReady.outcome, CommandOutcome.Committed);
-assert.equal(calledEndReady.internalStepBoundExceeded, true);
-if (calledEndReady.state.control.kind !== ControlStateKind.Running) {
+if (calledEndReady.control.kind !== ControlStateKind.Running) {
   throw new Error("expected the caller to remain running");
 }
-const hostInstanceId = calledEndReady.state.control.instanceId;
+const hostInstanceId = calledEndReady.control.instanceId;
 const calledEndOperation = callActivityProgram.operations.find(({ id }) =>
   id === "operation:End_Called"
 );
@@ -110,7 +110,7 @@ assert.ok(calledEndOperation?.kind === SemanticOperationKind.ReachNoneEnd);
 const calledEndCandidate = applyInternalOperationStep(
   callActivityProgram,
   calledEndOperation,
-  calledEndReady.state,
+  calledEndReady,
 );
 if (calledEndCandidate === null || calledEndCandidate.owner === null) {
   throw new Error("expected a called-Process End candidate");
@@ -168,7 +168,7 @@ test("distinct ordinary Ends compose while absolute End-count observation confli
 test("a called-Process End retains its semantic owner instead of the host instance", () => {
   const footprint = deriveInternalReachNoneEndStateFootprint(
     callActivityProgram,
-    calledEndReady.state,
+    calledEndReady,
     calledEndCandidate,
   );
   if (footprint === null) {
@@ -191,13 +191,13 @@ test("preparation ignores the supplied successor and rejects an inexact offer", 
     ...candidate,
     successor: {
       ...candidate.successor,
-      controlTokens: ready.state.controlTokens,
+      controlTokens: ready.controlTokens,
       endOccurrences: 999,
     },
   };
   assert.deepEqual(requireEndFootprint(poisoned), expected);
 
-  const offered = ready.state.controlTokens.find(({ placeId }) =>
+  const offered = ready.controlTokens.find(({ placeId }) =>
     placeId === operation.input
   );
   assert.ok(offered !== undefined);
@@ -205,8 +205,8 @@ test("preparation ignores the supplied successor and rejects an inexact offer", 
     deriveInternalReachNoneEndStateFootprint(
       parallelProgram,
       {
-        ...ready.state,
-        controlTokens: ready.state.controlTokens.map((token) =>
+        ...ready,
+        controlTokens: ready.controlTokens.map((token) =>
           token === offered ? { ...token, multiplicity: 2 } : token
         ),
       },
@@ -221,7 +221,7 @@ function requireEndFootprint(
 ): InternalTransitionStateFootprint {
   const footprint = deriveInternalReachNoneEndStateFootprint(
     parallelProgram,
-    ready.state,
+    ready,
     selected,
   );
   if (footprint === null) {

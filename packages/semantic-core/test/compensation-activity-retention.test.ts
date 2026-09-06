@@ -1,8 +1,9 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
+import { admittedInternalPrefix } from "./internal-operation-prefix-fixture.ts";
+
 import {
-  CommandOutcome,
   CompensationCompletionFactKind,
   CompensationRetentionCapacityMeasure,
   CompensationRetentionProgramDefect,
@@ -19,7 +20,6 @@ import {
   SemanticProcessKind,
   SemanticProfileId,
   applyInternalOperation,
-  applyStimulus,
   canonicalCompensationRecordsUtf8Bytes,
   compensationRetentionProgramDefects,
   compensationRetentionStateDefects,
@@ -743,10 +743,17 @@ test("keeps the shared initial state byte-identical while every accepted start m
     startFixture(SemanticOperationKind.InitiateTimer),
   ];
   for (const { startProgram, stimulus } of cases) {
-    const started = applyStimulus(startProgram, initialState, stimulus, 0);
-    assert.equal(started.outcome, CommandOutcome.Committed);
-    assert.equal(started.state.compensationActivityRetentions?.length, 1);
-    assert.deepEqual(started.state.compensationActivityRetentions?.[0], {
+    const initiation = startProgram.operations.filter(({ kind }) =>
+      kind === SemanticOperationKind.Initiate ||
+      kind === SemanticOperationKind.InitiateMessage ||
+      kind === SemanticOperationKind.InitiateTimer
+    );
+    assert.equal(initiation.length, 1);
+    const started = admittedInternalPrefix(
+      startProgram, initialState, stimulus, [], [initiation[0]!.id],
+    );
+    assert.equal(started.compensationActivityRetentions?.length, 1);
+    assert.deepEqual(started.compensationActivityRetentions?.[0], {
       owner: {
         processInstanceId: stimulus.instanceId,
         definitionScopeId: startProgram.compensationActivityRetention?.definitionScopeId,

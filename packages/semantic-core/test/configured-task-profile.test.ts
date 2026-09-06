@@ -251,20 +251,20 @@ test("specializes existing effect completion and occurrence-only refusal", () =>
 });
 
 test("locks exact configured Task closure limits and one-smaller overflow", () => {
-  assert.equal(
-    applyStimulus(configuredProgram, initialState, start, 1)
-      .internalStepBoundExceeded,
-    true,
-  );
+  const shortStart = applyStimulus(configuredProgram, initialState, start, 1);
+  assert.equal(shortStart.outcome, CommandOutcome.RolledBack);
+  assert.equal(shortStart.internalStepBoundExceeded, true);
+  assert.equal(shortStart.ambiguousInternalChoice, false);
+  assert.equal(shortStart.state, initialState);
   const started = applyStimulus(configuredProgram, initialState, start, 2);
   assert.equal(started.internalStepBoundExceeded, false);
   assert.equal(projectOpenEffects(started.state).length, 1);
 
-  assert.equal(
-    applyStimulus(configuredProgram, started.state, effectCompletion, 0)
-      .internalStepBoundExceeded,
-    true,
-  );
+  const shortEffectCompletion = applyStimulus(configuredProgram, started.state, effectCompletion, 0);
+  assert.equal(shortEffectCompletion.outcome, CommandOutcome.RolledBack);
+  assert.equal(shortEffectCompletion.internalStepBoundExceeded, true);
+  assert.equal(shortEffectCompletion.ambiguousInternalChoice, false);
+  assert.equal(shortEffectCompletion.state, started.state);
   const effectCompleted = applyStimulus(
     configuredProgram,
     started.state,
@@ -274,15 +274,16 @@ test("locks exact configured Task closure limits and one-smaller overflow", () =
   assert.equal(effectCompleted.internalStepBoundExceeded, false);
   assert.equal(projectOpenUserTasks(effectCompleted.state).length, 1);
 
-  assert.equal(
-    applyStimulus(
-      configuredProgram,
-      effectCompleted.state,
-      userTaskCompletion,
-      1,
-    ).internalStepBoundExceeded,
-    true,
+  const shortTaskCompletion = applyStimulus(
+    configuredProgram,
+    effectCompleted.state,
+    userTaskCompletion,
+    1,
   );
+  assert.equal(shortTaskCompletion.outcome, CommandOutcome.RolledBack);
+  assert.equal(shortTaskCompletion.internalStepBoundExceeded, true);
+  assert.equal(shortTaskCompletion.ambiguousInternalChoice, false);
+  assert.equal(shortTaskCompletion.state, effectCompleted.state);
   const completed = applyStimulus(
     configuredProgram,
     effectCompleted.state,

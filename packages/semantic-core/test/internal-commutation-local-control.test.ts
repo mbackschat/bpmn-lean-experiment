@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
+import { admittedInternalPrefix } from "./internal-operation-prefix-fixture.ts";
+
 import {
   CommandOutcome,
   ControlStateKind,
@@ -86,14 +88,13 @@ if (duplicateOutput === undefined) {
   throw new Error("expected one Parallel Gateway fork output");
 }
 
-const beforeFork = applyStimulus(
+const beforeFork = admittedInternalPrefix(
   parallelProgram,
   initialState,
   startStimulus(),
-  1,
+  ["operation:StartEvent_1"],
+  ["operation:Gateway_Fork"],
 );
-assert.equal(beforeFork.outcome, CommandOutcome.Committed);
-assert.equal(beforeFork.internalStepBoundExceeded, true);
 
 const started = applyStimulus(
   parallelProgram,
@@ -107,14 +108,13 @@ const afterA = applyStimulus(
   completionStimulus("UserTask_A"),
 );
 assert.equal(afterA.outcome, CommandOutcome.Committed);
-const beforeJoin = applyStimulus(
+const beforeJoin = admittedInternalPrefix(
   parallelProgram,
   afterA.state,
   completionStimulus("UserTask_B"),
-  0,
+  [],
+  ["operation:Gateway_Join"],
 );
-assert.equal(beforeJoin.outcome, CommandOutcome.Committed);
-assert.equal(beforeJoin.internalStepBoundExceeded, true);
 
 const choiceProgram = rootScopedProgram({
   kind: SemanticProcessKind.SemanticProcess,
@@ -204,14 +204,13 @@ const synchronizeSelected = requireOperation(
   inclusiveProgram,
   SemanticOperationKind.SynchronizeSelected,
 );
-const beforeInclusiveSplit = applyStimulus(
+const beforeInclusiveSplit = admittedInternalPrefix(
   inclusiveProgram,
   initialState,
   inclusiveStart([present("takeA"), present("takeB")]),
-  1,
+  ["operation:Start"],
+  ["operation:Split"],
 );
-assert.equal(beforeInclusiveSplit.outcome, CommandOutcome.Committed);
-assert.equal(beforeInclusiveSplit.internalStepBoundExceeded, true);
 const inclusiveStarted = applyStimulus(
   inclusiveProgram,
   initialState,
@@ -224,19 +223,18 @@ const inclusiveAfterA = applyStimulus(
   inclusiveCompletion("Task_A"),
 );
 assert.equal(inclusiveAfterA.outcome, CommandOutcome.Committed);
-const beforeInclusiveJoin = applyStimulus(
+const beforeInclusiveJoin = admittedInternalPrefix(
   inclusiveProgram,
   inclusiveAfterA.state,
   inclusiveCompletion("Task_B"),
-  0,
+  [],
+  ["operation:Join"],
 );
-assert.equal(beforeInclusiveJoin.outcome, CommandOutcome.Committed);
-assert.equal(beforeInclusiveJoin.internalStepBoundExceeded, true);
 
 test("prepares the exact Parallel Gateway fork token footprint", () => {
   const prepared = deriveInternalDuplicatePreparation(
     parallelProgram,
-    beforeFork.state,
+    beforeFork,
     duplicate,
   );
   if (prepared === null) {
@@ -256,7 +254,7 @@ test("prepares the exact Parallel Gateway fork token footprint", () => {
 test("prepares the exact Parallel Gateway join token footprint", () => {
   const prepared = deriveInternalSynchronizePreparation(
     parallelProgram,
-    beforeJoin.state,
+    beforeJoin,
     synchronize,
   );
   if (prepared === null) {
@@ -270,13 +268,13 @@ test("prepares the exact Parallel Gateway join token footprint", () => {
 });
 
 test("retains token-unit semantics for a repeated fork offer", () => {
-  const input = beforeFork.state.controlTokens.find(({ placeId }) =>
+  const input = beforeFork.controlTokens.find(({ placeId }) =>
     placeId === duplicate.input
   );
   assert.ok(input !== undefined);
   const repeated: RuntimeState = {
-    ...beforeFork.state,
-    controlTokens: beforeFork.state.controlTokens.map((token) =>
+    ...beforeFork,
+    controlTokens: beforeFork.controlTokens.map((token) =>
       token === input ? { ...token, multiplicity: 2 } : token
     ),
   };
@@ -287,7 +285,7 @@ test("retains token-unit semantics for a repeated fork offer", () => {
 });
 
 test("refuses an ambiguous affected output bucket", () => {
-  const owner = beforeFork.state.controlTokens[0]?.owner;
+  const owner = beforeFork.controlTokens[0]?.owner;
   if (owner === undefined) {
     throw new Error("expected one Parallel Gateway fork owner");
   }
@@ -295,9 +293,9 @@ test("refuses an ambiguous affected output bucket", () => {
     deriveInternalDuplicatePreparation(
       parallelProgram,
       {
-        ...beforeFork.state,
+        ...beforeFork,
         controlTokens: [
-          ...beforeFork.state.controlTokens,
+          ...beforeFork.controlTokens,
           { placeId: duplicateOutput, owner, multiplicity: 1 },
           { placeId: duplicateOutput, owner, multiplicity: 1 },
         ],
@@ -311,7 +309,7 @@ test("refuses an ambiguous affected output bucket", () => {
 test("separates disjoint owners and conflicts on one exact token bucket", () => {
   const prepared = deriveInternalDuplicatePreparation(
     parallelProgram,
-    beforeFork.state,
+    beforeFork,
     duplicate,
   );
   if (prepared === null) {
@@ -384,7 +382,7 @@ test("prepares the selected Exclusive branch with only its evaluated reads", () 
 test("prepares every selected Inclusive branch and its hidden record", () => {
   const prepared = deriveInternalSelectManyPreparation(
     inclusiveProgram,
-    beforeInclusiveSplit.state,
+    beforeInclusiveSplit,
     selectMany,
   );
   if (prepared === null) {
@@ -414,7 +412,7 @@ test("prepares every selected Inclusive branch and its hidden record", () => {
 test("prepares the exact selected Inclusive join record and token subset", () => {
   const prepared = deriveInternalSynchronizeSelectedPreparation(
     inclusiveProgram,
-    beforeInclusiveJoin.state,
+    beforeInclusiveJoin,
     synchronizeSelected,
   );
   if (prepared === null) {
@@ -458,7 +456,7 @@ test("conflicts only with the exact Process variable and selected-set owner", ()
 
   const splitPrepared = requirePrepared(deriveInternalSelectManyPreparation(
     inclusiveProgram,
-    beforeInclusiveSplit.state,
+    beforeInclusiveSplit,
     selectMany,
   ));
   const selectedBranch = {

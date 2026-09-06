@@ -38,7 +38,10 @@ test("arms both complete waits atomically in exactly two start steps", () => {
 
   assert.equal(exact.outcome, CommandOutcome.Committed);
   assert.equal(exact.internalStepBoundExceeded, false);
+  assert.equal(short.outcome, CommandOutcome.RolledBack);
   assert.equal(short.internalStepBoundExceeded, true);
+  assert.equal(short.ambiguousInternalChoice, false);
+  assert.equal(short.state, initialState);
   assert.deepEqual(short.state.eventRaces, []);
   assert.deepEqual(exact.state.eventRaces, [{
     id: {
