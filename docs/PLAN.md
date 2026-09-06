@@ -112,7 +112,7 @@ Temporal verification at `65862a36` exposed an unfinished readiness Query. Nativ
 
 Next action: complete [native deployment closure](TEMPORAL-WORKER-DEPLOYMENT-REPAIR-PROPOSAL.md#scope-review-and-closure), [capacity closure](capsules/COMPENSATION-EMPTY-STATE-CAPACITY-REPAIR-PROPOSAL.md#independent-cold-review-receipt), [start-data closure](capsules/COMPENSATION-DURABILITY-START-DATA-REPAIR-PROPOSAL.md#independent-cold-review-receipt), and the [composed Activity-data audit](capsules/ACTIVITY-DATA-INPUT-OUTPUT-MEDIATION-PROPOSAL.md#independent-cold-review-receipt). Their receipts own stage decisions. The [held-Task witness](TEMPORAL-TEST-EVIDENCE-MAP.md#temporal-witness-and-mutation-inventory) now settles the previously separate undelivered-Update case.
 
-Capacity/start-data findings are corrected; approval awaits complete verification. Composed duplicate-declaration refusal passes focused Lean guards; verification and audit remain. Full-suite PMI failed timing margin, then publication availability; isolated runs pass. Both Docker dependencies are cached; container smoke remains required.
+Capacity/start-data findings are corrected; approval awaits complete verification. Composed refusal passes complete Lean and bounded consumer gates; audit remains. Container smoke passed at `9628d6fb`. Full-suite PMI previously failed timing margin, then publication availability; isolated runs pass. Complete verification and closure reviews remain.
 
 Oracle: one User Task activation copies the required Process input into its occurrence-owned local scope, and one accepted completion atomically routes its required output to Process scope and disposes that same local scope across source, Lean, the semantic core, publication, and Temporal refinement.
 
