@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { test } from "node:test";
+import { enrollmentFixture } from "../../temporal-adapter/client/test/worker-deployment-enrollment-fixture.ts";
 
 import {
   EngineDefinitionScheduleIntegrityCode,
@@ -299,6 +300,7 @@ class FakeScheduleClient {
 
   readonly client = {
     workflow: {
+      ...enrollmentFixture("definition-schedule-queue"),
       start: async () => {
         this.workflowStarts += 1;
         return {};

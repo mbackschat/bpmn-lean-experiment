@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { test } from "node:test";
+import { enrollmentFixture } from "../../temporal-adapter/client/test/worker-deployment-enrollment-fixture.ts";
 
 import {
   EngineDefinitionMessageStartDescriptionStatus,
@@ -195,6 +196,7 @@ class FakeMessageStartClient {
 
   constructor(description: unknown = undefined) {
     this.client = {
+      ...enrollmentFixture("message-start-queue"),
       start: async (workflowType: unknown, options: unknown) => {
         this.startCalls.push({
           workflowType,

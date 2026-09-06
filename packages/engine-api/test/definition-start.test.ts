@@ -6,6 +6,7 @@ import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { test } from "node:test";
+import { enrollmentFixture } from "../../temporal-adapter/client/test/worker-deployment-enrollment-fixture.ts";
 
 import {
   EngineDefinitionStartIntegrityCode,
@@ -336,6 +337,7 @@ function fakeClient(
   handle: unknown = {},
 ): EngineDefinitionStartRequest["temporalClient"] {
   return {
+    ...enrollmentFixture("m1-start-queue"),
     start: async (_workflowType: unknown, options: unknown) => {
       calls.push({ options });
       return handle;
