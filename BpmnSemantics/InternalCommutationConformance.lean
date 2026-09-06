@@ -130,7 +130,6 @@ theorem ordinary_user_task_pair_has_footprints :
         [userTask, userTaskB] = true := by
   decide +kernel
 
-/-- The first final-closure Red: all six permutations of three ordinary User Tasks reach one exact raw state, and the complete frontier classifier admits the batch. -/
 theorem ordinary_user_task_triple_commutes_under_all_permutations :
     internalOperationFrontierPairwiseIndependent? userTaskTripleProgram
         userTaskTripleState [userTask, userTaskB, userTaskC] = true ∧
