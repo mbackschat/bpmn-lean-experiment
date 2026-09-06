@@ -1,4 +1,5 @@
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceEffectProgramValidity
+import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceUserTaskProgramValidity
 
 /-! # Flow-node occurrence wait Program validity
 
@@ -9,40 +10,6 @@ namespace BpmnSemantics.SemanticProcess
 
 open BpmnSemantics
 open FlowNodeOccurrenceProgramValidity.Internal
-
-private def userTaskWaitValid (program : Program) (state : RuntimeState)
-    (wait : UserTaskWait) : Bool :=
-  occurrenceOwnerValid state wait.processInstanceId wait.owner ⟨wait.task.id.value⟩ wait.activation &&
-    (program.operations.filter fun operation =>
-      if !operationOwnedBy program operation wait.owner then false
-      else match operation with
-      | .awaitUserTask _ _ _ output task =>
-          output = wait.output && task = wait.task && wait.metadata = task.metadata
-      | .awaitDataInputUserTask _ _ _ output taskId taskName _
-      | .awaitDataInputOutputUserTask _ _ _ output taskId taskName _ _
-      | .awaitDataOutputUserTask _ _ _ output taskId taskName _ =>
-          taskId = wait.task.id && taskName = wait.task.name && output = wait.output &&
-            wait.task.metadata.isNone && wait.metadata.isNone
-      | .awaitBoundedUserTask _ _ _ task _
-      | .awaitMessageBoundedUserTask _ _ _ task _
-      | .awaitMonitoredUserTask _ _ _ task _ =>
-          task.id = wait.task.id && task.name = wait.task.name && task.output = wait.output &&
-            wait.task.metadata.isNone && wait.metadata.isNone
-      | .awaitSequentialMultiInstanceUserTask _ _ _ task _ normalOutput _ _ =>
-          task.id = wait.task.id && task.name = wait.task.name && normalOutput = wait.output &&
-            wait.task.metadata.isNone && wait.metadata.isNone
-      | .awaitParallelMultiInstanceUserTask _ _ _ taskId taskName _ normalOutput _ _ _ =>
-          taskId = wait.task.id && taskName = wait.task.name && normalOutput = wait.output &&
-            wait.task.metadata.isNone && wait.metadata.isNone
-      | .initiate .. | .initiateMessage .. | .initiateTimer ..
-      | .enterScope .. | .enterBoundedScope .. | .invokeProcess .. | .returnProcess ..
-      | .completeParallelMultiInstanceUserTask .. | .awaitTimer ..
-      | .awaitMessage .. | .awaitPayloadMessage .. | .awaitCorrelatedPayloadMessage ..
-      | .awaitEventRace .. | .awaitEffect ..
-      | .duplicate .. | .synchronize .. | .mergeExclusive ..
-      | .choose .. | .selectMany .. | .synchronizeSelected ..
-      | .throwError .. | .reachNoneEnd .. | .terminateScope ..
-      | .completeScope .. | .triggerCompensation .. => false).length = 1
 
 private def messageWaitId (wait : MessageWait) : OccurrenceId :=
   { processInstanceId := wait.processInstanceId
@@ -189,7 +156,7 @@ private def timerWaitValid (program : Program) (state : RuntimeState)
 
 /-- Exact immutable-Program correspondence for every wait family used by open projection. -/
 def flowNodeOccurrenceWaitProgramValidity (program : Program) (state : RuntimeState) : Bool :=
-  state.waits.all (userTaskWaitValid program state) &&
+  flowNodeOccurrenceUserTaskProgramValidity program state &&
     state.messageWaits.all (messageWaitValid program state) &&
     state.timerWaits.all (timerWaitValid program state) &&
     flowNodeOccurrenceEffectProgramValidity program state
@@ -268,10 +235,7 @@ theorem flowNodeOccurrenceWaitProgramValidity_wait_owner_ids (program : Program)
       incident.wait.processInstanceId = incident.wait.owner.processInstanceId) := by
   simp only [flowNodeOccurrenceWaitProgramValidity, Bool.and_eq_true, List.all_eq_true] at valid
   refine ⟨?_, ?_, ?_, ?_, ?_⟩
-  · intro wait member
-    have waitValid := valid.1.1.1 wait member
-    simp [userTaskWaitValid, occurrenceOwnerValid] at waitValid
-    exact waitValid.1.1.2
+  · exact flowNodeOccurrenceUserTaskProgramValidity_wait_owner_ids program state valid.1.1.1
 
   · intro wait member
     have waitValid := valid.1.1.2 wait member
@@ -305,8 +269,6 @@ theorem flowNodeOccurrenceWaitProgramValidity_insertOrdinaryUserTask (program : 
       { state with waits := insertUserTaskWait wait state.waits } = true := by
   let after : RuntimeState := { state with waits := insertUserTaskWait wait state.waits }
   change flowNodeOccurrenceWaitProgramValidity program after = true
-  have owned := operationOwnedBy_of_exact_declaration program
-    (.awaitUserTask id origin input wait.output wait.task) wait.owner _ declarers declared
   have timerFrame (timer : TimerWait) :
       timerWaitValid program after timer = timerWaitValid program state timer := by
     unfold timerWaitValid
@@ -321,103 +283,9 @@ theorem flowNodeOccurrenceWaitProgramValidity_insertOrdinaryUserTask (program : 
   obtain ⟨h2, effects⟩ := prior
   obtain ⟨h1, timers⟩ := h2
   obtain ⟨users, messages⟩ := h1
-  have newValid : userTaskWaitValid program after wait = true := by
-    simp_all [userTaskWaitValid, occurrenceOwnerValid, flowNodeOccurrenceOwnerLiveUnique,
-      after]
-    calc
-      _ = (userTaskWaitDeclarers program wait.task.id).length := by
-        apply congrArg List.length
-        unfold userTaskWaitDeclarers
-        apply List.filter_congr
-        intro operation member
-        have only : operation ∈ userTaskWaitDeclarers program wait.task.id ↔
-            operation = .awaitUserTask id origin input wait.output wait.task := by
-          rw [declarers]
-          simp
-        by_cases familyMember : operation ∈ userTaskWaitDeclarers program wait.task.id
-        · have operationEq := only.mp familyMember
-          subst operation
-          simp [owned]
-        · cases operation with
-          | awaitUserTask candidateId candidateOrigin candidateInput candidateOutput candidateTask =>
-              have different : candidateTask.id ≠ wait.task.id := by
-                intro same
-                apply familyMember
-                simp [userTaskWaitDeclarers, member, same]
-              have taskDifferent : candidateTask ≠ wait.task :=
-                fun same => different (congrArg UserTaskDefinition.id same)
-              simp [different, taskDifferent]
-          | awaitDataInputUserTask candidateId candidateOrigin candidateInput candidateOutput
-              candidateTaskId candidateTaskName directInput =>
-              have different : candidateTaskId ≠ wait.task.id := by
-                intro same
-                apply familyMember
-                unfold userTaskWaitDeclarers
-                rw [List.mem_filter]
-                exact ⟨member, by simp [same]⟩
-              simp [different]
-          | awaitDataInputOutputUserTask candidateId candidateOrigin candidateInput candidateOutput
-              candidateTaskId candidateTaskName directInput directOutput =>
-              have different : candidateTaskId ≠ wait.task.id := by
-                intro same
-                apply familyMember
-                unfold userTaskWaitDeclarers
-                rw [List.mem_filter]
-                exact ⟨member, by simp [same]⟩
-              simp [different]
-          | awaitDataOutputUserTask candidateId candidateOrigin candidateInput candidateOutput
-              candidateTaskId candidateTaskName directOutput =>
-              have different : candidateTaskId ≠ wait.task.id := by
-                intro same
-                apply familyMember
-                unfold userTaskWaitDeclarers
-                rw [List.mem_filter]
-                exact ⟨member, by simp [same]⟩
-              simp [different]
-          | awaitBoundedUserTask candidateId candidateOrigin candidateInput candidateTask boundary =>
-              have different : candidateTask.id ≠ wait.task.id := by
-                intro same
-                apply familyMember
-                simp [userTaskWaitDeclarers, member, same]
-              simp [different]
-          | awaitMonitoredUserTask candidateId candidateOrigin candidateInput candidateTask boundary =>
-              have different : candidateTask.id ≠ wait.task.id := by
-                intro same
-                apply familyMember
-                simp [userTaskWaitDeclarers, member, same]
-              simp [different]
-          | awaitMessageBoundedUserTask candidateId candidateOrigin candidateInput candidateTask boundary =>
-              have different : candidateTask.id ≠ wait.task.id := by
-                intro same
-                apply familyMember
-                simp [userTaskWaitDeclarers, member, same]
-              simp [different]
-          | awaitSequentialMultiInstanceUserTask candidateId candidateOrigin candidateInput
-              candidateTask data normalOutput boundary limits =>
-              have different : candidateTask.id ≠ wait.task.id := by
-                intro same
-                apply familyMember
-                simp [userTaskWaitDeclarers, member, same]
-              simp [different]
-          | awaitParallelMultiInstanceUserTask candidateId candidateOrigin candidateInput
-              candidateTaskId candidateTaskName data normalOutput boundary condition limits =>
-              have different : candidateTaskId ≠ wait.task.id := by
-                intro same
-                apply familyMember
-                unfold userTaskWaitDeclarers
-                rw [List.mem_filter]
-                exact ⟨member, by simp [same]⟩
-              simp [different]
-          | _ => simp
-      _ = 1 := by
-        simpa [userTaskWaitDeclarers] using congrArg List.length declarers
-  have usersAfter : after.waits.all (userTaskWaitValid program after) = true := by
-    rw [show after.waits = insertUserTaskWait wait state.waits by rfl,
-      all_insertUserTaskWait]
-    simp only [Bool.and_eq_true]
-    refine ⟨newValid, ?_⟩
-    simpa [userTaskWaitValid, occurrenceOwnerValid, flowNodeOccurrenceOwnerLiveUnique,
-      after] using users
+  have usersAfter := flowNodeOccurrenceUserTaskProgramValidity_insertOrdinaryUserTask
+    program state id origin input wait users declarers declared live ownerProcess taskId
+    positive processOwner metadata
   have timersAfter : after.timerWaits.all (timerWaitValid program after) = true := by
     simp only [List.all_eq_true] at timers ⊢
     intro timer member
@@ -482,8 +350,9 @@ theorem flowNodeOccurrenceWaitProgramValidity_insertOrdinaryMessage (program : P
     intro timer member
     rw [timerFrame]
     exact timers timer member
-  exact ⟨⟨⟨by simpa [userTaskWaitValid, occurrenceOwnerValid,
-      flowNodeOccurrenceOwnerLiveUnique, after] using users, messagesAfter⟩,
+  exact ⟨⟨⟨by
+      rw [flowNodeOccurrenceUserTaskProgramValidity_frame program state after rfl rfl]
+      exact users, messagesAfter⟩,
     timersAfter⟩, by
       rw [flowNodeOccurrenceEffectProgramValidity_frame program state after]
       · exact effects
@@ -543,8 +412,9 @@ theorem flowNodeOccurrenceWaitProgramValidity_insertPayloadMessage (program : Pr
     intro timer member
     rw [timerFrame]
     exact timers timer member
-  exact ⟨⟨⟨by simpa [userTaskWaitValid, occurrenceOwnerValid,
-      flowNodeOccurrenceOwnerLiveUnique, after] using users, messagesAfter⟩,
+  exact ⟨⟨⟨by
+      rw [flowNodeOccurrenceUserTaskProgramValidity_frame program state after rfl rfl]
+      exact users, messagesAfter⟩,
     timersAfter⟩, by
       rw [flowNodeOccurrenceEffectProgramValidity_frame program state after]
       · exact effects
@@ -607,8 +477,9 @@ theorem flowNodeOccurrenceWaitProgramValidity_insertCorrelatedPayloadMessage
     intro timer member
     rw [timerFrame]
     exact timers timer member
-  exact ⟨⟨⟨by simpa [userTaskWaitValid, occurrenceOwnerValid,
-      flowNodeOccurrenceOwnerLiveUnique, after] using users, messagesAfter⟩,
+  exact ⟨⟨⟨by
+      rw [flowNodeOccurrenceUserTaskProgramValidity_frame program state after rfl rfl]
+      exact users, messagesAfter⟩,
     timersAfter⟩, by
       rw [flowNodeOccurrenceEffectProgramValidity_frame program state after]
       · exact effects
@@ -733,8 +604,9 @@ theorem flowNodeOccurrenceWaitProgramValidity_insertOrdinaryTimer (program : Pro
     refine ⟨newValid, ?_⟩
     simpa [timerWaitValid, occurrenceOwnerValid, flowNodeOccurrenceOwnerLiveUnique,
       boundaryTimerOperationMatches, after] using timers
-  exact ⟨⟨⟨by simpa [userTaskWaitValid, occurrenceOwnerValid,
-      flowNodeOccurrenceOwnerLiveUnique, after] using users,
+  exact ⟨⟨⟨by
+      rw [flowNodeOccurrenceUserTaskProgramValidity_frame program state after rfl rfl]
+      exact users,
     by simpa [messageWaitValid, occurrenceOwnerValid, flowNodeOccurrenceOwnerLiveUnique,
       after] using messages⟩, timersAfter⟩, by
       rw [flowNodeOccurrenceEffectProgramValidity_frame program state after]
@@ -784,8 +656,8 @@ theorem flowNodeOccurrenceWaitProgramValidity_insertOrdinaryEffect (program : Pr
   simp only [flowNodeOccurrenceWaitProgramValidity, Bool.and_eq_true] at prior ⊢
   obtain ⟨⟨⟨users, messages⟩, timers⟩, effects⟩ := prior
   refine ⟨⟨⟨?_, ?_⟩, ?_⟩, ?_⟩
-  · simpa [userTaskWaitValid, occurrenceOwnerValid, flowNodeOccurrenceOwnerLiveUnique,
-      after] using users
+  · rw [flowNodeOccurrenceUserTaskProgramValidity_frame program state after rfl rfl]
+    exact users
   · simpa [messageWaitValid, occurrenceOwnerValid, flowNodeOccurrenceOwnerLiveUnique,
       after] using messages
   · simpa [timerWaitValid, boundaryTimerOperationMatches, occurrenceOwnerValid,
