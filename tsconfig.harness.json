@@ -96,6 +96,7 @@
     "packages/temporal-adapter/testkit/calibration/*.ts",
     "packages/temporal-adapter/testkit/test/*.ts",
     "packages/temporal-adapter/workflow/test/closure-failure-classification*.ts",
+    "packages/temporal-adapter/workflow/test/workflow-chain-update-capacity.test.ts",
     "scripts/*.ts"
   ],
   "exclude": [

@@ -469,7 +469,7 @@ export function validateWorkflowChainUpdate(
     case WorkflowChainRecoveryIngressKind.IdentityConflict:
       throw workflowCommandIdentityConflict(stimulus);
     case WorkflowChainRecoveryIngressKind.CapacityExceeded:
-      throw workflowChain.capacity.applicationFailure();
+      throw workflowChain.capacity.applicationFailure(ingress.failure);
     default:
       return assertNever(ingress);
   }
