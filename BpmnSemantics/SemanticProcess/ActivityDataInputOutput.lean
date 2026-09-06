@@ -106,8 +106,10 @@ def dataInputOutputTaskContract? (program : Program) (taskId : TaskDefinitionId)
   | [contract] => some contract
   | _ => none
 
+/-- `ADIO-REFUSE-01`: ambiguous declarations still belong to composed completion, where the
+unique-contract lookup refuses them before ordinary completion can consume the wait. -/
 def isDataInputOutputTaskDefinition (program : Program) (taskId : TaskDefinitionId) : Bool :=
-  (dataInputOutputTaskContract? program taskId).isSome
+  (dataInputOutputTaskContracts program).any fun contract => decide (contract.taskId = taskId)
 
 /-- The unique wait named by the complete task occurrence identity. Duplicate matching waits are
 refused rather than resolved by list order. -/

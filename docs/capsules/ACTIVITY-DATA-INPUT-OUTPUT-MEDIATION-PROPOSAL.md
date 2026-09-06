@@ -258,5 +258,7 @@ That checkpoint requires independent cold review before registered answer-free s
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
 | Proposal | `559faf0f734e24b8edfc3c16803b43f8d322ecbc` | `fork-turns-none` | `approve-with-required-edits` | `78b9ca0c, c161ef74` |
-| Semantic checkpoint | `fe0c4a4d` | `not-recorded` | `pending` | `not-applicable` |
+| Semantic checkpoint | `30c20e47` | `not-recorded` | `pending` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+
+The checkpoint review reproduced a dispatch defect: Lean used unique-contract lookup to recognize the composed family, so multiple declarations fell through to ordinary completion. The correction separates presence-based dispatch from unique-contract admission. The [refusal laws](../../BpmnSemantics/ActivityDataInputOutputRefusalConformance.lean) require exact rejected-state preservation for duplicate declarations with supplied or empty output and for three declarations. The runtime map now distinguishes the implemented checkpoint from remaining closure. Complete verification and the same reviewer's correction audit remain required before downstream work.

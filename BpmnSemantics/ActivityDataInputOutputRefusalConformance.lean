@@ -13,6 +13,30 @@ namespace BpmnSemantics.ActivityDataInputOutputConformance
 open BpmnSemantics
 open BpmnSemantics.SemanticProcess
 
+private def withExtraComposedDeclarations (count : Nat) : Program :=
+  { claimProgram with
+    operations := claimProgram.operations ++
+      (List.replicate count (claimProgram.operations.filter fun
+        | .awaitDataInputOutputUserTask .. => true
+        | _ => false)).flatten }
+
+/-- `ADIO-REFUSE-01` applies at command dispatch, including malformed Programs that cannot pass
+source admission; successful unique lookup must not decide whether the family owns the task. -/
+theorem duplicateComposedDeclarationRefusesOutputWithExactStatePreservation :
+    applyStimulus scenarioClosureLimit (withExtraComposedDeclarations 1) active
+        (completeClaim "duplicate-output" [decision (.string "approve")]) = refused active := by
+  exact applyStimulus_rejected_of_admission _ _ _ _ rfl
+
+theorem duplicateComposedDeclarationRefusesEmptyOutputWithExactStatePreservation :
+    applyStimulus scenarioClosureLimit (withExtraComposedDeclarations 1) active
+        (completeClaim "duplicate-empty" []) = refused active := by
+  exact applyStimulus_rejected_of_admission _ _ _ _ rfl
+
+theorem threeComposedDeclarationsRefuseWithExactStatePreservation :
+    applyStimulus scenarioClosureLimit (withExtraComposedDeclarations 2) active
+        (completeClaim "three-declarers" [decision (.string "approve")]) = refused active := by
+  exact applyStimulus_rejected_of_admission _ _ _ _ rfl
+
 /-- `ADIO-FILL-01`: omitting the sole required output preserves the complete active state. -/
 theorem zeroOutputsRefuseWithExactStatePreservation :
     applyStimulus scenarioClosureLimit claimProgram active

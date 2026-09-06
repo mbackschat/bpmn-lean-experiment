@@ -77,7 +77,7 @@ Owner instruction on 2026-09-05: resolve the supplied six reviews before resumin
 - [x] Repair regional cancellation, quiescence, and Lean removal completeness (`R2`, `R6`).
 - [x] Measure E1; remove demonstrated fixture-reduction amplification (`R4`).
 - [ ] Close runtime-invariant binding and preservation gaps (`R1`, `R2`, `R6`).
-- [x] Repair footprint, preparation, rollback, commutation, and publication guarantees (`R3`).
+- [x] Correct implemented scheduling, preparation, rollback, and publication claims (`R3`); broader proofs remain queued under `INTERNAL-COMMUTATION`.
 - [x] Correct Compensation dependency defects and disclose the bounded cancellation, ownership, and failure contract (`R6`).
 - [ ] Repair Temporal deployment/recovery and complete omitted hosting checks (`R5`).
 - [x] Bind source-order and fixture/scenario evidence independently for the reported fixtures (`R1`).
@@ -112,7 +112,7 @@ Temporal verification at `65862a36` exposed an unfinished readiness Query. Nativ
 
 Next action: complete [native deployment closure](TEMPORAL-WORKER-DEPLOYMENT-REPAIR-PROPOSAL.md#scope-review-and-closure), [capacity closure](capsules/COMPENSATION-EMPTY-STATE-CAPACITY-REPAIR-PROPOSAL.md#independent-cold-review-receipt), [start-data closure](capsules/COMPENSATION-DURABILITY-START-DATA-REPAIR-PROPOSAL.md#independent-cold-review-receipt), and the [composed Activity-data audit](capsules/ACTIVITY-DATA-INPUT-OUTPUT-MEDIATION-PROPOSAL.md#independent-cold-review-receipt). Their receipts own stage decisions. The [held-Task witness](TEMPORAL-TEST-EVIDENCE-MAP.md#temporal-witness-and-mutation-inventory) now settles the previously separate undelivered-Update case.
 
-Reviews resumed; capacity/start-data audits and complete verification remain. At `32b76106`, PMI timing margin failed (3,250/5,000 ms); the unchanged isolated rerun passed. Docker project images build, but pinned Temporal-image CDN access fails from Docker and host IPv4.
+Capacity/start-data findings are corrected; approval awaits complete verification. Composed duplicate-declaration refusal passes focused Lean guards; verification and audit remain. Full-suite PMI failed timing margin, then publication availability; isolated runs pass. Both Docker dependencies are cached; container smoke remains required.
 
 Oracle: one User Task activation copies the required Process input into its occurrence-owned local scope, and one accepted completion atomically routes its required output to Process scope and disposes that same local scope across source, Lean, the semantic core, publication, and Temporal refinement.
 
