@@ -408,9 +408,9 @@ export const leanModuleCostRecord = {
     },
     {
       module: "BpmnSemantics.CompensationTriggerHandlerRuntimeConformance",
-      peakResidentKib: 1086024,
-      elapsedSeconds: 2.93,
-      measuredAtCommit: "ef739572",
+      peakResidentKib: 1292220,
+      elapsedSeconds: 4.78,
+      measuredAtCommit: "eed22392",
     },
     {
       module: "BpmnSemantics.CompensationTriggerHandlerTransitionConformance",
@@ -531,7 +531,7 @@ export const leanModuleCostRecord = {
       elapsedSeconds: 0.47,
       measuredAtCommit: "bd2bef03",
     },
-    { module: "BpmnSemantics.UserTaskInteractionConformance", peakResidentKib: 1592552, elapsedSeconds: 7.3 },
+    { module: "BpmnSemantics.UserTaskInteractionConformance", peakResidentKib: 1516764, elapsedSeconds: 7.14, measuredAtCommit: "eed22392" },
     { module: "BpmnSemantics.ConfiguredTaskConformance", peakResidentKib: 1661596, elapsedSeconds: 9.48, measuredAtCommit: "24d92a7c" },
     { module: "BpmnSemantics.MappedBoundaryErrorConformance", peakResidentKib: 1463248, elapsedSeconds: 7.2 },
     { module: "BpmnSemantics.BooleanProcessDataConformance", peakResidentKib: 1405164, elapsedSeconds: 3.8 },

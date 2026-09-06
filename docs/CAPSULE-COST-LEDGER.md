@@ -225,6 +225,15 @@ The unchanged-limit isolation pass then exercised every cold consumer implicated
 
 The accepted complete receipts are immutable at `7b3ca41f`. The warm-closure test ran in 0.65 seconds at 120,048 KiB GNU RSS and 136,794,112 bytes cgroup peak; its log SHA-256 is `aaec15959030baf4dae2b0327c50fdb5b8a765e3f80ad93b82629f4339833d58`. The warm-closure build ran in 0.45 seconds at 119,768 KiB and 36,450,304 bytes; its log SHA-256 is `748a58696eab89272da962e2f88d514187abf2aab87a66985dfedc4e14ee0a13`. Both exited zero with every controlled memory event zero. The validator binds these receipts as closure evidence while the rejected cold diagnostic and isolated cold-consumer rows remain visible; no larger limit or exit-code-only exception was introduced.
 
+#### External-review fixture cost binding
+
+The external-review corrections were remeasured at immutable commit `eed22392635ba31cc485367a0a1bf460b6d1c8f4` on 2026-09-06 under the identical pinned image and 3 GiB, no-additional-swap, one-CPU protocol above. The corrected [User Task fixture](../BpmnSemantics/UserTaskInteractionConformance.lean) and [Compensation collision fixture](../BpmnSemantics/CompensationTriggerHandlerRuntimeConformance.lean) were each rebuilt alone after warming their dependencies and moving only that target's generated artifacts out of the isolated cache. Both exited zero with zero swaps, every cgroup memory-event counter zero, and zero memory-pressure totals; neither reaches the 90% disclosure threshold. These records replace the stale source bindings in the executable cost registry without changing either fixture or the memory policy.
+
+| Corrected target at `eed22392` | Elapsed | GNU maximum RSS | Cgroup peak | Output SHA-256 |
+|---|---:|---:|---:|---|
+| `UserTaskInteractionConformance` | 7.14 s | 1,516,764 KiB | 1,154,441,216 bytes | `ac68ba3162e016bb0893f29b7b19c45b039915b48fcf8532420a8140c4378002` |
+| `CompensationTriggerHandlerRuntimeConformance` | 4.78 s | 1,292,220 KiB | 909,676,544 bytes | `2d07cdd47b74a2bab9fed4dbf6c477cc49f67613e8784f97ca1f2b0815bf5303` |
+
 #### Compensation trigger-handler module-cost binding
 
 The compensation trigger-handler proof owners were initially measured from immutable commit `ef739572` with a warm dependency closure and only each measured target's own generated artifacts removed. Other host processes were active, so elapsed time is recorded but not compared; every command exited zero without swap, and every cgroup `high`, `max`, `oom`, `oom_kill`, and `oom_group_kill` event remained zero.
