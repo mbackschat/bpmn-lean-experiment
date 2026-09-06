@@ -96,12 +96,10 @@ private theorem completeQuiescentScope_preserves_unrelated_components
          subst completion
          exact ⟨rfl, rfl, rfl, rfl, rfl, rfl⟩)
 
-/-- Scope completion rewrites only control, scope occurrences, and tokens.
+/-- Layered family proofs use this frame to isolate their own withdrawal and logical-time cases.
 
-Every other component is carried through unchanged. A family layered on this transition needs that fact
-to withdraw its own state and to separate its arms by logical time: without it, a law about the composed
-transition cannot see that the shared completion left the timer, wait, activation, and end-history
-components alone. -/
+The six equalities below remain valid when `completeQuiescentScope?` disposes root-owned Compensation
+retentions; they do not frame every component of RuntimeState. -/
 theorem completeScopeState_preserves_unrelated_components
     (state completed : RuntimeState) (scopeId : DefinitionScopeId)
     (parentOutput : Option ControlPlaceId)
