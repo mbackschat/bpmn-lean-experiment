@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtemp, mkdir, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import test from "node:test";
@@ -122,6 +122,19 @@ test("still requires each execution environment's SDK dependency", async () => {
 
   assert.deepEqual(await assessTemporalPackageBoundary(root), [
     "packages/temporal-adapter/client/package.json: missing required SDK dependency @temporalio/client",
+  ]);
+});
+
+test("permits native deployment protocol access in the client, Worker, and testkit", async () => {
+  const root = await createValidBoundaryFixture();
+  for (const role of ["client", "worker", "testkit", "workflow"]) {
+    const manifestPath = path.join(root, "packages", "temporal-adapter", role, "package.json");
+    const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
+    manifest.dependencies["@temporalio/proto"] = fixtureSdkVersion;
+    await writeManifest(manifestPath, manifest);
+  }
+  assert.deepEqual(await assessTemporalPackageBoundary(root), [
+    "packages/temporal-adapter/workflow/package.json: forbidden Temporal SDK dependency @temporalio/proto",
   ]);
 });
 

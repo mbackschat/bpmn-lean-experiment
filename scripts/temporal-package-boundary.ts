@@ -33,7 +33,7 @@ const packagePolicies: Readonly<Record<PackageRole, PackagePolicy>> = {
     name: "@bpmn-lean/temporal-client",
     internalDependencies: [PackageRole.Protocol],
     requiredSdkDependencies: ["@temporalio/client"],
-    allowedSdkDependencies: ["@temporalio/client"],
+    allowedSdkDependencies: ["@temporalio/client", "@temporalio/proto"],
   },
   [PackageRole.Workflow]: {
     name: "@bpmn-lean/temporal-workflow",
@@ -49,7 +49,7 @@ const packagePolicies: Readonly<Record<PackageRole, PackagePolicy>> = {
       PackageRole.Workflow,
     ],
     requiredSdkDependencies: ["@temporalio/worker"],
-    allowedSdkDependencies: ["@temporalio/worker"],
+    allowedSdkDependencies: ["@temporalio/worker", "@temporalio/proto"],
   },
   [PackageRole.Runner]: {
     name: "@bpmn-lean/temporal-runner",
@@ -74,6 +74,7 @@ const packagePolicies: Readonly<Record<PackageRole, PackagePolicy>> = {
     allowedSdkDependencies: [
       "@temporalio/activity",
       "@temporalio/client",
+      "@temporalio/proto",
       "@temporalio/testing",
       "@temporalio/worker",
       "@temporalio/workflow",

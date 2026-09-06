@@ -92,6 +92,7 @@
     "packages/differential/test/*.ts",
     "packages/engine-api/test/*.ts",
     "packages/semantic-core/test/*.ts",
+    "packages/temporal-adapter/client/test/worker-deployment-enrollment.test.ts",
     "packages/temporal-adapter/runner/cli/*.ts",
     "packages/temporal-adapter/testkit/calibration/*.ts",
     "packages/temporal-adapter/testkit/test/*.ts",

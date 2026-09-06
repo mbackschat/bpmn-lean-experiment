@@ -15,10 +15,12 @@
     "build": "tsc -p tsconfig.json"
   },
   "dependencies": {
+    "@grpc/grpc-js": "1.14.4",
     "@bpmn-lean/semantic-core": "workspace:*",
     "@bpmn-lean/temporal-client": "workspace:*",
     "@bpmn-lean/temporal-protocol": "workspace:*",
     "@bpmn-lean/temporal-workflow": "workspace:*",
+    "@temporalio/proto": "1.21.0",
     "@temporalio/worker": "1.21.0"
   },
   "devDependencies": {

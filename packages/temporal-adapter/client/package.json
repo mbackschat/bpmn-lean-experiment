@@ -55,6 +55,7 @@
   "dependencies": {
     "@bpmn-lean/semantic-core": "workspace:*",
     "@bpmn-lean/temporal-protocol": "workspace:*",
-    "@temporalio/client": "1.21.0"
+    "@temporalio/client": "1.21.0",
+    "@temporalio/proto": "1.21.0"
   }
 }
