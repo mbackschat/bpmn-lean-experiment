@@ -57,7 +57,7 @@ Two monotonicity facts are separate relations rather than conjuncts, because whe
 | Rule | Consequence | Derivation |
 |---|---|---|
 | `RSI-FOREST-01` | the live scope-occurrence graph is an acyclic parent-linked forest | under a `programWellFormed` hypothesis, whose `scopeForestWellFormed` conjunct in [`GraphValidation.lean`](../BpmnSemantics/SemanticProcess/GraphValidation.lean) already requires an acyclic definition-scope forest by invoking `acyclicClosed`, `RSI-BIND-02` projects each runtime parent onto the program's declared parent scope, so no runtime cycle can project onto it |
-| `RSI-TERM-01` | a terminal state holds no wait, hidden record, or incident | `RSI-LIFE-02` removes every occurrence and `RSI-OWN-01` requires a live owner for each of them |
+| `RSI-TERM-01` | a `completed` or `cancelled` state holds no wait, record, or incident covered by `RSI-OWN-01`; Compensation trigger tombstones remain subject to their [separate runtime contract](capsules/COMPENSATION-TRIGGER-HANDLER-PROPOSAL.md#runtime-and-public-failure-contract) | `RSI-LIFE-02` removes every live occurrence and `RSI-OWN-01` requires a live owner for each collection it names; this derivation does not remove separately governed retained Compensation records |
 
 ### Facts the rules depend on
 
