@@ -96,7 +96,7 @@ Within the dependency order below, prioritize high-risk work before packaging an
 
 ## Current evidence
 
-- Canonical token-storage checkpoint. Command: `./scripts/pnpm.sh run test:pre-push`. Status: `exit 0`. Date: `2026-09-08`. Commit: `e07943d5ceb3bcf3640b6a4719c17adfd8205ad9`. The [review receipt](INTERNAL-COMMUTATION-PROPOSAL.md#independent-cold-review-receipt) records independent approval without required findings and the preceding native-runtime failure. The unchanged clean committed repository-wide gate passes with agreement across all 72 pipeline cases.
+- Local-control preparation prerequisite. Command: `./scripts/pnpm.sh run test:pre-push`. Status: `exit 0`. Date: `2026-09-08`. Commit: `f5a4ecbe463206c54645520abef635ae548111a5`. The [review receipt](INTERNAL-COMMUTATION-PROPOSAL.md#independent-cold-review-receipt) records independent approval without required findings and the preceding sandbox restriction. The unchanged clean committed repository-wide gate passes with agreement across all 72 pipeline cases; its contended timing is not a performance baseline.
 - Start-capacity assurance. Command: `fixed-3-GiB docker run … ./scripts/lake.sh build BpmnSemantics.CompensationSourceCompatibilityConformance`. Status: `exit 0` after three exact-bound OOM reproductions. Date: `2026-09-03`. Commit: `8ab3ba5f`. The final target completed in 15.00s at 2,324,123,648 cgroup bytes and 1,938,140 KiB RSS with every pressure/OOM counter zero. The [specification](capsules/COMPENSATION-DURABILITY-START-DATA-REPAIR-SPEC.md#lean-assurance-correction-after-the-hard-ceiling) retains the exact 3,221,225,472-byte failures, full chronology, and rejected limit/native-decision alternatives.
 
 ## Exact resume point
