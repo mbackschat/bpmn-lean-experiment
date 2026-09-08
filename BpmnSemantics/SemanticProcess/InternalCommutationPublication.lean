@@ -43,6 +43,28 @@ def numberInternalPublicationPairs :
       { transitionIndex, publication := pair } ::
         numberInternalPublicationPairs (transitionIndex + 1) rest
 
+private theorem insertAcceptedPair_map_pair (inserted : AcceptedInternalPublicationPair)
+    (values : List AcceptedInternalPublicationPair) :
+    (insertAcceptedPair inserted values).map (·.pair) =
+      InternalCommutation.sortInsertBy publicationPairBefore inserted.pair (values.map (·.pair)) := by
+  induction values with
+  | nil => rfl
+  | cons current rest ih =>
+      simp only [insertAcceptedPair, InternalCommutation.sortInsertBy, acceptedPairBefore,
+        List.map_cons]
+      split <;> simp_all
+
+theorem canonicalAcceptedInternalPublicationPairs_map_pair
+    (values : List AcceptedInternalPublicationPair) :
+    (canonicalAcceptedInternalPublicationPairs values).map (·.pair) =
+      canonicalPublicationPairs (values.map (·.pair)) := by
+  rw [canonicalPublicationPairs_eq_sortBy]
+  induction values with
+  | nil => rfl
+  | cons current rest ih =>
+      simp [canonicalAcceptedInternalPublicationPairs, insertAcceptedPair_map_pair,
+        InternalCommutation.sortBy, ih]
+
 def acceptedInternalPublicationForFootprint? (program : Program) (expectedInstanceId : SemanticId)
     (before after : RuntimeState) (operation : SemanticOperation) (commandId : SemanticId)
     (footprint : InternalTransitionFootprint) : Option AcceptedInternalPublicationPair := do
@@ -215,6 +237,91 @@ theorem canonicalAcceptedInternalPublicationPairs_pair_commutes
       before, String.lt_asymm before]
   · simp [canonicalAcceptedInternalPublicationPairs, insertAcceptedPair, forward, backward,
       before, String.lt_asymm before]
+
+private def acceptedOperationIdBefore (left right : AcceptedInternalPublicationPair) : Bool :=
+  left.pair.footprint.operationId.value < right.pair.footprint.operationId.value
+
+private theorem insertAcceptedPair_eq_id_insert (inserted : AcceptedInternalPublicationPair)
+    (values : List AcceptedInternalPublicationPair)
+    (different : ∀ value ∈ values,
+      inserted.pair.footprint.operationId ≠ value.pair.footprint.operationId) :
+    insertAcceptedPair inserted values =
+      InternalCommutation.sortInsertBy acceptedOperationIdBefore inserted values := by
+  induction values with
+  | nil => rfl
+  | cons current rest ih =>
+      have head := different current (by simp)
+      have tail := ih (fun value present => different value (by simp [present]))
+      simp [insertAcceptedPair, InternalCommutation.sortInsertBy, acceptedPairBefore,
+        publicationPairBefore, acceptedOperationIdBefore, head, tail]
+
+private theorem canonicalAcceptedInternalPublicationPairs_eq_id_sort
+    (values : List AcceptedInternalPublicationPair)
+    (distinct : values.Pairwise (fun left right =>
+      left.pair.footprint.operationId ≠ right.pair.footprint.operationId)) :
+    canonicalAcceptedInternalPublicationPairs values =
+      InternalCommutation.sortBy acceptedOperationIdBefore values := by
+  induction values with
+  | nil => rfl
+  | cons current rest ih =>
+      obtain ⟨different, tail⟩ := List.pairwise_cons.mp distinct
+      simp only [canonicalAcceptedInternalPublicationPairs, InternalCommutation.sortBy, ih tail]
+      apply insertAcceptedPair_eq_id_insert
+      intro value present
+      exact different value ((mem_sortBy acceptedOperationIdBefore value rest).mp present)
+
+private theorem sortInsertBy_eq_canonical_insert (before : α → α → Bool)
+    (inserted : α) (values : List α) :
+    InternalCommutation.sortInsertBy before inserted values =
+      canonicalInsertBy before inserted values := by
+  induction values with
+  | nil => rfl
+  | cons current rest ih =>
+      simp only [InternalCommutation.sortInsertBy, canonicalInsertBy, ih]
+
+private theorem accepted_id_insert_commutes (left right : AcceptedInternalPublicationPair)
+    (different : left.pair.footprint.operationId ≠ right.pair.footprint.operationId)
+    (values : List AcceptedInternalPublicationPair) :
+    InternalCommutation.sortInsertBy acceptedOperationIdBefore left
+        (InternalCommutation.sortInsertBy acceptedOperationIdBefore right values) =
+      InternalCommutation.sortInsertBy acceptedOperationIdBefore right
+        (InternalCommutation.sortInsertBy acceptedOperationIdBefore left values) := by
+  simp only [sortInsertBy_eq_canonical_insert]
+  apply canonicalInsertBy_commutes_of_strict_order acceptedOperationIdBefore
+  · intro first second ordered
+    simpa [acceptedOperationIdBefore] using String.lt_asymm (of_decide_eq_true ordered)
+  · intro first middle last firstBefore middleBefore
+    exact decide_eq_true (String.lt_trans (of_decide_eq_true firstBefore)
+      (of_decide_eq_true middleBefore))
+  · have valueDifferent : left.pair.footprint.operationId.value ≠
+        right.pair.footprint.operationId.value := by
+      intro same
+      apply different
+      exact congrArg OperationId.mk same
+    simpa [acceptedOperationIdBefore] using string_total _ _ valueDifferent
+
+/-- Complete accepted bundles are sorted before numbering, for arbitrary distinct-ID permutations. -/
+theorem canonicalAcceptedInternalPublicationPairs_perm
+    (left right : List AcceptedInternalPublicationPair)
+    (distinct : left.Pairwise (fun first second =>
+      first.pair.footprint.operationId ≠ second.pair.footprint.operationId))
+    (permutation : left.Perm right) :
+    canonicalAcceptedInternalPublicationPairs left =
+      canonicalAcceptedInternalPublicationPairs right := by
+  rw [canonicalAcceptedInternalPublicationPairs_eq_id_sort left distinct,
+    canonicalAcceptedInternalPublicationPairs_eq_id_sort right
+      (distinct.perm permutation Ne.symm)]
+  induction permutation with
+  | nil => rfl
+  | cons head permutation ih =>
+      simp only [InternalCommutation.sortBy]
+      rw [ih (List.pairwise_cons.mp distinct).2]
+  | swap first second tail =>
+      simp only [InternalCommutation.sortBy]
+      exact accepted_id_insert_commutes second first
+        ((List.pairwise_cons.mp distinct).1 first (by simp)) _
+  | trans first second ihFirst ihSecond =>
+      exact (ihFirst distinct).trans (ihSecond (distinct.perm first Ne.symm))
 
 theorem accepted_pair_publication_commutes_of_frames
     (program : Program) (instanceId commandId : SemanticId) (firstTransitionIndex : Nat)

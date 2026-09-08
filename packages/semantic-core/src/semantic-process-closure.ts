@@ -31,20 +31,23 @@ export type RefusableClosureResult<State, Step, Refusal> =
 export function closeSupportedInternalOperations<
   State,
   Step extends ExecutableInternalStep<State>,
+  Prepared extends Readonly<{ operation: SemanticOperation }>,
 >(
   initialState: State,
   limit: number,
   enabledOperations: (state: State) => ReadonlyArray<Step>,
-  frontierIsPairwiseIndependent: (
+  prepareBatch: (
     state: State,
     enabled: ReadonlyArray<Step>,
-  ) => boolean,
+  ) => ReadonlyArray<Prepared> | null,
+  applyPrepared: (state: State, prepared: Prepared) => Step | null,
 ): SupportedClosureResult<State, Step> {
   const result = closeRefusableInternalOperations(
     initialState,
     limit,
     (state) => ({ steps: enabledOperations(state), refusal: null }),
-    frontierIsPairwiseIndependent,
+    prepareBatch,
+    applyPrepared,
   );
   return {
     state: result.state,
@@ -55,21 +58,23 @@ export function closeSupportedInternalOperations<
   };
 }
 
-/** Closes a three-arm internal frontier while making refusal discard every provisional batch. */
+/** CLOSURE-ATOMIC-01 requires any refusal to discard every provisional batch. */
 export function closeRefusableInternalOperations<
   State,
   Step extends ExecutableInternalStep<State>,
   Refusal,
+  Prepared extends Readonly<{ operation: SemanticOperation }>,
 >(
   initialState: State,
   limit: number,
   attemptedOperations: (
     state: State,
   ) => RefusableClosureFrontier<Step, Refusal>,
-  frontierIsPairwiseIndependent: (
+  prepareBatch: (
     state: State,
     enabled: ReadonlyArray<Step>,
-  ) => boolean,
+  ) => ReadonlyArray<Prepared> | null,
+  applyPrepared: (state: State, prepared: Prepared) => Step | null,
 ): RefusableClosureResult<State, Step, Refusal> {
   let state = initialState;
   const steps: Step[] = [];
@@ -84,7 +89,8 @@ export function closeRefusableInternalOperations<
       return accepted(closed(state, steps, batches));
     }
     if (enabled.length > 1) {
-      if (!frontierIsPairwiseIndependent(state, enabled)) {
+      const prepared = prepareBatch(state, enabled);
+      if (prepared === null || prepared.length !== enabled.length) {
         return accepted(ambiguous(state, steps, batches));
       }
       if (enabled.length > limit - steps.length) {
@@ -93,15 +99,16 @@ export function closeRefusableInternalOperations<
 
       const batchStart = state;
       const batch: Step[] = [];
-      for (const expected of enabled) {
+      for (const expected of prepared) {
         const reevaluated = attemptedOperations(state);
         if (reevaluated.refusal !== null) {
           return refused(initialState, reevaluated.refusal);
         }
-        const selected = reevaluated.steps.find(({ operation }) =>
+        const stillEnabled = reevaluated.steps.some(({ operation }) =>
           operation.id === expected.operation.id
         );
-        if (selected === undefined) {
+        const selected = stillEnabled ? applyPrepared(state, expected) : null;
+        if (selected === null) {
           return accepted(ambiguous(batchStart, steps, batches));
         }
         batch.push(selected);

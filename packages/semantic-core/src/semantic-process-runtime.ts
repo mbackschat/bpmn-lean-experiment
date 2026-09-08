@@ -3,7 +3,7 @@ import type { Stimulus } from "./contract.js";
 import type { DeepReadonly } from "./deep-readonly.js";
 import { admit } from "./semantic-command-admission.js";
 import type { SemanticCommandOutcome } from "./semantic-command-admission.js";
-import { internalOperationFrontierIsPairwiseIndependent } from "./internal-transition-footprint.js";
+import { applyPreparedInternalArming, prepareInternalArmingBatch } from "./internal-transition-arming-batch.js";
 import { applyInternalInitiationPatch } from "./internal-transition-initiation-patch.js";
 import { SemanticOperationKind } from "./semantic-process-contract.js";
 import type { SemanticOperation, SemanticProcessProgram } from "./semantic-process-contract.js";
@@ -740,12 +740,13 @@ export function evaluateStimulusWithSelectedSteps(
         admission.state,
         closureLimit,
         (current) => internalOperationFrontier(program, current),
-        (current, enabled) =>
-          internalOperationFrontierIsPairwiseIndependent(
-            program,
-            current,
-            enabled,
-          ),
+        (current, enabled) => prepareInternalArmingBatch(program, current, enabled),
+        (current, prepared) => {
+          const successor = applyPreparedInternalArming(program, current, prepared);
+          return successor === null ? null : {
+            operation: prepared.operation, owner: prepared.owner, successor,
+          };
+        },
       );
       if (closure.refusal !== null) {
         return {

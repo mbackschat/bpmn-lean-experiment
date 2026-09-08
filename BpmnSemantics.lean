@@ -86,6 +86,7 @@ import BpmnSemantics.SemanticProcess.InternalDataArmingExecution
 import BpmnSemantics.SemanticProcess.InternalDataArmingPairPublication
 import BpmnSemantics.SemanticProcess.InternalDataArmingPublication
 import BpmnSemantics.InternalCommutationConformance
+import BpmnSemantics.FiniteInternalArmingConformance
 import BpmnSemantics.InternalClosureAtomicityConformance
 
 /-! Root of the BPMN semantic contract library.

@@ -418,7 +418,8 @@ test("refusal outranks enabled work and discards a partially re-evaluated batch"
       steps: [{ operation: first, successor: 1 }],
       refusal,
     }),
-    () => true,
+    (_state, enabled) => enabled,
+    (_state, prepared) => prepared,
   );
   assert.deepEqual(immediate, {
     state: 0,
@@ -442,7 +443,8 @@ test("refusal outranks enabled work and discards a partially re-evaluated batch"
             refusal: null,
           }
         : { steps: [], refusal },
-    () => true,
+    (_state, enabled) => enabled,
+    (_state, prepared) => prepared,
   );
   assert.deepEqual(duringBatch, {
     state: 0,

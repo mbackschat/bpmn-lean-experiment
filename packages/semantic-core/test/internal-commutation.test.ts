@@ -26,6 +26,8 @@ import {
   InternalTransitionStateAtomKind,
   closeFrontier,
   closeSupportedInternalOperations,
+  applyPreparedArmingStep,
+  prepareInternalArmingBatch,
   deriveInternalTransitionFootprint,
   effectFrontier,
   effectProgram,
@@ -400,7 +402,9 @@ test("unsupported and colliding larger frontiers fail closed", () => {
     3,
     () => [...candidates, candidates[0]!],
     (state, enabled) =>
-      internalOperationPairIsIndependent(program, state, enabled),
+      internalOperationPairIsIndependent(program, state, enabled)
+        ? prepareInternalArmingBatch(program, state, enabled) : null,
+    (state, prepared) => applyPreparedArmingStep(program, state, prepared),
   );
   assert.equal(larger.ambiguousInternalChoice, true);
   assert.deepEqual(larger.state, frontier);
@@ -434,7 +438,9 @@ test("a footprint-approved pair rolls back when its second step disappears", () 
     2,
     () => invocation++ === 0 ? candidates : [],
     (state, enabled) =>
-      internalOperationPairIsIndependent(program, state, enabled),
+      internalOperationPairIsIndependent(program, state, enabled)
+        ? prepareInternalArmingBatch(program, state, enabled) : null,
+    (state, prepared) => applyPreparedArmingStep(program, state, prepared),
   );
 
   assert.equal(closed.ambiguousInternalChoice, true);

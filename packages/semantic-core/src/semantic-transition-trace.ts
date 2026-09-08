@@ -12,9 +12,8 @@ import type {
 } from "./flow-node-occurrence-lifecycle.js";
 import {
   compareInternalTransitionPublicationSortKeys,
-  deriveInternalTransitionFootprint,
-  internalOperationFrontierIsPairwiseIndependent,
 } from "./internal-transition-footprint.js";
+import { prepareInternalArmingBatch } from "./internal-transition-arming-batch.js";
 import type {
   InternalTransitionPublicationSortKey,
 } from "./internal-transition-footprint.js";
@@ -155,23 +154,14 @@ export function applyStimulusWithTrace(
   let before = evaluation.admittedState;
   for (const batch of evaluation.selectedInternalBatches) {
     const batchStart = before;
-    if (
-      batch.length === 0 ||
-      (batch.length > 1 &&
-        !internalOperationFrontierIsPairwiseIndependent(
-          program,
-          batchStart,
-          batch,
-        ))
-    ) {
+    const prepared = batch.length > 1 ? prepareInternalArmingBatch(program, batchStart, batch) : null;
+    if (batch.length === 0 || (batch.length > 1 && prepared === null)) {
       return noTrace(result);
     }
 
     const units: InternalPublicationUnit[] = [];
-    for (const step of batch) {
-      const footprint = batch.length === 1
-        ? null
-        : deriveInternalTransitionFootprint(program, batchStart, step);
+    for (const [index, step] of batch.entries()) {
+      const footprint = prepared?.[index]?.footprint ?? null;
       if (batch.length > 1 && footprint === null) {
         return noTrace(result);
       }

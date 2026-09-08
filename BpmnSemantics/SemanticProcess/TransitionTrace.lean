@@ -1,5 +1,6 @@
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 import BpmnSemantics.SemanticProcess.InternalCommutation
+import BpmnSemantics.SemanticProcess.InternalPreparedArming
 
 /-! # Committed semantic transition traces
 
@@ -373,6 +374,23 @@ def canonicalPublicationPairs :
   | [] => []
   | pair :: rest => canonicalPublicationPair pair (canonicalPublicationPairs rest)
 
+private theorem canonicalPublicationPair_eq_sortInsert (pair : InternalPublicationPair)
+    (values : List InternalPublicationPair) :
+    canonicalPublicationPair pair values =
+      InternalCommutation.sortInsertBy publicationPairBefore pair values := by
+  induction values with
+  | nil => rfl
+  | cons current rest ih =>
+      simp [canonicalPublicationPair, InternalCommutation.sortInsertBy, ih]
+
+theorem canonicalPublicationPairs_eq_sortBy (values : List InternalPublicationPair) :
+    canonicalPublicationPairs values = InternalCommutation.sortBy publicationPairBefore values := by
+  induction values with
+  | nil => rfl
+  | cons current rest ih =>
+      simp [canonicalPublicationPairs, InternalCommutation.sortBy,
+        canonicalPublicationPair_eq_sortInsert, ih]
+
 def internalPublicationPairForFootprint? (program : Program) (before after : RuntimeState)
     (operation : SemanticOperation) (commandId : SemanticId)
     (footprint : InternalTransitionFootprint) : Option InternalPublicationPair := do
@@ -387,19 +405,18 @@ def internalPublicationPair? (program : Program) (footprintState before after : 
   let footprint ← internalTransitionFootprint? program footprintState operation
   internalPublicationPairForFootprint? program before after operation commandId footprint
 
-private structure InternalBatchResult where
+structure InternalBatchResult where
   state : RuntimeState
   publications : List InternalPublicationPair
 
-private def fireInternalBatch? (program : Program) (footprintState : RuntimeState)
-    (commandId : SemanticId) :
-    RuntimeState → List SemanticOperation → Option InternalBatchResult
+def fireInternalBatch? (program : Program) (commandId : SemanticId) :
+    RuntimeState → List InternalCommutation.PreparedInternalArming → Option InternalBatchResult
   | state, [] => some { state, publications := [] }
-  | state, operation :: rest => do
-      let successor ← fire? program operation state
-      let publication ← internalPublicationPair? program footprintState state successor
-        operation commandId
-      let tail ← fireInternalBatch? program footprintState commandId successor rest
+  | state, prepared :: rest => do
+      let successor ← InternalCommutation.applyPreparedInternalArming? program state prepared
+      let publication ← internalPublicationPairForFootprint? program state successor
+        prepared.operation commandId prepared.footprint
+      let tail ← fireInternalBatch? program commandId successor rest
       pure { state := tail.state, publications := publication :: tail.publications }
 
 /-- A returned pair is the actual accepted record and lifecycle for the same operation step. -/
@@ -459,12 +476,13 @@ private def closeSupportedTraced :
       | first :: second :: remaining =>
           let transitions := first :: second :: remaining
           let operations := transitions.map (·.1)
-          if internalOperationFrontierPairwiseIndependent? program state operations then
+          match InternalCommutation.prepareInternalArmingBatch? program state operations with
+          | some prepared =>
             if operations.length > fuel + 1 then
               { state, hitBound := true, ambiguousChoice := false,
                 records := none, lifecycles := none }
             else
-              match fireInternalBatch? program state commandId state operations with
+              match fireInternalBatch? program commandId state prepared with
               | none =>
                   { state, hitBound := false, ambiguousChoice := true,
                     records := none, lifecycles := none }
@@ -474,7 +492,7 @@ private def closeSupportedTraced :
                   let paired := prependPublicationPairs (some batch.publications)
                     closed.records closed.lifecycles
                   { closed with records := paired.1, lifecycles := paired.2 }
-          else
+          | none =>
             { state, hitBound := false, ambiguousChoice := true,
               records := none, lifecycles := none }
 termination_by fuel => fuel

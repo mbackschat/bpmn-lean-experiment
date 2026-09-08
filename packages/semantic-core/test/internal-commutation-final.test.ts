@@ -23,6 +23,8 @@ import type {
 
 import {
   closeSupportedInternalOperations,
+  applyPreparedArmingStep,
+  prepareInternalArmingBatch,
   enabledOperations,
   internalOperationFrontierIsPairwiseIndependent,
 } from "./internal-commutation-fixture.ts";
@@ -189,12 +191,8 @@ test("closes a complete three-arm pairwise-independent User Task frontier", () =
     threeTaskFrontier,
     3,
     (state) => enabledOperations(threeTaskProgram, state),
-    (state, enabled) =>
-      internalOperationFrontierIsPairwiseIndependent(
-        threeTaskProgram,
-        state,
-        enabled,
-      ),
+    (state, enabled) => prepareInternalArmingBatch(threeTaskProgram, state, enabled),
+    (state, prepared) => applyPreparedArmingStep(threeTaskProgram, state, prepared),
   );
 
   assert.equal(closed.ambiguousInternalChoice, false);
@@ -236,12 +234,8 @@ test("rejects a later conflict after an independent canonical prefix", () => {
     selectiveConflictFrontier,
     3,
     (state) => enabledOperations(selectiveConflictProgram, state),
-    (state, enabled) =>
-      internalOperationFrontierIsPairwiseIndependent(
-        selectiveConflictProgram,
-        state,
-        enabled,
-      ),
+    (state, enabled) => prepareInternalArmingBatch(selectiveConflictProgram, state, enabled),
+    (state, prepared) => applyPreparedArmingStep(selectiveConflictProgram, state, prepared),
   );
 
   assert.equal(closed.ambiguousInternalChoice, true);

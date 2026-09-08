@@ -22,6 +22,8 @@ import type {
 
 type FootprintModule = typeof import("../src/internal-transition-footprint.ts");
 type ClosureModule = typeof import("../src/semantic-process-closure.ts");
+type ArmingBatchModule = typeof import("../src/internal-transition-arming-batch.ts");
+type PreparedInternalArming = import("../src/internal-transition-arming-batch.ts").PreparedInternalArming;
 export type InternalTransitionFootprint = import("../src/internal-transition-footprint.ts")
   .InternalTransitionFootprint;
 export type InternalOccurrenceKind = import("../src/internal-transition-footprint.ts")
@@ -45,6 +47,9 @@ export const {
   internalTransitionFootprintsAreIndependent,
 } = footprintModule;
 export const { closeSupportedInternalOperations } = closureModule;
+export const { prepareInternalArmingBatch, applyPreparedInternalArming } = await import(
+  new URL("../dist/internal-transition-arming-batch.js", import.meta.url).href
+) as ArmingBatchModule;
 
 import {
   controlPlace,
@@ -226,13 +231,15 @@ export function closeFrontier(
     state,
     limit,
     (current) => enabledOperations(selectedProgram, current),
-    (current, enabled) =>
-      internalOperationFrontierIsPairwiseIndependent(
-        selectedProgram,
-        current,
-        enabled,
-      ),
+    (current, enabled) => prepareInternalArmingBatch(selectedProgram, current, enabled),
+    (current, prepared) => applyPreparedArmingStep(selectedProgram, current, prepared),
   );
+}
+
+export function applyPreparedArmingStep(program: SemanticProcessProgram, state: RuntimeState,
+  prepared: PreparedInternalArming): AppliedInternalOperationStep | null {
+  const successor = applyPreparedInternalArming(program, state, prepared);
+  return successor === null ? null : { operation: prepared.operation, owner: prepared.owner, successor };
 }
 
 export function enabledOperations(
