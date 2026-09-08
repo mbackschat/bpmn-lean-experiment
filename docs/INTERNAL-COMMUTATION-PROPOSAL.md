@@ -3,7 +3,7 @@
 ## Status
 
 Lifecycle: implementation-in-progress
-Review: approved
+Review: pending
 
 ## Decision question and boundary
 
@@ -165,7 +165,7 @@ A destructive or completing transition additionally carries an `occurrenceRegion
 
 TypeScript stores each token bucket as one row with `multiplicity`; Lean stores one `ControlToken` per unit. TypeScript nests wait and Activity identities where Lean stores the same values flat. TypeScript `ActivityOccurrence` also retains `operationId`, while Lean deliberately derives the unique operation from the admitted Program. The prepared TypeScript value preserves that stored field exactly and the Lean correspondence proves the derivation. TypeScript's optional Multi-Instance collections use absence as a profile-specific exact continuation shape, distinct from present-empty at the representation boundary; Lean's plain lists represent both as the same semantic membership. No independent TypeScript patch may change presence.
 
-Before any token-producing or region family joins production batching, preparation must represent the complete place-wide owner census read by `onlyTokenOwner` as `tokenOwners(place)`. A producer inserting another owner's token at that place can invalidate selection without touching the selected owner's multiplicity bucket; regional removal can change the same census. The census atom supplements owner-specific multiplicity atoms. This is a future integration obligation grounded in [the runtime owner lookup](../BpmnSemantics/SemanticProcess/RuntimeState.lean), not a counterexample to [the ordinary-arm pair theorem](../BpmnSemantics/SemanticProcess/InternalCommutation.lean), whose footprint domain excludes those producers.
+Before any token-producing or region family joins production batching, preparation must represent the complete place-wide owner census read by `onlyTokenOwner` as `tokenOwners(place)`. A producer inserting another owner's token at that place can invalidate selection without touching the selected owner's multiplicity bucket; regional removal can change the same census. The census atom supplements owner-specific multiplicity atoms. The [census checkpoint](#place-wide-token-owner-census-checkpoint) implements that prerequisite in the existing preparation domains. Production integration of additional families remains open; the discriminator is grounded in [the runtime owner lookup](../BpmnSemantics/SemanticProcess/RuntimeState.lean) and is outside [the ordinary-arm pair theorem](../BpmnSemantics/SemanticProcess/InternalCommutation.lean)'s producer domain.
 
 Arbitrary raw-state commutation also requires canonical storage at every newly affected Lean insertion site. Final closure replaces prepend-based insertion for distinct control-token buckets, ordinary child scope occurrences, scope activation rows, Call activation rows, and event-race activation rows, as well as any remaining wait, counter, controller, record, or variable-scope collection reached by a prepared family. The TypeScript and Lean insertion oracles compare exact stored values, not observations sorted by the test.
 
@@ -331,6 +331,30 @@ The production multi-operation closure in both languages retains complete prepar
 
 Red was reproduced with the mixed claim Start returning `rolledBack` and `ambiguousInternalChoice=true` despite the complete prepared frontier; production integration makes it commit. The first complete repository gate exposed an overbroad TypeScript snapshot exclusion: it blocked pre-existing ordinary arming and rolled back all three [exact-source Compensation runtime scenarios](../packages/bpmn-source/test/compensation-source-runtime.test.ts). Six family-wide regressions reproduced the mechanism before narrowing the exclusion to composed data arming. The complete TypeScript semantic-core gate passes 776 tests and the complete source gate passes 814 tests on 2026-09-08. The first Lean publication/fuel fixture build passed under the unchanged 3 GiB controller with zero memory events, pressure totals, and swap. [Immutable cost calibration](CAPSULE-COST-LEDGER.md#finite-prepared-arming-checkpoint-calibration) passes for the new fixture and all four standing-watch consumers. The independent correction audit is approved, and the clean complete pre-push gate passes at `ec93ba11322879808ab2512ce48e6340e4ecc841` with agreement across all 72 pipeline cases; output SHA-256 is `ee49893b830c88b2eafc91753f0229597cd8de4cf57c19f1fb95df44174dde7f`. Region-family execution, universal normalization around conflicts, explicit scheduled choice, and final Internal Commutation closure remain open.
 
+### Place-wide token-owner census checkpoint
+
+The private footprint vocabulary now includes owner-free `tokenOwners(place)` alongside owner-specific `controlToken(owner,place)`. Census atoms conflict by exact place identity and carry no occurrence-region owner. They describe a dependency of the existing token collection, not a new RuntimeState field. The [TypeScript shared helper](../packages/semantic-core/src/internal-transition-token-preparation.ts) deduplicates affected places before canonical atom construction; owner-specific output-bucket checks do not imply a census read.
+
+| Existing TypeScript preparation | Census reads | Census writes |
+|---|---|---|
+| Ordinary, composed-data, boundary-Activity, and event-race arming | Input | Input |
+| Sequential/parallel Multi-Instance entry | Input | Input; normal output only for zero items |
+| Duplicate, Choose, and SelectMany | Input | Consumed input and actual selected outputs |
+| Synchronize | Every input | Every consumed input and output |
+| SynchronizeSelected | None; exact selected-branch ownership selects the buckets | Actual selected inputs and output |
+| Exact Merge alternative | None; its owner and input are already selected | Selected input and output |
+| Ordinary/bounded scope entry and Call invocation | Input | Input and child/called entry |
+| Process initiation | None | Actual selected outputs |
+| None End | Input, including the evaluator's owner selection | Input |
+| Error and Terminate | Input, including the evaluator's owner selection | Every pre-state token place in the removed region; Error also writes the handler output |
+| Call return and scope completion | None; exact owner quiescence | Caller/parent output when present, plus token places actually removed by Call return |
+
+Regional writes enumerate the exact pre-state ownership closure through both scope-parent and Call associations. Termination includes tokens owned by its retained root. Multiple regional owners at one place yield one census atom. The existing occurrence-region write separately conflicts with insertion into the region at a previously absent place. Successful return/completion requires regional quiescence; this table does not turn their owner-specific emptiness checks into place-wide reads. Exact Merge alternative preparation is distinct from complete frontier enumeration, whose broader read/frame obligation remains open.
+
+The [Lean footprint core](../BpmnSemantics/SemanticProcess/InternalCommutationCore.lean) adds the same typed census atom to ordinary arming reads and writes; [composed arming](../BpmnSemantics/SemanticProcess/InternalDataArmingFootprint.lean) inherits both. [Quantified membership and conflict laws](../BpmnSemantics/SemanticProcess/InternalCommutation.lean) prove that every writer containing the reader's input census is non-independent of that arming footprint. Existing preparation, frame, finite raw-state, and accepted-publication laws retain their theorem contracts. Lean gains no prepared producer or regional execution family here.
+
+The [TypeScript separating witnesses](../packages/semantic-core/test/internal-commutation-token-owner-census.test.ts) reproduce foreign-owner insertion invalidating ordinary/composed selection while the selected bucket stays exact, a second join-input collision, and Error/Terminate removal through descendant and called ownership. Disjoint-place changes remain independent. Family tests bind the table above. The [kernel witnesses](../BpmnSemantics/InternalCommutationConformance.lean) establish the foreign-owner selection change and removal reversal, then distinguish a declared census writer from the wrong owner-bucket-only footprint. These are helper/proof-boundary witnesses, not new admitted source or corpus claims. The first changed kernel fixture and [immutable calibration of both commutation consumers and four standing-watch modules](CAPSULE-COST-LEDGER.md#place-wide-token-owner-census-calibration) pass under the unchanged 3 GiB controller with zero controlled memory events, pressure totals, and swap. Complete Lean and TypeScript package gates pass on 2026-09-08. Production batching, storage ordering, admission, public wire contracts, and Temporal hosting are unchanged by this prerequisite.
+
 ### Remaining final-closure discriminators
 
 The region separator uses two enabled operations in disjoint sibling occurrences and a second state that moves one operation into the other's descendant occurrence. The sibling case must batch; the ancestor/descendant case must conflict even when every concrete pre-existing collection key differs. A mutation that compares only region-root equality must accept the wrong case and fail the oracle.
@@ -376,7 +400,7 @@ A future admitted topology that exposes an interrupting transition beside an una
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
 | Proposal | `242c72f81bdeb2b6df28b4f2fc39e78c20573ef6` | `fork-turns-none` | `approve-with-required-edits` | `280716b667da387c04356f43d40123f10e0e6aab, 905fba45833daafd2994f11dd23c0476419f64b9, 543430f7ebc560572515dd2b3317a7a0e954ae9c, owner-authorized` |
-| Semantic checkpoint | `0a382dc6766a210bd83e27437250b1bad20f9c12` | `fork-turns-none` | `approve-with-required-edits` | `4dee9ae65c7bf97b91cf64b79f82a6b46f5bd842` |
+| Semantic checkpoint | `21b4c1de92c39d021142b665d4cfccd9251dd8b4` | `not-recorded` | `pending` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
 The first checkpoint proposal review targeted `95ee893fc7efef561d579c9c2ecd164eccae1187` and closed its required edits at `e65fa4fbd2b4303794398061d94c0602e54a4714`. Its context-cold checkpoint review targeted `f4b09ba48054a2c059f06b92b3b4d2b4675a6117` and closed the required correction at `a34df385863d706f36785282201703604720013f`; those immutable results continue to own the implemented Beta checkpoint. The materially amended final-closure account received three correction audits after its cold proposal review; the owner authorized the third round, and the same reviewer approved target `543430f7ebc560572515dd2b3317a7a0e954ae9c` with every required finding closed. Its context-cold final-implementation checkpoint review targeted `f6da5db574c7d2733dd06c7a13e4122cc1415fe1`; the same reviewer approved correction target `fb998985daa5ecc94af313b78bc6485a352dd213` with no remaining findings after the unrelated Temporal harness limitation was corrected and the clean complete gate passed at `9bbc99e5f830f4dea5157ed944f4d54b461ec6cc`.
