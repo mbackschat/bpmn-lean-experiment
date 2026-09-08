@@ -38,7 +38,7 @@ The family map owns the independently closure-reviewed Activity boundary Message
 
 The approved [census](INTERNAL-COMMUTATION-PROPOSAL.md#place-wide-token-owner-census-checkpoint) owns token dependencies/evidence. [Additional families](INTERNAL-COMMUTATION-PROPOSAL.md#local-control-preparation-prerequisite) remain unintegrated; [`implementation-status-owner:ENGINE-SEMANTIC-INVARIANT`](ENGINE-SEMANTIC-INVARIANT-IMPLEMENTATION-MAP.md#runtime-state-well-formedness) owns collection ordering.
 
-The [selected-join checkpoint](INTERNAL-COMMUTATION-PROPOSAL.md#selected-join-dependency-checkpoint) implements TypeScript dependencies and Lean readiness frames; review and integration remain open.
+The independently approved [selected-join checkpoint](INTERNAL-COMMUTATION-PROPOSAL.md#selected-join-dependency-checkpoint) implements TypeScript dependencies and Lean readiness frames; integration remains open.
 
 The independently approved first boundary Compensation retention checkpoint implements completed-Activity representation and pure transition preparation.
 
