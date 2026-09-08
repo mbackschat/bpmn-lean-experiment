@@ -63,6 +63,8 @@ Integration state: `queued`.
 
 Owner instruction on 2026-09-08 supersedes the earlier MUE push authorization: do not push without an explicit new instruction. Continue local implementation, commits, required reviews, and the applicable gates in [the three-level verification policy](TESTING-SPEC.md#three-level-verification-policy).
 
+Execution blocker: creating the required fresh reviewer returned `agent thread limit reached` on 2026-09-08 after all existing lanes completed. Restore reviewer capacity, then review target `f7b59b08c0441416f036ad0753e6cba88fe18629` against baseline `5a23ff2f562bda62d5e31cf9168402e061e8afb6` with `fork-turns-none`. The generated proposal packet has SHA-256 `96ee9e0383d88458352e75687813bb9dfe62a3fdc26e96e8e0ad457ff34b761f`. Reusing a context-bearing reviewer cannot approve this amended account.
+
 
 ## Ordered work
 
