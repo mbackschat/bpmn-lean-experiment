@@ -470,6 +470,21 @@ On 2026-09-08, immutable commit `f7d96debd3c215149730b3db5299bd9d0a3cc826` suppl
 
 Every retained command exited zero below the hard ceiling with zero controlled memory events, pressure totals, and swap. These rows replace the corresponding [module-cost records](../scripts/lean-module-cost.ts); none is near-cap. GNU RSS and cgroup charging remain separate measurements, and elapsed times reflect host load. This target-only calibration does not replace the cold full-library acceptance or establish independent semantic approval.
 
+#### Inclusive pairing calibration
+
+On 2026-09-08, immutable commit `565ff325eec927f5367be6fe16d160c578ab70ae` supplied the read-only archive for the new pairing witness, the existing Inclusive Gateway consumer, and all four standing-watch consumers of the changed structural validator. All 360 archived Lean/build inputs match that commit. The pinned image, one CPU/thread, no network, fixed 3 GiB ceiling, and no-additional-swap policy remain unchanged. Each target retained warm dependencies and moved aside only its eight generated products inside the measurement container; every retained invocation explicitly rebuilt the named module.
+
+| Module | Elapsed | GNU RSS | Cgroup peak | Output SHA-256 |
+|---|---:|---:|---:|---|
+| `InclusiveGatewayPairingConformance` | 3.43 s | 836,304 KiB | 414,973,952 bytes | `a966643491f93ee8ff51ab7d15fdef2989f6a0e91c1fa549738f0148f222e9c4` |
+| `InclusiveGatewayConformance` | 27.63 s | 1,435,552 KiB | 1,141,964,800 bytes | `1de9b43eb472fa128cd474b3193c7636469df26d14b4b4a081a8b1ee070514ee` |
+| `CallActivityConformance` | 25.96 s | 1,347,480 KiB | 1,039,626,240 bytes | `1ac7c302baef4d83ca8a94f79c933ae28e5c42df248c5f41f285cbab2d056a3c` |
+| `SequentialMultiInstanceProgramBindingConformance` | 37.44 s | 1,557,340 KiB | 1,246,167,040 bytes | `58acb65caca0ce173a57d2ca9333241a08438b5d5c8ec749229cfeffed7cb7d8` |
+| `TimerStartConformance` | 25.38 s | 1,416,408 KiB | 1,121,857,536 bytes | `761ccefedf2615b0653937832533ee2d4e3f6b77270ed34b31916cd628e08104` |
+| `TerminateEndEventConformance` | 31.99 s | 1,604,368 KiB | 1,331,187,712 bytes | `ebfdf901892b95a3b4e1964bb81d50c82a64390b1db2168a938f512b1dcfe8e3` |
+
+Every retained command exited zero below the hard ceiling with zero controlled memory events, pressure totals, and swap. These source-bound rows update [the executable module-cost record](../scripts/lean-module-cost.ts); none is near-cap. Elapsed times remain host-load context. The initial container launch failed before Lean because the read-only source archive lacked the nested cache mount point; creating that empty directory changed no source input. These isolated measurements do not replace full-library acceptance or establish semantic approval.
+
 | Increment | Boundary | Code | Documentation | Elapsed | Comparison consequence |
 |---|---|---:|---:|---|---|
 | [Scoped runtime data](capsules/SCOPED-DATA-SPEC.md) | `08d8b84..3b2e44d` | `+540/-73` | `+134/-11` | Unknown | First atomic runtime-representation replacement; later scope work should not be compared as if it were a small local semantic clause. |
