@@ -2,6 +2,10 @@ import BpmnSemantics.SemanticProcess.InternalCommutationCore
 import BpmnSemantics.SemanticProcess.TokenPatch
 import BpmnSemantics.SemanticProcess.InclusiveGateway
 
+/-! The selected-join dependency checkpoint protects InclusiveGateway's unique-ready filter across
+independent token patches; complete preparation and publication preservation remain separate obligations.
+-/
+
 namespace BpmnSemantics.SemanticProcess
 
 namespace InternalCommutation
