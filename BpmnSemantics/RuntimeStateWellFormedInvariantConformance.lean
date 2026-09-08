@@ -44,6 +44,14 @@ theorem unordered_activations_fail_order_with_ownership_intact :
     canonicalCollectionOrder unorderedActivationsState = false ∧
       waitOwnersLive unorderedActivationsState = true := by decide +kernel
 
+private def unorderedActivityCounters : RuntimeState :=
+  { armedState with activityActivations :=
+      [{ taskId := ⟨"z-counter"⟩, count := 1 }, { taskId := ⟨"a-counter"⟩, count := 1 }] }
+
+theorem unordered_activity_counters_fail_order_with_ownership_intact :
+    canonicalCollectionOrder unorderedActivityCounters = false ∧
+      waitOwnersLive unorderedActivityCounters = true := by decide +kernel
+
 theorem not_started_with_pending_initiation_is_refused :
     runtimeStateWellFormed program instanceId notStartedWithPendingInitiationState = false := by
   decide +kernel

@@ -55,10 +55,7 @@ def activateDataOutputUserTask? (state : RuntimeState) (input output : ControlPl
               elementId := ⟨taskId.value⟩
               activation := taskActivation }
           attachedHandlers := [] } state.activityOccurrences
-      activityActivations :=
-        { taskId, count := activityActivation } ::
-          state.activityActivations.filter fun value =>
-            decide (value.taskId ≠ taskId)
+      activityActivations := setActivationCount state.activityActivations taskId activityActivation
       variables := addActivityOccurrenceVariableScope state.variables
         activityOwner [] }
 

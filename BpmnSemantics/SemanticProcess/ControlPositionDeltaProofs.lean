@@ -503,26 +503,28 @@ private theorem tokenDifference_insert_one (position : PublicControlTokenPositio
             rw [tokenDifference_right_cons_frame _ _ current restDifferent]
             exact (ih restStrict).2
 
-/-- One prepared ordinary internal arm publishes exactly one consumed Sequence Flow token. -/
-theorem controlPositionDelta_prepared_internal_arm (program : Program)
-    (expectedInstanceId : SemanticId) (state : RuntimeState) (operation : SemanticOperation)
+/-- Removing one selected token publishes its exact Sequence Flow position when scope reads frame. -/
+theorem controlPositionDelta_consumed_token (program : Program)
+    (expectedInstanceId : SemanticId) (state after : RuntimeState)
     (patch : InternalArmingPatch)
     (position : runtimePositionValid program expectedInstanceId state = true)
-    (prepared : prepareInternalArm? program state operation = some patch) :
-    controlPositionDelta? program expectedInstanceId state
-        (applyInternalArmingPatch state patch) =
+    (selected : onlyTokenOwner? state patch.input = some patch.owner)
+    (originSelected : selectedInputOrigin? program patch.input patch.owner = some patch.inputOrigin)
+    (controlEq : after.control = state.control)
+    (scopesEq : after.scopeOccurrences = state.scopeOccurrences)
+    (callsEq : after.calledProcessOccurrences = state.calledProcessOccurrences)
+    (tokensEq : after.tokens = removeToken state.tokens patch.input patch.owner) :
+    controlPositionDelta? program expectedInstanceId state after =
       some
         { consumedTokens :=
             [PublicControlTokenPosition.mk patch.inputOrigin.elementId patch.owner 1]
           producedTokens := []
           enteredScopes := []
           exitedScopes := [] } := by
-  have selected := prepared_owner_lookup program state operation patch prepared
   have present := onlyTokenOwner_has_selected_token state patch.input patch.owner selected
   obtain ⟨token, tokenMember, placeEq, ownerEq⟩ := present
   obtain ⟨place, unique⟩ := runtimePositionValid_token_uniqueControlPlace program
     expectedInstanceId state token position tokenMember
-  have originSelected := prepared_input_origin program state operation patch prepared
   have originEq : tokenOrigin program { placeId := patch.input, owner := patch.owner } =
       patch.inputOrigin.elementId := by
     cases token with | mk tokenPlace tokenOwner =>
@@ -539,20 +541,33 @@ theorem controlPositionDelta_prepared_internal_arm (program : Program)
   have differences := tokenDifference_insert_one consumed rfl
     (projectTokens program (removeToken state.tokens patch.input patch.owner))
     (projectTokens_strict program _)
-  have afterPosition := applyInternalArmingPatch_preserves_runtimePosition program
-    expectedInstanceId state patch position selected
-  have tokensEq : (applyInternalArmingPatch state patch).tokens =
-      removeToken state.tokens patch.input patch.owner := by
-    cases patch with | mk _ _ _ _ _ _ _ _ _ write => cases write <;> rfl
-  have scopesEq : (applyInternalArmingPatch state patch).scopeOccurrences =
-      state.scopeOccurrences := by
-    cases patch with | mk _ _ _ _ _ _ _ _ _ write => cases write <;> rfl
+  have afterPosition := runtimePositionValid_removeToken_frame program expectedInstanceId
+    state after patch.input patch.owner position selected controlEq scopesEq callsEq tokensEq
   unfold controlPositionDelta?
   simp only [projectControlPosition?, position, afterPosition, if_true]
   simp only [tokensEq, scopesEq]
   rw [projectionEq]
   dsimp [consumed] at differences
   simp [differences.1, differences.2, scopeDifference_self]
+
+/-- One prepared ordinary internal arm publishes exactly one consumed Sequence Flow token. -/
+theorem controlPositionDelta_prepared_internal_arm (program : Program)
+    (expectedInstanceId : SemanticId) (state : RuntimeState) (operation : SemanticOperation)
+    (patch : InternalArmingPatch)
+    (position : runtimePositionValid program expectedInstanceId state = true)
+    (prepared : prepareInternalArm? program state operation = some patch) :
+    controlPositionDelta? program expectedInstanceId state
+        (applyInternalArmingPatch state patch) =
+      some
+        { consumedTokens :=
+            [PublicControlTokenPosition.mk patch.inputOrigin.elementId patch.owner 1]
+          producedTokens := []
+          enteredScopes := []
+          exitedScopes := [] } := by
+  apply controlPositionDelta_consumed_token program expectedInstanceId state _ patch position
+    (prepared_owner_lookup program state operation patch prepared)
+    (prepared_input_origin program state operation patch prepared)
+  all_goals cases writeEq : patch.write <;> simp [applyInternalArmingPatch, writeEq]
 
 end InternalCommutation
 

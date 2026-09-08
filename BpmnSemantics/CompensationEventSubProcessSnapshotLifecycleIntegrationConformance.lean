@@ -128,8 +128,7 @@ theorem snapshot_footprints_are_exact_and_region_owned :
       ( [ .compensationParentContextCapacity
         , .compensationParentContextRetention
             CompensationEventSubProcessSnapshotConformance.childOccurrence
-        , .ordinary (.processVariable
-            CompensationEventSubProcessSnapshotConformance.instanceId "context") ]
+        , .ordinary (.processVariable "context") ]
       , [ .compensationParentContextCapacity
         , .compensationParentContextRetention
             CompensationEventSubProcessSnapshotConformance.childOccurrence ] ) ∧

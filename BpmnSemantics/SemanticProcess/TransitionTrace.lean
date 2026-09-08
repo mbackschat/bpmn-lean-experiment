@@ -170,6 +170,23 @@ theorem internalTransitionRecord_of_selection (program : Program) (state : Runti
   rw [selected]
   simp [ownerSelected]
 
+theorem internalTransitionRecords_same_id_same_operation
+    (program : Program) (state : RuntimeState) (left right : SemanticOperation)
+    (leftRecord rightRecord : InternalTransitionRecord)
+    (leftFound : internalTransitionRecord? program state left = some leftRecord)
+    (rightFound : internalTransitionRecord? program state right = some rightRecord)
+    (sameId : left.id = right.id) : left = right := by
+  unfold internalTransitionRecord? at leftFound rightFound
+  obtain ⟨leftSelected, leftLookup, leftFound⟩ := Option.bind_eq_some_iff.mp leftFound
+  obtain ⟨rightSelected, rightLookup, rightFound⟩ := Option.bind_eq_some_iff.mp rightFound
+  rw [sameId, rightLookup] at leftLookup
+  have sameSelected := Option.some.inj leftLookup
+  by_cases leftExact : leftSelected = left
+  · by_cases rightExact : rightSelected = right
+    · exact leftExact.symm.trans (sameSelected.symm.trans rightExact)
+    · simp [rightExact] at rightFound
+  · simp [leftExact] at leftFound
+
 /-- Replay one internal record after checking all metadata against one unique Program operation. -/
 def replayInternalTransition? (program : Program) (state : RuntimeState)
     (record : InternalTransitionRecord) : Option RuntimeState := do
@@ -356,14 +373,19 @@ def canonicalPublicationPairs :
   | [] => []
   | pair :: rest => canonicalPublicationPair pair (canonicalPublicationPairs rest)
 
-def internalPublicationPair? (program : Program) (footprintState before after : RuntimeState)
-    (operation : SemanticOperation) (commandId : SemanticId) : Option InternalPublicationPair := do
-  let footprint ← internalTransitionFootprint? program footprintState operation
+def internalPublicationPairForFootprint? (program : Program) (before after : RuntimeState)
+    (operation : SemanticOperation) (commandId : SemanticId)
+    (footprint : InternalTransitionFootprint) : Option InternalPublicationPair := do
   let record ← internalTransitionRecord? program before operation
   -- Supported arming lifecycles carry occurrence anchors, not transition-index anchors. Index zero
   -- therefore keeps the pair unnumbered until its canonical batch position is assigned.
   let lifecycle ← flowNodeOccurrenceDeltaForOperation? program before after operation commandId 0
   pure { footprint, record, lifecycle }
+
+def internalPublicationPair? (program : Program) (footprintState before after : RuntimeState)
+    (operation : SemanticOperation) (commandId : SemanticId) : Option InternalPublicationPair := do
+  let footprint ← internalTransitionFootprint? program footprintState operation
+  internalPublicationPairForFootprint? program before after operation commandId footprint
 
 private structure InternalBatchResult where
   state : RuntimeState
@@ -390,7 +412,7 @@ theorem internalPublicationPair_defined (program : Program)
       internalTransitionRecord? program before operation = some pair.record ∧
       flowNodeOccurrenceDeltaForOperation? program before after operation commandId 0 =
         some pair.lifecycle := by
-  simp only [internalPublicationPair?] at defined
+  simp only [internalPublicationPair?, internalPublicationPairForFootprint?] at defined
   obtain ⟨footprint, footprintEq, defined⟩ := Option.bind_eq_some_iff.mp defined
   obtain ⟨record, recordEq, defined⟩ := Option.bind_eq_some_iff.mp defined
   obtain ⟨lifecycle, lifecycleEq, resultEq⟩ := Option.bind_eq_some_iff.mp defined

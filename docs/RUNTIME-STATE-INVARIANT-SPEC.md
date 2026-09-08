@@ -86,7 +86,7 @@ This inventory locates the current Lean aggregate's checks, including imported c
 | `compensationTriggers`, `compensationHandlerEffectWaits` | complete `compensationExecutionStateValid`, including terminal tombstone rules |
 | `variables.activities` | order and lifecycle emptiness; attachment to a live Activity/body occurrence is **open** |
 | `variables.process.bindings` | no general binding-content conjunct in this aggregate; declaration-specific snapshot/handler checks do not establish one |
-| activation-counter collections | `RuntimeStateMonotone` covers all eight families as a separate two-state relation; one-state bounds cover only User Task, Timer, and Activity; canonical order covers task, Message, Timer, and Effect counters |
+| activation-counter collections | `RuntimeStateMonotone` covers all eight families as a separate two-state relation; one-state bounds cover only User Task, Timer, and Activity; canonical order covers task, Message, Timer, Effect, and Activity counters |
 
 The Activity-local gap is distinct from the repaired cancellation path: withdrawal now removes affected local scopes, but an arbitrarily supplied running state can still contain an orphan local scope. `RSI-OWN-01` does not cover `variables.activities`, and ordering cannot establish attachment. Reopen with a consumer-specific ownership account and separating live/orphan witnesses before relying on that fact; this disclosure adds no predicate or preservation claim.
 

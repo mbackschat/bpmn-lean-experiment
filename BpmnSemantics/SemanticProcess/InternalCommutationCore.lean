@@ -18,17 +18,33 @@ inductive InternalWaitKind where
   | effect
   deriving Repr, DecidableEq
 
+inductive InternalActivationKind where
+  | userTask
+  | message
+  | timer
+  | effect
+  | activity
+  deriving Repr, DecidableEq
+
+def InternalWaitKind.activationKind : InternalWaitKind → InternalActivationKind
+  | .userTask => .userTask
+  | .message => .message
+  | .timer => .timer
+  | .effect => .effect
+
 inductive InternalStateAtom where
   | controlToken (owner : ScopeOccurrenceId) (place : ControlPlaceId)
   | scopeOccurrence (owner : ScopeOccurrenceId)
   | runtimeControl (instanceId : SemanticId)
   | logicalTime
-  | activation (kind : InternalWaitKind) (elementId : NodeId)
+  | activation (kind : InternalActivationKind) (elementId : NodeId)
   | wait (kind : InternalWaitKind) (occurrence : OccurrenceId)
   | openWaitAnchor (occurrence : OccurrenceId)
-  | processVariable (processInstanceId : SemanticId) (propertyId : String)
-  | activityVariableScope (occurrence : EffectOccurrenceId)
-  | activityVariable (occurrence : EffectOccurrenceId) (name : String)
+  | processVariable (propertyId : String)
+  | activityVariableScope (owner : LocalDataOwner)
+  | activityVariable (owner : LocalDataOwner) (name : String)
+  | activityOccurrence (occurrence : ActivityOccurrenceId)
+  | activityBodyTaskClaim (occurrence : OccurrenceId)
   deriving Repr, DecidableEq
 
 structure InternalPositionDelta where
@@ -84,6 +100,13 @@ def kindRank : InternalWaitKind → Nat
   | .timer => 2
   | .effect => 3
 
+def activationKindRank : InternalActivationKind → Nat
+  | .userTask => 0
+  | .message => 1
+  | .timer => 2
+  | .effect => 3
+  | .activity => 4
+
 def scopeBefore (left right : ScopeOccurrenceId) : Bool :=
   if left.processInstanceId ≠ right.processInstanceId then
     left.processInstanceId.value < right.processInstanceId.value
@@ -112,9 +135,11 @@ def stateAtomRank : InternalStateAtom → Nat
   | .activation _ _ => 4
   | .wait _ _ => 5
   | .openWaitAnchor _ => 6
-  | .processVariable _ _ => 7
+  | .processVariable _ => 7
   | .activityVariableScope _ => 8
   | .activityVariable _ _ => 9
+  | .activityOccurrence _ => 10
+  | .activityBodyTaskClaim _ => 11
 
 def stateAtomBefore (left right : InternalStateAtom) : Bool :=
   if stateAtomRank left ≠ stateAtomRank right then
@@ -128,20 +153,19 @@ def stateAtomBefore (left right : InternalStateAtom) : Bool :=
         else leftPlace.value < rightPlace.value
     | .logicalTime, .logicalTime => false
     | .activation leftKind leftElement, .activation rightKind rightElement =>
-        if leftKind ≠ rightKind then kindRank leftKind < kindRank rightKind
+        if leftKind ≠ rightKind then activationKindRank leftKind < activationKindRank rightKind
         else leftElement.value < rightElement.value
     | .wait leftKind leftOccurrence, .wait rightKind rightOccurrence =>
         if leftKind ≠ rightKind then kindRank leftKind < kindRank rightKind
         else occurrenceBefore leftOccurrence rightOccurrence
     | .openWaitAnchor left, .openWaitAnchor right => occurrenceBefore left right
-    | .processVariable leftInstance leftProperty,
-        .processVariable rightInstance rightProperty =>
-        if leftInstance ≠ rightInstance then leftInstance.value < rightInstance.value
-        else leftProperty < rightProperty
-    | .activityVariableScope left, .activityVariableScope right => effectOccurrenceBefore left right
+    | .processVariable leftProperty, .processVariable rightProperty => leftProperty < rightProperty
+    | .activityVariableScope left, .activityVariableScope right => localDataOwnerBefore left right
     | .activityVariable left leftName, .activityVariable right rightName =>
-        if left ≠ right then effectOccurrenceBefore left right
+        if left ≠ right then localDataOwnerBefore left right
         else leftName < rightName
+    | .activityOccurrence left, .activityOccurrence right => localActivityOwnerBefore left right
+    | .activityBodyTaskClaim left, .activityBodyTaskClaim right => occurrenceBefore left right
     | _, _ => false
 
 def publicationRank : InternalPublicationAtom → Nat
@@ -467,16 +491,15 @@ def footprintOfPatch (patch : InternalArmingPatch) : InternalTransitionFootprint
   let occurrence := patch.write.occurrence
   let elementId := patch.write.elementId
   let extraReads := match patch.write with
-    | .timer .. => [.logicalTime]
-    | .effect wait _ => [.activityVariableScope (effectWaitOccurrence wait)]
+    | .effect wait _ => [.activityVariableScope (.effectOccurrence (effectWaitOccurrence wait))]
     | _ => []
   let correlationReads := match patch.operation with
     | .awaitCorrelatedPayloadMessage _ _ _ _ _ _ _ _ processPropertySelector =>
-        [.processVariable patch.owner.processInstanceId processPropertySelector.propertyId]
+        [.processVariable processPropertySelector.propertyId]
     | _ => []
   let extraWrites := match patch.write with
-    | .effect wait bindings => .activityVariableScope (effectWaitOccurrence wait) ::
-        bindings.map fun binding => .activityVariable (effectWaitOccurrence wait) binding.name
+    | .effect wait bindings => .activityVariableScope (.effectOccurrence (effectWaitOccurrence wait)) ::
+        bindings.map fun binding => .activityVariable (.effectOccurrence (effectWaitOccurrence wait)) binding.name
     | _ => []
   let correlationPublications := match patch.operation with
     | .awaitCorrelatedPayloadMessage _ _ _ _ message correlationKeyId correlationPropertyId
@@ -491,10 +514,10 @@ def footprintOfPatch (patch : InternalArmingPatch) : InternalTransitionFootprint
     occurrence := occurrence
     reads := canonicalStateAtomSet
       ([.runtimeControl patch.runtimeInstanceId, .scopeOccurrence patch.owner,
-        .controlToken patch.owner patch.input, .activation kind elementId,
+        .logicalTime, .controlToken patch.owner patch.input, .activation kind.activationKind elementId,
         .wait kind occurrence, .openWaitAnchor occurrence] ++ extraReads ++ correlationReads)
     writes := canonicalStateAtomSet
-      ([.controlToken patch.owner patch.input, .activation kind elementId,
+      ([.controlToken patch.owner patch.input, .activation kind.activationKind elementId,
         .wait kind occurrence, .openWaitAnchor occurrence] ++ extraWrites)
     publications := canonicalPublicationAtomSet
       ([.committedTransition patch.operation.id kind patch.origin patch.owner

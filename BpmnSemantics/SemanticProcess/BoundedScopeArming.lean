@@ -61,10 +61,8 @@ def armScopeDeadline (state : RuntimeState) (owner : ScopeOccurrenceId)
         owner
         body := .childScope child
         attachedHandlers := [.timer deadlineId] } state.activityOccurrences
-    activityActivations :=
-      { taskId := { value := childScopeId.value }, count := activityActivation } ::
-        state.activityActivations.filter fun value =>
-          decide (value.taskId ≠ { value := childScopeId.value })
+    activityActivations := setActivationCount state.activityActivations
+      ⟨childScopeId.value⟩ activityActivation
     timerActivations := setTimerActivationCount state.timerActivations
       boundaryTimer.elementId activation }
 

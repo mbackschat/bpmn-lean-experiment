@@ -460,13 +460,13 @@ theorem sharedParallelProgress_preserves_runtimeStateWellFormed
   have hiddenAfter : hiddenRecordDeclarationsValid program after = true := by
     simpa [after, hiddenRecordDeclarationsValid] using hidden
   simp only [canonicalCollectionOrder, Bool.and_eq_true] at order
-  obtain ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨taskOrder, activationOrder⟩, messageWaitOrder⟩,
+  obtain ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨activityCounterOrder, taskOrder⟩, activationOrder⟩, messageWaitOrder⟩,
     timerWaitOrder⟩, effectWaitOrder⟩, messageActivationOrder⟩, timerActivationOrder⟩,
     effectActivationOrder⟩, activityVariableOrder⟩, selectionOrder⟩, raceOrder⟩,
     callOrder⟩, activityOrder⟩, sequentialControllerOrder⟩, _parallelControllerOrder⟩ := order
   have orderAfter : canonicalCollectionOrder after = true := by
     simp only [canonicalCollectionOrder, Bool.and_eq_true]
-    refine ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨?_, activationOrder⟩, messageWaitOrder⟩,
+    refine ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨activityCounterOrder, ?_⟩, activationOrder⟩, messageWaitOrder⟩,
       timerWaitOrder⟩, effectWaitOrder⟩, messageActivationOrder⟩, timerActivationOrder⟩,
       effectActivationOrder⟩, activityVariableOrder⟩, selectionOrder⟩, raceOrder⟩,
       callOrder⟩, ?_⟩, sequentialControllerOrder⟩, ?_⟩

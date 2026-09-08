@@ -105,6 +105,18 @@ export const writerRecords = new Map<string, WriterRecord>([
       markers: ["theorem prepared_data_arm_preserves_runtime"],
     },
   }],
+  ["BpmnSemantics/SemanticProcess/InternalDataArmingMixedFrames.lean#applyInternalDataArmingActivityPatch@1", {
+    classification: WriterClassification.Issuer,
+    claimPreservation: ClaimPreservation.DisjointInsertion,
+    evidence: {
+      relativePath: "BpmnSemantics/SemanticProcess/InternalDataArmingMixedFrames.lean",
+      markers: ["theorem prepared_data_activity_patch_issuesFreshActivity"],
+    },
+    claimEvidence: {
+      relativePath: "BpmnSemantics/SemanticProcess/InternalDataArmingMixedFrames.lean",
+      markers: ["theorem prepared_data_activity_patch_preserves_claims"],
+    },
+  }],
   ["BpmnSemantics/SemanticProcess/ActivityDataInputOutput.lean#completeDataInputOutputUserTask?@1", {
     classification: WriterClassification.IdentityRemoving,
     claimPreservation: ClaimPreservation.Removal,

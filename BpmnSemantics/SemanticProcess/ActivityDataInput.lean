@@ -64,10 +64,7 @@ def activateDataInputUserTask? (state : RuntimeState) (input output : ControlPla
               elementId := ⟨taskId.value⟩
               activation := taskActivation }
           attachedHandlers := [] } state.activityOccurrences
-      activityActivations :=
-        { taskId, count := activityActivation } ::
-          state.activityActivations.filter fun value =>
-            decide (value.taskId ≠ taskId)
+      activityActivations := setActivationCount state.activityActivations taskId activityActivation
       variables := addActivityOccurrenceVariableScope state.variables
         activityOwner
         [{ name := directInput.targetDataInputId, value := source.value }] }
@@ -508,10 +505,36 @@ def activityScopesWithinIssuedCount (state : RuntimeState) : Prop :=
     ∀ owner : ActivityOccurrenceId, scope.owner = .activityOccurrence owner →
       owner.activation ≤ activityActivationCount state ⟨owner.activityElementId.value⟩
 
-private theorem taskActivationCount_cons_self
-    (rest : List TaskActivation) (taskId : TaskDefinitionId) (count : Nat) :
-    taskActivationCount ({ taskId, count } :: rest) taskId = count := by
-  simp [taskActivationCount]
+private theorem taskActivationCount_insert_self (rest : List TaskActivation)
+    (taskId : TaskDefinitionId) (count : Nat)
+    (absent : ∀ value ∈ rest, value.taskId ≠ taskId) :
+    taskActivationCount (insertTaskActivation { taskId, count } rest) taskId = count := by
+  induction rest with
+  | nil => simp [insertTaskActivation, taskActivationCount]
+  | cons head tail ih =>
+      have headDifferent := absent head (by simp)
+      have tailAbsent : ∀ value ∈ tail, value.taskId ≠ taskId := by
+        intro value member
+        exact absent value (by simp [member])
+      by_cases before : taskId.value < head.taskId.value <;>
+        simp [insertTaskActivation, before, taskActivationCount, headDifferent, ih tailAbsent]
+
+private theorem taskActivationCount_set_self (rest : List TaskActivation)
+    (taskId : TaskDefinitionId) (count : Nat) :
+    taskActivationCount (setActivationCount rest taskId count) taskId = count := by
+  apply taskActivationCount_insert_self
+  intro value member
+  exact of_decide_eq_true (List.mem_filter.mp member).2
+
+private theorem taskActivationCount_insert_other (rest : List TaskActivation)
+    (inserted : TaskActivation) (query : TaskDefinitionId) (different : inserted.taskId ≠ query) :
+    taskActivationCount (insertTaskActivation inserted rest) query =
+      taskActivationCount rest query := by
+  induction rest with
+  | nil => simp [insertTaskActivation, taskActivationCount, different]
+  | cons head tail ih =>
+      by_cases before : inserted.taskId.value < head.taskId.value <;>
+        simp [insertTaskActivation, before, taskActivationCount, different, ih]
 
 private theorem taskActivationCount_filter_ne
     (rest : List TaskActivation) {taskId other : TaskDefinitionId} (distinct : other ≠ taskId) :
@@ -629,20 +652,16 @@ private theorem activationCounterMonotone (state : RuntimeState)
     (taskId element : TaskDefinitionId) :
     taskActivationCount state.activityActivations element ≤
       taskActivationCount
-        ({ taskId, count := taskActivationCount state.activityActivations taskId + 1 } ::
-          state.activityActivations.filter fun value => !decide (value.taskId = taskId))
+        (setActivationCount state.activityActivations taskId
+          (taskActivationCount state.activityActivations taskId + 1))
         element := by
   by_cases same : element = taskId
   · subst same
-    rw [taskActivationCount_cons_self]
+    rw [taskActivationCount_set_self]
     exact Nat.le_succ _
-  · have head : ¬ (taskId = element) := fun eq => same eq.symm
-    simp only [taskActivationCount, head, ite_false]
-    have bridge :
-        (state.activityActivations.filter fun value => !decide (value.taskId = taskId)) =
-          state.activityActivations.filter fun value => decide (value.taskId ≠ taskId) := by
-      simp only [ne_eq, decide_not]
-    rw [bridge, taskActivationCount_filter_ne _ same]
+  · unfold setActivationCount
+    rw [taskActivationCount_insert_other _ _ _ (Ne.symm same),
+      taskActivationCount_filter_ne _ same]
     exact Nat.le_refl _
 
 /-- Arming preserves the bound: the minted scope sits exactly at the new mark, and every scope that
@@ -672,7 +691,7 @@ theorem activateDataInputUserTask_preservesIssuedCountBound {state after : Runti
               · subst minted
                 simp only at owned
                 cases owned
-                simp only [activityActivationCount, taskActivationCount_cons_self]
+                simp only [activityActivationCount, taskActivationCount_set_self]
                 exact Nat.le_refl _
               · have prior := bound scope earlier owner owned
                 simp only [activityActivationCount] at prior ⊢

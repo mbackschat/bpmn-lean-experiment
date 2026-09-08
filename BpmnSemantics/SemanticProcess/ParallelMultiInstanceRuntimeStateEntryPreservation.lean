@@ -429,7 +429,7 @@ theorem sharedParallelEntry_preserves_runtimeStateWellFormed (program : Program)
           insertActivityOccurrence_preserves_attachedMessagesUnambiguous_of_empty before record
             (by simp [record, ActivityOccurrence.messageHandlerOccurrences]) messagesUnambiguous
       simp only [canonicalCollectionOrder, Bool.and_eq_true] at order
-      obtain ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨taskOrder, activationOrder⟩, messageWaitOrder⟩,
+      obtain ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨activityCounterOrder, taskOrder⟩, activationOrder⟩, messageWaitOrder⟩,
         timerWaitOrder⟩, effectWaitOrder⟩, messageActivationOrder⟩, timerActivationOrder⟩,
         effectActivationOrder⟩, activityVariableOrder⟩, selectionOrder⟩, raceOrder⟩,
         callOrder⟩, activityOrder⟩, sequentialControllerOrder⟩, parallelControllerOrder⟩ := order
@@ -451,10 +451,12 @@ theorem sharedParallelEntry_preserves_runtimeStateWellFormed (program : Program)
         simpa [successor, setTimerActivationCount, decide_not] using inserted
       have orderAfter : canonicalCollectionOrder successor = true := by
         simp only [canonicalCollectionOrder, Bool.and_eq_true]
-        refine ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨?_, activationOrderAfter⟩, messageWaitOrder⟩,
+        refine ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨?_, ?_⟩, activationOrderAfter⟩, messageWaitOrder⟩,
           ?_⟩, effectWaitOrder⟩, messageActivationOrder⟩, timerActivationOrderAfter⟩,
           effectActivationOrder⟩, activityVariableOrder⟩, selectionOrder⟩, raceOrder⟩,
           callOrder⟩, ?_⟩, ?_⟩, ?_⟩
+        · exact orderedBy_insertTaskActivation _ _
+            (orderedBy_filter activationBefore_compose _ _ activityCounterOrder)
         · exact insertParallelChildWaits_ordered arm owner slots before.waits taskOrder
         · simpa [successor] using
             InternalCommutation.orderedBy_insertTimerWait_preserved timerWait before.timerWaits

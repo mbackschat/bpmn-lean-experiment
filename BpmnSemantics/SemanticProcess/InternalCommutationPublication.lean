@@ -43,27 +43,44 @@ def numberInternalPublicationPairs :
       { transitionIndex, publication := pair } ::
         numberInternalPublicationPairs (transitionIndex + 1) rest
 
+def acceptedInternalPublicationForFootprint? (program : Program) (expectedInstanceId : SemanticId)
+    (before after : RuntimeState) (operation : SemanticOperation) (commandId : SemanticId)
+    (footprint : InternalTransitionFootprint) : Option AcceptedInternalPublicationPair := do
+  let pair ← internalPublicationPairForFootprint? program before after operation commandId footprint
+  let positionDelta ← controlPositionDelta? program expectedInstanceId before after
+  pure { pair, logicalTimeMs := before.logicalTimeMs, positionDelta }
+
 def acceptedInternalPublicationPair? (program : Program) (expectedInstanceId : SemanticId)
     (footprintState before after : RuntimeState) (operation : SemanticOperation)
     (commandId : SemanticId) : Option AcceptedInternalPublicationPair := do
-  let pair ← internalPublicationPair? program footprintState before after operation commandId
-  let positionDelta ← controlPositionDelta? program expectedInstanceId before after
-  pure { pair, logicalTimeMs := before.logicalTimeMs, positionDelta }
+  let footprint ← internalTransitionFootprint? program footprintState operation
+  acceptedInternalPublicationForFootprint? program expectedInstanceId before after operation
+    commandId footprint
+
+def acceptedInternalPairPublicationForFootprints? (program : Program) (expectedInstanceId : SemanticId)
+    (state : RuntimeState) (first second : SemanticOperation)
+    (commandId : SemanticId) (firstTransitionIndex : Nat)
+    (firstFootprint secondFootprint : InternalTransitionFootprint) :
+    Option (RuntimeState × List NumberedInternalPublicationPair) := do
+  let firstAfter ← fire? program first state
+  let final ← fire? program second firstAfter
+  let firstPair ← acceptedInternalPublicationForFootprint? program expectedInstanceId
+    state firstAfter first commandId firstFootprint
+  let secondPair ← acceptedInternalPublicationForFootprint? program expectedInstanceId
+    firstAfter final second commandId secondFootprint
+  let ordered := canonicalAcceptedInternalPublicationPairs [firstPair, secondPair]
+  pure (final, numberInternalPublicationPairs firstTransitionIndex ordered)
 
 def acceptedInternalPairPublication? (program : Program) (expectedInstanceId : SemanticId)
     (state : RuntimeState) (first second : SemanticOperation)
     (commandId : SemanticId) (firstTransitionIndex : Nat) :
     Option (RuntimeState × List NumberedInternalPublicationPair) := do
-  let firstAfter ← fire? program first state
-  let final ← fire? program second firstAfter
-  let firstPair ← acceptedInternalPublicationPair? program expectedInstanceId
-    state state firstAfter first commandId
-  let secondPair ← acceptedInternalPublicationPair? program expectedInstanceId
-    state firstAfter final second commandId
-  let ordered := canonicalAcceptedInternalPublicationPairs [firstPair, secondPair]
-  pure (final, numberInternalPublicationPairs firstTransitionIndex ordered)
+  let firstFootprint ← internalTransitionFootprint? program state first
+  let secondFootprint ← internalTransitionFootprint? program state second
+  acceptedInternalPairPublicationForFootprints? program expectedInstanceId state first second
+    commandId firstTransitionIndex firstFootprint secondFootprint
 
-private theorem runtimeStateWellFormed_position (program : Program) (instanceId : SemanticId)
+theorem runtimeStateWellFormed_position (program : Program) (instanceId : SemanticId)
     (state : RuntimeState)
     (wellFormed : runtimeStateWellFormed program instanceId state = true) :
     runtimePositionValid program instanceId state = true := by
@@ -88,6 +105,47 @@ private theorem runtimeStateWellFormed_position (program : Program) (instanceId 
   obtain ⟨h1, _incidents⟩ := h2
   obtain ⟨position, _eventRaces⟩ := h1
   exact position
+
+theorem acceptedInternalPublicationForFootprint_prepared (program : Program)
+    (expectedInstanceId commandId : SemanticId) (before : RuntimeState)
+    (operation : SemanticOperation) (patch : InternalArmingPatch)
+    (programAdmitted : programWellFormed program = true)
+    (beforeAdmitted : runtimeStateWellFormed program expectedInstanceId before = true)
+    (openBefore : (projectOpenFlowNodeOccurrences? program before).isSome = true)
+    (beforePrepared : prepareInternalArm? program before operation = some patch) :
+    ∃ newStart,
+      waitStart? program before patch.owner patch.write.elementId
+          patch.write.occurrence.activation = some newStart ∧
+      acceptedInternalPublicationForFootprint? program expectedInstanceId before
+          (applyInternalArmingPatch before patch) operation commandId (footprintOfPatch patch) =
+        some
+          { pair :=
+              { footprint := footprintOfPatch patch
+                record :=
+                  { operationId := patch.operation.id
+                    operationKind := patch.operation.kind
+                    origin := patch.operation.origin
+                    owner := patch.owner }
+                lifecycle := canonicalFlowNodeOccurrenceDelta [newStart] [] }
+            logicalTimeMs := before.logicalTimeMs
+            positionDelta :=
+              { consumedTokens :=
+                  [PublicControlTokenPosition.mk patch.inputOrigin.elementId patch.owner 1]
+                producedTokens := []
+                enteredScopes := []
+                exitedScopes := [] } } := by
+  obtain ⟨newStart, started, lifecycle⟩ := prepared_arm_lifecycle_singleton program before
+    operation patch expectedInstanceId commandId programAdmitted beforeAdmitted openBefore
+    beforePrepared
+  have record := internalTransitionRecord_prepared program before operation patch programAdmitted
+    beforePrepared
+  have position := runtimeStateWellFormed_position program expectedInstanceId before beforeAdmitted
+  have positionDelta := controlPositionDelta_prepared_internal_arm program expectedInstanceId before
+    operation patch position beforePrepared
+  refine ⟨newStart, started, ?_⟩
+  simp only [acceptedInternalPublicationForFootprint?, internalPublicationPairForFootprint?]
+  rw [record, lifecycle, positionDelta]
+  rfl
 
 private theorem acceptedInternalPublicationPair_prepared (program : Program)
     (expectedInstanceId commandId : SemanticId) (footprintState before : RuntimeState)
@@ -118,19 +176,9 @@ private theorem acceptedInternalPublicationPair_prepared (program : Program)
                 producedTokens := []
                 enteredScopes := []
                 exitedScopes := [] } } := by
-  obtain ⟨newStart, started, lifecycle⟩ := prepared_arm_lifecycle_singleton program before
-    operation patch expectedInstanceId commandId programAdmitted beforeAdmitted openBefore
-    beforePrepared
-  have record := internalTransitionRecord_prepared program before operation patch programAdmitted
-    beforePrepared
-  have position := runtimeStateWellFormed_position program expectedInstanceId before beforeAdmitted
-  have positionDelta := controlPositionDelta_prepared_internal_arm program expectedInstanceId before
-    operation patch position beforePrepared
-  refine ⟨newStart, started, ?_⟩
-  simp only [acceptedInternalPublicationPair?, internalPublicationPair?,
-    internalTransitionFootprint?, footprintPrepared, Option.map_some]
-  rw [record, lifecycle, positionDelta]
-  rfl
+  simpa [acceptedInternalPublicationPair?, internalTransitionFootprint?, footprintPrepared] using
+    acceptedInternalPublicationForFootprint_prepared program expectedInstanceId commandId before
+      operation patch programAdmitted beforeAdmitted openBefore beforePrepared
 
 private theorem string_total (left right : String) (different : left ≠ right) :
     left < right ∨ right < left := by
@@ -138,7 +186,7 @@ private theorem string_total (left right : String) (different : left ≠ right) 
   · exact Or.inl before
   · exact Or.inr (Std.lt_of_le_of_ne (by simpa using before) (Ne.symm different))
 
-private theorem canonicalAcceptedInternalPublicationPairs_pair_commutes
+theorem canonicalAcceptedInternalPublicationPairs_pair_commutes
     (left right : AcceptedInternalPublicationPair)
     (different : left.pair.footprint.operationId ≠ right.pair.footprint.operationId) :
     canonicalAcceptedInternalPublicationPairs [left, right] =
@@ -167,6 +215,39 @@ private theorem canonicalAcceptedInternalPublicationPairs_pair_commutes
       before, String.lt_asymm before]
   · simp [canonicalAcceptedInternalPublicationPairs, insertAcceptedPair, forward, backward,
       before, String.lt_asymm before]
+
+theorem accepted_pair_publication_commutes_of_frames
+    (program : Program) (instanceId commandId : SemanticId) (firstTransitionIndex : Nat)
+    (state leftAfter rightAfter final : RuntimeState) (left right : SemanticOperation)
+    (leftFootprint rightFootprint : InternalTransitionFootprint)
+    (leftPublication rightPublication : AcceptedInternalPublicationPair)
+    (leftStep : fire? program left state = some leftAfter)
+    (rightStep : fire? program right state = some rightAfter)
+    (rightSecond : fire? program right leftAfter = some final)
+    (leftSecond : fire? program left rightAfter = some final)
+    (leftFirst : acceptedInternalPublicationForFootprint? program instanceId state leftAfter
+      left commandId leftFootprint = some leftPublication)
+    (rightFirst : acceptedInternalPublicationForFootprint? program instanceId state rightAfter
+      right commandId rightFootprint = some rightPublication)
+    (rightAfterLeft : acceptedInternalPublicationForFootprint? program instanceId leftAfter final
+      right commandId rightFootprint = some rightPublication)
+    (leftAfterRight : acceptedInternalPublicationForFootprint? program instanceId rightAfter final
+      left commandId leftFootprint = some leftPublication)
+    (different : leftPublication.pair.footprint.operationId ≠
+      rightPublication.pair.footprint.operationId) :
+    ∃ publications,
+      acceptedInternalPairPublicationForFootprints? program instanceId state left right commandId
+          firstTransitionIndex leftFootprint rightFootprint = some (final, publications) ∧
+        acceptedInternalPairPublicationForFootprints? program instanceId state right left commandId
+          firstTransitionIndex rightFootprint leftFootprint = some (final, publications) := by
+  have ordered := canonicalAcceptedInternalPublicationPairs_pair_commutes
+    leftPublication rightPublication different
+  refine ⟨numberInternalPublicationPairs firstTransitionIndex
+    (canonicalAcceptedInternalPublicationPairs [leftPublication, rightPublication]), ?_, ?_⟩
+  · simp [acceptedInternalPairPublicationForFootprints?, leftStep, rightSecond,
+      leftFirst, rightAfterLeft]
+  · simp [acceptedInternalPairPublicationForFootprints?, rightStep, leftSecond,
+      rightFirst, leftAfterRight, ← ordered]
 
 /-- Both explicit orders yield one defined identical complete publication with canonical numbering. -/
 theorem classified_internal_pair_publication_commutes
@@ -303,33 +384,41 @@ theorem classified_internal_pair_publication_commutes
             (final, numberInternalPublicationPairs firstTransitionIndex
               (canonicalAcceptedInternalPublicationPairs [leftPublication, rightPublication]))
           refine ⟨publication, ?_, ?_⟩
-          · unfold acceptedInternalPairPublication?
+          · simp only [acceptedInternalPairPublication?, internalTransitionFootprint?,
+              leftPrepared, rightPrepared, Option.map_some, Option.bind_eq_bind, Option.bind_some]
+            unfold acceptedInternalPairPublicationForFootprints?
             simp only [Option.bind_eq_bind]
             rw [leftStep]
             simp only [Option.bind_some]
             rw [rightSecond]
             simp only [Option.bind_some]
-            rw [show acceptedInternalPublicationPair? program instanceId state state
-                (applyInternalArmingPatch state leftPatch) left commandId =
-                some leftPublication by simpa [leftAfter] using leftAcceptedFirst]
+            rw [show acceptedInternalPublicationForFootprint? program instanceId state
+                (applyInternalArmingPatch state leftPatch) left commandId (footprintOfPatch leftPatch) =
+                some leftPublication by simpa [leftAfter, acceptedInternalPublicationPair?,
+                  internalTransitionFootprint?, leftPrepared] using leftAcceptedFirst]
             simp only [Option.bind_some]
-            rw [show acceptedInternalPublicationPair? program instanceId state
-                (applyInternalArmingPatch state leftPatch) final right commandId =
-                some rightPublication by simpa [leftAfter] using rightAcceptedSecond]
+            rw [show acceptedInternalPublicationForFootprint? program instanceId
+                (applyInternalArmingPatch state leftPatch) final right commandId (footprintOfPatch rightPatch) =
+                some rightPublication by simpa [leftAfter, acceptedInternalPublicationPair?,
+                  internalTransitionFootprint?, rightPrepared] using rightAcceptedSecond]
             rfl
-          · unfold acceptedInternalPairPublication?
+          · simp only [acceptedInternalPairPublication?, internalTransitionFootprint?,
+              leftPrepared, rightPrepared, Option.map_some, Option.bind_eq_bind, Option.bind_some]
+            unfold acceptedInternalPairPublicationForFootprints?
             simp only [Option.bind_eq_bind]
             rw [rightStep]
             simp only [Option.bind_some]
             rw [leftSecond]
             simp only [Option.bind_some]
-            rw [show acceptedInternalPublicationPair? program instanceId state state
-                (applyInternalArmingPatch state rightPatch) right commandId =
-                some rightPublication by simpa [rightAfter] using rightAcceptedFirst]
+            rw [show acceptedInternalPublicationForFootprint? program instanceId state
+                (applyInternalArmingPatch state rightPatch) right commandId (footprintOfPatch rightPatch) =
+                some rightPublication by simpa [rightAfter, acceptedInternalPublicationPair?,
+                  internalTransitionFootprint?, rightPrepared] using rightAcceptedFirst]
             simp only [Option.bind_some]
-            rw [show acceptedInternalPublicationPair? program instanceId state
-                (applyInternalArmingPatch state rightPatch) final left commandId =
-                some leftPublication by simpa [rightAfter] using leftAcceptedSecond]
+            rw [show acceptedInternalPublicationForFootprint? program instanceId
+                (applyInternalArmingPatch state rightPatch) final left commandId (footprintOfPatch leftPatch) =
+                some leftPublication by simpa [rightAfter, acceptedInternalPublicationPair?,
+                  internalTransitionFootprint?, leftPrepared] using leftAcceptedSecond]
             simp only [Option.bind_some]
             rw [← orderedEq]
             rfl

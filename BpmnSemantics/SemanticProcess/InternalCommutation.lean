@@ -25,11 +25,11 @@ theorem flowNodeLifecycle_mem_footprint_publications (patch : InternalArmingPatc
   simp [footprintOfPatch, canonicalPublicationAtomSet, mem_sortBy]
 
 theorem activation_mem_footprint_writes (patch : InternalArmingPatch) :
-    .activation patch.write.kind patch.write.elementId ∈ (footprintOfPatch patch).writes := by
+    .activation patch.write.kind.activationKind patch.write.elementId ∈ (footprintOfPatch patch).writes := by
   simp [footprintOfPatch, canonicalStateAtomSet, mem_sortBy]
 
 theorem activation_mem_footprint_reads (patch : InternalArmingPatch) :
-    .activation patch.write.kind patch.write.elementId ∈ (footprintOfPatch patch).reads := by
+    .activation patch.write.kind.activationKind patch.write.elementId ∈ (footprintOfPatch patch).reads := by
   simp [footprintOfPatch, canonicalStateAtomSet, mem_sortBy]
 
 theorem noninterfering_occurrence_ne (left right : InternalArmingPatch) (separated : footprintsNonInterfering (footprintOfPatch left) (footprintOfPatch right) = true) :
@@ -49,7 +49,7 @@ theorem noninterfering_same_kind_element_ne (left right : InternalArmingPatch) (
   simp only [footprintsNonInterfering, Bool.and_eq_true] at separated
   have excluded := not_mem_right_of_listsDisjoint
     (footprintOfPatch left).writes (footprintOfPatch right).reads separated.1.1.1
-    (.activation left.write.kind left.write.elementId)
+    (.activation left.write.kind.activationKind left.write.elementId)
     (activation_mem_footprint_writes left)
   apply excluded
   simpa [sameKind, same] using activation_mem_footprint_reads right
@@ -164,17 +164,19 @@ theorem noninterfering_prepared_inputs_ne (program : Program) (state : RuntimeSt
   simp_all [footprintsNonInterfering, listsDisjoint, footprintOfPatch,
     canonicalStateAtomSet, mem_sortBy]
 
-theorem prepared_patch_frame (program : Program) (state : RuntimeState) (leftOperation rightOperation : SemanticOperation) (left right : InternalArmingPatch) (leftPrepared : prepareInternalArm? program state leftOperation = some left) (rightPrepared : prepareInternalArm? program state rightOperation = some right)
+theorem prepared_patch_frame_of_inputs_ne (program : Program) (state : RuntimeState)
+    (rightOperation : SemanticOperation) (left right : InternalArmingPatch)
+    (rightPrepared : prepareInternalArm? program state rightOperation = some right)
+    (inputDistinct : left.input ≠ right.input)
     (separated : footprintsNonInterfering (footprintOfPatch left) (footprintOfPatch right) = true) : prepareInternalArm? program (applyInternalArmingPatch state left) rightOperation = some right := by
   have occurrenceDistinct := noninterfering_occurrence_ne left right separated
   have elementDistinct := fun same => noninterfering_same_kind_element_ne left right same separated
-  have inputDistinct := noninterfering_prepared_inputs_ne program state leftOperation rightOperation left right leftPrepared rightPrepared separated
   have activationFrame := armingActivationRead_frame state left right.write.kind right.write.elementId elementDistinct; have anchorFrame := armingOpenAnchorRead_frame state left right.write.occurrence occurrenceDistinct
   have availableFrame : right.write.available (applyInternalArmingPatch state left) = right.write.available state := by
     cases writeEq : right.write <;> simp [InternalArmingWrite.available]
     case effect wait bindings => simpa [InternalArmingWrite.available] using effectAvailableRead_frame state left wait bindings (by rw [writeEq] at occurrenceDistinct; exact occurrenceDistinct)
   have processVariablesFrame := armingProcessVariablesRead_frame state left
-  clear leftPrepared separated
+  clear separated
   cases rightOperation
   case awaitCorrelatedPayloadMessage id origin input output message correlationKeyId
       correlationPropertyId payloadSelector processPropertySelector =>
@@ -245,6 +247,16 @@ theorem prepared_patch_frame (program : Program) (state : RuntimeState) (leftOpe
           armingLiveOwnerRead_frame, InternalArmingWrite.kind,
           InternalArmingWrite.elementId, InternalArmingWrite.occurrence]
 
+
+theorem prepared_patch_frame (program : Program) (state : RuntimeState)
+    (leftOperation rightOperation : SemanticOperation) (left right : InternalArmingPatch)
+    (leftPrepared : prepareInternalArm? program state leftOperation = some left)
+    (rightPrepared : prepareInternalArm? program state rightOperation = some right)
+    (separated : footprintsNonInterfering (footprintOfPatch left) (footprintOfPatch right) = true) :
+    prepareInternalArm? program (applyInternalArmingPatch state left) rightOperation = some right :=
+  prepared_patch_frame_of_inputs_ne program state rightOperation left right rightPrepared
+    (noninterfering_prepared_inputs_ne program state leftOperation rightOperation left right
+      leftPrepared rightPrepared separated) separated
 
 end InternalCommutation
 

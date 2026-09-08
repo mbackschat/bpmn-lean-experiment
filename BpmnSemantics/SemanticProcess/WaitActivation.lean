@@ -103,10 +103,7 @@ def activateBoundedUserTask (state : RuntimeState) (instanceId : SemanticId)
             { processInstanceId := instanceId
               elementId := { value := boundaryTimer.elementId.value }
               activation := timerActivation }] } state.activityOccurrences
-    activityActivations :=
-      { taskId := task.id, count := activityActivation } ::
-        state.activityActivations.filter fun value =>
-          decide (value.taskId ≠ task.id) }
+    activityActivations := setActivationCount state.activityActivations task.id activityActivation }
 
 def activateMessage (state : RuntimeState) (instanceId : SemanticId)
     (owner : ScopeOccurrenceId) (input output : ControlPlaceId)

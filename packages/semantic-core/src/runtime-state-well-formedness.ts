@@ -428,6 +428,7 @@ export function runtimeStateDefects(
     state.messageActivations,
     state.timerActivations,
     state.effectActivations,
+    state.activityActivations,
   ];
   const ordered =
     isSorted(state.activityOccurrences, compareActivityOccurrences) &&

@@ -78,7 +78,7 @@ def compensationSnapshotPromotionAtoms (program : Program) (state : RuntimeState
   else
     (CompensationSnapshotInternalCommutation.canonicalAtomSet <| snapshotAtoms ++
       state.variables.process.bindings.map fun binding =>
-        .ordinary (.processVariable parent.id.processInstanceId binding.name),
+        .ordinary (.processVariable binding.name),
       CompensationSnapshotInternalCommutation.canonicalAtomSet snapshotAtoms)
 
 /-- Purge owns each exact record whose parent or containing root belongs to the removed region. -/

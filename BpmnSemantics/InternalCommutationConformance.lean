@@ -423,7 +423,8 @@ private def sameEffectLeftFootprint : InternalTransitionFootprint :=
        .wait .effect
         { processInstanceId := instanceId, elementId := ⟨"SharedEffect"⟩, activation := 1 },
        .activityVariableScope
-        { processInstanceId := instanceId, elementId := ⟨"SharedEffect"⟩, activation := 1 }]
+        (.effectOccurrence
+          { processInstanceId := instanceId, elementId := ⟨"SharedEffect"⟩, activation := 1 })]
     publications :=
       [.publicationPair leftEffect.id
         { processInstanceId := instanceId, elementId := ⟨"SharedEffect"⟩, activation := 1 }] }

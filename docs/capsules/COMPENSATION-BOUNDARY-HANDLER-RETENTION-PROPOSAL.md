@@ -232,7 +232,7 @@ The 800-nonblank-line soft target is the extraction threshold and 1,200 lines th
 |---|---:|---|
 | [TypeScript Program contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 178 | add only the optional declaration reference; extract before crossing 800 |
 | [TypeScript RuntimeState](../../packages/semantic-core/src/semantic-process-state.ts) | 363 | add only the optional collection reference; new types live elsewhere |
-| [TypeScript well-formedness](../../packages/semantic-core/src/runtime-state-well-formedness.ts) | 51 | add one delegated validator hook; extract before crossing 800 |
+| [TypeScript well-formedness](../../packages/semantic-core/src/runtime-state-well-formedness.ts) | 50 | add one delegated validator hook; extract before crossing 800 |
 | [TypeScript scope runtime](../../packages/semantic-core/src/semantic-process-scope-runtime.ts) | 553 | route normal root disposal only |
 | [TypeScript called-Process runtime](../../packages/semantic-core/src/semantic-process-call-runtime.ts) | 378 | remove owner-keyed records with a called-instance subtree even though declaring Programs exclude Call operations |
 | [TypeScript scope cancellation](../../packages/semantic-core/src/semantic-process-scope-cancellation.ts) | 578 | remove owner-keyed records with a cancelled region even though declaring Programs exclude cancellation |
@@ -240,7 +240,7 @@ The 800-nonblank-line soft target is the extraction threshold and 1,200 lines th
 | [TypeScript triggered start](../../packages/semantic-core/src/semantic-process-triggered-start.ts) | 583 | initialize root-owned retention state before any start mutation |
 | [Lean Program contract](../../BpmnSemantics/SemanticProcessContract.lean) | 11 | direct Activity-data carriers extracted into a bounded owner |
 | [Lean RuntimeState](../../BpmnSemantics/SemanticProcess/RuntimeState.lean) | 75 | add only the collection reference and its root-owned invariant; new structures live elsewhere |
-| [Lean well-formedness](../../BpmnSemantics/SemanticProcess/RuntimeStateWellFormed.lean) | 57 | add one delegated predicate; extract before crossing 800 |
+| [Lean well-formedness](../../BpmnSemantics/SemanticProcess/RuntimeStateWellFormed.lean) | 56 | add one delegated predicate; extract before crossing 800 |
 | [Lean scope completion](../../BpmnSemantics/SemanticProcess/ScopeCompletion.lean) | 683 | add exact register disposal and update its frame theorem |
 | [Strict Lean Program decoder](../../BpmnSemantics/SemanticProcessJson/Program.lean) | 87 | delegate the optional field to a focused decoder; extract before crossing 800 |
 | [Lean internal-commutation runtime preservation](../../BpmnSemantics/SemanticProcess/InternalCommutationRuntimePreservation.lean) | 35 | prove the new aggregate invariant conjunct is framed; any further growth extracts the compensation frame proof |
@@ -248,9 +248,9 @@ The 800-nonblank-line soft target is the extraction threshold and 1,200 lines th
 | [Lean message-payload preservation](../../BpmnSemantics/SemanticProcess/MessagePayloadPreservation.lean) | 456 | reconstruct the strengthened aggregate invariant while framing the compensation register exactly |
 | [Lean Activity-body turnover preservation](../../BpmnSemantics/SemanticProcess/ActivityBodyTurnoverPreservation.lean) | 555 | preserve compensation validity and destructure lifecycle facts by name rather than positional projection |
 | [Lean Activity issuing conformance](../../BpmnSemantics/ActivityIssuingDisciplineConformance.lean) | 578 | keep the exact root-completion witness synchronized with owner-keyed register disposal |
-| [Lean parallel Multi-Instance entry preservation](../../BpmnSemantics/SemanticProcess/ParallelMultiInstanceRuntimeStateEntryPreservation.lean) | 6 | frame the compensation register through entry after extracting its order fact |
+| [Lean parallel Multi-Instance entry preservation](../../BpmnSemantics/SemanticProcess/ParallelMultiInstanceRuntimeStateEntryPreservation.lean) | 4 | frame the compensation register through entry after extracting its order fact |
 | [Lean parallel Multi-Instance closing selection](../../BpmnSemantics/SemanticProcess/ParallelMultiInstanceRuntimeStateClosingSelection.lean) | 204 | destructure the strengthened aggregate invariant before applying Activity-body uniqueness |
-| [Lean internal-commutation publication](../../BpmnSemantics/SemanticProcess/InternalCommutationPublication.lean) | 481 | name both final aggregate facts while projecting the existing publication prerequisites |
+| [Lean internal-commutation publication](../../BpmnSemantics/SemanticProcess/InternalCommutationPublication.lean) | 396 | name both final aggregate facts while projecting the existing publication prerequisites |
 | [Lean parallel Multi-Instance empty-state preservation](../../BpmnSemantics/SemanticProcess/ParallelMultiInstanceRuntimeStateEmptyPreservation.lean) | 703 | carry both final aggregate facts through the unchanged empty-state result |
 | [Lean parallel Multi-Instance closing progress preservation](../../BpmnSemantics/SemanticProcess/ParallelMultiInstanceRuntimeStateClosingProgressPreservation.lean) | 235 | frame the compensation register through non-terminal closing progress |
 | [Lean parallel Multi-Instance closing terminal preservation](../../BpmnSemantics/SemanticProcess/ParallelMultiInstanceRuntimeStateClosingTerminalPreservation.lean) | 17 | frame the compensation register through terminal child closing; any further growth should extract the frame proof |

@@ -4,15 +4,22 @@ import test from "node:test";
 import {
   ActivityBodyKind,
   ControlStateKind,
+  CorrelationScalarPathLanguage,
   LocalDataOwnerKind,
+  MessageChannelKind,
   SemanticOperationKind,
   SemanticProcessCompilerId,
   SemanticProcessKind,
   SemanticProfileId,
   SemanticTransitionKind,
   VariableValueKind,
+  applyInternalOperationStep,
+  compareCanonicalStrings,
   initialState,
+  isWellFormedRuntimeState,
+  isWellFormedSemanticProcessProgram,
   projectFlowNodeOccurrenceLifecycleDelta,
+  projectOpenFlowNodeOccurrences,
 } from "@bpmn-lean/semantic-core";
 import type {
   AwaitDataInputOutputUserTaskOperation,
@@ -22,11 +29,20 @@ import type {
 } from "@bpmn-lean/semantic-core";
 import { rootScopedProgram, rootScopeOccurrence } from "./root-scope-fixture.ts";
 import { controlPlace, operationBase } from "./semantic-program-parts.ts";
+import type { InternalOrdinaryArmingOperation as OrdinaryOperation } from "../src/internal-transition-ordinary-arming-patch.ts";
 
 type PreparationModule = typeof import("../src/internal-transition-data-arming-preparation.ts");
 type PatchModule = typeof import("../src/internal-transition-data-arming-patch.ts");
 type FootprintModule = typeof import("../src/internal-transition-footprint.ts");
 type PublicationModule = typeof import("../src/internal-publication-template.ts");
+type OrdinaryPreparationModule = typeof import("../src/internal-transition-ordinary-arming-preparation.ts");
+type OrdinaryPatchModule = typeof import("../src/internal-transition-ordinary-arming-patch.ts");
+const { deriveInternalOrdinaryArmingPreparation: prepareOrdinary } = await import(
+  new URL("../dist/internal-transition-ordinary-arming-preparation.js", import.meta.url).href
+) as OrdinaryPreparationModule;
+const { applyInternalOrdinaryArmingPatch: applyOrdinaryPatch } = await import(
+  new URL("../dist/internal-transition-ordinary-arming-patch.js", import.meta.url).href
+) as OrdinaryPatchModule;
 const { instantiateInternalPublicationBatch } = await import(
   new URL("../dist/internal-publication-template.js", import.meta.url).href
 ) as PublicationModule;
@@ -227,7 +243,13 @@ test("composed preparation separates tagged local scopes and rejects Activity bo
   const prepared = required();
   const taskId = prepared.patch.wait.id;
   const activityId = prepared.patch.record.id;
-  const effectScope = { owner: { kind: LocalDataOwnerKind.EffectOccurrence, id: taskId }, bindings: [] } as const;
+  const effectScope = {
+    owner: {
+      kind: LocalDataOwnerKind.EffectOccurrence,
+      id: { processInstanceId: activityId.processInstanceId, elementId: activityId.activityElementId, activation: activityId.activation },
+    },
+    bindings: [],
+  } as const;
   const effectBefore = { ...before, variables: { ...before.variables, activities: [effectScope] } };
   assert.notEqual(prepare(program, effectBefore, candidate), null);
   const activityScope = { owner: { kind: LocalDataOwnerKind.ActivityOccurrence, id: activityId }, bindings: [] } as const;
@@ -256,3 +278,122 @@ test("composed preparation rejects unsafe issuance while preserving the unavaila
   assert.equal(footprint.writes.some((atom) => atom.kind === Atom.Activation && atom.occurrenceKind === InternalOccurrenceKind.UserTask), true);
   assert.equal(deriveInternalTransitionFootprint(program, before, candidate), null);
 });
+
+function ordinaryOperations(): ReadonlyArray<OrdinaryOperation> {
+  const input = "place:Flow_Ready_Ordinary";
+  const output = "place:Flow_Ordinary_Done";
+  const channel = {
+    kind: MessageChannelKind.OperationMessage,
+    interfaceId: "Interface_Claim", interfaceOperationId: "Operation_Claim", messageId: "Message_Claim",
+  } as const;
+  const message = { elementId: "MessageCatch_Claim", channel };
+  const messageBase = { ...operationBase(message.elementId), input, output, message };
+  return [
+    { ...operationBase("UserTask_Ordinary"), kind: SemanticOperationKind.AwaitUserTask,
+      input, output, task: { elementId: "UserTask_Ordinary", name: "Ordinary review" } },
+    { ...messageBase, kind: SemanticOperationKind.AwaitMessage },
+    { ...messageBase, kind: SemanticOperationKind.AwaitPayloadMessage,
+      directOutput: { associationId: "MessageOutputAssociation", sourceDataOutputId: "MessageOutput",
+        sourceDataOutputName: "Message result", targetPropertyId: "Property_MessageResult" } },
+    { ...messageBase, kind: SemanticOperationKind.AwaitCorrelatedPayloadMessage,
+      correlationKeyId: "ClaimKey", correlationPropertyId: "ClaimProperty",
+      payloadSelector: { language: CorrelationScalarPathLanguage, body: "payload" },
+      processPropertySelector: { language: CorrelationScalarPathLanguage,
+        body: `property:${source.name}`, propertyId: source.name } },
+    { ...operationBase("Timer_Claim"), kind: SemanticOperationKind.AwaitTimer,
+      input, output, timer: { elementId: "Timer_Claim", durationMs: 1000 } },
+    { ...operationBase(leftOperation.task.elementId), id: "operation:Effect_Claim",
+      kind: SemanticOperationKind.AwaitEffect, input, output, bpmnErrorRoute: null,
+      effect: { elementId: leftOperation.task.elementId,
+        descriptor: { protocol: "urn:bpmn-lean:effect-protocol:activity-v1", operation: "urn:bpmn-lean:effect-operation:probe-v1" },
+        inputMappings: [],
+        outputMappings: [] } },
+  ];
+}
+
+function mixedProgram(ordinary: OrdinaryOperation): SemanticProcessProgram {
+  const placeNames = ["Flow_Start_Fork", "Flow_Ready_Coverage", "Flow_Ready_Ordinary",
+    "Flow_Coverage_Done", "Flow_Ordinary_Done", "Flow_Join_End"];
+  return rootScopedProgram({
+    ...program,
+    controlPlaces: placeNames.map(controlPlace).sort((left, right) => compareCanonicalStrings(left.id, right.id)),
+    operations: [
+      { ...operationBase("Start_Claim"), kind: SemanticOperationKind.Initiate, output: "place:Flow_Start_Fork" },
+      { ...operationBase("Fork_Claim"), kind: SemanticOperationKind.Duplicate, input: "place:Flow_Start_Fork",
+        outputs: [leftOperation.input, ordinary.input] },
+      leftOperation, ordinary,
+      { ...operationBase("Join_Claim"), kind: SemanticOperationKind.Synchronize,
+        inputs: [leftOperation.output, ordinary.output], output: "place:Flow_Join_End" },
+      { ...operationBase("End_Claim"), kind: SemanticOperationKind.ReachNoneEnd, input: "place:Flow_Join_End" },
+    ],
+  });
+}
+
+for (const ordinary of ordinaryOperations()) {
+  test(`composed and ${ordinary.kind} preserve complete preparation, raw state and accepted publication`, () => {
+    const mixed = mixedProgram(ordinary);
+    const state: RuntimeState = {
+      ...before,
+      controlTokens: [leftOperation.input, ordinary.input].map((placeId) => ({ placeId, owner, multiplicity: 1 })),
+      effectActivations: ordinary.kind === SemanticOperationKind.AwaitEffect
+        ? [{ elementId: ordinary.effect.elementId, count: 7 }] : [],
+      variables: ordinary.kind === SemanticOperationKind.AwaitEffect
+        ? { ...before.variables, process: { bindings: [{ name: source.name, value: { kind: VariableValueKind.Null } }] } }
+        : before.variables,
+    };
+    assert.equal(isWellFormedSemanticProcessProgram(mixed), true);
+    const data = prepare(mixed, state, candidate);
+    const wait = prepareOrdinary(mixed, state, { operation: ordinary, owner });
+    assert.ok(data !== null && wait !== null);
+    assert.equal(internalTransitionFootprintsAreIndependent(data.footprint, wait.footprint), true);
+    const afterData = applyPatch(state, data.patch);
+    const afterOrdinary = applyOrdinaryPatch(state, wait.patch);
+    assert.deepEqual(prepareOrdinary(mixed, afterData, { operation: ordinary, owner }), wait);
+    assert.deepEqual(prepare(mixed, afterOrdinary, candidate), data);
+    const dataThenOrdinary = applyOrdinaryPatch(afterData, wait.patch);
+    assert.deepEqual(dataThenOrdinary, applyPatch(afterOrdinary, data.patch));
+    for (const intermediate of [state, afterData, afterOrdinary, dataThenOrdinary]) {
+      assert.equal(isWellFormedRuntimeState(mixed, instanceId, intermediate), true);
+      assert.notEqual(projectOpenFlowNodeOccurrences(mixed, intermediate), null);
+    }
+    const entries = [
+      { operation: data.operation, template: data.publicationTemplate, apply: (current: RuntimeState) => applyPatch(current, data.patch) },
+      { operation: wait.operation, template: wait.publicationTemplate, apply: (current: RuntimeState) => applyOrdinaryPatch(current, wait.patch) },
+    ];
+    for (const order of [entries, entries.toReversed()]) {
+      let current = state;
+      for (const [index, entry] of order.entries()) {
+        const successor = entry.apply(current);
+        assert.deepEqual(applyInternalOperationStep(mixed, entry.operation, current)?.successor, successor);
+        const actual = projectFlowNodeOccurrenceLifecycleDelta(mixed, current, successor,
+          { kind: "internal", operation: entry.operation, owner }, "mixed-claim", 23 + index);
+        assert.ok(actual !== null);
+        const instantiated = instantiateInternalPublicationBatch("mixed-claim", 23 + index, [entry.template]);
+        assert.ok(instantiated !== null);
+        assert.deepEqual(instantiated[0]?.lifecycle, actual);
+        current = successor;
+      }
+    }
+    assert.deepEqual(
+      instantiateInternalPublicationBatch("mixed-claim", 23, entries.map(({ template }) => template)),
+      instantiateInternalPublicationBatch("mixed-claim", 23, entries.toReversed().map(({ template }) => template)),
+    );
+    if (ordinary.kind === SemanticOperationKind.AwaitCorrelatedPayloadMessage) {
+      const writer = { reads: [], writes: [{ kind: Atom.ProcessVariable, name: source.name }] } as const;
+      for (const footprint of [data.footprint, wait.footprint]) {
+        assert.deepEqual(footprint.reads.filter(({ kind }) => kind === Atom.ProcessVariable),
+          [{ kind: Atom.ProcessVariable, name: source.name }]);
+        assert.equal(footprint.writes.some(({ kind }) => kind === Atom.ProcessVariable), false);
+        assert.equal(internalTransitionStateFootprintsAreIndependent(footprint, writer), false);
+      }
+    }
+    if (ordinary.kind === SemanticOperationKind.AwaitEffect) {
+      assert.deepEqual(dataThenOrdinary.variables.activities.map(({ owner: local }) => local.kind),
+        [LocalDataOwnerKind.EffectOccurrence, LocalDataOwnerKind.ActivityOccurrence]);
+      const collision = { ...state, effectActivations: [{ elementId: ordinary.effect.elementId, count: 2 }] };
+      const colliding = prepareOrdinary(mixed, collision, { operation: ordinary, owner });
+      assert.ok(colliding !== null);
+      assert.equal(internalTransitionFootprintsAreIndependent(data.footprint, colliding.footprint), false);
+    }
+  });
+}

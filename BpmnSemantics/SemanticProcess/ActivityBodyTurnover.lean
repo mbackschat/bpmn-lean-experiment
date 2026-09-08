@@ -372,11 +372,11 @@ theorem canonicalCollectionOrder_replacedState (state : RuntimeState)
     (holds : canonicalCollectionOrder state = true) :
     canonicalCollectionOrder (replacedState state record wait body) = true := by
   simp only [canonicalCollectionOrder, Bool.and_eq_true] at holds ⊢
-  obtain ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨waits, activations⟩, messages⟩, timers⟩, effects⟩,
+  obtain ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨activityActivations, waits⟩, activations⟩, messages⟩, timers⟩, effects⟩,
       messageActivations⟩, timerActivations⟩, effectActivations⟩, activityScopes⟩,
       selections⟩, races⟩, calls⟩, records⟩, sequentialControllers⟩,
       parallelControllers⟩ := holds
-  refine ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨?_, ?_⟩, messages⟩, timers⟩, effects⟩,
+  refine ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨activityActivations, ?_⟩, ?_⟩, messages⟩, timers⟩, effects⟩,
       messageActivations⟩, timerActivations⟩, effectActivations⟩, activityScopes⟩,
       selections⟩, races⟩, calls⟩, ?_⟩, sequentialControllers⟩,
       parallelControllers⟩

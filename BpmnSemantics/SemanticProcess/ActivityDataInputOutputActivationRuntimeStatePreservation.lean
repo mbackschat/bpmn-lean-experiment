@@ -519,7 +519,7 @@ theorem dataInputOutputActivationStep_preserves_runtimeStateWellFormed_general
                 simpa [successor, controllersNotExhausted] using notExhausted
               have orderAfter : canonicalCollectionOrder successor = true := by
                 simp only [canonicalCollectionOrder, Bool.and_eq_true] at order ⊢
-                obtain ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨taskOrder, activationOrder⟩, messageOrder⟩,
+                obtain ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨activityCounterOrder, taskOrder⟩, activationOrder⟩, messageOrder⟩,
                   timerOrder⟩, effectOrder⟩, messageActivationOrder⟩, timerActivationOrder⟩,
                   effectActivationOrder⟩, activityVariableOrder⟩, selectionOrder⟩, raceOrder⟩,
                   callOrder⟩, activityOrder⟩, sequentialOrder⟩, parallelOrder⟩ := order
@@ -533,10 +533,12 @@ theorem dataInputOutputActivationStep_preserves_runtimeStateWellFormed_general
                     activationOrder
                   simpa [successor, setActivationCount,
                     insertTaskActivation_eq_canonicalInsertBy, decide_not] using inserted
-                refine ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨?_, activationOrderAfter⟩, messageOrder⟩,
+                refine ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨?_, ?_⟩, activationOrderAfter⟩, messageOrder⟩,
                   timerOrder⟩, effectOrder⟩, messageActivationOrder⟩,
                   timerActivationOrder⟩, effectActivationOrder⟩, ?_⟩, selectionOrder⟩,
                   raceOrder⟩, callOrder⟩, ?_⟩, sequentialOrder⟩, parallelOrder⟩
+                · exact orderedBy_insertTaskActivation _ _
+                    (orderedBy_filter activationBefore_compose _ _ activityCounterOrder)
                 · simpa [successor] using orderedBy_insertUserTaskWait insertedWait
                     before.waits taskOrder
                 · change orderedBy activityVariableScopeBefore

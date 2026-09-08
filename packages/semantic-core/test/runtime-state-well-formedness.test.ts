@@ -331,6 +331,10 @@ test("every commutation-affected collection requires canonical storage order", (
       ...effectArmed,
       effectActivations: counterInversion,
     }],
+    ["Activity counters", eventRaceProgram, instanceId(), {
+      ...armed,
+      activityActivations: counterInversion,
+    }],
     ["Activity-variable scopes", configuredTaskProgram, effectInstanceId, {
       ...effectArmed,
       effectWaits: [effectWait, nextEffect],
