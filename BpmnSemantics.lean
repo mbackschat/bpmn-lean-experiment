@@ -87,6 +87,7 @@ import BpmnSemantics.SemanticProcess.InternalDataArmingPairPublication
 import BpmnSemantics.SemanticProcess.InternalDataArmingPublication
 import BpmnSemantics.InternalCommutationConformance
 import BpmnSemantics.CanonicalTokenStorageConformance
+import BpmnSemantics.SemanticProcess.TokenPatch
 import BpmnSemantics.FiniteInternalArmingConformance
 import BpmnSemantics.InternalClosureAtomicityConformance
 
