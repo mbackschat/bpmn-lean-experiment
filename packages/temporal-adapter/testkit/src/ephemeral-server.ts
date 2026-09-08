@@ -1,6 +1,8 @@
-import { mkdir } from "node:fs/promises";
+import { mkdir, stat } from "node:fs/promises";
+import { createRequire } from "node:module";
+import path from "node:path";
 
-import { TestWorkflowEnvironment } from "@temporalio/testing";
+import { TestWorkflowEnvironment, type EphemeralServerExecutable } from "@temporalio/testing";
 
 /**
  * Owner of every cached ephemeral Temporal server this project starts.
@@ -39,14 +41,12 @@ export type CachedTimeSkippingEnvironmentOptions = CachedEnvironmentOptions;
 export async function createCachedLocalEnvironment(
   options: CachedLocalEnvironmentOptions,
 ): Promise<TestWorkflowEnvironment> {
-  await mkdir(options.downloadDirectory, { recursive: true });
+  const version = options.cliVersion ?? temporalCliVersion;
+  const fixedVersion = /^v?\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/u.test(version);
   return TestWorkflowEnvironment.createLocal({
     server: {
-      executable: {
-        type: "cached-download",
-        version: options.cliVersion ?? temporalCliVersion,
-        downloadDir: options.downloadDirectory,
-      },
+      executable: await cachedExecutable(options.downloadDirectory, version,
+        fixedVersion ? `temporal-${version}` : undefined),
     },
     client: {
       identity: options.identity,
@@ -63,17 +63,43 @@ export async function createCachedLocalEnvironment(
 export async function createCachedTimeSkippingEnvironment(
   options: CachedTimeSkippingEnvironmentOptions,
 ): Promise<TestWorkflowEnvironment> {
-  await mkdir(options.downloadDirectory, { recursive: true });
+  const sdkVersion: string = createRequire(import.meta.url)("@temporalio/testing/package.json").version;
   return TestWorkflowEnvironment.createTimeSkipping({
     server: {
-      executable: {
-        type: "cached-download",
-        version: "default",
-        downloadDir: options.downloadDirectory,
-      },
+      executable: await cachedExecutable(options.downloadDirectory, "default",
+        `temporal-test-server-sdk-typescript-${sdkVersion}`),
     },
     client: {
       identity: options.identity,
     },
   });
+}
+
+/**
+ * Preserve installed version-bound executables across offline runs.
+ *
+ * The pinned SDK's `ephemeral-server.ts` supplies a one-day TTL even for fixed
+ * versions; sdk-core `ephemeral_server::remove_file_past_ttl` deletes the old
+ * binary before fetching its replacement. Its `ExistingPath` arm bypasses that
+ * expiration. Cache names follow `EphemeralExe::get_or_download`; floating CLI
+ * selectors retain SDK download policy.
+ */
+async function cachedExecutable(
+  downloadDirectory: string,
+  version: string,
+  basename: string | undefined,
+): Promise<EphemeralServerExecutable> {
+  await mkdir(downloadDirectory, { recursive: true });
+  if (basename !== undefined) {
+    const executable = path.resolve(downloadDirectory, `${basename}${process.platform === "win32" ? ".exe" : ""}`);
+    const metadata = await stat(executable).catch((error: NodeJS.ErrnoException) => {
+      if (error.code === "ENOENT") return undefined;
+      throw error;
+    });
+    if (metadata !== undefined) {
+      if (!metadata.isFile()) throw new Error(`Temporal executable cache entry is not a file: ${executable}`);
+      return { type: "existing-path", path: executable };
+    }
+  }
+  return { type: "cached-download", version, downloadDir: downloadDirectory };
 }
