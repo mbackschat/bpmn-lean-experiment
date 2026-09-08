@@ -34,6 +34,7 @@ def InternalWaitKind.activationKind : InternalWaitKind → InternalActivationKin
 
 inductive InternalStateAtom where
   | controlToken (owner : ScopeOccurrenceId) (place : ControlPlaceId)
+  | tokenOwners (place : ControlPlaceId)
   | scopeOccurrence (owner : ScopeOccurrenceId)
   | runtimeControl (instanceId : SemanticId)
   | logicalTime
@@ -140,6 +141,7 @@ def stateAtomRank : InternalStateAtom → Nat
   | .activityVariable _ _ => 9
   | .activityOccurrence _ => 10
   | .activityBodyTaskClaim _ => 11
+  | .tokenOwners _ => 12
 
 def stateAtomBefore (left right : InternalStateAtom) : Bool :=
   if stateAtomRank left ≠ stateAtomRank right then
@@ -151,6 +153,7 @@ def stateAtomBefore (left right : InternalStateAtom) : Bool :=
     | .controlToken leftOwner leftPlace, .controlToken rightOwner rightPlace =>
         if leftOwner ≠ rightOwner then scopeBefore leftOwner rightOwner
         else leftPlace.value < rightPlace.value
+    | .tokenOwners left, .tokenOwners right => left.value < right.value
     | .logicalTime, .logicalTime => false
     | .activation leftKind leftElement, .activation rightKind rightElement =>
         if leftKind ≠ rightKind then activationKindRank leftKind < activationKindRank rightKind
@@ -514,10 +517,12 @@ def footprintOfPatch (patch : InternalArmingPatch) : InternalTransitionFootprint
     occurrence := occurrence
     reads := canonicalStateAtomSet
       ([.runtimeControl patch.runtimeInstanceId, .scopeOccurrence patch.owner,
-        .logicalTime, .controlToken patch.owner patch.input, .activation kind.activationKind elementId,
+        .logicalTime, .controlToken patch.owner patch.input, .tokenOwners patch.input,
+        .activation kind.activationKind elementId,
         .wait kind occurrence, .openWaitAnchor occurrence] ++ extraReads ++ correlationReads)
     writes := canonicalStateAtomSet
-      ([.controlToken patch.owner patch.input, .activation kind.activationKind elementId,
+      ([.controlToken patch.owner patch.input, .tokenOwners patch.input,
+        .activation kind.activationKind elementId,
         .wait kind occurrence, .openWaitAnchor occurrence] ++ extraWrites)
     publications := canonicalPublicationAtomSet
       ([.committedTransition patch.operation.id kind patch.origin patch.owner

@@ -589,6 +589,45 @@ theorem complete_pair_publication_is_order_independent :
     rfl
   · rw [leftEq, rightEq]
 
+private def censusInput : ControlPlaceId := ⟨"place:user-input"⟩
+
+private def foreignTokenState : RuntimeState :=
+  { state with tokens := addToken state.tokens censusInput calledOwner }
+
+private def censusWriter (place : ControlPlaceId) : InternalTransitionFootprint :=
+  { abstractLeftFootprint with
+    reads := []
+    writes := [.controlToken calledOwner place, .tokenOwners place]
+    publications := [] }
+
+theorem foreign_owner_changes_selection_without_changing_the_selected_bucket :
+    onlyTokenOwner? state censusInput = some owner ∧
+      onlyTokenOwner? foreignTokenState censusInput = none ∧
+      foreignTokenState.tokens.filter
+          (fun token => decide (token.placeId = censusInput ∧ token.owner = owner)) =
+        state.tokens.filter
+          (fun token => decide (token.placeId = censusInput ∧ token.owner = owner)) ∧
+      removeToken foreignTokenState.tokens censusInput calledOwner = state.tokens ∧
+      onlyTokenOwner?
+          { state with tokens := addToken state.tokens ⟨"place:unrelated"⟩ calledOwner }
+          censusInput = some owner := by
+  decide +kernel
+
+theorem census_footprint_rejects_foreign_bucket_writes_and_preserves_disjoint_places :
+    let reader := internalTransitionFootprint? program state userTask
+    reader.map (fun footprint =>
+        (footprint.reads.contains (.tokenOwners censusInput),
+         footprint.writes.contains (.tokenOwners censusInput))) = some (true, true) ∧
+      reader.map (fun footprint =>
+        footprintsNonInterfering (censusWriter censusInput) footprint) = some false ∧
+      reader.map (fun footprint =>
+        footprintsNonInterfering (censusWriter ⟨"place:unrelated"⟩) footprint) = some true ∧
+      reader.map (fun footprint =>
+        footprintsNonInterfering
+          { censusWriter censusInput with writes := [.controlToken calledOwner censusInput] }
+          footprint) = some true := by
+  decide +kernel
+
 /-- Zero fuel retains bound precedence and does not relabel the frontier as an ambiguous choice. -/
 theorem zero_fuel_bound_precedence_is_unchanged :
     let result := applyStimulus 0 parallelProgram initialState parallelStart

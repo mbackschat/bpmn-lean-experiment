@@ -32,6 +32,27 @@ theorem activation_mem_footprint_reads (patch : InternalArmingPatch) :
     .activation patch.write.kind.activationKind patch.write.elementId ∈ (footprintOfPatch patch).reads := by
   simp [footprintOfPatch, canonicalStateAtomSet, mem_sortBy]
 
+theorem tokenOwners_mem_footprint_reads (patch : InternalArmingPatch) :
+    .tokenOwners patch.input ∈ (footprintOfPatch patch).reads := by
+  simp [footprintOfPatch, canonicalStateAtomSet, mem_sortBy]
+
+theorem tokenOwners_mem_footprint_writes (patch : InternalArmingPatch) :
+    .tokenOwners patch.input ∈ (footprintOfPatch patch).writes := by
+  simp [footprintOfPatch, canonicalStateAtomSet, mem_sortBy]
+
+theorem tokenOwners_write_conflicts_with_arming (writer : InternalTransitionFootprint)
+    (reader : InternalArmingPatch)
+    (written : .tokenOwners reader.input ∈ writer.writes) :
+    footprintsNonInterfering writer (footprintOfPatch reader) = false := by
+  cases separated : footprintsNonInterfering writer (footprintOfPatch reader) with
+  | false => rfl
+  | true =>
+      simp only [footprintsNonInterfering, Bool.and_eq_true] at separated
+      have absent := not_mem_right_of_listsDisjoint writer.writes
+        (footprintOfPatch reader).reads separated.1.1.1
+        (.tokenOwners reader.input) written
+      exact False.elim (absent (tokenOwners_mem_footprint_reads reader))
+
 theorem noninterfering_occurrence_ne (left right : InternalArmingPatch) (separated : footprintsNonInterfering (footprintOfPatch left) (footprintOfPatch right) = true) :
     left.write.occurrence ≠ right.write.occurrence := by
   intro same
