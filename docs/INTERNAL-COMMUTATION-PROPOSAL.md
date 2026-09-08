@@ -3,7 +3,7 @@
 ## Status
 
 Lifecycle: implementation-in-progress
-Review: approved
+Review: pending
 
 ## Decision question and boundary
 
@@ -11,7 +11,7 @@ What is the smallest reusable rule that lets bounded internal closure advance ev
 
 The implemented first `INTERNAL-COMMUTATION` Beta risk checkpoint replaced the constructor-specific exception for exactly two distinct `awaitUserTask` operations with one semantic-footprint criterion over an exact two-operation frontier. The checkpoint covers ordinary `awaitUserTask`, `awaitMessage`, `awaitTimer`, and `awaitEffect` arming operations in Lean and the independently written TypeScript core. It added no BPMN source shape, profile capability, Semantic Process operation, RuntimeState field, stimulus, public wire field, Temporal host capability, MUE content ID, or support claim.
 
-The full MUE content obligation remains open after that checkpoint. This amendment selects the final-closure account for larger enabled sets, every current operation family, and explicit choice representation while leaving the implemented checkpoint unchanged. It adds no BPMN construct or newly admitted topology. The amended account requires a new cold proposal verdict before implementation resumes.
+The full MUE content obligation remains open after that checkpoint. The approved final-closure account selects larger enabled sets, every current operation family, and explicit choice representation without adding a BPMN construct or newly admitted topology. The [selected-join readiness amendment](#selected-join-readiness-dependency-amendment) reopens only its dependency vocabulary and awaits a new cold proposal verdict before that correction is implemented. Earlier approved checkpoints retain their recorded boundaries.
 
 ## Existing risk
 
@@ -139,7 +139,7 @@ The state-atom vocabulary is selected by the following exhaustive RuntimeState c
 | `timerWaits` | `timerWaits` | `timerWait(occurrence)`; owned by its runtime owner | read/write `W,A,R,X` | a member-owned wait conflicts with region removal |
 | `effectWaits` | `effectWaits` | `effectWait(occurrence)`; owned by its runtime owner | read/write `W,R,X` | a member-owned wait conflicts with region removal |
 | `effectIncidents` | `effectIncidents` | `effectIncident(incident)` and its suspended `effectWait`; owned by the wait owner | read `W,R,X`; write `R,X` | incident and suspended wait conflict with owner-region removal |
-| `selectedBranchSets` | `selectedBranchSets` | `selectedBranch(owner,selectionKey)`; owned by `owner` | read/write `L,R` | a member-owned selection conflicts with region removal |
+| `selectedBranchSets` | `selectedBranchSets` | `selectedBranch(owner,selectionKey)`, owned by `owner`, plus the proposed owner-free population atom `selectedBranchOwners(selectionKey)` | read/write `L,R`; same-key population reads and every insertion/removal follow the readiness amendment | a member-owned selection conflicts with region removal; removal also writes each affected selection-key population |
 | `eventRaces` | `eventRaces` | `eventRace(occurrence)` plus its two wait associations; owned by the race owner | read/write `A,R,X` | race and both associated waits conflict with owner-region removal |
 | `calledProcessOccurrences` | `calledProcessOccurrences` | `callOccurrence(callerOccurrence)` plus caller/called-root association; owned jointly by the caller and called root | read/write `S,R` | removal of either endpoint conflicts; region membership follows both transitive scope-parent and Call edges, while disjoint call trees remain separable |
 | `activityOccurrences` | `activityOccurrences` | `activityOccurrence(activityId)`, body-member, and attached-handler atoms; owned by the containing scope and containing its body members | read/write `A,R,X` | containing-scope removal, body-member removal, or concurrent body insertion conflicts |
@@ -172,6 +172,26 @@ Arbitrary raw-state commutation also requires canonical storage at every newly a
 Each prepared-operation owner owes reusable laws in Lean and equivalent executable discriminators in TypeScript over every admitted Program and every runtime-well-formed, canonical, open-set-projectable intermediate state: applying its patch implements the existing operation relation and preserves those premises; applying an independent patch preserves byte-for-byte equality of the complete prepared value, including its footprint and publication template; and applying two independent patches commutes in raw canonical state and numbering-free publication. These laws must remain applicable after every preceding independent patch, so adjacent swaps do not assume their intermediate premises. The executor must apply the classified prepared patch or check equality of the complete re-derived preparation before accepting the step; matching only its operation ID is insufficient. Composite operations may reuse established per-family preservation theorems, but no family may claim a complete footprint by calling its successor and diffing state. These remain final-integration obligations for the remaining families; the finite prepared arming checkpoint below establishes them only for its closed arming domain.
 
 The [Lean region module](../BpmnSemantics/SemanticProcess/InternalCommutationRegion.lean) is imported by [the maintained library root](../BpmnSemantics.lean). That inclusion supplies the bounded ownership-closure definitions; it establishes neither production integration of region families nor a general region-commutation proof.
+
+### Selected-join readiness dependency amendment
+
+The existing [TypeScript selector](../packages/semantic-core/src/semantic-process-inclusive-gateway-runtime.ts) and [Lean selected synchronization](../BpmnSemantics/SemanticProcess/InclusiveGateway.lean) accept exactly one ready record across all owners of the operation's selection key. A record is ready when every expected input has an owned token. The [preparation prerequisite](#local-control-preparation-prerequisite) records two valid-state counterexamples to protecting only the selected record. This amendment changes dependency tracking for that existing selector; it changes no Inclusive Gateway meaning, runtime validity, admitted topology, or public contract.
+
+Add `selectedBranchOwners(selectionKey)` to the closed state-atom vocabulary. It protects the complete same-key record population, including absence, independently of any selected owner. Equality uses the exact selection key and existing tagged Unicode-scalar ordering. No occurrence region owns this atom; regional mutations enumerate the keys they change. The existing `selectedBranch(owner,selectionKey)` atom protects the complete keyed record content. Lean introduces both typed atoms when its preparation vocabulary grows; neither is currently part of its ordinary/composed arming vocabulary.
+
+| Prepared operation | Required selected-record reads | Selected-record writes |
+|---|---|---|
+| `selectMany` | Absence of the selected owner's `selectedBranch(owner,key)` | Inserted `selectedBranch(owner,key)` and `selectedBranchOwners(key)` |
+| `synchronizeSelected` | `selectedBranchOwners(key)`; every pre-state same-key `selectedBranch(owner,key)`; every `controlToken(owner,input)` named by each such record, including absent buckets and inputs of unready records | Removed `selectedBranch(owner,key)` and `selectedBranchOwners(key)` |
+| Regional removal | Existing region and operation-specific reads remain required | Every removed record's `selectedBranch(owner,key)` and one `selectedBranchOwners(key)` for each affected key, derived from the exact pre-state ownership closure |
+
+Token writes retain their existing owned-bucket and place-census obligations. The selected join needs no `tokenOwners(place)` read because each record supplies the exact owner; its separate population read protects record insertion and removal. Readiness reads follow each record's actual `expectedInputs`, not only the operation's declared join inputs, because the current runtime invariant does not equate those lists. Atom construction deduplicates repeated dependencies before canonical validation while retaining every distinct owner and key. Complete-preparation equality, not merely unchanged enabledness, remains the frame obligation.
+
+The writer boundary includes Inclusive split insertion, selected-join consumption, [Call cleanup](../packages/semantic-core/src/semantic-process-call-runtime.ts), and [scope cancellation](../packages/semantic-core/src/semantic-process-scope-cancellation.ts), following transitive scope-parent and Call ownership. Termination includes records owned by its retained root. Error, Terminate, and Call-return preparation must enumerate affected populations before any regional family can batch. Scope completion adds no removal write when its existing quiescence condition leaves no record to remove. Initialization and [terminal Compensation cleanup](../packages/semantic-core/src/compensation-trigger-handler-completion.ts), including the [Lean cancellation path](../BpmnSemantics/SemanticProcess/CompensationTriggerHandlerCancellation.lean), remain external or unavailable to batching; any later prepared writer must carry the same population obligation. This amendment admits none of those excluded families.
+
+The separating oracle uses one structurally admitted child-scope Program with two live child activations and one ready same-key record. In the first state, a token producer makes the second existing record ready. In the second, an Inclusive split inserts a second ready record whose expected token already exists. Both predecessor and actual successor must independently pass runtime well-formedness, canonical storage, open-set projection, and control-position projection. The join is prepared before either producer and unavailable afterward; corrected footprints must conflict. Removing the unready-record bucket read must restore the first wrong independence result, while removing the population atom must restore the second. These are admitted-Program state witnesses, not registered-source reachability claims.
+
+With otherwise disjoint dependencies, positive controls retain independence for unrelated selection keys and for token changes to unrelated owned buckets, including a different owner's bucket at the same place. Regional tests bind same-key cleanup through descendants and called roots, plus an unrelated-key control. The existing [local-control tests](../packages/semantic-core/test/internal-commutation-local-control.test.ts), [preparation tests](../packages/semantic-core/test/internal-transition-local-control-preparation.test.ts), [region tests](../packages/semantic-core/test/internal-commutation-region.test.ts), and [cross-language census guard](../scripts/internal-commutation-census.test.ts) remain acceptance constraints. Lean must establish corresponding typed conflict and readiness-frame facts before selected joins enter its batch theorem; complete runtime and accepted-publication preservation remain the broader family obligations above. The unchanged [Temporal preflight](#temporal-hosting-and-information-preservation-preflight) applies: this private dependency correction adds no ingress, persistence, replay, or host-admission mechanism.
 
 ### Numbering-free publication template
 
@@ -341,7 +361,7 @@ The private footprint vocabulary now includes owner-free `tokenOwners(place)` al
 | Sequential/parallel Multi-Instance entry | Input | Input; normal output only for zero items |
 | Duplicate, Choose, and SelectMany | Input | Consumed input and actual selected outputs |
 | Synchronize | Every input | Every consumed input and output |
-| SynchronizeSelected | None; exact selected-branch ownership selects the buckets | Actual selected inputs and output |
+| SynchronizeSelected | None; record-supplied owners select exact buckets, with the separate population/readiness correction in the [pending amendment](#selected-join-readiness-dependency-amendment) | Actual selected inputs and output |
 | Exact Merge alternative | None; its owner and input are already selected | Selected input and output |
 | Ordinary/bounded scope entry and Call invocation | Input | Input and child/called entry |
 | Process initiation | None | Actual selected outputs |
