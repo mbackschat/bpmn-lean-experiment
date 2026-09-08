@@ -22,7 +22,7 @@ import type {
   InternalLocalControlPatch,
   InternalSelectedBranchPatch,
 } from "./internal-transition-local-control-patch.js";
-import type { SemanticTransitionKind } from "./semantic-transition-trace.js";
+import { SemanticTransitionKind } from "./semantic-transition-trace.js";
 import { InternalTransitionStateAtomKind } from "./internal-transition-footprint-vocabulary.js";
 import { affectedTokenBucketsAreExact, tokenOwnerCensusAtoms } from "./internal-transition-token-preparation.js";
 import { selectConditionalBranch } from "./semantic-process-control-flow-runtime.js";
@@ -380,7 +380,7 @@ function prepareTokenTransformation(
         record: {
           logicalTimeMs: state.logicalTimeMs,
           transition: {
-            kind: "internalOperation" as SemanticTransitionKind.InternalOperation,
+            kind: SemanticTransitionKind.InternalOperation,
             operationId: operation.id, operationKind: operation.kind,
             origin: operation.origin, owner,
           },
