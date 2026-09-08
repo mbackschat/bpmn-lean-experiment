@@ -56,7 +56,10 @@ theorem timer_initiation_from_fresh_root_produces_each_output
       some
         { state with
           initiationPending := false
-          tokens := outputs.map fun output => { placeId := output, owner } } := by
+          tokens := addTokens [] outputs owner } ∧
+      ∀ query, ((addTokens [] outputs owner).filter
+        fun token => decide (token.placeId = query)).length =
+          (outputs.filter fun output => decide (output = query)).length := by
   exact message_initiation_from_fresh_root_produces_each_output
     state owner outputs root pending empty
 

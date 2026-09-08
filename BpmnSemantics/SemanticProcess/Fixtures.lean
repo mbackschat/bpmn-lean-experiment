@@ -256,9 +256,9 @@ def excessAfterJoin : RuntimeState :=
   { excessJoinState with
     tokens :=
       [ rootToken parallelInstanceId ⟨"Process_ParallelForkJoin"⟩
-          ⟨"place:Flow_JoinToEnd"⟩
+          ⟨"place:Flow_AToJoin"⟩
       , rootToken parallelInstanceId ⟨"Process_ParallelForkJoin"⟩
-          ⟨"place:Flow_AToJoin"⟩ ] }
+          ⟨"place:Flow_JoinToEnd"⟩ ] }
 
 def parallelAfterCompletingA : RuntimeState :=
   (completeUserTask parallelWaitingState parallelInstanceId

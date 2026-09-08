@@ -70,7 +70,7 @@ This inventory locates the current Lean aggregate's checks, including imported c
 | Runtime collection (Lean name; TypeScript name where different) | Current conjunct or explicit gap |
 |---|---|
 | `scopeOccurrences` | `runtimePositionValid`: lifecycle, unique identity, definition/parent binding, and hosting/called-root association |
-| `tokens`; `controlTokens` | `runtimePositionValid`: multiplicity, live owner, and owning Program place |
+| `tokens`; `controlTokens` | `runtimePositionValid`: multiplicity, live owner, and owning Program place; `canonicalCollectionOrder`: complete place/owner order with multiplicity preserved |
 | `waits`; `userTaskWaits` | `waitOwnersLive`, `waitIdentitiesUnique`, `waitDeclarationsValid`, `canonicalCollectionOrder`, and the User Task branch of `runtimeStateIdentityBound` |
 | `messageWaits` | owner, identity, declaration, and order checks; event-race and attached-handler associations; counter bound open |
 | `timerWaits` | owner, identity, declaration, order, and Timer counter bound; event-race and attached-handler associations |

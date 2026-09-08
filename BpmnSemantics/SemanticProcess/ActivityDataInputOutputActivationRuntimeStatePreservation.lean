@@ -519,7 +519,7 @@ theorem dataInputOutputActivationStep_preserves_runtimeStateWellFormed_general
                 simpa [successor, controllersNotExhausted] using notExhausted
               have orderAfter : canonicalCollectionOrder successor = true := by
                 simp only [canonicalCollectionOrder, Bool.and_eq_true] at order ⊢
-                obtain ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨activityCounterOrder, taskOrder⟩, activationOrder⟩, messageOrder⟩,
+                obtain ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨tokenOrder, activityCounterOrder⟩, taskOrder⟩, activationOrder⟩, messageOrder⟩,
                   timerOrder⟩, effectOrder⟩, messageActivationOrder⟩, timerActivationOrder⟩,
                   effectActivationOrder⟩, activityVariableOrder⟩, selectionOrder⟩, raceOrder⟩,
                   callOrder⟩, activityOrder⟩, sequentialOrder⟩, parallelOrder⟩ := order
@@ -533,7 +533,7 @@ theorem dataInputOutputActivationStep_preserves_runtimeStateWellFormed_general
                     activationOrder
                   simpa [successor, setActivationCount,
                     insertTaskActivation_eq_canonicalInsertBy, decide_not] using inserted
-                refine ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨?_, ?_⟩, activationOrderAfter⟩, messageOrder⟩,
+                refine ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨orderedBy_removeToken _ input owner tokenOrder, ?_⟩, ?_⟩, activationOrderAfter⟩, messageOrder⟩,
                   timerOrder⟩, effectOrder⟩, messageActivationOrder⟩,
                   timerActivationOrder⟩, effectActivationOrder⟩, ?_⟩, selectionOrder⟩,
                   raceOrder⟩, callOrder⟩, ?_⟩, sequentialOrder⟩, parallelOrder⟩

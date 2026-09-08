@@ -550,9 +550,28 @@ theorem removeToken_commutes (tokens : List ControlToken)
           simp [removeToken, right, different]
         · simp [removeToken, left, right, ih]
 
+def canonicalInsertBy (before : α → α → Bool) (value : α) : List α → List α
+  | [] => [value]
+  | current :: rest =>
+      if before value current then value :: current :: rest
+      else current :: canonicalInsertBy before value rest
+
+def scopeOwnerBefore (left right : ScopeOccurrenceId) : Bool :=
+  if left.processInstanceId.value ≠ right.processInstanceId.value then
+    left.processInstanceId.value < right.processInstanceId.value
+  else if left.definitionScopeId.value ≠ right.definitionScopeId.value then
+    left.definitionScopeId.value < right.definitionScopeId.value
+  else
+    left.activation < right.activation
+
+def controlTokenBefore (left right : ControlToken) : Bool :=
+  if left.placeId.value ≠ right.placeId.value then
+    left.placeId.value < right.placeId.value
+  else scopeOwnerBefore left.owner right.owner
+
 def addToken (tokens : List ControlToken) (place : ControlPlaceId)
     (owner : ScopeOccurrenceId) : List ControlToken :=
-  { placeId := place, owner } :: tokens
+  canonicalInsertBy controlTokenBefore { placeId := place, owner } tokens
 
 def rootScopeOccurrence? (state : RuntimeState) : Option ScopeOccurrenceId :=
   match state.scopeOccurrences.filter (·.parent.isNone) with
@@ -623,25 +642,11 @@ def userTaskWaitBefore (left right : UserTaskWait) : Bool :=
     left.task.id.value < right.task.id.value
   else left.activation < right.activation
 
-def canonicalInsertBy (before : α → α → Bool) (value : α) : List α → List α
-  | [] => [value]
-  | current :: rest =>
-      if before value current then value :: current :: rest
-      else current :: canonicalInsertBy before value rest
-
 def insertUserTaskWait (wait : UserTaskWait) : List UserTaskWait → List UserTaskWait
   | [] => [wait]
   | current :: rest =>
       if userTaskWaitBefore wait current then wait :: current :: rest
       else current :: insertUserTaskWait wait rest
-
-def scopeOwnerBefore (left right : ScopeOccurrenceId) : Bool :=
-  if left.processInstanceId.value ≠ right.processInstanceId.value then
-    left.processInstanceId.value < right.processInstanceId.value
-  else if left.definitionScopeId.value ≠ right.definitionScopeId.value then
-    left.definitionScopeId.value < right.definitionScopeId.value
-  else
-    left.activation < right.activation
 
 def waitOccurrenceBefore (leftInstance rightInstance : SemanticId)
     (leftOwner rightOwner : ScopeOccurrenceId) (leftElement rightElement : NodeId)

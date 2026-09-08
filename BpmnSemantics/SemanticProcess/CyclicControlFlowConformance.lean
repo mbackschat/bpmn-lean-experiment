@@ -253,7 +253,7 @@ theorem representative_choice_selects_repeat_for_every_activation
     cyclicPostCompletionState, cyclicPostChooseState, cyclicWaitingState,
     cyclicVariables, singletonWaitingState, chooseToken, onlyTokenOwner?,
     tokenOwners, selectConditionalOutput, evaluateSimpleBooleanExpression,
-    removeToken, addToken]
+    removeToken, addToken, canonicalInsertBy]
 
 theorem representative_choice_selects_rework_for_every_activation
     (activation : Nat) :
@@ -267,7 +267,7 @@ theorem representative_choice_selects_rework_for_every_activation
     cyclicPostCompletionState, cyclicPostChooseState, cyclicWaitingState,
     cyclicVariables, singletonWaitingState, chooseToken, onlyTokenOwner?,
     tokenOwners, selectConditionalOutput, evaluateSimpleBooleanExpression,
-    removeToken, addToken]
+    removeToken, addToken, canonicalInsertBy]
 
 theorem representative_merge_passes_selected_branch_for_every_activation
     (activation : Nat) (route : String) (output : ControlPlaceId)
@@ -322,7 +322,7 @@ theorem representative_choice_selects_exit_for_every_activation
     cyclicPostCompletionState, cyclicPostChooseState, cyclicWaitingState,
     cyclicVariables, singletonWaitingState, chooseToken, onlyTokenOwner?,
     tokenOwners, selectConditionalOutput, evaluateSimpleBooleanExpression,
-    removeToken, addToken]
+    removeToken, addToken, canonicalInsertBy]
 
 theorem representative_none_end_consumes_the_only_token
     (activation : Nat) :

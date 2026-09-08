@@ -1,4 +1,5 @@
 import BpmnSemantics.SemanticProcess.InternalCommutationProjection
+import BpmnSemantics.SemanticProcess.TokenOrder
 
 /-! # Internal commutation state-frame proofs
 
@@ -386,6 +387,8 @@ theorem applyInternalArmingPatch_preserves_order (state : RuntimeState)
     (patch : InternalArmingPatch) (canonical : canonicalCollectionOrder state = true) :
     canonicalCollectionOrder (applyInternalArmingPatch state patch) = true := by
   have updateOrders := canonicalCollectionOrder_internalArmingOrders state canonical
+  have tokenOrder := orderedBy_removeToken state.tokens patch.input patch.owner
+    (canonicalCollectionOrder_tokens state canonical)
   simp only [canonicalCollectionOrder, Bool.and_eq_true] at canonical ⊢
   cases patch with | mk _ _ _ _ _ _ _ _ _ write =>
     cases write with

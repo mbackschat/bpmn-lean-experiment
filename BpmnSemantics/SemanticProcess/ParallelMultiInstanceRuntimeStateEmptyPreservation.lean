@@ -1,4 +1,5 @@
 import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStatePreservation
+import BpmnSemantics.SemanticProcess.TokenOrder
 
 /-! # Empty parallel Multi-Instance runtime-state preservation
 
@@ -90,7 +91,9 @@ theorem sharedParallelEmpty_preserves_runtimeStateWellFormed (program : Program)
   refine ⟨?_, messagesUnambiguous⟩
   refine ⟨?_, timersUnambiguous⟩
   refine ⟨?_, bodies⟩
-  refine ⟨?_, order⟩
+  refine ⟨?_, canonicalCollectionOrder_tokens_update before _ order
+      (orderedBy_addToken _ arm.normalOutput owner
+        (orderedBy_removeToken _ arm.input owner (canonicalCollectionOrder_tokens before order)))⟩
   refine ⟨?_, hidden⟩
   refine ⟨?_, declarations⟩
   refine ⟨?_, bounds⟩

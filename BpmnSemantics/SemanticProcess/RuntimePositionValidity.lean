@@ -1,5 +1,6 @@
 import BpmnSemantics.SemanticProcess.CallActivity
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import BpmnSemantics.SemanticProcess.TokenStorage
 
 /-! # Runtime position validity
 
@@ -333,7 +334,7 @@ theorem runtimePositionValid_addToken (program : Program) (expectedInstanceId : 
         have prior := scopes occurrence member
         simpa [exactLiveFrame, scopeValidFrame] using prior
       change (addToken state.tokens place owner).all (tokenBindingValid program after) = true
-      simp only [addToken, List.all_cons, Bool.and_eq_true]
+      simp only [addToken_all, Bool.and_eq_true]
       refine ⟨?_, ?_⟩
       unfold tokenBindingValid controlPlaceScope?
       obtain ⟨declared, placeUnique⟩ := placeUnique

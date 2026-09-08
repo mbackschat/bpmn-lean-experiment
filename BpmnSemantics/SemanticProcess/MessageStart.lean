@@ -1,5 +1,5 @@
 import BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
-import BpmnSemantics.SemanticProcess.RuntimeState
+import BpmnSemantics.SemanticProcess.TokenStorage
 
 /-! # Message Start Event transition
 
@@ -70,9 +70,14 @@ theorem message_initiation_from_fresh_root_produces_each_output
       some
         { state with
           initiationPending := false
-          tokens := outputs.map fun output => { placeId := output, owner } } := by
-  simp [initiateMessageState?, initiateTriggeredStartState?, root, pending,
-    empty, addTokens, addToken]
+          tokens := addTokens [] outputs owner } ∧
+      ∀ query, ((addTokens [] outputs owner).filter
+        fun token => decide (token.placeId = query)).length =
+          (outputs.filter fun output => decide (output = query)).length := by
+  constructor
+  · simp [initiateMessageState?, initiateTriggeredStartState?, root, pending, empty]
+  · intro query
+    simpa using addTokens_place_multiplicity [] outputs owner query
 
 /-- One-output Message initiation is the exact singleton specialization of the generic fan-out. -/
 theorem message_initiation_one_output_corollary
@@ -86,8 +91,9 @@ theorem message_initiation_one_output_corollary
         { state with
           initiationPending := false
           tokens := [{ placeId := output, owner }] } := by
-  exact message_initiation_from_fresh_root_produces_each_output
-    state owner [output] root pending empty
+  simpa [addTokens, addToken, canonicalInsertBy] using
+    (message_initiation_from_fresh_root_produces_each_output
+      state owner [output] root pending empty).1
 
 /-- Identity correspondence between two fresh one-output starts whose BPMN and Process identifiers may differ. -/
 structure StartControlIdentityRenaming where

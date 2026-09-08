@@ -449,7 +449,8 @@ The controller collection is included although this capsule adds no Lean inserti
 the independently written core does maintain and check that order: admitting an unordered controller
 list here would be a state one target refuses and the other accepts. -/
 def canonicalCollectionOrder (state : RuntimeState) : Bool :=
-  orderedBy activationBefore state.activityActivations &&
+  orderedBy controlTokenBefore state.tokens &&
+    orderedBy activationBefore state.activityActivations &&
     orderedBy userTaskWaitBefore state.waits &&
     orderedBy activationBefore state.activations &&
     orderedBy messageWaitBefore state.messageWaits &&

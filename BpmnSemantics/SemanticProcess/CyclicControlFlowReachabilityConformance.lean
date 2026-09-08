@@ -127,7 +127,7 @@ theorem arbitrary_route_choice_is_exact
         CyclicRouteValue.output, CyclicRouteValue.bindings,
         singletonWaitingState, chooseToken, onlyTokenOwner?, tokenOwners,
         selectConditionalOutput, evaluateSimpleBooleanExpression,
-        removeToken, addToken, initialState]
+        removeToken, addToken, canonicalInsertBy, initialState]
   | nullValue =>
       simp [cyclicChoiceOperation, cyclic_program_has_no_snapshot_declaration, chooseState?,
         cyclicPostCompletionWithBindings, cyclicPostChooseWithBindings,
@@ -135,7 +135,7 @@ theorem arbitrary_route_choice_is_exact
         CyclicRouteValue.output, CyclicRouteValue.bindings,
         singletonWaitingState, chooseToken, onlyTokenOwner?, tokenOwners,
         selectConditionalOutput, evaluateSimpleBooleanExpression,
-        removeToken, addToken, initialState]
+        removeToken, addToken, canonicalInsertBy, initialState]
   | stringValue value =>
       by_cases isRepeat : value = "repeat"
       · subst value
@@ -145,7 +145,7 @@ theorem arbitrary_route_choice_is_exact
           CyclicRouteValue.output, CyclicRouteValue.bindings,
           singletonWaitingState, chooseToken, onlyTokenOwner?, tokenOwners,
           selectConditionalOutput, evaluateSimpleBooleanExpression,
-          removeToken, addToken, initialState]
+          removeToken, addToken, canonicalInsertBy, initialState]
       · by_cases rework : value = "rework"
         · subst value
           simp [cyclicChoiceOperation, cyclic_program_has_no_snapshot_declaration, chooseState?,
@@ -154,14 +154,14 @@ theorem arbitrary_route_choice_is_exact
             CyclicRouteValue.output, CyclicRouteValue.bindings,
             singletonWaitingState, chooseToken, onlyTokenOwner?, tokenOwners,
             selectConditionalOutput, evaluateSimpleBooleanExpression,
-            removeToken, addToken, initialState]
+            removeToken, addToken, canonicalInsertBy, initialState]
         · simp [cyclicChoiceOperation, cyclic_program_has_no_snapshot_declaration, chooseState?,
             cyclicPostCompletionWithBindings, cyclicPostChooseWithBindings,
             cyclicWaitingWithBindings, cyclicScopedVariables,
             CyclicRouteValue.output, CyclicRouteValue.bindings,
             singletonWaitingState, chooseToken, onlyTokenOwner?, tokenOwners,
             selectConditionalOutput, evaluateSimpleBooleanExpression,
-            removeToken, addToken, initialState, isRepeat, rework]
+            removeToken, addToken, canonicalInsertBy, initialState, isRepeat, rework]
 
 theorem arbitrary_route_review_is_exact
     (activation : Nat) (route : CyclicRouteValue) :
@@ -206,7 +206,7 @@ private theorem exact_review_completion_before_patch
         some (cyclicPostCompletionWithBindings activation route) := by
   simp [completeUserTask, cyclicWaitingWithBindings,
     cyclicPostCompletionWithBindings, cyclicWait, cyclicScopedVariables,
-    singletonWaitingState, initialState, addToken]
+    singletonWaitingState, initialState, addToken, canonicalInsertBy]
 
 private theorem exact_review_patch
     (activation : Nat) (route : CyclicRouteValue)
@@ -375,7 +375,7 @@ private theorem selected_action_preserves_shape
               simpa [completeUserTask, cyclicWaitingWithBindings,
                 cyclicPostCompletionWithBindings, cyclicWait,
                 cyclicScopedVariables, singletonWaitingState, initialState,
-                addToken] using completion
+                addToken, canonicalInsertBy] using completion
             subst raw
             have afterExact : after = cyclicPostCompletionWithBindings
                 currentActivation (patch.apply route) := by

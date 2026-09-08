@@ -429,7 +429,7 @@ theorem sharedParallelEntry_preserves_runtimeStateWellFormed (program : Program)
           insertActivityOccurrence_preserves_attachedMessagesUnambiguous_of_empty before record
             (by simp [record, ActivityOccurrence.messageHandlerOccurrences]) messagesUnambiguous
       simp only [canonicalCollectionOrder, Bool.and_eq_true] at order
-      obtain ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨activityCounterOrder, taskOrder⟩, activationOrder⟩, messageWaitOrder⟩,
+      obtain ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨tokenOrder, activityCounterOrder⟩, taskOrder⟩, activationOrder⟩, messageWaitOrder⟩,
         timerWaitOrder⟩, effectWaitOrder⟩, messageActivationOrder⟩, timerActivationOrder⟩,
         effectActivationOrder⟩, activityVariableOrder⟩, selectionOrder⟩, raceOrder⟩,
         callOrder⟩, activityOrder⟩, sequentialControllerOrder⟩, parallelControllerOrder⟩ := order
@@ -451,7 +451,7 @@ theorem sharedParallelEntry_preserves_runtimeStateWellFormed (program : Program)
         simpa [successor, setTimerActivationCount, decide_not] using inserted
       have orderAfter : canonicalCollectionOrder successor = true := by
         simp only [canonicalCollectionOrder, Bool.and_eq_true]
-        refine ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨?_, ?_⟩, activationOrderAfter⟩, messageWaitOrder⟩,
+        refine ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨orderedBy_removeToken _ arm.input owner tokenOrder, ?_⟩, ?_⟩, activationOrderAfter⟩, messageWaitOrder⟩,
           ?_⟩, effectWaitOrder⟩, messageActivationOrder⟩, timerActivationOrderAfter⟩,
           effectActivationOrder⟩, activityVariableOrder⟩, selectionOrder⟩, raceOrder⟩,
           callOrder⟩, ?_⟩, ?_⟩, ?_⟩

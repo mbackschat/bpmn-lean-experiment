@@ -1,5 +1,6 @@
 import BpmnSemantics.SemanticProcess.CollectionOrder
 import BpmnSemantics.SemanticProcess.MessagePayload
+import BpmnSemantics.SemanticProcess.TokenOrder
 
 /-! # Message payload delivery preservation
 
@@ -241,11 +242,12 @@ theorem deliverPayloadMessage_preserves_runtimeStateWellFormed
         simpa [settled, framed, hiddenRecordDeclarationsValid] using hidden
       have orderAfter : canonicalCollectionOrder settled = true := by
         simp only [canonicalCollectionOrder, Bool.and_eq_true] at order ⊢
-        obtain ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨taskOrder, activationOrder⟩, messageOrder⟩,
+        obtain ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨tokenOrder, activityCounterOrder⟩, taskOrder⟩, activationOrder⟩, messageOrder⟩,
           timerOrder⟩, effectOrder⟩, messageActivationOrder⟩, timerActivationOrder⟩,
           effectActivationOrder⟩, activityVariableOrder⟩, selectionOrder⟩, raceOrder⟩,
           callOrder⟩, activityOrder⟩, sequentialOrder⟩, parallelOrder⟩ := order
-        refine ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨taskOrder, activationOrder⟩, ?_⟩, timerOrder⟩,
+        refine ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨orderedBy_addToken _ wait.output wait.owner tokenOrder,
+          activityCounterOrder⟩, taskOrder⟩, activationOrder⟩, ?_⟩, timerOrder⟩,
           effectOrder⟩, messageActivationOrder⟩, timerActivationOrder⟩,
           effectActivationOrder⟩, activityVariableOrder⟩, selectionOrder⟩, raceOrder⟩,
           callOrder⟩, activityOrder⟩, sequentialOrder⟩, parallelOrder⟩

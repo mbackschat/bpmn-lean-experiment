@@ -1,4 +1,4 @@
-import BpmnSemantics.SemanticProcess.RuntimeState
+import BpmnSemantics.SemanticProcess.TokenStorage
 
 /-! # Exclusive Merge runtime semantics
 
@@ -99,7 +99,7 @@ theorem mergeExclusiveState_singleton_offer
         { before with
           tokens := [{ placeId := output, owner := token.owner }] } := by
   simp [mergeExclusiveState?, exclusiveMergeInputTokens,
-    tokenUsesMergeInput, singleton, offered, removeToken, addToken]
+    tokenUsesMergeInput, singleton, offered, removeToken, addToken, canonicalInsertBy]
 
 /-- Every executable Exclusive Merge step consumes and produces one token, preserving total token cardinality. -/
 theorem mergeExclusiveState_preserves_token_count
@@ -116,7 +116,7 @@ theorem mergeExclusiveState_preserves_token_count
       | nil =>
           simp at result
           subst after
-          simp [addToken]
+          simp only [addToken_length]
           exact removeToken_length_of_member before.tokens token
             (by
               have member : token ∈ before.tokens := by

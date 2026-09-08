@@ -61,7 +61,7 @@ Risk order is executable in Ordered work: data lifetime first, then internal sch
 
 Integration state: `queued`.
 
-For the current MUE programme, the owner authorizes pushes at the triggers in [the three-level verification policy](TESTING-SPEC.md#three-level-verification-policy) after every selected pre-push entry point passes. This authorizes neither pushing an unverified target nor bypassing a required review or gate.
+Owner instruction on 2026-09-08 supersedes the earlier MUE push authorization: do not push without an explicit new instruction. Continue local implementation, commits, required reviews, and the applicable gates in [the three-level verification policy](TESTING-SPEC.md#three-level-verification-policy).
 
 
 ## Ordered work
@@ -107,7 +107,7 @@ Risk band: RC internal scheduling; the six external reviews and composed Activit
 
 The [composed Activity-data specification](capsules/ACTIVITY-DATA-INPUT-OUTPUT-MEDIATION-SPEC.md) closes `DATA-AND-TASK-MECHANISMS` for RC. Its single input-bearing occurrence lifetime, exact output routing, atomic cleanup, null/absence distinction, and live durability evidence are preserved. It admits no new Task host, expression runtime, or broader data interface.
 
-Next action: implement canonical token storage before token-producing and regional families join batches. The independently approved [place-wide token-owner census checkpoint](INTERNAL-COMMUTATION-PROPOSAL.md#place-wide-token-owner-census-checkpoint) supplies the prerequisite dependency atom; its [review receipt](INTERNAL-COMMUTATION-PROPOSAL.md#independent-cold-review-receipt), immutable resource calibration, and clean complete gate are green. Preserve token multiplicity and exact owner identity while proving insertion, removal, and order laws in both representations. Regions, scheduled choice, and final closure remain open; the [cold library memory correction](CAPSULE-COST-LEDGER.md#package-wide-theorem-elaboration-memory-correction) retains the unchanged 3 GiB ceiling.
+Next action: complete immutable resource calibration, repository-wide verification, and independent checkpoint review for [canonical token storage](INTERNAL-COMMUTATION-PROPOSAL.md#canonical-token-storage-checkpoint) before token-producing and regional families join batches. The [place-wide token-owner census checkpoint](INTERNAL-COMMUTATION-PROPOSAL.md#place-wide-token-owner-census-checkpoint) supplies the approved dependency atom. Both representations now check complete place/owner order while preserving multiplicity; Lean proves insertion, removal, permutation, and order laws, and its existing preservation consumers retain their public premises. Regions, scheduled choice, and final closure remain open; the [cold library memory correction](CAPSULE-COST-LEDGER.md#package-wide-theorem-elaboration-memory-correction) retains the unchanged 3 GiB ceiling.
 
 Oracle: independent prepared operations preserve one another's complete preparation and commute in exact canonical RuntimeState and accepted publication; shared Process reads commute, conflicting writes and overlapping occurrence regions refuse batching, and a failed batch or schedule rolls back the complete command before publication.
 
