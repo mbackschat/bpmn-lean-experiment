@@ -32,6 +32,7 @@ import {
   startFor,
 } from "./flow-node-occurrence-lifecycle-fixture.ts";
 import { parallelProgram, parallelStart } from "./parallel-multi-instance-fixture.ts";
+import { frontier as tokenFrontier, program as tokenProgram } from "./internal-commutation-fixture.ts";
 
 /**
  * Well-formedness of committed runtime state, and the malformed states the account refuses.
@@ -300,6 +301,10 @@ test("every commutation-affected collection requires canonical storage order", (
     { elementId: "a-counter", count: 1 },
   ];
   const cases = [
+    ["control tokens", tokenProgram, "Instance_InternalCommutation", {
+      ...tokenFrontier,
+      controlTokens: [...tokenFrontier.controlTokens].reverse(),
+    }],
     ["Message waits", eventRaceProgram, instanceId(), {
       ...armed,
       messageWaits: [nextMessage, messageWait],

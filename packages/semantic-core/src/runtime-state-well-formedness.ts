@@ -23,6 +23,7 @@ import {
   compareMessageWaits,
   compareSelectedBranchSets,
   compareTimerWaits,
+  compareTokenPlaces,
   compareUserTaskWaits,
   ControlStateKind,
   sameOccurrence,
@@ -424,6 +425,7 @@ export function runtimeStateDefects(
     state.activityActivations,
   ];
   const ordered =
+    isSorted(state.controlTokens, compareTokenPlaces) &&
     isSorted(state.activityOccurrences, compareActivityOccurrences) &&
     isSorted(state.userTaskWaits, compareUserTaskWaits) &&
     isSorted(state.messageWaits, compareMessageWaits) &&

@@ -167,6 +167,8 @@ This contributor map assigns source-file responsibilities inside `@bpmn-lean/sem
 
 Tests under [`test/`](test/) mirror these owners by contract or semantic family. The registry-driven [runtime-state preservation lane](../differential/test/runtime-state-preservation.test.ts) sits at the differential composition boundary so compiling every registered program does not add parser or catalog dependencies to this package. The [testing specification](../../docs/TESTING-SPEC.md) selects the applicable focused and repository gates.
 
+The [canonical token storage tests](test/canonical-token-storage.test.ts) check raw complete-key order, multiplicity, and admitted execution prefixes. Position-valid reversed controls isolate the aggregate order check; separate projection controls retain duplicate-bucket and nonpositive-multiplicity refusal.
+
 The [closure atomicity tests](test/closure-atomicity.test.ts) and [publication tests](test/semantic-transition-publication.test.ts) check rollback and erasure at public result boundaries. Tests needing an intermediate internal state use the [private admission-and-prefix fixture](test/internal-operation-prefix-fixture.ts), whose [guards](test/internal-operation-prefix-fixture.test.ts) require a unique enabled operation at every consumed prefix step and the exact final frontier.
 
 The [Compensation runtime contract tests](test/compensation-trigger-handler-runtime-contract.test.ts) and [Lean collision witnesses](../../BpmnSemantics/CompensationTriggerHandlerRuntimeConformance.lean) check handler-effect identity against ordinary waits and retained incidents independently. An empty ordinary-wait collection must not hide an incident collision; unrelated incident identities remain the positive control.

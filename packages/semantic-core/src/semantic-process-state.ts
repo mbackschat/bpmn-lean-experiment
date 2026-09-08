@@ -434,7 +434,7 @@ export function compareEffectIncidents(
   return compareOccurrences(left.id.effectId, right.id.effectId);
 }
 
-function compareTokenPlaces(
+export function compareTokenPlaces(
   left: ControlPlaceTokens,
   right: ControlPlaceTokens,
 ): number {
