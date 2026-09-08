@@ -1,5 +1,4 @@
 import BpmnSemantics.SemanticProcess.InternalLocalControlArmingCommutation
-import BpmnSemantics.SemanticProcess.InternalArmingBatch
 
 /-! Complete finite mixed preparations follow the predecessor-only
 [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).

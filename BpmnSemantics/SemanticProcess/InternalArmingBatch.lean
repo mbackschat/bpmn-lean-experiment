@@ -7,10 +7,6 @@ namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
 open BpmnSemantics
 
-theorem PreparedInternalArming.independent_symm {left right : PreparedInternalArming}
-    (independent : left.Independent right) : right.Independent left :=
-  ⟨independent.2, independent.1⟩
-
 theorem prepared_arming_pair (program : Program) (state : RuntimeState)
     (left right : PreparedInternalArming)
     (leftPrepared : left.Prepared program state)

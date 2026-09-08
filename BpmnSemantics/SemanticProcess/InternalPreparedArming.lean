@@ -53,6 +53,10 @@ def PreparedInternalArming.Independent (left right : PreparedInternalArming) : P
 instance (left right : PreparedInternalArming) : Decidable (left.Independent right) :=
   inferInstanceAs (Decidable (_ ∧ _))
 
+theorem PreparedInternalArming.independent_symm {left right : PreparedInternalArming}
+    (independent : left.Independent right) : right.Independent left :=
+  ⟨independent.2, independent.1⟩
+
 def prepareInternalArmingBatch? (program : Program) (state : RuntimeState)
     (operations : List SemanticOperation) : Option (List PreparedInternalArming) := do
   if operations.length < 2 then none else pure ()
