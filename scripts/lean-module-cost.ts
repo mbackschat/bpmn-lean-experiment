@@ -98,11 +98,9 @@ export type LeanModuleCostViolation = DeepReadonly<
 /**
  * Fraction of the measured memory bound above which a module must be disclosed.
  *
- * There is deliberately no absolute ceiling that rows must stay under. Two
- * recorded rows already exceed the enforced bound without having been killed,
- * for the accounting reason stated in `accountingCaveat`, so a ceiling
- * assertion would be either unpassable or an invitation to raise the bound to
- * go green. The ratchet plus this disclosure is the whole enforcement design.
+ * GNU RSS and cgroup charging differ for the reason in `accountingCaveat`.
+ * This disclosure and the RSS ratchet detect expensive modules; the separate
+ * [cgroup acceptance rule](./lean-memory-acceptance.ts) checks the hard limit.
  */
 export const nearCapFraction = 0.9;
 
@@ -125,7 +123,7 @@ export const leanModuleCostRecord = {
     cacheState:
       "warm dependency closure; only the measured target's own .olean/.ilean/hash/trace/C/setup artifacts removed",
     accountingCaveat:
-      "Two modules report ru_maxrss above the cgroup ceiling without being OOM-killed, because Docker Desktop on macOS runs a Linux VM and GNU time's resident-set accounting does not align exactly with cgroup charging, so these figures are comparable with each other but only approximately comparable to the ledger's exit-137 row.",
+      "GNU time's resident-set accounting in Docker Desktop's Linux VM does not align exactly with cgroup charging. Compare RSS within this measurement series; use the separately recorded cgroup peak and events for hard-limit acceptance.",
   },
   nearCapModules: [
     "BpmnSemantics.MessagePayloadCatchConformance",
