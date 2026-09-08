@@ -36,7 +36,9 @@ The family map owns the independently closure-reviewed Activity boundary Message
 
 [Internal commutation](INTERNAL-COMMUTATION-PROPOSAL.md#finite-prepared-arming-checkpoint) implements finite independent ordinary/composed arming batches in reject mode. Lean proves arbitrary raw-state/publication permutation equality without snapshot declarations; TypeScript's ordinary-only snapshot batches remain outside that theorem. Scheduled choice, regional batches, other families, and closure are absent. The approved [atomicity repair](capsules/INTERNAL-CLOSURE-ATOMICITY-REPAIR-SPEC.md) proves rollback/no-publication matching TypeScript, with replay discriminators and Temporal failure-before-publication handling.
 
-The independently approved [census checkpoint](INTERNAL-COMMUTATION-PROPOSAL.md#place-wide-token-owner-census-checkpoint) adds owner-free token dependencies to TypeScript preparations and Lean ordinary/composed footprints, with insertion/removal discriminators and membership/conflict laws. Additional families remain [unintegrated](INTERNAL-COMMUTATION-PROPOSAL.md#local-control-preparation-prerequisite). Collection-order status belongs to [`implementation-status-owner:ENGINE-SEMANTIC-INVARIANT`](ENGINE-SEMANTIC-INVARIANT-IMPLEMENTATION-MAP.md#runtime-state-well-formedness).
+The approved [census](INTERNAL-COMMUTATION-PROPOSAL.md#place-wide-token-owner-census-checkpoint) owns token dependencies/evidence. [Additional families](INTERNAL-COMMUTATION-PROPOSAL.md#local-control-preparation-prerequisite) remain unintegrated; [`implementation-status-owner:ENGINE-SEMANTIC-INVARIANT`](ENGINE-SEMANTIC-INVARIANT-IMPLEMENTATION-MAP.md#runtime-state-well-formedness) owns collection ordering.
+
+The [selected-join checkpoint](INTERNAL-COMMUTATION-PROPOSAL.md#selected-join-dependency-checkpoint) implements TypeScript dependencies and Lean readiness frames; review and integration remain open.
 
 The independently approved first boundary Compensation retention checkpoint implements completed-Activity representation and pure transition preparation.
 

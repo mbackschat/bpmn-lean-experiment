@@ -246,14 +246,14 @@ The complete `what-binds` inventory requires [`implementation-status-owner:ENGIN
 | [TS closure](../../packages/semantic-core/src/semantic-process-closure.ts) | 609 | refusal precedence/rollback |
 | [TS snapshot staging](../../packages/semantic-core/src/internal-transition-attempt.ts) | 668 | pre-mutation reservation/promotion selection |
 | [TS census](../../packages/semantic-core/src/internal-commutation-census.ts) | 658 | new state field |
-| [TS footprint vocabulary](../../packages/semantic-core/src/internal-transition-footprint-vocabulary.ts) | 761 | snapshot atoms |
-| [TS footprint union](../../packages/semantic-core/src/internal-transition-footprint.ts) | 108 | retention/capacity/context helpers |
-| [TS footprint order](../../packages/semantic-core/src/internal-transition-footprint-ordering.ts) | 242 | snapshot atom order and region overlap |
+| [TS footprint vocabulary](../../packages/semantic-core/src/internal-transition-footprint-vocabulary.ts) | 760 | snapshot atoms |
+| [TS footprint union](../../packages/semantic-core/src/internal-transition-footprint.ts) | 104 | retention/capacity/context helpers |
+| [TS footprint order](../../packages/semantic-core/src/internal-transition-footprint-ordering.ts) | 239 | snapshot atom order and region overlap |
 | [TS scope-entry preparation](../../packages/semantic-core/src/internal-transition-scope-creation-preparation.ts) | 561 | retention read/write |
 | [TS bounded-entry preparation](../../packages/semantic-core/src/internal-transition-bounded-scope-preparation.ts) | 603 | retention read/write |
 | [TS completion preparation](../../packages/semantic-core/src/internal-transition-scope-completion-preparation.ts) | 656 | context/retention footprint |
-| [TS Error preparation](../../packages/semantic-core/src/internal-transition-error-preparation.ts) | 708 | purge footprint |
-| [TS termination preparation](../../packages/semantic-core/src/internal-transition-termination-preparation.ts) | 716 | purge footprint |
+| [TS Error preparation](../../packages/semantic-core/src/internal-transition-error-preparation.ts) | 706 | purge footprint |
+| [TS termination preparation](../../packages/semantic-core/src/internal-transition-termination-preparation.ts) | 714 | purge footprint |
 | [Lean Program](../../BpmnSemantics/SemanticProcessContract.lean) | 11 | direct Activity-data carriers extracted into a bounded owner |
 | [Lean structural admission](../../BpmnSemantics/SemanticProcess/ProgramStructuralValidation.lean) | 120 | declaration hook |
 | [Lean graph admission](../../BpmnSemantics/SemanticProcess/GraphValidation.lean) | 91 | lifecycle helper extracted; preserve the recovered headroom |
@@ -267,7 +267,7 @@ The complete `what-binds` inventory requires [`implementation-status-owner:ENGIN
 | [Lean trace closure](../../BpmnSemantics/SemanticProcess/TransitionTrace.lean) | 100 | refusal rollback/no trace |
 | [Lean command admission](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean) | 97 | map root-capacity refusal to `Rejected`, never `semanticFailure`, and reject an invalid committed post-state |
 | [Lean census](../../BpmnSemantics/SemanticProcess/InternalCommutationCensus.lean) | 652 | new state field |
-| [Lean footprint core](../../BpmnSemantics/SemanticProcess/InternalCommutationCore.lean) | 313 | snapshot atom/footprint |
+| [Lean footprint core](../../BpmnSemantics/SemanticProcess/InternalCommutationCore.lean) | 305 | snapshot atom/footprint |
 | [Lean Program decoder](../../BpmnSemantics/SemanticProcessJson/Program.lean) | 87 | focused decoder |
 | [Lean commutation preservation](../../BpmnSemantics/SemanticProcess/InternalCommutationRuntimePreservation.lean) | 35 | extract the snapshot frame before further growth |
 | [Lean correlation preservation](../../BpmnSemantics/SemanticProcess/MessageKeyCorrelationPreservation.lean) | 351 | frame new invariant |

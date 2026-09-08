@@ -46,6 +46,8 @@ inductive InternalStateAtom where
   | activityVariable (owner : LocalDataOwner) (name : String)
   | activityOccurrence (occurrence : ActivityOccurrenceId)
   | activityBodyTaskClaim (occurrence : OccurrenceId)
+  | selectedBranch (owner : ScopeOccurrenceId) (selectionKey : String)
+  | selectedBranchOwners (selectionKey : String)
   deriving Repr, DecidableEq
 
 structure InternalPositionDelta where
@@ -142,6 +144,8 @@ def stateAtomRank : InternalStateAtom → Nat
   | .activityOccurrence _ => 10
   | .activityBodyTaskClaim _ => 11
   | .tokenOwners _ => 12
+  | .selectedBranch _ _ => 13
+  | .selectedBranchOwners _ => 14
 
 def stateAtomBefore (left right : InternalStateAtom) : Bool :=
   if stateAtomRank left ≠ stateAtomRank right then
@@ -154,6 +158,10 @@ def stateAtomBefore (left right : InternalStateAtom) : Bool :=
         if leftOwner ≠ rightOwner then scopeBefore leftOwner rightOwner
         else leftPlace.value < rightPlace.value
     | .tokenOwners left, .tokenOwners right => left.value < right.value
+    | .selectedBranch leftOwner leftKey, .selectedBranch rightOwner rightKey =>
+        if leftOwner ≠ rightOwner then scopeBefore leftOwner rightOwner
+        else leftKey < rightKey
+    | .selectedBranchOwners left, .selectedBranchOwners right => left < right
     | .logicalTime, .logicalTime => false
     | .activation leftKind leftElement, .activation rightKind rightElement =>
         if leftKind ≠ rightKind then activationKindRank leftKind < activationKindRank rightKind
