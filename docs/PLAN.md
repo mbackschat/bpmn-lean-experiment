@@ -95,7 +95,7 @@ Within the dependency order below, prioritize high-risk work before packaging an
 
 ## Current evidence
 
-- Selected-join dependency checkpoint. Command: `./scripts/pnpm.sh run test:pre-push`. Status: `exit 0`. Date: `2026-09-08`. Commit: `3b6938feab8c5d513a0105e98a5b40c61887469e`. The [review receipt](INTERNAL-COMMUTATION-PROPOSAL.md#independent-cold-review-receipt) records independent approval with every correction closed. The clean committed repository-wide gate passes with agreement across all 72 pipeline cases; its contended timing is not a performance baseline.
+- Selected-record patch and Inclusive pairing checkpoint. Command: `./scripts/pnpm.sh run test:pre-push`. Status: `exit 0`. Date: `2026-09-08`. Commit: `33b2ef7eca2475fe43a091ba0f37a7de28ef3290`. The [review receipt](INTERNAL-COMMUTATION-PROPOSAL.md#independent-cold-review-receipt) records independent approval with every correction closed. The clean committed repository-wide gate passes with agreement across all 72 pipeline cases; its contended timing is not a performance baseline.
 - Start-capacity assurance. Command: `fixed-3-GiB docker run … ./scripts/lake.sh build BpmnSemantics.CompensationSourceCompatibilityConformance`. Status: `exit 0` after three exact-bound OOM reproductions. Date: `2026-09-03`. Commit: `8ab3ba5f`. The final target completed in 15.00s at 2,324,123,648 cgroup bytes and 1,938,140 KiB RSS with every pressure/OOM counter zero. The [specification](capsules/COMPENSATION-DURABILITY-START-DATA-REPAIR-SPEC.md#lean-assurance-correction-after-the-hard-ceiling) retains the exact 3,221,225,472-byte failures, full chronology, and rejected limit/native-decision alternatives.
 
 ## Exact resume point
@@ -104,9 +104,9 @@ Active work ID: `INTERNAL-COMMUTATION`.
 
 Risk band: RC internal scheduling; the six external reviews and composed Activity-data closure are complete.
 
-Next action: close the [standalone Inclusive pairing repair](capsules/INCLUSIVE-GATEWAY-SPEC.md#lean-assurance-lane). Lean admitted distinct-payload pairs sharing one selection key, contradicting runtime declaration uniqueness and TypeScript admission. Both collision witnesses now pass with positive graph and distinct-key controls. Finish independent review and the complete gate before resuming [local-control batch integration](INTERNAL-COMMUTATION-PROPOSAL.md#local-control-preparation-prerequisite).
+Next action: resume [local-control batch integration](INTERNAL-COMMUTATION-PROPOSAL.md#local-control-preparation-prerequisite). The [Inclusive pairing repair](capsules/INCLUSIVE-GATEWAY-SPEC.md#lean-assurance-lane), token-patch runtime validity, and selected-record algebra have independent checkpoint approval and a clean complete gate. Complete the five-family Lean preparation, frame, validity, and accepted-publication laws, then integrate finite mixed batches with the existing arming families.
 
-Pending batch source changes are preserved in Git stash `76a2b017a630d23203ded482227382003f296f0b`; restore them after repair approval without restoring its obsolete plan notes. Complete preparation, canonical multiplicity, runtime validity, and accepted publication remain required. Regions, scheduled choice, and final closure remain open. Preserve the [3 GiB ceiling](CAPSULE-COST-LEDGER.md#package-wide-theorem-elaboration-memory-correction).
+Pending batch source changes are preserved in Git stash `76a2b017a630d23203ded482227382003f296f0b`; restore only source, retaining this plan. Keep token-unit multiplicity distinct from dependency-set membership in complete preparation. Regions, scheduled choice, and final closure remain open. Preserve the [3 GiB ceiling](CAPSULE-COST-LEDGER.md#package-wide-theorem-elaboration-memory-correction).
 
 Oracle: independent prepared operations preserve one another's complete preparation and commute in exact canonical RuntimeState and accepted publication; shared Process reads commute, conflicting writes and overlapping occurrence regions refuse batching, and a failed batch or schedule rolls back the complete command before publication.
 
