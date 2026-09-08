@@ -161,29 +161,18 @@ theorem runtimePositionValid_running_instance
   simp [running, runningPositionValid] at valid
   exact valid.2.1.1.1.1
 
-private theorem all_removeToken (tokens : List ControlToken) (place : ControlPlaceId)
-    (owner : ScopeOccurrenceId) (predicate : ControlToken → Bool)
-    (holds : tokens.all predicate = true) :
-    (removeToken tokens place owner).all predicate = true := by
-  induction tokens with
-  | nil => rfl
-  | cons token rest ih =>
-      simp only [List.all_cons, Bool.and_eq_true] at holds
-      simp only [removeToken]
-      split
-      · exact holds.2
-      · simp [holds.1, ih holds.2]
-
-/-- Removing one selected token preserves the runtime position when every other read is framed. -/
-theorem runtimePositionValid_removeToken_frame (program : Program) (expectedInstanceId : SemanticId)
-    (before after : RuntimeState) (input : ControlPlaceId) (owner : ScopeOccurrenceId)
+/-- Removing any token sublist preserves position; explicit owned removal need not select the
+only owner at a place, as selected joins may share that place with a different live owner. -/
+theorem runtimePositionValid_tokens_sublist_frame (program : Program)
+    (expectedInstanceId : SemanticId) (before after : RuntimeState)
     (valid : runtimePositionValid program expectedInstanceId before = true)
-    (_selected : onlyTokenOwner? before input = some owner)
     (controlFrame : after.control = before.control)
     (scopesFrame : after.scopeOccurrences = before.scopeOccurrences)
     (callsFrame : after.calledProcessOccurrences = before.calledProcessOccurrences)
-    (tokensFrame : after.tokens = removeToken before.tokens input owner) :
+    (tokensSublist : after.tokens.Sublist before.tokens) :
     runtimePositionValid program expectedInstanceId after = true := by
+  have emptyFrame (empty : before.tokens = []) : after.tokens = [] := by
+    simpa [empty] using tokensSublist
   have exactLiveFrame (id : ScopeOccurrenceId) :
       exactLiveOccurrence after id = exactLiveOccurrence before id := by
     simp [exactLiveOccurrence, scopesFrame]
@@ -207,17 +196,17 @@ theorem runtimePositionValid_removeToken_frame (program : Program) (expectedInst
   rw [controlFrame]
   cases controlEq : before.control with
   | notStarted =>
-      simp [controlEq, scopesFrame, tokensFrame] at valid ⊢
-      exact ⟨valid.2.1, by rw [valid.2.2]; rfl⟩
+      simp [controlEq, scopesFrame] at valid ⊢
+      exact ⟨valid.2.1, emptyFrame valid.2.2⟩
   | completed instanceId =>
-      simp [controlEq, scopesFrame, tokensFrame] at valid ⊢
-      exact ⟨valid.2.1, by rw [valid.2.2]; rfl⟩
+      simp [controlEq, scopesFrame] at valid ⊢
+      exact ⟨valid.2.1, emptyFrame valid.2.2⟩
   | cancelled instanceId =>
-      simp [controlEq, scopesFrame, tokensFrame] at valid ⊢
-      exact ⟨valid.2.1, by rw [valid.2.2]; rfl⟩
+      simp [controlEq, scopesFrame] at valid ⊢
+      exact ⟨valid.2.1, emptyFrame valid.2.2⟩
   | failed instanceId failure =>
-      simp [controlEq, scopesFrame, tokensFrame] at valid ⊢
-      exact ⟨valid.2.1, by rw [valid.2.2]; rfl⟩
+      simp [controlEq, scopesFrame] at valid ⊢
+      exact ⟨valid.2.1, emptyFrame valid.2.2⟩
   | running instanceId =>
       simp only [controlEq, runningPositionValid, Bool.and_eq_true] at valid ⊢
       obtain ⟨⟨⟨⟨identity, roots⟩, associations⟩, scopes⟩, tokens⟩ := valid.2
@@ -231,12 +220,25 @@ theorem runtimePositionValid_removeToken_frame (program : Program) (expectedInst
         rw [scopesFrame] at member
         have prior := scopes occurrence member
         simpa [exactLiveFrame, scopeValidFrame] using prior
-      · rw [tokensFrame]
-        apply all_removeToken
-        rw [List.all_eq_true] at tokens ⊢
+      · rw [List.all_eq_true] at tokens ⊢
         intro token member
         rw [tokenValidFrame]
-        exact tokens token member
+        exact tokens token (tokensSublist.subset member)
+
+/-- The selected single-removal API specializes the finite removal frame. -/
+theorem runtimePositionValid_removeToken_frame (program : Program) (expectedInstanceId : SemanticId)
+    (before after : RuntimeState) (input : ControlPlaceId) (owner : ScopeOccurrenceId)
+    (valid : runtimePositionValid program expectedInstanceId before = true)
+    (_selected : onlyTokenOwner? before input = some owner)
+    (controlFrame : after.control = before.control)
+    (scopesFrame : after.scopeOccurrences = before.scopeOccurrences)
+    (callsFrame : after.calledProcessOccurrences = before.calledProcessOccurrences)
+    (tokensFrame : after.tokens = removeToken before.tokens input owner) :
+    runtimePositionValid program expectedInstanceId after = true := by
+  apply runtimePositionValid_tokens_sublist_frame program expectedInstanceId before after valid
+    controlFrame scopesFrame callsFrame
+  rw [tokensFrame]
+  exact removeToken_sublist before.tokens input owner
 
 /-- Adding one token at a projection-unique place owned by a live scope preserves the runtime
 position. The caller supplies the singleton static ownership witness because this layer validates a
