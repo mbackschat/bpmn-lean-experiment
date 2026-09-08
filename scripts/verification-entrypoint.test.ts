@@ -199,6 +199,27 @@ test("Lake testing builds the semantic library instead of a native executable", 
   assert.doesNotMatch(lakefile, /name = "checkConformance"/u);
 });
 
+function synchronousPackageElaboration(lakefile: string): boolean {
+  const packageFields = lakefile.split(/^\s*\[/mu, 1)[0] ?? "";
+  return /^leanOptions = \{ Elab\.async = false \}$/mu.test(packageFields);
+}
+
+test("the Lake package defaults every module target to synchronous theorem elaboration", async () => {
+  const lakefile = await readFile(
+    fileURLToPath(new URL("../lakefile.toml", import.meta.url)), "utf8",
+  );
+  assert.equal(synchronousPackageElaboration(lakefile), true,
+    "set synchronous elaboration at package scope so all libraries and executables inherit it");
+});
+
+test("the elaboration guard rejects an absent, enabled, or library-only setting", () => {
+  const option = "leanOptions = { Elab.async = false }";
+  assert.equal(synchronousPackageElaboration(`${option}\n[[lean_lib]]\nname = \"Example\"`), true);
+  assert.equal(synchronousPackageElaboration("[[lean_lib]]\nname = \"Example\""), false);
+  assert.equal(synchronousPackageElaboration(option.replace("false", "true")), false);
+  assert.equal(synchronousPackageElaboration(`[[lean_lib]]\nname = \"Example\"\n${option}`), false);
+});
+
 test("the hosted Lean library lane retains its unchanged cold-build ceiling", async () => {
   const workflow = await readFile(verificationWorkflowPath, "utf8");
   const job = workflow.match(

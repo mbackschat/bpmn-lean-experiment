@@ -3,6 +3,7 @@ version = "0.1.0"
 license = "MIT"
 defaultTargets = ["BpmnSemantics"]
 testDriver = "BpmnSemantics"
+leanOptions = { Elab.async = false }
 
 [[lean_lib]]
 name = "BpmnSemantics"
