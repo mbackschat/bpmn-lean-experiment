@@ -264,7 +264,7 @@ The complete `what-binds` inventory requires [`implementation-status-owner:ENGIN
 | [Lean cancellation](../../BpmnSemantics/SemanticProcess/ScopeCancellation.lean) | 567 | regional filtering |
 | [Lean transition](../../BpmnSemantics/SemanticProcess/Transition.lean) | 127 | dispatch only; the applied-result contract is extracted |
 | [Lean internal-operation attempt](../../BpmnSemantics/SemanticProcess/InternalOperationAttempt.lean) | 752 | validate every applied snapshot-aware successor before exposure |
-| [Lean trace closure](../../BpmnSemantics/SemanticProcess/TransitionTrace.lean) | 100 | refusal rollback/no trace |
+| [Lean trace closure](../../BpmnSemantics/SemanticProcess/TransitionTrace.lean) | 368 | refusal rollback/no trace |
 | [Lean command admission](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean) | 97 | map root-capacity refusal to `Rejected`, never `semanticFailure`, and reject an invalid committed post-state |
 | [Lean census](../../BpmnSemantics/SemanticProcess/InternalCommutationCensus.lean) | 652 | new state field |
 | [Lean footprint core](../../BpmnSemantics/SemanticProcess/InternalCommutationCore.lean) | 305 | snapshot atom/footprint |

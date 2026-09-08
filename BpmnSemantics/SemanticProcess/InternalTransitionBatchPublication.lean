@@ -9,19 +9,6 @@ namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
 open BpmnSemantics
 
-def runPreparedTransitionBatchPublication? (program : Program) (instanceId commandId : SemanticId)
-    (indexForOperation : OperationId → Nat) (state : RuntimeState) :
-    List PreparedInternalTransition →
-    Option (RuntimeState × List InstantiatedInternalTransitionPublication)
-  | [] => some (state, [])
-  | head :: tail => do
-      let next ← applyPreparedInternalTransition? program state head
-      let publication ← actualInternalTransitionPublication? program instanceId state next
-        head.operation commandId (indexForOperation head.operation.id)
-      let (final, publications) ← runPreparedTransitionBatchPublication? program instanceId commandId
-        indexForOperation next tail
-      some (final, publication :: publications)
-
 private theorem prepared_transition_templates_after_step (program : Program) (state : RuntimeState)
     (step : PreparedInternalTransition) (queries : List PreparedInternalTransition) :
     queries.mapM (preparedTransitionPublicationTemplate? program (step.apply state)) =

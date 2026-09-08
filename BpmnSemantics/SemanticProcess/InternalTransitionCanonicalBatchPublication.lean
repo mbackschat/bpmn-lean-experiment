@@ -9,14 +9,6 @@ namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
 open BpmnSemantics
 
-def acceptedPreparedTransitionBatch? (program : Program) (instanceId commandId : SemanticId)
-    (first : Nat) (state : RuntimeState) (prepared : List PreparedInternalTransition) :
-    Option (RuntimeState × List InstantiatedInternalTransitionPublication) := do
-  let templates ← prepared.mapM (preparedTransitionPublicationTemplate? program state)
-  let (final, publications) ← runPreparedTransitionBatchPublication? program instanceId commandId
-    (internalTransitionPublicationIndex first templates) state prepared
-  some (final, canonicalInstantiatedTransitionPublications publications)
-
 theorem prepared_transition_canonical_batch_publication (program : Program) (state : RuntimeState)
     (prepared : List PreparedInternalTransition) (instanceId commandId : SemanticId) (first : Nat)
     (programWF : programWellFormed program = true)

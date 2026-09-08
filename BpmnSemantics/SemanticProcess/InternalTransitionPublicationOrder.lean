@@ -1,4 +1,4 @@
-import BpmnSemantics.SemanticProcess.InternalTransitionPublicationTemplate
+import BpmnSemantics.SemanticProcess.InternalTransitionPublication
 
 /-! Complete mixed templates sort before lifecycle numbering under the
 [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).
@@ -7,29 +7,6 @@ import BpmnSemantics.SemanticProcess.InternalTransitionPublicationTemplate
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
 open BpmnSemantics
-
-def canonicalTransitionPublicationTemplates (templates : List InternalTransitionPublicationTemplate) :
-    List InternalTransitionPublicationTemplate :=
-  sortBy (fun left right => left.record.operationId.value < right.record.operationId.value) templates
-
-def numberTransitionPublicationTemplates (commandId : SemanticId) :
-    Nat → List InternalTransitionPublicationTemplate → List InstantiatedInternalTransitionPublication
-  | _, [] => []
-  | first, template :: rest => template.instantiate commandId first ::
-      numberTransitionPublicationTemplates commandId (first + 1) rest
-
-def instantiateTransitionPublicationBatch (commandId : SemanticId) (first : Nat)
-    (templates : List InternalTransitionPublicationTemplate) : List InstantiatedInternalTransitionPublication :=
-  numberTransitionPublicationTemplates commandId first (canonicalTransitionPublicationTemplates templates)
-
-def internalTransitionPublicationIndex (first : Nat)
-    (templates : List InternalTransitionPublicationTemplate) (operationId : OperationId) : Nat :=
-  first + (canonicalTransitionPublicationTemplates templates).findIdx
-    (fun template => template.record.operationId == operationId)
-
-def canonicalInstantiatedTransitionPublications (publications : List InstantiatedInternalTransitionPublication) :
-    List InstantiatedInternalTransitionPublication :=
-  sortBy (fun left right => left.record.operationId.value < right.record.operationId.value) publications
 
 private theorem sortInsert_eq_canonical (before : α → α → Bool) (inserted : α) (values : List α) :
     sortInsertBy before inserted values = canonicalInsertBy before inserted values := by
