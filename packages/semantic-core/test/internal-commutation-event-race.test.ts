@@ -78,6 +78,12 @@ test("prepares the race, both waits, counters, anchors, and input token", () => 
     rootOperation,
   ));
 
+  assert.deepEqual(new Set(prepared.footprint.reads.flatMap((atom) =>
+    atom.kind === InternalTransitionStateAtomKind.TokenOwners ? [atom.placeId] : []
+  )), new Set([rootOperation.input]));
+  assert.deepEqual(new Set(prepared.footprint.writes.flatMap((atom) =>
+    atom.kind === InternalTransitionStateAtomKind.TokenOwners ? [atom.placeId] : []
+  )), new Set([rootOperation.input]));
   assert.deepEqual(prepared.race, {
     id: {
       processInstanceId: eventRaceStart.instanceId,

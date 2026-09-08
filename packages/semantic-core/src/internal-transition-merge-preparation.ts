@@ -5,6 +5,7 @@ import {
 import type { InternalMergeInputAlternative } from "./internal-transition-alternative.js";
 import { canonicalUniqueStateAtoms } from "./internal-transition-footprint-ordering.js";
 import type { InternalTransitionStateFootprint } from "./internal-transition-footprint.js";
+import { tokenOwnerCensusAtoms } from "./internal-transition-token-preparation.js";
 import { InternalTransitionStateAtomKind } from "./internal-transition-footprint-vocabulary.js";
 import type {
   MergeExclusiveOperation,
@@ -68,7 +69,9 @@ export function deriveInternalExclusiveMergePreparations(
       output,
       { kind: InternalTransitionStateAtomKind.LogicalTime },
     ]);
-    const writes = canonicalUniqueStateAtoms([input, output]);
+    const writes = canonicalUniqueStateAtoms([
+      input, output, ...tokenOwnerCensusAtoms([alternative.inputControlPlace, operation.output]),
+    ]);
     if (reads === null || writes === null) {
       return null;
     }

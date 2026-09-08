@@ -246,14 +246,14 @@ The complete `what-binds` inventory requires [`implementation-status-owner:ENGIN
 | [TS closure](../../packages/semantic-core/src/semantic-process-closure.ts) | 609 | refusal precedence/rollback |
 | [TS snapshot staging](../../packages/semantic-core/src/internal-transition-attempt.ts) | 668 | pre-mutation reservation/promotion selection |
 | [TS census](../../packages/semantic-core/src/internal-commutation-census.ts) | 658 | new state field |
-| [TS footprint vocabulary](../../packages/semantic-core/src/internal-transition-footprint-vocabulary.ts) | 762 | snapshot atoms |
-| [TS footprint union](../../packages/semantic-core/src/internal-transition-footprint.ts) | 115 | retention/capacity/context helpers |
-| [TS footprint order](../../packages/semantic-core/src/internal-transition-footprint-ordering.ts) | 245 | snapshot atom order and region overlap |
-| [TS scope-entry preparation](../../packages/semantic-core/src/internal-transition-scope-creation-preparation.ts) | 564 | retention read/write |
-| [TS bounded-entry preparation](../../packages/semantic-core/src/internal-transition-bounded-scope-preparation.ts) | 606 | retention read/write |
-| [TS completion preparation](../../packages/semantic-core/src/internal-transition-scope-completion-preparation.ts) | 657 | context/retention footprint |
-| [TS Error preparation](../../packages/semantic-core/src/internal-transition-error-preparation.ts) | 711 | purge footprint |
-| [TS termination preparation](../../packages/semantic-core/src/internal-transition-termination-preparation.ts) | 719 | purge footprint |
+| [TS footprint vocabulary](../../packages/semantic-core/src/internal-transition-footprint-vocabulary.ts) | 761 | snapshot atoms |
+| [TS footprint union](../../packages/semantic-core/src/internal-transition-footprint.ts) | 108 | retention/capacity/context helpers |
+| [TS footprint order](../../packages/semantic-core/src/internal-transition-footprint-ordering.ts) | 242 | snapshot atom order and region overlap |
+| [TS scope-entry preparation](../../packages/semantic-core/src/internal-transition-scope-creation-preparation.ts) | 561 | retention read/write |
+| [TS bounded-entry preparation](../../packages/semantic-core/src/internal-transition-bounded-scope-preparation.ts) | 603 | retention read/write |
+| [TS completion preparation](../../packages/semantic-core/src/internal-transition-scope-completion-preparation.ts) | 656 | context/retention footprint |
+| [TS Error preparation](../../packages/semantic-core/src/internal-transition-error-preparation.ts) | 708 | purge footprint |
+| [TS termination preparation](../../packages/semantic-core/src/internal-transition-termination-preparation.ts) | 716 | purge footprint |
 | [Lean Program](../../BpmnSemantics/SemanticProcessContract.lean) | 11 | direct Activity-data carriers extracted into a bounded owner |
 | [Lean structural admission](../../BpmnSemantics/SemanticProcess/ProgramStructuralValidation.lean) | 120 | declaration hook |
 | [Lean graph admission](../../BpmnSemantics/SemanticProcess/GraphValidation.lean) | 91 | lifecycle helper extracted; preserve the recovered headroom |

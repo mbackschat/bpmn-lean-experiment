@@ -74,6 +74,12 @@ test("derives the exact called region, Call association, and caller output", () 
   const footprint = requireReturnFootprint(returnCandidate);
   const association = returnReady.calledProcessOccurrences[0];
   assert.ok(association !== undefined);
+  assert.deepEqual(new Set(footprint.reads.flatMap((atom) =>
+    atom.kind === InternalTransitionStateAtomKind.TokenOwners ? [atom.placeId] : []
+  )), new Set([]));
+  assert.deepEqual(new Set(footprint.writes.flatMap((atom) =>
+    atom.kind === InternalTransitionStateAtomKind.TokenOwners ? [atom.placeId] : []
+  )), new Set([returnOperation.callerOutput]));
   assert.deepEqual(
     footprint.writes.find(({ kind }) =>
       kind === InternalTransitionStateAtomKind.OccurrenceRegion

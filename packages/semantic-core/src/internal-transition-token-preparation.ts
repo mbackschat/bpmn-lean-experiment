@@ -5,6 +5,34 @@ import type {
   RuntimeState,
   ScopeOccurrenceId,
 } from "./semantic-process-state.js";
+import type { InternalTransitionStateAtom } from "./internal-transition-footprint.js";
+import { InternalTransitionStateAtomKind } from "./internal-transition-footprint-vocabulary.js";
+import { internalOccurrenceRegionContains } from "./internal-transition-region.js";
+import type { InternalOccurrenceRegion } from "./internal-transition-region.js";
+
+/** Shared places across owners need one census atom because canonicalUniqueStateAtoms rejects duplicates. */
+export function tokenOwnerCensusAtoms(
+  placeIds: ReadonlyArray<string>,
+): ReadonlyArray<InternalTransitionStateAtom> {
+  return [...new Set(placeIds)].map((placeId) => ({
+    kind: InternalTransitionStateAtomKind.TokenOwners,
+    placeId,
+  }));
+}
+
+/** removeScopeOccurrenceContents retains the selected root but removes its tokens, so its places still change census. */
+export function regionalTokenOwnerCensusWrites(
+  state: RuntimeState,
+  region: InternalOccurrenceRegion,
+  outputs: ReadonlyArray<string>,
+): ReadonlyArray<InternalTransitionStateAtom> {
+  return tokenOwnerCensusAtoms([
+    ...state.controlTokens.filter(({ owner }) =>
+      internalOccurrenceRegionContains(region, owner)
+    ).map(({ placeId }) => placeId),
+    ...outputs,
+  ]);
+}
 
 /** Requires one exact input row and at most one existing output row for every affected bucket. */
 export function affectedTokenBucketsAreExact(

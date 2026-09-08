@@ -103,6 +103,12 @@ test("prepares each Process initiation from one exact pending root", () => {
     if (prepared === null) {
       throw new Error(`expected ${operation.kind} initiation preparation`);
     }
+    assert.deepEqual(new Set(prepared.footprint.reads.flatMap((atom) =>
+      atom.kind === InternalTransitionStateAtomKind.TokenOwners ? [atom.placeId] : []
+    )), new Set([]));
+    assert.deepEqual(new Set(prepared.footprint.writes.flatMap((atom) =>
+      atom.kind === InternalTransitionStateAtomKind.TokenOwners ? [atom.placeId] : []
+    )), new Set(prepared.outputs));
     assert.deepEqual(prepared.owner, owner);
     assert.deepEqual(
       prepared.outputs,

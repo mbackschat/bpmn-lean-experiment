@@ -4,6 +4,7 @@ import type {
   InternalTransitionCandidate,
   InternalTransitionStateFootprint,
 } from "./internal-transition-footprint.js";
+import { tokenOwnerCensusAtoms } from "./internal-transition-token-preparation.js";
 import { InternalTransitionStateAtomKind } from "./internal-transition-footprint-vocabulary.js";
 import { SemanticOperationKind } from "./semantic-process-contract.js";
 import type { SemanticProcessProgram } from "./semantic-process-contract.js";
@@ -48,6 +49,7 @@ export function deriveInternalReachNoneEndStateFootprint(
     kind: InternalTransitionStateAtomKind.EndIncrement,
   } as const;
   const reads = canonicalUniqueStateAtoms([
+    ...tokenOwnerCensusAtoms([operation.input]),
     {
       kind: InternalTransitionStateAtomKind.RuntimeControl,
       instanceId: state.control.instanceId,
@@ -57,6 +59,6 @@ export function deriveInternalReachNoneEndStateFootprint(
     endIncrement,
     { kind: InternalTransitionStateAtomKind.LogicalTime },
   ]);
-  const writes = canonicalUniqueStateAtoms([input, endIncrement]);
+  const writes = canonicalUniqueStateAtoms([input, endIncrement, ...tokenOwnerCensusAtoms([operation.input])]);
   return reads === null || writes === null ? null : { reads, writes };
 }

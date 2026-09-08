@@ -28,6 +28,7 @@ export enum InternalTransitionStateAtomKind {
   SequentialControllerSnapshot = "sequentialControllerSnapshot",
   ScopeOccurrence = "scopeOccurrence",
   ScopeParent = "scopeParent",
+  TokenOwners = "tokenOwners",
   Wait = "wait",
 }
 

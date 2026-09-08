@@ -74,6 +74,12 @@ assert.ok(candidate !== null && candidate.owner !== null);
 
 test("derives the exact interrupted region, throwing token, and parent output", () => {
   const footprint = requireErrorFootprint(candidate);
+  assert.deepEqual(new Set(footprint.reads.flatMap((atom) =>
+    atom.kind === InternalTransitionStateAtomKind.TokenOwners ? [atom.placeId] : []
+  )), new Set([operation.input]));
+  assert.deepEqual(new Set(footprint.writes.flatMap((atom) =>
+    atom.kind === InternalTransitionStateAtomKind.TokenOwners ? [atom.placeId] : []
+  )), new Set([operation.input, operation.handler.output]));
   const child = scopeOccurrence(terminateChildScopeId);
   const root = scopeOccurrence(terminateRootScopeId);
 

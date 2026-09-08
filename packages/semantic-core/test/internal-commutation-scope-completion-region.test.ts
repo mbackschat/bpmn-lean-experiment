@@ -71,6 +71,12 @@ test("derives the exact child region, parent continuation, Activity, and deadlin
     boundedReady,
     boundedCandidate,
   );
+  assert.deepEqual(new Set(footprint.reads.flatMap((atom) =>
+    atom.kind === InternalTransitionStateAtomKind.TokenOwners ? [atom.placeId] : []
+  )), new Set([]));
+  assert.deepEqual(new Set(footprint.writes.flatMap((atom) =>
+    atom.kind === InternalTransitionStateAtomKind.TokenOwners ? [atom.placeId] : []
+  )), new Set([boundedParentOutput]));
   const child = boundedReady.scopeOccurrences.find(({ id }) =>
     id.definitionScopeId === boundedOperation.scopeId
   );
@@ -219,6 +225,12 @@ test("root completion writes runtime control and reads initiation state", () => 
   assert.ok(candidate !== null && candidate.owner !== null);
   const footprint = requireScopeCompletionFootprint(rootReady, candidate);
 
+  assert.deepEqual(new Set(footprint.reads.flatMap((atom) =>
+    atom.kind === InternalTransitionStateAtomKind.TokenOwners ? [atom.placeId] : []
+  )), new Set([]));
+  assert.deepEqual(new Set(footprint.writes.flatMap((atom) =>
+    atom.kind === InternalTransitionStateAtomKind.TokenOwners ? [atom.placeId] : []
+  )), new Set([]));
   assert.deepEqual(findWrite(footprint, InternalTransitionStateAtomKind.RuntimeControl), {
     kind: InternalTransitionStateAtomKind.RuntimeControl,
     instanceId: rootOccurrence.processInstanceId,

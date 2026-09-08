@@ -81,6 +81,12 @@ test("prepares the complete controller, Activity, body, deadline, and snapshot",
       operation,
     ),
   );
+  assert.deepEqual(new Set(prepared.footprint.reads.flatMap((atom) =>
+    atom.kind === InternalTransitionStateAtomKind.TokenOwners ? [atom.placeId] : []
+  )), new Set([operation.input]));
+  assert.deepEqual(new Set(prepared.footprint.writes.flatMap((atom) =>
+    atom.kind === InternalTransitionStateAtomKind.TokenOwners ? [atom.placeId] : []
+  )), new Set([operation.input]));
   assert.equal(prepared.kind, SequentialMultiInstanceEntryKind.Armed);
   if (prepared.kind !== SequentialMultiInstanceEntryKind.Armed) {
     throw new Error("expected an armed Sequential Multi-Instance entry");
@@ -157,6 +163,12 @@ test("prepares zero items as one atomic data and control transition", () => {
       operation,
     ),
   );
+  assert.deepEqual(new Set(prepared.footprint.reads.flatMap((atom) =>
+    atom.kind === InternalTransitionStateAtomKind.TokenOwners ? [atom.placeId] : []
+  )), new Set([operation.input]));
+  assert.deepEqual(new Set(prepared.footprint.writes.flatMap((atom) =>
+    atom.kind === InternalTransitionStateAtomKind.TokenOwners ? [atom.placeId] : []
+  )), new Set([operation.input, operation.normalOutput]));
   assert.equal(prepared.kind, SequentialMultiInstanceEntryKind.Empty);
   assert.equal(writeCount(
     prepared.footprint,

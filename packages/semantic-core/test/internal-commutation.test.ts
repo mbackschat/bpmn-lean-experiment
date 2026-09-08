@@ -138,6 +138,7 @@ test("the mixed frontier carries every reviewed atom and publication fact", () =
       InternalTransitionStateAtomKind.ActivityVariableScope,
       InternalTransitionStateAtomKind.ControlToken,
       InternalTransitionStateAtomKind.OpenWaitAnchor,
+      InternalTransitionStateAtomKind.TokenOwners,
       InternalTransitionStateAtomKind.Wait,
     ],
   );
@@ -548,6 +549,10 @@ function expectedArmingFootprint(
     owner: selectedOwner,
     placeId: input,
   } as const;
+  const tokenOwners = {
+    kind: InternalTransitionStateAtomKind.TokenOwners,
+    placeId: input,
+  } as const;
   const wait = {
     kind: InternalTransitionStateAtomKind.Wait,
     occurrence,
@@ -571,6 +576,7 @@ function expectedArmingFootprint(
       kind: InternalTransitionStateAtomKind.ScopeOccurrence,
       owner: selectedOwner,
     } as const,
+    tokenOwners,
     wait,
   ];
   const positionDelta = {
@@ -585,7 +591,7 @@ function expectedArmingFootprint(
   } as const;
   return {
     reads,
-    writes: [activation, controlToken, openWaitAnchor, wait],
+    writes: [activation, controlToken, openWaitAnchor, tokenOwners, wait],
     publications: [
       {
         kind: InternalTransitionPublicationAtomKind.CommittedTransition,

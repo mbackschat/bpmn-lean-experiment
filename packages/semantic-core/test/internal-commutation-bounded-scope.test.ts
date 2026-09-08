@@ -71,6 +71,12 @@ test("prepares the child, parent relation, Activity, deadline, counters, and tok
     operation,
   ));
 
+  assert.deepEqual(new Set(prepared.footprint.reads.flatMap((atom) =>
+    atom.kind === InternalTransitionStateAtomKind.TokenOwners ? [atom.placeId] : []
+  )), new Set([operation.input]));
+  assert.deepEqual(new Set(prepared.footprint.writes.flatMap((atom) =>
+    atom.kind === InternalTransitionStateAtomKind.TokenOwners ? [atom.placeId] : []
+  )), new Set([operation.input, operation.childEntry]));
   assert.deepEqual(prepared.child, {
     id: {
       processInstanceId: prepared.parent.processInstanceId,

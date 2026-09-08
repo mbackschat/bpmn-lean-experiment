@@ -11,7 +11,7 @@ import type {
 import { canonicalUniqueStateAtoms } from "./internal-transition-footprint-ordering.js";
 import type { InternalTransitionStateFootprint } from "./internal-transition-footprint.js";
 import { InternalTransitionStateAtomKind } from "./internal-transition-footprint-vocabulary.js";
-import { affectedTokenBucketsAreExact } from "./internal-transition-token-preparation.js";
+import { affectedTokenBucketsAreExact, tokenOwnerCensusAtoms } from "./internal-transition-token-preparation.js";
 import { selectConditionalBranch } from "./semantic-process-control-flow-runtime.js";
 import { SemanticOperationKind } from "./semantic-process-contract.js";
 import type {
@@ -87,6 +87,7 @@ export function deriveInternalDuplicatePreparation(
       owner,
       [operation.input],
       operation.outputs,
+      [operation.input],
       null,
       [],
       [],
@@ -112,6 +113,7 @@ export function deriveInternalSynchronizePreparation(
       owner,
       operation.inputs,
       [operation.output],
+      operation.inputs,
       null,
       [],
       [],
@@ -142,6 +144,7 @@ export function deriveInternalChoosePreparation(
     owner,
     [operation.input],
     [selected.output],
+    [operation.input],
     {
       kind: InternalLocalControlBranchResultKind.ExclusiveChoice,
       output: selected.output,
@@ -193,6 +196,7 @@ export function deriveInternalSelectManyPreparation(
     owner,
     [operation.input],
     selected.selected.map(({ output }) => output),
+    [operation.input],
     {
       kind: InternalLocalControlBranchResultKind.InclusiveSelection,
       selected: selected.selected,
@@ -233,6 +237,7 @@ export function deriveInternalSynchronizeSelectedPreparation(
     record.owner,
     record.expectedInputs,
     [operation.output],
+    [],
     {
       kind: InternalLocalControlBranchResultKind.SelectedJoin,
       record,
@@ -259,6 +264,7 @@ function prepareTokenTransformation(
   owner: ScopeOccurrenceId,
   inputs: ReadonlyArray<string>,
   outputs: ReadonlyArray<string>,
+  censusReads: ReadonlyArray<string>,
   branchResult: InternalLocalControlBranchResult | null,
   extraReads: InternalTransitionStateFootprint["reads"],
   extraWrites: InternalTransitionStateFootprint["writes"],
@@ -277,6 +283,7 @@ function prepareTokenTransformation(
     placeId,
   }) as const);
   const reads = canonicalUniqueStateAtoms([
+    ...tokenOwnerCensusAtoms(censusReads),
     {
       kind: InternalTransitionStateAtomKind.RuntimeControl,
       instanceId: state.control.instanceId,
@@ -286,7 +293,9 @@ function prepareTokenTransformation(
     ...extraReads,
     { kind: InternalTransitionStateAtomKind.LogicalTime },
   ]);
-  const writes = canonicalUniqueStateAtoms([...tokens, ...extraWrites]);
+  const writes = canonicalUniqueStateAtoms([
+    ...tokens, ...tokenOwnerCensusAtoms([...inputs, ...outputs]), ...extraWrites,
+  ]);
   return reads === null || writes === null
     ? null
     : {

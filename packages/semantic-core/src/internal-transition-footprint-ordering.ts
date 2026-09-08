@@ -159,6 +159,8 @@ function stateAtomParts(
       return [atom.kind, atom.name];
     case InternalTransitionStateAtomKind.ControlToken:
       return [atom.kind, ...scopeParts(atom.owner), atom.placeId];
+    case InternalTransitionStateAtomKind.TokenOwners:
+      return [atom.kind, atom.placeId];
     case InternalTransitionStateAtomKind.EndCount:
     case InternalTransitionStateAtomKind.EndIncrement:
     case InternalTransitionStateAtomKind.InitiationPending:
@@ -305,6 +307,7 @@ function occurrenceRegionConflictsWithAtom(
     case InternalTransitionStateAtomKind.ProcessVariable:
     case InternalTransitionStateAtomKind.RuntimeControl:
     case InternalTransitionStateAtomKind.SequentialControllersPresence:
+    case InternalTransitionStateAtomKind.TokenOwners:
       return false;
     default:
       return assertNever(atom);

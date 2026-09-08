@@ -19,7 +19,7 @@ import { canonicalUniqueStateAtoms } from "./internal-transition-footprint-order
 import type { InternalTransitionStateFootprint } from "./internal-transition-footprint.js";
 import { InternalTransitionStateAtomKind } from "./internal-transition-footprint-vocabulary.js";
 import type { InternalInitiationPatch } from "./internal-transition-initiation-patch.js";
-import { affectedTokenBucketsAreExact } from "./internal-transition-token-preparation.js";
+import { affectedTokenBucketsAreExact, tokenOwnerCensusAtoms } from "./internal-transition-token-preparation.js";
 import { SemanticOperationKind } from "./semantic-process-contract.js";
 import type {
   SemanticOperation,
@@ -137,6 +137,7 @@ export function deriveInternalInitiationPreparation(
     { kind: InternalTransitionStateAtomKind.LogicalTime },
   ]);
   const writes = canonicalUniqueStateAtoms([
+    ...tokenOwnerCensusAtoms(selected.outputs),
     initiationPending,
     ...outputTokens,
   ]);

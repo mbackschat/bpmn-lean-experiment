@@ -20,7 +20,7 @@ import type {
   InternalTransitionStateFootprint,
 } from "./internal-transition-footprint.js";
 import { InternalTransitionStateAtomKind } from "./internal-transition-footprint-vocabulary.js";
-import { affectedTokenBucketsAreExact } from "./internal-transition-token-preparation.js";
+import { affectedTokenBucketsAreExact, tokenOwnerCensusAtoms } from "./internal-transition-token-preparation.js";
 import {
   InternalOccurrenceKind,
   openWaitAnchorIsAbsent,
@@ -114,6 +114,7 @@ export function deriveInternalParallelMultiInstancePreparation(
       ? [controllerPresence]
       : [];
   const commonReads: ReadonlyArray<InternalTransitionStateAtom> = [
+    ...tokenOwnerCensusAtoms([operation.input]),
     {
       kind: InternalTransitionStateAtomKind.RuntimeControl,
       instanceId: state.control.instanceId,
@@ -196,6 +197,7 @@ function prepareEmptyEntry(
     ...retentionAtoms,
   ]);
   const writes = canonicalUniqueStateAtoms([
+    ...tokenOwnerCensusAtoms([operation.input, operation.normalOutput]),
     tokenAtom(selected.owner, operation.input),
     outputToken,
     outputVariable,
@@ -305,6 +307,7 @@ function prepareArmedEntry(
     ...anchors,
   ]);
   const writes = canonicalUniqueStateAtoms([
+    ...tokenOwnerCensusAtoms([operation.input]),
     tokenAtom(selected.owner, operation.input),
     association,
     controller,

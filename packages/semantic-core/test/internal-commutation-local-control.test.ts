@@ -240,6 +240,12 @@ test("prepares the exact Parallel Gateway fork token footprint", () => {
   if (prepared === null) {
     throw new Error("expected a prepared Parallel Gateway fork");
   }
+  assert.deepEqual(new Set(prepared.footprint.reads.flatMap((atom) =>
+    atom.kind === InternalTransitionStateAtomKind.TokenOwners ? [atom.placeId] : []
+  )), new Set([duplicate.input]));
+  assert.deepEqual(new Set(prepared.footprint.writes.flatMap((atom) =>
+    atom.kind === InternalTransitionStateAtomKind.TokenOwners ? [atom.placeId] : []
+  )), new Set([duplicate.input, ...duplicate.outputs]));
   assert.deepEqual(prepared.alternative, {
     kind: InternalAlternativeKind.Operation,
     operationId: duplicate.id,
@@ -260,6 +266,12 @@ test("prepares the exact Parallel Gateway join token footprint", () => {
   if (prepared === null) {
     throw new Error("expected a prepared Parallel Gateway join");
   }
+  assert.deepEqual(new Set(prepared.footprint.reads.flatMap((atom) =>
+    atom.kind === InternalTransitionStateAtomKind.TokenOwners ? [atom.placeId] : []
+  )), new Set(synchronize.inputs));
+  assert.deepEqual(new Set(prepared.footprint.writes.flatMap((atom) =>
+    atom.kind === InternalTransitionStateAtomKind.TokenOwners ? [atom.placeId] : []
+  )), new Set([...synchronize.inputs, synchronize.output]));
   assert.deepEqual(controlTokenWrites(prepared.footprint), [
     "place:Flow_AToJoin",
     "place:Flow_BToJoin",
@@ -306,7 +318,7 @@ test("refuses an ambiguous affected output bucket", () => {
   );
 });
 
-test("separates disjoint owners and conflicts on one exact token bucket", () => {
+test("separates disjoint owners and places while shared place censuses conflict", () => {
   const prepared = deriveInternalDuplicatePreparation(
     parallelProgram,
     beforeFork,
@@ -319,6 +331,10 @@ test("separates disjoint owners and conflicts on one exact token bucket", () => 
   const disjointOwner = { ...owner, activation: owner.activation + 1 };
   assert.equal(
     independent(prepared.footprint, remapOwner(prepared.footprint, disjointOwner)),
+    false,
+  );
+  assert.equal(
+    independent(prepared.footprint, remapOwner(prepared.footprint, disjointOwner, "other:")),
     true,
   );
   assert.equal(
@@ -343,6 +359,12 @@ test("prepares the selected Exclusive branch with only its evaluated reads", () 
   if (prepared === null) {
     throw new Error("expected a prepared Exclusive Gateway choice");
   }
+  assert.deepEqual(new Set(prepared.footprint.reads.flatMap((atom) =>
+    atom.kind === InternalTransitionStateAtomKind.TokenOwners ? [atom.placeId] : []
+  )), new Set([choose.input]));
+  assert.deepEqual(new Set(prepared.footprint.writes.flatMap((atom) =>
+    atom.kind === InternalTransitionStateAtomKind.TokenOwners ? [atom.placeId] : []
+  )), new Set([choose.input, "place:Flow_First"]));
   assert.deepEqual(prepared.branchResult, {
     kind: InternalLocalControlBranchResultKind.ExclusiveChoice,
     output: "place:Flow_First",
@@ -402,6 +424,12 @@ test("prepares every selected Inclusive branch and its hidden record", () => {
     prepared.branchResult.selected.map(({ output }) => output),
     ["place:Flow_A", "place:Flow_B"],
   );
+  assert.deepEqual(new Set(prepared.footprint.reads.flatMap((atom) =>
+    atom.kind === InternalTransitionStateAtomKind.TokenOwners ? [atom.placeId] : []
+  )), new Set([selectMany.input]));
+  assert.deepEqual(new Set(prepared.footprint.writes.flatMap((atom) =>
+    atom.kind === InternalTransitionStateAtomKind.TokenOwners ? [atom.placeId] : []
+  )), new Set([selectMany.input, "place:Flow_A", "place:Flow_B"]));
   assert.deepEqual(processVariableReads(prepared.footprint), ["takeA", "takeB"]);
   assert.deepEqual(selectedBranchWrites(prepared.footprint), [{
     owner: prepared.owner,
@@ -422,6 +450,12 @@ test("prepares the exact selected Inclusive join record and token subset", () =>
     prepared.branchResult?.kind,
     InternalLocalControlBranchResultKind.SelectedJoin,
   );
+  assert.deepEqual(new Set(prepared.footprint.reads.flatMap((atom) =>
+    atom.kind === InternalTransitionStateAtomKind.TokenOwners ? [atom.placeId] : []
+  )), new Set([]));
+  assert.deepEqual(new Set(prepared.footprint.writes.flatMap((atom) =>
+    atom.kind === InternalTransitionStateAtomKind.TokenOwners ? [atom.placeId] : []
+  )), new Set(["place:Flow_A_Join", "place:Flow_B_Join", "place:Flow_End"]));
   assert.deepEqual(controlTokenWrites(prepared.footprint), [
     "place:Flow_A_Join",
     "place:Flow_B_Join",
@@ -550,12 +584,16 @@ function selectedBranchWrites(
 function remapOwner(
   footprint: InternalTransitionStateFootprint,
   owner: ScopeOccurrenceId,
+  placePrefix = "",
 ): InternalTransitionStateFootprint {
   const remap = (
     atom: typeof footprint.reads[number],
   ): typeof footprint.reads[number] => {
     switch (atom.kind) {
       case InternalTransitionStateAtomKind.ControlToken:
+        return { ...atom, owner, placeId: `${placePrefix}${atom.placeId}` };
+      case InternalTransitionStateAtomKind.TokenOwners:
+        return { ...atom, placeId: `${placePrefix}${atom.placeId}` };
       case InternalTransitionStateAtomKind.ScopeOccurrence:
         return { ...atom, owner };
       case InternalTransitionStateAtomKind.RuntimeControl:

@@ -82,6 +82,12 @@ test("prepares the complete parallel controller, children, deadline, and snapsho
       operation,
     ),
   );
+  assert.deepEqual(new Set(prepared.footprint.reads.flatMap((atom) =>
+    atom.kind === InternalTransitionStateAtomKind.TokenOwners ? [atom.placeId] : []
+  )), new Set([operation.input]));
+  assert.deepEqual(new Set(prepared.footprint.writes.flatMap((atom) =>
+    atom.kind === InternalTransitionStateAtomKind.TokenOwners ? [atom.placeId] : []
+  )), new Set([operation.input]));
   assert.equal(prepared.kind, ParallelMultiInstanceEntryKind.Armed);
   if (prepared.kind !== ParallelMultiInstanceEntryKind.Armed) {
     throw new Error("expected an armed Parallel Multi-Instance entry");
@@ -150,6 +156,12 @@ test("prepares zero items without a controller, deadline, or logical-time depend
       operation,
     ),
   );
+  assert.deepEqual(new Set(prepared.footprint.reads.flatMap((atom) =>
+    atom.kind === InternalTransitionStateAtomKind.TokenOwners ? [atom.placeId] : []
+  )), new Set([operation.input]));
+  assert.deepEqual(new Set(prepared.footprint.writes.flatMap((atom) =>
+    atom.kind === InternalTransitionStateAtomKind.TokenOwners ? [atom.placeId] : []
+  )), new Set([operation.input, operation.normalOutput]));
   assert.equal(prepared.kind, ParallelMultiInstanceEntryKind.Empty);
   assert.equal(writeCount(
     prepared.footprint,

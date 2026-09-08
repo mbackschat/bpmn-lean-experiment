@@ -13,7 +13,7 @@ import type {
   InternalTransitionStateFootprint,
 } from "./internal-transition-footprint.js";
 import { InternalTransitionStateAtomKind } from "./internal-transition-footprint-vocabulary.js";
-import { affectedTokenBucketsAreExact } from "./internal-transition-token-preparation.js";
+import { affectedTokenBucketsAreExact, tokenOwnerCensusAtoms } from "./internal-transition-token-preparation.js";
 import {
   InternalOccurrenceKind,
   openWaitAnchorIsAbsent,
@@ -113,6 +113,7 @@ export function deriveInternalActivityArmingPreparation(
     openWaitAnchorAtom(selected.timerWait.id, owner),
   ];
   const writes = canonicalUniqueStateAtoms([
+    ...tokenOwnerCensusAtoms([operation.input]),
     inputToken,
     association,
     ...activationAtoms,
@@ -120,6 +121,7 @@ export function deriveInternalActivityArmingPreparation(
     ...anchorAtoms,
   ]);
   const reads = canonicalUniqueStateAtoms([
+    ...tokenOwnerCensusAtoms([operation.input]),
     {
       kind: InternalTransitionStateAtomKind.RuntimeControl,
       instanceId: state.control.instanceId,

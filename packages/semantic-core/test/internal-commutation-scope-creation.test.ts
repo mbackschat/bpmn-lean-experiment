@@ -119,6 +119,12 @@ test("prepares a fresh child scope with its exact parent and activation", () => 
       activation: 3,
     },
   });
+  assert.deepEqual(new Set(prepared.footprint.reads.flatMap((atom) =>
+    atom.kind === InternalTransitionStateAtomKind.TokenOwners ? [atom.placeId] : []
+  )), new Set([enterA.input]));
+  assert.deepEqual(new Set(prepared.footprint.writes.flatMap((atom) =>
+    atom.kind === InternalTransitionStateAtomKind.TokenOwners ? [atom.placeId] : []
+  )), new Set([enterA.input, enterA.childEntry]));
   assert.deepEqual(activationWrites(prepared.footprint), [{
     occurrenceKind: InternalOccurrenceKind.Scope,
     elementId: childScopeA,
@@ -211,6 +217,12 @@ test("prepares a called root, association, and call activation from one pre-stat
       returnOperationId: callOperation.returnOperationId,
     },
   });
+  assert.deepEqual(new Set(prepared.footprint.reads.flatMap((atom) =>
+    atom.kind === InternalTransitionStateAtomKind.TokenOwners ? [atom.placeId] : []
+  )), new Set([callOperation.input]));
+  assert.deepEqual(new Set(prepared.footprint.writes.flatMap((atom) =>
+    atom.kind === InternalTransitionStateAtomKind.TokenOwners ? [atom.placeId] : []
+  )), new Set([callOperation.input, callOperation.calledEntry]));
   assert.deepEqual(activationWrites(prepared.footprint), [{
     occurrenceKind: InternalOccurrenceKind.Call,
     elementId: callElementId,

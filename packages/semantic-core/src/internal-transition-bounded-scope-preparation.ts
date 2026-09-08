@@ -17,6 +17,7 @@ import { InternalTransitionStateAtomKind } from "./internal-transition-footprint
 import {
   affectedTokenBucketsAreExact,
   tokenBucketIsAbsent,
+  tokenOwnerCensusAtoms,
 } from "./internal-transition-token-preparation.js";
 import {
   InternalOccurrenceKind,
@@ -131,6 +132,7 @@ export function deriveInternalBoundedScopePreparation(
     selected.child,
   );
   const writes = canonicalUniqueStateAtoms([
+    ...tokenOwnerCensusAtoms([operation.input, operation.childEntry]),
     inputToken,
     childEntryToken,
     childOccurrence,
@@ -142,6 +144,7 @@ export function deriveInternalBoundedScopePreparation(
     ...snapshotAtoms,
   ]);
   const reads = canonicalUniqueStateAtoms([
+    ...tokenOwnerCensusAtoms([operation.input]),
     {
       kind: InternalTransitionStateAtomKind.RuntimeControl,
       instanceId: state.control.instanceId,

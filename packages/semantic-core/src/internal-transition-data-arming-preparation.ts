@@ -9,7 +9,7 @@ import type { InternalDataArmingPatch } from "./internal-transition-data-arming-
 import { canonicalUniquePublicationAtoms, canonicalUniqueStateAtoms } from "./internal-transition-footprint-ordering.js";
 import type { InternalTransitionCandidate, InternalTransitionFootprint } from "./internal-transition-footprint.js";
 import { InternalTransitionPublicationAtomKind, InternalTransitionStateAtomKind } from "./internal-transition-footprint-vocabulary.js";
-import { affectedTokenBucketsAreExact } from "./internal-transition-token-preparation.js";
+import { affectedTokenBucketsAreExact, tokenOwnerCensusAtoms } from "./internal-transition-token-preparation.js";
 import { InternalOccurrenceKind, openWaitAnchorIsAbsent, operationIsUniqueWaitDeclarer } from "./internal-transition-wait-census.js";
 import { SemanticOperationKind } from "./semantic-process-contract.js";
 import type { AwaitDataInputOutputUserTaskOperation, SemanticProcessProgram } from "./semantic-process-contract.js";
@@ -82,6 +82,7 @@ export function deriveInternalDataArmingPreparation(
   const anchor = { kind: InternalTransitionStateAtomKind.OpenWaitAnchor, occurrence: patch.wait.id, owner } as const;
   const scope = { kind: InternalTransitionStateAtomKind.ActivityVariableScope, occurrence: activity, owner } as const;
   const reads = canonicalUniqueStateAtoms([
+    ...tokenOwnerCensusAtoms([operation.input]),
     { kind: InternalTransitionStateAtomKind.RuntimeControl, instanceId: state.control.instanceId },
     { kind: InternalTransitionStateAtomKind.ScopeOccurrence, owner },
     { kind: InternalTransitionStateAtomKind.LogicalTime },
@@ -89,6 +90,7 @@ export function deriveInternalDataArmingPreparation(
     token, association, ...counters, wait, anchor, scope,
   ]);
   const writes = canonicalUniqueStateAtoms([
+    ...tokenOwnerCensusAtoms([operation.input]),
     token, association, ...counters, wait, anchor, scope,
     { kind: InternalTransitionStateAtomKind.ActivityVariable, occurrence: activity, owner, name: patch.inputBinding.name },
   ]);

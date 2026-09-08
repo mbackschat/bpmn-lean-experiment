@@ -70,6 +70,12 @@ assert.ok(candidate !== null && candidate.owner !== null);
 
 test("derives the retained-root termination region, input, and End increment", () => {
   const footprint = requireTerminationFootprint(candidate);
+  assert.deepEqual(new Set(footprint.reads.flatMap((atom) =>
+    atom.kind === InternalTransitionStateAtomKind.TokenOwners ? [atom.placeId] : []
+  )), new Set([operation.input]));
+  assert.deepEqual(new Set(footprint.writes.flatMap((atom) =>
+    atom.kind === InternalTransitionStateAtomKind.TokenOwners ? [atom.placeId] : []
+  )), new Set([operation.input]));
   const child = ready.scopeOccurrences.find(({ id }) =>
     id.definitionScopeId === operation.scopeId
   );

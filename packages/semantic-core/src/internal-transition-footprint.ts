@@ -30,6 +30,7 @@ import {
 } from "./internal-transition-wait-census.js";
 export { InternalOccurrenceKind } from "./internal-transition-wait-census.js";
 import type { InternalOccurrenceRegion } from "./internal-transition-region.js";
+import { tokenOwnerCensusAtoms } from "./internal-transition-token-preparation.js";
 import { SemanticOperationKind } from "./semantic-process-contract.js";
 import type {
   BpmnElementOrigin,
@@ -158,6 +159,10 @@ export type InternalTransitionStateAtom = Readonly<
       kind: InternalTransitionStateAtomKind.ScopeParent;
       occurrence: ScopeOccurrenceId;
       parent: ScopeOccurrenceId | null;
+    }
+  | {
+      kind: InternalTransitionStateAtomKind.TokenOwners;
+      placeId: string;
     }
   | {
       kind: InternalTransitionStateAtomKind.Wait;
@@ -619,6 +624,7 @@ function waitFootprint(
     },
     { kind: InternalTransitionStateAtomKind.ScopeOccurrence, owner },
     controlToken,
+    ...tokenOwnerCensusAtoms([operation.input]),
     activationAtom,
     wait,
     openWaitAnchor,
@@ -633,6 +639,7 @@ function waitFootprint(
   ]);
   const writes = canonicalUniqueStateAtoms([
     controlToken,
+    ...tokenOwnerCensusAtoms([operation.input]),
     activationAtom,
     wait,
     openWaitAnchor,

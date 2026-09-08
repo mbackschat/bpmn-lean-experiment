@@ -124,6 +124,12 @@ test("derives one exact ordinary-End token and a relative End increment", () => 
     owner: candidateOwner,
     placeId: operation.input,
   });
+  assert.deepEqual(new Set(footprint.reads.flatMap((atom) =>
+    atom.kind === InternalTransitionStateAtomKind.TokenOwners ? [atom.placeId] : []
+  )), new Set([operation.input]));
+  assert.deepEqual(new Set(footprint.writes.flatMap((atom) =>
+    atom.kind === InternalTransitionStateAtomKind.TokenOwners ? [atom.placeId] : []
+  )), new Set([operation.input]));
   assert.deepEqual(findWrite(footprint, InternalTransitionStateAtomKind.EndIncrement), {
     kind: InternalTransitionStateAtomKind.EndIncrement,
   });

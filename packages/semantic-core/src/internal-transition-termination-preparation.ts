@@ -5,6 +5,7 @@ import type {
   InternalTransitionStateFootprint,
 } from "./internal-transition-footprint.js";
 import { compensationSnapshotPurgeAtoms } from "./internal-transition-footprint.js";
+import { tokenOwnerCensusAtoms, regionalTokenOwnerCensusWrites } from "./internal-transition-token-preparation.js";
 import { InternalTransitionStateAtomKind } from "./internal-transition-footprint-vocabulary.js";
 import { deriveInternalOccurrenceRegion } from "./internal-transition-region.js";
 import { SemanticOperationKind } from "./semantic-process-contract.js";
@@ -57,6 +58,7 @@ export function deriveInternalTerminateScopeStateFootprint(
     kind: InternalTransitionStateAtomKind.EndIncrement,
   } as const;
   const reads = canonicalUniqueStateAtoms([
+    ...tokenOwnerCensusAtoms([operation.input]),
     {
       kind: InternalTransitionStateAtomKind.RuntimeControl,
       instanceId: state.control.instanceId,
@@ -74,6 +76,7 @@ export function deriveInternalTerminateScopeStateFootprint(
     ...snapshotAtoms,
   ]);
   const writes = canonicalUniqueStateAtoms([
+    ...regionalTokenOwnerCensusWrites(state, region, []),
     input,
     regionAtom,
     endIncrement,

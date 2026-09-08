@@ -176,6 +176,8 @@ test("derives exact selected-input and owner-local output footprints", () => {
       owner: firstOwner,
       placeId: "place:Flow_Output",
     },
+    { kind: InternalTransitionStateAtomKind.TokenOwners, placeId: "place:Flow_A" },
+    { kind: InternalTransitionStateAtomKind.TokenOwners, placeId: "place:Flow_Output" },
   ]);
 
   const sameOwnerOtherInput = requirePreparation(
@@ -189,7 +191,15 @@ test("derives exact selected-input and owner-local output footprints", () => {
     "place:Flow_A",
   );
   assert.equal(independent(firstInput.footprint, sameOwnerOtherInput.footprint), false);
-  assert.equal(independent(firstInput.footprint, otherOwner.footprint), true);
+  assert.equal(independent(firstInput.footprint, otherOwner.footprint), false);
+  const disjointPlaces = (atoms: InternalTransitionStateFootprint["reads"]) => atoms.map((atom) =>
+    atom.kind === InternalTransitionStateAtomKind.ControlToken || atom.kind === InternalTransitionStateAtomKind.TokenOwners
+      ? { ...atom, placeId: `other:${atom.placeId}` } : atom
+  );
+  assert.equal(independent(firstInput.footprint, {
+    reads: disjointPlaces(otherOwner.footprint.reads), writes: disjointPlaces(otherOwner.footprint.writes),
+  }), true);
+  assert.deepEqual(firstInput.footprint.reads.filter(({ kind }) => kind === InternalTransitionStateAtomKind.TokenOwners), []);
 });
 
 test("selects one unit from an exact bucket without broadening the legacy evaluator", () => {

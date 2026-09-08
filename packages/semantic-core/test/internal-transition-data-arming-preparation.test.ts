@@ -132,6 +132,12 @@ function withBindings(bindings: ReadonlyArray<VariableBinding>): RuntimeState {
 
 test("composed preparation copies input into one joined lifetime with distinct counter domains", () => {
   const prepared = required();
+  assert.deepEqual(new Set(prepared.footprint.reads.flatMap((atom) =>
+    atom.kind === Atom.TokenOwners ? [atom.placeId] : []
+  )), new Set([leftOperation.input]));
+  assert.deepEqual(new Set(prepared.footprint.writes.flatMap((atom) =>
+    atom.kind === Atom.TokenOwners ? [atom.placeId] : []
+  )), new Set([leftOperation.input]));
   const taskId = { processInstanceId: instanceId, elementId: leftOperation.task.elementId, activation: 3 };
   const activityId = { processInstanceId: instanceId, activityElementId: leftOperation.task.elementId, activation: 8 };
   const after = applyPatch(before, prepared.patch);

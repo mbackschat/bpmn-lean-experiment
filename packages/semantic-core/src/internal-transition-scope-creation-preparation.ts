@@ -14,6 +14,7 @@ import { InternalTransitionStateAtomKind } from "./internal-transition-footprint
 import {
   affectedTokenBucketsAreExact,
   tokenBucketIsAbsent,
+  tokenOwnerCensusAtoms,
 } from "./internal-transition-token-preparation.js";
 import { InternalOccurrenceKind } from "./internal-transition-wait-census.js";
 import {
@@ -208,6 +209,7 @@ function prepareScopeCreation(
     parent: operation.kind === SemanticOperationKind.EnterScope ? owner : null,
   } as const;
   const writes = canonicalUniqueStateAtoms([
+    ...tokenOwnerCensusAtoms([input, entry]),
     inputToken,
     entryToken,
     createdOccurrence,
@@ -215,6 +217,7 @@ function prepareScopeCreation(
     ...creationAtoms,
   ]);
   const reads = canonicalUniqueStateAtoms([
+    ...tokenOwnerCensusAtoms([input]),
     {
       kind: InternalTransitionStateAtomKind.RuntimeControl,
       instanceId: state.control.instanceId,

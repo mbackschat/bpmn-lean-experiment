@@ -6,6 +6,7 @@ import type {
   InternalTransitionStateFootprint,
 } from "./internal-transition-footprint.js";
 import { compensationSnapshotPromotionAtoms } from "./internal-transition-footprint.js";
+import { tokenOwnerCensusAtoms } from "./internal-transition-token-preparation.js";
 import { InternalTransitionStateAtomKind } from "./internal-transition-footprint-vocabulary.js";
 import { deriveInternalOccurrenceRegion } from "./internal-transition-region.js";
 import { InternalOccurrenceKind } from "./internal-transition-wait-census.js";
@@ -107,7 +108,7 @@ export function deriveInternalCompleteScopeStateFootprint(
         },
         parentOutput,
       );
-      writes.push(parentOutput);
+      writes.push(parentOutput, ...tokenOwnerCensusAtoms([selected.parentOutput]));
       break;
     }
   }

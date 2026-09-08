@@ -101,6 +101,12 @@ test("prepares every ordinary wait family with publication-time and an exact wai
     const inputPlace = candidateProgram.controlPlaces.find(({ id }) =>
       id === input
     );
+    assert.deepEqual(new Set(prepared.footprint.reads.flatMap((atom) =>
+      atom.kind === InternalTransitionStateAtomKind.TokenOwners ? [atom.placeId] : []
+    )), new Set([input]));
+    assert.deepEqual(new Set(prepared.footprint.writes.flatMap((atom) =>
+      atom.kind === InternalTransitionStateAtomKind.TokenOwners ? [atom.placeId] : []
+    )), new Set([input]));
     assert.ok(inputPlace !== undefined);
     assert.deepEqual(prepared.publicationTemplate.record, {
       logicalTimeMs: state.logicalTimeMs,
