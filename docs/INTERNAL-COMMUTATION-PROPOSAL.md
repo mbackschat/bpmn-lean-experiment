@@ -3,7 +3,7 @@
 ## Status
 
 Lifecycle: implementation-in-progress
-Review: pending
+Review: approved
 
 ## Decision question and boundary
 
@@ -11,7 +11,7 @@ What is the smallest reusable rule that lets bounded internal closure advance ev
 
 The implemented first `INTERNAL-COMMUTATION` Beta risk checkpoint replaced the constructor-specific exception for exactly two distinct `awaitUserTask` operations with one semantic-footprint criterion over an exact two-operation frontier. The checkpoint covers ordinary `awaitUserTask`, `awaitMessage`, `awaitTimer`, and `awaitEffect` arming operations in Lean and the independently written TypeScript core. It added no BPMN source shape, profile capability, Semantic Process operation, RuntimeState field, stimulus, public wire field, Temporal host capability, MUE content ID, or support claim.
 
-The full MUE content obligation remains open after that checkpoint. The approved final-closure account selects larger enabled sets, every current operation family, and explicit choice representation without adding a BPMN construct or newly admitted topology. The [selected-join readiness amendment](#selected-join-readiness-dependency-amendment) reopens only its dependency vocabulary and awaits a new cold proposal verdict before that correction is implemented. Earlier approved checkpoints retain their recorded boundaries.
+The full MUE content obligation remains open after that checkpoint. The approved final-closure account selects larger enabled sets, every current operation family, and explicit choice representation without adding a BPMN construct or newly admitted topology. The independently approved [selected-join readiness amendment](#selected-join-readiness-dependency-amendment) extends only its dependency vocabulary; its implementation precedes local-control batch integration. Earlier approved checkpoints retain their recorded boundaries.
 
 ## Existing risk
 
@@ -361,7 +361,7 @@ The private footprint vocabulary now includes owner-free `tokenOwners(place)` al
 | Sequential/parallel Multi-Instance entry | Input | Input; normal output only for zero items |
 | Duplicate, Choose, and SelectMany | Input | Consumed input and actual selected outputs |
 | Synchronize | Every input | Every consumed input and output |
-| SynchronizeSelected | None; record-supplied owners select exact buckets, with the separate population/readiness correction in the [pending amendment](#selected-join-readiness-dependency-amendment) | Actual selected inputs and output |
+| SynchronizeSelected | None; record-supplied owners select exact buckets, with the separate population/readiness correction in the [approved amendment](#selected-join-readiness-dependency-amendment) | Actual selected inputs and output |
 | Exact Merge alternative | None; its owner and input are already selected | Selected input and output |
 | Ordinary/bounded scope entry and Call invocation | Input | Input and child/called entry |
 | Process initiation | None | Actual selected outputs |
@@ -439,11 +439,13 @@ A future admitted topology that exposes an interrupting transition beside an una
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `242c72f81bdeb2b6df28b4f2fc39e78c20573ef6` | `fork-turns-none` | `approve-with-required-edits` | `280716b667da387c04356f43d40123f10e0e6aab, 905fba45833daafd2994f11dd23c0476419f64b9, 543430f7ebc560572515dd2b3317a7a0e954ae9c, owner-authorized` |
+| Proposal | `f7b59b08c0441416f036ad0753e6cba88fe18629` | `fork-turns-none` | `approve` | `not-required` |
 | Semantic checkpoint | `f5a4ecbe463206c54645520abef635ae548111a5` | `fork-turns-none` | `approve` | `not-required` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
-The first checkpoint proposal review targeted `95ee893fc7efef561d579c9c2ecd164eccae1187` and closed its required edits at `e65fa4fbd2b4303794398061d94c0602e54a4714`. Its context-cold checkpoint review targeted `f4b09ba48054a2c059f06b92b3b4d2b4675a6117` and closed the required correction at `a34df385863d706f36785282201703604720013f`; those immutable results continue to own the implemented Beta checkpoint. The materially amended final-closure account received three correction audits after its cold proposal review; the owner authorized the third round, and the same reviewer approved target `543430f7ebc560572515dd2b3317a7a0e954ae9c` with every required finding closed. Its context-cold final-implementation checkpoint review targeted `f6da5db574c7d2733dd06c7a13e4122cc1415fe1`; the same reviewer approved correction target `fb998985daa5ecc94af313b78bc6485a352dd213` with no remaining findings after the unrelated Temporal harness limitation was corrected and the clean complete gate passed at `9bbc99e5f830f4dea5157ed944f4d54b461ec6cc`.
+The first checkpoint proposal review targeted `95ee893fc7efef561d579c9c2ecd164eccae1187` and closed its required edits at `e65fa4fbd2b4303794398061d94c0602e54a4714`. Its context-cold checkpoint review targeted `f4b09ba48054a2c059f06b92b3b4d2b4675a6117` and closed the required correction at `a34df385863d706f36785282201703604720013f`; those immutable results continue to own the implemented Beta checkpoint.
+
+The materially amended final-closure account received a cold proposal review at `242c72f81bdeb2b6df28b4f2fc39e78c20573ef6`, followed by correction audits at `280716b667da387c04356f43d40123f10e0e6aab`, `905fba45833daafd2994f11dd23c0476419f64b9`, and `543430f7ebc560572515dd2b3317a7a0e954ae9c`. The owner authorized the third round, and the same reviewer approved its target with every required finding closed. Its context-cold final-implementation checkpoint review targeted `f6da5db574c7d2733dd06c7a13e4122cc1415fe1`; the same reviewer approved correction target `fb998985daa5ecc94af313b78bc6485a352dd213` with no remaining findings after the unrelated Temporal harness limitation was corrected and the clean complete gate passed at `9bbc99e5f830f4dea5157ed944f4d54b461ec6cc`.
 
 The Activity-data projection prerequisite received a context-cold checkpoint review at `94033af12a0efc0e2be584b295888503b4e69c21`. The same reviewer approved correction target `13dfe438898bd3dc95283de9cf9fa32f984e54e9` with no remaining findings after the PLAN routing correction, 114 independent focused checks, and the clean complete `./scripts/pnpm.sh run test:pre-push` gate. Its output SHA-256 is `a8d7e33152fd35de2dda5658204da2b946a6d5bff24f96e90bf41ce5a2cd850f`; all 72 pipeline cases agree. That review covered the projection contract only.
 
@@ -464,3 +466,5 @@ The local-control preparation prerequisite received a context-cold review at `f5
 The clean complete `./scripts/pnpm.sh run test:pre-push` gate passed at that target on 2026-09-08 with all 72 pipeline cases agreeing; output SHA-256 is `67a52331d91a56d7591d70e7f37043f38da5ba6fb8a65d76c8ecd22d57f0ad8a`. The preceding sandboxed invocation stopped at a denied loopback listener (`EPERM`); the unchanged rerun used the local-service access required by the gate. The contended pipeline exceeded its soft feedback target and is correctness evidence, not a comparable performance measurement.
 
 The advisory's local enum-reference cleanup is non-material: it changes no semantic claim. Type checking, the existing local-control preparation matrix, source-hygiene guards, and the complete semantic-core gate cover that correction.
+
+The selected-join readiness amendment received a context-cold proposal review at `f7b59b08c0441416f036ad0753e6cba88fe18629`, against baseline `5a23ff2f562bda62d5e31cf9168402e061e8afb6`. The isolated reviewer approved with no required findings after independently reproducing both admitted-state counterexamples, dependency-omission mutations, and the different-owner same-place and unrelated-key controls. All 51 existing focused checks passed, and the packet regenerated exactly to SHA-256 `96ee9e0383d88458352e75687813bb9dfe62a3fdc26e96e8e0ad457ff34b761f`. Its advisory corrects the Semantic Process specification's wording to require exactly one ready same-key record, as both selectors already implement. That clarification changes no selected account; implementation and its preservation evidence remain open.
