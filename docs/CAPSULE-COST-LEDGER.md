@@ -485,6 +485,20 @@ On 2026-09-08, immutable commit `565ff325eec927f5367be6fe16d160c578ab70ae` suppl
 
 Every retained command exited zero below the hard ceiling with zero controlled memory events, pressure totals, and swap. These source-bound rows update [the executable module-cost record](../scripts/lean-module-cost.ts); none is near-cap. Elapsed times remain host-load context. The initial container launch failed before Lean because the read-only source archive lacked the nested cache mount point; creating that empty directory changed no source input. These isolated measurements do not replace full-library acceptance or establish semantic approval.
 
+#### Finite mixed local-control calibration
+
+On 2026-09-09, immutable commit `5a335c21673f97f6b993755e5804b4dfa0d62f5b` supplied the read-only archive for the new mixed witness and the four standing consumers of the changed shared proof inputs. All 394 archived Lean/build inputs match that commit. The pinned image, one CPU/thread, no network, unchanged 3 GiB ceiling, and no-additional-swap policy remain fixed. Each target retained warm dependencies and moved aside only its eight generated products inside the container; every retained invocation explicitly rebuilt the named module.
+
+| Module | Elapsed | GNU RSS | Cgroup peak | Output SHA-256 |
+|---|---:|---:|---:|---|
+| `FiniteInternalTransitionConformance` | 7.48 s | 1,154,012 KiB | 797,900,800 bytes | `e15bc0042aa61348abc36d97bf699f0658762703c4623e68fd7ba9359f690aef` |
+| `CallActivityConformance` | 23.28 s | 1,347,552 KiB | 1,041,088,512 bytes | `8c3911ef4fb523aa08ff4c7a6ad15b5d97ec1160dad9470ab9000ac124a120ee` |
+| `SequentialMultiInstanceProgramBindingConformance` | 28.15 s | 1,549,028 KiB | 1,242,087,424 bytes | `2b64254ce5902a986c76ad3ae4326280eee676a2d8847d763f80878cfff1ed40` |
+| `TimerStartConformance` | 21.72 s | 1,417,632 KiB | 1,115,271,168 bytes | `1bdf4f0639300e44b67f2b829dbf71075c969a860f3740dbe5bf1f78ae2a91c9` |
+| `TerminateEndEventConformance` | 31.57 s | 1,595,884 KiB | 1,285,562,368 bytes | `c120987c200626aedc2bbad3a19f038a3963d78080a949640593a1907363f8b1` |
+
+Every retained command exited zero with zero controlled memory events, pressure totals, and swap. The source-bound rows update [the executable module-cost record](../scripts/lean-module-cost.ts); none is near-cap. The mixed witness consumes quantified arbitrary-permutation laws instead of repeatedly reducing complete executions. These measurements establish resource acceptance at this proof checkpoint, not production integration or a performance trend.
+
 | Increment | Boundary | Code | Documentation | Elapsed | Comparison consequence |
 |---|---|---:|---:|---|---|
 | [Scoped runtime data](capsules/SCOPED-DATA-SPEC.md) | `08d8b84..3b2e44d` | `+540/-73` | `+134/-11` | Unknown | First atomic runtime-representation replacement; later scope work should not be compared as if it were a small local semantic clause. |
