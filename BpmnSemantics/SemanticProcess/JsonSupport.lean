@@ -1,6 +1,7 @@
 import BpmnSemantics.SemanticProcessContract
 import BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
 import BpmnSemantics.StrictJson
+import BpmnSemantics.WireNatural
 import Lean.Data.Json
 
 /-! # Semantic Process JSON value support
@@ -12,11 +13,6 @@ namespace BpmnSemantics.SemanticProcessJson
 
 open BpmnSemantics
 open Lean
-
-def maxSafeWireNat : Nat := 9007199254740991
-
-def isSafeWireNat (value : Nat) : Bool :=
-  value ≤ maxSafeWireNat
 
 def parseWireJson (contents : String) : Except String Json :=
   BpmnSemantics.StrictJson.parse contents
