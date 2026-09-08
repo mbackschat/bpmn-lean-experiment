@@ -63,7 +63,9 @@ def activateTimer (state : RuntimeState) (instanceId : SemanticId)
     timerActivations := setTimerActivationCount state.timerActivations
       timer.elementId activation }
 
-/-- Arms the Activity occurrence and its boundary deadline as one transition, in either interruption disposition, consuming the incoming token exactly once. Both occurrences take a fresh ordinal from their own element's counter, so the pair shares one activation only because arming is atomic; that shared ordinal is what later recovers the pair without a stored ownership record. -/
+/-- Arms the task and its boundary deadline atomically. The Activity occurrence records both
+independently issued identities, preserving the `AOO-JOIN-03` pairing contract when their counters
+differ. -/
 def activateBoundedUserTask (state : RuntimeState) (instanceId : SemanticId)
     (owner : ScopeOccurrenceId) (input : ControlPlaceId)
     (task : BoundedTaskArm) (boundaryTimer : BoundaryTimerArm) : RuntimeState :=
