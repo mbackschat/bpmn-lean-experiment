@@ -153,7 +153,7 @@ theorem localControl_independent_bucket_frame (state : RuntimeState)
   · exact localControl_independent_read_bucket_untouched state left right leftInstance rightInstance
       separated owner place read written (List.mem_append_right _ member) same
 
-private theorem localControl_selectedJoin_patch (state : RuntimeState)
+theorem localControl_selectedJoin_patch (state : RuntimeState)
     (operation : SemanticOperation) (selected : InternalLocalControlSelection)
     (found : selectInternalLocalControl? state operation = some selected)
     (chosen : SelectedBranchSet) (branch : selected.branchResult = some (.selectedJoin chosen)) :
