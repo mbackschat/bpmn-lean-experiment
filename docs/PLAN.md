@@ -104,9 +104,9 @@ Active work ID: `INTERNAL-COMMUTATION`.
 
 Risk band: RC internal scheduling; the six external reviews and composed Activity-data closure are complete.
 
-Next action: resume [local-control batch integration](INTERNAL-COMMUTATION-PROPOSAL.md#local-control-preparation-prerequisite). The [Inclusive pairing repair](capsules/INCLUSIVE-GATEWAY-SPEC.md#lean-assurance-lane), token-patch runtime validity, and selected-record algebra have independent checkpoint approval and a clean complete gate. Complete the five-family Lean preparation, frame, validity, and accepted-publication laws, then integrate finite mixed batches with the existing arming families.
+Next action: continue [local-control batch integration](INTERNAL-COMMUTATION-PROPOSAL.md#local-control-preparation-prerequisite). Complete five-family Lean preparation and read frames are implemented. Derive prepared-step validity and commutation from footprints, prove accepted publication, then integrate finite mixed batches with the existing arming families. The [Inclusive pairing repair](capsules/INCLUSIVE-GATEWAY-SPEC.md#lean-assurance-lane), token-patch validity, and selected-record algebra retain checkpoint approval.
 
-Pending batch source changes are preserved in Git stash `76a2b017a630d23203ded482227382003f296f0b`; restore only source, retaining this plan. Keep token-unit multiplicity distinct from dependency-set membership in complete preparation. Regions, scheduled choice, and final closure remain open. Preserve the [3 GiB ceiling](CAPSULE-COST-LEDGER.md#package-wide-theorem-elaboration-memory-correction).
+Pending batch source is restored; Git stash `76a2b017a630d23203ded482227382003f296f0b` remains retained. Keep token-unit multiplicity distinct from dependency-set membership. Regions, scheduled choice, and final closure remain open. Preserve the [3 GiB ceiling](CAPSULE-COST-LEDGER.md#package-wide-theorem-elaboration-memory-correction).
 
 Oracle: independent prepared operations preserve one another's complete preparation and commute in exact canonical RuntimeState and accepted publication; shared Process reads commute, conflicting writes and overlapping occurrence regions refuse batching, and a failed batch or schedule rolls back the complete command before publication.
 

@@ -36,7 +36,7 @@ The family map owns the independently closure-reviewed Activity boundary Message
 
 [Internal commutation](INTERNAL-COMMUTATION-PROPOSAL.md#finite-prepared-arming-checkpoint) implements finite independent ordinary/composed arming batches in reject mode. Lean proves arbitrary raw-state/publication permutation equality without snapshot declarations; TypeScript's ordinary-only snapshot batches remain outside that theorem. Scheduled choice, regional batches, other families, and closure are absent. The approved [atomicity repair](capsules/INTERNAL-CLOSURE-ATOMICITY-REPAIR-SPEC.md) proves rollback/no-publication matching TypeScript, with replay discriminators and Temporal failure-before-publication handling.
 
-The [token census](INTERNAL-COMMUTATION-PROPOSAL.md#place-wide-token-owner-census-checkpoint) is approved. [Local-control helpers](INTERNAL-COMMUTATION-PROPOSAL.md#local-control-preparation-prerequisite) preserve token/record runtime validity; integration remains open. [`implementation-status-owner:ENGINE-SEMANTIC-INVARIANT`](ENGINE-SEMANTIC-INVARIANT-IMPLEMENTATION-MAP.md#runtime-state-well-formedness) owns collection ordering.
+[Token census](INTERNAL-COMMUTATION-PROPOSAL.md#place-wide-token-owner-census-checkpoint) is approved. [Local-control helpers](INTERNAL-COMMUTATION-PROPOSAL.md#local-control-preparation-prerequisite) cover validity and preparation frames; publication/batching remain open. [`implementation-status-owner:ENGINE-SEMANTIC-INVARIANT`](ENGINE-SEMANTIC-INVARIANT-IMPLEMENTATION-MAP.md#runtime-state-well-formedness) owns collection ordering.
 
 The approved [selected-join checkpoint](INTERNAL-COMMUTATION-PROPOSAL.md#selected-join-dependency-checkpoint) implements TypeScript dependencies and Lean readiness frames.
 
