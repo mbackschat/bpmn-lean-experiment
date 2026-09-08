@@ -10,13 +10,8 @@ import {
 import type {
   UnnumberedFlowNodeOccurrenceDelta,
 } from "./flow-node-occurrence-lifecycle.js";
-import {
-  compareInternalTransitionPublicationSortKeys,
-} from "./internal-transition-footprint.js";
-import { prepareInternalArmingBatch } from "./internal-transition-arming-batch.js";
-import type {
-  InternalTransitionPublicationSortKey,
-} from "./internal-transition-footprint.js";
+import { prepareInternalTransitionBatch } from "./internal-transition-batch.js";
+import { instantiateInternalPublicationBatch } from "./internal-publication-template.js";
 import {
   projectControlPositionDelta,
   projectCurrentControlPositions,
@@ -153,50 +148,36 @@ export function applyStimulusWithTrace(
 
   let before = evaluation.admittedState;
   for (const batch of evaluation.selectedInternalBatches) {
-    const batchStart = before;
-    const prepared = batch.length > 1 ? prepareInternalArmingBatch(program, batchStart, batch) : null;
-    if (batch.length === 0 || (batch.length > 1 && prepared === null)) {
-      return noTrace(result);
+    if (batch.length === 0) return noTrace(result);
+    if (batch.length === 1) {
+      const step = batch[0]!;
+      const unit = internalPublicationUnit(program, before, step);
+      if (unit === null || !appendInternalPublicationUnits(stimulus.commandId, records, lifecycles, [unit])) {
+        return noTrace(result);
+      }
+      before = step.successor;
+      continue;
     }
 
-    const units: InternalPublicationUnit[] = [];
-    for (const [index, step] of batch.entries()) {
-      const footprint = prepared?.[index]?.footprint ?? null;
-      if (batch.length > 1 && footprint === null) {
+    const prepared = prepareInternalTransitionBatch(program, before, batch);
+    if (prepared === null) return noTrace(result);
+    const publications = instantiateInternalPublicationBatch(stimulus.commandId, records.length,
+      prepared.map(({ publicationTemplate }) => publicationTemplate));
+    if (publications === null) return noTrace(result);
+    for (const step of batch) {
+      const publication = publications.find(({ alternative }) => alternative.operationId === step.operation.id);
+      const unit = internalPublicationUnit(program, before, step);
+      if (publication === undefined || unit === null) return noTrace(result);
+      const lifecycle = unit.lifecycleAt(stimulus.commandId, publication.transitionIndex);
+      // The commutation contract requires equality with actual accepted projections, including defined lifecycles.
+      if (lifecycle === null || !sameJson(unit.record, publication.record) || !sameJson(lifecycle, publication.lifecycle)) {
         return noTrace(result);
       }
-      const unit = internalPublicationUnit(
-        program,
-        before,
-        step,
-        footprint?.publicationSortKey ?? null,
-      );
-      if (unit === null) {
-        return noTrace(result);
-      }
-      units.push(unit);
       before = step.successor;
     }
-    if (batch.length > 1) {
-      if (!units.every(hasInternalPublicationSortKey)) {
-        return noTrace(result);
-      }
-      units.sort((left, right) =>
-        compareInternalTransitionPublicationSortKeys(
-          left.sortKey,
-          right.sortKey,
-        )
-      );
-    }
-    if (
-      !appendInternalPublicationUnits(
-        stimulus.commandId,
-        records,
-        lifecycles,
-        units,
-      )
-    ) {
-      return noTrace(result);
+    for (const publication of publications) {
+      records.push(publication.record);
+      lifecycles.push(publication.lifecycle);
     }
   }
   return sameJson(before, result.state)
@@ -215,24 +196,12 @@ type InternalPublicationUnit = Readonly<{
     commandId: string,
     transitionIndex: number,
   ) => UnnumberedFlowNodeOccurrenceDelta | null;
-  sortKey: InternalTransitionPublicationSortKey | null;
 }>;
-
-type SortableInternalPublicationUnit = InternalPublicationUnit & Readonly<{
-  sortKey: InternalTransitionPublicationSortKey;
-}>;
-
-function hasInternalPublicationSortKey(
-  unit: InternalPublicationUnit,
-): unit is SortableInternalPublicationUnit {
-  return unit.sortKey !== null;
-}
 
 function internalPublicationUnit(
   program: SemanticProcessProgram,
   before: RuntimeState,
   step: AppliedInternalOperationStep,
-  sortKey: InternalTransitionPublicationSortKey | null,
 ): InternalPublicationUnit | null {
   const owner = step.owner;
   if (owner === null) {
@@ -263,7 +232,6 @@ function internalPublicationUnit(
             commandId,
             transitionIndex,
           ),
-        sortKey,
       };
 }
 

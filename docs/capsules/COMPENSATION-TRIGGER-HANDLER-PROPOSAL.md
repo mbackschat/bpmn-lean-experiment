@@ -451,7 +451,7 @@ The operation census must classify trigger creation and frontier activation as o
 | [TS runtime validity](../../packages/semantic-core/src/runtime-state-well-formedness.ts) | 55 | extract compensation validity first |
 | [TS runtime defects](../../packages/semantic-core/src/runtime-state-defect.ts) | 754 | new defect arms only |
 | [TS command admission](../../packages/semantic-core/src/semantic-command-admission.ts) | 326 | result dispatch only |
-| [TS transition trace](../../packages/semantic-core/src/semantic-transition-trace.ts) | 436 | failed arm only |
+| [TS transition trace](../../packages/semantic-core/src/semantic-transition-trace.ts) | 466 | failed arm only |
 | [TS lifecycle](../../packages/semantic-core/src/flow-node-occurrence-lifecycle.ts) | 60 | delegate compensation projection |
 | [TS lifecycle completeness](../../packages/semantic-core/src/flow-node-occurrence-publication-external-completeness.ts) | 69 | delegate compensation oracle |
 | [TS canonical contract](../../packages/semantic-core/src/contract.ts) | 311 | failed union references only |
