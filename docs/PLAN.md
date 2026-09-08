@@ -104,7 +104,7 @@ Active work ID: `INTERNAL-COMMUTATION`.
 
 Risk band: RC internal scheduling; the six external reviews and composed Activity-data closure are complete.
 
-Next action: continue [local-control batch integration](INTERNAL-COMMUTATION-PROPOSAL.md#local-control-preparation-prerequisite). Five-family Lean preparation, validity, local-pair execution/publication, and mixed arming/local-control preparation and state commutation are implemented. Lift the pair laws to finite batches and canonical accepted publication. The [Inclusive pairing repair](capsules/INCLUSIVE-GATEWAY-SPEC.md#lean-assurance-lane), token-patch validity, and selected-record algebra retain checkpoint approval.
+Next action: continue [local-control batch integration](INTERNAL-COMMUTATION-PROPOSAL.md#local-control-preparation-prerequisite). Complete preparation, mixed-pair frames, arbitrary finite prefix validity, and exact checked/actual execution commutation are implemented. Close canonical accepted mixed publication, then checkpoint review and production integration. The [Inclusive pairing repair](capsules/INCLUSIVE-GATEWAY-SPEC.md#lean-assurance-lane), token-patch validity, and selected-record algebra retain checkpoint approval.
 
 Pending batch source is restored; Git stash `76a2b017a630d23203ded482227382003f296f0b` remains retained. Keep token-unit multiplicity distinct from dependency-set membership. Regions, scheduled choice, and final closure remain open. Preserve the [3 GiB ceiling](CAPSULE-COST-LEDGER.md#package-wide-theorem-elaboration-memory-correction).
 
