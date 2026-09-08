@@ -285,7 +285,36 @@ test("batch refusal retains every unavailable frontier member and the minimum ca
   }
 });
 
-test("snapshot declarations exclude both ordinary and composed preparation and checked apply", () => {
+for (const ordinary of ordinaryOperations()) {
+  test(`snapshot declarations preserve existing ordinary ${ordinary.kind} batches`, () => {
+    const companion = { ...operationBase("UserTask_Companion"),
+      kind: SemanticOperationKind.AwaitUserTask, input: "place:Flow_Ready_Companion",
+      output: "place:Flow_Companion_Done", task: { elementId: "UserTask_Companion", name: "Companion" } } as const;
+    const { program, state, candidates } = fixture([ordinary, companion]);
+    const snapshots = { ...program, compensationEventSubProcessSnapshots: {
+      targets: [], limits: { maxRecords: 1, maxCanonicalBytes: 1024 },
+    } };
+    const prepared = batch(snapshots, state, candidates);
+    assert.ok(prepared !== null);
+    let final: RuntimeState | undefined;
+    for (const ordered of permutations(prepared)) {
+      let current = state;
+      for (const member of ordered) {
+        assert.deepEqual(prepare(snapshots, current, member), member);
+        const expected = applyInternalOperationStep(snapshots, member.operation, current);
+        assert.ok(expected !== null);
+        const successor = apply(snapshots, current, member);
+        assert.deepEqual(successor, expected.successor);
+        assert.ok(successor !== null);
+        current = successor;
+      }
+      if (final === undefined) final = current;
+      else assert.deepEqual(current, final);
+    }
+  });
+}
+
+test("snapshot declarations exclude composed preparation, checked apply and mixed batches", () => {
   const ordinary = ordinaryOperations()[0]!;
   const { program, state, candidates } = fixture([coverage, ordinary]);
   const prepared = batch(program, state, candidates);
@@ -294,8 +323,13 @@ test("snapshot declarations exclude both ordinary and composed preparation and c
     targets: [], limits: { maxRecords: 1, maxCanonicalBytes: 1024 },
   } };
   for (const member of prepared) {
-    assert.equal(prepare(snapshots, state, member), null);
-    assert.equal(apply(snapshots, state, member), null);
+    if (member.kind === PreparedInternalArmingKind.Data) {
+      assert.equal(prepare(snapshots, state, member), null);
+      assert.equal(apply(snapshots, state, member), null);
+    } else {
+      assert.deepEqual(prepare(snapshots, state, member), member);
+      assert.deepEqual(apply(snapshots, state, member), apply(program, state, member));
+    }
   }
   assert.equal(batch(snapshots, state, candidates), null);
 });

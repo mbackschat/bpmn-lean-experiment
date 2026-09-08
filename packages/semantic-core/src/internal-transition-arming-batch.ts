@@ -25,9 +25,9 @@ export function deriveInternalArmingPreparation(
   state: RuntimeState,
   candidate: InternalTransitionCandidate,
 ): PreparedInternalArming | null {
-  if (program.compensationEventSubProcessSnapshots !== undefined) return null;
   switch (candidate.operation.kind) {
     case SemanticOperationKind.AwaitDataInputOutputUserTask: {
+      if (program.compensationEventSubProcessSnapshots !== undefined) return null;
       const prepared = deriveInternalDataArmingPreparation(program, state, candidate);
       return prepared === null ? null : { kind: PreparedInternalArmingKind.Data, ...prepared };
     }
