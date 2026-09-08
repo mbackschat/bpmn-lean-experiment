@@ -25,6 +25,7 @@ import type {
 import { SemanticTransitionKind } from "./semantic-transition-trace.js";
 import { InternalTransitionStateAtomKind } from "./internal-transition-footprint-vocabulary.js";
 import { affectedTokenBucketsAreExact, tokenOwnerCensusAtoms } from "./internal-transition-token-preparation.js";
+import { selectedBranchOwnerCensusAtom, selectedJoinReadinessAtoms } from "./internal-transition-selected-branch-preparation.js";
 import { selectConditionalBranch } from "./semantic-process-control-flow-runtime.js";
 import { SemanticOperationKind } from "./semantic-process-contract.js";
 import type {
@@ -264,7 +265,7 @@ export function deriveInternalSelectManyPreparation(
       }) as const),
       selectedBranch,
     ],
-    [selectedBranch],
+    [selectedBranch, selectedBranchOwnerCensusAtom(operation.selectionKey)],
     {
       kind: InternalSelectedBranchPatchKind.Insert,
       record: { owner, selectionKey: operation.selectionKey, expectedInputs: selected.expectedInputs },
@@ -305,8 +306,8 @@ export function deriveInternalSynchronizeSelectedPreparation(
       kind: InternalLocalControlBranchResultKind.SelectedJoin,
       record,
     },
-    [selectedBranch],
-    [selectedBranch],
+    selectedJoinReadinessAtoms(state, record, operation.output),
+    [selectedBranch, selectedBranchOwnerCensusAtom(operation.selectionKey)],
     { kind: InternalSelectedBranchPatchKind.Remove, record },
   );
 }

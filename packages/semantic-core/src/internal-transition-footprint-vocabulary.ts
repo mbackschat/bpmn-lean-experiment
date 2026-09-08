@@ -22,6 +22,7 @@ export enum InternalTransitionStateAtomKind {
   ProcessVariable = "processVariable",
   RuntimeControl = "runtimeControl",
   SelectedBranch = "selectedBranch",
+  SelectedBranchOwners = "selectedBranchOwners",
   SequentialController = "sequentialController",
   SequentialControllerOutput = "sequentialControllerOutput",
   SequentialControllersPresence = "sequentialControllersPresence",

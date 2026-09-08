@@ -170,6 +170,8 @@ function stateAtomParts(
       return [atom.kind, atom.instanceId];
     case InternalTransitionStateAtomKind.SelectedBranch:
       return [atom.kind, ...scopeParts(atom.owner), atom.selectionKey];
+    case InternalTransitionStateAtomKind.SelectedBranchOwners:
+      return [atom.kind, atom.selectionKey];
     case InternalTransitionStateAtomKind.SequentialController:
       return [
         atom.kind,
@@ -308,6 +310,7 @@ function occurrenceRegionConflictsWithAtom(
     case InternalTransitionStateAtomKind.RuntimeControl:
     case InternalTransitionStateAtomKind.SequentialControllersPresence:
     case InternalTransitionStateAtomKind.TokenOwners:
+    case InternalTransitionStateAtomKind.SelectedBranchOwners:
       return false;
     default:
       return assertNever(atom);

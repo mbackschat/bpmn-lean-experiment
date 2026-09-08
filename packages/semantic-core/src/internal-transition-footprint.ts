@@ -138,6 +138,10 @@ export type InternalTransitionStateAtom = Readonly<
       selectionKey: string;
     }
   | {
+      kind: InternalTransitionStateAtomKind.SelectedBranchOwners;
+      selectionKey: string;
+    }
+  | {
       kind: InternalTransitionStateAtomKind.SequentialController;
       id: ActivityOccurrenceId;
       owner: ScopeOccurrenceId;

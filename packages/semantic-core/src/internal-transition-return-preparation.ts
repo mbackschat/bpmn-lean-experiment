@@ -5,6 +5,7 @@ import type {
   InternalTransitionStateFootprint,
 } from "./internal-transition-footprint.js";
 import { regionalTokenOwnerCensusWrites } from "./internal-transition-token-preparation.js";
+import { regionalSelectedBranchOwnerCensusWrites } from "./internal-transition-selected-branch-preparation.js";
 import { InternalTransitionStateAtomKind } from "./internal-transition-footprint-vocabulary.js";
 import { deriveInternalOccurrenceRegion } from "./internal-transition-region.js";
 import { SemanticOperationKind } from "./semantic-process-contract.js";
@@ -80,6 +81,7 @@ export function deriveInternalReturnProcessStateFootprint(
   ]);
   const writes = canonicalUniqueStateAtoms([
     ...regionalTokenOwnerCensusWrites(state, region, [operation.callerOutput]),
+    ...regionalSelectedBranchOwnerCensusWrites(state, region),
     regionAtom,
     association,
     callerOutput,
