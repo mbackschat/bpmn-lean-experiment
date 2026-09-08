@@ -125,13 +125,9 @@ export const leanModuleCostRecord = {
     accountingCaveat:
       "GNU time's resident-set accounting in Docker Desktop's Linux VM does not align exactly with cgroup charging. Compare RSS within this measurement series; use the separately recorded cgroup peak and events for hard-limit acceptance.",
   },
-  nearCapModules: [
-    "BpmnSemantics.MessagePayloadCatchConformance",
-    "BpmnSemantics.CompensationEventSubProcessSnapshotRootClosureConformance",
-    "BpmnSemantics.CompensationSourceAdmissionConformance",
-    "BpmnSemantics.CompensationTriggerHandlerCompletionConformance",
-  ],
+  nearCapModules: [],
   rows: [
+    { module: "BpmnSemantics.ActivityActivationOrderConformance", peakResidentKib: 607400, elapsedSeconds: 1.66, measuredAtCommit: "5fa6dfe3" },
     {
       module: "BpmnSemantics.MessageStartAdmissionConformance",
       peakResidentKib: 1810064,
@@ -164,9 +160,9 @@ export const leanModuleCostRecord = {
     },
     {
       module: "BpmnSemantics.MessagePayloadCatchConformance",
-      peakResidentKib: 3108244,
-      elapsedSeconds: 24.96,
-      measuredAtCommit: "9ea2a203",
+      peakResidentKib: 1508268,
+      elapsedSeconds: 25.93,
+      measuredAtCommit: "5fa6dfe3",
     },
     {
       module: "BpmnSemantics.SequentialMultiInstanceConformance",
@@ -242,9 +238,9 @@ export const leanModuleCostRecord = {
     },
     {
       module: "BpmnSemantics.RuntimeStateWellFormedInvariantConformance",
-      peakResidentKib: 1164872,
-      elapsedSeconds: 21.72,
-      measuredAtCommit: "0958697d",
+      peakResidentKib: 1183920,
+      elapsedSeconds: 20.24,
+      measuredAtCommit: "5fa6dfe3",
     },
     {
       module: "BpmnSemantics.RuntimeStateWellFormedEventRaceConformance",
@@ -258,18 +254,18 @@ export const leanModuleCostRecord = {
       elapsedSeconds: 14.57,
       measuredAtCommit: "da6e6477",
     },
-    { module: "BpmnSemantics.CallActivityConformance", peakResidentKib: 1346800, elapsedSeconds: 23.17, measuredAtCommit: "8d3927f6" },
+    { module: "BpmnSemantics.CallActivityConformance", peakResidentKib: 1345716, elapsedSeconds: 23.6, measuredAtCommit: "5fa6dfe3" },
     {
       module: "BpmnSemantics.SequentialMultiInstanceProgramBindingConformance",
-      peakResidentKib: 1548508,
-      elapsedSeconds: 29.75,
-      measuredAtCommit: "8d3927f6",
+      peakResidentKib: 1546980,
+      elapsedSeconds: 31.01,
+      measuredAtCommit: "5fa6dfe3",
     },
     {
       module: "BpmnSemantics.TimerStartConformance",
-      peakResidentKib: 1416936,
-      elapsedSeconds: 22.32,
-      measuredAtCommit: "8d3927f6",
+      peakResidentKib: 1416140,
+      elapsedSeconds: 23.25,
+      measuredAtCommit: "5fa6dfe3",
     },
     {
       module: "BpmnSemantics.ServiceTaskIncidentCancellationConformance",
@@ -340,9 +336,9 @@ export const leanModuleCostRecord = {
     { module: "BpmnSemantics.IntermediateCatchMessageConformance", peakResidentKib: 2225108, elapsedSeconds: 11.7 },
     {
       module: "BpmnSemantics.TerminateEndEventConformance",
-      peakResidentKib: 1543944,
-      elapsedSeconds: 31.07,
-      measuredAtCommit: "8d3927f6",
+      peakResidentKib: 1544784,
+      elapsedSeconds: 30.56,
+      measuredAtCommit: "5fa6dfe3",
     },
     { module: "BpmnSemantics.SemanticProcessConformance", peakResidentKib: 2203824, elapsedSeconds: 8.9 },
     {
@@ -376,12 +372,12 @@ export const leanModuleCostRecord = {
     { module: "BpmnSemantics.EmbeddedSubProcessCompletionConformance", peakResidentKib: 1926344, elapsedSeconds: 11.0 },
     {
       module: "BpmnSemantics.InternalCommutationConformance",
-      peakResidentKib: 1923892,
-      elapsedSeconds: 8.73,
-      measuredAtCommit: "e9c9db0f",
+      peakResidentKib: 1242848,
+      elapsedSeconds: 8.99,
+      measuredAtCommit: "5fa6dfe3",
     },
     { module: "BpmnSemantics.InternalClosureAtomicityConformance", peakResidentKib: 1217720, elapsedSeconds: 12.95, measuredAtCommit: "e9c9db0f" },
-    { module: "BpmnSemantics.CompensationSourceAdmissionConformance", peakResidentKib: 2863952, elapsedSeconds: 20.54, measuredAtCommit: "b4544cf6" },
+    { module: "BpmnSemantics.CompensationSourceAdmissionConformance", peakResidentKib: 2447360, elapsedSeconds: 18.21, measuredAtCommit: "5fa6dfe3" },
     { module: "BpmnSemantics.CompensationSourceJsonConformance", peakResidentKib: 2326880, elapsedSeconds: 12.15, measuredAtCommit: "b4544cf6" },
     { module: "BpmnSemantics.CompensationSourceCompatibilityConformance", peakResidentKib: 2023220, elapsedSeconds: 14.78, measuredAtCommit: "05244cf7" },
     { module: "BpmnSemantics.CompensationSourceBindingReferenceConformance", peakResidentKib: 2725808, elapsedSeconds: 31.89, measuredAtCommit: "b4544cf6" },
@@ -418,9 +414,9 @@ export const leanModuleCostRecord = {
     },
     {
       module: "BpmnSemantics.CompensationTriggerHandlerCompletionConformance",
-      peakResidentKib: 2938028,
-      elapsedSeconds: 27.07,
-      measuredAtCommit: "3020899b",
+      peakResidentKib: 1485228,
+      elapsedSeconds: 25.83,
+      measuredAtCommit: "5fa6dfe3",
     },
     {
       module: "BpmnSemantics.CompensationTriggerHandlerCancellationConformance",
@@ -472,15 +468,15 @@ export const leanModuleCostRecord = {
     },
     {
       module: "BpmnSemantics.CompensationEventSubProcessSnapshotLifecycleIntegrationConformance",
-      peakResidentKib: 2126608,
-      elapsedSeconds: 20.52,
-      measuredAtCommit: "6208f2e4",
+      peakResidentKib: 1933028,
+      elapsedSeconds: 15.25,
+      measuredAtCommit: "5fa6dfe3",
     },
     {
       module: "BpmnSemantics.CompensationEventSubProcessSnapshotRootClosureConformance",
-      peakResidentKib: 2929256,
-      elapsedSeconds: 33.59,
-      measuredAtCommit: "bd2bef03",
+      peakResidentKib: 1489244,
+      elapsedSeconds: 20.08,
+      measuredAtCommit: "5fa6dfe3",
     },
     {
       module: "BpmnSemantics.CompensationEventSubProcessSnapshotErrorProgramConformance",

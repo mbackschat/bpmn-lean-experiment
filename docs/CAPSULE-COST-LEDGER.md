@@ -395,6 +395,33 @@ The second genuinely cold full-library run passed all 322 jobs in 23:34.16 at 2,
 
 This memory repair is non-material to the semantic review boundary: public execution definitions, theorem propositions, profiles, observations, and admission remain unchanged. The verification-entrypoint and contributor-setup guards cover the native package setting; Lean source-contract, import-boundary, source-hygiene, link, plan, and reviewability guards cover the fixture correction. Kernel equality locks and their separating mutations preserve the complete results. The composed arming footprint checkpoint still requires its separate independent semantic review.
 
+#### Composed arming footprint checkpoint calibration
+
+On 2026-09-08, immutable commit `5fa6dfe36214b6620ee90d588726a90c951c206d` supplied the read-only source archive for the measurements below. All 348 source inputs match the accepted cold full-library run above byte-for-byte. Each module retained the warm dependency closure and invalidated only its eight owned generated products; the pinned image, one CPU/thread, network isolation, 3 GiB ceiling, and no-additional-swap policy were unchanged. The selection covers the new canonical Activity-order witness, changed runtime and commutation consumers, all four standing-watch consumers, and all remaining near-cap targets.
+
+| Module (`BpmnSemantics.` prefix) | Elapsed | GNU RSS | Cgroup peak | Output SHA-256 |
+|---|---:|---:|---:|---|
+| `ActivityActivationOrderConformance` | 1.66 s | 607,400 KiB | 845,103,104 bytes | `0a64a22b3043985df9340abc50fc56008e07c3a4ed8b712b015f2a3a18b367af` |
+| `CallActivityConformance` | 23.60 s | 1,345,716 KiB | 1,045,606,400 bytes | `42dc8c7f41f482653b6b56fb669b94b9c969c5cecf3045edad62a0e5d9bb903f` |
+| `CompensationEventSubProcessSnapshotLifecycleIntegrationConformance` | 15.25 s | 1,933,028 KiB | 1,656,119,296 bytes | `a19e78326a3d01c0248eefd64b4c26b6edf0f1866b6d415f3616cd23bff7ec8a` |
+| `CompensationEventSubProcessSnapshotRootClosureConformance` | 20.08 s | 1,489,244 KiB | 1,225,306,112 bytes | `bbf0a1cacac672f35de204b21627877cbc238184c3cf79ca7d9033740bb69485` |
+| `CompensationSourceAdmissionConformance` | 18.21 s | 2,447,360 KiB | 2,190,393,344 bytes | `61b115e04638762688e749ebe148e0f6361113d4a43a473ddf6024772632385b` |
+| `CompensationTriggerHandlerCompletionConformance` | 25.83 s | 1,485,228 KiB | 1,177,042,944 bytes | `5120fe0e7e1db374d2d867970d760d18b2535579c22c6e3574395bad875190bd` |
+| `InternalCommutationConformance` | 8.99 s | 1,242,848 KiB | 903,319,552 bytes | `3bbddc75baac4eac5b7e9177fe84f57a96fc3c331244d91d1538275cb3123ea1` |
+| `MessagePayloadCatchConformance` | 25.93 s | 1,508,268 KiB | 1,215,041,536 bytes | `0830688b14e3209b8224e86304523035d7237143cb6360752826464261f261f7` |
+| `RuntimeStateWellFormedInvariantConformance` | 20.24 s | 1,183,920 KiB | 845,213,696 bytes | `f19100b4e1fe8d42d54ae5168bae1b290cb32dbcc6a0cb36aaa2f4728809fea8` |
+| `SequentialMultiInstanceProgramBindingConformance` | 31.01 s | 1,546,980 KiB | 1,246,470,144 bytes | `c94baa7d3503d1bf6192c6479a78c43b81817e0367a6de2d8849f4c0ab607604` |
+| `TerminateEndEventConformance` | 30.56 s | 1,544,784 KiB | 1,240,502,272 bytes | `b4322512580a22c87fbcae5ea278ab94f25f11c9a7e013b61a20608f612cb257` |
+| `TimerStartConformance` | 23.25 s | 1,416,140 KiB | 1,103,757,312 bytes | `0face0a8984680cd457c455eda188c71501d5c883d2d035287a98c0aa1dba131` |
+
+Every command exited zero with zero controlled memory events, both pressure totals zero, and no swap. The source-bound rows replace [the module-cost record](../scripts/lean-module-cost.ts); its derived near-cap set is now empty. Historical measurements of unchanged targets remain historical evidence, and the standing-watch trigger remains in force. Elapsed time is contextual: source archive faults and competing host work prevent a controlled speed comparison.
+
+The immutable archive also passed `./scripts/lake.sh build` against those warm outputs in 0.34 seconds at 121,872 KiB GNU RSS and 41,222,144 cgroup bytes; output SHA-256: `4f567059c83dca3b1b9ffbbc39d5b9d271d0162dfbde274d951b9dc03891cd21`. All controlled memory events, pressure totals, and swap were zero.
+
+The immutable archive also passed `./scripts/lake.sh test` against those warm outputs in 0.54 seconds at 121,856 KiB GNU RSS and 43,171,840 cgroup bytes; output SHA-256: `fe812e937bf9d73be49a2b1a69a77b28790dc06a28d06c9c556cb3c6fa69f8cd`. All controlled memory events, pressure totals, and swap were zero.
+
+These two warm tuples replace [the cgroup acceptance record](../scripts/lean-memory-acceptance.ts). They do not replace the genuinely cold full-library acceptance above. This calibration closes the resource checkpoint; independent semantic review and production batch integration remain separate obligations.
+
 | Increment | Boundary | Code | Documentation | Elapsed | Comparison consequence |
 |---|---|---:|---:|---|---|
 | [Scoped runtime data](capsules/SCOPED-DATA-SPEC.md) | `08d8b84..3b2e44d` | `+540/-73` | `+134/-11` | Unknown | First atomic runtime-representation replacement; later scope work should not be compared as if it were a small local semantic clause. |
