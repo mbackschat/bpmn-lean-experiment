@@ -451,6 +451,25 @@ On 2026-09-08, immutable commit `21b4c1de92c39d021142b665d4cfccd9251dd8b4` suppl
 
 Every retained command exited zero below the hard ceiling with zero controlled memory events, pressure totals, and swap. These rows replace the corresponding [module-cost records](../scripts/lean-module-cost.ts); none is near-cap. GNU RSS remains comparable within the series, while elapsed times reflect host load and the container-side invalidation is included in cgroup accounting. The checkpoint establishes no new full-library resource acceptance or semantic approval.
 
+#### Canonical token-storage calibration
+
+On 2026-09-08, immutable commit `f7d96debd3c215149730b3db5299bd9d0a3cc826` supplied the read-only archive for the new token-storage witness, both commutation consumers, the four standing-watch consumers, and three changed cyclic-control-flow witnesses. All 357 archived Lean/build inputs were checked against that commit. The pinned image, one CPU/thread, no network, fixed 3 GiB ceiling, and no-additional-swap policy remain unchanged. Each target retained warm dependencies and moved aside only its eight generated products inside the measurement container; every retained invocation explicitly rebuilt the named module.
+
+| Module | Elapsed | GNU RSS | Cgroup peak | Output SHA-256 |
+|---|---:|---:|---:|---|
+| `CanonicalTokenStorageConformance` | 4.60 s | 1,216,092 KiB | 846,581,760 bytes | `f6fad239d7ce20ce265d89f33bb10c83546623453ce00bcdce2f2743b3244b79` |
+| `InternalCommutationConformance` | 10.31 s | 1,273,148 KiB | 933,793,792 bytes | `20cf31d517420252b68c3d28454f88c70381ec1ba969d2a960f358cf537842c5` |
+| `FiniteInternalArmingConformance` | 10.18 s | 1,337,416 KiB | 1,009,618,944 bytes | `b633ba2d9d3779037906339af9a7e0d90a68df9bb2d2ad3fa539f54995bb2ac2` |
+| `CallActivityConformance` | 25.74 s | 1,345,652 KiB | 1,049,415,680 bytes | `85ef8e867d8bd77b63c0fdd4c1e4d689311ac65d4edccb80bbc4449ad93d3eb3` |
+| `SequentialMultiInstanceProgramBindingConformance` | 28.93 s | 1,550,868 KiB | 1,195,577,344 bytes | `c50be9dc7c3751c3719a04705bee9d1e784181f862037e6adc6a995e6ccd4e6f` |
+| `TimerStartConformance` | 22.01 s | 1,417,392 KiB | 1,107,922,944 bytes | `a0ed91182c41563ad9549c470f59893239be055ee8eeba4fd3a1cfe02b03d273` |
+| `TerminateEndEventConformance` | 33.25 s | 1,595,728 KiB | 1,284,681,728 bytes | `8cf1e5b54a99982db30aa1977f9e5ecb8b5eabaa2ef3ae2208dbb542bc33901a` |
+| `SemanticProcess.CyclicControlFlowConformance` | 10.15 s | 1,072,920 KiB | 710,578,176 bytes | `3eddf1559257c357f91462facd199d2f765d945e7ae5b0e03e9c45f135532a01` |
+| `SemanticProcess.CyclicControlFlowExecutionConformance` | 3.07 s | 695,004 KiB | 295,247,872 bytes | `3b9a5f1cc7ef2e02567b384b21aef2ad455178c4f3fa7b79bd14af1d905e16ee` |
+| `SemanticProcess.CyclicControlFlowReachabilityConformance` | 3.98 s | 734,464 KiB | 336,646,144 bytes | `bff2b3825725c676c78b07b647ade8f7dd8d93fa45e8911ee6b411613e4a29f9` |
+
+Every retained command exited zero below the hard ceiling with zero controlled memory events, pressure totals, and swap. These rows replace the corresponding [module-cost records](../scripts/lean-module-cost.ts); none is near-cap. GNU RSS and cgroup charging remain separate measurements, and elapsed times reflect host load. This target-only calibration does not replace the cold full-library acceptance or establish independent semantic approval.
+
 | Increment | Boundary | Code | Documentation | Elapsed | Comparison consequence |
 |---|---|---:|---:|---|---|
 | [Scoped runtime data](capsules/SCOPED-DATA-SPEC.md) | `08d8b84..3b2e44d` | `+540/-73` | `+134/-11` | Unknown | First atomic runtime-representation replacement; later scope work should not be compared as if it were a small local semantic clause. |

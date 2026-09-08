@@ -127,7 +127,8 @@ export const leanModuleCostRecord = {
   },
   nearCapModules: [],
   rows: [
-    { module: "BpmnSemantics.FiniteInternalArmingConformance", peakResidentKib: 1315448, elapsedSeconds: 9.90, measuredAtCommit: "21b4c1de" },
+    { module: "BpmnSemantics.CanonicalTokenStorageConformance", peakResidentKib: 1216092, elapsedSeconds: 4.60, measuredAtCommit: "f7d96deb" },
+    { module: "BpmnSemantics.FiniteInternalArmingConformance", peakResidentKib: 1337416, elapsedSeconds: 10.18, measuredAtCommit: "f7d96deb" },
     { module: "BpmnSemantics.ActivityActivationOrderConformance", peakResidentKib: 607400, elapsedSeconds: 1.66, measuredAtCommit: "5fa6dfe3" },
     {
       module: "BpmnSemantics.MessageStartAdmissionConformance",
@@ -255,18 +256,18 @@ export const leanModuleCostRecord = {
       elapsedSeconds: 14.57,
       measuredAtCommit: "da6e6477",
     },
-    { module: "BpmnSemantics.CallActivityConformance", peakResidentKib: 1346324, elapsedSeconds: 29.76, measuredAtCommit: "21b4c1de" },
+    { module: "BpmnSemantics.CallActivityConformance", peakResidentKib: 1345652, elapsedSeconds: 25.74, measuredAtCommit: "f7d96deb" },
     {
       module: "BpmnSemantics.SequentialMultiInstanceProgramBindingConformance",
-      peakResidentKib: 1552572,
-      elapsedSeconds: 33.36,
-      measuredAtCommit: "21b4c1de",
+      peakResidentKib: 1550868,
+      elapsedSeconds: 28.93,
+      measuredAtCommit: "f7d96deb",
     },
     {
       module: "BpmnSemantics.TimerStartConformance",
-      peakResidentKib: 1415592,
-      elapsedSeconds: 25.67,
-      measuredAtCommit: "21b4c1de",
+      peakResidentKib: 1417392,
+      elapsedSeconds: 22.01,
+      measuredAtCommit: "f7d96deb",
     },
     {
       module: "BpmnSemantics.ServiceTaskIncidentCancellationConformance",
@@ -337,9 +338,9 @@ export const leanModuleCostRecord = {
     { module: "BpmnSemantics.IntermediateCatchMessageConformance", peakResidentKib: 2225108, elapsedSeconds: 11.7 },
     {
       module: "BpmnSemantics.TerminateEndEventConformance",
-      peakResidentKib: 1550232,
-      elapsedSeconds: 38.71,
-      measuredAtCommit: "21b4c1de",
+      peakResidentKib: 1595728,
+      elapsedSeconds: 33.25,
+      measuredAtCommit: "f7d96deb",
     },
     { module: "BpmnSemantics.SemanticProcessConformance", peakResidentKib: 2203824, elapsedSeconds: 8.9 },
     {
@@ -366,16 +367,16 @@ export const leanModuleCostRecord = {
     { module: "BpmnSemantics.SemanticProcess.CyclicControlFlowClosureConformance", peakResidentKib: 1981884, elapsedSeconds: 24.5 },
     {
       module: "BpmnSemantics.SemanticProcess.CyclicControlFlowConformance",
-      peakResidentKib: 1892268,
-      elapsedSeconds: 9.87,
-      measuredAtCommit: "e9c9db0f",
+      peakResidentKib: 1072920,
+      elapsedSeconds: 10.15,
+      measuredAtCommit: "f7d96deb",
     },
     { module: "BpmnSemantics.EmbeddedSubProcessCompletionConformance", peakResidentKib: 1926344, elapsedSeconds: 11.0 },
     {
       module: "BpmnSemantics.InternalCommutationConformance",
-      peakResidentKib: 1250512,
-      elapsedSeconds: 10.91,
-      measuredAtCommit: "21b4c1de",
+      peakResidentKib: 1273148,
+      elapsedSeconds: 10.31,
+      measuredAtCommit: "f7d96deb",
     },
     { module: "BpmnSemantics.InternalClosureAtomicityConformance", peakResidentKib: 1217720, elapsedSeconds: 12.95, measuredAtCommit: "e9c9db0f" },
     { module: "BpmnSemantics.CompensationSourceAdmissionConformance", peakResidentKib: 2447360, elapsedSeconds: 18.21, measuredAtCommit: "5fa6dfe3" },
@@ -564,9 +565,9 @@ export const leanModuleCostRecord = {
     { module: "BpmnSemantics.Experiments.CheckedSourceFrontierConformance", peakResidentKib: 839556, elapsedSeconds: 3.9 },
     {
       module: "BpmnSemantics.SemanticProcess.CyclicControlFlowReachabilityConformance",
-      peakResidentKib: 842656,
-      elapsedSeconds: 3.58,
-      measuredAtCommit: "e9c9db0f",
+      peakResidentKib: 734464,
+      elapsedSeconds: 3.98,
+      measuredAtCommit: "f7d96deb",
     },
     {
       module: "BpmnSemantics.SemanticProcess.CyclicControlFlowStepCompletenessConformance",
@@ -576,9 +577,9 @@ export const leanModuleCostRecord = {
     },
     {
       module: "BpmnSemantics.SemanticProcess.CyclicControlFlowExecutionConformance",
-      peakResidentKib: 806972,
-      elapsedSeconds: 1.90,
-      measuredAtCommit: "e9c9db0f",
+      peakResidentKib: 695004,
+      elapsedSeconds: 3.07,
+      measuredAtCommit: "f7d96deb",
     },
     {
       module: "BpmnSemantics.SemanticProcessJsonConformance",
