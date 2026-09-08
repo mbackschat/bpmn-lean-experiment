@@ -127,6 +127,7 @@ export const leanModuleCostRecord = {
   },
   nearCapModules: [],
   rows: [
+    { module: "BpmnSemantics.FiniteInternalArmingConformance", peakResidentKib: 1311400, elapsedSeconds: 8.96, measuredAtCommit: "1fb503c6" },
     { module: "BpmnSemantics.ActivityActivationOrderConformance", peakResidentKib: 607400, elapsedSeconds: 1.66, measuredAtCommit: "5fa6dfe3" },
     {
       module: "BpmnSemantics.MessageStartAdmissionConformance",
@@ -254,18 +255,18 @@ export const leanModuleCostRecord = {
       elapsedSeconds: 14.57,
       measuredAtCommit: "da6e6477",
     },
-    { module: "BpmnSemantics.CallActivityConformance", peakResidentKib: 1345716, elapsedSeconds: 23.6, measuredAtCommit: "5fa6dfe3" },
+    { module: "BpmnSemantics.CallActivityConformance", peakResidentKib: 1347112, elapsedSeconds: 22.57, measuredAtCommit: "1fb503c6" },
     {
       module: "BpmnSemantics.SequentialMultiInstanceProgramBindingConformance",
-      peakResidentKib: 1546980,
-      elapsedSeconds: 31.01,
-      measuredAtCommit: "5fa6dfe3",
+      peakResidentKib: 1548380,
+      elapsedSeconds: 27.36,
+      measuredAtCommit: "1fb503c6",
     },
     {
       module: "BpmnSemantics.TimerStartConformance",
-      peakResidentKib: 1416140,
-      elapsedSeconds: 23.25,
-      measuredAtCommit: "5fa6dfe3",
+      peakResidentKib: 1419104,
+      elapsedSeconds: 22.77,
+      measuredAtCommit: "1fb503c6",
     },
     {
       module: "BpmnSemantics.ServiceTaskIncidentCancellationConformance",
@@ -336,9 +337,9 @@ export const leanModuleCostRecord = {
     { module: "BpmnSemantics.IntermediateCatchMessageConformance", peakResidentKib: 2225108, elapsedSeconds: 11.7 },
     {
       module: "BpmnSemantics.TerminateEndEventConformance",
-      peakResidentKib: 1544784,
-      elapsedSeconds: 30.56,
-      measuredAtCommit: "5fa6dfe3",
+      peakResidentKib: 1549756,
+      elapsedSeconds: 31.99,
+      measuredAtCommit: "1fb503c6",
     },
     { module: "BpmnSemantics.SemanticProcessConformance", peakResidentKib: 2203824, elapsedSeconds: 8.9 },
     {

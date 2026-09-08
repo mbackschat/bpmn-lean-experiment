@@ -422,6 +422,20 @@ The immutable archive also passed `./scripts/lake.sh test` against those warm ou
 
 These two warm tuples replace [the cgroup acceptance record](../scripts/lean-memory-acceptance.ts). They do not replace the genuinely cold full-library acceptance above. This calibration closes the resource checkpoint; independent semantic review and production batch integration remain separate obligations.
 
+#### Finite prepared arming checkpoint calibration
+
+On 2026-09-08, immutable commit `1fb503c64f686eaee95ba22e7444ed5775dfc827` supplied the read-only archive for the new finite arming fixture and all four standing-watch consumers. Each measurement used the pinned image, one CPU/thread, no network, the unchanged 3 GiB/no-additional-swap controller, warm dependencies, and removal of only the target's eight generated products. The first new-target invocation after invalidation reported success without compiling the target; its 0.25-second result is excluded. The retained retry and every watch measurement explicitly rebuilt the named module.
+
+| Module | Elapsed | GNU RSS | Cgroup peak | Output SHA-256 |
+|---|---:|---:|---:|---|
+| `FiniteInternalArmingConformance` | 8.96 s | 1,311,400 KiB | 963,710,976 bytes | `a372343c039cb110b1b392ded116ef3603892af3420546f3a7da492c5d753040` |
+| `CallActivityConformance` | 22.57 s | 1,347,112 KiB | 1,035,366,400 bytes | `6b4ff9720ee9229c1f2434f7501de3c68aac423b3b06fe97271eba539d7f5b10` |
+| `SequentialMultiInstanceProgramBindingConformance` | 27.36 s | 1,548,380 KiB | 1,253,380,096 bytes | `07dd293d5c77e1337f05c9275e3d50cfedac69b4a990ce09d191afd90791feec` |
+| `TimerStartConformance` | 22.77 s | 1,419,104 KiB | 1,106,575,360 bytes | `c29a18e830711dec71d145e29a0baa8ed8852d6f173af1fa7844bdb297855644` |
+| `TerminateEndEventConformance` | 31.99 s | 1,549,756 KiB | 1,287,991,296 bytes | `368fb04cc63138b9a611337f3d9119aaaaece63e47590a2c6a2aaffc797401ac` |
+
+Every retained command exited zero with zero controlled memory events, pressure totals, and swap. These source-bound rows update [the executable module-cost record](../scripts/lean-module-cost.ts); none reaches the near-cap threshold. Elapsed times remain host-load context. The measurements do not replace the full-library acceptance record or establish independent semantic approval.
+
 | Increment | Boundary | Code | Documentation | Elapsed | Comparison consequence |
 |---|---|---:|---:|---|---|
 | [Scoped runtime data](capsules/SCOPED-DATA-SPEC.md) | `08d8b84..3b2e44d` | `+540/-73` | `+134/-11` | Unknown | First atomic runtime-representation replacement; later scope work should not be compared as if it were a small local semantic clause. |
