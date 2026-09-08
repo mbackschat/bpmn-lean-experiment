@@ -10,6 +10,19 @@ import type {
 } from "./internal-transition-alternative.js";
 import { canonicalUniqueStateAtoms } from "./internal-transition-footprint-ordering.js";
 import type { InternalTransitionStateFootprint } from "./internal-transition-footprint.js";
+import { FlowNodeOccurrenceTerminalKind } from "./flow-node-occurrence-lifecycle.js";
+import { InternalPublicationTemplateAnchorKind } from "./internal-publication-template.js";
+import type { InternalPublicationTemplate } from "./internal-publication-template.js";
+import {
+  applyInternalLocalControlPatch,
+  deriveInternalLocalControlPositionDelta,
+  InternalSelectedBranchPatchKind,
+} from "./internal-transition-local-control-patch.js";
+import type {
+  InternalLocalControlPatch,
+  InternalSelectedBranchPatch,
+} from "./internal-transition-local-control-patch.js";
+import type { SemanticTransitionKind } from "./semantic-transition-trace.js";
 import { InternalTransitionStateAtomKind } from "./internal-transition-footprint-vocabulary.js";
 import { affectedTokenBucketsAreExact, tokenOwnerCensusAtoms } from "./internal-transition-token-preparation.js";
 import { selectConditionalBranch } from "./semantic-process-control-flow-runtime.js";
@@ -31,6 +44,7 @@ import {
 } from "./semantic-process-scope-runtime.js";
 import {
   ControlStateKind,
+  ownedTokenMultiplicity,
   sameScopeOccurrence,
 } from "./semantic-process-state.js";
 import type {
@@ -63,10 +77,52 @@ export type InternalLocalControlBranchResult = Readonly<
 
 export type PreparedInternalLocalControl = Readonly<{
   alternative: InternalOperationAlternative;
+  operation: InternalLocalControlOperation;
   owner: ScopeOccurrenceId;
   branchResult: InternalLocalControlBranchResult | null;
   footprint: InternalTransitionStateFootprint;
+  patch: InternalLocalControlPatch;
+  publicationTemplate: InternalPublicationTemplate;
 }>;
+
+export type InternalLocalControlOperation = Extract<SemanticOperation, {
+  kind:
+    | SemanticOperationKind.Duplicate
+    | SemanticOperationKind.Synchronize
+    | SemanticOperationKind.Choose
+    | SemanticOperationKind.SelectMany
+    | SemanticOperationKind.SynchronizeSelected;
+}>;
+
+export function deriveInternalLocalControlPreparation(
+  program: SemanticProcessProgram,
+  state: RuntimeState,
+  operation: InternalLocalControlOperation,
+): PreparedInternalLocalControl | null {
+  switch (operation.kind) {
+    case SemanticOperationKind.Duplicate:
+      return deriveInternalDuplicatePreparation(program, state, operation);
+    case SemanticOperationKind.Synchronize:
+      return deriveInternalSynchronizePreparation(program, state, operation);
+    case SemanticOperationKind.Choose:
+      return deriveInternalChoosePreparation(program, state, operation);
+    case SemanticOperationKind.SelectMany:
+      return deriveInternalSelectManyPreparation(program, state, operation);
+    case SemanticOperationKind.SynchronizeSelected:
+      return deriveInternalSynchronizeSelectedPreparation(program, state, operation);
+  }
+}
+
+export function applyPreparedInternalLocalControl(
+  program: SemanticProcessProgram,
+  state: RuntimeState,
+  prepared: PreparedInternalLocalControl,
+): RuntimeState | null {
+  const current = deriveInternalLocalControlPreparation(program, state, prepared.operation);
+  // INTERNAL-COMMUTATION requires the complete branch, patch, and publication frame, not just operation identity.
+  if (current === null || JSON.stringify(current) !== JSON.stringify(prepared)) return null;
+  return applyInternalLocalControlPatch(state, prepared.patch);
+}
 
 /** Derives the exact Parallel Gateway fork preparation without applying token movement. */
 export function deriveInternalDuplicatePreparation(
@@ -209,6 +265,10 @@ export function deriveInternalSelectManyPreparation(
       selectedBranch,
     ],
     [selectedBranch],
+    {
+      kind: InternalSelectedBranchPatchKind.Insert,
+      record: { owner, selectionKey: operation.selectionKey, expectedInputs: selected.expectedInputs },
+    },
   );
 }
 
@@ -225,6 +285,9 @@ export function deriveInternalSynchronizeSelectedPreparation(
   if (record === null) {
     return null;
   }
+  if (state.selectedBranchSets.filter((candidate) =>
+    candidate.selectionKey === record.selectionKey && sameScopeOccurrence(candidate.owner, record.owner)
+  ).length !== 1) return null;
   const selectedBranch = {
     kind: InternalTransitionStateAtomKind.SelectedBranch,
     owner: record.owner,
@@ -244,23 +307,14 @@ export function deriveInternalSynchronizeSelectedPreparation(
     },
     [selectedBranch],
     [selectedBranch],
+    { kind: InternalSelectedBranchPatchKind.Remove, record },
   );
 }
 
 function prepareTokenTransformation(
   program: SemanticProcessProgram,
   state: RuntimeState,
-  operation: Extract<
-    SemanticOperation,
-    {
-      kind:
-        | SemanticOperationKind.Duplicate
-        | SemanticOperationKind.Synchronize
-        | SemanticOperationKind.Choose
-        | SemanticOperationKind.SelectMany
-        | SemanticOperationKind.SynchronizeSelected;
-    }
-  >,
+  operation: InternalLocalControlOperation,
   owner: ScopeOccurrenceId,
   inputs: ReadonlyArray<string>,
   outputs: ReadonlyArray<string>,
@@ -268,15 +322,24 @@ function prepareTokenTransformation(
   branchResult: InternalLocalControlBranchResult | null,
   extraReads: InternalTransitionStateFootprint["reads"],
   extraWrites: InternalTransitionStateFootprint["writes"],
+  selectedBranch: InternalSelectedBranchPatch = { kind: InternalSelectedBranchPatchKind.Preserve },
 ): PreparedInternalLocalControl | null {
+  const processId = candidateProcessId(program, state, owner);
   if (
     state.control.kind !== ControlStateKind.Running ||
     !operationIsSelectedFromProgram(program, operation, owner) ||
-    candidateProcessId(program, state, owner) === null ||
+    processId === null || operation.origin.elementId.length === 0 ||
+    !Number.isSafeInteger(state.logicalTimeMs) || state.logicalTimeMs < 0 ||
     !affectedTokenBucketsAreExact(state, owner, inputs, outputs)
   ) {
     return null;
   }
+  if (![...new Set([...inputs, ...outputs])].every((placeId) => {
+    const remaining = ownedTokenMultiplicity(state.controlTokens, placeId, owner) -
+      inputs.filter((input) => input === placeId).length;
+    const produced = remaining + outputs.filter((output) => output === placeId).length;
+    return remaining >= 0 && Number.isSafeInteger(produced) && produced >= 0;
+  })) return null;
   const tokens = [...inputs, ...outputs].map((placeId) => ({
     kind: InternalTransitionStateAtomKind.ControlToken,
     owner,
@@ -296,12 +359,37 @@ function prepareTokenTransformation(
   const writes = canonicalUniqueStateAtoms([
     ...tokens, ...tokenOwnerCensusAtoms([...inputs, ...outputs]), ...extraWrites,
   ]);
-  return reads === null || writes === null
+  const patch: InternalLocalControlPatch = { owner, consumed: inputs, produced: outputs, selectedBranch };
+  const positionDelta = deriveInternalLocalControlPositionDelta(program, patch);
+  const alternative = internalOperationAlternative(operation.id);
+  const anchor = {
+    kind: InternalPublicationTemplateAnchorKind.TransitionTemplate,
+    processId, elementId: operation.origin.elementId, owner,
+  } as const;
+  return reads === null || writes === null || positionDelta === null
     ? null
     : {
-      alternative: internalOperationAlternative(operation.id),
+      alternative,
+      operation,
       owner,
       branchResult,
       footprint: { reads, writes },
+      patch,
+      publicationTemplate: {
+        alternative,
+        record: {
+          logicalTimeMs: state.logicalTimeMs,
+          transition: {
+            kind: "internalOperation" as SemanticTransitionKind.InternalOperation,
+            operationId: operation.id, operationKind: operation.kind,
+            origin: operation.origin, owner,
+          },
+          positionDelta,
+        },
+        lifecycle: {
+          started: [{ anchor, processId, elementId: operation.origin.elementId, owner }],
+          ended: [{ anchor, terminal: FlowNodeOccurrenceTerminalKind.Completed }],
+        },
+      },
     };
 }
