@@ -39,6 +39,14 @@ export function canonicalUniqueStateAtoms(
   return canonicalUnique(atoms, compareStateAtoms);
 }
 
+export function canonicalStateAtomSet(
+  atoms: ReadonlyArray<InternalTransitionStateAtom>,
+): ReadonlyArray<InternalTransitionStateAtom> {
+  return [...atoms].sort(compareStateAtoms).filter((atom, index, sorted) =>
+    index === 0 || compareStateAtoms(sorted[index - 1]!, atom) !== 0
+  );
+}
+
 export function canonicalUniquePublicationAtoms(
   atoms: ReadonlyArray<InternalTransitionPublicationAtom>,
 ): ReadonlyArray<InternalTransitionPublicationAtom> | null {

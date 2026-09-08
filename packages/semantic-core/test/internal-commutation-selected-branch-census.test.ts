@@ -23,7 +23,7 @@ import { admittedInternalPrefix } from "./internal-operation-prefix-fixture.ts";
 import { propagatedErrorProgram, startFor } from "./flow-node-occurrence-lifecycle-fixture.ts";
 import { terminateProgram, terminateCompletion, terminateInstanceId } from "./terminate-end-event-fixture.ts";
 
-const { deriveInternalLocalControlPreparation: prepare } = await import(
+const { deriveInternalLocalControlPreparation: prepare, applyPreparedInternalLocalControl } = await import(
   new URL("../dist/internal-transition-local-control-preparation.js", import.meta.url).href
 ) as typeof import("../src/internal-transition-local-control-preparation.ts");
 const { InternalTransitionStateAtomKind: Atom, internalTransitionStateFootprintsAreIndependent: independent } = await import(
@@ -139,6 +139,37 @@ test("selected join reads every existing same-key record and writes its populati
     reads: [], writes: [{ kind: Atom.SelectedBranch, owner: second, selectionKey: "Other" }],
   }), true);
 });
+
+for (const extraInputs of [
+  ["place:Flow_Extra", "place:Flow_Extra"],
+  ["place:Flow_Extra", "place:Flow_B_Join"],
+]) {
+  test(`selected join deduplicates dependencies while retaining other-owner records ${extraInputs.join(",")}`, () => {
+    const retained = extraInputs.map((input) => record(second, input));
+    const before = state([token(first, "place:Flow_A_Join")], [
+      record(first, "place:Flow_A_Join"), ...retained,
+    ]);
+    const original = structuredClone(before);
+    assertValid(before);
+    const actual = applyInternalOperationStep(program, join, before)?.successor;
+    assert.ok(actual);
+    assertValid(actual);
+    const prepared = prepare(program, before, join);
+    assert.ok(prepared);
+    assert.deepEqual(applyPreparedInternalLocalControl(program, before, prepared), actual);
+    assert.deepEqual(actual.selectedBranchSets, [...retained].sort(compareSelectedBranchSets));
+    assert.deepEqual(before, original);
+    assert.notEqual(canonicalUniqueStateAtoms(prepared.footprint.reads), null);
+    for (const placeId of extraInputs) {
+      assert.equal(independent(prepared.footprint, {
+        reads: [], writes: [{ kind: Atom.ControlToken, owner: second, placeId }],
+      }), false);
+    }
+    assert.equal(independent(prepared.footprint, {
+      reads: [], writes: [{ kind: Atom.SelectedBranch, owner: second, selectionKey: "Split" }],
+    }), false);
+  });
+}
 
 test("selection populations retain exact canonical keys and no occurrence-region owner", () => {
   const atom = { kind: Atom.SelectedBranchOwners, selectionKey: "\u{10000}" } as const;

@@ -1,5 +1,6 @@
 import type { InternalTransitionStateAtom } from "./internal-transition-footprint.js";
 import { InternalTransitionStateAtomKind } from "./internal-transition-footprint-vocabulary.js";
+import { canonicalStateAtomSet } from "./internal-transition-footprint-ordering.js";
 import { internalOccurrenceRegionContains } from "./internal-transition-region.js";
 import type { InternalOccurrenceRegion } from "./internal-transition-region.js";
 import { sameScopeOccurrence } from "./semantic-process-state.js";
@@ -9,13 +10,13 @@ export function selectedBranchOwnerCensusAtom(selectionKey: string): InternalTra
   return { kind: InternalTransitionStateAtomKind.SelectedBranchOwners, selectionKey };
 }
 
-/** selectSynchronizeSelected filters readiness across every same-key record, including unready owners. */
+/** selectSynchronizeSelected reads every same-key record; repeated runtime records share dependency atoms. */
 export function selectedJoinReadinessAtoms(
   state: RuntimeState,
   selected: SelectedBranchSet,
   output: string,
 ): ReadonlyArray<InternalTransitionStateAtom> {
-  return [
+  return canonicalStateAtomSet([
     selectedBranchOwnerCensusAtom(selected.selectionKey),
     ...state.selectedBranchSets.filter(({ selectionKey }) => selectionKey === selected.selectionKey)
       .flatMap((record): InternalTransitionStateAtom[] => [
@@ -30,7 +31,7 @@ export function selectedJoinReadinessAtoms(
           placeId,
         }) as const),
       ]),
-  ];
+  ]);
 }
 
 /** removeScopeOccurrenceContents purges selected records even at its retained root. */
