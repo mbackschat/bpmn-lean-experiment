@@ -1,4 +1,10 @@
-/** Stable classes of malformed committed runtime state. */
+/**
+ * The classes of malformed committed state this account refuses.
+ *
+ * A defect names a failing class, not a rule identifier: no value here reaches a public command
+ * result, and `admit` returns its ordinary refusal outcome rather than a diagnosis. The names exist
+ * so a fixture can assert *which* class rejected a state instead of only that something did.
+ */
 export const RuntimeStateDefect = {
   ForeignInstance: "foreignInstance",
   NotStartedWithWork: "notStartedWithWork",

@@ -79,13 +79,6 @@ import {
  * not a transcription of the Lean predicate's decomposition; the two agreeing is a transcription
  * check carried by the publication-parity channel, and cannot establish that the account is right.
  */
-/**
- * The classes of malformed committed state this account refuses.
- *
- * A defect names a failing class, not a rule identifier: no value here reaches a public command
- * result, and `admit` returns its ordinary refusal outcome rather than a diagnosis. The names exist
- * so a fixture can assert *which* class rejected a state instead of only that something did.
- */
 /** The ways a successor may contradict its predecessor. Separate from {@link RuntimeStateDefect}
  * because neither can be decided from one state: a rewound counter is a property of the pair. */
 export const RuntimeStateRegression = {
@@ -461,18 +454,6 @@ export function runtimeStateDefects(
 }
 
 /**
- * Every way the Activity occurrence records disagree with what they claim to own.
- *
- * The two directions are both required and neither implies the other. A record whose body is gone is
- * an Activity that outlived its own execution, which is what an owner-filtered region removal
- * produces when the handler it strands is owned by a scope outside that region. A handler wait no
- * record lists is the same defect seen from the wait: nothing identifies the Activity it guards, so
- * no cancellation can find it.
- *
- * Ownership agreement is checked too, because a record and its attached wait naming different scope
- * occurrences would let a withdrawal cross a region boundary in the other direction.
- */
-/**
  * The controller conjuncts, which are about binding rather than about counting.
  *
  * Nothing here checks a counter, because the representation stores none: planned, generated,
@@ -566,6 +547,18 @@ function childScopeClaims(body: ActivityBody): ReadonlyArray<ScopeOccurrenceId> 
   }
 }
 
+/**
+ * Every way the Activity occurrence records disagree with what they claim to own.
+ *
+ * The two directions are both required and neither implies the other. A record whose body is gone is
+ * an Activity that outlived its own execution, which is what an owner-filtered region removal
+ * produces when the handler it strands is owned by a scope outside that region. A handler wait no
+ * record lists is the same defect seen from the wait: nothing identifies the Activity it guards, so
+ * no cancellation can find it.
+ *
+ * Ownership agreement is checked too, because a record and its attached wait naming different scope
+ * occurrences would let a withdrawal cross a region boundary in the other direction.
+ */
 function activityOwnershipDefects(
   state: RuntimeState,
 ): ReadonlyArray<RuntimeStateDefect> {
