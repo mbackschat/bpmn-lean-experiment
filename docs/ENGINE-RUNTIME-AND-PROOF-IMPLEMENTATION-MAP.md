@@ -78,7 +78,7 @@ Product 1 rejects malformed and over-cap starts as semantic-process unsupported,
 - child removal plus one parent-owned continuation and separate root completion
 - direct-parent exact-code Error interruption that removes the child occurrence subtree, preserves monotonic counters and root-owned work, and emits one parent-owned boundary continuation
 - containing-scope `terminateScope` cancellation that clears every represented live owner in the selected occurrence subtree, retains that occurrence quiescent, preserves higher-level work and monotonic state, and delegates all continuation or root completion to unchanged `completeScope`
-- owner-scoped selected-branch records that block quiescence until exact selected-input synchronization and are removed by owner interruption
+- owner-scoped selected-branch records, uniquely declared by selection key, that block quiescence until selected-input synchronization and disappear on owner interruption
 - occurrence-owned Call records that block caller quiescence, bind one distinct called semantic instance, and remove the complete parentless called subtree on return or interruption
 - missing, duplicate, cross-owner, premature-completion, and stranded-child guards
 

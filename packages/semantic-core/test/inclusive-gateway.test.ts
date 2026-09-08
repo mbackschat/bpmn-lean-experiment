@@ -31,6 +31,8 @@ import {
   present,
 } from "./inclusive-gateway-fixture.ts";
 import { stateObservationAt } from "./canonical-observations.ts";
+import { rootScopedProgram } from "./root-scope-fixture.ts";
+import { controlPlace, operationBase } from "./semantic-program-parts.ts";
 
 const expectedTasks = (state: ReturnType<typeof applyStimulus>["state"]) =>
   state.userTaskWaits.map(({ id }) => id.elementId);
@@ -239,4 +241,45 @@ test("owner interruption removes hidden selected-branch records", () => {
     selectedBranchSets: [{ owner: child, selectionKey: "Split", expectedInputs: ["place:A"] }],
   });
   assert.deepEqual(interrupted?.selectedBranchSets, []);
+});
+
+test("selection keys identify unique pairs independently of their expected-input payload", () => {
+  const split = inclusiveProgram.operations.find(({ kind }) => kind === SemanticOperationKind.SelectMany);
+  assert.ok(split?.kind === SemanticOperationKind.SelectMany);
+  const condition = split.candidates[0].condition;
+  function region(prefix: string, input: string, output: string, key: string): SemanticOperation[] {
+    const candidate = (index: number) => ({
+      condition,
+      output: `place:${prefix}${index}`,
+      expectedJoinInput: `place:${prefix}${index}`,
+      origin: { kind: SemanticOriginKind.BpmnSequenceFlow, elementId: `${prefix}${index}` } as const,
+    });
+    const first = candidate(1);
+    const second = candidate(2);
+    return [
+      { ...operationBase(`${prefix}S`), kind: SemanticOperationKind.SelectMany,
+        input: `place:${input}`, candidates: [first, second],
+        defaultBranch: { output: `place:${prefix}3`, expectedJoinInput: `place:${prefix}3`,
+          origin: { kind: SemanticOriginKind.BpmnSequenceFlow, elementId: `${prefix}3` } }, selectionKey: key },
+      { ...operationBase(`${prefix}J`), kind: SemanticOperationKind.SynchronizeSelected,
+        inputs: [`place:${prefix}1`, `place:${prefix}2`, `place:${prefix}3`],
+        output: `place:${output}`, selectionKey: key },
+    ];
+  }
+  function pairedProgram(secondKey: string, thirdKey: string): SemanticProcessProgram {
+    return rootScopedProgram({
+      ...inclusiveProgram,
+      controlPlaces: ["A0", "A1", "A2", "A3", "B0", "B1", "B2", "B3", "C0", "C1", "C2", "C3", "D0"]
+        .map(controlPlace),
+      operations: [
+        ...region("A", "A0", "B0", "A"), ...region("B", "B0", "C0", secondKey),
+        ...region("C", "C0", "D0", thirdKey),
+        { ...operationBase("Start"), kind: SemanticOperationKind.Initiate, output: "place:A0" },
+        { ...operationBase("End"), kind: SemanticOperationKind.ReachNoneEnd, input: "place:D0" },
+      ],
+    });
+  }
+  assert.equal(isWellFormedSemanticProcessProgram(pairedProgram("B", "C")), true);
+  assert.equal(isWellFormedSemanticProcessProgram(pairedProgram("A", "C")), false);
+  assert.equal(isWellFormedSemanticProcessProgram(pairedProgram("A", "A")), false);
 });

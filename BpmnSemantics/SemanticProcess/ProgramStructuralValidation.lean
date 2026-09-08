@@ -543,11 +543,10 @@ private def inclusiveOperationsPaired (operations : List SemanticOperation) : Bo
   else
     selections.length = joins.length &&
       selections.all fun selection =>
-        (joins.filter fun join => decide (join.1 = selection.1 &&
-          join.2 = selection.2)).length = 1 &&
+        -- IGW-TRACK-01 binds by split identity; payload equality cannot distinguish shared keys.
+        (joins.filter fun join => decide (join.1 = selection.1)) = [selection] &&
       joins.all fun join =>
-        (selections.filter fun selection => decide (selection.1 = join.1 &&
-          selection.2 = join.2)).length = 1
+        (selections.filter fun selection => decide (selection.1 = join.1)).length = 1
 
 /-- Structural validation for a decoded Semantic Process program, independent of checked-source equality. -/
 def programWellFormed (program : Program) : Bool :=
@@ -640,6 +639,92 @@ theorem programWellFormed_rejects_waitDeclarerCollision (program : Program)
   have rightOnly := programWellFormed_waitDeclarer program right key valid rightMember rightDeclares
   rw [leftOnly] at rightOnly
   exact different (by simpa using rightOnly)
+
+/-- An admitted selection key resolves to exactly one declaring split, independently of its
+expected-input payload, as required by `hiddenRecordDeclarationsValid`. -/
+theorem programWellFormed_selectMany_declarer_unique (program : Program)
+    (valid : programWellFormed program = true)
+    (id : OperationId) (origin : BpmnElementOrigin) (input : ControlPlaceId)
+    (candidates : List InclusiveCandidate) (defaultBranch : InclusiveDefaultBranch)
+    (selectionKey : String)
+    (member : .selectMany id origin input candidates defaultBranch selectionKey ∈
+      program.operations) :
+    (program.operations.filter fun
+      | .selectMany _ _ _ _ _ key => decide (key = selectionKey)
+      | _ => false).length = 1 := by
+  have paired : inclusiveOperationsPaired program.operations = true := by
+    simp only [programWellFormed, Bool.and_eq_true] at valid
+    grind
+  let selections := program.operations.filterMap fun
+    | .selectMany _ _ _ candidates defaultBranch key =>
+        some (key, canonicalControlPlaceOrder
+          (candidates.map (·.expectedJoinInput) ++ [defaultBranch.expectedJoinInput]))
+    | _ => none
+  let joins := program.operations.filterMap fun
+    | .synchronizeSelected _ _ inputs _ key => some (key, inputs)
+    | _ => none
+  let selection := (selectionKey, canonicalControlPlaceOrder
+    (candidates.map (·.expectedJoinInput) ++ [defaultBranch.expectedJoinInput]))
+  have selected : selection ∈ selections :=
+    List.mem_filterMap.mpr ⟨_, member, rfl⟩
+  have nonempty : selections.isEmpty = false := by
+    exact List.isEmpty_eq_false_iff.mpr (List.ne_nil_of_mem selected)
+  change (if selections.isEmpty && joins.isEmpty then true else
+    selections.length = joins.length &&
+      selections.all (fun selection =>
+        (joins.filter fun join => decide (join.1 = selection.1)) = [selection] &&
+        joins.all (fun join =>
+          (selections.filter fun selection => decide (selection.1 = join.1)).length = 1))) =
+    true at paired
+  simp only [nonempty, Bool.false_and, Bool.false_eq_true, ↓reduceIte,
+    Bool.and_eq_true, decide_eq_true_eq] at paired
+  have matching := List.all_eq_true.mp paired.2 selection selected
+  simp only [Bool.and_eq_true, decide_eq_true_eq] at matching
+  have joined : selection ∈ joins := by
+    have filtered : selection ∈ joins.filter (fun join => decide (join.1 = selection.1)) := by
+      rw [matching.1]
+      exact List.mem_cons_self
+    exact (List.mem_filter.mp filtered).1
+  have unique := List.all_eq_true.mp matching.2 selection joined
+  simp only [decide_eq_true_eq] at unique
+  calc
+    _ = (selections.filter fun candidate => decide (candidate.1 = selectionKey)).length := by
+      simp only [selections, ← List.countP_eq_length_filter, List.countP_filterMap]
+      congr 1
+      funext operation
+      cases operation <;> rfl
+    _ = 1 := unique
+
+/-- Distinct split declarations sharing a selection key are rejected even when their expected
+join inputs differ; `IGW-TRACK-01` uses the split key as the retained-record identity. -/
+theorem programWellFormed_rejects_selectMany_declarer_collision (program : Program)
+    (leftId rightId : OperationId) (leftOrigin rightOrigin : BpmnElementOrigin)
+    (leftInput rightInput : ControlPlaceId) (leftCandidates rightCandidates : List InclusiveCandidate)
+    (leftDefault rightDefault : InclusiveDefaultBranch) (selectionKey : String)
+    (leftMember : .selectMany leftId leftOrigin leftInput leftCandidates leftDefault selectionKey ∈
+      program.operations)
+    (rightMember : .selectMany rightId rightOrigin rightInput rightCandidates rightDefault selectionKey ∈
+      program.operations)
+    (different : SemanticOperation.selectMany leftId leftOrigin leftInput leftCandidates
+      leftDefault selectionKey ≠
+      .selectMany rightId rightOrigin rightInput rightCandidates rightDefault selectionKey) :
+    programWellFormed program = false := by
+  apply Bool.eq_false_iff.mpr
+  intro valid
+  have unique := programWellFormed_selectMany_declarer_unique program valid
+    leftId leftOrigin leftInput leftCandidates leftDefault selectionKey leftMember
+  obtain ⟨sole, singleton⟩ := List.length_eq_one_iff.mp unique
+  have leftFiltered : SemanticOperation.selectMany leftId leftOrigin leftInput leftCandidates
+      leftDefault selectionKey ∈ program.operations.filter (fun
+        | .selectMany _ _ _ _ _ key => decide (key = selectionKey)
+        | _ => false) := List.mem_filter.mpr ⟨leftMember, by simp⟩
+  have rightFiltered : SemanticOperation.selectMany rightId rightOrigin rightInput rightCandidates
+      rightDefault selectionKey ∈ program.operations.filter (fun
+        | .selectMany _ _ _ _ _ key => decide (key = selectionKey)
+        | _ => false) := List.mem_filter.mpr ⟨rightMember, by simp⟩
+  rw [singleton] at leftFiltered rightFiltered
+  simp only [List.mem_singleton] at leftFiltered rightFiltered
+  exact different (leftFiltered.trans rightFiltered.symm)
 
 /-- Every structurally admitted Program has an acyclic, parent-complete definition-scope forest. -/
 theorem programWellFormed_scopeForest (program : Program)

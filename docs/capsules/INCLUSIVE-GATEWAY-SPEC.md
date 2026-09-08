@@ -113,7 +113,7 @@ type SynchronizeSelectedOperation = DeepReadonly<
 
 `selectMany` is multi-output conditional selection plus creation of one expected-input set. `synchronizeSelected` consumes the expected subset for the matching owner and key. Neither operation contains an Inclusive Gateway mode flag or calls a topology-specific evaluator. Lowering derives each candidate or default `output` from its own split Sequence Flow, derives that entry's `expectedJoinInput` by following that same branch through its sole User Task to the paired join input, and derives `selectionKey` from the paired divergent Gateway's BPMN element ID. `selectMany.candidates` is canonically sorted by `origin.elementId`; it does not inherit `choose.candidates` declaration order. `synchronizeSelected.inputs` is likewise in canonical Sequence Flow ID order.
 
-Standalone program admission requires the three candidate/default `expectedJoinInput` values to be distinct, to equal the `synchronizeSelected.inputs` set, and to share the exact nonempty key used by the paired operations. Checked-definition binding additionally requires every `expectedJoinInput` to equal the join input structurally reachable from that entry's own `output` in the checked graph and requires `selectionKey` to equal the paired split ID. A seeded permutation that swaps two branch-to-join-input pairings while preserving the same set and key must remain structurally well-formed as a program shape but fail checked-definition binding and Lean lowering equality.
+Standalone program admission requires each nonempty `selectionKey` to identify exactly one `selectMany` and one `synchronizeSelected`, independently of their payloads. The three candidate/default `expectedJoinInput` values must be distinct and equal the paired `synchronizeSelected.inputs` set. Checked-definition binding additionally requires every `expectedJoinInput` to equal the join input structurally reachable from that entry's own `output` in the checked graph and requires `selectionKey` to equal the paired split ID. A seeded permutation that swaps two branch-to-join-input pairings while preserving the same set and key must remain structurally well-formed as a program shape but fail checked-definition binding and Lean lowering equality.
 
 The existing `choose` contract remains first-true and single-output. The existing `synchronize` contract remains ready only when every declared input has a token. Reusing either with weakened meaning is outside the proposal.
 
@@ -144,6 +144,10 @@ Public stable observation remains unchanged. It exposes the resulting User Task 
 Lane shape: proved
 
 Evidence: [The Inclusive Gateway conformance owner](../../BpmnSemantics/InclusiveGatewayConformance.lean) proves exact branch selection, selected-input readiness and consumption, quiescence blocking, and both completion orders for the admitted structured split/task/join region; it does not prove general Inclusive Gateway reachability.
+
+The [standalone pairing witnesses](../../BpmnSemantics/InclusiveGatewayPairingConformance.lean) and [independent TypeScript controls](../../packages/semantic-core/test/inclusive-gateway.test.ts) reject two and three distinct-payload pairs sharing a selection key, while retaining graph admission and a distinct-key positive control. They guard declaration identity for the runtime record, not source admission of multiple Inclusive regions. Filtering by payload before counting key matches is unsound because `hiddenRecordDeclarationsValid` resolves the declaring operation by key alone.
+
+The [structural validator's declaration laws](../../BpmnSemantics/SemanticProcess/ProgramStructuralValidation.lean) derive the exact key-only split count for every admitted Program and reject any two distinct split declarations sharing that key. These are admission consequences; they assume neither runtime validity nor transition preservation.
 
 The answer-free scenario family uses one definition and three initial-binding cases:
 
