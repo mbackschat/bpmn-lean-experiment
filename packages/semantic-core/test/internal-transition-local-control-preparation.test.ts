@@ -13,6 +13,7 @@ import {
   initialState,
   projectControlPositionDelta,
   projectFlowNodeOccurrenceLifecycleDelta,
+  runtimeStateDefects,
 } from "@bpmn-lean/semantic-core";
 import type { RuntimeState, SemanticProcessProgram } from "@bpmn-lean/semantic-core";
 import type { InternalLocalControlOperation, PreparedInternalLocalControl } from "../src/internal-transition-local-control-preparation.ts";
@@ -246,6 +247,64 @@ test("signed token units cancel in publication without dropping the consumed and
     consumedTokens: [], producedTokens: [], enteredScopes: [], exitedScopes: [],
   });
   assert.deepEqual(applyPatch(beforeFork, patch), beforeFork);
+});
+
+test("private selected-join preparation retains repeated token units with one bucket dependency", () => {
+  const operation = inclusiveProgram.operations.find((candidate) => candidate.id === "operation:Join");
+  assert.ok(operation?.kind === SemanticOperationKind.SynchronizeSelected);
+  const record = beforeSelectedJoin.selectedBranchSets[0]!;
+  const input = record.expectedInputs[0];
+  const before: RuntimeState = {
+    ...beforeSelectedJoin,
+    selectedBranchSets: [{ ...record, expectedInputs: [input, input] }],
+    controlTokens: beforeSelectedJoin.controlTokens.map((token) =>
+      token.placeId === input ? { ...token, multiplicity: 2 } : token),
+  };
+  assert.deepEqual(runtimeStateDefects(inclusiveProgram, record.owner.processInstanceId, before), []);
+  assert.notEqual(applyInternalOperationStep(inclusiveProgram, operation, before), null);
+  const after = assertExactStep(inclusiveProgram, before, operation);
+  const prepared = required(inclusiveProgram, before, operation);
+  assert.deepEqual(prepared.patch.consumed, [input, input]);
+  for (const atoms of [prepared.footprint.reads, prepared.footprint.writes]) {
+    assert.equal(atoms.filter((atom) => atom.kind === Atom.ControlToken && atom.placeId === input).length, 1);
+  }
+  assert.equal(after.controlTokens.some((token) => token.placeId === input), false);
+});
+
+test("private selected-join preparation cancels a consumed and reproduced bucket only in publication", () => {
+  const operation = inclusiveProgram.operations.find((candidate) => candidate.id === "operation:Join");
+  assert.ok(operation?.kind === SemanticOperationKind.SynchronizeSelected);
+  const record = beforeSelectedJoin.selectedBranchSets[0]!;
+  const before: RuntimeState = {
+    ...beforeSelectedJoin,
+    selectedBranchSets: [{ ...record, expectedInputs: [operation.output] }],
+    controlTokens: [...beforeSelectedJoin.controlTokens,
+      { placeId: operation.output, owner: record.owner, multiplicity: 1 }].sort(compareControlTokens),
+  };
+  assert.deepEqual(runtimeStateDefects(inclusiveProgram, record.owner.processInstanceId, before), []);
+  assert.notEqual(applyInternalOperationStep(inclusiveProgram, operation, before), null);
+  const after = assertExactStep(inclusiveProgram, before, operation);
+  const prepared = required(inclusiveProgram, before, operation);
+  assert.deepEqual(prepared.patch.consumed, [operation.output]);
+  assert.deepEqual(prepared.patch.produced, [operation.output]);
+  assert.deepEqual(after.controlTokens, before.controlTokens);
+  assert.deepEqual(prepared.publicationTemplate.record.positionDelta, {
+    consumedTokens: [], producedTokens: [], enteredScopes: [], exitedScopes: [],
+  });
+});
+
+test("private selected-join preparation refuses more consumed units than the bucket contains", () => {
+  const operation = inclusiveProgram.operations.find((candidate) => candidate.id === "operation:Join");
+  assert.ok(operation?.kind === SemanticOperationKind.SynchronizeSelected);
+  const record = beforeSelectedJoin.selectedBranchSets[0]!;
+  const input = record.expectedInputs[0];
+  const before: RuntimeState = {
+    ...beforeSelectedJoin,
+    selectedBranchSets: [{ ...record, expectedInputs: [input, input] }],
+  };
+  assert.deepEqual(runtimeStateDefects(inclusiveProgram, record.owner.processInstanceId, before), []);
+  assert.notEqual(applyInternalOperationStep(inclusiveProgram, operation, before), null);
+  assert.equal(prepare(inclusiveProgram, before, operation), null);
 });
 
 test("preparation refuses an output increment that has no safe public multiplicity", () => {

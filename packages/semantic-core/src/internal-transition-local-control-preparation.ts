@@ -341,7 +341,7 @@ function prepareTokenTransformation(
     const produced = remaining + outputs.filter((output) => output === placeId).length;
     return remaining >= 0 && Number.isSafeInteger(produced) && produced >= 0;
   })) return null;
-  const tokens = [...inputs, ...outputs].map((placeId) => ({
+  const tokens = [...new Set([...inputs, ...outputs])].map((placeId) => ({
     kind: InternalTransitionStateAtomKind.ControlToken,
     owner,
     placeId,
