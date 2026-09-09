@@ -10,6 +10,7 @@ import {
 } from "@bpmn-lean/semantic-core";
 import type { RuntimeState, SemanticOperation, SemanticProcessProgram } from "@bpmn-lean/semantic-core";
 import type { PreparedInternalTransition } from "../src/internal-transition-batch.ts";
+import type { InstantiatedInternalPublication } from "../src/internal-publication-template.ts";
 import { completionStimulus, parallelProgram, startStimulus } from "./parallel-fork-join-fixture.ts";
 import { inclusiveCompletion, inclusiveProgram, inclusiveStart, present } from "./inclusive-gateway-fixture.ts";
 import { admittedInternalPrefix } from "./internal-operation-prefix-fixture.ts";
@@ -83,7 +84,7 @@ test("a later oversized arming batch rolls back the preceding mixed local-contro
   assert.deepEqual(result.flowNodeOccurrenceLifecycles, []);
 });
 
-const { deriveInternalTransitionPreparation: prepare, prepareInternalTransitionBatch: batch,
+const { PreparedInternalTransitionFamily, deriveInternalTransitionPreparation: prepare, prepareInternalTransitionBatch: batch,
   applyPreparedInternalTransition: apply } = await import(
   new URL("../dist/internal-transition-batch.js", import.meta.url).href
 ) as typeof import("../src/internal-transition-batch.ts");
@@ -111,10 +112,13 @@ const exclusiveProgram: SemanticProcessProgram = {
   identity: { ...inclusiveProgram.identity, semanticProfile: SemanticProfileId.ExclusiveGatewaySimpleBoolean },
   operations: inclusiveProgram.operations.map((operation): SemanticOperation => {
     switch (operation.kind) {
-      case SemanticOperationKind.SelectMany:
+      case SemanticOperationKind.SelectMany: {
+        const candidates = operation.candidates.map(({ expectedJoinInput: _join, ...candidate }) => candidate);
+        assert.equal(candidates.length, 2);
         return { ...operationBase(operation.origin.elementId), kind: SemanticOperationKind.Choose,
-          input: operation.input, candidates: operation.candidates.map(({ expectedJoinInput: _join, ...candidate }) => candidate),
+          input: operation.input, candidates: [candidates[0]!, candidates[1]!],
           defaultOutput: operation.defaultBranch.output, defaultOrigin: operation.defaultBranch.origin };
+      }
       case SemanticOperationKind.SynchronizeSelected:
         return { ...operationBase(operation.origin.elementId), kind: SemanticOperationKind.MergeExclusive,
           inputs: operation.inputs, output: operation.output };
@@ -245,7 +249,7 @@ function assertAllOrders({ program, state, candidates }: ReturnType<typeof mixed
       const step = applyInternalOperationStep(program, member.operation, current);
       assert.ok(step !== null && step.owner !== null);
       assert.deepEqual(step.successor, successor);
-      const publication = expected.find(({ alternative }) => alternative.operationId === member.operation.id)!;
+      const publication: InstantiatedInternalPublication = expected.find(({ alternative }) => alternative.operationId === member.operation.id)!;
       const positionDelta = projectControlPositionDelta(program, current, successor);
       assert.ok(positionDelta !== null);
       const record = { logicalTimeMs: current.logicalTimeMs,
@@ -396,8 +400,15 @@ test("each mixed family rejects stale complete preparations despite unchanged op
     assert.notEqual(applyInternalOperationStep(program, member.operation, stale), null);
     assert.notEqual(prepare(program, stale, member), null);
     assert.equal(apply(program, stale, member), null);
-    const forged: PreparedInternalTransition = { ...member,
-      footprint: { ...member.footprint, reads: [] } };
+    let forged: PreparedInternalTransition;
+    switch (member.family) {
+      case PreparedInternalTransitionFamily.Arming:
+        forged = { ...member, footprint: { ...member.footprint, reads: [] } };
+        break;
+      case PreparedInternalTransitionFamily.LocalControl:
+        forged = { ...member, footprint: { ...member.footprint, reads: [] } };
+        break;
+    }
     assert.equal(apply(program, state, forged), null);
   }
 });
