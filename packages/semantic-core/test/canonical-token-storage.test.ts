@@ -49,8 +49,8 @@ test("same-place token owners require numeric activation order beside a position
   };
   const canonical: RuntimeState = {
     ...frontier,
-    scopeOccurrences: [...frontier.scopeOccurrences,
-      { id: child2, parent: owner }, { id: child10, parent: owner }],
+    scopeOccurrences: [{ id: child2, parent: owner }, { id: child10, parent: owner },
+      ...frontier.scopeOccurrences],
     controlTokens: [
       { placeId, owner: child2, multiplicity: 1 },
       { placeId, owner: child10, multiplicity: 1 },

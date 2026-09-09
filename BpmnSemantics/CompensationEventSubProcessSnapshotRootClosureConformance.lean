@@ -66,7 +66,7 @@ private def rootAndChildStartedValue : StimulusResult :=
     state :=
       { initialState with
         control := .running instanceId
-        scopeOccurrences := [childOccurrence, rootOccurrence]
+        scopeOccurrences := [rootOccurrence, childOccurrence]
         waits :=
           [{ processInstanceId := instanceId
              owner := childOccurrence.id
@@ -99,8 +99,8 @@ private def rootAndChildStartedValue : StimulusResult :=
         activations := [{ taskId := ⟨"ChildTask"⟩, count := 1 }]
         timerActivations := [{ elementId := ⟨"Deadline"⟩, count := 1 }]
         scopeActivations :=
-          [{ scopeId := childOccurrence.id.definitionScopeId, count := 1 },
-           { scopeId := rootOccurrence.id.definitionScopeId, count := 1 }]
+          [{ scopeId := rootOccurrence.id.definitionScopeId, count := 1 },
+           { scopeId := childOccurrence.id.definitionScopeId, count := 1 }]
         activityActivations := [{ taskId := ⟨"scope:Scope"⟩, count := 1 }] }
     internalStepBoundExceeded := false
     ambiguousInternalChoice := false }

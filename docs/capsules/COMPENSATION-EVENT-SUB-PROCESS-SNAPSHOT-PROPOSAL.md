@@ -235,7 +235,7 @@ The complete `what-binds` inventory requires [`implementation-status-owner:ENGIN
 | [TS command admission](../../packages/semantic-core/src/semantic-command-admission.ts) | 326 | optional-field normalization |
 | [TS RuntimeState](../../packages/semantic-core/src/semantic-process-state.ts) | 363 | collection reference only |
 | [TS runtime-state defect](../../packages/semantic-core/src/runtime-state-defect.ts) | 754 | preserve the closed malformed-state classification or record a proved no-change mapping |
-| [TS well-formedness](../../packages/semantic-core/src/runtime-state-well-formedness.ts) | 55 | delegate before 800 |
+| [TS well-formedness](../../packages/semantic-core/src/runtime-state-well-formedness.ts) | 50 | delegate before 800 |
 | [TS preservation oracle](../../packages/differential/test/runtime-state-preservation.test.ts) | 658 | exact new-field preservation and malformed-state refusal |
 | [TS root start](../../packages/semantic-core/src/semantic-process-triggered-start.ts) | 583 | pre-mutation reservation |
 | [TS scope runtime](../../packages/semantic-core/src/semantic-process-scope-runtime.ts) | 553 | unbounded entry/promotion |
@@ -257,8 +257,8 @@ The complete `what-binds` inventory requires [`implementation-status-owner:ENGIN
 | [Lean Program](../../BpmnSemantics/SemanticProcessContract.lean) | 11 | direct Activity-data carriers extracted into a bounded owner |
 | [Lean structural admission](../../BpmnSemantics/SemanticProcess/ProgramStructuralValidation.lean) | 37 | declaration hook |
 | [Lean graph admission](../../BpmnSemantics/SemanticProcess/GraphValidation.lean) | 91 | lifecycle helper extracted; preserve the recovered headroom |
-| [Lean RuntimeState](../../BpmnSemantics/SemanticProcess/RuntimeState.lean) | 71 | collection reference only |
-| [Lean well-formedness](../../BpmnSemantics/SemanticProcess/RuntimeStateWellFormed.lean) | 55 | delegated predicate |
+| [Lean RuntimeState](../../BpmnSemantics/SemanticProcess/RuntimeState.lean) | 54 | collection reference only |
+| [Lean well-formedness](../../BpmnSemantics/SemanticProcess/RuntimeStateWellFormed.lean) | 53 | delegated predicate |
 | [Lean initialization preservation](../../BpmnSemantics/SemanticProcess/RuntimeStateWellFormedInitialization.lean) | 420 | preserve the new invariant from the exact initialized state |
 | [Lean completion](../../BpmnSemantics/SemanticProcess/ScopeCompletion.lean) | 683 | promotion/frame |
 | [Lean cancellation](../../BpmnSemantics/SemanticProcess/ScopeCancellation.lean) | 567 | regional filtering |
@@ -270,16 +270,16 @@ The complete `what-binds` inventory requires [`implementation-status-owner:ENGIN
 | [Lean footprint core](../../BpmnSemantics/SemanticProcess/InternalCommutationCore.lean) | 305 | snapshot atom/footprint |
 | [Lean Program decoder](../../BpmnSemantics/SemanticProcessJson/Program.lean) | 87 | focused decoder |
 | [Lean commutation preservation](../../BpmnSemantics/SemanticProcess/InternalCommutationRuntimePreservation.lean) | 35 | extract the snapshot frame before further growth |
-| [Lean correlation preservation](../../BpmnSemantics/SemanticProcess/MessageKeyCorrelationPreservation.lean) | 351 | frame new invariant |
-| [Lean payload preservation](../../BpmnSemantics/SemanticProcess/MessagePayloadPreservation.lean) | 454 | frame new invariant |
+| [Lean correlation preservation](../../BpmnSemantics/SemanticProcess/MessageKeyCorrelationPreservation.lean) | 349 | frame new invariant |
+| [Lean payload preservation](../../BpmnSemantics/SemanticProcess/MessagePayloadPreservation.lean) | 452 | frame new invariant |
 | [Lean turnover preservation](../../BpmnSemantics/SemanticProcess/ActivityBodyTurnoverPreservation.lean) | 555 | frame new invariant |
 | [Lean issuing conformance](../../BpmnSemantics/ActivityIssuingDisciplineConformance.lean) | 578 | synchronize close witness |
-| [Lean MI entry preservation](../../BpmnSemantics/SemanticProcess/ParallelMultiInstanceRuntimeStateEntryPreservation.lean) | 4 | order fact extracted; frame new invariant |
+| [Lean MI entry preservation](../../BpmnSemantics/SemanticProcess/ParallelMultiInstanceRuntimeStateEntryPreservation.lean) | 2 | order fact extracted; frame new invariant |
 | [Lean MI closing selection](../../BpmnSemantics/SemanticProcess/ParallelMultiInstanceRuntimeStateClosingSelection.lean) | 204 | frame new invariant |
 | [Lean commutation publication](../../BpmnSemantics/SemanticProcess/InternalCommutationPublication.lean) | 297 | carry aggregate fact |
 | [Lean MI empty preservation](../../BpmnSemantics/SemanticProcess/ParallelMultiInstanceRuntimeStateEmptyPreservation.lean) | 700 | carry aggregate fact |
-| [Lean MI progress preservation](../../BpmnSemantics/SemanticProcess/ParallelMultiInstanceRuntimeStateClosingProgressPreservation.lean) | 235 | frame new invariant |
-| [Lean MI terminal preservation](../../BpmnSemantics/SemanticProcess/ParallelMultiInstanceRuntimeStateClosingTerminalPreservation.lean) | 15 | extract the frame proof before further growth |
+| [Lean MI progress preservation](../../BpmnSemantics/SemanticProcess/ParallelMultiInstanceRuntimeStateClosingProgressPreservation.lean) | 233 | frame new invariant |
+| [Lean MI terminal preservation](../../BpmnSemantics/SemanticProcess/ParallelMultiInstanceRuntimeStateClosingTerminalPreservation.lean) | 13 | extract the frame proof before further growth |
 
 Every headroom figure is the measured number of nonblank lines remaining below the 800-line review target. An owner must extract before this checkpoint's planned growth consumes that figure; a row with insufficient headroom may not grow first. No size exception is requested. Planned bounded owners are `packages/semantic-core/src/compensation-event-sub-process-snapshot-contract.ts`, `packages/semantic-core/src/compensation-event-sub-process-snapshot.ts`, `packages/semantic-core/src/compensation-event-sub-process-snapshot-state-validation.ts`, `packages/semantic-core/test/compensation-event-sub-process-snapshot.test.ts`, `packages/semantic-core/test/compensation-event-sub-process-snapshot-integration.test.ts`, [Lean snapshot runtime](../../BpmnSemantics/SemanticProcess/CompensationEventSubProcessSnapshot.lean) with 99 lines of headroom, [Lean lifecycle laws](../../BpmnSemantics/SemanticProcess/CompensationEventSubProcessSnapshotLifecycleLaws.lean) with 446 lines, [Lean lifecycle integration](../../BpmnSemantics/CompensationEventSubProcessSnapshotLifecycleIntegrationConformance.lean) with 674 lines, `BpmnSemantics/SemanticProcess/CompensationEventSubProcessSnapshotDeclaration.lean`, its JSON decoder, and its remaining conformance targets. Root integration owns shared contracts, closure, schema, registries, status, and receipts.
 

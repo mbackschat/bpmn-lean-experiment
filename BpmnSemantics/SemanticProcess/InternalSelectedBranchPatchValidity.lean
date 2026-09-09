@@ -61,6 +61,8 @@ theorem InternalSelectedBranchPatch.preserves_collection_order (state : RuntimeS
     canonicalCollectionOrder
       { state with selectedBranchSets := patch.apply state.selectedBranchSets } = true := by
   simp only [canonicalCollectionOrder, Bool.and_eq_true] at ordered ⊢
+  obtain ⟨⟨⟨⟨ordered, scopeOrder⟩, scopeCounterOrder⟩, callCounterOrder⟩, raceCounterOrder⟩ := ordered
+  refine ⟨⟨⟨⟨?_, scopeOrder⟩, scopeCounterOrder⟩, callCounterOrder⟩, raceCounterOrder⟩
   obtain ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨tokens, activity⟩, tasks⟩, activations⟩, messages⟩,
     timers⟩, effects⟩, messageActivations⟩, timerActivations⟩, effectActivations⟩, variables⟩,
     branches⟩, races⟩, calls⟩, occurrences⟩, sequential⟩, parallel⟩ := ordered

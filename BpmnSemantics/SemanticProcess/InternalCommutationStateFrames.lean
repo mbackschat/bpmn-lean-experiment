@@ -19,11 +19,7 @@ theorem canonicalCollectionOrder_internalArmingOrders (state : RuntimeState)
       orderedBy effectActivationBefore state.effectActivations = true ∧
       orderedBy activityVariableScopeBefore state.variables.activities = true := by
   simp only [canonicalCollectionOrder, Bool.and_eq_true] at canonical
-  exact ⟨canonical.1.1.1.1.1.1.1.1.1.1.1.1.1.2,
-    canonical.1.1.1.1.1.1.1.1.1.2,
-    canonical.1.1.1.1.1.1.1.1.2,
-    canonical.1.1.1.1.1.1.1.2,
-    canonical.1.1.1.1.1.1.2⟩
+  simp_all
 
 def runningStateInstance? (state : RuntimeState) : Option SemanticId := match state.control with
   | .running instanceId => some instanceId

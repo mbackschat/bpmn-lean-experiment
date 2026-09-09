@@ -154,10 +154,8 @@ def armEventRaceState? (state : RuntimeState) (origin : BpmnElementOrigin)
                 state.messageActivations message.elementId messageActivation
               timerActivations := setTimerActivationCount state.timerActivations
                 timer.elementId timerActivation
-              eventRaceActivations :=
-                { elementId := origin.elementId, count := raceActivation } ::
-                  state.eventRaceActivations.filter fun value =>
-                    decide (value.elementId ≠ origin.elementId) }
+              eventRaceActivations := setEventRaceActivationCount state.eventRaceActivations
+                origin.elementId raceActivation }
 
 /-- Atomic declarative arming relation with explicit ownership, freshness, identities, and state update. -/
 inductive EventRaceArmingStep : RuntimeState → BpmnElementOrigin →
@@ -212,10 +210,8 @@ inductive EventRaceArmingStep : RuntimeState → BpmnElementOrigin →
             before.messageActivations message.elementId messageActivation
           timerActivations := setTimerActivationCount before.timerActivations
             timer.elementId timerActivation
-          eventRaceActivations :=
-            { elementId := origin.elementId, count := raceActivation } ::
-              before.eventRaceActivations.filter fun value =>
-                decide (value.elementId ≠ origin.elementId) }
+          eventRaceActivations := setEventRaceActivationCount before.eventRaceActivations
+            origin.elementId raceActivation }
 
 theorem armEventRaceState_sound (before after : RuntimeState)
     (origin : BpmnElementOrigin) (input : ControlPlaceId)

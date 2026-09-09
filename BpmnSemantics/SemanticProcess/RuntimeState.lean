@@ -564,6 +564,32 @@ def scopeOwnerBefore (left right : ScopeOccurrenceId) : Bool :=
   else
     left.activation < right.activation
 
+def scopeOccurrenceBefore (left right : RuntimeScopeOccurrence) : Bool :=
+  scopeOwnerBefore left.id right.id
+
+def insertScopeOccurrence (occurrence : RuntimeScopeOccurrence)
+    (values : List RuntimeScopeOccurrence) : List RuntimeScopeOccurrence :=
+  canonicalInsertBy scopeOccurrenceBefore occurrence values
+
+def scopeActivationBefore (left right : ScopeActivation) : Bool :=
+  left.scopeId.value < right.scopeId.value
+
+def callActivationBefore (left right : CallActivation) : Bool :=
+  left.elementId.value < right.elementId.value
+
+def eventRaceActivationBefore (left right : EventRaceActivation) : Bool :=
+  left.elementId.value < right.elementId.value
+
+def setScopeActivationCount (values : List ScopeActivation)
+    (scopeId : DefinitionScopeId) (count : Nat) : List ScopeActivation :=
+  canonicalInsertBy scopeActivationBefore { scopeId, count }
+    (values.filter fun value => decide (value.scopeId.value ≠ scopeId.value))
+
+def setEventRaceActivationCount (values : List EventRaceActivation)
+    (elementId : NodeId) (count : Nat) : List EventRaceActivation :=
+  canonicalInsertBy eventRaceActivationBefore { elementId, count }
+    (values.filter fun value => decide (value.elementId.value ≠ elementId.value))
+
 def controlTokenBefore (left right : ControlToken) : Bool :=
   if left.placeId.value ≠ right.placeId.value then
     left.placeId.value < right.placeId.value
@@ -791,8 +817,8 @@ def callActivationCount (state : RuntimeState) (elementId : NodeId) : Nat :=
 
 def setCallActivationCount (state : RuntimeState) (elementId : NodeId)
     (count : Nat) : List CallActivation :=
-  { elementId, count } :: state.callActivations.filter fun value =>
-    decide (value.elementId ≠ elementId)
+  canonicalInsertBy callActivationBefore { elementId, count }
+    (state.callActivations.filter fun value => decide (value.elementId.value ≠ elementId.value))
 
 def duplicateToken (state : RuntimeState) (owner : ScopeOccurrenceId)
     (input : ControlPlaceId) (outputs : List ControlPlaceId) : RuntimeState :=
@@ -843,10 +869,8 @@ def enterScopeState? (state : RuntimeState) (input childEntry : ControlPlaceId)
     some
       { state with
         tokens := addToken (removeToken state.tokens input parent) childEntry child
-        scopeOccurrences := { id := child, parent := some parent } ::
+        scopeOccurrences := insertScopeOccurrence { id := child, parent := some parent }
           state.scopeOccurrences
-        scopeActivations := { scopeId := childScopeId, count := activation } ::
-          state.scopeActivations.filter fun value =>
-            decide (value.scopeId ≠ childScopeId) }
+        scopeActivations := setScopeActivationCount state.scopeActivations childScopeId activation }
 
 end BpmnSemantics.SemanticProcess

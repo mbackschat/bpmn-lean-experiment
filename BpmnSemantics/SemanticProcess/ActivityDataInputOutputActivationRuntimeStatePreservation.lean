@@ -519,6 +519,8 @@ theorem dataInputOutputActivationStep_preserves_runtimeStateWellFormed_general
                 simpa [successor, controllersNotExhausted] using notExhausted
               have orderAfter : canonicalCollectionOrder successor = true := by
                 simp only [canonicalCollectionOrder, Bool.and_eq_true] at order ⊢
+                obtain ⟨⟨⟨⟨order, scopeOrder⟩, scopeCounterOrder⟩, callCounterOrder⟩, raceCounterOrder⟩ := order
+                refine ⟨⟨⟨⟨?_, scopeOrder⟩, scopeCounterOrder⟩, callCounterOrder⟩, raceCounterOrder⟩
                 obtain ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨tokenOrder, activityCounterOrder⟩, taskOrder⟩, activationOrder⟩, messageOrder⟩,
                   timerOrder⟩, effectOrder⟩, messageActivationOrder⟩, timerActivationOrder⟩,
                   effectActivationOrder⟩, activityVariableOrder⟩, selectionOrder⟩, raceOrder⟩,

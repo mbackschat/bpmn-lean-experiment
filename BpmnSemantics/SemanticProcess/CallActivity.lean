@@ -10,16 +10,9 @@ namespace BpmnSemantics.SemanticProcess
 
 open BpmnSemantics
 
-private def occurrenceBefore (left right : ScopeOccurrenceId) : Bool :=
-  if left.processInstanceId.value ≠ right.processInstanceId.value then
-    left.processInstanceId.value < right.processInstanceId.value
-  else if left.definitionScopeId.value ≠ right.definitionScopeId.value then
-    left.definitionScopeId.value < right.definitionScopeId.value
-  else left.activation < right.activation
-
 def callRecordBefore
     (left right : CalledProcessOccurrence) : Bool :=
-  if occurrenceBefore left.caller right.caller then true
+  if scopeOwnerBefore left.caller right.caller then true
   else if left.caller = right.caller then
     if left.id.elementId.value ≠ right.id.elementId.value then
       left.id.elementId.value < right.id.elementId.value
@@ -37,13 +30,6 @@ private def sortCallRecords :
     List CalledProcessOccurrence → List CalledProcessOccurrence
   | [] => []
   | record :: rest => insertCallRecord record (sortCallRecords rest)
-
-private def insertScopeOccurrence (occurrence : RuntimeScopeOccurrence) :
-    List RuntimeScopeOccurrence → List RuntimeScopeOccurrence
-  | [] => [occurrence]
-  | current :: rest =>
-      if occurrenceBefore occurrence.id current.id then occurrence :: current :: rest
-      else current :: insertScopeOccurrence occurrence rest
 
 private def rootInstanceId? (state : RuntimeState) : Option SemanticId :=
   match state.control with

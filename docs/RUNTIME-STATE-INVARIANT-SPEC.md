@@ -61,7 +61,7 @@ Two monotonicity facts are separate relations rather than conjuncts, because whe
 
 ### Facts the rules depend on
 
-**`RSI-ORDER-01` membership criterion.** A collection is listed when every one of its add sites canonically inserts, and excluded when its add sites disagree. `scopeOccurrences` is excluded because Call Activity inserts canonically while `enterScope` prepends. Process bindings take submitted order at Process start, so no whole-`variables` order is claimed. The nested `variables.activities` collection is separately ordered by both current predicates. The criterion decides whether a future collection joins the conjunct; [the Lean aggregate](../BpmnSemantics/SemanticProcess/RuntimeStateWellFormed.lean) and [TypeScript defect owner](../packages/semantic-core/src/runtime-state-well-formedness.ts) decide the current membership.
+**`RSI-ORDER-01` membership criterion.** A collection is listed when every one of its add sites canonically inserts, and excluded when its add sites disagree. Both implementations now include `scopeOccurrences` and all eight activation-counter families after the [canonical scope and counter-storage correction](INTERNAL-COMMUTATION-PROPOSAL.md#canonical-scope-and-counter-storage-checkpoint). Process bindings take submitted order at Process start, so no whole-`variables` order is claimed. The nested `variables.activities` collection is separately ordered by both current predicates. The criterion decides whether a future collection joins the conjunct; [the Lean aggregate](../BpmnSemantics/SemanticProcess/RuntimeStateWellFormed.lean) and [TypeScript defect owner](../packages/semantic-core/src/runtime-state-well-formedness.ts) decide the current membership.
 
 ### Collection-to-conjunct inventory
 
@@ -69,7 +69,7 @@ This inventory locates the current Lean aggregate's checks, including imported c
 
 | Runtime collection (Lean name; TypeScript name where different) | Current conjunct or explicit gap |
 |---|---|
-| `scopeOccurrences` | `runtimePositionValid`: lifecycle, unique identity, definition/parent binding, and hosting/called-root association |
+| `scopeOccurrences` | `runtimePositionValid`: lifecycle, unique identity, definition/parent binding, and hosting/called-root association; `canonicalCollectionOrder`: complete occurrence-identity order |
 | `tokens`; `controlTokens` | `runtimePositionValid`: multiplicity, live owner, and owning Program place; `canonicalCollectionOrder`: complete place/owner order with multiplicity preserved |
 | `waits`; `userTaskWaits` | `waitOwnersLive`, `waitIdentitiesUnique`, `waitDeclarationsValid`, `canonicalCollectionOrder`, and the User Task branch of `runtimeStateIdentityBound` |
 | `messageWaits` | owner, identity, declaration, and order checks; event-race and attached-handler associations; counter bound open |
@@ -86,7 +86,7 @@ This inventory locates the current Lean aggregate's checks, including imported c
 | `compensationTriggers`, `compensationHandlerEffectWaits` | complete `compensationExecutionStateValid`, including terminal tombstone rules |
 | `variables.activities` | order and lifecycle emptiness; attachment to a live Activity/body occurrence is **open** |
 | `variables.process.bindings` | no general binding-content conjunct in this aggregate; declaration-specific snapshot/handler checks do not establish one |
-| activation-counter collections | `RuntimeStateMonotone` covers all eight families as a separate two-state relation; one-state bounds cover only User Task, Timer, and Activity; canonical order covers task, Message, Timer, Effect, and Activity counters |
+| activation-counter collections | `RuntimeStateMonotone` covers all eight families as a separate two-state relation; one-state bounds cover only User Task, Timer, and Activity; canonical order covers all eight families |
 
 The Activity-local gap is distinct from the repaired cancellation path: withdrawal now removes affected local scopes, but an arbitrarily supplied running state can still contain an orphan local scope. `RSI-OWN-01` does not cover `variables.activities`, and ordering cannot establish attachment. Reopen with a consumer-specific ownership account and separating live/orphan witnesses before relying on that fact; this disclosure adds no predicate or preservation claim.
 

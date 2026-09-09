@@ -153,7 +153,7 @@ def armedState : RuntimeState :=
 theorem scope_and_deadline_arm_atomically :
     (armedState.scopeOccurrences.map fun occurrence =>
         (occurrence.id.definitionScopeId.value, occurrence.id.activation)) =
-        [("scope:Scope", 1), ("scope:Process_SubProcessBoundaryTimer", 1)] ∧
+        [("scope:Process_SubProcessBoundaryTimer", 1), ("scope:Scope", 1)] ∧
       (armedState.timerWaits.map fun wait =>
         (wait.elementId.value, wait.activation, wait.deadlineMs)) =
         [("Deadline", 1, 1000)] ∧

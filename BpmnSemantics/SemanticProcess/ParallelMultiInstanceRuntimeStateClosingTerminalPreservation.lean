@@ -611,12 +611,14 @@ theorem sharedParallelTerminal_preserves_runtimeStateWellFormed
     refine ⟨by simpa [after, closeSharedParallelRegion] using hidden.1, ?_⟩
     simp [after, closeSharedParallelRegion, noRaces]
   simp only [canonicalCollectionOrder, Bool.and_eq_true] at order
+  obtain ⟨⟨⟨⟨order, scopeOrder⟩, scopeCounterOrder⟩, callCounterOrder⟩, raceCounterOrder⟩ := order
   obtain ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨tokenOrder, activityCounterOrder⟩, taskOrder⟩, activationOrder⟩, messageWaitOrder⟩,
     timerWaitOrder⟩, effectWaitOrder⟩, messageActivationOrder⟩, timerActivationOrder⟩,
     effectActivationOrder⟩, activityVariableOrder⟩, selectionOrder⟩, raceOrder⟩,
     callOrder⟩, activityOrder⟩, sequentialControllerOrder⟩, _parallelControllerOrder⟩ := order
   have orderAfter : canonicalCollectionOrder after = true := by
     simp only [canonicalCollectionOrder, Bool.and_eq_true]
+    refine ⟨⟨⟨⟨?_, scopeOrder⟩, scopeCounterOrder⟩, callCounterOrder⟩, raceCounterOrder⟩
     refine ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨orderedBy_addToken _ _ record.owner tokenOrder,
       activityCounterOrder⟩, ?_⟩, activationOrder⟩, messageWaitOrder⟩,
       ?_⟩, effectWaitOrder⟩, messageActivationOrder⟩, timerActivationOrder⟩,

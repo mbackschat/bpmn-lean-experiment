@@ -200,7 +200,7 @@ theorem canonicalCollectionOrder_tokens (state : RuntimeState)
     (ordered : canonicalCollectionOrder state = true) :
     orderedBy controlTokenBefore state.tokens = true := by
   simp only [canonicalCollectionOrder, Bool.and_eq_true] at ordered
-  exact ordered.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1
+  simp_all
 
 theorem canonicalCollectionOrder_tokens_update (state : RuntimeState) (tokens : List ControlToken)
     (ordered : canonicalCollectionOrder state = true)

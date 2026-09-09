@@ -21,6 +21,7 @@ import {
   compareEffectWaits,
   compareEventRaces,
   compareMessageWaits,
+  compareScopeOccurrenceIds,
   compareSelectedBranchSets,
   compareTimerWaits,
   compareTokenPlaces,
@@ -423,8 +424,12 @@ export function runtimeStateDefects(
     state.timerActivations,
     state.effectActivations,
     state.activityActivations,
+    state.scopeActivations,
+    state.callActivations,
+    state.eventRaceActivations,
   ];
   const ordered =
+    isSorted(state.scopeOccurrences, (left, right) => compareScopeOccurrenceIds(left.id, right.id)) &&
     isSorted(state.controlTokens, compareTokenPlaces) &&
     isSorted(state.activityOccurrences, compareActivityOccurrences) &&
     isSorted(state.userTaskWaits, compareUserTaskWaits) &&

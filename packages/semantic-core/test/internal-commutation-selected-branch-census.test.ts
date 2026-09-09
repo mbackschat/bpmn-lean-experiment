@@ -240,7 +240,7 @@ function state(tokens: RuntimeState["controlTokens"], records: RuntimeState["sel
   return {
     ...initialState,
     control: { kind: ControlStateKind.Running, instanceId },
-    scopeOccurrences: [{ id: root, parent: null }, { id: first, parent: root }, { id: second, parent: root }],
+    scopeOccurrences: [{ id: first, parent: root }, { id: second, parent: root }, { id: root, parent: null }],
     scopeActivations: [{ elementId: childScope, count: 2 }],
     variables: { process: { bindings: [{ name: "takeB", value: { kind: VariableValueKind.Null } }] }, activities: [] },
     controlTokens: [...tokens].sort(compareTokenPlaces),

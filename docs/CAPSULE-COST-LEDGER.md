@@ -533,6 +533,31 @@ On 2026-09-09, independent production review approved correction `34e38132` as r
 
 The macOS native reports captured at 2026-09-09 02:42:24 and 2026-09-08 16:10:34 local time have the same signal, invalid address, and first sixteen native frames. The earlier report predates this production integration. The isolated and concurrent passes establish diagnostic recovery; only the final complete run establishes repository acceptance, and none establishes a V8 fix. The final pipeline's 57,040 ms exceeds its 36,000 ms soft feedback target while remaining below the unchanged pathology ceiling; host load rose from 0.60 to 1.99 per core, so elapsed time establishes no performance trend.
 
+#### Canonical scope-storage working-tree checkpoint
+
+On 2026-09-09, the [scope and counter-storage prerequisite](INTERNAL-COMMUTATION-PROPOSAL.md#canonical-scope-and-counter-storage-checkpoint) reproduced actual child-entry, Call-invocation, and race-arming order differences before replacing the shared Lean prepend writers. The correctly typed red kernel run exited 1 in 2,147 ms, output SHA-256 `2e9044e418e0c3269d79d146cc647f376587c9bec3a0e89743fe63294a3b971a`; all four initial assertions failed for the intended storage mechanism.
+
+Each changed kernel fixture passes in a mutable candidate mirror under `memory.max=3221225472`, zero swap allowance, and zero controlled memory events and pressure totals. GNU elapsed includes any dependency rebuilds. These are pre-commit resource checks, not immutable calibration or committed-source cost binding.
+
+| Kernel target | GNU elapsed | Maximum RSS (KiB) | Cgroup peak (bytes) | Output SHA-256 |
+|---|---:|---:|---:|---|
+| `ScopeStorageOrderConformance` | 3.38 s | 688,308 | 933,367,808 | `5e15f9ea47d7e2462c3467166e3330d9e1329fcebd3bb2a77397bf76d0d8ee72` |
+| `SubProcessBoundaryTimerConformance` | 172.32 s | 1,357,552 | 1,707,782,144 | `ec247e61f68907cd24f9a1671a58f6253762496ccae7c0de284ca9d575bf1119` |
+| `CompensationEventSubProcessSnapshotRootClosureConformance` | 60.27 s | 1,963,476 | 1,674,342,400 | `fe0ff3af072580c666478e73d50937a1ac5727c838be2d36c2abacdfbc495278` |
+
+The full rebuilds exposed an old child-first expected list in the boundary-Timer witness, then the same scope/counter ordering in the dependent Compensation witness's cached complete result. Both corrections preserve occurrence and counter values; complete-result equality remains checked. Existing aggregate-preservation proofs retain their public contracts.
+
+| Working-tree gate | Exit | Elapsed | Output SHA-256 |
+|---|---:|---:|---|
+| Semantic core, all 897 tests | 0 | 17,822 ms | `f463b653fdcd6fa749b2d2ee6e380aae57e0ee010cad030f73aac5efd540bf85` |
+| Six shared Lean proof-consumer roots | 0 | 31,953 ms | `6c46c563865adf143f2372efaa609d921e1920c8581b7fcd6fc283b32698cd1a` |
+| Full Lean library: old boundary-Timer expectation | 1 | 1,107,808 ms | `b484b489b58a664cb8423777ed3c90abe19f59f291deb0f7d0559c0fa8ef10c9` |
+| Full Lean library: dependent cached Compensation result | 1 | 144,910 ms | `50e092b81856a4bc04e916e580c70d9fc554680030d039a97244ae8955cefeac` |
+| Full Lean library after both corrections, all 370 jobs | 0 | 22,674 ms | `329ba22813eb2dc5091dea8650aca5a10742cdb0a1ee94320ebb72670efcaac4` |
+| Prepared differential pipeline, all 72 cases agree | 0 | 54,793 ms | `9d71d0eb437c189e9489d49040951b1511422d7b479d3aff305f434b1e6440f3` |
+
+The pipeline reports `dirty=true` against base `669f2bf9`, so it is working-tree correctness evidence. Its 53,435 ms warm measurement exceeds the unchanged 36,000 ms soft feedback target while remaining below the pathology ceiling; load per core rises from 0.65 to 1.53, so it establishes no performance trend. At the owner's requested next-commit stop, committed-source calibration, immutable churn accounting, independent checkpoint review, and the complete clean gate remain resume obligations. The module-cost guard must continue to refuse a missing calibration row until that evidence exists.
+
 | Increment | Boundary | Code | Documentation | Elapsed | Comparison consequence |
 |---|---|---:|---:|---|---|
 | [Scoped runtime data](capsules/SCOPED-DATA-SPEC.md) | `08d8b84..3b2e44d` | `+540/-73` | `+134/-11` | Unknown | First atomic runtime-representation replacement; later scope work should not be compared as if it were a small local semantic clause. |

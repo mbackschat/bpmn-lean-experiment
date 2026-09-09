@@ -64,13 +64,8 @@ theorem TokenPatch.preserves_position (program : Program) (instanceId : Semantic
 theorem TokenPatch.preserves_collection_order (state : RuntimeState) (patch : TokenPatch)
     (ordered : canonicalCollectionOrder state = true) :
     canonicalCollectionOrder { state with tokens := patch.apply state.tokens } = true := by
-  simp only [canonicalCollectionOrder, Bool.and_eq_true] at ordered ⊢
-  obtain ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨tokens, activity⟩, tasks⟩, activations⟩, messages⟩,
-    timers⟩, effects⟩, messageActivations⟩, timerActivations⟩, effectActivations⟩, variables⟩,
-    branches⟩, races⟩, calls⟩, occurrences⟩, sequential⟩, parallel⟩ := ordered
-  exact ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨patch.preserves_order state.tokens tokens, activity⟩, tasks⟩,
-    activations⟩, messages⟩, timers⟩, effects⟩, messageActivations⟩, timerActivations⟩,
-    effectActivations⟩, variables⟩, branches⟩, races⟩, calls⟩, occurrences⟩, sequential⟩, parallel⟩
+  exact canonicalCollectionOrder_tokens_update state (patch.apply state.tokens) ordered
+    (patch.preserves_order state.tokens (canonicalCollectionOrder_tokens state ordered))
 
 /-- The live owner forces running control, where Compensation and all other non-token checks frame
 through unchanged fields. Inclusive record changes require their own preservation proof. -/

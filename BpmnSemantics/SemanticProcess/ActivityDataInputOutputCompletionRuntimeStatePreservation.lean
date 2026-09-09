@@ -433,6 +433,8 @@ theorem dataInputOutputCompletionStep_preserves_runtimeStateWellFormed
         exact localDataOwnerBefore_compose a b c
       have orderAfter : canonicalCollectionOrder successor = true := by
         simp only [canonicalCollectionOrder, Bool.and_eq_true] at order ⊢
+        obtain ⟨⟨⟨⟨order, scopeOrder⟩, scopeCounterOrder⟩, callCounterOrder⟩, raceCounterOrder⟩ := order
+        refine ⟨⟨⟨⟨?_, scopeOrder⟩, scopeCounterOrder⟩, callCounterOrder⟩, raceCounterOrder⟩
         obtain ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨tokenOrder, activityCounterOrder⟩, taskOrder⟩, activationOrder⟩, messageOrder⟩,
           timerOrder⟩, effectOrder⟩, messageActivationOrder⟩, timerActivationOrder⟩,
           effectActivationOrder⟩, activityVariableOrder⟩, selectionOrder⟩, raceOrder⟩,

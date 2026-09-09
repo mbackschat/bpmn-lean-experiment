@@ -352,6 +352,8 @@ theorem deliverCorrelatedPayloadMessage_preserves_runtimeStateWellFormed
         simpa [settled, framed, hiddenRecordDeclarationsValid] using hidden
       have orderAfter : canonicalCollectionOrder settled = true := by
         simp only [canonicalCollectionOrder, Bool.and_eq_true] at order ⊢
+        obtain ⟨⟨⟨⟨order, scopeOrder⟩, scopeCounterOrder⟩, callCounterOrder⟩, raceCounterOrder⟩ := order
+        refine ⟨⟨⟨⟨?_, scopeOrder⟩, scopeCounterOrder⟩, callCounterOrder⟩, raceCounterOrder⟩
         obtain ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨tokenOrder, activityCounterOrder⟩, taskOrder⟩, activationOrder⟩, messageOrder⟩,
           timerOrder⟩, effectOrder⟩, messageActivationOrder⟩, timerActivationOrder⟩,
           effectActivationOrder⟩, activityVariableOrder⟩, selectionOrder⟩, raceOrder⟩,

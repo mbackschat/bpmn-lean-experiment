@@ -439,10 +439,8 @@ def controllersNotExhausted (state : RuntimeState) : Bool :=
 /-- `RSI-ORDER-01`. The collections whose every add site canonically inserts hold that order.
 
 The membership rule is a criterion rather than a list: a collection belongs here when all of its add
-sites insert canonically, and is excluded when they disagree. `scopeOccurrences` is excluded because
-Call Activity inserts canonically while `enterScope` prepends, and `variables` because process
-bindings are merged canonically at User Task completion but take submitted order at Process start.
-Asserting order for either would be refuted by ordinary reachable states, since `RuntimeState`
+sites insert canonically. Process bindings are excluded because they take submitted order at Process
+start. Asserting order for them would be refuted by ordinary reachable states, since `RuntimeState`
 derives `DecidableEq` and therefore retains list order as state.
 
 The controller collection is included although this capsule adds no Lean insertion site for it, because
@@ -466,7 +464,11 @@ def canonicalCollectionOrder (state : RuntimeState) : Bool :=
     orderedBy activityOccurrenceBefore state.activityOccurrences &&
     orderedBy sequentialMultiInstanceControllerBefore
       state.sequentialMultiInstanceControllers &&
-    parallelMultiInstanceControllersOrdered state.parallelMultiInstanceControllers
+    parallelMultiInstanceControllersOrdered state.parallelMultiInstanceControllers &&
+    orderedBy scopeOccurrenceBefore state.scopeOccurrences &&
+    orderedBy scopeActivationBefore state.scopeActivations &&
+    orderedBy callActivationBefore state.callActivations &&
+    orderedBy eventRaceActivationBefore state.eventRaceActivations
 
 /-! ## Layer 2: program agreement -/
 
