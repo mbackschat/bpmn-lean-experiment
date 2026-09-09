@@ -517,6 +517,21 @@ On 2026-09-09, immutable commit `cbb78a1179031d02a7edd99f6ced70d6872fe76c` suppl
 
 Every retained command exited zero with zero controlled memory events, pressure totals, and swap. None reaches the near-cap threshold; [the executable module-cost record](../scripts/lean-module-cost.ts) binds every row to the immutable source. Elapsed readings include host contention and source-page faults and establish no performance trend. The complete native Lean gate also passes on these production sources; independent production review and complete repository verification remain separate obligations.
 
+#### Mixed local-control production verification
+
+On 2026-09-09, independent production review approved correction `34e38132` as recorded in [the receipt](INTERNAL-COMMUTATION-PROPOSAL.md#independent-cold-review-receipt). Complete verification remains pending. The retained attempts distinguish a corrected test typing defect from two runtime-harness failures; no test deadline, clock margin, VM flag, dependency pin, or semantic limit changed during these diagnostics.
+
+| Target | Command or exact diagnostic | Exit | Elapsed | Output SHA-256 |
+|---|---|---:|---:|---|
+| `8c3f818c` | `test:pre-push`: harness typecheck refused three new test typing errors, corrected at `caa56e48` | 1 | 9,678 ms | `787240ddf34d17ca3a19799965aa34d459c76366ac745afa1b9bb3d30e4891c6` |
+| `caa56e48` | `test:pre-push`: the SMI natural path consumed 2,622 ms of its 5,000 ms host Timer, exceeding the 50% margin after successful task completions | 1 | 559,534 ms | `c8dc0244bed85a9467aabd9d2cb902c8288e34ba6118969474f8113a967e2e03` |
+| `caa56e48` | isolated `sequential-multi-instance-refinement.temporal-serial-test.ts`, unchanged deadline and margin | 0 | 18,422 ms | `de088f026f18faf110e07628406d18df54b78761dbb2e2545ea9b7dc59ba4c1a` |
+| `34e38132` | `test:pre-push`: the direct-VM managed-wait test process terminated with `SIGSEGV` in V8 `ClearStaleLeftTrimmedPointerVisitor::VisitRootPointers` during mark/compact collection | 1 | 246,169 ms | `f35aa4a229b5b34aa801bbffc58ac67fcac8aeba30feb16516efb877f047b61e` |
+| `34e38132` | isolated `managed-wait-host-wakeup.test.ts` under the existing `--no-parallel-scavenge` flag | 0 | 2,775 ms | `23314a35b02a416742b26c6d8d7a419f37cdf6cf6a846f9f2e96980b6bdd2388` |
+| `34e38132` | `test:temporal:built:concurrent`, all 332 tests unchanged | 0 | 76,802 ms | `e7c8a66c25be12fc3704a74f4e3871fa77f1ae7a9d472dc9235b77e637ed79d7` |
+
+The macOS native reports captured at 2026-09-09 02:42:24 and 2026-09-08 16:10:34 local time have the same signal, invalid address, and first sixteen native frames. The earlier report predates this production integration. The isolated and concurrent passes establish diagnostic recovery, not a V8 fix or complete repository acceptance.
+
 | Increment | Boundary | Code | Documentation | Elapsed | Comparison consequence |
 |---|---|---:|---:|---|---|
 | [Scoped runtime data](capsules/SCOPED-DATA-SPEC.md) | `08d8b84..3b2e44d` | `+540/-73` | `+134/-11` | Unknown | First atomic runtime-representation replacement; later scope work should not be compared as if it were a small local semantic clause. |
