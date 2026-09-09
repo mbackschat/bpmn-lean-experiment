@@ -119,6 +119,7 @@ import BpmnSemantics.SemanticProcess.InternalTransitionBatchPublication
 import BpmnSemantics.SemanticProcess.InternalTransitionCanonicalBatchPublication
 import BpmnSemantics.FiniteInternalArmingConformance
 import BpmnSemantics.FiniteInternalTransitionConformance
+import BpmnSemantics.MixedLocalControlClosureConformance
 import BpmnSemantics.InternalClosureAtomicityConformance
 
 /-! Root of the BPMN semantic contract library.

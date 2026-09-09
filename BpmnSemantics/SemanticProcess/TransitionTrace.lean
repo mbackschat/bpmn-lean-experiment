@@ -1,4 +1,5 @@
 import BpmnSemantics.SemanticProcess.TransitionRecord
+import BpmnSemantics.SemanticProcess.InternalTransitionPublication
 import BpmnSemantics.SemanticProcess.InternalCommutation
 import BpmnSemantics.SemanticProcess.InternalPreparedArming
 
@@ -150,17 +151,17 @@ theorem internalPublicationPair_defined (program : Program)
   cases resultEq
   exact ⟨footprintEq, recordEq, lifecycleEq⟩
 
-private def prependPublicationPairs (heads : Option (List InternalPublicationPair))
+private def prependTransitionPublications
+    (heads : List InternalCommutation.InstantiatedInternalTransitionPublication)
     (records : Option (List InternalTransitionRecord))
     (lifecycles : Option (List UnnumberedFlowNodeOccurrenceDelta)) :
     Option (List InternalTransitionRecord) ×
       Option (List UnnumberedFlowNodeOccurrenceDelta) :=
-  match heads, records, lifecycles with
-  | some pairs, some records, some lifecycles =>
-      let ordered := canonicalPublicationPairs pairs
-      (some (ordered.map (·.record) ++ records),
-        some (ordered.map (·.lifecycle) ++ lifecycles))
-  | _, _, _ => (none, none)
+  match records, lifecycles with
+  | some records, some lifecycles =>
+      (some (heads.map (·.record) ++ records),
+        some (heads.map (·.lifecycle) ++ lifecycles))
+  | _, _ => (none, none)
 
 /-- Execute bounded closure while retaining the selected operation and dynamic owner at each step. -/
 private def closeSupportedTraced :
@@ -190,20 +191,23 @@ private def closeSupportedTraced :
       | first :: second :: remaining =>
           let transitions := first :: second :: remaining
           let operations := transitions.map (·.1)
-          match InternalCommutation.prepareInternalArmingBatch? program state operations with
+          match InternalCommutation.prepareInternalTransitionBatch? program state operations with
           | some prepared =>
             if operations.length > fuel + 1 then
               { state, hitBound := true, ambiguousChoice := false,
                 records := none, lifecycles := none }
             else
-              match fireInternalBatch? program commandId state prepared with
+              match (do
+                let instanceId ← hostingInstanceId? state
+                InternalCommutation.acceptedPreparedTransitionBatch? program instanceId commandId
+                  transitionIndex state prepared) with
               | none =>
                   { state, hitBound := false, ambiguousChoice := true,
                     records := none, lifecycles := none }
-              | some batch =>
+              | some (successor, publications) =>
                   let closed := closeSupportedTraced (fuel - (remaining.length + 1))
-                    program commandId (transitionIndex + operations.length) batch.state
-                  let paired := prependPublicationPairs (some batch.publications)
+                    program commandId (transitionIndex + operations.length) successor
+                  let paired := prependTransitionPublications publications
                     closed.records closed.lifecycles
                   { closed with records := paired.1, lifecycles := paired.2 }
           | none =>
