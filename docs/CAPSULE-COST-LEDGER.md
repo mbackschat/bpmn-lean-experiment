@@ -499,6 +499,24 @@ On 2026-09-09, immutable commit `5a335c21673f97f6b993755e5804b4dfa0d62f5b` suppl
 
 Every retained command exited zero with zero controlled memory events, pressure totals, and swap. The source-bound rows update [the executable module-cost record](../scripts/lean-module-cost.ts); none is near-cap. The mixed witness consumes quantified arbitrary-permutation laws instead of repeatedly reducing complete executions. These measurements establish resource acceptance at this proof checkpoint, not production integration or a performance trend.
 
+#### Mixed local-control production calibration
+
+On 2026-09-09, immutable commit `cbb78a1179031d02a7edd99f6ced70d6872fe76c` supplied the read-only archive for the new production-closure example, four direct batch/publication consumers, and all four standing-watch consumers. All 394 archived root Lean/build inputs match both that commit and the measured sources. The pinned image, one CPU/thread, no network, unchanged 3 GiB ceiling, and no-additional-swap policy remain fixed. Each measurement retained warm dependencies and moved aside only the target's eight generated products inside the container; every retained invocation explicitly rebuilt the named target.
+
+| Module | Elapsed | GNU RSS | Cgroup peak | Output SHA-256 |
+|---|---:|---:|---:|---|
+| `MixedLocalControlClosureConformance` | 32.32 s | 1,567,812 KiB | 1,846,767,616 bytes | `9b2c3a052b1da8e299e7d58015f2977c10aaaaa431eb7ebdd5e235846e767219` |
+| `FiniteInternalArmingConformance` | 9.35 s | 1,343,692 KiB | 1,026,576,384 bytes | `fb7ca9aa01113ca532912dea62aba1995296d2eb5839b85df8752f554db5e684` |
+| `InternalClosureAtomicityConformance` | 14.90 s | 1,261,436 KiB | 926,498,816 bytes | `5398eb623487676b94c9a620d9af81ec03ab5ff46351165160252fcd6bb8bae8` |
+| `CommittedExecutionPublicationConformance` | 17.13 s | 1,478,996 KiB | 1,154,965,504 bytes | `755a7ee59e885d30384f9754890e9dc0eab71e987aebe3b5d9d105b2f3f04cf8` |
+| `InternalCommutationConformance` | 9.83 s | 1,269,404 KiB | 918,433,792 bytes | `28f74973a309536e8bae22e0ffb716df5ada66b9df51c7f0a386e94d685ef7ad` |
+| `CallActivityConformance` | 23.67 s | 1,355,584 KiB | 1,058,447,360 bytes | `361fa030d47a71a62ee3f35ddd41dfd566f9d42e90ddc4ec10b58e199da3a972` |
+| `SequentialMultiInstanceProgramBindingConformance` | 38.62 s | 1,557,084 KiB | 1,285,394,432 bytes | `93cb6533898775133bf32dc2bd64a124a7e60a8df608599590482be25b56b9ac` |
+| `TimerStartConformance` | 27.30 s | 1,422,720 KiB | 1,128,316,928 bytes | `6af9205208545787c136375a8a971d5f294330e6ed3dc7a45df66c4cd68b5657` |
+| `TerminateEndEventConformance` | 43.32 s | 1,612,012 KiB | 1,368,268,800 bytes | `2bf6c7b135ecc54703192599c752ad0f6a1b7a07649f4caba6c1f2914da20882` |
+
+Every retained command exited zero with zero controlled memory events, pressure totals, and swap. None reaches the near-cap threshold; [the executable module-cost record](../scripts/lean-module-cost.ts) binds every row to the immutable source. Elapsed readings include host contention and source-page faults and establish no performance trend. The complete native Lean gate also passes on these production sources; independent production review and complete repository verification remain separate obligations.
+
 | Increment | Boundary | Code | Documentation | Elapsed | Comparison consequence |
 |---|---|---:|---:|---|---|
 | [Scoped runtime data](capsules/SCOPED-DATA-SPEC.md) | `08d8b84..3b2e44d` | `+540/-73` | `+134/-11` | Unknown | First atomic runtime-representation replacement; later scope work should not be compared as if it were a small local semantic clause. |
