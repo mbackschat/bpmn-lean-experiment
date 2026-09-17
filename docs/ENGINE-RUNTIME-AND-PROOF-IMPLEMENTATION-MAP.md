@@ -40,6 +40,8 @@ The family map owns the independently closure-reviewed Activity boundary Message
 
 The approved [selected-join checkpoint](INTERNAL-COMMUTATION-PROPOSAL.md#selected-join-dependency-checkpoint) implements TypeScript dependencies and Lean readiness frames.
 
+TypeScript [scope-creation preparation](INTERNAL-COMMUTATION-PROPOSAL.md#scope-creation-preparation-prerequisite) awaits acceptance; Lean laws and regional batching remain open.
+
 The independently approved first boundary Compensation retention checkpoint implements completed-Activity representation and pure transition preparation.
 
 The Compensation Event Sub-Process snapshot checkpoint is independently approved. Lean and the independently written TypeScript core validate canonical parent/handler declarations and hidden provisional/promoted context records, reserve on root/child entry, promote from the deciding pre-completion context, purge unsuccessful or unselected-root records, retain selected-root terminal ownership, and refuse count/byte overflow with exact pre-stimulus state and no trace or publication. Closure uses a focused three-arm attempt path with quantified exact delegation for declaration-free Programs; Lean separately proves aggregate state validity for every applied child entry, bounded-child entry, and scope completion successor.

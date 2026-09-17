@@ -152,7 +152,7 @@ test("separates sibling scope entries and catches a repeated child definition", 
   ));
   assert.equal(independent(preparedA.footprint, preparedB.footprint), true);
 
-  const collidingB = { ...enterB, childScopeId: childScopeA };
+  const collidingB = { ...enterB, origin: enterA.origin, childScopeId: childScopeA };
   const collidingProgram = scopeCreationProgram([enterA, collidingB]);
   const collidingPrepared = requirePrepared(deriveInternalEnterScopePreparation(
     collidingProgram,
@@ -334,7 +334,7 @@ function scopeCreationProgram(
       ...childScopes.map((id) => ({
         id,
         parentScopeId: rootScopeId,
-        originElementId: id,
+        originElementId: operations.find(({ childScopeId }) => childScopeId === id)!.origin.elementId,
       })),
     ],
     operationScopes: operations.map(({ id: operationId }) => ({

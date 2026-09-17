@@ -9,7 +9,15 @@ import type {
   InternalTransitionStateAtom,
   InternalTransitionStateFootprint,
 } from "./internal-transition-footprint.js";
-import { compensationSnapshotReservationAtoms } from "./internal-transition-footprint.js";
+import { InternalPublicationTemplateAnchorKind } from "./internal-publication-template.js";
+import type { InternalPublicationTemplate } from "./internal-publication-template.js";
+import {
+  applyInternalScopeCreationPatch,
+  deriveInternalScopeCreationPositionDelta,
+  InternalScopeCreationPatchKind,
+} from "./internal-transition-scope-creation-patch.js";
+import type { InternalScopeCreationPatch } from "./internal-transition-scope-creation-patch.js";
+import { SemanticTransitionKind } from "./semantic-transition-trace.js";
 import { InternalTransitionStateAtomKind } from "./internal-transition-footprint-vocabulary.js";
 import {
   affectedTokenBucketsAreExact,
@@ -57,10 +65,41 @@ export type InternalScopeCreationResult = Readonly<
 
 export type PreparedInternalScopeCreation = Readonly<{
   alternative: InternalOperationAlternative;
+  operation: InternalScopeCreationOperation;
   owner: ScopeOccurrenceId;
   creation: InternalScopeCreationResult;
   footprint: InternalTransitionStateFootprint;
+  patch: InternalScopeCreationPatch;
+  publicationTemplate: InternalPublicationTemplate;
 }>;
+
+export type InternalScopeCreationOperation = Extract<SemanticOperation, {
+  kind: SemanticOperationKind.EnterScope | SemanticOperationKind.InvokeProcess;
+}>;
+
+export function deriveInternalScopeCreationPreparation(
+  program: SemanticProcessProgram,
+  state: RuntimeState,
+  operation: InternalScopeCreationOperation,
+): PreparedInternalScopeCreation | null {
+  switch (operation.kind) {
+    case SemanticOperationKind.EnterScope:
+      return deriveInternalEnterScopePreparation(program, state, operation);
+    case SemanticOperationKind.InvokeProcess:
+      return deriveInternalInvokeProcessPreparation(program, state, operation);
+  }
+}
+
+export function applyPreparedInternalScopeCreation(
+  program: SemanticProcessProgram,
+  state: RuntimeState,
+  prepared: PreparedInternalScopeCreation,
+): RuntimeState | null {
+  const current = deriveInternalScopeCreationPreparation(program, state, prepared.operation);
+  // INTERNAL-COMMUTATION requires the complete retained frame, including issuance and publication.
+  if (current === null || JSON.stringify(current) !== JSON.stringify(prepared)) return null;
+  return applyInternalScopeCreationPatch(state, prepared.patch);
+}
 
 /** Derives one exact ordinary child-scope creation without applying it. */
 export function deriveInternalEnterScopePreparation(
@@ -83,10 +122,6 @@ export function deriveInternalEnterScopePreparation(
   ) {
     return null;
   }
-  const snapshotAtoms = compensationSnapshotReservationAtoms(program, {
-    id: selected.child,
-    parent: owner,
-  });
   return prepareScopeCreation(
     program,
     state,
@@ -103,7 +138,7 @@ export function deriveInternalEnterScopePreparation(
       kind: InternalTransitionStateAtomKind.Activation,
       occurrenceKind: InternalOccurrenceKind.Scope,
       elementId: operation.childScopeId,
-    }, ...snapshotAtoms],
+    }],
   );
 }
 
@@ -177,12 +212,34 @@ function prepareScopeCreation(
     sameScopeOccurrence(id, owner)
   );
   const ownerRecord = owners[0];
+  const processId = candidateProcessId(program, state, owner);
+  const definitions = program.definitionScopes.filter(({ id }) => id === created.definitionScopeId);
+  const definition = definitions[0];
+  const counters = operation.kind === SemanticOperationKind.EnterScope ? state.scopeActivations : state.callActivations;
+  const elementId = operation.kind === SemanticOperationKind.EnterScope ? operation.childScopeId : operation.origin.elementId;
+  const selectedCounters = counters.filter((counter) => counter.elementId === elementId);
+  const previous = selectedCounters[0]?.count ?? 0;
   if (
     state.control.kind !== ControlStateKind.Running ||
+    program.compensationEventSubProcessSnapshots !== undefined ||
+    program.operations.filter(({ id }) => id === operation.id).length !== 1 ||
+    program.definitionScopes.some((candidate, index, all) =>
+      candidate.id.length === 0 || candidate.originElementId.length === 0 ||
+      all.findIndex(({ id }) => id === candidate.id) !== index ||
+      all.findIndex(({ originElementId }) => originElementId === candidate.originElementId) !== index
+    ) ||
+    operation.origin.elementId.length === 0 ||
+    !Number.isSafeInteger(state.logicalTimeMs) || state.logicalTimeMs < 0 ||
+    !Number.isSafeInteger(owner.activation) || owner.activation <= 0 || owner.processInstanceId.length === 0 ||
+    selectedCounters.length > 1 || !Number.isSafeInteger(previous) || previous < 0 ||
+    !Number.isSafeInteger(previous + 1) ||
+    definitions.length !== 1 || definition === undefined ||
+    definition.parentScopeId !== (operation.kind === SemanticOperationKind.EnterScope ? owner.definitionScopeId : null) ||
+    definition.originElementId !== (operation.kind === SemanticOperationKind.EnterScope ? operation.origin.elementId : operation.calledProcessId) ||
     owners.length !== 1 ||
     ownerRecord === undefined ||
     !operationIsSelectedFromProgram(program, operation, owner) ||
-    candidateProcessId(program, state, owner) === null ||
+    processId === null ||
     !affectedTokenBucketsAreExact(state, owner, [input], []) ||
     !tokenBucketIsAbsent(state, created, entry)
   ) {
@@ -235,12 +292,34 @@ function prepareScopeCreation(
     ...creationAtoms,
     { kind: InternalTransitionStateAtomKind.LogicalTime },
   ]);
-  return reads === null || writes === null
+  const scope = { id: created, parent: operation.kind === SemanticOperationKind.EnterScope ? owner : null };
+  const counter = { elementId, count: previous + 1 };
+  const patch: InternalScopeCreationPatch = creation.kind === InternalScopeCreationResultKind.ChildScope
+    ? { kind: InternalScopeCreationPatchKind.ChildScope, owner, input, entry, scope, counter }
+    : { kind: InternalScopeCreationPatchKind.CalledProcess, owner, input, entry, scope, counter, record: creation.record };
+  const positionDelta = deriveInternalScopeCreationPositionDelta(program, patch);
+  const alternative = internalOperationAlternative(operation.id);
+  const anchor = creation.kind === InternalScopeCreationResultKind.ChildScope
+    ? { kind: InternalPublicationTemplateAnchorKind.Scope, id: creation.child } as const
+    : { kind: InternalPublicationTemplateAnchorKind.CallActivity, id: creation.record.id } as const;
+  return reads === null || writes === null || positionDelta === null
     ? null
     : {
-      alternative: internalOperationAlternative(operation.id),
+      alternative,
+      operation,
       owner,
       creation,
       footprint: { reads, writes },
+      patch,
+      publicationTemplate: {
+        alternative,
+        record: {
+          logicalTimeMs: state.logicalTimeMs,
+          transition: { kind: SemanticTransitionKind.InternalOperation, operationId: operation.id,
+            operationKind: operation.kind, origin: operation.origin, owner },
+          positionDelta,
+        },
+        lifecycle: { started: [{ anchor, processId, elementId: operation.origin.elementId, owner }], ended: [] },
+      },
     };
 }
