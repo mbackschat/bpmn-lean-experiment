@@ -8,10 +8,8 @@ import { pathToFileURL } from "node:url";
 
 import {
   derivedNearCapModules,
-  formatLeanModuleCostViolation,
   leanModuleCostBaseline,
   leanModuleCostRecord,
-  leanModuleCostViolations,
   measurementCommitFor,
   nearCapThresholdKib,
   type LeanModuleCostBaseline,
@@ -19,6 +17,10 @@ import {
   type LeanModuleCostViolation,
   type LeanModuleMeasurementSourceMismatch,
 } from "./lean-module-cost.ts";
+import {
+  formatLeanModuleCostViolation,
+  leanModuleCostViolations,
+} from "./lean-module-cost-comparison.ts";
 import {
   formatLeanMemoryAcceptanceViolation,
   leanMemoryAcceptanceRecord,
