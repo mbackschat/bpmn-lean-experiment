@@ -40,7 +40,7 @@ The family map owns the independently closure-reviewed Activity boundary Message
 
 The approved [selected-join checkpoint](INTERNAL-COMMUTATION-PROPOSAL.md#selected-join-dependency-checkpoint) implements TypeScript dependencies and Lean readiness frames.
 
-TypeScript [scope-creation preparation](INTERNAL-COMMUTATION-PROPOSAL.md#scope-creation-preparation-prerequisite) is approved; Lean review and regional batching remain open.
+Approved [scope-creation prerequisites](INTERNAL-COMMUTATION-PROPOSAL.md#scope-creation-preparation-prerequisite): TypeScript preparation and Lean selector/refinement; regional batching remains open.
 
 The independently approved first boundary Compensation retention checkpoint implements completed-Activity representation and pure transition preparation.
 
