@@ -24,6 +24,8 @@ inductive InternalActivationKind where
   | timer
   | effect
   | activity
+  | scope
+  | call
   deriving Repr, DecidableEq
 
 def InternalWaitKind.activationKind : InternalWaitKind → InternalActivationKind
@@ -48,6 +50,8 @@ inductive InternalStateAtom where
   | activityBodyTaskClaim (occurrence : OccurrenceId)
   | selectedBranch (owner : ScopeOccurrenceId) (selectionKey : String)
   | selectedBranchOwners (selectionKey : String)
+  | scopeParent (occurrence : ScopeOccurrenceId) (parent : Option ScopeOccurrenceId)
+  | callAssociation (record : CalledProcessOccurrence)
   deriving Repr, DecidableEq
 
 structure InternalPositionDelta where
@@ -109,6 +113,8 @@ def activationKindRank : InternalActivationKind → Nat
   | .timer => 2
   | .effect => 3
   | .activity => 4
+  | .scope => 5
+  | .call => 6
 
 def scopeBefore (left right : ScopeOccurrenceId) : Bool :=
   if left.processInstanceId ≠ right.processInstanceId then
@@ -146,6 +152,8 @@ def stateAtomRank : InternalStateAtom → Nat
   | .tokenOwners _ => 12
   | .selectedBranch _ _ => 13
   | .selectedBranchOwners _ => 14
+  | .scopeParent _ _ => 15
+  | .callAssociation _ => 16
 
 def stateAtomBefore (left right : InternalStateAtom) : Bool :=
   if stateAtomRank left ≠ stateAtomRank right then
@@ -162,6 +170,19 @@ def stateAtomBefore (left right : InternalStateAtom) : Bool :=
         if leftOwner ≠ rightOwner then scopeBefore leftOwner rightOwner
         else leftKey < rightKey
     | .selectedBranchOwners left, .selectedBranchOwners right => left < right
+    | .scopeParent left leftParent, .scopeParent right rightParent =>
+        if left ≠ right then scopeBefore left right
+        else match leftParent, rightParent with
+          | none, some _ => true
+          | some left, some right => scopeBefore left right
+          | _, _ => false
+    | .callAssociation left, .callAssociation right =>
+        if left.id ≠ right.id then occurrenceBefore left.id right.id
+        else if left.caller ≠ right.caller then scopeBefore left.caller right.caller
+        else if left.calledProcessId ≠ right.calledProcessId then
+          left.calledProcessId.value < right.calledProcessId.value
+        else if left.calledRoot ≠ right.calledRoot then scopeBefore left.calledRoot right.calledRoot
+        else left.returnOperationId.value < right.returnOperationId.value
     | .logicalTime, .logicalTime => false
     | .activation leftKind leftElement, .activation rightKind rightElement =>
         if leftKind ≠ rightKind then activationKindRank leftKind < activationKindRank rightKind

@@ -267,7 +267,7 @@ The complete `what-binds` inventory requires [`implementation-status-owner:ENGIN
 | [Lean trace closure](../../BpmnSemantics/SemanticProcess/TransitionTrace.lean) | 364 | refusal rollback/no trace |
 | [Lean command admission](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean) | 97 | map root-capacity refusal to `Rejected`, never `semanticFailure`, and reject an invalid committed post-state |
 | [Lean census](../../BpmnSemantics/SemanticProcess/InternalCommutationCensus.lean) | 652 | new state field |
-| [Lean footprint core](../../BpmnSemantics/SemanticProcess/InternalCommutationCore.lean) | 305 | snapshot atom/footprint |
+| [Lean footprint core](../../BpmnSemantics/SemanticProcess/InternalCommutationCore.lean) | 284 | snapshot atom/footprint |
 | [Lean Program decoder](../../BpmnSemantics/SemanticProcessJson/Program.lean) | 87 | focused decoder |
 | [Lean commutation preservation](../../BpmnSemantics/SemanticProcess/InternalCommutationRuntimePreservation.lean) | 35 | extract the snapshot frame before further growth |
 | [Lean correlation preservation](../../BpmnSemantics/SemanticProcess/MessageKeyCorrelationPreservation.lean) | 349 | frame new invariant |
