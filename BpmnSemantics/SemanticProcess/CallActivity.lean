@@ -19,7 +19,7 @@ def callRecordBefore
     else left.id.activation < right.id.activation
   else false
 
-private def insertCallRecord (record : CalledProcessOccurrence) :
+def insertCallRecord (record : CalledProcessOccurrence) :
     List CalledProcessOccurrence → List CalledProcessOccurrence
   | [] => [record]
   | current :: rest =>
@@ -42,7 +42,7 @@ private def sameCallIdentity (record : CalledProcessOccurrence)
     (caller : ScopeOccurrenceId) (elementId : NodeId) : Bool :=
   record.caller = caller && record.id.elementId.value = elementId.value
 
-private def processInstanceClosureWithin
+def processInstanceClosureWithin
     (records : List CalledProcessOccurrence) (seed : List SemanticId) :
     Nat → List SemanticId
   | 0 => seed
