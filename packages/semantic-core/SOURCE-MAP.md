@@ -171,6 +171,8 @@ This contributor map assigns source-file responsibilities inside `@bpmn-lean/sem
 
 Tests under [`test/`](test/) mirror these owners by contract or semantic family. The registry-driven [runtime-state preservation lane](../differential/test/runtime-state-preservation.test.ts) sits at the differential composition boundary so compiling every registered program does not add parser or catalog dependencies to this package. The [testing specification](../../docs/TESTING-SPEC.md) selects the applicable focused and repository gates.
 
+The [Call pairing tests](test/call-activity-pairing.test.ts) distinguish a bijection from equal invoke/return counts using duplicated and distinct invoke identities that share one return while leaving another unclaimed.
+
 The [canonical token storage tests](test/canonical-token-storage.test.ts) check raw complete-key order, multiplicity, and admitted execution prefixes. Position-valid reversed controls isolate the aggregate order check; separate projection controls retain duplicate-bucket and nonpositive-multiplicity refusal.
 
 The [canonical scope storage tests](test/canonical-scope-storage.test.ts) check complete occurrence-key order and Scope, Call, and event-race counter order. Projectable reversed scope controls isolate aggregate refusal; ordinary child entry/removal and event-race arming/winner paths retain exact occurrence identity and high-water counters.

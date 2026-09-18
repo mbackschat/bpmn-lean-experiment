@@ -38,7 +38,7 @@ theorem callOperationsPaired_invoke_input_scope_ne_calledRoot
   · split at paired
     · next entryRoot roots =>
         simp only [Bool.and_eq_true] at paired
-        have selected := paired.2
+        have selected := paired.1.2
         rw [List.all_filterMap] at selected
         have selected := List.all_eq_true.mp selected
           (.invokeProcess id origin input calledProcessId calledRoot calledEntry returnOperationId)

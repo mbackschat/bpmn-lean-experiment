@@ -78,7 +78,7 @@ def callOperationsPaired (program : Program) : Bool :=
           scope.originElementId.value = program.processId.value with
     | [entryRoot] =>
         invokes.length = returns.length &&
-          invokes.all fun invoke =>
+          (invokes.all fun invoke =>
             match returns.filter fun returned =>
                 returned.id = invoke.returnOperationId with
             | [returned] =>
@@ -97,7 +97,7 @@ def callOperationsPaired (program : Program) : Bool :=
                       returned.calledProcessId = invoke.calledProcessId &&
                       returned.calledRoot = invoke.calledRoot
                 | _ => false
-            | _ => false
+            | _ => false)
           && returns.all fun returned =>
             (invokes.filter fun invoke =>
               invoke.returnOperationId = returned.id).length = 1

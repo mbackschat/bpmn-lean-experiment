@@ -12,7 +12,7 @@ These mechanisms constrain how runtime state is admitted, who owns an Activity o
 
 ## Implemented
 
-The mechanisms with a section here are the runtime-state well-formedness predicate, Activity occurrence ownership, Compensation Activity retention, and Activity body turnover. Each section names its own rules, evidence lanes, and absences, and is the authority for that mechanism rather than a summary of one.
+The mechanisms with a section here are the runtime-state well-formedness predicate, Call declaration pairing, Activity occurrence ownership, Compensation Activity retention, and Activity body turnover. Each section names its own rules, evidence lanes, and absences, and is the authority for that mechanism rather than a summary of one.
 
 ## Explicitly absent
 
@@ -53,6 +53,10 @@ The independently approved [complete scope-creation preparation frames](INTERNAL
 The independently approved [scope-creation commutation laws](INTERNAL-COMMUTATION-PROPOSAL.md#scope-creation-preparation-prerequisite) derive exact complete-state equality, both unchanged preparations, and every intermediate/final validity result from the same predecessor premises for all four child/Call pairings. Canonical Call-list equality requires the existing association predicate's unique caller/element anchors; an equal-key/different-payload witness rejects an unrestricted sorting claim. The complete Lean gate, [immutable calibration](CAPSULE-COST-LEDGER.md#scope-creation-commutation-calibration), and clean complete repository verification pass under the [review receipt](INTERNAL-COMMUTATION-PROPOSAL.md#independent-cold-review-receipt). Accepted publication and production scope/region batching remain open.
 
 The independently approved [scope-creation control-position law](INTERNAL-COMMUTATION-PROPOSAL.md#scope-creation-preparation-prerequisite) derives exact actual token and scope deltas from predecessor validity and successful preparation, including different token owners and complete scope provenance. Constructed kernel witnesses distinguish repeated token units, wrong produced ownership, and wrong scope parentage. The complete Lean gate, [immutable calibration](CAPSULE-COST-LEDGER.md#scope-creation-control-position-publication-calibration), and clean complete repository verification pass under the [review receipt](INTERNAL-COMMUTATION-PROPOSAL.md#independent-cold-review-receipt). Accepted lifecycle publication and production batching remain open.
+
+## Call declaration pairing
+
+Both standalone [Call pairing predicates](capsules/CALL-ACTIVITY-SPEC.md#checked-graph-and-semantic-process-il) enforce reverse uniqueness independently of equal invoke/return counts. Lean and TypeScript witnesses reject balanced many-to-one pairings with duplicated or distinct invoke identities. Both constructed populations also fail full Lean Program admission; no admitted-program bypass or additional Call capability is established. The Lean expression-grouping correction preserves the existing scope-definition separation theorem's premises and conclusion.
 
 ## Compensation Activity retention
 
