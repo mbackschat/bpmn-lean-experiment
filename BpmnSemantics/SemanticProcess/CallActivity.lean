@@ -26,7 +26,7 @@ private def insertCallRecord (record : CalledProcessOccurrence) :
       if callRecordBefore record current then record :: current :: rest
       else current :: insertCallRecord record rest
 
-private def sortCallRecords :
+def sortCallRecords :
     List CalledProcessOccurrence → List CalledProcessOccurrence
   | [] => []
   | record :: rest => insertCallRecord record (sortCallRecords rest)

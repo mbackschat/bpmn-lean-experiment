@@ -806,7 +806,7 @@ def timerActivationCount (state : RuntimeState) (elementId : NodeId) :
   elementActivationCount (state.timerActivations.map fun value =>
     (value.elementId, value.count)) elementId
 
-private def scopeActivationCount (state : RuntimeState)
+def scopeActivationCount (state : RuntimeState)
     (scopeId : DefinitionScopeId) : Nat :=
   (state.scopeActivations.find? fun activation =>
     decide (activation.scopeId = scopeId)).map (·.count) |>.getD 0
