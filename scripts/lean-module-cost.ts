@@ -127,6 +127,7 @@ export const leanModuleCostRecord = {
   },
   nearCapModules: [],
   rows: [
+    { module: "BpmnSemantics.InternalScopeCreationFrameConformance", peakResidentKib: 1297740, elapsedSeconds: 23.24, measuredAtCommit: "ba020ca9" },
     { module: "BpmnSemantics.ScopeCreationCompensationValidityConformance", peakResidentKib: 1049176, elapsedSeconds: 4.40, measuredAtCommit: "52a84367" },
     { module: "BpmnSemantics.InternalScopeCreationValidityConformance", peakResidentKib: 1726820, elapsedSeconds: 12.13, measuredAtCommit: "d7fcdcb0" },
     { module: "BpmnSemantics.InternalScopeCreationPreparationConformance", peakResidentKib: 721184, elapsedSeconds: 1.78, measuredAtCommit: "93cfcbf9" },
