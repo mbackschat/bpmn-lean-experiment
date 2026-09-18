@@ -52,6 +52,8 @@ The independently approved [complete scope-creation preparation frames](INTERNAL
 
 The independently approved [scope-creation commutation laws](INTERNAL-COMMUTATION-PROPOSAL.md#scope-creation-preparation-prerequisite) derive exact complete-state equality, both unchanged preparations, and every intermediate/final validity result from the same predecessor premises for all four child/Call pairings. Canonical Call-list equality requires the existing association predicate's unique caller/element anchors; an equal-key/different-payload witness rejects an unrestricted sorting claim. The complete Lean gate, [immutable calibration](CAPSULE-COST-LEDGER.md#scope-creation-commutation-calibration), and clean complete repository verification pass under the [review receipt](INTERNAL-COMMUTATION-PROPOSAL.md#independent-cold-review-receipt). Accepted publication and production scope/region batching remain open.
 
+The [scope-creation control-position law](INTERNAL-COMMUTATION-PROPOSAL.md#scope-creation-preparation-prerequisite) derives exact actual token and scope deltas from predecessor validity and successful preparation, including different token owners and complete scope provenance. Constructed kernel witnesses distinguish repeated token units, wrong produced ownership, and wrong scope parentage. Accepted lifecycle publication and production batching remain open.
+
 ## Compensation Activity retention
 
 The [boundary-handler retention proposal](capsules/COMPENSATION-BOUNDARY-HANDLER-RETENTION-PROPOSAL.md) owns one hidden root-scoped completed-Activity register. It adds no source shape, operation kind, profile, scenario, or public field.

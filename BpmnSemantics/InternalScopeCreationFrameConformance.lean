@@ -1,6 +1,7 @@
 import BpmnSemantics.SemanticProcess.DefinitionBindingValidation
 import BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation
 import BpmnSemantics.SemanticProcess.InternalLocalControlFootprintCommutation
+import BpmnSemantics.SemanticProcess.ControlPositionProjection
 
 /-! # Independent scope-creation preparation witnesses
 
@@ -179,6 +180,56 @@ theorem child_call_complete_states_commute_and_remain_valid :
 
 theorem call_call_complete_states_commute_and_remain_valid :
     pairCommutes (program .called .called) = true := by decide +kernel
+
+private def positionPublicationMatches (program : Program) (state : RuntimeState)
+    (element : NodeId) : Bool :=
+  match preparation program state element with
+  | none => false
+  | some prepared => controlPositionDelta? program owner.processInstanceId state
+      (prepared.selection.apply state) == some prepared.publicationTemplate.positionDelta
+
+theorem child_creation_publishes_exact_position_delta :
+    positionPublicationMatches (program .child .child) before ⟨"C_Left"⟩ = true := by
+  decide +kernel
+
+theorem call_creation_publishes_exact_position_delta :
+    positionPublicationMatches (program .called .called) before ⟨"C_Left"⟩ = true := by
+  decide +kernel
+
+private def repeatedInput : RuntimeState :=
+  { before with tokens := addToken before.tokens (flowControlPlaceId ⟨"f02"⟩) owner }
+
+theorem repeated_child_input_retains_one_token_and_publishes_one_consumption :
+    runtimeStateWellFormed (program .child .child) owner.processInstanceId repeatedInput = true ∧
+    positionPublicationMatches (program .child .child) repeatedInput ⟨"C_Left"⟩ = true ∧
+    (match preparation (program .child .child) repeatedInput ⟨"C_Left"⟩ with
+     | none => false
+     | some prepared =>
+         ((prepared.selection.apply repeatedInput).tokens.filter fun token =>
+           token.placeId == flowControlPlaceId ⟨"f02"⟩ && token.owner == owner).length == 1 &&
+         prepared.publicationTemplate.positionDelta.consumedTokens ==
+           [{ sequenceFlowId := ⟨"f02"⟩, owner, multiplicity := 1 }]) = true := by
+  constructor
+  · decide +kernel
+  · constructor <;> decide +kernel
+
+theorem call_creation_still_refuses_repeated_input :
+    preparation (program .called .called) repeatedInput ⟨"C_Left"⟩ = none := by
+  decide +kernel
+
+theorem child_publication_distinguishes_produced_owner_and_scope_parent :
+    (match preparation (program .child .child) before ⟨"C_Left"⟩ with
+     | none => false
+     | some prepared =>
+         let delta := prepared.publicationTemplate.positionDelta
+         let actual := controlPositionDelta? (program .child .child) owner.processInstanceId
+           before (prepared.selection.apply before)
+         let wrongOwner := { delta with
+           producedTokens := delta.producedTokens.map (fun token => { token with owner }) }
+         let wrongParent := { delta with
+           enteredScopes := delta.enteredScopes.map (fun scope => { scope with parent := none }) }
+         actual != some wrongOwner && actual != some wrongParent) = true := by
+  decide +kernel
 
 theorem equal_call_sort_keys_do_not_identify_retained_payloads :
     (match preparation (program .called .called) before ⟨"C_Left"⟩ with
