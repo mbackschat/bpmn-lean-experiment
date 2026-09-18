@@ -587,6 +587,26 @@ The immutable run exited zero in 2.23 seconds at 658,084 KiB GNU RSS and 905,416
 
 The first bounded working-tree build also rebuilt stale dependencies: it passed in 52.84 seconds at 667,652 KiB GNU RSS and 946,212,864 cgroup bytes, with zero controlled memory events, pressure totals, and swap. The complete native Lean gate passed all 371 jobs in 1,324.61 seconds on identical Lean/build inputs. Existing evaluator files differ only in the visibility of the shared scope-counter reader and Call sorter; their bodies are unchanged. These results add no new full-library memory-acceptance or independent semantic-review claim.
 
+#### Scope-creation preparation calibration
+
+On 2026-09-18, immutable commit `93cfcbf9c34de63dfa745f11815cd1003efd509f` supplied the new preparation witness, four commutation/batch consumers, and all four standing-watch consumers. All 402 archived Lean/build inputs match that commit and were checked before and after each measurement. The pinned image, one CPU/thread, network isolation, 3 GiB ceiling, and zero swap allowance remain unchanged. After warming the dependency closure, each fresh container rebuilt only its named target with its eight generated products moved aside. The measured invocation was `/usr/bin/time -v timeout --kill-after=10s 1800 ./scripts/lake.sh build <target>`.
+
+| Module | Elapsed | GNU RSS | Cgroup peak | Build-output SHA-256 |
+|---|---:|---:|---:|---|
+| `InternalScopeCreationPreparationConformance` | 1.78 s | 721,184 KiB | 316,637,184 bytes | `f93691c23995dc4c0c82915bc85f102060d4414947506458225cc837cd2fe2c5` |
+| `InternalCommutationConformance` | 9.16 s | 1,271,768 KiB | 928,616,448 bytes | `05d9425e321f1c125aac4d367e3f6b4d96e0b3f77dfa5eeebfcba3a798fc35d4` |
+| `FiniteInternalArmingConformance` | 8.83 s | 1,344,100 KiB | 1,000,226,816 bytes | `6b2671644cfada0cbccb9da136ebbb76a042e16a4b4853c57a49abac5e25bc5a` |
+| `FiniteInternalTransitionConformance` | 6.77 s | 1,160,420 KiB | 797,130,752 bytes | `920baa1bdab4ccf6c6cc245c8b832e2e6abfc879c222a55876ef9e33d197622a` |
+| `MixedLocalControlClosureConformance` | 28.99 s | 1,570,176 KiB | 1,365,401,600 bytes | `203f1c94a6c728c539439d2db6baa8bfd4e5d9e93e38bdb324e67ccf77fa4075` |
+| `CallActivityConformance` | 24.50 s | 1,362,324 KiB | 1,072,025,600 bytes | `4e709467c35d3c459368a5e00dfb58a79a67c1f47ea5a15d56361078738a9830` |
+| `SequentialMultiInstanceProgramBindingConformance` | 27.41 s | 1,557,692 KiB | 1,273,290,752 bytes | `f7536ef452b495907da4800198863b2ac02323b8b7487d9dcdf0b28851f19ef0` |
+| `TimerStartConformance` | 21.83 s | 1,428,084 KiB | 1,125,556,224 bytes | `4d5111671f5195f697640d39ef4da4ddc2b038d2f9f7cbf10ebb2ea44f3e1acc` |
+| `TerminateEndEventConformance` | 31.22 s | 1,663,504 KiB | 1,381,236,736 bytes | `2a0597c17261b11be62d00bdee182c91f551cc5cbdb71a6a795de2b1b3a292b7` |
+
+Every invocation exited zero, its durable receipt passed the separate assertion, and all controlled memory events, pressure totals, and swaps remained zero. The highest cgroup peak leaves 1,839,988,736 bytes below the hard ceiling; no row reaches the GNU-RSS near-cap threshold. [The executable cost record](../scripts/lean-module-cost.ts) binds all nine measurements to the immutable source. GNU RSS and cgroup charging remain separate series, and elapsed readings establish no performance trend.
+
+The first successful bounded working-tree witness passed in 2.62 seconds at 727,636 KiB GNU RSS and 321,511,424 cgroup bytes with zero events, pressure, and swap. Two earlier fixture-elaboration failures remain retained and are not acceptance evidence. The complete native Lean gate passed all 375 jobs in 1,228.65 seconds on identical Lean/build inputs. This resource-record increment is non-material and governed by module-cost/source binding, cost reproduction, documentation guards, and the complete infrastructure gate; it creates no full-library memory-acceptance or independent semantic-review claim.
+
 | Increment | Boundary | Code | Documentation | Elapsed | Comparison consequence |
 |---|---|---:|---:|---|---|
 | [Scoped runtime data](capsules/SCOPED-DATA-SPEC.md) | `08d8b84..3b2e44d` | `+540/-73` | `+134/-11` | Unknown | First atomic runtime-representation replacement; later scope work should not be compared as if it were a small local semantic clause. |
