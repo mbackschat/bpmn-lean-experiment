@@ -122,6 +122,16 @@ private def pairFrames (program : Program) : Bool :=
         preparation program (left.selection.apply before) ⟨"D_Right"⟩ == some right
   | _, _ => false
 
+private def pairCommutes (program : Program) : Bool :=
+  match preparation program before ⟨"C_Left"⟩, preparation program before ⟨"D_Right"⟩ with
+  | some left, some right =>
+      let leftThenRight := right.selection.apply (left.selection.apply before)
+      let rightThenLeft := left.selection.apply (right.selection.apply before)
+      leftThenRight == rightThenLeft &&
+        runtimeStateWellFormed program owner.processInstanceId leftThenRight &&
+        runtimeStateWellFormed program owner.processInstanceId rightThenLeft
+  | _, _ => false
+
 theorem constructed_pairs_remain_outside_profile_admission :
     programProfileCapabilitiesValid (program .child .child) = false ∧
     programProfileCapabilitiesValid (program .child .called) = false ∧
@@ -160,6 +170,29 @@ theorem child_call_complete_preparations_survive_both_orders :
 
 theorem call_call_complete_preparations_survive_both_orders :
     pairFrames (program .called .called) = true := by decide +kernel
+
+theorem child_child_complete_states_commute_and_remain_valid :
+    pairCommutes (program .child .child) = true := by decide +kernel
+
+theorem child_call_complete_states_commute_and_remain_valid :
+    pairCommutes (program .child .called) = true := by decide +kernel
+
+theorem call_call_complete_states_commute_and_remain_valid :
+    pairCommutes (program .called .called) = true := by decide +kernel
+
+theorem equal_call_sort_keys_do_not_identify_retained_payloads :
+    (match preparation (program .called .called) before ⟨"C_Left"⟩ with
+     | none => false
+     | some prepared =>
+         match prepared.selection.kind with
+         | .child => false
+         | .called record =>
+             let alias := { record with returnOperationId := ⟨"different-return"⟩ }
+             !callRecordBefore record alias && !callRecordBefore alias record &&
+               sortCallRecords [record, alias] != sortCallRecords [alias, record] &&
+               !calledProcessAssociationsValid
+                 { prepared.selection.apply before with calledProcessOccurrences := [record, alias] }) = true := by
+  decide +kernel
 
 theorem child_definition_population_excludes_a_different_occurrence_identity :
     (match preparation (program .child .child) before ⟨"C_Left"⟩ with
