@@ -266,6 +266,7 @@ export const leanModuleCostRecord = {
       measuredAtCommit: "da6e6477",
     },
     { module: "BpmnSemantics.CallActivityConformance", peakResidentKib: 1362324, elapsedSeconds: 24.50, measuredAtCommit: "93cfcbf9" },
+    { module: "BpmnSemantics.CallActivityPairingConformance", peakResidentKib: 1081832, elapsedSeconds: 3.54, measuredAtCommit: "b304150e" },
     {
       module: "BpmnSemantics.SequentialMultiInstanceProgramBindingConformance",
       peakResidentKib: 1557692,

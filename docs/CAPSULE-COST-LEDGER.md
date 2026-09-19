@@ -637,6 +637,12 @@ On 2026-09-18, immutable commit `27d619c0267b1d365129edce2a19931fec91fc14` suppl
 
 The confirmed rebuild exited zero in 53.30 seconds at 1,364,012 KiB GNU RSS and 1,796,804,608 cgroup bytes, with every controlled memory event, pressure total, and swap count zero. Build-output SHA-256 is `916f0656136a50f9d8dd08efd560b447feea86439d4bd8c6fece591b58d340ab`; the durable receipt passed its separate assertion. [The executable cost record](../scripts/lean-module-cost.ts) binds the exact measured source. The first successful bounded working-tree build passed in 46.18 seconds at 1,120,387,072 cgroup bytes after two retained import/syntax failures. The root's complete Lean gate passed all 394 jobs. These measurements establish neither a performance trend nor new full-library memory acceptance. This resource-record increment is non-material; independent semantic review and complete repository verification remain separate.
 
+#### Call pairing calibration
+
+On 2026-09-19, immutable commit `b304150ebab88f047b9e80094d6c5a579a9f8490` supplied `BpmnSemantics.CallActivityPairingConformance`. All 422 archived Lean/build inputs matched the commit and current source before and after measurement. The pinned image, one CPU/thread, network isolation, 3 GiB ceiling, and zero additional swap remain unchanged. After warming the dependency closure, only the target's eight generated products were moved aside; the confirmed isolated rebuild exited zero in 3.54 seconds at 1,081,832 KiB GNU RSS and 701,947,904 cgroup bytes. Every memory event, pressure total, and swap count was zero.
+
+Build-output SHA-256 is `1b2acd871190eb6449a239e8c418dc1c8ba882cf4315e1a41c895cccc164dc73`; the durable receipt passed its separate assertion. [The module-cost guard](../scripts/lean-module-cost.test.ts) requires this missing source-bound row before complete verification. This evidence correction is non-material and leaves semantic review separate. The preceding dependency build passed in 255.55 seconds at 1,770,995,712 cgroup bytes; an earlier container mount failure exited before Lean started. No new full-library memory acceptance is claimed.
+
 | Increment | Boundary | Code | Documentation | Elapsed | Comparison consequence |
 |---|---|---:|---:|---|---|
 | [Scoped runtime data](capsules/SCOPED-DATA-SPEC.md) | `08d8b84..3b2e44d` | `+540/-73` | `+134/-11` | Unknown | First atomic runtime-representation replacement; later scope work should not be compared as if it were a small local semantic clause. |
