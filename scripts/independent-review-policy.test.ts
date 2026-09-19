@@ -474,6 +474,30 @@ test("keeps delegated implementation orchestration in its documentation owners",
   assert.match(testingSpec, /worktree-local dependency projection/u);
 });
 
+test("separates integration handoffs from outcome-sized commit boundaries", async () => {
+  const [contributorGuide, testingSpec, costLedger] = await Promise.all([
+    readFile(path.join(projectRoot, "CLAUDE.md"), "utf8"),
+    readFile(path.join(projectRoot, "docs/TESTING-SPEC.md"), "utf8"),
+    readFile(path.join(projectRoot, "docs/CAPSULE-COST-LEDGER.md"), "utf8"),
+  ]);
+
+  for (const document of [contributorGuide, testingSpec]) {
+    assert.equal(
+      /Treat \*\*Focused gates green\*\* as a commit-boundary trigger|A broader semantic stage boundary does not authorize accumulating independently green slices/u.test(document),
+      false,
+      "a green lane must not force a commit independently of its coherent outcome",
+    );
+  }
+  assert.match(contributorGuide, /\]\(docs\/TESTING-SPEC\.md#commit-boundaries\)/u);
+  assert.match(costLedger, /\]\(TESTING-SPEC\.md#commit-boundaries\)/u);
+  const cadence = testingSpec.split("## Commit boundaries\n")[1]?.split("\n## ")[0] ?? "";
+  assert.match(cadence, /feature, defect repair, or material semantic checkpoint/u);
+  assert.match(cadence, /helper theorem, module, or agent handoff/u);
+  assert.match(cadence, /before dependent implementation crosses/u);
+  assert.match(cadence, /cost-only commit/u);
+  assert.match(cadence, /exact executable guard/u);
+});
+
 test("bounds correction-audit rounds and demands owner authorization past the bound", () => {
   // Round history is the fact this test protects. The receipt used to hold one commit per stage, so
   // a stage that ran four correction rounds and a stage that ran one were indistinguishable, and the

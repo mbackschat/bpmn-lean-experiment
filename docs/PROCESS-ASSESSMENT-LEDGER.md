@@ -1089,6 +1089,23 @@ Evidence
 
 Fuel exhaustion and late ambiguity independently exposed the same broken command boundary after successful admission. The caller-visible result now restores the exact pre-admission state and removes speculative publication; quantified Lean laws cover both result producers. The Workflow checks infrastructure failure before its success-only publication and recovery processing. Its separating probe requires the intended failure type after recovery admission and keeps a successful recoverable completion as the positive control.
 
+### Finding 63
+
+Integration handoffs were treated as commit boundaries, and supporting proof prerequisites became separate review checkpoints, multiplying each increment into implementation, evidence, and acceptance commits.
+
+Instances
+: 6
+
+Disposition
+: `unguardable`
+
+Evidence
+: [commit boundaries](TESTING-SPEC.md#commit-boundaries) and [instruction regression guard](../scripts/independent-review-policy.test.ts)
+
+**First observed:** owner review of the scope-creation commit cadence on 2026-09-18. The six implementation/evidence/acceptance triples are retained in `598f7365..36cce36d`.
+
+The contributor guide explicitly made a green delegated lane a commit trigger and prohibited grouping independently compiling slices. That rule confused integration readiness with a completed outcome; cost and immutable-review bookkeeping amplified the split. The corrected owner groups supporting work by the declared outcome, retains early review before dependent implementation, and combines later records unless an executable gate requires a separate evidence commit. The guard rejects the former forced-handoff instruction. It cannot decide whether two arbitrary proof increments constitute one useful semantic checkpoint, so that judgment remains explicit rather than presented as executable coverage.
+
 ## Update rule
 
 At each capsule closure and each session handoff, answer the questions above and either add a row or record that none applied. When a mechanism already has a row, increment its instance count instead of adding a near-duplicate — the count is the signal the escalation rule reads. Keep the finding text describing the mechanism, not the incident, so a second occurrence in different code still matches the same row.

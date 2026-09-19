@@ -240,6 +240,14 @@ An admission, lowering, runtime-representation, or public-observation capsule mu
 
 Semantic program admission and host capability are separate gates. Before Workflow start, the adapter must deterministically accept every reachable wait-set shape or return a typed adapter admission failure. A capsule that makes concurrent waits or a mixed timer/effect/subscription set reachable must either prove the current single-host-wait restriction remains preserved or implement and evidence the required deterministic scheduler. A non-retryable throw from Workflow execution is not an admission result and does not satisfy this gate.
 
+## Commit boundaries
+
+Choose one independently reviewable outcome before implementation: a feature, defect repair, or material semantic checkpoint. Keep its supporting proofs, modules, agent lanes, tests, and ordinary documentation together until that outcome passes its focused and complete affected-package gates. A green helper theorem, module, or agent handoff does not establish a separate outcome merely because it can compile alone. Commit a completed outcome before starting unrelated work; do not accumulate unrelated green features or use a time interval or commit-count quota as the boundary. This applies to root work and delegation, including instructions to commit after each feature.
+
+Review materiality and isolation remain unchanged. Group helper proofs toward the declared semantic claim instead of opening a review cycle for each proof prerequisite. Retain an early checkpoint when a new account, public contract, admission rule, proof assumption, or refinement risk needs independent review before dependent implementation crosses that boundary; name the deciding claim and risk in the existing plan or capsule. A required immutable review target remains a separate commit, and no reviewed target may be rewritten to reduce the count.
+
+Include documentation available before review in the implementation commit. Combine later cost records, resource evidence, review receipts, and status updates in the next required closure commit. Do not create a cost-only commit merely because an implementation hash has become available. If a source-bound calibration or another executable gate requires committed evidence before review or complete verification, identify the exact executable guard and use the necessary evidence commit; preserve every measurement and review obligation. Bookkeeping does not create another feature or semantic checkpoint.
+
 ## Delegated implementation protocol
 
 Delegate only when a lane is genuinely independent and large enough to repay its handoff cost. Work the root integrator could finish in a handful of tool calls stays with the root integrator, and no lane is asked to verify or double-check its own output; independent verification is governed by [the independent cold-review gate](#independent-cold-review-gate). Concurrency is bounded by disjointness rather than by a lane count: concurrent lanes need disjoint owned paths and disjoint build outputs, and at most one may be Lean-capable. Within those bounds prefer more concurrency to less.
@@ -252,7 +260,8 @@ Before work starts, the delegation prompt defines:
 2. the invariant algorithm as the ordered identity selection, validation, state transition, and rejection rules that decide the result;
 3. an adversarial counterexample and its predicted red observation, including identity-first duplicates when uniqueness is claimed—for example, two definitions with the same owning Gateway where only one is otherwise valid;
 4. a cross-target invariant matrix listing every required fact and the explicit non-requirements, so one target cannot silently strengthen the account beyond another;
-5. the focused gates the agent runs and the repository-wide gates reserved for integration.
+5. the focused gates the agent runs and the repository-wide gates reserved for integration;
+6. the coherent outcome and required review boundary under [the commit boundaries](#commit-boundaries), shared by supporting lanes rather than inferred from each lane's green report.
 
 Every nontrivial implementation agent sends exactly three concise safe-boundary reports:
 
