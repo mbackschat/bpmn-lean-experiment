@@ -34,13 +34,13 @@ Four answer-free population schedules execute through separate Lean and TypeScri
 
 The family map owns the independently closure-reviewed Activity boundary Message slice; this map adds no general claim from that bounded family.
 
-[Internal commutation](INTERNAL-COMMUTATION-PROPOSAL.md#local-control-preparation-prerequisite) implements finite independent ordinary/composed arming and local-control batches in reject mode. Lean proves raw-state/publication permutation equality without snapshot declarations; TypeScript's ordinary-only snapshot batches remain outside that theorem. Scheduled choice, regional batches, remaining families, and closure are absent. The approved [atomicity repair](capsules/INTERNAL-CLOSURE-ATOMICITY-REPAIR-SPEC.md) proves rollback/no-publication matching TypeScript, with replay discriminators and Temporal failure-before-publication handling.
+[Internal commutation](INTERNAL-COMMUTATION-PROPOSAL.md#scope-creation-preparation-prerequisite) implements finite independent arming, local-control, and scope-creation batches in reject mode. Lean proves state/publication permutation equality without snapshots; TypeScript's ordinary-only snapshot batches remain outside that theorem. Scope integration review is pending. Scheduled choice, regional removal, remaining families, and closure are absent. The approved [atomicity repair](capsules/INTERNAL-CLOSURE-ATOMICITY-REPAIR-SPEC.md) proves rollback/no-publication matching TypeScript, with replay discriminators and Temporal failure-before-publication handling.
 
 [Local-control proofs and production batching](INTERNAL-COMMUTATION-PROPOSAL.md#independent-cold-review-receipt) are independently approved and pass [complete verification](PLAN.md#current-evidence). [`implementation-status-owner:ENGINE-SEMANTIC-INVARIANT`](ENGINE-SEMANTIC-INVARIANT-IMPLEMENTATION-MAP.md#runtime-state-well-formedness) owns collection ordering.
 
 The approved [selected-join checkpoint](INTERNAL-COMMUTATION-PROPOSAL.md#selected-join-dependency-checkpoint) implements TypeScript dependencies and Lean readiness frames.
 
-[Scope preparation and lifecycle](INTERNAL-COMMUTATION-PROPOSAL.md#scope-creation-preparation-prerequisite) are approved and verified; regional batching remains open.
+[Scope preparation/lifecycle](INTERNAL-COMMUTATION-PROPOSAL.md#scope-creation-preparation-prerequisite) are approved; regional batching remains open.
 
 The independently approved first boundary Compensation retention checkpoint implements completed-Activity representation and pure transition preparation.
 
@@ -193,7 +193,7 @@ The exact sequential Multi-Instance User Task profile is implemented and executi
 - adopted checked-source semantics and run-level observational lowering-preservation proof
 - either-target-fires and exactly-two enabledness at a two-token frontier
 - generalized enabled-transition, supported-closure, admission, observation, and stimulus-list correspondence remain unresolved
-- scheduled choice and complete multiple-enabled closure beyond mixed arming/local-control batches
+- scheduled choice and complete multiple-enabled closure beyond mixed arming/local-control/scope-creation batches
 - replay/host-attempt stability as a Lean proposition
 - general or repeated scopes, nested/heterogeneous/decimal values, effect faults, catch-all/multi-handler/ancestor Error search, expression languages, or exceptional propagation beyond one direct parent
 - TypeScript or Temporal correspondence proof

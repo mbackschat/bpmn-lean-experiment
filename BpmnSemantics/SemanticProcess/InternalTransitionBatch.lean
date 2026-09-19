@@ -11,6 +11,9 @@ namespace BpmnSemantics.SemanticProcess.InternalCommutation
 open BpmnSemantics
 
 theorem prepared_transition_pair (program : Program) (state : RuntimeState)
+    (instanceId : SemanticId)
+    (programValid : programWellFormed program = true)
+    (stateValid : runtimeStateWellFormed program instanceId state = true)
     (left right : PreparedInternalTransition)
     (leftPrepared : left.Prepared program state)
     (rightPrepared : right.Prepared program state)
@@ -30,6 +33,11 @@ theorem prepared_transition_pair (program : Program) (state : RuntimeState)
             left rightPrepared leftPrepared canonical
             (localControlStateFootprintsNonInterfering_symm _ _ independent)
           exact ⟨pair.2.1, pair.1, pair.2.2.symm⟩
+      | scopeCreation right =>
+          have pair := prepared_scope_creation_arming_pair program state right.selection.operation
+            right left rightPrepared leftPrepared canonical
+            (localControlStateFootprintsNonInterfering_symm _ _ independent)
+          exact ⟨pair.2.1, pair.1, pair.2.2.symm⟩
   | localControl left =>
       cases right with
       | arming right =>
@@ -39,6 +47,24 @@ theorem prepared_transition_pair (program : Program) (state : RuntimeState)
           have pair := prepared_local_control_pair_commutes program state left.operation
             right.operation left right leftPrepared rightPrepared canonical independent
           exact ⟨pair.2.1, pair.1, pair.2.2⟩
+      | scopeCreation right =>
+          have pair := prepared_scope_creation_local_control_pair program state
+            right.selection.operation left.operation right left rightPrepared leftPrepared
+            canonical (localControlStateFootprintsNonInterfering_symm _ _ independent)
+          exact ⟨pair.2.1, pair.1, pair.2.2.symm⟩
+  | scopeCreation left =>
+      cases right with
+      | arming right =>
+          exact prepared_scope_creation_arming_pair program state left.selection.operation
+            left right leftPrepared rightPrepared canonical independent
+      | localControl right =>
+          exact prepared_scope_creation_local_control_pair program state left.selection.operation
+            right.operation left right leftPrepared rightPrepared canonical independent
+      | scopeCreation right =>
+          have pair := prepared_scope_creation_pair_complete program instanceId state
+            left.selection.operation right.selection.operation left right programValid stateValid
+            leftPrepared rightPrepared independent
+          exact ⟨pair.2.1, pair.1, pair.2.2.2.2.2.2⟩
 
 theorem prepared_transition_control_frame (state : RuntimeState)
     (prepared : PreparedInternalTransition) :
@@ -49,6 +75,7 @@ theorem prepared_transition_control_frame (state : RuntimeState)
       | ordinary operation patch => exact armingControlRead_frame state patch
       | data contract patch => exact armingControlRead_frame state patch.arm
   | localControl localPrepared => rfl
+  | scopeCreation scope => exact scopeCreation_apply_control state scope.selection
 
 theorem prepared_transition_preserves (program : Program) (state : RuntimeState)
     (prepared : PreparedInternalTransition) (instanceId : SemanticId)
@@ -75,6 +102,16 @@ theorem prepared_transition_preserves (program : Program) (state : RuntimeState)
       rw [prepareInternalLocalControl_open_occurrences_frame program state
         localPrepared.operation localPrepared instanceId stateValid running selected]
       exact openBefore
+  | scopeCreation scope =>
+      refine ⟨prepareInternalScopeCreation_preserves_runtimeStateWellFormed program instanceId state
+        scope.selection.operation scope programValid stateValid selected, control, ?_⟩
+      cases projected : projectOpenFlowNodeOccurrences? program state with
+      | none => simp [projected] at openBefore
+      | some current =>
+          obtain ⟨start, _, afterProjected⟩ := prepared_scope_creation_open_projection program state
+            scope.selection.operation scope instanceId current programValid stateValid projected selected
+          change (projectOpenFlowNodeOccurrences? program (scope.selection.apply state)).isSome = true
+          simp only [afterProjected, Option.isSome_some]
 
 theorem prepared_transition_applies (program : Program) (state : RuntimeState)
     (prepared : PreparedInternalTransition)
@@ -88,6 +125,8 @@ theorem prepared_transition_applies (program : Program) (state : RuntimeState)
     | localControl localPrepared =>
         exact prepareInternalLocalControl_refines program state localPrepared.operation
           localPrepared snapshots selected
+    | scopeCreation scope =>
+        exact prepareInternalScopeCreation_refines program state scope.selection.operation scope selected
   · simp [applyPreparedInternalTransition?, snapshots, selected]
 
 def PreparedTransitionList (program : Program) (state : RuntimeState)
@@ -95,13 +134,16 @@ def PreparedTransitionList (program : Program) (state : RuntimeState)
   ∀ member ∈ prepared, member.Prepared program state
 
 theorem prepared_transition_tail (program : Program) (state : RuntimeState)
+    (instanceId : SemanticId)
+    (programValid : programWellFormed program = true)
+    (stateValid : runtimeStateWellFormed program instanceId state = true)
     (head : PreparedInternalTransition) (tail : List PreparedInternalTransition)
     (selected : PreparedTransitionList program state (head :: tail))
     (canonical : canonicalCollectionOrder state = true)
     (independent : (head :: tail).Pairwise PreparedInternalTransition.Independent) :
     PreparedTransitionList program (head.apply state) tail := by
   intro member present
-  exact (prepared_transition_pair program state head member (selected head (by simp))
+  exact (prepared_transition_pair program state instanceId programValid stateValid head member (selected head (by simp))
     (selected member (by simp [present])) canonical
     ((List.pairwise_cons.mp independent).1 member present)).1
 
@@ -125,7 +167,7 @@ theorem prepared_transition_batch_preserves (program : Program) (state : Runtime
       have valid := prepared_transition_preserves program state head instanceId programValid
         stateValid running openBefore (selected head (by simp))
       exact ih (head.apply state) valid.1 valid.2.1 valid.2.2
-        (prepared_transition_tail program state head tail selected
+        (prepared_transition_tail program state instanceId programValid stateValid head tail selected
           (runtimeStateWellFormed_canonicalCollectionOrder program instanceId state stateValid)
           independent)
         (List.pairwise_cons.mp independent).2
@@ -149,10 +191,10 @@ theorem prepared_transition_batch_frame (program : Program) (state : RuntimeStat
         stateValid
       have valid := prepared_transition_preserves program state head instanceId programValid
         stateValid running openBefore (selected head (by simp))
-      have frame := (prepared_transition_pair program state head query (selected head (by simp))
+      have frame := (prepared_transition_pair program state instanceId programValid stateValid head query (selected head (by simp))
         queryPrepared canonical (separated head (by simp))).1
       exact ih (head.apply state) valid.1 valid.2.1 valid.2.2
-        (prepared_transition_tail program state head tail selected canonical independent) frame
+        (prepared_transition_tail program state instanceId programValid stateValid head tail selected canonical independent) frame
         (List.pairwise_cons.mp independent).2
         (fun member present => separated member (by simp [present]))
 
@@ -174,12 +216,12 @@ theorem prepared_transition_batch_perm (program : Program) (state : RuntimeState
       have valid := prepared_transition_preserves program state head instanceId programValid
         stateValid running openBefore (selected head (by simp))
       exact ih (head.apply state) valid.1 valid.2.1 valid.2.2
-        (prepared_transition_tail program state head _ selected
+        (prepared_transition_tail program state instanceId programValid stateValid head _ selected
           (runtimeStateWellFormed_canonicalCollectionOrder program instanceId state stateValid)
           independent)
         (List.pairwise_cons.mp independent).2
   | swap first second tail =>
-      have pair := prepared_transition_pair program state second first
+      have pair := prepared_transition_pair program state instanceId programValid stateValid second first
         (selected second (by simp)) (selected first (by simp))
         (runtimeStateWellFormed_canonicalCollectionOrder program instanceId state stateValid)
         ((List.pairwise_cons.mp independent).1 first (by simp))
@@ -249,7 +291,7 @@ theorem prepared_transition_batch_applies (program : Program) (state : RuntimeSt
       have valid := prepared_transition_preserves program state head instanceId programValid
         stateValid running openBefore (selected head (by simp))
       have rest := ih (head.apply state) valid.1 valid.2.1 valid.2.2
-        (prepared_transition_tail program state head tail selected
+        (prepared_transition_tail program state instanceId programValid stateValid head tail selected
           (runtimeStateWellFormed_canonicalCollectionOrder program instanceId state stateValid)
           independent)
         (List.pairwise_cons.mp independent).2

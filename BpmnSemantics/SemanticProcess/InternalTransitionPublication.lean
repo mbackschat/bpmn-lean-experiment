@@ -13,12 +13,14 @@ open BpmnSemantics
 inductive InternalTransitionLifecycleTemplate where
   | wait (start : OpenSemanticFlowNodeOccurrence)
   | instantaneous (identity : FlowNodeIdentity)
+  | scopeCreation (delta : UnnumberedFlowNodeOccurrenceDelta)
   deriving Repr, DecidableEq
 
 def InternalTransitionLifecycleTemplate.instantiate (commandId : SemanticId)
     (transitionIndex : Nat) : InternalTransitionLifecycleTemplate → UnnumberedFlowNodeOccurrenceDelta
   | .wait start => canonicalFlowNodeOccurrenceDelta [start] []
   | .instantaneous identity => instantaneousFlowNodeOccurrenceDelta commandId transitionIndex [identity]
+  | .scopeCreation delta => delta
 
 structure InternalTransitionPublicationTemplate where
   record : InternalTransitionRecord
@@ -68,6 +70,15 @@ def internalLocalControlPublicationTemplate (prepared : PreparedInternalLocalCon
     positionDelta := prepared.publicationTemplate.positionDelta
     lifecycle := .instantaneous prepared.publicationTemplate.identity }
 
+def internalScopeCreationPublicationTemplate (prepared : PreparedInternalScopeCreation) :
+    InternalTransitionPublicationTemplate :=
+  { record :=
+      { operationId := prepared.selection.operation.id, operationKind := prepared.selection.operation.kind
+        origin := prepared.selection.operation.origin, owner := prepared.selection.owner }
+    logicalTimeMs := prepared.publicationTemplate.logicalTimeMs
+    positionDelta := prepared.publicationTemplate.positionDelta
+    lifecycle := .scopeCreation prepared.publicationTemplate.lifecycle }
+
 /-- Templates use the complete predecessor preparation and owner ancestry; no successor projection
 or command/index assignment participates in constructing this value. -/
 def preparedTransitionPublicationTemplate? (program : Program) (state : RuntimeState) :
@@ -75,6 +86,7 @@ def preparedTransitionPublicationTemplate? (program : Program) (state : RuntimeS
   | .arming (.ordinary operation patch) => internalArmingPublicationTemplate? program state operation patch
   | .arming (.data contract patch) => internalArmingPublicationTemplate? program state contract.operation patch.arm
   | .localControl prepared => some (internalLocalControlPublicationTemplate prepared)
+  | .scopeCreation prepared => some (internalScopeCreationPublicationTemplate prepared)
 
 def actualInternalTransitionPublication? (program : Program) (instanceId : SemanticId)
     (before after : RuntimeState) (operation : SemanticOperation) (commandId : SemanticId)

@@ -107,7 +107,8 @@ theorem mixed_frontier_is_classified :
       prepared.map (fun
         | .arming (.data _ _) => "composed-data"
         | .arming (.ordinary _ _) => "ordinary"
-        | .localControl _ => "local-control") =
+        | .localControl _ => "local-control"
+        | .scopeCreation _ => "scope-creation") =
         ["composed-data", "ordinary", "local-control"] := by
   decide +kernel
 

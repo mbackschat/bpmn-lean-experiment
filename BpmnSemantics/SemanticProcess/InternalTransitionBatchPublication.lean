@@ -10,13 +10,25 @@ namespace BpmnSemantics.SemanticProcess.InternalCommutation
 open BpmnSemantics
 
 private theorem prepared_transition_templates_after_step (program : Program) (state : RuntimeState)
-    (step : PreparedInternalTransition) (queries : List PreparedInternalTransition) :
+    (step : PreparedInternalTransition) (queries : List PreparedInternalTransition)
+    (instanceId : SemanticId) (programWF : programWellFormed program = true)
+    (beforeWF : runtimeStateWellFormed program instanceId state = true)
+    (running : state.control = .running instanceId)
+    (projectable : (projectOpenFlowNodeOccurrences? program state).isSome = true)
+    (stepPrepared : step.Prepared program state)
+    (queriesPrepared : PreparedTransitionList program state queries) :
     queries.mapM (preparedTransitionPublicationTemplate? program (step.apply state)) =
       queries.mapM (preparedTransitionPublicationTemplate? program state) := by
   induction queries with
   | nil => rfl
   | cons head tail ih =>
-      simp only [List.mapM_cons, prepared_transition_template_after_step, ih]
+      have headPrepared := queriesPrepared head (by simp)
+      have tailPrepared : PreparedTransitionList program state tail := by
+        intro query member
+        exact queriesPrepared query (List.mem_cons_of_mem head member)
+      simp only [List.mapM_cons,
+        prepared_transition_template_after_step program state step head instanceId programWF
+          beforeWF running projectable stepPrepared headPrepared, ih tailPrepared]
 
 /-- Every actual prefix publication equals its complete original template at the assigned index.
 Canonical assignment is supplied after sorting; this theorem does not infer indices from execution order. -/
@@ -42,11 +54,15 @@ theorem prepared_transition_batch_publications (program : Program) (state : Runt
       have headPrepared := selected head (by simp)
       have preserved := prepared_transition_preserves program state head instanceId programWF
         beforeWF running projectable headPrepared
-      have remaining := prepared_transition_tail program state head tail selected
+      have remaining := prepared_transition_tail program state instanceId programWF beforeWF head tail selected
         (runtimeStateWellFormed_canonicalCollectionOrder program instanceId state beforeWF) independent
       obtain ⟨templates, tailMap, tailRun⟩ := ih (head.apply state) preserved.1 preserved.2.1
         preserved.2.2 remaining (List.pairwise_cons.mp independent).2
-      rw [prepared_transition_templates_after_step program state head tail] at tailMap
+      have tailPrepared : PreparedTransitionList program state tail := by
+        intro query member
+        exact selected query (List.mem_cons_of_mem head member)
+      rw [prepared_transition_templates_after_step program state head tail instanceId programWF
+        beforeWF running projectable headPrepared tailPrepared] at tailMap
       obtain ⟨template, headMap, headActual⟩ := prepared_transition_publication_template_accepted
         program state head instanceId commandId (indexForOperation head.operation.id)
         programWF beforeWF running projectable headPrepared

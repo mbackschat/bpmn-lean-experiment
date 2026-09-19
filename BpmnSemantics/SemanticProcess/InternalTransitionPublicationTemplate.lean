@@ -1,6 +1,8 @@
 import BpmnSemantics.SemanticProcess.InternalTransitionPublication
 import BpmnSemantics.SemanticProcess.InternalArmingBatchPublication
 import BpmnSemantics.SemanticProcess.InternalLocalControlPairPublication
+import BpmnSemantics.SemanticProcess.InternalScopeCreationAcceptedPublication
+import BpmnSemantics.SemanticProcess.InternalScopeCreationPositionPublication
 
 /-! Predecessor-only mixed publication templates implement the numbering boundary in the
 [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).
@@ -72,6 +74,50 @@ theorem prepared_data_publication_template_accepted (program : Program) (state :
       internalArmingPublicationTemplate, InternalTransitionPublicationTemplate.instantiate,
       InternalTransitionLifecycleTemplate.instantiate]
 
+private theorem scope_creation_selected_owner (state : RuntimeState)
+    (operation : SemanticOperation) (selected : InternalScopeCreationSelection)
+    (found : selectInternalScopeCreation? state operation = some selected) :
+    selectedOperationOwner? state operation = some selected.owner := by
+  unfold selectInternalScopeCreation? at found
+  obtain ⟨hosting, _, found⟩ := Option.bind_eq_some_iff.mp found
+  cases operation
+  all_goals first
+    | contradiction
+    | obtain ⟨owner, owned, found⟩ := Option.bind_eq_some_iff.mp found
+      dsimp only at found
+      repeat first | contradiction | split at found
+      all_goals cases found
+      all_goals exact owned
+
+theorem prepared_scope_creation_publication_template_accepted (program : Program) (state : RuntimeState)
+    (prepared : PreparedInternalScopeCreation) (instanceId commandId : SemanticId) (transitionIndex : Nat)
+    (programWF : programWellFormed program = true)
+    (beforeWF : runtimeStateWellFormed program instanceId state = true)
+    (projectable : (projectOpenFlowNodeOccurrences? program state).isSome = true)
+    (found : prepareInternalScopeCreation? program state prepared.selection.operation = some prepared) :
+    actualInternalTransitionPublication? program instanceId state (prepared.selection.apply state)
+      prepared.selection.operation commandId transitionIndex =
+        some ((internalScopeCreationPublicationTemplate prepared).instantiate commandId transitionIndex) := by
+  obtain ⟨current, projected⟩ := Option.isSome_iff_exists.mp projectable
+  have lifecycle := prepareInternalScopeCreation_accepted_lifecycle program state
+    prepared.selection.operation prepared instanceId commandId transitionIndex current
+    programWF beforeWF projected found
+  have position := internalScopeCreationPositionDelta_corresponds program instanceId state
+    prepared.selection.operation prepared programWF beforeWF found
+  obtain ⟨selected, hosting, ownerRecord, origin, definition, start, delta, selection, _, _,
+    exactOperation, _, _, _, _, _, _, preparedEq⟩ :=
+      prepareInternalScopeCreation_facts program state prepared.selection.operation prepared found
+  have record := internalTransitionRecord_of_selection program state prepared.selection.operation
+    selected.owner exactOperation (scope_creation_selected_owner state _ selected selection)
+  have ownerEq : selected.owner = prepared.selection.owner := by
+    rw [preparedEq]; rfl
+  have time : prepared.publicationTemplate.logicalTimeMs = state.logicalTimeMs := by
+    rw [preparedEq]; rfl
+  rw [ownerEq] at record
+  simp [actualInternalTransitionPublication?, record, lifecycle, position,
+    internalScopeCreationPublicationTemplate, InternalTransitionPublicationTemplate.instantiate,
+    InternalTransitionLifecycleTemplate.instantiate, time]
+
 /-- Every actual publication component is accepted at any later assigned index and equals the
 predecessor template; acceptance and position correspondence are derived, never premises. -/
 theorem prepared_transition_publication_template_accepted (program : Program) (state : RuntimeState)
@@ -108,6 +154,10 @@ theorem prepared_transition_publication_template_accepted (program : Program) (s
       simp only [actualInternalTransitionPublication?, record, lifecycle, position,
         time]
       rfl
+  | scopeCreation scopePrepared =>
+      exact ⟨internalScopeCreationPublicationTemplate scopePrepared, rfl,
+        prepared_scope_creation_publication_template_accepted program state scopePrepared instanceId
+          commandId transitionIndex programWF beforeWF projectable found⟩
 
 theorem prepared_transition_template_operation_id (program : Program) (state : RuntimeState)
     (prepared : PreparedInternalTransition) (template : InternalTransitionPublicationTemplate)
@@ -121,40 +171,71 @@ theorem prepared_transition_template_operation_id (program : Program) (state : R
           cases found
           rfl
   | localControl localPrepared => cases found; rfl
+  | scopeCreation scopePrepared => cases found; rfl
 
 theorem prepared_transition_template_frame (program : Program) (before after : RuntimeState)
     (prepared : PreparedInternalTransition)
+    (template : InternalTransitionPublicationTemplate)
     (time : after.logicalTimeMs = before.logicalTimeMs)
-    (starts : ∀ owner element activation, waitStart? program after owner element activation =
-      waitStart? program before owner element activation) :
-    preparedTransitionPublicationTemplate? program after prepared =
-      preparedTransitionPublicationTemplate? program before prepared := by
+    (starts : ∀ owner element activation start,
+      waitStart? program before owner element activation = some start →
+      waitStart? program after owner element activation = some start)
+    (found : preparedTransitionPublicationTemplate? program before prepared = some template) :
+    preparedTransitionPublicationTemplate? program after prepared = some template := by
   cases prepared with
   | arming arm =>
-      cases arm <;> simp only [preparedTransitionPublicationTemplate?, internalArmingPublicationTemplate?,
-        starts, time]
-  | localControl _ => rfl
+      cases arm with
+      | ordinary operation patch | data operation patch =>
+          obtain ⟨start, started, templateEq⟩ := Option.map_eq_some_iff.mp found
+          cases templateEq
+          simp only [preparedTransitionPublicationTemplate?, internalArmingPublicationTemplate?,
+            starts _ _ _ _ started, Option.map_some, time]
+  | localControl _ => exact found
+  | scopeCreation _ => exact found
 
 theorem prepared_transition_time_frame (state : RuntimeState) (prepared : PreparedInternalTransition) :
     (prepared.apply state).logicalTimeMs = state.logicalTimeMs := by
   cases prepared with
   | arming arm => exact prepared_arming_time_frame state arm
   | localControl _ => rfl
+  | scopeCreation scopePrepared => exact scopeCreation_apply_time state scopePrepared.selection
 
 theorem prepared_transition_start_frame (program : Program) (state : RuntimeState)
     (prepared : PreparedInternalTransition) (owner : ScopeOccurrenceId) (element : NodeId)
-    (activation : Nat) :
-    waitStart? program (prepared.apply state) owner element activation =
-      waitStart? program state owner element activation := by
+    (activation : Nat) (start : OpenSemanticFlowNodeOccurrence)
+    (found : prepared.Prepared program state)
+    (prior : waitStart? program state owner element activation = some start) :
+    waitStart? program (prepared.apply state) owner element activation = some start := by
   cases prepared with
-  | arming arm => exact prepared_arming_start_frame program state arm owner element activation
-  | localControl _ => rfl
+  | arming arm =>
+      change waitStart? program (arm.apply state) owner element activation = some start
+      rw [prepared_arming_start_frame program state arm owner element activation]
+      exact prior
+  | localControl _ => exact prior
+  | scopeCreation scopePrepared =>
+      obtain ⟨selected, hosting, ownerRecord, origin, definition, scopeStart, delta, selection,
+        _, _, _, _, _, _, _, _, _, preparedEq⟩ :=
+          prepareInternalScopeCreation_facts program state scopePrepared.selection.operation scopePrepared found
+      have preserved := scopeCreation_wait_start_preserved program state _ selected owner element
+        activation start selection prior
+      simpa only [preparedEq, PreparedInternalTransition.apply, makeInternalScopeCreationPreparation]
+        using preserved
 
 theorem prepared_transition_template_after_step (program : Program) (state : RuntimeState)
-    (step query : PreparedInternalTransition) :
+    (step query : PreparedInternalTransition) (instanceId : SemanticId)
+    (programWF : programWellFormed program = true)
+    (beforeWF : runtimeStateWellFormed program instanceId state = true)
+    (running : state.control = .running instanceId)
+    (projectable : (projectOpenFlowNodeOccurrences? program state).isSome = true)
+    (stepPrepared : step.Prepared program state) (queryPrepared : query.Prepared program state) :
     preparedTransitionPublicationTemplate? program (step.apply state) query =
-      preparedTransitionPublicationTemplate? program state query :=
-  prepared_transition_template_frame program state (step.apply state) query
-    (prepared_transition_time_frame state step) (prepared_transition_start_frame program state step)
+      preparedTransitionPublicationTemplate? program state query := by
+  obtain ⟨template, found, _⟩ := prepared_transition_publication_template_accepted program state query
+    instanceId instanceId 0 programWF beforeWF running projectable queryPrepared
+  rw [found]
+  exact prepared_transition_template_frame program state (step.apply state) query template
+    (prepared_transition_time_frame state step)
+    (fun owner element activation start prior => prepared_transition_start_frame program state step
+      owner element activation start stepPrepared prior) found
 
 end BpmnSemantics.SemanticProcess.InternalCommutation

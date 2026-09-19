@@ -9,6 +9,11 @@ import {
 } from "./internal-transition-local-control-preparation.js";
 import type { PreparedInternalLocalControl } from "./internal-transition-local-control-preparation.js";
 import {
+  applyPreparedInternalScopeCreation,
+  deriveInternalScopeCreationPreparation,
+} from "./internal-transition-scope-creation-preparation.js";
+import type { PreparedInternalScopeCreation } from "./internal-transition-scope-creation-preparation.js";
+import {
   internalTransitionFootprintsAreIndependent,
   internalTransitionStateFootprintsAreIndependent,
 } from "./internal-transition-footprint.js";
@@ -22,11 +27,13 @@ import type { RuntimeState } from "./semantic-process-state.js";
 export enum PreparedInternalTransitionFamily {
   Arming = "arming",
   LocalControl = "localControl",
+  ScopeCreation = "scopeCreation",
 }
 
 export type PreparedInternalTransition = Readonly<
   | PreparedInternalArming & { family: PreparedInternalTransitionFamily.Arming }
   | PreparedInternalLocalControl & { family: PreparedInternalTransitionFamily.LocalControl }
+  | PreparedInternalScopeCreation & { family: PreparedInternalTransitionFamily.ScopeCreation }
 >;
 
 export function deriveInternalTransitionPreparation(
@@ -35,6 +42,13 @@ export function deriveInternalTransitionPreparation(
   candidate: InternalTransitionCandidate,
 ): PreparedInternalTransition | null {
   switch (candidate.operation.kind) {
+    case SemanticOperationKind.EnterScope:
+    case SemanticOperationKind.InvokeProcess: {
+      if (candidate.owner === null) return null;
+      const prepared = deriveInternalScopeCreationPreparation(program, state, candidate.operation);
+      return prepared === null || !sameScopeOccurrence(prepared.owner, candidate.owner)
+        ? null : { family: PreparedInternalTransitionFamily.ScopeCreation, ...prepared };
+    }
     case SemanticOperationKind.Duplicate:
     case SemanticOperationKind.Synchronize:
     case SemanticOperationKind.Choose:
@@ -95,6 +109,10 @@ export function applyPreparedInternalTransition(
       if (program.compensationEventSubProcessSnapshots !== undefined) return null;
       const { family: _family, ...localControl } = prepared;
       return applyPreparedInternalLocalControl(program, state, localControl);
+    }
+    case PreparedInternalTransitionFamily.ScopeCreation: {
+      const { family: _family, ...scopeCreation } = prepared;
+      return applyPreparedInternalScopeCreation(program, state, scopeCreation);
     }
   }
 }
