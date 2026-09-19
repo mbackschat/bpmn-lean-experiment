@@ -127,6 +127,7 @@ export const leanModuleCostRecord = {
   },
   nearCapModules: [],
   rows: [
+    { module: "BpmnSemantics.ScopeCreationMixedBatchConformance", peakResidentKib: 1980156, elapsedSeconds: 80.59, measuredAtCommit: "10e774c5" },
     { module: "BpmnSemantics.InternalScopeCreationFrameConformance", peakResidentKib: 1368940, elapsedSeconds: 72.62, measuredAtCommit: "b589ab0a" },
     { module: "BpmnSemantics.ScopeCreationCompensationValidityConformance", peakResidentKib: 1049176, elapsedSeconds: 4.40, measuredAtCommit: "52a84367" },
     { module: "BpmnSemantics.InternalScopeCreationValidityConformance", peakResidentKib: 1726820, elapsedSeconds: 12.13, measuredAtCommit: "d7fcdcb0" },
@@ -134,7 +135,7 @@ export const leanModuleCostRecord = {
     { module: "BpmnSemantics.InternalScopeCreationSelectionConformance", peakResidentKib: 658084, elapsedSeconds: 2.23, measuredAtCommit: "bced19a5" },
     { module: "BpmnSemantics.ScopeStorageOrderConformance", peakResidentKib: 690964, elapsedSeconds: 1.61, measuredAtCommit: "a97a4ea1" },
     { module: "BpmnSemantics.MixedLocalControlClosureConformance", peakResidentKib: 1570176, elapsedSeconds: 28.99, measuredAtCommit: "93cfcbf9" },
-    { module: "BpmnSemantics.FiniteInternalTransitionConformance", peakResidentKib: 1160420, elapsedSeconds: 6.77, measuredAtCommit: "93cfcbf9" },
+    { module: "BpmnSemantics.FiniteInternalTransitionConformance", peakResidentKib: 1170672, elapsedSeconds: 8.31, measuredAtCommit: "10e774c5" },
     { module: "BpmnSemantics.InclusiveGatewayPairingConformance", peakResidentKib: 836304, elapsedSeconds: 3.43, measuredAtCommit: "565ff325" },
     { module: "BpmnSemantics.CanonicalTokenStorageConformance", peakResidentKib: 1226740, elapsedSeconds: 5.85, measuredAtCommit: "a97a4ea1" },
     { module: "BpmnSemantics.FiniteInternalArmingConformance", peakResidentKib: 1344100, elapsedSeconds: 8.83, measuredAtCommit: "93cfcbf9" },
