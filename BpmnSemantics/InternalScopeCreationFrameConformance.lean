@@ -288,4 +288,64 @@ theorem call_issuance_change_alters_the_complete_preparation :
          next.isSome && next != some prepared) = true := by
   decide +kernel
 
+private def lifecyclePublicationMatches (program : Program) (state : RuntimeState)
+    (prepared : PreparedInternalScopeCreation) (index : Nat) : Bool :=
+  let after := prepared.selection.apply state
+  prepared.publicationTemplate.lifecycle.started.length == 1 &&
+    prepared.publicationTemplate.lifecycle.ended.isEmpty &&
+    flowNodeOccurrenceDeltaForOperation? program state after prepared.selection.operation
+      ⟨"scope-frame-command"⟩ index == some prepared.publicationTemplate.lifecycle
+
+private def pairLifecycleMatches (program : Program) : Bool :=
+  match preparation program before ⟨"C_Left"⟩, preparation program before ⟨"D_Right"⟩ with
+  | some left, some right =>
+      let afterLeft := left.selection.apply before
+      let afterRight := right.selection.apply before
+      let leftThenRight := right.selection.apply afterLeft
+      let rightThenLeft := left.selection.apply afterRight
+      let expected := sortFlowNodeOccurrenceStarts
+        (left.publicationTemplate.lifecycle.started ++ right.publicationTemplate.lifecycle.started)
+      lifecyclePublicationMatches program before left 7 &&
+        lifecyclePublicationMatches program afterLeft right 8 &&
+        lifecyclePublicationMatches program before right 7 &&
+        lifecyclePublicationMatches program afterRight left 8 &&
+        expected.length == 2 &&
+        projectOpenFlowNodeOccurrences? program leftThenRight == some expected &&
+        projectOpenFlowNodeOccurrences? program rightThenLeft == some expected
+  | _, _ => false
+
+theorem child_child_lifecycle_is_accepted_in_both_orders :
+    pairLifecycleMatches (program .child .child) = true := by decide +kernel
+
+theorem child_call_lifecycle_is_accepted_in_both_orders :
+    pairLifecycleMatches (program .child .called) = true := by decide +kernel
+
+theorem call_call_lifecycle_is_accepted_in_both_orders :
+    pairLifecycleMatches (program .called .called) = true := by decide +kernel
+
+private def alteredLifecycleRefused (program : Program) : Bool :=
+  match preparation program before ⟨"C_Left"⟩ with
+  | none => false
+  | some prepared =>
+      let after := prepared.selection.apply before
+      let delta := prepared.publicationTemplate.lifecycle
+      let accepts := acceptFlowNodeOccurrenceCandidate? program before after
+      let wrongAnchor : OccurrenceId :=
+        { processInstanceId := owner.processInstanceId, elementId := ⟨"wrong-anchor"⟩, activation := 1 }
+      accepts delta == some delta &&
+        (accepts { delta with started := [] }).isNone &&
+        (accepts { delta with started := delta.started ++ delta.started }).isNone &&
+        (accepts { delta with started := delta.started.map fun start =>
+          { start with processId := ⟨"wrong-process"⟩ } }).isNone &&
+        (accepts { delta with started := delta.started.map fun start =>
+          { start with owner := prepared.selection.created.id } }).isNone &&
+        (accepts { delta with started := delta.started.map fun start =>
+          { start with anchor := .wait wrongAnchor } }).isNone
+
+theorem child_lifecycle_rejects_missing_duplicate_and_wrong_identity_starts :
+    alteredLifecycleRefused (program .child .child) = true := by decide +kernel
+
+theorem call_lifecycle_rejects_missing_duplicate_and_wrong_identity_starts :
+    alteredLifecycleRefused (program .called .called) = true := by decide +kernel
+
 end BpmnSemantics.InternalScopeCreationFrameConformance
