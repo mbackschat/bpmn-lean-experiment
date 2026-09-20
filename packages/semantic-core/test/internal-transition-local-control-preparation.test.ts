@@ -239,6 +239,42 @@ test("foreign-owner input insertion changes the selected owner without changing 
   assert.equal(independent(prepared.footprint, { reads: [], writes: [{ kind: Atom.TokenOwners, placeId: duplicate.input }] }), false);
 });
 
+test("a private fork patch retains foreign output owners outside its preparation reads", () => {
+  const prepared = required(parallelProgram, beforeFork, duplicate);
+  const placeId = duplicate.outputs[0]!;
+  const foreign = { ...prepared.owner, activation: prepared.owner.activation + 1 };
+  const changed = { ...beforeFork, controlTokens: [...beforeFork.controlTokens,
+    { placeId, owner: foreign, multiplicity: 1 }].sort(compareControlTokens) };
+  const changedAtoms = [{ kind: Atom.ControlToken, owner: foreign, placeId },
+    { kind: Atom.TokenOwners, placeId }] as const;
+  assert.equal(independent({ reads: prepared.footprint.reads, writes: [] },
+    { reads: [], writes: changedAtoms }), true);
+  assert.deepEqual(required(parallelProgram, changed, duplicate), prepared);
+  assert.ok(prepared.footprint.writes.some((atom) =>
+    atom.kind === Atom.TokenOwners && atom.placeId === placeId));
+  const owners = (state: RuntimeState) => state.controlTokens
+    .filter((token) => token.placeId === placeId).map((token) => token.owner);
+  assert.deepEqual(owners(applyPatch(beforeFork, prepared.patch)), [prepared.owner]);
+  assert.deepEqual(owners(applyPatch(changed, prepared.patch)), [prepared.owner, foreign]);
+});
+
+test("a private Inclusive insertion retains foreign same-key records outside its preparation reads", () => {
+  const operation = inclusiveProgram.operations.find((candidate) => candidate.id === "operation:Split");
+  assert.ok(operation?.kind === SemanticOperationKind.SelectMany);
+  const prepared = required(inclusiveProgram, beforeSplit, operation);
+  const foreign = { ...prepared.owner, activation: prepared.owner.activation + 1 };
+  const record = { owner: foreign, selectionKey: operation.selectionKey,
+    expectedInputs: ["place:Flow_Default_Join"] as [string] };
+  const changed = { ...beforeSplit, selectedBranchSets: [record] };
+  assert.deepEqual(required(inclusiveProgram, changed, operation), prepared);
+  assert.equal(prepared.footprint.reads.some((atom) =>
+    atom.kind === Atom.SelectedBranchOwners && atom.selectionKey === operation.selectionKey), false);
+  assert.ok(prepared.footprint.writes.some((atom) =>
+    atom.kind === Atom.SelectedBranchOwners && atom.selectionKey === operation.selectionKey));
+  assert.deepEqual(applyPatch(changed, prepared.patch).selectedBranchSets,
+    [...applyPatch(beforeSplit, prepared.patch).selectedBranchSets, record]);
+});
+
 test("signed token units cancel in publication without dropping the consumed and produced patch units", () => {
   const prepared = required(parallelProgram, beforeFork, duplicate);
   const patch = { ...prepared.patch, consumed: [duplicate.input], produced: [duplicate.input],

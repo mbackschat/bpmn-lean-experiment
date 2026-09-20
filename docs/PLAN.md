@@ -71,14 +71,15 @@ Exactly one stable work ID is active. Required maps are part of the routing cont
 
 Owner instruction on 2026-09-20: investigate necessity before expanding regional proofs; preserve complete gates and existing guarantees. The two external reviews advise the work but do not approve a semantic checkpoint.
 
-- [x] Bind resource measurements to measured source digests and record review targets with verdicts, preserving provenance, ratchets, immutable packets, and isolation.
+- [x] Bind measurements to source digests and record review targets with verdicts; retain provenance, ratchets, packets, and isolation.
 - [x] Retain the admitted [Error/arming conflict](../packages/bpmn-source/test/subprocess-error-lowering.test.ts) and atomic rollback.
-- [x] Separate an admitted model's manually delayed regional pair from its actual closure, which batches arming before regional completion; retain both preparation frames and exact-state commutation in the [frontier tests](../packages/bpmn-source/test/embedded-subprocess-lowering.test.ts).
-- [x] Retain a real End-arrival/arming frontier: exact states commute, but start rolls back. This is `reachNoneEnd`, not regional removal; publication and general batching remain unproved.
-- [ ] Settle E1 with an actual independent regional frontier or a capability-level exclusion argument; generated graph checks and a manually selected interleaving do not settle it.
-- [ ] After E1, state E2's one-family locality interface over value-bearing updates, complete state agreement, and canonical order before proving or migrating anything.
+- [x] Retain the [delayed regional pair](../packages/bpmn-source/test/embedded-subprocess-lowering.test.ts): preparations and exact states commute, but actual closure arms the peer earlier.
+- [x] Retain actual End-arrival/arming rollback despite exact-state commutation; publication and general batching remain unproved.
+- [x] E1: independently review the source-grounded exclusion argument for current registered capabilities from initial state through fully closed commands. No reachability theorem or singleton classification is approved.
+- [x] E2 Stage 0: typecheck and independently audit local-control locality, residual equality, and canonical-order statements. [Two counterexamples](../packages/semantic-core/test/internal-transition-local-control-preparation.test.ts) refute reads-only output locality; no certificate or migration is supplied.
+- [ ] Pilot local-control locality using existing frames; derive the unchanged pair theorem before extending to arming. Preserve shared atoms, runtime footprints, semantics, and assurance strength.
 
-Bulk fixture conversion, broad representation migration, gate selection, and additional telemetry are deferred. An unsuccessful witness search is inconclusive; reassessment cannot discard an essential correctness obligation.
+Bulk fixture conversion, broad representation migration, gate selection, and additional telemetry are deferred. An unsuccessful witness search is inconclusive; reassessment cannot discard an essential correctness obligation. [Non-material](TESTING-SPEC.md#independent-cold-review-gate); complete semantic-core/infrastructure gates cover the retained tests.
 
 ### External-review correction checklist
 
@@ -106,7 +107,7 @@ Active work ID: `INTERNAL-COMMUTATION`.
 
 Risk band: RC internal scheduling; the six external reviews and composed Activity-data closure are complete.
 
-Next action: review the E1 exclusion argument against actual registered admission and closure; the [frontier tests](../packages/bpmn-source/test/embedded-subprocess-lowering.test.ts) distinguish delayed regional pairing from an actual End-arrival/arming rollback. Do not treat the search as an unreachability proof or begin another regional prerequisite. The [regional owner](INTERNAL-COMMUTATION-PROPOSAL.md#regional-preparation-prerequisite) retains its unresolved obligations; any narrower batching account still requires semantic-checkpoint review.
+Next action: run the bounded local-control proof pilot above before expanding regional machinery. E1's structural investigation and E2's statement-only feasibility audit are complete; neither supplies a new theorem or approves narrower RC scope. The [regional owner](INTERNAL-COMMUTATION-PROPOSAL.md#regional-preparation-prerequisite) retains its unresolved obligations, and [frontier tests](../packages/bpmn-source/test/embedded-subprocess-lowering.test.ts) retain the separate End-arrival/arming rollback. Any singleton classification still needs its separating guard and semantic-checkpoint review.
 
 In progress: Timer classification and wait validity share operation-level proofs; four list-uniqueness proofs use the standard library. The cleanup preserves existing theorem statements and matcher behavior. Complete/Return publication and cancellation wait/Effect-local preservation remain implemented. `AOO-RETAINED-BODY-01` requires a separate amendment before bounded-Terminate admission.
 
