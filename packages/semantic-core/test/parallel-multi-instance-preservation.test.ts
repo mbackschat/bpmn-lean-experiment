@@ -9,6 +9,7 @@ import {
   RuntimeStateDefect,
   SemanticFlowNodeOccurrenceAnchorKind,
   SemanticTransitionKind,
+  VariableValueKind,
   applyStimulus,
   applyStimulusWithTrace,
   initialState,
@@ -23,6 +24,7 @@ import {
   completeIteration,
   fireOuterTimer,
   instanceId,
+  outputBinding,
 } from "./sequential-multi-instance-fixture.ts";
 import {
   parallelProgram,
@@ -110,6 +112,61 @@ test("all-policy completion permutations preserve exact state and observation", 
     observeStableState(parallelProgram, outOfIndex),
     observeStableState(parallelProgram, natural),
   );
+});
+
+for (const [label, count, value, serializedBytes] of [
+  ["array overhead", 16, "x".repeat(512), 8241],
+  ["JSON escaping", 3, "\u0000".repeat(512), 9226],
+] as const) {
+  test(`final parallel output refuses ${label} overflow without consuming the last child`, () => {
+    assert.equal(Buffer.byteLength(JSON.stringify(Array(count).fill(value))), serializedBytes);
+    let before = committed(startState(), startWithParallelItems(label, Array(count).fill("a"), "all"));
+    for (let index = 0; index < count - 1; index += 1) {
+      before = committed(before, completeIteration(index, value));
+    }
+    assertAdmitted(label, before);
+    const refused = applyStimulusWithTrace(parallelProgram, before, completeIteration(count - 1, value));
+    assert.equal(refused.result.outcome, CommandOutcome.Rejected);
+    assert.deepEqual(refused.result.state, before);
+    assert.deepEqual(refused.committedTransitions, []);
+    assert.deepEqual(refused.flowNodeOccurrenceLifecycles, []);
+    assert.equal(outputBinding(before), undefined);
+    assert.equal(outputBinding(committed(before, fireOuterTimer)), undefined);
+  });
+}
+
+test("parallel output accepts exactly 8192 canonical bytes and permits correction after overflow", () => {
+  const prefix = Array<string>(15).fill("x".repeat(512));
+  let before = committed(startState(), startWithParallelItems("output-boundary", Array(16).fill("a"), "all"));
+  for (let index = 0; index < prefix.length; index += 1) {
+    before = committed(before, completeIteration(index, prefix[index]!));
+  }
+  assert.equal(Buffer.byteLength(JSON.stringify([...prefix, "y".repeat(464)])), 8193);
+  const refused = applyStimulusWithTrace(parallelProgram, before, completeIteration(15, "y".repeat(464)));
+  assert.equal(refused.result.outcome, CommandOutcome.Rejected);
+  assert.deepEqual(refused.result.state, before);
+  assert.deepEqual(refused.committedTransitions, []);
+  assert.deepEqual(refused.flowNodeOccurrenceLifecycles, []);
+  for (const lastLength of [462, 463]) {
+    const values = [...prefix, "y".repeat(lastLength)];
+    assert.equal(Buffer.byteLength(JSON.stringify(values)), 7729 + lastLength);
+    const finished = committed(refused.result.state, completeIteration(15, values[15]!));
+    assert.deepEqual(outputBinding(finished)?.value, { kind: VariableValueKind.StringList, value: values });
+    assertAdmitted(`output ${7729 + lastLength} bytes`, finished);
+  }
+});
+
+test("unpublished parallel results do not acquire an aggregate publication limit", () => {
+  let state = committed(startState(), startWithParallelItems("partial-output", Array(4).fill("a"), "all"));
+  for (let index = 0; index < 3; index += 1) {
+    state = committed(state, completeIteration(index, "\u0000".repeat(512)));
+  }
+  assertAdmitted("unpublished oversized partial results", state);
+  assert.equal(state.userTaskWaits.length, 1);
+  assert.equal(outputBinding(state), undefined);
+  const interrupted = committed(state, fireOuterTimer);
+  assert.equal(outputBinding(interrupted), undefined);
+  assertAdmitted("interruption after partial results", interrupted);
 });
 
 test("first-policy winner order changes E1 and E2 while preserving terminal semantic state", () => {

@@ -12,6 +12,18 @@ import {
 import { SemanticProfileId } from "./semantic-profile-catalog.js";
 import { utf8ByteLength } from "./wire.js";
 
+export function parallelMultiInstanceCollectionWithinLimits(
+  operation: AwaitParallelMultiInstanceUserTaskOperation,
+  items: ReadonlyArray<string>,
+): boolean {
+  return items.length <= operation.limits.maximumItems &&
+    items.every((item) =>
+      utf8ByteLength(item) <= operation.limits.maximumItemUtf8Bytes
+    ) &&
+    utf8ByteLength(JSON.stringify(items)) <=
+      operation.limits.maximumCanonicalCollectionUtf8Bytes;
+}
+
 export function admittedParallelMultiInstanceInputCollection(
   operation: AwaitParallelMultiInstanceUserTaskOperation,
   bindings: ReadonlyArray<VariableBinding>,
@@ -32,12 +44,7 @@ export function admittedParallelMultiInstanceInputCollection(
     policy?.kind !== VariableValueKind.String ||
     (policy.value !== ParallelMultiInstanceCompletionPolicy.All &&
       policy.value !== ParallelMultiInstanceCompletionPolicy.First) ||
-    collection.value.length > operation.limits.maximumItems ||
-    collection.value.some((item) =>
-      utf8ByteLength(item) > operation.limits.maximumItemUtf8Bytes
-    ) ||
-    utf8ByteLength(JSON.stringify(collection.value)) >
-      operation.limits.maximumCanonicalCollectionUtf8Bytes
+    !parallelMultiInstanceCollectionWithinLimits(operation, collection.value)
   ) {
     return undefined;
   }

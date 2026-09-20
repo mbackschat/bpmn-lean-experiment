@@ -34,6 +34,7 @@ import {
   admittedParallelMultiInstanceChildResult,
   admittedParallelMultiInstanceCompletionPolicy,
   admittedParallelMultiInstanceInputCollection,
+  parallelMultiInstanceCollectionWithinLimits,
 } from "./parallel-multi-instance-command-data-admission.js";
 import {
   ParallelMultiInstanceCompletionPolicy,
@@ -335,6 +336,12 @@ export function completeParallelMultiInstanceChild(
     const completedResults = slots.flatMap((slot) =>
       slot.kind === ParallelMultiInstanceSlotKind.Completed ? [slot.result] : []
     );
+    if (
+      remaining === 0 &&
+      !parallelMultiInstanceCollectionWithinLimits(pair.entry, completedResults)
+    ) {
+      return null;
+    }
     const staged = stageCompensationActivityRetention(program, state, {
       kind: CompensationCompletionFactKind.MultiInstanceUserTask,
       activity: record.id,

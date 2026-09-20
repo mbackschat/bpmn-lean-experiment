@@ -75,7 +75,7 @@ Owner instruction on 2026-09-20: finish both reviews' follow-ups; preserve compl
 - [x] E1: retain [Error/arming conflict](../packages/bpmn-source/test/subprocess-error-lowering.test.ts), [delayed regional pairs and End/arming rollback](../packages/bpmn-source/test/embedded-subprocess-lowering.test.ts); review structural exclusion. No reachability theorem or singleton classification is approved.
 - [x] E2: retain [reads-only counterexamples](../packages/semantic-core/test/internal-transition-local-control-preparation.test.ts); Lean-check and independently audit the unchanged pair theorem through a locality certificate. Reject migration: no demonstrated net simplification; exact collections, residual state, and existing guarantees remain intact.
 - [x] E1: [guard admission premises](../packages/semantic-core/test/regional-frontier-admission.test.ts) and record the capability-level exclusion argument; preserve regional obligations pending semantic review.
-- [ ] Resolve Review 1's evidence-matrix, lowering-equality, and PMI theorem claims.
+- [ ] Close reviewed evidence/PMI claims and [output-limit repair](capsules/PARALLEL-MULTI-INSTANCE-SPEC.md#independent-cold-review-receipt).
 - [ ] Evaluate named invariant fields, dual state descriptions, and duplicate helpers against consumers.
 - [x] Measure the [fixture pilot](CAPSULE-COST-LEDGER.md#kernel-fixture-pilot-2026-09-20); retain kernel checks after assessing trust.
 - [ ] Bind snapshot-batching limitations to Compensation's pre-registration obligations.
