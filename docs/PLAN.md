@@ -97,9 +97,9 @@ Active work ID: `INTERNAL-COMMUTATION`.
 
 Risk band: RC internal scheduling; the six external reviews and composed Activity-data closure are complete.
 
-Next action: close the reproduced `MBP-EMPTY-TASK-01` projection correction, then resume the [regional preparation prerequisite](INTERNAL-COMMUTATION-PROPOSAL.md#regional-preparation-prerequisite) and collect the pending trial observations. The correction must reject orphan Message and scope-body substitutions through the complete projector, retain valid paired execution, and pass the affected proofs and independent review. Reassess before adding any further representation or prerequisite. E1/E2 change no RC scope.
+Next action: repair `RHP-HANDLER-01` under the [regional preparation prerequisite](INTERNAL-COMMUTATION-PROPOSAL.md#regional-preparation-prerequisite) before further Error/Terminate publication proofs. Cancellation must end every previously published handler it withdraws, including one owned outside the cancelled body region; private Timers stay private. Reuse the retention witness and predecessor ownership account; require exact accepted publication in both targets. Reassess before another representation or prerequisite. E1/E2 change no RC scope.
 
-In progress: the Message projection correction passes focused Lean, core, and resource checks; independent review remains required. Error/Terminate accepted publication follows. `AOO-RETAINED-BODY-01` requires a separate amendment before bounded-Terminate admission.
+In progress: `MBP-EMPTY-TASK-01` has independent checkpoint approval and a clean complete gate; its [receipt](INTERNAL-COMMUTATION-PROPOSAL.md#independent-cold-review-receipt) owns the evidence. Four constructed Error/Terminate × Message/Timer probes reproduce the next publication gap outside profile admission. Regional trial closure remains pending. `AOO-RETAINED-BODY-01` requires a separate amendment before bounded-Terminate admission.
 
 Retain snapshot exclusion, predicate coverage, token multiplicity, the [3 GiB ceiling](CAPSULE-COST-LEDGER.md#package-wide-theorem-elaboration-memory-correction), and stashes `f35bdd6b0424b2e3d5d06f101eb822bd285ab29e` and `76a2b017a630d23203ded482227382003f296f0b`. Scope batching is approved; regions, scheduled choice, and closure remain open.
 
