@@ -77,7 +77,7 @@ Owner instruction on 2026-09-20: finish both reviews' follow-ups; preserve compl
 - [x] E1: [guard admission premises](../packages/semantic-core/test/regional-frontier-admission.test.ts) and record the capability-level exclusion argument; preserve regional obligations pending semantic review.
 - [ ] Resolve Review 1's evidence-matrix, lowering-equality, and PMI theorem claims.
 - [ ] Evaluate named invariant fields, dual state descriptions, and duplicate helpers against consumers.
-- [ ] Measure the fixture pilot and its verification boundary.
+- [x] Measure the [fixture pilot](CAPSULE-COST-LEDGER.md#kernel-fixture-pilot-2026-09-20); retain kernel checks after assessing trust.
 - [ ] Bind snapshot-batching limitations to Compensation's pre-registration obligations.
 - [x] Review 2: locate diagnostics in failed receipts; preserve verdicts and complete logs.
 - [x] Reject [gate selection](TESTING-SPEC.md#three-level-verification-policy): historical inputs cannot establish safe omission; retain complete gates.

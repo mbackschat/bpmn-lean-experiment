@@ -393,9 +393,10 @@ export const leanModuleCostRecord = {
     { module: "BpmnSemantics.EmbeddedSubProcessCompletionConformance", sourceSha256: "4c30ff0decdd55e26d94931e5e90b781b30b20610708001662aacd89cb12a808", peakResidentKib: 1926344, elapsedSeconds: 11.0 },
     {
       module: "BpmnSemantics.InternalCommutationConformance", sourceSha256: "a02dd231e707535714fa9f6f453b6a8ca6059f89123b8f8aadb10737ac868d00",
-      peakResidentKib: 1271768,
-      elapsedSeconds: 9.16,
-      measuredAtCommit: "93cfcbf9",
+      peakResidentKib: 1288936,
+      elapsedSeconds: 10.86,
+      measurementReceiptSha256: "a836939c202072965c700b568492e38cfd346628584fc39f77726a391fb1dc53",
+      measuredAtCommit: "df8a6c2d",
     },
     { module: "BpmnSemantics.InternalClosureAtomicityConformance", sourceSha256: "726af063eace416930440c691765d1349259deae28caabe682c6d4294fd04cba", peakResidentKib: 1261436, elapsedSeconds: 14.90, measuredAtCommit: "cbb78a11" },
     { module: "BpmnSemantics.CompensationSourceAdmissionConformance", sourceSha256: "88b1ed346d0012c1117855f7fa82dec4f46ed81a48b0c13e9f7be5060edf2457", peakResidentKib: 2447360, elapsedSeconds: 18.21, measuredAtCommit: "5fa6dfe3" },
