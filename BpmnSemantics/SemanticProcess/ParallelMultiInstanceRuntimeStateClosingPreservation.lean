@@ -35,7 +35,7 @@ theorem sharedParallelCompletionStep_preserves_runtimeStateWellFormed
       subst after
       exact sharedParallelFinal_preserves_runtimeStateWellFormed program expectedInstanceId
         instanceId arm ownerScope account before taskId controller record results running
-        selectedController selectedRecord regionValid withinLimits wellFormed
+        selectedController selectedRecord regionValid wellFormed
   | early instanceId controller record result running sameInstance selectedController selectedRecord
       regionValid accepted condition incomplete rewrite =>
       subst after

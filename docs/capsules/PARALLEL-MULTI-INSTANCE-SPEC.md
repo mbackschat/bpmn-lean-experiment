@@ -111,6 +111,8 @@ Lane shape: proved
 
 Evidence: [The Parallel Multi-Instance law owner](../../BpmnSemantics/SemanticProcess/ParallelMultiInstanceLaws.lean) proves quantified indexed-slot accounting, identity freshness, distinct-completion commutation, ordered aggregation, regional withdrawal, and output absence under the admitted controller invariants; host scheduling order and other Activity or data shapes remain outside the proof.
 
+Ordered aggregation combines two facts: successful result extraction equates the complete slot-result list with the published result list position by position, and final publication stores that list. `completed_parallel_results_preserve_slot_order` proves the extraction fact by induction for arbitrary slot lists, retaining duplicates and excluding pending slots; `final_aggregation_publishes_input_index_order` consumes it. Slot replacement separately preserves the identity-at-index array. A publication-only definitional equality would not establish extraction order.
+
 The Lean lane is **proved** for the bounded transition family. It defines the parallel controller, indexed-slot partition, batch-entry relation, child-completion relation, Timer-interruption relation, and evaluator clauses independently of TypeScript.
 
 Required theorems cover entry well-formedness; task-identity freshness and pairwise uniqueness; progress accounting; exact-slot preservation; all-complete commutation for two distinct pending tasks; index-ordered final aggregation; early-completion sibling withdrawal and output absence; Timer regional withdrawal and output absence; stale/duplicate refusal; evaluator soundness for every new relation arm; and preservation of the applicable runtime-state invariant.

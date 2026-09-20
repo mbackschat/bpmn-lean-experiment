@@ -725,7 +725,7 @@ An **evidence lane** is one source of assurance about a claim, identified by thr
 2. what passage of that lane can establish;
 3. what passage of that lane cannot establish.
 
-A fourth requirement decides whether two lanes are genuinely two: **two lanes are distinct only if their failure modes are uncorrelated.** Two producers that share an account, an internal representation, a fixture, or a projection cannot fail apart, so they count once regardless of how many artifacts they produce. Record that judgement per capsule rather than inferring it from the number of targets that agreed.
+A fourth requirement decides whether two lanes are genuinely two: **two lanes are distinct only for failure modes they can detect independently.** Record the claim, separating defect, and shared dependencies per capsule. Sharing an account, representation, fixture, or projection permits common-mode errors in that dependency; it does not prevent separately written implementations from disagreeing on a transcription defect. Two producers that necessarily reproduce the assessed defect count once regardless of artifact count. Agreement does not establish independence or correctness of shared inputs.
 
 This document owns the term. Related but different concepts keep their own names: a **work-stream** is an implementation activity that produces a lane's artifact, a **pinned baseline** is a reference checkout or execution configuration as defined in [REFERENCE-INSTRUMENTATION-POLICY.md](REFERENCE-INSTRUMENTATION-POLICY.md), and individual propositions inside one lane are **rules**, owned by the applicable [capsule](capsules/README.md).
 
@@ -734,12 +734,15 @@ This document owns the term. Related but different concepts keep their own names
 | Normative BPMN/profile review | Selected requirement and interpretation are explicit | Any implementation performs them |
 | CIB compatibility | Pinned CIB behaves as observed under the declared profile | Universal BPMN correctness |
 | Lean | The explicit Lean account executes and its stated laws hold | Correctness of CIB, parser, TypeScript, Temporal, or effects |
+| Checked-graph lowering comparison | [Lean definition-input validation](../BpmnSemantics/SemanticProcessJson/DefinitionInput.lean) recomputes lowering and rejects any supplied Program unequal to it, detecting disagreement with separately written TypeScript lowering on maintained inputs | XML-import correctness, correctness of the shared checked graph or selected lowering account, profile translation, or universal compiler/execution correspondence |
 | TypeScript differential | The independently written core agrees on maintained inputs | Universal Lean correspondence, or that the core chose its operational account independently |
 | Temporal refinement | The tested durable host preserves core-visible results and replays | Unsupported BPMN meaning |
 | MIWG interchange | Structural import/reference/encoding behavior for pinned models | Execution conformance |
 | Seeded mutation | Comparator-side mutations (applied to a clone of a target's canonical result) establish that the comparator detects one claimed field distinction; verifier-side mutations (applied to retained raw producer observations) establish that the raw-to-canonical evidence projection detects it | Projection completeness; a comparator-side mutation establishes nothing about the evidence projection |
 
 No agreement vote resolves a source disagreement. Classify mismatches against the standard, profile, CIB configuration, observation boundary, and evidence before changing semantics.
+
+The lowering comparison is executable structural Program equality, not a universal compiler theorem or a comparison of JSON spelling. The [differential boundary mutations](../packages/differential/test/semantic-differential-targets.ts) alter source origin and erase provenance to require rejection before execution. Downstream execution agreement alone would miss an incorrect Program supplied identically to both targets.
 
 The CIB evidence owner must classify every field of `scenario.schema.json#/$defs/stateObservation` and every nested occurrence, wait, timer, effect, and variable field as `engine-observed`, `adapter-derived`, `adapter-decided`, or not claimed. The classification follows the complete schema rather than a prose field count and explicitly includes activation, multiplicity, lifecycle state, and timer deadline. A raw observation may be added only when the pinned engine exposes the fact. A verifier that reuses producer projection rules remains a raw-to-canonical consistency check and does not become another independent evidence lane.
 

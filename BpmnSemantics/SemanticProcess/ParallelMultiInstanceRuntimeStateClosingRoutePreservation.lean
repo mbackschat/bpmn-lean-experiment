@@ -14,7 +14,8 @@ namespace BpmnSemantics.SemanticProcess
 
 open BpmnSemantics
 
-/-- Final child completion closes the region and publishes the exact bounded result list. -/
+/-- Final child completion preserves the structural runtime invariant for the supplied results.
+The transition relation separately enforces collection limits; this invariant does not bound them. -/
 theorem sharedParallelFinal_preserves_runtimeStateWellFormed
     (program : Program) (expectedInstanceId instanceId : SemanticId)
     (arm : ParallelMultiInstanceArm) (ownerScope : DefinitionScopeId)
@@ -26,7 +27,6 @@ theorem sharedParallelFinal_preserves_runtimeStateWellFormed
     (selectedController : parallelControllerForTask? arm before taskId = some controller)
     (selectedRecord : parallelControllerRecord? before controller = some record)
     (regionValid : parallelRegionValid arm before controller record = true)
-    (_withinLimits : withinParallelMultiInstanceLimits arm results = true)
     (wellFormed : runtimeStateWellFormed program expectedInstanceId before = true) :
     runtimeStateWellFormed program expectedInstanceId
       (closeSharedParallelRegion before controller record arm.normalOutput

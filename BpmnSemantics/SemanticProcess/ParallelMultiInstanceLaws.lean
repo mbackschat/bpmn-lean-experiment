@@ -628,14 +628,34 @@ theorem two_distinct_all_policy_shared_final_completions_commute
     (completed_parallel_results_of_commuted_slots controller.slots different leftResult
       rightResult leftResults rightResults leftCompleted rightCompleted)
 
-/-- Final aggregation writes the complete result list in the slot traversal order. -/
+/-- Successful extraction preserves every slot position, including repeated result values. -/
+theorem completed_parallel_results_preserve_slot_order (slots : List ParallelMultiInstanceSlot)
+    (results : List String) (complete : completedParallelResults? slots = some results) :
+    slots.map ParallelMultiInstanceSlot.result? = results.map some := by
+  induction slots generalizing results with
+  | nil => simpa [completedParallelResults?] using complete
+  | cons slot rest ih =>
+      cases slot with
+      | pending taskId => simp [completedParallelResults?] at complete
+      | completed taskId result =>
+          cases remaining : completedParallelResults? rest with
+          | none => simp [completedParallelResults?, remaining] at complete
+          | some values =>
+              have equal : result :: values = results := by
+                simpa [completedParallelResults?, remaining] using complete
+              subst results
+              simpa [ParallelMultiInstanceSlot.result?] using
+                congrArg (List.cons (some result)) (ih values remaining)
+
+/-- Final aggregation publishes every slot result at the same input-list position. -/
 theorem final_aggregation_publishes_input_index_order (arm : ParallelMultiInstanceArm)
     (before : ParallelMultiInstanceRuntimeState) (slots : List ParallelMultiInstanceSlot)
-    (results : List String) (_complete : completedParallelResults? slots = some results) :
+    (results : List String) (complete : completedParallelResults? slots = some results) :
     (finishedParallelMultiInstanceState arm before results).processBindings =
       mergeProcessVariableBindings before.processBindings
-        [{ name := arm.data.output.dataObjectReferenceId, value := .stringList results }] := by
-  rfl
+        [{ name := arm.data.output.dataObjectReferenceId, value := .stringList results }] ∧
+      slots.map ParallelMultiInstanceSlot.result? = results.map some := by
+  exact ⟨rfl, completed_parallel_results_preserve_slot_order slots results complete⟩
 
 /-- A false completion retains the one lifetime Timer and publishes no Process data. -/
 theorem false_completion_preserves_timer_and_publishes_nothing
