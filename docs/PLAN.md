@@ -67,28 +67,13 @@ Owner instruction on 2026-09-08 supersedes the earlier MUE push authorization: d
 
 Exactly one stable work ID is active. Required maps are part of the routing contract, not descriptive tags.
 
-### Architecture and workflow review follow-up
+### Pending regional trial
 
-Owner decision, 2026-09-20: finish review fixes; leave the regional trial pending in the RC queue, outside this goal. Preserve complete gates, guarantees, and required semantic reviews.
-
-- [x] Review 2: fix source-digest/review-target binding and require deliverable-based reassessment without weakening evidence.
-- [x] E1: retain [Error/arming conflict](../packages/bpmn-source/test/subprocess-error-lowering.test.ts), [delayed regional pairs and End/arming rollback](../packages/bpmn-source/test/embedded-subprocess-lowering.test.ts); review structural exclusion. No reachability theorem or singleton classification is approved.
-- [x] E2: [retained counterexamples](../packages/semantic-core/test/internal-transition-local-control-preparation.test.ts) and an independently audited Lean locality certificate preserve the exact theorem; no demonstrated simplification justifies migration.
-- [x] E1: [guard admission premises](../packages/semantic-core/test/regional-frontier-admission.test.ts) and record the capability-level exclusion argument; preserve regional obligations pending semantic review.
-- [ ] Close reviewed evidence/PMI claims and [output-limit repair](capsules/PARALLEL-MULTI-INSTANCE-SPEC.md#independent-cold-review-receipt).
-- [x] [Representation/reuse assessment](INTERNAL-COMMUTATION-PROPOSAL.md#representation-and-reuse-assessment-2026-09-20): retain the representation and consolidate identical collection proofs under the complete Lean/infrastructure gates.
-- [x] Measure the [fixture pilot](CAPSULE-COST-LEDGER.md#kernel-fixture-pilot-2026-09-20); retain kernel checks after assessing trust.
-- [x] Bind snapshot-batching and runner limitations to [Compensation registration prerequisites](capsules/COMPENSATION-TRIGGER-HANDLER-PROPOSAL.md#public-registration-prerequisites), including the private Lean/TypeScript ordinary-batch gap.
-- [x] Review 2: locate diagnostics in failed receipts; preserve verdicts and complete logs.
-- [x] Reject [gate selection](TESTING-SPEC.md#three-level-verification-policy): historical inputs cannot establish safe omission; retain complete gates.
-- [x] Add [receipt timing](../scripts/summarize-command-receipts.ts) and optional lane labels; reproduce the reviewed window without inferring effort.
-- [ ] Audit every finding and the trial evidence.
-
-Failed witness searches are inconclusive; reassessment cannot discard correctness obligations. Tooling/tests are [non-material](TESTING-SPEC.md#independent-cold-review-gate), covered by complete infrastructure/core gates; semantic/proof changes retain required reviews.
+Owner decision, 2026-09-20: the regional checkpoint trial remains pending in the RC queue, outside the completed [architecture/workflow review follow-up](CAPSULE-COST-LEDGER.md#architecture-and-workflow-review-follow-up-2026-09-20). Its observations remain receipt span/union, contemporaneous repeat-work records, commit purpose, and unchanged assurance. Preserve complete gates, guarantees, and required semantic reviews; the review fixes do not establish trial success or change RC scope.
 
 ### External-review correction checklist
 
-The six reviews supplied on 2026-09-05 and their correction audits are complete; the architecture and workflow follow-up above is separate.
+The six reviews supplied on 2026-09-05 and their correction audits are complete; the later [architecture/workflow review follow-up](CAPSULE-COST-LEDGER.md#architecture-and-workflow-review-follow-up-2026-09-20) has its own evidence and dispositions.
 
 The closure-reviewed [seven-byte capacity correction](capsules/COMPENSATION-EMPTY-STATE-CAPACITY-REPAIR-SPEC.md) supplies the declaration minimum used by the closure-reviewed [initialization repair](capsules/RUNTIME-INITIALIZATION-ASSURANCE-REPAIR-SPEC.md). The unchanged empty-state theorem and actual committed-start guarantees remain intact; no general all-transition preservation theorem is claimed. The [cost ledger](CAPSULE-COST-LEDGER.md#repair-closure-costs) owns contiguous measurements and comparisons.
 
@@ -112,7 +97,7 @@ Active work ID: `INTERNAL-COMMUTATION`.
 
 Risk band: RC internal scheduling; the six external reviews and composed Activity-data closure are complete.
 
-Next action: finish the review-follow-up checklist before expanding [regional proofs](INTERNAL-COMMUTATION-PROPOSAL.md#regional-preparation-prerequisite). E1/E2 change no RC scope; changed classifications require separating guards and semantic-checkpoint review. Reopen locality migration only for demonstrated shared simplification preserving exact order and complete preparations.
+Next action: when RC work resumes, take the [regional preparation prerequisite](INTERNAL-COMMUTATION-PROPOSAL.md#regional-preparation-prerequisite) to its declared semantic checkpoint and collect the pending trial observations. E1/E2 change no RC scope; changed classifications require separating guards and semantic-checkpoint review. Reopen locality migration only for demonstrated shared simplification preserving exact order and complete preparations.
 
 In progress: Timer classification and wait validity share operation-level proofs; four list-uniqueness proofs use the standard library. The cleanup preserves existing theorem statements and matcher behavior. Complete/Return publication and cancellation wait/Effect-local preservation remain implemented. `AOO-RETAINED-BODY-01` requires a separate amendment before bounded-Terminate admission.
 
