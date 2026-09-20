@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
+  ActivityBodyKind,
   ActivityHandlerKind,
   CommandOutcome,
   FlowNodeOccurrenceTerminalKind,
@@ -14,9 +15,11 @@ import {
   initialState,
   projectOpenFlowNodeOccurrences,
   requireCompleteFlowNodeOccurrenceLifecycles,
+  runtimeStateDefects,
 } from "@bpmn-lean/semantic-core";
 import type {
   RetainedFlowNodeOccurrence,
+  RuntimeState,
   TracedCommandResult,
   UnnumberedFlowNodeOccurrenceDelta,
 } from "@bpmn-lean/semantic-core";
@@ -105,6 +108,24 @@ test("current-open projection requires the Activity record to own both paired wa
       })),
     })),
   }), null);
+});
+
+test("an empty task population does not exempt orphan Message subscriptions from projection validation", () => {
+  const state = traceStart().result.state;
+  const orphan = { ...state, userTaskWaits: [], activityOccurrences: [] };
+  assert.deepEqual(runtimeStateDefects(program, start.instanceId, orphan), []);
+  assert.equal(projectOpenFlowNodeOccurrences(program, orphan), null);
+});
+
+test("an empty task population does not let a Message Activity substitute a live scope for its task body", () => {
+  const state = traceStart().result.state;
+  const wrongBody: RuntimeState = { ...state, userTaskWaits: [],
+    activityOccurrences: state.activityOccurrences.map((record) => ({
+      ...record, body: { kind: ActivityBodyKind.ChildScope, scope: owner },
+    })),
+  };
+  assert.deepEqual(runtimeStateDefects(program, start.instanceId, wrongBody), []);
+  assert.equal(projectOpenFlowNodeOccurrences(program, wrongBody), null);
 });
 
 test("each winner publishes the exact loser cancellation and only Message executes the Boundary Event", () => {

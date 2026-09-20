@@ -90,18 +90,52 @@ theorem preparedChildComplete_projection_associations (program : Program) (befor
   have incidentFrame := regional_child_incident_associations_frame before after prepared.selection.root.id quiet scopes control effects incidents locals
   exact ⟨after, applied, callFrame.trans priorCalls, incidentFrame.trans priorIncidents, raceValid⟩
 
-/-- A selected Task witness activates the predecessor's nested reverse Message-pair
-census, binding every selected Activity to an actual Task body and owner. -/
+/-- ABMSG-ARM-01 requires an atomic Task/Message/Activity population. Empty Tasks
+cannot make either reverse population check vacuous (MBP-EMPTY-TASK-01). -/
+theorem messageBoundedProjection_empty_tasks
+    (program : Program) (state : RuntimeState)
+    (id : OperationId) (origin : BpmnElementOrigin) (input : ControlPlaceId)
+    (task : BoundedTaskArm) (boundary : BoundaryMessageArm)
+    (empty : (state.waits.filter fun wait =>
+      FlowNodeOccurrenceProgramValidity.Internal.operationOwnedBy program
+        (.awaitMessageBoundedUserTask id origin input task boundary) wait.owner &&
+          decide (wait.task.id = task.id)) = [])
+    (valid : messageBoundedOperationProjectionValid program state
+      (.awaitMessageBoundedUserTask id origin input task boundary) = true) :
+    (state.messageWaits.filter fun wait =>
+      FlowNodeOccurrenceProgramValidity.Internal.operationOwnedBy program
+        (.awaitMessageBoundedUserTask id origin input task boundary) wait.owner &&
+          decide (wait.elementId = boundary.elementId)) = [] ∧
+    (state.activityOccurrences.filter fun record =>
+      FlowNodeOccurrenceProgramValidity.Internal.operationOwnedBy program
+        (.awaitMessageBoundedUserTask id origin input task boundary) record.owner &&
+          decide (record.activityElementId.value = task.id.value)) = [] := by
+  have drop (records : List ActivityOccurrence) : records.filter (fun _ => false) = [] := by
+    induction records with
+    | nil => rfl
+    | cons head tail ih => exact ih
+  simp only [messageBoundedOperationProjectionValid, empty, List.all_nil,
+    List.filter_nil, List.length_nil, Nat.zero_ne_one, decide_false,
+    Bool.true_and, Bool.and_eq_true] at valid
+  constructor
+  · apply List.eq_nil_iff_forall_not_mem.mpr
+    intro wait member
+    have impossible := List.all_eq_true.mp valid.1 wait member
+    simp only [drop, List.length_nil, Nat.zero_ne_one, decide_false,
+      Bool.false_eq_true] at impossible
+  · apply List.eq_nil_iff_forall_not_mem.mpr
+    intro record member
+    have impossible := List.all_eq_true.mp valid.2 record member
+    contradiction
+
+/-- The independent reverse record census binds every selected Activity to an actual
+Task body and owner, including when the selected Task population is empty. -/
 theorem messageBoundedProjection_record_task_binding (program : Program) (state : RuntimeState)
     (id : OperationId) (origin : BpmnElementOrigin) (input : ControlPlaceId)
     (task : BoundedTaskArm) (boundary : BoundaryMessageArm)
     (record : ActivityOccurrence)
     (prior : messageBoundedOperationProjectionValid program state
       (.awaitMessageBoundedUserTask id origin input task boundary) = true)
-    (firstTask : UserTaskWait)
-    (firstTaskMember : firstTask ∈ state.waits.filter (fun wait =>
-      FlowNodeOccurrenceProgramValidity.Internal.operationOwnedBy program
-        (.awaitMessageBoundedUserTask id origin input task boundary) wait.owner && decide (wait.task.id = task.id)))
     (member : record ∈ state.activityOccurrences.filter (fun candidate =>
       FlowNodeOccurrenceProgramValidity.Internal.operationOwnedBy program
         (.awaitMessageBoundedUserTask id origin input task boundary) candidate.owner &&
@@ -111,18 +145,8 @@ theorem messageBoundedProjection_record_task_binding (program : Program) (state 
         { processInstanceId := taskWait.processInstanceId
           elementId := ⟨taskWait.task.id.value⟩
           activation := taskWait.activation } := by
-  simp only [messageBoundedOperationProjectionValid] at prior
-  have firstValid := Bool.and_eq_true_iff.mp (List.all_eq_true.mp prior firstTask firstTaskMember)
-  obtain ⟨pairedRecord, pairedRecordCensus⟩ := List.length_eq_one_iff.mp (of_decide_eq_true firstValid.1)
-  have pairedRecordIn := congrArg (fun values : List ActivityOccurrence => pairedRecord ∈ values) pairedRecordCensus
-  simp only [List.mem_singleton] at pairedRecordIn
-  have pairedRecordMember := List.mem_filter.mp (Eq.mpr pairedRecordIn trivial)
-  obtain ⟨firstMessage, firstMessageCensus⟩ := List.length_eq_one_iff.mp (of_decide_eq_true pairedRecordMember.2)
-  have firstMessageIn := congrArg (fun values : List MessageWait => firstMessage ∈ values) firstMessageCensus
-  simp only [List.mem_singleton] at firstMessageIn
-  have firstMessageMember := (List.mem_filter.mp (Eq.mpr firstMessageIn trivial)).1
-  have messageValid := Bool.and_eq_true_iff.mp (List.all_eq_true.mp firstValid.2 firstMessage firstMessageMember)
-  have recordValid := List.all_eq_true.mp messageValid.2 record member
+  simp only [messageBoundedOperationProjectionValid, Bool.and_eq_true] at prior
+  have recordValid := List.all_eq_true.mp prior.2 record member
   obtain ⟨taskWait, taskCensus⟩ := List.length_eq_one_iff.mp (of_decide_eq_true recordValid)
   have taskIn := congrArg (fun values : List UserTaskWait => taskWait ∈ values) taskCensus
   simp only [List.mem_singleton] at taskIn
@@ -142,17 +166,13 @@ theorem messageBoundedProjection_record_not_child (program : Program) (state : R
     (record : ActivityOccurrence) (removed : ScopeOccurrenceId)
     (prior : messageBoundedOperationProjectionValid program state
       (.awaitMessageBoundedUserTask id origin input task boundary) = true)
-    (firstTask : UserTaskWait)
-    (firstTaskMember : firstTask ∈ state.waits.filter (fun wait =>
-      FlowNodeOccurrenceProgramValidity.Internal.operationOwnedBy program
-        (.awaitMessageBoundedUserTask id origin input task boundary) wait.owner && decide (wait.task.id = task.id)))
     (member : record ∈ state.activityOccurrences.filter (fun candidate =>
       FlowNodeOccurrenceProgramValidity.Internal.operationOwnedBy program
         (.awaitMessageBoundedUserTask id origin input task boundary) candidate.owner &&
           decide (candidate.activityElementId.value = task.id.value))) :
     record.body ≠ .childScope removed := by
   obtain ⟨taskWait, _, _, body⟩ := messageBoundedProjection_record_task_binding program state id origin input
-    task boundary record prior firstTask firstTaskMember member
+    task boundary record prior member
   simp [body]
 
 theorem completionWithdrawal_message_projection_validity (program : Program) (before after : RuntimeState)
@@ -167,25 +187,16 @@ theorem completionWithdrawal_message_projection_validity (program : Program) (be
   have valid := prior operation member
   cases operation <;> try exact valid
   case awaitMessageBoundedUserTask id origin input task boundary =>
-    cases selectedTasks : before.waits.filter (fun wait =>
-      FlowNodeOccurrenceProgramValidity.Internal.operationOwnedBy program
-        (.awaitMessageBoundedUserTask id origin input task boundary) wait.owner && decide (wait.task.id = task.id)) with
-    | nil => simp only [messageBoundedOperationProjectionValid, tasks, selectedTasks, List.all_nil]
-    | cons firstTask rest =>
-      have firstTaskMember : firstTask ∈ before.waits.filter (fun wait =>
-          FlowNodeOccurrenceProgramValidity.Internal.operationOwnedBy program
-            (.awaitMessageBoundedUserTask id origin input task boundary) wait.owner && decide (wait.task.id = task.id)) := by
-        rw [selectedTasks]; simp
-      have census := regional_child_activity_filter_frame before after root withdrawal
+    have census := regional_child_activity_filter_frame before after root withdrawal
         (fun record => FlowNodeOccurrenceProgramValidity.Internal.operationOwnedBy program
           (.awaitMessageBoundedUserTask id origin input task boundary) record.owner &&
             decide (record.activityElementId.value = task.id.value)) activities (by
           intro record recordMember body
           apply Bool.eq_false_iff.mpr
           intro selected
-          exact messageBoundedProjection_record_not_child program before id origin input task boundary record root valid firstTask firstTaskMember
+          exact messageBoundedProjection_record_not_child program before id origin input task boundary record root valid
             (List.mem_filter.mpr ⟨recordMember, selected⟩) body)
-      simpa only [messageBoundedOperationProjectionValid, tasks, messages, census] using valid
+    simpa only [messageBoundedOperationProjectionValid, tasks, messages, census] using valid
 
 theorem preparedChildComplete_message_projection_validity (program : Program) (before : RuntimeState)
     (id : OperationId) (origin : BpmnElementOrigin) (definition : DefinitionScopeId)

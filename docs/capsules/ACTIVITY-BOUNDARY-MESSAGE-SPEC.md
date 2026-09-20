@@ -156,6 +156,8 @@ The open Message subscription is a semantic fact keyed by subscription identity 
 
 The empty-submission User Task completion Update and payload-free Message Signal are explicit competing inputs. A non-empty completion and every payload-bearing Message delivery are refused rather than projected into an unmodeled data contract. Semantic state contains no implicit scheduler order, wall clock, Workflow Task identity, Event History position, or Run ID.
 
+Open projection checks the selected Task, Message, and Activity populations independently: an empty Task population cannot exempt orphan subscriptions or records from the exact body/handler pairing. The [Message projection correction](../INTERNAL-COMMUTATION-PROPOSAL.md#regional-preparation-prerequisite) records the two complete-predicate counterexamples, quantified empty-population law, and verification boundary; its malformed-state refusal changes no source capability or victory transition.
+
 The Boundary Event is a Flow Node but an armed subscription is not a running Boundary Event occurrence. `ABMSG-OBSERVE-01` distinguishes handler readiness from trigger occurrence so E2 publication cannot invent a long-running boundary-node duration.
 
 The distinct normal and boundary follow-on User Tasks are the public route discriminator. End Event identity is not used as the only discriminator because terminal element identity is absent from the canonical stable observation.

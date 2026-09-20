@@ -292,15 +292,15 @@ def messageBoundedOperationProjectionValid (program : Program) (state : RuntimeS
       let records := state.activityOccurrences.filter fun record =>
         owned record.owner && decide (record.activityElementId.value = task.id.value)
       let paired := messageBoundedProjectionPairMatches program operation
-      tasks.all fun taskWait =>
+      (tasks.all fun taskWait =>
         (records.filter fun record =>
-          (messages.filter fun messageWait => paired record taskWait messageWait).length = 1).length = 1 &&
-      messages.all fun messageWait =>
+          (messages.filter fun messageWait => paired record taskWait messageWait).length = 1).length = 1) &&
+      (messages.all fun messageWait =>
         (records.filter fun record =>
-          (tasks.filter fun taskWait => paired record taskWait messageWait).length = 1).length = 1 &&
-      records.all fun record =>
+          (tasks.filter fun taskWait => paired record taskWait messageWait).length = 1).length = 1) &&
+      (records.all fun record =>
         (tasks.filter fun taskWait =>
-          (messages.filter fun messageWait => paired record taskWait messageWait).length = 1).length = 1
+          (messages.filter fun messageWait => paired record taskWait messageWait).length = 1).length = 1)
   | _ => true
 
 def messageBoundedProjectionValid (program : Program) (state : RuntimeState) : Bool :=

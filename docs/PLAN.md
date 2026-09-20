@@ -97,9 +97,9 @@ Active work ID: `INTERNAL-COMMUTATION`.
 
 Risk band: RC internal scheduling; the six external reviews and composed Activity-data closure are complete.
 
-Next action: when RC work resumes, take the [regional preparation prerequisite](INTERNAL-COMMUTATION-PROPOSAL.md#regional-preparation-prerequisite) to its declared semantic checkpoint and collect the pending trial observations. E1/E2 change no RC scope; changed classifications require separating guards and semantic-checkpoint review. Reopen locality migration only for demonstrated shared simplification preserving exact order and complete preparations.
+Next action: close the reproduced `MBP-EMPTY-TASK-01` projection correction, then resume the [regional preparation prerequisite](INTERNAL-COMMUTATION-PROPOSAL.md#regional-preparation-prerequisite) and collect the pending trial observations. The correction must reject orphan Message and scope-body substitutions through the complete projector, retain valid paired execution, and pass the affected proofs and independent review. Reassess before adding any further representation or prerequisite. E1/E2 change no RC scope.
 
-In progress: Timer classification and wait validity share operation-level proofs; four list-uniqueness proofs use the standard library. The cleanup preserves existing theorem statements and matcher behavior. Complete/Return publication and cancellation wait/Effect-local preservation remain implemented. `AOO-RETAINED-BODY-01` requires a separate amendment before bounded-Terminate admission.
+In progress: the Message projection correction passes focused Lean, core, and resource checks; independent review remains required. Error/Terminate accepted publication follows. `AOO-RETAINED-BODY-01` requires a separate amendment before bounded-Terminate admission.
 
 Retain snapshot exclusion, predicate coverage, token multiplicity, the [3 GiB ceiling](CAPSULE-COST-LEDGER.md#package-wide-theorem-elaboration-memory-correction), and stashes `f35bdd6b0424b2e3d5d06f101eb822bd285ab29e` and `76a2b017a630d23203ded482227382003f296f0b`. Scope batching is approved; regions, scheduled choice, and closure remain open.
 

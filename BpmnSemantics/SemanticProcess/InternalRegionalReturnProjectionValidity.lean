@@ -3,8 +3,8 @@ import BpmnSemantics.SemanticProcess.InternalRegionalChildProjectionValidity
 import BpmnSemantics.SemanticProcess.InternalRegionalIncidentValidity
 
 /-! Return's independent projection guards follow from predecessor validators and the
-actual cleanup. Message-boundary record retention uses the existing nested Task witness;
-it does not strengthen the empty-Task predicate or claim cross-target domain agreement. -/
+actual cleanup. Message-boundary record retention uses the independent reverse record census;
+each surviving Activity must retain its exact Task body. -/
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -22,24 +22,16 @@ theorem regional_return_message_projection_validity (program : Program) (before 
   have valid := prior operation member
   cases operation <;> try exact valid
   case awaitMessageBoundedUserTask id origin input task boundary =>
-    cases selectedTasks : before.waits.filter (fun wait =>
-      operationOwnedBy program (.awaitMessageBoundedUserTask id origin input task boundary) wait.owner &&
-        decide (wait.task.id = task.id)) with
-    | nil => simp only [messageBoundedOperationProjectionValid, tasks, selectedTasks, List.all_nil]
-    | cons firstTask rest =>
-      have firstTaskMember : firstTask ∈ before.waits.filter (fun wait =>
-          operationOwnedBy program (.awaitMessageBoundedUserTask id origin input task boundary) wait.owner &&
-            decide (wait.task.id = task.id)) := by rw [selectedTasks]; simp
-      have census := regional_return_activity_filter_frame before after root
+    have census := regional_return_activity_filter_frame before after root
         (fun record => operationOwnedBy program (.awaitMessageBoundedUserTask id origin input task boundary) record.owner &&
           decide (record.activityElementId.value = task.id.value)) activities (by
         intro record member owner
         apply Bool.eq_false_iff.mpr
         intro selected
         obtain ⟨taskWait, taskMember, taskOwner, _⟩ := messageBoundedProjection_record_task_binding program before
-          id origin input task boundary record valid firstTask firstTaskMember (List.mem_filter.mpr ⟨member, selected⟩)
+          id origin input task boundary record valid (List.mem_filter.mpr ⟨member, selected⟩)
         exact (regional_quiescent_wait_owners_differ before root quiet).1 taskWait taskMember (taskOwner.trans owner))
-      simpa only [messageBoundedOperationProjectionValid, tasks, messages, census] using valid
+    simpa only [messageBoundedOperationProjectionValid, tasks, messages, census] using valid
 
 theorem preparedReturn_message_projection_validity (program : Program) (before : RuntimeState)
     (expected : SemanticId) (id : OperationId) (origin : BpmnElementOrigin)
