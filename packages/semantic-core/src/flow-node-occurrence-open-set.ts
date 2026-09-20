@@ -169,17 +169,17 @@ export function resolveBoundaryTimerBinding(
   const operation = record === undefined ? undefined : only(
     program.operations.filter((candidate) => candidate.id === record.operationId),
   );
-  if (record === undefined || operation === undefined) return null;
-  // The output check distinguishes this operation's own deadline from another Timer of the same
-  // element and depends on no ordinal agreement. Kinds are switched rather than filtered so each arm
-  // carries the narrowed operation the binding union requires.
+  if (record === undefined || operation === undefined ||
+      !sameScopeOccurrence(record.owner, wait.owner) ||
+      !boundaryTimerOperationMatches(program, operation, wait)) return null;
   switch (operation.kind) {
     case SemanticOperationKind.AwaitBoundedUserTask:
     case SemanticOperationKind.AwaitMonitoredUserTask: {
       const body = activityBodyTask(record);
       const task = body === undefined ? undefined
         : only(state.userTaskWaits.filter(({ id }) => sameOccurrence(id, body)));
-      return task === undefined || operation.boundaryTimer.output !== wait.output
+      return task === undefined || task.id.elementId !== operation.task.elementId ||
+          !sameScopeOccurrence(task.owner, wait.owner)
         ? null
         : { operation, hostId: task.id };
     }
@@ -197,12 +197,33 @@ export function resolveBoundaryTimerBinding(
       const body = activityBodyScope(record);
       const child = body === undefined ? undefined
         : only(state.scopeOccurrences.filter(({ id }) => sameScopeOccurrence(id, body)));
-      return child === undefined || operation.boundaryTimer.output !== wait.output
+      return child === undefined || child.id.definitionScopeId !== operation.childScopeId ||
+          child.parent === null || !sameScopeOccurrence(child.parent, wait.owner)
         ? null
         : { operation, child };
     }
     default:
       return null;
+  }
+}
+
+/** The open-occurrence contract binds private deadlines to declarations; an Activity lookup key alone cannot establish that binding. */
+function boundaryTimerOperationMatches(
+  program: SemanticProcessProgram,
+  operation: SemanticOperation,
+  wait: RuntimeState["timerWaits"][number],
+): operation is BoundaryTimerBinding["operation"] {
+  switch (operation.kind) {
+    case SemanticOperationKind.AwaitBoundedUserTask:
+    case SemanticOperationKind.AwaitMonitoredUserTask:
+    case SemanticOperationKind.AwaitSequentialMultiInstanceUserTask:
+    case SemanticOperationKind.AwaitParallelMultiInstanceUserTask:
+    case SemanticOperationKind.EnterBoundedScope:
+      return operation.boundaryTimer.elementId === wait.id.elementId &&
+        operation.boundaryTimer.output === wait.output &&
+        operationOwnedBy(program, operation, wait.owner);
+    default:
+      return false;
   }
 }
 

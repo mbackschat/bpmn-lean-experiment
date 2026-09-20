@@ -2,8 +2,8 @@
 
 ## Status
 
-Lifecycle: draft
-Review: pending
+Lifecycle: implementation-in-progress
+Review: approved
 
 ## Question and boundary
 
@@ -50,6 +50,16 @@ Preparation returns its existing refusal result on a closure violation. It neith
 
 `REG-OWN-FRAME-01`: pair preservation must establish this complete closure condition again after the independent member. Every deciding reference census must either have its reads protected by the existing typed footprint or have a proved frame under that other operation. Omitting the new condition from retained-preparation equality, ignoring it after the first step, or declaring all record writes globally conflicting does not discharge this obligation. Valid disjoint regional and mixed pairs must remain batchable.
 
+## Retained local-data correction
+
+Implementation on 2026-09-20 exposed an omitted edge in the proposal's original body/handler/race enumeration: an Activity-tagged local scope references its owning Activity. The existing [input lifetime account](capsules/ACTIVITY-DATA-INPUT-MEDIATION-SPEC.md) (`ADINPUT-SCOPE-01`) and [output lifetime account](capsules/ACTIVITY-DATA-OUTPUT-MEDIATION-SPEC.md) (`ADIO-SCOPE-01`) already require that exact live owner. This correction applies those contracts to private regional preparation; the original proposal review did not enumerate this edge. It remains part of the pending regional semantic checkpoint review.
+
+Two state-level counterexamples pass the predecessor validators and open projection: root Complete retains an orphan Activity-local scope and then fails terminal projection; bounded Complete retains a local scope while withdrawing its exact live Activity owner. Predecessor owner existence alone therefore does not suffice. These witnesses establish no registered-profile reachability.
+
+For every Activity-tagged local scope retained by the selected operation, require exactly one predecessor Activity record with its complete occurrence identity, and require that record to survive. Derive local retention independently: Complete retains all local scopes; Return filters their owner Process instances through the called-instance closure; Error/Terminate compose that cleanup with exact withdrawn Activity and Effect identities. Keep the Effect-tagged account and global validator unchanged. A whole removed component imposes no retained-owner obligation; unrelated retained components remain allowed.
+
+The [Lean local-data owner](../BpmnSemantics/SemanticProcess/InternalRegionalLocalDataRetention.lean) and [selection integration](../BpmnSemantics/SemanticProcess/InternalRegionalSelectedRetention.lean) prove actual field agreement and retained-owner preservation. The fixed-mask deletion frame uses both removals' closure conditions; re-derived masks and data-arming insertion still require complete preparation frames. [TypeScript witnesses](../packages/semantic-core/test/internal-transition-regional-preparation.test.ts) distinguish owner absence from withdrawal, all identity coordinates, duplicate owners, owner tags, whole-component removal, and unrelated retention. The complete core gate passes 1067 tests on 2026-09-20. This correction adds no raw cleanup, source capability, or aggregate-preservation claim.
+
 ## Required and excluded work
 
 Required are independently written Lean and TypeScript mask/closure predicates, agreement with the actual removal fields, refusal of the reproduced cases, derived retained-body/handler/race preservation from predecessor validity, and complete preparation/pair-frame integration. The mask account is a private proof and preparation boundary; it is not a second runtime evaluator or a universal graph schema.
@@ -91,6 +101,6 @@ This private, pre-release preparation change introduces no serialized field or v
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `f9cd2804` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `f9cd2804` | `fork-turns-none` | `approve` | `not-required` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |

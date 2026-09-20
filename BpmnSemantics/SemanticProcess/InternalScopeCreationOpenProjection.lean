@@ -229,7 +229,7 @@ theorem open_projection_single_start_from_components (program : Program) (before
     ↓reduceIte, bind, Option.bind, pure, Pure.pure, afterWaits, afterScopes, afterCalls, sortedNodup]
   rw [sortedEq]
 
-private theorem mapM_output_member (values : List α) (project : α → Option β)
+theorem mapM_output_member (values : List α) (project : α → Option β)
     (results : List β) (mapped : values.mapM project = some results)
     (result : β) (member : result ∈ results) :
     ∃ value ∈ values, project value = some result := by

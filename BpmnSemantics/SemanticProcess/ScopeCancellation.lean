@@ -1,6 +1,6 @@
 import BpmnSemantics.SemanticProcess.ActivityOccurrence
 import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshot
-import BpmnSemantics.SemanticProcess.RuntimeState
+import BpmnSemantics.SemanticProcess.CallInstanceClosure
 import BpmnSemantics.SemanticProcess.SequentialMultiInstance
 
 /-! # Scope-subtree cancellation
@@ -22,12 +22,12 @@ inductive SelectedScopeDisposition where
   | remove
   deriving Repr, DecidableEq
 
-private def occurrenceParent? (occurrences : List RuntimeScopeOccurrence)
+def occurrenceParent? (occurrences : List RuntimeScopeOccurrence)
     (candidate : ScopeOccurrenceId) : Option ScopeOccurrenceId :=
   (occurrences.find? fun occurrence => decide (occurrence.id = candidate))
     |>.bind (·.parent)
 
-private def occurrenceInSubtreeWithin
+def occurrenceInSubtreeWithin
     (occurrences : List RuntimeScopeOccurrence) (root candidate : ScopeOccurrenceId) :
     Nat → Bool
   | 0 => false
@@ -42,18 +42,6 @@ def occurrenceInSubtree (occurrences : List RuntimeScopeOccurrence)
     (root candidate : ScopeOccurrenceId) : Bool :=
   occurrenceInSubtreeWithin occurrences root candidate (occurrences.length + 1)
 
-private def calledInstanceClosureWithin
-    (records : List CalledProcessOccurrence) (seed : List SemanticId) :
-    Nat → List SemanticId
-  | 0 => seed
-  | fuel + 1 =>
-      let expanded := (seed ++ records.filterMap fun record =>
-        if seed.contains record.caller.processInstanceId then
-          some record.calledRoot.processInstanceId
-        else none).eraseDups
-      if expanded.length = seed.length then expanded
-      else calledInstanceClosureWithin records expanded fuel
-
 /-- Semantic Process-instance IDs transitively owned by calls whose callers lie in one cancelled scope subtree. -/
 def calledInstanceClosure (state : RuntimeState)
     (root : ScopeOccurrenceId) : List SemanticId :=
@@ -61,7 +49,7 @@ def calledInstanceClosure (state : RuntimeState)
     if occurrenceInSubtree state.scopeOccurrences root record.caller then
       some record.calledRoot.processInstanceId
     else none
-  calledInstanceClosureWithin state.calledProcessOccurrences direct
+  processInstanceClosureWithin state.calledProcessOccurrences direct
     (state.calledProcessOccurrences.length + 1)
 
 private def effectOccurrenceId (wait : EffectWait) : EffectOccurrenceId :=

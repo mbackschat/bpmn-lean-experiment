@@ -31,7 +31,7 @@ namespace BpmnSemantics.SemanticProcess
 
 open BpmnSemantics
 
-private def runningInstance? (state : RuntimeState) : Option SemanticId :=
+def runningInstance? (state : RuntimeState) : Option SemanticId :=
   match state.control with
   | .running instanceId => some instanceId
   | _ => none

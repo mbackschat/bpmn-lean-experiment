@@ -135,6 +135,69 @@ def runtimePositionValid (program : Program) (expectedInstanceId : SemanticId)
   programWellFormed program && programProjectionBindingsValid program &&
     lifecyclePositionValid program expectedInstanceId state
 
+/-- A valid running predecessor exposes exact live scopes and their static parent binding. -/
+theorem runtimePositionValid_scope_parent_binding (program : Program)
+    (expectedInstanceId instanceId : SemanticId) (state : RuntimeState)
+    (valid : runtimePositionValid program expectedInstanceId state = true)
+    (running : state.control = .running instanceId)
+    (occurrence : RuntimeScopeOccurrence) (member : occurrence ∈ state.scopeOccurrences) :
+    exactLiveOccurrence state occurrence.id = true ∧
+      ∃ definition ∈ program.definitionScopes,
+        definition.id = occurrence.id.definitionScopeId ∧
+        ((definition.parentScopeId = none ∧ occurrence.parent = none) ∨
+          ∃ parent, occurrence.parent = some parent ∧
+            definition.parentScopeId = some parent.definitionScopeId ∧
+            parent.processInstanceId = occurrence.id.processInstanceId ∧
+            exactLiveOccurrence state parent = true) := by
+  simp only [runtimePositionValid, Bool.and_eq_true] at valid
+  have lifecycle := valid.2
+  simp only [lifecyclePositionValid, running, runningPositionValid, Bool.and_eq_true] at lifecycle
+  have fields := List.all_eq_true.mp lifecycle.1.2 occurrence member
+  simp only [Bool.and_eq_true] at fields
+  refine ⟨fields.1, ?_⟩
+  have scopeValid := fields.2
+  unfold scopeOccurrenceValid at scopeValid
+  cases found : uniqueDefinitionScope? program occurrence.id.definitionScopeId with
+  | none => simp [found] at scopeValid
+  | some definition =>
+      have selected := found
+      unfold uniqueDefinitionScope? at selected
+      split at selected
+      · rename_i scope rest singleton
+        split at selected
+        · cases selected
+          have filtered : definition ∈ program.definitionScopes.filter fun scope =>
+              decide (scope.id = occurrence.id.definitionScopeId) := by
+            rw [singleton]
+            simp
+          obtain ⟨definitionMember, identity⟩ := List.mem_filter.mp filtered
+          refine ⟨definition, definitionMember, of_decide_eq_true identity, ?_⟩
+          simp only [found, Bool.and_eq_true] at scopeValid
+          have parentValid := scopeValid.2
+          unfold runtimeParentValid at parentValid
+          cases static : definition.parentScopeId <;> cases parent : occurrence.parent <;>
+            simp only [static, parent] at parentValid
+          · exact Or.inl ⟨rfl, rfl⟩
+          · contradiction
+          · contradiction
+          · rename_i staticParent runtimeParent
+            simp only [Bool.and_eq_true, decide_eq_true_eq] at parentValid
+            exact Or.inr ⟨runtimeParent, rfl, congrArg some parentValid.1.2.symm,
+              parentValid.1.1, parentValid.2⟩
+        · contradiction
+      · contradiction
+
+/-- Running position validity includes the complete Call association predicate. -/
+theorem runtimePositionValid_called_associations (program : Program)
+    (expectedInstanceId instanceId : SemanticId) (state : RuntimeState)
+    (valid : runtimePositionValid program expectedInstanceId state = true)
+    (running : state.control = .running instanceId) :
+    calledProcessAssociationsValid state = true := by
+  simp only [runtimePositionValid, Bool.and_eq_true] at valid
+  have lifecycle := valid.2
+  simp only [lifecyclePositionValid, running, runningPositionValid, Bool.and_eq_true] at lifecycle
+  exact lifecycle.1.1.2
+
 /-- The lifecycle position rule permits live scope ownership only while the instance is running. -/
 theorem runtimePositionValid_liveOccurrence_running (program : Program)
     (expectedInstanceId : SemanticId) (state : RuntimeState) (owner : ScopeOccurrenceId)
@@ -224,6 +287,117 @@ theorem runtimePositionValid_tokens_sublist_frame (program : Program)
         intro token member
         rw [tokenValidFrame]
         exact tokens token (tokensSublist.subset member)
+
+/-- A retained occurrence keeps its singleton identity census under sublist removal. -/
+theorem exactLiveOccurrence_sublist_of_mem (before after : RuntimeState)
+    (scopes : after.scopeOccurrences.Sublist before.scopeOccurrences)
+    (occurrence : RuntimeScopeOccurrence) (member : occurrence ∈ after.scopeOccurrences)
+    (live : exactLiveOccurrence before occurrence.id = true) :
+    exactLiveOccurrence after occurrence.id = true := by
+  have bounded := (scopes.filter (fun candidate => decide (candidate.id = occurrence.id))).length_le
+  have positive := List.length_pos_of_mem
+    ((List.mem_filter (p := fun candidate : RuntimeScopeOccurrence =>
+      decide (candidate.id = occurrence.id))).mpr ⟨member, by simp⟩)
+  simp only [exactLiveOccurrence, decide_eq_true_eq] at live ⊢
+  omega
+
+/-- Forest restriction preserves position once the hosting census, retained root bindings,
+Call associations, and surviving parent/token owners have been established separately. -/
+theorem runtimePositionValid_forest_removal_frame (program : Program)
+    (expectedInstanceId instanceId : SemanticId) (before after : RuntimeState)
+    (valid : runtimePositionValid program expectedInstanceId before = true)
+    (running : before.control = .running instanceId)
+    (controlFrame : after.control = before.control)
+    (scopes : after.scopeOccurrences.Sublist before.scopeOccurrences)
+    (rootsFrame : (after.scopeOccurrences.filter fun occurrence =>
+      occurrence.parent.isNone && decide (occurrence.id.processInstanceId = instanceId)) =
+      before.scopeOccurrences.filter (fun occurrence =>
+        occurrence.parent.isNone && decide (occurrence.id.processInstanceId = instanceId)))
+    (callsFrame : ∀ occurrence ∈ after.scopeOccurrences,
+      (after.calledProcessOccurrences.filter fun record => decide (record.calledRoot = occurrence.id)) =
+      before.calledProcessOccurrences.filter (fun record => decide (record.calledRoot = occurrence.id)))
+    (associations : calledProcessAssociationsValid after = true)
+    (parentsLive : ∀ occurrence ∈ after.scopeOccurrences, ∀ parent,
+      occurrence.parent = some parent → exactLiveOccurrence after parent = true)
+    (tokens : after.tokens.Sublist before.tokens)
+    (tokenOwnersLive : ∀ token ∈ after.tokens, exactLiveOccurrence after token.owner = true) :
+    runtimePositionValid program expectedInstanceId after = true := by
+  have rootsCount : hostingRootCount program instanceId after =
+      hostingRootCount program instanceId before := by
+    let selected := fun occurrence : RuntimeScopeOccurrence =>
+      match uniqueDefinitionScope? program occurrence.id.definitionScopeId with
+      | none => false
+      | some scope => hostingRoot program instanceId scope occurrence
+    have same := congrArg (List.filter selected) rootsFrame
+    have mask (occurrence : RuntimeScopeOccurrence) :
+        (selected occurrence && (occurrence.parent.isNone &&
+          decide (occurrence.id.processInstanceId = instanceId))) = selected occurrence := by
+      dsimp [selected]
+      cases uniqueDefinitionScope? program occurrence.id.definitionScopeId <;>
+        simp [hostingRoot, Bool.and_left_comm, Bool.and_comm]
+    simpa only [hostingRootCount, List.filter_filter, mask] using congrArg List.length same
+  simp only [runtimePositionValid, Bool.and_eq_true] at valid ⊢
+  refine ⟨valid.1, ?_⟩
+  have prior := valid.2
+  simp only [lifecyclePositionValid, running, runningPositionValid, Bool.and_eq_true] at prior
+  simp only [lifecyclePositionValid, controlFrame, running, runningPositionValid, Bool.and_eq_true]
+  refine ⟨⟨⟨⟨prior.1.1.1.1, ?_⟩, ?_⟩, ?_⟩, ?_⟩
+  · simpa only [rootsCount] using prior.1.1.1.2
+  · exact associations
+  · apply List.all_eq_true.mpr
+    intro occurrence member
+    have old := List.all_eq_true.mp prior.1.2 occurrence (scopes.subset member)
+    simp only [Bool.and_eq_true] at old ⊢
+    refine ⟨exactLiveOccurrence_sublist_of_mem before after scopes occurrence member old.1, ?_⟩
+    have binding := old.2
+    unfold scopeOccurrenceValid at binding ⊢
+    cases found : uniqueDefinitionScope? program occurrence.id.definitionScopeId with
+    | none => simp [found] at binding
+    | some definition =>
+        simp only [found, Bool.and_eq_true] at binding ⊢
+        refine ⟨binding.1, ?_⟩
+        have parentBinding := binding.2
+        unfold runtimeParentValid at parentBinding ⊢
+        cases static : definition.parentScopeId <;> cases parent : occurrence.parent <;>
+          simp only [static, parent] at parentBinding ⊢
+        · simpa only [rootAssociationValid, calledRootBindingValid, callsFrame occurrence member] using parentBinding
+        · contradiction
+        · contradiction
+        · simp only [Bool.and_eq_true] at parentBinding ⊢
+          exact ⟨parentBinding.1, parentsLive occurrence member _ parent⟩
+  · apply List.all_eq_true.mpr
+    intro token member
+    have binding := List.all_eq_true.mp prior.2 token (tokens.subset member)
+    unfold tokenBindingValid at binding ⊢
+    cases placeFound : uniqueControlPlace? program token.placeId <;>
+      cases ownerFound : controlPlaceScope? program token.placeId <;>
+        simp only [placeFound, ownerFound, Bool.and_eq_true] at binding ⊢
+    all_goals first | contradiction | exact ⟨binding.1, tokenOwnersLive token member⟩
+
+/-- Child-scope removal specializes forest restriction to unchanged parentless roots and Calls. -/
+theorem runtimePositionValid_scope_removal_frame (program : Program)
+    (expectedInstanceId instanceId : SemanticId) (before after : RuntimeState)
+    (valid : runtimePositionValid program expectedInstanceId before = true)
+    (running : before.control = .running instanceId)
+    (controlFrame : after.control = before.control)
+    (scopes : after.scopeOccurrences.Sublist before.scopeOccurrences)
+    (rootsFrame : after.scopeOccurrences.filter (·.parent.isNone) =
+      before.scopeOccurrences.filter (·.parent.isNone))
+    (callsFrame : after.calledProcessOccurrences = before.calledProcessOccurrences)
+    (parentsLive : ∀ occurrence ∈ after.scopeOccurrences, ∀ parent,
+      occurrence.parent = some parent → exactLiveOccurrence after parent = true)
+    (tokens : after.tokens.Sublist before.tokens)
+    (tokenOwnersLive : ∀ token ∈ after.tokens, exactLiveOccurrence after token.owner = true) :
+    runtimePositionValid program expectedInstanceId after = true := by
+  apply runtimePositionValid_forest_removal_frame program expectedInstanceId instanceId before after
+    valid running controlFrame scopes _ _ _ parentsLive tokens tokenOwnersLive
+  · have same := congrArg (List.filter (fun occurrence : RuntimeScopeOccurrence =>
+      decide (occurrence.id.processInstanceId = instanceId))) rootsFrame
+    simpa only [List.filter_filter, Bool.and_comm] using same
+  · intro occurrence _
+    rw [callsFrame]
+  · rw [calledProcessAssociationsValid_parentless_frame before after controlFrame rootsFrame callsFrame]
+    exact runtimePositionValid_called_associations program expectedInstanceId instanceId before valid running
 
 /-- The selected single-removal API specializes the finite removal frame. -/
 theorem runtimePositionValid_removeToken_frame (program : Program) (expectedInstanceId : SemanticId)
@@ -349,6 +523,19 @@ theorem runtimePositionValid_addToken (program : Program) (expectedInstanceId : 
         intro token member
         rw [tokenValidFrame]
         exact tokens token member
+
+/-- Every token's owner names one exact live occurrence in a valid running predecessor. -/
+theorem runtimePositionValid_token_owner_live (program : Program)
+    (expectedInstanceId instanceId : SemanticId) (state : RuntimeState) (token : ControlToken)
+    (valid : runtimePositionValid program expectedInstanceId state = true)
+    (running : state.control = .running instanceId) (member : token ∈ state.tokens) :
+    exactLiveOccurrence state token.owner = true := by
+  simp only [runtimePositionValid, Bool.and_eq_true] at valid
+  have lifecycle := valid.2
+  simp only [lifecyclePositionValid, running, runningPositionValid, Bool.and_eq_true] at lifecycle
+  have tokenValid := List.all_eq_true.mp lifecycle.2 token member
+  unfold tokenBindingValid at tokenValid
+  split at tokenValid <;> simp_all
 
 /-- Every token in a valid runtime position resolves to one projection-unique control place. -/
 theorem runtimePositionValid_token_uniqueControlPlace (program : Program)

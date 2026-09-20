@@ -40,7 +40,7 @@ const regionRemoval = "function removeScopeOccurrenceRegion(";
 const leanRuntimeStateOwner = "BpmnSemantics/SemanticProcess/RuntimeState.lean";
 const leanRemovalOwners = [
   ["BpmnSemantics/SemanticProcess/ScopeCancellation.lean", "def cancelScopeSubtree ("],
-  ["BpmnSemantics/SemanticProcess/CallActivity.lean", "private def removeCalledProcessTree ("],
+  ["BpmnSemantics/SemanticProcess/CallActivity.lean", "def removeCalledProcessTree ("],
 ] as const;
 
 /**

@@ -102,6 +102,39 @@ def flowNodeOccurrenceStructuralProgramValidity (program : Program)
   state.scopeOccurrences.all (runtimeScopeBindingValid program state) &&
     state.calledProcessOccurrences.all (callRecordValid program state)
 
+/-- The complete Call census supplies a declaring invocation owned by the recorded caller.
+Selection by Return identity alone does not establish this Program binding. -/
+theorem flowNodeOccurrenceStructuralProgramValidity_call_declarer (program : Program)
+    (state : RuntimeState) (record : CalledProcessOccurrence)
+    (valid : flowNodeOccurrenceStructuralProgramValidity program state = true)
+    (member : record ∈ state.calledProcessOccurrences) :
+    ∃ id origin input process root entry returned,
+      .invokeProcess id origin input process root entry returned ∈ program.operations ∧
+      operationOwnedBy program (.invokeProcess id origin input process root entry returned) record.caller = true ∧
+      origin.elementId.value = record.id.elementId.value ∧ process = record.calledProcessId ∧
+      root = record.calledRoot.definitionScopeId ∧ returned = record.returnOperationId := by
+  simp only [flowNodeOccurrenceStructuralProgramValidity, Bool.and_eq_true, List.all_eq_true] at valid
+  have count := valid.2 record member
+  simp only [callRecordValid, Bool.and_eq_true] at count
+  obtain ⟨operation, singleton⟩ := List.length_eq_one_iff.mp (of_decide_eq_true count.2)
+  have selected : operation ∈ program.operations.filter (fun operation =>
+      if !operationOwnedBy program operation record.caller then false
+      else match operation with
+      | .invokeProcess _ origin _ process root _ returned =>
+          origin.elementId.value = record.id.elementId.value && process = record.calledProcessId &&
+            root = record.calledRoot.definitionScopeId && returned = record.returnOperationId
+      | _ => false) := by rw [singleton]; simp
+  obtain ⟨present, fields⟩ := List.mem_filter.mp selected
+  split at fields
+  · contradiction
+  · rename_i owned
+    have owned : operationOwnedBy program operation record.caller = true := by simpa using owned
+    cases operation <;> simp only at fields
+    all_goals first
+      | contradiction
+      | (simp only [Bool.and_eq_true, decide_eq_true_eq] at fields
+         exact ⟨_, _, _, _, _, _, _, present, owned, fields.1.1.1, fields.1.1.2, fields.1.2, fields.2⟩)
+
 /-- Structural validity makes every exact live scope owner's Process identity nonempty. -/
 theorem flowNodeOccurrenceStructuralProgramValidity_live_owner_nonempty (program : Program)
     (state : RuntimeState) (owner : ScopeOccurrenceId)

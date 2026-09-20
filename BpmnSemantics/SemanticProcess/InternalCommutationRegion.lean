@@ -22,7 +22,7 @@ private def exactScopeOccurrenceCount (state : RuntimeState)
     (id : ScopeOccurrenceId) : Bool :=
   (state.scopeOccurrences.filter fun occurrence => decide (occurrence.id = id)).length == 1
 
-private def scopeOwnershipGraphExact (state : RuntimeState) : Bool :=
+def scopeOwnershipGraphExact (state : RuntimeState) : Bool :=
   decide (state.scopeOccurrences.map (·.id)).Nodup &&
     state.scopeOccurrences.all (fun occurrence =>
       match occurrence.parent with
@@ -34,11 +34,11 @@ private def scopeOwnershipGraphExact (state : RuntimeState) : Bool :=
         (state.scopeOccurrences.filter fun occurrence =>
           decide (occurrence.id = record.calledRoot) && occurrence.parent.isNone).length == 1)
 
-private def canonicalScopeMembers (members : List ScopeOccurrenceId) :
+def canonicalScopeMembers (members : List ScopeOccurrenceId) :
     List ScopeOccurrenceId :=
   sortBy scopeBefore members.eraseDups
 
-private def expandOccurrenceRegionMembers (state : RuntimeState)
+def expandOccurrenceRegionMembers (state : RuntimeState)
     (members : List ScopeOccurrenceId) : List ScopeOccurrenceId :=
   canonicalScopeMembers
     (members ++
@@ -49,7 +49,7 @@ private def expandOccurrenceRegionMembers (state : RuntimeState)
       state.calledProcessOccurrences.filterMap fun record =>
         if members.contains record.caller then some record.calledRoot else none)
 
-private def occurrenceRegionMembersWithin (state : RuntimeState)
+def occurrenceRegionMembersWithin (state : RuntimeState)
     (members : List ScopeOccurrenceId) : Nat → List ScopeOccurrenceId
   | 0 => canonicalScopeMembers members
   | fuel + 1 =>

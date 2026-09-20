@@ -187,4 +187,27 @@ def compensationEventSubProcessSnapshotScopeLifecycleWellFormed
       (declaredScopeLifecycleValid program entryRootId
         (declaredHandlerScopeIds program))
 
+/-- A declared parentless scope with a Complete operation is the hosting entry scope. Called
+roots require Return instead, and the snapshot handler exemption requires a child scope. -/
+theorem scopeLifecycle_parentless_completion_is_entryRoot (program : Program)
+    (entryRoot : DefinitionScopeId) (scope : DefinitionScope)
+    (id : OperationId) (origin : BpmnElementOrigin) (output : Option ControlPlaceId)
+    (valid : compensationEventSubProcessSnapshotScopeLifecycleWellFormed program entryRoot = true)
+    (member : scope ∈ program.definitionScopes) (parentless : scope.parentScopeId = none)
+    (completion : .completeScope id origin scope.id output ∈ program.operations) : scope.id = entryRoot := by
+  simp only [compensationEventSubProcessSnapshotScopeLifecycleWellFormed, Bool.and_eq_true] at valid
+  have lifecycle := List.all_eq_true.mp valid.2 scope member
+  unfold declaredScopeLifecycleValid at lifecycle
+  split at lifecycle
+  · simp [parentless] at lifecycle
+  · unfold ordinaryScopeLifecycleValid at lifecycle
+    simp only [parentless, Bool.and_eq_true] at lifecycle
+    by_cases same : scope.id = entryRoot
+    · exact same
+    · simp only [same, ↓reduceIte, Bool.and_eq_true, List.isEmpty_iff] at lifecycle
+      have present : .completeScope id origin scope.id output ∈ program.operations.filter (completesScope scope.id) :=
+        List.mem_filter.mpr ⟨completion, by simp [completesScope]⟩
+      rw [lifecycle.1.1] at present
+      contradiction
+
 end BpmnSemantics.SemanticProcess

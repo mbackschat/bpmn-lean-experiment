@@ -379,14 +379,7 @@ private theorem admittedSharedParallelEntryAccount (program : Program)
 
 private theorem nodup_of_value_nodup (values : List α) (value : α → String)
     (valid : (values.map value).Nodup) : values.Nodup := by
-  induction values with
-  | nil => simp
-  | cons head tail ih =>
-      obtain ⟨fresh, rest⟩ := List.nodup_cons.mp valid
-      apply List.nodup_cons.mpr
-      refine ⟨?_, ih rest⟩
-      intro member
-      exact fresh (List.mem_map.mpr ⟨head, member, rfl⟩)
+  exact List.Pairwise.of_map value (fun _ _ different same => different (congrArg value same)) valid
 
 theorem sharedParallelProgramAccount_of_admission (program : Program)
     (arm : ParallelMultiInstanceArm) (entryOperation : SemanticOperation)

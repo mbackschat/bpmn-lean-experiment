@@ -16,14 +16,7 @@ open BpmnSemantics
 
 private theorem nodup_of_value_nodup (values : List α) (value : α → String)
     (valid : (values.map value).Nodup) : values.Nodup := by
-  induction values with
-  | nil => simp
-  | cons head tail ih =>
-      obtain ⟨fresh, rest⟩ := List.nodup_cons.mp valid
-      apply List.nodup_cons.mpr
-      refine ⟨?_, ih rest⟩
-      intro member
-      exact fresh (List.mem_map.mpr ⟨head, member, rfl⟩)
+  exact List.Pairwise.of_map value (fun _ _ different same => different (congrArg value same)) valid
 
 private theorem all_occursOnce_erase [BEq α] [LawfulBEq α] (same : α → α → Bool)
     (reflexive : ∀ value, same value value = true) (removed : α) (values : List α)

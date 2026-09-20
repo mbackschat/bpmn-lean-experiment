@@ -102,4 +102,44 @@ theorem projectScopes_insert_differences (program : Program)
   simpa only [scopePosition, binding] using
     difference_of_fresh_perm _ _ _ permutation absent
 
+/-- Filtering runtime scope identities retains exactly the same complete public scope payloads. -/
+theorem projectScopes_filter_membership (program : Program) (occurrences : List RuntimeScopeOccurrence)
+    (keep : ScopeOccurrenceId → Bool) (position : PublicScopePosition) :
+    position ∈ projectScopes program (occurrences.filter fun scope => keep scope.id) ↔
+      position ∈ projectScopes program occurrences ∧ keep position.id = true := by
+  constructor
+  · intro member
+    obtain ⟨scope, present, equal⟩ := List.mem_map.mp ((projection_perm _ _).subset member)
+    obtain ⟨present, retained⟩ := List.mem_filter.mp present
+    refine ⟨(projection_perm _ _).symm.subset (List.mem_map.mpr ⟨scope, present, equal⟩), ?_⟩
+    simpa only [← equal, scopePosition] using retained
+  · rintro ⟨member, retained⟩
+    obtain ⟨scope, present, equal⟩ := List.mem_map.mp ((projection_perm _ _).subset member)
+    apply (projection_perm _ _).symm.subset
+    exact List.mem_map.mpr ⟨scope, List.mem_filter.mpr ⟨present,
+      by simpa only [← equal, scopePosition] using retained⟩, equal⟩
+
+/-- Scope deletion publishes every removed predecessor payload, with no entered scope. -/
+theorem projectScopes_filter_differences (program : Program) (occurrences : List RuntimeScopeOccurrence)
+    (keep : ScopeOccurrenceId → Bool) :
+    scopeDifference (projectScopes program occurrences)
+        (projectScopes program (occurrences.filter fun scope => keep scope.id)) =
+      (projectScopes program occurrences).filter (fun position => !(keep position.id)) ∧
+    scopeDifference (projectScopes program (occurrences.filter fun scope => keep scope.id))
+        (projectScopes program occurrences) = [] := by
+  constructor
+  · apply List.filter_congr
+    intro position member
+    have present : ((projectScopes program (occurrences.filter fun scope => keep scope.id)).any
+        fun candidate => candidate == position) = keep position.id := by
+      apply Bool.eq_iff_iff.mpr
+      simp [List.any_eq_true, projectScopes_filter_membership, member]
+    exact congrArg Bool.not present
+  · apply List.filter_eq_nil_iff.mpr
+    intro position member removed
+    have prior := (projectScopes_filter_membership program occurrences keep position).mp member |>.1
+    have present : ((projectScopes program occurrences).any fun candidate => candidate == position) = true :=
+      List.any_eq_true.mpr ⟨position, prior, by simp⟩
+    simp [present] at removed
+
 end BpmnSemantics.SemanticProcess

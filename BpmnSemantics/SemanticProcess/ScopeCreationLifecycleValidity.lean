@@ -77,14 +77,15 @@ theorem scopeCreation_preserves_effect_validity (program : Program) (state : Run
 
 theorem scopeCreation_bounded_scope_filter_frame (state : RuntimeState)
     (selected : InternalScopeCreationSelection) (timer : TimerWait) (definition : DefinitionScopeId)
+    (record : ActivityOccurrence)
     (excluded : selected.created.parent = none ∨
       definition ≠ selected.created.id.definitionScopeId) :
-    ((selected.apply state).scopeOccurrences.filter fun child => decide
-      (child.id.definitionScopeId = definition && child.id.activation = timer.activation &&
-        child.parent = some timer.owner)).length =
-      (state.scopeOccurrences.filter fun child => decide
-        (child.id.definitionScopeId = definition && child.id.activation = timer.activation &&
-          child.parent = some timer.owner)).length := by
+    ((selected.apply state).scopeOccurrences.filter fun child =>
+      decide (child.id.definitionScopeId = definition && child.parent = some timer.owner) &&
+        activityBodyScope? record == some child.id).length =
+      (state.scopeOccurrences.filter fun child =>
+        decide (child.id.definitionScopeId = definition && child.parent = some timer.owner) &&
+          activityBodyScope? record == some child.id).length := by
   cases kind : selected.kind <;>
     simp only [InternalScopeCreationSelection.apply, kind, insertScopeOccurrence,
       length_filter_canonicalInsertBy]
@@ -106,11 +107,14 @@ theorem scopeCreation_boundary_timer_frame (program : Program) (state : RuntimeS
   intro candidate member
   cases candidate <;> try (cases kind : selected.kind <;> simp only [InternalScopeCreationSelection.apply, kind] <;> rfl)
   case enterBoundedScope id origin input entry definition boundary =>
-    have counts := scopeCreation_bounded_scope_filter_frame state selected timer definition
+    have counts := fun record => scopeCreation_bounded_scope_filter_frame state selected timer definition record
       (excluded id origin input entry definition boundary member)
+    have activities : (selected.apply state).activityOccurrences = state.activityOccurrences := by
+      cases kind : selected.kind <;> simp only [InternalScopeCreationSelection.apply, kind] <;> rfl
     change (if !operationOwnedBy program (.enterBoundedScope id origin input entry definition boundary)
         timer.owner then false else _ && _ && decide (_ = 1)) = _
-    rw [counts]
+    rw [activities]
+    simp only [counts]
     rfl
 
 theorem scopeCreation_preserves_wait_validity (program : Program) (state : RuntimeState)
@@ -158,13 +162,16 @@ theorem scopeCreation_preserves_wait_validity (program : Program) (state : Runti
     intro candidate candidateMember
     cases candidate <;> try (cases kind : selected.kind <;> simp only [InternalScopeCreationSelection.apply, kind] <;> rfl)
     case enterBoundedScope id origin input entry definition boundary =>
-      have counts := scopeCreation_bounded_scope_filter_frame state selected timer definition
+      have counts := fun record => scopeCreation_bounded_scope_filter_frame state selected timer definition record
         (excluded id origin input entry definition boundary candidateMember)
+      have activities : (selected.apply state).activityOccurrences = state.activityOccurrences := by
+        cases kind : selected.kind <;> simp only [InternalScopeCreationSelection.apply, kind] <;> rfl
       change (if !operationOwnedBy program (.enterBoundedScope id origin input entry definition boundary)
           timer.owner then false else
           if !operationOwnedBy program (.enterBoundedScope id origin input entry definition boundary)
             timer.owner then false else _ && _ && decide (_ = 1)) = _
-      rw [counts]
+      rw [activities]
+      simp only [counts]
       rfl
 
 theorem scopeCreation_program_validity_of_structural (program : Program) (state : RuntimeState)

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
-  CommandOutcome, CorrelationScalarPathLanguage, MessageChannelKind, SemanticOperationKind, SemanticTransitionKind, VariableValueKind,
+  CommandOutcome, SemanticOperationKind, SemanticTransitionKind, VariableValueKind,
   applyInternalOperationStep, applyStimulusWithTrace, compareCanonicalStrings, initialState,
   isWellFormedRuntimeState, isWellFormedSemanticProcessProgram, projectControlPositionDelta,
   projectCurrentControlPositions, projectFlowNodeOccurrenceLifecycleDelta,
@@ -16,6 +16,8 @@ import { callActivityProgram, callActivityStart } from "./call-activity-fixture.
 import { admittedInternalPrefix } from "./internal-operation-prefix-fixture.ts";
 import { controlPlace, operationBase } from "./semantic-program-parts.ts";
 import { reviewProgram } from "./sequential-multi-instance-fixture.ts";
+import { internalArmingKinds as armKinds, internalArmingOperation } from "./internal-arming-operation-fixture.ts";
+import type { InternalArmingKind as ArmKind } from "./internal-arming-operation-fixture.ts";
 
 const { deriveInternalTransitionPreparation: prepare, prepareInternalTransitionBatch: batch,
   applyPreparedInternalTransition: apply } = await import(
@@ -32,50 +34,13 @@ const { internalTransitionStateFootprintsAreIndependent: independent, InternalTr
 ) as typeof import("../src/internal-transition-footprint.ts");
 
 type ScopeKind = SemanticOperationKind.EnterScope | SemanticOperationKind.InvokeProcess;
-type ArmKind = SemanticOperationKind.AwaitUserTask | SemanticOperationKind.AwaitTimer |
-  SemanticOperationKind.AwaitDataInputOutputUserTask | SemanticOperationKind.AwaitMessage |
-  SemanticOperationKind.AwaitPayloadMessage | SemanticOperationKind.AwaitCorrelatedPayloadMessage | SemanticOperationKind.AwaitEffect;
 const scopeKinds: ScopeKind[] = [SemanticOperationKind.EnterScope, SemanticOperationKind.InvokeProcess];
-const armKinds: ArmKind[] = [SemanticOperationKind.AwaitUserTask, SemanticOperationKind.AwaitTimer,
-  SemanticOperationKind.AwaitDataInputOutputUserTask, SemanticOperationKind.AwaitMessage,
-  SemanticOperationKind.AwaitPayloadMessage, SemanticOperationKind.AwaitCorrelatedPayloadMessage, SemanticOperationKind.AwaitEffect];
 const root: SemanticProcessProgram["definitionScopes"][number] = scopeProgram.definitionScopes[0]!;
 const place = (name: string) => `place:${name}`;
 const task = (name: string, input: string, output: string) => ({
   ...operationBase(name), kind: SemanticOperationKind.AwaitUserTask, input, output,
   task: { elementId: name, name },
 } as const);
-
-function armingOperation(kind: ArmKind): Extract<SemanticOperation, { kind: ArmKind }> {
-  const ordinary = task("Side_Task", place("Arm_Input"), place("Arm_Output"));
-  const message = { elementId: "Side_Message", channel: { kind: MessageChannelKind.OperationMessage,
-    interfaceId: "Side_Interface", interfaceOperationId: "Side_Operation", messageId: "Side_Definition" } } as const;
-  const messageBase = { ...operationBase(message.elementId), input: ordinary.input, output: ordinary.output, message };
-  switch (kind) {
-    case SemanticOperationKind.AwaitUserTask:
-      return ordinary;
-    case SemanticOperationKind.AwaitTimer:
-      return { ...operationBase("Side_Timer"), kind, input: ordinary.input, output: ordinary.output,
-        timer: { elementId: "Side_Timer", durationMs: 1000 } };
-    case SemanticOperationKind.AwaitDataInputOutputUserTask:
-      return { ...ordinary, kind,
-        directInput: { associationId: "Input_Association", sourcePropertyId: "details", targetDataInputId: "Input", targetDataInputName: "Details" },
-        directOutput: { associationId: "Output_Association", sourceDataOutputId: "Output", sourceDataOutputName: "Decision", targetPropertyId: "decision" } };
-    case SemanticOperationKind.AwaitMessage:
-      return { ...messageBase, kind };
-    case SemanticOperationKind.AwaitPayloadMessage:
-      return { ...messageBase, kind, directOutput: { associationId: "Message_Output_Association", sourceDataOutputId: "Message_Output",
-        sourceDataOutputName: "Response", targetPropertyId: "response" } };
-    case SemanticOperationKind.AwaitCorrelatedPayloadMessage:
-      return { ...messageBase, kind, correlationKeyId: "Side_Key", correlationPropertyId: "Side_Property",
-        payloadSelector: { language: CorrelationScalarPathLanguage, body: "payload" },
-        processPropertySelector: { language: CorrelationScalarPathLanguage, body: "property:details", propertyId: "details" } };
-    case SemanticOperationKind.AwaitEffect:
-      return { ...operationBase("Side_Effect"), kind, input: ordinary.input, output: ordinary.output, bpmnErrorRoute: null,
-        effect: { elementId: "Side_Effect", inputMappings: [], outputMappings: [],
-          descriptor: { protocol: "urn:bpmn-lean:effect-protocol:activity-v1", operation: "urn:bpmn-lean:effect-operation:probe-v1" } } };
-  }
-}
 
 function fixture(kinds: readonly ScopeKind[], armKind: ArmKind = SemanticOperationKind.AwaitUserTask) {
   const operations: SemanticOperation[] = [];
@@ -116,7 +81,7 @@ function fixture(kinds: readonly ScopeKind[], armKind: ArmKind = SemanticOperati
     "Arm_Input", "Arm_Output"]);
   const local = { ...operationBase("Local_Fork"), kind: SemanticOperationKind.Duplicate,
     input: place("Local_Input"), outputs: [place("Local_Left"), place("Local_Right")] } as const;
-  const arm = armingOperation(armKind);
+  const arm = internalArmingOperation(armKind, place("Arm_Input"), place("Arm_Output"));
   addOperation({ ...operationBase("Start"), kind: SemanticOperationKind.Initiate, output: place("Start") });
   addOperation({ ...operationBase("Outer_Fork"), kind: SemanticOperationKind.Duplicate, input: place("Start"),
     outputs: [...scopeOperations.map(({ input }) => input),

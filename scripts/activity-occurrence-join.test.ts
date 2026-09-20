@@ -40,12 +40,13 @@ const pairingOwners = [
   "packages/semantic-core/src/flow-node-occurrence-publication-external-completeness.ts",
 ] as const;
 
-/** The Lean family modules that recover a body-to-handler pair. */
+/** AOO-JOIN-03 covers both family execution and the independent publication binding. */
 const leanPairingOwners = [
   "BpmnSemantics/SemanticProcess/BoundedTask.lean",
   "BpmnSemantics/SemanticProcess/MessageBoundedTask.lean",
   "BpmnSemantics/SemanticProcess/MonitoredTask.lean",
   "BpmnSemantics/SemanticProcess/BoundedScope.lean",
+  "BpmnSemantics/SemanticProcess/FlowNodeOccurrenceWaitProgramValidity.lean",
 ] as const;
 
 const leanRecordLookup = /activityOccurrenceFor|activityBody(Task|Scope)\?|RecordJoins/u;
@@ -121,7 +122,7 @@ test("every enumerated pairing owner resolves its pair through the ownership rec
   }
 });
 
-test("every Lean family module resolves its pair through the ownership record", () => {
+test("every Lean execution and projection owner resolves its pair through the ownership record", () => {
   for (const owner of leanPairingOwners) {
     assert.deepEqual(
       lines(owner).flatMap((line, index) =>

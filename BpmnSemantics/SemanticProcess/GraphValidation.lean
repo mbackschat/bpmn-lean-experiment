@@ -137,7 +137,7 @@ private def operationInputs : SemanticOperation → List ControlPlaceId
   | .mergeExclusive _ _ inputs _
   | .synchronizeSelected _ _ inputs _ _ => inputs
 
-private def operationOutputs : SemanticOperation → List ControlPlaceId
+def operationOutputs : SemanticOperation → List ControlPlaceId
   | .initiate _ _ output
   | .invokeProcess _ _ _ _ _ output _
   | .returnProcess _ _ _ _ output
@@ -215,7 +215,7 @@ theorem awaitCorrelatedPayloadMessage_output_mem_operationControlPlaces
         correlationPropertyId payloadSelector processPropertySelector) := by
   simp [operationControlPlaces, operationInputs, operationOutputs]
 
-private def producers (operations : List SemanticOperation)
+def producers (operations : List SemanticOperation)
     (place : ControlPlaceId) : List OperationId :=
   operations.filterMap fun operation =>
     if (operationOutputs operation).contains place then
@@ -255,7 +255,7 @@ private def placesOwnedBy (program : Program) (places : List ControlPlaceId)
     (scopeId : DefinitionScopeId) : Bool :=
   places.all fun place => placeScope? program place == some scopeId
 
-private def operationRespectsScopes (program : Program)
+def operationRespectsScopes (program : Program)
     (entryRootId : DefinitionScopeId)
     (operation : SemanticOperation) : Bool :=
   match operationScope? program operation.id with
@@ -331,7 +331,7 @@ def scopeForestWellFormed (program : Program) : Bool :=
       | some parent => scope.id ≠ parent && ids.contains parent) &&
     acyclicClosed edges ids.length
 
-private def scopedOwnershipComplete (program : Program)
+def scopedOwnershipComplete (program : Program)
     (entryRootId : DefinitionScopeId) : Bool :=
   program.operationScopes.map (·.operationId) = program.operations.map (·.id) &&
     program.controlPlaceScopes.map (·.controlPlaceId) =
@@ -477,7 +477,7 @@ private def parallelMultiInstancePairsShareScope (program : Program) : Bool :=
         | some completion => operationScope? program completion.id = operationScope? program entry.id
         | none => false
 
-private def programGraphWellFormedWithScopeLifecycle (program : Program)
+def programGraphWellFormedWithScopeLifecycle (program : Program)
     (scopeLifecycle : Program → DefinitionScopeId → Bool) : Bool :=
   let operationIds := program.operations.map (·.id)
   let starts := initiateIds program.operations
@@ -512,7 +512,7 @@ def programGraphWellFormedForProgram (program : Program) : Bool :=
   programGraphWellFormedWithScopeLifecycle program
     compensationEventSubProcessSnapshotScopeLifecycleWellFormed
 
-private theorem filter_eq_singleton_of_key_nodup [DecidableEq β]
+theorem filter_key_eq_singleton_of_nodup [DecidableEq β]
     (values : List α) (key : α → β) (value : α)
     (nodup : (values.map key).Nodup) (member : value ∈ values) :
     values.filter (fun candidate => decide (key candidate = key value)) = [value] := by
@@ -640,17 +640,17 @@ theorem programGraphWellFormed_operationControlPlaceScope (program : Program)
                           subst placeScope
                           refine ⟨operationScope, declared, ?_, ?_, ?_⟩
                           · simpa using
-                              filter_eq_singleton_of_key_nodup program.operationScopes
+                              filter_key_eq_singleton_of_nodup program.operationScopes
                                 (fun binding => binding.operationId)
                                 { operationId := operation.id, scopeId := operationScope }
                                 operationScopeKeys operationBindingMember
                           · simpa using
-                              filter_eq_singleton_of_key_nodup program.controlPlaceScopes
+                              filter_key_eq_singleton_of_nodup program.controlPlaceScopes
                                 (fun binding => binding.controlPlaceId)
                                 { controlPlaceId := place, scopeId := operationScope }
                                 placeScopeKeys placeBindingMember
                           · simpa [declaredId] using
-                              filter_eq_singleton_of_key_nodup program.controlPlaces
+                              filter_key_eq_singleton_of_nodup program.controlPlaces
                                 (fun value => value.id) declared placeIdsUnique declaredMember
 
 /-- A graph-admitted parallel entry and its selected completion share one operation scope; their
@@ -765,5 +765,88 @@ theorem programGraphWellFormed_scopeForest (program : Program)
           | some root =>
               simp only [Bool.and_eq_true] at valid
               grind
+
+/-- The admitted graph exposes one common scope contract for regional continuation proofs;
+each operation family then interprets its existing ownership and lifecycle clauses. -/
+theorem programGraphWellFormed_scopeContract (program : Program)
+    (valid : programGraphWellFormedForProgram program = true) :
+    ∃ entryRoot, programEntryRootScopeId? program = some entryRoot ∧
+      compensationEventSubProcessSnapshotScopeLifecycleWellFormed program entryRoot = true ∧
+      scopedOwnershipComplete program entryRoot = true := by
+  unfold programGraphWellFormedForProgram programGraphWellFormedWithScopeLifecycle at valid
+  dsimp only at valid
+  split at valid
+  · split at valid
+    · rename_i entryRoot rootFound
+      simp only [Bool.and_eq_true] at valid
+      exact ⟨entryRoot, rootFound, by grind, by grind⟩
+    · contradiction
+  · contradiction
+
+/-- Complete ownership maps turn a successful place lookup into exact declaration and binding
+censuses. Regional continuations need this independently of their operation's own scope. -/
+theorem programGraphWellFormed_exactPlaceBinding (program : Program)
+    (place : ControlPlaceId) (scope : DefinitionScopeId)
+    (valid : programGraphWellFormedForProgram program = true)
+    (unique : (program.controlPlaces.map (·.id)).Nodup)
+    (found : placeScope? program place = some scope) :
+    (∃ declared, program.controlPlaces.filter (fun candidate => decide (candidate.id = place)) = [declared]) ∧
+      program.controlPlaceScopes.filter (fun binding => decide (binding.controlPlaceId = place)) =
+        [{ controlPlaceId := place, scopeId := scope }] := by
+  obtain ⟨_, _, _, ownership⟩ := programGraphWellFormed_scopeContract program valid
+  simp only [scopedOwnershipComplete, Bool.and_eq_true, decide_eq_true_eq] at ownership
+  have keys := ownership.1.2
+  have bindingsUnique : (program.controlPlaceScopes.map (·.controlPlaceId)).Nodup := by
+    rw [keys]; exact unique
+  unfold placeScope? at found
+  cases lookup : program.controlPlaceScopes.find? (fun binding => decide (binding.controlPlaceId = place)) with
+  | none => simp [lookup] at found
+  | some binding =>
+      simp only [lookup, Option.map_some, Option.some.injEq] at found
+      have member := List.mem_of_find?_eq_some lookup
+      have key : binding.controlPlaceId = place := by
+        simpa only [decide_eq_true_eq] using List.find?_some lookup
+      have placeMember : place ∈ program.controlPlaces.map (·.id) := by
+        rw [← keys]
+        exact List.mem_map.mpr ⟨binding, member, key⟩
+      obtain ⟨declared, declaredMember, declaredId⟩ := List.mem_map.mp placeMember
+      have declaration := filter_key_eq_singleton_of_nodup program.controlPlaces (·.id) declared unique declaredMember
+      have bindingCensus := filter_key_eq_singleton_of_nodup program.controlPlaceScopes (·.controlPlaceId)
+        binding bindingsUnique member
+      have bindingEq : binding = { controlPlaceId := place, scopeId := scope } := by
+        cases binding
+        simp_all
+      exact ⟨⟨declared, by simpa only [declaredId] using declaration⟩,
+        by simpa only [key, bindingEq] using bindingCensus⟩
+
+/-- Completion admission selects a declared scope and respects its root or parent continuation;
+the complete lifecycle account remains available to distinguish hosting roots from called roots. -/
+theorem programGraphWellFormed_completion_binding (program : Program)
+    (id : OperationId) (origin : BpmnElementOrigin) (scopeId : DefinitionScopeId) (output : Option ControlPlaceId)
+    (valid : programGraphWellFormedForProgram program = true)
+    (member : .completeScope id origin scopeId output ∈ program.operations) :
+    ∃ entryRoot definition, programEntryRootScopeId? program = some entryRoot ∧
+      compensationEventSubProcessSnapshotScopeLifecycleWellFormed program entryRoot = true ∧
+      (program.definitionScopes.find? fun scope => decide (scope.id = scopeId)) = some definition ∧
+      (match (generalizing := false) definition.parentScopeId, output with
+      | none, none => True
+      | some parent, some place => placeScope? program place = some parent
+      | _, _ => False) := by
+  obtain ⟨entryRoot, rootFound, lifecycle, ownership⟩ := programGraphWellFormed_scopeContract program valid
+  simp only [scopedOwnershipComplete, Bool.and_eq_true] at ownership
+  have respects := List.all_eq_true.mp ownership.2 _ member
+  unfold operationRespectsScopes at respects
+  dsimp only at respects
+  split at respects
+  · contradiction
+  · simp only [Bool.and_eq_true] at respects
+    have completion := respects.2
+    unfold definitionScope? at completion
+    split at completion
+    · contradiction
+    · rename_i definition found
+      refine ⟨entryRoot, definition, rootFound, lifecycle, found, ?_⟩
+      cases parent : definition.parentScopeId <;> cases output <;>
+        simp_all [placesOwnedBy, beq_iff_eq]
 
 end BpmnSemantics.SemanticProcess

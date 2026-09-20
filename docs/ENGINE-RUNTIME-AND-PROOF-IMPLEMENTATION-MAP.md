@@ -34,13 +34,13 @@ Four answer-free population schedules execute through separate Lean and TypeScri
 
 The family map owns the independently closure-reviewed Activity boundary Message slice; this map adds no general claim from that bounded family.
 
-[Internal commutation](INTERNAL-COMMUTATION-PROPOSAL.md#scope-creation-preparation-prerequisite) implements finite independent arming, local-control, and scope-creation batches in reject mode. Lean proves state/publication permutation equality without snapshots; TypeScript's ordinary-only snapshot batches remain outside that theorem. Scope integration is independently approved. Scheduled choice, regional removal, remaining families, and closure are absent. The approved [atomicity repair](capsules/INTERNAL-CLOSURE-ATOMICITY-REPAIR-SPEC.md) proves rollback/no-publication matching TypeScript, with replay discriminators and Temporal failure-before-publication handling.
+[Internal commutation](INTERNAL-COMMUTATION-PROPOSAL.md#scope-creation-preparation-prerequisite) implements approved finite arming/local-control/scope-creation batches in reject mode. Lean proves snapshot-free state/publication permutation equality; TypeScript's ordinary-only snapshot batches are outside that theorem. Scheduled choice, regions, remaining families, and closure are absent. The approved [atomicity repair](capsules/INTERNAL-CLOSURE-ATOMICITY-REPAIR-SPEC.md) proves rollback/no-publication, with replay and Temporal failure-before-publication evidence.
 
-[Local-control proofs and production batching](INTERNAL-COMMUTATION-PROPOSAL.md#independent-cold-review-receipt) are independently approved and pass [complete verification](PLAN.md#current-evidence). [`implementation-status-owner:ENGINE-SEMANTIC-INVARIANT`](ENGINE-SEMANTIC-INVARIANT-IMPLEMENTATION-MAP.md#runtime-state-well-formedness) owns collection ordering.
+[Local-control batching](INTERNAL-COMMUTATION-PROPOSAL.md#independent-cold-review-receipt) passes review and [complete verification](PLAN.md#current-evidence). [`implementation-status-owner:ENGINE-SEMANTIC-INVARIANT`](ENGINE-SEMANTIC-INVARIANT-IMPLEMENTATION-MAP.md#runtime-state-well-formedness) owns collection ordering.
 
-The approved [selected-join checkpoint](INTERNAL-COMMUTATION-PROPOSAL.md#selected-join-dependency-checkpoint) implements TypeScript dependencies and Lean readiness frames.
+[Selected joins](INTERNAL-COMMUTATION-PROPOSAL.md#selected-join-dependency-checkpoint): approved TypeScript dependencies and Lean readiness frames.
 
-[Scope preparation/lifecycle](INTERNAL-COMMUTATION-PROPOSAL.md#scope-creation-preparation-prerequisite) are approved; regional batching remains open.
+[Regional preparation](INTERNAL-COMMUTATION-PROPOSAL.md#regional-preparation-prerequisite): ownership-conditioned preservation; Complete/Return publication; `BTP-LEGACY-HOST-01` correction. `AOO-RETAINED-BODY-01` limits bounded-Terminate liveness. Aggregate validity, remaining publication, preparation frames, pair laws, review, and batching remain open.
 
 The independently approved first boundary Compensation retention checkpoint implements completed-Activity representation and pure transition preparation.
 

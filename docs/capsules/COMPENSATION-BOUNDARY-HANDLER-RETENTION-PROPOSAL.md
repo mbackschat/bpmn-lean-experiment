@@ -241,11 +241,11 @@ The 800-nonblank-line soft target is the extraction threshold and 1,200 lines th
 | [Lean Program contract](../../BpmnSemantics/SemanticProcessContract.lean) | 11 | direct Activity-data carriers extracted into a bounded owner |
 | [Lean RuntimeState](../../BpmnSemantics/SemanticProcess/RuntimeState.lean) | 54 | add only the collection reference and its root-owned invariant; new structures live elsewhere |
 | [Lean well-formedness](../../BpmnSemantics/SemanticProcess/RuntimeStateWellFormed.lean) | 53 | add one delegated predicate; extract before crossing 800 |
-| [Lean scope completion](../../BpmnSemantics/SemanticProcess/ScopeCompletion.lean) | 683 | add exact register disposal and update its frame theorem |
+| [Lean scope completion](../../BpmnSemantics/SemanticProcess/ScopeCompletion.lean) | 630 | add exact register disposal and update its frame theorem |
 | [Strict Lean Program decoder](../../BpmnSemantics/SemanticProcessJson/Program.lean) | 87 | delegate the optional field to a focused decoder; extract before crossing 800 |
 | [Lean internal-commutation runtime preservation](../../BpmnSemantics/SemanticProcess/InternalCommutationRuntimePreservation.lean) | 35 | prove the new aggregate invariant conjunct is framed; any further growth extracts the compensation frame proof |
-| [Lean message-key correlation preservation](../../BpmnSemantics/SemanticProcess/MessageKeyCorrelationPreservation.lean) | 349 | reconstruct the strengthened aggregate invariant while framing the compensation register exactly |
-| [Lean message-payload preservation](../../BpmnSemantics/SemanticProcess/MessagePayloadPreservation.lean) | 452 | reconstruct the strengthened aggregate invariant while framing the compensation register exactly |
+| [Lean message-key correlation preservation](../../BpmnSemantics/SemanticProcess/MessageKeyCorrelationPreservation.lean) | 356 | reconstruct the strengthened aggregate invariant while framing the compensation register exactly |
+| [Lean message-payload preservation](../../BpmnSemantics/SemanticProcess/MessagePayloadPreservation.lean) | 459 | reconstruct the strengthened aggregate invariant while framing the compensation register exactly |
 | [Lean Activity-body turnover preservation](../../BpmnSemantics/SemanticProcess/ActivityBodyTurnoverPreservation.lean) | 555 | preserve compensation validity and destructure lifecycle facts by name rather than positional projection |
 | [Lean Activity issuing conformance](../../BpmnSemantics/ActivityIssuingDisciplineConformance.lean) | 578 | keep the exact root-completion witness synchronized with owner-keyed register disposal |
 | [Lean parallel Multi-Instance entry preservation](../../BpmnSemantics/SemanticProcess/ParallelMultiInstanceRuntimeStateEntryPreservation.lean) | 2 | frame the compensation register through entry after extracting its order fact |

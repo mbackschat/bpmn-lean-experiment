@@ -116,6 +116,10 @@ theorem sortFlowNodeOccurrenceStarts_perm (values : List UnnumberedFlowNodeOccur
 
 def sortFlowNodeOccurrenceEnds : List UnnumberedFlowNodeOccurrenceEnd → List UnnumberedFlowNodeOccurrenceEnd := sortBy (fun left right => flowNodeOccurrenceAnchorBefore left.anchor right.anchor)
 
+theorem sortFlowNodeOccurrenceEnds_perm (values : List UnnumberedFlowNodeOccurrenceEnd) :
+    (sortFlowNodeOccurrenceEnds values).Perm values :=
+  sortBy_perm (fun left right : UnnumberedFlowNodeOccurrenceEnd => flowNodeOccurrenceAnchorBefore left.anchor right.anchor) values
+
 theorem mem_sortFlowNodeOccurrenceEnds (value : UnnumberedFlowNodeOccurrenceEnd) (values : List UnnumberedFlowNodeOccurrenceEnd) : value ∈ sortFlowNodeOccurrenceEnds values ↔ value ∈ values := by
   exact mem_sortBy (fun left right => flowNodeOccurrenceAnchorBefore left.anchor right.anchor) value values
 

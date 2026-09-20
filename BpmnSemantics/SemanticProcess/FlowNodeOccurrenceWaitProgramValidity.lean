@@ -45,16 +45,19 @@ private def timerWaitId (wait : TimerWait) : OccurrenceId :=
     elementId := ⟨wait.elementId.value⟩
     activation := wait.activation }
 
-private def boundaryTimerOperationMatches (program : Program) (state : RuntimeState)
+/-- Shared internal matcher for classification and wait-validity frame proofs under AOO-JOIN-03. -/
+def FlowNodeOccurrenceProgramValidity.Internal.boundaryTimerOperationMatches (program : Program) (state : RuntimeState)
     (wait : TimerWait) (operation : SemanticOperation) : Bool :=
   if !operationOwnedBy program operation wait.owner then false
   else match operation with
   | .awaitBoundedUserTask _ _ _ task boundary
   | .awaitMonitoredUserTask _ _ _ task boundary =>
       boundary.elementId = wait.elementId && boundary.output = wait.output &&
-        (state.waits.filter fun host => decide
-          (host.owner = wait.owner && host.task.id = task.id &&
-            host.activation = wait.activation)).length = 1
+        (state.activityOccurrences.filter fun record =>
+          record.owner = wait.owner && recordAttaches record (timerWaitId wait) &&
+            (state.waits.filter fun host =>
+              decide (host.owner = wait.owner && host.task.id = task.id) &&
+                recordBodyNamesWait host record).length = 1).length = 1
   | .awaitSequentialMultiInstanceUserTask _ _ _ task _ _ boundary _ =>
       boundary.elementId = wait.elementId && boundary.output = wait.output &&
         (state.activityOccurrences.filter fun record =>
@@ -71,9 +74,11 @@ private def boundaryTimerOperationMatches (program : Program) (state : RuntimeSt
             | none => false).length = 1
   | .enterBoundedScope _ _ _ _ childScopeId boundary =>
       boundary.elementId = wait.elementId && boundary.output = wait.output &&
-        (state.scopeOccurrences.filter fun child => decide
-          (child.id.definitionScopeId = childScopeId && child.id.activation = wait.activation &&
-            child.parent = some wait.owner)).length = 1
+        (state.activityOccurrences.filter fun record =>
+          record.owner = wait.owner && recordAttaches record (timerWaitId wait) &&
+            (state.scopeOccurrences.filter fun child =>
+              decide (child.id.definitionScopeId = childScopeId && child.parent = some wait.owner) &&
+                activityBodyScope? record == some child.id).length = 1).length = 1
   | _ => false
 
 /-- Whether one already validated Timer wait is the private deadline of one exact live host. -/
@@ -146,7 +151,7 @@ private theorem boundaryTimerOperationMatches_insertUnattachedActivity (program 
   all_goals rw [filter_insertActivityOccurrence_of_rejected _ record
     (by simp only [unattached, Bool.and_false, Bool.false_and])]
 
-/-- Without attached handlers, an inserted Activity cannot join either Multi-Instance Timer filter. -/
+/-- AOO-JOIN-03 excludes an unattached Activity from every private Timer host census. -/
 theorem flowNodeOccurrenceBoundaryTimerBound_insertUnattachedActivity (program : Program)
     (state : RuntimeState) (record : ActivityOccurrence) (empty : record.attachedHandlers = [])
     (timer : TimerWait) :

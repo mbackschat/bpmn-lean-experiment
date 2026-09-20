@@ -1,4 +1,5 @@
 import BpmnSemantics.SemanticProcess.CallActivityIdentity
+import BpmnSemantics.SemanticProcess.CallInstanceClosure
 import BpmnSemantics.SemanticProcess.ScopeCompletion
 
 /-! # Called-Process Call Activity runtime semantics
@@ -31,7 +32,7 @@ def sortCallRecords :
   | [] => []
   | record :: rest => insertCallRecord record (sortCallRecords rest)
 
-private def rootInstanceId? (state : RuntimeState) : Option SemanticId :=
+def rootInstanceId? (state : RuntimeState) : Option SemanticId :=
   match state.control with
   | .running instanceId
   | .completed instanceId
@@ -41,18 +42,6 @@ private def rootInstanceId? (state : RuntimeState) : Option SemanticId :=
 private def sameCallIdentity (record : CalledProcessOccurrence)
     (caller : ScopeOccurrenceId) (elementId : NodeId) : Bool :=
   record.caller = caller && record.id.elementId.value = elementId.value
-
-def processInstanceClosureWithin
-    (records : List CalledProcessOccurrence) (seed : List SemanticId) :
-    Nat → List SemanticId
-  | 0 => seed
-  | fuel + 1 =>
-      let expanded := (seed ++ records.filterMap fun record =>
-        if seed.contains record.caller.processInstanceId then
-          some record.calledRoot.processInstanceId
-        else none).eraseDups
-      if expanded.length = seed.length then expanded
-      else processInstanceClosureWithin records expanded fuel
 
 /-- The hidden call collection and parentless called roots form a one-to-one identity association. -/
 def calledProcessAssociationsValid (state : RuntimeState) : Bool :=
@@ -105,6 +94,62 @@ theorem calledProcessAssociationsValid_frame (before after : RuntimeState)
   cases after
   simp_all [calledProcessAssociationsValid, rootInstanceId?]
 
+/-- Call associations inspect only parentless scope occurrences; deleting child scopes leaves
+their endpoint censuses and the unchanged Call graph's reachability intact. -/
+theorem calledProcessAssociationsValid_parentless_frame (before after : RuntimeState)
+    (controlFrame : after.control = before.control)
+    (rootsFrame : after.scopeOccurrences.filter (·.parent.isNone) =
+      before.scopeOccurrences.filter (·.parent.isNone))
+    (callsFrame : after.calledProcessOccurrences = before.calledProcessOccurrences) :
+    calledProcessAssociationsValid after = calledProcessAssociationsValid before := by
+  have rootIdentity : rootInstanceId? after = rootInstanceId? before := by
+    simp [rootInstanceId?, controlFrame]
+  have census (predicate : RuntimeScopeOccurrence → Bool) :
+      after.scopeOccurrences.filter (fun occurrence => occurrence.parent.isNone && predicate occurrence) =
+      before.scopeOccurrences.filter (fun occurrence => occurrence.parent.isNone && predicate occurrence) := by
+    have same := congrArg (List.filter predicate) rootsFrame
+    simpa only [List.filter_filter, Bool.and_comm] using same
+  have rootsValid (instanceId : SemanticId) :
+      (after.scopeOccurrences.all fun occurrence =>
+        if occurrence.parent.isNone && occurrence.id.processInstanceId ≠ instanceId then
+          (after.calledProcessOccurrences.filter fun record =>
+            decide (record.calledRoot = occurrence.id)).length = 1
+        else true) =
+      (before.scopeOccurrences.all fun occurrence =>
+        if occurrence.parent.isNone && occurrence.id.processInstanceId ≠ instanceId then
+          (before.calledProcessOccurrences.filter fun record =>
+            decide (record.calledRoot = occurrence.id)).length = 1
+        else true) := by
+    rw [callsFrame]
+    apply Bool.eq_iff_iff.mpr
+    simp only [List.all_eq_true]
+    constructor <;> intro valid occurrence member
+    all_goals
+      by_cases parentless : occurrence.parent.isNone = true
+      · have retained := (List.mem_filter (p := fun occurrence : RuntimeScopeOccurrence =>
+          occurrence.parent.isNone)).mpr ⟨member, parentless⟩
+        first | rw [rootsFrame] at retained | rw [← rootsFrame] at retained
+        exact valid occurrence (List.mem_filter.mp retained).1
+      · simp [parentless]
+  have endpoints (owner : ScopeOccurrenceId) :
+      (after.scopeOccurrences.filter fun occurrence =>
+        decide (occurrence.id = owner) && occurrence.parent.isNone) =
+      (before.scopeOccurrences.filter fun occurrence =>
+        decide (occurrence.id = owner) && occurrence.parent.isNone) := by
+    simpa only [Bool.and_comm] using
+      census (fun occurrence => decide (occurrence.id = owner))
+  unfold calledProcessAssociationsValid
+  rw [rootIdentity]
+  simp only [callsFrame] at rootsValid
+  cases rootInstanceId? before with
+  | none => rfl
+  | some instanceId =>
+      simp only [Bool.decide_eq_true]
+      rw [census]
+      split
+      · simp only [endpoints, callsFrame, rootsValid]
+      · rfl
+
 /-- Valid Call records that mint the same called Process identity have the same Call anchor. -/
 theorem calledProcessAssociationsValid_called_instance_injective (state : RuntimeState)
     (left right : CalledProcessOccurrence)
@@ -154,7 +199,7 @@ theorem calledProcessAssociationsValid_called_instance_injective (state : Runtim
           congrArg (fun id : NodeId => (⟨id.value⟩ : SemanticId)) tuple.2.1,
           tuple.2.2⟩
 
-private def removeCalledProcessTree (state : RuntimeState)
+def removeCalledProcessTree (state : RuntimeState)
     (record : CalledProcessOccurrence) : RuntimeState :=
   let removed := processInstanceClosureWithin state.calledProcessOccurrences
     [record.calledRoot.processInstanceId]

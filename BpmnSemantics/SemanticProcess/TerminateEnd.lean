@@ -53,7 +53,7 @@ inductive TerminateScopeStep (program : Program) (id : OperationId)
       TerminateScopeStep program id origin input scopeId before
         (commitTermination before owner)
 
-private def selectedTerminateOwner? (program : Program) (before : RuntimeState)
+def selectedTerminateOwner? (program : Program) (before : RuntimeState)
     (id : OperationId) (origin : BpmnElementOrigin) (input : ControlPlaceId)
     (scopeId : DefinitionScopeId) : Option ScopeOccurrenceId := do
   if program.identity.semanticProfile ≠ terminateEndCheckpointProfileId then none

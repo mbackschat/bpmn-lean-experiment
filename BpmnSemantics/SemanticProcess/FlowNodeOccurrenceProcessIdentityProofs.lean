@@ -38,7 +38,7 @@ private theorem graphReachesBool_eq_true_iff [DecidableEq α]
   classical
   simp [graphReachesBool]
 
-private noncomputable def definitionScopeAncestorRank (program : Program)
+noncomputable def definitionScopeAncestorRank (program : Program)
     (target : DefinitionScopeId) : Nat :=
   (program.definitionScopes.filter fun scope =>
     graphReachesBool (scopeEdges program) scope.id target).length
@@ -103,7 +103,7 @@ private theorem scope_parent_edge (program : Program) (scope : DefinitionScope)
   unfold scopeEdges
   exact List.mem_filterMap.mpr ⟨scope, member, by simp [parentEq]⟩
 
-private theorem definitionScopeAncestorRank_parent_lt (program : Program)
+theorem definitionScopeAncestorRank_parent_lt (program : Program)
     (forest : scopeForestWellFormed program = true) (scope : DefinitionScope)
     (scopeMember : scope ∈ program.definitionScopes)
     (parentEq : scope.parentScopeId = some parent) :

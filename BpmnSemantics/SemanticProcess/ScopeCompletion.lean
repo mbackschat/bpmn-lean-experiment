@@ -45,7 +45,7 @@ theorem scopeQuiescent_refuses_active_compensation_trigger
 Separate from the gating above so each owner has one responsibility: the caller decides *whether* a
 scope may complete, and this decides *what completing it does*. Root completion ends the instance and
 clears its occurrence; a child hands exactly one continuation token to its live parent. -/
-private def completeQuiescentScope? (state : RuntimeState)
+def completeQuiescentScope? (state : RuntimeState)
     (occurrence : RuntimeScopeOccurrence) (parentOutput : Option ControlPlaceId) :
     Option RuntimeState :=
   match occurrence.parent, parentOutput, state.control with
@@ -74,6 +74,36 @@ def completeScopeState? (state : RuntimeState) (scopeId : DefinitionScopeId)
       if !scopeQuiescent state occurrence.id then none
       else completeQuiescentScope? state occurrence parentOutput
   | _ => none
+
+/-- Successful completion exposes its exact selected rewrite so downstream preservation proofs
+need not unfold the private completion implementation or assume its resulting field values. -/
+theorem completeScopeState_selected_update (state completed : RuntimeState)
+    (scopeId : DefinitionScopeId) (parentOutput : Option ControlPlaceId)
+    (occurrence : RuntimeScopeOccurrence)
+    (unique : state.scopeOccurrences.filter (fun candidate =>
+      decide (candidate.id.definitionScopeId = scopeId)) = [occurrence])
+    (completion : completeScopeState? state scopeId parentOutput = some completed) :
+    scopeQuiescent state occurrence.id = true ∧
+      (match (generalizing := false) occurrence.parent, parentOutput, state.control with
+      | none, none, .running instanceId =>
+          if state.initiationPending then none
+          else some { state with
+            control := .completed instanceId
+            scopeOccurrences := []
+            compensationActivityRetentions := state.compensationActivityRetentions.filter fun retention =>
+              decide (retention.owner ≠ occurrence.id) }
+      | some parent, some output, .running _ =>
+          if state.scopeOccurrences.any (fun candidate => candidate.id == parent) then
+            some { state with
+              tokens := addToken state.tokens output parent
+              scopeOccurrences := state.scopeOccurrences.filter fun candidate => decide (candidate.id ≠ occurrence.id) }
+          else none
+      | _, _, _ => none) = some completed := by
+  simp only [completeScopeState?, unique] at completion
+  split at completion
+  · simp at completion
+  · rename_i quiet
+    exact ⟨by simpa using quiet, completion⟩
 
 private theorem completeQuiescentScope_preserves_unrelated_components
     (state completed : RuntimeState) (occurrence : RuntimeScopeOccurrence)
@@ -117,6 +147,31 @@ theorem completeScopeState_preserves_unrelated_components
     · exact completeQuiescentScope_preserves_unrelated_components state completed _
         parentOutput completion
   · simp at completion
+
+/-- Regional retention needs the actual root/child scope mask, not just the unrelated-field frame. -/
+theorem completeScopeState_reference_fields (state completed : RuntimeState)
+    (scopeId : DefinitionScopeId) (parentOutput : Option ControlPlaceId)
+    (occurrence : RuntimeScopeOccurrence)
+    (unique : state.scopeOccurrences.filter (fun candidate =>
+      decide (candidate.id.definitionScopeId = scopeId)) = [occurrence])
+    (completion : completeScopeState? state scopeId parentOutput = some completed) :
+    completed.scopeOccurrences = (match occurrence.parent with
+      | none => []
+      | some _ => state.scopeOccurrences.filter fun candidate => decide (candidate.id ≠ occurrence.id)) ∧
+    completed.activityOccurrences = state.activityOccurrences ∧
+    completed.waits = state.waits ∧ completed.messageWaits = state.messageWaits ∧
+    completed.timerWaits = state.timerWaits ∧ completed.eventRaces = state.eventRaces := by
+  simp only [completeScopeState?, unique] at completion
+  split at completion
+  · simp at completion
+  · unfold completeQuiescentScope? at completion
+    repeat' split at completion
+    all_goals
+      first
+        | (simp at completion; done)
+        | (simp only [Option.some.injEq] at completion
+           subst completed
+           simp_all)
 
 /-- A uniquely identified live scope cannot complete while any owned token, wait, or child occurrence remains. -/
 theorem completeScopeState_refuses_nonquiescent

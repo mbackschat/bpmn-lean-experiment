@@ -60,14 +60,24 @@ theorem prepared_data_arm_boundaryTimer_frame
       contract.directOutput rfl rfl
   have declarers : userTaskWaitDeclarers program wait.task.id = [contract.operation] := by
     simpa [uniqueFamilyDeclarer?, wait] using unique
-  change flowNodeOccurrenceBoundaryTimerBound program
-    { { state with waits := insertUserTaskWait wait state.waits } with
-      activityOccurrences := insertActivityOccurrence
-        (dataInputOutputActivityRecord state owner.processInstanceId owner contract.taskId)
-        state.activityOccurrences } timer = _
-  rw [flowNodeOccurrenceBoundaryTimerBound_insertUnattachedActivity _ _ _ rfl]
-  exact flowNodeOccurrenceBoundaryTimerBound_insertUnboundedUserTask program state
-    contract.operation wait declaration declarers timer
+  have frame := (flowNodeOccurrenceBoundaryTimerBound_insertUnattachedActivity program
+    { state with waits := insertUserTaskWait wait state.waits }
+    (dataInputOutputActivityRecord state owner.processInstanceId owner contract.taskId) rfl timer).trans
+    (flowNodeOccurrenceBoundaryTimerBound_insertUnboundedUserTask program state
+      contract.operation wait declaration declarers timer)
+  have matchers : FlowNodeOccurrenceProgramValidity.Internal.boundaryTimerOperationMatches program
+      (applyInternalDataArmingPatch state
+        (makeInternalDataArmingPatch program state contract owner inputOrigin source)) timer =
+      FlowNodeOccurrenceProgramValidity.Internal.boundaryTimerOperationMatches program
+        { { state with waits := insertUserTaskWait wait state.waits } with
+          activityOccurrences := insertActivityOccurrence
+            (dataInputOutputActivityRecord state owner.processInstanceId owner contract.taskId)
+            state.activityOccurrences } timer := by
+    funext candidate
+    cases candidate <;> rfl
+  unfold flowNodeOccurrenceBoundaryTimerBound
+  rw [matchers]
+  exact frame
 
 theorem prepared_data_arm_preserves_messageBoundedProjectionValid
     (program : Program) (state : RuntimeState) (contract : InternalDataArmingContract)
