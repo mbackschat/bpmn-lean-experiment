@@ -1112,6 +1112,23 @@ The contributor guide explicitly made a green delegated lane a commit trigger an
 
 The 2026-09-20 workflow review confirmed two further outcome-level recurrences after the instruction correction: lifecycle implementation `b589ab0a`, evidence `026c690f`, and acceptance `7613956c`; then mixed-batch implementation `10e774c5`, evidence `299eea89`, contract correction `bd1ac87b`, and acceptance `62744865`. The latter correction changes the stated batching contract and is not merely ceremony; it belongs to the same outcome and is not counted as a third recurrence. Source-digest binding now removes the forced post-implementation cost commit, and the review packet binds the immutable target before review without requiring a separate committed receipt. These mechanisms address forced ordering; they do not mechanically judge the usefulness of a checkpoint.
 
+### Finding 64
+
+Optional investigations consumed open agent threads without reserving the capacity required for independent closure review; completed tasks were mistaken for released thread capacity.
+
+Instances
+: 1
+
+Disposition
+: `unguardable`
+
+Evidence
+: [thread-capacity rules](../CLAUDE.md#delegated-implementation), [questions 3 and 10](#self-assessment-questions)
+
+**First observed:** owner review of agent-thread exhaustion during the 2026-09-20 architecture/workflow follow-up.
+
+The 2026-09-20 review follow-up stalled at the required reviewer because the session could neither spawn nor resume a reviewer and exposed no thread-close operation. This counts the blocked outcome once, not each failed retry. Routine investigation stays with the root, capacity is reserved for required reviews, and the exact reviewer is reused for corrections and eligible closure. Repository guards cannot observe the orchestration service's open-thread quota or release a slot; instruction checks do not enforce runtime allocation.
+
 ## Update rule
 
 At each capsule closure and each session handoff, answer the questions above and either add a row or record that none applied. When a mechanism already has a row, increment its instance count instead of adding a near-duplicate — the count is the signal the escalation rule reads. Keep the finding text describing the mechanism, not the incident, so a second occurrence in different code still matches the same row.
