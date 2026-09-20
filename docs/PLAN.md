@@ -67,20 +67,20 @@ Owner instruction on 2026-09-08 supersedes the earlier MUE push authorization: d
 
 Exactly one stable work ID is active. Required maps are part of the routing contract, not descriptive tags.
 
+### Architecture and workflow review follow-up
+
+Owner instruction on 2026-09-20: investigate necessity before expanding regional proofs; preserve complete gates and existing guarantees. The two external reviews advise the work but do not approve a semantic checkpoint.
+
+- [x] Investigate admitted regional mixed frontiers: the [Error witness](../packages/bpmn-source/test/subprocess-error-lowering.test.ts) admits an Error throw beside sibling arming and checks atomic rollback. The operations conflict; independent regional reachability remains unresolved.
+- [x] Bind resource measurements to measured source digests and record review targets with verdicts, preserving provenance, ratchets, immutable packets, and isolation.
+- [x] Define the next deliverable: establish an admitted independent regional frontier or a capability-level exclusion argument. Reassess at that evidence boundary, or before any new substantial prerequisite; do not expand pair proofs meanwhile.
+- [x] Verify the non-material binding repair and retained witness with separating tests and complete infrastructure/source gates.
+
+Bulk fixture conversion, broad representation migration, gate selection, and additional telemetry are deferred. An unsuccessful witness search is inconclusive; reassessment cannot discard an essential correctness obligation.
+
 ### External-review correction checklist
 
-Owner instruction on 2026-09-05: resolve the supplied six reviews before resuming RC implementation. `R1`–`R6` identify those reports. Confirm each finding against source; close defects with separating evidence and the required review. Intentional exclusions require an accurate contract, not new feature admission.
-
-- [x] Validate and classify every finding; reconcile conflicting recommendations.
-- [x] Correct assurance and deployment overclaims (`R1`, `R2`, `R5`, `R6`).
-- [x] Repair regional cancellation, quiescence, and Lean removal completeness (`R2`, `R6`).
-- [x] Measure E1; remove demonstrated fixture-reduction amplification (`R4`).
-- [x] Close runtime-invariant binding and preservation gaps (`R1`, `R2`, `R6`).
-- [x] Correct implemented scheduling, preparation, rollback, and publication claims (`R3`); broader proofs remain queued under `INTERNAL-COMMUTATION`.
-- [x] Correct Compensation dependency defects and disclose the bounded cancellation, ownership, and failure contract (`R6`).
-- [x] Repair Temporal deployment/recovery and complete omitted hosting checks (`R5`).
-- [x] Bind source-order and fixture/scenario evidence independently for the reported fixtures (`R1`).
-- [x] Complete correction audits, consumer measurements, and full verification; resume RC.
+The six reviews supplied on 2026-09-05 and their correction audits are complete; the architecture and workflow follow-up above is separate.
 
 The closure-reviewed [seven-byte capacity correction](capsules/COMPENSATION-EMPTY-STATE-CAPACITY-REPAIR-SPEC.md) supplies the declaration minimum used by the closure-reviewed [initialization repair](capsules/RUNTIME-INITIALIZATION-ASSURANCE-REPAIR-SPEC.md). The unchanged empty-state theorem and actual committed-start guarantees remain intact; no general all-transition preservation theorem is claimed. The [cost ledger](CAPSULE-COST-LEDGER.md#repair-closure-costs) owns contiguous measurements and comparisons.
 
@@ -104,7 +104,7 @@ Active work ID: `INTERNAL-COMMUTATION`.
 
 Risk band: RC internal scheduling; the six external reviews and composed Activity-data closure are complete.
 
-Next action: obtain the owner-requested external reviews of Lean architecture and work efficiency against the tested regional preparation checkpoint at `4d4d8d76` before expanding the proof effort. The [regional owner](INTERNAL-COMMUTATION-PROPOSAL.md#regional-preparation-prerequisite) retains Error/Terminate publication, preparation frames, selected-domain agreement, aggregate preservation, and pair laws as open. Architecture advice does not replace the required semantic-checkpoint review before finite batching.
+Next action: establish an admitted independent regional frontier or a capability-level exclusion argument; the retained Error frontier conflicts and does not settle necessity. The [regional owner](INTERNAL-COMMUTATION-PROPOSAL.md#regional-preparation-prerequisite) retains Error/Terminate publication, preparation frames, selected-domain agreement, aggregate preservation, and pair laws as open. Reassess before expanding that proof effort; external architectural advice does not replace semantic-checkpoint review.
 
 In progress: Timer classification and wait validity share operation-level proofs; four list-uniqueness proofs use the standard library. The cleanup preserves existing theorem statements and matcher behavior. Complete/Return publication and cancellation wait/Effect-local preservation remain implemented. `AOO-RETAINED-BODY-01` requires a separate amendment before bounded-Terminate admission.
 

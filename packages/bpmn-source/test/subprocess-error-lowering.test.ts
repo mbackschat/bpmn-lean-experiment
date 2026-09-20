@@ -9,6 +9,15 @@ import {
   compileBpmnToSemanticProcess,
 } from "@bpmn-lean/bpmn-source";
 import type { SemanticOperation } from "@bpmn-lean/semantic-core";
+import {
+  CommandOutcome,
+  StimulusKind,
+  applyInternalOperationStep,
+  applyStimulusWithTrace,
+  initialState,
+  isWellFormedSemanticProcessProgram,
+} from "@bpmn-lean/semantic-core";
+import { admittedInternalPrefix } from "../../semantic-core/test/internal-operation-prefix-fixture.ts";
 
 import {
   compileSemanticProcessFixture,
@@ -180,6 +189,51 @@ test("Error lowering survives one combined representative declaration reordering
     reordered.semanticProcess.controlPlaceScopes,
     original.semanticProcess.controlPlaceScopes,
   );
+});
+
+test("admits an Error and sibling-arming frontier but rolls back their conflicting start", async () => {
+  const xml = await readFile(fixtureUrl, "utf8");
+  const candidate = xml.replace(/\s*<bpmn:(incoming|outgoing)>[^<]*<\/bpmn:\1>/gu, "")
+    .replace('sourceRef="Gateway_ChildFork" targetRef="UserTask_TriggerError"',
+      'sourceRef="Gateway_ChildFork" targetRef="EndEvent_ScopedFailure"')
+    .replace('sourceRef="UserTask_TriggerError" targetRef="EndEvent_ScopedFailure"',
+      'sourceRef="UserTask_TriggerError" targetRef="EndEvent_SiblingWork"')
+    .replace('sourceRef="UserTask_SiblingWork" targetRef="EndEvent_SiblingWork"',
+      'sourceRef="UserTask_SiblingWork" targetRef="UserTask_TriggerError"');
+  const compiled = await compileText(candidate, "error-mixed-frontier");
+  assert.equal(compiled.status, BpmnCompilationStatus.Accepted);
+  const program = compiled.semanticProcess;
+  assert.equal(isWellFormedSemanticProcessProgram(program), true);
+  const start = {
+    kind: StimulusKind.StartProcess,
+    commandId: "start-error-mixed-frontier",
+    processId: program.processId,
+    instanceId: "error-mixed-frontier",
+    initialVariables: [],
+  } as const;
+  const frontier = admittedInternalPrefix(program, initialState, start, [
+    "operation:StartEvent_Outer",
+    "operation:SubProcess_Work",
+    "operation:Gateway_ChildFork",
+  ], ["operation:EndEvent_ScopedFailure", "operation:UserTask_SiblingWork"]);
+  const error = operationOfKind(program.operations, SemanticOperationKind.ThrowError);
+  const sibling = program.operations.find(({ id }) => id === "operation:UserTask_SiblingWork");
+  assert.ok(sibling !== undefined);
+  const thrown = applyInternalOperationStep(program, error, frontier);
+  assert.ok(thrown !== null);
+  assert.equal(applyInternalOperationStep(program, sibling, thrown.successor), null,
+    "Error cancels the sibling's owner: this witness does not justify independent batching");
+  const traced = applyStimulusWithTrace(program, initialState, start);
+  assert.equal(traced.result.outcome, CommandOutcome.RolledBack);
+  assert.equal(traced.result.ambiguousInternalChoice, true);
+  assert.equal(traced.result.internalStepBoundExceeded, false);
+  assert.deepEqual(traced.result.state, initialState);
+  assert.deepEqual(traced.committedTransitions, []);
+  assert.deepEqual(traced.flowNodeOccurrenceLifecycles, []);
+  const original = await compileText(xml, "error-original-frontier");
+  assert.ok(original.status === BpmnCompilationStatus.Accepted);
+  assert.equal(applyStimulusWithTrace(original.semanticProcess, initialState, start).result.outcome,
+    CommandOutcome.Committed);
 });
 
 test("rejects non-interrupting, misattached, unmatched, and malformed Error variants", async () => {

@@ -53,6 +53,20 @@ const grandfatheredReviewDocuments: ReadonlySet<string> = new Set(
   expectedGrandfatheredReviewDocuments,
 );
 
+test("all pending stages can record their packet-bound target with the verdict", () => {
+  for (const stage of Object.values(ReviewStage)) {
+    const pending: ReviewReceipt = { stage, target: "not-recorded", isolation: "not-recorded",
+      verdict: "pending", correctionAudit: "not-applicable" };
+    assert.doesNotThrow(() => assertReceiptRow(pending, "packet-bound-pending"));
+    assert.throws(() => assertIndependentlyApproved(pending, "packet-bound-pending"));
+    assert.throws(() => assertReceiptRow({ ...pending, verdict: "approve",
+      isolation: "fork-turns-none", correctionAudit: "not-required" }, "unbound-verdict"));
+  }
+  assert.doesNotThrow(() => assertReviewContinuity(new Map(Object.values(ReviewStage).map((stage) =>
+    [stage, { stage, target: "not-recorded", isolation: "not-recorded", verdict: "pending",
+      correctionAudit: "not-applicable" }])), "pending-stages"));
+});
+
 function baselineGrandfatheredReviewDocuments(): ReadonlyArray<string> {
   assert.equal(
     isReviewCommitTarget(reviewPolicyBaseline),

@@ -2,7 +2,7 @@
 
 import {
   derivedNearCapModules,
-  measurementCommitFor,
+  measurementIdentityFor,
   nearCapThresholdKib,
   type LeanModuleCostBaseline,
   type LeanModuleCostProvenance,
@@ -77,7 +77,7 @@ function completenessViolations(
 
 /**
  * Rejects any recorded figure changed from its baseline under the same
- * measurement commit.
+ * measurement identity.
  *
  * A lowered figure can hide a near-cap module just as an inflated figure can
  * misstate its cost. Either direction therefore requires a new immutable
@@ -91,19 +91,28 @@ function ratchetViolations(
     return [];
   }
   const baselineMeasurements = new Map(
-    baseline.measurements.map(([module, kib, measuredAtCommit]) => [
+    baseline.measurements.map(([module, kib, measuredAtCommit, sourceSha256]) => [
       module,
-      { kib, measuredAtCommit },
+      { kib, measuredAtCommit, sourceSha256 },
     ]),
   );
   const violations: LeanModuleCostViolation[] = [];
   for (const row of record.rows) {
     const previous = baselineMeasurements.get(row.module);
-    const measuredAtCommit = measurementCommitFor(record, row);
+    const measuredAtCommit = measurementIdentityFor(record, row);
+    if (row.measurementReceiptSha256 === undefined && previous?.measuredAtCommit !== measuredAtCommit) {
+      violations.push({
+        kind: "measurement-source-mismatch",
+        module: row.module,
+        measuredAtCommit,
+        reason: "new measurement requires a receipt digest",
+      });
+    }
+    const sourceChanged = previous?.sourceSha256 !== undefined && previous.sourceSha256 !== row.sourceSha256;
     if (
       previous !== undefined &&
       previous.measuredAtCommit === measuredAtCommit &&
-      row.peakResidentKib !== previous.kib
+      (row.peakResidentKib !== previous.kib || sourceChanged)
     ) {
       violations.push({
         kind: "changed-without-remeasurement",
@@ -111,6 +120,7 @@ function ratchetViolations(
         baselineKib: previous.kib,
         recordedKib: row.peakResidentKib,
         measuredAtCommit,
+        sourceChanged,
       });
     }
   }
@@ -182,6 +192,7 @@ export function formatLeanModuleCostViolation(violation: LeanModuleCostViolation
     case "unknown-row":
       return `${violation.module} has a recorded row but is not a tracked conformance module`;
     case "changed-without-remeasurement":
+      if (violation.sourceChanged) return `${violation.module} changed source while its measurement target remains ${violation.measuredAtCommit}`;
       return `${violation.module} changed from ${violation.baselineKib} to ${violation.recordedKib} KiB while its measurement target remains ${violation.measuredAtCommit}`;
     case "measurement-source-mismatch":
       return `${violation.module} does not match measurement target ${violation.measuredAtCommit}: ${violation.reason}`;

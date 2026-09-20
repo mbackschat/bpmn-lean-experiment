@@ -200,6 +200,8 @@ Per-scenario requirements are owned by the guarded artifact catalogs and each ca
 
 The complete prepared pipeline enforces the cross-cutting CIB, Lean, core, Temporal, mutation, replay, and teardown invariants defined by [TESTING-SPEC.md](TESTING-SPEC.md#complete-differentialrefinement-pipeline). Exact counts and latest measurements belong to the generated report and [PLAN.md](PLAN.md).
 
+Non-material [binding repair](TESTING-SPEC.md#independent-cold-review-gate): [cost](../scripts/lean-module-cost.test.ts) and [review](../scripts/independent-review-policy.test.ts) guards; the [Error witness](../packages/bpmn-source/test/subprocess-error-lowering.test.ts) retains existing refusal.
+
 ## Nearest unsupported claims
 
 - **A12 adoption evidence:** the optional adoption lane admits the exact external `CreateDocument.bpmn` bytes through the product-neutral mapped-success profile plus a content-bound data-only overlay. Its current oracle proves the two project-authored adoption projections equal the selected frozen generation outside the approved profile/overlay identity translation. The frozen manifest at immutable target `02330ad` derives the complete A12-specific baseline set plus the original validator, projector, and effect-projection roots independently of its own entries. Closure correction `8d6ea1a` is approved, and the [handoff](../adoption/a12/current/README.md#resume-point-for-a-future-a12-add-on) records how future product-3 work resumes.

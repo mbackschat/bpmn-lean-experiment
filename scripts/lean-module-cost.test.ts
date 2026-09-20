@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -10,7 +11,7 @@ import {
   derivedNearCapModules,
   leanModuleCostBaseline,
   leanModuleCostRecord,
-  measurementCommitFor,
+  measurementIdentityFor,
   nearCapThresholdKib,
   type LeanModuleCostBaseline,
   type LeanModuleCostRecord,
@@ -75,7 +76,7 @@ function narrowBaseline(loaded: unknown): LeanModuleCostBaseline {
     throw new TypeError(`${recordPath} at HEAD carries no readable cost baseline`);
   }
   const defaultMeasuredAtCommit = previous.provenance.measuredAtCommit;
-  const measurements = previous.rows.map((row: unknown): readonly [string, number, string] => {
+  const measurements = previous.rows.map((row: unknown): readonly [string, number, string, string] => {
     if (
       row === null ||
       typeof row !== "object" ||
@@ -90,7 +91,13 @@ function narrowBaseline(loaded: unknown): LeanModuleCostBaseline {
       "measuredAtCommit" in row && typeof row.measuredAtCommit === "string"
         ? row.measuredAtCommit
         : defaultMeasuredAtCommit;
-    return [row.module, row.peakResidentKib, measuredAtCommit];
+    const identity = "measurementReceiptSha256" in row && typeof row.measurementReceiptSha256 === "string"
+      ? row.measurementReceiptSha256 : measuredAtCommit;
+    const sourceSha256 = "sourceSha256" in row && typeof row.sourceSha256 === "string"
+      ? row.sourceSha256
+      : createHash("sha256").update(execFileSync("git", ["show",
+        `${measuredAtCommit}:${moduleSourcePath(row.module)}`], { maxBuffer: 8 * 1024 * 1024 })).digest("hex");
+    return [row.module, row.peakResidentKib, identity, sourceSha256];
   });
   return { measurements };
 }
@@ -101,25 +108,24 @@ function moduleSourcePath(module: string): string {
 
 function measurementSourceMismatches(
   record: LeanModuleCostRecord,
+  readSource: (sourcePath: string) => Uint8Array = (sourcePath) => readFileSync(sourcePath),
 ): LeanModuleMeasurementSourceMismatch[] {
   return record.rows.flatMap((row) => {
     const sourcePath = moduleSourcePath(row.module);
-    if (!existsSync(sourcePath)) {
-      return [];
+    const measuredAtCommit = measurementIdentityFor(record, row);
+    if (!/^[0-9a-f]{64}$/u.test(row.sourceSha256)) {
+      return [{ module: row.module, measuredAtCommit, reason: "invalid source digest" }];
     }
-    const measuredAtCommit = measurementCommitFor(record, row);
-    let measuredSource: string;
+    if (row.measurementReceiptSha256 !== undefined && !/^[0-9a-f]{64}$/u.test(row.measurementReceiptSha256)) {
+      return [{ module: row.module, measuredAtCommit, reason: "invalid measurement receipt digest" }];
+    }
     try {
-      measuredSource = execFileSync("git", ["show", `${measuredAtCommit}:${sourcePath}`], {
-        encoding: "utf8",
-        maxBuffer: 8 * 1024 * 1024,
-      });
+      const actual = createHash("sha256").update(readSource(sourcePath)).digest("hex");
+      return actual === row.sourceSha256 ? []
+        : [{ module: row.module, measuredAtCommit, reason: "source bytes changed" }];
     } catch {
       return [{ module: row.module, measuredAtCommit, reason: "source is unavailable" }];
     }
-    return measuredSource === readFileSync(sourcePath, "utf8")
-      ? []
-      : [{ module: row.module, measuredAtCommit, reason: "source bytes changed" }];
   });
 }
 
@@ -286,6 +292,59 @@ test("the declared near-cap disclosure equals the set derived from the recorded 
   );
 });
 
+test("new module measurements bind to archived bytes before the introducing commit exists", () => {
+  const source = Buffer.from("theorem measured : True := True.intro\n");
+  const digest = createHash("sha256").update(source).digest("hex");
+  for (const module of ["BpmnSemantics.NewOneConformance", "BpmnSemantics.NewTwoConformance"]) {
+    const record: LeanModuleCostRecord = {
+      ...leanModuleCostRecord,
+      rows: [{ module, peakResidentKib: 100, elapsedSeconds: 1,
+        sourceSha256: digest, measurementReceiptSha256: "a".repeat(64) }],
+    };
+    assert.deepEqual(measurementSourceMismatches(record, () => source), []);
+    assert.equal(measurementSourceMismatches(record, () => Buffer.from("changed\n")).length, 1);
+    assert.equal(measurementSourceMismatches(record, () => { throw new Error("missing"); }).length, 1);
+    assert.equal(measurementSourceMismatches({ ...record,
+      rows: [{ ...record.rows[0]!, sourceSha256: "" }] }, () => source).length, 1);
+    assert.equal(measurementSourceMismatches({ ...record,
+      rows: [{ ...record.rows[0]!, measurementReceiptSha256: "not-a-receipt" }] }, () => source).length, 1);
+  }
+});
+
+test("receipt identity permits a fresh measurement but provenance alone cannot bypass its ratchet", () => {
+  const row = leanModuleCostRecord.rows[0]!;
+  const measured: LeanModuleCostRecord = { ...leanModuleCostRecord,
+    rows: [{ ...row, measurementReceiptSha256: "a".repeat(64) }] };
+  const compare = (receipt: string, measuredAtCommit: string) => leanModuleCostViolations({
+    record: { ...measured, rows: [{ ...measured.rows[0]!, peakResidentKib: row.peakResidentKib + 1,
+      measurementReceiptSha256: receipt, measuredAtCommit }] },
+    baseline: leanModuleCostBaseline(measured), trackedModules: [row.module], measurementSourceMismatches: [],
+  });
+  assert.equal(compare("a".repeat(64), "different-provenance").some(
+    ({ kind }) => kind === "changed-without-remeasurement"), true);
+  assert.deepEqual(compare("b".repeat(64), "same-provenance"), []);
+  const changedSource = { ...measured, rows: [{ ...measured.rows[0]!, sourceSha256: "c".repeat(64) }] };
+  assert.equal(leanModuleCostViolations({ record: changedSource,
+    baseline: leanModuleCostBaseline(measured), trackedModules: [row.module], measurementSourceMismatches: [],
+  }).length, 1, "an unchanged peak does not excuse changed source under the same measurement identity");
+});
+
+test("new and replacement measurements cannot borrow historical provenance without a receipt", () => {
+  const row = leanModuleCostRecord.rows[0]!;
+  for (const replacement of [
+    { ...row, module: "BpmnSemantics.UnmeasuredConformance" },
+    { ...row, measuredAtCommit: "different-provenance" },
+  ]) {
+    const violations = (measurementReceiptSha256?: string) => leanModuleCostViolations({
+      record: { ...leanModuleCostRecord, rows: [measurementReceiptSha256 === undefined
+        ? replacement : { ...replacement, measurementReceiptSha256 }] },
+      baseline: selfBaseline, trackedModules: [replacement.module], measurementSourceMismatches: [],
+    });
+    assert.equal(violations().some(({ kind }) => kind === "measurement-source-mismatch"), true);
+    assert.deepEqual(violations("a".repeat(64)), []);
+  }
+});
+
 test("a conformance module with no recorded row fails completeness", () => {
   assert.deepEqual(
     messages(
@@ -339,14 +398,10 @@ test("a recorded peak changed under an unchanged measurement commit fails the ra
   );
   assert.deepEqual(
     leanModuleCostViolations({
-      record: raised,
-      baseline: {
-        measurements: selfBaseline.measurements.map(([module, kib, commit]) =>
-          module === "BpmnSemantics.MessageStartConformance"
-            ? [module, kib, "0bfccf53"]
-            : [module, kib, commit],
-        ),
-      },
+      record: { ...raised, rows: raised.rows.map((row) =>
+        row.module === "BpmnSemantics.MessageStartConformance"
+          ? { ...row, measurementReceiptSha256: "a".repeat(64) } : row) },
+      baseline: selfBaseline,
       trackedModules: recordedModules,
       measurementSourceMismatches: [],
     }),
@@ -398,23 +453,16 @@ test("a source changed after its measurement target fails source binding", () =>
 });
 
 test("a module crossing the near-cap threshold fails an unchanged disclosure", () => {
-  // Re-measured provenance isolates the disclosure arm from the ratchet arm.
   const remeasured = withRows((row) =>
     row.module === "BpmnSemantics.SemanticProcessAdmissionConformance"
-      ? { ...row, peakResidentKib: 2_900_000 }
+      ? { ...row, peakResidentKib: 2_900_000, measurementReceiptSha256: "a".repeat(64) }
       : row,
   );
   assert.deepEqual(
     messages(
       leanModuleCostViolations({
         record: remeasured,
-        baseline: {
-          measurements: selfBaseline.measurements.map(([module, kib, commit]) =>
-            module === "BpmnSemantics.SemanticProcessAdmissionConformance"
-              ? [module, kib, "0bfccf53"]
-              : [module, kib, commit],
-          ),
-        },
+        baseline: selfBaseline,
         trackedModules: recordedModules,
         measurementSourceMismatches: [],
       }),

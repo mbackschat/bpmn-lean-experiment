@@ -354,7 +354,7 @@ export function assertReceiptRow(row: ReviewReceipt, relativePath: string): void
   }
 
   if (row.verdict === "pending") {
-    if (row.stage === ReviewStage.Proposal && row.target === "not-recorded") {
+    if (row.target === "not-recorded") {
       assert.equal(row.isolation, "not-recorded");
       assert.equal(row.correctionAudit, "not-applicable");
       return;
@@ -426,7 +426,7 @@ export function assertReviewContinuity(
     return;
   }
   if (
-    checkpoint?.target !== "not-applicable" &&
+    commitPattern.test(checkpoint?.target ?? "") &&
     checkpoint?.target === closure?.target
   ) {
     throw new Error(
