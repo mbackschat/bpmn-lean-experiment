@@ -81,7 +81,7 @@ Owner instruction on 2026-09-20: finish both reviews' follow-ups; preserve compl
 - [ ] Bind snapshot-batching limitations to Compensation's pre-registration obligations.
 - [x] Review 2: locate diagnostics in failed receipts; preserve verdicts and complete logs.
 - [ ] Evaluate conservative gate selection against historical failures without reducing live gates.
-- [ ] Add receipt-span/busy-duration reporting and optional lane identity without inferring engineering effort.
+- [x] Add [receipt timing](../scripts/summarize-command-receipts.ts) and optional lane labels; reproduce the reviewed window without inferring effort.
 - [ ] Audit every finding and the trial evidence.
 
 Failed witness searches are inconclusive; reassessment cannot discard correctness obligations. Tooling/tests are [non-material](TESTING-SPEC.md#independent-cold-review-gate), covered by complete infrastructure/core gates; semantic/proof changes retain required reviews.

@@ -217,3 +217,31 @@ test("completed failures locate the first recognized diagnostic without changing
     await rm(temporaryRoot, { recursive: true, force: true });
   }
 });
+
+test("receipt runner records an optional lane and refuses malformed or stale labels before execution", async () => {
+  const temporaryRoot = await mkdtemp(path.join(tmpdir(), "bpmn-receipt-lane-test-"));
+  try {
+    const labeled = path.join(temporaryRoot, "labeled");
+    const result = spawnSync(receiptScriptPath, [labeled, "--", process.execPath, "-e", "process.exit(7)"], {
+      encoding: "utf8", env: { ...process.env, COMMAND_RECEIPT_LANE: "proof/local-control" },
+    });
+    assert.equal(result.status, 7, result.stderr);
+    assert.equal(await readFile(path.join(labeled, "lane"), "utf8"), "proof/local-control\n");
+    assert.equal(await readFile(path.join(labeled, "exit-status"), "utf8"), "7\n");
+    const malformed = spawnSync(receiptScriptPath, [path.join(temporaryRoot, "malformed"), "--",
+      process.execPath, "-e", "process.exit(85)"], {
+      encoding: "utf8", env: { ...process.env, COMMAND_RECEIPT_LANE: "first\nsecond" },
+    });
+    assert.equal(malformed.status, 2, malformed.stderr);
+    const stale = path.join(temporaryRoot, "stale");
+    await mkdir(stale);
+    await writeFile(path.join(stale, "lane"), "older\n");
+    const reused = spawnSync(receiptScriptPath, [stale, "--", process.execPath, "-e", "process.exit(85)"], {
+      encoding: "utf8", env: { ...process.env, COMMAND_RECEIPT_LANE: "" },
+    });
+    assert.equal(reused.status, 2, reused.stderr);
+    assert.equal(await readFile(path.join(stale, "lane"), "utf8"), "older\n");
+  } finally {
+    await rm(temporaryRoot, { recursive: true, force: true });
+  }
+});

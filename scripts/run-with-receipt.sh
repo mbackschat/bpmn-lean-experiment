@@ -20,14 +20,21 @@ if [ "$#" -eq 0 ]; then
   usage
 fi
 
+receipt_lane=${COMMAND_RECEIPT_LANE:-}
+if [ -n "$receipt_lane" ] && [[ ! "$receipt_lane" =~ ^[A-Za-z0-9][A-Za-z0-9_.:/-]{0,127}$ ]]; then
+  printf 'invalid command receipt lane label\n' >&2
+  exit 2
+fi
+
 mkdir -p -- "$receipt_root" || exit 2
 log_path="$receipt_root/output.log"
 status_path="$receipt_root/exit-status"
 command_path="$receipt_root/command.txt"
 head_path="$receipt_root/git-head"
+lane_path="$receipt_root/lane"
 
 # Refusing reuse keeps an earlier result recoverable instead of silently replacing its evidence.
-for evidence_path in "$log_path" "$status_path" "$command_path" "$head_path"; do
+for evidence_path in "$log_path" "$status_path" "$command_path" "$head_path" "$lane_path"; do
   if [ -e "$evidence_path" ]; then
     printf 'receipt directory already contains command evidence: %s\n' "$receipt_root" >&2
     exit 2
@@ -44,6 +51,11 @@ if [[ ! "$git_head" =~ ^[0-9a-f]{40}$ ]]; then
 fi
 printf '%s\n' "$git_head" > "$head_path.tmp" || exit 2
 mv "$head_path.tmp" "$head_path" || exit 2
+
+if [ -n "$receipt_lane" ]; then
+  printf '%s\n' "$receipt_lane" > "$lane_path.tmp" || exit 2
+  mv "$lane_path.tmp" "$lane_path" || exit 2
+fi
 
 {
   printf 'cwd=%q\n' "$PWD"
