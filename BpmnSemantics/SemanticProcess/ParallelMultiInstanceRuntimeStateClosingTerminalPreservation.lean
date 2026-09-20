@@ -28,28 +28,6 @@ private theorem parallelBodyClaims_eq {record : ActivityOccurrence}
   cases shape : record.body <;>
     simp_all [activityBodyParallelTasks?, activityBodyTaskClaims]
 
-private theorem all_occursOnce_filter (same : α → α → Bool)
-    (self : ∀ value, same value value = true) (values : List α) (keep : α → Bool)
-    (unique : values.all (occursOnce same values) = true) :
-    (values.filter keep).all (occursOnce same (values.filter keep)) = true := by
-  simp only [List.all_eq_true] at unique ⊢
-  intro value member
-  have originalMember : value ∈ values := (List.mem_filter.mp member).1
-  have original := unique value originalMember
-  simp only [occursOnce, decide_eq_true_eq] at original ⊢
-  have sublist : List.Sublist
-      ((values.filter keep).filter (same value))
-      (values.filter (same value)) := by
-    apply List.Sublist.trans (l₂ := (values.filter (same value)).filter keep)
-    · simp [List.filter_filter, Bool.and_comm]
-    · exact List.filter_sublist
-  have positive : 0 < ((values.filter keep).filter (same value)).length := by
-    apply List.length_pos_of_mem
-    exact List.mem_filter.mpr ⟨member, self value⟩
-  have upper := sublist.length_le
-  rw [original] at upper
-  exact Nat.le_antisymm upper positive
-
 private theorem removeParallelChildWaits_lookup_of_not_mem (waits : List UserTaskWait)
     (targets : List UserTaskInstanceId) (task : UserTaskInstanceId)
     (absent : task ∉ targets) :

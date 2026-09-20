@@ -10,45 +10,6 @@ namespace BpmnSemantics.SemanticProcess
 
 open BpmnSemantics
 
-private theorem all_occursOnce_erase [BEq α] [LawfulBEq α] (same : α → α → Bool)
-    (reflexive : ∀ value, same value value = true) (removed : α) (values : List α)
-    (valid : values.all (occursOnce same values) = true) :
-    (values.erase removed).all (occursOnce same (values.erase removed)) = true := by
-  simp only [List.all_eq_true] at valid ⊢
-  intro value member
-  have priorMember : value ∈ values := List.mem_of_mem_erase member
-  have prior := valid value priorMember
-  simp only [occursOnce, decide_eq_true_eq] at prior ⊢
-  have retained : value ∈ (values.erase removed).filter (same value) :=
-    List.mem_filter.mpr ⟨member, reflexive value⟩
-  have filteredSublist : List.Sublist ((values.erase removed).filter (same value))
-      (values.filter (same value)) := List.erase_sublist.filter _
-  have upper : ((values.erase removed).filter (same value)).length ≤ 1 := by
-    rw [← prior]
-    exact filteredSublist.length_le
-  exact Nat.le_antisymm upper (List.length_pos_of_mem retained)
-
-private theorem all_occursOnce_filter (same : α → α → Bool)
-    (self : ∀ value, same value value = true) (values : List α) (keep : α → Bool)
-    (unique : values.all (occursOnce same values) = true) :
-    (values.filter keep).all (occursOnce same (values.filter keep)) = true := by
-  simp only [List.all_eq_true] at unique ⊢
-  intro value member
-  have originalMember : value ∈ values := (List.mem_filter.mp member).1
-  have original := unique value originalMember
-  simp only [occursOnce, decide_eq_true_eq] at original ⊢
-  have sublist : List.Sublist
-      ((values.filter keep).filter (same value))
-      (values.filter (same value)) := by
-    apply List.Sublist.trans (l₂ := (values.filter (same value)).filter keep)
-    · simp [List.filter_filter, Bool.and_comm]
-    · exact List.filter_sublist
-  have positive : 0 < ((values.filter keep).filter (same value)).length := by
-    apply List.length_pos_of_mem
-    exact List.mem_filter.mpr ⟨member, self value⟩
-  have upper := sublist.length_le
-  rw [original] at upper
-  exact Nat.le_antisymm upper positive
 
 private theorem all_erase [BEq α] [LawfulBEq α] (predicate : α → Bool)
     (removed : α) (values : List α) (valid : values.all predicate = true) :
@@ -56,37 +17,6 @@ private theorem all_erase [BEq α] [LawfulBEq α] (predicate : α → Bool)
   exact List.all_eq_true.mpr fun value member =>
     List.all_eq_true.mp valid value (List.mem_of_mem_erase member)
 
-private theorem orderedBy_erase [BEq α] [LawfulBEq α] (before : α → α → Bool)
-    (compose : ∀ a b c, before b a = false → before c b = false → before c a = false)
-    (removed : α) : ∀ values : List α,
-    orderedBy before values = true → orderedBy before (values.erase removed) = true := by
-  intro values
-  induction values with
-  | nil => intro _; rfl
-  | cons head tail ih =>
-      intro ordered
-      by_cases removedHead : removed = head
-      · subst removed
-        rw [List.erase_cons_head]
-        cases tail with
-        | nil => rfl
-        | cons next rest =>
-            simp only [orderedBy, Bool.and_eq_true] at ordered
-            exact ordered.2
-      · rw [List.erase_cons_tail (by simpa using Ne.symm removedHead)]
-        cases tail with
-        | nil => rfl
-        | cons next rest =>
-            simp only [orderedBy, Bool.and_eq_true, Bool.not_eq_true'] at ordered
-            have tailOrdered := ih ordered.2
-            cases erasedEq : (next :: rest).erase removed with
-            | nil => rfl
-            | cons retained more =>
-                simp only [orderedBy, Bool.and_eq_true, Bool.not_eq_true']
-                refine ⟨?_, ?_⟩
-                · exact orderedBy_bound compose next rest head ordered.2 ordered.1 retained
-                    (List.mem_of_mem_erase (by rw [erasedEq]; simp))
-                · simpa [erasedEq] using tailOrdered
 
 private def completionLexStep [DecidableEq α] (less : α → α → Bool)
     (left right : α) (rest : Bool) : Bool :=

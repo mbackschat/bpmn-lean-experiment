@@ -73,12 +73,12 @@ Owner instruction on 2026-09-20: finish both reviews' follow-ups; preserve compl
 
 - [x] Review 2: fix source-digest/review-target binding and require deliverable-based reassessment without weakening evidence.
 - [x] E1: retain [Error/arming conflict](../packages/bpmn-source/test/subprocess-error-lowering.test.ts), [delayed regional pairs and End/arming rollback](../packages/bpmn-source/test/embedded-subprocess-lowering.test.ts); review structural exclusion. No reachability theorem or singleton classification is approved.
-- [x] E2: retain [reads-only counterexamples](../packages/semantic-core/test/internal-transition-local-control-preparation.test.ts); Lean-check and independently audit the unchanged pair theorem through a locality certificate. Reject migration: no demonstrated net simplification; exact collections, residual state, and existing guarantees remain intact.
+- [x] E2: [retained counterexamples](../packages/semantic-core/test/internal-transition-local-control-preparation.test.ts) and an independently audited Lean locality certificate preserve the exact theorem; no demonstrated simplification justifies migration.
 - [x] E1: [guard admission premises](../packages/semantic-core/test/regional-frontier-admission.test.ts) and record the capability-level exclusion argument; preserve regional obligations pending semantic review.
 - [ ] Close reviewed evidence/PMI claims and [output-limit repair](capsules/PARALLEL-MULTI-INSTANCE-SPEC.md#independent-cold-review-receipt).
-- [ ] Evaluate named invariant fields, dual state descriptions, and duplicate helpers against consumers.
+- [x] [Representation/reuse assessment](INTERNAL-COMMUTATION-PROPOSAL.md#representation-and-reuse-assessment-2026-09-20): retain the representation and consolidate identical collection proofs under the complete Lean/infrastructure gates.
 - [x] Measure the [fixture pilot](CAPSULE-COST-LEDGER.md#kernel-fixture-pilot-2026-09-20); retain kernel checks after assessing trust.
-- [ ] Bind snapshot-batching limitations to Compensation's pre-registration obligations.
+- [x] Bind snapshot-batching and runner limitations to [Compensation registration prerequisites](capsules/COMPENSATION-TRIGGER-HANDLER-PROPOSAL.md#public-registration-prerequisites), including the private Lean/TypeScript ordinary-batch gap.
 - [x] Review 2: locate diagnostics in failed receipts; preserve verdicts and complete logs.
 - [x] Reject [gate selection](TESTING-SPEC.md#three-level-verification-policy): historical inputs cannot establish safe omission; retain complete gates.
 - [x] Add [receipt timing](../scripts/summarize-command-receipts.ts) and optional lane labels; reproduce the reviewed window without inferring effort.

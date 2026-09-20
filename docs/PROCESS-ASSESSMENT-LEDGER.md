@@ -15,7 +15,7 @@ This is not a retrospective diary. Rows are findings with dispositions, one row 
 Answer these after a capsule or milestone closes, and again at each session handoff. A question whose honest answer is "I do not know" is itself a finding.
 
 1. **Bounds.** Which executable guard, oracle, registry, or size ceiling already constrained this work, and did I enumerate them before the first edit or discover one mid-change?
-2. **Recall.** Which structural claim did I state without reading its source in this session? Name the claim, not the intent to be careful.
+2. **Recall.** Which structural claim did I state without reading its source in this session? For each theorem cited as evidence, what do its premises already assume, and which separating defect can its conclusion detect? Name the claim, not the intent to be careful.
 3. **Rework.** What did I write and then discard? Was the deciding fact available before I started?
 4. **Measurement.** Is every number I reported reproducible by a named command, and was any timing figure taken under competing load? Which resource dimensions did I actually measure, and did I draw a cost conclusion from fewer dimensions than the change can consume?
 5. **Evidence reading.** Did I read each gate outcome from the run's own output, or from a summary, notification, or impression of it?
@@ -63,7 +63,7 @@ The fourth instance shows the limit of the disposition: `what-binds` was run bef
 Which module or conjunct enforced a behavior was asserted without opening or probing it, and the claim was wrong.
 
 Instances
-: 8
+: 9
 
 Disposition
 : `unguardable`
@@ -74,6 +74,8 @@ Evidence
 **First observed:** [Interrupting Activity boundary Timer](capsules/ACTIVITY-BOUNDARY-TIMER-SPEC.md) capsule . The seventh instance is a claim refuted by a document edited in the same capsule: the plan and the map both said one profile admits modeler notation and every other rejects it, while the preserve-only specification's own second paragraph records the A12 CreateDocument reader admitting Diagram Interchange and exporter metadata and calls it the precedent this generalizes. Reading a document while writing it is not the same as checking a claim against it. The eighth instance is the same mechanism about executed behavior rather than about a rule, and it reached two documents: a closure correction stated that the preservation schedules never reach the Message, Timer, or event-race branches, from reading the fixtures rather than running them, then carried that claim into a second owner while fixing something else. Executing the schedules refuted it — the armed event-race state holds one Message wait, one Timer wait, and one race, and the inclusive start holds a selected-branch set — leaving only the effect wait, effect incident, and declaration-scoping branches genuinely unexercised. It understated evidence rather than overstating it, so it licensed nothing, but a reader planning the open lane's closure would have targeted branches a witness already covers. It is the first instance on this row surfaced by the reviewer re-examining its own earlier endorsement of the inference rather than by a probe, and the durable marker sits in the corrected text: the sentence now says the branch set was measured rather than inferred
 
 The second and third instances are the same mechanism one layer deeper, and both were refuted by one probe: a capsule stated that its attachment rule requires the unique Sub-Process host, while that rule constrains only the host's kind and scope and the *operation multiset* at scenario and start admission is what requires the identity — moving the deadline to a same-scope User Task compiles and lowers to another family's program. The adjacent negative test then credited its rejection to the host-kind conjunct when the same-scope conjunct is what fails, so the case carried none of the weight its comment assigned it. The fourth instance landed *inside the correction closing the second and third*, which is the strongest evidence that this class does not yield to intention: a new owner-inventory row credited a semantic-core admission merge with rejecting a managed race beside a bounded wait, where that rejection is `managedTotal === 1` in the adapter's host classifier and already existed at the baseline. The false reason was the adjacent row's true reason, transplanted into a module that decides program well-formedness and nothing about host capability. `unguardable` states a limit rather than a preference: no repository fact distinguishes a prose or comment sentence that names the right conjunct from one that names a neighbouring conjunct of the same predicate, because both compile and both leave the test green, which is why question 2 stands in for the guard. One half *is* mechanizable and is the cheaper defence: seeding a conjunct mutation per negative case, which this capsule did for the host-kind allowlist — replacing its closing `false` with `true` fails exactly the two host-kind cases — and did not do for the child-task case, where it would have shown the same-scope conjunct failing before review did. The fifth instance moves the class from code to the normative corpus and shows it is at its worst inside a correction: told that two tables sit in a different clause than cited, the correction invented a reason — "a Boundary Event is a kind of Intermediate Event" — that `BPMN20.cmof` refutes by deriving `BoundaryEvent` and `IntermediateCatchEvent` alike from `CatchEvent`, on the same page the capsule was already citing. A wrong citation is checkable and a wrong rationale reads as understanding, so the invented explanation was worse than the error it explained. Two further rounds then corrected the replacement's sub-heading, each time by walking backward from the table to the nearest heading — the same weak method whose failure had just been demonstrated . The sixth instance is two claims in one stretch of documentation work, both about files open in the same session: that *two* capsules delegate their scope to the implementation map when three do, and that six capsules listing the map do so without claiming it owns their status when four of them say it owns their exact evidence status. Both were stated to the owner as fact and both were refuted by one grep. Neither was a hard question; the common feature is that a countable claim about a small file set was answered from reading rather than from counting
+
+The ninth instance was the embedded Sub-Process evidence matrix attributing transition evidence to evaluator-premise `OperationStep` arms. Correction `2aee015b` distinguishes dispatch soundness from the concrete outcome witnesses, and its independent semantic-checkpoint review approved that classification. The existing [Lean source contracts](../scripts/lean-source-contracts.test.ts) reject direct evaluator delegation in explicitly declared independent Compensation relations; they do not determine whether arbitrary prose cites a theorem for an appropriate claim. A wording assertion would check only this sentence and would not guard the recurring class. That remaining claim-to-premise judgment stays `unguardable`, covered by question 2 and the required independent review, rather than being reported as executable protection.
 
 ### Finding 03
 
@@ -720,17 +722,19 @@ The first expanded M4 pipeline completed every semantic comparison and replay, t
 An aggregate boundary was described as exhaustive while its service-level tests exercised only interior and over-limit populations, so zero members, the exact ceiling, and a late unavailable member remained unproved behind green repository and package gates.
 
 Instances
-: 1
+: 2
 
 Disposition
 : `executable guard`
 
 Evidence
-: [flow-node metrics aggregate boundary tests](../platform/modules/operate/test/flow-node-metrics-aggregation-service.test.ts)
+: [flow-node metrics aggregate boundary tests](../platform/modules/operate/test/flow-node-metrics-aggregation-service.test.ts), [parallel result collection boundary tests](../packages/semantic-core/test/parallel-multi-instance-preservation.test.ts)
 
 **First observed:** Flow-node occurrence metrics closure review
 
 Boundary inventories must execute both sides of every stated cut and an all-or-error failure after a valid prefix, rather than treating nearby unit tests as aggregate evidence
+
+The second instance was exposed during the 2026-09-20 proof/evidence review: TypeScript checked each parallel result's byte limit but omitted the assembled collection's canonical JSON limit, which Lean already enforced. Array overhead and JSON escaping independently reproduced the defect. Correction `61faeee7` applies the shared collection predicate before final retention or closure; retained tests distinguish 8,191/8,192/8,193 bytes, preserve the exact prestate and empty events on rejection, and exercise corrected retry and Timer interruption after unpublished partial results. Per-item admission is not evidence for aggregate admission.
 
 ### Finding 42
 
@@ -1094,7 +1098,7 @@ Fuel exhaustion and late ambiguity independently exposed the same broken command
 Integration handoffs were treated as commit boundaries, and supporting proof prerequisites became separate review checkpoints, multiplying each increment into implementation, evidence, and acceptance commits.
 
 Instances
-: 6
+: 8
 
 Disposition
 : `unguardable`
@@ -1105,6 +1109,8 @@ Evidence
 **First observed:** owner review of the scope-creation commit cadence on 2026-09-18. The six implementation/evidence/acceptance triples are retained in `598f7365..36cce36d`.
 
 The contributor guide explicitly made a green delegated lane a commit trigger and prohibited grouping independently compiling slices. That rule confused integration readiness with a completed outcome; cost and immutable-review bookkeeping amplified the split. The corrected owner groups supporting work by the declared outcome, retains early review before dependent implementation, and combines later records unless an executable gate requires a separate evidence commit. The guard rejects the former forced-handoff instruction. It cannot decide whether two arbitrary proof increments constitute one useful semantic checkpoint, so that judgment remains explicit rather than presented as executable coverage.
+
+The 2026-09-20 workflow review confirmed two further outcome-level recurrences after the instruction correction: lifecycle implementation `b589ab0a`, evidence `026c690f`, and acceptance `7613956c`; then mixed-batch implementation `10e774c5`, evidence `299eea89`, contract correction `bd1ac87b`, and acceptance `62744865`. The latter correction changes the stated batching contract and is not merely ceremony; it belongs to the same outcome and is not counted as a third recurrence. Source-digest binding now removes the forced post-implementation cost commit, and the review packet binds the immutable target before review without requiring a separate committed receipt. These mechanisms address forced ordering; they do not mechanically judge the usefulness of a checkpoint.
 
 ## Update rule
 

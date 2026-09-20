@@ -73,57 +73,6 @@ private theorem replaceParallelRecordBody_map_of_frame {keyType : Type}
   · simp only [Bool.not_eq_true] at selected
     simp [selected]
 
-private theorem sameActivityOccurrence_member_eq (state : RuntimeState)
-    (target candidate : ActivityOccurrence)
-    (identitiesUnique : activityIdentitiesUnique state = true)
-    (targetMember : target ∈ state.activityOccurrences)
-    (candidateMember : candidate ∈ state.activityOccurrences)
-    (same : sameActivityOccurrence candidate target = true) : candidate = target := by
-  have once := List.all_eq_true.mp identitiesUnique target targetMember
-  simp only [occursOnce] at once
-  have targetFiltered : target ∈
-      state.activityOccurrences.filter (sameActivityOccurrence target) :=
-    List.mem_filter.mpr ⟨targetMember, by simp [sameActivityOccurrence]⟩
-  have candidateFiltered : candidate ∈
-      state.activityOccurrences.filter (sameActivityOccurrence target) :=
-    List.mem_filter.mpr ⟨candidateMember, by
-      have comm : sameActivityOccurrence target candidate =
-          sameActivityOccurrence candidate target := by
-        apply Bool.eq_iff_iff.mpr
-        simp only [sameActivityOccurrence, Bool.and_eq_true, beq_iff_eq]
-        constructor
-        · rintro ⟨⟨process, activity⟩, activation⟩
-          exact ⟨⟨process.symm, activity.symm⟩, activation.symm⟩
-        · rintro ⟨⟨process, activity⟩, activation⟩
-          exact ⟨⟨process.symm, activity.symm⟩, activation.symm⟩
-      rw [comm]
-      exact same⟩
-  obtain ⟨only, singleton⟩ := List.length_eq_one_iff.mp (of_decide_eq_true once)
-  have targetEq : target = only := by simpa [singleton] using targetFiltered
-  have candidateEq : candidate = only := by simpa [singleton] using candidateFiltered
-  exact candidateEq.trans targetEq.symm
-
-private theorem all_occursOnce_filter (same : α → α → Bool)
-    (self : ∀ value, same value value = true) (values : List α) (keep : α → Bool)
-    (unique : values.all (occursOnce same values) = true) :
-    (values.filter keep).all (occursOnce same (values.filter keep)) = true := by
-  simp only [List.all_eq_true] at unique ⊢
-  intro value member
-  have originalMember : value ∈ values := (List.mem_filter.mp member).1
-  have original := unique value originalMember
-  simp only [occursOnce, decide_eq_true_eq] at original ⊢
-  have sublist : List.Sublist
-      ((values.filter keep).filter (same value))
-      (values.filter (same value)) := by
-    apply List.Sublist.trans (l₂ := (values.filter (same value)).filter keep)
-    · simp [List.filter_filter, Bool.and_comm]
-    · exact List.filter_sublist
-  have positive : 0 < ((values.filter keep).filter (same value)).length := by
-    apply List.length_pos_of_mem
-    exact List.mem_filter.mpr ⟨member, self value⟩
-  have upper := sublist.length_le
-  rw [original] at upper
-  exact Nat.le_antisymm upper positive
 
 private theorem removeParallelChildWaits_lookup_of_ne (waits : List UserTaskWait)
     (target task : UserTaskInstanceId) (different : task ≠ target) :
@@ -315,7 +264,7 @@ theorem sharedParallelProgress_preserves_runtimeStateWellFormed
     simp only [replaceParallelRecordBody, List.mem_map] at member
     obtain ⟨original, originalMember, rfl⟩ := member
     by_cases selected : sameActivityOccurrence original record = true
-    · have originalEq := sameActivityOccurrence_member_eq before record original activityIds
+    · have originalEq := activityIdentitiesUnique_member_eq before record original activityIds
           selection.recordMember originalMember selected
       subst original
       simpa [selected, ActivityOccurrence.timerHandlerOccurrences,
