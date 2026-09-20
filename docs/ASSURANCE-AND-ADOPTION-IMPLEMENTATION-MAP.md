@@ -200,7 +200,7 @@ Per-scenario requirements are owned by the guarded artifact catalogs and each ca
 
 The complete prepared pipeline enforces the cross-cutting CIB, Lean, core, Temporal, mutation, replay, and teardown invariants defined by [TESTING-SPEC.md](TESTING-SPEC.md#complete-differentialrefinement-pipeline). Exact counts and latest measurements belong to the generated report and [PLAN.md](PLAN.md).
 
-Non-material [binding repair](TESTING-SPEC.md#independent-cold-review-gate): [cost](../scripts/lean-module-cost.test.ts) and [review](../scripts/independent-review-policy.test.ts) guards; the [Error witness](../packages/bpmn-source/test/subprocess-error-lowering.test.ts) retains existing refusal.
+Non-material [repairs/investigation](TESTING-SPEC.md#independent-cold-review-gate): [cost](../scripts/lean-module-cost.test.ts), [review](../scripts/independent-review-policy.test.ts), and [frontier](../packages/bpmn-source/test/embedded-subprocess-lowering.test.ts) tests preserve existing behavior.
 
 ## Nearest unsupported claims
 

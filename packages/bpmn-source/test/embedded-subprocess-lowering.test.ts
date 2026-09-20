@@ -7,7 +7,12 @@ import {
   SemanticOperationKind,
   compileBpmnToSemanticProcess,
 } from "@bpmn-lean/bpmn-source";
-import type { SemanticOperation } from "@bpmn-lean/semantic-core";
+import {
+  CommandOutcome, applyInternalOperationStep, applyStimulusWithTrace, initialState,
+  isWellFormedSemanticProcessProgram, runtimeStateDefects, StimulusKind,
+} from "@bpmn-lean/semantic-core";
+import type { RuntimeState, SemanticOperation, SemanticProcessProgram } from "@bpmn-lean/semantic-core";
+import { admittedInternalPrefix } from "../../semantic-core/test/internal-operation-prefix-fixture.ts";
 
 import {
   compileSemanticProcessFixture,
@@ -20,6 +25,123 @@ const fixtureUrl = new URL(
 );
 const semanticProfile =
   "cibseven-2.2.0-embedded-subprocess-completion-draft";
+
+const { evaluateStimulusWithSelectedSteps } = await import(
+  new URL("../../semantic-core/dist/semantic-process-runtime.js", import.meta.url).href
+) as typeof import("../../semantic-core/src/semantic-process-runtime.ts");
+const { deriveInternalRegionalPreparation } = await import(
+  new URL("../../semantic-core/dist/internal-transition-regional-preparation.js", import.meta.url).href
+) as typeof import("../../semantic-core/src/internal-transition-regional-preparation.ts");
+const { deriveInternalTransitionPreparation } = await import(
+  new URL("../../semantic-core/dist/internal-transition-batch.js", import.meta.url).href
+) as typeof import("../../semantic-core/src/internal-transition-batch.ts");
+const { internalTransitionStateFootprintsAreIndependent } = await import(
+  new URL("../../semantic-core/dist/internal-transition-footprint.js", import.meta.url).href
+) as typeof import("../../semantic-core/src/internal-transition-footprint.ts");
+
+async function compileFrontier(xml: string) {
+  const compiled = await compileBpmnToSemanticProcess({
+    bytes: new TextEncoder().encode(xml), sourceId: "admitted-frontier",
+    expectedSha256: undefined, semanticProfile, sourceOverlay: null,
+    limits: semanticProcessTestLimits,
+  });
+  assert.ok(compiled.status === BpmnCompilationStatus.Accepted);
+  const program = compiled.semanticProcess;
+  assert.equal(isWellFormedSemanticProcessProgram(program), true);
+  const start = {
+    kind: StimulusKind.StartProcess, commandId: "frontier-start",
+    processId: program.processId, instanceId: "frontier-instance", initialVariables: [],
+  } as const;
+  return { program, start };
+}
+
+function stepAt(program: SemanticProcessProgram, state: RuntimeState, id: string) {
+  const operation = program.operations.find((candidate) => candidate.id === id);
+  assert.ok(operation !== undefined);
+  const step = applyInternalOperationStep(program, operation, state);
+  assert.ok(step !== null, `operation ${id} must be enabled`);
+  assert.deepEqual(runtimeStateDefects(program, "frontier-instance", step.successor), []);
+  return step;
+}
+
+test("an admitted regional pair reached by delaying arming is absent from actual closure batches", async () => {
+  const { program, start } = await compileFrontier(`
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="Defs" targetNamespace="urn:frontier">
+  <bpmn:process id="Root" isExecutable="true">
+    <bpmn:startEvent id="Start"/>
+    <bpmn:parallelGateway id="Fork" gatewayDirection="Diverging"/>
+    <bpmn:subProcess id="Scope">
+      <bpmn:startEvent id="ChildStart"/>
+      <bpmn:endEvent id="EndChild"/>
+      <bpmn:sequenceFlow id="F7" sourceRef="ChildStart" targetRef="EndChild"/>
+    </bpmn:subProcess>
+    <bpmn:userTask id="AfterScope"/><bpmn:userTask id="FollowUp"/><bpmn:userTask id="Peer"/>
+    <bpmn:endEvent id="EndA"/><bpmn:endEvent id="EndB"/>
+    <bpmn:sequenceFlow id="F0" sourceRef="Start" targetRef="Fork"/>
+    <bpmn:sequenceFlow id="F1" sourceRef="Fork" targetRef="Scope"/>
+    <bpmn:sequenceFlow id="F2" sourceRef="Scope" targetRef="AfterScope"/>
+    <bpmn:sequenceFlow id="F3" sourceRef="AfterScope" targetRef="FollowUp"/>
+    <bpmn:sequenceFlow id="F4" sourceRef="FollowUp" targetRef="EndA"/>
+    <bpmn:sequenceFlow id="F5" sourceRef="Fork" targetRef="Peer"/>
+    <bpmn:sequenceFlow id="F6" sourceRef="Peer" targetRef="EndB"/>
+  </bpmn:process>
+</bpmn:definitions>`);
+  const forked = admittedInternalPrefix(program, initialState, start,
+    ["operation:Start", "operation:Fork"], ["operation:Scope", "operation:Peer"]);
+  const entered = stepAt(program, forked, "operation:Scope").successor;
+  const counterfactual = stepAt(program, entered, "operation:EndChild").successor;
+  const completion = stepAt(program, counterfactual, "operation:complete-scope:scope:Scope");
+  const arming = stepAt(program, counterfactual, "operation:Peer");
+  assert.ok(completion.operation.kind === SemanticOperationKind.CompleteScope);
+  assert.equal(program.operations.filter((operation) =>
+    applyInternalOperationStep(program, operation, counterfactual) !== null).length, 2);
+  const regional = deriveInternalRegionalPreparation(program, counterfactual, completion.operation);
+  const ordinary = deriveInternalTransitionPreparation(program, counterfactual, arming);
+  assert.ok(regional !== null && ordinary !== null);
+  assert.equal(internalTransitionStateFootprintsAreIndependent(regional.footprint, ordinary.footprint), true);
+  assert.deepEqual(deriveInternalRegionalPreparation(program, arming.successor, completion.operation), regional);
+  assert.deepEqual(deriveInternalTransitionPreparation(program, completion.successor, arming), ordinary);
+  assert.deepEqual(stepAt(program, completion.successor, arming.operation.id).successor,
+    stepAt(program, arming.successor, completion.operation.id).successor);
+
+  const actual = evaluateStimulusWithSelectedSteps(program, initialState, start);
+  assert.equal(actual.result.outcome, CommandOutcome.Committed);
+  assert.deepEqual(actual.selectedInternalBatches.map((batch) => batch.map(({ operation }) => operation.kind)), [
+    [SemanticOperationKind.Initiate], [SemanticOperationKind.Duplicate],
+    [SemanticOperationKind.AwaitUserTask, SemanticOperationKind.EnterScope],
+    [SemanticOperationKind.ReachNoneEnd], [SemanticOperationKind.CompleteScope],
+    [SemanticOperationKind.AwaitUserTask],
+  ]);
+});
+
+test("an admitted End arrival and task arming commute in state but start rolls back", async () => {
+  const xml = (await readFile(fixtureUrl, "utf8"))
+    .replace(/\s*<bpmn:(incoming|outgoing)>[^<]*<\/bpmn:\1>/gu, "")
+    .replace('sourceRef="Gateway_ChildFork" targetRef="UserTask_ChildA"',
+      'sourceRef="Gateway_ChildFork" targetRef="EndEvent_ChildA"')
+    .replace('sourceRef="UserTask_ChildA" targetRef="EndEvent_ChildA"',
+      'sourceRef="UserTask_ChildA" targetRef="EndEvent_ChildB"')
+    .replace('sourceRef="UserTask_ChildB" targetRef="EndEvent_ChildB"',
+      'sourceRef="UserTask_ChildB" targetRef="UserTask_ChildA"');
+  const { program, start } = await compileFrontier(xml);
+  const frontier = admittedInternalPrefix(program, initialState, start,
+    ["operation:StartEvent_Outer", "operation:SubProcess_Work", "operation:Gateway_ChildFork"],
+    ["operation:EndEvent_ChildA", "operation:UserTask_ChildB"]);
+  const end = stepAt(program, frontier, "operation:EndEvent_ChildA");
+  const task = stepAt(program, frontier, "operation:UserTask_ChildB");
+  assert.deepEqual(stepAt(program, end.successor, task.operation.id).successor,
+    stepAt(program, task.successor, end.operation.id).successor);
+  const actual = applyStimulusWithTrace(program, initialState, start);
+  assert.equal(actual.result.outcome, CommandOutcome.RolledBack);
+  assert.equal(actual.result.ambiguousInternalChoice, true);
+  assert.equal(actual.result.internalStepBoundExceeded, false);
+  assert.deepEqual(actual.result.state, initialState);
+  assert.deepEqual(actual.committedTransitions, []);
+  assert.deepEqual(actual.flowNodeOccurrenceLifecycles, []);
+  const original = await compileFrontier(await readFile(fixtureUrl, "utf8"));
+  assert.equal(applyStimulusWithTrace(original.program, initialState, original.start).result.outcome,
+    CommandOutcome.Committed);
+});
 
 function operationOfKind<Kind extends SemanticOperationKind>(
   operations: ReadonlyArray<SemanticOperation>,

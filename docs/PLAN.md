@@ -71,10 +71,12 @@ Exactly one stable work ID is active. Required maps are part of the routing cont
 
 Owner instruction on 2026-09-20: investigate necessity before expanding regional proofs; preserve complete gates and existing guarantees. The two external reviews advise the work but do not approve a semantic checkpoint.
 
-- [x] Investigate admitted regional mixed frontiers: the [Error witness](../packages/bpmn-source/test/subprocess-error-lowering.test.ts) admits an Error throw beside sibling arming and checks atomic rollback. The operations conflict; independent regional reachability remains unresolved.
 - [x] Bind resource measurements to measured source digests and record review targets with verdicts, preserving provenance, ratchets, immutable packets, and isolation.
-- [x] Define the next deliverable: establish an admitted independent regional frontier or a capability-level exclusion argument. Reassess at that evidence boundary, or before any new substantial prerequisite; do not expand pair proofs meanwhile.
-- [x] Verify the non-material binding repair and retained witness with separating tests and complete infrastructure/source gates.
+- [x] Retain the admitted [Error/arming conflict](../packages/bpmn-source/test/subprocess-error-lowering.test.ts) and atomic rollback.
+- [x] Separate an admitted model's manually delayed regional pair from its actual closure, which batches arming before regional completion; retain both preparation frames and exact-state commutation in the [frontier tests](../packages/bpmn-source/test/embedded-subprocess-lowering.test.ts).
+- [x] Retain a real End-arrival/arming frontier: exact states commute, but start rolls back. This is `reachNoneEnd`, not regional removal; publication and general batching remain unproved.
+- [ ] Settle E1 with an actual independent regional frontier or a capability-level exclusion argument; generated graph checks and a manually selected interleaving do not settle it.
+- [ ] After E1, state E2's one-family locality interface over value-bearing updates, complete state agreement, and canonical order before proving or migrating anything.
 
 Bulk fixture conversion, broad representation migration, gate selection, and additional telemetry are deferred. An unsuccessful witness search is inconclusive; reassessment cannot discard an essential correctness obligation.
 
@@ -104,7 +106,7 @@ Active work ID: `INTERNAL-COMMUTATION`.
 
 Risk band: RC internal scheduling; the six external reviews and composed Activity-data closure are complete.
 
-Next action: establish an admitted independent regional frontier or a capability-level exclusion argument; the retained Error frontier conflicts and does not settle necessity. The [regional owner](INTERNAL-COMMUTATION-PROPOSAL.md#regional-preparation-prerequisite) retains Error/Terminate publication, preparation frames, selected-domain agreement, aggregate preservation, and pair laws as open. Reassess before expanding that proof effort; external architectural advice does not replace semantic-checkpoint review.
+Next action: review the E1 exclusion argument against actual registered admission and closure; the [frontier tests](../packages/bpmn-source/test/embedded-subprocess-lowering.test.ts) distinguish delayed regional pairing from an actual End-arrival/arming rollback. Do not treat the search as an unreachability proof or begin another regional prerequisite. The [regional owner](INTERNAL-COMMUTATION-PROPOSAL.md#regional-preparation-prerequisite) retains its unresolved obligations; any narrower batching account still requires semantic-checkpoint review.
 
 In progress: Timer classification and wait validity share operation-level proofs; four list-uniqueness proofs use the standard library. The cleanup preserves existing theorem statements and matcher behavior. Complete/Return publication and cancellation wait/Effect-local preservation remain implemented. `AOO-RETAINED-BODY-01` requires a separate amendment before bounded-Terminate admission.
 
