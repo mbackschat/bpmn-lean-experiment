@@ -1,5 +1,6 @@
 import BpmnSemantics.SemanticProcess.WaitActivation
 import BpmnSemantics.SemanticProcess.ActivityOccurrence
+import BpmnSemantics.SemanticProcess.ActivityBodyClaimUniqueness
 
 /-! # Non-interrupting boundary Timer
 
@@ -94,6 +95,13 @@ def MonitoredPairing (program : Program) (task : UserTaskWait)
     operation.2.1.output = taskOutput ∧
     operation.2.2.output = timerOutput
 
+/-- `AOO-ATTACH-01` withdraws only the consumed Timer attachment, preserving Message tags and every other occurrence. -/
+private def detachConsumedTimer (timer : TimerWait) (record : ActivityOccurrence) :
+    ActivityOccurrence :=
+  { record with attachedHandlers := record.attachedHandlers.filter fun
+      | .timer occurrence => !timerIdNamesWait occurrence timer
+      | .message _ => true }
+
 /-- `NBTIMER-SPAWN-01` as a relation: the deadline is consumed, the boundary token appears, and the host is untouched.
 
 `waits` is unconstrained on purpose rather than by omission — it is the proposition. The interrupting
@@ -113,6 +121,7 @@ inductive MonitoredSpawnStep (program : Program) :
       MonitoredSpawnStep program before
         { before with
           timerWaits := before.timerWaits.erase timer
+          activityOccurrences := before.activityOccurrences.map (detachConsumedTimer timer)
           tokens := addToken before.tokens timerOutput timer.owner
           logicalTimeMs := timer.deadlineMs }
 
@@ -137,6 +146,7 @@ inductive MonitoredCompletionStep (program : Program) :
         { before with
           waits := before.waits.erase task
           timerWaits := before.timerWaits.erase timer
+          activityOccurrences := before.activityOccurrences.filter (!recordBodyNamesWait task ·)
           tokens := addToken before.tokens taskOutput task.owner }
   | afterSpawn (before : RuntimeState) (instanceId : SemanticId)
       (task : UserTaskWait) (timerElementId : NodeId)
@@ -148,6 +158,7 @@ inductive MonitoredCompletionStep (program : Program) :
       MonitoredCompletionStep program before
         { before with
           waits := before.waits.erase task
+          activityOccurrences := before.activityOccurrences.filter (!recordBodyNamesWait task ·)
           tokens := addToken before.tokens taskOutput task.owner }
 
 private structure MonitoredTask where
@@ -206,6 +217,7 @@ def completeMonitoredUserTask? (program : Program) (state : RuntimeState)
       some
         { state with
           waits := state.waits.erase monitored.task
+          activityOccurrences := state.activityOccurrences.filter (!recordBodyNamesWait monitored.task ·)
           timerWaits :=
             match monitored.timer with
             | some timer => state.timerWaits.erase timer
@@ -214,7 +226,7 @@ def completeMonitoredUserTask? (program : Program) (state : RuntimeState)
             addToken state.tokens monitored.taskOutput monitored.task.owner }
   | _ => none
 
-/-- Consumes the deadline at its exact instant and produces the boundary token beside the continuing Activity. Nothing else changes: the task occurrence, its activation ordinal, every other wait, and every activation counter are preserved exactly. -/
+/-- Consumes the deadline and its attachment at the exact instant while preserving the continuing Task, every other wait, and all activation counters (`NBTIMER-SPAWN-01`, `AOO-ATTACH-01`). -/
 def spawnFromMonitoredUserTask? (program : Program) (state : RuntimeState)
     (timerId : TimerOccurrenceId) (logicalTimeMs : Nat) :
     Option RuntimeState := do
@@ -230,6 +242,7 @@ def spawnFromMonitoredUserTask? (program : Program) (state : RuntimeState)
         some
           { state with
             timerWaits := state.timerWaits.erase timer
+            activityOccurrences := state.activityOccurrences.map (detachConsumedTimer timer)
             tokens := addToken state.tokens monitored.timerOutput timer.owner
             logicalTimeMs := timer.deadlineMs }
     | _ => none
@@ -538,5 +551,38 @@ theorem completeMonitoredUserTask_some_of_no_deadline_wait (program : Program)
       none := by
   unfold completeMonitoredUserTask? monitoredTaskForTask?
   simp [taskFound, operationFound, noTimers, running]
+
+theorem monitored_completion_activity_identity_discipline (program : Program)
+    (before after : RuntimeState) (step : MonitoredCompletionStep program before after) :
+    activityIdentityIssuingDiscipline before after = true := by
+  apply activityIdentityIssuingDiscipline_of_subset
+  intro record present
+  cases step <;> exact (List.mem_filter.mp present).1
+
+theorem monitored_spawn_activity_identity_discipline (program : Program)
+    (before after : RuntimeState) (step : MonitoredSpawnStep program before after) :
+    activityIdentityIssuingDiscipline before after = true := by
+  apply activityIdentityIssuingDiscipline_of_identity_witness
+  intro record present
+  cases step
+  obtain ⟨original, originalMem, rfl⟩ := List.mem_map.mp present
+  exact ⟨original, originalMem, by simp [sameActivityOccurrence, detachConsumedTimer]⟩
+
+private theorem detachConsumedTimer_preserves_body_claims (timer : TimerWait)
+    (records : List ActivityOccurrence) :
+    activityBodyClaimsUnique (records.map (detachConsumedTimer timer)) =
+      activityBodyClaimsUnique records := by
+  induction records with
+  | nil => rfl
+  | cons record rest ih =>
+      simp only [List.map_cons, activityBodyClaimsUnique_cons, ih, List.all_map]
+      rfl
+
+theorem monitored_spawn_preserves_body_claims (program : Program)
+    (before after : RuntimeState) (step : MonitoredSpawnStep program before after) :
+    activityBodyClaimsUnique after.activityOccurrences =
+      activityBodyClaimsUnique before.activityOccurrences := by
+  cases step
+  exact detachConsumedTimer_preserves_body_claims _ _
 
 end BpmnSemantics.SemanticProcess

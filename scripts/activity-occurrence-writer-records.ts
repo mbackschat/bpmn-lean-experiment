@@ -197,6 +197,81 @@ export const writerRecords = new Map<string, WriterRecord>([
       markers: ["theorem armBoundedScopeState_preserves_activityBodyClaimsUnique"],
     },
   }],
+  ["BpmnSemantics/SemanticProcess/BoundedTask.lean#BoundedTaskVictoryStep@1", {
+    classification: WriterClassification.IdentityRemoving,
+    claimPreservation: ClaimPreservation.Removal,
+    evidence: {
+      relativePath: "BpmnSemantics/SemanticProcess/BoundedTask.lean",
+      markers: ["theorem bounded_victory_activity_identity_discipline"],
+    },
+  }],
+  ["BpmnSemantics/SemanticProcess/BoundedTask.lean#BoundedTaskVictoryStep@2", {
+    classification: WriterClassification.IdentityRemoving,
+    claimPreservation: ClaimPreservation.Removal,
+    evidence: {
+      relativePath: "BpmnSemantics/SemanticProcess/BoundedTask.lean",
+      markers: ["theorem bounded_victory_activity_identity_discipline"],
+    },
+  }],
+  ["BpmnSemantics/SemanticProcess/BoundedTask.lean#commitVictory@1", {
+    classification: WriterClassification.IdentityRemoving,
+    claimPreservation: ClaimPreservation.Removal,
+    evidence: {
+      relativePath: "BpmnSemantics/SemanticProcess/BoundedTask.lean",
+      markers: ["theorem commitVictory_activity_identity_discipline"],
+    },
+  }],
+  ["BpmnSemantics/SemanticProcess/MonitoredTask.lean#MonitoredCompletionStep@1", {
+    classification: WriterClassification.IdentityRemoving,
+    claimPreservation: ClaimPreservation.Removal,
+    evidence: {
+      relativePath: "BpmnSemantics/SemanticProcess/MonitoredTask.lean",
+      markers: ["theorem monitored_completion_activity_identity_discipline"],
+    },
+  }],
+  ["BpmnSemantics/SemanticProcess/MonitoredTask.lean#MonitoredCompletionStep@2", {
+    classification: WriterClassification.IdentityRemoving,
+    claimPreservation: ClaimPreservation.Removal,
+    evidence: {
+      relativePath: "BpmnSemantics/SemanticProcess/MonitoredTask.lean",
+      markers: ["theorem monitored_completion_activity_identity_discipline"],
+    },
+  }],
+  ["BpmnSemantics/SemanticProcess/MonitoredTask.lean#completeMonitoredUserTask?@1", {
+    classification: WriterClassification.IdentityRemoving,
+    claimPreservation: ClaimPreservation.Removal,
+    evidence: {
+      relativePath: "BpmnSemantics/SemanticProcess/MonitoredTask.lean",
+      markers: ["theorem completeMonitoredUserTask_sound",
+        "theorem monitored_completion_activity_identity_discipline"],
+    },
+  }],
+  ["BpmnSemantics/SemanticProcess/MonitoredTask.lean#MonitoredSpawnStep@1", {
+    classification: WriterClassification.IdentityPreserving,
+    claimPreservation: ClaimPreservation.ProjectionPreserving,
+    evidence: {
+      relativePath: "BpmnSemantics/SemanticProcess/MonitoredTask.lean",
+      markers: ["theorem monitored_spawn_activity_identity_discipline"],
+    },
+    claimEvidence: {
+      relativePath: "BpmnSemantics/SemanticProcess/MonitoredTask.lean",
+      markers: ["theorem monitored_spawn_preserves_body_claims"],
+    },
+  }],
+  ["BpmnSemantics/SemanticProcess/MonitoredTask.lean#spawnFromMonitoredUserTask?@1", {
+    classification: WriterClassification.IdentityPreserving,
+    claimPreservation: ClaimPreservation.ProjectionPreserving,
+    evidence: {
+      relativePath: "BpmnSemantics/SemanticProcess/MonitoredTask.lean",
+      markers: ["theorem spawnFromMonitoredUserTask_sound",
+        "theorem monitored_spawn_activity_identity_discipline"],
+    },
+    claimEvidence: {
+      relativePath: "BpmnSemantics/SemanticProcess/MonitoredTask.lean",
+      markers: ["theorem spawnFromMonitoredUserTask_sound",
+        "theorem monitored_spawn_preserves_body_claims"],
+    },
+  }],
   ["BpmnSemantics/SemanticProcess/MessageBoundedTask.lean#MessageBoundedTaskVictoryStep@1", {
     classification: WriterClassification.IdentityRemoving,
     claimPreservation: ClaimPreservation.Removal,

@@ -368,14 +368,14 @@ export const leanModuleCostRecord = {
       elapsedSeconds: 23.34,
       measuredAtCommit: "6208f2e4",
     },
-    { module: "BpmnSemantics.NonInterruptingBoundaryTimerConformance", sourceSha256: "c5fcf05bf1649b0a7bbb1ecead30b0c9e2f41c206b08598cea92a507f5897a4b", peakResidentKib: 2176108, elapsedSeconds: 13.9 },
+    { module: "BpmnSemantics.NonInterruptingBoundaryTimerConformance", sourceSha256: "e15ea42b1c57eadb2648fcdeb79ee86a7f34c89e694d6d7538ce32f803dee234", peakResidentKib: 1238276, elapsedSeconds: 14.94, measurementReceiptSha256: "17590cbed8308a1d5a3c191f9bcca6ecda2765c5a5dd1dd36fac0453e2e13bf2" },
     {
       module: "BpmnSemantics.ActivityDataInputConformance", sourceSha256: "6d87c86d6eb92ffc4474e075f156f78f9a75b5504ce7aab3b39110b12ccdc428",
       peakResidentKib: 2696232,
       elapsedSeconds: 13.18,
       measuredAtCommit: "de03c7b1",
     },
-    { module: "BpmnSemantics.ActivityBoundaryTimerConformance", sourceSha256: "a1974a15a5e0c291794eb15a8f10cfc17e8b71e05d8370cdd62188531a1565fa", peakResidentKib: 2146500, elapsedSeconds: 13.5 },
+    { module: "BpmnSemantics.ActivityBoundaryTimerConformance", sourceSha256: "afe496d4bfa8a26b4412fc75603301d71dfe5cc6dd06b86f0161cbfe80503791", peakResidentKib: 1216932, elapsedSeconds: 16.38, measurementReceiptSha256: "0d0c94bd9a592e13ad4153f32fafef87ddf90de402ed78c1a256bd8584ec9ef6" },
     {
       module: "BpmnSemantics.MappedSuccessConformance", sourceSha256: "15192c3681069c9d407b3a73ed0be9bc94d124f5bc85cc1921af28e831ba0739",
       peakResidentKib: 2139596,

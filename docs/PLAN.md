@@ -97,7 +97,7 @@ Active work ID: `INTERNAL-COMMUTATION`.
 
 Risk band: RC internal scheduling; the six external reviews and composed Activity-data closure are complete.
 
-Next action: repair Activity-record retirement in the Lean bounded/monitored Task writers under the [regional prerequisite](INTERNAL-COMMUTATION-PROPOSAL.md#regional-preparation-prerequisite), before further Error/Terminate proofs. Complete commands reproduce stale records after both interrupting victories and monitored completion, and a stale attachment after monitored firing. Close exact retirement and attachment maintenance with unchanged public outcomes and successor-validity witnesses. Reassess before another representation or prerequisite. E1/E2 change no RC scope.
+Next action: finish the complete affected gates and independent semantic-checkpoint review for the Activity-retirement repair under the [regional prerequisite](INTERNAL-COMMUTATION-PROPOSAL.md#regional-preparation-prerequisite), before further Error/Terminate proofs. The bounded/monitored writers now maintain exact records and attachments; both cold kernel fixtures and the complete core gate pass. Reassess before another representation or prerequisite. E1/E2 change no RC scope.
 
 In progress: `AOO-JOIN-03`, `RHP-HANDLER-01`, and `MBP-EMPTY-TASK-01` are independently approved with clean complete integration; their [receipts](INTERNAL-COMMUTATION-PROPOSAL.md#independent-cold-review-receipt) own exact evidence. Constructed publication witnesses establish no profile reachability; the retained Message child-scope exclusion is unchanged. Regional trial closure remains pending. `AOO-RETAINED-BODY-01` requires a separate amendment before bounded-Terminate admission.
 

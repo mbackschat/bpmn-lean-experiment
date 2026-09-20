@@ -3,6 +3,7 @@ import BpmnSemantics.SemanticProcess.Lowering
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.RootScopeFixtures
 import BpmnSemantics.SemanticProcess.TransitionTrace
+import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
 
 /-! # BpmnSemantics.NonInterruptingBoundaryTimerConformance — non-interrupting boundary Timer locks
 
@@ -128,7 +129,7 @@ def armedState : RuntimeState :=
     (.startProcess startCommandId ⟨"Process_NonInterruptingBoundaryTimer"⟩
       instanceId [])).state
 
-/-- Arming is atomic: one incoming token becomes exactly one Activity occurrence and one deadline, and both take activation ordinal one from their own element counter. That shared ordinal is what later recovers the family without a stored ownership record. -/
+/-- Arming allocates each wait from its own counter; the stored Activity body and attachment identify the pair independently of those counters. -/
 theorem activity_and_deadline_arm_atomically :
     (armedState.waits.map fun wait => (wait.task.id.value, wait.activation)) =
         [("MonitoredTask", 1)] ∧
@@ -144,6 +145,38 @@ def afterSpawn : RuntimeState :=
 def afterEarlyCompletion : RuntimeState :=
   (applyStimulus scenarioClosureLimit program armedState
     (.completeUserTaskInstance ⟨"complete-monitored-task"⟩ taskId [])).state
+
+theorem monitored_commands_preserve_exact_activity_lifetime :
+    runtimeStateWellFormed program instanceId armedState = true ∧
+      afterSpawn.activityOccurrences = (armedState.activityOccurrences.map fun record =>
+        { record with attachedHandlers := [] }) ∧
+      runtimeStateWellFormed program instanceId afterSpawn = true ∧
+      afterEarlyCompletion.activityOccurrences = [] ∧
+      runtimeStateWellFormed program instanceId afterEarlyCompletion = true ∧
+      (let completed := applyStimulus scenarioClosureLimit program afterSpawn
+          (.completeUserTaskInstance ⟨"complete-after-spawn"⟩ taskId [])
+       completed.outcome = .committed ∧ completed.state.activityOccurrences = [] ∧
+         runtimeStateWellFormed program instanceId completed.state = true) := by
+  decide +kernel
+
+/-- Constructed frame control, outside profile reachability: other Task/Timer activations and a same-coordinate Message attachment remain distinct. -/
+private def unrelatedActivitySurvives : Bool :=
+  match armedState.activityOccurrences.head? with
+  | none => false
+  | some record =>
+      let deadline : OccurrenceId := { processInstanceId := instanceId, elementId := ⟨"Reminder"⟩, activation := 1 }
+      let unrelated := { record with
+        activation := 2
+        body := .userTask { processInstanceId := instanceId, elementId := ⟨"MonitoredTask"⟩, activation := 2 }
+        attachedHandlers := [.timer { deadline with activation := 2 }, .message deadline] }
+      let before := { armedState with activityOccurrences := [record, unrelated] }
+      decide ((completeMonitoredUserTask? program before instanceId ⟨"MonitoredTask"⟩ 1).map
+        (·.activityOccurrences) = some [unrelated]) &&
+      decide ((spawnFromMonitoredUserTask? program before reminderId 1000).map
+        (·.activityOccurrences) = some [{ record with attachedHandlers := [] }, unrelated])
+
+theorem monitored_commands_preserve_unrelated_records_and_attachments :
+    unrelatedActivitySurvives = true := by decide +kernel
 
 /-- **The proposition this capsule exists for.** Firing leaves the monitored occurrence exactly as it was — same element, same activation ordinal — and adds the handler occurrence beside it. The interrupting sibling's corresponding transition removes the host instead, so this state is unreachable there. -/
 theorem firing_spawns_the_handler_and_preserves_its_host :

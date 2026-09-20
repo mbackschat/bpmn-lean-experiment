@@ -111,7 +111,7 @@ private def boundedPairForTimer? (program : Program) (state : RuntimeState)
       taskOutput := operation.2.1.output
       timerOutput := operation.2.2.output }
 
-/-- Withdraws both waits and produces the winning route as one transition. Activation counters stay monotonic because removing a wait never rewinds its element's count. -/
+/-- `AOO-BODY-01` retires the ended Task's record with both waits. Counters stay unchanged because withdrawal must not permit identity reuse. -/
 private def commitVictory (state : RuntimeState) (pair : BoundedPair)
     (output : ControlPlaceId) (logicalTimeMs : Nat) : Option RuntimeState :=
   match state.control with
@@ -120,6 +120,7 @@ private def commitVictory (state : RuntimeState) (pair : BoundedPair)
         { state with
           waits := state.waits.erase pair.task
           timerWaits := state.timerWaits.erase pair.timer
+          activityOccurrences := state.activityOccurrences.filter (!recordBodyNamesWait pair.task ·)
           tokens := addToken state.tokens output pair.task.owner
           logicalTimeMs }
   | _ => none
@@ -162,6 +163,7 @@ inductive BoundedTaskVictoryStep (program : Program) :
         { before with
           waits := before.waits.erase task
           timerWaits := before.timerWaits.erase timer
+          activityOccurrences := before.activityOccurrences.filter (!recordBodyNamesWait task ·)
           tokens := addToken before.tokens taskOutput task.owner
           logicalTimeMs := before.logicalTimeMs }
   | deadline (before : RuntimeState) (instanceId : SemanticId)
@@ -175,6 +177,7 @@ inductive BoundedTaskVictoryStep (program : Program) :
         { before with
           waits := before.waits.erase task
           timerWaits := before.timerWaits.erase timer
+          activityOccurrences := before.activityOccurrences.filter (!recordBodyNamesWait task ·)
           tokens := addToken before.tokens timerOutput task.owner
           logicalTimeMs := timer.deadlineMs }
 
@@ -470,7 +473,7 @@ theorem bounded_victory_preserves_activation_counters (program : Program)
   | activity => exact ⟨rfl, rfl⟩
   | deadline => exact ⟨rfl, rfl⟩
 
-/-- The deadline arm publishes exactly its own deadline as logical time, while the Activity arm leaves logical time untouched. This is what makes the two victories distinguishable without an ownership record. -/
+/-- The winning route and logical time distinguish the two arms; the ownership record selects their exact occurrences. -/
 theorem bounded_victory_logical_time (program : Program)
     (before after : RuntimeState)
     (step : BoundedTaskVictoryStep program before after) :
@@ -479,5 +482,24 @@ theorem bounded_victory_logical_time (program : Program)
   cases step with
   | activity => exact .inl rfl
   | deadline _ _ timer _ _ _ _ timerLive _ => exact .inr ⟨timer, timerLive, rfl⟩
+
+/-- The evaluator only removes records, so every remaining identity was already present. -/
+theorem commitVictory_activity_identity_discipline
+    (before after : RuntimeState) (pair : BoundedPair) (output : ControlPlaceId)
+    (time : Nat) (success : commitVictory before pair output time = some after) :
+    activityIdentityIssuingDiscipline before after = true := by
+  apply activityIdentityIssuingDiscipline_of_subset
+  intro record present
+  unfold commitVictory at success
+  cases running : before.control <;> simp [running] at success
+  cases success
+  exact (List.mem_filter.mp present).1
+
+theorem bounded_victory_activity_identity_discipline (program : Program)
+    (before after : RuntimeState) (step : BoundedTaskVictoryStep program before after) :
+    activityIdentityIssuingDiscipline before after = true := by
+  apply activityIdentityIssuingDiscipline_of_subset
+  intro record present
+  cases step <;> exact (List.mem_filter.mp present).1
 
 end BpmnSemantics.SemanticProcess

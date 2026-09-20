@@ -1,6 +1,7 @@
 import BpmnSemantics.SemanticProcess.CheckedProcessAdmission
 import BpmnSemantics.SemanticProcess.RootScopeFixtures
 import BpmnSemantics.SemanticProcess.Scenario
+import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
 
 /-! # BpmnSemantics.ActivityBoundaryTimerConformance — interrupting boundary Timer locks
 
@@ -107,7 +108,7 @@ def armedState : RuntimeState :=
     (.startProcess startCommandId ⟨"Process_ActivityBoundaryTimer"⟩
       instanceId [])).state
 
-/-- Arming is atomic: one incoming token becomes exactly one Activity occurrence and one deadline, and both take activation ordinal one from their own element counter. That shared ordinal is what later recovers the pair without a stored ownership record. -/
+/-- Arming allocates each wait from its own counter; the stored Activity body and attachment identify the pair independently of those counters. -/
 theorem activity_and_deadline_arm_atomically :
     (armedState.waits.map fun wait => (wait.task.id.value, wait.activation)) =
         [("BoundedTask", 1)] ∧
@@ -245,6 +246,32 @@ def afterActivityVictory : RuntimeState :=
 def afterDeadlineVictory : RuntimeState :=
   (applyStimulus scenarioClosureLimit program armedState
     (.fireTimer ⟨"fire-deadline"⟩ deadlineId 1000)).state
+
+theorem victories_retire_the_activity_and_preserve_runtime_validity :
+    runtimeStateWellFormed program instanceId armedState = true ∧
+      afterActivityVictory.activityOccurrences = [] ∧
+      runtimeStateWellFormed program instanceId afterActivityVictory = true ∧
+      afterDeadlineVictory.activityOccurrences = [] ∧
+      runtimeStateWellFormed program instanceId afterDeadlineVictory = true := by
+  decide +kernel
+
+/-- Constructed record-frame control, outside profile reachability: another activation of the same Task must survive either victory. -/
+private def unrelatedActivitySurvives : Bool :=
+  match armedState.activityOccurrences.head? with
+  | none => false
+  | some record =>
+      let unrelated := { record with
+        activation := 2
+        body := .userTask { processInstanceId := instanceId, elementId := ⟨"BoundedTask"⟩, activation := 2 }
+        attachedHandlers := [] }
+      let before := { armedState with activityOccurrences := [record, unrelated] }
+      decide ((completeBoundedUserTask? program before instanceId ⟨"BoundedTask"⟩ 1).map
+        (·.activityOccurrences) = some [unrelated]) &&
+      decide ((interruptBoundedUserTask? program before deadlineId 1000).map
+        (·.activityOccurrences) = some [unrelated])
+
+theorem victories_preserve_unrelated_activity_records : unrelatedActivitySurvives = true := by
+  decide +kernel
 
 /-- After the Activity wins, its deadline no longer exists, so the losing arm cannot fire late. The refusal preserves the winning state exactly rather than only reporting a rejected outcome. -/
 theorem deadline_firing_after_the_activity_victory_is_rejected :

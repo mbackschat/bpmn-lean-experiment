@@ -346,7 +346,7 @@ function writerMatchesClassification(site: WriterSite, classification: WriterCla
     case WriterClassification.Issuer:
       return /activityOccurrences\s*:=\s*insertActivityOccurrence/su.test(site.source);
     case WriterClassification.IdentityPreserving:
-      return /activityOccurrences\s*:=\s*(?:replaceBodyIn|replaceParallelRecordBody)/su.test(site.source);
+      return /activityOccurrences\s*:=\s*(?:replaceBodyIn|replaceParallelRecordBody|[A-Za-z_]\w*\.activityOccurrences\.map\b)/su.test(site.source);
     case WriterClassification.IdentityRemoving:
       return /activityOccurrences\s*:=.*(?:\.filter|\.erase|filter\s|retainedByRegion|removeParallelRecord)/su.test(site.source) ||
         (site.owner !== "initialState" && /activityOccurrences\s*:=\s*\[\]/su.test(site.source));
@@ -453,6 +453,18 @@ test("an identity-removing classification rejects a mixed remove-and-issue rewri
   };
   assert.equal(writerMatchesClassification(mixedRewrite, WriterClassification.IdentityRemoving), false);
   assert.equal(writerMatchesClassification(mixedRewrite, WriterClassification.Issuer), true);
+});
+
+test("Lean record maps retain the identity-preserving shape without accepting maps of another collection", () => {
+  for (const [expression, expected] of [
+    ["state.activityOccurrences.map detach", true],
+    ["state.waits.map issue", false],
+  ] as const) {
+    const [site] = writerSitesFromSource("Seeded.lean", SourceLanguage.Lean,
+      `def rewrite (state : RuntimeState) : RuntimeState :=\n  { state with activityOccurrences := ${expression} }`);
+    assert.ok(site !== undefined);
+    assert.equal(writerMatchesClassification(site, WriterClassification.IdentityPreserving), expected);
+  }
 });
 
 test("direct terminal clearing is removal rather than initialization in both languages", () => {
