@@ -330,15 +330,17 @@ test("receipt identity permits a fresh measurement but provenance alone cannot b
 });
 
 test("new and replacement measurements cannot borrow historical provenance without a receipt", () => {
-  const row = leanModuleCostRecord.rows[0]!;
+  const row = { module: "BpmnSemantics.HistoricalConformance", peakResidentKib: 100,
+    elapsedSeconds: 1, sourceSha256: "b".repeat(64), measuredAtCommit: "historical-provenance" };
+  const historical: LeanModuleCostRecord = { ...leanModuleCostRecord, rows: [row] };
   for (const replacement of [
     { ...row, module: "BpmnSemantics.UnmeasuredConformance" },
     { ...row, measuredAtCommit: "different-provenance" },
   ]) {
     const violations = (measurementReceiptSha256?: string) => leanModuleCostViolations({
-      record: { ...leanModuleCostRecord, rows: [measurementReceiptSha256 === undefined
+      record: { ...historical, rows: [measurementReceiptSha256 === undefined
         ? replacement : { ...replacement, measurementReceiptSha256 }] },
-      baseline: selfBaseline, trackedModules: [replacement.module], measurementSourceMismatches: [],
+      baseline: leanModuleCostBaseline(historical), trackedModules: [replacement.module], measurementSourceMismatches: [],
     });
     assert.equal(violations().some(({ kind }) => kind === "measurement-source-mismatch"), true);
     assert.deepEqual(violations("a".repeat(64)), []);

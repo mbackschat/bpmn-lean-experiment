@@ -97,7 +97,7 @@ Active work ID: `INTERNAL-COMMUTATION`.
 
 Risk band: RC internal scheduling; the six external reviews and composed Activity-data closure are complete.
 
-Next action: reproduce the separate `AOO-JOIN-03` actual Timer-publication advisory in the [review receipt](INTERNAL-COMMUTATION-PROPOSAL.md#independent-cold-review-receipt) before further Error/Terminate publication proofs. Separate Task/Timer counters while preserving valid, projectable Activity attachment; require accepted publication to end the record-named Task. Correct the existing join and its census coverage only after the discriminator fails. Reassess before another representation or prerequisite. E1/E2 change no RC scope.
+Next action: finish resource and affected-package gates, then the independent semantic-checkpoint review for the `AOO-JOIN-03` actual Timer-publication correction under the [regional prerequisite](INTERNAL-COMMUTATION-PROPOSAL.md#regional-preparation-prerequisite), before further Error/Terminate proofs. Both divergent-counter discriminators reproduced refused publication; the helper now reads the record and the census covers its owner. Reassess before another representation or prerequisite. E1/E2 change no RC scope.
 
 In progress: `RHP-HANDLER-01` is independently approved with clean complete integration; its [receipt](INTERNAL-COMMUTATION-PROPOSAL.md#independent-cold-review-receipt) owns exact evidence. Constructed witnesses establish no profile reachability; the retained Message child-scope exclusion is unchanged. `MBP-EMPTY-TASK-01` is independently approved. Regional trial closure remains pending. `AOO-RETAINED-BODY-01` requires a separate amendment before bounded-Terminate admission.
 

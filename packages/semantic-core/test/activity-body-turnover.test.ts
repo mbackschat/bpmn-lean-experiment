@@ -4,9 +4,8 @@
  * The oracle is [the ownership specification](../../../docs/ACTIVITY-OCCURRENCE-OWNERSHIP-SPEC.md), rules
  * `AOO-TURNOVER-02` through `AOO-TURNOVER-04`.
  *
- * Nothing drives this transition yet: no registered profile admits a construct that replaces a body,
- * so the caller here is the test. That is the shape the proposal approved, and it is why the
- * separating assertion below is about *representation* rather than about a schedule. What turnover
+ * These tests replace the ordinary bounded Task's body directly; they are constructed-state
+ * witnesses rather than registered schedules. What turnover
  * makes checkable is the divergence between a body's activation and its attached handler's, which is
  * the pair every join this capsule retired was keyed on.
  */
@@ -16,10 +15,13 @@ import { test } from "node:test";
 import {
   ActivityBodyKind,
   CommandOutcome,
+  FlowNodeOccurrenceTerminalKind,
+  SemanticFlowNodeOccurrenceAnchorKind,
   RuntimeStateDefect,
   activityOccurrenceForAttachedTimer,
   attachedTimerOccurrences,
   applyStimulus,
+  applyStimulusWithTrace,
   initialState,
   replaceActivityBodyTask,
   runtimeStateDefects,
@@ -32,6 +34,7 @@ import {
   instanceId,
   start,
   taskId,
+  fireDeadline,
 } from "./bounded-task-fixture.ts";
 
 function armed(): RuntimeState {
@@ -131,7 +134,7 @@ test("replacement advances the body's counter family and not the Activity's", ()
  * every retired join read as a pair. After replacement they differ, the record still resolves the
  * pair, and an ordinal join would resolve nothing at all rather than resolve it wrongly.
  */
-test("after replacement the body and its handler disagree, and only the record still pairs them", () => {
+test("after replacement the record pairs the divergent body and publishes its cancellation", () => {
   const before = armed();
   const deadline = attachedTimerOccurrences(armedRecord(before))[0];
   assert.ok(deadline !== undefined);
@@ -162,6 +165,17 @@ test("after replacement the body and its handler disagree, and only the record s
     id.activation === deadline.activation
   );
   assert.deepEqual(ordinalJoin, [], "the retired join returns no pair rather than a wrong one");
+
+  const fired = applyStimulusWithTrace(boundedProgram, after, fireDeadline);
+  assert.equal(fired.result.outcome, CommandOutcome.Committed);
+  assert.ok(fired.committedTransitions.length > 0);
+  const lifecycle = fired.flowNodeOccurrenceLifecycles[0];
+  assert.ok(lifecycle !== undefined);
+  assert.deepEqual(lifecycle.ended.filter(({ anchor }) =>
+    anchor.kind === SemanticFlowNodeOccurrenceAnchorKind.Wait), [{
+    anchor: { kind: SemanticFlowNodeOccurrenceAnchorKind.Wait, id: body.id },
+    terminal: FlowNodeOccurrenceTerminalKind.Cancelled,
+  }]);
 });
 
 test("the post-replacement state is well-formed, and the pre-state is the control", () => {

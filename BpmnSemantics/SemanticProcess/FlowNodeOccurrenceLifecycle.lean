@@ -455,8 +455,10 @@ private def lifecycleEventRaceForTimer? (state : RuntimeState)
 private def taskForBoundaryTimer? (operations : List (ControlPlaceId × BoundedTaskArm × BoundaryTimerArm))
     (state : RuntimeState) (timer : TimerWait) : Option UserTaskWait := do
   let operation ← operations.find? fun candidate => decide (candidate.2.2.elementId = timer.elementId)
-  state.waits.find? fun wait => decide (wait.task.id = operation.2.1.id &&
-    wait.activation = timer.activation && wait.owner = timer.owner)
+  let record ← activityOccurrenceForTimerWait? state.activityOccurrences timer
+  let body ← activityBodyTask? record
+  state.waits.find? fun wait => taskIdNamesWait body wait &&
+    decide (wait.task.id = operation.2.1.id && wait.owner = timer.owner)
 
 private def waitEnd (id : OccurrenceId) (terminal : FlowNodeOccurrenceTerminalKind) :
     UnnumberedFlowNodeOccurrenceEnd := { anchor := .wait id, terminal }

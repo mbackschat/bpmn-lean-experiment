@@ -47,6 +47,7 @@ const leanPairingOwners = [
   "BpmnSemantics/SemanticProcess/MonitoredTask.lean",
   "BpmnSemantics/SemanticProcess/BoundedScope.lean",
   "BpmnSemantics/SemanticProcess/FlowNodeOccurrenceWaitProgramValidity.lean",
+  "BpmnSemantics/SemanticProcess/FlowNodeOccurrenceLifecycle.lean",
 ] as const;
 
 const leanRecordLookup = /activityOccurrenceFor|activityBody(Task|Scope)\?|RecordJoins/u;
@@ -57,17 +58,14 @@ const leanRecordLookup = /activityOccurrenceFor|activityBody(Task|Scope)\?|Recor
  * `=` rather than `===`, and it must not match a *same-family* identity check. Those compare a wait's
  * activation against a submitted occurrence identity's, which is a wrong-identity refusal and not a
  * join, so the pattern requires both sides to end in `.activation` and excludes a right-hand side
- * naming one of the submitted task, Timer, or Message occurrence identity parameters.
+ * naming a submitted task, Timer, or Message identity or the EventRace's exact stored wait identity.
  *
- * That exclusion is line-scoped, and the closure review named the hole: a genuine cross-family join
- * written on a line that also mentions any excluded identifier evades this pattern. Naming the safe
- * operand instead, as the TypeScript pattern below does, narrows the trigger from three identifiers to
- * one exact line but does not close the hole either, because that line is still matched whole: a real
- * join written beside the safe comparison escapes both patterns. The enumeration is what carries the
- * rule in both languages, and the residual hole is recorded rather than claimed closed.
+ * The exclusion applies only to the complete right-hand identity expression. The lifecycle-owner
+ * enrollment reproduced the older line-scoped exemption hiding a real join before a legitimate
+ * EventRace identity check; the mixed-comparison controls below keep that join visible.
  */
 const leanCrossFamilyJoin =
-  /\.activation\s*=\s*(?!.*\b(?:timerId|taskId|subscriptionId|submitted)\b)[A-Za-z_][\w.]*\.activation\b/u;
+  /\.activation\s*=\s*(?!(?:timerId|taskId|subscriptionId|submitted|delivery\.subscriptionId|race\.(?:messageSubscriptionId|timerOccurrenceId))\.activation\b)[A-Za-z_][\w.]*\.activation\b/u;
 
 /**
  * A join across two counter families, written in TypeScript.
@@ -79,8 +77,8 @@ const leanCrossFamilyJoin =
  * is one line, named exactly, and it compares an element of the retained handler list against the
  * submitted deadline, which is an identity equality inside one family.
  *
- * Naming the operand narrows the hole the Lean pattern records rather than closing it: the safe line
- * is still matched whole, so a real join written on that same line escapes. The enumeration below
+ * The safe line is still matched whole, so a real join written on that same line escapes this
+ * TypeScript pattern. The enumeration below
  * carries the rest of the rule while exempting nothing.
  */
 const crossFamilyJoin = /\.activation\s*===\s*[A-Za-z_$][\w$.]*\.activation\b/u;
@@ -144,11 +142,16 @@ test("the Lean pattern separates a cross-family join from a same-family identity
   const sample = [
     "      timer.activation = task.activation ∧",
     "        wait.activation = timerId.activation)",
+    "            wait.activation = race.messageSubscriptionId.activation) with",
+    "            wait.activation = race.timerOccurrenceId.activation) with",
     "  let activityActivation := activityActivationCount state task.id + 1",
+    "  wait.activation = timerId.activation ∧ timer.activation = task.activation",
+    "  timer.activation = task.activation ∧ wait.activation = race.timerOccurrenceId.activation",
+    "  timer.activation = task.activation ∧ wait.activation = timerId.activation",
   ];
   assert.deepEqual(
     sample.flatMap((line, index) => leanCrossFamilyJoin.test(line) ? [index] : []),
-    [0],
+    [0, 5, 6, 7],
   );
 });
 
