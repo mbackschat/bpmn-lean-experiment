@@ -71,7 +71,7 @@ const leanCrossFamilyJoin =
  * A join across two counter families, written in TypeScript.
  *
  * The exclusion is the *left* operand, not the line. An earlier form excluded any line mentioning a
- * submitted identity, which is how the Lean pattern is written and which is wrong here: the join this
+ * submitted identity, as the Lean pattern also did before its mixed-comparison correction: the join this
  * capsule removed was `entry.anchor.id.activation === timerId.activation`, so a whole-line exclusion
  * for `timerId` would have stopped flagging exactly the regression it exists to catch. The safe shape
  * is one line, named exactly, and it compares an element of the retained handler list against the
