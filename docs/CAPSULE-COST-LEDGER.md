@@ -658,6 +658,19 @@ Both builds exited zero with every memory event, pressure total, and swap count 
 
 Before the implementation commit, the complete 403-job Lean gate and all 940 semantic-core tests passed. The bounded production witness passed in 83.33 seconds at 2,011,357,184 cgroup bytes. Three earlier bounded runs retained fixture type-annotation failures, with peaks of 2,272,514,048, 2,291,757,056, and 2,222,071,808 bytes; a cache-mount failure occurred before Lean started. The finite witness's initial dependency rebuild passed in 61.89 seconds at 1,494,188,032 cgroup bytes. These measurements establish neither an uncontended performance trend nor new full-library memory acceptance.
 
+#### Regional review-checkpoint calibration
+
+On 2026-09-20, both new regional projection conformance targets were measured before implementation commit `4d4d8d76ddba14266264d62ea13b255bd70ec576`. All 513 archived Lean/build inputs were checked against the working tree and that commit. The pinned image, one CPU/thread, network isolation, 3 GiB ceiling, and zero additional swap remain unchanged. Each isolated measurement followed dependency prewarming and removal of only its target's eight generated products; the container checked their absence before building.
+
+| Target | Elapsed | GNU maximum RSS | Cgroup peak | Build-output SHA-256 |
+|---|---:|---:|---:|---|
+| `BpmnSemantics.BoundaryTimerProjectionConformance` | 8.45 s | 1,218,364 KiB | 878,329,856 bytes | `385b1962aae7b5a3fc559463dae6d3fcf098bb93269457ae18badb176fe5eaca` |
+| `BpmnSemantics.InternalRegionalCancellationProjectionConformance` | 70.22 s | 2,156,844 KiB | 2,187,943,936 bytes | `e0b004a29afa277a8d05ed067a7e43b84221f6bb687213dc91f2b7b5186b2176` |
+
+Both commands exited zero with every memory event, pressure total, and swap count zero; their durable receipts passed separate assertions. Dependency prewarming also passed, at 2,952,351,744 cgroup bytes with zero events, pressure, and swap. An earlier mountpoint failure occurred before Lean started. These measurements supply the two source-bound module-cost rows, not new full-library memory acceptance or semantic approval.
+
+The complete pre-commit semantic gate passed all 482 Lean jobs and 1076 core tests. Its first run exposed an implicit whole-state conversion exceeding the unchanged 200,000-heartbeat limit in [data arming](../BpmnSemantics/SemanticProcess/InternalDataArmingFrames.lean). Explicit operation-level matcher equality preserves every theorem statement and passes the narrow build in about one second; the subsequent complete gate reused successful unaffected outputs. Regional batching and the remaining proof obligations stay open for the owner-requested architectural review and required semantic-checkpoint review.
+
 #### Call pairing calibration
 
 On 2026-09-19, immutable commit `b304150ebab88f047b9e80094d6c5a579a9f8490` supplied `BpmnSemantics.CallActivityPairingConformance`. All 422 archived Lean/build inputs matched the commit and current source before and after measurement. The pinned image, one CPU/thread, network isolation, 3 GiB ceiling, and zero additional swap remain unchanged. After warming the dependency closure, only the target's eight generated products were moved aside; the confirmed isolated rebuild exited zero in 3.54 seconds at 1,081,832 KiB GNU RSS and 701,947,904 cgroup bytes. Every memory event, pressure total, and swap count was zero.

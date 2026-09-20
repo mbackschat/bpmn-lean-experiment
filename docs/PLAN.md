@@ -104,7 +104,7 @@ Active work ID: `INTERNAL-COMMUTATION`.
 
 Risk band: RC internal scheduling; the six external reviews and composed Activity-data closure are complete.
 
-Next action: establish a tested, committed regional preparation checkpoint for the owner-requested external reviews of Lean architecture and work efficiency before expanding the proof effort. The [regional owner](INTERNAL-COMMUTATION-PROPOSAL.md#regional-preparation-prerequisite) retains Error/Terminate publication, preparation frames, selected-domain agreement, aggregate preservation, and pair laws as open. Architecture advice does not replace the required semantic-checkpoint review before finite batching.
+Next action: obtain the owner-requested external reviews of Lean architecture and work efficiency against the tested regional preparation checkpoint at `4d4d8d76` before expanding the proof effort. The [regional owner](INTERNAL-COMMUTATION-PROPOSAL.md#regional-preparation-prerequisite) retains Error/Terminate publication, preparation frames, selected-domain agreement, aggregate preservation, and pair laws as open. Architecture advice does not replace the required semantic-checkpoint review before finite batching.
 
 In progress: Timer classification and wait validity share operation-level proofs; four list-uniqueness proofs use the standard library. The cleanup preserves existing theorem statements and matcher behavior. Complete/Return publication and cancellation wait/Effect-local preservation remain implemented. `AOO-RETAINED-BODY-01` requires a separate amendment before bounded-Terminate admission.
 
