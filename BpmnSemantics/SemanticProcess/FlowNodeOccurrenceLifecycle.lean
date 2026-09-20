@@ -421,7 +421,10 @@ def flowNodeOccurrenceOwnedBySubtree (state : RuntimeState) (root : ScopeOccurre
   match occurrence.anchor with
   | .scope scopeId => occurrenceInSubtree state.scopeOccurrences root scopeId ||
       called.contains scopeId.processInstanceId
-  | .wait _ | .callActivity _ | .compensationTrigger _ | .compensationHandler _ =>
+  | .wait id =>
+      occurrenceInSubtree state.scopeOccurrences root occurrence.owner ||
+      called.contains occurrence.owner.processInstanceId || scopeCancellationWithdrawsHandler state root id
+  | .callActivity _ | .compensationTrigger _ | .compensationHandler _ =>
       occurrenceInSubtree state.scopeOccurrences root occurrence.owner ||
       called.contains occurrence.owner.processInstanceId
   | .transition .. => false

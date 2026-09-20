@@ -52,6 +52,18 @@ def calledInstanceClosure (state : RuntimeState)
   processInstanceClosureWithin state.calledProcessOccurrences direct
     (state.calledProcessOccurrences.length + 1)
 
+/-- RHP-HANDLER-01: a published wait can end through its Activity's child body even when
+its own scope survives. Match the live handler family as well as its complete identity. -/
+def scopeCancellationWithdrawsHandler (state : RuntimeState) (root : ScopeOccurrenceId)
+    (id : OccurrenceId) : Bool :=
+  let withdrawn := withdrawnByRegion (fun owner =>
+    occurrenceInSubtree state.scopeOccurrences root owner ||
+      (calledInstanceClosure state root).contains owner.processInstanceId) state.activityOccurrences
+  (state.messageWaits.any fun wait => messageIdNamesWait id wait &&
+    activityRecordsAttachMessageWait withdrawn wait) ||
+  (state.timerWaits.any fun wait => timerIdNamesWait id wait &&
+    anyTimerIdNamesWait (attachedTimersOf withdrawn) wait)
+
 private def effectOccurrenceId (wait : EffectWait) : EffectOccurrenceId :=
   { processInstanceId := wait.processInstanceId
     elementId := ⟨wait.elementId.value⟩

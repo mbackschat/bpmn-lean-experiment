@@ -135,7 +135,7 @@ theorem regionalLifecycleTemplate_candidate (program : Program) (before after : 
     (selection : selectInternalRegional? program before operation = some selected)
     (derived : deriveInternalOccurrenceRegion? before selected.root.id = some region)
     (projected : projectOpenFlowNodeOccurrences? program before = some current)
-    (lifecycle : regionalLifecycleTemplate? program selected region current = some (identities, ends)) :
+    (lifecycle : regionalLifecycleTemplate? program before selected region current = some (identities, ends)) :
     candidateFlowNodeOccurrenceDeltaForOperation? program before after operation commandId transitionIndex =
       some (instantaneousFlowNodeOccurrenceDeltaWithEnds commandId transitionIndex identities ends) := by
   have owned := regionalSelection_lifecycle_owner program before operation selected selection

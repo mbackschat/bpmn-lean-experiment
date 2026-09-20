@@ -20,6 +20,7 @@ import { ScopeCompletionSelectionKind } from "./semantic-process-scope-runtime.j
 import { sameOccurrence, sameScopeOccurrence } from "./semantic-process-state.js";
 import type { RuntimeState, ScopeOccurrenceId } from "./semantic-process-state.js";
 import { SemanticTransitionKind } from "./semantic-transition-trace.js";
+import { scopeCancellationHandlerWaitIds } from "./semantic-process-scope-cancellation.js";
 
 /** Resolves regional publication from predecessor ownership and selected continuation facts. */
 export function deriveInternalRegionalPublication(
@@ -75,6 +76,8 @@ export function deriveInternalRegionalPublication(
       if (instant === null) return null;
       addInstant(instant, started, ended);
       const retainRoot = selection.kind === SemanticOperationKind.TerminateScope;
+      const handlers = scopeCancellationHandlerWaitIds(state, selection.kind === SemanticOperationKind.ThrowError
+        ? selection.selected.attached : selection.selected.occurrence);
       if (selection.kind === SemanticOperationKind.ThrowError) {
         const boundary = candidateElementOccurrence(program, state,
           selection.operation.handler.origin.boundaryEventId, selection.selected.parent);
@@ -86,8 +89,10 @@ export function deriveInternalRegionalPublication(
       for (const entry of open) {
         if (entry.anchor.kind === SemanticFlowNodeOccurrenceAnchorKind.Scope && retainRoot &&
             sameScopeOccurrence(entry.anchor.id, selection.owner)) continue;
+        const anchorId = entry.anchor.kind === SemanticFlowNodeOccurrenceAnchorKind.Wait ? entry.anchor.id : null;
         if (!contains(entry.owner) && !(entry.anchor.kind === SemanticFlowNodeOccurrenceAnchorKind.Scope &&
-            contains(entry.anchor.id))) continue;
+            contains(entry.anchor.id)) &&
+            !(anchorId !== null && handlers.some((id) => sameOccurrence(id, anchorId)))) continue;
         const anchor = retainedAnchor(entry.anchor);
         if (anchor === null) return null;
         ended.push({ anchor, terminal: FlowNodeOccurrenceTerminalKind.Cancelled });

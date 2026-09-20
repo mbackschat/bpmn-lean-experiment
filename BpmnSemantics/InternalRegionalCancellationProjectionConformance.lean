@@ -1,5 +1,6 @@
 import BpmnSemantics.SubProcessBoundaryTimerConformance
 import BpmnSemantics.SubProcessErrorPropagationConformance
+import BpmnSemantics.TerminateEndEventFixtures
 import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
@@ -138,6 +139,117 @@ theorem divergent_deadline_predecessor_valid : runtimeStateWellFormed program in
 theorem divergent_deadline_projection_unchanged :
     projectOpenFlowNodeOccurrences? program divergentDeadline = projectOpenFlowNodeOccurrences? program armedState ∧
       (projectOpenFlowNodeOccurrences? program armedState).isSome = true := by
+  decide +kernel
+
+/-! RHP-HANDLER-01 constructs a live, projectable parent-owned handler with a child body.
+These are validation/publication witnesses, not admitted execution-reachability claims. -/
+namespace HandlerPublicationWitness
+
+def handlerElement (terminate : Bool) : String :=
+  if terminate then "E_OuterTask" else "UserTask_Recover"
+
+def hosting (terminate : Bool) : SemanticId :=
+  if terminate then TerminateEndEventFixtures.semanticInstanceId else SubProcessErrorPropagationConformance.instanceId
+
+def handlerProgram (timer terminate : Bool) : Program :=
+  let source := if terminate then TerminateEndEventFixtures.checkedProcess else SubProcessErrorPropagationConformance.checkedProcess
+  lowerCheckedProcess { source with nodes := source.nodes.map fun node =>
+    match node with
+    | .userTask id _ => if id.value = handlerElement terminate then
+        if timer then .intermediateCatchTimerEvent id "PT1S"
+        else .intermediateCatchMessageEvent id (.directMessage ⟨"Message_Recovery"⟩)
+      else node
+    | _ => node }
+
+def selected (timer terminate : Bool) : SemanticOperation :=
+  ((handlerProgram timer terminate).operations.find? fun operation => match operation with
+    | .throwError .. | .terminateScope .. => true
+    | _ => false).getD (.reachNoneEnd ⟨"missing"⟩ ⟨⟨"missing"⟩⟩ ⟨"missing"⟩)
+
+def outside (terminate : Bool) : ScopeOccurrenceId :=
+  { processInstanceId := hosting terminate
+    definitionScopeId := if terminate then TerminateEndEventFixtures.rootScopeId else SubProcessErrorPropagationConformance.rootScopeId
+    activation := 1 }
+def body (terminate : Bool) : ScopeOccurrenceId :=
+  { processInstanceId := hosting terminate
+    definitionScopeId := if terminate then TerminateEndEventFixtures.childScopeId else SubProcessErrorPropagationConformance.childScopeId
+    activation := 1 }
+def handler (terminate : Bool) : OccurrenceId :=
+  { processInstanceId := hosting terminate, elementId := ⟨handlerElement terminate⟩, activation := 1 }
+
+def triggerReady (terminate : Bool) : RuntimeState :=
+  if terminate then
+    let started := applyStimulus scenarioClosureLimit TerminateEndEventFixtures.program initialState
+      TerminateEndEventFixtures.startStimulus
+    (completeUserTask started.state (hosting terminate) ⟨"J_Trigger"⟩ 1).getD initialState
+  else SubProcessErrorPropagationConformance.triggerCommittedBeforeClosure
+
+def handlerState (timer terminate : Bool) : RuntimeState := Id.run do
+  let program := handlerProgram timer terminate
+  let operation := (program.operations.find? fun operation => match operation with
+    | .awaitTimer .. | .awaitMessage .. => true
+    | _ => false).getD (.reachNoneEnd ⟨"missing"⟩ ⟨⟨"missing"⟩⟩ ⟨"missing"⟩)
+  let input := match operation with
+    | .awaitTimer _ _ input .. | .awaitMessage _ _ input .. => input
+    | _ => ⟨"missing"⟩
+  let ready := { triggerReady terminate with
+    tokens := addToken (triggerReady terminate).tokens input (outside terminate) }
+  let armed := (fire? program operation ready).getD initialState
+  return { armed with
+    activityOccurrences :=
+      [{ processInstanceId := hosting terminate
+         activityElementId := ⟨"CrossRegionBody"⟩
+         activation := 1
+         owner := outside terminate
+         body := .childScope (body terminate)
+         attachedHandlers := [if timer then .timer (handler terminate) else .message (handler terminate)] }]
+    activityActivations := [{ taskId := ⟨"CrossRegionBody"⟩, count := 1 }] }
+
+def exactHandlerPublication (timer terminate : Bool) : Bool :=
+  let program := handlerProgram timer terminate
+  let before := handlerState timer terminate
+  match prepareInternalRegional? program before (selected timer terminate) with
+  | none => false
+  | some prepared =>
+    match applyPreparedInternalRegional? program before prepared with
+    | none => false
+    | some after =>
+      programWellFormed program &&
+      runtimeStateWellFormed program (hosting terminate) before &&
+      runtimeStateWellFormed program (hosting terminate) after &&
+      after.messageWaits.isEmpty && after.timerWaits.isEmpty &&
+      (projectOpenFlowNodeOccurrences? program before).isSome &&
+      (projectOpenFlowNodeOccurrences? program after).isSome &&
+      prepared.publicationTemplate.retainedEnds.contains
+        { anchor := .wait (handler terminate), terminal := .cancelled } &&
+      decide (flowNodeOccurrenceDeltaForOperation? program before after (selected timer terminate)
+        ⟨"cancel-body"⟩ 0 = some (prepared.publicationTemplate.lifecycle ⟨"cancel-body"⟩ 0))
+
+theorem error_message_handler_publication_exact : exactHandlerPublication false false = true := by
+  decide +kernel
+
+theorem error_timer_handler_publication_exact : exactHandlerPublication true false = true := by
+  decide +kernel
+
+theorem terminate_message_handler_publication_exact : exactHandlerPublication false true = true := by
+  decide +kernel
+
+theorem terminate_timer_handler_publication_exact : exactHandlerPublication true true = true := by
+  decide +kernel
+
+end HandlerPublicationWitness
+
+def privateErrorTimerPublication : Option (Nat × Nat × Bool) := do
+  let prepared ← prepareInternalRegional? errorProgram errorReady errorOperation
+  let after ← applyPreparedInternalRegional? errorProgram errorReady prepared
+  let delta ← flowNodeOccurrenceDeltaForOperation? errorProgram errorReady after errorOperation ⟨"private-timer"⟩ 0
+  pure (errorReady.timerWaits.length, after.timerWaits.length,
+    delta.ended.any fun ending => match ending.anchor with
+      | .wait id => errorReady.timerWaits.any (timerIdNamesWait id)
+      | _ => false)
+
+theorem private_error_timer_is_withdrawn_without_a_public_ending :
+    privateErrorTimerPublication = some (1, 0, false) := by
   decide +kernel
 
 end BpmnSemantics.SemanticProcess.InternalCommutation.CancellationProjectionWitness

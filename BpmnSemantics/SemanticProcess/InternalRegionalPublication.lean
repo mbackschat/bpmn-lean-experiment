@@ -11,41 +11,43 @@ namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
 open BpmnSemantics
 
-def regionalCancelsOpenOccurrence (region : InternalOccurrenceRegion) (retainRoot : Bool)
+def regionalCancelsOpenOccurrence (state : RuntimeState) (region : InternalOccurrenceRegion) (retainRoot : Bool)
     (entry : OpenSemanticFlowNodeOccurrence) : Bool :=
   match entry.anchor with
   | .scope id => !(retainRoot && id == region.root) &&
       (region.contains id || region.contains entry.owner)
-  | .wait _ | .callActivity _ | .compensationTrigger _ | .compensationHandler _ =>
+  | .wait id => region.contains entry.owner || scopeCancellationWithdrawsHandler state region.root id
+  | .callActivity _ | .compensationTrigger _ | .compensationHandler _ =>
       region.contains entry.owner
   | .transition .. => false
 
-def regionalCancellationEnds (region : InternalOccurrenceRegion) (retainRoot : Bool)
+def regionalCancellationEnds (state : RuntimeState) (region : InternalOccurrenceRegion) (retainRoot : Bool)
     (current : List OpenSemanticFlowNodeOccurrence) : List UnnumberedFlowNodeOccurrenceEnd :=
-  (current.filter (regionalCancelsOpenOccurrence region retainRoot)).map fun entry =>
+  (current.filter (regionalCancelsOpenOccurrence state region retainRoot)).map fun entry =>
     { anchor := entry.anchor, terminal := .cancelled }
 
-theorem regionalCancellation_retains_selected_root (region : InternalOccurrenceRegion)
+theorem regionalCancellation_retains_selected_root (state : RuntimeState) (region : InternalOccurrenceRegion)
     (entry : OpenSemanticFlowNodeOccurrence) (root : entry.anchor = .scope region.root) :
-    regionalCancellationEnds region true [entry] = [] := by
+    regionalCancellationEnds state region true [entry] = [] := by
   simp [regionalCancellationEnds, regionalCancelsOpenOccurrence, root]
 
-theorem regionalCancellation_preserves_outside_wait (region : InternalOccurrenceRegion)
+theorem regionalCancellation_preserves_outside_wait (state : RuntimeState) (region : InternalOccurrenceRegion)
     (entry : OpenSemanticFlowNodeOccurrence) (id : OccurrenceId)
-    (wait : entry.anchor = .wait id) (outside : region.contains entry.owner = false) :
-    regionalCancellationEnds region false [entry] = [] := by
-  simp [regionalCancellationEnds, regionalCancelsOpenOccurrence, wait, outside]
+    (wait : entry.anchor = .wait id) (outside : region.contains entry.owner = false)
+    (unattached : scopeCancellationWithdrawsHandler state region.root id = false) :
+    regionalCancellationEnds state region false [entry] = [] := by
+  simp [regionalCancellationEnds, regionalCancelsOpenOccurrence, wait, outside, unattached]
 
-theorem regionalCancellation_removes_selected_root (region : InternalOccurrenceRegion)
+theorem regionalCancellation_removes_selected_root (state : RuntimeState) (region : InternalOccurrenceRegion)
     (entry : OpenSemanticFlowNodeOccurrence) (root : entry.anchor = .scope region.root)
     (inside : region.contains region.root = true) :
-    regionalCancellationEnds region false [entry] = [{ anchor := entry.anchor, terminal := .cancelled }] := by
+    regionalCancellationEnds state region false [entry] = [{ anchor := entry.anchor, terminal := .cancelled }] := by
   simp [regionalCancellationEnds, regionalCancelsOpenOccurrence, root, inside]
 
-theorem regionalCancellation_cancels_owned_wait (region : InternalOccurrenceRegion)
+theorem regionalCancellation_cancels_owned_wait (state : RuntimeState) (region : InternalOccurrenceRegion)
     (retainRoot : Bool) (entry : OpenSemanticFlowNodeOccurrence) (id : OccurrenceId)
     (wait : entry.anchor = .wait id) (inside : region.contains entry.owner = true) :
-    regionalCancellationEnds region retainRoot [entry] = [{ anchor := entry.anchor, terminal := .cancelled }] := by
+    regionalCancellationEnds state region retainRoot [entry] = [{ anchor := entry.anchor, terminal := .cancelled }] := by
   simp [regionalCancellationEnds, regionalCancelsOpenOccurrence, wait, inside]
 
 structure InternalRegionalPublicationTemplate where
@@ -94,7 +96,7 @@ def regionalPositionDelta? (program : Program) (selected : InternalRegionalSelec
         exitedScopes := removedScopes.filter fun scope => scope.id != selected.root.id }
   | _, _ => none
 
-def regionalLifecycleTemplate? (program : Program) (selected : InternalRegionalSelection)
+def regionalLifecycleTemplate? (program : Program) (state : RuntimeState) (selected : InternalRegionalSelection)
     (region : InternalOccurrenceRegion) (current : List OpenSemanticFlowNodeOccurrence) :
     Option (List FlowNodeIdentity × List UnnumberedFlowNodeOccurrenceEnd) :=
   let owner := selected.root.id
@@ -114,10 +116,10 @@ def regionalLifecycleTemplate? (program : Program) (selected : InternalRegionalS
       let errorIdentity ← candidateOperationFlowNodeIdentity? program selected.operation owner owner origin.elementId
       let boundaryIdentity ← candidateOperationFlowNodeIdentity? program selected.operation owner parent
         handler.origin.boundaryEventId
-      pure ([errorIdentity, boundaryIdentity], regionalCancellationEnds region false current)
+      pure ([errorIdentity, boundaryIdentity], regionalCancellationEnds state region false current)
   | .terminateScope _ origin _ _, .terminating => do
       let ending ← candidateOperationFlowNodeIdentity? program selected.operation owner owner origin.elementId
-      pure ([ending], regionalCancellationEnds region true current)
+      pure ([ending], regionalCancellationEnds state region true current)
   | _, _ => none
 
 /-- Every dependency and publication component is selected before executing the operation. -/
@@ -128,7 +130,7 @@ def regionalPublicationTemplate? (program : Program) (state : RuntimeState)
   let positions ← projectControlPosition? program hosting state
   let current ← projectOpenFlowNodeOccurrences? program state
   let delta ← regionalPositionDelta? program selected region positions
-  let lifecycle ← regionalLifecycleTemplate? program selected region current
+  let lifecycle ← regionalLifecycleTemplate? program state selected region current
   pure { operation := selected.operation, owner := selected.root.id, logicalTimeMs := state.logicalTimeMs
          positionDelta := delta, instantaneous := lifecycle.1, retainedEnds := lifecycle.2 }
 
@@ -141,7 +143,7 @@ theorem regionalPublicationTemplate_facts (program : Program) (state : RuntimeSt
       projectControlPosition? program hosting state = some positions ∧
       projectOpenFlowNodeOccurrences? program state = some current ∧
       regionalPositionDelta? program selected region positions = some delta ∧
-      regionalLifecycleTemplate? program selected region current = some (identities, ends) ∧
+      regionalLifecycleTemplate? program state selected region current = some (identities, ends) ∧
       template =
         { operation := selected.operation, owner := selected.root.id
           logicalTimeMs := state.logicalTimeMs, positionDelta := delta

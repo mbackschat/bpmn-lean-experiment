@@ -58,7 +58,7 @@ theorem regionalLifecycleTemplate_empty_ends (program : Program) (before : Runti
     (operation : SemanticOperation) (selected : InternalRegionalSelection) (region : InternalOccurrenceRegion)
     (current : List OpenSemanticFlowNodeOccurrence) (ends : List UnnumberedFlowNodeOccurrenceEnd)
     (selection : selectInternalRegional? program before operation = some selected)
-    (lifecycle : regionalLifecycleTemplate? program selected region current = some ([], ends)) :
+    (lifecycle : regionalLifecycleTemplate? program before selected region current = some ([], ends)) :
     (ends.map (·.anchor)).Nodup ∧ ∀ ending ∈ ends, ending.anchor ∈ current.map (·.anchor) := by
   have single (anchor : SemanticFlowNodeOccurrenceAnchor) (terminal : FlowNodeOccurrenceTerminalKind)
       (census : (current.filter fun entry => entry.anchor == anchor).length = 1) :

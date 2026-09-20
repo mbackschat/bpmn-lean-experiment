@@ -134,7 +134,7 @@ export const leanModuleCostRecord = {
   nearCapModules: [],
   rows: [
     { module: "BpmnSemantics.BoundaryTimerProjectionConformance", sourceSha256: "ccdedbfd1114f35fb272c9f58144ba283e53e4a0afd2c0dd2b4cb650f5225e14", peakResidentKib: 1218364, elapsedSeconds: 8.45, measuredAtCommit: "4d4d8d76" },
-    { module: "BpmnSemantics.InternalRegionalCancellationProjectionConformance", sourceSha256: "17bed49f82efabc9b11d38a7c2cb1a62d9654ca65ca035e95d4fdec022ff9101", peakResidentKib: 2156844, elapsedSeconds: 70.22, measuredAtCommit: "4d4d8d76" },
+    { module: "BpmnSemantics.InternalRegionalCancellationProjectionConformance", sourceSha256: "4bd403746a5814999f24bc0e20be37d2f4997f30d0baaf0ff7ad0e8344502b42", peakResidentKib: 2794292, elapsedSeconds: 102.70, measurementReceiptSha256: "53244f1815b8dc0192fa2986b70c12cefe8cee8c3c85e54386c66571465cffac", measuredAtCommit: "4d4d8d76" },
     { module: "BpmnSemantics.ScopeCreationMixedBatchConformance", sourceSha256: "b3b5735380de0d8ae4f0fe93808e095052a3a1134a892069ac06d6273ab70c45", peakResidentKib: 1980156, elapsedSeconds: 80.59, measuredAtCommit: "10e774c5" },
     { module: "BpmnSemantics.InternalScopeCreationFrameConformance", sourceSha256: "4cc55b055ae93be5f5e4f12e181fbbc56cf0d822afcbbaa45b0de4352d988094", peakResidentKib: 1368940, elapsedSeconds: 72.62, measuredAtCommit: "b589ab0a" },
     { module: "BpmnSemantics.ScopeCreationCompensationValidityConformance", sourceSha256: "4aae161d215aab3fcb9df35905d8f643587cfdd8f5005a77d3b3a1d49cd5b43d", peakResidentKib: 1049176, elapsedSeconds: 4.40, measuredAtCommit: "52a84367" },

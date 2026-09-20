@@ -531,12 +531,18 @@ export function cancelledRegion(
       }
     }
   }
+  const inRegion = (entry: OpenOccurrence): boolean =>
+    entry.anchor.kind === SemanticFlowNodeOccurrenceAnchorKind.Scope
+      ? removedScopes.has(scopeKey(entry.anchor.id))
+      : ownerIsRemoved(entry.owner, removedScopes, removedInstances);
+  // RHP-HANDLER-01: Terminate retains its root anchor, but withdraws that body's handlers.
+  const handlers = open.filter(inRegion).flatMap(({ attachedHandlers }) => attachedHandlers);
   return open.filter((entry) => {
-    if (entry.anchor.kind === SemanticFlowNodeOccurrenceAnchorKind.Scope) {
-      return removedScopes.has(scopeKey(entry.anchor.id)) &&
-        !(retainRoot && sameScope(entry.anchor.id, root));
-    }
-    return ownerIsRemoved(entry.owner, removedScopes, removedInstances);
+    const anchor = entry.anchor;
+    if (anchor.kind === SemanticFlowNodeOccurrenceAnchorKind.Scope &&
+      retainRoot && sameScope(anchor.id, root)) return false;
+    return inRegion(entry) || (anchor.kind === SemanticFlowNodeOccurrenceAnchorKind.Wait &&
+      handlers.some(({ occurrence }) => sameOccurrence(occurrence, anchor.id)));
   }).map((entry) => lifecycleEnd(entry, FlowNodeOccurrenceTerminalKind.Cancelled));
 }
 

@@ -62,6 +62,7 @@ import type {
   MessageBoundedPair,
 } from "./semantic-process-message-bounded-task-runtime.js";
 import { sameMessageChannel } from "./message-channel.js";
+import { scopeCancellationHandlerWaitIds } from "./semantic-process-scope-cancellation.js";
 import {
   projectCompensationCompletionLifecycle,
   projectCompensationTriggerLifecycle,
@@ -557,10 +558,14 @@ function cancelledRegion(
     }
   };
   addScope(root.id);
+  const handlers = scopeCancellationHandlerWaitIds(state, root);
   return openAnchorCandidates(program, state).filter((entry) => {
+    const anchor = entry.anchor;
     if (entry.anchor.kind === SemanticFlowNodeOccurrenceAnchorKind.Scope && retainRoot && sameScopeOccurrence(entry.anchor.id, root.id)) return false;
     return removed.has(scopeKey(entry.owner)) ||
-      (entry.anchor.kind === SemanticFlowNodeOccurrenceAnchorKind.Scope && removed.has(scopeKey(entry.anchor.id)));
+      (entry.anchor.kind === SemanticFlowNodeOccurrenceAnchorKind.Scope && removed.has(scopeKey(entry.anchor.id))) ||
+      (anchor.kind === SemanticFlowNodeOccurrenceAnchorKind.Wait &&
+        handlers.some((id) => sameOccurrence(id, anchor.id)));
   }).map(({ anchor }) => ({ anchor, terminal: FlowNodeOccurrenceTerminalKind.Cancelled }));
 }
 
