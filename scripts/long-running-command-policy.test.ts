@@ -185,3 +185,35 @@ test("receipt assertion is the sole machine verdict for a completed long command
     await rm(temporaryRoot, { recursive: true, force: true });
   }
 });
+
+test("completed failures locate the first recognized diagnostic without changing the verdict", async (context) => {
+  const cases = [
+    { name: "Node", status: 1, output: "✔ first\nexpected error: example\n✖ broken test\n✔ later\n✖ another\n", locator: "3: ✖ broken test" },
+    { name: "Lean", status: 1, output: "building\r\nerror: Main.lean:3: mismatch\r\nerror: build failed\r\n", locator: "2: error: Main.lean:3: mismatch" },
+    { name: "Lake summary", status: 1, output: "building\nSome required targets logged failures:\n- Main\n", locator: "2: Some required targets logged failures:" },
+    { name: "unrecognized failure", status: 7, output: "ordinary output\n", locator: undefined },
+    { name: "embedded diagnostic", status: 7, output: "expected error: example\nquoted ✖ failure\n", locator: undefined },
+    { name: "passing negative test", status: 0, output: "✖ expected fixture\nerror: expected negative\n", locator: undefined },
+  ];
+  const temporaryRoot = await mkdtemp(path.join(tmpdir(), "bpmn-failure-locator-test-"));
+  try {
+    for (const [index, fixture] of cases.entries()) {
+      await context.test(fixture.name, async () => {
+        const receipt = path.join(temporaryRoot, String(index));
+        const command = spawnSync(receiptScriptPath, [receipt, "--", process.execPath, "-e",
+          `process.stdout.write(${JSON.stringify(fixture.output)}); process.exit(${fixture.status});`],
+        { encoding: "utf8" });
+        assert.equal(command.status, fixture.status);
+        const result = spawnSync(process.execPath, [receiptAssertionPath, receipt], { encoding: "utf8" });
+        assert.equal(result.status, fixture.status === 0 ? 0 : 1);
+        const markers = result.stderr.split("\n").filter((line) => line.startsWith("COMMAND_RECEIPT_FIRST_FAILURE="));
+        assert.deepEqual(markers, fixture.locator === undefined ? [] : [`COMMAND_RECEIPT_FIRST_FAILURE=${fixture.locator}`]);
+        assert.match(result.stdout + result.stderr, new RegExp(`COMMAND_RECEIPT_VERDICT=${fixture.status === 0 ? "success" : "failure"} exitStatus=${fixture.status} `, "u"));
+        assert.equal(await readFile(path.join(receipt, "output.log"), "utf8"), fixture.output);
+        assert.equal(await readFile(path.join(receipt, "exit-status"), "utf8"), `${fixture.status}\n`);
+      });
+    }
+  } finally {
+    await rm(temporaryRoot, { recursive: true, force: true });
+  }
+});

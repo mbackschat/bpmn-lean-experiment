@@ -75,6 +75,15 @@ function runCli(receiptRoot: string | undefined): void {
         `COMMAND_RECEIPT_VERDICT=success exitStatus=0 gitHead=${receipt.gitHead} receipt=${receipt.receipt}\n`,
       );
     } else {
+      const lines = readFileSync(path.join(receipt.receipt, "output.log"), "utf8").split(/\r?\n/u);
+      const firstFailure = lines.findIndex((line) =>
+        /^(?:✖ |error: |Some required targets logged failures:)/u.test(line),
+      );
+      if (firstFailure !== -1) {
+        process.stderr.write(
+          `COMMAND_RECEIPT_FIRST_FAILURE=${firstFailure + 1}: ${lines[firstFailure]}\n`,
+        );
+      }
       process.stderr.write(
         `COMMAND_RECEIPT_VERDICT=failure exitStatus=${receipt.exitStatus} gitHead=${receipt.gitHead} receipt=${receipt.receipt}\n`,
       );
