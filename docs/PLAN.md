@@ -69,7 +69,7 @@ Exactly one stable work ID is active. Required maps are part of the routing cont
 
 ### Architecture and workflow review follow-up
 
-Owner instruction on 2026-09-20: finish both reviews' follow-ups; preserve complete gates and guarantees. External reviews do not approve a semantic checkpoint.
+Owner decision, 2026-09-20: finish review fixes; leave the regional trial pending in the RC queue, outside this goal. Preserve complete gates, guarantees, and required semantic reviews.
 
 - [x] Review 2: fix source-digest/review-target binding and require deliverable-based reassessment without weakening evidence.
 - [x] E1: retain [Error/arming conflict](../packages/bpmn-source/test/subprocess-error-lowering.test.ts), [delayed regional pairs and End/arming rollback](../packages/bpmn-source/test/embedded-subprocess-lowering.test.ts); review structural exclusion. No reachability theorem or singleton classification is approved.
