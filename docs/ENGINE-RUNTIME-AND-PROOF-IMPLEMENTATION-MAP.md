@@ -115,7 +115,7 @@ Product 1 rejects malformed and over-cap starts as semantic-process unsupported,
 - single-operation closure and finite independent ordinary/composed-data arming and local-control batches, with predecessor-derived prefix invariants, complete preparation preservation, raw-state permutation equality, and canonical accepted publication; [the bounded account](INTERNAL-COMMUTATION-PROPOSAL.md#local-control-preparation-prerequisite) excludes snapshot declarations, region families, and scheduled choice
 - one catalog-driven result emitter that consumes and echoes answer-free scenarios, with strict role decoders and independent cross-artifact validation
 - the separately gated checked-source experiment with bounded structural, decomposition, reachability, and enabled-frontier results
-- proved committed-transition trace/replay, positions/deltas, nonpublication, source-compiled TypeScript parity; [Error/Terminate lifecycle](INTERNAL-COMMUTATION-PROPOSAL.md#error-and-terminate-accepted-publication) awaits checkpoint review
+- proved committed-transition trace/replay, positions/deltas, nonpublication, source-compiled TypeScript parity; approved [Error/Terminate lifecycle](INTERNAL-COMMUTATION-PROPOSAL.md#error-and-terminate-accepted-publication)
 
 ### TypeScript semantic core
 

@@ -97,7 +97,7 @@ Active work ID: `INTERNAL-COMMUTATION`.
 
 Risk band: RC internal scheduling; the six external reviews and composed Activity-data closure are complete.
 
-Next action: finish complete affected gates for [Error/Terminate accepted publication](INTERNAL-COMMUTATION-PROPOSAL.md#error-and-terminate-accepted-publication), then commit the coherent proof checkpoint and obtain its independent cold review before further regional implementation. The narrow target derives actual successor projection and lifecycle acceptance, including hosting-root Terminate and the valid Task/Message alias controls. Reassess before any substantial prerequisite or representation change; E1/E2 change no RC scope.
+Next action: audit aggregate runtime-preservation gaps against existing regional component lemmas, then compose preservation for actual Error/Terminate successors as the next bounded deliverable. Check every predecessor-derived conjunct and the retained child/root and private-Timer controls before adding machinery; reassess any substantial prerequisite or representation change. [Individual lifecycle acceptance](INTERNAL-COMMUTATION-PROPOSAL.md#error-and-terminate-accepted-publication) is independently approved at `5c3570c7` with clean integration. E1/E2 change no RC scope.
 
 In progress: [review receipts](INTERNAL-COMMUTATION-PROPOSAL.md#independent-cold-review-receipt) own the approved publication/record corrections, including `RHP-PRIVATE-01`, and clean integration. Constructed witnesses establish no profile reachability; the Message child-scope exclusion is unchanged. Regional trial closure remains pending. `AOO-RETAINED-BODY-01` requires a separate amendment before bounded-Terminate admission.
 
