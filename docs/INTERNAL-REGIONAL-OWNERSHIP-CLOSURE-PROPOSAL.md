@@ -31,7 +31,7 @@ The raw owners are [Call cleanup](../packages/semantic-core/src/semantic-process
 
 ## Selected preparation contract
 
-`REG-OWN-CLOSE-01`: regional preparation succeeds only when every live body or handler reference of a retained Activity, and both wait references of a retained event race, excludes the exact predecessor targets selected for deletion.
+`REG-OWN-CLOSE-01`: regional preparation succeeds only when every live owner, body, or handler reference of a retained Activity, and both wait references of a retained event race, excludes the exact predecessor targets selected for deletion.
 
 Resolve the existing exact operation selection first. Derive retention masks for scopes, Activity records, User Task waits, Message waits, Timer waits, and event races from that selection and the predecessor. No mask may be obtained by running an operation, comparing states, or validating a speculative successor.
 
@@ -42,7 +42,7 @@ Resolve the existing exact operation selection first. Derive retention masks for
 | Error | Selected attached subtree and transitively called instances; remove the selected root; withdraw Activities by owner or child body and their tagged handlers |
 | Terminate | The same content cancellation with the selected scope retained; End-count increment is outside the reference masks |
 
-For each retained Activity record, examine every task in its singular or parallel body, or its exact child-scope occurrence. Examine every attached handler in its tagged family. Every matching predecessor target must be retained by its family mask. Apply the same test to every Message and Timer target matched by each retained event race. Compare complete occurrence identity, including Process instance and activation; scope identity also includes definition scope. Preserve list multiplicity and the distinction between a User Task, Message, Timer, and scope target.
+For each retained Activity record, examine its exact owning scope and every task in its singular or parallel body, or its exact child-scope occurrence. Examine every attached handler in its tagged family. Every matching predecessor target must be retained by its family mask. Apply the same test to every Message and Timer target matched by each retained event race. Compare complete occurrence identity, including Process instance and activation; scope identity also includes definition scope. Preserve list multiplicity and the distinction between a User Task, Message, Timer, and scope target.
 
 This condition does not replace predecessor validity: liveness and exact-census predicates still establish that a referenced target exists with the required multiplicity. Nor does it require every retained wait or scope to be claimed. Standalone catches, ordinary User Tasks, empty-handler monitored Activities, and whole removed ownership components remain permitted. A removed source record imposes no survival requirement on its former targets.
 
@@ -60,9 +60,15 @@ For every Activity-tagged local scope retained by the selected operation, requir
 
 The [Lean local-data owner](../BpmnSemantics/SemanticProcess/InternalRegionalLocalDataRetention.lean) and [selection integration](../BpmnSemantics/SemanticProcess/InternalRegionalSelectedRetention.lean) prove actual field agreement and retained-owner preservation. The fixed-mask deletion frame uses both removals' closure conditions; re-derived masks and data-arming insertion still require complete preparation frames. [TypeScript witnesses](../packages/semantic-core/test/internal-transition-regional-preparation.test.ts) distinguish owner absence from withdrawal, all identity coordinates, duplicate owners, owner tags, whole-component removal, and unrelated retention. The complete core gate passes 1067 tests on 2026-09-20. This correction adds no raw cleanup, source capability, or aggregate-preservation claim.
 
+## Retained Activity-owner correction
+
+The Complete preservation investigation on 2026-09-21 reproduced another omitted reference in both targets: a retained Activity's own scope can disappear while its body and handlers survive. Constructed ordinary and bounded child-completion predecessors pass the full runtime validator and open projection, but their accepted prepared successors fail `RSI-OWN-01` with `danglingWaitOwner`; successor open projection still succeeds. Moving only the Activity's owner to the surviving parent gives a valid positive sibling. These witnesses establish no registered-profile reachability.
+
+The existing [runtime owner invariant](RUNTIME-STATE-INVARIANT-SPEC.md#layer-1-lifecycle-and-structure) already requires every Activity record to name exactly one live scope. Both targets now apply the same predecessor-mask criterion to that owner edge across all regional families. The [Lean owner-retention component](../BpmnSemantics/SemanticProcess/InternalRegionalOwnerRetention.lean) proves the general refusal, exact owner-census preservation, and fixed-mask filter frame; the [TypeScript closure](../packages/semantic-core/src/internal-transition-regional-ownership.ts) checks the same complete scope identity. The original proposal review did not enumerate this edge; its correction belongs to the pending semantic checkpoint. Raw transitions, global validity, source admission, Compensation history, and snapshot exclusion retain their existing contracts.
+
 ## Required and excluded work
 
-Required are independently written Lean and TypeScript mask/closure predicates, agreement with the actual removal fields, refusal of the reproduced cases, derived retained-body/handler/race preservation from predecessor validity, and complete preparation/pair-frame integration. The mask account is a private proof and preparation boundary; it is not a second runtime evaluator or a universal graph schema.
+Required are independently written Lean and TypeScript mask/closure predicates, agreement with the actual removal fields, refusal of the reproduced cases, derived retained-owner/body/handler/race preservation from predecessor validity, and complete preparation/pair-frame integration. The mask account is a private proof and preparation boundary; it is not a second runtime evaluator or a universal graph schema.
 
 The cross-target contract is the same reference criterion. TypeScript's retained `operationId` is not an additional deciding field: Lean's Activity record does not carry it. A target may decompose its validator differently, but neither may silently add a source-declaration or profile restriction.
 
@@ -72,11 +78,11 @@ No optional extension is selected.
 
 ## Assurance and separating evidence
 
-Lean lane: **proved**, bounded to reference-mask agreement, closure-derived body/handler/race survival, and preservation of this preparation condition under the independent regional and already admitted mixed operation families. If a frame cannot be derived, record the exact unresolved family; do not substitute a successor-validity premise or silently reject every pair of that family.
+Lean lane: **proved**, bounded to reference-mask agreement, closure-derived owner/body/handler/race survival, and preservation of this preparation condition under the independent regional and already admitted mixed operation families. If a frame cannot be derived, record the exact unresolved family; do not substitute a successor-validity premise or silently reject every pair of that family.
 
 | Rule or claim | Required evidence |
 |---|---|
-| `REG-OWN-CLOSE-01` | Separate Lean and TypeScript Return and ordinary-Complete negatives; exact precondition siblings; refusal before raw application |
+| `REG-OWN-CLOSE-01` | Separate Lean and TypeScript Return and ordinary/bounded-Complete negatives; distinguish Activity owner from body; exact precondition siblings; refusal before raw application |
 | Tagged handler and race references | Independent Timer and Message negatives; validate the actual association and open-set projection rather than only TypeScript's defect list |
 | No over-refusal | Ordinary Return/Complete, bounded completion, whole removed races, standalone waits, empty-handler records, distinct activations, and disjoint multi-record positives |
 | Actual masks | Quantified field equalities against each unchanged raw operation, including retain/remove root and bounded withdrawal |
@@ -85,7 +91,7 @@ Lean lane: **proved**, bounded to reference-mask agreement, closure-derived body
 
 Mutations must omit the child-body edge, omit each tagged handler/race edge, drop Process instance or activation from comparison, confuse retained-root Terminate with root removal, and omit the closure recheck after the first independent step. At least one positive must fail a blanket refusal or one-record restriction. Finite cases do not establish the quantified frame law.
 
-The nearest unsupported claim is complete regional well-formedness preservation: controller completeness, incident/Call associations, historical Compensation validity, and remaining lifecycle predicates still require their own derivations. Historical Compensation references must not be treated as live Activity or race edges. The principal common-mode risk is deriving both masks and their oracle from one filtering helper; field agreement must compare against the actual operation definitions.
+Individual aggregate preservation is derived separately: Error/Terminate is approved, while [Complete/Return preservation](INTERNAL-COMMUTATION-PROPOSAL.md#complete-and-return-runtime-preservation) and this owner correction await review. Complete preparation frames and pair laws remain open. Historical Compensation references must not be treated as live Activity or race edges. The principal common-mode risk is deriving both masks and their oracle from one filtering helper; field agreement must compare against the actual operation definitions.
 
 ## Consumers, versioning, and gates
 

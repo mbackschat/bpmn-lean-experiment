@@ -1,6 +1,7 @@
 import BpmnSemantics.SemanticProcess.InternalRegionalSelection
 import BpmnSemantics.SemanticProcess.InternalRegionalReferencePreservation
 import BpmnSemantics.SemanticProcess.InternalRegionalLocalDataRetention
+import BpmnSemantics.SemanticProcess.InternalRegionalOwnerRetention
 
 /-! # Ownership closure for selected regional operations
 
@@ -160,7 +161,8 @@ def selectInternalOwnershipClosedRegional? (program : Program) (state : RuntimeS
   let selected ← selectInternalRegional? program state operation
   if regionalOwnershipClosed state (regionalSelectionReferenceRetention state selected) &&
       regionalRetainedLocalDataClosed state (regionalSelectionReferenceRetention state selected).activity
-        (regionalSelectionLocalDataRetention state selected) then
+        (regionalSelectionLocalDataRetention state selected) &&
+      regionalActivityOwnersClosed state (regionalSelectionReferenceRetention state selected) then
     some selected
   else none
 
@@ -177,9 +179,10 @@ theorem ownershipClosedSelection_accepts_closed_references (program : Program) (
     (found : selectInternalRegional? program state operation = some selected)
     (closed : regionalOwnershipClosed state (regionalSelectionReferenceRetention state selected) = true)
     (locals : regionalRetainedLocalDataClosed state (regionalSelectionReferenceRetention state selected).activity
-      (regionalSelectionLocalDataRetention state selected) = true) :
+      (regionalSelectionLocalDataRetention state selected) = true)
+    (owners : regionalActivityOwnersClosed state (regionalSelectionReferenceRetention state selected) = true) :
     selectInternalOwnershipClosedRegional? program state operation = some selected := by
-  simp [selectInternalOwnershipClosedRegional?, found, closed, locals]
+  simp [selectInternalOwnershipClosedRegional?, found, closed, locals, owners]
 
 theorem ownershipClosedSelection_facts (program : Program) (state : RuntimeState)
     (operation : SemanticOperation) (selected : InternalRegionalSelection)
@@ -190,7 +193,7 @@ theorem ownershipClosedSelection_facts (program : Program) (state : RuntimeState
   obtain ⟨actual, selectedBefore, found⟩ := Option.bind_eq_some_iff.mp found
   split at found
   · rename_i closed
-    cases found; exact ⟨selectedBefore, (Bool.and_eq_true_iff.mp closed).1⟩
+    cases found; exact ⟨selectedBefore, (Bool.and_eq_true_iff.mp (Bool.and_eq_true_iff.mp closed).1).1⟩
   · simp at found
 
 theorem ownershipClosedSelection_local_data (program : Program) (state : RuntimeState)
@@ -198,6 +201,17 @@ theorem ownershipClosedSelection_local_data (program : Program) (state : Runtime
     (found : selectInternalOwnershipClosedRegional? program state operation = some selected) :
     regionalRetainedLocalDataClosed state (regionalSelectionReferenceRetention state selected).activity
       (regionalSelectionLocalDataRetention state selected) = true := by
+  unfold selectInternalOwnershipClosedRegional? at found
+  obtain ⟨actual, _, found⟩ := Option.bind_eq_some_iff.mp found
+  split at found
+  · rename_i closed
+    cases found; exact (Bool.and_eq_true_iff.mp (Bool.and_eq_true_iff.mp closed).1).2
+  · simp at found
+
+theorem ownershipClosedSelection_activity_owners (program : Program) (state : RuntimeState)
+    (operation : SemanticOperation) (selected : InternalRegionalSelection)
+    (found : selectInternalOwnershipClosedRegional? program state operation = some selected) :
+    regionalActivityOwnersClosed state (regionalSelectionReferenceRetention state selected) = true := by
   unfold selectInternalOwnershipClosedRegional? at found
   obtain ⟨actual, _, found⟩ := Option.bind_eq_some_iff.mp found
   split at found

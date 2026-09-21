@@ -50,6 +50,9 @@ export function regionalOwnershipIsClosed(state: RuntimeState, selection: Intern
           !sameOccurrence(wait.id, task) || keep.task(wait)));
     }
   };
+  // RSI-OWN-01 covers the record's owner independently of its body and attached handlers.
+  const ownerSurvives = ({ owner }: ActivityOccurrence): boolean =>
+    state.scopeOccurrences.every((scope) => !sameScopeOccurrence(scope.id, owner) || keep.scope(scope));
   // ADINPUT-SCOPE-01 / ADIO-SCOPE-01 require the retained local scope's exact live Activity owner.
   const localOwnersSurvive = state.variables.activities.every((local) => {
     if (!keep.localData(local) || local.owner.kind === LocalDataOwnerKind.EffectOccurrence) return true;
@@ -57,7 +60,7 @@ export function regionalOwnershipIsClosed(state: RuntimeState, selection: Intern
     return owners.length === 1 && owners.every(keep.activity);
   });
   return localOwnersSurvive && state.activityOccurrences.every((record) => !keep.activity(record) ||
-    (bodySurvives(record) && record.attachedHandlers.every(handlerSurvives))) &&
+    (ownerSurvives(record) && bodySurvives(record) && record.attachedHandlers.every(handlerSurvives))) &&
     state.eventRaces.every((race) => !keep.race(race) ||
       (state.messageWaits.every((wait) =>
         !sameOccurrence(wait.id, race.messageSubscriptionId) || keep.message(wait)) &&

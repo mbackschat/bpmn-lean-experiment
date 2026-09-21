@@ -392,6 +392,43 @@ function operation(program: SemanticProcessProgram, id: string): InternalRegiona
   return selected;
 }
 
+for (const entry of [
+  { name: "ordinary", program: terminateProgram,
+    state: { ...terminated.state, tokens: [], userTaskWaits: [], activityOccurrences: [] },
+    selected: operation(terminateProgram, "operation:complete-scope:scope:SubProcess_Work") },
+  { name: "bounded", program: boundedScopeProgram, state: childReady, selected: cases[1].operation },
+]) {
+  test(`${entry.name} completion refuses a retained Activity whose owning scope is removed`, () => {
+    const child = entry.state.scopeOccurrences.find(({ parent }) => parent !== null)!;
+    assert.ok(child.parent !== null);
+    for (const owner of [child.parent, child.id]) {
+      const record: RuntimeState["activityOccurrences"][number] = {
+        id: { processInstanceId: child.id.processInstanceId, activityElementId: "Z_CrossOwnedScopeBody", activation: 1 },
+        owner, operationId: "predicate-only", attachedHandlers: [],
+        body: { kind: ActivityBodyKind.ChildScope, scope: child.parent },
+      };
+      const before: RuntimeState = { ...entry.state,
+        activityOccurrences: [...entry.state.activityOccurrences, record].sort(compareActivityOccurrences),
+        activityActivations: [...entry.state.activityActivations,
+          { elementId: record.id.activityElementId, count: 1 }]
+          .sort((left, right) => compareCanonicalStrings(left.elementId, right.elementId)),
+      };
+      assert.deepEqual(runtimeStateDefects(entry.program, child.id.processInstanceId, before), []);
+      assert.notEqual(projectOpenFlowNodeOccurrences(entry.program, before), null);
+      const raw = applyInternalOperationStep(entry.program, entry.selected, before);
+      assert.ok(raw !== null);
+      assert.notEqual(projectOpenFlowNodeOccurrences(entry.program, raw.successor), null);
+      if (owner === child.id) {
+        assert.deepEqual(runtimeStateDefects(entry.program, child.id.processInstanceId, raw.successor), ["danglingWaitOwner"]);
+        assert.equal(prepare(entry.program, before, entry.selected) === null, true);
+      } else {
+        assert.deepEqual(runtimeStateDefects(entry.program, child.id.processInstanceId, raw.successor), []);
+        assert.deepEqual(assertExactStep(entry.program, before, entry.selected), raw.successor);
+      }
+    }
+  });
+}
+
 function required(program: SemanticProcessProgram, state: RuntimeState, selected: InternalRegionalOperation) {
   const prepared = prepare(program, state, selected);
   assert.notEqual(prepared, null);
