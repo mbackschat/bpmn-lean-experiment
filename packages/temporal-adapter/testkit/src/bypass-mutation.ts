@@ -352,6 +352,38 @@ type RetainedTraceMutationConfiguration = Readonly<{
   description: string;
 }>;
 
+async function createMutationWorker(
+  environment: TestWorkflowEnvironment,
+  configuration: RetainedTraceMutationConfiguration,
+  taskQueue: string,
+): Promise<Worker> {
+  let abandoned = false;
+  const creation = Worker.create({
+    connection: environment.nativeConnection,
+    identity: temporalTestIdentity,
+    taskQueue,
+    workflowsPath: configuration.workflowsPath,
+  }).then(async (worker) => {
+    if (abandoned) {
+      // Worker.create is not cancellable. SDK runUntil owns shutdown even when creation
+      // finishes after our deadline; this isolated queue has no Workflow to execute.
+      await worker.runUntil(async () => {});
+      throw new Error(`${configuration.description} Worker arrived after startup expiry`);
+    }
+    return worker;
+  });
+  try {
+    return await withDeadline(
+      creation,
+      workerStartupDeadlineMs,
+      `${configuration.description} Worker startup`,
+    );
+  } catch (error) {
+    abandoned = true;
+    throw error;
+  }
+}
+
 async function runRetainedTraceMutation<Result>(
   environment: TestWorkflowEnvironment,
   start: ReturnType<typeof requireStartStimulus>,
@@ -362,16 +394,8 @@ async function runRetainedTraceMutation<Result>(
     handle: WorkflowHandle<BpmnProcessWorkflow>,
   ) => Promise<Result>,
 ): Promise<Result> {
-  const mutationWorker = await withDeadline(
-    Worker.create({
-      connection: environment.nativeConnection,
-      identity: temporalTestIdentity,
-      taskQueue: configuration.taskQueue,
-      workflowsPath: configuration.workflowsPath,
-    }),
-    workerStartupDeadlineMs,
-    `${configuration.description} Worker startup`,
-  );
+  const taskQueue = `${configuration.taskQueue}:${workflowId}`;
+  const mutationWorker = await createMutationWorker(environment, configuration, taskQueue);
   let mutationWorkerError: unknown;
   const mutationWorkerRun = mutationWorker.run().catch((error: unknown) => {
     mutationWorkerError = error;
@@ -383,7 +407,7 @@ async function runRetainedTraceMutation<Result>(
       environment.client.workflow.start(
         configuration.workflowType,
         {
-          taskQueue: configuration.taskQueue,
+          taskQueue,
           workflowId,
           workflowIdReusePolicy: "REJECT_DUPLICATE",
           args: [start, semanticProcess],
@@ -425,16 +449,8 @@ async function runBypassMutation(
   waitForUserTask: WaitForUserTask,
 ): Promise<TemporalTimerBypassMutationExecution> {
   const start = requireStartStimulus(scenario);
-  const mutationWorker = await withDeadline(
-    Worker.create({
-      connection: environment.nativeConnection,
-      identity: temporalTestIdentity,
-      taskQueue: configuration.taskQueue,
-      workflowsPath: configuration.workflowsPath,
-    }),
-    workerStartupDeadlineMs,
-    `${configuration.description} Worker startup`,
-  );
+  const taskQueue = `${configuration.taskQueue}:${workflowId}`;
+  const mutationWorker = await createMutationWorker(environment, configuration, taskQueue);
   let mutationWorkerError: unknown;
   const mutationWorkerRun = mutationWorker.run().catch((error: unknown) => {
     mutationWorkerError = error;
@@ -445,7 +461,7 @@ async function runBypassMutation(
       environment.client.workflow.start(
         configuration.workflowType,
         {
-          taskQueue: configuration.taskQueue,
+          taskQueue,
           workflowId,
           workflowIdReusePolicy: "REJECT_DUPLICATE",
           args: [start, semanticProcess],
