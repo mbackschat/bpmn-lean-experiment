@@ -199,7 +199,7 @@ private theorem retained_timer_live (state : RuntimeState) (root : ScopeOccurren
     rw [outside] at withdrawn
     contradiction
 
-private theorem retained_message_live (state : RuntimeState) (root : ScopeOccurrenceId)
+theorem retained_message_live (state : RuntimeState) (root : ScopeOccurrenceId)
     (disposition : SelectedScopeDisposition) (record : ActivityOccurrence) (wait : MessageWait)
     (valid : attachedMessagesUnambiguous state = true)
     (recordMem : record ∈ state.activityOccurrences)

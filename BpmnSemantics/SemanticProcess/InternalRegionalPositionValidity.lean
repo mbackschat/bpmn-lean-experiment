@@ -152,6 +152,46 @@ theorem runtimePositionValid_parent_outside_child_subtree (program : Program) (s
   have bound := monotone parent ancestry
   omega
 
+/-- A surviving scope's parent is outside the cancelled region, including when Terminate
+retains the selected child itself. Position and projection preservation share this ancestry fact. -/
+theorem cancelScopeSubtree_child_parent_outside (program : Program) (state : RuntimeState)
+    (expectedInstanceId instanceId : SemanticId)
+    (valid : runtimePositionValid program expectedInstanceId state = true)
+    (running : state.control = .running instanceId)
+    (root : RuntimeScopeOccurrence) (rootMember : root ∈ state.scopeOccurrences)
+    (child : root.parent ≠ none) (disposition : SelectedScopeDisposition)
+    (occurrence : RuntimeScopeOccurrence)
+    (member : occurrence ∈ (cancelScopeSubtree state root.id disposition).scopeOccurrences)
+    (parent : ScopeOccurrenceId) (parentEq : occurrence.parent = some parent) :
+    (occurrenceInSubtree state.scopeOccurrences root.id parent ||
+      (calledInstanceClosure state root.id).contains parent.processInstanceId) = false := by
+  have empty := calledInstanceClosure_child_empty program state expectedInstanceId instanceId
+    valid running root rootMember child
+  have unique := runtimePositionValid_scope_ids_nodup program expectedInstanceId instanceId state valid running
+  have parents := runtimePositionValid_scope_parents_live program expectedInstanceId instanceId state valid running
+  obtain ⟨prior, kept⟩ := List.mem_filter.mp member
+  simp only [empty, List.contains_nil, Bool.or_false]
+  by_cases same : occurrence.id = root.id
+  · simpa only [same] using runtimePositionValid_parent_outside_child_subtree
+      program state expectedInstanceId instanceId valid running occurrence prior parent parentEq
+  · have outside : occurrenceInSubtree state.scopeOccurrences root.id occurrence.id = false := by
+      cases disposition with
+      | retain =>
+          change (decide (occurrence.id = root.id) ||
+            !(occurrenceInSubtree state.scopeOccurrences root.id occurrence.id ||
+              (calledInstanceClosure state root.id).contains occurrence.id.processInstanceId)) = true at kept
+          simpa only [same, decide_false, Bool.false_or, empty, List.contains_nil,
+            Bool.or_false, Bool.not_eq_true'] using kept
+      | remove =>
+          change (!(occurrenceInSubtree state.scopeOccurrences root.id occurrence.id ||
+            (calledInstanceClosure state root.id).contains occurrence.id.processInstanceId)) = true at kept
+          simpa only [empty, List.contains_nil, Bool.or_false, Bool.not_eq_true'] using kept
+    apply Bool.eq_false_iff.mpr
+    intro reached
+    have included := occurrenceInSubtree_closed state.scopeOccurrences unique parents root.id parent occurrence.id
+      reached ⟨occurrence, prior, parentEq, rfl⟩
+    simp [outside] at included
+
 /-- Both actual child-cancellation dispositions preserve complete runtime position, including
 unrelated called Processes. No successor validity or precomputed successor mask is assumed. -/
 theorem cancelScopeSubtree_child_preserves_position (program : Program) (state : RuntimeState)
@@ -164,7 +204,6 @@ theorem cancelScopeSubtree_child_preserves_position (program : Program) (state :
   have empty := calledInstanceClosure_child_empty program state expectedInstanceId instanceId
     valid running root rootMember child
   have unique := runtimePositionValid_scope_ids_nodup program expectedInstanceId instanceId state valid running
-  have parents := runtimePositionValid_scope_parents_live program expectedInstanceId instanceId state valid running
   apply runtimePositionValid_scope_removal_frame program expectedInstanceId instanceId state
     (cancelScopeSubtree state root.id disposition) valid running rfl (List.filter_sublist)
   · cases disposition <;>
@@ -185,7 +224,7 @@ theorem cancelScopeSubtree_child_preserves_position (program : Program) (state :
   · exact cancellation_child_calls_frame program state expectedInstanceId instanceId
       valid running root rootMember child disposition
   · intro occurrence member parent parentEq
-    obtain ⟨prior, kept⟩ := List.mem_filter.mp member
+    have prior := (List.mem_filter.mp member).1
     obtain ⟨_, definition, _, _, binding⟩ := runtimePositionValid_scope_parent_binding
       program expectedInstanceId instanceId state valid running occurrence prior
     have parentLive : exactLiveOccurrence state parent = true := by
@@ -193,27 +232,8 @@ theorem cancelScopeSubtree_child_preserves_position (program : Program) (state :
       · simp [parentless] at parentEq
       · simpa only [Option.some.inj (ownerEq.symm.trans parentEq)] using live
     apply cancelScopeSubtree_preserves_uncancelled_owner state root.id disposition parent parentLive
-    simp only [empty, List.contains_nil, Bool.or_false]
-    by_cases same : occurrence.id = root.id
-    · simpa only [same] using runtimePositionValid_parent_outside_child_subtree
-        program state expectedInstanceId instanceId valid running occurrence prior parent parentEq
-    · have outside : occurrenceInSubtree state.scopeOccurrences root.id occurrence.id = false := by
-        cases disposition with
-        | retain =>
-            change (decide (occurrence.id = root.id) ||
-              !(occurrenceInSubtree state.scopeOccurrences root.id occurrence.id ||
-                (calledInstanceClosure state root.id).contains occurrence.id.processInstanceId)) = true at kept
-            simpa only [same, decide_false, Bool.false_or, empty, List.contains_nil,
-              Bool.or_false, Bool.not_eq_true'] using kept
-        | remove =>
-            change (!(occurrenceInSubtree state.scopeOccurrences root.id occurrence.id ||
-              (calledInstanceClosure state root.id).contains occurrence.id.processInstanceId)) = true at kept
-            simpa only [empty, List.contains_nil, Bool.or_false, Bool.not_eq_true'] using kept
-      apply Bool.eq_false_iff.mpr
-      intro reached
-      have included := occurrenceInSubtree_closed state.scopeOccurrences unique parents root.id parent occurrence.id
-        reached ⟨occurrence, prior, parentEq, rfl⟩
-      simp [outside] at included
+    exact cancelScopeSubtree_child_parent_outside program state expectedInstanceId instanceId valid running
+      root rootMember child disposition occurrence member parent parentEq
   · exact List.filter_sublist
   · intro token member
     obtain ⟨prior, kept⟩ := List.mem_filter.mp member

@@ -72,7 +72,7 @@ theorem waitStart_anchor_of_eq (program : Program) (state : RuntimeState)
       activation } = start.anchor at anchorEq
   exact anchorEq.symm
 
-private theorem mapM_waitStart_anchor_map (program : Program) (state : RuntimeState)
+theorem mapM_waitStart_anchor_map (program : Program) (state : RuntimeState)
     (values : List α) (owner : α → ScopeOccurrenceId) (element : α → NodeId)
     (activation : α → Nat) (starts : List OpenSemanticFlowNodeOccurrence)
     (mapped : values.mapM (fun value => waitStart? program state (owner value)
