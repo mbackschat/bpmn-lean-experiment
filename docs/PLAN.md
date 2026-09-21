@@ -97,7 +97,7 @@ Active work ID: `INTERNAL-COMMUTATION`.
 
 Risk band: RC internal scheduling; the six external reviews and composed Activity-data closure are complete.
 
-Next action: independently review the [reverse preparation frame](INTERNAL-COMMUTATION-PROPOSAL.md#regional-preservation-of-local-control-preparation) after complete affected gates and commit. It reuses existing read frames and removal laws; the pair matrix and dependency-omission negatives cover both orders. The forward frame is approved at `e185caca`; pair commutation/publication follows reverse-frame approval. Reassess before substantial prerequisite expansion; no helper-only checkpoint. E1/E2 change no RC scope.
+Next action: derive the regional/local-control pair commutation and accepted-publication laws. Reuse the [approved complete preparation frames](INTERNAL-COMMUTATION-PROPOSAL.md#regional-preservation-of-local-control-preparation), exact token/branch algebra, individual publication acceptance, and existing pair matrix. Both directions are approved through `ecd535a0`, with clean integration. Derive final equality and publication from predecessor facts; never assume them. Reassess before substantial prerequisite expansion; no helper-only checkpoint. Other family frames and batching remain open. E1/E2 change no RC scope.
 
 In progress: [review receipts](INTERNAL-COMMUTATION-PROPOSAL.md#independent-cold-review-receipt) own the approved publication/record corrections, including `RHP-PRIVATE-01`, and clean integration. Constructed witnesses establish no profile reachability; the Message child-scope exclusion is unchanged. Regional trial closure remains pending. `AOO-RETAINED-BODY-01` requires a separate amendment before bounded-Terminate admission.
 
