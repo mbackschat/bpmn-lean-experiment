@@ -97,7 +97,7 @@ Active work ID: `INTERNAL-COMMUTATION`.
 
 Risk band: RC internal scheduling; the six external reviews and composed Activity-data closure are complete.
 
-Next action: obtain independent review and clean integration for the [regional/scope-creation outcome](INTERNAL-COMMUTATION-PROPOSAL.md#regionalscope-creation-outcome). Complete pair proofs, publication, and Lean/core gates are green. Finish infrastructure validation before committing the review target. After acceptance, resume finite regional batching under the [regional preparation account](INTERNAL-COMMUTATION-PROPOSAL.md#regional-preparation-prerequisite), reusing pair laws; reassess before substantial prerequisites. Regional trial closure stays open; E1/E2 change no RC scope.
+Next action: integrate finite regional batching under the [regional preparation account](INTERNAL-COMMUTATION-PROPOSAL.md#regional-preparation-prerequisite), reusing approved pair laws. Close complete preparation, prefix validity, exact canonical state/publication permutation, and whole-command refusal together; reassess before substantial prerequisites. The [regional/scope-creation outcome](INTERNAL-COMMUTATION-PROPOSAL.md#regionalscope-creation-outcome) is accepted after review and clean integration. Regional trial closure stays open; E1/E2 change no RC scope.
 
 In progress: [review receipts](INTERNAL-COMMUTATION-PROPOSAL.md#independent-cold-review-receipt) own the approved publication/record corrections, including `RHP-PRIVATE-01`, and clean integration. Constructed witnesses establish no profile reachability; the Message child-scope exclusion is unchanged. Regional trial closure remains pending. `AOO-RETAINED-BODY-01` requires a separate amendment before bounded-Terminate admission.
 
