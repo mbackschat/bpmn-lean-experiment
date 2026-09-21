@@ -105,7 +105,7 @@ function valid(program: SemanticProcessProgram, state: RuntimeState, instanceId:
 
 for (const regionalKind of regionalKinds) for (const kind of localKinds) {
   for (const bounded of regionalKind === Kind.CompleteScope ? [false, true] : [false]) {
-    test(`${regionalKind}/${kind}${bounded ? "/bounded" : ""} preserves complete regional preparation`, () => {
+    test(`${regionalKind}/${kind}${bounded ? "/bounded" : ""} preserves both complete preparations`, () => {
       const { program, state, selected, branches, start } = fixture(regionalKind, kind, bounded);
       valid(program, state, start.instanceId);
       assert.equal(supportsSemanticProcessExecution(start, program), false);
@@ -172,5 +172,10 @@ for (const kind of [Kind.ThrowError, Kind.TerminateScope] as const) {
     assert.notDeepEqual(regional(program, after, operation), second);
     assert.equal(applyRegional(program, after, second), null);
     assert.equal(applyRegional(program, state, { ...second, footprint: omitted }), null);
+    const regionalFirst = applyRegional(program, state, second);
+    assert.ok(regionalFirst !== null);
+    valid(program, regionalFirst, start.instanceId);
+    assert.equal(localControl(program, regionalFirst, fork), null);
+    assert.equal(applyLocalControl(program, regionalFirst, first), null);
   });
 }
