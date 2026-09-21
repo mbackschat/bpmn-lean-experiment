@@ -240,7 +240,7 @@ The complete `what-binds` inventory requires [`implementation-status-owner:ENGIN
 | [TS root start](../../packages/semantic-core/src/semantic-process-triggered-start.ts) | 583 | pre-mutation reservation |
 | [TS scope runtime](../../packages/semantic-core/src/semantic-process-scope-runtime.ts) | 553 | unbounded entry/promotion |
 | [TS bounded scope](../../packages/semantic-core/src/semantic-process-bounded-scope-runtime.ts) | 446 | bounded entry/promotion |
-| [TS cancellation](../../packages/semantic-core/src/semantic-process-scope-cancellation.ts) | 562 | regional filtering |
+| [TS cancellation](../../packages/semantic-core/src/semantic-process-scope-cancellation.ts) | 578 | regional filtering |
 | [TS Call cleanup](../../packages/semantic-core/src/semantic-process-call-runtime.ts) | 378 | structural filtering only |
 | [TS evaluator](../../packages/semantic-core/src/semantic-process-runtime.ts) | 28 | three-arm dispatch only; snapshot and Activity-data staging are extracted |
 | [TS closure](../../packages/semantic-core/src/semantic-process-closure.ts) | 609 | refusal precedence/rollback |
@@ -261,7 +261,7 @@ The complete `what-binds` inventory requires [`implementation-status-owner:ENGIN
 | [Lean well-formedness](../../BpmnSemantics/SemanticProcess/RuntimeStateWellFormed.lean) | 53 | delegated predicate |
 | [Lean initialization preservation](../../BpmnSemantics/SemanticProcess/RuntimeStateWellFormedInitialization.lean) | 420 | preserve the new invariant from the exact initialized state |
 | [Lean completion](../../BpmnSemantics/SemanticProcess/ScopeCompletion.lean) | 630 | promotion/frame |
-| [Lean cancellation](../../BpmnSemantics/SemanticProcess/ScopeCancellation.lean) | 567 | regional filtering |
+| [Lean cancellation](../../BpmnSemantics/SemanticProcess/ScopeCancellation.lean) | 578 | regional filtering |
 | [Lean transition](../../BpmnSemantics/SemanticProcess/Transition.lean) | 127 | dispatch only; the applied-result contract is extracted |
 | [Lean internal-operation attempt](../../BpmnSemantics/SemanticProcess/InternalOperationAttempt.lean) | 752 | validate every applied snapshot-aware successor before exposure |
 | [Lean trace closure](../../BpmnSemantics/SemanticProcess/TransitionTrace.lean) | 364 | refusal rollback/no trace |

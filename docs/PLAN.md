@@ -97,7 +97,7 @@ Active work ID: `INTERNAL-COMMUTATION`.
 
 Risk band: RC internal scheduling; the six external reviews and composed Activity-data closure are complete.
 
-Next action: reassess the remaining Error/Terminate accepted-publication obligation under the [regional prerequisite](INTERNAL-COMMUTATION-PROPOSAL.md#regional-preparation-prerequisite), then establish its smallest separating execution before extending the proof. Activity retirement is independently approved with clean complete integration. Reuse existing cancellation and projection laws; reassess before another representation or prerequisite. E1/E2 change no RC scope.
+Next action: finish `RHP-PRIVATE-01` under the [private Timer alias correction](INTERNAL-COMMUTATION-PROPOSAL.md#private-timer-alias-correction): complete pre-commit verification, then obtain independent checkpoint review and clean integration. Both kernel witnesses passed the fixed 3 GiB gate. Valid Task/Message alias counterexamples separated this publication defect before more Error/Terminate proof work. Reuse existing cancellation and projection laws after acceptance; E1/E2 change no RC scope.
 
 In progress: `AOO-JOIN-03`, `RHP-HANDLER-01`, and `MBP-EMPTY-TASK-01` are independently approved with clean complete integration; their [receipts](INTERNAL-COMMUTATION-PROPOSAL.md#independent-cold-review-receipt) own exact evidence. Constructed publication witnesses establish no profile reachability; the retained Message child-scope exclusion is unchanged. Regional trial closure remains pending. `AOO-RETAINED-BODY-01` requires a separate amendment before bounded-Terminate admission.
 

@@ -289,7 +289,7 @@ function internalDelta(
       });
       return lifecycleDelta(
         [],
-        cancelledRegion(open, owner, false),
+        cancelledRegion(program, open, owner, false),
         [
           operationInstant,
           instantOccurrence(
@@ -305,7 +305,7 @@ function internalDelta(
     case SemanticOperationKind.TerminateScope:
       return lifecycleDelta(
         [],
-        cancelledRegion(open, owner, true),
+        cancelledRegion(program, open, owner, true),
         [operationInstant],
         commandId,
         transitionIndex,

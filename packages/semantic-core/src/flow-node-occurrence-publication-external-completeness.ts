@@ -166,7 +166,7 @@ export function expectedExternalLifecycle(
       ]);
     }
     case StimulusKind.FireTimer: {
-      const timer = findWait(open, stimulus.timerId);
+      const timer = declaresPublicTimer(program, stimulus.timerId.elementId) ? findWait(open, stimulus.timerId) : null;
       if (timer !== null) {
         const pair = eventRacePair(program, open, timer, "timer");
         return pair === null
@@ -399,7 +399,7 @@ function boundaryTimerLifecycle(
       }
       return lifecycleDelta(
         [],
-        cancelledRegion(open, child.anchor.id, false),
+        cancelledRegion(program, open, child.anchor.id, false),
         [instantOccurrence(child.processId, timerId.elementId, child.owner)],
         commandId,
         transitionIndex,
@@ -504,7 +504,20 @@ export function lifecycleDelta(
   };
 }
 
+function declaresPublicTimer(program: SemanticProcessProgram, elementId: string): boolean {
+  return program.operations.some((operation) => {
+    switch (operation.kind) {
+      case SemanticOperationKind.AwaitTimer:
+      case SemanticOperationKind.AwaitEventRace:
+        return operation.timer.elementId === elementId;
+      default:
+        return false;
+    }
+  });
+}
+
 export function cancelledRegion(
+  program: SemanticProcessProgram,
   open: readonly OpenOccurrence[],
   root: ScopeOccurrenceId,
   retainRoot: boolean,
@@ -536,7 +549,8 @@ export function cancelledRegion(
       ? removedScopes.has(scopeKey(entry.anchor.id))
       : ownerIsRemoved(entry.owner, removedScopes, removedInstances);
   // RHP-HANDLER-01: Terminate retains its root anchor, but withdraws that body's handlers.
-  const handlers = open.filter(inRegion).flatMap(({ attachedHandlers }) => attachedHandlers);
+  const handlers = open.filter(inRegion).flatMap(({ attachedHandlers }) => attachedHandlers)
+    .filter((handler) => handler.kind === ActivityHandlerKind.Message || declaresPublicTimer(program, handler.occurrence.elementId));
   return open.filter((entry) => {
     const anchor = entry.anchor;
     if (anchor.kind === SemanticFlowNodeOccurrenceAnchorKind.Scope &&

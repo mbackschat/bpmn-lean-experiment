@@ -11,6 +11,7 @@ import {
 } from "./contract.js";
 import type { OccurrenceId, Stimulus } from "./contract.js";
 import {
+  ActivityBodyKind,
   ActivityHandlerKind,
   activityOccurrenceForTaskBody,
 } from "./activity-occurrence.js";
@@ -62,7 +63,7 @@ import type {
   MessageBoundedPair,
 } from "./semantic-process-message-bounded-task-runtime.js";
 import { sameMessageChannel } from "./message-channel.js";
-import { scopeCancellationHandlerWaitIds } from "./semantic-process-scope-cancellation.js";
+import { scopeOccurrenceSubtree } from "./semantic-process-scope-cancellation.js";
 import {
   projectCompensationCompletionLifecycle,
   projectCompensationTriggerLifecycle,
@@ -558,7 +559,7 @@ function cancelledRegion(
     }
   };
   addScope(root.id);
-  const handlers = scopeCancellationHandlerWaitIds(state, root);
+  const handlers = scopeCancellationHandlerWaitIds(program, state, root);
   return openAnchorCandidates(program, state).filter((entry) => {
     const anchor = entry.anchor;
     if (entry.anchor.kind === SemanticFlowNodeOccurrenceAnchorKind.Scope && retainRoot && sameScopeOccurrence(entry.anchor.id, root.id)) return false;
@@ -567,6 +568,28 @@ function cancelledRegion(
       (anchor.kind === SemanticFlowNodeOccurrenceAnchorKind.Wait &&
         handlers.some((id) => sameOccurrence(id, anchor.id)));
   }).map(({ anchor }) => ({ anchor, terminal: FlowNodeOccurrenceTerminalKind.Cancelled }));
+}
+
+/** RHP-HANDLER-01 uses public handlers only: private Timers can alias another family's wait anchor. */
+export function scopeCancellationHandlerWaitIds(
+  program: SemanticProcessProgram,
+  state: RuntimeState,
+  root: RuntimeScopeOccurrence,
+): OccurrenceId[] {
+  const subtree = scopeOccurrenceSubtree(state.scopeOccurrences, root);
+  const inside = (owner: ScopeOccurrenceId): boolean =>
+    subtree.some(({ id }) => sameScopeOccurrence(id, owner));
+  return state.activityOccurrences.filter(({ owner, body }) => inside(owner) ||
+    (body.kind === ActivityBodyKind.ChildScope && inside(body.scope))
+  ).flatMap(({ attachedHandlers }) => attachedHandlers.flatMap((handler) => {
+    switch (handler.kind) {
+      case ActivityHandlerKind.Timer:
+        return state.timerWaits.some((wait) => sameOccurrence(wait.id, handler.occurrence) &&
+          resolveBoundaryTimerBinding(program, state, wait) === null) ? [handler.occurrence] : [];
+      case ActivityHandlerKind.Message:
+        return state.messageWaits.some(({ id }) => sameOccurrence(id, handler.occurrence)) ? [handler.occurrence] : [];
+    }
+  }));
 }
 
 function openAnchorCandidates(

@@ -22,7 +22,7 @@ private theorem owned_subtree_cancellation_ends_exact
     (ended : List UnnumberedFlowNodeOccurrenceEnd)
     (projected : projectOpenFlowNodeOccurrences? program state = some current)
     (selected : ownedSubtreeCancellationEnds? program state root = some ended) :
-    ended = (current.filter (flowNodeOccurrenceOwnedBySubtree state root) |>.map fun occurrence =>
+    ended = (current.filter (flowNodeOccurrenceOwnedBySubtree program state root) |>.map fun occurrence =>
       { anchor := occurrence.anchor, terminal := .cancelled }) := by
   simp [ownedSubtreeCancellationEnds?, projected] at selected
   exact selected.symm
@@ -33,7 +33,7 @@ private theorem termination_subtree_cancellation_ends_exact
     (ended : List UnnumberedFlowNodeOccurrenceEnd)
     (projected : projectOpenFlowNodeOccurrences? program state = some current)
     (selected : terminationSubtreeCancellationEnds? program state root = some ended) :
-    ended = (current.filter (flowNodeOccurrenceOwnedBySubtree state root) |>.map (fun occurrence =>
+    ended = (current.filter (flowNodeOccurrenceOwnedBySubtree program state root) |>.map (fun occurrence =>
       { anchor := occurrence.anchor, terminal := .cancelled }) |>.filter fun terminal =>
         terminal.anchor ≠ .scope root) := by
   unfold terminationSubtreeCancellationEnds? at selected
@@ -44,7 +44,7 @@ private theorem termination_subtree_cancellation_ends_exact
     (List.filter (fun terminal => decide (terminal.anchor ≠ .scope root))
       (List.map (fun occurrence =>
         { anchor := occurrence.anchor, terminal := FlowNodeOccurrenceTerminalKind.cancelled })
-        (List.filter (flowNodeOccurrenceOwnedBySubtree state root) current))) = some ended at filtered
+        (List.filter (flowNodeOccurrenceOwnedBySubtree program state root) current))) = some ended at filtered
   exact (Option.some.inj filtered).symm
 
 private theorem cancelled_member_of_instantaneous_with_ends
@@ -224,18 +224,18 @@ def ExactCancellationAndOutsidePreservation
         occurrence ∈ after
 
 /-- Terminate Scope removes every owned occurrence except the selected scope occurrence itself. -/
-def flowNodeOccurrenceRemovedByTermination (state : RuntimeState)
+def flowNodeOccurrenceRemovedByTermination (program : Program) (state : RuntimeState)
     (root : ScopeOccurrenceId) (occurrence : OpenSemanticFlowNodeOccurrence) : Bool :=
-  flowNodeOccurrenceOwnedBySubtree state root occurrence &&
+  flowNodeOccurrenceOwnedBySubtree program state root occurrence &&
     decide (occurrence.anchor ≠ .scope root)
 
-private theorem termination_cancelled_map_eq (state : RuntimeState)
+private theorem termination_cancelled_map_eq (program : Program) (state : RuntimeState)
     (root : ScopeOccurrenceId) (current : List OpenSemanticFlowNodeOccurrence) :
-    ((current.filter (flowNodeOccurrenceOwnedBySubtree state root)).map fun occurrence =>
+    ((current.filter (flowNodeOccurrenceOwnedBySubtree program state root)).map fun occurrence =>
       ({ anchor := occurrence.anchor, terminal := FlowNodeOccurrenceTerminalKind.cancelled } :
         UnnumberedFlowNodeOccurrenceEnd)).filter
           (fun terminal => terminal.anchor ≠ SemanticFlowNodeOccurrenceAnchor.scope root) =
-      (current.filter (flowNodeOccurrenceRemovedByTermination state root)).map fun occurrence =>
+      (current.filter (flowNodeOccurrenceRemovedByTermination program state root)).map fun occurrence =>
         ({ anchor := occurrence.anchor, terminal := .cancelled } :
           UnnumberedFlowNodeOccurrenceEnd) := by
   induction current with
@@ -248,13 +248,13 @@ private theorem termination_cancelled_map_eq (state : RuntimeState)
                 ({ anchor := occurrence.anchor, terminal :=
                     FlowNodeOccurrenceTerminalKind.cancelled } :
                   UnnumberedFlowNodeOccurrenceEnd))
-                (List.filter (flowNodeOccurrenceOwnedBySubtree state root) tail)) =
+                (List.filter (flowNodeOccurrenceOwnedBySubtree program state root) tail)) =
             List.map (fun occurrence =>
               ({ anchor := occurrence.anchor, terminal := .cancelled } :
                 UnnumberedFlowNodeOccurrenceEnd))
-              (List.filter (flowNodeOccurrenceRemovedByTermination state root) tail) := by
+              (List.filter (flowNodeOccurrenceRemovedByTermination program state root) tail) := by
         simpa only [decide_not] using ih
-      cases ownedEq : flowNodeOccurrenceOwnedBySubtree state root head with
+      cases ownedEq : flowNodeOccurrenceOwnedBySubtree program state root head with
       | false => simp [flowNodeOccurrenceRemovedByTermination, ownedEq, ih']
       | true =>
           by_cases rootEq : head.anchor = .scope root
@@ -317,7 +317,7 @@ theorem accepted_interrupting_boundary_delta_cancels_exact_subtree
     candidateFlowNodeOccurrenceDeltaForStimulus? program before
         (.fireTimer commandId timerId firedAtMs) commandId transitionIndex = some delta ∧
       ExactCancellationAndOutsidePreservation current next delta
-        (flowNodeOccurrenceOwnedBySubtree before root) := by
+        (flowNodeOccurrenceOwnedBySubtree program before root) := by
   constructor
   · exact candidateSelected
   · unfold interruptingBoundaryCancellationDelta? at branchSelected
@@ -339,7 +339,7 @@ theorem accepted_interrupting_boundary_delta_cancels_exact_subtree
       (.fireTimer commandId timerId firedAtMs) transitionIndex delta current next accepted
       projectedBefore projectedAfter
     exact instantaneous_cancellation_branch_exact_and_preserves current next delta commandId
-      transitionIndex [identity] cancelled (flowNodeOccurrenceOwnedBySubtree before root)
+      transitionIndex [identity] cancelled (flowNodeOccurrenceOwnedBySubtree program before root)
       deltaEq cancelledEq folded
 
 /-- The actual Error propagation operation cancels its exact throwing-scope subtree and preserves every outside occurrence. -/
@@ -362,7 +362,7 @@ theorem accepted_error_propagation_delta_cancels_exact_subtree
     candidateFlowNodeOccurrenceDeltaForOperation? program before after
         (.throwError operationId origin input error handler) commandId transitionIndex = some delta ∧
       ExactCancellationAndOutsidePreservation current next delta
-        (flowNodeOccurrenceOwnedBySubtree before owner) := by
+        (flowNodeOccurrenceOwnedBySubtree program before owner) := by
   constructor
   · exact candidateSelected
   · unfold errorPropagationCancellationDelta? at branchSelected
@@ -385,7 +385,7 @@ theorem accepted_error_propagation_delta_cancels_exact_subtree
       current next accepted projectedBefore projectedAfter
     exact instantaneous_cancellation_branch_exact_and_preserves current next delta commandId
       transitionIndex [errorIdentity, boundaryIdentity] cancelled
-      (flowNodeOccurrenceOwnedBySubtree before owner) deltaEq cancelledEq folded
+      (flowNodeOccurrenceOwnedBySubtree program before owner) deltaEq cancelledEq folded
 
 /-- The actual Terminate Scope operation cancels every other open occurrence in its subtree and preserves all nonremoved occurrences, including the selected scope occurrence. -/
 theorem accepted_terminate_scope_delta_cancels_exact_subtree
@@ -406,7 +406,7 @@ theorem accepted_terminate_scope_delta_cancels_exact_subtree
     candidateFlowNodeOccurrenceDeltaForOperation? program before after
         (.terminateScope operationId origin input scopeId) commandId transitionIndex = some delta ∧
       ExactCancellationAndOutsidePreservation current next delta
-        (flowNodeOccurrenceRemovedByTermination before owner) := by
+        (flowNodeOccurrenceRemovedByTermination program before owner) := by
   constructor
   · exact candidateSelected
   · unfold terminateScopeCancellationDelta? at branchSelected
@@ -421,16 +421,16 @@ theorem accepted_terminate_scope_delta_cancels_exact_subtree
     have rawCancelledEq := termination_subtree_cancellation_ends_exact program before owner
       current cancelled projectedBefore cancelledSelected
     have cancelledEq : cancelled =
-        (current.filter (flowNodeOccurrenceRemovedByTermination before owner) |>.map fun occurrence =>
+        (current.filter (flowNodeOccurrenceRemovedByTermination program before owner) |>.map fun occurrence =>
           { anchor := occurrence.anchor, terminal := .cancelled }) := by
       rw [rawCancelledEq]
-      exact termination_cancelled_map_eq before owner current
+      exact termination_cancelled_map_eq program before owner current
     have folded := accepted_operation_fold_at_projections program before after
       (.terminateScope operationId origin input scopeId) commandId transitionIndex delta
       current next accepted projectedBefore projectedAfter
     exact instantaneous_cancellation_branch_exact_and_preserves current next delta commandId
       transitionIndex [identity] cancelled
-      (flowNodeOccurrenceRemovedByTermination before owner) deltaEq cancelledEq folded
+      (flowNodeOccurrenceRemovedByTermination program before owner) deltaEq cancelledEq folded
 
 /-- The actual incident-root cancellation stimulus cancels its exact open hosting subtree and preserves every outside occurrence. -/
 theorem accepted_incident_root_cancellation_delta_cancels_exact_subtree
@@ -452,7 +452,7 @@ theorem accepted_incident_root_cancellation_delta_cancels_exact_subtree
         (.cancelIncidentProcess commandId processInstanceId incidentId) commandId transitionIndex =
           some delta ∧
       ExactCancellationAndOutsidePreservation current next delta
-        (flowNodeOccurrenceOwnedBySubtree before root) := by
+        (flowNodeOccurrenceOwnedBySubtree program before root) := by
   constructor
   · exact candidateSelected
   · unfold incidentRootCancellationDelta? at branchSelected
@@ -476,7 +476,7 @@ theorem accepted_incident_root_cancellation_delta_cancels_exact_subtree
       (.cancelIncidentProcess commandId processInstanceId incidentId) transitionIndex delta
       current next accepted projectedBefore projectedAfter
     exact instantaneous_cancellation_branch_exact_and_preserves current next delta commandId
-      transitionIndex [] cancelled (flowNodeOccurrenceOwnedBySubtree before root)
+      transitionIndex [] cancelled (flowNodeOccurrenceOwnedBySubtree program before root)
       deltaEq cancelledEq folded
 
 end BpmnSemantics.SemanticProcess

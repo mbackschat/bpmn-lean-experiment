@@ -20,7 +20,7 @@ import { ScopeCompletionSelectionKind } from "./semantic-process-scope-runtime.j
 import { sameOccurrence, sameScopeOccurrence } from "./semantic-process-state.js";
 import type { RuntimeState, ScopeOccurrenceId } from "./semantic-process-state.js";
 import { SemanticTransitionKind } from "./semantic-transition-trace.js";
-import { scopeCancellationHandlerWaitIds } from "./semantic-process-scope-cancellation.js";
+import { scopeCancellationHandlerWaitIds } from "./flow-node-occurrence-lifecycle.js";
 
 /** Resolves regional publication from predecessor ownership and selected continuation facts. */
 export function deriveInternalRegionalPublication(
@@ -76,7 +76,7 @@ export function deriveInternalRegionalPublication(
       if (instant === null) return null;
       addInstant(instant, started, ended);
       const retainRoot = selection.kind === SemanticOperationKind.TerminateScope;
-      const handlers = scopeCancellationHandlerWaitIds(state, selection.kind === SemanticOperationKind.ThrowError
+      const handlers = scopeCancellationHandlerWaitIds(program, state, selection.kind === SemanticOperationKind.ThrowError
         ? selection.selected.attached : selection.selected.occurrence);
       if (selection.kind === SemanticOperationKind.ThrowError) {
         const boundary = candidateElementOccurrence(program, state,

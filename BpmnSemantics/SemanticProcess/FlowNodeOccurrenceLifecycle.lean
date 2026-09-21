@@ -415,7 +415,7 @@ def instantaneousFlowNodeOccurrenceDeltaWithEnds (commandId : SemanticId) (trans
   let instant := instantaneousFlowNodeOccurrenceDelta commandId transitionIndex identities
   canonicalFlowNodeOccurrenceDelta instant.started (instant.ended ++ extraEnds)
 
-def flowNodeOccurrenceOwnedBySubtree (state : RuntimeState) (root : ScopeOccurrenceId)
+def flowNodeOccurrenceOwnedBySubtree (program : Program) (state : RuntimeState) (root : ScopeOccurrenceId)
     (occurrence : OpenSemanticFlowNodeOccurrence) : Bool :=
   let called := calledInstanceClosure state root
   match occurrence.anchor with
@@ -423,7 +423,7 @@ def flowNodeOccurrenceOwnedBySubtree (state : RuntimeState) (root : ScopeOccurre
       called.contains scopeId.processInstanceId
   | .wait id =>
       occurrenceInSubtree state.scopeOccurrences root occurrence.owner ||
-      called.contains occurrence.owner.processInstanceId || scopeCancellationWithdrawsHandler state root id
+      called.contains occurrence.owner.processInstanceId || scopeCancellationWithdrawsHandler program state root id
   | .callActivity _ | .compensationTrigger _ | .compensationHandler _ =>
       occurrenceInSubtree state.scopeOccurrences root occurrence.owner ||
       called.contains occurrence.owner.processInstanceId
@@ -432,7 +432,7 @@ def flowNodeOccurrenceOwnedBySubtree (state : RuntimeState) (root : ScopeOccurre
 def ownedSubtreeCancellationEnds? (program : Program) (state : RuntimeState)
     (root : ScopeOccurrenceId) : Option (List UnnumberedFlowNodeOccurrenceEnd) := do
   let current ← projectOpenFlowNodeOccurrences? program state
-  pure (current.filter (flowNodeOccurrenceOwnedBySubtree state root) |>.map fun occurrence =>
+  pure (current.filter (flowNodeOccurrenceOwnedBySubtree program state root) |>.map fun occurrence =>
     cancelledEnd occurrence.anchor)
 
 def terminationSubtreeCancellationEnds? (program : Program) (state : RuntimeState)

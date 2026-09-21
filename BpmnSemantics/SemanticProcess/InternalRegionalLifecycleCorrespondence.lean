@@ -16,8 +16,8 @@ theorem regionalCancellation_owner_corresponds (program : Program) (state : Runt
     (derived : deriveInternalOccurrenceRegion? state root = some region)
     (entry : OpenSemanticFlowNodeOccurrence) (ownership : regionalOpenOwnership state entry)
     (retainRoot : Bool) :
-    regionalCancelsOpenOccurrence state region retainRoot entry =
-      (flowNodeOccurrenceOwnedBySubtree state root entry &&
+    regionalCancelsOpenOccurrence program state region retainRoot entry =
+      (flowNodeOccurrenceOwnedBySubtree program state root entry &&
         !(retainRoot && entry.anchor == .scope root)) := by
   have rootEq := (deriveInternalOccurrenceRegion_spec state root region derived).1
   have ownerMask := regional_cancellation_mask program state hosting hosting valid running root region derived
@@ -50,8 +50,8 @@ theorem regionalCancellationEnds_corresponds (program : Program) (state : Runtim
     (running : state.control = .running hosting)
     (derived : deriveInternalOccurrenceRegion? state root = some region)
     (projected : projectOpenFlowNodeOccurrences? program state = some current) (retainRoot : Bool) :
-    regionalCancellationEnds state region retainRoot current =
-      ((current.filter (flowNodeOccurrenceOwnedBySubtree state root)).map fun entry =>
+    regionalCancellationEnds program state region retainRoot current =
+      ((current.filter (flowNodeOccurrenceOwnedBySubtree program state root)).map fun entry =>
         ({ anchor := entry.anchor, terminal := .cancelled } : UnnumberedFlowNodeOccurrenceEnd)).filter
           (fun ending => !(retainRoot && ending.anchor == .scope root)) := by
   unfold regionalCancellationEnds
@@ -70,7 +70,7 @@ theorem regionalError_cancellation_ends (program : Program) (state : RuntimeStat
     (valid : runtimePositionValid program hosting state = true) (running : state.control = .running hosting)
     (derived : deriveInternalOccurrenceRegion? state root = some region)
     (projected : projectOpenFlowNodeOccurrences? program state = some current) :
-    ownedSubtreeCancellationEnds? program state root = some (regionalCancellationEnds state region false current) := by
+    ownedSubtreeCancellationEnds? program state root = some (regionalCancellationEnds program state region false current) := by
   rw [regionalCancellationEnds_corresponds program state hosting root region current valid running derived projected false]
   simp only [ownedSubtreeCancellationEnds?, projected, Option.bind_eq_bind, Option.bind_some,
     Bool.false_and, Bool.not_false]
@@ -84,7 +84,7 @@ theorem regionalTerminate_cancellation_ends (program : Program) (state : Runtime
     (valid : runtimePositionValid program hosting state = true) (running : state.control = .running hosting)
     (derived : deriveInternalOccurrenceRegion? state root = some region)
     (projected : projectOpenFlowNodeOccurrences? program state = some current) :
-    terminationSubtreeCancellationEnds? program state root = some (regionalCancellationEnds state region true current) := by
+    terminationSubtreeCancellationEnds? program state root = some (regionalCancellationEnds program state region true current) := by
   rw [regionalCancellationEnds_corresponds program state hosting root region current valid running derived projected true]
   simp only [terminationSubtreeCancellationEnds?, ownedSubtreeCancellationEnds?, projected,
     Option.bind_eq_bind, Option.bind_some, Bool.true_and, pure, Pure.pure]
@@ -101,9 +101,9 @@ theorem preparedRegional_cancellation_ends (program : Program) (state : RuntimeS
     (found : prepareInternalRegional? program state operation = some prepared) :
     ∃ current, projectOpenFlowNodeOccurrences? program state = some current ∧
       ownedSubtreeCancellationEnds? program state prepared.selection.root.id =
-        some (regionalCancellationEnds state prepared.region false current) ∧
+        some (regionalCancellationEnds program state prepared.region false current) ∧
       terminationSubtreeCancellationEnds? program state prepared.selection.root.id =
-        some (regionalCancellationEnds state prepared.region true current) := by
+        some (regionalCancellationEnds program state prepared.region true current) := by
   obtain ⟨_, _, _, _, derived, _, published⟩ := prepareInternalRegional_facts program state operation prepared found
   obtain ⟨hosting, positions, current, _, _, _, running, projected, opened, _⟩ :=
     regionalPublicationTemplate_facts program state prepared.selection prepared.region prepared.publicationTemplate published

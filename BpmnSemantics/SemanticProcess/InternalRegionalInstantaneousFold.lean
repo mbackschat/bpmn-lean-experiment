@@ -221,10 +221,10 @@ theorem applyFlowNodeOccurrenceDelta_small_instantaneous_ends (current : List Op
   exact applyFlowNodeOccurrenceDelta_transient_ends current starts ends unique regular sorted
     startsUnique transient startsSorted endsUnique endsPresent
 
-theorem regionalCancellationEnds_anchor_facts (state : RuntimeState) (current : List OpenSemanticFlowNodeOccurrence)
+theorem regionalCancellationEnds_anchor_facts (program : Program) (state : RuntimeState) (current : List OpenSemanticFlowNodeOccurrence)
     (region : InternalOccurrenceRegion) (retainRoot : Bool) (unique : (current.map (·.anchor)).Nodup) :
-    ((regionalCancellationEnds state region retainRoot current).map (·.anchor)).Nodup ∧
-      ∀ ending ∈ regionalCancellationEnds state region retainRoot current, ending.anchor ∈ current.map (·.anchor) := by
+    ((regionalCancellationEnds program state region retainRoot current).map (·.anchor)).Nodup ∧
+      ∀ ending ∈ regionalCancellationEnds program state region retainRoot current, ending.anchor ∈ current.map (·.anchor) := by
   constructor
   · simp only [regionalCancellationEnds, List.map_map, Function.comp_def]
     exact unique.sublist (List.filter_sublist.map (fun entry : OpenSemanticFlowNodeOccurrence => entry.anchor))
@@ -273,13 +273,13 @@ theorem regionalLifecycleTemplate_fold_facts (program : Program) (before : Runti
       obtain ⟨_, _, lifecycle⟩ := Option.bind_eq_some_iff.mp lifecycle
       obtain ⟨_, _, lifecycle⟩ := Option.bind_eq_some_iff.mp lifecycle
       cases lifecycle
-      exact ⟨by simp, regionalCancellationEnds_anchor_facts before current region false unique⟩
+      exact ⟨by simp, regionalCancellationEnds_anchor_facts program before current region false unique⟩
   | terminateScope id origin input definition =>
       cases kind : selected.kind <;> simp only [kind] at facts <;> try contradiction
       simp only [regionalLifecycleTemplate?, selectedOperation, kind] at lifecycle
       obtain ⟨_, _, lifecycle⟩ := Option.bind_eq_some_iff.mp lifecycle
       cases lifecycle
-      exact ⟨by simp, regionalCancellationEnds_anchor_facts before current region true unique⟩
+      exact ⟨by simp, regionalCancellationEnds_anchor_facts program before current region true unique⟩
   | _ => cases selected.kind <;> contradiction
 
 theorem preparedRegional_lifecycle_fold (program : Program) (before : RuntimeState)

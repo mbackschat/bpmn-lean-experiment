@@ -86,6 +86,19 @@ def flowNodeOccurrenceBoundaryTimerBound (program : Program) (state : RuntimeSta
     (wait : TimerWait) : Bool :=
   (program.operations.filter (boundaryTimerOperationMatches program state wait)).length = 1
 
+/-- RHP-HANDLER-01: a published wait can end through its Activity's child body even when
+its own scope survives. Exclude private Timers before matching the untagged public wait identity. -/
+def scopeCancellationWithdrawsHandler (program : Program) (state : RuntimeState) (root : ScopeOccurrenceId)
+    (id : OccurrenceId) : Bool :=
+  let withdrawn := withdrawnByRegion (fun owner =>
+    occurrenceInSubtree state.scopeOccurrences root owner ||
+      (calledInstanceClosure state root).contains owner.processInstanceId) state.activityOccurrences
+  (state.messageWaits.any fun wait => messageIdNamesWait id wait &&
+    activityRecordsAttachMessageWait withdrawn wait) ||
+  (state.timerWaits.any fun wait => timerIdNamesWait id wait &&
+    !flowNodeOccurrenceBoundaryTimerBound program state wait &&
+    anyTimerIdNamesWait (attachedTimersOf withdrawn) wait)
+
 private theorem boundaryTimerOperationMatches_insertUnboundedUserTask (program : Program)
     (state : RuntimeState) (selected : SemanticOperation) (wait : UserTaskWait)
     {anchor : UserTaskWait} (declaration : UnboundedUserTaskWaitDeclaration anchor selected)

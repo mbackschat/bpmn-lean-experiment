@@ -18,7 +18,6 @@ import {
   sameActivityOccurrence,
 } from "./activity-occurrence.js";
 import type { ActivityOccurrence } from "./activity-occurrence.js";
-import type { OccurrenceId } from "./contract.js";
 import {
   sameOccurrence,
   sameScopeOccurrence,
@@ -44,22 +43,6 @@ export function removeScopeOccurrenceSubtree(
   attached: RuntimeScopeOccurrence,
 ): RuntimeState {
   return removeScopeOccurrenceRegion(state, attached, false);
-}
-
-/** RHP-HANDLER-01 publishes withdrawn handlers through their predecessor Activity body, including surviving owners. */
-export function scopeCancellationHandlerWaitIds(
-  state: RuntimeState,
-  root: RuntimeScopeOccurrence,
-): OccurrenceId[] {
-  const subtree = scopeOccurrenceSubtree(state.scopeOccurrences, root);
-  const inside = (owner: ScopeOccurrenceId): boolean =>
-    subtree.some(({ id }) => sameScopeOccurrence(id, owner));
-  return state.activityOccurrences.filter(({ owner, body }) => inside(owner) ||
-    (body.kind === ActivityBodyKind.ChildScope && inside(body.scope))
-  ).flatMap(({ attachedHandlers }) => attachedHandlers.flatMap((handler) => {
-    const waits = handler.kind === ActivityHandlerKind.Timer ? state.timerWaits : state.messageWaits;
-    return waits.some(({ id }) => sameOccurrence(id, handler.occurrence)) ? [handler.occurrence] : [];
-  }));
 }
 
 /** Removes every live owner below one occurrence while retaining that occurrence for completion. */

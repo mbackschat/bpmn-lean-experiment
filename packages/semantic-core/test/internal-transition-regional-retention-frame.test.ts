@@ -135,7 +135,7 @@ for (const leftKind of [Kind.ThrowError, Kind.TerminateScope] as const) {
         const retained = projectOpenFlowNodeOccurrences(program, before)!.map((entry) => ({
           ...entry, attachedHandlers: attachedHandlersForBodyAnchor(before, entry.anchor),
         }));
-        assert.deepEqual(cancelledRegion(retained, rightPrepared.selection.owner,
+        assert.deepEqual(cancelledRegion(program, retained, rightPrepared.selection.owner,
           rightKind === Kind.TerminateScope), actual!.ended.filter(({ terminal }) =>
           terminal === FlowNodeOccurrenceTerminalKind.Cancelled
         ), "the state-free cancellation relation must include the retained body's public handlers");
