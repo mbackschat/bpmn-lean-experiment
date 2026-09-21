@@ -4,9 +4,11 @@ import {
   SemanticOperationKind as Kind, SimpleBooleanExpressionKind,
   applyInternalOperationStep, compareCanonicalStrings, isWellFormedSemanticProcessProgram,
   projectCurrentControlPositions, projectOpenFlowNodeOccurrences, runtimeStateDefects, supportsSemanticProcessExecution,
+  projectControlPositionDelta, projectFlowNodeOccurrenceLifecycleDelta, SemanticTransitionKind,
 } from "@bpmn-lean/semantic-core";
 import type { RuntimeState, SemanticOperation, SemanticProcessProgram } from "@bpmn-lean/semantic-core";
 import type { InternalLocalControlOperation } from "../src/internal-transition-local-control-preparation.ts";
+import type { InternalPublicationTemplate } from "../src/internal-publication-template.ts";
 import { regionalKinds, regionalPairFixture } from "./internal-regional-pair-fixture.ts";
 import { controlPlace, operationBase } from "./semantic-program-parts.ts";
 import { present } from "./inclusive-gateway-fixture.ts";
@@ -23,6 +25,9 @@ const { internalTransitionStateFootprintsAreIndependent: independent, InternalTr
 const { compareTokenPlaces } = await import(
   new URL("../dist/semantic-process-state.js", import.meta.url).href
 ) as typeof import("../src/semantic-process-state.ts");
+const { instantiateInternalPublicationBatch } = await import(
+  new URL("../dist/internal-publication-template.js", import.meta.url).href
+) as typeof import("../src/internal-publication-template.ts");
 
 const localKinds = [Kind.Duplicate, Kind.Synchronize, Kind.Choose, Kind.SelectMany, Kind.SynchronizeSelected] as const;
 type LocalKind = typeof localKinds[number];
@@ -103,9 +108,30 @@ function valid(program: SemanticProcessProgram, state: RuntimeState, instanceId:
   assert.notEqual(projectOpenFlowNodeOccurrences(program, state), null);
 }
 
+function acceptedPublication(program: SemanticProcessProgram, before: RuntimeState, after: RuntimeState,
+  operation: SemanticOperation, template: InternalPublicationTemplate, index: number) {
+  const step = applyInternalOperationStep(program, operation, before);
+  assert.ok(step !== null && step.owner !== null);
+  assert.deepEqual(step.successor, after);
+  const positionDelta = projectControlPositionDelta(program, before, after);
+  const lifecycle = projectFlowNodeOccurrenceLifecycleDelta(program, before, after,
+    { kind: "internal", operation, owner: step.owner }, "mixed-pair", index);
+  assert.notEqual(positionDelta, null);
+  assert.notEqual(lifecycle, null);
+  const publications = instantiateInternalPublicationBatch("mixed-pair", index, [template]);
+  assert.ok(publications !== null && publications[0] !== undefined);
+  assert.deepEqual(publications[0].record, {
+    logicalTimeMs: before.logicalTimeMs,
+    transition: { kind: SemanticTransitionKind.InternalOperation, operationId: operation.id,
+      operationKind: operation.kind, origin: operation.origin, owner: step.owner }, positionDelta,
+  });
+  assert.deepEqual(publications[0].lifecycle, lifecycle);
+  return publications[0];
+}
+
 for (const regionalKind of regionalKinds) for (const kind of localKinds) {
   for (const bounded of regionalKind === Kind.CompleteScope ? [false, true] : [false]) {
-    test(`${regionalKind}/${kind}${bounded ? "/bounded" : ""} preserves both complete preparations`, () => {
+    test(`${regionalKind}/${kind}${bounded ? "/bounded" : ""} commutes with accepted publication`, () => {
       const { program, state, selected, branches, start } = fixture(regionalKind, kind, bounded);
       valid(program, state, start.instanceId);
       assert.equal(supportsSemanticProcessExecution(start, program), false);
@@ -126,6 +152,13 @@ for (const regionalKind of regionalKinds) for (const kind of localKinds) {
       valid(program, regionalFirst, start.instanceId);
       assert.deepEqual(localControl(program, regionalFirst, selected), first);
       assert.deepEqual(applyLocalControl(program, regionalFirst, first), result);
+      const localPublication = acceptedPublication(program, state, after, selected, first.publicationTemplate, 31);
+      assert.deepEqual(acceptedPublication(program, regionalFirst, result, selected, first.publicationTemplate, 31), localPublication);
+      assert.deepEqual(acceptedPublication(program, state, regionalFirst, branches[0]!.selected, second.publicationTemplate, 47),
+        acceptedPublication(program, after, result, branches[0]!.selected, second.publicationTemplate, 47));
+      const renumbered = instantiateInternalPublicationBatch("mixed-pair", 47, [first.publicationTemplate]);
+      assert.ok(renumbered !== null && renumbered[0] !== undefined);
+      assert.notDeepEqual(renumbered[0].lifecycle, localPublication.lifecycle);
     });
   }
 }
