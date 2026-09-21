@@ -25,7 +25,7 @@ private theorem insertion_perm (before : α → α → Bool) (value : α) (value
       · exact List.Perm.refl _
       · exact (List.Perm.cons current ih).trans (List.Perm.swap _ _ _)
 
-private theorem projected_cons (program : Program) (occurrence : RuntimeScopeOccurrence)
+theorem projected_cons (program : Program) (occurrence : RuntimeScopeOccurrence)
     (occurrences : List RuntimeScopeOccurrence) :
     projectScopes program (occurrence :: occurrences) =
       canonicalInsertBy (fun left right : PublicScopePosition => scopeOwnerBefore left.id right.id)

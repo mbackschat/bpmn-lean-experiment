@@ -97,7 +97,7 @@ Active work ID: `INTERNAL-COMMUTATION`.
 
 Risk band: RC internal scheduling; the six external reviews and composed Activity-data closure are complete.
 
-Next action: close one complete regional/regional pair outcome under the [regional preparation account](INTERNAL-COMMUTATION-PROPOSAL.md#regional-preparation-prerequisite): both preparation directions, exact canonical state equality, successor validity, and accepted publication from predecessor facts. Reuse existing disjoint-removal laws; reassess before substantial prerequisite expansion. The [arming outcome](INTERNAL-COMMUTATION-PROPOSAL.md#regionalarming-outcome) has review and clean integration acceptance. Scope-creation pairs, finite regional batching, and trial closure stay open. E1/E2 change no RC scope.
+Next action: review and integrate the complete [regional/regional pair outcome](INTERNAL-COMMUTATION-PROPOSAL.md#regionalregional-outcome): both preparation directions, exact canonical state equality, successor validity, and accepted publication from predecessor facts. The consumer compiles; complete gates and independent review precede acceptance. The [arming outcome](INTERNAL-COMMUTATION-PROPOSAL.md#regionalarming-outcome) is accepted. Scope-creation pairs, finite regional batching, and trial closure stay open. E1/E2 change no RC scope.
 
 In progress: [review receipts](INTERNAL-COMMUTATION-PROPOSAL.md#independent-cold-review-receipt) own the approved publication/record corrections, including `RHP-PRIVATE-01`, and clean integration. Constructed witnesses establish no profile reachability; the Message child-scope exclusion is unchanged. Regional trial closure remains pending. `AOO-RETAINED-BODY-01` requires a separate amendment before bounded-Terminate admission.
 

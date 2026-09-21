@@ -74,7 +74,7 @@ theorem cancellationOwnershipClosed_of_owner_frame (before after : RuntimeState)
       exact Bool.noConfusion (old.symm.trans kept.2)
   · exact regionalOwnershipClosed_after_filter before after _ other fields closed
 
-private theorem calledInstanceClosure_of_graph_frame (before after : RuntimeState)
+theorem calledInstanceClosure_of_graph_frame (before after : RuntimeState)
     (root : ScopeOccurrenceId) (keep : CalledProcessOccurrence → Bool)
     (calls : after.calledProcessOccurrences = before.calledProcessOccurrences.filter keep)
     (unique : (before.calledProcessOccurrences.map (fun record => record.calledRoot.processInstanceId)).Nodup)

@@ -373,12 +373,13 @@ theorem cancelScopeSubtree_child_compensation_retention (program : Program) (sta
           root rootMember child, List.contains_nil, Bool.or_false]
       · contradiction
 
-theorem cancelScopeSubtree_child_compensation_execution (program : Program) (state : RuntimeState)
+theorem cancelScopeSubtree_child_compensation_fields (program : Program) (state : RuntimeState)
     (expected hosting : SemanticId) (root : RuntimeScopeOccurrence) (disposition : SelectedScopeDisposition)
     (position : runtimePositionValid program expected state = true) (running : state.control = .running hosting)
     (rootMember : root ∈ state.scopeOccurrences) (child : root.parent ≠ none)
     (valid : compensationExecutionStateValid program state = true) :
-    compensationExecutionStateValid program (cancelScopeSubtree state root.id disposition) = true := by
+    (cancelScopeSubtree state root.id disposition).compensationTriggers = state.compensationTriggers ∧
+      (cancelScopeSubtree state root.id disposition).compensationHandlerEffectWaits = state.compensationHandlerEffectWaits := by
   have outside : ∀ trigger ∈ state.compensationTriggers,
       (occurrenceInSubtree state.scopeOccurrences root.id trigger.owner ||
         (calledInstanceClosure state root.id).contains trigger.owner.processInstanceId) = false := by
@@ -425,6 +426,16 @@ theorem cancelScopeSubtree_child_compensation_execution (program : Program) (sta
     change state.compensationHandlerEffectWaits.filter _ = _
     simp only [removed, List.any_nil, Bool.not_false]
     exact List.filter_eq_self.mpr (by intros; rfl)
+  exact ⟨triggers, waits⟩
+
+theorem cancelScopeSubtree_child_compensation_execution (program : Program) (state : RuntimeState)
+    (expected hosting : SemanticId) (root : RuntimeScopeOccurrence) (disposition : SelectedScopeDisposition)
+    (position : runtimePositionValid program expected state = true) (running : state.control = .running hosting)
+    (rootMember : root ∈ state.scopeOccurrences) (child : root.parent ≠ none)
+    (valid : compensationExecutionStateValid program state = true) :
+    compensationExecutionStateValid program (cancelScopeSubtree state root.id disposition) = true := by
+  obtain ⟨triggers, waits⟩ := cancelScopeSubtree_child_compensation_fields program state expected hosting root disposition
+    position running rootMember child valid
   exact compensation_execution_running_retained_frame program state _ hosting running rfl triggers waits
     (fun owner => congrArg List.length (cancelScopeSubtree_child_parentless_census program state expected hosting
       root disposition position running rootMember child owner))

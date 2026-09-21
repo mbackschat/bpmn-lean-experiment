@@ -40,7 +40,7 @@ The family map owns the independently closure-reviewed Activity boundary Message
 
 [Selected joins](INTERNAL-COMMUTATION-PROPOSAL.md#selected-join-dependency-checkpoint): approved TypeScript dependencies and Lean readiness frames.
 
-[Regional preparation](INTERNAL-COMMUTATION-PROPOSAL.md#regional-preparation-prerequisite) and [local-control publication](INTERNAL-COMMUTATION-PROPOSAL.md#regionallocal-control-commutation-and-accepted-publication) are approved. [Arming](INTERNAL-COMMUTATION-PROPOSAL.md#regionalarming-outcome) preparation, equality, validity, and publication are approved with clean integration. Remaining pairs/batching stay open; `AOO-RETAINED-BODY-01` limits bounded-Terminate liveness.
+[Regional preparation](INTERNAL-COMMUTATION-PROPOSAL.md#regional-preparation-prerequisite), [local-control](INTERNAL-COMMUTATION-PROPOSAL.md#regionallocal-control-commutation-and-accepted-publication), and [arming](INTERNAL-COMMUTATION-PROPOSAL.md#regionalarming-outcome) pairs are approved. The [regional/regional consumer](INTERNAL-COMMUTATION-PROPOSAL.md#regionalregional-outcome) proves preparation, equality, validity, and publication; review/integration remain pending. Scope-creation pairs/batching stay open; `AOO-RETAINED-BODY-01` limits bounded-Terminate liveness.
 
 The independently approved first boundary Compensation retention checkpoint implements completed-Activity representation and pure transition preparation.
 
