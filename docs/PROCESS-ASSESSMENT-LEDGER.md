@@ -1098,7 +1098,7 @@ Fuel exhaustion and late ambiguity independently exposed the same broken command
 Integration handoffs were treated as commit boundaries, and supporting proof prerequisites became separate review checkpoints, multiplying each increment into implementation, evidence, and acceptance commits.
 
 Instances
-: 8
+: 9
 
 Disposition
 : `unguardable`
@@ -1111,6 +1111,10 @@ Evidence
 The contributor guide explicitly made a green delegated lane a commit trigger and prohibited grouping independently compiling slices. That rule confused integration readiness with a completed outcome; cost and immutable-review bookkeeping amplified the split. The corrected owner groups supporting work by the declared outcome, retains early review before dependent implementation, and combines later records unless an executable gate requires a separate evidence commit. The guard rejects the former forced-handoff instruction. It cannot decide whether two arbitrary proof increments constitute one useful semantic checkpoint, so that judgment remains explicit rather than presented as executable coverage.
 
 The 2026-09-20 workflow review confirmed two further outcome-level recurrences after the instruction correction: lifecycle implementation `b589ab0a`, evidence `026c690f`, and acceptance `7613956c`; then mixed-batch implementation `10e774c5`, evidence `299eea89`, contract correction `bd1ac87b`, and acceptance `62744865`. The latter correction changes the stated batching contract and is not merely ceremony; it belongs to the same outcome and is not counted as a third recurrence. Source-digest binding now removes the forced post-implementation cost commit, and the review packet binds the immutable target before review without requiring a separate committed receipt. These mechanisms address forced ordering; they do not mechanically judge the usefulness of a checkpoint.
+
+The 2026-09-21 external review confirmed the ninth recurrence: the regional/local-control forward frame `e185caca`, reverse frame `ecd535a0`, and pair theorem/publication `ab29d3ca` received separate checkpoint reviews although none introduced a new account, public contract, admission rule, proof assumption, or refinement risk requiring early review. The footprint independence and lift definitions already existed at `4d4d8d76`; the existing grouping rule applied. The [cost record](CAPSULE-COST-LEDGER.md#regional-pair-review-cycle-baseline-2026-09-21) owns the per-outcome review and clean-gate counts. The earlier frame reassessments mistook a compiled prerequisite for a complete outcome.
+
+The proposed completeness guard is deferred: it would allow these semantic checkpoints and therefore would not detect this recurrence. Reconsider it only for a concrete false-acceptance failure, with complete elaborated theorem types, evidence bound to the checked sources, and an obligation baseline fixed by an approved review target. Masked source text omits literals and inherited assumptions; neither imports nor axiom lists establish an unchanged guarantee. This separate assurance idea is not a prerequisite for the regional/arming proof. The disposition remains `unguardable`; the reusable question is which newly introduced claim or risk requires review before dependent work, rather than review of the complete declared outcome.
 
 ### Finding 64
 

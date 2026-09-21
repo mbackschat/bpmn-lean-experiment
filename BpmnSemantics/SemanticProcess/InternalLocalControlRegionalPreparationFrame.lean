@@ -7,7 +7,7 @@ namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
 open BpmnSemantics
 
-private theorem preparedRegional_removed_censuses (program : Program) (before : RuntimeState)
+theorem preparedRegional_removed_censuses (program : Program) (before : RuntimeState)
     (operation : SemanticOperation) (prepared : PreparedInternalRegional)
     (found : prepareInternalRegional? program before operation = some prepared) :
     (∀ token ∈ before.tokens, prepared.region.contains token.owner = true →

@@ -114,6 +114,21 @@ private theorem keyed_any_absent [DecidableEq β] (values : List α) (key : α �
     exact absent (List.mem_map.mpr ⟨value, member, same⟩)
   simp [different]
 
+/-- An unissued wait identity cannot be withdrawn indirectly through an Activity handler. -/
+theorem absent_wait_anchor_not_withdrawn (program : Program) (state : RuntimeState)
+    (root : ScopeOccurrenceId) (id : OccurrenceId) (absent : openWaitAnchorAbsent state id = true) :
+    scopeCancellationWithdrawsHandler program state root id = false := by
+  have missing : id ∉ openWaitAnchors state := by
+    simpa [openWaitAnchorAbsent, List.contains_eq_mem] using absent
+  have messages : id ∉ state.messageWaits.map messageWaitOccurrence :=
+    fun member => missing (by simp [openWaitAnchors, member])
+  have timers : id ∉ state.timerWaits.map timerWaitOccurrence :=
+    fun member => missing (by simp [openWaitAnchors, member])
+  simp only [scopeCancellationWithdrawsHandler, messageIdNamesWait_identity,
+    timerIdNamesWait_identity, Bool.and_assoc,
+    keyed_any_absent state.messageWaits messageWaitOccurrence id _ messages,
+    keyed_any_absent state.timerWaits timerWaitOccurrence id _ timers, Bool.false_or]
+
 theorem keyed_any_unique [DecidableEq β] (values : List α) (key : α → β)
     (selected : α) (predicate : α → Bool)
     (unique : (values.map key).Nodup) (member : selected ∈ values) :

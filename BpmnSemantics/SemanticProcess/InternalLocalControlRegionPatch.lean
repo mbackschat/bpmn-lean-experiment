@@ -8,7 +8,7 @@ namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
 open BpmnSemantics
 
-private theorem filter_canonicalInsertBy_retained (before : α → α → Bool)
+theorem filter_canonicalInsertBy_retained (before : α → α → Bool)
     (compose : ∀ a b c, before b a = false → before c b = false → before c a = false)
     (keep : α → Bool) (value : α) (values : List α)
     (ordered : orderedBy before values = true) (kept : keep value = true) :

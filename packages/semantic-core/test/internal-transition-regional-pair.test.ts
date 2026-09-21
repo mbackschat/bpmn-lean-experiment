@@ -122,9 +122,10 @@ for (const other of regionalKinds) {
   });
 }
 
-for (const kind of regionalKinds) for (const armingKind of internalArmingKinds) {
-  test(`${kind}/${armingKind} preserves complete preparation, raw state and accepted publication in both orders`, () => {
-    const fixture = regionalPairFixture(kind, Kind.CompleteScope);
+for (const kind of regionalKinds) for (const armingKind of internalArmingKinds)
+for (const bounded of kind === Kind.CompleteScope ? [false, true] : [false]) {
+  test(`${kind}/${armingKind}${bounded ? "/bounded" : ""} preserves complete preparation, raw state and accepted publication in both orders`, () => {
+    const fixture = regionalPairFixture(kind, Kind.CompleteScope, bounded);
     const { start, branches, side } = fixture;
     assert.ok(side.kind === Kind.AwaitUserTask);
     const arming = internalArmingOperation(armingKind, side.input, side.output);
@@ -182,6 +183,15 @@ for (const kind of regionalKinds) for (const armingKind of internalArmingKinds) 
       assert.deepEqual(actual.sort((a, b) => compareCanonicalStrings(a.alternative.operationId, b.alternative.operationId)), expected);
       if (final === undefined) final = current;
       else assert.deepEqual(current, final, "exact raw states commute without assertion-time normalization");
+    }
+    if (bounded) {
+      assert.ok(regional.selection.kind === Kind.CompleteScope && regional.selection.withdrawal.kind === "bounded");
+      const { record, timerWaits } = regional.selection.withdrawal;
+      assert.notDeepEqual(record.owner, regional.selection.owner);
+      assert.equal(timerWaits.length, 1);
+      assert.ok(final !== undefined);
+      assert.equal(final.activityOccurrences.includes(record), false);
+      assert.equal(final.timerWaits.includes(timerWaits[0]!), false);
     }
   });
 }

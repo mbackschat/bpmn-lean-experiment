@@ -216,7 +216,7 @@ theorem InternalSelectedBranchPatch.owner_key_frame (records : List SelectedBran
     rcases mutation with rfl | rfl <;> simpa [selectionKey] using different
   simp [keyDifferent]
 
-private theorem canonicalInsertBy_erase [BEq α] [LawfulBEq α]
+theorem canonicalInsertBy_erase [BEq α] [LawfulBEq α]
     (before : α → α → Bool)
     (compose : ∀ a b c, before b a = false → before c b = false → before c a = false)
     (inserted removed : α) (different : inserted ≠ removed) (values : List α)

@@ -1,5 +1,6 @@
 import BpmnSemantics.SemanticProcess.InternalRegionalLocalControlDependencies
 import BpmnSemantics.SemanticProcess.InternalScopeCreationPreparationFrames
+import BpmnSemantics.SemanticProcess.InternalRegionalSelectionFrame
 
 /-! Regional selection observes token-owner censuses and quiescence. The existing patch filter
 laws retain both observations when the regional footprint excludes local-control writes. -/
@@ -53,73 +54,28 @@ theorem regionalSelection_localControl_frame (program : Program) (state : Runtim
           input ∉ control.tokens.consumed ++ control.tokens.produced
       | _ => True) :
     selectInternalRegional? program (control.apply state) operation = some selected := by
-  have sameCalls : calledProcessAssociationsValid (control.apply state) = calledProcessAssociationsValid state := rfl
-  have sameCompletion (definition : DefinitionScopeId) :
-      selectInternalCompletionWithdrawal? program (control.apply state) definition =
-        selectInternalCompletionWithdrawal? program state definition := rfl
-  have sameScopes : (control.apply state).scopeOccurrences = state.scopeOccurrences := rfl
-  have sameCallRecords : (control.apply state).calledProcessOccurrences = state.calledProcessOccurrences := rfl
-  have sameRunning : runningInstance? (control.apply state) = runningInstance? state := rfl
-  have samePending : (control.apply state).initiationPending = state.initiationPending := rfl
-  unfold selectInternalRegional? at found ⊢
-  obtain ⟨hosting, running, found⟩ := Option.bind_eq_some_iff.mp found
-  rw [sameRunning, running]
-  dsimp only [Option.bind_some]
+  apply regionalSelection_read_frame program state (control.apply state) operation selected
+    found rfl rfl rfl rfl quiet (fun _ _ chosen => chosen)
   cases operation with
-  | returnProcess id origin process definition output =>
-      dsimp only at found ⊢
-      rw [sameCalls, sameCallRecords, sameScopes]
-      repeat' first | (solve | simp at found) | split at found
-      all_goals cases found <;> simp_all only [↓reduceIte]
-  | completeScope id origin definition output =>
-      dsimp only at found ⊢
-      rw [sameScopes]
-      split at found
-      · split at found
-        · contradiction
-        · obtain ⟨withdrawal, withdrawn, found⟩ := Option.bind_eq_some_iff.mp found
-          repeat' first | (solve | simp at found) | split at found
-          all_goals cases found <;> simp_all only [Bool.false_eq_true, ↓reduceIte]
-      · contradiction
   | throwError id origin input error handler =>
       have absent : input ∉ control.tokens.consumed ∧ input ∉ control.tokens.produced := by
         simpa only [List.mem_append, not_or] using inputs
       have owners := control.tokens.owner_selection_frame state input absent.1 absent.2
-      have bucket := control.tokens.filter_untouched state.tokens
+      refine ⟨owners, ?_⟩
+      exact control.tokens.filter_untouched state.tokens
         (fun token => decide (token.placeId = input && token.owner = selected.root.id))
         (by intro place member; simp; intro same; exact False.elim (absent.1 (same ▸ member)))
         (by intro place member; simp; intro same; exact False.elim (absent.2 (same ▸ member)))
-      dsimp only at found ⊢
-      change onlyTokenOwner? (control.apply state) input = onlyTokenOwner? state input at owners
-      rw [owners]
-      obtain ⟨owner, offered, found⟩ := Option.bind_eq_some_iff.mp found
-      rw [offered]
-      split at found
-      · contradiction
-      · split at found
-        · contradiction
-        · split at found
-          · rename_i root census
-            obtain ⟨parent, parentFound, found⟩ := Option.bind_eq_some_iff.mp found
-            split at found
-            · cases found
-              have identity := scope_identity_of_census state owner root census
-              rw [identity] at bucket
-              simp_all [Option.bind_eq_bind, InternalLocalControlSelection.apply]
-            · contradiction
-          · contradiction
   | terminateScope id origin input definition =>
       have absent : input ∉ control.tokens.consumed ∧ input ∉ control.tokens.produced := by
         simpa only [List.mem_append, not_or] using inputs
       have owners := control.tokens.owner_census_frame state input absent.1 absent.2
       change tokenOwners (control.apply state) input = tokenOwners state input at owners
-      have selectedOwner : selectedTerminateOwner? program (control.apply state) id origin input definition =
-          selectedTerminateOwner? program state id origin input definition := by
-        unfold selectedTerminateOwner?
-        rw [owners]
-        rfl
-      dsimp only at found ⊢
-      simpa only [selectedOwner, sameScopes] using found
-  | _ => contradiction
+      change selectedTerminateOwner? program (control.apply state) id origin input definition =
+        selectedTerminateOwner? program state id origin input definition
+      unfold selectedTerminateOwner?
+      rw [owners]
+      rfl
+  | _ => trivial
 
 end BpmnSemantics.SemanticProcess.InternalCommutation

@@ -745,6 +745,21 @@ The [pair law](../BpmnSemantics/SemanticProcess/InternalRegionalLocalControlComm
 
 The existing [pair matrix](../packages/semantic-core/test/internal-transition-regional-local-control.test.ts) checks actual accepted publication in both orders for all 25 family combinations, including bounded completion. Nonzero distinct assigned indices remain attached to their operations; renumbering local control changes its lifecycle, separating state commutation from publication numbering. The two dependency-omission negatives still refuse stale preparations. A constructed Lean Error/Synchronize predecessor jointly satisfies Program/runtime validity, preparation, independence, and exact final equality. The main theorem axiom reports contain only `propext`, `Classical.choice`, and `Quot.sound`. The [independent checkpoint review](#independent-cold-review-receipt) approved without findings. This closes the local-control pair proof obligation only; other family pairs, finite regional batching, source admission, and the regional trial remain open.
 
+#### Regional/arming outcome
+
+The next complete outcome covers prepared ordinary and composed-data arming beside Return, Complete, Error, and Terminate under the existing footprint independence account. Its obligations are:
+
+1. Preserve both complete preparations from predecessor facts.
+2. Derive successful execution in both orders and literally equal canonical RuntimeState, including collection order and multiplicity.
+3. Derive intermediate and final runtime well-formedness from predecessor validity and the individual preservation laws.
+4. Derive actual accepted publication in both orders, with equal per-operation records and deltas at their assigned indices and agreement after canonical ordering and numbering.
+
+Intermediate validity, retained preparation, final equality, and publication acceptance must be conclusions rather than added premises. The existing snapshot and Message child-scope exclusions and `AOO-RETAINED-BODY-01` remain unchanged. [PLAN.md](PLAN.md#exact-resume-point) owns the unresolved work; [the cost ledger](CAPSULE-COST-LEDGER.md#regional-pair-review-cycle-baseline-2026-09-21) owns the review-cycle comparison. This is one outcome under the existing [commit boundaries](TESTING-SPEC.md#commit-boundaries), not a new process rule.
+
+The [pair theorem](../BpmnSemantics/SemanticProcess/InternalRegionalArmingCommutation.lean) derives complete preparation in both directions and exact successor equality from predecessor validity and the existing independence predicate. The [publication theorem](../BpmnSemantics/SemanticProcess/InternalRegionalArmingPairPublication.lean) composes actual execution, all successor validity, and accepted per-operation publication at arbitrary assigned indices. Ordinary and composed-data arming share the owner/retention frames; Call return, cancellation, and bounded completion retain exact canonical collections rather than sorting away differences. No intermediate invariant or post-execution equality is assumed.
+
+The [TypeScript pair matrix](../packages/semantic-core/test/internal-transition-regional-pair.test.ts) includes all four regional families and bounded completion beside seven arming variants. It checks actual publications with distinct nonzero assigned indices and canonical ordering, complete preparations, and exact states in both orders. Constructed Lean Error/ordinary-Task and Error/composed-data-Task predecessors jointly satisfy the theorem hypotheses and check actual state/publication equality at indices 43 and 44; renumbering the arming publication changes it. Both main theorem axiom reports contain only `propext`, `Classical.choice`, and `Quot.sound`. This is a pair-level proof checkpoint awaiting independent review and clean integration; it does not implement regional batching or establish public-profile reachability or regional-trial closure.
+
 ### Remaining final-closure discriminators
 
 The region separator uses two enabled operations in disjoint sibling occurrences and a second state that moves one operation into the other's descendant occurrence. The sibling case must batch; the ancestor/descendant case must conflict even when every concrete pre-existing collection key differs. A mutation that compares only region-root equality must accept the wrong case and fail the oracle.
