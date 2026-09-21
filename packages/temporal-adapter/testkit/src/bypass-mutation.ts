@@ -418,24 +418,27 @@ async function runRetainedTraceMutation<Result>(
     );
     return await drive(handle);
   } finally {
-    if (handle !== undefined) {
+    try {
+      if (handle !== undefined) {
+        await withDeadline(
+          handle.terminate(`retained ${configuration.description}`),
+          operationDeadlineMs,
+          `${configuration.description} Workflow cleanup`,
+        );
+      }
+    } finally {
+      mutationWorker.shutdown();
       await withDeadline(
-        handle.terminate(`retained ${configuration.description}`),
-        operationDeadlineMs,
-        `${configuration.description} Workflow cleanup`,
+        mutationWorkerRun,
+        shutdownDeadlineMs,
+        `${configuration.description} Worker shutdown`,
       );
-    }
-    mutationWorker.shutdown();
-    await withDeadline(
-      mutationWorkerRun,
-      shutdownDeadlineMs,
-      `${configuration.description} Worker shutdown`,
-    );
-    if (mutationWorkerError !== undefined) {
-      throw normalizeError(
-        mutationWorkerError,
-        `${configuration.description} Worker failed`,
-      );
+      if (mutationWorkerError !== undefined) {
+        throw normalizeError(
+          mutationWorkerError,
+          `${configuration.description} Worker failed`,
+        );
+      }
     }
   }
 }

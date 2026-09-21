@@ -79,3 +79,28 @@ for (const [name, run] of probes) {
     assert.equal(shutdowns, 1);
   });
 }
+
+test("retained trace joins Worker shutdown when Workflow termination fails", async (context) => {
+  const stopped = Promise.withResolvers<void>();
+  const failure = new Error("workflow termination refused");
+  let shutdowns = 0;
+  context.mock.method(Worker, "create", async () => ({
+    run: () => stopped.promise,
+    shutdown() { shutdowns += 1; stopped.resolve(); },
+  }));
+  context.mock.property(environment, "client", {
+    workflow: {
+      async start() {
+        return {
+          async fetchHistory() { return { events: [] }; },
+          async terminate() { throw failure; },
+        };
+      },
+    },
+  });
+  await assert.rejects(runBranchBypassMutation(
+    environment as TestWorkflowEnvironment, input.scenario, input.semanticProcess,
+    "termination-failure", async () => [],
+  ), (error) => error === failure);
+  assert.equal(shutdowns, 1);
+});

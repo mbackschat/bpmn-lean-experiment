@@ -4,7 +4,7 @@ This detail map owns exact current Product 1 protocol, client, Workflow, Worker,
 
 ## Current boundary
 
-Disposable mutation probes isolate their Worker task queues by probe Workflow ID. The [startup regressions](../packages/temporal-adapter/testkit/test/bypass-worker-startup.test.ts) cover both runner paths: startup expiry still fails, but a Worker created afterward enters SDK-managed shutdown instead of losing its owner. Normal startup retains matching Worker/Workflow queues and joins shutdown when Workflow start fails. Production hosting and timeout values are unchanged.
+Disposable mutation probes isolate Worker queues by probe Workflow ID. The [lifecycle regressions](../packages/temporal-adapter/testkit/test/bypass-worker-startup.test.ts) cover both runner paths: expiry still fails, but late-created Workers enter SDK-managed shutdown. Normal startup retains matching Worker/Workflow queues; Workflow-start failure joins shutdown, and retained-trace termination failure cannot skip it. Production hosting and timeouts are unchanged.
 
 Client RPCs use SDK connection deadlines for task/incident and execution/occurrence-publication Queries, retained results, Workflow creation/description, Schedules, and correlation ingress/publication. The [RPC matrix](../packages/temporal-adapter/client/test/client-rpc-deadline.test.ts) rejects timeout with an unfinished request. Publication expiry settles the RPC before returning `unavailable`; segment reselection retains the original five-second allowance. Creation/Update expiry retains recovery classification and does not prove service refusal.
 
