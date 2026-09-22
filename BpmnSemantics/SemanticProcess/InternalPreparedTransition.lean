@@ -4,6 +4,7 @@ import BpmnSemantics.SemanticProcess.InternalScopeCreationLocalControlCommutatio
 import BpmnSemantics.SemanticProcess.InternalScopeCreationAcceptedPublication
 import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
 import BpmnSemantics.SemanticProcess.InternalRegionalPairDependencies
+import BpmnSemantics.SemanticProcess.InternalEndPreparation
 
 /-! Complete finite mixed preparations follow the predecessor-only
 [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).
@@ -18,6 +19,7 @@ inductive PreparedInternalTransition where
   | localControl (prepared : PreparedInternalLocalControl)
   | scopeCreation (prepared : PreparedInternalScopeCreation)
   | regional (prepared : PreparedInternalRegional)
+  | ordinaryEnd (prepared : PreparedInternalEnd)
   deriving Repr, DecidableEq
 
 def PreparedInternalTransition.operation : PreparedInternalTransition → SemanticOperation
@@ -25,6 +27,7 @@ def PreparedInternalTransition.operation : PreparedInternalTransition → Semant
   | .localControl prepared => prepared.operation
   | .scopeCreation prepared => prepared.selection.operation
   | .regional prepared => prepared.selection.operation
+  | .ordinaryEnd prepared => prepared.operation
 
 def PreparedInternalTransition.apply (program : Program) (state : RuntimeState) :
     PreparedInternalTransition → RuntimeState
@@ -32,6 +35,7 @@ def PreparedInternalTransition.apply (program : Program) (state : RuntimeState) 
   | .localControl prepared => prepared.selection.apply state
   | .scopeCreation prepared => prepared.selection.apply state
   | .regional prepared => (applyPreparedInternalRegional? program state prepared).getD state
+  | .ordinaryEnd prepared => prepared.selection.apply state
 
 def PreparedInternalTransition.stateFootprint :
     PreparedInternalTransition → InternalRegionalStateFootprint
@@ -39,6 +43,7 @@ def PreparedInternalTransition.stateFootprint :
   | .localControl prepared => liftRegionalStateFootprint prepared.selection.owner prepared.footprint
   | .scopeCreation prepared => liftRegionalStateFootprint prepared.selection.owner prepared.footprint
   | .regional prepared => prepared.footprint
+  | .ordinaryEnd prepared => prepared.footprint
 
 def PreparedInternalTransition.Prepared (program : Program) (state : RuntimeState) :
     PreparedInternalTransition → Prop
@@ -49,6 +54,8 @@ def PreparedInternalTransition.Prepared (program : Program) (state : RuntimeStat
       prepareInternalScopeCreation? program state prepared.selection.operation = some prepared
   | .regional prepared =>
       prepareInternalRegional? program state prepared.selection.operation = some prepared
+  | .ordinaryEnd prepared =>
+      prepareInternalEnd? program state prepared.operation = some prepared
 
 instance (program : Program) (state : RuntimeState) (prepared : PreparedInternalTransition) :
     Decidable (prepared.Prepared program state) := by
@@ -67,7 +74,8 @@ def PreparedInternalTransition.Independent (left right : PreparedInternalTransit
   | .localControl first, .scopeCreation second => localControlStateFootprintsNonInterfering first.footprint second.footprint = true
   | .scopeCreation first, .localControl second => localControlStateFootprintsNonInterfering first.footprint second.footprint = true
   | .scopeCreation first, .scopeCreation second => localControlStateFootprintsNonInterfering first.footprint second.footprint = true
-  | .regional _, _ | _, .regional _ => regionalStateFootprintsIndependent left.stateFootprint right.stateFootprint = true
+  | .regional _, _ | _, .regional _ | .ordinaryEnd _, _ | _, .ordinaryEnd _ =>
+      regionalStateFootprintsIndependent left.stateFootprint right.stateFootprint = true
 
 instance (left right : PreparedInternalTransition) : Decidable (left.Independent right) := by
   cases left <;> cases right <;> unfold PreparedInternalTransition.Independent <;> infer_instance
@@ -96,6 +104,7 @@ def prepareInternalTransition? (program : Program) (state : RuntimeState)
   match operation with
   | .returnProcess .. | .completeScope .. | .throwError .. | .terminateScope .. =>
       (prepareInternalRegional? program state operation).map .regional
+  | .reachNoneEnd .. => (prepareInternalEnd? program state operation).map .ordinaryEnd
   | _ => prepareOrdinaryInternalTransition? program state operation
 
 def applyPreparedInternalTransition? (program : Program) (state : RuntimeState)
@@ -169,8 +178,18 @@ theorem prepareInternalTransition_sound (program : Program) (state : RuntimeStat
     refine ⟨?_, operationEq, (prepareInternalRegional_facts program state operation member memberFound).1⟩
     change prepareInternalRegional? program state member.selection.operation = some member
     rwa [operationEq]
+  have ordinaryEnd (operation : SemanticOperation)
+      (selected : (prepareInternalEnd? program state operation).map PreparedInternalTransition.ordinaryEnd = some prepared) :
+      prepared.Prepared program state ∧ prepared.operation = operation ∧
+        program.compensationEventSubProcessSnapshots = none := by
+    obtain ⟨member, memberFound, rfl⟩ := Option.map_eq_some_iff.mp selected
+    have operationEq := prepareInternalEnd_operation program state operation member memberFound
+    refine ⟨?_, operationEq, (prepareInternalEnd_facts program state operation member memberFound).1⟩
+    change prepareInternalEnd? program state member.operation = some member
+    rwa [operationEq]
   cases operation <;> first
     | exact regional _ found
+    | exact ordinaryEnd _ found
     | exact prepareOrdinaryInternalTransition_sound program state _ prepared found
 
 private theorem prepareInternalTransitionList_sound (program : Program) (state : RuntimeState)
@@ -238,6 +257,6 @@ theorem prepareInternalTransition_snapshots_refused (program : Program) (state :
   cases operation <;> simp only [prepareInternalTransition?]
   all_goals first
     | exact prepareOrdinaryInternalTransition_snapshots_refused program state _ snapshots declared
-    | simp [prepareInternalRegional?, declared]
+    | simp [prepareInternalRegional?, prepareInternalEnd?, declared]
 
 end BpmnSemantics.SemanticProcess.InternalCommutation

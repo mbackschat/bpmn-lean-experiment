@@ -1,6 +1,7 @@
 import BpmnSemantics.SemanticProcess.InternalTransitionPublication
 import BpmnSemantics.SemanticProcess.InternalTransitionPublicationAcceptance
 import BpmnSemantics.SemanticProcess.InternalRegionalArmingAcceptedPublication
+import BpmnSemantics.SemanticProcess.InternalEndPublication
 
 /-! Predecessor-only mixed publication templates implement the numbering boundary in the [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md). -/
 
@@ -48,6 +49,21 @@ theorem prepared_transition_publication_template_accepted (program : Program) (s
       exact ⟨internalScopeCreationPublicationTemplate scopePrepared, rfl,
         prepared_scope_creation_publication_template_accepted program state scopePrepared instanceId
           commandId transitionIndex programWF beforeWF projectable found⟩
+  | ordinaryEnd ending =>
+      have record := prepareInternalEnd_record program state ending.operation ending found
+      have lifecycle := prepareInternalEnd_accepted_lifecycle program state ending.operation ending
+        instanceId commandId transitionIndex running projectable found
+      have position := prepareInternalEnd_position program state ending.operation ending instanceId beforeWF found
+      have time : ending.publicationTemplate.logicalTimeMs = state.logicalTimeMs := by
+        obtain ⟨_, _, _, _, _, _, _, _, _, _, _, _, _, _, rfl⟩ :=
+          prepareInternalEnd_facts program state ending.operation ending found
+        rfl
+      refine ⟨internalEndPublicationTemplate ending, rfl, ?_⟩
+      change actualInternalTransitionPublication? program instanceId state (ending.selection.apply state)
+        ending.operation commandId transitionIndex = _
+      simp only [actualInternalTransitionPublication?, record, lifecycle, position,
+        internalEndPublicationTemplate, InternalTransitionPublicationTemplate.instantiate, time]
+      rfl
   | regional regional =>
       obtain ⟨after, applied, published⟩ := prepareInternalRegional_execution_publication program state _ regional
         instanceId commandId transitionIndex programWF beforeWF found
@@ -75,6 +91,7 @@ theorem prepared_transition_template_operation_id (program : Program) (state : R
   | localControl localPrepared => cases found; rfl
   | scopeCreation scopePrepared => cases found; rfl
   | regional regional => cases found; rfl
+  | ordinaryEnd ending => cases found; rfl
 
 theorem prepared_transition_template_frame (program : Program) (before after : RuntimeState)
     (prepared : PreparedInternalTransition)
@@ -96,6 +113,7 @@ theorem prepared_transition_template_frame (program : Program) (before after : R
   | localControl _ => exact found
   | scopeCreation _ => exact found
   | regional _ => exact found
+  | ordinaryEnd _ => exact found
 
 theorem prepared_transition_template_after_step (program : Program) (state : RuntimeState)
     (step query : PreparedInternalTransition) (instanceId : SemanticId)
@@ -120,6 +138,9 @@ theorem prepared_transition_template_after_step (program : Program) (state : Run
   | localControl control =>
       exact prepared_transition_template_frame program state (control.selection.apply state) query template
         rfl (fun _ _ _ _ prior => prior) found
+  | ordinaryEnd ending =>
+      exact prepared_transition_template_frame program state (ending.selection.apply state) query template
+        rfl (fun _ _ _ _ prior => prior) found
   | scopeCreation creation =>
       apply prepared_transition_template_frame program state (creation.selection.apply state) query template
         (scopeCreation_apply_time state creation.selection) _ found
@@ -131,7 +152,7 @@ theorem prepared_transition_template_after_step (program : Program) (state : Run
         scopeCreation_wait_start_preserved program state _ selected owner element activation start selection prior
   | regional regional =>
       cases query with
-      | localControl _ | scopeCreation _ | regional _ => exact found
+      | localControl _ | scopeCreation _ | regional _ | ordinaryEnd _ => exact found
       | arming arm =>
           have facts := preparedArming_owner_facts program state arm queryPrepared
           have hosting := runtimePositionValid_running_instance program instanceId arm.scopeFramePatch.runtimeInstanceId state

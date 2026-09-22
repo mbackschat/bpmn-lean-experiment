@@ -97,7 +97,7 @@ Active work ID: `INTERNAL-COMMUTATION`.
 
 Risk band: RC internal scheduling; the six external reviews and composed Activity-data closure are complete.
 
-Next action: reconcile remaining family preparations and the unified exact-alternative frontier against the [final-closure obligations](INTERNAL-COMMUTATION-PROPOSAL.md#final-closure-required-optional-and-excluded-work). Name the smallest complete next outcome and its separating witness before implementation; reuse the accepted finite consumer and reassess before substantial prerequisites. Regional trial closure stays open; E1/E2 change no RC scope.
+Next action: independently review and clean-integrate the [ordinary End batch outcome](INTERNAL-COMMUTATION-PROPOSAL.md#ordinary-end-batch-outcome). Complete preparation, mixed-family frames, exact state/publication equality, successor validity, and whole-command fuel rollback pass the complete Lean and semantic-core gates; the fixed-3-GiB measurements and infrastructure gate pass. Keep one complete outcome through acceptance. Merge's exact-input alternatives remain a separate frontier obligation. Regional trial closure stays open; E1/E2 change no RC scope.
 
 Accepted: the [finite regional batch outcome](INTERNAL-COMMUTATION-PROPOSAL.md#finite-regional-batch-outcome) composes approved pair laws for complete preparation, prefix validity, exact canonical state/publication permutation, and whole-command refusal. Independent review, clean integration, and fixed-3-GiB checks pass. Constructed witnesses establish no profile reachability; the Message child-scope exclusion is unchanged. `AOO-RETAINED-BODY-01` requires a separate amendment before bounded-Terminate admission.
 

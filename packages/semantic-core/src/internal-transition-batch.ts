@@ -18,6 +18,8 @@ import {
   deriveInternalRegionalPreparation,
 } from "./internal-transition-regional-preparation.js";
 import type { InternalRegionalOperation, PreparedInternalRegionalTransition } from "./internal-transition-regional-preparation.js";
+import { applyPreparedInternalEnd, deriveInternalEndPreparation } from "./internal-transition-end-preparation.js";
+import type { PreparedInternalEnd } from "./internal-transition-end-preparation.js";
 import {
   internalTransitionFootprintsAreIndependent,
   internalTransitionStateFootprintsAreIndependent,
@@ -34,12 +36,14 @@ export enum PreparedInternalTransitionFamily {
   LocalControl = "localControl",
   ScopeCreation = "scopeCreation",
   Regional = "regional",
+  OrdinaryEnd = "ordinaryEnd",
 }
 
 export type PreparedInternalTransition = Readonly<
   | PreparedInternalArming & { family: PreparedInternalTransitionFamily.Arming }
   | PreparedInternalLocalControl & { family: PreparedInternalTransitionFamily.LocalControl }
   | PreparedInternalScopeCreation & { family: PreparedInternalTransitionFamily.ScopeCreation }
+  | PreparedInternalEnd & { family: PreparedInternalTransitionFamily.OrdinaryEnd }
   | PreparedInternalRegionalTransition & {
       family: PreparedInternalTransitionFamily.Regional;
       operation: InternalRegionalOperation;
@@ -53,6 +57,12 @@ export function deriveInternalTransitionPreparation(
   candidate: InternalTransitionCandidate,
 ): PreparedInternalTransition | null {
   switch (candidate.operation.kind) {
+    case SemanticOperationKind.ReachNoneEnd: {
+      if (candidate.owner === null) return null;
+      const prepared = deriveInternalEndPreparation(program, state, candidate.operation);
+      return prepared === null || !sameScopeOccurrence(prepared.owner, candidate.owner)
+        ? null : { family: PreparedInternalTransitionFamily.OrdinaryEnd, ...prepared };
+    }
     case SemanticOperationKind.ReturnProcess:
     case SemanticOperationKind.CompleteScope:
     case SemanticOperationKind.ThrowError:
@@ -122,6 +132,10 @@ export function applyPreparedInternalTransition(
   prepared: PreparedInternalTransition,
 ): RuntimeState | null {
   switch (prepared.family) {
+    case PreparedInternalTransitionFamily.OrdinaryEnd: {
+      const { family: _family, ...end } = prepared;
+      return applyPreparedInternalEnd(program, state, end);
+    }
     case PreparedInternalTransitionFamily.Regional: {
       const { family: _family, operation, owner, ...regional } = prepared;
       // Closure consumes these common fields; bind them to the complete regional artifact before execution.

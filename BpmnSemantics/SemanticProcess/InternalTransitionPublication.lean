@@ -7,6 +7,15 @@ namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
 open BpmnSemantics
 
+def internalEndPublicationTemplate (prepared : PreparedInternalEnd) :
+    InternalTransitionPublicationTemplate :=
+  { record :=
+      { operationId := prepared.operation.id, operationKind := prepared.operation.kind
+        origin := prepared.operation.origin, owner := prepared.selection.owner }
+    logicalTimeMs := prepared.publicationTemplate.logicalTimeMs
+    positionDelta := prepared.publicationTemplate.positionDelta
+    lifecycle := .instantaneous prepared.publicationTemplate.identity }
+
 /-- Templates use the complete predecessor preparation and owner ancestry; no successor projection
 or command/index assignment participates in constructing this value. -/
 def preparedTransitionPublicationTemplate? (program : Program) (state : RuntimeState) :
@@ -16,6 +25,7 @@ def preparedTransitionPublicationTemplate? (program : Program) (state : RuntimeS
   | .localControl prepared => some (internalLocalControlPublicationTemplate prepared)
   | .scopeCreation prepared => some (internalScopeCreationPublicationTemplate prepared)
   | .regional prepared => some (internalRegionalPublicationTemplate prepared)
+  | .ordinaryEnd prepared => some (internalEndPublicationTemplate prepared)
 
 def runPreparedTransitionBatchPublication? (program : Program) (instanceId commandId : SemanticId)
     (indexForOperation : OperationId → Nat) (state : RuntimeState) :

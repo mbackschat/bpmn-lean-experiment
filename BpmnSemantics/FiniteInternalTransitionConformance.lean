@@ -109,7 +109,8 @@ theorem mixed_frontier_is_classified :
         | .arming (.ordinary _ _) => "ordinary"
         | .localControl _ => "local-control"
         | .scopeCreation _ => "scope-creation"
-        | .regional _ => "regional") =
+        | .regional _ => "regional"
+        | .ordinaryEnd _ => "ordinary-end") =
         ["composed-data", "ordinary", "local-control"] := by
   decide +kernel
 
@@ -233,5 +234,52 @@ theorem canonical_numbering_ignores_reversed_execution_order :
     original_templates_are_defined selected.2.2.1
   exact instantiateTransitionPublicationBatch_perm commandId 37 templates templates.reverse
     distinct (List.reverse_perm _).symm
+
+private def ending : SemanticOperation :=
+  .reachNoneEnd ⟨"operation:End_Claim"⟩ { elementId := ⟨"End_Claim"⟩ } ⟨"place:Flow_Join"⟩
+
+private def endReady : RuntimeState :=
+  { ready with tokens := addToken ready.tokens ⟨"place:Flow_Join"⟩ owner, endOccurrences := 7 }
+
+private def endFrontier : List SemanticOperation := frontier ++ [ending]
+private def endPrepared : List PreparedInternalTransition :=
+  (prepareInternalTransitionBatch? program endReady endFrontier).getD []
+
+/-- The extra token is a constructed admitted state, not a claim of reachability in this model. -/
+theorem mixed_end_frontier_has_joint_predecessor_premises :
+    runtimeStateWellFormed program instanceId endReady = true ∧
+      (projectOpenFlowNodeOccurrences? program endReady).isSome = true ∧
+      prepareInternalTransitionBatch? program endReady endFrontier = some endPrepared ∧
+      endPrepared.length = 4 ∧
+      endPrepared.any (fun | .ordinaryEnd _ => true | _ => false) = true := by
+  decide +kernel
+
+theorem mixed_end_permutations_have_exact_accepted_publication
+    (reordered : List PreparedInternalTransition) (permutation : endPrepared.Perm reordered) :
+    ∃ final publications,
+      acceptedPreparedTransitionBatch? program instanceId commandId 41 endReady endPrepared =
+        some (final, publications) ∧
+      acceptedPreparedTransitionBatch? program instanceId commandId 41 endReady reordered =
+        some (final, publications) ∧
+      fireInternalTransitionBatch? program endReady
+        (reordered.map PreparedInternalTransition.operation) = some final ∧
+      runtimeStateWellFormed program instanceId final = true := by
+  have premise := mixed_end_frontier_has_joint_predecessor_premises
+  have selected := prepareInternalTransitionBatch_sound program endReady endFrontier endPrepared premise.2.2.1
+  obtain ⟨final, publications, left, right, _, _, _, _, _, fired, valid, _⟩ :=
+    prepared_transition_canonical_batch_publication_perm program endReady endPrepared reordered
+      instanceId commandId 41 fixture_is_admitted.1 premise.1 rfl premise.2.1 rfl
+      selected.2.1 selected.2.2.2.1 selected.2.2.1 selected.1 permutation
+  exact ⟨final, publications, left, right, fired, valid⟩
+
+theorem ordinary_end_retains_relative_count_and_canonical_index :
+    (applyInternalTransitionBatch program endReady endPrepared).endOccurrences = 8 ∧
+      ((endPrepared.mapM (preparedTransitionPublicationTemplate? program endReady)).map
+        (instantiateTransitionPublicationBatch commandId 41)).map
+          (fun publications => publications.head?.map fun publication =>
+            (publication.record.operationId, publication.transitionIndex,
+              publication.lifecycle.started.map (·.anchor))) =
+        some (some (ending.id, 41, [.transition commandId 41 0])) := by
+  decide +kernel
 
 end BpmnSemantics.FiniteInternalTransitionConformance

@@ -4,6 +4,10 @@ import BpmnSemantics.SemanticProcess.InternalLocalControlPairPublication
 import BpmnSemantics.SemanticProcess.InternalRegionalPairCommutation
 import BpmnSemantics.SemanticProcess.InternalRegionalArmingCommutation
 import BpmnSemantics.SemanticProcess.InternalRegionalScopeCreationCommutation
+import BpmnSemantics.SemanticProcess.InternalEndArmingCommutation
+import BpmnSemantics.SemanticProcess.InternalEndLocalControlCommutation
+import BpmnSemantics.SemanticProcess.InternalEndScopeCreationCommutation
+import BpmnSemantics.SemanticProcess.InternalEndRegionalCommutation
 
 /-! Complete mixed preparations lift to arbitrary finite prefixes and multiplicity-preserving
 permutations under the [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).
@@ -59,6 +63,17 @@ private theorem prepared_regional_transition_pair (program : Program) (state : R
       refine ⟨?_, frame, ?_⟩
       · simpa only [PreparedInternalTransition.Prepared, PreparedInternalTransition.apply, applied, Option.getD_some] using creationFrame
       · simp only [PreparedInternalTransition.apply, applied, commute, Option.getD_some]
+  | ordinaryEnd ending =>
+      have running : state.control = .running ending.runtimeInstanceId := by
+        obtain ⟨_, _, _, _, _, _, _, _, running, _, _, _, _, _, rfl⟩ :=
+          prepareInternalEnd_facts program state ending.operation ending otherFound
+        exact running
+      obtain ⟨frame, after, applied, endFrame, commute⟩ := prepared_regional_end_pair_commutes
+        program state regional.selection.operation ending.operation regional ending
+          (validFor _ running) regionalFound otherFound independent
+      refine ⟨?_, frame, ?_⟩
+      · simpa only [PreparedInternalTransition.Prepared, PreparedInternalTransition.apply, applied, Option.getD_some] using endFrame
+      · simp only [PreparedInternalTransition.apply, applied, commute, Option.getD_some]
   | regional right =>
       have selected := (ownershipClosedSelection_facts program state regional.selection.operation regional.selection
         (prepareInternalRegional_facts program state _ regional regionalFound).2.2.2.1).1
@@ -72,6 +87,39 @@ private theorem prepared_regional_transition_pair (program : Program) (state : R
       · simpa only [PreparedInternalTransition.Prepared, PreparedInternalTransition.apply, rightApplied, Option.getD_some] using leftFrame
       · simp only [PreparedInternalTransition.apply, leftApplied, rightApplied, Option.getD_some,
           lrApplied, rlApplied]
+
+private theorem prepared_end_transition_pair (program : Program) (state : RuntimeState)
+    (instanceId : SemanticId) (ending : PreparedInternalEnd) (other : PreparedInternalTransition)
+    (programValid : programWellFormed program = true)
+    (stateValid : runtimeStateWellFormed program instanceId state = true)
+    (endFound : prepareInternalEnd? program state ending.operation = some ending)
+    (otherFound : other.Prepared program state)
+    (canonical : canonicalCollectionOrder state = true)
+    (independent : (PreparedInternalTransition.ordinaryEnd ending).Independent other) :
+    other.Prepared program (ending.selection.apply state) ∧
+      prepareInternalEnd? program (other.apply program state) ending.operation = some ending ∧
+      other.apply program (ending.selection.apply state) = ending.selection.apply (other.apply program state) := by
+  cases other with
+  | arming arm =>
+      have pair := prepared_end_arming_pair_commutes program state ending.operation ending arm
+        endFound otherFound independent
+      exact ⟨pair.2.1, pair.1, pair.2.2⟩
+  | localControl control =>
+      have pair := prepared_end_local_control_pair_commutes program state ending.operation control.operation
+        ending control endFound otherFound canonical independent
+      exact ⟨pair.2.1, pair.1, pair.2.2⟩
+  | scopeCreation creation =>
+      have pair := prepared_end_scope_creation_pair_commutes program state ending.operation creation.selection.operation
+        ending creation endFound otherFound canonical independent
+      exact ⟨pair.2.1, pair.1, pair.2.2⟩
+  | ordinaryEnd other =>
+      have pair := prepared_end_pair_commutes program state ending.operation other.operation ending other
+        endFound otherFound independent
+      exact ⟨pair.2.1, pair.1, pair.2.2⟩
+  | regional regional =>
+      have pair := prepared_regional_transition_pair program state instanceId regional (.ordinaryEnd ending)
+        programValid stateValid otherFound endFound (PreparedInternalTransition.independent_symm independent)
+      exact ⟨pair.2.1, pair.1, pair.2.2.symm⟩
 
 theorem prepared_transition_pair (program : Program) (state : RuntimeState)
     (instanceId : SemanticId)
@@ -105,6 +153,10 @@ theorem prepared_transition_pair (program : Program) (state : RuntimeState)
           have pair := prepared_regional_transition_pair program state instanceId right (.arming left)
             programValid stateValid rightPrepared leftPrepared (PreparedInternalTransition.independent_symm independent)
           exact ⟨pair.2.1, pair.1, pair.2.2.symm⟩
+      | ordinaryEnd right =>
+          have pair := prepared_end_transition_pair program state instanceId right (.arming left)
+            programValid stateValid rightPrepared leftPrepared canonical (PreparedInternalTransition.independent_symm independent)
+          exact ⟨pair.2.1, pair.1, pair.2.2.symm⟩
   | localControl left =>
       cases right with
       | arming right =>
@@ -123,6 +175,10 @@ theorem prepared_transition_pair (program : Program) (state : RuntimeState)
           have pair := prepared_regional_transition_pair program state instanceId right (.localControl left)
             programValid stateValid rightPrepared leftPrepared (PreparedInternalTransition.independent_symm independent)
           exact ⟨pair.2.1, pair.1, pair.2.2.symm⟩
+      | ordinaryEnd right =>
+          have pair := prepared_end_transition_pair program state instanceId right (.localControl left)
+            programValid stateValid rightPrepared leftPrepared canonical (PreparedInternalTransition.independent_symm independent)
+          exact ⟨pair.2.1, pair.1, pair.2.2.symm⟩
   | scopeCreation left =>
       cases right with
       | arming right =>
@@ -140,9 +196,16 @@ theorem prepared_transition_pair (program : Program) (state : RuntimeState)
           have pair := prepared_regional_transition_pair program state instanceId right (.scopeCreation left)
             programValid stateValid rightPrepared leftPrepared (PreparedInternalTransition.independent_symm independent)
           exact ⟨pair.2.1, pair.1, pair.2.2.symm⟩
+      | ordinaryEnd right =>
+          have pair := prepared_end_transition_pair program state instanceId right (.scopeCreation left)
+            programValid stateValid rightPrepared leftPrepared canonical (PreparedInternalTransition.independent_symm independent)
+          exact ⟨pair.2.1, pair.1, pair.2.2.symm⟩
   | regional left =>
       exact prepared_regional_transition_pair program state instanceId left right programValid stateValid
         leftPrepared rightPrepared independent
+  | ordinaryEnd left =>
+      exact prepared_end_transition_pair program state instanceId left right programValid stateValid
+        leftPrepared rightPrepared canonical independent
 
 /-- Root completion writes hosting control. A genuinely independent batch supplies another
 member's protected control read, deriving this condition before prefix induction. -/
@@ -160,7 +223,7 @@ theorem prepared_transition_pair_control_read_only (program : Program) (state : 
     runtimePositionValid_running_instance program instanceId hosting state
       (runtimeStateWellFormed_position program instanceId state valid) selectedRunning
   cases left with
-  | arming _ | localControl _ | scopeCreation _ => trivial
+  | arming _ | localControl _ | scopeCreation _ | ordinaryEnd _ => trivial
   | regional regional =>
       change .ordinary (.runtimeControl instanceId) ∉ regional.footprint.writes
       cases right with
@@ -192,6 +255,14 @@ theorem prepared_transition_pair_control_read_only (program : Program) (state : 
           exact regional_pair_read_key_not_written _ _ independent _
             (regionalStateFootprint_control_read state other.selection other.region other.footprint instanceId running
               (prepareInternalRegional_facts program state _ other rightFound).2.2.2.2.2.1)
+      | ordinaryEnd ending =>
+          obtain ⟨_, selection, _, hosting, _, _, _, _, selectedRunning, _, _, _, _, _, rfl⟩ :=
+            prepareInternalEnd_facts program state ending.operation ending rightFound
+          have same := instanceEq hosting selectedRunning
+          subst hosting
+          exact regional_pair_read_key_not_written _ _ independent _
+            (by simp [PreparedInternalTransition.stateFootprint, makeInternalEndPreparation,
+              internalEndStateFootprint, canonicalRegionalStateAtoms_mem])
 
 theorem prepared_transition_control_frame (program : Program) (state : RuntimeState)
     (prepared : PreparedInternalTransition) (instanceId : SemanticId)
@@ -206,6 +277,7 @@ theorem prepared_transition_control_frame (program : Program) (state : RuntimeSt
       | ordinary operation patch => exact armingControlRead_frame state patch
       | data contract patch => exact armingControlRead_frame state patch.arm
   | localControl localPrepared => rfl
+  | ordinaryEnd _ => rfl
   | scopeCreation scope => exact scopeCreation_apply_control state scope.selection
   | regional regional =>
       obtain ⟨after, _, applied⟩ := prepareInternalRegional_executes program state _ regional found
@@ -240,6 +312,12 @@ theorem prepared_transition_preserves (program : Program) (state : RuntimeState)
       rw [prepareInternalLocalControl_open_occurrences_frame program state
         localPrepared.operation localPrepared instanceId stateValid running selected]
       exact openBefore
+  | ordinaryEnd ending =>
+      refine ⟨prepareInternalEnd_preserves_runtimeStateWellFormed program state ending.operation ending
+        instanceId stateValid selected, control, ?_⟩
+      change (projectOpenFlowNodeOccurrences? program (ending.selection.apply state)).isSome = true
+      rw [ending.selection.open_occurrences_frame program state instanceId running]
+      exact openBefore
   | scopeCreation scope =>
       refine ⟨prepareInternalScopeCreation_preserves_runtimeStateWellFormed program instanceId state
         scope.selection.operation scope programValid stateValid selected, control, ?_⟩
@@ -273,6 +351,8 @@ theorem prepared_transition_applies (program : Program) (state : RuntimeState)
           localPrepared snapshots selected
     | scopeCreation scope =>
         exact prepareInternalScopeCreation_refines program state scope.selection.operation scope selected
+    | ordinaryEnd ending =>
+        exact prepareInternalEnd_refines program state ending.operation ending selected
     | regional regional =>
         obtain ⟨after, fired, applied⟩ := prepareInternalRegional_executes program state _ regional selected
         simpa only [PreparedInternalTransition.operation, PreparedInternalTransition.apply, applied, Option.getD_some] using fired
