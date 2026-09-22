@@ -30,11 +30,8 @@ import type {
   RuntimeState,
   ScopeOccurrenceId,
 } from "./semantic-process-state.js";
-import type { SemanticTransitionKind } from "./semantic-transition-trace.js";
+import { SemanticTransitionKind } from "./semantic-transition-trace.js";
 import { compareCanonicalStrings } from "./wire.js";
-
-const InternalOperationTransitionKind =
-  "internalOperation" as SemanticTransitionKind.InternalOperation;
 
 export type InternalInitiationOperation = Extract<
   SemanticOperation,
@@ -158,7 +155,7 @@ export function deriveInternalInitiationPreparation(
         record: {
           logicalTimeMs: state.logicalTimeMs,
           transition: {
-            kind: InternalOperationTransitionKind,
+            kind: SemanticTransitionKind.InternalOperation,
             operationId: operation.id,
             operationKind: operation.kind,
             origin: operation.origin,

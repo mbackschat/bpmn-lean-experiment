@@ -47,12 +47,9 @@ import type {
   RuntimeState,
   ScopeOccurrenceId,
 } from "./semantic-process-state.js";
-import type {
+import {
   SemanticTransitionKind,
 } from "./semantic-transition-trace.js";
-
-const InternalOperationTransitionKind =
-  "internalOperation" as SemanticTransitionKind.InternalOperation;
 
 export type PreparedInternalOrdinaryArming = Readonly<{
   alternative: InternalOperationAlternative;
@@ -112,7 +109,7 @@ export function deriveInternalOrdinaryArmingPreparation(
       record: {
         logicalTimeMs: committed.logicalTimeMs,
         transition: {
-          kind: InternalOperationTransitionKind,
+          kind: SemanticTransitionKind.InternalOperation,
           operationId: committed.operationId,
           operationKind: committed.operationKind,
           origin: committed.origin,

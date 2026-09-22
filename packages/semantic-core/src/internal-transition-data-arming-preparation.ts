@@ -16,9 +16,7 @@ import type { SemanticProcessProgram } from "./semantic-process-contract.js";
 import { onlyTokenOwner } from "./semantic-process-scope-runtime.js";
 import { ControlStateKind, sameScopeOccurrence } from "./semantic-process-state.js";
 import type { RuntimeState, ScopeOccurrenceId } from "./semantic-process-state.js";
-import type { SemanticTransitionKind } from "./semantic-transition-trace.js";
-
-const InternalOperationTransitionKind = "internalOperation" as SemanticTransitionKind.InternalOperation;
+import { SemanticTransitionKind } from "./semantic-transition-trace.js";
 
 export type PreparedInternalDataArming = Readonly<{
   alternative: InternalOperationAlternative;
@@ -134,7 +132,7 @@ export function deriveInternalDataArmingPreparation(
       record: {
         logicalTimeMs: committed.logicalTimeMs,
         transition: {
-          kind: InternalOperationTransitionKind,
+          kind: SemanticTransitionKind.InternalOperation,
           operationId: operation.id, operationKind: operation.kind, origin: operation.origin, owner,
         },
         positionDelta,

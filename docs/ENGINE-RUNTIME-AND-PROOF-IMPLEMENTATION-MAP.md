@@ -36,7 +36,7 @@ The family map owns the independently closure-reviewed Activity boundary Message
 
 Production closure supports independent batches from ordinary `awaitUserTask`, `awaitMessage`, `awaitPayloadMessage`, `awaitCorrelatedPayloadMessage`, `awaitTimer`, and `awaitEffect` arming; input-only `awaitDataInputUserTask`, output-only `awaitDataOutputUserTask`, and composed `awaitDataInputOutputUserTask` arming; interrupting `awaitBoundedUserTask` and non-interrupting `awaitMonitoredUserTask` arming; local `duplicate`, `synchronize`, `choose`, `selectMany`, and `synchronizeSelected` control; ordinary child `enterScope` or Call `invokeProcess` creation; ordinary `reachNoneEnd`; exact `mergeExclusive` owner/input alternatives; and regional `returnProcess`, `completeScope`, `throwError`, or `terminateScope`.
 
-[Timer-task acceptance](INTERNAL-COMMUTATION-PROPOSAL.md#timer-task-arming-outcome) awaits review.
+[Timer-task acceptance](INTERNAL-COMMUTATION-PROPOSAL.md#timer-task-arming-outcome) is recorded.
 
 [Finite batching](INTERNAL-COMMUTATION-PROPOSAL.md#finite-regional-batch-outcome), [ordinary End](INTERNAL-COMMUTATION-PROPOSAL.md#ordinary-end-batch-outcome), and [exact Merge/private scheduling](INTERNAL-COMMUTATION-PROPOSAL.md#exact-merge-frontier-outcome) pass independent semantic review and selected integration gates. Lean's permutation theorem excludes snapshots. The [atomicity repair](capsules/INTERNAL-CLOSURE-ATOMICITY-REPAIR-SPEC.md) owns rollback/no-publication; remaining families and closure stay open.
 

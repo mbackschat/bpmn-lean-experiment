@@ -29,7 +29,7 @@ import type {
   SelectedActivityArming,
 } from "./semantic-process-activity-arming.js";
 import type { SemanticProcessProgram } from "./semantic-process-contract.js";
-import type { SemanticTransitionKind } from "./semantic-transition-trace.js";
+import { SemanticTransitionKind } from "./semantic-transition-trace.js";
 import { onlyTokenOwner } from "./semantic-process-scope-runtime.js";
 import {
   ControlStateKind,
@@ -177,7 +177,7 @@ export function deriveInternalActivityArmingPreparation(
           alternative,
           record: {
             logicalTimeMs: state.logicalTimeMs,
-            transition: { kind: "internalOperation" as SemanticTransitionKind.InternalOperation,
+            transition: { kind: SemanticTransitionKind.InternalOperation,
               operationId: operation.id, operationKind: operation.kind, origin: operation.origin, owner },
             positionDelta,
           },
