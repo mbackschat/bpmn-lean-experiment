@@ -31,7 +31,7 @@ TypeScript keeps the command-admission union unchanged. Only the evaluator's res
 
 The [scenario harness](../../packages/semantic-core/src/scenario.ts) must check both flags before calling observation or creating command observations. Either failure remains `HarnessFailure` with no observation or publication; it does not become a semantic terminal outcome. The [Workflow loop](../../packages/temporal-adapter/workflow/src/workflow-implementation.ts) must classify that result as `BpmnSemanticClosureFailure` before publication integration, recovery outcome lookup/recording, or candidate assignment, including when recovery admission is present. Semantic state, publication, and semantic command results remain unchanged. This contract adds no public retry or semantic rollback receipt.
 
-The future scheduled evaluator inherits whole-command rollback for fuel and reject-mode ambiguity. Fuel still precedes the next batch or directive; exhausted fuel does not become a schedule defect or an unused-directive failure. Existing directive-validation order and whole-command rollback remain selected but unimplemented obligations of the owning commutation proposal.
+Private scheduled evaluation inherits whole-command rollback for fuel, reject-mode ambiguity, and directive failure. Fuel precedes the next batch or directive; exhausted fuel does not become a schedule defect or an unused-directive failure. The [exact Merge outcome](../INTERNAL-COMMUTATION-PROPOSAL.md#exact-merge-frontier-outcome) owns implemented directive validation and consumption; this repair adds no public scheduled profile or Temporal admission.
 
 ## Publication and commutation account corrections
 

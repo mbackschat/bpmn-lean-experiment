@@ -201,7 +201,7 @@ The exact sequential Multi-Instance User Task profile is implemented and executi
 
 ### TypeScript semantic core
 
-- I/O, byte-level parser, Temporal SDK, CIB dependency, JUEL/XPath/FEEL/script grammar or evaluation, conditional-evaluation receipts, form schema or validation, general BPMN state model, raw source-binding interpretation, effect execution or transport digest, integer execution outside exact M6 User Task completion, String-list values outside M6 completion and the exact Multi-Instance profile bindings, nested or heterogeneous values, general mapping expressions or scope nesting, Call data or generalized definition graphs, general faults or Error propagation beyond one direct parent, timer forms or races beyond the exact capsule, semantically material nondeterministic scheduling, arbitrary graph execution
+- I/O, byte-level parser, Temporal SDK, CIB dependency, JUEL/XPath/FEEL/script grammar or evaluation, conditional-evaluation receipts, form schema or validation, general BPMN state model, raw source-binding interpretation, effect execution or transport digest, integer execution outside exact M6 User Task completion, String-list values outside M6 completion and the exact Multi-Instance profile bindings, nested or heterogeneous values, general mapping expressions or scope nesting, Call data or generalized definition graphs, general faults or Error propagation beyond one direct parent, timer forms or races beyond the exact capsule, public or hosted scheduled choice, arbitrary graph execution
 
 ### BPMN conformance
 
