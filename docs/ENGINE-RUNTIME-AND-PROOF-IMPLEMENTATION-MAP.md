@@ -34,7 +34,7 @@ Four answer-free population schedules execute through separate Lean and TypeScri
 
 The family map owns the independently closure-reviewed Activity boundary Message slice; this map adds no general claim from that bounded family.
 
-[Finite batching](INTERNAL-COMMUTATION-PROPOSAL.md#finite-regional-batch-outcome), [ordinary End](INTERNAL-COMMUTATION-PROPOSAL.md#ordinary-end-batch-outcome), and [exact Merge/private scheduling](INTERNAL-COMMUTATION-PROPOSAL.md#exact-merge-frontier-outcome) pass independent semantic review. Merge integration awaits the pinned browser. Lean's permutation theorem excludes snapshots. The [atomicity repair](capsules/INTERNAL-CLOSURE-ATOMICITY-REPAIR-SPEC.md) owns rollback/no-publication; remaining families and closure stay open.
+[Finite batching](INTERNAL-COMMUTATION-PROPOSAL.md#finite-regional-batch-outcome), [ordinary End](INTERNAL-COMMUTATION-PROPOSAL.md#ordinary-end-batch-outcome), and [exact Merge/private scheduling](INTERNAL-COMMUTATION-PROPOSAL.md#exact-merge-frontier-outcome) pass independent semantic review and selected integration gates. Lean's permutation theorem excludes snapshots. The [atomicity repair](capsules/INTERNAL-CLOSURE-ATOMICITY-REPAIR-SPEC.md) owns rollback/no-publication; remaining families and closure stay open.
 
 [Local-control batching](INTERNAL-COMMUTATION-PROPOSAL.md#independent-cold-review-receipt) passes review and [complete verification](PLAN.md#current-evidence). [`implementation-status-owner:ENGINE-SEMANTIC-INVARIANT`](ENGINE-SEMANTIC-INVARIANT-IMPLEMENTATION-MAP.md#runtime-state-well-formedness) owns collection ordering.
 
