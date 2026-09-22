@@ -45,7 +45,7 @@ test("changed-section navigation covers positions independently of manual routes
 
 test("section comparison preserves multiplicity and order without global ordinal churn", () => {
   const original = "# Guide\n\n## First\n\n- A\n- A\n- B\n\n## Last\n\nStable.\n";
-  for (const target of [original.replace("- A\n- A", "- A"), original.replace("- A\n- A\n- B", "- A\n- B\n- A")]) {
+  for (const target of [original.replace("- A\n- A", "- A"), original.replace("- A\n- A", "- A\n- A\n- A"), original.replace("- A\n- A\n- B", "- A\n- B\n- A")]) {
     const sections = deriveChangedMarkdownSections("README.md", original, target);
     assert.equal(sections.length, 2);
     assert.ok(sections.every(({ headingPath }) => headingPath === "Guide > First"));
@@ -83,6 +83,18 @@ test("unrepresented whitespace moves cannot disappear beside another changed sec
   const moved = baseline.replace("- A\n\n- B", "- A\n- B\n");
   for (const target of [moved, moved.replace("Stable.", "Changed.")]) {
     assert.deepEqual(deriveChangedMarkdownSections("README.md", baseline, target)
+      .map(({ headingPath, revision }) => [headingPath, revision]), [[null, "baseline"], [null, "target"]]);
+  }
+});
+
+test("mixed claim edits retain fallback for internal separator moves in the same section", () => {
+  const prefix = "# Guide\n## Parent\n### Mixed\n";
+  for (const [before, after] of [
+    ["- A\n\n- B\n", "- Changed\n- B\n\n"],
+    ["- A\n- B\n\n", "- Changed\n\n- B\n"],
+    ["- A\n\n- B\n- C\n", "- Changed\n- B\n\n- C\n"],
+  ]) {
+    assert.deepEqual(deriveChangedMarkdownSections("README.md", prefix + before, prefix + after)
       .map(({ headingPath, revision }) => [headingPath, revision]), [[null, "baseline"], [null, "target"]]);
   }
 });

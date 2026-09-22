@@ -170,10 +170,20 @@ export function extractDocumentCoverage(filePath: string, document: string): Rea
   const headings = new Map(structure.headings.map((heading) => [heading.line, heading.headingPath]));
   let owningHeading = "<document>";
   const units: DocumentUnit[] = [];
-  const residual: Array<readonly [string, number | null]> = [];
+  const residual: Array<[string, number | null | "end"]> = [];
+  let blankSeparators: number[] = [];
   let precedingUnits = 0;
   let index = 0;
   let ordinal = 1;
+
+  const finishSection = (): void => {
+    // Terminal blanks stay terminal when ordinary claim counts change; internal blanks retain their position.
+    for (const position of blankSeparators) {
+      const separator = residual[position]!;
+      if (separator[1] === precedingUnits) separator[1] = "end";
+    }
+    blankSeparators = [];
+  };
 
   const addUnit = (text: string): void => {
     units.push({
@@ -196,6 +206,7 @@ export function extractDocumentCoverage(filePath: string, document: string): Rea
     }
     const heading = headings.get(index);
     if (heading !== undefined) {
+      finishSection();
       owningHeading = heading;
       precedingUnits = 0;
       residual.push([line, null]);
@@ -203,7 +214,8 @@ export function extractDocumentCoverage(filePath: string, document: string): Rea
       continue;
     }
     if (line.trim().length === 0 || isTableDelimiter(line) || /^\s*(?:-{3,}|\*{3,}|_{3,})\s*$/u.test(line)) {
-      residual.push([line, line.trim().length === 0 ? null : precedingUnits]);
+      if (line.trim().length === 0) blankSeparators.push(residual.length);
+      residual.push([line, precedingUnits]);
       index += 1;
       continue;
     }
@@ -232,6 +244,7 @@ export function extractDocumentCoverage(filePath: string, document: string): Rea
     }
     addUnit(block.join("\n"));
   }
+  finishSection();
   return { units, residual: JSON.stringify(residual) };
 }
 
