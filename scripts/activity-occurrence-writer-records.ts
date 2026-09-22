@@ -105,6 +105,18 @@ export const writerRecords = new Map<string, WriterRecord>([
       markers: ["theorem prepared_data_arm_preserves_runtime"],
     },
   }],
+  ["BpmnSemantics/SemanticProcess/InternalTimerTaskPreparation.lean#applyInternalTimerTaskPatch@1", {
+    classification: WriterClassification.Issuer,
+    claimPreservation: ClaimPreservation.DisjointInsertion,
+    evidence: {
+      relativePath: "BpmnSemantics/SemanticProcess/InternalTimerTaskPreparation.lean",
+      markers: ["theorem prepareInternalTimerTaskContract_issuesFreshActivity"],
+    },
+    claimEvidence: {
+      relativePath: "BpmnSemantics/SemanticProcess/InternalTimerTaskPreparation.lean",
+      markers: ["theorem prepareInternalTimerTaskContract_preserves_bodyClaims"],
+    },
+  }],
   ["BpmnSemantics/SemanticProcess/InternalDataArmingMixedFrames.lean#applyInternalDataArmingActivityPatch@1", {
     classification: WriterClassification.Issuer,
     claimPreservation: ClaimPreservation.DisjointInsertion,
@@ -443,7 +455,7 @@ export const writerRecords = new Map<string, WriterRecord>([
     classification: WriterClassification.IdentityRemoving,
     claimPreservation: ClaimPreservation.Removal,
   }],
-  ["packages/semantic-core/src/semantic-process-activity-arming.ts#armActivityWithBoundaryTimer@1", {
+  ["packages/semantic-core/src/semantic-process-activity-arming.ts#applySelectedActivityArming@1", {
     classification: WriterClassification.Issuer,
     claimPreservation: ClaimPreservation.DisjointInsertion,
     evidence: {

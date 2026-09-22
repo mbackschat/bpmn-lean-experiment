@@ -9,7 +9,7 @@ import {
 import type { RuntimeState, SemanticProcessProgram } from "@bpmn-lean/semantic-core";
 import type { InstantiatedInternalPublication } from "../src/internal-publication-template.ts";
 import { regionalKinds, regionalPairFixture } from "./internal-regional-pair-fixture.ts";
-import { internalArmingKinds, internalArmingOperation } from "./internal-arming-operation-fixture.ts";
+import { internalArmingKinds, internalArmingOperation, withInternalArmingBoundaryRoute } from "./internal-arming-operation-fixture.ts";
 
 const { deriveInternalRegionalPreparation: prepare, applyPreparedInternalRegionalTransition: apply } = await import(
   new URL("../dist/internal-transition-regional-preparation.js", import.meta.url).href
@@ -129,12 +129,12 @@ for (const bounded of kind === Kind.CompleteScope ? [false, true] : [false]) {
     const { start, branches, side } = fixture;
     assert.ok(side.kind === Kind.AwaitUserTask);
     const arming = internalArmingOperation(armingKind, side.input, side.output);
-    const program: SemanticProcessProgram = { ...fixture.program,
+    const program = withInternalArmingBoundaryRoute({ ...fixture.program,
       operations: fixture.program.operations.map((operation) => operation === side ? arming : operation)
         .sort((a, b) => compareCanonicalStrings(a.id, b.id)),
       operationScopes: fixture.program.operationScopes.map((binding) => binding.operationId === side.id
         ? { ...binding, operationId: arming.id } : binding)
-        .sort((a, b) => compareCanonicalStrings(a.operationId, b.operationId)) };
+        .sort((a, b) => compareCanonicalStrings(a.operationId, b.operationId)) }, arming);
     const state: RuntimeState = { ...fixture.state,
       variables: { ...fixture.state.variables, process: { bindings: [
         { name: "details", value: { kind: VariableValueKind.String, value: "Review details" } },

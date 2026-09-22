@@ -12,6 +12,8 @@ import BpmnSemantics.SemanticProcess.InternalMergeArmingCommutation
 import BpmnSemantics.SemanticProcess.InternalMergeScopeCreationCommutation
 import BpmnSemantics.SemanticProcess.InternalMergeEndCommutation
 import BpmnSemantics.SemanticProcess.InternalMergeRegionalCommutation
+import BpmnSemantics.SemanticProcess.InternalTimerTaskTransitionPair
+import BpmnSemantics.SemanticProcess.InternalTimerTaskAcceptedPublication
 
 /-! Complete mixed preparations lift to arbitrary finite prefixes and multiplicity-preserving
 permutations under the [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).
@@ -38,6 +40,12 @@ private theorem prepared_regional_transition_pair (program : Program) (state : R
       (runtimeStateWellFormed_position program instanceId state stateValid) running
     simpa only [same] using stateValid
   cases other with
+  | timerTask contract patch =>
+      have pair := prepared_timer_task_transition_pair program state instanceId contract patch (.regional regional)
+        programValid stateValid otherFound regionalFound
+        (runtimeStateWellFormed_canonicalCollectionOrder program instanceId state stateValid)
+        (PreparedInternalTransition.independent_symm independent)
+      exact ⟨pair.2.1, pair.1, pair.2.2.symm⟩
   | arming arm =>
       have valid := validFor _ (preparedArming_owner_facts program state arm otherFound).2.2
       obtain ⟨frame, after, applied, armFrame, commute⟩ := prepared_regional_arming_pair_commutes
@@ -115,6 +123,10 @@ private theorem prepared_end_transition_pair (program : Program) (state : Runtim
       prepareInternalEnd? program (other.apply program state) ending.operation = some ending ∧
       other.apply program (ending.selection.apply state) = ending.selection.apply (other.apply program state) := by
   cases other with
+  | timerTask contract patch =>
+      have pair := prepared_timer_task_transition_pair program state instanceId contract patch (.ordinaryEnd ending)
+        programValid stateValid otherFound endFound canonical (PreparedInternalTransition.independent_symm independent)
+      exact ⟨pair.2.1, pair.1, pair.2.2.symm⟩
   | arming arm =>
       have pair := prepared_end_arming_pair_commutes program state ending.operation ending arm
         endFound otherFound independent
@@ -151,6 +163,10 @@ private theorem prepared_merge_transition_pair (program : Program) (state : Runt
       prepareInternalMerge? program (other.apply program state) merge.selection.operation merge.selection.alternative = some merge ∧
       other.apply program (merge.selection.apply state) = merge.selection.apply (other.apply program state) := by
   cases other with
+  | timerTask contract patch =>
+      have pair := prepared_timer_task_transition_pair program state instanceId contract patch (.mergeInput merge)
+        programValid stateValid otherFound mergeFound canonical (PreparedInternalTransition.independent_symm independent)
+      exact ⟨pair.2.1, pair.1, pair.2.2.symm⟩
   | arming arm =>
       exact prepared_merge_arming_pair_commutes program state merge.selection.operation merge.selection.alternative
         merge arm mergeFound otherFound canonical independent
@@ -189,8 +205,15 @@ theorem prepared_transition_pair (program : Program) (state : RuntimeState)
       left.Prepared program (right.apply program state) ∧
       right.apply program (left.apply program state) = left.apply program (right.apply program state) := by
   cases left with
+  | timerTask contract patch =>
+      exact prepared_timer_task_transition_pair program state instanceId contract patch right
+        programValid stateValid leftPrepared rightPrepared canonical independent
   | arming left =>
       cases right with
+      | timerTask contract patch =>
+          have pair := prepared_timer_task_transition_pair program state instanceId contract patch (.arming left)
+            programValid stateValid rightPrepared leftPrepared canonical (PreparedInternalTransition.independent_symm independent)
+          exact ⟨pair.2.1, pair.1, pair.2.2.symm⟩
       | arming right =>
           exact prepared_arming_pair program state left right leftPrepared rightPrepared
             canonical independent
@@ -218,6 +241,10 @@ theorem prepared_transition_pair (program : Program) (state : RuntimeState)
           exact ⟨pair.2.1, pair.1, pair.2.2.symm⟩
   | localControl left =>
       cases right with
+      | timerTask contract patch =>
+          have pair := prepared_timer_task_transition_pair program state instanceId contract patch (.localControl left)
+            programValid stateValid rightPrepared leftPrepared canonical (PreparedInternalTransition.independent_symm independent)
+          exact ⟨pair.2.1, pair.1, pair.2.2.symm⟩
       | arming right =>
           exact prepared_local_control_arming_pair program state left.operation left right
             leftPrepared rightPrepared canonical independent
@@ -244,6 +271,10 @@ theorem prepared_transition_pair (program : Program) (state : RuntimeState)
           exact ⟨pair.2.1, pair.1, pair.2.2.symm⟩
   | scopeCreation left =>
       cases right with
+      | timerTask contract patch =>
+          have pair := prepared_timer_task_transition_pair program state instanceId contract patch (.scopeCreation left)
+            programValid stateValid rightPrepared leftPrepared canonical (PreparedInternalTransition.independent_symm independent)
+          exact ⟨pair.2.1, pair.1, pair.2.2.symm⟩
       | arming right =>
           exact prepared_scope_creation_arming_pair program state left.selection.operation
             left right leftPrepared rightPrepared canonical independent
@@ -293,10 +324,17 @@ theorem prepared_transition_pair_control_read_only (program : Program) (state : 
     runtimePositionValid_running_instance program instanceId hosting state
       (runtimeStateWellFormed_position program instanceId state valid) selectedRunning
   cases left with
-  | arming _ | localControl _ | scopeCreation _ | ordinaryEnd _ | mergeInput _ => trivial
+  | timerTask _ _ | arming _ | localControl _ | scopeCreation _ | ordinaryEnd _ | mergeInput _ => trivial
   | regional regional =>
       change .ordinary (.runtimeControl instanceId) ∉ regional.footprint.writes
       cases right with
+      | timerTask contract patch =>
+          have same := instanceEq _ (preparedTimerTask_owner_facts program state contract patch rightFound).2.2
+          intro written
+          have read : .ordinary (.runtimeControl instanceId) ∈ (timerTaskStateFootprint patch).reads := by
+            simp [timerTaskStateFootprint, canonicalRegionalStateAtoms_mem, same]
+          have conflict := regional_independent_read_write _ _ independent _ _ written read
+          simp [regionalStateAtomsConflict] at conflict
       | arming arm =>
           have same := instanceEq _ (preparedArming_owner_facts program state arm rightFound).2.2
           simpa only [same] using arming_regional_control_not_written regional.footprint arm independent
@@ -356,6 +394,7 @@ theorem prepared_transition_control_frame (program : Program) (state : RuntimeSt
     (readOnly : prepared.ControlReadOnly instanceId) :
     (prepared.apply program state).control = state.control := by
   cases prepared with
+  | timerTask _ patch => exact armingControlRead_frame state patch.arm
   | arming arm =>
       cases arm with
       | ordinary operation patch => exact armingControlRead_frame state patch
@@ -384,6 +423,10 @@ theorem prepared_transition_preserves (program : Program) (state : RuntimeState)
       (projectOpenFlowNodeOccurrences? program (prepared.apply program state)).isSome = true := by
   have control := (prepared_transition_control_frame program state prepared instanceId stateValid running selected readOnly).trans running
   cases prepared with
+  | timerTask contract patch =>
+      have preserved := prepared_timer_task_preserves_runtime_and_open_set program state contract patch instanceId
+        programValid stateValid openBefore selected
+      exact ⟨preserved.1, control, preserved.2⟩
   | arming arm =>
       have preserved := prepared_arming_preserves program state arm instanceId
         programValid stateValid openBefore selected
@@ -438,6 +481,8 @@ theorem prepared_transition_applies (program : Program) (state : RuntimeState)
   · cases prepared <;> simp only [PreparedInternalTransition.operation, PreparedInternalTransition.alternative,
       fireInternalAlternative_operation, PreparedInternalTransition.apply]
     case arming arm => exact (prepared_arming_applies program state arm snapshots selected).1
+    case timerTask contract patch =>
+        exact prepareInternalTimerTaskContract_refines_operation program state contract patch selected
     case localControl localPrepared =>
         exact prepareInternalLocalControl_refines program state localPrepared.operation
           localPrepared snapshots selected

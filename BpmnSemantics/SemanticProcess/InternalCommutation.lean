@@ -185,19 +185,20 @@ theorem noninterfering_prepared_inputs_ne (program : Program) (state : RuntimeSt
   simp_all [footprintsNonInterfering, listsDisjoint, footprintOfPatch,
     canonicalStateAtomSet, mem_sortBy]
 
-theorem prepared_patch_frame_of_inputs_ne (program : Program) (state : RuntimeState)
-    (rightOperation : SemanticOperation) (left right : InternalArmingPatch)
+theorem prepared_arm_read_frame (program : Program) (state after : RuntimeState)
+    (rightOperation : SemanticOperation) (right : InternalArmingPatch)
     (rightPrepared : prepareInternalArm? program state rightOperation = some right)
-    (inputDistinct : left.input ≠ right.input)
-    (separated : footprintsNonInterfering (footprintOfPatch left) (footprintOfPatch right) = true) : prepareInternalArm? program (applyInternalArmingPatch state left) rightOperation = some right := by
-  have occurrenceDistinct := noninterfering_occurrence_ne left right separated
-  have elementDistinct := fun same => noninterfering_same_kind_element_ne left right same separated
-  have activationFrame := armingActivationRead_frame state left right.write.kind right.write.elementId elementDistinct; have anchorFrame := armingOpenAnchorRead_frame state left right.write.occurrence occurrenceDistinct
-  have availableFrame : right.write.available (applyInternalArmingPatch state left) = right.write.available state := by
-    cases writeEq : right.write <;> simp [InternalArmingWrite.available]
-    case effect wait bindings => simpa [InternalArmingWrite.available] using effectAvailableRead_frame state left wait bindings (by rw [writeEq] at occurrenceDistinct; exact occurrenceDistinct)
-  have processVariablesFrame := armingProcessVariablesRead_frame state left
-  clear separated
+    (ownerFrame : onlyTokenOwner? after right.input = onlyTokenOwner? state right.input)
+    (controlFrame : after.control = state.control)
+    (timeFrame : after.logicalTimeMs = state.logicalTimeMs)
+    (liveFrame : ∀ owner, exactLiveOccurrence after owner = exactLiveOccurrence state owner)
+    (processVariablesFrame : after.variables.process = state.variables.process)
+    (activationFrame : internalActivationCount after right.write.kind right.write.elementId =
+      internalActivationCount state right.write.kind right.write.elementId)
+    (anchorFrame : openWaitAnchorAbsent after right.write.occurrence =
+      openWaitAnchorAbsent state right.write.occurrence)
+    (availableFrame : right.write.available after = right.write.available state) :
+    prepareInternalArm? program after rightOperation = some right := by
   cases rightOperation
   case awaitCorrelatedPayloadMessage id origin input output message correlationKeyId
       correlationPropertyId payloadSelector processPropertySelector =>
@@ -230,10 +231,8 @@ theorem prepared_patch_frame_of_inputs_ne (program : Program) (state : RuntimeSt
                 rw [← prepared.2] at correlatedAnchorFrame
                 simp only [InternalArmingWrite.occurrence] at correlatedAnchorFrame
                 have anchorAfter := correlatedAnchorFrame.trans prepared.1.1.2
-                have correlatedInputDistinct := inputDistinct
-                rw [← prepared.2] at correlatedInputDistinct
-                have ownerFrame := armingOwnerRead_frame state left input
-                  correlatedInputDistinct
+                have correlatedOwnerFrame := ownerFrame
+                rw [← prepared.2] at correlatedOwnerFrame
                 have correlatedActivationFrame := activationFrame
                 rw [← prepared.2] at correlatedActivationFrame
                 simp only [InternalArmingWrite.kind, InternalArmingWrite.elementId,
@@ -244,8 +243,7 @@ theorem prepared_patch_frame_of_inputs_ne (program : Program) (state : RuntimeSt
                 simp only [InternalArmingWrite.kind, InternalArmingWrite.elementId,
                   InternalArmingWrite.occurrence] at activationFrame anchorFrame
                 simp_all [prepareInternalArm?, internalArmInput?, internalArmOrigin?,
-                  internalActivationCount, armingControlRead_frame, armingTimeRead_frame,
-                  armingLiveOwnerRead_frame]
+                  internalActivationCount]
                 simpa only [InternalArmingWrite.occurrence] using anchorAfter
             | boolean _ => simp [filteredEq, valueEq] at prepared
             | integer _ => simp [filteredEq, valueEq] at prepared
@@ -264,9 +262,28 @@ theorem prepared_patch_frame_of_inputs_ne (program : Program) (state : RuntimeSt
         simp only [InternalArmingWrite.kind, InternalArmingWrite.elementId,
           InternalArmingWrite.occurrence] at activationFrame anchorFrame
         simp_all [prepareInternalArm?, internalArmInput?, internalArmOrigin?, internalActivationCount,
-          armingOwnerRead_frame, armingControlRead_frame, armingTimeRead_frame,
-          armingLiveOwnerRead_frame, InternalArmingWrite.kind,
+          InternalArmingWrite.kind,
           InternalArmingWrite.elementId, InternalArmingWrite.occurrence]
+
+theorem prepared_patch_frame_of_inputs_ne (program : Program) (state : RuntimeState)
+    (rightOperation : SemanticOperation) (left right : InternalArmingPatch)
+    (rightPrepared : prepareInternalArm? program state rightOperation = some right)
+    (inputDistinct : left.input ≠ right.input)
+    (separated : footprintsNonInterfering (footprintOfPatch left) (footprintOfPatch right) = true) :
+    prepareInternalArm? program (applyInternalArmingPatch state left) rightOperation = some right := by
+  have occurrenceDistinct := noninterfering_occurrence_ne left right separated
+  have elementDistinct := fun same => noninterfering_same_kind_element_ne left right same separated
+  have availableFrame : right.write.available (applyInternalArmingPatch state left) = right.write.available state := by
+    cases writeEq : right.write <;> simp [InternalArmingWrite.available]
+    case effect wait bindings =>
+      simpa [InternalArmingWrite.available] using effectAvailableRead_frame state left wait bindings
+        (by rw [writeEq] at occurrenceDistinct; exact occurrenceDistinct)
+  exact prepared_arm_read_frame program state _ rightOperation right rightPrepared
+    (armingOwnerRead_frame state left right.input inputDistinct)
+    (armingControlRead_frame state left) (armingTimeRead_frame state left)
+    (armingLiveOwnerRead_frame state left) (armingProcessVariablesRead_frame state left)
+    (armingActivationRead_frame state left right.write.kind right.write.elementId elementDistinct)
+    (armingOpenAnchorRead_frame state left right.write.occurrence occurrenceDistinct) availableFrame
 
 
 theorem prepared_patch_frame (program : Program) (state : RuntimeState)

@@ -25,8 +25,8 @@ def armBoundedUserTaskState? (state : RuntimeState) (input : ControlPlaceId)
     (task : BoundedTaskArm) (boundaryTimer : BoundaryTimerArm) :
     Option RuntimeState := do
   let owner ← onlyTokenOwner? state input
-  let instanceId ← boundedRunningInstance? state
-  pure (activateBoundedUserTask state instanceId owner input task boundaryTimer)
+  let _ ← boundedRunningInstance? state
+  pure (activateBoundedUserTask state owner.processInstanceId owner input task boundaryTimer)
 
 /-- Atomic declarative arming relation with explicit ownership, freshness, and the exact resulting state. -/
 inductive BoundedTaskArmingStep : RuntimeState → ControlPlaceId →
@@ -37,7 +37,18 @@ inductive BoundedTaskArmingStep : RuntimeState → ControlPlaceId →
       (owned : onlyTokenOwner? before input = some owner)
       (running : boundedRunningInstance? before = some instanceId) :
       BoundedTaskArmingStep before input task boundaryTimer
-        (activateBoundedUserTask before instanceId owner input task boundaryTimer)
+        (activateBoundedUserTask before owner.processInstanceId owner input task boundaryTimer)
+
+/-- A called Process owns its task, Timer, and Activity identities even while runtime control names
+the root Process; `flowNodeOccurrenceProgramValidity_wait_owner_ids` requires this identity equality. -/
+theorem armBoundedUserTaskState_of_owned_running (state : RuntimeState)
+    (input : ControlPlaceId) (task : BoundedTaskArm) (boundaryTimer : BoundaryTimerArm)
+    (owner : ScopeOccurrenceId) (instanceId : SemanticId)
+    (owned : onlyTokenOwner? state input = some owner)
+    (running : state.control = .running instanceId) :
+    armBoundedUserTaskState? state input task boundaryTimer =
+      some (activateBoundedUserTask state owner.processInstanceId owner input task boundaryTimer) := by
+  simp [armBoundedUserTaskState?, owned, boundedRunningInstance?, running]
 
 theorem armBoundedUserTaskState_sound (before after : RuntimeState)
     (input : ControlPlaceId) (task : BoundedTaskArm)

@@ -92,9 +92,25 @@ inductive UnboundedUserTaskWaitDeclaration (wait : UserTaskWait) : SemanticOpera
         (.awaitDataInputOutputUserTask id origin input wait.output wait.task.id wait.task.name
           directInput directOutput)
 
-theorem flowNodeOccurrenceUserTaskProgramValidity_insertUnboundedUserTask (program : Program)
+/-- User Task projection checks the task declaration independently of its attached Timer. The Timer
+half still requires the joint Activity/handler matcher in `boundaryTimerOperationMatches`. -/
+inductive UserTaskWaitDeclaration (wait : UserTaskWait) : SemanticOperation → Prop
+  | unbounded {operation} (declaration : UnboundedUserTaskWaitDeclaration wait operation) :
+      UserTaskWaitDeclaration wait operation
+  | bounded (id origin input timer)
+      (taskMetadata : wait.task.metadata = none) (metadata : wait.metadata = none) :
+      UserTaskWaitDeclaration wait
+        (.awaitBoundedUserTask id origin input
+          { id := wait.task.id, name := wait.task.name, output := wait.output } timer)
+  | monitored (id origin input timer)
+      (taskMetadata : wait.task.metadata = none) (metadata : wait.metadata = none) :
+      UserTaskWaitDeclaration wait
+        (.awaitMonitoredUserTask id origin input
+          { id := wait.task.id, name := wait.task.name, output := wait.output } timer)
+
+theorem flowNodeOccurrenceUserTaskProgramValidity_insertUserTask (program : Program)
     (state : RuntimeState) (operation : SemanticOperation) (wait : UserTaskWait)
-    (declaration : UnboundedUserTaskWaitDeclaration wait operation)
+    (declaration : UserTaskWaitDeclaration wait operation)
     (prior : flowNodeOccurrenceUserTaskProgramValidity program state = true)
     (declarers : userTaskWaitDeclarers program wait.task.id = [operation])
     (declared : declaredByExactlyOneOwnedOperation program
@@ -125,7 +141,9 @@ theorem flowNodeOccurrenceUserTaskProgramValidity_insertUnboundedUserTask (progr
         by_cases familyMember : candidate ∈ userTaskWaitDeclarers program wait.task.id
         · have operationEq := only.mp familyMember
           subst candidate
-          cases declaration <;> simp_all
+          cases declaration with
+          | unbounded original => cases original <;> simp_all
+          | bounded | monitored => simp_all
         · cases candidate with
           | awaitUserTask candidateId candidateOrigin candidateInput candidateOutput candidateTask =>
               have different : candidateTask.id ≠ wait.task.id := by
@@ -206,6 +224,22 @@ theorem flowNodeOccurrenceUserTaskProgramValidity_insertUnboundedUserTask (progr
   refine ⟨newValid, ?_⟩
   simpa [userTaskWaitValid, occurrenceOwnerValid, flowNodeOccurrenceOwnerLiveUnique,
     after] using prior
+
+theorem flowNodeOccurrenceUserTaskProgramValidity_insertUnboundedUserTask (program : Program)
+    (state : RuntimeState) (operation : SemanticOperation) (wait : UserTaskWait)
+    (declaration : UnboundedUserTaskWaitDeclaration wait operation)
+    (prior : flowNodeOccurrenceUserTaskProgramValidity program state = true)
+    (declarers : userTaskWaitDeclarers program wait.task.id = [operation])
+    (declared : declaredByExactlyOneOwnedOperation program
+      (userTaskWaitDeclarers program wait.task.id) wait.owner = true)
+    (live : flowNodeOccurrenceOwnerLiveUnique state wait.owner = true)
+    (ownerProcess : !wait.processInstanceId.value.isEmpty = true)
+    (taskId : !wait.task.id.value.isEmpty = true) (positive : wait.activation > 0)
+    (processOwner : wait.processInstanceId = wait.owner.processInstanceId) :
+    flowNodeOccurrenceUserTaskProgramValidity program
+      { state with waits := insertUserTaskWait wait state.waits } = true :=
+  flowNodeOccurrenceUserTaskProgramValidity_insertUserTask program state operation wait
+    (.unbounded declaration) prior declarers declared live ownerProcess taskId positive processOwner
 
 theorem flowNodeOccurrenceUserTaskProgramValidity_insertOrdinaryUserTask (program : Program)
     (state : RuntimeState) (id : OperationId) (origin : BpmnElementOrigin)

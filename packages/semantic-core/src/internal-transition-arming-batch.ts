@@ -6,6 +6,10 @@ import type { InternalTransitionCandidate } from "./internal-transition-footprin
 import { applyInternalOrdinaryArmingPatch } from "./internal-transition-ordinary-arming-patch.js";
 import { deriveInternalOrdinaryArmingPreparation } from "./internal-transition-ordinary-arming-preparation.js";
 import type { PreparedInternalOrdinaryArming } from "./internal-transition-ordinary-arming-preparation.js";
+import { deriveInternalActivityArmingPreparation } from "./internal-transition-activity-arming-preparation.js";
+import type { PreparedInternalActivityArming } from "./internal-transition-activity-arming-preparation.js";
+import { applySelectedActivityArming } from "./semantic-process-activity-arming.js";
+import { sameScopeOccurrence } from "./semantic-process-state.js";
 import { SemanticOperationKind } from "./semantic-process-contract.js";
 import type { SemanticProcessProgram } from "./semantic-process-contract.js";
 import type { RuntimeState } from "./semantic-process-state.js";
@@ -13,11 +17,13 @@ import type { RuntimeState } from "./semantic-process-state.js";
 export enum PreparedInternalArmingKind {
   Ordinary = "ordinary",
   Data = "data",
+  TimerTask = "timerTask",
 }
 
 export type PreparedInternalArming = Readonly<
   | PreparedInternalOrdinaryArming & { kind: PreparedInternalArmingKind.Ordinary }
   | PreparedInternalDataArming & { kind: PreparedInternalArmingKind.Data }
+  | PreparedInternalActivityArming & { kind: PreparedInternalArmingKind.TimerTask }
 >;
 
 export function deriveInternalArmingPreparation(
@@ -26,6 +32,13 @@ export function deriveInternalArmingPreparation(
   candidate: InternalTransitionCandidate,
 ): PreparedInternalArming | null {
   switch (candidate.operation.kind) {
+    case SemanticOperationKind.AwaitBoundedUserTask:
+    case SemanticOperationKind.AwaitMonitoredUserTask: {
+      if (program.compensationEventSubProcessSnapshots !== undefined || candidate.owner === null) return null;
+      const prepared = deriveInternalActivityArmingPreparation(program, state, candidate.operation);
+      return prepared === null || !sameScopeOccurrence(prepared.owner, candidate.owner)
+        ? null : { kind: PreparedInternalArmingKind.TimerTask, ...prepared };
+    }
     case SemanticOperationKind.AwaitDataInputUserTask:
     case SemanticOperationKind.AwaitDataOutputUserTask:
     case SemanticOperationKind.AwaitDataInputOutputUserTask: {
@@ -81,6 +94,8 @@ export function applyPreparedInternalArming(
   // checks every field without erasing tags, array order, or the separate occurrence counters.
   if (current === null || JSON.stringify(current) !== JSON.stringify(prepared)) return null;
   switch (prepared.kind) {
+    case PreparedInternalArmingKind.TimerTask:
+      return applySelectedActivityArming(state, prepared.owner, prepared.operation.input, prepared);
     case PreparedInternalArmingKind.Ordinary:
       return applyInternalOrdinaryArmingPatch(state, prepared.patch);
     case PreparedInternalArmingKind.Data:

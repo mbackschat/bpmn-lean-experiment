@@ -106,28 +106,38 @@ export function armActivityWithBoundaryTimer(
   if (selected === null) {
     return null;
   }
+  return applySelectedActivityArming(state, owner, operation.input, selected);
+}
+
+/** Applies the retained three-identity selection without replacing unrelated sibling state. */
+export function applySelectedActivityArming(
+  state: RuntimeState,
+  owner: ScopeOccurrenceId,
+  input: string,
+  selected: SelectedActivityArming,
+): RuntimeState {
   return {
     ...state,
     activityOccurrences: [...state.activityOccurrences, selected.record]
       .sort(compareActivityOccurrences),
     activityActivations: setActivationCount(
       state.activityActivations,
-      operation.task.elementId,
+      selected.record.id.activityElementId,
       selected.record.id.activation,
     ),
-    controlTokens: removeToken(state.controlTokens, operation.input, owner),
+    controlTokens: removeToken(state.controlTokens, input, owner),
     userTaskWaits: [...state.userTaskWaits, selected.taskWait]
       .sort(compareUserTaskWaits),
     timerWaits: [...state.timerWaits, selected.timerWait]
       .sort(compareTimerWaits),
     taskActivations: setActivationCount(
       state.taskActivations,
-      operation.task.elementId,
+      selected.taskWait.id.elementId,
       selected.taskWait.id.activation,
     ),
     timerActivations: setActivationCount(
       state.timerActivations,
-      operation.boundaryTimer.elementId,
+      selected.timerWait.id.elementId,
       selected.timerWait.id.activation,
     ),
   };

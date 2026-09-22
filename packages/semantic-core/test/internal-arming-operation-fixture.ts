@@ -1,9 +1,11 @@
-import { CorrelationScalarPathLanguage, MessageChannelKind, SemanticOperationKind as Kind } from "@bpmn-lean/semantic-core";
-import type { SemanticOperation } from "@bpmn-lean/semantic-core";
-import { operationBase } from "./semantic-program-parts.ts";
+import { CorrelationScalarPathLanguage, MessageChannelKind, SemanticOperationKind as Kind,
+  SemanticOriginKind, compareCanonicalStrings } from "@bpmn-lean/semantic-core";
+import type { SemanticOperation, SemanticProcessProgram } from "@bpmn-lean/semantic-core";
+import { controlPlace, operationBase } from "./semantic-program-parts.ts";
 
 export const internalArmingKinds = [Kind.AwaitUserTask, Kind.AwaitTimer, Kind.AwaitDataInputOutputUserTask,
-  Kind.AwaitMessage, Kind.AwaitPayloadMessage, Kind.AwaitCorrelatedPayloadMessage, Kind.AwaitEffect] as const;
+  Kind.AwaitMessage, Kind.AwaitPayloadMessage, Kind.AwaitCorrelatedPayloadMessage, Kind.AwaitEffect,
+  Kind.AwaitBoundedUserTask, Kind.AwaitMonitoredUserTask] as const;
 export type InternalArmingKind = typeof internalArmingKinds[number];
 
 export function internalArmingOperation(kind: InternalArmingKind, input: string, output: string):
@@ -16,6 +18,11 @@ export function internalArmingOperation(kind: InternalArmingKind, input: string,
   switch (kind) {
     case Kind.AwaitUserTask:
       return ordinary;
+    case Kind.AwaitBoundedUserTask:
+    case Kind.AwaitMonitoredUserTask:
+      return { ...operationBase("Side_Task"), kind, input, task: { ...ordinary.task, output },
+        boundaryTimer: { elementId: "Side_Deadline", durationMs: 1000, output: "place:Side_Deadline_Flow",
+          origin: { kind: SemanticOriginKind.BpmnSequenceFlow, elementId: "Side_Deadline_Flow" } } };
     case Kind.AwaitTimer:
       return { ...operationBase("Side_Timer"), kind, input, output,
         timer: { elementId: "Side_Timer", durationMs: 1000 } };
@@ -37,4 +44,22 @@ export function internalArmingOperation(kind: InternalArmingKind, input: string,
         effect: { elementId: "Side_Effect", inputMappings: [], outputMappings: [],
           descriptor: { protocol: "urn:bpmn-lean:effect-protocol:activity-v1", operation: "urn:bpmn-lean:effect-operation:probe-v1" } } };
   }
+}
+
+export function withInternalArmingBoundaryRoute(program: SemanticProcessProgram,
+    operation: SemanticOperation): SemanticProcessProgram {
+  if (operation.kind !== Kind.AwaitBoundedUserTask && operation.kind !== Kind.AwaitMonitoredUserTask) return program;
+  const scope = program.operationScopes.find(({ operationId }) => operationId === operation.id);
+  if (scope === undefined) throw new Error("Timer-task fixture must have an operation scope");
+  const boundaryPlace = controlPlace(operation.boundaryTimer.origin.elementId);
+  const boundaryEnd = { ...operationBase("Side_Deadline_End"), kind: Kind.ReachNoneEnd,
+    input: boundaryPlace.id } as const;
+  return { ...program,
+    controlPlaces: [...program.controlPlaces, boundaryPlace].sort((a, b) => compareCanonicalStrings(a.id, b.id)),
+    controlPlaceScopes: [...program.controlPlaceScopes, { controlPlaceId: boundaryPlace.id, scopeId: scope.scopeId }]
+      .sort((a, b) => compareCanonicalStrings(a.controlPlaceId, b.controlPlaceId)),
+    operations: [...program.operations, boundaryEnd].sort((a, b) => compareCanonicalStrings(a.id, b.id)),
+    operationScopes: [...program.operationScopes, { operationId: boundaryEnd.id, scopeId: scope.scopeId }]
+      .sort((a, b) => compareCanonicalStrings(a.operationId, b.operationId)),
+  };
 }

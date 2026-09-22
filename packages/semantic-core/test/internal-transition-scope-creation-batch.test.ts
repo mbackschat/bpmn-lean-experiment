@@ -16,7 +16,7 @@ import { callActivityProgram, callActivityStart } from "./call-activity-fixture.
 import { admittedInternalPrefix } from "./internal-operation-prefix-fixture.ts";
 import { controlPlace, operationBase } from "./semantic-program-parts.ts";
 import { reviewProgram } from "./sequential-multi-instance-fixture.ts";
-import { internalArmingKinds as armKinds, internalArmingOperation } from "./internal-arming-operation-fixture.ts";
+import { internalArmingKinds as armKinds, internalArmingOperation, withInternalArmingBoundaryRoute } from "./internal-arming-operation-fixture.ts";
 import type { InternalArmingKind as ArmKind } from "./internal-arming-operation-fixture.ts";
 
 const { deriveInternalTransitionPreparation: prepare, prepareInternalTransitionBatch: batch,
@@ -96,7 +96,7 @@ function fixture(kinds: readonly ScopeKind[], armKind: ArmKind = SemanticOperati
   addOperation({ ...operationBase("End"), kind: SemanticOperationKind.ReachNoneEnd, input: place("End") });
   addOperation({ ...operationBase("Complete_Root"), origin: operationBase(scopeProgram.processId).origin,
     kind: SemanticOperationKind.CompleteScope, scopeId: root.id, parentOutput: null });
-  const program: SemanticProcessProgram = {
+  const program = withInternalArmingBoundaryRoute({
     ...scopeProgram,
     definitionScopes: definitionScopes.sort((left, right) => compareCanonicalStrings(left.id, right.id)),
     operations: operations.sort((left, right) => compareCanonicalStrings(left.id, right.id)),
@@ -104,7 +104,7 @@ function fixture(kinds: readonly ScopeKind[], armKind: ArmKind = SemanticOperati
     controlPlaces: controlPlaceScopes.map(({ controlPlaceId }) => controlPlace(controlPlaceId.slice(6)))
       .sort((left, right) => compareCanonicalStrings(left.id, right.id)),
     controlPlaceScopes: controlPlaceScopes.sort((left, right) => compareCanonicalStrings(left.controlPlaceId, right.controlPlaceId)),
-  };
+  }, arm);
   const start = { ...startStimulus(), initialVariables: [
     { name: "details", value: { kind: VariableValueKind.String, value: "Review details" } },
   ] } as const;

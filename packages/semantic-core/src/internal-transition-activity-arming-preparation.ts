@@ -7,12 +7,14 @@ import {
 } from "./flow-node-occurrence-candidates.js";
 import { internalOperationAlternative } from "./internal-transition-alternative.js";
 import type { InternalOperationAlternative } from "./internal-transition-alternative.js";
-import { canonicalUniqueStateAtoms } from "./internal-transition-footprint-ordering.js";
+import { canonicalUniqueStateAtoms, canonicalUniquePublicationAtoms } from "./internal-transition-footprint-ordering.js";
+import { InternalPublicationTemplateAnchorKind } from "./internal-publication-template.js";
+import type { InternalPublicationTemplate } from "./internal-publication-template.js";
 import type {
   InternalTransitionStateAtom,
-  InternalTransitionStateFootprint,
+  InternalTransitionFootprint,
 } from "./internal-transition-footprint.js";
-import { InternalTransitionStateAtomKind } from "./internal-transition-footprint-vocabulary.js";
+import { InternalTransitionStateAtomKind, InternalTransitionPublicationAtomKind } from "./internal-transition-footprint-vocabulary.js";
 import { affectedTokenBucketsAreExact, tokenOwnerCensusAtoms } from "./internal-transition-token-preparation.js";
 import {
   InternalOccurrenceKind,
@@ -27,6 +29,7 @@ import type {
   SelectedActivityArming,
 } from "./semantic-process-activity-arming.js";
 import type { SemanticProcessProgram } from "./semantic-process-contract.js";
+import type { SemanticTransitionKind } from "./semantic-transition-trace.js";
 import { onlyTokenOwner } from "./semantic-process-scope-runtime.js";
 import {
   ControlStateKind,
@@ -39,8 +42,10 @@ import type {
 
 export type PreparedInternalActivityArming = SelectedActivityArming & Readonly<{
   alternative: InternalOperationAlternative;
+  operation: ActivityArmingOperation;
   owner: ScopeOccurrenceId;
-  footprint: InternalTransitionStateFootprint;
+  footprint: InternalTransitionFootprint;
+  publicationTemplate: InternalPublicationTemplate;
 }>;
 
 /** Derives one complete boundary-task Activity arming without applying it. */
@@ -53,6 +58,13 @@ export function deriveInternalActivityArmingPreparation(
   if (owner === undefined) {
     return null;
   }
+  const processId = candidateProcessId(program, state, owner);
+  const inputs = program.controlPlaces.filter(({ id }) => id === operation.input);
+  const input = inputs[0];
+  const inputOwners = program.controlPlaceScopes.filter(({ controlPlaceId }) =>
+    controlPlaceId === operation.input);
+  if (processId === null || inputs.length !== 1 || input === undefined ||
+      inputOwners.length !== 1 || inputOwners[0]?.scopeId !== owner.definitionScopeId) return null;
   const selected = selectActivityArming(operation, state, owner);
   if (
     selected === null ||
@@ -64,7 +76,6 @@ export function deriveInternalActivityArmingPreparation(
       sameScopeOccurrence(id, owner)
     ).length !== 1 ||
     !operationIsSelectedFromProgram(program, operation, owner) ||
-    candidateProcessId(program, state, owner) === null ||
     !affectedTokenBucketsAreExact(state, owner, [operation.input], []) ||
     !operationIsUniqueWaitDeclarer(
       program,
@@ -134,13 +145,48 @@ export function deriveInternalActivityArmingPreparation(
     ...waitAtoms,
     ...anchorAtoms,
   ]);
-  return reads === null || writes === null
+  const positionDelta = {
+    consumedTokens: [{ sequenceFlowId: input.origin.elementId, owner, multiplicity: 1 }],
+    producedTokens: [], enteredScopes: [], exitedScopes: [],
+  };
+  const occurrence = { kind: InternalOccurrenceKind.UserTask, id: selected.taskWait.id } as const;
+  const committed = {
+    kind: InternalTransitionPublicationAtomKind.CommittedTransition,
+    operationId: operation.id, operationKind: operation.kind, origin: operation.origin,
+    owner, logicalTimeMs: state.logicalTimeMs, positionDelta,
+  } as const;
+  // The boundary deadline is a state dependency; E2 starts the Activity's task only
+  // (candidateLongLivedStarts, the existing boundary-Timer publication contract).
+  const publications = canonicalUniquePublicationAtoms([
+    committed,
+    { kind: InternalTransitionPublicationAtomKind.FlowNodeLifecycle, occurrence: selected.taskWait.id },
+    { kind: InternalTransitionPublicationAtomKind.PublicationPair, operationId: operation.id, occurrence },
+  ]);
+  const alternative = internalOperationAlternative(operation.id);
+  return reads === null || writes === null || publications === null
     ? null
     : {
-        alternative: internalOperationAlternative(operation.id),
+        alternative,
+        operation,
         owner,
         ...selected,
-        footprint: { reads, writes },
+        footprint: { reads, writes, publications,
+          publicationSortKey: { operationId: operation.id, occurrenceKind: InternalOccurrenceKind.UserTask,
+            ...selected.taskWait.id } },
+        publicationTemplate: {
+          alternative,
+          record: {
+            logicalTimeMs: state.logicalTimeMs,
+            transition: { kind: "internalOperation" as SemanticTransitionKind.InternalOperation,
+              operationId: operation.id, operationKind: operation.kind, origin: operation.origin, owner },
+            positionDelta,
+          },
+          lifecycle: {
+            started: [{ anchor: { kind: InternalPublicationTemplateAnchorKind.Wait, id: selected.taskWait.id },
+              processId, elementId: selected.taskWait.id.elementId, owner }],
+            ended: [],
+          },
+        },
       };
 }
 

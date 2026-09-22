@@ -22,6 +22,7 @@ def preparedTransitionPublicationTemplate? (program : Program) (state : RuntimeS
     PreparedInternalTransition → Option InternalTransitionPublicationTemplate
   | .arming (.ordinary operation patch) => internalArmingPublicationTemplate? program state operation patch
   | .arming (.data contract patch) => internalArmingPublicationTemplate? program state contract.operation patch.arm
+  | .timerTask contract patch => internalArmingPublicationTemplate? program state contract.operation patch.arm
   | .localControl prepared => some (internalLocalControlPublicationTemplate prepared)
   | .scopeCreation prepared => some (internalScopeCreationPublicationTemplate prepared)
   | .regional prepared => some (internalRegionalPublicationTemplate prepared)

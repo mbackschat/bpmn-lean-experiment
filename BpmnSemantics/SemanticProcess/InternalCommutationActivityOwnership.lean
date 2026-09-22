@@ -115,6 +115,31 @@ theorem activityRecords_insertMessageWait (state : RuntimeState) (inserted : Mes
   obtain ⟨old, oldMember, named⟩ := messages message attached
   exact ⟨old, (mem_canonicalInsertBy _ _ _ _).2 (Or.inr oldMember), named⟩
 
+theorem activityRecords_do_not_claim_fresh_timer (state : RuntimeState) (inserted : TimerWait)
+    (fresh : ∀ old ∈ state.timerWaits,
+      timerWaitKeyMatches inserted old = false)
+    (records : activityRecordsOwnLiveWork state = true) :
+    ∀ record ∈ state.activityOccurrences,
+      anyTimerIdNamesWait record.timerHandlerOccurrences inserted = false := by
+  intro record recordMember
+  apply Bool.eq_false_iff.mpr
+  intro insertedNamed
+  simp only [activityRecordsOwnLiveWork, List.all_eq_true, Bool.and_eq_true,
+    List.any_eq_true] at records
+  obtain ⟨⟨_, attached⟩, _⟩ := records record recordMember
+  simp only [anyTimerIdNamesWait, List.any_eq_true] at insertedNamed
+  obtain ⟨timerId, timerMember, insertedMatch⟩ := insertedNamed
+  obtain ⟨old, oldMember, oldMatch⟩ := attached timerId timerMember
+  simp only [timerIdNamesWait, Bool.and_eq_true, beq_iff_eq,
+    decide_eq_true_eq] at insertedMatch oldMatch
+  have elementEq : inserted.elementId = old.elementId :=
+    congrArg NodeId.mk (insertedMatch.1.2.symm.trans oldMatch.1.1.2)
+  have keyed : timerWaitKeyMatches inserted old = true := by
+    simp [timerWaitKeyMatches, insertedMatch.1.1.symm.trans oldMatch.1.1.1,
+      elementEq, insertedMatch.2.symm.trans oldMatch.1.2]
+  rw [fresh old oldMember] at keyed
+  contradiction
+
 theorem activityRecords_insertFreshTimerWait (state : RuntimeState) (inserted : TimerWait)
     (fresh : ∀ old ∈ state.timerWaits,
       timerWaitKeyMatches inserted old = false ∧ timerWaitKeyMatches old inserted = false)
@@ -124,26 +149,8 @@ theorem activityRecords_insertFreshTimerWait (state : RuntimeState) (inserted : 
         { state with timerWaits := insertTimerWait inserted state.timerWaits } = true ∧
       attachedTimersUnambiguous
         { state with timerWaits := insertTimerWait inserted state.timerWaits } = true := by
-  have unclaimed : ∀ record ∈ state.activityOccurrences,
-      anyTimerIdNamesWait record.timerHandlerOccurrences inserted = false := by
-    intro record recordMember
-    apply Bool.eq_false_iff.mpr
-    intro insertedNamed
-    simp only [activityRecordsOwnLiveWork, List.all_eq_true, Bool.and_eq_true,
-      List.any_eq_true] at records
-    obtain ⟨⟨_, attached⟩, _⟩ := records record recordMember
-    simp only [anyTimerIdNamesWait, List.any_eq_true] at insertedNamed
-    obtain ⟨timerId, timerMember, insertedMatch⟩ := insertedNamed
-    obtain ⟨old, oldMember, oldMatch⟩ := attached timerId timerMember
-    simp only [timerIdNamesWait, Bool.and_eq_true, beq_iff_eq,
-      decide_eq_true_eq] at insertedMatch oldMatch
-    have elementEq : inserted.elementId = old.elementId :=
-      congrArg NodeId.mk (insertedMatch.1.2.symm.trans oldMatch.1.1.2)
-    have keyed : timerWaitKeyMatches inserted old = true := by
-      simp [timerWaitKeyMatches, insertedMatch.1.1.symm.trans oldMatch.1.1.1,
-        elementEq, insertedMatch.2.symm.trans oldMatch.1.2]
-    rw [(fresh old oldMember).1] at keyed
-    contradiction
+  have unclaimed := activityRecords_do_not_claim_fresh_timer state inserted
+    (fun old member => (fresh old member).1) records
   constructor
   · simp only [activityRecordsOwnLiveWork, List.all_eq_true, Bool.and_eq_true] at records ⊢
     intro record member

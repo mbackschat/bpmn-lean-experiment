@@ -28,8 +28,8 @@ def armMonitoredUserTaskState? (state : RuntimeState) (input : ControlPlaceId)
     (task : BoundedTaskArm) (boundaryTimer : BoundaryTimerArm) :
     Option RuntimeState := do
   let owner ← onlyTokenOwner? state input
-  let instanceId ← monitoredRunningInstance? state
-  pure (activateBoundedUserTask state instanceId owner input task boundaryTimer)
+  let _ ← monitoredRunningInstance? state
+  pure (activateBoundedUserTask state owner.processInstanceId owner input task boundaryTimer)
 
 /-- Atomic declarative arming relation with explicit ownership, freshness, and the exact resulting state.
 
@@ -42,7 +42,18 @@ inductive MonitoredTaskArmingStep : RuntimeState → ControlPlaceId →
       (owned : onlyTokenOwner? before input = some owner)
       (running : monitoredRunningInstance? before = some instanceId) :
       MonitoredTaskArmingStep before input task boundaryTimer
-        (activateBoundedUserTask before instanceId owner input task boundaryTimer)
+        (activateBoundedUserTask before owner.processInstanceId owner input task boundaryTimer)
+
+/-- Both Timer-task families use the containing Process for occurrence identity, including called
+Processes; root runtime control supplies only the running-state precondition. -/
+theorem armMonitoredUserTaskState_of_owned_running (state : RuntimeState)
+    (input : ControlPlaceId) (task : BoundedTaskArm) (boundaryTimer : BoundaryTimerArm)
+    (owner : ScopeOccurrenceId) (instanceId : SemanticId)
+    (owned : onlyTokenOwner? state input = some owner)
+    (running : state.control = .running instanceId) :
+    armMonitoredUserTaskState? state input task boundaryTimer =
+      some (activateBoundedUserTask state owner.processInstanceId owner input task boundaryTimer) := by
+  simp [armMonitoredUserTaskState?, owned, monitoredRunningInstance?, running]
 
 theorem armMonitoredUserTaskState_sound (before after : RuntimeState)
     (input : ControlPlaceId) (task : BoundedTaskArm)

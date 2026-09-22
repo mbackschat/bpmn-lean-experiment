@@ -6,6 +6,7 @@ import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
 import BpmnSemantics.SemanticProcess.InternalRegionalPairDependencies
 import BpmnSemantics.SemanticProcess.InternalEndPreparation
 import BpmnSemantics.SemanticProcess.InternalMergePreparation
+import BpmnSemantics.SemanticProcess.InternalTimerTaskPreparation
 
 /-! Complete finite mixed preparations follow the predecessor-only
 [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).
@@ -17,6 +18,7 @@ open BpmnSemantics
 
 inductive PreparedInternalTransition where
   | arming (prepared : PreparedInternalArming)
+  | timerTask (contract : InternalTimerTaskContract) (patch : InternalTimerTaskPatch)
   | localControl (prepared : PreparedInternalLocalControl)
   | scopeCreation (prepared : PreparedInternalScopeCreation)
   | regional (prepared : PreparedInternalRegional)
@@ -26,6 +28,7 @@ inductive PreparedInternalTransition where
 
 def PreparedInternalTransition.operation : PreparedInternalTransition → SemanticOperation
   | .arming prepared => prepared.operation
+  | .timerTask contract _ => contract.operation
   | .localControl prepared => prepared.operation
   | .scopeCreation prepared => prepared.selection.operation
   | .regional prepared => prepared.selection.operation
@@ -39,6 +42,7 @@ def PreparedInternalTransition.alternative : PreparedInternalTransition → Inte
 def PreparedInternalTransition.apply (program : Program) (state : RuntimeState) :
     PreparedInternalTransition → RuntimeState
   | .arming prepared => prepared.apply state
+  | .timerTask _ patch => applyInternalTimerTaskPatch state patch
   | .localControl prepared => prepared.selection.apply state
   | .scopeCreation prepared => prepared.selection.apply state
   | .regional prepared => (applyPreparedInternalRegional? program state prepared).getD state
@@ -48,6 +52,7 @@ def PreparedInternalTransition.apply (program : Program) (state : RuntimeState) 
 def PreparedInternalTransition.stateFootprint :
     PreparedInternalTransition → InternalRegionalStateFootprint
   | .arming prepared => liftRegionalStateFootprint prepared.scopeFramePatch.owner prepared.stateFootprint
+  | .timerTask _ patch => timerTaskStateFootprint patch
   | .localControl prepared => liftRegionalStateFootprint prepared.selection.owner prepared.footprint
   | .scopeCreation prepared => liftRegionalStateFootprint prepared.selection.owner prepared.footprint
   | .regional prepared => prepared.footprint
@@ -57,6 +62,7 @@ def PreparedInternalTransition.stateFootprint :
 def PreparedInternalTransition.Prepared (program : Program) (state : RuntimeState) :
     PreparedInternalTransition → Prop
   | .arming prepared => prepared.Prepared program state
+  | .timerTask contract patch => prepareInternalTimerTaskContract? program state contract = some patch
   | .localControl prepared =>
       prepareInternalLocalControl? program state prepared.operation = some prepared
   | .scopeCreation prepared =>
@@ -92,7 +98,7 @@ def PreparedInternalTransition.Independent (left right : PreparedInternalTransit
   | .scopeCreation first, .mergeInput second => localControlStateFootprintsNonInterfering first.footprint second.footprint = true
   | .mergeInput first, .scopeCreation second => localControlStateFootprintsNonInterfering first.footprint second.footprint = true
   | .mergeInput first, .mergeInput second => localControlStateFootprintsNonInterfering first.footprint second.footprint = true
-  | .regional _, _ | _, .regional _ | .ordinaryEnd _, _ | _, .ordinaryEnd _ =>
+  | .timerTask .., _ | _, .timerTask .. | .regional _, _ | _, .regional _ | .ordinaryEnd _, _ | _, .ordinaryEnd _ =>
       regionalStateFootprintsIndependent left.stateFootprint right.stateFootprint = true
 
 instance (left right : PreparedInternalTransition) : Decidable (left.Independent right) := by
@@ -117,9 +123,17 @@ private def prepareOrdinaryInternalTransition? (program : Program) (state : Runt
       | some _ => (prepareInternalScopeCreation? program state operation).map .scopeCreation
       | none => (prepareInternalArming? program state operation).map .arming
 
+private def prepareTimerTaskInternalTransition? (program : Program) (state : RuntimeState)
+    (operation : SemanticOperation) : Option PreparedInternalTransition := do
+  let contract ← timerTaskContract? operation
+  let patch ← prepareInternalTimerTaskContract? program state contract
+  some (.timerTask contract patch)
+
 def prepareInternalTransition? (program : Program) (state : RuntimeState)
     (operation : SemanticOperation) : Option PreparedInternalTransition :=
   match operation with
+  | .awaitBoundedUserTask .. | .awaitMonitoredUserTask .. =>
+      prepareTimerTaskInternalTransition? program state operation
   | .returnProcess .. | .completeScope .. | .throwError .. | .terminateScope .. =>
       (prepareInternalRegional? program state operation).map .regional
   | .reachNoneEnd .. => (prepareInternalEnd? program state operation).map .ordinaryEnd
@@ -205,9 +219,19 @@ theorem prepareInternalTransition_sound (program : Program) (state : RuntimeStat
     refine ⟨?_, operationEq, (prepareInternalEnd_facts program state operation member memberFound).1⟩
     change prepareInternalEnd? program state member.operation = some member
     rwa [operationEq]
+  have timerTask (operation : SemanticOperation)
+      (selected : prepareTimerTaskInternalTransition? program state operation = some prepared) :
+      prepared.Prepared program state ∧ prepared.operation = operation ∧
+        program.compensationEventSubProcessSnapshots = none := by
+    obtain ⟨contract, classified, selected⟩ := Option.bind_eq_some_iff.mp selected
+    obtain ⟨patch, patchFound, selected⟩ := Option.bind_eq_some_iff.mp selected
+    cases selected
+    exact ⟨patchFound, timerTaskContract_operation operation contract classified,
+      (prepareInternalTimerTaskContract_facts program state contract patch patchFound).1⟩
   cases operation <;> first
     | exact regional _ found
     | exact ordinaryEnd _ found
+    | exact timerTask _ found
     | exact prepareOrdinaryInternalTransition_sound program state _ prepared found
 
 private theorem prepareInternalTransitionList_sound (program : Program) (state : RuntimeState)
@@ -275,6 +299,7 @@ theorem prepareInternalTransition_snapshots_refused (program : Program) (state :
   cases operation <;> simp only [prepareInternalTransition?]
   all_goals first
     | exact prepareOrdinaryInternalTransition_snapshots_refused program state _ snapshots declared
-    | simp [prepareInternalRegional?, prepareInternalEnd?, declared]
+    | simp [prepareInternalRegional?, prepareInternalEnd?, prepareTimerTaskInternalTransition?,
+        timerTaskContract?, prepareInternalTimerTaskContract?, declared]
 
 end BpmnSemantics.SemanticProcess.InternalCommutation

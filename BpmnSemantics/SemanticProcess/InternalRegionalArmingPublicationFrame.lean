@@ -142,6 +142,41 @@ theorem sorted_open_insert_filter_rejected (program : Program) (state : RuntimeS
   simp only [Bool.false_eq_true, ↓reduceIte]
   rw [sortFlowNodeOccurrenceStarts_filter, projectOpenFlowNodeOccurrences_sorted program state current projected]
 
+theorem regionalLifecycleTemplate_after_wait_insertion (program : Program) (state after : RuntimeState)
+    (selected : InternalRegionalSelection) (region : InternalOccurrenceRegion)
+    (current : List OpenSemanticFlowNodeOccurrence) (entry : OpenSemanticFlowNodeOccurrence)
+    (occurrence : OccurrenceId) (anchor : entry.anchor = .wait occurrence)
+    (fresh : openWaitAnchorAbsent state occurrence = true)
+    (outside : region.contains entry.owner = false)
+    (handler : ∀ id, scopeCancellationWithdrawsHandler program after region.root id =
+      scopeCancellationWithdrawsHandler program state region.root id)
+    (projected : projectOpenFlowNodeOccurrences? program state = some current)
+    : regionalLifecycleTemplate? program after selected region
+      (sortFlowNodeOccurrenceStarts (entry :: current)) =
+      regionalLifecycleTemplate? program state selected region current := by
+  have unattached := absent_wait_anchor_not_withdrawn program state region.root _ fresh
+  have predicate (retainRoot : Bool) (value : OpenSemanticFlowNodeOccurrence) :
+      regionalCancelsOpenOccurrence program after region retainRoot value =
+        regionalCancelsOpenOccurrence program state region retainRoot value := by
+    cases value.anchor <;> simp only [regionalCancelsOpenOccurrence, handler]
+  have cancellation (retainRoot : Bool) :
+      regionalCancellationEnds program after region retainRoot
+        (sortFlowNodeOccurrenceStarts (entry :: current)) =
+      regionalCancellationEnds program state region retainRoot current := by
+    have predicateEq := funext (predicate retainRoot)
+    simp only [regionalCancellationEnds, predicateEq]
+    rw [sorted_open_insert_filter_rejected program state current entry _ projected (by
+      simp only [regionalCancelsOpenOccurrence, anchor, outside, unattached, Bool.false_or])]
+  have calls (id : OccurrenceId) :
+      (sortFlowNodeOccurrenceStarts (entry :: current)).filter (fun value => value.anchor == .callActivity id) =
+        current.filter (fun value => value.anchor == .callActivity id) :=
+    sorted_open_insert_filter_rejected program state current entry _ projected (by simp [anchor])
+  have scopes (id : ScopeOccurrenceId) :
+      (sortFlowNodeOccurrenceStarts (entry :: current)).filter (fun value => value.anchor == .scope id) =
+        current.filter (fun value => value.anchor == .scope id) :=
+    sorted_open_insert_filter_rejected program state current entry _ projected (by simp [anchor])
+  simp only [regionalLifecycleTemplate?, cancellation, calls, scopes]
+
 theorem regionalLifecycleTemplate_after_arming (program : Program) (state : RuntimeState)
     (arm : PreparedInternalArming) (selected : InternalRegionalSelection) (region : InternalOccurrenceRegion)
     (current : List OpenSemanticFlowNodeOccurrence) (entry : OpenSemanticFlowNodeOccurrence)
@@ -156,29 +191,9 @@ theorem regionalLifecycleTemplate_after_arming (program : Program) (state : Runt
       (sortFlowNodeOccurrenceStarts (entry :: current)) =
       regionalLifecycleTemplate? program state selected region current := by
   obtain ⟨owner, anchor, fresh⟩ := preparedArming_start_shape program state arm prepared entry started
-  have handler := preparedArming_handler_withdrawal_frame program state arm region.root prepared live cancelled
-  have unattached := absent_wait_anchor_not_withdrawn program state region.root _ fresh
-  have predicate (retainRoot : Bool) (value : OpenSemanticFlowNodeOccurrence) :
-      regionalCancelsOpenOccurrence program (arm.apply state) region retainRoot value =
-        regionalCancelsOpenOccurrence program state region retainRoot value := by
-    cases value.anchor <;> simp only [regionalCancelsOpenOccurrence, handler]
-  have cancellation (retainRoot : Bool) :
-      regionalCancellationEnds program (arm.apply state) region retainRoot
-        (sortFlowNodeOccurrenceStarts (entry :: current)) =
-      regionalCancellationEnds program state region retainRoot current := by
-    have predicateEq := funext (predicate retainRoot)
-    simp only [regionalCancellationEnds, predicateEq]
-    rw [sorted_open_insert_filter_rejected program state current entry _ projected (by
-      simp only [regionalCancelsOpenOccurrence, anchor, owner, outside, unattached, Bool.false_or])]
-  have calls (id : OccurrenceId) :
-      (sortFlowNodeOccurrenceStarts (entry :: current)).filter (fun value => value.anchor == .callActivity id) =
-        current.filter (fun value => value.anchor == .callActivity id) :=
-    sorted_open_insert_filter_rejected program state current entry _ projected (by simp [anchor])
-  have scopes (id : ScopeOccurrenceId) :
-      (sortFlowNodeOccurrenceStarts (entry :: current)).filter (fun value => value.anchor == .scope id) =
-        current.filter (fun value => value.anchor == .scope id) :=
-    sorted_open_insert_filter_rejected program state current entry _ projected (by simp [anchor])
-  simp only [regionalLifecycleTemplate?, cancellation, calls, scopes]
+  exact regionalLifecycleTemplate_after_wait_insertion program state (arm.apply state) selected region
+    current entry _ anchor fresh (by simpa only [owner] using outside)
+    (preparedArming_handler_withdrawal_frame program state arm region.root prepared live cancelled) projected
 
 theorem regionalPublicationTemplate_after_arming (program : Program) (state : RuntimeState)
     (arm : PreparedInternalArming) (selected : InternalRegionalSelection) (region : InternalOccurrenceRegion)

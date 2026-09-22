@@ -327,7 +327,9 @@ for (const ordinary of ordinaryOperations()) {
       const effect = final.effectWaits[0];
       assert.ok(activity !== undefined && effect !== undefined);
       assert.equal(activity.id.activation, effect.id.activation);
-      assert.notEqual(activity.id.activation, prepared[0]!.patch.wait.id.activation);
+      const data = prepared[0]!;
+      assert.equal(data.kind, PreparedInternalArmingKind.Data);
+      assert.notEqual(activity.id.activation, data.patch.wait.id.activation);
     }
   });
 }

@@ -107,6 +107,7 @@ theorem mixed_frontier_is_classified :
       prepared.map (fun
         | .arming (.data _ _) => "composed-data"
         | .arming (.ordinary _ _) => "ordinary"
+        | .timerTask _ _ => "timer-task"
         | .localControl _ => "local-control"
         | .scopeCreation _ => "scope-creation"
         | .regional _ => "regional"

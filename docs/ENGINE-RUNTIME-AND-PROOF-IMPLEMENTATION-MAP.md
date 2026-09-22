@@ -34,7 +34,9 @@ Four answer-free population schedules execute through separate Lean and TypeScri
 
 The family map owns the independently closure-reviewed Activity boundary Message slice; this map adds no general claim from that bounded family.
 
-Production closure supports independent batches from ordinary `awaitUserTask`, `awaitMessage`, `awaitPayloadMessage`, `awaitCorrelatedPayloadMessage`, `awaitTimer`, and `awaitEffect` arming; input-only `awaitDataInputUserTask`, output-only `awaitDataOutputUserTask`, and composed `awaitDataInputOutputUserTask` arming; local `duplicate`, `synchronize`, `choose`, `selectMany`, and `synchronizeSelected` control; ordinary child `enterScope` or Call `invokeProcess` creation; ordinary `reachNoneEnd`; exact `mergeExclusive` owner/input alternatives; and regional `returnProcess`, `completeScope`, `throwError`, or `terminateScope`.
+Production closure supports independent batches from ordinary `awaitUserTask`, `awaitMessage`, `awaitPayloadMessage`, `awaitCorrelatedPayloadMessage`, `awaitTimer`, and `awaitEffect` arming; input-only `awaitDataInputUserTask`, output-only `awaitDataOutputUserTask`, and composed `awaitDataInputOutputUserTask` arming; interrupting `awaitBoundedUserTask` and non-interrupting `awaitMonitoredUserTask` arming; local `duplicate`, `synchronize`, `choose`, `selectMany`, and `synchronizeSelected` control; ordinary child `enterScope` or Call `invokeProcess` creation; ordinary `reachNoneEnd`; exact `mergeExclusive` owner/input alternatives; and regional `returnProcess`, `completeScope`, `throwError`, or `terminateScope`.
+
+[Timer-task acceptance](INTERNAL-COMMUTATION-PROPOSAL.md#timer-task-arming-outcome) awaits review.
 
 [Finite batching](INTERNAL-COMMUTATION-PROPOSAL.md#finite-regional-batch-outcome), [ordinary End](INTERNAL-COMMUTATION-PROPOSAL.md#ordinary-end-batch-outcome), and [exact Merge/private scheduling](INTERNAL-COMMUTATION-PROPOSAL.md#exact-merge-frontier-outcome) pass independent semantic review and selected integration gates. Lean's permutation theorem excludes snapshots. The [atomicity repair](capsules/INTERNAL-CLOSURE-ATOMICITY-REPAIR-SPEC.md) owns rollback/no-publication; remaining families and closure stay open.
 
@@ -150,7 +152,7 @@ Product 1 rejects malformed and over-cap starts as semantic-process unsupported,
 - registered E2 metadata admission and independent preservation through checked User Task, ordinary operation, committed wait, and public projection, with passive completion, exact refusal preservation, strict wire values, and old-profile exclusion
 - registered literal-generation incident report and exact retry transitions, private and public association validation, incident-aware quiescence and resumability, and pre-dispatch refusal of malformed or cross-program injected incident states
 - adapter-facing projection, structural stimulus validation, command identity, effect-transport material, incremental deployment and advancement, and complete scenario evaluation
-- complete-frontier batching through predecessor-derived footprints for ordinary/input-only/output-only/composed-data arming and the five [local-control families](INTERNAL-COMMUTATION-PROPOSAL.md#local-control-preparation-prerequisite); retained complete preparations, canonical accepted publication, permutation oracles, and ambiguity refusal for unsupported, colliding, malformed, or stranded frontiers
+- [Prepared batching](#current-boundary): predecessor footprints, complete preparations, canonical accepted publication, permutation checks; unsupported, colliding, malformed, or stranded frontiers refuse.
 - stable-state classification separated into structural soundness, which gates committed publication and the incident projection, and resumability, which additionally requires a live ingress and gates Run-boundary continuation
 - traced committed transitions/replay and fail-closed control-position projection, with unchanged canonical observations and Lean parity
 
