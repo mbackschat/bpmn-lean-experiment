@@ -88,7 +88,7 @@ Within the dependency order below, prioritize high-risk work before packaging an
 
 ## Current evidence
 
-- Ordinary End batching. Command: `./scripts/pnpm.sh run test:pre-push`. Status: `exit 0`. Date: `2026-09-22`. Commit: `ae78a5341b7ba98908741b250c02c168512af87b`. The [review receipt](INTERNAL-COMMUTATION-PROPOSAL.md#independent-cold-review-receipt) records independent approval, the clean complete gate, and fixed-3-GiB evidence. Scheduled choice, remaining families, final closure, and regional-trial closure remain open.
+- Exact Merge and private scheduling. Command: `./scripts/pnpm.sh run test:pre-push`. Status: `exit 1`. Date: `2026-09-22`. Commit: `cd114dd672795f5898daf4dcb46a5fd539e629e2`. Engine, platform, PostgreSQL, and showcase lanes passed; UI could not launch the missing pinned Chromium, whose download host was unreachable. The [review receipt](INTERNAL-COMMUTATION-PROPOSAL.md#independent-cold-review-receipt) records semantic-checkpoint approval at `52ed7496`, successful bounded evidence, and the incomplete integration gate. Final acceptance remains pending.
 - Start-capacity assurance. Command: `fixed-3-GiB docker run … ./scripts/lake.sh build BpmnSemantics.CompensationSourceCompatibilityConformance`. Status: `exit 0` after three exact-bound OOM reproductions. Date: `2026-09-03`. Commit: `8ab3ba5f`. The final target completed in 15.00s at 2,324,123,648 cgroup bytes and 1,938,140 KiB RSS with every pressure/OOM counter zero. The [specification](capsules/COMPENSATION-DURABILITY-START-DATA-REPAIR-SPEC.md#lean-assurance-correction-after-the-hard-ceiling) retains the exact 3,221,225,472-byte failures, full chronology, and rejected limit/native-decision alternatives.
 
 ## Exact resume point
@@ -97,11 +97,11 @@ Active work ID: `INTERNAL-COMMUTATION`.
 
 Risk band: RC internal scheduling; the six external reviews and composed Activity-data closure are complete.
 
-Next action: take the [exact Merge frontier outcome](INTERNAL-COMMUTATION-PROPOSAL.md#exact-merge-frontier-outcome) through final infrastructure verification, its implementation commit, and independent review alongside clean integration. Full bounded Lean, complete core/source, shared scheduling parity, harness types, and cold fixture measurements pass. Preserve successor validity, atomic refusal, and the registered cyclic-source baseline. Reassess before new atoms or per-field machinery. Regional trial closure stays pending; RC scope is unchanged.
+Next action: provision the pinned Chromium once its download host is reachable, resume the failed UI integration lane on a clean commit, then record final acceptance of the [exact Merge frontier outcome](INTERNAL-COMMUTATION-PROPOSAL.md#exact-merge-frontier-outcome). Semantic review is approved; complete integration remains blocked. Preserve the successful engine, platform, PostgreSQL, showcase, parity, and bounded Lean evidence while their inputs remain unchanged. Do not begin another semantic outcome before resolving this checkpoint. Regional trial closure stays pending; RC scope is unchanged.
 
 Accepted: the [ordinary End outcome](INTERNAL-COMMUTATION-PROPOSAL.md#ordinary-end-batch-outcome) passes independent review, clean integration, and fixed-3-GiB checks. Its admitted source witness commits; constructed regional witnesses establish no profile reachability. Message child-scope exclusion and `AOO-RETAINED-BODY-01` remain unchanged.
 
-Retain snapshot exclusion, predicate coverage, token multiplicity, the [3 GiB ceiling](CAPSULE-COST-LEDGER.md#package-wide-theorem-elaboration-memory-correction), and stashes `f35bdd6b0424b2e3d5d06f101eb822bd285ab29e` and `76a2b017a630d23203ded482227382003f296f0b`. Private scheduling awaits review; remaining families and closure remain open.
+Retain snapshot exclusion, predicate coverage, token multiplicity, the [3 GiB ceiling](CAPSULE-COST-LEDGER.md#package-wide-theorem-elaboration-memory-correction), and stashes `f35bdd6b0424b2e3d5d06f101eb822bd285ab29e` and `76a2b017a630d23203ded482227382003f296f0b`. Public/hosted scheduling, remaining families, and closure remain open.
 
 Oracle: independent prepared operations preserve one another's complete preparation and commute in exact canonical RuntimeState and accepted publication; shared Process reads commute, conflicting writes and overlapping occurrence regions refuse batching, and a failed batch or schedule rolls back the complete command before publication.
 
