@@ -407,6 +407,7 @@ test("each mixed family rejects stale complete preparations despite unchanged op
         break;
       case PreparedInternalTransitionFamily.LocalControl:
       case PreparedInternalTransitionFamily.ScopeCreation:
+      case PreparedInternalTransitionFamily.Regional:
         forged = { ...member, footprint: { ...member.footprint, reads: [] } };
         break;
     }

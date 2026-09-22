@@ -108,7 +108,8 @@ theorem mixed_frontier_is_classified :
         | .arming (.data _ _) => "composed-data"
         | .arming (.ordinary _ _) => "ordinary"
         | .localControl _ => "local-control"
-        | .scopeCreation _ => "scope-creation") =
+        | .scopeCreation _ => "scope-creation"
+        | .regional _ => "regional") =
         ["composed-data", "ordinary", "local-control"] := by
   decide +kernel
 
@@ -119,8 +120,8 @@ theorem every_permutation_has_one_defined_canonical_publication
         some (final, publications) ∧
       acceptedPreparedTransitionBatch? program instanceId commandId 37 ready reordered =
         some (final, publications) ∧
-      applyInternalTransitionBatch ready prepared = final ∧
-      applyInternalTransitionBatch ready reordered = final ∧
+      applyInternalTransitionBatch program ready prepared = final ∧
+      applyInternalTransitionBatch program ready reordered = final ∧
       runPreparedTransitionBatch? program ready prepared = some final ∧
       runPreparedTransitionBatch? program ready reordered = some final ∧
       fireInternalTransitionBatch? program ready
@@ -134,7 +135,7 @@ theorem every_permutation_has_one_defined_canonical_publication
     mixed_frontier_is_classified.1
   exact prepared_transition_canonical_batch_publication_perm program ready prepared reordered
     instanceId commandId 37 fixture_is_admitted.1 fixture_is_admitted.2.1 rfl
-    fixture_is_admitted.2.2 rfl selected.2.1 selected.2.2.2.1 selected.2.2.1 permutation
+    fixture_is_admitted.2.2 rfl selected.2.1 selected.2.2.2.1 selected.2.2.1 selected.1 permutation
 
 private def templates : List InternalTransitionPublicationTemplate :=
   (prepared.mapM (preparedTransitionPublicationTemplate? program ready)).getD []
@@ -148,13 +149,13 @@ theorem original_templates_are_defined :
 
 theorem actual_batch_uses_the_complete_original_templates :
     acceptedPreparedTransitionBatch? program instanceId commandId 37 ready prepared =
-      some (applyInternalTransitionBatch ready prepared, publications) := by
+      some (applyInternalTransitionBatch program ready prepared, publications) := by
   have selected := prepareInternalTransitionBatch_sound program ready frontier prepared
     mixed_frontier_is_classified.1
   obtain ⟨values, found, actual⟩ := prepared_transition_canonical_batch_publication
     program ready prepared instanceId commandId 37 fixture_is_admitted.1
     fixture_is_admitted.2.1 rfl fixture_is_admitted.2.2 rfl selected.2.1
-    selected.2.2.2.1 selected.2.2.1
+    selected.2.2.2.1 selected.2.2.1 selected.1
   rw [original_templates_are_defined] at found
   cases found
   exact actual

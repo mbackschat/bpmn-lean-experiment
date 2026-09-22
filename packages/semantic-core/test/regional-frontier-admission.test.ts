@@ -165,7 +165,8 @@ test("broadening the admitted fork multiset exposes an independent regional fron
     return prepared;
   });
   assert.equal(internalTransitionStateFootprintsAreIndependent(ordinary[0]!.footprint, ordinary[1]!.footprint), true);
-  assert.equal(prepareInternalTransitionBatch(program, state, frontier), null);
+  const batch = prepareInternalTransitionBatch(program, state, frontier);
+  assert.ok(batch !== null, "the broader private frontier is now covered by finite regional batching");
   const [first, second] = ordinary;
   assert.ok(first !== undefined && second !== undefined);
   let final: RuntimeState | undefined;
@@ -190,10 +191,25 @@ test("broadening the admitted fork multiset exposes an independent regional fron
     if (final === undefined) final = current;
     else assert.deepEqual(current, final);
   }
-  const result = applyStimulusWithTrace(program, initialState, start);
-  assert.equal(result.result.outcome, CommandOutcome.RolledBack);
-  assert.equal(result.result.ambiguousInternalChoice, true);
-  assert.deepEqual(result.result.state, initialState);
-  assert.deepEqual(result.committedTransitions, []);
-  assert.deepEqual(result.flowNodeOccurrenceLifecycles, []);
+  let batched = state;
+  for (const member of batch) {
+    const next = applyPreparedInternalTransition(program, batched, member);
+    assert.ok(next !== null);
+    batched = next;
+  }
+  assert.deepEqual(batched, final);
+  const bounded = applyStimulusWithTrace(program, initialState, start, 8);
+  assert.equal(bounded.result.outcome, CommandOutcome.RolledBack);
+  assert.equal(bounded.result.internalStepBoundExceeded, true);
+  assert.equal(bounded.result.ambiguousInternalChoice, false);
+  assert.deepEqual(bounded.result.state, initialState);
+  assert.deepEqual(bounded.committedTransitions, []);
+  assert.deepEqual(bounded.flowNodeOccurrenceLifecycles, []);
+  const result = applyStimulusWithTrace(program, initialState, start, 9);
+  assert.equal(result.result.outcome, CommandOutcome.Committed);
+  assert.equal(result.result.ambiguousInternalChoice, false);
+  assert.deepEqual(runtimeStateDefects(program, start.instanceId, result.result.state), []);
+  assert.deepEqual(result.result.state.userTaskWaits.map(({ id }) => id.elementId), ["TaskA", "TaskB", "TaskC"]);
+  assert.ok(result.committedTransitions.length > 0);
+  assert.equal(result.flowNodeOccurrenceLifecycles.length, result.committedTransitions.length);
 });

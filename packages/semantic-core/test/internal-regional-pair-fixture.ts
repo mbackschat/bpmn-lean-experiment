@@ -23,6 +23,10 @@ const task = (name: string, input: string, output: string) => ({
 
 /** Constructed runtime witness; scope and Call identities come from the actual entry operations. */
 export function regionalPairFixture(left: RegionalKind, right: RegionalKind, boundedCompletion = false) {
+  return regionalFrontierFixture([left, right], boundedCompletion);
+}
+
+export function regionalFrontierFixture(kinds: readonly [RegionalKind, RegionalKind, ...RegionalKind[]], boundedCompletion = false) {
   const operations: SemanticOperation[] = [];
   const definitionScopes: SemanticProcessProgram["definitionScopes"][number][] = [root];
   const operationScopes: SemanticProcessProgram["operationScopes"][number][] = [];
@@ -35,7 +39,7 @@ export function regionalPairFixture(left: RegionalKind, right: RegionalKind, bou
   const addPlaces = (names: string[], scopeId: string = root.id) => {
     controlPlaceScopes.push(...names.map((name) => ({ controlPlaceId: place(name), scopeId })));
   };
-  const branches = [left, right].map((kind, index) => {
+  const branches = kinds.map((kind, index) => {
     const name = `Branch_${index}:é😀`;
     const scopeId = `scope:${name}`;
     const calledProcessId = `Process_${name}`;

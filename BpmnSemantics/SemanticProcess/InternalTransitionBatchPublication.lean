@@ -16,8 +16,9 @@ private theorem prepared_transition_templates_after_step (program : Program) (st
     (running : state.control = .running instanceId)
     (projectable : (projectOpenFlowNodeOccurrences? program state).isSome = true)
     (stepPrepared : step.Prepared program state)
-    (queriesPrepared : PreparedTransitionList program state queries) :
-    queries.mapM (preparedTransitionPublicationTemplate? program (step.apply state)) =
+    (queriesPrepared : PreparedTransitionList program state queries)
+    (separated : ∀ query ∈ queries, step.Independent query) :
+    queries.mapM (preparedTransitionPublicationTemplate? program (step.apply program state)) =
       queries.mapM (preparedTransitionPublicationTemplate? program state) := by
   induction queries with
   | nil => rfl
@@ -28,7 +29,8 @@ private theorem prepared_transition_templates_after_step (program : Program) (st
         exact queriesPrepared query (List.mem_cons_of_mem head member)
       simp only [List.mapM_cons,
         prepared_transition_template_after_step program state step head instanceId programWF
-          beforeWF running projectable stepPrepared headPrepared, ih tailPrepared]
+          beforeWF running projectable stepPrepared headPrepared (separated head (by simp)),
+        ih tailPrepared (fun query present => separated query (by simp [present]))]
 
 /-- Every actual prefix publication equals its complete original template at the assigned index.
 Canonical assignment is supplied after sorting; this theorem does not infer indices from execution order. -/
@@ -41,11 +43,12 @@ theorem prepared_transition_batch_publications (program : Program) (state : Runt
     (projectable : (projectOpenFlowNodeOccurrences? program state).isSome = true)
     (snapshots : program.compensationEventSubProcessSnapshots = none)
     (selected : PreparedTransitionList program state prepared)
+    (readOnly : ∀ member ∈ prepared, member.ControlReadOnly instanceId)
     (independent : prepared.Pairwise PreparedInternalTransition.Independent) :
     ∃ templates,
       prepared.mapM (preparedTransitionPublicationTemplate? program state) = some templates ∧
       runPreparedTransitionBatchPublication? program instanceId commandId indexForOperation state prepared =
-        some (applyInternalTransitionBatch state prepared,
+        some (applyInternalTransitionBatch program state prepared,
           templates.map fun template => template.instantiate commandId
             (indexForOperation template.record.operationId)) := by
   induction prepared generalizing state with
@@ -53,16 +56,18 @@ theorem prepared_transition_batch_publications (program : Program) (state : Runt
   | cons head tail ih =>
       have headPrepared := selected head (by simp)
       have preserved := prepared_transition_preserves program state head instanceId programWF
-        beforeWF running projectable headPrepared
+        beforeWF running projectable headPrepared (readOnly head (by simp))
       have remaining := prepared_transition_tail program state instanceId programWF beforeWF head tail selected
         (runtimeStateWellFormed_canonicalCollectionOrder program instanceId state beforeWF) independent
-      obtain ⟨templates, tailMap, tailRun⟩ := ih (head.apply state) preserved.1 preserved.2.1
-        preserved.2.2 remaining (List.pairwise_cons.mp independent).2
+      obtain ⟨templates, tailMap, tailRun⟩ := ih (head.apply program state) preserved.1 preserved.2.1
+        preserved.2.2 remaining (fun member present => readOnly member (by simp [present]))
+        (List.pairwise_cons.mp independent).2
       have tailPrepared : PreparedTransitionList program state tail := by
         intro query member
         exact selected query (List.mem_cons_of_mem head member)
       rw [prepared_transition_templates_after_step program state head tail instanceId programWF
-        beforeWF running projectable headPrepared tailPrepared] at tailMap
+        beforeWF running projectable headPrepared tailPrepared
+        (List.pairwise_cons.mp independent).1] at tailMap
       obtain ⟨template, headMap, headActual⟩ := prepared_transition_publication_template_accepted
         program state head instanceId commandId (indexForOperation head.operation.id)
         programWF beforeWF running projectable headPrepared

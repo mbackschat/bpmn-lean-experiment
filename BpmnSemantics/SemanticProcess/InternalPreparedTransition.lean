@@ -2,6 +2,8 @@ import BpmnSemantics.SemanticProcess.InternalLocalControlArmingCommutation
 import BpmnSemantics.SemanticProcess.InternalScopeCreationArmingCommutation
 import BpmnSemantics.SemanticProcess.InternalScopeCreationLocalControlCommutation
 import BpmnSemantics.SemanticProcess.InternalScopeCreationAcceptedPublication
+import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
+import BpmnSemantics.SemanticProcess.InternalRegionalPairDependencies
 
 /-! Complete finite mixed preparations follow the predecessor-only
 [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).
@@ -15,24 +17,28 @@ inductive PreparedInternalTransition where
   | arming (prepared : PreparedInternalArming)
   | localControl (prepared : PreparedInternalLocalControl)
   | scopeCreation (prepared : PreparedInternalScopeCreation)
+  | regional (prepared : PreparedInternalRegional)
   deriving Repr, DecidableEq
 
 def PreparedInternalTransition.operation : PreparedInternalTransition → SemanticOperation
   | .arming prepared => prepared.operation
   | .localControl prepared => prepared.operation
   | .scopeCreation prepared => prepared.selection.operation
+  | .regional prepared => prepared.selection.operation
 
-def PreparedInternalTransition.apply (state : RuntimeState) :
+def PreparedInternalTransition.apply (program : Program) (state : RuntimeState) :
     PreparedInternalTransition → RuntimeState
   | .arming prepared => prepared.apply state
   | .localControl prepared => prepared.selection.apply state
   | .scopeCreation prepared => prepared.selection.apply state
+  | .regional prepared => (applyPreparedInternalRegional? program state prepared).getD state
 
 def PreparedInternalTransition.stateFootprint :
-    PreparedInternalTransition → InternalTransitionStateFootprint
-  | .arming prepared => prepared.stateFootprint
-  | .localControl prepared => prepared.footprint
-  | .scopeCreation prepared => prepared.footprint
+    PreparedInternalTransition → InternalRegionalStateFootprint
+  | .arming prepared => liftRegionalStateFootprint prepared.scopeFramePatch.owner prepared.stateFootprint
+  | .localControl prepared => liftRegionalStateFootprint prepared.selection.owner prepared.footprint
+  | .scopeCreation prepared => liftRegionalStateFootprint prepared.selection.owner prepared.footprint
+  | .regional prepared => prepared.footprint
 
 def PreparedInternalTransition.Prepared (program : Program) (state : RuntimeState) :
     PreparedInternalTransition → Prop
@@ -41,6 +47,8 @@ def PreparedInternalTransition.Prepared (program : Program) (state : RuntimeStat
       prepareInternalLocalControl? program state prepared.operation = some prepared
   | .scopeCreation prepared =>
       prepareInternalScopeCreation? program state prepared.selection.operation = some prepared
+  | .regional prepared =>
+      prepareInternalRegional? program state prepared.selection.operation = some prepared
 
 instance (program : Program) (state : RuntimeState) (prepared : PreparedInternalTransition) :
     Decidable (prepared.Prepared program state) := by
@@ -51,7 +59,15 @@ their distinct indices only after the selected account's unique-alternative batc
 def PreparedInternalTransition.Independent (left right : PreparedInternalTransition) : Prop :=
   match left, right with
   | .arming first, .arming second => first.Independent second
-  | _, _ => localControlStateFootprintsNonInterfering left.stateFootprint right.stateFootprint = true
+  | .arming first, .localControl second => localControlStateFootprintsNonInterfering first.stateFootprint second.footprint = true
+  | .arming first, .scopeCreation second => localControlStateFootprintsNonInterfering first.stateFootprint second.footprint = true
+  | .localControl first, .arming second => localControlStateFootprintsNonInterfering first.footprint second.stateFootprint = true
+  | .scopeCreation first, .arming second => localControlStateFootprintsNonInterfering first.footprint second.stateFootprint = true
+  | .localControl first, .localControl second => localControlStateFootprintsNonInterfering first.footprint second.footprint = true
+  | .localControl first, .scopeCreation second => localControlStateFootprintsNonInterfering first.footprint second.footprint = true
+  | .scopeCreation first, .localControl second => localControlStateFootprintsNonInterfering first.footprint second.footprint = true
+  | .scopeCreation first, .scopeCreation second => localControlStateFootprintsNonInterfering first.footprint second.footprint = true
+  | .regional _, _ | _, .regional _ => regionalStateFootprintsIndependent left.stateFootprint right.stateFootprint = true
 
 instance (left right : PreparedInternalTransition) : Decidable (left.Independent right) := by
   cases left <;> cases right <;> unfold PreparedInternalTransition.Independent <;> infer_instance
@@ -60,9 +76,11 @@ theorem PreparedInternalTransition.independent_symm {left right : PreparedIntern
     (separated : left.Independent right) : right.Independent left := by
   cases left <;> cases right
   · exact PreparedInternalArming.independent_symm separated
-  all_goals exact localControlStateFootprintsNonInterfering_symm _ _ separated
+  all_goals first
+    | exact localControlStateFootprintsNonInterfering_symm _ _ separated
+    | exact regionalStateFootprintsIndependent_symmetric _ _ separated
 
-def prepareInternalTransition? (program : Program) (state : RuntimeState)
+private def prepareOrdinaryInternalTransition? (program : Program) (state : RuntimeState)
     (operation : SemanticOperation) : Option PreparedInternalTransition :=
   match internalLocalControlOrigin? operation with
   | some _ =>
@@ -73,10 +91,17 @@ def prepareInternalTransition? (program : Program) (state : RuntimeState)
       | some _ => (prepareInternalScopeCreation? program state operation).map .scopeCreation
       | none => (prepareInternalArming? program state operation).map .arming
 
+def prepareInternalTransition? (program : Program) (state : RuntimeState)
+    (operation : SemanticOperation) : Option PreparedInternalTransition :=
+  match operation with
+  | .returnProcess .. | .completeScope .. | .throwError .. | .terminateScope .. =>
+      (prepareInternalRegional? program state operation).map .regional
+  | _ => prepareOrdinaryInternalTransition? program state operation
+
 def applyPreparedInternalTransition? (program : Program) (state : RuntimeState)
     (prepared : PreparedInternalTransition) : Option RuntimeState :=
   if program.compensationEventSubProcessSnapshots.isSome then none
-  else if prepared.Prepared program state then some (prepared.apply state) else none
+  else if prepared.Prepared program state then some (prepared.apply program state) else none
 
 def prepareInternalTransitionBatch? (program : Program) (state : RuntimeState)
     (operations : List SemanticOperation) : Option (List PreparedInternalTransition) := do
@@ -85,24 +110,24 @@ def prepareInternalTransitionBatch? (program : Program) (state : RuntimeState)
   if prepared.Pairwise (fun left right => left.operation.id ≠ right.operation.id) ∧
       prepared.Pairwise PreparedInternalTransition.Independent then some prepared else none
 
-def applyInternalTransitionBatch (state : RuntimeState)
+def applyInternalTransitionBatch (program : Program) (state : RuntimeState)
     (prepared : List PreparedInternalTransition) : RuntimeState :=
-  prepared.foldl PreparedInternalTransition.apply state
+  prepared.foldl (PreparedInternalTransition.apply program) state
 
-theorem prepareInternalTransition_sound (program : Program) (state : RuntimeState)
+private theorem prepareOrdinaryInternalTransition_sound (program : Program) (state : RuntimeState)
     (operation : SemanticOperation) (prepared : PreparedInternalTransition)
-    (found : prepareInternalTransition? program state operation = some prepared) :
+    (found : prepareOrdinaryInternalTransition? program state operation = some prepared) :
     prepared.Prepared program state ∧ prepared.operation = operation ∧
       program.compensationEventSubProcessSnapshots = none := by
   cases originFound : internalLocalControlOrigin? operation with
   | none =>
       cases scopeOrigin : internalScopeCreationOrigin? operation with
       | none =>
-          simp only [prepareInternalTransition?, originFound, scopeOrigin] at found
+          simp only [prepareOrdinaryInternalTransition?, originFound, scopeOrigin] at found
           obtain ⟨arm, selected, rfl⟩ := Option.map_eq_some_iff.mp found
           exact prepareInternalArming_sound program state operation arm selected
       | some origin =>
-          simp only [prepareInternalTransition?, originFound, scopeOrigin] at found
+          simp only [prepareOrdinaryInternalTransition?, originFound, scopeOrigin] at found
           obtain ⟨scope, selected, rfl⟩ := Option.map_eq_some_iff.mp found
           have operationEq := (prepareInternalScopeCreation_operation program state operation
             scope selected).1
@@ -116,9 +141,9 @@ theorem prepareInternalTransition_sound (program : Program) (state : RuntimeStat
           exact selected
   | some origin =>
       cases snapshots : program.compensationEventSubProcessSnapshots with
-      | some _ => simp [prepareInternalTransition?, originFound, snapshots] at found
+      | some _ => simp [prepareOrdinaryInternalTransition?, originFound, snapshots] at found
       | none =>
-          simp only [prepareInternalTransition?, originFound, snapshots, Option.isSome_none,
+          simp only [prepareOrdinaryInternalTransition?, originFound, snapshots, Option.isSome_none,
             Bool.false_eq_true, ↓reduceIte] at found
           obtain ⟨localPrepared, selected, rfl⟩ := Option.map_eq_some_iff.mp found
           have operationEq : localPrepared.operation = operation := by
@@ -129,6 +154,24 @@ theorem prepareInternalTransition_sound (program : Program) (state : RuntimeStat
           change prepareInternalLocalControl? program state localPrepared.operation = some localPrepared
           rw [operationEq]
           exact selected
+
+theorem prepareInternalTransition_sound (program : Program) (state : RuntimeState)
+    (operation : SemanticOperation) (prepared : PreparedInternalTransition)
+    (found : prepareInternalTransition? program state operation = some prepared) :
+    prepared.Prepared program state ∧ prepared.operation = operation ∧
+      program.compensationEventSubProcessSnapshots = none := by
+  have regional (operation : SemanticOperation)
+      (selected : (prepareInternalRegional? program state operation).map PreparedInternalTransition.regional = some prepared) :
+      prepared.Prepared program state ∧ prepared.operation = operation ∧
+        program.compensationEventSubProcessSnapshots = none := by
+    obtain ⟨member, memberFound, rfl⟩ := Option.map_eq_some_iff.mp selected
+    have operationEq := prepareInternalRegional_operation program state operation member memberFound
+    refine ⟨?_, operationEq, (prepareInternalRegional_facts program state operation member memberFound).1⟩
+    change prepareInternalRegional? program state member.selection.operation = some member
+    rwa [operationEq]
+  cases operation <;> first
+    | exact regional _ found
+    | exact prepareOrdinaryInternalTransition_sound program state _ prepared found
 
 private theorem prepareInternalTransitionList_sound (program : Program) (state : RuntimeState)
     (operations : List SemanticOperation) (prepared : List PreparedInternalTransition)
@@ -177,15 +220,24 @@ theorem prepareInternalTransitionBatch_sound (program : Program) (state : Runtim
           exact ⟨by omega, allPrepared, classified.1, classified.2, sameOperations⟩
       · simp at found
 
-theorem prepareInternalTransition_snapshots_refused (program : Program) (state : RuntimeState)
+private theorem prepareOrdinaryInternalTransition_snapshots_refused (program : Program) (state : RuntimeState)
     (operation : SemanticOperation) (snapshots : CompensationEventSubProcessSnapshotDeclaration)
     (declared : program.compensationEventSubProcessSnapshots = some snapshots) :
-    prepareInternalTransition? program state operation = none := by
+    prepareOrdinaryInternalTransition? program state operation = none := by
   have scopeRefused := prepareInternalScopeCreation_snapshots_refused program state operation
     (by simp [declared])
   cases origin : internalLocalControlOrigin? operation <;>
     cases scopeOrigin : internalScopeCreationOrigin? operation <;>
-    simp [prepareInternalTransition?, origin, scopeOrigin, scopeRefused,
+    simp [prepareOrdinaryInternalTransition?, origin, scopeOrigin, scopeRefused,
       prepareInternalArming?, declared]
+
+theorem prepareInternalTransition_snapshots_refused (program : Program) (state : RuntimeState)
+    (operation : SemanticOperation) (snapshots : CompensationEventSubProcessSnapshotDeclaration)
+    (declared : program.compensationEventSubProcessSnapshots = some snapshots) :
+    prepareInternalTransition? program state operation = none := by
+  cases operation <;> simp only [prepareInternalTransition?]
+  all_goals first
+    | exact prepareOrdinaryInternalTransition_snapshots_refused program state _ snapshots declared
+    | simp [prepareInternalRegional?, declared]
 
 end BpmnSemantics.SemanticProcess.InternalCommutation
