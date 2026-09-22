@@ -1156,6 +1156,14 @@ Evidence
 
 The packet derives changed heading paths from ordered document-unit digests in both immutable trees and retains file references for structural, fenced-code, ambiguous, new or deleted content. Tests seed each position, duplicate occurrences, reordering, and the misleading sibling route through the CLI. This splits the enumerable routing-omission class from [Finding 15](#finding-15); that finding's arbitrary prose-consistency class remains unguardable. The prompt assertion preserves an explicit check of affected unchanged owners using the computed map set and boundary owners; it does not prove the reviewer performed that check or identified every affected claim.
 
+The documentation/tooling correction received a context-cold review and three same-reviewer correction audits; the owner explicitly authorized the third after the two-audit stop. Final approval at `a0e5355e7a28225b1b9ad98e8b4f782d7cca60ff` closes the structural/separator fallback and stale invariant-map findings, with no remaining required or advisory findings.
+
+| Stage | Review target | Isolation | Verdict | Correction audit |
+|---|---|---|---|---|
+| Closure | `6991ced1` | `fork-turns-none` | `approve-with-required-edits` | `c3ffac0b, 34c7c24d, a0e5355e, owner-authorized` |
+
+The final packet is `97ec011b8c4c0ecc3bdbdaab783843a30dc9b25aa7ff80d1dba39bd696bd587e`; its temporary migration matrix binds seven source documents and 1,440 source units. The reviewer verified the digests and separating red/green receipts, including 20 focused and 582 complete infrastructure checks. This approval covers documentation preservation and review navigation only; arbitrary prose consistency, source-set completeness, and Internal Commutation closure are not established by these guards.
+
 ## Update rule
 
 At each capsule closure and each session handoff, answer the questions above and either add a row or record that none applied. When a mechanism already has a row, increment its instance count instead of adding a near-duplicate — the count is the signal the escalation rule reads. Keep the finding text describing the mechanism, not the incident, so a second occurrence in different code still matches the same row.
