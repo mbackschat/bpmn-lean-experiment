@@ -3,7 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import {
-  exactSecondLevelSection,
+  exactMarkdownSection,
   sha256,
 } from "./semantic-review-text.ts";
 
@@ -27,13 +27,14 @@ export type ReviewSectionSelections = Readonly<
 
 export type ReviewSectionFingerprint = Readonly<{
   category: ReviewBoundaryCategory;
-  heading: string;
+  headingPath: string;
   baselineSha256: string;
   targetSha256: string;
   unchanged: boolean;
 }>;
 
 export type ReviewSectionManifest = Readonly<{
+  format: "semantic-review-manifest/v2";
   sections: ReadonlyArray<ReviewSectionFingerprint>;
   eligibleForWarmClosure: boolean;
   manifestSha256: string;
@@ -56,14 +57,14 @@ export function fingerprintReviewSections(
     }
     for (const heading of headings) {
       const baselineSha256 = sha256(
-        exactSecondLevelSection(baselineDocument, heading),
+        exactMarkdownSection(baselineDocument, heading),
       );
       const targetSha256 = sha256(
-        exactSecondLevelSection(targetDocument, heading),
+        exactMarkdownSection(targetDocument, heading),
       );
       sections.push({
         category,
-        heading,
+        headingPath: heading,
         baselineSha256,
         targetSha256,
         unchanged: baselineSha256 === targetSha256,
@@ -71,7 +72,7 @@ export function fingerprintReviewSections(
     }
   }
   const eligibleForWarmClosure = sections.every(({ unchanged }) => unchanged);
-  const manifestBody = { sections, eligibleForWarmClosure };
+  const manifestBody = { format: "semantic-review-manifest/v2" as const, sections, eligibleForWarmClosure };
   return {
     ...manifestBody,
     manifestSha256: sha256(JSON.stringify(manifestBody)),
@@ -162,6 +163,7 @@ function runCli(arguments_: ReadonlyArray<string>): void {
   ]).split("\n").filter(Boolean);
   const body = {
     kind: "semanticReviewManifest",
+    format: "semantic-review-manifest/v2",
     baseline,
     target,
     capsule: parsed.capsule,

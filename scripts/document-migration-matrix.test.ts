@@ -7,11 +7,12 @@ import { test } from "node:test";
 
 import {
   DOCUMENT_MIGRATION_MATRIX_FORMAT,
-  DOCUMENT_MIGRATION_SOURCE_PATHS,
   deriveDocumentUnits,
   extractDocumentUnits,
   loadDocumentMigrationMatrix,
 } from "./document-migration-matrix.ts";
+
+const fixtureSourcePaths = ["docs/PLAN.md", "docs/IMPLEMENTATION-MAP.md"] as const;
 
 function git(repository: string, arguments_: ReadonlyArray<string>): string {
   const result = spawnSync("git", arguments_, { cwd: repository, encoding: "utf8" });
@@ -82,16 +83,17 @@ test("a complete migration matrix is independently derived and validated", async
     git(repository, ["init", "--quiet"]);
     await writeFile(path.join(repository, "docs/PLAN.md"), "# Plan\n\n## Active\n\nOne claim containing two allocations.\n", "utf8");
     await writeFile(path.join(repository, "docs/IMPLEMENTATION-MAP.md"), "# Map\n\n## State\n\n- One fact.\n", "utf8");
+    await writeFile(path.join(repository, "docs/OTHER.md"), "# Other\n\nAn independently selected claim.\n", "utf8");
     const baseline = commitAll(repository, "baseline");
     await writeFile(path.join(repository, "docs/PLAN.md"), "# Plan\n\n## Active\n\nFirst allocated claim.\n\nSecond allocated claim.\n", "utf8");
     const target = commitAll(repository, "target");
-    const baselineUnits = deriveDocumentUnits(repository, baseline, DOCUMENT_MIGRATION_SOURCE_PATHS);
-    const targetUnits = deriveDocumentUnits(repository, target, DOCUMENT_MIGRATION_SOURCE_PATHS);
+    const baselineUnits = deriveDocumentUnits(repository, baseline, fixtureSourcePaths);
+    const targetUnits = deriveDocumentUnits(repository, target, fixtureSourcePaths);
     const matrix = {
       format: DOCUMENT_MIGRATION_MATRIX_FORMAT,
       baseline,
       target,
-      sourcePaths: DOCUMENT_MIGRATION_SOURCE_PATHS,
+      sourcePaths: fixtureSourcePaths,
       rows: baselineUnits.map((source) => ({
         source: identity(source),
         disposition: {
@@ -164,12 +166,35 @@ test("a complete migration matrix is independently derived and validated", async
     const deleted = loadDocumentMigrationMatrix({ repositoryRoot: repository, matrixPath, baseline, target });
     assert.deepEqual(deleted.diagnostics.deleted.map(({ disposition }) => disposition), ["duplicate", "history"]);
 
+    for (const sourcePaths of [["docs/OTHER.md"], [...fixtureSourcePaths, "docs/OTHER.md"]]) {
+      const alternateUnits = deriveDocumentUnits(repository, baseline, sourcePaths);
+      await writeMatrix(matrixPath, {
+        ...matrix,
+        sourcePaths,
+        rows: alternateUnits.map((source) => ({
+          source: identity(source),
+          disposition: { kind: "history", rationale: "The baseline claim remains historical evidence." },
+        })),
+      });
+      const alternate = loadDocumentMigrationMatrix({ repositoryRoot: repository, matrixPath, baseline, target });
+      assert.deepEqual(alternate.normalized.sourcePaths, sourcePaths);
+      assert.deepEqual(alternate.normalized.rows.map(({ source }) => source), alternateUnits);
+      assert.notEqual(alternate.exactBytesSha256, validated.exactBytesSha256);
+    }
+
     const invalidMatrices: ReadonlyArray<Readonly<{ value: unknown; message: RegExp }>> = [
       { value: { ...matrix, format: "document-migration-matrix/v1" }, message: /unknown format/u },
       { value: { ...matrix, rows: matrix.rows.slice(1) }, message: /omits 1 baseline source unit/u },
       { value: { ...matrix, rows: [...matrix.rows, firstRow] }, message: /repeats a baseline source unit/u },
       { value: { ...matrix, baseline: target }, message: /equal the requested commits/u },
-      { value: { ...matrix, sourcePaths: [...DOCUMENT_MIGRATION_SOURCE_PATHS, "docs/OTHER.md"] }, message: /exact registered source paths/u },
+      { value: { ...matrix, sourcePaths: [...fixtureSourcePaths, "docs/OTHER.md"] }, message: /omits 1 baseline source unit/u },
+      { value: { ...matrix, sourcePaths: [] }, message: /nonempty sourcePaths array/u },
+      { value: { ...matrix, sourcePaths: [...fixtureSourcePaths, fixtureSourcePaths[0]] }, message: /repeats a source path/u },
+      { value: { ...matrix, sourcePaths: [null] }, message: /source path must be a nonempty string/u },
+      { value: { ...matrix, sourcePaths: ["../docs/PLAN.md"] }, message: /canonical repository-relative path/u },
+      { value: { ...matrix, sourcePaths: ["docs/../docs/PLAN.md"] }, message: /canonical repository-relative path/u },
+      { value: { ...matrix, sourcePaths: ["/docs/PLAN.md"] }, message: /canonical repository-relative path/u },
+      { value: { ...matrix, sourcePaths: ["docs/PLAN.txt"] }, message: /must name a Markdown document/u },
       { value: { ...matrix, extra: true }, message: /needs exactly/u },
       {
         value: {

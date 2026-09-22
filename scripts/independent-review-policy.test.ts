@@ -53,6 +53,20 @@ const grandfatheredReviewDocuments: ReadonlySet<string> = new Set(
   expectedGrandfatheredReviewDocuments,
 );
 
+function assertOwnerReviewPrompt(document: string): void {
+  const prompt = document.split("```text\nReview stage:")[1]?.split("\n```")[0] ?? "";
+  assert.match(prompt, /what-binds map set: <actual map paths for the changed paths>/u);
+  assert.match(prompt, /Check affected claims and exclusions in unchanged owner passages/u);
+}
+
+test("the minted review prompt retains the unchanged-owner check and computed map context", async () => {
+  const document = await readFile(path.join(projectRoot, "docs/TESTING-SPEC.md"), "utf8");
+  assertOwnerReviewPrompt(document);
+  for (const clause of ["what-binds map set: <actual map paths for the changed paths>", "Check affected claims and exclusions in unchanged owner passages"]) {
+    assert.throws(() => assertOwnerReviewPrompt(document.replace(clause, "")));
+  }
+});
+
 test("all pending stages can record their packet-bound target with the verdict", () => {
   for (const stage of Object.values(ReviewStage)) {
     const pending: ReviewReceipt = { stage, target: "not-recorded", isolation: "not-recorded",

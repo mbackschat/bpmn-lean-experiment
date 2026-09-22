@@ -15,13 +15,46 @@ import { fileURLToPath } from "node:url";
 
 import {
   assembleSemanticReviewPacket,
+  deriveChangedMarkdownSections,
   type SemanticReviewPacketInput,
 } from "./semantic-review-packet.ts";
 import {
   DOCUMENT_MIGRATION_MATRIX_FORMAT,
-  DOCUMENT_MIGRATION_SOURCE_PATHS,
   deriveDocumentUnits,
 } from "./document-migration-matrix.ts";
+
+test("changed-section navigation covers positions independently of manual routes", () => {
+  const original = "Preface.\n\n# Guide\n\n## Quick start\n\nRun.\n\n## Learn more\n\n### Detail\n\nOld.\n";
+  const changed = original.replace("Old.", "New.");
+  const sections = deriveChangedMarkdownSections("README.md", original, changed);
+  assert.deepEqual(sections.map(({ headingPath, revision }) => [headingPath, revision]), [
+    ["Guide > Learn more > Detail", "baseline"], ["Guide > Learn more > Detail", "target"],
+  ]);
+  assert.ok(deriveChangedMarkdownSections("README.md", original, original.replace("Preface.", "New preface.")).every(({ headingPath }) => headingPath === null));
+  for (const target of [original.replace("## Learn more", "## Further reading"), original.slice(0, original.indexOf("## Learn more"))]) {
+    assert.ok(deriveChangedMarkdownSections("README.md", original, target).some(({ revision }) => revision === "baseline"));
+  }
+  assert.deepEqual(deriveChangedMarkdownSections("new.md", null, changed).map(({ headingPath, revision }) => [headingPath, revision]), [[null, "target"]]);
+  assert.deepEqual(deriveChangedMarkdownSections("gone.md", original, null).map(({ headingPath, revision }) => [headingPath, revision]), [[null, "baseline"]]);
+  const repeated = "# Guide\n\n## Same\n\nOne.\n\n## Same\n\nTwo.\n";
+  assert.ok(deriveChangedMarkdownSections("README.md", repeated, repeated.replace("Two.", "Three.")).every(({ headingPath }) => headingPath === null));
+  const fenced = "# Guide\n\n## Code\n\n````md\n## Fake\n```\nold\n````\n";
+  assert.ok(deriveChangedMarkdownSections("README.md", fenced, fenced.replace("old", "new")).length > 0);
+  assert.ok(deriveChangedMarkdownSections("README.md", fenced, fenced.replace("old", "new")).every(({ headingPath }) => headingPath === null));
+});
+
+test("section comparison preserves multiplicity and order without global ordinal churn", () => {
+  const original = "# Guide\n\n## First\n\n- A\n- A\n- B\n\n## Last\n\nStable.\n";
+  for (const target of [original.replace("- A\n- A", "- A"), original.replace("- A\n- A\n- B", "- A\n- B\n- A")]) {
+    const sections = deriveChangedMarkdownSections("README.md", original, target);
+    assert.equal(sections.length, 2);
+    assert.ok(sections.every(({ headingPath }) => headingPath === "Guide > First"));
+  }
+  assert.deepEqual(deriveChangedMarkdownSections("README.md", original, original), []);
+  assert.ok(deriveChangedMarkdownSections("README.md", original, original.replace("Stable.", "Changed."), true).every(({ headingPath }) => headingPath === null));
+});
+
+const DOCUMENT_MIGRATION_SOURCE_PATHS = ["docs/PLAN.md", "docs/IMPLEMENTATION-MAP.md"] as const;
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 
@@ -105,7 +138,7 @@ function packetCliArguments(gatesPath: string = "gates.json"): ReadonlyArray<str
     "--baseline", "HEAD^",
     "--target", "HEAD",
     "--capsule", "docs/capsules/EXAMPLE-PROPOSAL.md",
-    "--route", "docs/capsules/EXAMPLE-PROPOSAL.md::Selected rules",
+    "--route", "docs/capsules/EXAMPLE-PROPOSAL.md::Example proposal > Selected rules",
     "--gates", gatesPath,
   ];
 }
@@ -155,13 +188,15 @@ const packetInput = {
     path: "docs/capsules/EXAMPLE-PROPOSAL.md",
     sha256: "c".repeat(64),
   },
+  changedSections: [],
   changedFiles: [
     { path: "BpmnSemantics/Example.lean", added: 10, removed: 2 },
   ],
   routedSections: [
     {
       path: "docs/SEMANTIC-PROCESS-IL-SPEC.md",
-      heading: "Runtime state",
+      headingPath: "Semantic Process > Runtime state",
+      revision: "target",
       sha256: "d".repeat(64),
     },
   ],
@@ -186,14 +221,16 @@ test("the semantic review packet is deterministic and digest-sensitive", () => {
       sha256: packetInput.capsule.sha256,
       path: packetInput.capsule.path,
     },
+    changedSections: packetInput.changedSections,
     changedFiles: packetInput.changedFiles.map(({ path: filePath, added, removed }) => ({
       removed,
       added,
       path: filePath,
     })),
-    routedSections: packetInput.routedSections.map(({ path: filePath, heading, sha256 }) => ({
+    routedSections: packetInput.routedSections.map(({ path: filePath, headingPath, revision, sha256 }) => ({
       sha256,
-      heading,
+      headingPath,
+      revision,
       path: filePath,
     })),
     rootGates: packetInput.rootGates.map(({ command, exitStatus, elapsedMs, outputSha256 }) => ({
@@ -210,7 +247,7 @@ test("the semantic review packet is deterministic and digest-sensitive", () => {
       ...packetInput.changedFiles,
     ].reverse(),
     routedSections: [
-      { path: "docs/Z.md", heading: "Z", sha256: "f".repeat(64) },
+      { path: "docs/Z.md", headingPath: "Z", revision: "target" as const, sha256: "f".repeat(64) },
       ...packetInput.routedSections,
     ].reverse(),
     rootGates: [
@@ -421,8 +458,8 @@ test("the semantic review packet CLI resolves exact commits, sections, and numst
     assert.match(target, /^[0-9a-f]{40}$/u);
     const firstRoute: unknown = packet.routedSections[0];
     assert.ok(isRecord(firstRoute));
-    assert.ok("heading" in firstRoute);
-    assert.equal(firstRoute.heading, "Selected rules");
+    assert.ok("headingPath" in firstRoute);
+    assert.equal(firstRoute.headingPath, "Example proposal > Selected rules");
     assert.equal(packet.changedFiles.length > 0, true);
     assert.match(packetSha256, /^[0-9a-f]{64}$/u);
 
@@ -439,7 +476,7 @@ test("the semantic review packet CLI resolves exact commits, sections, and numst
 
     const missingSection = runPacketCli(
       repository,
-      arguments_.map((value) => value === "docs/capsules/EXAMPLE-PROPOSAL.md::Selected rules"
+      arguments_.map((value) => value === "docs/capsules/EXAMPLE-PROPOSAL.md::Example proposal > Selected rules"
           ? "docs/capsules/EXAMPLE-PROPOSAL.md::Missing section"
           : value),
     );
@@ -547,5 +584,33 @@ test("the semantic review packet CLI binds a complete migration matrix", async (
     }
   } finally {
     await rm(temporaryRoot, { recursive: true, force: true });
+  }
+});
+
+test("the CLI derives Learn more even when the manual route names Quick start", async () => {
+  const repository = await mkdtemp(path.join(os.tmpdir(), "review-section-routing-"));
+  try {
+    await initializeReviewRepository(repository);
+    const original = "# Reader\n\n## Quick start\n\nRun.\n\n## Learn more\n\nOld account.\n";
+    await writeFile(path.join(repository, "README.md"), original);
+    commitAll(repository, "baseline readme");
+    await writeFile(path.join(repository, "README.md"), original.replace("Old account.", "New account."));
+    await writeFile(path.join(repository, "BpmnSemantics/Example.lean"), "def example := false\n");
+    commitAll(repository, "change section and code");
+    const result = runPacketCli(repository, [...packetCliArguments(), "--route", "README.md::Reader > Quick start"]);
+    assert.equal(result.status, 0, result.stderr);
+    const packet = JSON.parse(result.stdout) as { format: string; changedFiles: Array<{ path: string }>; changedSections: Array<{ headingPath: string; revision: string }>; packetSha256: string };
+    assert.equal(packet.format, "semantic-review-packet/v2");
+    assert.deepEqual(packet.changedSections.map(({ headingPath, revision }) => [headingPath, revision]), [
+      ["Reader > Learn more", "baseline"], ["Reader > Learn more", "target"],
+    ]);
+    assert.ok(packet.changedFiles.some(({ path: filePath }) => filePath === "BpmnSemantics/Example.lean"));
+    // Pending edits cannot change evidence bound to committed trees.
+    await writeFile(path.join(repository, "README.md"), "Uncommitted replacement.\n");
+    const rerun = runPacketCli(repository, [...packetCliArguments(), "--route", "README.md::Reader > Quick start"]);
+    assert.equal(rerun.status, 0, rerun.stderr);
+    assert.equal((JSON.parse(rerun.stdout) as { packetSha256: string }).packetSha256, packet.packetSha256);
+  } finally {
+    await rm(repository, { recursive: true, force: true });
   }
 });

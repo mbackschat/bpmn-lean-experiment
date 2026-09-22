@@ -294,6 +294,8 @@ The root cause is stating one obligation in several places, so each correction c
 
 The twenty-third instance is the exact Merge/private scheduling checkpoint: the implementation account changed while current IL, atomicity, and map descriptions still excluded its private execution. The first correction updated those owners but missed another blanket Multi-Merge exclusion in the runtime map's unsupported-claims section. Qualifying it as public or hosted execution closed the second correction audit at `52ed7496`. The [review receipt](INTERNAL-COMMUTATION-PROPOSAL.md#independent-cold-review-receipt) retains both audits and the separate integration blocker. A claim sweep must include sibling absence statements and the packet must route the sections actually changed; existing guards do not decide the semantic equivalence of arbitrary prose.
 
+The enumerable changed-section routing omission is separately owned by [Finding 65](#finding-65). Its executable coverage does not decide whether an unchanged owner paragraph has become false.
+
 ### Finding 16
 
 A production-wide constructor correction was implemented from the two callers already under attention rather than from an executable producer census.
@@ -1134,6 +1136,23 @@ Evidence
 **First observed:** owner review of agent-thread exhaustion during the 2026-09-20 architecture/workflow follow-up.
 
 The 2026-09-20 review follow-up stalled at the required reviewer because the session could neither spawn nor resume a reviewer and exposed no thread-close operation. This counts the blocked outcome once, not each failed retry. Routine investigation stays with the root, capacity is reserved for required reviews, and the exact reviewer is reused for corrections and eligible closure. Repository guards cannot observe the orchestration service's open-thread quota or release a slot; instruction checks do not enforce runtime allocation.
+
+### Finding 65
+
+A review packet listed a changed Markdown file but manually routed an unchanged sibling section, omitting the changed section from review navigation.
+
+Instances
+: 1
+
+Disposition
+: `executable guard`
+
+Evidence
+: [packet position and CLI regression tests](../scripts/semantic-review-packet.test.ts), [review-prompt contract](../scripts/independent-review-policy.test.ts), and [packet/migration contract](TESTING-SPEC.md#independent-cold-review-gate)
+
+**First observed:** exact Merge review at `cd114dd6`: the differential README change was under `Learn more`, while the packet routed `Quick start`.
+
+The packet derives changed heading paths from ordered document-unit digests in both immutable trees and retains file references for structural, fenced-code, ambiguous, new or deleted content. Tests seed each position, duplicate occurrences, reordering, and the misleading sibling route through the CLI. This splits the enumerable routing-omission class from [Finding 15](#finding-15); that finding's arbitrary prose-consistency class remains unguardable. The prompt assertion preserves an explicit check of affected unchanged owners using the computed map set and boundary owners; it does not prove the reviewer performed that check or identified every affected claim.
 
 ## Update rule
 

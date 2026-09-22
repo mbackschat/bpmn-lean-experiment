@@ -5,11 +5,13 @@ import { fileURLToPath } from "node:url";
 
 import {
   compareExactStrings,
-  exactSecondLevelSection,
+  exactMarkdownSection,
+  markdownSections,
   sha256,
 } from "./semantic-review-text.ts";
 import {
   loadDocumentMigrationMatrix,
+  extractDocumentUnits,
   type ValidatedDocumentMigrationMatrix,
 } from "./document-migration-matrix.ts";
 
@@ -62,7 +64,8 @@ export type ReviewPacketChangedFile =
 
 export type ReviewPacketSection = Readonly<{
   path: string;
-  heading: string;
+  headingPath: string | null;
+  revision: "baseline" | "target";
   sha256: string;
 }>;
 
@@ -79,6 +82,7 @@ export type SemanticReviewPacketInput = Readonly<{
   target: string;
   capsule: Readonly<{ path: string; sha256: string }>;
   changedFiles: ReadonlyArray<ReviewPacketChangedFile>;
+  changedSections: ReadonlyArray<ReviewPacketSection>;
   routedSections: ReadonlyArray<ReviewPacketSection>;
   rootGates: ReadonlyArray<ReviewPacketGate>;
   migrationMatrix?: ValidatedDocumentMigrationMatrix;
@@ -86,8 +90,57 @@ export type SemanticReviewPacketInput = Readonly<{
 
 export type SemanticReviewPacket = SemanticReviewPacketInput & Readonly<{
   kind: "semanticReviewPacket";
+  format: "semantic-review-packet/v2";
   packetSha256: string;
 }>;
+
+/** Unit sequence comparison retains duplicates and ordering without global ordinal churn. */
+export function deriveChangedMarkdownSections(
+  filePath: string, baseline: string | null, target: string | null, wholeDocument = false,
+): ReadonlyArray<ReviewPacketSection> {
+  if (baseline === target) return [];
+  const files = (): ReviewPacketSection[] => ([ ["baseline", baseline], ["target", target] ] as const)
+    .flatMap(([revision, document]) => document === null ? [] : [{ path: filePath, headingPath: null, revision, sha256: sha256(document) }]);
+  if (baseline === null || target === null || wholeDocument) return files();
+  const before = markdownSections(baseline);
+  const after = markdownSections(target);
+  if ([before, after].some((sections) => new Set(sections.map(({ headingPath }) => headingPath)).size !== sections.length)) return files();
+  const units = (document: string): Map<string, string[]> => {
+    const result = new Map<string, string[]>();
+    for (const unit of extractDocumentUnits(filePath, document)) {
+      const sequence = result.get(unit.owningHeading) ?? [];
+      sequence.push(unit.sha256);
+      result.set(unit.owningHeading, sequence);
+    }
+    return result;
+  };
+  const beforeUnits = units(baseline);
+  const afterUnits = units(target);
+  const changed = new Set([...beforeUnits.keys(), ...afterUnits.keys()].filter((heading) =>
+    JSON.stringify(beforeUnits.get(heading) ?? []) !== JSON.stringify(afterUnits.get(heading) ?? [])));
+  const refs: ReviewPacketSection[] = [];
+  let fallback = changed.has("<document>");
+  const beforePaths = before.map(({ headingPath }) => headingPath);
+  const afterPaths = after.map(({ headingPath }) => headingPath);
+  const beforeByPath = new Map(before.map((section) => [section.headingPath, section]));
+  const afterByPath = new Map(after.map((section) => [section.headingPath, section]));
+  // Heading-only changes, moves, fences, and structural bytes are not claim units.
+  if (JSON.stringify(beforePaths) !== JSON.stringify(afterPaths)) fallback = true;
+  const preface = (document: string, line: number | undefined): string => document.split("\n").slice(0, line).join("\n");
+  if (preface(baseline, before[0]?.line) !== preface(target, after[0]?.line)) fallback = true;
+  for (const heading of new Set([...beforePaths, ...afterPaths])) {
+    const left = beforeByPath.get(heading);
+    const right = afterByPath.get(heading);
+    if (!changed.has(heading)) {
+      if (left?.ownText !== right?.ownText) fallback = true;
+      continue;
+    }
+    for (const [revision, section] of [["baseline", left], ["target", right]] as const) {
+      if (section !== undefined) refs.push({ path: filePath, headingPath: heading, revision, sha256: sha256(section.text) });
+    }
+  }
+  return fallback ? files() : refs;
+}
 
 function assertRepositoryPath(value: string, label: string): void {
   if (
@@ -204,9 +257,9 @@ export function assembleSemanticReviewPacket(
       }
     }
   }
-  for (const section of input.routedSections) {
+  for (const section of [...input.routedSections, ...input.changedSections]) {
     assertRepositoryPath(section.path, "routed section");
-    if (section.heading.length === 0 || !digestPattern.test(section.sha256)) {
+    if ((section.headingPath !== null && (typeof section.headingPath !== "string" || section.headingPath.length === 0)) || !["baseline", "target"].includes(section.revision) || !digestPattern.test(section.sha256)) {
       throw new Error("each routed section needs a heading and lowercase SHA-256 digest");
     }
   }
@@ -216,7 +269,7 @@ export function assembleSemanticReviewPacket(
   assertUnique(input.changedFiles, ({ path: filePath }) => filePath, "changed file");
   assertUnique(
     input.routedSections,
-    ({ path: filePath, heading }) => `${filePath}\u0000${heading}`,
+    ({ path: filePath, headingPath, revision }) => JSON.stringify([filePath, headingPath, revision]),
     "routed section",
   );
   assertUnique(input.rootGates, ({ command }) => command, "root gate command");
@@ -232,8 +285,12 @@ export function assembleSemanticReviewPacket(
     }
   }
 
-  const body: SemanticReviewPacketInput & { readonly kind: "semanticReviewPacket" } = {
+  const canonicalSections = (sections: ReadonlyArray<ReviewPacketSection>): ReadonlyArray<ReviewPacketSection> => [...sections]
+    .sort((left, right) => compareExactStrings(left.path, right.path) || compareExactStrings(left.headingPath ?? "", right.headingPath ?? "") || compareExactStrings(left.revision, right.revision))
+    .map(({ path: filePath, headingPath, revision, sha256: digest }) => ({ path: filePath, headingPath, revision, sha256: digest }));
+  const body: SemanticReviewPacketInput & { readonly kind: "semanticReviewPacket"; readonly format: "semantic-review-packet/v2" } = {
     kind: "semanticReviewPacket",
+    format: "semantic-review-packet/v2",
     stage: input.stage,
     baseline: input.baseline,
     target: input.target,
@@ -255,15 +312,8 @@ export function assembleSemanticReviewPacket(
             added: changedFile.added,
             removed: changedFile.removed,
           }),
-    routedSections: [...input.routedSections]
-      .sort((left, right) =>
-        compareExactStrings(left.path, right.path) ||
-        compareExactStrings(left.heading, right.heading))
-      .map(({ path: filePath, heading, sha256: sectionSha256 }) => ({
-        path: filePath,
-        heading,
-        sha256: sectionSha256,
-      })),
+    changedSections: canonicalSections(input.changedSections),
+    routedSections: canonicalSections(input.routedSections),
     rootGates: [...input.rootGates]
       .sort((left, right) => compareExactStrings(left.command, right.command))
       .map(({ command, exitStatus, elapsedMs, outputSha256 }) => ({
@@ -431,13 +481,13 @@ function parseRoutes(target: string, routes: ReadonlyArray<string>): ReadonlyArr
   return routes.map((route) => {
     const separator = route.indexOf("::");
     if (separator <= 0 || separator === route.length - 2) {
-      throw new Error(`route must use <path>::<level-two-heading>: ${route}`);
+      throw new Error(`route must use <path>::<full heading path>: ${route}`);
     }
     const filePath = route.slice(0, separator);
-    const heading = route.slice(separator + 2);
+    const headingPath = route.slice(separator + 2);
     assertRepositoryPath(filePath, "routed section");
     const document = gitText(["show", `${target}:${filePath}`]);
-    return { path: filePath, heading, sha256: sha256(exactSecondLevelSection(document, heading)) };
+    return { path: filePath, headingPath, revision: "target", sha256: sha256(exactMarkdownSection(document, headingPath)) };
   });
 }
 
@@ -463,6 +513,12 @@ function runCli(arguments_: ReadonlyArray<string>): void {
     throw new Error("target must be an ancestor of HEAD");
   }
   const capsuleDocument = gitText(["show", `${target}:${parsed.capsule}`]);
+  const changedFiles = parseNumstat(baseline, target);
+  const changedSections = changedFiles.flatMap(({ path: filePath }) => {
+    if (!filePath.toLowerCase().endsWith(".md")) return [];
+    const documentAt = (revision: string): string | null => gitBlobSha256(revision, filePath) === null ? null : gitText(["show", `${revision}:${filePath}`]);
+    return deriveChangedMarkdownSections(filePath, documentAt(baseline), documentAt(target), filePath === parsed.capsule);
+  });
   const migrationMatrix = parsed.migrationMatrixPath === undefined
     ? undefined
     : loadDocumentMigrationMatrix({
@@ -476,7 +532,8 @@ function runCli(arguments_: ReadonlyArray<string>): void {
     baseline,
     target,
     capsule: { path: parsed.capsule, sha256: sha256(capsuleDocument) },
-    changedFiles: parseNumstat(baseline, target),
+    changedFiles,
+    changedSections,
     routedSections: parseRoutes(target, parsed.routes),
     rootGates: parseGateRecords(parsed.gatesPath),
     ...(migrationMatrix === undefined ? {} : { migrationMatrix }),

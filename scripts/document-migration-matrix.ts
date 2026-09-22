@@ -2,13 +2,9 @@ import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 
-import { compareExactStrings, sha256 } from "./semantic-review-text.ts";
+import { compareExactStrings, markdownStructure, sha256 } from "./semantic-review-text.ts";
 
 export const DOCUMENT_MIGRATION_MATRIX_FORMAT = "document-migration-matrix/v2" as const;
-export const DOCUMENT_MIGRATION_SOURCE_PATHS = Object.freeze([
-  "docs/PLAN.md",
-  "docs/IMPLEMENTATION-MAP.md",
-] as const);
 
 const commitPattern = /^[0-9a-f]{40}$/u;
 const digestPattern = /^[0-9a-f]{64}$/u;
@@ -52,7 +48,7 @@ export type NormalizedDocumentMigrationMatrix = Readonly<{
   format: typeof DOCUMENT_MIGRATION_MATRIX_FORMAT;
   baseline: string;
   target: string;
-  sourcePaths: typeof DOCUMENT_MIGRATION_SOURCE_PATHS;
+  sourcePaths: ReadonlyArray<string>;
   rows: ReadonlyArray<Readonly<{
     source: DocumentUnit;
     disposition:
@@ -146,17 +142,6 @@ function gitDocument(repositoryRoot: string, revision: string, filePath: string)
   return gitText(repositoryRoot, ["show", `${revision}:${filePath}`]);
 }
 
-function headingOwner(stack: ReadonlyArray<string | undefined>): string {
-  const headings = stack.filter((heading): heading is string => heading !== undefined);
-  return headings.length === 0 ? "<document>" : headings.join(" > ");
-}
-
-function headingAt(line: string): Readonly<{ level: number; text: string }> | undefined {
-  const match = /^(#{1,6})[ \t]+(.+?)(?:[ \t]+#+)?[ \t]*$/u.exec(line);
-  if (match?.[1] === undefined || match[2] === undefined) return undefined;
-  return { level: match[1].length, text: match[2] };
-}
-
 function isListItem(line: string): boolean {
   return /^\s*(?:[-+*]|\d+[.)])[ \t]+\S/u.test(line);
 }
@@ -169,24 +154,21 @@ function isTableDelimiter(line: string): boolean {
   return /^\s*\|(?:\s*:?-{3,}:?\s*\|)+\s*$/u.test(line);
 }
 
-function fenceMarker(line: string): string | undefined {
-  return /^\s*(`{3,}|~{3,})/u.exec(line)?.[1]?.[0];
-}
-
 /** Extracts only claim-bearing Markdown blocks; headings and structural delimiters own or separate units. */
 export function extractDocumentUnits(filePath: string, document: string): ReadonlyArray<DocumentUnit> {
   assertRepositoryPath(filePath, "document path");
   const lines = document.split("\n");
-  const headings: Array<string | undefined> = [];
+  const structure = markdownStructure(document);
+  const headings = new Map(structure.headings.map((heading) => [heading.line, heading.headingPath]));
+  let owningHeading = "<document>";
   const units: DocumentUnit[] = [];
   let index = 0;
   let ordinal = 1;
-  let openFence: string | undefined;
 
   const addUnit = (text: string): void => {
     units.push({
       path: filePath,
-      owningHeading: headingOwner(headings),
+      owningHeading,
       ordinal,
       sha256: sha256(text),
       text,
@@ -196,21 +178,13 @@ export function extractDocumentUnits(filePath: string, document: string): Readon
 
   while (index < lines.length) {
     const line = lines[index] ?? "";
-    const marker = fenceMarker(line);
-    if (openFence !== undefined) {
-      if (marker === openFence) openFence = undefined;
+    if (structure.fencedLines.has(index)) {
       index += 1;
       continue;
     }
-    if (marker !== undefined) {
-      openFence = marker;
-      index += 1;
-      continue;
-    }
-    const heading = headingAt(line);
+    const heading = headings.get(index);
     if (heading !== undefined) {
-      headings.length = heading.level - 1;
-      headings[heading.level - 1] = heading.text;
+      owningHeading = heading;
       index += 1;
       continue;
     }
@@ -231,8 +205,8 @@ export function extractDocumentUnits(filePath: string, document: string): Readon
       const candidate = lines[index] ?? "";
       if (
         candidate.trim().length === 0 ||
-        headingAt(candidate) !== undefined ||
-        fenceMarker(candidate) !== undefined ||
+        headings.has(index) ||
+        structure.fencedLines.has(index) ||
         isTableRow(candidate) ||
         isTableDelimiter(candidate) ||
         (list && isListItem(candidate)) ||
@@ -345,7 +319,7 @@ function parseMatrix(value: unknown): Readonly<{
   format: typeof DOCUMENT_MIGRATION_MATRIX_FORMAT;
   baseline: string;
   target: string;
-  sourcePaths: typeof DOCUMENT_MIGRATION_SOURCE_PATHS;
+  sourcePaths: ReadonlyArray<string>;
   rows: ReadonlyArray<MatrixRow>;
 }> {
   assertPlainRecord(value, "migration matrix");
@@ -354,8 +328,19 @@ function parseMatrix(value: unknown): Readonly<{
   if (typeof value.baseline !== "string" || typeof value.target !== "string") {
     throw new Error("migration matrix commits must be strings");
   }
-  if (!Array.isArray(value.sourcePaths) || value.sourcePaths.length !== DOCUMENT_MIGRATION_SOURCE_PATHS.length || value.sourcePaths.some((candidate, index) => candidate !== DOCUMENT_MIGRATION_SOURCE_PATHS[index])) {
-    throw new Error("migration matrix sourcePaths must be the exact registered source paths");
+  if (!Array.isArray(value.sourcePaths) || value.sourcePaths.length === 0) {
+    throw new Error("migration matrix needs a nonempty sourcePaths array");
+  }
+  const sourcePaths = value.sourcePaths.map((candidate) => {
+    const sourcePath = parseNonemptyString(candidate, "migration matrix source path");
+    assertRepositoryPath(sourcePath, "migration matrix source path");
+    if (!sourcePath.endsWith(".md")) {
+      throw new Error("migration matrix source path must name a Markdown document");
+    }
+    return sourcePath;
+  });
+  if (new Set(sourcePaths).size !== sourcePaths.length) {
+    throw new Error("migration matrix repeats a source path");
   }
   if (!Array.isArray(value.rows)) throw new Error("migration matrix rows must be an array");
   const rows = value.rows.map((row, index): MatrixRow => {
@@ -370,7 +355,7 @@ function parseMatrix(value: unknown): Readonly<{
     format: DOCUMENT_MIGRATION_MATRIX_FORMAT,
     baseline: value.baseline,
     target: value.target,
-    sourcePaths: DOCUMENT_MIGRATION_SOURCE_PATHS,
+    sourcePaths,
     rows,
   };
 }
@@ -399,11 +384,11 @@ export function loadDocumentMigrationMatrix(input: DocumentMigrationMatrixLoadIn
     throw new Error("migration matrix baseline and target must equal the requested commits");
   }
 
-  const baselineUnits = deriveDocumentUnits(input.repositoryRoot, baseline, DOCUMENT_MIGRATION_SOURCE_PATHS);
+  const baselineUnits = deriveDocumentUnits(input.repositoryRoot, baseline, matrix.sourcePaths);
   const baselineByKey = new Map(baselineUnits.map((unit) => [identityKey(unit), unit]));
   const rowBySource = new Map<string, MatrixRow>();
   for (const row of matrix.rows) {
-    if (!DOCUMENT_MIGRATION_SOURCE_PATHS.includes(row.source.path as (typeof DOCUMENT_MIGRATION_SOURCE_PATHS)[number])) {
+    if (!matrix.sourcePaths.includes(row.source.path)) {
       throw new Error(`migration matrix source uses unknown path ${row.source.path}`);
     }
     const key = identityKey(row.source);
@@ -464,7 +449,7 @@ export function loadDocumentMigrationMatrix(input: DocumentMigrationMatrixLoadIn
       format: DOCUMENT_MIGRATION_MATRIX_FORMAT,
       baseline,
       target,
-      sourcePaths: DOCUMENT_MIGRATION_SOURCE_PATHS,
+      sourcePaths: matrix.sourcePaths,
       rows: normalizedRows,
     },
     diagnostics: { changed, deleted },

@@ -25,10 +25,10 @@ Lean and TypeScript.
 `;
 
 const selections = {
-  account: ["Semantic rules"],
-  contract: ["Public contract"],
-  exclusions: ["Exclusions"],
-  evidence: ["Evidence"],
+  account: ["Capsule > Semantic rules"],
+  contract: ["Capsule > Public contract"],
+  exclusions: ["Capsule > Exclusions"],
+  evidence: ["Capsule > Evidence"],
 } as const;
 
 test("the review manifest proves all four closure boundaries unchanged", () => {
@@ -63,4 +63,13 @@ test("the review manifest rejects omitted or duplicate headings", () => {
     () => fingerprintReviewSections(`${baseline}\n## Evidence\n\nDuplicate.\n`, baseline, selections),
     /heading must occur exactly once/u,
   );
+});
+
+test("continuity fingerprints nested sections, fences and exact trailing bytes", () => {
+  const nested = baseline.replace("Field A.", "### Nested\n\nField A.\n\n````md\n## Not a section\n```\ncode\n````");
+  const nestedSelections = { ...selections, contract: ["Capsule > Public contract > Nested"] };
+  assert.equal(fingerprintReviewSections(nested, nested, nestedSelections).eligibleForWarmClosure, true);
+  for (const target of [nested.replace("code", "changed"), nested.replace("Field A.", "Field A. ")]) {
+    assert.equal(fingerprintReviewSections(nested, target, nestedSelections).eligibleForWarmClosure, false);
+  }
 });

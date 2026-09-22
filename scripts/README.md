@@ -45,10 +45,10 @@ The report names the required implementation detail maps, guards, this registry,
 
 | Task | Entry point | Use |
 |---|---|---|
-| Build a neutral review packet | [`semantic-review-packet.ts`](semantic-review-packet.ts) | Bind an immutable baseline, target, routed sections, gate receipts, and optional validated migration matrix for cold review. |
-| Build or check review continuity | [`semantic-review-manifest.ts`](semantic-review-manifest.ts) | Create the hash-bound checkpoint-to-closure manifest required for eligible warm continuity. |
+| Build a neutral review packet | [`semantic-review-packet.ts`](semantic-review-packet.ts) | Derive changed Markdown sections and before/after file fallbacks; bind immutable commits, full heading-path context, gate receipts, and an optional validated migration matrix. |
+| Build or check review continuity | [`semantic-review-manifest.ts`](semantic-review-manifest.ts) | Fingerprint full heading-path sections for eligible checkpoint-to-closure warm continuity. |
 | Measure a capsule | [`capsule-cost.ts`](capsule-cost.ts) | Report commit-bounded nonblank code and documentation additions/removals. |
-| Validate a documentation migration | [`document-migration-matrix.ts`](document-migration-matrix.ts) | Derive and validate claim-granular baseline-to-target routing for a bounded documentation migration. |
+| Validate a documentation migration | [`document-migration-matrix.ts`](document-migration-matrix.ts) | Derive exactly-once claim dispositions for an invocation's declared Markdown source set, bound to immutable baseline and target trees. |
 | Generate mechanism-maturity evidence | [`mechanism-maturity.ts`](mechanism-maturity.ts) | Join the live mechanism-family map with the evidence-owned invariant, Activity-occurrence, multiple-enabled, and composition classifications into an ephemeral non-conformance JSON vector. |
 | Classify Activity-occurrence writers | [`activity-occurrence-writer-census.test.ts`](activity-occurrence-writer-census.test.ts) | Keep every production `activityOccurrences` assignment classified for Activity-identity issuance and body-claim preservation, with explicit evidence for each non-structural write shape. |
 | Check semantic operation censuses | [`internal-commutation-census.test.ts`](internal-commutation-census.test.ts) and [`semantic-operation-consumer-census.test.ts`](semantic-operation-consumer-census.test.ts) | Keep both semantic accounts exhaustive over operation families and RuntimeState atom domains, and require every composed Activity-data analogue consumer to remain classified in its reviewed implementation matrix. |

@@ -15,7 +15,7 @@ The full MUE content obligation remains open after that checkpoint. The approved
 
 ## Existing risk
 
-[The Semantic Process contract](SEMANTIC-PROCESS-IL-SPEC.md#internal-scheduling) requires every material internal choice to be explicit or observationally irrelevant under exact hypotheses. Production closure currently recognizes only one exact pair of distinct ordinary User Task arms. Its check names operation constructors and three identifiers, but does not state the semantic resources each transition reads and writes. Adding another operation kind by extending that checklist would repeat the mechanism without establishing why the pair commutes.
+[The Semantic Process contract](SEMANTIC-PROCESS-IL-SPEC.md#internal-scheduling) requires every material internal choice to be explicit or observationally irrelevant under exact hypotheses. Before this proposal's first Beta checkpoint, production closure recognized only one exact pair of distinct ordinary User Task arms. That check named operation constructors and three identifiers without stating the semantic resources each transition reads and writes. Extending that checklist would repeat the mechanism without establishing why the pair commutes. Current batch coverage belongs to [`implementation-status-owner:ENGINE-RUNTIME-PROOF`](ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md#current-boundary); the checkpoint sections below retain their bounded laws and exclusions.
 
 Canonical operation-ID selection is necessary for reproducibility but is not evidence of commutation. Sorting two conflicting transitions merely makes one conflict deterministic. The deciding rule must establish non-interference before the selector may use canonical order.
 

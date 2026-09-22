@@ -137,6 +137,8 @@ Live success crosses a pre-schedule Run boundary, replaces the Worker, retries B
 
 ## Explicitly absent
 
+- Temporal admission of `requireChoiceSchedule` Programs; private semantic scheduling establishes no hosted scheduling capability
+
 ### Temporal adapter
 
 - retained result beyond Temporal retention

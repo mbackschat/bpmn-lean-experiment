@@ -799,14 +799,16 @@ node scripts/semantic-review-packet.ts \
   --baseline <strict-ancestor-commit> \
   --target <review-target> \
   --capsule docs/capsules/<CAPSULE>-PROPOSAL.md \
-  --route 'docs/<OWNER>.md::<exact level-two heading>' \
+  --route 'docs/<OWNER>.md::<Title > Section > Subsection>' \
   [--migration-matrix <temporary-migration-matrix.json>] \
   --gates <temporary-root-gate-records.json>
 ```
 
-The dependency-free packet resolves full commit identities and requires the baseline to be a strict ancestor of the target and the target to be an ancestor of `HEAD`. It hashes the complete target capsule and every exact routed level-two section, records deterministic no-rename Git line counts for text, and records exact before/after SHA-256 digests only for the closed repository-owned binary artifact classes in [`semantic-review-packet.ts`](../scripts/semantic-review-packet.ts): the pinned Maven wrapper JAR and Linux UI snapshot PNGs. Any other Git-binary path, including source or Markdown containing a NUL byte, rejects instead of losing the text/source line inventory. The packet sorts and validates gate records and emits one `packetSha256`. Duplicate or missing routes, duplicate commands, malformed gate records, unregistered binary paths, and non-ancestral targets reject. The root may route more than one section by repeating `--route`; the reviewer verifies routing completeness independently.
+The dependency-free `semantic-review-packet/v2` packet resolves full commit identities and requires the baseline to be a strict ancestor of the target and the target to be an ancestor of `HEAD`. It hashes the complete target capsule and every exact routed heading-path section, records deterministic no-rename Git line counts for text, and records exact before/after SHA-256 digests for the closed repository-owned binary artifact classes in [`semantic-review-packet.ts`](../scripts/semantic-review-packet.ts): the pinned Maven wrapper JAR and Linux UI snapshot PNGs. Any other Git-binary path, including source or Markdown containing a NUL byte, rejects instead of losing the text/source line inventory. The packet sorts and validates gate records and emits one `packetSha256`. Duplicate or missing routes, duplicate commands, malformed gate records, unregistered binary paths, and non-ancestral targets reject. The root may route more than one section by repeating `--route`; the reviewer verifies routing completeness independently.
 
-For a bounded documentation migration whose review contract requires claim-by-claim preservation, pass exactly one temporary matrix through `--migration-matrix`. [`document-migration-matrix.ts`](../scripts/document-migration-matrix.ts) independently derives baseline paragraph, complete-list-item, and table-row units from Git, requires exactly-once coverage, validates every exact target unit or explicit changed, duplicate, or history disposition, and preserves source and target text in normalized reviewer evidence. The packet requires the matrix commits to equal its baseline and target, embeds the normalized rows and the exact matrix-byte SHA-256, and includes both in `packetSha256`. The matrix is temporary review input, not a retained status owner.
+Changed Markdown navigation is derived from both immutable trees using the migration matrix's document units: a heading path changes when its ordered unit-digest sequence changes. Duplicates and order remain significant; document-global ordinal shifts do not mark unrelated sections. Derived and manually routed references share `{ path, headingPath, revision, sha256 }`, where `revision` selects baseline or target and a null `headingPath` identifies the complete file. New/deleted documents, renamed/deleted/repeated heading paths, pre-heading changes, and structural or fenced-code changes outside those units retain before/after file references. The fully reviewed capsule receives file references instead of redundant section enumeration. Non-Markdown changes remain in `changedFiles`. These references identify changed locations, not semantic consistency or all affected unchanged owners. Historical packet digests describe their original format; change the format only with no dependent review round open.
+
+For a bounded documentation migration whose review contract requires claim-by-claim preservation, pass exactly one temporary matrix through `--migration-matrix`. Each invocation declares its nonempty, unique, canonical Markdown `sourcePaths`; the reviewer checks that this source set is complete for the consolidation. [`document-migration-matrix.ts`](../scripts/document-migration-matrix.ts) independently derives baseline paragraph, complete-list-item, and table-row units from Git, requires exactly-once coverage, validates every exact target unit or explicit changed, duplicate, or history disposition, and preserves source and target text in normalized reviewer evidence. For every removed duplicate, its rationale links the exact surviving owner section that states the fact; a sole record moves through a destination disposition instead of being discarded. Historical dispositions preserve the baseline scope. Link resolution does not establish semantic preservation: the reviewer checks the dispositions, hypotheses and exclusions. The packet requires the matrix commits to equal its baseline and target, embeds the actual source set, normalized rows and exact matrix-byte SHA-256, and includes them in `packetSha256`. The matrix is temporary review input, not a retained status owner.
 
 ### When a warm review is valid
 
@@ -817,7 +819,7 @@ Warm review is valid in four bounded cases:
 3. an agent that did not implement the reviewed files checks a routine non-material refactor or integration change that does not select or change a governed semantic claim.
 4. the exact approved semantic-checkpoint reviewer performs closure review after the executable continuity manifest proves that the selected account, public contract, exclusions, and evidence strategy are byte-identical across the approved checkpoint state and closure target.
 
-A warm reviewer may retain the prior review thread or the limited author context needed for those purposes, which saves rediscovery time. Warm closure continuity is valid only when the checkpoint review was required and approved, the closure target descends from that checkpoint, the same reviewer did not implement later work, and the manifest command exits zero. Use the checkpoint correction-audit commit as the baseline after `approve-with-required-edits`; otherwise use the checkpoint review target. The reviewer selects every level-two capsule section that owns the account, contract, exclusions, or evidence strategy and must reject warm eligibility if a material section is omitted. A changed fingerprint, unavailable reviewer thread, absent checkpoint, or changed governed claim requires a new `fork-turns-none` closure reviewer. Other warm review cannot satisfy a governed cold stage, review its own implementation, or carry approval across a material redesign.
+A warm reviewer may retain the prior review thread or the limited author context needed for those purposes, which saves rediscovery time. Warm closure continuity is valid only when the checkpoint review was required and approved, the closure target descends from that checkpoint, the same reviewer did not implement later work, and the manifest command exits zero. Use the checkpoint correction-audit commit as the baseline after `approve-with-required-edits`; otherwise use the checkpoint review target. The reviewer selects every full heading path owning the account, contract, exclusions, or evidence strategy, including its document title, and must reject warm eligibility if a material section is omitted. A changed fingerprint, unavailable reviewer thread, absent checkpoint, or changed governed claim requires a new `fork-turns-none` closure reviewer. Other warm review cannot satisfy a governed cold stage, review its own implementation, or carry approval across a material redesign.
 
 Generate the neutral, hash-bound continuity input without storing another artifact:
 
@@ -826,10 +828,10 @@ node scripts/semantic-review-manifest.ts \
   --baseline <approved-checkpoint-commit> \
   --target <closure-target> \
   --capsule docs/capsules/<CAPSULE>-PROPOSAL.md \
-  --account "<semantic-rules heading>" \
-  --contract "<public-contract heading>" \
-  --exclusions "<exclusions heading>" \
-  --evidence "<evidence-strategy heading>"
+  --account "<Title > Semantic rules>" \
+  --contract "<Title > Public contract>" \
+  --exclusions "<Title > Exclusions>" \
+  --evidence "<Title > Evidence strategy>"
 ```
 
 Each category accepts repeated flags when its contract spans multiple sections. The command resolves both commits, hashes the complete capsule blobs and every selected section, lists the changed files, prints one deterministic `manifestSha256`, exits `0` only when all selected boundaries are byte-identical, and exits `2` when any selected boundary changed. The manifest cannot prove that the author selected every material section; the checkpoint reviewer independently checks selection completeness and records the digest in the review report. It contains no diagnosis, preferred verdict, or claimed gate result.
@@ -844,8 +846,11 @@ Target commit: <immutable SHA>
 Baseline commit or range: <strict ancestor SHA>
 Capsule: <relative link/path>
 Semantic review packet: <packet SHA-256 plus JSON output>
+what-binds map set: <actual map paths for the changed paths>
 
 Work read-only. Read the capsule in full and the exact routed sections of other owner/source documents, inspect the exact target diff and implementation, and verify material claims against executable evidence. Do not modify files and do not infer implementation from prose.
+
+Check affected claims and exclusions in unchanged owner passages. Use the what-binds map set and the boundary-specific owners to identify this context; the changed-section inventory does not establish semantic routing completeness. Report missing owner context rather than treating absence from the diff as evidence of consistency.
 
 Required output:
 VERDICT: APPROVE | APPROVE WITH REQUIRED EDITS | REJECT
