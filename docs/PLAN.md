@@ -88,7 +88,7 @@ Within the dependency order below, prioritize high-risk work before packaging an
 
 ## Current evidence
 
-- Scope-creation mixed batching. Command: `./scripts/pnpm.sh run test:pre-push`. Status: `exit 0`. Date: `2026-09-20`. Commit: `299eea89a73c54c50491c50a1091f5e4646bfb74`. The [review receipt](INTERNAL-COMMUTATION-PROPOSAL.md#independent-cold-review-receipt) records the clean complete gate, fixed-3-GiB evidence, and independent approval after the documentation-only correction audit at `bd1ac87b`. Regional batching and final closure remain open.
+- Finite regional batching. Command: `./scripts/pnpm.sh run test:pre-push`. Status: `exit 0`. Date: `2026-09-22`. Commit: `63b20e136031a9566c3b900d1f4bfe32a9ca701e`. The [review receipt](INTERNAL-COMMUTATION-PROPOSAL.md#independent-cold-review-receipt) records independent approval, the clean complete gate, and fixed-3-GiB evidence. Scheduled choice, remaining families, final closure, and regional-trial closure remain open.
 - Start-capacity assurance. Command: `fixed-3-GiB docker run … ./scripts/lake.sh build BpmnSemantics.CompensationSourceCompatibilityConformance`. Status: `exit 0` after three exact-bound OOM reproductions. Date: `2026-09-03`. Commit: `8ab3ba5f`. The final target completed in 15.00s at 2,324,123,648 cgroup bytes and 1,938,140 KiB RSS with every pressure/OOM counter zero. The [specification](capsules/COMPENSATION-DURABILITY-START-DATA-REPAIR-SPEC.md#lean-assurance-correction-after-the-hard-ceiling) retains the exact 3,221,225,472-byte failures, full chronology, and rejected limit/native-decision alternatives.
 
 ## Exact resume point
@@ -97,11 +97,11 @@ Active work ID: `INTERNAL-COMMUTATION`.
 
 Risk band: RC internal scheduling; the six external reviews and composed Activity-data closure are complete.
 
-Next action: finish resource calibration, complete gates, and independent review for the [finite regional batch outcome](INTERNAL-COMMUTATION-PROPOSAL.md#finite-regional-batch-outcome). The implementation composes approved pair laws for complete preparation, prefix validity, exact canonical state/publication permutation, and whole-command refusal. Keep one consumer boundary; reassess before substantial prerequisites. Regional trial closure stays open; E1/E2 change no RC scope.
+Next action: reconcile remaining family preparations and the unified exact-alternative frontier against the [final-closure obligations](INTERNAL-COMMUTATION-PROPOSAL.md#final-closure-required-optional-and-excluded-work). Name the smallest complete next outcome and its separating witness before implementation; reuse the accepted finite consumer and reassess before substantial prerequisites. Regional trial closure stays open; E1/E2 change no RC scope.
 
-In progress: the finite canonical consumer compiles under the fixed 3 GiB controller; all seventeen constructed Lean frontier probes and 1,166 core tests pass. Review and clean integration remain pending. Constructed witnesses establish no profile reachability; the Message child-scope exclusion is unchanged. `AOO-RETAINED-BODY-01` requires a separate amendment before bounded-Terminate admission.
+Accepted: the [finite regional batch outcome](INTERNAL-COMMUTATION-PROPOSAL.md#finite-regional-batch-outcome) composes approved pair laws for complete preparation, prefix validity, exact canonical state/publication permutation, and whole-command refusal. Independent review, clean integration, and fixed-3-GiB checks pass. Constructed witnesses establish no profile reachability; the Message child-scope exclusion is unchanged. `AOO-RETAINED-BODY-01` requires a separate amendment before bounded-Terminate admission.
 
-Retain snapshot exclusion, predicate coverage, token multiplicity, the [3 GiB ceiling](CAPSULE-COST-LEDGER.md#package-wide-theorem-elaboration-memory-correction), and stashes `f35bdd6b0424b2e3d5d06f101eb822bd285ab29e` and `76a2b017a630d23203ded482227382003f296f0b`. Scope batching is approved; regions, scheduled choice, and closure remain open.
+Retain snapshot exclusion, predicate coverage, token multiplicity, the [3 GiB ceiling](CAPSULE-COST-LEDGER.md#package-wide-theorem-elaboration-memory-correction), and stashes `f35bdd6b0424b2e3d5d06f101eb822bd285ab29e` and `76a2b017a630d23203ded482227382003f296f0b`. Scheduled choice, remaining families, and closure remain open.
 
 Oracle: independent prepared operations preserve one another's complete preparation and commute in exact canonical RuntimeState and accepted publication; shared Process reads commute, conflicting writes and overlapping occurrence regions refuse batching, and a failed batch or schedule rolls back the complete command before publication.
 
