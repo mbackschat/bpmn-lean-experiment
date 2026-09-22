@@ -9,7 +9,9 @@ import {
 } from "@bpmn-lean/bpmn-source";
 import {
   CommandOutcome, applyInternalOperationStep, applyStimulusWithTrace, initialState,
-  isWellFormedSemanticProcessProgram, runtimeStateDefects, StimulusKind,
+  isWellFormedSemanticProcessProgram, projectControlPositionDelta,
+  projectCurrentControlPositions, projectFlowNodeOccurrenceLifecycleDelta,
+  runtimeStateDefects, SemanticTransitionKind, StimulusKind,
 } from "@bpmn-lean/semantic-core";
 import type { RuntimeState, SemanticOperation, SemanticProcessProgram } from "@bpmn-lean/semantic-core";
 import { admittedInternalPrefix } from "../../semantic-core/test/internal-operation-prefix-fixture.ts";
@@ -114,7 +116,7 @@ test("an admitted regional pair reached by delaying arming is absent from actual
   ]);
 });
 
-test("an admitted End arrival and task arming commute in state but start rolls back", async () => {
+test("an admitted End arrival and task arming commit with exact publication and bounded rollback", async () => {
   const xml = (await readFile(fixtureUrl, "utf8"))
     .replace(/\s*<bpmn:(incoming|outgoing)>[^<]*<\/bpmn:\1>/gu, "")
     .replace('sourceRef="Gateway_ChildFork" targetRef="UserTask_ChildA"',
@@ -129,15 +131,45 @@ test("an admitted End arrival and task arming commute in state but start rolls b
     ["operation:EndEvent_ChildA", "operation:UserTask_ChildB"]);
   const end = stepAt(program, frontier, "operation:EndEvent_ChildA");
   const task = stepAt(program, frontier, "operation:UserTask_ChildB");
-  assert.deepEqual(stepAt(program, end.successor, task.operation.id).successor,
+  const afterEnd = stepAt(program, end.successor, task.operation.id);
+  assert.deepEqual(afterEnd.successor,
     stepAt(program, task.successor, end.operation.id).successor);
-  const actual = applyStimulusWithTrace(program, initialState, start);
-  assert.equal(actual.result.outcome, CommandOutcome.RolledBack);
-  assert.equal(actual.result.ambiguousInternalChoice, true);
+  const actual = applyStimulusWithTrace(program, initialState, start, 5);
+  assert.equal(actual.result.outcome, CommandOutcome.Committed);
+  assert.equal(actual.result.ambiguousInternalChoice, false);
   assert.equal(actual.result.internalStepBoundExceeded, false);
-  assert.deepEqual(actual.result.state, initialState);
-  assert.deepEqual(actual.committedTransitions, []);
-  assert.deepEqual(actual.flowNodeOccurrenceLifecycles, []);
+  assert.deepEqual(actual.result.state, afterEnd.successor);
+  assert.deepEqual(actual.currentPositions, projectCurrentControlPositions(program, afterEnd.successor));
+  assert.equal(actual.committedTransitions.length, 6);
+  assert.equal(actual.flowNodeOccurrenceLifecycles.length, 6);
+  assert.deepEqual(actual.committedTransitions.slice(1).map(({ transition }) =>
+    transition.kind === SemanticTransitionKind.InternalOperation ? transition.operationId : null), [
+    "operation:StartEvent_Outer", "operation:SubProcess_Work", "operation:Gateway_ChildFork",
+    "operation:EndEvent_ChildA", "operation:UserTask_ChildB",
+  ]);
+  for (const [before, step, index] of [[frontier, end, 4], [end.successor, afterEnd, 5]] as const) {
+    assert.ok(step.owner !== null);
+    const positionDelta = projectControlPositionDelta(program, before, step.successor);
+    const lifecycle = projectFlowNodeOccurrenceLifecycleDelta(program, before, step.successor,
+      { kind: "internal", operation: step.operation, owner: step.owner }, start.commandId, index);
+    assert.ok(positionDelta !== null && lifecycle !== null);
+    assert.deepEqual(actual.committedTransitions[index], {
+      logicalTimeMs: before.logicalTimeMs,
+      transition: { kind: SemanticTransitionKind.InternalOperation, operationId: step.operation.id,
+        operationKind: step.operation.kind, origin: step.operation.origin, owner: step.owner },
+      positionDelta,
+    });
+    assert.deepEqual(actual.flowNodeOccurrenceLifecycles[index], lifecycle);
+  }
+  for (const fuel of [0, 2, 3, 4]) {
+    const refused = applyStimulusWithTrace(program, initialState, start, fuel);
+    assert.equal(refused.result.outcome, CommandOutcome.RolledBack);
+    assert.equal(refused.result.ambiguousInternalChoice, false);
+    assert.equal(refused.result.internalStepBoundExceeded, true);
+    assert.deepEqual(refused.result.state, initialState);
+    assert.deepEqual(refused.committedTransitions, []);
+    assert.deepEqual(refused.flowNodeOccurrenceLifecycles, []);
+  }
   const original = await compileFrontier(await readFile(fixtureUrl, "utf8"));
   assert.equal(applyStimulusWithTrace(original.program, initialState, original.start).result.outcome,
     CommandOutcome.Committed);
