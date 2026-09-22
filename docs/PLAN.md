@@ -97,7 +97,7 @@ Active work ID: `INTERNAL-COMMUTATION`.
 
 Risk band: RC internal scheduling; the six external reviews and composed Activity-data closure are complete.
 
-Next action: close standalone input-only and output-only Activity arming under the [complete operation-family account](INTERNAL-COMMUTATION-PROPOSAL.md#complete-operation-family-census). Reproduce independent arming rollback, then reuse composed arming's task/Activity lifetime patch while preserving input availability and output-only entry without Process reads. Complete preparation, successor validity, mixed-family state/publication, and production integration form one outcome. Reassess before new atoms or per-field proof expansion. Regional trial closure stays pending; RC scope is unchanged.
+Next action: finish the complete gates and obtain independent semantic review of the [standalone Activity-data arming outcome](INTERNAL-COMMUTATION-PROPOSAL.md#standalone-activity-data-arming-outcome). Its shared lifetime patch preserves input availability and output-only entry without Process reads; preparation, successor validity, mixed-family state/publication, and production integration remain one outcome. Record acceptance only after review and clean integration. Regional trial closure stays pending; RC scope is unchanged.
 
 Accepted: the [exact Merge/private scheduling outcome](INTERNAL-COMMUTATION-PROPOSAL.md#exact-merge-frontier-outcome) passes independent review, all selected integration lanes, and fixed-3-GiB checks. Private scheduling witnesses establish no new profile reachability. Message child-scope exclusion and `AOO-RETAINED-BODY-01` remain unchanged.
 

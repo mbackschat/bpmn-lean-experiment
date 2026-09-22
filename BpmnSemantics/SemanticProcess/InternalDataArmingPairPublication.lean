@@ -1,6 +1,6 @@
 import BpmnSemantics.SemanticProcess.InternalDataArmingAcceptedPublication
 
-/-! # Accepted mixed and composed data-pair publication
+/-! # Accepted mixed and data-pair publication
 
 One admitted predecessor supplies every preparation, intermediate invariant, evaluator step, and
 accepted publication. Canonical numbering follows only after complete publications agree.
@@ -34,8 +34,9 @@ theorem prepared_data_ordinary_operation_ids_ne
   have sameOperation := internalTransitionRecords_same_id_same_operation program state
     contract.operation operation _ _ dataRecord ordinaryRecord sameId
   rw [← sameOperation] at ordinaryPrepared
-  simp [prepareInternalArm?, internalArmInput?, internalArmOrigin?,
-    InternalDataArmingContract.operation] at ordinaryPrepared
+  cases dataEq : contract.data <;>
+    simp [prepareInternalArm?, internalArmInput?, internalArmOrigin?,
+      InternalDataArmingContract.operation, dataEq] at ordinaryPrepared
 
 theorem prepared_data_ordinary_publication_commutes
     (program : Program) (state : RuntimeState) (contract : InternalDataArmingContract)
@@ -160,7 +161,8 @@ theorem prepared_data_pair_publication_commutes
       (internalTransitionRecord_prepared_data program state right rightPatch programValid rightPrepared)
       sameId
     have sameContract : left = right := by
-      exact Option.some.inj (congrArg dataArmingContract? sameOperation)
+      exact Option.some.inj (by
+        simpa only [dataArmingContract_roundtrip] using (congrArg dataArmingContract? sameOperation))
     exact (noninterfering_data_inputs_and_tasks_ne program state left right leftPatch rightPatch
       leftPrepared rightPrepared separated).2 (congrArg (fun contract => contract.taskId) sameContract)
   have leftStep := prepareInternalDataArmingContract_applies program state left leftPatch

@@ -48,7 +48,7 @@ The checked graph adds `dataInputOutputUserTask`, carrying `directInput: DirectA
 
 The composed operation is one arm because its transition boundary is one Activity occurrence. Its operation admission requires every association, Property, DataInput, DataOutput, task, operation, and control-place identity to be nonempty. The seven BPMN element IDs—the task, both association IDs, both Property IDs, the DataInput ID, and the DataOutput ID—must be mutually distinct; operation and control-place identities retain their existing graph-wide uniqueness rules. Descriptive names remain optional and non-authoritative.
 
-The implemented account classifies `awaitDataInputOutputUserTask` as `compositeWaitAndActivityArming`. Its internal-transition footprint remains unavailable until the immediately following `INTERNAL-COMMUTATION` RC unit proves the complete read/write and region account. Any frontier containing the new operation therefore fails closed rather than entering a batch by analogy with either predecessor.
+The account classifies `awaitDataInputOutputUserTask` as `compositeWaitAndActivityArming`. At this capsule's closure its footprint was unavailable; the subsequent [finite arming checkpoint](../INTERNAL-COMMUTATION-PROPOSAL.md#finite-prepared-arming-checkpoint) supplies complete prepared batching, and the [standalone data-arming outcome](../INTERNAL-COMMUTATION-PROPOSAL.md#standalone-activity-data-arming-outcome) owns the shared preparation contract. The ordinary inner wait alone is never a sufficient footprint.
 
 ## Runtime, command, stable-state, and observation contract
 

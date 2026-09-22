@@ -4,7 +4,7 @@ import BpmnSemantics.SemanticProcess.InternalCommutation
 
 /-! # Complete mixed data and ordinary arming frames
 
-One predecessor and footprint separation determine both complete re-preparations. The composed
+One predecessor and footprint separation determine both complete re-preparations. The
 Activity supplement preserves ordinary reads through the discriminated local-owner contract.
 -/
 
@@ -51,7 +51,7 @@ theorem ordinary_arming_activity_scope_read (state : RuntimeState) (patch : Inte
 
 theorem makeInternalDataArmingPatch_ordinary_frame (program : Program) (state : RuntimeState)
     (contract : InternalDataArmingContract) (owner : ScopeOccurrenceId)
-    (origin : BpmnSequenceFlowOrigin) (source : VariableBinding) (ordinary : InternalArmingPatch)
+    (origin : BpmnSequenceFlowOrigin) (source : List VariableBinding) (ordinary : InternalArmingPatch)
     (different : ordinary.write.kind = .userTask →
       ordinary.write.elementId ≠ (⟨contract.taskId.value⟩ : NodeId)) :
     makeInternalDataArmingPatch program (applyInternalArmingPatch state ordinary)
@@ -92,10 +92,9 @@ theorem prepareInternalDataArmingContract_ordinary_preserved
     origin source ordinary taskDistinct
   have ownerFrame := armingOwnerRead_frame state ordinary contract.input inputDistinct.symm
   have anchorFrame := armingOpenAnchorRead_frame state ordinary _ occurrenceDistinct.symm
-  have sourceFrame : dataInputOutputSourceBinding? (applyInternalArmingPatch state ordinary)
-      contract.directInput = dataInputOutputSourceBinding? state contract.directInput := by
-    unfold dataInputOutputSourceBinding? dataInputSourceBinding?
-    rw [armingProcessVariablesRead_frame]
+  have sourceFrame := dataArmingBindings_process_frame state
+    (applyInternalArmingPatch state ordinary) contract.data
+    (armingProcessVariablesRead_frame state ordinary)
   simp [prepareInternalDataArmingContract?, ownerFrame, owned,
     armingControlRead_frame, running, armingLiveOwnerRead_frame, selected, live,
     originFound, sourceFrame, sourceFound, patchFrame, unique, anchorFrame,
@@ -109,7 +108,7 @@ def applyInternalDataArmingActivityPatch (state : RuntimeState)
     activityActivations := setActivationCount state.activityActivations
       ⟨patch.record.activityElementId.value⟩ patch.record.activation
     variables := addActivityOccurrenceVariableScope state.variables
-      (activityOwnerForRecord patch.record) [patch.inputBinding] }
+      (activityOwnerForRecord patch.record) patch.bindings }
 
 theorem prepared_data_activity_patch_issuesFreshActivity
     (program : Program) (state : RuntimeState) (contract : InternalDataArmingContract)

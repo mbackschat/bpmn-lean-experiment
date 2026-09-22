@@ -205,7 +205,8 @@ theorem prepared_arming_ids_ne (program : Program) (state : RuntimeState)
             (internalTransitionRecord_prepared_data program state rightContract rightPatch
               programValid rightPrepared) sameId
           have sameContract : leftContract = rightContract :=
-            Option.some.inj (congrArg dataArmingContract? sameOperation)
+            Option.some.inj (by
+              simpa only [dataArmingContract_roundtrip] using (congrArg dataArmingContract? sameOperation))
           exact (noninterfering_data_inputs_and_tasks_ne program state leftContract rightContract
             leftPatch rightPatch leftPrepared rightPrepared independent.1).2
             (congrArg (fun contract => contract.taskId) sameContract)

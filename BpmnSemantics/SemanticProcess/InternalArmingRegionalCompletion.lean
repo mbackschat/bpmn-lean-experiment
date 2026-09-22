@@ -86,7 +86,7 @@ theorem arming_return_removal_commutes (program : Program) (state : RuntimeState
       have localFilter := filter_canonicalInsertBy_retained activityVariableScopeBefore
         regional_activityVariableScopeBefore_compose
         (fun scope : ActivityVariableScope => !removed.contains scope.owner.processInstanceId)
-        { owner := .activityOccurrence (activityOwnerForRecord data.record), bindings := [data.inputBinding] }
+        { owner := .activityOccurrence (activityOwnerForRecord data.record), bindings := data.bindings }
         state.variables.activities canonical.2.2.2.2.2.2.2.2.2.2.1 taskKept
       dsimp only [data, makeInternalDataArmingPatch] at activityFilter localFilter
       simp only [PreparedInternalArming.apply, applyInternalDataArmingPatch, makeInternalDataArmingPatch,

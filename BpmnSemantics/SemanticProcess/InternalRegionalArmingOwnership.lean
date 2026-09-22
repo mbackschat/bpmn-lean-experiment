@@ -179,7 +179,7 @@ theorem preparedDataArming_regional_local_data_frame (program : Program) (state 
       regionalRetainedLocalDataClosed state keepActivity keepLocal := by
   obtain ⟨owner, inputOrigin, source, _, _, _, _, _, _, _, _, localsFresh, recordsFresh, _⟩ :=
     prepareInternalDataArmingContract_facts program state contract patch prepared
-  have frame := regionalLocalData_insert_activity state patch.record [patch.inputBinding]
+  have frame := regionalLocalData_insert_activity state patch.record patch.bindings
     keepActivity keepLocal (by
       intro scope member
       exact Bool.eq_false_iff.mpr (List.any_eq_false.mp localsFresh scope member)) (by

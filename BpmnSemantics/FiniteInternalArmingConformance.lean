@@ -165,4 +165,76 @@ theorem insufficient_batch_fuel_restores_the_whole_command :
       refused.flowNodeOccurrenceLifecycles = [] := by
   decide +kernel
 
+private def standaloneInput : SemanticOperation :=
+  .awaitDataInputUserTask ⟨"operation:UserTask_Coverage"⟩
+    { elementId := ⟨"UserTask_Coverage"⟩ } ⟨"place:Flow_A_Input"⟩ ⟨"place:Flow_A_Output"⟩
+    ⟨"UserTask_Coverage"⟩ (some "Coverage") directInput
+
+private def standaloneOutput : SemanticOperation :=
+  .awaitDataOutputUserTask ⟨"operation:UserTask_Review"⟩ { elementId := ⟨"UserTask_Review"⟩ }
+    ⟨"place:Flow_B_Input"⟩ ⟨"place:Flow_B_Output"⟩ ⟨"UserTask_Review"⟩ (some "Review") directOutput
+
+private def standaloneProgram : Program :=
+  { program with
+    identity := { program.identity with semanticProfile := activityDataInputUserTaskProfileId }
+    operations := program.operations.map fun operation =>
+      if operation.id = data.id then standaloneInput
+      else if operation.id = ordinary.id then standaloneOutput
+      else operation }
+
+private def standaloneFrontier : List SemanticOperation := [standaloneInput, standaloneOutput, timer]
+private def standalonePrepared : List PreparedInternalArming :=
+  (prepareInternalArmingBatch? standaloneProgram ready standaloneFrontier).getD []
+
+theorem standalone_frontier_has_valid_complete_predecessors :
+    programWellFormed standaloneProgram = true ∧
+      runtimeStateWellFormed standaloneProgram instanceId ready = true ∧
+      (projectOpenFlowNodeOccurrences? standaloneProgram ready).isSome = true ∧
+      prepareInternalArmingBatch? standaloneProgram ready standaloneFrontier = some standalonePrepared ∧
+      standalonePrepared.length = 3 := by
+  decide +kernel
+
+theorem standalone_every_permutation_has_one_defined_publication
+    (reordered : List PreparedInternalArming) (permutation : standalonePrepared.Perm reordered) :
+    ∃ final publications,
+      runtimeStateWellFormed standaloneProgram instanceId final = true ∧
+      (projectOpenFlowNodeOccurrences? standaloneProgram final).isSome = true ∧
+      canonicalCollectionOrder final = true ∧
+      acceptedPreparedArmingBatch? standaloneProgram instanceId ⟨"standalone-review"⟩ 37 ready
+        standalonePrepared = some (final, publications) ∧
+      acceptedPreparedArmingBatch? standaloneProgram instanceId ⟨"standalone-review"⟩ 37 ready
+        reordered = some (final, publications) := by
+  obtain ⟨programValid, stateValid, projected, prepared, _⟩ :=
+    standalone_frontier_has_valid_complete_predecessors
+  have selected := prepareInternalArmingBatch_sound standaloneProgram ready standaloneFrontier
+    standalonePrepared prepared
+  exact prepared_arming_batch_publication_perm standaloneProgram instanceId ⟨"standalone-review"⟩ 37
+    ready standalonePrepared reordered programValid stateValid projected rfl selected.2.1
+    selected.2.2.1 permutation
+
+theorem standalone_output_prepares_an_empty_scope_without_Process_data :
+    let missing := { ready with variables := { ready.variables with process := { bindings := [] } } }
+    prepareInternalArming? standaloneProgram missing standaloneInput = none ∧
+      (match prepareInternalArming? standaloneProgram missing standaloneOutput with
+        | some (.data contract patch) => patch.bindings.isEmpty &&
+            (footprintOfDataPatch contract patch).reads.all (fun atom =>
+              match atom with | .processVariable _ => false | _ => true)
+        | _ => false) = true := by
+  decide +kernel
+
+theorem standalone_start_publishes_or_rolls_back_the_complete_frontier :
+    let accepted := applyStimulusTraced 5 standaloneProgram initialState start
+    let refused := applyStimulusTraced 4 standaloneProgram initialState start
+    accepted.result.outcome = .committed ∧
+      accepted.committedTransitions.length = 6 ∧
+      accepted.flowNodeOccurrenceLifecycles.length = 6 ∧
+      runtimeStateWellFormed standaloneProgram instanceId accepted.result.state = true ∧
+      refused.result =
+        { outcome := .rolledBack
+          state := initialState
+          internalStepBoundExceeded := true
+          ambiguousInternalChoice := false } ∧
+      refused.committedTransitions = [] ∧ refused.flowNodeOccurrenceLifecycles = [] := by
+  decide +kernel
+
 end BpmnSemantics.FiniteInternalArmingConformance

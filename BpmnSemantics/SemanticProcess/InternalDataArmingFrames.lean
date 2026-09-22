@@ -2,7 +2,7 @@ import BpmnSemantics.SemanticProcess.InternalDataArmingPreparation
 import BpmnSemantics.SemanticProcess.InternalCommutationOpenProjection
 import BpmnSemantics.SemanticProcess.ActivityDataInputOutputActivationRuntimeStatePreservation
 
-/-! # Composed data-arming runtime and projection frames
+/-! # Data-arming runtime and projection frames
 
 The predecessor's exact declaration and unattached Activity record preserve every existing wait
 family, including Boundary Timer filtering and Message-boundary pairing.
@@ -12,6 +12,18 @@ namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
 open BpmnSemantics
 
+theorem dataArming_unbounded_declaration (contract : InternalDataArmingContract)
+    (instanceId : SemanticId) (owner : ScopeOccurrenceId) (activation : Nat) :
+    UnboundedUserTaskWaitDeclaration
+      { processInstanceId := instanceId, owner,
+        task := { id := contract.taskId, name := contract.taskName }, activation,
+        output := contract.output } contract.operation := by
+  unfold InternalDataArmingContract.operation
+  cases contract.data with
+  | input association => exact .dataInput _ _ _ association rfl rfl
+  | output association => exact .dataOutput _ _ _ association rfl rfl
+  | inputOutput input output => exact .dataInputOutput _ _ _ input output rfl rfl
+
 theorem prepared_data_arm_preserves_runtime
     (program : Program) (state : RuntimeState) (contract : InternalDataArmingContract)
     (patch : InternalDataArmingPatch) (expectedInstanceId : SemanticId)
@@ -19,9 +31,19 @@ theorem prepared_data_arm_preserves_runtime
     (prepared : prepareInternalDataArmingContract? program state contract = some patch) :
     runtimeStateWellFormed program expectedInstanceId
       (applyInternalDataArmingPatch state patch) = true := by
-  exact dataInputOutputActivationStep_preserves_runtimeStateWellFormed_general
-    program expectedInstanceId state _ wellFormed
-    (prepareInternalDataArmingContract_sound program state contract patch prepared)
+  obtain ⟨owner, inputOrigin, bindings, owned, running, _, _, _, _, unique, _, _, _, rfl⟩ :=
+    prepareInternalDataArmingContract_facts program state contract patch prepared
+  have declarers : userTaskWaitDeclarers program contract.taskId = [contract.operation] := by
+    simpa [uniqueFamilyDeclarer?] using unique
+  have member : contract.operation ∈ userTaskWaitDeclarers program contract.taskId := by
+    rw [declarers]
+    simp
+  exact unboundedTaskActivityInsertion_preserves_runtimeStateWellFormed program expectedInstanceId
+    state owner.processInstanceId owner contract.input contract.output contract.taskId
+    contract.taskName bindings contract.operation wellFormed running owned
+    (List.mem_filter.mp member).1 (dataArming_unbounded_declaration contract _ _ _) (by
+      cases dataEq : contract.data <;>
+        simp only [InternalDataArmingContract.operation, dataEq] <;> left)
 
 theorem dataArmingWaitStart_frame (program : Program) (state : RuntimeState)
     (patch : InternalDataArmingPatch) (owner : ScopeOccurrenceId) (element : NodeId)
@@ -56,8 +78,7 @@ theorem prepared_data_arm_boundaryTimer_frame
       task := { id := contract.taskId, name := contract.taskName },
       activation := activationCount state contract.taskId + 1, output := contract.output }
   have declaration : UnboundedUserTaskWaitDeclaration wait contract.operation :=
-    .dataInputOutput contract.operationId contract.origin contract.input contract.directInput
-      contract.directOutput rfl rfl
+    dataArming_unbounded_declaration contract _ _ _
   have declarers : userTaskWaitDeclarers program wait.task.id = [contract.operation] := by
     simpa [uniqueFamilyDeclarer?, wait] using unique
   have frame := (flowNodeOccurrenceBoundaryTimerBound_insertUnattachedActivity program
@@ -107,7 +128,8 @@ theorem prepared_data_arm_preserves_messageBoundedProjectionValid
     have boundedMember : boundedOperation ∈ userTaskWaitDeclarers program contract.taskId := by
       simp [boundedOperation, userTaskWaitDeclarers, member, same]
     rw [declarers] at boundedMember
-    simp [boundedOperation, InternalDataArmingContract.operation] at boundedMember
+    cases dataEq : contract.data <;>
+      simp [boundedOperation, InternalDataArmingContract.operation, dataEq] at boundedMember
   have valuesDifferent : contract.taskId.value ≠ boundedTask.id.value :=
     fun same => different (taskDefinitionId_eq_of_value_eq _ _ same)
   let owned := FlowNodeOccurrenceProgramValidity.Internal.operationOwnedBy program boundedOperation
@@ -210,15 +232,17 @@ theorem prepared_data_arm_preserves_flowNodeOccurrenceProgramValidity
     contract.operation owner _ declarers selected
   have processId := flowNodeOccurrenceStructuralProgramValidity_live_owner_nonempty
     program state owner parts.1.1.1 live
-  have elementId := programWellFormed_internalArm_element_nonempty program contract.operation
-    programValid operationMember
+  have elementId : !contract.taskId.value.isEmpty = true := by
+    cases contract with
+    | mk id origin input output taskId taskName data =>
+        cases data <;> simpa [InternalDataArmingContract.operation] using
+          (programWellFormed_internalArm_element_nonempty program _ programValid operationMember)
   have waitValid := flowNodeOccurrenceWaitProgramValidity_insertUnboundedUserTask
     program state contract.operation wait
-    (.dataInputOutput contract.operationId contract.origin contract.input contract.directInput
-      contract.directOutput rfl rfl)
+    (dataArming_unbounded_declaration contract _ _ _)
     parts.1.1.2 declarers declared
     (by simpa [flowNodeOccurrenceOwnerLiveUnique, exactLiveOccurrence] using live)
-    processId (by simpa [InternalDataArmingContract.operation, wait] using elementId)
+    processId (by simpa [wait] using elementId)
     (by simp [wait]) rfl
   have waitsAfter : flowNodeOccurrenceWaitProgramValidity program after = true := by
     let base : RuntimeState :=
@@ -233,7 +257,7 @@ theorem prepared_data_arm_preserves_flowNodeOccurrenceProgramValidity
         with
         variables := addActivityOccurrenceVariableScope base.variables
           (activityOwnerForRecord record)
-          [{ name := contract.directInput.targetDataInputId, value := source.value }] } = true
+          source } = true
     rw [flowNodeOccurrenceWaitProgramValidity_addActivityOccurrenceVariableScope]
     rw [flowNodeOccurrenceWaitProgramValidity_insertUnattachedActivity _ _ _ rfl]
     exact waitValid

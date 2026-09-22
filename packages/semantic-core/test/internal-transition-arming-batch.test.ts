@@ -55,6 +55,10 @@ function dataTask(suffix: string): AwaitDataInputOutputUserTaskOperation {
 type ArmingOperation = Extract<SemanticOperation, { input: string; output: string }>;
 const coverage = dataTask("Coverage");
 const payment = dataTask("Payment");
+const { directOutput: _coverageOutput, ...coverageInput } = coverage;
+const inputOnly = { ...coverageInput, kind: SemanticOperationKind.AwaitDataInputUserTask } as const;
+const { directInput: _paymentInput, ...paymentOutput } = payment;
+const outputOnly = { ...paymentOutput, kind: SemanticOperationKind.AwaitDataOutputUserTask } as const;
 function fixture(arms: ReadonlyArray<ArmingOperation> = [coverage, payment]) {
   const names = ["Flow_Start_Fork", "Flow_Join_End",
     ...arms.flatMap(({ input, output }) => [input.slice(6), output.slice(6)])];
@@ -191,6 +195,112 @@ function checkEveryOrder(program: SemanticProcessProgram, state: RuntimeState,
   return final;
 }
 
+test("standalone input and output arming close together with exact evaluator state and publication", () => {
+  const { program: composedProfile, state, candidates } = fixture([inputOnly, outputOnly]);
+  const program = { ...composedProfile, identity: {
+    ...composedProfile.identity, semanticProfile: SemanticProfileId.ActivityDataInputUserTask,
+  } };
+  assert.equal(isWellFormedSemanticProcessProgram(program), true);
+  assertInvariants(program, state);
+  const started = applyStimulusWithTrace(program, initialState, {
+    kind: StimulusKind.StartProcess, commandId: "start-standalone-data", processId, instanceId,
+    initialVariables: state.variables.process.bindings,
+  }, 4);
+  assert.equal(started.result.outcome, CommandOutcome.Committed);
+  assertInvariants(program, started.result.state);
+  const prepared = batch(program, state, candidates);
+  assert.ok(prepared !== null);
+  let expected: RuntimeState = { ...state, taskActivations: [], activityActivations: [], logicalTimeMs: 0 };
+  for (const { operation } of candidates) {
+    const step = applyInternalOperationStep(program, operation, expected);
+    assert.ok(step !== null);
+    expected = step.successor;
+  }
+  assert.deepEqual(started.result.state, expected);
+  const actual = started.committedTransitions?.filter(({ transition }) =>
+    transition.kind === SemanticTransitionKind.InternalOperation &&
+    candidates.some(({ operation }) => operation.id === transition.operationId));
+  assert.ok(actual !== undefined && actual.length === 2);
+  const templates = batch(program, { ...state, taskActivations: [], activityActivations: [], logicalTimeMs: 0 }, candidates);
+  assert.ok(templates !== null);
+  const publication = instantiateInternalPublicationBatch("start-standalone-data", 3,
+    templates.map(({ publicationTemplate }) => publicationTemplate));
+  assert.ok(publication !== null);
+  assert.deepEqual(actual, publication.map(({ record }) => record));
+  assert.deepEqual(started.flowNodeOccurrenceLifecycles?.slice(3), publication.map(({ lifecycle }) => lifecycle));
+});
+
+test("input-only, output-only and composed arms preserve complete state and publication in every order", () => {
+  const { program, state, candidates } = fixture([inputOnly, outputOnly, dataTask("Fraud")]);
+  const final = checkEveryOrder(program, state, candidates);
+  assert.deepEqual(final.variables.process, state.variables.process);
+  const outputRecord = final.activityOccurrences.find(({ operationId }) => operationId === outputOnly.id);
+  assert.ok(outputRecord !== undefined);
+  assert.deepEqual(final.variables.activities.find(({ owner: local }) =>
+    local.kind === LocalDataOwnerKind.ActivityOccurrence &&
+    local.id.activityElementId === outputRecord.id.activityElementId), {
+    owner: { kind: LocalDataOwnerKind.ActivityOccurrence, id: outputRecord.id }, bindings: [],
+  });
+});
+
+test("output-only arms create empty scopes with no Process data or variable dependencies", () => {
+  const arms = ["Coverage", "Payment", "Fraud"].map((suffix) => {
+    const { directInput: _input, ...operation } = dataTask(suffix);
+    return { ...operation, kind: SemanticOperationKind.AwaitDataOutputUserTask } as const;
+  });
+  const { program, state: initial, candidates } = fixture(arms);
+  const state = { ...initial, variables: { ...initial.variables, process: { bindings: [] } } };
+  const final = checkEveryOrder(program, state, candidates);
+  assert.equal(final.variables.activities.length, 3);
+  assert.ok(final.variables.activities.every(({ bindings }) => bindings.length === 0));
+  const prepared = batch(program, state, candidates);
+  assert.ok(prepared !== null);
+  for (const member of prepared) {
+    assert.equal(member.footprint.reads.some(({ kind }) => kind === Atom.ProcessVariable), false);
+    assert.equal(member.footprint.writes.some(({ kind }) => kind === Atom.ProcessVariable || kind === Atom.ActivityVariable), false);
+    assert.equal(member.footprint.writes.some(({ kind }) => kind === Atom.ActivityVariableScope), true);
+    const writer = { reads: [], writes: [{ kind: Atom.ProcessVariable, name: sourceName }] } as const;
+    assert.equal(internalTransitionStateFootprintsAreIndependent(member.footprint, writer), true);
+    const changed: RuntimeState = { ...state, variables: { ...state.variables, process: { bindings: [
+      { name: sourceName, value: { kind: VariableValueKind.Null } },
+    ] } } };
+    assert.deepEqual(prepare(program, changed, member), member);
+    assert.deepEqual(apply(program, changed, member), applyInternalOperationStep(program, member.operation, changed)?.successor);
+  }
+});
+
+test("three input-only arms share one Process read and retain independently issued Activity scopes", () => {
+  const arms = ["Coverage", "Payment", "Fraud"].map((suffix) => {
+    const { directOutput: _output, ...operation } = dataTask(suffix);
+    return { ...operation, kind: SemanticOperationKind.AwaitDataInputUserTask } as const;
+  });
+  const { program, state, candidates } = fixture(arms);
+  const final = checkEveryOrder(program, state, candidates);
+  assert.equal(final.variables.activities.length, 3);
+  assert.ok(final.variables.activities.every(({ bindings }) => bindings.length === 1));
+  assert.deepEqual(final.variables.process, state.variables.process);
+});
+
+for (const ordinary of ordinaryOperations()) {
+  test(`standalone data arms and ${ordinary.kind} preserve complete preparation and publication in all orders`, () => {
+    const { program, state: initial, candidates } = fixture([inputOnly, outputOnly, ordinary]);
+    const state = ordinary.kind === SemanticOperationKind.AwaitEffect
+      ? { ...initial, effectActivations: [{ elementId: ordinary.effect.elementId, count: 7 }] }
+      : initial;
+    checkEveryOrder(program, state, candidates);
+    const prepared = batch(program, state, candidates);
+    assert.ok(prepared !== null);
+    const writer = { reads: [], writes: [{ kind: Atom.ProcessVariable, name: sourceName }] } as const;
+    for (const member of prepared) {
+      const readsInput = member.operation.kind === SemanticOperationKind.AwaitDataInputUserTask ||
+        member.operation.kind === SemanticOperationKind.AwaitCorrelatedPayloadMessage;
+      assert.deepEqual(member.footprint.reads.filter(({ kind }) => kind === Atom.ProcessVariable),
+        readsInput ? [{ kind: Atom.ProcessVariable, name: sourceName }] : []);
+      assert.equal(internalTransitionStateFootprintsAreIndependent(member.footprint, writer), !readsInput);
+    }
+  });
+}
+
 for (const ordinary of ordinaryOperations()) {
   test(`three-member composed/${ordinary.kind} frontier preserves complete preparations and accepted E1/E2 in all six orders`, () => {
     const { program, state: initial, candidates } = fixture([coverage, payment, ordinary]);
@@ -268,11 +378,7 @@ test("batch refusal retains every unavailable frontier member and the minimum ca
   assert.equal(batch(program, state, [...candidates, candidates[0]!]), null);
   const disabled = { ...state, controlTokens: state.controlTokens.slice(1) };
   assert.equal(batch(program, disabled, candidates), null);
-  const { directOutput: _output, ...inputOnly } = coverage;
-  const { directInput: _input, ...outputOnly } = coverage;
   const excluded: ReadonlyArray<SemanticOperation> = [
-    { ...inputOnly, kind: SemanticOperationKind.AwaitDataInputUserTask },
-    { ...outputOnly, kind: SemanticOperationKind.AwaitDataOutputUserTask },
     ...program.operations.filter(({ kind }) => kind === SemanticOperationKind.Duplicate ||
       kind === SemanticOperationKind.Synchronize || kind === SemanticOperationKind.ReachNoneEnd),
   ];
@@ -314,9 +420,9 @@ for (const ordinary of ordinaryOperations()) {
   });
 }
 
-test("snapshot declarations exclude composed preparation, checked apply and mixed batches", () => {
+test("snapshot declarations exclude every data preparation, checked apply and mixed batch", () => {
   const ordinary = ordinaryOperations()[0]!;
-  const { program, state, candidates } = fixture([coverage, ordinary]);
+  const { program, state, candidates } = fixture([inputOnly, outputOnly, dataTask("Fraud"), ordinary]);
   const prepared = batch(program, state, candidates);
   assert.ok(prepared !== null);
   const snapshots = { ...program, compensationEventSubProcessSnapshots: {
@@ -333,6 +439,40 @@ test("snapshot declarations exclude composed preparation, checked apply and mixe
   }
   assert.equal(batch(snapshots, state, candidates), null);
 });
+
+for (const operation of [inputOnly, outputOnly, dataTask("Fraud")]) {
+  test(`${operation.kind} refuses malformed selection, token ownership and occurrence collisions`, () => {
+    const { program, state } = fixture([operation, dataTask("Companion")]);
+    assert.equal(isWellFormedSemanticProcessProgram(program), true);
+    assertInvariants(program, state);
+    const candidate = { operation, owner };
+    const prepared = prepare(program, state, candidate);
+    assert.ok(prepared !== null && prepared.kind === PreparedInternalArmingKind.Data);
+    const { record, wait } = prepared.patch;
+    const token = state.controlTokens.find(({ placeId }) => placeId === operation.input)!;
+    const mutations: ReadonlyArray<RuntimeState> = [
+      { ...state, scopeOccurrences: [] },
+      { ...state, controlTokens: [...state.controlTokens, token] },
+      { ...state, controlTokens: state.controlTokens.filter(({ placeId }) => placeId !== operation.input) },
+      { ...state, variables: { ...state.variables, activities: [{
+        owner: { kind: LocalDataOwnerKind.ActivityOccurrence, id: record.id }, bindings: [],
+      }] } },
+      { ...state, activityOccurrences: [record] },
+      { ...state, activityOccurrences: [{ ...record, id: { ...record.id, activation: 99 } }] },
+      { ...state, timerWaits: [{ id: wait.id, owner, deadlineMs: 1000, output: operation.output }] },
+      { ...state, taskActivations: [{ elementId: operation.task.elementId, count: Number.MAX_SAFE_INTEGER }] },
+      { ...state, activityActivations: [{ elementId: operation.task.elementId, count: Number.MAX_SAFE_INTEGER }] },
+    ];
+    for (const malformed of mutations) {
+      assert.equal(prepare(program, malformed, candidate), null);
+      assert.equal(apply(program, malformed, prepared), null);
+    }
+    const duplicate = { ...program, operations: [...program.operations, { ...operation, id: "operation:Duplicate" }] };
+    assert.equal(prepare(duplicate, state, candidate), null);
+    assert.equal(prepare(program, state, { operation: { ...operation, output: "place:stale" }, owner }), null);
+    assert.equal(prepare(program, state, { operation, owner: null }), null);
+  });
+}
 
 test("checked apply compares operation, owner, patch, footprint and publication template", () => {
   const { program, state } = fixture();
@@ -366,13 +506,16 @@ test("copied null and escaped String values survive the complete JSON preparatio
     assert.notEqual(apply(program, current, prepared), null);
   }
 });
-for (const changed of ["Process input", "logical time", "task ordinal", "Activity ordinal"] as const) {
-  test(`checked composed apply refuses stale ${changed} with unchanged operation ID and token`, () => {
-    const { program, state } = fixture();
+const staleInputCases = [inputOnly, coverage].flatMap((operation) =>
+  (["Process input", "logical time", "task ordinal", "Activity ordinal"] as const)
+    .map((changed) => ({ operation, changed })));
+for (const { operation, changed } of staleInputCases) {
+  test(`checked ${operation.kind} apply refuses stale ${changed} with unchanged operation ID and token`, () => {
+    const { program, state } = fixture([operation, payment]);
     assert.equal(isWellFormedSemanticProcessProgram(program), true);
     assert.equal(isWellFormedRuntimeState(program, instanceId, state), true);
     assert.notEqual(projectOpenFlowNodeOccurrences(program, state), null);
-    const prepared = prepare(program, state, { operation: coverage, owner });
+    const prepared = prepare(program, state, { operation, owner });
     assert.ok(prepared !== null);
     let stale = state;
     switch (changed) {
@@ -393,6 +536,20 @@ for (const changed of ["Process input", "logical time", "task ordinal", "Activit
     assert.equal(apply(program, stale, prepared), null);
   });
 }
+
+test("an oversized standalone batch restores the pre-command state and erases both publications", () => {
+  const { program } = fixture([inputOnly, outputOnly, dataTask("Fraud")]);
+  const result = applyStimulusWithTrace(program, initialState, {
+    kind: StimulusKind.StartProcess, commandId: "bounded-standalone-data", processId, instanceId,
+    initialVariables: [{ name: sourceName, value: { kind: VariableValueKind.String, value: "Claim summary" } }],
+  }, 4);
+  assert.equal(result.result.outcome, CommandOutcome.RolledBack);
+  assert.equal(result.result.internalStepBoundExceeded, true);
+  assert.equal(result.result.ambiguousInternalChoice, false);
+  assert.deepEqual(result.result.state, initialState);
+  assert.deepEqual(result.committedTransitions, []);
+  assert.deepEqual(result.flowNodeOccurrenceLifecycles, []);
+});
 
 test("committed Start closes a complete composed, ordinary task and Timer frontier with paired publication", () => {
   const task = ordinaryOperations()[0]!;

@@ -2,7 +2,7 @@ import BpmnSemantics.SemanticProcess.InternalDataArmingPreparation
 import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStateEntryOrder
 import BpmnSemantics.SemanticProcess.InternalArmingOrder
 
-/-! # Exact composed data-arming patch commutation
+/-! # Exact data-arming patch commutation
 
 Fixed patches share one predecessor while task and Activity issuers retain independent counters.
 -/
@@ -57,7 +57,7 @@ theorem insertActivityOccurrence_commutes_of_distinct_element (left right : Acti
 theorem makeInternalDataArmingPatch_commutes
     (program : Program) (state : RuntimeState)
     (left right : InternalDataArmingContract) (leftOwner rightOwner : ScopeOccurrenceId)
-    (leftOrigin rightOrigin : BpmnSequenceFlowOrigin) (leftSource rightSource : VariableBinding)
+    (leftOrigin rightOrigin : BpmnSequenceFlowOrigin) (leftSource rightSource : List VariableBinding)
     (different : left.taskId ≠ right.taskId)
     (taskOrdered : orderedBy activationBefore state.activations = true)
     (activityOrdered : orderedBy activationBefore state.activityActivations = true) :

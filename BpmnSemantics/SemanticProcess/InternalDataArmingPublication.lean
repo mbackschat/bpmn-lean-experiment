@@ -1,6 +1,6 @@
 import BpmnSemantics.SemanticProcess.InternalDataArmingFrames
 
-/-! # Accepted composed data-arming publication
+/-! # Accepted data-arming publication
 
 The prepared wait's exact candidate must pass the existing lifecycle acceptance boundary; a
 successful projection alone does not establish the committed delta.
@@ -63,18 +63,20 @@ theorem prepared_data_arm_candidate_singleton
         decide (old.activation = activationForTask state contract.taskId + 1)) = [wait] := by
     simpa [wait, activationForTask_eq_activationCount] using
       filter_insertUserTaskWait_eq_singleton wait state.waits rfl ownerIds.1 fresh
-  simp only [InternalDataArmingContract.operation, candidateFlowNodeOccurrenceDeltaForOperation?,
-    flowNodeSelectedOperationOwner?, owned, Option.bind_eq_bind, Option.bind_some,
-    applyInternalDataArmingPatch, makeInternalDataArmingPatch, applyInternalArmingPatch,
-    Bool.decide_coe]
-  dsimp [wait] at filtered
-  rw [filtered]
-  have candidate := candidateWaitStart_of_exact_selection program contract.operation owner
-    owner.processInstanceId ⟨contract.taskId.value⟩ (activationCount state contract.taskId + 1)
-    runtimeProcess binding operationSelection scopeSelection scopeMatches processAligned rfl (by omega)
-  simp only [InternalDataArmingContract.operation] at candidate
-  simp [candidateUserTaskStart?, candidate]
-  rfl
+  cases dataEq : contract.data
+  all_goals
+    simp only [InternalDataArmingContract.operation, dataEq, candidateFlowNodeOccurrenceDeltaForOperation?,
+      flowNodeSelectedOperationOwner?, owned, Option.bind_eq_bind, Option.bind_some,
+      applyInternalDataArmingPatch, makeInternalDataArmingPatch, applyInternalArmingPatch,
+      Bool.decide_coe]
+    dsimp [wait] at filtered
+    rw [filtered]
+    have candidate := candidateWaitStart_of_exact_selection program contract.operation owner
+      owner.processInstanceId ⟨contract.taskId.value⟩ (activationCount state contract.taskId + 1)
+      runtimeProcess binding operationSelection scopeSelection scopeMatches processAligned rfl (by omega)
+    simp only [InternalDataArmingContract.operation, dataEq] at candidate
+    simp [candidateUserTaskStart?, candidate]
+    rfl
 
 theorem prepared_data_arm_lifecycle_singleton
     (program : Program) (state : RuntimeState) (contract : InternalDataArmingContract)

@@ -1,8 +1,8 @@
 import BpmnSemantics.SemanticProcess.InternalDataArmingPreparation
 
-/-! # Complete composed Activity-data arming footprints
+/-! # Complete Activity-data arming footprints
 
-The prepared data arm owns its Activity record and input-local scope in addition to its User Task
+The prepared data arm owns its Activity record and Activity-local scope in addition to its User Task
 wait. Shared Process input reads remain independent under the Internal Commutation contract.
 -/
 
@@ -21,11 +21,11 @@ def footprintOfDataPatch (contract : InternalDataArmingContract)
     InternalStateAtom.activityBodyTaskClaim
   { ordinary with
     reads := canonicalStateAtomSet
-      (ordinary.reads ++ [.processVariable contract.directInput.sourcePropertyId,
-        counter, record, scope] ++ claims)
+      (ordinary.reads ++ (contract.data.inputAssociation?.toList.map fun input =>
+        .processVariable input.sourcePropertyId) ++ [counter, record, scope] ++ claims)
     writes := canonicalStateAtomSet
-      (ordinary.writes ++ [counter, record, scope,
-        .activityVariable (.activityOccurrence activity) patch.inputBinding.name] ++ claims) }
+      (ordinary.writes ++ [counter, record, scope] ++ (patch.bindings.map fun binding =>
+        .activityVariable (.activityOccurrence activity) binding.name) ++ claims) }
 
 theorem ordinary_arming_reads_publication_time (patch : InternalArmingPatch) :
     InternalStateAtom.logicalTime ∈ (footprintOfPatch patch).reads := by
@@ -45,10 +45,11 @@ theorem ordinary_writes_subset_data_writes (contract : InternalDataArmingContrac
   simp [footprintOfDataPatch, canonicalStateAtomSet, mem_sortBy, member]
 
 theorem data_arming_reads_source (contract : InternalDataArmingContract)
-    (patch : InternalDataArmingPatch) :
-    .processVariable contract.directInput.sourcePropertyId ∈
+    (patch : InternalDataArmingPatch) (input : DirectActivityDataInput)
+    (selected : contract.data.inputAssociation? = some input) :
+    .processVariable input.sourcePropertyId ∈
       (footprintOfDataPatch contract patch).reads := by
-  simp [footprintOfDataPatch, canonicalStateAtomSet, mem_sortBy]
+  simp [footprintOfDataPatch, selected, canonicalStateAtomSet, mem_sortBy]
 
 theorem data_arming_does_not_write_process (contract : InternalDataArmingContract)
     (patch : InternalDataArmingPatch) (name : String) :

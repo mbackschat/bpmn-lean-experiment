@@ -159,7 +159,7 @@ test("composed preparation copies input into one joined lifetime with distinct c
       }],
     },
   });
-  assert.notEqual(prepared.patch.inputBinding.value, source.value);
+  assert.notEqual(prepared.patch.bindings[0]!.value, source.value);
   assert.deepEqual(prepared.publicationTemplate.record, {
     logicalTimeMs: 321,
     transition: {
@@ -203,6 +203,41 @@ test("composed preparation keeps absence distinct from present null and empty St
   }
   for (const bindings of [[], [source, source], [{ name: source.name, value: { kind: VariableValueKind.Boolean, value: true } }]] as const) {
     assert.equal(prepare(program, withBindings(bindings), candidate), null);
+  }
+});
+
+test("standalone input preparation copies only a unique String or Null while output ignores Process data", () => {
+  const { directOutput: _output, ...input } = leftOperation;
+  const { directInput: _input, ...output } = rightOperation;
+  const inputOperation = { ...input, kind: SemanticOperationKind.AwaitDataInputUserTask } as const;
+  const outputOperation = { ...output, kind: SemanticOperationKind.AwaitDataOutputUserTask } as const;
+  const standalone = { ...program, operations: [inputOperation, outputOperation] };
+  const available = [
+    { kind: VariableValueKind.Null },
+    { kind: VariableValueKind.String, value: "" },
+    { kind: VariableValueKind.String, value: "Quote: \"; slash: \\; newline: \n" },
+  ] as const;
+  for (const value of available) {
+    const state = withBindings([{ name: source.name, value }]);
+    const prepared = prepare(standalone, state, { operation: inputOperation, owner });
+    assert.ok(prepared !== null);
+    assert.deepEqual(prepared.patch.bindings, [{ name: inputOperation.directInput.targetDataInputId, value }]);
+    assert.notEqual(prepared.patch.bindings[0]!.value, value);
+    assert.deepEqual(applyPatch(state, prepared.patch), applyInternalOperationStep(standalone, inputOperation, state)?.successor);
+  }
+  const unavailable: ReadonlyArray<ReadonlyArray<VariableBinding>> = [
+    [], [source, source],
+    [{ name: source.name, value: { kind: VariableValueKind.Boolean, value: true } }],
+    [{ name: source.name, value: { kind: VariableValueKind.Integer, value: 1 } }],
+    [{ name: source.name, value: { kind: VariableValueKind.StringList, value: [] } }],
+  ];
+  for (const bindings of unavailable) {
+    const state = withBindings(bindings);
+    assert.equal(prepare(standalone, state, { operation: inputOperation, owner }), null);
+    const prepared = prepare(standalone, state, { operation: outputOperation, owner });
+    assert.ok(prepared !== null);
+    assert.deepEqual(prepared.patch.bindings, []);
+    assert.deepEqual(applyPatch(state, prepared.patch), applyInternalOperationStep(standalone, outputOperation, state)?.successor);
   }
 });
 

@@ -115,7 +115,7 @@ theorem prepareInternalDataArm_after_scope_creation (program : Program) (state :
   cases kind : selected.kind <;>
     simpa only [InternalScopeCreationSelection.apply, kind, makeInternalDataArmingPatch,
       activationCount, dataInputOutputActivityRecord, activityActivationCount,
-      dataInputOutputSourceBinding?, dataInputSourceBinding?, openWaitAnchorAbsent,
+      dataArmingBindings?, dataInputOutputSourceBinding?, dataInputSourceBinding?, openWaitAnchorAbsent,
       openWaitAnchors] using found
 
 theorem scopeArming_bucket_frame (state : RuntimeState)

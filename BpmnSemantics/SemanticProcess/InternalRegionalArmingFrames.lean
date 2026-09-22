@@ -288,8 +288,9 @@ theorem prepareInternalDataArm_retirement_frame (program : Program) (before afte
     rw [patchEq]
     simp only [makeInternalDataArmingPatch, activationCount, activityActivationCount,
       dataInputOutputActivityRecord, retirement.tasks, retirement.activities, time]
-  have sourceFrame : dataInputOutputSourceBinding? after contract.directInput = some source := by
-    simpa only [dataInputOutputSourceBinding?, dataInputSourceBinding?, process] using sourceFound
+  have sourceFrame : dataArmingBindings? after contract.data = some source := by
+    rw [dataArmingBindings_process_frame before after contract.data process]
+    exact sourceFound
   have scopeFrame : after.variables.activities.any
       (activityOccurrenceScopeMatches (activityOwnerForRecord patch.record)) = false :=
     List.any_eq_false.mpr fun value member =>

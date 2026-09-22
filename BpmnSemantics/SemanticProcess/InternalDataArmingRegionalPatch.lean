@@ -1,6 +1,6 @@
 import BpmnSemantics.SemanticProcess.InternalArmingRegionalPatch
 
-/-! Composed data arming commutes with cancellation outside its owner. Actual preparation supplies
+/-! Data arming commutes with cancellation outside its owner. Actual preparation supplies
 the fresh Activity identity, so cancellation cannot discard the newly copied local binding.
 -/
 
@@ -32,7 +32,7 @@ theorem dataArming_cancellation_commutes (program : Program) (state : RuntimeSta
       activation := activationCount state contract.taskId + 1, output := contract.output }
   let scope : ActivityVariableScope :=
     { owner := .activityOccurrence (activityOwnerForRecord record),
-      bindings := [{ name := contract.directInput.targetDataInputId, value := source.value }] }
+      bindings := source }
   have keptWait : (!cancelled wait.owner) = true := by simp [wait, outside]
   have keptRecord : (!recordInRegion cancelled record) = true := by
     simp [record, dataInputOutputActivityRecord, recordInRegion, outside]

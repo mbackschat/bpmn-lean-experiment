@@ -1,6 +1,6 @@
 import BpmnSemantics.SemanticProcess.InternalDataArmingCommutation
 
-/-! # Composed data-arming preparation preservation
+/-! # Data-arming preparation preservation
 
 The predecessor-selected copy and both independent issuers survive the other task's six-field
 update. Complete preparation, including association freshness, is reconstructed from those reads.
@@ -61,7 +61,7 @@ theorem makeInternalDataArmingPatch_frame
     (program : Program) (state : RuntimeState) (left right : InternalDataArmingContract)
     (leftOwner rightOwner : ScopeOccurrenceId)
     (leftOrigin rightOrigin : BpmnSequenceFlowOrigin)
-    (leftSource rightSource : VariableBinding) (different : left.taskId ≠ right.taskId) :
+    (leftSource rightSource : List VariableBinding) (different : left.taskId ≠ right.taskId) :
     makeInternalDataArmingPatch program
         (applyInternalDataArmingPatch state
           (makeInternalDataArmingPatch program state left leftOwner leftOrigin leftSource))
@@ -124,7 +124,7 @@ theorem prepareInternalDataArmingContract_preserved
     exact owned
   have runningFrame : after.control = .running rightOwner.processInstanceId := running
   have liveFrame : exactLiveOccurrence after rightOwner = true := live
-  have sourceFrame : dataInputOutputSourceBinding? after right.directInput = some rightSource :=
+  have sourceFrame : dataArmingBindings? after right.data = some rightSource :=
     sourceFound
   have patchFrame : makeInternalDataArmingPatch program after right rightOwner
       rightOrigin rightSource = rightPatch :=

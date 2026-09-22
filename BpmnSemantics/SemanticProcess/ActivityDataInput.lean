@@ -20,6 +20,11 @@ private def dataInputRunningInstance? (state : RuntimeState) :
   | .running instanceId => some instanceId
   | _ => none
 
+theorem dataInputRunningInstance_of_running {state : RuntimeState}
+    {instanceId : SemanticId} (running : state.control = .running instanceId) :
+    dataInputRunningInstance? state = some instanceId := by
+  simp [dataInputRunningInstance?, running]
+
 /-- The exact present Process binding one direct association reads, or `none`. -/
 def dataInputSourceBinding? (state : RuntimeState)
     (directInput : DirectActivityDataInput) : Option VariableBinding :=

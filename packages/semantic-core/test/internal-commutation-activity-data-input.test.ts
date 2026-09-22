@@ -1,14 +1,7 @@
 /**
- * The checkpoint boundary of the direct Activity data-input operation under internal commutation.
- *
- * Contract: the operation is classified as a composite Activity-arming declarer, and its footprint is
- * deliberately unavailable at this checkpoint. Unavailability is not neutral — it must make every
- * frontier containing the operation fail closed, so the operation can never execute inside a batch.
- *
- * The discriminating fixture is a two-branch program whose branches are otherwise independent, which
- * is exactly the frontier a permissive footprint derivation would wrongly admit. It is local to this
- * guard rather than shared, because it is not a model the profile admits: it exists only to put the
- * operation into a genuinely multi-enabled frontier.
+ * The complete preparation owns the Activity lifetime and copied input, which the legacy footprint
+ * facade cannot represent. This constructed Program exercises batching beside an ordinary task;
+ * it does not establish checked-source or registered-profile admission.
  */
 import assert from "node:assert/strict";
 import { test } from "node:test";
@@ -141,24 +134,27 @@ test("classifies the data-input entry as composite Activity arming", () => {
   );
 });
 
-test("refuses a frontier holding the data-input entry beside an independent arming", () => {
+test("commits a frontier holding the data-input entry beside an independent arming", () => {
   const evaluated = evaluateStimulusWithSelectedSteps(
     forkedProgram,
     initialState,
     startForked,
   );
 
-  assert.equal(evaluated.result.outcome, CommandOutcome.RolledBack);
-  assert.equal(evaluated.result.state, initialState);
+  assert.equal(evaluated.result.outcome, CommandOutcome.Committed);
   assert.equal(evaluated.result.internalStepBoundExceeded, false);
-  assert.equal(evaluated.result.ambiguousInternalChoice, true);
-  assert.equal(evaluated.ambiguousInternalChoice, true);
-  assert.equal(evaluated.admittedState, null);
-  assert.deepEqual(evaluated.selectedInternalBatches, []);
-  assert.deepEqual(evaluated.selectedInternalSteps, []);
+  assert.equal(evaluated.result.ambiguousInternalChoice, false);
+  assert.equal(evaluated.ambiguousInternalChoice, false);
+  assert.notEqual(evaluated.admittedState, null);
+  assert.deepEqual(evaluated.selectedInternalBatches.map((batch) => batch.length), [1, 1, 2]);
+  assert.deepEqual(evaluated.result.state.userTaskWaits.map(({ id }) => id.elementId),
+    ["UserTask_Other", "UserTask_Review"]);
+  assert.deepEqual(evaluated.result.state.variables.activities.map(({ bindings }) => bindings),
+    [[{ name: directInput.targetDataInputId,
+      value: { kind: VariableValueKind.String, value: "invoice-4711" } }]]);
 });
 
-test("derives no footprint for the data-input entry in that exact frontier state", () => {
+test("the legacy footprint facade leaves data-input entry to complete preparation", () => {
   const frontier = admittedInternalPrefix(
     forkedProgram,
     initialState,

@@ -2,7 +2,7 @@ import BpmnSemantics.SemanticProcess.InternalDataArmingPreparation
 import BpmnSemantics.SemanticProcess.TransitionTrace
 import BpmnSemantics.SemanticProcess.ControlPositionDeltaProofs
 
-/-! # Composed data-arming execution and transition record
+/-! # Data-arming execution and transition record
 
 The complete predecessor preparation supplies the actual evaluator and committed record. The
 legacy evaluator retains its existing snapshot-declaration boundary.
@@ -22,7 +22,9 @@ theorem prepareInternalDataArmingContract_applies
     program state contract patch prepared
   unfold fire?
   rw [snapshotAbsent]
-  exact activated
+  cases contract with
+  | mk id origin input output taskId taskName data =>
+      cases data <;> exact activated
 
 theorem internalTransitionRecord_prepared_data
     (program : Program) (state : RuntimeState) (contract : InternalDataArmingContract)
@@ -54,8 +56,9 @@ theorem internalTransitionRecord_prepared_data
         intro candidate _ accepted
         exact congrArg OperationId.value (of_decide_eq_true accepted))
   apply internalTransitionRecord_of_selection program state contract.operation owner selectedById
-  simpa [selectedOperationOwner?, flowNodeSelectedOperationOwner?,
-    InternalDataArmingContract.operation] using owned
+  cases dataEq : contract.data <;>
+    simpa [selectedOperationOwner?, flowNodeSelectedOperationOwner?,
+      InternalDataArmingContract.operation, dataEq] using owned
 
 theorem controlPositionDelta_prepared_data_arm
     (program : Program) (expectedInstanceId : SemanticId) (state : RuntimeState)

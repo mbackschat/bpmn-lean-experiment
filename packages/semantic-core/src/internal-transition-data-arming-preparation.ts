@@ -5,14 +5,14 @@ import { activityAssociationsConflict } from "./internal-transition-activity-ass
 import { internalOperationAlternative } from "./internal-transition-alternative.js";
 import type { InternalOperationAlternative } from "./internal-transition-alternative.js";
 import { deriveInternalDataArmingPatch } from "./internal-transition-data-arming-patch.js";
-import type { InternalDataArmingPatch } from "./internal-transition-data-arming-patch.js";
+import type { InternalDataArmingOperation, InternalDataArmingPatch } from "./internal-transition-data-arming-patch.js";
 import { canonicalUniquePublicationAtoms, canonicalUniqueStateAtoms } from "./internal-transition-footprint-ordering.js";
 import type { InternalTransitionCandidate, InternalTransitionFootprint } from "./internal-transition-footprint.js";
 import { InternalTransitionPublicationAtomKind, InternalTransitionStateAtomKind } from "./internal-transition-footprint-vocabulary.js";
 import { affectedTokenBucketsAreExact, tokenOwnerCensusAtoms } from "./internal-transition-token-preparation.js";
 import { InternalOccurrenceKind, openWaitAnchorIsAbsent, operationIsUniqueWaitDeclarer } from "./internal-transition-wait-census.js";
 import { SemanticOperationKind } from "./semantic-process-contract.js";
-import type { AwaitDataInputOutputUserTaskOperation, SemanticProcessProgram } from "./semantic-process-contract.js";
+import type { SemanticProcessProgram } from "./semantic-process-contract.js";
 import { onlyTokenOwner } from "./semantic-process-scope-runtime.js";
 import { ControlStateKind, sameScopeOccurrence } from "./semantic-process-state.js";
 import type { RuntimeState, ScopeOccurrenceId } from "./semantic-process-state.js";
@@ -22,22 +22,30 @@ const InternalOperationTransitionKind = "internalOperation" as SemanticTransitio
 
 export type PreparedInternalDataArming = Readonly<{
   alternative: InternalOperationAlternative;
-  operation: AwaitDataInputOutputUserTaskOperation;
+  operation: InternalDataArmingOperation;
   owner: ScopeOccurrenceId;
   patch: InternalDataArmingPatch;
   footprint: InternalTransitionFootprint;
   publicationTemplate: InternalPublicationTemplate;
 }>;
 
-/** Derives composed data arming and its full publication exclusively from the exact pre-state. */
+/** Derives data arming and its full publication exclusively from the exact pre-state. */
 export function deriveInternalDataArmingPreparation(
   program: SemanticProcessProgram,
   state: RuntimeState,
   candidate: InternalTransitionCandidate,
 ): PreparedInternalDataArming | null {
   const { operation, owner } = candidate;
+  switch (operation.kind) {
+    case SemanticOperationKind.AwaitDataInputUserTask:
+    case SemanticOperationKind.AwaitDataInputOutputUserTask:
+    case SemanticOperationKind.AwaitDataOutputUserTask:
+      break;
+    default:
+      return null;
+  }
   if (
-    operation.kind !== SemanticOperationKind.AwaitDataInputOutputUserTask || owner === null ||
+    owner === null ||
     state.control.kind !== ControlStateKind.Running ||
     owner.processInstanceId !== state.control.instanceId ||
     !operationIsSelectedFromProgram(program, operation, owner)
@@ -86,13 +94,18 @@ export function deriveInternalDataArmingPreparation(
     { kind: InternalTransitionStateAtomKind.RuntimeControl, instanceId: state.control.instanceId },
     { kind: InternalTransitionStateAtomKind.ScopeOccurrence, owner },
     { kind: InternalTransitionStateAtomKind.LogicalTime },
-    { kind: InternalTransitionStateAtomKind.ProcessVariable, name: operation.directInput.sourcePropertyId },
+    ...(operation.kind === SemanticOperationKind.AwaitDataOutputUserTask ? [] : [{
+      kind: InternalTransitionStateAtomKind.ProcessVariable,
+      name: operation.directInput.sourcePropertyId,
+    } as const]),
     token, association, ...counters, wait, anchor, scope,
   ]);
   const writes = canonicalUniqueStateAtoms([
     ...tokenOwnerCensusAtoms([operation.input]),
     token, association, ...counters, wait, anchor, scope,
-    { kind: InternalTransitionStateAtomKind.ActivityVariable, occurrence: activity, owner, name: patch.inputBinding.name },
+    ...patch.bindings.map(({ name }) => ({
+      kind: InternalTransitionStateAtomKind.ActivityVariable, occurrence: activity, owner, name,
+    } as const)),
   ]);
   const positionDelta = {
     consumedTokens: [{ sequenceFlowId: input.origin.elementId, owner, multiplicity: 1 }],
