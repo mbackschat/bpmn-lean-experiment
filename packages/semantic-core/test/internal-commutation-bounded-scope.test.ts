@@ -171,8 +171,9 @@ test("composes disjoint sibling entries and conflicts on the same child definiti
   ));
   assert.equal(independent(first.footprint, second.footprint), true);
 
-  const colliding = { ...sibling, childScopeId: operation.childScopeId };
-  const collidingProgram = withSibling(boundedScopeProgram, colliding);
+  const colliding = { ...sibling, childScopeId: operation.childScopeId, childEntry: operation.childEntry };
+  const collidingProgram = { ...program,
+    operations: program.operations.map((candidate) => candidate.id === colliding.id ? colliding : candidate) };
   const collision = requirePrepared(deriveInternalBoundedScopePreparation(
     collidingProgram,
     state,

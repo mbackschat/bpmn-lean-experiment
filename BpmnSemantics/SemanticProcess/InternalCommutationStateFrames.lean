@@ -214,9 +214,9 @@ theorem key_false_of_projection_ne (project : α → OccurrenceId) (key : α →
     (sound : key left right = true → project left = project right) : key left right = false :=
   Bool.eq_false_iff.mpr fun keyed => different (sound keyed)
 
-theorem armingPatch_key_fresh_of_anchor_absent (state : RuntimeState) (patch : InternalArmingPatch)
-    (absent : openWaitAnchorAbsent state patch.write.occurrence = true) :
-    match patch.write with
+theorem armingWrite_key_fresh_of_anchor_absent (state : RuntimeState) (write : InternalArmingWrite)
+    (absent : openWaitAnchorAbsent state write.occurrence = true) :
+    match write with
     | .userTask inserted => ∀ old ∈ state.waits,
         userTaskWaitKeyMatches inserted old = false ∧
           userTaskWaitKeyMatches old inserted = false
@@ -229,10 +229,9 @@ theorem armingPatch_key_fresh_of_anchor_absent (state : RuntimeState) (patch : I
     | .effect inserted _ => ∀ old ∈ state.effectWaits,
         effectWaitKeyMatches inserted old = false ∧
           effectWaitKeyMatches old inserted = false := by
-  have missing : patch.write.occurrence ∉ openWaitAnchors state := by
+  have missing : write.occurrence ∉ openWaitAnchors state := by
     simpa [openWaitAnchorAbsent, List.contains_eq_mem] using absent
-  cases patch with | mk _ _ _ _ _ _ _ _ _ write =>
-    cases write with
+  cases write with
     | userTask inserted =>
         intro old member
         have sound (left right : UserTaskWait) : userTaskWaitKeyMatches left right = true →
@@ -302,6 +301,20 @@ theorem armingPatch_key_fresh_of_anchor_absent (state : RuntimeState) (patch : I
           exact Or.inr (Or.inr (Or.inr (Or.inl ⟨old, member, same⟩)))
         exact ⟨key_false_of_projection_ne _ _ _ _ different.symm (sound _ _),
           key_false_of_projection_ne _ _ _ _ different (sound _ _)⟩
+
+theorem armingPatch_key_fresh_of_anchor_absent (state : RuntimeState) (patch : InternalArmingPatch)
+    (absent : openWaitAnchorAbsent state patch.write.occurrence = true) :
+    match patch.write with
+    | .userTask inserted => ∀ old ∈ state.waits,
+        userTaskWaitKeyMatches inserted old = false ∧ userTaskWaitKeyMatches old inserted = false
+    | .message inserted => ∀ old ∈ state.messageWaits,
+        messageWaitKeyMatches inserted old = false ∧ messageWaitKeyMatches old inserted = false
+    | .timer inserted => ∀ old ∈ state.timerWaits,
+        timerWaitKeyMatches inserted old = false ∧ timerWaitKeyMatches old inserted = false
+    | .effect inserted _ => ∀ old ∈ state.effectWaits,
+        effectWaitKeyMatches inserted old = false ∧ effectWaitKeyMatches old inserted = false := by
+  cases patch with | mk _ _ _ _ _ _ _ _ _ write =>
+    cases write <;> exact armingWrite_key_fresh_of_anchor_absent state _ absent
 
 theorem prepared_arm_key_fresh (program : Program) (state : RuntimeState)
     (operation : SemanticOperation) (patch : InternalArmingPatch)

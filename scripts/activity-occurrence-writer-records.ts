@@ -117,6 +117,18 @@ export const writerRecords = new Map<string, WriterRecord>([
       markers: ["theorem prepareInternalTimerTaskContract_preserves_bodyClaims"],
     },
   }],
+  ["BpmnSemantics/SemanticProcess/InternalBoundedScopeSelection.lean#InternalBoundedScopeSelection.apply@1", {
+    classification: WriterClassification.Issuer,
+    claimPreservation: ClaimPreservation.DisjointInsertion,
+    evidence: {
+      relativePath: "BpmnSemantics/SemanticProcess/InternalBoundedScopePreparation.lean",
+      markers: ["theorem prepareInternalBoundedScope_issuesFreshActivity"],
+    },
+    claimEvidence: {
+      relativePath: "BpmnSemantics/SemanticProcess/InternalBoundedScopePreparation.lean",
+      markers: ["theorem prepareInternalBoundedScope_preserves_bodyClaims"],
+    },
+  }],
   ["BpmnSemantics/SemanticProcess/InternalDataArmingMixedFrames.lean#applyInternalDataArmingActivityPatch@1", {
     classification: WriterClassification.Issuer,
     claimPreservation: ClaimPreservation.DisjointInsertion,
@@ -439,7 +451,7 @@ export const writerRecords = new Map<string, WriterRecord>([
       ],
     },
   }],
-  ["packages/semantic-core/src/semantic-process-bounded-scope-runtime.ts#armBoundedScope@1", {
+  ["packages/semantic-core/src/semantic-process-bounded-scope-runtime.ts#applySelectedBoundedScopeArming@1", {
     classification: WriterClassification.Issuer,
     claimPreservation: ClaimPreservation.DisjointInsertion,
     evidence: {

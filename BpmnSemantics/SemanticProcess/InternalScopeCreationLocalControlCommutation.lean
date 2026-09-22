@@ -17,7 +17,7 @@ private theorem mixed_read_write_separate
   intro same
   exact not_mem_right_of_listsDisjoint _ _ separated.1.2 read (same ▸ writes) reads
 
-private theorem local_scope_input_untouched (state : RuntimeState)
+theorem local_scope_input_untouched (state : RuntimeState)
     (scope : InternalScopeCreationSelection) (localSelection : InternalLocalControlSelection)
     (scopeInstance localInstance : SemanticId) (scopeOwner : RuntimeScopeOccurrence)
     (separated : localControlStateFootprintsNonInterfering
@@ -29,7 +29,7 @@ private theorem local_scope_input_untouched (state : RuntimeState)
     (scopeCreation_census_read scope scopeInstance scopeOwner)
     (localControl_tokenOwners_write state localSelection localInstance scope.input member) rfl
 
-private theorem local_scope_bucket_frame (state : RuntimeState)
+theorem local_scope_bucket_frame (state : RuntimeState)
     (scope : InternalScopeCreationSelection) (localSelection : InternalLocalControlSelection)
     (scopeInstance localInstance : SemanticId) (scopeOwner : RuntimeScopeOccurrence)
     (separated : localControlStateFootprintsNonInterfering
@@ -200,18 +200,15 @@ theorem scope_local_scope_frame (state : RuntimeState)
 
 /-- The scope insertion frames all same-key selected-join records and every readiness bucket,
 including records that the predecessor selector did not choose. -/
-theorem prepareInternalLocalControl_after_scope_creation (program : Program) (state : RuntimeState)
-    (scopeOperation localOperation : SemanticOperation)
-    (scopePrepared : PreparedInternalScopeCreation) (localPrepared : PreparedInternalLocalControl)
-    (scopeFound : prepareInternalScopeCreation? program state scopeOperation = some scopePrepared)
+theorem prepareInternalLocalControl_after_scope_patch (program : Program) (state : RuntimeState)
+    (scope : InternalScopeCreationSelection) (scopeInstance : SemanticId)
+    (scopeOwner : RuntimeScopeOccurrence) (localOperation : SemanticOperation)
+    (localPrepared : PreparedInternalLocalControl)
     (localFound : prepareInternalLocalControl? program state localOperation = some localPrepared)
     (separated : localControlStateFootprintsNonInterfering
-      scopePrepared.footprint localPrepared.footprint = true) :
-    prepareInternalLocalControl? program (scopePrepared.selection.apply state) localOperation =
+      (internalScopeCreationStateFootprint scope scopeInstance scopeOwner) localPrepared.footprint = true) :
+    prepareInternalLocalControl? program (scope.apply state) localOperation =
       some localPrepared := by
-  obtain ⟨scope, scopeInstance, scopeOwner, origin, definition, start, delta,
-    _, _, _, _, _, _, _, _, _, _, rfl⟩ :=
-    prepareInternalScopeCreation_facts program state scopeOperation scopePrepared scopeFound
   obtain ⟨localSelection, _, localInstance, _, _, selection, _, _, _, _, _, _, _, _, _, rfl⟩ :=
     prepareInternalLocalControl_facts program state localOperation localPrepared localFound
   have reverse := localControlStateFootprintsNonInterfering_symm _ _ separated
@@ -242,6 +239,21 @@ theorem prepareInternalLocalControl_after_scope_creation (program : Program) (st
       (localControl_selectedJoin_bucket_read state localSelection localInstance chosen record place
         (localControl_selectedJoin_patch state localOperation localSelection selection chosen branch)
         present key member)
+
+theorem prepareInternalLocalControl_after_scope_creation (program : Program) (state : RuntimeState)
+    (scopeOperation localOperation : SemanticOperation)
+    (scopePrepared : PreparedInternalScopeCreation) (localPrepared : PreparedInternalLocalControl)
+    (scopeFound : prepareInternalScopeCreation? program state scopeOperation = some scopePrepared)
+    (localFound : prepareInternalLocalControl? program state localOperation = some localPrepared)
+    (separated : localControlStateFootprintsNonInterfering
+      scopePrepared.footprint localPrepared.footprint = true) :
+    prepareInternalLocalControl? program (scopePrepared.selection.apply state) localOperation =
+      some localPrepared := by
+  obtain ⟨scope, scopeInstance, scopeOwner, origin, definition, start, delta,
+    _, _, _, _, _, _, _, _, _, _, rfl⟩ :=
+    prepareInternalScopeCreation_facts program state scopeOperation scopePrepared scopeFound
+  exact prepareInternalLocalControl_after_scope_patch program state scope scopeInstance scopeOwner
+    localOperation localPrepared localFound separated
 
 private theorem scope_local_tokens_commute (tokens : List ControlToken)
     (scope : InternalScopeCreationSelection) (patch : TokenPatch)

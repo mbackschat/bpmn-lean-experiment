@@ -85,6 +85,16 @@ export function armBoundedScope(
   if (selected === null) {
     return null;
   }
+  return applySelectedBoundedScopeArming(operation, state, parent, selected);
+}
+
+/** Applies the selected child, deadline, and Activity together for direct and prepared execution. */
+export function applySelectedBoundedScopeArming(
+  operation: EnterBoundedScopeOperation,
+  state: RuntimeState,
+  parent: ScopeOccurrenceId,
+  selected: SelectedBoundedScopeArming,
+): RuntimeState {
   return {
     ...state,
     controlTokens: addToken(

@@ -5,7 +5,7 @@ import { controlPlace, operationBase } from "./semantic-program-parts.ts";
 
 export const internalArmingKinds = [Kind.AwaitUserTask, Kind.AwaitTimer, Kind.AwaitDataInputOutputUserTask,
   Kind.AwaitMessage, Kind.AwaitPayloadMessage, Kind.AwaitCorrelatedPayloadMessage, Kind.AwaitEffect,
-  Kind.AwaitBoundedUserTask, Kind.AwaitMonitoredUserTask] as const;
+  Kind.AwaitBoundedUserTask, Kind.AwaitMonitoredUserTask, Kind.EnterBoundedScope] as const;
 export type InternalArmingKind = typeof internalArmingKinds[number];
 
 export function internalArmingOperation(kind: InternalArmingKind, input: string, output: string):
@@ -18,6 +18,11 @@ export function internalArmingOperation(kind: InternalArmingKind, input: string,
   switch (kind) {
     case Kind.AwaitUserTask:
       return ordinary;
+    case Kind.EnterBoundedScope:
+      return { ...operationBase("Side_Scope"), kind, input,
+        childScopeId: "scope:Side_Scope", childEntry: "place:Side_Scope_Entry",
+        boundaryTimer: { elementId: "Side_Deadline", durationMs: 1000, output,
+          origin: { kind: SemanticOriginKind.BpmnSequenceFlow, elementId: output.slice("place:".length) } } };
     case Kind.AwaitBoundedUserTask:
     case Kind.AwaitMonitoredUserTask:
       return { ...operationBase("Side_Task"), kind, input, task: { ...ordinary.task, output },
@@ -48,6 +53,37 @@ export function internalArmingOperation(kind: InternalArmingKind, input: string,
 
 export function withInternalArmingBoundaryRoute(program: SemanticProcessProgram,
     operation: SemanticOperation): SemanticProcessProgram {
+  if (operation.kind === Kind.EnterBoundedScope) {
+    const scope = program.operationScopes.find(({ operationId }) => operationId === operation.id);
+    if (scope === undefined) throw new Error("Bounded-scope fixture must have an operation scope");
+    const childPlaces = [controlPlace("Side_Scope_Entry"), controlPlace("Side_Scope_End")];
+    const normalExit = controlPlace("Side_Scope_Normal_Exit");
+    const normalEnd = { ...operationBase("Side_Scope_Normal_End"), kind: Kind.ReachNoneEnd,
+      input: normalExit.id } as const;
+    const childOperations: SemanticOperation[] = [
+      { ...operationBase("Side_Child_Task"), kind: Kind.AwaitUserTask,
+        input: operation.childEntry, output: "place:Side_Scope_End",
+        task: { elementId: "Side_Child_Task", name: "Child review" } },
+      { ...operationBase("Side_Child_End"), kind: Kind.ReachNoneEnd, input: "place:Side_Scope_End" },
+      { ...operationBase("Side_Child_Complete"), kind: Kind.CompleteScope,
+        origin: operation.origin, scopeId: operation.childScopeId, parentOutput: normalExit.id },
+    ];
+    return { ...program,
+      definitionScopes: [...program.definitionScopes, { id: operation.childScopeId,
+        parentScopeId: scope.scopeId, originElementId: operation.origin.elementId }]
+        .sort((a, b) => compareCanonicalStrings(a.id, b.id)),
+      controlPlaces: [...program.controlPlaces, ...childPlaces, normalExit].sort((a, b) => compareCanonicalStrings(a.id, b.id)),
+      controlPlaceScopes: [...program.controlPlaceScopes, ...childPlaces.map(({ id }) =>
+        ({ controlPlaceId: id, scopeId: operation.childScopeId })),
+        { controlPlaceId: normalExit.id, scopeId: scope.scopeId }]
+        .sort((a, b) => compareCanonicalStrings(a.controlPlaceId, b.controlPlaceId)),
+      operations: [...program.operations, ...childOperations, normalEnd].sort((a, b) => compareCanonicalStrings(a.id, b.id)),
+      operationScopes: [...program.operationScopes, ...childOperations.map(({ id }) =>
+        ({ operationId: id, scopeId: operation.childScopeId })),
+        { operationId: normalEnd.id, scopeId: scope.scopeId }]
+        .sort((a, b) => compareCanonicalStrings(a.operationId, b.operationId)),
+    };
+  }
   if (operation.kind !== Kind.AwaitBoundedUserTask && operation.kind !== Kind.AwaitMonitoredUserTask) return program;
   const scope = program.operationScopes.find(({ operationId }) => operationId === operation.id);
   if (scope === undefined) throw new Error("Timer-task fixture must have an operation scope");

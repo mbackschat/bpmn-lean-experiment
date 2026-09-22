@@ -5,6 +5,7 @@ import BpmnSemantics.SemanticProcess.TransitionRecord
 import BpmnSemantics.SemanticProcess.ControlPositionProjection
 import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
 import BpmnSemantics.SemanticProcess.InternalMergePreparation
+import BpmnSemantics.SemanticProcess.InternalBoundedScopePreparation
 
 /-! Family publication values stay below the unified prepared dispatcher, so its pair laws can reuse acceptance without an import cycle. -/
 
@@ -85,6 +86,16 @@ def internalScopeCreationPublicationTemplate (prepared : PreparedInternalScopeCr
   { record :=
       { operationId := prepared.selection.operation.id, operationKind := prepared.selection.operation.kind
         origin := prepared.selection.operation.origin, owner := prepared.selection.owner }
+    logicalTimeMs := prepared.publicationTemplate.logicalTimeMs
+    positionDelta := prepared.publicationTemplate.positionDelta
+    lifecycle := .scopeCreation prepared.publicationTemplate.lifecycle }
+
+def internalBoundedScopePublicationTemplate (prepared : PreparedInternalBoundedScope) :
+    InternalTransitionPublicationTemplate :=
+  { record :=
+      { operationId := prepared.selection.creation.operation.id
+        operationKind := prepared.selection.creation.operation.kind
+        origin := prepared.selection.creation.operation.origin, owner := prepared.selection.creation.owner }
     logicalTimeMs := prepared.publicationTemplate.logicalTimeMs
     positionDelta := prepared.publicationTemplate.positionDelta
     lifecycle := .scopeCreation prepared.publicationTemplate.lifecycle }

@@ -83,7 +83,7 @@ private def rootAndChildStartedValue : StimulusResult :=
              output := ⟨"place:Flow_Boundary"⟩ }]
         activityOccurrences :=
           [{ processInstanceId := instanceId
-             activityElementId := ⟨"scope:Scope"⟩
+             activityElementId := ⟨"Scope"⟩
              activation := 1
              owner := rootOccurrence.id
              body := .childScope childOccurrence.id
@@ -101,7 +101,7 @@ private def rootAndChildStartedValue : StimulusResult :=
         scopeActivations :=
           [{ scopeId := rootOccurrence.id.definitionScopeId, count := 1 },
            { scopeId := childOccurrence.id.definitionScopeId, count := 1 }]
-        activityActivations := [{ taskId := ⟨"scope:Scope"⟩, count := 1 }] }
+        activityActivations := [{ taskId := ⟨"Scope"⟩, count := 1 }] }
     internalStepBoundExceeded := false
     ambiguousInternalChoice := false }
 

@@ -149,28 +149,33 @@ theorem scopeCreation_call_population_empty (state : RuntimeState)
       rw [((sortCallRecords_perm (record :: state.calledProcessOccurrences)).filter predicate).length_eq]
       simpa [rejected record kind] using empty
 
-theorem prepareInternalScopeCreation_after_independent (program : Program) (instanceId : SemanticId) (state : RuntimeState)
-    (leftOperation rightOperation : SemanticOperation) (left right : PreparedInternalScopeCreation)
-    (programWF : programWellFormed program = true)
-    (stateWF : runtimeStateWellFormed program instanceId state = true)
-    (leftFound : prepareInternalScopeCreation? program state leftOperation = some left)
-    (rightFound : prepareInternalScopeCreation? program state rightOperation = some right)
-    (separated : localControlStateFootprintsNonInterfering left.footprint right.footprint = true) :
-    prepareInternalScopeCreation? program (right.selection.apply state) leftOperation = some left := by
-  obtain ⟨leftSelected, leftInstance, leftOwner, leftOrigin, leftDefinition, leftStart, leftDelta,
-    leftSelection, leftRunning, _, _, leftOwnerExact, _, leftDefinitionFound, leftChecks,
-    _, _, rfl⟩ := prepareInternalScopeCreation_facts program state leftOperation left leftFound
-  obtain ⟨rightSelected, rightInstance, rightOwner, rightOrigin, rightDefinition, rightStart, rightDelta,
-    rightSelection, rightRunning, _, _, _, _, rightDefinitionFound, rightChecks,
-    _, _, rfl⟩ := prepareInternalScopeCreation_facts program state rightOperation right rightFound
-  dsimp only [makeInternalScopeCreationPreparation] at separated ⊢
-  have position : runtimePositionValid program instanceId state = true := by
-    simp only [runtimeStateWellFormed, Bool.and_eq_true, and_assoc] at stateWF
-    exact stateWF.1
-  have hosting := runtimePositionValid_running_instance program instanceId leftInstance state position leftRunning
-  subst leftInstance
-  have rightHosting : rightInstance = instanceId := by rw [leftRunning] at rightRunning; exact ProcessControl.running.inj rightRunning.symm
-  subst rightInstance
+/-- Ordinary and bounded entry share the selector's complete read obligations. The callers
+derive Call-association preservation from their actual operation, without inventing a Program entry. -/
+theorem scopeCreation_independent_reads (program : Program) (instanceId : SemanticId) (state : RuntimeState)
+    (leftOperation rightOperation : SemanticOperation) (leftSelected rightSelected : InternalScopeCreationSelection)
+    (leftOwner rightOwner : RuntimeScopeOccurrence) (leftOrigin rightOrigin : BpmnElementOrigin)
+    (leftDefinition rightDefinition : DefinitionScope)
+    (leftSelection : selectInternalScopeCreation? state leftOperation = some leftSelected)
+    (rightSelection : selectInternalScopeCreation? state rightOperation = some rightSelected)
+    (leftRunning : state.control = .running instanceId)
+    (leftOwnerExact : state.scopeOccurrences.filter (fun occurrence => decide (occurrence.id = leftSelected.owner)) = [leftOwner])
+    (leftDefinitionFound : definitionScope? program leftSelected.created.id.definitionScopeId = some leftDefinition)
+    (rightDefinitionFound : definitionScope? program rightSelected.created.id.definitionScopeId = some rightDefinition)
+    (leftChecks : internalScopeCreationPredecessorChecks program state leftOperation leftSelected leftOrigin leftDefinition = true)
+    (rightChecks : internalScopeCreationPredecessorChecks program state rightOperation rightSelected rightOrigin rightDefinition = true)
+    (associationsPreserved : calledProcessAssociationsValid state = true →
+      calledProcessAssociationsValid (rightSelected.apply state) = true)
+    (separated : localControlStateFootprintsNonInterfering
+      (internalScopeCreationStateFootprint leftSelected instanceId leftOwner)
+      (internalScopeCreationStateFootprint rightSelected instanceId rightOwner) = true) :
+    selectInternalScopeCreation? (rightSelected.apply state) leftOperation = some leftSelected ∧
+      (rightSelected.apply state).scopeOccurrences.filter (fun occurrence => decide (occurrence.id = leftSelected.owner)) =
+        state.scopeOccurrences.filter (fun occurrence => decide (occurrence.id = leftSelected.owner)) ∧
+      (rightSelected.apply state).tokens.filter (fun token => decide (token.placeId = leftSelected.input && token.owner = leftSelected.owner)) =
+        state.tokens.filter (fun token => decide (token.placeId = leftSelected.input && token.owner = leftSelected.owner)) ∧
+      (rightSelected.apply state).tokens.filter (fun token => decide (token.placeId = leftSelected.entry && token.owner = leftSelected.created.id)) =
+        state.tokens.filter (fun token => decide (token.placeId = leftSelected.entry && token.owner = leftSelected.created.id)) ∧
+      internalScopeCreationCounterSafe (rightSelected.apply state) leftSelected = internalScopeCreationCounterSafe state leftSelected := by
   have leftParent := scopeCreation_definition_parent state leftOperation leftSelected leftDefinition leftSelection
     (internalScopeCreationPredecessorChecks_facts program state leftOperation leftSelected leftOrigin leftDefinition leftChecks).2.1
   have rightParent := scopeCreation_definition_parent state rightOperation rightSelected rightDefinition rightSelection
@@ -236,9 +241,8 @@ theorem prepareInternalScopeCreation_after_independent (program : Program) (inst
       obtain ⟨leftHosting, leftCaller, _, leftRoot, leftDerived, callerEmpty, scopeEmpty, collisionEmpty⟩ :=
         scopeCreation_selection_call_facts state leftOperation leftSelected leftRecord instanceId
           leftRunning leftSelection leftCalled
-      have associations := prepareInternalScopeCreation_preserves_callAssociations program state rightOperation _
-        programWF (scopeCreation_selection_call_associations state leftOperation leftSelected leftRecord
-          leftSelection leftCalled) rightFound
+      have associations := associationsPreserved (scopeCreation_selection_call_associations state leftOperation
+        leftSelected leftRecord leftSelection leftCalled)
       have notHosting : leftSelected.created.id.processInstanceId ≠ instanceId := by
         intro same
         have present : leftOwner ∈ state.scopeOccurrences.filter (fun occurrence =>
@@ -252,7 +256,7 @@ theorem prepareInternalScopeCreation_after_independent (program : Program) (inst
         intro rightRecord rightCalled same
         obtain ⟨_, _, _, rightRoot, rightDerived, _⟩ :=
           scopeCreation_selection_call_facts state rightOperation rightSelected rightRecord instanceId
-            rightRunning rightSelection rightCalled
+            leftRunning rightSelection rightCalled
         have derivedEqual : deriveCalledProcessInstanceId instanceId ⟨rightRecord.id.elementId.value⟩ rightRecord.id.activation =
             deriveCalledProcessInstanceId instanceId ⟨leftRecord.id.elementId.value⟩ leftRecord.id.activation := by
           rw [← rightDerived, ← leftDerived, ← rightRoot, ← leftRoot]
@@ -263,7 +267,7 @@ theorem prepareInternalScopeCreation_after_independent (program : Program) (inst
         cases kind : rightSelected.kind with
         | child =>
             have facts := scopeCreation_selection_child_facts state rightOperation rightSelected instanceId
-              rightRunning rightSelection kind
+              leftRunning rightSelection kind
             rw [facts.2.1]
             exact Ne.symm notHosting
         | called record => exact callInstances record kind
@@ -281,12 +285,44 @@ theorem prepareInternalScopeCreation_after_independent (program : Program) (inst
           intro same
           exact keysDifferent (congrArg (fun id : OccurrenceId => id.elementId.value) same)
         have root := (scopeCreation_selection_call_facts state rightOperation rightSelected rightRecord instanceId
-          rightRunning rightSelection rightCalled).2.2.2.1
+          leftRunning rightSelection rightCalled).2.2.2.1
         simp [idsDifferent, ← root, newInstanceDifferent]
+  exact ⟨selectionAfter, ownerFrame, inputFrame, entryFrame,
+    scopeCreation_counter_read_frame state (rightSelected.apply state) leftSelected childCounter callCounter⟩
+
+theorem prepareInternalScopeCreation_after_independent (program : Program) (instanceId : SemanticId) (state : RuntimeState)
+    (leftOperation rightOperation : SemanticOperation) (left right : PreparedInternalScopeCreation)
+    (programWF : programWellFormed program = true)
+    (stateWF : runtimeStateWellFormed program instanceId state = true)
+    (leftFound : prepareInternalScopeCreation? program state leftOperation = some left)
+    (rightFound : prepareInternalScopeCreation? program state rightOperation = some right)
+    (separated : localControlStateFootprintsNonInterfering left.footprint right.footprint = true) :
+    prepareInternalScopeCreation? program (right.selection.apply state) leftOperation = some left := by
+  have associationsPreserved := fun valid => prepareInternalScopeCreation_preserves_callAssociations
+    program state rightOperation right programWF valid rightFound
+  obtain ⟨leftSelected, leftInstance, leftOwner, leftOrigin, leftDefinition, leftStart, leftDelta,
+    leftSelection, leftRunning, _, _, leftOwnerExact, _, leftDefinitionFound, leftChecks,
+    _, _, rfl⟩ := prepareInternalScopeCreation_facts program state leftOperation left leftFound
+  obtain ⟨rightSelected, rightInstance, rightOwner, rightOrigin, rightDefinition, rightStart, rightDelta,
+    rightSelection, rightRunning, _, _, _, _, rightDefinitionFound, rightChecks,
+    _, _, rfl⟩ := prepareInternalScopeCreation_facts program state rightOperation right rightFound
+  dsimp only [makeInternalScopeCreationPreparation] at separated ⊢
+  have position : runtimePositionValid program instanceId state = true := by
+    simp only [runtimeStateWellFormed, Bool.and_eq_true, and_assoc] at stateWF
+    exact stateWF.1
+  have hosting := runtimePositionValid_running_instance program instanceId leftInstance state position leftRunning
+  subst leftInstance
+  have rightHosting : rightInstance = instanceId := by
+    rw [leftRunning] at rightRunning
+    exact ProcessControl.running.inj rightRunning.symm
+  subst rightInstance
+  obtain ⟨selectionAfter, ownerFrame, inputFrame, entryFrame, counterFrame⟩ :=
+    scopeCreation_independent_reads program instanceId state leftOperation rightOperation leftSelected rightSelected
+      leftOwner rightOwner leftOrigin rightOrigin leftDefinition rightDefinition leftSelection rightSelection
+      leftRunning leftOwnerExact leftDefinitionFound rightDefinitionFound leftChecks rightChecks associationsPreserved separated
   exact prepareInternalScopeCreation_read_frame program state (rightSelected.apply state) leftOperation _
     leftFound selectionAfter (scopeCreation_apply_control state rightSelected) (scopeCreation_apply_time state rightSelected)
-    ownerFrame inputFrame entryFrame (scopeCreation_counter_read_frame state (rightSelected.apply state)
-      leftSelected childCounter callCounter)
+    ownerFrame inputFrame entryFrame counterFrame
 
 theorem prepared_scope_creation_pair_preserves_preparation
     (program : Program) (instanceId : SemanticId) (state : RuntimeState)

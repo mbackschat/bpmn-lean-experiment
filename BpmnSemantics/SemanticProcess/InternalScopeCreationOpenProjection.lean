@@ -68,7 +68,7 @@ theorem scopeCreation_process_lookup_preserved (program : Program) (state : Runt
                 ↓reduceIte, filtered] using permutation
             simpa only [InternalScopeCreationSelection.apply, kind, exactRecords] using prior
 
-private theorem mapM_preserves_success (values : List α) (before after : α → Option β)
+theorem mapM_preserves_success (values : List α) (before after : α → Option β)
     (preserved : ∀ value result, before value = some result → after value = some result)
     (results : List β) (prior : values.mapM before = some results) :
     values.mapM after = some results := by

@@ -171,6 +171,55 @@ theorem activityRecords_insertFreshTimerWait (state : RuntimeState) (inserted : 
         contradiction
     simp [empty]
 
+/-- One fresh deadline joined to one record preserves attachment uniqueness for both User Tasks
+and Sub-Processes. Body validity is a separate obligation of their existing activation laws. -/
+theorem attachedTimers_insertFreshTimerAndRecord (state : RuntimeState)
+    (timer : TimerWait) (record : ActivityOccurrence)
+    (handlers : record.timerHandlerOccurrences = [timerWaitOccurrence timer])
+    (fresh : ∀ old ∈ state.timerWaits, timerWaitKeyMatches timer old = false)
+    (records : activityRecordsOwnLiveWork state = true)
+    (attachments : attachedTimersUnambiguous state = true) :
+    attachedTimersUnambiguous
+      { state with timerWaits := insertTimerWait timer state.timerWaits
+                   activityOccurrences := insertActivityOccurrence record state.activityOccurrences } = true := by
+  have unclaimed := activityRecords_do_not_claim_fresh_timer state timer fresh records
+  have nodeEquality (left right : NodeId) : left = right ↔ left.value = right.value := by
+    cases left; cases right; simp
+  change (insertTimerWait timer state.timerWaits).all (fun wait =>
+    decide (((insertActivityOccurrence record state.activityOccurrences).filter
+      (fun candidate => anyTimerIdNamesWait candidate.timerHandlerOccurrences wait)).length ≤ 1)) = true
+  simp only [insertTimerWait, all_canonicalInsertBy, Bool.and_eq_true, List.all_eq_true,
+    decide_eq_true_eq]
+  constructor
+  · rw [insertActivityOccurrence_eq_canonicalInsertBy, length_filter_canonicalInsertBy]
+    have empty : state.activityOccurrences.filter
+        (fun candidate => anyTimerIdNamesWait candidate.timerHandlerOccurrences timer) = [] :=
+      List.filter_eq_nil_iff.mpr fun candidate member holds => by
+        rw [unclaimed candidate member] at holds
+        contradiction
+    rw [empty]
+    simp [handlers, anyTimerIdNamesWait, timerIdNamesWait, timerWaitOccurrence]
+  · intro wait member
+    have prior := List.all_eq_true.mp attachments wait member
+    rw [insertActivityOccurrence_eq_canonicalInsertBy, length_filter_canonicalInsertBy]
+    have rejected : anyTimerIdNamesWait record.timerHandlerOccurrences wait = false := by
+      simpa [handlers, anyTimerIdNamesWait, timerIdNamesWait, timerWaitOccurrence,
+        timerWaitKeyMatches, nodeEquality] using fresh wait member
+    simpa [rejected] using prior
+
+theorem recordAttaches_timer_eq_names (record : ActivityOccurrence) (timer : TimerWait) :
+    recordAttaches record (timerWaitOccurrence timer) =
+      anyTimerIdNamesWait record.timerHandlerOccurrences timer := by
+  simp only [recordAttaches, List.contains_eq_any_beq, anyTimerIdNamesWait]
+  congr 1
+  funext id
+  apply Bool.eq_iff_iff.mpr
+  simp only [beq_iff_eq, timerIdNamesWait, Bool.and_eq_true]
+  cases id with
+  | mk process element activation =>
+    cases element
+    simp [timerWaitOccurrence, eq_comm, and_assoc, and_left_comm]
+
 end InternalCommutation
 
 end BpmnSemantics.SemanticProcess

@@ -244,30 +244,22 @@ private theorem completion_withdrawal (program : Program) (state : RuntimeState)
       · cases kind : creation.kind <;> simpa only [InternalScopeCreationSelection.apply, kind] using census
       · exact deadlineOwner
 
-/-- Complete predecessor preparation and dependency independence preserve the raw regional selector, including its singleton censuses and bounded withdrawal. -/
-theorem selectInternalRegional_after_independent_scopeCreation
+/-- Child or Call insertion preserves regional queries under separated populations. The caller
+derives position validity from its own complete preparation, including bounded child entry. -/
+theorem scopeCreation_regional_selection
     (program : Program) (state : RuntimeState)
     (operation creationOperation : SemanticOperation)
-    (regional : PreparedInternalRegional) (creation : PreparedInternalScopeCreation)
+    (regional : PreparedInternalRegional) (selected : InternalScopeCreationSelection)
+    (hosting : SemanticId) (ownerRecord : RuntimeScopeOccurrence)
     (programValid : programWellFormed program = true)
-    (valid : runtimeStateWellFormed program creation.runtimeInstanceId state = true)
+    (position : runtimePositionValid program hosting state = true)
+    (afterPosition : runtimePositionValid program hosting (selected.apply state) = true)
     (regionalFound : prepareInternalRegional? program state operation = some regional)
-    (creationFound : prepareInternalScopeCreation? program state creationOperation = some creation)
+    (selection : selectInternalScopeCreation? state creationOperation = some selected)
+    (running : state.control = .running hosting)
     (independent : regionalStateFootprintsIndependent regional.footprint
-      (liftRegionalStateFootprint creation.selection.owner creation.footprint) = true) :
-    selectInternalRegional? program (creation.selection.apply state) operation = some regional.selection := by
-  have afterValid := prepareInternalScopeCreation_preserves_runtimeStateWellFormed
-    program creation.runtimeInstanceId state creationOperation creation programValid valid creationFound
-  obtain ⟨selected, hosting, ownerRecord, origin, definition, start, delta,
-    selection, running, _, _, _, _, _, _, _, _, rfl⟩ :=
-    prepareInternalScopeCreation_facts program state creationOperation creation creationFound
-  dsimp only [makeInternalScopeCreationPreparation] at valid afterValid independent ⊢
-  have position : runtimePositionValid program hosting state = true := by
-    simp only [runtimeStateWellFormed, Bool.and_eq_true, and_assoc] at valid
-    exact valid.1
-  have afterPosition : runtimePositionValid program hosting (selected.apply state) = true := by
-    simp only [runtimeStateWellFormed, Bool.and_eq_true, and_assoc] at afterValid
-    exact afterValid.1
+      (liftRegionalStateFootprint selected.owner (internalScopeCreationStateFootprint selected hosting ownerRecord)) = true) :
+    selectInternalRegional? program (selected.apply state) operation = some regional.selection := by
   obtain ⟨_, _, _, closed, derived, footprint, published⟩ :=
     prepareInternalRegional_facts program state operation regional regionalFound
   have found := (ownershipClosedSelection_facts program state operation regional.selection closed).1
@@ -419,5 +411,30 @@ theorem selectInternalRegional_after_independent_scopeCreation
         all_goals have scopeQuery := scopes owner (by omega)
         all_goals simp_all only [↓reduceIte, Bool.false_eq_true, and_self]
     | _ => trivial
+
+/-- Complete preparation discharges every position premise of the shared regional query law. -/
+theorem selectInternalRegional_after_independent_scopeCreation
+    (program : Program) (state : RuntimeState)
+    (operation creationOperation : SemanticOperation)
+    (regional : PreparedInternalRegional) (creation : PreparedInternalScopeCreation)
+    (programValid : programWellFormed program = true)
+    (valid : runtimeStateWellFormed program creation.runtimeInstanceId state = true)
+    (regionalFound : prepareInternalRegional? program state operation = some regional)
+    (creationFound : prepareInternalScopeCreation? program state creationOperation = some creation)
+    (independent : regionalStateFootprintsIndependent regional.footprint
+      (liftRegionalStateFootprint creation.selection.owner creation.footprint) = true) :
+    selectInternalRegional? program (creation.selection.apply state) operation = some regional.selection := by
+  have afterValid := prepareInternalScopeCreation_preserves_runtimeStateWellFormed
+    program creation.runtimeInstanceId state creationOperation creation programValid valid creationFound
+  obtain ⟨selected, hosting, ownerRecord, _, _, _, _, selection, running, _, _, _, _, _, _, _, _, rfl⟩ :=
+    prepareInternalScopeCreation_facts program state creationOperation creation creationFound
+  have position : runtimePositionValid program hosting state = true := by
+    simp only [runtimeStateWellFormed, Bool.and_eq_true, and_assoc] at valid
+    exact valid.1
+  have afterPosition : runtimePositionValid program hosting (selected.apply state) = true := by
+    simp only [runtimeStateWellFormed, Bool.and_eq_true, and_assoc] at afterValid
+    exact afterValid.1
+  exact scopeCreation_regional_selection program state operation creationOperation regional selected hosting ownerRecord
+    programValid position afterPosition regionalFound selection running independent
 
 end BpmnSemantics.SemanticProcess.InternalCommutation

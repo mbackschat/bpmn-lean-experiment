@@ -374,23 +374,27 @@ private theorem selection_created_facts (program : Program) (state : RuntimeStat
             (fun candidate => decide (candidate.calledRoot = rootId)) = [] from absent] using permutation
   | _ => simp at found
 
-/-- Complete predecessor preparation preserves the unchanged runtime position predicate, including
-the called Process payload and the exclusive hosting/called root association. -/
-theorem prepareInternalScopeCreation_preserves_runtimePositionValid
+/-- Child insertion is shared by ordinary and bounded entry. Its facts describe the selected
+patch and predecessor checks, without requiring an extra operation in the Program. -/
+theorem selectedScopeCreation_preserves_runtimePositionValid
     (program : Program) (state : RuntimeState) (operation : SemanticOperation)
-    (prepared : PreparedInternalScopeCreation) (instanceId : SemanticId)
-    (programWF : programWellFormed program = true)
+    (selected : InternalScopeCreationSelection) (instanceId hosting : SemanticId)
+    (ownerRecord : RuntimeScopeOccurrence) (origin : BpmnElementOrigin)
+    (scope : DefinitionScope) (delta : PublicControlPositionDelta)
     (valid : runtimePositionValid program instanceId state = true)
-    (found : prepareInternalScopeCreation? program state operation = some prepared) :
-    runtimePositionValid program instanceId (prepared.selection.apply state) = true := by
-  have callValid := prepareInternalScopeCreation_preserves_callAssociations program state operation
-    prepared programWF
-  obtain ⟨selected, hosting, ownerRecord, origin, scope, start, delta, selection, running,
-    _, _, ownerExact, _, definition, checks, _, position, rfl⟩ :=
-      prepareInternalScopeCreation_facts program state operation prepared found
-  dsimp only [makeInternalScopeCreationPreparation] at callValid ⊢
+    (selection : selectInternalScopeCreation? state operation = some selected)
+    (running : state.control = .running hosting)
+    (ownerExact : state.scopeOccurrences.filter (fun candidate => decide (candidate.id = selected.owner)) =
+      [ownerRecord])
+    (definition : definitionScope? program selected.created.id.definitionScopeId = some scope)
+    (checks : internalScopeCreationPredecessorChecks program state operation selected origin scope = true)
+    (position : internalScopeCreationPositionDelta? program selected = some delta)
+    (callSeparated : ∀ record, selected.kind = .called record →
+      selected.created.id.definitionScopeId ≠ selected.owner.definitionScopeId) :
+    runtimePositionValid program instanceId (selected.apply state) = true := by
   have facts := (position_iff program instanceId hosting state running).mp valid
-  have calls := callValid facts.2.2.2.2.1 found
+  have calls := selectInternalScopeCreation_preserves_callAssociations state operation selected
+    selection facts.2.2.2.2.1 callSeparated
   obtain ⟨_, matching, _, _, nonempty, _⟩ :=
     internalScopeCreationPredecessorChecks_facts program state operation selected origin scope checks
   obtain ⟨_, produced, declared, _, outputFound, declaredFound, _, origins, _⟩ :=
@@ -427,5 +431,23 @@ theorem prepareInternalScopeCreation_preserves_runtimePositionValid
     removedValid newLive bindings.1 bindings.2
   cases kind : selected.kind <;>
     simpa only [removed, inserted, InternalScopeCreationSelection.apply, kind] using result
+
+/-- Complete predecessor preparation preserves the unchanged runtime position predicate, including
+the called Process payload and the exclusive hosting/called root association. -/
+theorem prepareInternalScopeCreation_preserves_runtimePositionValid
+    (program : Program) (state : RuntimeState) (operation : SemanticOperation)
+    (prepared : PreparedInternalScopeCreation) (instanceId : SemanticId)
+    (programWF : programWellFormed program = true)
+    (valid : runtimePositionValid program instanceId state = true)
+    (found : prepareInternalScopeCreation? program state operation = some prepared) :
+    runtimePositionValid program instanceId (prepared.selection.apply state) = true := by
+  have callSeparated := prepareInternalScopeCreation_called_definition_ne_owner
+    program state operation prepared
+  obtain ⟨selected, hosting, ownerRecord, origin, scope, start, delta, selection, running,
+    _, _, ownerExact, _, definition, checks, _, position, rfl⟩ :=
+    prepareInternalScopeCreation_facts program state operation prepared found
+  exact selectedScopeCreation_preserves_runtimePositionValid program state operation selected
+    instanceId hosting ownerRecord origin scope delta valid selection running ownerExact definition checks
+    position (fun record kind => callSeparated record programWF found kind)
 
 end BpmnSemantics.SemanticProcess.InternalCommutation

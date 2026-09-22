@@ -161,7 +161,7 @@ inductive OperationStep (program : Program) :
   | enterBoundedScope (id origin input childEntry childScopeId boundaryTimer)
       (before after : RuntimeState)
       (transition :
-        BoundedScopeArmingStep before input childEntry childScopeId boundaryTimer
+        BoundedScopeArmingStep before origin input childEntry childScopeId boundaryTimer
           after) :
       OperationStep program
         (.enterBoundedScope id origin input childEntry childScopeId boundaryTimer)
@@ -330,8 +330,8 @@ private def fireWithoutCompensationSnapshots? (program : Program)
   | .initiateTimer _ _ _ outputs => initiateTimerState? state outputs
   | .enterScope _ _ input childEntry childScopeId =>
       enterScopeState? state input childEntry childScopeId
-  | .enterBoundedScope _ _ input childEntry childScopeId boundaryTimer =>
-      armBoundedScopeState? state input childEntry childScopeId boundaryTimer
+  | .enterBoundedScope _ origin input childEntry childScopeId boundaryTimer =>
+      armBoundedScopeState? state origin input childEntry childScopeId boundaryTimer
   | .invokeProcess _ origin input calledProcessId calledRootScopeId calledEntry
       returnOperationId =>
       invokeProcessState? state origin input calledProcessId calledRootScopeId
@@ -411,7 +411,7 @@ private theorem fireWithoutCompensationSnapshots_sound (program : Program)
         (initiateTimerState_sound before after _ result)
     | exact .enterScope _ _ _ _ _ before after result
     | exact OperationStep.enterBoundedScope _ _ _ _ _ _ before after
-        (armBoundedScopeState_sound before after _ _ _ _
+        (armBoundedScopeState_sound before after _ _ _ _ _
           (by simpa [fireWithoutCompensationSnapshots?] using result))
     | exact .invokeProcess _ _ _ _ _ _ _ before after
         (invokeProcessState_sound _ _ _ _ _ _ _ _ result)
@@ -497,8 +497,8 @@ def attemptInternalOperation (program : Program) (operation : SemanticOperation)
           match operation with
           | .enterScope _ _ input childEntry childScopeId =>
               attemptEnterScope program operation state input childEntry childScopeId
-          | .enterBoundedScope _ _ input childEntry childScopeId boundaryTimer =>
-              attemptEnterBoundedScope program operation state input childEntry childScopeId
+          | .enterBoundedScope _ origin input childEntry childScopeId boundaryTimer =>
+              attemptEnterBoundedScope program operation state origin input childEntry childScopeId
                 boundaryTimer
           | .completeScope _ _ scopeId parentOutput =>
               attemptCompleteScope program operation state scopeId parentOutput

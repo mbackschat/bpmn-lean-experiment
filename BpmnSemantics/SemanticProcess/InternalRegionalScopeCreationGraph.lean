@@ -175,23 +175,19 @@ private theorem insertion_graph_exact (program : Program) (before after : Runtim
         · contradiction
 
 /-- Recompute the region with the enlarged graph's own fuel; independence excludes every new outgoing edge of the original region. -/
-theorem prepareInternalRegional_region_after_independent_scopeCreation
+theorem scopeCreation_region_frame
     (program : Program) (state : RuntimeState)
     (operation creationOperation : SemanticOperation)
-    (regional : PreparedInternalRegional) (creation : PreparedInternalScopeCreation)
-    (programValid : programWellFormed program = true)
-    (valid : runtimeStateWellFormed program creation.runtimeInstanceId state = true)
+    (regional : PreparedInternalRegional) (selected : InternalScopeCreationSelection)
+    (hosting : SemanticId) (ownerRecord : RuntimeScopeOccurrence)
+    (afterPosition : runtimePositionValid program hosting (selected.apply state) = true)
     (regionalFound : prepareInternalRegional? program state operation = some regional)
-    (creationFound : prepareInternalScopeCreation? program state creationOperation = some creation)
+    (selection : selectInternalScopeCreation? state creationOperation = some selected)
+    (running : state.control = .running hosting)
+    (ownerExact : state.scopeOccurrences.filter (fun scope => decide (scope.id = selected.owner)) = [ownerRecord])
     (independent : regionalStateFootprintsIndependent regional.footprint
-      (liftRegionalStateFootprint creation.selection.owner creation.footprint) = true) :
-    deriveInternalOccurrenceRegion? (creation.selection.apply state) regional.selection.root.id = some regional.region := by
-  have afterValid := prepareInternalScopeCreation_preserves_runtimeStateWellFormed
-    program creation.runtimeInstanceId state creationOperation creation programValid valid creationFound
-  obtain ⟨selected, hosting, ownerRecord, origin, definition, start, delta,
-    selection, running, _, _, ownerExact, _, _, _, _, _, rfl⟩ :=
-    prepareInternalScopeCreation_facts program state creationOperation creation creationFound
-  dsimp only [makeInternalScopeCreationPreparation] at afterValid independent ⊢
+      (liftRegionalStateFootprint selected.owner (internalScopeCreationStateFootprint selected hosting ownerRecord)) = true) :
+    deriveInternalOccurrenceRegion? (selected.apply state) regional.selection.root.id = some regional.region := by
   have facts := prepareInternalRegional_facts program state operation regional regionalFound
   have derived := facts.2.2.2.2.1
   have footprint := facts.2.2.2.2.2.1
@@ -216,9 +212,6 @@ theorem prepareInternalRegional_region_after_independent_scopeCreation
         all_goals cases selection <;> rfl
   have scopes : (selected.apply state).scopeOccurrences = insertScopeOccurrence selected.created state.scopeOccurrences := by
     cases kind : selected.kind <;> simp only [InternalScopeCreationSelection.apply, kind]
-  have afterPosition : runtimePositionValid program hosting (selected.apply state) = true := by
-    simp only [runtimeStateWellFormed, Bool.and_eq_true, and_assoc] at afterValid
-    exact afterValid.1
   have graph := insertion_graph_exact program state (selected.apply state) hosting selected.created
     (deriveInternalOccurrenceRegion_success state _ _ derived).1 afterPosition
     ((scopeCreation_apply_control state selected).trans running) scopes (by
@@ -237,5 +230,26 @@ theorem prepareInternalRegional_region_after_independent_scopeCreation
   exact derived_region_edge_frame state (selected.apply state) regional.selection.root.id regional.region
     derived graph (scopeCreation_apply_scope_filter state selected _ (by simpa using rootDifferent))
     (scopeCreation_region_edges state selected regional.region outside.2.2.1 outside.2.2.2)
+
+theorem prepareInternalRegional_region_after_independent_scopeCreation
+    (program : Program) (state : RuntimeState)
+    (operation creationOperation : SemanticOperation)
+    (regional : PreparedInternalRegional) (creation : PreparedInternalScopeCreation)
+    (programValid : programWellFormed program = true)
+    (valid : runtimeStateWellFormed program creation.runtimeInstanceId state = true)
+    (regionalFound : prepareInternalRegional? program state operation = some regional)
+    (creationFound : prepareInternalScopeCreation? program state creationOperation = some creation)
+    (independent : regionalStateFootprintsIndependent regional.footprint
+      (liftRegionalStateFootprint creation.selection.owner creation.footprint) = true) :
+    deriveInternalOccurrenceRegion? (creation.selection.apply state) regional.selection.root.id = some regional.region := by
+  have afterValid := prepareInternalScopeCreation_preserves_runtimeStateWellFormed
+    program creation.runtimeInstanceId state creationOperation creation programValid valid creationFound
+  obtain ⟨selected, hosting, ownerRecord, _, _, _, _, selection, running, _, _, ownerExact, _, _, _, _, _, rfl⟩ :=
+    prepareInternalScopeCreation_facts program state creationOperation creation creationFound
+  have afterPosition : runtimePositionValid program hosting (selected.apply state) = true := by
+    simp only [runtimeStateWellFormed, Bool.and_eq_true, and_assoc] at afterValid
+    exact afterValid.1
+  exact scopeCreation_region_frame program state operation creationOperation regional selected hosting ownerRecord
+    afterPosition regionalFound selection running ownerExact independent
 
 end BpmnSemantics.SemanticProcess.InternalCommutation

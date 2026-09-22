@@ -407,6 +407,7 @@ test("each mixed family rejects stale complete preparations despite unchanged op
         break;
       case PreparedInternalTransitionFamily.LocalControl:
       case PreparedInternalTransitionFamily.ScopeCreation:
+      case PreparedInternalTransitionFamily.BoundedScope:
       case PreparedInternalTransitionFamily.Regional:
       case PreparedInternalTransitionFamily.OrdinaryEnd:
       case PreparedInternalTransitionFamily.MergeInput:

@@ -190,14 +190,14 @@ theorem attemptInternalOperation_enterBoundedScope_applied_shape
         .applied step) :
     step.operation = .enterBoundedScope id origin input childEntry childScopeId boundaryTimer ∧
       ∃ entered child prepared,
-        armBoundedScopeState? state input childEntry childScopeId boundaryTimer = some entered ∧
+        armBoundedScopeState? state origin input childEntry childScopeId boundaryTimer = some entered ∧
         childOccurrenceAfterEntry? state input childScopeId entered = some child ∧
         reserveCompensationParentContext program state child = .applied prepared ∧
-        armBoundedScopeState? prepared input childEntry childScopeId boundaryTimer =
+        armBoundedScopeState? prepared origin input childEntry childScopeId boundaryTimer =
           some step.successor := by
   simp only [attemptInternalOperation, declared] at applied
   unfold attemptEnterBoundedScope at applied
-  cases enteredResult : armBoundedScopeState? state input childEntry childScopeId boundaryTimer with
+  cases enteredResult : armBoundedScopeState? state origin input childEntry childScopeId boundaryTimer with
   | none => simp [enteredResult] at applied
   | some entered =>
       cases childResult : childOccurrenceAfterEntry? state input childScopeId entered with
@@ -210,7 +210,7 @@ theorem attemptInternalOperation_enterBoundedScope_applied_shape
           obtain ⟨operation, prepared, reserved, successor⟩ :=
             applyPreparedReservation_applied_selected_shape program
               (.enterBoundedScope id origin input childEntry childScopeId boundaryTimer) state child
-              (fun prepared => armBoundedScopeState? prepared input childEntry childScopeId boundaryTimer)
+              (fun prepared => armBoundedScopeState? prepared origin input childEntry childScopeId boundaryTimer)
               step declaration target declared childSelected (by simpa [enteredResult, childResult] using applied)
           exact ⟨operation, entered, child, prepared, rfl, childResult, reserved, successor⟩
 
@@ -228,7 +228,7 @@ theorem attemptInternalOperation_enterBoundedScope_applied_stateValid
     compensationEventSubProcessSnapshotStateValid program step.successor = true := by
   simp only [attemptInternalOperation, declared] at applied
   unfold attemptEnterBoundedScope at applied
-  cases enteredResult : armBoundedScopeState? state input childEntry childScopeId boundaryTimer with
+  cases enteredResult : armBoundedScopeState? state origin input childEntry childScopeId boundaryTimer with
   | none => simp [enteredResult] at applied
   | some entered =>
       cases childResult : childOccurrenceAfterEntry? state input childScopeId entered with
@@ -236,7 +236,7 @@ theorem attemptInternalOperation_enterBoundedScope_applied_stateValid
       | some child =>
           exact applyPreparedReservation_applied_stateValid program
             (.enterBoundedScope id origin input childEntry childScopeId boundaryTimer) state child
-            (fun prepared => armBoundedScopeState? prepared input childEntry childScopeId boundaryTimer)
+            (fun prepared => armBoundedScopeState? prepared origin input childEntry childScopeId boundaryTimer)
             step (by simpa [enteredResult, childResult] using applied)
 
 /-- Every applied selected completion promotes the deciding pre-state before it removes the occurrence or applies the root disposition. -/

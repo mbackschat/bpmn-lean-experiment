@@ -51,23 +51,29 @@ private theorem filtered_empty_of_subset (before after : List α) (predicate : �
   rw [List.length_eq_zero_iff.mp empty] at present
   contradiction
 
-/-- Full predecessor independence preserves the selected owner, both token buckets, issuance
-counters, and removal-monotone freshness checks, hence the literal prepared artifact. -/
-theorem prepareInternalScopeCreation_after_independent_regional
+/-- The selector and its read populations survive independent retirement. Both ordinary and
+bounded child preparation consume these facts without inventing a Program declaration. -/
+theorem scopeCreation_after_regional_reads
     (program : Program) (before after : RuntimeState)
     (regionalOperation creationOperation : SemanticOperation)
-    (regional : PreparedInternalRegional) (creation : PreparedInternalScopeCreation)
-    (beforeWF : runtimeStateWellFormed program creation.runtimeInstanceId before = true)
+    (regional : PreparedInternalRegional) (selected : InternalScopeCreationSelection)
+    (hosting : SemanticId) (ownerRecord : RuntimeScopeOccurrence)
+    (beforeWF : runtimeStateWellFormed program hosting before = true)
     (regionalFound : prepareInternalRegional? program before regionalOperation = some regional)
-    (creationFound : prepareInternalScopeCreation? program before creationOperation = some creation)
+    (selection : selectInternalScopeCreation? before creationOperation = some selected)
+    (running : before.control = .running hosting)
     (independent : regionalStateFootprintsIndependent regional.footprint
-      (liftRegionalStateFootprint creation.selection.owner creation.footprint) = true)
+      (liftRegionalStateFootprint selected.owner (internalScopeCreationStateFootprint selected hosting ownerRecord)) = true)
     (applied : applyPreparedInternalRegional? program before regional = some after) :
-    prepareInternalScopeCreation? program after creationOperation = some creation := by
-  obtain ⟨selected, hosting, ownerRecord, origin, definition, start, delta,
-    selection, running, _, _, _, _, _, _, _, _, rfl⟩ :=
-    prepareInternalScopeCreation_facts program before creationOperation creation creationFound
-  dsimp only [makeInternalScopeCreationPreparation] at beforeWF independent ⊢
+    selectInternalScopeCreation? after creationOperation = some selected ∧
+      after.control = before.control ∧ after.logicalTimeMs = before.logicalTimeMs ∧
+      after.scopeOccurrences.filter (fun scope => decide (scope.id = selected.owner)) =
+        before.scopeOccurrences.filter (fun scope => decide (scope.id = selected.owner)) ∧
+      after.tokens.filter (fun token => decide (token.placeId = selected.input && token.owner = selected.owner)) =
+        before.tokens.filter (fun token => decide (token.placeId = selected.input && token.owner = selected.owner)) ∧
+      after.tokens.filter (fun token => decide (token.placeId = selected.entry && token.owner = selected.created.id)) =
+        before.tokens.filter (fun token => decide (token.placeId = selected.entry && token.owner = selected.created.id)) ∧
+      internalScopeCreationCounterSafe after selected = internalScopeCreationCounterSafe before selected := by
   have footprint := (prepareInternalRegional_facts program before regionalOperation regional regionalFound).2.2.2.2.2.1
   have liftedRead (atom : InternalStateAtom)
       (read : atom ∈ (internalScopeCreationStateFootprint selected hosting ownerRecord).reads)
@@ -169,9 +175,28 @@ theorem prepareInternalScopeCreation_after_independent_regional
         filtered_empty_of_subset _ _ _ callSubset callerEmpty,
         filtered_empty_of_subset _ _ _ scopeSubset scopeEmpty,
         filtered_empty_of_subset _ _ _ callSubset collisionEmpty⟩
-  exact prepareInternalScopeCreation_read_frame program before after creationOperation _ creationFound selectionAfter
-    untouched.1 untouched.2.1 scopeFrame.2.2.2.1 inputFrame entryFrame
+  exact ⟨selectionAfter, untouched.1, untouched.2.1, scopeFrame.2.2.2.1, inputFrame, entryFrame,
     (scopeCreation_counter_read_frame before after selected
-      (by intro _; rw [counters.1]) (by intro _ _; rw [counters.2]))
+      (by intro _; rw [counters.1]) (by intro _ _; rw [counters.2]))⟩
+
+/-- Complete preparation retains the literal artifact, including its publication payload. -/
+theorem prepareInternalScopeCreation_after_independent_regional
+    (program : Program) (before after : RuntimeState)
+    (regionalOperation creationOperation : SemanticOperation)
+    (regional : PreparedInternalRegional) (creation : PreparedInternalScopeCreation)
+    (beforeWF : runtimeStateWellFormed program creation.runtimeInstanceId before = true)
+    (regionalFound : prepareInternalRegional? program before regionalOperation = some regional)
+    (creationFound : prepareInternalScopeCreation? program before creationOperation = some creation)
+    (independent : regionalStateFootprintsIndependent regional.footprint
+      (liftRegionalStateFootprint creation.selection.owner creation.footprint) = true)
+    (applied : applyPreparedInternalRegional? program before regional = some after) :
+    prepareInternalScopeCreation? program after creationOperation = some creation := by
+  obtain ⟨selected, hosting, ownerRecord, _, _, _, _, selection, running, _, _, _, _, _, _, _, _, rfl⟩ :=
+    prepareInternalScopeCreation_facts program before creationOperation creation creationFound
+  obtain ⟨selectionAfter, control, time, owner, input, entry, counters⟩ :=
+    scopeCreation_after_regional_reads program before after regionalOperation creationOperation regional selected
+      hosting ownerRecord beforeWF regionalFound selection running independent applied
+  exact prepareInternalScopeCreation_read_frame program before after creationOperation _ creationFound selectionAfter
+    control time owner input entry counters
 
 end BpmnSemantics.SemanticProcess.InternalCommutation

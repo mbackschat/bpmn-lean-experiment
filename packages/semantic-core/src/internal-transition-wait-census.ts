@@ -66,7 +66,7 @@ export function openWaitAnchorIsAbsent(
   return !open.some((candidate) => sameOccurrence(candidate, occurrence));
 }
 
-function operationDeclaresWait(
+export function operationDeclaresWait(
   operation: SemanticOperation,
   family: InternalOccurrenceKind,
   elementId: string,

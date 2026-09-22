@@ -69,16 +69,16 @@ def attemptEnterScope (program : Program) (operation : SemanticOperation)
 /-- Compose bounded child entry and arming with its exact snapshot reservation. -/
 def attemptEnterBoundedScope (program : Program)
     (operation : SemanticOperation) (state : RuntimeState)
-    (input childEntry : ControlPlaceId) (childScopeId : DefinitionScopeId)
+    (origin : BpmnElementOrigin) (input childEntry : ControlPlaceId) (childScopeId : DefinitionScopeId)
     (boundaryTimer : BoundaryTimerArm) : InternalOperationAttempt :=
-  match armBoundedScopeState? state input childEntry childScopeId boundaryTimer with
+  match armBoundedScopeState? state origin input childEntry childScopeId boundaryTimer with
   | none => .disabled operation
   | some entered =>
       match childOccurrenceAfterEntry? state input childScopeId entered with
       | none => .disabled operation
       | some child =>
           applyPreparedReservation program operation state child fun prepared =>
-            armBoundedScopeState? prepared input childEntry childScopeId boundaryTimer
+            armBoundedScopeState? prepared origin input childEntry childScopeId boundaryTimer
 
 /-- Resolve the sole live occurrence whose completion is being decided. -/
 def selectedCompletionOccurrence? (state : RuntimeState)

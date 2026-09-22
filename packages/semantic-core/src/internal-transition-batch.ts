@@ -13,6 +13,8 @@ import {
   deriveInternalScopeCreationPreparation,
 } from "./internal-transition-scope-creation-preparation.js";
 import type { PreparedInternalScopeCreation } from "./internal-transition-scope-creation-preparation.js";
+import { applyPreparedInternalBoundedScope, deriveInternalBoundedScopePreparation } from "./internal-transition-bounded-scope-preparation.js";
+import type { PreparedInternalBoundedScope } from "./internal-transition-bounded-scope-preparation.js";
 import {
   applyPreparedInternalRegionalTransition,
   deriveInternalRegionalPreparation,
@@ -37,6 +39,7 @@ export enum PreparedInternalTransitionFamily {
   Arming = "arming",
   LocalControl = "localControl",
   ScopeCreation = "scopeCreation",
+  BoundedScope = "boundedScope",
   Regional = "regional",
   OrdinaryEnd = "ordinaryEnd",
   MergeInput = "mergeInput",
@@ -46,6 +49,7 @@ export type PreparedInternalTransition = Readonly<
   | PreparedInternalArming & { family: PreparedInternalTransitionFamily.Arming }
   | PreparedInternalLocalControl & { family: PreparedInternalTransitionFamily.LocalControl }
   | PreparedInternalScopeCreation & { family: PreparedInternalTransitionFamily.ScopeCreation }
+  | PreparedInternalBoundedScope & { family: PreparedInternalTransitionFamily.BoundedScope; owner: ScopeOccurrenceId }
   | PreparedInternalEnd & { family: PreparedInternalTransitionFamily.OrdinaryEnd }
   | PreparedInternalExclusiveMergeInput & { family: PreparedInternalTransitionFamily.MergeInput }
   | PreparedInternalRegionalTransition & {
@@ -61,6 +65,12 @@ export function deriveInternalTransitionPreparation(
   candidate: InternalTransitionCandidate,
 ): PreparedInternalTransition | null {
   switch (candidate.operation.kind) {
+    case SemanticOperationKind.EnterBoundedScope: {
+      if (program.compensationEventSubProcessSnapshots !== undefined || candidate.owner === null) return null;
+      const prepared = deriveInternalBoundedScopePreparation(program, state, candidate.operation);
+      return prepared === null || !sameScopeOccurrence(prepared.parent, candidate.owner)
+        ? null : { family: PreparedInternalTransitionFamily.BoundedScope, owner: prepared.parent, ...prepared };
+    }
     case SemanticOperationKind.ReachNoneEnd: {
       if (candidate.owner === null) return null;
       const prepared = deriveInternalEndPreparation(program, state, candidate.operation);
@@ -141,6 +151,11 @@ export function applyPreparedInternalTransition(
   prepared: PreparedInternalTransition,
 ): RuntimeState | null {
   switch (prepared.family) {
+    case PreparedInternalTransitionFamily.BoundedScope: {
+      const { family: _family, owner, ...bounded } = prepared;
+      if (!sameScopeOccurrence(owner, bounded.parent)) return null;
+      return applyPreparedInternalBoundedScope(program, state, bounded);
+    }
     case PreparedInternalTransitionFamily.MergeInput: {
       const { family: _family, ...merge } = prepared;
       return applyPreparedInternalExclusiveMerge(program, state, merge);

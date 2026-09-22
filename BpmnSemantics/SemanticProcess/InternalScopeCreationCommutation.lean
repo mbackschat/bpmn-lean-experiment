@@ -79,6 +79,36 @@ private theorem call_sort_pair_perm (records : List CalledProcessOccurrence)
     ((List.Perm.swap _ _ _).trans ((List.Perm.cons _ (sortCallRecords_perm _).symm).trans
       (sortCallRecords_perm _).symm)))
 
+/-- Child insertion commutes with either scope-creation kind from the shared footprint alone.
+Bounded entry uses this same insertion before adding its private deadline and Activity. -/
+theorem scope_creation_child_patches_commute (state : RuntimeState)
+    (left right : InternalScopeCreationSelection) (leftInstance rightInstance : SemanticId)
+    (leftOwner rightOwner : RuntimeScopeOccurrence)
+    (child : left.kind = .child)
+    (canonical : canonicalCollectionOrder state = true)
+    (separated : localControlStateFootprintsNonInterfering
+      (internalScopeCreationStateFootprint left leftInstance leftOwner)
+      (internalScopeCreationStateFootprint right rightInstance rightOwner) = true) :
+    right.apply (left.apply state) = left.apply (right.apply state) := by
+  have tokens := independent_tokens state left right leftInstance rightInstance leftOwner rightOwner
+    separated (canonicalCollectionOrder_tokens state canonical)
+  have scopes := insertScopeOccurrence_commutes right.created left.created
+    (independent_scopes _ _ _ _ _ _ separated) state.scopeOccurrences
+  cases kind : right.kind with
+  | child =>
+      have different := scopeCreation_independent_child_keys _ _ _ _ _ _ separated child kind
+      have scopeOrder : orderedBy scopeActivationBefore state.scopeActivations = true := by
+        simp only [canonicalCollectionOrder, Bool.and_eq_true] at canonical
+        exact canonical.1.1.2
+      have counters := setScopeActivationCount_commutes left.created.id.definitionScopeId
+        right.created.id.definitionScopeId left.created.id.activation right.created.id.activation
+        (Ne.symm different) state.scopeActivations scopeOrder
+      simp only [InternalScopeCreationSelection.apply, child, kind]
+      congr 1
+  | called record =>
+      simp only [InternalScopeCreationSelection.apply, child, kind]
+      congr 1
+
 theorem prepared_scope_creation_pair_commutes
     (program : Program) (instanceId : SemanticId) (state : RuntimeState)
     (leftOperation rightOperation : SemanticOperation) (left right : PreparedInternalScopeCreation)
@@ -100,25 +130,13 @@ theorem prepared_scope_creation_pair_commutes
     right.runtimeInstanceId leftOwner rightOwner separated (canonicalCollectionOrder_tokens state ordered)
   have scopes := insertScopeOccurrence_commutes right.selection.created left.selection.created
     (independent_scopes _ _ _ _ _ _ separated) state.scopeOccurrences
-  have scopeOrder : orderedBy scopeActivationBefore state.scopeActivations = true := by
-    simp only [canonicalCollectionOrder, Bool.and_eq_true] at ordered
-    exact ordered.1.1.2
   have callOrder : orderedBy callActivationBefore state.callActivations = true := by
     simp only [canonicalCollectionOrder, Bool.and_eq_true] at ordered
     exact ordered.1.2
   cases leftKind : left.selection.kind with
   | child =>
-      cases rightKind : right.selection.kind with
-      | child =>
-          have different := scopeCreation_independent_child_keys _ _ _ _ _ _ separated leftKind rightKind
-          have counters := setScopeActivationCount_commutes left.selection.created.id.definitionScopeId
-            right.selection.created.id.definitionScopeId left.selection.created.id.activation
-            right.selection.created.id.activation (Ne.symm different) state.scopeActivations scopeOrder
-          simp only [InternalScopeCreationSelection.apply, leftKind, rightKind]
-          congr 1
-      | called record =>
-          simp only [InternalScopeCreationSelection.apply, leftKind, rightKind]
-          congr 1
+      exact scope_creation_child_patches_commute state left.selection right.selection left.runtimeInstanceId
+        right.runtimeInstanceId leftOwner rightOwner leftKind ordered separated
   | called leftRecord =>
       cases rightKind : right.selection.kind with
       | child =>

@@ -113,24 +113,30 @@ private theorem creation_waitOwners (state : RuntimeState) (operation : Semantic
       · simpa only [caller, exactLiveOccurrence] using callerLive
       · exact List.all_eq_true.mp previous.1.2 candidate old
 
-theorem prepareInternalScopeCreation_preserves_runtimeStateWellFormed
+theorem selectedScopeCreation_preserves_runtimeStateWellFormed
     (program : Program) (instanceId : SemanticId) (state : RuntimeState)
-    (operation : SemanticOperation) (prepared : PreparedInternalScopeCreation)
-    (admitted : programWellFormed program = true)
+    (operation : SemanticOperation) (selected : InternalScopeCreationSelection)
+    (hosting : SemanticId) (ownerRecord : RuntimeScopeOccurrence)
+    (origin : BpmnElementOrigin) (definition : DefinitionScope) (delta : PublicControlPositionDelta)
     (valid : runtimeStateWellFormed program instanceId state = true)
-    (found : prepareInternalScopeCreation? program state operation = some prepared) :
-    runtimeStateWellFormed program instanceId (prepared.selection.apply state) = true := by
-  have position := prepareInternalScopeCreation_preserves_runtimePositionValid program state operation
-    prepared instanceId admitted (by
+    (selection : selectInternalScopeCreation? state operation = some selected)
+    (running : state.control = .running hosting)
+    (snapshots : program.compensationEventSubProcessSnapshots = none)
+    (ownerExact : state.scopeOccurrences.filter (fun candidate => decide (candidate.id = selected.owner)) =
+      [ownerRecord])
+    (definitionFound : definitionScope? program selected.created.id.definitionScopeId = some definition)
+    (checks : internalScopeCreationPredecessorChecks program state operation selected origin definition = true)
+    (deltaFound : internalScopeCreationPositionDelta? program selected = some delta)
+    (callSeparated : ∀ record, selected.kind = .called record →
+      selected.created.id.definitionScopeId ≠ selected.owner.definitionScopeId) :
+    runtimeStateWellFormed program instanceId (selected.apply state) = true := by
+  have position := selectedScopeCreation_preserves_runtimePositionValid program state operation
+    selected instanceId hosting ownerRecord origin definition delta (by
       have parts := valid
       simp only [runtimeStateWellFormed, Bool.and_eq_true, and_assoc] at parts
-      exact parts.1) found
-  have ordered := creation_order state prepared.selection
+      exact parts.1) selection running ownerExact definitionFound checks deltaFound callSeparated
+  have ordered := creation_order state selected
     (runtimeStateWellFormed_canonicalCollectionOrder program instanceId state valid)
-  obtain ⟨selected, hosting, ownerRecord, origin, definition, start, delta, selection, running,
-    snapshots, _, ownerExact, _, _, _, _, _, rfl⟩ :=
-      prepareInternalScopeCreation_facts program state operation prepared found
-  dsimp only [makeInternalScopeCreationPreparation] at position ordered ⊢
   have fresh := selectInternalScopeCreation_fresh state operation selected selection
   have live : exactLiveOccurrence state selected.owner = true := by
     simp [exactLiveOccurrence, ownerExact]
@@ -169,5 +175,21 @@ theorem prepareInternalScopeCreation_preserves_runtimeStateWellFormed
   all_goals first
     | (solve | simp only [running])
     | simpa only [compensationEventSubProcessSnapshotStateValid, snapshots] using compensation.1.2
+
+theorem prepareInternalScopeCreation_preserves_runtimeStateWellFormed
+    (program : Program) (instanceId : SemanticId) (state : RuntimeState)
+    (operation : SemanticOperation) (prepared : PreparedInternalScopeCreation)
+    (admitted : programWellFormed program = true)
+    (valid : runtimeStateWellFormed program instanceId state = true)
+    (found : prepareInternalScopeCreation? program state operation = some prepared) :
+    runtimeStateWellFormed program instanceId (prepared.selection.apply state) = true := by
+  have callSeparated := prepareInternalScopeCreation_called_definition_ne_owner
+    program state operation prepared
+  obtain ⟨selected, hosting, ownerRecord, origin, definition, start, delta, selection, running,
+    snapshots, _, ownerExact, _, definitionFound, checks, _, deltaFound, rfl⟩ :=
+    prepareInternalScopeCreation_facts program state operation prepared found
+  exact selectedScopeCreation_preserves_runtimeStateWellFormed program instanceId state operation selected
+    hosting ownerRecord origin definition delta valid selection running snapshots ownerExact
+    definitionFound checks deltaFound (fun record kind => callSeparated record admitted found kind)
 
 end BpmnSemantics.SemanticProcess.InternalCommutation

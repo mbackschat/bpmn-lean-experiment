@@ -86,21 +86,21 @@ private theorem same_local_names_identity (scope : ActivityVariableScope) (left 
   simp [sameActivityOccurrence] at fields ⊢
   exact ⟨⟨fields.1, congrArg NodeId.mk fields.2.1⟩, fields.2.2⟩
 
-theorem timerTask_regional_local_data_preserved (program : Program) (state : RuntimeState)
-    (contract : InternalTimerTaskContract) (patch : InternalTimerTaskPatch)
+theorem regionalLocalDataClosed_insertActivity (state after : RuntimeState) (inserted : ActivityOccurrence)
     (keepActivity : ActivityOccurrence → Bool) (keepLocal : ActivityVariableScope → Bool)
-    (prepared : prepareInternalTimerTaskContract? program state contract = some patch)
+    (activities : after.activityOccurrences = insertActivityOccurrence inserted state.activityOccurrences)
+    (locals : after.variables.activities = state.variables.activities)
+    (absent : state.activityOccurrences.any (regionalActivityAssociationsConflict · inserted) = false)
     (prior : regionalRetainedLocalDataClosed state keepActivity keepLocal = true) :
-    regionalRetainedLocalDataClosed (applyInternalTimerTaskPatch state patch) keepActivity keepLocal = true := by
-  obtain ⟨_, owner, instanceId, origin, processId, _, _, _, _, _, _, _, _, _, _, absent, rfl⟩ :=
-    prepareInternalTimerTaskContract_facts program state contract patch prepared
-  let patch := makeInternalTimerTaskPatch program state contract owner instanceId processId origin
+    regionalRetainedLocalDataClosed after keepActivity keepLocal = true := by
+  unfold regionalRetainedLocalDataClosed
+  rw [locals, activities]
   apply List.all_eq_true.mpr
   intro scope member
   have previous := List.all_eq_true.mp prior scope member
   change (if !keepLocal scope then true else match scope.owner with
     | .effectOccurrence _ => true
-    | .activityOccurrence _ => match (insertActivityOccurrence patch.record state.activityOccurrences).filter
+    | .activityOccurrence _ => match (insertActivityOccurrence inserted state.activityOccurrences).filter
         (regionalLocalScopeNamesActivity scope) with
       | [record] => keepActivity record | _ => false) = true
   by_cases kept : keepLocal scope = true
@@ -117,11 +117,10 @@ theorem timerTask_regional_local_data_preserved (program : Program) (state : Run
         have oldMember : record ∈ state.activityOccurrences.filter (regionalLocalScopeNamesActivity scope) := by
           rw [census]; simp
         obtain ⟨oldMember, named⟩ := List.mem_filter.mp oldMember
-        have rejected : regionalLocalScopeNamesActivity scope patch.record = false := by
+        have rejected : regionalLocalScopeNamesActivity scope inserted = false := by
           apply Bool.eq_false_iff.mpr
           intro newNamed
-          have same := same_local_names_identity scope record patch.record named newNamed
-          dsimp only [patch] at same
+          have same := same_local_names_identity scope record inserted named newNamed
           have disjoint := List.any_eq_false.mp absent record oldMember
           apply disjoint
           simp [regionalActivityAssociationsConflict, same]
@@ -129,6 +128,16 @@ theorem timerTask_regional_local_data_preserved (program : Program) (state : Run
           filter_canonicalInsertBy_rejected _ _ _ _ rejected]
         exact previous
   · simp [kept]
+
+theorem timerTask_regional_local_data_preserved (program : Program) (state : RuntimeState)
+    (contract : InternalTimerTaskContract) (patch : InternalTimerTaskPatch)
+    (keepActivity : ActivityOccurrence → Bool) (keepLocal : ActivityVariableScope → Bool)
+    (prepared : prepareInternalTimerTaskContract? program state contract = some patch)
+    (prior : regionalRetainedLocalDataClosed state keepActivity keepLocal = true) :
+    regionalRetainedLocalDataClosed (applyInternalTimerTaskPatch state patch) keepActivity keepLocal = true := by
+  obtain ⟨_, owner, instanceId, origin, processId, _, _, _, _, _, _, _, _, _, _, absent, rfl⟩ :=
+    prepareInternalTimerTaskContract_facts program state contract patch prepared
+  exact regionalLocalDataClosed_insertActivity state _ _ keepActivity keepLocal rfl rfl absent prior
 
 theorem regionalOwnershipSelection_after_independent_timer_task
     (program : Program) (state : RuntimeState) (operation : SemanticOperation)

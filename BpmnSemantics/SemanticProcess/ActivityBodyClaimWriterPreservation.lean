@@ -196,17 +196,17 @@ theorem activateDataOutputUserTask_preserves_activityBodyClaimsUnique
 /-- The Sub-Process deadline writer preserves uniqueness once the preceding scope-entry proof has
 established that its newly issued child is absent from every existing scope claim. -/
 theorem armScopeDeadline_preserves_activityBodyClaimsUnique (state : RuntimeState)
-    (owner : ScopeOccurrenceId) (childScopeId : DefinitionScopeId)
+    (owner : ScopeOccurrenceId) (origin : BpmnElementOrigin)
     (child : ScopeOccurrenceId) (boundaryTimer : BoundaryTimerArm)
     (freshChild : ∀ record ∈ state.activityOccurrences,
       child ∉ activityBodyScopeClaims record.body)
     (claimsUnique : activityBodyClaimsUnique state.activityOccurrences = true) :
     activityBodyClaimsUnique
-      (armScopeDeadline state owner childScopeId child boundaryTimer).activityOccurrences = true := by
+      (armScopeDeadline state owner origin child boundaryTimer).activityOccurrences = true := by
   let issuedRecord : ActivityOccurrence :=
     { processInstanceId := owner.processInstanceId
-      activityElementId := { value := childScopeId.value }
-      activation := activityActivationCount state { value := childScopeId.value } + 1
+      activityElementId := origin.elementId
+      activation := activityActivationCount state { value := origin.elementId.value } + 1
       owner
       body := .childScope child
       attachedHandlers :=
@@ -290,9 +290,9 @@ private theorem activityBodyScopeClaim_is_live (state : RuntimeState)
 entry-and-deadline path. Scope entry excludes the selected child's definition from the pre-state,
 while body liveness makes every prior child-scope claim resolve to a pre-state occurrence. -/
 theorem armBoundedScopeState_preserves_activityBodyClaimsUnique (before after : RuntimeState)
-    (input childEntry : ControlPlaceId) (childScopeId : DefinitionScopeId)
+    (origin : BpmnElementOrigin) (input childEntry : ControlPlaceId) (childScopeId : DefinitionScopeId)
     (boundaryTimer : BoundaryTimerArm)
-    (success : armBoundedScopeState? before input childEntry childScopeId boundaryTimer = some after)
+    (success : armBoundedScopeState? before origin input childEntry childScopeId boundaryTimer = some after)
     (recordsOwn : activityRecordsOwnLiveWork before = true)
     (claimsUnique : activityBodyClaimsUnique before.activityOccurrences = true) :
     activityBodyClaimsUnique after.activityOccurrences = true := by

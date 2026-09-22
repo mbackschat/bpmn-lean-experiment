@@ -11,7 +11,7 @@ namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
 open BpmnSemantics FlowNodeOccurrenceProgramValidity.Internal
 
-private theorem filter_singleton_of_subpredicate (values : List α) (broad narrow : α → Bool)
+theorem filter_singleton_of_subpredicate (values : List α) (broad narrow : α → Bool)
     (value : α) (singleton : values.filter broad = [value])
     (included : ∀ candidate ∈ values, narrow candidate = true → broad candidate = true)
     (accepted : narrow value = true) : values.filter narrow = [value] := by
@@ -25,13 +25,13 @@ private theorem filter_singleton_of_subpredicate (values : List α) (broad narro
   rw [same, singleton]
   simp [accepted]
 
-private theorem definition_singleton (program : Program) (id : DefinitionScopeId)
+theorem definition_singleton (program : Program) (id : DefinitionScopeId)
     (definition : DefinitionScope) (found : definitionScope? program id = some definition) :
     program.definitionScopes.filter (fun scope => decide (scope.id = id)) = [definition] := by
   unfold definitionScope? at found
   split at found <;> simp_all
 
-private theorem child_entry_census (program : Program) (definition : DefinitionScope)
+theorem child_entry_census (program : Program) (definition : DefinitionScope)
     (parent : DefinitionScopeId) (admitted : programWellFormed program = true)
     (snapshots : program.compensationEventSubProcessSnapshots = none)
     (member : definition ∈ program.definitionScopes)
@@ -126,7 +126,7 @@ theorem prepareInternalScopeCreation_child_excludes_bounded_entry
       all_goals contradiction
   | _ => contradiction
 
-private def EntryBinding (program : Program) (occurrence : RuntimeScopeOccurrence)
+def EntryBinding (program : Program) (occurrence : RuntimeScopeOccurrence)
     (definition : DefinitionScope) : Bool :=
   match occurrence.parent with
   | none => true
@@ -217,7 +217,7 @@ private theorem start_operation_owned (program : Program) (selected : InternalSc
       all_goals simp_all
       all_goals split at scopeFound <;> contradiction
 
-private def ScopeBinding (program : Program) (state : RuntimeState)
+def ScopeBinding (program : Program) (state : RuntimeState)
     (occurrence : RuntimeScopeOccurrence) : Bool :=
   match program.definitionScopes.filter fun scope => decide (scope.id = occurrence.id.definitionScopeId) with
   | [definition] =>
@@ -237,7 +237,7 @@ private def ScopeBinding (program : Program) (state : RuntimeState)
         | _, _, _ => false
   | _ => false
 
-private def CallBinding (program : Program) (state : RuntimeState)
+def CallBinding (program : Program) (state : RuntimeState)
     (record : CalledProcessOccurrence) : Bool :=
   occurrenceOwnerValid state record.id.processInstanceId record.caller
       ⟨record.id.elementId.value⟩ record.id.activation &&
@@ -502,18 +502,14 @@ theorem prepareInternalScopeCreation_excludes_bounded_entry
           prepareInternalScopeCreation_facts program state operation prepared found
       exact Or.inl (selected_call_root state operation selected record selection kind).2
 
-theorem prepareInternalScopeCreation_preserves_structuralProgramValidity
-    (program : Program) (state : RuntimeState)
-    (operation : SemanticOperation) (prepared : PreparedInternalScopeCreation)
-    (admitted : programWellFormed program = true)
+theorem scopeCreation_structural_of_created_bindings
+    (program : Program) (state : RuntimeState) (operation : SemanticOperation)
+    (selected : InternalScopeCreationSelection)
     (structural : flowNodeOccurrenceStructuralProgramValidity program state = true)
-    (found : prepareInternalScopeCreation? program state operation = some prepared) :
-    flowNodeOccurrenceStructuralProgramValidity program (prepared.selection.apply state) = true := by
-  have created := created_bindings program state operation prepared admitted found
-  obtain ⟨selected, hosting, ownerRecord, origin, definition, start, delta,
-    selection, _, _, _, _, _, _, _, _, _, rfl⟩ :=
-      prepareInternalScopeCreation_facts program state operation prepared found
-  dsimp only [makeInternalScopeCreationPreparation] at created ⊢
+    (selection : selectInternalScopeCreation? state operation = some selected)
+    (created : ScopeBinding program (selected.apply state) selected.created = true ∧
+      ∀ record, selected.kind = .called record → CallBinding program (selected.apply state) record = true) :
+    flowNodeOccurrenceStructuralProgramValidity program (selected.apply state) = true := by
   have fresh := selectInternalScopeCreation_fresh state operation selected selection
   have owners : ∀ owner, flowNodeOccurrenceOwnerLiveUnique state owner = true →
       flowNodeOccurrenceOwnerLiveUnique (selected.apply state) owner = true :=
@@ -557,5 +553,18 @@ theorem prepareInternalScopeCreation_preserves_structuralProgramValidity
         rcases List.mem_cons.mp previous with rfl | previous
         · exact created.2 _ kind
         · exact call_binding_frame program state (selected.apply state) record (old.2 record previous) owners
+
+theorem prepareInternalScopeCreation_preserves_structuralProgramValidity
+    (program : Program) (state : RuntimeState)
+    (operation : SemanticOperation) (prepared : PreparedInternalScopeCreation)
+    (admitted : programWellFormed program = true)
+    (structural : flowNodeOccurrenceStructuralProgramValidity program state = true)
+    (found : prepareInternalScopeCreation? program state operation = some prepared) :
+    flowNodeOccurrenceStructuralProgramValidity program (prepared.selection.apply state) = true := by
+  have created := created_bindings program state operation prepared admitted found
+  obtain ⟨selected, hosting, ownerRecord, origin, definition, start, delta,
+    selection, _, _, _, _, _, _, _, _, _, rfl⟩ :=
+      prepareInternalScopeCreation_facts program state operation prepared found
+  exact scopeCreation_structural_of_created_bindings program state operation selected structural selection created
 
 end BpmnSemantics.SemanticProcess.InternalCommutation

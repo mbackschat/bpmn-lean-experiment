@@ -82,7 +82,7 @@ theorem scope_negative_uses_a_live_non_root_child :
 
 def scopeAliasRecord : ActivityOccurrence :=
   { processInstanceId := scopeInstanceId
-    activityElementId := ⟨SubProcessBoundaryTimerConformance.childScopeId.value⟩
+    activityElementId := ⟨"Scope"⟩
     activation := 2
     owner := scopeParent
     body := .childScope liveChildScope
@@ -93,7 +93,7 @@ def duplicateScopeBodyClaimState : RuntimeState :=
   { scopeArmedState with
     activityOccurrences := scopeArmedState.activityOccurrences ++ [scopeAliasRecord]
     activityActivations := scopeArmedState.activityActivations.map fun activation =>
-      if activation.taskId.value = SubProcessBoundaryTimerConformance.childScopeId.value then
+      if activation.taskId.value = scopeAliasRecord.activityElementId.value then
         { activation with count := 2 }
       else activation }
 

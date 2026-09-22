@@ -153,38 +153,10 @@ theorem prepared_timer_task_preserves_timer_attachments
     (attachments : attachedTimersUnambiguous state = true) :
     attachedTimersUnambiguous (applyInternalTimerTaskPatch state patch) = true := by
   have timerFresh := prepared_timer_task_timer_keys_fresh program state contract patch prepared
-  have unclaimed := activityRecords_do_not_claim_fresh_timer state patch.timer
-    (fun old member => (timerFresh old member).1) records
+  have joined := attachedTimers_insertFreshTimerAndRecord state patch.timer patch.record
   obtain ⟨_, owner, instanceId, inputOrigin, processId, _, _, _, _, _, _, _, _, _, _, _, rfl⟩ :=
     prepareInternalTimerTaskContract_facts program state contract patch prepared
-  let selected := makeInternalTimerTaskPatch program state contract owner instanceId processId inputOrigin
-  have nodeEquality (left right : NodeId) : left = right ↔ left.value = right.value := by
-    cases left; cases right; simp
-  change (insertTimerWait selected.timer state.timerWaits).all (fun timer =>
-    decide (((insertActivityOccurrence selected.record state.activityOccurrences).filter
-      (fun record => anyTimerIdNamesWait record.timerHandlerOccurrences timer)).length ≤ 1)) = true
-  simp only [insertTimerWait, all_canonicalInsertBy, Bool.and_eq_true, List.all_eq_true,
-    decide_eq_true_eq]
-  constructor
-  · rw [insertActivityOccurrence_eq_canonicalInsertBy, length_filter_canonicalInsertBy]
-    have empty : state.activityOccurrences.filter
-        (fun record => anyTimerIdNamesWait record.timerHandlerOccurrences selected.timer) = [] :=
-      List.filter_eq_nil_iff.mpr fun record member => by
-        change ¬ anyTimerIdNamesWait record.timerHandlerOccurrences
-          (makeInternalTimerTaskPatch program state contract owner instanceId processId inputOrigin).timer = true
-        rw [unclaimed record member]
-        simp
-    rw [empty]
-    simp [selected, makeInternalTimerTaskPatch, anyTimerIdNamesWait,
-      ActivityOccurrence.timerHandlerOccurrences, timerIdNamesWait]
-  · intro timer member
-    have prior := List.all_eq_true.mp attachments timer member
-    rw [insertActivityOccurrence_eq_canonicalInsertBy, length_filter_canonicalInsertBy]
-    have rejected : anyTimerIdNamesWait selected.record.timerHandlerOccurrences timer = false := by
-      simpa [selected, makeInternalTimerTaskPatch, anyTimerIdNamesWait,
-        ActivityOccurrence.timerHandlerOccurrences, timerIdNamesWait, timerWaitKeyMatches,
-        nodeEquality] using (timerFresh timer member).1
-    simpa [rejected] using prior
+  exact joined rfl (fun old member => (timerFresh old member).1) records attachments
 
 private theorem boundaryTimerOperationMatches_insert_disjoint_task_record
     (program : Program) (state : RuntimeState) (wait : UserTaskWait)
@@ -307,19 +279,6 @@ theorem prepared_timer_task_preserves_existing_timer_binding
   intro operation _
   exact prepared_timer_task_preserves_existing_timer_match program state contract patch prepared
     timer member operation
-
-private theorem recordAttaches_timer_eq_names (record : ActivityOccurrence) (timer : TimerWait) :
-    recordAttaches record (timerWaitOccurrence timer) =
-      anyTimerIdNamesWait record.timerHandlerOccurrences timer := by
-  simp only [recordAttaches, List.contains_eq_any_beq, anyTimerIdNamesWait]
-  congr 1
-  funext id
-  apply Bool.eq_iff_iff.mpr
-  simp only [beq_iff_eq, timerIdNamesWait, Bool.and_eq_true]
-  cases id with
-  | mk process element activation =>
-    cases element
-    simp [timerWaitOccurrence, eq_comm, and_assoc, and_left_comm]
 
 theorem prepared_timer_task_new_timer_binding
     (program : Program) (state : RuntimeState) (contract : InternalTimerTaskContract)

@@ -40,6 +40,24 @@ theorem preparedScopeCreation_regional_retention (program : Program) (state : Ru
       cases creationKind : creation.selection.kind <;>
         simp only [InternalScopeCreationSelection.apply, creationKind, and_self]
 
+theorem regional_completion_nonroot_of_control_read (state : RuntimeState) (hosting : SemanticId)
+    (selected : InternalRegionalSelection) (region : InternalOccurrenceRegion)
+    (footprint : InternalRegionalStateFootprint)
+    (running : state.control = .running hosting)
+    (footprintFound : regionalStateFootprint? state selected region = some footprint)
+    (noWrite : .ordinary (.runtimeControl hosting) ∉ footprint.writes)
+    (withdrawal : InternalCompletionWithdrawal) (kind : selected.kind = .completing withdrawal) :
+    selected.root.parent ≠ none := by
+  intro parentless
+  obtain ⟨base, baseFound, writes⟩ := regional_footprint_base state hosting selected region footprint running footprintFound
+  cases operationEq : selected.operation <;>
+    simp only [regionalBaseFootprint?, operationEq, kind, parentless] at baseFound
+  all_goals repeat' first
+    | contradiction
+    | (solve | simp at baseFound)
+    | (solve | cases baseFound; exact noWrite (writes _ (by simp)))
+    | split at baseFound
+
 theorem preparedScopeCreation_regional_nonroot (program : Program) (state : RuntimeState)
     (operation creationOperation : SemanticOperation)
     (regional : PreparedInternalRegional) (creation : PreparedInternalScopeCreation)
@@ -61,16 +79,8 @@ theorem preparedScopeCreation_regional_nonroot (program : Program) (state : Runt
       List.mem_map.mpr ⟨_, by simp [internalScopeCreationStateFootprint, canonicalStateAtomSet, mem_sortBy], rfl⟩
     have conflict := regional_independent_read_write _ _ independent _ _ written read
     simp [liftRegionalStateAtom, regionalStateAtomsConflict] at conflict
-  intro parentless
-  obtain ⟨base, baseFound, writes⟩ := regional_footprint_base state hosting regional.selection regional.region
-    regional.footprint running footprint
-  cases operationEq : regional.selection.operation <;>
-    simp only [regionalBaseFootprint?, operationEq, kind, parentless] at baseFound
-  all_goals repeat' first
-    | contradiction
-    | (solve | simp at baseFound)
-    | (solve | cases baseFound; exact noWrite (writes _ (by simp)))
-    | split at baseFound
+  exact regional_completion_nonroot_of_control_read state hosting regional.selection regional.region
+    regional.footprint running footprint noWrite withdrawal kind
 
 private theorem insertion_ownership (state : RuntimeState) (creation : InternalScopeCreationSelection)
     (keep : RegionalReferenceRetention) (kept : keep.scope creation.created = true) :

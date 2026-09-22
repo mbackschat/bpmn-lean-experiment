@@ -38,8 +38,8 @@ private def boundedAfter : RuntimeState :=
     { id := ⟨"z"⟩, name := none, output := ⟨"output"⟩ } boundary
 
 private def scopeAfter : RuntimeState :=
-  armScopeDeadline state owner ⟨"z"⟩
-    { owner with definitionScopeId := ⟨"z"⟩, activation := 4 } boundary
+  armScopeDeadline state owner ⟨⟨"z"⟩⟩
+    { owner with definitionScopeId := ⟨"scope:z"⟩, activation := 4 } boundary
 
 private def inputAfter : Option RuntimeState :=
   activateDataInputUserTask? state ⟨"input"⟩ ⟨"output"⟩ ⟨"z"⟩ none

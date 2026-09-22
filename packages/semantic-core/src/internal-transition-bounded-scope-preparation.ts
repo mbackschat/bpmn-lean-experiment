@@ -4,6 +4,10 @@ import {
 } from "./flow-node-occurrence-candidates.js";
 import { internalOperationAlternative } from "./internal-transition-alternative.js";
 import type { InternalOperationAlternative } from "./internal-transition-alternative.js";
+import { InternalPublicationTemplateAnchorKind } from "./internal-publication-template.js";
+import type { InternalPublicationTemplate } from "./internal-publication-template.js";
+import { deriveInternalScopeCreationPositionDelta, InternalScopeCreationPatchKind } from "./internal-transition-scope-creation-patch.js";
+import { SemanticTransitionKind } from "./semantic-transition-trace.js";
 import {
   activityAssociationsConflict,
 } from "./internal-transition-activity-association.js";
@@ -22,9 +26,11 @@ import {
 import {
   InternalOccurrenceKind,
   openWaitAnchorIsAbsent,
+  operationDeclaresWait,
   operationIsUniqueWaitDeclarer,
 } from "./internal-transition-wait-census.js";
 import {
+  applySelectedBoundedScopeArming,
   selectBoundedScopeArming,
 } from "./semantic-process-bounded-scope-runtime.js";
 import type {
@@ -46,8 +52,10 @@ import type {
 
 export type PreparedInternalBoundedScope = SelectedBoundedScopeArming & Readonly<{
   alternative: InternalOperationAlternative;
+  operation: EnterBoundedScopeOperation;
   parent: ScopeOccurrenceId;
   footprint: InternalTransitionStateFootprint;
+  publicationTemplate: InternalPublicationTemplate;
 }>;
 
 /** Derives one complete bounded Sub-Process arming without applying it. */
@@ -65,6 +73,7 @@ export function deriveInternalBoundedScopePreparation(
     sameScopeOccurrence(id, parent)
   );
   const parentRecord = parentRecords[0];
+  const processId = candidateProcessId(program, state, parent);
   if (
     selected === null ||
     parentRecord === undefined ||
@@ -74,7 +83,10 @@ export function deriveInternalBoundedScopePreparation(
     !safeActivation(selected.deadline.id.activation) ||
     state.control.kind !== ControlStateKind.Running ||
     !operationIsSelectedFromProgram(program, operation, parent) ||
-    candidateProcessId(program, state, parent) === null ||
+    program.operations.some((candidate) =>
+      operationDeclaresWait(candidate, InternalOccurrenceKind.UserTask, operation.origin.elementId)
+    ) ||
+    processId === null ||
     !affectedTokenBucketsAreExact(state, parent, [operation.input], []) ||
     !tokenBucketIsAbsent(state, selected.child.id, operation.childEntry) ||
     !operationIsUniqueWaitDeclarer(
@@ -166,14 +178,48 @@ export function deriveInternalBoundedScopePreparation(
     ...activationAtoms,
     ...snapshotAtoms,
   ]);
-  return reads === null || writes === null
+  const positionDelta = deriveInternalScopeCreationPositionDelta(program, {
+    kind: InternalScopeCreationPatchKind.ChildScope,
+    owner: parent, input: operation.input, entry: operation.childEntry,
+    scope: selected.child,
+    counter: { elementId: operation.childScopeId, count: selected.child.id.activation },
+  });
+  const alternative = internalOperationAlternative(operation.id);
+  return reads === null || writes === null || positionDelta === null
     ? null
     : {
-        alternative: internalOperationAlternative(operation.id),
+        alternative,
+        operation,
         parent,
         ...selected,
         footprint: { reads, writes },
+        publicationTemplate: {
+          alternative,
+          record: {
+            logicalTimeMs: state.logicalTimeMs,
+            transition: { kind: SemanticTransitionKind.InternalOperation,
+              operationId: operation.id, operationKind: operation.kind, origin: operation.origin, owner: parent },
+            positionDelta,
+          },
+          lifecycle: {
+            started: [{ anchor: { kind: InternalPublicationTemplateAnchorKind.Scope, id: selected.child.id },
+              processId, elementId: operation.origin.elementId, owner: parent }],
+            ended: [],
+          },
+        },
       };
+}
+
+export function applyPreparedInternalBoundedScope(
+  program: SemanticProcessProgram,
+  state: RuntimeState,
+  prepared: PreparedInternalBoundedScope,
+): RuntimeState | null {
+  if (program.compensationEventSubProcessSnapshots !== undefined) return null;
+  const current = deriveInternalBoundedScopePreparation(program, state, prepared.operation);
+  // INTERNAL-COMMUTATION retains the whole preparation, including three counters and publication.
+  if (current === null || JSON.stringify(current) !== JSON.stringify(prepared)) return null;
+  return applySelectedBoundedScopeArming(prepared.operation, state, prepared.parent, prepared);
 }
 
 function safeActivation(activation: number): boolean {
