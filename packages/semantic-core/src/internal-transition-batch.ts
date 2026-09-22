@@ -20,6 +20,8 @@ import {
 import type { InternalRegionalOperation, PreparedInternalRegionalTransition } from "./internal-transition-regional-preparation.js";
 import { applyPreparedInternalEnd, deriveInternalEndPreparation } from "./internal-transition-end-preparation.js";
 import type { PreparedInternalEnd } from "./internal-transition-end-preparation.js";
+import { applyPreparedInternalExclusiveMerge } from "./internal-transition-merge-preparation.js";
+import type { PreparedInternalExclusiveMergeInput } from "./internal-transition-merge-preparation.js";
 import {
   internalTransitionFootprintsAreIndependent,
   internalTransitionStateFootprintsAreIndependent,
@@ -37,6 +39,7 @@ export enum PreparedInternalTransitionFamily {
   ScopeCreation = "scopeCreation",
   Regional = "regional",
   OrdinaryEnd = "ordinaryEnd",
+  MergeInput = "mergeInput",
 }
 
 export type PreparedInternalTransition = Readonly<
@@ -44,6 +47,7 @@ export type PreparedInternalTransition = Readonly<
   | PreparedInternalLocalControl & { family: PreparedInternalTransitionFamily.LocalControl }
   | PreparedInternalScopeCreation & { family: PreparedInternalTransitionFamily.ScopeCreation }
   | PreparedInternalEnd & { family: PreparedInternalTransitionFamily.OrdinaryEnd }
+  | PreparedInternalExclusiveMergeInput & { family: PreparedInternalTransitionFamily.MergeInput }
   | PreparedInternalRegionalTransition & {
       family: PreparedInternalTransitionFamily.Regional;
       operation: InternalRegionalOperation;
@@ -115,15 +119,20 @@ export function prepareInternalTransitionBatch(
     for (let right = left + 1; right < prepared.length; right += 1) {
       const first = prepared[left]!;
       const second = prepared[right]!;
-      const independent = first.family === PreparedInternalTransitionFamily.Arming &&
-          second.family === PreparedInternalTransitionFamily.Arming
-        ? internalTransitionFootprintsAreIndependent(first.footprint, second.footprint)
-        : internalTransitionStateFootprintsAreIndependent(first.footprint, second.footprint);
       // Instantaneous local-control anchors acquire distinct indices from the unique alternatives above.
-      if (!independent) return null;
+      if (!preparedInternalTransitionsAreIndependent(first, second)) return null;
     }
   }
   return prepared;
+}
+
+export function preparedInternalTransitionsAreIndependent(
+  left: PreparedInternalTransition,
+  right: PreparedInternalTransition,
+): boolean {
+  return left.family === PreparedInternalTransitionFamily.Arming && right.family === PreparedInternalTransitionFamily.Arming
+    ? internalTransitionFootprintsAreIndependent(left.footprint, right.footprint)
+    : internalTransitionStateFootprintsAreIndependent(left.footprint, right.footprint);
 }
 
 export function applyPreparedInternalTransition(
@@ -132,6 +141,10 @@ export function applyPreparedInternalTransition(
   prepared: PreparedInternalTransition,
 ): RuntimeState | null {
   switch (prepared.family) {
+    case PreparedInternalTransitionFamily.MergeInput: {
+      const { family: _family, ...merge } = prepared;
+      return applyPreparedInternalExclusiveMerge(program, state, merge);
+    }
     case PreparedInternalTransitionFamily.OrdinaryEnd: {
       const { family: _family, ...end } = prepared;
       return applyPreparedInternalEnd(program, state, end);

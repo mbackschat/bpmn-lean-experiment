@@ -4,6 +4,7 @@ import BpmnSemantics.SemanticProcess.InternalLocalControlPreparation
 import BpmnSemantics.SemanticProcess.TransitionRecord
 import BpmnSemantics.SemanticProcess.ControlPositionProjection
 import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
+import BpmnSemantics.SemanticProcess.InternalMergePreparation
 
 /-! Family publication values stay below the unified prepared dispatcher, so its pair laws can reuse acceptance without an import cycle. -/
 
@@ -73,6 +74,12 @@ def internalLocalControlPublicationTemplate (prepared : PreparedInternalLocalCon
     positionDelta := prepared.publicationTemplate.positionDelta
     lifecycle := .instantaneous prepared.publicationTemplate.identity }
 
+def internalMergePublicationTemplate (prepared : PreparedInternalMerge) : InternalTransitionPublicationTemplate :=
+  { record := prepared.selection.record
+    logicalTimeMs := prepared.publicationTemplate.logicalTimeMs
+    positionDelta := prepared.publicationTemplate.positionDelta
+    lifecycle := .instantaneous prepared.publicationTemplate.identity }
+
 def internalScopeCreationPublicationTemplate (prepared : PreparedInternalScopeCreation) :
     InternalTransitionPublicationTemplate :=
   { record :=
@@ -99,9 +106,41 @@ def actualInternalTransitionPublication? (program : Program) (instanceId : Seman
   let positionDelta ← controlPositionDelta? program instanceId before after
   some { transitionIndex, record, logicalTimeMs := before.logicalTimeMs, positionDelta, lifecycle }
 
+/-- Exact alternatives validate the chosen Merge bucket; actual public deltas remain independent projections. -/
+def actualInternalAlternativePublication? (program : Program) (instanceId : SemanticId)
+    (before after : RuntimeState) (operation : SemanticOperation) (alternative : InternalAlternative)
+    (commandId : SemanticId) (transitionIndex : Nat) : Option InstantiatedInternalTransitionPublication := do
+  match alternative with
+  | .operation id =>
+      if id = operation.id then
+        actualInternalTransitionPublication? program instanceId before after operation commandId transitionIndex
+      else none
+  | .mergeInput .. =>
+      let selected ← selectInternalMerge? before operation alternative
+      if replayInternalTransition? program before selected.record ≠ some after then none
+      else
+        let identity ← candidateOperationFlowNodeIdentity? program operation selected.owner selected.owner
+          operation.origin.elementId
+        let lifecycle ← acceptFlowNodeOccurrenceCandidate? program before after
+          (instantaneousFlowNodeOccurrenceDelta commandId transitionIndex [identity])
+        let positionDelta ← controlPositionDelta? program instanceId before after
+        some
+          { transitionIndex, record := selected.record, logicalTimeMs := before.logicalTimeMs
+            positionDelta, lifecycle }
+
+def internalRecordAlternative (record : InternalTransitionRecord) : InternalAlternative :=
+  match record.mergeInput with
+  | none => .operation record.operationId
+  | some input => .mergeInput record.operationId record.owner input
+
+@[simp] theorem internalRecordAlternative_operationId (record : InternalTransitionRecord) :
+    (internalRecordAlternative record).operationId = record.operationId := by
+  cases selected : record.mergeInput <;> simp [internalRecordAlternative, selected, InternalAlternative.operationId]
+
 def canonicalTransitionPublicationTemplates (templates : List InternalTransitionPublicationTemplate) :
     List InternalTransitionPublicationTemplate :=
-  sortBy (fun left right => left.record.operationId.value < right.record.operationId.value) templates
+  sortBy (fun left right => internalAlternativeBefore (internalRecordAlternative left.record)
+    (internalRecordAlternative right.record)) templates
 
 def numberTransitionPublicationTemplates (commandId : SemanticId) :
     Nat → List InternalTransitionPublicationTemplate → List InstantiatedInternalTransitionPublication
@@ -120,6 +159,7 @@ def internalTransitionPublicationIndex (first : Nat)
 
 def canonicalInstantiatedTransitionPublications (publications : List InstantiatedInternalTransitionPublication) :
     List InstantiatedInternalTransitionPublication :=
-  sortBy (fun left right => left.record.operationId.value < right.record.operationId.value) publications
+  sortBy (fun left right => internalAlternativeBefore (internalRecordAlternative left.record)
+    (internalRecordAlternative right.record)) publications
 
 end BpmnSemantics.SemanticProcess.InternalCommutation

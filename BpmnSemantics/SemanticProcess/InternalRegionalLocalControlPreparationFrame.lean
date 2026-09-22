@@ -46,21 +46,18 @@ private theorem regional_footprint_localControl_frame (state : RuntimeState)
   have running : runningInstance? (control.apply state) = runningInstance? state := rfl
   simp only [regionalStateFootprint?, base, activities, running]
 
-private theorem regional_publication_localControl_frame (program : Program) (state : RuntimeState)
-    (operation : SemanticOperation) (control : PreparedInternalLocalControl)
+private theorem regional_publication_localPatch_frame (program : Program) (state : RuntimeState)
+    (patch : InternalLocalControlSelection) (hosting : SemanticId)
     (selected : InternalRegionalSelection) (region : InternalOccurrenceRegion)
     (template : InternalRegionalPublicationTemplate)
-    (beforeWF : runtimeStateWellFormed program control.runtimeInstanceId state = true)
-    (localFound : prepareInternalLocalControl? program state operation = some control)
+    (running : state.control = .running hosting)
+    (afterValid : runtimePositionValid program hosting (patch.apply state) = true)
+    (openFrame : projectOpenFlowNodeOccurrences? program (patch.apply state) =
+      projectOpenFlowNodeOccurrences? program state)
     (found : regionalPublicationTemplate? program state selected region = some template)
-    (tokens : (control.selection.apply state).tokens.filter (fun token => region.contains token.owner) =
+    (tokens : (patch.apply state).tokens.filter (fun token => region.contains token.owner) =
       state.tokens.filter (fun token => region.contains token.owner)) :
-    regionalPublicationTemplate? program (control.selection.apply state) selected region = some template := by
-  obtain ⟨patch, origin, hosting, identity, localDelta, selection, _, running, live,
-    _, _, _, _, identityFound, deltaFound, rfl⟩ :=
-    prepareInternalLocalControl_facts program state operation control localFound
-  have openFrame := prepareInternalLocalControl_open_occurrences_frame program state operation
-    (makeInternalLocalControlPreparation state patch hosting identity localDelta) hosting beforeWF running localFound
+    regionalPublicationTemplate? program (patch.apply state) selected region = some template := by
   obtain ⟨selectedHosting, positions, current, delta, identities, ends,
     selectedRunning, projected, opened, positioned, lifecycle, rfl⟩ :=
     regionalPublicationTemplate_facts program state selected region template found
@@ -69,12 +66,7 @@ private theorem regional_publication_localControl_frame (program : Program) (sta
   subst selectedHosting
   unfold projectControlPosition? at projected
   split at projected
-  · rename_i valid
-    cases projected
-    have outputs := internalLocalControlPositionDelta?_output_bindings program patch.tokens localDelta deltaFound
-    have afterValid := patch.tokens.preserves_position program hosting state valid live
-      (fun place member => (outputs place member).1) (fun place member => (outputs place member).2)
-    change runtimePositionValid program hosting (patch.apply state) = true at afterValid
+  · cases projected
     have tokenProjection :
         (projectTokens program (patch.apply state).tokens).filter (fun token => region.contains token.owner) =
           (projectTokens program state.tokens).filter (fun token => region.contains token.owner) := by
@@ -101,18 +93,17 @@ private theorem regional_publication_localControl_frame (program : Program) (sta
     rfl
   · contradiction
 
-theorem prepareInternalRegional_after_independent_localControl (program : Program) (state : RuntimeState)
-    (regionalOperation localOperation : SemanticOperation)
-    (regional : PreparedInternalRegional) (control : PreparedInternalLocalControl)
-    (beforeWF : runtimeStateWellFormed program control.runtimeInstanceId state = true)
+theorem prepareInternalRegional_after_independent_localPatch (program : Program) (state : RuntimeState)
+    (regionalOperation : SemanticOperation) (regional : PreparedInternalRegional)
+    (patch : InternalLocalControlSelection) (hosting : SemanticId)
+    (running : state.control = .running hosting)
+    (afterValid : runtimePositionValid program hosting (patch.apply state) = true)
+    (openFrame : projectOpenFlowNodeOccurrences? program (patch.apply state) =
+      projectOpenFlowNodeOccurrences? program state)
     (regionalFound : prepareInternalRegional? program state regionalOperation = some regional)
-    (localFound : prepareInternalLocalControl? program state localOperation = some control)
     (independent : regionalStateFootprintsIndependent regional.footprint
-      (liftRegionalStateFootprint control.selection.owner control.footprint) = true) :
-    prepareInternalRegional? program (control.selection.apply state) regionalOperation = some regional := by
-  obtain ⟨patch, origin, hosting, identity, localDelta, localSelection, _, running, _,
-    _, _, _, _, _, _, rfl⟩ :=
-    prepareInternalLocalControl_facts program state localOperation control localFound
+      (liftRegionalStateFootprint patch.owner (internalLocalControlStateFootprint state patch hosting)) = true) :
+    prepareInternalRegional? program (patch.apply state) regionalOperation = some regional := by
   obtain ⟨snapshots, declared, time, closed, derived, footprint, publication⟩ :=
     prepareInternalRegional_facts program state regionalOperation regional regionalFound
   have selected := (ownershipClosedSelection_facts program state regionalOperation regional.selection closed).1
@@ -155,13 +146,36 @@ theorem prepareInternalRegional_after_independent_localControl (program : Progra
   have tokens := localControl_region_token_frame state patch regional.region tokenOutside
   have branches := localControl_region_branch_frame state patch regional.region branchOutside
   have dependencies := regional_footprint_localControl_frame state regional.selection regional.region patch tokens branches
-  have published := regional_publication_localControl_frame program state localOperation
-    (makeInternalLocalControlPreparation state patch hosting identity localDelta)
-    regional.selection regional.region regional.publicationTemplate beforeWF localFound publication tokens
+  have published := regional_publication_localPatch_frame program state patch hosting
+    regional.selection regional.region regional.publicationTemplate running afterValid openFrame publication tokens
   have result := prepareInternalRegional_of_components program (patch.apply state) regionalOperation
     regional.selection regional.region regional.footprint regional.publicationTemplate snapshots declared time
     closureFrame (regionFrame.trans derived) (dependencies.trans footprint) published
   cases regional
   exact result
+
+theorem prepareInternalRegional_after_independent_localControl (program : Program) (state : RuntimeState)
+    (regionalOperation localOperation : SemanticOperation)
+    (regional : PreparedInternalRegional) (control : PreparedInternalLocalControl)
+    (beforeWF : runtimeStateWellFormed program control.runtimeInstanceId state = true)
+    (regionalFound : prepareInternalRegional? program state regionalOperation = some regional)
+    (localFound : prepareInternalLocalControl? program state localOperation = some control)
+    (independent : regionalStateFootprintsIndependent regional.footprint
+      (liftRegionalStateFootprint control.selection.owner control.footprint) = true) :
+    prepareInternalRegional? program (control.selection.apply state) regionalOperation = some regional := by
+  obtain ⟨patch, origin, hosting, identity, delta, _, _, running, live,
+    _, _, _, _, _, deltaFound, rfl⟩ :=
+    prepareInternalLocalControl_facts program state localOperation control localFound
+  have outputs := internalLocalControlPositionDelta?_output_bindings program patch.tokens delta deltaFound
+  have beforePosition : runtimePositionValid program hosting state = true := by
+    simp only [runtimeStateWellFormed, Bool.and_eq_true, and_assoc] at beforeWF
+    exact beforeWF.1
+  have afterValid := patch.tokens.preserves_position program hosting state
+    beforePosition live
+    (fun place member => (outputs place member).1) (fun place member => (outputs place member).2)
+  have openFrame := prepareInternalLocalControl_open_occurrences_frame program state localOperation
+    (makeInternalLocalControlPreparation state patch hosting identity delta) hosting beforeWF running localFound
+  exact prepareInternalRegional_after_independent_localPatch program state regionalOperation regional patch hosting
+    running afterValid openFrame regionalFound independent
 
 end BpmnSemantics.SemanticProcess.InternalCommutation

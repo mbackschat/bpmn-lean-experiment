@@ -26,6 +26,7 @@ def preparedTransitionPublicationTemplate? (program : Program) (state : RuntimeS
   | .scopeCreation prepared => some (internalScopeCreationPublicationTemplate prepared)
   | .regional prepared => some (internalRegionalPublicationTemplate prepared)
   | .ordinaryEnd prepared => some (internalEndPublicationTemplate prepared)
+  | .mergeInput prepared => some (internalMergePublicationTemplate prepared)
 
 def runPreparedTransitionBatchPublication? (program : Program) (instanceId commandId : SemanticId)
     (indexForOperation : OperationId → Nat) (state : RuntimeState) :
@@ -34,8 +35,8 @@ def runPreparedTransitionBatchPublication? (program : Program) (instanceId comma
   | [] => some (state, [])
   | head :: tail => do
       let next ← applyPreparedInternalTransition? program state head
-      let publication ← actualInternalTransitionPublication? program instanceId state next
-        head.operation commandId (indexForOperation head.operation.id)
+      let publication ← actualInternalAlternativePublication? program instanceId state next
+        head.operation head.alternative commandId (indexForOperation head.operation.id)
       let (final, publications) ← runPreparedTransitionBatchPublication? program instanceId commandId
         indexForOperation next tail
       some (final, publication :: publications)

@@ -29,6 +29,7 @@ Message key correlation uses a separate engine-population catalog because one an
 - [Testing specification](../../docs/TESTING-SPEC.md) owns the complete pipeline, target isolation, and evidence rules.
 - [Pipeline case identifier registry](test/pipeline-case-id-registry.ts) owns the exact ordered identifier contract checked before target execution.
 - [Runtime-state preservation lane](test/runtime-state-preservation.test.ts) derives its programs and schedules from that registered catalog; it is finite executable evidence, not the open general Lean preservation theorem.
+- [Private scheduling parity](test/internal-choice-schedule-lean-core.integration-test.ts), run with `./scripts/pnpm.sh run test:internal-choice-schedule-lean-core`, sends identical structurally admitted Programs, stimuli, and exact choice schedules to Lean and TypeScript, comparing rollback precedence and replayed publication without registering a scheduled profile.
 - [Composed Activity-data cases](test/activity-data-input-output-pipeline-cases.ts) bind present, null, absent-input, and omitted-output schedules to exact Lean/core/Temporal comparison and independent routing, input, and refusal mutations.
 - [`implementation-status-owner:ASSURANCE-ADOPTION`](../../docs/ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md) records the exact current target matrix and evidence boundary.
 - [Shared wire contracts](../../contracts/README.md) owns the canonical result shape.

@@ -95,20 +95,17 @@ theorem scope_creation_selected_join_readiness_writer_conflicts (state : Runtime
 
 /-- Complete scope preparation survives the local patch because its parent input census and
 fresh-owner entry bucket are independent reads, while issuance and Call populations are unchanged. -/
-theorem prepareInternalScopeCreation_after_local_control (program : Program) (state : RuntimeState)
-    (scopeOperation localOperation : SemanticOperation)
-    (scopePrepared : PreparedInternalScopeCreation) (localPrepared : PreparedInternalLocalControl)
+theorem prepareInternalScopeCreation_after_local_patch (program : Program) (state : RuntimeState)
+    (scopeOperation : SemanticOperation) (scopePrepared : PreparedInternalScopeCreation)
+    (localSelection : InternalLocalControlSelection) (localInstance : SemanticId)
     (scopeFound : prepareInternalScopeCreation? program state scopeOperation = some scopePrepared)
-    (localFound : prepareInternalLocalControl? program state localOperation = some localPrepared)
     (separated : localControlStateFootprintsNonInterfering
-      scopePrepared.footprint localPrepared.footprint = true) :
-    prepareInternalScopeCreation? program (localPrepared.selection.apply state) scopeOperation =
+      scopePrepared.footprint (internalLocalControlStateFootprint state localSelection localInstance) = true) :
+    prepareInternalScopeCreation? program (localSelection.apply state) scopeOperation =
       some scopePrepared := by
   obtain ⟨scope, scopeInstance, scopeOwner, origin, definition, start, delta,
     selection, running, _, _, _, _, _, _, _, _, rfl⟩ :=
     prepareInternalScopeCreation_facts program state scopeOperation scopePrepared scopeFound
-  obtain ⟨localSelection, _, localInstance, _, _, _, _, _, _, _, _, _, _, _, _, rfl⟩ :=
-    prepareInternalLocalControl_facts program state localOperation localPrepared localFound
   have untouched := local_scope_input_untouched state scope localSelection scopeInstance localInstance
     scopeOwner separated
   have inputFrame := local_scope_bucket_frame state scope localSelection scopeInstance localInstance
@@ -137,7 +134,21 @@ theorem prepareInternalScopeCreation_after_local_control (program : Program) (st
   exact scopeCreation_counter_read_frame state (localSelection.apply state) scope
     (by intro _; rfl) (by intro _ _; rfl)
 
-private theorem scope_local_bucket_frame (state : RuntimeState)
+theorem prepareInternalScopeCreation_after_local_control (program : Program) (state : RuntimeState)
+    (scopeOperation localOperation : SemanticOperation)
+    (scopePrepared : PreparedInternalScopeCreation) (localPrepared : PreparedInternalLocalControl)
+    (scopeFound : prepareInternalScopeCreation? program state scopeOperation = some scopePrepared)
+    (localFound : prepareInternalLocalControl? program state localOperation = some localPrepared)
+    (separated : localControlStateFootprintsNonInterfering
+      scopePrepared.footprint localPrepared.footprint = true) :
+    prepareInternalScopeCreation? program (localPrepared.selection.apply state) scopeOperation =
+      some scopePrepared := by
+  obtain ⟨localSelection, _, localInstance, _, _, _, _, _, _, _, _, _, _, _, _, rfl⟩ :=
+    prepareInternalLocalControl_facts program state localOperation localPrepared localFound
+  exact prepareInternalScopeCreation_after_local_patch program state scopeOperation scopePrepared
+    localSelection localInstance scopeFound separated
+
+theorem scope_local_bucket_frame (state : RuntimeState)
     (scope : InternalScopeCreationSelection) (localSelection : InternalLocalControlSelection)
     (scopeInstance localInstance : SemanticId) (scopeOwner : RuntimeScopeOccurrence)
     (separated : localControlStateFootprintsNonInterfering
@@ -166,6 +177,27 @@ private theorem scope_local_bucket_frame (state : RuntimeState)
     simp only [matched.1, matched.2] at writes
     exact mixed_read_write_separate _ _ reverse _ _ read writes rfl
 
+theorem scope_local_scope_frame (state : RuntimeState)
+    (scope : InternalScopeCreationSelection) (localSelection : InternalLocalControlSelection)
+    (scopeInstance localInstance : SemanticId) (scopeOwner : RuntimeScopeOccurrence)
+    (separated : localControlStateFootprintsNonInterfering
+      (internalScopeCreationStateFootprint scope scopeInstance scopeOwner)
+      (internalLocalControlStateFootprint state localSelection localInstance) = true) :
+    (scope.apply state).scopeOccurrences.filter (fun occurrence => decide (occurrence.id = localSelection.owner)) =
+      state.scopeOccurrences.filter (fun occurrence => decide (occurrence.id = localSelection.owner)) := by
+  apply scopeCreation_apply_scope_filter
+  apply Bool.eq_false_iff.mpr
+  intro matched
+  simp only [decide_eq_true_eq] at matched
+  have reads : .scopeOccurrence localSelection.owner ∈
+      (internalLocalControlStateFootprint state localSelection localInstance).reads := by
+    simp [internalLocalControlStateFootprint, canonicalStateAtomSet, mem_sortBy]
+  have writes := scopeCreation_creation_write scope scopeInstance scopeOwner
+    (.scopeOccurrence scope.created.id) (by simp [internalScopeCreationCreationAtoms])
+  rw [matched] at writes
+  exact mixed_read_write_separate _ _ (localControlStateFootprintsNonInterfering_symm _ _ separated)
+    _ _ reads writes rfl
+
 /-- The scope insertion frames all same-key selected-join records and every readiness bucket,
 including records that the predecessor selector did not choose. -/
 theorem prepareInternalLocalControl_after_scope_creation (program : Program) (state : RuntimeState)
@@ -185,17 +217,7 @@ theorem prepareInternalLocalControl_after_scope_creation (program : Program) (st
   have reverse := localControlStateFootprintsNonInterfering_symm _ _ separated
   apply prepareInternalLocalControl_read_frame program state (scope.apply state) localOperation _ localFound
     (scopeCreation_apply_control state scope) (scopeCreation_apply_time state scope)
-  · apply scopeCreation_apply_scope_filter
-    apply Bool.eq_false_iff.mpr
-    intro matched
-    simp only [decide_eq_true_eq] at matched
-    have reads : .scopeOccurrence localSelection.owner ∈
-        (internalLocalControlStateFootprint state localSelection localInstance).reads := by
-      simp [internalLocalControlStateFootprint, canonicalStateAtomSet, mem_sortBy]
-    have writes := scopeCreation_creation_write scope scopeInstance scopeOwner
-      (.scopeOccurrence scope.created.id) (by simp [internalScopeCreationCreationAtoms])
-    rw [matched] at writes
-    exact mixed_read_write_separate _ _ reverse _ _ reads writes rfl
+  · exact scope_local_scope_frame state scope localSelection scopeInstance localInstance scopeOwner separated
   · intro place member
     have different (written : ControlPlaceId) (writtenMember : written ∈ [scope.input, scope.entry]) :
         written ≠ place := by

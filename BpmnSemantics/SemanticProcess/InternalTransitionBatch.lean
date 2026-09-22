@@ -8,6 +8,10 @@ import BpmnSemantics.SemanticProcess.InternalEndArmingCommutation
 import BpmnSemantics.SemanticProcess.InternalEndLocalControlCommutation
 import BpmnSemantics.SemanticProcess.InternalEndScopeCreationCommutation
 import BpmnSemantics.SemanticProcess.InternalEndRegionalCommutation
+import BpmnSemantics.SemanticProcess.InternalMergeArmingCommutation
+import BpmnSemantics.SemanticProcess.InternalMergeScopeCreationCommutation
+import BpmnSemantics.SemanticProcess.InternalMergeEndCommutation
+import BpmnSemantics.SemanticProcess.InternalMergeRegionalCommutation
 
 /-! Complete mixed preparations lift to arbitrary finite prefixes and multiplicity-preserving
 permutations under the [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).
@@ -74,6 +78,17 @@ private theorem prepared_regional_transition_pair (program : Program) (state : R
       refine ⟨?_, frame, ?_⟩
       · simpa only [PreparedInternalTransition.Prepared, PreparedInternalTransition.apply, applied, Option.getD_some] using endFrame
       · simp only [PreparedInternalTransition.apply, applied, commute, Option.getD_some]
+  | mergeInput merge =>
+      have running : state.control = .running merge.runtimeInstanceId := by
+        obtain ⟨_, _, _, _, _, _, running, _, _, _, _, _, _, rfl⟩ :=
+          prepareInternalMerge_facts program state merge.selection.operation merge.selection.alternative merge otherFound
+        exact running
+      obtain ⟨frame, after, applied, mergeFrame, commute⟩ := prepared_regional_merge_pair_commutes
+        program state regional.selection.operation merge.selection.operation merge.selection.alternative regional merge
+          (validFor _ running) regionalFound otherFound independent
+      refine ⟨?_, frame, ?_⟩
+      · simpa only [PreparedInternalTransition.Prepared, PreparedInternalTransition.apply, applied, Option.getD_some] using mergeFrame
+      · simp only [PreparedInternalTransition.apply, applied, commute, Option.getD_some]
   | regional right =>
       have selected := (ownershipClosedSelection_facts program state regional.selection.operation regional.selection
         (prepareInternalRegional_facts program state _ regional regionalFound).2.2.2.1).1
@@ -116,9 +131,49 @@ private theorem prepared_end_transition_pair (program : Program) (state : Runtim
       have pair := prepared_end_pair_commutes program state ending.operation other.operation ending other
         endFound otherFound independent
       exact ⟨pair.2.1, pair.1, pair.2.2⟩
+  | mergeInput merge =>
+      exact prepared_merge_end_pair_commutes program state merge.selection.operation ending.operation
+        merge.selection.alternative merge ending otherFound endFound canonical independent
   | regional regional =>
       have pair := prepared_regional_transition_pair program state instanceId regional (.ordinaryEnd ending)
         programValid stateValid otherFound endFound (PreparedInternalTransition.independent_symm independent)
+      exact ⟨pair.2.1, pair.1, pair.2.2.symm⟩
+
+private theorem prepared_merge_transition_pair (program : Program) (state : RuntimeState)
+    (instanceId : SemanticId) (merge : PreparedInternalMerge) (other : PreparedInternalTransition)
+    (programValid : programWellFormed program = true)
+    (stateValid : runtimeStateWellFormed program instanceId state = true)
+    (mergeFound : prepareInternalMerge? program state merge.selection.operation merge.selection.alternative = some merge)
+    (otherFound : other.Prepared program state)
+    (canonical : canonicalCollectionOrder state = true)
+    (independent : (PreparedInternalTransition.mergeInput merge).Independent other) :
+    other.Prepared program (merge.selection.apply state) ∧
+      prepareInternalMerge? program (other.apply program state) merge.selection.operation merge.selection.alternative = some merge ∧
+      other.apply program (merge.selection.apply state) = merge.selection.apply (other.apply program state) := by
+  cases other with
+  | arming arm =>
+      exact prepared_merge_arming_pair_commutes program state merge.selection.operation merge.selection.alternative
+        merge arm mergeFound otherFound canonical independent
+  | localControl control =>
+      have pair := prepared_merge_local_control_pair_commutes program state merge.selection.operation control.operation
+        merge.selection.alternative merge control mergeFound otherFound canonical independent
+      exact ⟨pair.2.1, pair.1, pair.2.2⟩
+  | scopeCreation creation =>
+      have pair := prepared_merge_scope_creation_pair_commutes program state merge.selection.operation creation.selection.operation
+        merge.selection.alternative merge creation mergeFound otherFound canonical
+          (localControlStateFootprintsNonInterfering_symm _ _ independent)
+      exact ⟨pair.2.1, pair.1, pair.2.2.symm⟩
+  | mergeInput right =>
+      have pair := prepared_merge_pair_commutes program state merge.selection.operation right.selection.operation
+        merge.selection.alternative right.selection.alternative merge right mergeFound otherFound canonical independent
+      exact ⟨pair.2.1, pair.1, pair.2.2⟩
+  | ordinaryEnd ending =>
+      have pair := prepared_end_transition_pair program state instanceId ending (.mergeInput merge)
+        programValid stateValid otherFound mergeFound canonical (PreparedInternalTransition.independent_symm independent)
+      exact ⟨pair.2.1, pair.1, pair.2.2.symm⟩
+  | regional regional =>
+      have pair := prepared_regional_transition_pair program state instanceId regional (.mergeInput merge)
+        programValid stateValid otherFound mergeFound (PreparedInternalTransition.independent_symm independent)
       exact ⟨pair.2.1, pair.1, pair.2.2.symm⟩
 
 theorem prepared_transition_pair (program : Program) (state : RuntimeState)
@@ -157,6 +212,10 @@ theorem prepared_transition_pair (program : Program) (state : RuntimeState)
           have pair := prepared_end_transition_pair program state instanceId right (.arming left)
             programValid stateValid rightPrepared leftPrepared canonical (PreparedInternalTransition.independent_symm independent)
           exact ⟨pair.2.1, pair.1, pair.2.2.symm⟩
+      | mergeInput right =>
+          have pair := prepared_merge_transition_pair program state instanceId right (.arming left)
+            programValid stateValid rightPrepared leftPrepared canonical (PreparedInternalTransition.independent_symm independent)
+          exact ⟨pair.2.1, pair.1, pair.2.2.symm⟩
   | localControl left =>
       cases right with
       | arming right =>
@@ -177,6 +236,10 @@ theorem prepared_transition_pair (program : Program) (state : RuntimeState)
           exact ⟨pair.2.1, pair.1, pair.2.2.symm⟩
       | ordinaryEnd right =>
           have pair := prepared_end_transition_pair program state instanceId right (.localControl left)
+            programValid stateValid rightPrepared leftPrepared canonical (PreparedInternalTransition.independent_symm independent)
+          exact ⟨pair.2.1, pair.1, pair.2.2.symm⟩
+      | mergeInput right =>
+          have pair := prepared_merge_transition_pair program state instanceId right (.localControl left)
             programValid stateValid rightPrepared leftPrepared canonical (PreparedInternalTransition.independent_symm independent)
           exact ⟨pair.2.1, pair.1, pair.2.2.symm⟩
   | scopeCreation left =>
@@ -200,11 +263,18 @@ theorem prepared_transition_pair (program : Program) (state : RuntimeState)
           have pair := prepared_end_transition_pair program state instanceId right (.scopeCreation left)
             programValid stateValid rightPrepared leftPrepared canonical (PreparedInternalTransition.independent_symm independent)
           exact ⟨pair.2.1, pair.1, pair.2.2.symm⟩
+      | mergeInput right =>
+          have pair := prepared_merge_transition_pair program state instanceId right (.scopeCreation left)
+            programValid stateValid rightPrepared leftPrepared canonical (PreparedInternalTransition.independent_symm independent)
+          exact ⟨pair.2.1, pair.1, pair.2.2.symm⟩
   | regional left =>
       exact prepared_regional_transition_pair program state instanceId left right programValid stateValid
         leftPrepared rightPrepared independent
   | ordinaryEnd left =>
       exact prepared_end_transition_pair program state instanceId left right programValid stateValid
+        leftPrepared rightPrepared canonical independent
+  | mergeInput left =>
+      exact prepared_merge_transition_pair program state instanceId left right programValid stateValid
         leftPrepared rightPrepared canonical independent
 
 /-- Root completion writes hosting control. A genuinely independent batch supplies another
@@ -223,7 +293,7 @@ theorem prepared_transition_pair_control_read_only (program : Program) (state : 
     runtimePositionValid_running_instance program instanceId hosting state
       (runtimeStateWellFormed_position program instanceId state valid) selectedRunning
   cases left with
-  | arming _ | localControl _ | scopeCreation _ | ordinaryEnd _ => trivial
+  | arming _ | localControl _ | scopeCreation _ | ordinaryEnd _ | mergeInput _ => trivial
   | regional regional =>
       change .ordinary (.runtimeControl instanceId) ∉ regional.footprint.writes
       cases right with
@@ -263,6 +333,20 @@ theorem prepared_transition_pair_control_read_only (program : Program) (state : 
           exact regional_pair_read_key_not_written _ _ independent _
             (by simp [PreparedInternalTransition.stateFootprint, makeInternalEndPreparation,
               internalEndStateFootprint, canonicalRegionalStateAtoms_mem])
+      | mergeInput merge =>
+          have view := prepareInternalMerge_patch_footprint program state merge.selection.operation merge.selection.alternative merge rightFound
+          have runningMerge : state.control = .running merge.runtimeInstanceId := by
+            obtain ⟨_, _, _, _, _, _, selectedRunning, _, _, _, _, _, _, rfl⟩ :=
+              prepareInternalMerge_facts program state merge.selection.operation merge.selection.alternative merge rightFound
+            exact selectedRunning
+          have separated : regionalStateFootprintsIndependent regional.footprint
+              (liftRegionalStateFootprint merge.selection.localControlPatch.owner
+                (internalLocalControlStateFootprint state merge.selection.localControlPatch merge.runtimeInstanceId)) = true := by
+            rw [view]
+            exact independent
+          simpa only [instanceEq _ runningMerge] using
+            localControl_regional_control_not_written state regional.footprint merge.selection.localControlPatch
+              merge.runtimeInstanceId separated
 
 theorem prepared_transition_control_frame (program : Program) (state : RuntimeState)
     (prepared : PreparedInternalTransition) (instanceId : SemanticId)
@@ -278,6 +362,7 @@ theorem prepared_transition_control_frame (program : Program) (state : RuntimeSt
       | data contract patch => exact armingControlRead_frame state patch.arm
   | localControl localPrepared => rfl
   | ordinaryEnd _ => rfl
+  | mergeInput _ => rfl
   | scopeCreation scope => exact scopeCreation_apply_control state scope.selection
   | regional regional =>
       obtain ⟨after, _, applied⟩ := prepareInternalRegional_executes program state _ regional found
@@ -318,6 +403,12 @@ theorem prepared_transition_preserves (program : Program) (state : RuntimeState)
       change (projectOpenFlowNodeOccurrences? program (ending.selection.apply state)).isSome = true
       rw [ending.selection.open_occurrences_frame program state instanceId running]
       exact openBefore
+  | mergeInput merge =>
+      refine ⟨prepareInternalMerge_preserves_runtimeStateWellFormed program state merge.selection.operation
+        merge.selection.alternative merge instanceId stateValid selected, control, ?_⟩
+      change (projectOpenFlowNodeOccurrences? program (merge.selection.apply state)).isSome = true
+      rw [merge.selection.open_occurrences_frame program state instanceId running]
+      exact openBefore
   | scopeCreation scope =>
       refine ⟨prepareInternalScopeCreation_preserves_runtimeStateWellFormed program instanceId state
         scope.selection.operation scope programValid stateValid selected, control, ?_⟩
@@ -341,21 +432,24 @@ theorem prepared_transition_applies (program : Program) (state : RuntimeState)
     (prepared : PreparedInternalTransition)
     (snapshots : program.compensationEventSubProcessSnapshots = none)
     (selected : prepared.Prepared program state) :
-    fire? program prepared.operation state = some (prepared.apply program state) ∧
+    fireInternalAlternative? program state prepared.operation prepared.alternative = some (prepared.apply program state) ∧
       applyPreparedInternalTransition? program state prepared = some (prepared.apply program state) := by
   constructor
-  · cases prepared with
-    | arming arm => exact (prepared_arming_applies program state arm snapshots selected).1
-    | localControl localPrepared =>
+  · cases prepared <;> simp only [PreparedInternalTransition.operation, PreparedInternalTransition.alternative,
+      fireInternalAlternative_operation, PreparedInternalTransition.apply]
+    case arming arm => exact (prepared_arming_applies program state arm snapshots selected).1
+    case localControl localPrepared =>
         exact prepareInternalLocalControl_refines program state localPrepared.operation
           localPrepared snapshots selected
-    | scopeCreation scope =>
+    case scopeCreation scope =>
         exact prepareInternalScopeCreation_refines program state scope.selection.operation scope selected
-    | ordinaryEnd ending =>
+    case ordinaryEnd ending =>
         exact prepareInternalEnd_refines program state ending.operation ending selected
-    | regional regional =>
+    case regional regional =>
         obtain ⟨after, fired, applied⟩ := prepareInternalRegional_executes program state _ regional selected
         simpa only [PreparedInternalTransition.operation, PreparedInternalTransition.apply, applied, Option.getD_some] using fired
+    case mergeInput merge =>
+        exact prepareInternalMerge_refines program state merge.selection.operation merge.selection.alternative merge selected
   · simp [applyPreparedInternalTransition?, snapshots, selected]
 
 def PreparedTransitionList (program : Program) (state : RuntimeState)
@@ -528,6 +622,36 @@ def fireInternalTransitionBatch? (program : Program) (state : RuntimeState) :
       let next ← fire? program head state
       fireInternalTransitionBatch? program next tail
 
+def fireInternalAlternativeBatch? (program : Program) (state : RuntimeState) :
+    List (SemanticOperation × InternalAlternative) → Option RuntimeState
+  | [] => some state
+  | (operation, alternative) :: tail => do
+      let next ← fireInternalAlternative? program state operation alternative
+      fireInternalAlternativeBatch? program next tail
+
+theorem fireInternalAlternativeBatch_operations (program : Program) (state : RuntimeState)
+    (operations : List SemanticOperation) :
+    fireInternalAlternativeBatch? program state (operations.map (fun operation => (operation, .operation operation.id))) =
+      fireInternalTransitionBatch? program state operations := by
+  induction operations generalizing state with
+  | nil => rfl
+  | cons operation rest ih =>
+      simp only [List.map_cons, fireInternalAlternativeBatch?, fireInternalAlternative_operation, fireInternalTransitionBatch?]
+      cases fired : fire? program operation state <;> simp [ih]
+
+/-- Existing operation-only batches retain their original evaluator guarantee. -/
+theorem fireInternalAlternativeBatch_ordinary_preparations (program : Program) (state : RuntimeState)
+    (prepared : List PreparedInternalTransition)
+    (ordinary : ∀ member ∈ prepared, member.alternative = .operation member.operation.id) :
+    fireInternalAlternativeBatch? program state (prepared.map (fun member => (member.operation, member.alternative))) =
+      fireInternalTransitionBatch? program state (prepared.map PreparedInternalTransition.operation) := by
+  rw [← fireInternalAlternativeBatch_operations]
+  congr 1
+  simp only [List.map_map]
+  apply List.map_congr_left
+  intro member present
+  exact Prod.ext rfl (ordinary member present)
+
 /-- The real evaluator and checked prepared fold both succeed at every derived prefix. Snapshot
 exclusion is needed for these execution paths, not for the raw-state permutation law. -/
 theorem prepared_transition_batch_applies (program : Program) (state : RuntimeState)
@@ -542,8 +666,8 @@ theorem prepared_transition_batch_applies (program : Program) (state : RuntimeSt
     (independent : prepared.Pairwise PreparedInternalTransition.Independent) :
     runPreparedTransitionBatch? program state prepared =
         some (applyInternalTransitionBatch program state prepared) ∧
-      fireInternalTransitionBatch? program state
-        (prepared.map PreparedInternalTransition.operation) =
+      fireInternalAlternativeBatch? program state
+        (prepared.map (fun member => (member.operation, member.alternative))) =
         some (applyInternalTransitionBatch program state prepared) := by
   induction prepared generalizing state with
   | nil => exact ⟨rfl, rfl⟩
@@ -557,7 +681,7 @@ theorem prepared_transition_batch_applies (program : Program) (state : RuntimeSt
           independent)
         (fun member present => readOnly member (by simp [present]))
         (List.pairwise_cons.mp independent).2
-      simpa only [runPreparedTransitionBatch?, fireInternalTransitionBatch?, List.map_cons,
+      simpa only [runPreparedTransitionBatch?, fireInternalAlternativeBatch?, List.map_cons,
         applied.1, applied.2, Bind.bind, Option.bind, applyInternalTransitionBatch, List.foldl_cons]
         using rest
 

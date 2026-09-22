@@ -3,11 +3,14 @@ import type { Stimulus } from "./contract.js";
 import type { DeepReadonly } from "./deep-readonly.js";
 import { admit } from "./semantic-command-admission.js";
 import type { SemanticCommandOutcome } from "./semantic-command-admission.js";
-import { applyPreparedInternalTransition, prepareInternalTransitionBatch } from "./internal-transition-batch.js";
+import type { PreparedInternalTransition } from "./internal-transition-batch.js";
+import { deriveInternalExecutionFrontier } from "./internal-transition-preparation.js";
+import type { InternalExecutionFrontier } from "./internal-transition-preparation.js";
+import { evaluateScheduledClosure } from "./internal-choice-schedule.js";
+import type { InternalChoiceSchedule, ScheduledStimulusEvaluationResult, ScheduledStimulusResult } from "./internal-choice-schedule.js";
 import { applyInternalInitiationPatch } from "./internal-transition-initiation-patch.js";
 import { SemanticOperationKind } from "./semantic-process-contract.js";
 import type { SemanticOperation, SemanticProcessProgram } from "./semantic-process-contract.js";
-import { closeRefusableInternalOperations } from "./semantic-process-closure.js";
 import {
   calledProcessAssociationsAreValid,
   invokeCalledProcess,
@@ -76,7 +79,6 @@ import {
   createTimerWait,
   createUserTaskWait,
 } from "./semantic-process-wait-runtime.js";
-import { compareCanonicalStrings } from "./wire.js";
 import {
   type CompensationParentContextRefusal,
 } from "./compensation-event-sub-process-snapshot-contract.js";
@@ -155,6 +157,7 @@ export type StimulusEvaluationResult = DeepReadonly<{
   admittedState: RuntimeState | null;
   selectedInternalSteps: AppliedInternalOperationStep[];
   selectedInternalBatches: AppliedInternalOperationStep[][];
+  selectedInternalPreparations: (PreparedInternalTransition[] | null)[];
 }>;
 
 export const semanticProcessClosureLimit = 8;
@@ -165,50 +168,25 @@ export function validateClosureLimit(closureLimit: number): void {
   }
 }
 
-// Every internal operation the program permits in this state. Membership and
-// count are order-independent; the canonical-ID sort exists only for the
-// selector below.
+// Exact alternatives include every Merge input; canonical order never chooses between them.
 function enabledInternalOperations(
   program: SemanticProcessProgram,
   state: RuntimeState,
 ): ReadonlyArray<AppliedInternalOperationStep> {
-  return internalOperationFrontier(program, state).steps;
+  return internalOperationFrontier(program, state).offers.map(({ step }) => step);
 }
 
 function internalOperationFrontier(
   program: SemanticProcessProgram,
   state: RuntimeState,
-): Readonly<{
-  steps: ReadonlyArray<AppliedInternalOperationStep>;
-  refusal: InternalOperationRefusal | null;
-}> {
-  const attempts = program.operations
-    .map((operation) => attemptInternalOperationStep(program, operation, state))
-    .sort((left, right) =>
-      compareCanonicalStrings(attemptOperationId(left), attemptOperationId(right))
-    );
-  const refusal = attempts.find(
-    (attempt) => attempt.kind === InternalOperationAttemptKind.Refused,
-  );
-  return {
-    steps: attempts.flatMap((attempt) =>
-      attempt.kind === InternalOperationAttemptKind.Applied ? [attempt.step] : []
-    ),
-    refusal: refusal?.kind === InternalOperationAttemptKind.Refused
-      ? refusal.detail
-      : null,
-  };
-}
-
-function attemptOperationId(attempt: InternalOperationAttempt): string {
-  switch (attempt.kind) {
-    case InternalOperationAttemptKind.Disabled:
-      return attempt.operation.id;
-    case InternalOperationAttemptKind.Applied:
-      return attempt.step.operation.id;
-    case InternalOperationAttemptKind.Refused:
-      return attempt.operation.id;
-  }
+): InternalExecutionFrontier<InternalOperationRefusal> {
+  return deriveInternalExecutionFrontier<InternalOperationRefusal>(program, state, (operation) => {
+    const attempt = attemptInternalOperationStep(program, operation, state);
+    return {
+      step: attempt.kind === InternalOperationAttemptKind.Applied ? attempt.step : null,
+      refusal: attempt.kind === InternalOperationAttemptKind.Refused ? attempt.detail : null,
+    };
+  });
 }
 
 export function enabledInternalOperationCount(
@@ -714,84 +692,32 @@ export function evaluateStimulusWithSelectedSteps(
   stimulus: Stimulus,
   closureLimit: number = semanticProcessClosureLimit,
 ): StimulusEvaluationResult {
-  validateClosureLimit(closureLimit);
+  const evaluation = evaluateScheduledStimulusWithSelectedSteps(program, state, stimulus, [], closureLimit);
+  const { scheduleFailure: _failure, ...result } = evaluation.result;
+  return { ...evaluation, result };
+}
 
-  const admission = admit(program, state, stimulus);
-  switch (admission.outcome) {
-    case CommandOutcome.Committed: {
-      if (
-        admission.state.control.kind === ControlStateKind.Cancelled ||
-        admission.state.control.kind === ControlStateKind.Failed
-      ) {
-        return {
-          result: {
-            outcome: CommandOutcome.Committed,
-            state: admission.state,
-            internalStepBoundExceeded: false,
-            ambiguousInternalChoice: false,
-          },
-          ambiguousInternalChoice: false,
-          admittedState: admission.state,
-          selectedInternalSteps: [],
-          selectedInternalBatches: [],
-        };
-      }
-      const closure = closeRefusableInternalOperations(
-        admission.state,
-        closureLimit,
-        (current) => internalOperationFrontier(program, current),
-        (current, enabled) => prepareInternalTransitionBatch(program, current, enabled),
-        (current, prepared) => {
-          const successor = applyPreparedInternalTransition(program, current, prepared);
-          return successor === null ? null : {
-            operation: prepared.operation, owner: prepared.owner, successor,
-          };
-        },
-      );
-      if (closure.refusal !== null) {
-        return {
-          result: {
-            outcome: CommandOutcome.Rejected,
-            state,
-            internalStepBoundExceeded: false,
-            ambiguousInternalChoice: false,
-          },
-          ambiguousInternalChoice: false,
-          admittedState: null,
-          selectedInternalSteps: [],
-          selectedInternalBatches: [],
-        };
-      }
-      const failed = closure.hitBound || closure.ambiguousInternalChoice;
-      return {
-        result: {
-          outcome: failed ? CommandOutcome.RolledBack : CommandOutcome.Committed,
-          state: failed ? state : closure.state,
-          internalStepBoundExceeded: closure.hitBound,
-          ambiguousInternalChoice: closure.ambiguousInternalChoice,
-        },
-        ambiguousInternalChoice: closure.ambiguousInternalChoice,
-        admittedState: failed ? null : admission.state,
-        selectedInternalSteps: failed ? [] : closure.steps,
-        selectedInternalBatches: failed ? [] : closure.batches,
-      };
-    }
-    case CommandOutcome.Rejected:
-      return {
-        result: {
-          outcome: CommandOutcome.Rejected,
-          state: admission.state,
-          internalStepBoundExceeded: false,
-          ambiguousInternalChoice: false,
-        },
-        ambiguousInternalChoice: false,
-        admittedState: null,
-        selectedInternalSteps: [],
-        selectedInternalBatches: [],
-      };
-    default:
-      return assertNever(admission.outcome);
-  }
+/** Private lower-layer schedule input; registered profiles and the engine API retain empty schedules. */
+export function applyStimulusWithSchedule(
+  program: SemanticProcessProgram,
+  state: RuntimeState,
+  stimulus: Stimulus,
+  schedule: InternalChoiceSchedule,
+  closureLimit: number = semanticProcessClosureLimit,
+): ScheduledStimulusResult {
+  return evaluateScheduledStimulusWithSelectedSteps(program, state, stimulus, schedule, closureLimit).result;
+}
+
+export function evaluateScheduledStimulusWithSelectedSteps(
+  program: SemanticProcessProgram,
+  state: RuntimeState,
+  stimulus: Stimulus,
+  schedule: InternalChoiceSchedule,
+  closureLimit: number = semanticProcessClosureLimit,
+): ScheduledStimulusEvaluationResult {
+  validateClosureLimit(closureLimit);
+  return evaluateScheduledClosure(program, state, admit(program, state, stimulus), schedule, closureLimit,
+    (current) => internalOperationFrontier(program, current));
 }
 
 function assertNever(value: never): never {

@@ -2,6 +2,7 @@ import BpmnSemantics.SemanticProcess.TransitionRecord
 import BpmnSemantics.SemanticProcess.InternalTransitionPublication
 import BpmnSemantics.SemanticProcess.InternalCommutation
 import BpmnSemantics.SemanticProcess.InternalPreparedArming
+import BpmnSemantics.SemanticProcess.InternalScheduledClosure
 
 /-! # Committed semantic transition traces
 
@@ -12,17 +13,9 @@ namespace BpmnSemantics.SemanticProcess
 
 open BpmnSemantics
 
-private def enabledTransitions (program : Program) (state : RuntimeState) :
-    List (SemanticOperation × RuntimeState) :=
-  canonicalEnabledInternalTransitions <|
-    program.operations.filterMap fun operation =>
-      match fire? program operation state with
-      | none => none
-      | some successor => some (operation, successor)
-
-/-- Number of enabled internal operations, exposed for targeted admission-preservation checks. -/
+/-- Number of exact enabled alternatives in the frontier used by bounded closure. -/
 def enabledInternalOperationCount (program : Program) (state : RuntimeState) : Nat :=
-  (enabledTransitions program state).length
+  (InternalCommutation.deriveInternalExecutionFrontier program state).offers.length
 
 /-- A stable state is resumable exactly when it is complete or exposes a semantic wait. -/
 def stableStateResumable (state : RuntimeState) : Bool :=
@@ -36,17 +29,6 @@ def stableStateResumable (state : RuntimeState) : Bool :=
           !state.effectIncidents.isEmpty)
   | .completed _ | .cancelled _ => true
   | .failed .. => false
-
-private structure ClosureTraceResult where
-  state : RuntimeState
-  hitBound : Bool
-  ambiguousChoice : Bool
-  records : Option (List InternalTransitionRecord)
-  lifecycles : Option (List UnnumberedFlowNodeOccurrenceDelta)
-
-private def prependRecord (head : Option InternalTransitionRecord)
-    (tail : Option (List InternalTransitionRecord)) : Option (List InternalTransitionRecord) := do
-  pure ((← head) :: (← tail))
 
 private def prependLifecycle (head : Option UnnumberedFlowNodeOccurrenceDelta)
     (tail : Option (List UnnumberedFlowNodeOccurrenceDelta)) :
@@ -151,73 +133,6 @@ theorem internalPublicationPair_defined (program : Program)
   cases resultEq
   exact ⟨footprintEq, recordEq, lifecycleEq⟩
 
-private def prependTransitionPublications
-    (heads : List InternalCommutation.InstantiatedInternalTransitionPublication)
-    (records : Option (List InternalTransitionRecord))
-    (lifecycles : Option (List UnnumberedFlowNodeOccurrenceDelta)) :
-    Option (List InternalTransitionRecord) ×
-      Option (List UnnumberedFlowNodeOccurrenceDelta) :=
-  match records, lifecycles with
-  | some records, some lifecycles =>
-      (some (heads.map (·.record) ++ records),
-        some (heads.map (·.lifecycle) ++ lifecycles))
-  | _, _ => (none, none)
-
-/-- Execute bounded closure while retaining the selected operation and dynamic owner at each step. -/
-private def closeSupportedTraced :
-    Nat → Program → SemanticId → Nat → RuntimeState → ClosureTraceResult
-  | 0, program, _, _, state =>
-      match enabledTransitions program state with
-      | [] =>
-          { state, hitBound := false, ambiguousChoice := false,
-            records := some [], lifecycles := some [] }
-      | [_] | _ :: _ :: _ =>
-          { state, hitBound := true, ambiguousChoice := false,
-            records := none, lifecycles := none }
-  | fuel + 1, program, commandId, transitionIndex, state =>
-      match enabledTransitions program state with
-      | [] =>
-          { state, hitBound := false, ambiguousChoice := false,
-            records := some [], lifecycles := some [] }
-      | [(operation, successor)] =>
-          let closed := closeSupportedTraced fuel program commandId
-            (transitionIndex + 1) successor
-          { closed with
-            records := prependRecord (internalTransitionRecord? program state operation)
-              closed.records
-            lifecycles := prependLifecycle
-              (flowNodeOccurrenceDeltaForOperation? program state successor operation
-                commandId transitionIndex) closed.lifecycles }
-      | first :: second :: remaining =>
-          let transitions := first :: second :: remaining
-          let operations := transitions.map (·.1)
-          match InternalCommutation.prepareInternalTransitionBatch? program state operations with
-          | some prepared =>
-            if operations.length > fuel + 1 then
-              { state, hitBound := true, ambiguousChoice := false,
-                records := none, lifecycles := none }
-            else
-              match (do
-                let instanceId ← hostingInstanceId? state
-                InternalCommutation.acceptedPreparedTransitionBatch? program instanceId commandId
-                  transitionIndex state prepared) with
-              | none =>
-                  { state, hitBound := false, ambiguousChoice := true,
-                    records := none, lifecycles := none }
-              | some (successor, publications) =>
-                  let closed := closeSupportedTraced (fuel - (remaining.length + 1))
-                    program commandId (transitionIndex + operations.length) successor
-                  let paired := prependTransitionPublications publications
-                    closed.records closed.lifecycles
-                  { closed with records := paired.1, lifecycles := paired.2 }
-          | none =>
-            { state, hitBound := false, ambiguousChoice := true,
-              records := none, lifecycles := none }
-termination_by fuel => fuel
-decreasing_by
-  all_goals apply Nat.lt_succ_of_le
-  all_goals first | exact Nat.le_refl _ | exact Nat.sub_le _ _
-
 /-- Semantic command outcome and candidate state, with closure failures kept separate. -/
 structure StimulusResult where
   outcome : CommandOutcome
@@ -241,6 +156,15 @@ theorem StimulusResult.ofClosure_failure_rolls_back
       (StimulusResult.ofClosure before successor hitBound ambiguous).state = before := by
   simp [StimulusResult.ofClosure, failed]
 
+/-- Schedule refusal has the same atomic boundary as closure refusal, with its own failure channel. -/
+def StimulusResult.ofScheduledClosure (before : RuntimeState)
+    (closure : InternalCommutation.ScheduledClosureResult) : StimulusResult :=
+  if closure.scheduleFailure.isSome then
+    { outcome := .rolledBack, state := before
+      internalStepBoundExceeded := false, ambiguousInternalChoice := false }
+  else
+    StimulusResult.ofClosure before closure.state closure.hitBound closure.ambiguousChoice
+
 /-- Result plus an unnumbered trace. Empty is the only representation of unpublishability. -/
 structure TracedStimulusResult where
   result : StimulusResult
@@ -248,22 +172,46 @@ structure TracedStimulusResult where
   flowNodeOccurrenceLifecycles : List UnnumberedFlowNodeOccurrenceDelta
   deriving Repr, DecidableEq
 
+/-- Explicit scheduling is a lower-layer command input; it does not change runtime state. -/
+structure ScheduledStimulusResult extends StimulusResult where
+  scheduleFailure : Option InternalCommutation.InternalChoiceScheduleFailure
+  deriving Repr, DecidableEq
+
+structure ScheduledTracedStimulusResult where
+  result : ScheduledStimulusResult
+  committedTransitions : List CommittedTransition
+  flowNodeOccurrenceLifecycles : List UnnumberedFlowNodeOccurrenceDelta
+  deriving Repr, DecidableEq
+
 private structure EvaluatedStimulus where
   result : StimulusResult
+  scheduleFailure : Option InternalCommutation.InternalChoiceScheduleFailure := none
   candidateTransitions : Option (List CommittedTransition)
   candidateLifecycles : Option (List UnnumberedFlowNodeOccurrenceDelta)
 
-private def evaluateStimulus (closureLimit : Nat) (program : Program)
-    (state : RuntimeState) (stimulus : Stimulus) : EvaluatedStimulus :=
+private def evaluateStimulusScheduled (closureLimit : Nat) (program : Program)
+    (state : RuntimeState) (stimulus : Stimulus)
+    (schedule : InternalCommutation.InternalChoiceSchedule) : EvaluatedStimulus :=
   let admission := admitStimulus program state stimulus
   match admission.outcome with
   | .committed =>
+      if program.internalSchedulingMode = .rejectObservableChoice ∧ schedule ≠ [] then
+        { result := { outcome := .rolledBack, state
+                      internalStepBoundExceeded := false, ambiguousInternalChoice := false }
+          scheduleFailure := some .scheduleForbiddenForMode
+          candidateTransitions := none, candidateLifecycles := none }
+      else
       let commandId := stimulusCommandId stimulus
       let externalLifecycle := flowNodeOccurrenceDeltaForStimulus? program state
         admission.state stimulus 0
-      let closure := closeSupportedTraced closureLimit program commandId 1 admission.state
-      let result := StimulusResult.ofClosure state closure.state
-        closure.hitBound closure.ambiguousChoice
+      let closure := InternalCommutation.closeScheduledTraced closureLimit program commandId
+        1 0 schedule admission.state
+      let result := StimulusResult.ofScheduledClosure state closure
+      if closure.scheduleFailure.isSome then
+        { result
+          scheduleFailure := closure.scheduleFailure
+          candidateTransitions := none, candidateLifecycles := none }
+      else
       if closure.hitBound || closure.ambiguousChoice then
         { result, candidateTransitions := none, candidateLifecycles := none }
       else
@@ -282,6 +230,34 @@ private def evaluateStimulus (closureLimit : Nat) (program : Program)
             ambiguousInternalChoice := false }
         candidateTransitions := none
         candidateLifecycles := none }
+
+private def evaluateStimulus (closureLimit : Nat) (program : Program)
+    (state : RuntimeState) (stimulus : Stimulus) : EvaluatedStimulus :=
+  evaluateStimulusScheduled closureLimit program state stimulus []
+
+private theorem evaluateStimulusScheduled_failure_is_atomic
+    (closureLimit : Nat) (program : Program) (state : RuntimeState) (stimulus : Stimulus)
+    (schedule : InternalCommutation.InternalChoiceSchedule)
+    (failed : (evaluateStimulusScheduled closureLimit program state stimulus schedule).scheduleFailure ≠ none) :
+    (evaluateStimulusScheduled closureLimit program state stimulus schedule).result =
+        { outcome := .rolledBack, state, internalStepBoundExceeded := false, ambiguousInternalChoice := false } ∧
+      (evaluateStimulusScheduled closureLimit program state stimulus schedule).candidateTransitions = none ∧
+      (evaluateStimulusScheduled closureLimit program state stimulus schedule).candidateLifecycles = none := by
+  unfold evaluateStimulusScheduled at failed ⊢
+  generalize admissionEq : admitStimulus program state stimulus = admission at failed ⊢
+  cases outcomeEq : admission.outcome
+  case committed =>
+    simp only [outcomeEq] at failed ⊢
+    by_cases forbidden : program.internalSchedulingMode = .rejectObservableChoice ∧ schedule ≠ []
+    · simp [forbidden]
+    · simp only [if_neg forbidden] at failed ⊢
+      generalize closureEq : InternalCommutation.closeScheduledTraced closureLimit program
+        (stimulusCommandId stimulus) 1 0 schedule admission.state = closure at failed ⊢
+      cases closure with
+      | mk successor hitBound ambiguous failure records lifecycles =>
+          cases hitBound <;> cases ambiguous <;> cases failure <;>
+            simp_all [StimulusResult.ofScheduledClosure]
+  all_goals simp [outcomeEq] at failed
 
 private def replayCheckedTransitions (program : Program) (initial result : RuntimeState) :
     Option (List CommittedTransition) → List CommittedTransition
@@ -325,20 +301,65 @@ def applyStimulusTraced (closureLimit : Nat) (program : Program)
     committedTransitions := publishEvaluatedTransitions program state evaluated
     flowNodeOccurrenceLifecycles := publishEvaluatedLifecycles program state evaluated }
 
-/-- Existing result-only API, defined as exact erasure of the traced evaluator. -/
+def applyStimulusScheduledTraced (closureLimit : Nat) (program : Program)
+    (state : RuntimeState) (stimulus : Stimulus)
+    (schedule : InternalCommutation.InternalChoiceSchedule) : ScheduledTracedStimulusResult :=
+  let evaluated := evaluateStimulusScheduled closureLimit program state stimulus schedule
+  { result := { toStimulusResult := evaluated.result, scheduleFailure := evaluated.scheduleFailure }
+    committedTransitions := publishEvaluatedTransitions program state evaluated
+    flowNodeOccurrenceLifecycles := publishEvaluatedLifecycles program state evaluated }
+
+def applyStimulusScheduled (closureLimit : Nat) (program : Program)
+    (state : RuntimeState) (stimulus : Stimulus)
+    (schedule : InternalCommutation.InternalChoiceSchedule) : ScheduledStimulusResult :=
+  let evaluated := evaluateStimulusScheduled closureLimit program state stimulus schedule
+  { toStimulusResult := evaluated.result, scheduleFailure := evaluated.scheduleFailure }
+
+/-- Result-only evaluation exposes admission before the shared atomic closure result. -/
 def applyStimulus (closureLimit : Nat) (program : Program)
     (state : RuntimeState) (stimulus : Stimulus) : StimulusResult :=
   let admission := admitStimulus program state stimulus
   match admission.outcome with
-  | .committed =>
-      let closure := closeSupportedTraced closureLimit program (stimulusCommandId stimulus) 1
-        admission.state
-      StimulusResult.ofClosure state closure.state closure.hitBound closure.ambiguousChoice
+  | .committed => StimulusResult.ofScheduledClosure state
+      (InternalCommutation.closeScheduledTraced closureLimit program
+        (stimulusCommandId stimulus) 1 0 [] admission.state)
   | outcome =>
-      { outcome
-        state := admission.state
-        internalStepBoundExceeded := false
-        ambiguousInternalChoice := false }
+      { outcome, state := admission.state
+        internalStepBoundExceeded := false, ambiguousInternalChoice := false }
+
+private theorem evaluateStimulus_result_eq_applyStimulus
+    (closureLimit : Nat) (program : Program) (state : RuntimeState) (stimulus : Stimulus) :
+    (evaluateStimulus closureLimit program state stimulus).result =
+      applyStimulus closureLimit program state stimulus := by
+  unfold evaluateStimulus evaluateStimulusScheduled applyStimulus
+  generalize admitStimulus program state stimulus = admission
+  cases outcomeEq : admission.outcome
+  case committed =>
+    simp only [outcomeEq, ne_eq, not_true_eq_false, and_false, ↓reduceIte]
+    split
+    · rfl
+    · split <;> rfl
+  all_goals simp [outcomeEq]
+
+/-- No scheduled failure exposes admitted or partially executed state, flags, or publication. -/
+theorem applyStimulusScheduledTraced_failure_is_atomic
+    (closureLimit : Nat) (program : Program) (state : RuntimeState) (stimulus : Stimulus)
+    (schedule : InternalCommutation.InternalChoiceSchedule)
+    (failed : (applyStimulusScheduledTraced closureLimit program state stimulus schedule).result.scheduleFailure ≠ none) :
+    (applyStimulusScheduledTraced closureLimit program state stimulus schedule).result.toStimulusResult =
+        { outcome := .rolledBack, state, internalStepBoundExceeded := false, ambiguousInternalChoice := false } ∧
+      (applyStimulusScheduledTraced closureLimit program state stimulus schedule).committedTransitions = [] ∧
+      (applyStimulusScheduledTraced closureLimit program state stimulus schedule).flowNodeOccurrenceLifecycles = [] := by
+  have facts := evaluateStimulusScheduled_failure_is_atomic closureLimit program state stimulus schedule failed
+  refine ⟨facts.1, ?_, ?_⟩
+  · simp [applyStimulusScheduledTraced, publishEvaluatedTransitions, facts.1]
+  · simp [applyStimulusScheduledTraced, publishEvaluatedLifecycles, facts.2.2]
+
+theorem applyStimulusScheduled_empty_erases_to_applyStimulus
+    (closureLimit : Nat) (program : Program) (state : RuntimeState) (stimulus : Stimulus) :
+    (applyStimulusScheduled closureLimit program state stimulus []).toStimulusResult =
+      applyStimulus closureLimit program state stimulus :=
+  evaluateStimulus_result_eq_applyStimulus closureLimit program state stimulus
 
 theorem applyStimulus_closure_failure_rolls_back
     (closureLimit : Nat) (program : Program) (state : RuntimeState) (stimulus : Stimulus)
@@ -351,7 +372,12 @@ theorem applyStimulus_closure_failure_rolls_back
   cases outcomeEq : admission.outcome
   case committed =>
     simp only [outcomeEq] at failed ⊢
-    exact StimulusResult.ofClosure_failure_rolls_back _ _ _ _ failed
+    generalize closureEq : InternalCommutation.closeScheduledTraced closureLimit program
+      (stimulusCommandId stimulus) 1 0 [] admission.state = closure at failed ⊢
+    cases closure with
+    | mk successor hitBound ambiguous failure records lifecycles =>
+        cases hitBound <;> cases ambiguous <;> cases failure <;>
+          simp [StimulusResult.ofScheduledClosure, StimulusResult.ofClosure] at *
   all_goals simp [outcomeEq] at failed
 
 theorem applyStimulus_withSnapshotDeclaration_rejects
@@ -379,28 +405,12 @@ theorem applyStimulusTraced_withSnapshotDeclaration_rejects
       (applyStimulusTraced closureLimit program state stimulus).committedTransitions = [] ∧
       (applyStimulusTraced closureLimit program state stimulus).flowNodeOccurrenceLifecycles =
         [] := by
-  simp [applyStimulusTraced, evaluateStimulus, admitStimulus, declared,
+  simp [applyStimulusTraced, evaluateStimulus, evaluateStimulusScheduled, admitStimulus, declared,
     publishEvaluatedTransitions, publishEvaluatedLifecycles]
 
 def scenarioClosureLimit : Nat := 8
 
-private theorem evaluateStimulus_result_eq_applyStimulus
-    (closureLimit : Nat) (program : Program) (state : RuntimeState) (stimulus : Stimulus) :
-    (evaluateStimulus closureLimit program state stimulus).result =
-      applyStimulus closureLimit program state stimulus := by
-  unfold evaluateStimulus applyStimulus
-  generalize admissionEq : admitStimulus program state stimulus = admission
-  cases outcomeEq : admission.outcome
-  case committed =>
-    simp only [outcomeEq]
-    generalize closureEq : closeSupportedTraced closureLimit program
-      (stimulusCommandId stimulus) 1 admission.state = closure
-    cases closure with
-    | mk successor hitBound ambiguous records lifecycles =>
-        cases hitBound <;> cases ambiguous <;> rfl
-  all_goals simp [outcomeEq]
-
-/-- Erasing the trace is definitionally the existing evaluator result. -/
+/-- Erasing the trace preserves the result-only evaluator's exact result. -/
 theorem applyStimulusTraced_erases_to_applyStimulus
     (closureLimit : Nat) (program : Program) (state : RuntimeState) (stimulus : Stimulus) :
     (applyStimulusTraced closureLimit program state stimulus).result =

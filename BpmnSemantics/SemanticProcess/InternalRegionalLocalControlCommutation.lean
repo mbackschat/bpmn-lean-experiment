@@ -27,24 +27,19 @@ private theorem regional_continuation_separated (before : RuntimeState)
   have equalities := ControlToken.mk.inj same
   simp [regionalStateAtomsConflict, equalities.1, equalities.2] at conflict
 
-private theorem regional_localControl_successors_equal (program : Program) (before after afterLocal : RuntimeState)
-    (regionalOperation localOperation : SemanticOperation)
-    (regional : PreparedInternalRegional) (control : PreparedInternalLocalControl)
-    (programWF : programWellFormed program = true)
-    (beforeWF : runtimeStateWellFormed program control.runtimeInstanceId before = true)
+theorem regional_localPatch_successors_equal (program : Program) (before after afterLocal : RuntimeState)
+    (regionalOperation : SemanticOperation) (regional : PreparedInternalRegional)
+    (patch : InternalLocalControlSelection) (hosting : SemanticId)
+    (beforeWF : runtimeStateWellFormed program hosting before = true)
+    (localWF : runtimeStateWellFormed program hosting (patch.apply before) = true)
+    (running : before.control = .running hosting)
     (regionalFound : prepareInternalRegional? program before regionalOperation = some regional)
-    (localFound : prepareInternalLocalControl? program before localOperation = some control)
+    (regionalFrame : prepareInternalRegional? program (patch.apply before) regionalOperation = some regional)
     (independent : regionalStateFootprintsIndependent regional.footprint
-      (liftRegionalStateFootprint control.selection.owner control.footprint) = true)
+      (liftRegionalStateFootprint patch.owner (internalLocalControlStateFootprint before patch hosting)) = true)
     (applied : applyPreparedInternalRegional? program before regional = some after)
-    (localApplied : applyPreparedInternalRegional? program (control.selection.apply before) regional = some afterLocal) :
-    afterLocal = control.selection.apply after := by
-  have regionalFrame := prepareInternalRegional_after_independent_localControl program before
-    regionalOperation localOperation regional control beforeWF regionalFound localFound independent
-  obtain ⟨patch, origin, hosting, identity, delta, localSelection, _, running, _,
-    _, _, _, _, _, _, rfl⟩ := prepareInternalLocalControl_facts program before localOperation control localFound
-  have localWF := prepareInternalLocalControl_preserves_runtimeStateWellFormed program before localOperation
-    (makeInternalLocalControlPreparation before patch hosting identity delta) hosting programWF beforeWF running localFound
+    (localApplied : applyPreparedInternalRegional? program (patch.apply before) regional = some afterLocal) :
+    afterLocal = patch.apply after := by
   obtain ⟨snapshots, _, _, closed, derived, footprint, _⟩ :=
     prepareInternalRegional_facts program before regionalOperation regional regionalFound
   obtain ⟨_, _, _, localClosed, localDerived, _, _⟩ :=
@@ -101,7 +96,6 @@ private theorem regional_localControl_successors_equal (program : Program) (befo
       change addToken (patch.tokens.apply before.tokens) output record.caller =
         patch.tokens.apply (addToken before.tokens output record.caller) at tokenFrame
       rw [tokenFrame, branches, localBranches]
-      rfl
   | completeScope id origin definition output =>
       obtain ⟨withdrawal, kind, census⟩ := regionalSelection_complete_census program before id origin definition output
         regional.selection selected
@@ -163,6 +157,27 @@ private theorem regional_localControl_successors_equal (program : Program) (befo
       rw [cancelled]
       rfl
   | _ => simp [selectInternalRegional?] at selected
+
+private theorem regional_localControl_successors_equal (program : Program) (before after afterLocal : RuntimeState)
+    (regionalOperation localOperation : SemanticOperation)
+    (regional : PreparedInternalRegional) (control : PreparedInternalLocalControl)
+    (programWF : programWellFormed program = true)
+    (beforeWF : runtimeStateWellFormed program control.runtimeInstanceId before = true)
+    (regionalFound : prepareInternalRegional? program before regionalOperation = some regional)
+    (localFound : prepareInternalLocalControl? program before localOperation = some control)
+    (independent : regionalStateFootprintsIndependent regional.footprint
+      (liftRegionalStateFootprint control.selection.owner control.footprint) = true)
+    (applied : applyPreparedInternalRegional? program before regional = some after)
+    (localApplied : applyPreparedInternalRegional? program (control.selection.apply before) regional = some afterLocal) :
+    afterLocal = control.selection.apply after := by
+  have regionalFrame := prepareInternalRegional_after_independent_localControl program before
+    regionalOperation localOperation regional control beforeWF regionalFound localFound independent
+  obtain ⟨patch, origin, hosting, identity, delta, _, _, running, _,
+    _, _, _, _, _, _, rfl⟩ := prepareInternalLocalControl_facts program before localOperation control localFound
+  have localWF := prepareInternalLocalControl_preserves_runtimeStateWellFormed program before localOperation
+    (makeInternalLocalControlPreparation before patch hosting identity delta) hosting programWF beforeWF running localFound
+  exact regional_localPatch_successors_equal program before after afterLocal regionalOperation regional patch hosting
+    beforeWF localWF running regionalFound regionalFrame independent applied localApplied
 
 /-- Both complete preparations survive and actual evaluation reaches one exact canonical state.
 No intermediate validity, successor equality, or family-specific frame is assumed. -/

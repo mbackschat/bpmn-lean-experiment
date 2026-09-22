@@ -5,6 +5,7 @@ import BpmnSemantics.SemanticProcess.InternalScopeCreationAcceptedPublication
 import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
 import BpmnSemantics.SemanticProcess.InternalRegionalPairDependencies
 import BpmnSemantics.SemanticProcess.InternalEndPreparation
+import BpmnSemantics.SemanticProcess.InternalMergePreparation
 
 /-! Complete finite mixed preparations follow the predecessor-only
 [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).
@@ -20,6 +21,7 @@ inductive PreparedInternalTransition where
   | scopeCreation (prepared : PreparedInternalScopeCreation)
   | regional (prepared : PreparedInternalRegional)
   | ordinaryEnd (prepared : PreparedInternalEnd)
+  | mergeInput (prepared : PreparedInternalMerge)
   deriving Repr, DecidableEq
 
 def PreparedInternalTransition.operation : PreparedInternalTransition → SemanticOperation
@@ -28,6 +30,11 @@ def PreparedInternalTransition.operation : PreparedInternalTransition → Semant
   | .scopeCreation prepared => prepared.selection.operation
   | .regional prepared => prepared.selection.operation
   | .ordinaryEnd prepared => prepared.operation
+  | .mergeInput prepared => prepared.selection.operation
+
+def PreparedInternalTransition.alternative : PreparedInternalTransition → InternalAlternative
+  | .mergeInput prepared => prepared.selection.alternative
+  | prepared => .operation prepared.operation.id
 
 def PreparedInternalTransition.apply (program : Program) (state : RuntimeState) :
     PreparedInternalTransition → RuntimeState
@@ -36,6 +43,7 @@ def PreparedInternalTransition.apply (program : Program) (state : RuntimeState) 
   | .scopeCreation prepared => prepared.selection.apply state
   | .regional prepared => (applyPreparedInternalRegional? program state prepared).getD state
   | .ordinaryEnd prepared => prepared.selection.apply state
+  | .mergeInput prepared => prepared.selection.apply state
 
 def PreparedInternalTransition.stateFootprint :
     PreparedInternalTransition → InternalRegionalStateFootprint
@@ -44,6 +52,7 @@ def PreparedInternalTransition.stateFootprint :
   | .scopeCreation prepared => liftRegionalStateFootprint prepared.selection.owner prepared.footprint
   | .regional prepared => prepared.footprint
   | .ordinaryEnd prepared => prepared.footprint
+  | .mergeInput prepared => liftRegionalStateFootprint prepared.selection.owner prepared.footprint
 
 def PreparedInternalTransition.Prepared (program : Program) (state : RuntimeState) :
     PreparedInternalTransition → Prop
@@ -56,6 +65,8 @@ def PreparedInternalTransition.Prepared (program : Program) (state : RuntimeStat
       prepareInternalRegional? program state prepared.selection.operation = some prepared
   | .ordinaryEnd prepared =>
       prepareInternalEnd? program state prepared.operation = some prepared
+  | .mergeInput prepared =>
+      prepareInternalMerge? program state prepared.selection.operation prepared.selection.alternative = some prepared
 
 instance (program : Program) (state : RuntimeState) (prepared : PreparedInternalTransition) :
     Decidable (prepared.Prepared program state) := by
@@ -74,6 +85,13 @@ def PreparedInternalTransition.Independent (left right : PreparedInternalTransit
   | .localControl first, .scopeCreation second => localControlStateFootprintsNonInterfering first.footprint second.footprint = true
   | .scopeCreation first, .localControl second => localControlStateFootprintsNonInterfering first.footprint second.footprint = true
   | .scopeCreation first, .scopeCreation second => localControlStateFootprintsNonInterfering first.footprint second.footprint = true
+  | .arming first, .mergeInput second => localControlStateFootprintsNonInterfering first.stateFootprint second.footprint = true
+  | .mergeInput first, .arming second => localControlStateFootprintsNonInterfering first.footprint second.stateFootprint = true
+  | .localControl first, .mergeInput second => localControlStateFootprintsNonInterfering first.footprint second.footprint = true
+  | .mergeInput first, .localControl second => localControlStateFootprintsNonInterfering first.footprint second.footprint = true
+  | .scopeCreation first, .mergeInput second => localControlStateFootprintsNonInterfering first.footprint second.footprint = true
+  | .mergeInput first, .scopeCreation second => localControlStateFootprintsNonInterfering first.footprint second.footprint = true
+  | .mergeInput first, .mergeInput second => localControlStateFootprintsNonInterfering first.footprint second.footprint = true
   | .regional _, _ | _, .regional _ | .ordinaryEnd _, _ | _, .ordinaryEnd _ =>
       regionalStateFootprintsIndependent left.stateFootprint right.stateFootprint = true
 

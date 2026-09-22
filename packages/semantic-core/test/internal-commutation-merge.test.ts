@@ -8,6 +8,8 @@ import {
   SemanticProcessKind,
   applyInternalOperationStep,
   initialState,
+  projectControlPositionDelta,
+  projectFlowNodeOccurrenceLifecycleDelta,
 } from "@bpmn-lean/semantic-core";
 import type {
   MergeExclusiveOperation,
@@ -59,7 +61,11 @@ const {
   InternalAlternativeKind,
   canonicalUniqueInternalAlternatives,
 } = alternativeModule;
-const { deriveInternalExclusiveMergePreparations } = mergePreparationModule;
+const { deriveInternalExclusiveMergePreparations, deriveInternalExclusiveMergePreparation,
+  applyPreparedInternalExclusiveMerge } = mergePreparationModule;
+const { instantiateInternalPublicationBatch } = await import(
+  new URL("../dist/internal-publication-template.js", import.meta.url).href
+) as typeof import("../src/internal-publication-template.ts");
 const {
   applyExclusiveMergeInput,
   mergeExclusive,
@@ -156,6 +162,77 @@ test("exposes every exact merge input in canonical alternative order", () => {
       mergeAlternative(secondOwner, "place:Flow_A"),
     ],
   );
+});
+
+test("retains an executable token patch and publication for each exact alternative", () => {
+  const [prepared] = requirePreparations(multiOfferState);
+  assert.ok(prepared !== undefined);
+  assert.deepEqual(prepared.operation, mergeOperation);
+  assert.deepEqual(prepared.owner, firstOwner);
+  assert.deepEqual(prepared.patch, {
+    owner: firstOwner, consumed: ["place:Flow_A"], produced: ["place:Flow_Output"],
+    selectedBranch: { kind: "preserve" },
+  });
+  assert.deepEqual(prepared.publicationTemplate.alternative, prepared.alternative);
+  assert.deepEqual(prepared.publicationTemplate.record.positionDelta, {
+    consumedTokens: [{ sequenceFlowId: "Flow_A", owner: firstOwner, multiplicity: 1 }],
+    producedTokens: [{ sequenceFlowId: "Flow_Output", owner: firstOwner, multiplicity: 1 }],
+    enteredScopes: [], exitedScopes: [],
+  });
+});
+
+test("each retained Merge publication equals the actual selected transition at a nonzero index", () => {
+  const before: RuntimeState = { ...runningState([]),
+    scopeOccurrences: [{ id: rootOwner, parent: null }],
+    controlTokens: [token("place:Flow_A", rootOwner, 1), token("place:Flow_B", rootOwner, 1)],
+  };
+  const preparations = deriveInternalExclusiveMergePreparations(rootProgram, before, mergeOperation);
+  assert.ok(preparations !== null && preparations.length === 2);
+  for (const prepared of preparations) {
+    const after = applyPreparedInternalExclusiveMerge(rootProgram, before, prepared);
+    assert.ok(after !== null);
+    assert.deepEqual(after, applyExclusiveMergeInput(mergeOperation, before, prepared.alternative));
+    const actual = instantiateInternalPublicationBatch("merge-command", 41, [prepared.publicationTemplate]);
+    assert.ok(actual !== null && actual[0] !== undefined);
+    assert.deepEqual(actual[0].record.positionDelta, projectControlPositionDelta(rootProgram, before, after));
+    assert.deepEqual(actual[0].lifecycle, projectFlowNodeOccurrenceLifecycleDelta(
+      rootProgram, before, after,
+      { kind: "internal", operation: mergeOperation, owner: prepared.owner }, "merge-command", 41,
+    ));
+  }
+});
+
+test("retained Merge preparation survives changes to other offered inputs without hiding them from discovery", () => {
+  const selected = requirePreparation(requirePreparations(multiOfferState), firstOwner, "place:Flow_A");
+  const afterOtherOffer = { ...multiOfferState, controlTokens: multiOfferState.controlTokens.filter(
+    ({ placeId }) => placeId !== "place:Flow_B",
+  ) };
+  assert.deepEqual(deriveInternalExclusiveMergePreparation(program, afterOtherOffer,
+    mergeOperation, selected.alternative), selected);
+  assert.equal(requirePreparations(afterOtherOffer).length, 2);
+  assert.notEqual(applyPreparedInternalExclusiveMerge(program, afterOtherOffer, selected), null);
+});
+
+test("complete Merge revalidation rejects altered patches, owners, footprints, publication, and stale time", () => {
+  const selected = requirePreparation(requirePreparations(multiOfferState), firstOwner, "place:Flow_A");
+  const altered = [
+    { ...selected, owner: secondOwner },
+    { ...selected, patch: { ...selected.patch, produced: [] } },
+    { ...selected, footprint: { ...selected.footprint, reads: [] } },
+    { ...selected, publicationTemplate: { ...selected.publicationTemplate,
+      lifecycle: { started: [], ended: [] } } },
+  ];
+  for (const prepared of altered) assert.equal(applyPreparedInternalExclusiveMerge(program, multiOfferState, prepared), null);
+  assert.equal(applyPreparedInternalExclusiveMerge(program,
+    { ...multiOfferState, logicalTimeMs: 1 }, selected), null);
+});
+
+test("Merge preparation rejects unsafe output multiplicity before applying a token patch", () => {
+  const state = runningState([
+    token("place:Flow_A", firstOwner, 1),
+    token("place:Flow_Output", firstOwner, Number.MAX_SAFE_INTEGER),
+  ]);
+  assert.equal(deriveInternalExclusiveMergePreparations(program, state, mergeOperation), null);
 });
 
 test("derives exact selected-input and owner-local output footprints", () => {

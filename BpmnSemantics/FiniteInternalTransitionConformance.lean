@@ -110,7 +110,8 @@ theorem mixed_frontier_is_classified :
         | .localControl _ => "local-control"
         | .scopeCreation _ => "scope-creation"
         | .regional _ => "regional"
-        | .ordinaryEnd _ => "ordinary-end") =
+        | .ordinaryEnd _ => "ordinary-end"
+        | .mergeInput _ => "merge-input") =
         ["composed-data", "ordinary", "local-control"] := by
   decide +kernel
 
@@ -134,9 +135,14 @@ theorem every_permutation_has_one_defined_canonical_publication
       (projectOpenFlowNodeOccurrences? program final).isSome = true := by
   have selected := prepareInternalTransitionBatch_sound program ready frontier prepared
     mixed_frontier_is_classified.1
-  exact prepared_transition_canonical_batch_publication_perm program ready prepared reordered
+  have ordinary : ∀ member ∈ prepared, member.alternative = .operation member.operation.id := by decide +kernel
+  have result := prepared_transition_canonical_batch_publication_perm program ready prepared reordered
     instanceId commandId 37 fixture_is_admitted.1 fixture_is_admitted.2.1 rfl
     fixture_is_admitted.2.2 rfl selected.2.1 selected.2.2.2.1 selected.2.2.1 selected.1 permutation
+  rw [fireInternalAlternativeBatch_ordinary_preparations program ready prepared ordinary,
+    fireInternalAlternativeBatch_ordinary_preparations program ready reordered
+      (fun member present => ordinary member (permutation.mem_iff.mpr present))] at result
+  exact result
 
 private def templates : List InternalTransitionPublicationTemplate :=
   (prepared.mapM (preparedTransitionPublicationTemplate? program ready)).getD []
@@ -270,6 +276,9 @@ theorem mixed_end_permutations_have_exact_accepted_publication
     prepared_transition_canonical_batch_publication_perm program endReady endPrepared reordered
       instanceId commandId 41 fixture_is_admitted.1 premise.1 rfl premise.2.1 rfl
       selected.2.1 selected.2.2.2.1 selected.2.2.1 selected.1 permutation
+  have ordinary : ∀ member ∈ endPrepared, member.alternative = .operation member.operation.id := by decide +kernel
+  rw [fireInternalAlternativeBatch_ordinary_preparations program endReady reordered
+    (fun member present => ordinary member (permutation.mem_iff.mpr present))] at fired
   exact ⟨final, publications, left, right, fired, valid⟩
 
 theorem ordinary_end_retains_relative_count_and_canonical_index :

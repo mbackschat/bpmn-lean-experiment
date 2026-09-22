@@ -2,12 +2,19 @@ import BpmnSemantics.SemanticProcess.InternalTransitionPublication
 import BpmnSemantics.SemanticProcess.InternalTransitionPublicationAcceptance
 import BpmnSemantics.SemanticProcess.InternalRegionalArmingAcceptedPublication
 import BpmnSemantics.SemanticProcess.InternalEndPublication
+import BpmnSemantics.SemanticProcess.InternalMergePublication
 
 /-! Predecessor-only mixed publication templates implement the numbering boundary in the [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md). -/
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
 open BpmnSemantics
+
+private theorem actualInternalAlternativePublication_operation (program : Program) (instanceId : SemanticId)
+    (before after : RuntimeState) (operation : SemanticOperation) (commandId : SemanticId) (index : Nat) :
+    actualInternalAlternativePublication? program instanceId before after operation (.operation operation.id) commandId index =
+      actualInternalTransitionPublication? program instanceId before after operation commandId index := by
+  simp [actualInternalAlternativePublication?]
 
 /-- Every actual publication component is accepted at any later assigned index and equals the
 predecessor template; acceptance and position correspondence are derived, never premises. -/
@@ -20,10 +27,11 @@ theorem prepared_transition_publication_template_accepted (program : Program) (s
     (found : prepared.Prepared program state) :
     ∃ template,
       preparedTransitionPublicationTemplate? program state prepared = some template ∧
-      actualInternalTransitionPublication? program instanceId state (prepared.apply program state)
-        prepared.operation commandId transitionIndex = some (template.instantiate commandId transitionIndex) := by
-  cases prepared with
-  | arming arm =>
+      actualInternalAlternativePublication? program instanceId state (prepared.apply program state)
+        prepared.operation prepared.alternative commandId transitionIndex = some (template.instantiate commandId transitionIndex) := by
+  cases prepared <;> simp only [PreparedInternalTransition.operation, PreparedInternalTransition.alternative,
+    actualInternalAlternativePublication_operation]
+  case arming arm =>
       cases arm with
       | ordinary operation patch =>
           exact prepared_ordinary_publication_template_accepted program state operation patch instanceId
@@ -31,7 +39,7 @@ theorem prepared_transition_publication_template_accepted (program : Program) (s
       | data contract patch =>
           exact prepared_data_publication_template_accepted program state contract patch instanceId
             commandId transitionIndex programWF beforeWF projectable found
-  | localControl localPrepared =>
+  case localControl localPrepared =>
       have record := prepareInternalLocalControl_record program state localPrepared.operation localPrepared found
       have lifecycle := prepareInternalLocalControl_accepted_lifecycle program state localPrepared.operation
         localPrepared instanceId commandId transitionIndex beforeWF running projectable found
@@ -45,11 +53,11 @@ theorem prepared_transition_publication_template_accepted (program : Program) (s
       simp only [actualInternalTransitionPublication?, record, lifecycle, position,
         time]
       rfl
-  | scopeCreation scopePrepared =>
+  case scopeCreation scopePrepared =>
       exact ⟨internalScopeCreationPublicationTemplate scopePrepared, rfl,
         prepared_scope_creation_publication_template_accepted program state scopePrepared instanceId
           commandId transitionIndex programWF beforeWF projectable found⟩
-  | ordinaryEnd ending =>
+  case ordinaryEnd ending =>
       have record := prepareInternalEnd_record program state ending.operation ending found
       have lifecycle := prepareInternalEnd_accepted_lifecycle program state ending.operation ending
         instanceId commandId transitionIndex running projectable found
@@ -64,18 +72,22 @@ theorem prepared_transition_publication_template_accepted (program : Program) (s
       simp only [actualInternalTransitionPublication?, record, lifecycle, position,
         internalEndPublicationTemplate, InternalTransitionPublicationTemplate.instantiate, time]
       rfl
-  | regional regional =>
+  case regional regional =>
       obtain ⟨after, applied, published⟩ := prepareInternalRegional_execution_publication program state _ regional
         instanceId commandId transitionIndex programWF beforeWF found
       refine ⟨internalRegionalPublicationTemplate regional, rfl, ?_⟩
       have record := published.record
       rw [published.operationBound] at record
-      simp only [PreparedInternalTransition.apply, applied, Option.getD_some, PreparedInternalTransition.operation,
+      simp only [PreparedInternalTransition.apply, applied, Option.getD_some,
         actualInternalTransitionPublication?, record, published.lifecycle, published.position,
         internalRegionalPublicationTemplate, InternalTransitionPublicationTemplate.instantiate,
         InternalTransitionLifecycleTemplate.instantiate, InternalRegionalPublicationTemplate.lifecycle,
         published.logicalTime]
       rfl
+  case mergeInput merge =>
+      exact ⟨internalMergePublicationTemplate merge, rfl,
+        prepareInternalMerge_accepted_publication program state merge.selection.operation merge.selection.alternative merge
+          instanceId commandId transitionIndex beforeWF running projectable found⟩
 
 theorem prepared_transition_template_operation_id (program : Program) (state : RuntimeState)
     (prepared : PreparedInternalTransition) (template : InternalTransitionPublicationTemplate)
@@ -92,6 +104,7 @@ theorem prepared_transition_template_operation_id (program : Program) (state : R
   | scopeCreation scopePrepared => cases found; rfl
   | regional regional => cases found; rfl
   | ordinaryEnd ending => cases found; rfl
+  | mergeInput merge => cases found; rfl
 
 theorem prepared_transition_template_frame (program : Program) (before after : RuntimeState)
     (prepared : PreparedInternalTransition)
@@ -114,6 +127,7 @@ theorem prepared_transition_template_frame (program : Program) (before after : R
   | scopeCreation _ => exact found
   | regional _ => exact found
   | ordinaryEnd _ => exact found
+  | mergeInput _ => exact found
 
 theorem prepared_transition_template_after_step (program : Program) (state : RuntimeState)
     (step query : PreparedInternalTransition) (instanceId : SemanticId)
@@ -141,6 +155,9 @@ theorem prepared_transition_template_after_step (program : Program) (state : Run
   | ordinaryEnd ending =>
       exact prepared_transition_template_frame program state (ending.selection.apply state) query template
         rfl (fun _ _ _ _ prior => prior) found
+  | mergeInput merge =>
+      exact prepared_transition_template_frame program state (merge.selection.apply state) query template
+        rfl (fun _ _ _ _ prior => prior) found
   | scopeCreation creation =>
       apply prepared_transition_template_frame program state (creation.selection.apply state) query template
         (scopeCreation_apply_time state creation.selection) _ found
@@ -152,7 +169,7 @@ theorem prepared_transition_template_after_step (program : Program) (state : Run
         scopeCreation_wait_start_preserved program state _ selected owner element activation start selection prior
   | regional regional =>
       cases query with
-      | localControl _ | scopeCreation _ | regional _ | ordinaryEnd _ => exact found
+      | localControl _ | scopeCreation _ | regional _ | ordinaryEnd _ | mergeInput _ => exact found
       | arming arm =>
           have facts := preparedArming_owner_facts program state arm queryPrepared
           have hosting := runtimePositionValid_running_instance program instanceId arm.scopeFramePatch.runtimeInstanceId state

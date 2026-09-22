@@ -409,6 +409,7 @@ test("each mixed family rejects stale complete preparations despite unchanged op
       case PreparedInternalTransitionFamily.ScopeCreation:
       case PreparedInternalTransitionFamily.Regional:
       case PreparedInternalTransitionFamily.OrdinaryEnd:
+      case PreparedInternalTransitionFamily.MergeInput:
         forged = { ...member, footprint: { ...member.footprint, reads: [] } };
         break;
     }

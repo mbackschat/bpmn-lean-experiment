@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
+  CommandOutcome,
   ControlStateKind,
   InternalSchedulingMode,
   SemanticOperationKind,
@@ -12,8 +13,13 @@ import {
   StimulusKind,
   applyInternalOperationStep,
   applyStimulusWithTrace,
+  compareCanonicalStrings,
   initialState,
+  enabledInternalOperationCount,
   isWellFormedSemanticProcessProgram,
+  projectCurrentControlPositions,
+  projectOpenFlowNodeOccurrences,
+  runtimeStateDefects,
   supportsSemanticProcessExecution,
 } from "@bpmn-lean/semantic-core";
 import type {
@@ -37,6 +43,16 @@ import {
   rootScopeOccurrence,
 } from "./root-scope-fixture.ts";
 import { parallelProgram } from "./parallel-fork-join-fixture.ts";
+const { classifyPreparedInternalFrontier, InternalFrontierDisposition } = await import(
+  new URL("../dist/internal-transition-preparation.js", import.meta.url).href
+) as typeof import("../src/internal-transition-preparation.ts");
+const { deriveInternalTransitionPreparation, PreparedInternalTransitionFamily,
+  applyPreparedInternalTransition, preparedInternalTransitionsAreIndependent } = await import(
+  new URL("../dist/internal-transition-batch.js", import.meta.url).href
+) as typeof import("../src/internal-transition-batch.ts");
+const { deriveInternalExclusiveMergePreparations } = await import(
+  new URL("../dist/internal-transition-merge-preparation.js", import.meta.url).href
+) as typeof import("../src/internal-transition-merge-preparation.ts");
 
 const threeTaskProgram = rootScopedProgram({
   kind: SemanticProcessKind.SemanticProcess,
@@ -150,6 +166,111 @@ const threeTaskTraceProgram = rootScopedProgram({
       input: "place:Flow_JoinToEnd",
     },
   ],
+});
+
+const mergeChoiceProgram = rootScopedProgram({
+  kind: SemanticProcessKind.SemanticProcess,
+  identity: { ...threeTaskProgram.identity, semanticProfile: SemanticProfileId.UserTaskCycle,
+    sourceId: "exact-merge-frontier" },
+  processId: "Process_ExactMergeFrontier",
+  controlPlaces: ["A", "B", "Fork", "Output"].map(controlPlace),
+  operations: [
+    { ...operationBase("Start"), kind: SemanticOperationKind.Initiate, output: "place:Fork" },
+    { ...operationBase("Fork"), kind: SemanticOperationKind.Duplicate,
+      input: "place:Fork", outputs: ["place:A", "place:B"] },
+    { ...operationBase("Merge"), kind: SemanticOperationKind.MergeExclusive,
+      inputs: ["place:A", "place:B"], output: "place:Output" },
+    { ...operationBase("End"), kind: SemanticOperationKind.ReachNoneEnd, input: "place:Output" },
+  ],
+});
+
+const mergeChoiceOwner = rootScopeOccurrence(mergeChoiceProgram.processId, "Instance_ExactMergeFrontier");
+const mergeChoiceState: RuntimeState = {
+  ...initialState,
+  control: { kind: ControlStateKind.Running, instanceId: mergeChoiceOwner.processInstanceId },
+  scopeOccurrences: [{ id: mergeChoiceOwner, parent: null }],
+  scopeActivations: [{ elementId: mergeChoiceProgram.processId, count: 1 }],
+  controlTokens: ["place:A", "place:B"].map((placeId) =>
+    ({ placeId, owner: mergeChoiceOwner, multiplicity: 1 })),
+};
+
+test("counts both exact Merge alternatives even when its unique-offer evaluator is disabled", () => {
+  assert.equal(isWellFormedSemanticProcessProgram(mergeChoiceProgram), true);
+  assert.deepEqual(runtimeStateDefects(mergeChoiceProgram, mergeChoiceOwner.processInstanceId, mergeChoiceState), []);
+  assert.notEqual(projectCurrentControlPositions(mergeChoiceProgram, mergeChoiceState), null);
+  assert.notEqual(projectOpenFlowNodeOccurrences(mergeChoiceProgram, mergeChoiceState), null);
+  const merge = mergeChoiceProgram.operations.find(({ kind }) => kind === SemanticOperationKind.MergeExclusive)!;
+  assert.equal(applyInternalOperationStep(mergeChoiceProgram, merge, mergeChoiceState), null);
+  assert.equal(enabledInternalOperationCount(mergeChoiceProgram, mergeChoiceState), 2);
+});
+
+test("reject mode rolls back a command reaching multiple Merge alternatives instead of committing false stability", () => {
+  const start = { kind: StimulusKind.StartProcess, commandId: "start-exact-merge-frontier",
+    processId: mergeChoiceProgram.processId, instanceId: mergeChoiceOwner.processInstanceId,
+    initialVariables: [] } as const;
+  assert.equal(supportsSemanticProcessExecution(start, mergeChoiceProgram), false);
+  for (const operations of [mergeChoiceProgram.operations, [...mergeChoiceProgram.operations].reverse()]) {
+    const result = applyStimulusWithTrace({ ...mergeChoiceProgram, operations }, initialState, start, 8);
+    assert.equal(result.result.outcome, CommandOutcome.RolledBack);
+    assert.equal(result.result.ambiguousInternalChoice, true);
+    assert.equal(result.result.internalStepBoundExceeded, false);
+    assert.equal(result.result.state, initialState);
+    assert.deepEqual(result.committedTransitions, []);
+    assert.deepEqual(result.flowNodeOccurrenceLifecycles, []);
+  }
+});
+
+test("normalization takes only the operation independent of both exact Merge alternatives", () => {
+  const program = rootScopedProgram({ ...mergeChoiceProgram,
+    controlPlaces: [...mergeChoiceProgram.controlPlaces, ...["SideInput", "SideOutput"].map(controlPlace)]
+      .sort((left, right) => compareCanonicalStrings(left.id, right.id)),
+    operations: [...mergeChoiceProgram.operations.map((operation) => operation.kind === SemanticOperationKind.Duplicate
+      ? { ...operation, outputs: [...operation.outputs, "place:SideInput"] } : operation),
+      { ...operationBase("Side"), kind: SemanticOperationKind.AwaitUserTask,
+        input: "place:SideInput", output: "place:SideOutput", task: { elementId: "Side", name: null } },
+      { ...operationBase("SideEnd"), kind: SemanticOperationKind.ReachNoneEnd, input: "place:SideOutput" }],
+  });
+  const state: RuntimeState = { ...mergeChoiceState,
+    controlTokens: [...mergeChoiceState.controlTokens,
+      { placeId: "place:SideInput", owner: mergeChoiceOwner, multiplicity: 1 }],
+  };
+  assert.equal(isWellFormedSemanticProcessProgram(program), true);
+  assert.deepEqual(runtimeStateDefects(program, mergeChoiceOwner.processInstanceId, state), []);
+  const merge = program.operations.find(({ kind }) => kind === SemanticOperationKind.MergeExclusive)!;
+  assert.ok(merge.kind === SemanticOperationKind.MergeExclusive);
+  const offers = deriveInternalExclusiveMergePreparations(program, state, merge);
+  assert.ok(offers !== null && offers.length === 2);
+  const side = program.operations.find(({ id }) => id === "operation:Side")!;
+  const sidePrepared = deriveInternalTransitionPreparation(program, state, { operation: side, owner: mergeChoiceOwner });
+  assert.ok(sidePrepared !== null);
+  const members = [...offers.map((offer) => ({ ...offer, family: PreparedInternalTransitionFamily.MergeInput } as const)),
+    sidePrepared];
+  for (const order of permutations(members)) {
+    assert.deepEqual(classifyPreparedInternalFrontier(order),
+      { kind: InternalFrontierDisposition.IndependentBatch, members: [sidePrepared] });
+  }
+  const after = applyPreparedInternalTransition(program, state, sidePrepared);
+  assert.ok(after !== null);
+  assert.deepEqual(deriveInternalExclusiveMergePreparations(program, after, merge), offers);
+  assert.deepEqual(classifyPreparedInternalFrontier(members.slice(0, 2)),
+    { kind: InternalFrontierDisposition.ObservableChoice, members: members.slice(0, 2) });
+  assert.equal(classifyPreparedInternalFrontier([members[0]!, members[0]!]), null);
+  assert.deepEqual(classifyPreparedInternalFrontier([]), { kind: InternalFrontierDisposition.Stable });
+
+  assert.ok(side.kind === SemanticOperationKind.AwaitUserTask);
+  const competing = { ...side, input: "place:A" };
+  const competingProgram = { ...program,
+    operations: program.operations.map((operation) => operation.id === side.id ? competing : operation) };
+  const competingPrepared = deriveInternalTransitionPreparation(competingProgram, state,
+    { operation: competing, owner: mergeChoiceOwner });
+  assert.ok(competingPrepared !== null);
+  assert.equal(preparedInternalTransitionsAreIndependent(competingPrepared, members[0]!), false);
+  assert.equal(preparedInternalTransitionsAreIndependent(competingPrepared, members[1]!), true);
+  const competingMembers = [competingPrepared, ...members.slice(0, 2)];
+  for (const order of permutations(competingMembers)) {
+    assert.deepEqual(classifyPreparedInternalFrontier(order),
+      { kind: InternalFrontierDisposition.ObservableChoice, members: competingMembers });
+  }
 });
 
 test("requires one closed internal scheduling mode", () => {

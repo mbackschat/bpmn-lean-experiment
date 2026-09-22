@@ -131,11 +131,11 @@ export const leanModuleCostRecord = {
     accountingCaveat:
       "GNU time's resident-set accounting in Docker Desktop's Linux VM does not align exactly with cgroup charging. Compare RSS within this measurement series; use the separately recorded cgroup peak and events for hard-limit acceptance.",
   },
-  nearCapModules: [],
+  nearCapModules: ["BpmnSemantics.InternalRegionalCancellationProjectionConformance"],
   rows: [
     { module: "BpmnSemantics.InternalRegionalPrivateTimerAliasConformance", sourceSha256: "ea6e88079f52f88f539f2d4bcaea55a96ef15a0605478a37d9b4102b856ac288", peakResidentKib: 2689160, elapsedSeconds: 16.21, measurementReceiptSha256: "e2710362ef63fb262bf2f2be7e9271cfe2b25074a6d406478d44ecf12c947b7a" },
     { module: "BpmnSemantics.BoundaryTimerProjectionConformance", sourceSha256: "7f66ba0f077edcdc0eb6ecbdd42183a20e93fb755cd4637cfc5e55f327974086", peakResidentKib: 1218336, elapsedSeconds: 12.64, measurementReceiptSha256: "736239e62e8ed55852587eadf1300ad26b0c3309f8039d63dc68f8631585fc0a", measuredAtCommit: "4d4d8d76" },
-    { module: "BpmnSemantics.InternalRegionalCancellationProjectionConformance", sourceSha256: "4bd403746a5814999f24bc0e20be37d2f4997f30d0baaf0ff7ad0e8344502b42", peakResidentKib: 2767292, elapsedSeconds: 102.47, measurementReceiptSha256: "d0f1d53ed6f4b42a250898064da0bba0fc30f85ff2b1c657f81530b6f8732ef4", measuredAtCommit: "4d4d8d76" },
+    { module: "BpmnSemantics.InternalRegionalCancellationProjectionConformance", sourceSha256: "4bd403746a5814999f24bc0e20be37d2f4997f30d0baaf0ff7ad0e8344502b42", peakResidentKib: 2841852, elapsedSeconds: 105.65, measurementReceiptSha256: "617a4ed1c3896fefe62cc3ee47c93a7bf6e0a462cda6c7419db6912699c6f027", measuredAtCommit: "4d4d8d76" },
     { module: "BpmnSemantics.ScopeCreationMixedBatchConformance", sourceSha256: "b3b5735380de0d8ae4f0fe93808e095052a3a1134a892069ac06d6273ab70c45", peakResidentKib: 1999244, elapsedSeconds: 76.64, measurementReceiptSha256: "629b4179eb19116a49209997217cb02567acbd907af7d0bebe0ce32076e17d10" },
     { module: "BpmnSemantics.InternalScopeCreationFrameConformance", sourceSha256: "4cc55b055ae93be5f5e4f12e181fbbc56cf0d822afcbbaa45b0de4352d988094", peakResidentKib: 1368940, elapsedSeconds: 72.62, measuredAtCommit: "b589ab0a" },
     { module: "BpmnSemantics.ScopeCreationCompensationValidityConformance", sourceSha256: "4aae161d215aab3fcb9df35905d8f643587cfdd8f5005a77d3b3a1d49cd5b43d", peakResidentKib: 1049176, elapsedSeconds: 4.40, measuredAtCommit: "52a84367" },
@@ -144,7 +144,7 @@ export const leanModuleCostRecord = {
     { module: "BpmnSemantics.InternalScopeCreationSelectionConformance", sourceSha256: "1e6e453574d725a87dc3822e6db07bf0fb6571518fbf3559bab7d14161aabe3a", peakResidentKib: 658084, elapsedSeconds: 2.23, measuredAtCommit: "bced19a5" },
     { module: "BpmnSemantics.ScopeStorageOrderConformance", sourceSha256: "631273878f32400bb4c7ba24db7b1b07a1d6ae78b198b106c97115c2bf146009", peakResidentKib: 690964, elapsedSeconds: 1.61, measuredAtCommit: "a97a4ea1" },
     { module: "BpmnSemantics.MixedLocalControlClosureConformance", sourceSha256: "1bed9ad23468ac08ae9c8324b35c003d004faf98f74f44d37c77277771722bcc", peakResidentKib: 1570176, elapsedSeconds: 28.99, measuredAtCommit: "93cfcbf9" },
-    { module: "BpmnSemantics.FiniteInternalTransitionConformance", sourceSha256: "a49b3081a062d8133789cdfecd9705c0464d4902d55696a2478b8e54378632bd", peakResidentKib: 1358004, elapsedSeconds: 10.18, measurementReceiptSha256: "396a76d8f957acfd681af98d3d3d2bac172731a55935c4767dc28300f959a02a" },
+    { module: "BpmnSemantics.FiniteInternalTransitionConformance", sourceSha256: "b7a286c9a9b39f32c4041be352b1a748f059ec2d64f40b103b48a45cf241f7b5", peakResidentKib: 1379540, elapsedSeconds: 11.43, measurementReceiptSha256: "449cadce23e9f4caed9a943464d55bf1d08efd99f7269cb78fa287ab9feffee9" },
     { module: "BpmnSemantics.InclusiveGatewayPairingConformance", sourceSha256: "d82637238732c40185c03155e953afb19e99ff1f0f6b5cd916cfd19dcf8943c8", peakResidentKib: 836304, elapsedSeconds: 3.43, measuredAtCommit: "565ff325" },
     { module: "BpmnSemantics.CanonicalTokenStorageConformance", sourceSha256: "c51bf6ffcf66937adeb9dbb3bd713942282d83254a35d022dcdf45c50d5705cb", peakResidentKib: 1226740, elapsedSeconds: 5.85, measuredAtCommit: "a97a4ea1" },
     { module: "BpmnSemantics.FiniteInternalArmingConformance", sourceSha256: "7d662e97e567300b6a80e892b77b6a38befc8db3e7518f6bc775705ed7ec652d", peakResidentKib: 1344100, elapsedSeconds: 8.83, measuredAtCommit: "93cfcbf9" },

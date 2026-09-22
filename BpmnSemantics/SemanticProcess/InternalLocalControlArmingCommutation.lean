@@ -39,7 +39,7 @@ private theorem arming_token_write (arm : PreparedInternalArming) :
   | ordinary operation patch => exact ordinary patch
   | data contract patch => exact ordinary_writes_subset_data_writes contract patch (ordinary patch.arm)
 
-private theorem arming_local_read_projections (state : RuntimeState) (arm : PreparedInternalArming) :
+theorem arming_local_read_projections (state : RuntimeState) (arm : PreparedInternalArming) :
     (arm.apply state).control = state.control ∧
       (arm.apply state).logicalTimeMs = state.logicalTimeMs ∧
       (arm.apply state).scopeOccurrences = state.scopeOccurrences ∧
@@ -97,7 +97,7 @@ private theorem arming_local_census_frame (state : RuntimeState)
   rw [(arming_local_read_projections state arm).2.2.2.2.2,
     filterTokens_removeToken_other _ _ _ _ different]
 
-private theorem arming_local_bucket_frame (state : RuntimeState)
+theorem arming_local_bucket_frame (state : RuntimeState)
     (selected : InternalLocalControlSelection) (instanceId : SemanticId) (arm : PreparedInternalArming)
     (separated : localControlStateFootprintsNonInterfering
       (internalLocalControlStateFootprint state selected instanceId) arm.stateFootprint = true)
@@ -151,22 +151,17 @@ theorem prepareInternalLocalControl_after_arming (program : Program) (state : Ru
         (localControl_selectedJoin_patch state operation selected selection chosen selectedBranch)
         present key member)
 
-/-- Computed state separation derives both complete preparations and exact canonical mixed
-commutation for all five local families and ordinary or composed-data arms. -/
-theorem prepared_local_control_arming_pair (program : Program) (state : RuntimeState)
-    (localOperation : SemanticOperation) (preparedLocal : PreparedInternalLocalControl) (arm : PreparedInternalArming)
-    (localFound : prepareInternalLocalControl? program state localOperation = some preparedLocal)
+/-- Arming depends on the local patch footprint, independently of the operation's selector. -/
+theorem prepared_arming_after_local_patch (program : Program) (state : RuntimeState)
+    (selected : InternalLocalControlSelection) (instanceId : SemanticId) (arm : PreparedInternalArming)
     (armFound : arm.Prepared program state)
     (canonical : canonicalCollectionOrder state = true)
-    (separated : localControlStateFootprintsNonInterfering preparedLocal.footprint arm.stateFootprint = true) :
-    arm.Prepared program (preparedLocal.selection.apply state) ∧
-      prepareInternalLocalControl? program (arm.apply state) localOperation = some preparedLocal ∧
-      arm.apply (preparedLocal.selection.apply state) = preparedLocal.selection.apply (arm.apply state) := by
-  have localAfter := prepareInternalLocalControl_after_arming program state localOperation preparedLocal arm localFound separated
-  obtain ⟨selected, origin, instanceId, identity, delta, selection,
-    _, _, _, _, _, _, _, _, _, rfl⟩ := prepareInternalLocalControl_facts program state localOperation preparedLocal localFound
+    (separated : localControlStateFootprintsNonInterfering
+      (internalLocalControlStateFootprint state selected instanceId) arm.stateFootprint = true) :
+    arm.Prepared program (selected.apply state) ∧
+      arm.apply (selected.apply state) = selected.apply (arm.apply state) := by
   have untouched := local_control_arming_input_untouched state selected instanceId arm separated
-  refine ⟨?_, localAfter, ?_⟩
+  constructor
   · cases arm with
     | ordinary operation patch =>
         exact prepareInternalArm_after_local_control program state operation patch selected armFound untouched
@@ -185,5 +180,22 @@ theorem prepared_local_control_arming_pair (program : Program) (state : RuntimeS
     | data contract patch =>
         exact local_control_data_arm_patches_commute state selected patch canonical
           (fun member => untouched (List.mem_append_right _ member))
+
+/-- Computed state separation derives both complete preparations and exact canonical mixed
+commutation for all five local families and ordinary or composed-data arms. -/
+theorem prepared_local_control_arming_pair (program : Program) (state : RuntimeState)
+    (localOperation : SemanticOperation) (preparedLocal : PreparedInternalLocalControl) (arm : PreparedInternalArming)
+    (localFound : prepareInternalLocalControl? program state localOperation = some preparedLocal)
+    (armFound : arm.Prepared program state)
+    (canonical : canonicalCollectionOrder state = true)
+    (separated : localControlStateFootprintsNonInterfering preparedLocal.footprint arm.stateFootprint = true) :
+    arm.Prepared program (preparedLocal.selection.apply state) ∧
+      prepareInternalLocalControl? program (arm.apply state) localOperation = some preparedLocal ∧
+      arm.apply (preparedLocal.selection.apply state) = preparedLocal.selection.apply (arm.apply state) := by
+  have localAfter := prepareInternalLocalControl_after_arming program state localOperation preparedLocal arm localFound separated
+  obtain ⟨selected, origin, instanceId, identity, delta, selection,
+    _, _, _, _, _, _, _, _, _, rfl⟩ := prepareInternalLocalControl_facts program state localOperation preparedLocal localFound
+  have armAfter := prepared_arming_after_local_patch program state selected instanceId arm armFound canonical separated
+  exact ⟨armAfter.1, localAfter, armAfter.2⟩
 
 end BpmnSemantics.SemanticProcess.InternalCommutation

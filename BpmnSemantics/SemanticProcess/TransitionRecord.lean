@@ -125,6 +125,9 @@ structure InternalTransitionRecord where
   operationKind : SemanticOperationKind
   origin : BpmnElementOrigin
   owner : ScopeOccurrenceId
+  /-- The complete-frontier account requires replay to retain the chosen Merge bucket.
+  Publication exposes that choice through the consumed-token delta, not an extra wire field. -/
+  mergeInput : Option ControlPlaceId := none
   deriving Repr, DecidableEq
 
 /-- One revision-free committed semantic transition. -/
@@ -186,15 +189,67 @@ theorem internalTransitionRecords_same_id_same_operation
     · simp [rightExact] at rightFound
   · simp [leftExact] at leftFound
 
-/-- Replay one internal record after checking all metadata against one unique Program operation. -/
+/-- Exact Merge records validate their chosen owned bucket; legacy records retain the unique selector. -/
+def selectedRecordedOperationOwner? (state : RuntimeState) (operation : SemanticOperation)
+    (record : InternalTransitionRecord) : Option ScopeOccurrenceId :=
+  match record.mergeInput, operation with
+  | none, _ => selectedOperationOwner? state operation
+  | some input, .mergeExclusive _ _ inputs _ =>
+      if input ∈ inputs ∧ ⟨input, record.owner⟩ ∈ state.tokens then some record.owner else none
+  | some _, _ => none
+
+private def fireRecordedOperation? (program : Program) (state : RuntimeState)
+    (operation : SemanticOperation) (record : InternalTransitionRecord) : Option RuntimeState :=
+  match record.mergeInput, operation with
+  | none, _ => fire? program operation state
+  | some input, .mergeExclusive _ _ inputs output =>
+      if program.compensationEventSubProcessSnapshots = none ∧ input ∈ inputs ∧
+          ⟨input, record.owner⟩ ∈ state.tokens then
+        some { state with tokens := addToken (removeToken state.tokens input record.owner) output record.owner }
+      else none
+  | some _, _ => none
+
+private theorem fireRecordedOperation_sound (program : Program) (before after : RuntimeState)
+    (operation : SemanticOperation) (record : InternalTransitionRecord)
+    (fired : fireRecordedOperation? program before operation record = some after) :
+    OperationStep program operation before after := by
+  cases choice : record.mergeInput with
+  | none => exact fire_sound program operation before after (by simpa [fireRecordedOperation?, choice] using fired)
+  | some input =>
+      cases operation with
+      | mergeExclusive id origin inputs output =>
+          simp only [fireRecordedOperation?, choice] at fired
+          split at fired
+          · next valid =>
+              cases fired
+              exact .mergeExclusive id origin inputs output _ _
+                (mergeExclusiveStep_of_offered_token before inputs output ⟨input, record.owner⟩ valid.2.2 valid.2.1)
+          · contradiction
+      | _ => simp [fireRecordedOperation?, choice] at fired
+
+/-- Replay one internal record after checking all metadata and its exact choice against one Program operation. -/
 def replayInternalTransition? (program : Program) (state : RuntimeState)
     (record : InternalTransitionRecord) : Option RuntimeState := do
   let operation ← uniqueOperation? program record.operationId
   if operation.kind ≠ record.operationKind || operation.origin ≠ record.origin then none
   else
-    let owner ← selectedOperationOwner? state operation
+    let owner ← selectedRecordedOperationOwner? state operation record
     if owner ≠ record.owner then none
-    else fire? program operation state
+    else fireRecordedOperation? program state operation record
+
+/-- An exact retained Merge input replays even when another input or another indistinguishable unit is offered. -/
+theorem replayInternalTransition_merge_input (program : Program) (state : RuntimeState)
+    (id : OperationId) (origin : BpmnElementOrigin) (inputs : List ControlPlaceId)
+    (output input : ControlPlaceId) (owner : ScopeOccurrenceId)
+    (snapshots : program.compensationEventSubProcessSnapshots = none)
+    (selected : program.operations.filter (fun operation => decide (operation.id = id)) =
+      [.mergeExclusive id origin inputs output])
+    (offered : input ∈ inputs) (present : ⟨input, owner⟩ ∈ state.tokens) :
+    replayInternalTransition? program state
+      { operationId := id, operationKind := .mergeExclusive, origin, owner, mergeInput := some input } =
+      some { state with tokens := addToken (removeToken state.tokens input owner) output owner } := by
+  simp [replayInternalTransition?, uniqueOperation?, selected, selectedRecordedOperationOwner?,
+    fireRecordedOperation?, snapshots, offered, present, SemanticOperation.kind, SemanticOperation.origin]
 
 private theorem uniqueOperation_mem_and_matches (program : Program) (id : OperationId)
     (operation : SemanticOperation)
@@ -227,7 +282,7 @@ theorem replayInternalTransition_sound (program : Program) (before after : Runti
         uniqueOperation? program record.operationId = some operation ∧
           operation.kind = record.operationKind ∧
           operation.origin = record.origin ∧
-          selectedOperationOwner? before operation = some record.owner := by
+          selectedRecordedOperationOwner? before operation record = some record.owner := by
   unfold replayInternalTransition? at replayed
   generalize selectedEq : uniqueOperation? program record.operationId = selected at replayed
   cases selected with
@@ -236,7 +291,7 @@ theorem replayInternalTransition_sound (program : Program) (before after : Runti
       by_cases kindMatches : operation.kind = record.operationKind
       · by_cases originMatches : operation.origin = record.origin
         · simp [kindMatches, originMatches] at replayed
-          generalize ownerEq : selectedOperationOwner? before operation = selectedOwner at replayed
+          generalize ownerEq : selectedRecordedOperationOwner? before operation record = selectedOwner at replayed
           cases selectedOwner with
           | none => simp at replayed
           | some selectedOwner =>
@@ -246,7 +301,7 @@ theorem replayInternalTransition_sound (program : Program) (before after : Runti
                   operation selectedEq
                 exact
                   ⟨⟨operation, membership.1, membership.2,
-                      fire_sound program operation before after replayed⟩,
+                      fireRecordedOperation_sound program before after operation record replayed⟩,
                     operation, (by simp), kindMatches, originMatches,
                     ownerEq.trans (congrArg some ownerMatches)⟩
               · simp [ownerMatches] at replayed

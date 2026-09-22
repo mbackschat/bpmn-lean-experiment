@@ -120,6 +120,25 @@ private theorem localControl_scope_difference_self (positions : List PublicScope
     List.any_eq_true.mpr ⟨position, member, by simp⟩
   simp [present]
 
+/-- Local-control, End, and Merge use the same token projection algebra once their family laws
+have established position validity; no family-specific state invariant is assumed here. -/
+theorem internalTokenPatch_position_delta (program : Program) (before after : RuntimeState)
+    (patch : TokenPatch) (delta : PublicControlPositionDelta) (instanceId : SemanticId)
+    (beforePosition : runtimePositionValid program instanceId before = true)
+    (afterPosition : runtimePositionValid program instanceId after = true)
+    (tokens : after.tokens = patch.apply before.tokens)
+    (scopes : after.scopeOccurrences = before.scopeOccurrences)
+    (found : internalLocalControlPositionDelta? program patch = some delta)
+    (available : internalLocalControlTokensAvailable before patch = true) :
+    controlPositionDelta? program instanceId before after = some delta := by
+  have differences := internalLocalControlPositionDelta?_token_differences program before patch delta found available
+  obtain ⟨_, _, _, _, entered, exited⟩ := internalLocalControlPositionDelta?_strict program patch delta found
+  simp only [controlPositionDelta?, projectControlPosition?, beforePosition, afterPosition,
+    if_true, Option.bind_eq_bind, Option.bind_some, tokens, scopes, differences.1, differences.2,
+    localControl_scope_difference_self]
+  cases delta
+  simp_all
+
 /-- Complete predecessor preparation determines the actual public position delta. Runtime validity
 of the patched successor and equality of its independently projected delta are derived here. -/
 theorem internalLocalControlPositionDelta?_corresponds (program : Program) (state : RuntimeState)
@@ -136,13 +155,7 @@ theorem internalLocalControlPositionDelta?_corresponds (program : Program) (stat
       programWF beforeWF running found)
   obtain ⟨selected, origin, selectedInstance, identity, delta, _, _, _, _, _, _, available,
     _, _, deltaFound, rfl⟩ := prepareInternalLocalControl_facts program state operation prepared found
-  have differences := internalLocalControlPositionDelta?_token_differences program state selected.tokens delta deltaFound available
-  obtain ⟨_, _, _, _, entered, exited⟩ := internalLocalControlPositionDelta?_strict program selected.tokens delta deltaFound
-  simp only [controlPositionDelta?, projectControlPosition?, beforePosition, afterPosition,
-    if_true, Option.bind_eq_bind, Option.bind_some]
-  simp only [makeInternalLocalControlPreparation, InternalLocalControlSelection.apply,
-    differences.1, differences.2, localControl_scope_difference_self]
-  cases delta
-  simp_all
+  exact internalTokenPatch_position_delta program state (selected.apply state) selected.tokens delta instanceId
+    beforePosition afterPosition rfl rfl deltaFound available
 
 end BpmnSemantics.SemanticProcess.InternalCommutation

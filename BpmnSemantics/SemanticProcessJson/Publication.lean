@@ -155,11 +155,9 @@ private def transitionRecordsJson? (program : Program) (instanceId : SemanticId)
         transitionRecordsJson? program instanceId successor remaining
       pure (record :: tail, finalState)
 
-/-- Emit only the exact unnumbered records and independently projected head position for one publishable manual Process start. -/
-def committedExecutionPublicationJson? (closureLimit : Nat) (program : Program)
-    (instanceId : SemanticId) (initial : RuntimeState)
-    (stimulus : Stimulus) : Option Json := do
-  let traced := applyStimulusTraced closureLimit program initial stimulus
+/-- Both ordinary and scheduled parity witnesses replay actual records before projecting their head. -/
+def tracedExecutionPublicationJson? (program : Program) (instanceId : SemanticId)
+    (initial : RuntimeState) (traced : TracedStimulusResult) : Option Json := do
   if traced.committedTransitions.isEmpty then none
   else
     let (records, finalState) ←
@@ -171,6 +169,12 @@ def committedExecutionPublicationJson? (closureLimit : Nat) (program : Program)
       pure <| Json.mkObj
         [ ("transitions", jsonArray records)
         , ("current", currentPositionJson current) ]
+
+/-- Emit only the exact unnumbered records and independently projected head position for one publishable manual Process start. -/
+def committedExecutionPublicationJson? (closureLimit : Nat) (program : Program)
+    (instanceId : SemanticId) (initial : RuntimeState) (stimulus : Stimulus) : Option Json :=
+  tracedExecutionPublicationJson? program instanceId initial
+    (applyStimulusTraced closureLimit program initial stimulus)
 
 private def projectionRejectionsJson
     (cases : List (String × Program × SemanticId × RuntimeState)) : Json :=

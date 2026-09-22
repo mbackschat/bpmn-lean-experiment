@@ -254,7 +254,8 @@ theorem user_task_completion_with_same_successor_is_equal
     decide (entry.1 = ⟨submittedTaskId.elementId.value⟩)) <;>
     cases outputPresent : (dataOutputTaskOperations program).any (fun entry =>
       decide (entry.1 = ⟨submittedTaskId.elementId.value⟩)) <;>
-  simp [applyStimulus, StimulusResult.ofClosure, admitStimulus, snapshotAbsent, leftNoIncidents,
+  simp [applyStimulus, StimulusResult.ofScheduledClosure, StimulusResult.ofClosure,
+    admitStimulus, snapshotAbsent, leftNoIncidents,
     rightNoIncidents, leftRunning, rightRunning,
     ordinaryTask.1, ordinaryTask.2, noSequentialMultiInstance, noParallelMultiInstance,
     noMessageBoundedTask, noDataInputOutputTask, inputPresent, outputPresent,
@@ -262,7 +263,7 @@ theorem user_task_completion_with_same_successor_is_equal
     ordinaryProgram, valuesAdmitted,
     completeOrdinaryUserTaskWithCompensation?, nonCompensationTarget, leftCompletion,
     rightCompletion] at committed ⊢
-  simp_all
+  split at committed <;> simp_all
 
 /-- Any ordinary-family mismatch in the full semantic task-occurrence identity rejects completion with exact state preservation. -/
 theorem task_identity_mismatch_is_rejected

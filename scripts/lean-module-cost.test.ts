@@ -298,6 +298,7 @@ test("new module measurements bind to archived bytes before the introducing comm
   for (const module of ["BpmnSemantics.NewOneConformance", "BpmnSemantics.NewTwoConformance"]) {
     const record: LeanModuleCostRecord = {
       ...leanModuleCostRecord,
+      nearCapModules: [],
       rows: [{ module, peakResidentKib: 100, elapsedSeconds: 1,
         sourceSha256: digest, measurementReceiptSha256: "a".repeat(64) }],
     };
@@ -312,8 +313,9 @@ test("new module measurements bind to archived bytes before the introducing comm
 });
 
 test("receipt identity permits a fresh measurement but provenance alone cannot bypass its ratchet", () => {
-  const row = leanModuleCostRecord.rows[0]!;
-  const measured: LeanModuleCostRecord = { ...leanModuleCostRecord,
+  const row = { module: "BpmnSemantics.MeasuredConformance", peakResidentKib: 100,
+    elapsedSeconds: 1, sourceSha256: "b".repeat(64) };
+  const measured: LeanModuleCostRecord = { ...leanModuleCostRecord, nearCapModules: [],
     rows: [{ ...row, measurementReceiptSha256: "a".repeat(64) }] };
   const compare = (receipt: string, measuredAtCommit: string) => leanModuleCostViolations({
     record: { ...measured, rows: [{ ...measured.rows[0]!, peakResidentKib: row.peakResidentKib + 1,
@@ -332,7 +334,7 @@ test("receipt identity permits a fresh measurement but provenance alone cannot b
 test("new and replacement measurements cannot borrow historical provenance without a receipt", () => {
   const row = { module: "BpmnSemantics.HistoricalConformance", peakResidentKib: 100,
     elapsedSeconds: 1, sourceSha256: "b".repeat(64), measuredAtCommit: "historical-provenance" };
-  const historical: LeanModuleCostRecord = { ...leanModuleCostRecord, rows: [row] };
+  const historical: LeanModuleCostRecord = { ...leanModuleCostRecord, nearCapModules: [], rows: [row] };
   for (const replacement of [
     { ...row, module: "BpmnSemantics.UnmeasuredConformance" },
     { ...row, measuredAtCommit: "different-provenance" },

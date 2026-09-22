@@ -26,7 +26,7 @@ verify_lean_library() {
 }
 
 verify_lean_checks() {
-  ./scripts/lake.sh build BpmnSemantics.Experiments.CheckedSourceRelationMain BpmnSemantics.SemanticProcessJsonMain BpmnSemantics.EnginePopulationScenarioJsonMain BpmnSemantics.CommittedExecutionPublicationJsonMain BpmnSemantics.FixtureBindingJsonMain
+  ./scripts/lake.sh build BpmnSemantics.Experiments.CheckedSourceRelationMain BpmnSemantics.SemanticProcessJsonMain BpmnSemantics.EnginePopulationScenarioJsonMain BpmnSemantics.CommittedExecutionPublicationJsonMain BpmnSemantics.FixtureBindingJsonMain BpmnSemantics.InternalChoiceScheduleJsonMain
   ./scripts/lake.sh run BpmnSemantics/Experiments/CheckedSourceRelationMain.lean
   ./scripts/lake.sh run BpmnSemantics/CommittedExecutionPublicationJsonMain.lean
 }
@@ -46,6 +46,7 @@ verify_pipeline() {
   ./scripts/pnpm.sh run test:message-key-correlation-population-lean-core:built
   ./scripts/pnpm.sh run test:message-payload-lean-core:built
   ./scripts/pnpm.sh run test:activity-boundary-message-lean-core:built
+  ./scripts/pnpm.sh run test:internal-choice-schedule-lean-core:built
   env BPMN_PIPELINE_PREBUILT=1 ./scripts/pnpm.sh run test:pipeline
   git diff --check
 }

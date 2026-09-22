@@ -77,40 +77,39 @@ theorem selectedInputOrigin?_exact_bindings (program : Program) (place : Control
                       simp_all
                   · contradiction
 
+theorem candidateOperationFlowNodeIdentity_exact_operation (program : Program)
+    (operation : SemanticOperation) (selectedOwner identityOwner : ScopeOccurrenceId)
+    (elementId : NodeId) (identity : FlowNodeIdentity)
+    (found : candidateOperationFlowNodeIdentity? program operation selectedOwner identityOwner
+      elementId = some identity) :
+    program.operations.filter (fun candidate => decide (candidate.id = operation.id)) = [operation] := by
+  unfold candidateOperationFlowNodeIdentity? at found
+  obtain ⟨scope, scopeFound, _⟩ := Option.bind_eq_some_iff.mp found
+  change (do
+    let selected ← match program.operations.filter (fun candidate => decide (candidate.id = operation.id)) with
+      | [selected] => some selected | _ => none
+    if selected ≠ operation then none else
+      match program.operationScopes.filter (fun binding => decide (binding.operationId = operation.id)) with
+      | [binding] => some binding.scopeId | _ => none) = some scope at scopeFound
+  dsimp only at scopeFound
+  split at scopeFound
+  · next selected filtered =>
+      by_cases same : selected = operation
+      · simpa [same] using filtered
+      · simp [bind, Option.bind, same] at scopeFound
+  · simp at scopeFound
+
 theorem candidateOperationFlowNodeIdentity?_operation_member (program : Program)
     (operation : SemanticOperation) (selectedOwner identityOwner : ScopeOccurrenceId)
     (elementId : NodeId) (identity : FlowNodeIdentity)
     (found : candidateOperationFlowNodeIdentity? program operation selectedOwner
       identityOwner elementId = some identity) : operation ∈ program.operations := by
-  unfold candidateOperationFlowNodeIdentity? at found
-  obtain ⟨scope, scopeFound, _⟩ := Option.bind_eq_some_iff.mp found
-  change (do
-    let selected ← match program.operations.filter fun candidate =>
-        decide (candidate.id = operation.id) with
-      | [selected] => some selected
-      | _ => none
-    if selected ≠ operation then none else
-      match program.operationScopes.filter fun binding =>
-          decide (binding.operationId = operation.id) with
-      | [binding] => some binding.scopeId
-      | _ => none) = some scope at scopeFound
-  generalize selectedEq : program.operations.filter
-    (fun candidate => decide (candidate.id = operation.id)) = operations at scopeFound
-  cases operations with
-  | nil => simp at scopeFound
-  | cons selected rest =>
-      cases rest with
-      | cons _ _ => simp at scopeFound
-      | nil =>
-          simp only [Option.bind_eq_bind, Option.bind_some] at scopeFound
-          by_cases same : selected = operation
-          · subst selected
-            have member : operation ∈ program.operations.filter
-                (fun candidate => decide (candidate.id = operation.id)) := by
-              rw [selectedEq]
-              exact List.mem_cons_self
-            exact (List.mem_filter.mp member).1
-          · simp [same] at scopeFound
+  have selected := candidateOperationFlowNodeIdentity_exact_operation program operation
+    selectedOwner identityOwner elementId identity found
+  have member : operation ∈ program.operations.filter (fun candidate => decide (candidate.id = operation.id)) := by
+    rw [selected]
+    exact List.mem_cons_self
+  exact (List.mem_filter.mp member).1
 
 theorem selectInternalLocalControl_insert_facts (state : RuntimeState)
     (operation : SemanticOperation) (selected : InternalLocalControlSelection)

@@ -97,11 +97,11 @@ Active work ID: `INTERNAL-COMMUTATION`.
 
 Risk band: RC internal scheduling; the six external reviews and composed Activity-data closure are complete.
 
-Next action: take the approved [exact-alternative frontier obligation](INTERNAL-COMMUTATION-PROPOSAL.md#arbitrary-complete-frontier-batches), starting with Merge. Define one complete consumer with separating source/frontier witnesses, complete preparations, exact state/publication, successor validity, and command rollback. Check source-level refusal expectations before changing batching. Reassess before new per-field machinery or atoms. Regional trial closure stays open; E1/E2 change no RC scope.
+Next action: take the [exact Merge frontier outcome](INTERNAL-COMMUTATION-PROPOSAL.md#exact-merge-frontier-outcome) through final infrastructure verification, its implementation commit, and independent review alongside clean integration. Full bounded Lean, complete core/source, shared scheduling parity, harness types, and cold fixture measurements pass. Preserve successor validity, atomic refusal, and the registered cyclic-source baseline. Reassess before new atoms or per-field machinery. Regional trial closure stays pending; RC scope is unchanged.
 
 Accepted: the [ordinary End outcome](INTERNAL-COMMUTATION-PROPOSAL.md#ordinary-end-batch-outcome) passes independent review, clean integration, and fixed-3-GiB checks. Its admitted source witness commits; constructed regional witnesses establish no profile reachability. Message child-scope exclusion and `AOO-RETAINED-BODY-01` remain unchanged.
 
-Retain snapshot exclusion, predicate coverage, token multiplicity, the [3 GiB ceiling](CAPSULE-COST-LEDGER.md#package-wide-theorem-elaboration-memory-correction), and stashes `f35bdd6b0424b2e3d5d06f101eb822bd285ab29e` and `76a2b017a630d23203ded482227382003f296f0b`. Scheduled choice, remaining families, and closure remain open.
+Retain snapshot exclusion, predicate coverage, token multiplicity, the [3 GiB ceiling](CAPSULE-COST-LEDGER.md#package-wide-theorem-elaboration-memory-correction), and stashes `f35bdd6b0424b2e3d5d06f101eb822bd285ab29e` and `76a2b017a630d23203ded482227382003f296f0b`. Private scheduling awaits review; remaining families and closure remain open.
 
 Oracle: independent prepared operations preserve one another's complete preparation and commute in exact canonical RuntimeState and accepted publication; shared Process reads commute, conflicting writes and overlapping occurrence regions refuse batching, and a failed batch or schedule rolls back the complete command before publication.
 

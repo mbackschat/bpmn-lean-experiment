@@ -192,16 +192,15 @@ theorem localControl_selectedJoin_patch (state : RuntimeState)
 
 /-- Every complete predecessor read is framed by the opposite patch's declared footprint,
 including the selected join's other-owner readiness buckets and whole-key record population. -/
-theorem prepareInternalLocalControl_after_independent (program : Program) (state : RuntimeState)
-    (leftOperation rightOperation : SemanticOperation) (left right : PreparedInternalLocalControl)
+theorem prepareInternalLocalControl_after_independent_patch (program : Program) (state : RuntimeState)
+    (leftOperation : SemanticOperation) (left : PreparedInternalLocalControl)
+    (rightSelected : InternalLocalControlSelection) (rightInstance : SemanticId)
     (leftFound : prepareInternalLocalControl? program state leftOperation = some left)
-    (rightFound : prepareInternalLocalControl? program state rightOperation = some right)
-    (separated : localControlStateFootprintsNonInterfering left.footprint right.footprint = true) :
-    prepareInternalLocalControl? program (right.selection.apply state) leftOperation = some left := by
+    (separated : localControlStateFootprintsNonInterfering left.footprint
+      (internalLocalControlStateFootprint state rightSelected rightInstance) = true) :
+    prepareInternalLocalControl? program (rightSelected.apply state) leftOperation = some left := by
   obtain ⟨leftSelected, leftOrigin, leftInstance, leftIdentity, leftDelta, leftSelection,
     _, _, _, _, _, _, _, _, _, rfl⟩ := prepareInternalLocalControl_facts program state leftOperation left leftFound
-  obtain ⟨rightSelected, rightOrigin, rightInstance, rightIdentity, rightDelta, rightSelection,
-    _, _, _, _, _, _, _, _, _, rfl⟩ := prepareInternalLocalControl_facts program state rightOperation right rightFound
   apply prepareInternalLocalControl_read_frame program state (rightSelected.apply state) leftOperation _ leftFound
   · rfl
   · rfl
@@ -226,6 +225,17 @@ theorem prepareInternalLocalControl_after_independent (program : Program) (state
       separated record.owner place (localControl_selectedJoin_bucket_read state leftSelected leftInstance
         chosen record place (localControl_selectedJoin_patch state leftOperation leftSelected leftSelection
           chosen selectedBranch) present key member)
+
+theorem prepareInternalLocalControl_after_independent (program : Program) (state : RuntimeState)
+    (leftOperation rightOperation : SemanticOperation) (left right : PreparedInternalLocalControl)
+    (leftFound : prepareInternalLocalControl? program state leftOperation = some left)
+    (rightFound : prepareInternalLocalControl? program state rightOperation = some right)
+    (separated : localControlStateFootprintsNonInterfering left.footprint right.footprint = true) :
+    prepareInternalLocalControl? program (right.selection.apply state) leftOperation = some left := by
+  obtain ⟨selected, origin, instanceId, identity, delta, _, _, _, _, _, _, _, _, _, _, rfl⟩ :=
+    prepareInternalLocalControl_facts program state rightOperation right rightFound
+  exact prepareInternalLocalControl_after_independent_patch program state leftOperation left selected instanceId
+    leftFound separated
 
 theorem localControl_independent_patches_commute (state : RuntimeState)
     (left right : InternalLocalControlSelection) (leftInstance rightInstance : SemanticId)

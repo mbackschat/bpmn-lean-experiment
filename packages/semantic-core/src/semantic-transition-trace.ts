@@ -10,8 +10,9 @@ import {
 import type {
   UnnumberedFlowNodeOccurrenceDelta,
 } from "./flow-node-occurrence-lifecycle.js";
-import { prepareInternalTransitionBatch } from "./internal-transition-batch.js";
+import type { InternalChoiceSchedule, ScheduledStimulusResult } from "./internal-choice-schedule.js";
 import { instantiateInternalPublicationBatch } from "./internal-publication-template.js";
+import { applyPreparedInternalExclusiveMerge, deriveInternalExclusiveMergePreparations } from "./internal-transition-merge-preparation.js";
 import {
   projectControlPositionDelta,
   projectCurrentControlPositions,
@@ -25,17 +26,20 @@ import type {
 import { admit } from "./semantic-command-admission.js";
 import type {
   BpmnElementOrigin,
+  MergeExclusiveOperation,
   SemanticProcessProgram,
 } from "./semantic-process-contract.js";
 import { SemanticOperationKind } from "./semantic-process-contract.js";
 import {
   applyInternalOperationStep,
   evaluateStimulusWithSelectedSteps,
+  evaluateScheduledStimulusWithSelectedSteps,
   isStableStateSound,
 } from "./semantic-process-runtime.js";
 import type {
   AppliedInternalOperationStep,
   CommandResult,
+  StimulusEvaluationResult,
 } from "./semantic-process-runtime.js";
 import {
   sameScopeOccurrence,
@@ -77,6 +81,10 @@ export type TracedCommandResult = DeepReadonly<{
   currentPositions: CurrentControlPositions | null;
 }>;
 
+export type TracedScheduledStimulusResult = Omit<TracedCommandResult, "result"> & Readonly<{
+  result: ScheduledStimulusResult;
+}>;
+
 export type UnnumberedCurrentCommittedExecution = DeepReadonly<{
   state: StateObservation;
   controlTokens: PublicControlTokenPosition[];
@@ -107,6 +115,26 @@ export function applyStimulusWithTrace(
     stimulus,
     closureLimit,
   );
+  return projectStimulusEvaluation(program, state, stimulus, evaluation);
+}
+
+export function applyStimulusWithScheduleAndTrace(
+  program: SemanticProcessProgram,
+  state: RuntimeState,
+  stimulus: Stimulus,
+  schedule: InternalChoiceSchedule,
+  closureLimit?: number,
+): TracedScheduledStimulusResult {
+  const evaluation = evaluateScheduledStimulusWithSelectedSteps(program, state, stimulus, schedule, closureLimit);
+  return { ...projectStimulusEvaluation(program, state, stimulus, evaluation), result: evaluation.result };
+}
+
+function projectStimulusEvaluation(
+  program: SemanticProcessProgram,
+  state: RuntimeState,
+  stimulus: Stimulus,
+  evaluation: StimulusEvaluationResult,
+): TracedCommandResult {
   const result = evaluation.result;
   const currentPositions = projectCurrentControlPositions(program, result.state);
   if (
@@ -147,9 +175,11 @@ export function applyStimulusWithTrace(
   lifecycles.push(externalLifecycle);
 
   let before = evaluation.admittedState;
-  for (const batch of evaluation.selectedInternalBatches) {
+  for (const [batchIndex, batch] of evaluation.selectedInternalBatches.entries()) {
     if (batch.length === 0) return noTrace(result);
-    if (batch.length === 1) {
+    const prepared = evaluation.selectedInternalPreparations[batchIndex];
+    if (prepared === undefined) return noTrace(result);
+    if (prepared === null && batch.length === 1) {
       const step = batch[0]!;
       const unit = internalPublicationUnit(program, before, step);
       if (unit === null || !appendInternalPublicationUnits(stimulus.commandId, records, lifecycles, [unit])) {
@@ -159,8 +189,7 @@ export function applyStimulusWithTrace(
       continue;
     }
 
-    const prepared = prepareInternalTransitionBatch(program, before, batch);
-    if (prepared === null) return noTrace(result);
+    if (prepared === null || prepared.length !== batch.length) return noTrace(result);
     const publications = instantiateInternalPublicationBatch(stimulus.commandId, records.length,
       prepared.map(({ publicationTemplate }) => publicationTemplate));
     if (publications === null) return noTrace(result);
@@ -313,7 +342,10 @@ export function replayCommittedTransitions(
     if (operations.length !== 1 || operation === undefined) {
       return null;
     }
-    const step = applyInternalOperationStep(program, operation, current);
+    // A record identifies its consumed bucket through its exact public delta; replay must not use the unique-offer selector.
+    const step = operation.kind === SemanticOperationKind.MergeExclusive
+      ? replayMergeStep(program, current, operation, record)
+      : applyInternalOperationStep(program, operation, current);
     if (
       step === null ||
       step.owner === null ||
@@ -327,6 +359,22 @@ export function replayCommittedTransitions(
     current = step.successor;
   }
   return current;
+}
+
+function replayMergeStep(
+  program: SemanticProcessProgram,
+  before: RuntimeState,
+  operation: MergeExclusiveOperation,
+  record: UnnumberedCommittedTransitionRecord,
+): AppliedInternalOperationStep | null {
+  const preparations = deriveInternalExclusiveMergePreparations(program, before, operation);
+  if (preparations === null) return applyInternalOperationStep(program, operation, before);
+  const matches = preparations.flatMap((prepared) => {
+    const successor = applyPreparedInternalExclusiveMerge(program, before, prepared);
+    return successor !== null && recordBoundaryMatches(program, before, successor, record)
+      ? [{ operation, owner: prepared.owner, successor }] : [];
+  });
+  return matches.length === 1 ? matches[0]! : null;
 }
 
 function recordBoundaryMatches(

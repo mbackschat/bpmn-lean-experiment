@@ -7,6 +7,74 @@ namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
 open BpmnSemantics
 
+/-- The relative counter is outside local patches; only the End input census needs a frame. -/
+theorem prepareInternalEnd_after_local_patch (program : Program) (state : RuntimeState)
+    (operation : SemanticOperation) (ending : PreparedInternalEnd)
+    (patch : InternalLocalControlSelection) (hosting : SemanticId)
+    (found : prepareInternalEnd? program state operation = some ending)
+    (independent : regionalStateFootprintsIndependent ending.footprint
+      (liftRegionalStateFootprint patch.owner (internalLocalControlStateFootprint state patch hosting)) = true) :
+    prepareInternalEnd? program (patch.apply state) operation = some ending := by
+  obtain ⟨_, selected, _, instanceId, _, _, _, _, _, _, _, _, _, _, rfl⟩ :=
+    prepareInternalEnd_facts program state operation ending found
+  have read : .ordinary (.tokenOwners selected.input) ∈ (internalEndStateFootprint selected instanceId).reads := by
+    simp [internalEndStateFootprint, canonicalRegionalStateAtoms_mem]
+  have untouched := regional_localControl_census_untouched state
+    (internalEndStateFootprint selected instanceId) patch hosting selected.input read independent
+  apply prepareInternalEnd_read_frame program state (patch.apply state) operation _ found rfl rfl rfl
+  apply patch.tokens.filter_untouched
+  all_goals
+    intro place member
+    apply Bool.eq_false_iff.mpr
+    intro same
+    have placeEq : place = selected.input := of_decide_eq_true same
+    subst place
+  · exact untouched (List.mem_append_left _ member)
+  · exact untouched (List.mem_append_right _ member)
+
+theorem end_local_bucket_frame (state : RuntimeState) (selected : InternalEndSelection)
+    (patch : InternalLocalControlSelection) (endInstance hosting : SemanticId)
+    (independent : regionalStateFootprintsIndependent (internalEndStateFootprint selected endInstance)
+      (liftRegionalStateFootprint patch.owner (internalLocalControlStateFootprint state patch hosting)) = true)
+    (owner : ScopeOccurrenceId) (place : ControlPlaceId)
+    (read : .controlToken owner place ∈ (internalLocalControlStateFootprint state patch hosting).reads) :
+    (selected.apply state).tokens.filter (fun token => decide (token.placeId = place && token.owner = owner)) =
+      state.tokens.filter (fun token => decide (token.placeId = place && token.owner = owner)) := by
+  have tokenWrite : .ordinary (.controlToken selected.owner selected.input) ∈
+      (internalEndStateFootprint selected endInstance).writes := by
+    simp [internalEndStateFootprint, canonicalRegionalStateAtoms_mem]
+  have conflict := regional_independent_read_write _ _ independent _ _ tokenWrite
+    (List.mem_map.mpr ⟨_, read, rfl⟩)
+  apply selected.tokens.filter_untouched
+  · intro input member
+    have inputEq : input = selected.input := List.mem_singleton.mp member
+    subst input
+    apply Bool.eq_false_iff.mpr
+    intro matched
+    simp only [decide_eq_true_eq, Bool.and_eq_true] at matched
+    have ownerSame : selected.owner = owner := matched.2
+    simp [liftRegionalStateAtom, regionalStateAtomsConflict, matched.1, ownerSame] at conflict
+  · simp [InternalEndSelection.tokens]
+
+theorem end_local_patches_commute (state : RuntimeState) (selected : InternalEndSelection)
+    (patch : InternalLocalControlSelection) (endInstance hosting : SemanticId)
+    (canonical : canonicalCollectionOrder state = true)
+    (independent : regionalStateFootprintsIndependent (internalEndStateFootprint selected endInstance)
+      (liftRegionalStateFootprint patch.owner (internalLocalControlStateFootprint state patch hosting)) = true) :
+    patch.apply (selected.apply state) = selected.apply (patch.apply state) := by
+  have read : .ordinary (.tokenOwners selected.input) ∈ (internalEndStateFootprint selected endInstance).reads := by
+    simp [internalEndStateFootprint, canonicalRegionalStateAtoms_mem]
+  have untouched := regional_localControl_census_untouched state
+    (internalEndStateFootprint selected endInstance) patch hosting selected.input read independent
+  have tokens := selected.tokens.commutes state.tokens patch.tokens
+    (canonicalCollectionOrder_tokens state canonical) (by simp [InternalEndSelection.tokens])
+    (by
+      intro produced producedMember consumed consumedMember same
+      have input : consumed = selected.input := List.mem_singleton.mp consumedMember
+      have place : produced = consumed := congrArg ControlToken.placeId same
+      exact untouched (List.mem_append_right _ ((place.trans input) ▸ producedMember)))
+  simp only [InternalEndSelection.apply, InternalLocalControlSelection.apply, tokens]
+
 /-- End consumes one token and increments the independent relative counter. Local control's
 existing complete read frame also covers competing selected-join buckets and variable reads. -/
 theorem prepared_end_local_control_pair_commutes (program : Program) (state : RuntimeState)
@@ -24,15 +92,7 @@ theorem prepared_end_local_control_pair_commutes (program : Program) (state : Ru
     prepareInternalEnd_facts program state endOperation ending endFound
   obtain ⟨patch, origin, hosting, identity, delta, selection, _, _, _, _, _, _, _, _, _, rfl⟩ :=
     prepareInternalLocalControl_facts program state localOperation control localFound
-  have endRead : .ordinary (.tokenOwners selected.input) ∈
-      (internalEndStateFootprint selected endInstance).reads := by
-    simp [internalEndStateFootprint, canonicalRegionalStateAtoms_mem]
-  have untouched := regional_localControl_census_untouched state
-    (internalEndStateFootprint selected endInstance) patch hosting selected.input endRead independent
   have endWrite : .ordinary (.tokenOwners selected.input) ∈
-      (internalEndStateFootprint selected endInstance).writes := by
-    simp [internalEndStateFootprint, canonicalRegionalStateAtoms_mem]
-  have tokenWrite : .ordinary (.controlToken selected.owner selected.input) ∈
       (internalEndStateFootprint selected endInstance).writes := by
     simp [internalEndStateFootprint, canonicalRegionalStateAtoms_mem]
   have census (place : ControlPlaceId) (member : place ∈ patch.censusReads) :
@@ -45,33 +105,9 @@ theorem prepared_end_local_control_pair_commutes (program : Program) (state : Ru
       simp [liftRegionalStateAtom, regionalStateAtomsConflict, same] at conflict
     exact selected.tokens.owner_census_frame state place
       (by simpa [InternalEndSelection.tokens] using different) (by simp [InternalEndSelection.tokens])
-  have bucket (owner : ScopeOccurrenceId) (place : ControlPlaceId)
-      (read : .controlToken owner place ∈ (internalLocalControlStateFootprint state patch hosting).reads) :
-      (selected.apply state).tokens.filter (fun token => decide (token.placeId = place && token.owner = owner)) =
-        state.tokens.filter (fun token => decide (token.placeId = place && token.owner = owner)) := by
-    have conflict := regional_independent_read_write _ _ independent _ _ tokenWrite
-      (List.mem_map.mpr ⟨_, read, rfl⟩)
-    apply selected.tokens.filter_untouched
-    · intro input member
-      have inputEq : input = selected.input := List.mem_singleton.mp member
-      subst input
-      apply Bool.eq_false_iff.mpr
-      intro matched
-      simp only [decide_eq_true_eq, Bool.and_eq_true] at matched
-      have ownerSame : selected.owner = owner := matched.2
-      simp [liftRegionalStateAtom, regionalStateAtomsConflict, matched.1, ownerSame] at conflict
-    · simp [InternalEndSelection.tokens]
+  have bucket := end_local_bucket_frame state selected patch endInstance hosting independent
   refine ⟨?_, ?_, ?_⟩
-  · apply prepareInternalEnd_read_frame program state (patch.apply state) endOperation _ endFound rfl rfl rfl
-    apply patch.tokens.filter_untouched
-    all_goals
-      intro place member
-      apply Bool.eq_false_iff.mpr
-      intro same
-      have placeEq : place = selected.input := of_decide_eq_true same
-      subst place
-    · exact untouched (List.mem_append_left _ member)
-    · exact untouched (List.mem_append_right _ member)
+  · exact prepareInternalEnd_after_local_patch program state endOperation _ patch hosting endFound independent
   · apply prepareInternalLocalControl_read_frame program state (selected.apply state) localOperation _ localFound
       rfl rfl rfl census
     · intro place member
@@ -83,14 +119,6 @@ theorem prepared_end_local_control_pair_commutes (program : Program) (state : Ru
     · intro chosen branch record present key place member
       exact bucket record.owner place (localControl_selectedJoin_bucket_read state patch hosting chosen record place
         (localControl_selectedJoin_patch state localOperation patch selection chosen branch) present key member)
-  · have tokens := selected.tokens.commutes state.tokens patch.tokens
-      (canonicalCollectionOrder_tokens state canonical) (by simp [InternalEndSelection.tokens])
-      (by
-        intro produced producedMember consumed consumedMember same
-        have input : consumed = selected.input := List.mem_singleton.mp consumedMember
-        have place : produced = consumed := congrArg ControlToken.placeId same
-        exact untouched (List.mem_append_right _ ((place.trans input) ▸ producedMember)))
-    change patch.apply (selected.apply state) = selected.apply (patch.apply state)
-    simp only [InternalEndSelection.apply, InternalLocalControlSelection.apply, tokens]
+  · exact end_local_patches_commute state selected patch endInstance hosting canonical independent
 
 end BpmnSemantics.SemanticProcess.InternalCommutation

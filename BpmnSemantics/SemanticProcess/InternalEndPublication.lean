@@ -88,20 +88,7 @@ theorem prepareInternalEnd_position (program : Program) (state : RuntimeState)
     (prepareInternalEnd_preserves_runtimeStateWellFormed program state operation prepared instanceId beforeWF found)
   obtain ⟨_, selected, _, _, _, delta, selection, _, _, _, _, _, _, deltaFound, rfl⟩ :=
     prepareInternalEnd_facts program state operation prepared found
-  have differences := internalLocalControlPositionDelta?_token_differences program state selected.tokens delta
-    deltaFound (selectInternalEnd_tokens_available state operation selected selection)
-  obtain ⟨_, _, _, _, entered, exited⟩ := internalLocalControlPositionDelta?_strict program selected.tokens delta deltaFound
-  have scopes : scopeDifference (projectScopes program state.scopeOccurrences)
-      (projectScopes program state.scopeOccurrences) = [] := by
-    apply List.filter_eq_nil_iff.mpr
-    intro position member
-    have present : ((projectScopes program state.scopeOccurrences).any fun candidate => candidate == position) = true :=
-      List.any_eq_true.mpr ⟨position, member, by simp⟩
-    simp [present]
-  simp only [controlPositionDelta?, projectControlPosition?, beforePosition, afterPosition,
-    if_true, Option.bind_eq_bind, Option.bind_some]
-  simp only [makeInternalEndPreparation, InternalEndSelection.apply, differences.1, differences.2, scopes]
-  cases delta
-  simp_all
+  exact internalTokenPatch_position_delta program state (selected.apply state) selected.tokens delta instanceId
+    beforePosition afterPosition rfl rfl deltaFound (selectInternalEnd_tokens_available state operation selected selection)
 
 end BpmnSemantics.SemanticProcess.InternalCommutation

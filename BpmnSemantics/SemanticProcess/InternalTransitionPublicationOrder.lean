@@ -1,4 +1,5 @@
 import BpmnSemantics.SemanticProcess.InternalTransitionPublication
+import BpmnSemantics.SemanticProcess.InternalTransitionAlternativeOrder
 
 /-! Complete mixed templates sort before lifecycle numbering under the
 [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).
@@ -14,27 +15,24 @@ private theorem sortInsert_eq_canonical (before : α → α → Bool) (inserted 
   | nil => rfl
   | cons current rest ih => simp only [sortInsertBy, canonicalInsertBy, ih]
 
-private theorem key_insert_commutes (key : α → String) (left right : α)
+private theorem key_insert_commutes (key : α → InternalAlternative) (left right : α)
     (different : key left ≠ key right) (values : List α) :
-    sortInsertBy (fun a b => key a < key b) left
-        (sortInsertBy (fun a b => key a < key b) right values) =
-      sortInsertBy (fun a b => key a < key b) right
-        (sortInsertBy (fun a b => key a < key b) left values) := by
+    sortInsertBy (fun a b => internalAlternativeBefore (key a) (key b)) left
+        (sortInsertBy (fun a b => internalAlternativeBefore (key a) (key b)) right values) =
+      sortInsertBy (fun a b => internalAlternativeBefore (key a) (key b)) right
+        (sortInsertBy (fun a b => internalAlternativeBefore (key a) (key b)) left values) := by
   simp only [sortInsert_eq_canonical]
   apply canonicalInsertBy_commutes_of_strict_order
-  · intro first second ordered
-    simpa using String.lt_asymm (of_decide_eq_true ordered)
-  · intro first middle last firstBefore middleBefore
-    exact decide_eq_true (String.lt_trans (of_decide_eq_true firstBefore)
-      (of_decide_eq_true middleBefore))
-  · by_cases before : key left < key right
-    · exact Or.inl (decide_eq_true before)
-    · exact Or.inr (decide_eq_true
-        (Std.lt_of_le_of_ne (by simpa using before) (Ne.symm different)))
+  · intro first second
+    exact internalAlternativeBefore_asymm (key first) (key second)
+  · intro first middle last
+    exact internalAlternativeBefore_trans (key first) (key middle) (key last)
+  · exact internalAlternativeBefore_total (key left) (key right) different
 
-private theorem key_sort_perm (key : α → String) (left right : List α)
+private theorem key_sort_perm (key : α → InternalAlternative) (left right : List α)
     (distinct : left.Pairwise (fun a b => key a ≠ key b)) (permutation : left.Perm right) :
-    sortBy (fun a b => key a < key b) left = sortBy (fun a b => key a < key b) right := by
+    sortBy (fun a b => internalAlternativeBefore (key a) (key b)) left =
+      sortBy (fun a b => internalAlternativeBefore (key a) (key b)) right := by
   induction permutation with
   | nil => rfl
   | cons head permutation ih =>
@@ -50,8 +48,9 @@ theorem canonicalTransitionPublicationTemplates_perm (left right : List Internal
     (distinct : left.Pairwise (fun a b => a.record.operationId ≠ b.record.operationId))
     (permutation : left.Perm right) :
     canonicalTransitionPublicationTemplates left = canonicalTransitionPublicationTemplates right := by
-  apply key_sort_perm (fun template => template.record.operationId.value) left right _ permutation
-  exact distinct.imp (fun different same => different (congrArg OperationId.mk same))
+  apply key_sort_perm (fun template => internalRecordAlternative template.record) left right _ permutation
+  exact distinct.imp (fun different same => different (by
+    simpa only [internalRecordAlternative_operationId] using congrArg InternalAlternative.operationId same))
 
 theorem instantiateTransitionPublicationBatch_perm (commandId : SemanticId) (first : Nat)
     (left right : List InternalTransitionPublicationTemplate)

@@ -66,28 +66,6 @@ theorem internalLocalControl_candidate_lifecycle (program : Program) (state afte
   all_goals cases originFound; simp only [Option.bind_eq_bind, Option.bind_some, identityFound,
     singleton, pure, Pure.pure]
 
-theorem candidateOperationFlowNodeIdentity_exact_operation (program : Program)
-    (operation : SemanticOperation) (selectedOwner identityOwner : ScopeOccurrenceId)
-    (elementId : NodeId) (identity : FlowNodeIdentity)
-    (found : candidateOperationFlowNodeIdentity? program operation selectedOwner identityOwner
-      elementId = some identity) :
-    program.operations.filter (fun candidate => decide (candidate.id = operation.id)) = [operation] := by
-  unfold candidateOperationFlowNodeIdentity? at found
-  obtain ⟨scope, scopeFound, _⟩ := Option.bind_eq_some_iff.mp found
-  change (do
-    let selected ← match program.operations.filter (fun candidate => decide (candidate.id = operation.id)) with
-      | [selected] => some selected | _ => none
-    if selected ≠ operation then none else
-      match program.operationScopes.filter (fun binding => decide (binding.operationId = operation.id)) with
-      | [binding] => some binding.scopeId | _ => none) = some scope at scopeFound
-  dsimp only at scopeFound
-  split at scopeFound
-  · next selected filtered =>
-      by_cases same : selected = operation
-      · simpa [same] using filtered
-      · simp [bind, Option.bind, same] at scopeFound
-  · simp at scopeFound
-
 theorem prepareInternalLocalControl_record (program : Program) (state : RuntimeState)
     (operation : SemanticOperation) (prepared : PreparedInternalLocalControl)
     (found : prepareInternalLocalControl? program state operation = some prepared) :

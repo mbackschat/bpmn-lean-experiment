@@ -10,11 +10,11 @@ namespace BpmnSemantics.SemanticProcess
 
 open BpmnSemantics
 
-private def lifecycleLexStep [DecidableEq α] (before : α → α → Bool)
+def lifecycleLexStep [DecidableEq α] (before : α → α → Bool)
     (left right : α) (rest : Bool) : Bool :=
   if left ≠ right then before left right else rest
 
-private theorem lifecycleLexStep_asymm [DecidableEq α] (before : α → α → Bool)
+theorem lifecycleLexStep_asymm [DecidableEq α] (before : α → α → Bool)
     (asymm : ∀ left right, before left right = true → before right left = false)
     (left right : α) (forward backward : Bool)
     (fall : forward = true → backward = false) :
@@ -28,7 +28,7 @@ private theorem lifecycleLexStep_asymm [DecidableEq α] (before : α → α → 
     rw [if_pos same, if_pos reverse]
     exact asymm left right
 
-private theorem lifecycleLexStep_trans [DecidableEq α] (before : α → α → Bool)
+theorem lifecycleLexStep_trans [DecidableEq α] (before : α → α → Bool)
     (asymm : ∀ left right, before left right = true → before right left = false)
     (trans : ∀ left middle right, before left middle = true →
       before middle right = true → before left right = true)
@@ -41,7 +41,7 @@ private theorem lifecycleLexStep_trans [DecidableEq α] (before : α → α → 
     (try simp_all)
   all_goals exact trans a b c
 
-private theorem lifecycleLexStep_comparable [DecidableEq α] (before : α → α → Bool)
+theorem lifecycleLexStep_comparable [DecidableEq α] (before : α → α → Bool)
     (total : ∀ left right, left ≠ right →
       before left right = true ∨ before right left = true)
     (left right : α) (forward backward : Bool)
@@ -149,14 +149,14 @@ private theorem scopeBefore_chain (left right : ScopeOccurrenceId) :
   cases right
   simp [scopeBefore, lifecycleLexStep, natBefore]
 
-private theorem scopeBefore_asymm (left right : ScopeOccurrenceId) :
+theorem scopeBefore_asymm (left right : ScopeOccurrenceId) :
     scopeBefore left right = true → scopeBefore right left = false := by
   rw [scopeBefore_chain, scopeBefore_chain]
   apply lifecycleLexStep_asymm _ (fun _ _ => scalarBefore_asymm _ _)
   apply lifecycleLexStep_asymm _ (fun _ _ => scalarBefore_asymm _ _)
   exact natBefore_asymm _ _
 
-private theorem scopeBefore_trans (a b c : ScopeOccurrenceId) :
+theorem scopeBefore_trans (a b c : ScopeOccurrenceId) :
     scopeBefore a b = true → scopeBefore b c = true → scopeBefore a c = true := by
   rw [scopeBefore_chain, scopeBefore_chain, scopeBefore_chain]
   apply lifecycleLexStep_trans
@@ -169,7 +169,7 @@ private theorem scopeBefore_trans (a b c : ScopeOccurrenceId) :
     (fun a b c => scalarBefore_trans a.value b.value c.value)
   exact natBefore_trans _ _ _
 
-private theorem scopeBefore_total (left right : ScopeOccurrenceId) (different : left ≠ right) :
+theorem scopeBefore_total (left right : ScopeOccurrenceId) (different : left ≠ right) :
     scopeBefore left right = true ∨ scopeBefore right left = true := by
   rw [scopeBefore_chain, scopeBefore_chain]
   apply lifecycleLexStep_comparable

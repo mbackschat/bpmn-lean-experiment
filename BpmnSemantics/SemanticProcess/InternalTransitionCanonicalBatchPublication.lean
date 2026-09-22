@@ -60,8 +60,8 @@ theorem prepared_transition_canonical_batch_publication_perm (program : Program)
       applyInternalTransitionBatch program state right = final ∧
       runPreparedTransitionBatch? program state left = some final ∧
       runPreparedTransitionBatch? program state right = some final ∧
-      fireInternalTransitionBatch? program state (left.map PreparedInternalTransition.operation) = some final ∧
-      fireInternalTransitionBatch? program state (right.map PreparedInternalTransition.operation) = some final ∧
+      fireInternalAlternativeBatch? program state (left.map (fun member => (member.operation, member.alternative))) = some final ∧
+      fireInternalAlternativeBatch? program state (right.map (fun member => (member.operation, member.alternative))) = some final ∧
       runtimeStateWellFormed program instanceId final = true ∧
       final.control = .running instanceId ∧
       (projectOpenFlowNodeOccurrences? program final).isSome = true := by

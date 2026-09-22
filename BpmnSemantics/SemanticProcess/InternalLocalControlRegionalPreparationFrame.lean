@@ -66,6 +66,38 @@ theorem preparedRegional_removed_censuses (program : Program) (before : RuntimeS
         simp [inside] at outside
   | _ => simp [selectInternalRegional?] at selected
 
+theorem localPatch_regional_bucket_frame (program : Program) (before after : RuntimeState)
+    (operation : SemanticOperation) (regional : PreparedInternalRegional)
+    (patch : InternalLocalControlSelection) (hosting : SemanticId)
+    (beforeWF : runtimeStateWellFormed program hosting before = true)
+    (running : before.control = .running hosting)
+    (found : prepareInternalRegional? program before operation = some regional)
+    (independent : regionalStateFootprintsIndependent regional.footprint
+      (liftRegionalStateFootprint patch.owner (internalLocalControlStateFootprint before patch hosting)) = true)
+    (applied : applyPreparedInternalRegional? program before regional = some after)
+    (owner : ScopeOccurrenceId) (place : ControlPlaceId)
+    (read : .controlToken owner place ∈ (internalLocalControlStateFootprint before patch hosting).reads) :
+    after.tokens.filter (fun token => decide (token.placeId = place && token.owner = owner)) =
+      before.tokens.filter (fun token => decide (token.placeId = place && token.owner = owner)) := by
+  obtain ⟨_, _, _, _, _, footprint, _⟩ := prepareInternalRegional_facts program before operation regional found
+  have outside := localControl_regional_bucket_outside before regional.selection regional.region regional.footprint
+    patch hosting footprint independent owner place read
+  have absent := localControl_regional_bucket_not_written before regional.footprint patch hosting independent owner place read
+  have noControl := localControl_regional_control_not_written before regional.footprint patch hosting independent
+  have observations := preparedRegional_control_filters program before after hosting operation regional
+    beforeWF running found applied (fun _ => false)
+    (fun token => decide (token.placeId = place && token.owner = owner)) (fun _ => false)
+    (by simp)
+    (by intro token _ seen; simp only [decide_eq_true_eq, Bool.and_eq_true] at seen; simpa only [seen.2] using outside)
+    (by simp)
+    (by
+      intro emittedOwner output written _
+      apply Bool.eq_false_iff.mpr
+      intro seen
+      simp only [decide_eq_true_eq, Bool.and_eq_true] at seen
+      exact absent (by simpa only [seen.1, seen.2] using written)) noControl
+  exact observations.2.2.2.2.1
+
 /-- The actual regional successor retains the full prepared local-control artifact. Every read
 frame follows from predecessor validity and footprint independence, including other-owner joins. -/
 theorem prepareInternalLocalControl_after_independent_regional (program : Program) (before after : RuntimeState)
@@ -91,24 +123,8 @@ theorem prepareInternalLocalControl_after_independent_regional (program : Progra
   have scopeFrame := frame (fun scope => decide (scope.id = patch.owner)) (fun _ => false) (fun _ => false)
     (by intro scope _ seen; simpa only [of_decide_eq_true seen] using scopeOutside)
     (by simp) (by simp) (by simp) noControl
-  have bucketFrame (owner : ScopeOccurrenceId) (place : ControlPlaceId)
-      (read : .controlToken owner place ∈ (internalLocalControlStateFootprint before patch hosting).reads) :
-      after.tokens.filter (fun token => decide (token.placeId = place && token.owner = owner)) =
-        before.tokens.filter (fun token => decide (token.placeId = place && token.owner = owner)) := by
-    have outside := localControl_regional_bucket_outside before regional.selection regional.region regional.footprint patch hosting footprint independent owner place read
-    have absent := localControl_regional_bucket_not_written before regional.footprint patch hosting independent owner place read
-    have observations := frame (fun _ => false)
-      (fun token => decide (token.placeId = place && token.owner = owner)) (fun _ => false)
-      (by simp)
-      (by intro token _ seen; simp only [decide_eq_true_eq, Bool.and_eq_true] at seen; simpa only [seen.2] using outside)
-      (by simp)
-      (by
-        intro emittedOwner output written _
-        apply Bool.eq_false_iff.mpr
-        intro seen
-        simp only [decide_eq_true_eq, Bool.and_eq_true] at seen
-        exact absent (by simpa only [seen.1, seen.2] using written)) noControl
-    exact observations.2.2.2.2.1
+  have bucketFrame := localPatch_regional_bucket_frame program before after regionalOperation regional patch hosting
+    beforeWF running regionalFound independent applied
   apply prepareInternalLocalControl_read_frame program before after localOperation
     (makeInternalLocalControlPreparation before patch hosting identity delta) localFound
     untouched.1 untouched.2.1 scopeFrame.2.2.2.1
