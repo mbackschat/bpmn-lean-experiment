@@ -280,7 +280,7 @@ The third instance also refuted the first disposition's reach: the guard binds s
 A checklist item was corrected only where attention already was, leaving its siblings unaudited: a capsule's Required evidence list was amended for the two scenarios under discussion while two other Required items stayed listed and absent, a stale claim was fixed in the owning map but not in the capsule that copied it, one Required-Lean list was corrected while the sibling list and matrix row restating the same obligation were not, and the correction for that then declared itself the single owner while one sibling enumeration survived.
 
 Instances
-: 24
+: 25
 
 Disposition
 : `unguardable`
@@ -297,6 +297,8 @@ The twenty-third instance is the exact Merge/private scheduling checkpoint: the 
 The enumerable changed-section routing omission is separately owned by [Finding 65](#finding-65). Its executable coverage does not decide whether an unchanged owner paragraph has become false.
 
 The twenty-fourth instance was found during review of that correction at `6991ced1`: the consolidation left the invariant map's regional-removal exclusion and pending-review copy untouched. The affected unchanged-owner check identified both, and correction extended the migration source set to that map. The current integration and review facts are routed to their owners; the historical scope-creation boundary and constructed-witness limitations remain explicit.
+
+The twenty-fifth instance was found in standalone Activity-data arming review at `46f9d1f6`: the input specification's evidence row linked the new batching outcome while its [source-contract paragraph](capsules/ACTIVITY-DATA-INPUT-MEDIATION-SPEC.md#exact-source-and-profile-contract) still forbade independent batching. The unchanged-owner check found the contradiction. The correction scopes the refusal to the historical checkpoint and legacy facade and routes complete preparation to its current owner; changed-section derivation cannot detect a false unchanged paragraph.
 
 ### Finding 16
 
