@@ -34,7 +34,7 @@ Four answer-free population schedules execute through separate Lean and TypeScri
 
 The family map owns the independently closure-reviewed Activity boundary Message slice; this map adds no general claim from that bounded family.
 
-[Finite batching](INTERNAL-COMMUTATION-PROPOSAL.md#finite-regional-batch-outcome) is independently approved with clean integration. [Ordinary End](INTERNAL-COMMUTATION-PROPOSAL.md#ordinary-end-batch-outcome) passes proofs and core tests; review and integration remain pending. Lean's state/publication permutation theorem excludes snapshots; TypeScript's ordinary-only snapshot path is outside it. Scheduled choice, remaining families and closure remain open. The [atomicity repair](capsules/INTERNAL-CLOSURE-ATOMICITY-REPAIR-SPEC.md) proves rollback/no-publication with replay and Temporal evidence.
+[Finite batching](INTERNAL-COMMUTATION-PROPOSAL.md#finite-regional-batch-outcome) and [ordinary End](INTERNAL-COMMUTATION-PROPOSAL.md#ordinary-end-batch-outcome) pass independent review and clean integration. Lean's state/publication permutation theorem excludes snapshots; TypeScript's ordinary-only snapshot path is outside it. Scheduled choice, remaining families and closure remain open. The [atomicity repair](capsules/INTERNAL-CLOSURE-ATOMICITY-REPAIR-SPEC.md) proves rollback/no-publication with replay and Temporal evidence.
 
 [Local-control batching](INTERNAL-COMMUTATION-PROPOSAL.md#independent-cold-review-receipt) passes review and [complete verification](PLAN.md#current-evidence). [`implementation-status-owner:ENGINE-SEMANTIC-INVARIANT`](ENGINE-SEMANTIC-INVARIANT-IMPLEMENTATION-MAP.md#runtime-state-well-formedness) owns collection ordering.
 

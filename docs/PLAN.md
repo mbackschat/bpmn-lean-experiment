@@ -88,7 +88,7 @@ Within the dependency order below, prioritize high-risk work before packaging an
 
 ## Current evidence
 
-- Finite regional batching. Command: `./scripts/pnpm.sh run test:pre-push`. Status: `exit 0`. Date: `2026-09-22`. Commit: `63b20e136031a9566c3b900d1f4bfe32a9ca701e`. The [review receipt](INTERNAL-COMMUTATION-PROPOSAL.md#independent-cold-review-receipt) records independent approval, the clean complete gate, and fixed-3-GiB evidence. Scheduled choice, remaining families, final closure, and regional-trial closure remain open.
+- Ordinary End batching. Command: `./scripts/pnpm.sh run test:pre-push`. Status: `exit 0`. Date: `2026-09-22`. Commit: `ae78a5341b7ba98908741b250c02c168512af87b`. The [review receipt](INTERNAL-COMMUTATION-PROPOSAL.md#independent-cold-review-receipt) records independent approval, the clean complete gate, and fixed-3-GiB evidence. Scheduled choice, remaining families, final closure, and regional-trial closure remain open.
 - Start-capacity assurance. Command: `fixed-3-GiB docker run … ./scripts/lake.sh build BpmnSemantics.CompensationSourceCompatibilityConformance`. Status: `exit 0` after three exact-bound OOM reproductions. Date: `2026-09-03`. Commit: `8ab3ba5f`. The final target completed in 15.00s at 2,324,123,648 cgroup bytes and 1,938,140 KiB RSS with every pressure/OOM counter zero. The [specification](capsules/COMPENSATION-DURABILITY-START-DATA-REPAIR-SPEC.md#lean-assurance-correction-after-the-hard-ceiling) retains the exact 3,221,225,472-byte failures, full chronology, and rejected limit/native-decision alternatives.
 
 ## Exact resume point
@@ -97,9 +97,9 @@ Active work ID: `INTERNAL-COMMUTATION`.
 
 Risk band: RC internal scheduling; the six external reviews and composed Activity-data closure are complete.
 
-Next action: independently review and clean-integrate the [ordinary End batch outcome](INTERNAL-COMMUTATION-PROPOSAL.md#ordinary-end-batch-outcome). Complete preparation, mixed-family frames, exact state/publication equality, successor validity, and whole-command fuel rollback pass the complete Lean and semantic-core gates; the fixed-3-GiB measurements and infrastructure gate pass. Keep one complete outcome through acceptance. Merge's exact-input alternatives remain a separate frontier obligation. Regional trial closure stays open; E1/E2 change no RC scope.
+Next action: take the approved [exact-alternative frontier obligation](INTERNAL-COMMUTATION-PROPOSAL.md#arbitrary-complete-frontier-batches), starting with Merge. Define one complete consumer with separating source/frontier witnesses, complete preparations, exact state/publication, successor validity, and command rollback. Check source-level refusal expectations before changing batching. Reassess before new per-field machinery or atoms. Regional trial closure stays open; E1/E2 change no RC scope.
 
-Accepted: the [finite regional batch outcome](INTERNAL-COMMUTATION-PROPOSAL.md#finite-regional-batch-outcome) composes approved pair laws for complete preparation, prefix validity, exact canonical state/publication permutation, and whole-command refusal. Independent review, clean integration, and fixed-3-GiB checks pass. Constructed witnesses establish no profile reachability; the Message child-scope exclusion is unchanged. `AOO-RETAINED-BODY-01` requires a separate amendment before bounded-Terminate admission.
+Accepted: the [ordinary End outcome](INTERNAL-COMMUTATION-PROPOSAL.md#ordinary-end-batch-outcome) passes independent review, clean integration, and fixed-3-GiB checks. Its admitted source witness commits; constructed regional witnesses establish no profile reachability. Message child-scope exclusion and `AOO-RETAINED-BODY-01` remain unchanged.
 
 Retain snapshot exclusion, predicate coverage, token multiplicity, the [3 GiB ceiling](CAPSULE-COST-LEDGER.md#package-wide-theorem-elaboration-memory-correction), and stashes `f35bdd6b0424b2e3d5d06f101eb822bd285ab29e` and `76a2b017a630d23203ded482227382003f296f0b`. Scheduled choice, remaining families, and closure remain open.
 
