@@ -105,6 +105,8 @@ export function deriveChangedMarkdownSections(
   if (baseline === null || target === null || wholeDocument) return files();
   const before = markdownSections(baseline);
   const after = markdownSections(target);
+  const preface = (document: string, line: number | undefined): string => document.split("\n").slice(0, line).join("\n");
+  if (preface(baseline, before[0]?.line) !== preface(target, after[0]?.line)) return files();
   if ([before, after].some((sections) => new Set(sections.map(({ headingPath }) => headingPath)).size !== sections.length)) return files();
   const beforeCoverage = extractDocumentCoverage(filePath, baseline);
   const afterCoverage = extractDocumentCoverage(filePath, target);
@@ -126,6 +128,10 @@ export function deriveChangedMarkdownSections(
   if (changed.has("<document>")) return files();
   const beforeByPath = new Map(before.map((section) => [section.headingPath, section]));
   const afterByPath = new Map(after.map((section) => [section.headingPath, section]));
+  // Exact bytes catch changes the claim projection cannot represent, including whitespace moves.
+  for (const [heading, section] of beforeByPath) {
+    if (!changed.has(heading) && section.ownText !== afterByPath.get(heading)?.ownText) return files();
+  }
   for (const heading of changed) {
     const left = beforeByPath.get(heading);
     const right = afterByPath.get(heading);

@@ -159,7 +159,7 @@ export function extractDocumentUnits(filePath: string, document: string): Readon
   return extractDocumentCoverage(filePath, document).units;
 }
 
-/** Retains non-unit bytes separately so mixed claim/fence edits cannot bypass review fallback. */
+/** Retains non-unit bytes and section-local claim positions so mixed edits and structural moves trigger fallback. */
 export function extractDocumentCoverage(filePath: string, document: string): Readonly<{
   units: ReadonlyArray<DocumentUnit>;
   residual: string;
@@ -170,12 +170,12 @@ export function extractDocumentCoverage(filePath: string, document: string): Rea
   const headings = new Map(structure.headings.map((heading) => [heading.line, heading.headingPath]));
   let owningHeading = "<document>";
   const units: DocumentUnit[] = [];
-  const coveredLines = new Set<number>();
+  const residual: Array<readonly [string, number | null]> = [];
+  let precedingUnits = 0;
   let index = 0;
   let ordinal = 1;
 
-  const addUnit = (text: string, start: number, end: number): void => {
-    for (let line = start; line < end; line += 1) coveredLines.add(line);
+  const addUnit = (text: string): void => {
     units.push({
       path: filePath,
       owningHeading,
@@ -184,31 +184,35 @@ export function extractDocumentCoverage(filePath: string, document: string): Rea
       text,
     });
     ordinal += 1;
+    precedingUnits += 1;
   };
 
   while (index < lines.length) {
     const line = lines[index] ?? "";
     if (structure.fencedLines.has(index)) {
+      residual.push([line, precedingUnits]);
       index += 1;
       continue;
     }
     const heading = headings.get(index);
     if (heading !== undefined) {
       owningHeading = heading;
+      precedingUnits = 0;
+      residual.push([line, null]);
       index += 1;
       continue;
     }
     if (line.trim().length === 0 || isTableDelimiter(line) || /^\s*(?:-{3,}|\*{3,}|_{3,})\s*$/u.test(line)) {
+      residual.push([line, line.trim().length === 0 ? null : precedingUnits]);
       index += 1;
       continue;
     }
     if (isTableRow(line)) {
-      addUnit(line, index, index + 1);
+      addUnit(line);
       index += 1;
       continue;
     }
 
-    const start = index;
     const block: string[] = [line];
     const list = isListItem(line);
     index += 1;
@@ -226,9 +230,9 @@ export function extractDocumentCoverage(filePath: string, document: string): Rea
       block.push(candidate);
       index += 1;
     }
-    addUnit(block.join("\n"), start, index);
+    addUnit(block.join("\n"));
   }
-  return { units, residual: lines.filter((_, line) => !coveredLines.has(line)).join("\n") };
+  return { units, residual: JSON.stringify(residual) };
 }
 
 export function deriveDocumentUnits(

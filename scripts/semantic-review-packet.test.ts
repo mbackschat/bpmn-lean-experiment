@@ -67,6 +67,26 @@ test("mixed claim and non-unit edits retain file fallback independently", () => 
   }
 });
 
+test("structural moves across claims retain file fallback even with unchanged unit sequences", () => {
+  for (const structure of ["~~~js\ncode()\n~~~", "---", "|---|---|"]) {
+    const baseline = `# Guide\n## Mixed\n- A\n${structure}\n- B\n`;
+    for (const firstClaim of ["A", "Changed"]) {
+      const target = `# Guide\n## Mixed\n${structure}\n- ${firstClaim}\n- B\n`;
+      assert.deepEqual(deriveChangedMarkdownSections("README.md", baseline, target)
+        .map(({ headingPath, revision }) => [headingPath, revision]), [[null, "baseline"], [null, "target"]]);
+    }
+  }
+});
+
+test("unrepresented whitespace moves cannot disappear beside another changed section", () => {
+  const baseline = "# Guide\n## Mixed\n- A\n\n- B\n## Other\nStable.\n";
+  const moved = baseline.replace("- A\n\n- B", "- A\n- B\n");
+  for (const target of [moved, moved.replace("Stable.", "Changed.")]) {
+    assert.deepEqual(deriveChangedMarkdownSections("README.md", baseline, target)
+      .map(({ headingPath, revision }) => [headingPath, revision]), [[null, "baseline"], [null, "target"]]);
+  }
+});
+
 const DOCUMENT_MIGRATION_SOURCE_PATHS = ["docs/PLAN.md", "docs/IMPLEMENTATION-MAP.md"] as const;
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
