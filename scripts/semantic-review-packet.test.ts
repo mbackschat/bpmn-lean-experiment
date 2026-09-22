@@ -54,6 +54,19 @@ test("section comparison preserves multiplicity and order without global ordinal
   assert.ok(deriveChangedMarkdownSections("README.md", original, original.replace("Stable.", "Changed."), true).every(({ headingPath }) => headingPath === null));
 });
 
+test("mixed claim and non-unit edits retain file fallback independently", () => {
+  for (const [oldStructure, newStructure] of [
+    ["~~~js\noldCode()\n~~~", "~~~js\nnewCode()\n~~~"],
+    ["---", "***"],
+    ["| Key | Value |\n|---|---|", "| Key | Value |\n|:---|---:|"],
+  ]) {
+    const baseline = `# Guide\n\n## Mixed\n\nOld claim.\n\n${oldStructure}\n`;
+    const target = `# Guide\n\n## Mixed\n\nNew claim.\n\n${newStructure}\n`;
+    const refs = deriveChangedMarkdownSections("README.md", baseline, target);
+    assert.deepEqual(refs.map(({ headingPath, revision }) => [headingPath, revision]), [[null, "baseline"], [null, "target"]]);
+  }
+});
+
 const DOCUMENT_MIGRATION_SOURCE_PATHS = ["docs/PLAN.md", "docs/IMPLEMENTATION-MAP.md"] as const;
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));

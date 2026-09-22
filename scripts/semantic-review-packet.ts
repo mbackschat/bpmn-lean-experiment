@@ -11,7 +11,8 @@ import {
 } from "./semantic-review-text.ts";
 import {
   loadDocumentMigrationMatrix,
-  extractDocumentUnits,
+  extractDocumentCoverage,
+  type DocumentUnit,
   type ValidatedDocumentMigrationMatrix,
 } from "./document-migration-matrix.ts";
 
@@ -105,41 +106,34 @@ export function deriveChangedMarkdownSections(
   const before = markdownSections(baseline);
   const after = markdownSections(target);
   if ([before, after].some((sections) => new Set(sections.map(({ headingPath }) => headingPath)).size !== sections.length)) return files();
-  const units = (document: string): Map<string, string[]> => {
+  const beforeCoverage = extractDocumentCoverage(filePath, baseline);
+  const afterCoverage = extractDocumentCoverage(filePath, target);
+  if (beforeCoverage.residual !== afterCoverage.residual) return files();
+  const units = (documentUnits: ReadonlyArray<DocumentUnit>): Map<string, string[]> => {
     const result = new Map<string, string[]>();
-    for (const unit of extractDocumentUnits(filePath, document)) {
+    for (const unit of documentUnits) {
       const sequence = result.get(unit.owningHeading) ?? [];
       sequence.push(unit.sha256);
       result.set(unit.owningHeading, sequence);
     }
     return result;
   };
-  const beforeUnits = units(baseline);
-  const afterUnits = units(target);
+  const beforeUnits = units(beforeCoverage.units);
+  const afterUnits = units(afterCoverage.units);
   const changed = new Set([...beforeUnits.keys(), ...afterUnits.keys()].filter((heading) =>
     JSON.stringify(beforeUnits.get(heading) ?? []) !== JSON.stringify(afterUnits.get(heading) ?? [])));
   const refs: ReviewPacketSection[] = [];
-  let fallback = changed.has("<document>");
-  const beforePaths = before.map(({ headingPath }) => headingPath);
-  const afterPaths = after.map(({ headingPath }) => headingPath);
+  if (changed.has("<document>")) return files();
   const beforeByPath = new Map(before.map((section) => [section.headingPath, section]));
   const afterByPath = new Map(after.map((section) => [section.headingPath, section]));
-  // Heading-only changes, moves, fences, and structural bytes are not claim units.
-  if (JSON.stringify(beforePaths) !== JSON.stringify(afterPaths)) fallback = true;
-  const preface = (document: string, line: number | undefined): string => document.split("\n").slice(0, line).join("\n");
-  if (preface(baseline, before[0]?.line) !== preface(target, after[0]?.line)) fallback = true;
-  for (const heading of new Set([...beforePaths, ...afterPaths])) {
+  for (const heading of changed) {
     const left = beforeByPath.get(heading);
     const right = afterByPath.get(heading);
-    if (!changed.has(heading)) {
-      if (left?.ownText !== right?.ownText) fallback = true;
-      continue;
-    }
     for (const [revision, section] of [["baseline", left], ["target", right]] as const) {
       if (section !== undefined) refs.push({ path: filePath, headingPath: heading, revision, sha256: sha256(section.text) });
     }
   }
-  return fallback ? files() : refs;
+  return refs;
 }
 
 function assertRepositoryPath(value: string, label: string): void {

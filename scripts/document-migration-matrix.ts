@@ -156,16 +156,26 @@ function isTableDelimiter(line: string): boolean {
 
 /** Extracts only claim-bearing Markdown blocks; headings and structural delimiters own or separate units. */
 export function extractDocumentUnits(filePath: string, document: string): ReadonlyArray<DocumentUnit> {
+  return extractDocumentCoverage(filePath, document).units;
+}
+
+/** Retains non-unit bytes separately so mixed claim/fence edits cannot bypass review fallback. */
+export function extractDocumentCoverage(filePath: string, document: string): Readonly<{
+  units: ReadonlyArray<DocumentUnit>;
+  residual: string;
+}> {
   assertRepositoryPath(filePath, "document path");
   const lines = document.split("\n");
   const structure = markdownStructure(document);
   const headings = new Map(structure.headings.map((heading) => [heading.line, heading.headingPath]));
   let owningHeading = "<document>";
   const units: DocumentUnit[] = [];
+  const coveredLines = new Set<number>();
   let index = 0;
   let ordinal = 1;
 
-  const addUnit = (text: string): void => {
+  const addUnit = (text: string, start: number, end: number): void => {
+    for (let line = start; line < end; line += 1) coveredLines.add(line);
     units.push({
       path: filePath,
       owningHeading,
@@ -193,11 +203,12 @@ export function extractDocumentUnits(filePath: string, document: string): Readon
       continue;
     }
     if (isTableRow(line)) {
-      addUnit(line);
+      addUnit(line, index, index + 1);
       index += 1;
       continue;
     }
 
+    const start = index;
     const block: string[] = [line];
     const list = isListItem(line);
     index += 1;
@@ -215,9 +226,9 @@ export function extractDocumentUnits(filePath: string, document: string): Readon
       block.push(candidate);
       index += 1;
     }
-    addUnit(block.join("\n"));
+    addUnit(block.join("\n"), start, index);
   }
-  return units;
+  return { units, residual: lines.filter((_, line) => !coveredLines.has(line)).join("\n") };
 }
 
 export function deriveDocumentUnits(

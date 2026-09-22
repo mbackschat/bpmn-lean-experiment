@@ -280,7 +280,7 @@ The third instance also refuted the first disposition's reach: the guard binds s
 A checklist item was corrected only where attention already was, leaving its siblings unaudited: a capsule's Required evidence list was amended for the two scenarios under discussion while two other Required items stayed listed and absent, a stale claim was fixed in the owning map but not in the capsule that copied it, one Required-Lean list was corrected while the sibling list and matrix row restating the same obligation were not, and the correction for that then declared itself the single owner while one sibling enumeration survived.
 
 Instances
-: 23
+: 24
 
 Disposition
 : `unguardable`
@@ -295,6 +295,8 @@ The root cause is stating one obligation in several places, so each correction c
 The twenty-third instance is the exact Merge/private scheduling checkpoint: the implementation account changed while current IL, atomicity, and map descriptions still excluded its private execution. The first correction updated those owners but missed another blanket Multi-Merge exclusion in the runtime map's unsupported-claims section. Qualifying it as public or hosted execution closed the second correction audit at `52ed7496`. The [review receipt](INTERNAL-COMMUTATION-PROPOSAL.md#independent-cold-review-receipt) retains both audits and the separate integration blocker. A claim sweep must include sibling absence statements and the packet must route the sections actually changed; existing guards do not decide the semantic equivalence of arbitrary prose.
 
 The enumerable changed-section routing omission is separately owned by [Finding 65](#finding-65). Its executable coverage does not decide whether an unchanged owner paragraph has become false.
+
+The twenty-fourth instance was found during review of that correction at `6991ced1`: the consolidation left the invariant map's regional-removal exclusion and pending-review copy untouched. The affected unchanged-owner check identified both, and correction extended the migration source set to that map. The current integration and review facts are routed to their owners; the historical scope-creation boundary and constructed-witness limitations remain explicit.
 
 ### Finding 16
 

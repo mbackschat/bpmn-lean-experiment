@@ -20,7 +20,6 @@ export type MarkdownSection = Readonly<{
   level: number;
   line: number;
   text: string;
-  ownText: string;
 }>;
 
 /** Shares fence and heading recognition between claim extraction and review navigation. */
@@ -66,10 +65,9 @@ export function markdownSections(document: string): ReadonlyArray<MarkdownSectio
     ends.set(heading.line, Math.min(...nextAtLevel.slice(1, heading.level + 1)));
     nextAtLevel[heading.level] = heading.line;
   }
-  return headings.map((heading, index) => {
+  return headings.map((heading) => {
     const end = ends.get(heading.line) ?? lines.length;
-    const ownEnd = headings[index + 1]?.line ?? lines.length;
-    return { ...heading, text: slice(heading.line, end), ownText: slice(heading.line, ownEnd) };
+    return { ...heading, text: slice(heading.line, end) };
   });
 }
 
