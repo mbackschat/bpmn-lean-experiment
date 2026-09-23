@@ -1,4 +1,4 @@
-import BpmnSemantics.SemanticProcess.TransitionTrace
+import BpmnSemantics.SemanticProcess.InternalSnapshotArming
 import BpmnSemantics.SemanticProcess.TransitionAttempt
 import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotCommandAdmission
 import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerFlowNodeOccurrence
@@ -59,33 +59,6 @@ def replayCommittedTransitionsWithCompensationSnapshots (program : Program)
     replayCommittedTransitionsForDeclaredCompensationSnapshots program initial transitions
   else replayCommittedTransitions program initial transitions
 
-private def internalOperationAttemptBefore
-    (left right : InternalOperationAttempt) : Bool :=
-  left.operation.id.value < right.operation.id.value
-
-/-- Select the private refusal detail from the lowest canonical operation ID. -/
-def canonicalInternalOperationRefusal?
-    (attempts : List InternalOperationAttempt) :
-    Option InternalOperationRefusal :=
-  (InternalCommutation.sortBy internalOperationAttemptBefore attempts).findSome? fun
-    | .refused _ reason => some reason
-    | .disabled _ | .applied _ => none
-
-private structure SnapshotInternalTransitionFrontier where
-  transitions : List (SemanticOperation × RuntimeState)
-  refusal : Option InternalOperationRefusal
-
-private def snapshotInternalTransitionFrontier (program : Program)
-    (state : RuntimeState) : SnapshotInternalTransitionFrontier :=
-  let attempts := program.operations.map fun operation =>
-    attemptInternalOperation program operation state
-  let refusal := canonicalInternalOperationRefusal? attempts
-  let transitions := canonicalEnabledInternalTransitions <|
-    (InternalCommutation.sortBy internalOperationAttemptBefore attempts).filterMap fun
-      | .applied step => some (step.operation, step.successor)
-      | .disabled _ | .refused _ _ => none
-  { transitions, refusal }
-
 def enabledInternalOperationCountWithCompensationSnapshots
     (program : Program) (state : RuntimeState) : Nat :=
   (snapshotInternalTransitionFrontier program state).transitions.length
@@ -106,50 +79,6 @@ private def prependSnapshotLifecycle (head : Option UnnumberedFlowNodeOccurrence
     (tail : Option (List UnnumberedFlowNodeOccurrenceDelta)) :
     Option (List UnnumberedFlowNodeOccurrenceDelta) := do
   pure ((← head) :: (← tail))
-
-private structure SnapshotInternalBatchResult where
-  state : RuntimeState
-  publications : List InternalPublicationPair
-
-private inductive SnapshotInternalBatchAttempt where
-  | disabled
-  | applied (result : SnapshotInternalBatchResult)
-  | refused (reason : InternalOperationRefusal)
-
-private def internalPublicationPairWithCompensation? (program : Program)
-    (footprintState before after : RuntimeState) (operation : SemanticOperation)
-    (commandId : SemanticId) : Option InternalPublicationPair := do
-  let footprint ← internalTransitionFootprint? program footprintState operation
-  let record ← internalTransitionRecord? program before operation
-  let lifecycle ← flowNodeOccurrenceDeltaForOperationWithCompensation? program before after
-    operation commandId 0
-  pure { footprint, record, lifecycle }
-
-private def fireSnapshotInternalBatch (program : Program) (footprintState : RuntimeState)
-    (commandId : SemanticId) :
-    RuntimeState → List SemanticOperation → SnapshotInternalBatchAttempt
-  | state, [] => .applied { state, publications := [] }
-  | state, operation :: rest =>
-      let frontier := snapshotInternalTransitionFrontier program state
-      match frontier.refusal with
-      | some reason => .refused reason
-      | none =>
-          match frontier.transitions.filter fun candidate =>
-              candidate.1.id == operation.id with
-          | [(selected, successor)] =>
-              match internalPublicationPairWithCompensation? program footprintState state successor
-                  selected commandId with
-              | none => .disabled
-              | some publication =>
-                  match fireSnapshotInternalBatch program footprintState commandId successor
-                      rest with
-                  | .disabled => .disabled
-                  | .refused reason => .refused reason
-                  | .applied tail =>
-                      .applied
-                        { state := tail.state
-                          publications := publication :: tail.publications }
-          | _ => .disabled
 
 private def prependSnapshotPublicationPairs
     (heads : Option (List InternalPublicationPair))
@@ -203,12 +132,13 @@ private def closeSupportedTracedWithCompensationSnapshots :
           | first :: second :: remaining =>
               let transitions := first :: second :: remaining
               let operations := transitions.map (·.1)
-              if internalOperationFrontierPairwiseIndependent? program state operations then
+              match InternalCommutation.prepareSnapshotArmingBatch? program state operations with
+              | some prepared =>
                 if operations.length > fuel + 1 then
                   { state, hitBound := true, ambiguousChoice := false,
                     records := none, lifecycles := none, refusal := none }
                 else
-                  match fireSnapshotInternalBatch program state commandId state operations with
+                  match fireSnapshotInternalBatch program commandId state prepared with
                   | .refused reason =>
                       { state, hitBound := false, ambiguousChoice := false,
                         records := none, lifecycles := none, refusal := some reason }
@@ -222,7 +152,7 @@ private def closeSupportedTracedWithCompensationSnapshots :
                       let paired := prependSnapshotPublicationPairs (some batch.publications)
                         closed.records closed.lifecycles
                       { closed with records := paired.1, lifecycles := paired.2 }
-              else
+              | none =>
                 { state, hitBound := false, ambiguousChoice := true,
                   records := none, lifecycles := none, refusal := none }
 termination_by fuel => fuel

@@ -283,6 +283,9 @@ import BpmnSemantics.MixedLocalControlClosureConformance
 import BpmnSemantics.ScopeCreationMixedBatchConformance
 import BpmnSemantics.InternalClosureAtomicityConformance
 
+import BpmnSemantics.SnapshotInternalArmingConformance
+import BpmnSemantics.SemanticProcess.InternalSnapshotArmingExecution
+
 /-! Root of the BPMN semantic contract library.
 
 The root contains profile-independent vocabulary, the sequential User Task capsule, and executable contract locks.

@@ -81,6 +81,57 @@ def projectOpenCompensationFlowNodeOccurrences? (program : Program) (state : Run
               (activeCompensationTriggerStarts program operation state.compensationTriggers)
             if starts.map (·.anchor) |>.Nodup then some starts else none
 
+private theorem activeCompensationHandlerStarts_nonTransition (program : Program)
+    (owner : ScopeOccurrenceId) (handlers : List CompensationHandlerExecution) :
+    ∀ start ∈ activeCompensationHandlerStarts program owner handlers,
+      transitionAnchor start.anchor = false := by
+  induction handlers with
+  | nil => simp [activeCompensationHandlerStarts]
+  | cons handler rest ih =>
+      cases lifecycle : handler.lifecycle <;>
+        simp_all [activeCompensationHandlerStarts, compensationHandlerStart,
+          compensationEffectStart, transitionAnchor]
+      split <;> simp_all
+
+private theorem activeCompensationTriggerStarts_nonTransition (program : Program)
+    (operation : SemanticOperation) (triggers : List CompensationTriggerExecution) :
+    ∀ start ∈ activeCompensationTriggerStarts program operation triggers,
+      transitionAnchor start.anchor = false := by
+  induction triggers with
+  | nil => simp [activeCompensationTriggerStarts]
+  | cons trigger rest ih =>
+      cases operation <;> cases lifecycle : trigger.lifecycle <;>
+        simp_all [activeCompensationTriggerStarts, compensationTriggerStart, transitionAnchor]
+      intro start member
+      rcases member with handler | remaining
+      · exact activeCompensationHandlerStarts_nonTransition program trigger.owner trigger.handlers
+          start handler
+      · exact ih start remaining
+
+/-- Open Compensation occurrences are persistent anchors, never instantaneous transitions. -/
+theorem projectOpenCompensationFlowNodeOccurrences_nonTransition (program : Program)
+    (state : RuntimeState) (projected : List OpenSemanticFlowNodeOccurrence)
+    (selected : projectOpenCompensationFlowNodeOccurrences? program state = some projected) :
+    ¬ ∃ start, start ∈ projected ∧ transitionAnchor start.anchor = true := by
+  rintro ⟨start, member, transition⟩
+  unfold projectOpenCompensationFlowNodeOccurrences? at selected
+  split at selected
+  · contradiction
+  · cases control : state.control <;> simp_all
+    case running =>
+      cases declaration : program.compensationExecution with
+      | none => simp_all
+      | some declaration =>
+          simp only [declaration] at selected
+          obtain ⟨operation, _, selected⟩ := Option.bind_eq_some_iff.mp selected
+          split at selected
+          · cases selected
+            have rawMember := (sortFlowNodeOccurrenceStarts_perm _).mem_iff.mp member
+            have shape := activeCompensationTriggerStarts_nonTransition program operation
+              state.compensationTriggers start rawMember
+            simp_all
+          · contradiction
+
 /-- Ordinary runtime-local projection for the proposal's manual pre-profile Program.
 
 The approved checkpoint forbids profile admission, while lifecycle fold checking still requires the
