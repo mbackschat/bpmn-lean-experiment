@@ -38,7 +38,7 @@ Production closure supports independent batches from ordinary `awaitUserTask`, `
 
 [Timer-task accepted](INTERNAL-COMMUTATION-PROPOSAL.md#timer-task-arming-outcome); [bounded-entry checkpoint](INTERNAL-COMMUTATION-PROPOSAL.md#bounded-sub-process-arming-outcome) awaits Lean integration/acceptance.
 
-[Finite batching](INTERNAL-COMMUTATION-PROPOSAL.md#finite-regional-batch-outcome), [ordinary End](INTERNAL-COMMUTATION-PROPOSAL.md#ordinary-end-batch-outcome), and [exact Merge/private scheduling](INTERNAL-COMMUTATION-PROPOSAL.md#exact-merge-frontier-outcome) are accepted. Focused snapshot arming is accepted; [pipeline correspondence](capsules/COMPENSATION-TRIGGER-HANDLER-PROPOSAL.md#public-registration-prerequisites) awaits acceptance. The [atomicity repair](capsules/INTERNAL-CLOSURE-ATOMICITY-REPAIR-SPEC.md) owns rollback/no-publication; remaining families and closure stay open.
+[Finite batching](INTERNAL-COMMUTATION-PROPOSAL.md#finite-regional-batch-outcome), [ordinary End](INTERNAL-COMMUTATION-PROPOSAL.md#ordinary-end-batch-outcome), and [exact Merge/private scheduling](INTERNAL-COMMUTATION-PROPOSAL.md#exact-merge-frontier-outcome) are accepted. Focused snapshot arming and private [pipeline correspondence](capsules/COMPENSATION-TRIGGER-HANDLER-PROPOSAL.md#public-registration-prerequisites) are accepted. The [atomicity repair](capsules/INTERNAL-CLOSURE-ATOMICITY-REPAIR-SPEC.md) owns rollback/no-publication; remaining families and closure stay open.
 
 [Review receipts](INTERNAL-COMMUTATION-PROPOSAL.md#independent-cold-review-receipt) retain verification. [`implementation-status-owner:ENGINE-SEMANTIC-INVARIANT`](ENGINE-SEMANTIC-INVARIANT-IMPLEMENTATION-MAP.md#runtime-state-well-formedness) owns collection ordering.
 
