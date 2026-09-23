@@ -100,6 +100,32 @@ The independent executable oracle explicitly runs both orders outside the produc
 
 ## Selected final-closure account
 
+### RC completion scope amendment
+
+Amendment proposed on 2026-09-23 after the owner closed the [proof-architecture review and experiments](experiments/INTERNAL-COMMUTATION-PROOF-ARCHITECTURE-EXPERIMENT.md). Its independent proposal review is pending. Until approval, this section selects no new implementation or reduced acceptance boundary; previously approved accounts and unfinished outcomes retain their status.
+
+The required RC result is safe, deterministic internal closure for the complete owner-selected RC capability surface, including the capabilities to be added by `EVENT-SUBSCRIPTIONS` and `COMPENSATION-TRANSACTIONS`. It is not completion of every possible cross-family combination in raw Programs. The [operation census](#complete-operation-family-census), [RuntimeState census](#prepared-transition-and-region-footprints), and all existing accepted theorem contracts remain exhaustive and unchanged. The broader final-closure account below remains the proposal's generalization target; completing the narrower RC result does not graduate this proposal or claim that target complete.
+
+Required for RC:
+
+- Preserve all existing accepted behavior, proof statements, independent evidence lanes, whole-command rollback, and the current public/Temporal refusal of scheduled mode. Keep the arbitrary finite-batch theorem and canonical state/publication guarantees; no universal theorem is replaced by finite tests.
+- Classify each remaining preparation/publication/integration obligation against the actual profile capability predicates, structural validators, lowering, and reachable command frontiers. Record in this owner its capability dependency, deciding evidence, and one of required, structurally excluded from RC, or unresolved. A failed witness search, scenario-corpus enumeration, or an unavailable footprint is not an exclusion argument. A structural exclusion needs an admission argument and an executable widening counterexample that reopens it.
+- Complete every required obligation before admitting its capability. An unresolved dependency blocks that capability's admission and RC closure; it does not authorize rejecting previously accepted behavior or silently changing committed outcomes. Each new family retains complete preparation in both directions, successful canonical execution, successor validity/projectability, and accepted publication for its admitted independent frontiers.
+- Reconcile the classification after the subscription and Compensation/Transaction accounts select their admission boundaries, and before the RC row can become satisfied. The existing [regional reachability argument](#regional-preparation-prerequisite) is bounded to its registered surface and cannot exclude those future compositions. Preserve the [same-change owners and reopen conditions](#same-change-owners-and-reopen-conditions), the hosting preflight, complete applicable gates, and governed reviews.
+
+The initial unresolved set is explicit; this amendment itself establishes no structural exclusions:
+
+| Obligation | Current disposition | Evidence needed to settle the RC dependency |
+|---|---|---|
+| Bounded Sub-Process entry: regional pair, accepted publication, finite integration | Unresolved; preserve the [unfinished checkpoint](#bounded-sub-process-arming-outcome) | Capability-level argument for every selected bounded-entry composition, or an admitted reachable frontier requiring the missing complete outcome |
+| Message-boundary task arming, Sequential/Parallel Multi-Instance arming, event-race arming | Unresolved; the [composite census](#complete-operation-family-census) remains binding | Classify independent frontiers under the retained profiles and the selected subscription widening; an already satisfied feature row does not supply a missing commutation proof |
+| Compensation trigger/frontier preparation and snapshot-enabled combinations | Unresolved; pre-registration dependency | Selected public Compensation/Transaction admission and reachable frontiers, including local control, scope creation, and data arming under snapshot declarations |
+| Existing scheduling, finite batches, classifications, and Temporal boundary | Required: retain implemented results and close any remaining evidence gaps | Reconcile the existing [final discriminators](#remaining-final-closure-discriminators) with exact current evidence; private scheduling does not imply public/hosted scheduling |
+
+Optional for RC are proof-only cleanups that demonstrably reduce maintenance while preserving the accepted contract. The two experimental replacements are not selected. Generalization solely for capabilities outside the selected RC surface may remain deliberately open only after its exclusion argument is recorded, with reason and admission-widening reopen trigger in [`implementation-status-owner:ENGINE-RUNTIME-PROOF`](ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md#explicitly-absent).
+
+Excluded from this amendment are a new preparation compiler or store representation, a changed conflict/acceptance rule, stronger raw-state validity, sequential fallback for ambiguous frontiers, public scheduled choice, new BPMN scope, and treating failed experiments as evidence that existing proofs are unnecessary. It adds no host primitive or wire change; the [existing Temporal preflight](#temporal-hosting-and-information-preservation-preflight) continues to apply.
+
 ### Complete operation-family census
 
 Final closure classifies the complete `SemanticOperation` discriminated union by semantic criterion. A TypeScript exhaustive switch, a Lean exhaustive definition, and one generated documentation guard must fail together when a variant is added without a classification. The classification is not a count and does not infer completeness from the table's prose.
@@ -285,6 +311,8 @@ The checkpoint excluded:
 - Parallel Multi-Instance, completion conditions, general event subscriptions, compensation, transactions, workload isolation, or closure of another MUE content ID.
 
 ## Final-closure required, optional, and excluded work
+
+This list retains the broader proposal-completion contract. The [RC completion scope amendment](#rc-completion-scope-amendment) separately bounds milestone obligations without declaring unimplemented parts of this list complete.
 
 Required:
 
@@ -930,6 +958,8 @@ Reopen before adding an atom domain or operation family, changing the region-ove
 A future admitted topology that exposes an interrupting transition beside an unarmed sibling also reopens the account: reject mode may encounter an observable choice. The current admitted Error/Terminate fixtures do not establish that frontier, and this proposal selects no preemption policy.
 
 ## Independent cold-review receipt
+
+RC completion scope amendment, 2026-09-23: proposal review pending; no reduced RC acceptance boundary is approved by the historical receipts below. The closed architecture investigation is retained in the [experiment report](experiments/INTERNAL-COMMUTATION-PROOF-ARCHITECTURE-EXPERIMENT.md) and is not this amendment's semantic approval.
 
 The Timer-task arming outcome received a context-cold semantic-checkpoint review at `e8c1aa724d65cd88cd56c555d2b9f57ab0b42be7`, against baseline `bbaeb866ef6a8c4da4eb05d947437fa737b9e26f`. The isolated reviewer (`fork-turns-none`) approved with no required corrections, independently passed 109 focused tests, and regenerated packet `c08028c998fea199ebb7f9a999c7fb39f3ec1cfb559b70c1bb6cc87c13012a18`. All seven gate-output hashes, ten complete resource-receipt digests, and 618 measured inputs matched. Approval covers complete preparation for both Timer-task variants, predecessor-derived successor validity, exact mixed-family state equality, actual accepted publication, and inherited finite permutation laws. The advisory identified an asserted string literal in the publication template; the acceptance follow-up replaces that pattern in all four preparation owners with the existing enum value. This behavior-preserving correction is non-material under [the review gate](TESTING-SPEC.md#independent-cold-review-gate), covered by the complete semantic-core and infrastructure gates; it changes no proof or resource input.
 

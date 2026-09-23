@@ -1,0 +1,856 @@
+--- /dev/null
++++ b/BpmnSemantics/SemanticProcess/InternalRegionalMaskSquare.lean
+@@ -0,0 +1,350 @@
++import BpmnSemantics.SemanticProcess.InternalRegionalPairOwnershipFrame
++import BpmnSemantics.SemanticProcess.InternalRegionalPairCancellationFrame
++import BpmnSemantics.SemanticProcess.InternalRegionalPairExecutionFrame
++
++namespace BpmnSemantics.SemanticProcess.InternalCommutation.ExecutionExperiment
++open BpmnSemantics
++
++-- The normal form is proof-only: the native filter functions below refine it by reduction.
++structure Masks where
++  scopeOccurrences : RuntimeScopeOccurrence → Bool := fun _ => true
++  waits : UserTaskWait → Bool := fun _ => true
++  messageWaits : MessageWait → Bool := fun _ => true
++  timerWaits : TimerWait → Bool := fun _ => true
++  effectWaits : EffectWait → Bool := fun _ => true
++  effectIncidents : SemanticEffectIncident → Bool := fun _ => true
++  selectedBranchSets : SelectedBranchSet → Bool := fun _ => true
++  eventRaces : EventRace → Bool := fun _ => true
++  calledProcessOccurrences : CalledProcessOccurrence → Bool := fun _ => true
++  activityOccurrences : ActivityOccurrence → Bool := fun _ => true
++  sequentialMultiInstanceControllers : SequentialMultiInstanceController → Bool := fun _ => true
++  parallelMultiInstanceControllers : ParallelMultiInstanceController → Bool := fun _ => true
++  compensationActivityRetentions : CompensationActivityRetention → Bool := fun _ => true
++  compensationParentContextRetentions : CompensationParentContextRetention → Bool := fun _ => true
++  compensationTriggers : CompensationTriggerExecution → Bool := fun _ => true
++  compensationHandlerEffectWaits : CompensationHandlerEffectWait → Bool := fun _ => true
++  localData : ActivityVariableScope → Bool := fun _ => true
++
++def Masks.apply (m : Masks) (s : RuntimeState) : RuntimeState :=
++  { s with
++    tokens := [], endOccurrences := 0
++    scopeOccurrences := s.scopeOccurrences.filter m.scopeOccurrences
++    waits := s.waits.filter m.waits
++    messageWaits := s.messageWaits.filter m.messageWaits
++    timerWaits := s.timerWaits.filter m.timerWaits
++    effectWaits := s.effectWaits.filter m.effectWaits
++    effectIncidents := s.effectIncidents.filter m.effectIncidents
++    selectedBranchSets := s.selectedBranchSets.filter m.selectedBranchSets
++    eventRaces := s.eventRaces.filter m.eventRaces
++    calledProcessOccurrences := s.calledProcessOccurrences.filter m.calledProcessOccurrences
++    activityOccurrences := s.activityOccurrences.filter m.activityOccurrences
++    sequentialMultiInstanceControllers := s.sequentialMultiInstanceControllers.filter m.sequentialMultiInstanceControllers
++    parallelMultiInstanceControllers := s.parallelMultiInstanceControllers.filter m.parallelMultiInstanceControllers
++    compensationActivityRetentions := s.compensationActivityRetentions.filter m.compensationActivityRetentions
++    compensationParentContextRetentions := s.compensationParentContextRetentions.filter m.compensationParentContextRetentions
++    compensationTriggers := s.compensationTriggers.filter m.compensationTriggers
++    compensationHandlerEffectWaits := s.compensationHandlerEffectWaits.filter m.compensationHandlerEffectWaits
++    variables := { s.variables with activities := s.variables.activities.filter m.localData } }
++
++theorem masks_commute (a b : Masks) (s : RuntimeState) : a.apply (b.apply s) = b.apply (a.apply s) := by
++  simp only [Masks.apply, List.filter_filter, Bool.and_comm]
++
++theorem masks_reset (m : Masks) (s : RuntimeState) :
++    m.apply { s with tokens := [], endOccurrences := 0 } = m.apply s := rfl
++
++def returnMasks (state : RuntimeState)
++    (record : CalledProcessOccurrence) : Masks :=
++  let removed := processInstanceClosureWithin state.calledProcessOccurrences
++    [record.calledRoot.processInstanceId]
++    (state.calledProcessOccurrences.length + 1)
++  let removedOwner := fun owner : ScopeOccurrenceId =>
++    removed.contains owner.processInstanceId
++  {
++    scopeOccurrences := fun occurrence =>
++      !removedOwner occurrence.id
++    waits := fun wait => !removedOwner wait.owner
++    messageWaits := fun wait => !removedOwner wait.owner
++    timerWaits := fun wait => !removedOwner wait.owner
++    effectWaits := fun wait => !removedOwner wait.owner
++    effectIncidents := fun incident => !removedOwner incident.wait.owner
++    activityOccurrences := fun activity => !removedOwner activity.owner
++    selectedBranchSets := fun selected =>
++      !removedOwner selected.owner
++    eventRaces := fun race => !removedOwner race.owner
++    calledProcessOccurrences := fun candidate =>
++      candidate.id ≠ record.id &&
++        !removedOwner candidate.caller && !removedOwner candidate.calledRoot
++    sequentialMultiInstanceControllers :=
++      fun controller =>
++        !removed.contains controller.processInstanceId
++    parallelMultiInstanceControllers :=
++      fun controller =>
++        !removed.contains controller.id.processInstanceId
++    compensationActivityRetentions :=
++      fun retention => !removedOwner retention.owner
++    compensationParentContextRetentions :=
++      fun retention =>
++        let parent := match retention with
++          | .provisional parent _ | .promoted parent _ _ => parent
++        !removedOwner parent.id && parent.parent.all (fun owner => !removedOwner owner)
++    compensationTriggers := fun trigger =>
++      !removedOwner trigger.owner
++    compensationHandlerEffectWaits := fun wait =>
++      !removed.contains wait.id.processInstanceId &&
++        !removed.contains wait.triggerId.processInstanceId &&
++        !removed.contains wait.handlerId.processInstanceId
++    localData := fun activity =>
++          !removed.contains activity.owner.processInstanceId }
++
++def cancelMasks (state : RuntimeState) (root : ScopeOccurrenceId)
++    (disposition : SelectedScopeDisposition) : Masks :=
++  let calledInstances := calledInstanceClosure state root
++  let cancelled := fun owner =>
++    occurrenceInSubtree state.scopeOccurrences root owner ||
++      calledInstances.contains owner.processInstanceId
++  let cancelledEffects := state.effectWaits.filter fun wait =>
++    cancelled wait.owner
++  let cancelledIncidents := state.effectIncidents.filter fun incident =>
++    cancelled incident.wait.owner
++  let cancelledTriggers := state.compensationTriggers.filter fun trigger =>
++    cancelled trigger.owner
++  let withdrawnActivities := withdrawnByRegion cancelled state.activityOccurrences
++  let withdrawnTimers := attachedTimersOf withdrawnActivities
++  {
++    scopeOccurrences := (fun occurrence => match disposition with
++      | .retain => occurrence.id = root || !cancelled occurrence.id
++      | .remove => !cancelled occurrence.id)
++    waits := fun wait => !cancelled wait.owner
++    messageWaits := fun wait =>
++      !cancelled wait.owner && !activityRecordsAttachMessageWait withdrawnActivities wait
++    timerWaits := fun wait =>
++      !cancelled wait.owner && !anyTimerIdNamesWait withdrawnTimers wait
++    activityOccurrences := fun record => !recordInRegion cancelled record
++    sequentialMultiInstanceControllers :=
++      fun controller =>
++        !calledInstances.contains controller.processInstanceId &&
++          !(withdrawnActivities.any (controllerNamesActivityOccurrence controller))
++    parallelMultiInstanceControllers :=
++      fun controller =>
++        !calledInstances.contains controller.id.processInstanceId &&
++          !(withdrawnActivities.any fun activity =>
++            parallelControllerNamesIdentity controller activity.processInstanceId
++              ⟨activity.activityElementId.value⟩ activity.activation)
++    effectWaits := fun wait => !cancelled wait.owner
++    effectIncidents :=
++      fun incident => !cancelled incident.wait.owner
++    selectedBranchSets :=
++      fun record => !cancelled record.owner
++    eventRaces := fun race => !cancelled race.owner
++    compensationActivityRetentions :=
++      fun retention => !cancelled retention.owner
++    compensationParentContextRetentions :=
++      (compensationParentContextRetentionSurvivesScopeCancellation
++          state root disposition)
++    compensationTriggers := fun trigger =>
++      !cancelled trigger.owner
++    compensationHandlerEffectWaits := fun wait =>
++      !(cancelledTriggers.any fun trigger => trigger.id == wait.triggerId)
++    calledProcessOccurrences :=
++      fun record =>
++        !cancelled record.caller && !cancelled record.calledRoot
++    localData := fun activity =>
++          !calledInstances.contains activity.owner.processInstanceId &&
++            !(withdrawnActivities.any fun record =>
++              activityOccurrenceScopeMatches
++                { processInstanceId := record.processInstanceId
++                  activityElementId := ⟨record.activityElementId.value⟩
++                  activation := record.activation } activity) &&
++            !(cancelledEffects.any fun wait =>
++              activityScopeMatches { processInstanceId := wait.processInstanceId, elementId := ⟨wait.elementId.value⟩, activation := wait.activation } activity) &&
++            !(cancelledIncidents.any fun incident =>
++              activityScopeMatches incident.id.effectId activity) }
++
++theorem return_native (s : RuntimeState) (record : CalledProcessOccurrence) :
++    (returnMasks s record).apply s = { removeCalledProcessTree s record with tokens := [], endOccurrences := 0 } := rfl
++
++theorem cancel_native (s : RuntimeState) (root : ScopeOccurrenceId) (d : SelectedScopeDisposition) :
++    (cancelMasks s root d).apply s = { cancelScopeSubtree s root d with tokens := [], endOccurrences := 0 } := by
++  cases d <;> rfl
++
++def completionMasks (s : RuntimeState) (selected : InternalRegionalSelection) : Masks :=
++  { scopeOccurrences := fun scope => decide (scope.id ≠ selected.root.id)
++    timerWaits := (regionalSelectionReferenceRetention s selected).timer
++    activityOccurrences := (regionalSelectionReferenceRetention s selected).activity }
++
++def selectedMasks (s : RuntimeState) (selected : InternalRegionalSelection) : Masks :=
++  match selected.kind with
++  | .returning record => returnMasks s record
++  | .completing _ => completionMasks s selected
++  | .interrupting _ => cancelMasks s selected.root.id .remove
++  | .terminating => cancelMasks s selected.root.id .retain
++
++theorem cancellation_masks_stable (before after : RuntimeState) (root : ScopeOccurrenceId)
++    (disposition : SelectedScopeDisposition)
++    (subtree : ∀ owner, occurrenceInSubtree after.scopeOccurrences root owner = occurrenceInSubtree before.scopeOccurrences root owner)
++    (called : ∀ pid, (calledInstanceClosure after root).contains pid = (calledInstanceClosure before root).contains pid)
++    (activities : withdrawnByRegion (fun owner => occurrenceInSubtree after.scopeOccurrences root owner ||
++      (calledInstanceClosure after root).contains owner.processInstanceId) after.activityOccurrences =
++      withdrawnByRegion (fun owner => occurrenceInSubtree before.scopeOccurrences root owner ||
++      (calledInstanceClosure before root).contains owner.processInstanceId) before.activityOccurrences)
++    (effects : after.effectWaits.filter (fun wait => occurrenceInSubtree after.scopeOccurrences root wait.owner ||
++      (calledInstanceClosure after root).contains wait.owner.processInstanceId) =
++      before.effectWaits.filter (fun wait => occurrenceInSubtree before.scopeOccurrences root wait.owner ||
++      (calledInstanceClosure before root).contains wait.owner.processInstanceId))
++    (incidents : after.effectIncidents.filter (fun incident => occurrenceInSubtree after.scopeOccurrences root incident.wait.owner ||
++      (calledInstanceClosure after root).contains incident.wait.owner.processInstanceId) =
++      before.effectIncidents.filter (fun incident => occurrenceInSubtree before.scopeOccurrences root incident.wait.owner ||
++      (calledInstanceClosure before root).contains incident.wait.owner.processInstanceId))
++    (triggers : after.compensationTriggers.filter (fun trigger => occurrenceInSubtree after.scopeOccurrences root trigger.owner ||
++      (calledInstanceClosure after root).contains trigger.owner.processInstanceId) =
++      before.compensationTriggers.filter (fun trigger => occurrenceInSubtree before.scopeOccurrences root trigger.owner ||
++      (calledInstanceClosure before root).contains trigger.owner.processInstanceId)) :
++    cancelMasks after root disposition = cancelMasks before root disposition := by
++  have parents : compensationParentContextRetentionSurvivesScopeCancellation after root disposition =
++      compensationParentContextRetentionSurvivesScopeCancellation before root disposition := by
++    funext retention
++    cases retention <;> simp only [compensationParentContextRetentionSurvivesScopeCancellation, subtree, called]
++  simp only [cancelMasks]
++  simp only [activities, effects, incidents, triggers, parents]
++  simp only [subtree, called]
++
++theorem selected_masks_native (program : Program) (before after : RuntimeState)
++    (hosting : SemanticId) (operation : SemanticOperation) (prepared : PreparedInternalRegional)
++    (valid : runtimeStateWellFormed program hosting before = true)
++    (running : before.control = .running hosting) (afterRunning : after.control = .running hosting)
++    (found : prepareInternalRegional? program before operation = some prepared)
++    (applied : applyPreparedInternalRegional? program before prepared = some after) :
++    { after with tokens := [], endOccurrences := 0 } = (selectedMasks before prepared.selection).apply before := by
++  have update := preparedRegional_execution_fields program before after hosting operation prepared valid running afterRunning found applied
++  have noFilter {α : Type} (xs : List α) : xs.filter (fun _ => true) = xs := by
++    induction xs <;> simp_all
++  cases kind : prepared.selection.kind with
++  | returning record =>
++      cases operation <;> simp only [kind] at update <;> try contradiction
++      rw [update]
++      simpa only [selectedMasks, kind] using (return_native before record).symm
++  | completing withdrawal =>
++      cases operation with
++      | completeScope id origin definition output =>
++          cases parent : prepared.selection.root.parent <;> cases output with
++          | none => simp only [kind, parent] at update
++          | some output =>
++              simp only [kind, parent] at update
++              all_goals
++                have exactUpdate := preparedCompletion_filter_update program before after hosting id origin definition output
++                  prepared withdrawal _ valid running afterRunning found applied kind parent
++                rw [exactUpdate]
++                simp [selectedMasks, completionMasks, kind, Masks.apply, noFilter]
++      | _ => simp only [kind] at update
++  | interrupting parent | terminating =>
++      cases operation <;> simp only [kind] at update <;> try contradiction
++      all_goals rw [update]
++      all_goals simpa only [selectedMasks, kind, interruptScope] using (cancel_native before prepared.selection.root.id _).symm
++
++theorem regional_masks_stable (program : Program) (before after : RuntimeState)
++    (hosting : SemanticId) (writerOperation readerOperation : SemanticOperation)
++    (writer reader : PreparedInternalRegional)
++    (valid : runtimeStateWellFormed program hosting before = true)
++    (running : before.control = .running hosting)
++    (writerFound : prepareInternalRegional? program before writerOperation = some writer)
++    (readerFound : prepareInternalRegional? program before readerOperation = some reader)
++    (independent : regionalStateFootprintsIndependent writer.footprint reader.footprint = true)
++    (applied : applyPreparedInternalRegional? program before writer = some after)
++    (afterValid : runtimeStateWellFormed program hosting after = true)
++    (afterRunning : after.control = .running hosting)
++    (afterFound : prepareInternalRegional? program after readerOperation = some reader) :
++    selectedMasks after reader.selection = selectedMasks before reader.selection := by
++  cases kind : reader.selection.kind with
++  | returning record =>
++      have selected := (ownershipClosedSelection_facts program before readerOperation reader.selection
++        (prepareInternalRegional_facts program before readerOperation reader readerFound).2.2.2.1).1
++      obtain ⟨binding, parentless⟩ := regionalSelection_return_root program before readerOperation reader.selection record selected kind
++      have closure := regional_pair_call_closure program before after hosting writerOperation readerOperation writer reader
++        valid running writerFound readerFound independent applied parentless
++      simp only [selectedMasks, kind, returnMasks, ← binding, closure]
++  | completing withdrawal =>
++      cases withdrawal <;> simp only [selectedMasks, kind, completionMasks, regionalSelectionReferenceRetention]
++  | interrupting parent | terminating =>
++      have cancelling : reader.selection.kind = .terminating ∨ ∃ parent, reader.selection.kind = .interrupting parent := by
++        first | exact Or.inl kind | exact Or.inr ⟨_, kind⟩
++      have classes := regional_pair_cancellation_classifiers program before after hosting writerOperation readerOperation writer reader
++        valid running writerFound readerFound independent applied
++      have populations := regional_pair_cancellation_populations program before after hosting writerOperation readerOperation writer reader
++        valid running writerFound readerFound independent applied cancelling
++      have triggers := preparedRegional_cancellation_triggers_empty program before hosting readerOperation reader valid running readerFound cancelling
++      have triggersAfter := preparedRegional_cancellation_triggers_empty program after hosting readerOperation reader
++        afterValid afterRunning afterFound cancelling
++      simpa only [selectedMasks, kind] using cancellation_masks_stable before after reader.selection.root.id _
++        classes.1 classes.2 populations.1 populations.2.1 populations.2.2 (triggersAfter.trans triggers.symm)
++
++def armRowsKept (m : Masks) (write : InternalArmingWrite) : Prop :=
++  match write with
++  | .userTask wait => m.waits wait = true
++  | .message wait => m.messageWaits wait = true
++  | .timer wait => m.timerWaits wait = true
++  | .effect wait bindings => m.effectWaits wait = true ∧
++      m.localData { owner := .effectOccurrence (effectWaitOccurrence wait), bindings } = true
++
++theorem ordinary_arming_masks (s : RuntimeState) (patch : InternalArmingPatch) (m : Masks)
++    (ordered : canonicalCollectionOrder s = true) (kept : armRowsKept m patch.write) :
++    m.apply (applyInternalArmingPatch s patch) = applyInternalArmingPatch (m.apply s) patch := by
++  simp only [canonicalCollectionOrder, Bool.and_eq_true, and_assoc] at ordered
++  cases write : patch.write with
++  | userTask wait =>
++      have keep : m.waits wait = true := by simpa only [armRowsKept, write] using kept
++      have frame := filter_canonicalInsertBy_retained userTaskWaitBefore userTaskWaitBefore_compose
++        m.waits wait s.waits ordered.2.2.1 keep
++      simp only [Masks.apply, applyInternalArmingPatch, write, insertUserTaskWait_eq_canonicalInsertBy]
++      rw [frame]
++      rfl
++  | message wait =>
++      have keep : m.messageWaits wait = true := by simpa only [armRowsKept, write] using kept
++      have frame := filter_canonicalInsertBy_retained messageWaitBefore regional_messageWaitBefore_compose
++        m.messageWaits wait s.messageWaits ordered.2.2.2.2.1 keep
++      simp only [Masks.apply, applyInternalArmingPatch, write, insertMessageWait]
++      rw [frame]
++      rfl
++  | timer wait =>
++      have keep : m.timerWaits wait = true := by simpa only [armRowsKept, write] using kept
++      have frame := filter_canonicalInsertBy_retained timerWaitBefore regional_timerWaitBefore_compose
++        m.timerWaits wait s.timerWaits ordered.2.2.2.2.2.1 keep
++      simp only [Masks.apply, applyInternalArmingPatch, write, insertTimerWait]
++      rw [frame]
++      rfl
++  | effect wait bindings =>
++      have keep : m.effectWaits wait = true ∧
++          m.localData { owner := .effectOccurrence (effectWaitOccurrence wait), bindings } = true := by
++        simpa only [armRowsKept, write] using kept
++      have frame := filter_canonicalInsertBy_retained effectWaitBefore regional_effectWaitBefore_compose
++        m.effectWaits wait s.effectWaits ordered.2.2.2.2.2.2.1 keep.1
++      have data := filter_canonicalInsertBy_retained activityVariableScopeBefore regional_activityVariableScopeBefore_compose
++        m.localData _ s.variables.activities ordered.2.2.2.2.2.2.2.2.2.2.1 keep.2
++      simp only [Masks.apply, applyInternalArmingPatch, write, insertEffectWait, insertActivityVariableScope_eq_canonicalInsertBy]
++      rw [frame, data]
++      rfl
++
++theorem data_arming_masks (s : RuntimeState) (patch : InternalDataArmingPatch) (m : Masks)
++    (ordered : canonicalCollectionOrder s = true) (kept : armRowsKept m patch.arm.write)
++    (activity : m.activityOccurrences patch.record = true)
++    (data : m.localData { owner := .activityOccurrence (activityOwnerForRecord patch.record), bindings := patch.bindings } = true) :
++    m.apply (applyInternalDataArmingPatch s patch) = applyInternalDataArmingPatch (m.apply s) patch := by
++  have ordinary := ordinary_arming_masks s patch.arm m ordered kept
++  simp only [canonicalCollectionOrder, Bool.and_eq_true, and_assoc] at ordered
++  have activityFrame := filter_canonicalInsertBy_retained activityOccurrenceBefore regional_activityOccurrenceBefore_compose
++    m.activityOccurrences patch.record s.activityOccurrences ordered.2.2.2.2.2.2.2.2.2.2.2.2.2.2.1 activity
++  have dataFrame := filter_canonicalInsertBy_retained activityVariableScopeBefore regional_activityVariableScopeBefore_compose
++    m.localData _ s.variables.activities ordered.2.2.2.2.2.2.2.2.2.2.1 data
++  let finish := fun t : RuntimeState => { t with
++    activityOccurrences := canonicalInsertBy activityOccurrenceBefore patch.record (s.activityOccurrences.filter m.activityOccurrences)
++    activityActivations := setActivationCount s.activityActivations ⟨patch.record.activityElementId.value⟩ patch.record.activation
++    variables := { s.variables with
++      activities := canonicalInsertBy activityVariableScopeBefore
++        { owner := .activityOccurrence (activityOwnerForRecord patch.record), bindings := patch.bindings }
++        (s.variables.activities.filter m.localData) } }
++  cases write : patch.arm.write <;>
++    simp only [applyInternalDataArmingPatch, applyInternalArmingPatch, write, Masks.apply,
++      insertActivityOccurrence_eq_canonicalInsertBy, addActivityOccurrenceVariableScope,
++      insertActivityVariableScope_eq_canonicalInsertBy] at ordinary ⊢ <;>
++    rw [activityFrame, dataFrame] <;> exact congrArg finish ordinary
++
++end BpmnSemantics.SemanticProcess.InternalCommutation.ExecutionExperiment
+--- a/BpmnSemantics/SemanticProcess/InternalRegionalPairCommutation.lean
++++ b/BpmnSemantics/SemanticProcess/InternalRegionalPairCommutation.lean
+@@ -1,15 +1,13 @@
++import BpmnSemantics.SemanticProcess.InternalRegionalMaskSquare
+ import BpmnSemantics.SemanticProcess.InternalRegionalPairExecutionFrame
+ import BpmnSemantics.SemanticProcess.InternalRegionalPairOwnershipFrame
+ import BpmnSemantics.SemanticProcess.InternalRegionalPairPublicationFrame
+ import BpmnSemantics.SemanticProcess.InternalRegionalPairCancellationFrame
+-import BpmnSemantics.SemanticProcess.InternalRegionalPairMixedFields
+ import BpmnSemantics.SemanticProcess.InternalLocalControlRegionPatch
+ 
+-/-! Complete regional pairs compose the existing preparation, execution, validity, and publication laws. Canonical token order and additive end counts are proved separately from retained-field removal before reconstructing literal RuntimeState equality. -/
+ 
+ namespace BpmnSemantics.SemanticProcess.InternalCommutation
+-
+-open BpmnSemantics
++open BpmnSemantics ExecutionExperiment
+ 
+ private structure RegionalPairExecutionSquare (program : Program)
+     (before afterLeft afterRight finalLR finalRL : RuntimeState) (hosting : SemanticId)
+@@ -70,45 +68,6 @@
+   exact ⟨afterLeft, afterRight, finalLR, finalRL, leftApplied, rightApplied, rightAfterLeft, leftAfterRight,
+     lrApplied, rlApplied, leftValid, rightValid, lrValid, rlValid, leftRunning, rightRunning, lrRunning, rlRunning⟩
+ 
+-private theorem prepared_return_fields (program : Program) (before after : RuntimeState)
+-    (hosting : SemanticId) (operation : SemanticOperation) (prepared : PreparedInternalRegional)
+-    (record : CalledProcessOccurrence)
+-    (valid : runtimeStateWellFormed program hosting before = true)
+-    (running : before.control = .running hosting) (afterRunning : after.control = .running hosting)
+-    (found : prepareInternalRegional? program before operation = some prepared)
+-    (applied : applyPreparedInternalRegional? program before prepared = some after)
+-    (kind : prepared.selection.kind = .returning record) :
+-    after = { removeCalledProcessTree before record with tokens := after.tokens } := by
+-  have update := preparedRegional_execution_fields program before after hosting operation prepared valid running afterRunning found applied
+-  cases operation <;> simp only [kind] at update <;> try contradiction
+-  rw [update]
+-
+-private theorem prepared_completion_fields (program : Program) (before after : RuntimeState)
+-    (hosting : SemanticId) (operation : SemanticOperation) (prepared : PreparedInternalRegional)
+-    (withdrawal : InternalCompletionWithdrawal)
+-    (valid : runtimeStateWellFormed program hosting before = true)
+-    (running : before.control = .running hosting) (afterRunning : after.control = .running hosting)
+-    (found : prepareInternalRegional? program before operation = some prepared)
+-    (applied : applyPreparedInternalRegional? program before prepared = some after)
+-    (kind : prepared.selection.kind = .completing withdrawal) :
+-    after = { before with
+-      tokens := after.tokens
+-      scopeOccurrences := before.scopeOccurrences.filter (fun scope => decide (scope.id ≠ prepared.selection.root.id))
+-      timerWaits := before.timerWaits.filter (regionalSelectionReferenceRetention before prepared.selection).timer
+-      activityOccurrences := before.activityOccurrences.filter (regionalSelectionReferenceRetention before prepared.selection).activity } := by
+-  have update := preparedRegional_execution_fields program before after hosting operation prepared valid running afterRunning found applied
+-  cases operation with
+-  | completeScope id origin definition output =>
+-      cases parent : prepared.selection.root.parent <;> cases output with
+-      | none => simp only [kind, parent] at update
+-      | some output =>
+-          simp only [kind, parent] at update
+-          all_goals
+-            have exactUpdate := preparedCompletion_filter_update program before after hosting id origin definition output
+-              prepared withdrawal _ valid running afterRunning found applied kind parent
+-            rw [exactUpdate]
+-  | _ => simp only [kind] at update
+-
+ private theorem filter_addTokens_retained (tokens : List ControlToken) (outputs : List ControlPlaceId)
+     (owner : ScopeOccurrenceId) (keep : ControlToken → Bool)
+     (ordered : orderedBy controlTokenBefore tokens = true)
+@@ -139,367 +98,6 @@
+   rw [filters]
+   exact addTokens_commute _ _ _ _ _
+ 
+-private theorem completion_updates_commute (before afterLeft afterRight : RuntimeState)
+-    (leftRoot rightRoot : ScopeOccurrenceId)
+-    (leftTimer rightTimer : TimerWait → Bool) (leftActivity rightActivity : ActivityOccurrence → Bool)
+-    (leftUpdate : afterLeft = { before with
+-      tokens := afterLeft.tokens
+-      scopeOccurrences := before.scopeOccurrences.filter (fun scope => decide (scope.id ≠ leftRoot))
+-      timerWaits := before.timerWaits.filter leftTimer
+-      activityOccurrences := before.activityOccurrences.filter leftActivity })
+-    (rightUpdate : afterRight = { before with
+-      tokens := afterRight.tokens
+-      scopeOccurrences := before.scopeOccurrences.filter (fun scope => decide (scope.id ≠ rightRoot))
+-      timerWaits := before.timerWaits.filter rightTimer
+-      activityOccurrences := before.activityOccurrences.filter rightActivity }) :
+-    { afterLeft with
+-      tokens := [], endOccurrences := 0
+-      scopeOccurrences := afterLeft.scopeOccurrences.filter (fun scope => decide (scope.id ≠ rightRoot))
+-      timerWaits := afterLeft.timerWaits.filter rightTimer
+-      activityOccurrences := afterLeft.activityOccurrences.filter rightActivity } =
+-    { afterRight with
+-      tokens := [], endOccurrences := 0
+-      scopeOccurrences := afterRight.scopeOccurrences.filter (fun scope => decide (scope.id ≠ leftRoot))
+-      timerWaits := afterRight.timerWaits.filter leftTimer
+-      activityOccurrences := afterRight.activityOccurrences.filter leftActivity } := by
+-  rw [leftUpdate, rightUpdate]
+-  congr 1
+-  · simp only [List.filter_filter, Bool.and_comm]
+-  · simp only [List.filter_filter, Bool.and_comm]
+-  · simp only [List.filter_filter, Bool.and_comm]
+-
+-private theorem return_completion_updates_commute (before returned completed : RuntimeState)
+-    (record : CalledProcessOccurrence) (root : ScopeOccurrenceId) (keepTimer : TimerWait → Bool)
+-    (keepActivity : ActivityOccurrence → Bool)
+-    (returnedUpdate : returned = { removeCalledProcessTree before record with tokens := returned.tokens })
+-    (completedUpdate : completed = { before with
+-      tokens := completed.tokens
+-      scopeOccurrences := before.scopeOccurrences.filter (fun scope => decide (scope.id ≠ root))
+-      timerWaits := before.timerWaits.filter keepTimer
+-      activityOccurrences := before.activityOccurrences.filter keepActivity }) :
+-    { returned with
+-      tokens := [], endOccurrences := 0
+-      scopeOccurrences := returned.scopeOccurrences.filter (fun scope => decide (scope.id ≠ root))
+-      timerWaits := returned.timerWaits.filter keepTimer
+-      activityOccurrences := returned.activityOccurrences.filter keepActivity } =
+-      { removeCalledProcessTree completed record with
+-        tokens := [], endOccurrences := 0 } := by
+-  rw [returnedUpdate, completedUpdate]
+-  simp only [removeCalledProcessTree]
+-  congr 1
+-  · simp only [List.filter_filter, Bool.and_comm]
+-  · simp only [List.filter_filter, Bool.and_comm]
+-  · simp only [List.filter_filter, Bool.and_comm]
+-
+-private theorem return_updates_commute (before afterLeft afterRight : RuntimeState)
+-    (left right : CalledProcessOccurrence)
+-    (leftUpdate : afterLeft = { removeCalledProcessTree before left with tokens := afterLeft.tokens })
+-    (rightUpdate : afterRight = { removeCalledProcessTree before right with tokens := afterRight.tokens })
+-    (leftClosure : ∀ id, (processInstanceClosureWithin afterRight.calledProcessOccurrences
+-      [left.calledRoot.processInstanceId] (afterRight.calledProcessOccurrences.length + 1)).contains id =
+-      (processInstanceClosureWithin before.calledProcessOccurrences
+-        [left.calledRoot.processInstanceId] (before.calledProcessOccurrences.length + 1)).contains id)
+-    (rightClosure : ∀ id, (processInstanceClosureWithin afterLeft.calledProcessOccurrences
+-      [right.calledRoot.processInstanceId] (afterLeft.calledProcessOccurrences.length + 1)).contains id =
+-      (processInstanceClosureWithin before.calledProcessOccurrences
+-        [right.calledRoot.processInstanceId] (before.calledProcessOccurrences.length + 1)).contains id) :
+-    { removeCalledProcessTree afterLeft right with tokens := [], endOccurrences := 0 } =
+-      { removeCalledProcessTree afterRight left with tokens := [], endOccurrences := 0 } := by
+-  simp only [removeCalledProcessTree, leftClosure, rightClosure]
+-  rw [leftUpdate, rightUpdate]
+-  simp only [removeCalledProcessTree]
+-  have filters {α : Type} (values : List α) (first second : α → Bool) :
+-      (values.filter first).filter second = (values.filter second).filter first := by
+-    simp only [List.filter_filter, Bool.and_comm]
+-  congr 1
+-  all_goals first
+-  | exact filters _ _ _
+-  | (congr 1; exact filters _ _ _)
+-
+-private theorem regional_return_pair_fields (program : Program)
+-    (before afterLeft afterRight finalLR finalRL : RuntimeState) (hosting : SemanticId)
+-    (leftOperation rightOperation : SemanticOperation) (left right : PreparedInternalRegional)
+-    (leftRecord rightRecord : CalledProcessOccurrence)
+-    (valid : runtimeStateWellFormed program hosting before = true)
+-    (running : before.control = .running hosting)
+-    (leftFound : prepareInternalRegional? program before leftOperation = some left)
+-    (rightFound : prepareInternalRegional? program before rightOperation = some right)
+-    (independent : regionalStateFootprintsIndependent left.footprint right.footprint = true)
+-    (square : RegionalPairExecutionSquare program before afterLeft afterRight finalLR finalRL hosting
+-      leftOperation rightOperation left right)
+-    (leftKind : left.selection.kind = .returning leftRecord)
+-    (rightKind : right.selection.kind = .returning rightRecord) :
+-    { finalLR with tokens := [], endOccurrences := 0 } = { finalRL with tokens := [], endOccurrences := 0 } := by
+-  have leftSelection := (ownershipClosedSelection_facts program before leftOperation left.selection
+-    (prepareInternalRegional_facts program before leftOperation left leftFound).2.2.2.1).1
+-  have rightSelection := (ownershipClosedSelection_facts program before rightOperation right.selection
+-    (prepareInternalRegional_facts program before rightOperation right rightFound).2.2.2.1).1
+-  obtain ⟨leftBinding, leftParentless⟩ := regionalSelection_return_root program before leftOperation left.selection leftRecord leftSelection leftKind
+-  obtain ⟨rightBinding, rightParentless⟩ := regionalSelection_return_root program before rightOperation right.selection rightRecord rightSelection rightKind
+-  have leftClosure := regional_pair_call_closure program before afterRight hosting rightOperation leftOperation right left
+-    valid running rightFound leftFound (regionalStateFootprintsIndependent_symmetric _ _ independent) square.rightApplied leftParentless
+-  have rightClosure := regional_pair_call_closure program before afterLeft hosting leftOperation rightOperation left right
+-    valid running leftFound rightFound independent square.leftApplied rightParentless
+-  have leftUpdate := prepared_return_fields program before afterLeft hosting leftOperation left leftRecord valid running
+-    square.leftRunning leftFound square.leftApplied leftKind
+-  have rightUpdate := prepared_return_fields program before afterRight hosting rightOperation right rightRecord valid running
+-    square.rightRunning rightFound square.rightApplied rightKind
+-  have lrUpdate := prepared_return_fields program afterLeft finalLR hosting rightOperation right rightRecord square.leftValid
+-    square.leftRunning square.lrRunning square.rightAfterLeft square.lrApplied rightKind
+-  have rlUpdate := prepared_return_fields program afterRight finalRL hosting leftOperation left leftRecord square.rightValid
+-    square.rightRunning square.rlRunning square.leftAfterRight square.rlApplied leftKind
+-  rw [lrUpdate, rlUpdate]
+-  exact return_updates_commute before afterLeft afterRight leftRecord rightRecord leftUpdate rightUpdate
+-    (by simpa only [leftBinding] using leftClosure) (by simpa only [rightBinding] using rightClosure)
+-
+-private theorem regional_completion_pair_fields (program : Program)
+-    (before afterLeft afterRight finalLR finalRL : RuntimeState) (hosting : SemanticId)
+-    (leftOperation rightOperation : SemanticOperation) (left right : PreparedInternalRegional)
+-    (leftWithdrawal rightWithdrawal : InternalCompletionWithdrawal)
+-    (valid : runtimeStateWellFormed program hosting before = true)
+-    (running : before.control = .running hosting)
+-    (leftFound : prepareInternalRegional? program before leftOperation = some left)
+-    (rightFound : prepareInternalRegional? program before rightOperation = some right)
+-    (square : RegionalPairExecutionSquare program before afterLeft afterRight finalLR finalRL hosting
+-      leftOperation rightOperation left right)
+-    (leftKind : left.selection.kind = .completing leftWithdrawal)
+-    (rightKind : right.selection.kind = .completing rightWithdrawal) :
+-    { finalLR with tokens := [], endOccurrences := 0 } = { finalRL with tokens := [], endOccurrences := 0 } := by
+-  have leftMask : regionalSelectionReferenceRetention afterRight left.selection =
+-      regionalSelectionReferenceRetention before left.selection := by
+-    cases leftWithdrawal <;> simp only [regionalSelectionReferenceRetention, leftKind]
+-  have rightMask : regionalSelectionReferenceRetention afterLeft right.selection =
+-      regionalSelectionReferenceRetention before right.selection := by
+-    cases rightWithdrawal <;> simp only [regionalSelectionReferenceRetention, rightKind]
+-  have leftUpdate := prepared_completion_fields program before afterLeft hosting leftOperation left leftWithdrawal valid running
+-    square.leftRunning leftFound square.leftApplied leftKind
+-  have rightUpdate := prepared_completion_fields program before afterRight hosting rightOperation right rightWithdrawal valid running
+-    square.rightRunning rightFound square.rightApplied rightKind
+-  have lrUpdate := prepared_completion_fields program afterLeft finalLR hosting rightOperation right rightWithdrawal square.leftValid
+-    square.leftRunning square.lrRunning square.rightAfterLeft square.lrApplied rightKind
+-  have rlUpdate := prepared_completion_fields program afterRight finalRL hosting leftOperation left leftWithdrawal square.rightValid
+-    square.rightRunning square.rlRunning square.leftAfterRight square.rlApplied leftKind
+-  rw [lrUpdate, rlUpdate]
+-  simp only [leftMask, rightMask]
+-  exact completion_updates_commute before afterLeft afterRight _ _ _ _ _ _ leftUpdate rightUpdate
+-
+-private theorem regional_return_completion_fields (program : Program)
+-    (before afterLeft afterRight finalLR finalRL : RuntimeState) (hosting : SemanticId)
+-    (leftOperation rightOperation : SemanticOperation) (left right : PreparedInternalRegional)
+-    (record : CalledProcessOccurrence) (withdrawal : InternalCompletionWithdrawal)
+-    (valid : runtimeStateWellFormed program hosting before = true)
+-    (running : before.control = .running hosting)
+-    (leftFound : prepareInternalRegional? program before leftOperation = some left)
+-    (rightFound : prepareInternalRegional? program before rightOperation = some right)
+-    (square : RegionalPairExecutionSquare program before afterLeft afterRight finalLR finalRL hosting
+-      leftOperation rightOperation left right)
+-    (leftKind : left.selection.kind = .returning record)
+-    (rightKind : right.selection.kind = .completing withdrawal) :
+-    { finalLR with tokens := [], endOccurrences := 0 } = { finalRL with tokens := [], endOccurrences := 0 } := by
+-  have rightMask : regionalSelectionReferenceRetention afterLeft right.selection =
+-      regionalSelectionReferenceRetention before right.selection := by
+-    cases withdrawal <;> simp only [regionalSelectionReferenceRetention, rightKind]
+-  have leftUpdate := prepared_return_fields program before afterLeft hosting leftOperation left record valid running
+-    square.leftRunning leftFound square.leftApplied leftKind
+-  have rightUpdate := prepared_completion_fields program before afterRight hosting rightOperation right withdrawal valid running
+-    square.rightRunning rightFound square.rightApplied rightKind
+-  have lrUpdate := prepared_completion_fields program afterLeft finalLR hosting rightOperation right withdrawal square.leftValid
+-    square.leftRunning square.lrRunning square.rightAfterLeft square.lrApplied rightKind
+-  have rlUpdate := prepared_return_fields program afterRight finalRL hosting leftOperation left record square.rightValid
+-    square.rightRunning square.rlRunning square.leftAfterRight square.rlApplied leftKind
+-  rw [lrUpdate, rlUpdate]
+-  simp only [rightMask]
+-  exact return_completion_updates_commute before afterLeft afterRight record _ _ _ leftUpdate rightUpdate
+-
+-private theorem cancellation_fields_commute (before afterLeft afterRight : RuntimeState)
+-    (left right : ScopeOccurrenceId) (leftDisposition rightDisposition : SelectedScopeDisposition)
+-    (leftTokens rightTokens : List ControlToken) (leftCount rightCount : Nat)
+-    (leftUpdate : afterLeft = { cancelScopeSubtree before left leftDisposition with
+-      tokens := leftTokens, endOccurrences := leftCount })
+-    (rightUpdate : afterRight = { cancelScopeSubtree before right rightDisposition with
+-      tokens := rightTokens, endOccurrences := rightCount })
+-    (leftSubtree : ∀ owner, occurrenceInSubtree afterRight.scopeOccurrences left owner =
+-      occurrenceInSubtree before.scopeOccurrences left owner)
+-    (rightSubtree : ∀ owner, occurrenceInSubtree afterLeft.scopeOccurrences right owner =
+-      occurrenceInSubtree before.scopeOccurrences right owner)
+-    (leftCalled : ∀ id, (calledInstanceClosure afterRight left).contains id =
+-      (calledInstanceClosure before left).contains id)
+-    (rightCalled : ∀ id, (calledInstanceClosure afterLeft right).contains id =
+-      (calledInstanceClosure before right).contains id)
+-    (leftActivities : withdrawnByRegion (fun owner => occurrenceInSubtree afterRight.scopeOccurrences left owner ||
+-        (calledInstanceClosure afterRight left).contains owner.processInstanceId) afterRight.activityOccurrences =
+-      withdrawnByRegion (fun owner => occurrenceInSubtree before.scopeOccurrences left owner ||
+-        (calledInstanceClosure before left).contains owner.processInstanceId) before.activityOccurrences)
+-    (rightActivities : withdrawnByRegion (fun owner => occurrenceInSubtree afterLeft.scopeOccurrences right owner ||
+-        (calledInstanceClosure afterLeft right).contains owner.processInstanceId) afterLeft.activityOccurrences =
+-      withdrawnByRegion (fun owner => occurrenceInSubtree before.scopeOccurrences right owner ||
+-        (calledInstanceClosure before right).contains owner.processInstanceId) before.activityOccurrences)
+-    (leftEffects : afterRight.effectWaits.filter (fun wait => occurrenceInSubtree afterRight.scopeOccurrences left wait.owner ||
+-        (calledInstanceClosure afterRight left).contains wait.owner.processInstanceId) =
+-      before.effectWaits.filter (fun wait => occurrenceInSubtree before.scopeOccurrences left wait.owner ||
+-        (calledInstanceClosure before left).contains wait.owner.processInstanceId))
+-    (rightEffects : afterLeft.effectWaits.filter (fun wait => occurrenceInSubtree afterLeft.scopeOccurrences right wait.owner ||
+-        (calledInstanceClosure afterLeft right).contains wait.owner.processInstanceId) =
+-      before.effectWaits.filter (fun wait => occurrenceInSubtree before.scopeOccurrences right wait.owner ||
+-        (calledInstanceClosure before right).contains wait.owner.processInstanceId))
+-    (leftIncidents : afterRight.effectIncidents.filter (fun incident => occurrenceInSubtree afterRight.scopeOccurrences left incident.wait.owner ||
+-        (calledInstanceClosure afterRight left).contains incident.wait.owner.processInstanceId) =
+-      before.effectIncidents.filter (fun incident => occurrenceInSubtree before.scopeOccurrences left incident.wait.owner ||
+-        (calledInstanceClosure before left).contains incident.wait.owner.processInstanceId))
+-    (rightIncidents : afterLeft.effectIncidents.filter (fun incident => occurrenceInSubtree afterLeft.scopeOccurrences right incident.wait.owner ||
+-        (calledInstanceClosure afterLeft right).contains incident.wait.owner.processInstanceId) =
+-      before.effectIncidents.filter (fun incident => occurrenceInSubtree before.scopeOccurrences right incident.wait.owner ||
+-        (calledInstanceClosure before right).contains incident.wait.owner.processInstanceId))
+-    (leftTriggers : afterRight.compensationTriggers.filter (fun trigger => occurrenceInSubtree afterRight.scopeOccurrences left trigger.owner ||
+-        (calledInstanceClosure afterRight left).contains trigger.owner.processInstanceId) =
+-      before.compensationTriggers.filter (fun trigger => occurrenceInSubtree before.scopeOccurrences left trigger.owner ||
+-        (calledInstanceClosure before left).contains trigger.owner.processInstanceId))
+-    (rightTriggers : afterLeft.compensationTriggers.filter (fun trigger => occurrenceInSubtree afterLeft.scopeOccurrences right trigger.owner ||
+-        (calledInstanceClosure afterLeft right).contains trigger.owner.processInstanceId) =
+-      before.compensationTriggers.filter (fun trigger => occurrenceInSubtree before.scopeOccurrences right trigger.owner ||
+-        (calledInstanceClosure before right).contains trigger.owner.processInstanceId)) :
+-    { cancelScopeSubtree afterLeft right rightDisposition with tokens := [], endOccurrences := 0 } =
+-      { cancelScopeSubtree afterRight left leftDisposition with tokens := [], endOccurrences := 0 } := by
+-  have leftParents : compensationParentContextRetentionSurvivesScopeCancellation afterRight left leftDisposition =
+-      compensationParentContextRetentionSurvivesScopeCancellation before left leftDisposition := by
+-    funext retention
+-    cases retention <;> simp only [compensationParentContextRetentionSurvivesScopeCancellation, leftSubtree, leftCalled]
+-  have rightParents : compensationParentContextRetentionSurvivesScopeCancellation afterLeft right rightDisposition =
+-      compensationParentContextRetentionSurvivesScopeCancellation before right rightDisposition := by
+-    funext retention
+-    cases retention <;> simp only [compensationParentContextRetentionSurvivesScopeCancellation, rightSubtree, rightCalled]
+-  simp only [cancelScopeSubtree]
+-  simp only [leftActivities, rightActivities, leftEffects, rightEffects,
+-    leftIncidents, rightIncidents, leftTriggers, rightTriggers, leftParents, rightParents]
+-  simp only [leftSubtree, rightSubtree, leftCalled, rightCalled]
+-  rw [leftUpdate, rightUpdate]
+-  simp only [cancelScopeSubtree, retainedByRegion]
+-  have filters {α : Type} (values : List α) (first second : α → Bool) :
+-      (values.filter first).filter second = (values.filter second).filter first := by
+-    simp only [List.filter_filter, Bool.and_comm]
+-  congr 1
+-  all_goals first
+-  | exact filters _ _ _
+-  | (congr 1; exact filters _ _ _)
+-
+-private theorem regional_cancellation_pair_fields (program : Program)
+-    (before afterLeft afterRight finalLR finalRL : RuntimeState) (hosting : SemanticId)
+-    (leftOperation rightOperation : SemanticOperation) (left right : PreparedInternalRegional)
+-    (valid : runtimeStateWellFormed program hosting before = true)
+-    (running : before.control = .running hosting)
+-    (leftFound : prepareInternalRegional? program before leftOperation = some left)
+-    (rightFound : prepareInternalRegional? program before rightOperation = some right)
+-    (independent : regionalStateFootprintsIndependent left.footprint right.footprint = true)
+-    (square : RegionalPairExecutionSquare program before afterLeft afterRight finalLR finalRL hosting
+-      leftOperation rightOperation left right)
+-    (leftCancels : left.selection.kind = .terminating ∨ ∃ parent, left.selection.kind = .interrupting parent)
+-    (rightCancels : right.selection.kind = .terminating ∨ ∃ parent, right.selection.kind = .interrupting parent) :
+-    { finalLR with tokens := [], endOccurrences := 0 } = { finalRL with tokens := [], endOccurrences := 0 } := by
+-  have symmetric := regionalStateFootprintsIndependent_symmetric _ _ independent
+-  have leftClasses := regional_pair_cancellation_classifiers program before afterRight hosting rightOperation leftOperation right left
+-    valid running rightFound leftFound symmetric square.rightApplied
+-  have rightClasses := regional_pair_cancellation_classifiers program before afterLeft hosting leftOperation rightOperation left right
+-    valid running leftFound rightFound independent square.leftApplied
+-  have leftPopulations := regional_pair_cancellation_populations program before afterRight hosting rightOperation leftOperation right left
+-    valid running rightFound leftFound symmetric square.rightApplied leftCancels
+-  have rightPopulations := regional_pair_cancellation_populations program before afterLeft hosting leftOperation rightOperation left right
+-    valid running leftFound rightFound independent square.leftApplied rightCancels
+-  have leftTriggers := preparedRegional_cancellation_triggers_empty program before hosting leftOperation left valid running leftFound leftCancels
+-  have rightTriggers := preparedRegional_cancellation_triggers_empty program before hosting rightOperation right valid running rightFound rightCancels
+-  have leftTriggersAfter := preparedRegional_cancellation_triggers_empty program afterRight hosting leftOperation left
+-    square.rightValid square.rightRunning square.leftAfterRight leftCancels
+-  have rightTriggersAfter := preparedRegional_cancellation_triggers_empty program afterLeft hosting rightOperation right
+-    square.leftValid square.leftRunning square.rightAfterLeft rightCancels
+-  have leftUpdate := preparedCancellation_field_update program before afterLeft hosting leftOperation left valid running
+-    square.leftRunning leftFound square.leftApplied leftCancels
+-  have rightUpdate := preparedCancellation_field_update program before afterRight hosting rightOperation right valid running
+-    square.rightRunning rightFound square.rightApplied rightCancels
+-  have lrUpdate := preparedCancellation_field_update program afterLeft finalLR hosting rightOperation right square.leftValid
+-    square.leftRunning square.lrRunning square.rightAfterLeft square.lrApplied rightCancels
+-  have rlUpdate := preparedCancellation_field_update program afterRight finalRL hosting leftOperation left square.rightValid
+-    square.rightRunning square.rlRunning square.leftAfterRight square.rlApplied leftCancels
+-  rw [lrUpdate, rlUpdate]
+-  exact cancellation_fields_commute before afterLeft afterRight _ _ _ _ _ _ _ _ leftUpdate rightUpdate
+-    leftClasses.1 rightClasses.1 leftClasses.2 rightClasses.2 leftPopulations.1 rightPopulations.1
+-    leftPopulations.2.1 rightPopulations.2.1 leftPopulations.2.2 rightPopulations.2.2
+-    (leftTriggersAfter.trans leftTriggers.symm) (rightTriggersAfter.trans rightTriggers.symm)
+-
+-private theorem regional_return_cancellation_fields (program : Program)
+-    (before afterLeft afterRight finalLR finalRL : RuntimeState) (hosting : SemanticId)
+-    (leftOperation rightOperation : SemanticOperation) (left right : PreparedInternalRegional)
+-    (record : CalledProcessOccurrence)
+-    (valid : runtimeStateWellFormed program hosting before = true)
+-    (running : before.control = .running hosting)
+-    (leftFound : prepareInternalRegional? program before leftOperation = some left)
+-    (rightFound : prepareInternalRegional? program before rightOperation = some right)
+-    (independent : regionalStateFootprintsIndependent left.footprint right.footprint = true)
+-    (square : RegionalPairExecutionSquare program before afterLeft afterRight finalLR finalRL hosting
+-      leftOperation rightOperation left right)
+-    (leftKind : left.selection.kind = .returning record)
+-    (rightCancels : right.selection.kind = .terminating ∨ ∃ parent, right.selection.kind = .interrupting parent) :
+-    { finalLR with tokens := [], endOccurrences := 0 } = { finalRL with tokens := [], endOccurrences := 0 } := by
+-  have selected := (ownershipClosedSelection_facts program before leftOperation left.selection
+-    (prepareInternalRegional_facts program before leftOperation left leftFound).2.2.2.1).1
+-  obtain ⟨binding, parentless⟩ := regionalSelection_return_root program before leftOperation left.selection record selected leftKind
+-  have closure := regional_pair_call_closure program before afterRight hosting rightOperation leftOperation right left
+-    valid running rightFound leftFound (regionalStateFootprintsIndependent_symmetric _ _ independent) square.rightApplied parentless
+-  have classes := regional_pair_cancellation_classifiers program before afterLeft hosting leftOperation rightOperation left right
+-    valid running leftFound rightFound independent square.leftApplied
+-  have populations := regional_pair_cancellation_populations program before afterLeft hosting leftOperation rightOperation left right
+-    valid running leftFound rightFound independent square.leftApplied rightCancels
+-  have triggers := preparedRegional_cancellation_triggers_empty program before hosting rightOperation right valid running rightFound rightCancels
+-  have triggersAfter := preparedRegional_cancellation_triggers_empty program afterLeft hosting rightOperation right
+-    square.leftValid square.leftRunning square.rightAfterLeft rightCancels
+-  have leftUpdate := prepared_return_fields program before afterLeft hosting leftOperation left record valid running
+-    square.leftRunning leftFound square.leftApplied leftKind
+-  have rightUpdate := preparedCancellation_field_update program before afterRight hosting rightOperation right valid running
+-    square.rightRunning rightFound square.rightApplied rightCancels
+-  have lrUpdate := preparedCancellation_field_update program afterLeft finalLR hosting rightOperation right square.leftValid
+-    square.leftRunning square.lrRunning square.rightAfterLeft square.lrApplied rightCancels
+-  have rlUpdate := prepared_return_fields program afterRight finalRL hosting leftOperation left record square.rightValid
+-    square.rightRunning square.rlRunning square.leftAfterRight square.rlApplied leftKind
+-  rw [lrUpdate, rlUpdate]
+-  exact return_cancel_fields_commute before afterLeft afterRight record _ _ _ _ _ leftUpdate rightUpdate
+-    (by simpa only [binding] using closure) classes.1 classes.2 populations.1 populations.2.1 populations.2.2
+-    (triggersAfter.trans triggers.symm)
+-
+-private theorem regional_completion_cancellation_fields (program : Program)
+-    (before afterLeft afterRight finalLR finalRL : RuntimeState) (hosting : SemanticId)
+-    (leftOperation rightOperation : SemanticOperation) (left right : PreparedInternalRegional)
+-    (withdrawal : InternalCompletionWithdrawal)
+-    (valid : runtimeStateWellFormed program hosting before = true)
+-    (running : before.control = .running hosting)
+-    (leftFound : prepareInternalRegional? program before leftOperation = some left)
+-    (rightFound : prepareInternalRegional? program before rightOperation = some right)
+-    (independent : regionalStateFootprintsIndependent left.footprint right.footprint = true)
+-    (square : RegionalPairExecutionSquare program before afterLeft afterRight finalLR finalRL hosting
+-      leftOperation rightOperation left right)
+-    (leftKind : left.selection.kind = .completing withdrawal)
+-    (rightCancels : right.selection.kind = .terminating ∨ ∃ parent, right.selection.kind = .interrupting parent) :
+-    { finalLR with tokens := [], endOccurrences := 0 } = { finalRL with tokens := [], endOccurrences := 0 } := by
+-  have mask : regionalSelectionReferenceRetention afterRight left.selection =
+-      regionalSelectionReferenceRetention before left.selection := by
+-    cases withdrawal <;> simp only [regionalSelectionReferenceRetention, leftKind]
+-  have classes := regional_pair_cancellation_classifiers program before afterLeft hosting leftOperation rightOperation left right
+-    valid running leftFound rightFound independent square.leftApplied
+-  have populations := regional_pair_cancellation_populations program before afterLeft hosting leftOperation rightOperation left right
+-    valid running leftFound rightFound independent square.leftApplied rightCancels
+-  have triggers := preparedRegional_cancellation_triggers_empty program before hosting rightOperation right valid running rightFound rightCancels
+-  have triggersAfter := preparedRegional_cancellation_triggers_empty program afterLeft hosting rightOperation right
+-    square.leftValid square.leftRunning square.rightAfterLeft rightCancels
+-  have leftUpdate := prepared_completion_fields program before afterLeft hosting leftOperation left withdrawal valid running
+-    square.leftRunning leftFound square.leftApplied leftKind
+-  have rightUpdate := preparedCancellation_field_update program before afterRight hosting rightOperation right valid running
+-    square.rightRunning rightFound square.rightApplied rightCancels
+-  have lrUpdate := preparedCancellation_field_update program afterLeft finalLR hosting rightOperation right square.leftValid
+-    square.leftRunning square.lrRunning square.rightAfterLeft square.lrApplied rightCancels
+-  have rlUpdate := prepared_completion_fields program afterRight finalRL hosting leftOperation left withdrawal square.rightValid
+-    square.rightRunning square.rlRunning square.leftAfterRight square.rlApplied leftKind
+-  rw [lrUpdate, rlUpdate]
+-  simp only [mask]
+-  exact completion_cancel_fields_commute before afterLeft afterRight _ _ _ _ _ _ _ _ leftUpdate rightUpdate
+-    classes.1 classes.2 populations.1 populations.2.1 populations.2.2 (triggersAfter.trans triggers.symm)
+-
+ private theorem regional_pair_retained_fields_equal (program : Program)
+     (before afterLeft afterRight finalLR finalRL : RuntimeState) (hosting : SemanticId)
+     (leftOperation rightOperation : SemanticOperation) (left right : PreparedInternalRegional)
+@@ -511,51 +109,23 @@
+     (square : RegionalPairExecutionSquare program before afterLeft afterRight finalLR finalRL hosting
+       leftOperation rightOperation left right) :
+     { finalLR with tokens := [], endOccurrences := 0 } = { finalRL with tokens := [], endOccurrences := 0 } := by
+-  have symmetric := regionalStateFootprintsIndependent_symmetric _ _ independent
+-  have swapped : RegionalPairExecutionSquare program before afterRight afterLeft finalRL finalLR hosting
+-      rightOperation leftOperation right left :=
+-    ⟨square.rightApplied, square.leftApplied, square.leftAfterRight, square.rightAfterLeft, square.rlApplied,
+-      square.lrApplied, square.rightValid, square.leftValid, square.rlValid, square.lrValid,
+-      square.rightRunning, square.leftRunning, square.rlRunning, square.lrRunning⟩
+-  cases leftKind : left.selection.kind with
+-  | returning record =>
+-      cases rightKind : right.selection.kind with
+-      | returning other =>
+-          exact regional_return_pair_fields program before afterLeft afterRight finalLR finalRL hosting
+-            leftOperation rightOperation left right record other valid running leftFound rightFound independent square leftKind rightKind
+-      | completing withdrawal =>
+-          exact regional_return_completion_fields program before afterLeft afterRight finalLR finalRL hosting
+-            leftOperation rightOperation left right record withdrawal valid running leftFound rightFound square leftKind rightKind
+-      | interrupting parent | terminating =>
+-          apply regional_return_cancellation_fields program before afterLeft afterRight finalLR finalRL hosting
+-            leftOperation rightOperation left right record valid running leftFound rightFound independent square leftKind
+-          first | exact Or.inl rightKind | exact Or.inr ⟨_, rightKind⟩
+-  | completing withdrawal =>
+-      cases rightKind : right.selection.kind with
+-      | returning record =>
+-          exact (regional_return_completion_fields program before afterRight afterLeft finalRL finalLR hosting
+-            rightOperation leftOperation right left record withdrawal valid running rightFound leftFound swapped rightKind leftKind).symm
+-      | completing other =>
+-          exact regional_completion_pair_fields program before afterLeft afterRight finalLR finalRL hosting
+-            leftOperation rightOperation left right withdrawal other valid running leftFound rightFound square leftKind rightKind
+-      | interrupting parent | terminating =>
+-          apply regional_completion_cancellation_fields program before afterLeft afterRight finalLR finalRL hosting
+-            leftOperation rightOperation left right withdrawal valid running leftFound rightFound independent square leftKind
+-          first | exact Or.inl rightKind | exact Or.inr ⟨_, rightKind⟩
+-  | interrupting parent | terminating =>
+-      have leftCancels : left.selection.kind = .terminating ∨ ∃ parent, left.selection.kind = .interrupting parent := by
+-        first | exact Or.inl leftKind | exact Or.inr ⟨_, leftKind⟩
+-      cases rightKind : right.selection.kind with
+-      | returning record =>
+-          exact (regional_return_cancellation_fields program before afterRight afterLeft finalRL finalLR hosting
+-            rightOperation leftOperation right left record valid running rightFound leftFound symmetric swapped rightKind leftCancels).symm
+-      | completing withdrawal =>
+-          exact (regional_completion_cancellation_fields program before afterRight afterLeft finalRL finalLR hosting
+-            rightOperation leftOperation right left withdrawal valid running rightFound leftFound symmetric swapped rightKind leftCancels).symm
+-      | interrupting otherParent | terminating =>
+-          apply regional_cancellation_pair_fields program before afterLeft afterRight finalLR finalRL hosting
+-            leftOperation rightOperation left right valid running leftFound rightFound independent square leftCancels
+-          first | exact Or.inl rightKind | exact Or.inr ⟨_, rightKind⟩
++  have leftUpdate := selected_masks_native program before afterLeft hosting leftOperation left
++    valid running square.leftRunning leftFound square.leftApplied
++  have rightUpdate := selected_masks_native program before afterRight hosting rightOperation right
++    valid running square.rightRunning rightFound square.rightApplied
++  have lrUpdate := selected_masks_native program afterLeft finalLR hosting rightOperation right
++    square.leftValid square.leftRunning square.lrRunning square.rightAfterLeft square.lrApplied
++  have rlUpdate := selected_masks_native program afterRight finalRL hosting leftOperation left
++    square.rightValid square.rightRunning square.rlRunning square.leftAfterRight square.rlApplied
++  have rightStable := regional_masks_stable program before afterLeft hosting leftOperation rightOperation left right
++    valid running leftFound rightFound independent square.leftApplied square.leftValid square.leftRunning square.rightAfterLeft
++  have leftStable := regional_masks_stable program before afterRight hosting rightOperation leftOperation right left
++    valid running rightFound leftFound (regionalStateFootprintsIndependent_symmetric _ _ independent)
++    square.rightApplied square.rightValid square.rightRunning square.leftAfterRight
++  rw [rightStable] at lrUpdate
++  rw [leftStable] at rlUpdate
++  rw [lrUpdate, rlUpdate, ← masks_reset _ afterLeft, ← masks_reset _ afterRight, leftUpdate, rightUpdate]
++  exact masks_commute _ _ _
+ 
+ private theorem regional_pair_tokens_equal (program : Program)
+     (before afterLeft afterRight finalLR finalRL : RuntimeState) (hosting : SemanticId)

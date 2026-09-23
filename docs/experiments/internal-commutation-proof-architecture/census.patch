@@ -1,0 +1,821 @@
+--- a/BpmnSemantics/SemanticProcess/InternalRegionalSelectionFrame.lean
++++ b/BpmnSemantics/SemanticProcess/InternalRegionalSelectionFrame.lean
+@@ -1,4 +1,4 @@
+-import BpmnSemantics.SemanticProcess.InternalRegionalSelectedRetention
++import BpmnSemantics.SemanticProcess.InternalRegionalCensusFrame
+ 
+ /-! Both local-control and arming patches preserve scope and Call records. Their regional
+ selector proofs share this read interface, with each caller deriving the changed-work queries. -/
+@@ -27,51 +27,22 @@
+             selectedTerminateOwner? program before id origin input definition
+       | _ => True) :
+     selectInternalRegional? program after operation = some selected := by
+-  have running : runningInstance? after = runningInstance? before := by simp only [runningInstance?, control]
+-  have associations := calledProcessAssociationsValid_frame before after control scopes calls
+-  unfold selectInternalRegional? at found ⊢
+-  obtain ⟨hosting, hosted, found⟩ := Option.bind_eq_some_iff.mp found
+-  rw [running, hosted]
+-  dsimp only [Option.bind_some]
+-  cases operation with
+-  | returnProcess id origin process definition output =>
+-    dsimp only at found ⊢
+-    rw [associations, calls, scopes]
+-    repeat' first | (solve | simp at found) | split at found
+-    all_goals cases found <;> simp_all only [↓reduceIte]
+-  | completeScope id origin definition output =>
+-    dsimp only at found ⊢
+-    rw [scopes]
+-    split at found
+-    · split at found
+-      · contradiction
+-      · obtain ⟨choice, chosen, found⟩ := Option.bind_eq_some_iff.mp found
+-        have afterChoice := withdrawal definition choice chosen
+-        repeat' first | (solve | simp at found) | split at found
+-        all_goals cases found <;> simp_all only [Bool.false_eq_true, ↓reduceIte, Option.bind_eq_bind, Option.bind_some]
+-    · contradiction
+-  | throwError id origin input error handler =>
+-    dsimp only at found ⊢
+-    rw [inputs.1]
+-    obtain ⟨owner, offered, found⟩ := Option.bind_eq_some_iff.mp found
+-    rw [offered]
+-    split at found
+-    · contradiction
+-    · split at found
+-      · contradiction
+-      · split at found
+-        · rename_i root census
+-          obtain ⟨parent, parentFound, found⟩ := Option.bind_eq_some_iff.mp found
+-          split at found
+-          · cases found
+-            have identity := scope_identity_of_census before owner root census
+-            rw [identity] at inputs
+-            simp_all only [Option.bind_eq_bind, Option.bind_some, ↓reduceIte]
+-          · contradiction
+-        · contradiction
+-  | terminateScope id origin input definition =>
+-    dsimp only at found ⊢
+-    simpa only [inputs, scopes] using found
+-  | _ => contradiction
++  have censuses := census_filter before after (fun _ => true) (fun _ => true)
++    (scopes.trans (List.filter_eq_self.mpr (by intros; rfl)).symm)
++    (calls.trans (List.filter_eq_self.mpr (by intros; rfl)).symm)
++  apply regionalSelection_census_frame program before after operation selected
++    (fun _ => true) (fun _ => true) found control censuses
++  · cases operation <;> try trivial
++    intro _ census; simpa [scopes] using census
++  · intro valid
++    simpa only [calledProcessAssociationsValid_frame before after control scopes calls] using valid
++  · exact pending
++  · rfl
++  · intros; rfl
++  · cases selected.kind <;> simp
++  · intro wasQuiet; simpa [quiet] using wasQuiet
++  · cases operation <;> first | trivial | exact withdrawal _
++  · cases operation <;> try exact inputs
++    intro owner chosen; simpa only [inputs] using chosen
+ 
+ end BpmnSemantics.SemanticProcess.InternalCommutation
+--- a/BpmnSemantics/SemanticProcess/InternalRegionalPairSelectionFrame.lean
++++ b/BpmnSemantics/SemanticProcess/InternalRegionalPairSelectionFrame.lean
+@@ -1,3 +1,4 @@
++import BpmnSemantics.SemanticProcess.InternalRegionalCensusFrame
+ import BpmnSemantics.SemanticProcess.InternalRegionalPairDependencies
+ 
+ /-! Selectors require exact singleton censuses, not membership alone. Footprint-protected scopes and Call records retain both the selected member and the absence of competitors. -/
+@@ -13,16 +14,6 @@
+     simp only [List.filter_filter, Bool.and_comm]
+   simp [commute, census, kept]
+ 
+-private theorem retained_census {α : Type} (values : List α) (keep names : α → Bool)
+-    (kept : ∀ value ∈ values, names value = true → keep value = true) :
+-    (values.filter keep).filter names = values.filter names := by
+-  apply allMatchingRetained_preserves_census
+-  apply List.all_eq_true.mpr
+-  intro value member
+-  cases named : names value <;> simp [named, kept value member]
+-
+-/-- Regional deletion preserves a selector when its retained singleton witnesses and input
+-queries survive. Unlike insertion frames, this permits the scope and Call tables to shrink. -/
+ theorem regionalSelection_filter_frame (program : Program) (before after : RuntimeState)
+     (operation : SemanticOperation) (selected : InternalRegionalSelection)
+     (keepScope : RuntimeScopeOccurrence → Bool) (keepCall : CalledProcessOccurrence → Bool)
+@@ -55,105 +46,21 @@
+             selectedTerminateOwner? program before id origin input definition
+       | _ => True) :
+     selectInternalRegional? program after operation = some selected := by
+-  have running : runningInstance? after = runningInstance? before := by
+-    simp only [runningInstance?, control]
+-  unfold selectInternalRegional? at found ⊢
+-  obtain ⟨hosting, hosted, found⟩ := Option.bind_eq_some_iff.mp found
+-  rw [running, hosted]
+-  dsimp only [Option.bind_some]
+-  cases operation with
+-  | returnProcess id origin process definition output =>
+-      dsimp only at found ⊢
+-      repeat' first | (solve | simp at found) | split at found
+-      all_goals
+-        rename_i valid _ record returnCensus processEq definitionEq _ root rootCensus parentless callerCount processCount quiescent
+-        cases found
+-        have rootIdentity := scope_identity_of_census before record.calledRoot root rootCensus
+-        have rootPresent : root ∈ before.scopeOccurrences :=
+-          (List.mem_filter.mp (show root ∈ before.scopeOccurrences.filter
+-            (fun scope => decide (scope.id = record.calledRoot)) by simp [rootCensus])).1
+-        have rootAfter := regional_pair_retained_singleton _ keepScope _ root rootCensus rootKept
+-        have callAfter := regional_pair_retained_singleton _ keepCall _ record returnCensus callKept.1
+-        have callerAfter := retained_census before.scopeOccurrences keepScope
+-          (fun scope => decide (scope.id = record.caller)) (by
+-            intro scope member named
+-            exact callKept.2 scope member (of_decide_eq_true named))
+-        obtain ⟨processRoot, processCensus⟩ := List.length_eq_one_iff.mp processCount
+-        have sameRoot : root = processRoot := by
+-          have member : root ∈ before.scopeOccurrences.filter (fun scope => decide (
+-              scope.id.processInstanceId = record.calledRoot.processInstanceId && scope.parent.isNone)) :=
+-            List.mem_filter.mpr ⟨rootPresent, by simp [rootIdentity, parentless]⟩
+-          have singleton : root ∈ [processRoot] := by
+-            rw [← processCensus]
+-            exact member
+-          exact List.mem_singleton.mp singleton
+-        subst processRoot
+-        have processAfter := regional_pair_retained_singleton _ keepScope _ root processCensus rootKept
+-        simp_all only [↓reduceIte, List.length_singleton]
+-  | completeScope id origin definition output =>
+-      dsimp only at found ⊢
+-      split at found
+-      · rename_i root census
+-        split at found
+-        · contradiction
+-        · rename_i notBusy
+-          have priorQuiet : scopeQuiescent before root.id = true := by simpa using notBusy
+-          obtain ⟨choice, chosen, found⟩ := Option.bind_eq_some_iff.mp found
+-          have afterChoice := withdrawal choice chosen
+-          repeat' first | (solve | simp at found) | split at found
+-          all_goals
+-            cases found
+-            have afterQuiet := quiet priorQuiet
+-            have rootAfter := regional_pair_retained_singleton _ keepScope _ root census rootKept
+-            have parentAfter : ∀ parent, root.parent = some parent →
+-                after.scopeOccurrences.any (fun scope => scope.id == parent) =
+-                  before.scopeOccurrences.any (fun scope => scope.id == parent) := by
+-              intro parent parentEq
+-              rw [scopes]
+-              apply Bool.eq_iff_iff.mpr
+-              simp only [List.any_eq_true, List.mem_filter]
+-              constructor
+-              · rintro ⟨scope, ⟨member, _⟩, named⟩
+-                exact ⟨scope, member, named⟩
+-              · rintro ⟨scope, member, named⟩
+-                exact ⟨scope, ⟨member, parentKept parent parentEq scope member (by simpa using named)⟩, named⟩
+-            simp_all only [Bool.false_eq_true, ↓reduceIte, Option.bind_eq_bind, Option.bind_some]
+-      · contradiction
+-  | throwError id origin input error handler =>
+-      dsimp only at found ⊢
+-      rw [inputs.1]
+-      obtain ⟨owner, offered, found⟩ := Option.bind_eq_some_iff.mp found
+-      rw [offered]
+-      split at found
+-      · contradiction
+-      · split at found
+-        · contradiction
+-        · split at found
+-          · rename_i root census
+-            obtain ⟨parent, parentFound, found⟩ := Option.bind_eq_some_iff.mp found
+-            split at found
+-            · cases found
+-              have identity := scope_identity_of_census before owner root census
+-              rw [identity] at inputs
+-              have rootAfter := regional_pair_retained_singleton _ keepScope _ root census rootKept
+-              have parentAfter := retained_census before.scopeOccurrences keepScope
+-                (fun scope => decide (scope.id = parent)) (by
+-                  intro scope member named
+-                  exact parentKept parent parentFound scope member (of_decide_eq_true named))
+-              simp_all only [Option.bind_eq_bind, Option.bind_some, ↓reduceIte]
+-            · contradiction
+-          · contradiction
+-  | terminateScope id origin input definition =>
+-      dsimp only at found ⊢
+-      rw [inputs]
+-      obtain ⟨owner, chosen, found⟩ := Option.bind_eq_some_iff.mp found
+-      rw [chosen]
+-      split at found
+-      · rename_i root census
+-        cases found
+-        have rootAfter := regional_pair_retained_singleton _ keepScope _ root census rootKept
+-        simp only [Option.bind_eq_bind, Option.bind_some, scopes, rootAfter]
+-      · contradiction
+-  | _ => contradiction
++  apply regionalSelection_census_frame program before after operation selected keepScope keepCall
++    found control (census_filter before after keepScope keepCall scopes calls)
++  · cases operation <;> try trivial
++    intro _ census
++    rw [scopes]
++    exact regional_pair_retained_singleton _ keepScope _ selected.root census rootKept
++  · intro _; exact associations
++  · exact pending
++  · exact rootKept
++  · exact parentKept
++  · exact callKept
++  · exact quiet
++  · exact withdrawal
++  · cases operation <;> try exact inputs
++    intro owner chosen; simpa only [inputs] using chosen
++
+ 
+ end BpmnSemantics.SemanticProcess.InternalCommutation
+--- a/BpmnSemantics/SemanticProcess/InternalRegionalScopeCreationSelection.lean
++++ b/BpmnSemantics/SemanticProcess/InternalRegionalScopeCreationSelection.lean
+@@ -9,111 +9,6 @@
+ namespace BpmnSemantics.SemanticProcess.InternalCommutation
+ 
+ open BpmnSemantics
+-
+-private theorem selection_query_frame (program : Program) (before after : RuntimeState)
+-    (operation : SemanticOperation) (selected : InternalRegionalSelection)
+-    (found : selectInternalRegional? program before operation = some selected)
+-    (control : after.control = before.control)
+-    (scopes : ∀ owner, 0 < (before.scopeOccurrences.filter (fun scope => decide (scope.id = owner))).length →
+-      after.scopeOccurrences.filter (fun scope => decide (scope.id = owner)) =
+-        before.scopeOccurrences.filter (fun scope => decide (scope.id = owner)))
+-    (live : ∀ owner, before.scopeOccurrences.any (fun scope => scope.id == owner) = true →
+-      after.scopeOccurrences.any (fun scope => scope.id == owner) = true)
+-    (associations : calledProcessAssociationsValid after = true)
+-    (pending : after.initiationPending = before.initiationPending)
+-    (quiet : scopeQuiescent after selected.root.id = scopeQuiescent before selected.root.id)
+-    (withdrawal : ∀ definition choice, selectInternalCompletionWithdrawal? program before definition = some choice →
+-      selectInternalCompletionWithdrawal? program after definition = some choice)
+-    (populations : match (generalizing := false) operation with
+-      | .returnProcess id origin _ _ _ =>
+-          after.calledProcessOccurrences.filter (fun record => decide
+-            (record.returnOperationId = id && record.id.elementId.value = origin.elementId.value)) =
+-          before.calledProcessOccurrences.filter (fun record => decide
+-            (record.returnOperationId = id && record.id.elementId.value = origin.elementId.value)) ∧
+-          ∀ record, selected.kind = .returning record →
+-            after.scopeOccurrences.filter (fun scope => decide
+-              (scope.id.processInstanceId = record.calledRoot.processInstanceId && scope.parent.isNone)) =
+-            before.scopeOccurrences.filter (fun scope => decide
+-              (scope.id.processInstanceId = record.calledRoot.processInstanceId && scope.parent.isNone))
+-      | .completeScope _ _ definition _ =>
+-          after.scopeOccurrences.filter (fun scope => decide (scope.id.definitionScopeId = definition)) =
+-            before.scopeOccurrences.filter (fun scope => decide (scope.id.definitionScopeId = definition))
+-      | _ => True)
+-    (inputs : match (generalizing := false) operation with
+-      | .throwError _ _ input _ _ =>
+-          onlyTokenOwner? after input = onlyTokenOwner? before input ∧
+-          after.tokens.filter (fun token => decide (token.placeId = input && token.owner = selected.root.id)) =
+-            before.tokens.filter (fun token => decide (token.placeId = input && token.owner = selected.root.id))
+-      | .terminateScope id origin input definition => ∀ owner,
+-          selectedTerminateOwner? program before id origin input definition = some owner →
+-          selectedTerminateOwner? program after id origin input definition = some owner
+-      | _ => True) :
+-    selectInternalRegional? program after operation = some selected := by
+-  have running : runningInstance? after = runningInstance? before := by simp only [runningInstance?, control]
+-  unfold selectInternalRegional? at found ⊢
+-  obtain ⟨hosting, hosted, found⟩ := Option.bind_eq_some_iff.mp found
+-  rw [running, hosted]
+-  dsimp only [Option.bind_some]
+-  cases operation with
+-  | returnProcess id origin process definition output =>
+-      dsimp only at found ⊢
+-      rw [populations.1]
+-      repeat' first | (solve | simp at found) | split at found
+-      all_goals
+-        rename_i valid _ record returnCensus processEq definitionEq _ root rootCensus parentless callerCount processCount quiescent
+-        cases found
+-        have rootAfter := scopes record.calledRoot (by simp [rootCensus])
+-        have callerAfter := scopes record.caller (by omega)
+-        have processAfter := populations.2 record rfl
+-        simp_all only [↓reduceIte]
+-  | completeScope id origin definition output =>
+-      dsimp only at found ⊢
+-      rw [populations]
+-      split at found
+-      · split at found
+-        · contradiction
+-        · obtain ⟨choice, chosen, found⟩ := Option.bind_eq_some_iff.mp found
+-          have afterChoice := withdrawal definition choice chosen
+-          repeat' first | (solve | simp at found) | split at found
+-          all_goals cases found
+-          all_goals first
+-            | (rename_i parent output parentEq outputEq present
+-               have parentAfter := live parent (by simpa using present)
+-               simp_all only [Bool.false_eq_true, ↓reduceIte, Option.bind_eq_bind, Option.bind_some])
+-            | simp_all only [Bool.false_eq_true, ↓reduceIte, Option.bind_eq_bind, Option.bind_some]
+-      · contradiction
+-  | throwError id origin input error handler =>
+-      dsimp only at found ⊢
+-      rw [inputs.1]
+-      obtain ⟨owner, offered, found⟩ := Option.bind_eq_some_iff.mp found
+-      rw [offered]
+-      split at found
+-      · contradiction
+-      · split at found
+-        · contradiction
+-        · split at found
+-          · rename_i root census
+-            obtain ⟨parent, parentFound, found⟩ := Option.bind_eq_some_iff.mp found
+-            split at found
+-            · rename_i parentCount
+-              cases found
+-              have identity := scope_identity_of_census before owner root census
+-              rw [identity] at inputs
+-              have rootAfter := scopes owner (by simp [census])
+-              have parentAfter := scopes parent (by omega)
+-              simp_all only [Option.bind_eq_bind, Option.bind_some, ↓reduceIte]
+-            · contradiction
+-          · contradiction
+-  | terminateScope id origin input definition =>
+-      dsimp only at found ⊢
+-      obtain ⟨owner, chosen, found⟩ := Option.bind_eq_some_iff.mp found
+-      rw [inputs owner chosen]
+-      split at found
+-      · rename_i root census
+-        cases found
+-        simp only [Option.bind_eq_bind, Option.bind_some, scopes owner (by simp [census]), census]
+-      · contradiction
+-  | _ => contradiction
+ 
+ theorem scopeCreation_regional_quiescent (state : RuntimeState)
+     (creation : InternalScopeCreationSelection) (region : InternalOccurrenceRegion)
+@@ -244,8 +139,100 @@
+       · cases kind : creation.kind <;> simpa only [InternalScopeCreationSelection.apply, kind] using census
+       · exact deadlineOwner
+ 
+-/-- Child or Call insertion preserves regional queries under separated populations. The caller
+-derives position validity from its own complete preparation, including bounded child entry. -/
++
++/-- Projectability supplies Call structural facts without any regional publication. -/
++theorem call_element_fresh (program : Program) (state : RuntimeState)
++    (hosting : SemanticId) (operation : SemanticOperation) (creation : InternalScopeCreationSelection)
++    (inserted : CalledProcessOccurrence) (current : List OpenSemanticFlowNodeOccurrence)
++    (position : runtimePositionValid program hosting state = true)
++    (running : state.control = .running hosting)
++    (projected : projectOpenFlowNodeOccurrences? program state = some current)
++    (found : selectInternalScopeCreation? state operation = some creation)
++    (called : creation.kind = .called inserted) :
++    ∀ old ∈ state.calledProcessOccurrences, inserted.id.elementId.value ≠ old.id.elementId.value := by
++  have structural : flowNodeOccurrenceStructuralProgramValidity program state = true := by
++    have allValidity := (projectOpenFlowNodeOccurrences_validities program state current hosting running projected).1
++    simp only [flowNodeOccurrenceProgramValidity, Bool.and_eq_true, and_assoc] at allValidity
++    exact allValidity.1
++  intro old member same
++  have callers := regionalScopeCreation_call_caller_eq program state hosting old inserted operation creation
++    position structural running member found called
++  obtain ⟨_, _, _, _, _, absent, _, _⟩ := scopeCreation_selection_call_facts
++    state operation creation inserted hosting running found called
++  have occupied : old ∈ state.calledProcessOccurrences.filter (fun candidate =>
++      candidate.caller = creation.owner && candidate.id.elementId.value = inserted.id.elementId.value) :=
++    List.mem_filter.mpr ⟨member, by simp [callers, same]⟩
++  rw [List.length_eq_zero_iff.mp absent] at occupied
++  contradiction
++
++/-- One writer certificate covers child and Call insertion for all selected readers.
++Parented definitions are protected; called-root definitions may gain new instances. -/
++theorem scopeCreation_censuses (program : Program) (state : RuntimeState)
++    (hosting : SemanticId) (operation : SemanticOperation) (creation : InternalScopeCreationSelection)
++    (current : List OpenSemanticFlowNodeOccurrence)
++    (programValid : programWellFormed program = true)
++    (position : runtimePositionValid program hosting state = true)
++    (afterPosition : runtimePositionValid program hosting (creation.apply state) = true)
++    (running : state.control = .running hosting)
++    (projected : projectOpenFlowNodeOccurrences? program state = some current)
++    (found : selectInternalScopeCreation? state operation = some creation) :
++    CensusStep state (creation.apply state) (fun _ => true) (fun _ => true) := by
++  have noFilter {α : Type} (xs : List α) : xs.filter (fun _ => true) = xs :=
++    List.filter_eq_self.mpr (by intros; rfl)
++  have fresh := selectInternalScopeCreation_fresh state operation creation found
++  constructor
++  · intro owner positive
++    rw [noFilter]
++    apply scopeCreation_apply_scope_filter
++    obtain ⟨old, member⟩ := List.exists_mem_of_ne_nil _ (List.length_pos_iff.mp positive)
++    obtain ⟨member, named⟩ := List.mem_filter.mp member
++    have different := fresh old member
++    simp only [of_decide_eq_true named] at different
++    simpa [ne_comm] using different
++  · intro definition root member named parent positive
++    rw [noFilter]
++    apply scopeCreation_apply_scope_filter
++    have different := scopeCreation_existing_child_definition program state hosting operation creation
++      programValid position afterPosition running found root member parent
++    simpa only [named, decide_eq_false_iff_not] using different
++  · intro pid positive
++    rw [noFilter]
++    apply scopeCreation_apply_scope_filter
++    cases kind : creation.kind with
++    | child => simp [created_parent state operation creation found, kind]
++    | called inserted =>
++      obtain ⟨old, member⟩ := List.exists_mem_of_ne_nil _ (List.length_pos_iff.mp positive)
++      obtain ⟨member, named⟩ := List.mem_filter.mp member
++      have named := of_decide_eq_true named
++      simp only [Bool.and_eq_true, decide_eq_true_eq] at named
++      obtain ⟨_, _, _, _, _, _, absent, _⟩ := scopeCreation_selection_call_facts
++        state operation creation inserted hosting running found kind
++      have different : creation.created.id.processInstanceId ≠ pid := by
++        intro same
++        have occupied : old ∈ state.scopeOccurrences.filter (fun scope =>
++            decide (scope.id.processInstanceId = creation.created.id.processInstanceId)) :=
++          List.mem_filter.mpr ⟨member, by simp [named.1, same]⟩
++        rw [List.length_eq_zero_iff.mp absent] at occupied
++        contradiction
++      simp [different]
++  · intro id element old census
++    cases kind : creation.kind with
++    | child => simp only [InternalScopeCreationSelection.apply, kind, census, noFilter] 
++    | called inserted =>
++      have member : old ∈ state.calledProcessOccurrences.filter (fun r => decide
++          (r.returnOperationId = id && r.id.elementId.value = element)) := by rw [census]; simp
++      obtain ⟨member, named⟩ := List.mem_filter.mp member
++      have named := of_decide_eq_true named
++      simp only [Bool.and_eq_true, decide_eq_true_eq] at named
++      have different := call_element_fresh program state hosting operation creation inserted current
++        position running projected found kind old member
++      have rejected : decide (inserted.returnOperationId = id && inserted.id.elementId.value = element) = false := by
++        simp [← named.2, different]
++      have perm := (sortCallRecords_perm (inserted :: state.calledProcessOccurrences)).filter
++        (fun r => decide (r.returnOperationId = id && r.id.elementId.value = element))
++      simp only [List.filter_cons, rejected, Bool.false_eq_true, ↓reduceIte, census] at perm
++      simpa only [InternalScopeCreationSelection.apply, kind, noFilter] using List.perm_singleton.mp perm
++
+ theorem scopeCreation_regional_selection
+     (program : Program) (state : RuntimeState)
+     (operation creationOperation : SemanticOperation)
+@@ -269,20 +256,15 @@
+     selected hosting ownerRecord footprint independent
+   have inside : regional.region.contains regional.selection.root.id = true :=
+     List.contains_iff_mem.mpr (deriveInternalOccurrenceRegion_spec state _ _ derived).2.1
+-  have fresh := selectInternalScopeCreation_fresh state creationOperation selected selection
++  obtain ⟨_, _, current, _, _, _, _, _, opened, _, _, _⟩ :=
++    regionalPublicationTemplate_facts program state regional.selection regional.region _ published
++  have censuses := scopeCreation_censuses program state hosting creationOperation selected current
++    programValid position afterPosition running opened selection
+   have scopes (owner : ScopeOccurrenceId)
+       (positive : 0 < (state.scopeOccurrences.filter (fun scope => decide (scope.id = owner))).length) :
+       (selected.apply state).scopeOccurrences.filter (fun scope => decide (scope.id = owner)) =
+         state.scopeOccurrences.filter (fun scope => decide (scope.id = owner)) := by
+-    apply scopeCreation_apply_scope_filter
+-    cases census : state.scopeOccurrences.filter (fun scope => decide (scope.id = owner)) with
+-    | nil => simp [census] at positive
+-    | cons scope tail =>
+-        have member : scope ∈ state.scopeOccurrences.filter (fun scope => decide (scope.id = owner)) := by rw [census]; simp
+-        obtain ⟨member, named⟩ := List.mem_filter.mp member
+-        have different := fresh scope member
+-        simp only [of_decide_eq_true named] at different
+-        simpa [ne_comm] using different
++    exact (censuses.scopeId owner positive).trans (List.filter_eq_self.mpr (by intros; rfl))
+   have inputFilter (input : ControlPlaceId) (read : .ordinary (.tokenOwners input) ∈ regional.footprint.reads) :
+       (selected.apply state).tokens.filter (fun token => decide (token.placeId = input)) =
+         state.tokens.filter (fun token => decide (token.placeId = input)) := by
+@@ -293,103 +275,40 @@
+       simp [liftRegionalStateAtom, regionalStateAtomsConflict, same] at separate
+     exact scopeCreation_apply_token_filter state selected _
+       (by simpa using distinct selected.input (by simp)) (by simpa using distinct selected.entry (by simp))
+-  apply selection_query_frame program state (selected.apply state) operation regional.selection found
+-    (scopeCreation_apply_control state selected) scopes
+-  · intro owner present
+-    obtain ⟨scope, member, named⟩ := List.any_eq_true.mp present
+-    apply List.any_eq_true.mpr
+-    refine ⟨scope, ?_, named⟩
+-    cases kind : selected.kind <;> simp only [InternalScopeCreationSelection.apply, kind]
+-    all_goals exact (mem_insertScopeOccurrence _ _ _).mpr (.inr member)
+-  · exact runtimePositionValid_called_associations program hosting hosting (selected.apply state)
+-      afterPosition ((scopeCreation_apply_control state selected).trans running)
+-  · cases kind : selected.kind <;> simp only [InternalScopeCreationSelection.apply, kind]
+-  · exact scopeCreation_regional_quiescent state selected regional.region regional.selection.root.id inside outside
+-  · exact completion_withdrawal program state hosting creationOperation selected programValid
+-      position afterPosition running selection
++  apply regionalSelection_census_frame program state (selected.apply state) operation regional.selection
++    (fun _ => true) (fun _ => true) found (scopeCreation_apply_control state selected) censuses
+   · cases operation with
+-    | returnProcess id returnOrigin process rootDefinition output =>
+-        obtain ⟨record, kind, rootId, census⟩ := regionalSelection_return_record program state
+-          id returnOrigin process rootDefinition output regional.selection found
+-        have present : record ∈ state.calledProcessOccurrences.filter (fun record => decide
+-            (record.returnOperationId = id && record.id.elementId.value = returnOrigin.elementId.value)) := by
+-          rw [census]; simp
+-        obtain ⟨member, named⟩ := List.mem_filter.mp present
+-        have named := of_decide_eq_true named
+-        simp only [Bool.and_eq_true, decide_eq_true_eq] at named
+-        refine ⟨?_, ?_⟩
+-        · cases creationKind : selected.kind with
+-          | child => simp only [InternalScopeCreationSelection.apply, creationKind]
+-          | called inserted =>
+-              obtain ⟨_, _, current, _, _, _, _, _, opened, _, _, _⟩ :=
+-                regionalPublicationTemplate_facts program state regional.selection regional.region _ published
+-              have allValidity := (projectOpenFlowNodeOccurrences_validities program state current hosting running opened).1
+-              have structural : flowNodeOccurrenceStructuralProgramValidity program state = true := by
+-                simp only [flowNodeOccurrenceProgramValidity, Bool.and_eq_true, and_assoc] at allValidity
+-                exact allValidity.1
+-              have callers := regionalScopeCreation_call_caller_eq program state hosting record inserted
+-                creationOperation selected position structural running member selection creationKind
+-              obtain ⟨_, _, _, _, _, absent, _, _⟩ := scopeCreation_selection_call_facts
+-                state creationOperation selected inserted hosting running selection creationKind
+-              have rejected : decide (inserted.returnOperationId = id &&
+-                  inserted.id.elementId.value = returnOrigin.elementId.value) = false := by
+-                apply decide_eq_false_iff_not.mpr
+-                intro matching
+-                simp only [Bool.and_eq_true, decide_eq_true_eq] at matching
+-                have old : record ∈ state.calledProcessOccurrences.filter (fun candidate =>
+-                    candidate.caller = selected.owner && candidate.id.elementId.value = inserted.id.elementId.value) :=
+-                  List.mem_filter.mpr ⟨member, by simp [callers, named.2, matching.2]⟩
+-                rw [List.length_eq_zero_iff.mp absent] at old
+-                contradiction
+-              simp only [InternalScopeCreationSelection.apply, creationKind]
+-              have perm := (sortCallRecords_perm (inserted :: state.calledProcessOccurrences)).filter
+-                (fun record => decide (record.returnOperationId = id && record.id.elementId.value = returnOrigin.elementId.value))
+-              simp only [List.filter_cons, rejected, Bool.false_eq_true, ↓reduceIte, census] at perm ⊢
+-              exact List.perm_singleton.mp perm
+-        · intro actual actualKind
+-          have same : actual = record := by simpa only [kind, InternalRegionalKind.returning.injEq] using actualKind.symm
+-          subst actual
+-          apply scopeCreation_apply_scope_filter
+-          cases creationKind : selected.kind with
+-          | child => simp [created_parent state creationOperation selected selection, creationKind]
+-          | called inserted =>
+-              obtain ⟨_, _, _, _, _, _, absent, _⟩ := scopeCreation_selection_call_facts
+-                state creationOperation selected inserted hosting running selection creationKind
+-              have different : selected.created.id.processInstanceId ≠ record.calledRoot.processInstanceId := by
+-                intro same
+-                have old : regional.selection.root ∈ state.scopeOccurrences.filter (fun scope => decide
+-                    (scope.id.processInstanceId = selected.created.id.processInstanceId)) :=
+-                  List.mem_filter.mpr ⟨rootMember, by simp [rootId, same]⟩
+-                rw [List.length_eq_zero_iff.mp absent] at old
+-                contradiction
+-              simp [different]
+     | completeScope id completeOrigin rootDefinition output =>
+         obtain ⟨withdrawal, kind, census⟩ := regionalSelection_complete_census program state id completeOrigin
+           rootDefinition output regional.selection found
+-        have parent : regional.selection.root.parent ≠ none := by
+-          intro absent
+-          obtain ⟨base, baseFound, included⟩ := regional_footprint_base state hosting regional.selection
+-            regional.region regional.footprint running footprint
+-          simp only [regionalBaseFootprint?, operationEq, kind, absent] at baseFound
+-          cases output with
+-          | some place => contradiction
+-          | none =>
+-              cases baseFound
+-              have written := included (.ordinary (.runtimeControl hosting)) (by simp)
+-              have read : liftRegionalStateAtom selected.owner (.runtimeControl hosting) ∈
+-                  (liftRegionalStateFootprint selected.owner
+-                    (internalScopeCreationStateFootprint selected hosting ownerRecord)).reads :=
+-                List.mem_map.mpr ⟨_, by simp [internalScopeCreationStateFootprint, canonicalStateAtomSet, mem_sortBy], rfl⟩
+-              have clash := regional_independent_read_write _ _ independent _ _ written read
+-              simp [liftRegionalStateAtom, regionalStateAtomsConflict] at clash
+-        have filtered : regional.selection.root ∈ state.scopeOccurrences.filter
+-            (fun scope => decide (scope.id.definitionScopeId = rootDefinition)) := by rw [census]; simp
+-        have named := of_decide_eq_true (List.mem_filter.mp filtered).2
+-        have different := scopeCreation_existing_child_definition program state hosting creationOperation selected
+-          programValid position afterPosition running selection regional.selection.root rootMember parent
+-        apply scopeCreation_apply_scope_filter
+-        simpa only [named, decide_eq_false_iff_not] using different
++        intro absent _
++        obtain ⟨base, baseFound, included⟩ := regional_footprint_base state hosting regional.selection
++          regional.region regional.footprint running footprint
++        simp only [regionalBaseFootprint?, operationEq, kind, absent] at baseFound
++        cases output with
++        | some place => contradiction
++        | none =>
++            cases baseFound
++            have written := included (.ordinary (.runtimeControl hosting)) (by simp)
++            have read : liftRegionalStateAtom selected.owner (.runtimeControl hosting) ∈
++                (liftRegionalStateFootprint selected.owner
++                  (internalScopeCreationStateFootprint selected hosting ownerRecord)).reads :=
++              List.mem_map.mpr ⟨_, by simp [internalScopeCreationStateFootprint, canonicalStateAtomSet, mem_sortBy], rfl⟩
++            have clash := regional_independent_read_write _ _ independent _ _ written read
++            simp [liftRegionalStateAtom, regionalStateAtomsConflict] at clash
+     | _ => trivial
++  · intro _
++    exact runtimePositionValid_called_associations program hosting hosting (selected.apply state)
++      afterPosition ((scopeCreation_apply_control state selected).trans running)
++  · cases kind : selected.kind <;> simp only [InternalScopeCreationSelection.apply, kind]
++  · rfl
++  · intros; rfl
++  · cases regional.selection.kind <;> simp
++  · intro wasQuiet
++    simpa only [scopeCreation_regional_quiescent state selected regional.region regional.selection.root.id inside outside] using wasQuiet
++  · cases operation <;> try trivial
++    exact completion_withdrawal program state hosting creationOperation selected programValid
++      position afterPosition running selection _
+   · have read := regionalStateFootprint_selector_read state regional.selection regional.region regional.footprint footprint
+     rw [operationEq] at read
+     cases operation with
+--- /dev/null
++++ b/BpmnSemantics/SemanticProcess/InternalRegionalCensusFrame.lean
+@@ -0,0 +1,219 @@
++import BpmnSemantics.SemanticProcess.InternalRegionalSelectedRetention
++
++namespace BpmnSemantics.SemanticProcess.InternalCommutation
++open BpmnSemantics
++
++/-- Occupied queries may lose masked rows but never acquire competitors. Empty
++queries are intentionally unrestricted: they belong to read agreement, not freshness. -/
++def Occupied {α : Type} (before after : List α) (keep names : α → Bool) : Prop :=
++  0 < (before.filter names).length → after.filter names = (before.filter names).filter keep
++
++structure CensusStep (before after : RuntimeState)
++    (keepScope : RuntimeScopeOccurrence → Bool) (keepCall : CalledProcessOccurrence → Bool) : Prop where
++  scopeId : ∀ id, Occupied before.scopeOccurrences after.scopeOccurrences keepScope
++    (fun s => decide (s.id = id))
++  parentedDefinition : ∀ definition root, root ∈ before.scopeOccurrences →
++    root.id.definitionScopeId = definition → root.parent ≠ none →
++    Occupied before.scopeOccurrences after.scopeOccurrences keepScope
++      (fun s => decide (s.id.definitionScopeId = definition))
++  parentlessPid : ∀ pid, Occupied before.scopeOccurrences after.scopeOccurrences keepScope
++    (fun s => decide (s.id.processInstanceId = pid && s.parent.isNone))
++  returnKey : ∀ id element record,
++    before.calledProcessOccurrences.filter (fun r => decide (r.returnOperationId = id && r.id.elementId.value = element)) = [record] →
++    after.calledProcessOccurrences.filter (fun r => decide (r.returnOperationId = id && r.id.elementId.value = element)) = [record].filter keepCall
++
++theorem occupied_singleton {α : Type} (before after : List α) (keep names : α → Bool)
++    (value : α) (step : Occupied before after keep names)
++    (census : before.filter names = [value]) (kept : keep value = true) :
++    after.filter names = [value] := by
++  simpa [census, kept] using step (by simp [census])
++
++theorem occupied_retained {α : Type} (before after : List α) (keep names : α → Bool)
++    (step : Occupied before after keep names) (positive : 0 < (before.filter names).length)
++    (kept : ∀ value ∈ before, names value = true → keep value = true) :
++    after.filter names = before.filter names := by
++  rw [step positive]
++  apply List.filter_eq_self.mpr
++  intro value member
++  obtain ⟨member, named⟩ := List.mem_filter.mp member
++  exact kept value member named
++
++theorem regionalSelection_census_frame (program : Program) (before after : RuntimeState)
++    (operation : SemanticOperation) (selected : InternalRegionalSelection)
++    (keepScope : RuntimeScopeOccurrence → Bool) (keepCall : CalledProcessOccurrence → Bool)
++    (found : selectInternalRegional? program before operation = some selected)
++    (control : after.control = before.control)
++    (censuses : CensusStep before after keepScope keepCall)
++    (rootCompletion : match (generalizing := false) operation with
++      | .completeScope _ _ definition _ => selected.root.parent = none →
++          before.scopeOccurrences.filter (fun s => decide (s.id.definitionScopeId = definition)) = [selected.root] →
++          after.scopeOccurrences.filter (fun s => decide (s.id.definitionScopeId = definition)) = [selected.root]
++      | _ => True)
++    (associations : calledProcessAssociationsValid before = true → calledProcessAssociationsValid after = true)
++    (pending : after.initiationPending = before.initiationPending)
++    (rootKept : keepScope selected.root = true)
++    (parentKept : ∀ parent, selected.root.parent = some parent →
++      ∀ scope ∈ before.scopeOccurrences, scope.id = parent → keepScope scope = true)
++    (callKept : match (generalizing := false) selected.kind with
++      | .returning record => keepCall record = true ∧
++          ∀ scope ∈ before.scopeOccurrences, scope.id = record.caller → keepScope scope = true
++      | _ => True)
++    (quiet : scopeQuiescent before selected.root.id = true → scopeQuiescent after selected.root.id = true)
++    (withdrawal : match (generalizing := false) operation with
++      | .completeScope _ _ definition _ => ∀ choice,
++          selectInternalCompletionWithdrawal? program before definition = some choice →
++          selectInternalCompletionWithdrawal? program after definition = some choice
++      | _ => True)
++    (inputs : match (generalizing := false) operation with
++      | .throwError _ _ input _ _ =>
++          onlyTokenOwner? after input = onlyTokenOwner? before input ∧
++          after.tokens.filter (fun token => decide (token.placeId = input && token.owner = selected.root.id)) =
++            before.tokens.filter (fun token => decide (token.placeId = input && token.owner = selected.root.id))
++      | .terminateScope id origin input definition => ∀ owner,
++          selectedTerminateOwner? program before id origin input definition = some owner →
++          selectedTerminateOwner? program after id origin input definition = some owner
++      | _ => True) :
++    selectInternalRegional? program after operation = some selected := by
++  have running : runningInstance? after = runningInstance? before := by
++    simp only [runningInstance?, control]
++  unfold selectInternalRegional? at found ⊢
++  obtain ⟨hosting, hosted, found⟩ := Option.bind_eq_some_iff.mp found
++  rw [running, hosted]
++  dsimp only [Option.bind_some]
++  cases operation with
++  | returnProcess id origin process definition output =>
++      dsimp only at found ⊢
++      repeat' first | (solve | simp at found) | split at found
++      all_goals
++        rename_i valid _ record returnCensus processEq definitionEq _ root rootCensus parentless callerCount processCount quiescent
++        cases found
++        have rootIdentity := scope_identity_of_census before record.calledRoot root rootCensus
++        have rootPresent : root ∈ before.scopeOccurrences :=
++          (List.mem_filter.mp (show root ∈ before.scopeOccurrences.filter
++            (fun scope => decide (scope.id = record.calledRoot)) by simp [rootCensus])).1
++        have rootAfter := occupied_singleton _ _ keepScope _ _
++          (censuses.scopeId record.calledRoot) rootCensus rootKept
++        have callAfter : after.calledProcessOccurrences.filter
++            (fun r => decide (r.returnOperationId = id && r.id.elementId.value = origin.elementId.value)) = [record] := by
++          simpa [callKept.1] using censuses.returnKey id origin.elementId.value record returnCensus
++        have callerAfter := occupied_retained _ _ keepScope
++          (fun scope => decide (scope.id = record.caller))
++          (censuses.scopeId record.caller) (by omega) (by
++            intro scope member named
++            exact callKept.2 scope member (of_decide_eq_true named))
++        obtain ⟨processRoot, processCensus⟩ := List.length_eq_one_iff.mp processCount
++        have sameRoot : root = processRoot := by
++          have member : root ∈ before.scopeOccurrences.filter (fun scope => decide (
++              scope.id.processInstanceId = record.calledRoot.processInstanceId && scope.parent.isNone)) :=
++            List.mem_filter.mpr ⟨rootPresent, by simp [rootIdentity, parentless]⟩
++          have singleton : root ∈ [processRoot] := by
++            rw [← processCensus]
++            exact member
++          exact List.mem_singleton.mp singleton
++        subst processRoot
++        have processAfter := occupied_singleton _ _ keepScope _ _
++          (censuses.parentlessPid record.calledRoot.processInstanceId) processCensus rootKept
++        simp_all only [↓reduceIte, List.length_singleton]
++  | completeScope id origin definition output =>
++      dsimp only at found ⊢
++      split at found
++      · rename_i root census
++        split at found
++        · contradiction
++        · rename_i notBusy
++          have priorQuiet : scopeQuiescent before root.id = true := by simpa using notBusy
++          obtain ⟨choice, chosen, found⟩ := Option.bind_eq_some_iff.mp found
++          have afterChoice := withdrawal choice chosen
++          repeat' first | (solve | simp at found) | split at found
++          all_goals
++            cases found
++            have afterQuiet := quiet priorQuiet
++            have rootAfter : after.scopeOccurrences.filter
++                (fun scope => decide (scope.id.definitionScopeId = definition)) = [root] := by
++              by_cases parentless : root.parent = none
++              · exact rootCompletion parentless census
++              · have present : root ∈ before.scopeOccurrences :=
++                  (List.mem_filter.mp (show root ∈ before.scopeOccurrences.filter
++                    (fun s => decide (s.id.definitionScopeId = definition)) by simp [census])).1
++                have named := of_decide_eq_true (List.mem_filter.mp (show root ∈ before.scopeOccurrences.filter
++                  (fun s => decide (s.id.definitionScopeId = definition)) by simp [census])).2
++                exact occupied_singleton _ _ keepScope _ _
++                  (censuses.parentedDefinition definition root present named parentless) census rootKept
++            have parentAfter : ∀ parent, root.parent = some parent →
++                before.scopeOccurrences.any (fun scope => scope.id == parent) = true →
++                after.scopeOccurrences.any (fun scope => scope.id == parent) = true := by
++              intro parent parentEq present
++              obtain ⟨scope, member, named⟩ := List.any_eq_true.mp present
++              have identity : scope.id = parent := by simpa using named
++              have filtered : scope ∈ before.scopeOccurrences.filter (fun s => decide (s.id = parent)) :=
++                List.mem_filter.mpr ⟨member, by simp [identity]⟩
++              have positive : 0 < (before.scopeOccurrences.filter (fun s => decide (s.id = parent))).length :=
++                List.length_pos_iff.mpr (by intro empty; simp [empty] at filtered)
++              have query := censuses.scopeId parent positive
++              have kept := parentKept parent parentEq scope member identity
++              have survivor : scope ∈ after.scopeOccurrences :=
++                (List.mem_filter.mp (show scope ∈ after.scopeOccurrences.filter (fun s => decide (s.id = parent)) by
++                  rw [query]; exact List.mem_filter.mpr ⟨filtered, kept⟩)).1
++              exact List.any_eq_true.mpr ⟨scope, survivor, named⟩
++            simp_all only [Bool.false_eq_true, ↓reduceIte, Option.bind_eq_bind, Option.bind_some]
++      · contradiction
++  | throwError id origin input error handler =>
++      dsimp only at found ⊢
++      rw [inputs.1]
++      obtain ⟨owner, offered, found⟩ := Option.bind_eq_some_iff.mp found
++      rw [offered]
++      split at found
++      · contradiction
++      · split at found
++        · contradiction
++        · split at found
++          · rename_i root census
++            obtain ⟨parent, parentFound, found⟩ := Option.bind_eq_some_iff.mp found
++            split at found
++            · cases found
++              have identity := scope_identity_of_census before owner root census
++              rw [identity] at inputs
++              have rootAfter := occupied_singleton _ _ keepScope _ _
++                (censuses.scopeId owner) census rootKept
++              have parentAfter := occupied_retained _ _ keepScope
++                (fun scope => decide (scope.id = parent))
++                (censuses.scopeId parent) (by omega) (by
++                  intro scope member named
++                  exact parentKept parent parentFound scope member (of_decide_eq_true named))
++              simp_all only [Option.bind_eq_bind, Option.bind_some, ↓reduceIte]
++            · contradiction
++          · contradiction
++  | terminateScope id origin input definition =>
++      dsimp only at found ⊢
++      obtain ⟨owner, chosen, found⟩ := Option.bind_eq_some_iff.mp found
++      rw [inputs owner chosen]
++      split at found
++      · rename_i root census
++        cases found
++        have rootAfter := occupied_singleton _ _ keepScope _ _
++                (censuses.scopeId owner) census rootKept
++        simp only [Option.bind_eq_bind, Option.bind_some, rootAfter]
++      · contradiction
++  | _ => contradiction
++
++
++theorem occupied_filter {α : Type} (values : List α) (keep names : α → Bool) :
++    Occupied values (values.filter keep) keep names := by
++  intro _
++  simp only [List.filter_filter, Bool.and_comm]
++
++theorem census_filter (before after : RuntimeState) (ks : RuntimeScopeOccurrence → Bool)
++    (kc : CalledProcessOccurrence → Bool)
++    (scopes : after.scopeOccurrences = before.scopeOccurrences.filter ks)
++    (calls : after.calledProcessOccurrences = before.calledProcessOccurrences.filter kc) :
++    CensusStep before after ks kc := by
++  constructor
++  · intro id; rw [scopes]; exact occupied_filter _ _ _
++  · intro definition root member named parent; rw [scopes]; exact occupied_filter _ _ _
++  · intro pid; rw [scopes]; exact occupied_filter _ _ _
++  · intro id element record census
++    rw [calls, List.filter_filter]
++    simpa only [List.filter_filter, Bool.and_comm, census] using congrArg (List.filter kc) census
++
++
++end BpmnSemantics.SemanticProcess.InternalCommutation

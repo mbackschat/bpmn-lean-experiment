@@ -1,0 +1,175 @@
+{
+  "baseline": "2a12990b416e5327d19d37440a95e556d3642c02",
+  "adopted": false,
+  "records": {
+    "census": {
+      "patchSha256": "52802774aa432c0b837beac382212b13843bbf181d639104628f3934e0d96344",
+      "result": {
+        "baseline": "2a12990b416e5327d19d37440a95e556d3642c02",
+        "scope": "isolated proof-only census replacement",
+        "beforeNonblank": 653,
+        "afterNonblank": 656,
+        "netReduction": -3,
+        "publicSourceHeadersUnchanged": 7,
+        "elaboratedPublicTypesUnchanged": 12,
+        "elaboratedTypesSha256": "16c0944e2c9af58a4f993d48af7ea5ae6c40f52a849c1b59884b9f553d383aea",
+        "fullBuild": {
+          "elapsedSeconds": 101.43,
+          "userCpuSeconds": 80.31,
+          "systemCpuSeconds": 8.93,
+          "maxRssKiB": 2005704,
+          "cgroupPeakBytes": 1922166784,
+          "memoryEvents": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0\n",
+          "memoryPressure": "some avg10=0.00 avg60=0.00 avg300=0.00 total=0\nfull avg10=0.00 avg60=0.00 avg300=0.00 total=0\n",
+          "exitStatus": 0
+        },
+        "benchmarkBaseline": {
+          "elapsedSeconds": 112.78,
+          "userCpuSeconds": 87.99,
+          "systemCpuSeconds": 10.84,
+          "maxRssKiB": 2030500,
+          "cgroupPeakBytes": 1911808000,
+          "memoryEvents": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0\n",
+          "memoryPressure": "some avg10=0.06 avg60=0.35 avg300=0.13 total=563683\nfull avg10=0.06 avg60=0.35 avg300=0.13 total=563683\n",
+          "exitStatus": 0
+        },
+        "benchmarkReplacement": {
+          "elapsedSeconds": 108.88,
+          "userCpuSeconds": 85.03,
+          "systemCpuSeconds": 10.0,
+          "maxRssKiB": 2004976,
+          "cgroupPeakBytes": 1911496704,
+          "memoryEvents": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0\n",
+          "memoryPressure": "some avg10=0.04 avg60=0.04 avg300=0.00 total=57033\nfull avg10=0.04 avg60=0.04 avg300=0.00 total=57033\n",
+          "exitStatus": 0
+        },
+        "benchmarkInvalidatedBaselineModules": 58,
+        "fullColdBuild": false,
+        "productionChanged": false
+      },
+      "counts": [
+        {
+          "path": "BpmnSemantics/SemanticProcess/InternalRegionalSelectionFrame.lean",
+          "before": 72,
+          "after": 43,
+          "beforeSha256": "730f659b573db30f6b8b1f52b04513df9109d02cd6fd60075d86d8060cf0dcf8",
+          "afterSha256": "ee05221e2c6c32d76f7e106a42ce342936750cbcd1d922d844ba2f460a5f98b2"
+        },
+        {
+          "path": "BpmnSemantics/SemanticProcess/InternalRegionalPairSelectionFrame.lean",
+          "before": 152,
+          "after": 59,
+          "beforeSha256": "972384a080aa48516627b1e1bc9a65ffa5fd4db3e19257c5443b8608b7805440",
+          "afterSha256": "02280747563b927315e376b20ba9da7c784e1d06d9eacaff8a721e9b074e3b5c"
+        },
+        {
+          "path": "BpmnSemantics/SemanticProcess/InternalRegionalScopeCreationSelection.lean",
+          "before": 429,
+          "after": 346,
+          "beforeSha256": "8651ed448ee1f32e4cda33182e23ea2cf0cfe4809e16daf9929891f027ac87d9",
+          "afterSha256": "22713db5433e1d57597d50290b5f7d3a25375e01bf9b08d2c061f954501d85be"
+        },
+        {
+          "path": "BpmnSemantics/SemanticProcess/InternalRegionalCensusFrame.lean",
+          "before": 0,
+          "after": 208,
+          "beforeSha256": null,
+          "afterSha256": "73cc390d9e6f3606fd33c87552f1e3fb879a17776fb49275b6e14fc45475688b"
+        }
+      ]
+    },
+    "execution": {
+      "patchSha256": "15a1f347d14c1cb5b99ca88672da129eeb1745bc000c752becfd0aaeccfa2188",
+      "result": {
+        "status": "stopped-at-numeric-gate",
+        "baseline": "2a12990b416e5327d19d37440a95e556d3642c02",
+        "counts": {
+          "rows": [
+            {
+              "path": "BpmnSemantics/SemanticProcess/InternalRegionalPairCommutation.lean",
+              "before": 671,
+              "after": 254,
+              "sourceSha256": "6bfab5f1a0b3e263d22c5127b52481bcd80fa5327499a21db8d2f4b01c157f10"
+            },
+            {
+              "path": "BpmnSemantics/SemanticProcess/InternalRegionalMaskSquare.lean",
+              "before": 0,
+              "after": 332,
+              "sourceSha256": "edf74097f1972ebde8c7238f1b146c450cf5cbf10ea93b37e7a4702415f5615b"
+            },
+            {
+              "path": "BpmnSemantics/SemanticProcess/InternalRegionalArmingCommutation.lean",
+              "before": 212,
+              "after": 212,
+              "sourceSha256": "5d3cea3157dc5bbd482ac6ae41c834947011192febc19ffb1222579f9ad548a5"
+            }
+          ],
+          "before": 883,
+          "after": 798,
+          "armingPrivateLines": 180,
+          "insertionAdapterLines": 67,
+          "netReduction": 85,
+          "optimisticReductionWithFreeRemainingArmingReplacement": 265,
+          "requiredReduction": 300
+        },
+        "publicTypes": {
+          "count": 6,
+          "identical": true,
+          "bytes": 140225,
+          "sha256": "e81676bdf83eadc24eaaf650ce1c35d8d94442df000dfa729a392758f6c114ae"
+        },
+        "library": {
+          "exitStatus": 0,
+          "elapsedSeconds": 59.35,
+          "userCPUSeconds": 53.83,
+          "systemCPUSeconds": 2.15,
+          "maxRSSKiB": 2030840,
+          "cgroupPeakBytes": 1953951744,
+          "memoryBoundBytes": 3221225472,
+          "memoryEvents": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0\n",
+          "unaffectedDependencies": "warm",
+          "speedupClaim": false
+        },
+        "completedNewConsumers": [
+          "Regional\u00d7Regional"
+        ],
+        "unchangedConsumers": [
+          "Regional\u00d7Arming"
+        ],
+        "armingPremiseDischarge": "not completed",
+        "adopted": false,
+        "infrastructureRun": false,
+        "outOfPoolUnreferencedLinesNotDeleted": 112
+      },
+      "counts": {
+        "rows": [
+          {
+            "path": "BpmnSemantics/SemanticProcess/InternalRegionalPairCommutation.lean",
+            "before": 671,
+            "after": 254,
+            "sourceSha256": "6bfab5f1a0b3e263d22c5127b52481bcd80fa5327499a21db8d2f4b01c157f10"
+          },
+          {
+            "path": "BpmnSemantics/SemanticProcess/InternalRegionalMaskSquare.lean",
+            "before": 0,
+            "after": 332,
+            "sourceSha256": "edf74097f1972ebde8c7238f1b146c450cf5cbf10ea93b37e7a4702415f5615b"
+          },
+          {
+            "path": "BpmnSemantics/SemanticProcess/InternalRegionalArmingCommutation.lean",
+            "before": 212,
+            "after": 212,
+            "sourceSha256": "5d3cea3157dc5bbd482ac6ae41c834947011192febc19ffb1222579f9ad548a5"
+          }
+        ],
+        "before": 883,
+        "after": 798,
+        "armingPrivateLines": 180,
+        "insertionAdapterLines": 67,
+        "netReduction": 85,
+        "optimisticReductionWithFreeRemainingArmingReplacement": 265,
+        "requiredReduction": 300
+      }
+    }
+  }
+}
