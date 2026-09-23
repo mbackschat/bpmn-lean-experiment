@@ -22,7 +22,7 @@ Counts are nonblank physical source lines including comments, measured at the ba
 |---|---:|---:|
 | `SemanticProcess/Internal*` modules | 0 | 272 |
 | Their nonblank lines | 0 | 54,072 |
-| All Lean nonblank lines | 35,491 | 136,388 |
+| Active Lean nonblank lines, excluding the frozen `adoption/a12/legacy/source-tree/` snapshot | 35,491 | 136,388 |
 
 Other work contributed to total Lean growth. The reviewer's heuristic module-name classification counted 15,709 clearly pair-shaped lines, of which 11,794 involved Regional, plus 5,363 mixed frame/retention lines. These are candidate costs, not verified removable code. Of 28 unordered cross-family combinations among eight families, 21 were integrated; six bounded-entry combinations had core pair results without complete publication/integration, and bounded entry × Regional remained partial. This is proof coverage, not profile reachability.
 
