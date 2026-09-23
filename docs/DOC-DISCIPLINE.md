@@ -180,11 +180,6 @@ Write documents as current contracts or arguments, not changelogs. Preserve hist
 
 ## Verification
 
-After a documentation change, run:
-
-```sh
-./scripts/verify.sh
-git diff --check
-```
+Documentation changes follow the [three-level verification policy](TESTING-SPEC.md#three-level-verification-policy) and [focused gate matrix](TESTING-SPEC.md#focused-gate-matrix), which own the affected-package, clean-HEAD, and full-verifier requirements. Also run `git diff --check`.
 
 The infrastructure gate enumerates maintained Markdown outside the ignored normative reference corpus, requires every document to appear in [the documentation registry](README.md), enforces the role suffixes and reserved singleton names above, and fails if a project-authored local Markdown file or heading anchor is stale. The focused control-plane guards additionally require the four-section plan, one active stable work ID, matching resume ID, exact root/detail map registry, independent tracked-path routing, map word and review-unit bounds, proposal Status contract, and delegated capsule scope. A rename is incomplete until those guards and every applicable focused gate are green.
