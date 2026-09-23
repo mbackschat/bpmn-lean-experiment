@@ -201,6 +201,8 @@ The complete prepared pipeline enforces the cross-cutting CIB, Lean, core, Tempo
 
 Non-material [repairs/investigation](TESTING-SPEC.md#independent-cold-review-gate): [cost](../scripts/lean-module-cost.test.ts), [review](../scripts/independent-review-policy.test.ts), and [frontier](../packages/bpmn-source/test/embedded-subprocess-lowering.test.ts) tests preserve existing behavior.
 
+Non-material [RC witnesses](../packages/bpmn-source/test/internal-commutation-rc-admission.test.ts); no semantic changes. Gates: source package, harness types, infrastructure.
+
 ## Nearest unsupported claims
 
 - **A12 adoption evidence:** the optional adoption lane admits the exact external `CreateDocument.bpmn` bytes through the product-neutral mapped-success profile plus a content-bound data-only overlay. Its current oracle proves the two project-authored adoption projections equal the selected frozen generation outside the approved profile/overlay identity translation. The frozen manifest at immutable target `02330ad` derives the complete A12-specific baseline set plus the original validator, projector, and effect-projection roots independently of its own entries. Closure correction `8d6ea1a` is approved, and the [handoff](../adoption/a12/current/README.md#resume-point-for-a-future-a12-add-on) records how future product-3 work resumes.
