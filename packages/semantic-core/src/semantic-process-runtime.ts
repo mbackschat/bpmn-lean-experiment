@@ -255,9 +255,9 @@ export function isStableStateResumable(state: RuntimeState): boolean {
 /**
  * The internal transition of one operation, including the consequences only the program determines.
  *
- * `program` is not decoration: a bounded scope's deadline is paired to its child scope through the
- * committed bounded-scope operation rather than through a runtime record, so the completing scope's
- * own operation cannot name the deadline it withdraws.
+ * `selectScopeCompletionWithdrawal` needs the Program to decide whether scope completion withdraws
+ * a boundary deadline. The Activity occurrence record binds the exact child and Timer identities;
+ * the definition check prevents a missing record from being treated as an unbounded completion.
  */
 export function applyInternalOperation(
   program: SemanticProcessProgram,
