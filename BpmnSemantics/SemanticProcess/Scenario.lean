@@ -1,4 +1,5 @@
 import BpmnSemantics.SemanticProcess.Execution
+import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotTransitionTrace
 import BpmnSemantics.SemanticProcess.Lowering
 import BpmnSemantics.SemanticProcess.MessageKeyCorrelation
 import BpmnSemantics.SemanticProcess.ProfileAdmission
@@ -109,6 +110,14 @@ private def effectDefinitions (program : Program) : List EffectDefinition :=
   program.operations.flatMap fun operation =>
     (ownedWaitDefinitions operation).effects
 
+private def effectElementIds (program : Program) : List NodeId :=
+  (effectDefinitions program).map (·.elementId) ++
+    match program.compensationExecution with
+    | none => []
+    | some declaration => declaration.subjects.map fun
+        | .boundaryActivity _ body | .eventSubProcess _ _ body =>
+            body.effectElementId
+
 def timerWaitMultiplicity (state : RuntimeState) (elementId : NodeId) : Nat :=
   (state.timerWaits.filter fun wait =>
     decide (wait.elementId = elementId)).length
@@ -119,7 +128,9 @@ def messageWaitMultiplicity (state : RuntimeState) (elementId : NodeId) : Nat :=
 
 def effectWaitMultiplicity (state : RuntimeState) (elementId : NodeId) : Nat :=
   (state.effectWaits.filter fun wait =>
-    decide (wait.elementId = elementId)).length
+    decide (wait.elementId = elementId)).length +
+    (state.compensationHandlerEffectWaits.filter fun wait =>
+      decide (wait.id.elementId.value = elementId.value)).length
 
 def incidentWaitMultiplicity (state : RuntimeState) (elementId : NodeId) : Nat :=
   (state.effectIncidents.filter fun incident =>
@@ -173,13 +184,13 @@ private def activeWaits (program : Program) (state : RuntimeState) :
             kind := .timer
             multiplicity }
   let effectWaits :=
-    (effectDefinitions program).filterMap fun effect =>
-      let multiplicity := effectWaitMultiplicity state effect.elementId
+    (effectElementIds program).filterMap fun elementId =>
+      let multiplicity := effectWaitMultiplicity state elementId
       if multiplicity = 0 then
         none
       else
         some
-          { elementId := ⟨effect.elementId.value⟩
+          { elementId := ⟨elementId.value⟩
             kind := .effect
             multiplicity }
   let incidentWaits :=
@@ -252,7 +263,7 @@ private def openMessageSubscriptions (program : Program)
 
 private def openEffects (program : Program) (state : RuntimeState) :
     List OpenEffect :=
-  (effectDefinitions program).flatMap fun effect =>
+  let ordinary := (effectDefinitions program).flatMap fun effect =>
     (state.effectWaits.filter fun wait =>
       decide (wait.elementId = effect.elementId)).map fun wait =>
         { id :=
@@ -261,6 +272,14 @@ private def openEffects (program : Program) (state : RuntimeState) :
               activation := wait.activation }
           descriptor := wait.descriptor
           arguments := wait.arguments }
+  let compensation := state.compensationHandlerEffectWaits.map fun wait =>
+    { id := wait.id, descriptor := wait.descriptor, arguments := wait.arguments : OpenEffect }
+  (ordinary ++ compensation).mergeSort fun left right =>
+    if left.id.processInstanceId ≠ right.id.processInstanceId then
+      left.id.processInstanceId.value < right.id.processInstanceId.value
+    else if left.id.elementId ≠ right.id.elementId then
+      left.id.elementId.value < right.id.elementId.value
+    else left.id.activation ≤ right.id.activation
 
 private structure SequentialMultiInstanceObservationDefinition where
   taskId : TaskDefinitionId
@@ -506,7 +525,7 @@ private def executeStimuli (closureLimit : Nat) (program : Program) :
         state
         trace := [] }
   | state, stimulus :: remaining =>
-      let result := applyStimulus closureLimit program state stimulus
+      let result := applyStimulusWithCompensationSnapshots closureLimit program state stimulus
       if result.internalStepBoundExceeded ||
           result.ambiguousInternalChoice then
         { outcome := .harnessFailure

@@ -47,6 +47,7 @@ verify_pipeline() {
   ./scripts/pnpm.sh run test:message-payload-lean-core:built
   ./scripts/pnpm.sh run test:activity-boundary-message-lean-core:built
   ./scripts/pnpm.sh run test:internal-choice-schedule-lean-core:built
+  node --test --test-concurrency=1 packages/differential/test/compensation-pipeline-lean-core.integration-test.ts
   env BPMN_PIPELINE_PREBUILT=1 ./scripts/pnpm.sh run test:pipeline
   git diff --check
 }

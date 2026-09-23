@@ -1,5 +1,6 @@
 import BpmnSemantics.SemanticProcess.Scenario
 import BpmnSemantics.SemanticProcessJson
+import BpmnSemantics.SemanticProcessJson.Publication
 import Lean.Data.Json
 
 /-! One-way canonical JSON-lines emitter for admitted Semantic Process scenarios.
@@ -552,15 +553,55 @@ private def definitionBindingJson (input : DefinitionInput) : Json :=
         toJson input.checkedProcess.identity.semanticProfile.value)
     , ("programMatchesLeanLowering", toJson true) ]
 
+private def commandPublicationsJson (program : SemanticProcess.Program)
+    (instanceId : SemanticId) : SemanticProcess.RuntimeState → List Stimulus → List Json
+  | _, [] => []
+  | initial, stimulus :: rest =>
+      let traced := SemanticProcess.applyStimulusTracedWithCompensationSnapshots
+        SemanticProcess.scenarioClosureLimit program initial stimulus
+      let publication := Publication.tracedExecutionPublicationJson? program instanceId initial
+        traced (some ∘ stimulusJson)
+      let replays := SemanticProcess.replayCommittedTransitionsWithCompensationSnapshots program initial
+        traced.committedTransitions = some traced.result.state
+      let openOccurrences := SemanticProcess.projectOpenFlowNodeOccurrencesWithCompensation?
+        program traced.result.state
+      let record := Json.mkObj
+        [ ("commandId", toJson (SemanticProcess.stimulusCommandId stimulus).value)
+        , ("outcome", commandOutcomeJson traced.result.outcome)
+        , ("stateUnchanged", toJson (decide (traced.result.state = initial)))
+        , ("stateWellFormed", toJson (SemanticProcess.runtimeStateWellFormed program instanceId traced.result.state))
+        , ("traceReplays", toJson (decide replays))
+        , ("publication", publication.getD .null)
+        , ("lifecycles", jsonArray (traced.flowNodeOccurrenceLifecycles.map Publication.occurrenceDeltaJson))
+        , ("openOccurrences", (openOccurrences.map fun starts =>
+            jsonArray (starts.map Publication.occurrenceStartJson)).getD .null) ]
+      let tail := match traced.result.outcome with
+        | .committed | .rejected =>
+            if traced.result.internalStepBoundExceeded || traced.result.ambiguousInternalChoice ||
+                (SemanticProcess.observeStableState program traced.result.state).isNone then []
+            else commandPublicationsJson program instanceId traced.result.state rest
+        | .rolledBack | .semanticFailure | .unsupported => []
+      record :: tail
+
+private def scenarioPublicationsJson (scenario : Scenario) (input : DefinitionInput) : Json :=
+  let instanceId := match scenario.stimuli.head? with
+    | some (.startProcess _ _ instanceId _) | some (.triggerMessageStart _ _ instanceId _ _)
+    | some (.triggerTimerStart _ _ instanceId _) => instanceId
+    | _ => ⟨""⟩
+  jsonArray <| if SemanticProcess.supportsScenario input.semanticProcess scenario then
+    commandPublicationsJson input.semanticProcess instanceId SemanticProcess.initialState scenario.stimuli
+  else []
+
 private def resultRecordJson (scenario : Scenario)
-    (input : DefinitionInput) : Json :=
-  Json.mkObj
+    (input : DefinitionInput) (includePublications : Bool) : Json :=
+  Json.mkObj <|
     [ ("scenarioId", toJson scenario.id.value)
     , ("scenario", scenarioJson scenario)
     , ("definitionBinding", definitionBindingJson input)
     , ("result", scenarioResultJson
         (BpmnSemantics.SemanticProcess.runScenario
-          input.semanticProcess scenario)) ]
+          input.semanticProcess scenario)) ] ++
+    if includePublications then [("commandPublications", scenarioPublicationsJson scenario input)] else []
 
 private def readDefinitionInputs (path : System.FilePath) :
     IO (List DefinitionInput) := do
@@ -604,19 +645,22 @@ private def definitionForScenario (inputs : List DefinitionInput)
   pure input
 
 def emit (definitionInputPath : System.FilePath)
-    (scenarioPaths : List System.FilePath) : IO Unit := do
+    (scenarioPaths : List System.FilePath) (includePublications : Bool := false) : IO Unit := do
   let inputs ← readDefinitionInputs definitionInputPath
   let scenarios ← scenarioPaths.mapM readScenario
   if inputs.length ≠ scenarios.length then
     throw (IO.userError "definition input count does not match Lean scenarios")
   for scenario in scenarios do
     let input ← definitionForScenario inputs scenario
-    IO.println (resultRecordJson scenario input).compress
+    IO.println (resultRecordJson scenario input includePublications).compress
 
 end BpmnSemantics.SemanticProcessJsonMain
 
 def main (arguments : List String) : IO Unit :=
   do
+    let (includePublications, arguments) := match arguments with
+      | "--publications" :: rest => (true, rest)
+      | _ => (false, arguments)
     match arguments with
     | definitionInputPath :: scenarioPaths =>
         if scenarioPaths.isEmpty then
@@ -625,6 +669,7 @@ def main (arguments : List String) : IO Unit :=
         BpmnSemantics.SemanticProcessJsonMain.emit
           definitionInputPath
           (scenarioPaths.map fun path => (⟨path⟩ : System.FilePath))
+          includePublications
     | _ =>
         throw (IO.userError
-          "usage: emitSemanticProcessResults <definition-input.jsonl> <scenario.json>...")
+          "usage: emitSemanticProcessResults [--publications] <definition-input.jsonl> <scenario.json>...")
