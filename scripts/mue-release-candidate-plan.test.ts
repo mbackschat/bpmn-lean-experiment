@@ -14,13 +14,12 @@ const releaseCandidateContent = [
   ["PARALLEL-MULTI-INSTANCE", "satisfied"],
   ["MECHANISM-MATURITY-EVIDENCE", "queued"],
   ["DATA-AND-TASK-MECHANISMS", "satisfied"],
-  ["EVENT-SUBSCRIPTIONS", "queued"],
+  ["EVENT-SUBSCRIPTIONS", "satisfied"],
   ["COMPENSATION-TRANSACTIONS", "queued"],
 ] as const;
 
 const unfinishedExecutionOrder = [
   "INTERNAL-COMMUTATION",
-  "EVENT-SUBSCRIPTIONS",
   "COMPENSATION-TRANSACTIONS",
   "MECHANISM-MATURITY-EVIDENCE",
   "MUE-RELEASE-CANDIDATE",
@@ -67,8 +66,8 @@ test("rejects a chore-first RC path and a broader hidden denominator", async () 
   const rcStart = plan.indexOf(rcMarker);
   assert.notEqual(rcStart, -1);
   const broadened = plan.slice(0, rcStart) + plan.slice(rcStart).replace(
-    "| `EVENT-SUBSCRIPTIONS` | `queued` |",
-    "| `H3-WORKLOAD-ISOLATION` | `queued` | Later only. | [Maturity ladder](PROJECT-DESIGN.md#engine-maturity-roadmap-labels) |\n| `EVENT-SUBSCRIPTIONS` | `queued` |",
+    "| `EVENT-SUBSCRIPTIONS` | `satisfied` |",
+    "| `H3-WORKLOAD-ISOLATION` | `queued` | Later only. | [Maturity ladder](PROJECT-DESIGN.md#engine-maturity-roadmap-labels) |\n| `EVENT-SUBSCRIPTIONS` | `satisfied` |",
   );
 
   assert.throws(() => assertReleaseCandidatePath(movedEvidenceFirst), /risk-first sequence/u);

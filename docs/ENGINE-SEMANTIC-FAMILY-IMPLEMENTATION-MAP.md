@@ -70,11 +70,11 @@ The [non-interrupting boundary Timer specification](capsules/NON-INTERRUPTING-BO
 
 ## Repeatable Event subscriptions
 
-The [subscription capsule](capsules/REPEATABLE-EVENT-SUBSCRIPTIONS-PROPOSAL.md) has an accepted semantic checkpoint and implemented hosting and registration; governed closure remains open.
+The [subscription capsule](capsules/REPEATABLE-EVENT-SUBSCRIPTIONS-SPEC.md) is independently closure-reviewed across the semantic checkpoint, durable hosting and registration.
 
 **Implemented.** The normative profile composes payload-free Message catches/Receive Tasks, exact `PT1S` Timer catches, interrupting/non-interrupting User Task Message/Timer boundaries and Sub-Process Timer boundaries within one depth-one, burst-bounded fork forest. Repeated Messages retain their exact subscription; `R/PT1S` non-interrupting boundaries issue fresh Timers and preserve overlapping handler occurrences. Host completion withdraws future triggers, regional cancellation preserves outside work, and inner Terminate retains the subscribed body until ordinary completion. The four selected scheduling proposition groups and finite canonical-publication lift are accepted. Registered application-review scenarios compare independent Lean/core execution and durable Temporal delivery, with retained corpus and canonical About disclosures.
 
-**Absent.** General recurrence expressions, multiple Timers/boundaries/child scopes, deeper scopes, Message boundaries on Sub-Processes, joins/loops, and composition with effects, data mediation, Multi-Instance, Call Activities, Event Sub-Processes or Transactions remain excluded. Public scheduled choice, CIB subscription compatibility, browser-catalog eligibility and capsule closure are not established.
+**Absent.** General recurrence expressions, multiple Timers/boundaries/child scopes, deeper scopes, Message boundaries on Sub-Processes, joins/loops, and composition with effects, data mediation, Multi-Instance, Call Activities, Event Sub-Processes or Transactions remain excluded. Public scheduled choice, CIB subscription compatibility and browser-catalog eligibility are not established.
 
 ## Interrupting Sub-Process boundary Timer
 

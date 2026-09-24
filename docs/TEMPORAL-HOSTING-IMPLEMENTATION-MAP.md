@@ -20,7 +20,7 @@ Product 1 privately traverses paired E1 and occurrence-publication segments acro
 
 Activity boundary Message retains isolated admission, E1/E2 validation, direct-VM scheduling and live Signal/Update refinement, continuation, replacement, coalescence failure, history assertions and replay.
 
-The [subscription hosting checkpoint](capsules/REPEATABLE-EVENT-SUBSCRIPTIONS-PROPOSAL.md#temporal-hosting-implementation-checkpoint) implements complete-profile admission, ordered activation batches, recurring Timer handoff, carried physical deadlines, failure classification and accepted-input draining. Direct-VM, live recovery/replay and the registered ordered-stimulus pipeline pass; governed closure remains open.
+The [subscription hosting checkpoint](capsules/REPEATABLE-EVENT-SUBSCRIPTIONS-SPEC.md#temporal-hosting-implementation-checkpoint) implements complete-profile admission, ordered activation batches, recurring Timer handoff, carried physical deadlines, failure classification and accepted-input draining. Direct-VM, live recovery/replay and the registered ordered-stimulus pipeline pass; independent closure review is approved.
 
 The independently approved Message key-correlation semantic checkpoint extends protocol and validation types far enough to preserve the complete global address, correlated interaction, candidate facts, and target delivery across shared boundaries. Correction target `1ce28ed5` is the approved boundary. The first downstream hosting slice adds one ingress Workflow per canonical complete-address hash, fixed production configuration, an immutable identity/configuration Query, and a client operation that validates that Query after successful start, concurrent duplicate, or lost response.
 
