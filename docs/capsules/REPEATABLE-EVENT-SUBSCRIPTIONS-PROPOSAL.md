@@ -2,14 +2,14 @@
 
 ## Status
 
-Lifecycle: draft
-Review: pending
+Lifecycle: owner-approved
+Review: approved-with-required-edits
 
 ## Question and boundary
 
 How do the selected RC Message and Timer subscriptions remain available for the lifetime of their catching locus, allow overlapping non-interrupting handler work, resolve completion/trigger races explicitly, and disappear with exactly the scope or Activity that owns them?
 
-This proposal owns the subscription-lifetime account required by [the RC content boundary](../PLAN.md#mue-release-candidate-critical-path). It is not implementation authority yet. Independent review must settle the [review questions](#review-questions-and-implementation-obligations); in particular, a root-only repeated-handler example cannot substitute for the selected catch, Activity-boundary, and nested-cleanup boundary. Existing profiles and their same-activation refusals remain unchanged.
+This proposal owns the approved subscription-lifetime account required by [the RC content boundary](../PLAN.md#mue-release-candidate-critical-path). The [independent review receipt](#independent-cold-review-receipt) authorizes implementation within its exact admission and evidence boundary; no production capability is established yet. In particular, a root-only repeated-handler example cannot substitute for the selected catch, Activity-boundary, and nested-cleanup boundary. Existing profiles and their same-activation refusals remain unchanged.
 
 The [dependency findings](../INTERNAL-COMMUTATION-PROPOSAL.md#subscription-dependency-findings) establish the starting point: exact Activity ownership already exists; ordinary User Task identities can distinguish overlapping handler instances; the one-shot Timer owner cannot directly replace a fired identity; and the current rollover fence prevents continuation while that owner remains armed. These are implementation constraints, not a selected scheduling policy.
 
@@ -240,7 +240,7 @@ Capability closure registers answer-free scenarios and whole business models for
 3. Does `ESL-RETAIN-01` preserve Activity-body ownership through the dependent inner-Terminate/ordinary-completion sequence? Review it as a material amendment to the existing cancellation rule. Source-reachable completion and publication are required, not merely a valid constructed successor.
 4. Do the flag premise, complete ingress routing, fixed batches, and due-time handoff preserve the public schedule through Worker replacement and every successor Run? Direct-VM feasibility does not replace production recovery/capacity tests, actual cancellation, recorded flags, retained histories, and replay.
 
-The account, migration inventory, and bounded assurance lane are the proposal-review target. No production work is selected until that review approves it. The successful handoff preflight closes its feasibility question, while actual semantic replacement, strict continuation validation, live cancellation, Worker replacement, and replay remain implementation obligations.
+The account, migration inventory, and bounded assurance lane are approved at the correction target in the receipt below. The successful handoff preflight closes its feasibility question, while actual semantic replacement, strict continuation validation, live cancellation, Worker replacement, and replay remain implementation obligations. The next coherent outcome is the semantic checkpoint: exact checked-source/Program admission through independent Lean/core lifetime execution and E1/E2 publication, including retained-body cancellation and only the source-reachable scheduling obligations. Begin with the known retention discriminator; its helper repairs remain part of that complete outcome. Reassess each proposition group at its stated effort bound before adding prerequisites. Artifact registration and the production Temporal lane follow checkpoint review.
 
 These questions belong to independent review, not a separate request for owner confirmation.
 
@@ -305,6 +305,6 @@ The Lean contract's 11-line margin cannot hold the selected additions. Extract i
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `df633a8108ded1f8bdfd059a11e531357e8d302b` | `fork-turns-none` | `approve-with-required-edits` | `5677738d64732f9b39050421f53e93a3f6e08e55` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
