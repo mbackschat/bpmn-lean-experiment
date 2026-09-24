@@ -207,6 +207,14 @@ The bounded M5 surface should therefore add one `Operator history` tab to exact 
 
 This surface completes the bounded M5 operator-history and audit-export requirement. It does not make the current producers a complete log of every platform or engine operation, and it does not change the top-level incident Audit tab into a cross-capability collection. A future global audit product, retention archive, tenant policy, or additional audit producer requires its own scope and authorization account.
 
+## Failed Process inspection preflight
+
+On 2026-09-25, the official [CIB Seven 2.2 Process-instance view](https://docs.cibseven.org/manual/2.2/webapps/cockpit/bpmn/process-instance-view/) and [incident documentation](https://docs.cibseven.org/manual/2.2/user-guide/process-engine/incidents/) were inspected alongside the pristine [registered CIB checkout](../SOURCES.md#cib-seven) at `5a45b47ea22688d774de97277c3ff7013f54fdd2`. Cockpit places incident detail in instance context and offers failed-job retry. The source owners `webapps/frontend/ui/cockpit/plugins/base/app/views/processInstance/incidentJobRetryAction.js` and `jobRetryDialog.js` bind that action to a job's retry count. `engine/src/main/java/org/cibseven/bpm/engine/history/HistoricProcessInstance.java#getState` lists active, suspended, completed, externally terminated and internally terminated states; it supplies no counterpart to this project's typed terminal Compensation failure. This inspection makes no UI-source equivalence claim for another CIB revision.
+
+The independent [Camunda Operate incident-resolution guide](https://docs.camunda.io/docs/components/operate/userguide/resolve-incidents-update-variables/) likewise presents repair and retry for a Process blocked by an incident. That is useful negative evidence: reusing incident recovery controls for the engine's terminal `failed` state would promise an action that the published contract does not contain.
+
+The [failed-Process proposal](../BPM-PLATFORM-FAILED-PROCESS-PROPOSAL.md) adopts instance-context diagnostics and explicit state text, deliberately shows only the published Compensation failure and its complete occurrence identities, and excludes stack traces, invented causes, variable repair and Retry/Cancel. Its acceptance oracle distinguishes terminal semantic failure from both a running incident and unavailable transport, preserves exact History/export, and checks readable, non-actionable detail at both supported desktop widths. No reference code, appearance, assets or private model is copied.
+
 ## Product evidence matrix
 
 | Product | Find work | Perform work | Process context | Operations pattern | Transferable lesson | Project-specific caution |
