@@ -3,7 +3,6 @@ import assert from "node:assert/strict";
 import { CommandOutcome } from "@bpmn-lean/semantic-core";
 import {
   TemporalScenarioRunner,
-  createCachedLocalEnvironment,
   durableUpdateOutcomes,
   historyEvents,
   isCompletedProcessReceipt,
@@ -11,12 +10,10 @@ import {
   readTestProcessTerminalResult,
   withDeadline,
 } from "@bpmn-lean/temporal-testkit";
-import type { TemporalHistory } from "@bpmn-lean/temporal-testkit";
+import type { TemporalHistory, TemporalWorkflowClient } from "@bpmn-lean/temporal-testkit";
 
 const operationDeadlineMs = 20_000;
 const replayStartupDeadlineMs = 30_000;
-
-type TemporalClient = Awaited<ReturnType<typeof createCachedLocalEnvironment>>["client"];
 
 type JourneyEvidence = Readonly<{
   status: "completed";
@@ -35,7 +32,7 @@ export type MuePreviewAlphaEvidence = Readonly<{
 
 /** Reads Event History only after both journeys terminate, then replays every exact Run. */
 export async function verifyMuePreviewAlphaEvidence(input: Readonly<{
-  client: TemporalClient;
+  client: TemporalWorkflowClient;
   naturalProcessInstanceId: string;
   interruptedProcessInstanceId: string;
   temporalCacheDirectory: string;
@@ -73,12 +70,12 @@ export async function verifyMuePreviewAlphaEvidence(input: Readonly<{
 }
 
 async function collectJourney(
-  client: TemporalClient,
+  client: TemporalWorkflowClient,
   processInstanceId: string,
 ): Promise<Readonly<{ histories: readonly TemporalHistory[] }>> {
   const workflowId = processWorkflowId(processInstanceId);
   const terminal = await withDeadline(
-    readTestProcessTerminalResult(client.workflow.getHandle(workflowId)),
+    readTestProcessTerminalResult(client.getHandle(workflowId)),
     operationDeadlineMs,
     `MUE Preview Alpha ${processInstanceId} terminal result`,
   );
@@ -92,7 +89,7 @@ async function collectJourney(
   }
   const histories = await Promise.all(runs.map(async ({ runId }) => {
     const history = await withDeadline(
-      client.workflow.getHandle(workflowId, runId).fetchHistory(),
+      client.getHandle(workflowId, runId).fetchHistory(),
       operationDeadlineMs,
       `MUE Preview Alpha ${runId} history fetch`,
     );
@@ -105,12 +102,12 @@ async function collectJourney(
 }
 
 async function workflowChainRuns(
-  client: TemporalClient,
+  client: TemporalWorkflowClient,
   workflowId: string,
 ): Promise<readonly Readonly<{ runId: string; startedAt: number }>[]> {
   return withDeadline((async () => {
     const runs: Array<Readonly<{ runId: string; startedAt: number }>> = [];
-    for await (const execution of client.workflow.list()) {
+    for await (const execution of client.list()) {
       if (execution.workflowId === workflowId) {
         runs.push({
           runId: execution.runId,

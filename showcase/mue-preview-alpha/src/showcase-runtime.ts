@@ -45,6 +45,7 @@ import type {
 const operationDeadlineMs = 20_000;
 const environmentStartupDeadlineMs = 40_000;
 const taskQueue = "bpmn-mue-preview-alpha";
+const namespace = "bpmn-mue-preview-alpha";
 const temporalCacheDirectory = fileURLToPath(
   new URL("../../../.cache/temporal-cli/", import.meta.url),
 );
@@ -81,6 +82,13 @@ export class MuePreviewAlphaShowcaseRuntime {
       environmentStartupDeadlineMs,
       "MUE Preview Alpha Temporal environment startup",
     );
+    const initializedWorker = await ExternalTemporalRuntime.initializeFreshNamespace({
+      address: this.#environment.address,
+      namespace,
+      taskQueue,
+      identity: `bpmn-mue-preview-alpha-initializer-${process.pid}`,
+    }, createHostEffectActivities([]), 86_400);
+    await initializedWorker.shutdown();
     await this.#startPlatform();
   }
 
@@ -90,7 +98,7 @@ export class MuePreviewAlphaShowcaseRuntime {
     this.#worker = await withDeadline(
       ExternalTemporalRuntime.connect({
         address: environment.address,
-        namespace: environment.namespace ?? "default",
+        namespace,
         taskQueue,
         identity: `bpmn-mue-preview-alpha-worker-${process.pid}`,
       }, createHostEffectActivities([])),
@@ -122,7 +130,7 @@ export class MuePreviewAlphaShowcaseRuntime {
     interruptedProcessInstanceId: string,
   ): Promise<MuePreviewAlphaEvidence> {
     return verifyMuePreviewAlphaEvidence({
-      client: this.#requireEnvironment().client,
+      client: this.#requireWorker().workflowClient,
       naturalProcessInstanceId,
       interruptedProcessInstanceId,
       temporalCacheDirectory,
@@ -166,7 +174,7 @@ export class MuePreviewAlphaShowcaseRuntime {
       maxSourceBytes: 1024 * 1024,
       parserDeadlineMs: 5_000,
       temporalAddress: environment.address,
-      temporalNamespace: environment.namespace ?? "default",
+      temporalNamespace: namespace,
       temporalTaskQueue: taskQueue,
       temporalConnectTimeoutMs: 5_000,
       fakeActorId: "alpha-preview-actor",
@@ -191,7 +199,7 @@ export class MuePreviewAlphaShowcaseRuntime {
   }
 
   #interactionPort(instance: PublicProcessInstanceIdentity): HostInteractionPort {
-    const client = this.#requireEnvironment().client.workflow;
+    const client = this.#requireWorker().workflowClient;
     const processInstanceId = instance.processInstanceId;
     return {
       readState: async () => latestState(
@@ -211,6 +219,13 @@ export class MuePreviewAlphaShowcaseRuntime {
         throw new Error("MUE Preview Alpha actor must not submit cancellation stimuli");
       },
     };
+  }
+
+  #requireWorker(): ExternalTemporalRuntime {
+    if (this.#worker === undefined) {
+      throw new Error("MUE Preview Alpha Worker is not running");
+    }
+    return this.#worker;
   }
 
   #requireEnvironment(): Environment {

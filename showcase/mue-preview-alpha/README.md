@@ -4,6 +4,10 @@ This package is the executable MUE Preview Alpha acceptance boundary. It deploys
 
 The natural journey shows exact committed iteration progress and the ordered `accepted`, `flagged`, `archived` aggregate. The interrupted journey waits for the production `PT5S` Boundary Timer, shows the committed `fireTimer` command and published escalation task, and terminates without a partial output collection. Event History is read only after both journeys terminate, solely to verify exact Timer and Update facts and replay every actual Workflow Run.
 
+The harness initializes a fresh Temporal Namespace and selects native Current with the existing deployment initializer before public Start. It then stops the initializer Worker so the browser can still inspect each initial queued execution before polling resumes. Actor observations and replay collection use that same Namespace. This preserves the production enrollment requirement; merely connecting a Worker does not select Current.
+
+The 2026-09-25 bootstrap correction is non-material: it restores the existing acceptance journey without changing engine meaning, admission, or publication. The prior journey failed at public Start before the actor ran; a separate running-Worker probe reproduced the missing-Current refusal. The corrected complete Alpha unit/type, browser and every-Run replay gate passed in 22.84 seconds. Platform-boundary, build-coverage and Alpha/Beta command guards cover the harness boundary.
+
 Run the complete Alpha acceptance gate with `./scripts/pnpm.sh run test:release:mue-preview-alpha`. The visible `MUE Preview Alpha` label is a product-delivery boundary, not a claim that the other seven MUE programmes are implemented or closed.
 
 Run the presenter-paced browser journey with `./scripts/pnpm.sh run demo:mue-preview-alpha`. It uses pinned Playwright Chromium and pauses only after the natural branch has committed its ordered aggregate, while the interrupted branch is already at its committed escalation checkpoint, and after the interrupted terminal result is visible. Ordinary evidence runs keep these pauses disabled.
