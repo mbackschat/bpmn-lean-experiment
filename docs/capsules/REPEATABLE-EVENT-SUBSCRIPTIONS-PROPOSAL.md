@@ -2,14 +2,14 @@
 
 ## Status
 
-Lifecycle: draft
-Review: pending
+Lifecycle: owner-approved
+Review: approved-with-required-edits
 
 ## Question and boundary
 
 How do the selected RC Message and Timer subscriptions remain available for the lifetime of their catching locus, allow overlapping non-interrupting handler work, resolve completion/trigger races explicitly, and disappear with exactly the scope or Activity that owns them?
 
-This proposal owns the subscription-lifetime account required by [the RC content boundary](../PLAN.md#mue-release-candidate-critical-path). Its previously approved lifetime account is retained, but the [scheduling proof-domain amendment](#scheduling-proof-domain-amendment) requires a new cold proposal review before dependent implementation continues. No production capability is established. A root-only repeated-handler example cannot substitute for the selected catch, Activity-boundary, and nested-cleanup boundary. Existing profiles and their same-activation refusals remain unchanged.
+This proposal owns the subscription-lifetime account required by [the RC content boundary](../PLAN.md#mue-release-candidate-critical-path). The [independent review receipt](#independent-cold-review-receipt) approves the retained lifetime account and [scheduling proof-domain amendment](#scheduling-proof-domain-amendment) for implementation within their exact admission and evidence boundary. No production capability is established. A root-only repeated-handler example cannot substitute for the selected catch, Activity-boundary, and nested-cleanup boundary. Existing profiles and their same-activation refusals remain unchanged.
 
 The [dependency findings](../INTERNAL-COMMUTATION-PROPOSAL.md#subscription-dependency-findings) establish the starting point: exact Activity ownership already exists; ordinary User Task identities can distinguish overlapping handler instances; the one-shot Timer owner cannot directly replace a fired identity; and the current rollover fence prevents continuation while that owner remains armed. These are implementation constraints, not a selected scheduling policy.
 
@@ -265,7 +265,7 @@ Capability closure registers answer-free scenarios and whole business models for
 3. Does `ESL-RETAIN-01` preserve Activity-body ownership through the dependent inner-Terminate/ordinary-completion sequence? Review it as a material amendment to the existing cancellation rule. Source-reachable completion and publication are required, not merely a valid constructed successor.
 4. Do the flag premise, complete ingress routing, fixed batches, and due-time handoff preserve the public schedule through Worker replacement and every successor Run? Direct-VM feasibility does not replace production recovery/capacity tests, actual cancellation, recorded flags, retained histories, and replay.
 
-The lifetime account and migration inventory were approved at `5677738d64732f9b39050421f53e93a3f6e08e55`; the current proof-domain amendment requires a new cold proposal review. The next coherent implementation outcome remains the semantic checkpoint: exact checked-source/Program admission through independent Lean/core lifetime execution and E1/E2 publication, including retained-body cancellation and the bounded scheduling proof domain above. Helper repairs remain part of that complete outcome. Reassess each proposition group at its stated effort bound before adding prerequisites. Artifact registration and the production Temporal lane follow checkpoint review.
+The lifetime account and migration inventory were approved at `5677738d64732f9b39050421f53e93a3f6e08e55`; the receipt below records the later proof-domain amendment and scheduling-owner correction. The next coherent implementation outcome remains the semantic checkpoint: exact checked-source/Program admission through independent Lean/core lifetime execution and E1/E2 publication, including retained-body cancellation and the bounded scheduling proof domain above. Helper repairs remain part of that complete outcome. Reassess each proposition group at its stated effort bound before adding prerequisites. Artifact registration and the production Temporal lane follow checkpoint review.
 
 These questions belong to independent review, not a separate request for owner confirmation.
 
@@ -334,6 +334,6 @@ The Lean contract's 11-line margin cannot hold the selected additions. Extract i
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `8f86640b9f5160c6f34b5a4b9ed067ebd1936515` | `fork-turns-none` | `approve-with-required-edits` | `3420e87bed1c3ffded423ed503df06e8dd826829` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
