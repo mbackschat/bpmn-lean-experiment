@@ -4,6 +4,7 @@ import {
   EffectExecutionResultKind,
   isDenseArray,
   isVariableBinding,
+  sameVariablePatch,
   VariableValueKind,
 } from "@bpmn-lean/semantic-core";
 import type {
@@ -151,7 +152,8 @@ export class EffectProbeActivityRegistry {
       if (
         registration === undefined ||
         registration.request.protocol !== request.protocol ||
-        registration.request.operation !== request.operation
+        registration.request.operation !== request.operation ||
+        !sameVariablePatch(registration.request.arguments, request.arguments)
       ) {
         throw new Error(
           `No exact probe registration exists for ${request.idempotencyKey}`,

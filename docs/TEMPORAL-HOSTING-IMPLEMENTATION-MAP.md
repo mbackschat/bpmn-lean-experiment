@@ -8,7 +8,9 @@ Disposable mutation probes isolate queues by Workflow ID. [Lifecycle regressions
 
 Client RPCs use SDK connection deadlines for task/incident and execution/occurrence-publication Queries, retained results, Workflow creation/description, Schedules, and correlation ingress/publication. The [RPC matrix](../packages/temporal-adapter/client/test/client-rpc-deadline.test.ts) rejects timeout with an unfinished request. Publication expiry settles the RPC before returning `unavailable`; segment reselection retains the original five-second allowance. Creation/Update expiry retains recovery classification and does not prove service refusal.
 
-Testkit readiness applies its per-attempt allowance to native RPCs, closing the unfinished-Query leak exposed by live Compensation recovery without changing semantics.
+Testkit readiness enforces per-attempt RPC deadlines, closing Compensation recovery's Query leak without semantic changes.
+
+[Non-material probe repair](TESTING-SPEC.md#independent-cold-review-gate): exact-request matching. Guards: [drift/retry controls](../packages/temporal-adapter/testkit/test/compensation-effect-probe.test.ts), complete Temporal gate.
 
 Accepted Updates interrupted by Workflow closure enter content-bound recovery using the pinned SDK's exact `AcceptedUpdateCompletedWorkflow` cause type. The [service probe and client controls](TEMPORAL-TEST-EVIDENCE-MAP.md#temporal-witness-and-mutation-inventory) retain the complete command across actual Continue-As-New and keep unrelated application failures distinct. Update and Message clients capture the complete command before yielding and share one native absolute RPC deadline across submission, recovery, and retained-result access. A live Worker-absence witness retains SDK timeout classification, same-command recovery after replacement, one committed recovery entry, exact final state, and replay.
 

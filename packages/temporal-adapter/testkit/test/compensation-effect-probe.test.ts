@@ -57,6 +57,64 @@ test("executes admitted compensation probes with empty-patch success", async () 
   });
 });
 
+test("binds compensation probe invocation to the complete registered arguments", async (context) => {
+  const differentArguments: ReadonlyArray<{
+    label: string;
+    arguments: ReadonlyArray<VariableBinding>;
+  }> = [
+    {
+      label: "changed restored value",
+      arguments: [{
+        name: "archivedContext",
+        value: { kind: VariableValueKind.String, value: "changed" },
+      }],
+    },
+    {
+      label: "renamed restored binding",
+      arguments: [{
+        name: "otherContext",
+        value: { kind: VariableValueKind.String, value: "frozen" },
+      }],
+    },
+    {
+      label: "changed restored type",
+      arguments: [{
+        name: "archivedContext",
+        value: { kind: VariableValueKind.Null },
+      }],
+    },
+    { label: "omitted restored binding", arguments: [] },
+  ];
+
+  for (const changed of differentArguments) {
+    await context.test(changed.label, async () => {
+      const registry = new EffectProbeActivityRegistry();
+      let invocations = 0;
+      registry.register(restoredStringRequest, async () => {
+        invocations += 1;
+        return { kind: EffectExecutionResultKind.Success, localPatch: [] };
+      });
+      await assert.rejects(
+        registry.activities.executeBpmnEffect({
+          ...restoredStringRequest,
+          arguments: changed.arguments,
+        }),
+        /No exact probe registration/u,
+      );
+      assert.equal(invocations, 0);
+      for (let attempt = 0; attempt < 2; attempt += 1) {
+        assert.deepEqual(
+          await registry.activities.executeBpmnEffect(
+            structuredClone(restoredStringRequest),
+          ),
+          { kind: EffectExecutionResultKind.Success, localPatch: [] },
+        );
+      }
+      assert.equal(invocations, 2);
+    });
+  }
+});
+
 test("accepts every transport-supported compensation binding value", async () => {
   const supportedBindings: ReadonlyArray<VariableBinding> = [
     {
