@@ -197,6 +197,43 @@ test("refuses escalation without the committed Timer state", async () => {
   assert.equal(submissions, 0);
 });
 
+for (const journey of Object.values(AlphaJourney)) {
+  test(`refuses failed ${journey} termination after all configured responses are consumed`, async () => {
+    const processInstanceId = `Instance_${journey}_Failed`;
+    const failed: StateObservation = {
+      ...alphaTerminalState(processInstanceId, journey),
+      status: ProcessStatus.Failed,
+      failure: {
+        kind: "compensationHandlerFailure",
+        triggerId: occurrence(processInstanceId, "Throw_Compensation", 1),
+        handlerId: occurrence(processInstanceId, "Handler_Compensation", 1),
+        effectId: occurrence(processInstanceId, "Effect_Compensation", 1),
+        code: "unexpectedFailure",
+        message: null,
+      },
+    };
+    const prefix = journey === AlphaJourney.Natural
+      ? [0, 1, 2].map((index) => alphaReviewState(processInstanceId, index))
+      : [
+          alphaReviewState(processInstanceId, 0),
+          alphaReviewState(processInstanceId, 1),
+          alphaEscalationState(processInstanceId),
+        ];
+    const harness = sequencedPort([...prefix, failed], journey === AlphaJourney.Interrupted);
+    const actor = new MuePreviewAlphaActor(async () => undefined);
+    await assert.rejects(
+      journey === AlphaJourney.Natural
+        ? actor.runNatural(publicInstance(processInstanceId), harness.port)
+        : actor.runInterrupted(publicInstance(processInstanceId), harness.port, {
+            onEscalationReady: () => undefined,
+            waitForEscalationRelease: async () => undefined,
+          }),
+      /journey reached unexpected status failed/u,
+    );
+    assert.equal(harness.submitted.length, journey === AlphaJourney.Natural ? 3 : 2);
+  });
+}
+
 function naturalPort() {
   const processInstanceId = "Instance_Natural";
   return sequencedPort([

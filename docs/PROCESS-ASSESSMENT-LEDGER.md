@@ -1176,20 +1176,22 @@ The final packet is `97ec011b8c4c0ecc3bdbdaab783843a30dc9b25aa7ff80d1dba39bd696b
 
 ### Finding 66
 
-A terminal-state predicate used the complement of Running, silently including NotStarted and, in one consumer, absent state. Tests exercised terminal outcomes without separating every valid nonterminal state.
+A terminal-state classifier omitted valid Process-status alternatives: a complement of Running included NotStarted and absent state, while an incomplete expected-outcome switch silently admitted Failed. Tests did not separate every status from the selected terminal outcome.
 
 Instances
-: 1
+: 2
 
 Disposition
 : `executable guard`
 
 Evidence
-: [terminal harness-state classification](../packages/temporal-adapter/testkit/test/harness-evidence.test.ts)
+: [terminal harness-state classification](../packages/temporal-adapter/testkit/test/harness-evidence.test.ts) and [Alpha expected-outcome validation](../showcase/mue-preview-alpha/test/automated-actor.test.ts)
 
 **First observed:** Public Compensation registration closure review at `953f5d64`.
 
 Both harness consumers now share an explicit status classifier. The separating guard covers every Process status and absent state, and still requires exact durable receipts for Completed, Cancelled and Failed. A category defined over an enum must account for all alternatives rather than infer membership from one excluded value.
+
+The second instance was reported during failed-Process proposal review at `fd1e18f0`. Alpha accepted a failed observation after every configured response had been consumed because its status switch fell through and the generic interaction driver legitimately treated failure as terminal. Both natural and interrupted journeys reproduced false success. The actor now rejects failed and unknown statuses explicitly; both separating tests retain the completed-journey controls. This is a non-material test-actor correction: no Alpha or engine admission changes. The two red cases, complete Alpha unit/type gate, document-reviewability guard, and browser/replay acceptance after the separate native-enrollment bootstrap correction cover it.
 
 ## Update rule
 

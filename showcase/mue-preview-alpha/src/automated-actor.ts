@@ -183,6 +183,8 @@ function requireExactAlphaState(
       return;
     case ProcessStatus.NotStarted:
     case ProcessStatus.Cancelled:
+    case ProcessStatus.Failed:
+    default:
       throw new Error(`Alpha ${journey} journey reached unexpected status ${state.status}`);
   }
 }
