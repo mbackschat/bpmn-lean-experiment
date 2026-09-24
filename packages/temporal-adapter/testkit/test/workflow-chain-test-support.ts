@@ -80,8 +80,8 @@ export async function waitForPublishedWorkflowChainState(
   predicate: (state: StateObservation) => boolean,
   scheduler: WorkflowChainPollScheduler = workflowChainPollScheduler,
 ): Promise<StateObservation> {
+  let afterRevision = 0;
   const state = await pollWorkflowChainObservation(async () => {
-    let afterRevision = 0;
     for (let pageIndex = 0; pageIndex < 16; pageIndex += 1) {
       const result = await observeTemporalExecutionPublication(
         environment.client.workflow as unknown as TemporalExecutionPublicationClient,
