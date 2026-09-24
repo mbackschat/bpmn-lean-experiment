@@ -97,9 +97,11 @@ The [ordinary snapshot arming and complete pipeline correspondence outcomes](cap
 
 Active work ID: `INTERNAL-COMMUTATION`.
 
-Risk band: RC internal scheduling; the six external reviews and composed Activity-data closure are complete.
+Risk band: RC internal scheduling.
 
-Next action: commit the subscription checkpoint and obtain independent review before hosting or registration. The [dependency findings](INTERNAL-COMMUTATION-PROPOSAL.md#subscription-checkpoint-dependency-reassessment) record all four bounded proof groups closed, unchanged finite-batch/publication guarantees, 651-job Lean verification, 27 source-bound Lean/core schedules, and twelve fixed-memory fixture qualifications. Preserve the [approved domain and effort bound](capsules/REPEATABLE-EVENT-SUBSCRIPTIONS-PROPOSAL.md#scheduling-proof-domain-amendment), legacy TypeScript bounded-scope behavior, bounded checkpoint and regional trial. No further proof infrastructure is selected.
+Next action: complete the subscription checkpoint correction audit before hosting or registration. `ac244f16` requires profile-wide host refusal and documentation corrections. The [dependency findings](INTERNAL-COMMUTATION-PROPOSAL.md#subscription-checkpoint-dependency-reassessment) record the four bounded proof groups, unchanged guarantees, and source-bound and fixed-memory evidence. Preserve the [approved domain and effort bound](capsules/REPEATABLE-EVENT-SUBSCRIPTIONS-PROPOSAL.md#scheduling-proof-domain-amendment), legacy TypeScript bounded-scope behavior, bounded checkpoint and regional trial. No further proof infrastructure is selected.
+
+The non-material source-map repair adds pending files to [the ownership guard](../scripts/document-control-plane.test.ts); complete infrastructure verification covers it without changing semantic claims.
 
 Accepted: [Timer-task arming](INTERNAL-COMMUTATION-PROPOSAL.md#timer-task-arming-outcome), the [standalone Activity-data arming](INTERNAL-COMMUTATION-PROPOSAL.md#standalone-activity-data-arming-outcome) and [exact Merge/private scheduling](INTERNAL-COMMUTATION-PROPOSAL.md#exact-merge-frontier-outcome) outcomes; their [review receipt](INTERNAL-COMMUTATION-PROPOSAL.md#independent-cold-review-receipt) owns integration and resource evidence. Constructed scheduling witnesses establish no new profile reachability. Message child-scope exclusion remains; the approved [`ESL-RETAIN-01` amendment](capsules/REPEATABLE-EVENT-SUBSCRIPTIONS-PROPOSAL.md#retained-sub-process-body-amendment) resolves the retained-body gap in the private checkpoint.
 
