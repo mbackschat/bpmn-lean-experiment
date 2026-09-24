@@ -123,6 +123,50 @@ theorem timerTask_bounded_withdrawal_commutes (program : Program) (before comple
     rw [canonicalInsertBy_erase timerWaitBefore regional_timerWaitBefore_compose _ _ different
       completed.timerWaits (timers ▸ timerOrder), recordFilter]
 
+private theorem timerTask_monitored_withdrawal_commutes (program : Program) (before completed : RuntimeState)
+    (contract : InternalTimerTaskContract) (patch : InternalTimerTaskPatch)
+    (record : ActivityOccurrence) (child : ScopeOccurrenceId) (deadline : Option TimerWait)
+    (prepared : prepareInternalTimerTaskContract? program before contract = some patch)
+    (canonical : canonicalCollectionOrder before = true)
+    (body : record.body = .childScope child)
+    (member : ∀ timer, deadline = some timer → timer ∈ before.timerWaits)
+    (timers : completed.timerWaits = before.timerWaits)
+    (activities : completed.activityOccurrences = before.activityOccurrences) :
+    { applyInternalTimerTaskPatch completed patch with
+      timerWaits := removeMonitoredScopeTimer (applyInternalTimerTaskPatch completed patch).timerWaits deadline
+      activityOccurrences := (applyInternalTimerTaskPatch completed patch).activityOccurrences.erase record } =
+    applyInternalTimerTaskPatch { completed with
+      timerWaits := removeMonitoredScopeTimer completed.timerWaits deadline
+      activityOccurrences := completed.activityOccurrences.erase record } patch := by
+  have timerOrder : orderedBy timerWaitBefore before.timerWaits = true := by
+    simp_all only [canonicalCollectionOrder, Bool.and_eq_true]
+  have activityOrder : orderedBy activityOccurrenceBefore before.activityOccurrences = true := by
+    simp_all only [canonicalCollectionOrder, Bool.and_eq_true]
+  have different : patch.record ≠ record := by
+    obtain ⟨_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, rfl⟩ :=
+      prepareInternalTimerTaskContract_facts program before contract patch prepared
+    intro same
+    have bodies := congrArg ActivityOccurrence.body same
+    rw [body] at bodies
+    contradiction
+  have recordErase := canonicalInsertBy_erase activityOccurrenceBefore regional_activityOccurrenceBefore_compose
+    _ _ different completed.activityOccurrences (activities ▸ activityOrder)
+  cases deadline with
+  | none =>
+      cases write : patch.arm.write <;>
+        simp only [applyInternalTimerTaskPatch, applyInternalArmingPatch, write,
+          removeMonitoredScopeTimer, insertActivityOccurrence_eq_canonicalInsertBy] <;> rw [recordErase]
+  | some timer =>
+      have fresh := (prepared_timer_task_timer_keys_fresh program before contract patch prepared timer (member timer rfl)).1
+      have timerDifferent : patch.timer ≠ timer := by
+        intro same
+        simp [same, timerWaitKeyMatches] at fresh
+      cases write : patch.arm.write <;>
+        simp only [applyInternalTimerTaskPatch, applyInternalArmingPatch, write, removeMonitoredScopeTimer,
+          insertTimerWait, insertActivityOccurrence_eq_canonicalInsertBy] <;>
+        rw [canonicalInsertBy_erase timerWaitBefore regional_timerWaitBefore_compose _ _ timerDifferent
+          completed.timerWaits (timers ▸ timerOrder), recordErase]
+
 theorem timerTask_completion_successors_equal (program : Program) (before after afterTask : RuntimeState)
     (contract : InternalTimerTaskContract) (patch : InternalTimerTaskPatch)
     (hosting : SemanticId) (definition : DefinitionScopeId) (output : Option ControlPlaceId)
@@ -155,8 +199,73 @@ theorem timerTask_completion_successors_equal (program : Program) (before after 
   have taskSame : taskActual = afterTask := Option.some.inj (taskResultFound.symm.trans taskResult)
   subst taskActual
   cases withdrawal with
+  | monitored record deadline =>
+      exact (boundedWithdrawal_not_monitored program before definition record deadline withdrawn).elim
   | unbounded => simp only at update taskUpdate; rw [update, taskUpdate]
   | bounded record deadline =>
+      obtain ⟨declaration, child, parent, _, _, _, body⟩ :=
+        completionWithdrawal_raw_selection program before definition record deadline withdrawn
+      obtain ⟨_, _, _, attached, _, _, _, _, _, _, _, deadlineCensus, _⟩ :=
+        completionWithdrawal_bounded_facts program before definition record deadline withdrawn
+      have member : deadline ∈ before.timerWaits := by
+        have present : deadline ∈ before.timerWaits.filter (timerIdNamesWait attached) := by rw [deadlineCensus]; simp
+        exact (List.mem_filter.mp present).1
+      have fields := completeScopeState_reference_fields before completed definition output root census ordinary
+      simp only at update taskUpdate
+      rw [update, taskUpdate, body]
+      exact timerTask_bounded_withdrawal_commutes program before completed contract patch child deadline
+        prepared canonical member fields.2.2.2.2.1 fields.2.1
+
+theorem timerTask_selected_completion_successors_equal (program : Program) (before after afterTask : RuntimeState)
+    (contract : InternalTimerTaskContract) (patch : InternalTimerTaskPatch)
+    (hosting : SemanticId) (definition : DefinitionScopeId) (output : Option ControlPlaceId)
+    (root : RuntimeScopeOccurrence) (withdrawal : InternalCompletionWithdrawal)
+    (prepared : prepareInternalTimerTaskContract? program before contract = some patch)
+    (canonical : canonicalCollectionOrder before = true)
+    (running : before.control = .running hosting)
+    (census : before.scopeOccurrences.filter (fun scope => decide (scope.id.definitionScopeId = definition)) = [root])
+    (withdrawn : selectSubscribedCompletionWithdrawal? program before definition output = some withdrawal)
+    (quiet : scopeQuiescent (applyInternalTimerTaskPatch before patch) root.id = scopeQuiescent before root.id)
+    (continuation : ∀ owner place, root.parent = some owner → output = some place →
+      addToken (removeToken before.tokens patch.arm.input patch.arm.owner) place owner =
+        removeToken (addToken before.tokens place owner) patch.arm.input patch.arm.owner)
+    (result : completeSelectedScope? program before definition output = some after)
+    (taskResult : completeSelectedScope? program (applyInternalTimerTaskPatch before patch)
+      definition output = some afterTask) :
+    afterTask = applyInternalTimerTaskPatch after patch := by
+  obtain ⟨completed, ordinary, _⟩ := completeSelectedScope_position_fields program before after definition output result
+  have ordinaryFrame := timerTask_ordinary_completion_commutes before patch hosting definition output root
+    running census quiet continuation
+  rw [ordinary, Option.map_some] at ordinaryFrame
+  have withdrawalFrame := timerTask_subscribed_completion_withdrawal program before contract patch prepared definition output withdrawal withdrawn
+  obtain ⟨actual, actualResult, update⟩ := subscribedWithdrawal_refines program before completed
+    definition output withdrawal withdrawn ordinary
+  have same : actual = after := Option.some.inj (actualResult.symm.trans result)
+  subst actual
+  obtain ⟨taskActual, taskResultFound, taskUpdate⟩ := subscribedWithdrawal_refines program
+    (applyInternalTimerTaskPatch before patch) (applyInternalTimerTaskPatch completed patch)
+    definition output withdrawal withdrawalFrame ordinaryFrame
+  have taskSame : taskActual = afterTask := Option.some.inj (taskResultFound.symm.trans taskResult)
+  subst taskActual
+  cases withdrawal with
+  | monitored record deadline =>
+      obtain ⟨pair, _, _, _, _, recordEq, timerEq⟩ :=
+        subscribedWithdrawal_monitored_facts program before definition output record deadline withdrawn
+      have body : record.body = .childScope pair.val.child.id := by
+        simpa only [recordEq] using pair.property.2.1.2.2.2.2.2.2.1
+      have member (timer : TimerWait) (present : deadline = some timer) : timer ∈ before.timerWaits := by
+        have binding := pair.property.2.2
+        simp only [MonitoredScopeTimerBinding, timerEq, present] at binding
+        exact (List.mem_filter.mp (show timer ∈ before.timerWaits.filter (monitoredScopeTimerNames pair.val) by
+          rw [binding.2.1]; simp)).1
+      have fields := completeScopeState_reference_fields before completed definition output root census ordinary
+      simp only at update taskUpdate
+      rw [update, taskUpdate]
+      exact timerTask_monitored_withdrawal_commutes program before completed contract patch record pair.val.child.id deadline
+        prepared canonical body member fields.2.2.2.2.1 fields.2.1
+  | unbounded => simp only at update taskUpdate; rw [update, taskUpdate]
+  | bounded record deadline =>
+      have withdrawn := subscribedWithdrawal_bounded_selection program before definition output record deadline withdrawn
       obtain ⟨declaration, child, parent, _, _, _, body⟩ :=
         completionWithdrawal_raw_selection program before definition record deadline withdrawn
       obtain ⟨_, _, _, attached, _, _, _, _, _, _, _, deadlineCensus, _⟩ :=

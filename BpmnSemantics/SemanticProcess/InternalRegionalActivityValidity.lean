@@ -18,7 +18,7 @@ theorem cancelled_timer_claimant_blocks_survival (state : RuntimeState)
     (withdrawn : ActivityOccurrence) (timer : OccurrenceId) (wait : TimerWait)
     (member : withdrawn ∈ state.activityOccurrences)
     (inside : recordInRegion (fun owner => occurrenceInSubtree state.scopeOccurrences root owner ||
-      (calledInstanceClosure state root).contains owner.processInstanceId) withdrawn = true)
+      (calledInstanceClosure state root).contains owner.processInstanceId) withdrawn (retainedCancellationRoot root disposition) = true)
     (attached : timer ∈ withdrawn.timerHandlerOccurrences)
     (names : timerIdNamesWait timer wait = true) :
     wait ∉ (cancelScopeSubtree state root disposition).timerWaits := by
@@ -27,7 +27,7 @@ theorem cancelled_timer_claimant_blocks_survival (state : RuntimeState)
   have present : anyTimerIdNamesWait (attachedTimersOf (withdrawnByRegion
       (fun owner => occurrenceInSubtree state.scopeOccurrences root owner ||
         (calledInstanceClosure state root).contains owner.processInstanceId)
-      state.activityOccurrences)) wait = true := by
+      state.activityOccurrences (retainedCancellationRoot root disposition))) wait = true := by
     apply List.any_eq_true.mpr
     exact ⟨timer, List.mem_flatMap.mpr
       ⟨withdrawn, List.mem_filter.mpr ⟨member, inside⟩, attached⟩, names⟩
@@ -114,7 +114,7 @@ private theorem task_census_preserved (state : RuntimeState) (root : ScopeOccurr
 private theorem retained_body_live (state : RuntimeState) (root : ScopeOccurrenceId)
     (disposition : SelectedScopeDisposition) (record : ActivityOccurrence)
     (outside : recordInRegion (fun owner => occurrenceInSubtree state.scopeOccurrences root owner ||
-      (calledInstanceClosure state root).contains owner.processInstanceId) record = false)
+      (calledInstanceClosure state root).contains owner.processInstanceId) record (retainedCancellationRoot root disposition) = false)
     (live : activityBodyLive state record = true)
     (owners : activityTaskBodyOwnersAgree state record = true) :
     activityBodyLive (cancelScopeSubtree state root disposition) record = true := by
@@ -146,8 +146,28 @@ private theorem retained_body_live (state : RuntimeState) (root : ScopeOccurrenc
   | childScope scope =>
     simp only [recordInRegion, body, Bool.or_eq_false_iff] at outside
     simp only [activityBodyLive, body] at live ⊢
-    exact cancelScopeSubtree_preserves_uncancelled_owner state root disposition scope
-      live (Bool.or_eq_false_iff.mpr outside.2)
+    cases disposition with
+    | remove =>
+        exact cancelScopeSubtree_preserves_uncancelled_owner state root .remove scope
+          live (by simpa [retainedCancellationRoot] using outside.2)
+    | retain =>
+        by_cases same : scope = root
+        · subst scope
+          change decide (_ = 1) = true
+          have census : (cancelScopeSubtree state root .retain).scopeOccurrences.filter
+              (fun occurrence => decide (occurrence.id = root)) =
+              state.scopeOccurrences.filter (fun occurrence => decide (occurrence.id = root)) := by
+            change (state.scopeOccurrences.filter fun occurrence => decide (occurrence.id = root) ||
+              !(occurrenceInSubtree state.scopeOccurrences root occurrence.id ||
+                (calledInstanceClosure state root).contains occurrence.id.processInstanceId)).filter _ = _
+            rw [List.filter_filter]
+            apply List.filter_congr
+            intro occurrence _
+            by_cases identity : occurrence.id = root <;> simp [identity]
+          rw [census]
+          simpa only [exactLiveOccurrence] using live
+        · exact cancelScopeSubtree_preserves_uncancelled_owner state root .retain scope live
+            (by simpa [retainedCancellationRoot, beq_iff_eq, same, Ne.symm same] using outside.2)
 
 private theorem task_owners_preserved (state : RuntimeState) (root : ScopeOccurrenceId)
     (disposition : SelectedScopeDisposition) (record : ActivityOccurrence)
@@ -177,7 +197,7 @@ private theorem retained_timer_live (state : RuntimeState) (root : ScopeOccurren
     (valid : attachedTimersUnambiguous state = true)
     (recordMem : record ∈ state.activityOccurrences)
     (outside : recordInRegion (fun owner => occurrenceInSubtree state.scopeOccurrences root owner ||
-      (calledInstanceClosure state root).contains owner.processInstanceId) record = false)
+      (calledInstanceClosure state root).contains owner.processInstanceId) record (retainedCancellationRoot root disposition) = false)
     (waitMem : wait ∈ state.timerWaits) (owner : wait.owner = record.owner)
     (names : anyTimerIdNamesWait record.timerHandlerOccurrences wait = true) :
     wait ∈ (cancelScopeSubtree state root disposition).timerWaits := by
@@ -204,7 +224,7 @@ theorem retained_message_live (state : RuntimeState) (root : ScopeOccurrenceId)
     (valid : attachedMessagesUnambiguous state = true)
     (recordMem : record ∈ state.activityOccurrences)
     (outside : recordInRegion (fun owner => occurrenceInSubtree state.scopeOccurrences root owner ||
-      (calledInstanceClosure state root).contains owner.processInstanceId) record = false)
+      (calledInstanceClosure state root).contains owner.processInstanceId) record (retainedCancellationRoot root disposition) = false)
     (waitMem : wait ∈ state.messageWaits) (owner : wait.owner = record.owner)
     (names : anyMessageIdNamesWait record.messageHandlerOccurrences wait = true) :
     wait ∈ (cancelScopeSubtree state root disposition).messageWaits := by

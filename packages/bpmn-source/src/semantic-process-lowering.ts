@@ -159,7 +159,9 @@ function lowerNode(
           ? { ...base, kind: SemanticOperationKind.EnterScope, ...entry }
           : {
               ...base,
-              kind: SemanticOperationKind.EnterBoundedScope,
+              kind: boundaryTimer.interruption === BoundaryInterruption.Interrupting
+                ? SemanticOperationKind.EnterBoundedScope
+                : SemanticOperationKind.EnterMonitoredScope,
               ...entry,
               boundaryTimer: lowerBoundaryTimerArm(source, boundaryTimer),
             },
@@ -201,7 +203,9 @@ function lowerNode(
         }
         return scoped({
           ...base,
-          kind: SemanticOperationKind.AwaitMessageBoundedUserTask,
+          kind: boundaryMessage.interruption === BoundaryInterruption.Interrupting
+            ? SemanticOperationKind.AwaitMessageBoundedUserTask
+            : SemanticOperationKind.AwaitMessageMonitoredUserTask,
           input: requireOnly(incoming, node.id, "incoming"),
           task: {
             elementId: node.id,
@@ -593,7 +597,8 @@ function lowerBoundaryTimerArm(
 ): BoundaryTimerArm<1000> {
   return {
     elementId: boundaryTimer.id,
-    durationMs: normalizeTimerDurationMs(boundaryTimer.durationLiteral),
+    durationMs: normalizeTimerDurationMs(boundaryTimer.cycleLiteral ?? boundaryTimer.durationLiteral),
+    ...(boundaryTimer.cycleLiteral === undefined ? {} : { recurrence: "repeating" as const }),
     output: requireOnly(
       flowPlaces(source.sequenceFlows, boundaryTimer.id, "outgoing"),
       boundaryTimer.id,

@@ -18,6 +18,17 @@ theorem completeBoundedScope_child_has_parent (program : Program) (before after 
   | none => cases control : before.control <;> simp [parent, control] at update
   | some owner => rfl
 
+theorem completeSelectedScope_child_has_parent (program : Program) (before after : RuntimeState)
+    (definition : DefinitionScopeId) (output : ControlPlaceId) (root : RuntimeScopeOccurrence)
+    (children : before.scopeOccurrences.filter (fun scope => decide (scope.id.definitionScopeId = definition)) = [root])
+    (result : completeSelectedScope? program before definition (some output) = some after) :
+    root.parent.isSome = true := by
+  obtain ⟨ordinary, completed, _⟩ := completeSelectedScope_position_fields program before after definition (some output) result
+  have update := (completeScopeState_selected_update before ordinary definition (some output) root children completed).2
+  cases parent : root.parent with
+  | none => cases control : before.control <;> simp [parent, control] at update
+  | some owner => rfl
+
 theorem regional_child_call_associations_frame (before after : RuntimeState)
     (root : RuntimeScopeOccurrence) (definition : DefinitionScopeId)
     (children : before.scopeOccurrences.filter (fun scope => decide (scope.id.definitionScopeId = definition)) = [root])
@@ -78,15 +89,15 @@ theorem preparedChildComplete_projection_associations (program : Program) (befor
     preparedChildComplete_projection_lookup_fields program before id origin definition output prepared found
   have same : actual = after := Option.some.inj (appliedAgain.symm.trans applied)
   subst actual
-  have result : completeBoundedScope? program before definition (some output) = some after := by
+  have result : completeSelectedScope? program before definition (some output) = some after := by
     simp only [fire?, snapshots] at fired
-    change completeBoundedScope? program before definition (some output) = some after at fired
+    change completeSelectedScope? program before definition (some output) = some after at fired
     exact fired
-  have parent := completeBoundedScope_child_has_parent program before after definition output prepared.selection.root children result
+  have parent := completeSelectedScope_child_has_parent program before after definition output prepared.selection.root children result
   have callFrame := regional_child_call_associations_frame before after prepared.selection.root definition children parent scopes control calls
-  obtain ⟨effects, incidents, _⟩ := regionalCompletion_effect_and_branch_fields program before after definition (some output) result
+  obtain ⟨effects, incidents, _⟩ := regionalSelectedCompletion_effect_and_branch_fields program before after definition (some output) result
   have locals := congrArg ScopedVariables.activities
-    (regionalLocalData_completion_variables program before after definition (some output) result)
+    (regionalLocalData_selected_completion_variables program before after definition (some output) result)
   have incidentFrame := regional_child_incident_associations_frame before after prepared.selection.root.id quiet scopes control effects incidents locals
   exact ⟨after, applied, callFrame.trans priorCalls, incidentFrame.trans priorIncidents, raceValid⟩
 
@@ -128,6 +139,35 @@ theorem messageBoundedProjection_empty_tasks
     have impossible := List.all_eq_true.mp valid.2 record member
     contradiction
 
+/-- The reverse Activity census requires an actual Task body in both Message-host dispositions. -/
+theorem messageHostProjection_record_task_binding (program : Program) (state : RuntimeState)
+    (contract : InternalMessageTaskContract) (record : ActivityOccurrence)
+    (prior : messageBoundedOperationProjectionValid program state contract.operation = true)
+    (member : record ∈ state.activityOccurrences.filter (fun candidate =>
+      FlowNodeOccurrenceProgramValidity.Internal.operationOwnedBy program contract.operation candidate.owner &&
+        decide (candidate.activityElementId.value = contract.task.id.value))) :
+    ∃ taskWait ∈ state.waits, taskWait.owner = record.owner ∧
+      record.body = .userTask
+        { processInstanceId := taskWait.processInstanceId
+          elementId := ⟨taskWait.task.id.value⟩
+          activation := taskWait.activation } := by
+  cases kind : contract.kind
+  all_goals
+    simp only [InternalMessageTaskContract.operation, kind, messageBoundedOperationProjectionValid, Bool.and_eq_true] at prior member
+    have recordValid := List.all_eq_true.mp prior.2 record member
+    obtain ⟨taskWait, taskCensus⟩ := List.length_eq_one_iff.mp (of_decide_eq_true recordValid)
+    have taskIn := congrArg (fun values : List UserTaskWait => taskWait ∈ values) taskCensus
+    simp only [List.mem_singleton] at taskIn
+    have taskMember := List.mem_filter.mp (Eq.mpr taskIn trivial)
+    obtain ⟨messageWait, messageCensus⟩ := List.length_eq_one_iff.mp (of_decide_eq_true taskMember.2)
+    have messageIn := congrArg (fun values : List MessageWait => messageWait ∈ values) messageCensus
+    simp only [List.mem_singleton] at messageIn
+    have paired := (List.mem_filter.mp (Eq.mpr messageIn trivial)).2
+    change (_ && decide _) = true at paired
+    simp only [Bool.and_eq_true, decide_eq_true_eq, and_assoc] at paired
+    exact ⟨taskWait, (List.mem_filter.mp taskMember.1).1, paired.2.2.2.2.1,
+      paired.2.2.2.2.2.2.2.2.2.2.1⟩
+
 /-- The independent reverse record census binds every selected Activity to an actual
 Task body and owner, including when the selected Task population is empty. -/
 theorem messageBoundedProjection_record_task_binding (program : Program) (state : RuntimeState)
@@ -145,20 +185,8 @@ theorem messageBoundedProjection_record_task_binding (program : Program) (state 
         { processInstanceId := taskWait.processInstanceId
           elementId := ⟨taskWait.task.id.value⟩
           activation := taskWait.activation } := by
-  simp only [messageBoundedOperationProjectionValid, Bool.and_eq_true] at prior
-  have recordValid := List.all_eq_true.mp prior.2 record member
-  obtain ⟨taskWait, taskCensus⟩ := List.length_eq_one_iff.mp (of_decide_eq_true recordValid)
-  have taskIn := congrArg (fun values : List UserTaskWait => taskWait ∈ values) taskCensus
-  simp only [List.mem_singleton] at taskIn
-  have taskMember := List.mem_filter.mp (Eq.mpr taskIn trivial)
-  obtain ⟨messageWait, messageCensus⟩ := List.length_eq_one_iff.mp (of_decide_eq_true taskMember.2)
-  have messageIn := congrArg (fun values : List MessageWait => messageWait ∈ values) messageCensus
-  simp only [List.mem_singleton] at messageIn
-  have paired := (List.mem_filter.mp (Eq.mpr messageIn trivial)).2
-  change (_ && decide _) = true at paired
-  simp only [Bool.and_eq_true, decide_eq_true_eq, and_assoc] at paired
-  exact ⟨taskWait, (List.mem_filter.mp taskMember.1).1, paired.2.2.2.2.1,
-    paired.2.2.2.2.2.2.2.2.2.2.1⟩
+  exact messageHostProjection_record_task_binding program state
+    { kind := .interrupting, operationId := id, origin, input, task, message := boundary } record prior member
 
 theorem messageBoundedProjection_record_not_child (program : Program) (state : RuntimeState)
     (id : OperationId) (origin : BpmnElementOrigin) (input : ControlPlaceId)
@@ -180,23 +208,32 @@ theorem completionWithdrawal_message_projection_validity (program : Program) (be
     (prior : messageBoundedProjectionValid program before = true)
     (tasks : after.waits = before.waits) (messages : after.messageWaits = before.messageWaits)
     (activities : after.activityOccurrences = before.activityOccurrences.filter (fun record =>
-      match (generalizing := false) withdrawal with | .unbounded => true | .bounded .. => !decide (record.body = .childScope root))) :
+      match (generalizing := false) withdrawal with | .unbounded => true | .bounded .. | .monitored .. => !decide (record.body = .childScope root))) :
     messageBoundedProjectionValid program after = true := by
+  have preserves (contract : InternalMessageTaskContract)
+      (valid : messageBoundedOperationProjectionValid program before contract.operation = true) :
+      messageBoundedOperationProjectionValid program after contract.operation = true := by
+    have census := regional_child_activity_filter_frame before after root withdrawal
+      (fun record => FlowNodeOccurrenceProgramValidity.Internal.operationOwnedBy program contract.operation record.owner &&
+        decide (record.activityElementId.value = contract.task.id.value)) activities (by
+          intro record recordMember body
+          apply Bool.eq_false_iff.mpr
+          intro selected
+          obtain ⟨_, _, _, taskBody⟩ := messageHostProjection_record_task_binding program before contract record valid
+            (List.mem_filter.mpr ⟨recordMember, selected⟩)
+          simp [taskBody] at body)
+    cases kind : contract.kind
+    all_goals
+      simp only [InternalMessageTaskContract.operation, kind] at census valid ⊢
+      simpa only [messageBoundedOperationProjectionValid, tasks, messages, census] using valid
   simp only [messageBoundedProjectionValid, List.all_eq_true] at prior ⊢
   intro operation member
   have valid := prior operation member
   cases operation <;> try exact valid
   case awaitMessageBoundedUserTask id origin input task boundary =>
-    have census := regional_child_activity_filter_frame before after root withdrawal
-        (fun record => FlowNodeOccurrenceProgramValidity.Internal.operationOwnedBy program
-          (.awaitMessageBoundedUserTask id origin input task boundary) record.owner &&
-            decide (record.activityElementId.value = task.id.value)) activities (by
-          intro record recordMember body
-          apply Bool.eq_false_iff.mpr
-          intro selected
-          exact messageBoundedProjection_record_not_child program before id origin input task boundary record root valid
-            (List.mem_filter.mpr ⟨recordMember, selected⟩) body)
-    simpa only [messageBoundedOperationProjectionValid, tasks, messages, census] using valid
+    exact preserves { kind := .interrupting, operationId := id, origin, input, task, message := boundary } valid
+  case awaitMessageMonitoredUserTask id origin input task boundary =>
+    exact preserves { kind := .nonInterrupting, operationId := id, origin, input, task, message := boundary } valid
 
 theorem preparedChildComplete_message_projection_validity (program : Program) (before : RuntimeState)
     (id : OperationId) (origin : BpmnElementOrigin) (definition : DefinitionScopeId)

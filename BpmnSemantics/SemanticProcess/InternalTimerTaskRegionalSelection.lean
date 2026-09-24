@@ -87,6 +87,8 @@ theorem timerTask_completion_withdrawal (program : Program) (state : RuntimeStat
     prepareInternalTimerTaskContract_facts program state contract patch prepared
   let patch := makeInternalTimerTaskPatch program state contract owner instanceId processId origin
   cases choice with
+  | monitored record timer =>
+      exact (boundedWithdrawal_not_monitored program state definition record timer selected).elim
   | unbounded =>
       exact (completionWithdrawal_unbounded program _ definition
         (completionWithdrawal_unbounded_facts program state definition selected)).1
@@ -102,6 +104,105 @@ theorem timerTask_completion_withdrawal (program : Program) (state : RuntimeStat
       · exact element
       · exact timerTask_existing_timer_census program state contract patch prepared attached deadline census
       · exact deadlineOwner
+
+private theorem timerTask_monitored_binding (program : Program) (state : RuntimeState)
+    (contract : InternalTimerTaskContract) (patch : InternalTimerTaskPatch)
+    (prepared : prepareInternalTimerTaskContract? program state contract = some patch)
+    (pair : MonitoredScopePair) (bound : MonitoredScopeBinding program state pair) :
+    MonitoredScopeBinding program (applyInternalTimerTaskPatch state patch) pair := by
+  obtain ⟨_, owner, instanceId, inputOrigin, processId, _, _, _, _, _, _, _, unique, _, _, absent, patchEq⟩ :=
+    prepareInternalTimerTaskContract_facts program state contract patch prepared
+  have oldRecords := bound.2.1.2.2.2.2.2.1
+  have member : pair.record ∈ state.activityOccurrences :=
+    (List.mem_filter.mp (show pair.record ∈ state.activityOccurrences.filter (sameActivityOccurrence pair.record) by
+      rw [oldRecords]; simp)).1
+  have rejected : sameActivityOccurrence pair.record patch.record = false := by
+    apply Bool.eq_false_iff.mpr
+    intro same
+    exact List.any_eq_false.mp absent pair.record member
+      (by simp [regionalActivityAssociationsConflict, same])
+  have records : (applyInternalTimerTaskPatch state patch).activityOccurrences.filter
+      (sameActivityOccurrence pair.record) = [pair.record] := by
+    change (insertActivityOccurrence _ state.activityOccurrences).filter _ = _
+    rw [insertActivityOccurrence_eq_canonicalInsertBy,
+      filter_canonicalInsertBy_rejected _ _ _ _ rejected]
+    exact oldRecords
+  have body : (applyInternalTimerTaskPatch state patch).activityOccurrences.filter
+      (fun record => decide (record.body = .childScope pair.child.id)) =
+        state.activityOccurrences.filter (fun record => decide (record.body = .childScope pair.child.id)) := by
+    rw [patchEq]
+    change (insertActivityOccurrence _ state.activityOccurrences).filter _ = _
+    rw [insertActivityOccurrence_eq_canonicalInsertBy]
+    apply filter_canonicalInsertBy_rejected
+    rfl
+  have declaration : pair.definition ∈ monitoredScopeDefinitions program :=
+    (List.mem_filter.mp (show pair.definition ∈ (monitoredScopeDefinitions program).filter
+      (fun definition => decide (definition.childScopeId = pair.definition.childScopeId)) by
+        rw [bound.1.1]; simp)).1
+  have declared : .enterMonitoredScope pair.definition.id pair.definition.origin pair.definition.input
+      pair.definition.childEntry pair.definition.childScopeId pair.definition.timer ∈ program.operations := by
+    generalize definitionEq : pair.definition = definition at declaration ⊢
+    obtain ⟨operation, present, selected⟩ := List.mem_filterMap.mp declaration
+    cases operation <;> simp at selected
+    cases selected
+    exact present
+  have declarers : timerWaitDeclarers program contract.timer.elementId = [contract.operation] := by
+    simpa [uniqueFamilyDeclarer?] using unique
+  have different : contract.timer.elementId ≠ pair.definition.timer.elementId := by
+    intro same
+    have collision : .enterMonitoredScope pair.definition.id pair.definition.origin pair.definition.input
+        pair.definition.childEntry pair.definition.childScopeId pair.definition.timer ∈
+          timerWaitDeclarers program contract.timer.elementId := by
+      simp [timerWaitDeclarers, declared, same]
+    rw [declarers] at collision
+    cases kind : contract.kind <;> simp [InternalTimerTaskContract.operation, kind] at collision
+  have timers : (applyInternalTimerTaskPatch state patch).timerWaits.filter (monitoredScopeTimerNames pair) =
+      state.timerWaits.filter (monitoredScopeTimerNames pair) := by
+    change (insertTimerWait _ state.timerWaits).filter _ = _
+    unfold insertTimerWait
+    apply filter_canonicalInsertBy_rejected
+    simp [patchEq, makeInternalTimerTaskPatch, monitoredScopeTimerNames, different]
+  have control : (applyInternalTimerTaskPatch state patch).control = state.control := by
+    rw [patchEq]; rfl
+  have scopes : (applyInternalTimerTaskPatch state patch).scopeOccurrences = state.scopeOccurrences := by
+    rw [patchEq]; rfl
+  refine ⟨bound.1, ?_, ?_⟩
+  · simpa only [MonitoredScopeOwnership, control, scopes, body, records, oldRecords] using bound.2.1
+  · have timerBinding := bound.2.2
+    cases deadline : pair.timer with
+    | none => simpa only [MonitoredScopeTimerBinding, deadline, timers] using timerBinding
+    | some timer =>
+      simp only [MonitoredScopeTimerBinding, deadline] at timerBinding ⊢
+      refine ⟨timerBinding.1, timers.trans timerBinding.2.1, ?_⟩
+      have identity := timerTask_existing_timer_census program state contract patch prepared
+        (boundaryTimerWaitIdentity timer) timer timerBinding.2.2.1
+      simpa only [NonInterruptingBoundaryTimerBinding, identity, records,
+        timerBinding.2.2.1, oldRecords] using timerBinding.2.2
+
+theorem timerTask_subscribed_completion_withdrawal (program : Program) (state : RuntimeState)
+    (contract : InternalTimerTaskContract) (patch : InternalTimerTaskPatch)
+    (prepared : prepareInternalTimerTaskContract? program state contract = some patch)
+    (definition : DefinitionScopeId) (output : Option ControlPlaceId) (choice : InternalCompletionWithdrawal)
+    (selected : selectSubscribedCompletionWithdrawal? program state definition output = some choice) :
+    selectSubscribedCompletionWithdrawal? program (applyInternalTimerTaskPatch state patch)
+      definition output = some choice := by
+  unfold selectSubscribedCompletionWithdrawal? at selected ⊢
+  split at selected
+  · next monitored =>
+    rw [if_pos monitored]
+    obtain ⟨pair, _, selected⟩ := Option.bind_eq_some_iff.mp selected
+    split at selected
+    · next addressed =>
+      cases selected
+      have bound := timerTask_monitored_binding program state contract patch prepared pair.val pair.property
+      have rebuilt := monitoredScopePairForChild_complete program (applyInternalTimerTaskPatch state patch) pair.val bound
+      rw [addressed.1] at rebuilt
+      simp only [rebuilt, Option.bind_eq_bind, Option.bind_some]
+      rw [if_pos addressed]
+    · contradiction
+  · next unmonitored =>
+    rw [if_neg unmonitored]
+    exact timerTask_completion_withdrawal program state contract patch prepared definition choice selected
 
 theorem timerTask_regional_input_distinct (footprint : InternalRegionalStateFootprint)
     (patch : InternalTimerTaskPatch) (input : ControlPlaceId)
@@ -142,7 +243,7 @@ theorem regionalSelection_after_independent_timer_task (program : Program) (stat
   apply regionalSelection_read_frame program state (applyInternalTimerTaskPatch state patch)
     operation selected found control scopes calls pending
     (timerTask_quiescent_frame program state contract patch selected.root.id prepared distinct)
-    (timerTask_completion_withdrawal program state contract patch prepared)
+    (timerTask_subscribed_completion_withdrawal program state contract patch prepared)
   have operationEq := regionalSelection_operation program state operation selected found
   have inputRead := regionalStateFootprint_selector_read state selected region footprint footprintFound
   rw [operationEq] at inputRead

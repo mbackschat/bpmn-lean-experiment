@@ -22,6 +22,13 @@ inductive SelectedScopeDisposition where
   | remove
   deriving Repr, DecidableEq
 
+/-- ESL-RETAIN-01 excludes only the selected scope from actual body removal. -/
+def retainedCancellationRoot (root : ScopeOccurrenceId)
+    (disposition : SelectedScopeDisposition) : Option ScopeOccurrenceId :=
+  match disposition with
+  | .retain => some root
+  | .remove => none
+
 def occurrenceParent? (occurrences : List RuntimeScopeOccurrence)
     (candidate : ScopeOccurrenceId) : Option ScopeOccurrenceId :=
   (occurrences.find? fun occurrence => decide (occurrence.id = candidate))
@@ -98,7 +105,7 @@ def cancelScopeSubtree (state : RuntimeState) (root : ScopeOccurrenceId)
   -- A handler attached to an Activity is owned by the scope *holding* that Activity, so an
   -- owner-only rule leaves a bounded Sub-Process deadline alive after its child region is gone. The
   -- records name what each Activity owns, and the withdrawn ones carry their attached waits out.
-  let withdrawnActivities := withdrawnByRegion cancelled state.activityOccurrences
+  let withdrawnActivities := withdrawnByRegion cancelled state.activityOccurrences (retainedCancellationRoot root disposition)
   let withdrawnTimers := attachedTimersOf withdrawnActivities
   { state with
     tokens := state.tokens.filter fun token => !cancelled token.owner
@@ -109,7 +116,7 @@ def cancelScopeSubtree (state : RuntimeState) (root : ScopeOccurrenceId)
       !cancelled wait.owner && !activityRecordsAttachMessageWait withdrawnActivities wait
     timerWaits := state.timerWaits.filter fun wait =>
       !cancelled wait.owner && !anyTimerIdNamesWait withdrawnTimers wait
-    activityOccurrences := retainedByRegion cancelled state.activityOccurrences
+    activityOccurrences := retainedByRegion cancelled state.activityOccurrences (retainedCancellationRoot root disposition)
     sequentialMultiInstanceControllers :=
       state.sequentialMultiInstanceControllers.filter fun controller =>
         !calledInstances.contains controller.processInstanceId &&
@@ -180,10 +187,10 @@ theorem cancelScopeSubtree_retains_no_withdrawn_record (state : RuntimeState)
         (fun owner =>
           occurrenceInSubtree state.scopeOccurrences root owner ||
             (calledInstanceClosure state root).contains owner.processInstanceId)
-        record = false := by
+        record (retainedCancellationRoot root disposition) = false := by
   intro record retained
   simp only [cancelScopeSubtree] at retained
-  exact retained_records_are_outside_the_region _ _ record retained
+  simpa only [Bool.not_eq_true'] using (List.mem_filter.mp retained).2
 
 /-- No Timer wait a withdrawn record listed survives the region either. -/
 theorem cancelScopeSubtree_withdraws_listed_timers (state : RuntimeState)
@@ -195,7 +202,7 @@ theorem cancelScopeSubtree_withdraws_listed_timers (state : RuntimeState)
             (fun owner =>
               occurrenceInSubtree state.scopeOccurrences root owner ||
                 (calledInstanceClosure state root).contains owner.processInstanceId)
-            state.activityOccurrences))
+            state.activityOccurrences (retainedCancellationRoot root disposition)))
         wait = false := by
   intro wait survives
   simp only [cancelScopeSubtree, List.mem_filter, Bool.and_eq_true,
@@ -211,7 +218,7 @@ theorem cancelScopeSubtree_withdraws_listed_messages (state : RuntimeState)
           (fun owner =>
             occurrenceInSubtree state.scopeOccurrences root owner ||
               (calledInstanceClosure state root).contains owner.processInstanceId)
-          state.activityOccurrences) wait = false := by
+          state.activityOccurrences (retainedCancellationRoot root disposition)) wait = false := by
   intro wait survives
   simp only [cancelScopeSubtree, List.mem_filter, Bool.and_eq_true,
     Bool.not_eq_true'] at survives
@@ -225,7 +232,7 @@ theorem cancelScopeSubtree_withdraws_activity_local_data (state : RuntimeState)
         (fun owner =>
           occurrenceInSubtree state.scopeOccurrences root owner ||
             (calledInstanceClosure state root).contains owner.processInstanceId)
-        state.activityOccurrences).any (fun record =>
+        state.activityOccurrences (retainedCancellationRoot root disposition)).any (fun record =>
           activityOccurrenceScopeMatches
             { processInstanceId := record.processInstanceId
               activityElementId := ⟨record.activityElementId.value⟩
@@ -234,6 +241,20 @@ theorem cancelScopeSubtree_withdraws_activity_local_data (state : RuntimeState)
   simp only [cancelScopeSubtree, List.mem_filter, Bool.and_eq_true,
     Bool.not_eq_true'] at survives
   exact survives.2.1.1.2
+
+/-- ESL-RETAIN-01 keeps the parent-owned Activity of the exact retained child. -/
+theorem cancelScopeSubtree_retains_selected_child_activity (state : RuntimeState)
+    (root : ScopeOccurrenceId) (record : ActivityOccurrence)
+    (member : record ∈ state.activityOccurrences)
+    (outside : (occurrenceInSubtree state.scopeOccurrences root record.owner ||
+      (calledInstanceClosure state root).contains record.owner.processInstanceId) = false)
+    (body : record.body = .childScope root) :
+    record ∈ (cancelScopeSubtree state root .retain).activityOccurrences := by
+  change record ∈ state.activityOccurrences.filter _
+  apply List.mem_filter.mpr
+  refine ⟨member, ?_⟩
+  simp only [recordInRegion, outside, body, retainedCancellationRoot, beq_self_eq_true,
+    Bool.not_true, Bool.and_false, Bool.or_self, Bool.not_false]
 
 /-- Regional interruption removes the selected occurrence and then emits the caught route token in its live parent. -/
 def interruptScope (state : RuntimeState) (root parent : ScopeOccurrenceId)

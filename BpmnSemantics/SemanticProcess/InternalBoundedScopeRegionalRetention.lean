@@ -166,10 +166,10 @@ theorem boundedScope_regional_retention_frame
     (calledInstanceClosure state regional.selection.root.id).contains id.processInstanceId
   change cancelled entry.owner = false at ownerMask
   change cancelled entry.created.id = false at childMask
-  have populations : withdrawnByRegion cancelled after.activityOccurrences =
-      withdrawnByRegion cancelled state.activityOccurrences := by
+  have populations (retainedRoot : Option ScopeOccurrenceId) : withdrawnByRegion cancelled after.activityOccurrences retainedRoot =
+      withdrawnByRegion cancelled state.activityOccurrences retainedRoot := by
     change withdrawnByRegion cancelled (insertActivityOccurrence
-      (makeInternalBoundedScopeSelection state contract entry).record state.activityOccurrences) = _
+      (makeInternalBoundedScopeSelection state contract entry).record state.activityOccurrences) retainedRoot = _
     rw [withdrawnByRegion, insertActivityOccurrence_eq_canonicalInsertBy,
       filter_canonicalInsertBy_rejected _ _ _ _ (by simp [makeInternalBoundedScopeSelection, recordInRegion, ownerMask, childMask])]
     rfl
@@ -240,7 +240,7 @@ theorem boundedScope_regional_scope_retained
       | none => exact False.elim (nonroot parentEq)
       | some parent => cases withdrawal <;>
           simp [regionalSelectionReferenceRetention, kind, boundedCompletionReferenceRetention,
-            ordinaryCompletionReferenceRetention, parentEq, distinct]
+            monitoredCompletionReferenceRetention, ordinaryCompletionReferenceRetention, parentEq, distinct]
   | interrupting parent | terminating =>
       simp only [regionalSelectionReferenceRetention, kind, cancellationReferenceRetention, masks.1, Bool.not_false, Bool.or_true]
 
@@ -270,9 +270,9 @@ theorem boundedScope_regional_insertions_retained
     exact valid.2.2.2.2.2.2.2.2.2.1
   have unclaimed := activityRecords_do_not_claim_fresh_timer state bounded.selection.timer
     (fun old member => (fresh old member).1) records
-  have unattached : anyTimerIdNamesWait (attachedTimersOf
+  have unattached (retainedRoot : Option ScopeOccurrenceId) : anyTimerIdNamesWait (attachedTimersOf
       (withdrawnByRegion (fun owner => occurrenceInSubtree state.scopeOccurrences regional.selection.root.id owner ||
-        (calledInstanceClosure state regional.selection.root.id).contains owner.processInstanceId) state.activityOccurrences))
+        (calledInstanceClosure state regional.selection.root.id).contains owner.processInstanceId) state.activityOccurrences retainedRoot))
       bounded.selection.timer = false := by
     apply List.any_eq_false.mpr
     intro id member
@@ -306,8 +306,29 @@ theorem boundedScope_regional_insertions_retained
             simp [same, timerWaitKeyMatches] at conflict
           simpa [regionalSelectionReferenceRetention, kind, boundedCompletionReferenceRetention,
             ordinaryCompletionReferenceRetention, distinct, makeInternalBoundedScopeSelection] using different
+      | monitored record timer =>
+          cases timer with
+          | none => simp [regionalSelectionReferenceRetention, kind, monitoredCompletionReferenceRetention,
+              ordinaryCompletionReferenceRetention, distinct]
+          | some deadline =>
+              have member := regionalSelection_monitored_deadline program state operation regional.selection record deadline selected kind
+              have rejected : timerIdNamesWait (boundaryTimerWaitIdentity deadline)
+                  (makeInternalBoundedScopeSelection state contract entry).timer = false := by
+                apply Bool.eq_false_iff.mpr
+                intro same
+                simp only [timerIdNamesWait, boundaryTimerWaitIdentity, Bool.and_eq_true, beq_iff_eq] at same
+                have element : (makeInternalBoundedScopeSelection state contract entry).timer.elementId = deadline.elementId :=
+                  congrArg NodeId.mk same.1.2.symm
+                have collision : timerWaitKeyMatches (makeInternalBoundedScopeSelection state contract entry).timer deadline = true := by
+                  simp [timerWaitKeyMatches, same.1.1.symm, element, same.2.symm]
+                have absent := (fresh deadline member).1
+                change timerWaitKeyMatches (makeInternalBoundedScopeSelection state contract entry).timer deadline = false at absent
+                rw [absent] at collision
+                contradiction
+              simpa [regionalSelectionReferenceRetention, kind, monitoredCompletionReferenceRetention,
+                ordinaryCompletionReferenceRetention, distinct, makeInternalBoundedScopeSelection] using rejected
   | interrupting parent | terminating =>
       simp only [regionalSelectionReferenceRetention, kind, cancellationReferenceRetention, recordInRegion,
-        ownerMasks.1, childMasks.1, unattached, Bool.or_false, Bool.not_false, Bool.true_and, and_self]
+        ownerMasks.1, childMasks.1, unattached, Bool.false_and, Bool.or_false, Bool.not_false, Bool.true_and, and_self]
 
 end BpmnSemantics.SemanticProcess.InternalCommutation

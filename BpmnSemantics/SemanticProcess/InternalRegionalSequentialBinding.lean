@@ -215,17 +215,17 @@ private theorem tuple_retention (program : Program) (state : RuntimeState)
     (controller : SequentialMultiInstanceController) (id : OperationId)
     (task : SequentialMultiInstanceTaskDefinition) (boundary : BoundaryTimerArm)
     (tuple : SequentialBindingTuple program state controller id task boundary)
-    (root : ScopeOccurrenceId)
+    (root : ScopeOccurrenceId) (disposition : SelectedScopeDisposition)
     (unambiguous : attachedTimersUnambiguous state = true) :
     let called := calledInstanceClosure state root
     let cancelled := fun owner : ScopeOccurrenceId =>
       occurrenceInSubtree state.scopeOccurrences root owner || called.contains owner.processInstanceId
-    let withdrawn := withdrawnByRegion cancelled state.activityOccurrences
+    let withdrawn := withdrawnByRegion cancelled state.activityOccurrences (retainedCancellationRoot root disposition)
     (!called.contains controller.processInstanceId &&
       !withdrawn.any (controllerNamesActivityOccurrence controller)) =
-        (!recordInRegion cancelled tuple.record) ∧
-    (!recordInRegion cancelled tuple.record) = (!cancelled tuple.task.owner) ∧
-    (!recordInRegion cancelled tuple.record) =
+        (!recordInRegion cancelled tuple.record (retainedCancellationRoot root disposition)) ∧
+    (!recordInRegion cancelled tuple.record (retainedCancellationRoot root disposition)) = (!cancelled tuple.task.owner) ∧
+    (!recordInRegion cancelled tuple.record (retainedCancellationRoot root disposition)) =
       (!cancelled tuple.timer.owner && !anyTimerIdNamesWait (attachedTimersOf withdrawn) tuple.timer) := by
   dsimp only
   let cancelled := fun owner : ScopeOccurrenceId =>
@@ -236,19 +236,19 @@ private theorem tuple_retention (program : Program) (state : RuntimeState)
   have process : controller.processInstanceId = tuple.record.owner.processInstanceId := by
     simp only [controllerNamesActivityOccurrence, Bool.and_eq_true, beq_iff_eq] at recordNames
     exact recordNames.1.1.trans tuple.ownerProcess.symm
-  have recordMask : recordInRegion cancelled tuple.record = cancelled tuple.record.owner := by
+  have recordMask : recordInRegion cancelled tuple.record (retainedCancellationRoot root disposition) = cancelled tuple.record.owner := by
     simp [recordInRegion, tuple.bodyShape]
-  have withdrawnMatch : (withdrawnByRegion cancelled state.activityOccurrences).any
+  have withdrawnMatch : (withdrawnByRegion cancelled state.activityOccurrences (retainedCancellationRoot root disposition)).any
       (controllerNamesActivityOccurrence controller) = cancelled tuple.record.owner := by
     rw [withdrawnByRegion, List.any_filter]
-    have commutes : (fun candidate => recordInRegion cancelled candidate &&
+    have commutes : (fun candidate => recordInRegion cancelled candidate (retainedCancellationRoot root disposition) &&
         controllerNamesActivityOccurrence controller candidate) =
         (fun candidate => controllerNamesActivityOccurrence controller candidate &&
-          recordInRegion cancelled candidate) := by funext candidate; exact Bool.and_comm _ _
+          recordInRegion cancelled candidate (retainedCancellationRoot root disposition)) := by funext candidate; exact Bool.and_comm _ _
     rw [commutes, singleton_census_any _ _ _ _ tuple.recordCensus, recordMask]
-  change _ = (!recordInRegion cancelled tuple.record) ∧
-    (!recordInRegion cancelled tuple.record) = (!cancelled tuple.task.owner) ∧
-    (!recordInRegion cancelled tuple.record) = _
+  change _ = (!recordInRegion cancelled tuple.record (retainedCancellationRoot root disposition)) ∧
+    (!recordInRegion cancelled tuple.record (retainedCancellationRoot root disposition)) = (!cancelled tuple.task.owner) ∧
+    (!recordInRegion cancelled tuple.record (retainedCancellationRoot root disposition)) = _
   rw [withdrawnMatch, recordMask, tuple.taskOwner, tuple.timerOwner]
   refine ⟨?_, rfl, ?_⟩
   · rw [process]
@@ -257,12 +257,12 @@ private theorem tuple_retention (program : Program) (state : RuntimeState)
       cases (calledInstanceClosure state root).contains tuple.record.owner.processInstanceId <;> rfl
   · change (!cancelled tuple.record.owner) =
       (!cancelled tuple.record.owner && !anyTimerIdNamesWait
-        (attachedTimersOf (withdrawnByRegion cancelled state.activityOccurrences)) tuple.timer)
+        (attachedTimersOf (withdrawnByRegion cancelled state.activityOccurrences (retainedCancellationRoot root disposition))) tuple.timer)
     cases outside : cancelled tuple.record.owner with
     | true => simp
     | false =>
       have noClaim : anyTimerIdNamesWait
-          (attachedTimersOf (withdrawnByRegion cancelled state.activityOccurrences)) tuple.timer = false := by
+          (attachedTimersOf (withdrawnByRegion cancelled state.activityOccurrences (retainedCancellationRoot root disposition))) tuple.timer = false := by
         apply Bool.eq_false_iff.mpr
         intro claim
         obtain ⟨timerId, attached, named⟩ := List.any_eq_true.mp claim
@@ -599,7 +599,7 @@ theorem cancelScopeSubtree_preserves_sequential_operation_binding (program : Pro
   apply sequential_operation_binding_after_filters program state
     (cancelScopeSubtree state root disposition) _ _ _ _ rfl rfl rfl rfl
     (fun controller id task boundary tuple =>
-      tuple_retention program state controller id task boundary tuple root timerClaims)
+      tuple_retention program state controller id task boundary tuple root disposition timerClaims)
     operation operationMem bindings complete unique bodyClaims timerClaims
 
 /-- Both halves of the executable SMI program binding are preserved by regional cancellation;

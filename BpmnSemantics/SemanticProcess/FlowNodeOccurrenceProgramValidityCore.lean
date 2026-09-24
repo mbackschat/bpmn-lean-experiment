@@ -54,7 +54,8 @@ private def scopeOperationBindingValid (program : Program) (occurrence : Runtime
         if !operationOwnedBy program operation parent then false
         else match operation with
         | .enterScope _ origin _ _ childScopeId
-        | .enterBoundedScope _ origin _ _ childScopeId _ =>
+        | .enterBoundedScope _ origin _ _ childScopeId _
+        | .enterMonitoredScope _ origin _ _ childScopeId _ =>
             childScopeId = occurrence.id.definitionScopeId &&
               origin.elementId = definition.originElementId
         | _ => false).length = 1

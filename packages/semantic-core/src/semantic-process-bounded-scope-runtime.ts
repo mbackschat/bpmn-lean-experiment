@@ -16,6 +16,7 @@
 import { SemanticOperationKind } from "./semantic-process-contract.js";
 import type {
   EnterBoundedScopeOperation,
+  EnterMonitoredScopeOperation,
   SemanticOperation,
   SemanticProcessProgram,
 } from "./semantic-process-contract.js";
@@ -90,7 +91,7 @@ export function armBoundedScope(
 
 /** Applies the selected child, deadline, and Activity together for direct and prepared execution. */
 export function applySelectedBoundedScopeArming(
-  operation: EnterBoundedScopeOperation,
+  operation: EnterBoundedScopeOperation | EnterMonitoredScopeOperation,
   state: RuntimeState,
   parent: ScopeOccurrenceId,
   selected: SelectedBoundedScopeArming,
@@ -130,7 +131,7 @@ export function applySelectedBoundedScopeArming(
 
 /** Selects the complete child, Activity record, and parent-owned deadline from the pre-state. */
 export function selectBoundedScopeArming(
-  operation: EnterBoundedScopeOperation,
+  operation: EnterBoundedScopeOperation | EnterMonitoredScopeOperation,
   state: RuntimeState,
   parent: ScopeOccurrenceId,
 ): SelectedBoundedScopeArming | null {
@@ -183,8 +184,8 @@ export function selectBoundedScopeArming(
  *
  * Withdrawal is a consequence of the child's completion rather than a transition of its own, and only
  * the scope owner decides quiescence, so this composes the two rather than reimplementing either. An
- * unpaired scope passes straight through; a paired scope whose deadline is absent refuses, because
- * arming made that state unreachable.
+ * unpaired scope passes straight through. A one-shot monitored scope may already have consumed its
+ * Timer; interrupting and recurring declarations still require their live attachment (ESL-HOST-01).
  */
 export function completeScopeWithdrawingDeadline(
   program: SemanticProcessProgram,
@@ -220,7 +221,11 @@ export function selectScopeCompletionWithdrawal(
   completedScopeId: string,
   state: RuntimeState,
 ): ScopeCompletionWithdrawal | null {
-  const definitions = boundedScopeOperations(program).filter(
+  const definitions = program.operations.filter(
+    (operation): operation is EnterBoundedScopeOperation | EnterMonitoredScopeOperation =>
+      operation.kind === SemanticOperationKind.EnterBoundedScope ||
+      operation.kind === SemanticOperationKind.EnterMonitoredScope,
+  ).filter(
     (operation) => operation.childScopeId === completedScopeId,
   );
   if (definitions.length === 0) {
@@ -241,8 +246,11 @@ export function selectScopeCompletionWithdrawal(
     record === undefined ||
     record.operationId !== definition.id ||
     !sameScopeOccurrence(record.owner, child.parent) ||
-    record.attachedHandlers.length !== 1 ||
-    attachedTimerOccurrences(record)[0]?.elementId !== definition.boundaryTimer.elementId
+    (record.attachedHandlers.length !== 1 &&
+      !(definition.kind === SemanticOperationKind.EnterMonitoredScope &&
+        definition.boundaryTimer.recurrence === undefined && record.attachedHandlers.length === 0)) ||
+    (record.attachedHandlers.length === 1 &&
+      attachedTimerOccurrences(record)[0]?.elementId !== definition.boundaryTimer.elementId)
   ) {
     return null;
   }

@@ -112,6 +112,7 @@ function internalOperationStarts(
       return sameScope(owner, transitionOwner) &&
         operation.task.elementId === value.elementId;
     case SemanticOperationKind.AwaitMessageBoundedUserTask:
+    case SemanticOperationKind.AwaitMessageMonitoredUserTask:
       return sameScope(owner, transitionOwner) && (
         operation.task.elementId === value.elementId ||
         operation.boundaryMessage.elementId === value.elementId
@@ -140,6 +141,7 @@ function internalOperationStarts(
       ));
     case SemanticOperationKind.EnterScope:
     case SemanticOperationKind.EnterBoundedScope:
+    case SemanticOperationKind.EnterMonitoredScope:
     case SemanticOperationKind.InvokeProcess:
       return exactOrigin;
     case SemanticOperationKind.ThrowError:
@@ -194,8 +196,8 @@ function externalStimulusStarts(
           owner.processInstanceId &&
         stimulus.subscriptionId.elementId === value.elementId &&
         program.operations.some((operation) =>
-          operation.kind ===
-            SemanticOperationKind.AwaitMessageBoundedUserTask &&
+          (operation.kind === SemanticOperationKind.AwaitMessageBoundedUserTask ||
+            operation.kind === SemanticOperationKind.AwaitMessageMonitoredUserTask) &&
           operation.boundaryMessage.elementId === value.elementId &&
           operationOwnsScope(operation, owner.definitionScopeId, program)
         );
@@ -268,6 +270,7 @@ function boundaryTimerElement(
     case SemanticOperationKind.AwaitBoundedUserTask:
     case SemanticOperationKind.AwaitMonitoredUserTask:
     case SemanticOperationKind.EnterBoundedScope:
+    case SemanticOperationKind.EnterMonitoredScope:
       return operation.boundaryTimer.elementId;
     case SemanticOperationKind.AwaitSequentialMultiInstanceUserTask:
     case SemanticOperationKind.AwaitParallelMultiInstanceUserTask:
@@ -419,6 +422,7 @@ function operationPublishesNestedElement(
         operation.boundaryTimer.elementId === elementId
       );
     case SemanticOperationKind.AwaitMessageBoundedUserTask:
+    case SemanticOperationKind.AwaitMessageMonitoredUserTask:
       return directlyOwned && (
         operation.task.elementId === elementId ||
         operation.boundaryMessage.elementId === elementId
@@ -434,6 +438,7 @@ function operationPublishesNestedElement(
     case SemanticOperationKind.CompleteParallelMultiInstanceUserTask:
       return false;
     case SemanticOperationKind.EnterBoundedScope:
+    case SemanticOperationKind.EnterMonitoredScope:
       return directlyOwned && operation.boundaryTimer.elementId === elementId;
     case SemanticOperationKind.AwaitMessage:
     case SemanticOperationKind.AwaitPayloadMessage:

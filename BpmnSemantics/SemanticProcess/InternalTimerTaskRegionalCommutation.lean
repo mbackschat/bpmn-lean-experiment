@@ -117,14 +117,14 @@ private theorem regional_timerTask_successors_equal (program : Program) (before 
           (continuation owner place independent (baseWrites _ (by simp))))
         cases write : patch.arm.write <;>
           simpa only [applyInternalTimerTaskPatch, applyInternalArmingPatch, write] using result
-      have raw : completeBoundedScope? program before definition output = some after := by
+      have raw : completeSelectedScope? program before definition output = some after := by
         simp only [fire?, snapshots] at fired
         exact fired
-      have taskRaw : completeBoundedScope? program (applyInternalTimerTaskPatch before patch)
+      have taskRaw : completeSelectedScope? program (applyInternalTimerTaskPatch before patch)
           definition output = some afterTask := by
         simp only [fire?, snapshots] at taskFired
         exact taskFired
-      exact timerTask_completion_successors_equal program before after afterTask contract patch _ definition output
+      exact timerTask_selected_completion_successors_equal program before after afterTask contract patch _ definition output
         regional.selection.root withdrawal taskFound canonical running census withdrawn quiet tokenFrame raw taskRaw
   | throwError id origin input error handler =>
       have raw : throwErrorState? before input error handler = some after := by

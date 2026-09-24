@@ -159,6 +159,75 @@ theorem regional_pair_owner_retention (program : Program) (before after : Runtim
   | terminating =>
       simp only [regionalSelectionReferenceRetention, kind, cancellationReferenceRetention, subtree, called, and_self]
 
+/-- ESL-RETAIN-01 changes actual withdrawals, while the existing region read still protects
+all Activity endpoints in that region. This frames either explicit root disposition. -/
+theorem regional_pair_cancellation_activity_frame (program : Program) (before after : RuntimeState)
+    (hosting : SemanticId) (leftOperation rightOperation : SemanticOperation)
+    (left right : PreparedInternalRegional)
+    (valid : runtimeStateWellFormed program hosting before = true)
+    (running : before.control = .running hosting)
+    (leftFound : prepareInternalRegional? program before leftOperation = some left)
+    (rightFound : prepareInternalRegional? program before rightOperation = some right)
+    (independent : regionalStateFootprintsIndependent left.footprint right.footprint = true)
+    (applied : applyPreparedInternalRegional? program before left = some after)
+    (retainedRoot : Option ScopeOccurrenceId) :
+    withdrawnByRegion (fun owner => occurrenceInSubtree after.scopeOccurrences right.selection.root.id owner ||
+        (calledInstanceClosure after right.selection.root.id).contains owner.processInstanceId)
+      after.activityOccurrences retainedRoot =
+    withdrawnByRegion (fun owner => occurrenceInSubtree before.scopeOccurrences right.selection.root.id owner ||
+        (calledInstanceClosure before right.selection.root.id).contains owner.processInstanceId)
+      before.activityOccurrences retainedRoot := by
+  have leftFacts := prepareInternalRegional_facts program before leftOperation left leftFound
+  have rightFacts := prepareInternalRegional_facts program before rightOperation right rightFound
+  have selected := (ownershipClosedSelection_facts program before leftOperation left.selection leftFacts.2.2.2.1).1
+  have identities : waitIdentitiesUnique before = true := by
+    simp only [runtimeStateWellFormed, Bool.and_eq_true, and_assoc] at valid
+    simp_all only
+  obtain ⟨actual, fired, executed⟩ := prepareInternalRegional_executes program before leftOperation left leftFound
+  have same : actual = after := Option.some.inj (executed.symm.trans applied)
+  subst actual
+  have fields := regionalSelection_reference_fields program before after leftOperation left.selection
+    leftFacts.1 identities selected fired
+  have classifiers := regional_pair_cancellation_classifiers program before after hosting leftOperation rightOperation
+    left right valid running leftFound rightFound independent applied
+  simp only [withdrawnByRegion, classifiers.1, classifiers.2, fields.2.1, List.filter_filter]
+  apply List.filter_congr
+  intro record member
+  let cancelled := fun owner => occurrenceInSubtree before.scopeOccurrences right.selection.root.id owner ||
+    (calledInstanceClosure before right.selection.root.id).contains owner.processInstanceId
+  cases withdrawn : recordInRegion cancelled record retainedRoot with
+  | false => simp only [Bool.false_and]
+  | true =>
+    have full : recordInRegion cancelled record = true := by
+      cases ownerInside : cancelled record.owner with
+      | true => simp [recordInRegion, ownerInside]
+      | false =>
+        cases body : record.body with
+        | userTask _ | parallelUserTasks _ _ => simp [recordInRegion, ownerInside, body] at withdrawn
+        | childScope child =>
+          have inside := withdrawn
+          simp only [recordInRegion, ownerInside, body, Bool.false_or, Bool.and_eq_true] at inside
+          simpa [recordInRegion, ownerInside, body] using inside.1
+    have regionMask := regional_activity_record_mask program before hosting hosting valid running
+      right.selection.root.id right.region rightFacts.2.2.2.2.1 record member
+    have regionInside : recordInRegion right.region.contains record = true := regionMask.symm.trans full
+    have kept : (regionalSelectionReferenceRetention before left.selection).activity record = true := by
+      cases keep : (regionalSelectionReferenceRetention before left.selection).activity record with
+      | true => rfl
+      | false =>
+        have written := regionalStateFootprint_protects_withdrawn_activity before left.selection left.region
+          left.footprint record member keep leftFacts.2.2.2.2.2.1
+        have read := regionalStateFootprint_region_read before right.selection right.region right.footprint
+          rightFacts.2.2.2.2.2.1
+        have separated := regional_independent_write_read right.footprint left.footprint
+          (regionalStateFootprintsIndependent_symmetric _ _ independent) _ _ written read
+        have conflict : regionalStateAtomsConflict (.activityAssociation record) (.occurrenceRegion right.region) = true := by
+          cases body : record.body <;>
+            simpa [regionalStateAtomsConflict, regionalOwnsAtom, recordInRegion, body] using regionInside
+        rw [conflict] at separated
+        contradiction
+    simp only [kept, Bool.and_self]
+
 private theorem cancellation_local_data_closed (state : RuntimeState) (selected : InternalRegionalSelection)
     (global : regionalRetainedLocalDataClosed state (fun _ => true) (fun _ => true) = true)
     (cancelling : selected.kind = .terminating ∨ ∃ parent, selected.kind = .interrupting parent) :
@@ -183,15 +252,17 @@ private theorem cancellation_local_data_closed (state : RuntimeState) (selected 
             | false =>
                 let cancelled := fun owner => occurrenceInSubtree state.scopeOccurrences selected.root.id owner ||
                   (calledInstanceClosure state selected.root.id).contains owner.processInstanceId
-                have removed : recordInRegion cancelled record = true := by
+                let retainedRoot := match selected.kind with | .terminating => some selected.root.id | _ => none
+                have removed : recordInRegion cancelled record retainedRoot = true := by
                   rcases cancelling with kind | ⟨parent, kind⟩ <;>
-                    simpa [regionalSelectionReferenceRetention, kind, cancellationReferenceRetention, cancelled] using activityKept
-                have matching : (withdrawnByRegion cancelled state.activityOccurrences).any
+                    simpa [regionalSelectionReferenceRetention, kind, cancellationReferenceRetention, cancelled, retainedRoot, retainedCancellationRoot, kind] using activityKept
+                have matching : (withdrawnByRegion cancelled state.activityOccurrences retainedRoot).any
                     (regionalLocalScopeNamesActivity scope) = true :=
                   List.any_eq_true.mpr ⟨record, List.mem_filter.mpr ⟨recordMember, removed⟩, named⟩
-                dsimp only [cancelled] at matching
+                dsimp only [cancelled, retainedRoot] at matching
                 rcases cancelling with kind | ⟨parent, kind⟩ <;>
-                  simp only [regionalSelectionLocalDataRetention, kind, matching, Bool.not_true,
+                  simp only [kind] at matching <;>
+                  simp only [regionalSelectionLocalDataRetention, kind, retainedCancellationRoot, matching, Bool.not_true,
                     Bool.and_false, Bool.false_and, Bool.false_eq_true] at retained
           simp only [Bool.not_true, Bool.false_eq_true, ↓reduceIte, census, kept]
 

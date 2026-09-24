@@ -108,6 +108,7 @@ private def operationOriginElementId : SemanticOperation → Option NodeId
   | .triggerCompensation .. => none
   | .initiate _ origin _ | .initiateMessage _ origin _ _ | .initiateTimer _ origin _ _
   | .enterScope _ origin _ _ _ | .enterBoundedScope _ origin _ _ _ _
+  | .enterMonitoredScope _ origin _ _ _ _
   | .invokeProcess _ origin _ _ _ _ _ | .returnProcess _ origin _ _ _
   | .awaitUserTask _ origin _ _ _ | .awaitDataInputUserTask _ origin _ _ _ _ _
   | .awaitDataInputOutputUserTask _ origin _ _ _ _ _ _
@@ -120,6 +121,7 @@ private def operationOriginElementId : SemanticOperation → Option NodeId
   | .awaitCorrelatedPayloadMessage _ origin _ _ _ _ _ _ _
   | .awaitEventRace _ origin _ _ _ | .awaitBoundedUserTask _ origin _ _ _
   | .awaitMessageBoundedUserTask _ origin _ _ _
+  | .awaitMessageMonitoredUserTask _ origin _ _ _
   | .awaitMonitoredUserTask _ origin _ _ _ | .awaitEffect _ origin _ _ _ _
   | .duplicate _ origin _ _ | .synchronize _ origin _ _ | .mergeExclusive _ origin _ _
   | .choose _ origin _ _ _ _ | .selectMany _ origin _ _ _ _

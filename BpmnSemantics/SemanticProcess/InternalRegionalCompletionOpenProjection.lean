@@ -68,6 +68,17 @@ theorem regionalCompletion_effect_and_branch_fields (program : Program) (before 
         | (simp at result; done)
         | (simp only [Option.some.injEq] at result; subst after; exact ordinaryFields completed ordinary)
 
+theorem regionalSelectedCompletion_effect_and_branch_fields (program : Program) (before after : RuntimeState)
+    (definition : DefinitionScopeId) (output : Option ControlPlaceId)
+    (result : completeSelectedScope? program before definition output = some after) :
+    after.effectWaits = before.effectWaits ∧ after.effectIncidents = before.effectIncidents ∧
+      after.selectedBranchSets = before.selectedBranchSets := by
+  unfold completeSelectedScope? at result
+  split at result
+  · cases completeMonitoredScope_sound program before after definition output result
+    exact ⟨rfl, rfl, rfl⟩
+  · exact regionalCompletion_effect_and_branch_fields program before after definition output result
+
 /-- Normal hosting-root completion has an empty open set on both sides. Predecessor runtime
 validity supplies body liveness; preparation additionally supplies local-owner survival. -/
 theorem preparedRootComplete_open_projection (program : Program) (before : RuntimeState)
@@ -112,8 +123,13 @@ theorem preparedRootComplete_open_projection (program : Program) (before : Runti
   obtain ⟨after, fired, applied⟩ := prepareInternalRegional_executes program before _ prepared found
   have result : completeBoundedScope? program before definition none = some after := by
     simp only [fire?, snapshots] at fired
-    change completeBoundedScope? program before definition none = some after at fired
-    exact fired
+    change completeSelectedScope? program before definition none = some after at fired
+    unfold completeSelectedScope? at fired
+    split at fired
+    · unfold completeMonitoredScope? at fired
+      obtain ⟨pair, _, fired⟩ := Option.bind_eq_some_iff.mp fired
+      simp at fired
+    · exact fired
   obtain ⟨ordinary, completed, control, afterScopes, afterCalls, afterTokens⟩ :=
     completeBoundedScope_position_fields program before after definition none result
   obtain ⟨quiet, update⟩ := completeScopeState_selected_update before ordinary definition none prepared.selection.root census completed
@@ -136,7 +152,8 @@ theorem preparedRootComplete_open_projection (program : Program) (before : Runti
           (regionalSelectionReferenceRetention before prepared.selection).scope scope = false := by
         intro scope member
         cases withdrawal <;> simp [regionalSelectionReferenceRetention, kind,
-          ordinaryCompletionReferenceRetention, boundedCompletionReferenceRetention, parentEq]
+          ordinaryCompletionReferenceRetention, boundedCompletionReferenceRetention,
+          monitoredCompletionReferenceRetention, parentEq]
       have noActivities := retained_activities_empty_of_no_body before
         (regionalSelectionReferenceRetention before prepared.selection) (by
           intro record member

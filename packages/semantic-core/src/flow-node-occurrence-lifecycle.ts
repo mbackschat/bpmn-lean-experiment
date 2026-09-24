@@ -11,9 +11,7 @@ import {
 } from "./contract.js";
 import type { OccurrenceId, Stimulus } from "./contract.js";
 import {
-  ActivityBodyKind,
   ActivityHandlerKind,
-  activityOccurrenceForTaskBody,
 } from "./activity-occurrence.js";
 import type { DeepReadonly } from "./deep-readonly.js";
 import { SemanticOperationKind } from "./semantic-process-contract.js";
@@ -57,13 +55,12 @@ import {
 import {
   isMessageBoundaryDefinition,
   isMessageBoundedTaskDefinition,
-  messageBoundedPairForSubscription,
+  messageBoundaryPairForSubscription,
+  messageBoundaryPairForTask,
 } from "./semantic-process-message-bounded-task-runtime.js";
-import type {
-  MessageBoundedPair,
-} from "./semantic-process-message-bounded-task-runtime.js";
+import { isMessageMonitoredTaskDefinition, isMonitoredMessageBoundaryDefinition } from "./semantic-process-message-monitored-task-runtime.js";
 import { sameMessageChannel } from "./message-channel.js";
-import { scopeOccurrenceSubtree } from "./semantic-process-scope-cancellation.js";
+import { scopeCancellationWithdrawnActivities } from "./semantic-process-scope-cancellation.js";
 import {
   projectCompensationCompletionLifecycle,
   projectCompensationTriggerLifecycle,
@@ -224,8 +221,9 @@ function externalLifecycle(
     case StimulusKind.RetryIncident:
       return pieces();
     case StimulusKind.CompleteUserTaskInstance: {
-      if (isMessageBoundedTaskDefinition(program, stimulus.taskId)) {
-        const pair = messageBoundedPairForTask(
+      if (isMessageBoundedTaskDefinition(program, stimulus.taskId) ||
+          isMessageMonitoredTaskDefinition(program, stimulus.taskId)) {
+        const pair = messageBoundaryPairForTask(
           program,
           before,
           stimulus.taskId,
@@ -259,8 +257,9 @@ function externalLifecycle(
       return completed(stimulus.taskId);
     }
     case StimulusKind.DeliverMessage: {
-      if (isMessageBoundaryDefinition(program, stimulus.subscriptionId)) {
-        const pair = messageBoundedPairForSubscription(
+      if (isMessageBoundaryDefinition(program, stimulus.subscriptionId) ||
+          isMonitoredMessageBoundaryDefinition(program, stimulus.subscriptionId)) {
+        const pair = messageBoundaryPairForSubscription(
           program,
           before,
           stimulus.subscriptionId,
@@ -276,7 +275,7 @@ function externalLifecycle(
         return pair === undefined || boundary === null ||
             !sameMessageChannel(pair.message.channel, stimulus.channel)
           ? null
-          : pieces([], [
+          : pieces([], pair.definition.kind === SemanticOperationKind.AwaitMessageMonitoredUserTask ? [] : [
               {
                 anchor: waitAnchor(pair.task.id),
                 terminal: FlowNodeOccurrenceTerminalKind.Cancelled,
@@ -320,6 +319,8 @@ function externalLifecycle(
                 terminal: FlowNodeOccurrenceTerminalKind.Cancelled,
               }], [instant])
             : null;
+        case SemanticOperationKind.EnterMonitoredScope:
+          return "child" in boundary ? pieces([], [], [instant]) : null;
         case SemanticOperationKind.AwaitMonitoredUserTask:
           return "hostId" in boundary ? pieces([], [], [instant]) : null;
         case SemanticOperationKind.AwaitSequentialMultiInstanceUserTask: {
@@ -407,12 +408,14 @@ function internalLifecycle(
     case SemanticOperationKind.AwaitCorrelatedPayloadMessage:
     case SemanticOperationKind.AwaitTimer:
     case SemanticOperationKind.AwaitEffect: {
-      const starts = candidateLongLivedStarts(program, after, operation, owner);
+      const starts = candidateLongLivedStarts(program, before, after, operation, owner);
       return starts === null ? null : pieces(starts);
     }
+    case SemanticOperationKind.AwaitMessageMonitoredUserTask:
     case SemanticOperationKind.AwaitMessageBoundedUserTask: {
       const starts = candidateLongLivedStarts(
         program,
+        before,
         after,
         operation,
         owner,
@@ -424,17 +427,18 @@ function internalLifecycle(
     case SemanticOperationKind.TriggerCompensation:
       return projectCompensationTriggerLifecycle(program, before, after, operation, owner);
     case SemanticOperationKind.AwaitEventRace: {
-      const starts = candidateLongLivedStarts(program, after, operation, owner);
+      const starts = candidateLongLivedStarts(program, before, after, operation, owner);
       const gateway = instant();
       return starts === null || gateway === null ? null : pieces(starts, [], [gateway]);
     }
     case SemanticOperationKind.EnterScope:
+    case SemanticOperationKind.EnterMonitoredScope:
     case SemanticOperationKind.EnterBoundedScope: {
-      const starts = candidateLongLivedStarts(program, after, operation, owner);
+      const starts = candidateLongLivedStarts(program, before, after, operation, owner);
       return starts === null ? null : pieces(starts);
     }
     case SemanticOperationKind.InvokeProcess: {
-      const starts = candidateLongLivedStarts(program, after, operation, owner);
+      const starts = candidateLongLivedStarts(program, before, after, operation, owner);
       return starts === null ? null : pieces(starts);
     }
     case SemanticOperationKind.ReturnProcess: {
@@ -474,31 +478,6 @@ function internalLifecycle(
     default:
       return assertNever(operation);
   }
-}
-
-function messageBoundedPairForTask(
-  program: SemanticProcessProgram,
-  state: RuntimeState,
-  taskId: OccurrenceId,
-): MessageBoundedPair | undefined {
-  const record = activityOccurrenceForTaskBody(
-    state.activityOccurrences,
-    taskId,
-  );
-  const handler = record?.attachedHandlers.length === 1 &&
-      record.attachedHandlers[0]?.kind === ActivityHandlerKind.Message
-    ? record.attachedHandlers[0]
-    : undefined;
-  if (record === undefined || handler === undefined) return undefined;
-  const pair = messageBoundedPairForSubscription(
-    program,
-    state,
-    handler.occurrence,
-  );
-  return pair !== undefined && pair.record === record &&
-      sameOccurrence(pair.task.id, taskId)
-    ? pair
-    : undefined;
 }
 
 type LifecyclePieces = Readonly<{
@@ -559,7 +538,7 @@ function cancelledRegion(
     }
   };
   addScope(root.id);
-  const handlers = scopeCancellationHandlerWaitIds(program, state, root);
+  const handlers = scopeCancellationHandlerWaitIds(program, state, root, retainRoot);
   return openAnchorCandidates(program, state).filter((entry) => {
     const anchor = entry.anchor;
     if (entry.anchor.kind === SemanticFlowNodeOccurrenceAnchorKind.Scope && retainRoot && sameScopeOccurrence(entry.anchor.id, root.id)) return false;
@@ -575,13 +554,10 @@ export function scopeCancellationHandlerWaitIds(
   program: SemanticProcessProgram,
   state: RuntimeState,
   root: RuntimeScopeOccurrence,
+  retainRoot: boolean,
 ): OccurrenceId[] {
-  const subtree = scopeOccurrenceSubtree(state.scopeOccurrences, root);
-  const inside = (owner: ScopeOccurrenceId): boolean =>
-    subtree.some(({ id }) => sameScopeOccurrence(id, owner));
-  return state.activityOccurrences.filter(({ owner, body }) => inside(owner) ||
-    (body.kind === ActivityBodyKind.ChildScope && inside(body.scope))
-  ).flatMap(({ attachedHandlers }) => attachedHandlers.flatMap((handler) => {
+  return scopeCancellationWithdrawnActivities(state, root, retainRoot)
+    .flatMap(({ attachedHandlers }) => attachedHandlers.flatMap((handler) => {
     switch (handler.kind) {
       case ActivityHandlerKind.Timer:
         return state.timerWaits.some((wait) => sameOccurrence(wait.id, handler.occurrence) &&

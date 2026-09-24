@@ -107,11 +107,11 @@ theorem regional_pair_retained_timer_frame (program : Program) (before after : R
           subst completed
           exact frame timer member
       | none =>
-          have raw : completeBoundedScope? program before definition none = some after := by
+          have raw : completeSelectedScope? program before definition none = some after := by
             simp only [fire?, snapshots] at fired
             exact fired
           obtain ⟨withdrawal, _, census⟩ := regionalSelection_complete_census program before id origin definition none left.selection selected
-          obtain ⟨ordinary, completed, control, _⟩ := completeBoundedScope_position_fields program before after definition none raw
+          obtain ⟨ordinary, completed, control, _⟩ := completeSelectedScope_position_fields program before after definition none raw
           have update := (completeScopeState_selected_update before ordinary definition none left.selection.root census completed).2
           cases parent : left.selection.root.parent <;> simp only [parent, running] at update
           · split at update
@@ -187,9 +187,10 @@ theorem regional_pair_handler_withdrawal (program : Program) (before after : Run
     (rightFound : prepareInternalRegional? program before rightOperation = some right)
     (independent : regionalStateFootprintsIndependent left.footprint right.footprint = true)
     (applied : applyPreparedInternalRegional? program before left = some after)
-    (cancelling : right.selection.kind = .terminating ∨ ∃ parent, right.selection.kind = .interrupting parent) :
-    ∀ id, scopeCancellationWithdrawsHandler program after right.selection.root.id id =
-      scopeCancellationWithdrawsHandler program before right.selection.root.id id := by
+    (_cancelling : right.selection.kind = .terminating ∨ ∃ parent, right.selection.kind = .interrupting parent) :
+    ∀ id disposition, scopeCancellationWithdrawsHandler program after right.selection.root.id id disposition =
+      scopeCancellationWithdrawsHandler program before right.selection.root.id id disposition := by
+  intro id disposition
   have leftFacts := prepareInternalRegional_facts program before leftOperation left leftFound
   obtain ⟨selected, closed⟩ := ownershipClosedSelection_facts program before leftOperation left.selection leftFacts.2.2.2.1
   have identities : waitIdentitiesUnique before = true := by
@@ -201,22 +202,17 @@ theorem regional_pair_handler_withdrawal (program : Program) (before after : Run
   have fields := regionalSelection_reference_fields program before after leftOperation left.selection
     leftFacts.1 identities selected fired
   let oldRecords := withdrawnByRegion (fun owner => occurrenceInSubtree before.scopeOccurrences right.selection.root.id owner ||
-    (calledInstanceClosure before right.selection.root.id).contains owner.processInstanceId) before.activityOccurrences
+    (calledInstanceClosure before right.selection.root.id).contains owner.processInstanceId) before.activityOccurrences (retainedCancellationRoot right.selection.root.id disposition)
   have records : withdrawnByRegion (fun owner => occurrenceInSubtree after.scopeOccurrences right.selection.root.id owner ||
-      (calledInstanceClosure after right.selection.root.id).contains owner.processInstanceId) after.activityOccurrences = oldRecords := by
-    have writes := withdrawn_activity_frame program before after hosting leftOperation rightOperation left right
-      valid running leftFound rightFound independent applied
-    unfold regionalWithdrawnActivityWrites at writes
-    have raw := (List.map_inj_right (fun _ _ equal => InternalRegionalStateAtom.activityAssociation.inj equal)).mp writes
-    rcases cancelling with kind | ⟨parent, kind⟩ <;>
-      simpa only [regionalSelectionReferenceRetention, kind, cancellationReferenceRetention, Bool.not_not,
-        oldRecords, withdrawnByRegion] using raw
+      (calledInstanceClosure after right.selection.root.id).contains owner.processInstanceId) after.activityOccurrences (retainedCancellationRoot right.selection.root.id disposition) = oldRecords := by
+    exact regional_pair_cancellation_activity_frame program before after hosting leftOperation rightOperation left right
+      valid running leftFound rightFound independent applied _
   have retained (record : ActivityOccurrence) (member : record ∈ oldRecords) :
       record ∈ before.activityOccurrences ∧ (regionalSelectionReferenceRetention before left.selection).activity record = true := by
     have afterMember : record ∈ after.activityOccurrences :=
       (List.mem_filter.mp (show record ∈ withdrawnByRegion (fun owner =>
         occurrenceInSubtree after.scopeOccurrences right.selection.root.id owner ||
-          (calledInstanceClosure after right.selection.root.id).contains owner.processInstanceId) after.activityOccurrences by
+          (calledInstanceClosure after right.selection.root.id).contains owner.processInstanceId) after.activityOccurrences (retainedCancellationRoot right.selection.root.id disposition) by
             rw [records]; exact member)).1
     rw [fields.2.1] at afterMember
     exact List.mem_filter.mp afterMember
@@ -248,26 +244,25 @@ theorem regional_pair_handler_withdrawal (program : Program) (before after : Run
         have classification := regional_pair_retained_timer_frame program before after hosting leftOperation rightOperation left right
           valid running leftFound rightFound independent applied wait afterMember
         simp [kept, classification]
-  intro id
   simp only [scopeCancellationWithdrawsHandler, records, messageFrame, timerFrame]
   rfl
 
 private theorem cancellation_handler_classification (program : Program) (state : RuntimeState)
-    (hosting : SemanticId) (current : List OpenSemanticFlowNodeOccurrence) (root : ScopeOccurrenceId)
+    (hosting : SemanticId) (current : List OpenSemanticFlowNodeOccurrence) (root : ScopeOccurrenceId) (disposition : SelectedScopeDisposition)
     (running : state.control = .running hosting)
     (valid : flowNodeOccurrenceWaitProgramValidity program state = true)
     (projected : projectOpenFlowNodeOccurrences? program state = some current) :
-    (∀ wait ∈ state.waits, scopeCancellationWithdrawsHandler program state root (userTaskWaitOccurrence wait) = false) ∧
-    (∀ wait ∈ state.messageWaits, scopeCancellationWithdrawsHandler program state root (messageWaitOccurrence wait) =
+    (∀ wait ∈ state.waits, scopeCancellationWithdrawsHandler program state root (userTaskWaitOccurrence wait) disposition = false) ∧
+    (∀ wait ∈ state.messageWaits, scopeCancellationWithdrawsHandler program state root (messageWaitOccurrence wait) disposition =
       activityRecordsAttachMessageWait (withdrawnByRegion (fun owner => occurrenceInSubtree state.scopeOccurrences root owner ||
-        (calledInstanceClosure state root).contains owner.processInstanceId) state.activityOccurrences) wait) ∧
+        (calledInstanceClosure state root).contains owner.processInstanceId) state.activityOccurrences (retainedCancellationRoot root disposition)) wait) ∧
     (∀ wait ∈ state.timerWaits.filter (fun timer => !flowNodeOccurrenceBoundaryTimerBound program state timer),
-      scopeCancellationWithdrawsHandler program state root (timerWaitOccurrence wait) =
+      scopeCancellationWithdrawsHandler program state root (timerWaitOccurrence wait) disposition =
         anyTimerIdNamesWait (attachedTimersOf (withdrawnByRegion (fun owner => occurrenceInSubtree state.scopeOccurrences root owner ||
-          (calledInstanceClosure state root).contains owner.processInstanceId) state.activityOccurrences)) wait) ∧
-    (∀ wait ∈ state.effectWaits, scopeCancellationWithdrawsHandler program state root (effectWaitOccurrence wait) = false) ∧
+          (calledInstanceClosure state root).contains owner.processInstanceId) state.activityOccurrences (retainedCancellationRoot root disposition))) wait) ∧
+    (∀ wait ∈ state.effectWaits, scopeCancellationWithdrawsHandler program state root (effectWaitOccurrence wait) disposition = false) ∧
     (∀ incident ∈ state.effectIncidents,
-      scopeCancellationWithdrawsHandler program state root (effectWaitOccurrence incident.wait) = false) := by
+      scopeCancellationWithdrawsHandler program state root (effectWaitOccurrence incident.wait) disposition = false) := by
   have unique := projected_public_wait_identities_nodup program state hosting current running valid projected
   obtain ⟨fourUnique, _, beforeIncident⟩ := List.nodup_append.mp unique
   obtain ⟨threeUnique, _, beforeEffect⟩ := List.nodup_append.mp fourUnique
@@ -281,12 +276,12 @@ private theorem cancellation_handler_classification (program : Program) (state :
     · intro message; exact beforeMessage _ present _ message rfl
     · intro timer; exact beforeTimer _ (by simp only [List.mem_append]; exact Or.inl present) _ timer rfl
   · intro wait member
-    apply scopeCancellationWithdrawsHandler_message program state root wait messageUnique member
+    apply scopeCancellationWithdrawsHandler_message (disposition := disposition) program state root wait messageUnique member
     intro timer
     exact beforeTimer _ (by simp only [List.mem_append]; exact Or.inr (List.mem_map.mpr ⟨wait, member, rfl⟩)) _ timer rfl
   · intro wait member
     obtain ⟨present, visible⟩ := List.mem_filter.mp member
-    apply scopeCancellationWithdrawsHandler_timer program state root wait timerUnique present (by simpa using visible)
+    apply scopeCancellationWithdrawsHandler_timer (disposition := disposition) program state root wait timerUnique present (by simpa using visible)
     intro message
     exact beforeTimer _ (by simp only [List.mem_append]; exact Or.inr message)
       _ (List.mem_map.mpr ⟨wait, member, rfl⟩) rfl
@@ -313,11 +308,11 @@ private theorem cancelled_handlers_retained_by_other (state : RuntimeState)
     (cancelling : other.kind = .terminating ∨ ∃ parent, other.kind = .interrupting parent) :
     (∀ wait ∈ state.messageWaits, activityRecordsAttachMessageWait (withdrawnByRegion (fun owner =>
         occurrenceInSubtree state.scopeOccurrences other.root.id owner ||
-          (calledInstanceClosure state other.root.id).contains owner.processInstanceId) state.activityOccurrences) wait = true →
+          (calledInstanceClosure state other.root.id).contains owner.processInstanceId) state.activityOccurrences (retainedCancellationRoot other.root.id (if other.kind = .terminating then .retain else .remove))) wait = true →
       (regionalSelectionReferenceRetention state selected).message wait = true) ∧
     (∀ wait ∈ state.timerWaits, anyTimerIdNamesWait (attachedTimersOf (withdrawnByRegion (fun owner =>
         occurrenceInSubtree state.scopeOccurrences other.root.id owner ||
-          (calledInstanceClosure state other.root.id).contains owner.processInstanceId) state.activityOccurrences)) wait = true →
+          (calledInstanceClosure state other.root.id).contains owner.processInstanceId) state.activityOccurrences (retainedCancellationRoot other.root.id (if other.kind = .terminating then .retain else .remove)))) wait = true →
       (regionalSelectionReferenceRetention state selected).timer wait = true) := by
   apply closed_reference_handlers_retained state _ _ closed
   intro record member
@@ -325,6 +320,7 @@ private theorem cancelled_handlers_retained_by_other (state : RuntimeState)
   refine ⟨recordMember, ?_⟩
   have otherRemoved : (regionalSelectionReferenceRetention state other).activity record = false := by
     rcases cancelling with kind | ⟨parent, kind⟩ <;>
+      simp only [kind, reduceCtorEq, ↓reduceIte] at removed <;>
       simp only [regionalSelectionReferenceRetention, kind, cancellationReferenceRetention, removed, Bool.not_true]
   cases kept : (regionalSelectionReferenceRetention state selected).activity record with
   | true => rfl
@@ -336,7 +332,7 @@ private theorem cancelled_handlers_retained_by_other (state : RuntimeState)
 
 private theorem mapped_cancellation_disjoint (program : Program) (state : RuntimeState)
     (hosting : SemanticId) (leftRoot rightRoot : ScopeOccurrenceId)
-    (leftRegion rightRegion : InternalOccurrenceRegion)
+    (leftRegion rightRegion : InternalOccurrenceRegion) (retainLeft retainRight : Bool)
     (position : runtimePositionValid program hosting state = true)
     (running : state.control = .running hosting)
     (leftDerived : deriveInternalOccurrenceRegion? state leftRoot = some leftRegion)
@@ -351,14 +347,14 @@ private theorem mapped_cancellation_disjoint (program : Program) (state : Runtim
     (separated : ∀ value ∈ values, (owner value) ∈ state.scopeOccurrences.map (·.id) →
       ((occurrenceInSubtree state.scopeOccurrences leftRoot (owner value) ||
           (calledInstanceClosure state leftRoot).contains (owner value).processInstanceId ||
-          scopeCancellationWithdrawsHandler program state leftRoot (identity value)) &&
+          scopeCancellationWithdrawsHandler program state leftRoot (identity value) (if retainLeft then .retain else .remove)) &&
         (occurrenceInSubtree state.scopeOccurrences rightRoot (owner value) ||
           (calledInstanceClosure state rightRoot).contains (owner value).processInstanceId ||
-          scopeCancellationWithdrawsHandler program state rightRoot (identity value))) = false) :
-    ∀ entry ∈ starts, ∀ retainLeft retainRight,
+          scopeCancellationWithdrawsHandler program state rightRoot (identity value) (if retainRight then .retain else .remove))) = false) :
+    ∀ entry ∈ starts,
       (regionalCancelsOpenOccurrence program state leftRegion retainLeft entry &&
         regionalCancelsOpenOccurrence program state rightRegion retainRight entry) = false := by
-  intro entry member retainLeft retainRight
+  intro entry member
   obtain ⟨value, valueMember, started⟩ := mapM_output_member values _ starts mapped entry member
   have live := (waitStart_regional_ownership program state _ _ _ entry started).1
   unfold waitStart? at started
@@ -385,9 +381,9 @@ private theorem cancellation_wait_disjoint (program : Program) (state : RuntimeS
     (rightCancels : right.selection.kind = .terminating ∨ ∃ parent, right.selection.kind = .interrupting parent)
     (opened : projectOpenFlowNodeOccurrences? program state = some current)
     (projected : projectWaits? program state = some entries) :
-    ∀ entry ∈ entries, ∀ retainLeft retainRight,
-      (regionalCancelsOpenOccurrence program state left.region retainLeft entry &&
-        regionalCancelsOpenOccurrence program state right.region retainRight entry) = false := by
+    ∀ entry ∈ entries,
+      (regionalCancelsOpenOccurrence program state left.region (decide (left.selection.kind = .terminating)) entry &&
+        regionalCancelsOpenOccurrence program state right.region (decide (right.selection.kind = .terminating)) entry) = false := by
   have lf := prepareInternalRegional_facts program state leftOperation left leftFound
   have rf := prepareInternalRegional_facts program state rightOperation right rightFound
   have leftDerived := lf.2.2.2.2.1
@@ -399,8 +395,10 @@ private theorem cancellation_wait_disjoint (program : Program) (state : RuntimeS
   have waitValidity : flowNodeOccurrenceWaitProgramValidity program state = true := by
     simp only [flowNodeOccurrenceProgramValidity, Bool.and_eq_true] at programValidity
     exact programValidity.1.1.2
-  have leftHandlers := cancellation_handler_classification program state hosting current left.selection.root.id running waitValidity opened
-  have rightHandlers := cancellation_handler_classification program state hosting current right.selection.root.id running waitValidity opened
+  have leftHandlers := cancellation_handler_classification program state hosting current left.selection.root.id
+    (if left.selection.kind = .terminating then .retain else .remove) running waitValidity opened
+  have rightHandlers := cancellation_handler_classification program state hosting current right.selection.root.id
+    (if right.selection.kind = .terminating then .retain else .remove) running waitValidity opened
   have leftKeeps := cancelled_handlers_retained_by_other state left.selection right.selection left.region right.region
     left.footprint right.footprint lf.2.2.2.2.2.1 rf.2.2.2.2.2.1 independent
     (ownershipClosedSelection_facts program state leftOperation left.selection lf.2.2.2.1).2 rightCancels
@@ -424,56 +422,58 @@ private theorem cancellation_wait_disjoint (program : Program) (state : RuntimeS
     exact disjoint owner (List.contains_iff_mem.mp l) (List.contains_iff_mem.mp r)
   have messageDisjoint (wait : MessageWait) (member : wait ∈ state.messageWaits)
       (live : wait.owner ∈ state.scopeOccurrences.map (·.id)) :
-      ((cancelled left.selection wait.owner || scopeCancellationWithdrawsHandler program state left.selection.root.id (messageWaitOccurrence wait)) &&
-        (cancelled right.selection wait.owner || scopeCancellationWithdrawsHandler program state right.selection.root.id (messageWaitOccurrence wait))) = false := by
+      ((cancelled left.selection wait.owner || scopeCancellationWithdrawsHandler program state left.selection.root.id (messageWaitOccurrence wait) (if left.selection.kind = .terminating then .retain else .remove)) &&
+        (cancelled right.selection wait.owner || scopeCancellationWithdrawsHandler program state right.selection.root.id (messageWaitOccurrence wait) (if right.selection.kind = .terminating then .retain else .remove))) = false := by
     rw [leftHandlers.2.1 wait member, rightHandlers.2.1 wait member]
     have lk := leftKeeps.1 wait member
     have rk := rightKeeps.1 wait member
     rcases leftCancels with kindL | ⟨parentL, kindL⟩ <;>
       rcases rightCancels with kindR | ⟨parentR, kindR⟩ <;>
-      simp only [regionalSelectionReferenceRetention, kindL, kindR, cancellationReferenceRetention] at lk rk
+      simp only [regionalSelectionReferenceRetention, kindL, kindR, cancellationReferenceRetention, reduceCtorEq, ↓reduceIte] at lk rk ⊢
     all_goals
       have base := ownersDisjoint wait.owner live
       exact cancellation_predicates_disjoint _ _ _ _ base lk rk
   have timerDisjoint (wait : TimerWait)
       (member : wait ∈ state.timerWaits.filter (fun timer => !flowNodeOccurrenceBoundaryTimerBound program state timer))
       (live : wait.owner ∈ state.scopeOccurrences.map (·.id)) :
-      ((cancelled left.selection wait.owner || scopeCancellationWithdrawsHandler program state left.selection.root.id (timerWaitOccurrence wait)) &&
-        (cancelled right.selection wait.owner || scopeCancellationWithdrawsHandler program state right.selection.root.id (timerWaitOccurrence wait))) = false := by
+      ((cancelled left.selection wait.owner || scopeCancellationWithdrawsHandler program state left.selection.root.id (timerWaitOccurrence wait) (if left.selection.kind = .terminating then .retain else .remove)) &&
+        (cancelled right.selection wait.owner || scopeCancellationWithdrawsHandler program state right.selection.root.id (timerWaitOccurrence wait) (if right.selection.kind = .terminating then .retain else .remove))) = false := by
     rw [leftHandlers.2.2.1 wait member, rightHandlers.2.2.1 wait member]
     have lk := leftKeeps.2 wait (List.mem_filter.mp member).1
     have rk := rightKeeps.2 wait (List.mem_filter.mp member).1
     rcases leftCancels with kindL | ⟨parentL, kindL⟩ <;>
       rcases rightCancels with kindR | ⟨parentR, kindR⟩ <;>
-      simp only [regionalSelectionReferenceRetention, kindL, kindR, cancellationReferenceRetention] at lk rk
+      simp only [regionalSelectionReferenceRetention, kindL, kindR, cancellationReferenceRetention, reduceCtorEq, ↓reduceIte] at lk rk ⊢
     all_goals
       have base := ownersDisjoint wait.owner live
       exact cancellation_predicates_disjoint _ _ _ _ base lk rk
   have mapped := @mapped_cancellation_disjoint program state hosting left.selection.root.id right.selection.root.id
-    left.region right.region position running leftDerived rightDerived
+    left.region right.region (decide (left.selection.kind = .terminating))
+    (decide (right.selection.kind = .terminating)) position running leftDerived rightDerived
+  simp only [decide_eq_true_eq] at mapped
   obtain ⟨tasks, messages, timers, effects, incidents, tasksEq, messagesEq, timersEq, effectsEq, incidentsEq, rfl⟩ :=
     (projectWaits_eq_some_iff program state entries).mp projected
   obtain ⟨taskOwners, messageOwners, timerOwners, effectOwners, incidentOwners⟩ :=
     flowNodeOccurrenceWaitProgramValidity_wait_owner_ids program state waitValidity
-  intro entry member retainLeft retainRight
+  intro entry member
   simp only [List.mem_append] at member
   rcases member with member | member | member | member | member
   · exact @mapped _ state.waits (·.owner) (fun wait => ⟨wait.task.id.value⟩) (·.activation) userTaskWaitOccurrence tasks tasksEq
       (by intro wait mem; simp only [userTaskWaitOccurrence, taskOwners wait mem])
       (by intro wait mem live; simpa only [leftHandlers.1 wait mem, rightHandlers.1 wait mem, Bool.or_false] using ownersDisjoint wait.owner live)
-      entry member retainLeft retainRight
+      entry member
   · exact @mapped _ state.messageWaits (·.owner) (·.elementId) (·.activation) messageWaitOccurrence messages messagesEq
-      (by intro wait mem; simp only [messageWaitOccurrence, messageOwners wait mem]) messageDisjoint entry member retainLeft retainRight
+      (by intro wait mem; simp only [messageWaitOccurrence, messageOwners wait mem]) messageDisjoint entry member
   · exact @mapped TimerWait _ (·.owner) (·.elementId) (·.activation) timerWaitOccurrence timers timersEq
-      (by intro wait mem; simp only [timerWaitOccurrence, timerOwners wait (List.mem_filter.mp mem).1]) timerDisjoint entry member retainLeft retainRight
+      (by intro wait mem; simp only [timerWaitOccurrence, timerOwners wait (List.mem_filter.mp mem).1]) timerDisjoint entry member
   · exact @mapped _ state.effectWaits (·.owner) (·.elementId) (·.activation) effectWaitOccurrence effects effectsEq
       (by intro wait mem; simp only [effectWaitOccurrence, effectOwners wait mem])
       (by intro wait mem live; simpa only [leftHandlers.2.2.2.1 wait mem, rightHandlers.2.2.2.1 wait mem, Bool.or_false] using ownersDisjoint wait.owner live)
-      entry member retainLeft retainRight
+      entry member
   · exact @mapped _ state.effectIncidents (·.wait.owner) (·.wait.elementId) (·.wait.activation) (fun incident => effectWaitOccurrence incident.wait)
       incidents incidentsEq (by intro incident mem; simp only [effectWaitOccurrence, incidentOwners incident mem])
       (by intro incident mem live; simpa only [leftHandlers.2.2.2.2 incident mem, rightHandlers.2.2.2.2 incident mem, Bool.or_false] using ownersDisjoint incident.wait.owner live)
-      entry member retainLeft retainRight
+      entry member
 
 private theorem cancellation_open_disjoint (program : Program) (state : RuntimeState)
     (hosting : SemanticId) (leftOperation rightOperation : SemanticOperation)
@@ -486,9 +486,9 @@ private theorem cancellation_open_disjoint (program : Program) (state : RuntimeS
     (leftCancels : left.selection.kind = .terminating ∨ ∃ parent, left.selection.kind = .interrupting parent)
     (rightCancels : right.selection.kind = .terminating ∨ ∃ parent, right.selection.kind = .interrupting parent)
     (opened : projectOpenFlowNodeOccurrences? program state = some current) :
-    ∀ entry ∈ current, ∀ retainLeft retainRight,
-      (regionalCancelsOpenOccurrence program state left.region retainLeft entry &&
-        regionalCancelsOpenOccurrence program state right.region retainRight entry) = false := by
+    ∀ entry ∈ current,
+      (regionalCancelsOpenOccurrence program state left.region (decide (left.selection.kind = .terminating)) entry &&
+        regionalCancelsOpenOccurrence program state right.region (decide (right.selection.kind = .terminating)) entry) = false := by
   have lf := prepareInternalRegional_facts program state leftOperation left leftFound
   have rf := prepareInternalRegional_facts program state rightOperation right rightFound
   have disjoint := regional_pair_regions_disjoint state left.selection right.selection left.region right.region
@@ -521,7 +521,7 @@ private theorem cancellation_open_disjoint (program : Program) (state : RuntimeS
     obtain ⟨l, r⟩ := Bool.and_eq_true_iff.mp both
     simp only [regionalCancelsOpenOccurrence, anchor] at l r
     exact disjoint _ (List.contains_iff_mem.mp l) (List.contains_iff_mem.mp r)
-  intro entry member retainLeft retainRight
+  intro entry member
   have raw := opened
   simp only [projectOpenFlowNodeOccurrences?, running] at raw
   split at raw
@@ -538,11 +538,11 @@ private theorem cancellation_open_disjoint (program : Program) (state : RuntimeS
       · rcases List.mem_append.mp rawMember with rawMember | rawMember
         · exact cancellation_wait_disjoint program state hosting leftOperation rightOperation left right current waits
             valid running leftFound rightFound independent leftCancels rightCancels opened waitsEq
-            entry rawMember retainLeft retainRight
+            entry rawMember
         · obtain ⟨scope, _, started⟩ := mapM_output_member _ _ scopeStarts scopeEq entry rawMember
-          exact scopes entry member scope.id (scope_start_anchor program state scope entry started) retainLeft retainRight
+          exact scopes entry member scope.id (scope_start_anchor program state scope entry started) (decide (left.selection.kind = .terminating)) (decide (right.selection.kind = .terminating))
       · obtain ⟨record, _, started⟩ := mapM_output_member _ _ callStarts callEq entry rawMember
-        exact calls entry record.id (call_start_anchor program state record entry started) retainLeft retainRight
+        exact calls entry record.id (call_start_anchor program state record entry started) (decide (left.selection.kind = .terminating)) (decide (right.selection.kind = .terminating))
     · contradiction
 
 theorem mapM_input_member (values : List α) (project : α → Option β)
@@ -620,8 +620,8 @@ private theorem cancellation_entry_not_ended (program : Program) (state : Runtim
     (independent : regionalStateFootprintsIndependent left.footprint right.footprint = true)
     (rightCancels : right.selection.kind = .terminating ∨ ∃ parent, right.selection.kind = .interrupting parent)
     (opened : projectOpenFlowNodeOccurrences? program state = some current)
-    (entry : OpenSemanticFlowNodeOccurrence) (member : entry ∈ current) (retain : Bool)
-    (cancelled : regionalCancelsOpenOccurrence program state right.region retain entry = true) :
+    (entry : OpenSemanticFlowNodeOccurrence) (member : entry ∈ current)
+    (cancelled : regionalCancelsOpenOccurrence program state right.region (decide (right.selection.kind = .terminating)) entry = true) :
     entry.anchor ∉ left.publicationTemplate.retainedEnds.map (·.anchor) := by
   have lf := prepareInternalRegional_facts program state leftOperation left leftFound
   have rf := prepareInternalRegional_facts program state rightOperation right rightFound
@@ -635,7 +635,7 @@ private theorem cancellation_entry_not_ended (program : Program) (state : Runtim
   have actualEq : actual = current := Option.some.inj (actualOpened.symm.trans opened)
   subst actual
   have cancelling (leftCancels : left.selection.kind = .terminating ∨ ∃ parent, left.selection.kind = .interrupting parent)
-      (retainLeft : Bool) (endsEq : ends = regionalCancellationEnds program state left.region retainLeft current) :
+      (endsEq : ends = regionalCancellationEnds program state left.region (decide (left.selection.kind = .terminating)) current) :
       entry.anchor ∉ left.publicationTemplate.retainedEnds.map (·.anchor) := by
     rw [template, endsEq]
     intro present
@@ -647,7 +647,7 @@ private theorem cancellation_entry_not_ended (program : Program) (state : Runtim
       other entry otherMember member (by rw [← anchorEq, ← endingEq])
     subst other
     have separate := cancellation_open_disjoint program state hosting leftOperation rightOperation left right current
-      valid running leftFound rightFound independent leftCancels rightCancels opened entry member retainLeft retain
+      valid running leftFound rightFound independent leftCancels rightCancels opened entry member
     simp [otherCancelled, cancelled] at separate
   cases leftOperation with
   | returnProcess id origin process definition output =>
@@ -699,13 +699,13 @@ private theorem cancellation_entry_not_ended (program : Program) (state : Runtim
       obtain ⟨_, _, lifecycle⟩ := Option.bind_eq_some_iff.mp lifecycle
       obtain ⟨_, _, lifecycle⟩ := Option.bind_eq_some_iff.mp lifecycle
       cases lifecycle
-      exact cancelling (Or.inr ⟨_, kind⟩) false rfl
+      exact cancelling (Or.inr ⟨_, kind⟩) (by simp [kind])
   | terminateScope id origin input definition =>
       cases kind : left.selection.kind <;> simp only [kind] at facts <;> try contradiction
       simp only [regionalLifecycleTemplate?, operation, kind] at lifecycle
       obtain ⟨_, _, lifecycle⟩ := Option.bind_eq_some_iff.mp lifecycle
       cases lifecycle
-      exact cancelling (Or.inl kind) true rfl
+      exact cancelling (Or.inl kind) (by simp [kind])
   | _ => simp at facts
 
 /-- Independent preparation protects every projected entry selected by cancellation,
@@ -723,8 +723,8 @@ theorem regionalCancellationEnds_after_independent_regional (program : Program) 
     ∃ current next,
       projectOpenFlowNodeOccurrences? program before = some current ∧
       projectOpenFlowNodeOccurrences? program after = some next ∧
-      ∀ retain, regionalCancellationEnds program after right.region retain next =
-        regionalCancellationEnds program before right.region retain current := by
+      regionalCancellationEnds program after right.region (decide (right.selection.kind = .terminating)) next =
+        regionalCancellationEnds program before right.region (decide (right.selection.kind = .terminating)) current := by
   obtain ⟨current, opened, nextOpened⟩ := preparedRegional_open_projection_filter program before after hosting
     leftOperation left valid leftFound applied
   have handlers := regional_pair_handler_withdrawal program before after hosting leftOperation rightOperation left right
@@ -736,7 +736,7 @@ theorem regionalCancellationEnds_after_independent_regional (program : Program) 
         regionalCancelsOpenOccurrence program before right.region retain entry := by
     cases anchor : entry.anchor <;> simp only [regionalCancelsOpenOccurrence, anchor, root, handlers]
   refine ⟨current, _, opened, nextOpened, ?_⟩
-  intro retain
+  let retain := decide (right.selection.kind = .terminating)
   unfold regionalCancellationEnds removeEndedFlowNodeOccurrences
   rw [List.filter_filter]
   apply congrArg (List.map fun entry : OpenSemanticFlowNodeOccurrence =>
@@ -748,7 +748,7 @@ theorem regionalCancellationEnds_after_independent_regional (program : Program) 
   | false => simp
   | true =>
       have absent := cancellation_entry_not_ended program before hosting leftOperation rightOperation left right current
-        valid running leftFound rightFound independent cancelling opened entry member retain selected
+        valid running leftFound rightFound independent cancelling opened entry member selected
       have notContained : (left.publicationTemplate.retainedEnds.map (·.anchor)).contains entry.anchor = false :=
         Bool.eq_false_iff.mpr (fun contained => absent (List.contains_iff_mem.mp contained))
       simp only [notContained, Bool.not_false, Bool.true_and]

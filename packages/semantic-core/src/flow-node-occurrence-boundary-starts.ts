@@ -17,6 +17,7 @@ import type {
   SemanticProcessProgram,
 } from "./semantic-process-contract.js";
 import {
+  nextActivation,
   sameOccurrence,
   sameScopeOccurrence,
 } from "./semantic-process-state.js";
@@ -46,6 +47,7 @@ const CallAnchorKind = "callActivity" as SemanticFlowNodeOccurrenceAnchorKind.Ca
 /** Constructs every long-lived start created by one selected internal operation. */
 export function candidateLongLivedStarts(
   program: SemanticProcessProgram,
+  before: RuntimeState,
   after: RuntimeState,
   operation: SemanticOperation,
   owner: ScopeOccurrenceId,
@@ -57,6 +59,7 @@ export function candidateLongLivedStarts(
     case SemanticOperationKind.AwaitUserTask: {
       const wait = only(after.userTaskWaits.filter((candidate) =>
         candidate.id.elementId === operation.task.elementId &&
+        candidate.id.activation === nextActivation(before.taskActivations, operation.task.elementId) &&
         candidate.output === operation.output &&
         candidate.name === operation.task.name &&
         sameJson(candidate.metadata, operation.task.metadata) &&
@@ -76,6 +79,7 @@ export function candidateLongLivedStarts(
       ));
       return oneWaitStart(processId, operation.task.elementId, owner, wait?.id);
     }
+    case SemanticOperationKind.AwaitMessageMonitoredUserTask:
     case SemanticOperationKind.AwaitMessageBoundedUserTask:
       return messageBoundedUserTaskStarts(
         after,
@@ -103,6 +107,7 @@ export function candidateLongLivedStarts(
     case SemanticOperationKind.AwaitCorrelatedPayloadMessage: {
       const wait = only(after.messageWaits.filter((candidate) =>
         candidate.id.elementId === operation.message.elementId &&
+        candidate.id.activation === nextActivation(before.messageActivations, operation.message.elementId) &&
         candidate.output === operation.output &&
         sameMessageChannel(candidate.channel, operation.message.channel) &&
         sameScopeOccurrence(candidate.owner, owner)
@@ -136,6 +141,7 @@ export function candidateLongLivedStarts(
     case SemanticOperationKind.AwaitEventRace:
       return eventRaceStarts(program, after, operation, owner, processId);
     case SemanticOperationKind.EnterScope:
+    case SemanticOperationKind.EnterMonitoredScope:
     case SemanticOperationKind.EnterBoundedScope: {
       const definition = only(program.definitionScopes.filter(({ id, originElementId }) =>
         id === operation.childScopeId && originElementId === operation.origin.elementId
@@ -195,7 +201,7 @@ function messageBoundedUserTaskStarts(
   after: RuntimeState,
   operation: Extract<
     SemanticOperation,
-    { kind: SemanticOperationKind.AwaitMessageBoundedUserTask }
+    { kind: SemanticOperationKind.AwaitMessageBoundedUserTask | SemanticOperationKind.AwaitMessageMonitoredUserTask }
   >,
   owner: ScopeOccurrenceId,
   processId: string,

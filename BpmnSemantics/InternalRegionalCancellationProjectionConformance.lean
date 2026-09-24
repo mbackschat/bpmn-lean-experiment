@@ -58,7 +58,7 @@ def errorProgram : Program :=
   lowerCheckedProcess
     { source with
       nodes := source.nodes ++
-        [.timerBoundaryEvent ⟨"Deadline"⟩ ⟨"SubProcess_Work"⟩ .interrupting "PT1S" ⟨"Flow_Timeout"⟩,
+        [.timerBoundaryEvent ⟨"Deadline"⟩ ⟨"SubProcess_Work"⟩ .interrupting (.duration "PT1S") ⟨"Flow_Timeout"⟩,
           .noneEndEvent ⟨"TimeoutEnd"⟩]
       nodeScopes := source.nodeScopes ++
         [{ nodeId := ⟨"Deadline"⟩, scopeId := SubProcessErrorPropagationConformance.rootScopeId },
@@ -217,11 +217,15 @@ def exactHandlerPublication (timer terminate : Bool) : Bool :=
       programWellFormed program &&
       runtimeStateWellFormed program (hosting terminate) before &&
       runtimeStateWellFormed program (hosting terminate) after &&
-      after.messageWaits.isEmpty && after.timerWaits.isEmpty &&
+      (if terminate then
+        decide (after.messageWaits = before.messageWaits ∧ after.timerWaits = before.timerWaits ∧
+          after.activityOccurrences = before.activityOccurrences)
+      else after.messageWaits.isEmpty && after.timerWaits.isEmpty && after.activityOccurrences.isEmpty) &&
+      (after.scopeOccurrences.any (fun scope => decide (scope.id = body terminate)) == terminate) &&
       (projectOpenFlowNodeOccurrences? program before).isSome &&
       (projectOpenFlowNodeOccurrences? program after).isSome &&
-      prepared.publicationTemplate.retainedEnds.contains
-        { anchor := .wait (handler terminate), terminal := .cancelled } &&
+      (prepared.publicationTemplate.retainedEnds.contains
+        { anchor := .wait (handler terminate), terminal := .cancelled } == !terminate) &&
       decide (flowNodeOccurrenceDeltaForOperation? program before after (selected timer terminate)
         ⟨"cancel-body"⟩ 0 = some (prepared.publicationTemplate.lifecycle ⟨"cancel-body"⟩ 0))
 

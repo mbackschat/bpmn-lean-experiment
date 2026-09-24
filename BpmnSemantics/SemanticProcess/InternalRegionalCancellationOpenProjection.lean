@@ -25,10 +25,10 @@ theorem cancelScopeSubtree_child_open_projection (program : Program) (state : Ru
     projectOpenFlowNodeOccurrences? program (cancelScopeSubtree state root.id disposition) =
       some (current.filter fun entry =>
         (decide (disposition = .retain) && decide (entry.anchor = .scope root.id)) ||
-          !flowNodeOccurrenceOwnedBySubtree program state root.id entry) := by
+          !flowNodeOccurrenceOwnedBySubtree program state root.id entry disposition) := by
   let keep := fun entry : OpenSemanticFlowNodeOccurrence =>
     (decide (disposition = .retain) && decide (entry.anchor = .scope root.id)) ||
-      !flowNodeOccurrenceOwnedBySubtree program state root.id entry
+      !flowNodeOccurrenceOwnedBySubtree program state root.id entry disposition
   have admitted : programWellFormed program = true := by
     simp only [runtimePositionValid, Bool.and_eq_true] at valid
     exact valid.1.1
@@ -59,7 +59,7 @@ theorem cancelScopeSubtree_child_open_projection (program : Program) (state : Ru
       split at raw
       · exact (Option.some.inj raw).symm
       · contradiction
-    have waitKeep : waits.filter (fun entry => !flowNodeOccurrenceOwnedBySubtree program state root.id entry) =
+    have waitKeep : waits.filter (fun entry => !flowNodeOccurrenceOwnedBySubtree program state root.id entry disposition) =
         waits.filter keep := by
       apply List.filter_congr
       intro entry member

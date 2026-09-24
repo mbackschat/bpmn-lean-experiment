@@ -312,7 +312,7 @@ test("Effect-tagged local data does not acquire an Activity owner requirement", 
 
 for (const kind of [SemanticOperationKind.ReturnProcess, SemanticOperationKind.ThrowError,
   SemanticOperationKind.TerminateScope] as const) {
-  test(`${kind} removes a whole Activity-local component and retains an unrelated component`, () => {
+  test(`${kind} keeps Activity-local data exactly while its parent-owned child body survives`, () => {
     const { program, state, start: started, branches } = regionalPairFixture(kind, kind);
     const records = branches.map((branch, index): RuntimeState["activityOccurrences"][number] => {
       const scope = state.scopeOccurrences.find(({ id }) => id.definitionScopeId === branch.scopeId)!;
@@ -335,8 +335,9 @@ for (const kind of [SemanticOperationKind.ReturnProcess, SemanticOperationKind.T
     assert.deepEqual(runtimeStateDefects(program, started.instanceId, before), []);
     assert.notEqual(projectOpenFlowNodeOccurrences(program, before), null);
     const after = assertExactStep(program, before, branches[0]!.selected);
-    assert.deepEqual(after.activityOccurrences, [records[1]]);
-    assert.deepEqual(after.variables.activities, [locals[1]]);
+    const retained = kind === SemanticOperationKind.TerminateScope;
+    assert.deepEqual(after.activityOccurrences, retained ? before.activityOccurrences : [records[1]]);
+    assert.deepEqual(after.variables.activities, retained ? before.variables.activities : [locals[1]]);
   });
 }
 

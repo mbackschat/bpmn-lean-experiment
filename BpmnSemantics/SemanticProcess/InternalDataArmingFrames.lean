@@ -118,38 +118,38 @@ theorem prepared_data_arm_preserves_messageBoundedProjectionValid
   unfold messageBoundedProjectionValid at valid ⊢
   simp only [List.all_eq_true] at valid ⊢
   intro candidate member
+  let boundedOperation := candidate
   have prior := valid candidate member
   cases candidate <;> try exact prior
-  rename_i candidateId candidateOrigin candidateInput boundedTask boundaryMessage
-  let boundedOperation := SemanticOperation.awaitMessageBoundedUserTask candidateId
-    candidateOrigin candidateInput boundedTask boundaryMessage
-  have different : contract.taskId ≠ boundedTask.id := by
-    intro same
-    have boundedMember : boundedOperation ∈ userTaskWaitDeclarers program contract.taskId := by
-      simp [boundedOperation, userTaskWaitDeclarers, member, same]
-    rw [declarers] at boundedMember
-    cases dataEq : contract.data <;>
-      simp [boundedOperation, InternalDataArmingContract.operation, dataEq] at boundedMember
-  have valuesDifferent : contract.taskId.value ≠ boundedTask.id.value :=
-    fun same => different (taskDefinitionId_eq_of_value_eq _ _ same)
-  let owned := FlowNodeOccurrenceProgramValidity.Internal.operationOwnedBy program boundedOperation
-  let taskFilter := fun current : UserTaskWait =>
-    owned current.owner && decide (current.task.id = boundedTask.id)
-  let recordFilter := fun current : ActivityOccurrence =>
-    owned current.owner && decide (current.activityElementId.value = boundedTask.id.value)
-  have tasksFrame : (insertUserTaskWait wait state.waits).filter taskFilter =
-      state.waits.filter taskFilter := by
-    rw [insertUserTaskWait_eq_canonicalInsertBy]
-    apply filter_canonicalInsertBy_rejected
-    simp [taskFilter, wait, different]
-  have recordsFrame : (insertActivityOccurrence record state.activityOccurrences).filter
-      recordFilter = state.activityOccurrences.filter recordFilter := by
-    rw [BpmnSemantics.SemanticProcess.insertActivityOccurrence_eq_canonicalInsertBy]
-    apply filter_canonicalInsertBy_rejected
-    simp [recordFilter, record, dataInputOutputActivityRecord, valuesDifferent]
-  simpa [boundedOperation, messageBoundedOperationProjectionValid,
-    applyInternalDataArmingPatch, makeInternalDataArmingPatch, applyInternalArmingPatch,
-    owned, taskFilter, recordFilter, wait, record, tasksFrame, recordsFrame] using prior
+  all_goals
+    rename_i candidateId candidateOrigin candidateInput boundedTask boundaryMessage
+    have different : contract.taskId ≠ boundedTask.id := by
+      intro same
+      have boundedMember : boundedOperation ∈ userTaskWaitDeclarers program contract.taskId := by
+        simp [boundedOperation, userTaskWaitDeclarers, member, same]
+      rw [declarers] at boundedMember
+      cases dataEq : contract.data <;>
+        simp [boundedOperation, InternalDataArmingContract.operation, dataEq] at boundedMember
+    have valuesDifferent : contract.taskId.value ≠ boundedTask.id.value :=
+      fun same => different (taskDefinitionId_eq_of_value_eq _ _ same)
+    let owned := FlowNodeOccurrenceProgramValidity.Internal.operationOwnedBy program boundedOperation
+    let taskFilter := fun current : UserTaskWait =>
+      owned current.owner && decide (current.task.id = boundedTask.id)
+    let recordFilter := fun current : ActivityOccurrence =>
+      owned current.owner && decide (current.activityElementId.value = boundedTask.id.value)
+    have tasksFrame : (insertUserTaskWait wait state.waits).filter taskFilter =
+        state.waits.filter taskFilter := by
+      rw [insertUserTaskWait_eq_canonicalInsertBy]
+      apply filter_canonicalInsertBy_rejected
+      simp [taskFilter, wait, different]
+    have recordsFrame : (insertActivityOccurrence record state.activityOccurrences).filter
+        recordFilter = state.activityOccurrences.filter recordFilter := by
+      rw [BpmnSemantics.SemanticProcess.insertActivityOccurrence_eq_canonicalInsertBy]
+      apply filter_canonicalInsertBy_rejected
+      simp [recordFilter, record, dataInputOutputActivityRecord, valuesDifferent]
+    simpa [boundedOperation, messageBoundedOperationProjectionValid,
+      applyInternalDataArmingPatch, makeInternalDataArmingPatch, applyInternalArmingPatch,
+      owned, taskFilter, recordFilter, wait, record, tasksFrame, recordsFrame] using prior
 
 theorem prepared_data_arm_projectWaits_insert
     (program : Program) (state : RuntimeState) (contract : InternalDataArmingContract)

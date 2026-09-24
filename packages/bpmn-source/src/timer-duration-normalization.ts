@@ -17,6 +17,7 @@
 const admittedTimerDurationsMs = {
   PT1S: 1_000,
   PT5S: 5_000,
+  "R/PT1S": 1_000,
 } as const;
 
 /** The duration lexemes the admitted profiles accept. */

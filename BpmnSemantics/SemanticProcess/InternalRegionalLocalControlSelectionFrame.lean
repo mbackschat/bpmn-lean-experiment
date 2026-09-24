@@ -55,7 +55,7 @@ theorem regionalSelection_localControl_frame (program : Program) (state : Runtim
       | _ => True) :
     selectInternalRegional? program (control.apply state) operation = some selected := by
   apply regionalSelection_read_frame program state (control.apply state) operation selected
-    found rfl rfl rfl rfl quiet (fun _ _ chosen => chosen)
+    found rfl rfl rfl rfl quiet (fun _ _ _ chosen => chosen)
   cases operation with
   | throwError id origin input error handler =>
       have absent : input ∉ control.tokens.consumed ∧ input ∉ control.tokens.produced := by

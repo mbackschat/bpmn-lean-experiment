@@ -361,7 +361,10 @@ private theorem admittedSharedParallelEntryAccount (program : Program)
         parallelMultiInstanceOperationsPair entryOperation completionOperation = true ∧
         parallelMultiInstanceCompletionForEntry? program.operations entryOperation =
           some completionOperation := by
-  simp only [programProfileCapabilitiesValid, Bool.and_eq_true] at capabilities
+  have legacy : program.identity.semanticProfile ≠ repeatableSubscriptionCheckpointProfileId := by
+    rw [profile]
+    simp [parallelMultiInstanceUserTaskProfileId, repeatableSubscriptionCheckpointProfileId]
+  simp only [programProfileCapabilitiesValid, legacy, ↓reduceIte, Bool.and_eq_true] at capabilities
   obtain ⟨profileEntry, completionOperation, entries, completions, paired, completionLookup⟩ :=
     programParallelMultiInstanceProfile_pair_census program profile capabilities.1.2
   have selectedExact := programWellFormed_parallel_projection_exact program entryOperation

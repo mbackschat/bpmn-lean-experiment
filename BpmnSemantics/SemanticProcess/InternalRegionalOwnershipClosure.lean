@@ -70,11 +70,11 @@ def cancellationReferenceRetention (state : RuntimeState) (root : ScopeOccurrenc
     (disposition : SelectedScopeDisposition) : RegionalReferenceRetention :=
   let cancelled := fun owner => occurrenceInSubtree state.scopeOccurrences root owner ||
     (calledInstanceClosure state root).contains owner.processInstanceId
-  let withdrawn := withdrawnByRegion cancelled state.activityOccurrences
+  let withdrawn := withdrawnByRegion cancelled state.activityOccurrences (retainedCancellationRoot root disposition)
   { scope := fun occurrence => match disposition with
       | .retain => occurrence.id = root || !cancelled occurrence.id
       | .remove => !cancelled occurrence.id
-    activity := fun record => !recordInRegion cancelled record
+    activity := fun record => !recordInRegion cancelled record (retainedCancellationRoot root disposition)
     task := fun wait => !cancelled wait.owner
     message := fun wait => !cancelled wait.owner && !activityRecordsAttachMessageWait withdrawn wait
     timer := fun wait => !cancelled wait.owner && !anyTimerIdNamesWait (attachedTimersOf withdrawn) wait

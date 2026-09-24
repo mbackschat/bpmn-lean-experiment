@@ -19,6 +19,7 @@ import type {
   AwaitBoundedUserTaskOperation,
   AwaitMonitoredUserTaskOperation,
   EnterBoundedScopeOperation,
+  EnterMonitoredScopeOperation,
 } from "./semantic-process-contract.js";
 import { isWellFormedWireString } from "./wire.js";
 
@@ -97,12 +98,12 @@ function isWellFormedTaskHostedDeadline<
  * so what is checkable here is that the deadline's route is distinct from the child entry. A shared
  * place would make the two victories publicly indistinguishable, exactly as for the task host.
  */
-export function isWellFormedEnterBoundedScopeOperation(
+export function isWellFormedScopeBoundaryTimerOperation(
   value: Record<string, unknown>,
   placeIds: ReadonlySet<string>,
   placeOrigins: ReadonlyMap<string, string>,
   scopeOrigins: ReadonlyMap<string, string>,
-): value is EnterBoundedScopeOperation {
+): value is EnterBoundedScopeOperation | EnterMonitoredScopeOperation {
   if (
     !hasOnlyKeys(value, [
       "id",
@@ -113,7 +114,8 @@ export function isWellFormedEnterBoundedScopeOperation(
       "childScopeId",
       "boundaryTimer",
     ]) ||
-    value.kind !== SemanticOperationKind.EnterBoundedScope ||
+    (value.kind !== SemanticOperationKind.EnterBoundedScope &&
+      value.kind !== SemanticOperationKind.EnterMonitoredScope) ||
     !isPlaceReference(value.input, placeIds) ||
     !isPlaceReference(value.childEntry, placeIds) ||
     !isNonEmptyString(value.childScopeId) ||
@@ -156,7 +158,9 @@ export function isWellFormedBoundaryTimerArm<
   origin: { kind: SemanticOriginKind.BpmnSequenceFlow; elementId: string };
 } {
   return isRecord(value) &&
-    hasOnlyKeys(value, ["elementId", "durationMs", "output", "origin"]) &&
+    hasOnlyKeys(value, ["elementId", "durationMs", "output", "origin",
+      ...(Object.hasOwn(value, "recurrence") ? ["recurrence"] : [])]) &&
+    (!Object.hasOwn(value, "recurrence") || value.recurrence === "repeating") &&
     isNonEmptyString(value.elementId) &&
     value.durationMs === admittedDurationMs &&
     isPlaceReference(value.output, placeIds) &&

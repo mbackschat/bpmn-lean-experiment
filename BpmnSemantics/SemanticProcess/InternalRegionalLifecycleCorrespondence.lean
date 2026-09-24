@@ -17,7 +17,8 @@ theorem regionalCancellation_owner_corresponds (program : Program) (state : Runt
     (entry : OpenSemanticFlowNodeOccurrence) (ownership : regionalOpenOwnership state entry)
     (retainRoot : Bool) :
     regionalCancelsOpenOccurrence program state region retainRoot entry =
-      (flowNodeOccurrenceOwnedBySubtree program state root entry &&
+      (flowNodeOccurrenceOwnedBySubtree program state root entry
+        (if retainRoot then .retain else .remove) &&
         !(retainRoot && entry.anchor == .scope root)) := by
   have rootEq := (deriveInternalOccurrenceRegion_spec state root region derived).1
   have ownerMask := regional_cancellation_mask program state hosting hosting valid running root region derived
@@ -51,7 +52,8 @@ theorem regionalCancellationEnds_corresponds (program : Program) (state : Runtim
     (derived : deriveInternalOccurrenceRegion? state root = some region)
     (projected : projectOpenFlowNodeOccurrences? program state = some current) (retainRoot : Bool) :
     regionalCancellationEnds program state region retainRoot current =
-      ((current.filter (flowNodeOccurrenceOwnedBySubtree program state root)).map fun entry =>
+      ((current.filter (fun entry => flowNodeOccurrenceOwnedBySubtree program state root entry
+          (if retainRoot then .retain else .remove))).map fun entry =>
         ({ anchor := entry.anchor, terminal := .cancelled } : UnnumberedFlowNodeOccurrenceEnd)).filter
           (fun ending => !(retainRoot && ending.anchor == .scope root)) := by
   unfold regionalCancellationEnds

@@ -20,6 +20,10 @@ private theorem completion_keeps_task_body (before : RuntimeState) (selected : I
       cases shape : record.body <;>
         simp_all [activityBodyTask?, activityBodyParallelTasks?, regionalSelectionReferenceRetention,
           boundedCompletionReferenceRetention]
+  | monitored activity deadline =>
+      cases shape : record.body <;>
+        simp_all [activityBodyTask?, activityBodyParallelTasks?, regionalSelectionReferenceRetention,
+          monitoredCompletionReferenceRetention]
 
 private theorem filter_singleton_retained {α : Type} (values : List α) (keep names : α → Bool)
     (record : α) (census : values.filter names = [record]) (retained : keep record = true) :

@@ -30,11 +30,13 @@ def semanticOperationInternalFamily : SemanticOperation → InternalOperationFam
   | .awaitTimer _ _ _ _ _
   | .awaitEffect _ _ _ _ _ _ => .ordinaryWaitArming
   | .enterBoundedScope _ _ _ _ _ _
+  | .enterMonitoredScope _ _ _ _ _ _
   | .awaitDataInputUserTask _ _ _ _ _ _ _
   | .awaitDataInputOutputUserTask _ _ _ _ _ _ _ _
   | .awaitDataOutputUserTask _ _ _ _ _ _ _
   | .awaitBoundedUserTask _ _ _ _ _
   | .awaitMessageBoundedUserTask _ _ _ _ _
+  | .awaitMessageMonitoredUserTask _ _ _ _ _
   | .awaitMonitoredUserTask _ _ _ _ _
   | .awaitSequentialMultiInstanceUserTask _ _ _ _ _ _ _ _
   | .awaitParallelMultiInstanceUserTask _ _ _ _ _ _ _ _ _ _

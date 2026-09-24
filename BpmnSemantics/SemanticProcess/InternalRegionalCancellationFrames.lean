@@ -26,21 +26,21 @@ theorem cancellationOwnershipClosed_of_owner_frame (before after : RuntimeState)
     (calledInstanceClosure before root).contains owner.processInstanceId
   have classifier : (fun owner => occurrenceInSubtree after.scopeOccurrences root owner ||
       (calledInstanceClosure after root).contains owner.processInstanceId) = cancelled := funext owners
-  have withdrawn : withdrawnByRegion cancelled after.activityOccurrences ⊆
-      withdrawnByRegion cancelled before.activityOccurrences := by
+  have withdrawn : withdrawnByRegion cancelled after.activityOccurrences (retainedCancellationRoot root disposition) ⊆
+      withdrawnByRegion cancelled before.activityOccurrences (retainedCancellationRoot root disposition) := by
     intro record member
     obtain ⟨member, selected⟩ := List.mem_filter.mp member
     rw [fields.2.1] at member
     exact List.mem_filter.mpr ⟨(List.mem_filter.mp member).1, selected⟩
   have messageBack (wait : MessageWait) :
-      activityRecordsAttachMessageWait (withdrawnByRegion cancelled after.activityOccurrences) wait = true →
-      activityRecordsAttachMessageWait (withdrawnByRegion cancelled before.activityOccurrences) wait = true := by
+      activityRecordsAttachMessageWait (withdrawnByRegion cancelled after.activityOccurrences (retainedCancellationRoot root disposition)) wait = true →
+      activityRecordsAttachMessageWait (withdrawnByRegion cancelled before.activityOccurrences (retainedCancellationRoot root disposition)) wait = true := by
     intro attached
     obtain ⟨record, member, names⟩ := List.any_eq_true.mp attached
     exact List.any_eq_true.mpr ⟨record, withdrawn member, names⟩
   have timerBack (wait : TimerWait) :
-      anyTimerIdNamesWait (attachedTimersOf (withdrawnByRegion cancelled after.activityOccurrences)) wait = true →
-      anyTimerIdNamesWait (attachedTimersOf (withdrawnByRegion cancelled before.activityOccurrences)) wait = true := by
+      anyTimerIdNamesWait (attachedTimersOf (withdrawnByRegion cancelled after.activityOccurrences (retainedCancellationRoot root disposition))) wait = true →
+      anyTimerIdNamesWait (attachedTimersOf (withdrawnByRegion cancelled before.activityOccurrences (retainedCancellationRoot root disposition))) wait = true := by
     intro attached
     obtain ⟨timer, member, names⟩ := List.any_eq_true.mp attached
     obtain ⟨record, recordMember, timerMember⟩ := List.mem_flatMap.mp member
@@ -60,7 +60,7 @@ theorem cancellationOwnershipClosed_of_owner_frame (before after : RuntimeState)
   · intro value _ kept
     simp only [cancellationReferenceRetention, owners, Bool.and_eq_true, Bool.not_eq_true'] at kept ⊢
     refine ⟨kept.1, ?_⟩
-    cases next : activityRecordsAttachMessageWait (withdrawnByRegion cancelled after.activityOccurrences) value
+    cases next : activityRecordsAttachMessageWait (withdrawnByRegion cancelled after.activityOccurrences (retainedCancellationRoot root disposition)) value
     · rfl
     · have old := messageBack value next
       exact Bool.noConfusion (old.symm.trans kept.2)
@@ -68,7 +68,7 @@ theorem cancellationOwnershipClosed_of_owner_frame (before after : RuntimeState)
     simp only [cancellationReferenceRetention, owners, Bool.and_eq_true, Bool.not_eq_true'] at kept ⊢
     refine ⟨kept.1, ?_⟩
     cases next : anyTimerIdNamesWait (attachedTimersOf
-        (withdrawnByRegion cancelled after.activityOccurrences)) value
+        (withdrawnByRegion cancelled after.activityOccurrences (retainedCancellationRoot root disposition))) value
     · rfl
     · have old := timerBack value next
       exact Bool.noConfusion (old.symm.trans kept.2)

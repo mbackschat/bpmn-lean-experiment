@@ -320,29 +320,30 @@ theorem activityOccurrenceForMessageWait_sound {records : List ActivityOccurrenc
 
 /-! ## Withdrawal completeness
 
-A record is in a cancelled region when either end of it is: its owner, or its body. The two differ
-only on the child-scope arm, and that difference is the whole defect this account closes. A boundary
-handler is owned by the scope holding the Activity, so an owner-only rule leaves a deadline whose body
-has just been removed alive and unreachable, with no state naming the Activity it was guarding.
+ESL-RETAIN-01 withdraws a record when its owner is cancelled or its child body is actually
+removed. The exact retained root is excluded only from body removal; descendants and body-owned
+Task records remain cancelled. The default absent retained root specializes these helpers to whole
+subtree removal, preserving the existing remove-region laws below.
 -/
 
-/-- Whether a record belongs to the region a cancellation predicate selects. -/
-def recordInRegion (cancelled : ScopeOccurrenceId → Bool) (record : ActivityOccurrence) : Bool :=
+/-- ESL-RETAIN-01 separates cancelled owners from actual child-body removal. -/
+def recordInRegion (cancelled : ScopeOccurrenceId → Bool) (record : ActivityOccurrence)
+    (retainedRoot : Option ScopeOccurrenceId := none) : Bool :=
   cancelled record.owner ||
     match record.body with
     | .userTask _ => false
     | .parallelUserTasks .. => false
-    | .childScope scope => cancelled scope
+    | .childScope scope => cancelled scope && !(retainedRoot == some scope)
 
 /-- The records and attached Timer occurrences a region withdraws. -/
 def withdrawnByRegion (cancelled : ScopeOccurrenceId → Bool)
-    (records : List ActivityOccurrence) : List ActivityOccurrence :=
-  records.filter (recordInRegion cancelled)
+    (records : List ActivityOccurrence) (retainedRoot : Option ScopeOccurrenceId := none) : List ActivityOccurrence :=
+  records.filter (fun record => recordInRegion cancelled record retainedRoot)
 
 /-- The records a region retains. -/
 def retainedByRegion (cancelled : ScopeOccurrenceId → Bool)
-    (records : List ActivityOccurrence) : List ActivityOccurrence :=
-  records.filter fun record => !recordInRegion cancelled record
+    (records : List ActivityOccurrence) (retainedRoot : Option ScopeOccurrenceId := none) : List ActivityOccurrence :=
+  records.filter fun record => !recordInRegion cancelled record retainedRoot
 
 theorem retained_and_withdrawn_partition_records
     (cancelled : ScopeOccurrenceId → Bool) (records : List ActivityOccurrence) :
@@ -374,7 +375,7 @@ theorem retained_child_scope_body_survives
     cancelled scope = false := by
   have outside := retained_record_is_outside_region cancelled records record retained
   simp only [recordInRegion, body, Bool.or_eq_false_iff] at outside
-  exact outside.2
+  simpa using outside.2
 
 /-- No retained record was in the region, quantified over every state and region.
 

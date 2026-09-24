@@ -24,7 +24,7 @@ import {
 import {
   isWellFormedAwaitBoundedUserTaskOperation,
   isWellFormedAwaitMonitoredUserTaskOperation,
-  isWellFormedEnterBoundedScopeOperation,
+  isWellFormedScopeBoundaryTimerOperation,
 } from "./bounded-wait-admission.js";
 import {
   isWellFormedInvokeProcessOperation,
@@ -256,8 +256,9 @@ export function isWellFormedSemanticOperation(
         isNonEmptyString(value.childScopeId) &&
         scopeOrigins.has(value.childScopeId)
       );
+    case SemanticOperationKind.EnterMonitoredScope:
     case SemanticOperationKind.EnterBoundedScope:
-      return isWellFormedEnterBoundedScopeOperation(
+      return isWellFormedScopeBoundaryTimerOperation(
         value,
         placeIds,
         placeOrigins,
@@ -437,6 +438,7 @@ export function isWellFormedSemanticOperation(
         placeIds,
         placeOrigins,
       );
+    case SemanticOperationKind.AwaitMessageMonitoredUserTask:
     case SemanticOperationKind.AwaitMessageBoundedUserTask:
       return isWellFormedAwaitMessageBoundedUserTaskOperation(
         value,

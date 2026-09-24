@@ -143,10 +143,12 @@ function declaredElementIds(
         userTask.add(operation.task.elementId);
         timer.add(operation.boundaryTimer.elementId);
         break;
+      case SemanticOperationKind.AwaitMessageMonitoredUserTask:
       case SemanticOperationKind.AwaitMessageBoundedUserTask:
         userTask.add(operation.task.elementId);
         message.add(operation.boundaryMessage.elementId);
         break;
+      case SemanticOperationKind.EnterMonitoredScope:
       case SemanticOperationKind.EnterBoundedScope:
         timer.add(operation.boundaryTimer.elementId);
         break;

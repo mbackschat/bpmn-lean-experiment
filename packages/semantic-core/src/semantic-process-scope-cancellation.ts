@@ -64,18 +64,7 @@ function removeScopeOccurrenceRegion(
   const isRemovedSnapshotOwner = (owner: ScopeOccurrenceId): boolean =>
     isInterrupted(owner) &&
     !(retainRoot && sameScopeOccurrence(owner, attached.id));
-  // A record is in the region when either end of it is: its owner, or its body. The two differ, and
-  // the difference is the whole defect this closes. A boundary handler is owned by the scope holding
-  // the Activity, so an owner-only rule leaves a deadline whose body has just been removed alive and
-  // unreachable, with no state naming the Activity it was guarding.
-  // Only the child-scope arm can differ from its owner. A task body shares its record's owner by
-  // `AOO-OWN-01`, so `isInterrupted(owner)` already decides it; a child scope is the body while the
-  // owner is the parent holding the Activity, which is precisely why an owner-only rule stranded the
-  // deadline.
-  const isInterruptedRecord = ({ owner, body }: ActivityOccurrence): boolean =>
-    isInterrupted(owner) ||
-    (body.kind === ActivityBodyKind.ChildScope && isInterrupted(body.scope));
-  const withdrawnRecords = state.activityOccurrences.filter(isInterruptedRecord);
+  const withdrawnRecords = scopeCancellationWithdrawnActivities(state, attached, retainRoot);
   const withdrawnTimers = withdrawnRecords.flatMap(attachedTimerOccurrences);
 
   const interruptedEffects = state.effectWaits
@@ -200,6 +189,22 @@ function removeScopeOccurrenceRegion(
       ),
     },
   };
+}
+
+/** ESL-RETAIN-01 keeps a parent-owned Activity while its exact child body survives for completion. */
+export function scopeCancellationWithdrawnActivities(
+  state: RuntimeState,
+  root: RuntimeScopeOccurrence,
+  retainRoot: boolean,
+): ReadonlyArray<ActivityOccurrence> {
+  const region = scopeOccurrenceSubtree(state.scopeOccurrences, root);
+  const contains = (owner: ScopeOccurrenceId): boolean =>
+    region.some(({ id }) => sameScopeOccurrence(id, owner));
+  return state.activityOccurrences.filter(({ owner, body }) =>
+    contains(owner) ||
+    (body.kind === ActivityBodyKind.ChildScope && contains(body.scope) &&
+      !(retainRoot && sameScopeOccurrence(body.scope, root.id)))
+  );
 }
 
 /** Classifies one runtime occurrence and every occurrence descended through parent ownership. */

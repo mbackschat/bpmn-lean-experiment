@@ -46,10 +46,11 @@ theorem regional_activity_record_mask (program : Program) (state : RuntimeState)
     (running : state.control = .running instanceId)
     (root : ScopeOccurrenceId) (region : InternalOccurrenceRegion)
     (prepared : deriveInternalOccurrenceRegion? state root = some region)
-    (record : ActivityOccurrence) (member : record ∈ state.activityOccurrences) :
+    (record : ActivityOccurrence) (member : record ∈ state.activityOccurrences)
+    (retainedRoot : Option ScopeOccurrenceId := none) :
     recordInRegion (fun owner => occurrenceInSubtree state.scopeOccurrences root owner ||
-      (calledInstanceClosure state root).contains owner.processInstanceId) record =
-      recordInRegion region.contains record := by
+      (calledInstanceClosure state root).contains owner.processInstanceId) record retainedRoot =
+      recordInRegion region.contains record retainedRoot := by
   obtain ⟨_, owners, bodies⟩ := regional_validity_facts program state expectedInstanceId valid
   simp only [waitOwnersLive, Bool.and_eq_true] at owners
   have ownerLive := List.all_eq_true.mp owners.2 record member
@@ -75,13 +76,15 @@ theorem regional_withdrawn_activities_eq (program : Program) (state : RuntimeSta
     (valid : runtimeStateWellFormed program expectedInstanceId state = true)
     (running : state.control = .running instanceId)
     (root : ScopeOccurrenceId) (region : InternalOccurrenceRegion)
-    (prepared : deriveInternalOccurrenceRegion? state root = some region) :
+    (prepared : deriveInternalOccurrenceRegion? state root = some region)
+    (retainedRoot : Option ScopeOccurrenceId := none) :
     withdrawnByRegion (fun owner => occurrenceInSubtree state.scopeOccurrences root owner ||
-      (calledInstanceClosure state root).contains owner.processInstanceId) state.activityOccurrences =
-      withdrawnByRegion region.contains state.activityOccurrences := by
+      (calledInstanceClosure state root).contains owner.processInstanceId) state.activityOccurrences retainedRoot =
+      withdrawnByRegion region.contains state.activityOccurrences retainedRoot := by
   apply List.filter_congr
+  intro record member
   exact regional_activity_record_mask program state expectedInstanceId instanceId valid running
-    root region prepared
+    root region prepared record member retainedRoot
 
 /-- AOO-CANCEL-01 withdraws the Activity when either its owner or its child body lies in the
 prepared region; the handler's scope alone cannot determine its lifetime. -/
@@ -93,11 +96,11 @@ theorem cancelScopeSubtree_activities_eq_prepared_region (program : Program) (st
     (prepared : deriveInternalOccurrenceRegion? state root = some region)
     (disposition : SelectedScopeDisposition) :
     (cancelScopeSubtree state root disposition).activityOccurrences =
-      retainedByRegion region.contains state.activityOccurrences := by
+      retainedByRegion region.contains state.activityOccurrences (retainedCancellationRoot root disposition) := by
   apply List.filter_congr
   intro record member
   exact congrArg Bool.not (regional_activity_record_mask program state expectedInstanceId instanceId
-    valid running root region prepared record member)
+    valid running root region prepared record member (retainedCancellationRoot root disposition))
 
 /-- AOO-CANCEL-01 includes attached Timers outside the scope region, using the exact withdrawn
 Activity identities rather than assuming the Timer owner is cancelled. -/
@@ -111,9 +114,9 @@ theorem cancelScopeSubtree_timers_eq_prepared_region (program : Program) (state 
     (cancelScopeSubtree state root disposition).timerWaits =
       state.timerWaits.filter fun wait => !region.contains wait.owner &&
         !anyTimerIdNamesWait
-          (attachedTimersOf (withdrawnByRegion region.contains state.activityOccurrences)) wait := by
+          (attachedTimersOf (withdrawnByRegion region.contains state.activityOccurrences (retainedCancellationRoot root disposition))) wait := by
   have withdrawn := regional_withdrawn_activities_eq program state expectedInstanceId instanceId
-    valid running root region prepared
+    valid running root region prepared (retainedCancellationRoot root disposition)
   change state.timerWaits.filter _ = _
   rw [withdrawn]
   apply List.filter_congr
@@ -135,9 +138,9 @@ theorem cancelScopeSubtree_messages_eq_prepared_region (program : Program) (stat
     (cancelScopeSubtree state root disposition).messageWaits =
       state.messageWaits.filter fun wait => !region.contains wait.owner &&
         !activityRecordsAttachMessageWait
-          (withdrawnByRegion region.contains state.activityOccurrences) wait := by
+          (withdrawnByRegion region.contains state.activityOccurrences (retainedCancellationRoot root disposition)) wait := by
   have withdrawn := regional_withdrawn_activities_eq program state expectedInstanceId instanceId
-    valid running root region prepared
+    valid running root region prepared (retainedCancellationRoot root disposition)
   change state.messageWaits.filter _ = _
   rw [withdrawn]
   apply List.filter_congr
@@ -209,16 +212,16 @@ theorem cancelScopeSubtree_controllers_eq_prepared_region (program : Program) (s
     (cancelScopeSubtree state root disposition).sequentialMultiInstanceControllers =
         state.sequentialMultiInstanceControllers.filter (fun controller =>
           !(calledInstanceClosure state root).contains controller.processInstanceId &&
-            !((withdrawnByRegion region.contains state.activityOccurrences).any
+            !((withdrawnByRegion region.contains state.activityOccurrences (retainedCancellationRoot root disposition)).any
               (controllerNamesActivityOccurrence controller))) ∧
       (cancelScopeSubtree state root disposition).parallelMultiInstanceControllers =
         state.parallelMultiInstanceControllers.filter (fun controller =>
           !(calledInstanceClosure state root).contains controller.id.processInstanceId &&
-            !((withdrawnByRegion region.contains state.activityOccurrences).any fun activity =>
+            !((withdrawnByRegion region.contains state.activityOccurrences (retainedCancellationRoot root disposition)).any fun activity =>
               parallelControllerNamesIdentity controller activity.processInstanceId
                 ⟨activity.activityElementId.value⟩ activity.activation)) := by
   have withdrawn := regional_withdrawn_activities_eq program state expectedInstanceId instanceId
-    valid running root region prepared
+    valid running root region prepared (retainedCancellationRoot root disposition)
   simp only [cancelScopeSubtree, withdrawn, and_self]
 
 /-- Activity-local data is removed by the same exact withdrawn Activity and effect identities as
@@ -233,7 +236,7 @@ theorem cancelScopeSubtree_local_data_eq_prepared_region (program : Program) (st
     (cancelScopeSubtree state root disposition).variables.activities =
       state.variables.activities.filter fun activity =>
         !(calledInstanceClosure state root).contains activity.owner.processInstanceId &&
-          !((withdrawnByRegion region.contains state.activityOccurrences).any fun record =>
+          !((withdrawnByRegion region.contains state.activityOccurrences (retainedCancellationRoot root disposition)).any fun record =>
             activityOccurrenceScopeMatches
               { processInstanceId := record.processInstanceId
                 activityElementId := ⟨record.activityElementId.value⟩
@@ -246,7 +249,7 @@ theorem cancelScopeSubtree_local_data_eq_prepared_region (program : Program) (st
           !((state.effectIncidents.filter fun incident => region.contains incident.wait.owner).any
             fun incident => activityScopeMatches incident.id.effectId activity) := by
   have withdrawn := regional_withdrawn_activities_eq program state expectedInstanceId instanceId
-    valid running root region prepared
+    valid running root region prepared (retainedCancellationRoot root disposition)
   have owners := (regional_validity_facts program state expectedInstanceId valid).2.1
   simp only [waitOwnersLive, Bool.and_eq_true, and_assoc] at owners
   have effects := regional_owned_filter program state expectedInstanceId instanceId valid running

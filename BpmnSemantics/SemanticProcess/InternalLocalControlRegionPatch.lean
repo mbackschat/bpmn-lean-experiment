@@ -156,6 +156,31 @@ theorem localControl_addToken_commutes (before : RuntimeState) (control : Intern
     control.tokens.apply (addToken before.tokens output owner) at commute
   simp only [InternalLocalControlSelection.apply, commute]
 
+private theorem localControl_ordinary_completion_commutes (before : RuntimeState)
+    (control : InternalLocalControlSelection) (hosting : SemanticId)
+    (definition : DefinitionScopeId) (output : Option ControlPlaceId) (root : RuntimeScopeOccurrence)
+    (running : before.control = .running hosting)
+    (census : before.scopeOccurrences.filter (fun scope => decide (scope.id.definitionScopeId = definition)) = [root])
+    (quiet : scopeQuiescent (control.apply before) root.id = scopeQuiescent before root.id)
+    (continuation : ∀ owner place, root.parent = some owner → output = some place →
+      addToken (control.tokens.apply before.tokens) place owner =
+        control.tokens.apply (addToken before.tokens place owner)) :
+    completeScopeState? (control.apply before) definition output =
+      (completeScopeState? before definition output).map control.apply := by
+  simp only [completeScopeState?, InternalLocalControlSelection.apply, census]
+  change (if !scopeQuiescent (control.apply before) root.id then none else _) = _
+  rw [quiet]
+  split
+  · rfl
+  · simp only [completeQuiescentScope?, running]
+    cases parent : root.parent <;> cases produced : output <;> simp only [Option.map_none]
+    all_goals try rfl
+    · split <;> rfl
+    · split
+      · simp only [Option.map_some,
+          continuation _ _ parent produced]
+      · rfl
+
 theorem localControl_completion_commutes (program : Program) (before : RuntimeState)
     (control : InternalLocalControlSelection) (hosting : SemanticId)
     (definition : DefinitionScopeId) (output : Option ControlPlaceId) (root : RuntimeScopeOccurrence)
@@ -167,21 +192,8 @@ theorem localControl_completion_commutes (program : Program) (before : RuntimeSt
         control.tokens.apply (addToken before.tokens place owner)) :
     completeBoundedScope? program (control.apply before) definition output =
       (completeBoundedScope? program before definition output).map control.apply := by
-  have ordinary : completeScopeState? (control.apply before) definition output =
-      (completeScopeState? before definition output).map control.apply := by
-    simp only [completeScopeState?, InternalLocalControlSelection.apply, census]
-    change (if !scopeQuiescent (control.apply before) root.id then none else _) = _
-    rw [quiet]
-    split
-    · rfl
-    · simp only [completeQuiescentScope?, running]
-      cases parent : root.parent <;> cases produced : output <;> simp only [Option.map_none]
-      all_goals try rfl
-      · split <;> rfl
-      · split
-        · simp only [Option.map_some,
-            continuation _ _ parent produced]
-        · rfl
+  have ordinary := localControl_ordinary_completion_commutes before control hosting definition output root
+    running census quiet continuation
   have child : boundedScopeChildOccurrence? (control.apply before) definition =
       boundedScopeChildOccurrence? before definition := rfl
   have deadline (root parent : ScopeOccurrenceId) (timer : BoundaryTimerArm) :
@@ -201,5 +213,40 @@ theorem localControl_completion_commutes (program : Program) (before : RuntimeSt
           | some occurrence =>
               dsimp only
               cases parentOwnedDeadline? before occurrence.1 occurrence.2 boundary.2 <;> rfl
+
+theorem localControl_selected_completion_commutes (program : Program) (before : RuntimeState)
+    (control : InternalLocalControlSelection) (hosting : SemanticId)
+    (definition : DefinitionScopeId) (output : Option ControlPlaceId) (root : RuntimeScopeOccurrence)
+    (running : before.control = .running hosting)
+    (census : before.scopeOccurrences.filter (fun scope => decide (scope.id.definitionScopeId = definition)) = [root])
+    (quiet : scopeQuiescent (control.apply before) root.id = scopeQuiescent before root.id)
+    (continuation : ∀ owner place, root.parent = some owner → output = some place →
+      addToken (control.tokens.apply before.tokens) place owner =
+        control.tokens.apply (addToken before.tokens place owner)) :
+    completeSelectedScope? program (control.apply before) definition output =
+      (completeSelectedScope? program before definition output).map control.apply := by
+  unfold completeSelectedScope?
+  split
+  · have ordinary := localControl_ordinary_completion_commutes before control hosting definition output root
+      running census quiet continuation
+    unfold completeMonitoredScope?
+    change (do
+      let pair ← monitoredScopePairForChild? program before definition
+      if pair.val.definition.childScopeId = definition ∧ output = some pair.val.output then
+        let completed ← completeScopeState? (control.apply before) definition output
+        some { completed with
+          timerWaits := removeMonitoredScopeTimer completed.timerWaits pair.val.timer
+          activityOccurrences := completed.activityOccurrences.erase pair.val.record }
+      else none) = _
+    cases monitoredScopePairForChild? program before definition with
+    | none => rfl
+    | some pair =>
+        simp only [Option.bind_eq_bind, Option.bind_some]
+        split
+        · rw [ordinary]
+          cases completeScopeState? before definition output <;> rfl
+        · rfl
+  · exact localControl_completion_commutes program before control hosting definition output root
+      running census quiet continuation
 
 end BpmnSemantics.SemanticProcess.InternalCommutation

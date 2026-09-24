@@ -15,8 +15,8 @@ theorem regionalSelection_read_frame (program : Program) (before after : Runtime
     (calls : after.calledProcessOccurrences = before.calledProcessOccurrences)
     (pending : after.initiationPending = before.initiationPending)
     (quiet : scopeQuiescent after selected.root.id = scopeQuiescent before selected.root.id)
-    (withdrawal : ∀ definition choice, selectInternalCompletionWithdrawal? program before definition = some choice →
-      selectInternalCompletionWithdrawal? program after definition = some choice)
+    (withdrawal : ∀ definition output choice, selectSubscribedCompletionWithdrawal? program before definition output = some choice →
+      selectSubscribedCompletionWithdrawal? program after definition output = some choice)
     (inputs : match operation with
       | .throwError _ _ input _ _ =>
           onlyTokenOwner? after input = onlyTokenOwner? before input ∧
@@ -46,7 +46,7 @@ theorem regionalSelection_read_frame (program : Program) (before after : Runtime
     · split at found
       · contradiction
       · obtain ⟨choice, chosen, found⟩ := Option.bind_eq_some_iff.mp found
-        have afterChoice := withdrawal definition choice chosen
+        have afterChoice := withdrawal definition output choice chosen
         repeat' first | (solve | simp at found) | split at found
         all_goals cases found <;> simp_all only [Bool.false_eq_true, ↓reduceIte, Option.bind_eq_bind, Option.bind_some]
     · contradiction

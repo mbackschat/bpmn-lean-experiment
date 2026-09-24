@@ -249,6 +249,40 @@ theorem completeBoundedScope_position_fields (program : Program) (before after :
            subst after
            exact ⟨rfl, rfl, rfl, rfl⟩)
 
+theorem completeSelectedScope_ordinary_withdrawal (program : Program) (before after : RuntimeState)
+    (scopeId : DefinitionScopeId) (parentOutput : Option ControlPlaceId)
+    (result : completeSelectedScope? program before scopeId parentOutput = some after) :
+    ∃ ordinary, completeScopeState? before scopeId parentOutput = some ordinary ∧
+      ∃ timers activities, after = { ordinary with timerWaits := timers, activityOccurrences := activities } := by
+  unfold completeSelectedScope? at result
+  split at result
+  · unfold completeMonitoredScope? at result
+    obtain ⟨pair, _, result⟩ := Option.bind_eq_some_iff.mp result
+    split at result
+    · obtain ⟨ordinary, completed, result⟩ := Option.bind_eq_some_iff.mp result
+      cases result
+      exact ⟨ordinary, completed, _, _, rfl⟩
+    · contradiction
+  · unfold completeBoundedScope? at result
+    cases ordinary : completeScopeState? before scopeId parentOutput with
+    | none => simp [ordinary] at result
+    | some completed =>
+        simp only [ordinary] at result
+        repeat' split at result
+        all_goals first
+          | (simp at result; done)
+          | (simp only [Option.some.injEq] at result; subst after; exact ⟨completed, rfl, _, _, rfl⟩)
+
+theorem completeSelectedScope_position_fields (program : Program) (before after : RuntimeState)
+    (scopeId : DefinitionScopeId) (parentOutput : Option ControlPlaceId)
+    (result : completeSelectedScope? program before scopeId parentOutput = some after) :
+    ∃ ordinary, completeScopeState? before scopeId parentOutput = some ordinary ∧
+      after.control = ordinary.control ∧ after.scopeOccurrences = ordinary.scopeOccurrences ∧
+      after.calledProcessOccurrences = ordinary.calledProcessOccurrences ∧ after.tokens = ordinary.tokens := by
+  obtain ⟨ordinary, completed, _, _, rfl⟩ :=
+    completeSelectedScope_ordinary_withdrawal program before after scopeId parentOutput result
+  exact ⟨ordinary, completed, rfl, rfl, rfl, rfl⟩
+
 /-- Bounded completion's mandatory Activity/deadline withdrawal preserves the child continuation
 position established by actual ordinary completion, including the unbounded passthrough case. -/
 theorem completeBoundedScope_child_preserves_position (program : Program) (before after : RuntimeState)

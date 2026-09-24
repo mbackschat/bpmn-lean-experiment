@@ -57,7 +57,7 @@ theorem cancelled_activity_claimant_removes_parallel_controller (state : Runtime
     (controller : ParallelMultiInstanceController) (record : ActivityOccurrence)
     (member : record ∈ state.activityOccurrences)
     (inside : recordInRegion (fun owner => occurrenceInSubtree state.scopeOccurrences root owner ||
-      (calledInstanceClosure state root).contains owner.processInstanceId) record = true)
+      (calledInstanceClosure state root).contains owner.processInstanceId) record (retainedCancellationRoot root disposition) = true)
     (names : parallelControllerNamesIdentity controller record.processInstanceId
       ⟨record.activityElementId.value⟩ record.activation = true) :
     controller ∉ (cancelScopeSubtree state root disposition).parallelMultiInstanceControllers := by
@@ -67,7 +67,7 @@ theorem cancelled_activity_claimant_removes_parallel_controller (state : Runtime
   have withdrawn : (withdrawnByRegion
       (fun owner => occurrenceInSubtree state.scopeOccurrences root owner ||
         (calledInstanceClosure state root).contains owner.processInstanceId)
-      state.activityOccurrences).any (fun activity =>
+      state.activityOccurrences (retainedCancellationRoot root disposition)).any (fun activity =>
         parallelControllerNamesIdentity controller activity.processInstanceId
           ⟨activity.activityElementId.value⟩ activity.activation) = true :=
     List.any_eq_true.mpr ⟨record, List.mem_filter.mpr ⟨member, inside⟩, names⟩

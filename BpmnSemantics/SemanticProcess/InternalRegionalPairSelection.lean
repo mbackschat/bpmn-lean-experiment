@@ -69,11 +69,9 @@ theorem regionalSelection_after_independent_regional (program : Program) (before
   have position : runtimePositionValid program hosting after = true := by
     simp only [runtimeStateWellFormed, Bool.and_eq_true, and_assoc] at afterValid
     exact afterValid.1
-  apply regionalSelection_filter_frame program before after rightOperation right.selection keepScope keepCall
-    selected fields.1 scopes calls
-    (runtimePositionValid_called_associations program hosting hosting after position (fields.1.trans running))
-    (preparedRegional_pending_frame program before after leftOperation left leftFound applied) rootKept
-  · intro parent parentEq scope member identity
+  have parentKept (parent : ScopeOccurrenceId) (parentEq : right.selection.root.parent = some parent)
+      (scope : RuntimeScopeOccurrence) (member : scope ∈ before.scopeOccurrences) (identity : scope.id = parent) :
+      keepScope scope = true := by
     apply scopeSurvives scope member
     rw [identity]
     have separated := regional_independent_read_write _ _ independent _ _
@@ -81,6 +79,11 @@ theorem regionalSelection_after_independent_regional (program : Program) (before
     apply Bool.eq_false_iff.mpr
     intro inside
     simp [regionalStateAtomsConflict, regionalOwnsAtom, regionalOwnsOrdinaryAtom, parentEq, inside] at separated
+  apply regionalSelection_filter_frame program before after rightOperation right.selection keepScope keepCall
+    selected fields.1 scopes calls
+    (runtimePositionValid_called_associations program hosting hosting after position (fields.1.trans running))
+    (preparedRegional_pending_frame program before after leftOperation left leftFound applied) rootKept
+  · exact parentKept
   · cases kind : right.selection.kind with
     | returning record =>
         have callerOutside := regional_pair_read_owner_outside before left.selection left.region left.footprint right.footprint
@@ -104,8 +107,20 @@ theorem regionalSelection_after_independent_regional (program : Program) (before
         subst withdrawal
         have children := regional_pair_retained_singleton before.scopeOccurrences keepScope
           (fun scope => decide (scope.id.definitionScopeId = definition)) right.selection.root census rootKept
-        exact regional_pair_completion_withdrawal program before after hosting leftOperation left right definition choice
-          valid leftFound rightFootprint kind independent applied (by rw [scopes, children, census]) chosen
+        apply regional_pair_subscribed_completion_withdrawal program before after hosting leftOperation left right definition output choice
+          valid leftFound rightFootprint kind independent applied fields.1 (by rw [scopes, children, census]) ?_ chosen
+        intro child parent childCensus parentEq
+        have sameChild : child = right.selection.root := by simpa using childCensus.symm.trans census
+        subst child
+        rw [scopes]
+        apply allMatchingRetained_preserves_census
+        apply List.all_eq_true.mpr
+        intro scope member
+        cases named : decide (scope.id = parent) with
+        | false => simp [named]
+        | true =>
+            have retained := parentKept parent parentEq scope member (of_decide_eq_true named)
+            simp [named, retained]
     | _ => trivial
   · have inputRead := regionalStateFootprint_selector_read before right.selection right.region right.footprint rightFootprint
     rw [operationEq] at inputRead

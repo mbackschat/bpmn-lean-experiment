@@ -2465,6 +2465,9 @@
           "$ref": "#/$defs/enterBoundedScope"
         },
         {
+          "$ref": "#/$defs/enterMonitoredScope"
+        },
+        {
           "$ref": "#/$defs/invokeProcess"
         },
         {
@@ -2511,6 +2514,9 @@
         },
         {
           "$ref": "#/$defs/awaitMessageBoundedUserTask"
+        },
+        {
+          "$ref": "#/$defs/awaitMessageMonitoredUserTask"
         },
         {
           "$ref": "#/$defs/awaitMonitoredUserTask"
@@ -2723,7 +2729,7 @@
           "$ref": "#/$defs/boundedTaskArm"
         },
         "boundaryTimer": {
-          "$ref": "#/$defs/boundaryTimerArm",
+          "$ref": "#/$defs/monitoredBoundaryTimerArm",
           "type": "object",
           "properties": { "durationMs": { "const": 1000 } }
         }
@@ -2764,6 +2770,107 @@
           "$ref": "#/$defs/boundaryTimerArm",
           "type": "object",
           "properties": { "durationMs": { "const": 1000 } }
+        }
+      }
+    },
+    "awaitMessageMonitoredUserTask": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "origin",
+        "input",
+        "task",
+        "boundaryMessage"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "kind": {
+          "const": "awaitMessageMonitoredUserTask"
+        },
+        "origin": {
+          "$ref": "#/$defs/bpmnElementOrigin"
+        },
+        "input": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "task": {
+          "$ref": "#/$defs/boundedTaskArm"
+        },
+        "boundaryMessage": {
+          "$ref": "#/$defs/boundaryMessageArm"
+        }
+      }
+    },
+    "enterMonitoredScope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "origin",
+        "input",
+        "childEntry",
+        "childScopeId",
+        "boundaryTimer"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "kind": {
+          "const": "enterMonitoredScope"
+        },
+        "origin": {
+          "$ref": "#/$defs/bpmnElementOrigin"
+        },
+        "input": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "childEntry": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "childScopeId": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "boundaryTimer": {
+          "$ref": "#/$defs/monitoredBoundaryTimerArm",
+          "type": "object",
+          "properties": {
+            "durationMs": {
+              "const": 1000
+            }
+          }
+        }
+      }
+    },
+    "monitoredBoundaryTimerArm": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "elementId",
+        "durationMs",
+        "output",
+        "origin"
+      ],
+      "properties": {
+        "elementId": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "durationMs": {
+          "const": 1000
+        },
+        "output": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "origin": {
+          "$ref": "#/$defs/bpmnSequenceFlowOrigin"
+        },
+        "recurrence": {
+          "const": "repeating"
         }
       }
     }

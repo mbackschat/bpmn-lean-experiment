@@ -230,6 +230,7 @@ theorem regionalPublicationTemplate_after_independent_regional (program : Progra
         have followingEq : following = next := Option.some.inj (followingFound.symm.trans nextFound)
         subst prior
         subst following
+        simp only [kind, reduceCtorEq, decide_true, decide_false] at endsFrame
         cases op : right.selection.operation <;> simp only [regionalLifecycleTemplate?, op, kind, endsFrame]
   dsimp only [next] at lifecycleFrame
   have deltaFrame := regionalPositionDelta_after_independent_regional program before after hosting

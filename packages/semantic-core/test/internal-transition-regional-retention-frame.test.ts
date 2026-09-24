@@ -36,7 +36,7 @@ const { completeOrdinaryUserTask } = await import(
 for (const leftKind of [Kind.ThrowError, Kind.TerminateScope] as const) {
   for (const rightKind of [Kind.ThrowError, Kind.TerminateScope] as const) {
     for (const handlerKind of [ActivityHandlerKind.Timer, ActivityHandlerKind.Message] as const) {
-      test(`${leftKind}/${rightKind}/${handlerKind} preserves closure and publishes handlers withdrawn through their child body`, () => {
+      test(`${leftKind}/${rightKind}/${handlerKind} preserves closure and publishes actual child-body withdrawal`, () => {
         const fixture = regionalPairFixture(leftKind, rightKind);
         const [left, right] = fixture.branches;
         assert.ok(left && right);
@@ -97,35 +97,46 @@ for (const leftKind of [Kind.ThrowError, Kind.TerminateScope] as const) {
         assert.ok(next !== null);
         assert.equal(closed(after, next.selection), true);
         const newMask = retention(after, next.selection);
+        const removesBody = rightKind === Kind.ThrowError;
         if (handlerKind === ActivityHandlerKind.Timer) {
-          assert.equal(oldMask.timer(before.timerWaits[0]!), false);
+          assert.equal(oldMask.timer(before.timerWaits[0]!), !removesBody);
           assert.equal(newMask.timer(before.timerWaits[0]!), true);
         } else {
-          assert.equal(oldMask.message(before.messageWaits[0]!), false);
+          assert.equal(oldMask.message(before.messageWaits[0]!), !removesBody);
           assert.equal(newMask.message(before.messageWaits[0]!), true);
         }
         assert.equal(independent(leftPrepared.footprint, rightPrepared.footprint), false,
-          "both cancellations withdraw the same Activity despite their disjoint scope regions");
+          "the Activity withdrawal overlaps the other cancellation's body region even when its root survives");
         const omitActivityWrites = (prepared: typeof leftPrepared) => ({ ...prepared.footprint,
           writes: prepared.footprint.writes.filter(({ kind }) => kind !== Atom.ActivityAssociation),
         });
         assert.equal(independent(omitActivityWrites(leftPrepared), omitActivityWrites(rightPrepared)), true,
           "omitting shared Activity writes reproduces false independence");
         assert.equal(apply(program, before, { ...leftPrepared, footprint: omitActivityWrites(leftPrepared) }), null);
-        assert.notDeepEqual(next, rightPrepared,
-          "ownership closure alone does not prove preservation of complete preparation");
+        if (removesBody) {
+          assert.notDeepEqual(next, rightPrepared,
+            "ownership closure alone does not prove preservation of complete preparation");
+        } else {
+          assert.deepEqual(next, rightPrepared);
+        }
         const rightAfter = apply(program, before, rightPrepared);
         assert.ok(rightAfter !== null);
         valid(rightAfter);
-        assert.deepEqual(rightAfter.timerWaits, []);
-        assert.deepEqual(rightAfter.messageWaits, []);
+        assert.deepEqual(rightAfter.timerWaits, removesBody ? [] : before.timerWaits);
+        assert.deepEqual(rightAfter.messageWaits, removesBody ? [] : before.messageWaits);
+        if (!removesBody) {
+          const leftAfterRight = prepare(program, rightAfter, left.selected);
+          assert.ok(leftAfterRight !== null);
+          assert.deepEqual(leftAfterRight, leftPrepared);
+          assert.deepEqual(apply(program, rightAfter, leftAfterRight), apply(program, after, next));
+        }
         const publication = instantiateInternalPublicationBatch("cancel-body", 0, [rightPrepared.publicationTemplate]);
         assert.ok(publication !== null && publication[0] !== undefined);
-        assert.ok(publication[0].lifecycle.ended.some(({ anchor, terminal }) =>
+        assert.equal(publication[0].lifecycle.ended.some(({ anchor, terminal }) =>
           anchor.kind === SemanticFlowNodeOccurrenceAnchorKind.Wait &&
           JSON.stringify(anchor.id) === JSON.stringify(wait.id) &&
           terminal === FlowNodeOccurrenceTerminalKind.Cancelled
-        ), "the retained template must end a withdrawn handler whose owner survives");
+        ), removesBody, "the template ends the outside handler only when its body is removed");
         const actual = projectFlowNodeOccurrenceLifecycleDelta(program, before, rightAfter, {
           kind: "internal", operation: right.selected,
           owner: rightPrepared.selection.owner,
@@ -138,7 +149,7 @@ for (const leftKind of [Kind.ThrowError, Kind.TerminateScope] as const) {
         assert.deepEqual(cancelledRegion(program, retained, rightPrepared.selection.owner,
           rightKind === Kind.TerminateScope), actual!.ended.filter(({ terminal }) =>
           terminal === FlowNodeOccurrenceTerminalKind.Cancelled
-        ), "the state-free cancellation relation must include the retained body's public handlers");
+        ), "the state-free relation must distinguish a retained body from a removed body");
         const side = before.userTaskWaits.find(({ id }) => id.elementId === "Side_Task");
         assert.ok(side !== undefined);
         const stimulus = { kind: StimulusKind.CompleteUserTaskInstance,
@@ -168,12 +179,15 @@ for (const leftKind of [Kind.ThrowError, Kind.TerminateScope] as const) {
             "the current retained Message account still excludes child-scope hosts");
         } else {
           assert.doesNotThrow(check);
-          const missingHandler = { ...commandPublication.lifecycle,
-            ended: commandPublication.lifecycle.ended.filter(({ anchor }) =>
+          const wrongHandler: typeof commandPublication.lifecycle = { ...commandPublication.lifecycle,
+            ended: removesBody ? commandPublication.lifecycle.ended.filter(({ anchor }) =>
               anchor.kind !== SemanticFlowNodeOccurrenceAnchorKind.Wait ||
-              JSON.stringify(anchor.id) !== JSON.stringify(wait.id)) };
+              JSON.stringify(anchor.id) !== JSON.stringify(wait.id)) : [...commandPublication.lifecycle.ended, {
+                anchor: { kind: SemanticFlowNodeOccurrenceAnchorKind.Wait, id: wait.id },
+                terminal: FlowNodeOccurrenceTerminalKind.Cancelled,
+              }] };
           assert.throws(() => requireCompleteFlowNodeOccurrenceLifecycles(program, retained, stimulus.commandId,
-            transitions, [externalDelta, missingHandler]));
+            transitions, [externalDelta, wrongHandler]));
         }
       });
     }

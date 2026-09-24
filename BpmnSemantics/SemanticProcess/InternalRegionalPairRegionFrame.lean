@@ -131,10 +131,10 @@ theorem preparedRegional_graph_filters (program : Program) (before after : Runti
   | completeScope id origin definition output =>
       obtain ⟨withdrawal, kind, census⟩ := regionalSelection_complete_census program before id origin definition output
         prepared.selection selected
-      have raw : completeBoundedScope? program before definition output = some after := by
+      have raw : completeSelectedScope? program before definition output = some after := by
         simp only [fire?, snapshots] at fired
         exact fired
-      obtain ⟨ordinary, completed, _, scopes, calls, _⟩ := completeBoundedScope_position_fields program before after definition output raw
+      obtain ⟨ordinary, completed, _, scopes, calls, _⟩ := completeSelectedScope_position_fields program before after definition output raw
       have update := (completeScopeState_selected_update before ordinary definition output prepared.selection.root census completed).2
       obtain ⟨base, baseFound, baseWrites⟩ := regional_footprint_base before hosting prepared.selection prepared.region
         prepared.footprint running footprint

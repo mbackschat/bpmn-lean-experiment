@@ -60,6 +60,7 @@ export enum SemanticOperationKind {
   InitiateTimer = "initiateTimer",
   EnterScope = "enterScope",
   EnterBoundedScope = "enterBoundedScope",
+  EnterMonitoredScope = "enterMonitoredScope",
   InvokeProcess = "invokeProcess",
   ReturnProcess = "returnProcess",
   AwaitUserTask = "awaitUserTask",
@@ -71,6 +72,7 @@ export enum SemanticOperationKind {
   CompleteParallelMultiInstanceUserTask = "completeParallelMultiInstanceUserTask",
   AwaitBoundedUserTask = "awaitBoundedUserTask",
   AwaitMessageBoundedUserTask = "awaitMessageBoundedUserTask",
+  AwaitMessageMonitoredUserTask = "awaitMessageMonitoredUserTask",
   AwaitMonitoredUserTask = "awaitMonitoredUserTask",
   AwaitMessage = "awaitMessage",
   AwaitPayloadMessage = "awaitPayloadMessage",
@@ -269,6 +271,7 @@ export type BoundaryTimerArm<
 > = DeepReadonly<{
   elementId: string;
   durationMs: DurationMs;
+  recurrence?: "repeating";
   output: string;
   origin: BpmnSequenceFlowOrigin;
 }>;
@@ -310,6 +313,15 @@ export type AwaitMessageBoundedUserTaskOperation = OperationBase &
       output: string;
       origin: BpmnSequenceFlowOrigin;
     };
+  }>;
+
+/** Persistent Message subscription attached to one User Task lifetime (ESL-MESSAGE-01). */
+export type AwaitMessageMonitoredUserTaskOperation = OperationBase &
+  DeepReadonly<{
+    kind: SemanticOperationKind.AwaitMessageMonitoredUserTask;
+    input: string;
+    task: AwaitMessageBoundedUserTaskOperation["task"];
+    boundaryMessage: AwaitMessageBoundedUserTaskOperation["boundaryMessage"];
   }>;
 
 /**
@@ -497,6 +509,16 @@ export type EnterBoundedScopeOperation = OperationBase &
     boundaryTimer: BoundaryTimerArm<1000>;
   }>;
 
+/** Child scope whose boundary Timer spawns sibling work while its body remains live (ESL-HOST-01). */
+export type EnterMonitoredScopeOperation = OperationBase &
+  DeepReadonly<{
+    kind: SemanticOperationKind.EnterMonitoredScope;
+    input: string;
+    childEntry: string;
+    childScopeId: string;
+    boundaryTimer: BoundaryTimerArm<1000>;
+  }>;
+
 export type InvokeProcessOperation = OperationBase &
   DeepReadonly<{
     kind: SemanticOperationKind.InvokeProcess;
@@ -547,6 +569,7 @@ export type SemanticOperation =
         childScopeId: string;
       }>)
   | EnterBoundedScopeOperation
+  | EnterMonitoredScopeOperation
   | InvokeProcessOperation
   | ReturnProcessOperation
   | (OperationBase &
@@ -575,6 +598,7 @@ export type SemanticOperation =
   | AwaitDataOutputUserTaskOperation
   | AwaitBoundedUserTaskOperation
   | AwaitMessageBoundedUserTaskOperation
+  | AwaitMessageMonitoredUserTaskOperation
   | AwaitMonitoredUserTaskOperation
   | AwaitSequentialMultiInstanceUserTaskOperation
   | AwaitParallelMultiInstanceUserTaskOperation

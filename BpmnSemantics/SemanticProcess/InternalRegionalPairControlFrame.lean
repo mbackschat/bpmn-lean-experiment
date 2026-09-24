@@ -9,28 +9,21 @@ open BpmnSemantics
 
 private theorem completion_pending_frame (program : Program) (before after : RuntimeState)
     (definition : DefinitionScopeId) (output : Option ControlPlaceId)
-    (result : completeBoundedScope? program before definition output = some after) :
+    (result : completeSelectedScope? program before definition output = some after) :
     after.initiationPending = before.initiationPending := by
-  unfold completeBoundedScope? at result
-  cases completed : completeScopeState? before definition output with
-  | none => simp [completed] at result
-  | some ordinary =>
-      have pending : ordinary.initiationPending = before.initiationPending := by
-        unfold completeScopeState? at completed
-        split at completed
-        · split at completed
-          · simp at completed
-          · unfold completeQuiescentScope? at completed
-            repeat' split at completed
-            all_goals first
-              | (simp at completed; done)
-              | (simp only [Option.some.injEq] at completed; subst ordinary; rfl)
-        · simp at completed
-      simp only [completed] at result
-      repeat' split at result
+  obtain ⟨ordinary, completed, timers, activities, rfl⟩ :=
+    completeSelectedScope_ordinary_withdrawal program before after definition output result
+  change ordinary.initiationPending = before.initiationPending
+  unfold completeScopeState? at completed
+  split at completed
+  · split at completed
+    · simp at completed
+    · unfold completeQuiescentScope? at completed
+      repeat' split at completed
       all_goals first
-        | (simp at result; done)
-        | (simp only [Option.some.injEq] at result; subst after; exact pending)
+        | (simp at completed; done)
+        | (simp only [Option.some.injEq] at completed; subst ordinary; rfl)
+  · simp at completed
 
 theorem preparedRegional_pending_frame (program : Program) (before after : RuntimeState)
     (operation : SemanticOperation) (prepared : PreparedInternalRegional)

@@ -4,6 +4,7 @@ import BpmnSemantics.SemanticProcess.ScopeCancellation
 /-! # Regional Activity lifetime regression witnesses
 
 AOO-CANCEL-01 follows the Activity record's body and tagged attachments across scope owners.
+ESL-RETAIN-01 preserves that record while its selected child body remains live.
 These literal ownership graphs exercise cancellation without claiming new profile admission.
 Called-Process cleanup also supplies exact predecessor membership for the Activity issuing census.
 -/
@@ -62,31 +63,51 @@ theorem removal_withdraws_exact_activity_local_data :
     (cancelScopeSubtree state child .remove).variables.activities =
       state.variables.activities.tail := by decide +kernel
 
-theorem retained_region_also_withdraws_exact_activity_local_data :
+theorem retained_child_preserves_parent_activity_local_data :
     (cancelScopeSubtree state child .retain).variables.activities =
-      state.variables.activities.tail := by decide +kernel
+      state.variables.activities := by decide +kernel
 
 theorem removal_withdraws_exact_parent_owned_message :
     (cancelScopeSubtree state child .remove).messageWaits =
       [otherActivationMessage] := by decide +kernel
 
-theorem retained_region_also_withdraws_exact_parent_owned_message :
+theorem retained_child_preserves_parent_owned_message :
     (cancelScopeSubtree state child .retain).messageWaits =
-      [otherActivationMessage] := by decide +kernel
+      state.messageWaits := by decide +kernel
 
 theorem message_attachment_does_not_withdraw_same_coordinates_timer :
     (cancelScopeSubtree state child .remove).timerWaits =
       [sameCoordinatesTimer] := by decide +kernel
 
-theorem both_dispositions_withdraw_the_activity_record :
+theorem activity_record_lifetime_follows_child_body_disposition :
     (cancelScopeSubtree state child .remove).activityOccurrences = [] ∧
-      (cancelScopeSubtree state child .retain).activityOccurrences = [] := by decide +kernel
+      (cancelScopeSubtree state child .retain).activityOccurrences =
+        state.activityOccurrences := by decide +kernel
 
-theorem disposition_selects_only_the_region_occurrence_lifetime :
+theorem disposition_selects_the_region_occurrence_lifetime :
     (cancelScopeSubtree state child .remove).scopeOccurrences =
         [{ id := root, parent := none }] ∧
       (cancelScopeSubtree state child .retain).scopeOccurrences =
         state.scopeOccurrences := by decide +kernel
+
+private def grandchild : ScopeOccurrenceId := ⟨⟨"Instance"⟩, ⟨"scope:grandchild"⟩, 1⟩
+
+private def descendantBodyState : RuntimeState :=
+  { state with
+    scopeOccurrences := state.scopeOccurrences ++ [{ id := grandchild, parent := some child }]
+    activityOccurrences := state.activityOccurrences.map fun occurrence =>
+      { occurrence with body := .childScope grandchild } }
+
+theorem retained_region_withdraws_removed_descendant_body_and_exact_attachments :
+    (cancelScopeSubtree descendantBodyState child .retain).scopeOccurrences =
+        state.scopeOccurrences ∧
+      (cancelScopeSubtree descendantBodyState child .retain).activityOccurrences = [] ∧
+      (cancelScopeSubtree descendantBodyState child .retain).messageWaits =
+        [otherActivationMessage] ∧
+      (cancelScopeSubtree descendantBodyState child .retain).timerWaits =
+        [sameCoordinatesTimer] ∧
+      (cancelScopeSubtree descendantBodyState child .retain).variables.activities =
+        state.variables.activities.tail := by decide +kernel
 
 private def otherRoot : ScopeOccurrenceId := ⟨⟨"OtherInstance"⟩, ⟨"scope:root"⟩, 1⟩
 

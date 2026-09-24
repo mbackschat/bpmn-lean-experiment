@@ -116,9 +116,9 @@ private theorem handler_frame (program : Program) (state : RuntimeState)
     (creationFound : prepareInternalScopeCreation? program state creationOperation = some creation)
     (independent : regionalStateFootprintsIndependent regional.footprint
       (liftRegionalStateFootprint creation.selection.owner creation.footprint) = true)
-    (id : OccurrenceId) :
-    scopeCancellationWithdrawsHandler program (creation.selection.apply state) regional.region.root id =
-      scopeCancellationWithdrawsHandler program state regional.region.root id := by
+    (id : OccurrenceId) (disposition : SelectedScopeDisposition) :
+    scopeCancellationWithdrawsHandler program (creation.selection.apply state) regional.region.root id disposition =
+      scopeCancellationWithdrawsHandler program state regional.region.root id disposition := by
   have classifiers := preparedScopeCreation_regional_classifiers program state operation creationOperation regional creation
     programValid valid regionalFound creationFound independent
   have root := (deriveInternalOccurrenceRegion_spec state _ _

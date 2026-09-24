@@ -10,7 +10,7 @@ namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
 open BpmnSemantics
 
-theorem completeBoundedScope_position_delta (program : Program) (before after : RuntimeState)
+private theorem completion_position_delta_of_fields (program : Program) (before after ordinary : RuntimeState)
     (hosting : SemanticId) (id : OperationId) (origin : BpmnElementOrigin)
     (definition : DefinitionScopeId) (output : Option ControlPlaceId) (root : RuntimeScopeOccurrence)
     (valid : runtimePositionValid program hosting before = true)
@@ -18,9 +18,12 @@ theorem completeBoundedScope_position_delta (program : Program) (before after : 
     (running : before.control = .running hosting)
     (operation : .completeScope id origin definition output ∈ program.operations)
     (unique : before.scopeOccurrences.filter (fun scope => decide (scope.id.definitionScopeId = definition)) = [root])
-    (result : completeBoundedScope? program before definition output = some after) :
+    (completed : completeScopeState? before definition output = some ordinary)
+    (control : after.control = ordinary.control) (scopes : after.scopeOccurrences = ordinary.scopeOccurrences)
+    (calls : after.calledProcessOccurrences = ordinary.calledProcessOccurrences) (tokens : after.tokens = ordinary.tokens)
+    (afterValid : runtimePositionValid program hosting after = true) :
     controlPositionDelta? program hosting before after =
-      match root.parent, output with
+      match (generalizing := false) root.parent, output with
       | none, none => some
           { consumedTokens := [], producedTokens := [], enteredScopes := []
             exitedScopes := projectScopes program before.scopeOccurrences }
@@ -31,10 +34,6 @@ theorem completeBoundedScope_position_delta (program : Program) (before after : 
             enteredScopes := []
             exitedScopes := (projectScopes program before.scopeOccurrences).filter fun scope => scope.id == root.id }
       | _, _ => none := by
-  have afterValid := declaredBoundedComplete_preserves_position program before after hosting hosting id origin definition output
-    valid structural running operation result
-  obtain ⟨ordinary, completed, control, scopes, calls, tokens⟩ :=
-    completeBoundedScope_position_fields program before after definition output result
   obtain ⟨quiet, update⟩ := completeScopeState_selected_update before ordinary definition output root unique completed
   have member : root ∈ before.scopeOccurrences.filter (fun scope => decide (scope.id.definitionScopeId = definition)) := by
     rw [unique]; simp
@@ -81,6 +80,62 @@ theorem completeBoundedScope_position_delta (program : Program) (before after : 
             apply Bool.eq_iff_iff.mpr
             simp
           · contradiction
+
+theorem completeBoundedScope_position_delta (program : Program) (before after : RuntimeState)
+    (hosting : SemanticId) (id : OperationId) (origin : BpmnElementOrigin)
+    (definition : DefinitionScopeId) (output : Option ControlPlaceId) (root : RuntimeScopeOccurrence)
+    (valid : runtimePositionValid program hosting before = true)
+    (structural : flowNodeOccurrenceStructuralProgramValidity program before = true)
+    (running : before.control = .running hosting)
+    (operation : .completeScope id origin definition output ∈ program.operations)
+    (unique : before.scopeOccurrences.filter (fun scope => decide (scope.id.definitionScopeId = definition)) = [root])
+    (result : completeBoundedScope? program before definition output = some after) :
+    controlPositionDelta? program hosting before after =
+      match (generalizing := false) root.parent, output with
+      | none, none => some
+          { consumedTokens := [], producedTokens := [], enteredScopes := []
+            exitedScopes := projectScopes program before.scopeOccurrences }
+      | some parent, some place => some
+          { consumedTokens := []
+            producedTokens := [{ sequenceFlowId := tokenOrigin program { placeId := place, owner := parent }
+                                 owner := parent, multiplicity := 1 }]
+            enteredScopes := []
+            exitedScopes := (projectScopes program before.scopeOccurrences).filter fun scope => scope.id == root.id }
+      | _, _ => none := by
+  obtain ⟨ordinary, completed, control, scopes, calls, tokens⟩ :=
+    completeBoundedScope_position_fields program before after definition output result
+  exact completion_position_delta_of_fields program before after ordinary hosting id origin
+    definition output root valid structural running operation unique completed control scopes calls tokens
+    (declaredBoundedComplete_preserves_position program before after hosting hosting id origin
+      definition output valid structural running operation result)
+
+theorem completeSelectedScope_position_delta (program : Program) (before after : RuntimeState)
+    (hosting : SemanticId) (id : OperationId) (origin : BpmnElementOrigin)
+    (definition : DefinitionScopeId) (output : Option ControlPlaceId) (root : RuntimeScopeOccurrence)
+    (valid : runtimePositionValid program hosting before = true)
+    (structural : flowNodeOccurrenceStructuralProgramValidity program before = true)
+    (running : before.control = .running hosting)
+    (operation : .completeScope id origin definition output ∈ program.operations)
+    (unique : before.scopeOccurrences.filter (fun scope => decide (scope.id.definitionScopeId = definition)) = [root])
+    (result : completeSelectedScope? program before definition output = some after) :
+    controlPositionDelta? program hosting before after =
+      match (generalizing := false) root.parent, output with
+      | none, none => some
+          { consumedTokens := [], producedTokens := [], enteredScopes := []
+            exitedScopes := projectScopes program before.scopeOccurrences }
+      | some parent, some place => some
+          { consumedTokens := []
+            producedTokens := [{ sequenceFlowId := tokenOrigin program { placeId := place, owner := parent }
+                                 owner := parent, multiplicity := 1 }]
+            enteredScopes := []
+            exitedScopes := (projectScopes program before.scopeOccurrences).filter fun scope => scope.id == root.id }
+      | _, _ => none := by
+  obtain ⟨ordinary, completed, control, scopes, calls, tokens⟩ :=
+    completeSelectedScope_position_fields program before after definition output result
+  exact completion_position_delta_of_fields program before after ordinary hosting id origin
+    definition output root valid structural running operation unique completed control scopes calls tokens
+    (declaredSelectedComplete_preserves_position program before after hosting hosting id origin
+      definition output valid structural running operation result)
 
 theorem regionalSelection_complete_census (program : Program) (before : RuntimeState)
     (id : OperationId) (origin : BpmnElementOrigin) (definition : DefinitionScopeId)
@@ -134,11 +189,11 @@ theorem preparedComplete_position_delta (program : Program) (before : RuntimeSta
       { controlTokens := projectTokens program before.tokens, scopes := projectScopes program before.scopeOccurrences } := by
     simpa [projectControlPosition?, valid] using projected.symm
   obtain ⟨after, fired, applied⟩ := prepareInternalRegional_executes program before _ prepared found
-  have result : completeBoundedScope? program before definition output = some after := by
+  have result : completeSelectedScope? program before definition output = some after := by
     simp only [fire?, snapshots] at fired
-    change completeBoundedScope? program before definition output = some after at fired
+    change completeSelectedScope? program before definition output = some after at fired
     exact fired
-  have position := completeBoundedScope_position_delta program before after hosting id origin definition output
+  have position := completeSelectedScope_position_delta program before after hosting id origin definition output
     prepared.selection.root valid structural runningState member census result
   refine ⟨hosting, after, runningState, applied, ?_⟩
   rw [position, template]

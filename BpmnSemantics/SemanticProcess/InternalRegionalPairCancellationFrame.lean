@@ -53,11 +53,12 @@ theorem regional_pair_cancellation_populations (program : Program) (before after
     (rightFound : prepareInternalRegional? program before rightOperation = some right)
     (independent : regionalStateFootprintsIndependent left.footprint right.footprint = true)
     (applied : applyPreparedInternalRegional? program before left = some after)
-    (cancelling : right.selection.kind = .terminating ∨ ∃ parent, right.selection.kind = .interrupting parent) :
+    (_cancelling : right.selection.kind = .terminating ∨ ∃ parent, right.selection.kind = .interrupting parent)
+    (retainedRoot : Option ScopeOccurrenceId := none) :
     withdrawnByRegion (fun owner => occurrenceInSubtree after.scopeOccurrences right.selection.root.id owner ||
-        (calledInstanceClosure after right.selection.root.id).contains owner.processInstanceId) after.activityOccurrences =
+        (calledInstanceClosure after right.selection.root.id).contains owner.processInstanceId) after.activityOccurrences retainedRoot =
       withdrawnByRegion (fun owner => occurrenceInSubtree before.scopeOccurrences right.selection.root.id owner ||
-        (calledInstanceClosure before right.selection.root.id).contains owner.processInstanceId) before.activityOccurrences ∧
+        (calledInstanceClosure before right.selection.root.id).contains owner.processInstanceId) before.activityOccurrences retainedRoot ∧
     after.effectWaits.filter (fun wait => occurrenceInSubtree after.scopeOccurrences right.selection.root.id wait.owner ||
         (calledInstanceClosure after right.selection.root.id).contains wait.owner.processInstanceId) =
       before.effectWaits.filter (fun wait => occurrenceInSubtree before.scopeOccurrences right.selection.root.id wait.owner ||
@@ -66,28 +67,23 @@ theorem regional_pair_cancellation_populations (program : Program) (before after
         (calledInstanceClosure after right.selection.root.id).contains incident.wait.owner.processInstanceId) =
       before.effectIncidents.filter (fun incident => occurrenceInSubtree before.scopeOccurrences right.selection.root.id incident.wait.owner ||
         (calledInstanceClosure before right.selection.root.id).contains incident.wait.owner.processInstanceId) := by
-  have writes := withdrawn_activity_frame program before after hosting leftOperation rightOperation left right
+  refine ⟨regional_pair_cancellation_activity_frame program before after hosting leftOperation rightOperation
+    left right valid running leftFound rightFound independent applied retainedRoot, ?_⟩
+  obtain ⟨actual, actualApplied, afterValid⟩ := preparedRegional_preserves_runtimeStateWellFormed program before hosting
+    leftOperation left valid leftFound
+  have same : actual = after := Option.some.inj (actualApplied.symm.trans applied)
+  subst actual
+  have afterRunning := (regional_pair_control_frame program before after hosting leftOperation rightOperation left right
+    valid running leftFound rightFound independent applied).1.trans running
+  have beforeDerived := (prepareInternalRegional_facts program before rightOperation right rightFound).2.2.2.2.1
+  have afterDerived := prepareInternalRegional_region_after_independent_regional program before after hosting
+    leftOperation rightOperation left right valid running leftFound rightFound independent applied
+  have beforeMasks := cancellation_effect_filters program before hosting right.selection.root.id right.region valid running beforeDerived
+  have afterMasks := cancellation_effect_filters program after hosting right.selection.root.id right.region afterValid afterRunning afterDerived
+  rw [afterMasks.1, beforeMasks.1, afterMasks.2, beforeMasks.2]
+  exact regional_pair_effect_populations program before after hosting leftOperation rightOperation left right
     valid running leftFound rightFound independent applied
-  unfold regionalWithdrawnActivityWrites at writes
-  have records := (List.map_inj_right (fun _ _ equal => InternalRegionalStateAtom.activityAssociation.inj equal)).mp writes
-  refine ⟨?_, ?_⟩
-  · rcases cancelling with kind | ⟨parent, kind⟩ <;>
-      simpa only [regionalSelectionReferenceRetention, kind, cancellationReferenceRetention, Bool.not_not,
-        withdrawnByRegion] using records
-  · obtain ⟨actual, actualApplied, afterValid⟩ := preparedRegional_preserves_runtimeStateWellFormed program before hosting
-      leftOperation left valid leftFound
-    have same : actual = after := Option.some.inj (actualApplied.symm.trans applied)
-    subst actual
-    have afterRunning := (regional_pair_control_frame program before after hosting leftOperation rightOperation left right
-      valid running leftFound rightFound independent applied).1.trans running
-    have beforeDerived := (prepareInternalRegional_facts program before rightOperation right rightFound).2.2.2.2.1
-    have afterDerived := prepareInternalRegional_region_after_independent_regional program before after hosting
-      leftOperation rightOperation left right valid running leftFound rightFound independent applied
-    have beforeMasks := cancellation_effect_filters program before hosting right.selection.root.id right.region valid running beforeDerived
-    have afterMasks := cancellation_effect_filters program after hosting right.selection.root.id right.region afterValid afterRunning afterDerived
-    rw [afterMasks.1, beforeMasks.1, afterMasks.2, beforeMasks.2]
-    exact regional_pair_effect_populations program before after hosting leftOperation rightOperation left right
-      valid running leftFound rightFound independent applied
+
 
 /-- Fully prepared cancellation has no selected Compensation trigger to withdraw.
 The child case follows from the existing exact retained-trigger filter, rather than a

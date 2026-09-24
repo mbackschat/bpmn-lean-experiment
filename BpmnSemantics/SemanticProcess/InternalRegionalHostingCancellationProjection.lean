@@ -128,7 +128,7 @@ theorem hosting_cancellation_public_filter_empty (program : Program) (state : Ru
     (rootHosting : root.id.processInstanceId = hosting)
     (projected : projectOpenFlowNodeOccurrences? program state = some current) :
     current.filter (fun entry => decide (entry.anchor = .scope root.id) ||
-      !flowNodeOccurrenceOwnedBySubtree program state root.id entry) = [] := by
+      !flowNodeOccurrenceOwnedBySubtree program state root.id entry .retain) = [] := by
   have coverage := hosting_cancellation_covers_live_scope program state hosting hosting valid running
     root rootMember parentless rootHosting
   have unique := runtimePositionValid_scope_ids_nodup program hosting hosting state valid running

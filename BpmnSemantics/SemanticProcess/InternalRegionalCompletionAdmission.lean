@@ -173,4 +173,29 @@ theorem declaredBoundedComplete_preserves_position (program : Program) (before a
   rw [tokens]
   exact List.Sublist.refl _
 
+/-- Monitored withdrawal changes no position field beyond actual ordinary completion. -/
+theorem declaredSelectedComplete_preserves_position (program : Program) (before after : RuntimeState)
+    (expectedInstanceId instanceId : SemanticId) (id : OperationId) (origin : BpmnElementOrigin)
+    (scopeId : DefinitionScopeId) (output : Option ControlPlaceId)
+    (valid : runtimePositionValid program expectedInstanceId before = true)
+    (structural : flowNodeOccurrenceStructuralProgramValidity program before = true)
+    (running : before.control = .running instanceId)
+    (operation : .completeScope id origin scopeId output ∈ program.operations)
+    (result : completeSelectedScope? program before scopeId output = some after) :
+    runtimePositionValid program expectedInstanceId after = true := by
+  unfold completeSelectedScope? at result
+  split at result
+  · unfold completeMonitoredScope? at result
+    obtain ⟨pair, _, result⟩ := Option.bind_eq_some_iff.mp result
+    split at result
+    · obtain ⟨ordinary, completed, result⟩ := Option.bind_eq_some_iff.mp result
+      cases result
+      exact runtimePositionValid_tokens_sublist_frame program expectedInstanceId ordinary _
+        (declaredComplete_preserves_position program before ordinary expectedInstanceId instanceId
+          id origin scopeId output valid structural running operation completed) rfl rfl rfl
+        (List.Sublist.refl _)
+    · contradiction
+  · exact declaredBoundedComplete_preserves_position program before after expectedInstanceId
+      instanceId id origin scopeId output valid structural running operation result
+
 end BpmnSemantics.SemanticProcess

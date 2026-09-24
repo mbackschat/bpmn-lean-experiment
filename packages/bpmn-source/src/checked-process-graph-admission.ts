@@ -1,6 +1,7 @@
 import {
   CheckedNodeKind,
   COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID,
+  REPEATABLE_EVENT_SUBSCRIPTIONS_CHECKPOINT_PROFILE_ID,
   GatewayDirection,
   SemanticGraphPolicyKind,
   SemanticProfileId,
@@ -70,6 +71,7 @@ export function resolveAdmittedCheckedProcessGraph(
         flowScopes,
         graphPolicy,
         dormantScopeIds,
+        semanticProfile,
       )
     )
   ) {
@@ -85,6 +87,7 @@ function isAdmittedDefinitionScope(
   flowScopes: ReadonlyMap<string, string>,
   graphPolicy: SemanticGraphPolicy,
   dormantScopeIds: ReadonlySet<string>,
+  semanticProfile: string,
 ): boolean {
   const nodes = graph.nodes.filter(({ id }) => nodeScopes.get(id) === scopeId);
   const flows = graph.flows.filter(({ id }) => flowScopes.get(id) === scopeId);
@@ -97,7 +100,7 @@ function isAdmittedDefinitionScope(
   if (dormantScopeIds.has(scopeId)) {
     return nodes.length === 0 && flows.length === 0;
   }
-  return nodes.every((node) => hasSelectedArity(node, flows)) &&
+  return nodes.every((node) => hasSelectedArity(node, flows, semanticProfile)) &&
     flows.every((flow) =>
       nodeIds.has(flow.targetId) &&
       (nodeIds.has(flow.sourceId) ||
@@ -154,6 +157,7 @@ function ownershipMap<K extends "nodeId" | "sequenceFlowId">(
 function hasSelectedArity(
   node: CheckedNode,
   flows: ReadonlyArray<CheckedSequenceFlow>,
+  semanticProfile: string,
 ): boolean {
   const incoming = flows.filter(({ targetId }) => targetId === node.id).length;
   const outgoing = flows.filter(({ sourceId }) => sourceId === node.id).length;
@@ -186,7 +190,9 @@ function hasSelectedArity(
     case CheckedNodeKind.ParallelGateway:
       switch (node.direction) {
         case GatewayDirection.Diverging:
-          return incoming === 1 && outgoing === 2;
+          return incoming === 1 &&
+            (semanticProfile === REPEATABLE_EVENT_SUBSCRIPTIONS_CHECKPOINT_PROFILE_ID
+              ? outgoing >= 2 : outgoing === 2);
         case GatewayDirection.Converging:
           return incoming === 2 && outgoing === 1;
       }

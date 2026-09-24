@@ -207,19 +207,19 @@ private theorem cancellation_parallel_tuple_retention (program : Program) (state
     (arm : ParallelMultiInstanceArm)
     (tuple : RegionalParallelBindingTuple program state controller entry arm)
     (facts : ParallelControllerProgramBindingFacts program state controller)
-    (root : ScopeOccurrenceId)
+    (root : ScopeOccurrenceId) (disposition : SelectedScopeDisposition)
     (owners : ∀ wait ∈ state.waits, wait.processInstanceId = wait.owner.processInstanceId)
     (unambiguous : attachedTimersUnambiguous state = true) :
     let called := calledInstanceClosure state root
     let cancelled := fun owner : ScopeOccurrenceId =>
       occurrenceInSubtree state.scopeOccurrences root owner || called.contains owner.processInstanceId
-    let withdrawn := withdrawnByRegion cancelled state.activityOccurrences
+    let withdrawn := withdrawnByRegion cancelled state.activityOccurrences (retainedCancellationRoot root disposition)
     (!called.contains controller.id.processInstanceId &&
       !withdrawn.any (regionalParallelNamesRecord controller)) =
-      (!recordInRegion cancelled tuple.record) ∧
+      (!recordInRegion cancelled tuple.record (retainedCancellationRoot root disposition)) ∧
     (∀ wait ∈ state.waits, regionalParallelNamesTask controller wait = true →
-      (!recordInRegion cancelled tuple.record) = (!cancelled wait.owner)) ∧
-    (!recordInRegion cancelled tuple.record) =
+      (!recordInRegion cancelled tuple.record (retainedCancellationRoot root disposition)) = (!cancelled wait.owner)) ∧
+    (!recordInRegion cancelled tuple.record (retainedCancellationRoot root disposition)) =
       (!cancelled tuple.timer.owner && !anyTimerIdNamesWait (attachedTimersOf withdrawn) tuple.timer) := by
   dsimp only
   let cancelled := fun owner : ScopeOccurrenceId =>
@@ -228,22 +228,22 @@ private theorem cancellation_parallel_tuple_retention (program : Program) (state
   obtain ⟨recordMem, _recordNames⟩ := regional_parallel_census_member tuple.recordCensus
   obtain ⟨timerMem, timerNames⟩ := regional_parallel_census_member tuple.timerCensus
   have process := parallel_tuple_owner_process program state controller entry arm tuple facts owners
-  have recordMask : recordInRegion cancelled tuple.record = cancelled tuple.record.owner := by
+  have recordMask : recordInRegion cancelled tuple.record (retainedCancellationRoot root disposition) = cancelled tuple.record.owner := by
     have body := tuple.body
     cases shape : tuple.record.body <;> simp [activityBodyParallelTasks?, shape] at body
     simp [recordInRegion, shape]
-  have withdrawnMatch : (withdrawnByRegion cancelled state.activityOccurrences).any
+  have withdrawnMatch : (withdrawnByRegion cancelled state.activityOccurrences (retainedCancellationRoot root disposition)).any
       (regionalParallelNamesRecord controller) = cancelled tuple.record.owner := by
     rw [withdrawnByRegion, List.any_filter]
-    have commute : (fun record => recordInRegion cancelled record &&
+    have commute : (fun record => recordInRegion cancelled record (retainedCancellationRoot root disposition) &&
         regionalParallelNamesRecord controller record) =
         (fun record => regionalParallelNamesRecord controller record &&
-          recordInRegion cancelled record) := by funext record; exact Bool.and_comm _ _
+          recordInRegion cancelled record (retainedCancellationRoot root disposition)) := by funext record; exact Bool.and_comm _ _
     rw [commute, ← List.any_filter, tuple.recordCensus]
     simpa using recordMask
-  change _ = (!recordInRegion cancelled tuple.record) ∧
+  change _ = (!recordInRegion cancelled tuple.record (retainedCancellationRoot root disposition)) ∧
     (∀ wait ∈ state.waits, regionalParallelNamesTask controller wait = true →
-      (!recordInRegion cancelled tuple.record) = (!cancelled wait.owner)) ∧ _
+      (!recordInRegion cancelled tuple.record (retainedCancellationRoot root disposition)) = (!cancelled wait.owner)) ∧ _
   rw [withdrawnMatch, recordMask]
   refine ⟨?_, ?_, ?_⟩
   · rw [← process]
@@ -254,13 +254,13 @@ private theorem cancellation_parallel_tuple_retention (program : Program) (state
     rw [(tuple.children wait member named).1]
   · change (!cancelled tuple.record.owner) =
       (!cancelled tuple.timer.owner && !anyTimerIdNamesWait
-        (attachedTimersOf (withdrawnByRegion cancelled state.activityOccurrences)) tuple.timer)
+        (attachedTimersOf (withdrawnByRegion cancelled state.activityOccurrences (retainedCancellationRoot root disposition))) tuple.timer)
     rw [tuple.timerOwner]
     cases outside : cancelled tuple.record.owner with
     | true => simp
     | false =>
       have noClaim : anyTimerIdNamesWait
-          (attachedTimersOf (withdrawnByRegion cancelled state.activityOccurrences)) tuple.timer = false := by
+          (attachedTimersOf (withdrawnByRegion cancelled state.activityOccurrences (retainedCancellationRoot root disposition))) tuple.timer = false := by
         apply Bool.eq_false_iff.mpr
         intro claim
         obtain ⟨timerId, attached, named⟩ := List.any_eq_true.mp claim
@@ -298,7 +298,7 @@ theorem cancelScopeSubtree_preserves_parallel_program_bindings (program : Progra
   intro controller member entry arm tuple
   exact cancellation_parallel_tuple_retention program state controller entry arm tuple
     (parallelMultiInstanceProgramBindingsValid_controller_facts program state controller bindings member)
-    root owners timers
+    root disposition owners timers
 
 /-- Whole-Call cleanup removes complete PMI groups. The weighted census retains only pending
 slots, so a surviving partially completed controller keeps its exact remaining child population. -/

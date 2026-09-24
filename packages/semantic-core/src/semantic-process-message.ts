@@ -70,6 +70,7 @@ export function messageWaitDeliveryKind(
         return operation.message.elementId === wait.id.elementId &&
           operation.output === wait.output &&
           sameMessageChannel(operation.message.channel, wait.channel);
+      case SemanticOperationKind.AwaitMessageMonitoredUserTask:
       case SemanticOperationKind.AwaitMessageBoundedUserTask:
         return operation.boundaryMessage.elementId === wait.id.elementId &&
           operation.boundaryMessage.output === wait.output &&
@@ -99,6 +100,7 @@ export function messageWaitDeliveryKind(
     case SemanticOperationKind.AwaitCorrelatedPayloadMessage:
       return MessageWaitDeliveryKind.CorrelatedPayload;
     case SemanticOperationKind.AwaitMessage:
+    case SemanticOperationKind.AwaitMessageMonitoredUserTask:
     case SemanticOperationKind.AwaitMessageBoundedUserTask:
     case SemanticOperationKind.AwaitEventRace:
       return MessageWaitDeliveryKind.Direct;

@@ -21,6 +21,7 @@ import { sameMessageChannel } from "./message-channel.js";
 import { SemanticOperationKind } from "./semantic-process-contract.js";
 import type {
   AwaitMessageBoundedUserTaskOperation,
+  AwaitMessageMonitoredUserTaskOperation,
   SemanticProcessProgram,
 } from "./semantic-process-contract.js";
 import {
@@ -41,11 +42,21 @@ import type {
   SemanticUserTaskWait,
 } from "./semantic-process-state.js";
 
-export type MessageBoundedPair = Readonly<{
-  definition: AwaitMessageBoundedUserTaskOperation;
+export type MessageBoundaryPair = Readonly<{
+  definition: AwaitMessageBoundedUserTaskOperation | AwaitMessageMonitoredUserTaskOperation;
   record: ActivityOccurrence;
   task: SemanticUserTaskWait;
   message: SemanticMessageWait;
+}>;
+
+export type MessageBoundedPair = MessageBoundaryPair & Readonly<{
+  definition: AwaitMessageBoundedUserTaskOperation;
+}>;
+
+export type SelectedMessageActivityArming = Readonly<{
+  record: ActivityOccurrence;
+  taskWait: SemanticUserTaskWait;
+  messageWait: SemanticMessageWait;
 }>;
 
 /** Atomically replaces the incoming token with the Activity, task, and Message subscription. */
@@ -54,6 +65,25 @@ export function armMessageBoundedUserTask(
   state: RuntimeState,
   owner: ScopeOccurrenceId,
 ): RuntimeState | null {
+  return armUserTaskWithBoundaryMessage(operation, state, owner);
+}
+
+/** Both interruption dispositions create the same exact Activity/body/subscription ownership triple. */
+export function armUserTaskWithBoundaryMessage(
+  operation: AwaitMessageBoundedUserTaskOperation | AwaitMessageMonitoredUserTaskOperation,
+  state: RuntimeState,
+  owner: ScopeOccurrenceId,
+): RuntimeState | null {
+  const selected = selectMessageActivityArming(operation, state, owner);
+  return selected === null ? null : applySelectedMessageActivityArming(state, owner, operation.input, selected);
+}
+
+/** Retains all three identities before mutation so independent scheduling can frame the complete arm. */
+export function selectMessageActivityArming(
+  operation: AwaitMessageBoundedUserTaskOperation | AwaitMessageMonitoredUserTaskOperation,
+  state: RuntimeState,
+  owner: ScopeOccurrenceId,
+): SelectedMessageActivityArming | null {
   if (state.control.kind !== ControlStateKind.Running) {
     return null;
   }
@@ -100,27 +130,37 @@ export function armMessageBoundedUserTask(
     channel: operation.boundaryMessage.channel,
     output: operation.boundaryMessage.output,
   };
+  return { record, taskWait, messageWait };
+}
+
+export function applySelectedMessageActivityArming(
+  state: RuntimeState,
+  owner: ScopeOccurrenceId,
+  input: string,
+  selected: SelectedMessageActivityArming,
+): RuntimeState {
+  const { record, taskWait, messageWait } = selected;
   return {
     ...state,
     activityOccurrences: [...state.activityOccurrences, record]
       .sort(compareActivityOccurrences),
     activityActivations: setActivationCount(
       state.activityActivations,
-      operation.task.elementId,
-      activityActivation,
+      record.id.activityElementId,
+      record.id.activation,
     ),
-    controlTokens: removeToken(state.controlTokens, operation.input, owner),
+    controlTokens: removeToken(state.controlTokens, input, owner),
     userTaskWaits: [...state.userTaskWaits, taskWait].sort(compareUserTaskWaits),
     messageWaits: [...state.messageWaits, messageWait].sort(compareMessageWaits),
     taskActivations: setActivationCount(
       state.taskActivations,
-      operation.task.elementId,
-      taskId.activation,
+      taskWait.id.elementId,
+      taskWait.id.activation,
     ),
     messageActivations: setActivationCount(
       state.messageActivations,
-      operation.boundaryMessage.elementId,
-      messageId.activation,
+      messageWait.id.elementId,
+      messageWait.id.activation,
     ),
   };
 }
@@ -140,7 +180,7 @@ export function completeMessageBoundedUserTask(
   const pair = messageBoundedPairForTask(program, state, stimulus.taskId);
   return pair === undefined
     ? null
-    : commitVictory(state, pair, pair.definition.task.output);
+    : commitMessageTaskVictory(state, pair, pair.definition.task.output);
 }
 
 /** Commits exact payload-free delivery and cancels the losing User Task. */
@@ -160,7 +200,7 @@ export function interruptMessageBoundedUserTask(
   return pair === undefined ||
       !sameMessageChannel(pair.message.channel, stimulus.channel)
     ? null
-    : commitVictory(state, pair, pair.definition.boundaryMessage.output);
+    : commitMessageTaskVictory(state, pair, pair.definition.boundaryMessage.output);
 }
 
 export function isMessageBoundedTaskDefinition(
@@ -183,10 +223,27 @@ export function isMessageBoundaryDefinition(
 }
 
 export function messageBoundedPairForSubscription(
+  program: SemanticProcessProgram, state: RuntimeState, subscriptionId: MessageSubscriptionId,
+): MessageBoundedPair | undefined {
+  return interruptingPair(messageBoundaryPairForSubscription(program, state, subscriptionId));
+}
+
+function messageBoundedPairForTask(
+  program: SemanticProcessProgram, state: RuntimeState, taskId: OccurrenceId,
+): MessageBoundedPair | undefined {
+  return interruptingPair(messageBoundaryPairForTask(program, state, taskId));
+}
+
+function interruptingPair(pair: MessageBoundaryPair | undefined): MessageBoundedPair | undefined {
+  return pair?.definition.kind === SemanticOperationKind.AwaitMessageBoundedUserTask
+    ? { ...pair, definition: pair.definition } : undefined;
+}
+
+export function messageBoundaryPairForSubscription(
   program: SemanticProcessProgram,
   state: RuntimeState,
   subscriptionId: MessageSubscriptionId,
-): MessageBoundedPair | undefined {
+): MessageBoundaryPair | undefined {
   const record = only(state.activityOccurrences.filter((candidate) =>
     candidate.attachedHandlers.some((handler) =>
       handler.kind === ActivityHandlerKind.Message &&
@@ -195,26 +252,30 @@ export function messageBoundedPairForSubscription(
   ));
   return record === undefined
     ? undefined
-    : messageBoundedPairForRecord(program, state, record);
+    : messageBoundaryPairForRecord(program, state, record);
 }
 
-function messageBoundedPairForTask(
+export function messageBoundaryPairForTask(
   program: SemanticProcessProgram,
   state: RuntimeState,
   taskId: OccurrenceId,
-): MessageBoundedPair | undefined {
+): MessageBoundaryPair | undefined {
   const record = activityOccurrenceForTaskBody(state.activityOccurrences, taskId);
   return record === undefined
     ? undefined
-    : messageBoundedPairForRecord(program, state, record);
+    : messageBoundaryPairForRecord(program, state, record);
 }
 
-function messageBoundedPairForRecord(
+function messageBoundaryPairForRecord(
   program: SemanticProcessProgram,
   state: RuntimeState,
   record: ActivityOccurrence,
-): MessageBoundedPair | undefined {
-  const definition = only(messageBoundedTaskOperations(program).filter(
+): MessageBoundaryPair | undefined {
+  const definition = only(program.operations.filter(
+    (operation): operation is MessageBoundaryPair["definition"] =>
+      operation.kind === SemanticOperationKind.AwaitMessageBoundedUserTask ||
+      operation.kind === SemanticOperationKind.AwaitMessageMonitoredUserTask,
+  ).filter(
     (operation) => operation.id === record.operationId,
   ));
   const messageHandlers = record.attachedHandlers.filter(
@@ -259,9 +320,9 @@ function messageBoundedTaskOperations(
   );
 }
 
-function commitVictory(
+export function commitMessageTaskVictory(
   state: RuntimeState,
-  pair: MessageBoundedPair,
+  pair: MessageBoundaryPair,
   output: string,
 ): RuntimeState | null {
   if (state.control.kind !== ControlStateKind.Running) {

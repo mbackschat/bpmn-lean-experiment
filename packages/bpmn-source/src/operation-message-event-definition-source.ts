@@ -33,19 +33,20 @@ export function resolveOperationMessageEventDefinition(
   MessageChannel,
   { kind: typeof MessageChannelKind.OperationMessage }
 > | undefined {
-  if (!isOperationMessageRootArtifacts(artifacts)) {
-    return undefined;
-  }
   const definitions = asElementArray(element.eventDefinitions);
   const definition = definitions?.[0];
+  const matches = artifacts?.filter(isOperationMessageRootArtifacts).filter(
+    (candidate) => definition?.messageRef === candidate.message &&
+      definition?.operationRef === candidate.operation,
+  );
+  const matched = matches?.length === 1 ? matches[0] : undefined;
   if (
+    matched === undefined ||
     definitions?.length !== 1 ||
     definition === undefined ||
     definition.$type !== bpmnTypes.messageEventDefinitionType ||
     !hasOnlyModelledKeys(definition, ["$type", "id"]) ||
     readId(definition) === undefined ||
-    definition.messageRef !== artifacts.message ||
-    definition.operationRef !== artifacts.operation ||
     definition.eventDefinitionRef !== undefined ||
     definition.dataOutputs !== undefined ||
     definition.outputSet !== undefined ||
@@ -53,5 +54,5 @@ export function resolveOperationMessageEventDefinition(
   ) {
     return undefined;
   }
-  return artifacts.channel;
+  return matched.channel;
 }

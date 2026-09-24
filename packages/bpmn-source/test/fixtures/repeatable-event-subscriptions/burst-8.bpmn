@@ -1,0 +1,90 @@
+<?xml version='1.0' encoding='utf-8'?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="Definitions_TerminateEnd" targetNamespace="urn:bpmn-lean:terminate-end">
+  <bpmn:process id="Process_TerminateEnd" isExecutable="true" name="Review application while independent audit continues">
+    <bpmn:startEvent id="Start_Root">
+      <bpmn:outgoing>Flow_StartToFork</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:subProcess id="SubProcess_Work" name="Application review region">
+      <bpmn:incoming>Flow_RootStartToScope</bpmn:incoming>
+      <bpmn:outgoing>Flow_ScopeToOuter</bpmn:outgoing>
+      <bpmn:startEvent id="Start_Child">
+        <bpmn:outgoing>Flow_ChildStartToFork</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:parallelGateway id="Gateway_ChildFork" gatewayDirection="Diverging">
+        <bpmn:incoming>Flow_ChildStartToFork</bpmn:incoming>
+        <bpmn:outgoing>Flow_ForkToTrigger</bpmn:outgoing>
+        <bpmn:outgoing>Flow_ForkToSibling</bpmn:outgoing>
+      </bpmn:parallelGateway>
+      <bpmn:userTask id="UserTask_Trigger" name="Cancel review region">
+        <bpmn:incoming>Flow_ForkToTrigger</bpmn:incoming>
+        <bpmn:outgoing>Flow_TriggerToTerminate</bpmn:outgoing>
+      </bpmn:userTask>
+      <bpmn:userTask id="UserTask_Sibling" name="Review application">
+        <bpmn:incoming>Flow_ForkToSibling</bpmn:incoming>
+        <bpmn:outgoing>Flow_SiblingToEnd</bpmn:outgoing>
+      </bpmn:userTask>
+      <bpmn:endEvent id="End_Terminate">
+        <bpmn:incoming>Flow_TriggerToTerminate</bpmn:incoming>
+        <bpmn:terminateEventDefinition />
+      </bpmn:endEvent>
+      <bpmn:endEvent id="End_Sibling">
+        <bpmn:incoming>Flow_SiblingToEnd</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="Flow_ChildStartToFork" sourceRef="Start_Child" targetRef="Gateway_ChildFork" />
+      <bpmn:sequenceFlow id="Flow_ForkToTrigger" sourceRef="Gateway_ChildFork" targetRef="UserTask_Trigger" />
+      <bpmn:sequenceFlow id="Flow_ForkToSibling" sourceRef="Gateway_ChildFork" targetRef="UserTask_Sibling" />
+      <bpmn:sequenceFlow id="Flow_TriggerToTerminate" sourceRef="UserTask_Trigger" targetRef="End_Terminate" />
+      <bpmn:sequenceFlow id="Flow_SiblingToEnd" sourceRef="UserTask_Sibling" targetRef="End_Sibling" />
+      <bpmn:boundaryEvent id="Reminder" attachedToRef="UserTask_Sibling" cancelActivity="false">
+        <bpmn:outgoing>Flow_ReminderToHandler</bpmn:outgoing>
+        <bpmn:timerEventDefinition>
+          <bpmn:timeCycle>R/PT1S</bpmn:timeCycle>
+        </bpmn:timerEventDefinition>
+      </bpmn:boundaryEvent>
+      <bpmn:userTask id="HandleReminder" name="Respond to application reminder">
+        <bpmn:incoming>Flow_ReminderToHandler</bpmn:incoming>
+        <bpmn:outgoing>Flow_HandlerToEnd</bpmn:outgoing>
+      </bpmn:userTask>
+      <bpmn:endEvent id="ReminderEnd">
+        <bpmn:incoming>Flow_HandlerToEnd</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="Flow_ReminderToHandler" sourceRef="Reminder" targetRef="HandleReminder" />
+      <bpmn:sequenceFlow id="Flow_HandlerToEnd" sourceRef="HandleReminder" targetRef="ReminderEnd" />
+    </bpmn:subProcess>
+    <bpmn:userTask id="UserTask_Outer" name="Archive review outcome">
+      <bpmn:incoming>Flow_ScopeToOuter</bpmn:incoming>
+      <bpmn:outgoing>Flow_OuterToEnd</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="End_Root">
+      <bpmn:incoming>Flow_OuterToEnd</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_RootStartToScope" sourceRef="RootFork" targetRef="SubProcess_Work" />
+    <bpmn:sequenceFlow id="Flow_ScopeToOuter" sourceRef="SubProcess_Work" targetRef="UserTask_Outer" />
+    <bpmn:sequenceFlow id="Flow_OuterToEnd" sourceRef="UserTask_Outer" targetRef="End_Root" />
+    <bpmn:parallelGateway id="RootFork" gatewayDirection="Diverging">
+      <bpmn:incoming>Flow_StartToFork</bpmn:incoming>
+      <bpmn:outgoing>Flow_RootStartToScope</bpmn:outgoing>
+      <bpmn:outgoing>Flow_ForkToAudit</bpmn:outgoing>
+      <bpmn:outgoing>ExtraIn0</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:userTask id="IndependentAudit" name="Complete independent audit">
+      <bpmn:incoming>Flow_ForkToAudit</bpmn:incoming>
+      <bpmn:outgoing>Flow_AuditToEnd</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="AuditEnd">
+      <bpmn:incoming>Flow_AuditToEnd</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_StartToFork" sourceRef="Start_Root" targetRef="RootFork" />
+    <bpmn:sequenceFlow id="Flow_ForkToAudit" sourceRef="RootFork" targetRef="IndependentAudit" />
+    <bpmn:sequenceFlow id="Flow_AuditToEnd" sourceRef="IndependentAudit" targetRef="AuditEnd" />
+    <bpmn:userTask id="ExtraAudit0">
+      <bpmn:incoming>ExtraIn0</bpmn:incoming>
+      <bpmn:outgoing>ExtraOut0</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="ExtraEnd0">
+      <bpmn:incoming>ExtraOut0</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="ExtraIn0" sourceRef="RootFork" targetRef="ExtraAudit0" />
+    <bpmn:sequenceFlow id="ExtraOut0" sourceRef="ExtraAudit0" targetRef="ExtraEnd0" />
+  </bpmn:process>
+</bpmn:definitions>

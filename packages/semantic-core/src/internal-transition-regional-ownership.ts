@@ -9,7 +9,10 @@ import {
 } from "./local-data-owner.js";
 import { ScopeCompletionWithdrawalKind } from "./semantic-process-bounded-scope-runtime.js";
 import { SemanticOperationKind } from "./semantic-process-contract.js";
-import { scopeOccurrenceSubtree } from "./semantic-process-scope-cancellation.js";
+import {
+  scopeCancellationWithdrawnActivities,
+  scopeOccurrenceSubtree,
+} from "./semantic-process-scope-cancellation.js";
 import { ScopeCompletionSelectionKind } from "./semantic-process-scope-runtime.js";
 import { sameOccurrence, sameScopeOccurrence } from "./semantic-process-state.js";
 import type { RuntimeState, ScopeOccurrenceId } from "./semantic-process-state.js";
@@ -102,8 +105,9 @@ export function deriveRegionalReferenceRetention(
         .filter(({ caller }) => interrupted(caller)).map(({ calledRoot }) => calledRoot.processInstanceId));
       // The raw TypeScript cancellation selects body/handler withdrawal from the parent subtree;
       // called-instance cleanup independently filters owner instances (REG-OWN-CLOSE-01 mask agreement).
-      const withdrawn = state.activityOccurrences.filter(({ owner, body }) => interrupted(owner) ||
-        (body.kind === ActivityBodyKind.ChildScope && interrupted(body.scope)));
+      const withdrawn = scopeCancellationWithdrawnActivities(
+        state, root, selection.kind === SemanticOperationKind.TerminateScope,
+      );
       const interruptedEffects = state.effectWaits.filter(({ owner }) => interrupted(owner)).map(({ id }) => id)
         .concat(state.effectIncidents.filter(({ wait }) => interrupted(wait.owner)).map(({ id }) => id.effectId));
       const keepOwner = ({ owner }: { owner: ScopeOccurrenceId }) =>

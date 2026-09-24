@@ -111,6 +111,7 @@ private def operationInputs : SemanticOperation → List ControlPlaceId
   | .completeScope .. => []
   | .enterScope _ _ input _ _
   | .enterBoundedScope _ _ input _ _ _
+  | .enterMonitoredScope _ _ input _ _ _
   | .invokeProcess _ _ input _ _ _ _
   | .awaitUserTask _ _ input _ _
   | .awaitDataInputUserTask _ _ input _ _ _ _
@@ -124,6 +125,7 @@ private def operationInputs : SemanticOperation → List ControlPlaceId
   | .awaitEventRace _ _ input _ _
   | .awaitBoundedUserTask _ _ input _ _
   | .awaitMessageBoundedUserTask _ _ input _ _
+  | .awaitMessageMonitoredUserTask _ _ input _ _
   | .awaitMonitoredUserTask _ _ input _ _
   | .awaitEffect _ _ input _ _ _
   | .duplicate _ _ input _
@@ -161,12 +163,14 @@ def operationOutputs : SemanticOperation → List ControlPlaceId
   | .awaitBoundedUserTask _ _ _ task boundaryTimer
   | .awaitMonitoredUserTask _ _ _ task boundaryTimer =>
       [task.output, boundaryTimer.output]
-  | .awaitMessageBoundedUserTask _ _ _ task boundaryMessage =>
+  | .awaitMessageBoundedUserTask _ _ _ task boundaryMessage
+  | .awaitMessageMonitoredUserTask _ _ _ task boundaryMessage =>
       [task.output, boundaryMessage.output]
   | .synchronizeSelected _ _ _ output _ => [output]
   | .enterScope _ _ _ childEntry _ => [childEntry]
   -- The boundary route is token-carrying and lands in the parent scope, unlike the child entry.
-  | .enterBoundedScope _ _ _ childEntry _ boundaryTimer =>
+  | .enterBoundedScope _ _ _ childEntry _ boundaryTimer
+  | .enterMonitoredScope _ _ _ childEntry _ boundaryTimer =>
       [childEntry, boundaryTimer.output]
   | .awaitEffect _ _ _ output _ route =>
       output :: route.toList.map (·.output)
@@ -194,6 +198,7 @@ The excluded constructors deliberately cross a definition-scope boundary for at 
 def operationControlPlacesShareOwner : SemanticOperation → Bool
   | .enterScope ..
   | .enterBoundedScope ..
+  | .enterMonitoredScope ..
   | .invokeProcess ..
   | .returnProcess ..
   | .completeScope ..
@@ -277,7 +282,8 @@ def operationRespectsScopes (program : Program)
       -- token-carrying and lands in the *parent*, so it is owner-scoped while the child entry is not.
       -- Without this arm the operation falls to the catch-all below, which demands that every output
       -- be owner-scoped and therefore rejects the child entry it is required to produce.
-      | .enterBoundedScope _ _ input childEntry childScopeId boundaryTimer =>
+      | .enterBoundedScope _ _ input childEntry childScopeId boundaryTimer
+      | .enterMonitoredScope _ _ input childEntry childScopeId boundaryTimer =>
           placesOwnedBy program [input] owner &&
             placesOwnedBy program [childEntry] childScopeId &&
             placesOwnedBy program [boundaryTimer.output] owner &&
@@ -379,8 +385,9 @@ def semanticOperationIsResumptionCut : SemanticOperation → Bool
   | .awaitDataOutputUserTask .. => true
   | .awaitSequentialMultiInstanceUserTask .. => true
   | .awaitParallelMultiInstanceUserTask .. => true
-  | .awaitMessageBoundedUserTask .. => true
+  | .awaitMessageBoundedUserTask .. | .awaitMessageMonitoredUserTask .. => true
   | .initiate .. | .initiateMessage .. | .initiateTimer .. | .enterScope .. | .enterBoundedScope ..
+  | .enterMonitoredScope ..
   | .invokeProcess .. | .returnProcess .. | .completeParallelMultiInstanceUserTask .. | .awaitTimer ..
   | .awaitMessage .. | .awaitPayloadMessage .. | .awaitCorrelatedPayloadMessage ..
   | .awaitEventRace .. | .awaitBoundedUserTask ..
@@ -461,7 +468,8 @@ opposite direction. -/
 private def boundedScopeEntryOriginsOwnTheirScopes (program : Program) : Bool :=
   program.operations.all fun operation =>
     match operation with
-    | .enterBoundedScope _ origin _ _ childScopeId _ =>
+    | .enterBoundedScope _ origin _ _ childScopeId _
+    | .enterMonitoredScope _ origin _ _ childScopeId _ =>
         match program.definitionScopes.find? fun scope =>
             decide (scope.id = childScopeId) with
         | some scope => decide (scope.originElementId = origin.elementId)

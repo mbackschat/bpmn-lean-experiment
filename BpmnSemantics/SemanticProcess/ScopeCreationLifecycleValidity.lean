@@ -97,7 +97,8 @@ theorem scopeCreation_bounded_scope_filter_frame (state : RuntimeState)
 theorem scopeCreation_boundary_timer_frame (program : Program) (state : RuntimeState)
     (selected : InternalScopeCreationSelection) (timer : TimerWait)
     (excluded : ∀ id origin input entry definition boundary,
-      .enterBoundedScope id origin input entry definition boundary ∈ program.operations →
+      (.enterBoundedScope id origin input entry definition boundary ∈ program.operations ∨
+        .enterMonitoredScope id origin input entry definition boundary ∈ program.operations) →
         selected.created.parent = none ∨ definition ≠ selected.created.id.definitionScopeId) :
     flowNodeOccurrenceBoundaryTimerBound program (selected.apply state) timer =
       flowNodeOccurrenceBoundaryTimerBound program state timer := by
@@ -105,13 +106,15 @@ theorem scopeCreation_boundary_timer_frame (program : Program) (state : RuntimeS
   congr 3
   apply List.filter_congr
   intro candidate member
+  let selectedOperation := candidate
   cases candidate <;> try (cases kind : selected.kind <;> simp only [InternalScopeCreationSelection.apply, kind] <;> rfl)
-  case enterBoundedScope id origin input entry definition boundary =>
+  all_goals
+    rename_i id origin input entry definition boundary
     have counts := fun record => scopeCreation_bounded_scope_filter_frame state selected timer definition record
-      (excluded id origin input entry definition boundary member)
+      (excluded id origin input entry definition boundary (by first | exact Or.inl member | exact Or.inr member))
     have activities : (selected.apply state).activityOccurrences = state.activityOccurrences := by
       cases kind : selected.kind <;> simp only [InternalScopeCreationSelection.apply, kind] <;> rfl
-    change (if !operationOwnedBy program (.enterBoundedScope id origin input entry definition boundary)
+    change (if !operationOwnedBy program selectedOperation
         timer.owner then false else _ && _ && decide (_ = 1)) = _
     rw [activities]
     simp only [counts]
@@ -121,7 +124,8 @@ theorem scopeCreation_preserves_wait_validity (program : Program) (state : Runti
     (operation : SemanticOperation) (selected : InternalScopeCreationSelection)
     (selection : selectInternalScopeCreation? state operation = some selected)
     (excluded : ∀ id origin input entry definition boundary,
-      .enterBoundedScope id origin input entry definition boundary ∈ program.operations →
+      (.enterBoundedScope id origin input entry definition boundary ∈ program.operations ∨
+        .enterMonitoredScope id origin input entry definition boundary ∈ program.operations) →
         selected.created.parent = none ∨ definition ≠ selected.created.id.definitionScopeId)
     (prior : flowNodeOccurrenceWaitProgramValidity program state = true) :
     flowNodeOccurrenceWaitProgramValidity program (selected.apply state) = true := by
@@ -160,15 +164,17 @@ theorem scopeCreation_preserves_wait_validity (program : Program) (state : Runti
     congr 3
     apply List.filter_congr
     intro candidate candidateMember
+    let selectedOperation := candidate
     cases candidate <;> try (cases kind : selected.kind <;> simp only [InternalScopeCreationSelection.apply, kind] <;> rfl)
-    case enterBoundedScope id origin input entry definition boundary =>
+    all_goals
+      rename_i id origin input entry definition boundary
       have counts := fun record => scopeCreation_bounded_scope_filter_frame state selected timer definition record
-        (excluded id origin input entry definition boundary candidateMember)
+        (excluded id origin input entry definition boundary (by first | exact Or.inl candidateMember | exact Or.inr candidateMember))
       have activities : (selected.apply state).activityOccurrences = state.activityOccurrences := by
         cases kind : selected.kind <;> simp only [InternalScopeCreationSelection.apply, kind] <;> rfl
-      change (if !operationOwnedBy program (.enterBoundedScope id origin input entry definition boundary)
+      change (if !operationOwnedBy program selectedOperation
           timer.owner then false else
-          if !operationOwnedBy program (.enterBoundedScope id origin input entry definition boundary)
+          if !operationOwnedBy program selectedOperation
             timer.owner then false else _ && _ && decide (_ = 1)) = _
       rw [activities]
       simp only [counts]
@@ -178,7 +184,8 @@ theorem scopeCreation_program_validity_of_structural (program : Program) (state 
     (operation : SemanticOperation) (selected : InternalScopeCreationSelection)
     (selection : selectInternalScopeCreation? state operation = some selected)
     (excluded : ∀ id origin input entry definition boundary,
-      .enterBoundedScope id origin input entry definition boundary ∈ program.operations →
+      (.enterBoundedScope id origin input entry definition boundary ∈ program.operations ∨
+        .enterMonitoredScope id origin input entry definition boundary ∈ program.operations) →
         selected.created.parent = none ∨ definition ≠ selected.created.id.definitionScopeId)
     (prior : flowNodeOccurrenceProgramValidity program state = true)
     (structural : flowNodeOccurrenceStructuralProgramValidity program (selected.apply state) = true) :

@@ -116,8 +116,9 @@ private theorem keyed_any_absent [DecidableEq β] (values : List α) (key : α �
 
 /-- An unissued wait identity cannot be withdrawn indirectly through an Activity handler. -/
 theorem absent_wait_anchor_not_withdrawn (program : Program) (state : RuntimeState)
-    (root : ScopeOccurrenceId) (id : OccurrenceId) (absent : openWaitAnchorAbsent state id = true) :
-    scopeCancellationWithdrawsHandler program state root id = false := by
+    (root : ScopeOccurrenceId) (id : OccurrenceId) (absent : openWaitAnchorAbsent state id = true)
+    (disposition : SelectedScopeDisposition := .remove) :
+    scopeCancellationWithdrawsHandler program state root id disposition = false := by
   have missing : id ∉ openWaitAnchors state := by
     simpa [openWaitAnchorAbsent, List.contains_eq_mem] using absent
   have messages : id ∉ state.messageWaits.map messageWaitOccurrence :=
@@ -140,11 +141,12 @@ theorem keyed_any_unique [DecidableEq β] (values : List α) (key : α → β)
   simp
 
 private theorem scopeCancellationWithdrawsHandler_public_keys (program : Program) (state : RuntimeState)
-    (root : ScopeOccurrenceId) (id : OccurrenceId) :
-    scopeCancellationWithdrawsHandler program state root id =
+    (root : ScopeOccurrenceId) (id : OccurrenceId)
+    (disposition : SelectedScopeDisposition := .remove) :
+    scopeCancellationWithdrawsHandler program state root id disposition =
       let withdrawn := withdrawnByRegion (fun owner =>
         occurrenceInSubtree state.scopeOccurrences root owner ||
-          (calledInstanceClosure state root).contains owner.processInstanceId) state.activityOccurrences
+          (calledInstanceClosure state root).contains owner.processInstanceId) state.activityOccurrences (retainedCancellationRoot root disposition)
       (state.messageWaits.any fun wait => decide (messageWaitOccurrence wait = id) &&
         activityRecordsAttachMessageWait withdrawn wait) ||
       ((state.timerWaits.filter fun wait => !flowNodeOccurrenceBoundaryTimerBound program state wait).any
@@ -160,9 +162,10 @@ theorem scopeCancellationWithdrawsHandler_absent (program : Program) (state : Ru
     (root : ScopeOccurrenceId) (id : OccurrenceId)
     (messages : id ∉ state.messageWaits.map messageWaitOccurrence)
     (timers : id ∉ (state.timerWaits.filter fun wait =>
-      !flowNodeOccurrenceBoundaryTimerBound program state wait).map timerWaitOccurrence) :
-    scopeCancellationWithdrawsHandler program state root id = false := by
-  rw [scopeCancellationWithdrawsHandler_public_keys]
+      !flowNodeOccurrenceBoundaryTimerBound program state wait).map timerWaitOccurrence)
+    (disposition : SelectedScopeDisposition := .remove) :
+    scopeCancellationWithdrawsHandler program state root id disposition = false := by
+  rw [scopeCancellationWithdrawsHandler_public_keys (disposition := disposition)]
   simp only [keyed_any_absent _ _ id _ messages, keyed_any_absent _ _ id _ timers, Bool.or_false]
 
 theorem scopeCancellationWithdrawsHandler_message (program : Program) (state : RuntimeState)
@@ -170,12 +173,13 @@ theorem scopeCancellationWithdrawsHandler_message (program : Program) (state : R
     (unique : (state.messageWaits.map messageWaitOccurrence).Nodup)
     (member : wait ∈ state.messageWaits)
     (timers : messageWaitOccurrence wait ∉ (state.timerWaits.filter fun timer =>
-      !flowNodeOccurrenceBoundaryTimerBound program state timer).map timerWaitOccurrence) :
-    scopeCancellationWithdrawsHandler program state root (messageWaitOccurrence wait) =
+      !flowNodeOccurrenceBoundaryTimerBound program state timer).map timerWaitOccurrence)
+    (disposition : SelectedScopeDisposition := .remove) :
+    scopeCancellationWithdrawsHandler program state root (messageWaitOccurrence wait) disposition =
       activityRecordsAttachMessageWait (withdrawnByRegion (fun owner =>
         occurrenceInSubtree state.scopeOccurrences root owner ||
-          (calledInstanceClosure state root).contains owner.processInstanceId) state.activityOccurrences) wait := by
-  rw [scopeCancellationWithdrawsHandler_public_keys]
+          (calledInstanceClosure state root).contains owner.processInstanceId) state.activityOccurrences (retainedCancellationRoot root disposition)) wait := by
+  rw [scopeCancellationWithdrawsHandler_public_keys (disposition := disposition)]
   simp only [keyed_any_unique _ _ wait _ unique member,
     keyed_any_absent _ _ (messageWaitOccurrence wait) _ timers, Bool.or_false]
 
@@ -185,12 +189,13 @@ theorem scopeCancellationWithdrawsHandler_timer (program : Program) (state : Run
       !flowNodeOccurrenceBoundaryTimerBound program state timer).map timerWaitOccurrence).Nodup)
     (member : wait ∈ state.timerWaits)
     (isPublic : flowNodeOccurrenceBoundaryTimerBound program state wait = false)
-    (messages : timerWaitOccurrence wait ∉ state.messageWaits.map messageWaitOccurrence) :
-    scopeCancellationWithdrawsHandler program state root (timerWaitOccurrence wait) =
+    (messages : timerWaitOccurrence wait ∉ state.messageWaits.map messageWaitOccurrence)
+    (disposition : SelectedScopeDisposition := .remove) :
+    scopeCancellationWithdrawsHandler program state root (timerWaitOccurrence wait) disposition =
       anyTimerIdNamesWait (attachedTimersOf (withdrawnByRegion (fun owner =>
         occurrenceInSubtree state.scopeOccurrences root owner ||
-          (calledInstanceClosure state root).contains owner.processInstanceId) state.activityOccurrences)) wait := by
-  rw [scopeCancellationWithdrawsHandler_public_keys]
+          (calledInstanceClosure state root).contains owner.processInstanceId) state.activityOccurrences (retainedCancellationRoot root disposition))) wait := by
+  rw [scopeCancellationWithdrawsHandler_public_keys (disposition := disposition)]
   simp only [keyed_any_absent _ _ (timerWaitOccurrence wait) _ messages, Bool.false_or]
   exact keyed_any_unique _ _ wait _ unique (List.mem_filter.mpr ⟨member, by simp [isPublic]⟩)
 
@@ -208,13 +213,13 @@ private theorem cancellation_wait_mapM (program : Program) (state : RuntimeState
       { processInstanceId := (owner value).processInstanceId,
         elementId := ⟨(element value).value⟩, activation := activation value })
     (handlers : ∀ value ∈ values,
-      scopeCancellationWithdrawsHandler program state root.id (identity value) = withdrawn value) :
+      scopeCancellationWithdrawsHandler program state root.id (identity value) disposition = withdrawn value) :
     (values.filter fun value =>
       !(occurrenceInSubtree state.scopeOccurrences root.id (owner value) ||
         (calledInstanceClosure state root.id).contains (owner value).processInstanceId) && !withdrawn value).mapM
           (fun value => waitStart? program (cancelScopeSubtree state root.id disposition)
             (owner value) (element value) (activation value)) =
-      some (entries.filter fun entry => !flowNodeOccurrenceOwnedBySubtree program state root.id entry) := by
+      some (entries.filter fun entry => !flowNodeOccurrenceOwnedBySubtree program state root.id entry disposition) := by
   apply mapM_filter_preserves_success _ _ _ _ _ entries projected
   · intro value member entry started
     have handler := handlers value member
@@ -225,7 +230,7 @@ private theorem cancellation_wait_mapM (program : Program) (state : RuntimeState
     change (!_ && !withdrawn value) =
       !(_ || scopeCancellationWithdrawsHandler program state root.id
         { processInstanceId := (owner value).processInstanceId,
-          elementId := ⟨(element value).value⟩, activation := activation value })
+          elementId := ⟨(element value).value⟩, activation := activation value } disposition)
     simp only [handler, Bool.not_or]
   · intro value member entry started kept
     simp only [Bool.and_eq_true, Bool.not_eq_true'] at kept
@@ -242,7 +247,7 @@ theorem cancelScopeSubtree_public_timers (program : Program) (state : RuntimeSta
           (calledInstanceClosure state root).contains timer.owner.processInstanceId) &&
           !anyTimerIdNamesWait (attachedTimersOf (withdrawnByRegion (fun owner =>
             occurrenceInSubtree state.scopeOccurrences root owner ||
-              (calledInstanceClosure state root).contains owner.processInstanceId) state.activityOccurrences)) timer) := by
+              (calledInstanceClosure state root).contains owner.processInstanceId) state.activityOccurrences (retainedCancellationRoot root disposition))) timer) := by
   calc
     _ = (cancelScopeSubtree state root disposition).timerWaits.filter
         (fun timer => !flowNodeOccurrenceBoundaryTimerBound program state timer) := by
@@ -266,54 +271,54 @@ theorem cancelScopeSubtree_child_wait_projection (program : Program) (state : Ru
     (opened : projectOpenFlowNodeOccurrences? program state = some current)
     (projected : projectWaits? program state = some entries) :
     projectWaits? program (cancelScopeSubtree state root.id disposition) =
-      some (entries.filter fun entry => !flowNodeOccurrenceOwnedBySubtree program state root.id entry) := by
+      some (entries.filter fun entry => !flowNodeOccurrenceOwnedBySubtree program state root.id entry disposition) := by
   let publicTimers := state.timerWaits.filter fun timer => !flowNodeOccurrenceBoundaryTimerBound program state timer
   let withdrawn := withdrawnByRegion (fun owner => occurrenceInSubtree state.scopeOccurrences root.id owner ||
-    (calledInstanceClosure state root.id).contains owner.processInstanceId) state.activityOccurrences
+    (calledInstanceClosure state root.id).contains owner.processInstanceId) state.activityOccurrences (retainedCancellationRoot root.id disposition)
   have unique := projected_public_wait_identities_nodup program state hosting current running waitValid opened
   obtain ⟨fourUnique, _, beforeIncident⟩ := List.nodup_append.mp unique
   obtain ⟨threeUnique, _, beforeEffect⟩ := List.nodup_append.mp fourUnique
   obtain ⟨twoUnique, timerUnique, beforeTimer⟩ := List.nodup_append.mp threeUnique
   obtain ⟨_, messageUnique, beforeMessage⟩ := List.nodup_append.mp twoUnique
   have taskHandlers (wait : UserTaskWait) (member : wait ∈ state.waits) :
-      scopeCancellationWithdrawsHandler program state root.id (userTaskWaitOccurrence wait) = false := by
+      scopeCancellationWithdrawsHandler program state root.id (userTaskWaitOccurrence wait) disposition = false := by
     have present : userTaskWaitOccurrence wait ∈ state.waits.map userTaskWaitOccurrence :=
       List.mem_map.mpr ⟨wait, member, rfl⟩
-    apply scopeCancellationWithdrawsHandler_absent
+    apply scopeCancellationWithdrawsHandler_absent (disposition := disposition)
     · intro message
       exact beforeMessage _ present _ message rfl
     · intro timer
       exact beforeTimer _ (by simp only [List.mem_append]; exact Or.inl present) _ timer rfl
   have messageHandlers (wait : MessageWait) (member : wait ∈ state.messageWaits) :
-      scopeCancellationWithdrawsHandler program state root.id (messageWaitOccurrence wait) =
+      scopeCancellationWithdrawsHandler program state root.id (messageWaitOccurrence wait) disposition =
         activityRecordsAttachMessageWait withdrawn wait := by
-    apply scopeCancellationWithdrawsHandler_message program state root.id wait messageUnique member
+    apply scopeCancellationWithdrawsHandler_message (disposition := disposition) program state root.id wait messageUnique member
     intro timer
     exact beforeTimer _ (by simp only [List.mem_append]; exact Or.inr (List.mem_map.mpr ⟨wait, member, rfl⟩)) _ timer rfl
   have timerHandlers (wait : TimerWait) (member : wait ∈ publicTimers) :
-      scopeCancellationWithdrawsHandler program state root.id (timerWaitOccurrence wait) =
+      scopeCancellationWithdrawsHandler program state root.id (timerWaitOccurrence wait) disposition =
         anyTimerIdNamesWait (attachedTimersOf withdrawn) wait := by
     obtain ⟨present, visible⟩ := List.mem_filter.mp member
-    apply scopeCancellationWithdrawsHandler_timer program state root.id wait timerUnique present
+    apply scopeCancellationWithdrawsHandler_timer (disposition := disposition) program state root.id wait timerUnique present
       (by simpa using visible)
     intro message
     exact beforeTimer _ (by simp only [List.mem_append]; exact Or.inr message)
       _ (List.mem_map.mpr ⟨wait, member, rfl⟩) rfl
   have effectHandlers (wait : EffectWait) (member : wait ∈ state.effectWaits) :
-      scopeCancellationWithdrawsHandler program state root.id (effectWaitOccurrence wait) = false := by
+      scopeCancellationWithdrawsHandler program state root.id (effectWaitOccurrence wait) disposition = false := by
     have present : effectWaitOccurrence wait ∈ state.effectWaits.map effectWaitOccurrence :=
       List.mem_map.mpr ⟨wait, member, rfl⟩
-    apply scopeCancellationWithdrawsHandler_absent
+    apply scopeCancellationWithdrawsHandler_absent (disposition := disposition)
     · intro message
       exact beforeEffect _ (by simp only [List.mem_append]; exact Or.inl (Or.inr message)) _ present rfl
     · intro timer
       exact beforeEffect _ (by simp only [List.mem_append]; exact Or.inr timer) _ present rfl
   have incidentHandlers (incident : SemanticEffectIncident) (member : incident ∈ state.effectIncidents) :
-      scopeCancellationWithdrawsHandler program state root.id (effectWaitOccurrence incident.wait) = false := by
+      scopeCancellationWithdrawsHandler program state root.id (effectWaitOccurrence incident.wait) disposition = false := by
     have present : effectWaitOccurrence incident.wait ∈
         state.effectIncidents.map (fun incident => effectWaitOccurrence incident.wait) :=
       List.mem_map.mpr ⟨incident, member, rfl⟩
-    apply scopeCancellationWithdrawsHandler_absent
+    apply scopeCancellationWithdrawsHandler_absent (disposition := disposition)
     · intro message
       exact beforeIncident _ (by simp only [List.mem_append]; exact Or.inl (Or.inl (Or.inr message))) _ present rfl
     · intro timer

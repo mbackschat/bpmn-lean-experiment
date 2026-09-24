@@ -8,8 +8,8 @@
  * kinds rather than one kind carrying a flag.
  *
  * The join is deliberately one-sided, and that is the load-bearing difference from the sibling. A
- * monitored task whose deadline has already fired is the normal state here, so the record's attached
- * list may legitimately be empty while its body is live. That state is also why record existence is a
+ * one-shot monitored task whose deadline has already fired has an empty attached list while its body
+ * is live; ESL-TIMER-01 requires a recurring deadline to be replaced atomically. Record existence is a
  * property of the program rather than of the state: a state-level rule would delete the record at the
  * moment it is the only thing still identifying the host.
  *
@@ -34,6 +34,7 @@ import {
   addToken,
   ControlStateKind,
   sameOccurrence,
+  sameScopeOccurrence,
 } from "./semantic-process-state.js";
 import type {
   RuntimeState,
@@ -42,6 +43,8 @@ import type {
   SemanticUserTaskWait,
 } from "./semantic-process-state.js";
 import { armActivityWithBoundaryTimer } from "./semantic-process-activity-arming.js";
+import { fireNonInterruptingBoundaryTimer } from "./semantic-process-recurring-boundary-timer-runtime.js";
+import { operationIsSelectedFromProgram } from "./flow-node-occurrence-candidates.js";
 import { StimulusKind } from "./contract.js";
 import type {
   CompleteUserTaskInstanceStimulus,
@@ -51,8 +54,8 @@ import type {
 
 /**
  * A live monitored task joined to its committed definition, with its deadline when one is still
- * live. `NBTIMER-COMPLETE-01` makes the absent deadline an ordinary post-firing state rather than a
- * defect, so the field is nullable here where the interrupting family requires both waits.
+ * live. `NBTIMER-COMPLETE-01` permits one-shot absence after firing; `ESL-TIMER-01` requires a live
+ * replacement for recurrence. The nullable field represents only the first case.
  */
 type MonitoredTask = Readonly<{
   definition: AwaitMonitoredUserTaskOperation;
@@ -74,8 +77,8 @@ export function armMonitoredUserTask(
 }
 
 /**
- * `NBTIMER-COMPLETE-01`. Commits the monitored task, withdrawing its deadline when one is still
- * live and accepting the completion unchanged when the deadline has already fired.
+ * `NBTIMER-COMPLETE-01` and `ESL-CLOSE-01` withdraw the live deadline on completion. Only a consumed
+ * one-shot deadline may be absent; a recurring attachment must still resolve exactly.
  *
  * The profile admits no completion patch, so a non-empty submission is rejected rather than ignored:
  * variable submission is a separately reviewed proposition and admitting it here would add a data
@@ -120,10 +123,8 @@ export function completeMonitoredUserTask(
  * `NBTIMER-SPAWN-01`. Consumes the deadline at its exact instant and produces the boundary token
  * beside the continuing Activity.
  *
- * Everything else is preserved exactly: the task occurrence, its activation ordinal, every other
- * wait, every variable binding, and every activation counter. The consumed occurrence does not
- * re-arm, so under this profile's single `timeDuration` the deadline fires at most once per
- * activation.
+ * The task, unrelated waits, and data survive. NBTIMER-SPAWN-01 consumes a one-shot deadline;
+ * ESL-TIMER-01 replaces a recurring deadline with a fresh identity and advances from the fired due time.
  */
 export function spawnFromMonitoredUserTask(
   program: SemanticProcessProgram,
@@ -143,26 +144,9 @@ export function spawnFromMonitoredUserTask(
   ) {
     return null;
   }
-  return {
-    ...state,
-    controlTokens: addToken(
-      state.controlTokens,
-      monitored.definition.boundaryTimer.output,
-      monitored.timer.owner,
-    ),
-    timerWaits: state.timerWaits.filter(
-      (candidate) => candidate !== monitored.timer,
-    ),
-    // The record survives with an empty attached list, because its body does. This is the state that
-    // makes record existence a program-level property: a state-level rule would delete the record
-    // here, exactly when it is the only thing still identifying the host.
-    activityOccurrences: state.activityOccurrences.map((candidate) =>
-      sameActivityOccurrence(candidate.id, monitored.record.id)
-        ? { ...candidate, attachedHandlers: [] }
-        : candidate
-    ),
-    logicalTimeMs: monitored.timer.deadlineMs,
-  };
+  return fireNonInterruptingBoundaryTimer(
+    state, monitored.record, monitored.timer, monitored.definition.boundaryTimer,
+  );
 }
 
 /** True when the occurrence names the monitored Activity of a committed monitored-task operation. */
@@ -202,8 +186,7 @@ function monitoredTaskOperations(
 /**
  * Joins one live task wait to its committed definition and to its deadline when that is still live.
  *
- * This is the one-sided join. A missing deadline is not repaired and not refused: it is the state
- * left by a committed spawn.
+ * NBTIMER-SPAWN-01 permits an absent one-shot deadline; ESL-TIMER-01 requires a live replacement.
  */
 function monitoredTaskFor(
   program: SemanticProcessProgram,
@@ -236,35 +219,45 @@ function monitoredTaskForTimer(
 /**
  * Joins one record to its definition, its live body, and its deadline when one is still live.
  *
- * The one-sided shape is this family's whole difference from its interrupting sibling and it survives
- * the migration: a monitored task whose deadline has already fired is an ordinary state, so `timer` is
- * optional. What changed is that the deadline is looked up through the record's attached list rather
- * than by matching its element under the task's scope with an equal activation ordinal — a comparison
- * across two counter families that no state asserted and that repetition breaks.
+ * NBTIMER-COMPLETE-01 permits an empty attachment after one-shot firing; ESL-TIMER-01 requires a
+ * replacement after every recurring firing. Both resolve through the recorded tagged attachment:
+ * task and Timer counters allocate independently, so equal ordinals cannot establish ownership.
  */
 function monitoredTaskForRecord(
   program: SemanticProcessProgram,
   state: RuntimeState,
   record: ActivityOccurrence,
 ): MonitoredTask | undefined {
-  const definition = monitoredTaskOperations(program).find(
+  const definitions = monitoredTaskOperations(program).filter(
     (operation) => operation.id === record.operationId,
   );
-  if (definition === undefined || record.body.kind !== ActivityBodyKind.UserTask) {
+  const definition = definitions.length === 1 ? definitions[0] : undefined;
+  if (definition === undefined || record.body.kind !== ActivityBodyKind.UserTask ||
+      !operationIsSelectedFromProgram(program, definition, record.owner) ||
+      record.id.activityElementId !== definition.task.elementId) {
     return undefined;
   }
   const body = record.body.task;
-  const task = state.userTaskWaits.find(({ id }) => sameOccurrence(id, body));
-  if (task === undefined) {
+  const tasks = state.userTaskWaits.filter(({ id }) => sameOccurrence(id, body));
+  const task = tasks.length === 1 ? tasks[0] : undefined;
+  if (task === undefined || task.id.elementId !== definition.task.elementId ||
+      !sameScopeOccurrence(task.owner, record.owner) || task.output !== definition.task.output ||
+      task.name !== definition.task.name) {
     return undefined;
   }
-  const [attached] = attachedTimerOccurrences(record);
+  const attachments = attachedTimerOccurrences(record);
+  if (attachments.length !== record.attachedHandlers.length || attachments.length > 1 ||
+      (definition.boundaryTimer.recurrence === "repeating" && attachments.length !== 1)) return undefined;
+  const attached = attachments[0];
+  const timers = attached === undefined ? [] : state.timerWaits.filter(({ id }) => sameOccurrence(id, attached));
+  const timer = timers.length === 1 ? timers[0] : undefined;
+  if (attached !== undefined && (timer === undefined ||
+      timer.id.elementId !== definition.boundaryTimer.elementId ||
+      timer.output !== definition.boundaryTimer.output || !sameScopeOccurrence(timer.owner, record.owner))) return undefined;
   return {
     definition,
     record,
     task,
-    timer: attached === undefined
-      ? undefined
-      : state.timerWaits.find(({ id }) => sameOccurrence(id, attached)),
+    timer,
   };
 }

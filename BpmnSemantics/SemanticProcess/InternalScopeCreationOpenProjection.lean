@@ -128,7 +128,8 @@ theorem scopeCreation_wait_projection_preserved (program : Program) (state : Run
     (operation : SemanticOperation) (selected : InternalScopeCreationSelection)
     (selection : selectInternalScopeCreation? state operation = some selected)
     (excluded : ∀ id origin input entry definition boundary,
-      .enterBoundedScope id origin input entry definition boundary ∈ program.operations →
+      (.enterBoundedScope id origin input entry definition boundary ∈ program.operations ∨
+        .enterMonitoredScope id origin input entry definition boundary ∈ program.operations) →
         selected.created.parent = none ∨ definition ≠ selected.created.id.definitionScopeId)
     (waits : List OpenSemanticFlowNodeOccurrence)
     (prior : projectWaits? program state = some waits) :

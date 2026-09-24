@@ -327,13 +327,13 @@ private theorem cancellation_fields_commute (before afterLeft afterRight : Runti
     (rightCalled : ∀ id, (calledInstanceClosure afterLeft right).contains id =
       (calledInstanceClosure before right).contains id)
     (leftActivities : withdrawnByRegion (fun owner => occurrenceInSubtree afterRight.scopeOccurrences left owner ||
-        (calledInstanceClosure afterRight left).contains owner.processInstanceId) afterRight.activityOccurrences =
+        (calledInstanceClosure afterRight left).contains owner.processInstanceId) afterRight.activityOccurrences (retainedCancellationRoot left leftDisposition) =
       withdrawnByRegion (fun owner => occurrenceInSubtree before.scopeOccurrences left owner ||
-        (calledInstanceClosure before left).contains owner.processInstanceId) before.activityOccurrences)
+        (calledInstanceClosure before left).contains owner.processInstanceId) before.activityOccurrences (retainedCancellationRoot left leftDisposition))
     (rightActivities : withdrawnByRegion (fun owner => occurrenceInSubtree afterLeft.scopeOccurrences right owner ||
-        (calledInstanceClosure afterLeft right).contains owner.processInstanceId) afterLeft.activityOccurrences =
+        (calledInstanceClosure afterLeft right).contains owner.processInstanceId) afterLeft.activityOccurrences (retainedCancellationRoot right rightDisposition) =
       withdrawnByRegion (fun owner => occurrenceInSubtree before.scopeOccurrences right owner ||
-        (calledInstanceClosure before right).contains owner.processInstanceId) before.activityOccurrences)
+        (calledInstanceClosure before right).contains owner.processInstanceId) before.activityOccurrences (retainedCancellationRoot right rightDisposition))
     (leftEffects : afterRight.effectWaits.filter (fun wait => occurrenceInSubtree afterRight.scopeOccurrences left wait.owner ||
         (calledInstanceClosure afterRight left).contains wait.owner.processInstanceId) =
       before.effectWaits.filter (fun wait => occurrenceInSubtree before.scopeOccurrences left wait.owner ||
@@ -400,10 +400,10 @@ private theorem regional_cancellation_pair_fields (program : Program)
     valid running rightFound leftFound symmetric square.rightApplied
   have rightClasses := regional_pair_cancellation_classifiers program before afterLeft hosting leftOperation rightOperation left right
     valid running leftFound rightFound independent square.leftApplied
-  have leftPopulations := regional_pair_cancellation_populations program before afterRight hosting rightOperation leftOperation right left
-    valid running rightFound leftFound symmetric square.rightApplied leftCancels
-  have rightPopulations := regional_pair_cancellation_populations program before afterLeft hosting leftOperation rightOperation left right
-    valid running leftFound rightFound independent square.leftApplied rightCancels
+  have leftPopulations := fun retainedRoot => regional_pair_cancellation_populations program before afterRight hosting rightOperation leftOperation right left
+    valid running rightFound leftFound symmetric square.rightApplied leftCancels retainedRoot
+  have rightPopulations := fun retainedRoot => regional_pair_cancellation_populations program before afterLeft hosting leftOperation rightOperation left right
+    valid running leftFound rightFound independent square.leftApplied rightCancels retainedRoot
   have leftTriggers := preparedRegional_cancellation_triggers_empty program before hosting leftOperation left valid running leftFound leftCancels
   have rightTriggers := preparedRegional_cancellation_triggers_empty program before hosting rightOperation right valid running rightFound rightCancels
   have leftTriggersAfter := preparedRegional_cancellation_triggers_empty program afterRight hosting leftOperation left
@@ -420,8 +420,8 @@ private theorem regional_cancellation_pair_fields (program : Program)
     square.rightRunning square.rlRunning square.leftAfterRight square.rlApplied leftCancels
   rw [lrUpdate, rlUpdate]
   exact cancellation_fields_commute before afterLeft afterRight _ _ _ _ _ _ _ _ leftUpdate rightUpdate
-    leftClasses.1 rightClasses.1 leftClasses.2 rightClasses.2 leftPopulations.1 rightPopulations.1
-    leftPopulations.2.1 rightPopulations.2.1 leftPopulations.2.2 rightPopulations.2.2
+    leftClasses.1 rightClasses.1 leftClasses.2 rightClasses.2 (leftPopulations _).1 (rightPopulations _).1
+    (leftPopulations none).2.1 (rightPopulations none).2.1 (leftPopulations none).2.2 (rightPopulations none).2.2
     (leftTriggersAfter.trans leftTriggers.symm) (rightTriggersAfter.trans rightTriggers.symm)
 
 private theorem regional_return_cancellation_fields (program : Program)
@@ -445,8 +445,8 @@ private theorem regional_return_cancellation_fields (program : Program)
     valid running rightFound leftFound (regionalStateFootprintsIndependent_symmetric _ _ independent) square.rightApplied parentless
   have classes := regional_pair_cancellation_classifiers program before afterLeft hosting leftOperation rightOperation left right
     valid running leftFound rightFound independent square.leftApplied
-  have populations := regional_pair_cancellation_populations program before afterLeft hosting leftOperation rightOperation left right
-    valid running leftFound rightFound independent square.leftApplied rightCancels
+  have populations := fun retainedRoot => regional_pair_cancellation_populations program before afterLeft hosting leftOperation rightOperation left right
+    valid running leftFound rightFound independent square.leftApplied rightCancels retainedRoot
   have triggers := preparedRegional_cancellation_triggers_empty program before hosting rightOperation right valid running rightFound rightCancels
   have triggersAfter := preparedRegional_cancellation_triggers_empty program afterLeft hosting rightOperation right
     square.leftValid square.leftRunning square.rightAfterLeft rightCancels
@@ -460,7 +460,7 @@ private theorem regional_return_cancellation_fields (program : Program)
     square.rightRunning square.rlRunning square.leftAfterRight square.rlApplied leftKind
   rw [lrUpdate, rlUpdate]
   exact return_cancel_fields_commute before afterLeft afterRight record _ _ _ _ _ leftUpdate rightUpdate
-    (by simpa only [binding] using closure) classes.1 classes.2 populations.1 populations.2.1 populations.2.2
+    (by simpa only [binding] using closure) classes.1 classes.2 (populations _).1 (populations none).2.1 (populations none).2.2
     (triggersAfter.trans triggers.symm)
 
 private theorem regional_completion_cancellation_fields (program : Program)
@@ -482,8 +482,8 @@ private theorem regional_completion_cancellation_fields (program : Program)
     cases withdrawal <;> simp only [regionalSelectionReferenceRetention, leftKind]
   have classes := regional_pair_cancellation_classifiers program before afterLeft hosting leftOperation rightOperation left right
     valid running leftFound rightFound independent square.leftApplied
-  have populations := regional_pair_cancellation_populations program before afterLeft hosting leftOperation rightOperation left right
-    valid running leftFound rightFound independent square.leftApplied rightCancels
+  have populations := fun retainedRoot => regional_pair_cancellation_populations program before afterLeft hosting leftOperation rightOperation left right
+    valid running leftFound rightFound independent square.leftApplied rightCancels retainedRoot
   have triggers := preparedRegional_cancellation_triggers_empty program before hosting rightOperation right valid running rightFound rightCancels
   have triggersAfter := preparedRegional_cancellation_triggers_empty program afterLeft hosting rightOperation right
     square.leftValid square.leftRunning square.rightAfterLeft rightCancels
@@ -498,7 +498,7 @@ private theorem regional_completion_cancellation_fields (program : Program)
   rw [lrUpdate, rlUpdate]
   simp only [mask]
   exact completion_cancel_fields_commute before afterLeft afterRight _ _ _ _ _ _ _ _ leftUpdate rightUpdate
-    classes.1 classes.2 populations.1 populations.2.1 populations.2.2 (triggersAfter.trans triggers.symm)
+    classes.1 classes.2 (populations _).1 (populations none).2.1 (populations none).2.2 (triggersAfter.trans triggers.symm)
 
 private theorem regional_pair_retained_fields_equal (program : Program)
     (before afterLeft afterRight finalLR finalRL : RuntimeState) (hosting : SemanticId)

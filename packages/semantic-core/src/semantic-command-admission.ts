@@ -8,6 +8,11 @@
  * outcome rather than as a closure that produced no step.
  */
 import {
+  completeMessageMonitoredUserTask, isMessageMonitoredTaskDefinition,
+  isMonitoredMessageBoundaryDefinition, spawnFromMessageMonitoredUserTask,
+} from "./semantic-process-message-monitored-task-runtime.js";
+import { isMonitoredScopeDeadlineDefinition, spawnFromMonitoredScope } from "./semantic-process-monitored-scope-runtime.js";
+import {
   CommandOutcome,
   EffectExecutionResultKind,
   StimulusKind,
@@ -238,6 +243,12 @@ export function admit(
         : { outcome: CommandOutcome.Committed, state: next };
     }
     case StimulusKind.CompleteUserTaskInstance: {
+      if (isMessageMonitoredTaskDefinition(program, stimulus.taskId)) {
+        const next = completeMessageMonitoredUserTask(program, state, stimulus);
+        return next === null
+          ? { outcome: CommandOutcome.Rejected, state }
+          : { outcome: CommandOutcome.Committed, state: next };
+      }
       if (isMessageBoundedTaskDefinition(program, stimulus.taskId)) {
         const next = completeMessageBoundedUserTask(program, state, stimulus);
         return next === null
@@ -307,6 +318,12 @@ export function admit(
         : { outcome: CommandOutcome.Committed, state: next };
     }
     case StimulusKind.DeliverMessage: {
+      if (isMonitoredMessageBoundaryDefinition(program, stimulus.subscriptionId)) {
+        const next = spawnFromMessageMonitoredUserTask(program, state, stimulus);
+        return next === null
+          ? { outcome: CommandOutcome.Rejected, state }
+          : { outcome: CommandOutcome.Committed, state: next };
+      }
       const next = isEventRaceMessageDefinition(program, stimulus.subscriptionId)
         ? winEventRaceWithMessage(program, state, stimulus)
         : isMessageBoundaryDefinition(program, stimulus.subscriptionId)
@@ -329,6 +346,12 @@ export function admit(
         : { outcome: CommandOutcome.Committed, state: next };
     }
     case StimulusKind.FireTimer: {
+      if (isMonitoredScopeDeadlineDefinition(program, stimulus.timerId)) {
+        const next = spawnFromMonitoredScope(program, state, stimulus);
+        return next === null
+          ? { outcome: CommandOutcome.Rejected, state }
+          : { outcome: CommandOutcome.Committed, state: next };
+      }
       if (isEventRaceTimerDefinition(program, stimulus.timerId)) {
         const next = winEventRaceWithTimer(program, state, stimulus);
         return next === null

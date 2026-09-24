@@ -8,13 +8,13 @@ namespace BpmnSemantics.SemanticProcess.InternalCommutation
 open BpmnSemantics FlowNodeOccurrenceProgramValidity.Internal
 
 theorem completionWithdrawal_wait_program_validity (program : Program) (before after : RuntimeState)
-    (scopeId : DefinitionScopeId) (root : RuntimeScopeOccurrence)
+    (scopeId : DefinitionScopeId) {output : Option ControlPlaceId} (root : RuntimeScopeOccurrence)
     (withdrawal : InternalCompletionWithdrawal)
     (prior : flowNodeOccurrenceWaitProgramValidity program before = true)
     (unique : waitIdentitiesUnique before = true)
     (quiet : scopeQuiescent before root.id = true)
     (children : before.scopeOccurrences.filter (fun child => decide (child.id.definitionScopeId = scopeId)) = [root])
-    (selected : selectInternalCompletionWithdrawal? program before scopeId = some withdrawal)
+    (selected : selectSubscribedCompletionWithdrawal? program before scopeId output = some withdrawal)
     (scopes : after.scopeOccurrences = before.scopeOccurrences.filter (fun child => decide (child.id ≠ root.id)))
     (tasks : after.waits = before.waits)
     (messages : after.messageWaits = before.messageWaits)
@@ -23,9 +23,10 @@ theorem completionWithdrawal_wait_program_validity (program : Program) (before a
     (incidents : after.effectIncidents = before.effectIncidents)
     (locals : after.variables.activities = before.variables.activities)
     (activities : after.activityOccurrences = before.activityOccurrences.filter (fun record =>
-      match (generalizing := false) withdrawal with | .unbounded => true | .bounded .. => !decide (record.body = .childScope root.id)))
+      match (generalizing := false) withdrawal with | .unbounded => true | .bounded .. | .monitored .. => !decide (record.body = .childScope root.id)))
     (timers : after.timerWaits = match (generalizing := false) withdrawal with
-      | .unbounded => before.timerWaits | .bounded _ deadline => before.timerWaits.erase deadline) :
+      | .unbounded => before.timerWaits | .bounded _ deadline => before.timerWaits.erase deadline
+      | .monitored _ deadline => removeMonitoredScopeTimer before.timerWaits deadline) :
     flowNodeOccurrenceWaitProgramValidity program after = true := by
   simp only [flowNodeOccurrenceWaitProgramValidity, Bool.and_eq_true] at prior ⊢
   refine ⟨⟨⟨regional_child_user_task_program_validity program before after root.id prior.1.1.1 quiet scopes tasks,
@@ -44,6 +45,10 @@ theorem completionWithdrawal_wait_program_validity (program : Program) (before a
       cases withdrawal with
       | unbounded => exact retained
       | bounded record deadline => exact List.mem_of_mem_erase retained
+      | monitored record deadline =>
+          cases deadline with
+          | none => exact retained
+          | some timer => exact List.mem_of_mem_erase retained
     have valid := List.all_eq_true.mp prior.1.2 timer member
     have different := (regional_quiescent_wait_owners_differ before root.id quiet).2.2.1 timer member
     change (occurrenceOwnerValid after timer.processInstanceId timer.owner timer.elementId timer.activation && _) = true
@@ -73,13 +78,13 @@ theorem preparedChildComplete_wait_program_validity (program : Program) (before 
   obtain ⟨after, withdrawal, applied, fired, withdrawn, children, quiet, scopes, tasks, messages, races, activities, timers⟩ :=
     preparedChildComplete_wait_fields program before id origin definition output prepared identities found
   have snapshots := (prepareInternalRegional_facts program before _ prepared found).1
-  have result : completeBoundedScope? program before definition (some output) = some after := by
+  have result : completeSelectedScope? program before definition (some output) = some after := by
     simp only [fire?, snapshots] at fired
-    change completeBoundedScope? program before definition (some output) = some after at fired
+    change completeSelectedScope? program before definition (some output) = some after at fired
     exact fired
-  obtain ⟨effects, incidents, _⟩ := regionalCompletion_effect_and_branch_fields program before after definition (some output) result
+  obtain ⟨effects, incidents, _⟩ := regionalSelectedCompletion_effect_and_branch_fields program before after definition (some output) result
   have locals := congrArg ScopedVariables.activities
-    (regionalLocalData_completion_variables program before after definition (some output) result)
+    (regionalLocalData_selected_completion_variables program before after definition (some output) result)
   exact ⟨after, applied, completionWithdrawal_wait_program_validity program before after definition prepared.selection.root
     withdrawal prior identities quiet children withdrawn scopes tasks messages races effects incidents locals activities timers⟩
 
@@ -136,11 +141,11 @@ theorem preparedChildComplete_program_validity (program : Program) (before : Run
   have sameFields : fieldsAfter = after := Option.some.inj (fieldsApplied.symm.trans applied)
   subst fieldsAfter
   have snapshots := (prepareInternalRegional_facts program before _ prepared found).1
-  have result : completeBoundedScope? program before definition (some output) = some after := by
+  have result : completeSelectedScope? program before definition (some output) = some after := by
     simp only [fire?, snapshots] at fired
-    change completeBoundedScope? program before definition (some output) = some after at fired
+    change completeSelectedScope? program before definition (some output) = some after at fired
     exact fired
-  have branches := (regionalCompletion_effect_and_branch_fields program before after definition (some output) result).2.2
+  have branches := (regionalSelectedCompletion_effect_and_branch_fields program before after definition (some output) result).2.2
   have structural := regional_child_structural_program_validity program before after prepared.selection.root.id
     prior.1.1.1 quiet scopes control calls
   have retained := regional_child_branch_and_race_validity before after prepared.selection.root.id prior.1.2 prior.2

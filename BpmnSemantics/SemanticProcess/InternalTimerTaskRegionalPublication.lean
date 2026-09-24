@@ -16,9 +16,9 @@ theorem timerTask_handler_withdrawal_frame (program : Program) (state : RuntimeS
     (live : activityRecordsOwnLiveWork state = true)
     (outside : (occurrenceInSubtree state.scopeOccurrences root patch.arm.owner ||
       (calledInstanceClosure state root).contains patch.arm.owner.processInstanceId) = false)
-    (id : OccurrenceId) :
-    scopeCancellationWithdrawsHandler program (applyInternalTimerTaskPatch state patch) root id =
-      scopeCancellationWithdrawsHandler program state root id := by
+    (id : OccurrenceId) (disposition : SelectedScopeDisposition := .remove) :
+    scopeCancellationWithdrawsHandler program (applyInternalTimerTaskPatch state patch) root id disposition =
+      scopeCancellationWithdrawsHandler program state root id disposition := by
   have fresh := prepared_timer_task_timer_keys_fresh program state contract patch prepared
   have unclaimed := activityRecords_do_not_claim_fresh_timer state patch.timer
     (fun old member => (fresh old member).1) live
@@ -30,14 +30,14 @@ theorem timerTask_handler_withdrawal_frame (program : Program) (state : RuntimeS
   let cancelled := fun owner => occurrenceInSubtree state.scopeOccurrences root owner ||
     (calledInstanceClosure state root).contains owner.processInstanceId
   change cancelled owner = false at outside
-  have populations : withdrawnByRegion cancelled after.activityOccurrences =
-      withdrawnByRegion cancelled state.activityOccurrences := by
-    change withdrawnByRegion cancelled (insertActivityOccurrence patch.record state.activityOccurrences) = _
+  have populations : withdrawnByRegion cancelled after.activityOccurrences (retainedCancellationRoot root disposition) =
+      withdrawnByRegion cancelled state.activityOccurrences (retainedCancellationRoot root disposition) := by
+    change withdrawnByRegion cancelled (insertActivityOccurrence patch.record state.activityOccurrences) (retainedCancellationRoot root disposition) = _
     rw [withdrawnByRegion, insertActivityOccurrence_eq_canonicalInsertBy,
       filter_canonicalInsertBy_rejected _ _ _ _ (by simp [patch, makeInternalTimerTaskPatch, recordInRegion, outside])]
     rfl
   have unattached : anyTimerIdNamesWait
-      (attachedTimersOf (withdrawnByRegion cancelled state.activityOccurrences)) patch.timer = false := by
+      (attachedTimersOf (withdrawnByRegion cancelled state.activityOccurrences (retainedCancellationRoot root disposition))) patch.timer = false := by
     apply List.any_eq_false.mpr
     intro timer member
     obtain ⟨record, recordMember, timerMember⟩ := List.mem_flatMap.mp member
@@ -46,7 +46,7 @@ theorem timerTask_handler_withdrawal_frame (program : Program) (state : RuntimeS
   have scopes : after.scopeOccurrences = state.scopeOccurrences := rfl
   have messages : after.messageWaits = state.messageWaits := rfl
   have timers : after.timerWaits = insertTimerWait patch.timer state.timerWaits := rfl
-  change scopeCancellationWithdrawsHandler program after root id = _
+  change scopeCancellationWithdrawsHandler program after root id disposition = _
   dsimp only [cancelled] at populations unattached
   simp only [scopeCancellationWithdrawsHandler, scopes, calls, populations, messages, timers]
   congr 1
@@ -117,7 +117,7 @@ theorem regionalPublicationTemplate_after_timer_task (program : Program) (state 
   have lifecycleFrame := regionalLifecycleTemplate_after_wait_insertion program state
     (applyInternalTimerTaskPatch state patch) selected region current entry _ anchor fresh
     (by simpa only [owner] using outside)
-    (timerTask_handler_withdrawal_frame program state contract patch region.root prepared live cancelled) opened
+    (fun id disposition => timerTask_handler_withdrawal_frame program state contract patch region.root prepared live cancelled id disposition) opened
   have fields := scopeArming_scope_read_projections state (.ordinary patch.arm.operation patch.arm)
   have control : (applyInternalTimerTaskPatch state patch).control = state.control := fields.1
   have time : (applyInternalTimerTaskPatch state patch).logicalTimeMs = state.logicalTimeMs := fields.2.1

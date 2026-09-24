@@ -167,7 +167,7 @@ theorem prepareInternalRegional_ownership_after_independent_scopeCreation
         | none => exact False.elim (parent parentEq)
         | some parent => cases withdrawal <;>
             simp [regionalSelectionReferenceRetention, kind, ordinaryCompletionReferenceRetention,
-              boundedCompletionReferenceRetention, parentEq, different]
+              boundedCompletionReferenceRetention, monitoredCompletionReferenceRetention, parentEq, different]
     | interrupting parent | terminating =>
         simp only [regionalSelectionReferenceRetention, kind, cancellationReferenceRetention,
           cancelled, Bool.not_false, Bool.or_true]

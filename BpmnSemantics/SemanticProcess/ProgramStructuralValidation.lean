@@ -100,7 +100,8 @@ def operationWaitDeclarationKeys : SemanticOperation → List WaitDeclarationKey
   | .awaitMonitoredUserTask _ _ _ task boundaryTimer =>
       [userTaskWaitDeclarationKey task.id,
         timerWaitDeclarationKey boundaryTimer.elementId]
-  | .awaitMessageBoundedUserTask _ _ _ task boundaryMessage =>
+  | .awaitMessageBoundedUserTask _ _ _ task boundaryMessage
+  | .awaitMessageMonitoredUserTask _ _ _ task boundaryMessage =>
       [userTaskWaitDeclarationKey task.id,
         messageWaitDeclarationKey boundaryMessage.elementId]
   | .awaitSequentialMultiInstanceUserTask _ _ _ task _ _ boundaryTimer _ =>
@@ -115,7 +116,8 @@ def operationWaitDeclarationKeys : SemanticOperation → List WaitDeclarationKey
   | .awaitCorrelatedPayloadMessage _ _ _ _ message _ _ _ _ =>
       [messageWaitDeclarationKey message.elementId]
   | .awaitTimer _ _ _ _ timer => [timerWaitDeclarationKey timer.elementId]
-  | .enterBoundedScope _ _ _ _ _ boundaryTimer =>
+  | .enterBoundedScope _ _ _ _ _ boundaryTimer
+  | .enterMonitoredScope _ _ _ _ _ boundaryTimer =>
       [timerWaitDeclarationKey boundaryTimer.elementId]
   | .awaitEventRace _ _ _ message timer =>
       [messageWaitDeclarationKey message.elementId,
@@ -179,7 +181,8 @@ private def operationWellFormed (program : Program) (places : List ControlPlace)
         nonempty childScopeId.value &&
         placeExists program.controlPlaces input &&
         placeExists program.controlPlaces childEntry
-  | .enterBoundedScope id origin input childEntry childScopeId boundaryTimer =>
+  | .enterBoundedScope id origin input childEntry childScopeId boundaryTimer
+  | .enterMonitoredScope id origin input childEntry childScopeId boundaryTimer =>
       nonempty id.value &&
         nonempty origin.elementId.value &&
         nonempty childScopeId.value &&
@@ -379,7 +382,8 @@ private def operationWellFormed (program : Program) (places : List ControlPlace)
             place.origin = boundaryTimer.origin)) &&
         placeExists places input &&
         placeExists places task.output
-  | .awaitMessageBoundedUserTask id origin input task boundaryMessage =>
+  | .awaitMessageBoundedUserTask id origin input task boundaryMessage
+  | .awaitMessageMonitoredUserTask id origin input task boundaryMessage =>
       nonempty id.value &&
         nonempty origin.elementId.value &&
         nonempty task.id.value &&
@@ -548,6 +552,12 @@ private def inclusiveOperationsPaired (operations : List SemanticOperation) : Bo
       joins.all fun join =>
         (selections.filter fun selection => decide (selection.1 = join.1)).length = 1
 
+private def operationRecurrenceValid (profile : ProfileId) : SemanticOperation → Bool
+  | .awaitMonitoredUserTask _ _ _ _ arm | .enterMonitoredScope _ _ _ _ _ arm =>
+      arm.recurrence.isNone || profile == repeatableSubscriptionCheckpointProfileId
+  | .awaitBoundedUserTask _ _ _ _ arm | .enterBoundedScope _ _ _ _ _ arm => arm.recurrence.isNone
+  | _ => true
+
 /-- Structural validation for a decoded Semantic Process program, independent of checked-source equality. -/
 def programWellFormed (program : Program) : Bool :=
   nonempty program.identity.semanticProfile.value &&
@@ -566,6 +576,7 @@ def programWellFormed (program : Program) : Bool :=
     program.controlPlaces.all (fun place =>
       nonempty place.id.value && nonempty place.origin.elementId.value) &&
     program.operations.all (operationWellFormed program program.controlPlaces) &&
+    program.operations.all (operationRecurrenceValid program.identity.semanticProfile) &&
     inclusiveOperationsPaired program.operations &&
     callOperationsPaired program &&
     (program.operations.filter isInitiate).length = 1 &&

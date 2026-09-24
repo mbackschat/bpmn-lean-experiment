@@ -44,7 +44,13 @@ theorem preparedRootComplete_preserves_runtimeStateWellFormed (program : Program
   have result : completeBoundedScope? program before definition none = some after := by
     have raw := firedAgain
     simp only [fire?, snapshots] at raw
-    exact raw
+    change completeSelectedScope? program before definition none = some after at raw
+    unfold completeSelectedScope? at raw
+    split at raw
+    · unfold completeMonitoredScope? at raw
+      obtain ⟨pair, _, raw⟩ := Option.bind_eq_some_iff.mp raw
+      simp at raw
+    · exact raw
   obtain ⟨withdrawal, kind, census⟩ := regionalSelection_complete_census program before id origin definition none
     prepared.selection selection
   obtain ⟨ordinary, completed, _⟩ := completeBoundedScope_position_fields program before after definition none result
@@ -74,7 +80,8 @@ theorem preparedRootComplete_preserves_runtimeStateWellFormed (program : Program
           (regionalSelectionReferenceRetention before prepared.selection).scope scope = false := by
         intro scope _
         cases withdrawal <;> simp [regionalSelectionReferenceRetention, kind,
-          ordinaryCompletionReferenceRetention, boundedCompletionReferenceRetention, parent]
+          ordinaryCompletionReferenceRetention, boundedCompletionReferenceRetention,
+          monitoredCompletionReferenceRetention, parent]
       have noActivities := retained_activities_empty_of_no_body before
         (regionalSelectionReferenceRetention before prepared.selection) (by
           intro record member

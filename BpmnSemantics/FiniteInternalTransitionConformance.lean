@@ -108,6 +108,8 @@ theorem mixed_frontier_is_classified :
         | .arming (.data _ _) => "composed-data"
         | .arming (.ordinary _ _) => "ordinary"
         | .timerTask _ _ => "timer-task"
+        | .messageTask _ _ => "message-task"
+        | .boundedScope _ _ => "bounded-scope"
         | .localControl _ => "local-control"
         | .scopeCreation _ => "scope-creation"
         | .regional _ => "regional"

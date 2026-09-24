@@ -136,13 +136,13 @@ private theorem regional_arming_successors_equal (program : Program) (before aft
         have tokens (state : RuntimeState) := (scopeArming_scope_read_projections state arm).2.2.2.2.2.2
         simpa only [tokens] using congrArg RuntimeState.tokens (arming_addToken_commutes before arm owner place ordered
           (continuation owner place independent (baseWrites _ (by simp))))
-      have raw : completeBoundedScope? program before definition output = some after := by
+      have raw : completeSelectedScope? program before definition output = some after := by
         simp only [fire?, snapshots] at fired
         exact fired
-      have armRaw : completeBoundedScope? program (arm.apply before) definition output = some afterArm := by
+      have armRaw : completeSelectedScope? program (arm.apply before) definition output = some afterArm := by
         simp only [fire?, snapshots] at armFired
         exact armFired
-      exact arming_completion_successors_equal program before after afterArm arm _ definition output regional.selection.root
+      exact arming_selected_completion_successors_equal program before after afterArm arm _ definition output regional.selection.root
         withdrawal armFound canonical running census withdrawn quiet tokenFrame raw armRaw
   | throwError id origin input error handler =>
       have raw : throwErrorState? before input error handler = some after := by

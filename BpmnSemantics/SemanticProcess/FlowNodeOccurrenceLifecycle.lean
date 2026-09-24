@@ -148,6 +148,7 @@ def flowNodeSelectedOperationOwner? (state : RuntimeState) :
   | .initiate .. | .initiateMessage .. | .initiateTimer .. => rootScopeOccurrence? state
   | .enterScope _ _ input _ _
   | .enterBoundedScope _ _ input _ _ _
+  | .enterMonitoredScope _ _ input _ _ _
   | .invokeProcess _ _ input _ _ _ _
   | .awaitUserTask _ _ input _ _
   | .awaitDataInputUserTask _ _ input _ _ _ _
@@ -162,6 +163,7 @@ def flowNodeSelectedOperationOwner? (state : RuntimeState) :
   | .awaitEventRace _ _ input _ _
   | .awaitBoundedUserTask _ _ input _ _
   | .awaitMessageBoundedUserTask _ _ input _ _
+  | .awaitMessageMonitoredUserTask _ _ input _ _
   | .awaitMonitoredUserTask _ _ input _ _
   | .awaitEffect _ _ input _ _ _
   | .duplicate _ _ input _
@@ -255,56 +257,6 @@ private def runtimeExecutionEmpty (state : RuntimeState) : Bool :=
     state.effectIncidents.isEmpty && state.selectedBranchSets.isEmpty &&
     state.eventRaces.isEmpty && state.calledProcessOccurrences.isEmpty &&
     state.variables.activities.isEmpty
-
-private def messageBoundedProjectionPairMatches (program : Program)
-    (operation : SemanticOperation) (record : ActivityOccurrence)
-    (taskWait : UserTaskWait) (messageWait : MessageWait) : Bool :=
-  match operation with
-  | .awaitMessageBoundedUserTask _ _ _ task boundary =>
-      FlowNodeOccurrenceProgramValidity.Internal.operationOwnedBy program operation record.owner &&
-        decide (record.processInstanceId = record.owner.processInstanceId &&
-          record.activityElementId.value = task.id.value &&
-          taskWait.processInstanceId = record.processInstanceId && taskWait.owner = record.owner &&
-          taskWait.task.id = task.id && taskWait.task.name = task.name &&
-          taskWait.task.metadata = none && taskWait.metadata = none && taskWait.output = task.output &&
-          record.body = .userTask
-            { processInstanceId := taskWait.processInstanceId
-              elementId := ⟨taskWait.task.id.value⟩
-              activation := taskWait.activation } &&
-          messageWait.processInstanceId = record.processInstanceId &&
-          messageWait.owner = record.owner && messageWait.elementId = boundary.elementId &&
-          messageWait.channel = boundary.channel && messageWait.output = boundary.output &&
-          record.attachedHandlers = [.message
-            { processInstanceId := messageWait.processInstanceId
-              elementId := ⟨messageWait.elementId.value⟩
-              activation := messageWait.activation }])
-  | _ => false
-
-def messageBoundedOperationProjectionValid (program : Program) (state : RuntimeState)
-    (operation : SemanticOperation) : Bool :=
-  match operation with
-  | .awaitMessageBoundedUserTask _ _ _ task boundary =>
-      let owned := FlowNodeOccurrenceProgramValidity.Internal.operationOwnedBy program operation
-      let tasks := state.waits.filter fun wait =>
-        owned wait.owner && decide (wait.task.id = task.id)
-      let messages := state.messageWaits.filter fun wait =>
-        owned wait.owner && decide (wait.elementId = boundary.elementId)
-      let records := state.activityOccurrences.filter fun record =>
-        owned record.owner && decide (record.activityElementId.value = task.id.value)
-      let paired := messageBoundedProjectionPairMatches program operation
-      (tasks.all fun taskWait =>
-        (records.filter fun record =>
-          (messages.filter fun messageWait => paired record taskWait messageWait).length = 1).length = 1) &&
-      (messages.all fun messageWait =>
-        (records.filter fun record =>
-          (tasks.filter fun taskWait => paired record taskWait messageWait).length = 1).length = 1) &&
-      (records.all fun record =>
-        (tasks.filter fun taskWait =>
-          (messages.filter fun messageWait => paired record taskWait messageWait).length = 1).length = 1)
-  | _ => true
-
-def messageBoundedProjectionValid (program : Program) (state : RuntimeState) : Bool :=
-  program.operations.all (messageBoundedOperationProjectionValid program state)
 
 def projectOpenFlowNodeOccurrences? (program : Program) (state : RuntimeState) :
     Option (List OpenSemanticFlowNodeOccurrence) :=
@@ -416,28 +368,28 @@ def instantaneousFlowNodeOccurrenceDeltaWithEnds (commandId : SemanticId) (trans
   canonicalFlowNodeOccurrenceDelta instant.started (instant.ended ++ extraEnds)
 
 def flowNodeOccurrenceOwnedBySubtree (program : Program) (state : RuntimeState) (root : ScopeOccurrenceId)
-    (occurrence : OpenSemanticFlowNodeOccurrence) : Bool :=
+    (occurrence : OpenSemanticFlowNodeOccurrence) (disposition : SelectedScopeDisposition := .remove) : Bool :=
   let called := calledInstanceClosure state root
   match occurrence.anchor with
   | .scope scopeId => occurrenceInSubtree state.scopeOccurrences root scopeId ||
       called.contains scopeId.processInstanceId
   | .wait id =>
       occurrenceInSubtree state.scopeOccurrences root occurrence.owner ||
-      called.contains occurrence.owner.processInstanceId || scopeCancellationWithdrawsHandler program state root id
+      called.contains occurrence.owner.processInstanceId || scopeCancellationWithdrawsHandler program state root id disposition
   | .callActivity _ | .compensationTrigger _ | .compensationHandler _ =>
       occurrenceInSubtree state.scopeOccurrences root occurrence.owner ||
       called.contains occurrence.owner.processInstanceId
   | .transition .. => false
 
 def ownedSubtreeCancellationEnds? (program : Program) (state : RuntimeState)
-    (root : ScopeOccurrenceId) : Option (List UnnumberedFlowNodeOccurrenceEnd) := do
+    (root : ScopeOccurrenceId) (disposition : SelectedScopeDisposition := .remove) : Option (List UnnumberedFlowNodeOccurrenceEnd) := do
   let current ← projectOpenFlowNodeOccurrences? program state
-  pure (current.filter (flowNodeOccurrenceOwnedBySubtree program state root) |>.map fun occurrence =>
+  pure (current.filter (fun occurrence => flowNodeOccurrenceOwnedBySubtree program state root occurrence disposition) |>.map fun occurrence =>
     cancelledEnd occurrence.anchor)
 
 def terminationSubtreeCancellationEnds? (program : Program) (state : RuntimeState)
     (root : ScopeOccurrenceId) : Option (List UnnumberedFlowNodeOccurrenceEnd) := do
-  let cancelled ← ownedSubtreeCancellationEnds? program state root
+  let cancelled ← ownedSubtreeCancellationEnds? program state root .retain
   pure (cancelled.filter fun terminal => terminal.anchor ≠ .scope root)
 
 private def lifecycleEventRaceForMessage? (state : RuntimeState)
@@ -560,6 +512,26 @@ private def messageBoundedMessageDeliveryDelta? (program : Program) (before : Ru
   pure (instantaneousFlowNodeOccurrenceDeltaWithEnds commandId transitionIndex [identity]
     [waitEnd taskId .cancelled, waitEnd subscriptionId .completed])
 
+private def messageMonitoredTaskCompletionDelta? (program : Program) (before : RuntimeState)
+    (taskId : UserTaskInstanceId) (submitted : List VariableBinding) :
+    Option UnnumberedFlowNodeOccurrenceDelta := do
+  if !submitted.isEmpty then none
+  let selected ← messageMonitoredPairForTask? program before taskId
+  pure (canonicalFlowNodeOccurrenceDelta [] [waitEnd taskId .completed,
+    waitEnd (messageMonitoredSubscriptionIdentity selected.val.message) .cancelled])
+
+private def messageMonitoredDeliveryDelta? (program : Program) (before : RuntimeState)
+    (subscriptionId : MessageSubscriptionId) (channel : MessageChannel)
+    (commandId : SemanticId) (transitionIndex : Nat) : Option UnnumberedFlowNodeOccurrenceDelta := do
+  let selected ← messageMonitoredPairForSubscription? program before subscriptionId
+  let pair := selected.val
+  if pair.message.channel ≠ channel then none
+  let operation := SemanticOperation.awaitMessageMonitoredUserTask pair.definition.id
+    pair.definition.origin pair.definition.input pair.definition.task pair.definition.boundary
+  let identity ← candidateOperationFlowNodeIdentity? program operation pair.record.owner
+    pair.record.owner pair.message.elementId
+  pure (instantaneousFlowNodeOccurrenceDelta commandId transitionIndex [identity])
+
 def candidateFlowNodeOccurrenceDeltaForStimulus? (program : Program) (before : RuntimeState)
     (stimulus : Stimulus) (commandId : SemanticId) (transitionIndex : Nat) :
     Option UnnumberedFlowNodeOccurrenceDelta :=
@@ -574,7 +546,9 @@ def candidateFlowNodeOccurrenceDeltaForStimulus? (program : Program) (before : R
           match sequentialMultiInstanceOperationForTask? program ⟨taskId.elementId.value⟩ with
           | some _ => sequentialMultiInstanceCompletionDelta? program before taskId
           | none =>
-              if isMessageBoundedTaskDefinition program ⟨taskId.elementId.value⟩ then
+              if isMessageMonitoredTaskDefinition program ⟨taskId.elementId.value⟩ then
+                messageMonitoredTaskCompletionDelta? program before taskId submitted
+              else if isMessageBoundedTaskDefinition program ⟨taskId.elementId.value⟩ then
                 messageBoundedTaskCompletionDelta? program before taskId submitted
               else if before.waits.any fun wait => decide
                 (wait.processInstanceId = taskId.processInstanceId &&
@@ -589,7 +563,9 @@ def candidateFlowNodeOccurrenceDeltaForStimulus? (program : Program) (before : R
         | some race => some (canonicalFlowNodeOccurrenceDelta []
             [waitEnd race.messageSubscriptionId .completed, waitEnd race.timerOccurrenceId .cancelled])
         | none =>
-            if isMessageBoundaryDefinition program ⟨subscriptionId.elementId.value⟩ then
+            if isMonitoredMessageBoundaryDefinition program ⟨subscriptionId.elementId.value⟩ then
+              messageMonitoredDeliveryDelta? program before subscriptionId channel commandId transitionIndex
+            else if isMessageBoundaryDefinition program ⟨subscriptionId.elementId.value⟩ then
               messageBoundedMessageDeliveryDelta? program before subscriptionId channel commandId
                 transitionIndex
             else some (canonicalFlowNodeOccurrenceDelta [] [waitEnd subscriptionId .completed])
@@ -637,7 +613,8 @@ def candidateFlowNodeOccurrenceDeltaForStimulus? (program : Program) (before : R
                       [waitEnd (occurrenceId task.processInstanceId
                         ⟨task.task.id.value⟩ task.activation) .cancelled])
                   | none =>
-                      if isMonitoredBoundaryTimerDefinition program timer.elementId then
+                      if isMonitoredBoundaryTimerDefinition program timer.elementId ||
+                          isMonitoredScopeDeadlineDefinition program timer.elementId then
                         pure (instantaneousFlowNodeOccurrenceDelta commandId transitionIndex [identity])
                       else match boundedScopeDefinitionFor? program timer with
                         | some definition => do
@@ -669,7 +646,8 @@ def candidateFlowNodeOccurrenceDeltaForOperation? (program : Program) (before af
   match operation with
   | .initiate _ origin _ | .initiateMessage _ origin _ _ | .initiateTimer _ origin _ _ =>
       pure (instantaneousFlowNodeOccurrenceDelta commandId transitionIndex [← identityFor origin.elementId])
-  | .enterScope _ _ _ _ childScopeId | .enterBoundedScope _ _ _ _ childScopeId _ =>
+  | .enterScope _ _ _ _ childScopeId | .enterBoundedScope _ _ _ _ childScopeId _
+  | .enterMonitoredScope _ _ _ _ childScopeId _ =>
       let child ← match after.scopeOccurrences.filter fun occurrence =>
           decide (occurrence.id.definitionScopeId = childScopeId && occurrence.parent = some owner) with
         | [child] => some child
@@ -770,7 +748,8 @@ def candidateFlowNodeOccurrenceDeltaForOperation? (program : Program) (before af
         | [wait] => some wait
         | _ => none
       pure (canonicalFlowNodeOccurrenceDelta [← candidateUserTaskStart? program operation owner wait] [])
-  | .awaitMessageBoundedUserTask _ _ _ task boundary =>
+  | .awaitMessageBoundedUserTask _ _ _ task boundary
+  | .awaitMessageMonitoredUserTask _ _ _ task boundary =>
       let taskActivation := activationForTask before task.id + 1
       let messageActivation := activationForNode
         (before.messageActivations.map fun value => (value.elementId, value.count))

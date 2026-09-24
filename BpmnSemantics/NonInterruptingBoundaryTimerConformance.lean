@@ -42,7 +42,7 @@ def checkedProcess : CheckedProcess :=
       , .noneEndEvent ⟨"NormalEnd"⟩
       , .userTask ⟨"NormalTask"⟩ (some "Monitored work finished")
       , .timerBoundaryEvent ⟨"Reminder"⟩ ⟨"MonitoredTask"⟩ .nonInterrupting
-          "PT1S" ⟨"Flow_Boundary"⟩
+          (.duration "PT1S") ⟨"Flow_Boundary"⟩
       , .noneStartEvent ⟨"Start"⟩ ]
     sequenceFlows :=
       [ { id := ⟨"Flow_Boundary"⟩

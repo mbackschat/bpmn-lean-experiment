@@ -38,7 +38,9 @@ def regionalSelectionLocalDataRetention (state : RuntimeState)
       let called := calledInstanceClosure state selected.root.id
       let cancelled := fun owner => occurrenceInSubtree state.scopeOccurrences selected.root.id owner ||
         called.contains owner.processInstanceId
+      let disposition := match selected.kind with | .terminating => SelectedScopeDisposition.retain | _ => .remove
       let withdrawn := withdrawnByRegion cancelled state.activityOccurrences
+        (retainedCancellationRoot selected.root.id disposition)
       let effects := state.effectWaits.filter fun wait => cancelled wait.owner
       let incidents := state.effectIncidents.filter fun incident => cancelled incident.wait.owner
       fun scope => !called.contains scope.owner.processInstanceId &&
@@ -183,5 +185,18 @@ theorem regionalLocalData_completion_variables (program : Program) (before after
       all_goals first
         | (simp at result; done)
         | (simp only [Option.some.injEq] at result; subst after; exact ordinaryVariables completed ordinary)
+
+/-- ESL-CLOSE removes monitored ownership records, while primitive completion preserves
+Activity-local values exactly; preparation separately checks retained local owners. -/
+theorem regionalLocalData_selected_completion_variables (program : Program) (before after : RuntimeState)
+    (scopeId : DefinitionScopeId) (parentOutput : Option ControlPlaceId)
+    (result : completeSelectedScope? program before scopeId parentOutput = some after) :
+    after.variables = before.variables := by
+  unfold completeSelectedScope? at result
+  split at result
+  · have step := completeMonitoredScope_sound program before after scopeId parentOutput result
+    cases step
+    rfl
+  · exact regionalLocalData_completion_variables program before after scopeId parentOutput result
 
 end BpmnSemantics.SemanticProcess.InternalCommutation

@@ -1,5 +1,6 @@
 import {
   CheckedNodeKind,
+  isWellFormedWireString,
 } from "@bpmn-lean/semantic-core";
 import type {
   CheckedNode,
@@ -25,13 +26,18 @@ export function projectReceiveTask(
   id: string,
   artifacts: MessageRootArtifacts | undefined,
 ): Extract<CheckedNode, { kind: CheckedNodeKind.ReceiveTask }> | undefined {
+  const matches = artifacts?.filter(isDirectMessageRootArtifacts).filter(
+    (candidate) => element.messageRef === candidate.message,
+  );
+  const matched = matches?.length === 1 ? matches[0] : undefined;
   if (
-    !isDirectMessageRootArtifacts(artifacts) ||
+    matched === undefined ||
+    typeof matched.message.name !== "string" || matched.message.name.length === 0 ||
+    !isWellFormedWireString(matched.message.name) ||
     !hasOnlyProjectedFlowElementKeys(
       element,
       ProjectedFlowElementShape.ReceiveTask,
     ) ||
-    element.messageRef !== artifacts.message ||
     (element.instantiate !== undefined && element.instantiate !== false)
   ) {
     return undefined;
@@ -39,6 +45,6 @@ export function projectReceiveTask(
   return {
     kind: CheckedNodeKind.ReceiveTask,
     id,
-    channel: artifacts.channel,
+    channel: matched.channel,
   };
 }

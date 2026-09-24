@@ -76,22 +76,22 @@ theorem preparedArming_handler_withdrawal_frame (program : Program) (state : Run
     (prepared : arm.Prepared program state) (live : activityRecordsOwnLiveWork state = true)
     (outside : (occurrenceInSubtree state.scopeOccurrences root arm.scopeFramePatch.owner ||
       (calledInstanceClosure state root).contains arm.scopeFramePatch.owner.processInstanceId) = false)
-    (id : OccurrenceId) :
-    scopeCancellationWithdrawsHandler program (arm.apply state) root id =
-      scopeCancellationWithdrawsHandler program state root id := by
+    (id : OccurrenceId) (disposition : SelectedScopeDisposition := .remove) :
+    scopeCancellationWithdrawsHandler program (arm.apply state) root id disposition =
+      scopeCancellationWithdrawsHandler program state root id disposition := by
   let cancelled := fun owner => occurrenceInSubtree state.scopeOccurrences root owner ||
     (calledInstanceClosure state root).contains owner.processInstanceId
   have fields := scopeArming_scope_read_projections state arm
   have called : calledInstanceClosure (arm.apply state) root = calledInstanceClosure state root := by
     simp only [calledInstanceClosure, fields.2.2.1, fields.2.2.2.1]
-  have populations := preparedArming_cancellation_populations program state arm cancelled prepared outside
+  have populations := preparedArming_cancellation_populations program state arm cancelled prepared outside (retainedCancellationRoot root disposition)
   dsimp only [cancelled] at populations
   have classification := preparedArming_boundaryTimer_frame program state arm prepared
   simp only [scopeCancellationWithdrawsHandler, fields.2.2.1, called, populations.1, classification]
   cases arm with
   | ordinary operation patch =>
       have unattached := preparedArm_new_wait_unattached program state operation patch
-        (withdrawnByRegion cancelled state.activityOccurrences)
+        (withdrawnByRegion cancelled state.activityOccurrences (retainedCancellationRoot root disposition))
         (fun _ member => (List.mem_filter.mp member).1) live prepared
       dsimp only [cancelled] at unattached
       cases write : patch.write <;> simp only [write] at unattached
@@ -148,13 +148,13 @@ theorem regionalLifecycleTemplate_after_wait_insertion (program : Program) (stat
     (occurrence : OccurrenceId) (anchor : entry.anchor = .wait occurrence)
     (fresh : openWaitAnchorAbsent state occurrence = true)
     (outside : region.contains entry.owner = false)
-    (handler : ∀ id, scopeCancellationWithdrawsHandler program after region.root id =
-      scopeCancellationWithdrawsHandler program state region.root id)
+    (handler : ∀ id disposition, scopeCancellationWithdrawsHandler program after region.root id disposition =
+      scopeCancellationWithdrawsHandler program state region.root id disposition)
     (projected : projectOpenFlowNodeOccurrences? program state = some current)
     : regionalLifecycleTemplate? program after selected region
       (sortFlowNodeOccurrenceStarts (entry :: current)) =
       regionalLifecycleTemplate? program state selected region current := by
-  have unattached := absent_wait_anchor_not_withdrawn program state region.root _ fresh
+  have unattached := fun disposition => absent_wait_anchor_not_withdrawn program state region.root _ fresh disposition
   have predicate (retainRoot : Bool) (value : OpenSemanticFlowNodeOccurrence) :
       regionalCancelsOpenOccurrence program after region retainRoot value =
         regionalCancelsOpenOccurrence program state region retainRoot value := by
@@ -166,7 +166,7 @@ theorem regionalLifecycleTemplate_after_wait_insertion (program : Program) (stat
     have predicateEq := funext (predicate retainRoot)
     simp only [regionalCancellationEnds, predicateEq]
     rw [sorted_open_insert_filter_rejected program state current entry _ projected (by
-      simp only [regionalCancelsOpenOccurrence, anchor, outside, unattached, Bool.false_or])]
+      simp only [regionalCancelsOpenOccurrence, anchor, outside, unattached _, Bool.false_or])]
   have calls (id : OccurrenceId) :
       (sortFlowNodeOccurrenceStarts (entry :: current)).filter (fun value => value.anchor == .callActivity id) =
         current.filter (fun value => value.anchor == .callActivity id) :=
@@ -193,7 +193,7 @@ theorem regionalLifecycleTemplate_after_arming (program : Program) (state : Runt
   obtain ⟨owner, anchor, fresh⟩ := preparedArming_start_shape program state arm prepared entry started
   exact regionalLifecycleTemplate_after_wait_insertion program state (arm.apply state) selected region
     current entry _ anchor fresh (by simpa only [owner] using outside)
-    (preparedArming_handler_withdrawal_frame program state arm region.root prepared live cancelled) projected
+    (fun id disposition => preparedArming_handler_withdrawal_frame program state arm region.root prepared live cancelled id disposition) projected
 
 theorem regionalPublicationTemplate_after_arming (program : Program) (state : RuntimeState)
     (arm : PreparedInternalArming) (selected : InternalRegionalSelection) (region : InternalOccurrenceRegion)

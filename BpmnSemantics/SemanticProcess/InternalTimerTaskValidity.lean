@@ -158,7 +158,7 @@ theorem prepared_timer_task_preserves_timer_attachments
     prepareInternalTimerTaskContract_facts program state contract patch prepared
   exact joined rfl (fun old member => (timerFresh old member).1) records attachments
 
-private theorem boundaryTimerOperationMatches_insert_disjoint_task_record
+theorem boundaryTimerOperationMatches_insert_disjoint_task_record
     (program : Program) (state : RuntimeState) (wait : UserTaskWait)
     (record : ActivityOccurrence) (timer : TimerWait) (operation : SemanticOperation)
     (bodyFresh : ∀ old ∈ state.activityOccurrences, recordBodyNamesWait wait old = false)

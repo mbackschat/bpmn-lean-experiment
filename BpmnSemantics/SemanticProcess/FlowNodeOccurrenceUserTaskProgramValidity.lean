@@ -27,6 +27,7 @@ private def userTaskWaitValid (program : Program) (state : RuntimeState)
             wait.task.metadata.isNone && wait.metadata.isNone
       | .awaitBoundedUserTask _ _ _ task _
       | .awaitMessageBoundedUserTask _ _ _ task _
+      | .awaitMessageMonitoredUserTask _ _ _ task _
       | .awaitMonitoredUserTask _ _ _ task _ =>
           task.id = wait.task.id && task.name = wait.task.name && task.output = wait.output &&
             wait.task.metadata.isNone && wait.metadata.isNone
@@ -37,7 +38,7 @@ private def userTaskWaitValid (program : Program) (state : RuntimeState)
           taskId = wait.task.id && taskName = wait.task.name && normalOutput = wait.output &&
             wait.task.metadata.isNone && wait.metadata.isNone
       | .initiate .. | .initiateMessage .. | .initiateTimer ..
-      | .enterScope .. | .enterBoundedScope .. | .invokeProcess .. | .returnProcess ..
+      | .enterScope .. | .enterBoundedScope .. | .enterMonitoredScope .. | .invokeProcess .. | .returnProcess ..
       | .completeParallelMultiInstanceUserTask .. | .awaitTimer ..
       | .awaitMessage .. | .awaitPayloadMessage .. | .awaitCorrelatedPayloadMessage ..
       | .awaitEventRace .. | .awaitEffect ..
@@ -92,8 +93,8 @@ inductive UnboundedUserTaskWaitDeclaration (wait : UserTaskWait) : SemanticOpera
         (.awaitDataInputOutputUserTask id origin input wait.output wait.task.id wait.task.name
           directInput directOutput)
 
-/-- User Task projection checks the task declaration independently of its attached Timer. The Timer
-half still requires the joint Activity/handler matcher in `boundaryTimerOperationMatches`. -/
+/-- User Task projection checks its declaration independently of attached handlers. Handler
+association remains a separate obligation of the Timer and Message projection validators. -/
 inductive UserTaskWaitDeclaration (wait : UserTaskWait) : SemanticOperation → Prop
   | unbounded {operation} (declaration : UnboundedUserTaskWaitDeclaration wait operation) :
       UserTaskWaitDeclaration wait operation
@@ -107,6 +108,16 @@ inductive UserTaskWaitDeclaration (wait : UserTaskWait) : SemanticOperation → 
       UserTaskWaitDeclaration wait
         (.awaitMonitoredUserTask id origin input
           { id := wait.task.id, name := wait.task.name, output := wait.output } timer)
+  | messageBounded (id origin input message)
+      (taskMetadata : wait.task.metadata = none) (metadata : wait.metadata = none) :
+      UserTaskWaitDeclaration wait
+        (.awaitMessageBoundedUserTask id origin input
+          { id := wait.task.id, name := wait.task.name, output := wait.output } message)
+  | messageMonitored (id origin input message)
+      (taskMetadata : wait.task.metadata = none) (metadata : wait.metadata = none) :
+      UserTaskWaitDeclaration wait
+        (.awaitMessageMonitoredUserTask id origin input
+          { id := wait.task.id, name := wait.task.name, output := wait.output } message)
 
 theorem flowNodeOccurrenceUserTaskProgramValidity_insertUserTask (program : Program)
     (state : RuntimeState) (operation : SemanticOperation) (wait : UserTaskWait)
@@ -143,7 +154,7 @@ theorem flowNodeOccurrenceUserTaskProgramValidity_insertUserTask (program : Prog
           subst candidate
           cases declaration with
           | unbounded original => cases original <;> simp_all
-          | bounded | monitored => simp_all
+          | bounded | monitored | messageBounded | messageMonitored => simp_all
         · cases candidate with
           | awaitUserTask candidateId candidateOrigin candidateInput candidateOutput candidateTask =>
               have different : candidateTask.id ≠ wait.task.id := by
@@ -192,7 +203,8 @@ theorem flowNodeOccurrenceUserTaskProgramValidity_insertUserTask (program : Prog
                 apply familyMember
                 simp [userTaskWaitDeclarers, member, same]
               simp [different]
-          | awaitMessageBoundedUserTask candidateId candidateOrigin candidateInput candidateTask boundary =>
+          | awaitMessageBoundedUserTask candidateId candidateOrigin candidateInput candidateTask boundary
+          | awaitMessageMonitoredUserTask candidateId candidateOrigin candidateInput candidateTask boundary =>
               have different : candidateTask.id ≠ wait.task.id := by
                 intro same
                 apply familyMember

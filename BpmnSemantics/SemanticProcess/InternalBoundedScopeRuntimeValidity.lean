@@ -360,7 +360,8 @@ private theorem prepared_bounded_scope_excludes_multiInstance
       have conflict : _ ∈ timerWaitDeclarers program contract.timer.elementId :=
         List.mem_filter.mpr ⟨member, by simp [same]⟩
       rw [timers] at conflict
-      simp [InternalBoundedScopeContract.operation] at conflict
+      cases disposition : contract.disposition <;>
+        simp [InternalBoundedScopeContract.operation, disposition] at conflict
 
 theorem prepared_bounded_scope_preserves_multiInstance
     (program : Program) (state : RuntimeState) (contract : InternalBoundedScopeContract)

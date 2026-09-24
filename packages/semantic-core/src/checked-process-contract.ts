@@ -125,6 +125,11 @@ type CheckedConfiguredTask = DeepReadonly<{
   descriptor: EffectDescriptor;
 }>;
 
+/** Exact source expression; normalization belongs to each independent lowering account. */
+export type CheckedBoundaryTimerExpression =
+  | Readonly<{ durationLiteral: "PT1S"; cycleLiteral?: never }>
+  | Readonly<{ cycleLiteral: "R/PT1S"; durationLiteral?: never }>;
+
 export type CheckedNode =
   | DeepReadonly<{
       kind: CheckedNodeKind.NoneStartEvent;
@@ -163,7 +168,7 @@ export type CheckedNode =
   /**
    * A Timer Boundary Event, in either interruption disposition.
    *
-   * `durationLiteral` retains the exact source lexeme so Lean normalizes it to milliseconds
+   * The duration/cycle choice retains the exact source lexeme so Lean normalizes it to milliseconds
    * independently instead of trusting the TypeScript compiler's arithmetic. `interruption` is what
    * selects the host's lowering clause, so a source cannot acquire the wrong interruption semantics
    * by matching a shape; which dispositions a given profile admits is the profile's own decision.
@@ -173,14 +178,13 @@ export type CheckedNode =
       id: string;
       attachedToRef: string;
       interruption: BoundaryInterruption;
-      durationLiteral: "PT1S";
       outputFlowId: string;
-    }>
+    } & CheckedBoundaryTimerExpression>
   | DeepReadonly<{
       kind: CheckedNodeKind.MessageBoundaryEvent;
       id: string;
       attachedToRef: string;
-      interruption: BoundaryInterruption.Interrupting;
+      interruption: BoundaryInterruption;
       channel: Extract<
         MessageChannel,
         { kind: typeof MessageChannelKind.OperationMessage }

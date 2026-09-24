@@ -48,10 +48,10 @@ theorem preparedRegional_removed_censuses (program : Program) (before : RuntimeS
   | completeScope id origin definition output =>
       obtain ⟨_, _, selectedScope⟩ := regionalSelection_complete_census program before id origin definition output prepared.selection selected
       obtain ⟨after, fired, _⟩ := prepareInternalRegional_executes program before _ prepared found
-      have raw : completeBoundedScope? program before definition output = some after := by
+      have raw : completeSelectedScope? program before definition output = some after := by
         simp only [fire?, snapshots] at fired
         exact fired
-      obtain ⟨ordinary, completed, _⟩ := completeBoundedScope_position_fields program before after definition output raw
+      obtain ⟨ordinary, completed, _⟩ := completeSelectedScope_position_fields program before after definition output raw
       have quiet := (completeScopeState_selected_update before ordinary definition output prepared.selection.root selectedScope completed).1
       have singleton := quiescent_prepared_region_singleton before prepared.selection.root.id prepared.region derived quiet
       simp only [scopeQuiescent, Bool.and_eq_true, and_assoc] at quiet

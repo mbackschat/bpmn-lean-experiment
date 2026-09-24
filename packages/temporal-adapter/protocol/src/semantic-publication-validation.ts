@@ -500,6 +500,7 @@ function messageInteractionKind(
       case SemanticOperationKind.AwaitEventRace:
         return operation.message.elementId === elementId;
       case SemanticOperationKind.AwaitMessageBoundedUserTask:
+      case SemanticOperationKind.AwaitMessageMonitoredUserTask:
         return operation.boundaryMessage.elementId === elementId;
       default:
         return false;

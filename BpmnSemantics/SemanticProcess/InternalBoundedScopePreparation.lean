@@ -3,7 +3,7 @@ import BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation
 import BpmnSemantics.SemanticProcess.InternalRegionalDependencies
 
 /-! Complete bounded Sub-Process preparations combine the existing child-entry footprint with
-the joined Activity and parent-owned Timer under the [complete-family account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md#complete-operation-family-census).
+the joined Activity and parent-owned Timer for either explicit boundary disposition under the [complete-family account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md#complete-operation-family-census).
 -/
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
@@ -47,6 +47,32 @@ def boundedScopeJointResourcesAvailable (program : Program) (state : RuntimeStat
     uniqueFamilyDeclarer? program contract.operation .timer contract.timer.elementId &&
     openWaitAnchorAbsent state (timerWaitOccurrence selected.timer) &&
     !(state.activityOccurrences.any (regionalActivityAssociationsConflict · selected.record))
+
+/-- A same-id declaration of the other boundary kind cannot satisfy exact Program selection. -/
+theorem boundedScope_wrong_disposition_refuses_exact_selection (program : Program)
+    (contract : InternalBoundedScopeContract) (other : InternalBoundedScopeDisposition)
+    (owner : ScopeOccurrenceId) (different : contract.disposition ≠ other)
+    (census : program.operations.filter (fun candidate => decide (candidate.id = contract.operationId)) =
+      [( { contract with disposition := other } : InternalBoundedScopeContract).operation]) :
+    exactProgramSelection program contract.operation owner = false := by
+  have operationId : contract.operation.id = contract.operationId := by
+    cases disposition : contract.disposition <;>
+      simp [InternalBoundedScopeContract.operation, disposition, SemanticOperation.id]
+  have unequal : contract.operation ≠
+      ({ contract with disposition := other } : InternalBoundedScopeContract).operation := by
+    cases disposition : contract.disposition <;> cases other <;>
+      simp_all [InternalBoundedScopeContract.operation]
+  have absent : program.operations.filter (fun candidate => decide (candidate = contract.operation)) = [] := by
+    apply List.filter_eq_nil_iff.mpr
+    intro candidate member matched
+    have equal : candidate = contract.operation := of_decide_eq_true matched
+    subst candidate
+    have present : contract.operation ∈ program.operations.filter
+        (fun candidate => decide (candidate.id = contract.operationId)) :=
+      List.mem_filter.mpr ⟨member, by simp [operationId]⟩
+    rw [census] at present
+    exact unequal (List.mem_singleton.mp present)
+  simp [exactProgramSelection, absent]
 
 /-- The Timer declaration must belong to the selected parent, matching the semantic core's
 complete preparation check rather than trusting operation identity alone. -/

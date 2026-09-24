@@ -28,6 +28,9 @@ import type {
   ActivityArmingOperation,
   SelectedActivityArming,
 } from "./semantic-process-activity-arming.js";
+import { selectMessageActivityArming } from "./semantic-process-message-bounded-task-runtime.js";
+import type { SelectedMessageActivityArming } from "./semantic-process-message-bounded-task-runtime.js";
+import type { AwaitMessageBoundedUserTaskOperation, AwaitMessageMonitoredUserTaskOperation } from "./semantic-process-contract.js";
 import type { SemanticProcessProgram } from "./semantic-process-contract.js";
 import { SemanticTransitionKind } from "./semantic-transition-trace.js";
 import { onlyTokenOwner } from "./semantic-process-scope-runtime.js";
@@ -40,9 +43,12 @@ import type {
   ScopeOccurrenceId,
 } from "./semantic-process-state.js";
 
-export type PreparedInternalActivityArming = SelectedActivityArming & Readonly<{
+type BoundaryTaskArmingOperation = ActivityArmingOperation |
+  AwaitMessageBoundedUserTaskOperation | AwaitMessageMonitoredUserTaskOperation;
+
+export type PreparedInternalActivityArming = (SelectedActivityArming | SelectedMessageActivityArming) & Readonly<{
   alternative: InternalOperationAlternative;
-  operation: ActivityArmingOperation;
+  operation: BoundaryTaskArmingOperation;
   owner: ScopeOccurrenceId;
   footprint: InternalTransitionFootprint;
   publicationTemplate: InternalPublicationTemplate;
@@ -52,7 +58,7 @@ export type PreparedInternalActivityArming = SelectedActivityArming & Readonly<{
 export function deriveInternalActivityArmingPreparation(
   program: SemanticProcessProgram,
   state: RuntimeState,
-  operation: ActivityArmingOperation,
+  operation: BoundaryTaskArmingOperation,
 ): PreparedInternalActivityArming | null {
   const owner = onlyTokenOwner(state, operation.input);
   if (owner === undefined) {
@@ -65,12 +71,16 @@ export function deriveInternalActivityArmingPreparation(
     controlPlaceId === operation.input);
   if (processId === null || inputs.length !== 1 || input === undefined ||
       inputOwners.length !== 1 || inputOwners[0]?.scopeId !== owner.definitionScopeId) return null;
-  const selected = selectActivityArming(operation, state, owner);
+  const selected = "boundaryMessage" in operation
+    ? selectMessageActivityArming(operation, state, owner)
+    : selectActivityArming(operation, state, owner);
+  if (selected === null) return null;
+  const attachedWait = "messageWait" in selected ? selected.messageWait : selected.timerWait;
+  const attachedKind = "messageWait" in selected ? InternalOccurrenceKind.Message : InternalOccurrenceKind.Timer;
   if (
-    selected === null ||
     !safeActivation(selected.record.id.activation) ||
     !safeActivation(selected.taskWait.id.activation) ||
-    !safeActivation(selected.timerWait.id.activation) ||
+    !safeActivation(attachedWait.id.activation) ||
     state.control.kind !== ControlStateKind.Running ||
     state.scopeOccurrences.filter(({ id }) =>
       sameScopeOccurrence(id, owner)
@@ -86,14 +96,14 @@ export function deriveInternalActivityArmingPreparation(
     !operationIsUniqueWaitDeclarer(
       program,
       operation,
-      InternalOccurrenceKind.Timer,
-      operation.boundaryTimer.elementId,
+      attachedKind,
+      attachedWait.id.elementId,
     ) ||
     state.activityOccurrences.some((record) =>
       activityAssociationsConflict(record, selected.record)
     ) ||
     !openWaitAnchorIsAbsent(state, selected.taskWait.id) ||
-    !openWaitAnchorIsAbsent(state, selected.timerWait.id)
+    !openWaitAnchorIsAbsent(state, attachedWait.id)
   ) {
     return null;
   }
@@ -111,17 +121,17 @@ export function deriveInternalActivityArmingPreparation(
     activationAtom(InternalOccurrenceKind.Activity, operation.task.elementId),
     activationAtom(InternalOccurrenceKind.UserTask, operation.task.elementId),
     activationAtom(
-      InternalOccurrenceKind.Timer,
-      operation.boundaryTimer.elementId,
+      attachedKind,
+      attachedWait.id.elementId,
     ),
   ];
   const waitAtoms = [
     waitAtom(InternalOccurrenceKind.UserTask, selected.taskWait.id, owner),
-    waitAtom(InternalOccurrenceKind.Timer, selected.timerWait.id, owner),
+    waitAtom(attachedKind, attachedWait.id, owner),
   ];
   const anchorAtoms = [
     openWaitAnchorAtom(selected.taskWait.id, owner),
-    openWaitAnchorAtom(selected.timerWait.id, owner),
+    openWaitAnchorAtom(attachedWait.id, owner),
   ];
   const writes = canonicalUniqueStateAtoms([
     ...tokenOwnerCensusAtoms([operation.input]),
@@ -149,18 +159,23 @@ export function deriveInternalActivityArmingPreparation(
     consumedTokens: [{ sequenceFlowId: input.origin.elementId, owner, multiplicity: 1 }],
     producedTokens: [], enteredScopes: [], exitedScopes: [],
   };
-  const occurrence = { kind: InternalOccurrenceKind.UserTask, id: selected.taskWait.id } as const;
+  const startedOccurrences = [
+    { kind: InternalOccurrenceKind.UserTask, id: selected.taskWait.id },
+    ...("messageWait" in selected ? [{ kind: InternalOccurrenceKind.Message, id: selected.messageWait.id }] : []),
+  ];
   const committed = {
     kind: InternalTransitionPublicationAtomKind.CommittedTransition,
     operationId: operation.id, operationKind: operation.kind, origin: operation.origin,
     owner, logicalTimeMs: state.logicalTimeMs, positionDelta,
   } as const;
-  // The boundary deadline is a state dependency; E2 starts the Activity's task only
-  // (candidateLongLivedStarts, the existing boundary-Timer publication contract).
+  // candidateLongLivedStarts publishes the Message wait anchor as well as the task;
+  // a boundary Timer is a state dependency with no separate long-lived E2 occurrence.
   const publications = canonicalUniquePublicationAtoms([
     committed,
-    { kind: InternalTransitionPublicationAtomKind.FlowNodeLifecycle, occurrence: selected.taskWait.id },
-    { kind: InternalTransitionPublicationAtomKind.PublicationPair, operationId: operation.id, occurrence },
+    ...startedOccurrences.flatMap((occurrence) => [
+      { kind: InternalTransitionPublicationAtomKind.FlowNodeLifecycle, occurrence: occurrence.id } as const,
+      { kind: InternalTransitionPublicationAtomKind.PublicationPair, operationId: operation.id, occurrence } as const,
+    ]),
   ]);
   const alternative = internalOperationAlternative(operation.id);
   return reads === null || writes === null || publications === null
@@ -182,8 +197,10 @@ export function deriveInternalActivityArmingPreparation(
             positionDelta,
           },
           lifecycle: {
-            started: [{ anchor: { kind: InternalPublicationTemplateAnchorKind.Wait, id: selected.taskWait.id },
-              processId, elementId: selected.taskWait.id.elementId, owner }],
+            started: startedOccurrences.map(({ id }) => ({
+              anchor: { kind: InternalPublicationTemplateAnchorKind.Wait, id },
+              processId, elementId: id.elementId, owner,
+            })),
             ended: [],
           },
         },
@@ -206,7 +223,7 @@ function activationAtom(
 }
 
 function waitAtom(
-  kind: InternalOccurrenceKind.UserTask | InternalOccurrenceKind.Timer,
+  kind: InternalOccurrenceKind.UserTask | InternalOccurrenceKind.Timer | InternalOccurrenceKind.Message,
   id: RuntimeState["userTaskWaits"][number]["id"],
   owner: ScopeOccurrenceId,
 ): InternalTransitionStateAtom {

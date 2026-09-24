@@ -18,16 +18,17 @@ theorem cancelScopeSubtree_timer_host_retained (state : RuntimeState) (root : Sc
     record ∈ (cancelScopeSubtree state root disposition).activityOccurrences := by
   let cancelled := fun owner => occurrenceInSubtree state.scopeOccurrences root owner ||
     (calledInstanceClosure state root).contains owner.processInstanceId
-  have outside : recordInRegion cancelled record = false := by
+  have outside : recordInRegion cancelled record (retainedCancellationRoot root disposition) = false := by
     apply Bool.eq_false_iff.mpr
     intro withdrawn
-    have listed := withdrawn_records_carry_their_attached_timers cancelled state.activityOccurrences record
-      { processInstanceId := timer.processInstanceId, elementId := ⟨timer.elementId.value⟩, activation := timer.activation }
-      (List.mem_filter.mpr ⟨member, withdrawn⟩) (by simpa [recordAttaches] using attached)
-    have names : anyTimerIdNamesWait (attachedTimersOf (withdrawnByRegion cancelled state.activityOccurrences)) timer = true :=
+    have listed : (⟨timer.processInstanceId, ⟨timer.elementId.value⟩, timer.activation⟩ : OccurrenceId) ∈
+        attachedTimersOf (withdrawnByRegion cancelled state.activityOccurrences
+          (retainedCancellationRoot root disposition)) := List.mem_flatMap.mpr
+      ⟨record, List.mem_filter.mpr ⟨member, withdrawn⟩, by simpa [recordAttaches] using attached⟩
+    have names : anyTimerIdNamesWait (attachedTimersOf (withdrawnByRegion cancelled state.activityOccurrences (retainedCancellationRoot root disposition))) timer = true :=
       List.any_eq_true.mpr ⟨_, listed, by simp [timerIdNamesWait]⟩
     have absent := cancelScopeSubtree_withdraws_listed_timers state root disposition timer survives
-    rw [show anyTimerIdNamesWait (attachedTimersOf (withdrawnByRegion cancelled state.activityOccurrences)) timer = false from absent] at names
+    rw [show anyTimerIdNamesWait (attachedTimersOf (withdrawnByRegion cancelled state.activityOccurrences (retainedCancellationRoot root disposition))) timer = false from absent] at names
     contradiction
   exact List.mem_filter.mpr ⟨member, by simpa only [Bool.not_eq_true'] using outside⟩
 
@@ -88,18 +89,28 @@ theorem cancelScopeSubtree_retained_scope_body_census (state : RuntimeState) (ro
   by_cases bodyMatches : (activityBodyScope? record == some scope.id) = true
   · have body : record.body = .childScope scope.id := by
       cases shape : record.body <;> simp_all [activityBodyScope?, beq_iff_eq]
-    have outside := retained_child_scope_body_survives _ state.activityOccurrences record scope.id retained body
+    have kept := (List.mem_filter.mp retained).2
+    simp only [Bool.not_eq_true', recordInRegion, body, Bool.or_eq_false_iff] at kept
+    have outside := kept.2
     cases disposition with
     | retain =>
         change (predicate scope && (activityBodyScope? record == some scope.id) &&
           (decide (scope.id = root) || !(occurrenceInSubtree state.scopeOccurrences root scope.id ||
             (calledInstanceClosure state root).contains scope.id.processInstanceId))) = _
-        simp only [outside, Bool.not_false, Bool.or_true, Bool.and_true]
+        by_cases selected : scope.id = root
+        · simp [selected]
+        · have uncancelled : (occurrenceInSubtree state.scopeOccurrences root scope.id ||
+              (calledInstanceClosure state root).contains scope.id.processInstanceId) = false := by
+            simpa [retainedCancellationRoot, beq_iff_eq, selected, Ne.symm selected] using outside
+          simp only [uncancelled, Bool.not_false, Bool.or_true, Bool.and_true]
     | remove =>
         change (predicate scope && (activityBodyScope? record == some scope.id) &&
           !(occurrenceInSubtree state.scopeOccurrences root scope.id ||
             (calledInstanceClosure state root).contains scope.id.processInstanceId)) = _
-        simp only [outside, Bool.not_false, Bool.and_true]
+        have uncancelled : (occurrenceInSubtree state.scopeOccurrences root scope.id ||
+            (calledInstanceClosure state root).contains scope.id.processInstanceId) = false := by
+          simpa [retainedCancellationRoot] using outside
+        simp only [uncancelled, Bool.not_false, Bool.and_true]
   · cases disposition <;> simp [Bool.eq_false_iff.mpr bodyMatches]
 
 theorem cancelScopeSubtree_boundary_timer_operation_frame (program : Program) (state : RuntimeState)
@@ -108,6 +119,7 @@ theorem cancelScopeSubtree_boundary_timer_operation_frame (program : Program) (s
     (survives : timer ∈ (cancelScopeSubtree state root disposition).timerWaits) :
     boundaryTimerOperationMatches program (cancelScopeSubtree state root disposition) timer candidate =
       boundaryTimerOperationMatches program state timer candidate := by
+  let original := candidate
   cases candidate <;> try rfl
   case awaitBoundedUserTask id origin input task boundary =>
     have hosts := cancelScopeSubtree_timer_host_census state root disposition timer
@@ -143,7 +155,8 @@ theorem cancelScopeSubtree_boundary_timer_operation_frame (program : Program) (s
     exact congrArg (fun records : List ActivityOccurrence =>
       if !operationOwnedBy program (.awaitParallelMultiInstanceUserTask id origin input taskId taskName data output boundary condition limits) timer.owner then false
       else boundary.elementId = timer.elementId && boundary.output = timer.output && records.length = 1) hosts
-  case enterBoundedScope id origin input entry definition boundary =>
+  all_goals
+    rename_i id origin input entry definition boundary
     have hosts := cancelScopeSubtree_timer_host_census state root disposition timer
       (fun record => decide ((state.scopeOccurrences.filter fun child =>
         decide (child.id.definitionScopeId = definition && child.parent = some timer.owner) &&
@@ -156,7 +169,7 @@ theorem cancelScopeSubtree_boundary_timer_operation_frame (program : Program) (s
         rw [cancelScopeSubtree_retained_scope_body_census state root disposition record _
           (cancelScopeSubtree_timer_host_retained state root disposition timer record survives recordMember attached)])
     exact congrArg (fun records : List ActivityOccurrence =>
-      if !operationOwnedBy program (.enterBoundedScope id origin input entry definition boundary) timer.owner then false
+      if !operationOwnedBy program original timer.owner then false
       else boundary.elementId = timer.elementId && boundary.output = timer.output && records.length = 1) hosts
 
 theorem cancelScopeSubtree_boundary_timer_frame (program : Program) (state : RuntimeState)

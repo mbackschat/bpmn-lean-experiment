@@ -20,7 +20,8 @@ private def operationScope? (program : Program) (operationId : OperationId) :
 /-- The child definition scope entered by each scope-entering operation family. The exhaustive match makes a newly added family fail compilation until its lifecycle role is classified. -/
 def enteredChildScopeId? : SemanticOperation → Option DefinitionScopeId
   | .enterScope _ _ _ _ childScopeId
-  | .enterBoundedScope _ _ _ _ childScopeId _ => some childScopeId
+  | .enterBoundedScope _ _ _ _ childScopeId _
+  | .enterMonitoredScope _ _ _ _ childScopeId _ => some childScopeId
   | .initiate .. | .initiateMessage .. | .initiateTimer .. | .invokeProcess .. | .returnProcess .. | .awaitUserTask ..
   | .awaitDataInputUserTask ..
   | .awaitDataInputOutputUserTask ..
@@ -32,6 +33,7 @@ def enteredChildScopeId? : SemanticOperation → Option DefinitionScopeId
   | .awaitCorrelatedPayloadMessage .. | .awaitEventRace ..
   | .awaitBoundedUserTask .. | .awaitMonitoredUserTask ..
   | .awaitMessageBoundedUserTask ..
+  | .awaitMessageMonitoredUserTask ..
   | .awaitEffect .. | .duplicate ..
   | .synchronize .. | .mergeExclusive .. | .choose .. | .selectMany ..
   | .synchronizeSelected ..

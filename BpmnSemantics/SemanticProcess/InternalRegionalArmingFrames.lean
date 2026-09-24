@@ -159,6 +159,26 @@ private theorem boundedCompletion_arming_retirement (program : Program)
              frame.effectWaits, frame.incidents,
              (fun _ member => frame.records (List.mem_filter.mp member).1), frame.locals⟩)
 
+private theorem selectedCompletion_arming_retirement (program : Program)
+    (before after : RuntimeState) (definition : DefinitionScopeId) (output : Option ControlPlaceId)
+    (result : completeSelectedScope? program before definition output = some after) :
+    RegionalArmingRetirement before after := by
+  unfold completeSelectedScope? at result
+  split at result
+  · unfold completeMonitoredScope? at result
+    obtain ⟨pair, _, result⟩ := Option.bind_eq_some_iff.mp result
+    split at result
+    · obtain ⟨ordinary, completed, result⟩ := Option.bind_eq_some_iff.mp result
+      cases result
+      have frame := ordinaryCompletion_arming_retirement before ordinary definition output completed
+      refine ⟨frame.tasks, frame.messages, frame.timers, frame.effects, frame.activities,
+        frame.taskWaits, frame.messageWaits, ?_, frame.effectWaits, frame.incidents,
+        List.Subset.trans List.erase_subset frame.records, frame.locals⟩
+      cases pair.val.timer <;>
+        first | exact frame.timerWaits | exact List.Subset.trans List.erase_subset frame.timerWaits
+    · contradiction
+  · exact boundedCompletion_arming_retirement program before after definition output result
+
 theorem preparedRegional_arming_retirement (program : Program) (before after : RuntimeState)
     (operation : SemanticOperation) (prepared : PreparedInternalRegional)
     (found : prepareInternalRegional? program before operation = some prepared)
@@ -178,7 +198,7 @@ theorem preparedRegional_arming_retirement (program : Program) (before after : R
       cases returnProcessState_sound before after id origin process definition output raw
       constructor <;> first | rfl | exact fun _ member => (List.mem_filter.mp member).1
   | completeScope id origin definition output =>
-      apply boundedCompletion_arming_retirement program before after definition output
+      apply selectedCompletion_arming_retirement program before after definition output
       simp only [fire?, snapshots] at fired
       exact fired
   | throwError id origin input error handler =>

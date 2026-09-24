@@ -16,6 +16,14 @@ def internalEndPublicationTemplate (prepared : PreparedInternalEnd) :
     positionDelta := prepared.publicationTemplate.positionDelta
     lifecycle := .instantaneous prepared.publicationTemplate.identity }
 
+def internalMessageTaskPublicationTemplate? (program : Program) (state : RuntimeState)
+    (contract : InternalMessageTaskContract) (patch : InternalMessageTaskPatch) :
+    Option InternalTransitionPublicationTemplate := do
+  let task ← waitStart? program state patch.arm.owner patch.arm.write.elementId patch.arm.write.occurrence.activation
+  let message ← waitStart? program state patch.message.owner patch.message.elementId patch.message.activation
+  let base := internalArmingPublicationTemplate contract.operation patch.arm state.logicalTimeMs task
+  some { base with lifecycle := .waits [task, message] }
+
 /-- Templates use the complete predecessor preparation and owner ancestry; no successor projection
 or command/index assignment participates in constructing this value. -/
 def preparedTransitionPublicationTemplate? (program : Program) (state : RuntimeState) :
@@ -23,11 +31,23 @@ def preparedTransitionPublicationTemplate? (program : Program) (state : RuntimeS
   | .arming (.ordinary operation patch) => internalArmingPublicationTemplate? program state operation patch
   | .arming (.data contract patch) => internalArmingPublicationTemplate? program state contract.operation patch.arm
   | .timerTask contract patch => internalArmingPublicationTemplate? program state contract.operation patch.arm
+  | .messageTask contract patch => internalMessageTaskPublicationTemplate? program state contract patch
+  | .boundedScope contract prepared =>
+      if prepared.selection.creation.operation = contract.operation then
+        some (internalBoundedScopePublicationTemplate prepared)
+      else none
   | .localControl prepared => some (internalLocalControlPublicationTemplate prepared)
   | .scopeCreation prepared => some (internalScopeCreationPublicationTemplate prepared)
   | .regional prepared => some (internalRegionalPublicationTemplate prepared)
   | .ordinaryEnd prepared => some (internalEndPublicationTemplate prepared)
   | .mergeInput prepared => some (internalMergePublicationTemplate prepared)
+
+/-- A raw bounded-child constructor cannot publish metadata from a different operation. -/
+theorem bounded_scope_template_refuses_operation_mismatch (program : Program) (state : RuntimeState)
+    (contract : InternalBoundedScopeContract) (prepared : PreparedInternalBoundedScope)
+    (different : prepared.selection.creation.operation ≠ contract.operation) :
+    preparedTransitionPublicationTemplate? program state (.boundedScope contract prepared) = none := by
+  simp [preparedTransitionPublicationTemplate?, different]
 
 def runPreparedTransitionBatchPublication? (program : Program) (instanceId commandId : SemanticId)
     (indexForOperation : OperationId → Nat) (state : RuntimeState) :

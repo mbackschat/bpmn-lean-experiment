@@ -14,11 +14,12 @@ private theorem child_completion_runtime_frame (program : Program) (before after
     (hosting : SemanticId) (definition : DefinitionScopeId) (output : ControlPlaceId)
     (root : RuntimeScopeOccurrence) (running : before.control = .running hosting)
     (census : before.scopeOccurrences.filter (fun scope => decide (scope.id.definitionScopeId = definition)) = [root])
-    (result : completeBoundedScope? program before definition (some output) = some after) :
+    (result : completeSelectedScope? program before definition (some output) = some after) :
     after = { before with
       scopeOccurrences := after.scopeOccurrences, tokens := after.tokens
       timerWaits := after.timerWaits, activityOccurrences := after.activityOccurrences } := by
-  obtain ⟨ordinary, completed, _⟩ := completeBoundedScope_position_fields program before after definition (some output) result
+  obtain ⟨ordinary, completed, timers, activities, rfl⟩ :=
+    completeSelectedScope_ordinary_withdrawal program before after definition (some output) result
   have update := (completeScopeState_selected_update before ordinary definition (some output) root census completed).2
   cases parent : root.parent with
   | none => simp [parent, running] at update
@@ -26,11 +27,7 @@ private theorem child_completion_runtime_frame (program : Program) (before after
       simp only [parent, running] at update
       split at update
       · cases update
-        unfold completeBoundedScope? at result
-        rw [completed] at result
-        repeat' split at result
-        all_goals first | (simp at result; done) |
-          (simp_all only [Option.some.injEq]; subst_vars; simp_all only)
+        simp only [running]
       · contradiction
 
 private theorem quiescent_owners_after_child {α : Type} (before after : RuntimeState)
@@ -94,11 +91,11 @@ private theorem child_completion_token_order (program : Program) (before after :
     (hosting : SemanticId) (definition : DefinitionScopeId) (output : ControlPlaceId)
     (root : RuntimeScopeOccurrence) (running : before.control = .running hosting)
     (census : before.scopeOccurrences.filter (fun scope => decide (scope.id.definitionScopeId = definition)) = [root])
-    (result : completeBoundedScope? program before definition (some output) = some after)
+    (result : completeSelectedScope? program before definition (some output) = some after)
     (ordered : orderedBy controlTokenBefore before.tokens = true) :
     orderedBy controlTokenBefore after.tokens = true := by
   obtain ⟨ordinary, completed, _, _, _, tokens⟩ :=
-    completeBoundedScope_position_fields program before after definition (some output) result
+    completeSelectedScope_position_fields program before after definition (some output) result
   have update := (completeScopeState_selected_update before ordinary definition (some output) root census completed).2
   cases parent : root.parent with
   | none => simp [parent, running] at update
@@ -142,17 +139,19 @@ theorem preparedChildComplete_preserves_runtimeStateWellFormed (program : Progra
   obtain ⟨after, firedAgain, applied⟩ := prepareInternalRegional_executes program before _ prepared found
   have equal : checked = after := Option.some.inj (fired.symm.trans firedAgain)
   subst checked
-  have result : completeBoundedScope? program before definition (some output) = some after := by
+  have result : completeSelectedScope? program before definition (some output) = some after := by
     have raw := firedAgain
     simp only [fire?, snapshots] at raw
     exact raw
   obtain ⟨withdrawal, kind, census⟩ := regionalSelection_complete_census program before id origin definition (some output)
     prepared.selection selection
   have frame := child_completion_runtime_frame program before after hosting definition output prepared.selection.root running census result
-  obtain ⟨quiet, control, _, scopes⟩ := completeBoundedScope_child_lookup_fields program before after hosting
-    definition output prepared.selection.root running census result
+  obtain ⟨lookupAfter, lookupApplied, quiet, control, _, scopes⟩ :=
+    preparedChildComplete_projection_lookup_fields program before id origin definition output prepared found
+  have sameLookup : lookupAfter = after := Option.some.inj (lookupApplied.symm.trans applied)
+  subst lookupAfter
   have child : prepared.selection.root.parent ≠ none := by
-    have parent := completeBoundedScope_child_has_parent program before after definition output prepared.selection.root census result
+    have parent := completeSelectedScope_child_has_parent program before after definition output prepared.selection.root census result
     intro absent
     simp [absent] at parent
   have member : prepared.selection.root ∈ before.scopeOccurrences :=

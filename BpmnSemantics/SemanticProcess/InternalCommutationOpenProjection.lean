@@ -109,11 +109,10 @@ private theorem prepared_arm_preserves_messageBoundedProjectionValid
   simp only [List.all_eq_true] at valid ⊢
   intro candidate candidateMember
   have prior := valid candidate candidateMember
+  let boundedOperation := candidate
   cases candidate <;> try exact prior
-  case awaitMessageBoundedUserTask candidateId candidateOrigin candidateInput boundedTask
-      boundaryMessage =>
-    let boundedOperation := SemanticOperation.awaitMessageBoundedUserTask candidateId
-      candidateOrigin candidateInput boundedTask boundaryMessage
+  all_goals
+    rename_i candidateId candidateOrigin candidateInput boundedTask boundaryMessage
     let owned := FlowNodeOccurrenceProgramValidity.Internal.operationOwnedBy program boundedOperation
     cases writeEq : patch.write with
     | userTask inserted =>
@@ -284,7 +283,7 @@ theorem prepared_arm_preserves_runtime_and_open_set (program : Program) (state :
       expectedInstanceId programAdmitted stateAdmitted openBefore prepared
   exact ⟨wellAfter, by simp [afterEq]⟩
 
-private theorem filter_canonicalInsertBy_eq_singleton (before : α → α → Bool)
+theorem filter_canonicalInsertBy_eq_singleton (before : α → α → Bool)
     (predicate : α → Bool) (inserted : α) (values : List α)
     (kept : predicate inserted = true)
     (rejected : ∀ value ∈ values, predicate value = false) :

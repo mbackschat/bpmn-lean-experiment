@@ -73,10 +73,11 @@ theorem prepared_bounded_scope_preserves_existing_timer_match
         change (_ && recordAttaches selected.record (timerWaitOccurrence timer) && _) = false
         simp only [unattached, Bool.and_false, Bool.false_and])]
   all_goals try rfl
-  congr 5
-  apply List.filter_congr
-  intro old oldMember
-  rw [scopeFrame _ old oldMember]
+  all_goals
+    congr 5
+    apply List.filter_congr
+    intro old oldMember
+    rw [scopeFrame _ old oldMember]
 
 theorem prepared_bounded_scope_preserves_existing_timer_binding
     (program : Program) (state : RuntimeState) (contract : InternalBoundedScopeContract)
@@ -145,29 +146,31 @@ theorem prepared_bounded_scope_new_timer_binding
     exact unclaimed old member
   have matched : boundaryTimerOperationMatches program after selected.timer contract.operation = true := by
     change operationOwnedBy program contract.operation entry.owner = true at owned
-    simp only [InternalBoundedScopeContract.operation] at owned
-    simp only [boundaryTimerOperationMatches, InternalBoundedScopeContract.operation,
-      show selected.timer.owner = entry.owner from rfl, owned,
-      Bool.not_true, Bool.false_eq_true, ↓reduceIte]
-    simp only [after, selected, InternalBoundedScopeSelection.apply, makeInternalBoundedScopeSelection,
-      InternalScopeCreationSelection.apply, child]
-    change (_ && _ && decide (((insertActivityOccurrence selected.record state.activityOccurrences).filter
-      (fun record => record.owner = entry.owner && recordAttaches record (timerWaitOccurrence selected.timer) &&
-        ((insertScopeOccurrence entry.created state.scopeOccurrences).filter fun scope =>
-          decide (scope.id.definitionScopeId = contract.definition && scope.parent = some entry.owner) &&
-            activityBodyScope? record == some scope.id).length = 1)).length = 1)) = true
-    rw [insertActivityOccurrence_eq_canonicalInsertBy, length_filter_canonicalInsertBy]
-    have empty : (state.activityOccurrences.filter (fun record =>
-        record.owner = entry.owner && recordAttaches record (timerWaitOccurrence selected.timer) &&
+    cases disposition : contract.disposition <;>
+      simp only [InternalBoundedScopeContract.operation, disposition] at owned ⊢
+    all_goals
+      simp only [boundaryTimerOperationMatches,
+        show selected.timer.owner = entry.owner from rfl, owned,
+        Bool.not_true, Bool.false_eq_true, ↓reduceIte]
+      simp only [after, selected, InternalBoundedScopeSelection.apply, makeInternalBoundedScopeSelection,
+        InternalScopeCreationSelection.apply, child]
+      change (_ && _ && decide (((insertActivityOccurrence selected.record state.activityOccurrences).filter
+        (fun record => record.owner = entry.owner && recordAttaches record (timerWaitOccurrence selected.timer) &&
           ((insertScopeOccurrence entry.created state.scopeOccurrences).filter fun scope =>
             decide (scope.id.definitionScopeId = contract.definition && scope.parent = some entry.owner) &&
-              activityBodyScope? record == some scope.id).length = 1)) = [] := by
-      apply List.filter_eq_nil_iff.mpr
-      intro old member
-      simp only [oldRejected old member, Bool.and_false, Bool.false_and, Bool.false_eq_true, not_false_eq_true]
-    rw [empty, childCount]
-    simp [recordAttaches, selected, makeInternalBoundedScopeSelection,
-      ActivityOccurrence.timerHandlerOccurrences, timerWaitOccurrence]
+              activityBodyScope? record == some scope.id).length = 1)).length = 1)) = true
+      rw [insertActivityOccurrence_eq_canonicalInsertBy, length_filter_canonicalInsertBy]
+      have empty : (state.activityOccurrences.filter (fun record =>
+          record.owner = entry.owner && recordAttaches record (timerWaitOccurrence selected.timer) &&
+            ((insertScopeOccurrence entry.created state.scopeOccurrences).filter fun scope =>
+              decide (scope.id.definitionScopeId = contract.definition && scope.parent = some entry.owner) &&
+                activityBodyScope? record == some scope.id).length = 1)) = [] := by
+        apply List.filter_eq_nil_iff.mpr
+        intro old member
+        simp only [oldRejected old member, Bool.and_false, Bool.false_and, Bool.false_eq_true, not_false_eq_true]
+      rw [empty, childCount]
+      simp [recordAttaches, selected, makeInternalBoundedScopeSelection,
+        ActivityOccurrence.timerHandlerOccurrences, timerWaitOccurrence]
   have declarers : timerWaitDeclarers program selected.timer.elementId = [contract.operation] := timerDeclarers
   change flowNodeOccurrenceBoundaryTimerBound program after selected.timer = true
   unfold flowNodeOccurrenceBoundaryTimerBound
@@ -280,13 +283,15 @@ theorem prepared_bounded_scope_preserves_wait_program_validity
           have different : timer.elementId ≠ selected.timer.elementId := by
             intro equal
             have same := only.mp (by simp [timerWaitDeclarers, member, equal])
-            simp [InternalBoundedScopeContract.operation] at same
+            cases disposition : contract.disposition <;>
+              simp [InternalBoundedScopeContract.operation, disposition] at same
           simp [boundaryTimerOperationMatches, different]
         case awaitEventRace id origin input message timer =>
           have different : timer.elementId ≠ selected.timer.elementId := by
             intro equal
             have same := only.mp (by simp [timerWaitDeclarers, member, equal])
-            simp [InternalBoundedScopeContract.operation] at same
+            cases disposition : contract.disposition <;>
+              simp [InternalBoundedScopeContract.operation, disposition] at same
           simp [boundaryTimerOperationMatches, different]
         all_goals
           simp only [boundaryTimerOperationMatches]
@@ -433,8 +438,10 @@ theorem prepared_bounded_scope_preserves_structural_program_validity
   obtain ⟨sole, singleton⟩ := List.length_eq_one_iff.mp census
   have filtered : contract.operation ∈ program.operations.filter
       (fun operation => decide (enteredChildScopeId? operation = some definition.id)) := by
-    exact List.mem_filter.mpr ⟨member, by simp [InternalBoundedScopeContract.operation,
-      enteredChildScopeId?, definitionMatch.1.1]⟩
+    exact List.mem_filter.mpr ⟨member, by
+      cases disposition : contract.disposition <;>
+        simp [InternalBoundedScopeContract.operation, disposition,
+          enteredChildScopeId?, definitionMatch.1.1]⟩
   rw [singleton] at filtered
   simp only [List.mem_singleton] at filtered
   rw [← filtered] at singleton
@@ -450,8 +457,9 @@ theorem prepared_bounded_scope_preserves_structural_program_validity
       all_goals simp only [enteredChildScopeId?, Bool.and_eq_true, decide_eq_true_eq] at accepted ⊢
       all_goals exact congrArg some (accepted.1.trans (childDefinition.trans definitionMatch.1.1.symm))
     · change operationOwnedBy program contract.operation entry.owner = true at owned
-      simp [InternalBoundedScopeContract.operation] at owned
-      simp [InternalBoundedScopeContract.operation, owned, childDefinition, definitionMatch.2]
+      cases disposition : contract.disposition <;>
+        simp [InternalBoundedScopeContract.operation, disposition] at owned ⊢ <;>
+        simp [owned, childDefinition, definitionMatch.2]
   have ownerLive : exactLiveOccurrence state entry.owner = true := by
     change state.scopeOccurrences.filter (fun candidate => decide (candidate.id = entry.owner)) =
       [ownerRecord] at owners
@@ -500,9 +508,12 @@ theorem prepared_bounded_scope_preserves_occurrence_program_validity
     exact (List.mem_filter.mp filtered).1
   have operationValid := List.all_eq_true.mp (programWellFormed_operations program admitted) contract.operation member
   have timerId : (!contract.timer.elementId.value.isEmpty) = true := by
-    change (_ && _ && _ && (!contract.timer.elementId.value.isEmpty) && _ && _ && _ && _ && _ && _) = true at operationValid
-    simp only [Bool.and_eq_true] at operationValid
-    simp_all only
+    cases disposition : contract.disposition <;>
+      simp only [InternalBoundedScopeContract.operation, disposition] at operationValid
+    all_goals
+      change (_ && _ && _ && (!contract.timer.elementId.value.isEmpty) && _ && _ && _ && _ && _ && _) = true at operationValid
+      simp only [Bool.and_eq_true] at operationValid
+      simp_all only
   have live : flowNodeOccurrenceOwnerLiveUnique state selected.creation.owner = true := by
     simp [flowNodeOccurrenceOwnerLiveUnique, owners]
   have process := flowNodeOccurrenceStructuralProgramValidity_live_owner_nonempty program state
@@ -546,28 +557,33 @@ theorem prepared_bounded_scope_preserves_message_projection_validity
   intro operation member
   have prior := valid operation member
   cases operation <;> try exact prior
-  rename_i id origin input task message
-  let operation := SemanticOperation.awaitMessageBoundedUserTask id origin input task message
-  have different : task.id.value ≠ contract.origin.elementId.value := by
-    intro same
-    have taskSame : task.id = ⟨contract.origin.elementId.value⟩ :=
-      taskDefinitionId_eq_of_value_eq _ _ same
-    have conflict : operation ∈ userTaskWaitDeclarers program ⟨contract.origin.elementId.value⟩ :=
-      List.mem_filter.mpr ⟨member, by simp [operation, taskSame]⟩
-    rw [noTasks] at conflict
-    simp at conflict
-  let owned := operationOwnedBy program operation
-  have recordsFrame : (insertActivityOccurrence selected.record state.activityOccurrences).filter
-      (fun record => owned record.owner && decide (record.activityElementId.value = task.id.value)) =
-      state.activityOccurrences.filter
-        (fun record => owned record.owner && decide (record.activityElementId.value = task.id.value)) := by
-    rw [insertActivityOccurrence_eq_canonicalInsertBy]
-    apply filter_canonicalInsertBy_rejected
-    simp [selected, makeInternalBoundedScopeSelection, Ne.symm different]
-  simp only [selected, makeInternalBoundedScopeSelection, owned, operation] at recordsFrame
-  simpa [makeInternalBoundedScopePreparation, InternalBoundedScopeSelection.apply,
-    makeInternalBoundedScopeSelection, InternalScopeCreationSelection.apply, child,
-    messageBoundedOperationProjectionValid, operation, selected, owned, recordsFrame] using prior
+  all_goals
+    rename_i id origin input task message
+    first
+      | (let operation := SemanticOperation.awaitMessageBoundedUserTask id origin input task message
+         change operation ∈ program.operations at member)
+      | (let operation := SemanticOperation.awaitMessageMonitoredUserTask id origin input task message
+         change operation ∈ program.operations at member)
+    have different : task.id.value ≠ contract.origin.elementId.value := by
+      intro same
+      have taskSame : task.id = ⟨contract.origin.elementId.value⟩ :=
+        taskDefinitionId_eq_of_value_eq _ _ same
+      have conflict : operation ∈ userTaskWaitDeclarers program ⟨contract.origin.elementId.value⟩ :=
+        List.mem_filter.mpr ⟨member, by simp [operation, taskSame]⟩
+      rw [noTasks] at conflict
+      simp at conflict
+    let owned := operationOwnedBy program operation
+    have recordsFrame : (insertActivityOccurrence selected.record state.activityOccurrences).filter
+        (fun record => owned record.owner && decide (record.activityElementId.value = task.id.value)) =
+        state.activityOccurrences.filter
+          (fun record => owned record.owner && decide (record.activityElementId.value = task.id.value)) := by
+      rw [insertActivityOccurrence_eq_canonicalInsertBy]
+      apply filter_canonicalInsertBy_rejected
+      simp [selected, makeInternalBoundedScopeSelection, Ne.symm different]
+    simp only [selected, makeInternalBoundedScopeSelection, owned, operation] at recordsFrame
+    simpa [makeInternalBoundedScopePreparation, InternalBoundedScopeSelection.apply,
+      makeInternalBoundedScopeSelection, InternalScopeCreationSelection.apply, child,
+      messageBoundedOperationProjectionValid, operation, selected, owned, recordsFrame] using prior
 
 theorem prepared_bounded_scope_start_projects
     (program : Program) (state : RuntimeState) (contract : InternalBoundedScopeContract)

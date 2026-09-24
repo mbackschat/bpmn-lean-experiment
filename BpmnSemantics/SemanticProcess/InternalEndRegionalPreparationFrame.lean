@@ -114,7 +114,7 @@ theorem prepareInternalRegional_after_independent_end (program : Program) (state
     simp [regionalStateAtomsConflict, same] at conflict
   have selectionAfter : selectInternalRegional? program (ending.apply state) regionalOperation = some regional.selection := by
     apply regionalSelection_read_frame program state (ending.apply state) regionalOperation regional.selection
-      selection rfl rfl rfl rfl quiet (fun _ _ chosen => chosen)
+      selection rfl rfl rfl rfl quiet (fun _ _ _ chosen => chosen)
     have read := regionalStateFootprint_selector_read state regional.selection regional.region regional.footprint footprint
     rw [regionalSelection_operation program state regionalOperation regional.selection selection] at read
     cases regionalOperation with

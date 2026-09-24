@@ -9,6 +9,7 @@ import type {
 import {
   COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID,
   MESSAGE_KEY_CORRELATION_CHECKPOINT_PROFILE_ID,
+  REPEATABLE_EVENT_SUBSCRIPTIONS_CHECKPOINT_PROFILE_ID,
   SemanticProfileId,
 } from "./semantic-profile-catalog.js";
 import { isVariablePatch } from "./variable-value.js";
@@ -22,7 +23,8 @@ export enum VariableWriteSurface {
 type SemanticProfile =
   | typeof SemanticProfileId[keyof typeof SemanticProfileId]
   | typeof COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID
-  | typeof MESSAGE_KEY_CORRELATION_CHECKPOINT_PROFILE_ID;
+  | typeof MESSAGE_KEY_CORRELATION_CHECKPOINT_PROFILE_ID
+  | typeof REPEATABLE_EVENT_SUBSCRIPTIONS_CHECKPOINT_PROFILE_ID;
 
 const emptyValueDomain: ReadonlyArray<VariableValueKind> = Object.freeze([]);
 const stringValueDomain = Object.freeze([VariableValueKind.String]);
@@ -56,6 +58,7 @@ const admittedSemanticProfiles: ReadonlySet<string> = new Set(
     ...Object.values(SemanticProfileId),
     COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID,
     MESSAGE_KEY_CORRELATION_CHECKPOINT_PROFILE_ID,
+    REPEATABLE_EVENT_SUBSCRIPTIONS_CHECKPOINT_PROFILE_ID,
   ],
 );
 
@@ -199,6 +202,7 @@ function profileValueDomain(
     case SemanticProfileId.IntermediateCatchMessage:
     case SemanticProfileId.MessagePayloadCatch:
     case MESSAGE_KEY_CORRELATION_CHECKPOINT_PROFILE_ID:
+    case REPEATABLE_EVENT_SUBSCRIPTIONS_CHECKPOINT_PROFILE_ID:
     case SemanticProfileId.IntermediateCatchTimer:
     case SemanticProfileId.MessageAddressedReceiveTask:
     case SemanticProfileId.MessageStart:

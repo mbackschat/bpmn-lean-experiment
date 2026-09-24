@@ -19,7 +19,7 @@ theorem cancelled_activity_claimant_removes_controller (state : RuntimeState)
     (controller : SequentialMultiInstanceController) (record : ActivityOccurrence)
     (member : record ∈ state.activityOccurrences)
     (inside : recordInRegion (fun owner => occurrenceInSubtree state.scopeOccurrences root owner ||
-      (calledInstanceClosure state root).contains owner.processInstanceId) record = true)
+      (calledInstanceClosure state root).contains owner.processInstanceId) record (retainedCancellationRoot root disposition) = true)
     (names : controllerNamesActivityOccurrence controller record = true) :
     controller ∉ (cancelScopeSubtree state root disposition).sequentialMultiInstanceControllers := by
   intro survives
@@ -28,23 +28,23 @@ theorem cancelled_activity_claimant_removes_controller (state : RuntimeState)
   have withdrawn : (withdrawnByRegion
       (fun owner => occurrenceInSubtree state.scopeOccurrences root owner ||
         (calledInstanceClosure state root).contains owner.processInstanceId)
-      state.activityOccurrences).any (controllerNamesActivityOccurrence controller) = true :=
+      state.activityOccurrences (retainedCancellationRoot root disposition)).any (controllerNamesActivityOccurrence controller) = true :=
     List.any_eq_true.mpr ⟨record, List.mem_filter.mpr ⟨member, inside⟩, names⟩
   rw [kept.2] at withdrawn
   contradiction
 
 private theorem retained_census_of_no_withdrawn_claimant (records : List ActivityOccurrence)
-    (cancelled : ScopeOccurrenceId → Bool) (names : ActivityOccurrence → Bool)
-    (absent : (withdrawnByRegion cancelled records).any names = false) :
-    (retainedByRegion cancelled records).filter names = records.filter names := by
+    (cancelled : ScopeOccurrenceId → Bool) (names : ActivityOccurrence → Bool) (retainedRoot : Option ScopeOccurrenceId)
+    (absent : (withdrawnByRegion cancelled records retainedRoot).any names = false) :
+    (retainedByRegion cancelled records retainedRoot).filter names = records.filter names := by
   simp only [retainedByRegion, List.filter_filter]
   apply List.filter_congr
   intro record member
   by_cases named : names record = true
-  · have outside : recordInRegion cancelled record = false := by
+  · have outside : recordInRegion cancelled record retainedRoot = false := by
       apply Bool.eq_false_iff.mpr
       intro inside
-      have present : (withdrawnByRegion cancelled records).any names = true :=
+      have present : (withdrawnByRegion cancelled records retainedRoot).any names = true :=
         List.any_eq_true.mpr ⟨record, List.mem_filter.mpr ⟨member, inside⟩, named⟩
       rw [absent] at present
       contradiction
@@ -63,7 +63,7 @@ theorem cancelScopeSubtree_controller_activity_census (state : RuntimeState)
       state.activityOccurrences.filter (controllerNamesActivityOccurrence controller) := by
   have kept := (List.mem_filter.mp survives).2
   simp only [Bool.and_eq_true, Bool.not_eq_true'] at kept
-  exact retained_census_of_no_withdrawn_claimant _ _ _ kept.2
+  exact retained_census_of_no_withdrawn_claimant _ _ _ _ kept.2
 
 /-- PMI cancellation uses the same all-claimant withdrawal rule with its published controller
 identity. No successor controller/record binding is assumed. -/
@@ -80,7 +80,7 @@ theorem cancelScopeSubtree_parallel_controller_activity_census (state : RuntimeS
           ⟨activity.activityElementId.value⟩ activity.activation) := by
   have kept := (List.mem_filter.mp survives).2
   simp only [Bool.and_eq_true, Bool.not_eq_true'] at kept
-  exact retained_census_of_no_withdrawn_claimant _ _ _ kept.2
+  exact retained_census_of_no_withdrawn_claimant _ _ _ _ kept.2
 
 /-- The exact singleton Activity census of every retained SMI controller follows from the
 predecessor census and the actual identity-based controller withdrawal. -/

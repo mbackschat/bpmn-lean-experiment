@@ -11,6 +11,7 @@ import BpmnSemantics.SemanticProcess.ActivityDataInputOutput
 import BpmnSemantics.SemanticProcess.ActivityDataOutput
 import BpmnSemantics.SemanticProcess.MessagePayload
 import BpmnSemantics.SemanticProcess.MessageBoundedTask
+import BpmnSemantics.SemanticProcess.MessageMonitoredTask
 import BpmnSemantics.SemanticProcess.MessageKeyCorrelation
 import BpmnSemantics.SemanticProcess.CompensationActivityRetentionProducers
 import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshot
@@ -190,6 +191,14 @@ private def dataInputOutputStartBindingsAdmitted (program : Program)
                       { outcome := .rejected, state }
                 | none => { outcome := .rejected, state }
             | none => { outcome := .rejected, state }
+          else if isMessageMonitoredTaskDefinition program ⟨taskId.elementId.value⟩ then
+            match completeMessageMonitoredUserTask? program state taskId.processInstanceId
+                ⟨taskId.elementId.value⟩ taskId.activation submittedValues with
+            | some successor =>
+                if taskId.processInstanceId = instanceId then
+                  { outcome := .committed, state := successor }
+                else { outcome := .rejected, state }
+            | none => { outcome := .rejected, state }
           else if isMessageBoundedTaskDefinition program ⟨taskId.elementId.value⟩ then
             match completeMessageBoundedUserTask? program state taskId.processInstanceId
                 ⟨taskId.elementId.value⟩ taskId.activation submittedValues with
@@ -245,7 +254,7 @@ private def dataInputOutputStartBindingsAdmitted (program : Program)
                   { outcome := .rejected, state }
             | none => { outcome := .rejected, state }
           else if isMonitoredTaskDefinition program ⟨taskId.elementId.value⟩ then
-            match completeMonitoredUserTask? program state
+            match completeSelectedMonitoredUserTask? program state
                 taskId.processInstanceId ⟨taskId.elementId.value⟩
                 taskId.activation with
             | some successor =>
@@ -283,7 +292,9 @@ private def dataInputOutputStartBindingsAdmitted (program : Program)
       match state.control with
       | .running instanceId =>
           let delivery :=
-            if isMessageBoundaryDefinition program ⟨subscriptionId.elementId.value⟩ then
+            if isMonitoredMessageBoundaryDefinition program ⟨subscriptionId.elementId.value⟩ then
+              spawnFromMessageMonitoredUserTask? program state subscriptionId channel
+            else if isMessageBoundaryDefinition program ⟨subscriptionId.elementId.value⟩ then
               interruptMessageBoundedUserTask? program state subscriptionId channel
             else
               deliverMessage program state subscriptionId channel
@@ -346,12 +357,13 @@ private def dataInputOutputStartBindingsAdmitted (program : Program)
             | none => { outcome := .rejected, state }
           else
             match fireTimer program state timerId logicalTimeMs with
-            | some successor =>
+            | .ok (some successor) =>
                 if timerId.processInstanceId = instanceId then
                   { outcome := .committed, state := successor }
                 else
                   { outcome := .rejected, state }
-            | none => { outcome := .rejected, state }
+            | .ok none => { outcome := .rejected, state }
+            | .error .capacity => { outcome := .rolledBack, state }
       | .notStarted
       | .completed _
       | .cancelled _

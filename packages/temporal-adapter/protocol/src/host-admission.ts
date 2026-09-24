@@ -215,6 +215,7 @@ const managedClasses: ReadonlyArray<ManagedHostClass> = [
     operationClass: HostOperationClass.MonitoredActivityWait,
     isAdmissibleProgramForm: (operation) =>
       operation.kind === SemanticOperationKind.AwaitMonitoredUserTask &&
+      operation.boundaryTimer.recurrence === undefined &&
       operation.boundaryTimer.durationMs === 1_000,
     failure: {
       code: TemporalHostAdmissionFailureCode.MonitoredActivitySchedulerUnavailable,
@@ -265,8 +266,10 @@ function classifyHostOperation(
     case SemanticOperationKind.AwaitBoundedUserTask:
       return HostOperationClass.BoundedActivityWait;
     case SemanticOperationKind.AwaitMessageBoundedUserTask:
+    case SemanticOperationKind.AwaitMessageMonitoredUserTask:
       return HostOperationClass.MessageBoundedActivityWait;
     case SemanticOperationKind.EnterBoundedScope:
+    case SemanticOperationKind.EnterMonitoredScope:
       return HostOperationClass.BoundedScopeWait;
     // Managed rather than a token split, even though firing creates a second live branch: the split
     // is semantic and has no `duplicate` operation to declare it, so `canSplitTokens` is silent here

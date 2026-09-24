@@ -77,7 +77,7 @@ export function deriveInternalRegionalPublication(
       addInstant(instant, started, ended);
       const retainRoot = selection.kind === SemanticOperationKind.TerminateScope;
       const handlers = scopeCancellationHandlerWaitIds(program, state, selection.kind === SemanticOperationKind.ThrowError
-        ? selection.selected.attached : selection.selected.occurrence);
+        ? selection.selected.attached : selection.selected.occurrence, retainRoot);
       if (selection.kind === SemanticOperationKind.ThrowError) {
         const boundary = candidateElementOccurrence(program, state,
           selection.operation.handler.origin.boundaryEventId, selection.selected.parent);

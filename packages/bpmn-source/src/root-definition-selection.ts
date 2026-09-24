@@ -1,5 +1,6 @@
 import {
   MessageChannelKind,
+  REPEATABLE_EVENT_SUBSCRIPTIONS_CHECKPOINT_PROFILE_ID,
   SemanticProfileId,
   isWellFormedWireString,
 } from "@bpmn-lean/semantic-core";
@@ -50,18 +51,20 @@ type DirectMessageRootArtifacts = Readonly<{
   >;
 }>;
 
-export type MessageRootArtifacts =
+type MessageRootArtifact =
   | OperationMessageRootArtifacts
   | DirectMessageRootArtifacts;
 
+export type MessageRootArtifacts = ReadonlyArray<MessageRootArtifact>;
+
 export function isOperationMessageRootArtifacts(
-  artifacts: MessageRootArtifacts | undefined,
+  artifacts: MessageRootArtifact | undefined,
 ): artifacts is OperationMessageRootArtifacts {
   return artifacts?.channel.kind === MessageChannelKind.OperationMessage;
 }
 
 export function isDirectMessageRootArtifacts(
-  artifacts: MessageRootArtifacts | undefined,
+  artifacts: MessageRootArtifact | undefined,
 ): artifacts is DirectMessageRootArtifacts {
   return artifacts?.channel.kind === MessageChannelKind.DirectMessage;
 }
@@ -96,6 +99,8 @@ export function selectRootDefinitions(
     return unselected([]);
   }
   switch (semanticProfile) {
+    case REPEATABLE_EVENT_SUBSCRIPTIONS_CHECKPOINT_PROFILE_ID:
+      return selected(selectSubscriptionRoots(rootElements, process));
     case SemanticProfileId.MessageStart:
     case SemanticProfileId.IntermediateCatchMessage:
     case SemanticProfileId.EventBasedGatewayMessageTimer:
@@ -184,41 +189,11 @@ function selectMessageRoots(
     return undefined;
   }
   const operations = asElementArray(interface_.operations);
-  const operation = operations?.[0];
-  const messageId = readId(message);
-  const interfaceId = readId(interface_);
-  const interfaceOperationId =
-    operation === undefined ? undefined : readId(operation);
-  if (
-    operations?.length !== 1 ||
-    operation === undefined ||
-    operation.$type !== bpmnTypes.operationType ||
-    !hasOnlyModelledKeys(operation, ["$type", "id", "name"]) ||
-    typeof operation.name !== "string" ||
-    operation.inMessageRef !== message ||
-    operation.outMessageRef !== undefined ||
-    operation.errorRefs !== undefined ||
-    operation.implementationRef !== undefined ||
-    messageId === undefined ||
-    interfaceId === undefined ||
-    interfaceOperationId === undefined
-  ) {
-    return undefined;
-  }
-  return {
-    process,
-    messageArtifacts: {
-      message,
-      interface: interface_,
-      operation,
-      channel: {
-        kind: MessageChannelKind.OperationMessage,
-        interfaceId,
-        interfaceOperationId,
-        messageId,
-      },
-    },
-    errorArtifact: undefined,
+  if (operations?.length !== 1) return undefined;
+  const selection = selectSubscriptionRoots(rootElements, process);
+  return selection === undefined ? undefined : {
+    ...selection,
+    messageArtifacts: selection.messageArtifacts?.filter(isOperationMessageRootArtifacts),
   };
 }
 
@@ -245,15 +220,63 @@ function selectDirectMessageRoots(
   }
   return {
     process,
-    messageArtifacts: {
+    messageArtifacts: [{
       message,
       channel: {
         kind: MessageChannelKind.DirectMessage,
         messageId,
       },
-    },
+    }],
     errorArtifact: undefined,
   };
+}
+
+/** Resolves each selected channel from its own root references, allowing mixed catch/Receive populations. */
+function selectSubscriptionRoots(
+  rootElements: ReadonlyArray<ElementRecord>,
+  process: ElementRecord,
+): RootDefinitionSelection | undefined {
+  const messages = elementsOfType(rootElements, bpmnTypes.messageType);
+  const interfaces = elementsOfType(rootElements, bpmnTypes.interfaceType);
+  if (rootElements.length !== 1 + messages.length + interfaces.length) {
+    return undefined;
+  }
+  const artifacts: MessageRootArtifact[] = [];
+  for (const message of messages) {
+    const messageId = readId(message);
+    if (messageId === undefined ||
+        !hasOnlyModelledKeys(message, ["$type", "id", "name"]) ||
+        message.itemRef !== undefined) {
+      return undefined;
+    }
+    artifacts.push({ message, channel: { kind: MessageChannelKind.DirectMessage, messageId } });
+  }
+  for (const interface_ of interfaces) {
+    const interfaceId = readId(interface_);
+    const operations = asElementArray(interface_.operations);
+    if (interfaceId === undefined || typeof interface_.name !== "string" ||
+        !hasOnlyModelledKeys(interface_, ["$type", "id", "name", "operations"]) ||
+        operations === undefined || operations.length === 0) {
+      return undefined;
+    }
+    for (const operation of operations) {
+      const message = messages.find((candidate) => candidate === operation.inMessageRef);
+      const messageId = message === undefined ? undefined : readId(message);
+      const interfaceOperationId = readId(operation);
+      if (message === undefined || messageId === undefined || interfaceOperationId === undefined ||
+          operation.$type !== bpmnTypes.operationType ||
+          !hasOnlyModelledKeys(operation, ["$type", "id", "name"]) ||
+          typeof operation.name !== "string" ||
+          operation.outMessageRef !== undefined || operation.errorRefs !== undefined ||
+          operation.implementationRef !== undefined) {
+        return undefined;
+      }
+      artifacts.push({ message, interface: interface_, operation, channel: {
+        kind: MessageChannelKind.OperationMessage, interfaceId, interfaceOperationId, messageId,
+      } });
+    }
+  }
+  return { process, messageArtifacts: artifacts, errorArtifact: undefined };
 }
 
 function selectErrorRoots(

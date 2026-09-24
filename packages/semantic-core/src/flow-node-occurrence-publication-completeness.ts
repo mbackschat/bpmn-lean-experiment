@@ -215,6 +215,7 @@ function internalDelta(
         transitionIndex,
       );
     }
+    case SemanticOperationKind.AwaitMessageMonitoredUserTask:
     case SemanticOperationKind.AwaitMessageBoundedUserTask:
       return lifecycleDelta([
         requireWaitStart(supplied, processId, operation.task.elementId, owner),
@@ -250,6 +251,7 @@ function internalDelta(
         requireWaitStart(supplied, processId, operation.timer.elementId, owner),
       ], [], [operationInstant], commandId, transitionIndex);
     case SemanticOperationKind.EnterScope:
+    case SemanticOperationKind.EnterMonitoredScope:
     case SemanticOperationKind.EnterBoundedScope:
       return lifecycleDelta([
         requireScopeStart(
@@ -496,7 +498,8 @@ function retainedMessageBoundaryPairsAreExact(
   open: readonly OpenOccurrence[],
 ): boolean {
   const operations = program.operations.filter((operation) =>
-    operation.kind === SemanticOperationKind.AwaitMessageBoundedUserTask
+    operation.kind === SemanticOperationKind.AwaitMessageBoundedUserTask ||
+    operation.kind === SemanticOperationKind.AwaitMessageMonitoredUserTask
   );
   const pairs = operations.flatMap((operation) =>
     open.flatMap((host) => {

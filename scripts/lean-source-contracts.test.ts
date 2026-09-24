@@ -687,7 +687,7 @@ const checkedNodeWireKindAliases = new Map<string, string>([
 
 test("checked-node wire decoding covers every semantic variant", () => {
   const contract = readFileSync(
-    fileURLToPath(new URL("../BpmnSemantics/SemanticProcessContract.lean", import.meta.url)),
+    fileURLToPath(new URL("../BpmnSemantics/CheckedProcessContract.lean", import.meta.url)),
     "utf8",
   );
   const decoder = readFileSync(
@@ -749,7 +749,7 @@ test("Semantic-operation wire decoding covers every semantic variant", () => {
 
 test("internal scheduling-mode wire decoding covers every closed variant", () => {
   const contract = readFileSync(
-    fileURLToPath(new URL("../BpmnSemantics/SemanticProcessContract.lean", import.meta.url)),
+    fileURLToPath(new URL("../BpmnSemantics/CheckedProcessContract.lean", import.meta.url)),
     "utf8",
   );
   const decoder = readFileSync(

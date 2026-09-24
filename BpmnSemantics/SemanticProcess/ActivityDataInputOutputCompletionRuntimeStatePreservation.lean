@@ -487,7 +487,10 @@ theorem dataInputOutputCompletionStep_preserves_runtimeStateWellFormed
         all_occursOnce_filter sameActivityOccurrence
           (fun candidate => by simp [sameActivityOccurrence]) before.activityOccurrences _ activityIds
       have admitted := capabilities
-      simp only [programProfileCapabilitiesValid, Bool.and_eq_true] at admitted
+      have legacy : program.identity.semanticProfile ≠ repeatableSubscriptionCheckpointProfileId := by
+        rw [profile]
+        simp [activityDataInputOutputUserTaskProfileId, repeatableSubscriptionCheckpointProfileId]
+      simp only [programProfileCapabilitiesValid, legacy, ↓reduceIte, Bool.and_eq_true] at admitted
       have noSequential := admitted.1.1
       simp [programSequentialMultiInstanceProfileMatches, profile,
         activityDataInputOutputUserTaskProfileId, sequentialMultiInstanceUserTaskProfileId]

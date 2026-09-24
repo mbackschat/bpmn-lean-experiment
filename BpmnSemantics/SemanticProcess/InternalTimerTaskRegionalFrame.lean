@@ -131,20 +131,20 @@ theorem timer_task_cancellation_commutes (program : Program) (state : RuntimeSta
   let cancelled := fun owner => occurrenceInSubtree state.scopeOccurrences root owner ||
     (calledInstanceClosure state root).contains owner.processInstanceId
   change cancelled owner = false at outside
-  have populations : withdrawnByRegion cancelled (insertActivityOccurrence patch.record state.activityOccurrences) =
-      withdrawnByRegion cancelled state.activityOccurrences := by
+  have populations : withdrawnByRegion cancelled (insertActivityOccurrence patch.record state.activityOccurrences) (retainedCancellationRoot root disposition) =
+      withdrawnByRegion cancelled state.activityOccurrences (retainedCancellationRoot root disposition) := by
     rw [withdrawnByRegion, insertActivityOccurrence_eq_canonicalInsertBy,
       filter_canonicalInsertBy_rejected _ _ _ _ (by
         simp [patch, makeInternalTimerTaskPatch, recordInRegion, outside])]
     rfl
   have unattached : anyTimerIdNamesWait
-      (attachedTimersOf (withdrawnByRegion cancelled state.activityOccurrences)) patch.timer = false := by
+      (attachedTimersOf (withdrawnByRegion cancelled state.activityOccurrences (retainedCancellationRoot root disposition))) patch.timer = false := by
     apply List.any_eq_false.mpr
     intro id member
     obtain ⟨record, recordMember, timerMember⟩ := List.mem_flatMap.mp member
     exact List.any_eq_false.mp (unclaimed record (List.mem_filter.mp recordMember).1) id timerMember
   have keptTimer : (!cancelled patch.timer.owner && !anyTimerIdNamesWait
-      (attachedTimersOf (withdrawnByRegion cancelled state.activityOccurrences)) patch.timer) = true := by
+      (attachedTimersOf (withdrawnByRegion cancelled state.activityOccurrences (retainedCancellationRoot root disposition))) patch.timer) = true := by
     simp [patch, makeInternalTimerTaskPatch, outside] at unattached ⊢
     exact unattached
   have tokenFrame : (removeToken state.tokens contract.input owner).filter (fun token => !cancelled token.owner) =
@@ -163,10 +163,10 @@ theorem timer_task_cancellation_commutes (program : Program) (state : RuntimeSta
     state.waits taskOrder (by simp [outside])
   have timerFrame := filter_canonicalInsertBy_retained timerWaitBefore regional_timerWaitBefore_compose
     (fun wait => !cancelled wait.owner &&
-      !anyTimerIdNamesWait (attachedTimersOf (withdrawnByRegion cancelled state.activityOccurrences)) wait)
+      !anyTimerIdNamesWait (attachedTimersOf (withdrawnByRegion cancelled state.activityOccurrences (retainedCancellationRoot root disposition))) wait)
     patch.timer state.timerWaits timerOrder keptTimer
   have recordFrame := filter_canonicalInsertBy_retained activityOccurrenceBefore
-    regional_activityOccurrenceBefore_compose (fun record => !recordInRegion cancelled record)
+    regional_activityOccurrenceBefore_compose (fun record => !recordInRegion cancelled record (retainedCancellationRoot root disposition))
     patch.record state.activityOccurrences recordOrder (by simp [patch, makeInternalTimerTaskPatch, recordInRegion, outside])
   dsimp only [cancelled, patch, makeInternalTimerTaskPatch] at populations taskFrame timerFrame recordFrame tokenFrame
   simp only [calledInstanceClosure] at populations taskFrame timerFrame recordFrame tokenFrame

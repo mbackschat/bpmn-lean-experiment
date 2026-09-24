@@ -88,18 +88,20 @@ theorem cancelScopeSubtree_message_projection_validity (program : Program) (stat
   let cancelled := fun owner => occurrenceInSubtree state.scopeOccurrences root owner ||
     (calledInstanceClosure state root).contains owner.processInstanceId
   let keepTask := fun wait : UserTaskWait => !cancelled wait.owner
-  let keepRecord := fun record : ActivityOccurrence => !recordInRegion cancelled record
+  let keepRecord := fun record : ActivityOccurrence => !recordInRegion cancelled record (retainedCancellationRoot root disposition)
   let keepMessage := fun wait : MessageWait => !cancelled wait.owner &&
-    !activityRecordsAttachMessageWait (withdrawnByRegion cancelled state.activityOccurrences) wait
+    !activityRecordsAttachMessageWait (withdrawnByRegion cancelled state.activityOccurrences (retainedCancellationRoot root disposition)) wait
   have tasksFrame : (cancelScopeSubtree state root disposition).waits = state.waits.filter keepTask := rfl
   have messagesFrame : (cancelScopeSubtree state root disposition).messageWaits = state.messageWaits.filter keepMessage := rfl
   have recordsFrame : (cancelScopeSubtree state root disposition).activityOccurrences = state.activityOccurrences.filter keepRecord := rfl
   simp only [messageBoundedProjectionValid, List.all_eq_true] at prior ⊢
   intro operation member
   have previous := prior operation member
+  let original := operation
   cases operation <;> try exact previous
-  case awaitMessageBoundedUserTask id origin input task boundary =>
-    let operation := SemanticOperation.awaitMessageBoundedUserTask id origin input task boundary
+  all_goals
+    rename_i id origin input task boundary
+    let operation := original
     let tasks := state.waits.filter fun wait =>
       FlowNodeOccurrenceProgramValidity.Internal.operationOwnedBy program operation wait.owner && decide (wait.task.id = task.id)
     let messages := state.messageWaits.filter fun wait =>
@@ -117,7 +119,7 @@ theorem cancelScopeSubtree_message_projection_validity (program : Program) (stat
       cases inside : cancelled record.owner with
       | true => simp [keepMessage, keepTask, messageOwner, taskOwner, inside]
       | false =>
-          have outside : recordInRegion cancelled record = false := by simp [recordInRegion, body, inside]
+          have outside : recordInRegion cancelled record (retainedCancellationRoot root disposition) = false := by simp [recordInRegion, body, inside]
           have names : anyMessageIdNamesWait record.messageHandlerOccurrences messageWait = true := by
             simp [ActivityOccurrence.messageHandlerOccurrences, handlers, anyMessageIdNamesWait, messageIdNamesWait]
           have retained := retained_message_live state root disposition record messageWait unique

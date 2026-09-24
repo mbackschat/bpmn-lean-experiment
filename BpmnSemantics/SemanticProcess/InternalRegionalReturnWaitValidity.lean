@@ -75,7 +75,8 @@ theorem regional_return_boundary_timer_operation_frame (program : Program) (befo
     · rfl
     · intro record _ owner
       simp [owner, Ne.symm different]
-  case enterBoundedScope id origin input entry definition boundary =>
+  case enterBoundedScope id origin input entry definition boundary
+    | enterMonitoredScope id origin input entry definition boundary =>
     change (if !operationOwnedBy program _ timer.owner then false else _ && _ && decide (_ = 1)) = _
     rw [regional_return_activity_filter_frame before after root.id _ activities]
     · have counts (record : ActivityOccurrence) := regional_return_scope_filter_frame before after root

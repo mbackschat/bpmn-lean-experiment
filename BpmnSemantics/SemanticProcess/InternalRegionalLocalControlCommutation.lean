@@ -104,17 +104,17 @@ theorem regional_localPatch_successors_equal (program : Program) (before after a
       have quiet := localControl_quiescent_frame before patch regional.selection.root.id
         (by intro place member same; have outside := tokenOutside place member; rw [same, rootInside] at outside; contradiction)
         (by intro record changed same; have outside := branchOutside record changed; rw [same, rootInside] at outside; contradiction)
-      have commute := localControl_completion_commutes program before patch hosting definition output regional.selection.root
+      have commute := localControl_selected_completion_commutes program before patch hosting definition output regional.selection.root
         running census quiet (by
           intro owner place parent produced
           simp only [regionalBaseFootprint?, operationEq, kind, parent, produced] at baseFound
           cases baseFound
           exact congrArg RuntimeState.tokens (localControl_addToken_commutes before patch owner place ordered
             (continuation owner place (baseWrites _ (by simp)))))
-      have raw : completeBoundedScope? program before definition output = some after := by
+      have raw : completeSelectedScope? program before definition output = some after := by
         simp only [fire?, snapshots] at fired
         exact fired
-      have localRaw : completeBoundedScope? program (patch.apply before) definition output = some afterLocal := by
+      have localRaw : completeSelectedScope? program (patch.apply before) definition output = some afterLocal := by
         simp only [fire?, snapshots] at localFired
         exact localFired
       rw [raw] at commute

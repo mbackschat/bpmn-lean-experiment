@@ -25,7 +25,37 @@ theorem prepared_timer_task_transition_pair (program : Program) (state : Runtime
       prepareInternalTimerTaskContract? program (other.apply program state) contract = some patch ∧
       other.apply program (applyInternalTimerTaskPatch state patch) =
         applyInternalTimerTaskPatch (other.apply program state) patch := by
+  have timerMember : contract.operation ∈ program.operations := by
+    obtain ⟨_, owner, _, _, _, _, _, selected, _⟩ :=
+      prepareInternalTimerTaskContract_facts program state contract patch taskFound
+    obtain ⟨_, census, _⟩ := exactProgramSelection_parts program contract.operation owner programValid selected
+    exact (List.mem_filter.mp (show contract.operation ∈ program.operations.filter _ by rw [census]; simp)).1
+  have timerBoundary : repeatableSubscriptionBoundaryOperation contract.operation = true := by
+    cases kind : contract.kind <;> simp [InternalTimerTaskContract.operation, kind, repeatableSubscriptionBoundaryOperation]
   cases other with
+  | messageTask otherContract otherPatch =>
+      obtain ⟨_, owner, _, _, _, _, _, selected, _⟩ :=
+        prepareInternalMessageTaskContract_facts program state otherContract otherPatch otherFound.2
+      obtain ⟨_, census, _⟩ := exactProgramSelection_parts program otherContract.operation owner programValid selected
+      have member : otherContract.operation ∈ program.operations :=
+        (List.mem_filter.mp (show otherContract.operation ∈ program.operations.filter _ by rw [census]; simp)).1
+      have boundary : repeatableSubscriptionBoundaryOperation otherContract.operation = true := by
+        cases kind : otherContract.kind <;> simp [InternalMessageTaskContract.operation, kind, repeatableSubscriptionBoundaryOperation]
+      have same := repeatableSubscriptionProgramGraph_boundary_unique program otherFound.1.2.2
+        contract.operation otherContract.operation timerMember member timerBoundary boundary
+      cases leftKind : contract.kind <;> cases rightKind : otherContract.kind <;>
+        simp [InternalTimerTaskContract.operation, InternalMessageTaskContract.operation, leftKind, rightKind] at same
+  | boundedScope otherContract otherPatch =>
+      obtain ⟨_, _, _, _, _, _, _, _, _, census, _⟩ :=
+        prepareInternalBoundedScope_facts program state otherContract otherPatch otherFound.2
+      have member : otherContract.operation ∈ program.operations :=
+        (List.mem_filter.mp (show otherContract.operation ∈ program.operations.filter _ by rw [census]; simp)).1
+      have boundary : repeatableSubscriptionBoundaryOperation otherContract.operation = true := by
+        cases disposition : otherContract.disposition <;> simp [InternalBoundedScopeContract.operation, disposition, repeatableSubscriptionBoundaryOperation]
+      have same := repeatableSubscriptionProgramGraph_boundary_unique program otherFound.1.2.2
+        contract.operation otherContract.operation timerMember member timerBoundary boundary
+      cases leftKind : contract.kind <;> cases rightKind : otherContract.disposition <;>
+        simp [InternalTimerTaskContract.operation, InternalBoundedScopeContract.operation, leftKind, rightKind] at same
   | timerTask otherContract otherPatch =>
       exact prepared_timer_task_pair_commutes program state contract otherContract patch otherPatch
         taskFound otherFound canonical independent

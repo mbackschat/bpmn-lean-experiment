@@ -44,7 +44,9 @@ Production closure supports independent batches from ordinary `awaitUserTask`, `
 
 [Selected joins](INTERNAL-COMMUTATION-PROPOSAL.md#selected-join-dependency-checkpoint): approved TypeScript dependencies and Lean readiness frames.
 
-[Regional preparation](INTERNAL-COMMUTATION-PROPOSAL.md#regional-preparation-prerequisite), [local-control](INTERNAL-COMMUTATION-PROPOSAL.md#regionallocal-control-commutation-and-accepted-publication), [arming](INTERNAL-COMMUTATION-PROPOSAL.md#regionalarming-outcome), [regional pairs](INTERNAL-COMMUTATION-PROPOSAL.md#regionalregional-outcome), and [scope-creation pairs](INTERNAL-COMMUTATION-PROPOSAL.md#regionalscope-creation-outcome) are accepted after independent review and clean integration. `AOO-RETAINED-BODY-01` still limits bounded-Terminate liveness.
+Private [subscriptions](INTERNAL-COMMUTATION-PROPOSAL.md#subscription-checkpoint-dependency-reassessment): quantified scheduling and Lean/core pass; review remains open.
+
+[Regional preparation](INTERNAL-COMMUTATION-PROPOSAL.md#regional-preparation-prerequisite), [local-control](INTERNAL-COMMUTATION-PROPOSAL.md#regionallocal-control-commutation-and-accepted-publication), [arming](INTERNAL-COMMUTATION-PROPOSAL.md#regionalarming-outcome), [regional pairs](INTERNAL-COMMUTATION-PROPOSAL.md#regionalregional-outcome), and [scope-creation pairs](INTERNAL-COMMUTATION-PROPOSAL.md#regionalscope-creation-outcome) are accepted after independent review and clean integration. Subscription work resolves `AOO-RETAINED-BODY-01` privately.
 
 The independently approved first boundary Compensation retention checkpoint implements completed-Activity representation and pure transition preparation.
 

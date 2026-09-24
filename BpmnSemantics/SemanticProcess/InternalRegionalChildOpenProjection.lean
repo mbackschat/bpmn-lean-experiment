@@ -154,11 +154,11 @@ theorem preparedChildComplete_accepted_lifecycle (program : Program) (before : R
   have same : fieldsAfter = after := Option.some.inj (fieldsApplied.symm.trans applied)
   subst fieldsAfter
   have snapshots := (prepareInternalRegional_facts program before _ prepared found).1
-  have result : completeBoundedScope? program before definition (some output) = some after := by
+  have result : completeSelectedScope? program before definition (some output) = some after := by
     simp only [fire?, snapshots] at fired
-    change completeBoundedScope? program before definition (some output) = some after at fired
+    change completeSelectedScope? program before definition (some output) = some after at fired
     exact fired
-  have parent := completeBoundedScope_child_has_parent program before after definition output prepared.selection.root children result
+  have parent := completeSelectedScope_child_has_parent program before after definition output prepared.selection.root children result
   have ends := preparedChildComplete_retained_ends program before id origin definition output prepared parent found
   have removal : removeEndedFlowNodeOccurrences current prepared.publicationTemplate.retainedEnds =
       current.filter (fun entry => decide (entry.anchor ≠ .scope prepared.selection.root.id)) := by

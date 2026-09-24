@@ -16,6 +16,7 @@ import {
   EffectOperation,
   EffectProtocol,
   GatewayDirection,
+  REPEATABLE_EVENT_SUBSCRIPTIONS_CHECKPOINT_PROFILE_ID,
 } from "@bpmn-lean/semantic-core";
 import type {
   CheckedNode,
@@ -134,11 +135,13 @@ export function projectCheckedNodes(
           id,
           flows,
           rootSelection.messageArtifacts,
+          semanticProfile,
         ) ?? projectTimerBoundaryEvent(
           element,
           id,
           flows,
           bpmnTypes.timerEventDefinitionType,
+          semanticProfile,
         ) ??
           projectBoundaryErrorEvent(
           element,
@@ -188,7 +191,7 @@ export function projectCheckedNodes(
           ? undefined
           : projectConfiguredTask(element, id, configuredTaskPolicy);
       case bpmnTypes.parallelGatewayType: {
-        const direction = classifyGateway(element, id, flows);
+        const direction = classifyGateway(element, id, flows, semanticProfile);
         return direction === undefined
           ? undefined
           : {
@@ -343,6 +346,7 @@ function classifyGateway(
   element: ElementRecord,
   id: string,
   flows: ReadonlyArray<CheckedSequenceFlow>,
+  semanticProfile: string,
 ): GatewayDirection | undefined {
   if (
     !hasOnlyProjectedFlowElementKeys(
@@ -355,7 +359,8 @@ function classifyGateway(
   const incoming = flows.filter(({ targetId }) => targetId === id).length;
   const outgoing = flows.filter(({ sourceId }) => sourceId === id).length;
   const direction =
-    incoming === 1 && outgoing === 2
+    incoming === 1 && (semanticProfile === REPEATABLE_EVENT_SUBSCRIPTIONS_CHECKPOINT_PROFILE_ID
+      ? outgoing >= 2 : outgoing === 2)
       ? GatewayDirection.Diverging
       : incoming === 2 && outgoing === 1
         ? GatewayDirection.Converging

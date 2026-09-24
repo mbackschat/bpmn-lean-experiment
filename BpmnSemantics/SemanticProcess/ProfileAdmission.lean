@@ -13,7 +13,7 @@ theorem parallelMultiInstanceProfile_has_one_definition_scope (program : Program
     (profile : program.identity.semanticProfile = parallelMultiInstanceUserTaskProfileId)
     (capabilities : programProfileCapabilitiesValid program = true) :
     program.definitionScopes.length = 1 := by
-  simp only [programProfileCapabilitiesValid, Bool.and_eq_true] at capabilities
+  simp only [programProfileCapabilitiesValid] at capabilities
   rw [profile] at capabilities
   simp [programShape?, parallelMultiInstanceUserTaskProfileId,
     sequentialMultiInstanceUserTaskProfileId] at capabilities
@@ -27,7 +27,7 @@ theorem parallelMultiInstanceProfile_has_no_event_race_operation (program : Prog
       match operation with
       | .awaitEventRace .. => False
       | _ => True := by
-  simp only [programProfileCapabilitiesValid, Bool.and_eq_true] at capabilities
+  simp only [programProfileCapabilitiesValid] at capabilities
   rw [profile] at capabilities
   simp [programShape?, parallelMultiInstanceUserTaskProfileId,
     sequentialMultiInstanceUserTaskProfileId] at capabilities

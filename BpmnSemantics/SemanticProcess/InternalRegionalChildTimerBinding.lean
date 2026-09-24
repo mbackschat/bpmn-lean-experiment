@@ -9,15 +9,18 @@ namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
 open BpmnSemantics FlowNodeOccurrenceProgramValidity.Internal
 
-theorem valid_bounded_timer_binding
+theorem valid_scope_boundary_timer_binding
     (program : Program) (state : RuntimeState) (timer : TimerWait)
+    (entryOperation : SemanticOperation)
     (id : OperationId) (origin : BpmnElementOrigin)
     (input entry : ControlPlaceId) (definition : DefinitionScopeId)
     (boundary : BoundaryTimerArm)
     (programValid : programWellFormed program = true)
     (prior : flowNodeOccurrenceWaitProgramValidity program state = true)
     (timerMember : timer ∈ state.timerWaits)
-    (entryMember : .enterBoundedScope id origin input entry definition boundary ∈ program.operations)
+    (entryMember : entryOperation ∈ program.operations)
+    (entryShape : entryOperation = .enterBoundedScope id origin input entry definition boundary ∨
+      entryOperation = .enterMonitoredScope id origin input entry definition boundary)
     (element : timer.elementId = boundary.elementId) :
     flowNodeOccurrenceBoundaryTimerBound program state timer = true ∧
       timer.output = boundary.output ∧
@@ -53,36 +56,67 @@ theorem valid_bounded_timer_binding
          · contradiction
          · simp only [Bool.and_eq_true, decide_eq_true_eq] at matching
            simp_all)
-  have selected := boundedCompletion_timer_operation_binding program id origin input entry definition boundary
-    candidate programValid entryMember member.1 (by simpa only [element] using declared)
+  have entryDeclares : operationDeclaresWaitKey entryOperation (timerWaitDeclarationKey boundary.elementId) = true := by
+    rcases entryShape with rfl | rfl <;> simp [operationDeclaresWaitKey, operationWaitDeclarationKeys]
+  have declarers := programWellFormed_waitDeclarer program entryOperation
+    (timerWaitDeclarationKey boundary.elementId) programValid entryMember entryDeclares
+  have declaredMember : candidate ∈ program.operations.filter (fun operation =>
+      operationDeclaresWaitKey operation (timerWaitDeclarationKey boundary.elementId)) :=
+    List.mem_filter.mpr ⟨member.1, by simpa only [element] using declared⟩
+  rw [declarers] at declaredMember
+  have selected : candidate = entryOperation := List.mem_singleton.mp declaredMember
   subst candidate
-  refine ⟨?_, ?_⟩
-  · unfold flowNodeOccurrenceBoundaryTimerBound
-    rw [← census]
-    congr 2
-    apply congrArg List.length
-    apply List.filter_congr
-    intro operation operationMember
-    have only := congrArg (fun operations : List SemanticOperation => operation ∈ operations) exactCandidate
-    simp only [List.mem_filter, operationMember, true_and, List.mem_singleton] at only
-    cases operation <;> try rfl
-    all_goals first
-      | (have failed := mt (Eq.mp only) (by intro impossible; cases impossible)
-         change (if !operationOwnedBy program _ timer.owner then false else false) = _
-         simp only [ite_self]
-         exact (Bool.eq_false_iff.mpr failed).symm)
-      | (change (if !operationOwnedBy program _ timer.owner then false else _) =
-          (if !operationOwnedBy program _ timer.owner then false else
-            if !operationOwnedBy program _ timer.owner then false else _)
-         split <;> rfl)
-  ·
-    have matched := member.2
-    change (if !operationOwnedBy program _ timer.owner then false else
-      if !operationOwnedBy program _ timer.owner then false else _ && _ && _) = true at matched
-    split at matched
-    · contradiction
-    · simp only [Bool.and_eq_true, decide_eq_true_eq] at matched ⊢
-      exact ⟨matched.1.2.symm, matched.2⟩
+  rcases entryShape with rfl | rfl
+  all_goals
+    refine ⟨?_, ?_⟩
+    · unfold flowNodeOccurrenceBoundaryTimerBound
+      rw [← census]
+      congr 2
+      apply congrArg List.length
+      apply List.filter_congr
+      intro operation operationMember
+      have only := congrArg (fun operations : List SemanticOperation => operation ∈ operations) exactCandidate
+      simp only [List.mem_filter, operationMember, true_and, List.mem_singleton] at only
+      cases operation <;> try rfl
+      all_goals first
+        | (have failed := mt (Eq.mp only) (by intro impossible; cases impossible)
+           change (if !operationOwnedBy program _ timer.owner then false else false) = _
+           simp only [ite_self]
+           exact (Bool.eq_false_iff.mpr failed).symm)
+        | (change (if !operationOwnedBy program _ timer.owner then false else _) =
+            (if !operationOwnedBy program _ timer.owner then false else
+              if !operationOwnedBy program _ timer.owner then false else _)
+           split <;> rfl)
+    ·
+      have matched := member.2
+      change (if !operationOwnedBy program _ timer.owner then false else
+        if !operationOwnedBy program _ timer.owner then false else _ && _ && _) = true at matched
+      split at matched
+      · contradiction
+      · simp only [Bool.and_eq_true, decide_eq_true_eq] at matched ⊢
+        exact ⟨matched.1.2.symm, matched.2⟩
+
+theorem valid_bounded_timer_binding
+    (program : Program) (state : RuntimeState) (timer : TimerWait)
+    (id : OperationId) (origin : BpmnElementOrigin)
+    (input entry : ControlPlaceId) (definition : DefinitionScopeId)
+    (boundary : BoundaryTimerArm)
+    (programValid : programWellFormed program = true)
+    (prior : flowNodeOccurrenceWaitProgramValidity program state = true)
+    (timerMember : timer ∈ state.timerWaits)
+    (entryMember : .enterBoundedScope id origin input entry definition boundary ∈ program.operations)
+    (element : timer.elementId = boundary.elementId) :
+    flowNodeOccurrenceBoundaryTimerBound program state timer = true ∧
+      timer.output = boundary.output ∧
+      (state.activityOccurrences.filter fun record =>
+        record.owner = timer.owner && recordAttaches record
+          { processInstanceId := timer.processInstanceId, elementId := ⟨timer.elementId.value⟩, activation := timer.activation } &&
+          (state.scopeOccurrences.filter fun child =>
+            decide (child.id.definitionScopeId = definition && child.parent = some timer.owner) &&
+              activityBodyScope? record == some child.id).length = 1).length = 1 := by
+  exact valid_scope_boundary_timer_binding program state timer
+    (.enterBoundedScope id origin input entry definition boundary) id origin input entry definition boundary
+    programValid prior timerMember entryMember (.inl rfl) element
 
 /-- The selected deadline's unique declaration makes it private before completion. -/
 theorem completionWithdrawal_deadline_binding (program : Program) (state : RuntimeState)

@@ -56,25 +56,27 @@ theorem regional_cancellation_control_filters (program : Program) (before : Runt
     intro branch member seen
     simp [branches branch member seen]
 
+private theorem ordinary_completion_control_fields (before : RuntimeState)
+    (definition : DefinitionScopeId) (output : Option ControlPlaceId) (completed : RuntimeState)
+    (ordinary : completeScopeState? before definition output = some completed) :
+    completed.logicalTimeMs = before.logicalTimeMs ∧ completed.variables.process = before.variables.process ∧
+      completed.selectedBranchSets = before.selectedBranchSets := by
+  unfold completeScopeState? at ordinary
+  split at ordinary
+  · split at ordinary
+    · simp at ordinary
+    · unfold completeQuiescentScope? at ordinary
+      repeat' split at ordinary
+      all_goals first
+        | (simp at ordinary; done)
+        | (simp only [Option.some.injEq] at ordinary; subst completed; exact ⟨rfl, rfl, rfl⟩)
+  · simp at ordinary
+
 theorem regional_completion_control_fields (program : Program) (before after : RuntimeState)
     (definition : DefinitionScopeId) (output : Option ControlPlaceId)
     (result : completeBoundedScope? program before definition output = some after) :
     after.logicalTimeMs = before.logicalTimeMs ∧ after.variables.process = before.variables.process ∧
       after.selectedBranchSets = before.selectedBranchSets := by
-  have ordinaryFields (completed : RuntimeState)
-      (ordinary : completeScopeState? before definition output = some completed) :
-      completed.logicalTimeMs = before.logicalTimeMs ∧ completed.variables.process = before.variables.process ∧
-        completed.selectedBranchSets = before.selectedBranchSets := by
-    unfold completeScopeState? at ordinary
-    split at ordinary
-    · split at ordinary
-      · simp at ordinary
-      · unfold completeQuiescentScope? at ordinary
-        repeat' split at ordinary
-        all_goals first
-          | (simp at ordinary; done)
-          | (simp only [Option.some.injEq] at ordinary; subst completed; exact ⟨rfl, rfl, rfl⟩)
-    · simp at ordinary
   unfold completeBoundedScope? at result
   cases ordinary : completeScopeState? before definition output with
   | none => simp [ordinary] at result
@@ -83,7 +85,16 @@ theorem regional_completion_control_fields (program : Program) (before after : R
       repeat' split at result
       all_goals first
         | (simp at result; done)
-        | (simp only [Option.some.injEq] at result; subst after; exact ordinaryFields completed ordinary)
+        | (simp only [Option.some.injEq] at result; subst after; exact ordinary_completion_control_fields before definition output completed ordinary)
+
+theorem regional_selected_completion_control_fields (program : Program) (before after : RuntimeState)
+    (definition : DefinitionScopeId) (output : Option ControlPlaceId)
+    (result : completeSelectedScope? program before definition output = some after) :
+    after.logicalTimeMs = before.logicalTimeMs ∧ after.variables.process = before.variables.process ∧
+      after.selectedBranchSets = before.selectedBranchSets := by
+  obtain ⟨ordinary, completed, _, _, rfl⟩ :=
+    completeSelectedScope_ordinary_withdrawal program before after definition output result
+  exact ordinary_completion_control_fields before definition output ordinary completed
 
 theorem regional_footprint_base (state : RuntimeState) (hosting : SemanticId)
     (selected : InternalRegionalSelection) (region : InternalOccurrenceRegion)
@@ -161,14 +172,14 @@ theorem preparedRegional_control_filters (program : Program) (before after : Run
   | completeScope id origin definition output =>
       obtain ⟨withdrawal, kind, census⟩ := regionalSelection_complete_census program before id origin definition output
         prepared.selection selected
-      have raw : completeBoundedScope? program before definition output = some after := by
+      have raw : completeSelectedScope? program before definition output = some after := by
         simp only [fire?, snapshots] at fired
         exact fired
       obtain ⟨ordinary, completed, controlFields, scopeFields, _, tokenFields⟩ :=
-        completeBoundedScope_position_fields program before after definition output raw
+        completeSelectedScope_position_fields program before after definition output raw
       have update := (completeScopeState_selected_update before ordinary definition output
         prepared.selection.root census completed).2
-      obtain ⟨time, processFields, branchFields⟩ := regional_completion_control_fields program before after definition output raw
+      obtain ⟨time, processFields, branchFields⟩ := regional_selected_completion_control_fields program before after definition output raw
       cases parent : prepared.selection.root.parent with
       | none =>
         cases output with

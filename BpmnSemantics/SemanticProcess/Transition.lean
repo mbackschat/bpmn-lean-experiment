@@ -8,6 +8,7 @@ import BpmnSemantics.SemanticProcess.MessageStart
 import BpmnSemantics.SemanticProcess.TimerStart
 import BpmnSemantics.SemanticProcess.TerminateEnd
 import BpmnSemantics.SemanticProcess.MonitoredTask
+import BpmnSemantics.SemanticProcess.MonitoredScope
 import BpmnSemantics.SemanticProcess.ActivityDataInput
 import BpmnSemantics.SemanticProcess.ActivityDataInputOutput
 import BpmnSemantics.SemanticProcess.ActivityDataOutput
@@ -18,6 +19,7 @@ import BpmnSemantics.SemanticProcess.ScopeCancellation
 import BpmnSemantics.SemanticProcess.SequentialMultiInstanceTransition
 import BpmnSemantics.SemanticProcess.ParallelMultiInstanceTransition
 import BpmnSemantics.SemanticProcess.MessageBoundedTask
+import BpmnSemantics.SemanticProcess.MessageMonitoredTask
 import BpmnSemantics.SemanticProcess.CompensationActivityRetentionProducers
 import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotTransition
 import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerTransition
@@ -116,6 +118,12 @@ def throwErrorState? (state : RuntimeState) (input : ControlPlaceId)
       some (interruptScope state owner parent handler.output)
     else none
 
+def completeSelectedScope? (program : Program) (state : RuntimeState)
+    (scopeId : DefinitionScopeId) (parentOutput : Option ControlPlaceId) : Option RuntimeState :=
+  if isMonitoredScopeDefinition program scopeId then
+    completeMonitoredScope? program state scopeId parentOutput
+  else completeBoundedScope? program state scopeId parentOutput
+
 /-- Declarative transition relation for one explicitly selected Semantic Process operation.
 
 The arms are not uniform in what they claim, and the difference decides what may be cited as
@@ -166,6 +174,11 @@ inductive OperationStep (program : Program) :
       OperationStep program
         (.enterBoundedScope id origin input childEntry childScopeId boundaryTimer)
         before after
+  | enterMonitoredScope (id origin input childEntry childScopeId boundaryTimer)
+      (before after : RuntimeState)
+      (transition : BoundedScopeArmingStep before origin input childEntry childScopeId boundaryTimer after) :
+      OperationStep program
+        (.enterMonitoredScope id origin input childEntry childScopeId boundaryTimer) before after
   | invokeProcess (id origin input calledProcessId calledRootScopeId calledEntry
       returnOperationId) (before after : RuntimeState)
       (transition : InvokeProcessStep before origin input calledProcessId
@@ -259,6 +272,11 @@ inductive OperationStep (program : Program) :
       (transition : MessageBoundedTaskArmingStep before input task boundaryMessage after) :
       OperationStep program
         (.awaitMessageBoundedUserTask id origin input task boundaryMessage) before after
+  | awaitMessageMonitoredUserTask (id origin input task boundaryMessage)
+      (before after : RuntimeState)
+      (transition : MessageMonitoredTaskArmingStep before input task boundaryMessage after) :
+      OperationStep program
+        (.awaitMessageMonitoredUserTask id origin input task boundaryMessage) before after
   | awaitMonitoredUserTask (id origin input task boundaryTimer)
       (before after : RuntimeState)
       (transition :
@@ -316,7 +334,7 @@ inductive OperationStep (program : Program) :
   | completeScope (id origin scopeId parentOutput)
       (before after : RuntimeState)
       (transition :
-        completeBoundedScope? program before scopeId parentOutput = some after) :
+        completeSelectedScope? program before scopeId parentOutput = some after) :
       OperationStep program
         (.completeScope id origin scopeId parentOutput) before after
 
@@ -330,7 +348,8 @@ private def fireWithoutCompensationSnapshots? (program : Program)
   | .initiateTimer _ _ _ outputs => initiateTimerState? state outputs
   | .enterScope _ _ input childEntry childScopeId =>
       enterScopeState? state input childEntry childScopeId
-  | .enterBoundedScope _ origin input childEntry childScopeId boundaryTimer =>
+  | .enterBoundedScope _ origin input childEntry childScopeId boundaryTimer
+  | .enterMonitoredScope _ origin input childEntry childScopeId boundaryTimer =>
       armBoundedScopeState? state origin input childEntry childScopeId boundaryTimer
   | .invokeProcess _ origin input calledProcessId calledRootScopeId calledEntry
       returnOperationId =>
@@ -368,6 +387,8 @@ private def fireWithoutCompensationSnapshots? (program : Program)
       armBoundedUserTaskState? state input task boundaryTimer
   | .awaitMessageBoundedUserTask _ _ input task boundaryMessage =>
       armMessageBoundedUserTaskState? state input task boundaryMessage
+  | .awaitMessageMonitoredUserTask _ _ input task boundaryMessage =>
+      armMessageMonitoredUserTaskState? state input task boundaryMessage
   | .awaitMonitoredUserTask _ _ input task boundaryTimer =>
       armMonitoredUserTaskState? state input task boundaryTimer
   | .awaitEffect _ _ input output effect route =>
@@ -388,7 +409,7 @@ private def fireWithoutCompensationSnapshots? (program : Program)
   | .terminateScope id origin input scopeId =>
       terminateScopeState? program state id origin input scopeId
   | .completeScope _ _ scopeId parentOutput =>
-      completeBoundedScope? program state scopeId parentOutput
+      completeSelectedScope? program state scopeId parentOutput
   | .triggerCompensation .. => none
 
 /-- Dispatcher and constructor-selection check: `fire?` routes every operation kind to the state
@@ -411,6 +432,9 @@ private theorem fireWithoutCompensationSnapshots_sound (program : Program)
         (initiateTimerState_sound before after _ result)
     | exact .enterScope _ _ _ _ _ before after result
     | exact OperationStep.enterBoundedScope _ _ _ _ _ _ before after
+        (armBoundedScopeState_sound before after _ _ _ _ _
+          (by simpa [fireWithoutCompensationSnapshots?] using result))
+    | exact OperationStep.enterMonitoredScope _ _ _ _ _ _ before after
         (armBoundedScopeState_sound before after _ _ _ _ _
           (by simpa [fireWithoutCompensationSnapshots?] using result))
     | exact .invokeProcess _ _ _ _ _ _ _ before after
@@ -456,6 +480,9 @@ private theorem fireWithoutCompensationSnapshots_sound (program : Program)
           (by simpa [fireWithoutCompensationSnapshots?] using result))
     | exact OperationStep.awaitMessageBoundedUserTask _ _ _ _ _ before after
         (armMessageBoundedUserTaskState_sound before after _ _ _
+          (by simpa [fireWithoutCompensationSnapshots?] using result))
+    | exact OperationStep.awaitMessageMonitoredUserTask _ _ _ _ _ before after
+        (armMessageMonitoredUserTaskState_sound before after _ _ _
           (by simpa [fireWithoutCompensationSnapshots?] using result))
     | exact OperationStep.awaitMonitoredUserTask _ _ _ _ _ before after
         (armMonitoredUserTaskState_sound before after _ _ _

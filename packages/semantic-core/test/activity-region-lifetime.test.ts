@@ -20,7 +20,7 @@ import type { RuntimeState, SemanticOperation } from "@bpmn-lean/semantic-core";
 import { boundedScopeProgram, start } from "./bounded-scope-fixture.ts";
 
 for (const kind of [SemanticOperationKind.ThrowError, SemanticOperationKind.TerminateScope]) {
-  test(`${kind} withdraws the child Activity's parent-owned Message and local data`, () => {
+  test(`${kind} binds the parent-owned Message and local data to actual child removal`, () => {
     const started = applyStimulus(boundedScopeProgram, initialState, start);
     assert.equal(started.outcome, CommandOutcome.Committed);
     const [record] = started.state.activityOccurrences;
@@ -113,10 +113,12 @@ for (const kind of [SemanticOperationKind.ThrowError, SemanticOperationKind.Term
     assert.notDeepEqual(attachedMessage.owner, child);
     const after = applyInternalOperation(boundedScopeProgram, operation, before);
     assert.ok(after !== null, "the chosen route must reach regional cancellation");
-    assert.deepEqual(after.activityOccurrences, []);
-    assert.deepEqual(after.messageWaits, [unrelatedMessage]);
-    assert.deepEqual(after.timerWaits, [sameCoordinatesTimer]);
-    assert.deepEqual(after.variables.activities, [unrelatedData, sameCoordinatesEffectData]);
+    const retained = kind === SemanticOperationKind.TerminateScope;
+    assert.deepEqual(after.activityOccurrences, retained ? before.activityOccurrences : []);
+    assert.deepEqual(after.messageWaits, retained ? before.messageWaits : [unrelatedMessage]);
+    assert.deepEqual(after.timerWaits, retained ? before.timerWaits : [sameCoordinatesTimer]);
+    assert.deepEqual(after.variables.activities, retained
+      ? before.variables.activities : [unrelatedData, sameCoordinatesEffectData]);
     assert.deepEqual(after.variables.process, before.variables.process);
     assert.equal(after.logicalTimeMs, before.logicalTimeMs);
     assert.deepEqual(after.activityActivations, before.activityActivations);

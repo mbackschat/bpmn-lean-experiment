@@ -76,7 +76,8 @@ theorem prepareInternalScopeCreation_child_excludes_bounded_entry
     (admitted : programWellFormed program = true)
     (found : prepareInternalScopeCreation? program state operation = some prepared)
     (child : prepared.selection.kind = .child)
-    (member : .enterBoundedScope id origin input entry childScope timer ∈ program.operations) :
+    (member : .enterBoundedScope id origin input entry childScope timer ∈ program.operations ∨
+      .enterMonitoredScope id origin input entry childScope timer ∈ program.operations) :
     childScope ≠ prepared.selection.created.id.definitionScopeId := by
   obtain ⟨selected, hosting, ownerRecord, selectedOrigin, definition, start, delta,
     selection, running, snapshots, operations, _, _, definitionFound, checks, _, _, rfl⟩ :=
@@ -110,14 +111,15 @@ theorem prepareInternalScopeCreation_child_excludes_bounded_entry
               decide (enteredChildScopeId? candidate = some definition.id)) :=
           List.mem_filter.mpr ⟨operationMember, by simp [enteredChildScopeId?, matching.1.1]⟩
         intro same
-        have boundedMember : .enterBoundedScope id origin input entry childScope timer ∈
-            program.operations.filter (fun candidate =>
+        rcases member with member | member
+        all_goals
+          have boundedMember : _ ∈ program.operations.filter (fun candidate =>
               decide (enteredChildScopeId? candidate = some definition.id)) :=
-          List.mem_filter.mpr ⟨member, by simp [enteredChildScopeId?, matching.1.1, same]⟩
-        rw [singleton] at ordinaryMember boundedMember
-        simp only [List.mem_singleton] at ordinaryMember boundedMember
-        have impossible := ordinaryMember.trans boundedMember.symm
-        contradiction
+            List.mem_filter.mpr ⟨member, by simp [enteredChildScopeId?, matching.1.1, same]⟩
+          rw [singleton] at ordinaryMember boundedMember
+          simp only [List.mem_singleton] at ordinaryMember boundedMember
+          have impossible := ordinaryMember.trans boundedMember.symm
+          contradiction
   | invokeProcess selectedId selectedOrigin selectedInput process scope entry returned =>
       obtain ⟨owner, _, selection⟩ := Option.bind_eq_some_iff.mp selection
       dsimp only at selection
@@ -133,7 +135,8 @@ def EntryBinding (program : Program) (occurrence : RuntimeScopeOccurrence)
   | some parent => (program.operations.filter fun operation =>
       if !operationOwnedBy program operation parent then false
       else match operation with
-      | .enterScope _ origin _ _ child | .enterBoundedScope _ origin _ _ child _ =>
+      | .enterScope _ origin _ _ child | .enterBoundedScope _ origin _ _ child _
+      | .enterMonitoredScope _ origin _ _ child _ =>
           child = occurrence.id.definitionScopeId && origin.elementId = definition.originElementId
       | _ => false).length = 1
 
@@ -490,7 +493,8 @@ theorem prepareInternalScopeCreation_excludes_bounded_entry
     (childScope : DefinitionScopeId) (timer : BoundaryTimerArm)
     (admitted : programWellFormed program = true)
     (found : prepareInternalScopeCreation? program state operation = some prepared)
-    (member : .enterBoundedScope id origin input entry childScope timer ∈ program.operations) :
+    (member : .enterBoundedScope id origin input entry childScope timer ∈ program.operations ∨
+      .enterMonitoredScope id origin input entry childScope timer ∈ program.operations) :
     prepared.selection.created.parent = none ∨
       childScope ≠ prepared.selection.created.id.definitionScopeId := by
   cases kind : prepared.selection.kind with

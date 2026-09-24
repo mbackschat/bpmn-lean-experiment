@@ -17,13 +17,11 @@ const experimentTree = "BpmnSemantics/Experiments/";
 /**
  * The project-owned unions an experiment file may decide, and the module that declares them.
  *
- * Both live in the same owner today, but the pair is the point rather than the path: the class this
- * guard reports is a new constructor silently leaving an experiment matcher non-exhaustive, and that
- * class belongs to every union the tree matches on. Restricting it to `CheckedNode` let a new
- * `SemanticOperation` constructor break the tree with the guard green.
+ * Every matched union needs coverage: restricting this guard to `CheckedNode` let a new
+ * `SemanticOperation` constructor leave an experiment matcher non-exhaustive while the guard passed.
  */
 const decidedUnions: ReadonlyArray<Readonly<{ name: string; owner: string }>> = [
-  { name: "CheckedNode", owner: "BpmnSemantics/SemanticProcessContract.lean" },
+  { name: "CheckedNode", owner: "BpmnSemantics/CheckedProcessContract.lean" },
   { name: "SemanticOperation", owner: "BpmnSemantics/SemanticProcessContract.lean" },
   { name: "Stimulus", owner: "BpmnSemantics/Scenario.lean" },
 ];

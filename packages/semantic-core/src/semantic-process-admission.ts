@@ -1,3 +1,5 @@
+import { REPEATABLE_EVENT_SUBSCRIPTIONS_CHECKPOINT_PROFILE_ID } from "./semantic-profile-catalog.js";
+import { repeatableSubscriptionProgramGraph } from "./repeatable-subscription-admission.js";
 import {
   ScenarioDocumentKind,
   StimulusKind,
@@ -9,6 +11,7 @@ import type {
 } from "./contract.js";
 import {
   InternalSchedulingMode,
+  SemanticOperationKind,
   SemanticOriginKind,
   SemanticProcessCompilerId,
   SemanticProcessKind,
@@ -66,6 +69,12 @@ import {
   isCompensationExecutionDeclaration,
 } from "./compensation-trigger-handler-program-admission.js";
 import { compensationStartDataAdmitted } from "./compensation-start-data-admission.js";
+
+/** The subscription proof-domain amendment binds new preparations to the complete immutable Program. */
+export function repeatableSubscriptionPreparationAdmitted(program: SemanticProcessProgram): boolean {
+  return program.identity.semanticProfile === REPEATABLE_EVENT_SUBSCRIPTIONS_CHECKPOINT_PROFILE_ID &&
+    isWellFormedSemanticProcessProgram(program);
+}
 
 export function supportsSemanticProcessScenario(
   scenario: Scenario,
@@ -256,6 +265,14 @@ export function isWellFormedSemanticProcessProgram(
   }
   const program = value as unknown as SemanticProcessProgram;
   const snapshotTargets = program.compensationEventSubProcessSnapshots?.targets;
+  if (identity.semanticProfile === REPEATABLE_EVENT_SUBSCRIPTIONS_CHECKPOINT_PROFILE_ID) {
+    if (!repeatableSubscriptionProgramGraph(program)) return false;
+  } else if (checkedOperations.some((operation) =>
+    operation.kind === SemanticOperationKind.EnterMonitoredScope ||
+    operation.kind === SemanticOperationKind.AwaitMessageMonitoredUserTask ||
+    ("boundaryTimer" in operation && Object.hasOwn(operation.boundaryTimer, "recurrence")))) {
+    return false;
+  }
   return inclusiveOperationsArePaired(checkedOperations) &&
     programWaitDeclarersAreUnique(checkedOperations) &&
     compensationRetentionProgramDefects(program).length === 0 &&

@@ -21,7 +21,7 @@ theorem regionalCancellation_removal_filter (program : Program) (state : Runtime
     (projected : projectOpenFlowNodeOccurrences? program state = some current) :
     removeEndedFlowNodeOccurrences current (regionalCancellationEnds program state region retainRoot current) =
       current.filter (fun entry => (retainRoot && decide (entry.anchor = .scope root)) ||
-        !flowNodeOccurrenceOwnedBySubtree program state root entry) := by
+        !flowNodeOccurrenceOwnedBySubtree program state root entry (if retainRoot then .retain else .remove)) := by
   unfold removeEndedFlowNodeOccurrences regionalCancellationEnds
   apply List.filter_congr
   intro entry member
@@ -106,7 +106,7 @@ theorem preparedError_accepted_lifecycle (program : Program) (before : RuntimeSt
   unfold flowNodeOccurrenceDeltaForOperation?
   rw [preparedRegional_lifecycle_candidate program before after _ prepared commandId transitionIndex found]
   simp only [Option.bind_some, acceptFlowNodeOccurrenceCandidate?, opened, afterProjection, projected,
-    Option.bind_eq_bind, folded, ↓reduceIte]
+    Option.bind_eq_bind, folded, Bool.false_eq_true, ↓reduceIte]
 
 theorem selectedTerminateOwner_hosting (program : Program) (before : RuntimeState)
     (hosting : SemanticId) (id : OperationId) (origin : BpmnElementOrigin)
@@ -152,7 +152,7 @@ theorem preparedTerminate_accepted_lifecycle (program : Program) (before : Runti
   have projected : projectOpenFlowNodeOccurrences? program
       (cancelScopeSubtree before prepared.selection.root.id .retain) =
       some (current.filter fun entry => decide (entry.anchor = .scope prepared.selection.root.id) ||
-        !flowNodeOccurrenceOwnedBySubtree program before prepared.selection.root.id entry) := by
+        !flowNodeOccurrenceOwnedBySubtree program before prepared.selection.root.id entry .retain) := by
     cases parent : prepared.selection.root.parent with
     | some parentOwner =>
         simpa only [decide_true, Bool.true_and] using cancelScopeSubtree_child_open_projection program before hosting hosting

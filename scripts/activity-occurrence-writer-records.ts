@@ -49,6 +49,106 @@ export type WriterRecord = Readonly<{
 }>;
 
 export const writerRecords = new Map<string, WriterRecord>([
+  ["BpmnSemantics/SemanticProcess/InternalMessageTaskPreparation.lean#applyInternalMessageTaskPatch@1", {
+    classification: WriterClassification.Issuer,
+    claimPreservation: ClaimPreservation.DisjointInsertion,
+    evidence: {
+      relativePath: "BpmnSemantics/SemanticProcess/InternalMessageTaskPreparation.lean",
+      markers: ["theorem prepareInternalMessageTaskContract_issuesFreshActivity"],
+    },
+    claimEvidence: {
+      relativePath: "BpmnSemantics/SemanticProcess/InternalMessageTaskPreparation.lean",
+      markers: ["theorem prepareInternalMessageTaskContract_preserves_bodyClaims"],
+    },
+  }],
+  ["BpmnSemantics/SemanticProcess/MessageMonitoredTask.lean#completeMessageMonitoredPair@1", {
+    classification: WriterClassification.IdentityRemoving,
+    claimPreservation: ClaimPreservation.Removal,
+    evidence: {
+      relativePath: "BpmnSemantics/SemanticProcess/MessageMonitoredTaskLaws.lean",
+      markers: ["theorem completeMessageMonitoredPair_activity_identity_discipline"],
+    },
+  }],
+  ["BpmnSemantics/SemanticProcess/MonitoredScope.lean#completeMonitoredScopePair@1", {
+    classification: WriterClassification.IdentityRemoving,
+    claimPreservation: ClaimPreservation.Removal,
+    evidence: {
+      relativePath: "BpmnSemantics/SemanticProcess/MonitoredScopeLaws.lean",
+      markers: ["theorem completeMonitoredScopePair_activity_identity_discipline"],
+    },
+  }],
+  ["BpmnSemantics/SemanticProcess/MonitoredScope.lean#completeMonitoredScope?@1", {
+    classification: WriterClassification.IdentityRemoving,
+    claimPreservation: ClaimPreservation.Removal,
+    evidence: {
+      relativePath: "BpmnSemantics/SemanticProcess/MonitoredScopeLaws.lean",
+      markers: ["theorem completeMonitoredScope_activity_identity_discipline"],
+    },
+  }],
+  ["BpmnSemantics/SemanticProcess/WaitCompletion.lean#SelectedMonitoredTaskCompletionStep@1", {
+    classification: WriterClassification.IdentityRemoving,
+    claimPreservation: ClaimPreservation.Removal,
+    evidence: {
+      relativePath: "BpmnSemantics/SemanticProcess/WaitCompletion.lean",
+      markers: ["theorem selected_monitored_completion_activity_identity_discipline"],
+    },
+  }],
+  ["BpmnSemantics/SemanticProcess/WaitCompletion.lean#completeSelectedMonitoredUserTask?@1", {
+    classification: WriterClassification.IdentityRemoving,
+    claimPreservation: ClaimPreservation.Removal,
+    evidence: {
+      relativePath: "BpmnSemantics/SemanticProcess/WaitCompletion.lean",
+      markers: ["theorem completeSelectedMonitoredUserTask_sound", "theorem selected_monitored_completion_activity_identity_discipline"],
+    },
+  }],
+  ["BpmnSemantics/SemanticProcess/RecurringBoundaryTimer.lean#NonInterruptingBoundaryTimerStep@1", {
+    classification: WriterClassification.IdentityPreserving,
+    claimPreservation: ClaimPreservation.ProjectionPreserving,
+    evidence: {
+      relativePath: "BpmnSemantics/SemanticProcess/RecurringBoundaryTimerLaws.lean",
+      markers: ["theorem noninterrupting_boundary_timer_activity_identity_discipline"],
+    },
+    claimEvidence: {
+      relativePath: "BpmnSemantics/SemanticProcess/RecurringBoundaryTimerLaws.lean",
+      markers: ["theorem noninterrupting_boundary_timer_preserves_body_claims"],
+    },
+  }],
+  ["BpmnSemantics/SemanticProcess/RecurringBoundaryTimer.lean#NonInterruptingBoundaryTimerStep@2", {
+    classification: WriterClassification.IdentityPreserving,
+    claimPreservation: ClaimPreservation.ProjectionPreserving,
+    evidence: {
+      relativePath: "BpmnSemantics/SemanticProcess/RecurringBoundaryTimerLaws.lean",
+      markers: ["theorem noninterrupting_boundary_timer_activity_identity_discipline"],
+    },
+    claimEvidence: {
+      relativePath: "BpmnSemantics/SemanticProcess/RecurringBoundaryTimerLaws.lean",
+      markers: ["theorem noninterrupting_boundary_timer_preserves_body_claims"],
+    },
+  }],
+  ["BpmnSemantics/SemanticProcess/RecurringBoundaryTimer.lean#fireNonInterruptingBoundaryTimer@1", {
+    classification: WriterClassification.IdentityPreserving,
+    claimPreservation: ClaimPreservation.ProjectionPreserving,
+    evidence: {
+      relativePath: "BpmnSemantics/SemanticProcess/RecurringBoundaryTimerLaws.lean",
+      markers: ["theorem noninterrupting_boundary_timer_activity_identity_discipline"],
+    },
+    claimEvidence: {
+      relativePath: "BpmnSemantics/SemanticProcess/RecurringBoundaryTimerLaws.lean",
+      markers: ["theorem noninterrupting_boundary_timer_preserves_body_claims"],
+    },
+  }],
+  ["BpmnSemantics/SemanticProcess/RecurringBoundaryTimer.lean#fireNonInterruptingBoundaryTimer@2", {
+    classification: WriterClassification.IdentityPreserving,
+    claimPreservation: ClaimPreservation.ProjectionPreserving,
+    evidence: {
+      relativePath: "BpmnSemantics/SemanticProcess/RecurringBoundaryTimerLaws.lean",
+      markers: ["theorem noninterrupting_boundary_timer_activity_identity_discipline"],
+    },
+    claimEvidence: {
+      relativePath: "BpmnSemantics/SemanticProcess/RecurringBoundaryTimerLaws.lean",
+      markers: ["theorem noninterrupting_boundary_timer_preserves_body_claims"],
+    },
+  }],
   ["BpmnSemantics/SemanticProcess/ActivityBodyTurnover.lean#replacedState@1", {
     classification: WriterClassification.IdentityPreserving,
     claimPreservation: ClaimPreservation.BodyReplacement,
@@ -557,7 +657,7 @@ export const writerRecords = new Map<string, WriterRecord>([
     classification: WriterClassification.IdentityRemoving,
     claimPreservation: ClaimPreservation.Removal,
   }],
-  ["packages/semantic-core/src/semantic-process-message-bounded-task-runtime.ts#armMessageBoundedUserTask@1", {
+  ["packages/semantic-core/src/semantic-process-message-bounded-task-runtime.ts#applySelectedMessageActivityArming@1", {
     classification: WriterClassification.Issuer,
     claimPreservation: ClaimPreservation.DisjointInsertion,
     evidence: {
@@ -575,20 +675,20 @@ export const writerRecords = new Map<string, WriterRecord>([
       ],
     },
   }],
-  ["packages/semantic-core/src/semantic-process-message-bounded-task-runtime.ts#commitVictory@1", {
+  ["packages/semantic-core/src/semantic-process-message-bounded-task-runtime.ts#commitMessageTaskVictory@1", {
     classification: WriterClassification.IdentityRemoving,
     claimPreservation: ClaimPreservation.Removal,
   }],
-  ["packages/semantic-core/src/semantic-process-monitored-task-runtime.ts#spawnFromMonitoredUserTask@1", {
+  ["packages/semantic-core/src/semantic-process-recurring-boundary-timer-runtime.ts#fireNonInterruptingBoundaryTimer@1", {
     classification: WriterClassification.IdentityPreserving,
     claimPreservation: ClaimPreservation.ProjectionPreserving,
     evidence: {
-      relativePath: "packages/semantic-core/test/non-interrupting-boundary-timer.test.ts",
-      markers: ["runtimeStateRegressions(state, spawned.state)", "preserves the exact host Activity identity"],
+      relativePath: "packages/semantic-core/test/repeatable-subscription-lifetime.test.ts",
+      markers: ["Timer replacement preserves every Activity identity and body claim"],
     },
     claimEvidence: {
-      relativePath: "packages/semantic-core/test/non-interrupting-boundary-timer.test.ts",
-      markers: ["RuntimeStateDefect.DuplicateActivityBodyClaim", "claim-projection-preserving spawn keeps every Activity body claim"],
+      relativePath: "packages/semantic-core/test/repeatable-subscription-lifetime.test.ts",
+      markers: ["Timer replacement preserves every Activity identity and body claim"],
     },
   }],
   ["packages/semantic-core/src/semantic-process-parallel-multi-instance-runtime.ts#closeParallelMultiInstance@1", {

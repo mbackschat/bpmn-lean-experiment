@@ -34,6 +34,18 @@ import { SemanticOperationKind } from "./semantic-process-contract.js";
 import type { SemanticProcessProgram } from "./semantic-process-contract.js";
 import { sameScopeOccurrence } from "./semantic-process-state.js";
 import type { RuntimeState, ScopeOccurrenceId } from "./semantic-process-state.js";
+import { repeatableSubscriptionPreparationAdmitted } from "./semantic-process-admission.js";
+import { REPEATABLE_EVENT_SUBSCRIPTIONS_CHECKPOINT_PROFILE_ID } from "./semantic-profile-catalog.js";
+
+function boundedScopePreparationAdmitted(
+  program: SemanticProcessProgram,
+  operation: PreparedInternalBoundedScope["operation"],
+): boolean {
+  // The approved proof-domain amendment preserves the pre-existing raw bounded-scope path.
+  return operation.kind === SemanticOperationKind.EnterBoundedScope &&
+    program.identity.semanticProfile !== REPEATABLE_EVENT_SUBSCRIPTIONS_CHECKPOINT_PROFILE_ID ||
+    repeatableSubscriptionPreparationAdmitted(program);
+}
 
 export enum PreparedInternalTransitionFamily {
   Arming = "arming",
@@ -65,8 +77,10 @@ export function deriveInternalTransitionPreparation(
   candidate: InternalTransitionCandidate,
 ): PreparedInternalTransition | null {
   switch (candidate.operation.kind) {
+    case SemanticOperationKind.EnterMonitoredScope:
     case SemanticOperationKind.EnterBoundedScope: {
       if (program.compensationEventSubProcessSnapshots !== undefined || candidate.owner === null) return null;
+      if (!boundedScopePreparationAdmitted(program, candidate.operation)) return null;
       const prepared = deriveInternalBoundedScopePreparation(program, state, candidate.operation);
       return prepared === null || !sameScopeOccurrence(prepared.parent, candidate.owner)
         ? null : { family: PreparedInternalTransitionFamily.BoundedScope, owner: prepared.parent, ...prepared };
@@ -153,6 +167,7 @@ export function applyPreparedInternalTransition(
   switch (prepared.family) {
     case PreparedInternalTransitionFamily.BoundedScope: {
       const { family: _family, owner, ...bounded } = prepared;
+      if (!boundedScopePreparationAdmitted(program, bounded.operation)) return null;
       if (!sameScopeOccurrence(owner, bounded.parent)) return null;
       return applyPreparedInternalBoundedScope(program, state, bounded);
     }

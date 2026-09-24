@@ -99,6 +99,27 @@ theorem regional_child_call_start_frame (program : Program) (before after : Runt
   simp only [callStart?, regional_child_process_lookup_frame program before after removed record.caller
     scopes control calls different]
 
+private theorem completion_child_lookup_fields (before after ordinary : RuntimeState)
+    (hosting : SemanticId) (definition : DefinitionScopeId) (output : ControlPlaceId)
+    (root : RuntimeScopeOccurrence) (running : before.control = .running hosting)
+    (census : before.scopeOccurrences.filter (fun scope => decide (scope.id.definitionScopeId = definition)) = [root])
+    (completed : completeScopeState? before definition (some output) = some ordinary)
+    (control : after.control = ordinary.control)
+    (scopes : after.scopeOccurrences = ordinary.scopeOccurrences)
+    (calls : after.calledProcessOccurrences = ordinary.calledProcessOccurrences) :
+    scopeQuiescent before root.id = true ∧ after.control = before.control ∧
+      after.calledProcessOccurrences = before.calledProcessOccurrences ∧
+      after.scopeOccurrences = before.scopeOccurrences.filter (fun scope => decide (scope.id ≠ root.id)) := by
+  obtain ⟨quiet, update⟩ := completeScopeState_selected_update before ordinary definition (some output) root census completed
+  cases parentEq : root.parent with
+  | none => simp [parentEq, running] at update
+  | some parent =>
+      simp only [parentEq, running] at update
+      split at update
+      · cases update
+        exact ⟨quiet, control.trans running.symm, calls, scopes⟩
+      · contradiction
+
 /-- These fields come from the actual bounded evaluator, including its possible deadline withdrawal. -/
 theorem completeBoundedScope_child_lookup_fields (program : Program) (before after : RuntimeState)
     (hosting : SemanticId) (definition : DefinitionScopeId) (output : ControlPlaceId)
@@ -110,15 +131,8 @@ theorem completeBoundedScope_child_lookup_fields (program : Program) (before aft
       after.scopeOccurrences = before.scopeOccurrences.filter (fun scope => decide (scope.id ≠ root.id)) := by
   obtain ⟨ordinary, completed, control, scopes, calls, _⟩ :=
     completeBoundedScope_position_fields program before after definition (some output) result
-  obtain ⟨quiet, update⟩ := completeScopeState_selected_update before ordinary definition (some output) root census completed
-  cases parentEq : root.parent with
-  | none => simp [parentEq, running] at update
-  | some parent =>
-      simp only [parentEq, running] at update
-      split at update
-      · cases update
-        exact ⟨quiet, control.trans running.symm, calls, scopes⟩
-      · contradiction
+  exact completion_child_lookup_fields before after ordinary hosting definition output root running census
+    completed control scopes calls
 
 /-- A complete prepared child step supplies the quiescence and field frame needed by every
 retained wait, Scope, and Call projection. No intermediate validity is assumed. -/
@@ -137,12 +151,13 @@ theorem preparedChildComplete_projection_lookup_fields (program : Program) (befo
   obtain ⟨_, _, census⟩ := regionalSelection_complete_census program before id origin definition (some output)
     prepared.selection selection
   obtain ⟨after, fired, applied⟩ := prepareInternalRegional_executes program before _ prepared found
-  have result : completeBoundedScope? program before definition (some output) = some after := by
+  have result : completeSelectedScope? program before definition (some output) = some after := by
     simp only [fire?, snapshots] at fired
-    change completeBoundedScope? program before definition (some output) = some after at fired
     exact fired
-  exact ⟨after, applied, completeBoundedScope_child_lookup_fields program before after hosting definition output
-    prepared.selection.root running census result⟩
+  obtain ⟨ordinary, completed, control, scopes, calls, _⟩ :=
+    completeSelectedScope_position_fields program before after definition (some output) result
+  exact ⟨after, applied, completion_child_lookup_fields before after ordinary hosting definition output
+    prepared.selection.root running census completed control scopes calls⟩
 
 /-- The actual structural validator survives removal of a quiescent child. Parent and Call
 owner censuses are protected by quiescence, independently of any successor-validity claim. -/

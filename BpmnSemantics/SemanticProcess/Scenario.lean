@@ -66,7 +66,8 @@ private def ownedWaitDefinitions : SemanticOperation → OwnedWaitDefinitions
         timers :=
           [{ elementId := boundaryTimer.elementId
              durationMs := boundaryTimer.durationMs }] }
-  | .awaitMessageBoundedUserTask _ _ _ task boundaryMessage =>
+  | .awaitMessageBoundedUserTask _ _ _ task boundaryMessage
+  | .awaitMessageMonitoredUserTask _ _ _ task boundaryMessage =>
       { tasks := [{ id := task.id, name := task.name }]
         messages :=
           [{ elementId := boundaryMessage.elementId
@@ -84,7 +85,8 @@ private def ownedWaitDefinitions : SemanticOperation → OwnedWaitDefinitions
   | .completeParallelMultiInstanceUserTask .. => {}
   -- The deadline only. The bounded child's own task wait belongs to the child scope's `awaitUserTask`,
   -- so publishing it here would expose one task occurrence twice.
-  | .enterBoundedScope _ _ _ _ _ boundaryTimer =>
+  | .enterBoundedScope _ _ _ _ _ boundaryTimer
+  | .enterMonitoredScope _ _ _ _ _ boundaryTimer =>
       { timers :=
           [{ elementId := boundaryTimer.elementId
              durationMs := boundaryTimer.durationMs }] }
@@ -417,7 +419,7 @@ private def messageEnabledInteraction? (program : Program) (state : RuntimeState
         some (.publishCorrelatedPayloadMessage candidate.address)
       else none
   | [.awaitMessage ..] | [.awaitEventRace ..]
-  | [.awaitMessageBoundedUserTask ..] =>
+  | [.awaitMessageBoundedUserTask ..] | [.awaitMessageMonitoredUserTask ..] =>
       some (.deliverMessage subscription.id subscription.channel)
   | _ => none
 

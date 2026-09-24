@@ -27,7 +27,7 @@ private theorem completion_update (program : Program) (before after : RuntimeSta
     (running : before.control = .running hosting) (afterRunning : after.control = .running hosting)
     (found : selectInternalRegional? program before (.completeScope id origin definition output) = some selected)
     (kind : selected.kind = .completing withdrawal)
-    (fired : completeBoundedScope? program before definition output = some after) :
+    (fired : completeSelectedScope? program before definition output = some after) :
     match (generalizing := false) selected.root.parent, output with
     | some parent, some place =>
         let completed := { before with
@@ -38,14 +38,17 @@ private theorem completion_update (program : Program) (before after : RuntimeSta
         | .bounded record deadline => after = { completed with
             timerWaits := before.timerWaits.erase deadline
             activityOccurrences := before.activityOccurrences.filter (fun candidate => !decide (candidate.body = record.body)) }
+        | .monitored record deadline => after = { completed with
+            timerWaits := removeMonitoredScopeTimer before.timerWaits deadline
+            activityOccurrences := before.activityOccurrences.erase record }
     | _, _ => False := by
   obtain ⟨chosen, chosenKind, census⟩ := regionalSelection_complete_census program before id origin definition output selected found
   have sameKind : chosen = withdrawal := by simpa using chosenKind.symm.trans kind
   subst chosen
   have withdrawn := regionalSelection_completion_withdrawal program before id origin definition output selected withdrawal found kind
-  obtain ⟨ordinary, ordinaryFound, control, _⟩ := completeBoundedScope_position_fields program before after definition output fired
+  obtain ⟨ordinary, ordinaryFound, control, _⟩ := completeSelectedScope_position_fields program before after definition output fired
   have update := (completeScopeState_selected_update before ordinary definition output selected.root census ordinaryFound).2
-  obtain ⟨actual, actualFired, refinement⟩ := completionWithdrawal_refines program before ordinary definition output withdrawal withdrawn ordinaryFound
+  obtain ⟨actual, actualFired, refinement⟩ := subscribedWithdrawal_refines program before ordinary definition output withdrawal withdrawn ordinaryFound
   have same : actual = after := Option.some.inj (actualFired.symm.trans fired)
   subst actual
   cases parent : selected.root.parent <;> cases output with
@@ -87,6 +90,9 @@ theorem preparedRegional_execution_fields (program : Program) (before after : Ru
             | .bounded record deadline => after = { completed with
                 timerWaits := before.timerWaits.erase deadline
                 activityOccurrences := before.activityOccurrences.filter (fun candidate => !decide (candidate.body = record.body)) }
+            | .monitored record deadline => after = { completed with
+                timerWaits := removeMonitoredScopeTimer before.timerWaits deadline
+                activityOccurrences := before.activityOccurrences.erase record }
         | _, _ => False
     | .throwError _ _ _ _ handler, .interrupting parent =>
         after = interruptScope before prepared.selection.root.id parent handler.output
@@ -127,8 +133,8 @@ theorem preparedRegional_execution_fields (program : Program) (before after : Ru
       exact raw.symm
   | _ => simp [selectInternalRegional?] at selected
 
-/-- Both completion withdrawals use the existing reference masks, including the bounded
-Activity and its deadline, so the exact evaluator update composes as list filtering. -/
+/-- Completion withdrawals use the existing reference masks, including the monitored
+Activity and any live deadline, so the exact evaluator update composes as list filtering. -/
 theorem preparedCompletion_filter_update (program : Program) (before after : RuntimeState)
     (hosting : SemanticId) (id : OperationId) (origin : BpmnElementOrigin)
     (definition : DefinitionScopeId) (output : ControlPlaceId) (prepared : PreparedInternalRegional)
@@ -370,10 +376,10 @@ theorem regional_pair_effect_populations (program : Program) (before after : Run
       obtain ⟨actual, fired, executed⟩ := prepareInternalRegional_executes program before _ left leftFound
       have same : actual = after := Option.some.inj (executed.symm.trans applied)
       subst actual
-      have raw : completeBoundedScope? program before definition output = some after := by
+      have raw : completeSelectedScope? program before definition output = some after := by
         simp only [fire?, leftFacts.1] at fired
         exact fired
-      have fields := regionalCompletion_effect_and_branch_fields program before after definition output raw
+      have fields := regionalSelectedCompletion_effect_and_branch_fields program before after definition output raw
       rw [fields.1, fields.2.1]
       exact ⟨rfl, rfl⟩
   | throwError id origin input error handler =>

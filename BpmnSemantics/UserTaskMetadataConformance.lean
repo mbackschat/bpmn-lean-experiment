@@ -339,6 +339,7 @@ theorem completion_is_metadata_irrelevant
   apply user_task_completion_with_same_successor_is_equal
     (successor := successor)
     (noDataInputOutputTask := by decide +kernel)
+    (noMessageMonitoredTask := by decide +kernel)
   · rfl
   · simpa [waitingStateFor] using
       (show BooleanProcessDataConformance.waitingState.control =

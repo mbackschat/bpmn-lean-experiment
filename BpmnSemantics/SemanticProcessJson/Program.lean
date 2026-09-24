@@ -143,14 +143,21 @@ private def decodeBoundedTaskArm (json : Json) :
       name := ← decodeOptionalString (← field json "name")
       output := ⟨← stringField json "output"⟩ }
 
-private def decodeBoundaryTimerArm (json : Json) :
+private def decodeBoundaryTimerArm (json : Json) (allowRecurrence : Bool := false) :
     Except String BoundaryTimerArm := do
-  requireObjectShape json ["durationMs", "elementId", "origin", "output"]
+  let hasRecurrence := allowRecurrence && (json.getObjVal? "recurrence").isOk
+  requireObjectShape json (["durationMs", "elementId", "origin", "output"] ++
+    if hasRecurrence then ["recurrence"] else [])
+  let recurrence ← if hasRecurrence then do
+      expectStringField json "recurrence" "repeating"
+      pure (some BoundaryTimerRecurrence.repeating)
+    else pure none
   pure
     { elementId := ⟨← stringField json "elementId"⟩
       durationMs := ← decodeSafeNat (← field json "durationMs")
       output := ⟨← stringField json "output"⟩
-      origin := ← decodeSequenceFlowOrigin (← field json "origin") }
+      origin := ← decodeSequenceFlowOrigin (← field json "origin")
+      recurrence }
 
 private def decodeBoundaryMessageArm (json : Json) :
     Except String BoundaryMessageArm := do
@@ -382,6 +389,15 @@ private def decodeOperation (json : Json) :
           ⟨← stringField json "childEntry"⟩
           ⟨← stringField json "childScopeId"⟩
           (← decodeBoundaryTimerArm (← field json "boundaryTimer")))
+  | "enterMonitoredScope" =>
+      requireObjectShape json
+        ["boundaryTimer", "childEntry", "childScopeId", "id", "input", "kind", "origin"]
+      pure
+        (.enterMonitoredScope id origin
+          ⟨← stringField json "input"⟩
+          ⟨← stringField json "childEntry"⟩
+          ⟨← stringField json "childScopeId"⟩
+          (← decodeBoundaryTimerArm (← field json "boundaryTimer") true))
   | "invokeProcess" =>
       requireObjectShape json
         ["calledEntry", "calledProcessId", "calledRootScopeId", "id",
@@ -585,7 +601,15 @@ private def decodeOperation (json : Json) :
           origin
           ⟨← stringField json "input"⟩
           (← decodeBoundedTaskArm (← field json "task"))
-          (← decodeBoundaryTimerArm (← field json "boundaryTimer")))
+          (← decodeBoundaryTimerArm (← field json "boundaryTimer") true))
+  | "awaitMessageMonitoredUserTask" =>
+      requireObjectShape json
+        ["boundaryMessage", "id", "input", "kind", "origin", "task"]
+      pure
+        (.awaitMessageMonitoredUserTask id origin
+          ⟨← stringField json "input"⟩
+          (← decodeBoundedTaskArm (← field json "task"))
+          (← decodeBoundaryMessageArm (← field json "boundaryMessage")))
   | "awaitEffect" =>
       requireObjectShape json
         ["bpmnErrorRoute", "effect", "id", "input", "kind", "origin",

@@ -1,7 +1,8 @@
-/** Admission of one omission-only, interrupting, payload-free Message Boundary Event. */
+/** Projects the payload-free Message boundary disposition selected by the source profile. */
 import {
   BoundaryInterruption,
   CheckedNodeKind,
+  REPEATABLE_EVENT_SUBSCRIPTIONS_CHECKPOINT_PROFILE_ID,
 } from "@bpmn-lean/semantic-core";
 import type {
   CheckedNode,
@@ -27,7 +28,7 @@ import type {
 } from "./root-definition-selection.js";
 
 /**
- * Projects the selected Message handler only when the source omitted `cancelActivity`.
+ * The original Message-boundary capsule selects omission-only interruption.
  *
  * `bpmn-moddle` exposes the BPMN default `true` through the element prototype and creates an own
  * key only when the XML wrote the attribute. Both facts are checked because this capsule selects
@@ -38,13 +39,15 @@ export function projectMessageBoundaryEvent(
   id: string,
   flows: ReadonlyArray<CheckedSequenceFlow>,
   artifacts: MessageRootArtifacts | undefined,
+  semanticProfile: string,
 ): Extract<
   CheckedNode,
   { kind: CheckedNodeKind.MessageBoundaryEvent }
 > | undefined {
   if (
-    Object.hasOwn(element, "cancelActivity") ||
-    element.cancelActivity !== true ||
+    (semanticProfile === REPEATABLE_EVENT_SUBSCRIPTIONS_CHECKPOINT_PROFILE_ID
+      ? element.cancelActivity !== true && element.cancelActivity !== false
+      : Object.hasOwn(element, "cancelActivity") || element.cancelActivity !== true) ||
     !hasOnlyProjectedFlowElementKeys(
       element,
       ProjectedFlowElementShape.BoundaryEvent,
@@ -71,7 +74,9 @@ export function projectMessageBoundaryEvent(
     kind: CheckedNodeKind.MessageBoundaryEvent,
     id,
     attachedToRef,
-    interruption: BoundaryInterruption.Interrupting,
+    interruption: element.cancelActivity === false
+      ? BoundaryInterruption.NonInterrupting
+      : BoundaryInterruption.Interrupting,
     channel,
     outputFlowId: output.id,
   };

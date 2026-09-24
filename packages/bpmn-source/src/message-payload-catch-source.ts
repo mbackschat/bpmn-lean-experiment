@@ -214,12 +214,12 @@ export function compileMessagePayloadCatchCheckedProcess(
         exact.definitions,
         {
           process: exact.process,
-          messageArtifacts: {
+          messageArtifacts: [{
             message: exact.message,
             interface: exact.interface,
             operation: exact.operation,
             channel: exact.payloadNode.channel,
-          },
+          }],
           errorArtifact: undefined,
         },
         undefined,

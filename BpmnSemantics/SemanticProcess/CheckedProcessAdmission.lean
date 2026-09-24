@@ -195,7 +195,7 @@ private def checkedEventRaceConfigurationValid (source : CheckedProcess) : Bool 
         | _ => false
     | _ => true
 
-private def checkedNodeArityValid (flows : List CheckedSequenceFlow) :
+private def checkedNodeArityValid (repeatable : Bool) (flows : List CheckedSequenceFlow) :
     CheckedNode → Bool
   | .noneStartEvent id =>
       incomingCount flows id = 0 && outgoingCount flows id = 1
@@ -220,12 +220,13 @@ private def checkedNodeArityValid (flows : List CheckedSequenceFlow) :
       errorReferenceValid error &&
         incomingCount flows id = 0 && outgoingCount flows id = 1 &&
         flows.any fun flow => decide (flow.id = outputFlowId && flow.sourceId = id)
-  | .timerBoundaryEvent id _ _ durationLiteral outputFlowId =>
-      durationLiteral = "PT1S" &&
+  | .timerBoundaryEvent id _ interruption expression outputFlowId =>
+      (expression == .duration "PT1S" ||
+        (repeatable && expression == .cycle "R/PT1S" && interruption == .nonInterrupting)) &&
         incomingCount flows id = 0 && outgoingCount flows id = 1 &&
         flows.any fun flow => decide (flow.id = outputFlowId && flow.sourceId = id)
   | .messageBoundaryEvent id _ interruption channel outputFlowId =>
-      interruption = .interrupting &&
+      (repeatable || interruption == .interrupting) &&
         (match channel with
         | .operationMessage .. => channel.identifiersNonempty
         | .directMessage .. => false) &&
@@ -368,7 +369,7 @@ private def checkedNodeArityValid (flows : List CheckedSequenceFlow) :
   | .noneEndEvent id =>
       incomingCount flows id = 1 && outgoingCount flows id = 0
 
-/-- The node kinds whose lowered operation carries a boundary Timer deadline of the given disposition. An allowlist, so an unrecognised kind fails closed; a kind belongs here only once some lowering clause folds the deadline into that host's operation *and* preserves its disposition. The two dispositions have different allowlists because they have different lowering clauses: `enterBoundedScope` is interrupting by construction and discards the disposition it was given, so a non-interrupting deadline on a Sub-Process host must be refused here rather than lowered into it. -/
+/-- Legacy deadline-owning Activity kinds; the subscription profile separately selects monitored child entry. -/
 def checkedOwnsBoundaryTimerDeadline (node : CheckedNode)
     (interruption : BoundaryInterruption) (host : NodeId) : Bool :=
   match node, interruption with
@@ -383,27 +384,31 @@ def checkedBoundaryTimerAttachmentValid (source : CheckedProcess) : Bool :=
     | _ => none
   source.nodes.all fun
     | .timerBoundaryEvent id attachedToRef interruption _ _ =>
-        source.nodes.any
-            (checkedOwnsBoundaryTimerDeadline · interruption attachedToRef) &&
+        source.nodes.any (fun node =>
+          checkedOwnsBoundaryTimerDeadline node interruption attachedToRef ||
+            (source.identity.semanticProfile == repeatableSubscriptionCheckpointProfileId &&
+              match node with
+              | .embeddedSubProcess hostId _ => hostId == attachedToRef
+              | _ => false)) &&
           checkedNodeScopeId? source id ==
             checkedNodeScopeId? source attachedToRef &&
           (hosts.filter (· = attachedToRef)).length = 1
     | _ => true
 
-/-- Every admitted Message boundary Event is the sole interrupting Message handler of one same-scope
-User Task. The Message node is not an independently lowered catch operation. -/
+/-- Each Message boundary belongs to one same-scope ordinary User Task; only the subscription checkpoint admits the non-interrupting disposition. -/
 def checkedBoundaryMessageAttachmentValid (source : CheckedProcess) : Bool :=
   let hosts := source.nodes.filterMap fun
     | .messageBoundaryEvent _ attachedToRef _ _ _ => some attachedToRef
     | _ => none
   source.nodes.all fun
-    | .messageBoundaryEvent id attachedToRef .interrupting _ _ =>
+    | .messageBoundaryEvent id attachedToRef interruption _ _ =>
+        (interruption == .interrupting ||
+          source.identity.semanticProfile == repeatableSubscriptionCheckpointProfileId) &&
         (source.nodes.any fun
           | .userTask hostId _ none => hostId = attachedToRef
           | _ => false) &&
         checkedNodeScopeId? source id == checkedNodeScopeId? source attachedToRef &&
         (hosts.filter (· = attachedToRef)).length = 1
-    | .messageBoundaryEvent .. => false
     | _ => true
 
 /-- Independent static admission for the exact currently implemented checked-graph profiles. -/
@@ -440,7 +445,8 @@ def checkedWellFormed (source : CheckedProcess) : Bool :=
                 | .inclusiveGatewayDiverging _ candidateFlowIds _ =>
                     candidateFlowIds.contains flow.id
                 | _ => false)) &&
-    source.nodes.all (checkedNodeArityValid source.sequenceFlows) &&
+    source.nodes.all (checkedNodeArityValid
+      (source.identity.semanticProfile == repeatableSubscriptionCheckpointProfileId) source.sequenceFlows) &&
     checkedInclusivePairingValid source &&
     checkedEventRaceConfigurationValid source &&
     checkedErrorHandlersValid source &&

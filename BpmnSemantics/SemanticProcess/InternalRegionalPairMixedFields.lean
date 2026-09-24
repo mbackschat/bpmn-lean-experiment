@@ -25,9 +25,9 @@ theorem return_cancel_fields_commute (before returned cancelled : RuntimeState)
     (called : ∀ id, (calledInstanceClosure returned root).contains id =
       (calledInstanceClosure before root).contains id)
     (activities : withdrawnByRegion (fun owner => occurrenceInSubtree returned.scopeOccurrences root owner ||
-        (calledInstanceClosure returned root).contains owner.processInstanceId) returned.activityOccurrences =
+        (calledInstanceClosure returned root).contains owner.processInstanceId) returned.activityOccurrences (retainedCancellationRoot root disposition) =
       withdrawnByRegion (fun owner => occurrenceInSubtree before.scopeOccurrences root owner ||
-        (calledInstanceClosure before root).contains owner.processInstanceId) before.activityOccurrences)
+        (calledInstanceClosure before root).contains owner.processInstanceId) before.activityOccurrences (retainedCancellationRoot root disposition))
     (effects : returned.effectWaits.filter (fun wait => occurrenceInSubtree returned.scopeOccurrences root wait.owner ||
         (calledInstanceClosure returned root).contains wait.owner.processInstanceId) =
       before.effectWaits.filter (fun wait => occurrenceInSubtree before.scopeOccurrences root wait.owner ||
@@ -77,9 +77,9 @@ theorem completion_cancel_fields_commute (before completed cancelled : RuntimeSt
     (called : ∀ id, (calledInstanceClosure completed root).contains id =
       (calledInstanceClosure before root).contains id)
     (activities : withdrawnByRegion (fun owner => occurrenceInSubtree completed.scopeOccurrences root owner ||
-        (calledInstanceClosure completed root).contains owner.processInstanceId) completed.activityOccurrences =
+        (calledInstanceClosure completed root).contains owner.processInstanceId) completed.activityOccurrences (retainedCancellationRoot root disposition) =
       withdrawnByRegion (fun owner => occurrenceInSubtree before.scopeOccurrences root owner ||
-        (calledInstanceClosure before root).contains owner.processInstanceId) before.activityOccurrences)
+        (calledInstanceClosure before root).contains owner.processInstanceId) before.activityOccurrences (retainedCancellationRoot root disposition))
     (effects : completed.effectWaits.filter (fun wait => occurrenceInSubtree completed.scopeOccurrences root wait.owner ||
         (calledInstanceClosure completed root).contains wait.owner.processInstanceId) =
       before.effectWaits.filter (fun wait => occurrenceInSubtree before.scopeOccurrences root wait.owner ||

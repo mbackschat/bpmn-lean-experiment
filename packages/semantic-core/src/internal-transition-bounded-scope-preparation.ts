@@ -38,6 +38,7 @@ import type {
 } from "./semantic-process-bounded-scope-runtime.js";
 import type {
   EnterBoundedScopeOperation,
+  EnterMonitoredScopeOperation,
   SemanticProcessProgram,
 } from "./semantic-process-contract.js";
 import { onlyTokenOwner } from "./semantic-process-scope-runtime.js";
@@ -52,7 +53,7 @@ import type {
 
 export type PreparedInternalBoundedScope = SelectedBoundedScopeArming & Readonly<{
   alternative: InternalOperationAlternative;
-  operation: EnterBoundedScopeOperation;
+  operation: EnterBoundedScopeOperation | EnterMonitoredScopeOperation;
   parent: ScopeOccurrenceId;
   footprint: InternalTransitionStateFootprint;
   publicationTemplate: InternalPublicationTemplate;
@@ -62,7 +63,7 @@ export type PreparedInternalBoundedScope = SelectedBoundedScopeArming & Readonly
 export function deriveInternalBoundedScopePreparation(
   program: SemanticProcessProgram,
   state: RuntimeState,
-  operation: EnterBoundedScopeOperation,
+  operation: EnterBoundedScopeOperation | EnterMonitoredScopeOperation,
 ): PreparedInternalBoundedScope | null {
   const parent = onlyTokenOwner(state, operation.input);
   if (parent === undefined) {

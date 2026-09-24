@@ -1,3 +1,4 @@
+import BpmnSemantics.SemanticProcess.InternalTransitionPreservation
 import BpmnSemantics.SemanticProcess.InternalPreparedTransition
 import BpmnSemantics.SemanticProcess.InternalArmingBatchPublication
 import BpmnSemantics.SemanticProcess.InternalLocalControlPairPublication
@@ -14,6 +15,8 @@ import BpmnSemantics.SemanticProcess.InternalMergeEndCommutation
 import BpmnSemantics.SemanticProcess.InternalMergeRegionalCommutation
 import BpmnSemantics.SemanticProcess.InternalTimerTaskTransitionPair
 import BpmnSemantics.SemanticProcess.InternalTimerTaskAcceptedPublication
+import BpmnSemantics.SemanticProcess.InternalBoundedScopeTransitionPair
+import BpmnSemantics.SemanticProcess.InternalMessageTaskTransitionPair
 
 /-! Complete mixed preparations lift to arbitrary finite prefixes and multiplicity-preserving
 permutations under the [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).
@@ -40,6 +43,18 @@ private theorem prepared_regional_transition_pair (program : Program) (state : R
       (runtimeStateWellFormed_position program instanceId state stateValid) running
     simpa only [same] using stateValid
   cases other with
+  | messageTask contract message =>
+      have pair := prepared_message_task_transition_pair program state instanceId contract message (.regional regional)
+        programValid stateValid otherFound regionalFound
+        (runtimeStateWellFormed_canonicalCollectionOrder program instanceId state stateValid)
+        (PreparedInternalTransition.independent_symm independent)
+      exact ⟨pair.2.1, pair.1, pair.2.2.symm⟩
+  | boundedScope contract bounded =>
+      have pair := prepared_bounded_scope_transition_pair program state instanceId contract bounded (.regional regional)
+        programValid stateValid otherFound regionalFound
+        (runtimeStateWellFormed_canonicalCollectionOrder program instanceId state stateValid)
+        (PreparedInternalTransition.independent_symm independent)
+      exact ⟨pair.2.1, pair.1, pair.2.2.symm⟩
   | timerTask contract patch =>
       have pair := prepared_timer_task_transition_pair program state instanceId contract patch (.regional regional)
         programValid stateValid otherFound regionalFound
@@ -123,6 +138,14 @@ private theorem prepared_end_transition_pair (program : Program) (state : Runtim
       prepareInternalEnd? program (other.apply program state) ending.operation = some ending ∧
       other.apply program (ending.selection.apply state) = ending.selection.apply (other.apply program state) := by
   cases other with
+  | messageTask contract message =>
+      have pair := prepared_message_task_transition_pair program state instanceId contract message (.ordinaryEnd ending)
+        programValid stateValid otherFound endFound canonical (PreparedInternalTransition.independent_symm independent)
+      exact ⟨pair.2.1, pair.1, pair.2.2.symm⟩
+  | boundedScope contract bounded =>
+      have pair := prepared_bounded_scope_transition_pair program state instanceId contract bounded (.ordinaryEnd ending)
+        programValid stateValid otherFound endFound canonical (PreparedInternalTransition.independent_symm independent)
+      exact ⟨pair.2.1, pair.1, pair.2.2.symm⟩
   | timerTask contract patch =>
       have pair := prepared_timer_task_transition_pair program state instanceId contract patch (.ordinaryEnd ending)
         programValid stateValid otherFound endFound canonical (PreparedInternalTransition.independent_symm independent)
@@ -163,6 +186,14 @@ private theorem prepared_merge_transition_pair (program : Program) (state : Runt
       prepareInternalMerge? program (other.apply program state) merge.selection.operation merge.selection.alternative = some merge ∧
       other.apply program (merge.selection.apply state) = merge.selection.apply (other.apply program state) := by
   cases other with
+  | messageTask contract message =>
+      have pair := prepared_message_task_transition_pair program state instanceId contract message (.mergeInput merge)
+        programValid stateValid otherFound mergeFound canonical (PreparedInternalTransition.independent_symm independent)
+      exact ⟨pair.2.1, pair.1, pair.2.2.symm⟩
+  | boundedScope contract bounded =>
+      have pair := prepared_bounded_scope_transition_pair program state instanceId contract bounded (.mergeInput merge)
+        programValid stateValid otherFound mergeFound canonical (PreparedInternalTransition.independent_symm independent)
+      exact ⟨pair.2.1, pair.1, pair.2.2.symm⟩
   | timerTask contract patch =>
       have pair := prepared_timer_task_transition_pair program state instanceId contract patch (.mergeInput merge)
         programValid stateValid otherFound mergeFound canonical (PreparedInternalTransition.independent_symm independent)
@@ -205,11 +236,25 @@ theorem prepared_transition_pair (program : Program) (state : RuntimeState)
       left.Prepared program (right.apply program state) ∧
       right.apply program (left.apply program state) = left.apply program (right.apply program state) := by
   cases left with
+  | messageTask contract message =>
+      exact prepared_message_task_transition_pair program state instanceId contract message right
+        programValid stateValid leftPrepared rightPrepared canonical independent
+  | boundedScope contract bounded =>
+      exact prepared_bounded_scope_transition_pair program state instanceId contract bounded right
+        programValid stateValid leftPrepared rightPrepared canonical independent
   | timerTask contract patch =>
       exact prepared_timer_task_transition_pair program state instanceId contract patch right
         programValid stateValid leftPrepared rightPrepared canonical independent
   | arming left =>
       cases right with
+      | messageTask contract message =>
+          have pair := prepared_message_task_transition_pair program state instanceId contract message (.arming left)
+            programValid stateValid rightPrepared leftPrepared canonical (PreparedInternalTransition.independent_symm independent)
+          exact ⟨pair.2.1, pair.1, pair.2.2.symm⟩
+      | boundedScope contract bounded =>
+          have pair := prepared_bounded_scope_transition_pair program state instanceId contract bounded (.arming left)
+            programValid stateValid rightPrepared leftPrepared canonical (PreparedInternalTransition.independent_symm independent)
+          exact ⟨pair.2.1, pair.1, pair.2.2.symm⟩
       | timerTask contract patch =>
           have pair := prepared_timer_task_transition_pair program state instanceId contract patch (.arming left)
             programValid stateValid rightPrepared leftPrepared canonical (PreparedInternalTransition.independent_symm independent)
@@ -241,6 +286,14 @@ theorem prepared_transition_pair (program : Program) (state : RuntimeState)
           exact ⟨pair.2.1, pair.1, pair.2.2.symm⟩
   | localControl left =>
       cases right with
+      | messageTask contract message =>
+          have pair := prepared_message_task_transition_pair program state instanceId contract message (.localControl left)
+            programValid stateValid rightPrepared leftPrepared canonical (PreparedInternalTransition.independent_symm independent)
+          exact ⟨pair.2.1, pair.1, pair.2.2.symm⟩
+      | boundedScope contract bounded =>
+          have pair := prepared_bounded_scope_transition_pair program state instanceId contract bounded (.localControl left)
+            programValid stateValid rightPrepared leftPrepared canonical (PreparedInternalTransition.independent_symm independent)
+          exact ⟨pair.2.1, pair.1, pair.2.2.symm⟩
       | timerTask contract patch =>
           have pair := prepared_timer_task_transition_pair program state instanceId contract patch (.localControl left)
             programValid stateValid rightPrepared leftPrepared canonical (PreparedInternalTransition.independent_symm independent)
@@ -271,6 +324,14 @@ theorem prepared_transition_pair (program : Program) (state : RuntimeState)
           exact ⟨pair.2.1, pair.1, pair.2.2.symm⟩
   | scopeCreation left =>
       cases right with
+      | messageTask contract message =>
+          have pair := prepared_message_task_transition_pair program state instanceId contract message (.scopeCreation left)
+            programValid stateValid rightPrepared leftPrepared canonical (PreparedInternalTransition.independent_symm independent)
+          exact ⟨pair.2.1, pair.1, pair.2.2.symm⟩
+      | boundedScope contract bounded =>
+          have pair := prepared_bounded_scope_transition_pair program state instanceId contract bounded (.scopeCreation left)
+            programValid stateValid rightPrepared leftPrepared canonical (PreparedInternalTransition.independent_symm independent)
+          exact ⟨pair.2.1, pair.1, pair.2.2.symm⟩
       | timerTask contract patch =>
           have pair := prepared_timer_task_transition_pair program state instanceId contract patch (.scopeCreation left)
             programValid stateValid rightPrepared leftPrepared canonical (PreparedInternalTransition.independent_symm independent)
@@ -308,12 +369,6 @@ theorem prepared_transition_pair (program : Program) (state : RuntimeState)
       exact prepared_merge_transition_pair program state instanceId left right programValid stateValid
         leftPrepared rightPrepared canonical independent
 
-/-- Root completion writes hosting control. A genuinely independent batch supplies another
-member's protected control read, deriving this condition before prefix induction. -/
-def PreparedInternalTransition.ControlReadOnly (instanceId : SemanticId) : PreparedInternalTransition → Prop
-  | .regional prepared => .ordinary (.runtimeControl instanceId) ∉ prepared.footprint.writes
-  | _ => True
-
 theorem prepared_transition_pair_control_read_only (program : Program) (state : RuntimeState)
     (left right : PreparedInternalTransition) (instanceId : SemanticId)
     (valid : runtimeStateWellFormed program instanceId state = true)
@@ -324,10 +379,41 @@ theorem prepared_transition_pair_control_read_only (program : Program) (state : 
     runtimePositionValid_running_instance program instanceId hosting state
       (runtimeStateWellFormed_position program instanceId state valid) selectedRunning
   cases left with
-  | timerTask _ _ | arming _ | localControl _ | scopeCreation _ | ordinaryEnd _ | mergeInput _ => trivial
+  | messageTask _ _ | boundedScope _ _ | timerTask _ _ | arming _ | localControl _
+  | scopeCreation _ | ordinaryEnd _ | mergeInput _ => trivial
   | regional regional =>
       change .ordinary (.runtimeControl instanceId) ∉ regional.footprint.writes
       cases right with
+      | messageTask contract patch =>
+          obtain ⟨_, owner, hosting, inputOrigin, processId, _, selectedRunning, _, _, _, _, _, _, _, _, _, _, rfl⟩ :=
+            prepareInternalMessageTaskContract_facts program state contract patch rightFound.2
+          have same : hosting = instanceId := by
+            simpa only [runningInstance?, running, Option.some.injEq] using selectedRunning.symm
+          subst hosting
+          intro written
+          have read : .ordinary (.runtimeControl instanceId) ∈
+              (messageTaskStateFootprint
+                (makeInternalMessageTaskPatch program state contract owner instanceId processId inputOrigin)).reads := by
+            simp [messageTaskStateFootprint, makeInternalMessageTaskPatch, canonicalRegionalStateAtoms_mem]
+          have conflict := regional_independent_read_write _ _ independent _ _ written read
+          simp [regionalStateAtomsConflict] at conflict
+      | boundedScope contract scope =>
+          obtain ⟨selection, hosting, ownerRecord, _, start, delta, _, selectedRunning,
+            _, _, _, _, _, _, _, _, rfl⟩ :=
+            prepareInternalBoundedScope_facts program state contract scope rightFound.2
+          have same : hosting = instanceId := by
+            simpa only [runningInstance?, running, Option.some.injEq] using selectedRunning.symm
+          subst hosting
+          have read : .ordinary (.runtimeControl instanceId) ∈
+              (boundedScopeStateFootprint selection instanceId ownerRecord).reads := by
+            apply (canonicalRegionalStateAtoms_mem _ _).mpr
+            apply List.mem_append_left
+            apply List.mem_map.mpr
+            exact ⟨.runtimeControl instanceId,
+              by simp [internalScopeCreationStateFootprint, canonicalStateAtomSet, mem_sortBy], rfl⟩
+          intro written
+          have conflict := regional_independent_read_write _ _ independent _ _ written read
+          simp [regionalStateAtomsConflict] at conflict
       | timerTask contract patch =>
           have same := instanceEq _ (preparedTimerTask_owner_facts program state contract patch rightFound).2.2
           intro written
@@ -385,117 +471,6 @@ theorem prepared_transition_pair_control_read_only (program : Program) (state : 
           simpa only [instanceEq _ runningMerge] using
             localControl_regional_control_not_written state regional.footprint merge.selection.localControlPatch
               merge.runtimeInstanceId separated
-
-theorem prepared_transition_control_frame (program : Program) (state : RuntimeState)
-    (prepared : PreparedInternalTransition) (instanceId : SemanticId)
-    (valid : runtimeStateWellFormed program instanceId state = true)
-    (running : state.control = .running instanceId)
-    (found : prepared.Prepared program state)
-    (readOnly : prepared.ControlReadOnly instanceId) :
-    (prepared.apply program state).control = state.control := by
-  cases prepared with
-  | timerTask _ patch => exact armingControlRead_frame state patch.arm
-  | arming arm =>
-      cases arm with
-      | ordinary operation patch => exact armingControlRead_frame state patch
-      | data contract patch => exact armingControlRead_frame state patch.arm
-  | localControl localPrepared => rfl
-  | ordinaryEnd _ => rfl
-  | mergeInput _ => rfl
-  | scopeCreation scope => exact scopeCreation_apply_control state scope.selection
-  | regional regional =>
-      obtain ⟨after, _, applied⟩ := prepareInternalRegional_executes program state _ regional found
-      have frame := preparedRegional_control_filters program state after instanceId _ regional valid running
-        found applied (fun _ => false) (fun _ => false) (fun _ => false)
-        (by simp) (by simp) (by simp) (by simp) readOnly
-      simpa only [PreparedInternalTransition.apply, applied, Option.getD_some] using frame.1
-
-theorem prepared_transition_preserves (program : Program) (state : RuntimeState)
-    (prepared : PreparedInternalTransition) (instanceId : SemanticId)
-    (programValid : programWellFormed program = true)
-    (stateValid : runtimeStateWellFormed program instanceId state = true)
-    (running : state.control = .running instanceId)
-    (openBefore : (projectOpenFlowNodeOccurrences? program state).isSome = true)
-    (selected : prepared.Prepared program state)
-    (readOnly : prepared.ControlReadOnly instanceId) :
-    runtimeStateWellFormed program instanceId (prepared.apply program state) = true ∧
-      (prepared.apply program state).control = .running instanceId ∧
-      (projectOpenFlowNodeOccurrences? program (prepared.apply program state)).isSome = true := by
-  have control := (prepared_transition_control_frame program state prepared instanceId stateValid running selected readOnly).trans running
-  cases prepared with
-  | timerTask contract patch =>
-      have preserved := prepared_timer_task_preserves_runtime_and_open_set program state contract patch instanceId
-        programValid stateValid openBefore selected
-      exact ⟨preserved.1, control, preserved.2⟩
-  | arming arm =>
-      have preserved := prepared_arming_preserves program state arm instanceId
-        programValid stateValid openBefore selected
-      exact ⟨preserved.1, control, preserved.2⟩
-  | localControl localPrepared =>
-      refine ⟨prepareInternalLocalControl_preserves_runtimeStateWellFormed program state
-        localPrepared.operation localPrepared instanceId programValid stateValid running selected,
-        control, ?_⟩
-      change (projectOpenFlowNodeOccurrences? program
-        (localPrepared.selection.apply state)).isSome = true
-      rw [prepareInternalLocalControl_open_occurrences_frame program state
-        localPrepared.operation localPrepared instanceId stateValid running selected]
-      exact openBefore
-  | ordinaryEnd ending =>
-      refine ⟨prepareInternalEnd_preserves_runtimeStateWellFormed program state ending.operation ending
-        instanceId stateValid selected, control, ?_⟩
-      change (projectOpenFlowNodeOccurrences? program (ending.selection.apply state)).isSome = true
-      rw [ending.selection.open_occurrences_frame program state instanceId running]
-      exact openBefore
-  | mergeInput merge =>
-      refine ⟨prepareInternalMerge_preserves_runtimeStateWellFormed program state merge.selection.operation
-        merge.selection.alternative merge instanceId stateValid selected, control, ?_⟩
-      change (projectOpenFlowNodeOccurrences? program (merge.selection.apply state)).isSome = true
-      rw [merge.selection.open_occurrences_frame program state instanceId running]
-      exact openBefore
-  | scopeCreation scope =>
-      refine ⟨prepareInternalScopeCreation_preserves_runtimeStateWellFormed program instanceId state
-        scope.selection.operation scope programValid stateValid selected, control, ?_⟩
-      cases projected : projectOpenFlowNodeOccurrences? program state with
-      | none => simp [projected] at openBefore
-      | some current =>
-          obtain ⟨start, _, afterProjected⟩ := prepared_scope_creation_open_projection program state
-            scope.selection.operation scope instanceId current programValid stateValid projected selected
-          change (projectOpenFlowNodeOccurrences? program (scope.selection.apply state)).isSome = true
-          simp only [afterProjected, Option.isSome_some]
-  | regional regional =>
-      obtain ⟨after, applied, published⟩ := prepareInternalRegional_execution_publication program state _ regional
-        instanceId instanceId 0 programValid stateValid selected
-      obtain ⟨_, opened, _, projected, _⟩ := accepted_operation_delta_equals_independent_open_projection
-        program state after regional.selection.operation instanceId 0 _ published.lifecycle
-      refine ⟨?_, control, ?_⟩
-      · simpa only [PreparedInternalTransition.apply, applied, Option.getD_some] using published.wellFormed
-      · simp only [PreparedInternalTransition.apply, applied, Option.getD_some, projected, Option.isSome_some]
-
-theorem prepared_transition_applies (program : Program) (state : RuntimeState)
-    (prepared : PreparedInternalTransition)
-    (snapshots : program.compensationEventSubProcessSnapshots = none)
-    (selected : prepared.Prepared program state) :
-    fireInternalAlternative? program state prepared.operation prepared.alternative = some (prepared.apply program state) ∧
-      applyPreparedInternalTransition? program state prepared = some (prepared.apply program state) := by
-  constructor
-  · cases prepared <;> simp only [PreparedInternalTransition.operation, PreparedInternalTransition.alternative,
-      fireInternalAlternative_operation, PreparedInternalTransition.apply]
-    case arming arm => exact (prepared_arming_applies program state arm snapshots selected).1
-    case timerTask contract patch =>
-        exact prepareInternalTimerTaskContract_refines_operation program state contract patch selected
-    case localControl localPrepared =>
-        exact prepareInternalLocalControl_refines program state localPrepared.operation
-          localPrepared snapshots selected
-    case scopeCreation scope =>
-        exact prepareInternalScopeCreation_refines program state scope.selection.operation scope selected
-    case ordinaryEnd ending =>
-        exact prepareInternalEnd_refines program state ending.operation ending selected
-    case regional regional =>
-        obtain ⟨after, fired, applied⟩ := prepareInternalRegional_executes program state _ regional selected
-        simpa only [PreparedInternalTransition.operation, PreparedInternalTransition.apply, applied, Option.getD_some] using fired
-    case mergeInput merge =>
-        exact prepareInternalMerge_refines program state merge.selection.operation merge.selection.alternative merge selected
-  · simp [applyPreparedInternalTransition?, snapshots, selected]
 
 def PreparedTransitionList (program : Program) (state : RuntimeState)
     (prepared : List PreparedInternalTransition) : Prop :=

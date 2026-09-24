@@ -179,8 +179,15 @@ def substitutedSequentialMultiInstanceProgram : Program :=
 theorem every_other_profile_refuses_the_distinct_sequential_multi_instance_operation
     (profile : ProfileId) (different : profile ≠ sequentialMultiInstanceUserTaskProfileId) :
     programProfileCapabilitiesValid (programForProfile profile) = false := by
+  by_cases subscription : profile = repeatableSubscriptionCheckpointProfileId
+  · subst profile
+    decide +kernel
+  have legacy : program.identity.semanticProfile ≠ repeatableSubscriptionCheckpointProfileId := by
+    decide +kernel
+  have admitted := exact_registered_profile_shape_is_admitted
+  simp only [programProfileCapabilitiesValid, legacy, ↓reduceIte, Bool.and_eq_true] at admitted
   have exactProfileMatch : programSequentialMultiInstanceProfileMatches program = true :=
-    (Bool.and_eq_true_iff.mp exact_registered_profile_shape_is_admitted).1
+    admitted.1.1
   have programProfile : program.identity.semanticProfile =
       sequentialMultiInstanceUserTaskProfileId := by
     rfl
@@ -199,7 +206,8 @@ theorem every_other_profile_refuses_the_distinct_sequential_multi_instance_opera
     rw [operationPresent]
     simp only [different, decide_false, Bool.true_beq]
   unfold programProfileCapabilitiesValid
-  rw [mismatched]
+  rw [if_neg (show (programForProfile profile).identity.semanticProfile ≠
+    repeatableSubscriptionCheckpointProfileId from subscription), mismatched]
   rfl
 
 theorem profile_admission_refuses_omitted_duplicated_and_substituted_programs :

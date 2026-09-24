@@ -295,6 +295,7 @@ function operationRespectsScopes(
     // The two outputs land in different scopes and that asymmetry is the rule: the child entry is
     // inside the new region, while the boundary route is produced beside the Sub-Process, because the
     // deadline belongs to the host Activity's own scope.
+    case SemanticOperationKind.EnterMonitoredScope:
     case SemanticOperationKind.EnterBoundedScope:
       return referencesOwnedBy(
         [operation.input, operation.boundaryTimer.output],
@@ -368,6 +369,7 @@ function hasOneCompletionStrategyPerScope(
   const entries = [
     ...operationsOfKind(graph, SemanticOperationKind.EnterScope),
     ...operationsOfKind(graph, SemanticOperationKind.EnterBoundedScope),
+    ...operationsOfKind(graph, SemanticOperationKind.EnterMonitoredScope),
   ];
   const returns = operationsOfKind(graph, SemanticOperationKind.ReturnProcess);
   return graph.definitionScopes.every(({ id, parentScopeId }) => {
@@ -504,6 +506,7 @@ function operationInputs(
     case SemanticOperationKind.ReturnProcess:
       return [];
     case SemanticOperationKind.EnterScope:
+    case SemanticOperationKind.EnterMonitoredScope:
     case SemanticOperationKind.EnterBoundedScope:
     case SemanticOperationKind.InvokeProcess:
     case SemanticOperationKind.AwaitUserTask:
@@ -513,6 +516,7 @@ function operationInputs(
     case SemanticOperationKind.AwaitSequentialMultiInstanceUserTask:
     case SemanticOperationKind.AwaitParallelMultiInstanceUserTask:
     case SemanticOperationKind.AwaitBoundedUserTask:
+    case SemanticOperationKind.AwaitMessageMonitoredUserTask:
     case SemanticOperationKind.AwaitMessageBoundedUserTask:
     case SemanticOperationKind.AwaitMonitoredUserTask:
     case SemanticOperationKind.AwaitMessage:
@@ -568,15 +572,17 @@ function operationOutputs(
     // the deadline wins, unlike an Event-Based Gateway's configuration flows. The monitored family
     // declares the same two outputs, though it can produce both within one run rather than one.
     case SemanticOperationKind.AwaitBoundedUserTask:
+    case SemanticOperationKind.AwaitMessageMonitoredUserTask:
     case SemanticOperationKind.AwaitMessageBoundedUserTask:
     case SemanticOperationKind.AwaitMonitoredUserTask:
-      return operation.kind === SemanticOperationKind.AwaitMessageBoundedUserTask
+      return "boundaryMessage" in operation
         ? [operation.task.output, operation.boundaryMessage.output]
         : [operation.task.output, operation.boundaryTimer.output];
     case SemanticOperationKind.EnterScope:
       return [operation.childEntry];
     // The normal route is deliberately absent, exactly as for `enterScope`: it is the child scope's
     // own `completeScope` parent output, because the deadline is withdrawn by child quiescence.
+    case SemanticOperationKind.EnterMonitoredScope:
     case SemanticOperationKind.EnterBoundedScope:
       return [operation.childEntry, operation.boundaryTimer.output];
     case SemanticOperationKind.InvokeProcess:

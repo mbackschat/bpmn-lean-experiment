@@ -158,7 +158,7 @@ theorem projectWaits_wait_anchor_mem (program : Program) (state : RuntimeState)
     · exact Or.inr (Or.inr (Or.inr (Or.inr (by simpa using member))))
   simpa only [List.mem_append, or_assoc] using rawMember
 
-private theorem mapM_no_anchor (values : List α) (project : α → Option OpenSemanticFlowNodeOccurrence)
+theorem mapM_no_anchor (values : List α) (project : α → Option OpenSemanticFlowNodeOccurrence)
     (starts : List OpenSemanticFlowNodeOccurrence) (anchor : SemanticFlowNodeOccurrenceAnchor)
     (mapped : values.mapM project = some starts)
     (pointwise : ∀ value start, project value = some start → start.anchor ≠ anchor) :
@@ -173,7 +173,7 @@ private theorem mapM_no_anchor (values : List α) (project : α → Option OpenS
       subst starts
       simp [Ne.symm (pointwise value start startEq), ih tail tailEq]
 
-private theorem scopeStart_anchor_ne_wait (program : Program) (state : RuntimeState)
+theorem scopeStart_anchor_ne_wait (program : Program) (state : RuntimeState)
     (occurrence : RuntimeScopeOccurrence) (start : OpenSemanticFlowNodeOccurrence)
     (wait : OccurrenceId) (started : scopeStart? program state occurrence = some start) :
     start.anchor ≠ .wait wait := by
@@ -192,7 +192,7 @@ private theorem scopeStart_anchor_ne_wait (program : Program) (state : RuntimeSt
           simp
       | cons other tail => simp at started
 
-private theorem callStart_anchor_ne_wait (program : Program) (state : RuntimeState)
+theorem callStart_anchor_ne_wait (program : Program) (state : RuntimeState)
     (record : CalledProcessOccurrence) (start : OpenSemanticFlowNodeOccurrence)
     (wait : OccurrenceId) (started : callStart? program state record = some start) :
     start.anchor ≠ .wait wait := by

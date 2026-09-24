@@ -70,9 +70,10 @@ theorem preparedArming_cancelled_outside (program : Program) (state : RuntimeSta
 
 theorem preparedArming_cancellation_populations (program : Program) (state : RuntimeState)
     (arm : PreparedInternalArming) (cancelled : ScopeOccurrenceId → Bool)
-    (prepared : arm.Prepared program state) (outside : cancelled arm.scopeFramePatch.owner = false) :
-    withdrawnByRegion cancelled (arm.apply state).activityOccurrences =
-        withdrawnByRegion cancelled state.activityOccurrences ∧
+    (prepared : arm.Prepared program state) (outside : cancelled arm.scopeFramePatch.owner = false)
+    (retainedRoot : Option ScopeOccurrenceId := none) :
+    withdrawnByRegion cancelled (arm.apply state).activityOccurrences retainedRoot =
+        withdrawnByRegion cancelled state.activityOccurrences retainedRoot ∧
       (arm.apply state).effectWaits.filter (fun wait => cancelled wait.owner) =
         state.effectWaits.filter (fun wait => cancelled wait.owner) := by
   have assigned := preparedArming_write_owner program state arm prepared
@@ -89,7 +90,7 @@ theorem preparedArming_cancellation_populations (program : Program) (state : Run
       subst patch
       change cancelled owner = false at outside
       constructor
-      · change withdrawnByRegion cancelled (insertActivityOccurrence _ _) = _
+      · change withdrawnByRegion cancelled (insertActivityOccurrence _ _) retainedRoot = _
         rw [withdrawnByRegion, insertActivityOccurrence_eq_canonicalInsertBy,
           filter_canonicalInsertBy_rejected _ _ _ _ (by
             simp [makeInternalDataArmingPatch, dataInputOutputActivityRecord, recordInRegion, outside])]
@@ -107,9 +108,9 @@ theorem preparedArming_regional_retention_frame (program : Program) (state : Run
         regionalSelectionReferenceRetention state selected ∧
       regionalSelectionLocalDataRetention (arm.apply state) selected =
         regionalSelectionLocalDataRetention state selected := by
-  have populations := preparedArming_cancellation_populations program state arm
+  have populations := fun retainedRoot => preparedArming_cancellation_populations program state arm
     (fun owner => occurrenceInSubtree state.scopeOccurrences selected.root.id owner ||
-      (calledInstanceClosure state selected.root.id).contains owner.processInstanceId) prepared outside
+      (calledInstanceClosure state selected.root.id).contains owner.processInstanceId) prepared outside retainedRoot
   have fields := scopeArming_scope_read_projections state arm
   have scopes := fields.2.2.1
   have calls := fields.2.2.2.1
@@ -122,7 +123,8 @@ theorem preparedArming_regional_retention_frame (program : Program) (state : Run
   cases kind : selected.kind <;>
     simp only [regionalSelectionReferenceRetention, regionalSelectionLocalDataRetention, kind,
       callReferenceRetention, cancellationReferenceRetention, scopes, calls, called,
-      populations.1, populations.2, incidents, and_self]
+      (populations _).1, (populations none).2, incidents, and_self]
+  all_goals cases ‹InternalCompletionWithdrawal› <;> rfl
 
 /-- ADIO-SCOPE-01 adds one fresh owner and its local scope together. Neither freshness check
 can be dropped: an old local could otherwise start naming the new Activity. -/

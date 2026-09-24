@@ -35,7 +35,7 @@ def checkedProcess : CheckedProcess :=
       [ .noneEndEvent ⟨"BoundaryEnd"⟩
       , .userTask ⟨"BoundaryTask"⟩ (some "Deadline reached")
       , .userTask ⟨"BoundedTask"⟩ (some "Bounded work")
-      , .timerBoundaryEvent ⟨"Deadline"⟩ ⟨"BoundedTask"⟩ .interrupting "PT1S"
+      , .timerBoundaryEvent ⟨"Deadline"⟩ ⟨"BoundedTask"⟩ .interrupting (.duration "PT1S")
           ⟨"Flow_Boundary"⟩
       , .noneEndEvent ⟨"NormalEnd"⟩
       , .userTask ⟨"NormalTask"⟩ (some "Completed in time")

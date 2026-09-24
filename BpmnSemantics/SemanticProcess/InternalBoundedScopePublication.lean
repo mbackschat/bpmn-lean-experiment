@@ -51,16 +51,19 @@ theorem prepared_bounded_scope_candidate
         have permutation := filter_canonicalInsertBy_perm scopeOccurrenceBefore keep created
           state.scopeOccurrences (by simp [keep, created])
         simpa only [insertScopeOccurrence, absent] using permutation
-      simp only [makeInternalBoundedScopePreparation, InternalBoundedScopeSelection.apply,
-        makeInternalBoundedScopeSelection, InternalScopeCreationSelection.apply,
-        InternalBoundedScopeContract.operation, candidateFlowNodeOccurrenceDeltaForOperation?,
-        flowNodeSelectedOperationOwner?, owned, bind, Option.bind]
-      change (do
+      have singletonExpanded := singleton
+      dsimp only [keep, created] at singletonExpanded
+      suffices candidate : (do
         let scope ← match (insertScopeOccurrence created state.scopeOccurrences).filter keep with
           | [scope] => some scope | _ => none
         pure (canonicalFlowNodeOccurrenceDelta
           [← candidateScopeStart? program contract.operation owner scope] [])) =
-        some { started := [start], ended := [] }
+        some { started := [start], ended := [] } by
+        cases disposition : contract.disposition <;>
+          simpa only [keep, created, makeInternalBoundedScopePreparation, InternalBoundedScopeSelection.apply,
+            makeInternalBoundedScopeSelection, InternalScopeCreationSelection.apply,
+            InternalBoundedScopeContract.operation, disposition, candidateFlowNodeOccurrenceDeltaForOperation?,
+            flowNodeSelectedOperationOwner?, owned, bind, Option.bind, singletonExpanded] using candidate
       rw [singleton]
       change candidateScopeStart? program contract.operation owner created = some start at startFound
       simp only [bind, Option.bind, startFound, pure, Pure.pure]
@@ -126,14 +129,20 @@ theorem prepared_bounded_scope_transition_record
   obtain ⟨selected, _, _, _, _, _, selection, _, _, exactOperation, _, _, _, _, _, _, rfl⟩ :=
     prepareInternalBoundedScope_facts program state contract prepared found
   obtain ⟨entry, entryFound, rfl⟩ := selectInternalBoundedScope_facts state contract selected selection
-  apply internalTransitionRecord_of_selection program state contract.operation entry.owner exactOperation
+  have operationId : contract.operation.id = contract.operationId := by
+    cases disposition : contract.disposition <;>
+      simp only [InternalBoundedScopeContract.operation, disposition, SemanticOperation.id]
+  apply internalTransitionRecord_of_selection program state contract.operation entry.owner
+    (by simpa only [operationId] using exactOperation)
   unfold selectInternalScopeCreation? at entryFound
   obtain ⟨hosting, _, entryFound⟩ := Option.bind_eq_some_iff.mp entryFound
   obtain ⟨owner, owned, entryFound⟩ := Option.bind_eq_some_iff.mp entryFound
   split at entryFound
   · contradiction
   · cases entryFound
-    exact owned
+    cases disposition : contract.disposition <;>
+      simpa only [InternalBoundedScopeContract.operation, disposition, selectedOperationOwner?,
+        flowNodeSelectedOperationOwner?] using owned
 
 theorem prepared_bounded_scope_publication_accepted
     (program : Program) (state : RuntimeState) (contract : InternalBoundedScopeContract)

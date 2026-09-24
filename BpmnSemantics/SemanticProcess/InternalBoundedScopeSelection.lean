@@ -1,12 +1,17 @@
 import BpmnSemantics.SemanticProcess.InternalScopeCreationSelection
 
 /-! Bounded Sub-Process preparation reuses child-entry selection and retains its parent-owned
-deadline and Activity as one patch under the [complete-family account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md#complete-operation-family-census).
+deadline and Activity as one patch for interrupting and ESL-OWN noninterrupting boundaries under the [complete-family account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md#complete-operation-family-census).
 -/
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
 open BpmnSemantics
+
+inductive InternalBoundedScopeDisposition where
+  | interrupting
+  | nonInterrupting
+  deriving Repr, DecidableEq
 
 structure InternalBoundedScopeContract where
   operationId : OperationId
@@ -15,11 +20,15 @@ structure InternalBoundedScopeContract where
   entry : ControlPlaceId
   definition : DefinitionScopeId
   timer : BoundaryTimerArm
+  disposition : InternalBoundedScopeDisposition := .interrupting
   deriving Repr, DecidableEq
 
 def InternalBoundedScopeContract.operation (contract : InternalBoundedScopeContract) : SemanticOperation :=
-  .enterBoundedScope contract.operationId contract.origin contract.input contract.entry
-    contract.definition contract.timer
+  match contract.disposition with
+  | .interrupting => .enterBoundedScope contract.operationId contract.origin contract.input contract.entry
+      contract.definition contract.timer
+  | .nonInterrupting => .enterMonitoredScope contract.operationId contract.origin contract.input contract.entry
+      contract.definition contract.timer
 
 /-- This is the existing child-entry selector's input, not an extra Program operation or admission. -/
 def InternalBoundedScopeContract.entryOperation (contract : InternalBoundedScopeContract) : SemanticOperation :=
@@ -28,14 +37,22 @@ def InternalBoundedScopeContract.entryOperation (contract : InternalBoundedScope
 def boundedScopeContract? : SemanticOperation → Option InternalBoundedScopeContract
   | .enterBoundedScope operationId origin input entry definition timer =>
       some { operationId, origin, input, entry, definition, timer }
+  | .enterMonitoredScope operationId origin input entry definition timer =>
+      some { operationId, origin, input, entry, definition, timer, disposition := .nonInterrupting }
   | _ => none
 
 theorem boundedScopeContract_operation (operation : SemanticOperation)
     (contract : InternalBoundedScopeContract) (found : boundedScopeContract? operation = some contract) :
     contract.operation = operation := by
   cases operation <;> simp [boundedScopeContract?] at found
-  cases found
-  rfl
+  all_goals cases found; rfl
+
+/-- ESL-OWN shares arming while preserving the exact immutable boundary disposition. -/
+theorem boundedScopeContract_roundtrip (contract : InternalBoundedScopeContract) :
+    boundedScopeContract? contract.operation = some contract := by
+  cases contract with
+  | mk operationId origin input entry definition timer disposition =>
+      cases disposition <;> rfl
 
 structure InternalBoundedScopeSelection where
   creation : InternalScopeCreationSelection
@@ -153,11 +170,14 @@ theorem selectInternalBoundedScope_refines (program : Program) (state : RuntimeS
       have childFound := inserted_child_selected state.scopeOccurrences
         { processInstanceId := hosting, definitionScopeId := contract.definition
           activation := scopeActivationCount state contract.definition + 1 } owner fresh
-      unfold fire?
-      rw [snapshotAbsent]
-      change armBoundedScopeState? state contract.origin contract.input contract.entry contract.definition contract.timer = _
-      simp only [armBoundedScopeState?, enterScopeState?, owned, running, bind, Option.bind,
-        available, Bool.false_eq_true, ↓reduceIte, InternalScopeCreationSelection.apply, pure, Pure.pure]
-      rw [childFound]
+      cases disposition : contract.disposition <;>
+        simp only [InternalBoundedScopeContract.operation, disposition]
+      all_goals
+        unfold fire?
+        rw [snapshotAbsent]
+        change armBoundedScopeState? state contract.origin contract.input contract.entry contract.definition contract.timer = _
+        simp only [armBoundedScopeState?, enterScopeState?, owned, running, bind, Option.bind,
+          available, Bool.false_eq_true, ↓reduceIte, InternalScopeCreationSelection.apply, pure, Pure.pure]
+        rw [childFound]
 
 end BpmnSemantics.SemanticProcess.InternalCommutation

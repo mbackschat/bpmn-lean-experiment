@@ -83,6 +83,8 @@ theorem boundedScope_completion_supplement_frame
   let bounded := makeInternalBoundedScopeSelection state contract entry
   let after := bounded.apply state
   cases choice with
+  | monitored record timer =>
+      exact (boundedWithdrawal_not_monitored program _ definition record timer chosen).elim
   | unbounded =>
       exact (completionWithdrawal_unbounded program after definition
         (completionWithdrawal_unbounded_facts program _ definition chosen)).1
@@ -112,6 +114,153 @@ theorem boundedScope_completion_supplement_frame
             InternalScopeCreationSelection.apply, fields.2.2] using census)
       · exact deadlineOwner
 
+private theorem boundedScope_monitored_supplement_binding
+    (program : Program) (state : RuntimeState) (contract : InternalBoundedScopeContract)
+    (bounded : PreparedInternalBoundedScope)
+    (found : prepareInternalBoundedScope? program state contract = some bounded)
+    (pair : MonitoredScopePair)
+    (bound : MonitoredScopeBinding program (bounded.selection.creation.apply state) pair) :
+    MonitoredScopeBinding program (bounded.selection.apply state) pair := by
+  have oldBodies := prepared_bounded_scope_old_records_reject_child program state contract bounded found
+  have timerFrame := boundedScope_existing_timer_census program state contract bounded found
+  obtain ⟨selected, hosting, _, _, _, _, selection, running, _, _, _, _, _, joint, _, _, rfl⟩ :=
+    prepareInternalBoundedScope_facts program state contract bounded found
+  obtain ⟨entry, entryFound, rfl⟩ := selectInternalBoundedScope_facts state contract selected selection
+  have child := (boundedScope_entry_selection_input state contract entry entryFound).2.2
+  let selected := makeInternalBoundedScopeSelection state contract entry
+  let before := entry.apply state
+  let after := selected.apply state
+  change MonitoredScopeBinding program before pair at bound
+  change MonitoredScopeBinding program after pair
+  have activities : before.activityOccurrences = state.activityOccurrences := by
+    simp only [before, InternalScopeCreationSelection.apply, child]
+  have oldRecords : state.activityOccurrences.filter (sameActivityOccurrence pair.record) = [pair.record] := by
+    rw [← activities]; exact bound.2.1.2.2.2.2.2.1
+  have member : pair.record ∈ state.activityOccurrences :=
+    (List.mem_filter.mp (show pair.record ∈ state.activityOccurrences.filter (sameActivityOccurrence pair.record) by
+      rw [oldRecords]; simp)).1
+  have different : entry.created.id ≠ pair.child.id := by
+    intro same
+    apply oldBodies pair.record member
+    simp only [makeInternalBoundedScopePreparation, makeInternalBoundedScopeSelection, same,
+      activityBodyScope?, bound.2.1.2.2.2.2.2.2.1]
+  have originalChild : pair.child ∈ state.scopeOccurrences := by
+    have member := (List.mem_filter.mp (show pair.child ∈ before.scopeOccurrences.filter
+      (fun occurrence => decide (occurrence.id.definitionScopeId = pair.definition.childScopeId)) by
+        rw [bound.2.1.1]; simp)).1
+    simp only [before, InternalScopeCreationSelection.apply, child] at member
+    rcases (mem_insertScopeOccurrence _ _ _).mp member with same | old
+    · exact (different (congrArg RuntimeScopeOccurrence.id same).symm).elim
+    · exact old
+  have runningControl : state.control = .running hosting := by
+    cases control : state.control <;> simp_all [runningInstance?]
+  have absentChild := (scopeCreation_selection_child_facts state contract.entryOperation entry hosting
+    runningControl entryFound child).2.2.2
+  have definition : entry.created.id.definitionScopeId = contract.definition := by
+    unfold selectInternalScopeCreation? at entryFound
+    obtain ⟨_, _, entryFound⟩ := Option.bind_eq_some_iff.mp entryFound
+    obtain ⟨_, _, entryFound⟩ := Option.bind_eq_some_iff.mp entryFound
+    split at entryFound
+    · contradiction
+    · cases entryFound; rfl
+  have differentDefinition : contract.definition ≠ pair.definition.childScopeId := by
+    intro same
+    have rejected := List.any_eq_false.mp absentChild pair.child originalChild
+    simp [definition, same, bound.2.1.2.1] at rejected
+  simp only [boundedScopeJointResourcesAvailable, Bool.and_eq_true] at joint
+  have rejected : sameActivityOccurrence pair.record selected.record = false := by
+    apply Bool.eq_false_iff.mpr
+    intro same
+    have absent : state.activityOccurrences.any (regionalActivityAssociationsConflict · selected.record) = false := by
+      simpa using joint.2
+    exact List.any_eq_false.mp absent pair.record member
+      (by simp [regionalActivityAssociationsConflict, same])
+  have records : after.activityOccurrences.filter (sameActivityOccurrence pair.record) = [pair.record] := by
+    change (insertActivityOccurrence _ state.activityOccurrences).filter _ = _
+    rw [insertActivityOccurrence_eq_canonicalInsertBy,
+      filter_canonicalInsertBy_rejected _ _ _ _ rejected]
+    exact oldRecords
+  have body : after.activityOccurrences.filter (fun record => decide (record.body = .childScope pair.child.id)) =
+      before.activityOccurrences.filter (fun record => decide (record.body = .childScope pair.child.id)) := by
+    rw [activities]
+    change (insertActivityOccurrence _ state.activityOccurrences).filter _ = _
+    rw [insertActivityOccurrence_eq_canonicalInsertBy]
+    apply filter_canonicalInsertBy_rejected
+    simp [selected, makeInternalBoundedScopeSelection, different]
+  have declaration : pair.definition ∈ monitoredScopeDefinitions program :=
+    (List.mem_filter.mp (show pair.definition ∈ (monitoredScopeDefinitions program).filter
+      (fun definition => decide (definition.childScopeId = pair.definition.childScopeId)) by
+        rw [bound.1.1]; simp)).1
+  have declared : .enterMonitoredScope pair.definition.id pair.definition.origin pair.definition.input
+      pair.definition.childEntry pair.definition.childScopeId pair.definition.timer ∈ program.operations := by
+    generalize definitionEq : pair.definition = definition at declaration ⊢
+    obtain ⟨operation, present, chosen⟩ := List.mem_filterMap.mp declaration
+    cases operation <;> simp at chosen
+    cases chosen
+    exact present
+  have declarers : timerWaitDeclarers program contract.timer.elementId = [contract.operation] := by
+    simpa only [uniqueFamilyDeclarer?, decide_eq_true_eq] using joint.1.1.2
+  have differentTimer : contract.timer.elementId ≠ pair.definition.timer.elementId := by
+    intro same
+    have collision : .enterMonitoredScope pair.definition.id pair.definition.origin pair.definition.input
+        pair.definition.childEntry pair.definition.childScopeId pair.definition.timer ∈
+          timerWaitDeclarers program contract.timer.elementId := by
+      simp [timerWaitDeclarers, declared, same]
+    rw [declarers] at collision
+    cases disposition : contract.disposition <;>
+      simp [InternalBoundedScopeContract.operation, disposition] at collision
+    exact differentDefinition collision.2.2.2.2.1.symm
+  have timers : after.timerWaits.filter (monitoredScopeTimerNames pair) =
+      before.timerWaits.filter (monitoredScopeTimerNames pair) := by
+    simp only [before, InternalScopeCreationSelection.apply, child]
+    change (insertTimerWait _ state.timerWaits).filter _ = state.timerWaits.filter _
+    unfold insertTimerWait
+    apply filter_canonicalInsertBy_rejected
+    simp [selected, makeInternalBoundedScopeSelection, monitoredScopeTimerNames, differentTimer]
+  have oldRecordsBefore : before.activityOccurrences.filter (sameActivityOccurrence pair.record) = [pair.record] :=
+    bound.2.1.2.2.2.2.2.1
+  have control : after.control = before.control := rfl
+  have scopes : after.scopeOccurrences = before.scopeOccurrences := rfl
+  refine ⟨bound.1, ?_, ?_⟩
+  · simpa only [MonitoredScopeOwnership, control, scopes, body, records, oldRecordsBefore] using bound.2.1
+  · have timerBinding := bound.2.2
+    cases deadline : pair.timer with
+    | none => simpa only [MonitoredScopeTimerBinding, deadline, timers] using timerBinding
+    | some timer =>
+      simp only [MonitoredScopeTimerBinding, deadline] at timerBinding ⊢
+      refine ⟨timerBinding.1, timers.trans timerBinding.2.1, ?_⟩
+      have identity := timerFrame (boundaryTimerWaitIdentity timer) timer (by
+        simpa only [before, InternalScopeCreationSelection.apply, child] using timerBinding.2.2.1)
+      change after.timerWaits.filter (timerIdNamesWait (boundaryTimerWaitIdentity timer)) = [timer] at identity
+      simpa only [NonInterruptingBoundaryTimerBinding, identity, records,
+        timerBinding.2.2.1, oldRecordsBefore] using timerBinding.2.2
+
+theorem boundedScope_subscribed_completion_supplement_frame
+    (program : Program) (state : RuntimeState) (contract : InternalBoundedScopeContract)
+    (bounded : PreparedInternalBoundedScope)
+    (found : prepareInternalBoundedScope? program state contract = some bounded)
+    (definition : DefinitionScopeId) (output : Option ControlPlaceId) (choice : InternalCompletionWithdrawal)
+    (chosen : selectSubscribedCompletionWithdrawal? program (bounded.selection.creation.apply state)
+      definition output = some choice) :
+    selectSubscribedCompletionWithdrawal? program (bounded.selection.apply state) definition output = some choice := by
+  unfold selectSubscribedCompletionWithdrawal? at chosen ⊢
+  split at chosen
+  · next monitored =>
+    rw [if_pos monitored]
+    obtain ⟨pair, _, chosen⟩ := Option.bind_eq_some_iff.mp chosen
+    split at chosen
+    · next addressed =>
+      cases chosen
+      have bound := boundedScope_monitored_supplement_binding program state contract bounded found pair.val pair.property
+      have rebuilt := monitoredScopePairForChild_complete program (bounded.selection.apply state) pair.val bound
+      rw [addressed.1] at rebuilt
+      simp only [rebuilt, Option.bind_eq_bind, Option.bind_some]
+      rw [if_pos addressed]
+    · contradiction
+  · next unmonitored =>
+    rw [if_neg unmonitored]
+    exact boundedScope_completion_supplement_frame program state contract bounded found definition choice chosen
+
 theorem selectInternalRegional_after_independent_bounded_scope
     (program : Program) (state : RuntimeState) (contract : InternalBoundedScopeContract)
     (bounded : PreparedInternalBoundedScope) (operation : SemanticOperation) (regional : PreparedInternalRegional)
@@ -122,7 +271,7 @@ theorem selectInternalRegional_after_independent_bounded_scope
     (independent : regionalStateFootprintsIndependent regional.footprint bounded.footprint = true) :
     selectInternalRegional? program (bounded.selection.apply state) operation = some regional.selection := by
   have childValid := prepareInternalBoundedScope_preserves_child_runtime program state contract bounded _ valid found
-  have supplement := boundedScope_completion_supplement_frame program state contract bounded found
+  have supplement := boundedScope_subscribed_completion_supplement_frame program state contract bounded found
   obtain ⟨selected, hosting, owner, _, _, _, selection, running, _, _, _, _, _, _, _, _, rfl⟩ :=
     prepareInternalBoundedScope_facts program state contract bounded found
   have separated := boundedScope_other_child_independent regional.footprint selected hosting owner independent

@@ -22,6 +22,7 @@ def boundedCompletionDeclarations (program : Program) (scopeId : DefinitionScope
 inductive InternalCompletionWithdrawal where
   | unbounded
   | bounded (record : ActivityOccurrence) (deadline : TimerWait)
+  | monitored (record : ActivityOccurrence) (deadline : Option TimerWait)
   deriving Repr, DecidableEq
 
 def selectInternalCompletionWithdrawal? (program : Program) (state : RuntimeState)
@@ -45,6 +46,27 @@ def selectInternalCompletionWithdrawal? (program : Program) (state : RuntimeStat
             | _ => none
       | _ => none
   | _ => none
+
+/-- A monitored child retains its exact Activity even after consuming a one-shot deadline.
+The immutable completion route is checked during preparation, before any runtime mutation. -/
+def selectSubscribedCompletionWithdrawal? (program : Program) (state : RuntimeState)
+    (scopeId : DefinitionScopeId) (output : Option ControlPlaceId) : Option InternalCompletionWithdrawal :=
+  if isMonitoredScopeDefinition program scopeId then do
+    let pair ← monitoredScopePairForChild? program state scopeId
+    if pair.val.definition.childScopeId = scopeId ∧ output = some pair.val.output then
+      some (.monitored pair.val.record pair.val.timer)
+    else none
+  else selectInternalCompletionWithdrawal? program state scopeId
+
+theorem boundedWithdrawal_not_monitored (program : Program) (state : RuntimeState)
+    (scopeId : DefinitionScopeId) (record : ActivityOccurrence) (timer : Option TimerWait) :
+    selectInternalCompletionWithdrawal? program state scopeId ≠ some (.monitored record timer) := by
+  intro selected
+  unfold selectInternalCompletionWithdrawal? at selected
+  repeat' first
+    | (solve | simp at selected)
+    | split at selected
+    | obtain ⟨_, _, selected⟩ := Option.bind_eq_some_iff.mp selected
 
 /-- A first matching declaration cannot hide a second entry for the same child definition. -/
 theorem completionWithdrawal_ambiguous_declarations_refused (program : Program) (state : RuntimeState)
@@ -232,7 +254,8 @@ theorem completionWithdrawal_refines (program : Program) (before completed : Run
       | .bounded record deadline => after =
           { completed with
             timerWaits := completed.timerWaits.erase deadline
-            activityOccurrences := completed.activityOccurrences.filter (fun candidate => !decide (candidate.body = record.body)) }) := by
+            activityOccurrences := completed.activityOccurrences.filter (fun candidate => !decide (candidate.body = record.body)) }
+      | .monitored .. => False) := by
   cases withdrawal with
   | unbounded =>
       have absent := (completionWithdrawal_unbounded program before scopeId
@@ -243,6 +266,7 @@ theorem completionWithdrawal_refines (program : Program) (before completed : Run
         completionWithdrawal_raw_selection program before scopeId record deadline selected
       refine ⟨_, ?_, rfl⟩
       simp [completeBoundedScope?, ordinary, definitionFound, childFound, deadlineFound, body]
+  | monitored record deadline => exact (boundedWithdrawal_not_monitored program before scopeId record deadline selected).elim
 
 /-- The admitted completion law now applies to the predecessor-selected bounded withdrawal. -/
 theorem completionWithdrawal_preserves_position (program : Program) (before completed : RuntimeState)
@@ -259,5 +283,77 @@ theorem completionWithdrawal_preserves_position (program : Program) (before comp
   obtain ⟨after, result, _⟩ := completionWithdrawal_refines program before completed scopeId output withdrawal selected ordinary
   exact ⟨after, result, declaredBoundedComplete_preserves_position program before after expectedInstanceId instanceId
     id origin scopeId output valid structural running operation result⟩
+
+/-- Monitored selection yields the predecessor certificate used by the actual completion;
+no successful evaluator or successor validity is assumed by preparation. -/
+theorem subscribedWithdrawal_monitored_facts (program : Program) (state : RuntimeState)
+    (scopeId : DefinitionScopeId) (output : Option ControlPlaceId)
+    (record : ActivityOccurrence) (timer : Option TimerWait)
+    (selected : selectSubscribedCompletionWithdrawal? program state scopeId output =
+      some (.monitored record timer)) :
+    ∃ pair : { pair : MonitoredScopePair // MonitoredScopeBinding program state pair },
+      isMonitoredScopeDefinition program scopeId = true ∧
+      monitoredScopePairForChild? program state scopeId = some pair ∧
+      pair.val.definition.childScopeId = scopeId ∧ output = some pair.val.output ∧
+      pair.val.record = record ∧ pair.val.timer = timer := by
+  unfold selectSubscribedCompletionWithdrawal? at selected
+  split at selected
+  · next monitored =>
+      obtain ⟨pair, found, selected⟩ := Option.bind_eq_some_iff.mp selected
+      split at selected
+      · next addressed =>
+          cases selected
+          exact ⟨pair, monitored, found, addressed.1, addressed.2, rfl, rfl⟩
+      · contradiction
+  · exact (boundedWithdrawal_not_monitored program state scopeId record timer selected).elim
+
+theorem subscribedWithdrawal_monitored_refines (program : Program) (before completed : RuntimeState)
+    (scopeId : DefinitionScopeId) (output : Option ControlPlaceId)
+    (record : ActivityOccurrence) (timer : Option TimerWait)
+    (selected : selectSubscribedCompletionWithdrawal? program before scopeId output =
+      some (.monitored record timer))
+    (ordinary : completeScopeState? before scopeId output = some completed) :
+    completeSelectedScope? program before scopeId output = some
+      { completed with
+        timerWaits := removeMonitoredScopeTimer completed.timerWaits timer
+        activityOccurrences := completed.activityOccurrences.erase record } := by
+  obtain ⟨pair, monitored, found, scope, route, recordEq, timerEq⟩ :=
+    subscribedWithdrawal_monitored_facts program before scopeId output record timer selected
+  simp only [completeSelectedScope?, monitored, ↓reduceIte, completeMonitoredScope?,
+    found, Option.bind_eq_bind, Option.bind_some]
+  rw [if_pos ⟨scope, route⟩, ordinary]
+  simp only [Option.bind_some, recordEq, timerEq]
+
+/-- Complete preparation composes exact predecessor withdrawal with primitive quiescent
+completion. The existing bounded branch and its refusal domain remain unchanged. -/
+theorem subscribedWithdrawal_refines (program : Program) (before completed : RuntimeState)
+    (scopeId : DefinitionScopeId) (output : Option ControlPlaceId) (withdrawal : InternalCompletionWithdrawal)
+    (selected : selectSubscribedCompletionWithdrawal? program before scopeId output = some withdrawal)
+    (ordinary : completeScopeState? before scopeId output = some completed) :
+    ∃ after, completeSelectedScope? program before scopeId output = some after ∧
+      (match (generalizing := false) withdrawal with
+      | .unbounded => after = completed
+      | .bounded record deadline => after =
+          { completed with
+            timerWaits := completed.timerWaits.erase deadline
+            activityOccurrences := completed.activityOccurrences.filter (fun candidate => !decide (candidate.body = record.body)) }
+      | .monitored record deadline => after =
+          { completed with
+            timerWaits := removeMonitoredScopeTimer completed.timerWaits deadline
+            activityOccurrences := completed.activityOccurrences.erase record }) := by
+  have original := selected
+  unfold selectSubscribedCompletionWithdrawal? at selected
+  split at selected
+  · obtain ⟨pair, _, selected⟩ := Option.bind_eq_some_iff.mp selected
+    split at selected
+    · cases selected
+      exact ⟨_, subscribedWithdrawal_monitored_refines program before completed scopeId output
+        pair.val.record pair.val.timer original ordinary, rfl⟩
+    · contradiction
+  · next unmonitored =>
+      obtain ⟨after, result, update⟩ := completionWithdrawal_refines program before completed
+        scopeId output withdrawal selected ordinary
+      refine ⟨after, by simpa [completeSelectedScope?, unmonitored] using result, ?_⟩
+      cases withdrawal <;> simp_all
 
 end BpmnSemantics.SemanticProcess.InternalCommutation

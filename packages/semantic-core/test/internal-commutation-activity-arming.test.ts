@@ -345,10 +345,11 @@ function requireActivityArmingOperation(
   return operation;
 }
 
-function requirePrepared<Prepared>(prepared: Prepared | null): Prepared {
+function requirePrepared(prepared: ReturnType<ActivityArmingPreparationModule["deriveInternalActivityArmingPreparation"]>) {
   if (prepared === null) {
     throw new Error("expected a prepared Activity arming transition");
   }
+  assert.ok("timerWait" in prepared);
   return prepared;
 }
 

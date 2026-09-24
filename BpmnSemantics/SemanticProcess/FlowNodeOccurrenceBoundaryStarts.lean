@@ -106,6 +106,22 @@ def candidateOperationFlowNodeIdentity? (program : Program) (operation : Semanti
     let identity ← candidateFlowNodeIdentity? program identityOwner elementId
     if identity.processId ≠ operationProcessId then none else pure identity
 
+/-- Exact same-owner candidate identity follows from immutable operation and scope selection. -/
+theorem candidateOperationFlowNodeIdentity_of_exact_selection (program : Program)
+    (operation : SemanticOperation) (owner : ScopeOccurrenceId) (elementId : NodeId)
+    (processId : ProcessId) (binding : OperationScopeOwnership)
+    (operationSelection : program.operations.filter (fun candidate =>
+      decide (candidate.id = operation.id)) = [operation])
+    (scopeSelection : program.operationScopes.filter (fun candidate =>
+      decide (candidate.operationId = operation.id)) = [binding])
+    (scopeMatches : binding.scopeId = owner.definitionScopeId)
+    (processSelection : candidateProcessIdForDefinitionScope?
+      program owner.definitionScopeId = some processId) :
+    candidateOperationFlowNodeIdentity? program operation owner owner elementId =
+      some { processId, elementId, owner } := by
+  simp [candidateOperationFlowNodeIdentity?, exactOperationOwner?, candidateFlowNodeIdentity?,
+    operationSelection, scopeSelection, scopeMatches, processSelection]
+
 private def processIdForSelectedOperation? (program : Program)
     (operation : SemanticOperation) (owner : ScopeOccurrenceId) : Option ProcessId := do
   let staticOwner ← exactOperationOwner? program operation
@@ -173,7 +189,8 @@ def candidateUserTaskStart? (program : Program) (operation : SemanticOperation)
         else
           candidateWaitStart? program operation owner wait.processInstanceId
             (⟨wait.task.id.value⟩ : NodeId) wait.activation
-    | .awaitBoundedUserTask _ _ _ task _ | .awaitMonitoredUserTask _ _ _ task _ =>
+    | .awaitBoundedUserTask _ _ _ task _ | .awaitMonitoredUserTask _ _ _ task _
+    | .awaitMessageBoundedUserTask _ _ _ task _ | .awaitMessageMonitoredUserTask _ _ _ task _ =>
         if wait.task.id ≠ task.id || wait.task.name ≠ task.name || wait.output ≠ task.output ||
             wait.task.metadata.isSome || wait.metadata.isSome then none
         else
@@ -284,7 +301,8 @@ def candidateScopeStart? (program : Program) (operation : SemanticOperation)
   let processId ← processIdForSelectedOperation? program operation owner
   let origin ← match operation with
     | .enterScope _ origin _ _ childScopeId
-    | .enterBoundedScope _ origin _ _ childScopeId _ =>
+    | .enterBoundedScope _ origin _ _ childScopeId _
+    | .enterMonitoredScope _ origin _ _ childScopeId _ =>
         if occurrence.parent ≠ some owner || occurrence.id.definitionScopeId ≠ childScopeId ||
             occurrence.id.processInstanceId ≠ owner.processInstanceId || occurrence.id.activation = 0
           then none

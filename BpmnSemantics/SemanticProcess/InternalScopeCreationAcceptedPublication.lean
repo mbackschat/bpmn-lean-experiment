@@ -160,7 +160,8 @@ theorem prepared_scope_creation_open_projection (program : Program) (state : Run
     program state operation prepared admitted structuralBefore found
   have excluded := prepareInternalScopeCreation_excludes_bounded_entry program state operation prepared
   have excluded : ∀ id origin input entry definition boundary,
-      .enterBoundedScope id origin input entry definition boundary ∈ program.operations →
+      (.enterBoundedScope id origin input entry definition boundary ∈ program.operations ∨
+        .enterMonitoredScope id origin input entry definition boundary ∈ program.operations) →
         prepared.selection.created.parent = none ∨ definition ≠ prepared.selection.created.id.definitionScopeId :=
     fun id origin input entry definition boundary member =>
       excluded id origin input entry definition boundary admitted found member

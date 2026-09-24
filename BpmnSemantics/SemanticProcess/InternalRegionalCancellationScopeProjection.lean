@@ -21,7 +21,7 @@ theorem cancelScopeSubtree_child_scope_projection (program : Program) (state : R
         (scopeStart? program (cancelScopeSubtree state root.id disposition)) =
       some (entries.filter fun entry =>
         (decide (disposition = .retain) && decide (entry.anchor = .scope root.id)) ||
-          !flowNodeOccurrenceOwnedBySubtree program state root.id entry) := by
+          !flowNodeOccurrenceOwnedBySubtree program state root.id entry disposition) := by
   let keep := fun scope : RuntimeScopeOccurrence =>
     (decide (disposition = .retain) && decide (scope.id = root.id)) ||
       !(occurrenceInSubtree state.scopeOccurrences root.id scope.id ||
@@ -63,7 +63,7 @@ theorem cancelScopeSubtree_child_call_projection_filtered (program : Program) (s
         (callStart? program (cancelScopeSubtree state root.id disposition)) =
       some (entries.filter fun entry =>
         (decide (disposition = .retain) && decide (entry.anchor = .scope root.id)) ||
-          !flowNodeOccurrenceOwnedBySubtree program state root.id entry) := by
+          !flowNodeOccurrenceOwnedBySubtree program state root.id entry disposition) := by
   rw [cancelScopeSubtree_child_call_projection program state expected hosting root disposition
     valid running rootMember child, projected]
   congr 1

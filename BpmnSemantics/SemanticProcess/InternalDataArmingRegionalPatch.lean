@@ -20,7 +20,7 @@ theorem dataArming_cancellation_commutes (program : Program) (state : RuntimeSta
   let cancelled := fun owner => occurrenceInSubtree state.scopeOccurrences root owner ||
     (calledInstanceClosure state root).contains owner.processInstanceId
   have populations := preparedArming_cancellation_populations program state (.data contract patch)
-    cancelled prepared outside
+    cancelled prepared outside (retainedCancellationRoot root disposition)
   obtain ⟨owner, inputOrigin, source, _, _, _, _, _, _, _, _, _, recordsFresh, patchEq⟩ :=
     prepareInternalDataArmingContract_facts program state contract patch prepared
   subst patch
@@ -34,7 +34,7 @@ theorem dataArming_cancellation_commutes (program : Program) (state : RuntimeSta
     { owner := .activityOccurrence (activityOwnerForRecord record),
       bindings := source }
   have keptWait : (!cancelled wait.owner) = true := by simp [wait, outside]
-  have keptRecord : (!recordInRegion cancelled record) = true := by
+  have keptRecord : (!recordInRegion cancelled record (retainedCancellationRoot root disposition)) = true := by
     simp [record, dataInputOutputActivityRecord, recordInRegion, outside]
   have oldRecordAbsent (old : ActivityOccurrence) (member : old ∈ state.activityOccurrences) :
       activityOccurrenceScopeMatches (activityOwnerForRecord old) scope = false := by
@@ -52,7 +52,7 @@ theorem dataArming_cancellation_commutes (program : Program) (state : RuntimeSta
     simp [makeInternalDataArmingPatch, sameActivityOccurrence, ← show
       dataInputOutputActivityRecord state owner.processInstanceId owner contract.taskId = record from rfl,
       equal.1, element, equal.2.2]
-  have recordsAbsent : ((withdrawnByRegion cancelled state.activityOccurrences).any
+  have recordsAbsent : ((withdrawnByRegion cancelled state.activityOccurrences (retainedCancellationRoot root disposition)).any
       fun old => activityOccurrenceScopeMatches (activityOwnerForRecord old) scope) = false := by
     apply List.any_eq_false.mpr
     intro old member
@@ -64,7 +64,7 @@ theorem dataArming_cancellation_commutes (program : Program) (state : RuntimeSta
       root disposition).variables.activities = [scope] := by
     change [scope].filter (fun activity =>
       !(calledInstanceClosure state root).contains activity.owner.processInstanceId &&
-        !((withdrawnByRegion cancelled state.activityOccurrences).any fun old =>
+        !((withdrawnByRegion cancelled state.activityOccurrences (retainedCancellationRoot root disposition)).any fun old =>
           activityOccurrenceScopeMatches (activityOwnerForRecord old) activity) &&
         !((state.effectWaits.filter fun old => cancelled old.owner).any fun old =>
           activityScopeMatches (effectWaitOccurrenceId old) activity) &&
@@ -82,7 +82,7 @@ theorem dataArming_cancellation_commutes (program : Program) (state : RuntimeSta
   have waitFrame := filter_canonicalInsertBy_retained userTaskWaitBefore userTaskWaitBefore_compose
     (fun wait => !cancelled wait.owner) wait state.waits canonical.2.2.1 keptWait
   have recordFrame := filter_canonicalInsertBy_retained activityOccurrenceBefore
-    regional_activityOccurrenceBefore_compose (fun record => !recordInRegion cancelled record)
+    regional_activityOccurrenceBefore_compose (fun record => !recordInRegion cancelled record (retainedCancellationRoot root disposition))
     record state.activityOccurrences canonical.2.2.2.2.2.2.2.2.2.2.2.2.2.2.1 keptRecord
   dsimp only [cancelled] at populations waitFrame recordFrame tokenFrame
   simp only [PreparedInternalArming.apply, applyInternalDataArmingPatch,

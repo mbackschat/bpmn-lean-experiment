@@ -82,18 +82,12 @@ theorem regionalSelection_return_root (program : Program) (state : RuntimeState)
       | split at found
       | obtain ⟨_, _, found⟩ := Option.bind_eq_some_iff.mp found
 
-theorem regionalSelection_bounded_deadline (program : Program) (state : RuntimeState)
+private theorem completing_withdrawal (program : Program) (state : RuntimeState)
     (operation : SemanticOperation) (selected : InternalRegionalSelection)
-    (record : ActivityOccurrence) (deadline : TimerWait)
+    (withdrawal : InternalCompletionWithdrawal)
     (found : selectInternalRegional? program state operation = some selected)
-    (kind : selected.kind = .completing (.bounded record deadline)) : deadline ∈ state.timerWaits := by
-  have member (scope : DefinitionScopeId)
-      (withdrawal : selectInternalCompletionWithdrawal? program state scope = some (.bounded record deadline)) :
-      deadline ∈ state.timerWaits := by
-    obtain ⟨_, _, _, attached, _, _, _, _, _, _, _, census, _⟩ :=
-      completionWithdrawal_bounded_facts program state scope record deadline withdrawal
-    have present : deadline ∈ state.timerWaits.filter (timerIdNamesWait attached) := by rw [census]; simp
-    exact (List.mem_filter.mp present).1
+    (kind : selected.kind = .completing withdrawal) :
+    ∃ definition output, selectSubscribedCompletionWithdrawal? program state definition output = some withdrawal := by
   unfold selectInternalRegional? at found
   obtain ⟨_, _, found⟩ := Option.bind_eq_some_iff.mp found
   cases operation
@@ -102,9 +96,38 @@ theorem regionalSelection_bounded_deadline (program : Program) (state : RuntimeS
     repeat' first
       | (solve | simp at found)
       | (solve | cases found; simp at kind)
-      | (solve | cases found; cases kind; exact member _ (by assumption))
+      | (solve | cases found; cases kind; exact ⟨_, _, by assumption⟩)
       | split at found
       | obtain ⟨_, _, found⟩ := Option.bind_eq_some_iff.mp found
+
+theorem regionalSelection_bounded_deadline (program : Program) (state : RuntimeState)
+    (operation : SemanticOperation) (selected : InternalRegionalSelection)
+    (record : ActivityOccurrence) (deadline : TimerWait)
+    (found : selectInternalRegional? program state operation = some selected)
+    (kind : selected.kind = .completing (.bounded record deadline)) : deadline ∈ state.timerWaits := by
+  obtain ⟨scope, output, withdrawal⟩ := completing_withdrawal program state operation selected _ found kind
+  unfold selectSubscribedCompletionWithdrawal? at withdrawal
+  split at withdrawal
+  · obtain ⟨_, _, withdrawal⟩ := Option.bind_eq_some_iff.mp withdrawal
+    split at withdrawal <;> simp at withdrawal
+  · obtain ⟨_, _, _, attached, _, _, _, _, _, _, _, census, _⟩ :=
+      completionWithdrawal_bounded_facts program state scope record deadline withdrawal
+    have present : deadline ∈ state.timerWaits.filter (timerIdNamesWait attached) := by rw [census]; simp
+    exact (List.mem_filter.mp present).1
+
+theorem regionalSelection_monitored_deadline (program : Program) (state : RuntimeState)
+    (operation : SemanticOperation) (selected : InternalRegionalSelection)
+    (record : ActivityOccurrence) (deadline : TimerWait)
+    (found : selectInternalRegional? program state operation = some selected)
+    (kind : selected.kind = .completing (.monitored record (some deadline))) :
+    deadline ∈ state.timerWaits := by
+  obtain ⟨scope, output, withdrawal⟩ := completing_withdrawal program state operation selected _ found kind
+  obtain ⟨pair, _, _, _, _, _, timerEq⟩ :=
+    subscribedWithdrawal_monitored_facts program state scope output record (some deadline) withdrawal
+  have timerBinding := pair.property.2.2
+  simp only [MonitoredScopeTimerBinding, timerEq] at timerBinding
+  exact (List.mem_filter.mp (show deadline ∈ state.timerWaits.filter (monitoredScopeTimerNames pair.val) by
+    rw [timerBinding.2.1]; simp)).1
 
 theorem preparedArming_return_outside (program : Program) (state : RuntimeState)
     (operation : SemanticOperation) (selected : InternalRegionalSelection)
@@ -155,9 +178,9 @@ theorem preparedArm_regional_wait_retained (program : Program) (state : RuntimeS
   have called := preparedArming_return_outside program state regionalOperation selected region
     (.ordinary operation patch) valid selectedBefore prepared derived outside
   have assigned := (prepared_arm_selection_unique program state operation patch prepared).2.2
-  have unattached := preparedArm_new_wait_unattached program state operation patch
+  have unattached := fun retainedRoot => preparedArm_new_wait_unattached program state operation patch
     (withdrawnByRegion (fun owner => occurrenceInSubtree state.scopeOccurrences selected.root.id owner ||
-      (calledInstanceClosure state selected.root.id).contains owner.processInstanceId) state.activityOccurrences)
+      (calledInstanceClosure state selected.root.id).contains owner.processInstanceId) state.activityOccurrences retainedRoot)
     (fun _ member => (List.mem_filter.mp member).1) live prepared
   cases kind : selected.kind with
   | returning record =>
@@ -184,11 +207,37 @@ theorem preparedArm_regional_wait_retained (program : Program) (state : RuntimeS
               simpa [regionalSelectionReferenceRetention, kind, boundedCompletionReferenceRetention] using different
           | _ => simp only [regionalSelectionReferenceRetention, kind,
               boundedCompletionReferenceRetention, ordinaryCompletionReferenceRetention]
+      | monitored record timer =>
+          cases timer with
+          | none => cases patch.write <;>
+              simp only [regionalSelectionReferenceRetention, kind, monitoredCompletionReferenceRetention,
+                ordinaryCompletionReferenceRetention]
+          | some deadline =>
+              have member := regionalSelection_monitored_deadline program state regionalOperation selected record deadline selectedBefore kind
+              have fresh := prepared_arm_key_fresh program state operation patch prepared
+              cases write : patch.write with
+              | timer inserted =>
+                  rw [write] at fresh
+                  have rejected : timerIdNamesWait (boundaryTimerWaitIdentity deadline) inserted = false := by
+                    apply Bool.eq_false_iff.mpr
+                    intro same
+                    simp only [timerIdNamesWait, boundaryTimerWaitIdentity,
+                      Bool.and_eq_true, beq_iff_eq] at same
+                    have element : inserted.elementId = deadline.elementId :=
+                      congrArg NodeId.mk same.1.2.symm
+                    have collision : timerWaitKeyMatches inserted deadline = true := by
+                      simp [timerWaitKeyMatches, same.1.1.symm, element, same.2.symm]
+                    rw [(fresh deadline member).1] at collision
+                    contradiction
+                  simp only [regionalSelectionReferenceRetention, kind, monitoredCompletionReferenceRetention,
+                    rejected, Bool.not_false]
+              | _ => simp only [regionalSelectionReferenceRetention, kind,
+                  monitoredCompletionReferenceRetention, ordinaryCompletionReferenceRetention]
   | interrupting parent | terminating =>
       cases write : patch.write <;>
         simp only [write, InternalArmingWrite.owner] at assigned unattached
       all_goals simp only [regionalSelectionReferenceRetention, kind, cancellationReferenceRetention,
-        assigned, cancelled, unattached, Bool.not_false, Bool.true_and]
+        assigned, cancelled, unattached _, Bool.not_false, Bool.true_and]
 
 theorem preparedDataArming_record_retained (program : Program) (state : RuntimeState)
     (operation : SemanticOperation) (selected : InternalRegionalSelection)
@@ -222,7 +271,8 @@ theorem preparedDataArming_record_retained (program : Program) (state : RuntimeS
   | completing withdrawal =>
       cases withdrawal <;>
         simp [regionalSelectionReferenceRetention, kind, ordinaryCompletionReferenceRetention,
-          boundedCompletionReferenceRetention, makeInternalDataArmingPatch, dataInputOutputActivityRecord]
+          boundedCompletionReferenceRetention, monitoredCompletionReferenceRetention,
+          makeInternalDataArmingPatch, dataInputOutputActivityRecord]
   | interrupting parent =>
       simp only [regionalSelectionReferenceRetention, kind, cancellationReferenceRetention,
         makeInternalDataArmingPatch, dataInputOutputActivityRecord, recordInRegion,
@@ -274,7 +324,8 @@ theorem preparedDataArming_task_retained (program : Program) (state : RuntimeSta
   | completing withdrawal =>
       cases withdrawal <;>
         simp [makeInternalDataArmingPatch, regionalSelectionReferenceRetention, kind,
-          boundedCompletionReferenceRetention, ordinaryCompletionReferenceRetention]
+          boundedCompletionReferenceRetention, monitoredCompletionReferenceRetention,
+          ordinaryCompletionReferenceRetention]
   | _ =>
       simpa only [makeInternalDataArmingPatch, dataInputOutputActivityRecord,
         regionalSelectionReferenceRetention, kind, callReferenceRetention,
@@ -323,7 +374,7 @@ theorem preparedArming_scope_retained (program : Program) (state : RuntimeState)
       | none => exact False.elim (nonRoot parentEq)
       | some parent => cases withdrawal <;>
           simp [regionalSelectionReferenceRetention, kind, boundedCompletionReferenceRetention,
-            ordinaryCompletionReferenceRetention, parentEq, same, distinct]
+            monitoredCompletionReferenceRetention, ordinaryCompletionReferenceRetention, parentEq, same, distinct]
   | interrupting parent | terminating =>
       simp only [regionalSelectionReferenceRetention, kind, cancellationReferenceRetention,
         same, cancelled, Bool.not_false, Bool.or_true]

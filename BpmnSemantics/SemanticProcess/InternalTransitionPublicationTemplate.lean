@@ -4,6 +4,8 @@ import BpmnSemantics.SemanticProcess.InternalRegionalArmingAcceptedPublication
 import BpmnSemantics.SemanticProcess.InternalEndPublication
 import BpmnSemantics.SemanticProcess.InternalMergePublication
 import BpmnSemantics.SemanticProcess.InternalTimerTaskRegionalPairPublication
+import BpmnSemantics.SemanticProcess.InternalMessageTaskAcceptedPublication
+import BpmnSemantics.SemanticProcess.InternalBoundedScopePublication
 
 /-! Predecessor-only mixed publication templates implement the numbering boundary in the [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md). -/
 
@@ -43,6 +45,20 @@ theorem prepared_transition_publication_template_accepted (program : Program) (s
   case timerTask contract patch =>
       exact prepared_timer_task_publication_template_accepted program state contract patch instanceId
         commandId transitionIndex programWF beforeWF projectable found
+  case messageTask contract patch =>
+      exact prepared_message_task_publication_template_accepted program state contract patch instanceId
+        commandId transitionIndex found.1.2.2 programWF beforeWF projectable found.2
+  case boundedScope contract scope =>
+      obtain ⟨current, projected⟩ := Option.isSome_iff_exists.mp projectable
+      have accepted := prepared_bounded_scope_publication_accepted program state contract scope instanceId
+        commandId transitionIndex current programWF beforeWF projected found.2
+      have operation : scope.selection.creation.operation = contract.operation := by
+        obtain ⟨selected, _, _, _, _, _, selection, _, _, _, _, _, _, _, _, _, rfl⟩ :=
+          prepareInternalBoundedScope_facts program state contract scope found.2
+        obtain ⟨entry, _, rfl⟩ := selectInternalBoundedScope_facts state contract selected selection
+        rfl
+      exact ⟨internalBoundedScopePublicationTemplate scope,
+        by simp only [preparedTransitionPublicationTemplate?, operation, ↓reduceIte], accepted⟩
   case localControl localPrepared =>
       have record := prepareInternalLocalControl_record program state localPrepared.operation localPrepared found
       have lifecycle := prepareInternalLocalControl_accepted_lifecycle program state localPrepared.operation
@@ -98,6 +114,18 @@ theorem prepared_transition_template_operation_id (program : Program) (state : R
     (found : preparedTransitionPublicationTemplate? program state prepared = some template) :
     template.record.operationId = prepared.operation.id := by
   cases prepared with
+  | messageTask contract patch =>
+      obtain ⟨task, _, found⟩ := Option.bind_eq_some_iff.mp found
+      obtain ⟨message, _, found⟩ := Option.bind_eq_some_iff.mp found
+      cases found
+      rfl
+  | boundedScope contract scope =>
+      simp only [preparedTransitionPublicationTemplate?] at found
+      split at found
+      · next same =>
+          cases found
+          exact congrArg SemanticOperation.id same
+      · contradiction
   | timerTask contract patch =>
       obtain ⟨start, _, found⟩ := Option.map_eq_some_iff.mp found
       cases found
@@ -124,6 +152,13 @@ theorem prepared_transition_template_frame (program : Program) (before after : R
     (found : preparedTransitionPublicationTemplate? program before prepared = some template) :
     preparedTransitionPublicationTemplate? program after prepared = some template := by
   cases prepared with
+  | messageTask contract patch =>
+      obtain ⟨task, taskStarted, found⟩ := Option.bind_eq_some_iff.mp found
+      obtain ⟨message, messageStarted, templateEq⟩ := Option.bind_eq_some_iff.mp found
+      cases templateEq
+      simp only [preparedTransitionPublicationTemplate?, internalMessageTaskPublicationTemplate?,
+        starts _ _ _ _ taskStarted, starts _ _ _ _ messageStarted, Option.bind_eq_bind, Option.bind_some, time]
+  | boundedScope _ _ => exact found
   | timerTask contract patch =>
       obtain ⟨start, started, templateEq⟩ := Option.map_eq_some_iff.mp found
       cases templateEq
@@ -156,6 +191,27 @@ theorem prepared_transition_template_after_step (program : Program) (state : Run
     instanceId instanceId 0 programWF beforeWF running projectable queryPrepared
   rw [found]
   cases step with
+  | boundedScope contract scope =>
+      obtain ⟨selected, _, _, _, _, _, selection, _, _, _, _, _, _, _, _, _, preparedEq⟩ :=
+        prepareInternalBoundedScope_facts program state contract scope stepPrepared.2
+      obtain ⟨entry, entryFound, rfl⟩ := selectInternalBoundedScope_facts state contract selected selection
+      have child := (boundedScope_entry_selection_input state contract entry entryFound).2.2
+      apply prepared_transition_template_frame program state (scope.selection.apply state) query template _ _ found
+      · simp only [preparedEq, makeInternalBoundedScopePreparation, InternalBoundedScopeSelection.apply,
+          makeInternalBoundedScopeSelection, InternalScopeCreationSelection.apply, child]
+      · intro owner element activation start prior
+        have framed := scopeCreation_wait_start_preserved program state contract.entryOperation entry
+          owner element activation start entryFound prior
+        simpa only [preparedEq, makeInternalBoundedScopePreparation, InternalBoundedScopeSelection.apply,
+          makeInternalBoundedScopeSelection, InternalScopeCreationSelection.apply, child,
+          waitStart?, processIdForOwner?, hostingInstanceId?, flowNodeOccurrenceOwnerLiveUnique] using framed
+  | messageTask contract patch =>
+      apply prepared_transition_template_frame program state (applyInternalMessageTaskPatch state patch) query template
+        (show (applyInternalMessageTaskPatch state patch).logicalTimeMs = state.logicalTimeMs from
+          prepared_arming_time_frame state (.ordinary patch.arm.operation patch.arm)) _ found
+      intro owner element activation start prior
+      rw [messageTaskWaitStart_frame]
+      exact prior
   | timerTask contract patch =>
       apply prepared_transition_template_frame program state (applyInternalTimerTaskPatch state patch) query template
         (show (applyInternalTimerTaskPatch state patch).logicalTimeMs = state.logicalTimeMs from
@@ -189,6 +245,54 @@ theorem prepared_transition_template_after_step (program : Program) (state : Run
         scopeCreation_wait_start_preserved program state _ selected owner element activation start selection prior
   | regional regional =>
       cases query with
+      | messageTask contract patch =>
+          obtain ⟨current, projected⟩ := Option.isSome_iff_exists.mp projectable
+          have occurrenceValid := (projectOpenFlowNodeOccurrences_validities program state current instanceId
+            running projected).1
+          have aligned := prepared_message_task_owner_instance program state contract patch
+            queryPrepared.1.2.2 occurrenceValid queryPrepared.2
+          obtain ⟨_, owner, hosting, inputOrigin, processId, _, hostingFound, _, _, _, _, _, _, _, _, _, _, patchEq⟩ :=
+            prepareInternalMessageTaskContract_facts program state contract patch queryPrepared.2
+          have hostingEq : hosting = instanceId := by
+            simpa only [runningInstance?, running, Option.some.injEq] using hostingFound.symm
+          have patchHosting : patch.arm.runtimeInstanceId = instanceId := by
+            simpa only [patchEq, makeInternalMessageTaskPatch] using hostingEq
+          have ownerHosting : patch.arm.owner.processInstanceId = instanceId := aligned.symm.trans patchHosting
+          have sameOwner : patch.message.owner = patch.arm.owner := by rw [patchEq]; rfl
+          obtain ⟨after, _, applied⟩ := prepareInternalRegional_executes program state _ regional stepPrepared
+          change regionalStateFootprintsIndependent regional.footprint (messageTaskStateFootprint patch) = true at independent
+          have footprint := (prepareInternalRegional_facts program state _ regional stepPrepared).2.2.2.2.2.1
+          have outside : regional.region.contains patch.arm.owner = false := by
+            have separation := regional_independent_read_write _ _ independent _
+              (.ordinary (.scopeOccurrence patch.arm.owner))
+              (regionalStateFootprint_region_write state regional.selection regional.region regional.footprint footprint)
+              (by simp [messageTaskStateFootprint, canonicalRegionalStateAtoms_mem])
+            simpa [regionalStateAtomsConflict, regionalOwnsAtom, regionalOwnsOrdinaryAtom] using separation
+          have controlUnwritten : .ordinary (.runtimeControl instanceId) ∉ regional.footprint.writes := by
+            intro written
+            have separation := regional_independent_read_write _ _ independent _
+              (.ordinary (.runtimeControl patch.arm.runtimeInstanceId)) written
+              (by simp [messageTaskStateFootprint, canonicalRegionalStateAtoms_mem])
+            simp [patchHosting, regionalStateAtomsConflict] at separation
+          have fields := preparedRegional_control_filters program state after instanceId
+            regional.selection.operation regional beforeWF running stepPrepared applied
+            (fun scope => decide (scope.id = patch.arm.owner)) (fun _ => false) (fun _ => false)
+            (by
+              intro scope _ selected
+              simpa only [of_decide_eq_true selected] using outside)
+            (by simp) (by simp) (by simp) controlUnwritten
+          have census : flowNodeOccurrenceOwnerLiveUnique after patch.arm.owner =
+              flowNodeOccurrenceOwnerLiveUnique state patch.arm.owner := by
+            simp only [flowNodeOccurrenceOwnerLiveUnique, fields.2.2.2.1]
+          have startFrame (element : NodeId) (activation : Nat) :
+              waitStart? program after patch.arm.owner element activation =
+                waitStart? program state patch.arm.owner element activation := by
+            simp only [waitStart?, processIdForOwner?, hostingInstanceId?, fields.1, running,
+              census, ownerHosting, Option.bind_eq_bind, Option.bind_some, ↓reduceIte]
+          rw [← found]
+          simp only [PreparedInternalTransition.apply, applied, Option.getD_some,
+            preparedTransitionPublicationTemplate?, internalMessageTaskPublicationTemplate?,
+            sameOwner, startFrame, fields.2.1]
       | timerTask contract patch =>
           have facts := preparedTimerTask_owner_facts program state contract patch queryPrepared
           have hosting := runtimePositionValid_running_instance program instanceId patch.arm.runtimeInstanceId state
@@ -201,7 +305,7 @@ theorem prepared_transition_template_after_step (program : Program) (state : Run
           have sameTemplate : actualTemplate = template := Option.some.inj (beforeFound.symm.trans found)
           simpa only [PreparedInternalTransition.apply, applied, Option.getD_some,
             preparedTransitionPublicationTemplate?, sameTemplate] using afterFound
-      | localControl _ | scopeCreation _ | regional _ | ordinaryEnd _ | mergeInput _ => exact found
+      | boundedScope _ _ | localControl _ | scopeCreation _ | regional _ | ordinaryEnd _ | mergeInput _ => exact found
       | arming arm =>
           have facts := preparedArming_owner_facts program state arm queryPrepared
           have hosting := runtimePositionValid_running_instance program instanceId arm.scopeFramePatch.runtimeInstanceId state

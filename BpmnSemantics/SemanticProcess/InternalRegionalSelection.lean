@@ -58,7 +58,7 @@ def selectInternalRegional? (program : Program) (state : RuntimeState)
       | [root] =>
           if !scopeQuiescent state root.id then none
           else do
-            let withdrawal ← selectInternalCompletionWithdrawal? program state definition
+            let withdrawal ← selectSubscribedCompletionWithdrawal? program state definition output
             match root.parent, output with
             | none, none =>
                 if state.initiationPending then none
@@ -179,7 +179,7 @@ theorem regionalSelection_completion_complete (program : Program) (state complet
     (hosting : SemanticId) (id : OperationId) (origin : BpmnElementOrigin)
     (definition : DefinitionScopeId) (output : Option ControlPlaceId) (withdrawal : InternalCompletionWithdrawal)
     (running : state.control = .running hosting)
-    (withdrawn : selectInternalCompletionWithdrawal? program state definition = some withdrawal)
+    (withdrawn : selectSubscribedCompletionWithdrawal? program state definition output = some withdrawal)
     (ordinary : completeScopeState? state definition output = some completed) :
     ∃ selected, selectInternalRegional? program state (.completeScope id origin definition output) = some selected := by
   unfold completeScopeState? at ordinary
@@ -266,7 +266,7 @@ theorem regionalSelection_refines (program : Program) (state : RuntimeState)
           | (simp only [*, ↓reduceIte]; exact ⟨_, rfl⟩)
   | completeScope id origin definition output =>
       dsimp only at found
-      change ∃ after, completeBoundedScope? program state definition output = some after
+      change ∃ after, completeSelectedScope? program state definition output = some after
       split at found
       · rename_i root census
         split at found
@@ -280,7 +280,7 @@ theorem regionalSelection_refines (program : Program) (state : RuntimeState)
             all_goals simp_all only [Option.bind_eq_bind, Option.bind_some, Bool.false_eq_true, ↓reduceIte]
             all_goals exact ⟨_, rfl⟩
           obtain ⟨completed, ordinary⟩ := ordinary
-          obtain ⟨after, result, _⟩ := completionWithdrawal_refines program state completed definition output withdrawal withdrawn ordinary
+          obtain ⟨after, result, _⟩ := subscribedWithdrawal_refines program state completed definition output withdrawal withdrawn ordinary
           exact ⟨after, result⟩
       · contradiction
   | throwError id origin input error handler =>
@@ -326,7 +326,7 @@ theorem regionalSelection_preserves_position (program : Program) (state : Runtim
       exact declaredReturn_preserves_position program state after expectedInstanceId hosting id origin process definition output
         valid structural running declared result
   | completeScope id origin definition output =>
-      exact declaredBoundedComplete_preserves_position program state after expectedInstanceId hosting id origin definition output
+      exact declaredSelectedComplete_preserves_position program state after expectedInstanceId hosting id origin definition output
         valid structural running declared result
   | throwError id origin input error handler =>
       exact declaredError_preserves_position program state after expectedInstanceId hosting id origin input error handler

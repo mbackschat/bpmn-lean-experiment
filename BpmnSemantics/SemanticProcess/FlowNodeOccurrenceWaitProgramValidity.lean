@@ -24,7 +24,8 @@ private def messageOperationMatchesWait (program : Program) (eventRaces : List E
   | .awaitCorrelatedPayloadMessage _ _ _ output message _ _ _ _ =>
       message.elementId = wait.elementId && message.channel = wait.channel &&
         output = wait.output
-  | .awaitMessageBoundedUserTask _ _ _ _ boundaryMessage =>
+  | .awaitMessageBoundedUserTask _ _ _ _ boundaryMessage
+  | .awaitMessageMonitoredUserTask _ _ _ _ boundaryMessage =>
       boundaryMessage.elementId = wait.elementId &&
         boundaryMessage.channel = wait.channel && boundaryMessage.output = wait.output
   | .awaitEventRace _ origin _ message _ =>
@@ -72,7 +73,8 @@ def FlowNodeOccurrenceProgramValidity.Internal.boundaryTimerOperationMatches (pr
             match activityBodyParallelTasks? record with
             | some children => children.all fun child => child.elementId.value = taskId.value
             | none => false).length = 1
-  | .enterBoundedScope _ _ _ _ childScopeId boundary =>
+  | .enterBoundedScope _ _ _ _ childScopeId boundary
+  | .enterMonitoredScope _ _ _ _ childScopeId boundary =>
       boundary.elementId = wait.elementId && boundary.output = wait.output &&
         (state.activityOccurrences.filter fun record =>
           record.owner = wait.owner && recordAttaches record (timerWaitId wait) &&
@@ -89,10 +91,11 @@ def flowNodeOccurrenceBoundaryTimerBound (program : Program) (state : RuntimeSta
 /-- RHP-HANDLER-01: a published wait can end through its Activity's child body even when
 its own scope survives. Exclude private Timers before matching the untagged public wait identity. -/
 def scopeCancellationWithdrawsHandler (program : Program) (state : RuntimeState) (root : ScopeOccurrenceId)
-    (id : OccurrenceId) : Bool :=
+    (id : OccurrenceId) (disposition : SelectedScopeDisposition := .remove) : Bool :=
   let withdrawn := withdrawnByRegion (fun owner =>
     occurrenceInSubtree state.scopeOccurrences root owner ||
       (calledInstanceClosure state root).contains owner.processInstanceId) state.activityOccurrences
+      (retainedCancellationRoot root disposition)
   (state.messageWaits.any fun wait => messageIdNamesWait id wait &&
     activityRecordsAttachMessageWait withdrawn wait) ||
   (state.timerWaits.any fun wait => timerIdNamesWait id wait &&
@@ -213,7 +216,7 @@ private def timerWaitValid (program : Program) (state : RuntimeState)
                 race.timerOccurrenceId = timerWaitId wait
       | .awaitBoundedUserTask .. | .awaitMonitoredUserTask ..
       | .awaitSequentialMultiInstanceUserTask ..
-      | .awaitParallelMultiInstanceUserTask .. | .enterBoundedScope .. =>
+      | .awaitParallelMultiInstanceUserTask .. | .enterBoundedScope .. | .enterMonitoredScope .. =>
           boundaryTimerOperationMatches program state wait operation
       | _ => false).length = 1
 
@@ -313,7 +316,8 @@ private theorem messageOperationCount_eq_one (program : Program) (eventRaces : L
               apply notDeclarer
               simp [messageWaitDeclarers, member, same]
             simp [messageOperationMatchesWait, different]
-        | awaitMessageBoundedUserTask candidateId candidateOrigin candidateInput task boundary =>
+        | awaitMessageBoundedUserTask candidateId candidateOrigin candidateInput task boundary
+        | awaitMessageMonitoredUserTask candidateId candidateOrigin candidateInput task boundary =>
             have different : boundary.elementId ≠ wait.elementId := by
               intro same
               apply notDeclarer
@@ -321,6 +325,29 @@ private theorem messageOperationCount_eq_one (program : Program) (eventRaces : L
             simp [messageOperationMatchesWait, different]
         | _ => simp [messageOperationMatchesWait]
     _ = 1 := by simpa using congrArg List.length declarers
+
+/-- A Boundary Message wait uses the same exact declaration census for either interruption
+value; its Activity association is checked separately by Message-host projection. -/
+theorem boundaryMessageWait_valid (program : Program) (state : RuntimeState)
+    (operation : SemanticOperation) (id : OperationId) (origin : BpmnElementOrigin)
+    (input : ControlPlaceId) (task : BoundedTaskArm) (message : BoundaryMessageArm)
+    (wait : MessageWait)
+    (selected : operation = .awaitMessageBoundedUserTask id origin input task message ∨
+      operation = .awaitMessageMonitoredUserTask id origin input task message)
+    (declarers : messageWaitDeclarers program wait.elementId = [operation])
+    (declared : declaredByExactlyOneOwnedOperation program
+      (messageWaitDeclarers program wait.elementId) wait.owner = true)
+    (live : flowNodeOccurrenceOwnerLiveUnique state wait.owner = true)
+    (processId : !wait.processInstanceId.value.isEmpty = true)
+    (elementId : !wait.elementId.value.isEmpty = true) (positive : wait.activation > 0)
+    (processOwner : wait.processInstanceId = wait.owner.processInstanceId)
+    (element : message.elementId = wait.elementId) (channel : message.channel = wait.channel)
+    (output : message.output = wait.output) : messageWaitValid program state wait = true := by
+  have owned := operationOwnedBy_of_exact_declaration program operation wait.owner _ declarers declared
+  have count := messageOperationCount_eq_one program state.eventRaces wait operation declarers declared (by
+    rcases selected with rfl | rfl <;> simp [messageOperationMatchesWait, owned, element, channel, output])
+  simp only [messageWaitValid, occurrenceOwnerValid, count, Bool.and_eq_true, decide_eq_true_eq]
+  exact ⟨⟨⟨⟨⟨by simpa using processId, by simpa using elementId⟩, positive⟩, processOwner⟩, live⟩, trivial⟩
 
 /-- Every projected wait stores the same process identity as its live owner. -/
 theorem flowNodeOccurrenceWaitProgramValidity_wait_owner_ids (program : Program) (state : RuntimeState)
@@ -631,7 +658,7 @@ theorem flowNodeOccurrenceWaitProgramValidity_insertOrdinaryTimer (program : Pro
                   race.timerOccurrenceId = timerWaitId wait
         | .awaitBoundedUserTask .. | .awaitMonitoredUserTask ..
         | .awaitSequentialMultiInstanceUserTask ..
-        | .awaitParallelMultiInstanceUserTask .. | .enterBoundedScope .. =>
+        | .awaitParallelMultiInstanceUserTask .. | .enterBoundedScope .. | .enterMonitoredScope .. =>
             boundaryTimerOperationMatches program state wait operation
         | _ => false).length = 1 := by
     calc
@@ -689,7 +716,8 @@ theorem flowNodeOccurrenceWaitProgramValidity_insertOrdinaryTimer (program : Pro
                 apply familyMember
                 simp [timerWaitDeclarers, member, same]
               simp [boundaryTimerOperationMatches, different]
-          | enterBoundedScope candidateId candidateOrigin candidateInput childEntry childScope boundary =>
+          | enterBoundedScope candidateId candidateOrigin candidateInput childEntry childScope boundary
+          | enterMonitoredScope candidateId candidateOrigin candidateInput childEntry childScope boundary =>
               have different : boundary.elementId ≠ wait.elementId := by
                 intro same
                 apply familyMember

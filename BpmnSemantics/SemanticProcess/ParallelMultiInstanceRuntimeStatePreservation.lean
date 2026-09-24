@@ -553,7 +553,10 @@ theorem admitted_parallel_has_no_sequential_operation (program : Program)
       | .awaitSequentialMultiInstanceUserTask .. => False
       | _ => True := by
   have capabilities := account.capabilities
-  simp only [programProfileCapabilitiesValid, Bool.and_eq_true] at capabilities
+  have legacy : program.identity.semanticProfile ≠ repeatableSubscriptionCheckpointProfileId := by
+    rw [account.profile]
+    simp [parallelMultiInstanceUserTaskProfileId, repeatableSubscriptionCheckpointProfileId]
+  simp only [programProfileCapabilitiesValid, legacy, ↓reduceIte, Bool.and_eq_true] at capabilities
   have selected := capabilities.1.1
   simp [programSequentialMultiInstanceProfileMatches, account.profile,
     parallelMultiInstanceUserTaskProfileId, sequentialMultiInstanceUserTaskProfileId] at selected

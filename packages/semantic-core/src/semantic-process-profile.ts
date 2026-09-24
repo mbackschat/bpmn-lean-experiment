@@ -1,3 +1,4 @@
+import { repeatableSubscriptionCheckedShape, repeatableSubscriptionProgramShape } from "./repeatable-subscription-admission.js";
 import {
   CheckedNodeKind,
 } from "./checked-process-contract.js";
@@ -12,6 +13,7 @@ import {
 } from "./semantic-program-profile-shape.js";
 import {
   SemanticProfileId,
+  REPEATABLE_EVENT_SUBSCRIPTIONS_CHECKPOINT_PROFILE_ID,
 } from "./semantic-profile-catalog.js";
 import {
   EffectOperation,
@@ -25,6 +27,7 @@ import {
 
 export {
   COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID,
+  REPEATABLE_EVENT_SUBSCRIPTIONS_CHECKPOINT_PROFILE_ID,
   MESSAGE_KEY_CORRELATION_CHECKPOINT_PROFILE_ID,
   SERVICE_TASK_INCIDENT_CHECKPOINT_PROFILE_ID,
   SemanticProfileId,
@@ -36,6 +39,9 @@ export function profileAllowsProgramShape(
   actualOperations: ReadonlyArray<SemanticOperation>,
   definitionScopeCount: number,
 ): boolean {
+  if (semanticProfile === REPEATABLE_EVENT_SUBSCRIPTIONS_CHECKPOINT_PROFILE_ID) {
+    return repeatableSubscriptionProgramShape(actualOperations, definitionScopeCount);
+  }
   const required = requiredProgramShape(semanticProfile);
   return required !== undefined &&
     definitionScopeCount === required.definitionScopeCount &&
@@ -143,6 +149,9 @@ export function profileAllowsCheckedProcessShape(
   nodes: ReadonlyArray<CheckedNode>,
   definitionScopeCount: number,
 ): boolean {
+  if (semanticProfile === REPEATABLE_EVENT_SUBSCRIPTIONS_CHECKPOINT_PROFILE_ID) {
+    return repeatableSubscriptionCheckedShape(nodes, definitionScopeCount);
+  }
   const required = requiredCheckedProcessShape(semanticProfile);
   return required !== undefined &&
     definitionScopeCount === required.definitionScopeCount &&
@@ -150,7 +159,9 @@ export function profileAllowsCheckedProcessShape(
     nodes.every((node) =>
       (node.kind !== CheckedNodeKind.TimerBoundaryEvent &&
         node.kind !== CheckedNodeKind.MessageBoundaryEvent) ||
-      node.interruption === required.boundaryInterruption
+      (node.interruption === required.boundaryInterruption &&
+        (node.kind !== CheckedNodeKind.TimerBoundaryEvent ||
+          (node.durationLiteral === "PT1S" && !Object.hasOwn(node, "cycleLiteral"))))
     ) &&
     nodes.every((node) =>
       node.kind !== CheckedNodeKind.UserTask ||

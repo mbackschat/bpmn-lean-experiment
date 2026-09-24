@@ -62,6 +62,24 @@ private theorem bounded_completion_quiescent (program : Program) (before after :
                       | exact List.nil_subset _))
       · simp at completed
 
+private theorem selected_completion_quiescent (program : Program) (before after : RuntimeState)
+    (definition : DefinitionScopeId) (output : Option ControlPlaceId) (owner : ScopeOccurrenceId)
+    (result : completeSelectedScope? program before definition output = some after)
+    (quiet : scopeQuiescent before owner = true)
+    (tokens : after.tokens.any (fun token => token.owner == owner) = false) :
+    scopeQuiescent after owner = true := by
+  unfold completeSelectedScope? at result
+  split at result
+  · cases completeMonitoredScope_sound program before after definition output result with
+    | complete pair _ _ _ _ =>
+      apply quiescent_of_retained_work before _ owner quiet tokens
+      all_goals first
+        | exact List.Subset.refl _
+        | exact fun _ member => (List.mem_filter.mp member).1
+        | (change removeMonitoredScopeTimer before.timerWaits pair.timer ⊆ before.timerWaits
+           cases pair.timer <;> first | exact List.Subset.refl _ | exact List.erase_subset)
+  · exact bounded_completion_quiescent program before after definition output owner result quiet tokens
+
 /-- Regional steps only remove live work except for their explicit continuation token.
 Protecting the target's token query therefore preserves a previously quiescent scope. -/
 theorem preparedRegional_quiescence_of_token_query (program : Program) (before after : RuntimeState)
@@ -99,7 +117,7 @@ theorem preparedRegional_quiescence_of_token_query (program : Program) (before a
       apply quiescent_of_retained_work before _ owner quiet tokens
       all_goals exact fun _ member => (List.mem_filter.mp member).1
   | completeScope id origin definition output =>
-      exact bounded_completion_quiescent program before after definition output owner
+      exact selected_completion_quiescent program before after definition output owner
         (by simp only [fire?, snapshots] at fired; exact fired) quiet tokens
   | throwError id origin input error handler =>
       have raw : throwErrorState? before input error handler = some after := by

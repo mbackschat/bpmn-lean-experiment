@@ -135,6 +135,51 @@ function regionalRace(kind: Kind.ThrowError | Kind.TerminateScope, contained = f
   return { ...fixture, program, state: step.successor };
 }
 
+function withNestedCancellationBody(fixture: ReturnType<typeof regionalRace>) {
+  const branch = fixture.branches[0]!;
+  const previous = fixture.program.operations.find(({ id }) => id === `operation:${branch.name}_Sibling_Task`);
+  assert.ok(previous?.kind === Kind.AwaitUserTask);
+  const wait = fixture.state.userTaskWaits.find(({ id }) => id.elementId === previous.task.elementId);
+  assert.ok(wait !== undefined);
+  const scopeId = "scope:NestedCancellationBody";
+  const entryPlace = controlPlace("Nested_Entry");
+  const endPlace = controlPlace("Nested_End");
+  const entry: SemanticOperation = { ...operationBase(previous.origin.elementId), id: previous.id,
+    kind: Kind.EnterScope, input: previous.input, childEntry: entryPlace.id, childScopeId: scopeId };
+  const task: SemanticOperation = { ...operationBase("Nested_Task"), kind: Kind.AwaitUserTask,
+    input: entryPlace.id, output: endPlace.id, task: { elementId: "Nested_Task", name: null } };
+  const end: SemanticOperation = { ...operationBase("Nested_End"), kind: Kind.ReachNoneEnd, input: endPlace.id };
+  const complete: SemanticOperation = { ...operationBase("Nested_Complete"), origin: previous.origin,
+    kind: Kind.CompleteScope, scopeId, parentOutput: previous.output };
+  const added = [task, end, complete];
+  const program: SemanticProcessProgram = { ...fixture.program,
+    definitionScopes: [...fixture.program.definitionScopes,
+      { id: scopeId, parentScopeId: branch.scopeId, originElementId: previous.origin.elementId }]
+      .sort((a, b) => compareCanonicalStrings(a.id, b.id)),
+    operations: [...fixture.program.operations.map((operation) => operation === previous ? entry : operation), ...added]
+      .sort((a, b) => compareCanonicalStrings(a.id, b.id)),
+    operationScopes: [...fixture.program.operationScopes,
+      ...added.map(({ id }) => ({ operationId: id, scopeId }))]
+      .sort((a, b) => compareCanonicalStrings(a.operationId, b.operationId)),
+    controlPlaces: [...fixture.program.controlPlaces, entryPlace, endPlace]
+      .sort((a, b) => compareCanonicalStrings(a.id, b.id)),
+    controlPlaceScopes: [...fixture.program.controlPlaceScopes,
+      ...[entryPlace, endPlace].map(({ id }) => ({ controlPlaceId: id, scopeId }))]
+      .sort((a, b) => compareCanonicalStrings(a.controlPlaceId, b.controlPlaceId)),
+  };
+  const entered = applyInternalOperationStep(program, entry, { ...fixture.state,
+    userTaskWaits: fixture.state.userTaskWaits.filter((candidate) => candidate !== wait),
+    controlTokens: [...fixture.state.controlTokens,
+      { placeId: entry.input, owner: wait.owner, multiplicity: 1 }].sort(compareTokenPlaces),
+  });
+  assert.ok(entered !== null);
+  const armed = applyInternalOperationStep(program, task, entered.successor);
+  assert.ok(armed !== null);
+  const body = armed.successor.scopeOccurrences.find(({ id }) => id.definitionScopeId === scopeId);
+  assert.ok(body !== undefined);
+  return { ...fixture, program, state: armed.successor, body: body.id };
+}
+
 for (const handlerKind of [ActivityHandlerKind.Message, ActivityHandlerKind.Timer]) {
   test(`closure alone protects a retained ${handlerKind} handler using complete occurrence identity`, () => {
     const { program, state, branches } = regionalRace(Kind.TerminateScope);
@@ -204,15 +249,20 @@ for (const kind of [Kind.ThrowError, Kind.TerminateScope] as const) {
 
   for (const handlerKind of [ActivityHandlerKind.Message, ActivityHandlerKind.Timer]) {
     test(`${kind} refuses withdrawal of a retained race's ${handlerKind} member`, () => {
-      const { program, state, start, branches } = regionalRace(kind);
+      const fixture = regionalRace(kind);
+      const { program, state, start, branches } = kind === Kind.TerminateScope
+        ? withNestedCancellationBody(fixture) : fixture;
       const branch = branches[0]!;
       const child = state.scopeOccurrences.find(({ id }) => id.definitionScopeId === branch.scopeId)!;
       const owner = child.parent!;
+      const body = kind === Kind.TerminateScope
+        ? state.scopeOccurrences.find(({ id }) => id.definitionScopeId === "scope:NestedCancellationBody")!.id
+        : child.id;
       const race = state.eventRaces[0]!;
       const activityElementId = "ForeignHandlerClaim";
       const withClaim: RuntimeState = { ...state,
         activityOccurrences: [{ id: { processInstanceId: owner.processInstanceId, activityElementId, activation: 1 },
-          owner, operationId: branch.entry.id, body: { kind: ActivityBodyKind.ChildScope, scope: child.id },
+          owner, operationId: branch.entry.id, body: { kind: ActivityBodyKind.ChildScope, scope: body },
           attachedHandlers: [{ kind: handlerKind, occurrence: handlerKind === ActivityHandlerKind.Message
             ? race.messageSubscriptionId : race.timerOccurrenceId }] }],
         activityActivations: [...state.activityActivations, { elementId: activityElementId, count: 1 }]

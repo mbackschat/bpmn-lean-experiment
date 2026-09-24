@@ -17,6 +17,7 @@ def regionalCancelsOpenOccurrence (program : Program) (state : RuntimeState) (re
   | .scope id => !(retainRoot && id == region.root) &&
       (region.contains id || region.contains entry.owner)
   | .wait id => region.contains entry.owner || scopeCancellationWithdrawsHandler program state region.root id
+      (if retainRoot then .retain else .remove)
   | .callActivity _ | .compensationTrigger _ | .compensationHandler _ =>
       region.contains entry.owner
   | .transition .. => false

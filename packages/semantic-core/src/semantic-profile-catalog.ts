@@ -84,3 +84,7 @@ export const COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID =
 /** Transition alias retained while closure lanes migrate to the registered catalog member. */
 export const SERVICE_TASK_INCIDENT_CHECKPOINT_PROFILE_ID =
   SemanticProfileId.ServiceTaskIncident;
+
+/** Admission-only identity for the reviewed subscription checkpoint; hosting and registration follow semantic review. */
+export const REPEATABLE_EVENT_SUBSCRIPTIONS_CHECKPOINT_PROFILE_ID =
+  "bpmn-2.0.2-repeatable-event-subscriptions-draft" as const;

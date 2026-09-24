@@ -16,6 +16,7 @@ inductive SemanticOperationKind where
   | initiateTimer
   | enterScope
   | enterBoundedScope
+  | enterMonitoredScope
   | invokeProcess
   | returnProcess
   | awaitUserTask
@@ -32,6 +33,7 @@ inductive SemanticOperationKind where
   | awaitEventRace
   | awaitBoundedUserTask
   | awaitMessageBoundedUserTask
+  | awaitMessageMonitoredUserTask
   | awaitMonitoredUserTask
   | awaitEffect
   | duplicate
@@ -53,6 +55,7 @@ def SemanticOperation.kind : SemanticOperation → SemanticOperationKind
   | .initiateTimer .. => .initiateTimer
   | .enterScope .. => .enterScope
   | .enterBoundedScope .. => .enterBoundedScope
+  | .enterMonitoredScope .. => .enterMonitoredScope
   | .invokeProcess .. => .invokeProcess
   | .returnProcess .. => .returnProcess
   | .awaitUserTask .. => .awaitUserTask
@@ -69,6 +72,7 @@ def SemanticOperation.kind : SemanticOperation → SemanticOperationKind
   | .awaitEventRace .. => .awaitEventRace
   | .awaitBoundedUserTask .. => .awaitBoundedUserTask
   | .awaitMessageBoundedUserTask .. => .awaitMessageBoundedUserTask
+  | .awaitMessageMonitoredUserTask .. => .awaitMessageMonitoredUserTask
   | .awaitMonitoredUserTask .. => .awaitMonitoredUserTask
   | .awaitEffect .. => .awaitEffect
   | .duplicate .. => .duplicate
@@ -89,6 +93,7 @@ def SemanticOperation.origin : SemanticOperation → BpmnElementOrigin
   | .initiateTimer _ origin _ _
   | .enterScope _ origin _ _ _
   | .enterBoundedScope _ origin _ _ _ _
+  | .enterMonitoredScope _ origin _ _ _ _
   | .invokeProcess _ origin _ _ _ _ _
   | .returnProcess _ origin _ _ _
   | .awaitUserTask _ origin _ _ _
@@ -105,6 +110,7 @@ def SemanticOperation.origin : SemanticOperation → BpmnElementOrigin
   | .awaitEventRace _ origin _ _ _
   | .awaitBoundedUserTask _ origin _ _ _
   | .awaitMessageBoundedUserTask _ origin _ _ _
+  | .awaitMessageMonitoredUserTask _ origin _ _ _
   | .awaitMonitoredUserTask _ origin _ _ _
   | .awaitEffect _ origin _ _ _ _
   | .duplicate _ origin _ _

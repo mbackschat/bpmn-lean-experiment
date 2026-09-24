@@ -79,8 +79,8 @@ theorem timerTask_regional_retention_frame (program : Program) (state : RuntimeS
   let cancelled := fun owner => occurrenceInSubtree state.scopeOccurrences selected.root.id owner ||
     (calledInstanceClosure state selected.root.id).contains owner.processInstanceId
   change cancelled owner = false at outside
-  have populations : withdrawnByRegion cancelled (insertActivityOccurrence patch.record state.activityOccurrences) =
-      withdrawnByRegion cancelled state.activityOccurrences := by
+  have populations (retainedRoot : Option ScopeOccurrenceId) : withdrawnByRegion cancelled (insertActivityOccurrence patch.record state.activityOccurrences) retainedRoot =
+      withdrawnByRegion cancelled state.activityOccurrences retainedRoot := by
     rw [withdrawnByRegion, insertActivityOccurrence_eq_canonicalInsertBy,
       filter_canonicalInsertBy_rejected _ _ _ _ (by simp [patch, makeInternalTimerTaskPatch, recordInRegion, outside])]
     rfl
@@ -91,7 +91,8 @@ theorem timerTask_regional_retention_frame (program : Program) (state : RuntimeS
       callReferenceRetention, cancellationReferenceRetention, applyInternalTimerTaskPatch,
       makeInternalTimerTaskPatch, applyInternalArmingPatch]
   all_goals try dsimp only [calledInstanceClosure]
-  all_goals simp only [populations, and_self]
+  all_goals try simp only [populations, and_self]
+  all_goals cases ‹InternalCompletionWithdrawal› <;> rfl
 
 theorem timerTask_regional_insertions_retained (program : Program) (state : RuntimeState)
     (operation : SemanticOperation) (selected : InternalRegionalSelection)
@@ -122,9 +123,9 @@ theorem timerTask_regional_insertions_retained (program : Program) (state : Runt
   let patch := makeInternalTimerTaskPatch program state contract owner instanceId processId origin
   change (occurrenceInSubtree state.scopeOccurrences selected.root.id owner ||
     (calledInstanceClosure state selected.root.id).contains owner.processInstanceId) = false at cancelled
-  have unattached : anyTimerIdNamesWait (attachedTimersOf
+  have unattached (retainedRoot : Option ScopeOccurrenceId) : anyTimerIdNamesWait (attachedTimersOf
       (withdrawnByRegion (fun owner => occurrenceInSubtree state.scopeOccurrences selected.root.id owner ||
-        (calledInstanceClosure state selected.root.id).contains owner.processInstanceId) state.activityOccurrences))
+        (calledInstanceClosure state selected.root.id).contains owner.processInstanceId) state.activityOccurrences retainedRoot))
       patch.timer = false := by
     apply List.any_eq_false.mpr
     intro id member
@@ -148,9 +149,28 @@ theorem timerTask_regional_insertions_retained (program : Program) (state : Runt
             simp [same, timerWaitKeyMatches] at conflict
           simpa [patch, makeInternalTimerTaskPatch, regionalSelectionReferenceRetention, kind,
             boundedCompletionReferenceRetention, ordinaryCompletionReferenceRetention] using different
+      | monitored record timer =>
+          cases timer with
+          | none => simp [makeInternalTimerTaskPatch, regionalSelectionReferenceRetention, kind,
+              monitoredCompletionReferenceRetention, ordinaryCompletionReferenceRetention]
+          | some deadline =>
+              have member := regionalSelection_monitored_deadline program state operation selected record deadline selectedBefore kind
+              have rejected : timerIdNamesWait (boundaryTimerWaitIdentity deadline) patch.timer = false := by
+                apply Bool.eq_false_iff.mpr
+                intro same
+                simp only [timerIdNamesWait, boundaryTimerWaitIdentity, Bool.and_eq_true, beq_iff_eq] at same
+                have element : patch.timer.elementId = deadline.elementId := congrArg NodeId.mk same.1.2.symm
+                have collision : timerWaitKeyMatches patch.timer deadline = true := by
+                  simp [timerWaitKeyMatches, same.1.1.symm, element, same.2.symm]
+                have absent := (fresh deadline member).1
+                change timerWaitKeyMatches patch.timer deadline = false at absent
+                rw [absent] at collision
+                contradiction
+              simpa [patch, makeInternalTimerTaskPatch, regionalSelectionReferenceRetention, kind,
+                monitoredCompletionReferenceRetention, ordinaryCompletionReferenceRetention] using rejected
   | interrupting parent | terminating =>
       simp only [makeInternalTimerTaskPatch, regionalSelectionReferenceRetention, kind,
-        cancellationReferenceRetention, recordInRegion, cancelled, unattached,
+        cancellationReferenceRetention, recordInRegion, cancelled, unattached _,
         Bool.or_false, Bool.not_false, Bool.true_and, and_self]
 
 theorem timerTask_regional_scope_retained (program : Program) (state : RuntimeState)
@@ -202,7 +222,7 @@ theorem timerTask_regional_scope_retained (program : Program) (state : RuntimeSt
       | none => exact False.elim (nonRoot parentEq)
       | some parent => cases withdrawal <;>
           simp [regionalSelectionReferenceRetention, kind, boundedCompletionReferenceRetention,
-            ordinaryCompletionReferenceRetention, parentEq, same, distinct]
+            monitoredCompletionReferenceRetention, ordinaryCompletionReferenceRetention, parentEq, same, distinct]
   | interrupting parent | terminating =>
       simp only [regionalSelectionReferenceRetention, kind, cancellationReferenceRetention,
         same, cancelled, Bool.not_false, Bool.or_true]

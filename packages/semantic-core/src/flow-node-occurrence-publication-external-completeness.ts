@@ -24,6 +24,7 @@ import type {
 import { SemanticOperationKind } from "./semantic-process-contract.js";
 import type {
   AwaitMessageBoundedUserTaskOperation,
+  AwaitMessageMonitoredUserTaskOperation,
   SemanticOperation,
   SemanticProcessProgram,
 } from "./semantic-process-contract.js";
@@ -132,7 +133,7 @@ export function expectedExternalLifecycle(
         )) failCompleteness();
         return lifecycleDelta(
           [],
-          [
+          bounded.operation.kind === SemanticOperationKind.AwaitMessageMonitoredUserTask ? [] : [
             lifecycleEnd(bounded.host, FlowNodeOccurrenceTerminalKind.Cancelled),
             lifecycleEnd(bounded.message, FlowNodeOccurrenceTerminalKind.Completed),
           ],
@@ -235,7 +236,7 @@ export function expectedExternalLifecycle(
 }
 
 type MessageBoundaryPair = Readonly<{
-  operation: AwaitMessageBoundedUserTaskOperation;
+  operation: AwaitMessageBoundedUserTaskOperation | AwaitMessageMonitoredUserTaskOperation;
   host: OpenOccurrence;
   message: OpenOccurrence;
 }>;
@@ -247,8 +248,9 @@ function messageBoundaryPair(
   role: "task" | "message",
 ): MessageBoundaryPair | null {
   const operations = program.operations.filter(
-    (operation): operation is AwaitMessageBoundedUserTaskOperation =>
-      operation.kind === SemanticOperationKind.AwaitMessageBoundedUserTask &&
+    (operation): operation is AwaitMessageBoundedUserTaskOperation | AwaitMessageMonitoredUserTaskOperation =>
+      (operation.kind === SemanticOperationKind.AwaitMessageBoundedUserTask ||
+        operation.kind === SemanticOperationKind.AwaitMessageMonitoredUserTask) &&
       operationOwnedBy(program, operation, selected.owner) &&
       (role === "task"
         ? operation.task.elementId === selected.elementId
@@ -343,7 +345,8 @@ function boundaryTimerLifecycle(
         SemanticOperationKind.AwaitSequentialMultiInstanceUserTask ||
       operation.kind ===
         SemanticOperationKind.AwaitParallelMultiInstanceUserTask ||
-      operation.kind === SemanticOperationKind.EnterBoundedScope) &&
+      operation.kind === SemanticOperationKind.EnterBoundedScope ||
+      operation.kind === SemanticOperationKind.EnterMonitoredScope) &&
     operation.boundaryTimer.elementId === timerId.elementId);
   if (operations.length !== 1) failCompleteness();
   const operation = operations[0]!;
@@ -387,6 +390,7 @@ function boundaryTimerLifecycle(
         transitionIndex,
       );
     }
+    case SemanticOperationKind.EnterMonitoredScope:
     case SemanticOperationKind.EnterBoundedScope: {
       const child = requireUnique(open.filter((entry) =>
         entry.anchor.kind === SemanticFlowNodeOccurrenceAnchorKind.Scope &&
@@ -399,7 +403,8 @@ function boundaryTimerLifecycle(
       }
       return lifecycleDelta(
         [],
-        cancelledRegion(program, open, child.anchor.id, false),
+        operation.kind === SemanticOperationKind.EnterMonitoredScope ? []
+          : cancelledRegion(program, open, child.anchor.id, false),
         [instantOccurrence(child.processId, timerId.elementId, child.owner)],
         commandId,
         transitionIndex,
@@ -546,15 +551,14 @@ export function cancelledRegion(
   }
   const inRegion = (entry: OpenOccurrence): boolean =>
     entry.anchor.kind === SemanticFlowNodeOccurrenceAnchorKind.Scope
-      ? removedScopes.has(scopeKey(entry.anchor.id))
+      ? removedScopes.has(scopeKey(entry.anchor.id)) &&
+        !(retainRoot && sameScope(entry.anchor.id, root))
       : ownerIsRemoved(entry.owner, removedScopes, removedInstances);
-  // RHP-HANDLER-01: Terminate retains its root anchor, but withdraws that body's handlers.
+  // ESL-RETAIN-01: a retained child body keeps its parent's attachments until normal completion.
   const handlers = open.filter(inRegion).flatMap(({ attachedHandlers }) => attachedHandlers)
     .filter((handler) => handler.kind === ActivityHandlerKind.Message || declaresPublicTimer(program, handler.occurrence.elementId));
   return open.filter((entry) => {
     const anchor = entry.anchor;
-    if (anchor.kind === SemanticFlowNodeOccurrenceAnchorKind.Scope &&
-      retainRoot && sameScope(anchor.id, root)) return false;
     return inRegion(entry) || (anchor.kind === SemanticFlowNodeOccurrenceAnchorKind.Wait &&
       handlers.some(({ occurrence }) => sameOccurrence(occurrence, anchor.id)));
   }).map((entry) => lifecycleEnd(entry, FlowNodeOccurrenceTerminalKind.Cancelled));

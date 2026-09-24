@@ -79,7 +79,7 @@ export type BoundaryTimerBinding =
   | {
       operation: Extract<
         SemanticOperation,
-        { kind: SemanticOperationKind.EnterBoundedScope }
+        { kind: SemanticOperationKind.EnterBoundedScope | SemanticOperationKind.EnterMonitoredScope }
       >;
       child: RuntimeScopeOccurrence;
     }
@@ -193,6 +193,7 @@ export function resolveBoundaryTimerBinding(
         operation,
         wait,
       );
+    case SemanticOperationKind.EnterMonitoredScope:
     case SemanticOperationKind.EnterBoundedScope: {
       const body = activityBodyScope(record);
       const child = body === undefined ? undefined
@@ -218,6 +219,7 @@ function boundaryTimerOperationMatches(
     case SemanticOperationKind.AwaitMonitoredUserTask:
     case SemanticOperationKind.AwaitSequentialMultiInstanceUserTask:
     case SemanticOperationKind.AwaitParallelMultiInstanceUserTask:
+    case SemanticOperationKind.EnterMonitoredScope:
     case SemanticOperationKind.EnterBoundedScope:
       return operation.boundaryTimer.elementId === wait.id.elementId &&
         operation.boundaryTimer.output === wait.output &&
@@ -290,7 +292,8 @@ function projectEmbeddedScopes(
     ));
     const operation = only(program.operations.filter((candidate) =>
       (candidate.kind === SemanticOperationKind.EnterScope ||
-        candidate.kind === SemanticOperationKind.EnterBoundedScope) &&
+        candidate.kind === SemanticOperationKind.EnterBoundedScope ||
+        candidate.kind === SemanticOperationKind.EnterMonitoredScope) &&
       candidate.childScopeId === occurrence.id.definitionScopeId &&
       candidate.origin.elementId === definition?.originElementId &&
       operationOwnedBy(program, candidate, parent)
@@ -400,6 +403,7 @@ function waitMatchesUserTask(
           operation.task.output === wait.output &&
           operation.task.name === wait.name &&
           wait.metadata === undefined;
+      case SemanticOperationKind.AwaitMessageMonitoredUserTask:
       case SemanticOperationKind.AwaitMessageBoundedUserTask:
         return messageBoundedRecordForTask(
           program,
@@ -420,6 +424,7 @@ function waitMatchesUserTask(
       case SemanticOperationKind.InitiateMessage:
       case SemanticOperationKind.InitiateTimer:
       case SemanticOperationKind.EnterScope:
+      case SemanticOperationKind.EnterMonitoredScope:
       case SemanticOperationKind.EnterBoundedScope:
       case SemanticOperationKind.InvokeProcess:
       case SemanticOperationKind.ReturnProcess:
@@ -490,7 +495,7 @@ function messageBoundedRecordForTask(
   state: RuntimeState,
   operation: Extract<
     SemanticOperation,
-    { kind: SemanticOperationKind.AwaitMessageBoundedUserTask }
+    { kind: SemanticOperationKind.AwaitMessageBoundedUserTask | SemanticOperationKind.AwaitMessageMonitoredUserTask }
   >,
   taskId: OccurrenceId,
 ): ActivityOccurrence | undefined {
@@ -508,7 +513,8 @@ function messageBoundedRecordIsExact(
   record: ActivityOccurrence,
 ): boolean {
   const operation = only(program.operations.filter((candidate) =>
-    candidate.kind === SemanticOperationKind.AwaitMessageBoundedUserTask &&
+    (candidate.kind === SemanticOperationKind.AwaitMessageBoundedUserTask ||
+      candidate.kind === SemanticOperationKind.AwaitMessageMonitoredUserTask) &&
     candidate.id === record.operationId &&
     operationOwnedBy(program, candidate, record.owner)
   ));
@@ -517,7 +523,8 @@ function messageBoundedRecordIsExact(
     ? record.attachedHandlers[0]
     : undefined;
   if (
-    operation?.kind !== SemanticOperationKind.AwaitMessageBoundedUserTask ||
+    (operation?.kind !== SemanticOperationKind.AwaitMessageBoundedUserTask &&
+      operation?.kind !== SemanticOperationKind.AwaitMessageMonitoredUserTask) ||
     record.body.kind !== ActivityBodyKind.UserTask ||
     handler === undefined ||
     record.id.processInstanceId !== record.owner.processInstanceId ||

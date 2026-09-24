@@ -17,21 +17,30 @@ theorem regional_return_message_projection_validity (program : Program) (before 
     (tasks : after.waits = before.waits) (messages : after.messageWaits = before.messageWaits)
     (activities : after.activityOccurrences = before.activityOccurrences.filter (fun record => decide (record.owner ≠ root))) :
     messageBoundedProjectionValid program after = true := by
+  have preserves (contract : InternalMessageTaskContract)
+      (valid : messageBoundedOperationProjectionValid program before contract.operation = true) :
+      messageBoundedOperationProjectionValid program after contract.operation = true := by
+    have census := regional_return_activity_filter_frame before after root
+      (fun record => operationOwnedBy program contract.operation record.owner &&
+        decide (record.activityElementId.value = contract.task.id.value)) activities (by
+        intro record member owner
+        apply Bool.eq_false_iff.mpr
+        intro selected
+        obtain ⟨taskWait, taskMember, taskOwner, _⟩ := messageHostProjection_record_task_binding program before
+          contract record valid (List.mem_filter.mpr ⟨member, selected⟩)
+        exact (regional_quiescent_wait_owners_differ before root quiet).1 taskWait taskMember (taskOwner.trans owner))
+    cases kind : contract.kind
+    all_goals
+      simp only [InternalMessageTaskContract.operation, kind] at census valid ⊢
+      simpa only [messageBoundedOperationProjectionValid, tasks, messages, census] using valid
   simp only [messageBoundedProjectionValid, List.all_eq_true] at prior ⊢
   intro operation member
   have valid := prior operation member
   cases operation <;> try exact valid
   case awaitMessageBoundedUserTask id origin input task boundary =>
-    have census := regional_return_activity_filter_frame before after root
-        (fun record => operationOwnedBy program (.awaitMessageBoundedUserTask id origin input task boundary) record.owner &&
-          decide (record.activityElementId.value = task.id.value)) activities (by
-        intro record member owner
-        apply Bool.eq_false_iff.mpr
-        intro selected
-        obtain ⟨taskWait, taskMember, taskOwner, _⟩ := messageBoundedProjection_record_task_binding program before
-          id origin input task boundary record valid (List.mem_filter.mpr ⟨member, selected⟩)
-        exact (regional_quiescent_wait_owners_differ before root quiet).1 taskWait taskMember (taskOwner.trans owner))
-    simpa only [messageBoundedOperationProjectionValid, tasks, messages, census] using valid
+    exact preserves { kind := .interrupting, operationId := id, origin, input, task, message := boundary } valid
+  case awaitMessageMonitoredUserTask id origin input task boundary =>
+    exact preserves { kind := .nonInterrupting, operationId := id, origin, input, task, message := boundary } valid
 
 theorem preparedReturn_message_projection_validity (program : Program) (before : RuntimeState)
     (expected : SemanticId) (id : OperationId) (origin : BpmnElementOrigin)

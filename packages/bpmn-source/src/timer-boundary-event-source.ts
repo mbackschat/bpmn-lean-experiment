@@ -1,19 +1,19 @@
 /**
- * Admission of one `PT1S` Timer Boundary Event, in either interruption disposition.
+ * Admission of the selected duration or recurring Timer expression at an Activity boundary.
  *
  * `cancelActivity` is resolved to a closed disposition here and nowhere else. The XSD and CMOF
  * default it to `true`, so an omitted attribute is interrupting; Clause 13.5.3's "if the attribute
  * is not set" must be read as "not set to `true`", because the literal reading would make an omitted
  * attribute non-interrupting. Clause 10.5.6 grants a lexical `false` the continuing-Activity
  * behavior directly, which is why the two dispositions are admitted here rather than one being
- * refused. Which of them a given profile accepts is decided by that profile's operation multiset,
+ * refused. Which of them a given profile accepts is decided by that profile's admission predicate,
  * because both dispositions produce the same checked-node kind.
  *
- * The exact `PT1S` lexeme is retained rather than normalized here, so Lean converts it to milliseconds
- * independently instead of inheriting this compiler's arithmetic.
+ * The exact `PT1S` duration or `R/PT1S` cycle lexeme is retained, so Lean normalizes it independently.
  */
-import { BoundaryInterruption, CheckedNodeKind } from "@bpmn-lean/semantic-core";
+import { BoundaryInterruption, CheckedNodeKind, REPEATABLE_EVENT_SUBSCRIPTIONS_CHECKPOINT_PROFILE_ID } from "@bpmn-lean/semantic-core";
 import type {
+  CheckedBoundaryTimerExpression,
   CheckedNode,
   CheckedSequenceFlow,
 } from "@bpmn-lean/semantic-core";
@@ -36,18 +36,23 @@ export function projectTimerBoundaryEvent(
   flows: ReadonlyArray<CheckedSequenceFlow>,
   /** Manifest-owned `$type` of a Timer Event Definition; never re-derived here. */
   timerEventDefinitionType: string,
+  semanticProfile: string,
 ): Extract<
   CheckedNode,
   { kind: CheckedNodeKind.TimerBoundaryEvent }
 > | undefined {
   const interruption = readInterruption(element.cancelActivity);
+  const expression = readTimerExpression(element.eventDefinitions, timerEventDefinitionType);
+  const repeating = expression?.cycleLiteral !== undefined;
   if (
     interruption === undefined ||
     !hasOnlyProjectedFlowElementKeys(
       element,
       ProjectedFlowElementShape.BoundaryEvent,
     ) ||
-    !hasExactPt1sTimerDefinition(element.eventDefinitions, timerEventDefinitionType)
+    expression === undefined ||
+    (repeating && (semanticProfile !== REPEATABLE_EVENT_SUBSCRIPTIONS_CHECKPOINT_PROFILE_ID ||
+      interruption !== BoundaryInterruption.NonInterrupting))
   ) {
     return undefined;
   }
@@ -66,7 +71,7 @@ export function projectTimerBoundaryEvent(
         id,
         attachedToRef,
         interruption,
-        durationLiteral: "PT1S",
+        ...expression,
         outputFlowId: output.id,
       };
 }
@@ -89,23 +94,26 @@ function readInterruption(value: unknown): BoundaryInterruption | undefined {
   }
 }
 
-function hasExactPt1sTimerDefinition(
+function readTimerExpression(
   value: unknown,
   timerEventDefinitionType: string,
-): boolean {
+): CheckedBoundaryTimerExpression | undefined {
   const definitions = asElementArray(value);
   const definition = definitions?.[0];
-  if (
-    definitions === undefined ||
-    definitions.length !== 1 ||
-    definition === undefined ||
-    definition.$type !== timerEventDefinitionType ||
-    !hasOnlyModelledKeys(definition, ["$type", "timeDuration"])
-  ) {
-    return false;
+  if (definitions?.length !== 1 || definition === undefined ||
+      definition.$type !== timerEventDefinitionType ||
+      !hasOnlyModelledKeys(definition, ["$type", "timeDuration", "timeCycle"])) {
+    return undefined;
   }
   const duration = asElement(definition.timeDuration);
-  return duration !== undefined &&
-    hasOnlyModelledKeys(duration, ["$type", "body"]) &&
-    duration.body === "PT1S";
+  const cycle = asElement(definition.timeCycle);
+  if (duration !== undefined && definition.timeCycle === undefined &&
+      hasOnlyModelledKeys(duration, ["$type", "body"]) && duration.body === "PT1S") {
+    return { durationLiteral: "PT1S" };
+  }
+  if (cycle !== undefined && definition.timeDuration === undefined &&
+      hasOnlyModelledKeys(cycle, ["$type", "body"]) && cycle.body === "R/PT1S") {
+    return { cycleLiteral: "R/PT1S" };
+  }
+  return undefined;
 }

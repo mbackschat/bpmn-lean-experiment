@@ -22,8 +22,8 @@ private theorem selection_query_frame (program : Program) (before after : Runtim
     (associations : calledProcessAssociationsValid after = true)
     (pending : after.initiationPending = before.initiationPending)
     (quiet : scopeQuiescent after selected.root.id = scopeQuiescent before selected.root.id)
-    (withdrawal : ∀ definition choice, selectInternalCompletionWithdrawal? program before definition = some choice →
-      selectInternalCompletionWithdrawal? program after definition = some choice)
+    (withdrawal : ∀ definition output choice, selectSubscribedCompletionWithdrawal? program before definition output = some choice →
+      selectSubscribedCompletionWithdrawal? program after definition output = some choice)
     (populations : match (generalizing := false) operation with
       | .returnProcess id origin _ _ _ =>
           after.calledProcessOccurrences.filter (fun record => decide
@@ -73,7 +73,7 @@ private theorem selection_query_frame (program : Program) (before after : Runtim
       · split at found
         · contradiction
         · obtain ⟨choice, chosen, found⟩ := Option.bind_eq_some_iff.mp found
-          have afterChoice := withdrawal definition choice chosen
+          have afterChoice := withdrawal definition output choice chosen
           repeat' first | (solve | simp at found) | split at found
           all_goals cases found
           all_goals first
@@ -219,6 +219,8 @@ private theorem completion_withdrawal (program : Program) (state : RuntimeState)
     (selected : selectInternalCompletionWithdrawal? program state definition = some choice) :
     selectInternalCompletionWithdrawal? program (creation.apply state) definition = some choice := by
   cases choice with
+  | monitored record timer =>
+      exact (boundedWithdrawal_not_monitored program state definition record timer selected).elim
   | unbounded => exact (completionWithdrawal_unbounded program _ definition
       (completionWithdrawal_unbounded_facts program state definition selected)).1
   | bounded record deadline =>
@@ -243,6 +245,63 @@ private theorem completion_withdrawal (program : Program) (state : RuntimeState)
       · exact element
       · cases kind : creation.kind <;> simpa only [InternalScopeCreationSelection.apply, kind] using census
       · exact deadlineOwner
+
+private theorem subscribed_completion_withdrawal (program : Program) (state : RuntimeState)
+    (hosting : SemanticId) (operation : SemanticOperation) (creation : InternalScopeCreationSelection)
+    (programValid : programWellFormed program = true)
+    (beforeValid : runtimePositionValid program hosting state = true)
+    (afterValid : runtimePositionValid program hosting (creation.apply state) = true)
+    (running : state.control = .running hosting)
+    (found : selectInternalScopeCreation? state operation = some creation)
+    (definition : DefinitionScopeId) (output : Option ControlPlaceId) (choice : InternalCompletionWithdrawal)
+    (selected : selectSubscribedCompletionWithdrawal? program state definition output = some choice) :
+    selectSubscribedCompletionWithdrawal? program (creation.apply state) definition output = some choice := by
+  unfold selectSubscribedCompletionWithdrawal? at selected ⊢
+  split at selected
+  · next monitored =>
+    rw [if_pos monitored]
+    obtain ⟨pair, _, selected⟩ := Option.bind_eq_some_iff.mp selected
+    split at selected
+    · next addressed =>
+      cases selected
+      have bound := pair.property
+      have children := bound.2.1.1
+      have childMember : pair.val.child ∈ state.scopeOccurrences :=
+        (List.mem_filter.mp (show pair.val.child ∈ state.scopeOccurrences.filter
+          (fun child => decide (child.id.definitionScopeId = pair.val.definition.childScopeId)) by
+            rw [children]; simp)).1
+      have different := scopeCreation_existing_child_definition program state hosting operation creation
+        programValid beforeValid afterValid running found pair.val.child childMember
+        (by simp [bound.2.1.2.2.1])
+      have childFrame := scopeCreation_apply_scope_filter state creation
+        (fun child => decide (child.id.definitionScopeId = pair.val.definition.childScopeId)) (by
+          simpa only [bound.2.1.2.1, decide_eq_false_iff_not] using different)
+      have parents := bound.2.1.2.2.2.1
+      have parentMember : pair.val.parent ∈ state.scopeOccurrences :=
+        (List.mem_filter.mp (show pair.val.parent ∈ state.scopeOccurrences.filter
+          (fun parent => decide (parent.id = pair.val.parent.id)) by rw [parents]; simp)).1
+      have fresh := selectInternalScopeCreation_fresh state operation creation found pair.val.parent parentMember
+      have parentFrame := scopeCreation_apply_scope_filter state creation
+        (fun parent => decide (parent.id = pair.val.parent.id)) (by simpa [ne_comm] using fresh)
+      have records : (creation.apply state).activityOccurrences = state.activityOccurrences := by
+        cases kind : creation.kind <;> simp only [InternalScopeCreationSelection.apply, kind]
+      have timers : (creation.apply state).timerWaits = state.timerWaits := by
+        cases kind : creation.kind <;> simp only [InternalScopeCreationSelection.apply, kind]
+      have afterBound : MonitoredScopeBinding program (creation.apply state) pair.val := by
+        refine ⟨bound.1, ?_, ?_⟩
+        · simpa only [MonitoredScopeOwnership, childFrame, parentFrame, records,
+            scopeCreation_apply_control] using bound.2.1
+        · simpa only [MonitoredScopeTimerBinding, NonInterruptingBoundaryTimerBinding,
+            records, timers] using bound.2.2
+      have rebuilt := monitoredScopePairForChild_complete program (creation.apply state) pair.val afterBound
+      rw [addressed.1] at rebuilt
+      simp only [rebuilt, Option.bind_eq_bind, Option.bind_some]
+      rw [if_pos addressed]
+    · contradiction
+  · next unmonitored =>
+    rw [if_neg unmonitored]
+    exact completion_withdrawal program state hosting operation creation programValid beforeValid
+      afterValid running found definition choice selected
 
 /-- Child or Call insertion preserves regional queries under separated populations. The caller
 derives position validity from its own complete preparation, including bounded child entry. -/
@@ -305,7 +364,7 @@ theorem scopeCreation_regional_selection
       afterPosition ((scopeCreation_apply_control state selected).trans running)
   · cases kind : selected.kind <;> simp only [InternalScopeCreationSelection.apply, kind]
   · exact scopeCreation_regional_quiescent state selected regional.region regional.selection.root.id inside outside
-  · exact completion_withdrawal program state hosting creationOperation selected programValid
+  · exact subscribed_completion_withdrawal program state hosting creationOperation selected programValid
       position afterPosition running selection
   · cases operation with
     | returnProcess id returnOrigin process rootDefinition output =>

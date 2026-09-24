@@ -205,6 +205,8 @@ theorem user_task_completion_with_same_successor_is_equal
         isMonitoredTaskDefinition program ⟨submittedTaskId.elementId.value⟩ = false)
     (noMessageBoundedTask : isMessageBoundedTaskDefinition program
       ⟨submittedTaskId.elementId.value⟩ = false)
+    (noMessageMonitoredTask : isMessageMonitoredTaskDefinition program
+      ⟨submittedTaskId.elementId.value⟩ = false)
     (noSequentialMultiInstance : sequentialMultiInstanceOperationForTask? program
       ⟨submittedTaskId.elementId.value⟩ = none)
     (noParallelMultiInstance : parallelMultiInstanceEntryForTask? program
@@ -258,12 +260,39 @@ theorem user_task_completion_with_same_successor_is_equal
     admitStimulus, snapshotAbsent, leftNoIncidents,
     rightNoIncidents, leftRunning, rightRunning,
     ordinaryTask.1, ordinaryTask.2, noSequentialMultiInstance, noParallelMultiInstance,
-    noMessageBoundedTask, noDataInputOutputTask, inputPresent, outputPresent,
+    noMessageBoundedTask, noMessageMonitoredTask, noDataInputOutputTask, inputPresent, outputPresent,
     inputRefused, outputRefused,
     ordinaryProgram, valuesAdmitted,
     completeOrdinaryUserTaskWithCompensation?, nonCompensationTarget, leftCompletion,
     rightCompletion] at committed ⊢
   split at committed <;> simp_all
+
+private theorem empty_activities_refuse_monitored_task_completion (program : Program)
+    (state : RuntimeState) (process : SemanticId) (task : TaskDefinitionId) (activation : Nat)
+    (empty : state.activityOccurrences = []) :
+    completeSelectedMonitoredUserTask? program state process task activation = none := by
+  unfold completeSelectedMonitoredUserTask?
+  rw [empty]
+  rfl
+
+private theorem empty_activities_refuse_message_monitored_completion (program : Program)
+    (state : RuntimeState) (process : SemanticId) (task : TaskDefinitionId) (activation : Nat)
+    (values : List VariableBinding) (empty : state.activityOccurrences = []) :
+    completeMessageMonitoredUserTask? program state process task activation values = none := by
+  unfold completeMessageMonitoredUserTask?
+  split
+  · rfl
+  · unfold messageMonitoredPairForTask?
+    rw [empty]
+    rfl
+
+private theorem empty_activities_refuse_monitored_task_timer (program : Program)
+    (state : RuntimeState) (identity : TimerOccurrenceId) (time : Nat)
+    (empty : state.activityOccurrences = []) :
+    spawnFromSelectedMonitoredUserTask? program state identity time = .ok none := by
+  unfold spawnFromSelectedMonitoredUserTask?
+  rw [empty]
+  rfl
 
 /-- Any ordinary-family mismatch in the full semantic task-occurrence identity rejects completion with exact state preservation. -/
 theorem task_identity_mismatch_is_rejected
@@ -301,12 +330,13 @@ theorem task_identity_mismatch_is_rejected
       simp [admitStimulus, declared,
         completeOrdinaryUserTaskWithCompensation?, matchingOrdinaryUserTaskWait?, completeUserTask,
         initialState,
-        completeBoundedUserTask?, completeMonitoredUserTask?, completeDataInputOutputUserTask?,
+        completeBoundedUserTask?, empty_activities_refuse_monitored_task_completion, completeDataInputOutputUserTask?,
         isDataInputOutputTaskDefinition, dataInputOutputTaskContract?,
         dataInputOutputTaskContracts, dataInputOutputTaskWait?, completeDataInputUserTask?,
         completeDataOutputUserTask?, dataOutputAssociation?,
         dataOutputTaskOperations, dataOutputTaskWait?, dataInputTaskWait?,
         completeMessageBoundedUserTask?, messageBoundedPairForTask?,
+          empty_activities_refuse_message_monitored_completion,
         singletonWaitingState, noSequentialMultiInstance, noParallelMultiInstance, noMatch]
   · rcases remainingMismatch with elementMismatch | activationMismatch
     · have noMatch : ¬ (
@@ -321,12 +351,13 @@ theorem task_identity_mismatch_is_rejected
         simp [admitStimulus, declared,
           completeOrdinaryUserTaskWithCompensation?, matchingOrdinaryUserTaskWait?, completeUserTask,
           initialState,
-          completeBoundedUserTask?, completeMonitoredUserTask?, completeDataInputOutputUserTask?,
+          completeBoundedUserTask?, empty_activities_refuse_monitored_task_completion, completeDataInputOutputUserTask?,
           isDataInputOutputTaskDefinition, dataInputOutputTaskContract?,
           dataInputOutputTaskContracts, dataInputOutputTaskWait?, completeDataInputUserTask?,
           completeDataOutputUserTask?, dataOutputAssociation?,
           dataOutputTaskOperations, dataOutputTaskWait?, dataInputTaskWait?,
           completeMessageBoundedUserTask?, messageBoundedPairForTask?,
+          empty_activities_refuse_message_monitored_completion,
           singletonWaitingState, noSequentialMultiInstance, noParallelMultiInstance, noMatch]
     · have noMatch : ¬ (
           (wait.processInstanceId = submittedTaskId.processInstanceId ∧
@@ -339,13 +370,24 @@ theorem task_identity_mismatch_is_rejected
         simp [admitStimulus, declared,
           completeOrdinaryUserTaskWithCompensation?, matchingOrdinaryUserTaskWait?, completeUserTask,
           initialState,
-          completeBoundedUserTask?, completeMonitoredUserTask?, completeDataInputOutputUserTask?,
+          completeBoundedUserTask?, empty_activities_refuse_monitored_task_completion, completeDataInputOutputUserTask?,
           isDataInputOutputTaskDefinition, dataInputOutputTaskContract?,
           dataInputOutputTaskContracts, dataInputOutputTaskWait?, completeDataInputUserTask?,
           completeDataOutputUserTask?, dataOutputAssociation?,
           dataOutputTaskOperations, dataOutputTaskWait?, dataInputTaskWait?,
           completeMessageBoundedUserTask?, messageBoundedPairForTask?,
+          empty_activities_refuse_message_monitored_completion,
           singletonWaitingState, noSequentialMultiInstance, noParallelMultiInstance, noMatch]
+
+private theorem empty_activities_refuse_monitored_scope (program : Program) (state : RuntimeState)
+    (identity : TimerOccurrenceId) (time : Nat) (empty : state.activityOccurrences = []) :
+    spawnFromMonitoredScope? program state identity time = .ok none := by
+  unfold spawnFromMonitoredScope?
+  cases selected : monitoredScopePairForDeadline? program state identity with
+  | none => rfl
+  | some pair =>
+      have census := pair.property.2.1.2.2.2.2.1
+      simp [empty] at census
 
 /-- Any generic timer-family mismatch in the full occurrence identity or exact logical deadline rejects firing with exact state preservation. This one law covers both early and late firing. -/
 theorem timer_identity_or_time_mismatch_is_rejected
@@ -421,7 +463,8 @@ theorem timer_identity_or_time_mismatch_is_rejected
               cases declared : program.compensationEventSubProcessSnapshots <;>
                 cases definitionFound : boundedScopeDefinitionFor? program wait <;>
                 simp [admitStimulus, declared, fireTimer,
-                  activityOccurrenceForTimerWait?,
+                  activityOccurrenceForTimerWait?, empty_activities_refuse_monitored_task_timer,
+                  empty_activities_refuse_monitored_scope,
                   singletonTimerWaitingState, initialState,
                   processMatches, elementMatches,
                   activationMatches, timeMismatch, definitionFound,

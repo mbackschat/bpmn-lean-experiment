@@ -202,15 +202,15 @@ The 800-nonblank-line review target is the extraction threshold. These headroom 
 | Owner | Current headroom | Structural condition |
 |---|---:|---|
 | [Lean ProfileAdmission](../../BpmnSemantics/SemanticProcess/ProfileAdmission.lean) | 754 | profile-shape catalog extracted; keep this owner as dispatch only |
-| [Lean SemanticProcessContract](../../BpmnSemantics/SemanticProcessContract.lean) | 11 | checked Compensation support and direct Activity-data carriers are extracted |
-| [TypeScript profile admission](../../packages/bpmn-source/src/checked-process-admission.ts) | 114 | keep complete checkpoint validation in its bounded owner |
-| [Lean Lowering](../../BpmnSemantics/SemanticProcess/Lowering.lean) | 130 | keep Compensation construction in its bounded sibling module |
-| [TypeScript lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 134 | keep Compensation construction in its bounded sibling module |
+| [Lean SemanticProcessContract](../../BpmnSemantics/SemanticProcessContract.lean) | 306 | checked Compensation support and direct Activity-data carriers are extracted |
+| [TypeScript profile admission](../../packages/bpmn-source/src/checked-process-admission.ts) | 107 | keep complete checkpoint validation in its bounded owner |
+| [Lean Lowering](../../BpmnSemantics/SemanticProcess/Lowering.lean) | 121 | keep Compensation construction in its bounded sibling module |
+| [TypeScript lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 129 | keep Compensation construction in its bounded sibling module |
 | [TypeScript compilation dispatch](../../packages/bpmn-source/src/compilation-dispatch.ts) | 445 | dispatch only; no Compensation validation belongs here |
-| [TypeScript checked graph contract](../../packages/semantic-core/src/checked-process-contract.ts) | 423 | keep the closed Compensation shape in its bounded contract owner |
-| [TypeScript graph admission](../../packages/bpmn-source/src/checked-process-graph-admission.ts) | 426 | keep only the declaration-derived dormant-scope composition seam |
-| [Lean checked JSON](../../BpmnSemantics/SemanticProcessJson/CheckedProcess.lean) | 374 | keep optional-field decoding in the bounded Compensation decoder |
-| [Lean checked admission](../../BpmnSemantics/SemanticProcess/CheckedProcessAdmission.lean) | 369 | keep exact Compensation validation in its bounded sibling owner |
+| [TypeScript checked graph contract](../../packages/semantic-core/src/checked-process-contract.ts) | 420 | keep the closed Compensation shape in its bounded contract owner |
+| [TypeScript graph admission](../../packages/bpmn-source/src/checked-process-graph-admission.ts) | 420 | keep only the declaration-derived dormant-scope composition seam |
+| [Lean checked JSON](../../BpmnSemantics/SemanticProcessJson/CheckedProcess.lean) | 369 | keep optional-field decoding in the bounded Compensation decoder |
+| [Lean checked admission](../../BpmnSemantics/SemanticProcess/CheckedProcessAdmission.lean) | 363 | keep exact Compensation validation in its bounded sibling owner |
 
 New bounded owners hold the Compensation checked contract, exact source compiler, TypeScript lowering, Lean decoder/admission/lowering, and focused evidence. Existing package indexes and module graphs receive exports/imports only. Same-change documentation owners are this capsule, [shared wire contracts](../../contracts/README.md), [Semantic Process IL](../SEMANTIC-PROCESS-IL-SPEC.md), applicable detail maps routed by [`implementation-status-router`](../IMPLEMENTATION-MAP.md), package READMEs, the capsule cost ledger, and [PLAN](../PLAN.md).
 

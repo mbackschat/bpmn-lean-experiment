@@ -66,7 +66,7 @@ def checkedProcess : CheckedProcess :=
       , .noneEndEvent ⟨"ChildEnd"⟩
       , .noneStartEvent ⟨"ChildStart"⟩
       , .userTask ⟨"ChildTask"⟩ (some "Work inside the scope")
-      , .timerBoundaryEvent ⟨"Deadline"⟩ ⟨"Scope"⟩ .interrupting "PT1S"
+      , .timerBoundaryEvent ⟨"Deadline"⟩ ⟨"Scope"⟩ .interrupting (.duration "PT1S")
           ⟨"Flow_Boundary"⟩
       , .userTask ⟨"EscalationTask"⟩ (some "Deadline reached")
       , .noneEndEvent ⟨"NormalEnd"⟩

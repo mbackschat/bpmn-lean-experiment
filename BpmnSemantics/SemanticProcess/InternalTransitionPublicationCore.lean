@@ -15,6 +15,7 @@ open BpmnSemantics
 
 inductive InternalTransitionLifecycleTemplate where
   | wait (start : OpenSemanticFlowNodeOccurrence)
+  | waits (starts : List OpenSemanticFlowNodeOccurrence)
   | instantaneous (identity : FlowNodeIdentity)
   | scopeCreation (delta : UnnumberedFlowNodeOccurrenceDelta)
   | regional (instantaneous : List FlowNodeIdentity) (retainedEnds : List UnnumberedFlowNodeOccurrenceEnd)
@@ -23,6 +24,7 @@ inductive InternalTransitionLifecycleTemplate where
 def InternalTransitionLifecycleTemplate.instantiate (commandId : SemanticId)
     (transitionIndex : Nat) : InternalTransitionLifecycleTemplate → UnnumberedFlowNodeOccurrenceDelta
   | .wait start => canonicalFlowNodeOccurrenceDelta [start] []
+  | .waits starts => canonicalFlowNodeOccurrenceDelta starts []
   | .instantaneous identity => instantaneousFlowNodeOccurrenceDelta commandId transitionIndex [identity]
   | .scopeCreation delta => delta
   | .regional identities ends => instantaneousFlowNodeOccurrenceDeltaWithEnds commandId transitionIndex identities ends

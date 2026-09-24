@@ -2,12 +2,14 @@ import {
   BoundaryInterruption,
   CheckedNodeKind,
   COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID,
+  REPEATABLE_EVENT_SUBSCRIPTIONS_CHECKPOINT_PROFILE_ID,
   GatewayDirection,
   SemanticProfileId,
   SimpleBooleanExpressionKind,
   SimpleBooleanExpressionLanguage,
   hasExactBalancedTwoBranchControlTopology,
   profileAllowsCheckedProcessShape,
+  repeatableSubscriptionCheckedGraph,
 } from "@bpmn-lean/semantic-core";
 import type {
   CheckedNode,
@@ -59,7 +61,7 @@ export function isAdmittedCheckedProcess(
       admittedGraph.nodeScopes,
     ) &&
     errorNodesHaveDirectHandlers(graph, admittedGraph.nodeScopes) &&
-    boundaryTimersAttachToDeadlineOwners(graph, admittedGraph.nodeScopes) &&
+    boundaryTimersAttachToDeadlineOwners(graph, admittedGraph.nodeScopes, semanticProfile) &&
     boundaryMessagesAttachToUserTasks(graph, admittedGraph.nodeScopes) &&
     hasSelectedActivityBoundaryMessageTopology(semanticProfile, graph) &&
     hasSelectedExpressionLanguage(semanticProfile, expressionLanguage) &&
@@ -71,6 +73,8 @@ export function isAdmittedCheckedProcess(
     hasSelectedEventRaceTopology(semanticProfile, graph) &&
     hasSelectedConfiguredTaskTopology(semanticProfile, graph) &&
     hasSelectedCompensationCheckpoint(semanticProfile, graph) &&
+    (semanticProfile !== REPEATABLE_EVENT_SUBSCRIPTIONS_CHECKPOINT_PROFILE_ID ||
+      repeatableSubscriptionCheckedGraph(graph)) &&
     hasSelectedTerminateTopology(
       semanticProfile,
       graph,
@@ -278,21 +282,23 @@ function hasSelectedTerminateTopology(
  *
  * An allowlist rather than an exclusion list, so an unrecognised kind fails closed. A host kind
  * belongs here only once some lowering clause folds the deadline into that host's operation; adding
- * a kind here without that clause is exactly the deadline-free program the caller rejects. The two
- * dispositions have different allowlists because they have different lowering clauses: only the
- * interrupting one has a Sub-Process host, so a non-interrupting deadline on a Sub-Process is
- * refused here rather than lowering to an entry operation that would drop it.
+ * a kind here without that clause is exactly the deadline-free program the caller rejects. The
+ * subscription checkpoint adds the non-interrupting Sub-Process lowering; predecessor profiles
+ * retain their original host restrictions.
  */
 function ownsBoundaryTimerDeadline(
   node: CheckedNode,
   interruption: BoundaryInterruption,
+  semanticProfile: string,
 ): boolean {
   switch (interruption) {
     case BoundaryInterruption.Interrupting:
       return node.kind === CheckedNodeKind.UserTask ||
         node.kind === CheckedNodeKind.EmbeddedSubProcess;
     case BoundaryInterruption.NonInterrupting:
-      return node.kind === CheckedNodeKind.UserTask;
+      return node.kind === CheckedNodeKind.UserTask ||
+        (semanticProfile === REPEATABLE_EVENT_SUBSCRIPTIONS_CHECKPOINT_PROFILE_ID &&
+          node.kind === CheckedNodeKind.EmbeddedSubProcess);
   }
 }
 
@@ -309,6 +315,7 @@ function ownsBoundaryTimerDeadline(
 function boundaryTimersAttachToDeadlineOwners(
   graph: CheckedProcessGraph,
   nodeScopes: ReadonlyMap<string, string>,
+  semanticProfile: string,
 ): boolean {
   const deadlines = graph.nodes.filter(
     (node): node is Extract<
@@ -321,7 +328,7 @@ function boundaryTimersAttachToDeadlineOwners(
     const host = graph.nodes.find(
       (node) =>
         node.id === deadline.attachedToRef &&
-        ownsBoundaryTimerDeadline(node, deadline.interruption),
+        ownsBoundaryTimerDeadline(node, deadline.interruption, semanticProfile),
     );
     return host !== undefined &&
       nodeScopes.get(deadline.id) === nodeScopes.get(host.id) &&

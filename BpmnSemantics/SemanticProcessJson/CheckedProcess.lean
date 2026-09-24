@@ -200,15 +200,20 @@ private def decodeCheckedNode (json : Json) : Except String CheckedNode := do
           (← decodeErrorReference (← field json "error"))
           ⟨← stringField json "outputFlowId"⟩)
   | "timerBoundaryEvent" =>
+      let expressionField := if (json.getObjVal? "cycleLiteral").isOk then "cycleLiteral" else "durationLiteral"
       requireObjectShape json
-        ["attachedToRef", "durationLiteral", "id", "interruption", "kind",
+        ["attachedToRef", expressionField, "id", "interruption", "kind",
           "outputFlowId"]
+      let literal ← stringField json expressionField
+      let expression := if expressionField = "cycleLiteral" then
+          CheckedBoundaryTimerExpression.cycle literal
+        else CheckedBoundaryTimerExpression.duration literal
       pure
         (.timerBoundaryEvent
           ⟨← stringField json "id"⟩
           ⟨← stringField json "attachedToRef"⟩
           (← decodeBoundaryInterruption (← stringField json "interruption"))
-          (← stringField json "durationLiteral")
+          expression
           ⟨← stringField json "outputFlowId"⟩)
   | "messageBoundaryEvent" =>
       requireObjectShape json

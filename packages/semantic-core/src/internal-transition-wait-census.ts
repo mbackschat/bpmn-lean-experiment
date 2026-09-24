@@ -119,6 +119,7 @@ function operationWaitDeclarations(
           elementId: operation.boundaryTimer.elementId,
         },
       ];
+    case SemanticOperationKind.AwaitMessageMonitoredUserTask:
     case SemanticOperationKind.AwaitMessageBoundedUserTask:
       return [
         {
@@ -130,6 +131,7 @@ function operationWaitDeclarations(
           elementId: operation.boundaryMessage.elementId,
         },
       ];
+    case SemanticOperationKind.EnterMonitoredScope:
     case SemanticOperationKind.EnterBoundedScope:
       return [{
         family: InternalOccurrenceKind.Timer,

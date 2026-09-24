@@ -7,6 +7,8 @@ import BpmnSemantics.SemanticProcess.InternalRegionalPairDependencies
 import BpmnSemantics.SemanticProcess.InternalEndPreparation
 import BpmnSemantics.SemanticProcess.InternalMergePreparation
 import BpmnSemantics.SemanticProcess.InternalTimerTaskPreparation
+import BpmnSemantics.SemanticProcess.InternalMessageTaskPreparation
+import BpmnSemantics.SemanticProcess.InternalBoundedScopePreparation
 
 /-! Complete finite mixed preparations follow the predecessor-only
 [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).
@@ -19,6 +21,8 @@ open BpmnSemantics
 inductive PreparedInternalTransition where
   | arming (prepared : PreparedInternalArming)
   | timerTask (contract : InternalTimerTaskContract) (patch : InternalTimerTaskPatch)
+  | messageTask (contract : InternalMessageTaskContract) (patch : InternalMessageTaskPatch)
+  | boundedScope (contract : InternalBoundedScopeContract) (prepared : PreparedInternalBoundedScope)
   | localControl (prepared : PreparedInternalLocalControl)
   | scopeCreation (prepared : PreparedInternalScopeCreation)
   | regional (prepared : PreparedInternalRegional)
@@ -29,6 +33,8 @@ inductive PreparedInternalTransition where
 def PreparedInternalTransition.operation : PreparedInternalTransition → SemanticOperation
   | .arming prepared => prepared.operation
   | .timerTask contract _ => contract.operation
+  | .messageTask contract _ => contract.operation
+  | .boundedScope contract _ => contract.operation
   | .localControl prepared => prepared.operation
   | .scopeCreation prepared => prepared.selection.operation
   | .regional prepared => prepared.selection.operation
@@ -43,6 +49,8 @@ def PreparedInternalTransition.apply (program : Program) (state : RuntimeState) 
     PreparedInternalTransition → RuntimeState
   | .arming prepared => prepared.apply state
   | .timerTask _ patch => applyInternalTimerTaskPatch state patch
+  | .messageTask _ patch => applyInternalMessageTaskPatch state patch
+  | .boundedScope _ prepared => prepared.selection.apply state
   | .localControl prepared => prepared.selection.apply state
   | .scopeCreation prepared => prepared.selection.apply state
   | .regional prepared => (applyPreparedInternalRegional? program state prepared).getD state
@@ -53,16 +61,31 @@ def PreparedInternalTransition.stateFootprint :
     PreparedInternalTransition → InternalRegionalStateFootprint
   | .arming prepared => liftRegionalStateFootprint prepared.scopeFramePatch.owner prepared.stateFootprint
   | .timerTask _ patch => timerTaskStateFootprint patch
+  | .messageTask _ patch => messageTaskStateFootprint patch
+  | .boundedScope _ prepared => prepared.footprint
   | .localControl prepared => liftRegionalStateFootprint prepared.selection.owner prepared.footprint
   | .scopeCreation prepared => liftRegionalStateFootprint prepared.selection.owner prepared.footprint
   | .regional prepared => prepared.footprint
   | .ordinaryEnd prepared => prepared.footprint
   | .mergeInput prepared => liftRegionalStateFootprint prepared.selection.owner prepared.footprint
 
+/-- The subscription proof-domain amendment certifies immutable admission, not source reachability. -/
+def subscriptionPreparationAdmitted (program : Program) : Prop :=
+  program.identity.semanticProfile = repeatableSubscriptionCheckpointProfileId ∧
+    programWellFormed program = true ∧ repeatableSubscriptionProgramGraph program = true
+
+instance (program : Program) : Decidable (subscriptionPreparationAdmitted program) := by
+  unfold subscriptionPreparationAdmitted
+  infer_instance
+
 def PreparedInternalTransition.Prepared (program : Program) (state : RuntimeState) :
     PreparedInternalTransition → Prop
   | .arming prepared => prepared.Prepared program state
   | .timerTask contract patch => prepareInternalTimerTaskContract? program state contract = some patch
+  | .messageTask contract patch => subscriptionPreparationAdmitted program ∧
+      prepareInternalMessageTaskContract? program state contract = some patch
+  | .boundedScope contract prepared => subscriptionPreparationAdmitted program ∧
+      prepareInternalBoundedScope? program state contract = some prepared
   | .localControl prepared =>
       prepareInternalLocalControl? program state prepared.operation = some prepared
   | .scopeCreation prepared =>
@@ -77,6 +100,24 @@ def PreparedInternalTransition.Prepared (program : Program) (state : RuntimeStat
 instance (program : Program) (state : RuntimeState) (prepared : PreparedInternalTransition) :
     Decidable (prepared.Prepared program state) := by
   cases prepared <;> unfold PreparedInternalTransition.Prepared <;> infer_instance
+
+theorem messageTask_prepared_subscription_admission (program : Program) (state : RuntimeState)
+    (contract : InternalMessageTaskContract) (patch : InternalMessageTaskPatch)
+    (prepared : (PreparedInternalTransition.messageTask contract patch).Prepared program state) :
+    subscriptionPreparationAdmitted program := by
+  exact prepared.1
+
+theorem boundedScope_prepared_subscription_admission (program : Program) (state : RuntimeState)
+    (contract : InternalBoundedScopeContract) (patch : PreparedInternalBoundedScope)
+    (prepared : (PreparedInternalTransition.boundedScope contract patch).Prepared program state) :
+    subscriptionPreparationAdmitted program := by
+  exact prepared.1
+
+theorem subscriptionPreparationAdmitted_operation (program : Program)
+    (admitted : subscriptionPreparationAdmitted program)
+    (operation : SemanticOperation) (member : operation ∈ program.operations) :
+    repeatableSubscriptionOperationAllowed operation = true :=
+  repeatableSubscriptionProgramGraph_operation program admitted.2.2 operation member
 
 /-- Existing arming publication conflicts remain checked. Local instantaneous anchors receive
 their distinct indices only after the selected account's unique-alternative batch sort. -/
@@ -98,19 +139,41 @@ def PreparedInternalTransition.Independent (left right : PreparedInternalTransit
   | .scopeCreation first, .mergeInput second => localControlStateFootprintsNonInterfering first.footprint second.footprint = true
   | .mergeInput first, .scopeCreation second => localControlStateFootprintsNonInterfering first.footprint second.footprint = true
   | .mergeInput first, .mergeInput second => localControlStateFootprintsNonInterfering first.footprint second.footprint = true
+  | .messageTask .., _ | _, .messageTask .. | .boundedScope .., _ | _, .boundedScope ..
   | .timerTask .., _ | _, .timerTask .. | .regional _, _ | _, .regional _ | .ordinaryEnd _, _ | _, .ordinaryEnd _ =>
       regionalStateFootprintsIndependent left.stateFootprint right.stateFootprint = true
 
 instance (left right : PreparedInternalTransition) : Decidable (left.Independent right) := by
   cases left <;> cases right <;> unfold PreparedInternalTransition.Independent <;> infer_instance
 
+private theorem messageTask_independent_iff (contract : InternalMessageTaskContract)
+    (patch : InternalMessageTaskPatch) (other : PreparedInternalTransition) :
+    (PreparedInternalTransition.messageTask contract patch).Independent other ↔
+      other.Independent (.messageTask contract patch) := by
+  cases other <;> constructor <;> intro separated <;>
+    exact regionalStateFootprintsIndependent_symmetric _ _ separated
+
+private theorem boundedScope_independent_iff (contract : InternalBoundedScopeContract)
+    (prepared : PreparedInternalBoundedScope) (other : PreparedInternalTransition) :
+    (PreparedInternalTransition.boundedScope contract prepared).Independent other ↔
+      other.Independent (.boundedScope contract prepared) := by
+  cases other <;> constructor <;> intro separated <;>
+    exact regionalStateFootprintsIndependent_symmetric _ _ separated
+
 theorem PreparedInternalTransition.independent_symm {left right : PreparedInternalTransition}
     (separated : left.Independent right) : right.Independent left := by
-  cases left <;> cases right
-  · exact PreparedInternalArming.independent_symm separated
-  all_goals first
-    | exact localControlStateFootprintsNonInterfering_symm _ _ separated
-    | exact regionalStateFootprintsIndependent_symmetric _ _ separated
+  cases left with
+  | messageTask contract patch => exact (messageTask_independent_iff contract patch right).mp separated
+  | boundedScope contract prepared => exact (boundedScope_independent_iff contract prepared right).mp separated
+  | _ =>
+      cases right with
+      | messageTask contract patch => exact (messageTask_independent_iff contract patch _).mpr separated
+      | boundedScope contract prepared => exact (boundedScope_independent_iff contract prepared _).mpr separated
+      | _ =>
+          first
+          | exact PreparedInternalArming.independent_symm separated
+          | exact localControlStateFootprintsNonInterfering_symm _ _ separated
+          | exact regionalStateFootprintsIndependent_symmetric _ _ separated
 
 private def prepareOrdinaryInternalTransition? (program : Program) (state : RuntimeState)
     (operation : SemanticOperation) : Option PreparedInternalTransition :=
@@ -129,9 +192,29 @@ private def prepareTimerTaskInternalTransition? (program : Program) (state : Run
   let patch ← prepareInternalTimerTaskContract? program state contract
   some (.timerTask contract patch)
 
+private def prepareMessageTaskInternalTransition? (program : Program) (state : RuntimeState)
+    (operation : SemanticOperation) : Option PreparedInternalTransition :=
+  if subscriptionPreparationAdmitted program then do
+    let contract ← messageTaskContract? operation
+    let patch ← prepareInternalMessageTaskContract? program state contract
+    some (.messageTask contract patch)
+  else none
+
+private def prepareBoundedScopeInternalTransition? (program : Program) (state : RuntimeState)
+    (operation : SemanticOperation) : Option PreparedInternalTransition :=
+  if subscriptionPreparationAdmitted program then do
+    let contract ← boundedScopeContract? operation
+    let prepared ← prepareInternalBoundedScope? program state contract
+    some (.boundedScope contract prepared)
+  else none
+
 def prepareInternalTransition? (program : Program) (state : RuntimeState)
     (operation : SemanticOperation) : Option PreparedInternalTransition :=
   match operation with
+  | .awaitMessageBoundedUserTask .. | .awaitMessageMonitoredUserTask .. =>
+      prepareMessageTaskInternalTransition? program state operation
+  | .enterBoundedScope .. | .enterMonitoredScope .. =>
+      prepareBoundedScopeInternalTransition? program state operation
   | .awaitBoundedUserTask .. | .awaitMonitoredUserTask .. =>
       prepareTimerTaskInternalTransition? program state operation
   | .returnProcess .. | .completeScope .. | .throwError .. | .terminateScope .. =>
@@ -143,6 +226,27 @@ def applyPreparedInternalTransition? (program : Program) (state : RuntimeState)
     (prepared : PreparedInternalTransition) : Option RuntimeState :=
   if program.compensationEventSubProcessSnapshots.isSome then none
   else if prepared.Prepared program state then some (prepared.apply program state) else none
+
+theorem prepareInternalTransition_subscription_refused (program : Program) (state : RuntimeState)
+    (operation : SemanticOperation) (refused : ¬subscriptionPreparationAdmitted program)
+    (selected : (messageTaskContract? operation).isSome = true ∨
+      (boundedScopeContract? operation).isSome = true) :
+    prepareInternalTransition? program state operation = none := by
+  cases operation <;>
+    simp_all [messageTaskContract?, boundedScopeContract?, prepareInternalTransition?,
+      prepareMessageTaskInternalTransition?, prepareBoundedScopeInternalTransition?]
+
+theorem messageTask_application_subscription_refused (program : Program) (state : RuntimeState)
+    (contract : InternalMessageTaskContract) (patch : InternalMessageTaskPatch)
+    (refused : ¬subscriptionPreparationAdmitted program) :
+    applyPreparedInternalTransition? program state (.messageTask contract patch) = none := by
+  simp [applyPreparedInternalTransition?, PreparedInternalTransition.Prepared, refused]
+
+theorem boundedScope_application_subscription_refused (program : Program) (state : RuntimeState)
+    (contract : InternalBoundedScopeContract) (patch : PreparedInternalBoundedScope)
+    (refused : ¬subscriptionPreparationAdmitted program) :
+    applyPreparedInternalTransition? program state (.boundedScope contract patch) = none := by
+  simp [applyPreparedInternalTransition?, PreparedInternalTransition.Prepared, refused]
 
 def prepareInternalTransitionBatch? (program : Program) (state : RuntimeState)
     (operations : List SemanticOperation) : Option (List PreparedInternalTransition) := do
@@ -228,10 +332,41 @@ theorem prepareInternalTransition_sound (program : Program) (state : RuntimeStat
     cases selected
     exact ⟨patchFound, timerTaskContract_operation operation contract classified,
       (prepareInternalTimerTaskContract_facts program state contract patch patchFound).1⟩
+  have messageTask (operation : SemanticOperation)
+      (selected : prepareMessageTaskInternalTransition? program state operation = some prepared) :
+      prepared.Prepared program state ∧ prepared.operation = operation ∧
+        program.compensationEventSubProcessSnapshots = none := by
+    have admitted : subscriptionPreparationAdmitted program := by
+      by_cases certified : subscriptionPreparationAdmitted program
+      · exact certified
+      · simp [prepareMessageTaskInternalTransition?, certified] at selected
+    simp only [prepareMessageTaskInternalTransition?, admitted, ↓reduceIte] at selected
+    obtain ⟨contract, classified, selected⟩ := Option.bind_eq_some_iff.mp selected
+    obtain ⟨patch, patchFound, selected⟩ := Option.bind_eq_some_iff.mp selected
+    cases selected
+    exact ⟨⟨admitted, patchFound⟩, messageTaskContract_operation operation contract classified,
+      (prepareInternalMessageTaskContract_facts program state contract patch patchFound).1⟩
+  have boundedScope (operation : SemanticOperation)
+      (selected : prepareBoundedScopeInternalTransition? program state operation = some prepared) :
+      prepared.Prepared program state ∧ prepared.operation = operation ∧
+        program.compensationEventSubProcessSnapshots = none := by
+    have admitted : subscriptionPreparationAdmitted program := by
+      by_cases certified : subscriptionPreparationAdmitted program
+      · exact certified
+      · simp [prepareBoundedScopeInternalTransition?, certified] at selected
+    simp only [prepareBoundedScopeInternalTransition?, admitted, ↓reduceIte] at selected
+    obtain ⟨contract, classified, selected⟩ := Option.bind_eq_some_iff.mp selected
+    obtain ⟨patch, patchFound, selected⟩ := Option.bind_eq_some_iff.mp selected
+    cases selected
+    obtain ⟨_, _, _, _, _, _, _, _, snapshots, _⟩ :=
+      prepareInternalBoundedScope_facts program state contract patch patchFound
+    exact ⟨⟨admitted, patchFound⟩, boundedScopeContract_operation operation contract classified, snapshots⟩
   cases operation <;> first
     | exact regional _ found
     | exact ordinaryEnd _ found
     | exact timerTask _ found
+    | exact messageTask _ found
+    | exact boundedScope _ found
     | exact prepareOrdinaryInternalTransition_sound program state _ prepared found
 
 private theorem prepareInternalTransitionList_sound (program : Program) (state : RuntimeState)
@@ -296,10 +431,23 @@ theorem prepareInternalTransition_snapshots_refused (program : Program) (state :
     (operation : SemanticOperation) (snapshots : CompensationEventSubProcessSnapshotDeclaration)
     (declared : program.compensationEventSubProcessSnapshots = some snapshots) :
     prepareInternalTransition? program state operation = none := by
+  have messageRefused (contract : InternalMessageTaskContract) :
+      prepareInternalMessageTaskContract? program state contract = none := by
+    simp [prepareInternalMessageTaskContract?, declared]
+  have boundedRefused (contract : InternalBoundedScopeContract) :
+      prepareInternalBoundedScope? program state contract = none := by
+    cases found : prepareInternalBoundedScope? program state contract with
+    | none => rfl
+    | some prepared =>
+        obtain ⟨_, _, _, _, _, _, _, _, absent, _⟩ :=
+          prepareInternalBoundedScope_facts program state contract prepared found
+        simp [declared] at absent
   cases operation <;> simp only [prepareInternalTransition?]
   all_goals first
     | exact prepareOrdinaryInternalTransition_snapshots_refused program state _ snapshots declared
     | simp [prepareInternalRegional?, prepareInternalEnd?, prepareTimerTaskInternalTransition?,
-        timerTaskContract?, prepareInternalTimerTaskContract?, declared]
+        timerTaskContract?, prepareInternalTimerTaskContract?,
+        prepareMessageTaskInternalTransition?, messageTaskContract?, messageRefused,
+        prepareBoundedScopeInternalTransition?, boundedScopeContract?, boundedRefused, declared]
 
 end BpmnSemantics.SemanticProcess.InternalCommutation

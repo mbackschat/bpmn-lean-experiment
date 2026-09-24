@@ -9,21 +9,24 @@ import type { PreparedInternalOrdinaryArming } from "./internal-transition-ordin
 import { deriveInternalActivityArmingPreparation } from "./internal-transition-activity-arming-preparation.js";
 import type { PreparedInternalActivityArming } from "./internal-transition-activity-arming-preparation.js";
 import { applySelectedActivityArming } from "./semantic-process-activity-arming.js";
+import { applySelectedMessageActivityArming } from "./semantic-process-message-bounded-task-runtime.js";
 import { sameScopeOccurrence } from "./semantic-process-state.js";
 import { SemanticOperationKind } from "./semantic-process-contract.js";
 import type { SemanticProcessProgram } from "./semantic-process-contract.js";
 import type { RuntimeState } from "./semantic-process-state.js";
+import { repeatableSubscriptionPreparationAdmitted } from "./semantic-process-admission.js";
 
 export enum PreparedInternalArmingKind {
   Ordinary = "ordinary",
   Data = "data",
   TimerTask = "timerTask",
+  MessageTask = "messageTask",
 }
 
 export type PreparedInternalArming = Readonly<
   | PreparedInternalOrdinaryArming & { kind: PreparedInternalArmingKind.Ordinary }
   | PreparedInternalDataArming & { kind: PreparedInternalArmingKind.Data }
-  | PreparedInternalActivityArming & { kind: PreparedInternalArmingKind.TimerTask }
+  | PreparedInternalActivityArming & { kind: PreparedInternalArmingKind.TimerTask | PreparedInternalArmingKind.MessageTask }
 >;
 
 export function deriveInternalArmingPreparation(
@@ -31,13 +34,19 @@ export function deriveInternalArmingPreparation(
   state: RuntimeState,
   candidate: InternalTransitionCandidate,
 ): PreparedInternalArming | null {
+  if ((candidate.operation.kind === SemanticOperationKind.AwaitMessageBoundedUserTask ||
+      candidate.operation.kind === SemanticOperationKind.AwaitMessageMonitoredUserTask) &&
+      !repeatableSubscriptionPreparationAdmitted(program)) return null;
   switch (candidate.operation.kind) {
+    case SemanticOperationKind.AwaitMessageBoundedUserTask:
+    case SemanticOperationKind.AwaitMessageMonitoredUserTask:
     case SemanticOperationKind.AwaitBoundedUserTask:
     case SemanticOperationKind.AwaitMonitoredUserTask: {
       if (program.compensationEventSubProcessSnapshots !== undefined || candidate.owner === null) return null;
       const prepared = deriveInternalActivityArmingPreparation(program, state, candidate.operation);
       return prepared === null || !sameScopeOccurrence(prepared.owner, candidate.owner)
-        ? null : { kind: PreparedInternalArmingKind.TimerTask, ...prepared };
+        ? null : { kind: "messageWait" in prepared
+          ? PreparedInternalArmingKind.MessageTask : PreparedInternalArmingKind.TimerTask, ...prepared };
     }
     case SemanticOperationKind.AwaitDataInputUserTask:
     case SemanticOperationKind.AwaitDataOutputUserTask:
@@ -94,8 +103,11 @@ export function applyPreparedInternalArming(
   // checks every field without erasing tags, array order, or the separate occurrence counters.
   if (current === null || JSON.stringify(current) !== JSON.stringify(prepared)) return null;
   switch (prepared.kind) {
+    case PreparedInternalArmingKind.MessageTask:
     case PreparedInternalArmingKind.TimerTask:
-      return applySelectedActivityArming(state, prepared.owner, prepared.operation.input, prepared);
+      return "messageWait" in prepared
+        ? applySelectedMessageActivityArming(state, prepared.owner, prepared.operation.input, prepared)
+        : applySelectedActivityArming(state, prepared.owner, prepared.operation.input, prepared);
     case PreparedInternalArmingKind.Ordinary:
       return applyInternalOrdinaryArmingPatch(state, prepared.patch);
     case PreparedInternalArmingKind.Data:

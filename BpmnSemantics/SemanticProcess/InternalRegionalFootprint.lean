@@ -39,6 +39,11 @@ private def boundedWithdrawalAtoms : InternalCompletionWithdrawal → List Inter
       [.activityAssociation record,
         .owned (.wait .timer (timerWaitOccurrence deadline)) deadline.owner,
         .owned (.openWaitAnchor (timerWaitOccurrence deadline)) deadline.owner]
+  | .monitored record none => [.activityAssociation record]
+  | .monitored record (some deadline) =>
+      [.activityAssociation record,
+        .owned (.wait .timer (timerWaitOccurrence deadline)) deadline.owner,
+        .owned (.openWaitAnchor (timerWaitOccurrence deadline)) deadline.owner]
 
 def regionalBaseFootprint? (state : RuntimeState) (hosting : SemanticId)
     (selected : InternalRegionalSelection) (region : InternalOccurrenceRegion) : Option InternalRegionalStateFootprint :=

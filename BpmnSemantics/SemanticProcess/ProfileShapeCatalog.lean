@@ -3,6 +3,7 @@ import BpmnSemantics.SemanticProcess.StructuredHumanWorkAdmission
 import BpmnSemantics.SemanticProcess.ParallelMultiInstanceProfileAdmission
 import BpmnSemantics.SemanticProcess.MessageKeyCorrelationProfileAdmission
 import BpmnSemantics.SemanticProcess.CompensationSourceProfileAdmission
+import BpmnSemantics.SemanticProcess.RepeatableSubscriptionAdmission
 
 /-! # Semantic profile shape catalog
 
@@ -51,9 +52,11 @@ structure ShapeCardinalities where
   eventRaces : Nat := 0
   boundedUserTasks : Nat := 0
   messageBoundedUserTasks : Nat := 0
+  messageMonitoredUserTasks : Nat := 0
   monitoredUserTasks : Nat := 0
   sequentialMultiInstanceUserTasks : Nat := 0
   boundedScopeEntries : Nat := 0
+  monitoredScopeEntries : Nat := 0
   errorEnds : Nat := 0
   terminateEnds : Nat := 0
   errorThrows : Nat := 0
@@ -142,6 +145,8 @@ private def addOperationCardinality (counts : ShapeCardinalities)
     | .enterScope .. => { counts with scopeEntries := counts.scopeEntries + 1 }
     | .enterBoundedScope .. =>
         { counts with boundedScopeEntries := counts.boundedScopeEntries + 1 }
+    | .enterMonitoredScope .. =>
+        { counts with monitoredScopeEntries := counts.monitoredScopeEntries + 1 }
     | .invokeProcess .. =>
         { counts with processInvokes := counts.processInvokes + 1 }
     | .returnProcess .. =>
@@ -169,6 +174,8 @@ private def addOperationCardinality (counts : ShapeCardinalities)
         { counts with boundedUserTasks := counts.boundedUserTasks + 1 }
     | .awaitMessageBoundedUserTask .. =>
         { counts with messageBoundedUserTasks := counts.messageBoundedUserTasks + 1 }
+    | .awaitMessageMonitoredUserTask .. =>
+        { counts with messageMonitoredUserTasks := counts.messageMonitoredUserTasks + 1 }
     | .awaitMonitoredUserTask .. =>
         { counts with monitoredUserTasks := counts.monitoredUserTasks + 1 }
     | .awaitEffect .. => { counts with effects := counts.effects + 1 }
@@ -716,12 +723,16 @@ inductive ProfileGraphPolicy where
 def profileGraphPolicy? (profile : String) : Option ProfileGraphPolicy :=
   if profile = "bpmn-2.0.2-user-task-cycle-draft" then
     some .resumptionBounded
-  else if (checkedShape? profile).isSome && (programShape? profile).isSome then
+  else if profile = repeatableSubscriptionCheckpointProfileId.value ||
+      ((checkedShape? profile).isSome && (programShape? profile).isSome) then
     some .acyclic
   else none
 
 /-- Exact checked node and definition-scope cardinalities selected by the profile. -/
 def checkedProfileCapabilitiesValid (source : CheckedProcess) : Bool :=
+  if source.identity.semanticProfile = repeatableSubscriptionCheckpointProfileId then
+    repeatableSubscriptionCheckedGraph source
+  else
   checkedSequentialMultiInstanceProfileMatches source &&
     checkedParallelMultiInstanceProfileMatches source &&
     match checkedShape? source.identity.semanticProfile.value with
@@ -799,6 +810,9 @@ private def operationPayloadCapabilitiesValid (profile : String)
 
 /-- Exact operation and definition-scope cardinalities selected by the profile. -/
 def programProfileCapabilitiesValid (program : Program) : Bool :=
+  if program.identity.semanticProfile = repeatableSubscriptionCheckpointProfileId then
+    repeatableSubscriptionProgramGraph program
+  else
   programSequentialMultiInstanceProfileMatches program &&
     programParallelMultiInstanceProfileMatches program &&
     match programShape? program.identity.semanticProfile.value with

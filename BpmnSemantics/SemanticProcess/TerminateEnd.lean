@@ -28,7 +28,8 @@ private def terminateOperationPresent (program : Program) (id : OperationId)
 structure TerminateScopeEnabled (program : Program) (before : RuntimeState)
     (id : OperationId) (origin : BpmnElementOrigin) (input : ControlPlaceId)
     (scopeId : DefinitionScopeId) (owner : ScopeOccurrenceId) : Prop where
-  profile : program.identity.semanticProfile = terminateEndCheckpointProfileId
+  profile : program.identity.semanticProfile = terminateEndCheckpointProfileId ∨
+    program.identity.semanticProfile = repeatableSubscriptionCheckpointProfileId
   operation : .terminateScope id origin input scopeId ∈ program.operations
   operationScope :
     program.operationScopes.filter (fun ownership => ownership.operationId = id) =
@@ -56,7 +57,8 @@ inductive TerminateScopeStep (program : Program) (id : OperationId)
 def selectedTerminateOwner? (program : Program) (before : RuntimeState)
     (id : OperationId) (origin : BpmnElementOrigin) (input : ControlPlaceId)
     (scopeId : DefinitionScopeId) : Option ScopeOccurrenceId := do
-  if program.identity.semanticProfile ≠ terminateEndCheckpointProfileId then none
+  if ¬(program.identity.semanticProfile = terminateEndCheckpointProfileId ∨
+      program.identity.semanticProfile = repeatableSubscriptionCheckpointProfileId) then none
   else if !terminateOperationPresent program id origin input scopeId then none
   else if !operationOwnershipExact program id scopeId then none
   else match before.control, tokenOwners before input with
@@ -88,8 +90,9 @@ private theorem selectedTerminateOwner_sound
   split at selected <;> try contradiction
   rename_i profile
   have profileValid :
-      program.identity.semanticProfile = terminateEndCheckpointProfileId := by
-    simpa using profile
+      program.identity.semanticProfile = terminateEndCheckpointProfileId ∨
+        program.identity.semanticProfile = repeatableSubscriptionCheckpointProfileId := by
+    exact Classical.not_not.mp profile
   split at selected <;> try contradiction
   rename_i operation
   have operationPresent :

@@ -41,9 +41,9 @@ theorem regionalSelection_filter_frame (program : Program) (before after : Runti
       | _ => True)
     (quiet : scopeQuiescent before selected.root.id = true → scopeQuiescent after selected.root.id = true)
     (withdrawal : match (generalizing := false) operation with
-      | .completeScope _ _ definition _ => ∀ choice,
-          selectInternalCompletionWithdrawal? program before definition = some choice →
-          selectInternalCompletionWithdrawal? program after definition = some choice
+      | .completeScope _ _ definition output => ∀ choice,
+          selectSubscribedCompletionWithdrawal? program before definition output = some choice →
+          selectSubscribedCompletionWithdrawal? program after definition output = some choice
       | _ => True)
     (inputs : match (generalizing := false) operation with
       | .throwError _ _ input _ _ =>

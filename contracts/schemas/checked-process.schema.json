@@ -1083,7 +1083,7 @@
               "$ref": "#/$defs/nonemptyString"
             },
             "interruption": {
-              "const": "interrupting"
+              "enum": ["interrupting", "nonInterrupting"]
             },
             "channel": {
               "$ref": "#/$defs/operationMessageChannel"
@@ -1101,8 +1101,25 @@
             "id",
             "attachedToRef",
             "interruption",
-            "durationLiteral",
             "outputFlowId"
+          ],
+          "oneOf": [
+            {
+              "required": [
+                "durationLiteral"
+              ],
+              "properties": {
+                "durationLiteral": true
+              }
+            },
+            {
+              "required": [
+                "cycleLiteral"
+              ],
+              "properties": {
+                "cycleLiteral": true
+              }
+            }
           ],
           "properties": {
             "kind": {
@@ -1122,6 +1139,9 @@
             },
             "durationLiteral": {
               "const": "PT1S"
+            },
+            "cycleLiteral": {
+              "const": "R/PT1S"
             },
             "outputFlowId": {
               "$ref": "#/$defs/nonemptyString"

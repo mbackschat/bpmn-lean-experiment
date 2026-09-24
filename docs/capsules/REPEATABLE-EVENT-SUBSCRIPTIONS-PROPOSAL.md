@@ -208,7 +208,7 @@ Each capability claim must carry a concrete admitted source and reachable fronti
 
 Effort bound: each proposition group gets one direct reuse pass against the existing relation/frame machinery and one focused correction pass for a demonstrated missing lemma or ownership split. Failure to close after those two passes records the exact residual proposition and the attempted boundary in the runtime/proof map and returns that group to review; it does not authorize an aggregate invariant, generic family-pair programme, assumed successor validity, or weaker claim. Every new kernel-decided fixture retains the fixed 3 GiB cold-target gate; a memory failure triggers a smaller proof-owner split, never a larger limit or native-decision replacement. Measure the complete consumer closure before acceptance.
 
-Finite Lean/core schedules separately check source-to-result publication, both completion/trigger orders, repeated Messages to one subscription, stale Timer identity, and nested cleanup. They cannot replace the quantified multiplicity or cancellation laws. New `RepeatableEventSubscriptionAdmissionConformance`, `RepeatableMessageLifetimeConformance`, `RecurringTimerLifetimeConformance`, and `SubscribedScopeCancellationConformance` modules separate source/limit decisions, repeated delivery, replacement, and regional reduction costs. They are planned owners, not current evidence. The lane does not claim general fairness, a global reachable-state preservation theorem, or a Temporal liveness theorem.
+Finite Lean/core schedules separately check source-to-result publication, both completion/trigger orders, repeated Messages to one subscription, stale Timer identity, and nested cleanup. They cannot replace the quantified multiplicity or cancellation laws. The kernel-checked [admission fixture](../../BpmnSemantics/RepeatableEventSubscriptionAdmissionConformance.lean), [Message lifetime fixture](../../BpmnSemantics/RepeatableMessageLifetimeConformance.lean), [recurring Timer fixture](../../BpmnSemantics/RecurringTimerLifetimeConformance.lean), and [subscribed cleanup fixture](../../BpmnSemantics/SubscribedScopeCancellationConformance.lean) separate checked-graph/limit decisions, repeated delivery, replacement and overflow, and regional reduction costs. Their constructed inputs establish no additional XML provenance or admission surface; the source-bound pipeline remains separate. The 651-job complete Lean gate and all 27 source-bound Lean/core schedules pass; [twelve fixture qualifications](../CAPSULE-COST-LEDGER.md#subscription-checkpoint-resource-qualification-2026-09-24) retain the fixed 3 GiB ceiling. Independent checkpoint review remains required. The lane does not claim general fairness, a global reachable-state preservation theorem, or a Temporal liveness theorem.
 
 ### Scheduling proof-domain amendment
 
@@ -305,28 +305,28 @@ The profile-specific forest/burst predicates belong in new cohesive `repeatable-
 
 | Existing owner | Measured headroom before the 800-line review target |
 |---|---:|
-| [Monitored Task runtime](../../packages/semantic-core/src/semantic-process-monitored-task-runtime.ts) | 540 |
-| [Message-bounded Task runtime](../../packages/semantic-core/src/semantic-process-message-bounded-task-runtime.ts) | 525 |
+| [Monitored Task runtime](../../packages/semantic-core/src/semantic-process-monitored-task-runtime.ts) | 547 |
+| [Message-bounded Task runtime](../../packages/semantic-core/src/semantic-process-message-bounded-task-runtime.ts) | 472 |
 | [Durable Timer owner](../../packages/temporal-adapter/workflow/src/durable-timer-owner.ts) | 697 |
 | [Workflow continuation](../../packages/temporal-adapter/workflow/src/workflow-chain-continuation.ts) | 104 |
-| [Message boundary source](../../packages/bpmn-source/src/message-boundary-event-source.ts) | 724 |
-| [Timer boundary source](../../packages/bpmn-source/src/timer-boundary-event-source.ts) | 693 |
+| [Message boundary source](../../packages/bpmn-source/src/message-boundary-event-source.ts) | 719 |
+| [Timer boundary source](../../packages/bpmn-source/src/timer-boundary-event-source.ts) | 685 |
 | [Lean monitored Task](../../BpmnSemantics/SemanticProcess/MonitoredTask.lean) | 254 |
 | [Lean Message-bounded Task](../../BpmnSemantics/SemanticProcess/MessageBoundedTask.lean) | 361 |
-| [Core regional cancellation](../../packages/semantic-core/src/semantic-process-scope-cancellation.ts) | 578 |
-| [Lean regional cancellation](../../BpmnSemantics/SemanticProcess/ScopeCancellation.lean) | 578 |
-| [Checked contract](../../packages/semantic-core/src/checked-process-contract.ts) | 423 |
-| [IL contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 178 |
-| [Source lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 134 |
-| [Lean contract](../../BpmnSemantics/SemanticProcessContract.lean) | 11 |
-| [Lean transition](../../BpmnSemantics/SemanticProcess/Transition.lean) | 127 |
-| [Lean Program JSON](../../BpmnSemantics/SemanticProcessJson/Program.lean) | 87 |
-| [Product 2 operation enum](../../platform/contracts/src/execution-publications.ts) | 345 |
+| [Core regional cancellation](../../packages/semantic-core/src/semantic-process-scope-cancellation.ts) | 574 |
+| [Lean regional cancellation](../../BpmnSemantics/SemanticProcess/ScopeCancellation.lean) | 559 |
+| [Checked contract](../../packages/semantic-core/src/checked-process-contract.ts) | 420 |
+| [IL contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 156 |
+| [Source lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 129 |
+| [Lean contract](../../BpmnSemantics/SemanticProcessContract.lean) | 306 |
+| [Lean transition](../../BpmnSemantics/SemanticProcess/Transition.lean) | 101 |
+| [Lean Program JSON](../../BpmnSemantics/SemanticProcessJson/Program.lean) | 63 |
+| [Product 2 operation enum](../../platform/contracts/src/execution-publications.ts) | 343 |
 | [Temporal scenario runner](../../packages/temporal-adapter/testkit/src/runner.ts) | 255 |
-| [Lean prepared sum](../../BpmnSemantics/SemanticProcess/InternalPreparedTransition.lean) | 521 |
-| [Lean finite-batch consumer](../../BpmnSemantics/SemanticProcess/InternalTransitionBatch.lean) | 93 |
+| [Lean prepared sum](../../BpmnSemantics/SemanticProcess/InternalPreparedTransition.lean) | 385 |
+| [Lean finite-batch consumer](../../BpmnSemantics/SemanticProcess/InternalTransitionBatch.lean) | 114 |
 | [Lean canonical batch publication](../../BpmnSemantics/SemanticProcess/InternalTransitionCanonicalBatchPublication.lean) | 703 |
-| [Core prepared batch](../../packages/semantic-core/src/internal-transition-batch.ts) | 618 |
+| [Core prepared batch](../../packages/semantic-core/src/internal-transition-batch.ts) | 604 |
 
 The Lean contract's 11-line margin cannot hold the selected additions. Extract its existing checked-source declarations through `CheckedProcess`, including their shared identity types, to `BpmnSemantics/CheckedProcessContract.lean`; the current Semantic Process contract imports that cohesive owner and continues to own the IL operation sum. Preserve namespace, declaration meaning, and old codecs, and update exact-source guards to read the new checked owner rather than weakening their declaration checks. This is a representation-owner extraction, not new proof infrastructure. The continuation owner needs extraction only if its growth exceeds the measured 104-line margin. Other new cohesive owners are named above; closure cost is measured against the current Message-boundary and non-interrupting Timer increments in [the cost ledger](../CAPSULE-COST-LEDGER.md).
 

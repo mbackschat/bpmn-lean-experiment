@@ -159,7 +159,7 @@ theorem cancelScopeSubtree_preserves_incident_associations (state : RuntimeState
       simp_all [cancelled, called]
   · change (state.variables.activities.filter (fun scope =>
       !called.contains scope.owner.processInstanceId &&
-      !((withdrawnByRegion cancelled state.activityOccurrences).any fun record =>
+      !((withdrawnByRegion cancelled state.activityOccurrences (retainedCancellationRoot root disposition)).any fun record =>
         activityOccurrenceScopeMatches
           ⟨record.processInstanceId, ⟨record.activityElementId.value⟩, record.activation⟩ scope) &&
       !((state.effectWaits.filter fun wait => cancelled wait.owner).any fun wait =>

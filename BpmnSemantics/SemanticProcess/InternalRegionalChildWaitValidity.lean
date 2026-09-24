@@ -88,9 +88,9 @@ theorem preparedChildComplete_task_and_effect_validity (program : Program) (befo
   obtain ⟨actual, fired, appliedAgain⟩ := prepareInternalRegional_executes program before _ prepared found
   have same : actual = after := Option.some.inj (appliedAgain.symm.trans applied)
   subst actual
-  have result : completeBoundedScope? program before definition (some output) = some after := by
+  have result : completeSelectedScope? program before definition (some output) = some after := by
     simp only [fire?, snapshots] at fired
-    change completeBoundedScope? program before definition (some output) = some after at fired
+    change completeSelectedScope? program before definition (some output) = some after at fired
     exact fired
   have fields := regionalSelection_reference_fields program before after _ prepared.selection snapshots identities selection fired
   have taskFields : after.waits = before.waits := by
@@ -99,10 +99,10 @@ theorem preparedChildComplete_task_and_effect_validity (program : Program) (befo
     intro wait member
     simp only [regionalSelectionReferenceRetention, kind]
     cases withdrawal <;> rfl
-  obtain ⟨effectFields, incidentFields, _⟩ := regionalCompletion_effect_and_branch_fields program before after
+  obtain ⟨effectFields, incidentFields, _⟩ := regionalSelectedCompletion_effect_and_branch_fields program before after
     definition (some output) result
   have localFields := congrArg ScopedVariables.activities
-    (regionalLocalData_completion_variables program before after definition (some output) result)
+    (regionalLocalData_selected_completion_variables program before after definition (some output) result)
   exact ⟨after, applied,
     regional_child_user_task_program_validity program before after _ tasks quiet scopes taskFields,
     regional_child_effect_program_validity program before after _ effects quiet scopes effectFields incidentFields localFields⟩

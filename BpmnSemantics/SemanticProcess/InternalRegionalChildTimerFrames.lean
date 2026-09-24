@@ -9,6 +9,69 @@ namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
 open BpmnSemantics FlowNodeOccurrenceProgramValidity.Internal
 
+private theorem subscribed_unbounded (program : Program) (state : RuntimeState)
+    (scope : DefinitionScopeId) (output : Option ControlPlaceId)
+    (selected : selectSubscribedCompletionWithdrawal? program state scope output = some .unbounded) :
+    isMonitoredScopeDefinition program scope = false ∧ boundedCompletionDeclarations program scope = [] := by
+  unfold selectSubscribedCompletionWithdrawal? at selected
+  split at selected
+  · obtain ⟨_, _, selected⟩ := Option.bind_eq_some_iff.mp selected
+    split at selected <;> simp at selected
+  · next unmonitored =>
+      exact ⟨Bool.eq_false_iff.mpr unmonitored, completionWithdrawal_unbounded_facts program state scope selected⟩
+
+theorem subscribedWithdrawal_bounded_selection (program : Program) (state : RuntimeState)
+    (scope : DefinitionScopeId) (output : Option ControlPlaceId)
+    (record : ActivityOccurrence) (deadline : TimerWait)
+    (selected : selectSubscribedCompletionWithdrawal? program state scope output = some (.bounded record deadline)) :
+    selectInternalCompletionWithdrawal? program state scope = some (.bounded record deadline) := by
+  unfold selectSubscribedCompletionWithdrawal? at selected
+  split at selected
+  · obtain ⟨_, _, selected⟩ := Option.bind_eq_some_iff.mp selected
+    split at selected <;> simp at selected
+  · exact selected
+
+private theorem monitored_retained_timer_not_attached (program : Program) (state : RuntimeState)
+    (scope : DefinitionScopeId) (output : Option ControlPlaceId)
+    (record : ActivityOccurrence) (deadline : Option TimerWait) (timer : TimerWait)
+    (root : RuntimeScopeOccurrence) (candidate : ActivityOccurrence)
+    (children : state.scopeOccurrences.filter (fun child => decide (child.id.definitionScopeId = scope)) = [root])
+    (selected : selectSubscribedCompletionWithdrawal? program state scope output = some (.monitored record deadline))
+    (retained : timer ∈ removeMonitoredScopeTimer state.timerWaits deadline)
+    (member : candidate ∈ state.activityOccurrences) (body : candidate.body = .childScope root.id) :
+    recordAttaches candidate (boundaryTimerWaitIdentity timer) = false := by
+  obtain ⟨pair, _, _, definition, _, recordEq, timerEq⟩ :=
+    subscribedWithdrawal_monitored_facts program state scope output record deadline selected
+  have childCensus := pair.property.2.1.1
+  rw [definition, children] at childCensus
+  have childEq : pair.val.child = root := (List.singleton_inj.mp childCensus).symm
+  have bodyCensus := pair.property.2.1.2.2.2.2.1
+  rw [childEq] at bodyCensus
+  have sameRecord : candidate = pair.val.record := by
+    have included : candidate ∈ state.activityOccurrences.filter
+        (fun value => decide (value.body = .childScope root.id)) := List.mem_filter.mpr ⟨member, by simp [body]⟩
+    rw [bodyCensus] at included
+    exact List.mem_singleton.mp included
+  subst candidate
+  have binding := pair.property.2.2
+  cases deadline with
+  | none =>
+      simp only [MonitoredScopeTimerBinding, timerEq] at binding
+      simp [recordAttaches, ActivityOccurrence.timerHandlerOccurrences, binding.2.1]
+  | some selectedTimer =>
+      simp only [MonitoredScopeTimerBinding, timerEq] at binding
+      change timer ∈ state.timerWaits.erase selectedTimer at retained
+      rw [erase_matches_singleton_mask _ _ _ binding.2.2.1] at retained
+      have rejected := (List.mem_filter.mp retained).2
+      apply Bool.eq_false_iff.mpr
+      intro attached
+      have identity : boundaryTimerWaitIdentity timer = boundaryTimerWaitIdentity selectedTimer := by
+        simpa [recordAttaches, ActivityOccurrence.timerHandlerOccurrences, binding.1, beq_iff_eq] using attached
+      have names : timerIdNamesWait (boundaryTimerWaitIdentity selectedTimer) timer = true := by
+        rw [← identity]
+        simp [timerIdNamesWait, boundaryTimerWaitIdentity]
+      simp [names] at rejected
+
 theorem regional_child_scope_filter_frame (before after : RuntimeState)
     (root : RuntimeScopeOccurrence) (scopeId : DefinitionScopeId)
     (predicate : RuntimeScopeOccurrence → Bool)
@@ -32,20 +95,22 @@ theorem regional_child_scope_filter_frame (before after : RuntimeState)
   · simp [equal]
 
 theorem completionWithdrawal_timer_host_filter_frame (program : Program) (before after : RuntimeState)
-    (scopeId : DefinitionScopeId) (root : RuntimeScopeOccurrence)
+    (scopeId : DefinitionScopeId) {output : Option ControlPlaceId} (root : RuntimeScopeOccurrence)
     (withdrawal : InternalCompletionWithdrawal) (timer : TimerWait)
     (id : OperationId) (origin : BpmnElementOrigin) (input entry : ControlPlaceId)
     (definition : DefinitionScopeId) (boundary : BoundaryTimerArm)
     (record : ActivityOccurrence) (recordMember : record ∈ before.activityOccurrences)
     (unique : waitIdentitiesUnique before = true)
     (children : before.scopeOccurrences.filter (fun child => decide (child.id.definitionScopeId = scopeId)) = [root])
-    (selected : selectInternalCompletionWithdrawal? program before scopeId = some withdrawal)
+    (selected : selectSubscribedCompletionWithdrawal? program before scopeId output = some withdrawal)
     (scopes : after.scopeOccurrences = before.scopeOccurrences.filter (fun child => decide (child.id ≠ root.id)))
     (timers : after.timerWaits = match (generalizing := false) withdrawal with
       | .unbounded => before.timerWaits
-      | .bounded _ deadline => before.timerWaits.erase deadline)
+      | .bounded _ deadline => before.timerWaits.erase deadline
+      | .monitored _ deadline => removeMonitoredScopeTimer before.timerWaits deadline)
     (retained : timer ∈ after.timerWaits)
-    (entryMember : .enterBoundedScope id origin input entry definition boundary ∈ program.operations)
+    (entryMember : .enterBoundedScope id origin input entry definition boundary ∈ program.operations ∨
+      .enterMonitoredScope id origin input entry definition boundary ∈ program.operations)
     (attached : recordAttaches record
       { processInstanceId := timer.processInstanceId, elementId := ⟨timer.elementId.value⟩, activation := timer.activation } = true) :
     after.scopeOccurrences.filter (fun child =>
@@ -57,24 +122,44 @@ theorem completionWithdrawal_timer_host_filter_frame (program : Program) (before
   apply regional_child_scope_filter_frame before after root scopeId _ children scopes
   cases withdrawal with
   | unbounded =>
-      have absent := completionWithdrawal_unbounded_facts program before scopeId selected
+      obtain ⟨unmonitored, absent⟩ := subscribed_unbounded program before scopeId output selected
       have rootMember := List.mem_filter.mp (show root ∈ before.scopeOccurrences.filter
         (fun child => decide (child.id.definitionScopeId = scopeId)) from by rw [children]; simp)
       have different : root.id.definitionScopeId ≠ definition := by
         intro equal
         have definitionEq := equal.symm.trans (of_decide_eq_true rootMember.2)
-        have present : boundary ∈ boundedCompletionDeclarations program scopeId := by
-          unfold boundedCompletionDeclarations
-          exact List.mem_filterMap.mpr ⟨_, entryMember, by simp only [definitionEq, ↓reduceIte]⟩
-        rw [absent] at present
-        contradiction
+        rcases entryMember with bounded | monitored
+        · have present : boundary ∈ boundedCompletionDeclarations program scopeId := by
+            unfold boundedCompletionDeclarations
+            exact List.mem_filterMap.mpr ⟨_, bounded, by simp only [definitionEq, ↓reduceIte]⟩
+          rw [absent] at present
+          contradiction
+        · have present : isMonitoredScopeDefinition program scopeId = true := by
+            apply List.any_eq_true.mpr
+            refine ⟨{ id, origin, input, childEntry := entry, childScopeId := definition, timer := boundary }, ?_, ?_⟩
+            · exact List.mem_filterMap.mpr ⟨_, monitored, rfl⟩
+            · simp [definitionEq]
+          rw [unmonitored] at present
+          contradiction
       simp [different]
   | bounded selectedRecord deadline =>
       have survives : timer ∈ before.timerWaits.erase deadline := by simpa only [timers] using retained
       have different : record.body ≠ .childScope root.id := by
         intro body
         have absent := completionWithdrawal_retained_timer_not_attached program before scopeId selectedRecord deadline
-          timer root record unique children selected survives recordMember body
+          timer root record unique children (subscribedWithdrawal_bounded_selection program before scopeId output _ _ selected)
+          survives recordMember body
+        rw [absent] at attached
+        contradiction
+      cases body : record.body <;> simp_all [activityBodyScope?]
+  | monitored selectedRecord deadline =>
+      have survives : timer ∈ removeMonitoredScopeTimer before.timerWaits deadline := by
+        simpa only [timers] using retained
+      have different : record.body ≠ .childScope root.id := by
+        intro body
+        have absent := monitored_retained_timer_not_attached program before scopeId output selectedRecord deadline
+          timer root record children selected survives recordMember body
+        change recordAttaches record (boundaryTimerWaitIdentity timer) = true at attached
         rw [absent] at attached
         contradiction
       cases body : record.body <;> simp_all [activityBodyScope?]
@@ -83,7 +168,7 @@ theorem regional_child_activity_filter_frame (before after : RuntimeState)
     (root : ScopeOccurrenceId) (withdrawal : InternalCompletionWithdrawal)
     (predicate : ActivityOccurrence → Bool)
     (activities : after.activityOccurrences = before.activityOccurrences.filter (fun record =>
-      match (generalizing := false) withdrawal with | .unbounded => true | .bounded .. => !decide (record.body = .childScope root)))
+      match (generalizing := false) withdrawal with | .unbounded => true | .bounded .. | .monitored .. => !decide (record.body = .childScope root)))
     (excluded : ∀ record ∈ before.activityOccurrences, record.body = .childScope root → predicate record = false) :
     after.activityOccurrences.filter predicate = before.activityOccurrences.filter predicate := by
   rw [activities, List.filter_filter]
@@ -91,26 +176,28 @@ theorem regional_child_activity_filter_frame (before after : RuntimeState)
   intro record member
   cases withdrawal with
   | unbounded => simp only [Bool.and_true]
-  | bounded selected deadline =>
+  | bounded selected deadline | monitored selected deadline =>
       by_cases body : record.body = .childScope root
       · simp [body, excluded record member body]
       · simp [body]
 
 theorem completionWithdrawal_scope_timer_census_frame (program : Program) (before after : RuntimeState)
-    (scopeId : DefinitionScopeId) (root : RuntimeScopeOccurrence)
+    (scopeId : DefinitionScopeId) {output : Option ControlPlaceId} (root : RuntimeScopeOccurrence)
     (withdrawal : InternalCompletionWithdrawal) (timer : TimerWait)
     (id : OperationId) (origin : BpmnElementOrigin) (input entry : ControlPlaceId)
     (definition : DefinitionScopeId) (boundary : BoundaryTimerArm)
     (unique : waitIdentitiesUnique before = true)
     (children : before.scopeOccurrences.filter (fun child => decide (child.id.definitionScopeId = scopeId)) = [root])
-    (selected : selectInternalCompletionWithdrawal? program before scopeId = some withdrawal)
+    (selected : selectSubscribedCompletionWithdrawal? program before scopeId output = some withdrawal)
     (scopes : after.scopeOccurrences = before.scopeOccurrences.filter (fun child => decide (child.id ≠ root.id)))
     (activities : after.activityOccurrences = before.activityOccurrences.filter (fun record =>
-      match (generalizing := false) withdrawal with | .unbounded => true | .bounded .. => !decide (record.body = .childScope root.id)))
+      match (generalizing := false) withdrawal with | .unbounded => true | .bounded .. | .monitored .. => !decide (record.body = .childScope root.id)))
     (timers : after.timerWaits = match (generalizing := false) withdrawal with
-      | .unbounded => before.timerWaits | .bounded _ deadline => before.timerWaits.erase deadline)
+      | .unbounded => before.timerWaits | .bounded _ deadline => before.timerWaits.erase deadline
+      | .monitored _ deadline => removeMonitoredScopeTimer before.timerWaits deadline)
     (retained : timer ∈ after.timerWaits)
-    (entryMember : .enterBoundedScope id origin input entry definition boundary ∈ program.operations) :
+    (entryMember : .enterBoundedScope id origin input entry definition boundary ∈ program.operations ∨
+      .enterMonitoredScope id origin input entry definition boundary ∈ program.operations) :
     (after.activityOccurrences.filter fun record => record.owner = timer.owner && recordAttaches record
       { processInstanceId := timer.processInstanceId, elementId := ⟨timer.elementId.value⟩, activation := timer.activation } &&
         (after.scopeOccurrences.filter fun child =>
@@ -135,29 +222,43 @@ theorem completionWithdrawal_scope_timer_census_frame (program : Program) (befor
         have different : record.body ≠ .childScope root.id := by
           intro body
           have absent := completionWithdrawal_retained_timer_not_attached program before scopeId selectedRecord deadline
-            timer root record unique children selected survives member body
+            timer root record unique children (subscribedWithdrawal_bounded_selection program before scopeId output _ _ selected)
+            survives member body
+          rw [absent] at attached
+          contradiction
+        simp [different]
+    | monitored selectedRecord deadline =>
+        have survives : timer ∈ removeMonitoredScopeTimer before.timerWaits deadline := by
+          simpa only [timers] using retained
+        have different : record.body ≠ .childScope root.id := by
+          intro body
+          have absent := monitored_retained_timer_not_attached program before scopeId output selectedRecord deadline
+            timer root record children selected survives member body
+          change recordAttaches record (boundaryTimerWaitIdentity timer) = true at attached
           rw [absent] at attached
           contradiction
         simp [different]
   · simp only [Bool.eq_false_iff.mpr attached, Bool.and_false, Bool.false_and]
 
 theorem completionWithdrawal_boundary_timer_operation_frame (program : Program) (before after : RuntimeState)
-    (scopeId : DefinitionScopeId) (root : RuntimeScopeOccurrence)
+    (scopeId : DefinitionScopeId) {output : Option ControlPlaceId} (root : RuntimeScopeOccurrence)
     (withdrawal : InternalCompletionWithdrawal) (timer : TimerWait)
     (candidate : SemanticOperation)
     (member : candidate ∈ program.operations)
     (unique : waitIdentitiesUnique before = true)
     (children : before.scopeOccurrences.filter (fun child => decide (child.id.definitionScopeId = scopeId)) = [root])
-    (selected : selectInternalCompletionWithdrawal? program before scopeId = some withdrawal)
+    (selected : selectSubscribedCompletionWithdrawal? program before scopeId output = some withdrawal)
     (scopes : after.scopeOccurrences = before.scopeOccurrences.filter (fun child => decide (child.id ≠ root.id)))
     (tasks : after.waits = before.waits)
     (activities : after.activityOccurrences = before.activityOccurrences.filter (fun record =>
-      match (generalizing := false) withdrawal with | .unbounded => true | .bounded .. => !decide (record.body = .childScope root.id)))
+      match (generalizing := false) withdrawal with | .unbounded => true | .bounded .. | .monitored .. => !decide (record.body = .childScope root.id)))
     (timers : after.timerWaits = match (generalizing := false) withdrawal with
-      | .unbounded => before.timerWaits | .bounded _ deadline => before.timerWaits.erase deadline)
+      | .unbounded => before.timerWaits | .bounded _ deadline => before.timerWaits.erase deadline
+      | .monitored _ deadline => removeMonitoredScopeTimer before.timerWaits deadline)
     (retained : timer ∈ after.timerWaits) :
     boundaryTimerOperationMatches program after timer candidate =
       boundaryTimerOperationMatches program before timer candidate := by
+  let entryOperation := candidate
   cases candidate <;> try rfl
   case awaitBoundedUserTask id origin input task boundary =>
     change (if !operationOwnedBy program _ timer.owner then false else _ && _ && decide (_ = 1)) = _
@@ -185,26 +286,28 @@ theorem completionWithdrawal_boundary_timer_operation_frame (program : Program) 
     · rfl
     · intro record member body
       simp [activityBodyParallelTasks?, body]
-  case enterBoundedScope id origin input entry definition boundary =>
+  case enterBoundedScope id origin input entry definition boundary
+    | enterMonitoredScope id origin input entry definition boundary =>
     change (if !operationOwnedBy program _ timer.owner then false else _ && _ && decide (_ = 1)) = _
     have hosts := completionWithdrawal_scope_timer_census_frame program before after scopeId root withdrawal timer
-      id origin input entry definition boundary unique children selected scopes activities timers retained member
+      id origin input entry definition boundary unique children selected scopes activities timers retained (by simp [member])
     exact congrArg (fun records : List ActivityOccurrence =>
-      if !operationOwnedBy program (.enterBoundedScope id origin input entry definition boundary) timer.owner then false
+      if !operationOwnedBy program entryOperation timer.owner then false
       else boundary.elementId = timer.elementId && boundary.output = timer.output && records.length = 1) hosts
 
 theorem completionWithdrawal_boundary_timer_frame (program : Program) (before after : RuntimeState)
-    (scopeId : DefinitionScopeId) (root : RuntimeScopeOccurrence)
+    (scopeId : DefinitionScopeId) {output : Option ControlPlaceId} (root : RuntimeScopeOccurrence)
     (withdrawal : InternalCompletionWithdrawal) (timer : TimerWait)
     (unique : waitIdentitiesUnique before = true)
     (children : before.scopeOccurrences.filter (fun child => decide (child.id.definitionScopeId = scopeId)) = [root])
-    (selected : selectInternalCompletionWithdrawal? program before scopeId = some withdrawal)
+    (selected : selectSubscribedCompletionWithdrawal? program before scopeId output = some withdrawal)
     (scopes : after.scopeOccurrences = before.scopeOccurrences.filter (fun child => decide (child.id ≠ root.id)))
     (tasks : after.waits = before.waits)
     (activities : after.activityOccurrences = before.activityOccurrences.filter (fun record =>
-      match (generalizing := false) withdrawal with | .unbounded => true | .bounded .. => !decide (record.body = .childScope root.id)))
+      match (generalizing := false) withdrawal with | .unbounded => true | .bounded .. | .monitored .. => !decide (record.body = .childScope root.id)))
     (timers : after.timerWaits = match (generalizing := false) withdrawal with
-      | .unbounded => before.timerWaits | .bounded _ deadline => before.timerWaits.erase deadline)
+      | .unbounded => before.timerWaits | .bounded _ deadline => before.timerWaits.erase deadline
+      | .monitored _ deadline => removeMonitoredScopeTimer before.timerWaits deadline)
     (retained : timer ∈ after.timerWaits) :
     flowNodeOccurrenceBoundaryTimerBound program after timer =
       flowNodeOccurrenceBoundaryTimerBound program before timer := by
@@ -220,7 +323,7 @@ theorem regionalSelection_completion_withdrawal (program : Program) (state : Run
     (withdrawal : InternalCompletionWithdrawal)
     (found : selectInternalRegional? program state (.completeScope id origin definition output) = some selected)
     (kind : selected.kind = .completing withdrawal) :
-    selectInternalCompletionWithdrawal? program state definition = some withdrawal := by
+    selectSubscribedCompletionWithdrawal? program state definition output = some withdrawal := by
   unfold selectInternalRegional? at found
   obtain ⟨_, _, found⟩ := Option.bind_eq_some_iff.mp found
   dsimp only at found
@@ -239,16 +342,17 @@ theorem preparedChildComplete_wait_fields (program : Program) (before : RuntimeS
     (found : prepareInternalRegional? program before (.completeScope id origin definition (some output)) = some prepared) :
     ∃ after withdrawal, applyPreparedInternalRegional? program before prepared = some after ∧
       fire? program (.completeScope id origin definition (some output)) before = some after ∧
-      selectInternalCompletionWithdrawal? program before definition = some withdrawal ∧
+      selectSubscribedCompletionWithdrawal? program before definition (some output) = some withdrawal ∧
       before.scopeOccurrences.filter (fun child => decide (child.id.definitionScopeId = definition)) = [prepared.selection.root] ∧
       scopeQuiescent before prepared.selection.root.id = true ∧
       after.scopeOccurrences = before.scopeOccurrences.filter (fun child => decide (child.id ≠ prepared.selection.root.id)) ∧
       after.waits = before.waits ∧ after.messageWaits = before.messageWaits ∧ after.eventRaces = before.eventRaces ∧
       after.activityOccurrences = before.activityOccurrences.filter (fun record =>
         match (generalizing := false) withdrawal with
-        | .unbounded => true | .bounded .. => !decide (record.body = .childScope prepared.selection.root.id)) ∧
+        | .unbounded => true | .bounded .. | .monitored .. => !decide (record.body = .childScope prepared.selection.root.id)) ∧
       after.timerWaits = (match (generalizing := false) withdrawal with
-        | .unbounded => before.timerWaits | .bounded _ deadline => before.timerWaits.erase deadline) := by
+        | .unbounded => before.timerWaits | .bounded _ deadline => before.timerWaits.erase deadline
+        | .monitored _ deadline => removeMonitoredScopeTimer before.timerWaits deadline) := by
   obtain ⟨snapshots, _, _, closedSelection, _⟩ := prepareInternalRegional_facts program before _ prepared found
   have selection := (ownershipClosedSelection_facts program before _ prepared.selection closedSelection).1
   obtain ⟨withdrawal, kind, children⟩ := regionalSelection_complete_census program before id origin definition
@@ -269,12 +373,13 @@ theorem preparedChildComplete_wait_fields (program : Program) (before : RuntimeS
     cases withdrawal <;> rfl
   have activities : after.activityOccurrences = before.activityOccurrences.filter (fun record =>
       match (generalizing := false) withdrawal with
-      | .unbounded => true | .bounded .. => !decide (record.body = .childScope prepared.selection.root.id)) := by
+      | .unbounded => true | .bounded .. | .monitored .. => !decide (record.body = .childScope prepared.selection.root.id)) := by
     rw [fields.2.1]
     simp only [regionalSelectionReferenceRetention, kind]
     cases withdrawal <;> rfl
   have timers : after.timerWaits = match (generalizing := false) withdrawal with
-      | .unbounded => before.timerWaits | .bounded _ deadline => before.timerWaits.erase deadline := by
+      | .unbounded => before.timerWaits | .bounded _ deadline => before.timerWaits.erase deadline
+      | .monitored _ deadline => removeMonitoredScopeTimer before.timerWaits deadline := by
     rw [fields.2.2.2.2.1]
     simp only [regionalSelectionReferenceRetention, kind]
     cases withdrawal with
@@ -285,6 +390,15 @@ theorem preparedChildComplete_wait_fields (program : Program) (before : RuntimeS
         have nodup := occurrence_uniqueness_implies_nodup timerWaitKeyMatches
           (by intro wait; simp [timerWaitKeyMatches]) before.timerWaits unique.2.2.1
         exact (nodup.erase_eq_filter deadline).symm
+    | monitored record deadline =>
+        obtain ⟨pair, _, _, _, _, _, timerEq⟩ :=
+          subscribedWithdrawal_monitored_facts program before definition (some output) record deadline withdrawn
+        have binding := pair.property.2.2
+        cases deadline with
+        | none => exact List.filter_eq_self.mpr (by intros; rfl)
+        | some timer =>
+            simp only [MonitoredScopeTimerBinding, timerEq] at binding
+            exact (erase_matches_singleton_mask _ _ _ binding.2.2.1).symm
   have messages : after.messageWaits = before.messageWaits := by
     rw [fields.2.2.2.1]
     apply List.filter_eq_self.mpr

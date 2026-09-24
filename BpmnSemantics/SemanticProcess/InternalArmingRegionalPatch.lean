@@ -49,7 +49,7 @@ theorem arming_cancellation_commutes (program : Program) (state : RuntimeState)
   have populations := preparedArming_cancellation_populations program state (.ordinary operation patch)
     cancelled prepared outside
   have unattached := preparedArm_new_wait_unattached program state operation patch
-    (withdrawnByRegion cancelled state.activityOccurrences)
+    (withdrawnByRegion cancelled state.activityOccurrences (retainedCancellationRoot root disposition))
     (fun _ member => (List.mem_filter.mp member).1) live prepared
   have assigned := preparedArming_write_owner program state (.ordinary operation patch) prepared
   have tokenFrame : (removeToken state.tokens patch.input patch.owner).filter (fun token => !cancelled token.owner) =
@@ -74,11 +74,11 @@ theorem arming_cancellation_commutes (program : Program) (state : RuntimeState)
       have ownerEq : wait.owner = patch.owner := by
         simpa only [PreparedInternalArming.scopeFramePatch, write, InternalArmingWrite.owner] using assigned
       have kept : (!cancelled wait.owner &&
-          !activityRecordsAttachMessageWait (withdrawnByRegion cancelled state.activityOccurrences) wait) = true := by
+          !activityRecordsAttachMessageWait (withdrawnByRegion cancelled state.activityOccurrences (retainedCancellationRoot root disposition)) wait) = true := by
         simp only [ownerEq, show cancelled patch.owner = false from outside, unattached, Bool.not_false, Bool.and_self]
       have filtered := filter_canonicalInsertBy_retained messageWaitBefore regional_messageWaitBefore_compose
         (fun wait => !cancelled wait.owner &&
-          !activityRecordsAttachMessageWait (withdrawnByRegion cancelled state.activityOccurrences) wait)
+          !activityRecordsAttachMessageWait (withdrawnByRegion cancelled state.activityOccurrences (retainedCancellationRoot root disposition)) wait)
         wait state.messageWaits canonical.2.2.2.2.1 kept
       simp only [applyInternalArmingPatch, write, cancelScopeSubtree, insertMessageWait]
       dsimp only [cancelled] at filtered tokenFrame
@@ -90,11 +90,11 @@ theorem arming_cancellation_commutes (program : Program) (state : RuntimeState)
       have ownerEq : wait.owner = patch.owner := by
         simpa only [PreparedInternalArming.scopeFramePatch, write, InternalArmingWrite.owner] using assigned
       have kept : (!cancelled wait.owner &&
-          !anyTimerIdNamesWait (attachedTimersOf (withdrawnByRegion cancelled state.activityOccurrences)) wait) = true := by
+          !anyTimerIdNamesWait (attachedTimersOf (withdrawnByRegion cancelled state.activityOccurrences (retainedCancellationRoot root disposition))) wait) = true := by
         simp only [ownerEq, show cancelled patch.owner = false from outside, unattached, Bool.not_false, Bool.and_self]
       have filtered := filter_canonicalInsertBy_retained timerWaitBefore regional_timerWaitBefore_compose
         (fun wait => !cancelled wait.owner &&
-          !anyTimerIdNamesWait (attachedTimersOf (withdrawnByRegion cancelled state.activityOccurrences)) wait)
+          !anyTimerIdNamesWait (attachedTimersOf (withdrawnByRegion cancelled state.activityOccurrences (retainedCancellationRoot root disposition))) wait)
         wait state.timerWaits canonical.2.2.2.2.2.1 kept
       simp only [applyInternalArmingPatch, write, cancelScopeSubtree, insertTimerWait]
       dsimp only [cancelled] at filtered tokenFrame
@@ -149,7 +149,7 @@ theorem arming_cancellation_commutes (program : Program) (state : RuntimeState)
           root disposition).variables.activities = [scope] := by
         change [scope].filter (fun activity =>
           !(calledInstanceClosure state root).contains activity.owner.processInstanceId &&
-            !((withdrawnByRegion cancelled state.activityOccurrences).any fun record =>
+            !((withdrawnByRegion cancelled state.activityOccurrences (retainedCancellationRoot root disposition)).any fun record =>
               activityOccurrenceScopeMatches (activityOwnerForRecord record) activity) &&
             !((state.effectWaits.filter fun old => cancelled old.owner).any fun old =>
               activityScopeMatches (effectWaitOccurrenceId old) activity) &&

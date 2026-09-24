@@ -488,7 +488,8 @@ def timerWaitDeclarers (program : Program) (elementId : NodeId) : List SemanticO
         decide (boundaryTimer.elementId = elementId)
     | .awaitParallelMultiInstanceUserTask _ _ _ _ _ _ _ boundaryTimer _ _ =>
         decide (boundaryTimer.elementId = elementId)
-    | .enterBoundedScope _ _ _ _ _ boundaryTimer => decide (boundaryTimer.elementId = elementId)
+    | .enterBoundedScope _ _ _ _ _ boundaryTimer
+    | .enterMonitoredScope _ _ _ _ _ boundaryTimer => decide (boundaryTimer.elementId = elementId)
     | .awaitEventRace _ _ _ _ timer => decide (timer.elementId = elementId)
     | .initiate .. | .initiateMessage .. | .initiateTimer ..
     | .enterScope .. | .invokeProcess .. | .returnProcess ..
@@ -497,7 +498,7 @@ def timerWaitDeclarers (program : Program) (elementId : NodeId) : List SemanticO
     | .completeParallelMultiInstanceUserTask ..
     | .awaitMessage .. | .awaitPayloadMessage .. | .awaitCorrelatedPayloadMessage ..
     | .awaitEffect ..
-    | .awaitMessageBoundedUserTask ..
+    | .awaitMessageBoundedUserTask .. | .awaitMessageMonitoredUserTask ..
     | .duplicate .. | .synchronize .. | .mergeExclusive ..
     | .choose .. | .selectMany .. | .synchronizeSelected ..
     | .throwError .. | .reachNoneEnd .. | .terminateScope ..
@@ -514,10 +515,11 @@ def messageWaitDeclarers (program : Program) (elementId : NodeId) : List Semanti
     | .awaitCorrelatedPayloadMessage _ _ _ _ message _ _ _ _ =>
         decide (message.elementId = elementId)
     | .awaitEventRace _ _ _ message _ => decide (message.elementId = elementId)
-    | .awaitMessageBoundedUserTask _ _ _ _ boundaryMessage =>
+    | .awaitMessageBoundedUserTask _ _ _ _ boundaryMessage
+    | .awaitMessageMonitoredUserTask _ _ _ _ boundaryMessage =>
         decide (boundaryMessage.elementId = elementId)
     | .initiate .. | .initiateMessage .. | .initiateTimer ..
-    | .enterScope .. | .enterBoundedScope .. | .invokeProcess .. | .returnProcess ..
+    | .enterScope .. | .enterBoundedScope .. | .enterMonitoredScope .. | .invokeProcess .. | .returnProcess ..
     | .awaitUserTask .. | .awaitDataInputUserTask .. | .awaitDataInputOutputUserTask ..
     | .awaitDataOutputUserTask ..
     | .awaitSequentialMultiInstanceUserTask .. | .awaitParallelMultiInstanceUserTask ..
@@ -534,7 +536,8 @@ def userTaskWaitDeclarers (program : Program) (taskId : TaskDefinitionId) :
   program.operations.filter fun
     | .awaitUserTask _ _ _ _ task => decide (task.id = taskId)
     | .awaitBoundedUserTask _ _ _ task _ => decide (task.id = taskId)
-    | .awaitMessageBoundedUserTask _ _ _ task _ => decide (task.id = taskId)
+    | .awaitMessageBoundedUserTask _ _ _ task _
+    | .awaitMessageMonitoredUserTask _ _ _ task _ => decide (task.id = taskId)
     | .awaitMonitoredUserTask _ _ _ task _ => decide (task.id = taskId)
     | .awaitSequentialMultiInstanceUserTask _ _ _ task _ _ _ _ =>
         decide (task.id = taskId)
@@ -545,7 +548,7 @@ def userTaskWaitDeclarers (program : Program) (taskId : TaskDefinitionId) :
     | .awaitDataOutputUserTask _ _ _ _ candidateTaskId _ _ =>
         decide (candidateTaskId = taskId)
     | .initiate .. | .initiateMessage .. | .initiateTimer ..
-    | .enterScope .. | .enterBoundedScope .. | .invokeProcess .. | .returnProcess ..
+    | .enterScope .. | .enterBoundedScope .. | .enterMonitoredScope .. | .invokeProcess .. | .returnProcess ..
     | .completeParallelMultiInstanceUserTask .. | .awaitTimer ..
     | .awaitMessage .. | .awaitPayloadMessage .. | .awaitCorrelatedPayloadMessage ..
     | .awaitEventRace .. | .awaitEffect ..
@@ -559,7 +562,7 @@ def effectWaitDeclarers (program : Program) (elementId : NodeId) : List Semantic
   program.operations.filter fun
     | .awaitEffect _ origin _ _ _ _ => decide (origin.elementId = elementId)
     | .initiate .. | .initiateMessage .. | .initiateTimer ..
-    | .enterScope .. | .enterBoundedScope .. | .invokeProcess .. | .returnProcess ..
+    | .enterScope .. | .enterBoundedScope .. | .enterMonitoredScope .. | .invokeProcess .. | .returnProcess ..
     | .awaitUserTask .. | .awaitDataInputUserTask .. | .awaitDataInputOutputUserTask ..
     | .awaitDataOutputUserTask ..
     | .awaitSequentialMultiInstanceUserTask .. | .awaitParallelMultiInstanceUserTask ..
@@ -567,7 +570,7 @@ def effectWaitDeclarers (program : Program) (elementId : NodeId) : List Semantic
     | .awaitMessage .. | .awaitPayloadMessage .. | .awaitCorrelatedPayloadMessage ..
     | .awaitEventRace ..
     | .awaitBoundedUserTask .. | .awaitMonitoredUserTask ..
-    | .awaitMessageBoundedUserTask ..
+    | .awaitMessageBoundedUserTask .. | .awaitMessageMonitoredUserTask ..
     | .duplicate .. | .synchronize .. | .mergeExclusive ..
     | .choose .. | .selectMany .. | .synchronizeSelected ..
     | .throwError .. | .reachNoneEnd .. | .terminateScope ..

@@ -34,6 +34,9 @@ import { armBoundedUserTask } from "./semantic-process-bounded-task-runtime.js";
 import {
   armMessageBoundedUserTask,
 } from "./semantic-process-message-bounded-task-runtime.js";
+import { armMessageMonitoredUserTask } from "./semantic-process-message-monitored-task-runtime.js";
+import { armMonitoredScope } from "./semantic-process-monitored-scope-runtime.js";
+import { RecurringBoundaryTimerCapacityRefusal } from "./semantic-process-recurring-boundary-timer-runtime.js";
 import { applyActivityDataOperation } from "./activity-data-operation-runtime.js";
 import { armMonitoredUserTask } from "./semantic-process-monitored-task-runtime.js";
 import {
@@ -400,6 +403,14 @@ function applyInternalOperationState(
         captureOwner,
       );
     }
+    case SemanticOperationKind.EnterMonitoredScope: {
+      const boundedParent = onlyTokenOwner(state, operation.input);
+      return applyOwnedOperation(
+        boundedParent,
+        (selected) => armMonitoredScope(operation, state, selected),
+        captureOwner,
+      );
+    }
     case SemanticOperationKind.EnterBoundedScope: {
       const boundedParent = onlyTokenOwner(state, operation.input);
       return applyOwnedOperation(
@@ -499,6 +510,14 @@ function applyInternalOperationState(
       return applyOwnedOperation(
         boundedOwner,
         (selected) => armBoundedUserTask(operation, state, selected),
+        captureOwner,
+      );
+    }
+    case SemanticOperationKind.AwaitMessageMonitoredUserTask: {
+      const boundedOwner = onlyTokenOwner(state, operation.input);
+      return applyOwnedOperation(
+        boundedOwner,
+        (selected) => armMessageMonitoredUserTask(operation, state, selected),
         captureOwner,
       );
     }
@@ -716,8 +735,18 @@ export function evaluateScheduledStimulusWithSelectedSteps(
   closureLimit: number = semanticProcessClosureLimit,
 ): ScheduledStimulusEvaluationResult {
   validateClosureLimit(closureLimit);
-  return evaluateScheduledClosure(program, state, admit(program, state, stimulus), schedule, closureLimit,
-    (current) => internalOperationFrontier(program, current));
+  try {
+    return evaluateScheduledClosure(program, state, admit(program, state, stimulus), schedule, closureLimit,
+      (current) => internalOperationFrontier(program, current));
+  } catch (error) {
+    if (!(error instanceof RecurringBoundaryTimerCapacityRefusal)) throw error;
+    return {
+      result: { outcome: CommandOutcome.RolledBack, state, internalStepBoundExceeded: false,
+        ambiguousInternalChoice: false, scheduleFailure: null },
+      ambiguousInternalChoice: false, admittedState: null,
+      selectedInternalSteps: [], selectedInternalBatches: [], selectedInternalPreparations: [],
+    };
+  }
 }
 
 function assertNever(value: never): never {

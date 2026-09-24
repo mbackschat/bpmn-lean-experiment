@@ -117,6 +117,10 @@ private def normalizeTimerDuration (durationLiteral : String) : Nat :=
   else if durationLiteral = "PT5S" then 5000
   else 0
 
+private def normalizeBoundaryTimerExpression : CheckedBoundaryTimerExpression → Nat
+  | .duration literal => normalizeTimerDuration literal
+  | .cycle literal => if literal = "R/PT1S" then 1000 else 0
+
 private def eventRaceTimerArm (source : CheckedProcess)
     (gatewayId : NodeId) : EventRaceTimerArm :=
   match source.sequenceFlows.findSome? fun flow =>
@@ -229,7 +233,7 @@ private def sortInclusiveCandidates :
 
 /-- The Timer Boundary Event attached to this Activity, when the profile admitted one, with the disposition that selects the host's operation kind. -/
 private def timerBoundaryFor (source : CheckedProcess) (activityId : NodeId) :
-    Option (NodeId × BoundaryInterruption × String × SequenceFlowId) :=
+    Option (NodeId × BoundaryInterruption × CheckedBoundaryTimerExpression × SequenceFlowId) :=
   source.nodes.findSome? fun
     | .timerBoundaryEvent id attachedToRef interruption durationLiteral
         outputFlowId =>
@@ -277,16 +281,19 @@ private def lowerNode (source : CheckedProcess) :
   | .embeddedSubProcess id childScopeId => do
       let scopeId ← checkedNodeScopeId? source id
       match timerBoundaryFor source id with
-      | some (timerId, _, durationLiteral, outputFlowId) =>
+      | some (timerId, interruption, durationLiteral, outputFlowId) =>
           pure
-            (.enterBoundedScope
+            ((match interruption with
+              | .interrupting => SemanticOperation.enterBoundedScope
+              | .nonInterrupting => SemanticOperation.enterMonitoredScope)
               (nodeOperationId id)
               { elementId := id }
               (firstPlace (incomingPlaces source id))
               (childEntryPlace source childScopeId)
               childScopeId
               { elementId := timerId
-                durationMs := normalizeTimerDuration durationLiteral
+                durationMs := normalizeBoundaryTimerExpression durationLiteral
+                recurrence := match durationLiteral with | .cycle _ => some .repeating | _ => none
                 output := firstPlace (outgoingPlaces source timerId)
                 origin := { elementId := outputFlowId } }, scopeId)
       | none =>
@@ -318,9 +325,11 @@ private def lowerNode (source : CheckedProcess) :
   | .messageBoundaryEvent .. => none
   | .userTask id name metadata =>
       match messageBoundaryFor source id, timerBoundaryFor source id, metadata with
-      | some (messageId, .interrupting, channel, outputFlowId), none, none =>
+      | some (messageId, interruption, channel, outputFlowId), none, none =>
           checkedNodeScopeId? source id |>.map fun scopeId =>
-          (.awaitMessageBoundedUserTask
+          ((match interruption with
+            | .interrupting => SemanticOperation.awaitMessageBoundedUserTask
+            | .nonInterrupting => SemanticOperation.awaitMessageMonitoredUserTask)
             (nodeOperationId id)
             { elementId := id }
             (firstPlace (incomingPlaces source id))
@@ -346,7 +355,8 @@ private def lowerNode (source : CheckedProcess) :
               name
               output := firstPlace (outgoingPlaces source id) }
             { elementId := timerId
-              durationMs := normalizeTimerDuration durationLiteral
+              durationMs := normalizeBoundaryTimerExpression durationLiteral
+              recurrence := match durationLiteral with | .cycle _ => some .repeating | _ => none
               output := firstPlace (outgoingPlaces source timerId)
               origin := { elementId := outputFlowId } }, scopeId)
       | none, some _, some _ => none
