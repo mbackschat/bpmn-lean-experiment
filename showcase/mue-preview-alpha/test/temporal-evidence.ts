@@ -83,6 +83,14 @@ async function collectJourney(
   if (!isCompletedProcessReceipt(terminal.receipt)) {
     throw new Error(`MUE Preview Alpha ${processInstanceId} did not complete`);
   }
+  return { histories: await collectProcessRunHistories(client, processInstanceId) };
+}
+
+export async function collectProcessRunHistories(
+  client: TemporalWorkflowClient,
+  processInstanceId: string,
+): Promise<readonly TemporalHistory[]> {
+  const workflowId = processWorkflowId(processInstanceId);
   const runs = await workflowChainRuns(client, workflowId);
   if (runs.length === 0) {
     throw new Error(`MUE Preview Alpha ${processInstanceId} has no visible Workflow Runs`);
@@ -98,7 +106,7 @@ async function collectJourney(
     }
     return history as TemporalHistory;
   }));
-  return { histories };
+  return histories;
 }
 
 async function workflowChainRuns(

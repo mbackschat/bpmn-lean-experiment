@@ -10,8 +10,9 @@ import {
   TemporalScenarioRunner, observeTemporalExecutionPublication,
   processWorkflowId, readTestProcessTerminalResult, withDeadline,
 } from "@bpmn-lean/temporal-testkit";
-import type { TemporalHistory, TemporalWorkflowClient, TemporalExecutionPublicationClient } from "@bpmn-lean/temporal-testkit";
+import type { TemporalWorkflowClient, TemporalExecutionPublicationClient } from "@bpmn-lean/temporal-testkit";
 import { failureCode, failureMessage } from "./failed-process-support.ts";
+import { collectProcessRunHistories } from "./temporal-evidence.ts";
 
 export async function collectCompensationPublication(
   client: TemporalWorkflowClient,
@@ -74,18 +75,7 @@ export async function replayCompensationRuns(
   let replayed = 0;
   try {
     for (const instance of instances) {
-      const workflowId = processWorkflowId(instance.processInstanceId);
-      const histories = await withDeadline((async () => {
-        const result: TemporalHistory[] = [];
-        for await (const execution of client.list()) {
-          if (execution.workflowId !== workflowId) continue;
-          const history = await client.getHandle(workflowId, execution.runId).fetchHistory();
-          assert.ok(Array.isArray(history.events));
-          result.push(history as TemporalHistory);
-        }
-        return result;
-      })(), 20_000, "Compensation complete Run history collection");
-      assert.ok(histories.length > 0);
+      const histories = await collectProcessRunHistories(client, instance.processInstanceId);
       for (const history of histories) {
         await withDeadline(runner.replayHistory(history, `platform-compensation-${++replayed}`), 20_000, "Compensation Run replay");
       }
