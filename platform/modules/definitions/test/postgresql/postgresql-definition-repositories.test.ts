@@ -263,7 +263,7 @@ if (baseUrl === undefined) {
         ` });
         await session.query({ text: `
           UPDATE bpmn_platform_meta.schema_epoch SET epoch = 10
-          WHERE singleton = true AND epoch = 11
+          WHERE singleton = true
         ` });
         await session.query({ text: `
           ALTER TABLE bpmn_platform_meta.schema_epoch

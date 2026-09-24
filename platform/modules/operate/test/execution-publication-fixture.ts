@@ -159,6 +159,57 @@ export function secondPage(): ExecutionPublicationPage {
   };
 }
 
+export function failedPage(message: string | null = "échec 😀\u0000"): ExecutionPublicationPage {
+  const effectId = { processInstanceId: "Instance_1", elementId: "Undo_Service", activation: 3 };
+  return {
+    ...identity,
+    requestedAfterRevision: 2,
+    pageThroughRevision: 3,
+    headRevision: 3,
+    batches: [{
+      commandId: "command-failure",
+      fromRevision: 2,
+      throughRevision: 3,
+      transitions: [{
+        revision: 3,
+        logicalTimeMs: 0,
+        transition: {
+          kind: "externalStimulus",
+          stimulus: {
+            kind: "completeEffect",
+            commandId: "command-failure",
+            effectId,
+            result: { kind: "bpmnError", code: "undo-échec", message, localPatch: [] },
+          },
+        },
+        positionDelta: {
+          consumedTokens: current(2).controlTokens,
+          producedTokens: [],
+          enteredScopes: [],
+          exitedScopes: current(2).scopes,
+        },
+      }],
+    }],
+    current: {
+      revision: 3,
+      state: {
+        ...state,
+        status: "failed",
+        failure: {
+          kind: "compensationHandlerFailure",
+          triggerId: { processInstanceId: "Instance_1", elementId: "Throw", activation: 1 },
+          handlerId: { processInstanceId: "Instance_1", elementId: "Undo", activation: 2 },
+          effectId,
+          code: "undo-échec",
+          message,
+        },
+      },
+      controlTokens: [],
+      scopes: [],
+    },
+  };
+}
+
 function current(revision: number) {
   return {
     revision,

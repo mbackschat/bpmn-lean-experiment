@@ -104,6 +104,13 @@ export function applyExecutionPublicationPage(
       controlTokens,
       scopes,
     );
+    if (
+      prior.current !== null &&
+      prior.current.revision === current.revision &&
+      !sameJson(prior.current, current)
+    ) {
+      throw integrity("publication current state changed at an accepted revision");
+    }
   }
   return {
     identity: prior.identity,

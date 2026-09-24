@@ -14,6 +14,8 @@ Run the presenter-paced browser journey with `./scripts/pnpm.sh run demo:mue-pre
 
 Refresh the three presentation-only fallback frames with `./scripts/pnpm.sh run demo:mue-preview-alpha:capture`. The command drives the same real journey headlessly and captures only those three safe landmarks at 1600 by 900. The frames are documentation aids, not additional product or semantic evidence.
 
+The same harness also qualifies the separate [Product 2 failed-Process outcome](../../docs/BPM-PLATFORM-FAILED-PROCESS-PROPOSAL.md). That acceptance deploys the exact registered travel-cancellation XML through public HTTP, starts successful and failed executions with explicit data, and uses a labelled test actor for metadata-free published User Tasks. A declared Activity simulation refuses ground-travel cancellation for one explicit snapshot input. Both terminal publications must survive platform restart and remain byte-identical through public export and browser download; every actual Run is replayed. This adds inspection evidence, not a Compensation browser catalog entry or Human Work form.
+
 ## Presentation fallback
 
 If the local browser or Temporal process cannot be recovered during a presentation, use the maintained frames in order:

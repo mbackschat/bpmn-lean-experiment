@@ -353,7 +353,7 @@ function snapshotRejectedEngineResult(
       return { kind: "semantic" as const, outcome: value.outcome };
     case "processClosed":
       if (!hasOnlyKeys(value, ["kind", "status"]) ||
-          (value.status !== "completed" && value.status !== "cancelled")) {
+          (value.status !== "completed" && value.status !== "cancelled" && value.status !== "failed")) {
         throw new TypeError("closed rejection is malformed");
       }
       return { kind: "processClosed" as const, status: value.status };

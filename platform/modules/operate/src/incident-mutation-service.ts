@@ -398,7 +398,7 @@ function classifyEngineResult(
         return indeterminateResult(binding);
       }
       const status = value.receipt.finalState.status;
-      return status === "completed" || status === "cancelled"
+      return status === "completed" || status === "cancelled" || status === "failed"
         ? {
             state: "rejected",
             actionId: binding.actionId,

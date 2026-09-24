@@ -84,6 +84,8 @@ Task collections use one native table, row, header-cell, and data-cell DOM at ev
 
 Forms give each field a visible label, an explicit semantic type, compatible current value, validation state, and nearby completion action. Boolean is an explicit true-or-false choice rather than an unchecked checkbox whose absence could be confused with false. An incompatible value displays a blocking explanation and no editable control.
 
+The [failed-Process inspection contract](BPM-PLATFORM-FAILED-PROCESS-PROPOSAL.md#source-grounded-product-decision) shows exact Compensation failure facts in Operations Overview, including all complete occurrence identities and the null/empty message distinction. It adds no recovery action or Compensation start form; History, export, Operator history, and honest Diagram availability retain their independent boundaries.
+
 A user-visible mutation is actionable only when its current public prerequisite is true. An unclaimed Work task remains visible with its explicit Claim action but exposes no completion entry point or editable completion form. Navigation does not silently claim a task. When a server returns a valid definite refusal, the UI reports the refusal and refreshes current state; exact-operation retry language is reserved for transport, malformed-response, or explicit indeterminate outcomes where delivery or commitment is genuinely uncertain.
 
 Diagrams receive a stable minimum working height and use the full content width. Loading, generated-layout provenance, rendering failure, and missing presentation are visible states. Viewer attribution stays visible and unmodified.

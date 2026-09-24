@@ -25,7 +25,9 @@ import {
   withDeadline,
 } from "@bpmn-lean/temporal-testkit";
 import type {
+  EffectActivityImplementations,
   HostInteractionPort,
+  TemporalWorkflowClient,
 } from "@bpmn-lean/temporal-testkit";
 
 import {
@@ -60,13 +62,16 @@ export class MuePreviewAlphaShowcaseRuntime {
   #worker: ExternalTemporalRuntime | undefined;
   #platform: PlatformServerRuntime | undefined;
 
-  private constructor(dataDirectory: string) {
+  private constructor(dataDirectory: string, private readonly activities: EffectActivityImplementations) {
     this.#dataDirectory = dataDirectory;
   }
 
-  static async create(): Promise<MuePreviewAlphaShowcaseRuntime> {
+  static async create(
+    activities: EffectActivityImplementations = createHostEffectActivities([]),
+  ): Promise<MuePreviewAlphaShowcaseRuntime> {
     return new MuePreviewAlphaShowcaseRuntime(
       await mkdtemp(join(tmpdir(), "bpmn-lean-mue-preview-alpha-")),
+      activities,
     );
   }
 
@@ -87,7 +92,7 @@ export class MuePreviewAlphaShowcaseRuntime {
       namespace,
       taskQueue,
       identity: `bpmn-mue-preview-alpha-initializer-${process.pid}`,
-    }, createHostEffectActivities([]), 86_400);
+    }, this.activities, 86_400);
     await initializedWorker.shutdown();
     await this.#startPlatform();
   }
@@ -101,7 +106,7 @@ export class MuePreviewAlphaShowcaseRuntime {
         namespace,
         taskQueue,
         identity: `bpmn-mue-preview-alpha-worker-${process.pid}`,
-      }, createHostEffectActivities([])),
+      }, this.activities),
       operationDeadlineMs,
       "MUE Preview Alpha Worker startup",
     );
@@ -110,6 +115,16 @@ export class MuePreviewAlphaShowcaseRuntime {
   async stopWorker(): Promise<void> {
     await this.#worker?.shutdown();
     this.#worker = undefined;
+  }
+
+  get workflowClient(): TemporalWorkflowClient {
+    return this.#requireWorker().workflowClient;
+  }
+
+  async restartPlatform(): Promise<void> {
+    await this.#platform?.close();
+    this.#platform = undefined;
+    await this.#startPlatform();
   }
 
   runNatural(

@@ -18,6 +18,52 @@ import type {
   IncidentAuditOutboxItem,
 } from "@bpmn-lean/platform-operate";
 import type { PublicProcessInstanceIdentity } from "@bpmn-lean/platform-contracts";
+import { decodeIncidentActionResult } from "@bpmn-lean/platform-contracts";
+
+for (const actionIndex of [0, 1] as const) {
+  for (const matches of [true, false]) {
+    test(`recovers late failed closure for action ${actionIndex} with matching identity ${matches}`, async () => {
+      await withStore(async ({ processRepository, actionRepository, databaseFile }) => {
+        const published = incidentPublication("instance", true);
+        const interaction = published.interactions[actionIndex]!;
+        await processRepository.recordConfirmed(publication("instance"));
+        const lost = gatewayFor([published], async () => { throw new Error("response lost"); });
+        const initial = await service(processRepository, actionRepository, lost).submitAuthorized(
+          { actorId: "operator" }, "late-action", interaction,
+        );
+        assert.equal(initial.kind === "result" && initial.result.state, "indeterminate");
+        actionRepository.close();
+        const reopened = new SqliteIncidentActionRepository(databaseFile);
+        try {
+          const gateway = gatewayFor([], async ({ stimulus }) => ({
+            kind: "processClosed",
+            commandId: stimulus.commandId,
+            receipt: {
+              processInstanceId: matches ? "instance" : "another-instance",
+              finalState: { status: "failed" },
+            },
+          }));
+          const result = await service(processRepository, reopened, gateway).submitAuthorized(
+            { actorId: "operator" }, "late-action", interaction,
+          );
+          assert.equal(result.kind, "result");
+          if (result.kind !== "result") assert.fail("expected retained action result");
+          const expected = matches ? {
+            state: "rejected", actionId: "late-action", interaction,
+            engineResult: { kind: "processClosed", status: "failed" },
+          } : { state: "indeterminate", actionId: "late-action", interaction };
+          assert.deepEqual(result.result, expected);
+          assert.deepEqual((await reopened.get("late-action"))?.result, expected);
+          assert.deepEqual(decodeIncidentActionResult(JSON.parse(JSON.stringify(result.result))), expected);
+          assert.equal(gateway.observationCalls, 0);
+          assert.equal(gateway.actionCalls.length, 1);
+        } finally {
+          reopened.close();
+        }
+      });
+    });
+  }
+}
 
 test("durably rejects changed nested content under one action ID and forbids another actor", async () => {
   await withStore(async ({ processRepository, actionRepository, databaseFile }) => {

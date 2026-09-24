@@ -284,7 +284,7 @@ async function databaseFacts(runtime: PostgresqlRuntime): Promise<Readonly<{
       WHERE singleton = true
     `,
   });
-  assert.deepEqual(result.rows, [{ postgresql_major: 18, schema_epoch: 11 }]);
+  assert.deepEqual(result.rows, [{ postgresql_major: 18, schema_epoch: 12 }]);
   return {
     postgresqlMajor: result.rows[0]!.postgresql_major,
     schemaEpoch: result.rows[0]!.schema_epoch,

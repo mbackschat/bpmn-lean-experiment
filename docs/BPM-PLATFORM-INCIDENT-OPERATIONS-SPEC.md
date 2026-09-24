@@ -190,7 +190,7 @@ type IncidentActionResult =
 
 The nonempty caller-generated `actionId` becomes the semantic command ID. Retry copies `{ kind, commandId, incidentId }`; Cancel copies `{ kind, commandId, processInstanceId, incidentId }`. An unseen action requires a fresh authorized snapshot containing the byte-equivalent interaction. Retained lookup precedes that fresh snapshot only for the exact bound actor and content, allowing response recovery after Retry removes the incident or Cancel closes the Process.
 
-Semantic `committed` maps only to `committed`. Other semantic outcomes preserve their exact outcome as `rejected`. A matching `processClosed` receipt is preserved as `rejected` with its exact terminal status because closure alone does not prove that this action committed. `processUnknown`, retention-indistinguishable absence, or infrastructure loss after possible transmission maps to `indeterminate`. Product 2 never promotes absence or a cancelled receipt to action success.
+Semantic `committed` maps only to `committed`. Other semantic outcomes preserve their exact outcome as `rejected`. A matching `processClosed` receipt is preserved as `rejected` with its exact terminal status because closure alone does not prove that this action committed. `processUnknown`, retention-indistinguishable absence, or infrastructure loss after possible transmission maps to `indeterminate`. The [failed-Process addendum](BPM-PLATFORM-FAILED-PROCESS-PROPOSAL.md#public-contract) includes exact failed closure after response loss or restart; mismatched Process identity remains indeterminate. Product 2 never promotes absence or a terminal receipt to action success.
 
 ## Durable action lifecycle and concurrency
 

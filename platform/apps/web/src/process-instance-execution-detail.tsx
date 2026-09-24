@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import { ProcessStatus } from "@bpmn-lean/platform-contracts";
 import type {
+  CompensationHandlerFailure,
   ExecutionPublicationExport,
+  OccurrenceId,
   PublicProcessInstanceIdentity,
 } from "@bpmn-lean/platform-contracts";
 import {
@@ -328,6 +331,9 @@ function ExecutionOverview({
         <Fact label="Head revision" value={String(publication.headRevision)} />
         <Fact label="Current status" value={publication.current.state.status} />
       </dl>
+      {publication.current.state.status === ProcessStatus.Failed ? (
+        <CompensationFailureDetails failure={publication.current.state.failure} />
+      ) : null}
       <MuePreviewAlphaProgress
         batches={publication.batches}
         current={publication.current}
@@ -336,6 +342,39 @@ function ExecutionOverview({
       <div className={styles.actions}>
         <Button isPending={busy} onPress={onDownload}>Download execution history</Button>
       </div>
+    </section>
+  );
+}
+
+function CompensationFailureDetails({ failure }: Readonly<{ failure: CompensationHandlerFailure }>) {
+  return (
+    <section className={styles.overview} aria-labelledby="compensation-failure-heading">
+      <h4 id="compensation-failure-heading">Compensation failure</h4>
+      <dl className={styles.facts}>
+        <Fact label="Code" value={failure.code} />
+        <dt>Message</dt>
+        <dd>{failure.message === null ? <span>Absent (null)</span> : <code>{failure.message}</code>}</dd>
+      </dl>
+      <FailureOccurrence id="failure-trigger-heading" label="Trigger occurrence" occurrence={failure.triggerId} />
+      <FailureOccurrence id="failure-handler-heading" label="Handler occurrence" occurrence={failure.handlerId} />
+      <FailureOccurrence id="failure-effect-heading" label="Effect occurrence" occurrence={failure.effectId} />
+    </section>
+  );
+}
+
+function FailureOccurrence({ id, label, occurrence }: Readonly<{
+  id: string;
+  label: string;
+  occurrence: OccurrenceId;
+}>) {
+  return (
+    <section className={styles.overview} aria-labelledby={id}>
+      <h5 id={id}>{label}</h5>
+      <dl className={styles.facts}>
+        <Fact label="Process-instance ID" value={occurrence.processInstanceId} />
+        <Fact label="Element ID" value={occurrence.elementId} />
+        <Fact label="Activation" value={String(occurrence.activation)} />
+      </dl>
     </section>
   );
 }

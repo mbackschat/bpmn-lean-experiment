@@ -75,6 +75,26 @@ export function registerIncidentActionRepositoryContract(
   label: string,
   create: () => Promise<IncidentRepositoryContractFixture>,
 ): void {
+  test(`${label} retains a definite failed Process closure without inventing a committed action`, async () => {
+    const fixture = await create();
+    try {
+      await fixture.processes.recordConfirmed(processPublication("incident-instance", "Incident_Process"));
+      const binding = incidentBinding("failed-closure");
+      await fixture.incidents.reserve(binding, incidentAudit(binding, "reserved"));
+      await fixture.incidents.beginSubmission(binding.actionId, binding);
+      const result = {
+        state: "rejected", actionId: binding.actionId, interaction: binding.interaction,
+        engineResult: { kind: "processClosed", status: "failed" },
+      } as const;
+      await fixture.incidents.recordOutcome(binding, result, incidentAudit(binding, "rejected"));
+      assert.deepEqual((await fixture.incidents.get(binding.actionId))?.result, result);
+      assert.equal((await fixture.incidents.recordOutcome(binding, result, incidentAudit(binding, "rejected"))).kind, "retained");
+      assert.deepEqual((await fixture.incidents.listUndeliveredAuditEvents()).map(({ event }) => event.outcome), ["reserved", "rejected"]);
+    } finally {
+      await fixture.dispose();
+    }
+  });
+
   test(`${label} preserves reservation identity, authorization facts, and lifecycle CAS`, async () => {
     const fixture = await create();
     try {

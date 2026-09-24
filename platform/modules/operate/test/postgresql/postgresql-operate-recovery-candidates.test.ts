@@ -86,46 +86,48 @@ if (baseUrl === undefined) {
     );
   });
 
-  test("retains a closed Process as a candidate until both final projections are complete", async () => {
-    await resetOperateDatabase(runtime);
-    await insertProcess(runtime, "closed", "closed");
-    const source = new PostgresqlOperateRecoveryCandidateSource(runtime);
+  for (const terminal of ["completed", "cancelled", "failed"] as const) {
+    test(`retains a ${terminal} Process as a candidate until both final projections are complete`, async () => {
+      await resetOperateDatabase(runtime);
+      await insertProcess(runtime, "closed", "closed");
+      const source = new PostgresqlOperateRecoveryCandidateSource(runtime);
 
-    assert.deepEqual(
-      textKeys(await source.listCandidateKeys(
-        OperatePostgresqlRecoveryFamily.CommittedExecution,
-        10,
-      )),
-      ["closed"],
-    );
-    await insertExecution(runtime, "closed", "healthy");
-    assert.deepEqual(
-      textKeys(await source.listCandidateKeys(
-        OperatePostgresqlRecoveryFamily.CommittedExecution,
-        10,
-      )),
-      ["closed"],
-    );
+      assert.deepEqual(
+        textKeys(await source.listCandidateKeys(
+          OperatePostgresqlRecoveryFamily.CommittedExecution,
+          10,
+        )),
+        ["closed"],
+      );
+      await insertExecution(runtime, "closed", "healthy");
+      assert.deepEqual(
+        textKeys(await source.listCandidateKeys(
+          OperatePostgresqlRecoveryFamily.CommittedExecution,
+          10,
+        )),
+        ["closed"],
+      );
 
-    await markFinalExecution(runtime, "closed");
-    assert.deepEqual(
-      await source.listCandidateKeys(OperatePostgresqlRecoveryFamily.CommittedExecution, 10),
-      [],
-    );
-    assert.deepEqual(
-      textKeys(await source.listCandidateKeys(
-        OperatePostgresqlRecoveryFamily.FlowNodeOccurrence,
-        10,
-      )),
-      ["closed"],
-    );
+      await markFinalExecution(runtime, "closed", terminal);
+      assert.deepEqual(
+        await source.listCandidateKeys(OperatePostgresqlRecoveryFamily.CommittedExecution, 10),
+        [],
+      );
+      assert.deepEqual(
+        textKeys(await source.listCandidateKeys(
+          OperatePostgresqlRecoveryFamily.FlowNodeOccurrence,
+          10,
+        )),
+        ["closed"],
+      );
 
-    await insertFinalOccurrence(runtime, "closed");
-    assert.deepEqual(
-      await source.listCandidateKeys(OperatePostgresqlRecoveryFamily.FlowNodeOccurrence, 10),
-      [],
-    );
-  });
+      await insertFinalOccurrence(runtime, "closed");
+      assert.deepEqual(
+        await source.listCandidateKeys(OperatePostgresqlRecoveryFamily.FlowNodeOccurrence, 10),
+        [],
+      );
+    });
+  }
 
   test("leases one fixed incident-audit stream key instead of individual ordinals", async () => {
     await resetOperateDatabase(runtime);
@@ -262,6 +264,7 @@ async function insertExecution(
 async function markFinalExecution(
   runtime: PostgresqlRuntime,
   processInstanceId: string,
+  terminal: "completed" | "cancelled" | "failed",
 ): Promise<void> {
   await runtime.query({
     text: `
@@ -269,12 +272,12 @@ async function markFinalExecution(
       SET head_revision = 1,
           producer_head_revision = 1,
           last_logical_time_ms = 0,
-          current_json = '{"state":{"status":"completed"}}',
-          current_process_status = 'completed',
+          current_json = $2,
+          current_process_status = $3,
           last_complete_observed_at_epoch_ms = 0
       WHERE process_instance_id = $1
     `,
-    values: [Buffer.from(processInstanceId, "utf8")],
+    values: [Buffer.from(processInstanceId, "utf8"), JSON.stringify({ state: { status: terminal } }), terminal],
   });
 }
 

@@ -226,13 +226,6 @@ async function decodeMetricsRead(
     if (snapshot.registration.observation === "indeterminate") {
       throw new TypeError("indeterminate registration cannot prove metrics coverage");
     }
-    if (snapshot.execution === null && snapshot.occurrence === null) {
-      if (snapshot.registration.observation !== "closed") {
-        throw new TypeError("nonterminal registration has no projections");
-      }
-      snapshots.push(snapshot);
-      continue;
-    }
     if (snapshot.execution === null || snapshot.occurrence === null) {
       throw new TypeError("metrics projection pair is incomplete");
     }
@@ -253,7 +246,8 @@ async function decodeMetricsRead(
     }
     const terminal = snapshot.registration.observation === "closed" &&
       (snapshot.execution.current.state.status === "completed" ||
-        snapshot.execution.current.state.status === "cancelled") &&
+        snapshot.execution.current.state.status === "cancelled" ||
+        snapshot.execution.current.state.status === "failed") &&
       snapshot.occurrence.currentOpen.length === 0;
     if (snapshot.registration.observation === "closed" && !terminal) {
       throw new TypeError("closed metrics projection pair is not terminal");

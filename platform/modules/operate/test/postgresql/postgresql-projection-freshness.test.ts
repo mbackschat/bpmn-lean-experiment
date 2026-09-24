@@ -14,6 +14,8 @@ import {
   PostgresqlExecutionRecoveryStep,
   PostgresqlFlowNodeOccurrenceRecoveryStep,
   PostgresqlProcessInstanceRepository,
+  PostgresqlOperateRecoveryCandidateSource,
+  OperatePostgresqlRecoveryFamily,
 } from "@bpmn-lean/platform-operate";
 import type {
   OperateProcessRegistration,
@@ -31,6 +33,7 @@ import {
 } from "@bpmn-lean/platform-operate";
 import {
   firstPage,
+  failedPage,
   registration,
   secondPage,
 } from "../execution-publication-fixture.ts";
@@ -74,7 +77,7 @@ if (baseUrl === undefined) {
     assert.equal(afterRegistration.kind, PostgresqlProjectionReadKind.Unavailable);
   });
 
-  test("metrics uses one query, preserves a terminal U+0000 cut, and fails closed on age", async () => {
+  test("metrics uses one query and refuses missing publications or expired active evidence", async () => {
     await resetOperateDatabase(runtime);
     const definition = {
       ...structuredClone(registration.instance.definition),
@@ -92,16 +95,8 @@ if (baseUrl === undefined) {
       maxAgeMs: 60_000,
     });
     const allTerminal = await reader.read(definition);
-    assert.equal(allTerminal.kind, PostgresqlProjectionReadKind.Available);
+    assert.equal(allTerminal.kind, PostgresqlProjectionReadKind.Unavailable);
     assert.equal(queryCount, 1);
-    if (allTerminal.kind === PostgresqlProjectionReadKind.Available) {
-      assert.equal(allTerminal.read.value.kind, FlowNodeMetricsResultKind.Available);
-      if (allTerminal.read.value.kind === FlowNodeMetricsResultKind.Available) {
-        assert.equal(allTerminal.read.value.snapshot.population.processInstances, 1);
-        assert.deepEqual(allTerminal.read.value.snapshot.flowNodes, []);
-      }
-      assert.ok(allTerminal.read.freshness!.observedAfterEpochMs > 0);
-    }
     assert.equal((await runtime.query({ text: "SELECT 1 AS value" })).rows[0]?.value, 1);
 
     await resetOperateDatabase(runtime);
@@ -216,53 +211,117 @@ if (baseUrl === undefined) {
     assert.equal(watermarks.rows[0]?.current_process_status, "running");
   });
 
-  test("a closed aligned terminal projection remains readable after its observation age", async () => {
+  test("failed E1 with aligned but still open occurrences stays unavailable and retains E2 recovery", async () => {
     await resetOperateDatabase(runtime);
     const exact = await register(runtime, registration.instance.processInstanceId);
     await observeComplete(runtime, exact);
-    await new PostgresqlProcessInstanceRepository(runtime).recordObservation(
-      exact.instance.processInstanceId,
-      "closed",
-    );
-    await observeExecution(runtime, exact, terminalExecutionPage());
-    await observeOccurrence(runtime, exact, occurrenceSecondPage());
-    await runtime.query({
-      text: `
-        WITH execution AS (
-          UPDATE bpmn_platform.operate_execution_publications AS publication
-          SET last_complete_observed_at_epoch_ms = 0
-          WHERE publication.process_instance_id = $1
-          RETURNING publication.process_instance_id
-        )
-        UPDATE bpmn_platform.operate_flow_node_occurrence_publications AS occurrence
-        SET last_complete_observed_at_epoch_ms = 0
-        FROM execution
-        WHERE occurrence.process_instance_id = execution.process_instance_id
-      `,
-      values: [candidateKey(exact)],
+    await new PostgresqlProcessInstanceRepository(runtime).recordObservation(exact.instance.processInstanceId, "closed");
+    await observeExecution(runtime, exact, failedPage());
+    const suffix = occurrenceSecondPage();
+    await observeOccurrence(runtime, exact, {
+      ...suffix,
+      batches: [{ ...suffix.batches[0]!, commandId: "command-failure",
+        transitions: [{ revision: 3, lifecycle: { started: [], ended: [] } }],
+      }],
+      currentOpen: occurrenceFirstPage().currentOpen,
     });
-
-    const read = await new PostgresqlExecutionProjectionReader({
-      runtime,
-      maxAgeMs: 1,
-    }).page(exact.instance.processInstanceId, { afterRevision: 0, limit: 1 });
-    assert.equal(read.kind, PostgresqlProjectionReadKind.Available);
-    if (read.kind === PostgresqlProjectionReadKind.Available) {
-      const freshness = read.read.freshness;
-      assert.ok(freshness !== null);
-      assert.ok(freshness.observedAfterEpochMs > 0);
-    }
-    const metrics = await new PostgresqlFlowNodeMetricsReader({
-      runtime,
-      maxAgeMs: 1,
-    }).read(exact.instance.definition);
-    assert.equal(metrics.kind, PostgresqlProjectionReadKind.Available);
-    if (metrics.kind === PostgresqlProjectionReadKind.Available) {
-      const freshness = metrics.read.freshness;
-      assert.ok(freshness !== null);
-      assert.ok(freshness.observedAfterEpochMs > 0);
-    }
+    assert.equal((await new PostgresqlExecutionProjectionReader({ runtime, maxAgeMs: 60_000 })
+      .export(exact.instance.processInstanceId)).kind, PostgresqlProjectionReadKind.Unavailable);
+    assert.equal((await new PostgresqlFlowNodeMetricsReader({ runtime, maxAgeMs: 60_000 })
+      .read(exact.instance.definition)).kind, PostgresqlProjectionReadKind.Unavailable);
+    const source = new PostgresqlOperateRecoveryCandidateSource(runtime);
+    assert.deepEqual(await source.listCandidateKeys(OperatePostgresqlRecoveryFamily.CommittedExecution, 10), []);
+    assert.deepEqual(await source.listCandidateKeys(OperatePostgresqlRecoveryFamily.FlowNodeOccurrence, 10), [candidateKey(exact)]);
   });
+
+  for (const terminal of ["completed", "failed"] as const) {
+    test(`a closed aligned ${terminal} projection remains readable after its observation age`, async () => {
+      await resetOperateDatabase(runtime);
+      const exact = await register(runtime, registration.instance.processInstanceId);
+      await observeComplete(runtime, exact);
+      await new PostgresqlProcessInstanceRepository(runtime).recordObservation(
+        exact.instance.processInstanceId,
+        "closed",
+      );
+      await observeExecution(runtime, exact, terminal === "failed" ? failedPage() : terminalExecutionPage());
+      const occurrence = occurrenceSecondPage();
+      const batch = occurrence.batches[0]!;
+      const transition = batch.transitions[0];
+      await observeOccurrence(runtime, exact, terminal === "failed" ? {
+        ...occurrence,
+        batches: [{
+          ...batch,
+          commandId: "command-failure",
+          transitions: [{
+            ...transition,
+            lifecycle: {
+              ...transition.lifecycle,
+              ended: transition.lifecycle.ended.map((ended) => ({ ...ended, terminal: "cancelled" })),
+            },
+          }],
+        }],
+      } : occurrence);
+      await runtime.query({
+        text: `
+          WITH execution AS (
+            UPDATE bpmn_platform.operate_execution_publications AS publication
+            SET last_complete_observed_at_epoch_ms = 0
+            WHERE publication.process_instance_id = $1
+            RETURNING publication.process_instance_id
+          )
+          UPDATE bpmn_platform.operate_flow_node_occurrence_publications AS occurrence
+          SET last_complete_observed_at_epoch_ms = 0
+          FROM execution
+          WHERE occurrence.process_instance_id = execution.process_instance_id
+        `,
+        values: [candidateKey(exact)],
+      });
+
+      const read = await new PostgresqlExecutionProjectionReader({
+        runtime,
+        maxAgeMs: 1,
+      }).page(exact.instance.processInstanceId, { afterRevision: 0, limit: 1 });
+      assert.equal(read.kind, PostgresqlProjectionReadKind.Available);
+      if (read.kind === PostgresqlProjectionReadKind.Available) {
+        const freshness = read.read.freshness;
+        assert.ok(freshness !== null);
+        assert.ok(freshness.observedAfterEpochMs > 0);
+      }
+      const metrics = await new PostgresqlFlowNodeMetricsReader({
+        runtime,
+        maxAgeMs: 1,
+      }).read(exact.instance.definition);
+      assert.equal(metrics.kind, PostgresqlProjectionReadKind.Available);
+      if (metrics.kind === PostgresqlProjectionReadKind.Available) {
+        const freshness = metrics.read.freshness;
+        assert.ok(freshness !== null);
+        assert.ok(freshness.observedAfterEpochMs > 0);
+        if (terminal === "failed" && metrics.read.value.kind === FlowNodeMetricsResultKind.Available) {
+          assert.deepEqual(metrics.read.value.snapshot.flowNodes, [{
+            elementId: "Task_1", frequency: 1, running: 0, completed: 0,
+            cancelled: 1, completedDuration: null,
+          }]);
+        }
+      }
+      const executionReader = new PostgresqlExecutionProjectionReader({ runtime, maxAgeMs: 1 });
+      const metricsReader = new PostgresqlFlowNodeMetricsReader({ runtime, maxAgeMs: 1 });
+      for (const [table, damage, repair] of [
+        ["operate_execution_publications", "status = 'gap'", "status = 'healthy'"],
+        ["operate_execution_publications", "status = 'unavailable'", "status = 'healthy'"],
+        ["operate_execution_publications", "producer_head_revision = 4", "producer_head_revision = 3"],
+        ["operate_flow_node_occurrence_publications", "status = 'gap'", "status = 'healthy'"],
+        ["operate_flow_node_occurrence_publications", "status = 'unavailable'", "status = 'healthy'"],
+        ["operate_flow_node_occurrence_publications", "head_revision = 2", "head_revision = 3"],
+        ["operate_flow_node_occurrence_publications", "producer_head_revision = 4", "producer_head_revision = 3"],
+        ["operate_flow_node_occurrence_publications", "current_open_json = '[{}]'", "current_open_json = '[]'"],
+      ]) {
+        await runtime.query({ text: `UPDATE bpmn_platform.${table} SET ${damage} WHERE process_instance_id = $1`, values: [candidateKey(exact)] });
+        assert.equal((await executionReader.export(exact.instance.processInstanceId)).kind, PostgresqlProjectionReadKind.Unavailable, damage);
+        assert.equal((await metricsReader.read(exact.instance.definition)).kind, PostgresqlProjectionReadKind.Unavailable, damage);
+        await runtime.query({ text: `UPDATE bpmn_platform.${table} SET ${repair} WHERE process_instance_id = $1`, values: [candidateKey(exact)] });
+      }
+    });
+  }
 }
 
 async function register(

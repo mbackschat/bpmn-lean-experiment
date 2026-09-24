@@ -17,6 +17,7 @@ import { serializeCanonicalExecutionPublicationValue } from "@bpmn-lean/platform
 
 import {
   firstPage,
+  failedPage,
   registration,
   secondPage,
 } from "./execution-publication-fixture.ts";
@@ -70,45 +71,47 @@ test("retains exact duplicates and rejects changed overlapping batch content", a
   });
 });
 
-test("resumes a partial prefix after reopen and rebuilds byte-identically from zero", async () => {
-  const root = await mkdtemp(join(tmpdir(), "bpmn-lean-execution-publication-"));
-  const databaseFile = join(root, "operate.sqlite");
-  try {
-    const instances = new SqliteProcessInstanceRepository(databaseFile);
-    await instances.recordConfirmed({
-      instance: registration.instance,
-      locator: registration.locator,
-    });
-    const registered = await instances.getRegistration("Instance_1");
-    assert.ok(registered);
-    const first = new SqliteExecutionPublicationRepository(databaseFile);
-    await first.applyPage(registered, firstPage(3));
-    first.close();
+for (const suffix of [secondPage, failedPage]) {
+  test(`resumes ${suffix.name} after reopen and rebuilds byte-identically from zero`, async () => {
+    const root = await mkdtemp(join(tmpdir(), "bpmn-lean-execution-publication-"));
+    const databaseFile = join(root, "operate.sqlite");
+    try {
+      const instances = new SqliteProcessInstanceRepository(databaseFile);
+      await instances.recordConfirmed({
+        instance: registration.instance,
+        locator: registration.locator,
+      });
+      const registered = await instances.getRegistration("Instance_1");
+      assert.ok(registered);
+      const first = new SqliteExecutionPublicationRepository(databaseFile);
+      await first.applyPage(registered, firstPage(3));
+      first.close();
 
-    const reopened = new SqliteExecutionPublicationRepository(databaseFile);
-    await reopened.applyPage(registered, secondPage());
-    const uninterruptedExport = await reopened.export("Instance_1");
-    assert.ok(uninterruptedExport);
-    const page = await reopened.page("Instance_1", { afterRevision: 0, limit: 2 });
-    assert.equal(page?.batches.length, 2);
-    assert.equal(page?.current?.revision, 3);
+      const reopened = new SqliteExecutionPublicationRepository(databaseFile);
+      await reopened.applyPage(registered, suffix());
+      const uninterruptedExport = await reopened.export("Instance_1");
+      assert.ok(uninterruptedExport);
+      const page = await reopened.page("Instance_1", { afterRevision: 0, limit: 2 });
+      assert.equal(page?.batches.length, 2);
+      assert.equal(page?.current?.revision, 3);
 
-    const rebuilt = await reopened.replaceFromPages(
-      registered,
-      [firstPage(3), secondPage()],
-    );
-    const rebuiltExport = await reopened.export("Instance_1");
-    assert.equal(rebuilt.headRevision, 3);
-    assert.deepEqual(
-      serializeCanonicalExecutionPublicationValue(rebuiltExport),
-      serializeCanonicalExecutionPublicationValue(uninterruptedExport),
-    );
-    reopened.close();
-    instances.close();
-  } finally {
-    await rm(root, { recursive: true, force: true });
-  }
-});
+      const rebuilt = await reopened.replaceFromPages(
+        registered,
+        [firstPage(3), suffix()],
+      );
+      const rebuiltExport = await reopened.export("Instance_1");
+      assert.equal(rebuilt.headRevision, 3);
+      assert.deepEqual(
+        serializeCanonicalExecutionPublicationValue(rebuiltExport),
+        serializeCanonicalExecutionPublicationValue(uninterruptedExport),
+      );
+      reopened.close();
+      instances.close();
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+}
 
 test("suppresses every read after a durable gap or unavailable classification", async () => {
   await withRepositories(async (_, publications, registered) => {

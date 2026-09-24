@@ -210,7 +210,8 @@ function decodeRead(
     "execution completion watermark",
   );
   const terminal = first.observation === "closed" &&
-    (first.current_process_status === "completed" || first.current_process_status === "cancelled");
+    (first.current_process_status === "completed" || first.current_process_status === "cancelled" ||
+      first.current_process_status === "failed");
   if (
     first.status !== ExecutionPublicationProjectionStatus.Healthy ||
     headRevision !== producerHead ||
@@ -320,7 +321,8 @@ function requireAlignedOccurrence(
     "occurrence current-open",
   );
   const currentOpen = JSON.parse(currentOpenText) as unknown;
-  if (!Array.isArray(currentOpen) || JSON.stringify(currentOpen) !== currentOpenText) {
+  if (!Array.isArray(currentOpen) || JSON.stringify(currentOpen) !== currentOpenText ||
+      (terminal && currentOpen.length !== 0)) {
     throw new TypeError("occurrence current-open is invalid");
   }
 }

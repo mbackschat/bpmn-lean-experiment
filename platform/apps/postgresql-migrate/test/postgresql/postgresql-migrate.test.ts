@@ -26,6 +26,7 @@ const expectedMigrationNames = [
   "0009_projection-freshness__4be40408ea54a7eff181520e52acfa0d4685b76ce141d5b6f9b39b844e849ea9",
   "0010_definitions-process-locator__ee9f0d01f34e89b0fcc0e28a38eb1446badb9d025e6d780f2e2f1971131db611",
   "0011_definitions-start-command__681798219edab00a928b6289190b823aff6836027d40012d55707cb1ef332b8d",
+  "0012_failed-process-publication__b0668bf6f541e5dd02f76021c9ffa63861e937ed430cb216e5f9fb7865c35a9a",
 ] as const;
 const requiredRelations = [
   "bpmn_platform.exact_artifacts",
@@ -94,7 +95,7 @@ test(
     try {
       const first = await runMigrationApplication(databaseUrl.toString());
       assert.deepEqual(first, {
-        stdout: "11 PostgreSQL migrations are applied.\n",
+        stdout: "12 PostgreSQL migrations are applied.\n",
         stderr: "",
       });
 
@@ -124,7 +125,7 @@ test(
             WHERE singleton = true
           `,
         });
-        assert.deepEqual(schemaEpoch.rows, [{ epoch: 11 }]);
+        assert.deepEqual(schemaEpoch.rows, [{ epoch: 12 }]);
 
         const scheduleLocatorColumns = await database.query<
           Readonly<Record<string, unknown>> & Readonly<{ column_name: string }>

@@ -66,7 +66,7 @@ export class PostgresqlOperateRecoveryCandidateSource {
                OR execution.status <> 'healthy'
                OR execution.current_json IS NULL
                OR execution.head_revision <> execution.producer_head_revision
-               OR execution.current_process_status NOT IN ('completed', 'cancelled')
+               OR execution.current_process_status NOT IN ('completed', 'cancelled', 'failed')
             ORDER BY process.process_instance_id ASC
             LIMIT $1
           `,
@@ -86,7 +86,7 @@ export class PostgresqlOperateRecoveryCandidateSource {
                OR (
                  execution.current_json IS NOT NULL
                  AND execution.head_revision = execution.producer_head_revision
-                 AND execution.current_process_status IN ('completed', 'cancelled')
+                 AND execution.current_process_status IN ('completed', 'cancelled', 'failed')
                  AND (
                    occurrence.process_instance_id IS NULL
                    OR occurrence.status <> 'healthy'

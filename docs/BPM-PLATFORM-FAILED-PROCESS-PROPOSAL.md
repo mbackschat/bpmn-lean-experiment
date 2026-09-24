@@ -2,7 +2,7 @@
 
 ## Status
 
-Lifecycle: implementation-in-progress
+Lifecycle: implemented-awaiting-closure
 Review: approved
 
 ## Selected outcome and authority
@@ -87,10 +87,22 @@ The first implementation checkpoint contains only Product 2's failure-discrimina
 
 This checkpoint requires cold review before PostgreSQL migration/freshness, durable failed-state repository evidence, incident service classification, UI, or real-host acceptance advances. Those downstream lanes remain unimplemented. The proposal review approved target `fd1e18f0` without required edits. Its advisory Alpha actor status-switch defect is a separate harness correction; the new journey must use its own exact expected terminal outcome.
 
+## Implemented outcome and epistemic closure
+
+The downstream implementation now preserves the existing failure across SQLite/PostgreSQL publication storage, exact-head immutability, shared terminal freshness and recovery selection, definite late incident-action rejection, and Operations Overview, History and export. The checksum-bound migration advances epoch 11 to 12 without rewriting retained publication rows. A terminal execution cannot conceal an incomplete or still-open occurrence projection; closed registration without the publication pair proves no metrics coverage.
+
+The [live journey](../showcase/mue-preview-alpha/e2e/failed-process.spec.ts) deploys the retained travel-cancellation bytes through public HTTP, starts both outcomes with explicit inputs, uses published task identities through a labelled actor, compares Product 2 export bytes with the complete Product 1 publication, restarts the platform, checks browser inspection/download, rejects a substituted failure identity, and replays every collected Run. The [UI witnesses](../showcase/platform-ui-quality/e2e/failed-process-ui-quality.spec.ts) separately distinguish null from empty messages, preserve hostile text and repeated element IDs with different activations, and retain independent History, Diagram and Operator-history availability. The actor is not a Human Work form and the model remains outside the browser-start catalog.
+
+The established claim is exact downstream preservation and inspection of the selected engine failure. The nearest unsupported claims remain failed-Process recovery, other failure families, Transaction admission, and production-scale reliability. Producer receipt and publication share the engine account; their agreement cannot independently establish BPMN meaning. Literal failure identities, independent canonical-byte expectations, strict decoder mutations, both database adapters, and browser transport corruption challenge distinct consumer boundaries, while the previously reviewed engine evidence remains the semantic premise. No new Lean result or CIB compatibility result is claimed.
+
+The final changed-current discriminator keeps accepted history bytes exact while substituting only failure text; a running-state variable substitution reproduces the same defect outside Compensation. Both fail before the shared projection correction and pass afterward. The earlier changed-overlap fixture altered history too, so it did not separate current-state immutability. Terminal freshness negatives also exposed missing empty-occurrence validation and the closed-registration-only metrics shortcut. These are corrections required by the approved contract, not new failure behavior. The [cost record](CAPSULE-COST-LEDGER.md#failed-process-product-outcome-2026-09-25) retains qualification chronology and avoidable rework.
+
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
 | Proposal | `fd1e18f07d96cc30627d1e3c9da5b7ce789fd492` | `fork-turns-none` | `approve` | `not-required` |
-| Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Semantic checkpoint | `152f3973a6c301ebac0f7012f2f426c518944c93` | `fork-turns-none` | `approve-with-required-edits` | `38afb3e989e59908492562e9070f41150ae9e785` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+
+The semantic checkpoint used one correction audit. The same isolated reviewer approved `38afb3e9`, closing stale failed-ingress rejection claims without changing the selected contract. Product 1 verification and the ordinary platform gate passed at `152f3973`; its full integration stopped at a PostgreSQL fixture type error. After narrowing that fixture, the complete infrastructure gate and remaining clean-head PostgreSQL, showcase and UI gates passed at `38afb3e9`, including 83 browser tests. These checks establish the copied contract checkpoint; downstream outcome evidence remains separate.

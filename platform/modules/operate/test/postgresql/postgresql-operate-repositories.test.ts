@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { after, before, test } from "node:test";
+import { serializeCanonicalExecutionPublicationValue } from "@bpmn-lean/platform-contracts";
 
 import {
   IncidentActionAuditOutboxService,
@@ -15,6 +16,7 @@ import type { PostgresqlRuntime } from "@bpmn-lean/platform-postgresql-runtime";
 
 import {
   firstPage,
+  failedPage,
   registration,
 } from "../execution-publication-fixture.ts";
 import {
@@ -112,6 +114,35 @@ if (baseUrl === undefined) {
       };
     },
   );
+
+  test("failed publication resumes after independent PostgreSQL runtime replacement and rebuilds exactly", async () => {
+    await resetOperateDatabase(runtime);
+    const ordinal = await new PostgresqlProcessInstanceRepository(runtime).recordConfirmed({
+      instance: registration.instance, locator: registration.locator,
+    });
+    const exact = { ...registration, ordinal };
+    const writer = createOperateTestRuntime(baseUrl, "failed-prefix-writer");
+    try {
+      await new PostgresqlExecutionPublicationRepository(writer).applyPage(exact, firstPage(3));
+    } finally {
+      await writer.close();
+    }
+    const replacement = createOperateTestRuntime(baseUrl, "failed-suffix-writer");
+    let bytes: Uint8Array;
+    try {
+      const repository = new PostgresqlExecutionPublicationRepository(replacement);
+      await repository.applyPage(exact, failedPage());
+      const exported = await repository.export("Instance_1");
+      assert.deepEqual(exported?.current, failedPage().current);
+      bytes = serializeCanonicalExecutionPublicationValue(exported);
+    } finally {
+      await replacement.close();
+    }
+    const reopened = new PostgresqlExecutionPublicationRepository(runtime);
+    assert.deepEqual(serializeCanonicalExecutionPublicationValue(await reopened.export("Instance_1")), bytes);
+    await reopened.replaceFromPages(exact, [firstPage(3), failedPage()]);
+    assert.deepEqual(serializeCanonicalExecutionPublicationValue(await reopened.export("Instance_1")), bytes);
+  });
 
   registerFlowNodeOccurrenceRepositoryContract(
     "PostgreSQL flow-node occurrences",
