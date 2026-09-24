@@ -8,7 +8,7 @@ import type {
 } from "@bpmn-lean/semantic-core";
 import {
   CanonicalObservationKind, COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID,
-  ProcessStatus, REPEATABLE_EVENT_SUBSCRIPTIONS_CHECKPOINT_PROFILE_ID,
+  REPEATABLE_EVENT_SUBSCRIPTIONS_CHECKPOINT_PROFILE_ID,
 } from "@bpmn-lean/semantic-core";
 import type {
   WorkflowHandle,
@@ -66,6 +66,7 @@ import {
   requireDurableTimerHistory,
   requireSubscriptionTimerHistory,
   reconcileHarnessTraceEvidence,
+  isTerminalHarnessState,
 } from "./harness-evidence.js";
 import {
   openEffectsInTrace,
@@ -426,8 +427,11 @@ export class TemporalScenarioRunner {
       "Workflow final trace Query",
     );
     const result = scenarioResultFromTrace(trace);
+    const finalState = trace.findLast((observation) =>
+      observation.kind === CanonicalObservationKind.State
+    );
     const receipt = completedReceipt ?? timerReceipt ?? effectReceipt ??
-      (trace.findLast((observation) => observation.kind === CanonicalObservationKind.State)?.status !== ProcessStatus.Running
+      (isTerminalHarnessState(finalState)
         ? requireTerminalProcessReceipt(
           (await withDeadline(
             readTestProcessTerminalResult(handle),

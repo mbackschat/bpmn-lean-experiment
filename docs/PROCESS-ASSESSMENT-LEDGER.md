@@ -280,7 +280,7 @@ The third instance also refuted the first disposition's reach: the guard binds s
 A checklist item was corrected only where attention already was, leaving its siblings unaudited: a capsule's Required evidence list was amended for the two scenarios under discussion while two other Required items stayed listed and absent, a stale claim was fixed in the owning map but not in the capsule that copied it, one Required-Lean list was corrected while the sibling list and matrix row restating the same obligation were not, and the correction for that then declared itself the single owner while one sibling enumeration survived.
 
 Instances
-: 26
+: 27
 
 Disposition
 : `unguardable`
@@ -301,6 +301,8 @@ The twenty-fourth instance was found during review of that correction at `6991ce
 The twenty-fifth instance was found in standalone Activity-data arming review at `46f9d1f6`: the input specification's evidence row linked the new batching outcome while its [source-contract paragraph](capsules/ACTIVITY-DATA-INPUT-MEDIATION-SPEC.md#exact-source-and-profile-contract) still forbade independent batching. The unchanged-owner check found the contradiction. The correction scopes the refusal to the historical checkpoint and legacy facade and routes complete preparation to its current owner; changed-section derivation cannot detect a false unchanged paragraph.
 
 The twenty-sixth instance is subscription closure at `9caca887`: registration and accepted checkpoint evidence were recorded in the capsule and family map while the invariant map still denied both, and the requirement ledger did not route the new lifetime account. The correction reads the unchanged ownership passages, records the bounded requirement disposition without widening predecessor rows, and links the current evidence owner. This remains an unchanged-claim completeness problem rather than a missing changed-section hash.
+
+The twenty-seventh instance is public Compensation registration at `953f5d64`: enrollment changed while IL, lifecycle, evidence-map and adapter-guide passages still described private checkpoint exclusions as current. The correction scans registration and absence claims in unchanged owners, distinguishes historical evidence from current admission, and preserves Product 2 and Transaction exclusions. The affected-owner check remains necessary even when every changed section is routed.
 
 ### Finding 16
 
@@ -1167,6 +1169,23 @@ The documentation/tooling correction received a context-cold review and three sa
 | Closure | `6991ced1` | `fork-turns-none` | `approve-with-required-edits` | `c3ffac0b, 34c7c24d, a0e5355e, owner-authorized` |
 
 The final packet is `97ec011b8c4c0ecc3bdbdaab783843a30dc9b25aa7ff80d1dba39bd696bd587e`; its temporary migration matrix binds seven source documents and 1,440 source units. The reviewer verified the digests and separating red/green receipts, including 20 focused and 582 complete infrastructure checks. This approval covers documentation preservation and review navigation only; arbitrary prose consistency, source-set completeness, and Internal Commutation closure are not established by these guards.
+
+### Finding 66
+
+A terminal-state predicate used the complement of Running, silently including NotStarted and, in one consumer, absent state. Tests exercised terminal outcomes without separating every valid nonterminal state.
+
+Instances
+: 1
+
+Disposition
+: `executable guard`
+
+Evidence
+: [terminal harness-state classification](../packages/temporal-adapter/testkit/test/harness-evidence.test.ts)
+
+**First observed:** Public Compensation registration closure review at `953f5d64`.
+
+Both harness consumers now share an explicit status classifier. The separating guard covers every Process status and absent state, and still requires exact durable receipts for Completed, Cancelled and Failed. A category defined over an enum must account for all alternatives rather than infer membership from one excluded value.
 
 ## Update rule
 

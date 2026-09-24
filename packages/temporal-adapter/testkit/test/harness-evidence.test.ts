@@ -24,6 +24,7 @@ import type {
 import {
   isCompletedProcessReceipt,
   isTerminalProcessReceipt,
+  isTerminalHarnessState,
   durableUpdateOutcomes,
   processTerminalReceiptFormatV1,
   reconcileHarnessTraceEvidence,
@@ -177,7 +178,29 @@ test("reconciles Query command outcomes and terminal state with durable history"
   );
 });
 
-test("binds failed and cancelled Query states to their exact terminal receipt", () => {
+test("preserves nonterminal Query states without a terminal receipt", () => {
+  for (const status of [ProcessStatus.NotStarted, ProcessStatus.Running] as const) {
+    const state = {
+      ...completedState,
+      status,
+    };
+    assert.equal(isTerminalHarnessState(state), false);
+    assert.doesNotThrow(() => reconcileHarnessTraceEvidence(
+      [state], null, { events: [] },
+    ), status);
+  }
+});
+
+test("does not require a terminal receipt before any state is observed", () => {
+  assert.equal(isTerminalHarnessState(undefined), false);
+  assert.doesNotThrow(() => reconcileHarnessTraceEvidence(
+    [{ kind: CanonicalObservationKind.Command, commandId: "start-refused", outcome: CommandOutcome.Unsupported }],
+    null,
+    { events: [] },
+  ));
+});
+
+test("binds every terminal Query state to its exact terminal receipt", () => {
   const failure = {
     kind: "compensationHandlerFailure" as const,
     triggerId: { processInstanceId: "Instance_1", elementId: "Trigger", activation: 1 },
@@ -187,10 +210,12 @@ test("binds failed and cancelled Query states to their exact terminal receipt", 
     message: "The reversal failed",
   };
   const terminals: TerminalProcessReceipt[] = [
+    receipt,
     { ...receipt, finalState: { ...completedState, status: ProcessStatus.Failed, failure } },
     { ...receipt, finalState: { ...completedState, status: ProcessStatus.Cancelled } },
   ];
   for (const terminal of terminals) {
+    assert.equal(isTerminalHarnessState(terminal.finalState), true);
     assert.equal(isTerminalProcessReceipt(terminal), true);
     const terminalTrace = [...trace.slice(0, -1), terminal.finalState];
     assert.doesNotThrow(() => reconcileHarnessTraceEvidence(
@@ -200,7 +225,9 @@ test("binds failed and cancelled Query states to their exact terminal receipt", 
       terminalTrace, null, historyWithOutcome(CommandOutcome.Committed),
     ), /no .* Process receipt exists/);
     assert.throws(() => reconcileHarnessTraceEvidence(
-      terminalTrace, receipt, historyWithOutcome(CommandOutcome.Committed),
+      [...terminalTrace.slice(0, -1), { ...terminal.finalState, logicalTimeMs: 1 }],
+      terminal,
+      historyWithOutcome(CommandOutcome.Committed),
     ), /Query terminal state does not match/);
   }
 });

@@ -6,6 +6,7 @@ import type {
   CommandOutcome,
   CompleteUserTaskInstanceStimulus,
   EffectExecutionResult,
+  StateObservation,
 } from "@bpmn-lean/semantic-core";
 import {
   CanonicalObservationKind,
@@ -42,6 +43,19 @@ import {
 
 class HarnessEvidenceInfrastructureError extends Error {
   public override readonly name = "HarnessEvidenceInfrastructureError";
+}
+
+export function isTerminalHarnessState(state: StateObservation | undefined): boolean {
+  switch (state?.status) {
+    case ProcessStatus.Completed:
+    case ProcessStatus.Cancelled:
+    case ProcessStatus.Failed:
+      return true;
+    case ProcessStatus.NotStarted:
+    case ProcessStatus.Running:
+    case undefined:
+      return false;
+  }
 }
 
 /**
@@ -85,7 +99,7 @@ export function reconcileHarnessTraceEvidence(
       observation.kind === CanonicalObservationKind.State,
   );
   if (receipt === null) {
-    if (finalState !== undefined && finalState.status !== ProcessStatus.Running) {
+    if (isTerminalHarnessState(finalState)) {
       throw new TypeError(
         "Query trace is terminal but no terminal Process receipt exists",
       );
