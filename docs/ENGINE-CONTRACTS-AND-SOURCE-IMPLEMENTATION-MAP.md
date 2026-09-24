@@ -30,7 +30,7 @@ Both semantic accounts derive the required String start binding from that Progra
 
 The registered interrupting Activity boundary Message profile admits one exact omission-only, payload-free Message Boundary Event on one User Task under identity `bpmn-2.0.2-activity-boundary-message-draft`. It adds the strict checked `messageBoundaryEvent` and IL `awaitMessageBoundedUserTask` arms, exact source reference and attachment validation, deterministic lowering with distinct normal and boundary outputs, empty external value domains, and two answer-free schedules over the same exact source bytes. The independently closure-reviewed profile, differential cases, retained whole model, capability row, and Product 2 disclosure are evidence-closed.
 
-[Subscriptions](capsules/REPEATABLE-EVENT-SUBSCRIPTIONS-PROPOSAL.md): private admission/codecs/lowering and Lean/core publication pass; registration and hosting remain absent.
+[Subscriptions](capsules/REPEATABLE-EVENT-SUBSCRIPTIONS-PROPOSAL.md): admission/codecs/lowering and Lean/core publication accepted; hosting implemented, registration absent.
 
 ## Implemented
 

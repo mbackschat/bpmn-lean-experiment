@@ -22,6 +22,7 @@ export * from "./process-address.js";
 export * from "./process-correlation-registration.js";
 export * from "./semantic-publication.js";
 export * from "./semantic-publication-canonical-json.js";
+export * from "./subscription-timer-binding.js";
 export * from "./timer-command.js";
 export * from "./user-task-detail.js";
 export * from "./workflow-chain.js";

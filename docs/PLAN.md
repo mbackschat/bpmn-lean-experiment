@@ -90,7 +90,8 @@ The [ordinary snapshot arming and complete pipeline correspondence outcomes](cap
 
 ## Current evidence
 
-- Snapshot pipeline correspondence. Command: `./scripts/pnpm.sh run test:pre-push:verify`. Status: `exit 0`. Date: `2026-09-24`. Commit: `55cebd6fa18cbc38f5bc1eaefc10fdfda2b0fc8a`. Clean Product 1 integration passes the 36 private Compensation schedules, all 72 registered pipeline cases, and 83 replayed histories. The [review receipt](capsules/COMPENSATION-TRIGGER-HANDLER-PROPOSAL.md#independent-cold-review-receipt) records independent approval and ten adversarial publication/observation checks. Public registration and broader admission remain open.
+- Subscription semantic checkpoint integration. Command: `./scripts/pnpm.sh run test:pre-push:verify`. Status: `exit 0`. Date: `2026-09-24`. Commit: `b7bef0166f4a81cd9276d0ba64447bac05fb905f`. The clean receipt `/tmp/bpmn-subscription-correction-clean-verify-serialized` is independently asserted. The [checkpoint review](capsules/REPEATABLE-EVENT-SUBSCRIPTIONS-PROPOSAL.md#independent-cold-review-receipt) is accepted; subscription hosting and registration remain open.
+
 - Start-capacity assurance. Command: `fixed-3-GiB docker run … ./scripts/lake.sh build BpmnSemantics.CompensationSourceCompatibilityConformance`. Status: `exit 0` after three exact-bound OOM reproductions. Date: `2026-09-03`. Commit: `8ab3ba5f`. The final target completed in 15.00s at 2,324,123,648 cgroup bytes and 1,938,140 KiB RSS with every pressure/OOM counter zero. The [specification](capsules/COMPENSATION-DURABILITY-START-DATA-REPAIR-SPEC.md#lean-assurance-correction-after-the-hard-ceiling) retains the exact 3,221,225,472-byte failures, full chronology, and rejected limit/native-decision alternatives.
 
 ## Exact resume point
@@ -99,7 +100,7 @@ Active work ID: `INTERNAL-COMMUTATION`.
 
 Risk band: RC internal scheduling.
 
-Next action: complete the subscription checkpoint correction audit before hosting or registration. `ac244f16` requires profile-wide host refusal and documentation corrections. The [dependency findings](INTERNAL-COMMUTATION-PROPOSAL.md#subscription-checkpoint-dependency-reassessment) record the four bounded proof groups, unchanged guarantees, and source-bound and fixed-memory evidence. Preserve the [approved domain and effort bound](capsules/REPEATABLE-EVENT-SUBSCRIPTIONS-PROPOSAL.md#scheduling-proof-domain-amendment), legacy TypeScript bounded-scope behavior, bounded checkpoint and regional trial. No further proof infrastructure is selected.
+Next action: run clean integration for [subscription hosting](capsules/REPEATABLE-EVENT-SUBSCRIPTIONS-PROPOSAL.md#temporal-hosting-implementation-checkpoint), then finish ordered-Timer pipeline registration, corpus/disclosure and closure. Hosting and recovery/replay pass complete affected-package gates. Complete-profile host admission is enabled; legacy refusals remain. The semantic checkpoint and clean integration are accepted. Preserve the [proof domain](capsules/REPEATABLE-EVENT-SUBSCRIPTIONS-PROPOSAL.md#scheduling-proof-domain-amendment), legacy TypeScript behavior, bounded checkpoint, and regional trial; no further proof infrastructure is selected.
 
 Non-material repairs: [pending source ownership](../scripts/document-control-plane.test.ts) and [clock-sensitive witness serialization](../scripts/test-selection-coverage.test.ts). Infrastructure and Temporal gates cover them; semantic claims are unchanged.
 

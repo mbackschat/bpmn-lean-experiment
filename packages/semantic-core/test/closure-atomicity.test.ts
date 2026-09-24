@@ -4,6 +4,7 @@ import { test } from "node:test";
 
 import {
   CommandOutcome,
+  CanonicalObservationKind,
   ScenarioOutcomeKind,
   ScenarioStepKind,
   advanceScenario,
@@ -11,6 +12,7 @@ import {
   applyStimulusWithTrace,
   evaluateStimulusWithSelectedSteps,
   initialState,
+  runScenarioWithClosureLimit,
 } from "@bpmn-lean/semantic-core";
 import type {
   RuntimeState,
@@ -22,6 +24,7 @@ import type {
 import {
   completionStimulus,
   parallelProgram,
+  parallelScenario,
   startStimulus,
 } from "./parallel-fork-join-fixture.ts";
 import { requiredAt } from "./canonical-observations.ts";
@@ -78,6 +81,31 @@ test("successful and admission-rejected commands expose both false closure flags
   assert.equal(rejected.ambiguousInternalChoice, false);
 });
 
+test("an unprojectable rejected Start retains its private projection cause", () => {
+  const before = structuredClone(initialState);
+  assert.deepEqual(advanceScenario(parallelProgram, initialState, {
+    ...startStimulus(), processId: "Wrong_Process",
+  }), {
+    kind: ScenarioStepKind.HarnessFailure,
+    outcome: { kind: ScenarioOutcomeKind.HarnessFailure },
+    observations: [],
+    diagnostic: {
+      stage: "observationProjection",
+      outcome: CommandOutcome.Rejected,
+      internalStepBoundExceeded: false,
+      ambiguousInternalChoice: false,
+    },
+  });
+  assert.deepEqual(initialState, before);
+});
+
+test("scenario results exclude private closure diagnostics and rolled-back command observations", () => {
+  assert.deepEqual(runScenarioWithClosureLimit(0, parallelScenario, parallelProgram), {
+    outcome: { kind: ScenarioOutcomeKind.HarnessFailure },
+    trace: [{ kind: CanonicalObservationKind.Deployment, outcome: CommandOutcome.Committed }],
+  });
+});
+
 function assertBoundRollback(
   program: SemanticProcessProgram,
   before: RuntimeState,
@@ -109,5 +137,11 @@ function assertBoundRollback(
     kind: ScenarioStepKind.HarnessFailure,
     outcome: { kind: ScenarioOutcomeKind.HarnessFailure },
     observations: [],
+    diagnostic: {
+      stage: "commandClosure",
+      outcome: CommandOutcome.RolledBack,
+      internalStepBoundExceeded: true,
+      ambiguousInternalChoice: false,
+    },
   });
 }

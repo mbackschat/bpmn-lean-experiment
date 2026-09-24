@@ -4,11 +4,11 @@ This detail map owns exact current Product 1 protocol, client, Workflow, Worker,
 
 ## Current boundary
 
-Disposable mutation probes isolate Worker queues by probe Workflow ID. The [lifecycle regressions](../packages/temporal-adapter/testkit/test/bypass-worker-startup.test.ts) cover both runner paths: expiry still fails, but late-created Workers enter SDK-managed shutdown. Normal startup retains matching Worker/Workflow queues; Workflow-start failure joins shutdown, and retained-trace termination failure cannot skip it. Production hosting and timeouts are unchanged.
+Disposable mutation probes isolate queues by Workflow ID. [Lifecycle regressions](../packages/temporal-adapter/testkit/test/bypass-worker-startup.test.ts) cover both runners: late Workers shut down, start failures join shutdown, and trace-termination failures cannot skip it. Normal queue matching, hosting and timeouts are unchanged.
 
 Client RPCs use SDK connection deadlines for task/incident and execution/occurrence-publication Queries, retained results, Workflow creation/description, Schedules, and correlation ingress/publication. The [RPC matrix](../packages/temporal-adapter/client/test/client-rpc-deadline.test.ts) rejects timeout with an unfinished request. Publication expiry settles the RPC before returning `unavailable`; segment reselection retains the original five-second allowance. Creation/Update expiry retains recovery classification and does not prove service refusal.
 
-The testkit readiness helper also applies its per-attempt allowance to the native RPC. A live Compensation witness exposed its previous unfinished-Query leak after successful assertions and replay. Native expiry removes that leak without changing publication or Compensation meaning.
+Testkit readiness applies its per-attempt allowance to native RPCs, closing the unfinished-Query leak exposed by live Compensation recovery without changing semantics.
 
 Accepted Updates interrupted by Workflow closure enter content-bound recovery using the pinned SDK's exact `AcceptedUpdateCompletedWorkflow` cause type. The [service probe and client controls](TEMPORAL-TEST-EVIDENCE-MAP.md#temporal-witness-and-mutation-inventory) retain the complete command across actual Continue-As-New and keep unrelated application failures distinct. Update and Message clients capture the complete command before yielding and share one native absolute RPC deadline across submission, recovery, and retained-result access. A live Worker-absence witness retains SDK timeout classification, same-command recovery after replacement, one committed recovery entry, exact final state, and replay.
 
@@ -18,7 +18,9 @@ The implemented bounded Workflow-chain contract owns project Event History, payl
 
 Product 1 privately traverses paired E1 and occurrence-publication segments across Continue-As-New through SHA-bound descriptors and immutable latest-Run selection. Recovery, RuntimeState, paired publication, stimulus, Update, accepted-input queue, effect Activity, retained per-Run trace/publication, pending-Timer, Query-response, terminal-result, Event History, aggregate continuation, and 128-Run bounds are active before speculative exposure, scheduling, or return. Retry and conflict precede lifetime capacity, semantic terminal state and accepted-handler draining precede terminal-envelope capacity, and no public contract or host identity changes.
 
-Activity boundary Message has isolated admission, E1/E2 validation, direct-VM scheduling, and real-service Signal/Update refinement through forced Continue-As-New, Worker replacement, typed coalescence failure, exact history assertions, and replay.
+Activity boundary Message retains isolated admission, E1/E2 validation, direct-VM scheduling and live Signal/Update refinement, continuation, replacement, coalescence failure, history assertions and replay.
+
+The [subscription hosting checkpoint](capsules/REPEATABLE-EVENT-SUBSCRIPTIONS-PROPOSAL.md#temporal-hosting-implementation-checkpoint) implements complete-profile admission, ordered activation batches, recurring Timer handoff, carried physical deadlines, failure classification and accepted-input draining. Direct-VM and live recovery/replay witnesses pass; registration and closure remain open.
 
 The independently approved Message key-correlation semantic checkpoint extends protocol and validation types far enough to preserve the complete global address, correlated interaction, candidate facts, and target delivery across shared boundaries. Correction target `1ce28ed5` is the approved boundary. The first downstream hosting slice adds one ingress Workflow per canonical complete-address hash, fixed production configuration, an immutable identity/configuration Query, and a client operation that validates that Query after successful start, concurrent duplicate, or lost response.
 

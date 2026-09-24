@@ -42,6 +42,8 @@ import {
   workflowChainProductionLimit,
 } from "./workflow-chain.js";
 import { requireWorkflowChainPlainDataTree } from "./workflow-chain-plain-data.js";
+import { requireBpmnSubscriptionTimerBindingV1 } from "./subscription-timer-binding.js";
+import type { BpmnSubscriptionTimerBindingV1 } from "./subscription-timer-binding.js";
 import { isMessageDeliveryRecord } from "./lifecycle-results.js";
 import type {
   BpmnWorkflowContinuationPublicationV1,
@@ -101,6 +103,7 @@ export type BpmnWorkflowContinuationHostInputV1 = DeepReadonly<{
   startCommandId: string;
   publicationSegmentDirectorySha256: string;
   completedMessageDeliveryRecords: MessageDeliveryRecord[];
+  subscriptionTimer?: BpmnSubscriptionTimerBindingV1;
 }>;
 
 export type BpmnWorkflowHostInputV1 =
@@ -142,6 +145,7 @@ export function requireBpmnWorkflowHostInputV1(
         "firstExecutionRunId", "definition", "processId", "processInstanceId",
         "startCommandId", "publicationSegmentDirectorySha256",
         "completedMessageDeliveryRecords",
+        ...(Object.hasOwn(value, "subscriptionTimer") ? ["subscriptionTimer"] : []),
       ]);
       if (
         !Number.isSafeInteger(value.runOrdinal) ||
@@ -157,6 +161,9 @@ export function requireBpmnWorkflowHostInputV1(
         !value.completedMessageDeliveryRecords.every(isMessageDeliveryRecord)
       ) {
         throw new TypeError("Malformed Workflow continuation metadata");
+      }
+      if (Object.hasOwn(value, "subscriptionTimer")) {
+        requireBpmnSubscriptionTimerBindingV1(value.subscriptionTimer);
       }
       return value as BpmnWorkflowContinuationHostInputV1;
     default:

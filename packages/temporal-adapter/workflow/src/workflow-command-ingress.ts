@@ -71,7 +71,8 @@ import {
   WorkflowCommandCapacityPreflightKind,
 } from "./workflow-command-capacity.js";
 import { WorkflowCommandRecoveryLookupKind } from "./workflow-command-recovery.js";
-import { enqueueStimulus } from "./workflow-host-readiness.js";
+import { acceptStimulus, enqueueStimulus } from "./workflow-host-readiness.js";
+import type { SubscriptionReadinessScheduler } from "./subscription-readiness-scheduler.js";
 import {
   acceptedStimulus,
   validateCompleteUserTaskUpdate,
@@ -113,6 +114,7 @@ type WorkflowCommandIngressOptions = Readonly<{
     state: RuntimeState,
   ) => BoundedDeadlineScheduler | undefined;
   reserveStimulus: (stimulus: Stimulus) => boolean;
+  subscriptionScheduler?: SubscriptionReadinessScheduler | undefined;
 }>;
 
 /**
@@ -137,7 +139,16 @@ export function registerWorkflowCommandIngress(
     messageBoundedActivityScheduler,
     boundedDeadlineSchedulerFor,
     reserveStimulus,
+    subscriptionScheduler,
   } = options;
+
+  const enqueueExternal = (stimulus: Stimulus) => {
+    if (subscriptionScheduler === undefined) {
+      enqueueStimulus(acceptedStimuli, pendingStimuli, stimulus, reserveStimulus);
+    } else if (acceptStimulus(acceptedStimuli, stimulus, reserveStimulus)) {
+      subscriptionScheduler.recordCommand(stimulus);
+    }
+  };
 
   setHandler(bpmnDeliverMessageSignal, (stimulus: MessageDeliveryStimulus) => {
     validateDeliverMessageSignal(stimulus);
@@ -171,6 +182,13 @@ export function registerWorkflowCommandIngress(
       stimulus,
       accepted,
     );
+    if (subscriptionScheduler !== undefined) {
+      if (acceptance.enqueue) {
+        acceptedStimuli.push(stimulus);
+        subscriptionScheduler.recordCommand(stimulus);
+      }
+      return;
+    }
     const state = currentState();
     const scheduledByManagedRace =
       messageBoundedActivityScheduler.recordMessageCallback(
@@ -204,7 +222,9 @@ export function registerWorkflowCommandIngress(
           // A managed completion races either a Message callback or a deadline, so its scheduler
           // classifies the activation instead of letting loop arrival order choose the winner.
           const state = currentState();
-          if (
+          if (subscriptionScheduler !== undefined) {
+            enqueueExternal(stimulus);
+          } else if (
             messageBoundedActivityScheduler.recordCompletionCallback(
               state,
               stimulus,
@@ -256,12 +276,7 @@ export function registerWorkflowCommandIngress(
         stimulus,
         currentPublication().execution.headRevision,
         async () => {
-          enqueueStimulus(
-            acceptedStimuli,
-            pendingStimuli,
-            stimulus,
-            reserveStimulus,
-          );
+          enqueueExternal(stimulus);
           return await awaitWorkflowCommandOutcome(
             stimulus.commandId,
             () => commandOutcome(currentPublication(), stimulus.commandId),
@@ -300,12 +315,7 @@ export function registerWorkflowCommandIngress(
         stimulus,
         currentPublication().execution.headRevision,
         async () => {
-          enqueueStimulus(
-            acceptedStimuli,
-            pendingStimuli,
-            stimulus,
-            reserveStimulus,
-          );
+          enqueueExternal(stimulus);
           return await awaitWorkflowCommandOutcome(
             stimulus.commandId,
             () => commandOutcome(currentPublication(), stimulus.commandId),
@@ -340,12 +350,7 @@ export function registerWorkflowCommandIngress(
         stimulus,
         currentPublication().execution.headRevision,
         async () => {
-          enqueueStimulus(
-            acceptedStimuli,
-            pendingStimuli,
-            stimulus,
-            reserveStimulus,
-          );
+          enqueueExternal(stimulus);
           return await awaitWorkflowCommandOutcome(
             stimulus.commandId,
             () => commandOutcome(currentPublication(), stimulus.commandId),

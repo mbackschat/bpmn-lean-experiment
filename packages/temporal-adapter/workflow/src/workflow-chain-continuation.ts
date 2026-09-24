@@ -28,12 +28,14 @@ import {
   requireBpmnWorkflowContinuationCorrelationV1,
   requireBpmnWorkflowContinuationStateV1,
   requireBpmnWorkflowHostInputV1,
+  requireSubscriptionTimerBindingForState,
   requireWorkflowChainInitialArgumentBudgets,
   workflowPublicationSegmentDirectorySha256,
   workflowContinuationBudgetViolation,
   workflowChainProductionLimit,
 } from "@bpmn-lean/temporal-protocol";
 import type {
+  BpmnSubscriptionTimerBindingV1,
   BpmnWorkflowContinuationHostInputV1,
   BpmnWorkflowContinuationPublicationV1,
   BpmnWorkflowContinuationRecoveryV1,
@@ -91,6 +93,7 @@ export type WorkflowChainRestoredState = Readonly<{
   publication: CommandPublicationState;
   messageDeliveryRecords: MessageDeliveryRecord[];
   correlationRegistration: ProcessCorrelationRegistrationStage | null;
+  subscriptionTimer: BpmnSubscriptionTimerBindingV1 | undefined;
 }>;
 
 export type WorkflowChainSuccessorArguments = readonly [
@@ -181,6 +184,7 @@ export function initializeWorkflowChain(
           messageDeliveryRecords: [...input.completedMessageDeliveryRecords],
           correlationRegistration:
             validated.correlation?.registration ?? null,
+          subscriptionTimer: validated.subscriptionTimer,
         },
       };
     }
@@ -236,6 +240,7 @@ function validateContinuationArguments(
   correlationPatchActive: boolean,
 ) {
   const state = requireCarriedState(carriedState, program, start.instanceId);
+  const subscriptionTimer = requireCarriedSubscriptionTimer(program, state, input.subscriptionTimer);
   const recovery = requireCarriedRecovery(carriedRecovery);
   const publication = requireCarriedPublication(
     carriedPublication,
@@ -279,7 +284,7 @@ function validateContinuationArguments(
     publication,
     correlation,
   );
-  return { state, recovery, publication, correlation };
+  return { state, recovery, publication, correlation, subscriptionTimer };
 }
 
 export function buildWorkflowChainSuccessor(
@@ -291,7 +296,9 @@ export function buildWorkflowChainSuccessor(
   messageDeliveryRecords: ReadonlyArray<MessageDeliveryRecord>,
   correlationRegistration: ProcessCorrelationRegistrationStage | null = null,
   correlationPatchActive = false,
+  subscriptionTimer?: BpmnSubscriptionTimerBindingV1,
 ): WorkflowChainSuccessorArguments {
+  requireCarriedSubscriptionTimer(program, state, subscriptionTimer);
   if (messageDeliveryRecords.some(
     ({ stimulus }) =>
       stimulus.subscriptionId.processInstanceId !== start.instanceId,
@@ -332,6 +339,7 @@ export function buildWorkflowChainSuccessor(
     completedMessageDeliveryRecords: messageDeliveryRecords.map(
       cloneMessageDeliveryRecord,
     ),
+    ...(subscriptionTimer === undefined ? {} : { subscriptionTimer }),
   };
   const recovery: BpmnWorkflowContinuationRecoveryV1 = {
     entries: runtime.recovery.snapshot(),
@@ -695,6 +703,18 @@ function requireSuccessorArgumentBudgets(
       publication.execution.headRevision,
     );
     throw runtime.capacity.applicationFailure();
+  }
+}
+
+function requireCarriedSubscriptionTimer(
+  program: SemanticProcessProgram,
+  state: RuntimeState,
+  binding: unknown,
+): BpmnSubscriptionTimerBindingV1 | undefined {
+  try {
+    return requireSubscriptionTimerBindingForState(program, state, binding);
+  } catch (error) {
+    throw invalidContinuation("Invalid subscription Timer continuation", error);
   }
 }
 

@@ -201,6 +201,10 @@ importers:
       '@temporalio/workflow':
         specifier: 1.21.0
         version: 1.21.0
+    devDependencies:
+      '@bpmn-lean/bpmn-source':
+        specifier: workspace:*
+        version: link:../../bpmn-source
 
   platform/apps/postgresql-migrate:
     dependencies:

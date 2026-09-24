@@ -22,7 +22,7 @@ import type {
 } from "./contracts.js";
 
 /**
- * Conservatively proves the current single-host-driven-wait contract.
+ * Conservatively proves the selected host scheduler's wait-population contract.
  *
  * User Task and Message waits are passive ingress and may coexist. A token
  * split combined with a timer or effect can create more than one host-driven
@@ -37,18 +37,22 @@ import type {
  * second host-driven branch or scheduler is rejected before Workflow start.
  * The exact Compensation source checkpoint may retain its historical Parallel
  * split because semantic admission proves that it synchronizes before the throw.
+ * The subscription profile has its own activation scheduler; its complete structural
+ * admission bounds one Timer beside the selected passive and boundary waits.
  */
 export function assessTemporalHostCapability(
   program: SemanticProcessProgram,
 ): TemporalHostCapabilityResult {
-  // ESL-ORDER-01 in REPEATABLE-EVENT-SUBSCRIPTIONS-PROPOSAL.md requires one profile-wide
-  // ordering contract; legacy operation shapes do not establish its hosting refinement.
+  // ESL-ORDER-01 binds the scheduler to complete profile admission, not an operation-name allowlist.
   if (program.identity.semanticProfile === REPEATABLE_EVENT_SUBSCRIPTIONS_CHECKPOINT_PROFILE_ID) {
+    if (isWellFormedSemanticProcessProgram(program) && profileAllowsProgramShape(
+      program.identity.semanticProfile, program.operations, program.definitionScopes.length,
+    )) return { kind: TemporalHostCapabilityResultKind.Admitted };
     return {
       kind: TemporalHostCapabilityResultKind.Rejected,
       failure: {
         code: TemporalHostAdmissionFailureCode.SubscriptionSchedulerUnavailable,
-        evidence: "The repeatable Event subscription checkpoint has no Temporal hosting refinement.",
+        evidence: "The subscription scheduler requires the complete well-formed bounded subscription profile.",
       },
     };
   }

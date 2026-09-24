@@ -44,6 +44,7 @@ import type {
   MessageBoundedActivityReadinessScheduler,
 } from "./message-bounded-activity-readiness-scheduler.js";
 import { hostInvariantFailure } from "./host-invariant.js";
+import type { SubscriptionReadinessScheduler } from "./subscription-readiness-scheduler.js";
 import { isTerminalProcessState } from "./terminal-process-receipt.js";
 import {
   acceptedStimulus,
@@ -71,6 +72,7 @@ export type HostReadinessInput = Readonly<{
   messageBoundedActivityScheduler: MessageBoundedActivityReadinessScheduler;
   boundedDeadlineSchedulers: ReadonlyArray<BoundedDeadlineScheduler>;
   compensationScheduler: CompensationFrontierScheduler;
+  subscriptionScheduler?: SubscriptionReadinessScheduler | undefined;
   waitForTimer: (durationMs: number) => Promise<void>;
   executeEffect: (request: EffectRequest) => Promise<EffectActivityResult>;
   effectActivityPolicy: EffectActivityPolicy;
@@ -88,6 +90,7 @@ export async function waitForHostReadiness({
   messageBoundedActivityScheduler,
   boundedDeadlineSchedulers,
   compensationScheduler,
+  subscriptionScheduler,
   waitForTimer,
   executeEffect,
   effectActivityPolicy,
@@ -106,6 +109,10 @@ export async function waitForHostReadiness({
       return failCapacity(timerCapacity.failure);
     default:
       return assertNever(timerCapacity);
+  }
+  if (subscriptionScheduler !== undefined) {
+    pendingStimuli.push(...await subscriptionScheduler.waitForReadiness(Date.now(), hostWakeRequested));
+    return HostReadinessAction.RecheckMainLoop;
   }
   if (compensationScheduler.ownsCommittedFrontier(state)) {
     if (pendingStimuli.length > 0) {
@@ -294,17 +301,27 @@ export function enqueueStimulus(
   stimulus: Stimulus,
   reserveStimulus: (stimulus: Stimulus) => boolean = () => true,
 ): void {
+  if (acceptStimulus(acceptedStimuli, stimulus, reserveStimulus)) {
+    pendingStimuli.push(stimulus);
+  }
+}
+
+export function acceptStimulus(
+  acceptedStimuli: Stimulus[],
+  stimulus: Stimulus,
+  reserveStimulus: (stimulus: Stimulus) => boolean,
+): boolean {
   const commandId = stimulusCommandId(stimulus);
   const accepted = acceptedStimulus(acceptedStimuli, commandId);
   if (accepted === undefined) {
     if (!reserveStimulus(stimulus)) {
-      return;
+      return false;
     }
     acceptedStimuli.push(stimulus);
-    pendingStimuli.push(stimulus);
-    return;
+    return true;
   }
   requireSameCommandStimulus(accepted, stimulus);
+  return false;
 }
 
 function assertNever(value: never): never {

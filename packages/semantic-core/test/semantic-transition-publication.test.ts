@@ -320,6 +320,12 @@ test("late End ambiguity rolls back completion and its successful join prefix", 
     kind: ScenarioStepKind.HarnessFailure,
     outcome: { kind: ScenarioOutcomeKind.HarnessFailure },
     observations: [],
+    diagnostic: {
+      stage: "commandClosure",
+      outcome: CommandOutcome.RolledBack,
+      internalStepBoundExceeded: false,
+      ambiguousInternalChoice: true,
+    },
   });
 });
 

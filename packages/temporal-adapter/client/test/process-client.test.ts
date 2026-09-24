@@ -16,7 +16,6 @@ import {
   BpmnWorkflowHostInputKind,
   assessTemporalHostCapability,
   TemporalHostCapabilityResultKind,
-  TemporalHostAdmissionFailureCode,
   WorkflowChainBudgetKind,
   bpmnWorkflowContinuationV1,
   workflowChainProductionLimit,
@@ -31,7 +30,7 @@ for (const scenario of [
   "activity-boundary-message",
   "intermediate-catch-message",
 ]) {
-  test(`${scenario} keeps legacy hosting but refuses the subscription checkpoint before Workflow start`, async () => {
+  test(`${scenario} preserves legacy starts and enrolls the validated subscription profile`, async () => {
     const bytes = await readFile(new URL(`../../../../scenarios/${scenario}/process.bpmn`, import.meta.url));
     for (const semanticProfile of [
       `bpmn-2.0.2-${scenario}-draft`,
@@ -51,21 +50,10 @@ for (const scenario of [
       const calls: unknown[] = [];
       const result = await startBpmnProcess(fakeClient(calls), processStart, semanticProcess,
         { taskQueue: "process-task-queue" });
-      if (semanticProfile === REPEATABLE_EVENT_SUBSCRIPTIONS_CHECKPOINT_PROFILE_ID) {
-        assert.equal(host.kind, TemporalHostCapabilityResultKind.Rejected);
-        assert.equal(admission.kind, BpmnProcessAdmissionResultKind.Rejected);
-        assert.equal(result.kind, BpmnProcessStartResultKind.Rejected);
-        if (host.kind !== TemporalHostCapabilityResultKind.Rejected) throw new Error("Host admitted checkpoint");
-        assert.equal(host.failure.code, TemporalHostAdmissionFailureCode.SubscriptionSchedulerUnavailable);
-        assert.deepEqual(admission, { kind: BpmnProcessAdmissionResultKind.Rejected, failure: host.failure });
-        assert.deepEqual(result, { kind: BpmnProcessStartResultKind.Rejected, failure: host.failure });
-        assert.deepEqual(calls, []);
-      } else {
-        assert.equal(host.kind, TemporalHostCapabilityResultKind.Admitted);
-        assert.equal(admission.kind, BpmnProcessAdmissionResultKind.Admitted);
-        assert.equal(result.kind, BpmnProcessStartResultKind.Started);
-        assert.equal(calls.length, 1);
-      }
+      assert.equal(host.kind, TemporalHostCapabilityResultKind.Admitted);
+      assert.equal(admission.kind, BpmnProcessAdmissionResultKind.Admitted);
+      assert.equal(result.kind, BpmnProcessStartResultKind.Started);
+      assert.equal(calls.length, 1);
     }
   });
 }

@@ -98,9 +98,11 @@ import {
 } from "./workflow-terminal-completion.js";
 import {
   HostReadinessAction,
+  acceptStimulus,
   enqueueStimulus,
   waitForHostReadiness,
 } from "./workflow-host-readiness.js";
+import { createSubscriptionReadinessScheduler } from "./subscription-readiness-scheduler.js";
 import { WorkflowCommandRecoveryPreflightKind } from "./workflow-command-recovery.js";
 import type {
   WorkflowCommandRecoveryAdmission,
@@ -253,6 +255,10 @@ export async function runBpmnProcessWithHostEffects(
   const effectActivityPolicy = effectActivityPolicyForProfile(
     semanticProcess.identity.semanticProfile,
   );
+  const subscriptionScheduler = createSubscriptionReadinessScheduler(
+    semanticProcess, state, chainInitialization?.restored?.subscriptionTimer, waitForTimer,
+    (stimulus) => acceptStimulus(acceptedStimuli, stimulus, reserveStimulus),
+  );
   const eventRaceScheduler = createEventRaceReadinessScheduler(
     waitForTimer,
     eventRaceActivationDrain,
@@ -343,6 +349,7 @@ export async function runBpmnProcessWithHostEffects(
       ) ?? null,
   );
   registerWorkflowCommandIngress({
+    subscriptionScheduler,
     processInstanceId: start.instanceId,
     acceptedStimuli,
     pendingStimuli,
@@ -480,9 +487,20 @@ export async function runBpmnProcessWithHostEffects(
         throw ApplicationFailure.nonRetryable(
           "Semantic core exceeded its checked closure boundary",
           "BpmnSemanticClosureFailure",
+          {
+            ...step.diagnostic,
+            commandId: stimulusCommandId(stimulus),
+            ...(stimulus.kind === StimulusKind.FireTimer
+              ? { timerId: stimulus.timerId, logicalDeadlineMs: stimulus.logicalTimeMs }
+              : {}),
+            publicationRevision: commandPublication.execution.headRevision,
+          },
         );
       }
       const committedAtEpochMs = Date.now();
+      const subscriptionBinding = subscriptionScheduler?.prepareCommit(
+        state, step, stimulus, committedAtEpochMs, commandPublication.execution.headRevision,
+      );
       const publicationCandidate = integrateCommandPublication(
         semanticProcess,
         commandPublication,
@@ -572,6 +590,7 @@ export async function runBpmnProcessWithHostEffects(
         break;
       }
       commandPublication = completePublicationCandidate;
+      if (subscriptionBinding !== undefined) subscriptionScheduler?.commit(subscriptionBinding);
       const outcome = commandOutcome(
         commandPublication,
         stimulusCommandId(stimulus),
@@ -612,9 +631,11 @@ export async function runBpmnProcessWithHostEffects(
         case ScenarioStepKind.Committed:
         case ScenarioStepKind.Terminal:
           state = step.state;
-          eventRaceScheduler.reconcileCommittedState(state);
-          for (const scheduler of boundedDeadlineSchedulers) {
-            scheduler.reconcileCommittedState(state);
+          if (subscriptionScheduler === undefined) {
+            eventRaceScheduler.reconcileCommittedState(state);
+            for (const scheduler of boundedDeadlineSchedulers) {
+              scheduler.reconcileCommittedState(state);
+            }
           }
           compensationScheduler.reconcileCommittedState(state);
           break;
@@ -630,16 +651,24 @@ export async function runBpmnProcessWithHostEffects(
       continue;
     }
 
+    if (subscriptionScheduler !== undefined) {
+      pendingStimuli.push(...await subscriptionScheduler.takePendingBatch());
+      if (pendingStimuli.length > 0) continue;
+    }
     const processIsTerminal = isTerminalProcessState(state);
     const stableCheckpoint = workflowChain?.capacity.decideStableCheckpoint(processIsTerminal);
     if (processIsTerminal) {
       workflowChainFence = WorkflowChainFenceState.Terminal;
+      if (subscriptionScheduler !== undefined) {
+        pendingStimuli.push(...await subscriptionScheduler.fenceAndDrain());
+        if (pendingStimuli.length > 0) continue;
+      }
       await Promise.all([
         condition(allHandlersFinished),
         compensationScheduler.waitForIdle(),
       ]);
       if (
-        pendingStimuli.length === 0 &&
+        pendingStimuli.length === 0 && subscriptionScheduler?.hasPendingCallbacks() !== true &&
         allHandlersFinished() &&
         !compensationScheduler.hasUnreconciledActivities()
       ) {
@@ -653,8 +682,12 @@ export async function runBpmnProcessWithHostEffects(
       stableCheckpoint?.kind ===
         WorkflowChainStableCheckpointKind.CapacityExceeded
     ) {
+      if (subscriptionScheduler !== undefined) {
+        pendingStimuli.push(...await subscriptionScheduler.fenceAndDrain());
+        if (pendingStimuli.length > 0) continue;
+      }
       await condition(allHandlersFinished);
-      if (pendingStimuli.length !== 0 || !allHandlersFinished()) {
+      if (pendingStimuli.length !== 0 || subscriptionScheduler?.hasPendingCallbacks() === true || !allHandlersFinished()) {
         continue;
       }
       throw workflowChain.capacity.applicationFailure();
@@ -679,8 +712,12 @@ export async function runBpmnProcessWithHostEffects(
       })
     ) {
       workflowChainFence = WorkflowChainFenceState.Rollover;
+      if (subscriptionScheduler !== undefined) {
+        pendingStimuli.push(...await subscriptionScheduler.fenceAndDrain());
+        if (pendingStimuli.length > 0) continue;
+      }
       await condition(allHandlersFinished);
-      if (pendingStimuli.length !== 0 || !allHandlersFinished()) {
+      if (pendingStimuli.length !== 0 || subscriptionScheduler?.hasPendingCallbacks() === true || !allHandlersFinished()) {
         continue;
       }
       const successor = buildWorkflowChainSuccessor(
@@ -692,6 +729,7 @@ export async function runBpmnProcessWithHostEffects(
         completedMessageDeliveryRecords(messageDeliveryResolutions),
         correlationRegistration,
         correlationRegistrationPatchActive,
+        subscriptionScheduler?.currentBinding(),
       );
       return await continueAsNew<WorkflowChainWorkflow>(...successor);
     }
@@ -701,6 +739,7 @@ export async function runBpmnProcessWithHostEffects(
     }
 
     const readinessAction = await waitForHostReadiness({
+      subscriptionScheduler,
       state,
       semanticProcess,
       pendingStimuli,

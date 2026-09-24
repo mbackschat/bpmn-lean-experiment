@@ -29,7 +29,7 @@ async function compile(name: string): Promise<SemanticProcessProgram> {
   return compiled.semanticProcess;
 }
 
-test("an isolated recurring Timer cannot inherit the one-shot Temporal scheduler", () => {
+test("an isolated recurring Timer requires the subscription scheduler rather than legacy one-shot admission", () => {
   assert.equal(assessTemporalHostCapability(monitoredProgram).kind,
     TemporalHostCapabilityResultKind.Admitted);
   const recurring = { ...monitoredProgram,
@@ -40,6 +40,8 @@ test("an isolated recurring Timer cannot inherit the one-shot Temporal scheduler
         : operation),
   };
   assert.equal(assessTemporalHostCapability(recurring).kind,
+    TemporalHostCapabilityResultKind.Admitted);
+  assert.equal(assessTemporalHostCapability({ ...recurring, identity: monitoredProgram.identity }).kind,
     TemporalHostCapabilityResultKind.Rejected);
 });
 
@@ -92,8 +94,8 @@ for (const name of ["boundary-message", "boundary-timer", "subprocess-boundary-t
       assert.equal(published.state.userTaskWaits.filter(({ id }) => id.elementId === "HandleReminder").length, count);
     }
   });
-  test(`the semantic-only ${name} checkpoint remains unavailable to the Temporal host`, async () => {
+  test(`the validated ${name} checkpoint selects subscription hosting`, async () => {
     assert.equal(assessTemporalHostCapability(await compile(name)).kind,
-      TemporalHostCapabilityResultKind.Rejected);
+      TemporalHostCapabilityResultKind.Admitted);
   });
 }

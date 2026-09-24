@@ -456,7 +456,7 @@ The operation census must classify trigger creation and frontier activation as o
 | [TS lifecycle completeness](../../packages/semantic-core/src/flow-node-occurrence-publication-external-completeness.ts) | 46 | delegate compensation oracle |
 | [TS canonical contract](../../packages/semantic-core/src/contract.ts) | 311 | failed union references only |
 | [TS evaluator](../../packages/semantic-core/src/semantic-process-runtime.ts) | 73 | dispatch only; trigger, handler, and Activity-data logic stay extracted before growth |
-| [TS observation producer](../../packages/semantic-core/src/scenario.ts) | 150 | failed projection and exhaustive switch only |
+| [TS observation producer](../../packages/semantic-core/src/scenario.ts) | 131 | failed projection and exhaustive switch only |
 | [TS control-position projection](../../packages/semantic-core/src/control-position-projection.ts) | 382 | failed terminal-empty arm only |
 | [TS internal attempt](../../packages/semantic-core/src/internal-transition-attempt.ts) | 668 | trigger-attempt delegation only |
 | [Lean Program](../../BpmnSemantics/SemanticProcessContract.lean) | 306 | direct Activity-data carriers extracted into a bounded owner |
@@ -480,9 +480,9 @@ The operation census must classify trigger creation and frontier activation as o
 | [terminal receipt](../../packages/temporal-adapter/workflow/src/terminal-process-receipt.ts) | 670 | failed construction only |
 | [terminal envelope](../../packages/temporal-adapter/workflow/src/workflow-terminal-completion.ts) | 554 | failed validation only |
 | [incident query handler](../../packages/temporal-adapter/workflow/src/incident-operations-query-handler.ts) | 558 | failed terminal projection only |
-| [continuation](../../packages/temporal-adapter/protocol/src/workflow-continuation.ts) | 211 | new collections and failed refusal |
-| [Workflow loop](../../packages/temporal-adapter/workflow/src/workflow-implementation.ts) | 49 | extract frontier scheduler before integration |
-| [host readiness](../../packages/temporal-adapter/workflow/src/workflow-host-readiness.ts) | 494 | scheduler delegation only |
+| [continuation](../../packages/temporal-adapter/protocol/src/workflow-continuation.ts) | 204 | new collections and failed refusal |
+| [Workflow loop](../../packages/temporal-adapter/workflow/src/workflow-implementation.ts) | 10 | extract frontier scheduler before integration |
+| [host readiness](../../packages/temporal-adapter/workflow/src/workflow-host-readiness.ts) | 478 | scheduler delegation only |
 | [effect host](../../packages/temporal-adapter/workflow/src/effect-execution-host.ts) | 630 | compensation result dispatch only |
 
 Every headroom figure is the measured nonblank-line remainder below the 800-line review target. No size exception is requested. New bounded owners should contain the compensation execution contract, trigger construction, frontier selection, handler completion, cancellation, validity, and focused tests/proofs; shared integration owners receive references or dispatch only.

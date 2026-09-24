@@ -33,10 +33,13 @@ export type DirectVmActivationRun = Readonly<{
   bundle: ParsedWorkflowCode;
   workflowType: string;
   /**
-   * Withholds SDK flags. `hasFlag` answers false for a Workflow whose original execution recorded
-   * none, so replaying is how a test observes behavior that must not depend on a flag.
+   * Unless explicitly supplied below, withholds SDK flags on replay to exercise legacy histories.
    */
   replaying: boolean;
+  sdkFlags?: number[];
+  replayPatches?: ReadonlyArray<string>;
+  initialNowMs?: number;
+  activationStepMs?: number;
   taskQueue: string;
   args: ReadonlyArray<ReturnType<typeof defaultPayloadConverter.toPayload>>;
   readyJobs: NonNullable<Activation["jobs"]>;
@@ -63,17 +66,18 @@ export async function runDirectVmActivations(
   const workflow = await creator.createWorkflow({
     info: await workflowInfo(run.workflowType, run.replaying, run.taskQueue),
     randomnessSeed: Array.from({ length: 32 }, () => 7),
-    now: 0,
+    now: run.initialNowMs ?? 0,
     showStackTraceSources: false,
   });
   const runId = workflowRunId(run.workflowType, run.replaying);
   try {
     run.assertInitialization(await workflow.activate({
       runId,
-      timestamp: await timestamp(0),
+      timestamp: await timestamp(run.initialNowMs ?? 0),
       historyLength: 3,
       isReplaying: run.replaying,
-      jobs: [{
+      availableInternalFlags: run.sdkFlags ?? [],
+      jobs: [...(run.replaying ? (run.replayPatches ?? []).map((patchId) => ({ notifyHasPatch: { patchId } })) : []), {
         initializeWorkflow: {
           workflowId: workflowId(run.workflowType, run.replaying),
           workflowType: run.workflowType,
@@ -82,16 +86,17 @@ export async function runDirectVmActivations(
       }],
     }));
     const completions: Completion[] = [];
-    let elapsedMs = 0;
+    let elapsedMs = run.initialNowMs ?? 0;
     let historyLength = 3;
     for (const jobs of [run.readyJobs, ...laterBatches]) {
-      elapsedMs += 1_000;
+      elapsedMs += run.activationStepMs ?? 1_000;
       historyLength += 4;
       completions.push(await workflow.activate({
         runId,
         timestamp: await timestamp(elapsedMs),
         historyLength,
         isReplaying: run.replaying,
+        availableInternalFlags: run.sdkFlags ?? [],
         jobs,
       }));
     }

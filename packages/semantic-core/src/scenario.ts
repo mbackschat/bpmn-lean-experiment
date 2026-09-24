@@ -55,6 +55,7 @@ import {
   validateClosureLimit,
 } from "./semantic-process-runtime.js";
 import type {
+  CommandResult,
   RuntimeState,
 } from "./semantic-process-runtime.js";
 import {
@@ -103,6 +104,12 @@ type HarnessFailureScenarioStep = DeepReadonly<{
   kind: ScenarioStepKind.HarnessFailure;
   outcome: ScenarioResult["outcome"];
   observations: CanonicalObservation[];
+  diagnostic: {
+    stage: "commandClosure" | "observationProjection";
+    outcome: CommandResult["outcome"];
+    internalStepBoundExceeded: boolean;
+    ambiguousInternalChoice: boolean;
+  };
 }>;
 
 export type ScenarioStep =
@@ -478,6 +485,12 @@ export function advanceScenario(
       kind: ScenarioStepKind.HarnessFailure,
       outcome: { kind: ScenarioOutcomeKind.HarnessFailure },
       observations: [],
+      diagnostic: {
+        stage: "commandClosure",
+        outcome: result.outcome,
+        internalStepBoundExceeded: result.internalStepBoundExceeded,
+        ambiguousInternalChoice: result.ambiguousInternalChoice,
+      },
     };
   }
 
@@ -487,6 +500,12 @@ export function advanceScenario(
       kind: ScenarioStepKind.HarnessFailure,
       outcome: { kind: ScenarioOutcomeKind.HarnessFailure },
       observations: [],
+      diagnostic: {
+        stage: "observationProjection",
+        outcome: result.outcome,
+        internalStepBoundExceeded: result.internalStepBoundExceeded,
+        ambiguousInternalChoice: result.ambiguousInternalChoice,
+      },
     };
   }
   const observations = [

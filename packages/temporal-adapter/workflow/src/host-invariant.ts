@@ -10,9 +10,10 @@ import { ApplicationFailure } from "@temporalio/workflow";
 export const bpmnHostCapabilityInvariantViolationFailureType =
   "BpmnHostCapabilityInvariantViolation";
 
-export function hostInvariantFailure(message: string): ApplicationFailure {
+export function hostInvariantFailure(message: string, ...details: unknown[]): ApplicationFailure {
   return ApplicationFailure.nonRetryable(
     message,
     bpmnHostCapabilityInvariantViolationFailureType,
+    ...details,
   );
 }
