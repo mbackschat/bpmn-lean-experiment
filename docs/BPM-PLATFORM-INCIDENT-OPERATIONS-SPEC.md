@@ -178,7 +178,7 @@ type IncidentActionResult =
           }
         | {
             kind: "processClosed";
-            status: "completed" | "cancelled";
+            status: "completed" | "cancelled" | "failed";
           };
     }>
   | DeepReadonly<{

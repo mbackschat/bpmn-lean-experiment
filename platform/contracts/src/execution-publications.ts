@@ -303,9 +303,19 @@ export const ProcessStatus = {
   Running: "running",
   Completed: "completed",
   Cancelled: "cancelled",
+  Failed: "failed",
 } as const;
 
 export type ProcessStatus = typeof ProcessStatus[keyof typeof ProcessStatus];
+
+export type CompensationHandlerFailure = DeepReadonly<{
+  kind: "compensationHandlerFailure";
+  triggerId: OccurrenceId;
+  handlerId: OccurrenceId;
+  effectId: OccurrenceId;
+  code: string;
+  message: string | null;
+}>;
 
 export const WaitKind = {
   UserTask: "userTask",
@@ -431,13 +441,12 @@ export type EnabledInteraction = DeepReadonly<
 export const executionPublicationStateAcceptedKeys = [
   "kind", "instanceId", "status", "activeWaits", "openUserTasks",
   "openMessageSubscriptions", "openTimers", "openEffects", "openIncidents",
-  "openMultiInstances", "variables", "enabledInteractions", "logicalTimeMs",
+  "openMultiInstances", "variables", "enabledInteractions", "logicalTimeMs", "failure",
 ] as const;
 
 export type StateObservation = DeepReadonly<{
   kind: "state";
   instanceId: string;
-  status: ProcessStatus;
   activeWaits: ActiveWait[];
   openUserTasks: OpenUserTask[];
   openMessageSubscriptions: OpenMessageSubscription[];
@@ -448,7 +457,10 @@ export type StateObservation = DeepReadonly<{
   variables: VariableBinding[];
   enabledInteractions: EnabledInteraction[];
   logicalTimeMs: number;
-}>;
+} & (
+  | { status: Exclude<ProcessStatus, typeof ProcessStatus.Failed>; failure?: never }
+  | { status: typeof ProcessStatus.Failed; failure: CompensationHandlerFailure }
+)>;
 
 export type CommittedTransitionRecord = DeepReadonly<{
   revision: number;

@@ -200,13 +200,17 @@ export function requirePublicationState(
   const label = "execution publication current.state";
   requireObject(value, label);
   const hasMultiInstances = Object.hasOwn(value, "openMultiInstances");
-  exact(value, label, hasMultiInstances ? executionPublicationStateAcceptedKeys
-    : executionPublicationStateAcceptedKeys.filter((key) => key !== "openMultiInstances"));
+  const status = readOwn(value, "status");
+  exact(value, label, executionPublicationStateAcceptedKeys.filter((key) =>
+    (key !== "openMultiInstances" || hasMultiInstances) &&
+    (key !== "failure" || status === ProcessStatus.Failed)));
   if (readOwn(value, "kind") !== "state" || readOwn(value, "instanceId") !== instanceId) {
     throw new TypeError(`${label} has the wrong instance identity`);
   }
-  const status = readOwn(value, "status");
   if (!Object.values(ProcessStatus).includes(status as never)) throw new TypeError(`${label}.status is invalid`);
+  if (status === ProcessStatus.Failed) {
+    requireCompensationHandlerFailure(readOwn(value, "failure"), instanceId, `${label}.failure`);
+  }
   const waits = requireActiveWaits(readOwn(value, "activeWaits"));
   const tasks = requireArray(readOwn(value, "openUserTasks"), requireOpenUserTask, "openUserTasks");
   requireCanonical(tasks, (a, b) => compareOccurrence(a.id, b.id), "openUserTasks");
@@ -234,6 +238,22 @@ export function requirePublicationState(
     throw new TypeError(`terminal ${label} must have no open work`);
   }
   return value as StateObservation;
+}
+
+function requireCompensationHandlerFailure(value: unknown, instanceId: string, label: string): void {
+  requireObject(value, label);
+  exact(value, label, ["kind", "triggerId", "handlerId", "effectId", "code", "message"]);
+  if (readOwn(value, "kind") !== "compensationHandlerFailure") {
+    throw new TypeError(`${label}.kind is unknown`);
+  }
+  for (const key of ["triggerId", "handlerId", "effectId"] as const) {
+    if (requireOccurrence(readOwn(value, key), `${label}.${key}`).processInstanceId !== instanceId) {
+      throw new TypeError(`${label}.${key} has the wrong Process identity`);
+    }
+  }
+  requireNonemptyString(readOwn(value, "code"), `${label}.code`);
+  const message = readOwn(value, "message");
+  if (message !== null) requireWireString(message, `${label}.message`);
 }
 
 export function requirePublicationTokenPositions(
@@ -471,7 +491,7 @@ function requireEffectResult(value: unknown, label: string): void {
     case EffectExecutionResultKind.BpmnError:
       exact(value, label, ["kind", "code", "message", "localPatch"]);
       requireNonemptyString(readOwn(value, "code"), `${label}.code`);
-      if (readOwn(value, "message") !== null) requireNonemptyString(readOwn(value, "message"), `${label}.message`);
+      if (readOwn(value, "message") !== null) requireWireString(readOwn(value, "message"), `${label}.message`);
       requirePatch(readOwn(value, "localPatch"), `${label}.localPatch`);
       return;
     default:

@@ -8,6 +8,7 @@ import {
 } from "./decoder-primitives.js";
 import {
   ExecutionPublicationResultKind,
+  ProcessStatus,
   SemanticTransitionKind,
   executionPublicationExportFormat,
 } from "./execution-publications.js";
@@ -307,6 +308,9 @@ function requireCurrent(
     true,
     "execution publication current.scopes",
   );
+  if (state.status === ProcessStatus.Failed && (tokens.length !== 0 || scopes.length !== 0)) {
+    throw new TypeError("failed execution publication must have no control positions");
+  }
   for (const token of tokens) {
     if (!scopes.some(({ id }) => samePublicationScope(id, token.owner))) {
       throw new TypeError("execution publication current token owner is not a live scope");

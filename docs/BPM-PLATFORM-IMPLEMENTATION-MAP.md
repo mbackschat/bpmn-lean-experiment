@@ -8,6 +8,8 @@ M1 through M6 and Horizon 1 shared persistence are closed. Local mode remains si
 
 The closure-reviewed [structured Human Work specification](BPM-PLATFORM-STRUCTURED-HUMAN-WORK-SPEC.md) is evidence-closed across Product 1 semantics and Product 2 forms.
 
+The [failed-Process contract checkpoint](BPM-PLATFORM-FAILED-PROCESS-PROPOSAL.md#public-contract-checkpoint) adds strict copied-value acceptance and rejected incident-result decoding. Its independent checkpoint review precedes shared persistence, service classification, browser presentation, and complete journey evidence; those outcomes are not yet established.
+
 ## Implemented
 
 ### BPM platform
@@ -48,6 +50,7 @@ The closure-reviewed [structured Human Work specification](BPM-PLATFORM-STRUCTUR
 - MUE Preview Alpha exact start-data transport, reserved-start recovery, strict Sequential Multi-Instance progress decoding, browser-session-only Operations samples, and a production-bundle two-branch showcase that displays natural aggregation or Timer interruption from committed public state and replays every actual Workflow Run without exposing host identity
 - strict copied-contract decoding of the additive parallel Multi-Instance progress arm; the Alpha renderer and automated actor narrow explicitly to sequential mode, so engine compatibility broadens without adding a parallel Product 2 journey or mislabeling the existing preview
 - strict copied-contract decoding of the optional published Activity data-input collection, admitting exactly one DataInput binding on an open User Task and refusing every other shape; the collection stays optional so every other family decodes unchanged, and no Work inbox, form, or browser surface reads it
+- strict copied-contract decoding of the exact terminal failed Process and mandatory Compensation failure; all failure identities bind to the published Process, live work and control positions reject, null and empty messages remain distinct, and the v1 canonical export retains the exact failure
 
 ## Explicitly absent
 
@@ -60,6 +63,7 @@ The closure-reviewed [structured Human Work specification](BPM-PLATFORM-STRUCTUR
 - separately deployed or arbitrary rendered forms, nested structured values, BPMN data associations, or assignment expressions beyond the implemented metadata and fake-identity boundary
 - a client router, form library, themed component framework, virtualization, visual form builder, arbitrary or nested form schema, remote options, draft storage, attachments, or validation/computation involving I/O or user-authored expressions
 - complete discovery of engine Process instances started outside Product 2
+- complete failed-Process projection/recovery, late incident-action classification, Operations failure detail, and production-backed failure journey under the [selected proposal](BPM-PLATFORM-FAILED-PROCESS-PROPOSAL.md)
 - the deferred JUEL evaluator implementation under its product-owned `platform/workers/juel-evaluator/` location
 - recovery of legacy engine instances that predate the confirmed-start publication contract
 - BPMN diagram editing, a public raw-sidecar format, automatic layout for multiple root Processes, collaborations, Call Activities without complete source DI, Sub-Processes, groups, annotations, associations, or data artifacts

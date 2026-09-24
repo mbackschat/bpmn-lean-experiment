@@ -181,6 +181,12 @@ test("decodes only exact published action requests and closed results", () => {
       engineResult: { kind: "processClosed", status: "cancelled" },
     },
     { state: "indeterminate", actionId: "action-4", interaction: retry },
+    {
+      state: "rejected",
+      actionId: "action-5",
+      interaction: retry,
+      engineResult: { kind: "processClosed", status: "failed" },
+    },
   ] as const;
   for (const result of results) {
     assert.deepEqual(decodeIncidentActionResult(result), result);

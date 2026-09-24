@@ -10,6 +10,17 @@ declare const publication: ExecutionPublicationExport;
 declare const result: ExecutionPublicationResult;
 declare const state: StateObservation;
 
+declare const failed: Extract<StateObservation, { status: "failed" }>;
+failed.failure.code satisfies string;
+failed.failure.message satisfies string | null;
+// @ts-expect-error failure occurrence identities remain deeply immutable
+failed.failure.triggerId.activation = 2;
+const { failure: _failure, ...withoutFailure } = failed;
+// @ts-expect-error terminal failure cannot omit its reason
+const missingFailure: StateObservation = withoutFailure;
+// @ts-expect-error ordinary states cannot acquire a failure payload
+const misplacedFailure: StateObservation = { ...failed, status: "running" };
+
 // @ts-expect-error publication pages are deeply immutable
 page.batches[0]!.transitions[0]!.positionDelta.enteredScopes.push({});
 // @ts-expect-error current semantic values are deeply immutable

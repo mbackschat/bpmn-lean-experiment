@@ -179,6 +179,8 @@ The production Query accepts `{ afterRevision, limit? }`, where `afterRevision` 
 
 ## Stable rules
 
+The [failed-Process public contract](../BPM-PLATFORM-FAILED-PROCESS-PROPOSAL.md#public-contract) extends Product 2's copied state with the engine's mandatory Compensation failure. Failed current values contain neither live work nor control tokens/scopes; their complete identities and nullable message are copied exactly. An empty BPMN-error message remains valid in the committed effect stimulus and failure state. The export format and every earlier state encoding remain unchanged.
+
 ### EPUB-HISTORY-01: exact committed sequence
 
 For one stable committed command, emit exactly one external transition for its admitted `Stimulus`, followed by exactly one internal transition for every operation selected by the existing closure evaluator, in the same order. Do not emit records for enabled-but-unselected operations, speculative admission, rejected commands, host retries, Workflow Tasks, Activities, Queries, platform actions, or state differences.

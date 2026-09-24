@@ -201,6 +201,26 @@ async function publicationValidator() {
   return ajv.compile(publication);
 }
 
+test("keeps the Product 2 committed-status copy synchronized with the producer", async () => {
+  const [schema, source] = await Promise.all([
+    readSchema("scenario.schema.json"),
+    readFile(`${projectRoot}/platform/contracts/src/execution-publications.ts`, "utf8"),
+  ]);
+  assert.ok(isRecord(schema.$defs));
+  const state = schema.$defs.stateObservation;
+  assert.ok(isRecord(state) && isRecord(state.properties));
+  const status = state.properties.status;
+  assert.ok(isRecord(status) && Array.isArray(status.enum));
+  assert.ok(status.enum.every((value) => typeof value === "string"));
+  const committed = status.enum.filter((value) => value !== "notStarted").toSorted();
+  assert.deepEqual(declaredConstObjectValues(source, "ProcessStatus").toSorted(), committed);
+  for (const omitted of committed) {
+    const changed = source.replace(new RegExp(`^  [A-Za-z]+: "${omitted}",\\n`, "mu"), "");
+    assert.notEqual(changed, source);
+    assert.notDeepEqual(declaredConstObjectValues(changed, "ProcessStatus").toSorted(), committed);
+  }
+});
+
 async function readSchema(name: string): Promise<Record<string, unknown>> {
   return JSON.parse(
     await readFile(`${projectRoot}/contracts/schemas/${name}`, "utf8"),

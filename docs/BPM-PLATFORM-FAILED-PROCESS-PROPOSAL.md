@@ -2,8 +2,8 @@
 
 ## Status
 
-Lifecycle: draft
-Review: pending
+Lifecycle: implementation-in-progress
+Review: approved
 
 ## Selected outcome and authority
 
@@ -81,10 +81,16 @@ Run focused red/green oracles, then the complete affected platform package compo
 
 The consumer's public failed-state acceptance is material. Require cold proposal review before implementation. Keep this one coherent Product 2 outcome; use combined checkpoint/closure only if the first green implementation target contains every required database, browser, host, documentation, cost and reflection result. Otherwise stop at the first public-contract checkpoint for independent review before dependent implementation. Record the exact established claim, nearest unsupported claim and shared-assumption risks at closure. Reassess Transaction dependencies only after this outcome closes.
 
+## Public-contract checkpoint
+
+The first implementation checkpoint contains only Product 2's failure-discriminated immutable state, strict state and terminal-position decoders, exact empty/null message handling in both state and committed effect history, and the rejected incident-result wire arm. The copied status/key census, malformed identity/value/live-work mutations, independent canonical failure-byte expectation, unchanged legacy byte oracle, and type-level required/forbidden payload checks own its evidence. The complete contracts gate passes 173 tests on 2026-09-25 after the new oracle reproduced seven missing-contract failures; the independent running-state empty-message witness identifies the same history-decoder mechanism outside Compensation failure.
+
+This checkpoint requires cold review before PostgreSQL migration/freshness, durable failed-state repository evidence, incident service classification, UI, or real-host acceptance advances. Those downstream lanes remain unimplemented. The proposal review approved target `fd1e18f0` without required edits. Its advisory Alpha actor status-switch defect is a separate harness correction; the new journey must use its own exact expected terminal outcome.
+
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `fd1e18f07d96cc30627d1e3c9da5b7ce789fd492` | `fork-turns-none` | `approve` | `not-required` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |

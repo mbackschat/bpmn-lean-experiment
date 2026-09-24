@@ -360,6 +360,7 @@ function decodeRejectedEngineResult(
       switch (status) {
         case "completed":
         case "cancelled":
+        case "failed":
           return { kind, status };
         default:
           throw new TypeError("incident action engine result.status is not terminal");

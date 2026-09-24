@@ -38,6 +38,7 @@ type ParallelController = {
 };
 
 type ParallelState = {
+  activeWaits: Array<{ elementId: string; kind: string; multiplicity: number }>;
   openUserTasks: Array<{ id: TaskId; name: string; state: string }>;
   openMultiInstances: ParallelController[];
   enabledInteractions: Array<{ kind: string; taskId: TaskId }>;
