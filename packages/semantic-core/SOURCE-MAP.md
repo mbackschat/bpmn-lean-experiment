@@ -36,6 +36,7 @@ This contributor map assigns source-file responsibilities inside `@bpmn-lean/sem
 | [compensation-source-checkpoint-topology.ts](src/compensation-source-checkpoint-topology.ts) | Exact split, nested-scope, synchronization, trigger, and completion topology admitted by the source-bound Compensation hosting checkpoint |
 | [semantic-process-graph-policy.ts](src/semantic-process-graph-policy.ts) | Profile-owned graph policy shared by checked-source and Semantic Process admission |
 | [semantic-process-profile.ts](src/semantic-process-profile.ts) | Profile-selected operation capabilities |
+| [repeatable-subscription-admission.ts](src/repeatable-subscription-admission.ts) | Complete checked-graph and Program admission for the bounded subscription profile |
 | [checked-process-profile-shape.ts](src/checked-process-profile-shape.ts) | Profile-selected checked-node shapes |
 | [semantic-program-profile-shape.ts](src/semantic-program-profile-shape.ts) | Profile-selected operation shapes |
 | [semantic-profile-catalog.ts](src/semantic-profile-catalog.ts) | Semantic profile identities |
@@ -56,6 +57,7 @@ This contributor map assigns source-file responsibilities inside `@bpmn-lean/sem
 | [semantic-process-scope-cancellation.ts](src/semantic-process-scope-cancellation.ts) | Shared scope-subtree classification and regional cancellation |
 | [semantic-process-termination-runtime.ts](src/semantic-process-termination-runtime.ts) | Containing-scope termination |
 | [semantic-process-bounded-scope-runtime.ts](src/semantic-process-bounded-scope-runtime.ts) | Bounded-scope entry, deadline withdrawal, and interruption |
+| [semantic-process-monitored-scope-runtime.ts](src/semantic-process-monitored-scope-runtime.ts) | Child-scope entry with a non-interrupting boundary Timer |
 | [semantic-process-control-flow-runtime.ts](src/semantic-process-control-flow-runtime.ts) | Control-flow token transitions owning no wait, occurrence, or scope lifecycle |
 | [semantic-process-cyclic-control-flow-runtime.ts](src/semantic-process-cyclic-control-flow-runtime.ts) | Exclusive Merge token movement for the resumption-bounded cyclic capsule |
 | [semantic-process-scope-runtime.ts](src/semantic-process-scope-runtime.ts) | Token consumption at a scope-hosting Activity |
@@ -65,7 +67,9 @@ This contributor map assigns source-file responsibilities inside `@bpmn-lean/sem
 | [semantic-process-activity-arming.ts](src/semantic-process-activity-arming.ts) | Shared exact Activity record, User Task wait, and attached Timer arming for both boundary-task families |
 | [semantic-process-bounded-task-runtime.ts](src/semantic-process-bounded-task-runtime.ts) | A User Task occurrence owning an interrupting boundary Timer |
 | [semantic-process-message-bounded-task-runtime.ts](src/semantic-process-message-bounded-task-runtime.ts) | A User Task occurrence owning an interrupting boundary Message subscription |
+| [semantic-process-message-monitored-task-runtime.ts](src/semantic-process-message-monitored-task-runtime.ts) | Persistent boundary Message subscription and overlapping handler spawning for a User Task |
 | [semantic-process-monitored-task-runtime.ts](src/semantic-process-monitored-task-runtime.ts) | A User Task occurrence owning a non-interrupting boundary Timer |
+| [semantic-process-recurring-boundary-timer-runtime.ts](src/semantic-process-recurring-boundary-timer-runtime.ts) | Fresh recurring Timer identities and exact successor deadlines while the host remains active |
 | [semantic-process-activity-data-input-runtime.ts](src/semantic-process-activity-data-input-runtime.ts) | A User Task occurrence whose entry waits on one Process binding and copies it into the Activity's own scope |
 | [semantic-process-activity-data-input-output-runtime.ts](src/semantic-process-activity-data-input-output-runtime.ts) | One User Task occurrence whose input-dependent activation and exact output completion share the same input-bearing Activity-local scope |
 | [activity-data-input-contract.ts](src/activity-data-input-contract.ts) | The Task-neutral value describing one direct Data Input Association |

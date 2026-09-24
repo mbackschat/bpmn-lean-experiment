@@ -1,6 +1,7 @@
 import {
   COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID,
   MESSAGE_KEY_CORRELATION_CHECKPOINT_PROFILE_ID,
+  REPEATABLE_EVENT_SUBSCRIPTIONS_CHECKPOINT_PROFILE_ID,
   MessageChannelKind,
   SemanticOperationKind,
   isWellFormedSemanticProcessProgram,
@@ -40,6 +41,17 @@ import type {
 export function assessTemporalHostCapability(
   program: SemanticProcessProgram,
 ): TemporalHostCapabilityResult {
+  // ESL-ORDER-01 in REPEATABLE-EVENT-SUBSCRIPTIONS-PROPOSAL.md requires one profile-wide
+  // ordering contract; legacy operation shapes do not establish its hosting refinement.
+  if (program.identity.semanticProfile === REPEATABLE_EVENT_SUBSCRIPTIONS_CHECKPOINT_PROFILE_ID) {
+    return {
+      kind: TemporalHostCapabilityResultKind.Rejected,
+      failure: {
+        code: TemporalHostAdmissionFailureCode.SubscriptionSchedulerUnavailable,
+        evidence: "The repeatable Event subscription checkpoint has no Temporal hosting refinement.",
+      },
+    };
+  }
   const canSplitTokens = program.operations.some(
     ({ kind }) => classifyHostOperation(kind) === HostOperationClass.TokenSplit,
   );

@@ -468,7 +468,7 @@ The operation census must classify trigger creation and frontier activation as o
 | [Lean scenario contract](../../BpmnSemantics/Scenario.lean) | 437 | failed union only |
 | [Lean observation consumer](../../BpmnSemantics/SemanticProcess/Scenario.lean) | 206 | handler-effect/failed projection and selected scenario dispatch |
 | [Lean JSON](../../BpmnSemantics/SemanticProcessJsonMain.lean) | 186 | canonical encoding and selected publication dispatch |
-| [Temporal protocol](../../packages/temporal-adapter/protocol/src/contracts.ts) | 543 | failed receipt arm only |
+| [Temporal protocol](../../packages/temporal-adapter/protocol/src/contracts.ts) | 542 | failed receipt arm only |
 | [effect transport](../../packages/temporal-adapter/protocol/src/effect-transport.ts) | 618 | compensation key material and canonical tuple only |
 | [receipt validators](../../packages/temporal-adapter/protocol/src/lifecycle-results.ts) | 444 | failed receipt decoder only |
 | [publication validator](../../packages/temporal-adapter/protocol/src/semantic-publication-validation.ts) | 85 | failed discriminator only; extract state validation before other growth |

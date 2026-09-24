@@ -1,14 +1,22 @@
 /** The production Process start surface preserves semantic identity without exposing an SDK handle. */
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import { test } from "node:test";
+import { BpmnCompilationStatus, compileBpmnToSemanticProcess } from "../../../bpmn-source/dist/index.js";
+import { REPEATABLE_EVENT_SUBSCRIPTIONS_CHECKPOINT_PROFILE_ID, supportsSemanticProcessExecution } from "@bpmn-lean/semantic-core";
 import { enrollmentFixture } from "./worker-deployment-enrollment-fixture.ts";
 
 import {
   BpmnProcessStartResultKind,
+  BpmnProcessAdmissionResultKind,
+  assessBpmnProcessAdmission,
   startBpmnProcess,
 } from "@bpmn-lean/temporal-client";
 import {
   BpmnWorkflowHostInputKind,
+  assessTemporalHostCapability,
+  TemporalHostCapabilityResultKind,
+  TemporalHostAdmissionFailureCode,
   WorkflowChainBudgetKind,
   bpmnWorkflowContinuationV1,
   workflowChainProductionLimit,
@@ -17,6 +25,50 @@ import {
   processProgramFixture as program,
   processStartFixture as start,
 } from "./process-start-fixture.ts";
+
+for (const scenario of [
+  "non-interrupting-boundary-timer",
+  "activity-boundary-message",
+  "intermediate-catch-message",
+]) {
+  test(`${scenario} keeps legacy hosting but refuses the subscription checkpoint before Workflow start`, async () => {
+    const bytes = await readFile(new URL(`../../../../scenarios/${scenario}/process.bpmn`, import.meta.url));
+    for (const semanticProfile of [
+      `bpmn-2.0.2-${scenario}-draft`,
+      REPEATABLE_EVENT_SUBSCRIPTIONS_CHECKPOINT_PROFILE_ID,
+    ]) {
+      const compiled = await compileBpmnToSemanticProcess({
+        bytes, sourceId: scenario, semanticProfile, sourceOverlay: null,
+        limits: { maxBytes: 1024 * 1024, parserDeadlineMs: 1_000 },
+      });
+      assert.equal(compiled.status, BpmnCompilationStatus.Accepted);
+      if (compiled.status !== BpmnCompilationStatus.Accepted) throw new Error("Source refused");
+      const semanticProcess = compiled.semanticProcess;
+      const processStart = { ...start, processId: semanticProcess.processId };
+      assert.equal(supportsSemanticProcessExecution(processStart, semanticProcess), true);
+      const host = assessTemporalHostCapability(semanticProcess);
+      const admission = assessBpmnProcessAdmission(processStart, semanticProcess);
+      const calls: unknown[] = [];
+      const result = await startBpmnProcess(fakeClient(calls), processStart, semanticProcess,
+        { taskQueue: "process-task-queue" });
+      if (semanticProfile === REPEATABLE_EVENT_SUBSCRIPTIONS_CHECKPOINT_PROFILE_ID) {
+        assert.equal(host.kind, TemporalHostCapabilityResultKind.Rejected);
+        assert.equal(admission.kind, BpmnProcessAdmissionResultKind.Rejected);
+        assert.equal(result.kind, BpmnProcessStartResultKind.Rejected);
+        if (host.kind !== TemporalHostCapabilityResultKind.Rejected) throw new Error("Host admitted checkpoint");
+        assert.equal(host.failure.code, TemporalHostAdmissionFailureCode.SubscriptionSchedulerUnavailable);
+        assert.deepEqual(admission, { kind: BpmnProcessAdmissionResultKind.Rejected, failure: host.failure });
+        assert.deepEqual(result, { kind: BpmnProcessStartResultKind.Rejected, failure: host.failure });
+        assert.deepEqual(calls, []);
+      } else {
+        assert.equal(host.kind, TemporalHostCapabilityResultKind.Admitted);
+        assert.equal(admission.kind, BpmnProcessAdmissionResultKind.Admitted);
+        assert.equal(result.kind, BpmnProcessStartResultKind.Started);
+        assert.equal(calls.length, 1);
+      }
+    }
+  });
+}
 
 test("starts the exact Workflow request and returns only semantic Process identity", async () => {
   const calls: unknown[] = [];
