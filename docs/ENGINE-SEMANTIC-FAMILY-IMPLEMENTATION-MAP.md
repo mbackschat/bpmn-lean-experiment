@@ -34,7 +34,7 @@ The independently approved [boundary-handler retention proposal](capsules/COMPEN
 
 **Registered composition.** The exact travel-cancellation profile admits two boundary subjects, one dormant Compensation Event Sub-Process subject, a global synchronous throw, one restored Process binding and one direct dependency. Independent Lean/core execution and dedicated Temporal hosting preserve maximal handler frontiers, failure publication, sibling cancellation drain and replay. Six registered scenarios, the retained business model, About disclosure and runnable Product 1 example compose these checkpoints without broadening them.
 
-**Absent.** Wider source topology, Multi-Instance Sub-Process multiplicity, targeted/asynchronous throws, concurrent root triggers, general handler graphs, Transactions, CIB Compensation compatibility and Product 2 failed-Process support remain outside the registered capability.
+**Absent.** Wider source topology, Multi-Instance Sub-Process multiplicity, targeted/asynchronous throws, concurrent root triggers, general handler graphs, Transactions, CIB Compensation compatibility and complete Product 2 failed-Process projection and inspection beyond the [Product 2 public-contract checkpoint](BPM-PLATFORM-FAILED-PROCESS-PROPOSAL.md#public-contract-checkpoint) remain outside the registered capability.
 
 ## Interrupting Activity boundary Message
 

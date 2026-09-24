@@ -347,7 +347,9 @@ function noSuffixOccurrencePage(): FlowNodeOccurrencePage {
 
 function terminalExecutionPage(): ExecutionPublicationPage {
   const page = secondPage();
-  if (page.current === null) throw new TypeError("terminal fixture requires current execution");
+  if (page.current === null || page.current.state.status !== "running") {
+    throw new TypeError("terminal fixture requires current running execution");
+  }
   return {
     ...page,
     current: {

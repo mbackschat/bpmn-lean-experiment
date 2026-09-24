@@ -282,7 +282,7 @@ The third instance also refuted the first disposition's reach: the guard binds s
 A checklist item was corrected only where attention already was, leaving its siblings unaudited: a capsule's Required evidence list was amended for the two scenarios under discussion while two other Required items stayed listed and absent, a stale claim was fixed in the owning map but not in the capsule that copied it, one Required-Lean list was corrected while the sibling list and matrix row restating the same obligation were not, and the correction for that then declared itself the single owner while one sibling enumeration survived.
 
 Instances
-: 27
+: 28
 
 Disposition
 : `unguardable`
@@ -305,6 +305,8 @@ The twenty-fifth instance was found in standalone Activity-data arming review at
 The twenty-sixth instance is subscription closure at `9caca887`: registration and accepted checkpoint evidence were recorded in the capsule and family map while the invariant map still denied both, and the requirement ledger did not route the new lifetime account. The correction reads the unchanged ownership passages, records the bounded requirement disposition without widening predecessor rows, and links the current evidence owner. This remains an unchanged-claim completeness problem rather than a missing changed-section hash.
 
 The twenty-seventh instance is public Compensation registration at `953f5d64`: enrollment changed while IL, lifecycle, evidence-map and adapter-guide passages still described private checkpoint exclusions as current. The correction scans registration and absence claims in unchanged owners, distinguishes historical evidence from current admission, and preserves Product 2 and Transaction exclusions. The affected-owner check remains necessary even when every changed section is routed.
+
+The twenty-eighth instance is the Product 2 failed-Process public-contract checkpoint at `152f3973`: strict acceptance was implemented and recorded in its new owner while engine maps and the Compensation owner still required rejection. The correction scopes earlier rejection evidence to its historical checkpoints, links the later consumer acceptance boundary, and preserves unfinished persistence, recovery, service, UI and journey obligations. The same sweep also removes stale public-registration qualification claims from routed owners.
 
 ### Finding 16
 
