@@ -61,10 +61,17 @@ function retainsRegionalExclusionPremises(shape: RequiredProgramShape | undefine
     remainingKindsAre([Kind.EnterScope, Kind.Duplicate, Kind.CompleteScope, Kind.ThrowError, Kind.TerminateScope]);
 }
 
-test("every registered profile retains the structural premises of the regional exclusion investigation", () => {
+test("classifies every registered profile against the regional exclusion investigation", () => {
   for (const profile of Object.values(SemanticProfileId)) {
-    assert.equal(retainsRegionalExclusionPremises(requiredProgramShape(profile),
-      semanticGraphPolicyForProfile(profile)), true, profile);
+    const excluded = retainsRegionalExclusionPremises(requiredProgramShape(profile),
+      semanticGraphPolicyForProfile(profile));
+    switch (profile) {
+      case SemanticProfileId.RepeatableEventSubscriptions:
+        assert.equal(excluded, false, "subscription admission reopens regional frontiers under its own quantified account");
+        break;
+      default:
+        assert.equal(excluded, true, profile);
+    }
   }
 });
 

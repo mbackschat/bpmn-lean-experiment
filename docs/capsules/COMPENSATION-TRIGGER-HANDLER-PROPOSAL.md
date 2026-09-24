@@ -474,7 +474,7 @@ The operation census must classify trigger creation and frontier activation as o
 | [publication validator](../../packages/temporal-adapter/protocol/src/semantic-publication-validation.ts) | 85 | failed discriminator only; extract state validation before other growth |
 | [testkit Worker registry](../../packages/temporal-adapter/testkit/src/effect-probe.ts) | 524 | one exact operation and result registration only |
 | [process operations client](../../packages/temporal-adapter/client/src/process-operations-client.ts) | 592 | failed terminal case only |
-| [product interaction driver](../../packages/temporal-adapter/runner/src/host-interaction-driver.ts) | 354 | failed terminal predicate only |
+| [product interaction driver](../../packages/temporal-adapter/runner/src/host-interaction-driver.ts) | 350 | failed terminal predicate only |
 | [runnable Product 1 result](../../packages/temporal-adapter/runner/cli/runnable-mvp.ts) | 394 | failed receipt event/result arms only |
 | [runnable command exit](../../packages/temporal-adapter/runner/cli/runnable-mvp-command.ts) | 686 | one distinct failed-Process exit arm only |
 | [terminal receipt](../../packages/temporal-adapter/workflow/src/terminal-process-receipt.ts) | 670 | failed construction only |

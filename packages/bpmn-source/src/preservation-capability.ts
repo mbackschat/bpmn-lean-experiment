@@ -135,6 +135,7 @@ function preservationCapabilityKind(
     case SemanticProfileId.MappedSuccessServiceTask:
     case SemanticProfileId.MessageAddressedReceiveTask:
     case SemanticProfileId.MessageStart:
+    case SemanticProfileId.RepeatableEventSubscriptions:
     case SemanticProfileId.NonInterruptingBoundaryTimer:
     case SemanticProfileId.ParallelForkJoin:
     case SemanticProfileId.ParallelMultiInstanceUserTask:

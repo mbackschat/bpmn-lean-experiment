@@ -47,6 +47,8 @@ export const SemanticProfileId = Object.freeze({
     "cibseven-2.2.0-message-addressed-receive-task-draft",
   NonInterruptingBoundaryTimer:
     "bpmn-2.0.2-non-interrupting-boundary-timer-draft",
+  RepeatableEventSubscriptions:
+    "bpmn-2.0.2-repeatable-event-subscriptions-draft",
   ParallelForkJoin: "parallel-fork-join-draft",
   ServiceTaskEffect: "cibseven-2.2.0-service-task-effect-draft",
   ServiceTaskIncident:
@@ -85,6 +87,6 @@ export const COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID =
 export const SERVICE_TASK_INCIDENT_CHECKPOINT_PROFILE_ID =
   SemanticProfileId.ServiceTaskIncident;
 
-/** Admission-only identity for the reviewed subscription checkpoint; hosting and registration follow semantic review. */
+/** Preserves checkpoint consumers while the public catalog owns the registered identity. */
 export const REPEATABLE_EVENT_SUBSCRIPTIONS_CHECKPOINT_PROFILE_ID =
-  "bpmn-2.0.2-repeatable-event-subscriptions-draft" as const;
+  SemanticProfileId.RepeatableEventSubscriptions;

@@ -168,6 +168,7 @@ const hostPollIntervalMs = 250;
 
 type PendingResponse = {
   readonly response: HostInteractionResponse;
+  readonly index: number;
   consumed: boolean;
 };
 
@@ -177,8 +178,9 @@ export async function driveHostInteractions(
   wait: (delayMs: number) => Promise<void> = waitForHostDelay,
   observe: (event: HostInteractionEvent) => void = () => undefined,
 ): Promise<HostInteractionResult> {
-  const pending: PendingResponse[] = plan.map((response) => ({
+  const pending: PendingResponse[] = plan.map((response, index) => ({
     response,
+    index,
     consumed: false,
   }));
   let submitted = 0;
@@ -239,6 +241,7 @@ export async function driveHostInteractions(
     const outcome = await answerInteraction(
       selection.interaction,
       selection.pending.response,
+      selection.pending.index,
       port,
       wait,
       observe,
@@ -322,6 +325,7 @@ function answersInteraction(
 async function answerInteraction(
   interaction: EnabledInteraction,
   response: HostInteractionResponse,
+  responseIndex: number,
   port: HostInteractionPort,
   wait: (delayMs: number) => Promise<void>,
   observe: (event: HostInteractionEvent) => void,
@@ -357,7 +361,7 @@ async function answerInteraction(
     delayMs: response.delayMs,
   });
 
-  const result = await submitAnswer(interaction, response, port);
+  const result = await submitAnswer(interaction, response, responseIndex, port);
   observe({ kind: HostInteractionEventKind.InteractionResolved, result });
   if (!isCommitted(result)) {
     return {
@@ -374,14 +378,14 @@ async function answerInteraction(
 /**
  * Builds the command from the published occurrence identity only.
  *
- * The command identifier is occurrence-bound, so a resubmitted answer for the same occurrence
- * deduplicates against the same accepted command instead of creating a second one. It deliberately
- * excludes the submitted values; no reachable path submits differing content for one occurrence
- * because each configured response is consumed at most once.
+ * ESL-MESSAGE-01 permits multiple commands at one persistent subscription. Binding Message commands
+ * to the declared response slot keeps those deliveries distinct and makes the same plan deterministic
+ * across retries; occurrence identity still comes only from the published interaction.
  */
 async function submitAnswer(
   interaction: EnabledInteraction,
   response: HostInteractionResponse,
+  responseIndex: number,
   port: HostInteractionPort,
 ): Promise<HostInteractionResolution> {
   if (
@@ -415,7 +419,7 @@ async function submitAnswer(
     return port.submitMessage({
       kind: StimulusKind.DeliverMessage,
       commandId:
-        `mvp-deliver-message:${interaction.subscriptionId.elementId}:${interaction.subscriptionId.activation}`,
+        `mvp-deliver-message:${interaction.subscriptionId.elementId}:${interaction.subscriptionId.activation}:response:${responseIndex}`,
       subscriptionId: interaction.subscriptionId,
       channel: interaction.channel,
     });
@@ -427,7 +431,7 @@ async function submitAnswer(
     return port.submitMessage({
       kind: StimulusKind.DeliverPayloadMessage,
       commandId:
-        `mvp-deliver-payload-message:${interaction.subscriptionId.elementId}:${interaction.subscriptionId.activation}`,
+        `mvp-deliver-payload-message:${interaction.subscriptionId.elementId}:${interaction.subscriptionId.activation}:response:${responseIndex}`,
       subscriptionId: interaction.subscriptionId,
       channel: interaction.channel,
       payload: response.payload,

@@ -497,6 +497,28 @@ test("delivers a Message through the published subscription identity", async () 
   assert.equal(deliveries[0]?.channel.kind, MessageChannelKind.DirectMessage);
 });
 
+for (const [interaction, response] of [
+  [messageInteraction("reminder", 7), deliverResponse("reminder")],
+  [payloadMessageInteraction("reminder", 7), deliverPayloadResponse("reminder")],
+] as const) {
+  test(`${interaction.kind} distinguishes declared responses to one published subscription`, async () => {
+    const waiting = state({ enabledInteractions: [interaction] });
+    const runs: MessageDeliveryStimulus[][] = [];
+    for (let replay = 0; replay < 2; replay += 1) {
+      const { port, deliveries } = scriptedPort([
+        waiting, waiting, state({ status: ProcessStatus.Completed }),
+      ]);
+      const result = await driveHostInteractions([response, response], port, noWait);
+      assert.equal(result.kind, HostInteractionResultKind.Driven);
+      assert.equal(new Set(deliveries.map(({ commandId }) => commandId)).size, 2);
+      assert.deepEqual(deliveries.map(({ subscriptionId }) => subscriptionId),
+        [interaction.subscriptionId, interaction.subscriptionId]);
+      runs.push(deliveries);
+    }
+    assert.deepEqual(runs[0], runs[1]);
+  });
+}
+
 test("preserves a payload while answering the published payload Message interaction", async () => {
   const { port, deliveries } = scriptedPort([
     state({
@@ -524,7 +546,7 @@ test("preserves a payload while answering the published payload Message interact
   assert.equal(result.kind, HostInteractionResultKind.Driven);
   assert.deepEqual(deliveries, [{
     kind: StimulusKind.DeliverPayloadMessage,
-    commandId: "mvp-deliver-payload-message:Catch_invoice:1",
+    commandId: "mvp-deliver-payload-message:Catch_invoice:1:response:0",
     subscriptionId: {
       processInstanceId: instanceId,
       elementId: "Catch_invoice",

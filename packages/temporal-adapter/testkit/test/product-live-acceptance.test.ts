@@ -52,6 +52,10 @@ const liveMechanisms = [
     mechanism: "Message delivery through the published subscription identity",
   },
   {
+    example: "repeatable-event-subscriptions",
+    mechanism: "distinct planned Messages delivered through one persistent published subscription",
+  },
+  {
     example: "service-task-effect",
     mechanism: "product effect Activity returning its declared success arm",
   },

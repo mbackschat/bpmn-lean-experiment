@@ -100,7 +100,7 @@ Active work ID: `INTERNAL-COMMUTATION`.
 
 Risk band: RC internal scheduling.
 
-Next action: prepare the cost-bound [subscription closure](capsules/REPEATABLE-EVENT-SUBSCRIPTIONS-PROPOSAL.md#closure-evidence-boundary) target, then run independent review with clean integration. Registration is committed at `cebbc299`; package and corpus gates pass. Preserve the [proof domain](capsules/REPEATABLE-EVENT-SUBSCRIPTIONS-PROPOSAL.md#scheduling-proof-domain-amendment), legacy behavior and regional trial; no further proof infrastructure is selected.
+Next action: submit the completed [subscription closure corrections](capsules/REPEATABLE-EVENT-SUBSCRIPTIONS-PROPOSAL.md#closure-evidence-boundary) for the same-reviewer audit concurrently with clean integration. Review target `9caca887` failed the public-profile catalog guard. Preserve the [proof domain](capsules/REPEATABLE-EVENT-SUBSCRIPTIONS-PROPOSAL.md#scheduling-proof-domain-amendment), legacy behavior and regional trial; no further proof infrastructure is selected.
 
 Non-material repairs: [pending source ownership](../scripts/document-control-plane.test.ts) and [clock-sensitive witness serialization](../scripts/test-selection-coverage.test.ts). Infrastructure and Temporal gates cover them; semantic claims are unchanged.
 

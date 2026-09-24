@@ -1,0 +1,87 @@
+{
+  "kind": "runnableTemporalMvp",
+  "bpmn": {
+    "file": "../../scenarios/repeatable-event-subscriptions/boundary-message.bpmn",
+    "sourceId": "subscription-boundary-message",
+    "semanticProfile": "bpmn-2.0.2-repeatable-event-subscriptions-draft",
+    "limits": {
+      "maxBytes": 1048576,
+      "parserDeadlineMs": 1000
+    }
+  },
+  "process": {
+    "instanceId": "MvpExample_repeatable_event_subscriptions_1",
+    "initialVariables": []
+  },
+  "temporal": {
+    "address": "localhost:7233",
+    "namespace": "default",
+    "taskQueue": "bpmn-mvp",
+    "identity": "bpmn-mvp-command"
+  },
+  "interactions": [
+    {
+      "kind": "deliverMessage",
+      "channel": {
+        "kind": "operationMessage",
+        "interfaceId": "ApplicationMessages",
+        "interfaceOperationId": "ReceiveReminder",
+        "messageId": "ApplicationReminder"
+      },
+      "delayMs": 5
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "elementId": "HandleReminder",
+      "delayMs": 5,
+      "inputVariableNames": [],
+      "submittedValues": []
+    },
+    {
+      "kind": "deliverMessage",
+      "channel": {
+        "kind": "operationMessage",
+        "interfaceId": "ApplicationMessages",
+        "interfaceOperationId": "ReceiveReminder",
+        "messageId": "ApplicationReminder"
+      },
+      "delayMs": 5
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "elementId": "HandleReminder",
+      "delayMs": 5,
+      "inputVariableNames": [],
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "elementId": "UserTask_Sibling",
+      "delayMs": 5,
+      "inputVariableNames": [],
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "elementId": "UserTask_Trigger",
+      "delayMs": 5,
+      "inputVariableNames": [],
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "elementId": "UserTask_Outer",
+      "delayMs": 5,
+      "inputVariableNames": [],
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "elementId": "IndependentAudit",
+      "delayMs": 5,
+      "inputVariableNames": [],
+      "submittedValues": []
+    }
+  ],
+  "effectHandlers": []
+}
