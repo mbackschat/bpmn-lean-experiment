@@ -1,7 +1,20 @@
 import assert from "node:assert/strict";
+import { readdirSync } from "node:fs";
 import { test } from "node:test";
 
 import { runnableTestFiles, unselectedTestFiles } from "./test-selection-coverage.ts";
+
+test("host-clock winner witnesses with Worker replacement stay in the serial lane", () => {
+  const files = readdirSync(new URL("../packages/temporal-adapter/testkit/test/", import.meta.url));
+  for (const stem of [
+    "event-based-gateway",
+    "sequential-multi-instance-refinement",
+    "parallel-multi-instance-refinement",
+  ]) {
+    assert.ok(files.includes(`${stem}.temporal-serial-test.ts`),
+      `${stem} must not race concurrent suite startup against its native Timer`);
+  }
+});
 
 /**
  * Every tracked test file must be reachable from an automatically invoked gate.
