@@ -39,13 +39,13 @@ test("binds every retained and external model to exact local evidence", async ()
     compileModel: compileCorpusModel,
   });
 
-  assert.equal(report.models.length, 42);
-  assert.equal(report.retainedModels, 35);
+  assert.equal(report.models.length, 50);
+  assert.equal(report.retainedModels, 43);
   assert.equal(report.externalModels, 7);
-  assert.equal(report.acceptedModels, 35);
+  assert.equal(report.acceptedModels, 43);
   assert.equal(report.rejectedModels, 7);
   assert.equal(report.catalogReadyModels, 3);
-  assert.equal(report.mvpCapabilities.length, 35);
+  assert.equal(report.mvpCapabilities.length, 39);
   assert.deepEqual(report.uncoveredMvpCapabilities, []);
   assert.equal(report.models[0]?.product2, "journeyBacked");
   assert.deepEqual(
@@ -87,6 +87,14 @@ test("binds every retained and external model to exact local evidence", async ()
       "activity-data-input-present",
       "activity-data-output-supplied",
       "activity-data-input-output-present",
+      "subscription-boundary-message-repeat",
+      "subscription-boundary-timer-repeat",
+      "subscription-subprocess-boundary-timer-repeat",
+      "subscription-subprocess-boundary-one-shot-fire",
+      "subscription-message-host-with-child-entry-repeat",
+      "subscription-catch-message-resume",
+      "subscription-catch-timer-resume",
+      "subscription-receive-task-resume",
     ],
   );
 });

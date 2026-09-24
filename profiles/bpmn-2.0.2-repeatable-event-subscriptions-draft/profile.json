@@ -1,0 +1,77 @@
+{
+  "kind": "semanticProfile",
+  "id": "bpmn-2.0.2-repeatable-event-subscriptions-draft",
+  "status": "draft",
+  "claim": "bpmn-2.0.2-bounded-repeatable-event-subscription-lifetime",
+  "normativeAuthority": {
+    "name": "OMG Business Process Model and Notation",
+    "version": "2.0.2",
+    "references": [
+      "Clause 13.5.2",
+      "Clause 13.5.3",
+      "Clause 13.2",
+      "Table 10.91",
+      "Table 10.101"
+    ]
+  },
+  "bpmn": {
+    "process": "private-executable",
+    "features": [
+      "none-start-event",
+      "user-task",
+      "user-task-instance-completion",
+      "message-intermediate-catch-event",
+      "message-addressed-receive-task",
+      "timer-intermediate-catch-event",
+      "interrupting-and-non-interrupting-user-task-message-boundary",
+      "interrupting-and-non-interrupting-user-task-timer-boundary",
+      "interrupting-and-non-interrupting-subprocess-timer-boundary",
+      "literal-time-duration-pt1s",
+      "non-interrupting-time-cycle-r-pt1s",
+      "overlapping-handler-occurrences",
+      "exact-subscription-withdrawal",
+      "depth-one-embedded-subprocess",
+      "acyclic-parallel-fork-forest",
+      "none-end-event",
+      "terminate-end-event",
+      "sequence-flow",
+      "quiescent-process-completion"
+    ],
+    "extensions": [],
+    "relationships": [
+      "CIB-AGR-0001",
+      "CIB-OP-0001"
+    ]
+  },
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "comparison": {
+    "trace": "exact-after-canonical-projection",
+    "semanticConcurrency": true
+  },
+  "excluded": [
+    "cib-subscription-compatibility-claim",
+    "general-bpmn-process-execution-conformance",
+    "more-than-one-boundary-or-timer-definition",
+    "multiple-or-deeper-embedded-subprocesses",
+    "message-boundary-on-subprocess",
+    "finite-cycle-count-calendar-expression-or-timer-start-recurrence",
+    "loops-merges-joins-and-conditional-routing",
+    "payload-key-correlation-data-effect-call-multi-instance-event-subprocess-and-transaction-composition",
+    "portable-physical-simultaneity-order",
+    "external-timer-injection",
+    "public-scheduled-choice",
+    "bursts-over-eight-internal-operations",
+    "production-history-compatibility"
+  ]
+}

@@ -177,7 +177,7 @@ test("distinguishes boundary variants by interruption and attached element", () 
   assert.ok(!capabilities.includes("interruptingUserTaskBoundaryTimerEvent"));
 });
 
-test("classifies only an interrupting Message Boundary Event on a User Task", () => {
+test("distinguishes interrupting and repeatable Message boundaries on a User Task", () => {
   const interrupting = detectExecutableBpmnCapabilities(`
     <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL">
       <bpmn:process id="Process_Withdrawal" isExecutable="true">
@@ -192,8 +192,7 @@ test("classifies only an interrupting Message Boundary Event on a User Task", ()
   assert.ok(
     interrupting.includes("interruptingUserTaskBoundaryMessageEvent"),
   );
-  assert.throws(
-    () => detectExecutableBpmnCapabilities(`
+  const repeatable = detectExecutableBpmnCapabilities(`
       <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL">
         <bpmn:process id="Process_Reminder" isExecutable="true">
           <bpmn:userTask id="Review" />
@@ -205,9 +204,32 @@ test("classifies only an interrupting Message Boundary Event on a User Task", ()
           </bpmn:boundaryEvent>
         </bpmn:process>
       </bpmn:definitions>
-    `),
-    /unclassified executable BPMN non-interrupting User Task boundary Message/u,
-  );
+    `);
+  assert.ok(repeatable.includes("nonInterruptingUserTaskBoundaryMessageEvent"));
+  assert.ok(!repeatable.includes("interruptingUserTaskBoundaryMessageEvent"));
+});
+
+test("distinguishes recurring Timer handlers from one-shot handlers at both Activity loci", () => {
+  for (const [host, oneShot, recurring] of [
+    ["userTask", "nonInterruptingUserTaskBoundaryTimerEvent", "recurringUserTaskBoundaryTimerEvent"],
+    ["subProcess", "nonInterruptingSubProcessBoundaryTimerEvent", "recurringSubProcessBoundaryTimerEvent"],
+  ] as const) {
+    const xml = `<bpmn:definitions><bpmn:process id="Process" isExecutable="true">
+      <bpmn:${host} id="Host" />
+      <bpmn:boundaryEvent id="Reminder" attachedToRef="Host" cancelActivity="false">
+        <bpmn:timerEventDefinition><bpmn:timeCycle>R/PT1S</bpmn:timeCycle></bpmn:timerEventDefinition>
+      </bpmn:boundaryEvent>
+    </bpmn:process></bpmn:definitions>`;
+    for (const input of [xml, xml.replace('cancelActivity="false"', 'cancelActivity="0"')]) {
+      const capabilities = detectExecutableBpmnCapabilities(input);
+      assert.ok(capabilities.includes(recurring));
+      assert.ok(!capabilities.includes(oneShot));
+    }
+    const once = detectExecutableBpmnCapabilities(xml.replace("<bpmn:timeCycle>R/PT1S</bpmn:timeCycle>", "<bpmn:timeDuration>PT1S</bpmn:timeDuration>"));
+    assert.ok(once.includes(oneShot));
+    assert.ok(!once.includes(recurring));
+    assert.throws(() => detectExecutableBpmnCapabilities(xml.replace('cancelActivity="false"', 'cancelActivity="true"')), /recurring/);
+  }
 });
 
 test("classifies only an explicitly declared Multi-Instance User Task mode", () => {

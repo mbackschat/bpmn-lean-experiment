@@ -164,6 +164,69 @@ export function requireDurableTimerHistory(
 }
 
 /**
+ * Accounts for the subscription profile's single native Timer through replacement and withdrawal.
+ *
+ * Exact logical deadlines are checked by the semantic trace; physical deadline preservation has its own direct-VM oracle. This history check detects a host that fabricates those firings without durable Timers. Harness termination may abandon one pending Timer, while normal completion must settle it.
+ */
+export function requireSubscriptionTimerHistory(
+  history: TemporalHistory,
+  expectedFirings: number,
+): void {
+  if (!Number.isSafeInteger(expectedFirings) || expectedFirings < 0) {
+    throw new TypeError("Subscription Timer evidence requires a non-negative firing count");
+  }
+  const issued = new Set<string>();
+  let pending: Readonly<{ eventId: bigint; timerId: string }> | undefined;
+  let previousEventId = 0n;
+  let firings = 0;
+  let terminated = false;
+  for (const rawEvent of history.events) {
+    const event = asRecord(rawEvent, "Temporal history event");
+    const eventId = integerToBigInt(event.eventId);
+    if (eventId <= previousEventId || terminated) {
+      throw new TypeError("Subscription Timer history has unordered or post-termination events");
+    }
+    previousEventId = eventId;
+    const start = optionalRecord(event.timerStartedEventAttributes);
+    const fire = optionalRecord(event.timerFiredEventAttributes);
+    const cancel = optionalRecord(event.timerCanceledEventAttributes);
+    if ([start, fire, cancel].filter((value) => value !== undefined).length > 1) {
+      throw new TypeError("Subscription Timer history has conflicting event attributes");
+    }
+    if (start !== undefined) {
+      if (
+        pending !== undefined || typeof start.timerId !== "string" ||
+        start.timerId.length === 0 || issued.has(start.timerId) ||
+        durationMilliseconds(start.startToFireTimeout, "Subscription Timer duration") < 1n
+      ) {
+        throw new TypeError("Subscription Timer start overlaps, reuses identity, or has no positive delay");
+      }
+      issued.add(start.timerId);
+      pending = { eventId, timerId: start.timerId };
+    } else {
+      const disposition = fire ?? cancel;
+      if (disposition !== undefined) {
+        if (
+          pending === undefined || disposition.timerId !== pending.timerId ||
+          integerToBigInt(disposition.startedEventId) !== pending.eventId
+        ) {
+          throw new TypeError("Subscription Timer disposition does not identify its outstanding start");
+        }
+        if (fire !== undefined) firings += 1;
+        pending = undefined;
+      }
+    }
+    terminated = optionalRecord(event.workflowExecutionTerminatedEventAttributes) !== undefined;
+  }
+  if (firings !== expectedFirings) {
+    throw new TypeError(`Subscription Timer firing count ${firings} differs from ${expectedFirings}`);
+  }
+  if (pending !== undefined && !terminated) {
+    throw new TypeError("Subscription Timer history leaves an outstanding Timer");
+  }
+}
+
+/**
  * Binds canonical Service Task completion to one exact non-local Activity execution policy.
  *
  * The request must be the committed-intent rendering, retries remain raw history evidence, and

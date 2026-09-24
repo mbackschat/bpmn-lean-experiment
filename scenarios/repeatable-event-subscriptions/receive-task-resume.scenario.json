@@ -1,0 +1,101 @@
+{
+  "kind": "scenario",
+  "id": "subscription-receive-task-resume",
+  "profile": "bpmn-2.0.2-repeatable-event-subscriptions-draft",
+  "bpmn": {
+    "id": "subscription-receive-task",
+    "relativePath": "scenarios/repeatable-event-subscriptions/receive-task.bpmn",
+    "sha256": "63d1bd04e2eecd93b669272956e06124eea601cbd82ed83fabb0488f4fed3fb0",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "startProcess",
+      "commandId": "start-subscription",
+      "processId": "Process_TerminateEnd",
+      "instanceId": "Instance_receive-task_resume",
+      "initialVariables": []
+    },
+    {
+      "kind": "deliverMessage",
+      "commandId": "deliver-response",
+      "subscriptionId": {
+        "processInstanceId": "Instance_receive-task_resume",
+        "elementId": "UserTask_Sibling",
+        "activation": 1
+      },
+      "channel": {
+        "kind": "directMessage",
+        "messageId": "ApplicationReminder"
+      }
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-UserTask_Trigger-1",
+      "taskId": {
+        "processInstanceId": "Instance_receive-task_resume",
+        "elementId": "UserTask_Trigger",
+        "activation": 1
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "deliverMessage",
+      "commandId": "stale-response",
+      "subscriptionId": {
+        "processInstanceId": "Instance_receive-task_resume",
+        "elementId": "UserTask_Sibling",
+        "activation": 1
+      },
+      "channel": {
+        "kind": "directMessage",
+        "messageId": "ApplicationReminder"
+      }
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-UserTask_Outer-1",
+      "taskId": {
+        "processInstanceId": "Instance_receive-task_resume",
+        "elementId": "UserTask_Outer",
+        "activation": 1
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-IndependentAudit-1",
+      "taskId": {
+        "processInstanceId": "Instance_receive-task_resume",
+        "elementId": "IndependentAudit",
+        "activation": 1
+      },
+      "submittedValues": []
+    }
+  ],
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 13.5.2",
+      "BPMN 2.0.2 Clause 13.5.3",
+      "BPMN 2.0.2 Clause 13.2",
+      "BPMN 2.0.2 Table 10.91",
+      "BPMN 2.0.2 Table 10.101"
+    ],
+    "cibRevision": "5a45b47ea22688d774de97277c3ff7013f54fdd2",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/UserTaskActivityBehavior.java"
+    ]
+  }
+}

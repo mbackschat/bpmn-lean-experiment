@@ -67,7 +67,7 @@ export function leanInterpreterBatchTimeoutMsFor(caseCount: number): number {
  * silently outrunning this number. Raising it for a larger catalog keeps the declared per-case rate
  * intact and must keep the hosted CI budget at least 50% above it.
  */
-export const defaultWarmBudgetMs = 93_600;
+export const defaultWarmBudgetMs = 111_800;
 
 /**
  * Load per core above which a timing figure is not a comparable measurement.

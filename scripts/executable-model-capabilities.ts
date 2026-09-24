@@ -274,8 +274,25 @@ function addBoundaryCapability(
   const attachedTo = namesById.get(attachedToId) ?? "unknown";
   const attachedElement = elementsById.get(attachedToId);
   const definition = eventDefinition(event);
+  const interrupting = event.attributes.cancelActivity !== "false" && event.attributes.cancelActivity !== "0";
   if (definition === "timerEventDefinition") {
-    const interrupting = event.attributes.cancelActivity !== "false";
+    const timer = event.children.find(({ name }) => name === "timerEventDefinition");
+    const recurring = timer !== undefined && hasDirectChild(timer, "timeCycle");
+    if (recurring) {
+      if (interrupting || attachedElement === undefined || hasDirectChild(attachedElement, "multiInstanceLoopCharacteristics")) {
+        throw new TypeError("unclassified executable BPMN recurring boundary Timer host");
+      }
+      switch (attachedTo) {
+        case "userTask":
+          capabilities.add("recurringUserTaskBoundaryTimerEvent");
+          return;
+        case "subProcess":
+          capabilities.add("recurringSubProcessBoundaryTimerEvent");
+          return;
+        default:
+          throw new TypeError("unclassified executable BPMN recurring boundary Timer host");
+      }
+    }
     if (attachedTo === "userTask") {
       if (
         attachedElement !== undefined &&
@@ -311,8 +328,10 @@ function addBoundaryCapability(
         : "nonInterruptingUserTaskBoundaryTimerEvent");
       return;
     }
-    if (attachedTo === "subProcess" && interrupting) {
-      capabilities.add("interruptingSubProcessBoundaryTimerEvent");
+    if (attachedTo === "subProcess") {
+      capabilities.add(interrupting
+        ? "interruptingSubProcessBoundaryTimerEvent"
+        : "nonInterruptingSubProcessBoundaryTimerEvent");
       return;
     }
   }
@@ -327,12 +346,9 @@ function addBoundaryCapability(
     }
   }
   if (definition === "messageEventDefinition" && attachedTo === "userTask") {
-    if (event.attributes.cancelActivity === "false") {
-      throw new TypeError(
-        "unclassified executable BPMN non-interrupting User Task boundary Message",
-      );
-    }
-    capabilities.add("interruptingUserTaskBoundaryMessageEvent");
+    capabilities.add(interrupting
+      ? "interruptingUserTaskBoundaryMessageEvent"
+      : "nonInterruptingUserTaskBoundaryMessageEvent");
     return;
   }
   throw new TypeError(

@@ -1,0 +1,75 @@
+{
+  "kind": "scenario",
+  "id": "subscription-catch-timer-cancel",
+  "profile": "bpmn-2.0.2-repeatable-event-subscriptions-draft",
+  "bpmn": {
+    "id": "subscription-catch-timer",
+    "relativePath": "scenarios/repeatable-event-subscriptions/catch-timer.bpmn",
+    "sha256": "10b28698faec8d5f45d8cdd7eb56fa35132dfbe1d71c25b28849141317b4980f",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "startProcess",
+      "commandId": "start-subscription",
+      "processId": "Process_TerminateEnd",
+      "instanceId": "Instance_catch-timer_cancel",
+      "initialVariables": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-UserTask_Trigger-1",
+      "taskId": {
+        "processInstanceId": "Instance_catch-timer_cancel",
+        "elementId": "UserTask_Trigger",
+        "activation": 1
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-UserTask_Outer-1",
+      "taskId": {
+        "processInstanceId": "Instance_catch-timer_cancel",
+        "elementId": "UserTask_Outer",
+        "activation": 1
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-IndependentAudit-1",
+      "taskId": {
+        "processInstanceId": "Instance_catch-timer_cancel",
+        "elementId": "IndependentAudit",
+        "activation": 1
+      },
+      "submittedValues": []
+    }
+  ],
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 13.5.2",
+      "BPMN 2.0.2 Clause 13.5.3",
+      "BPMN 2.0.2 Clause 13.2",
+      "BPMN 2.0.2 Table 10.91",
+      "BPMN 2.0.2 Table 10.101"
+    ],
+    "cibRevision": "5a45b47ea22688d774de97277c3ff7013f54fdd2",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/UserTaskActivityBehavior.java"
+    ]
+  }
+}

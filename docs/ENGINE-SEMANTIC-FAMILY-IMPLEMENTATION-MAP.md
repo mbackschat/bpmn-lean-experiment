@@ -12,7 +12,7 @@ The union of these sections is not a coverage figure. BPMN requirement coverage,
 
 ## Implemented
 
-The families with a section here are the three boundary-Timer loci, the two Multi-Instance User Tasks, the two direct Activity data User Tasks, the Message payload Catch Event, Message key correlation, the Activity boundary Message Event, and the in-progress Compensation retention and parent-snapshot family. Each section names its own rules, evidence lanes, and absences, and is the authority for that family rather than a summary of one.
+Each section below owns one family’s exact rules, evidence lanes, and absences, including its closure status. Its claims do not extend to another family or an excluded composition.
 
 ## Explicitly absent
 
@@ -66,7 +66,15 @@ The [non-interrupting boundary Timer specification](capsules/NON-INTERRUPTING-BO
 
 **Implemented.** Source admission resolves `cancelActivity` into the closed `BoundaryInterruption` value, and the sibling profiles remain disjoint. The `awaitMonitoredUserTask` operation, Lean, the independent core, two registered schedules with mutations, Worker absence, shared-activation refusal, and replay are green. Firing keeps the monitored task live, spawns exactly one boundary task, and closes after both one-sided completions.
 
-**Absent.** CIB observation is not selected. Repeated firing is outside the slice and would require an occurrence record before the one-sided join could remain unambiguous.
+**Absent.** CIB observation is not selected. Repeated firing remains outside this one-shot profile; the separate [subscription account](#repeatable-event-subscriptions) owns its bounded implementation. Calendar expressions and finite recurrence counts remain unsupported.
+
+## Repeatable Event subscriptions
+
+The [subscription capsule](capsules/REPEATABLE-EVENT-SUBSCRIPTIONS-PROPOSAL.md) has an accepted semantic checkpoint and implemented hosting and registration; governed closure remains open.
+
+**Implemented.** The normative profile composes payload-free Message catches/Receive Tasks, exact `PT1S` Timer catches, interrupting/non-interrupting User Task Message/Timer boundaries and Sub-Process Timer boundaries within one depth-one, burst-bounded fork forest. Repeated Messages retain their exact subscription; `R/PT1S` non-interrupting boundaries issue fresh Timers and preserve overlapping handler occurrences. Host completion withdraws future triggers, regional cancellation preserves outside work, and inner Terminate retains the subscribed body until ordinary completion. The four selected scheduling proposition groups and finite canonical-publication lift are accepted. Registered application-review scenarios compare independent Lean/core execution and durable Temporal delivery, with retained corpus and canonical About disclosures.
+
+**Absent.** General recurrence expressions, multiple Timers/boundaries/child scopes, deeper scopes, Message boundaries on Sub-Processes, joins/loops, and composition with effects, data mediation, Multi-Instance, Call Activities, Event Sub-Processes or Transactions remain excluded. Public scheduled choice, CIB subscription compatibility, browser-catalog eligibility and capsule closure are not established.
 
 ## Interrupting Sub-Process boundary Timer
 

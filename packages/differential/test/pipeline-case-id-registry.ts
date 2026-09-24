@@ -72,6 +72,20 @@ export const pipelineCaseIdRegistry = Object.freeze([
   "activity-data-input-output-null",
   "activity-data-input-output-absent",
   "activity-data-input-output-omitted",
+  "subscription-boundary-message-repeat",
+  "subscription-boundary-message-completion-first",
+  "subscription-boundary-timer-repeat",
+  "subscription-boundary-timer-completion-first",
+  "subscription-subprocess-boundary-timer-repeat",
+  "subscription-subprocess-boundary-timer-completion-first",
+  "subscription-subprocess-boundary-one-shot-fire",
+  "subscription-message-host-with-child-entry-repeat",
+  "subscription-catch-message-resume",
+  "subscription-catch-message-cancel",
+  "subscription-catch-timer-resume",
+  "subscription-catch-timer-cancel",
+  "subscription-receive-task-resume",
+  "subscription-receive-task-cancel",
 ] as const);
 
 export type PipelineCaseId = typeof pipelineCaseIdRegistry[number];

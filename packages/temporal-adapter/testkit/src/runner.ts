@@ -5,6 +5,7 @@ import type {
   Scenario,
   SemanticProcessProgram,
 } from "@bpmn-lean/semantic-core";
+import { REPEATABLE_EVENT_SUBSCRIPTIONS_CHECKPOINT_PROFILE_ID } from "@bpmn-lean/semantic-core";
 import type {
   WorkflowHandle,
 } from "@temporalio/client";
@@ -57,6 +58,7 @@ import {
 import { EffectExecutionSchedule } from "./effect-probe.js";
 import {
   requireDurableTimerHistory,
+  requireSubscriptionTimerHistory,
   reconcileHarnessTraceEvidence,
 } from "./harness-evidence.js";
 import {
@@ -65,7 +67,7 @@ import {
   openTimersInTrace,
   requireCompletionStimuli,
   requireOptionalEffectExecution,
-  requireOptionalTimerStimulus,
+  requireTimerStimuli,
   requireStartStimulus,
   requiresImmediateTimerTerminalResult,
   scenarioResultFromTrace,
@@ -367,7 +369,8 @@ export class TemporalScenarioRunner {
       completedReceipt,
       ...interaction
     } = delivery;
-    const timerStimulus = requireOptionalTimerStimulus(scenario);
+    const timerStimuli = requireTimerStimuli(scenario);
+    const timerStimulus = timerStimuli[0];
     let timerReceipt: CompletedProcessReceipt | undefined;
     if (timerStimulus !== undefined) {
       if (
@@ -435,7 +438,9 @@ export class TemporalScenarioRunner {
       receipt,
       history as TemporalHistory,
     );
-    if (timerStimulus !== undefined) {
+    if (scenario.profile === REPEATABLE_EVENT_SUBSCRIPTIONS_CHECKPOINT_PROFILE_ID) {
+      requireSubscriptionTimerHistory(history as TemporalHistory, timerStimuli.length);
+    } else if (timerStimulus !== undefined) {
       requireDurableTimerHistory(
         history as TemporalHistory,
         timerStimulus.logicalTimeMs,

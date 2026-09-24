@@ -1,0 +1,95 @@
+{
+  "kind": "scenario",
+  "id": "subscription-subprocess-boundary-one-shot-fire",
+  "profile": "bpmn-2.0.2-repeatable-event-subscriptions-draft",
+  "bpmn": {
+    "id": "subscription-subprocess-boundary-one-shot",
+    "relativePath": "scenarios/repeatable-event-subscriptions/subprocess-boundary-one-shot.bpmn",
+    "sha256": "612d19bb38abe546ac9181b82c81420ca3050a7257c805b842771ba122088e3d",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "startProcess",
+      "commandId": "start-subscription",
+      "processId": "Process_TerminateEnd",
+      "instanceId": "Instance_subprocess-boundary-one-shot_fire",
+      "initialVariables": []
+    },
+    {
+      "kind": "fireTimer",
+      "commandId": "fire-timer-sha256:bc2da8fdbf5a294132aac7bbb00c01e4e005171d48dde763a5fb74e4251e6cdc",
+      "timerId": {
+        "processInstanceId": "Instance_subprocess-boundary-one-shot_fire",
+        "elementId": "Reminder",
+        "activation": 1
+      },
+      "logicalTimeMs": 1000
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-UserTask_Trigger-1",
+      "taskId": {
+        "processInstanceId": "Instance_subprocess-boundary-one-shot_fire",
+        "elementId": "UserTask_Trigger",
+        "activation": 1
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-HandleReminder-1",
+      "taskId": {
+        "processInstanceId": "Instance_subprocess-boundary-one-shot_fire",
+        "elementId": "HandleReminder",
+        "activation": 1
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-UserTask_Outer-1",
+      "taskId": {
+        "processInstanceId": "Instance_subprocess-boundary-one-shot_fire",
+        "elementId": "UserTask_Outer",
+        "activation": 1
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-IndependentAudit-1",
+      "taskId": {
+        "processInstanceId": "Instance_subprocess-boundary-one-shot_fire",
+        "elementId": "IndependentAudit",
+        "activation": 1
+      },
+      "submittedValues": []
+    }
+  ],
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 13.5.2",
+      "BPMN 2.0.2 Clause 13.5.3",
+      "BPMN 2.0.2 Clause 13.2",
+      "BPMN 2.0.2 Table 10.91",
+      "BPMN 2.0.2 Table 10.101"
+    ],
+    "cibRevision": "5a45b47ea22688d774de97277c3ff7013f54fdd2",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/UserTaskActivityBehavior.java"
+    ]
+  }
+}

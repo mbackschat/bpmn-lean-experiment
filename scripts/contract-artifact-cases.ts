@@ -331,6 +331,20 @@ export const normativeArtifactCases = Object.freeze([
     scenarioRelativePath:
       "scenarios/activity-data-input-output-user-task/omitted.scenario.json",
   }),
+  Object.freeze({ scenarioRelativePath: "scenarios/repeatable-event-subscriptions/boundary-message-repeat.scenario.json" }),
+  Object.freeze({ scenarioRelativePath: "scenarios/repeatable-event-subscriptions/boundary-message-completion-first.scenario.json" }),
+  Object.freeze({ scenarioRelativePath: "scenarios/repeatable-event-subscriptions/boundary-timer-repeat.scenario.json" }),
+  Object.freeze({ scenarioRelativePath: "scenarios/repeatable-event-subscriptions/boundary-timer-completion-first.scenario.json" }),
+  Object.freeze({ scenarioRelativePath: "scenarios/repeatable-event-subscriptions/subprocess-boundary-timer-repeat.scenario.json" }),
+  Object.freeze({ scenarioRelativePath: "scenarios/repeatable-event-subscriptions/subprocess-boundary-timer-completion-first.scenario.json" }),
+  Object.freeze({ scenarioRelativePath: "scenarios/repeatable-event-subscriptions/subprocess-boundary-one-shot-fire.scenario.json" }),
+  Object.freeze({ scenarioRelativePath: "scenarios/repeatable-event-subscriptions/message-host-with-child-entry-repeat.scenario.json" }),
+  Object.freeze({ scenarioRelativePath: "scenarios/repeatable-event-subscriptions/catch-message-resume.scenario.json" }),
+  Object.freeze({ scenarioRelativePath: "scenarios/repeatable-event-subscriptions/catch-message-cancel.scenario.json" }),
+  Object.freeze({ scenarioRelativePath: "scenarios/repeatable-event-subscriptions/catch-timer-resume.scenario.json" }),
+  Object.freeze({ scenarioRelativePath: "scenarios/repeatable-event-subscriptions/catch-timer-cancel.scenario.json" }),
+  Object.freeze({ scenarioRelativePath: "scenarios/repeatable-event-subscriptions/receive-task-resume.scenario.json" }),
+  Object.freeze({ scenarioRelativePath: "scenarios/repeatable-event-subscriptions/receive-task-cancel.scenario.json" }),
 ]);
 
 export type ArtifactCase = Readonly<{

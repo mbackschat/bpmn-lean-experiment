@@ -1,3 +1,4 @@
+import { repeatableSubscriptionPipelineCases } from "./repeatable-subscriptions-pipeline-cases.ts";
 /**
  * Answer-free pipeline case catalog and retained seeded-disagreement mutations.
  */
@@ -593,4 +594,5 @@ export const pipelineCases = Object.freeze([
   ...activityDataInputPipelineCases,
   ...activityDataOutputPipelineCases,
   ...activityDataInputOutputPipelineCases,
+  ...repeatableSubscriptionPipelineCases,
 ]);

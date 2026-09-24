@@ -1306,6 +1306,346 @@
       }
     },
     {
+      "id": "application-subscription-boundary-message",
+      "title": "Review an application with repeated reminder Messages",
+      "businessPurpose": "Keep application review open while repeated reminder Messages create independent response tasks; withdraw reminders when review finishes.",
+      "cloneFamily": "subprocess-termination",
+      "constructs": [
+        "boundaryEvent",
+        "endEvent",
+        "parallelGateway",
+        "process",
+        "sequenceFlow",
+        "startEvent",
+        "subProcess",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "embeddedSubProcess",
+        "parallelSplit",
+        "terminateEnd",
+        "userTaskWait",
+        "userTaskCompletion",
+        "messageWait"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/repeatable-event-subscriptions/boundary-message.bpmn",
+        "sha256": "953b2c1dac712e890414f335029e5701b25828b928540b8597133e105196c9b8",
+        "scenarioRelativePath": "scenarios/repeatable-event-subscriptions/boundary-message-repeat.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "bpmn-2.0.2-repeatable-event-subscriptions-draft",
+      "admission": {
+        "kind": "accepted"
+      },
+      "pipelineCaseId": "subscription-boundary-message-repeat",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "The subscription lifetime and cancellation paths have no complete production-backed browser journey."
+      }
+    },
+    {
+      "id": "application-subscription-boundary-timer",
+      "title": "Remind an application reviewer every second",
+      "businessPurpose": "Create overlapping reminder response tasks while application review is active, then finish those responses after withdrawing future deadlines.",
+      "cloneFamily": "subprocess-termination",
+      "constructs": [
+        "boundaryEvent",
+        "endEvent",
+        "parallelGateway",
+        "process",
+        "sequenceFlow",
+        "startEvent",
+        "subProcess",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "embeddedSubProcess",
+        "parallelSplit",
+        "terminateEnd",
+        "userTaskWait",
+        "userTaskCompletion",
+        "timerWait",
+        "nonInterruptingBoundaryTimer"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/repeatable-event-subscriptions/boundary-timer.bpmn",
+        "sha256": "0e25596daf5e47f538f5dd60d014a0777618bdbf988565e83ab006852d6fab2e",
+        "scenarioRelativePath": "scenarios/repeatable-event-subscriptions/boundary-timer-repeat.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "bpmn-2.0.2-repeatable-event-subscriptions-draft",
+      "admission": {
+        "kind": "accepted"
+      },
+      "pipelineCaseId": "subscription-boundary-timer-repeat",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "The subscription lifetime and cancellation paths have no complete production-backed browser journey."
+      }
+    },
+    {
+      "id": "application-subscription-subprocess-boundary-timer",
+      "title": "Remind the application review team until its region closes",
+      "businessPurpose": "Continue periodic reminders for the review region, stop its remaining internal work on cancellation, and finish parent-owned responses and independent audit.",
+      "cloneFamily": "subprocess-termination",
+      "constructs": [
+        "boundaryEvent",
+        "endEvent",
+        "parallelGateway",
+        "process",
+        "sequenceFlow",
+        "startEvent",
+        "subProcess",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "embeddedSubProcess",
+        "parallelSplit",
+        "terminateEnd",
+        "userTaskWait",
+        "userTaskCompletion",
+        "timerWait",
+        "nonInterruptingBoundaryTimer"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/repeatable-event-subscriptions/subprocess-boundary-timer.bpmn",
+        "sha256": "90bdc2526628f55d9c205ab18c87d23e3bad708a2440e059b884b5848c1e5bf6",
+        "scenarioRelativePath": "scenarios/repeatable-event-subscriptions/subprocess-boundary-timer-repeat.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "bpmn-2.0.2-repeatable-event-subscriptions-draft",
+      "admission": {
+        "kind": "accepted"
+      },
+      "pipelineCaseId": "subscription-subprocess-boundary-timer-repeat",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "The subscription lifetime and cancellation paths have no complete production-backed browser journey."
+      }
+    },
+    {
+      "id": "application-subscription-subprocess-boundary-one-shot",
+      "title": "Escalate a delayed application review once",
+      "businessPurpose": "Create one response task at the review-region deadline and preserve that parent-owned work after internal review termination.",
+      "cloneFamily": "subprocess-termination",
+      "constructs": [
+        "boundaryEvent",
+        "endEvent",
+        "parallelGateway",
+        "process",
+        "sequenceFlow",
+        "startEvent",
+        "subProcess",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "embeddedSubProcess",
+        "parallelSplit",
+        "terminateEnd",
+        "userTaskWait",
+        "userTaskCompletion",
+        "timerWait",
+        "nonInterruptingBoundaryTimer"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/repeatable-event-subscriptions/subprocess-boundary-one-shot.bpmn",
+        "sha256": "612d19bb38abe546ac9181b82c81420ca3050a7257c805b842771ba122088e3d",
+        "scenarioRelativePath": "scenarios/repeatable-event-subscriptions/subprocess-boundary-one-shot-fire.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "bpmn-2.0.2-repeatable-event-subscriptions-draft",
+      "admission": {
+        "kind": "accepted"
+      },
+      "pipelineCaseId": "subscription-subprocess-boundary-one-shot-fire",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "The subscription lifetime and cancellation paths have no complete production-backed browser journey."
+      }
+    },
+    {
+      "id": "application-subscription-message-host-with-child-entry",
+      "title": "Continue audit reminders after application review closes",
+      "businessPurpose": "Keep audit reminder delivery and existing response work available when the separate application review region terminates.",
+      "cloneFamily": "subprocess-termination",
+      "constructs": [
+        "boundaryEvent",
+        "endEvent",
+        "parallelGateway",
+        "process",
+        "sequenceFlow",
+        "startEvent",
+        "subProcess",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "embeddedSubProcess",
+        "parallelSplit",
+        "terminateEnd",
+        "userTaskWait",
+        "userTaskCompletion",
+        "messageWait"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/repeatable-event-subscriptions/message-host-with-child-entry.bpmn",
+        "sha256": "abd94b5573a93bca58da1ca2afba8645c4b60668c0f56893f2b86120d8e3a7f2",
+        "scenarioRelativePath": "scenarios/repeatable-event-subscriptions/message-host-with-child-entry-repeat.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "bpmn-2.0.2-repeatable-event-subscriptions-draft",
+      "admission": {
+        "kind": "accepted"
+      },
+      "pipelineCaseId": "subscription-message-host-with-child-entry-repeat",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "The subscription lifetime and cancellation paths have no complete production-backed browser journey."
+      }
+    },
+    {
+      "id": "application-subscription-catch-message",
+      "title": "Await an application response during parallel review",
+      "businessPurpose": "Consume the exact response Message or withdraw its subscription when review is cancelled, while retaining independent audit and archival work.",
+      "cloneFamily": "subprocess-termination",
+      "constructs": [
+        "endEvent",
+        "intermediateCatchEvent",
+        "parallelGateway",
+        "process",
+        "sequenceFlow",
+        "startEvent",
+        "subProcess",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "embeddedSubProcess",
+        "parallelSplit",
+        "terminateEnd",
+        "userTaskWait",
+        "userTaskCompletion",
+        "messageWait"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/repeatable-event-subscriptions/catch-message.bpmn",
+        "sha256": "d766dfa39222a3ee7857f8e5ac142bff0d2b90b8689edf56df0ec11629e23fd3",
+        "scenarioRelativePath": "scenarios/repeatable-event-subscriptions/catch-message-resume.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "bpmn-2.0.2-repeatable-event-subscriptions-draft",
+      "admission": {
+        "kind": "accepted"
+      },
+      "pipelineCaseId": "subscription-catch-message-resume",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "The subscription lifetime and cancellation paths have no complete production-backed browser journey."
+      }
+    },
+    {
+      "id": "application-subscription-catch-timer",
+      "title": "Await a review deadline beside independent audit",
+      "businessPurpose": "Resume review after its deadline or withdraw the pending deadline when the review region is cancelled, without cancelling outside audit.",
+      "cloneFamily": "subprocess-termination",
+      "constructs": [
+        "endEvent",
+        "intermediateCatchEvent",
+        "parallelGateway",
+        "process",
+        "sequenceFlow",
+        "startEvent",
+        "subProcess",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "embeddedSubProcess",
+        "parallelSplit",
+        "terminateEnd",
+        "userTaskWait",
+        "userTaskCompletion",
+        "timerWait"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/repeatable-event-subscriptions/catch-timer.bpmn",
+        "sha256": "10b28698faec8d5f45d8cdd7eb56fa35132dfbe1d71c25b28849141317b4980f",
+        "scenarioRelativePath": "scenarios/repeatable-event-subscriptions/catch-timer-resume.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "bpmn-2.0.2-repeatable-event-subscriptions-draft",
+      "admission": {
+        "kind": "accepted"
+      },
+      "pipelineCaseId": "subscription-catch-timer-resume",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "The subscription lifetime and cancellation paths have no complete production-backed browser journey."
+      }
+    },
+    {
+      "id": "application-subscription-receive-task",
+      "title": "Receive application documents during review",
+      "businessPurpose": "Receive one exact document Message or withdraw the Receive Task when review is cancelled; finish audit and archival work independently.",
+      "cloneFamily": "subprocess-termination",
+      "constructs": [
+        "endEvent",
+        "parallelGateway",
+        "process",
+        "receiveTask",
+        "sequenceFlow",
+        "startEvent",
+        "subProcess",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "embeddedSubProcess",
+        "parallelSplit",
+        "terminateEnd",
+        "userTaskWait",
+        "userTaskCompletion",
+        "messageWait",
+        "receiveTaskMessage"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/repeatable-event-subscriptions/receive-task.bpmn",
+        "sha256": "63d1bd04e2eecd93b669272956e06124eea601cbd82ed83fabb0488f4fed3fb0",
+        "scenarioRelativePath": "scenarios/repeatable-event-subscriptions/receive-task-resume.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "bpmn-2.0.2-repeatable-event-subscriptions-draft",
+      "admission": {
+        "kind": "accepted"
+      },
+      "pipelineCaseId": "subscription-receive-task-resume",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "The subscription lifetime and cancellation paths have no complete production-backed browser journey."
+      }
+    },
+    {
       "id": "cib-order-goods",
       "title": "CIB Seven order goods",
       "businessPurpose": null,

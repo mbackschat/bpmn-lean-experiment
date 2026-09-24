@@ -161,7 +161,7 @@ The [subscription account](capsules/REPEATABLE-EVENT-SUBSCRIPTIONS-PROPOSAL.md) 
 
 ##### Subscription checkpoint dependency reassessment
 
-The private [subscription semantic checkpoint](capsules/REPEATABLE-EVENT-SUBSCRIPTIONS-PROPOSAL.md) implements the approved source/Program admission through independent Lean/core lifetime execution, exact E1/E2 publication, and the selected scheduling obligations. All four bounded proposition groups are closed through direct reuse and focused correction. The complete Lean gate and source-bound pipeline pass; the [semantic-checkpoint review](capsules/REPEATABLE-EVENT-SUBSCRIPTIONS-PROPOSAL.md#independent-cold-review-receipt) and clean integration are accepted. The [Temporal hosting implementation](capsules/REPEATABLE-EVENT-SUBSCRIPTIONS-PROPOSAL.md#temporal-hosting-implementation-checkpoint) now has focused direct-VM and live-service/replay evidence; complete qualification, registration and closure remain open. No additional aggregate-invariant programme or family-pair expansion is selected.
+The private [subscription semantic checkpoint](capsules/REPEATABLE-EVENT-SUBSCRIPTIONS-PROPOSAL.md) implements the approved source/Program admission through independent Lean/core lifetime execution, exact E1/E2 publication, and the selected scheduling obligations. All four bounded proposition groups are closed through direct reuse and focused correction. The complete Lean gate and source-bound pipeline pass; the [semantic-checkpoint review](capsules/REPEATABLE-EVENT-SUBSCRIPTIONS-PROPOSAL.md#independent-cold-review-receipt) and clean integration are accepted. The [Temporal hosting implementation](capsules/REPEATABLE-EVENT-SUBSCRIPTIONS-PROPOSAL.md#temporal-hosting-implementation-checkpoint) now has focused direct-VM and live-service/replay evidence; clean hosting integration and the registered subscription pipeline pass; governed closure remains open. No additional aggregate-invariant programme or family-pair expansion is selected.
 
 | Dependency | Disposition at this checkpoint | Deciding boundary |
 |---|---|---|
@@ -189,7 +189,7 @@ Current evidence, 2026-09-24:
 - `/tmp/bpmn-subscription-checkpoint-registered-pipeline-retry`: all 72 registered cases pass with unchanged timeout after the contended first attempt; the [cost record](CAPSULE-COST-LEDGER.md#subscription-checkpoint-resource-qualification-2026-09-24) preserves both outcomes.
 - [Twelve immutable fixture qualifications](CAPSULE-COST-LEDGER.md#subscription-checkpoint-resource-qualification-2026-09-24) pass under the unchanged 3 GiB ceiling. The regional-publication fixture remains close to that ceiling; no resource-headroom improvement is claimed.
 
-This evidence and the accepted review establish the private semantic checkpoint. Public registration, Temporal refinement, retained business corpus/disclosure, and RC row closure remain open.
+This evidence and the accepted review establish the private semantic checkpoint. The downstream hosting and registered pipeline now supply Temporal refinement and retained business corpus/disclosure evidence; governed subscription closure and the Compensation/Transaction dependency reassessment remain before RC row closure.
 
 ### Complete operation-family census
 

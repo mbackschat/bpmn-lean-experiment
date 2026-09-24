@@ -21,6 +21,7 @@ import type {
 import {
   CanonicalObservationKind,
   ProcessStatus,
+  REPEATABLE_EVENT_SUBSCRIPTIONS_CHECKPOINT_PROFILE_ID,
   ScenarioOutcomeKind,
   ScenarioStepKind,
   StimulusKind,
@@ -84,8 +85,16 @@ export function validateExecutionOptions(
     default:
       assertNever(options.executionSchedule);
   }
-  const timer = requireOptionalTimerStimulus(scenario);
-  if (timer !== undefined) {
+  const timers = requireTimerStimuli(scenario);
+  if (timers.length > 1) {
+    if (scenario.profile !== REPEATABLE_EVENT_SUBSCRIPTIONS_CHECKPOINT_PROFILE_ID) {
+      throw new TypeError("The admitted Temporal capsule supports exactly one timer firing");
+    }
+    if (options.executionSchedule !== TemporalExecutionSchedule.StimulusOrder) {
+      throw new TypeError("Repeatable Timer scenarios require stimulus-order delivery");
+    }
+  }
+  if (timers.length > 0) {
     if (
       options.completionDelivery !== TemporalCompletionDelivery.Ordered ||
       (
@@ -252,7 +261,17 @@ export function requireMessageDeliveryStimuli(
 export function requireOptionalTimerStimulus(
   scenario: Scenario,
 ): FireTimerStimulus | undefined {
-  let timer: FireTimerStimulus | undefined;
+  const timers = requireTimerStimuli(scenario);
+  if (timers.length > 1) {
+    throw new TypeError("The admitted Temporal capsule supports exactly one timer firing");
+  }
+  return timers[0];
+}
+
+export function requireTimerStimuli(
+  scenario: Scenario,
+): ReadonlyArray<FireTimerStimulus> {
+  const timers: FireTimerStimulus[] = [];
   for (const stimulus of scenario.stimuli.slice(1)) {
     switch (stimulus.kind) {
       case StimulusKind.CompleteUserTaskInstance:
@@ -268,11 +287,6 @@ export function requireOptionalTimerStimulus(
           "The Temporal scenario runner does not yet host correlated Message delivery",
         );
       case StimulusKind.FireTimer:
-        if (timer !== undefined) {
-          throw new TypeError(
-            "The admitted Temporal capsule supports exactly one timer firing",
-          );
-        }
         if (
           stimulus.commandId !==
             timerFiringCommandId(
@@ -284,7 +298,7 @@ export function requireOptionalTimerStimulus(
             "Timer command ID is not bound to its occurrence and logical deadline",
           );
         }
-        timer = stimulus;
+        timers.push(stimulus);
         break;
       case StimulusKind.StartProcess:
       case StimulusKind.TriggerMessageStart:
@@ -296,7 +310,7 @@ export function requireOptionalTimerStimulus(
         assertNever(stimulus);
     }
   }
-  return timer;
+  return timers;
 }
 
 export function requireOptionalEffectExecution(
