@@ -5,6 +5,7 @@ import type {
   SemanticProcessProgram,
   ProcessStartStimulus,
 } from "@bpmn-lean/semantic-core";
+import { COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID } from "@bpmn-lean/semantic-core";
 import type {
   WorkflowClient,
   WorkflowHandle,
@@ -12,6 +13,7 @@ import type {
 import {
   bpmnProcessWorkflowType,
   bpmnSemanticTaskQueue,
+  productionBpmnWorkflowInitialHostInput,
 } from "./contracts.js";
 import type {
   BpmnProcessWorkflow,
@@ -36,7 +38,9 @@ export async function startScenarioWorkflow(
         taskQueue: bpmnSemanticTaskQueue,
         workflowId,
         workflowIdReusePolicy: "REJECT_DUPLICATE",
-        args: [start, semanticProcess],
+        args: semanticProcess.identity.semanticProfile === COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID
+          ? [start, semanticProcess, productionBpmnWorkflowInitialHostInput()]
+          : [start, semanticProcess],
       },
     ),
     operationDeadlineMs,

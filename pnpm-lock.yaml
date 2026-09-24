@@ -45,6 +45,9 @@ importers:
       '@bpmn-lean/bpmn-source':
         specifier: workspace:*
         version: link:../bpmn-source
+      '@bpmn-lean/temporal-protocol':
+        specifier: workspace:*
+        version: link:../temporal-adapter/protocol
       '@bpmn-lean/temporal-testkit':
         specifier: workspace:*
         version: link:../temporal-adapter/testkit

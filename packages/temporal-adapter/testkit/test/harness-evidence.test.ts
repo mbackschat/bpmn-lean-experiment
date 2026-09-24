@@ -23,12 +23,14 @@ import type {
 
 import {
   isCompletedProcessReceipt,
+  isTerminalProcessReceipt,
   durableUpdateOutcomes,
   processTerminalReceiptFormatV1,
   reconcileHarnessTraceEvidence,
 } from "@bpmn-lean/temporal-testkit";
 import type {
   CompletedProcessReceipt,
+  TerminalProcessReceipt,
   TemporalHistory,
 } from "@bpmn-lean/temporal-testkit";
 
@@ -175,6 +177,40 @@ test("reconciles Query command outcomes and terminal state with durable history"
   );
 });
 
+test("binds failed and cancelled Query states to their exact terminal receipt", () => {
+  const failure = {
+    kind: "compensationHandlerFailure" as const,
+    triggerId: { processInstanceId: "Instance_1", elementId: "Trigger", activation: 1 },
+    handlerId: { processInstanceId: "Instance_1", elementId: "Handler", activation: 1 },
+    effectId: { processInstanceId: "Instance_1", elementId: "Effect", activation: 1 },
+    code: "undo-rejected",
+    message: "The reversal failed",
+  };
+  const terminals: TerminalProcessReceipt[] = [
+    { ...receipt, finalState: { ...completedState, status: ProcessStatus.Failed, failure } },
+    { ...receipt, finalState: { ...completedState, status: ProcessStatus.Cancelled } },
+  ];
+  for (const terminal of terminals) {
+    assert.equal(isTerminalProcessReceipt(terminal), true);
+    const terminalTrace = [...trace.slice(0, -1), terminal.finalState];
+    assert.doesNotThrow(() => reconcileHarnessTraceEvidence(
+      terminalTrace, terminal, historyWithOutcome(CommandOutcome.Committed),
+    ));
+    assert.throws(() => reconcileHarnessTraceEvidence(
+      terminalTrace, null, historyWithOutcome(CommandOutcome.Committed),
+    ), /no .* Process receipt exists/);
+    assert.throws(() => reconcileHarnessTraceEvidence(
+      terminalTrace, receipt, historyWithOutcome(CommandOutcome.Committed),
+    ), /Query terminal state does not match/);
+  }
+});
+
+test("does not reconcile an earlier terminal observation as the final state", () => {
+  assert.throws(() => reconcileHarnessTraceEvidence(
+    [...trace, trace[2]!], receipt, historyWithOutcome(CommandOutcome.Committed),
+  ), /Query terminal state does not match/);
+});
+
 test("binds both incident Updates without admitting internal failure reporting", () => {
   assert.deepEqual(
     durableUpdateOutcomes(
@@ -231,7 +267,7 @@ test("rejects a Query terminal state that differs from the receipt", () => {
         },
         historyWithOutcome(CommandOutcome.Committed),
       ),
-    /Query terminal state does not match the completed Process receipt/,
+    /Query terminal state does not match the terminal Process receipt/,
   );
 });
 

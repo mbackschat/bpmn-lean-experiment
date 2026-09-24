@@ -12,6 +12,7 @@ This directory contains reviewed semantic-profile artifacts. A profile identifie
 - [BPMN 2.0.2 BPMN Lean configured Task effect draft](bpmn-2.0.2-bpmn-lean-configured-task-effect-draft/README.md)
 - [BPMN 2.0.2 BPMN Lean structured Human Work draft](bpmn-2.0.2-bpmn-lean-structured-human-work-draft/README.md)
 - [BPMN 2.0.2 bounded called-Process Call Activity draft](bpmn-2.0.2-called-process-call-activity-draft/README.md)
+- [BPMN 2.0.2 bounded Compensation draft](bpmn-2.0.2-compensation-source-checkpoint-draft/README.md)
 - [BPMN 2.0.2 Event-Based Gateway Message/Timer draft](bpmn-2.0.2-event-based-gateway-message-timer-draft/README.md)
 - [BPMN 2.0.2 structured Inclusive Gateway draft](bpmn-2.0.2-inclusive-gateway-selected-branches-draft/README.md)
 - [BPMN 2.0.2 Intermediate Catch Message draft](bpmn-2.0.2-intermediate-catch-message-draft/README.md)

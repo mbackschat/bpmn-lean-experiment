@@ -157,8 +157,8 @@ test("compiles the exact id-derived Compensation checked graph and existing Prog
   assert.equal(compensationSourceDefinitionBindingValid(checked, program), true);
 });
 
-test("keeps the checkpoint outside product registration", () => {
-  assert.equal(Object.values(SemanticProfileId).includes(profile as never), false);
+test("registers the reviewed Compensation identity without replacing its topology boundary", () => {
+  assert.equal(Object.values(SemanticProfileId).includes(profile as never), true);
 });
 
 test("rejects crossed parser-reference identities despite duplicate display names", async () => {

@@ -4,6 +4,7 @@ import { test } from "node:test";
 import {
   CanonicalObservationKind,
   CommandOutcome,
+  SemanticProfileId,
 } from "@bpmn-lean/semantic-core";
 import type {
   CanonicalObservation,
@@ -412,37 +413,44 @@ test(
         } else {
           assert.equal(caseEvidence.cibEffectRetryEvidence, null);
         }
-        assert.notEqual(caseEvidence.primaryEffectProbeEvidence, null);
-        assert.notEqual(caseEvidence.isolationEffectProbeEvidence, null);
-        if (
-          caseEvidence.primaryEffectProbeEvidence === null ||
-          caseEvidence.isolationEffectProbeEvidence === null
-        ) {
-          throw new Error(
-            "Service Task evidence omitted effect probe results",
+        if (caseReport.scenario.profile === SemanticProfileId.Compensation) {
+          // OrderedEffectExecution.requireHistory binds every handler; legacy probe counters describe one Service Task mutation.
+          assert.equal(pipelineCase.effectSchedules, null);
+          assert.equal(caseEvidence.primaryEffectProbeEvidence, null);
+          assert.equal(caseEvidence.isolationEffectProbeEvidence, null);
+        } else {
+          assert.notEqual(caseEvidence.primaryEffectProbeEvidence, null);
+          assert.notEqual(caseEvidence.isolationEffectProbeEvidence, null);
+          if (
+            caseEvidence.primaryEffectProbeEvidence === null ||
+            caseEvidence.isolationEffectProbeEvidence === null
+          ) {
+            throw new Error(
+              "Service Task evidence omitted effect probe results",
+            );
+          }
+          assert.equal(
+            caseEvidence.primaryEffectProbeEvidence.invocations,
+            isServiceTaskIncident ? 2 : 1,
+          );
+          assert.equal(
+            caseEvidence.primaryEffectProbeEvidence.mutations,
+            1,
+          );
+          assert.equal(
+            caseEvidence.isolationEffectProbeEvidence.invocations,
+            isServiceTaskIncident
+              ? 2
+              : pipelineCase.effectSchedules?.isolation ===
+                  EffectExecutionSchedule.FailAfterMutationOnce
+                ? 2
+                : 1,
+          );
+          assert.equal(
+            caseEvidence.isolationEffectProbeEvidence.mutations,
+            1,
           );
         }
-        assert.equal(
-          caseEvidence.primaryEffectProbeEvidence.invocations,
-          isServiceTaskIncident ? 2 : 1,
-        );
-        assert.equal(
-          caseEvidence.primaryEffectProbeEvidence.mutations,
-          1,
-        );
-        assert.equal(
-          caseEvidence.isolationEffectProbeEvidence.invocations,
-          isServiceTaskIncident
-            ? 2
-            : pipelineCase.effectSchedules?.isolation ===
-                EffectExecutionSchedule.FailAfterMutationOnce
-              ? 2
-              : 1,
-        );
-        assert.equal(
-          caseEvidence.isolationEffectProbeEvidence.mutations,
-          1,
-        );
       } else {
         assert.equal(caseEvidence.cibEffectRetryEvidence, null);
         if (isServiceTaskIncidentCancellation) {

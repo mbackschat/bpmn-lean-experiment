@@ -114,6 +114,16 @@ test("every registered profile lowers with observable internal choice rejected",
 
   assert.equal(result.status, BpmnCompilationStatus.Accepted);
   for (const semanticProfile of Object.values(SemanticProfileId)) {
+    if (semanticProfile === SemanticProfileId.Compensation) {
+      const compensation = await compileFixture(
+        "../../../scenarios/compensation/travel-cancellation.bpmn",
+        "compensation-scheduling-mode-profile-census",
+        semanticProfile,
+      );
+      assert.equal(compensation.status, BpmnCompilationStatus.Accepted);
+      assert.equal(compensation.semanticProcess.internalSchedulingMode, "rejectObservableChoice");
+      continue;
+    }
     const program = lowerCheckedProcess({
       ...result.checkedProcess,
       identity: {

@@ -26,6 +26,7 @@ Message key correlation uses a separate engine-population catalog because one an
 
 ## Learn more
 
+- [Registered Compensation scenarios](test/compensation-pipeline-cases.ts) bind the [travel-cancellation model](../../scenarios/compensation/README.md) to exact Lean/core/Temporal results and replay. [Mutations](test/compensation-pipeline-cases.test.ts) distinguish premature predecessors, missing concurrent handlers, altered restored input, failed-to-completed projection and stale-result mutation. The private 36-case publication comparison remains a separate lane.
 - [Testing specification](../../docs/TESTING-SPEC.md) owns the complete pipeline, target isolation, and evidence rules.
 - [Pipeline case identifier registry](test/pipeline-case-id-registry.ts) owns the exact ordered identifier contract checked before target execution.
 - [Runtime-state preservation lane](test/runtime-state-preservation.test.ts) derives its programs and schedules from that registered catalog; it is finite executable evidence, not the open general Lean preservation theorem.

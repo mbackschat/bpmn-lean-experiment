@@ -16,7 +16,7 @@ import {
 } from "@bpmn-lean/semantic-core";
 
 import type {
-  CompletedProcessReceipt,
+  TerminalProcessReceipt,
   TemporalHistory,
 } from "./contracts.js";
 import type { EffectActivityResult } from "./contracts.js";
@@ -47,11 +47,11 @@ class HarnessEvidenceInfrastructureError extends Error {
 /**
  * Reconciles Query-transported trace evidence with independently durable facts.
  *
- * This is a conformance-harness extraction contract, not a production observation API. Completion-command outcomes are bound to completed Update results in Event History, and a terminal state is bound to the completed Process receipt. The start command is a Workflow argument rather than an Update and is therefore excluded from durable Update-result reconciliation. Intermediate state observations remain Query-only evidence and are checked independently against the pure semantic core.
+ * This is a conformance-harness extraction contract, not a production observation API. Completion-command outcomes are bound to completed Update results in Event History, and a terminal state is bound to the terminal Process receipt. The start command is a Workflow argument rather than an Update and is therefore excluded from durable Update-result reconciliation. Intermediate state observations remain Query-only evidence and are checked independently against the pure semantic core.
  */
 export function reconcileHarnessTraceEvidence(
   trace: ReadonlyArray<CanonicalObservation>,
-  receipt: CompletedProcessReceipt | null,
+  receipt: TerminalProcessReceipt | null,
   history: TemporalHistory,
 ): void {
   const durableOutcomes = durableUpdateOutcomes(history);
@@ -82,13 +82,12 @@ export function reconcileHarnessTraceEvidence(
 
   const finalState = trace.findLast(
     (observation) =>
-      observation.kind === CanonicalObservationKind.State &&
-      observation.status === ProcessStatus.Completed,
+      observation.kind === CanonicalObservationKind.State,
   );
   if (receipt === null) {
-    if (finalState !== undefined) {
+    if (finalState !== undefined && finalState.status !== ProcessStatus.Running) {
       throw new TypeError(
-        "Query trace is terminal but no completed Process receipt exists",
+        "Query trace is terminal but no terminal Process receipt exists",
       );
     }
     return;
@@ -98,7 +97,7 @@ export function reconcileHarnessTraceEvidence(
     !isDeepStrictEqual(finalState, receipt.finalState)
   ) {
     throw new TypeError(
-      "Query terminal state does not match the completed Process receipt",
+      "Query terminal state does not match the terminal Process receipt",
     );
   }
 }

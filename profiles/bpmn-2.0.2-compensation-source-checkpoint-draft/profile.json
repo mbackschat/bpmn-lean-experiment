@@ -1,0 +1,79 @@
+{
+  "kind": "semanticProfile",
+  "id": "bpmn-2.0.2-compensation-source-checkpoint-draft",
+  "status": "draft",
+  "claim": "bpmn-2.0.2-exact-travel-cancellation-compensation",
+  "normativeAuthority": {
+    "name": "OMG Business Process Model and Notation",
+    "version": "2.0.2",
+    "references": [
+      "Clause 10.7.2",
+      "Clause 13.5.5",
+      "Clause 13.3.2"
+    ]
+  },
+  "bpmn": {
+    "process": "private-executable",
+    "features": [
+      "none-start-event",
+      "user-task",
+      "user-task-discovery",
+      "user-task-instance-completion",
+      "process-start-string-variable",
+      "parallel-fork-join",
+      "depth-one-embedded-subprocess",
+      "boundary-compensation-retention",
+      "compensation-event-subprocess-snapshot",
+      "global-synchronous-compensation-throw",
+      "single-effect-compensation-handler",
+      "restored-process-binding-handler-input",
+      "reverse-sequence-flow-dependency",
+      "concurrent-maximal-compensation-frontier",
+      "fail-fast-typed-process-failure",
+      "none-end-event",
+      "sequence-flow",
+      "process-completion"
+    ],
+    "extensions": [],
+    "relationships": [
+      "CIB-AGR-0002",
+      "CIB-OP-0001"
+    ]
+  },
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "comparison": {
+    "trace": "exact-after-canonical-projection",
+    "semanticConcurrency": true
+  },
+  "excluded": [
+    "cib-compensation-compatibility-claim",
+    "general-bpmn-process-execution-conformance",
+    "different-element-identities-or-topology",
+    "targeted-or-asynchronous-compensation",
+    "concurrent-global-triggers",
+    "compensation-end-event",
+    "transaction-and-cancel-events",
+    "implicit-or-recursive-compensation",
+    "active-or-unsuccessful-subjects",
+    "loop-or-multi-instance-subprocess",
+    "general-handler-control-flow-or-data",
+    "handler-output-mapping",
+    "handler-incident-retry-or-recovery",
+    "additional-dependency-sources",
+    "boundary-handler-context",
+    "public-scheduled-choice",
+    "product-two-failed-process-support",
+    "production-history-compatibility"
+  ]
+}

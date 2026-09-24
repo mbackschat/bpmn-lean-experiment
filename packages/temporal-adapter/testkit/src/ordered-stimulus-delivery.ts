@@ -5,6 +5,7 @@ import {
 } from "@bpmn-lean/semantic-core";
 import type {
   CanonicalObservation,
+  CompleteEffectStimulus,
   OpenUserTask,
   Scenario,
 } from "@bpmn-lean/semantic-core";
@@ -43,6 +44,7 @@ export async function deliverStimuliInOrder(
     handle: WorkflowHandle<BpmnProcessWorkflow>,
     minimumLength: number,
   ) => Promise<ReadonlyArray<CanonicalObservation>>,
+  releaseEffect?: (stimulus: CompleteEffectStimulus) => Promise<void>,
 ): Promise<CompletionDeliveryEvidence> {
   if (
     options.completionDelivery !== TemporalCompletionDelivery.Ordered ||
@@ -122,6 +124,13 @@ export async function deliverStimuliInOrder(
         );
         break;
       case StimulusKind.CompleteEffect:
+        if (releaseEffect === undefined) {
+          throw new TypeError("Stimulus-order effects require a registered Activity execution");
+        }
+        await releaseEffect(stimulus);
+        expectedTraceLength += 2;
+        await requireCommandAtTraceBoundary(handle, expectedTraceLength, stimulus.commandId, waitForTrace);
+        break;
       case StimulusKind.ReportEffectFailure:
       case StimulusKind.RetryIncident:
       case StimulusKind.CancelIncidentProcess:

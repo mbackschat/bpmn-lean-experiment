@@ -122,6 +122,7 @@ function preservationCapabilityKind(
     case SemanticProfileId.ActivityDataInputOutputUserTask:
     case SemanticProfileId.ActivityDataOutputUserTask:
     case SemanticProfileId.CalledProcessCallActivity:
+    case SemanticProfileId.Compensation:
     case SemanticProfileId.ConfiguredTask:
     case SemanticProfileId.EmbeddedSubProcessCompletion:
     case SemanticProfileId.EventBasedGatewayMessageTimer:

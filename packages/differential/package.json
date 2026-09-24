@@ -19,6 +19,7 @@
   },
   "devDependencies": {
     "@bpmn-lean/bpmn-source": "workspace:*",
+    "@bpmn-lean/temporal-protocol": "workspace:*",
     "@bpmn-lean/temporal-testkit": "workspace:*"
   }
 }

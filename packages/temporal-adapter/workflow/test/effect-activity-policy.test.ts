@@ -30,12 +30,13 @@ test("both incident profiles share one-attempt reporting while unrelated profile
     maximumAttempts: 1,
   });
 
-  const nonIncidentProfiles = Object.values(SemanticProfileId).filter(
+  const legacyProfiles = Object.values(SemanticProfileId).filter(
     (profile) =>
       profile !== SERVICE_TASK_INCIDENT_CHECKPOINT_PROFILE_ID &&
-      profile !== SemanticProfileId.ServiceTaskIncidentCancellation,
+      profile !== SemanticProfileId.ServiceTaskIncidentCancellation &&
+      profile !== SemanticProfileId.Compensation,
   );
-  for (const profile of [...nonIncidentProfiles, "unregistered-profile"]) {
+  for (const profile of [...legacyProfiles, "unregistered-profile"]) {
     assert.deepEqual(effectActivityPolicyForProfile(profile), {
       kind: EffectActivityPolicyKind.Legacy,
       maximumAttempts: 2,

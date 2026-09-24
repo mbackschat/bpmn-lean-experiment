@@ -18,6 +18,8 @@ export const SemanticProfileId = Object.freeze({
     "cibseven-2.0.0-mapped-boundary-error-service-task-draft",
   CalledProcessCallActivity:
     "bpmn-2.0.2-called-process-call-activity-draft",
+  Compensation:
+    "bpmn-2.0.2-compensation-source-checkpoint-draft",
   MappedSuccessServiceTask:
     "cibseven-2.0.0-mapped-success-service-task-draft",
   MessageStart: "bpmn-2.0.2-message-start-event-draft",
@@ -79,9 +81,9 @@ export const SemanticProfileId = Object.freeze({
 export const MESSAGE_KEY_CORRELATION_CHECKPOINT_PROFILE_ID =
   SemanticProfileId.MessageKeyCorrelation;
 
-/** Admission-only identity held outside the product registry until live Compensation hosting is reviewed. */
+/** Preserves checkpoint consumers while the public catalog owns the registered identity. */
 export const COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID =
-  "bpmn-2.0.2-compensation-source-checkpoint-draft" as const;
+  SemanticProfileId.Compensation;
 
 /** Transition alias retained while closure lanes migrate to the registered catalog member. */
 export const SERVICE_TASK_INCIDENT_CHECKPOINT_PROFILE_ID =

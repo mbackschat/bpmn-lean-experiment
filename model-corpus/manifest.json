@@ -1646,6 +1646,50 @@
       }
     },
     {
+      "id": "confirmed-travel-cancellation",
+      "title": "Cancel a confirmed travel itinerary",
+      "businessPurpose": "Reverse confirmed hotel, ground-travel and insurance arrangements while cancelling dependent ground travel before releasing the hotel reservation and preserving the itinerary needed by the cancellation handler.",
+      "cloneFamily": "dependency-aware-travel-compensation",
+      "constructs": [
+        "boundaryEvent",
+        "endEvent",
+        "intermediateThrowEvent",
+        "parallelGateway",
+        "process",
+        "sequenceFlow",
+        "serviceTask",
+        "startEvent",
+        "subProcess",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "parallelSplitJoin",
+        "embeddedSubProcess",
+        "userTaskWait",
+        "userTaskCompletion",
+        "externalEffect",
+        "dataAssociation"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/compensation/travel-cancellation.bpmn",
+        "sha256": "516073af27fbe95c319918b248c2563c2505263e7542db6f3e8d981f82d8dc93",
+        "scenarioRelativePath": "scenarios/compensation/success-b-c-a.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "bpmn-2.0.2-compensation-source-checkpoint-draft",
+      "admission": {
+        "kind": "accepted"
+      },
+      "pipelineCaseId": "compensation-success-b-c-a",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "Engine-only retained model: Product 2 failed-Process persistence, recovery, API, UI and browser journeys remain unsupported."
+      }
+    },
+    {
       "id": "cib-order-goods",
       "title": "CIB Seven order goods",
       "businessPurpose": null,

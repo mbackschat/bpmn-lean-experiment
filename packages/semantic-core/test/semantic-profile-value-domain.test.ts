@@ -91,6 +91,9 @@ const stringNullBoolean = [
 ] as const;
 
 const expectedCapabilities = new Map<string, ProfileCapabilities>([
+  [SemanticProfileId.Compensation, {
+    processStart: capability([VariableValueKind.String], "process-start-string-variable"),
+  }],
   [SemanticProfileId.SequentialMultiInstanceUserTask, {
     processStart: capability(
       [VariableValueKind.StringList],

@@ -4,6 +4,7 @@ This directory contains implementation-neutral BPMN resources, semantic stimuli,
 
 ## Scenario families
 
+- The [Compensation scenarios](compensation/README.md) reverse a confirmed travel itinerary through all three legal handler orders, failure at each handler, and stale-task refusal. They retain neutral Activity results, exact content-bound commands, and Lean/core/Temporal comparison without a CIB Compensation target.
 - The [User Task discovery and completion capsule](user-task-discovery-completion/README.md) owns one exact BPMN file and three separating scenarios: exact completion, wrong activation, and stale completion.
 - The [parallel fork/join scenarios](parallel-fork-join/README.md) add one content-addressed balanced source plus explicit A-then-B and B-then-A completion orders under their separate normative draft profile.
 - The [Intermediate Catch Timer scenario](intermediate-catch-timer/README.md) supplies the exact `PT1S` source and answer-free `fireTimer` input used across Lean, the TypeScript core, controlled-clock CIB, and committed-state-derived Temporal firing.

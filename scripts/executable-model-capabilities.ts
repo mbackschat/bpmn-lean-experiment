@@ -39,8 +39,11 @@ export function detectExecutableBpmnCapabilities(
     ),
   );
   const capabilities = new Set<MvpBpmnCapabilityId>();
+  const parents = new Map(elements.flatMap((parent) => parent.children.map((child) => [child, parent] as const)));
+  const compensation = compensationContext(elements, elementsById, parents, capabilities);
 
   for (const element of elements) {
+    if (compensation.dormant.has(element)) continue;
     switch (element.name) {
       case "process":
         capabilities.add("process");
@@ -59,7 +62,7 @@ export function detectExecutableBpmnCapabilities(
         break;
       case "serviceTask":
         rejectLoopVariant(element);
-        capabilities.add("serviceTask");
+        capabilities.add(compensation.handlers.has(element) ? "compensationHandlerServiceTask" : "serviceTask");
         break;
       case "receiveTask":
         rejectLoopVariant(element);
@@ -75,7 +78,7 @@ export function detectExecutableBpmnCapabilities(
         break;
       case "subProcess":
         rejectLoopVariant(element);
-        if (element.attributes.triggeredByEvent === "true") {
+        if (isTrue(element.attributes.triggeredByEvent)) {
           throw new TypeError("unclassified executable BPMN element eventSubProcess");
         }
         capabilities.add("embeddedSubProcess");
@@ -95,7 +98,22 @@ export function detectExecutableBpmnCapabilities(
       case "intermediateCatchEvent":
         addIntermediateCatchCapability(element, capabilities);
         break;
+      case "intermediateThrowEvent": {
+        const definition = element.children.find(({ name }) => name === "compensateEventDefinition");
+        if (eventDefinition(element) !== "compensateEventDefinition" || definition === undefined ||
+            definition.attributes.activityRef !== undefined ||
+            (definition.attributes.waitForCompletion !== undefined && !isTrue(definition.attributes.waitForCompletion)) ||
+            parents.get(element)?.name !== "process") {
+          throw new TypeError("unclassified executable BPMN Intermediate Throw Event variant");
+        }
+        capabilities.add("compensationIntermediateThrowEvent");
+        break;
+      }
       case "boundaryEvent":
+        if (compensation.boundaries.has(element)) {
+          capabilities.add("compensationBoundaryEvent");
+          break;
+        }
         addBoundaryCapability(
           element,
           namesById,
@@ -109,6 +127,74 @@ export function detectExecutableBpmnCapabilities(
   }
   addMessageCorrelationCapability(elements, capabilities);
   return Object.freeze([...capabilities].sort());
+}
+
+function isTrue(value: string | undefined): boolean {
+  return value === "true" || value === "1";
+}
+
+function compensationContext(
+  elements: ReadonlyArray<XmlElement>,
+  elementsById: ReadonlyMap<string, XmlElement>,
+  parents: ReadonlyMap<XmlElement, XmlElement>,
+  capabilities: Set<MvpBpmnCapabilityId>,
+): Readonly<{ dormant: ReadonlySet<XmlElement>; handlers: ReadonlySet<XmlElement>; boundaries: ReadonlySet<XmlElement> }> {
+  const dormant = new Set<XmlElement>();
+  const handlers = new Set<XmlElement>();
+  const boundaries = new Set<XmlElement>();
+  for (const element of elements) {
+    if (element.name !== "subProcess" || !isTrue(element.attributes.triggeredByEvent)) continue;
+    rejectLoopVariant(element);
+    const owner = parents.get(element);
+    const starts = element.children.filter(({ name }) => name === "startEvent");
+    const tasks = element.children.filter(({ name }) => name === "serviceTask");
+    const ends = element.children.filter(({ name }) => name === "endEvent");
+    if (owner?.name !== "subProcess" || isTrue(owner.attributes.triggeredByEvent) || parents.get(owner)?.name !== "process" ||
+        starts.length !== 1 || starts[0] === undefined || eventDefinition(starts[0]) !== "compensateEventDefinition" ||
+        tasks.length !== 1 || tasks[0] === undefined || !isCompensationEffect(tasks[0]) ||
+        ends.length !== 1 || ends[0] === undefined || eventDefinition(ends[0]) !== null) {
+      throw new TypeError("unclassified executable BPMN eventSubProcess variant");
+    }
+    rejectLoopVariant(tasks[0]);
+    const body = flattenElements(element.children);
+    for (const child of body) {
+      if (child === starts[0] || child === tasks[0] || child === ends[0]) continue;
+      if (child.name === "subProcess") throw new TypeError("unclassified executable BPMN nested Compensation handler");
+      rejectUnknownExecutableElement(child);
+    }
+    for (const child of [element, ...body]) dormant.add(child);
+    capabilities.add("compensationEventSubProcess");
+    capabilities.add("compensationHandlerServiceTask");
+  }
+  for (const event of elements) {
+    if (event.name !== "boundaryEvent" || eventDefinition(event) !== "compensateEventDefinition") continue;
+    const host = elementsById.get(event.attributes.attachedToRef ?? "");
+    const owner = parents.get(event);
+    const associations = elements.filter((element) => element.name === "association" &&
+      event.attributes.id !== undefined && element.attributes.sourceRef === event.attributes.id);
+    const association = associations[0];
+    const handler = elementsById.get(association?.attributes.targetRef ?? "");
+    if (owner?.name !== "process" || host?.name !== "userTask" || parents.get(host) !== owner ||
+        isTrue(host.attributes.isForCompensation) || associations.length !== 1 || association === undefined ||
+        parents.get(association) !== owner || handler?.name !== "serviceTask" || parents.get(handler) !== owner ||
+        !isTrue(handler.attributes.isForCompensation) || !isCompensationEffect(handler)) {
+      throw new TypeError("unclassified executable BPMN Compensation boundary handler context");
+    }
+    rejectLoopVariant(host);
+    rejectLoopVariant(handler);
+    boundaries.add(event);
+    handlers.add(handler);
+  }
+  for (const element of elements) {
+    if (isTrue(element.attributes.isForCompensation) && !handlers.has(element) && !dormant.has(element)) {
+      throw new TypeError("unclassified executable BPMN Compensation Activity context");
+    }
+  }
+  return { dormant, handlers, boundaries };
+}
+
+function isCompensationEffect(task: XmlElement): boolean {
+  return task.attributes.implementation === "urn:bpmn-lean:effect:compensation-single-effect-v1";
 }
 
 function addMessageCorrelationCapability(

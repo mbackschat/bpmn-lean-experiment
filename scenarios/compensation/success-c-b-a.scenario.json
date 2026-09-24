@@ -1,0 +1,130 @@
+{
+  "kind": "scenario",
+  "id": "compensation-success-c-b-a",
+  "profile": "bpmn-2.0.2-compensation-source-checkpoint-draft",
+  "bpmn": {
+    "id": "travel-cancellation",
+    "relativePath": "scenarios/compensation/travel-cancellation.bpmn",
+    "sha256": "516073af27fbe95c319918b248c2563c2505263e7542db6f3e8d981f82d8dc93",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "startProcess",
+      "commandId": "start-compensation-success-c-b-a",
+      "processId": "Process_Compensation",
+      "instanceId": "Compensation_success_c_b_a",
+      "initialVariables": [
+        {
+          "name": "Property_TravelDetails",
+          "value": {
+            "kind": "string",
+            "value": "Confirmed itinerary TRAVEL-4711"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete:Task_ReserveHotel",
+      "taskId": {
+        "processInstanceId": "Compensation_success_c_b_a",
+        "elementId": "Task_ReserveHotel",
+        "activation": 1
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "stale-task",
+      "taskId": {
+        "processInstanceId": "Compensation_success_c_b_a",
+        "elementId": "Task_ReserveHotel",
+        "activation": 1
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete:Task_IssueInsurance",
+      "taskId": {
+        "processInstanceId": "Compensation_success_c_b_a",
+        "elementId": "Task_IssueInsurance",
+        "activation": 1
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete:Task_ArrangeGroundTravel",
+      "taskId": {
+        "processInstanceId": "Compensation_success_c_b_a",
+        "elementId": "Task_ArrangeGroundTravel",
+        "activation": 1
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeEffect",
+      "commandId": "complete-effect-sha256:8e05a92cb4cc6c91ec9addaf842fc2a81d1a66d6c721dc22c077012750337662",
+      "effectId": {
+        "processInstanceId": "Compensation_success_c_b_a",
+        "elementId": "Task_UndoInsurance",
+        "activation": 1
+      },
+      "result": {
+        "kind": "success",
+        "localPatch": []
+      }
+    },
+    {
+      "kind": "completeEffect",
+      "commandId": "complete-effect-sha256:73dad9ad72a7995a25d17e1ce16b2b062373f371166184032c7c6635d843a699",
+      "effectId": {
+        "processInstanceId": "Compensation_success_c_b_a",
+        "elementId": "Task_UndoGroundTravel",
+        "activation": 1
+      },
+      "result": {
+        "kind": "success",
+        "localPatch": []
+      }
+    },
+    {
+      "kind": "completeEffect",
+      "commandId": "complete-effect-sha256:0ead95015aa3fdf925682b5d128017c6b5de7e6dda9db7413526f4cccaf6800b",
+      "effectId": {
+        "processInstanceId": "Compensation_success_c_b_a",
+        "elementId": "Task_UndoReserveHotel",
+        "activation": 1
+      },
+      "result": {
+        "kind": "success",
+        "localPatch": []
+      }
+    }
+  ],
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 10.7.2",
+      "BPMN 2.0.2 Clause 13.5.5",
+      "BPMN 2.0.2 Clause 13.3.2"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/UserTaskActivityBehavior.java"
+    ]
+  }
+}

@@ -1,10 +1,102 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 
 import {
   detectExecutableBpmnCapabilities,
 } from "./executable-model-capabilities.ts";
+import { artifactCases, normativeArtifactCases } from "./contract-artifact-cases.ts";
+import { enginePopulationScenarioRelativePaths } from "./engine-population-artifacts.ts";
+import { requireExecutableModelCorpusManifest } from "./executable-model-corpus-manifest.ts";
+import { CibCapabilityEvidenceKind, mvpBpmnCapabilities } from "../model-corpus/mvp-capabilities.ts";
+
+const compensationCapabilityIds = ["compensationBoundaryEvent", "compensationEventSubProcess", "compensationHandlerServiceTask", "compensationIntermediateThrowEvent"];
+
+test("inventories the retained Compensation graph without ordinary handler claims", async () => {
+  const xml = await readFile(new URL("../scenarios/compensation/travel-cancellation.bpmn", import.meta.url), "utf8");
+  const capabilities = detectExecutableBpmnCapabilities(xml);
+  assert.deepEqual(capabilities.filter((id) => id.startsWith("compensation")), compensationCapabilityIds);
+  assert.equal(capabilities.includes("serviceTask"), false);
+  assert.deepEqual(capabilities, [...compensationCapabilityIds, "embeddedSubProcess", "noneEndEvent", "noneStartEvent", "parallelGateway", "process", "sequenceFlow", "userTask"].sort());
+  assert.deepEqual(detectExecutableBpmnCapabilities(xml.replaceAll("ReserveHotel", "ReserveRoom").replaceAll("GroundTravel", "Transfers").replaceAll('name="Confirm travel insurance"', 'name="Unrelated display label"')), capabilities);
+  assert.deepEqual(detectExecutableBpmnCapabilities(xml.replaceAll('isForCompensation="true"', 'isForCompensation="1"')), capabilities);
+});
+
+const dormantCompensation = `<bpmn:subProcess triggeredByEvent="true">
+  <bpmn:startEvent><bpmn:compensateEventDefinition /></bpmn:startEvent>
+  <bpmn:serviceTask implementation="urn:bpmn-lean:effect:compensation-single-effect-v1" />
+  <bpmn:endEvent />
+</bpmn:subProcess>`;
+
+test("dormant Compensation bodies do not claim ordinary starts, effects or embedded scopes", () => {
+  const xml = `<bpmn:process><bpmn:subProcess>${dormantCompensation}</bpmn:subProcess></bpmn:process>`;
+  for (const input of [xml, xml.replace('triggeredByEvent="true"', 'triggeredByEvent="1"')]) {
+    assert.deepEqual(detectExecutableBpmnCapabilities(input), ["compensationEventSubProcess", "compensationHandlerServiceTask", "embeddedSubProcess", "process"]);
+  }
+});
+
+test("refuses unclassified dormant, standalone and unrelated Compensation markers", async () => {
+  const source = await readFile(new URL("../scenarios/compensation/travel-cancellation.bpmn", import.meta.url), "utf8");
+  for (const xml of [
+    source.replace('compensateEventDefinition id="Compensate_UndoGroundTravel"', 'messageEventDefinition id="Compensate_UndoGroundTravel"'),
+    `<bpmn:process><bpmn:serviceTask isForCompensation="true" /></bpmn:process>`,
+    `<bpmn:process><bpmn:serviceTask isForCompensation="1" /></bpmn:process>`,
+    `<bpmn:process><bpmn:startEvent><bpmn:compensateEventDefinition /></bpmn:startEvent></bpmn:process>`,
+    source.replace('attachedToRef="Task_ReserveHotel"', 'attachedToRef="SubProcess_ArrangeGroundTravel"'),
+    source.replace('id="Compensate_Global"', 'id="Compensate_Global" activityRef="Task_ReserveHotel"'),
+    source.replace('id="Compensate_Global"', 'id="Compensate_Global" waitForCompletion="false"'),
+    source.replace('id="Task_ReserveHotel" name=', 'id="Task_ReserveHotel" isForCompensation="true" name='),
+    `<bpmn:process>${dormantCompensation}</bpmn:process>`,
+    `<bpmn:process><bpmn:subProcess>${dormantCompensation.replace("bpmn:serviceTask", "bpmn:scriptTask")}</bpmn:subProcess></bpmn:process>`,
+  ]) assert.throws(() => detectExecutableBpmnCapabilities(xml), /unclassified executable BPMN/u);
+});
+
+test("the actual registered source union equals the catalog and remains covered by retained models", async () => {
+  const manifest = requireExecutableModelCorpusManifest(JSON.parse(await readFile(new URL("../model-corpus/manifest.json", import.meta.url), "utf8")));
+  const registeredSources = new Set<string>();
+  for (const artifact of [...artifactCases, ...normativeArtifactCases]) {
+    const scenario = JSON.parse(await readFile(new URL(`../${artifact.scenarioRelativePath}`, import.meta.url), "utf8"));
+    registeredSources.add(scenario.bpmn.relativePath);
+  }
+  for (const relativePath of enginePopulationScenarioRelativePaths) {
+    const scenario = JSON.parse(await readFile(new URL(`../${relativePath}`, import.meta.url), "utf8"));
+    for (const definition of scenario.definitions) registeredSources.add(definition.relativePath);
+  }
+  const detected = new Set<string>();
+  for (const relativePath of registeredSources) {
+    for (const capability of detectExecutableBpmnCapabilities(await readFile(new URL(`../${relativePath}`, import.meta.url), "utf8"))) detected.add(capability);
+  }
+  const retained = new Set<string>();
+  for (const model of manifest.models) {
+    if (model.source.kind !== "retainedScenario") continue;
+    for (const capability of detectExecutableBpmnCapabilities(await readFile(new URL(`../${model.source.bpmnRelativePath}`, import.meta.url), "utf8"))) retained.add(capability);
+  }
+  assert.deepEqual([...detected].sort(), mvpBpmnCapabilities.map(({ id }) => id).sort());
+  assert.deepEqual([...retained].sort(), [...detected].sort());
+  for (const id of compensationCapabilityIds) {
+    const row = mvpBpmnCapabilities.find((entry) => entry.id === id);
+    assert.ok(row);
+    assert.equal(row.cibEvidence.kind, CibCapabilityEvidenceKind.NotSelected);
+  }
+});
+
+test("the retained travel model binds exact source, profile and engine scenario without a browser claim", async () => {
+  const manifest = requireExecutableModelCorpusManifest(JSON.parse(await readFile(new URL("../model-corpus/manifest.json", import.meta.url), "utf8")));
+  const model = manifest.models.find(({ id }) => id === "confirmed-travel-cancellation");
+  assert.ok(model?.source.kind === "retainedScenario");
+  const source = await readFile(new URL(`../${model.source.bpmnRelativePath}`, import.meta.url));
+  const scenario = JSON.parse(await readFile(new URL(`../${model.source.scenarioRelativePath}`, import.meta.url), "utf8"));
+  assert.equal(model.source.sha256, createHash("sha256").update(source).digest("hex"));
+  assert.equal(model.source.sha256, scenario.bpmn.sha256);
+  assert.equal(model.source.bpmnRelativePath, scenario.bpmn.relativePath);
+  assert.equal(model.profile, scenario.profile);
+  assert.equal(model.pipelineCaseId, scenario.id);
+  assert.equal(model.pipelineCaseId, "compensation-success-b-c-a");
+  assert.equal(model.admission.kind, "accepted");
+  assert.equal(model.product2.kind, "notCatalogReady");
+  assert.ok(model.businessPurpose !== null && model.businessPurpose.length >= 20);
+});
 
 test("distinguishes composed Activity data from each one-direction User Task profile", async () => {
   for (const [family, expected] of [

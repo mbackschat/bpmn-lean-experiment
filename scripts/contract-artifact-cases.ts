@@ -143,6 +143,9 @@ export const artifactCases = Object.freeze([
 ]);
 
 export const normativeArtifactCases = Object.freeze([
+  ...["success-b-c-a", "success-b-a-c", "success-c-b-a", "failure-a", "failure-b", "failure-c"].map((name) => Object.freeze({
+    scenarioRelativePath: `scenarios/compensation/${name}.scenario.json`,
+  })),
   Object.freeze({
     scenarioRelativePath:
       "scenarios/exclusive-gateway-simple-boolean/scenario.json",

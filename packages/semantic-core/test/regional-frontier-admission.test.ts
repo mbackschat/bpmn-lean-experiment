@@ -69,6 +69,9 @@ test("classifies every registered profile against the regional exclusion investi
       case SemanticProfileId.RepeatableEventSubscriptions:
         assert.equal(excluded, false, "subscription admission reopens regional frontiers under its own quantified account");
         break;
+      case SemanticProfileId.Compensation:
+        assert.equal(excluded, false, "Compensation requires its separately reviewed exact-topology argument, not the legacy regional shape premises");
+        break;
       default:
         assert.equal(excluded, true, profile);
     }

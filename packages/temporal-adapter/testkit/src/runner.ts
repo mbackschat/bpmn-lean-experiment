@@ -1,11 +1,15 @@
 import type {
   CanonicalObservation,
+  CompleteEffectStimulus,
   CompleteUserTaskInstanceStimulus,
   OpenUserTask,
   Scenario,
   SemanticProcessProgram,
 } from "@bpmn-lean/semantic-core";
-import { REPEATABLE_EVENT_SUBSCRIPTIONS_CHECKPOINT_PROFILE_ID } from "@bpmn-lean/semantic-core";
+import {
+  CanonicalObservationKind, COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID,
+  ProcessStatus, REPEATABLE_EVENT_SUBSCRIPTIONS_CHECKPOINT_PROFILE_ID,
+} from "@bpmn-lean/semantic-core";
 import type {
   WorkflowHandle,
 } from "@temporalio/client";
@@ -21,6 +25,7 @@ import {
   bpmnOpenUserTasksQueryName,
   bpmnTraceQueryName,
   requireCompletedProcessReceipt,
+  requireTerminalProcessReceipt,
   TemporalCompletionDelivery,
   TemporalExecutionSchedule,
 } from "./contracts.js";
@@ -40,6 +45,7 @@ import {
   deliverCompletions,
 } from "./completion-delivery.js";
 import { deliverStimuliInOrder } from "./ordered-stimulus-delivery.js";
+import { OrderedEffectExecution } from "./ordered-effect-execution.js";
 import { readTestProcessTerminalResult } from "./private-process-handle.js";
 import {
   EffectProbeActivityRegistry,
@@ -62,7 +68,6 @@ import {
   reconcileHarnessTraceEvidence,
 } from "./harness-evidence.js";
 import {
-  completedState,
   openEffectsInTrace,
   openTimersInTrace,
   requireCompletionStimuli,
@@ -188,6 +193,17 @@ export class TemporalScenarioRunner {
     semanticProcess: SemanticProcessProgram,
     options: TemporalScenarioExecutionOptions,
   ): Promise<TemporalScenarioExecution> {
+    if (scenario.profile === COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID &&
+      options.executionSchedule === TemporalExecutionSchedule.StimulusOrder) {
+      validateExecutionOptions(scenario, options);
+      if (options.effectExecutionSchedule !== null) {
+        throw new TypeError("Ordered Compensation requires neutral Activity results without a legacy effect schedule");
+      }
+      return new OrderedEffectExecution(scenario, semanticProcess).run(
+        this.effectProbeRegistry,
+        (release) => this.runRegisteredScenario(scenario, semanticProcess, options, undefined, release),
+      );
+    }
     if (
       options.effectExecutionSchedule ===
         EffectExecutionSchedule.IncidentReportCancel
@@ -287,6 +303,7 @@ export class TemporalScenarioRunner {
     semanticProcess: SemanticProcessProgram,
     options: TemporalScenarioExecutionOptions,
     effectProbeStore?: EffectProbeStore,
+    releaseEffect?: (stimulus: CompleteEffectStimulus) => Promise<void>,
   ): Promise<TemporalScenarioExecution> {
     this.assertAvailable();
     validateExecutionOptions(scenario, options);
@@ -356,6 +373,7 @@ export class TemporalScenarioRunner {
         () => this.workerHost.assertHealthy(),
         (workflowHandle, minimumLength) =>
           this.waitForTrace(workflowHandle, minimumLength),
+        releaseEffect,
       )
       : await deliverCompletions(
         this.environment.client.workflow,
@@ -409,8 +427,8 @@ export class TemporalScenarioRunner {
     );
     const result = scenarioResultFromTrace(trace);
     const receipt = completedReceipt ?? timerReceipt ?? effectReceipt ??
-      (completedState(trace)
-        ? requireCompletedProcessReceipt(
+      (trace.findLast((observation) => observation.kind === CanonicalObservationKind.State)?.status !== ProcessStatus.Running
+        ? requireTerminalProcessReceipt(
           (await withDeadline(
             readTestProcessTerminalResult(handle),
             workflowResultDeadlineMs,

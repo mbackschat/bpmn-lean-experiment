@@ -86,6 +86,12 @@ export const pipelineCaseIdRegistry = Object.freeze([
   "subscription-catch-timer-cancel",
   "subscription-receive-task-resume",
   "subscription-receive-task-cancel",
+  "compensation-success-b-c-a",
+  "compensation-success-b-a-c",
+  "compensation-success-c-b-a",
+  "compensation-failure-a",
+  "compensation-failure-b",
+  "compensation-failure-c",
 ] as const);
 
 export type PipelineCaseId = typeof pipelineCaseIdRegistry[number];
