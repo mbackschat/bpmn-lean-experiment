@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { lstat, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { lstat, mkdir, mkdtemp, readFile, rename, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { test } from "node:test";
@@ -34,20 +34,26 @@ import {
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 
-async function maintainedMarkdownDocuments(): Promise<ReadonlyMap<string, string>> {
+async function maintainedMarkdownDocuments(root = projectRoot): Promise<ReadonlyMap<string, string>> {
   const paths = execFileSync(
     "git",
     ["ls-files", "--cached", "--others", "--exclude-standard", "-z", "--", "*.md"],
-    { cwd: projectRoot, encoding: "utf8" },
+    { cwd: root, encoding: "utf8" },
   ).split("\0").filter((file) =>
     file !== "" &&
     !file.startsWith("docs/archived/") &&
     !file.startsWith("docs/reference/")
   );
   const documents = await Promise.all(paths.map(async (file): Promise<readonly [string, string] | null> => {
-    const absolute = path.join(projectRoot, file);
-    if ((await lstat(absolute)).isSymbolicLink()) return null;
-    return [file, await readFile(absolute, "utf8")] as const;
+    const absolute = path.join(root, file);
+    try {
+      if ((await lstat(absolute)).isSymbolicLink()) return null;
+      return [file, await readFile(absolute, "utf8")] as const;
+    } catch (cause) {
+      // Git's --cached list retains unstaged removals; either filesystem read may find them absent.
+      if (cause instanceof Error && "code" in cause && cause.code === "ENOENT") return null;
+      throw cause;
+    }
   }));
   return new Map(documents.filter((entry): entry is readonly [string, string] => entry !== null));
 }
@@ -203,6 +209,46 @@ test("requires a governed owner only when the resume point names review work", (
 
 test("uses only structural implementation-map routes across maintained Markdown", async () => {
   assert.deepEqual(validateStructuralMapRoutes(await maintainedMarkdownDocuments()), []);
+});
+
+for (const change of ["rename", "delete"] as const) {
+  test(`Markdown inventory tolerates an unstaged tracked ${change} and retains pending documents`, async (t) => {
+    const root = await mkdtemp(path.join(tmpdir(), "bpmn-markdown-inventory-"));
+    t.after(() => rm(root, { recursive: true, force: true }));
+    execFileSync("git", ["init", "--quiet", root]);
+    const old = path.join(root, "OLD-PROPOSAL.md");
+    await writeFile(old, "old contract\n");
+    await writeFile(path.join(root, "README.md"), "registry\n");
+    execFileSync("git", ["add", "OLD-PROPOSAL.md", "README.md"], { cwd: root });
+    await writeFile(path.join(root, "PENDING-PROPOSAL.md"), "pending contract\n");
+    await symlink("README.md", path.join(root, "ALIAS.md"));
+    const expected = new Map([
+      ["README.md", "registry\n"],
+      ["PENDING-PROPOSAL.md", "pending contract\n"],
+    ]);
+    switch (change) {
+      case "rename":
+        await rename(old, path.join(root, "NEW-SPEC.md"));
+        expected.set("NEW-SPEC.md", "old contract\n");
+        break;
+      case "delete":
+        await rm(old);
+        break;
+    }
+    assert.deepEqual(await maintainedMarkdownDocuments(root), expected);
+  });
+}
+
+test("Markdown inventory propagates a non-missing read failure", async (t) => {
+  const root = await mkdtemp(path.join(tmpdir(), "bpmn-markdown-read-error-"));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  execFileSync("git", ["init", "--quiet", root]);
+  const document = path.join(root, "README.md");
+  await writeFile(document, "registry\n");
+  execFileSync("git", ["add", "README.md"], { cwd: root });
+  await rm(document);
+  await mkdir(document);
+  await assert.rejects(maintainedMarkdownDocuments(root), { code: "EISDIR" });
 });
 
 test("routes every tracked, pending, and workspace-package path independently", async () => {
