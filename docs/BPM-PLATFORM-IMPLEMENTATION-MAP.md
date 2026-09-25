@@ -8,7 +8,7 @@ M1 through M6 and Horizon 1 shared persistence are closed. Local mode remains si
 
 The closure-reviewed [structured Human Work specification](BPM-PLATFORM-STRUCTURED-HUMAN-WORK-SPEC.md) is evidence-closed across Product 1 semantics and Product 2 forms.
 
-The [failed-Process contract checkpoint](BPM-PLATFORM-FAILED-PROCESS-PROPOSAL.md#public-contract-checkpoint) adds strict copied-value acceptance and rejected incident-result decoding. The approved checkpoint is followed by failed-state storage, schema-epoch-12 readiness, terminal projection completeness, late-action rejection, and read-only Operations inspection. The public-start, restart, inspection, export and replay journey and independent closure review pass; clean integration remains unqualified.
+The [failed-Process contract checkpoint](BPM-PLATFORM-FAILED-PROCESS-SPEC.md#public-contract) adds strict copied-value acceptance and rejected incident-result decoding. The approved checkpoint is followed by failed-state storage, schema-epoch-12 readiness, terminal projection completeness, late-action rejection, and read-only Operations inspection. The public-start, restart, inspection, export and replay journey, independent closure review and clean integration pass.
 
 ## Implemented
 
@@ -63,7 +63,6 @@ The [failed-Process contract checkpoint](BPM-PLATFORM-FAILED-PROCESS-PROPOSAL.md
 - separately deployed or arbitrary rendered forms, nested structured values, BPMN data associations, or assignment expressions beyond the implemented metadata and fake-identity boundary
 - a client router, form library, themed component framework, virtualization, visual form builder, arbitrary or nested form schema, remote options, draft storage, attachments, or validation/computation involving I/O or user-authored expressions
 - complete discovery of engine Process instances started outside Product 2
-- independently closure-qualified failed-Process outcome under the [selected proposal](BPM-PLATFORM-FAILED-PROCESS-PROPOSAL.md); package, live-journey and independent review gates pass; clean integration remains unqualified
 - the deferred JUEL evaluator implementation under its product-owned `platform/workers/juel-evaluator/` location
 - recovery of legacy engine instances that predate the confirmed-start publication contract
 - BPMN diagram editing, a public raw-sidecar format, automatic layout for multiple root Processes, collaborations, Call Activities without complete source DI, Sub-Processes, groups, annotations, associations, or data artifacts

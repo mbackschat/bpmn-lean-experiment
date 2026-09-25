@@ -179,7 +179,7 @@ The production Query accepts `{ afterRevision, limit? }`, where `afterRevision` 
 
 ## Stable rules
 
-The [failed-Process public contract](../BPM-PLATFORM-FAILED-PROCESS-PROPOSAL.md#public-contract) extends Product 2's copied state with the engine's mandatory Compensation failure. Failed current values contain neither live work nor control tokens/scopes; their complete identities and nullable message are copied exactly. An empty BPMN-error message remains valid in the committed effect stimulus and failure state. Both persistence modes preserve that failure through suffix application, exact overlap, restart, and explicit rebuild. The export format and every earlier state encoding remain unchanged.
+The [failed-Process public contract](../BPM-PLATFORM-FAILED-PROCESS-SPEC.md#public-contract) extends Product 2's copied state with the engine's mandatory Compensation failure. Failed current values contain neither live work nor control tokens/scopes; their complete identities and nullable message are copied exactly. An empty BPMN-error message remains valid in the committed effect stimulus and failure state. Both persistence modes preserve that failure through suffix application, exact overlap, restart, and explicit rebuild. The export format and every earlier state encoding remain unchanged.
 
 ### EPUB-HISTORY-01: exact committed sequence
 

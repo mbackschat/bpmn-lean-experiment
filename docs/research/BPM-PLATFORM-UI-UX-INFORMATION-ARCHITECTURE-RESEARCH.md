@@ -213,7 +213,7 @@ On 2026-09-25, the official [CIB Seven 2.2 Process-instance view](https://docs.c
 
 The independent [Camunda Operate incident-resolution guide](https://docs.camunda.io/docs/components/operate/userguide/resolve-incidents-update-variables/) likewise presents repair and retry for a Process blocked by an incident. That is useful negative evidence: reusing incident recovery controls for the engine's terminal `failed` state would promise an action that the published contract does not contain.
 
-The [failed-Process proposal](../BPM-PLATFORM-FAILED-PROCESS-PROPOSAL.md) adopts instance-context diagnostics and explicit state text, deliberately shows only the published Compensation failure and its complete occurrence identities, and excludes stack traces, invented causes, variable repair and Retry/Cancel. Its acceptance oracle distinguishes terminal semantic failure from both a running incident and unavailable transport, preserves exact History/export, and checks readable, non-actionable detail at both supported desktop widths. No reference code, appearance, assets or private model is copied.
+The [failed-Process specification](../BPM-PLATFORM-FAILED-PROCESS-SPEC.md) adopts instance-context diagnostics and explicit state text, deliberately shows only the published Compensation failure and its complete occurrence identities, and excludes stack traces, invented causes, variable repair and Retry/Cancel. Its acceptance oracle distinguishes terminal semantic failure from both a running incident and unavailable transport, preserves exact History/export, and checks readable, non-actionable detail at both supported desktop widths. No reference code, appearance, assets or private model is copied.
 
 ## Product evidence matrix
 

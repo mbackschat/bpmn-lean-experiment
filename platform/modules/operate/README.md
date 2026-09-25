@@ -14,7 +14,7 @@ The ordinal-0008 migration adds immutable incident snapshot generations. Candida
 
 The ordinal-0009 migration adds database-clock completion watermarks to the append-only committed-execution and flow-node-occurrence headers, plus a constrained redundant current Process status. Lease-fenced recovery refreshes those facts even for an exact no-suffix Product 1 observation. Shared per-instance execution reads require one fresh aligned E1 and occurrence head, while shared metrics materialize and validate one exact-definition population cut in one SQL statement. Neither path calls Product 1 from the request, and metrics add no generation table or recovery family.
 
-The [failed-Process increment](../../../docs/BPM-PLATFORM-FAILED-PROCESS-PROPOSAL.md) adds the ordinal-0012 status-constraint migration and schema epoch 12. Both repositories preserve exact failure bytes. Closed execution caching requires complete healthy E1 and an aligned empty occurrence head; closed registration alone supplies no metrics. Matching late incident-action closure records a definite rejected result, including `failed`, without creating a repair action.
+The [failed-Process increment](../../../docs/BPM-PLATFORM-FAILED-PROCESS-SPEC.md) adds the ordinal-0012 status-constraint migration and schema epoch 12. Both repositories preserve exact failure bytes. Closed execution caching requires complete healthy E1 and an aligned empty occurrence head; closed registration alone supplies no metrics. Matching late incident-action closure records a definite rejected result, including `failed`, without creating a repair action.
 
 ## Quick start
 
