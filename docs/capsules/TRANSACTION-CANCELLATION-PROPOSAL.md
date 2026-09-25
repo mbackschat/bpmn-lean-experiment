@@ -2,14 +2,14 @@
 
 ## Status
 
-Lifecycle: draft
-Review: pending
+Lifecycle: owner-approved
+Review: approved-with-required-edits
 
 ## Question and bounded outcome
 
 How does one admitted Transaction Sub-Process cancel its live work, compensate its completed eligible work, and release its Cancel Boundary Event only after compensation finishes?
 
-The selected RC outcome is complete from exact BPMN XML through checked source, Semantic Process IL, Lean, TypeScript, production Temporal hosting, paired E1/E2 publication, and public engine commands. This proposal extends scope ownership of the existing Compensation mechanism; it does not select another general scheduling-proof programme. The [RC plan](../PLAN.md#mue-release-candidate-critical-path) remains the scope authority. Nothing in this draft changes current admission or claims implementation.
+The selected RC outcome is complete from exact BPMN XML through checked source, Semantic Process IL, Lean, TypeScript, production Temporal hosting, paired E1/E2 publication, and public engine commands. This proposal extends scope ownership of the existing Compensation mechanism; it does not select another general scheduling-proof programme. The [RC plan](../PLAN.md#mue-release-candidate-critical-path) remains the scope authority. Proposal approval authorizes implementation; it changes no current admission and claims no executed Transaction capability.
 
 ## Normative authority and interpretation boundary
 
@@ -176,7 +176,7 @@ These measurements come from `what-binds` on 2026-09-25. The source review targe
 
 ## Epistemic closure boundary and cost
 
-This draft establishes no executed Transaction capability. Closure requires the complete selected Start-to-publication outcome and the exact evidence rows above. The nearest unsupported claim remains successful protocol-controlled Transactions, followed by multi-subject dependency-aware Transaction compensation and hazard recovery. Neither existing root Compensation nor one green cancellation model establishes them.
+This approved proposal establishes no executed Transaction capability. Closure requires the complete selected Start-to-publication outcome and the exact evidence rows above. The nearest unsupported claim remains successful protocol-controlled Transactions, followed by multi-subject dependency-aware Transaction compensation and hazard recovery. Neither existing root Compensation nor one green cancellation model establishes them.
 
 Common-mode risks are a shared wrong source-role interpretation, dropping eligible records in generic cancellation, using root-only validators for child tombstones, normal scope completion racing compensation, and projecting the desired boundary from the fixture rather than transition evidence. Cross-language laws, non-target-owner witnesses, explicit empty/failure schedules, negative admission, and live paused-handler publication discriminate those risks separately.
 
@@ -186,6 +186,8 @@ Record commit-bounded code/document churn and command receipt span/union in the 
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `7ac97884658769e227b22f8c94bb8b4298e65a9f` | `fork-turns-none` | `approve-with-required-edits` | `9a5c3a4a20168f707870f20b011b47cf64bec820` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+
+The context-cold proposal review approved correction target `9a5c3a4a20168f707870f20b011b47cf64bec820` in its first same-reviewer audit on 2026-09-25. All required findings closed: distinct single-input root Ends, explicit child-register and host-admission owners/contracts, and the structural router link. Initial packet SHA-256: `775151f23ba25118cf6808834ae0bce4c1341e490e349bba7e5982836f6f284e`; correction packet: `1d3129333191c4fbbcf5c2e08b94ca969a29026445006810af8d04c5bae60fe4`. The complete infrastructure gate passed 594 checks in 56.79 seconds on the correction contents before commit, asserted receipt `/tmp/bpmn-transaction-proposal-correction-infrastructure`; its recorded Git head is the parent, so this is not clean-target qualification. No implementation, Lean or live-host result is implied.
