@@ -166,6 +166,7 @@ function hasSelectedArity(
     case CheckedNodeKind.MessageStartEvent:
     case CheckedNodeKind.TimerStartEvent:
       return incoming === 0 && outgoing === 1;
+    case CheckedNodeKind.TransactionSubProcess:
     case CheckedNodeKind.EmbeddedSubProcess:
     case CheckedNodeKind.CallActivity:
     case CheckedNodeKind.UserTask:
@@ -183,6 +184,7 @@ function hasSelectedArity(
     case CheckedNodeKind.ConfiguredTask:
     case CheckedNodeKind.GlobalSynchronousCompensationThrowEvent:
       return incoming === 1 && outgoing === 1;
+    case CheckedNodeKind.CancelBoundaryEvent:
     case CheckedNodeKind.BoundaryErrorEvent:
     case CheckedNodeKind.TimerBoundaryEvent:
     case CheckedNodeKind.MessageBoundaryEvent:
@@ -209,6 +211,7 @@ function hasSelectedArity(
       }
     case CheckedNodeKind.EventBasedGateway:
       return incoming === 1 && outgoing === 2;
+    case CheckedNodeKind.CancelEndEvent:
     case CheckedNodeKind.ErrorEndEvent:
     case CheckedNodeKind.TerminateEndEvent:
     case CheckedNodeKind.NoneEndEvent:
@@ -332,6 +335,7 @@ function exceptionalEdgesWithinScope(
 /** The Activity a boundary Event is attached to, or `undefined` for any other node. */
 function attachedBoundaryHost(node: CheckedNode): string | undefined {
   switch (node.kind) {
+    case CheckedNodeKind.CancelBoundaryEvent:
     case CheckedNodeKind.BoundaryErrorEvent:
     case CheckedNodeKind.TimerBoundaryEvent:
     case CheckedNodeKind.MessageBoundaryEvent:

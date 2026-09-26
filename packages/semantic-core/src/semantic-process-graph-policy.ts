@@ -3,6 +3,7 @@ import { CheckedNodeKind } from "./checked-process-contract.js";
 import type { DeepReadonly } from "./deep-readonly.js";
 import { SemanticOperationKind } from "./semantic-process-contract.js";
 import {
+  TRANSACTION_CANCELLATION_CHECKPOINT_PROFILE_ID,
   COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID,
   REPEATABLE_EVENT_SUBSCRIPTIONS_CHECKPOINT_PROFILE_ID,
   MESSAGE_KEY_CORRELATION_CHECKPOINT_PROFILE_ID,
@@ -67,6 +68,7 @@ export function semanticGraphPolicyForProfile(
     case SemanticProfileId.IntermediateCatchMessage:
     case SemanticProfileId.MessagePayloadCatch:
     case REPEATABLE_EVENT_SUBSCRIPTIONS_CHECKPOINT_PROFILE_ID:
+    case TRANSACTION_CANCELLATION_CHECKPOINT_PROFILE_ID:
     case COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID:
     case MESSAGE_KEY_CORRELATION_CHECKPOINT_PROFILE_ID:
     case SemanticProfileId.MessageAddressedReceiveTask:

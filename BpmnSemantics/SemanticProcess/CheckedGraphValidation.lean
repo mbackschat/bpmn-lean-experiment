@@ -13,6 +13,9 @@ private def checkedNodeId : CheckedNode → NodeId
   | .messageStartEvent id _
   | .timerStartEvent id _
   | .embeddedSubProcess id _
+  | .transactionSubProcess id _ _
+  | .cancelEndEvent id
+  | .cancelBoundaryEvent id _ _
   | .callActivity id _
   | .boundaryErrorEvent id _ _ _
   | .timerBoundaryEvent id _ _ _ _
@@ -84,10 +87,12 @@ private def checkedEdges (source : CheckedProcess)
 
 /-- Keyed on attachment, not on trigger kind: every boundary Event is reachable only through the Activity it is attached to, so a family added here without its edge would leave its own node unreachable. -/
 private def attachedBoundaryHost? : CheckedNode → Option (GraphEdge NodeId)
+  | .cancelBoundaryEvent id attachedToRef _
   | .boundaryErrorEvent id attachedToRef _ _
   | .timerBoundaryEvent id attachedToRef _ _ _
   | .messageBoundaryEvent id attachedToRef _ _ _ =>
       some { source := attachedToRef, target := id }
+  | .transactionSubProcess .. | .cancelEndEvent ..
   | .noneStartEvent .. | .messageStartEvent .. | .timerStartEvent .. | .embeddedSubProcess .. | .callActivity ..
   | .userTask .. | .dataInputUserTask .. | .dataInputOutputUserTask .. | .dataOutputUserTask ..
   | .intermediateCatchTimerEvent ..
@@ -116,6 +121,7 @@ private def checkedStartIds (nodes : List CheckedNode) : List NodeId :=
 
 private def checkedEndIds (nodes : List CheckedNode) : List NodeId :=
   nodes.filterMap fun
+    | .cancelEndEvent id => some id
     | .errorEndEvent id _ => some id
     | .terminateEndEvent id => some id
     | .noneEndEvent id => some id
@@ -129,8 +135,9 @@ def checkedNodeIsResumptionCut : CheckedNode → Bool
   | .dataOutputUserTask .. => true
   | .sequentialMultiInstanceUserTask .. => true
   | .parallelMultiInstanceUserTask .. => true
+  | .transactionSubProcess .. | .cancelEndEvent ..
   | .noneStartEvent .. | .messageStartEvent .. | .timerStartEvent .. | .embeddedSubProcess .. | .callActivity ..
-  | .boundaryErrorEvent .. | .timerBoundaryEvent .. | .messageBoundaryEvent ..
+  | .cancelBoundaryEvent .. | .boundaryErrorEvent .. | .timerBoundaryEvent .. | .messageBoundaryEvent ..
   | .intermediateCatchTimerEvent .. | .intermediateCatchMessageEvent ..
   | .payloadMessageCatchEvent ..
   | .correlatedPayloadMessageCatchEvent ..

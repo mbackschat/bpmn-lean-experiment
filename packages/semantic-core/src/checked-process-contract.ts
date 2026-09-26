@@ -9,6 +9,7 @@
 import type { DirectActivityDataInput } from "./activity-data-input-contract.js";
 import type { DirectActivityDataOutput } from "./activity-data-output-contract.js";
 import type { DirectCatchEventPayloadOutput } from "./catch-event-payload-contract.js";
+import type { CheckedTransactionCancellation } from "./transaction-source-contract.js";
 import type { CheckedCompensation } from "./compensation-source-contract.js";
 import type {
   CorrelationMessagePath,
@@ -41,6 +42,9 @@ export enum CheckedNodeKind {
   MessageStartEvent = "messageStartEvent",
   TimerStartEvent = "timerStartEvent",
   EmbeddedSubProcess = "embeddedSubProcess",
+  TransactionSubProcess = "transactionSubProcess",
+  CancelEndEvent = "cancelEndEvent",
+  CancelBoundaryEvent = "cancelBoundaryEvent",
   CallActivity = "callActivity",
   BoundaryErrorEvent = "boundaryErrorEvent",
   TimerBoundaryEvent = "timerBoundaryEvent",
@@ -152,6 +156,22 @@ export type CheckedNode =
       kind: CheckedNodeKind.EmbeddedSubProcess;
       id: string;
       childScopeId: string;
+    }>
+  | DeepReadonly<{
+      kind: CheckedNodeKind.TransactionSubProcess;
+      id: string;
+      childScopeId: string;
+      method: "##Compensate";
+    }>
+  | DeepReadonly<{
+      kind: CheckedNodeKind.CancelEndEvent;
+      id: string;
+    }>
+  | DeepReadonly<{
+      kind: CheckedNodeKind.CancelBoundaryEvent;
+      id: string;
+      attachedToRef: string;
+      outputFlowId: string;
     }>
   | DeepReadonly<{
       kind: CheckedNodeKind.CallActivity;
@@ -392,4 +412,5 @@ export type CheckedProcess = DeepReadonly<{
   nodes: CheckedNode[];
   sequenceFlows: CheckedSequenceFlow[];
   compensation?: CheckedCompensation;
+  transactionCancellation?: CheckedTransactionCancellation;
 }>;

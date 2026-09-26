@@ -1,6 +1,7 @@
 /** Profile-owned Activity retry and result policy. */
 import {
   COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID,
+  TRANSACTION_CANCELLATION_CHECKPOINT_PROFILE_ID,
   SERVICE_TASK_INCIDENT_CHECKPOINT_PROFILE_ID,
   SemanticProfileId,
 } from "@bpmn-lean/semantic-core";
@@ -52,6 +53,7 @@ export function effectActivityPolicyForProfile(
 ): EffectActivityPolicy {
   switch (semanticProfile) {
     case COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID:
+    case TRANSACTION_CANCELLATION_CHECKPOINT_PROFILE_ID:
       return compensationEffectActivityPolicy;
     case SERVICE_TASK_INCIDENT_CHECKPOINT_PROFILE_ID:
     case SemanticProfileId.ServiceTaskIncidentCancellation:

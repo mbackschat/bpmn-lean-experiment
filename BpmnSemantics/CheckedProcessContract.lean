@@ -211,6 +211,14 @@ structure CheckedCompensation where
   executionLimits : CheckedCompensationExecutionLimits
   deriving Repr, DecidableEq
 
+structure CheckedTransactionCancellation where
+  definitionScopeId : DefinitionScopeId
+  triggerElementId : NodeId
+  subject : CheckedCompensationSubject
+  retentionLimits : CheckedCompensationRetentionLimits
+  executionLimits : CheckedCompensationExecutionLimits
+  deriving Repr, DecidableEq
+
 inductive CheckedBoundaryTimerExpression where
   | duration (literal : String)
   | cycle (literal : String)
@@ -221,6 +229,9 @@ inductive CheckedNode where
   | messageStartEvent (id : NodeId) (channel : MessageChannel)
   | timerStartEvent (id : NodeId) (durationLiteral : String)
   | embeddedSubProcess (id : NodeId) (childScopeId : DefinitionScopeId)
+  | transactionSubProcess (id : NodeId) (childScopeId : DefinitionScopeId) (method : String)
+  | cancelEndEvent (id : NodeId)
+  | cancelBoundaryEvent (id attachedToRef : NodeId) (outputFlowId : SequenceFlowId)
   | callActivity (id : NodeId) (calledProcessId : ProcessId)
   | boundaryErrorEvent (id attachedToRef : NodeId)
       (error : ErrorReference) (outputFlowId : SequenceFlowId)
@@ -303,6 +314,9 @@ def CheckedNode.id : CheckedNode → NodeId
   | .messageStartEvent id _
   | .timerStartEvent id _
   | .embeddedSubProcess id _
+  | .transactionSubProcess id _ _
+  | .cancelEndEvent id
+  | .cancelBoundaryEvent id _ _
   | .callActivity id _
   | .boundaryErrorEvent id _ _ _
   | .timerBoundaryEvent id _ _ _ _
@@ -363,6 +377,7 @@ structure CheckedProcess where
   nodes : List CheckedNode
   sequenceFlows : List CheckedSequenceFlow
   compensation : Option CheckedCompensation := none
+  transactionCancellation : Option CheckedTransactionCancellation := none
   deriving Repr, DecidableEq
 
 end BpmnSemantics.SemanticProcess

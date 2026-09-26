@@ -1,4 +1,6 @@
+import { compileTransactionSourceCheckedProcess } from "./transaction-source.js";
 import {
+  TRANSACTION_CANCELLATION_CHECKPOINT_PROFILE_ID,
   COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID,
   MESSAGE_KEY_CORRELATION_CHECKPOINT_PROFILE_ID,
   PARALLEL_MULTI_INSTANCE_USER_TASK_PROFILE_ID,
@@ -78,6 +80,7 @@ export const CompilationDispatchId = Object.freeze({
   MessagePayloadCatch: "messagePayloadCatch",
   MessageKeyCorrelation: "messageKeyCorrelation",
   CompensationSource: "compensationSource",
+  TransactionCancellation: "transactionCancellation",
 } as const);
 
 export type CompilationDispatchId =
@@ -232,6 +235,13 @@ export const compilationDispatches: ReadonlyArray<CompilationDispatch> =
             ),
     },
     {
+      id: CompilationDispatchId.TransactionCancellation,
+      semanticProfile: TRANSACTION_CANCELLATION_CHECKPOINT_PROFILE_ID,
+      reader: (rootElement, source, overlay) => overlay === null
+        ? compileTransactionSourceCheckedProcess(rootElement, source)
+        : unsupported("Transaction cancellation does not admit a source overlay."),
+    },
+    {
       id: CompilationDispatchId.CompensationSource,
       semanticProfile: COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID,
       reader: (rootElement, source, overlay) =>
@@ -289,6 +299,7 @@ export function compileDispatchedCheckedProcess(
     case CompilationDispatchId.ActivityDataOutputUserTask:
     case CompilationDispatchId.MessagePayloadCatch:
     case CompilationDispatchId.MessageKeyCorrelation:
+    case CompilationDispatchId.TransactionCancellation:
     case CompilationDispatchId.CompensationSource:
       return dispatch.reader(rootElement, source, overlay);
     default:

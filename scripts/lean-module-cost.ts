@@ -138,6 +138,13 @@ export const leanModuleCostRecord = {
     "BpmnSemantics.TransactionCancellationJoinPublicationConformance",
   ],
   rows: [
+    {
+      module: "BpmnSemantics.TransactionSourceConformance", sourceSha256: "12631aa9acbaf0c75109b124b01b8a01e688bab4db763b42ec991245a1c51b67",
+      peakResidentKib: 1608308,
+      elapsedSeconds: 22.58,
+      measurementReceiptSha256: "6756b9e0e6b49dc10ffdd9ea0f3a70abfb973bfcf119ce753d1b902024ca037b",
+      measuredAtCommit: "ad6d0bc9",
+    },
     { module: "BpmnSemantics.InternalRegionalHandlerPublicationConformance", sourceSha256: "9331738a0f9afd02f56ce3b038cd6ee9e895f155ad751d3a3e64753f33b14954", peakResidentKib: 2870744, elapsedSeconds: 46.57, measurementReceiptSha256: "622e3008ab2f8c18bc8aa0060fe10282f4df76c6e6ca2fcd9c2b50c24ba407ea" },
     { module: "BpmnSemantics.TransactionCancellationJoinPublicationConformance", sourceSha256: "13244758d7a5b868054c98dae288b73ebce9f39795ad57dd34f3cea565017c98", peakResidentKib: 3322820, elapsedSeconds: 13.37, measurementReceiptSha256: "d87cdbd58c7e38f51ae4ae38dcd8a58e65dbc462497df3a49bd5df061bc6ab1e" },
     { module: "BpmnSemantics.TransactionCancellationTerminalPublicationConformance", sourceSha256: "06dbd2b6998daae2cb468f22f511da7c7b98e57e8e2cf14c0bd6fd003a56f4c3", peakResidentKib: 2089436, elapsedSeconds: 6.33, measurementReceiptSha256: "2aaec3a679a8d8293ef1d4903c15d4bfd258c9d25b291d7fed50f3d950505326" },

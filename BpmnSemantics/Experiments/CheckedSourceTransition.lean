@@ -88,6 +88,9 @@ def fireNode? (source : CheckedProcess) (node : CheckedNode)
   | .receiveTask _ _ => none
   | .configuredTask _ _ => none
   | .serviceTask _ _ _ _ _ => none
+  | .transactionSubProcess .. => none
+  | .cancelEndEvent .. => none
+  | .cancelBoundaryEvent .. => none
   | .embeddedSubProcess _ _ => none
   | .callActivity _ _ => none
   | .boundaryErrorEvent .. => none
@@ -178,6 +181,12 @@ theorem fireNode_sound (source : CheckedProcess) (node : CheckedNode)
   | configuredTask id descriptor =>
       simp [fireNode?] at result
   | serviceTask id descriptor inputMappings outputMappings bpmnErrorRoute =>
+      simp [fireNode?] at result
+  | transactionSubProcess id scopeId method =>
+      simp [fireNode?] at result
+  | cancelEndEvent id =>
+      simp [fireNode?] at result
+  | cancelBoundaryEvent id attachedToRef outputFlowId =>
       simp [fireNode?] at result
   | embeddedSubProcess id scopeId =>
       simp [fireNode?] at result

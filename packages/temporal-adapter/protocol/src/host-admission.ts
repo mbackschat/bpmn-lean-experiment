@@ -1,5 +1,6 @@
 import {
   COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID,
+  TRANSACTION_CANCELLATION_CHECKPOINT_PROFILE_ID,
   MESSAGE_KEY_CORRELATION_CHECKPOINT_PROFILE_ID,
   REPEATABLE_EVENT_SUBSCRIPTIONS_CHECKPOINT_PROFILE_ID,
   MessageChannelKind,
@@ -37,6 +38,7 @@ import type {
  * second host-driven branch or scheduler is rejected before Workflow start.
  * The exact Compensation source checkpoint may retain its historical Parallel
  * split because semantic admission proves that it synchronizes before the throw.
+ * The Transaction checkpoint cancels all ordinary child work before its effect frontier.
  * The subscription profile has its own activation scheduler; its complete structural
  * admission bounds one Timer beside the selected passive and boundary waits.
  */
@@ -144,17 +146,20 @@ const managedClasses: ReadonlyArray<ManagedHostClass> = [
   {
     operationClass: HostOperationClass.CompensationTrigger,
     isAdmissibleProgramForm: (operation, program) =>
-      operation.kind === SemanticOperationKind.TriggerCompensation &&
+      ((operation.kind === SemanticOperationKind.TriggerCompensation &&
       program.identity.semanticProfile ===
-        COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID &&
+        COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID) ||
+      (operation.kind === SemanticOperationKind.CancelTransaction &&
+      program.identity.semanticProfile ===
+        TRANSACTION_CANCELLATION_CHECKPOINT_PROFILE_ID)) &&
       isWellFormedSemanticProcessProgram(program) &&
       profileAllowsProgramShape(
         program.identity.semanticProfile,
         program.operations,
         program.definitionScopes.length,
       ),
-    // The approved hosting preflight permits this one historical split only because the exact
-    // checkpoint Program synchronizes it before the throw; see COMPENSATION-TRIGGER-HANDLER-PROPOSAL.md.
+    // The Compensation preflight synchronizes its split before throwing; the Transaction
+    // cancellation preflight removes ordinary child work before compensation (TXC-CANCEL-01).
     allowsSynchronizedTokenSplit: true,
     failure: {
       code: TemporalHostAdmissionFailureCode.CompensationSchedulerUnavailable,

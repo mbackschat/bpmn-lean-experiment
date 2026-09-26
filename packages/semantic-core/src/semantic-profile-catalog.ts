@@ -92,3 +92,7 @@ export const SERVICE_TASK_INCIDENT_CHECKPOINT_PROFILE_ID =
 /** Preserves checkpoint consumers while the public catalog owns the registered identity. */
 export const REPEATABLE_EVENT_SUBSCRIPTIONS_CHECKPOINT_PROFILE_ID =
   SemanticProfileId.RepeatableEventSubscriptions;
+
+/** Private source/host checkpoint identity; public registration follows complete capsule qualification. */
+export const TRANSACTION_CANCELLATION_CHECKPOINT_PROFILE_ID =
+  "bpmn-2.0.2-transaction-cancellation-checkpoint-draft";

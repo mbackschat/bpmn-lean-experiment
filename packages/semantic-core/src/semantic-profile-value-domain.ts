@@ -7,6 +7,7 @@ import type {
   VariableBinding,
 } from "./contract.js";
 import {
+  TRANSACTION_CANCELLATION_CHECKPOINT_PROFILE_ID,
   COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID,
   MESSAGE_KEY_CORRELATION_CHECKPOINT_PROFILE_ID,
   REPEATABLE_EVENT_SUBSCRIPTIONS_CHECKPOINT_PROFILE_ID,
@@ -22,6 +23,7 @@ export enum VariableWriteSurface {
 
 type SemanticProfile =
   | typeof SemanticProfileId[keyof typeof SemanticProfileId]
+  | typeof TRANSACTION_CANCELLATION_CHECKPOINT_PROFILE_ID
   | typeof COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID
   | typeof MESSAGE_KEY_CORRELATION_CHECKPOINT_PROFILE_ID
   | typeof REPEATABLE_EVENT_SUBSCRIPTIONS_CHECKPOINT_PROFILE_ID;
@@ -56,7 +58,8 @@ const scalarValueDomain = Object.freeze([
 const admittedSemanticProfiles: ReadonlySet<string> = new Set(
   [
     ...Object.values(SemanticProfileId),
-    COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID,
+    TRANSACTION_CANCELLATION_CHECKPOINT_PROFILE_ID,
+  COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID,
     MESSAGE_KEY_CORRELATION_CHECKPOINT_PROFILE_ID,
     REPEATABLE_EVENT_SUBSCRIPTIONS_CHECKPOINT_PROFILE_ID,
   ],
@@ -193,6 +196,7 @@ function profileValueDomain(
         stringNullValueDomain,
         structuredHumanWorkValueDomain,
       );
+    case TRANSACTION_CANCELLATION_CHECKPOINT_PROFILE_ID:
     case SemanticProfileId.ActivityBoundaryTimer:
     case SemanticProfileId.ActivityBoundaryMessage:
     case SemanticProfileId.CalledProcessCallActivity:

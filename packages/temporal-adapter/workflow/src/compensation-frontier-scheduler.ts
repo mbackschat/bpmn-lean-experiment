@@ -1,7 +1,11 @@
 /** Durable ownership and canonical result release for one committed Compensation frontier. */
 import {
   COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID,
+  TRANSACTION_CANCELLATION_CHECKPOINT_PROFILE_ID,
   compareCanonicalStrings,
+  compensationExecutionStateDefects,
+  isWellFormedSemanticProcessProgram,
+  profileAllowsProgramShape,
   projectCompensationEffectTransportMaterial,
 } from "@bpmn-lean/semantic-core";
 import type {
@@ -389,13 +393,18 @@ function requireOwnedState(
   const activeHandlers = activeTrigger?.handlers.filter(
     (handler) => handler.lifecycle === "compensating",
   ) ?? [];
-  if (program.identity.semanticProfile !== COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID) {
+  const admittedTransaction = program.identity.semanticProfile === TRANSACTION_CANCELLATION_CHECKPOINT_PROFILE_ID &&
+    isWellFormedSemanticProcessProgram(program) && profileAllowsProgramShape(
+      program.identity.semanticProfile, program.operations, program.definitionScopes.length,
+    );
+  if (program.identity.semanticProfile !== COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID && !admittedTransaction) {
     throw hostInvariantFailure(
       "Compensation frontier reached hosting outside its exact checkpoint profile",
     );
   }
   const first = waits[0];
   if (
+    (admittedTransaction && compensationExecutionStateDefects(program, state).length > 0) ||
     first === undefined ||
     waits.some(({ triggerId }) => !sameOccurrence(triggerId, first.triggerId)) ||
     activeTriggers.length !== 1 ||

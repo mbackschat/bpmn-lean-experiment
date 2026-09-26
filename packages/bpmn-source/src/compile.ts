@@ -1,3 +1,4 @@
+import { TRANSACTION_CANCELLATION_CHECKPOINT_PROFILE_ID } from "@bpmn-lean/semantic-core";
 import {
   BpmnCompilationStatus,
   BpmnSourceDiagnosticCode,
@@ -248,6 +249,11 @@ export async function compileBpmnToSemanticProcess(
     return reject(projection.diagnostics);
   }
   const semanticProcess = lowerCheckedProcess(projection.checkedProcess);
+  if (request.semanticProfile === TRANSACTION_CANCELLATION_CHECKPOINT_PROFILE_ID &&
+      !isWellFormedSemanticProcessProgram(semanticProcess)) {
+    return reject([diagnostic(BpmnSourceDiagnosticCode.UnsupportedModel,
+      "The lowered Transaction must preserve its complete scoped cancellation grammar.")]);
+  }
   if (
     isUserTaskMetadataProfile(request.semanticProfile) &&
     !userTaskMetadataBindingValid(projection.checkedProcess, semanticProcess)

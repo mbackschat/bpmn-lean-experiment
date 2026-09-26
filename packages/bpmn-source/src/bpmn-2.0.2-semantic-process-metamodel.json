@@ -33,7 +33,8 @@
       "BoundaryEvent attachment and interrupting default",
       "SubProcess FlowElementsContainer generalization and triggeredByEvent default",
       "ErrorEventDefinition.errorRef and Error name/code identity",
-      "Process artifact containment, Compensation event definition activity/wait references, Activity compensation marker, and Association endpoints/direction"
+      "Process artifact containment, Compensation event definition activity/wait references, Activity compensation marker, and Association endpoints/direction",
+      "Transaction and CancelEventDefinition type identity, Transaction method/protocol ownership, and the exact XSD ##Compensate method default"
     ],
     "absent": [
       "complete BPMN20 metamodel",
@@ -73,7 +74,9 @@
     "eventBasedGatewayType": "bpmn:EventBasedGateway",
     "endEventType": "bpmn:EndEvent",
     "associationType": "bpmn:Association",
-    "sequenceFlowType": "bpmn:SequenceFlow"
+    "sequenceFlowType": "bpmn:SequenceFlow",
+    "transactionType": "bpmn:Transaction",
+    "cancelEventDefinitionType": "bpmn:CancelEventDefinition"
   },
   "classes": [
     {
@@ -306,6 +309,18 @@
       "directSuperClasses": [
         "Activity",
         "InteractionNode"
+      ]
+    },
+    {
+      "name": "Transaction",
+      "directSuperClasses": [
+        "SubProcess"
+      ]
+    },
+    {
+      "name": "CancelEventDefinition",
+      "directSuperClasses": [
+        "EventDefinition"
       ]
     }
   ],
@@ -731,6 +746,22 @@
       "name": "targetRef",
       "type": "BaseElement",
       "lower": 1,
+      "upper": 1,
+      "containment": false
+    },
+    {
+      "owner": "Transaction",
+      "name": "method",
+      "type": "String",
+      "lower": 1,
+      "upper": 1,
+      "containment": false
+    },
+    {
+      "owner": "Transaction",
+      "name": "protocol",
+      "type": "String",
+      "lower": 0,
       "upper": 1,
       "containment": false
     }

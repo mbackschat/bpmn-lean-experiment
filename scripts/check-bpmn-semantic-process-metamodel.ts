@@ -34,6 +34,8 @@ type MetamodelManifest = Readonly<{
     intermediateThrowEventType: string;
     terminateEventDefinitionType: string;
     compensateEventDefinitionType: string;
+    transactionType: string;
+    cancelEventDefinitionType: string;
     associationType: string;
     userTaskType: string;
     renderingType: string;
@@ -174,6 +176,8 @@ function decodeMetamodelManifest(text: string): MetamodelManifest {
       ),
     },
     compilerProjection: {
+      transactionType: requiredMember(requireRecord(record["compilerProjection"], "manifest.compilerProjection"), "transactionType", "manifest.compilerProjection"),
+      cancelEventDefinitionType: requiredMember(requireRecord(record["compilerProjection"], "manifest.compilerProjection"), "cancelEventDefinitionType", "manifest.compilerProjection"),
       intermediateThrowEventType: requiredMember(
         requireRecord(
           record["compilerProjection"],
@@ -309,6 +313,8 @@ assert.equal(
 );
 
 const compensationProjectionFacts = [
+  ["transactionType", "Transaction", "transaction", "flowElement"],
+  ["cancelEventDefinitionType", "CancelEventDefinition", "cancelEventDefinition", "eventDefinition"],
   [
     "intermediateThrowEventType",
     "IntermediateThrowEvent",
@@ -356,6 +362,12 @@ const renderingFacts = manifest.classes.filter(
   ({ name }) => name === "Rendering",
 );
 assert.equal(renderingFacts.length, 1);
+assert.equal(
+  xpathIn(semanticXsdPath, 'string(//*[local-name()="complexType" and @name="tTransaction"]//*[local-name()="attribute" and @name="method"]/@default)'),
+  "##Compensate",
+  "The omitted Transaction method must retain the exact selected XSD default",
+);
+
 assert.equal(manifest.compilerProjection.renderingType, "bpmn:Rendering");
 assert.equal(manifest.compilerProjection.userTaskType, "bpmn:UserTask");
 assert.deepEqual(

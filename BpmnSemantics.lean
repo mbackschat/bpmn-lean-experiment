@@ -298,6 +298,7 @@ import BpmnSemantics.ScopeCreationMixedBatchConformance
 import BpmnSemantics.InternalClosureAtomicityConformance
 
 import BpmnSemantics.SnapshotInternalArmingConformance
+import BpmnSemantics.TransactionSourceConformance
 import BpmnSemantics.SemanticProcess.InternalSnapshotArmingExecution
 
 /-! Root of the BPMN semantic contract library.

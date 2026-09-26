@@ -13,7 +13,7 @@ The selected RC outcome is complete from exact BPMN XML through checked source, 
 
 ## Current implementation boundary
 
-[`implementation-status-owner:ENGINE-SEMANTIC-FAMILY`](../ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md#transaction-cancellation) owns the manual-Program implementation and its explicit missing source, scheduling and production-host evidence. The semantic checkpoint and closure reviews remain governed by the [review receipt](#independent-cold-review-receipt); proposal approval does not approve the implementation.
+[`implementation-status-owner:ENGINE-SEMANTIC-FAMILY`](../ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md#transaction-cancellation) owns the approved manual-Program checkpoint, source/production-host integration and the remaining scheduling, registration and qualification boundary. The semantic checkpoint and closure reviews remain governed by the [review receipt](#independent-cold-review-receipt); proposal approval does not approve the implementation.
 
 ## Normative authority and interpretation boundary
 
@@ -173,9 +173,9 @@ These measurements were refreshed with the shared source-measure functions on 20
 | [Lean retention](../../BpmnSemantics/SemanticProcess/CompensationActivityRetention.lean) | 363 |
 | [Lean completion](../../BpmnSemantics/SemanticProcess/CompensationTriggerHandlerCompletion.lean) | 318 |
 | [Retention validation](../../packages/semantic-core/src/compensation-activity-retention-state-validation.ts) | 440 |
-| [Host admission](../../packages/temporal-adapter/protocol/src/host-admission.ts) | 465 |
-| [Source graph admission](../../packages/bpmn-source/src/checked-process-graph-admission.ts) | 420 |
-| [Node lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 129 |
+| [Host admission](../../packages/temporal-adapter/protocol/src/host-admission.ts) | 460 |
+| [Source graph admission](../../packages/bpmn-source/src/checked-process-graph-admission.ts) | 416 |
+| [Node lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 123 |
 | [Lean retention declaration](../../BpmnSemantics/SemanticProcess/CompensationActivityRetentionDeclaration.lean) | 643 |
 
 ## Epistemic closure boundary and cost
@@ -191,7 +191,9 @@ Record commit-bounded code/document churn and command receipt span/union in the 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
 | Proposal | `7ac97884658769e227b22f8c94bb8b4298e65a9f` | `fork-turns-none` | `approve-with-required-edits` | `9a5c3a4a20168f707870f20b011b47cf64bec820` |
-| Semantic checkpoint | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
+| Semantic checkpoint | `ad6d0bc993ac7abdea3d3978e07092ffd2126851` | `fork-turns-none` | `approve` | `not-required` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
 The context-cold proposal review approved correction target `9a5c3a4a20168f707870f20b011b47cf64bec820` in its first same-reviewer audit on 2026-09-25. All required findings closed: distinct single-input root Ends, explicit child-register and host-admission owners/contracts, and the structural router link. Initial packet SHA-256: `775151f23ba25118cf6808834ae0bce4c1341e490e349bba7e5982836f6f284e`; correction packet: `1d3129333191c4fbbcf5c2e08b94ca969a29026445006810af8d04c5bae60fe4`. The complete infrastructure gate passed 594 checks in 56.79 seconds on the correction contents before commit, asserted receipt `/tmp/bpmn-transaction-proposal-correction-infrastructure`; its recorded Git head is the parent, so this is not clean-target qualification. No implementation, Lean or live-host result is implied.
+
+The independent cold semantic-checkpoint reviewer approved `ad6d0bc993ac7abdea3d3978e07092ffd2126851` against baseline `b5ef19ca3b872aacc8a239f0e0a86b3a5051fcae` on 2026-09-26 with no required findings. Packet SHA-256: `de4be6edae1463f6029c1e00cd5d919bc466bf18c7709983dc9e096def9e1f05`; reviewed capsule SHA-256: `25d2cf4c855c557f257c0c48f34c2d4b50dbbf11fe81c8e59429700440b58c51`. The root-owned exact-target Transaction gate passed 37 checks, receipt `/tmp/bpmn-transaction-checkpoint-review-focused`. Review covered child ownership and retention lifetime, selection before cleanup, atomic empty/active cancellation and join, failure disposition, paired publication, and preservation of existing scheduling contracts. Independent transcriptions can share an incorrect account; conditional continuation-absence laws do not establish absence in every reachable state. Source/profile admission, grammar-to-frontier and two-Task guarantees, and production refinement remain open. The additional full verifier was stopped under the owner's revised cadence and is not complete qualification evidence. Reviewer `01a0de4c-cb49-7b22-b6bb-f05e3fbe7f88` is retained for eligible continuity.

@@ -1,3 +1,4 @@
+import { transactionCancellationProgramShape } from "./transaction-cancellation-admission.js";
 import { repeatableSubscriptionCheckedShape, repeatableSubscriptionProgramShape } from "./repeatable-subscription-admission.js";
 import {
   CheckedNodeKind,
@@ -13,6 +14,7 @@ import {
 } from "./semantic-program-profile-shape.js";
 import {
   SemanticProfileId,
+  TRANSACTION_CANCELLATION_CHECKPOINT_PROFILE_ID,
   REPEATABLE_EVENT_SUBSCRIPTIONS_CHECKPOINT_PROFILE_ID,
 } from "./semantic-profile-catalog.js";
 import {
@@ -26,6 +28,7 @@ import {
 } from "./user-task-metadata.js";
 
 export {
+  TRANSACTION_CANCELLATION_CHECKPOINT_PROFILE_ID,
   COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID,
   REPEATABLE_EVENT_SUBSCRIPTIONS_CHECKPOINT_PROFILE_ID,
   MESSAGE_KEY_CORRELATION_CHECKPOINT_PROFILE_ID,
@@ -39,6 +42,9 @@ export function profileAllowsProgramShape(
   actualOperations: ReadonlyArray<SemanticOperation>,
   definitionScopeCount: number,
 ): boolean {
+  if (semanticProfile === TRANSACTION_CANCELLATION_CHECKPOINT_PROFILE_ID) {
+    return transactionCancellationProgramShape(actualOperations, definitionScopeCount);
+  }
   if (semanticProfile === REPEATABLE_EVENT_SUBSCRIPTIONS_CHECKPOINT_PROFILE_ID) {
     return repeatableSubscriptionProgramShape(actualOperations, definitionScopeCount);
   }

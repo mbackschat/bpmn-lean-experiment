@@ -1412,3 +1412,22 @@ The [Exclusive Gateway conditional-routing capsule](capsules/EXCLUSIVE-GATEWAY-C
 ## Update rule
 
 Record the baseline before implementation. At closure, create the implementation endpoint only after the complete applicable gate passes, verify the measurement from those two commits, add or update one row here, and compare it with the nearest increment that changed the same layers. Follow [the commit boundaries](TESTING-SPEC.md#commit-boundaries): record cost with the required closure evidence and receipt rather than creating an automatic cost-only commit after every proof prerequisite. [The reproduction guard](../scripts/capsule-cost-reproduction.test.ts) still recomputes every row's four figures from its immutable range; neither a working-tree estimate nor the previous capsule's tail is an admissible substitute. Do not keep the same measurement as a second live fact in [PLAN.md](PLAN.md).
+
+## Transaction source-to-publication integration, 2026-09-26
+
+This increment extends the approved `ad6d0bc9` manual-Program checkpoint through role-based XML/checked/Program admission, independent Lean lowering, the existing Compensation scheduler and public paired publication. It adds no registered capability or broader scheduling theorem. Receipts below bind development worktree contents; final clean-target qualification remains open. Unchanged package evidence was reused instead of another full repository run.
+
+| Evidence | Result | Receipt |
+|---|---|---|
+| Complete affected source package | 1,008 passed, 14.61s | `/tmp/bpmn-transaction-source-package` |
+| Complete affected core package | 1,359 passed, 25.91s | `/tmp/bpmn-transaction-core-package` |
+| Adapter components | 404 passed, 7.92s | `/tmp/bpmn-transaction-adapter-components` |
+| Live public Transaction journey | Empty, delayed success and typed failure; 12 Run histories replayed; 16.95s | `/tmp/bpmn-transaction-live-publication-first` |
+| Compiled-source Lean/core parity | Five schedules; exact observations, replayed state and paired E1/E2 publications; 2.60s | `/tmp/bpmn-transaction-pipeline-first` |
+| Narrow kernel source witnesses | Exit zero; 22.58s; GNU-time peak 1,608,308 KiB; cgroup peak 1,293,393,920 bytes; all memory events zero | `/tmp/bpmn-transaction-lean-source-final` |
+| Focused capacity and Program grammar | 50 passed, 0.42s | `/tmp/bpmn-transaction-capacity-focused` |
+| Final harness types | Exit zero | `/tmp/bpmn-transaction-final-harness-types` |
+
+The [module-cost record](../scripts/lean-module-cost.ts) binds the exact conformance source and successful command-receipt digest under one CPU, 3 GiB and zero swap. The first four source builds preserve syntax and reduction failures in `/tmp/bpmn-transaction-lean-source-first`, `-second`, `-third` and `-fourth`; the fourth also completed the affected interpreter dependency closure in 420.32s with zero memory events, but its fixture failure means the command is not green. Named `decide +kernel` witnesses and a reducible fixture closed the source gate without weakening admission or adding native-decide exceptions.
+
+Initial source, execution and host-admission reds remain retained. The receipt named `/tmp/bpmn-transaction-source-execution-green` actually failed on the missing profile graph policy and is not green evidence; `/tmp/bpmn-transaction-source-execution-2` records the repair. Guard corrections replace a test's build-output import, use the receipt's exact `not-required` token, name kernel facts, and refresh owner-headroom rows. The successful source/review guard correction has 63 checks; the measured-cost guard has 20. This increment's critical-path wait was the affected interpreter rebuild; no complete repository rerun was selected.

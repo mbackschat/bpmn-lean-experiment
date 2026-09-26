@@ -1,4 +1,5 @@
-import { REPEATABLE_EVENT_SUBSCRIPTIONS_CHECKPOINT_PROFILE_ID } from "./semantic-profile-catalog.js";
+import { transactionCancellationProgramGraph } from "./transaction-cancellation-admission.js";
+import { TRANSACTION_CANCELLATION_CHECKPOINT_PROFILE_ID, REPEATABLE_EVENT_SUBSCRIPTIONS_CHECKPOINT_PROFILE_ID } from "./semantic-profile-catalog.js";
 import { repeatableSubscriptionProgramGraph } from "./repeatable-subscription-admission.js";
 import {
   ScenarioDocumentKind,
@@ -265,6 +266,8 @@ export function isWellFormedSemanticProcessProgram(
   }
   const program = value as unknown as SemanticProcessProgram;
   const snapshotTargets = program.compensationEventSubProcessSnapshots?.targets;
+  if (identity.semanticProfile === TRANSACTION_CANCELLATION_CHECKPOINT_PROFILE_ID &&
+      !transactionCancellationProgramGraph(program)) return false;
   if (identity.semanticProfile === REPEATABLE_EVENT_SUBSCRIPTIONS_CHECKPOINT_PROFILE_ID) {
     if (!repeatableSubscriptionProgramGraph(program)) return false;
   } else if (checkedOperations.some((operation) =>

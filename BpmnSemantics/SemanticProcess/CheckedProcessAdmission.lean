@@ -59,6 +59,7 @@ private def checkedDefinitionScopesValid (source : CheckedProcess) : Bool :=
         decide (scope.id ≠ parentScopeId) &&
           scopeExists source.definitionScopes parentScopeId &&
           (source.nodes.any fun
+            | .transactionSubProcess id childScopeId _
             | .embeddedSubProcess id childScopeId =>
                 decide (
                   childScopeId = scope.id &&
@@ -211,6 +212,12 @@ private def checkedNodeArityValid (repeatable : Bool) (flows : List CheckedSeque
         incomingCount flows id = 0 && outgoingCount flows id = 1 &&
         (flows.find? fun flow => decide (flow.sourceId = id)).all
           (fun flow => flow.condition.isNone)
+  | .transactionSubProcess id _ method =>
+      method == "##Compensate" && incomingCount flows id == 1 && outgoingCount flows id == 1
+  | .cancelBoundaryEvent id _ outputFlowId =>
+      incomingCount flows id == 0 && outgoingCount flows id == 1 &&
+        flows.any (fun flow => flow.id == outputFlowId && flow.sourceId == id)
+  | .cancelEndEvent id => incomingCount flows id == 1 && outgoingCount flows id == 0
   | .embeddedSubProcess id _ =>
       incomingCount flows id = 1 && outgoingCount flows id = 1
   | .callActivity id calledProcessId =>

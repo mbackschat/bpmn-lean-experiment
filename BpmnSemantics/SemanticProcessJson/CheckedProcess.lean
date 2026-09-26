@@ -1,3 +1,4 @@
+import BpmnSemantics.SemanticProcessJson.TransactionSource
 import BpmnSemantics.SemanticProcess.JsonSupport
 import BpmnSemantics.SemanticProcessJson.Elements
 import BpmnSemantics.SemanticProcessJson.CompensationSource
@@ -178,6 +179,19 @@ private def decodeCheckedNode (json : Json) : Except String CheckedNode := do
         (.timerStartEvent
           ⟨id⟩
           durationLiteral)
+  | "transactionSubProcess" =>
+      requireObjectShape json ["kind", "id", "childScopeId", "method"]
+      expectStringField json "method" "##Compensate"
+      pure (.transactionSubProcess ⟨← decodeNonemptyStringField json "id"⟩
+        ⟨← decodeNonemptyStringField json "childScopeId"⟩ "##Compensate")
+  | "cancelEndEvent" =>
+      requireObjectShape json ["kind", "id"]
+      pure (.cancelEndEvent ⟨← decodeNonemptyStringField json "id"⟩)
+  | "cancelBoundaryEvent" =>
+      requireObjectShape json ["kind", "id", "attachedToRef", "outputFlowId"]
+      pure (.cancelBoundaryEvent ⟨← decodeNonemptyStringField json "id"⟩
+        ⟨← decodeNonemptyStringField json "attachedToRef"⟩
+        ⟨← decodeNonemptyStringField json "outputFlowId"⟩)
   | "embeddedSubProcess" =>
       requireObjectShape json ["childScopeId", "id", "kind"]
       pure
@@ -426,13 +440,12 @@ private def decodeSequenceFlowScopeOwnership (json : Json) :
 /-- Decode the exact current checked-process wire shape without admitting it structurally. Required nullable fields such as a User Task name must be present even when their value is `null`. -/
 def decodeCheckedProcess (json : Json) : Except String CheckedProcess := do
   let compensation ← decodeOptionalCheckedCompensationField json
+  let transactionCancellation ← decodeOptionalCheckedTransactionField json
   requireObjectShape json
-    (if compensation.isSome then
-      ["compensation", "definitionScopes", "identity", "kind", "nodeScopes", "nodes",
-        "processId", "sequenceFlowScopes", "sequenceFlows"]
-    else
-      ["definitionScopes", "identity", "kind", "nodeScopes", "nodes",
-        "processId", "sequenceFlowScopes", "sequenceFlows"])
+    (["definitionScopes", "identity", "kind", "nodeScopes", "nodes",
+      "processId", "sequenceFlowScopes", "sequenceFlows"] ++
+      (if compensation.isSome then ["compensation"] else []) ++
+      (if transactionCancellation.isSome then ["transactionCancellation"] else []))
   expectStringField json "kind" "checkedProcess"
   pure
     { identity := ← decodeSourceIdentity (← field json "identity")
@@ -448,6 +461,6 @@ def decodeCheckedProcess (json : Json) : Except String CheckedProcess := do
       sequenceFlows :=
         ← decodeArray decodeCheckedSequenceFlow
           (← field json "sequenceFlows")
-      compensation }
+      compensation, transactionCancellation }
 
 end BpmnSemantics.SemanticProcessJson

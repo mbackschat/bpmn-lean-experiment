@@ -1,3 +1,4 @@
+import BpmnSemantics.SemanticProcess.TransactionSourceAdmission
 import BpmnSemantics.SemanticProcess.ValueDomain
 import BpmnSemantics.SemanticProcess.StructuredHumanWorkAdmission
 import BpmnSemantics.SemanticProcess.ParallelMultiInstanceProfileAdmission
@@ -66,8 +67,7 @@ structure ShapeCardinalities where
   compensationTriggers : Nat := 0
   deriving DecidableEq
 
-private def nodeCardinalities (nodes : List CheckedNode) :
-    ShapeCardinalities :=
+private def nodeCardinalities (nodes : List CheckedNode) : ShapeCardinalities :=
   nodes.foldl (init := {}) fun counts node =>
     match node with
     | .noneStartEvent .. => { counts with starts := counts.starts + 1 }
@@ -100,6 +100,7 @@ private def nodeCardinalities (nodes : List CheckedNode) :
     | .sequentialMultiInstanceUserTask .. =>
         { counts with sequentialMultiInstanceUserTasks :=
             counts.sequentialMultiInstanceUserTasks + 1 }
+    | .transactionSubProcess .. | .cancelEndEvent .. | .cancelBoundaryEvent ..
     | .parallelMultiInstanceUserTask .. => counts
     | .intermediateCatchTimerEvent .. =>
         { counts with timers := counts.timers + 1 }
@@ -197,8 +198,7 @@ def addOperationCardinality (counts : ShapeCardinalities)
     | .triggerCompensation .. | .cancelTransaction .. =>
         { counts with compensationTriggers := counts.compensationTriggers + 1 }
 
-def operationCardinalities (operations : List SemanticOperation) :
-    ShapeCardinalities :=
+def operationCardinalities (operations : List SemanticOperation) : ShapeCardinalities :=
   operations.foldl (init := {}) addOperationCardinality
 
 def isEventRaceOperation : SemanticOperation → Bool
@@ -220,8 +220,7 @@ theorem operationCardinalities_eventRaces (operations : List SemanticOperation) 
         cases operation <;> simp [addOperationCardinality, isEventRaceOperation] <;> omega
   simpa using foldCount {}
 
-def withScopeCompletions (count : Nat) (shape : ShapeCardinalities) :
-    ShapeCardinalities :=
+def withScopeCompletions (count : Nat) (shape : ShapeCardinalities) : ShapeCardinalities :=
   { shape with scopeCompletions := count }
 
 /-- Runtime-frozen profile identity used only by the owner-approved semantic checkpoint. Product registration remains outside this Lean lane. -/
@@ -551,13 +550,11 @@ private def exactBalancedTwoBranchTopology [DecidableEq α]
           [startOutput, leftInput, rightInput, leftOutput, rightOutput, joinOutput]
   | _, _, _, _, _, _, _, _ => false
 
-private def checkedIncomingPorts (source : CheckedProcess) (nodeId : NodeId) :
-    List SequenceFlowId :=
+private def checkedIncomingPorts (source : CheckedProcess) (nodeId : NodeId) : List SequenceFlowId :=
   source.sequenceFlows.filterMap fun flow =>
     if flow.targetId = nodeId then some flow.id else none
 
-private def checkedOutgoingPorts (source : CheckedProcess) (nodeId : NodeId) :
-    List SequenceFlowId :=
+private def checkedOutgoingPorts (source : CheckedProcess) (nodeId : NodeId) : List SequenceFlowId :=
   source.sequenceFlows.filterMap fun flow =>
     if flow.sourceId = nodeId then some flow.id else none
 
@@ -723,13 +720,17 @@ inductive ProfileGraphPolicy where
 def profileGraphPolicy? (profile : String) : Option ProfileGraphPolicy :=
   if profile = "bpmn-2.0.2-user-task-cycle-draft" then
     some .resumptionBounded
-  else if profile = repeatableSubscriptionCheckpointProfileId.value ||
+  else if profile = transactionCancellationCheckpointProfileId.value ||
+      profile = repeatableSubscriptionCheckpointProfileId.value ||
       ((checkedShape? profile).isSome && (programShape? profile).isSome) then
     some .acyclic
   else none
 
 /-- Exact checked node and definition-scope cardinalities selected by the profile. -/
 def checkedProfileCapabilitiesValid (source : CheckedProcess) : Bool :=
+  if source.identity.semanticProfile == transactionCancellationCheckpointProfileId then
+    transactionCancellationCheckedGraph source
+  else transactionSourceAbsent source &&
   if source.identity.semanticProfile = repeatableSubscriptionCheckpointProfileId then
     repeatableSubscriptionCheckedGraph source
   else
@@ -810,7 +811,9 @@ private def operationPayloadCapabilitiesValid (profile : String)
 
 /-- Exact operation and definition-scope cardinalities selected by the profile. -/
 def programProfileCapabilitiesValid (program : Program) : Bool :=
-  if program.identity.semanticProfile = repeatableSubscriptionCheckpointProfileId then
+  if program.identity.semanticProfile == transactionCancellationCheckpointProfileId then
+    transactionCancellationProgramGraph program
+  else if program.identity.semanticProfile = repeatableSubscriptionCheckpointProfileId then
     repeatableSubscriptionProgramGraph program
   else
   programSequentialMultiInstanceProfileMatches program &&

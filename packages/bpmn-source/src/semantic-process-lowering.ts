@@ -1,3 +1,4 @@
+import { lowerTransactionDeclarations, lowerTransactionCancel } from "./transaction-source-lowering.js";
 import {
   BoundaryInterruption,
   CheckedNodeKind,
@@ -107,6 +108,7 @@ export function lowerCheckedProcess(
       .map(({ operation }) => operation)
       .sort(compareIds),
     ...lowerCompensationSourceDeclarations(source),
+    ...lowerTransactionDeclarations(source),
   };
   return program;
 }
@@ -147,6 +149,7 @@ function lowerNode(
         : [];
     case CheckedNodeKind.CallActivity:
       return [lowerCallActivityInvoke(node, source)];
+    case CheckedNodeKind.TransactionSubProcess:
     case CheckedNodeKind.EmbeddedSubProcess: {
       const entry = {
         input: requireOnly(incoming, node.id, "incoming"),
@@ -167,6 +170,9 @@ function lowerNode(
             },
       );
     }
+    case CheckedNodeKind.CancelEndEvent:
+      return scoped(lowerTransactionCancel(node, source));
+    case CheckedNodeKind.CancelBoundaryEvent:
     case CheckedNodeKind.BoundaryErrorEvent:
       return [];
     // An attached handler has no operation of its own: its Activity owns both competing waits, so

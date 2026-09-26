@@ -1,3 +1,4 @@
+import BpmnSemantics.SemanticProcess.TransactionSourceLowering
 import BpmnSemantics.SemanticProcess.CheckedGraphValidation
 import BpmnSemantics.SemanticProcess.ErrorDefinition
 import BpmnSemantics.SemanticProcess.InclusiveGateway
@@ -278,6 +279,12 @@ private def lowerNode (source : CheckedProcess) :
             some (lowerTimerStartOperation source id durationLiteral, scopeId)
           else none
       | none => none
+  | .transactionSubProcess id childScopeId _ => do
+      let scopeId ← checkedNodeScopeId? source id
+      pure (.enterScope (nodeOperationId id) { elementId := id }
+        (firstPlace (incomingPlaces source id)) (childEntryPlace source childScopeId) childScopeId, scopeId)
+  | .cancelEndEvent id => lowerTransactionCancel source id (firstPlace (incomingPlaces source id))
+  | .cancelBoundaryEvent .. => none
   | .embeddedSubProcess id childScopeId => do
       let scopeId ← checkedNodeScopeId? source id
       match timerBoundaryFor source id with
@@ -689,10 +696,12 @@ def lowerCheckedProcess (source : CheckedProcess) : Program :=
           CheckedSequenceFlow.toControlPlace
     operations := scopedOperations.map (·.1)
     compensationActivityRetention :=
-      lowerCheckedCompensationActivityRetention source
+      if source.transactionCancellation.isSome then lowerTransactionRetention source
+      else lowerCheckedCompensationActivityRetention source
     compensationEventSubProcessSnapshots :=
       lowerCheckedCompensationSnapshots source
-    compensationExecution := lowerCheckedCompensationExecution source }
+    compensationExecution := if source.transactionCancellation.isSome then lowerTransactionExecution source
+      else lowerCheckedCompensationExecution source }
 
 theorem lower_preserves_definition_identity (source : CheckedProcess) :
     (lowerCheckedProcess source).identity.semanticProfile =

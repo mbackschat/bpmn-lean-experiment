@@ -381,6 +381,13 @@ const dispatchFixtures = {
     semanticProfile: MESSAGE_KEY_CORRELATION_CHECKPOINT_PROFILE_ID,
     find: '<bpmn:startEvent id="StartEvent_PaymentInstructed"',
   },
+  transactionCancellation: {
+    path: "the Transaction cancellation reader",
+    source: new URL("./fixtures/transaction-cancellation.bpmn", import.meta.url),
+    sourceId: "reservation-withdrawal",
+    semanticProfile: "bpmn-2.0.2-transaction-cancellation-checkpoint-draft",
+    find: '<bpmn:startEvent id="Start_Request"',
+  },
   compensationSource: {
     path: "the Compensation source reader",
     source: new URL(

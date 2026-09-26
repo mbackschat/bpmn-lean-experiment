@@ -230,7 +230,7 @@ The complete `what-binds` inventory requires [`implementation-status-owner:ENGIN
 | Existing owner | Current headroom | Growth condition |
 |---|---:|---|
 | [TS Program](../../packages/semantic-core/src/semantic-process-contract.ts) | 146 | declaration reference only |
-| [TS Program admission](../../packages/semantic-core/src/semantic-process-admission.ts) | 352 | declaration before graph |
+| [TS Program admission](../../packages/semantic-core/src/semantic-process-admission.ts) | 349 | declaration before graph |
 | [TS graph admission](../../packages/semantic-core/src/semantic-process-graph-admission.ts) | 136 | private exact exemption plus later checkpoint-topology delegation |
 | [TS command admission](../../packages/semantic-core/src/semantic-command-admission.ts) | 303 | optional-field normalization |
 | [TS RuntimeState](../../packages/semantic-core/src/semantic-process-state.ts) | 363 | collection reference only |

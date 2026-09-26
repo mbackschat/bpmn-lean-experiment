@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="Definitions_Withdrawal" targetNamespace="https://bpmn-lean.org/transaction-withdrawal">
+  <bpmn:process id="Process_Withdrawal" isExecutable="true">
+    <bpmn:startEvent id="Start_Request" />
+    <bpmn:transaction id="Transaction_Reservation">
+      <bpmn:startEvent id="Start_Reservation" />
+      <bpmn:parallelGateway id="Split_Work" gatewayDirection="Diverging" />
+      <bpmn:userTask id="Task_Reserve" name="Reserve resource" />
+      <bpmn:userTask id="Task_Prepare" name="Prepare reservation" />
+      <bpmn:userTask id="Task_Withdraw" name="Approve withdrawal" />
+      <bpmn:endEvent id="End_Prepared" />
+      <bpmn:endEvent id="End_Cancel"><bpmn:cancelEventDefinition id="Cancel_Request" /></bpmn:endEvent>
+      <bpmn:boundaryEvent id="Boundary_Release" attachedToRef="Task_Reserve"><bpmn:compensateEventDefinition id="Compensate_Reservation" /></bpmn:boundaryEvent>
+      <bpmn:serviceTask id="Task_Release" name="Release resource" isForCompensation="true" implementation="urn:bpmn-lean:effect:compensation-single-effect-v1" />
+      <bpmn:association id="Association_Release" sourceRef="Boundary_Release" targetRef="Task_Release" />
+      <bpmn:sequenceFlow id="Flow_ChildStart" sourceRef="Start_Reservation" targetRef="Split_Work" />
+      <bpmn:sequenceFlow id="Flow_Reserve" sourceRef="Split_Work" targetRef="Task_Reserve" />
+      <bpmn:sequenceFlow id="Flow_Prepare" sourceRef="Task_Reserve" targetRef="Task_Prepare" />
+      <bpmn:sequenceFlow id="Flow_Prepared" sourceRef="Task_Prepare" targetRef="End_Prepared" />
+      <bpmn:sequenceFlow id="Flow_Withdraw" sourceRef="Split_Work" targetRef="Task_Withdraw" />
+      <bpmn:sequenceFlow id="Flow_Cancel" sourceRef="Task_Withdraw" targetRef="End_Cancel" />
+    </bpmn:transaction>
+    <bpmn:boundaryEvent id="Boundary_Cancel" attachedToRef="Transaction_Reservation"><bpmn:cancelEventDefinition id="Cancel_Catch" /></bpmn:boundaryEvent>
+    <bpmn:userTask id="Task_Acknowledge" name="Acknowledge withdrawal" />
+    <bpmn:endEvent id="End_Normal" />
+    <bpmn:endEvent id="End_Withdrawal" />
+    <bpmn:sequenceFlow id="Flow_Start" sourceRef="Start_Request" targetRef="Transaction_Reservation" />
+    <bpmn:sequenceFlow id="Flow_Normal" sourceRef="Transaction_Reservation" targetRef="End_Normal" />
+    <bpmn:sequenceFlow id="Flow_Boundary" sourceRef="Boundary_Cancel" targetRef="Task_Acknowledge" />
+    <bpmn:sequenceFlow id="Flow_Done" sourceRef="Task_Acknowledge" targetRef="End_Withdrawal" />
+  </bpmn:process>
+</bpmn:definitions>
