@@ -413,7 +413,10 @@ test(
         } else {
           assert.equal(caseEvidence.cibEffectRetryEvidence, null);
         }
-        if (caseReport.scenario.profile === SemanticProfileId.Compensation) {
+        if (
+          caseReport.scenario.profile === SemanticProfileId.Compensation ||
+          caseReport.scenario.profile === SemanticProfileId.TransactionCancellation
+        ) {
           // OrderedEffectExecution.requireHistory binds every handler; legacy probe counters describe one Service Task mutation.
           assert.equal(pipelineCase.effectSchedules, null);
           assert.equal(caseEvidence.primaryEffectProbeEvidence, null);
