@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { InternalSchedulingMode, supportsSemanticProcessExecution } from "@bpmn-lean/semantic-core";
+import { processProgramFixture, processStartFixture } from "../../client/test/process-start-fixture.ts";
 
 import type {
   ProcessStartStimulus,
@@ -12,6 +14,7 @@ import {
   WorkflowChainBudgetKind,
   bpmnWorkflowContinuationV1,
   productionBpmnWorkflowInitialHostInput,
+  requireWorkflowChainInitialArgumentBudgets,
   workflowChainCanonicalUtf8ByteLength,
   workflowChainProductionLimit,
   workflowContinuationBudgetViolation,
@@ -29,11 +32,13 @@ const aggregateBound = workflowChainProductionLimit(
 
 test("accepts the exact sum of separately encoded continuation arguments", () => {
   const args = continuationArguments(64 * kib, 64 * kib - 14);
+  assert.equal(args.reduce((sum, value) => sum + Buffer.byteLength(JSON.stringify(value), "utf8"), 0), aggregateBound);
   assert.equal(workflowContinuationBudgetViolation(...args), null);
 });
 
 test("reports one aggregate byte over without synthetic array punctuation", () => {
   const args = continuationArguments(64 * kib, 64 * kib - 13);
+  assert.equal(args.reduce((sum, value) => sum + Buffer.byteLength(JSON.stringify(value), "utf8"), 0), aggregateBound + 1);
   assert.deepEqual(workflowContinuationBudgetViolation(...args), {
     budget: WorkflowChainBudgetKind.ContinueAsNewCarriedArgumentsBytes,
     observedValue: aggregateBound + 1,
@@ -50,6 +55,36 @@ test("retains every stricter individual argument bound", () => {
   });
 });
 
+test("counts the required scheduling field at the exact Program limit and one byte over", () => {
+  const bound = workflowChainProductionLimit(WorkflowChainBudgetKind.SemanticProcessProgramBytes);
+  const exact = programWithBytes(bound);
+  const over = programWithBytes(bound + 1);
+  assert.doesNotThrow(() => requireWorkflowChainInitialArgumentBudgets(processStartFixture, exact));
+  assert.throws(() => requireWorkflowChainInitialArgumentBudgets(processStartFixture, over));
+  const args = continuationArguments(2, 2);
+  assert.deepEqual(workflowContinuationBudgetViolation(args[0], over, args[2], args[3], args[4], args[5]), {
+    budget: WorkflowChainBudgetKind.SemanticProcessProgramBytes,
+    observedValue: bound + 1, configuredBound: bound,
+  });
+  const { internalSchedulingMode, ...withoutMode } = over;
+  assert.equal(internalSchedulingMode, InternalSchedulingMode.RejectObservableChoice);
+  assert.ok(Buffer.byteLength(JSON.stringify(withoutMode), "utf8") < bound);
+});
+
+function programWithBytes(bytes: number): SemanticProcessProgram {
+  const baseBytes = Buffer.byteLength(JSON.stringify(processProgramFixture), "utf8");
+  assert.ok(bytes >= baseBytes);
+  const result = {
+    ...processProgramFixture,
+    identity: { ...processProgramFixture.identity,
+      sourceId: processProgramFixture.identity.sourceId + "p".repeat(bytes - baseBytes) },
+  };
+  assert.equal(Buffer.byteLength(JSON.stringify(result), "utf8"), bytes);
+  assert.equal(result.internalSchedulingMode, InternalSchedulingMode.RejectObservableChoice);
+  assert.equal(supportsSemanticProcessExecution(processStartFixture, result), true);
+  return result;
+}
+
 function continuationArguments(
   startBytes: number,
   publicationBytes: number,
@@ -63,7 +98,7 @@ function continuationArguments(
 ] {
   return [
     encodedString(startBytes, "s") as unknown as ProcessStartStimulus,
-    encodedString(192 * kib, "p") as unknown as SemanticProcessProgram,
+    programWithBytes(192 * kib),
     encodedString(64 * kib, "h") as unknown as BpmnWorkflowContinuationHostInputV1,
     encodedString(64 * kib, "r") as unknown as RuntimeState,
     { entries: [] },

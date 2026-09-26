@@ -3,7 +3,8 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 import { BpmnCompilationStatus, compileBpmnToSemanticProcess } from "../../../bpmn-source/dist/index.js";
-import { REPEATABLE_EVENT_SUBSCRIPTIONS_CHECKPOINT_PROFILE_ID, supportsSemanticProcessExecution } from "@bpmn-lean/semantic-core";
+import { InternalSchedulingMode, REPEATABLE_EVENT_SUBSCRIPTIONS_CHECKPOINT_PROFILE_ID, supportsSemanticProcessExecution } from "@bpmn-lean/semantic-core";
+import type { SemanticProcessProgram } from "@bpmn-lean/semantic-core";
 import { enrollmentFixture } from "./worker-deployment-enrollment-fixture.ts";
 
 import {
@@ -16,6 +17,7 @@ import {
   BpmnWorkflowHostInputKind,
   assessTemporalHostCapability,
   TemporalHostCapabilityResultKind,
+  TemporalHostAdmissionFailureCode,
   WorkflowChainBudgetKind,
   bpmnWorkflowContinuationV1,
   workflowChainProductionLimit,
@@ -24,6 +26,39 @@ import {
   processProgramFixture as program,
   processStartFixture as start,
 } from "./process-start-fixture.ts";
+
+for (const parallel of [false, true]) {
+  test(`refuses scheduled Programs before SDK start, parallel=${parallel}`, async () => {
+    let candidate: SemanticProcessProgram = program;
+    if (parallel) {
+      const bytes = await readFile(new URL("../../../../scenarios/parallel-fork-join/process.bpmn", import.meta.url));
+      const compiled = await compileBpmnToSemanticProcess({
+        bytes, sourceId: "parallel-mode-boundary", semanticProfile: "parallel-fork-join-draft",
+        sourceOverlay: null, limits: { maxBytes: 1024 * 1024, parserDeadlineMs: 1_000 },
+      });
+      assert.equal(compiled.status, BpmnCompilationStatus.Accepted);
+      if (compiled.status !== BpmnCompilationStatus.Accepted) throw new Error("Source refused");
+      candidate = compiled.semanticProcess;
+    }
+    const processStart = { ...start, processId: candidate.processId };
+    assert.equal(assessTemporalHostCapability(candidate).kind, TemporalHostCapabilityResultKind.Admitted);
+    const acceptedCalls: unknown[] = [];
+    assert.equal((await startBpmnProcess(fakeClient(acceptedCalls), processStart, candidate,
+      { taskQueue: "process-task-queue" })).kind, BpmnProcessStartResultKind.Started);
+    assert.equal(acceptedCalls.length, 1);
+    const scheduled = { ...candidate, internalSchedulingMode: InternalSchedulingMode.RequireChoiceSchedule };
+    const host = assessTemporalHostCapability(scheduled);
+    assert.equal(host.kind, TemporalHostCapabilityResultKind.Rejected);
+    assert.ok(host.kind === TemporalHostCapabilityResultKind.Rejected);
+    assert.equal(host.failure.code, TemporalHostAdmissionFailureCode.InternalChoiceSchedulerUnavailable);
+    const calls: unknown[] = [];
+    assert.deepEqual(await startBpmnProcess(fakeClient(calls), processStart, scheduled,
+      { taskQueue: "process-task-queue" }), {
+      kind: BpmnProcessStartResultKind.Rejected, failure: host.failure,
+    });
+    assert.equal(calls.length, 0);
+  });
+}
 
 for (const scenario of [
   "non-interrupting-boundary-timer",

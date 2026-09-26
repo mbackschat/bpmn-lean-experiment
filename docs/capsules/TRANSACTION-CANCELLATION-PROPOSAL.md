@@ -2,7 +2,7 @@
 
 ## Status
 
-Lifecycle: implementation-in-progress
+Lifecycle: implemented-awaiting-closure
 Review: approved-with-required-edits
 
 ## Question and bounded outcome
@@ -13,7 +13,7 @@ The selected RC outcome is complete from exact BPMN XML through checked source, 
 
 ## Current implementation boundary
 
-[`implementation-status-owner:ENGINE-SEMANTIC-FAMILY`](../ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md#transaction-cancellation) owns the approved manual-Program checkpoint, source/production-host integration and the remaining scheduling, registration and qualification boundary. The semantic checkpoint and closure reviews remain governed by the [review receipt](#independent-cold-review-receipt); proposal approval does not approve the implementation.
+[`implementation-status-owner:ENGINE-SEMANTIC-FAMILY`](../ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md#transaction-cancellation) owns the approved manual-Program checkpoint, source/production-host integration, quantified scheduling, public registration and the remaining qualification boundary. The semantic checkpoint and closure reviews remain governed by the [review receipt](#independent-cold-review-receipt); proposal approval does not approve the implementation.
 
 ## Normative authority and interpretation boundary
 
@@ -173,7 +173,7 @@ These measurements were refreshed with the shared source-measure functions on 20
 | [Lean retention](../../BpmnSemantics/SemanticProcess/CompensationActivityRetention.lean) | 363 |
 | [Lean completion](../../BpmnSemantics/SemanticProcess/CompensationTriggerHandlerCompletion.lean) | 293 |
 | [Retention validation](../../packages/semantic-core/src/compensation-activity-retention-state-validation.ts) | 440 |
-| [Host admission](../../packages/temporal-adapter/protocol/src/host-admission.ts) | 460 |
+| [Host admission](../../packages/temporal-adapter/protocol/src/host-admission.ts) | 449 |
 | [Source graph admission](../../packages/bpmn-source/src/checked-process-graph-admission.ts) | 416 |
 | [Node lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 123 |
 | [Lean retention declaration](../../BpmnSemantics/SemanticProcess/CompensationActivityRetentionDeclaration.lean) | 643 |

@@ -26,7 +26,9 @@ Message key correlation uses a separate engine-population catalog because one an
 
 ## Learn more
 
-- [Transaction source parity](test/transaction-pipeline-lean-core.integration-test.ts) runs in `./scripts/verify.sh pipeline`. It compares independently lowered source, complete observations and paired E1/E2 publication through empty cancellation, retained work with an active or ended branch, typed handler failure, stale commands and renamed two-Task branches. This private profile is not a registered public capability.
+- [Case loading](test/pipeline-case-loading.ts) compiles neutral scenarios independently of Lean execution; runtime-only catalog tests use this owner.
+
+- [Transaction source parity](test/transaction-pipeline-lean-core.integration-test.ts) runs in `./scripts/verify.sh pipeline`. It compares independently lowered source, complete observations and paired E1/E2 publication through empty cancellation, retained work with an active or ended branch, typed handler failure, stale commands and renamed two-Task branches. Four [registered cancellation schedules](test/transaction-cancellation-pipeline-cases.ts) separately bind the public bounded capability; neither lane claims generalized Transaction support.
 - [Registered Compensation scenarios](test/compensation-pipeline-cases.ts) bind the [travel-cancellation model](../../scenarios/compensation/README.md) to exact Lean/core/Temporal results and replay. [Mutations](test/compensation-pipeline-cases.test.ts) distinguish premature predecessors, missing concurrent handlers, altered restored input, failed-to-completed projection and stale-result mutation. The private 36-case publication comparison remains a separate lane.
 - [Testing specification](../../docs/TESTING-SPEC.md) owns the complete pipeline, target isolation, and evidence rules.
 - [Pipeline case identifier registry](test/pipeline-case-id-registry.ts) owns the exact ordered identifier contract checked before target execution.

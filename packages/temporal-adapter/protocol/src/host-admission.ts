@@ -1,4 +1,5 @@
 import {
+  InternalSchedulingMode,
   COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID,
   TRANSACTION_CANCELLATION_CHECKPOINT_PROFILE_ID,
   MESSAGE_KEY_CORRELATION_CHECKPOINT_PROFILE_ID,
@@ -45,6 +46,16 @@ import type {
 export function assessTemporalHostCapability(
   program: SemanticProcessProgram,
 ): TemporalHostCapabilityResult {
+  // INTERNAL-COMMUTATION's hosting contract excludes private choice directives from Temporal.
+  if (program.internalSchedulingMode !== InternalSchedulingMode.RejectObservableChoice) {
+    return {
+      kind: TemporalHostCapabilityResultKind.Rejected,
+      failure: {
+        code: TemporalHostAdmissionFailureCode.InternalChoiceSchedulerUnavailable,
+        evidence: "Temporal hosting requires rejectObservableChoice; private choice schedules are unsupported.",
+      },
+    };
+  }
   // ESL-ORDER-01 binds the scheduler to complete profile admission, not an operation-name allowlist.
   if (program.identity.semanticProfile === REPEATABLE_EVENT_SUBSCRIPTIONS_CHECKPOINT_PROFILE_ID) {
     if (isWellFormedSemanticProcessProgram(program) && profileAllowsProgramShape(

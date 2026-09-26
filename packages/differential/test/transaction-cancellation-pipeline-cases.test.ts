@@ -13,7 +13,7 @@ import { completeEffectCommandId } from "@bpmn-lean/temporal-protocol";
 import { TemporalCompletionDelivery, TemporalExecutionSchedule } from "@bpmn-lean/temporal-testkit";
 import { readAndVerifyNormativeArtifactSets, verifyNormativeArtifactSet } from "../../../scripts/contract-artifacts.ts";
 import { mutableClone, projectRoot } from "./pipeline-target-support.ts";
-import { loadAndCompileCases } from "./semantic-differential-targets.ts";
+import { loadAndCompileCases } from "./pipeline-case-loading.ts";
 import { PipelineReplaySelection, TemporalCaseRelation } from "./pipeline-types.ts";
 
 const profileId = "bpmn-2.0.2-transaction-cancellation-checkpoint-draft";

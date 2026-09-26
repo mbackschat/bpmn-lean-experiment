@@ -86,7 +86,7 @@ The [native deployment enrollment helper](client/src/worker-deployment-enrollmen
 
 ### Transaction cancellation integration
 
-- [Host admission](protocol/src/host-admission.ts) and [its negative controls](protocol/test/transaction-host-admission.test.ts) require the complete private Transaction grammar and reject scheduled or mixed-host Programs.
+- [Host admission](protocol/src/host-admission.ts) and [its negative controls](testkit/test/transaction-host-admission.test.ts) require the complete private Transaction grammar and reject scheduled or mixed-host Programs.
 - [Compensation scheduling](workflow/src/compensation-frontier-scheduler.ts) checks exact child trigger/wait ownership before reusing the established Activity mechanism; [scheduler controls](workflow/test/transaction-compensation-scheduler.test.ts) distinguish missing, forged and mixed frontiers.
 - The [live publication journey](testkit/test/transaction-publication.temporal-test.ts) compiles the business XML and uses public start/completion commands. Empty, delayed-success and typed-failure paths retain paired E1/E2 publication, pre-schedule rollover, Worker replacement, one external mutation and every-Run replay. Public registration and capsule closure remain open.
 

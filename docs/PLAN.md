@@ -67,9 +67,9 @@ Owner instruction on 2026-09-08 supersedes the earlier MUE push authorization: d
 
 Exactly one stable work ID is active. Required maps are part of the routing contract, not descriptive tags.
 
-### Pending regional trial
+### Regional trial disposition
 
-Owner decision, 2026-09-20: the regional checkpoint trial remains pending in the RC queue, outside the completed [architecture/workflow review follow-up](CAPSULE-COST-LEDGER.md#architecture-and-workflow-review-follow-up-2026-09-20). Its observations remain receipt span/union, contemporaneous repeat-work records, commit purpose, and unchanged assurance. Preserve complete gates, guarantees, and required semantic reviews; the review fixes do not establish trial success or change RC scope.
+The regional trial observations are complete. The [recorded disposition](CAPSULE-COST-LEDGER.md#regional-workflow-trial-disposition-2026-09-26) retains unchanged assurance but establishes no productivity or elapsed-time gain. Qualification and selected-capability closure remain separate obligations.
 
 ### External-review correction checklist
 
@@ -103,9 +103,9 @@ Owner instruction, 2026-09-26: continue autonomously to MUE RC without routine c
 
 CPU window: on 2026-09-26 the owner explicitly authorized root-owned Lean validation, superseding every earlier delegated-slot restriction, with one build at a time and the existing 1-CPU/3-GiB limits. Keep one bounded Lean process tree, reuse warmed dependencies, and notify the owner when CPU-intensive validation finishes.
 
-Next action: review the reconciled selected RC boundary and run complete clean qualification. Transaction registration is committed at `5bc50f7b`. The [Transaction scheduling proof](../BpmnSemantics/SemanticProcess/TransactionSchedulingGuarantees.lean), source/public hosting and four registered Lean/core/Temporal cases are green. The [Transaction receipt](capsules/TRANSACTION-CANCELLATION-PROPOSAL.md#independent-cold-review-receipt) owns checkpoint approval; Pascal remains available for eligible closure continuity. The stopped redundant verifier (`/tmp/bpmn-transaction-checkpoint-clean-verify`, exit 143) is not qualification evidence.
+Next action: correct the [selected scheduling closure findings](INTERNAL-COMMUTATION-PROPOSAL.md#independent-cold-review-receipt) and [Transaction closure findings](capsules/TRANSACTION-CANCELLATION-PROPOSAL.md#independent-cold-review-receipt), then run clean qualification and same-reviewer audits. Shared scheduled-mode admission, actual Program-byte evidence, test wiring and current status/cost reconciliation require correction. Both reviews assessed `eb4ea613`; the failed infrastructure receipt is `/tmp/bpmn-rc-integrated-verify-eb4ea613`.
 
-The selected-capability reassessment requires no additional non-Transaction quantified proof family. The focused parallel-publication witness combining pre-completion rollover, Worker replacement, accepted-result recovery, paired pagination and every-Run replay passes (`/tmp/bpmn-parallel-publication-rollover-first`); the existing discriminator receipts and regional workflow-trial disposition are reconciled in their owners. Broader mixed domains and unselected family pairs remain excluded. No new proof infrastructure.
+Transaction source-to-publication, quantified scheduling and four registered scenarios are implemented. Exact-target focused gates and Transaction/parallel public recovery witnesses pass. No additional quantified proof family is selected; broader mixed domains remain excluded. Regional trial observations are complete without an efficiency claim. The stopped earlier verifier remains non-evidence.
 
 Oracle: exact canonical state/publication, regional refusal, whole-command rollback and unchanged root-profile guarantees. Preserve Temporal scheduled-Program exclusion and the 3 GiB ceiling.
 

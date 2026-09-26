@@ -1,3 +1,5 @@
+import { InternalSchedulingMode } from "@bpmn-lean/semantic-core";
+
 export const definition = {
   compiler: "bpmn-source-semantic-process",
   semanticProfile: "profile-publication",
@@ -14,6 +16,7 @@ export const rootScope = {
 
 export const program = {
   kind: "semanticProcess",
+  internalSchedulingMode: InternalSchedulingMode.RejectObservableChoice,
   identity: definition,
   processId: "Process_1",
   definitionScopes: [{

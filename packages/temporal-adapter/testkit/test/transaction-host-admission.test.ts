@@ -64,6 +64,8 @@ test("Transaction host admission requires exact profile, full graph, and sole sc
     const result = assessTemporalHostCapability(candidate);
     assert.equal(result.kind, TemporalHostCapabilityResultKind.Rejected, label);
     assert.ok(result.kind === TemporalHostCapabilityResultKind.Rejected);
-    assert.equal(result.failure.code, TemporalHostAdmissionFailureCode.CompensationSchedulerUnavailable, label);
+    assert.equal(result.failure.code, label === "scheduled choice"
+      ? TemporalHostAdmissionFailureCode.InternalChoiceSchedulerUnavailable
+      : TemporalHostAdmissionFailureCode.CompensationSchedulerUnavailable, label);
   }
 });
