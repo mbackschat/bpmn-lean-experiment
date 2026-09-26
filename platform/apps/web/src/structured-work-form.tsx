@@ -21,6 +21,7 @@ import type {
 
 import styles from "./work-inbox.module.css";
 import type { StructuredCompletionSubmission } from "./work-completion-operation";
+export { structuredFormStateKey } from "./structured-form-state-key.ts";
 
 export type StructuredWorkFormProps = Readonly<{
   form: PublicStructuredTaskFormV1;
@@ -324,16 +325,6 @@ export function prepareStructuredFormSubmission(
       fields: Object.freeze(structuredClone(fields)),
     }),
   });
-}
-
-export function structuredFormStateKey(form: PublicStructuredTaskFormV1): string {
-  return JSON.stringify([
-    form.catalogIdentity.processId,
-    form.catalogIdentity.version,
-    form.catalogIdentity.sourceSha256,
-    form.catalogIdentity.semanticProfile,
-    form.taskDefinition.elementId,
-  ]);
 }
 
 type NormalizedField =

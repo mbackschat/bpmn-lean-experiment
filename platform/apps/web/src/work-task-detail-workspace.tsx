@@ -21,6 +21,7 @@ import { BpmnDiagramMarkerKind } from "./bpmn-viewer-contract.ts";
 import type { WorkCompletionView } from "./work-completion-operation";
 import type { WorkCompletionSubmission } from "./work-completion-operation";
 import { WorkCompletionViewKind } from "./work-completion-operation";
+import { structuredFormStateKey } from "./structured-form-state-key.ts";
 import styles from "./work-inbox.module.css";
 
 const StructuredWorkForm = lazy(async () => {
@@ -322,16 +323,4 @@ function rejectedCompletionMessage(
     case "semantic":
       return `Completion was rejected with semantic outcome ${result.engineResult.outcome}.`;
   }
-}
-
-function structuredFormStateKey(
-  form: Extract<NonNullable<PublicTaskDetail["form"]>, { schemaVersion: unknown }>,
-): string {
-  return JSON.stringify([
-    form.catalogIdentity.processId,
-    form.catalogIdentity.version,
-    form.catalogIdentity.sourceSha256,
-    form.catalogIdentity.semanticProfile,
-    form.taskDefinition.elementId,
-  ]);
 }
