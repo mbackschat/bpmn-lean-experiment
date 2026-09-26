@@ -171,7 +171,7 @@ These measurements were refreshed with the shared source-measure functions on 20
 | [Scope runtime](../../packages/semantic-core/src/semantic-process-scope-runtime.ts) | 553 |
 | [Region cancellation](../../packages/semantic-core/src/semantic-process-scope-cancellation.ts) | 574 |
 | [Lean retention](../../BpmnSemantics/SemanticProcess/CompensationActivityRetention.lean) | 363 |
-| [Lean completion](../../BpmnSemantics/SemanticProcess/CompensationTriggerHandlerCompletion.lean) | 318 |
+| [Lean completion](../../BpmnSemantics/SemanticProcess/CompensationTriggerHandlerCompletion.lean) | 293 |
 | [Retention validation](../../packages/semantic-core/src/compensation-activity-retention-state-validation.ts) | 440 |
 | [Host admission](../../packages/temporal-adapter/protocol/src/host-admission.ts) | 460 |
 | [Source graph admission](../../packages/bpmn-source/src/checked-process-graph-admission.ts) | 416 |

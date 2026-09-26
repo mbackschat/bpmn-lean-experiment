@@ -230,4 +230,88 @@ def transactionCancellationProgramGraph (p : Program) : Bool := Id.run do
     body.descriptor.operation == "urn:bpmn-lean:effect-operation:compensation-single-effect-v1" &&
     elements.all nonempty && decide elements.Nodup
 
+namespace TransactionProgramRoles
+
+/-- These projections expose the admission reader's roles without a second graph traversal. -/
+def operationOwner? := opOwner?
+def controlPlaceOwner? := placeOwner?
+def operationInput? := input?
+def soleConsumer? := consumer?
+def taskChain? := programChain
+def unique? := @only?
+def exactInventory := @exactSet
+def canonical := canonicalOperation
+
+def endsNormally (operations : List SemanticOperation) : Bool :=
+  match operations.getLast? with
+  | some (.reachNoneEnd ..) => true
+  | _ => false
+
+def taskElementIds (operations : List SemanticOperation) : List String :=
+  operations.filterMap fun
+    | .awaitUserTask _ _ _ _ task => some task.id.value
+    | _ => none
+
+theorem unique_exact (values : List α) (value : α)
+    (selected : unique? values = some value) : values = [value] := by
+  cases values with
+  | nil => simp [unique?, only?] at selected
+  | cons head tail =>
+      cases tail with
+      | nil => simpa [unique?, only?] using selected
+      | cons next rest => simp [unique?, only?] at selected
+
+theorem unique_filter_facts (values : List α) (predicate : α → Bool) (value : α)
+    (selected : unique? (values.filter predicate) = some value) :
+    value ∈ values ∧ predicate value = true := by
+  apply List.mem_filter.mp
+  rw [unique_exact _ _ selected]
+  exact List.mem_cons_self
+
+theorem soleConsumer_exact (p : Program) (place : ControlPlaceId)
+    (operation : SemanticOperation) (selected : soleConsumer? p place = some operation) :
+    p.operations.filter (fun candidate => operationInput? candidate == some place) =
+      [operation] := by
+  change only? (p.operations.filter (fun candidate => input? candidate == some place)) =
+    some operation at selected
+  change p.operations.filter (fun candidate => input? candidate == some place) = [operation]
+  generalize filtered : p.operations.filter (fun candidate => input? candidate == some place) =
+    candidates at selected ⊢
+  cases candidates with
+  | nil => simp [only?] at selected
+  | cons head tail =>
+      cases tail with
+      | nil => simpa [only?, operationInput?] using selected
+      | cons next rest => simp [only?] at selected
+
+theorem soleConsumer_facts (p : Program) (place : ControlPlaceId)
+    (operation : SemanticOperation) (selected : soleConsumer? p place = some operation) :
+    operation ∈ p.operations ∧ operationInput? operation = some place := by
+  have facts := unique_filter_facts p.operations
+    (fun candidate => operationInput? candidate == some place) operation selected
+  exact ⟨facts.1, by simpa only [beq_iff_eq] using facts.2⟩
+
+theorem taskChain_zero (p : Program) (child : DefinitionScopeId) (place : ControlPlaceId) :
+    taskChain? p child 0 place = none := rfl
+
+theorem taskChain_succ (p : Program) (child : DefinitionScopeId)
+    (fuel : Nat) (place : ControlPlaceId) :
+    taskChain? p child (fuel + 1) place = (do
+      if controlPlaceOwner? p place != some child then none else
+      let op ← soleConsumer? p place
+      if operationOwner? p op.id != some child then none else
+      match op with
+      | .awaitUserTask _ _ _ output task =>
+          if task.metadata.isSome then none else
+          let (ops, places) ← taskChain? p child fuel output
+          pure (op :: ops, place :: places)
+      | .reachNoneEnd .. | .cancelTransaction .. => pure ([op], [place])
+      | _ => none) := rfl
+
+theorem exactInventory_eq [DecidableEq α] (xs ys : List α) :
+    exactInventory xs ys =
+      (decide xs.Nodup && decide ys.Nodup && xs.length == ys.length && xs.all ys.contains) := rfl
+
+end TransactionProgramRoles
+
 end BpmnSemantics.SemanticProcess

@@ -202,6 +202,12 @@ theorem nodeDisabled (source : CheckedProcess) (state : SourceRuntimeState)
   | timerStartEvent id durationLiteral => rfl
   | embeddedSubProcess id scopeId =>
       simp [nodeArityValid] at candidateArity
+  | transactionSubProcess id scopeId method =>
+      simp [nodeArityValid] at candidateArity
+  | cancelEndEvent id =>
+      simp [nodeArityValid] at candidateArity
+  | cancelBoundaryEvent id attachedToRef outputFlowId =>
+      simp [nodeArityValid] at candidateArity
   | callActivity id calledElement =>
       simp [nodeArityValid] at candidateArity
   | boundaryErrorEvent id attachedToRef error outputFlowId =>

@@ -11,7 +11,8 @@ namespace BpmnSemantics.TransactionSourceConformance
 open BpmnSemantics.SemanticProcess
 open BpmnSemantics.SemanticProcessJson
 
-private def fixture (namePrefix : String) (long : Bool) : CheckedProcess :=
+/-- Shared role-grammar witness for source admission and the selected arming guarantee. -/
+def transactionCheckedSource (namePrefix : String) (long : Bool) : CheckedProcess :=
   let node := fun (name : String) => NodeId.mk (namePrefix ++ name)
   let root : DefinitionScopeId := ⟨"scope:" ++ namePrefix ++ "Process"⟩
   let child : DefinitionScopeId := ⟨"scope:" ++ namePrefix ++ "Transaction"⟩
@@ -114,31 +115,31 @@ private def nodeWireAccepted (node : String) : Bool :=
   unless (nodeWireAccepted "{\"kind\":\"cancelBoundaryEvent\",\"id\":\"boundary\",\"attachedToRef\":\"tx\",\"outputFlowId\":\"flow\",\"cancelActivity\":false}") == false do
     throw (IO.userError "Transaction strict decoder: reject extra Cancel Boundary field")
 
-theorem short_checked_source_is_admitted : checkedWellFormed (fixture "" false) = true := by
+theorem short_checked_source_is_admitted : checkedWellFormed (transactionCheckedSource "" false) = true := by
   decide +kernel
-theorem renamed_long_checked_source_is_admitted : checkedWellFormed (fixture "Renamed_" true) = true := by
+theorem renamed_long_checked_source_is_admitted : checkedWellFormed (transactionCheckedSource "Renamed_" true) = true := by
   decide +kernel
-theorem short_lowered_program_matches_complete_grammar : transactionCancellationProgramGraph (lowerCheckedProcess (fixture "" false)) = true := by
+theorem short_lowered_program_matches_complete_grammar : transactionCancellationProgramGraph (lowerCheckedProcess (transactionCheckedSource "" false)) = true := by
   decide +kernel
-theorem renamed_long_lowered_program_matches_complete_grammar : transactionCancellationProgramGraph (lowerCheckedProcess (fixture "Renamed_" true)) = true := by
+theorem renamed_long_lowered_program_matches_complete_grammar : transactionCancellationProgramGraph (lowerCheckedProcess (transactionCheckedSource "Renamed_" true)) = true := by
   decide +kernel
-theorem eligible_subject_on_cancel_branch_is_rejected : checkedWellFormed (misplaced (fixture "" false) "Withdraw") = false := by
+theorem eligible_subject_on_cancel_branch_is_rejected : checkedWellFormed (misplaced (transactionCheckedSource "" false) "Withdraw") = false := by
   decide +kernel
-theorem renamed_eligible_subject_on_cancel_branch_is_rejected : checkedWellFormed (misplaced (fixture "Renamed_" true) "Renamed_Withdraw") = false := by
+theorem renamed_eligible_subject_on_cancel_branch_is_rejected : checkedWellFormed (misplaced (transactionCheckedSource "Renamed_" true) "Renamed_Withdraw") = false := by
   decide +kernel
 theorem lowered_misplaced_subject_is_rejected : transactionCancellationProgramGraph
-    (lowerCheckedProcess (misplaced (fixture "" false) "Withdraw")) = false := by
+    (lowerCheckedProcess (misplaced (transactionCheckedSource "" false) "Withdraw")) = false := by
   decide +kernel
 theorem renamed_lowered_misplaced_subject_is_rejected : transactionCancellationProgramGraph
-    (lowerCheckedProcess (misplaced (fixture "Renamed_" true) "Renamed_Withdraw")) = false := by
+    (lowerCheckedProcess (misplaced (transactionCheckedSource "Renamed_" true) "Renamed_Withdraw")) = false := by
   decide +kernel
-theorem short_lowered_program_is_well_formed : programWellFormed (lowerCheckedProcess (fixture "" false)) = true := by
+theorem short_lowered_program_is_well_formed : programWellFormed (lowerCheckedProcess (transactionCheckedSource "" false)) = true := by
   decide +kernel
-theorem renamed_long_lowered_program_is_well_formed : programWellFormed (lowerCheckedProcess (fixture "Renamed_" true)) = true := by
+theorem renamed_long_lowered_program_is_well_formed : programWellFormed (lowerCheckedProcess (transactionCheckedSource "Renamed_" true)) = true := by
   decide +kernel
-theorem short_lowered_program_is_profile_admitted : programProfileCapabilitiesValid (lowerCheckedProcess (fixture "" false)) = true := by
+theorem short_lowered_program_is_profile_admitted : programProfileCapabilitiesValid (lowerCheckedProcess (transactionCheckedSource "" false)) = true := by
   decide +kernel
-theorem transaction_lowering_omits_snapshots : (lowerCheckedProcess (fixture "" false)).compensationEventSubProcessSnapshots = none := by
+theorem transaction_lowering_omits_snapshots : (lowerCheckedProcess (transactionCheckedSource "" false)).compensationEventSubProcessSnapshots = none := by
   decide +kernel
 theorem transaction_start_rejects_process_data : variableValueAdmitted transactionCancellationCheckpointProfileId .processStart (.string "data") = false := by
   decide +kernel

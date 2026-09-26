@@ -171,6 +171,9 @@ theorem parseFrom_sound (source : CheckedProcess) (fuel : Nat)
         | messageStartEvent _ _ => simp [parseFrom, nodeResult] at result
         | timerStartEvent _ _ => simp [parseFrom, nodeResult] at result
         | embeddedSubProcess _ _ => simp [parseFrom, nodeResult] at result
+        | transactionSubProcess _ _ _ => simp [parseFrom, nodeResult] at result
+        | cancelEndEvent _ => simp [parseFrom, nodeResult] at result
+        | cancelBoundaryEvent _ _ _ => simp [parseFrom, nodeResult] at result
         | callActivity _ _ => simp [parseFrom, nodeResult] at result
         | timerBoundaryEvent _ _ _ _ =>
             simp [parseFrom, nodeResult] at result

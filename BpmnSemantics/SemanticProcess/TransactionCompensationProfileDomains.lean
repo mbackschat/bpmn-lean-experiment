@@ -33,7 +33,16 @@ theorem RootCompensationExecutionDomain.of_zero_profile (program : Program)
       (fun entry => entry.2.compensationTriggers) = some 0)
     (capabilities : programProfileCapabilitiesValid program = true) :
     RootCompensationExecutionDomain program := by
-  simp only [programProfileCapabilitiesValid, legacy, ↓reduceIte, Bool.and_eq_true] at capabilities
+  have transaction : (program.identity.semanticProfile == transactionCancellationCheckpointProfileId) = false := by
+    apply Bool.eq_false_iff.mpr
+    intro selected
+    have same : program.identity.semanticProfile = transactionCancellationCheckpointProfileId := by
+      simpa only [beq_iff_eq] using selected
+    rw [same] at zero
+    change (none : Option Nat) = some 0 at zero
+    contradiction
+  simp only [programProfileCapabilitiesValid, transaction, Bool.false_eq_true, legacy,
+    ↓reduceIte, Bool.and_eq_true] at capabilities
   cases shape : programShape? program.identity.semanticProfile.value with
   | none => simp [shape] at zero
   | some entry =>

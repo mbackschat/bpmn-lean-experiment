@@ -556,7 +556,11 @@ theorem admitted_parallel_has_no_sequential_operation (program : Program)
   have legacy : program.identity.semanticProfile ≠ repeatableSubscriptionCheckpointProfileId := by
     rw [account.profile]
     simp [parallelMultiInstanceUserTaskProfileId, repeatableSubscriptionCheckpointProfileId]
-  simp only [programProfileCapabilitiesValid, legacy, ↓reduceIte, Bool.and_eq_true] at capabilities
+  have transaction : (program.identity.semanticProfile == transactionCancellationCheckpointProfileId) = false := by
+    rw [account.profile]
+    decide +kernel
+  simp only [programProfileCapabilitiesValid, transaction, Bool.false_eq_true, legacy,
+    ↓reduceIte, Bool.and_eq_true] at capabilities
   have selected := capabilities.1.1
   simp [programSequentialMultiInstanceProfileMatches, account.profile,
     parallelMultiInstanceUserTaskProfileId, sequentialMultiInstanceUserTaskProfileId] at selected

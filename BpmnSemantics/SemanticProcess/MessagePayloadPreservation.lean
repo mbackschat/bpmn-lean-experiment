@@ -107,7 +107,11 @@ theorem deliverPayloadMessage_preserves_runtimeStateWellFormed
       have legacy : program.identity.semanticProfile ≠ repeatableSubscriptionCheckpointProfileId := by
         rw [profile]
         simp [messagePayloadCatchProfileId, repeatableSubscriptionCheckpointProfileId]
-      simp only [programProfileCapabilitiesValid, legacy, ↓reduceIte, Bool.and_eq_true] at capabilities
+      have transaction : (program.identity.semanticProfile == transactionCancellationCheckpointProfileId) = false := by
+        rw [profile]
+        decide +kernel
+      simp only [programProfileCapabilitiesValid, transaction, Bool.false_eq_true, legacy,
+        ↓reduceIte, Bool.and_eq_true] at capabilities
       have parallelFamily := capabilities.1.2
       simp [programParallelMultiInstanceProfileMatches, profile, messagePayloadCatchProfileId,
         parallelMultiInstanceUserTaskProfileId] at parallelFamily

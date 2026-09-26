@@ -51,6 +51,32 @@ def selectCompensationHandler? (state : RuntimeState)
         if activeEffectId == effectId then some { wait, trigger, handler } else none
     | _ => none
 
+/-- A selected handler always refers to a retained trigger in the submitted state. -/
+theorem selectCompensationHandler_trigger_member (state : RuntimeState) (effectId : EffectOccurrenceId)
+    (selected : SelectedCompensationHandler)
+    (selection : selectCompensationHandler? state effectId = some selected) :
+    selected.trigger ∈ state.compensationTriggers := by
+  unfold selectCompensationHandler? at selection
+  obtain ⟨wait, _, selection⟩ := Option.bind_eq_some_iff.mp selection
+  obtain ⟨trigger, triggerSelected, selection⟩ := Option.bind_eq_some_iff.mp selection
+  have present : trigger ∈ state.compensationTriggers := by
+    unfold findUnique? at triggerSelected
+    split at triggerSelected
+    · rename_i candidate filtered
+      cases triggerSelected
+      exact (List.mem_filter.mp (show trigger ∈ state.compensationTriggers.filter
+        (fun current => current.id == wait.triggerId) by rw [filtered]; simp)).1
+    · contradiction
+  split at selection
+  · contradiction
+  · obtain ⟨handler, _, selection⟩ := Option.bind_eq_some_iff.mp selection
+    split at selection
+    · split at selection
+      · cases selection
+        exact present
+      · contradiction
+    · contradiction
+
 /-- Preserves handler identity while assigning a terminal lifecycle. -/
 def terminalHandler (handler : CompensationHandlerExecution)
     (lifecycle : CompensationHandlerLifecycle) : CompensationHandlerExecution :=

@@ -165,6 +165,109 @@ private structure SnapshotEvaluatedStimulus where
   candidateTransitions : Option (List CommittedTransition)
   candidateLifecycles : Option (List UnnumberedFlowNodeOccurrenceDelta)
 
+/-- The actual closure recursion preserves a phase when its selected singleton and batch steps do.
+This induction principle lets the Transaction account derive command-boundary reachability without
+replacing the production closure with a proof-only scheduler. -/
+private theorem snapshotClosure_preserves_phase
+    (program : Program) (commandId : SemanticId) (phase : RuntimeState → Prop)
+    (single : ∀ before operation after, phase before →
+      (snapshotInternalTransitionFrontier program before).refusal = none →
+      (operation, after) ∈ (snapshotInternalTransitionFrontier program before).transitions →
+      phase after)
+    (batch : ∀ before prepared result, phase before →
+      (snapshotInternalTransitionFrontier program before).refusal = none →
+      InternalCommutation.prepareSnapshotArmingBatch? program before
+        ((snapshotInternalTransitionFrontier program before).transitions.map (·.1)) =
+          some prepared →
+      fireSnapshotInternalBatch program commandId before prepared = .applied result →
+      phase result.state)
+    (fuel transitionIndex : Nat) (state : RuntimeState) (initial : phase state) :
+    phase (closeSupportedTracedWithCompensationSnapshots fuel program commandId
+      transitionIndex state).state := by
+  induction fuel using Nat.strongRecOn generalizing transitionIndex state with
+  | ind fuel ih =>
+    cases fuel with
+    | zero =>
+        simp only [closeSupportedTracedWithCompensationSnapshots]
+        split
+        · exact initial
+        · split <;> exact initial
+    | succ fuel =>
+        simp only [closeSupportedTracedWithCompensationSnapshots]
+        split
+        · exact initial
+        · rename_i noRefusal
+          split
+          · exact initial
+          · rename_i operation successor offered
+            apply ih fuel (Nat.lt_succ_self fuel) (transitionIndex + 1) successor
+            exact single state operation successor initial noRefusal
+              (by rw [offered]; simp)
+          · rename_i first second remaining offered
+            split
+            · rename_i prepared selected
+              split
+              · exact initial
+              · split
+                · exact initial
+                · exact initial
+                · rename_i result applied
+                  simp only [List.length_map]
+                  apply ih (fuel - (remaining.length + 1))
+                    (Nat.lt_succ_of_le (Nat.sub_le _ _))
+                    (transitionIndex + (first :: second :: remaining).length) result.state
+                  exact batch state prepared result initial noRefusal (by simpa only [offered] using selected)
+                    applied
+            · exact initial
+
+/-- A successful production closure has exhausted its actual refusal-aware frontier. -/
+private theorem snapshotClosure_success_is_stable
+    (program : Program) (commandId : SemanticId) (fuel transitionIndex : Nat)
+    (state : RuntimeState) :
+    (closeSupportedTracedWithCompensationSnapshots fuel program commandId transitionIndex state).hitBound = false →
+    (closeSupportedTracedWithCompensationSnapshots fuel program commandId transitionIndex state).ambiguousChoice = false →
+    (closeSupportedTracedWithCompensationSnapshots fuel program commandId transitionIndex state).refusal = none →
+    let final := (closeSupportedTracedWithCompensationSnapshots fuel program commandId transitionIndex state).state
+    (snapshotInternalTransitionFrontier program final).transitions = [] ∧
+      (snapshotInternalTransitionFrontier program final).refusal = none := by
+  induction fuel using Nat.strongRecOn generalizing transitionIndex state with
+  | ind fuel ih =>
+    cases fuel with
+    | zero =>
+      simp only [closeSupportedTracedWithCompensationSnapshots]
+      split
+      · intro _ _ impossible; contradiction
+      · rename_i noRefusal
+        split
+        · rename_i empty
+          exact fun _ _ _ => ⟨empty, noRefusal⟩
+        · intro impossible; contradiction
+        · intro impossible; contradiction
+    | succ fuel =>
+      simp only [closeSupportedTracedWithCompensationSnapshots]
+      split
+      · intro _ _ impossible; contradiction
+      · rename_i noRefusal
+        split
+        · rename_i empty
+          exact fun _ _ _ => ⟨empty, noRefusal⟩
+        · rename_i operation successor offered
+          exact ih fuel (Nat.lt_succ_self fuel) (transitionIndex + 1) successor
+        · rename_i first second remaining offered
+          split
+          · rename_i prepared selected
+            split
+            · intro impossible; contradiction
+            · split
+              · intro _ _ impossible; contradiction
+              · intro _ impossible; contradiction
+              · rename_i result applied
+                simp only [List.length_map]
+                exact ih (fuel - (remaining.length + 1))
+                  (Nat.lt_succ_of_le (Nat.sub_le _ _))
+                  (transitionIndex + (first :: second :: remaining).length) result.state
+          · intro _ impossible; contradiction
+
 private def evaluateStimulusWithCompensationSnapshots (closureLimit : Nat)
     (program : Program) (state : RuntimeState) (stimulus : Stimulus) :
     SnapshotEvaluatedStimulus :=
@@ -275,6 +378,98 @@ def applyStimulusWithCompensationSnapshots (closureLimit : Nat) (program : Progr
       program.compensationExecution.isSome then
     (evaluateStimulusWithCompensationSnapshots closureLimit program state stimulus).result
   else applyStimulus closureLimit program state stimulus
+
+/-- Local admission and selected-step phase laws lift through the actual Compensation evaluator,
+including its whole-command rollback and refusal paths. -/
+theorem applyStimulusWithCompensationSnapshots_preserves_phase
+    (program : Program) (declaration : CompensationExecutionDeclaration)
+    (declared : program.compensationExecution = some declaration)
+    (phase : RuntimeState → Prop) (state : RuntimeState) (stimulus : Stimulus)
+    (initial : phase state)
+    (admitted : phase (admitStimulusWithCompensationSnapshots program state stimulus).state)
+    (single : ∀ before operation after, phase before →
+      (snapshotInternalTransitionFrontier program before).refusal = none →
+      (operation, after) ∈ (snapshotInternalTransitionFrontier program before).transitions →
+      phase after)
+    (batch : ∀ before prepared result, phase before →
+      (snapshotInternalTransitionFrontier program before).refusal = none →
+      InternalCommutation.prepareSnapshotArmingBatch? program before
+        ((snapshotInternalTransitionFrontier program before).transitions.map (·.1)) =
+          some prepared →
+      fireSnapshotInternalBatch program (stimulusCommandId stimulus) before prepared =
+        .applied result → phase result.state)
+    (closureLimit : Nat) :
+    phase (applyStimulusWithCompensationSnapshots closureLimit program state stimulus).state := by
+  simp only [applyStimulusWithCompensationSnapshots, declared, Option.isSome_some,
+    Bool.or_true, if_true]
+  unfold evaluateStimulusWithCompensationSnapshots
+  dsimp only
+  split
+  · have closed := snapshotClosure_preserves_phase program (stimulusCommandId stimulus)
+      phase single batch closureLimit 1 _ admitted
+    generalize closedEq : closeSupportedTracedWithCompensationSnapshots closureLimit program
+      (stimulusCommandId stimulus) 1
+      (admitStimulusWithCompensationSnapshots program state stimulus).state = closure at closed ⊢
+    cases closure with
+    | mk successor hitBound ambiguous records lifecycles refusal =>
+      cases refusal <;> cases hitBound <;> cases ambiguous <;>
+        dsimp [StimulusResult.ofClosure]
+      all_goals first | exact initial | exact closed
+  · exact admitted
+
+/-- Committed Compensation commands end at a stable frontier; failed closure never counts as one. -/
+theorem applyStimulusWithCompensationSnapshots_committed_is_stable
+    (program : Program) (declaration : CompensationExecutionDeclaration)
+    (declared : program.compensationExecution = some declaration)
+    (closureLimit : Nat) (state : RuntimeState) (stimulus : Stimulus)
+    (committed : (applyStimulusWithCompensationSnapshots closureLimit program state stimulus).outcome =
+      .committed) :
+    let final := (applyStimulusWithCompensationSnapshots closureLimit program state stimulus).state
+    (snapshotInternalTransitionFrontier program final).transitions = [] ∧
+      (snapshotInternalTransitionFrontier program final).refusal = none := by
+  simp only [applyStimulusWithCompensationSnapshots, declared, Option.isSome_some,
+    Bool.or_true, if_true] at committed ⊢
+  unfold evaluateStimulusWithCompensationSnapshots at committed ⊢
+  generalize admissionEq : admitStimulusWithCompensationSnapshots program state stimulus =
+    admission at committed ⊢
+  cases outcome : admission.outcome
+  case committed =>
+    simp only [outcome] at committed ⊢
+    have stable := snapshotClosure_success_is_stable program (stimulusCommandId stimulus)
+      closureLimit 1 admission.state
+    generalize closureEq : closeSupportedTracedWithCompensationSnapshots closureLimit program
+      (stimulusCommandId stimulus) 1 admission.state = closure at committed stable ⊢
+    cases closure with
+    | mk successor hitBound ambiguous records lifecycles refusal =>
+      cases refusal <;> cases hitBound <;> cases ambiguous <;>
+        simp only [StimulusResult.ofClosure, Bool.or_false, Bool.or_true, ↓reduceIte,
+          reduceCtorEq] at committed ⊢
+      all_goals first | contradiction | exact stable rfl rfl rfl
+  all_goals simp [outcome] at committed
+
+/-- If admission only commits or preserves its input, the complete evaluator preserves that guarantee. -/
+theorem applyStimulusWithCompensationSnapshots_commits_or_preserves_state
+    (program : Program) (declaration : CompensationExecutionDeclaration)
+    (declared : program.compensationExecution = some declaration)
+    (before : RuntimeState) (stimulus : Stimulus) (closureLimit : Nat)
+    (admission : (admitStimulusWithCompensationSnapshots program before stimulus).outcome = .committed ∨
+      (admitStimulusWithCompensationSnapshots program before stimulus).state = before) :
+    (applyStimulusWithCompensationSnapshots closureLimit program before stimulus).outcome = .committed ∨
+      (applyStimulusWithCompensationSnapshots closureLimit program before stimulus).state = before := by
+  simp only [applyStimulusWithCompensationSnapshots, declared, Option.isSome_some, Bool.or_true, if_true]
+  unfold evaluateStimulusWithCompensationSnapshots
+  generalize admissionEq : admitStimulusWithCompensationSnapshots program before stimulus = admitted at admission ⊢
+  cases outcome : admitted.outcome
+  case committed =>
+    simp only [outcome]
+    generalize closureEq : closeSupportedTracedWithCompensationSnapshots closureLimit program
+      (stimulusCommandId stimulus) 1 admitted.state = closure
+    cases closure with
+    | mk state hitBound ambiguous records lifecycles refusal =>
+        cases refusal <;> cases hitBound <;> cases ambiguous <;> simp [StimulusResult.ofClosure]
+  all_goals
+    have same : admitted.state = before := admission.resolve_left (by simp [outcome])
+    simp [outcome, same]
 
 /-- Compensation-aware trace evaluation with empty publication on semantic refusal. -/
 def applyStimulusTracedWithCompensationSnapshots (closureLimit : Nat)

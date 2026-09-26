@@ -299,6 +299,13 @@ import BpmnSemantics.InternalClosureAtomicityConformance
 
 import BpmnSemantics.SnapshotInternalArmingConformance
 import BpmnSemantics.TransactionSourceConformance
+import BpmnSemantics.TransactionSourceArmingConformance
+import BpmnSemantics.SemanticProcess.TransactionReachableFrontier
+import BpmnSemantics.SemanticProcess.TransactionFrontierPhases
+import BpmnSemantics.SemanticProcess.TransactionFrontierCardinality
+import BpmnSemantics.SemanticProcess.TransactionBranchPhases
+import BpmnSemantics.SemanticProcess.TransactionCommandPhases
+import BpmnSemantics.SemanticProcess.TransactionSchedulingGuarantees
 import BpmnSemantics.SemanticProcess.InternalSnapshotArmingExecution
 
 /-! Root of the BPMN semantic contract library.

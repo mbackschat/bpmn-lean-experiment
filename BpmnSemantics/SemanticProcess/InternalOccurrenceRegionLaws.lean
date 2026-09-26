@@ -19,7 +19,7 @@ private theorem sortInsert_perm (before : α → α → Bool) (value : α) (valu
       · exact List.Perm.refl _
       · exact (List.Perm.cons head ih).trans (List.Perm.swap value head tail)
 
-private theorem sort_perm (before : α → α → Bool) (values : List α) :
+theorem sortBy_permutation (before : α → α → Bool) (values : List α) :
     (sortBy before values).Perm values := by
   induction values with
   | nil => rfl
@@ -41,11 +41,11 @@ theorem canonicalScopeMembers_mem (members : List ScopeOccurrenceId) (value : Sc
 
 theorem canonicalScopeMembers_nodup (members : List ScopeOccurrenceId) :
     (canonicalScopeMembers members).Nodup :=
-  (sort_perm scopeBefore members.eraseDups).nodup_iff.mpr (eraseDups_unique members)
+  (sortBy_permutation scopeBefore members.eraseDups).nodup_iff.mpr (eraseDups_unique members)
 
 theorem canonicalScopeMembers_length (members : List ScopeOccurrenceId) :
     (canonicalScopeMembers members).length = members.eraseDups.length :=
-  (sort_perm scopeBefore members.eraseDups).length_eq
+  (sortBy_permutation scopeBefore members.eraseDups).length_eq
 
 theorem scopeBefore_eq_scopeOwnerBefore (left right : ScopeOccurrenceId) :
     scopeBefore left right = scopeOwnerBefore left right := by

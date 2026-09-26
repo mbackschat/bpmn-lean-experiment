@@ -491,7 +491,11 @@ theorem dataInputOutputCompletionStep_preserves_runtimeStateWellFormed
       have legacy : program.identity.semanticProfile ≠ repeatableSubscriptionCheckpointProfileId := by
         rw [profile]
         simp [activityDataInputOutputUserTaskProfileId, repeatableSubscriptionCheckpointProfileId]
-      simp only [programProfileCapabilitiesValid, legacy, ↓reduceIte, Bool.and_eq_true] at admitted
+      have transaction : (program.identity.semanticProfile == transactionCancellationCheckpointProfileId) = false := by
+        rw [profile]
+        decide +kernel
+      simp only [programProfileCapabilitiesValid, transaction, Bool.false_eq_true, legacy,
+        ↓reduceIte, Bool.and_eq_true] at admitted
       have noSequential := admitted.1.1
       simp [programSequentialMultiInstanceProfileMatches, profile,
         activityDataInputOutputUserTaskProfileId, sequentialMultiInstanceUserTaskProfileId]

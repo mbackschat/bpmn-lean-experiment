@@ -166,7 +166,7 @@ private theorem snapshot_batch_erases_to_runner (program : Program)
       simp [fireSnapshotInternalBatch, snapshot_frontier_refusal_absent program state disabled,
         applied, pairAccepted, tailResult]
 
-private theorem snapshot_sort_eq (before : α → α → Bool) (values : List α) :
+theorem snapshot_sort_eq (before : α → α → Bool) (values : List α) :
     SemanticProcess.sortBy before values = sortBy before values := by
   have insertion (inserted : α) (entries : List α) :
       insertBy before inserted entries = sortInsertBy before inserted entries := by

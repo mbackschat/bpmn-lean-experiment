@@ -468,7 +468,7 @@ The operation census must classify trigger creation and frontier activation as o
 | [Lean Program](../../BpmnSemantics/SemanticProcessContract.lean) | 299 | direct Activity-data carriers extracted into a bounded owner |
 | [Lean RuntimeState](../../BpmnSemantics/SemanticProcess/RuntimeState.lean) | 51 | trigger collection reference only |
 | [Lean effect completion](../../BpmnSemantics/SemanticProcess/EffectCompletion.lean) | 721 | compensation relation only |
-| [Lean command admission](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean) | 85 | result dispatch only |
+| [Lean command admission](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean) | 77 | result dispatch only |
 | [Lean transition](../../BpmnSemantics/SemanticProcess/Transition.lean) | 93 | extract before adding the new dispatcher arm |
 | [Lean internal attempt](../../BpmnSemantics/SemanticProcess/InternalOperationAttempt.lean) | 752 | trigger-attempt delegation only |
 | [Lean scenario contract](../../BpmnSemantics/Scenario.lean) | 437 | failed union only |

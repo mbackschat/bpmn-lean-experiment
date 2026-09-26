@@ -624,6 +624,15 @@ theorem admitStimulusWithCompensationSnapshots_withoutDeclaration
       admitStimulus program state stimulus := by
   simp [admitStimulusWithCompensationSnapshots, admitStimulus, absent]
 
+/-- Correlated delivery cannot mutate a declaration-free Program outside its selected profile. -/
+theorem admitStimulusWithCompensationSnapshots_unselected_correlation
+    (program : Program) (state : RuntimeState) (delivery : DeliverCorrelatedPayloadMessageStimulus)
+    (absent : program.compensationEventSubProcessSnapshots = none)
+    (unselected : program.identity.semanticProfile ≠ messageKeyCorrelationProfileId) :
+    admitStimulusWithCompensationSnapshots program state (.deliverCorrelatedPayloadMessage delivery) =
+      { outcome := .rejected, state } := by
+  simp [admitStimulusWithCompensationSnapshots, absent, admitCorrelatedPayloadMessage, unselected]
+
 private theorem rawCommittedStart_shape (program : Program) (stimulus : Stimulus)
     (instanceId : SemanticId)
     (startKind : match stimulus with
