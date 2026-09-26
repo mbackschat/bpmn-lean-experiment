@@ -1482,3 +1482,19 @@ Registration exposed two integration omissions: the corpus construct list lacked
 The complete contract package passes 111 tests, the corpus/capability/requirement guards pass 49, the About rendering checks pass two, and harness types pass. The first differential package run passed 165/166 and failed only the stale aggregate catalog budget; its correction retains the fixed per-case rate and all 166 pass. The complete affected ordered-Activity witness passes both root Compensation and all four Transaction cases with ten replays in 12.951 seconds (`/tmp/bpmn-transaction-registration-ordered-live`); final harness types pass. Focused receipts use `/tmp/bpmn-transaction-registration-*`. The repository-wide and release gates remain reserved for the integrated RC candidate under the owner's cadence. Registration adds no generic Transaction, CIB, browser-catalog or universal cross-language equivalence claim.
 
 The documentation/source gate passes 79/80 checks; its sole failure was PLAN naming review work without linking the governed receipt. The link is restored, and `/tmp/bpmn-transaction-registration-plan-green` rechecks that control-plane boundary. Source reviewability, scenario/profile registries, normative references, test selection and the remaining documentation checks passed; this records the original failure without rerunning unrelated runtime lanes.
+
+
+## Regional workflow-trial disposition, 2026-09-26
+
+Disposition: observations complete; assurance retained; productivity and elapsed savings unproven. The trial grouped each complete preparation/frame/commutation/publication outcome before committing, while retaining required independent review and complete integration. It does not authorize omission of an early semantic checkpoint when a new account or material risk requires one.
+
+| Completed outcome | Cold review cycles | Clean full-gate attempts | Interpretation |
+|---|---:|---:|---|
+| [Regional/local-control baseline](#regional-pair-review-cycle-baseline-2026-09-21) | 3 | 3 | Three preparation/pair increments each opened review and integration. |
+| [Regional/arming](#regionalarming-outcome-preparation-2026-09-21) | 1 | 4 | One complete semantic outcome reduced reviews; three harness failures prevented fewer gate attempts. |
+| [Finite regional batch](INTERNAL-COMMUTATION-PROPOSAL.md#finite-regional-batch-outcome) | 1 | 1 | One finite consumer outcome retained the complete accepted contract. |
+| [Ordinary End batch](INTERNAL-COMMUTATION-PROPOSAL.md#ordinary-end-batch-outcome) | 1 | 2 | One review and one correction audit; a stale source oracle caused the first gate failure. |
+
+The linked cost records retain receipt span/union, failed commands, code/document measurements and exclusions. Regional/arming pre-commit span/union was 14794.974/2224.000 seconds, plus separately measured cleanup corrections 1244.543/775.523 seconds. These differently scoped and potentially overlapping intervals cannot be added into an engineering-effort or critical-path claim. Commit purpose was complete semantic outcome, required correction or evidence; no compiled helper alone required a checkpoint. The earlier pending-trial statements describe historical checkpoints and are superseded by this disposition.
+
+The practical consequence is the owner's current cadence: focused checks during implementation, complete affected boundaries at coherent outcomes, and one complete repository/release qualification for the integrated RC candidate. Repeated failures still require diagnosis and a separating guard. Existing finite-batch, validity, projectability, canonical paired publication, rollback and Temporal admission guarantees remain mandatory. This is a workflow assessment, not additional conformance evidence.
