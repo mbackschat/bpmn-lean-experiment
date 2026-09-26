@@ -1,0 +1,86 @@
+{
+  "kind": "scenario",
+  "id": "transaction-cancellation-handler-failed",
+  "profile": "bpmn-2.0.2-transaction-cancellation-checkpoint-draft",
+  "bpmn": {
+    "id": "reservation-withdrawal",
+    "relativePath": "scenarios/transaction-cancellation/reservation-withdrawal.bpmn",
+    "sha256": "1286fe6dd67bcf788f7626297a123ebd8c3d4d403f84a0ea9dcc67abc8edc4d4",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "startProcess",
+      "commandId": "start-handler-failed",
+      "processId": "Process_Withdrawal",
+      "instanceId": "withdrawal-handler-failed",
+      "initialVariables": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete:Task_Reserve",
+      "taskId": {
+        "processInstanceId": "withdrawal-handler-failed",
+        "elementId": "Task_Reserve",
+        "activation": 1
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete:Task_Withdraw",
+      "taskId": {
+        "processInstanceId": "withdrawal-handler-failed",
+        "elementId": "Task_Withdraw",
+        "activation": 1
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "stale-task",
+      "taskId": {
+        "processInstanceId": "withdrawal-handler-failed",
+        "elementId": "Task_Reserve",
+        "activation": 1
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeEffect",
+      "commandId": "complete-effect-sha256:244db6376213e071da307bd09f3c1d145b6ac3f7ff53ceaa661bf645742bd2ec",
+      "effectId": {
+        "processInstanceId": "withdrawal-handler-failed",
+        "elementId": "Task_Release",
+        "activation": 1
+      },
+      "result": {
+        "kind": "bpmnError",
+        "code": "release-failed",
+        "message": "release failed",
+        "localPatch": []
+      }
+    }
+  ],
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 10.3.5",
+      "BPMN 2.0.2 Clause 10.5.5",
+      "BPMN 2.0.2 Clause 13.5.5"
+    ],
+    "cibRevision": "not-applicable",
+    "cibRefs": []
+  }
+}

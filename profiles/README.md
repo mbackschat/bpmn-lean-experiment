@@ -26,6 +26,7 @@ This directory contains reviewed semantic-profile artifacts. A profile identifie
 - [BPMN 2.0.2 Simple Boolean Exclusive Gateway draft](bpmn-2.0.2-simple-boolean-exclusive-gateway-draft/README.md)
 - [BPMN 2.0.2 Sub-Process boundary Timer draft](bpmn-2.0.2-subprocess-boundary-timer-draft/README.md)
 - [BPMN 2.0.2 Terminate End Event draft](bpmn-2.0.2-terminate-end-event-draft/README.md)
+- [BPMN 2.0.2 bounded Transaction cancellation draft](bpmn-2.0.2-transaction-cancellation-checkpoint-draft/README.md)
 - [BPMN 2.0.2 Timer Start Event draft](bpmn-2.0.2-timer-start-event-draft/README.md)
 - [BPMN 2.0.2 Timer/User Task composition draft](bpmn-2.0.2-timer-user-task-composition-draft/README.md)
 - [BPMN 2.0.2 resumption-bounded User Task cycle draft](bpmn-2.0.2-user-task-cycle-draft/README.md)

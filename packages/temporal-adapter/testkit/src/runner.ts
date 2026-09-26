@@ -7,7 +7,7 @@ import type {
   SemanticProcessProgram,
 } from "@bpmn-lean/semantic-core";
 import {
-  CanonicalObservationKind, COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID,
+  CanonicalObservationKind, StimulusKind, COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID, TRANSACTION_CANCELLATION_CHECKPOINT_PROFILE_ID,
   REPEATABLE_EVENT_SUBSCRIPTIONS_CHECKPOINT_PROFILE_ID,
 } from "@bpmn-lean/semantic-core";
 import type {
@@ -194,7 +194,9 @@ export class TemporalScenarioRunner {
     semanticProcess: SemanticProcessProgram,
     options: TemporalScenarioExecutionOptions,
   ): Promise<TemporalScenarioExecution> {
-    if (scenario.profile === COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID &&
+    if ((scenario.profile === COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID ||
+        (scenario.profile === TRANSACTION_CANCELLATION_CHECKPOINT_PROFILE_ID &&
+          scenario.stimuli.some((stimulus) => stimulus.kind === StimulusKind.CompleteEffect))) &&
       options.executionSchedule === TemporalExecutionSchedule.StimulusOrder) {
       validateExecutionOptions(scenario, options);
       if (options.effectExecutionSchedule !== null) {

@@ -116,6 +116,14 @@ export const mvpBpmnCapabilities = Object.freeze([
     cibEvidence: notSelected,
   },
   {
+    id: "cancelEndEvent",
+    family: "End Events",
+    element: "Cancel End Event",
+    support: BpmnCapabilitySupport.BoundedStandard,
+    restriction: "One direct Transaction child Cancel End on one of two parallel one-or-two-User-Task branches. Cancels unfinished child work and compensates zero or one completed eligible Task; no root or ordinary Sub-Process Cancel End.",
+    cibEvidence: notSelected,
+  },
+  {
     id: "userTask",
     family: "Activities",
     element: "User Task",
@@ -204,11 +212,27 @@ export const mvpBpmnCapabilities = Object.freeze([
     cibEvidence: exactCib("embedded-subprocess-completion-a-then-b"),
   },
   {
+    id: "transaction",
+    family: "Activities",
+    element: "Transaction Sub-Process",
+    support: BpmnCapabilitySupport.BoundedStandard,
+    restriction: "One depth-one, single-activation cancellation Transaction; method omitted or exactly ##Compensate. Two parallel branches of one or two ordinary User Tasks, one eligible Task on the non-Cancel branch, empty data and handler arguments. One retained record/4096 bytes and one trigger/handler/20480 bytes; no metadata, loops, nested scopes, protocol success, hazard handling, Store/Image methods or generalized Transactions.",
+    cibEvidence: notSelected,
+  },
+  {
+    id: "transactionCancelBoundaryEvent",
+    family: "Boundary Events",
+    element: "Interrupting Transaction Cancel Boundary Event",
+    support: BpmnCapabilitySupport.BoundedStandard,
+    restriction: "One interrupting boundary attached to the exact Transaction in its direct parent. Emits one parent continuation after empty cancellation or successful single-handler compensation, followed by one acknowledgement User Task and its distinct None End. Typed handler failure emits no continuation; no non-interrupting Cancel catch or external Cancel command.",
+    cibEvidence: notSelected,
+  },
+  {
     id: "compensationBoundaryEvent",
     family: "Compensation",
     element: "Compensation Boundary Event",
     support: BpmnCapabilitySupport.BoundedStandard,
-    restriction: "Exact travel-cancellation graph only: two completed ordinary root User Task subjects retain their association-linked handlers; active and unsuccessful subjects are excluded.",
+    restriction: "The travel-cancellation profile selects two ordinary root User Task subjects; the bounded Transaction cancellation profile selects one ordinary Task on its non-Cancel branch. Boundary, Task, association and handler share that exact owner. Only completed eligible work is retained; no arbitrary nested Compensation context.",
     cibEvidence: notSelected,
   },
   {
@@ -232,7 +256,7 @@ export const mvpBpmnCapabilities = Object.freeze([
     family: "Compensation",
     element: "Single-effect Compensation handler Service Task",
     support: BpmnCapabilitySupport.BoundedStandard,
-    restriction: "One closed Compensation Activity effect protocol with empty result patches; handler failure commits typed Process failure and cancels active and pending siblings. No general handler graphs, output mappings, incidents or recovery.",
+    restriction: "One closed Compensation Activity effect protocol with empty result patches in the selected root account or the bounded Transaction's single child-owned handler with empty arguments. Handler failure commits typed Process failure and cancels active and pending siblings. No general handler graphs, output mappings, incidents or recovery.",
     cibEvidence: notSelected,
   },
   {
@@ -248,7 +272,7 @@ export const mvpBpmnCapabilities = Object.freeze([
     family: "Gateways",
     element: "Parallel Gateway",
     support: BpmnCapabilitySupport.BoundedStandard,
-    restriction: "Balanced two-branch fork/join in its registered profiles; the subscription profile additionally admits acyclic divergent fork forests within its complete-burst bound.",
+    restriction: "Balanced two-branch fork/join in its registered profiles; the subscription profile additionally admits acyclic divergent fork forests within its complete-burst bound. The bounded Transaction profile uses one two-way split into one-or-two-Task branches ending at Cancel and None respectively.",
     cibEvidence: exactCib("parallel-fork-join-a-then-b"),
   },
   {

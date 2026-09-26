@@ -150,6 +150,7 @@ const corpusConstructs = new Set([
   "startEvent",
   "subProcess",
   "task",
+  "transaction",
   "userTask",
 ]);
 

@@ -1690,6 +1690,47 @@
       }
     },
     {
+      "id": "reservation-withdrawal",
+      "title": "Withdraw a resource reservation",
+      "businessPurpose": "Release a completed resource reservation before acknowledging withdrawal, interrupt unfinished preparation, and expose a failed release without acknowledging success.",
+      "cloneFamily": "transaction-reservation-withdrawal",
+      "constructs": [
+        "boundaryEvent",
+        "endEvent",
+        "parallelGateway",
+        "process",
+        "sequenceFlow",
+        "serviceTask",
+        "startEvent",
+        "transaction",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "parallelSplit",
+        "userTaskWait",
+        "userTaskCompletion",
+        "externalEffect"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/transaction-cancellation/reservation-withdrawal.bpmn",
+        "sha256": "1286fe6dd67bcf788f7626297a123ebd8c3d4d403f84a0ea9dcc67abc8edc4d4",
+        "scenarioRelativePath": "scenarios/transaction-cancellation/retained-active.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "bpmn-2.0.2-transaction-cancellation-checkpoint-draft",
+      "admission": {
+        "kind": "accepted"
+      },
+      "pipelineCaseId": "transaction-cancellation-retained-active",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "No retained diagram or complete production-backed browser journey for this reservation-withdrawal model."
+      }
+    },
+    {
       "id": "cib-order-goods",
       "title": "CIB Seven order goods",
       "businessPurpose": null,

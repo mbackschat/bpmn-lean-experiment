@@ -356,18 +356,42 @@
           "uniqueItems": true
         },
         "cibRevision": {
-          "type": "string",
-          "pattern": "^[0-9a-f]{40}$"
+          "type": "string"
         },
         "cibRefs": {
           "type": "array",
           "items": {
             "$ref": "#/$defs/nonEmptyString"
           },
-          "minItems": 1,
           "uniqueItems": true
         }
-      }
+      },
+      "oneOf": [
+        {
+          "properties": {
+            "cibRevision": {
+              "const": "not-applicable",
+              "type": "string"
+            },
+            "cibRefs": {
+              "maxItems": 0,
+              "type": "array"
+            }
+          }
+        },
+        {
+          "properties": {
+            "cibRevision": {
+              "pattern": "^[0-9a-f]{40}$",
+              "type": "string"
+            },
+            "cibRefs": {
+              "minItems": 1,
+              "type": "array"
+            }
+          }
+        }
+      ]
     },
     "semanticOutcome": {
       "type": "object",

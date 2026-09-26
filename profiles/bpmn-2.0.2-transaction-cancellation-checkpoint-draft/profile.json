@@ -1,0 +1,76 @@
+{
+  "kind": "semanticProfile",
+  "id": "bpmn-2.0.2-transaction-cancellation-checkpoint-draft",
+  "status": "draft",
+  "claim": "bpmn-2.0.2-bounded-transaction-cancellation",
+  "normativeAuthority": {
+    "name": "OMG Business Process Model and Notation",
+    "version": "2.0.2",
+    "references": [
+      "Clause 10.3.5",
+      "Clause 10.5.5",
+      "Clause 13.3.4",
+      "Clause 13.5.5"
+    ]
+  },
+  "bpmn": {
+    "process": "private-executable",
+    "features": [
+      "none-start-event",
+      "user-task",
+      "user-task-discovery",
+      "user-task-instance-completion",
+      "parallel-split",
+      "depth-one-transaction-subprocess",
+      "cancel-end-event",
+      "transaction-cancel-boundary-event",
+      "child-owned-boundary-compensation-retention",
+      "single-effect-compensation-handler",
+      "delayed-cancel-continuation",
+      "fail-fast-typed-process-failure",
+      "none-end-event",
+      "sequence-flow",
+      "process-completion"
+    ],
+    "extensions": [],
+    "relationships": [
+      "CIB-AGR-0002",
+      "CIB-OP-0001"
+    ]
+  },
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "comparison": {
+    "trace": "exact-after-canonical-projection",
+    "semanticConcurrency": true
+  },
+  "excluded": [
+    "cib-transaction-or-compensation-compatibility-claim",
+    "general-bpmn-process-execution-conformance",
+    "successful-protocol-controlled-transactions",
+    "transaction-hazard-recovery",
+    "nested-or-concurrent-transactions",
+    "transaction-method-other-than-default-compensate",
+    "multiple-compensation-subjects",
+    "zero-task-cancel-branch",
+    "loop-or-multi-instance-activities",
+    "targeted-or-asynchronous-compensation",
+    "compensation-event-subprocess-snapshots",
+    "general-handler-control-flow-or-data",
+    "handler-output-mapping",
+    "handler-incident-retry-or-recovery",
+    "public-scheduled-choice",
+    "product-two-browser-catalog",
+    "production-history-compatibility"
+  ]
+}

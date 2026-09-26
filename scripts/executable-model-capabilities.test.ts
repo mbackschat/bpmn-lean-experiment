@@ -13,6 +13,88 @@ import { CibCapabilityEvidenceKind, mvpBpmnCapabilities } from "../model-corpus/
 
 const compensationCapabilityIds = ["compensationBoundaryEvent", "compensationEventSubProcess", "compensationHandlerServiceTask", "compensationIntermediateThrowEvent"];
 
+const transactionCapabilityIds = ["transaction", "cancelEndEvent", "transactionCancelBoundaryEvent"] as const;
+const transactionFixture = new URL("../packages/bpmn-source/test/fixtures/transaction-cancellation.bpmn", import.meta.url);
+
+test("Transaction inventory recognizes the approved child-owned cancellation fixture", async () => {
+  const xml = await readFile(transactionFixture, "utf8");
+  const expected = [...transactionCapabilityIds, "compensationBoundaryEvent", "compensationHandlerServiceTask",
+    "noneStartEvent", "noneEndEvent", "parallelGateway", "process", "sequenceFlow", "userTask"].sort();
+  assert.deepEqual(detectExecutableBpmnCapabilities(xml), expected);
+  assert.deepEqual(detectExecutableBpmnCapabilities(xml.replaceAll("Reservation", "Booking").replaceAll("Task_", "Work_")), expected);
+  assert.deepEqual(detectExecutableBpmnCapabilities(xml.replace('id="Transaction_Reservation"', 'id="Transaction_Reservation" method="##Compensate"')), expected);
+});
+
+test("Transaction inventory rejects Cancel End outside the direct Transaction child", async () => {
+  const xml = await readFile(transactionFixture, "utf8");
+  const cancel = '<bpmn:endEvent id="End_Cancel"><bpmn:cancelEventDefinition id="Cancel_Request" /></bpmn:endEvent>';
+  for (const malformed of [
+    xml.replace(cancel, "").replace("</bpmn:transaction>", `</bpmn:transaction>${cancel}`),
+    xml.replace(cancel, `<bpmn:subProcess id="Nested">${cancel}</bpmn:subProcess>`),
+  ]) assert.throws(() => detectExecutableBpmnCapabilities(malformed), /unclassified executable BPMN.*Cancel End/u);
+});
+
+test("Transaction inventory rejects wrong-owner and noninterrupting Cancel boundaries", async () => {
+  const xml = await readFile(transactionFixture, "utf8");
+  const boundary = '<bpmn:boundaryEvent id="Boundary_Cancel" attachedToRef="Transaction_Reservation"><bpmn:cancelEventDefinition id="Cancel_Catch" /></bpmn:boundaryEvent>';
+  for (const malformed of [
+    xml.replace(boundary, "").replace("</bpmn:transaction>", `${boundary}</bpmn:transaction>`),
+    xml.replace(boundary, `<bpmn:subProcess id="Other">${boundary}</bpmn:subProcess>`),
+    xml.replace('attachedToRef="Transaction_Reservation"', 'attachedToRef="Task_Acknowledge"'),
+    xml.replace('attachedToRef="Transaction_Reservation"', 'attachedToRef="Missing"'),
+    ...["false", "0", "invalid"].map((value) => xml.replace('id="Boundary_Cancel"', `id="Boundary_Cancel" cancelActivity="${value}"`)),
+  ]) assert.throws(() => detectExecutableBpmnCapabilities(malformed), /unclassified executable BPMN.*Cancel Boundary/u);
+  for (const value of ["true", "1"]) {
+    assert.deepEqual(detectExecutableBpmnCapabilities(xml.replace('id="Boundary_Cancel"', `id="Boundary_Cancel" cancelActivity="${value}"`)), detectExecutableBpmnCapabilities(xml));
+  }
+});
+
+test("Transaction inventory rejects unselected methods and nested Transaction contexts", async () => {
+  const xml = await readFile(transactionFixture, "utf8");
+  for (const malformed of [
+    ...["##compensate", "##Store", "##Image", "urn:other"].map((method) => xml.replace('id="Transaction_Reservation"', `id="Transaction_Reservation" method="${method}"`)),
+    xml.replace('<bpmn:transaction ', '<bpmn:subProcess id="Outer"><bpmn:transaction ').replace('</bpmn:transaction>', '</bpmn:transaction></bpmn:subProcess>'),
+    xml.replace('<bpmn:transaction id="Transaction_Reservation">', '<bpmn:transaction id="Transaction_Reservation"><bpmn:standardLoopCharacteristics />'),
+  ]) assert.throws(() => detectExecutableBpmnCapabilities(malformed), /unclassified executable BPMN/u);
+});
+
+test("Transaction inventory rejects missing or duplicate Cancel roles", async () => {
+  const xml = await readFile(transactionFixture, "utf8");
+  const end = '<bpmn:endEvent id="End_Cancel"><bpmn:cancelEventDefinition id="Cancel_Request" /></bpmn:endEvent>';
+  const boundary = '<bpmn:boundaryEvent id="Boundary_Cancel" attachedToRef="Transaction_Reservation"><bpmn:cancelEventDefinition id="Cancel_Catch" /></bpmn:boundaryEvent>';
+  for (const malformed of [xml.replace(end, ""), xml.replace(end, end + end.replaceAll("Cancel", "Cancel2"))]) {
+    assert.throws(() => detectExecutableBpmnCapabilities(malformed), /unclassified executable BPMN Cancel End cardinality/u);
+  }
+  for (const malformed of [xml.replace(boundary, ""), xml.replace(boundary, boundary + boundary.replaceAll("Cancel", "Cancel2"))]) {
+    assert.throws(() => detectExecutableBpmnCapabilities(malformed), /unclassified executable BPMN Cancel Boundary cardinality/u);
+  }
+});
+
+test("Transaction inventory preserves Compensation owner checks and the existing root graph", async () => {
+  const xml = await readFile(transactionFixture, "utf8");
+  const handler = '<bpmn:serviceTask id="Task_Release" name="Release resource" isForCompensation="true" implementation="urn:bpmn-lean:effect:compensation-single-effect-v1" />';
+  for (const malformed of [
+    xml.replace('attachedToRef="Task_Reserve"', 'attachedToRef="Task_Acknowledge"'),
+    xml.replace('targetRef="Task_Release"', 'targetRef="Task_Acknowledge"'),
+    xml.replace(handler, "").replace('</bpmn:transaction>', `</bpmn:transaction>${handler}`),
+    xml.replace('<bpmn:association id="Association_Release" sourceRef="Boundary_Release" targetRef="Task_Release" />',
+      '').replace('</bpmn:transaction>', '</bpmn:transaction><bpmn:association id="Association_Release" sourceRef="Boundary_Release" targetRef="Task_Release" />'),
+  ]) assert.throws(() => detectExecutableBpmnCapabilities(malformed), /unclassified executable BPMN Compensation boundary handler context/u);
+  const root = await readFile(new URL("../scenarios/compensation/travel-cancellation.bpmn", import.meta.url), "utf8");
+  assert.deepEqual(detectExecutableBpmnCapabilities(root).filter((id) => id.startsWith("compensation")), compensationCapabilityIds);
+  const body = '<bpmn:userTask id="Task" /><bpmn:boundaryEvent id="Boundary" attachedToRef="Task"><bpmn:compensateEventDefinition /></bpmn:boundaryEvent><bpmn:serviceTask id="Handler" isForCompensation="true" implementation="urn:bpmn-lean:effect:compensation-single-effect-v1" /><bpmn:association sourceRef="Boundary" targetRef="Handler" />';
+  assert.throws(() => detectExecutableBpmnCapabilities(`<bpmn:process><bpmn:subProcess>${body}</bpmn:subProcess></bpmn:process>`), /unclassified executable BPMN Compensation boundary handler context/u);
+  assert.throws(() => detectExecutableBpmnCapabilities(xml.replace('</bpmn:transaction>', `<bpmn:subProcess>${body}</bpmn:subProcess></bpmn:transaction>`)), /unclassified executable BPMN Compensation boundary handler context/u);
+});
+
+test("Transaction inventory catalog discloses bounded cancellation without CIB evidence", () => {
+  for (const id of transactionCapabilityIds) {
+    const row = mvpBpmnCapabilities.find((entry) => entry.id === id);
+    assert.ok(row, id);
+    assert.equal(row.cibEvidence.kind, CibCapabilityEvidenceKind.NotSelected);
+  }
+});
+
 test("inventories the retained Compensation graph without ordinary handler claims", async () => {
   const xml = await readFile(new URL("../scenarios/compensation/travel-cancellation.bpmn", import.meta.url), "utf8");
   const capabilities = detectExecutableBpmnCapabilities(xml);

@@ -1,3 +1,4 @@
+import { transactionCancellationPipelineCases } from "./transaction-cancellation-pipeline-cases.ts";
 import { repeatableSubscriptionPipelineCases } from "./repeatable-subscriptions-pipeline-cases.ts";
 import { compensationPipelineCases } from "./compensation-pipeline-cases.ts";
 /**
@@ -597,4 +598,5 @@ export const pipelineCases = Object.freeze([
   ...activityDataInputOutputPipelineCases,
   ...repeatableSubscriptionPipelineCases,
   ...compensationPipelineCases,
+  ...transactionCancellationPipelineCases,
 ]);

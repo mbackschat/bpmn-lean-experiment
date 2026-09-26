@@ -322,3 +322,18 @@ test("rejects retained evidence after its neutral scenario changes", async () =>
     /evidence scenario digest does not match/,
   );
 });
+
+
+test("scenario provenance separates absent CIB evidence from a pinned CIB source", async () => {
+  const [artifact] = await readAndVerifyArtifactSets(projectRoot);
+  assert.ok(artifact);
+  const schema = "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/provenance";
+  const normativeRefs = ["BPMN 2.0.2 Clause 10.3.5"];
+  assert.equal(artifact.validator.validate(schema, { normativeRefs, cibRevision: "not-applicable", cibRefs: [] }), true);
+  assert.equal(artifact.validator.validate(schema, { normativeRefs, cibRevision: "a".repeat(40), cibRefs: ["engine/source.java"] }), true);
+  for (const provenance of [
+    { normativeRefs, cibRevision: "not-applicable", cibRefs: ["engine/source.java"] },
+    { normativeRefs, cibRevision: "a".repeat(40), cibRefs: [] },
+    { normativeRefs, cibRevision: "unknown", cibRefs: [] },
+  ]) assert.equal(artifact.validator.validate(schema, provenance), false, JSON.stringify(provenance));
+});

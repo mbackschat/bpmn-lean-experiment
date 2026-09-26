@@ -348,6 +348,10 @@ export const normativeArtifactCases = Object.freeze([
   Object.freeze({ scenarioRelativePath: "scenarios/repeatable-event-subscriptions/catch-timer-cancel.scenario.json" }),
   Object.freeze({ scenarioRelativePath: "scenarios/repeatable-event-subscriptions/receive-task-resume.scenario.json" }),
   Object.freeze({ scenarioRelativePath: "scenarios/repeatable-event-subscriptions/receive-task-cancel.scenario.json" }),
+  Object.freeze({ scenarioRelativePath: "scenarios/transaction-cancellation/empty.scenario.json" }),
+  Object.freeze({ scenarioRelativePath: "scenarios/transaction-cancellation/retained-active.scenario.json" }),
+  Object.freeze({ scenarioRelativePath: "scenarios/transaction-cancellation/retained-ended.scenario.json" }),
+  Object.freeze({ scenarioRelativePath: "scenarios/transaction-cancellation/handler-failed.scenario.json" }),
 ]);
 
 export type ArtifactCase = Readonly<{

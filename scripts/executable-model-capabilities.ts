@@ -40,7 +40,8 @@ export function detectExecutableBpmnCapabilities(
   );
   const capabilities = new Set<MvpBpmnCapabilityId>();
   const parents = new Map(elements.flatMap((parent) => parent.children.map((child) => [child, parent] as const)));
-  const compensation = compensationContext(elements, elementsById, parents, capabilities);
+  const transactions = transactionContext(elements, elementsById, parents);
+  const compensation = compensationContext(elements, elementsById, parents, transactions, capabilities);
 
   for (const element of elements) {
     if (compensation.dormant.has(element)) continue;
@@ -55,7 +56,8 @@ export function detectExecutableBpmnCapabilities(
         addStartCapability(element, capabilities);
         break;
       case "endEvent":
-        addEndCapability(element, capabilities);
+        if (eventDefinition(element) === "cancelEventDefinition") capabilities.add("cancelEndEvent");
+        else addEndCapability(element, capabilities);
         break;
       case "userTask":
         addUserTaskCapability(element, capabilities);
@@ -82,6 +84,9 @@ export function detectExecutableBpmnCapabilities(
           throw new TypeError("unclassified executable BPMN element eventSubProcess");
         }
         capabilities.add("embeddedSubProcess");
+        break;
+      case "transaction":
+        capabilities.add("transaction");
         break;
       case "exclusiveGateway":
         capabilities.add("exclusiveGateway");
@@ -110,6 +115,10 @@ export function detectExecutableBpmnCapabilities(
         break;
       }
       case "boundaryEvent":
+        if (eventDefinition(element) === "cancelEventDefinition") {
+          capabilities.add("transactionCancelBoundaryEvent");
+          break;
+        }
         if (compensation.boundaries.has(element)) {
           capabilities.add("compensationBoundaryEvent");
           break;
@@ -133,10 +142,61 @@ function isTrue(value: string | undefined): boolean {
   return value === "true" || value === "1";
 }
 
+/** TXC's direct-child/parent roles classify coverage; the source validator owns complete graph admission. */
+function transactionContext(
+  elements: ReadonlyArray<XmlElement>,
+  elementsById: ReadonlyMap<string, XmlElement>,
+  parents: ReadonlyMap<XmlElement, XmlElement>,
+): ReadonlySet<XmlElement> {
+  const transactions = new Set(elements.filter(({ name }) => name === "transaction"));
+  const owners = new Set<XmlElement>();
+  const ends = new Map<XmlElement, number>();
+  const boundaries = new Map<XmlElement, number>();
+  for (const transaction of transactions) {
+    rejectLoopVariant(transaction);
+    const owner = parents.get(transaction);
+    if (owner?.name !== "process" || owners.has(owner) || isTrue(transaction.attributes.triggeredByEvent) ||
+        (transaction.attributes.method !== undefined && transaction.attributes.method !== "##Compensate")) {
+      throw new TypeError("unclassified executable BPMN Transaction context or method");
+    }
+    owners.add(owner);
+  }
+  for (const element of elements) {
+    if (!hasDirectChild(element, "cancelEventDefinition")) continue;
+    eventDefinition(element);
+    const owner = parents.get(element);
+    switch (element.name) {
+      case "endEvent":
+        if (owner === undefined || !transactions.has(owner)) {
+          throw new TypeError("unclassified executable BPMN Cancel End owner");
+        }
+        ends.set(owner, (ends.get(owner) ?? 0) + 1);
+        break;
+      case "boundaryEvent": {
+        const host = elementsById.get(element.attributes.attachedToRef ?? "");
+        if (host === undefined || !transactions.has(host) || owner?.name !== "process" || parents.get(host) !== owner ||
+            (element.attributes.cancelActivity !== undefined && !isTrue(element.attributes.cancelActivity))) {
+          throw new TypeError("unclassified executable BPMN Cancel Boundary attachment or interruption");
+        }
+        boundaries.set(host, (boundaries.get(host) ?? 0) + 1);
+        break;
+      }
+      default:
+        throw new TypeError("unclassified executable BPMN Cancel Event context");
+    }
+  }
+  for (const transaction of transactions) {
+    if (ends.get(transaction) !== 1) throw new TypeError("unclassified executable BPMN Cancel End cardinality");
+    if (boundaries.get(transaction) !== 1) throw new TypeError("unclassified executable BPMN Cancel Boundary cardinality");
+  }
+  return transactions;
+}
+
 function compensationContext(
   elements: ReadonlyArray<XmlElement>,
   elementsById: ReadonlyMap<string, XmlElement>,
   parents: ReadonlyMap<XmlElement, XmlElement>,
+  transactions: ReadonlySet<XmlElement>,
   capabilities: Set<MvpBpmnCapabilityId>,
 ): Readonly<{ dormant: ReadonlySet<XmlElement>; handlers: ReadonlySet<XmlElement>; boundaries: ReadonlySet<XmlElement> }> {
   const dormant = new Set<XmlElement>();
@@ -174,7 +234,8 @@ function compensationContext(
       event.attributes.id !== undefined && element.attributes.sourceRef === event.attributes.id);
     const association = associations[0];
     const handler = elementsById.get(association?.attributes.targetRef ?? "");
-    if (owner?.name !== "process" || host?.name !== "userTask" || parents.get(host) !== owner ||
+    if (owner === undefined || (owner.name !== "process" && !transactions.has(owner)) ||
+        host?.name !== "userTask" || parents.get(host) !== owner ||
         isTrue(host.attributes.isForCompensation) || associations.length !== 1 || association === undefined ||
         parents.get(association) !== owner || handler?.name !== "serviceTask" || parents.get(handler) !== owner ||
         !isTrue(handler.attributes.isForCompensation) || !isCompensationEffect(handler)) {
