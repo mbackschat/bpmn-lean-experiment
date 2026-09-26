@@ -1,3 +1,4 @@
+import BpmnSemantics.SemanticProcess.TransactionCompensationProfileDomains
 import BpmnSemantics.SemanticProcess.ActivityDataInputOutputActivationRuntimeStatePreservation
 
 /-! # Composed Activity-data completion runtime-state preservation
@@ -529,7 +530,9 @@ theorem dataInputOutputCompletionStep_preserves_runtimeStateWellFormed
         change compensationEventSubProcessSnapshotStateValid program before = true
         exact snapshots
       have executionAfter : compensationExecutionStateValid program successor = true := by
-        rw [compensationExecutionStateValid_running_frame program before successor instanceId
+        rw [compensationExecutionStateValid_running_frame program
+          (RootCompensationExecutionDomain.of_zero_profile program
+            (by rw [profile]; decide +kernel) (by rw [profile]; rfl) capabilities) before successor instanceId
           running rfl rfl rfl rfl rfl rfl]
         exact execution
       simp only [runtimeStateWellFormed, Bool.and_eq_true]

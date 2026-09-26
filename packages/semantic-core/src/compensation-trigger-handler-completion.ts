@@ -10,7 +10,8 @@ import {
   activateCompensationFrontier,
   executionFits,
 } from "./compensation-trigger-handler-transition.js";
-import type { SemanticProcessProgram } from "./semantic-process-contract.js";
+import { SemanticOperationKind, type SemanticProcessProgram } from "./semantic-process-contract.js";
+import { finishTransactionCancellation } from "./transaction-cancellation.js";
 import {
   ControlStateKind,
   addToken,
@@ -96,15 +97,31 @@ function completeSuccess(
   ).sort(compareTriggers);
   const progressedWaits = [...remainingWaits, ...activated.waits].sort(compareWaits);
   if (!executionFits(program, progressedTriggers, progressedWaits)) return null;
-  const prospective = {
+  let prospective: RuntimeState = {
     ...state,
-    controlTokens: allCompensated
-      ? addToken(state.controlTokens, trigger.output, trigger.owner)
-      : state.controlTokens,
     compensationTriggers: progressedTriggers,
     compensationHandlerEffectWaits: progressedWaits,
     effectActivations: activated.effectActivations,
   };
+  if (allCompensated) {
+    const operation = program.operations.find(({ id }) => id === trigger.id.elementId);
+    switch (operation?.kind) {
+      case SemanticOperationKind.TriggerCompensation:
+        prospective = {
+          ...prospective,
+          controlTokens: addToken(prospective.controlTokens, trigger.output, trigger.owner),
+        };
+        break;
+      case SemanticOperationKind.CancelTransaction: {
+        const finished = finishTransactionCancellation(operation, prospective, trigger.owner);
+        if (finished === null) return null;
+        prospective = finished;
+        break;
+      }
+      default:
+        return null;
+    }
+  }
   return compensationExecutionStateDefects(program, prospective).length === 0
     ? prospective
     : null;

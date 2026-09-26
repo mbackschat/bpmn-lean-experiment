@@ -117,7 +117,8 @@ theorem preparedRegional_cancellation_triggers_empty (program : Program) (state 
         exact fired
       obtain ⟨parent, _, parentEq, _⟩ := regionalSelection_error_execution program state after
         id origin input error handler prepared.selection selected raw
-      have retained := (cancelScopeSubtree_child_compensation_fields program state hosting hosting prepared.selection.root
+      have retained := (cancelScopeSubtree_child_compensation_fields program state
+        (prepareInternalRegional_rootCompensationDomain program state _ prepared found) hosting hosting prepared.selection.root
         .remove position running (regionalSelection_root_member program state _ prepared.selection selected)
         (by simp [parentEq]) execution).1
       change state.compensationTriggers.filter (fun trigger =>

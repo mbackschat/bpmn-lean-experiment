@@ -36,6 +36,14 @@ The independently approved [boundary-handler retention proposal](capsules/COMPEN
 
 **Absent.** Wider source topology, Multi-Instance Sub-Process multiplicity, targeted/asynchronous throws, concurrent root triggers, general handler graphs, Transactions and CIB Compensation compatibility remain outside the registered capability. Product 2 support belongs to the [failed-Process outcome](BPM-PLATFORM-FAILED-PROCESS-SPEC.md#implemented-outcome-and-epistemic-closure).
 
+## Transaction cancellation
+
+The [Transaction cancellation proposal](capsules/TRANSACTION-CANCELLATION-PROPOSAL.md#current-implementation-boundary) is implemented through a manual-Program semantic checkpoint; its [implementation review](capsules/TRANSACTION-CANCELLATION-PROPOSAL.md#independent-cold-review-receipt) is pending.
+
+**Implemented.** Lean and the independently written TypeScript core carry `cancelTransaction`, child-owned retention, exact-owner eligible-record selection, atomic regional cancellation, an active compensation scope, empty cancellation, successful parent join, terminal tombstones and typed whole-Process failure. Shared/Lean wire readers and program-bound publication validation carry the new arm. Seven kernel-checked manual-Program publication stages cover Start through terminal acknowledgement, including empty and failed paths; core tests cover malformed ownership, capacity, stale results and rollback. The [declarative account](../BpmnSemantics/SemanticProcess/TransactionCancellationSemantics.lean) separates constructor soundness, scoped laws and conditional continuation absence. Existing regional batching derives its root-only Compensation domain; Transaction regional preparation refuses batching.
+
+**Absent.** Source grammar, checked lowering, profile admission, grammar-to-frontier proof and the selected two-Task arming guarantee remain open. Production host admission, durable Transaction refinement, registered scenarios/corpus/disclosure, complete qualification and independent implementation review remain open. Protocol acceptance of publication shapes does not admit Transaction execution; the existing managed Compensation scheduler still rejects this topology. No generic invariant, mixed Transaction batch, CIB compatibility, successful protocol-controlled Transaction or hazard recovery is established.
+
 ## Interrupting Activity boundary Message
 
 The [interrupting Activity boundary Message specification](capsules/ACTIVITY-BOUNDARY-MESSAGE-SPEC.md) is implemented, independently closure-reviewed, evidence-closed, and graduated for one payload-free, operation-addressed interrupting Message Boundary Event on one User Task.

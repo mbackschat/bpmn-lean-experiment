@@ -7,6 +7,44 @@ namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
 open BpmnSemantics
 
+private theorem snapshot_cancellation_disabled_returns_input (program : Program)
+    (operation : SemanticOperation) (state returned : RuntimeState)
+    (disabled : attemptTransactionCancellation program operation state = .disabled returned) :
+    returned = state := by
+  unfold attemptTransactionCancellation at disabled
+  repeat' first | dsimp only at disabled | split at disabled | cases disabled | rfl
+  all_goals
+    change (if compensationTriggerHandlerStateValid program _ then
+      CompensationTriggerAttempt.applied _ else .refused .invalidState) = .disabled _ at disabled
+    split at disabled <;> contradiction
+
+private theorem snapshot_cancellation_stays_disabled (program : Program) (state : RuntimeState)
+    (operation : SemanticOperation) (patch : InternalArmingPatch)
+    (prepared : prepareInternalArm? program state operation = some patch)
+    (cancel : SemanticOperation)
+    (disabled : attemptTransactionCancellation program cancel state = .disabled state) :
+    attemptTransactionCancellation program cancel (applyInternalArmingPatch state patch) =
+      .disabled (applyInternalArmingPatch state patch) := by
+  obtain ⟨_, instanceId, running⟩ := prepared_arm_live_running program state operation patch prepared
+  have control : (applyInternalArmingPatch state patch).control = state.control := by
+    cases write : patch.write <;> simp only [applyInternalArmingPatch, write]
+  cases execution : program.compensationExecution with
+  | none => simp [attemptTransactionCancellation, execution] at disabled
+  | some declaration =>
+      cases cancel <;> try { solve | simp [attemptTransactionCancellation, execution] at disabled }
+      case cancelTransaction id origin scope input output boundary =>
+        cases afterOwner : onlyTokenOwner? (applyInternalArmingPatch state patch) input with
+        | none => simp [attemptTransactionCancellation, execution, control, running, afterOwner]
+        | some owner =>
+            have beforeOwner := prepared_arm_onlyTokenOwner_predecessor program state operation patch
+              prepared input owner afterOwner
+            simp only [attemptTransactionCancellation, execution, running, beforeOwner] at disabled
+            repeat' first | contradiction | split at disabled
+            all_goals
+              change (if compensationTriggerHandlerStateValid program _ then
+                CompensationTriggerAttempt.applied _ else .refused .invalidState) = .disabled _ at disabled
+              split at disabled <;> contradiction
+
 private def SnapshotRefusableDisabled (program : Program) (state : RuntimeState) :
     SemanticOperation → Prop
   | operation@(.enterScope _ _ input entry scope) =>
@@ -21,6 +59,9 @@ private def SnapshotRefusableDisabled (program : Program) (state : RuntimeState)
   | operation@(.triggerCompensation ..) =>
       program.compensationExecution.isSome = true →
         attemptCompensationTrigger program operation state = .disabled state
+  | operation@(.cancelTransaction ..) =>
+      program.compensationExecution.isSome = true →
+        attemptTransactionCancellation program operation state = .disabled state
   | _ => True
 
 private theorem snapshot_refusable_disabled_frame (program : Program) (state : RuntimeState)
@@ -44,6 +85,9 @@ private theorem snapshot_refusable_disabled_frame (program : Program) (state : R
         instanceId stateValid selected.1 _ scope output (disabled declared)
     case triggerCompensation id origin scope input output =>
       exact fun declared => prepared_arm_compensationTrigger_stays_disabled program state arm patch
+        selected.1 _ (disabled declared)
+    case cancelTransaction id origin scope input output boundary =>
+      exact fun declared => snapshot_cancellation_stays_disabled program state arm patch
         selected.1 _ (disabled declared)
 
 private def SnapshotNotRefused : InternalOperationAttempt → Prop
@@ -240,6 +284,19 @@ private theorem snapshot_initial_refusable_disabled (program : Program) (state :
       | refused reason => simp [attempted] at disabled
       | disabled returned =>
           have same := compensation_trigger_disabled_returns_input program _ state returned attempted
+          simp_all
+  case cancelTransaction id origin scope input output boundary =>
+    intro declared
+    cases execution : program.compensationExecution with
+    | none => simp [execution] at declared
+    | some declaration =>
+      simp only [attemptInternalOperation, execution] at disabled
+      cases attempted : attemptTransactionCancellation program
+          (.cancelTransaction id origin scope input output boundary) state with
+      | applied successor => simp [attempted] at disabled
+      | refused reason => simp [attempted] at disabled
+      | disabled returned =>
+          have same := snapshot_cancellation_disabled_returns_input program _ state returned attempted
           simp_all
 
 /-- The actual refusal-aware runner inherits complete accepted-publication equality for any finite

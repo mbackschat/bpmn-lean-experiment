@@ -51,6 +51,7 @@ import {
 } from "./correlation-scalar-path.js";
 import {
   isWellFormedTriggerCompensationOperation,
+  isWellFormedCancelTransactionOperation,
 } from "./compensation-trigger-handler-program-admission.js";
 import {
   isWellFormedAwaitDataInputUserTaskOperation,
@@ -464,6 +465,8 @@ export function isWellFormedSemanticOperation(
         placeIds,
         scopeOrigins,
       );
+    case SemanticOperationKind.CancelTransaction:
+      return isWellFormedCancelTransactionOperation(value, placeIds, scopeOrigins);
     case SemanticOperationKind.TerminateScope:
       return (
         hasOnlyKeys(value, ["id", "kind", "origin", "input", "scopeId"]) &&

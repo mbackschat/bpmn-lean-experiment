@@ -1,3 +1,4 @@
+import BpmnSemantics.SemanticProcess.TransactionCompensationProfileDomains
 import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStatePreservation
 import BpmnSemantics.SemanticProcess.TokenOrder
 
@@ -77,7 +78,7 @@ theorem sharedParallelEmpty_preserves_runtimeStateWellFormed (program : Program)
         tokens := addToken (removeToken before.tokens arm.input owner) arm.normalOutput owner
         variables := publishSharedParallelResults before arm [] }
   have executionAfter : compensationExecutionStateValid program successor = true := by
-    rw [compensationExecutionStateValid_running_frame program before successor instanceId
+    rw [compensationExecutionStateValid_running_frame program account.rootCompensationDomain before successor instanceId
       running rfl rfl rfl rfl rfl rfl]
     exact execution
   refine ⟨?_, ⟨preservedTail, executionAfter⟩⟩

@@ -1,4 +1,5 @@
 import BpmnSemantics.SemanticProcess.InternalRegionalPublication
+import BpmnSemantics.SemanticProcess.TransactionCompensationTokenPreservation
 
 /-! Complete regional preparation binds the selected removal, exact predecessor region,
 dependency footprint, and publication before invoking the existing evaluator.
@@ -17,7 +18,9 @@ structure PreparedInternalRegional where
 
 def prepareInternalRegional? (program : Program) (state : RuntimeState)
     (operation : SemanticOperation) : Option PreparedInternalRegional := do
-  if program.compensationEventSubProcessSnapshots ≠ none then none
+  if program.operations.any (fun operation =>
+      match operation with | .cancelTransaction .. => true | _ => false) then none
+  else if program.compensationEventSubProcessSnapshots ≠ none then none
   else if program.operations.filter (fun candidate => decide (candidate.id = operation.id)) ≠ [operation] then none
   else if !SemanticProcessJson.isSafeWireNat state.logicalTimeMs then none
   else
@@ -44,6 +47,7 @@ theorem prepareInternalRegional_facts (program : Program) (state : RuntimeState)
     regionalStateFootprint? state prepared.selection prepared.region = some prepared.footprint ∧
     regionalPublicationTemplate? program state prepared.selection prepared.region = some prepared.publicationTemplate := by
   unfold prepareInternalRegional? at found
+  split at found <;> try contradiction
   split at found
   · contradiction
   · split at found
@@ -57,9 +61,21 @@ theorem prepareInternalRegional_facts (program : Program) (state : RuntimeState)
         cases found
         simp_all
 
+/-- TXC's selected frontier requires no regional batch with child-owned Compensation. -/
+theorem prepareInternalRegional_rootCompensationDomain (program : Program) (state : RuntimeState)
+    (operation : SemanticOperation) (prepared : PreparedInternalRegional)
+    (found : prepareInternalRegional? program state operation = some prepared) :
+    RootCompensationExecutionDomain program := by
+  unfold prepareInternalRegional? at found
+  split at found
+  · contradiction
+  · rename_i absent
+    exact rootCompensationExecutionDomain_of_no_cancel program (Bool.eq_false_iff.mpr absent)
+
 theorem prepareInternalRegional_of_components (program : Program) (state : RuntimeState)
     (operation : SemanticOperation) (selected : InternalRegionalSelection) (region : InternalOccurrenceRegion)
     (footprint : InternalRegionalStateFootprint) (publication : InternalRegionalPublicationTemplate)
+    (domain : RootCompensationExecutionDomain program)
     (snapshots : program.compensationEventSubProcessSnapshots = none)
     (declared : program.operations.filter (fun candidate => decide (candidate.id = operation.id)) = [operation])
     (time : SemanticProcessJson.isSafeWireNat state.logicalTimeMs = true)
@@ -70,6 +86,9 @@ theorem prepareInternalRegional_of_components (program : Program) (state : Runti
     prepareInternalRegional? program state operation =
       some { selection := selected, region, footprint, publicationTemplate := publication } := by
   simp [prepareInternalRegional?, snapshots, declared, time, selection, derived, dependencies, published]
+  intro candidate member
+  have admitted := domain candidate member
+  cases candidate <;> simp_all
 
 theorem applyPreparedInternalRegional_altered_region_refused (program : Program) (state : RuntimeState)
     (prepared : PreparedInternalRegional)

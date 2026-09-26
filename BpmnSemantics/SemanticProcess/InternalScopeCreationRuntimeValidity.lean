@@ -114,7 +114,8 @@ private theorem creation_waitOwners (state : RuntimeState) (operation : Semantic
       · exact List.all_eq_true.mp previous.1.2 candidate old
 
 theorem selectedScopeCreation_preserves_runtimeStateWellFormed
-    (program : Program) (instanceId : SemanticId) (state : RuntimeState)
+    (program : Program) (domain : RootCompensationExecutionDomain program)
+    (instanceId : SemanticId) (state : RuntimeState)
     (operation : SemanticOperation) (selected : InternalScopeCreationSelection)
     (hosting : SemanticId) (ownerRecord : RuntimeScopeOccurrence)
     (origin : BpmnElementOrigin) (definition : DefinitionScope) (delta : PublicControlPositionDelta)
@@ -149,11 +150,11 @@ theorem selectedScopeCreation_preserves_runtimeStateWellFormed
   have newOwners := creation_waitOwners state operation selected selection live waitOwners
   have newActivities := activityRecordsOwnLiveWork_insertScopeOccurrence state selected.created
     fresh activities
-  have retention := compensationActivityRetentionStateValid_insertScopeOccurrence program state
+  have retention := compensationActivityRetentionStateValid_insertScopeOccurrence program domain state
     selected.created fresh compensation.1.1.2
-  have execution := compensationExecutionStateValid_insertScopeOccurrence program state
+  have execution := compensationExecutionStateValid_insertScopeOccurrence program domain state
     selected.created hosting running fresh compensation.2
-  have executionFrame := compensationExecutionStateValid_running_frame program
+  have executionFrame := compensationExecutionStateValid_running_frame program domain
     { state with scopeOccurrences := insertScopeOccurrence selected.created state.scopeOccurrences }
     (selected.apply state) hosting running
     (by cases kind : selected.kind <;> simp only [InternalScopeCreationSelection.apply, kind])
@@ -186,9 +187,15 @@ theorem prepareInternalScopeCreation_preserves_runtimeStateWellFormed
   have callSeparated := prepareInternalScopeCreation_called_definition_ne_owner
     program state operation prepared
   obtain ⟨selected, hosting, ownerRecord, origin, definition, start, delta, selection, running,
-    snapshots, _, ownerExact, _, definitionFound, checks, _, deltaFound, rfl⟩ :=
+    snapshots, operationExact, ownerExact, _, definitionFound, checks, _, deltaFound, rfl⟩ :=
     prepareInternalScopeCreation_facts program state operation prepared found
-  exact selectedScopeCreation_preserves_runtimeStateWellFormed program instanceId state operation selected
+  have domain := scopeCreation_runtime_rootCompensationDomain program instanceId state operation selected
+    origin definition valid checks definitionFound (by
+      intro id callOrigin input process scope entry returnOperation same
+      have member : operation ∈ program.operations.filter (fun candidate => decide (candidate.id = operation.id)) := by
+        rw [operationExact]; simp
+      exact (List.mem_filter.mp member).1)
+  exact selectedScopeCreation_preserves_runtimeStateWellFormed program domain instanceId state operation selected
     hosting ownerRecord origin definition delta valid selection running snapshots ownerExact
     definitionFound checks deltaFound (fun record kind => callSeparated record admitted found kind)
 

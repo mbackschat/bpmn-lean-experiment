@@ -10,7 +10,8 @@ import type {
   SingleEffectCompensationHandlerBody,
 } from "./compensation-trigger-handler-contract.js";
 import { EffectOperation, EffectProtocol } from "./semantic-value-contract.js";
-import type { SemanticProcessProgram } from "./semantic-process-contract.js";
+import { SemanticOperationKind, type SemanticProcessProgram } from "./semantic-process-contract.js";
+import { isScopeOccurrenceQuiescent } from "./semantic-process-scope-runtime.js";
 import {
   ControlStateKind,
   sameOccurrence,
@@ -65,7 +66,7 @@ export function compensationExecutionStateDefects(
 
   const defects: CompensationExecutionStateDefect[] = [];
   const triggerShapeValid = triggers.every((trigger) =>
-    triggerMatchesDeclaration(program, trigger) && triggerLifecycleIsValid(state, trigger)
+    triggerMatchesDeclaration(program, trigger) && triggerLifecycleIsValid(program, state, trigger)
   );
   if (
     !triggerShapeValid ||
@@ -360,22 +361,37 @@ function handlerEffectWaitIsValid(
 }
 
 function triggerLifecycleIsValid(
+  program: SemanticProcessProgram,
   state: RuntimeState,
   trigger: CompensationTriggerExecution,
 ): boolean {
+  const operation = program.operations.find(({ id }) => id === trigger.id.elementId);
+  const transaction = operation?.kind === SemanticOperationKind.CancelTransaction;
+  if (transaction && !transactionTriggerProvenanceIsValid(state, trigger)) return false;
+  const occurrences = state.scopeOccurrences.filter(({ id }) => sameScopeOccurrence(id, trigger.owner));
+  const occurrence = occurrences[0];
+  const ownerIsLive = occurrences.length === 1 && occurrence !== undefined &&
+    (transaction
+      ? occurrence.parent !== null &&
+        state.scopeOccurrences.some(({ id, parent }) =>
+          parent === null && sameScopeOccurrence(id, occurrence.parent!)
+        ) && isScopeOccurrenceQuiescent({
+          ...state,
+          compensationTriggers: (state.compensationTriggers ?? []).filter((candidate) => candidate !== trigger),
+        }, occurrence)
+      : occurrence.parent === null);
   switch (trigger.lifecycle) {
     case "active":
       return state.control.kind === ControlStateKind.Running &&
         trigger.owner.processInstanceId === state.control.instanceId &&
-        state.scopeOccurrences.filter(({ id, parent }) =>
-          parent === null && sameScopeOccurrence(id, trigger.owner)
-        ).length === 1 &&
+        ownerIsLive &&
         trigger.handlers.some(({ lifecycle }) =>
           lifecycle === "pending" || lifecycle === "compensating"
         ) &&
         trigger.handlers.every(({ lifecycle }) => lifecycle !== "failed" && lifecycle !== "terminated");
     case "succeeded":
-      return trigger.handlers.every(({ lifecycle }) => lifecycle === "compensated");
+      return (!transaction || occurrences.length === 0) &&
+        trigger.handlers.every(({ lifecycle }) => lifecycle === "compensated");
     case "failed":
       return state.control.kind === ControlStateKind.Failed &&
         trigger.handlers.filter(({ lifecycle }) => lifecycle === "failed").length === 1 &&
@@ -383,6 +399,30 @@ function triggerLifecycleIsValid(
           lifecycle === "compensated" || lifecycle === "failed" || lifecycle === "terminated"
         );
   }
+}
+
+function transactionTriggerProvenanceIsValid(
+  state: RuntimeState,
+  trigger: CompensationTriggerExecution,
+): boolean {
+  if (state.control.kind === ControlStateKind.NotStarted ||
+      state.control.instanceId !== trigger.owner.processInstanceId) return false;
+  const issuedScopes = state.scopeActivations.filter(({ elementId }) =>
+    elementId === trigger.owner.definitionScopeId
+  );
+  const issuedScope = issuedScopes[0];
+  // TXC-JOIN-01 disposes the scope, so its monotone issuance counter remains the identity witness.
+  if (issuedScopes.length !== 1 || issuedScope === undefined ||
+      trigger.owner.activation > issuedScope.count) return false;
+  return trigger.handlers.every(({ subject }) => {
+    if (subject.kind !== "boundaryActivity" ||
+        subject.activity.processInstanceId !== trigger.owner.processInstanceId) return false;
+    const issuedTasks = state.taskActivations.filter(({ elementId }) =>
+      elementId === subject.activity.activityElementId
+    );
+    return issuedTasks.length === 1 && issuedTasks[0] !== undefined &&
+      subject.activity.activation <= issuedTasks[0].count;
+  });
 }
 
 function controlLifecycleIsValid(

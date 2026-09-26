@@ -247,20 +247,55 @@ private def handlerSubjectUnique (handlers : List CompensationHandlerExecution)
   (handlers.filter fun candidate =>
     compensationSubjectMatches candidate.identity.subject handler.identity.subject).length = 1
 
-private def triggerLifecycleValid (state : RuntimeState)
+def transactionTriggerProvenanceValid (state : RuntimeState)
     (trigger : CompensationTriggerExecution) : Bool :=
+  let sameInstance := match state.control with
+    | .notStarted => false
+    | .running instanceId | .completed instanceId | .cancelled instanceId | .failed instanceId _ =>
+        instanceId == trigger.owner.processInstanceId
+  sameInstance &&
+    (match state.scopeActivations.filter (fun counter => counter.scopeId == trigger.owner.definitionScopeId) with
+      | [counter] => trigger.owner.activation ≤ counter.count
+      | _ => false) &&
+    trigger.handlers.all fun handler =>
+      match handler.identity.subject with
+      | .boundaryActivity activity =>
+          activity.processInstanceId == trigger.owner.processInstanceId &&
+            (match state.activations.filter (fun counter =>
+                counter.taskId.value == activity.activityElementId.value) with
+              | [counter] => activity.activation ≤ counter.count
+              | _ => false)
+      | _ => false
+
+def transactionTriggerOwnerLive (state : RuntimeState)
+    (trigger : CompensationTriggerExecution) : Bool :=
+  match state.scopeOccurrences.filter (fun occurrence => occurrence.id == trigger.owner) with
+  | [{ parent := some parent, .. }] =>
+      (state.scopeOccurrences.any fun occurrence =>
+        occurrence.id == parent && occurrence.parent.isNone) &&
+        scopeQuiescent { state with
+          compensationTriggers := state.compensationTriggers.filter
+            (fun candidate => candidate.id != trigger.id) } trigger.owner
+  | _ => false
+
+def triggerLifecycleValid (transaction : Bool) (state : RuntimeState)
+    (trigger : CompensationTriggerExecution) : Bool :=
+  (!transaction || transactionTriggerProvenanceValid state trigger) &&
   match trigger.lifecycle with
   | .active =>
       (match state.control with
         | .running instanceId => trigger.owner.processInstanceId == instanceId
         | _ => false) &&
-        (state.scopeOccurrences.filter fun occurrence =>
-          occurrence.id == trigger.owner && occurrence.parent.isNone).length = 1 &&
+        (if transaction then transactionTriggerOwnerLive state trigger else
+          (state.scopeOccurrences.filter fun occurrence =>
+            occurrence.id == trigger.owner && occurrence.parent.isNone).length = 1) &&
         (trigger.handlers.any fun handler =>
           match handler.lifecycle with | .pending _ | .compensating _ _ => true | _ => false) &&
         (trigger.handlers.all fun handler =>
           match handler.lifecycle with | .failed | .terminated => false | _ => true)
-  | .succeeded => trigger.handlers.all fun handler => handler.lifecycle == .compensated
+  | .succeeded =>
+      (!transaction || !(state.scopeOccurrences.any fun occurrence => occurrence.id == trigger.owner)) &&
+        trigger.handlers.all fun handler => handler.lifecycle == .compensated
   | .failed =>
       (match state.control with | .failed .. => true | _ => false) &&
         (trigger.handlers.filter fun handler => handler.lifecycle == .failed).length = 1 &&
@@ -268,11 +303,12 @@ private def triggerLifecycleValid (state : RuntimeState)
           handler.lifecycle == .compensated || handler.lifecycle == .failed ||
             handler.lifecycle == .terminated)
 
-private def triggerMatchesDeclaration (program : Program) (state : RuntimeState)
+def triggerMatchesDeclaration (program : Program) (state : RuntimeState)
     (declaration : CompensationExecutionDeclaration)
     (trigger : CompensationTriggerExecution) : Bool :=
   match program.operations.filter fun operation => operation.id == declaration.triggerOperationId with
-  | [.triggerCompensation _ _ _ _ output] =>
+  | [operation@(.triggerCompensation _ _ _ _ output)]
+  | [operation@(.cancelTransaction _ _ _ _ output _)] =>
       occurrenceIdValid trigger.id && scopeOccurrenceIdValid trigger.owner &&
         !trigger.handlers.isEmpty &&
         trigger.id.elementId.value == declaration.triggerOperationId.value &&
@@ -285,7 +321,7 @@ private def triggerMatchesDeclaration (program : Program) (state : RuntimeState)
         trigger.handlers.all (handlerMatchesDeclaration program trigger.owner) &&
         compensationDependenciesUnambiguous program declaration trigger.handlers &&
         trigger.dependencies == expectedCompensationDependencies program declaration trigger.handlers &&
-        triggerLifecycleValid state trigger
+        triggerLifecycleValid (match operation with | .cancelTransaction .. => true | _ => false) state trigger
   | _ => false
 
 private def triggerIdentityBefore
@@ -398,6 +434,110 @@ def compensationExecutionStateValid (program : Program) (state : RuntimeState) :
               state.compensationHandlerEffectWaits ≤ declaration.limits.maxCanonicalBytes &&
           controlLifecycleValid program state
 
+theorem compensationExecutionStateValid_trigger (program : Program) (state : RuntimeState)
+    (declaration : CompensationExecutionDeclaration)
+    (present : program.compensationExecution = some declaration)
+    (valid : compensationExecutionStateValid program state = true)
+    (trigger : CompensationTriggerExecution) (member : trigger ∈ state.compensationTriggers) :
+    triggerMatchesDeclaration program state declaration trigger = true := by
+  simp only [compensationExecutionStateValid, present, Bool.and_eq_true] at valid
+  exact List.all_eq_true.mp valid.2.1.1.1.1.1.1.1.1.1.2 trigger member
+
+theorem compensationExecutionStateValid_running_tokens_of_matches
+    (program : Program) (state : RuntimeState) (tokens : List ControlToken)
+    (instanceId : SemanticId) (running : state.control = .running instanceId)
+    (valid : compensationExecutionStateValid program state = true)
+    (matching : ∀ declaration, program.compensationExecution = some declaration →
+      ∀ trigger ∈ state.compensationTriggers,
+        triggerMatchesDeclaration program { state with tokens } declaration trigger = true) :
+    compensationExecutionStateValid program { state with tokens } = true := by
+  cases present : program.compensationExecution with
+  | none => simpa [compensationExecutionStateValid, present] using valid
+  | some declaration =>
+      have allMatching := List.all_eq_true.mpr (matching declaration present)
+      simp_all only [compensationExecutionStateValid, Bool.and_eq_true,
+        activeCompensationTriggerOwnersUnique, waitCollidesWithOrdinaryState,
+        controlLifecycleValid, and_self]
+
+/-- Per-trigger evidence owns changed liveness and provenance; the remaining census is framed. -/
+theorem compensationExecutionStateValid_running_of_matches
+    (program : Program) (before after : RuntimeState) (instanceId : SemanticId)
+    (beforeRunning : before.control = .running instanceId)
+    (controlFrame : after.control = before.control)
+    (triggersFrame : after.compensationTriggers = before.compensationTriggers)
+    (handlerWaitsFrame : after.compensationHandlerEffectWaits = before.compensationHandlerEffectWaits)
+    (effectsFrame : after.effectWaits = before.effectWaits)
+    (incidentsFrame : after.effectIncidents = before.effectIncidents)
+    (predecessorValid : compensationExecutionStateValid program before = true)
+    (matching : ∀ declaration, program.compensationExecution = some declaration →
+      ∀ trigger ∈ before.compensationTriggers,
+        triggerMatchesDeclaration program after declaration trigger = true) :
+    compensationExecutionStateValid program after = true := by
+  cases present : program.compensationExecution with
+  | none => simpa [compensationExecutionStateValid, present, triggersFrame, handlerWaitsFrame]
+      using predecessorValid
+  | some declaration =>
+      have allMatching := List.all_eq_true.mpr (matching declaration present)
+      simp_all only [compensationExecutionStateValid, Bool.and_eq_true,
+        activeCompensationTriggerOwnersUnique, waitCollidesWithOrdinaryState,
+        controlLifecycleValid, and_self]
+
+/-- Ordinary effect insertion additionally preserves the complete handler collision census. -/
+theorem compensationExecutionStateValid_running_insertEffect_of_matches
+    (program : Program) (before after : RuntimeState) (instanceId : SemanticId)
+    (inserted : EffectWait)
+    (beforeRunning : before.control = .running instanceId)
+    (controlFrame : after.control = before.control)
+    (triggersFrame : after.compensationTriggers = before.compensationTriggers)
+    (handlerWaitsFrame : after.compensationHandlerEffectWaits = before.compensationHandlerEffectWaits)
+    (effectsFrame : after.effectWaits = insertEffectWait inserted before.effectWaits)
+    (incidentsFrame : after.effectIncidents = before.effectIncidents)
+    (disjoint : ∀ wait ∈ before.compensationHandlerEffectWaits,
+      inserted.elementId.value ≠ wait.id.elementId.value)
+    (predecessorValid : compensationExecutionStateValid program before = true)
+    (matching : ∀ declaration, program.compensationExecution = some declaration →
+      ∀ trigger ∈ before.compensationTriggers,
+        triggerMatchesDeclaration program after declaration trigger = true) :
+    compensationExecutionStateValid program after = true := by
+  cases present : program.compensationExecution with
+  | none => simpa [compensationExecutionStateValid, present, triggersFrame, handlerWaitsFrame]
+      using predecessorValid
+  | some declaration =>
+      have allMatching := List.all_eq_true.mpr (matching declaration present)
+      have prior := predecessorValid
+      simp only [compensationExecutionStateValid, present, Bool.and_eq_true] at prior
+      have collisions : (after.compensationHandlerEffectWaits.all fun wait =>
+          !waitCollidesWithOrdinaryState after wait) = true := by
+        rw [handlerWaitsFrame]
+        apply List.all_eq_true.mpr
+        intro wait member
+        have old := List.all_eq_true.mp prior.2.1.1.1.1.2 wait member
+        simp only [Bool.not_eq_true', waitCollidesWithOrdinaryState, Bool.or_eq_false_iff] at old ⊢
+        constructor
+        · rw [effectsFrame]
+          have rejected : (inserted.processInstanceId == wait.id.processInstanceId &&
+              inserted.elementId.value == wait.id.elementId.value &&
+              inserted.activation == wait.id.activation) = false := by simp [disjoint wait member]
+          have frame : ∀ values : List EffectWait,
+              ((insertEffectWait inserted values).any fun ordinary =>
+                ordinary.processInstanceId == wait.id.processInstanceId &&
+                  ordinary.elementId.value == wait.id.elementId.value &&
+                  ordinary.activation == wait.id.activation) =
+              (values.any fun ordinary => ordinary.processInstanceId == wait.id.processInstanceId &&
+                ordinary.elementId.value == wait.id.elementId.value &&
+                ordinary.activation == wait.id.activation) := by
+            intro values
+            induction values with
+            | nil => simp [insertEffectWait, canonicalInsertBy, rejected]
+            | cons current rest ih =>
+                simp only [insertEffectWait, canonicalInsertBy]
+                split <;> simp_all [insertEffectWait]
+          rw [frame]
+          exact old.1
+        · simpa only [incidentsFrame] using old.2
+      simp_all only [compensationExecutionStateValid, Bool.and_eq_true,
+        activeCompensationTriggerOwnersUnique, controlLifecycleValid, and_self]
+
 /-- COMPEMPTY-CAPACITY-01 makes empty compensation work valid before and immediately after start. -/
 theorem compensationExecutionStateValid_empty (program : Program) (state : RuntimeState)
     (declarationValid : compensationExecutionDeclarationValid program = true)
@@ -415,8 +555,35 @@ theorem compensationExecutionStateValid_empty (program : Program) (state : Runti
           canonicalCompensationExecutionStateUtf8Bytes, canonicalArrayUtf8Bytes,
           controlLifecycleValid, *]
 
-/-- Running compensation validity reads no ordinary task body or Activity counter; callers frame its exact owners and effect collision census. -/
+/-- The preserved root account excludes the new child cancellation operation. -/
+def RootCompensationExecutionDomain (program : Program) : Prop :=
+  ∀ operation ∈ program.operations,
+    match operation with | .cancelTransaction .. => False | _ => True
+
+private theorem triggerMatchesDeclaration_root_running_frame (program : Program)
+    (domain : RootCompensationExecutionDomain program)
+    (before after : RuntimeState) (instanceId : SemanticId)
+    (beforeRunning : before.control = .running instanceId)
+    (controlFrame : after.control = before.control)
+    (scopesFrame : after.scopeOccurrences = before.scopeOccurrences)
+    (declaration : CompensationExecutionDeclaration) (trigger : CompensationTriggerExecution) :
+    triggerMatchesDeclaration program after declaration trigger =
+      triggerMatchesDeclaration program before declaration trigger := by
+  unfold triggerMatchesDeclaration
+  split
+  · simp [triggerLifecycleValid, controlFrame, beforeRunning, scopesFrame]
+  · rename_i id origin scope input output boundary selected
+    have member : .cancelTransaction id origin scope input output boundary ∈ program.operations := by
+      have filtered : .cancelTransaction id origin scope input output boundary ∈
+          program.operations.filter (fun operation => operation.id == declaration.triggerOperationId) := by
+        rw [selected]
+        exact List.mem_singleton_self _
+      exact (List.mem_filter.mp filtered).1
+    exact False.elim (domain _ member)
+  · rfl
+
 theorem compensationExecutionStateValid_running_frame (program : Program)
+    (domain : RootCompensationExecutionDomain program)
     (before after : RuntimeState) (instanceId : SemanticId)
     (beforeRunning : before.control = .running instanceId)
     (controlFrame : after.control = before.control)
@@ -430,8 +597,8 @@ theorem compensationExecutionStateValid_running_frame (program : Program)
   have matching : triggerMatchesDeclaration program after =
       triggerMatchesDeclaration program before := by
     funext declaration trigger
-    simp [triggerMatchesDeclaration, triggerLifecycleValid, controlFrame, beforeRunning,
-      scopesFrame]
+    exact triggerMatchesDeclaration_root_running_frame program domain before after instanceId
+      beforeRunning controlFrame scopesFrame declaration trigger
   simp [compensationExecutionStateValid, activeCompensationTriggerOwnersUnique,
     matching, waitCollidesWithOrdinaryState,
     controlLifecycleValid, controlFrame, beforeRunning, triggersFrame,
@@ -509,6 +676,7 @@ theorem compensationExecutionStateValid_awaitEffect_disjoint (program : Program)
   cases definition <;> simp_all [CompensationSubjectDefinition.body]
 
 theorem compensationExecutionStateValid_running_insertEffect_frame (program : Program)
+    (domain : RootCompensationExecutionDomain program)
     (before after : RuntimeState) (instanceId : SemanticId) (inserted : EffectWait)
     (beforeRunning : before.control = .running instanceId)
     (controlFrame : after.control = before.control)
@@ -527,8 +695,8 @@ theorem compensationExecutionStateValid_running_insertEffect_frame (program : Pr
   have matching : triggerMatchesDeclaration program after =
       triggerMatchesDeclaration program before := by
     funext declaration trigger
-    simp [triggerMatchesDeclaration, triggerLifecycleValid, controlFrame, beforeRunning,
-      scopesFrame]
+    exact triggerMatchesDeclaration_root_running_frame program domain before after instanceId
+      beforeRunning controlFrame scopesFrame declaration trigger
   have collisionFrame (wait : CompensationHandlerEffectWait)
       (member : wait ∈ before.compensationHandlerEffectWaits) :
       waitCollidesWithOrdinaryState after wait = waitCollidesWithOrdinaryState before wait := by

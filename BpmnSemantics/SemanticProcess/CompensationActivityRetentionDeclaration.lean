@@ -90,6 +90,57 @@ private def targetOperationValid (program : Program)
     (target : BoundaryCompensationTarget) : Bool :=
   (compensationActivityTargetFamily? program declaration target.activityElementId).isSome
 
+/-- The Transaction capsule admits exactly one depth-one child of the declared Process root. -/
+def compensationTransactionParentScope? (program : Program)
+    (childId : DefinitionScopeId) : Option DefinitionScopeId :=
+  match program.definitionScopes.filter (·.parentScopeId.isNone),
+      program.definitionScopes.filter (fun scope => scope.id == childId) with
+  | [root], [child] =>
+      if program.definitionScopes.length = 2 && root.id != child.id &&
+          !root.id.value.isEmpty && !child.id.value.isEmpty &&
+          !child.originElementId.value.isEmpty &&
+          root.originElementId.value == program.processId.value &&
+          child.parentScopeId == some root.id then
+        some root.id
+      else none
+  | _, _ => none
+
+/-- Necessary shared declaration shape for TXC-RETAIN-01, without an execution-validator import.
+The execution declaration additionally checks descriptors, body identity and capacity bounds. -/
+def compensationTransactionRetentionShapeValid (program : Program)
+    (retention : CompensationActivityRetentionDeclaration) : Bool :=
+  match compensationTransactionParentScope? program retention.definitionScopeId,
+      program.compensationExecution, retention.targets with
+  | some parent, some execution, [target] =>
+      execution.definitionScopeId == retention.definitionScopeId &&
+        program.compensationEventSubProcessSnapshots.isNone &&
+        execution.dependencies.isEmpty &&
+        compensationActivityTargetFamily? program retention target.activityElementId =
+          some .ordinaryUserTask &&
+        (match execution.subjects with
+        | [.boundaryActivity subject body] =>
+            subject == target.activityElementId && body.input == .empty &&
+              body.handlerElementId == target.compensationActivityElementId &&
+              body.effectElementId == target.compensationActivityElementId
+        | _ => false) &&
+        (match program.operations.filter (fun operation =>
+          match operation with
+          | .triggerCompensation .. | .cancelTransaction .. => true
+          | _ => false) with
+        | [.cancelTransaction id origin scope input output boundary] =>
+            id == execution.triggerOperationId && scope == retention.definitionScopeId &&
+              !origin.elementId.value.isEmpty && !boundary.value.isEmpty &&
+              origin.elementId != boundary &&
+              !input.value.isEmpty && !output.value.isEmpty && input != output &&
+              operationOwnedByScope program
+                (.cancelTransaction id origin scope input output boundary) scope &&
+              (program.controlPlaceScopes.filter (fun item => item.controlPlaceId == input)) =
+                [{ controlPlaceId := input, scopeId := scope }] &&
+              (program.controlPlaceScopes.filter (fun item => item.controlPlaceId == output)) =
+                [{ controlPlaceId := output, scopeId := parent }]
+        | _ => false)
+  | _, _, _ => false
+
 private def declarationHasFlatRoot (program : Program)
     (declaration : CompensationActivityRetentionDeclaration) : Bool :=
   match program.definitionScopes.filter (·.parentScopeId.isNone) with
@@ -108,7 +159,10 @@ def compensationActivityRetentionDeclarationValid (program : Program) : Bool :=
   match program.compensationActivityRetention with
   | none => true
   | some declaration =>
-      declarationHasFlatRoot program declaration &&
+      ((declarationHasFlatRoot program declaration &&
+          !(program.operations.any fun operation =>
+            match operation with | .cancelTransaction .. => true | _ => false)) ||
+        compensationTransactionRetentionShapeValid program declaration) &&
         program.identity.semanticProfile != serviceTaskIncidentCancellationCheckpointProfileId &&
         !declaration.targets.isEmpty &&
         declaration.targets.all targetIdentityValid &&

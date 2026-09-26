@@ -184,6 +184,97 @@ theorem internalLocalControlPositionDelta?_output_bindings (program : Program)
   exact selectedInputOrigin?_exact_bindings program place patch.owner origin
     (internalLocalControlPlaceOrigin?_selectedInputOrigin program place patch.owner origin resolved)
 
+private theorem onlyTokenOwner_ne_quiescent (state : RuntimeState)
+    (input : ControlPlaceId) (selected owner : ScopeOccurrenceId)
+    (found : onlyTokenOwner? state input = some selected)
+    (quiet : scopeQuiescent state owner = true) : selected ≠ owner := by
+  intro same
+  subst selected
+  cases owners : tokenOwners state input with
+  | nil => simp [onlyTokenOwner?, owners] at found
+  | cons first rest =>
+      have firstEq : first = owner := by
+        simp only [onlyTokenOwner?, owners] at found
+        split at found <;> simp_all
+      have present : owner ∈ tokenOwners state input := by simp [owners, firstEq]
+      obtain ⟨token, filtered, owned⟩ := List.mem_map.mp present
+      have tokenPresent : (state.tokens.any fun candidate => candidate.owner == owner) = true :=
+        List.any_eq_true.mpr ⟨token, (List.mem_filter.mp filtered).1, by simp [owned]⟩
+      simp [scopeQuiescent, tokenPresent] at quiet
+
+/-- Every selected local step reads ordinary work: a token, or the retained Inclusive join record. -/
+theorem selectInternalLocalControl_ne_quiescent (state : RuntimeState)
+    (operation : SemanticOperation) (selected : InternalLocalControlSelection)
+    (found : selectInternalLocalControl? state operation = some selected)
+    (owner : ScopeOccurrenceId) (quiet : scopeQuiescent state owner = true) :
+    selected.owner ≠ owner := by
+  cases operation with
+  | duplicate id origin input outputs =>
+      obtain ⟨selectedOwner, owned, found⟩ := Option.bind_eq_some_iff.mp found
+      cases found
+      exact onlyTokenOwner_ne_quiescent state input selectedOwner owner owned quiet
+  | synchronize id origin inputs output =>
+      obtain ⟨selectedOwner, owned, found⟩ := Option.bind_eq_some_iff.mp found
+      cases found
+      cases inputs with
+      | nil => simp [commonTokenOwner?] at owned
+      | cons first rest =>
+          obtain ⟨actual, actualOwned, owned⟩ := Option.bind_eq_some_iff.mp owned
+          split at owned
+          · cases owned
+            exact onlyTokenOwner_ne_quiescent state first _ owner actualOwned quiet
+          · contradiction
+  | choose id origin input candidates defaultOutput defaultOrigin =>
+      obtain ⟨selectedOwner, owned, found⟩ := Option.bind_eq_some_iff.mp found
+      obtain ⟨branch, _, found⟩ := Option.bind_eq_some_iff.mp found
+      cases found
+      exact onlyTokenOwner_ne_quiescent state input selectedOwner owner owned quiet
+  | selectMany id origin input candidates defaultBranch key =>
+      obtain ⟨selectedOwner, owned, found⟩ := Option.bind_eq_some_iff.mp found
+      split at found
+      · contradiction
+      · obtain ⟨branch, _, found⟩ := Option.bind_eq_some_iff.mp found
+        split at found
+        · contradiction
+        · cases found
+          exact onlyTokenOwner_ne_quiescent state input selectedOwner owner owned quiet
+  | synchronizeSelected id origin inputs output key =>
+      simp only [selectInternalLocalControl?] at found
+      split at found
+      · rename_i record records
+        cases found
+        intro same
+        change record.owner = owner at same
+        have member : record ∈ state.selectedBranchSets.filter (selectedBranchJoinReady state key) := by
+          rw [records]
+          exact List.mem_cons_self
+        have recordPresent : (state.selectedBranchSets.any fun candidate => candidate.owner == owner) = true :=
+          List.any_eq_true.mpr ⟨record, (List.mem_filter.mp member).1, by simpa using same⟩
+        simp [scopeQuiescent, recordPresent] at quiet
+      · contradiction
+  | _ => simp [selectInternalLocalControl?] at found
+
+theorem selectInternalLocalControl_separates_active_cancel (program : Program) (state : RuntimeState)
+    (operation : SemanticOperation) (selected : InternalLocalControlSelection)
+    (valid : compensationExecutionStateValid program state = true)
+    (found : selectInternalLocalControl? state operation = some selected) :
+    selected.tokens.SeparatesActiveCancelOwners program state := by
+  unfold TokenPatch.SeparatesActiveCancelOwners
+  cases declared : program.compensationExecution with
+  | none => trivial
+  | some declaration =>
+      simp only
+      split
+      · rename_i id origin scope input output boundary cancellation
+        intro trigger member active _ _
+        have quiet := compensationExecutionStateValid_active_cancel_quiescent program state declaration
+          declared valid id origin scope input output boundary cancellation trigger member active
+        exact selectInternalLocalControl_ne_quiescent
+          { state with compensationTriggers := (state.compensationTriggers.filter
+            (fun candidate => candidate.id != trigger.id)) }
+          operation selected (by exact found) trigger.owner quiet
+      · trivial
+
 /-- RSI-OWN-01 and RSI-BIND-05 are derived for the complete selected patch. The explicit running
 identity binds the caller's validity index to the instance selected by preparation. -/
 theorem prepareInternalLocalControl_preserves_runtimeStateWellFormed
@@ -201,13 +292,41 @@ theorem prepareInternalLocalControl_preserves_runtimeStateWellFormed
     selected.owner selected.owner origin.elementId identity identityFound
   have outputs := internalLocalControlPositionDelta?_output_bindings program selected.tokens
     delta deltaFound
+  have executionValid : compensationExecutionStateValid program state = true := by
+    simp only [runtimeStateWellFormed, Bool.and_eq_true] at beforeWF
+    exact beforeWF.2.2
+  have separated := selectInternalLocalControl_separates_active_cancel
+    program state operation selected executionValid selection
   have tokenWF := selected.tokens.preserves_runtimeStateWellFormed program instanceId
-    state beforeWF live (fun place inOutputs => (outputs place inOutputs).1)
+    state beforeWF separated live (fun place inOutputs => (outputs place inOutputs).1)
       (fun place inOutputs => (outputs place inOutputs).2)
   have inserted := selectInternalLocalControl_insert_valid program state operation selected
     programWF member selection live
+  have branchSeparated : selected.selectedBranch.SeparatesActiveCancelOwners program
+      { state with tokens := selected.tokens.apply state.tokens } := by
+    unfold InternalSelectedBranchPatch.SeparatesActiveCancelOwners
+    cases declared : program.compensationExecution with
+    | none => trivial
+    | some declaration =>
+        simp only
+        split
+        · rename_i id cancelOrigin scope input output boundary cancellation
+          intro trigger triggerMember active record insertion
+          have quiet := compensationExecutionStateValid_active_cancel_quiescent program state declaration
+            declared executionValid id cancelOrigin scope input output boundary cancellation
+            trigger triggerMember active
+          have distinct := selectInternalLocalControl_ne_quiescent
+            { state with compensationTriggers := (state.compensationTriggers.filter
+              (fun candidate => candidate.id != trigger.id)) }
+            operation selected (by exact selection)
+            trigger.owner quiet
+          have owner := (selectInternalLocalControl_insert_facts state operation selected
+            selection record insertion).1
+          simpa only [owner] using distinct
+        · trivial
   exact selected.selectedBranch.preserves_runtimeStateWellFormed program instanceId
     { state with tokens := selected.tokens.apply state.tokens } tokenWF running
+    branchSeparated
     (fun record insertion => (inserted record insertion).1)
     (fun record insertion => (inserted record insertion).2)
 

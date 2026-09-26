@@ -131,7 +131,7 @@ private def correspondenceOperationSupported : SemanticOperation → Bool
   | .awaitMessageMonitoredUserTask ..
   | .awaitMonitoredUserTask .. | .awaitEffect ..
   | .mergeExclusive .. | .choose .. | .selectMany ..
-  | .synchronizeSelected .. | .throwError .. | .triggerCompensation ..
+  | .synchronizeSelected .. | .throwError .. | .triggerCompensation .. | .cancelTransaction ..
   | .terminateScope .. => false
 
 private def programEnabledTransitions (program : Program)

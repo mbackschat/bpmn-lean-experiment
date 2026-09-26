@@ -185,10 +185,17 @@ theorem prepareInternalMerge_preserves_runtimeStateWellFormed (program : Program
     (valid : runtimeStateWellFormed program instanceId state = true)
     (found : prepareInternalMerge? program state operation alternative = some prepared) :
     runtimeStateWellFormed program instanceId (prepared.selection.apply state) = true := by
-  obtain ⟨_, selected, _, _, delta, _, _, live, _, _, _, _, deltaFound, rfl⟩ :=
+  obtain ⟨_, selected, _, _, delta, selection, _, live, _, _, _, _, deltaFound, rfl⟩ :=
     prepareInternalMerge_facts program state operation alternative prepared found
   have outputs := internalLocalControlPositionDelta?_output_bindings program selected.tokens delta deltaFound
-  exact selected.tokens.preserves_runtimeStateWellFormed program instanceId state valid live
+  obtain ⟨_, _, _, _, _, _, _, present⟩ :=
+    selectInternalMerge_facts state operation alternative selected selection
+  have executionValid : compensationExecutionStateValid program state = true := by
+    simp only [runtimeStateWellFormed, Bool.and_eq_true] at valid
+    exact valid.2.2
+  have separated := selected.tokens.separatesActiveCancelOwners_of_owned_token program state
+    executionValid ⟨selected.input, selected.owner⟩ present rfl
+  exact selected.tokens.preserves_runtimeStateWellFormed program instanceId state valid separated live
     (fun place member => (outputs place member).1) (fun place member => (outputs place member).2)
 
 theorem InternalMergeSelection.open_occurrences_frame (program : Program)

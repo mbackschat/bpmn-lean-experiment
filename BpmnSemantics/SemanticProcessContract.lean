@@ -375,6 +375,12 @@ inductive SemanticOperation where
       (origin : BpmnElementOrigin)
       (definitionScopeId : DefinitionScopeId)
       (input output : ControlPlaceId)
+  | cancelTransaction
+      (id : OperationId)
+      (origin : BpmnElementOrigin)
+      (definitionScopeId : DefinitionScopeId)
+      (input output : ControlPlaceId)
+      (boundaryEventElementId : NodeId)
   deriving Repr, DecidableEq
 
 def SemanticOperation.id : SemanticOperation → OperationId
@@ -413,7 +419,8 @@ def SemanticOperation.id : SemanticOperation → OperationId
   | .reachNoneEnd id _ _
   | .terminateScope id _ _ _
   | .completeScope id _ _ _
-  | .triggerCompensation id _ _ _ _ => id
+  | .triggerCompensation id _ _ _ _
+  | .cancelTransaction id _ _ _ _ _ => id
 
 structure OperationScopeOwnership where
   operationId : OperationId

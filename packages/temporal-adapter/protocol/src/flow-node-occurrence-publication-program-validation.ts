@@ -154,6 +154,11 @@ function internalOperationStarts(
       return false;
     case SemanticOperationKind.TriggerCompensation:
       return compensationTriggerStarts(operation, transitionOwner, value, program);
+    case SemanticOperationKind.CancelTransaction:
+      return compensationTriggerStarts(operation, transitionOwner, value, program) || (
+        operation.boundaryEventElementId === value.elementId &&
+        parentOwnerCanMatch(transitionOwner, owner, program)
+      );
     default:
       return assertNever(operation);
   }
@@ -332,7 +337,9 @@ function elementBelongsToProgram(
 }
 
 function compensationTriggerStarts(
-  operation: Extract<SemanticOperation, { kind: SemanticOperationKind.TriggerCompensation }>,
+  operation: Extract<SemanticOperation, {
+    kind: SemanticOperationKind.TriggerCompensation | SemanticOperationKind.CancelTransaction;
+  }>,
   transitionOwner: ScopeOccurrenceId,
   value: OccurrenceFact,
   program: SemanticProcessProgram,
@@ -357,11 +364,19 @@ function compensationCompletionStarts(
   const owner = value.owner as ScopeOccurrenceId;
   const declaration = program.compensationExecution;
   if (declaration === undefined ||
-    completedEffectId.processInstanceId !== owner.processInstanceId ||
-    declaration.definitionScopeId !== owner.definitionScopeId) return false;
+    completedEffectId.processInstanceId !== owner.processInstanceId) return false;
   const completedSubjects = declaration.subjects.filter(({ body }) =>
     body.effectElementId === completedEffectId.elementId
   ).map((subject) => compensationSubjectElementId(subject, program));
+  const trigger = uniqueOperation(program, declaration.triggerOperationId);
+  if (trigger?.kind === SemanticOperationKind.CancelTransaction &&
+    trigger.definitionScopeId === declaration.definitionScopeId &&
+    trigger.boundaryEventElementId === value.elementId) {
+    return completedSubjects.some((subject) => subject !== null) &&
+      program.definitionScopes.some(({ id, parentScopeId }) =>
+        id === declaration.definitionScopeId && parentScopeId === owner.definitionScopeId);
+  }
+  if (declaration.definitionScopeId !== owner.definitionScopeId) return false;
   const candidateSubjects = declaration.subjects.filter(({ body }) =>
     body.handlerElementId === value.elementId || body.effectElementId === value.elementId
   ).map((subject) => compensationSubjectElementId(subject, program));
@@ -463,6 +478,11 @@ function operationPublishesNestedElement(
         attached?.id === operationScopeId &&
         attached.parentScopeId === ownerScopeId;
     }
+    case SemanticOperationKind.CancelTransaction:
+      return operation.boundaryEventElementId === elementId &&
+        operation.definitionScopeId === operationScopeId &&
+        program.definitionScopes.some(({ id, parentScopeId }) =>
+          id === operation.definitionScopeId && parentScopeId === ownerScopeId);
     case SemanticOperationKind.Initiate:
     case SemanticOperationKind.InitiateMessage:
     case SemanticOperationKind.InitiateTimer:

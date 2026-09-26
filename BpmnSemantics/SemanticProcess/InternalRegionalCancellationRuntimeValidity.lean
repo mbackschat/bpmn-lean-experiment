@@ -120,6 +120,7 @@ theorem preparedError_preserves_runtimeStateWellFormed (program : Program) (befo
     (found : prepareInternalRegional? program before (.throwError id origin input error handler) = some prepared) :
     ∃ after, applyPreparedInternalRegional? program before prepared = some after ∧
       runtimeStateWellFormed program hosting after = true := by
+  have domain := prepareInternalRegional_rootCompensationDomain program before _ prepared found
   have components := valid
   simp only [runtimeStateWellFormed, Bool.and_eq_true, and_assoc] at components
   obtain ⟨position, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, retention, snapshotValid, execution⟩ := components
@@ -147,9 +148,9 @@ theorem preparedError_preserves_runtimeStateWellFormed (program : Program) (befo
   have child : prepared.selection.root.parent ≠ none := by simp [parentEq]
   have cancelledPosition := cancelScopeSubtree_child_preserves_position program before hosting hosting position running
     prepared.selection.root rootMember child .remove
-  have retentionAfter := cancelScopeSubtree_child_compensation_retention program before hosting hosting
+  have retentionAfter := cancelScopeSubtree_child_compensation_retention program before domain hosting hosting
     prepared.selection.root .remove position running rootMember child retention
-  have executionAfter := cancelScopeSubtree_child_compensation_execution program before hosting hosting
+  have executionAfter := cancelScopeSubtree_child_compensation_execution program before domain hosting hosting
     prepared.selection.root .remove position running rootMember child execution
   have snapshotsAfter : compensationEventSubProcessSnapshotStateValid program
       (cancelScopeSubtree before prepared.selection.root.id .remove) = true := by
@@ -168,7 +169,7 @@ theorem preparedError_preserves_runtimeStateWellFormed (program : Program) (befo
     (orderedBy_addToken _ handler.output parent (canonicalCollectionOrder_tokens _ order))
   have afterExecution := compensation_execution_running_retained_frame program
     (cancelScopeSubtree before prepared.selection.root.id .remove)
-    (interruptScope before prepared.selection.root.id parent handler.output) hosting running rfl rfl rfl
+    (interruptScope before prepared.selection.root.id parent handler.output) domain hosting running rfl rfl rfl
     (fun _ => rfl) (fun _ member => member) (fun _ member => member) executionAfter
   simp only [runtimeStateWellFormed, Bool.and_eq_true, and_assoc] at cancelled ⊢
   obtain ⟨_, races, incidents, waits, waitIds, bounds, declarations, hidden, _, activities,

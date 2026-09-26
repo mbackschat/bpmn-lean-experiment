@@ -149,7 +149,8 @@ theorem prepareInternalRegional_after_independent_localPatch (program : Program)
   have published := regional_publication_localPatch_frame program state patch hosting
     regional.selection regional.region regional.publicationTemplate running afterValid openFrame publication tokens
   have result := prepareInternalRegional_of_components program (patch.apply state) regionalOperation
-    regional.selection regional.region regional.footprint regional.publicationTemplate snapshots declared time
+    regional.selection regional.region regional.footprint regional.publicationTemplate
+    (prepareInternalRegional_rootCompensationDomain program state _ regional regionalFound) snapshots declared time
     closureFrame (regionFrame.trans derived) (dependencies.trans footprint) published
   cases regional
   exact result

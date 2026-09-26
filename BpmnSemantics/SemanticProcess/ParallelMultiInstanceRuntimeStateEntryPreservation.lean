@@ -1,3 +1,4 @@
+import BpmnSemantics.SemanticProcess.TransactionCompensationProfileDomains
 import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStateEntryOrder
 
 /-! # Parallel Multi-Instance shared runtime-state entry preservation
@@ -300,7 +301,7 @@ theorem sharedParallelEntry_preserves_runtimeStateWellFormed (program : Program)
         exact retention
       have snapshotsAfter : compensationEventSubProcessSnapshotStateValid program successor = true := by change compensationEventSubProcessSnapshotStateValid program before = true; exact snapshots
       have executionAfter : compensationExecutionStateValid program successor = true := by
-        rw [compensationExecutionStateValid_running_frame program before successor instanceId
+        rw [compensationExecutionStateValid_running_frame program account.rootCompensationDomain before successor instanceId
           running rfl rfl rfl rfl rfl rfl]
         exact execution
       have recordOwners := pendingParallelActivity_taskOwnersAgree before successor arm owner

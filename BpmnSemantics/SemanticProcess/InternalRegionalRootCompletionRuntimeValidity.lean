@@ -16,6 +16,7 @@ theorem preparedRootComplete_preserves_runtimeStateWellFormed (program : Program
     (found : prepareInternalRegional? program before (.completeScope id origin definition none) = some prepared) :
     ∃ after, applyPreparedInternalRegional? program before prepared = some after ∧
       runtimeStateWellFormed program hosting after = true := by
+  have domain := prepareInternalRegional_rootCompensationDomain program before _ prepared found
   have components := valid
   simp only [runtimeStateWellFormed, Bool.and_eq_true, and_assoc] at components
   obtain ⟨position, races, incidents, owners, waitIds, bounds, declarations, hidden, order,
@@ -94,11 +95,11 @@ theorem preparedRootComplete_preserves_runtimeStateWellFormed (program : Program
       · contradiction
       · have actualFields := Option.some.inj update.symm
         have terminal : after.control = .completed hosting := by rw [actualFields]
-        obtain ⟨succeeded, noHandlerWaits⟩ := quiescent_singleton_compensation_succeeded program before hosting
+        obtain ⟨succeeded, noHandlerWaits⟩ := quiescent_singleton_compensation_succeeded program domain before hosting
           prepared.selection.root running onlyRoot quiet execution
-        have nextRetention := completion_root_compensation_retention program before after hosting
+        have nextRetention := completion_root_compensation_retention program domain before after hosting
           prepared.selection.root running terminal onlyRoot (by rw [actualFields]) retention
-        have nextExecution := compensation_execution_completed_retained_frame program before after hosting terminal
+        have nextExecution := compensation_execution_completed_retained_frame program domain before after hosting terminal
           (by rw [actualFields]) noHandlerWaits (by simpa only [actualFields] using noHandlerWaits) succeeded execution
         refine ⟨after, applied, ?_⟩
         rw [actualFields] at afterPosition afterActivities afterRaces afterActivitiesEmpty nextRetention nextExecution ⊢

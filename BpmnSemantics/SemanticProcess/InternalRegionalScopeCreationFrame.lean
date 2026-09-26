@@ -267,7 +267,8 @@ theorem prepareInternalRegional_after_independent_scopeCreation (program : Progr
   have closed := ownershipClosedSelection_accepts_closed_references program (creation.selection.apply state) operation
     regional.selection selected references locals owners
   exact prepareInternalRegional_of_components program (creation.selection.apply state) operation regional.selection regional.region
-    regional.footprint regional.publicationTemplate snapshots declared (by rwa [scopeCreation_apply_time]) closed
+    regional.footprint regional.publicationTemplate
+    (prepareInternalRegional_rootCompensationDomain program state _ regional regionalFound) snapshots declared (by rwa [scopeCreation_apply_time]) closed
     (prepareInternalRegional_region_after_independent_scopeCreation program state operation creationOperation regional creation
       programValid valid regionalFound creationFound independent)
     (regionalStateFootprint_after_independent_scopeCreation program state operation creationOperation regional creation

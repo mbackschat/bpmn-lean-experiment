@@ -158,7 +158,8 @@ theorem prepareInternalRegional_after_independent_end (program : Program) (state
     have control : runningInstance? (ending.apply state) = runningInstance? state := rfl
     simp only [regionalStateFootprint?, base, activities, control]
   have result := prepareInternalRegional_of_components program (ending.apply state) regionalOperation
-    regional.selection regional.region regional.footprint regional.publicationTemplate snapshots declared time closureAfter
+    regional.selection regional.region regional.footprint regional.publicationTemplate
+    (prepareInternalRegional_rootCompensationDomain program state _ regional regionalFound) snapshots declared time closureAfter
     ((ending.region_frame state regional.selection.root.id).trans derived) (footprintAfter.trans footprint)
     (regional_publication_end_frame program state ending instanceId regional.selection regional.region
       regional.publicationTemplate valid live running publication outside)

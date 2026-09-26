@@ -187,7 +187,8 @@
             "terminateScope",
             "reachNoneEnd",
             "completeScope",
-            "triggerCompensation"
+            "triggerCompensation",
+            "cancelTransaction"
           ]
         },
         "origin": {

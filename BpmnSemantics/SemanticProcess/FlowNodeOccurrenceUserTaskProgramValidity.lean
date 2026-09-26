@@ -45,7 +45,7 @@ private def userTaskWaitValid (program : Program) (state : RuntimeState)
       | .duplicate .. | .synchronize .. | .mergeExclusive ..
       | .choose .. | .selectMany .. | .synchronizeSelected ..
       | .throwError .. | .reachNoneEnd .. | .terminateScope ..
-      | .completeScope .. | .triggerCompensation .. => false).length = 1
+      | .completeScope .. | .triggerCompensation .. | .cancelTransaction .. => false).length = 1
 
 /-- Exact immutable-Program correspondence for the User Task waits used by open projection. -/
 def flowNodeOccurrenceUserTaskProgramValidity (program : Program) (state : RuntimeState) : Bool :=

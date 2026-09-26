@@ -111,12 +111,29 @@ theorem prepared_bounded_scope_preserves_activity_work
 
 /-- The shared child insertion has a derived intermediate invariant. This is a conclusion from
 bounded-entry predecessor facts, not an extra hypothesis of the complete operation. -/
+theorem prepareInternalBoundedScope_rootCompensationDomain
+    (program : Program) (state : RuntimeState) (contract : InternalBoundedScopeContract)
+    (prepared : PreparedInternalBoundedScope) (instanceId : SemanticId)
+    (valid : runtimeStateWellFormed program instanceId state = true)
+    (found : prepareInternalBoundedScope? program state contract = some prepared) :
+    RootCompensationExecutionDomain program := by
+  obtain ⟨selected, hosting, ownerRecord, definition, start, delta, selection, running,
+    snapshots, _, ownerExact, definitionFound, checks, _, _, position, rfl⟩ :=
+    prepareInternalBoundedScope_facts program state contract prepared found
+  obtain ⟨entry, entryFound, rfl⟩ := selectInternalBoundedScope_facts state contract selected selection
+  exact scopeCreation_runtime_rootCompensationDomain program instanceId state contract.entryOperation
+    entry contract.origin definition valid checks definitionFound (by
+      intro id origin input process scope output returnOperation same
+      simp [InternalBoundedScopeContract.entryOperation] at same)
+
 theorem prepareInternalBoundedScope_preserves_child_runtime
     (program : Program) (state : RuntimeState) (contract : InternalBoundedScopeContract)
     (prepared : PreparedInternalBoundedScope) (instanceId : SemanticId)
     (valid : runtimeStateWellFormed program instanceId state = true)
     (found : prepareInternalBoundedScope? program state contract = some prepared) :
     runtimeStateWellFormed program instanceId (prepared.selection.creation.apply state) = true := by
+  have domain := prepareInternalBoundedScope_rootCompensationDomain program state contract
+    prepared instanceId valid found
   obtain ⟨selected, hosting, ownerRecord, definition, start, delta, selection, running,
     snapshots, _, ownerExact, definitionFound, checks, _, _, position, rfl⟩ :=
     prepareInternalBoundedScope_facts program state contract prepared found
@@ -124,7 +141,7 @@ theorem prepareInternalBoundedScope_preserves_child_runtime
   have child := (boundedScope_entry_selection_input state contract entry entryFound).2.2
   have control : state.control = .running hosting := by
     cases equation : state.control <;> simp_all [runningInstance?]
-  have result := selectedScopeCreation_preserves_runtimeStateWellFormed program instanceId state
+  have result := selectedScopeCreation_preserves_runtimeStateWellFormed program domain instanceId state
     contract.entryOperation entry hosting ownerRecord contract.origin definition delta
     valid entryFound control snapshots ownerExact definitionFound checks position
     (by intro record called; simp [child] at called)
@@ -452,6 +469,8 @@ theorem prepared_bounded_scope_preserves_runtime
     (found : prepareInternalBoundedScope? program state contract = some prepared)
     (wellFormed : runtimeStateWellFormed program instanceId state = true) :
     runtimeStateWellFormed program instanceId (prepared.selection.apply state) = true := by
+  have domain := prepareInternalBoundedScope_rootCompensationDomain program state contract
+    prepared instanceId wellFormed found
   have childValid := prepareInternalBoundedScope_preserves_child_runtime program state contract
     prepared instanceId wellFormed found
   have orderAfter := prepared_bounded_scope_preserves_order program state contract prepared
@@ -504,7 +523,7 @@ theorem prepared_bounded_scope_preserves_runtime
   have executionAfter : compensationExecutionStateValid program after = true := by
     have childControl : childState.control = .running hosting := by
       simp only [childState, InternalScopeCreationSelection.apply, child, control]
-    exact (compensationExecutionStateValid_running_frame program childState after hosting childControl
+    exact (compensationExecutionStateValid_running_frame program domain childState after hosting childControl
       rfl rfl rfl rfl rfl rfl).trans execution
   change runtimeStateWellFormed program instanceId after = true
   simp only [runtimeStateWellFormed, Bool.and_eq_true, and_assoc]

@@ -1,3 +1,4 @@
+import BpmnSemantics.SemanticProcess.TransactionCompensationOrdinaryFrames
 import BpmnSemantics.SemanticProcess.InternalTimerTaskValidity
 import BpmnSemantics.SemanticProcess.ActivityDataInputOutputMultiInstanceFrames
 import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStatePreservation
@@ -367,9 +368,24 @@ theorem prepared_timer_task_preserves_runtime
       | _ => true) = true := by
     simp [after, selected, applyInternalTimerTaskPatch, makeInternalTimerTaskPatch,
       applyInternalArmingPatch, control]
-  have executionAfter : compensationExecutionStateValid program after = true :=
-    (compensationExecutionStateValid_running_frame program state after instanceId control
-      rfl rfl rfl rfl rfl rfl).trans execution
+  have executionAfter : compensationExecutionStateValid program after = true := by
+    let task : UserTaskWait :=
+      { processInstanceId := owner.processInstanceId, owner, task := { id := contract.task.id, name := contract.task.name }
+        activation := activationCount state contract.task.id + 1, output := contract.task.output }
+    let armed := activateUserTask state owner.processInstanceId owner contract.input contract.task.output
+      { id := contract.task.id, name := contract.task.name }
+    have armedValid := compensationExecutionStateValid_activateUserTask program state instanceId
+      owner.processInstanceId owner contract.input contract.task.output
+      { id := contract.task.id, name := contract.task.name } control owned execution
+    have taskMember : task ∈ armed.waits := by
+      simp [armed, activateUserTask, task, insertUserTaskWait_eq_canonicalInsertBy, mem_canonicalInsertBy]
+    have attached := compensationExecutionStateValid_attachTimer program armed instanceId
+      selected.timer task control taskMember rfl armedValid
+    exact compensationExecutionStateValid_running_ordinary program
+      { armed with timerWaits := insertTimerWait selected.timer armed.timerWaits } after instanceId
+      control rfl rfl rfl rfl rfl rfl attached
+      (by intro trigger member prior; exact prior)
+      (by intro trigger member quiet; exact quiet)
   change runtimeStateWellFormed program expectedInstance after = true
   simp only [runtimeStateWellFormed, Bool.and_eq_true]
   exact ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨positionAfter, racesAfter⟩, incidents⟩,

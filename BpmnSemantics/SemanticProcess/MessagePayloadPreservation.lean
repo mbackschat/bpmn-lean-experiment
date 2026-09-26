@@ -1,3 +1,4 @@
+import BpmnSemantics.SemanticProcess.TransactionCompensationProfileDomains
 import BpmnSemantics.SemanticProcess.CollectionOrder
 import BpmnSemantics.SemanticProcess.MessagePayload
 import BpmnSemantics.SemanticProcess.TokenOrder
@@ -278,7 +279,9 @@ theorem deliverPayloadMessage_preserves_runtimeStateWellFormed
       have executionAfter : compensationExecutionStateValid program settled = true := by
         obtain ⟨instanceId, running⟩ := runtimePositionValid_liveOccurrence_running
           program expectedInstanceId before wait.owner position ownerLive
-        rw [compensationExecutionStateValid_running_frame program before settled instanceId
+        rw [compensationExecutionStateValid_running_frame program
+          (RootCompensationExecutionDomain.of_zero_profile program
+            (by rw [profile]; decide +kernel) (by rw [profile]; rfl) _capabilities) before settled instanceId
           running rfl rfl rfl rfl rfl rfl]
         exact execution
       simp only [runtimeStateWellFormed, Bool.and_eq_true]

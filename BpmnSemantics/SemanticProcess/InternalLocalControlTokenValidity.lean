@@ -1,6 +1,7 @@
 import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 import BpmnSemantics.SemanticProcess.TokenPatch
+import BpmnSemantics.SemanticProcess.TransactionCompensationTokenPreservation
 
 /-! # Local-control token-patch validity
 
@@ -67,11 +68,12 @@ theorem TokenPatch.preserves_collection_order (state : RuntimeState) (patch : To
   exact canonicalCollectionOrder_tokens_update state (patch.apply state.tokens) ordered
     (patch.preserves_order state.tokens (canonicalCollectionOrder_tokens state ordered))
 
-/-- The live owner forces running control, where Compensation and all other non-token checks frame
-through unchanged fields. Inclusive record changes require their own preservation proof. -/
+/-- A valid active Transaction is quiescent, so token production must remain outside its owner.
+Actual local-control selection derives this separation from its consumed predecessor token. -/
 theorem TokenPatch.preserves_runtimeStateWellFormed (program : Program)
     (instanceId : SemanticId) (state : RuntimeState) (patch : TokenPatch)
     (valid : runtimeStateWellFormed program instanceId state = true)
+    (separated : patch.SeparatesActiveCancelOwners program state)
     (live : exactLiveOccurrence state patch.owner = true)
     (declared : ∀ place ∈ patch.produced, ∃ declaration,
       program.controlPlaces.filter (fun candidate => decide (candidate.id = place)) = [declaration])
@@ -89,16 +91,14 @@ theorem TokenPatch.preserves_runtimeStateWellFormed (program : Program)
     notStarted⟩, compensation⟩ := valid
   obtain ⟨runningId, running⟩ :=
     runtimePositionValid_liveOccurrence_running program instanceId state patch.owner position live
-  have executionFrame := compensationExecutionStateValid_running_frame program state
-    { state with tokens := patch.apply state.tokens } runningId running
-    rfl rfl rfl rfl rfl rfl
+  have executionAfter := patch.preserves_compensationExecutionStateValid program state
+    runningId running compensation.2 separated
   refine ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨patch.preserves_position program instanceId state
     position live declared owned, races⟩, incidents⟩, waitOwners⟩, waitIds⟩, identity⟩,
     waits⟩, hidden⟩, ordered⟩, activities⟩, timers⟩, messages⟩, activityIds⟩, controllers⟩,
     sequential⟩, parallel⟩, controllerIds⟩, exhausted⟩, notStarted⟩,
     ⟨⟨⟨compensation.1.1.1, compensation.1.1.2⟩, compensation.1.2⟩, ?_⟩⟩
-  rw [executionFrame]
-  exact compensation.2
+  exact executionAfter
 
 /-- Running open occurrences describe waits, scopes, and calls, so a token-only patch leaves the
 actual projection unchanged, including whether projection succeeds. -/

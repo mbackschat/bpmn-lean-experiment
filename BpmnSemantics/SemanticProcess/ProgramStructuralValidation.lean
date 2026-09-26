@@ -140,7 +140,7 @@ def operationWaitDeclarationKeys : SemanticOperation → List WaitDeclarationKey
   | .reachNoneEnd ..
   | .terminateScope ..
   | .completeScope ..
-  | .triggerCompensation .. => []
+  | .triggerCompensation .. | .cancelTransaction .. => []
 
 def operationDeclaresWaitKey (operation : SemanticOperation)
     (key : WaitDeclarationKey) : Bool :=
@@ -523,6 +523,11 @@ private def operationWellFormed (program : Program) (places : List ControlPlace)
   | .triggerCompensation id origin definitionScopeId input output =>
       nonempty id.value && nonempty origin.elementId.value &&
         nonempty definitionScopeId.value && input != output &&
+        placeExists places input && placeExists places output
+  | .cancelTransaction id origin definitionScopeId input output boundaryEventElementId =>
+      nonempty id.value && nonempty origin.elementId.value &&
+        nonempty definitionScopeId.value && input != output &&
+        nonempty boundaryEventElementId.value && boundaryEventElementId != origin.elementId &&
         placeExists places input && placeExists places output
 
 private def isInitiate : SemanticOperation → Bool

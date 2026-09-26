@@ -1,6 +1,7 @@
 import BpmnSemantics.SemanticProcess.ActivityOccurrence
 import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerCancellation
 import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerTransition
+import BpmnSemantics.SemanticProcess.TransactionCancellation
 
 /-! # Compensation handler completion and fail-fast Process failure -/
 
@@ -109,16 +110,19 @@ def completeSuccess (program : Program)
       match completionCapacityRefusal? declaration triggers waits with
       | some reason => .refused reason
       | none =>
-          let successor :=
+          let progressedState :=
             { state with
-              tokens := if allCompensated then
-                  addToken state.tokens selected.trigger.output selected.trigger.owner
-                else state.tokens
               compensationTriggers := triggers
               compensationHandlerEffectWaits := waits
               effectActivations := activated.effectActivations }
-          if compensationTriggerHandlerStateValid program successor then .applied successor
-          else .refused .invalidState
+          let successor? := if allCompensated then
+              compensationCompletionRoute? program progressedState selected.trigger
+            else some progressedState
+          match successor? with
+          | none => .refused .invalidState
+          | some successor =>
+              if compensationTriggerHandlerStateValid program successor then .applied successor
+              else .refused .invalidState
 
 private def failOtherHandler (failed : CompensationHandlerExecution)
     (candidate : CompensationHandlerExecution) : CompensationHandlerExecution :=
@@ -372,12 +376,11 @@ inductive CompensationHandlerCompletionStep (program : Program) (before : Runtim
       (candidate : CompensationHandlerSuccessCandidate program before selected true
         activated triggers waits)
       (withinCapacity : completionCapacityRefusal? declaration triggers waits = none)
-      (afterShape : after =
+      (routing : CompensationCompletionRouting program
         { before with
-          tokens := addToken before.tokens selected.trigger.output selected.trigger.owner
           compensationTriggers := triggers
           compensationHandlerEffectWaits := waits
-          effectActivations := activated.effectActivations })
+          effectActivations := activated.effectActivations } selected.trigger after)
       (afterValid : compensationTriggerHandlerStateValid program after = true) :
       CompensationHandlerCompletionStep program before effectId result after
   | successAdvance (declaration : CompensationExecutionDeclaration)
@@ -474,15 +477,29 @@ inductive CompensationHandlerCompletionRefusalStep (program : Program)
       (candidate : CompensationHandlerSuccessCandidate program before selected
         allCompensated activated triggers waits)
       (withinCapacity : completionCapacityRefusal? declaration triggers waits = none)
-      (afterShape : after =
-        { before with
-          tokens := if allCompensated then
-              addToken before.tokens selected.trigger.output selected.trigger.owner
-            else before.tokens
-          compensationTriggers := triggers
-          compensationHandlerEffectWaits := waits
-          effectActivations := activated.effectActivations })
+      (routing : if allCompensated then
+          CompensationCompletionRouting program
+            { before with
+              compensationTriggers := triggers, compensationHandlerEffectWaits := waits,
+              effectActivations := activated.effectActivations } selected.trigger after
+        else after =
+          { before with
+            compensationTriggers := triggers, compensationHandlerEffectWaits := waits,
+            effectActivations := activated.effectActivations })
       (rejected : compensationTriggerHandlerStateValid program after = false) :
+      CompensationHandlerCompletionRefusalStep program before effectId result .invalidState
+  | invalidRouting (declaration : CompensationExecutionDeclaration)
+      (selected : SelectedCompensationHandler) (patch : List VariableBinding)
+      (activated : CompensationFrontierActivation)
+      (triggers : List CompensationTriggerExecution) (waits : List CompensationHandlerEffectWait)
+      (ready : CompensationHandlerCompletionReady program before effectId result declaration selected)
+      (resultShape : result = .success patch)
+      (candidate : CompensationHandlerSuccessCandidate program before selected true activated triggers waits)
+      (withinCapacity : completionCapacityRefusal? declaration triggers waits = none)
+      (unroutable : ∀ after, ¬ CompensationCompletionRouting program
+        { before with
+          compensationTriggers := triggers, compensationHandlerEffectWaits := waits,
+          effectActivations := activated.effectActivations } selected.trigger after) :
       CompensationHandlerCompletionRefusalStep program before effectId result .invalidState
   | invalidFailureSuccessor (declaration : CompensationExecutionDeclaration)
       (selected : SelectedCompensationHandler) (code : String) (message : Option String)

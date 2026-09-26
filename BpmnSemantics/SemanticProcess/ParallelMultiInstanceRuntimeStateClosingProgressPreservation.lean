@@ -1,3 +1,4 @@
+import BpmnSemantics.SemanticProcess.TransactionCompensationProfileDomains
 import BpmnSemantics.SemanticProcess.ParallelMultiInstanceProgramBindingProgress
 
 /-! # Parallel Multi-Instance progress runtime-state preservation
@@ -518,7 +519,7 @@ theorem sharedParallelProgress_preserves_runtimeStateWellFormed
     change compensationEventSubProcessSnapshotStateValid program before = true
     exact snapshots
   have executionAfter : compensationExecutionStateValid program after = true := by
-    rw [compensationExecutionStateValid_running_frame program before after instanceId
+    rw [compensationExecutionStateValid_running_frame program account.rootCompensationDomain before after instanceId
       running rfl rfl rfl rfl rfl rfl]
     exact execution
   simp only [runtimeStateWellFormed, Bool.and_eq_true]

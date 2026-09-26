@@ -56,6 +56,8 @@ private def activeCompensationTriggerStarts (program : Program)
       | .triggerCompensation _ origin _ _ _, .active =>
           compensationTriggerStart program origin trigger ::
             activeCompensationHandlerStarts program trigger.owner trigger.handlers ++ tail
+      | .cancelTransaction .., .active =>
+          activeCompensationHandlerStarts program trigger.owner trigger.handlers ++ tail
       | _, _ => tail
 
 private def declaredCompensationTriggerOperation? (program : Program) :
@@ -63,7 +65,8 @@ private def declaredCompensationTriggerOperation? (program : Program) :
   let declaration ← program.compensationExecution
   match program.operations.filter fun operation =>
       decide (operation.id = declaration.triggerOperationId) with
-  | [operation@(.triggerCompensation ..)] => some operation
+  | [operation@(.triggerCompensation ..)]
+  | [operation@(.cancelTransaction ..)] => some operation
   | _ => none
 
 /-- Exact open trigger, handler, and distinct handler-body occurrences in committed state. -/
@@ -102,11 +105,12 @@ private theorem activeCompensationTriggerStarts_nonTransition (program : Program
   | cons trigger rest ih =>
       cases operation <;> cases lifecycle : trigger.lifecycle <;>
         simp_all [activeCompensationTriggerStarts, compensationTriggerStart, transitionAnchor]
-      intro start member
-      rcases member with handler | remaining
-      · exact activeCompensationHandlerStarts_nonTransition program trigger.owner trigger.handlers
-          start handler
-      · exact ih start remaining
+      all_goals
+        intro start member
+        rcases member with handler | remaining
+        · exact activeCompensationHandlerStarts_nonTransition program trigger.owner trigger.handlers
+            start handler
+        · exact ih start remaining
 
 /-- Open Compensation occurrences are persistent anchors, never instantaneous transitions. -/
 theorem projectOpenCompensationFlowNodeOccurrences_nonTransition (program : Program)
@@ -209,8 +213,60 @@ private def compensationTriggerLifecycle? (program : Program) (before after : Ru
       | _ => none
   | _ => none
 
+/-- TXC-CANCEL-01 publishes interruption from the selected pre-state region and eligibility. -/
+private def transactionCancellationLifecycle? (program : Program) (before after : RuntimeState)
+    (operation : SemanticOperation) (owner : ScopeOccurrenceId)
+    (commandId : SemanticId) (transitionIndex : Nat) :
+    Option UnnumberedFlowNodeOccurrenceDelta := do
+  let .cancelTransaction _ origin scope _ _ boundary := operation | none
+  if owner.definitionScopeId != scope then none
+  let parent ← match before.scopeOccurrences.filter (fun occurrence => occurrence.id == owner) with
+    | [{ parent := some parent, .. }] => some parent
+    | _ => none
+  let retention ← match before.compensationActivityRetentions.filter (fun record => record.owner == owner) with
+    | [retention] => some retention
+    | _ => none
+  let retained := !retention.records.isEmpty
+  let active ← projectOpenCompensationFlowNodeOccurrences? program after
+  let started := active.filter (fun occurrence => occurrence.owner == owner)
+  if retained != !started.isEmpty then none
+  let current ← projectOpenFlowNodeOccurrencesWithCompensation? program before
+  let ended := current.filter (fun occurrence =>
+    flowNodeOccurrenceOwnedBySubtree program before owner occurrence &&
+      !(retained && occurrence.anchor == .scope owner)) |>.map fun occurrence =>
+        { anchor := occurrence.anchor, terminal := FlowNodeOccurrenceTerminalKind.cancelled }
+  let identities : List FlowNodeIdentity :=
+    { processId := program.processId, elementId := origin.elementId, owner } ::
+      if retained then [] else
+        [{ processId := program.processId, elementId := boundary, owner := parent }]
+  let instant := instantaneousFlowNodeOccurrenceDelta commandId transitionIndex identities
+  pure (canonicalFlowNodeOccurrenceDelta (started ++ instant.started) (ended ++ instant.ended))
+
+private def transactionCompletionLifecycle? (program : Program) (before : RuntimeState)
+    (operation : SemanticOperation) (trigger afterTrigger : CompensationTriggerExecution)
+    (handler : CompensationHandlerExecution) (result : EffectExecutionResult)
+    (commandId : SemanticId) (transitionIndex : Nat) :
+    Option UnnumberedFlowNodeOccurrenceDelta := do
+  let .cancelTransaction _ _ scope _ _ boundary := operation | none
+  if trigger.owner.definitionScopeId != scope then none
+  let parent ← match before.scopeOccurrences.filter (fun occurrence => occurrence.id == trigger.owner) with
+    | [{ parent := some parent, .. }] => some parent
+    | _ => none
+  match result with
+  | .success _ =>
+      if afterTrigger.lifecycle != .succeeded then none
+      else pure (instantaneousFlowNodeOccurrenceDeltaWithEnds commandId transitionIndex
+        [{ processId := program.processId, elementId := boundary, owner := parent }]
+        (compensationHandlerTerminalEnds handler .completed ++
+          [{ anchor := .scope trigger.owner, terminal := .cancelled }]))
+  | .bpmnError .. =>
+      let current ← projectOpenFlowNodeOccurrencesWithCompensation? program before
+      pure (canonicalFlowNodeOccurrenceDelta [] (current.map fun occurrence =>
+        { anchor := occurrence.anchor, terminal := .cancelled }))
+
 private def compensationCompletionLifecycle? (program : Program) (before after : RuntimeState)
-    (effectId : EffectOccurrenceId) (result : EffectExecutionResult) :
+    (effectId : EffectOccurrenceId) (result : EffectExecutionResult)
+    (commandId : SemanticId) (transitionIndex : Nat) :
     Option UnnumberedFlowNodeOccurrenceDelta := do
   let wait ← match before.compensationHandlerEffectWaits.filter fun candidate =>
       candidate.id == effectId with
@@ -230,6 +286,10 @@ private def compensationCompletionLifecycle? (program : Program) (before after :
       candidate.id == trigger.id with
     | [afterTrigger] => some afterTrigger
     | _ => none
+  let operation ← declaredCompensationTriggerOperation? program
+  if (match operation with | .cancelTransaction .. => true | _ => false) then
+    return ← transactionCompletionLifecycle? program before operation trigger afterTrigger handler
+      result commandId transitionIndex
   match result with
   | .success _ =>
       let ended := compensationHandlerTerminalEnds handler .completed ++
@@ -265,6 +325,7 @@ def flowNodeOccurrenceDeltaForStimulusWithCompensation? (program : Program)
         | [] => candidateFlowNodeOccurrenceDeltaForStimulus? program before stimulus
             (stimulusCommandId stimulus) transitionIndex
         | [_] => compensationCompletionLifecycle? program before after effectId result
+            (stimulusCommandId stimulus) transitionIndex
         | _ => none
     | _ => candidateFlowNodeOccurrenceDeltaForStimulus? program before stimulus
         (stimulusCommandId stimulus) transitionIndex
@@ -279,6 +340,10 @@ def flowNodeOccurrenceDeltaForOperationWithCompensation? (program : Program)
     | .triggerCompensation .. => do
         let owner ← flowNodeSelectedOperationOwner? before operation
         compensationTriggerLifecycle? program before after operation owner commandId
+          transitionIndex
+    | .cancelTransaction .. => do
+        let owner ← flowNodeSelectedOperationOwner? before operation
+        transactionCancellationLifecycle? program before after operation owner commandId
           transitionIndex
     | _ => candidateFlowNodeOccurrenceDeltaForOperation? program before after operation
         commandId transitionIndex

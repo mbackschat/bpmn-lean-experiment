@@ -127,6 +127,7 @@ private def operationOriginElementId : SemanticOperation → Option NodeId
   | .choose _ origin _ _ _ _ | .selectMany _ origin _ _ _ _
   | .synchronizeSelected _ origin _ _ _ | .throwError _ origin _ _ _
   | .reachNoneEnd _ origin _ | .terminateScope _ origin _ _
+  | .cancelTransaction _ origin _ _ _ _
   | .completeScope _ origin _ _ => some origin.elementId
 
 private def bodyElementIds : CompensationSubjectDefinition → List NodeId
@@ -147,14 +148,20 @@ private def bodyIdentityGroupsUnique (forbidden : List String) :
 
 private def declarationBodyIdentitiesValid (program : Program)
     (declaration : CompensationExecutionDeclaration) : Bool :=
-  match program.operations.filter fun operation => operation.id == declaration.triggerOperationId with
-  | [.triggerCompensation id origin _ _ _] =>
+  let identities := match program.operations.filter fun operation =>
+      operation.id == declaration.triggerOperationId with
+    | [.triggerCompensation id origin _ _ _] => some [id.value, origin.elementId.value]
+    | [.cancelTransaction id origin _ _ _ boundary] =>
+        some [id.value, origin.elementId.value, boundary.value]
+    | _ => none
+  match identities with
+  | some triggerIds =>
       let subjectIds :=
         declaration.subjects.filterMap (subjectElementId? program) |>.map (·.value)
-      !subjectIds.contains id.value && !subjectIds.contains origin.elementId.value &&
+      triggerIds.all (fun id => !subjectIds.contains id) &&
         bodyIdentityGroupsUnique
-          (subjectIds ++ [id.value, origin.elementId.value]) [] declaration.subjects
-  | _ => false
+          (subjectIds ++ triggerIds) [] declaration.subjects
+  | none => false
 
 private def bodyElementsUnavailableToOperations (program : Program)
     (subjects : List CompensationSubjectDefinition) : Bool :=
@@ -173,6 +180,27 @@ private def triggerValid (program : Program) (declaration : CompensationExecutio
           ownership.operationId == declaration.triggerOperationId) =
             [{ operationId := declaration.triggerOperationId,
                scopeId := declaration.definitionScopeId }]
+  | [.cancelTransaction ..] =>
+      match program.compensationActivityRetention with
+      | some retention => compensationTransactionRetentionShapeValid program retention
+      | none => false
+  | _ => false
+
+private def declarationScopeValid (program : Program)
+    (declaration : CompensationExecutionDeclaration) : Bool :=
+  match program.operations.filter fun operation => operation.id == declaration.triggerOperationId with
+  | [.triggerCompensation ..] =>
+      programEntryRootScopeId? program = some declaration.definitionScopeId &&
+        (program.definitionScopes.filter (·.parentScopeId.isNone)).map (·.id) =
+          [declaration.definitionScopeId] &&
+        !(program.operations.any fun operation =>
+          match operation with | .cancelTransaction .. => true | _ => false)
+  | [.cancelTransaction ..] =>
+      match program.compensationActivityRetention with
+      | some retention =>
+          compensationActivityRetentionDeclarationValid program &&
+            compensationTransactionRetentionShapeValid program retention
+      | none => false
   | _ => false
 
 private def successorIds (dependencies : List CompensationDependency) (id : NodeId) : List NodeId :=
@@ -201,11 +229,13 @@ def compensationExecutionDeclarationValid (program : Program) : Bool :=
   match program.compensationExecution with
   | none =>
       !(program.operations.any fun operation =>
-        match operation with | .triggerCompensation .. => true | _ => false)
+        match operation with
+        | .triggerCompensation .. | .cancelTransaction .. => true
+        | _ => false)
   | some declaration =>
-      programEntryRootScopeId? program = some declaration.definitionScopeId &&
-        (program.definitionScopes.filter (·.parentScopeId.isNone)).map (·.id) =
-          [declaration.definitionScopeId] &&
+      declarationScopeValid program declaration &&
+        (program.compensationActivityRetention.all fun retention =>
+          retention.definitionScopeId == declaration.definitionScopeId) &&
         triggerValid program declaration &&
         subjectsStrictlyOrdered program declaration.subjects &&
         declaration.subjects.all (subjectValid program) &&

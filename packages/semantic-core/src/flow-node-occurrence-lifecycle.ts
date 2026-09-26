@@ -65,6 +65,7 @@ import {
   projectCompensationCompletionLifecycle,
   projectCompensationTriggerLifecycle,
 } from "./flow-node-occurrence-compensation.js";
+import { projectTransactionCancellationLifecycle } from "./flow-node-occurrence-transaction-cancellation.js";
 
 export enum FlowNodeOccurrenceTerminalKind {
   Completed = "completed",
@@ -426,6 +427,13 @@ function internalLifecycle(
       return null;
     case SemanticOperationKind.TriggerCompensation:
       return projectCompensationTriggerLifecycle(program, before, after, operation, owner);
+    case SemanticOperationKind.CancelTransaction: {
+      const root = only(before.scopeOccurrences.filter(({ id }) => sameScopeOccurrence(id, owner)));
+      return root === undefined ? null : projectTransactionCancellationLifecycle(
+        program, before, after, operation, root,
+        (retainRoot) => cancelledRegion(program, before, root, retainRoot),
+      );
+    }
     case SemanticOperationKind.AwaitEventRace: {
       const starts = candidateLongLivedStarts(program, before, after, operation, owner);
       const gateway = instant();
@@ -583,10 +591,13 @@ function openAnchorCandidates(
   state.effectIncidents.forEach(({ wait }) => addWait(wait));
   for (const trigger of state.compensationTriggers ?? []) {
     if (trigger.lifecycle !== "active") continue;
-    candidates.push({
-      anchor: { kind: SemanticFlowNodeOccurrenceAnchorKind.CompensationTrigger, id: trigger.id },
-      owner: trigger.owner,
-    });
+    if (program.operations.some((operation) => operation.id === trigger.id.elementId &&
+      operation.kind === SemanticOperationKind.TriggerCompensation)) {
+      candidates.push({
+        anchor: { kind: SemanticFlowNodeOccurrenceAnchorKind.CompensationTrigger, id: trigger.id },
+        owner: trigger.owner,
+      });
+    }
     for (const handler of trigger.handlers) {
       if (handler.lifecycle !== "compensating") continue;
       candidates.push({

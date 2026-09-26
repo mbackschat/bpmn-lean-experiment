@@ -110,6 +110,8 @@ export function deriveInternalEnterScopePreparation(
     { kind: SemanticOperationKind.EnterScope }
   >,
 ): PreparedInternalScopeCreation | null {
+  // TXC-CANCEL-01 requires child-register creation; the ordinary scope patch has no retention write.
+  if (program.compensationActivityRetention?.definitionScopeId === operation.childScopeId) return null;
   const owner = onlyTokenOwner(state, operation.input);
   if (owner === undefined) {
     return null;

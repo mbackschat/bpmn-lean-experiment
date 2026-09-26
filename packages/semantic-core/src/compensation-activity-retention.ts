@@ -32,16 +32,21 @@ export function initializeCompensationActivityRetention(
   state: RuntimeState,
   owner: ScopeOccurrenceId,
 ): RuntimeState {
-  return program.compensationActivityRetention === undefined
-    ? state
-    : {
-        ...state,
-        compensationActivityRetentions: [{
-          owner,
-          nextCompletionOrdinal: 1,
-          records: [],
-        }],
-      };
+  const declaration = program.compensationActivityRetention;
+  if (declaration === undefined) return state;
+  if (owner.definitionScopeId !== declaration.definitionScopeId) {
+    return state.compensationActivityRetentions === undefined
+      ? { ...state, compensationActivityRetentions: [] }
+      : state;
+  }
+  return {
+    ...state,
+    compensationActivityRetentions: [{
+      owner,
+      nextCompletionOrdinal: 1,
+      records: [],
+    }],
+  };
 }
 
 export function retainCompletedCompensableActivity(
@@ -64,8 +69,8 @@ export function retainCompletedCompensableActivity(
     retentions.length !== 1 ||
     retention === undefined ||
     retention.owner.definitionScopeId !== declaration.definitionScopeId ||
-    !state.scopeOccurrences.some(({ id, parent }) =>
-      parent === null && sameScopeOccurrence(id, retention.owner)
+    !state.scopeOccurrences.some(({ id }) =>
+      sameScopeOccurrence(id, retention.owner)
     )
   ) {
     return refused(state, CompensationRetentionRefusalKind.RetentionStateMismatch);
@@ -84,6 +89,28 @@ export function retainCompletedCompensableActivity(
   }
   if (!factsMatchTargetOperation(program, facts)) {
     return refused(state, CompensationRetentionRefusalKind.InvalidCompletionFacts);
+  }
+  const childDeclaration = program.definitionScopes.some(({ id, parentScopeId }) =>
+    id === declaration.definitionScopeId && parentScopeId !== null
+  );
+  if (childDeclaration) {
+    // TXC-RETAIN-01 requires the live pre-removal wait, not merely a matching element.
+    const waits = state.userTaskWaits.filter(({ id }) =>
+      id.processInstanceId === facts.activity.processInstanceId &&
+      id.elementId === facts.activity.activityElementId &&
+      id.activation === facts.activity.activation
+    );
+    if (
+      facts.kind !== CompensationCompletionFactKind.OrdinaryUserTask ||
+      waits.length !== 1 ||
+      waits[0] === undefined ||
+      !sameScopeOccurrence(waits[0].owner, retention.owner) ||
+      state.compensationTriggers?.some((trigger) =>
+        trigger.lifecycle === "active" && sameScopeOccurrence(trigger.owner, retention.owner)
+      )
+    ) {
+      return refused(state, CompensationRetentionRefusalKind.InvalidCompletionFacts);
+    }
   }
 
   if (retention.records.some(({ id }) => sameActivityOccurrence(id, facts.activity))) {

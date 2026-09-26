@@ -233,6 +233,7 @@ theorem prepareInternalRegional_after_independent_message_task (program : Progra
     simpa only [deriveInternalOccurrenceRegion?, graph, scopes, members] using derived
   have result := prepareInternalRegional_of_components program (applyInternalMessageTaskPatch state patch)
     operation regional.selection regional.region regional.footprint regional.publicationTemplate
+    (prepareInternalRegional_rootCompensationDomain program state _ regional regionalFound)
     snapshots declared (by simpa only [logicalTime] using time) selectionFrame regionFrame dependencies published
   cases regional
   exact result

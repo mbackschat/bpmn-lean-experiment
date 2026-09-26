@@ -14,9 +14,11 @@ import type {
 } from "./flow-node-occurrence-lifecycle.js";
 import type { OpenOccurrence } from "./flow-node-occurrence-publication-external-completeness.js";
 import type {
+  CancelTransactionOperation,
   SemanticProcessProgram,
   TriggerCompensationOperation,
 } from "./semantic-process-contract.js";
+import { SemanticOperationKind } from "./semantic-process-contract.js";
 import {
   COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID,
 } from "./semantic-profile-catalog.js";
@@ -103,6 +105,10 @@ export function compensationCompletionCompletenessPieces(
 ): CompensationCompletenessPieces | null {
   const declaration = program.compensationExecution;
   if (declaration === undefined) return null;
+  const operation = program.operations.find(({ id }) => id === declaration.triggerOperationId);
+  if (operation?.kind === SemanticOperationKind.CancelTransaction) {
+    return transactionCompletionPieces(program, open, operation, stimulus);
+  }
   requireCheckpointProfile(program);
   const matchingSubjects = declaration.subjects.filter(({ body }) =>
     body.effectElementId === stimulus.effectId.elementId
@@ -189,6 +195,141 @@ export function compensationCompletionCompletenessPieces(
       ...triggerEnds,
     ],
   );
+}
+
+/** TXC-EMPTY-01 and TXC-JOIN-01 distinguish eligibility by the admitted branch position. */
+export function transactionCancellationCompletenessPieces(
+  program: SemanticProcessProgram,
+  open: readonly OpenOccurrence[],
+  operation: CancelTransactionOperation,
+  owner: ScopeOccurrenceId,
+  supplied: Readonly<{ started: readonly UnnumberedFlowNodeOccurrenceStart[] }>,
+): CompensationCompletenessPieces {
+  const { subject, tasks } = transactionBranch(program, operation);
+  const scope = transactionScope(program, open, operation, owner);
+  const ordinary = open.filter((entry) => sameScopeOccurrence(entry.owner, owner));
+  if (ordinary.length > 1 || ordinary.some((entry) =>
+    entry.anchor.kind !== SemanticFlowNodeOccurrenceAnchorKind.Wait ||
+    !tasks.includes(entry.elementId)
+  )) failCompleteness();
+  const eligibleIndex = tasks.indexOf(subject.subjectElementId);
+  const currentIndex = ordinary.length === 0 ? tasks.length : tasks.indexOf(ordinary[0]!.elementId);
+  // The proposal's two linear branches leave the other branch stable across the Cancel command.
+  // A predecessor wait therefore proves noncompletion; absence means that branch reached its End.
+  const eligible = currentIndex > eligibleIndex;
+  const starts = requireHandlerStarts(program, supplied.started, eligible ? [subject] : [], owner);
+  const waits = requireDistinctWaitStarts(supplied.started, eligible ? [subject] : [], owner, scope.processId);
+  return pieces([...starts, ...waits], [
+    ...ordinary.map((entry) => end(entry, FlowNodeOccurrenceTerminalKind.Cancelled)),
+    ...(eligible ? [] : [end(scope, FlowNodeOccurrenceTerminalKind.Cancelled)]),
+  ], [
+    { processId: scope.processId, elementId: operation.origin.elementId, owner },
+    ...(eligible ? [] : [{ processId: scope.processId, elementId: operation.boundaryEventElementId, owner: scope.owner }]),
+  ]);
+}
+
+function transactionCompletionPieces(
+  program: SemanticProcessProgram,
+  open: readonly OpenOccurrence[],
+  operation: CancelTransactionOperation,
+  stimulus: CompleteEffectStimulus,
+): CompensationCompletenessPieces | null {
+  const { subject } = transactionBranch(program, operation);
+  if (stimulus.effectId.elementId !== subject.body.effectElementId) return null;
+  const handler = requireUnique(open.filter((entry) =>
+    entry.anchor.kind === SemanticFlowNodeOccurrenceAnchorKind.CompensationHandler &&
+    entry.elementId === subject.body.handlerElementId &&
+    entry.owner.processInstanceId === stimulus.effectId.processInstanceId
+  ));
+  const scope = transactionScope(program, open, operation, handler.owner);
+  const terminals = handlerEnds(open, handler, subject, stimulus.effectId);
+  if (stimulus.result.kind === EffectExecutionResultKind.BpmnError) {
+    return pieces([], open.map((entry) => end(entry, FlowNodeOccurrenceTerminalKind.Cancelled)));
+  }
+  return pieces([], [
+    ...terminals,
+    end(scope, FlowNodeOccurrenceTerminalKind.Cancelled),
+  ], [{ processId: scope.processId, elementId: operation.boundaryEventElementId, owner: scope.owner }]);
+}
+
+function transactionScope(
+  program: SemanticProcessProgram,
+  open: readonly OpenOccurrence[],
+  operation: CancelTransactionOperation,
+  owner: ScopeOccurrenceId,
+): OpenOccurrence {
+  if (owner.definitionScopeId !== operation.definitionScopeId) failCompleteness();
+  const definition = requireUnique(program.definitionScopes.filter(({ id }) => id === operation.definitionScopeId));
+  const scope = requireUnique(open.filter((entry) =>
+    entry.anchor.kind === SemanticFlowNodeOccurrenceAnchorKind.Scope &&
+    sameScopeOccurrence(entry.anchor.id, owner)
+  ));
+  if (definition.parentScopeId === null || scope.owner.definitionScopeId !== definition.parentScopeId ||
+      scope.owner.processInstanceId !== owner.processInstanceId ||
+      scope.elementId !== definition.originElementId || scope.processId !== requireProcessId(program, owner)) failCompleteness();
+  return scope;
+}
+
+function transactionBranch(
+  program: SemanticProcessProgram,
+  operation: CancelTransactionOperation,
+): Readonly<{
+  subject: Extract<CompensationSubjectDefinition, { kind: "boundaryActivity" }>;
+  tasks: string[];
+}> {
+  const declaration = program.compensationExecution;
+  const retention = program.compensationActivityRetention;
+  if (declaration === undefined || retention === undefined ||
+      declaration.definitionScopeId !== operation.definitionScopeId ||
+      retention.definitionScopeId !== operation.definitionScopeId ||
+      declaration.triggerOperationId !== operation.id || declaration.dependencies.length !== 0 ||
+      program.compensationEventSubProcessSnapshots !== undefined) failCompleteness();
+  const subject = requireUnique(declaration.subjects);
+  const target = requireUnique(retention.targets);
+  if (subject.kind !== "boundaryActivity" || subject.body.input.kind !== "empty" ||
+      target.activityElementId !== subject.subjectElementId ||
+      target.compensationActivityElementId !== subject.body.handlerElementId) failCompleteness();
+  const childOperations = program.operations.filter((candidate) =>
+    program.operationScopes.some(({ operationId, scopeId }) => operationId === candidate.id && scopeId === operation.definitionScopeId)
+  );
+  const split = requireUnique(childOperations.filter((candidate) => candidate.kind === SemanticOperationKind.Duplicate));
+  if (split.outputs.length !== 2) failCompleteness();
+  const entry = requireUnique(program.operations.filter((candidate) =>
+    candidate.kind === SemanticOperationKind.EnterScope
+  ).filter((candidate) => candidate.childScopeId === operation.definitionScopeId));
+  const definition = requireUnique(program.definitionScopes.filter(({ id }) => id === operation.definitionScopeId));
+  const parent = requireUnique(program.definitionScopes.filter(({ id }) => id === definition.parentScopeId));
+  if (parent.parentScopeId !== null || entry.childEntry !== split.input ||
+      !program.operationScopes.some(({ operationId, scopeId }) => operationId === entry.id && scopeId === parent.id)) failCompleteness();
+  const visited = new Set<string>([split.id]);
+  const branches = split.outputs.map((output) => {
+    let input = output;
+    const tasks: string[] = [];
+    for (;;) {
+      const next = requireUnique(childOperations.filter((candidate) => "input" in candidate && candidate.input === input));
+      if (visited.has(next.id)) failCompleteness();
+      visited.add(next.id);
+      switch (next.kind) {
+        case SemanticOperationKind.AwaitUserTask:
+          if (tasks.length >= 2) failCompleteness();
+          tasks.push(next.task.elementId);
+          input = next.output;
+          break;
+        case SemanticOperationKind.ReachNoneEnd:
+        case SemanticOperationKind.CancelTransaction:
+          if (tasks.length === 0) failCompleteness();
+          return { tasks, terminal: next };
+        default:
+          return failCompleteness();
+      }
+    }
+  });
+  const ordinary = requireUnique(branches.filter(({ terminal }) => terminal.kind === SemanticOperationKind.ReachNoneEnd));
+  const cancel = requireUnique(branches.filter(({ terminal }) => terminal.kind === SemanticOperationKind.CancelTransaction));
+  if (cancel.terminal.id !== operation.id || !ordinary.tasks.includes(subject.subjectElementId) ||
+      new Set([...ordinary.tasks, ...cancel.tasks]).size !== ordinary.tasks.length + cancel.tasks.length ||
+      childOperations.some((candidate) => !visited.has(candidate.id) && candidate.kind !== SemanticOperationKind.CompleteScope)) failCompleteness();
+  return { subject, tasks: ordinary.tasks };
 }
 
 function requireHandlerStarts(

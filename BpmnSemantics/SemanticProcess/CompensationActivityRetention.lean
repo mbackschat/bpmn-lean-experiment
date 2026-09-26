@@ -87,12 +87,13 @@ private def recordIdentityUnique (records : List CompletedCompensableActivity)
 private def retentionRegisterValid
     (declaration : CompensationActivityRetentionDeclaration)
     (instanceId : SemanticId) (state : RuntimeState)
-    (retention : CompensationActivityRetention) : Bool :=
+    (retention : CompensationActivityRetention)
+    (parent : Option ScopeOccurrenceId := none) : Bool :=
   retention.owner.processInstanceId == instanceId &&
     retention.owner.definitionScopeId == declaration.definitionScopeId &&
     retention.owner.activation == 1 &&
     (state.scopeOccurrences.filter fun occurrence =>
-      occurrence.id == retention.owner) = [{ id := retention.owner, parent := none }] &&
+      occurrence.id == retention.owner) = [{ id := retention.owner, parent }] &&
     retention.nextCompletionOrdinal > 0 && safeNat retention.nextCompletionOrdinal &&
     recordsHaveIncreasingOrdinals retention.records &&
     retention.records.length ≤ declaration.maxRecords &&
@@ -107,6 +108,27 @@ private def retentionRegisterValid
         record.completionOrdinal < retention.nextCompletionOrdinal &&
         safeNat record.completionOrdinal
 
+private def childRetentionStateValid (declaration : CompensationActivityRetentionDeclaration)
+    (parentScopeId : DefinitionScopeId) (instanceId : SemanticId) (state : RuntimeState) : Bool :=
+  let parent : ScopeOccurrenceId := ⟨instanceId, parentScopeId, 1⟩
+  (state.scopeOccurrences.filter fun occurrence =>
+    occurrence.id.definitionScopeId == parentScopeId) = [{ id := parent, parent := none }] &&
+    match state.scopeOccurrences.filter fun occurrence =>
+        occurrence.id.definitionScopeId == declaration.definitionScopeId with
+    | [] => state.compensationActivityRetentions.isEmpty
+    | [child] =>
+        child.id.processInstanceId == instanceId && child.id.activation == 1 &&
+          child.parent == some parent &&
+          match state.compensationActivityRetentions with
+          | [retention] =>
+              retention.owner == child.id &&
+                retentionRegisterValid declaration instanceId state retention (some parent) &&
+                (!(state.compensationTriggers.any fun trigger =>
+                    trigger.owner == child.id && trigger.lifecycle == .active) ||
+                  retention.records.isEmpty)
+          | _ => false
+    | _ => false
+
 /-- Program-aware state validity. Lean's list represents both physical omission and empty collection;
 the Program declaration supplies the distinction at the strict wire boundary. -/
 def compensationActivityRetentionStateValid (program : Program)
@@ -119,9 +141,12 @@ def compensationActivityRetentionStateValid (program : Program)
         | .notStarted | .completed _ | .cancelled _ | .failed .. =>
             state.compensationActivityRetentions.isEmpty
         | .running instanceId =>
-            match state.compensationActivityRetentions with
-            | [retention] => retentionRegisterValid declaration instanceId state retention
-            | _ => false
+            match compensationTransactionParentScope? program declaration.definitionScopeId with
+            | some parent => childRetentionStateValid declaration parent instanceId state
+            | none =>
+                match state.compensationActivityRetentions with
+                | [retention] => retentionRegisterValid declaration instanceId state retention
+                | _ => false
 
 def compensationActivityRetentionView? (program : Program) (state : RuntimeState) :
     Option (List CompensationActivityRetention) :=
@@ -153,6 +178,57 @@ private def CompensationCompletionFacts.operationFamily :
     CompensationCompletionFacts → CompensationActivityOperationFamily
   | .ordinaryUserTask _ => .ordinaryUserTask
   | .multiInstanceUserTask .. => .multiInstanceUserTask
+
+/-- TXC-RETAIN-01 joins the pre-removal wait by complete Activity identity before checking its owner. -/
+def childCompensationCompletionOwnerValid (owner : ScopeOccurrenceId)
+    (activity : ActivityOccurrenceId) (state : RuntimeState) : Bool :=
+  match state.waits.filter fun wait =>
+      wait.processInstanceId == activity.processInstanceId &&
+        wait.task.id.value == activity.activityElementId.value &&
+        wait.activation == activity.activation with
+  | [wait] => wait.owner == owner
+  | _ => false
+
+/-- Independent pre-state ownership proposition: interruption removes the required live witness. -/
+def ChildCompensationCompletionJoined (owner : ScopeOccurrenceId)
+    (activity : ActivityOccurrenceId) (state : RuntimeState) : Prop :=
+  ∃ wait ∈ state.waits,
+    wait.processInstanceId = activity.processInstanceId ∧
+      wait.task.id.value = activity.activityElementId.value ∧
+      wait.activation = activity.activation ∧ wait.owner = owner
+
+theorem childCompensationCompletionOwnerValid_joined (owner : ScopeOccurrenceId)
+    (activity : ActivityOccurrenceId) (state : RuntimeState)
+    (valid : childCompensationCompletionOwnerValid owner activity state = true) :
+    ChildCompensationCompletionJoined owner activity state := by
+  unfold childCompensationCompletionOwnerValid at valid
+  split at valid
+  · rename_i wait matching
+    have member : wait ∈ state.waits.filter (fun candidate =>
+        candidate.processInstanceId == activity.processInstanceId &&
+          candidate.task.id.value == activity.activityElementId.value &&
+          candidate.activation == activity.activation) := by
+      rw [matching]
+      exact List.mem_singleton_self wait
+    obtain ⟨member, identity⟩ := List.mem_filter.mp member
+    simp only [Bool.and_eq_true, beq_iff_eq] at identity valid
+    exact ⟨wait, member, identity.1.1, identity.1.2, identity.2, valid⟩
+  · contradiction
+
+private def completionOwnerValid (program : Program) (owner : ScopeOccurrenceId)
+    (facts : CompensationCompletionFacts) (state : RuntimeState) : Bool :=
+  match program.compensationActivityRetention with
+  | none => true
+  | some declaration =>
+      match compensationTransactionParentScope? program declaration.definitionScopeId with
+      | none => true
+      | some _ =>
+          match facts with
+          | .ordinaryUserTask activity =>
+              childCompensationCompletionOwnerValid owner activity state &&
+                !(state.compensationTriggers.any fun trigger =>
+                  trigger.owner == owner && trigger.lifecycle == .active)
+          | .multiInstanceUserTask .. => false
 
 inductive CompensationRetentionCapacityMeasure where
   | records
@@ -222,6 +298,8 @@ def retainCompletedCompensableActivity (program : Program)
         .refused .invalidDeclaration state
       else if !compensationActivityRetentionStateValid program state then
         .refused .invalidState state
+      else if !completionOwnerValid program owner facts state then
+        .refused .malformedCompletion state
       else match retentionCandidate? facts with
         | none => .refused .malformedCompletion state
         | candidate =>
@@ -257,6 +335,40 @@ def retainCompletedCompensableActivity (program : Program)
                               record
                     | _ => .refused .registerAbsent state
                 | none => .refused .malformedCompletion state
+
+/-- Successful child retention requires a complete live wait identity and its exact owner. -/
+theorem retainCompletedCompensableActivity_child_joined
+    (program : Program) (declaration : CompensationActivityRetentionDeclaration)
+    (parent : DefinitionScopeId) (owner : ScopeOccurrenceId)
+    (activity : ActivityOccurrenceId) (before after : RuntimeState)
+    (record : CompletedCompensableActivity)
+    (declared : program.compensationActivityRetention = some declaration)
+    (child : compensationTransactionParentScope? program declaration.definitionScopeId = some parent)
+    (selected : retainCompletedCompensableActivity program owner
+      (.ordinaryUserTask activity) before = .retained after record) :
+    ChildCompensationCompletionJoined owner activity before := by
+  apply childCompensationCompletionOwnerValid_joined
+  cases joined : childCompensationCompletionOwnerValid owner activity before with
+  | true => rfl
+  | false =>
+      simp only [retainCompletedCompensableActivity, declared, completionOwnerValid,
+        child, joined, Bool.false_and, Bool.not_false] at selected
+      repeat' split at selected <;> simp_all
+
+/-- An interrupted, absent or foreign wait cannot produce a child retention successor. -/
+theorem retainCompletedCompensableActivity_child_without_join_cannot_retain
+    (program : Program) (declaration : CompensationActivityRetentionDeclaration)
+    (parent : DefinitionScopeId) (owner : ScopeOccurrenceId)
+    (activity : ActivityOccurrenceId) (before after : RuntimeState)
+    (record : CompletedCompensableActivity)
+    (declared : program.compensationActivityRetention = some declaration)
+    (child : compensationTransactionParentScope? program declaration.definitionScopeId = some parent)
+    (absent : ¬ ChildCompensationCompletionJoined owner activity before) :
+    retainCompletedCompensableActivity program owner (.ordinaryUserTask activity) before ≠
+      .retained after record := by
+  intro selected
+  exact absent (retainCompletedCompensableActivity_child_joined program declaration parent owner
+    activity before after record declared child selected)
 
 /-- Declarative selection of the same pure retention result. -/
 inductive CompensationRetentionStep (program : Program) (owner : ScopeOccurrenceId)

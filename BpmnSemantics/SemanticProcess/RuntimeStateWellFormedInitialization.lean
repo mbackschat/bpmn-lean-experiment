@@ -103,6 +103,48 @@ private theorem initialSnapshotValid (program : Program)
           canonicalCompensationParentContextRetentionsUtf8Bytes, retentionLifecycleValid]
         exact ⟨rfl, capacity⟩
 
+private theorem startingRoot_eq_parentless (program : Program) (root selected : DefinitionScope)
+    (rootFound : rootDefinitionScope? program = some root)
+    (parentless : program.definitionScopes.filter (·.parentScopeId.isNone) = [selected]) :
+    root = selected := by
+  unfold rootDefinitionScope? at rootFound
+  split at rootFound
+  · rename_i candidate selectedOnly
+    have selectedEq : candidate = root := Option.some.inj rootFound
+    have member : root ∈ program.definitionScopes.filter (fun scope =>
+        scope.parentScopeId.isNone &&
+          decide (scope.originElementId.value = program.processId.value)) := by
+      rw [selectedOnly, selectedEq]
+      simp
+    obtain ⟨member, matched⟩ := List.mem_filter.mp member
+    have parentMember : root ∈ program.definitionScopes.filter (·.parentScopeId.isNone) :=
+      List.mem_filter.mpr ⟨member, ((Bool.and_eq_true _ _).mp matched).1⟩
+    simpa only [parentless, List.mem_singleton] using parentMember
+  · contradiction
+
+/-- TXC-RETAIN-01 selects a child distinct from the actual root created at start. -/
+private theorem startingTransaction_parent (program : Program) (root : DefinitionScope)
+    (childId parentId : DefinitionScopeId)
+    (rootFound : rootDefinitionScope? program = some root)
+    (childFound : compensationTransactionParentScope? program childId = some parentId) :
+    root.id = parentId ∧ root.id ≠ childId := by
+  unfold compensationTransactionParentScope? at childFound
+  split at childFound
+  · rename_i parent child parents children
+    split at childFound
+    · rename_i shape
+      have rootEq := startingRoot_eq_parentless program root parent rootFound parents
+      have childMember : child ∈ program.definitionScopes.filter (fun scope => scope.id == childId) := by
+        rw [children]
+        simp
+      have childEq : child.id = childId := by simpa using (List.mem_filter.mp childMember).2
+      simp only [Bool.and_eq_true, Bool.not_eq_true', bne_iff_ne, beq_iff_eq,
+        decide_eq_true_eq] at shape
+      simp only [Option.some.injEq] at childFound
+      grind
+    · contradiction
+  · contradiction
+
 private theorem startedRetentionValid (program : Program) (instanceId : SemanticId)
     (variables : List VariableBinding) (raw : RuntimeState)
     (retentions : List CompensationParentContextRetention)
@@ -117,42 +159,42 @@ private theorem startedRetentionValid (program : Program) (instanceId : Semantic
   cases present : program.compensationActivityRetention with
   | none => simp [compensationActivityRetentionStateValid, valid, present]
   | some declaration =>
-      have declarationValid := valid
-      simp only [compensationActivityRetentionDeclarationValid, present, Bool.and_eq_true,
-        decide_eq_true_eq] at declarationValid
-      have capacity : 2 ≤ declaration.maxCanonicalBytes := by grind
-      have flat := declarationValid.1.1.1.1.1.1.1.1.1.1.1.1
-      have rootId : root.id = declaration.definitionScopeId := by
-        change (match program.definitionScopes.filter (·.parentScopeId.isNone) with
-          | [scope] => scope.id == declaration.definitionScopeId && scope.parentScopeId.isNone &&
-            scope.originElementId.value == program.processId.value &&
-            (program.compensationExecution.isSome || program.definitionScopes.length = 1)
-          | _ => false) = true at flat
-        split at flat
-        · rename_i scope parentless
-          simp only [Bool.and_eq_true, beq_iff_eq] at flat
-          unfold rootDefinitionScope? at rootFound
-          split at rootFound
-          · rename_i selected selectedOnly
-            have selectedEq : selected = root := Option.some.inj rootFound
-            have member : root ∈ program.definitionScopes.filter (fun scope =>
-                scope.parentScopeId.isNone &&
-                  decide (scope.originElementId.value = program.processId.value)) := by
-              rw [selectedOnly, selectedEq]
-              simp
-            obtain ⟨member, matched⟩ := List.mem_filter.mp member
-            have parentMember : root ∈ program.definitionScopes.filter
-                (·.parentScopeId.isNone) := List.mem_filter.mpr
-                  ⟨member, ((Bool.and_eq_true _ _).mp matched).1⟩
-            rw [parentless] at parentMember
-            have same : root = scope := by simpa using parentMember
-            exact same ▸ flat.1.1.1
-          · contradiction
-        · contradiction
-      simp only [compensationActivityRetentionStateValid, valid, present, Bool.true_and]
-      change (_ && _ && _ && _ && _ && _ && _ && _ && _ && _) = true
-      simp [rootId, canonicalCompensationRecordsUtf8Bytes, capacity]
-      exact ⟨rfl, rfl⟩
+      cases childFound : compensationTransactionParentScope? program declaration.definitionScopeId with
+      | some parent =>
+          obtain ⟨rootId, different⟩ := startingTransaction_parent program root
+            declaration.definitionScopeId parent rootFound childFound
+          simp only [compensationActivityRetentionStateValid, valid, present, runningStartState,
+            childFound, Bool.true_and, show (declaration.definitionScopeId == root.id) = false by
+              simp [Ne.symm different], Bool.false_eq_true, ↓reduceIte]
+          change (_ && _) = true
+          simp [← rootId, different]
+      | none =>
+          have declarationValid := valid
+          simp only [compensationActivityRetentionDeclarationValid, present, Bool.and_eq_true,
+            decide_eq_true_eq] at declarationValid
+          have capacity : 2 ≤ declaration.maxCanonicalBytes := by grind
+          have flat := declarationValid.1.1.1.1.1.1.1.1.1.1.1.1
+          have childAbsent : compensationTransactionRetentionShapeValid program declaration = false := by
+            simp [compensationTransactionRetentionShapeValid, childFound]
+          rw [childAbsent, Bool.or_false] at flat
+          have flat := (Bool.and_eq_true_iff.mp flat).1
+          have rootId : root.id = declaration.definitionScopeId := by
+            change (match program.definitionScopes.filter (·.parentScopeId.isNone) with
+              | [scope] => scope.id == declaration.definitionScopeId && scope.parentScopeId.isNone &&
+                scope.originElementId.value == program.processId.value &&
+                (program.compensationExecution.isSome || program.definitionScopes.length = 1)
+              | _ => false) = true at flat
+            split at flat
+            · rename_i scope parentless
+              simp only [Bool.and_eq_true, beq_iff_eq] at flat
+              have same := startingRoot_eq_parentless program root scope rootFound parentless
+              exact same ▸ flat.1.1.1
+            · contradiction
+          simp only [compensationActivityRetentionStateValid, valid, present, runningStartState,
+            childFound, Bool.true_and, rootId, beq_self_eq_true, ↓reduceIte]
+          change (_ && _ && _ && _ && _ && _ && _ && _ && _ && _) = true
+          simp [canonicalCompensationRecordsUtf8Bytes, capacity]
+          exact ⟨rfl, rfl⟩
 
 private theorem startedWithSnapshots_wellFormed (program : Program) (instanceId : SemanticId)
     (variables : List VariableBinding) (raw : RuntimeState)

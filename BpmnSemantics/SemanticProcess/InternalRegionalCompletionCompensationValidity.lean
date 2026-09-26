@@ -8,7 +8,8 @@ namespace BpmnSemantics.SemanticProcess
 
 open BpmnSemantics
 
-theorem quiescent_singleton_compensation_succeeded (program : Program) (state : RuntimeState)
+theorem quiescent_singleton_compensation_succeeded (program : Program)
+    (domain : RootCompensationExecutionDomain program) (state : RuntimeState)
     (hosting : SemanticId) (root : RuntimeScopeOccurrence)
     (running : state.control = .running hosting) (scopes : state.scopeOccurrences = [root])
     (quiet : scopeQuiescent state root.id = true)
@@ -25,27 +26,26 @@ theorem quiescent_singleton_compensation_succeeded (program : Program) (state : 
       have succeeded (trigger : CompensationTriggerExecution) (member : trigger ∈ state.compensationTriggers) :
           trigger.lifecycle = .succeeded := by
         have fact := List.all_eq_true.mp bindings trigger member
-        change (match program.operations.filter (fun operation => operation.id == declaration.triggerOperationId) with
-          | [.triggerCompensation _ _ _ _ _] => _ && _
-          | _ => false) = true at fact
-        split at fact
-        · have lifecycle := (Bool.and_eq_true_iff.mp fact).2
-          change (match trigger.lifecycle with | .active => _ | .succeeded => _ | .failed => _) = true at lifecycle
-          cases status : trigger.lifecycle with
-          | succeeded => rfl
-          | failed => simp [status, running] at lifecycle
-          | active =>
-              simp only [status, Bool.and_eq_true] at lifecycle
-              have census := lifecycle.1.1.2
-              change decide ((state.scopeOccurrences.filter fun occurrence =>
-                occurrence.id == trigger.owner && occurrence.parent.isNone).length = 1) = true at census
-              have owned : root.id = trigger.owner := by
-                by_cases same : root.id = trigger.owner
-                · exact same
-                · simp [scopes, same] at census
-              have refuses := scopeQuiescent_refuses_active_compensation_trigger state root.id trigger member status owned.symm
-              simp [quiet] at refuses
-        · contradiction
+        obtain ⟨id, origin, scope, input, output, selected⟩ :=
+          root_compensation_trigger_selected program domain state declaration trigger fact
+        simp only [triggerMatchesDeclaration, selected] at fact
+        have lifecycle := (Bool.and_eq_true_iff.mp fact).2
+        simp only [triggerLifecycleValid, Bool.not_false, Bool.true_or, Bool.true_and,
+          Bool.false_eq_true, ite_false] at lifecycle
+        cases status : trigger.lifecycle with
+        | succeeded => rfl
+        | failed => simp [status, running] at lifecycle
+        | active =>
+            simp only [status, Bool.and_eq_true] at lifecycle
+            have census := lifecycle.1.1.2
+            change decide ((state.scopeOccurrences.filter fun occurrence =>
+              occurrence.id == trigger.owner && occurrence.parent.isNone).length = 1) = true at census
+            have owned : root.id = trigger.owner := by
+              by_cases same : root.id = trigger.owner
+              · exact same
+              · simp [scopes, same] at census
+            have refuses := scopeQuiescent_refuses_active_compensation_trigger state root.id trigger member status owned.symm
+            simp [quiet] at refuses
       refine ⟨succeeded, ?_⟩
       apply List.eq_nil_iff_forall_not_mem.mpr
       intro wait member
@@ -69,7 +69,8 @@ theorem quiescent_singleton_compensation_succeeded (program : Program) (state : 
         · contradiction
       · contradiction
 
-theorem compensation_execution_completed_retained_frame (program : Program) (before after : RuntimeState)
+theorem compensation_execution_completed_retained_frame (program : Program)
+    (domain : RootCompensationExecutionDomain program) (before after : RuntimeState)
     (hosting : SemanticId) (completed : after.control = .completed hosting)
     (triggers : after.compensationTriggers = before.compensationTriggers)
     (waitsBefore : before.compensationHandlerEffectWaits = [])
@@ -94,15 +95,14 @@ theorem compensation_execution_completed_retained_frame (program : Program) (bef
         apply List.all_eq_true.mpr
         intro trigger member
         have prior := List.all_eq_true.mp bindings trigger member
-        change (match program.operations.filter (fun operation => operation.id == declaration.triggerOperationId) with
-          | [.triggerCompensation _ _ _ _ _] => _ && _ | _ => false) = true at prior ⊢
-        split at prior
-        · simp only [Bool.and_eq_true] at prior ⊢
-          refine ⟨prior.1, ?_⟩
-          have lifecycle := prior.2
-          change (match trigger.lifecycle with | .active => _ | .succeeded => _ | .failed => _) = true at lifecycle ⊢
-          simpa only [succeeded trigger member] using lifecycle
-        · contradiction
+        obtain ⟨id, origin, scope, input, output, selected⟩ :=
+          root_compensation_trigger_selected program domain before declaration trigger prior
+        simp only [triggerMatchesDeclaration, selected, Bool.and_eq_true] at prior ⊢
+        refine ⟨prior.1, ?_⟩
+        have lifecycle := prior.2
+        simp only [triggerLifecycleValid, Bool.not_false, Bool.true_or, Bool.true_and,
+          Bool.false_eq_true, ite_false] at lifecycle ⊢
+        simpa only [succeeded trigger member] using lifecycle
       · simpa only [waitsBefore, waitsAfter] using waitOrder
       · simpa only [waitsBefore, waitsAfter] using waitUnique
       · simpa only [waitsBefore, waitsAfter, triggers] using matching
@@ -118,7 +118,8 @@ theorem compensation_execution_completed_retained_frame (program : Program) (bef
         intro trigger member
         simp [succeeded trigger member]
 
-theorem completion_root_compensation_retention (program : Program) (before after : RuntimeState)
+theorem completion_root_compensation_retention (program : Program)
+    (domain : RootCompensationExecutionDomain program) (before after : RuntimeState)
     (hosting : SemanticId) (root : RuntimeScopeOccurrence)
     (running : before.control = .running hosting) (completed : after.control = .completed hosting)
     (scopes : before.scopeOccurrences = [root])
@@ -126,6 +127,7 @@ theorem completion_root_compensation_retention (program : Program) (before after
       (fun retention => decide (retention.owner ≠ root.id)))
     (valid : compensationActivityRetentionStateValid program before = true) :
     compensationActivityRetentionStateValid program after = true := by
+  have declarationValid := (Bool.and_eq_true_iff.mp valid).1
   simp only [compensationActivityRetentionStateValid, Bool.and_eq_true] at valid ⊢
   refine ⟨valid.1, ?_⟩
   cases declared : program.compensationActivityRetention with
@@ -134,7 +136,9 @@ theorem completion_root_compensation_retention (program : Program) (before after
         simpa only [declared, List.isEmpty_iff] using valid.2
       simp [retained, empty]
   | some declaration =>
-      simp only [declared, running] at valid
+      have rootAccount := compensationActivityRetention_root_parent_absent program declaration
+        declared domain declarationValid
+      simp only [declared, running, rootAccount] at valid
       cases records : before.compensationActivityRetentions with
       | nil => simp [records] at valid
       | cons retention rest =>
@@ -152,7 +156,8 @@ theorem completion_root_compensation_retention (program : Program) (before after
                 · simp [scopes, same] at fact
               simp [completed, retained, records, owner]
 
-theorem completion_child_compensation_retention (program : Program) (before after : RuntimeState)
+theorem completion_child_compensation_retention (program : Program)
+    (domain : RootCompensationExecutionDomain program) (before after : RuntimeState)
     (hosting : SemanticId) (root : RuntimeScopeOccurrence)
     (running : before.control = .running hosting) (control : after.control = before.control)
     (member : root ∈ before.scopeOccurrences) (child : root.parent ≠ none)
@@ -161,12 +166,15 @@ theorem completion_child_compensation_retention (program : Program) (before afte
     (retained : after.compensationActivityRetentions = before.compensationActivityRetentions)
     (valid : compensationActivityRetentionStateValid program before = true) :
     compensationActivityRetentionStateValid program after = true := by
+  have declarationValid := (Bool.and_eq_true_iff.mp valid).1
   simp only [compensationActivityRetentionStateValid, Bool.and_eq_true] at valid ⊢
   refine ⟨valid.1, ?_⟩
   cases declared : program.compensationActivityRetention with
   | none => simpa only [declared, retained] using valid.2
   | some declaration =>
-      simp only [declared, control, running, retained] at valid ⊢
+      have rootAccount := compensationActivityRetention_root_parent_absent program declaration
+        declared domain declarationValid
+      simp only [declared, control, running, retained, rootAccount] at valid ⊢
       cases records : before.compensationActivityRetentions with
       | nil => simp [records] at valid
       | cons retention rest =>
@@ -199,7 +207,8 @@ theorem completion_child_compensation_retention (program : Program) (before afte
               rw [census]
               exact previous
 
-theorem completion_child_compensation_execution (program : Program) (before after : RuntimeState)
+theorem completion_child_compensation_execution (program : Program)
+    (domain : RootCompensationExecutionDomain program) (before after : RuntimeState)
     (expected hosting : SemanticId) (root : RuntimeScopeOccurrence)
     (position : runtimePositionValid program expected before = true)
     (running : before.control = .running hosting) (control : after.control = before.control)
@@ -212,7 +221,7 @@ theorem completion_child_compensation_execution (program : Program) (before afte
     (incidents : after.effectIncidents ⊆ before.effectIncidents)
     (valid : compensationExecutionStateValid program before = true) :
     compensationExecutionStateValid program after = true := by
-  apply compensation_execution_running_retained_frame program before after hosting running control
+  apply compensation_execution_running_retained_frame program before after domain hosting running control
     triggers waits _ effects incidents valid
   intro owner
   have unique := runtimePositionValid_scope_ids_nodup program expected hosting before position running

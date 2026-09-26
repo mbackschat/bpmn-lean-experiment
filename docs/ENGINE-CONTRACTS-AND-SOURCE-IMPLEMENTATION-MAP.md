@@ -32,6 +32,8 @@ The registered interrupting Activity boundary Message profile admits one exact o
 
 [Subscriptions](capsules/REPEATABLE-EVENT-SUBSCRIPTIONS-SPEC.md): admission/codecs/lowering, Lean/core publication, durable hosting and registered pipeline independently closure-reviewed.
 
+Transaction wire/admission boundary: [`implementation-status-owner:ENGINE-SEMANTIC-FAMILY`](ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md#transaction-cancellation).
+
 ## Implemented
 
 ### Wire contracts

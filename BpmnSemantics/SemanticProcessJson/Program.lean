@@ -721,6 +721,18 @@ private def decodeOperation (json : Json) :
         ⟨← decodeNonemptyStringField json "definitionScopeId"⟩
         ⟨← decodeNonemptyStringField json "input"⟩
         ⟨← decodeNonemptyStringField json "output"⟩)
+  | "cancelTransaction" =>
+      requireObjectShape json
+        ["boundaryEventElementId", "definitionScopeId", "id", "input", "kind",
+          "origin", "output"]
+      let cancelId := OperationId.mk (← decodeNonemptyStringField json "id")
+      let cancelOrigin := BpmnElementOrigin.mk
+        (NodeId.mk (← decodeNonemptyStringField (← field json "origin") "elementId"))
+      pure (.cancelTransaction cancelId cancelOrigin
+        ⟨← decodeNonemptyStringField json "definitionScopeId"⟩
+        ⟨← decodeNonemptyStringField json "input"⟩
+        ⟨← decodeNonemptyStringField json "output"⟩
+        ⟨← decodeNonemptyStringField json "boundaryEventElementId"⟩)
   | _ => throw s!"unsupported Semantic Process operation {kind}"
 
 private def decodeOperationScopeOwnership (json : Json) :

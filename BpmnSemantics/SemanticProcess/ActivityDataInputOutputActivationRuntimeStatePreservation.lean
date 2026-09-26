@@ -1,3 +1,4 @@
+import BpmnSemantics.SemanticProcess.TransactionCompensationOrdinaryFrames
 import BpmnSemantics.SemanticProcess.ActivityDataInputOutput
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceUserTaskProgramValidity
 import BpmnSemantics.SemanticProcess.InternalCommutationRuntimePreservation
@@ -568,9 +569,13 @@ theorem unboundedTaskActivityInsertion_preserves_runtimeStateWellFormed
     change compensationEventSubProcessSnapshotStateValid program before = true
     exact snapshots
   have executionAfter : compensationExecutionStateValid program successor = true := by
-    rw [compensationExecutionStateValid_running_frame program before successor
-      instanceId running rfl rfl rfl rfl rfl rfl]
-    exact execution
+    let armed := activateUserTask before instanceId owner input output { id := taskId, name := taskName }
+    have armedValid := compensationExecutionStateValid_activateUserTask program before instanceId
+      instanceId owner input output { id := taskId, name := taskName } running selected execution
+    exact compensationExecutionStateValid_running_ordinary program armed successor instanceId
+      running rfl rfl rfl rfl rfl rfl armedValid
+      (by intro trigger member prior; exact prior)
+      (by intro trigger member quiet; exact quiet)
   simp only [runtimeStateWellFormed, Bool.and_eq_true]
   exact ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨positionAfter, racesAfter⟩, incidentsAfter⟩,
     ownersAfter⟩, identitiesAfter⟩, boundsAfter⟩, declarationsAfter⟩,

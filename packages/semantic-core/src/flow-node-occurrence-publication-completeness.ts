@@ -54,6 +54,7 @@ import type {
 } from "./flow-node-occurrence-publication-external-completeness.js";
 import {
   compensationTriggerCompletenessPieces,
+  transactionCancellationCompletenessPieces,
 } from "./flow-node-occurrence-publication-compensation-completeness.js";
 
 export type RetainedFlowNodeOccurrence = DeepReadonly<{
@@ -214,6 +215,10 @@ function internalDelta(
         commandId,
         transitionIndex,
       );
+    }
+    case SemanticOperationKind.CancelTransaction: {
+      const pieces = transactionCancellationCompletenessPieces(program, open, operation, owner, supplied);
+      return lifecycleDelta(pieces.starts, pieces.ends, pieces.instants, commandId, transitionIndex);
     }
     case SemanticOperationKind.AwaitMessageMonitoredUserTask:
     case SemanticOperationKind.AwaitMessageBoundedUserTask:

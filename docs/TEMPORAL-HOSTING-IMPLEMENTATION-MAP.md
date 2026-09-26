@@ -62,6 +62,8 @@ The registered source profile constructs the exact declaration-bearing Program a
 
 Live success crosses a pre-schedule Run boundary, replaces the Worker, retries B with one mutation and the same frozen request, runs B/C concurrently, delays A until B, and replays all six Runs. Live failure publishes the exact failed state after C's typed result, requests and awaits B cancellation before completing with the failed receipt, never starts A, and replays all five Runs. Independent review approved that checkpoint at `b951330c` after correction `dfae0d9f`; the [registration outcome](capsules/COMPENSATION-TRIGGER-HANDLER-PROPOSAL.md#public-registration-implementation) records subsequent public acceptance.
 
+Transaction protocol/admission boundary: [`implementation-status-owner:ENGINE-SEMANTIC-FAMILY`](ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md#transaction-cancellation).
+
 ## Implemented
 
 ### Temporal adapter

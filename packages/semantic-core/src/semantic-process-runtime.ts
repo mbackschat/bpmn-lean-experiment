@@ -96,6 +96,8 @@ import {
   CompensationTriggerAttemptKind,
   attemptCompensationTrigger,
 } from "./compensation-trigger-handler-transition.js";
+import { attemptTransactionCancellation } from "./transaction-cancellation.js";
+import { initializeCompensationActivityRetention } from "./compensation-activity-retention.js";
 
 export {
   ControlStateKind,
@@ -299,13 +301,12 @@ function attemptInternalOperationStep(
       detail: preparation.detail,
     };
   }
-  if (operation.kind === SemanticOperationKind.TriggerCompensation) {
-    const triggered = attemptCompensationTrigger(
-      program,
-      operation,
-      preparation.state,
-      onlyTokenOwner(preparation.state, operation.input),
-    );
+  if (operation.kind === SemanticOperationKind.TriggerCompensation ||
+      operation.kind === SemanticOperationKind.CancelTransaction) {
+    const owner = onlyTokenOwner(preparation.state, operation.input);
+    const triggered = operation.kind === SemanticOperationKind.TriggerCompensation
+      ? attemptCompensationTrigger(program, operation, preparation.state, owner)
+      : attemptTransactionCancellation(program, operation, preparation.state, owner);
     switch (triggered.kind) {
       case CompensationTriggerAttemptKind.Disabled:
         return { kind: InternalOperationAttemptKind.Disabled, operation };
@@ -399,7 +400,15 @@ function applyInternalOperationState(
       const owner = onlyTokenOwner(state, operation.input);
       return applyOwnedOperation(
         owner,
-        (selected) => enterScope(operation, state, selected),
+        (selected) => {
+          const entered = enterScope(operation, state, selected);
+          if (entered === null || program.compensationActivityRetention?.definitionScopeId !==
+              operation.childScopeId) return entered;
+          const child = entered.scopeOccurrences.find(({ id }) =>
+            id.definitionScopeId === operation.childScopeId
+          );
+          return child === undefined ? null : initializeCompensationActivityRetention(program, entered, child.id);
+        },
         captureOwner,
       );
     }
@@ -603,6 +612,7 @@ function applyInternalOperationState(
       );
     }
     case SemanticOperationKind.TriggerCompensation:
+    case SemanticOperationKind.CancelTransaction:
       return null;
     case SemanticOperationKind.TerminateScope: {
       const terminatedOwner = onlyTokenOwner(state, operation.input);

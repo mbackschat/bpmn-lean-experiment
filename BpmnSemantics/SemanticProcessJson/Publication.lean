@@ -73,6 +73,7 @@ private def operationKindJson : SemanticOperationKind → Option Json
   | .terminateScope => some (toJson "terminateScope")
   | .completeScope => some (toJson "completeScope")
   | .triggerCompensation => some (toJson "triggerCompensation")
+  | .cancelTransaction => some (toJson "cancelTransaction")
 
 private def scopeOccurrenceIdJson (id : ScopeOccurrenceId) : Json :=
   Json.mkObj

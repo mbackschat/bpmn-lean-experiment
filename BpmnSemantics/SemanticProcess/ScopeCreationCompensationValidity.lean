@@ -1,5 +1,5 @@
 import BpmnSemantics.SemanticProcess.ScopeInsertionValidity
-import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerRuntime
+import BpmnSemantics.SemanticProcess.TransactionScopeCreationDomain
 
 /-! Fresh scope insertion preserves the exact Compensation ownership checks required by the
 [scope-creation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).
@@ -54,7 +54,8 @@ theorem scopeFilter_sameIdentity_parentless_duplicate (state : RuntimeState)
   simp [insertScopeOccurrence, length_filter_canonicalInsertBy, singleton]
 
 theorem compensationActivityRetentionStateValid_insertScopeOccurrence
-    (program : Program) (state : RuntimeState) (inserted : RuntimeScopeOccurrence)
+    (program : Program) (domain : RootCompensationExecutionDomain program)
+    (state : RuntimeState) (inserted : RuntimeScopeOccurrence)
     (fresh : ∀ occurrence ∈ state.scopeOccurrences, occurrence.id ≠ inserted.id)
     (valid : compensationActivityRetentionStateValid program state = true) :
     compensationActivityRetentionStateValid program
@@ -63,10 +64,12 @@ theorem compensationActivityRetentionStateValid_insertScopeOccurrence
   unfold compensationActivityRetentionStateValid at valid ⊢
   simp only [Bool.and_eq_true] at valid ⊢
   refine ⟨valid.1, ?_⟩
-  cases declaration : program.compensationActivityRetention with
-  | none => simpa only [declaration] using valid.2
+  cases declared : program.compensationActivityRetention with
+  | none => simpa only [declared] using valid.2
   | some declaration =>
-      cases control : state.control <;> simp only [declaration, control] at valid ⊢
+      have parentAbsent := compensationActivityRetention_root_parent_absent program declaration
+        declared domain valid.1
+      cases control : state.control <;> simp only [declared, control, parentAbsent] at valid ⊢
       all_goals try exact valid.2
       rename_i instanceId
       cases records : state.compensationActivityRetentions with
@@ -99,96 +102,58 @@ theorem compensationActivityRetentionStateValid_insertScopeOccurrence
               exact valid
 
 theorem compensationExecutionStateValid_insertScopeOccurrence
-    (program : Program) (state : RuntimeState) (inserted : RuntimeScopeOccurrence)
+    (program : Program) (domain : RootCompensationExecutionDomain program)
+    (state : RuntimeState) (inserted : RuntimeScopeOccurrence)
     (instanceId : SemanticId) (running : state.control = .running instanceId)
     (fresh : ∀ occurrence ∈ state.scopeOccurrences, occurrence.id ≠ inserted.id)
     (valid : compensationExecutionStateValid program state = true) :
     compensationExecutionStateValid program
-      { state with scopeOccurrences := insertScopeOccurrence inserted state.scopeOccurrences } =
-      true := by
-  let lifecycle (state : RuntimeState) (trigger : CompensationTriggerExecution) : Bool :=
-    match trigger.lifecycle with
-    | .active =>
-        (match state.control with
-          | .running id => trigger.owner.processInstanceId == id
-          | _ => false) &&
-        (state.scopeOccurrences.filter fun occurrence =>
-          occurrence.id == trigger.owner && occurrence.parent.isNone).length = 1 &&
-        (trigger.handlers.any fun handler =>
-          match handler.lifecycle with | .pending _ | .compensating _ _ => true | _ => false) &&
-        (trigger.handlers.all fun handler =>
-          match handler.lifecycle with | .failed | .terminated => false | _ => true)
-    | .succeeded => trigger.handlers.all fun handler => handler.lifecycle == .compensated
-    | .failed =>
-        (match state.control with | .failed .. => true | _ => false) &&
-        (trigger.handlers.filter fun handler => handler.lifecycle == .failed).length = 1 &&
-        (trigger.handlers.all fun handler =>
-          handler.lifecycle == .compensated || handler.lifecycle == .failed ||
-            handler.lifecycle == .terminated)
+      { state with scopeOccurrences := insertScopeOccurrence inserted state.scopeOccurrences } = true := by
   have preservesLifecycle (trigger : CompensationTriggerExecution)
-      (valid : lifecycle state trigger = true) :
-      lifecycle { state with scopeOccurrences := insertScopeOccurrence inserted state.scopeOccurrences }
+      (prior : triggerLifecycleValid false state trigger = true) :
+      triggerLifecycleValid false
+        { state with scopeOccurrences := insertScopeOccurrence inserted state.scopeOccurrences }
         trigger = true := by
-    cases status : trigger.lifecycle with
-    | succeeded => simpa only [lifecycle, status] using valid
-    | failed => simpa only [lifecycle, status] using valid
+    cases lifecycle : trigger.lifecycle with
+    | succeeded | failed => simpa [triggerLifecycleValid, lifecycle] using prior
     | active =>
-        simp only [lifecycle, status, Bool.and_eq_true, decide_eq_true_eq] at valid ⊢
+        simp only [triggerLifecycleValid, lifecycle, Bool.not_false, Bool.true_or, Bool.true_and,
+          Bool.and_eq_true, decide_eq_true_eq, Bool.false_eq_true, ↓reduceIte] at prior ⊢
         have present : ∃ occurrence ∈ state.scopeOccurrences, occurrence.id = trigger.owner := by
           have nonempty : (state.scopeOccurrences.filter fun occurrence =>
               occurrence.id == trigger.owner && occurrence.parent.isNone) ≠ [] := by
             intro empty
-            simp [empty] at valid
+            simp [empty] at prior
           obtain ⟨occurrence, member⟩ := List.exists_mem_of_ne_nil _ nonempty
-          have facts := List.mem_filter.mp member
-          have predicate := facts.2
-          simp only [Bool.and_eq_true, beq_iff_eq] at predicate
-          exact ⟨occurrence, facts.1, predicate.1⟩
-        obtain ⟨occurrence, member, same⟩ := present
+          obtain ⟨member, matched⟩ := List.mem_filter.mp member
+          simp only [Bool.and_eq_true, beq_iff_eq] at matched
+          exact ⟨occurrence, member, matched.1⟩
+        obtain ⟨occurrence, member, identity⟩ := present
         have different : inserted.id ≠ trigger.owner := by
-          intro identity
-          exact fresh occurrence member (same.trans identity.symm)
+          intro same
+          exact fresh occurrence member (identity.trans same.symm)
         have lookup := filter_canonicalInsertBy_rejected scopeOccurrenceBefore
           (fun occurrence => occurrence.id == trigger.owner && occurrence.parent.isNone)
           inserted state.scopeOccurrences (by simp [different])
-        simpa only [insertScopeOccurrence, lookup] using valid
-  unfold compensationExecutionStateValid at valid ⊢
-  simp only [Bool.and_eq_true] at valid ⊢
-  refine ⟨valid.1, ?_⟩
-  cases declared : program.compensationExecution with
-  | none => simpa only [declared] using valid.2
-  | some declaration =>
-      simp only [declared, Bool.and_eq_true] at valid ⊢
-      have previous := valid.2
-      obtain ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨order, unique⟩, owners⟩, triggers⟩, waitOrder⟩,
-        waitUnique⟩, matching⟩, oneWait⟩, collision⟩, triggerBound⟩, handlerBound⟩,
-        byteBound⟩, control⟩ := previous
-      refine ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨order, unique⟩, owners⟩, ?_⟩, waitOrder⟩,
-        waitUnique⟩, matching⟩, oneWait⟩, collision⟩, triggerBound⟩, handlerBound⟩,
-        byteBound⟩, ?_⟩
-      · simp only [List.all_eq_true] at triggers ⊢
-        intro trigger member
-        have previous := triggers trigger member
-        change (match program.operations.filter (fun operation =>
-            operation.id == declaration.triggerOperationId) with
-          | [.triggerCompensation _ _ _ _ _] => _ && lifecycle state trigger
-          | _ => false) = true at previous
-        change (match program.operations.filter (fun operation =>
-            operation.id == declaration.triggerOperationId) with
-          | [.triggerCompensation _ _ _ _ _] => _ && lifecycle
-              { state with scopeOccurrences := insertScopeOccurrence inserted state.scopeOccurrences }
-              trigger
-          | _ => false) = true
-        split at previous
-        ·
-            simp only [Bool.and_eq_true] at previous ⊢
-            exact ⟨previous.1, preservesLifecycle trigger previous.2⟩
-        · contradiction
-      · change (match state.control with
-          | .notStarted => _
-          | .running _ => _
-          | .completed _ | .cancelled _ => _
-          | .failed .. => _) = true at control ⊢
-        simpa only [running] using control
+        simpa only [insertScopeOccurrence, lookup] using prior
+  apply compensationExecutionStateValid_running_of_matches program state
+    { state with scopeOccurrences := insertScopeOccurrence inserted state.scopeOccurrences }
+    instanceId running rfl rfl rfl rfl rfl valid
+  intro declaration declared trigger member
+  have matching := compensationExecutionStateValid_trigger program state declaration declared valid trigger member
+  unfold triggerMatchesDeclaration at matching ⊢
+  split at matching
+  · have lifecycle := (Bool.and_eq_true_iff.mp matching).2
+    have preserved := preservesLifecycle trigger lifecycle
+    simpa only [Bool.and_eq_true, lifecycle, preserved, and_true] using matching
+  · rename_i id origin scope input output boundary selected
+    have member : .cancelTransaction id origin scope input output boundary ∈ program.operations := by
+      have filtered : .cancelTransaction id origin scope input output boundary ∈
+          program.operations.filter (fun operation => operation.id == declaration.triggerOperationId) := by
+        rw [selected]
+        exact List.mem_singleton_self _
+      exact (List.mem_filter.mp filtered).1
+    exact False.elim (domain _ member)
+  · contradiction
 
 end BpmnSemantics.SemanticProcess

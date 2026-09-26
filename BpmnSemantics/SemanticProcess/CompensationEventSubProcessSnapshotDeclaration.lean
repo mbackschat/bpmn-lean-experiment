@@ -38,7 +38,7 @@ def enteredChildScopeId? : SemanticOperation → Option DefinitionScopeId
   | .synchronize .. | .mergeExclusive .. | .choose .. | .selectMany ..
   | .synchronizeSelected ..
   | .throwError .. | .reachNoneEnd .. | .terminateScope ..
-  | .completeScope .. | .triggerCompensation .. => none
+  | .completeScope .. | .triggerCompensation .. | .cancelTransaction .. => none
 
 private def completesScope (scopeId : DefinitionScopeId) : SemanticOperation → Bool
   | .completeScope _ _ completedScopeId _ => completedScopeId == scopeId

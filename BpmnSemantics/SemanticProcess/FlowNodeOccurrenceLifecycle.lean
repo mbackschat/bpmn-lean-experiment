@@ -172,7 +172,8 @@ def flowNodeSelectedOperationOwner? (state : RuntimeState) :
   | .throwError _ _ input _ _
   | .reachNoneEnd _ _ input
   | .terminateScope _ _ input _
-  | .triggerCompensation _ _ _ input _ => onlyTokenOwner? state input
+  | .triggerCompensation _ _ _ input _
+  | .cancelTransaction _ _ _ input _ _ => onlyTokenOwner? state input
   | .synchronize _ _ inputs _ => commonTokenOwner? state inputs
   | .mergeExclusive _ _ inputs _ =>
       match exclusiveMergeInputTokens state inputs with
@@ -813,7 +814,7 @@ def candidateFlowNodeOccurrenceDeltaForOperation? (program : Program) (before af
       | [{ id, parent := some _ }] => pure (canonicalFlowNodeOccurrenceDelta [] [completedEnd (.scope id)])
       | [{ parent := none, .. }] => pure (canonicalFlowNodeOccurrenceDelta [] [])
       | _ => none
-  | .triggerCompensation .. => none
+  | .triggerCompensation .. | .cancelTransaction .. => none
 
 def acceptFlowNodeOccurrenceCandidate? (program : Program) (before after : RuntimeState)
     (candidate : UnnumberedFlowNodeOccurrenceDelta) :

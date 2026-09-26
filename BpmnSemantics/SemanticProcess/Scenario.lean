@@ -96,7 +96,7 @@ private def ownedWaitDefinitions : SemanticOperation → OwnedWaitDefinitions
   | .synchronizeSelected .. | .throwError .. | .reachNoneEnd ..
   | .terminateScope ..
   | .completeScope ..
-  | .triggerCompensation .. => {}
+  | .triggerCompensation .. | .cancelTransaction .. => {}
 
 private def taskDefinitions (program : Program) : List UserTaskDefinition :=
   program.operations.flatMap fun operation => (ownedWaitDefinitions operation).tasks

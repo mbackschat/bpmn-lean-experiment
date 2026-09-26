@@ -1,6 +1,7 @@
 import BpmnSemantics.SemanticProcess.InternalRegionalRootTerminationValidity
 import BpmnSemantics.SemanticProcess.InternalRegionalCompletionAdmission
 import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerRuntime
+import BpmnSemantics.SemanticProcess.TransactionScopeCreationDomain
 
 /-! Cancellation preserves Compensation validity through the exact retained-owner census.
 The selected operation must justify retention or removal; an empty result alone is not
@@ -9,6 +10,40 @@ valid for a running Program that declares an Activity-retention register. -/
 namespace BpmnSemantics.SemanticProcess
 
 open BpmnSemantics
+
+theorem root_compensation_trigger_selected (program : Program)
+    (domain : RootCompensationExecutionDomain program) (state : RuntimeState)
+    (declaration : CompensationExecutionDeclaration) (trigger : CompensationTriggerExecution)
+    (valid : triggerMatchesDeclaration program state declaration trigger = true) :
+    ∃ id origin scope input output,
+      program.operations.filter (fun operation => operation.id == declaration.triggerOperationId) =
+        [.triggerCompensation id origin scope input output] := by
+  unfold triggerMatchesDeclaration at valid
+  split at valid
+  · exact ⟨_, _, _, _, _, by assumption⟩
+  · rename_i id origin scope input output boundary selected
+    have member : .cancelTransaction id origin scope input output boundary ∈ program.operations :=
+      (List.mem_filter.mp (selected.symm ▸ List.mem_singleton_self _)).1
+    exact False.elim (domain _ member)
+  · contradiction
+
+theorem root_compensation_declaration_scope (program : Program)
+    (domain : RootCompensationExecutionDomain program) (declaration : CompensationExecutionDeclaration)
+    (present : program.compensationExecution = some declaration)
+    (valid : compensationExecutionDeclarationValid program = true) :
+    (program.definitionScopes.filter (·.parentScopeId.isNone)).map (·.id) =
+      [declaration.definitionScopeId] := by
+  simp only [compensationExecutionDeclarationValid, present, Bool.and_eq_true, and_assoc] at valid
+  have scopeValid := valid.1
+  conv at scopeValid => lhs; whnf
+  split at scopeValid
+  · simp only [Bool.and_eq_true, decide_eq_true_eq] at scopeValid
+    exact scopeValid.1.2
+  · rename_i id origin scope input output boundary selected
+    have member : .cancelTransaction id origin scope input output boundary ∈ program.operations :=
+      (List.mem_filter.mp (selected.symm ▸ List.mem_singleton_self _)).1
+    exact False.elim (domain _ member)
+  · contradiction
 
 private theorem parentless_outside_child (state : RuntimeState)
     (unique : (state.scopeOccurrences.map (·.id)).Nodup)
@@ -83,6 +118,7 @@ theorem cancelScopeSubtree_child_root_definition_outside (program : Program) (st
   simp [outside] at reached
 
 theorem cancelScopeSubtree_compensation_retention_of_outside (program : Program)
+    (domain : RootCompensationExecutionDomain program)
     (state : RuntimeState) (hosting : SemanticId) (root : ScopeOccurrenceId)
     (disposition : SelectedScopeDisposition) (running : state.control = .running hosting)
     (outside : ∀ retention ∈ state.compensationActivityRetentions,
@@ -96,12 +132,15 @@ theorem cancelScopeSubtree_compensation_retention_of_outside (program : Program)
     intro retention member
     simp only [outside retention member, Bool.not_false]
   have control : (cancelScopeSubtree state root disposition).control = .running hosting := running
+  have declarationValid := (Bool.and_eq_true_iff.mp valid).1
   simp only [compensationActivityRetentionStateValid, Bool.and_eq_true] at valid ⊢
   refine ⟨valid.1, ?_⟩
-  cases declaration : program.compensationActivityRetention with
-  | none => simpa only [declaration, retained] using valid.2
+  cases declared : program.compensationActivityRetention with
+  | none => simpa only [declared, retained] using valid.2
   | some declaration =>
-      simp only [declaration, running, control, retained] at valid ⊢
+      have rootAccount := compensationActivityRetention_root_parent_absent program declaration
+        declared domain declarationValid
+      simp only [declared, running, control, retained, rootAccount] at valid ⊢
       cases records : state.compensationActivityRetentions with
       | nil => simp [records] at valid
       | cons retention rest =>
@@ -186,11 +225,10 @@ theorem compensation_execution_empty_without_subjects (program : Program)
     | nil => rfl
     | cons trigger rest =>
         have fact := List.all_eq_true.mp triggers trigger (by simp [entries])
-        change (match program.operations.filter (fun operation => operation.id == declaration.triggerOperationId) with
-          | [.triggerCompensation _ _ _ _ _] => _
-          | _ => false) = true at fact
-        split at fact
-        · simp only [Bool.and_eq_true, and_assoc] at fact
+        unfold triggerMatchesDeclaration at fact
+        split at fact <;> try contradiction
+        all_goals
+          simp only [Bool.and_eq_true, and_assoc] at fact
           obtain ⟨_, _, nonempty, _, _, _, _, _, _, _, matching, _⟩ := fact
           have present : trigger.handlers ≠ [] := by
             intro empty
@@ -202,7 +240,6 @@ theorem compensation_execution_empty_without_subjects (program : Program)
             | some _ => _) = true at bound
           rw [noDefinition] at bound
           contradiction
-        · contradiction
   refine ⟨noTriggers, ?_⟩
   have waits := valid.2.2.2.2.2.2.2.1
   cases entries : state.compensationHandlerEffectWaits with
@@ -266,6 +303,7 @@ theorem cancelScopeSubtree_terminate_compensation_validity (program : Program) (
       (Or.inr ⟨hosting, running⟩)
 
 theorem compensation_execution_running_retained_frame (program : Program) (before after : RuntimeState)
+    (domain : RootCompensationExecutionDomain program)
     (hosting : SemanticId) (running : before.control = .running hosting)
     (control : after.control = before.control)
     (triggers : after.compensationTriggers = before.compensationTriggers)
@@ -295,24 +333,23 @@ theorem compensation_execution_running_retained_frame (program : Program) (befor
         apply List.all_eq_true.mpr
         intro trigger member
         have prior := List.all_eq_true.mp triggerBindings trigger member
-        change (match program.operations.filter (fun operation => operation.id == declaration.triggerOperationId) with
-          | [.triggerCompensation _ _ _ _ _] => _ && _
-          | _ => false) = true at prior ⊢
-        split at prior
-        · simp only [Bool.and_eq_true] at prior ⊢
-          refine ⟨prior.1, ?_⟩
-          have previous := prior.2
-          change (match trigger.lifecycle with | .active => _ | .succeeded => _ | .failed => _) = true at previous ⊢
-          cases status : trigger.lifecycle with
-          | succeeded => simpa only [status] using previous
-          | failed => simpa only [status, control] using previous
-          | active =>
-              simp only [status] at previous ⊢
-              change (_ && decide ((after.scopeOccurrences.filter fun occurrence =>
-                occurrence.id == trigger.owner && occurrence.parent.isNone).length = 1) && _ && _) = true
-              rw [roots]
-              simpa only [control] using previous
-        · contradiction
+        obtain ⟨id, origin, scope, input, output, selected⟩ :=
+          root_compensation_trigger_selected program domain before declaration trigger prior
+        simp only [triggerMatchesDeclaration, selected] at prior ⊢
+        simp only [Bool.and_eq_true] at prior ⊢
+        refine ⟨prior.1, ?_⟩
+        have previous := prior.2
+        simp only [triggerLifecycleValid, Bool.not_false, Bool.true_or, Bool.true_and,
+          Bool.false_eq_true, ite_false] at previous ⊢
+        cases status : trigger.lifecycle with
+        | succeeded => simpa only [status] using previous
+        | failed => simpa only [status, control] using previous
+        | active =>
+            simp only [status] at previous ⊢
+            change (_ && decide ((after.scopeOccurrences.filter fun occurrence =>
+              occurrence.id == trigger.owner && occurrence.parent.isNone).length = 1) && _ && _) = true
+            rw [roots]
+            simpa only [control] using previous
       · simpa only [waits] using waitOrder
       · simpa only [waits] using waitUnique
       · simpa only [waits, triggers] using matching
@@ -336,12 +373,13 @@ theorem compensation_execution_running_retained_frame (program : Program) (befor
         simpa only [control, running, triggers] using lifecycle
 
 theorem cancelScopeSubtree_child_compensation_retention (program : Program) (state : RuntimeState)
+    (domain : RootCompensationExecutionDomain program)
     (expected hosting : SemanticId) (root : RuntimeScopeOccurrence) (disposition : SelectedScopeDisposition)
     (position : runtimePositionValid program expected state = true) (running : state.control = .running hosting)
     (rootMember : root ∈ state.scopeOccurrences) (child : root.parent ≠ none)
     (valid : compensationActivityRetentionStateValid program state = true) :
     compensationActivityRetentionStateValid program (cancelScopeSubtree state root.id disposition) = true := by
-  apply cancelScopeSubtree_compensation_retention_of_outside program state hosting root.id disposition running ?_ valid
+  apply cancelScopeSubtree_compensation_retention_of_outside program domain state hosting root.id disposition running ?_ valid
   intro retention member
   have fact := (Bool.and_eq_true_iff.mp valid).2
   cases declared : program.compensationActivityRetention with
@@ -350,7 +388,9 @@ theorem cancelScopeSubtree_child_compensation_retention (program : Program) (sta
         simpa only [declared, List.isEmpty_iff] using fact
       simp [empty] at member
   | some declaration =>
-      simp only [declared, running] at fact
+      have rootAccount := compensationActivityRetention_root_parent_absent program declaration
+        declared domain (Bool.and_eq_true_iff.mp valid).1
+      simp only [declared, running, rootAccount] at fact
       split at fact
       · rename_i register entries
         have same : retention = register := by simpa only [entries, List.mem_singleton] using member
@@ -374,6 +414,7 @@ theorem cancelScopeSubtree_child_compensation_retention (program : Program) (sta
       · contradiction
 
 theorem cancelScopeSubtree_child_compensation_fields (program : Program) (state : RuntimeState)
+    (domain : RootCompensationExecutionDomain program)
     (expected hosting : SemanticId) (root : RuntimeScopeOccurrence) (disposition : SelectedScopeDisposition)
     (position : runtimePositionValid program expected state = true) (running : state.control = .running hosting)
     (rootMember : root ∈ state.scopeOccurrences) (child : root.parent ≠ none)
@@ -393,8 +434,7 @@ theorem cancelScopeSubtree_child_compensation_fields (program : Program) (state 
           exact fact.1
         simp [empty] at member
     | some declaration =>
-        simp only [compensationExecutionDeclarationValid, declared, Bool.and_eq_true, and_assoc] at declarationValid
-        have roots := of_decide_eq_true declarationValid.2.1
+        have roots := root_compensation_declaration_scope program domain declaration declared declarationValid
         have present : declaration.definitionScopeId ∈
             (program.definitionScopes.filter (·.parentScopeId.isNone)).map (·.id) := by rw [roots]; simp
         obtain ⟨definition, definitionMember, definitionId⟩ := List.mem_map.mp present
@@ -402,15 +442,13 @@ theorem cancelScopeSubtree_child_compensation_fields (program : Program) (state 
         simp only [Option.isNone_iff_eq_none] at parentless
         simp only [declared, Bool.and_eq_true, and_assoc] at fact
         have binding := List.all_eq_true.mp fact.2.2.2.1 trigger member
-        change (match program.operations.filter (fun operation => operation.id == declaration.triggerOperationId) with
-          | [.triggerCompensation _ _ _ _ _] => _ | _ => false) = true at binding
-        split at binding
-        · simp only [Bool.and_eq_true, and_assoc] at binding
-          have ownerId : trigger.owner.definitionScopeId = declaration.definitionScopeId := by
-            simpa only [beq_iff_eq] using binding.2.2.2.2.2.1
-          exact cancelScopeSubtree_child_root_definition_outside program state expected hosting root definition
-            position running rootMember child definitionMember parentless trigger.owner (ownerId.trans definitionId.symm)
-        · contradiction
+        obtain ⟨id, origin, scope, input, output, selected⟩ :=
+          root_compensation_trigger_selected program domain state declaration trigger binding
+        simp only [triggerMatchesDeclaration, selected, Bool.and_eq_true, and_assoc] at binding
+        have ownerId : trigger.owner.definitionScopeId = declaration.definitionScopeId := by
+          simpa only [beq_iff_eq] using binding.2.2.2.2.2.1
+        exact cancelScopeSubtree_child_root_definition_outside program state expected hosting root definition
+          position running rootMember child definitionMember parentless trigger.owner (ownerId.trans definitionId.symm)
   have triggers : (cancelScopeSubtree state root.id disposition).compensationTriggers = state.compensationTriggers := by
     apply List.filter_eq_self.mpr
     intro trigger member
@@ -429,14 +467,15 @@ theorem cancelScopeSubtree_child_compensation_fields (program : Program) (state 
   exact ⟨triggers, waits⟩
 
 theorem cancelScopeSubtree_child_compensation_execution (program : Program) (state : RuntimeState)
+    (domain : RootCompensationExecutionDomain program)
     (expected hosting : SemanticId) (root : RuntimeScopeOccurrence) (disposition : SelectedScopeDisposition)
     (position : runtimePositionValid program expected state = true) (running : state.control = .running hosting)
     (rootMember : root ∈ state.scopeOccurrences) (child : root.parent ≠ none)
     (valid : compensationExecutionStateValid program state = true) :
     compensationExecutionStateValid program (cancelScopeSubtree state root.id disposition) = true := by
-  obtain ⟨triggers, waits⟩ := cancelScopeSubtree_child_compensation_fields program state expected hosting root disposition
+  obtain ⟨triggers, waits⟩ := cancelScopeSubtree_child_compensation_fields program state domain expected hosting root disposition
     position running rootMember child valid
-  exact compensation_execution_running_retained_frame program state _ hosting running rfl triggers waits
+  exact compensation_execution_running_retained_frame program state _ domain hosting running rfl triggers waits
     (fun owner => congrArg List.length (cancelScopeSubtree_child_parentless_census program state expected hosting
       root disposition position running rootMember child owner))
     (fun _ member => (List.mem_filter.mp member).1)

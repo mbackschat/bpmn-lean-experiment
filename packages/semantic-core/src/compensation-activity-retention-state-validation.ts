@@ -15,6 +15,7 @@ import {
   type SemanticProcessProgram,
 } from "./semantic-process-contract.js";
 import { SemanticProfileId } from "./semantic-profile-catalog.js";
+import { compensationExecutionMatchesProgram } from "./compensation-trigger-handler-program-admission.js";
 import {
   ControlStateKind,
   sameScopeOccurrence,
@@ -94,11 +95,15 @@ export function compensationRetentionProgramDefects(
   if (declaration === undefined) return [];
   const defects: CompensationRetentionProgramDefect[] = [];
   const root = program.definitionScopes.filter(({ parentScopeId }) => parentScopeId === null);
+  const childDeclaration = root[0]?.id !== declaration.definitionScopeId;
   if (
     (program.compensationExecution === undefined &&
       program.definitionScopes.length !== 1) ||
     root.length !== 1 ||
-    root[0]?.id !== declaration.definitionScopeId ||
+    (childDeclaration && (
+      program.compensationExecution === undefined ||
+      !compensationExecutionMatchesProgram(program)
+    )) ||
     root[0]?.originElementId !== program.processId
   ) {
     defects.push(CompensationRetentionProgramDefect.InvalidRootScope);
@@ -165,21 +170,52 @@ export function compensationRetentionStateDefects(
       : [CompensationRetentionStateDefect.RegisterCardinalityMismatch];
   }
   const root = state.scopeOccurrences.filter(({ parent }) => parent === null);
+  const declarationScope = program.definitionScopes.find(
+    ({ id }) => id === declaration.definitionScopeId,
+  );
+  const childDeclaration = declarationScope !== undefined &&
+    declarationScope.parentScopeId !== null;
+  const owners = childDeclaration
+    ? state.scopeOccurrences.filter(({ id }) =>
+        id.definitionScopeId === declaration.definitionScopeId
+      )
+    : root;
+  if (childDeclaration && owners.length === 0 && retentions.length === 0) {
+    return root.length === 1
+      ? []
+      : [CompensationRetentionStateDefect.RegisterCardinalityMismatch];
+  }
   const retention = retentions[0];
-  if (retentions.length !== 1 || root.length !== 1 || retention === undefined) {
+  if (retentions.length !== 1 || root.length !== 1 || owners.length !== 1 || retention === undefined) {
     return [CompensationRetentionStateDefect.RegisterCardinalityMismatch];
   }
 
   const defects: CompensationRetentionStateDefect[] = [];
   if (
     root[0] === undefined ||
-    !sameScopeOccurrence(retention.owner, root[0].id) ||
+    owners[0] === undefined ||
+    !sameScopeOccurrence(retention.owner, owners[0].id) ||
     retention.owner.definitionScopeId !== declaration.definitionScopeId ||
-    retention.owner.activation !== 1
+    retention.owner.activation !== 1 ||
+    (childDeclaration && (
+      owners[0].parent === null ||
+      !sameScopeOccurrence(owners[0].parent, root[0].id) ||
+      root[0].id.definitionScopeId !== declarationScope.parentScopeId ||
+      root[0].id.activation !== 1 ||
+      retention.owner.processInstanceId !== state.control.instanceId ||
+      retention.owner.processInstanceId !== root[0].id.processInstanceId
+    ))
   ) {
     defects.push(CompensationRetentionStateDefect.RegisterOwnerMismatch);
   }
-  if (!validChronology(retention.nextCompletionOrdinal, retention.records)) {
+  if (
+    !validChronology(retention.nextCompletionOrdinal, retention.records) ||
+    // TXC-CANCEL-01 consumes this single-subject register before its handler runs.
+    (childDeclaration && retention.records.length !== 0 &&
+      state.compensationTriggers?.some((trigger) =>
+        trigger.lifecycle === "active" && sameScopeOccurrence(trigger.owner, retention.owner)
+      ))
+  ) {
     defects.push(CompensationRetentionStateDefect.InvalidChronology);
   }
   if (retention.records.some((record, index) =>

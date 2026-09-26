@@ -56,6 +56,7 @@ def semanticOperationInternalFamily : SemanticOperation → InternalOperationFam
   | .terminateScope _ _ _ _ => .scopeReturnCompletionAndInterruption
   | .completeParallelMultiInstanceUserTask _ _ _ _ _ => .externallyAddressedCompletion
   | .triggerCompensation _ _ _ _ _ => .compensationTriggerAndFrontierActivation
+  | .cancelTransaction _ _ _ _ _ _ => .compensationTriggerAndFrontierActivation
 
 inductive InternalRuntimeStateAtomDomain where
   | runtimeControl

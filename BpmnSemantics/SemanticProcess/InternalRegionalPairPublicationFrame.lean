@@ -273,6 +273,7 @@ theorem prepareInternalRegional_after_independent_regional (program : Program) (
   have fields := regional_pair_control_frame program before after hosting leftOperation rightOperation left right
     valid running leftFound rightFound independent applied
   exact prepareInternalRegional_of_components program after rightOperation right.selection right.region
-    right.footprint right.publicationTemplate snapshots declared (by rwa [fields.2.1]) closed region footprint publication
+    right.footprint right.publicationTemplate
+    (prepareInternalRegional_rootCompensationDomain program before _ right rightFound) snapshots declared (by rwa [fields.2.1]) closed region footprint publication
 
 end BpmnSemantics.SemanticProcess.InternalCommutation

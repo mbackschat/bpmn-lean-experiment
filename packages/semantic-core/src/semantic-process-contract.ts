@@ -88,6 +88,7 @@ export enum SemanticOperationKind {
   AwaitEventRace = "awaitEventRace",
   ThrowError = "throwError",
   TriggerCompensation = "triggerCompensation",
+  CancelTransaction = "cancelTransaction",
   TerminateScope = "terminateScope",
   ReachNoneEnd = "reachNoneEnd",
   CompleteScope = "completeScope",
@@ -553,6 +554,15 @@ export type TriggerCompensationOperation = OperationBase &
     output: string;
   }>;
 
+export type CancelTransactionOperation = OperationBase &
+  DeepReadonly<{
+    kind: SemanticOperationKind.CancelTransaction;
+    definitionScopeId: string;
+    input: string;
+    output: string;
+    boundaryEventElementId: string;
+  }>;
+
 export type SemanticOperation =
   | (OperationBase &
       DeepReadonly<{
@@ -660,6 +670,7 @@ export type SemanticOperation =
         handler: InterruptingErrorHandler;
       }>)
   | TriggerCompensationOperation
+  | CancelTransactionOperation
   | TerminateScopeOperation
   | (OperationBase &
       DeepReadonly<{

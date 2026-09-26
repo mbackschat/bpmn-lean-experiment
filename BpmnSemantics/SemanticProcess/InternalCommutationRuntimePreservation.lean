@@ -1,4 +1,5 @@
 import BpmnSemantics.SemanticProcess.InternalCommutationActivityOwnership
+import BpmnSemantics.SemanticProcess.TransactionCompensationArmingPreservation
 
 /-! # Internal commutation runtime preservation
 
@@ -696,36 +697,29 @@ theorem prepared_arm_preserves_runtime (program : Program) (state : RuntimeState
   obtain ⟨runningInstanceId, running⟩ := liveRunning.2
   have executionAfter : compensationExecutionStateValid program
       (applyInternalArmingPatch state patch) = true := by
-    cases writeEq : patch.write with
-    | userTask inserted | message inserted | timer inserted =>
-        rw [compensationExecutionStateValid_running_frame program state
-          (applyInternalArmingPatch state patch) runningInstanceId running
-          (by simp [applyInternalArmingPatch, writeEq])
-          (by simp [applyInternalArmingPatch, writeEq])
-          (by simp [applyInternalArmingPatch, writeEq])
-          (by simp [applyInternalArmingPatch, writeEq])
-          (by simp [applyInternalArmingPatch, writeEq])
-          (by simp [applyInternalArmingPatch, writeEq])]
-        exact executionValid
-    | effect inserted bindings =>
-        have declared : declaredByExactlyOneOwnedOperation program
-            (effectWaitDeclarers program inserted.elementId) inserted.owner = true := by
-          simpa [writeEq] using declaredAfter
-        have disjoint : ∀ wait ∈ state.compensationHandlerEffectWaits,
-            inserted.elementId.value ≠ wait.id.elementId.value :=
-          declared_effect_compensation_disjoint program state inserted.elementId inserted.owner
-            declared executionValid
-        have incidentDisjoint := incident_compensation_disjoint program state expectedInstanceId
-          runningInstanceId positionBefore running incidents declarations executionValid
-        rw [compensationExecutionStateValid_running_insertEffect_frame program state
-          (applyInternalArmingPatch state patch) runningInstanceId inserted running
-          (by simp [applyInternalArmingPatch, writeEq])
-          (by simp [applyInternalArmingPatch, writeEq])
-          (by simp [applyInternalArmingPatch, writeEq])
-          (by simp [applyInternalArmingPatch, writeEq])
-          (by simp [applyInternalArmingPatch, writeEq])
-          (by simp [applyInternalArmingPatch, writeEq]) disjoint incidentDisjoint]
-        exact executionValid
+    have input : ({ placeId := patch.input, owner := patch.owner } : ControlToken) ∈ state.tokens := by
+      have selected := prepared_owner_lookup program state operation patch prepared
+      have member : patch.owner ∈ tokenOwners state patch.input := by
+        unfold onlyTokenOwner? at selected
+        split at selected <;> simp_all
+      obtain ⟨token, filtered, ownerEq⟩ := List.mem_map.mp member
+      obtain ⟨present, placeEq⟩ := List.mem_filter.mp filtered
+      have same : token = { placeId := patch.input, owner := patch.owner } := by
+        cases token
+        simp_all
+      exact same ▸ present
+    apply compensationExecutionStateValid_arming_preserved program state patch runningInstanceId
+      running executionValid input writeOwner
+    · intro wait writeEq
+      have next := prepared_arm_activation_next program state operation patch prepared
+      simp only [writeEq] at next
+      omega
+    · intro inserted bindings writeEq
+      have declared : declaredByExactlyOneOwnedOperation program
+          (effectWaitDeclarers program inserted.elementId) inserted.owner = true := by
+        simpa [writeEq] using declaredAfter
+      exact declared_effect_compensation_disjoint program state inserted.elementId inserted.owner
+        declared executionValid
   have terminalAfter :
       (match (applyInternalArmingPatch state patch).control with
        | .notStarted => notStartedStateEmpty (applyInternalArmingPatch state patch)

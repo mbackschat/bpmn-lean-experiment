@@ -73,13 +73,14 @@ def internalScopeCreationTokensAvailable (state : RuntimeState)
 def internalScopeCreationPredecessorChecks (program : Program) (state : RuntimeState)
     (operation : SemanticOperation) (selected : InternalScopeCreationSelection)
     (origin : BpmnElementOrigin) (definition : DefinitionScope) : Bool :=
-  internalScopeCreationDefinitionsExact program &&
+  internalScopeCreationRetentionUnchanged program operation &&
+    (internalScopeCreationDefinitionsExact program &&
     internalScopeCreationDefinitionMatches operation selected.owner definition &&
     selected.owner.activation > 0 && SemanticProcessJson.isSafeWireNat selected.owner.activation &&
     selected.owner.processInstanceId.value ≠ "" && origin.elementId.value ≠ "" &&
     SemanticProcessJson.isSafeWireNat state.logicalTimeMs &&
     internalScopeCreationCounterSafe state selected &&
-    internalScopeCreationTokensAvailable state selected
+    internalScopeCreationTokensAvailable state selected)
 
 def internalScopeCreationStart? (program : Program)
     (selected : InternalScopeCreationSelection) : Option UnnumberedFlowNodeOccurrenceStart :=
@@ -200,8 +201,9 @@ theorem internalScopeCreationPredecessorChecks_facts (program : Program) (state 
       SemanticProcessJson.isSafeWireNat state.logicalTimeMs = true ∧
       internalScopeCreationCounterSafe state selected = true ∧
       internalScopeCreationTokensAvailable state selected = true := by
-  simpa only [internalScopeCreationPredecessorChecks, Bool.and_eq_true,
-    decide_eq_true_eq, and_assoc] using checked
+  simp only [internalScopeCreationPredecessorChecks, Bool.and_eq_true,
+    decide_eq_true_eq, and_assoc] at checked
+  exact checked.2
 
 theorem internalScopeCreationDefinitionsExact_facts (program : Program)
     (definition : DefinitionScope)
@@ -264,15 +266,16 @@ theorem prepareInternalScopeCreation_operation (program : Program) (state : Runt
   have exactOperation := selectInternalScopeCreation_operation state operation selected selection
   exact ⟨exactOperation, exactOperation⟩
 
-/-- The predecessor check discharges the snapshot exclusion required by retained-patch refinement. -/
+/-- Predecessor checks exclude both snapshot creation and the Transaction's child-register write. -/
 theorem prepareInternalScopeCreation_refines (program : Program) (state : RuntimeState)
     (operation : SemanticOperation) (prepared : PreparedInternalScopeCreation)
     (found : prepareInternalScopeCreation? program state operation = some prepared) :
     fire? program operation state = some (prepared.selection.apply state) := by
   obtain ⟨selected, instanceId, ownerRecord, origin, definition, start, delta,
-    selection, _, snapshots, _, _, _, _, _, _, _, rfl⟩ :=
+    selection, _, snapshots, _, _, _, _, checks, _, _, rfl⟩ :=
       prepareInternalScopeCreation_facts program state operation prepared found
-  exact selectInternalScopeCreation_refines program state operation selected snapshots selection
+  exact selectInternalScopeCreation_refines program state operation selected snapshots
+    (Bool.and_eq_true_iff.mp checks).1 selection
 
 theorem applyPreparedInternalScopeCreation_of_preparation (program : Program) (state : RuntimeState)
     (operation : SemanticOperation) (prepared : PreparedInternalScopeCreation)
@@ -305,6 +308,20 @@ theorem prepareInternalScopeCreation_snapshots_refused (program : Program) (stat
       obtain ⟨_, _, _, _, _, _, _, _, _, absent, _⟩ :=
         prepareInternalScopeCreation_facts program state operation prepared found
       exact False.elim (snapshots absent)
+
+/-- TXC-RETAIN-01 needs an atomic register write that the ordinary retained scope patch lacks. -/
+theorem prepareInternalScopeCreation_child_retention_refused
+    (program : Program) (state : RuntimeState) (id : OperationId) (origin : BpmnElementOrigin)
+    (input entry : ControlPlaceId) (scope : DefinitionScopeId)
+    (retained : program.compensationActivityRetention.map (·.definitionScopeId) = some scope) :
+    prepareInternalScopeCreation? program state (.enterScope id origin input entry scope) = none := by
+  cases found : prepareInternalScopeCreation? program state (.enterScope id origin input entry scope) with
+  | none => rfl
+  | some prepared =>
+      obtain ⟨selected, _, _, selectedOrigin, definition, _, _, _, _, _, _, _, _, _, checks, _⟩ :=
+        prepareInternalScopeCreation_facts program state _ prepared found
+      simp [internalScopeCreationPredecessorChecks, internalScopeCreationRetentionUnchanged,
+        retained] at checks
 
 /-- A mismatching parent or origin does not hide a second declaration with the selected identity. -/
 theorem prepareInternalScopeCreation_definition_alias_refused (program : Program)

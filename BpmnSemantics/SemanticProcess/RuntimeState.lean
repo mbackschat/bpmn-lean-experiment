@@ -485,7 +485,10 @@ def runningProgramStartState? (program : Program) (instanceId : SemanticId)
       compensationActivityRetentions :=
         match program.compensationActivityRetention with
         | none => []
-        | some _ => [{ owner, nextCompletionOrdinal := 1, records := [] }] }
+        | some declaration =>
+            if declaration.definitionScopeId == root.id then
+              [{ owner, nextCompletionOrdinal := 1, records := [] }]
+            else [] }
 
 def tokenMultiplicity (state : RuntimeState) (place : ControlPlaceId) : Nat :=
   (state.tokens.filter fun token => decide (token.placeId = place)).length

@@ -2447,6 +2447,42 @@
         }
       }
     },
+    "cancelTransaction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "origin",
+        "definitionScopeId",
+        "input",
+        "output",
+        "boundaryEventElementId"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "kind": {
+          "const": "cancelTransaction"
+        },
+        "origin": {
+          "$ref": "#/$defs/bpmnElementOrigin"
+        },
+        "definitionScopeId": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "input": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "output": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "boundaryEventElementId": {
+          "$ref": "#/$defs/nonemptyString"
+        }
+      }
+    },
     "operation": {
       "oneOf": [
         {
@@ -2556,6 +2592,9 @@
         },
         {
           "$ref": "#/$defs/triggerCompensation"
+        },
+        {
+          "$ref": "#/$defs/cancelTransaction"
         }
       ]
     },

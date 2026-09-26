@@ -62,7 +62,9 @@ export function deriveInternalRegionalPreparation(
   state: RuntimeState,
   operation: InternalRegionalOperation,
 ): PreparedInternalRegionalTransition | null {
+  // TXC's approved frontier uses singleton regional completion; the regional batch laws retain root Compensation ownership.
   if (program.compensationEventSubProcessSnapshots !== undefined ||
+      program.operations.some(({ kind }) => kind === SemanticOperationKind.CancelTransaction) ||
       program.operations.filter(({ id }) => id === operation.id).length !== 1 ||
       !Number.isSafeInteger(state.logicalTimeMs) || state.logicalTimeMs < 0) return null;
   const selection = selectRegionalTransition(program, state, operation);

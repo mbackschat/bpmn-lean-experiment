@@ -307,7 +307,8 @@ theorem prepareInternalRegional_after_independent_arming (program : Program) (st
       some regional.region := by
     simpa only [deriveInternalOccurrenceRegion?, graph, fields.2.2.1, members] using derived
   have result := prepareInternalRegional_of_components program (arm.apply state) operation
-    regional.selection regional.region regional.footprint regional.publicationTemplate snapshots declared
+    regional.selection regional.region regional.footprint regional.publicationTemplate
+    (prepareInternalRegional_rootCompensationDomain program state _ regional regionalFound) snapshots declared
     (by simpa only [fields.2.1] using time) selectionFrame regionFrame dependencies published
   cases regional
   exact result

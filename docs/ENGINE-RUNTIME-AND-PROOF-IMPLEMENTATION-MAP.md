@@ -62,6 +62,8 @@ The registered profile lowers travel cancellation. Both implementations derive i
 
 Product 1 rejects malformed and over-cap starts as semantic-process unsupported, admits only the exact valid draft-profile start into the dedicated Compensation scheduler, and preserves `compensationSchedulerUnavailable` for every trigger-bearing topology near-miss before Workflow creation. Lean proves the bounded trigger, frontier, completion, failure, cancellation, stale-result, retained-tombstone, zero-subject, capacity, start-admission, soundness, and trace/replay account.
 
+Transaction semantics: [`implementation-status-owner:ENGINE-SEMANTIC-FAMILY`](ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md#transaction-cancellation).
+
 ## Implemented
 
 ### Runtime scoped data

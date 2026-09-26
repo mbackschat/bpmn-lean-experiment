@@ -134,7 +134,7 @@ private def nodeCardinalities (nodes : List CheckedNode) :
         { counts with terminateEnds := counts.terminateEnds + 1 }
     | .noneEndEvent .. => { counts with ends := counts.ends + 1 }
 
-private def addOperationCardinality (counts : ShapeCardinalities)
+def addOperationCardinality (counts : ShapeCardinalities)
     (operation : SemanticOperation) : ShapeCardinalities :=
   match operation with
     | .initiate .. => { counts with initiates := counts.initiates + 1 }
@@ -194,7 +194,7 @@ private def addOperationCardinality (counts : ShapeCardinalities)
         { counts with scopeTerminations := counts.scopeTerminations + 1 }
     | .completeScope .. =>
         { counts with scopeCompletions := counts.scopeCompletions + 1 }
-    | .triggerCompensation .. =>
+    | .triggerCompensation .. | .cancelTransaction .. =>
         { counts with compensationTriggers := counts.compensationTriggers + 1 }
 
 def operationCardinalities (operations : List SemanticOperation) :

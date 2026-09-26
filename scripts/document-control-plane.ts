@@ -191,10 +191,17 @@ const settledReviewVerdicts = new Set(["approve", "approve-with-required-edits",
 const pendingReviewWords = ["outstanding", "pending", "awaiting", "unreviewed"];
 
 function restatesPendingReview(resume: string, word: string): boolean {
-  if (word === "unreviewed") return /(?<![\w-])unreviewed(?![\w-])/iu.test(resume);
   const review = "(?:review|audit)(?:\\s+(?:round|stage|cycle))?";
   const modifiers = "(?:(?:the|required|independent|cold|warm|proposal|checkpoint|closure|correction|second|final)\\s+)*";
   const state = "(?:\\s+(?:is|are|remains?|still|currently))*\\s*:?\\s+";
+  if (word === "unreviewed") {
+    const subject = "(?:proposal|specification|implementation|checkpoint|closure|review|audit)";
+    // The regression fixtures distinguish review-state claims from guards on unreviewed inputs.
+    return new RegExp(
+      `(?<![\\w-])(?:${subject}${state}unreviewed|unreviewed\\s+${modifiers}${subject})(?![\\w-])`,
+      "iu",
+    ).test(resume);
+  }
   // A whole-resume keyword match binds unrelated Timer or verification status to every receipt.
   return new RegExp(
     `(?<![\\w-])(?:${review}${state}${word}|${word}\\s+${modifiers}${review})(?![\\w-])`,

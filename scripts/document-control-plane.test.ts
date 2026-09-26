@@ -164,6 +164,8 @@ test("binds pending state to review work rather than unrelated verification or r
     "The review is approved and verification remains outstanding.",
     "Awaiting package downloads before the cold review.",
     "The pending invoice-review model needs a retained fixture.",
+    "Stop if a correction weakens guarantees or broadens an unreviewed profile.",
+    "Do not publish unreviewed evidence. The proposal review receipt owns approval.",
   ]) assert.deepEqual(planReviewRestatementFindings(resume, settled), [], resume);
   for (const resume of [
     "The second audit round is outstanding.",
@@ -172,6 +174,8 @@ test("binds pending state to review work rather than unrelated verification or r
     "A pending independent audit blocks closure.",
     "Review: pending.",
     "The proposal remains unreviewed.",
+    "An unreviewed proposal blocks implementation.",
+    "The implementation is currently unreviewed.",
   ]) assert.equal(planReviewRestatementFindings(resume, settled).length, 1, resume);
 });
 

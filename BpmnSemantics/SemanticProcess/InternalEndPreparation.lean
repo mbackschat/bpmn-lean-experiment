@@ -182,8 +182,15 @@ theorem InternalEndSelection.preserves_runtimeStateWellFormed (program : Program
     (valid : runtimeStateWellFormed program instanceId state = true)
     (live : exactLiveOccurrence state selected.owner = true) :
     runtimeStateWellFormed program instanceId (selected.apply state) = true := by
+  have separated : selected.tokens.SeparatesActiveCancelOwners program state := by
+    unfold TokenPatch.SeparatesActiveCancelOwners
+    cases declared : program.compensationExecution with
+    | none => trivial
+    | some declaration =>
+        simp only
+        split <;> simp [InternalEndSelection.tokens]
   have tokenValid := selected.tokens.preserves_runtimeStateWellFormed program instanceId state
-    valid live (by simp [InternalEndSelection.tokens]) (by simp [InternalEndSelection.tokens])
+    valid separated live (by simp [InternalEndSelection.tokens]) (by simp [InternalEndSelection.tokens])
   exact tokenValid
 
 theorem prepareInternalEnd_preserves_runtimeStateWellFormed (program : Program)

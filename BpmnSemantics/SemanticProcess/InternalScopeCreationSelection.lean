@@ -153,11 +153,18 @@ theorem selectInternalScopeCreation_running (state : RuntimeState)
   cases control : state.control <;> simp [control] at running
   exact ⟨_, rfl⟩
 
-/-- Retained patches agree with the existing evaluator under the approved snapshot exclusion;
+/-- TXC-RETAIN-01 adds a register write outside the ordinary retained scope patch. -/
+def internalScopeCreationRetentionUnchanged (program : Program) : SemanticOperation → Bool
+  | .enterScope _ _ _ _ scope =>
+      decide (program.compensationActivityRetention.map (·.definitionScopeId) ≠ some scope)
+  | _ => true
+
+/-- Retained patches agree with the evaluator when neither snapshot nor child retention is created;
 this is not a footprint, validity-preservation, or commutation claim. -/
 theorem selectInternalScopeCreation_refines (program : Program) (state : RuntimeState)
     (operation : SemanticOperation) (selected : InternalScopeCreationSelection)
     (snapshotAbsent : program.compensationEventSubProcessSnapshots = none)
+    (retentionUnchanged : internalScopeCreationRetentionUnchanged program operation = true)
     (found : selectInternalScopeCreation? state operation = some selected) :
     fire? program operation state = some (selected.apply state) := by
   obtain ⟨hosting, running⟩ := selectInternalScopeCreation_running state operation selected found
@@ -172,7 +179,10 @@ theorem selectInternalScopeCreation_refines (program : Program) (state : Runtime
       · contradiction
       · next fresh =>
           cases found
-          change enterScopeState? state input entry definition = _
+          change enterScopeWithCompensationRetention? program state input entry definition = _
+          rw [enterScopeWithCompensationRetention_unselected program state input entry definition
+            (by simpa only [internalScopeCreationRetentionUnchanged, decide_eq_true_eq]
+              using retentionUnchanged)]
           simp only [enterScopeState?, owned, running, bind, Option.bind, fresh, Bool.false_eq_true,
             ↓reduceIte,
             InternalScopeCreationSelection.apply]

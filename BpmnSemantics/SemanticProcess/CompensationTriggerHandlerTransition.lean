@@ -201,7 +201,8 @@ def constructCompensationTriggerFrontier (program : Program) (state : RuntimeSta
     (operation : SemanticOperation) (owner : ScopeOccurrenceId)
     (selected : List SelectedCompensationSubject) : Option CompensationFrontierActivation :=
   match program.compensationExecution, operation with
-  | some declaration, .triggerCompensation operationId _ _ _ output =>
+  | some declaration, .triggerCompensation operationId _ _ _ output
+  | some declaration, .cancelTransaction operationId _ _ _ output _ =>
       if declaration.triggerOperationId != operationId then none
       else
         let handlers := selectedHandlers state owner selected

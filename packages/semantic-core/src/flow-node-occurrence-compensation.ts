@@ -1,6 +1,7 @@
 import { EffectExecutionResultKind, type CompleteEffectStimulus, type OccurrenceId } from "./contract.js";
 import { compensationExecutionStateDefects } from "./compensation-trigger-handler-runtime-state-validation.js";
-import type { TriggerCompensationOperation } from "./semantic-process-contract.js";
+import { SemanticOperationKind, type TriggerCompensationOperation } from "./semantic-process-contract.js";
+import { projectTransactionJoinLifecycle } from "./flow-node-occurrence-transaction-cancellation.js";
 import type { SemanticProcessProgram } from "./semantic-process-contract.js";
 import { sameOccurrence, type RuntimeState, type ScopeOccurrenceId } from "./semantic-process-state.js";
 import type {
@@ -42,11 +43,14 @@ export function projectOpenCompensationOccurrences(
   const declaration = program.compensationExecution;
   if (declaration === undefined) return [];
   const operation = program.operations.find(({ id }) => id === declaration.triggerOperationId);
-  if (operation?.kind !== "triggerCompensation") return null;
+  if (operation?.kind !== SemanticOperationKind.TriggerCompensation &&
+      operation?.kind !== SemanticOperationKind.CancelTransaction) return null;
   const starts: UnnumberedFlowNodeOccurrenceStart[] = [];
   for (const trigger of state.compensationTriggers ?? []) {
     if (trigger.lifecycle !== "active") continue;
-    starts.push(triggerStart(program, operation, trigger.id, trigger.owner));
+    if (operation.kind === SemanticOperationKind.TriggerCompensation) {
+      starts.push(triggerStart(program, operation, trigger.id, trigger.owner));
+    }
     for (const handler of trigger.handlers) {
       if (handler.lifecycle !== "compensating") continue;
       starts.push(handlerStart(program, handler.id, handler.handlerElementId, trigger.owner));
@@ -120,6 +124,13 @@ export function projectCompensationCompletionLifecycle(
   );
   if (afterTrigger === undefined) return null;
   const success = stimulus.result.kind === EffectExecutionResultKind.Success;
+  const operation = program.operations.find(({ id }) => id === trigger.id.elementId);
+  if (operation?.kind === SemanticOperationKind.CancelTransaction) {
+    return projectTransactionJoinLifecycle(
+      program, before, operation, trigger.owner, success,
+      handlerTerminals(handler, success ? CompletedTerminalKind : CancelledTerminalKind),
+    );
+  }
   const terminal = success ? CompletedTerminalKind : CancelledTerminalKind;
   const ended = success
     ? handlerTerminals(handler, terminal)

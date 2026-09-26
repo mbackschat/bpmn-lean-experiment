@@ -66,6 +66,7 @@ export function semanticOperationInternalFamily(
     case SemanticOperationKind.CompleteParallelMultiInstanceUserTask:
       return InternalOperationFamily.ExternallyAddressedCompletion;
     case SemanticOperationKind.TriggerCompensation:
+    case SemanticOperationKind.CancelTransaction:
       return InternalOperationFamily.CompensationTriggerAndFrontierActivation;
     default:
       return assertNever(operation);

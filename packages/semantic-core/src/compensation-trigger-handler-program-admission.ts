@@ -6,6 +6,7 @@ import type {
 } from "./compensation-trigger-handler-contract.js";
 import {
   SemanticOperationKind,
+  SemanticOriginKind,
   type SemanticProcessProgram,
 } from "./semantic-process-contract.js";
 import { EffectOperation, EffectProtocol } from "./semantic-value-contract.js";
@@ -66,14 +67,41 @@ export function isWellFormedTriggerCompensationOperation(
     value.input !== value.output;
 }
 
-/** Resolves the declaration against the exact Program-owned roots, operations, and source records. */
+export function isWellFormedCancelTransactionOperation(
+  value: Record<string, unknown>,
+  placeIds: ReadonlySet<string>,
+  scopeOrigins: ReadonlyMap<string, string>,
+): boolean {
+  return hasOnlyKeys(value, [
+    "id", "kind", "origin", "definitionScopeId", "input", "output",
+    "boundaryEventElementId",
+  ]) &&
+    isNonEmptyWireString(value.id) &&
+    value.kind === SemanticOperationKind.CancelTransaction &&
+    isRecord(value.origin) &&
+    hasOnlyKeys(value.origin, ["kind", "elementId"]) &&
+    value.origin.kind === SemanticOriginKind.BpmnElement &&
+    isNonEmptyWireString(value.origin.elementId) &&
+    isNonEmptyWireString(value.definitionScopeId) &&
+    scopeOrigins.has(value.definitionScopeId) &&
+    isNonEmptyWireString(value.input) &&
+    placeIds.has(value.input) &&
+    isNonEmptyWireString(value.output) &&
+    placeIds.has(value.output) &&
+    value.input !== value.output &&
+    isNonEmptyWireString(value.boundaryEventElementId) &&
+    value.boundaryEventElementId !== value.origin.elementId;
+}
+
+/** Resolves the declaration against the exact Program-owned scopes, operations, and source records. */
 export function compensationExecutionMatchesProgram(
   program: SemanticProcessProgram,
 ): boolean {
   const declaration = program.compensationExecution;
   if (declaration === undefined) {
     return !program.operations.some(
-      ({ kind }) => kind === SemanticOperationKind.TriggerCompensation,
+      ({ kind }) => kind === SemanticOperationKind.TriggerCompensation ||
+        kind === SemanticOperationKind.CancelTransaction,
     );
   }
 
@@ -82,24 +110,68 @@ export function compensationExecutionMatchesProgram(
   );
   const root = roots[0];
   const triggers = program.operations.filter(
-    ({ kind }) => kind === SemanticOperationKind.TriggerCompensation,
+    ({ kind }) => kind === SemanticOperationKind.TriggerCompensation ||
+      kind === SemanticOperationKind.CancelTransaction,
   );
   const trigger = triggers[0];
   if (
     roots.length !== 1 ||
     root === undefined ||
-    root.id !== declaration.definitionScopeId ||
     root.originElementId !== program.processId ||
     triggers.length !== 1 ||
-    trigger?.kind !== SemanticOperationKind.TriggerCompensation ||
+    trigger === undefined ||
+    (trigger.kind !== SemanticOperationKind.TriggerCompensation &&
+      trigger.kind !== SemanticOperationKind.CancelTransaction) ||
     trigger.id !== declaration.triggerOperationId ||
-    trigger.definitionScopeId !== root.id ||
+    trigger.definitionScopeId !== declaration.definitionScopeId ||
     program.operationScopes.filter(
-      ({ operationId, scopeId }) =>
-        operationId === trigger.id && scopeId === root.id,
-    ).length !== 1
+      ({ operationId }) => operationId === trigger.id,
+    ).length !== 1 ||
+    !program.operationScopes.some(({ operationId, scopeId }) =>
+      operationId === trigger.id && scopeId === declaration.definitionScopeId
+    )
   ) {
     return false;
+  }
+
+  switch (trigger.kind) {
+    case SemanticOperationKind.TriggerCompensation:
+      if (root.id !== declaration.definitionScopeId) return false;
+      break;
+    case SemanticOperationKind.CancelTransaction: {
+      const child = program.definitionScopes.find(
+        ({ id }) => id === declaration.definitionScopeId,
+      );
+      const subject = declaration.subjects[0];
+      const retention = program.compensationActivityRetention;
+      if (
+        program.definitionScopes.length !== 2 ||
+        child?.parentScopeId !== root.id ||
+        retention?.definitionScopeId !== child.id ||
+        declaration.subjects.length !== 1 ||
+        subject?.kind !== "boundaryActivity" ||
+        subject.body.kind !== "singleEffect" ||
+        subject.body.input.kind !== "empty" ||
+        program.compensationEventSubProcessSnapshots !== undefined ||
+        declaration.dependencies.length !== 0
+      ) return false;
+      const operations = program.operations.filter((operation) =>
+        operation.origin.elementId === subject.subjectElementId
+      );
+      const operation = operations[0];
+      if (
+        operations.length !== 1 ||
+        operation?.kind !== SemanticOperationKind.AwaitUserTask ||
+        operation.task.elementId !== subject.subjectElementId ||
+        program.operationScopes.filter(
+          ({ operationId }) => operationId === operation.id,
+        ).length !== 1 ||
+        !program.operationScopes.some(({ operationId, scopeId }) =>
+          operationId === operation.id && scopeId === child.id
+        )
+      ) return false;
+      break;
+    }
   }
 
   const derived = declaration.subjects.map((subject) => ({

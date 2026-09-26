@@ -24,6 +24,7 @@ import {
 } from "./compensation-trigger-handler-runtime-state-validation.js";
 import type {
   SemanticProcessProgram,
+  CancelTransactionOperation,
   TriggerCompensationOperation,
 } from "./semantic-process-contract.js";
 import {
@@ -118,7 +119,7 @@ export function attemptCompensationTrigger(
     return refused(state, CompensationTriggerRefusalReason.ActiveTriggerExists);
   }
 
-  const selected = selectedSubjects(program, owner, state);
+  const selected = selectedCompensationSubjects(program, owner, state);
   if (selected === null) {
     return refused(state, CompensationTriggerRefusalReason.InvalidSources);
   }
@@ -249,7 +250,7 @@ export function activateCompensationFrontier(
 export function constructCompensationTriggerFrontier(
   program: SemanticProcessProgram,
   state: RuntimeState,
-  operation: TriggerCompensationOperation,
+  operation: TriggerCompensationOperation | CancelTransactionOperation,
   owner: ScopeOccurrenceId,
   selected: ReadonlyArray<SelectedCompensationSubject>,
 ): CompensationFrontierActivation | null {
@@ -299,7 +300,7 @@ export function executionFits(
       limits.maxCanonicalBytes;
 }
 
-function selectedSubjects(
+export function selectedCompensationSubjects(
   program: SemanticProcessProgram,
   owner: ScopeOccurrenceId,
   state: RuntimeState,

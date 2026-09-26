@@ -439,4 +439,26 @@ theorem applyStimulusWithCompensationSnapshots_closure_refusal_rejects_atomicall
   simp only
   rw [refused]
 
+/-- TXC-CANCEL-01's execution declaration selects the same atomic refusal path without requiring snapshots. -/
+theorem applyStimulusWithCompensationSnapshots_execution_refusal_rejects_atomically
+    (closureLimit : Nat) (program : Program) (state admittedState : RuntimeState)
+    (stimulus : Stimulus) (reason : InternalOperationRefusal)
+    (declaration : CompensationExecutionDeclaration)
+    (declared : program.compensationExecution = some declaration)
+    (admitted : admitStimulusWithCompensationSnapshots program state stimulus =
+      { outcome := .committed, state := admittedState })
+    (refused : (closeSupportedTracedWithCompensationSnapshots closureLimit program
+      (stimulusCommandId stimulus) 1 admittedState).refusal = some reason) :
+    applyStimulusWithCompensationSnapshots closureLimit program state stimulus =
+      { outcome := .rejected
+        state
+        internalStepBoundExceeded := false
+        ambiguousInternalChoice := false } := by
+  simp only [applyStimulusWithCompensationSnapshots, declared, Option.isSome_some,
+    Bool.or_true, if_true]
+  unfold evaluateStimulusWithCompensationSnapshots
+  rw [admitted]
+  simp only
+  rw [refused]
+
 end BpmnSemantics.SemanticProcess

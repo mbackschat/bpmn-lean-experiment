@@ -329,6 +329,7 @@ function classifyHostOperation(
     case SemanticOperationKind.CompleteParallelMultiInstanceUserTask:
       return HostOperationClass.Passive;
     case SemanticOperationKind.TriggerCompensation:
+    case SemanticOperationKind.CancelTransaction:
       return HostOperationClass.CompensationTrigger;
     default:
       return assertNever(kind);

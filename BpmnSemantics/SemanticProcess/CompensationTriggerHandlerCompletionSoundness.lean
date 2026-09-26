@@ -83,22 +83,27 @@ private theorem completeSuccess_sound (program : Program)
           simp [completeSuccess, completed, handlers, allEq, progressed, remainingWaits,
             activated, triggers, waits, capacityEq] at applied
       | none =>
-          let successor : RuntimeState :=
+          let progressedState : RuntimeState :=
             { before with
-              tokens := addToken before.tokens selected.trigger.output selected.trigger.owner
               compensationTriggers := triggers
               compensationHandlerEffectWaits := waits
               effectActivations := activated.effectActivations }
-          cases validEq : compensationTriggerHandlerStateValid program successor with
-          | false =>
+          cases routeEq : compensationCompletionRoute? program progressedState selected.trigger with
+          | none =>
               simp [completeSuccess, completed, handlers, allEq, progressed, remainingWaits,
-                activated, triggers, waits, capacityEq, successor, validEq] at applied
-          | true =>
-              simp [completeSuccess, completed, handlers, allEq, progressed, remainingWaits,
-                activated, triggers, waits, capacityEq, successor, validEq] at applied
-              cases applied
-              exact .successFinal declaration selected patch activated triggers waits successor
-                ready resultShape candidate capacityEq rfl validEq
+                activated, triggers, waits, capacityEq, progressedState, routeEq] at applied
+          | some successor =>
+              cases validEq : compensationTriggerHandlerStateValid program successor with
+              | false =>
+                  simp [completeSuccess, completed, handlers, allEq, progressed, remainingWaits,
+                    activated, triggers, waits, capacityEq, progressedState, routeEq, validEq] at applied
+              | true =>
+                  simp [completeSuccess, completed, handlers, allEq, progressed, remainingWaits,
+                    activated, triggers, waits, capacityEq, progressedState, routeEq, validEq] at applied
+                  cases applied
+                  exact .successFinal declaration selected patch activated triggers waits after
+                    ready resultShape candidate capacityEq
+                    (compensationCompletionRoute_sound program progressedState after selected.trigger routeEq) validEq
 
 private theorem completeSuccess_refusal_sound (program : Program)
     (declaration : CompensationExecutionDeclaration) (before : RuntimeState)
@@ -193,23 +198,33 @@ private theorem completeSuccess_refusal_sound (program : Program)
           exact .capacity declaration selected patch true activated triggers waits
             capacityReason ready resultShape candidate capacityEq
       | none =>
-          let successor : RuntimeState :=
+          let progressedState : RuntimeState :=
             { before with
-              tokens := addToken before.tokens selected.trigger.output selected.trigger.owner
               compensationTriggers := triggers
               compensationHandlerEffectWaits := waits
               effectActivations := activated.effectActivations }
-          cases validEq : compensationTriggerHandlerStateValid program successor with
-          | false =>
+          cases routeEq : compensationCompletionRoute? program progressedState selected.trigger with
+          | none =>
               simp [completeSuccess, completed, handlers, allEq, progressed, remainingWaits,
-                activated, triggers, waits, capacityEq, successor, validEq] at refused
+                activated, triggers, waits, capacityEq, progressedState, routeEq] at refused
               have reasonEq : reason = .invalidState := by simpa using refused.symm
               subst reason
-              exact .invalidSuccessor declaration selected patch true activated triggers waits
-                successor ready resultShape candidate capacityEq rfl validEq
-          | true =>
-              simp [completeSuccess, completed, handlers, allEq, progressed, remainingWaits,
-                activated, triggers, waits, capacityEq, successor, validEq] at refused
+              exact .invalidRouting declaration selected patch activated triggers waits
+                ready resultShape candidate capacityEq
+                (compensationCompletionRoute_none_refuses program progressedState selected.trigger routeEq)
+          | some successor =>
+              cases validEq : compensationTriggerHandlerStateValid program successor with
+              | false =>
+                  simp [completeSuccess, completed, handlers, allEq, progressed, remainingWaits,
+                    activated, triggers, waits, capacityEq, progressedState, routeEq, validEq] at refused
+                  have reasonEq : reason = .invalidState := by simpa using refused.symm
+                  subst reason
+                  exact .invalidSuccessor declaration selected patch true activated triggers waits
+                    successor ready resultShape candidate capacityEq
+                    (compensationCompletionRoute_sound program progressedState successor selected.trigger routeEq) validEq
+              | true =>
+                  simp [completeSuccess, completed, handlers, allEq, progressed, remainingWaits,
+                    activated, triggers, waits, capacityEq, progressedState, routeEq, validEq] at refused
 
 private theorem completeFailure_sound (program : Program)
     (declaration : CompensationExecutionDeclaration) (before : RuntimeState)

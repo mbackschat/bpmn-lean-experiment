@@ -167,6 +167,21 @@ function candidateProjectionReuseViolations(
 
 const evaluatorIndependentRelations = Object.freeze([
   Object.freeze({
+    path: "BpmnSemantics/SemanticProcess/TransactionCancellationSemantics.lean",
+    relation: "TransactionCancellationStep",
+    evaluator: "attemptTransactionCancellation",
+  }),
+  Object.freeze({
+    path: "BpmnSemantics/SemanticProcess/TransactionCancellation.lean",
+    relation: "TransactionCancellationJoin",
+    evaluator: "finishTransactionCancellation?",
+  }),
+  Object.freeze({
+    path: "BpmnSemantics/SemanticProcess/TransactionCancellation.lean",
+    relation: "CompensationCompletionRouting",
+    evaluator: "compensationCompletionRoute?",
+  }),
+  Object.freeze({
     path: "BpmnSemantics/SemanticProcess/CompensationTriggerHandlerFrontier.lean",
     relation: "CompensationFrontierStep",
     evaluator: "activateCompensationFrontier",
@@ -426,6 +441,21 @@ inductive CompensationFrontierRefusalStep : Prop where
   | refused : CompensationFrontierRefusalStep
 `;
   assert.deepEqual(leanSourceViolations(path, independent), []);
+});
+
+test("Transaction relations reject evaluator-defined cancellation and joining", () => {
+  for (const [file, relation, evaluator, sibling] of [
+    ["TransactionCancellationSemantics", "TransactionCancellationStep", "attemptTransactionCancellation", "TransactionCancellationReady"],
+    ["TransactionCancellation", "TransactionCancellationJoin", "finishTransactionCancellation?", "CompensationCompletionRouting"],
+    ["TransactionCancellation", "CompensationCompletionRouting", "compensationCompletionRoute?", "TransactionCancellationJoin"],
+  ]) {
+    const source = `/-! Transaction contract. -/\ninductive ${relation} : Prop where\n` +
+      `  | selected (evaluated : ${evaluator} = none) : ${relation}\n` +
+      `inductive ${sibling} : Prop where\n  | selected : ${sibling}\n`;
+    assert.equal(leanSourceViolations(`BpmnSemantics/SemanticProcess/${file}.lean`, source).length, 1);
+    assert.deepEqual(leanSourceViolations(`BpmnSemantics/SemanticProcess/${file}.lean`,
+      source.replace(`${evaluator} = none`, "True")), []);
+  }
 });
 
 test("Lean literals preserve delimiters, primes, and exact character tokens", () => {

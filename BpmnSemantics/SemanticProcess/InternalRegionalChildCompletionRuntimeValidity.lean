@@ -114,6 +114,7 @@ theorem preparedChildComplete_preserves_runtimeStateWellFormed (program : Progra
     (found : prepareInternalRegional? program before (.completeScope id origin definition (some output)) = some prepared) :
     ∃ after, applyPreparedInternalRegional? program before prepared = some after ∧
       runtimeStateWellFormed program hosting after = true := by
+  have domain := prepareInternalRegional_rootCompensationDomain program before _ prepared found
   have components := valid
   simp only [runtimeStateWellFormed, Bool.and_eq_true, and_assoc] at components
   obtain ⟨position, races, incidents, owners, waitIds, bounds, declarations, hidden, order,
@@ -203,9 +204,9 @@ theorem preparedChildComplete_preserves_runtimeStateWellFormed (program : Progra
     exact ⟨tokenOrder, aa, tasks, activations, msgs, orderedBy_filter regional_timerWaitBefore_compose _ _ ts, effects,
       ma, ta, ea, locals, branches, rs, calls, orderedBy_filter regional_activityOccurrenceBefore_compose _ _ acts,
       smi, pmi, orderedBy_filter (fun a b c => scopeOwnerBefore_compose a.id b.id c.id) _ _ ss, sa, ca, ra⟩
-  have nextRetention := completion_child_compensation_retention program before after hosting prepared.selection.root
+  have nextRetention := completion_child_compensation_retention program domain before after hosting prepared.selection.root
     running control member child scopes (by rw [frame]) retention
-  have nextExecution := completion_child_compensation_execution program before after hosting hosting prepared.selection.root
+  have nextExecution := completion_child_compensation_execution program domain before after hosting hosting prepared.selection.root
     position running control member child scopes (by rw [frame]) (by rw [frame])
     (by rw [frame]; exact List.Subset.refl _) (by rw [frame]; exact List.Subset.refl _) execution
   refine ⟨after, applied, ?_⟩

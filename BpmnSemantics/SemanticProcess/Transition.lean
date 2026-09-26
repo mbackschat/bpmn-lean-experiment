@@ -16,6 +16,7 @@ import BpmnSemantics.SemanticProcess.CallActivity
 import BpmnSemantics.SemanticProcess.CyclicControlFlow
 import BpmnSemantics.SemanticProcess.SimpleBooleanExpression
 import BpmnSemantics.SemanticProcess.ScopeCancellation
+import BpmnSemantics.SemanticProcess.TransactionCancellation
 import BpmnSemantics.SemanticProcess.SequentialMultiInstanceTransition
 import BpmnSemantics.SemanticProcess.ParallelMultiInstanceTransition
 import BpmnSemantics.SemanticProcess.MessageBoundedTask
@@ -163,7 +164,7 @@ inductive OperationStep (program : Program) :
   | enterScope (id origin input childEntry childScopeId)
       (before after : RuntimeState)
       (transition :
-        enterScopeState? before input childEntry childScopeId = some after) :
+        enterScopeWithCompensationRetention? program before input childEntry childScopeId = some after) :
       OperationStep program
         (.enterScope id origin input childEntry childScopeId) before after
   | enterBoundedScope (id origin input childEntry childScopeId boundaryTimer)
@@ -347,7 +348,7 @@ private def fireWithoutCompensationSnapshots? (program : Program)
   | .initiateMessage _ _ _ outputs => initiateMessageState? state outputs
   | .initiateTimer _ _ _ outputs => initiateTimerState? state outputs
   | .enterScope _ _ input childEntry childScopeId =>
-      enterScopeState? state input childEntry childScopeId
+      enterScopeWithCompensationRetention? program state input childEntry childScopeId
   | .enterBoundedScope _ origin input childEntry childScopeId boundaryTimer
   | .enterMonitoredScope _ origin input childEntry childScopeId boundaryTimer =>
       armBoundedScopeState? state origin input childEntry childScopeId boundaryTimer
@@ -410,7 +411,7 @@ private def fireWithoutCompensationSnapshots? (program : Program)
       terminateScopeState? program state id origin input scopeId
   | .completeScope _ _ scopeId parentOutput =>
       completeSelectedScope? program state scopeId parentOutput
-  | .triggerCompensation .. => none
+  | .triggerCompensation .. | .cancelTransaction .. => none
 
 /-- Dispatcher and constructor-selection check: `fire?` routes every operation kind to the state
 transformation its relation arm names, and the constructor match is exhaustive.
@@ -504,11 +505,18 @@ private theorem fireWithoutCompensationSnapshots_sound (program : Program)
     | exact .completeScope _ _ _ _ before after result
     | case triggerCompensation =>
         exact False.elim (by simp [fireWithoutCompensationSnapshots?] at result)
+    | case cancelTransaction =>
+        exact False.elim (by simp [fireWithoutCompensationSnapshots?] at result)
 
 /-- Evaluate one exact Program operation through the closed snapshot-aware attempt boundary. -/
 def attemptInternalOperation (program : Program) (operation : SemanticOperation)
     (state : RuntimeState) : InternalOperationAttempt :=
   match program.compensationExecution, operation with
+  | some _, .cancelTransaction .. =>
+      match attemptTransactionCancellation program operation state with
+      | .disabled _ => .disabled operation
+      | .applied successor => .applied { operation, successor }
+      | .refused reason => .refused operation (.compensationTrigger reason)
   | some _, .triggerCompensation .. =>
       match attemptCompensationTrigger program operation state with
       | .disabled _ => .disabled operation

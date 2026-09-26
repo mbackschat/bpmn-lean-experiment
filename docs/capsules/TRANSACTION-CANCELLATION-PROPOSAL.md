@@ -2,7 +2,7 @@
 
 ## Status
 
-Lifecycle: owner-approved
+Lifecycle: implementation-in-progress
 Review: approved-with-required-edits
 
 ## Question and bounded outcome
@@ -10,6 +10,10 @@ Review: approved-with-required-edits
 How does one admitted Transaction Sub-Process cancel its live work, compensate its completed eligible work, and release its Cancel Boundary Event only after compensation finishes?
 
 The selected RC outcome is complete from exact BPMN XML through checked source, Semantic Process IL, Lean, TypeScript, production Temporal hosting, paired E1/E2 publication, and public engine commands. This proposal extends scope ownership of the existing Compensation mechanism; it does not select another general scheduling-proof programme. The [RC plan](../PLAN.md#mue-release-candidate-critical-path) remains the scope authority. Proposal approval authorizes implementation; it changes no current admission and claims no executed Transaction capability.
+
+## Current implementation boundary
+
+[`implementation-status-owner:ENGINE-SEMANTIC-FAMILY`](../ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md#transaction-cancellation) owns the manual-Program implementation and its explicit missing source, scheduling and production-host evidence. The semantic checkpoint and closure reviews remain governed by the [review receipt](#independent-cold-review-receipt); proposal approval does not approve the implementation.
 
 ## Normative authority and interpretation boundary
 
@@ -157,22 +161,22 @@ New scope/cancellation helpers and evidence modules belong beside these owners. 
 
 ### Owners this implementation grows
 
-These measurements come from `what-binds` on 2026-09-25. The source review target is 800 nonblank lines; extraction is required only if the resulting owner would exceed its applicable bound. Recompute headroom when an owner changes; this table is not a permanent extraction instruction.
+These measurements were refreshed with the shared source-measure functions on 2026-09-26. The source review target is 800 nonblank lines; extraction is required only if the resulting owner would exceed its applicable bound. Recompute headroom when an owner changes; this table is not a permanent extraction instruction.
 
 | Owner | Remaining lines before review target |
 |---|---|
-| [Operation contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 156 |
-| [Retention](../../packages/semantic-core/src/compensation-activity-retention.ts) | 572 |
-| [Handler completion](../../packages/semantic-core/src/compensation-trigger-handler-completion.ts) | 594 |
+| [Operation contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 146 |
+| [Retention](../../packages/semantic-core/src/compensation-activity-retention.ts) | 545 |
+| [Handler completion](../../packages/semantic-core/src/compensation-trigger-handler-completion.ts) | 577 |
 | [Scope runtime](../../packages/semantic-core/src/semantic-process-scope-runtime.ts) | 553 |
 | [Region cancellation](../../packages/semantic-core/src/semantic-process-scope-cancellation.ts) | 574 |
-| [Lean retention](../../BpmnSemantics/SemanticProcess/CompensationActivityRetention.lean) | 468 |
-| [Lean completion](../../BpmnSemantics/SemanticProcess/CompensationTriggerHandlerCompletion.lean) | 335 |
-| [Retention validation](../../packages/semantic-core/src/compensation-activity-retention-state-validation.ts) | 476 |
-| [Host admission](../../packages/temporal-adapter/protocol/src/host-admission.ts) | 466 |
+| [Lean retention](../../BpmnSemantics/SemanticProcess/CompensationActivityRetention.lean) | 363 |
+| [Lean completion](../../BpmnSemantics/SemanticProcess/CompensationTriggerHandlerCompletion.lean) | 318 |
+| [Retention validation](../../packages/semantic-core/src/compensation-activity-retention-state-validation.ts) | 440 |
+| [Host admission](../../packages/temporal-adapter/protocol/src/host-admission.ts) | 465 |
 | [Source graph admission](../../packages/bpmn-source/src/checked-process-graph-admission.ts) | 420 |
 | [Node lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 129 |
-| [Lean retention declaration](../../BpmnSemantics/SemanticProcess/CompensationActivityRetentionDeclaration.lean) | 695 |
+| [Lean retention declaration](../../BpmnSemantics/SemanticProcess/CompensationActivityRetentionDeclaration.lean) | 643 |
 
 ## Epistemic closure boundary and cost
 
@@ -187,7 +191,7 @@ Record commit-bounded code/document churn and command receipt span/union in the 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
 | Proposal | `7ac97884658769e227b22f8c94bb8b4298e65a9f` | `fork-turns-none` | `approve-with-required-edits` | `9a5c3a4a20168f707870f20b011b47cf64bec820` |
-| Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Semantic checkpoint | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
 The context-cold proposal review approved correction target `9a5c3a4a20168f707870f20b011b47cf64bec820` in its first same-reviewer audit on 2026-09-25. All required findings closed: distinct single-input root Ends, explicit child-register and host-admission owners/contracts, and the structural router link. Initial packet SHA-256: `775151f23ba25118cf6808834ae0bce4c1341e490e349bba7e5982836f6f284e`; correction packet: `1d3129333191c4fbbcf5c2e08b94ca969a29026445006810af8d04c5bae60fe4`. The complete infrastructure gate passed 594 checks in 56.79 seconds on the correction contents before commit, asserted receipt `/tmp/bpmn-transaction-proposal-correction-infrastructure`; its recorded Git head is the parent, so this is not clean-target qualification. No implementation, Lean or live-host result is implied.

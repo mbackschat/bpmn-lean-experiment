@@ -1,3 +1,4 @@
+import BpmnSemantics.SemanticProcess.TransactionCompensationOrdinaryFrames
 import BpmnSemantics.SemanticProcess.ActivityBodyTurnover
 
 /-! # Activity body turnover preservation
@@ -232,9 +233,32 @@ theorem replacedState_preserves_wellFormed (program : Program) (instanceId : Sem
     obtain ⟨runningInstance, running⟩ :=
       runtimePositionValid_liveOccurrence_running program instanceId state wait.owner
         position ownerLive
-    rw [compensationExecutionStateValid_running_frame program state
-      (replacedState state record wait body) runningInstance running rfl rfl rfl rfl rfl rfl]
-    exact executionValid
+    apply compensationExecutionStateValid_running_ordinary program state
+      (replacedState state record wait body) runningInstance running rfl rfl rfl rfl rfl rfl executionValid
+    · intro trigger member prior
+      simpa only [replacedState, transactionTriggerProvenanceValid] using
+        transactionTriggerProvenanceValid_setActivationCount state wait.task.id
+          (activationCount state wait.task.id + 1) (by omega) trigger prior
+    · intro trigger member quiet
+      have absent : (state.waits.any fun candidate => candidate.owner == trigger.owner) = false := by
+        simp only [scopeQuiescent, Bool.and_eq_true, Bool.not_eq_true'] at quiet
+        exact quiet.1.1.1.1.1.1.1.1.1.2
+      have separate : wait.owner ≠ trigger.owner := by
+        intro same
+        have refused := List.any_eq_false.mp absent wait waitMem
+        simp [same] at refused
+      have waitsAbsent : ((replacedState state record wait body).waits.any
+          fun candidate => candidate.owner == trigger.owner) = false := by
+        apply List.any_eq_false.mpr
+        intro candidate present
+        change candidate ∈ insertUserTaskWait (turnoverWait state wait)
+          (state.waits.filter fun candidate => !taskIdNamesWait body candidate) at present
+        rw [insertUserTaskWait_eq_canonicalInsertBy, mem_canonicalInsertBy] at present
+        rcases present with rfl | old
+        · simp [turnoverWait, separate]
+        · exact List.any_eq_false.mp absent candidate (List.mem_filter.mp old).1
+      simp only [replacedState] at waitsAbsent
+      simpa only [scopeQuiescent, replacedState, waitsAbsent, absent] using quiet
   exact ⟨⟨after18, lifecycleAfter⟩,
     ⟨⟨⟨claimsAfter, retentionAfter⟩, snapshotAfter⟩, executionAfter⟩⟩
 
