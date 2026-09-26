@@ -98,12 +98,14 @@ Active work ID: `MUE-RELEASE-CANDIDATE`.
 
 Risk band: Frozen RC integration.
 
-Owner instruction, 2026-09-26: continue autonomously without routine checkpoint pauses. Use focused and affected-package checks during development; reserve complete verification for integrated RC qualification.
+Owner instruction, 2026-09-26: continue autonomously; use affected-package checks and reserve complete verification for integrated qualification.
 
-CPU constraint: root-owned Lean validation is authorized with one process tree, one CPU, 3 GiB and no additional swap. Reuse warmed dependencies and notify the owner when CPU-intensive validation finishes.
+Latest owner sequence: finish RC with useful runnable UI showcases describing business purpose, BPMN elements, supported extent and evidence; tag RC, then prepare a full-MUE plan for discussion before implementation. The seven engine content IDs remain unchanged.
 
-Next action: run the clean integrated engine and selected Product 2, PostgreSQL, showcase and UI gates once; complete independent integration review against the [closed Transaction contract](capsules/TRANSACTION-CANCELLATION-SPEC.md) and remaining selected capability owners, then create the immutable local `phase/mue-release-candidate` tag with successful exact-head receipts. If that tag already exists, verify its target and receipts: RC is complete, and no additional capability work is selected. Do not push or declare Engine `v0.2` released.
+CPU constraint: root-owned Lean validation permits one process tree, one CPU, 3 GiB and no additional swap. Reuse warmed dependencies; report CPU-intensive validation completion.
 
-Oracle: all seven RC rows satisfied, unchanged selected semantic/publication guarantees and exclusions, clean exact-head receipts, approved integration review, and immutable phase tag. A qualification defect reopens only its affected boundary; no broader proof programme is selected.
+Next action: commit the native-enrollment showcase correction and obtain its clean receipt; reuse unchanged successful qualification phases from `73872c18`. Complete source-grounded UI preflight and the showcase catalog before final acceptance, independent integration review routed through the [Transaction specification](capsules/TRANSACTION-CANCELLATION-SPEC.md), and local tagging. Preserve failed receipts alongside corrections. Carry forward [Finding 68](PROCESS-ASSESSMENT-LEDGER.md#finding-68) and the [`implementation-status-owner:BPM-PLATFORM`](BPM-PLATFORM-IMPLEMENTATION-MAP.md#bpm-platform-1). If `phase/mue-release-candidate` exists, verify its target and receipts, then discuss full MUE. Do not push or declare Engine `v0.2` released.
 
-Stop if qualification exposes an unreviewed semantic change or a weaker guarantee. Preserve stashes `f35bdd6b0424b2e3d5d06f101eb822bd285ab29e` and `76a2b017a630d23203ded482227382003f296f0b`.
+Oracle: seven satisfied RC rows, unchanged semantic/publication guarantees, demonstrated showcase journeys, clean exact-head receipts, approved integration review and immutable phase tag.
+
+Stop if qualification exposes unreviewed semantics or weaker guarantees. Preserve stashes `f35bdd6b0424b2e3d5d06f101eb822bd285ab29e` and `76a2b017a630d23203ded482227382003f296f0b`.

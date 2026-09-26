@@ -14,3 +14,5 @@ Install the pinned development-only browser once, then run the focused gate:
 ```
 
 Playwright, Chromium, the cached Temporal service, and `@bpmn-lean/temporal-testkit` are development-only acceptance dependencies. They are absent from the web bundle and every production dependency graph.
+
+The witness initializes a fresh named Namespace and its Current Worker deployment through the existing [native enrollment contract](../../docs/TEMPORAL-WORKER-DEPLOYMENT-REPAIR-SPEC.md#required-deployment-contract). Platform starts, prerequisite Message commands and candidate queries use that same Namespace. Connecting a Worker alone does not establish enrollment readiness.

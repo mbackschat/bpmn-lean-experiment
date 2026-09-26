@@ -35,7 +35,7 @@ The [failed-Process contract checkpoint](BPM-PLATFORM-FAILED-PROCESS-SPEC.md#pub
 - Accepted compilation projects exact Timer Start identity and normalized duration into a platform-owned immutable capability stored with every exact definition version; other current profiles retain an empty collection
 - Accepted compilation also projects the exact Message Start Event and complete operation-addressed channel into the atomic `{ messageStarts, timerStarts }` capability contract; every other current profile publishes an empty Message Start collection
 - Exact one-target Message Start persistence, no-redispatch recovery, private Product 1 addressing, strict HTTP/UI, and live response-loss, replacement, replay, and privacy evidence
-- Definition-scoped correlated Message capability reconstruction and target-free publication with distinct unique, no-match, ambiguous, capacity, and infrastructure outcomes; the maintained production-browser/real-Temporal journey proves exact candidate registration, only-unique advancement, content-bound response-loss retry, and absence of Process locators or host identity
+- Definition-scoped correlated Message capability reconstruction and target-free publication with distinct unique, no-match, ambiguous, capacity, and infrastructure outcomes; the maintained production-browser/real-Temporal journey initializes a fresh native Namespace and Current deployment, then proves exact candidate registration, only-unique advancement, content-bound response-loss retry, and absence of Process locators or host identity
 - Exact one-shot Schedule persistence and host lifecycle, strict HTTP/UI, and live version retention, restart, race, cleanup, replay, and privacy evidence
 - Identity-only Process search with three durable producers, exact filters, stable opaque-cursor paging, strict HTTP/UI, and restart, insertion, privacy, and three-execution evidence
 - Strict Work contracts and opaque Product 1 locators over one all-producer confirmation lifecycle; all-or-error task aggregation before fake group policy; uniform hiding; exact unavailable and ceiling distinctions; durable registrations, claim generations, retry-safe completion, same-transaction audit outbox, and reopen/concurrency/response-loss/ABA/reconciliation evidence
@@ -66,6 +66,7 @@ The [failed-Process contract checkpoint](BPM-PLATFORM-FAILED-PROCESS-SPEC.md#pub
 - the deferred JUEL evaluator implementation under its product-owned `platform/workers/juel-evaluator/` location
 - recovery of legacy engine instances that predate the confirmed-start publication contract
 - BPMN diagram editing, a public raw-sidecar format, automatic layout for multiple root Processes, collaborations, Call Activities without complete source DI, Sub-Processes, groups, annotations, associations, or data artifacts
+- Conversation `messageFlowRef` parsing in the private Product 2 diagram parser: its pinned upstream descriptor still uses the plural property. The admitted correlation model has no source DI and its selected Triggers journey claims no diagram; the semantic compiler's existing correction and execution remain independent.
 
 ## Evidence owners
 

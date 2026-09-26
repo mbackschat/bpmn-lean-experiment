@@ -40,6 +40,7 @@ const operationDeadlineMs = 20_000;
 const environmentStartupDeadlineMs = 40_000;
 const stateDeadlineMs = 30_000;
 const taskQueue = "bpmn-m2-correlated-message-ingress";
+const namespace = "bpmn-m2-correlated-message-ingress";
 const directCatchEventId = "MessageCatch_InitialSettlement";
 const correlatedCatchEventId = "MessageCatch_CorrelatedSettlement";
 const reviewTaskId = "UserTask_ReviewSettlement";
@@ -86,12 +87,12 @@ export class CorrelatedMessageShowcaseRuntime {
     );
     const environment = this.#requireEnvironment();
     this.#worker = await withDeadline(
-      ExternalTemporalRuntime.connect({
+      ExternalTemporalRuntime.initializeFreshNamespace({
         address: environment.address,
-        namespace: environment.namespace ?? "default",
+        namespace,
         taskQueue,
         identity: `bpmn-m2-correlated-message-worker-${process.pid}`,
-      }, createHostEffectActivities([])),
+      }, createHostEffectActivities([]), 86_400),
       operationDeadlineMs,
       "M2 correlated Message Worker startup",
     );
@@ -125,13 +126,13 @@ export class CorrelatedMessageShowcaseRuntime {
     let result;
     try {
       result = await submitMessageDelivery(
-        this.#requireEnvironment().client.workflow,
+        this.#requireWorkflowClient(),
         processInstanceId,
         stimulus,
       );
     } catch {
       result = await submitMessageDelivery(
-        this.#requireEnvironment().client.workflow,
+        this.#requireWorkflowClient(),
         processInstanceId,
         stimulus,
       );
@@ -166,7 +167,7 @@ export class CorrelatedMessageShowcaseRuntime {
     if (subscriptionId === undefined) {
       throw new Error("correlated Message wait lost its subscription identity");
     }
-    const candidate = await this.#requireEnvironment().client.workflow.getHandle(
+    const candidate = await this.#requireWorkflowClient().getHandle(
       processWorkflowId(processInstanceId),
     ).query(bpmnProcessCorrelationCandidateQueryName, {
       address: interaction.address,
@@ -240,7 +241,7 @@ export class CorrelatedMessageShowcaseRuntime {
       maxSourceBytes: 1024 * 1024,
       parserDeadlineMs: 5_000,
       temporalAddress: environment.address,
-      temporalNamespace: environment.namespace ?? "default",
+      temporalNamespace: namespace,
       temporalTaskQueue: taskQueue,
       temporalConnectTimeoutMs: 5_000,
     });
@@ -271,7 +272,7 @@ export class CorrelatedMessageShowcaseRuntime {
     let latest: StateObservation | undefined;
     while (Date.now() < deadline) {
       const trace = await readBpmnProcessTrace(
-        this.#requireEnvironment().client.workflow,
+        this.#requireWorkflowClient(),
         processInstanceId,
       );
       latest = trace.findLast(
@@ -284,6 +285,13 @@ export class CorrelatedMessageShowcaseRuntime {
     throw new Error(
       `Process ${processInstanceId} did not reach ${label}: ${JSON.stringify(latest)}`,
     );
+  }
+
+  #requireWorkflowClient() {
+    if (this.#worker === undefined) {
+      throw new Error("correlated Message showcase Worker is not running");
+    }
+    return this.#worker.workflowClient;
   }
 
   #requireEnvironment(): Environment {

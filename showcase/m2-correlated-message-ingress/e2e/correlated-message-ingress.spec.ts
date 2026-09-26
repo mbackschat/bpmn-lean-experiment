@@ -207,7 +207,9 @@ async function startExactDefinition(
     new URL(response.url()).pathname.endsWith("/start")
   );
   await page.getByRole("button", { name: /Start version 1/u }).click();
-  const result = decodeProcessInstanceStartResult(await (await responsePromise).json());
+  const response = await responsePromise;
+  expect(response.status(), await response.text()).toBe(201);
+  const result = decodeProcessInstanceStartResult(await response.json());
   expect(result.status).toBe(ProcessInstanceStartStatus.Started);
   if (result.status !== ProcessInstanceStartStatus.Started) {
     throw new Error(`correlated Message Process was rejected: ${result.failure.evidence}`);

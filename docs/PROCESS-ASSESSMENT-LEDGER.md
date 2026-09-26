@@ -1218,6 +1218,23 @@ Evidence
 
 Both assertions now classify the two current profiles explicitly. The pipeline retains ordered Activity request/result/dependency/cancellation history checks and legacy Service Task probe requirements; two different Transaction schedules reproduce the original mismatch. No production semantics or additional proof framework changes.
 
+### Finding 68
+
+A maintained browser witness connected a versioned Worker without establishing native Current enrollment. Its type checks passed, but the first production start failed before the scenario reached the behavior it claimed to test.
+
+Instances
+: 1
+
+Disposition
+: `review question`
+
+Evidence
+: [correlated Message production-browser journey](../showcase/m2-correlated-message-ingress/e2e/correlated-message-ingress.spec.ts), [native enrollment contract](TEMPORAL-WORKER-DEPLOYMENT-REPAIR-SPEC.md#required-deployment-contract)
+
+**First observed:** final MUE RC qualification at `73872c18` on 2026-09-26.
+
+The retained journey fails with `WorkerDeploymentNotReady` before any Process is created. Its host now initializes a fresh named Namespace and Current deployment using the existing production operation, and every platform command and prerequisite query uses the same Namespace. The unchanged unique, zero-match, ambiguity and response-loss assertions then pass. The HTTP helper checks the response status before decoding, preserving the failure category. Review question: does each maintained acceptance host establish every creation-readiness prerequisite before exercising product behavior? The retained journey guards this host, not every bootstrap path; other maintained showcases require their own acceptance evidence.
+
 ## Update rule
 
 At each capsule closure and each session handoff, answer the questions above and either add a row or record that none applied. When a mechanism already has a row, increment its instance count instead of adding a near-duplicate — the count is the signal the escalation rule reads. Keep the finding text describing the mechanism, not the incident, so a second occurrence in different code still matches the same row.
