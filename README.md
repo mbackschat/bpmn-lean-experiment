@@ -32,6 +32,8 @@ Read [PLAN.md](docs/PLAN.md) for current execution order, root [`implementation-
 
 This is a commit-stamped publication snapshot rather than a live status owner. Its exact inputs and refresh procedure are recorded in the [project infographics guide](docs/PROJECT-INFOGRAPHICS-GUIDE.md#infographic-3-product-2-vision-and-progress).
 
+For interactive evaluation, run `./scripts/pnpm.sh run demo:rc` from a prepared checkout, then open **Definitions → Explore process showcases**. The [RC walkthrough](docs/BPM-PLATFORM-BROWSER-WALKTHROUGH.md#rc-process-showcase-catalog) explains launch, business examples, simulated participants and evidence limits.
+
 ## Architecture at a glance
 
 ```mermaid
@@ -256,7 +258,7 @@ Supporting lemmas count `private theorem` and every explicit `lemma` command, ma
 | Language | Files | Code | Comments | Blanks |
 |---|---:|---:|---:|---:|
 | Java | 85 | 11,508 | 251 | 1,156 |
-| TypeScript | 1,921 | 397,675 | 9,748 | 25,027 |
+| TypeScript | 1,937 | 398,994 | 9,756 | 25,130 |
 | Lean | 718 | 150,058 | 7,799 | 13,118 |
 <!-- publication-statistics:language-footprint:end -->
 

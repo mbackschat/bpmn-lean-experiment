@@ -3,6 +3,7 @@ import { DefinitionDeployStatus } from "@bpmn-lean/platform-contracts";
 import type {
   DefinitionDeployResult,
   DeployedDefinitionVersion,
+  PublicProcessInstanceIdentity,
 } from "@bpmn-lean/platform-contracts";
 import { useState } from "react";
 import type { FormEvent } from "react";
@@ -31,6 +32,7 @@ export type DefinitionWorkspaceProps = Readonly<{
   metricsApi: FlowNodeMetricsApi;
   onDeploy: (event: FormEvent<HTMLFormElement>) => Promise<void>;
   onOpenDefinition: (definition: DeployedDefinitionVersion) => Promise<void>;
+  onOpenInstance?: (instance: PublicProcessInstanceIdentity) => void;
   onSelectVersion: (definition: DeployedDefinitionVersion) => void;
   scheduleApi: DefinitionScheduleApiClient;
   selected: DeployedDefinitionVersion | null;
@@ -48,6 +50,7 @@ export function DefinitionWorkspace({
   metricsApi,
   onDeploy,
   onOpenDefinition,
+  onOpenInstance,
   onSelectVersion,
   scheduleApi,
   selected,
@@ -118,9 +121,11 @@ export function DefinitionWorkspace({
         </section>
       ) : (
         <DefinitionDetails
+          key={`${selected.processId}:${selected.version}:${selected.source.sha256}:${selected.semanticProfile}`}
           api={api}
           correlatedMessageApi={correlatedMessageApi}
           definition={selected}
+          {...(onOpenInstance === undefined ? {} : { onOpenInstance })}
           messageStartPublicationApi={messageStartPublicationApi}
           metricsApi={metricsApi}
           scheduleApi={scheduleApi}
@@ -134,6 +139,7 @@ function DefinitionDetails({
   api,
   correlatedMessageApi,
   definition,
+  onOpenInstance,
   messageStartPublicationApi,
   metricsApi,
   scheduleApi,
@@ -141,6 +147,7 @@ function DefinitionDetails({
   api: DefinitionApiClient;
   correlatedMessageApi: CorrelatedMessageApi;
   definition: DeployedDefinitionVersion;
+  onOpenInstance?: (instance: PublicProcessInstanceIdentity) => void;
   messageStartPublicationApi: MessageStartPublicationApiClient;
   metricsApi: FlowNodeMetricsApi;
   scheduleApi: DefinitionScheduleApiClient;
@@ -164,7 +171,7 @@ function DefinitionDetails({
   }, {
     id: "start",
     label: "Start",
-    content: <DefinitionStartPanel api={api} definition={definition} />,
+    content: <DefinitionStartPanel api={api} definition={definition} {...(onOpenInstance === undefined ? {} : { onOpenInstance })} />,
   }, {
     id: "triggers",
     label: "Triggers",

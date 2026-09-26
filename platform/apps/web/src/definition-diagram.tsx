@@ -39,7 +39,12 @@ export type DefinitionDiagramProps = Readonly<{
   onMissingMetricElementIds?: (elementIds: readonly string[]) => void;
 }>;
 
-export function DefinitionDiagram({
+export function DefinitionDiagram(props: DefinitionDiagramProps) {
+  const { definition } = props;
+  return <DefinitionDiagramContent key={`${definition.processId}:${definition.version}:${definition.source.sha256}:${definition.semanticProfile}`} {...props} />;
+}
+
+function DefinitionDiagramContent({
   api,
   definition,
   highlight,
@@ -87,6 +92,7 @@ export function DefinitionDiagram({
       active = false;
       viewer.current?.destroy();
       viewer.current = null;
+      setViewerReady(false);
     };
   }, []);
 
@@ -233,6 +239,8 @@ export function DefinitionDiagram({
       <div
         className={styles.canvas}
         ref={container}
+        style={{ visibility: rendering || renderError !== null ? "hidden" : "visible" }}
+        aria-hidden={rendering || renderError !== null}
         aria-label={diagramLabel(definition, highlight)}
       />
     </section>

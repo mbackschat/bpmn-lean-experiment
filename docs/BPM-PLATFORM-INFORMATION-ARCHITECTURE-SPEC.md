@@ -67,9 +67,15 @@ Task rows may use a table where the available container can display columns with
 
 Claim, release, completion, retry, and indeterminate delivery states stay adjacent to the selected task. A transport failure or indeterminate completion does not discard the exact retained operation or close the task detail.
 
+Task input and the selected resolution survive detail-tab and primary-workspace navigation in memory. A different task occurrence receives a fresh form. Inactive content is hidden and unavailable to keyboard navigation; persistent draft storage is not provided. An incompatible published field value makes the complete form unavailable before any editable controls appear, including when that field belongs to another resolution action.
+
 ## Definitions flow
 
-The Definitions workspace begins with selectors for an existing definition and exact version. Adding BPMN is a secondary action in the same workspace, not a separate third-party deployment product area. Selecting a definition opens Diagram by default, with Start and Triggers as related tabs for that exact version.
+The Definitions workspace includes a searchable Process showcase catalog alongside deployed definitions. Selecting a showcase reveals its business purpose, evaluation instructions, exact element restrictions and separate evidence boundaries before any deployment or start. Human-work examples use the existing claim/form flow; guided simulations require the explicitly isolated RC host and label simulated participants and integrations. Other retained models remain inspectable without an executable browser claim. The [RC source preflight](research/BPM-PLATFORM-UI-UX-INFORMATION-ARCHITECTURE-RESEARCH.md#rc-business-process-showcase-preflight) owns the adopted and excluded reference behavior. This presentation and reuse of existing public operations is non-material under the independent-review negative case. Catalog binding tests, complete affected-package gates and production-browser journeys own acceptance.
+
+The deployed-definition view begins with selectors for an existing definition and exact version. Adding BPMN is a secondary action in the same workspace, not a separate third-party deployment product area. Selecting a definition opens Diagram by default, with Start and Triggers as related tabs for that exact version.
+
+The latest selection owns asynchronous results. Deployment keeps its exact returned version even if another version appears concurrently. Changing definition resets its Start receipt and diagram; a failed diagram load never leaves an earlier model visible. Catalog return restores the originating control, and preparation focuses the definition selector. A successful Start offers direct Operations inspection using the returned public instance identity.
 
 Diagram resolution follows the [BPMN diagram presentation decision](BPMN-DIAGRAM-PRESENTATION-DECISION.md): prefer usable BPMN DI embedded in the admitted source and otherwise use a digest-bound generated-DI sidecar. The UI labels generated layout honestly and never presents generated DI or the resolved presentation as admitted or executable source.
 
@@ -80,6 +86,8 @@ Definitions use one closed `GET /api/v1/definitions/{processId}/versions/{versio
 Operations begins with React Aria tabs for Process instances, Incidents, and Audit. Process instances retains the existing confirmed-start search as a tab rather than a separate primary-navigation destination. Incidents is a responsive collection of exact current engine publications. Selecting an incident replaces that collection with full-width Overview, Diagram, and Audit tabs; the diagram highlights the exact published Service Task element, and Back restores focus to the originating row when it still exists or to the collection heading otherwise. The top-level Audit tab is a separate paged collection of platform action facts and never presents an audit row as proof that an incident remains current.
 
 Collection rows are request and focus context, not current-detail authority. Incident controls appear only after the exact detail request succeeds. A pending, unavailable, absent, or stale detail request renders an honest non-actionable state, and switching tabs invalidates the request rather than promoting a late response.
+
+An unresolved incident action retains its exact retry identity across detail tabs and primary workspaces. Back to the incident collection remains unavailable until the action has a definite disposition, with an adjacent explanation. Late completion callbacks cannot close another selection. This is in-memory interaction continuity, not persistent drafts or new engine observation.
 
 ## About flow
 

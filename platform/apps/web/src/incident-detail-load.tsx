@@ -73,6 +73,7 @@ export type IncidentDetailLoadBoundaryProps = Readonly<{
   definitionApi: Pick<DefinitionApiClient, "getPresentation">;
   onBack: () => void;
   onCommitted: (announcement: string) => void;
+  onRetentionChange?: (retained: boolean) => void;
   onRetry: (incident: PublicIncident) => void;
   state: IncidentDetailSelection;
 }>;
@@ -83,6 +84,7 @@ export function IncidentDetailLoadBoundary({
   definitionApi,
   onBack,
   onCommitted,
+  onRetentionChange = () => undefined,
   onRetry,
   state,
 }: IncidentDetailLoadBoundaryProps) {
@@ -96,6 +98,7 @@ export function IncidentDetailLoadBoundary({
           incident={state.incident}
           onBack={onBack}
           onCommitted={onCommitted}
+          onRetentionChange={onRetentionChange}
         />
       );
     case IncidentDetailLoadKind.Pending:

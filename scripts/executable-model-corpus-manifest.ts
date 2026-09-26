@@ -57,7 +57,7 @@ export type CorpusModel = {
   pipelineCaseId: string | null;
   product2:
     | { kind: "notCatalogReady"; reason: string }
-    | { kind: "journeyBacked"; journeyTestRelativePath: string };
+    | { kind: "journeyBacked" | "guidedJourneyBacked"; journeyTestRelativePath: string };
 };
 
 export type ExecutableModelCorpusManifest = {
@@ -327,7 +327,7 @@ function requireProduct2(value: unknown, label: string): CorpusModel["product2"]
       reason: string(product2.reason, `${label}.reason`),
     };
   }
-  if (product2.kind === "journeyBacked") {
+  if (product2.kind === "journeyBacked" || product2.kind === "guidedJourneyBacked") {
     exactKeys(product2, ["kind", "journeyTestRelativePath"], label);
     if (
       typeof product2.journeyTestRelativePath !== "string" ||
@@ -336,7 +336,7 @@ function requireProduct2(value: unknown, label: string): CorpusModel["product2"]
       throw new TypeError("journeyBacked model requires one production journey");
     }
     return {
-      kind: "journeyBacked",
+      kind: product2.kind,
       journeyTestRelativePath: safeRelativePath(
         product2.journeyTestRelativePath,
         `${label}.journeyTestRelativePath`,

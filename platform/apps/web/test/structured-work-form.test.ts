@@ -157,6 +157,29 @@ test("renders every field kind and ordered action without leaking server details
   assert.doesNotMatch(html, /zod|stack|workflow|task queue|event history/iu);
 });
 
+for (const key of ["notifySubmitter", "resolutionReason"] as const) {
+  test(`makes the complete form unavailable for incompatible ${key}, including a hidden field`, () => {
+    const incompatible: PublicStructuredTaskFormV1 = {
+      ...form,
+      fields: form.fields.map((field) => field.key === key ? {
+        ...field,
+        compatibility: "incompatible",
+        currentValue: key === "notifySubmitter"
+          ? { kind: "string", value: "false" }
+          : { kind: "boolean", value: false },
+      } : field),
+    };
+    const html = renderToStaticMarkup(createElement(module.StructuredWorkForm, {
+      form: incompatible, issues: [], onSubmit: () => assert.fail("Unavailable form must not submit"),
+    }));
+    assert.equal(/<(?:input|textarea|select|button)\b/u.test(html), false,
+      "Incompatible current values must not produce editable controls or resolution actions");
+    assert.ok(html.includes('role="alert"'));
+    assert.ok(html.includes("unavailable"));
+    assert.ok(html.includes(form.taskDefinition.form.fields.find((field) => field.key === key)!.label));
+  });
+}
+
 test("changes the state key when exact task or catalog identity changes", () => {
   const key = module.structuredFormStateKey(form);
   assert.notEqual(key, module.structuredFormStateKey({

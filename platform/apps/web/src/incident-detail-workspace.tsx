@@ -33,6 +33,7 @@ export type IncidentDetailWorkspaceProps = Readonly<{
   incident: PublicIncident;
   onBack: () => void;
   onCommitted: (announcement: string) => void;
+  onRetentionChange?: (retained: boolean) => void;
 }>;
 
 type ActionNotice = Readonly<{
@@ -47,6 +48,7 @@ export function IncidentDetailWorkspace({
   incident,
   onBack,
   onCommitted,
+  onRetentionChange = () => undefined,
 }: IncidentDetailWorkspaceProps) {
   const [current, setCurrent] = useState(incident);
   const [tab, setTab] = useState("overview");
@@ -75,6 +77,7 @@ export function IncidentDetailWorkspace({
 
   function start(interaction: IncidentActionRequest): void {
     operation.begin(crypto.randomUUID(), interaction);
+    onRetentionChange(true);
     setRetainedKind(interaction.kind);
     void submitRetained(interaction.kind);
   }
@@ -103,6 +106,7 @@ export function IncidentDetailWorkspace({
   async function handleResult(result: IncidentActionResult): Promise<void> {
     switch (result.state) {
       case "committed":
+        onRetentionChange(false);
         setRetainedKind(null);
         onCommitted(
           `${interactionLabelFromKind(result.interaction.kind)} action ${result.actionId} committed for incident ${incidentIdentityLabel(current)}.`,
@@ -116,6 +120,7 @@ export function IncidentDetailWorkspace({
         });
         return;
       case "rejected":
+        onRetentionChange(false);
         setRetainedKind(null);
         await handleRejection(result);
         return;
@@ -160,8 +165,12 @@ export function IncidentDetailWorkspace({
           </h2>
           <p><code>{incidentIdentityLabel(current)}</code></p>
         </div>
-        <Button variant={ButtonVariant.Secondary} onPress={onBack}>{presentation.backLabel}</Button>
+        <Button variant={ButtonVariant.Secondary} isDisabled={retainedKind !== null} onPress={onBack}>{presentation.backLabel}</Button>
       </div>
+
+      {retainedKind === null ? null : (
+        <p>Resolve the pending or uncertain action before returning to incidents.</p>
+      )}
 
       <WorkspaceTabs
         aria-label="Incident detail"

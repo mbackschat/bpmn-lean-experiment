@@ -4,8 +4,9 @@ This file is generated from `manifest.json` by the executable corpus guard. Edit
 
 ## Current result
 
-The first tranche contains 45 retained executable models and 7 exact external candidates. 45 are admitted, 7 are rejected, and 3 are eligible for the browser catalog.
+The first tranche contains 45 retained executable models and 7 exact external candidates. 45 are admitted, 7 are rejected, and 12 are eligible for the browser catalog.
 The retained MVP suite covers all 46 registered executable BPMN element or semantic variants.
+Browser eligibility separates 3 human-work journeys from 9 guided simulations with explicit host participants.
 
 ## Models
 
@@ -17,14 +18,14 @@ The retained MVP suite covers all 46 registered executable BPMN element or seman
 | Resolve an expense exception with structured human work | retainedScenario | structured-expense-exception-review | accepted | expense-exception-review-approve | notSelected | journeyBacked |
 | Route a Boolean decision | retainedScenario | exclusive-boolean-decision | accepted | exclusive-gateway-simple-boolean-first-true | notSelected | notCatalogReady |
 | Fulfil work through a called Process | retainedScenario | called-process-human-work | accepted | called-process-call-activity | notSelected | notCatalogReady |
-| Record an external service effect | retainedScenario | single-service-effect | accepted | service-task-effect-success | pipeline | notCatalogReady |
+| Record an external service effect | retainedScenario | single-service-effect | accepted | service-task-effect-success | pipeline | guidedJourneyBacked |
 | Coordinate parallel work inside a bounded scope | retainedScenario | embedded-parallel-human-work | accepted | embedded-subprocess-completion-a-then-b | pipeline | notCatalogReady |
 | Recover scoped work after a business error | retainedScenario | subprocess-error-recovery | accepted | subprocess-error-propagation-trigger-first | pipeline | notCatalogReady |
 | Wait for a review window | retainedScenario | timer-then-human-review | accepted | timer-user-task-composition | notSelected | notCatalogReady |
 | Continue a review after a message | retainedScenario | message-then-human-review | accepted | intermediate-catch-message | notSelected | notCatalogReady |
 | Review a confirmed settlement | retainedScenario | message-payload-then-human-review | accepted | message-payload-catch-supplied-scalar | notSelected | notCatalogReady |
 | Correlate a settlement confirmation to its waiting case | retainedScenario | message-key-correlated-settlement-review | accepted | message-key-correlation-unique | notSelected | notCatalogReady |
-| Wait for an invoice receipt | retainedScenario | addressed-receive-task | accepted | message-addressed-receive-task | pipeline | notCatalogReady |
+| Wait for an invoice receipt | retainedScenario | addressed-receive-task | accepted | message-addressed-receive-task | pipeline | guidedJourneyBacked |
 | Prepare every applicable review track | retainedScenario | inclusive-human-review-tracks | accepted | inclusive-gateway-both-true-a-then-b | notSelected | notCatalogReady |
 | Continue on a message or deadline | retainedScenario | message-timer-event-race | accepted | event-based-gateway-message-wins | notSelected | notCatalogReady |
 | Escalate work that misses a deadline | retainedScenario | interrupting-task-deadline | accepted | activity-boundary-timer-deadline-wins | notSelected | notCatalogReady |
@@ -36,17 +37,17 @@ The retained MVP suite covers all 46 registered executable BPMN element or seman
 | Start a scheduled review | retainedScenario | timer-start-human-review | accepted | timer-start-event | notSelected | notCatalogReady |
 | Stop remaining scoped work after termination | retainedScenario | subprocess-termination | accepted | terminate-end-event-trigger-first | notSelected | notCatalogReady |
 | Run a configured integration before review | retainedScenario | configured-effect-human-review | accepted | configured-task | notSelected | notCatalogReady |
-| Retain a mapped service result | retainedScenario | mapped-service-success | accepted | mapped-success-service-task | pipeline | notCatalogReady |
+| Retain a mapped service result | retainedScenario | mapped-service-success | accepted | mapped-success-service-task | pipeline | guidedJourneyBacked |
 | Route a mapped business error to review | retainedScenario | mapped-service-boundary-error | accepted | mapped-boundary-error-service-task-caught | pipeline | notCatalogReady |
-| Review an ordered batch of documents | retainedScenario | sequential-batch-review | accepted | sequential-multi-instance-natural | notSelected | notCatalogReady |
+| Review an ordered batch of documents | retainedScenario | sequential-batch-review | accepted | sequential-multi-instance-natural | notSelected | guidedJourneyBacked |
 | Escalate a batch review at its shared deadline | retainedScenario | sequential-batch-review | accepted | sequential-multi-instance-interrupted | notSelected | notCatalogReady |
-| Complete every parallel risk assessment | retainedScenario | parallel-risk-review | accepted | parallel-multi-instance-all | notSelected | notCatalogReady |
+| Complete every parallel risk assessment | retainedScenario | parallel-risk-review | accepted | parallel-multi-instance-all | notSelected | guidedJourneyBacked |
 | Stop a parallel review at the first material risk | retainedScenario | parallel-risk-review | accepted | parallel-multi-instance-first | notSelected | notCatalogReady |
 | Escalate a parallel risk review at its shared deadline | retainedScenario | parallel-risk-review | accepted | parallel-multi-instance-interrupted | notSelected | notCatalogReady |
 | Review an invoice with its supplied context | retainedScenario | human-review-with-direct-data-input | accepted | activity-data-input-present | notSelected | notCatalogReady |
 | Record an underwriting decision on the application | retainedScenario | human-decision-with-direct-data-output | accepted | activity-data-output-supplied | notSelected | notCatalogReady |
-| Assess a claim and record its decision | retainedScenario | human-assessment-with-direct-data-input-output | accepted | activity-data-input-output-present | notSelected | notCatalogReady |
-| Review an application with repeated reminder Messages | retainedScenario | subprocess-termination | accepted | subscription-boundary-message-repeat | notSelected | notCatalogReady |
+| Assess a claim and record its decision | retainedScenario | human-assessment-with-direct-data-input-output | accepted | activity-data-input-output-present | notSelected | guidedJourneyBacked |
+| Review an application with repeated reminder Messages | retainedScenario | subprocess-termination | accepted | subscription-boundary-message-repeat | notSelected | guidedJourneyBacked |
 | Remind an application reviewer every second | retainedScenario | subprocess-termination | accepted | subscription-boundary-timer-repeat | notSelected | notCatalogReady |
 | Remind the application review team until its region closes | retainedScenario | subprocess-termination | accepted | subscription-subprocess-boundary-timer-repeat | notSelected | notCatalogReady |
 | Escalate a delayed application review once | retainedScenario | subprocess-termination | accepted | subscription-subprocess-boundary-one-shot-fire | notSelected | notCatalogReady |
@@ -54,8 +55,8 @@ The retained MVP suite covers all 46 registered executable BPMN element or seman
 | Await an application response during parallel review | retainedScenario | subprocess-termination | accepted | subscription-catch-message-resume | notSelected | notCatalogReady |
 | Await a review deadline beside independent audit | retainedScenario | subprocess-termination | accepted | subscription-catch-timer-resume | notSelected | notCatalogReady |
 | Receive application documents during review | retainedScenario | subprocess-termination | accepted | subscription-receive-task-resume | notSelected | notCatalogReady |
-| Cancel a confirmed travel itinerary | retainedScenario | dependency-aware-travel-compensation | accepted | compensation-success-b-c-a | notSelected | notCatalogReady |
-| Withdraw a resource reservation | retainedScenario | transaction-reservation-withdrawal | accepted | transaction-cancellation-retained-active | notSelected | notCatalogReady |
+| Cancel a confirmed travel itinerary | retainedScenario | dependency-aware-travel-compensation | accepted | compensation-success-b-c-a | notSelected | guidedJourneyBacked |
+| Withdraw a resource reservation | retainedScenario | transaction-reservation-withdrawal | accepted | transaction-cancellation-retained-active | notSelected | guidedJourneyBacked |
 | CIB Seven order goods | externalGit | cib-order-goods | rejected | none | notApplicable | notCatalogReady |
 | CIB Seven review invoice | externalGit | cib-review-invoice | rejected | none | notApplicable | notCatalogReady |
 | CIB Seven invoice receipt version 1 | externalGit | cib-invoice-receipt | rejected | none | notApplicable | notCatalogReady |

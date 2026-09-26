@@ -280,8 +280,8 @@
       },
       "pipelineCaseId": "service-task-effect-success",
       "product2": {
-        "kind": "notCatalogReady",
-        "reason": "The successful service-effect path and its finished history are not yet one production browser journey."
+        "kind": "guidedJourneyBacked",
+        "journeyTestRelativePath": "showcase/mue-preview-alpha/e2e/rc-showcase-journeys.spec.ts"
       }
     },
     {
@@ -534,8 +534,8 @@
       "admission": { "kind": "accepted" },
       "pipelineCaseId": "message-addressed-receive-task",
       "product2": {
-        "kind": "notCatalogReady",
-        "reason": "The Receive Task message operation is not yet available as a production browser journey."
+        "kind": "guidedJourneyBacked",
+        "journeyTestRelativePath": "showcase/mue-preview-alpha/e2e/rc-showcase-journeys.spec.ts"
       }
     },
     {
@@ -966,8 +966,8 @@
       "admission": { "kind": "accepted" },
       "pipelineCaseId": "mapped-success-service-task",
       "product2": {
-        "kind": "notCatalogReady",
-        "reason": "Mapped service output and its finished history are not yet one production browser journey."
+        "kind": "guidedJourneyBacked",
+        "journeyTestRelativePath": "showcase/mue-preview-alpha/e2e/rc-showcase-journeys.spec.ts"
       }
     },
     {
@@ -1042,8 +1042,8 @@
       "admission": { "kind": "accepted" },
       "pipelineCaseId": "sequential-multi-instance-natural",
       "product2": {
-        "kind": "notCatalogReady",
-        "reason": "Sequential batch progress and ordered output are not yet one production browser journey."
+        "kind": "guidedJourneyBacked",
+        "journeyTestRelativePath": "showcase/mue-preview-alpha/e2e/rc-showcase-journeys.spec.ts"
       }
     },
     {
@@ -1119,8 +1119,8 @@
       "admission": { "kind": "accepted" },
       "pipelineCaseId": "parallel-multi-instance-all",
       "product2": {
-        "kind": "notCatalogReady",
-        "reason": "Parallel Multi-Instance progress and ordered output are not yet one production browser journey."
+        "kind": "guidedJourneyBacked",
+        "journeyTestRelativePath": "showcase/mue-preview-alpha/e2e/rc-showcase-journeys.spec.ts"
       }
     },
     {
@@ -1301,8 +1301,8 @@
       "admission": { "kind": "accepted" },
       "pipelineCaseId": "activity-data-input-output-present",
       "product2": {
-        "kind": "notCatalogReady",
-        "reason": "The exact profile publishes the task input and accepts its required output but admits no assignment or form metadata; a complete production browser journey is not selected."
+        "kind": "guidedJourneyBacked",
+        "journeyTestRelativePath": "showcase/mue-preview-alpha/e2e/rc-showcase-journeys.spec.ts"
       }
     },
     {
@@ -1343,8 +1343,8 @@
       },
       "pipelineCaseId": "subscription-boundary-message-repeat",
       "product2": {
-        "kind": "notCatalogReady",
-        "reason": "The subscription lifetime and cancellation paths have no complete production-backed browser journey."
+        "kind": "guidedJourneyBacked",
+        "journeyTestRelativePath": "showcase/mue-preview-alpha/e2e/rc-showcase-journeys.spec.ts"
       }
     },
     {
@@ -1685,8 +1685,8 @@
       },
       "pipelineCaseId": "compensation-success-b-c-a",
       "product2": {
-        "kind": "notCatalogReady",
-        "reason": "Engine-only retained model: Product 2 failed-Process persistence, recovery, API, UI and browser journeys remain unsupported."
+        "kind": "guidedJourneyBacked",
+        "journeyTestRelativePath": "showcase/mue-preview-alpha/e2e/rc-showcase-journeys.spec.ts"
       }
     },
     {
@@ -1726,8 +1726,8 @@
       },
       "pipelineCaseId": "transaction-cancellation-retained-active",
       "product2": {
-        "kind": "notCatalogReady",
-        "reason": "No retained diagram or complete production-backed browser journey for this reservation-withdrawal model."
+        "kind": "guidedJourneyBacked",
+        "journeyTestRelativePath": "showcase/mue-preview-alpha/e2e/rc-showcase-journeys.spec.ts"
       }
     },
     {

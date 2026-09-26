@@ -1,4 +1,5 @@
 import { lazy, Suspense, useState } from "react";
+import type { PublicProcessInstanceIdentity } from "@bpmn-lean/platform-contracts";
 
 import { AppShell, AppWorkspace } from "./app-shell";
 import { WorkWorkspace } from "./work-workspace";
@@ -23,6 +24,7 @@ export function App({
   productVersion,
 }: AppProps) {
   const [workspace, setWorkspace] = useState<AppWorkspace>(AppWorkspace.Work);
+  const [initialInstance, setInitialInstance] = useState<PublicProcessInstanceIdentity>();
 
   return (
     <AppShell
@@ -32,12 +34,16 @@ export function App({
           <CapabilitiesPanel productVersion={productVersion} />
         </Suspense>
       )}
-      onNavigate={setWorkspace}
+      onNavigate={(next) => {
+        setInitialInstance(undefined);
+        setWorkspace(next);
+      }}
       work={<WorkWorkspace origin={origin} />}
       operations={(
         <Suspense fallback={<WorkspaceLoadingStatus />}>
           <OperationsWorkspace
             origin={origin}
+            {...(initialInstance === undefined ? {} : { initialInstance })}
           />
         </Suspense>
       )}
@@ -45,6 +51,10 @@ export function App({
         <Suspense fallback={<WorkspaceLoadingStatus />}>
           <DefinitionWorkspace
             origin={origin}
+            onOpenInstance={(instance) => {
+              setInitialInstance({ ...instance });
+              setWorkspace(AppWorkspace.Operations);
+            }}
           />
         </Suspense>
       )}

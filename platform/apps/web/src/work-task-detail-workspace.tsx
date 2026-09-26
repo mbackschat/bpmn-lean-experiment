@@ -57,6 +57,7 @@ export function WorkTaskDetailWorkspace({
   const tabs = useMemo(() => [{
     id: "form",
     label: "Form",
+    keepMounted: true,
     content: (
       <WorkTaskForm
         detail={detail}
@@ -89,7 +90,11 @@ export function WorkTaskDetailWorkspace({
           {task.claim === null ? "Unclaimed" : `Claimed by ${task.claim.actorId}`}
         </span>
       </div>
-      <WorkspaceTabs aria-label="Task detail views" tabs={tabs} />
+      <WorkspaceTabs
+        key={JSON.stringify([task.task.id.processInstanceId, task.task.id.elementId, task.task.id.activation])}
+        aria-label="Task detail views"
+        tabs={tabs}
+      />
     </div>
   );
 }

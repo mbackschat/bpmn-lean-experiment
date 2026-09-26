@@ -79,6 +79,25 @@ export function StructuredWorkForm({
     }
   };
 
+  const incompatibleFields = form.taskDefinition.form.fields.filter((_field, index) =>
+    form.fields[index]!.compatibility === "incompatible"
+  );
+  if (incompatibleFields.length > 0) {
+    return (
+      <div className={styles.structuredForm!}>
+        <p className={styles.taskDescription}>{form.taskDefinition.description}</p>
+        <div className={styles.formIssues!} role="alert">
+          <p>Form completion is unavailable because a current Process value is incompatible with its declared field.</p>
+          <ul>
+            {incompatibleFields.map((field) => (
+              <li key={field.key}>{field.label}: the current value is incompatible with this field.</li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={styles.structuredForm!}>
       <p className={styles.taskDescription}>{form.taskDefinition.description}</p>

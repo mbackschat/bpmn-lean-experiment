@@ -1,5 +1,5 @@
 import { Button, ButtonVariant } from "@bpmn-lean/platform-ui-kit";
-import { useEffect, useRef } from "react";
+import { Activity, useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 
 import styles from "./app-shell.module.css";
@@ -59,9 +59,11 @@ export function AppShell({
 }: AppShellProps) {
   const pageHeading = useRef<HTMLHeadingElement>(null);
   const previousWorkspace = useRef(activeWorkspace);
+  const [visited, setVisited] = useState<ReadonlySet<AppWorkspace>>(() => new Set([activeWorkspace]));
   const active = workspaceDetails.find(({ id }) => id === activeWorkspace);
   if (active === undefined) throw new Error("Unknown application workspace.");
   useEffect(() => {
+    setVisited((current) => current.has(activeWorkspace) ? current : new Set([...current, activeWorkspace]));
     if (previousWorkspace.current === activeWorkspace) return;
     previousWorkspace.current = activeWorkspace;
     requestAnimationFrame(() => { pageHeading.current?.focus(); });
@@ -97,7 +99,11 @@ export function AppShell({
           <p>{active.summary}</p>
         </header>
         <div className={styles.workspace}>
-          {workspaceContent(activeWorkspace, { about, definitions, operations, work })}
+          {workspaceDetails.filter(({ id }) => visited.has(id) || id === activeWorkspace).map(({ id }) => (
+            <Activity key={id} mode={id === activeWorkspace ? "visible" : "hidden"}>
+              <div>{workspaceContent(id, { about, definitions, operations, work })}</div>
+            </Activity>
+          ))}
         </div>
       </main>
     </div>

@@ -8,7 +8,7 @@
     "type-test": "tsc -p tsconfig.json",
     "test:built": "pnpm run type-test && node --test --test-concurrency=1 test/*.test.ts",
     "test": "pnpm run test:built",
-    "test:e2e:built": "playwright test",
+    "test:e2e:built": "playwright test alpha-preview.spec.ts failed-process.spec.ts",
     "test:e2e": "pnpm run type-test && pnpm run test:e2e:built"
   },
   "devDependencies": {
@@ -17,6 +17,7 @@
     "@bpmn-lean/platform-web": "workspace:*",
     "@bpmn-lean/semantic-core": "workspace:*",
     "@bpmn-lean/temporal-testkit": "workspace:*",
-    "@playwright/test": "1.62.1"
+    "@playwright/test": "1.62.1",
+    "@temporalio/worker": "1.21.0"
   }
 }

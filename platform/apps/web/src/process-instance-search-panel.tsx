@@ -27,6 +27,7 @@ export type ProcessInstanceSearchPanelProps = Readonly<{
   executionApi: ProcessExecutionApi;
   operatorAuditApi: OperatorAuditApi;
   isActive: boolean;
+  initialInstance?: PublicProcessInstanceIdentity;
 }>;
 
 /** Global search surface for confirmed Product 2 starts and their public identity only. */
@@ -36,6 +37,7 @@ export function ProcessInstanceSearchPanel({
   executionApi,
   operatorAuditApi,
   isActive,
+  initialInstance,
 }: ProcessInstanceSearchPanelProps) {
   const [processInstanceId, setProcessInstanceId] = useState("");
   const [processId, setProcessId] = useState("");
@@ -56,10 +58,20 @@ export function ProcessInstanceSearchPanel({
   const returnFocusKey = useRef<string | null>(null);
   const restoreFocus = useRef(false);
   const rowRefs = useRef(new Map<string, HTMLButtonElement>());
+  const collectionHeading = useRef<HTMLHeadingElement>(null);
+  const consumedInitialInstance = useRef<PublicProcessInstanceIdentity | undefined>(undefined);
 
   useEffect(() => {
     if (!isActive) detailLoader.current.clear(executionApi, setDetail);
   }, [executionApi, isActive]);
+
+  useEffect(() => {
+    if (!isActive || initialInstance === undefined || consumedInitialInstance.current === initialInstance) return;
+    consumedInitialInstance.current = initialInstance;
+    returnFocusKey.current = null;
+    restoreFocus.current = false;
+    void detailLoader.current.load(initialInstance, executionApi, setDetail);
+  }, [executionApi, initialInstance, isActive]);
 
   useEffect(() => {
     if (
@@ -75,7 +87,8 @@ export function ProcessInstanceSearchPanel({
   }, [detail, executionApi, isActive]);
 
   useEffect(() => () => {
-    detailLoader.current.invalidate(executionApi);
+    detailLoader.current.clear(executionApi, setDetail);
+    consumedInitialInstance.current = undefined;
   }, [executionApi]);
 
   useEffect(() => {
@@ -84,7 +97,7 @@ export function ProcessInstanceSearchPanel({
     const row = returnFocusKey.current === null
       ? undefined
       : rowRefs.current.get(returnFocusKey.current);
-    requestAnimationFrame(() => { row?.focus(); });
+    requestAnimationFrame(() => { (row ?? collectionHeading.current)?.focus(); });
   }, [detail]);
 
   if (detail !== null) {
@@ -161,7 +174,7 @@ export function ProcessInstanceSearchPanel({
       <div className={styles.heading}>
         <div>
           <p className={styles.eyebrow}>Global Process-instance search</p>
-          <h2 id="process-instance-search-heading">Confirmed Product 2 starts</h2>
+          <h2 id="process-instance-search-heading" ref={collectionHeading} tabIndex={-1}>Confirmed Product 2 starts</h2>
           <p>Search only the exact public identity recorded after a confirmed start.</p>
         </div>
       </div>

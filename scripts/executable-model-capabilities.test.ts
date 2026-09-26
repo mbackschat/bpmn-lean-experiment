@@ -163,7 +163,7 @@ test("the actual registered source union equals the catalog and remains covered 
   }
 });
 
-test("the retained travel model binds exact source, profile and engine scenario without a browser claim", async () => {
+test("the retained travel model binds exact engine evidence and a guided browser journey", async () => {
   const manifest = requireExecutableModelCorpusManifest(JSON.parse(await readFile(new URL("../model-corpus/manifest.json", import.meta.url), "utf8")));
   const model = manifest.models.find(({ id }) => id === "confirmed-travel-cancellation");
   assert.ok(model?.source.kind === "retainedScenario");
@@ -176,7 +176,7 @@ test("the retained travel model binds exact source, profile and engine scenario 
   assert.equal(model.pipelineCaseId, scenario.id);
   assert.equal(model.pipelineCaseId, "compensation-success-b-c-a");
   assert.equal(model.admission.kind, "accepted");
-  assert.equal(model.product2.kind, "notCatalogReady");
+  assert.equal(model.product2.kind, "guidedJourneyBacked");
   assert.ok(model.businessPurpose !== null && model.businessPurpose.length >= 20);
 });
 

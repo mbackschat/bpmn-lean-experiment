@@ -534,7 +534,7 @@ export async function inspectExecutableModelCorpus(
       occurrence.cloneFamilies.add(model.cloneFamily);
       blockerOccurrences.set(key, occurrence);
     }
-    if (model.product2.kind === "journeyBacked") {
+    if (model.product2.kind === "journeyBacked" || model.product2.kind === "guidedJourneyBacked") {
       await readFile(path.join(
         options.projectRoot,
         model.product2.journeyTestRelativePath as string,
@@ -644,7 +644,7 @@ export async function inspectExecutableModelCorpus(
     acceptedModels: reports.filter(({ admission }) => admission === "accepted").length,
     rejectedModels: reports.filter(({ admission }) => admission === "rejected").length,
     catalogReadyModels: reports.filter(({ product2 }) =>
-      product2 === "journeyBacked"
+      product2 === "journeyBacked" || product2 === "guidedJourneyBacked"
     ).length,
   });
 }
@@ -665,6 +665,7 @@ export function renderExecutableModelCorpusMap(
     "",
     `The first tranche contains ${report.retainedModels} retained executable models and ${report.externalModels} exact external candidates. ${report.acceptedModels} are admitted, ${report.rejectedModels} are rejected, and ${report.catalogReadyModels} ${report.catalogReadyModels === 1 ? "is" : "are"} eligible for the browser catalog.`,
     `The retained MVP suite covers all ${report.mvpCapabilities.length} registered executable BPMN element or semantic variants.`,
+    `Browser eligibility separates ${report.models.filter((model) => model.product2 === "journeyBacked").length} human-work journeys from ${report.models.filter((model) => model.product2 === "guidedJourneyBacked").length} guided simulations with explicit host participants.`,
     "",
     "## Models",
     "",

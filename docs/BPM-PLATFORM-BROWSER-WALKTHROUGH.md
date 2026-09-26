@@ -29,6 +29,35 @@ flowchart LR
 
 The browser talks only to the public Product 2 HTTP API. The API reaches the Temporal-hosted engine through the narrowed engine gateway, while PostgreSQL-backed recovery workers refresh projections outside request handling.
 
+## RC process showcase catalog
+
+From a prepared contributor checkout, run:
+
+```sh
+./scripts/pnpm.sh run demo:rc
+```
+
+Open the printed origin, normally [http://127.0.0.1:3000](http://127.0.0.1:3000). Set `PLATFORM_PORT` if that port is occupied. This command builds the current Product 2 web/runtime graph and starts a private local platform and real Temporal server. It uses an isolated fresh Namespace and temporary data; Ctrl-C stops this host and removes only its temporary state. It neither starts nor resets the persistent Compose distribution. Lean and CIB Seven are not needed to execute these browser instances; their retained evidence qualifies the engine profiles.
+
+Open **Definitions → Explore process showcases**. Search by business purpose or BPMN element. The curated catalog offers three human-work examples and nine guided simulations; **Include all retained engine models** exposes the wider retained catalog without claiming that every model has a browser journey. Each detail explains what to try, the exact supported element variants and limits, and the separate CIB comparison boundary.
+
+1. Select a process and read its description and restrictions.
+2. Choose **Prepare this showcase** to deploy its exact retained source/profile. This does not start an instance.
+3. Inspect **Diagram**, then open **Start** and choose the displayed version. Required example input is shown before start.
+4. For **Interactive human work**, open **Work**, claim each task, fill the form and complete it. For **Guided simulation**, the isolated host supplies the declared simulated participants and integrations through published engine commands.
+5. Keep the returned instance ID, open **Operations**, search that ID and inspect **Overview** and **History**. Human-work journeys also produce **Operator history**. Diagram availability follows the model's actual source/presentation boundary.
+
+| Business evaluation | Interaction |
+|---|---|
+| Request approval; independent content and risk approvals; expense-exception resolution | Claim and complete real forms in Work |
+| Ordered document review; parallel risk assessment | Simulated batch participants; inspect ordered aggregation and completion |
+| External service recording; mapped service result | Simulated integrations; inspect durable completion and output mapping |
+| Invoice receipt; repeated application reminders | Simulated Message producers; inspect subscription consumption and handler occurrences |
+| Claim context and decision | Simulated assessor; inspect direct input/output mediation |
+| Travel cancellation; reservation withdrawal | Simulated bookings and reversal effects; inspect Compensation and bounded Transaction/Cancel |
+
+The same catalog is present in the ordinary platform. Guided preparation is disabled when the isolated host marker is absent, because the ordinary platform supplies no simulated participant. Manually starting an uploaded matching definition does not install such a participant. Retained engine-only models are inspectable but offer no browser-run action. No model promises general BPMN conformance, unrestricted CIB compatibility, a live external business service, or production capacity.
+
 ## Seven-minute MUE Preview Alpha live demo
 
 Use this run of show when presenting the project rather than evaluating each workflow manually. It combines one credible business Process with the canonical breadth view and the separate Multi-Instance proof, without implying that every reviewed semantic variant belongs to one executable profile.

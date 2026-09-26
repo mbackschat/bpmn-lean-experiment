@@ -44,7 +44,9 @@ test("binds every retained and external model to exact local evidence", async ()
   assert.equal(report.externalModels, 7);
   assert.equal(report.acceptedModels, 45);
   assert.equal(report.rejectedModels, 7);
-  assert.equal(report.catalogReadyModels, 3);
+  assert.equal(report.catalogReadyModels, 12);
+  assert.equal(report.models.filter(({ product2 }) => product2 === "journeyBacked").length, 3);
+  assert.equal(report.models.filter(({ product2 }) => product2 === "guidedJourneyBacked").length, 9);
   assert.equal(report.mvpCapabilities.length, 46);
   assert.deepEqual(report.uncoveredMvpCapabilities, []);
   assert.equal(report.models[0]?.product2, "journeyBacked");

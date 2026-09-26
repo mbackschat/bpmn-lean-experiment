@@ -66,6 +66,8 @@
     "demo:start": "node scripts/live-demo.ts start",
     "demo:status": "node scripts/live-demo.ts status",
     "demo:stop": "node scripts/live-demo.ts stop",
+    "demo:rc": "pnpm build:release-product2 && node showcase/mue-preview-alpha/src/rc-showcase-host.ts",
+    "test:showcase:mue-rc:built": "pnpm --filter @bpmn-lean/showcase-mue-preview-alpha type-test && env PLAYWRIGHT_PREBUILT_WEB=true pnpm --filter @bpmn-lean/showcase-mue-preview-alpha exec playwright test rc-showcase-journeys.spec.ts && node --test showcase/mue-preview-alpha/test/rc-showcase-shutdown.integration-test.ts",
     "demo:mue-preview-alpha": "pnpm build:release-product2 && env MUE_ALPHA_DEMO_PAUSE_MS=3500 PLAYWRIGHT_PREBUILT_WEB=true pnpm --filter @bpmn-lean/showcase-mue-preview-alpha exec playwright test --headed",
     "demo:mue-preview-alpha:capture": "pnpm build:release-product2 && env MUE_ALPHA_DEMO_CAPTURE=true PLAYWRIGHT_PREBUILT_WEB=true pnpm --filter @bpmn-lean/showcase-mue-preview-alpha exec playwright test",
     "demo:mue-headline": "pnpm build:release-product2 && env MUE_HEADLINE_DEMO=true MUE_HEADLINE_DEMO_PAUSE_MS=3500 PLAYWRIGHT_PREBUILT_WEB=true pnpm --filter @bpmn-lean/showcase-m3-human-work exec playwright test --headed --grep=1600px",

@@ -12,6 +12,7 @@ export type WorkspaceTab = Readonly<{
   id: string;
   label: ReactNode;
   content: ReactNode;
+  keepMounted?: boolean;
 }>;
 
 export type WorkspaceTabsProps = Readonly<{
@@ -41,7 +42,13 @@ export function WorkspaceTabs({
       </TabList>
       <div className={styles.content}>
         {tabs.map((tab) => (
-          <TabPanel className={styles.panel!} id={tab.id} key={tab.id}>
+          <TabPanel
+            className={styles.panel!}
+            id={tab.id}
+            key={tab.id}
+            shouldForceMount={tab.keepMounted ?? false}
+            style={({ isInert }) => isInert ? { display: "none" } : {}}
+          >
             {tab.content}
           </TabPanel>
         ))}

@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import type { PublicProcessInstanceIdentity } from "@bpmn-lean/platform-contracts";
 
 import { WorkspaceTabs } from "@bpmn-lean/platform-ui-kit";
 
@@ -18,6 +19,7 @@ export type OperationsWorkspaceProps = Readonly<{
   operatorAuditApi: OperatorAuditApi;
   processExecutionApi: ProcessExecutionApi;
   processInstanceSearchApi: ProcessInstanceSearchApi;
+  initialInstance?: PublicProcessInstanceIdentity;
 }>;
 
 /** Full-width operational workspace grouped by instances, current incidents, and action audit. */
@@ -27,8 +29,12 @@ export function OperationsWorkspace({
   operatorAuditApi,
   processExecutionApi,
   processInstanceSearchApi,
+  initialInstance,
 }: OperationsWorkspaceProps) {
   const [tab, setTab] = useState("process-instances");
+  useEffect(() => {
+    if (initialInstance !== undefined) setTab("process-instances");
+  }, [initialInstance]);
   return (
     <div className={styles.workspace} data-ui="operations-workspace">
       <WorkspaceTabs
@@ -38,6 +44,7 @@ export function OperationsWorkspace({
         tabs={[{
           id: "process-instances",
           label: "Process instances",
+          keepMounted: true,
           content: (
             <ProcessInstanceSearchPanel
               api={processInstanceSearchApi}
@@ -45,11 +52,13 @@ export function OperationsWorkspace({
               executionApi={processExecutionApi}
               operatorAuditApi={operatorAuditApi}
               isActive={tab === "process-instances"}
+              {...(initialInstance === undefined ? {} : { initialInstance })}
             />
           ),
         }, {
           id: "incidents",
           label: "Incidents",
+          keepMounted: true,
           content: (
             <IncidentsPanel
               api={incidentApi}

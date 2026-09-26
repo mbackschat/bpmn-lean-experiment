@@ -72,6 +72,24 @@
   box-shadow: inset 0 0 0 4px var(--ui-color-surface);
 }
 
+.checkbox[data-disabled],
+.radio[data-disabled] {
+  color: var(--ui-color-muted);
+  cursor: not-allowed;
+}
+
+.checkbox[data-disabled]::before,
+.radio[data-disabled]::before {
+  border-style: dashed;
+  background: var(--ui-color-inset);
+}
+
+.checkbox[data-disabled][data-selected]::before,
+.radio[data-disabled][data-selected]::before {
+  background: var(--ui-color-muted);
+  box-shadow: inset 0 0 0 4px var(--ui-color-inset);
+}
+
 .booleanChoice {
   display: grid;
   gap: var(--ui-space-2);

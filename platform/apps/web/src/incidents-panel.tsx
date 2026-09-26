@@ -36,6 +36,10 @@ export function IncidentsPanel({
   const returnFocusKey = useRef<string | null>(null);
   const restoreCollectionFocus = useRef<Readonly<{ rowKey: string | null }> | null>(null);
   const rowRefs = useRef(new Map<string, RefObject<HTMLButtonElement | null>>());
+  const selectionGeneration = useRef(0);
+  const retainedAction = useRef(false);
+  const requestedIncident = useRef<PublicIncident | null>(null);
+  const active = useRef(isActive);
 
   const loadCollection = useCallback(async (focusHeading = false) => {
     const generation = requests.current.begin();
@@ -45,7 +49,7 @@ export function IncidentsPanel({
       const snapshot = await api.listIncidents();
       if (!requests.current.isCurrent(generation)) return;
       setIncidents(snapshot.incidents);
-      if (focusHeading) queueFocus(heading.current);
+      if (focusHeading && active.current) queueFocus(heading.current);
     } catch (cause: unknown) {
       if (requests.current.isCurrent(generation)) setError(collectionErrorMessage(cause));
     } finally {
@@ -53,14 +57,41 @@ export function IncidentsPanel({
     }
   }, [api]);
 
+  const openIncident = useCallback(async (incident: PublicIncident): Promise<void> => {
+    if (retainedAction.current) return;
+    selectionGeneration.current += 1;
+    requestedIncident.current = incident;
+    returnFocusKey.current = incidentKey(incident);
+    setError(null);
+    await detailLoader.current.load(
+      incident,
+      (incidentId) => api.getIncident(incidentId),
+      setDetailSelection,
+    );
+  }, [api]);
+
   useEffect(() => {
+    active.current = isActive;
     if (!isActive) {
       requests.current.invalidate();
-      detailLoader.current.clear(setDetailSelection);
+      if (!retainedAction.current) {
+        selectionGeneration.current += 1;
+        requestedIncident.current = null;
+        detailLoader.current.clear(setDetailSelection);
+      }
       return;
     }
     void loadCollection();
-  }, [isActive, loadCollection]);
+    if (requestedIncident.current !== null && !retainedAction.current) {
+      void openIncident(requestedIncident.current);
+    }
+    return () => {
+      active.current = false;
+      requests.current.invalidate();
+      // Activity hides effects without discarding state; obsolete reads must not publish on return.
+      detailLoader.current.clear(() => undefined);
+    };
+  }, [isActive, loadCollection, openIncident]);
 
   useEffect(() => {
     const pending = restoreCollectionFocus.current;
@@ -72,35 +103,35 @@ export function IncidentsPanel({
     queueFocus(row ?? heading.current);
   }, [detailSelection]);
 
-  async function openIncident(incident: PublicIncident): Promise<void> {
-    returnFocusKey.current = incidentKey(incident);
-    setError(null);
-    await detailLoader.current.load(
-      incident,
-      (incidentId) => api.getIncident(incidentId),
-      setDetailSelection,
-    );
-  }
-
   function backToCollection(): void {
+    if (retainedAction.current) return;
+    selectionGeneration.current += 1;
+    requestedIncident.current = null;
     restoreCollectionFocus.current = { rowKey: returnFocusKey.current };
     detailLoader.current.clear(setDetailSelection);
   }
 
-  async function committed(message: string): Promise<void> {
+  async function committed(message: string, generation: number): Promise<void> {
+    if (selectionGeneration.current !== generation) return;
+    selectionGeneration.current += 1;
+    requestedIncident.current = null;
     setAnnouncement(message);
     detailLoader.current.clear(setDetailSelection);
-    await loadCollection(true);
+    if (active.current) await loadCollection(true);
   }
 
   if (detailSelection !== null) {
+    const generation = selectionGeneration.current;
     return (
       <IncidentDetailLoadBoundary
         api={api}
         definitionApi={definitionApi}
         state={detailSelection}
         onBack={backToCollection}
-        onCommitted={(message) => { void committed(message); }}
+        onCommitted={(message) => { void committed(message, generation); }}
+        onRetentionChange={(retained) => {
+          if (selectionGeneration.current === generation) retainedAction.current = retained;
+        }}
         onRetry={(incident) => { void openIncident(incident); }}
       />
     );
