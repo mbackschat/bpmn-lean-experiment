@@ -176,7 +176,7 @@ Two profiles preserve one internal standard-notation capability without executio
 
 The identity bound excludes Message, Effect, Event race, Call, ordinary Scope, and called roots. Only Activity issuing is checkpoint-approved; other issuing disciplines and general preservation remain absent.
 
-The composed Activity-data profile carries both direct directions on one User Task occurrence. Additional or paired sets, optional or while-executing data, another Task host, collections, transformations, expressions, and later data ingress remain absent. Missing input may stay durably Running; that is an explicit liveness limit. Product 2 forms and browser-catalog eligibility remain excluded.
+The composed Activity-data profile carries both direct directions on one User Task occurrence. Additional or paired sets, optional or while-executing data, other Task hosts, collections, transformations, expressions and later ingress remain absent. Missing input may remain durably Running. Forms remain excluded; the [claim-assessment RC simulation](BPM-PLATFORM-BROWSER-WALKTHROUGH.md#rc-process-showcase-catalog) has a guided browser journey.
 
 The exact sequential Multi-Instance User Task profile is implemented and execution-registered across Lean, the TypeScript core, public progress, E1/E2 publication, the differential pipeline, and the Temporal Workflow chain. Its controller representation, derived quantities, four well-formedness obligations, escape-aware bounds, named counterexamples, and measured mutations belong to [the capsule](capsules/SEQUENTIAL-MULTI-INSTANCE-SPEC.md) rather than to this map.
 

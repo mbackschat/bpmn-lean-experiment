@@ -12,4 +12,4 @@ Run the focused registration checks from the repository root after building the 
 node --test packages/differential/test/compensation-pipeline-cases.test.ts
 ```
 
-Registration does not widen element identities, source topology, fixed limits, handler bodies or dependencies. Transactions, generic Compensation, and Product 2 failed-Process support remain excluded; browser-catalog eligibility is false.
+Registration does not widen element identities, source topology, fixed limits, handler bodies or dependencies. Transactions and generic Compensation remain excluded from this profile. The [failed-Process specification](../../docs/BPM-PLATFORM-FAILED-PROCESS-SPEC.md) owns downstream failure inspection; the [RC catalog](../../docs/BPM-PLATFORM-BROWSER-WALKTHROUGH.md#rc-process-showcase-catalog) adds a guided successful travel-cancellation journey with simulated participants and services. Human-work forms remain absent.
