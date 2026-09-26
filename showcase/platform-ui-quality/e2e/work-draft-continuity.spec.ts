@@ -49,6 +49,7 @@ test("retained completion makes radio and checkbox choices visibly unavailable @
   await page.getByRole("checkbox", { name: "Receipt", exact: true }).press("Space");
   await page.getByRole("button", { name: "Approve", exact: true }).click();
   await expect(page.getByRole("button", { name: "Retry completion" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Back to tasks" })).toBeDisabled();
   for (const control of [page.getByRole("radio", { name: "True", exact: true }), page.getByRole("checkbox", { name: "Receipt", exact: true })]) {
     await expect(control).toBeDisabled();
     const label = control.locator("xpath=ancestor::label[1]");

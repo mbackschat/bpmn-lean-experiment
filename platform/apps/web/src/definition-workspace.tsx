@@ -121,7 +121,7 @@ export function DefinitionWorkspace({
         </section>
       ) : (
         <DefinitionDetails
-          key={`${selected.processId}:${selected.version}:${selected.source.sha256}:${selected.semanticProfile}`}
+          key={selected.processId}
           api={api}
           correlatedMessageApi={correlatedMessageApi}
           definition={selected}
@@ -171,7 +171,7 @@ function DefinitionDetails({
   }, {
     id: "start",
     label: "Start",
-    content: <DefinitionStartPanel api={api} definition={definition} {...(onOpenInstance === undefined ? {} : { onOpenInstance })} />,
+    content: <DefinitionStartPanel key={`${definition.processId}:${definition.version}:${definition.source.sha256}:${definition.semanticProfile}`} api={api} definition={definition} {...(onOpenInstance === undefined ? {} : { onOpenInstance })} />,
   }, {
     id: "triggers",
     label: "Triggers",

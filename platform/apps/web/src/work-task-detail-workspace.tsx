@@ -55,6 +55,9 @@ export function WorkTaskDetailWorkspace({
   const headingRef = useRef<HTMLHeadingElement>(null);
   useEffect(() => { headingRef.current?.focus(); }, []);
   const name = task.task.name ?? task.task.id.elementId;
+  const completionUnresolved = completionView.kind === WorkCompletionViewKind.Submitting ||
+    completionView.kind === WorkCompletionViewKind.TransportFailed ||
+    completionView.kind === WorkCompletionViewKind.Indeterminate;
   const tabs = useMemo(() => [{
     id: "form",
     label: "Form",
@@ -78,9 +81,10 @@ export function WorkTaskDetailWorkspace({
   }], [completionView, definitionApi, detail, onComplete, onRetry, task]);
   return (
     <div className={styles.detail}>
-      <Button className={styles.back!} variant={ButtonVariant.Plain} onPress={onBack}>
+      <Button className={styles.back!} variant={ButtonVariant.Plain} isDisabled={completionUnresolved} onPress={onBack}>
         ← Back to tasks
       </Button>
+      {completionUnresolved ? <p>Resolve the pending or uncertain completion before returning to tasks.</p> : null}
       <div className={styles.detailHeading}>
         <div>
           <p className={styles.eyebrow}>Active User Task</p>
