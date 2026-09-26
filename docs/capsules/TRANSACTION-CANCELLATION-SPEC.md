@@ -1,19 +1,18 @@
-# Transaction cancellation proposal
+# Transaction cancellation specification
 
 ## Status
 
-Lifecycle: implemented-awaiting-closure
-Review: approved-with-required-edits
+Implemented and independently closure-reviewed for the bounded cancellation profile. The semantic profile remains a draft compatibility contract; this specification claims neither general Transaction conformance nor CIB compatibility.
 
-## Question and bounded outcome
+## Implemented outcome
 
-How does one admitted Transaction Sub-Process cancel its live work, compensate its completed eligible work, and release its Cancel Boundary Event only after compensation finishes?
+One admitted Transaction Sub-Process cancels its live work, compensates its completed eligible work, and releases its Cancel Boundary Event only after compensation finishes.
 
-The selected RC outcome is complete from exact BPMN XML through checked source, Semantic Process IL, Lean, TypeScript, production Temporal hosting, paired E1/E2 publication, and public engine commands. This proposal extends scope ownership of the existing Compensation mechanism; it does not select another general scheduling-proof programme. The [RC plan](../PLAN.md#mue-release-candidate-critical-path) remains the scope authority. Proposal approval authorizes implementation; it changes no current admission and claims no executed Transaction capability.
+The selected RC outcome is complete from exact BPMN XML through checked source, Semantic Process IL, Lean, TypeScript, production Temporal hosting, paired E1/E2 publication, and public engine commands. This specification extends scope ownership of the existing Compensation mechanism; it does not select another general scheduling-proof programme. The [RC plan](../PLAN.md#mue-release-candidate-critical-path) remains the scope authority.
 
 ## Current implementation boundary
 
-[`implementation-status-owner:ENGINE-SEMANTIC-FAMILY`](../ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md#transaction-cancellation) owns the approved manual-Program checkpoint, source/production-host integration, quantified scheduling, public registration and the remaining qualification boundary. The semantic checkpoint and closure reviews remain governed by the [review receipt](#independent-cold-review-receipt); proposal approval does not approve the implementation.
+[`implementation-status-delegation:ENGINE-SEMANTIC-FAMILY`](../ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md#transaction-cancellation) owns the approved manual-Program checkpoint, source/production-host integration, quantified scheduling, public registration and exact qualification boundary. The [review receipt](#independent-cold-review-receipt) records the independent semantic-checkpoint and closure approvals.
 
 ## Normative authority and interpretation boundary
 
@@ -120,11 +119,11 @@ Admission of the new source/profile into the compensation scheduler is a separat
 
 Lane shape: proved
 
-Evidence: the existing [retention](../../BpmnSemantics/SemanticProcess/CompensationActivityRetention.lean) and [completion](../../BpmnSemantics/SemanticProcess/CompensationTriggerHandlerCompletion.lean) owners supply the root account to extend; the child-scoped laws listed below are required new evidence, not established results.
+Evidence: the existing [retention](../../BpmnSemantics/SemanticProcess/CompensationActivityRetention.lean) and [completion](../../BpmnSemantics/SemanticProcess/CompensationTriggerHandlerCompletion.lean) owners supply the preserved root account. The child-scoped laws below are implemented under their explicit hypotheses; [`implementation-status-owner:ENGINE-SEMANTIC-FAMILY`](../ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md#transaction-cancellation) distinguishes scoped laws, constructor soundness and actual reachability.
 
 Lean independently defines the child-owned retention, cancellation and join relations and executable transitions, with constructor-selection soundness bridges recorded separately from semantic laws. Required quantified laws cover exact owner selection, interrupted-work exclusion, all-or-nothing refusal, absence of a continuation while compensation is active, exactly one parent continuation on successful join, no normal continuation, regional frame preservation under explicit disjointness hypotheses, and full failed-Process cleanup. Existing root-only theorems retain their hypotheses; widening a validator is not a proof that they generalize.
 
-Prove the profile's reachable-frontier classification and the existing two-Task arming guarantee under the added child register. The cancellation operation's region/write footprint must be complete before private schedule refusal is claimed. Finite source-to-result and replay witnesses establish only their enumerated runs; they do not imply general compiler correctness, fairness, liveness, TypeScript equivalence or Temporal refinement.
+The profile's reachable-frontier classification and two-Task arming guarantee derive from admitted command/prefix reachability under the child register. The cancellation operation's region/write footprint must be complete before private schedule refusal is claimed. Finite source-to-result and replay witnesses establish only their enumerated runs; they do not imply general compiler correctness, fairness, liveness, TypeScript equivalence or Temporal refinement.
 
 The nearest checked non-law is that reaching a Cancel End immediately enables its boundary continuation: a pending compensation effect refutes it. Another is that every Task removed during cancellation is compensation-eligible: the unfinished reservation/follow-up Task refutes it. The effort boundary is this finite profile and these scoped laws, with the existing 3 GiB Lean memory ceiling; inability to close a required law leaves its exact claim open and blocks capability registration rather than selecting more proof infrastructure or weakening the law.
 
@@ -147,7 +146,7 @@ CIB is absent from every evidence row: no oracle equivalence is claimed. Neutral
 
 ## Versioning consequences
 
-Apply the [single-current pre-release contract policy](../../contracts/README.md#evolution-policy) atomically across producers, schemas, readers, fixtures and tests; no legacy reader or speculative history migration is selected. Existing reviewed profile meanings and their immutable evidence remain unchanged. The new profile receives a new identity. Public E1/E2 and receipt shape stay closed; only admitted source and operation variants expand. Any need for another public field or changed old-profile behavior reopens this proposal.
+Apply the [single-current pre-release contract policy](../../contracts/README.md#evolution-policy) atomically across producers, schemas, readers, fixtures and tests; no legacy reader or speculative history migration is selected. Existing reviewed profile meanings and their immutable evidence remain unchanged. The new profile receives a new identity. Public E1/E2 and receipt shape stay closed; only admitted source and operation variants expand. Any need for another public field or changed old-profile behavior requires renewed review.
 
 | Boundary | Owners and deciding guards |
 |---|---|
@@ -157,34 +156,15 @@ Apply the [single-current pre-release contract policy](../../contracts/README.md
 | Publication and host | [Compensation occurrences](../../packages/semantic-core/src/flow-node-occurrence-compensation.ts), [publication completeness](../../packages/semantic-core/src/flow-node-occurrence-publication-compensation-completeness.ts), [host admission](../../packages/temporal-adapter/protocol/src/host-admission.ts), [scheduler](../../packages/temporal-adapter/workflow/src/compensation-frontier-scheduler.ts), [continuation](../../packages/temporal-adapter/protocol/src/workflow-continuation.ts), [program-bound publication validation](../../packages/temporal-adapter/protocol/src/flow-node-occurrence-publication-program-validation.ts); [publication coverage](../../scripts/execution-publication-contract-coverage.test.ts), [public surface](../../packages/temporal-adapter/protocol/test/semantic-publication-public-surface.test.ts), [scheduler tests](../../packages/temporal-adapter/workflow/test/compensation-frontier-scheduler.test.ts), [durability witness](../../packages/temporal-adapter/testkit/test/compensation-durability.temporal-test.ts), [host admission tests](../../packages/temporal-adapter/testkit/test/host-admission.test.ts), [Compensation host-refusal tests](../../packages/temporal-adapter/testkit/test/compensation-source-host-refusal.test.ts) |
 | Capability and evidence | [requirement ledger](../BPMN-REQUIREMENT-LEDGER.md), [profile registry](../../profiles/README.md), [scenario registry](../../scenarios/README.md), [corpus registry](../../model-corpus/README.md), routed [`implementation-status-router`](../IMPLEMENTATION-MAP.md), [IL specification](../SEMANTIC-PROCESS-IL-SPEC.md); [requirement consistency](../../scripts/requirement-ledger-consistency.test.ts), [corpus policy](../../scripts/bpmn-corpus-policy.test.ts), [executable corpus](../../model-corpus/test/executable-model-corpus.test.ts), [mechanism maturity](../../scripts/mechanism-maturity.test.ts) |
 
-New scope/cancellation helpers and evidence modules belong beside these owners. Run `what-binds` on each concrete path before it is added or grown; its complete guard/registry output remains binding beyond this deciding inventory. Registration, retained whole model, pipeline binding, capability restriction row, generated corpus map and About disclosure move together only after the semantic and production outcome is green. The existing [Compensation capsule](COMPENSATION-TRIGGER-HANDLER-PROPOSAL.md) continues to own the root account; its Transaction exclusions are superseded only for the new profile when this capsule is implemented and reviewed.
-
-### Owners this implementation grows
-
-These measurements were refreshed with the shared source-measure functions on 2026-09-26. The source review target is 800 nonblank lines; extraction is required only if the resulting owner would exceed its applicable bound. Recompute headroom when an owner changes; this table is not a permanent extraction instruction.
-
-| Owner | Remaining lines before review target |
-|---|---|
-| [Operation contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 146 |
-| [Retention](../../packages/semantic-core/src/compensation-activity-retention.ts) | 545 |
-| [Handler completion](../../packages/semantic-core/src/compensation-trigger-handler-completion.ts) | 577 |
-| [Scope runtime](../../packages/semantic-core/src/semantic-process-scope-runtime.ts) | 553 |
-| [Region cancellation](../../packages/semantic-core/src/semantic-process-scope-cancellation.ts) | 574 |
-| [Lean retention](../../BpmnSemantics/SemanticProcess/CompensationActivityRetention.lean) | 363 |
-| [Lean completion](../../BpmnSemantics/SemanticProcess/CompensationTriggerHandlerCompletion.lean) | 293 |
-| [Retention validation](../../packages/semantic-core/src/compensation-activity-retention-state-validation.ts) | 440 |
-| [Host admission](../../packages/temporal-adapter/protocol/src/host-admission.ts) | 449 |
-| [Source graph admission](../../packages/bpmn-source/src/checked-process-graph-admission.ts) | 416 |
-| [Node lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 123 |
-| [Lean retention declaration](../../BpmnSemantics/SemanticProcess/CompensationActivityRetentionDeclaration.lean) | 643 |
+The existing [Compensation capsule](COMPENSATION-TRIGGER-HANDLER-PROPOSAL.md) continues to own the root account; this specification supersedes its Transaction exclusions only for the bounded cancellation profile. Registration, retained whole model, pipeline binding, capability restriction row, generated corpus map and About disclosure remain one capability boundary.
 
 ## Epistemic closure boundary and cost
 
-The selected implementation is registered; independent closure and clean qualification remain pending. Closure requires the complete selected Start-to-publication outcome and the exact evidence rows above. The nearest unsupported claim remains successful protocol-controlled Transactions, followed by multi-subject dependency-aware Transaction compensation and hazard recovery. Neither existing root Compensation nor one green cancellation model establishes them.
+The registered implementation closes the selected Start-to-publication outcome and the exact evidence rows above, with independent closure approval and clean engine qualification at `9fb6705b`. The nearest unsupported claim remains successful protocol-controlled Transactions, followed by multi-subject dependency-aware Transaction compensation and hazard recovery. Neither existing root Compensation nor one green cancellation model establishes them.
 
 Common-mode risks are a shared wrong source-role interpretation, dropping eligible records in generic cancellation, using root-only validators for child tombstones, normal scope completion racing compensation, and projecting the desired boundary from the fixture rather than transition evidence. Cross-language laws, non-target-owner witnesses, explicit empty/failure schedules, negative admission, and live paused-handler publication discriminate those risks separately.
 
-Record commit-bounded code/document churn and command receipt span/union in the [capsule cost ledger](../CAPSULE-COST-LEDGER.md), comparing the existing Compensation source/hosting increment and failed-Process integration. The implementation and first correction interval is `ac0a2c1d..85eb1a70`; [the closure cost record](../CAPSULE-COST-LEDGER.md#transaction-closure-correction-and-cost-2026-09-26) retains reproducible churn, both comparisons and sampled receipt span/union. Engineering elapsed time remains unknown. After each coherent outcome, reassess remaining internal scheduling strictly against this selected profile and the other RC capabilities.
+The implementation and correction interval is `ac0a2c1d..9fb6705b`; [the closure cost record](../CAPSULE-COST-LEDGER.md#transaction-closure-correction-and-cost-2026-09-26) retains reproducible churn, both comparisons and sampled receipt span/union. Engineering elapsed time remains unknown. Broader scheduling domains remain outside this specification.
 
 ## Independent cold-review receipt
 
@@ -192,10 +172,10 @@ Record commit-bounded code/document churn and command receipt span/union in the 
 |---|---|---|---|---|
 | Proposal | `7ac97884658769e227b22f8c94bb8b4298e65a9f` | `fork-turns-none` | `approve-with-required-edits` | `9a5c3a4a20168f707870f20b011b47cf64bec820` |
 | Semantic checkpoint | `ad6d0bc993ac7abdea3d3978e07092ffd2126851` | `fork-turns-none` | `approve` | `not-required` |
-| Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Closure | `eb4ea6130117d8376abf98d8e0b5f8a50a5532ce` | `fork-turns-none` | `approve-with-required-edits` | `1498e22d7c72727b5a9efd5bf2f578d13c9b2b6b, 9fb6705b895340e3626d3b6d9f36149f27588682` |
 
 The context-cold proposal review approved correction target `9a5c3a4a20168f707870f20b011b47cf64bec820` in its first same-reviewer audit on 2026-09-25. All required findings closed: distinct single-input root Ends, explicit child-register and host-admission owners/contracts, and the structural router link. Initial packet SHA-256: `775151f23ba25118cf6808834ae0bce4c1341e490e349bba7e5982836f6f284e`; correction packet: `1d3129333191c4fbbcf5c2e08b94ca969a29026445006810af8d04c5bae60fe4`. The complete infrastructure gate passed 594 checks in 56.79 seconds on the correction contents before commit, asserted receipt `/tmp/bpmn-transaction-proposal-correction-infrastructure`; its recorded Git head is the parent, so this is not clean-target qualification. No implementation, Lean or live-host result is implied.
 
 The independent cold semantic-checkpoint reviewer approved `ad6d0bc993ac7abdea3d3978e07092ffd2126851` against baseline `b5ef19ca3b872aacc8a239f0e0a86b3a5051fcae` on 2026-09-26 with no required findings. Packet SHA-256: `de4be6edae1463f6029c1e00cd5d919bc466bf18c7709983dc9e096def9e1f05`; reviewed capsule SHA-256: `25d2cf4c855c557f257c0c48f34c2d4b50dbbf11fe81c8e59429700440b58c51`. The root-owned exact-target Transaction gate passed 37 checks, receipt `/tmp/bpmn-transaction-checkpoint-review-focused`. Review covered child ownership and retention lifetime, selection before cleanup, atomic empty/active cancellation and join, failure disposition, paired publication, and preservation of existing scheduling contracts. Independent transcriptions can share an incorrect account; conditional continuation-absence laws do not establish absence in every reachable state. Source/profile admission, grammar-to-frontier and two-Task guarantees, and production refinement remain open. The additional full verifier was stopped under the owner's revised cadence and is not complete qualification evidence. Reviewer `01a0de4c-cb49-7b22-b6bb-f05e3fbe7f88` is retained for eligible continuity.
 
-The independent cold closure review at `eb4ea6130117d8376abf98d8e0b5f8a50a5532ce` against checkpoint `ad6d0bc993ac7abdea3d3978e07092ffd2126851` returned `approve-with-required-edits`. It requires corrected verification wiring with clean qualification, reconciled current Transaction exclusions and complete closure-cost accounting. No additional Transaction semantic defect was established. The initial reviewer is retained for correction audit; this pending disposition is not closure approval.
+The independent cold closure review at `eb4ea6130117d8376abf98d8e0b5f8a50a5532ce` against checkpoint `ad6d0bc993ac7abdea3d3978e07092ffd2126851` returned `approve-with-required-edits`. It requires corrected verification wiring with clean qualification, reconciled current Transaction exclusions and complete closure-cost accounting. No additional Transaction semantic defect was established. The same reviewer approved the second correction audit at `9fb6705b895340e3626d3b6d9f36149f27588682`; the first audit was `1498e22d7c72727b5a9efd5bf2f578d13c9b2b6b`. Both rounds retain the selected account and exclusions. Clean `lean-library`, `lean-checks` and `runtime` phases pass at parent `6229db87`; its pipeline passes all nine preliminary parity commands before the final test exposes a legacy effect-counter assertion. The only subsequent change classifies Transaction handlers with the existing ordered Compensation history oracle. The complete registered pipeline passes at `9fb6705b` in `/tmp/bpmn-rc-pipeline-9fb6705b`; the successful parent-phase inputs remain byte-identical. The original failed pipeline receipt remains failed. The bounded Linux Lean snapshot matches all 720 build inputs; the retained continuity manifest has SHA-256 `42bdcf7a085f0216f3a89b206462ddba374650a19545440c425e3fbc79f1b274`. Final correction packet: `c4e75fc214598a4c073f1e50c590c6910ad7775331f6ffd544464e5cb051a5ea`.

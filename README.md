@@ -242,10 +242,10 @@ These publication statistics are refreshed by the maintainer with `./scripts/pnp
 <!-- publication-statistics:lean-declarations:start -->
 | Metric | Count |
 |---|---:|
-| Public theorem declarations | 1,842 |
-| Supporting lemma declarations | 415 |
-| All declaration commands | 6,197 |
-| Proof declarations / all declaration commands | 36.4% |
+| Public theorem declarations | 4,398 |
+| Supporting lemma declarations | 916 |
+| All declaration commands | 10,357 |
+| Proof declarations / all declaration commands | 51.3% |
 
 Supporting lemmas count `private theorem` and every explicit `lemma` command, matching the repository convention. All declaration commands count `theorem`, `lemma`, `def`, `abbrev`, `opaque`, `axiom`, `constant`, `inductive`, `structure`, `class`, and `instance` after masking Lean comments and literals.
 <!-- publication-statistics:lean-declarations:end -->
@@ -256,8 +256,8 @@ Supporting lemmas count `private theorem` and every explicit `lemma` command, ma
 | Language | Files | Code | Comments | Blanks |
 |---|---:|---:|---:|---:|
 | Java | 85 | 11,508 | 251 | 1,156 |
-| TypeScript | 1,750 | 365,548 | 9,483 | 23,459 |
-| Lean | 315 | 71,482 | 5,238 | 7,423 |
+| TypeScript | 1,921 | 397,666 | 9,748 | 25,026 |
+| Lean | 718 | 150,058 | 7,799 | 13,118 |
 <!-- publication-statistics:language-footprint:end -->
 
 ## Repository guide

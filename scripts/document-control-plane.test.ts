@@ -307,11 +307,11 @@ test("rejects hollow plan and root-map contracts", async () => {
   const entries = parseOrderedWork(plan);
   assert.ok(entries.length > 1);
   const activeEntry = entries.find((entry) => entry.state === "active");
-  const queuedEntry = entries.find((entry) => entry.state === "queued");
+  const inactiveEntry = entries.find((entry) => entry.state !== "active");
   assert.ok(activeEntry !== undefined);
-  assert.ok(queuedEntry !== undefined);
+  assert.ok(inactiveEntry !== undefined);
   assert.throws(
-    () => assertPlanControlPlane(plan.replace(`\`${queuedEntry.id}\` · **queued**`, `\`${activeEntry.id}\` · **queued**`)),
+    () => assertPlanControlPlane(plan.replace(`\`${inactiveEntry.id}\` · **${inactiveEntry.state}**`, `\`${activeEntry.id}\` · **queued**`)),
     /duplicate work ID/u,
   );
   assert.throws(

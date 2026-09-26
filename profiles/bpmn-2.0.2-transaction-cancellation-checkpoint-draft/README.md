@@ -1,6 +1,6 @@
 # Transaction cancellation profile
 
-[profile.json](profile.json) registers the bounded source account defined by the approved [Transaction cancellation capsule](../../docs/capsules/TRANSACTION-CANCELLATION-PROPOSAL.md). The [reservation withdrawal scenarios](../../scenarios/transaction-cancellation/README.md) bind exact XML bytes and explicit commands to this profile identity.
+[profile.json](profile.json) registers the bounded source account defined by the approved [Transaction cancellation capsule](../../docs/capsules/TRANSACTION-CANCELLATION-SPEC.md). The [reservation withdrawal scenarios](../../scenarios/transaction-cancellation/README.md) bind exact XML bytes and explicit commands to this profile identity.
 
 BPMN 2.0.2 supplies the cancellation and completed-Activity compensation account. `CIB-AGR-0002` and `CIB-OP-0001` concern only reused ordinary User Task discovery/completion and occurrence mapping; no CIB Transaction or Compensation execution target is selected. Scenario provenance records that absence explicitly.
 

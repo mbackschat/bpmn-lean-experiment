@@ -58,7 +58,7 @@ Evidence
 
 The fourth instance shows the limit of the disposition: `what-binds` was run before editing the adapter schedulers and not before adding a check to a guard file that was already at 578 of 600 nonblank lines, so the module ceiling surfaced again mid-change. The enumerator reports bounds when invoked and cannot require its own invocation; the size gate rejected the result before commit, which is why this is a count rather than a new row. The fifth instance shows the same limit on the *add* half of the rule, which says every path a change will add or grow: four owners the change created — a 242-line family runtime, a replacement admission module, an extracted cancellation owner, and a new Lean module — were absent from the capsule's owner inventory, so the recomputing guard measured only the rows already present and could not report the ones nobody wrote. The sixth instance shows a third way the rule is evaded without being broken: `what-binds` was run on `scenarios/` before the first edit, correctly, but the change then grew to include the Temporal adapter when a red pipeline revealed the family had no host lane, and the enumerator was not re-run for the newly in-scope paths. `workflow-implementation.ts` was therefore edited to 591 of 600 nonblank lines and its 9-line headroom discovered afterwards rather than planned around. The rule reads as a precondition on a change whose extent is known at planning time; a change whose extent is discovered by a failing gate has no such moment, so the trigger belongs on scope growth rather than only on first edit. The seventh instance is the enumerator's output being read as a list of names rather than of constraints: `what-binds` was run before the first edit and reported [the source-hygiene guard](../scripts/source-hygiene.test.ts), whose assertions were not opened, so a deduplication key built by joining a code, a path, and a property on a separator was written and then rejected by that guard's prohibition on separator-joined composite identities. Naming a guard and reading it are different acts, and only the second one binds a plan The eleventh instance is the same file pair as the ninth and tenth, and the count is now the point: closure bookkeeping edited the plan's resume point and the cost ledger without running the binding oracle on either, and five guards answered in sequence, a displaced cost-ledger rank, a rank-total restated in ten places, a review-state word the receipt owns, a gate command token that belongs to the evidence section, and the word backstop. Each was a one-line fix and none was discoverable by reading the prose I was writing. What the repeat shows is that the oracle gets run before *feature* edits and skipped before *documentation* edits, as though the plan and the ledgers were prose rather than the most heavily guarded files in the repository
 
-The sixteenth instance is the [Transaction cancellation proposal review](capsules/TRANSACTION-CANCELLATION-PROPOSAL.md#independent-cold-review-receipt): the proposed graph merged two flows into a single-input End, and the inventory omitted the root-only retention validator and exact-profile host admission. The infrastructure gate separately caught an ordinary link to the implementation router. Correction `9a5c3a4a` keeps distinct Ends, makes register cardinality explicit and names the deciding owners/tests. The existing graph, retention and host-admission tests constrain implementation; inventory completeness still requires review, since headroom checks measure named owners only.
+The sixteenth instance is the [Transaction cancellation proposal review](capsules/TRANSACTION-CANCELLATION-SPEC.md#independent-cold-review-receipt): the proposed graph merged two flows into a single-input End, and the inventory omitted the root-only retention validator and exact-profile host admission. The infrastructure gate separately caught an ordinary link to the implementation router. Correction `9a5c3a4a` keeps distinct Ends, makes register cardinality explicit and names the deciding owners/tests. The existing graph, retention and host-admission tests constrain implementation; inventory completeness still requires review, since headroom checks measure named owners only.
 
 ### Finding 02
 
@@ -154,7 +154,7 @@ The third instance is inside the guard's reach and the fourth is outside it: a c
 A registered profile was landed without the live example its oracle requires, turning the complete gate red after the focused gates passed.
 
 Instances
-: 2
+: 4
 
 Disposition
 : `executable guard`
@@ -165,6 +165,8 @@ Evidence
 **First observed:** [Interrupting Activity boundary Timer](capsules/ACTIVITY-BOUNDARY-TIMER-SPEC.md) capsule
 
 The second instance was the interchange composition profile: its source, Lean, CIB, differential, and Temporal evidence existed, but the Product 1 example catalog remained incomplete until the complete gate reached it. The correction replaces profile-by-profile recollection with exact registered-profile coverage, so any future profile without an example fails the focused port-free catalog gate
+
+The third and fourth instances are the public subscription registration and bounded Transaction registration. Both omitted enrollment needed by existing public inventories; Transaction also omitted its runnable example. The existing catalog and example guards exposed the gaps. Their [closure cost records](CAPSULE-COST-LEDGER.md#transaction-closure-correction-and-cost-2026-09-26) retain failures; registration is complete only when those existing consumers agree.
 
 ### Finding 08
 
@@ -1198,6 +1200,23 @@ Evidence
 Both harness consumers now share an explicit status classifier. The separating guard covers every Process status and absent state, and still requires exact durable receipts for Completed, Cancelled and Failed. A category defined over an enum must account for all alternatives rather than infer membership from one excluded value.
 
 The second instance was reported during failed-Process proposal review at `fd1e18f0`. Alpha accepted a failed observation after every configured response had been consumed because its status switch fell through and the generic interaction driver legitimately treated failure as terminal. Both natural and interrupted journeys reproduced false success. The actor now rejects failed and unknown statuses explicitly; both separating tests retain the completed-journey controls. This is a non-material test-actor correction: no Alpha or engine admission changes. The two red cases, complete Alpha unit/type gate, document-reviewability guard, and browser/replay acceptance after the separate native-enrollment bootstrap correction cover it.
+
+### Finding 67
+
+An evidence assertion inferred legacy Service Task behavior from absence of one Compensation profile ID. A second profile reused the Compensation mechanism, so both the Activity-policy inventory assertion and registered pipeline counter assertion selected the wrong evidence contract.
+
+Instances
+: 2
+
+Disposition
+: `executable guard`
+
+Evidence
+: [complete public Activity-policy inventory](../packages/temporal-adapter/workflow/test/effect-activity-policy.test.ts), [registered cross-target pipeline](../packages/differential/test/pipeline.test.ts)
+
+**First observed:** Transaction public-catalog qualification at `6229db87`.
+
+Both assertions now classify the two current profiles explicitly. The pipeline retains ordered Activity request/result/dependency/cancellation history checks and legacy Service Task probe requirements; two different Transaction schedules reproduce the original mismatch. No production semantics or additional proof framework changes.
 
 ## Update rule
 

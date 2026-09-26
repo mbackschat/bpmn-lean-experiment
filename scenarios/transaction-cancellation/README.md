@@ -1,6 +1,6 @@
 # Reservation withdrawal Transaction scenarios
 
-The [profile](../../profiles/bpmn-2.0.2-transaction-cancellation-checkpoint-draft/README.md) selects the approved [Transaction cancellation account](../../docs/capsules/TRANSACTION-CANCELLATION-PROPOSAL.md). The exact [reservation model](reservation-withdrawal.bpmn) lets a reservation proceed while a withdrawal decision waits independently. A completed reservation is released before the parent acknowledges withdrawal; an unfinished reservation is interrupted without becoming compensation-eligible.
+The [profile](../../profiles/bpmn-2.0.2-transaction-cancellation-checkpoint-draft/README.md) selects the approved [Transaction cancellation account](../../docs/capsules/TRANSACTION-CANCELLATION-SPEC.md). The exact [reservation model](reservation-withdrawal.bpmn) lets a reservation proceed while a withdrawal decision waits independently. A completed reservation is released before the parent acknowledges withdrawal; an unfinished reservation is interrupted without becoming compensation-eligible.
 
 - [Empty cancellation](empty.scenario.json): withdraw before reserving and acknowledge without a handler.
 - [Completed reservation with preparation open](retained-active.scenario.json): retain the completed reservation, interrupt preparation, release the resource, then acknowledge.

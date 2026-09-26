@@ -38,7 +38,7 @@ The independently approved [boundary-handler retention proposal](capsules/COMPEN
 
 ## Transaction cancellation
 
-The [Transaction cancellation proposal](capsules/TRANSACTION-CANCELLATION-PROPOSAL.md#current-implementation-boundary) has an independently approved manual-Program semantic checkpoint. Source and production-host integration extends that checkpoint under the bounded profile; closure review remains open.
+The [Transaction cancellation specification](capsules/TRANSACTION-CANCELLATION-SPEC.md#current-implementation-boundary) has an independently approved manual-Program semantic checkpoint. Source, production hosting, scheduling and registration are independently closure-approved at `9fb6705b` under the bounded profile.
 
 **Implemented.** Lean and the independently written TypeScript core carry `cancelTransaction`, child-owned retention, exact-owner eligible-record selection, atomic regional cancellation, an active compensation scope, empty cancellation, successful parent join, terminal tombstones and typed whole-Process failure. Shared/Lean wire readers and program-bound publication validation carry the new arm. Seven kernel-checked manual-Program publication stages cover Start through terminal acknowledgement, including empty and failed paths; core tests cover malformed ownership, capacity, stale results and rollback. The [declarative account](../BpmnSemantics/SemanticProcess/TransactionCancellationSemantics.lean) separates constructor soundness, scoped laws and conditional continuation absence. Existing regional batching derives its root-only Compensation domain; Transaction regional preparation refuses batching.
 
@@ -50,7 +50,7 @@ The [complete phase induction](../BpmnSemantics/SemanticProcess/TransactionExecu
 
 **Registration.** Four [neutral scenarios](../scenarios/transaction-cancellation/README.md) bind the reservation-withdrawal whole model to the normative profile and exact Lean/core/Temporal pipeline. The canonical capability catalog supplies Transaction, Cancel End and Cancel Boundary restrictions to Product 2 About; no browser journey is claimed.
 
-**Absent.** Complete qualification and closure review remain open. No generic invariant, mixed Transaction batch, CIB compatibility, successful protocol-controlled Transaction or hazard recovery is established. [PLAN](PLAN.md#exact-resume-point) owns current cross-language validation and the next action.
+**Absent.** No generic invariant, mixed Transaction batch, CIB compatibility, successful protocol-controlled Transaction or hazard recovery is established. [PLAN](PLAN.md#exact-resume-point) owns RC integration and the next action.
 
 ## Interrupting Activity boundary Message
 

@@ -58,7 +58,7 @@ export function transactionCancellationProgramShape(
     tasks >= 3 && tasks <= 5;
 }
 
-/** Checks the bounded role grammar in TRANSACTION-CANCELLATION-PROPOSAL.md, independent of fixture IDs. */
+/** Checks the bounded role grammar in TRANSACTION-CANCELLATION-SPEC.md, independent of fixture IDs. */
 export function transactionCancellationProgramGraph(program: SemanticProcessProgram): boolean {
   if (!keys(program, ["kind", "identity", "internalSchedulingMode", "processId", "definitionScopes",
       "operationScopes", "controlPlaceScopes", "controlPlaces", "operations",

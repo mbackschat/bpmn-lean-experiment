@@ -10,22 +10,17 @@ const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 
 const releaseCandidateContent = [
   ["SEQUENTIAL-MULTI-INSTANCE", "satisfied"],
-  ["INTERNAL-COMMUTATION", "active"],
+  ["INTERNAL-COMMUTATION", "satisfied"],
   ["PARALLEL-MULTI-INSTANCE", "satisfied"],
-  ["MECHANISM-MATURITY-EVIDENCE", "queued"],
+  ["MECHANISM-MATURITY-EVIDENCE", "satisfied"],
   ["DATA-AND-TASK-MECHANISMS", "satisfied"],
   ["EVENT-SUBSCRIPTIONS", "satisfied"],
-  ["COMPENSATION-TRANSACTIONS", "queued"],
+  ["COMPENSATION-TRANSACTIONS", "satisfied"],
 ] as const;
 
-const unfinishedExecutionOrder = [
-  "INTERNAL-COMMUTATION",
-  "COMPENSATION-TRANSACTIONS",
-  "MECHANISM-MATURITY-EVIDENCE",
-  "MUE-RELEASE-CANDIDATE",
-] as const;
+const unfinishedExecutionOrder = ["MUE-RELEASE-CANDIDATE"] as const;
 
-test("makes the MUE Release Candidate content and risk-first execution path explicit", async () => {
+test("freezes all seven selected RC capabilities before integration", async () => {
   const plan = await readFile(path.join(projectRoot, "docs/PLAN.md"), "utf8");
   const section = releaseCandidateSection(plan);
   const rows = section.split("\n").filter((line) => line.startsWith("| `")).map((line) => {
@@ -38,13 +33,13 @@ test("makes the MUE Release Candidate content and risk-first execution path expl
   });
 
   assert.deepEqual(rows, releaseCandidateContent);
-  assert.equal(rows.filter(([, state]) => state === "active").length, 1);
+  assert.equal(rows.filter(([, state]) => state === "satisfied").length, 7);
   assert.doesNotMatch(
     rows.map(([id]) => id).join("\n"),
     /^(?:H3-WORKLOAD-ISOLATION|CONFORMANCE-CLOSURE|MUE-RELEASE-CANDIDATE)$/mu,
     "later maturity work and the RC delivery checkpoint are not MUE content",
   );
-  assert.match(section, /^Integration state: `queued`\.$/mu);
+  assert.match(section, /^Integration state: `active`\.$/mu);
   assert.match(section, /feature surface freezes only after all seven rows are `satisfied`/u);
   assert.match(section, /H3-WORKLOAD-ISOLATION[^\n]+Engine `v0\.3`/u);
   assert.match(section, /CONFORMANCE-CLOSURE[^\n]+Engine `v0\.9`/u);
@@ -52,16 +47,13 @@ test("makes the MUE Release Candidate content and risk-first execution path expl
   const orderedIds = parseOrderedWork(plan)
     .filter(({ id }) => unfinishedExecutionOrder.includes(id as typeof unfinishedExecutionOrder[number]))
     .map(({ id }) => id);
-  assert.deepEqual(orderedIds, unfinishedExecutionOrder, "ordered work must carry the RC risk-first sequence");
-  assert.equal(parseOrderedWork(plan).find(({ state }) => state === "active")?.id, "INTERNAL-COMMUTATION");
+  assert.deepEqual(orderedIds, unfinishedExecutionOrder, "ordered work must retain frozen integration");
+  assert.equal(parseOrderedWork(plan).find(({ state }) => state === "active")?.id, "MUE-RELEASE-CANDIDATE");
 });
 
-test("rejects a chore-first RC path and a broader hidden denominator", async () => {
+test("rejects unfinished content, premature later work and a broader hidden denominator", async () => {
   const plan = await readFile(path.join(projectRoot, "docs/PLAN.md"), "utf8");
-  const movedEvidenceFirst = plan
-    .replace("`COMPENSATION-TRANSACTIONS` · **queued**", "`TEMP-RC-SLOT` · **queued**")
-    .replace("`MECHANISM-MATURITY-EVIDENCE` · **queued**", "`COMPENSATION-TRANSACTIONS` · **queued**")
-    .replace("`TEMP-RC-SLOT` · **queued**", "`MECHANISM-MATURITY-EVIDENCE` · **queued**");
+  const prematureLaterWork = plan.replace("`MUE-RELEASE-CANDIDATE` · **active**", "`CONFORMANCE-CLOSURE` · **active**");
   const rcMarker = "### MUE Release Candidate critical path\n";
   const rcStart = plan.indexOf(rcMarker);
   assert.notEqual(rcStart, -1);
@@ -70,7 +62,12 @@ test("rejects a chore-first RC path and a broader hidden denominator", async () 
     "| `H3-WORKLOAD-ISOLATION` | `queued` | Later only. | [Maturity ladder](PROJECT-DESIGN.md#engine-maturity-roadmap-labels) |\n| `EVENT-SUBSCRIPTIONS` | `satisfied` |",
   );
 
-  assert.throws(() => assertReleaseCandidatePath(movedEvidenceFirst), /risk-first sequence/u);
+  const unfinished = plan.slice(0, rcStart) + plan.slice(rcStart).replace(
+    "| `COMPENSATION-TRANSACTIONS` | `satisfied` |",
+    "| `COMPENSATION-TRANSACTIONS` | `queued` |",
+  );
+  assert.throws(() => assertReleaseCandidatePath(unfinished), /satisfied/u);
+  assert.throws(() => assertReleaseCandidatePath(prematureLaterWork), /frozen integration/u);
   assert.throws(() => assertReleaseCandidatePath(broadened), /MUE content/u);
 });
 
@@ -80,10 +77,12 @@ function assertReleaseCandidatePath(plan: string): void {
     .filter((line) => line.startsWith("| `"))
     .map((line) => /^\| `([A-Z][A-Z0-9-]*)` \|/u.exec(line)?.[1]);
   assert.deepEqual(ids, releaseCandidateContent.map(([id]) => id), "RC table must retain exactly the selected MUE content");
+  assert.ok(section.split("\n").filter((line) => line.startsWith("| `"))
+    .every((line) => /^\| `[^`]+` \| `satisfied` \|/u.test(line)), "all seven RC boundaries must be satisfied before integration");
   const orderedIds = parseOrderedWork(plan)
     .filter(({ id }) => unfinishedExecutionOrder.includes(id as typeof unfinishedExecutionOrder[number]))
     .map(({ id }) => id);
-  assert.deepEqual(orderedIds, unfinishedExecutionOrder, "ordered work must retain the RC risk-first sequence");
+  assert.deepEqual(orderedIds, unfinishedExecutionOrder, "ordered work must retain frozen integration");
 }
 
 function releaseCandidateSection(plan: string): string {

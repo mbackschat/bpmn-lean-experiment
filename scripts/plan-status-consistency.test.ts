@@ -63,7 +63,7 @@ function assertMuePreviewBetaCriticalPath(plan: string): void {
   );
   const orderedActive = parseOrderedWork(plan).find(({ state }) => state === "active");
   assert.ok(rows.every(({ state }) => state === "satisfied"), "every Beta content boundary must be satisfied before integration");
-  assert.equal(orderedActive?.id, "INTERNAL-COMMUTATION", "closed data lifetime must hand RC work to internal scheduling");
+  assert.equal(orderedActive?.id, "MUE-RELEASE-CANDIDATE", "closed selected content must hand work to frozen RC integration");
   assert.match(section, /^Integration state: `satisfied`\.$/mu, "Beta integration must remain closed after every content row is satisfied");
 
   const riskMarker = "#### Risk-first execution bands\n";
@@ -98,26 +98,26 @@ test("rejects multiple active items, malformed states, duplicate IDs, and a dang
   const plan = await readFile(planPath, "utf8");
   const entries = parseOrderedWork(plan);
   const activeEntry = entries.find((entry) => entry.state === "active");
-  const queuedEntry = entries.find((entry) => entry.state === "queued");
+  const inactiveEntry = entries.find((entry) => entry.state !== "active");
   assert.ok(activeEntry !== undefined);
-  assert.ok(queuedEntry !== undefined);
+  assert.ok(inactiveEntry !== undefined);
   assert.throws(
     () => assertPlanControlPlane(plan.replace(
-      `\`${queuedEntry.id}\` · **queued**`,
-      `\`${queuedEntry.id}\` · **active**`,
+      `\`${inactiveEntry.id}\` · **${inactiveEntry.state}**`,
+      `\`${inactiveEntry.id}\` · **active**`,
     )),
     /exactly one active/u,
   );
   assert.throws(
     () => assertPlanControlPlane(plan.replace(
-      `\`${queuedEntry.id}\` · **queued**`,
-      `\`${queuedEntry.id}\` · **completed**`,
+      `\`${inactiveEntry.id}\` · **${inactiveEntry.state}**`,
+      `\`${inactiveEntry.id}\` · **completed**`,
     )),
     /stable work contract/u,
   );
   assert.throws(
     () => assertPlanControlPlane(plan.replace(
-      `\`${queuedEntry.id}\` · **queued**`,
+      `\`${inactiveEntry.id}\` · **${inactiveEntry.state}**`,
       `\`${activeEntry.id}\` · **queued**`,
     )),
     /duplicate work ID/u,
