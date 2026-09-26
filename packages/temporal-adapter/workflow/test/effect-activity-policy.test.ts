@@ -34,7 +34,8 @@ test("both incident profiles share one-attempt reporting while unrelated profile
     (profile) =>
       profile !== SERVICE_TASK_INCIDENT_CHECKPOINT_PROFILE_ID &&
       profile !== SemanticProfileId.ServiceTaskIncidentCancellation &&
-      profile !== SemanticProfileId.Compensation,
+      profile !== SemanticProfileId.Compensation &&
+      profile !== SemanticProfileId.TransactionCancellation,
   );
   for (const profile of [...legacyProfiles, "unregistered-profile"]) {
     assert.deepEqual(effectActivityPolicyForProfile(profile), {
@@ -76,6 +77,10 @@ test("both incident profiles share one-attempt reporting while unrelated profile
 });
 
 test("compensation uses two attempts without inheriting the legacy result policy", () => {
+  assert.strictEqual(
+    effectActivityPolicyForProfile(SemanticProfileId.TransactionCancellation),
+    effectActivityPolicyForProfile(COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID),
+  );
   assert.deepEqual(
     effectActivityPolicyForProfile(COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID),
     {

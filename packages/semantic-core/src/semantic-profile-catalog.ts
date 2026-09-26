@@ -20,6 +20,8 @@ export const SemanticProfileId = Object.freeze({
     "bpmn-2.0.2-called-process-call-activity-draft",
   Compensation:
     "bpmn-2.0.2-compensation-source-checkpoint-draft",
+  TransactionCancellation:
+    "bpmn-2.0.2-transaction-cancellation-checkpoint-draft",
   MappedSuccessServiceTask:
     "cibseven-2.0.0-mapped-success-service-task-draft",
   MessageStart: "bpmn-2.0.2-message-start-event-draft",
@@ -93,6 +95,6 @@ export const SERVICE_TASK_INCIDENT_CHECKPOINT_PROFILE_ID =
 export const REPEATABLE_EVENT_SUBSCRIPTIONS_CHECKPOINT_PROFILE_ID =
   SemanticProfileId.RepeatableEventSubscriptions;
 
-/** Private source/host checkpoint identity; public registration follows complete capsule qualification. */
+/** Preserves checkpoint consumers while the public catalog owns the registered identity. */
 export const TRANSACTION_CANCELLATION_CHECKPOINT_PROFILE_ID =
-  "bpmn-2.0.2-transaction-cancellation-checkpoint-draft";
+  SemanticProfileId.TransactionCancellation;

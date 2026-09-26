@@ -314,7 +314,7 @@ export const leanModuleCostRecord = {
     },
     { module: "BpmnSemantics.CallActivityConformance", sourceSha256: "594a55c469d1a1c89cb1280fd6adb46dbb21b7b6b3849ffb7c7adc598dbe4390", peakResidentKib: 1398692, elapsedSeconds: 31.25, measurementReceiptSha256: "86f4e44b46b1fc35e23dce78c4c107aad73dc328e804d1d2bd2beb8e8ad5fbe1" },
     { module: "BpmnSemantics.CallActivityPairingConformance", sourceSha256: "f1b06692452a19dcc1e41ddb9fdaca632dff95f3cc5196dae3af1a50488bc71b", peakResidentKib: 1081832, elapsedSeconds: 3.54, measuredAtCommit: "b304150e" },
-    { module: "BpmnSemantics.SequentialMultiInstanceProgramBindingConformance", sourceSha256: "9c9d85778b3f574d082cbb102840846089e05e1a6667577d31fe3d00a992fe7d", peakResidentKib: 1609256, elapsedSeconds: 51.5, measurementReceiptSha256: "2340a3aecb06e036a3bc74374b3a57e6c5b361073664e3cef4239901cfd68ac7" },
+    { module: "BpmnSemantics.SequentialMultiInstanceProgramBindingConformance", sourceSha256: "985d24ed53b5a9f9538b75051f424c016e0a31774cdecf145f14b17250d5f227", peakResidentKib: 1627956, elapsedSeconds: 33.48, measurementReceiptSha256: "1c72d429398762aeb59fc7df2bb3c3a19b0c483b9e404e6226bcbd02a247dc40" },
     {
       module: "BpmnSemantics.TimerStartConformance", sourceSha256: "6fabac266ded9705199deacc71b353a027f8bce17b925afd404b7b5ca3f63a61",
       peakResidentKib: 1438340,

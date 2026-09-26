@@ -72,6 +72,9 @@ test("classifies every registered profile against the regional exclusion investi
       case SemanticProfileId.Compensation:
         assert.equal(excluded, false, "Compensation requires its separately reviewed exact-topology argument, not the legacy regional shape premises");
         break;
+      case SemanticProfileId.TransactionCancellation:
+        assert.equal(excluded, false, "Transaction cancellation requires its quantified admitted-prefix scheduling account");
+        break;
       default:
         assert.equal(excluded, true, profile);
     }
