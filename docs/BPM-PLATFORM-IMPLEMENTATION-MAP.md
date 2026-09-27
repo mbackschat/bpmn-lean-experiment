@@ -14,6 +14,8 @@ The [failed-Process contract checkpoint](BPM-PLATFORM-FAILED-PROCESS-SPEC.md#pub
 
 ## Implemented
 
+- Presentation-only automatic layout covers all twelve prepared RC showcases, including expanded nested scopes, Transactions and visible data/compensation associations, with recursively checked DI and unchanged executable XML. The [diagram decision](BPMN-DIAGRAM-PRESENTATION-DECISION.md#selected-generator) owns the bounded coverage and adapter epoch.
+
 ### BPM platform
 
 - The concrete modular-monolith architecture, decision register, and complete owner inventory in [ARCHITECTURE.md](ARCHITECTURE.md)
@@ -70,7 +72,7 @@ The [failed-Process contract checkpoint](BPM-PLATFORM-FAILED-PROCESS-SPEC.md#pub
 - complete discovery of engine Process instances started outside Product 2
 - the deferred JUEL evaluator implementation under its product-owned `platform/workers/juel-evaluator/` location
 - recovery of legacy engine instances that predate the confirmed-start publication contract
-- BPMN diagram editing, a public raw-sidecar format, automatic layout for multiple root Processes, collaborations, Call Activities without complete source DI, Sub-Processes, groups, annotations, associations, or data artifacts
+- BPMN diagram editing, a public raw-sidecar format, automatic layout for multiple root Processes, collaborations, Call Activities without complete source DI, groups, annotations, Data Store References, or multi-source Data Associations
 - Conversation `messageFlowRef` parsing in the private Product 2 diagram parser: its pinned upstream descriptor still uses the plural property. The admitted correlation model has no source DI and its selected Triggers journey claims no diagram; the semantic compiler's existing correction and execution remain independent.
 
 ## Evidence owners

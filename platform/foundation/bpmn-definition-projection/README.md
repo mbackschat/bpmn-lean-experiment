@@ -6,6 +6,8 @@
 
 Classify source layout as usable, absent, or unusable, generate bounded DI in a killable worker, validate the exact-source composition before Definitions stores a sidecar, and project a strict source-ordered Human Task catalog with closed provenance.
 
+Generated layout supports a single root Process with expanded nested scopes, Transactions, visible data references and associations. The adapter normalizes only private layout input, validates recursive shape/edge coverage and emits DI for insertion into the untouched source. The [diagram decision](../../../docs/BPMN-DIAGRAM-PRESENTATION-DECISION.md#selected-generator) lists exclusions.
+
 ## Quick start
 
 ```sh

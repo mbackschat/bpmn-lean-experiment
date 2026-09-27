@@ -28,7 +28,7 @@ function sha256(value: string): string {
 
 test("binds the complete output-affecting layout and parser graph", () => {
   const exactGeneratorIdentity = [
-    "bpmn-presentation-adapter-epoch@1",
+    "bpmn-presentation-adapter-epoch@2",
     "bpmn-auto-layout@1.3.0",
     "bpmn-moddle@10.0.0",
     "moddle@8.2.0",
@@ -278,11 +278,8 @@ test("fails closed for every construct outside the generated-layout slice", asyn
   const adapter = new BpmnAutoLayoutPresentationAdapter();
   const excludedProcessContent = [
     '<bpmn:callActivity id="Unsupported_Call" />',
-    '<bpmn:subProcess id="Unsupported_SubProcess" />',
     '<bpmn:group id="Unsupported_Group" />',
     '<bpmn:textAnnotation id="Unsupported_Annotation"><bpmn:text>note</bpmn:text></bpmn:textAnnotation>',
-    '<bpmn:association id="Unsupported_Association" sourceRef="StartEvent_1" targetRef="UserTask_Approve" />',
-    '<bpmn:dataObject id="Unsupported_Data" />',
   ];
 
   for (const excluded of excludedProcessContent) {

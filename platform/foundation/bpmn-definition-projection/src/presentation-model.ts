@@ -1,5 +1,7 @@
 import { BpmnModdle } from "bpmn-moddle";
 
+import { layoutInventory } from "./layout-inventory.js";
+
 import structuredFormModdle from "./bpmn-lean-structured-form-moddle.json" with {
   type: "json",
 };
@@ -25,6 +27,11 @@ export interface ModdleElement {
   readonly dataInputAssociations?: readonly ModdleElement[];
   readonly dataOutputAssociations?: readonly ModdleElement[];
   readonly ioSpecification?: ModdleElement;
+  readonly sourceRef?: ModdleElement | readonly ModdleElement[];
+  readonly targetRef?: ModdleElement;
+  readonly dataObjectRef?: ModdleElement;
+  readonly isExpanded?: boolean;
+  set(name: string, value: unknown): void;
   readonly plane?: ModdleElement;
   readonly planeElement?: readonly ModdleElement[];
   readonly bpmnElement?: ModdleElement;
@@ -41,7 +48,9 @@ export interface ModdleElement {
   $instanceOf(typeName: string): boolean;
 }
 
-type PresentationModdleParser = Readonly<{
+export type PresentationModdleParser = Readonly<{
+  create(type: string, attributes?: Record<string, unknown>): ModdleElement;
+  toXML(element: ModdleElement, options: { format: boolean }): Promise<{ xml: string }>;
   fromXML(
     xml: string,
     options: Readonly<{ lax: false }>,
@@ -73,16 +82,18 @@ type ProcessDiagramSelection = Readonly<{
   participant: ModdleElement | null;
 }>;
 
+export function createPresentationModdle(): PresentationModdleParser {
+  // Upstream publishes no declarations; this private cast is the parser trust boundary.
+  return new BpmnModdle({ bpmnLean: structuredFormModdle }) as unknown as PresentationModdleParser;
+}
+
 export async function parsePresentationModel(
   xml: string,
   boundary: string,
 ): Promise<ParsedPresentationModel> {
   let parsed: Awaited<ReturnType<PresentationModdleParser["fromXML"]>>;
   try {
-    // Upstream publishes no declarations. This private cast is the parser trust boundary.
-    const parser = new BpmnModdle({
-      bpmnLean: structuredFormModdle,
-    }) as unknown as PresentationModdleParser;
+    const parser = createPresentationModdle();
     parsed = await parser.fromXML(xml, { lax: false });
   } catch (cause: unknown) {
     throw presentationError(`${boundary} is not well-formed BPMN XML`, cause);
@@ -135,35 +146,10 @@ export function validateGenerationScope(
     throw new Error("generated layout does not support Collaborations");
   }
 
-  const excludedFlowTypes = new Set([
-    "bpmn:CallActivity",
-    "bpmn:SubProcess",
-    "bpmn:DataObject",
-    "bpmn:DataObjectReference",
-    "bpmn:DataStoreReference",
-  ]);
-  const excludedArtifactTypes = new Set([
-    "bpmn:Association",
-    "bpmn:Group",
-    "bpmn:TextAnnotation",
-  ]);
-  const excluded = [
-    ...(inventory.process.flowElements ?? []).filter((element) =>
-      excludedFlowTypes.has(element.$type),
-    ),
-    ...(inventory.process.artifacts ?? []).filter((element) =>
-      excludedArtifactTypes.has(element.$type),
-    ),
-    ...inventory.flowNodes.filter(
-      (element) =>
-        (element.dataInputAssociations?.length ?? 0) > 0 ||
-        (element.dataOutputAssociations?.length ?? 0) > 0 ||
-        element.ioSpecification !== undefined,
-    ),
-  ];
-  if (excluded.length > 0) {
-    throw new Error(`generated layout does not support ${excluded[0]?.$type ?? "source"}`);
-  }
+  const selected = layoutInventory(inventory.process);
+  const excluded = selected.scopes.flatMap((scope) => [...(scope.flowElements ?? []), ...(scope.artifacts ?? [])])
+    .find((element) => ["bpmn:CallActivity", "bpmn:DataStoreReference", "bpmn:Group", "bpmn:TextAnnotation"].includes(element.$type));
+  if (excluded !== undefined) throw new Error(`generated layout does not support ${excluded.$type}`);
 }
 
 export function validateDiagramCoverage(
@@ -235,7 +221,8 @@ export function validateDiagramCoverage(
     }
   }
 
-  for (const node of inventory.flowNodes) {
+  const generatedInventory = generatedPresentation ? layoutInventory(inventory.process) : null;
+  for (const node of generatedInventory?.shapes ?? inventory.flowNodes) {
     const covered = coverage.get(requiredId(node)) ?? [];
     const shapes = covered.filter(
       (element) => element.$type === "bpmndi:BPMNShape",
@@ -248,7 +235,12 @@ export function validateDiagramCoverage(
       return `flow node ${requiredId(node)} needs exactly one finite positive-bounds BPMNShape`;
     }
   }
-  for (const flow of inventory.sequenceFlows) {
+  if (generatedInventory !== null) {
+    for (const scope of generatedInventory.scopes.slice(1)) {
+      if (coverage.get(requiredId(scope))?.[0]?.isExpanded !== true) return `Sub-Process ${requiredId(scope)} must be expanded`;
+    }
+  }
+  for (const flow of generatedInventory?.edges ?? inventory.sequenceFlows) {
     const covered = coverage.get(requiredId(flow)) ?? [];
     const edges = covered.filter(
       (element) => element.$type === "bpmndi:BPMNEdge",

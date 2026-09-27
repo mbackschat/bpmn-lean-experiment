@@ -38,6 +38,24 @@ test("RC startup prepares the curated definitions without starting instances", a
   }
 });
 
+test("every prepared showcase opens a complete definition diagram", async ({ page }) => {
+  const models = (await buildProcessShowcaseCatalog(fileURLToPath(new URL("../../../", import.meta.url))))
+    .filter((entry) => entry.showcase !== null);
+  await page.setViewportSize({ width: 1600, height: 1000 });
+  for (const model of models) {
+    await page.goto(`${runtime.origin}/#/definitions?view=showcases`);
+    await page.locator(`[data-model-id="${model.id}"]`).getByRole("link", { name: "Open definition", exact: true }).click();
+    const diagram = page.locator('[data-ui="definition-diagram-surface"]');
+    await expect(diagram, model.id).toHaveAttribute("data-diagram-status", "ready");
+    await expect(diagram.locator(".djs-shape").first()).toBeVisible();
+    const connection = diagram.locator(".djs-connection .djs-visual path").first();
+    await expect(connection).toBeAttached();
+    expect(await connection.evaluate((path) => (path as SVGPathElement).getTotalLength())).toBeGreaterThan(0);
+    await expect(page.getByRole("button", { name: "Download diagrammed BPMN", exact: true })).toBeEnabled();
+    await diagram.screenshot({ path: test.info().outputPath(`${model.id}.png`) });
+  }
+});
+
 for (const selection of rcShowcases) {
   test(`RC catalog completes ${selection.modelId} through the public UI`, async ({ page }) => {
     await page.setViewportSize({ width: 1600, height: 900 });

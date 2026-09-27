@@ -1,6 +1,6 @@
 import { parentPort } from "node:worker_threads";
 
-import { layoutProcess } from "bpmn-auto-layout";
+import { generateLayout } from "./layout-generation.js";
 
 if (parentPort === null) {
   throw new Error("layout worker requires a parent port");
@@ -22,7 +22,7 @@ parentPort.once("message", async (message: unknown) => {
     ) {
       throw new Error("layout worker received no output byte limit");
     }
-    const generatedXml = await layoutProcess(message.sourceXml);
+    const generatedXml = await generateLayout(message.sourceXml);
     if (
       Buffer.byteLength(generatedXml, "utf8") > message.maximumOutputBytes
     ) {
