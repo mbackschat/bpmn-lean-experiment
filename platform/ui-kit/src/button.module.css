@@ -1,6 +1,8 @@
 .button {
   appearance: none;
   display: inline-flex;
+  justify-self: start;
+  max-width: 100%;
   align-items: center;
   justify-content: center;
   min-height: 44px;

@@ -1,0 +1,30 @@
+.disclosure {
+  display: grid;
+  justify-items: start;
+  min-width: 0;
+  width: 100%;
+}
+
+.trigger {
+  gap: var(--ui-space-2);
+}
+
+.panel {
+  min-width: 0;
+  width: 100%;
+}
+
+.content {
+  margin-top: var(--ui-space-3);
+  border: var(--ui-border);
+  border-radius: var(--ui-radius-control);
+  padding: var(--ui-space-4);
+  background: var(--ui-color-inset);
+  overflow-wrap: anywhere;
+}
+
+.content pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-width: 100%;
+}

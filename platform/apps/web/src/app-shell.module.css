@@ -23,6 +23,13 @@
   align-items: center;
   gap: var(--ui-space-3);
   padding: 0 var(--ui-space-2);
+  border-radius: var(--ui-radius-control);
+  color: inherit;
+  text-decoration: none;
+}
+
+.brand:hover {
+  background: var(--ui-color-accent-soft);
 }
 
 .brandMark {
@@ -49,10 +56,6 @@
 .navigation {
   display: grid;
   gap: var(--ui-space-1);
-}
-
-.navigationItem {
-  width: 100%;
 }
 
 .identity {
@@ -111,11 +114,6 @@
     overflow-x: visible;
   }
 
-  .navigationItem {
-    width: auto;
-    white-space: nowrap;
-  }
-
   .identity {
     display: none;
   }
@@ -124,4 +122,25 @@
     padding: var(--ui-space-5) var(--ui-space-4) var(--ui-space-7);
   }
 
+}
+
+.navigationLink {
+  display: block;
+  padding: var(--ui-space-3) var(--ui-space-4);
+  border-radius: var(--ui-radius-control);
+  color: var(--ui-color-text);
+  font: var(--ui-font-label);
+  text-decoration: none;
+}
+
+.navigationLink:hover,
+.navigationLink[aria-current="page"] {
+  color: var(--ui-color-accent);
+  background: var(--ui-color-accent-soft);
+}
+
+.navigationLink:focus-visible,
+.brand:focus-visible {
+  outline: 2px solid var(--ui-color-focus);
+  box-shadow: var(--ui-focus-ring);
 }

@@ -13,6 +13,8 @@ The About destination keeps two denominators separate. Its executable-capability
 
 The production bundle loads the complete Work inbox first. Definitions, Operations, About, their workspace-only HTTP clients, and Work task detail load at navigation or task-selection boundaries. The structured form loads with a structured task detail, while the bpmn-js viewer runtime and styles load only when a Diagram surface mounts. The production-bundle guard measures the complete default Work static-import graph, keeps it below 500 kB, and rejects an eager bpmn-js runtime.
 
+Navigation uses TanStack Router hash URLs, for example `/#/definitions?process=Process_UserTaskMetadata&version=1&tab=start` and `/#/operations?tab=audit`. Copy the current browser address to share an exact selection; reload and Back/Forward restore the view after public API resolution. One application QueryClient owns shared server state. Feature components retain drafts and exact uncertain operations in memory; URLs never contain form values or commands. See [navigation and state ownership](../../../docs/BPM-PLATFORM-INFORMATION-ARCHITECTURE-SPEC.md) for the contract.
+
 ## Run locally
 
 Start the platform API and the web development server in separate terminals:

@@ -69,7 +69,8 @@ test("failed History stays readable with exact export and independent unavailabl
   const effect = history.locator('[data-revision="2"]');
   await expect(effect).toContainText("completeEffect");
   await expect(effect).toContainText(`${failedProcessLabels.processInstanceId} / ${failedProcessLabels.elementId} / activation 19`);
-  await effect.getByText("Exact stimulus values", { exact: true }).click();
+  await effect.getByRole("button", { name: "Show Exact stimulus values", exact: true }).click();
+  await expect(effect.getByRole("button", { name: "Hide Exact stimulus values", exact: true })).toHaveAttribute("aria-expanded", "true");
   const stimulus = JSON.parse(await effect.locator("pre").innerText()) as { result: { message: string; code: string } };
   expect(stimulus.result).toMatchObject({ code: failedProcessLabels.code, message: failedProcessLabels.message });
   await noOverflow(page, history);
@@ -111,7 +112,7 @@ async function openDetail(
 ) {
   await installFailedProcessFixtures(page, message, status);
   await page.goto("/");
-  await page.getByRole("button", { name: "Operations", exact: true }).click();
+  await page.getByRole("link", { name: "Operations", exact: true }).click();
   await page.getByRole("button", { name: "Search", exact: true }).click();
   const selection = page.getByRole("button", { name: `View details ${failedProcessLabels.processInstanceId}` });
   await selection.focus();

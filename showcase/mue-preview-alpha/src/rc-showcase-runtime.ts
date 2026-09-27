@@ -18,6 +18,8 @@ import {
 import type { HostInteractionPort } from "@bpmn-lean/temporal-testkit";
 
 import { allocatePlaywrightLoopbackPort } from "../../../scripts/playwright-loopback-ports.ts";
+import { buildProcessShowcaseCatalog } from "../../../scripts/rc-showcase-catalog.ts";
+import { prepareRcShowcases } from "./rc-showcase-preparation.ts";
 import {
   RcShowcaseActors, driveRcShowcaseActor, loadRcShowcaseBindings, mergeRcEffectHandlers,
 } from "./rc-showcase-actor.ts";
@@ -115,6 +117,10 @@ export class RcShowcaseRuntime {
         maxWorkProcesses: 100, maxWorkTasks: 1_000,
       });
       this.#origin = await withDeadline(this.#platform.listen(), 20_000, "RC showcase platform listen");
+      await prepareRcShowcases(this.#origin,
+        await buildProcessShowcaseCatalog(fileURLToPath(new URL("../../../", import.meta.url))), (input, init) => fetch(input, {
+        ...init, signal: AbortSignal.any([this.#stop.signal, AbortSignal.timeout(10_000)]),
+      }));
       this.#polling = this.#poll().catch((error: unknown) => {
         if (this.#isStoppedWait(error)) return;
         this.#failure = error;

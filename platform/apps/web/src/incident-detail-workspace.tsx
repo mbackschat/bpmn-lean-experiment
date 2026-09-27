@@ -26,8 +26,10 @@ import { DefinitionDiagram } from "./definition-diagram.tsx";
 import type { DefinitionApiClient } from "./definitions-api.ts";
 import { BpmnDiagramMarkerKind } from "./bpmn-viewer-contract.ts";
 import styles from "./incident-detail-workspace.module.css";
+import type { OperationsSearch, WorkspaceNavigation } from "./navigation/route-search.ts";
 
 export type IncidentDetailWorkspaceProps = Readonly<{
+  navigation?: WorkspaceNavigation<OperationsSearch>;
   api: IncidentOperationsApi;
   definitionApi: Pick<DefinitionApiClient, "getPresentation">;
   incident: PublicIncident;
@@ -49,9 +51,13 @@ export function IncidentDetailWorkspace({
   onBack,
   onCommitted,
   onRetentionChange = () => undefined,
+  navigation,
 }: IncidentDetailWorkspaceProps) {
   const [current, setCurrent] = useState(incident);
-  const [tab, setTab] = useState("overview");
+  const [localTab, setTab] = useState("overview");
+  const tab = navigation === undefined ? localTab
+    : navigation.search.view === "diagram" || navigation.search.view === "audit"
+      ? navigation.search.view : "overview";
   const [confirmationOpen, setConfirmationOpen] = useState(false);
   const [actionNotice, setActionNotice] = useState<ActionNotice | null>(null);
   const [retainedKind, setRetainedKind] = useState<IncidentActionRequest["kind"] | null>(null);
@@ -175,7 +181,12 @@ export function IncidentDetailWorkspace({
       <WorkspaceTabs
         aria-label="Incident detail"
         selectedKey={tab}
-        onSelectionChange={setTab}
+        onSelectionChange={(next) => {
+          if (navigation === undefined) setTab(next);
+          else if (next === "overview" || next === "diagram" || next === "audit") {
+            navigation.navigate({ ...navigation.search, view: next });
+          }
+        }}
         tabs={[{
           id: "overview",
           label: "Overview",

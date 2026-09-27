@@ -75,7 +75,7 @@ test("captures the ordered text-first platform walkthrough landmarks", async ({ 
 
   await expenseTask.getByRole("button", { name: "Claim", exact: true }).click();
   await expect(expenseTask).toContainText("Claimed by demo-user");
-  await expenseTask.getByRole("button", { name: "Review exception", exact: true }).click();
+  await expenseTask.getByRole("button", { name: "Edit task: Review exception", exact: true }).click();
   await expect(tasks.getByRole("heading", { name: "Review exception", exact: true })).toBeFocused();
   const formTab = tasks.getByRole("tablist", { name: "Task detail views" })
     .getByRole("tab", { name: "Form", exact: true });
@@ -214,7 +214,7 @@ async function navigate(
   workspace: "About" | "Definitions" | "Operations" | "Work",
 ): Promise<void> {
   const button = page.getByRole("navigation", { name: "Primary navigation" })
-    .getByRole("button", { name: workspace, exact: true });
+    .getByRole("link", { name: workspace, exact: true });
   const heading = page.getByRole("heading", { name: workspace, level: 1 });
   if (await button.getAttribute("aria-current") !== "page") await button.click();
   await expect(heading).toBeVisible();
@@ -308,7 +308,7 @@ async function openCompletedProcess(page: Page, processInstanceId: string): Prom
   await page.getByRole("textbox", { name: "Process-instance ID", exact: true })
     .fill(processInstanceId);
   await page.getByRole("button", { name: "Search", exact: true }).click();
-  const results = page.getByRole("table", { name: "Confirmed Product 2 starts" });
+  const results = page.getByRole("table", { name: "Process instances" });
   await expect(results).toContainText(processInstanceId);
   const detail = page.getByRole("region", { name: `Process instance ${processInstanceId}` });
   const historyTab = detail.getByRole("tab", { name: "History", exact: true });

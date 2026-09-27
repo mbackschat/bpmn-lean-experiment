@@ -42,9 +42,9 @@ test("parallel content and risk review completes its production user journey", a
     await expect(row).toContainText("Unclaimed");
     await expect(row).toContainText("reviewers");
   }
-  await expect(contentRow.getByRole("button", { name: "Review content", exact: true }))
+  await expect(contentRow.getByRole("button", { name: "Edit task: Review content", exact: true }))
     .toHaveCount(0);
-  await expect(riskRow.getByRole("button", { name: "Review risk", exact: true }))
+  await expect(riskRow.getByRole("button", { name: "Edit task: Review risk", exact: true }))
     .toHaveCount(0);
   await expect(tasks.getByRole("button", { name: "Complete task", exact: true }))
     .toHaveCount(0);
@@ -69,7 +69,7 @@ test("parallel content and risk review completes its production user journey", a
   });
   await tasks.getByRole("button", { name: "Back to tasks", exact: false }).click();
 
-  await contentRow.getByRole("button", { name: "Review content", exact: true }).click();
+  await contentRow.getByRole("button", { name: "Edit task: Review content", exact: true }).click();
   await tasks.getByRole("radio", { name: "True", exact: true }).press("Space");
   await tasks.getByRole("button", { name: "Complete task", exact: true }).click();
   await expect(taskRow(tasks, "Review content")).toHaveCount(0);
@@ -81,7 +81,7 @@ test("parallel content and risk review completes its production user journey", a
 
   await navigate(page, "Work");
   const remainingRiskRow = taskRow(tasks, "Review risk");
-  await remainingRiskRow.getByRole("button", { name: "Review risk", exact: true }).click();
+  await remainingRiskRow.getByRole("button", { name: "Edit task: Review risk", exact: true }).click();
   await tasks.getByRole("radio", { name: "True", exact: true }).press("Space");
   await tasks.getByRole("button", { name: "Complete task", exact: true }).click();
   await expect(tasks).toContainText("No current tasks.");
@@ -136,7 +136,7 @@ async function inspectClaimedTask(
     taskName: string;
   }>,
 ): Promise<void> {
-  await row.getByRole("button", { name: expected.taskName, exact: true }).click();
+  await row.getByRole("button", { name: `Edit task: ${expected.taskName}`, exact: true }).click();
   await expect(tasks.getByRole("heading", { name: expected.taskName, exact: true }))
     .toBeFocused();
   const taskTabs = tasks.getByRole("tablist", { name: "Task detail views" });
@@ -163,7 +163,7 @@ async function openExecution(
   await page.getByLabel("Process-instance ID").fill(processInstanceId);
   await page.getByRole("button", { name: "Search", exact: true }).click();
   const instanceRow = page
-    .getByRole("table", { name: "Confirmed Product 2 starts" })
+    .getByRole("table", { name: "Process instances" })
     .getByRole("row")
     .filter({ hasText: processInstanceId });
   await expect(instanceRow).toHaveCount(1);
@@ -180,7 +180,7 @@ async function navigate(
   workspace: "Definitions" | "Operations" | "Work",
 ): Promise<void> {
   await page.getByRole("navigation", { name: "Primary navigation" })
-    .getByRole("button", { name: workspace, exact: true })
+    .getByRole("link", { name: workspace, exact: true })
     .click();
   await expect(page.getByRole("heading", { name: workspace, level: 1 })).toBeFocused();
 }

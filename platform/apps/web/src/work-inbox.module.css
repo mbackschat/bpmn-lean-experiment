@@ -35,6 +35,12 @@
   min-width: 0;
 }
 
+.taskActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ui-space-3);
+}
+
 .detail {
   display: grid;
   gap: var(--ui-space-5);

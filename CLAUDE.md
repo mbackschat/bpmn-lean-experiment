@@ -44,12 +44,15 @@ Never claim BPMN conformance or CIB compatibility beyond the exact profile and e
 
 Use [docs/README.md](docs/README.md) as the documentation registry. Do not rely on chat history for project state.
 
+For frontend architecture questions, comparisons, or recommendations, apply [Before frontend recommendations](#before-frontend-recommendations) before the first recommendation, even when no code change is requested.
+
 ## Read before changing a boundary
 
 | Change | Required context |
 |---|---|
 | Documentation filename, role, lifecycle, placement, graduation, or archive | [Documentation discipline](docs/DOC-DISCIPLINE.md) |
 | Repository layout, package ownership, modular-monolith boundary, composition root, or deployment shape | [ARCHITECTURE.md](docs/ARCHITECTURE.md), [PROJECT-DESIGN.md](docs/PROJECT-DESIGN.md#one-repository-for-products-1-and-2), and the applicable product proposal |
+| Frontend architecture recommendation, React organization, routing, state management, or UI stack comparison | [Before frontend recommendations](#before-frontend-recommendations), including the existing stack research and adopted architecture decisions |
 | Product 2 UI/UX surface, workflow, visualization, or interaction model | [BPM platform UI/UX and information-architecture research](docs/research/BPM-PLATFORM-UI-UX-INFORMATION-ARCHITECTURE-RESEARCH.md), [UI design specification](docs/BPM-PLATFORM-UI-DESIGN-SPEC.md#source-grounded-design-preflight), applicable current product documentation, and the pristine pinned source registered in [SOURCES.md](docs/SOURCES.md) |
 | Mission, authority, compatibility, or assurance | [PROJECT-DESIGN.md](docs/PROJECT-DESIGN.md), [BPMN-CONFORMANCE-TARGET.md](docs/BPMN-CONFORMANCE-TARGET.md), and the applicable release/evidence gate in [TESTING-SPEC.md](docs/TESTING-SPEC.md) |
 | BPMN import, conformance, CIB relationship, or semantic interpretation | [BPMN-CONFORMANCE-TARGET.md](docs/BPMN-CONFORMANCE-TARGET.md), [CIB-BPMN-RELATION-REGISTER.md](docs/CIB-BPMN-RELATION-REGISTER.md), [BPMN-XML-INGESTION-DECISION.md](docs/BPMN-XML-INGESTION-DECISION.md), the applicable [semantic capsule](docs/capsules/README.md), and applicable normative sources |
@@ -120,9 +123,23 @@ For Product 2 PostgreSQL runtime or migration work, keep the ordinary package lo
 
 Preserve cached Docker images needed for future builds, tests, or demos, especially the pinned Temporal image. Clean up task-owned containers without deleting reusable images; broad image or system pruning must not discard those dependencies.
 
+### Before frontend recommendations
+
+Consult the existing decisions before recommending a frontend library, routing approach, state owner, component system, or application structure. This applies to discussion and review as well as implementation. Read these owners in order:
+
+1. [Platform stack research](docs/research/BPM-PLATFORM-STACK-RESEARCH.md): owner requirements, coherent-stack rationale, alternatives, recorded decisions, and open choices.
+2. [Architecture](docs/ARCHITECTURE.md#user-interface): implemented ownership and the [decision register](docs/ARCHITECTURE.md#architecture-decision-register), especially ARC-010, ARC-012, and ARC-015 and their reopen conditions.
+3. [Information architecture](docs/BPM-PLATFORM-INFORMATION-ARCHITECTURE-SPEC.md) and [UI design](docs/BPM-PLATFORM-UI-DESIGN-SPEC.md): user-facing terminology, navigation, draft and uncertain-command continuity, component ownership, and acceptance boundaries.
+
+Explain which existing decision the recommendation preserves or reopens and why the current requirement meets its reopen condition. Distinguish adopted choices, research candidates, deferred scope, and new recommendations; mentioning a library in research does not authorize its adoption. Prefer the established coherent stack and maintained ecosystem mechanisms. Keep these owners authoritative rather than duplicating their decisions here; the source preflight below additionally applies before material UI implementation.
+
 ### Product 2 UI/UX source preflight
 
+Design from the user's complete journey before arranging screens: name the objective, primary action, visible outcome and next action in the owning information architecture. Make essential actions visible where their object is shown; tabs and technical selectors must not force users to discover the sequence. Across the product, use visibly styled, verb-labelled buttons for actions, links for navigation, and plain text for object names and descriptions. Never make an essential action depend on an unmarked clickable title, row, card or colored area. Follow [the UI control guideline](docs/BPM-PLATFORM-UI-DESIGN-SPEC.md#components-and-patterns), including native tabs, disclosures and form controls. Verify the complete journey and visual button affordance as well as geometry, public prerequisites and keyboard behavior.
+
 For every material Product 2 UI/UX surface, inspect CIB Seven first when it has an analogous capability, using its current product documentation and the pristine pinned source rather than memory or screenshots alone. Run the `research` doctor scope and complete the [source-grounded design preflight](docs/BPM-PLATFORM-UI-DESIGN-SPEC.md#source-grounded-design-preflight) before production code. Use other established products to fill a gap or provide an independent comparison. Record what the project adopts, deliberately changes, and excludes, with the published engine or platform fact that justifies each deviation. This is design research, not permission to copy code, styling, assets, private data models, or product terminology.
+
+Apply [disclosure and dialog design](docs/BPM-PLATFORM-UI-DESIGN-SPEC.md#disclosures-and-dialogs) consistently: optional information expands inline with an explicit Show/Hide button; bounded forms and decisions use the shared modal with a backdrop, focus containment and obvious dismissal; long activities use a dedicated view. Never position a disclosure over unrelated content or present an overlay without a clear way to close it. Verify keyboard collapse/dismissal, focus return and pending/error states, not just the open screenshot.
 
 ### Semantic code
 

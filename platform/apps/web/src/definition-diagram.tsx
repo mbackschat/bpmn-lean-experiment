@@ -200,8 +200,8 @@ function DefinitionDiagramContent({
     >
       <div className={styles.heading}>
         <div>
-          <p className={styles.eyebrow}>Resolved BPMN presentation</p>
-          <h2 id="diagram-heading">{definition.processId}, version {definition.version}</h2>
+          <p className={styles.eyebrow}>Process diagram</p>
+          <h2 id="diagram-heading">BPMN process ID: {definition.processId}, version {definition.version}</h2>
         </div>
         <code>{definition.source.sha256.slice(0, 12)}…</code>
       </div>

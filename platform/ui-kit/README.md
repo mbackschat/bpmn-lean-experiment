@@ -4,7 +4,12 @@
 
 ## What you can do
 
-Build forms, Boolean choices, tabs, confirmation dialogs, and native-table views with shared keyboard, focus, dismissal, and visual-state behavior.
+Build forms, Boolean choices, tabs, modal and confirmation dialogs, inline disclosures, and native-table views with shared keyboard, focus, dismissal, and visual-state behavior.
+
+- `ModalDialog` supplies the shared titled overlay and focus boundary; the feature owns its form, visible Cancel/Close button and pending state. `ConfirmationDialog` composes it with a safe initial Cancel action and destructive confirmation.
+- `InlineDisclosure` supplies a visible Show/Hide button for supplementary content that expands in document flow. Do not use it for a floating form or hide a primary action inside it.
+
+The [disclosure and dialog guideline](../../docs/BPM-PLATFORM-UI-DESIGN-SPEC.md#disclosures-and-dialogs) owns pattern selection and acceptance.
 
 ## Quick start
 

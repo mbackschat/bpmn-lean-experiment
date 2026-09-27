@@ -20,6 +20,7 @@ import type {
 import { WorkApiError } from "./work-tasks-api";
 import type { WorkApiClient } from "./work-tasks-api";
 import type { DefinitionApiClient } from "./definitions-api";
+import type { WorkSearch, WorkspaceNavigation } from "./navigation/route-search.ts";
 import {
   createRetainedCompletionOperation,
   resolveCompletionResult,
@@ -45,15 +46,17 @@ export type WorkInboxPanelProps = Readonly<{
   >;
   createActionId?: () => string;
   definitionApi?: Pick<DefinitionApiClient, "getPresentation">;
+  navigation?: WorkspaceNavigation<WorkSearch>;
 }>;
 
 export function WorkInboxPanel({
   api,
   createActionId = () => globalThis.crypto.randomUUID(),
   definitionApi,
+  navigation,
 }: WorkInboxPanelProps) {
   const queryClient = useQueryClient();
-  const [selected, setSelected] = useState<PublicWorkTask | null>(null);
+  const [localSelected, setSelected] = useState<PublicWorkTask | null>(null);
   const collectionHeadingRef = useRef<HTMLHeadingElement>(null);
   const taskButtonRefs = useRef(new Map<string, HTMLButtonElement>());
   const lastSelectedTaskIdRef = useRef<string | null>(null);
@@ -66,6 +69,27 @@ export function WorkInboxPanel({
   const [completionView, setCompletionView] = useState<WorkCompletionView>({
     kind: WorkCompletionViewKind.Idle,
   });
+  const tasks = useQuery({
+    queryKey: tasksQueryKey,
+    queryFn: () => api.listTasks(),
+    refetchInterval: 5_000,
+    retry: false,
+  });
+  const routeTask = navigation?.search.task;
+  const selected = navigation === undefined ? localSelected
+    : routeTask === undefined ? null
+    : localSelected !== null && workTaskRowId(localSelected) === routeTask ? localSelected
+    : tasks.data?.tasks.find((task) => task.claim !== null && workTaskRowId(task) === routeTask) ?? null;
+  useEffect(() => {
+    if (selected === localSelected) return;
+    if (selected === null) {
+      returnFocusRef.current ??= "task";
+    } else {
+      lastSelectedTaskIdRef.current = workTaskRowId(selected);
+    }
+    setSelected(selected);
+    setCompletionView({ kind: WorkCompletionViewKind.Idle });
+  }, [selected, localSelected]);
   useEffect(() => {
     if (selected !== null) return;
     switch (returnFocusRef.current) {
@@ -85,12 +109,6 @@ export function WorkInboxPanel({
     }
     returnFocusRef.current = null;
   }, [selected]);
-  const tasks = useQuery({
-    queryKey: tasksQueryKey,
-    queryFn: () => api.listTasks(),
-    refetchInterval: 5_000,
-    retry: false,
-  });
   const detail = useQuery({
     queryKey: ["work", "task", selected === null ? "none" : workTaskRowId(selected)],
     queryFn: () => api.getTask(selected!.task.id),
@@ -129,6 +147,7 @@ export function WorkInboxPanel({
     onError: (error, operation) => {
       if (isFormValidationFailure(error)) {
         completionOperationRef.current = null;
+        navigation?.retainSelection(null);
         setCompletionOperation(null);
         setCompletionView({
           kind: WorkCompletionViewKind.ValidationFailed,
@@ -138,6 +157,7 @@ export function WorkInboxPanel({
       }
       if (isDefiniteCompletionRefusal(error)) {
         completionOperationRef.current = null;
+        navigation?.retainSelection(null);
         setCompletionOperation(null);
         setCompletionView({
           kind: WorkCompletionViewKind.NotAccepted,
@@ -153,11 +173,13 @@ export function WorkInboxPanel({
     onSuccess: async (result, operation) => {
       const resolution = resolveCompletionResult(operation, result);
       completionOperationRef.current = resolution.operation;
+      if (resolution.operation === null) navigation?.retainSelection(null);
       setCompletionOperation(resolution.operation);
       setCompletionView(resolution.view);
       if (resolution.closeDetail) {
         returnFocusRef.current = "collection";
-        setSelected(null);
+        if (navigation === undefined) setSelected(null);
+        else navigation.navigate({}, true);
         await queryClient.invalidateQueries({ queryKey: tasksQueryKey });
       } else if (result.state === "rejected") {
         await refresh();
@@ -169,28 +191,7 @@ export function WorkInboxPanel({
     id: "task",
     header: "Task",
     responsiveLabel: "Task",
-    cell: (row) => row.claim === null ? (
-      <span>{row.task.name ?? row.task.id.elementId}</span>
-    ) : (
-      <Button
-        ref={(element) => {
-          const taskId = workTaskRowId(row);
-          if (element === null) taskButtonRefs.current.delete(taskId);
-          else taskButtonRefs.current.set(taskId, element);
-        }}
-        onPress={() => {
-          if (completionOperation !== null) return;
-          lastSelectedTaskIdRef.current = workTaskRowId(row);
-          completionOperationRef.current = null;
-          setSelected(row);
-          setCompletionView({ kind: WorkCompletionViewKind.Idle });
-          complete.reset();
-        }}
-        variant={ButtonVariant.Plain}
-      >
-        {row.task.name ?? row.task.id.elementId}
-      </Button>
-    ),
+    cell: (row) => <span>{row.task.name ?? row.task.id.elementId}</span>,
   }, {
     cardWidth: DataTableCardWidth.Full,
     id: "process",
@@ -225,35 +226,73 @@ export function WorkInboxPanel({
         Claim
       </Button>
     ) : (
-      <Button
-        isPending={release.isPending}
-        onPress={() => release.mutate(row)}
-      >
-        Release
-      </Button>
+      <div className={styles.taskActions}>
+        <Button
+          ref={(element) => {
+            const taskId = workTaskRowId(row);
+            if (element === null) taskButtonRefs.current.delete(taskId);
+            else taskButtonRefs.current.set(taskId, element);
+          }}
+          onPress={() => {
+            if (completionOperation !== null) return;
+            lastSelectedTaskIdRef.current = workTaskRowId(row);
+            completionOperationRef.current = null;
+            if (navigation === undefined) setSelected(row);
+            else navigation.navigate({ task: workTaskRowId(row), view: "form" });
+            setCompletionView({ kind: WorkCompletionViewKind.Idle });
+            complete.reset();
+          }}
+          aria-label={`Edit task: ${row.task.name ?? row.task.id.elementId}`}
+        >
+          Edit task
+        </Button>
+        <Button
+          variant={ButtonVariant.Secondary}
+          isPending={release.isPending}
+          onPress={() => release.mutate(row)}
+        >
+          Release
+        </Button>
+      </div>
     ),
-  }], [claim, release, complete, completionOperation]);
+  }], [claim, release, complete, completionOperation, navigation]);
   const error = tasks.error ?? detail.error ?? claim.error ?? release.error;
+  const detailMismatch = selected !== null && detail.data !== undefined &&
+    workTaskRowId(detail.data.workTask) !== workTaskRowId(selected);
+  const backToTasks = () => {
+    if (completionOperationRef.current !== null) return;
+    returnFocusRef.current = "task";
+    if (navigation === undefined) setSelected(null);
+    else navigation.navigate({});
+    setCompletionView({ kind: WorkCompletionViewKind.Idle });
+    complete.reset();
+  };
+  if (routeTask !== undefined && selected === null) {
+    return (
+      <section className={styles.panel} aria-label="Tasks">
+        <Button variant={ButtonVariant.Plain} onPress={backToTasks}>← Back to tasks</Button>
+        <p role="status">{tasks.isPending ? "Loading current tasks…" : "This task is unavailable. Return to tasks to see current claimed work."}</p>
+        {error === null ? null : <p role="alert" className={styles.error}>{errorMessage(error)}</p>}
+      </section>
+    );
+  }
   if (selected !== null) {
     return (
       <section className={styles.panel} aria-label="Tasks">
         {error === null ? null : <p role="alert" className={styles.error}>{errorMessage(error)}</p>}
         {detail.isPending ? <p role="status">Loading task detail…</p> : null}
-        {detail.data === undefined ? null : (
+        {detail.isError || detailMismatch ? <Button variant={ButtonVariant.Plain} isDisabled={completionOperation !== null} onPress={backToTasks}>← Back to tasks</Button> : null}
+        {detailMismatch ? <p role="status">This task detail is unavailable because its published identity changed.</p> : null}
+        {detail.data === undefined || detailMismatch ? null : (
           <Suspense fallback={<p role="status">Loading task detail…</p>}>
             <WorkTaskDetailWorkspace
+              key={workTaskRowId(selected)}
               task={detail.data.workTask}
               detail={detail.data}
               completionView={completionView}
               {...(definitionApi === undefined ? {} : { definitionApi })}
-              onBack={() => {
-                if (completionOperation !== null) return;
-                returnFocusRef.current = "task";
-                setSelected(null);
-                completionOperationRef.current = null;
-                setCompletionView({ kind: WorkCompletionViewKind.Idle });
-                complete.reset();
-              }}
+              {...(navigation === undefined ? {} : { navigation })}
+              onBack={backToTasks}
               onComplete={(value) => {
                 const operation = completionOperationRef.current ??
                   createRetainedCompletionOperation(
@@ -262,6 +301,7 @@ export function WorkInboxPanel({
                     createActionId,
                   );
                 completionOperationRef.current = operation;
+                navigation?.retainSelection(workTaskRowId(selected));
                 complete.mutate(operation);
               }}
               onRetry={() => {
@@ -282,7 +322,7 @@ export function WorkInboxPanel({
       <div className={styles.heading}>
         <div>
           <h2 id="human-work-heading" ref={collectionHeadingRef} tabIndex={-1}>Tasks</h2>
-          <p>Engine-published User Tasks available to the current actor.</p>
+          <p>Claim a task, then choose Edit task to open its form. Nothing is submitted until you complete the form.</p>
         </div>
         <Button onPress={() => { void tasks.refetch(); }} isPending={tasks.isFetching}>
           Refresh

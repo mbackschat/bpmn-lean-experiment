@@ -204,7 +204,7 @@ async function navigate(
   workspace: "Definitions" | "Operations",
 ): Promise<void> {
   const button = page.getByRole("navigation", { name: "Primary navigation" })
-    .getByRole("button", { name: workspace, exact: true });
+    .getByRole("link", { name: workspace, exact: true });
   if (await button.getAttribute("aria-current") !== "page") await button.click();
   await expect(page.getByRole("heading", { name: workspace, level: 1 })).toBeVisible();
 }

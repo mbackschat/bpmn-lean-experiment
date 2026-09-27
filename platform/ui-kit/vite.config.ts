@@ -12,6 +12,9 @@ export default defineConfig({
     rollupOptions: {
       external: (id) => !id.startsWith(".") && !id.startsWith("/"),
       output: {
+        preserveModules: true,
+        preserveModulesRoot: "src",
+        entryFileNames: "[name].js",
         assetFileNames: (asset) => asset.name === "style.css" ? "style.css" : "[name][extname]",
       },
     },

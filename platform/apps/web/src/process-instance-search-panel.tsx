@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
 
 import type {
@@ -20,6 +20,8 @@ import type {
   ProcessExecutionDetailSelection,
 } from "./process-instance-execution-detail.tsx";
 import styles from "./process-instance-search-panel.module.css";
+import type { OperationsSearch, WorkspaceNavigation } from "./navigation/route-search.ts";
+import { LatestRequest } from "./latest-request.ts";
 
 export type ProcessInstanceSearchPanelProps = Readonly<{
   api: ProcessInstanceSearchApi;
@@ -28,6 +30,7 @@ export type ProcessInstanceSearchPanelProps = Readonly<{
   operatorAuditApi: OperatorAuditApi;
   isActive: boolean;
   initialInstance?: PublicProcessInstanceIdentity;
+  navigation?: WorkspaceNavigation<OperationsSearch>;
 }>;
 
 /** Global search surface for confirmed Product 2 starts and their public identity only. */
@@ -38,6 +41,7 @@ export function ProcessInstanceSearchPanel({
   operatorAuditApi,
   isActive,
   initialInstance,
+  navigation,
 }: ProcessInstanceSearchPanelProps) {
   const [processInstanceId, setProcessInstanceId] = useState("");
   const [processId, setProcessId] = useState("");
@@ -60,18 +64,92 @@ export function ProcessInstanceSearchPanel({
   const rowRefs = useRef(new Map<string, HTMLButtonElement>());
   const collectionHeading = useRef<HTMLHeadingElement>(null);
   const consumedInitialInstance = useRef<PublicProcessInstanceIdentity | undefined>(undefined);
+  const [lookupError, setLookupError] = useState<string | null>(null);
+  const routed = navigation !== undefined;
+  const routeInstance = navigation?.search.instance;
+  const filterInstance = navigation?.search.filterInstance;
+  const filterProcess = navigation?.search.process;
+  const filterVersion = navigation?.search.version;
+  const filterSource = navigation?.search.source;
+  const filterKey = JSON.stringify([filterInstance, filterProcess, filterVersion, filterSource]);
+  const previousFilterKey = useRef(filterKey);
+  const collectionRequests = useRef(new LatestRequest());
+
+  const runSearch = useCallback(async (request: ProcessInstanceSearchRequest): Promise<void> => {
+    const generation = collectionRequests.current.begin();
+    setBusy("search");
+    setError(null);
+    try {
+      const page = await api.search(request);
+      if (!collectionRequests.current.isCurrent(generation)) return;
+      setInstances(page.instances);
+      setActiveRequest(request);
+      setNextCursor(page.nextCursor);
+      setSearched(true);
+    } catch (cause: unknown) {
+      if (collectionRequests.current.isCurrent(generation)) setError(errorMessage(cause));
+    } finally {
+      if (collectionRequests.current.isCurrent(generation)) setBusy(null);
+    }
+  }, [api]);
 
   useEffect(() => {
-    if (!isActive) detailLoader.current.clear(executionApi, setDetail);
-  }, [executionApi, isActive]);
+    if (!isActive && !routed) detailLoader.current.clear(executionApi, setDetail);
+  }, [executionApi, isActive, routed]);
 
   useEffect(() => {
-    if (!isActive || initialInstance === undefined || consumedInitialInstance.current === initialInstance) return;
+    if (routed || !isActive || initialInstance === undefined || consumedInitialInstance.current === initialInstance) return;
     consumedInitialInstance.current = initialInstance;
     returnFocusKey.current = null;
     restoreFocus.current = false;
     void detailLoader.current.load(initialInstance, executionApi, setDetail);
-  }, [executionApi, initialInstance, isActive]);
+  }, [executionApi, initialInstance, isActive, routed]);
+
+  useEffect(() => {
+    if (!routed || !isActive) return;
+    let current = true;
+    detailLoader.current.clear(executionApi, setDetail);
+    setLookupError(null);
+    if (routeInstance === undefined) return;
+    void (async () => {
+      try {
+        const instance = initialInstance?.processInstanceId === routeInstance
+          ? initialInstance
+          : (await api.search({ processInstanceId: routeInstance, limit: 2 })).instances
+            .find((candidate) => candidate.processInstanceId === routeInstance);
+        if (!current) return;
+        if (instance === undefined) throw new Error("No matching public Process instance was found.");
+        await detailLoader.current.load(instance, executionApi, setDetail);
+      } catch (cause: unknown) {
+        if (current) setLookupError(errorMessage(cause));
+      }
+    })();
+    return () => {
+      current = false;
+      detailLoader.current.invalidate(executionApi);
+    };
+  }, [api, executionApi, initialInstance, isActive, routeInstance, routed]);
+
+  useEffect(() => {
+    if (!routed || !isActive || routeInstance !== undefined) return;
+    const changed = previousFilterKey.current !== filterKey;
+    previousFilterKey.current = filterKey;
+    setProcessInstanceId(filterInstance ?? "");
+    setProcessId(filterProcess ?? "");
+    setVersion(filterVersion === undefined ? "" : String(filterVersion));
+    setSourceSha256(filterSource ?? "");
+    if (filterInstance === undefined && filterProcess === undefined && filterVersion === undefined && filterSource === undefined) {
+      setBusy(null);
+      if (changed) void runSearch({ limit: 2 });
+      return () => { collectionRequests.current.invalidate(); };
+    }
+    const request = processInstanceSearchRequest({
+      processInstanceId: filterInstance ?? "", processId: filterProcess ?? "",
+      version: filterVersion === undefined ? "" : String(filterVersion), sourceSha256: filterSource ?? "",
+    });
+    void runSearch(request);
+    return () => { collectionRequests.current.invalidate(); };
+  }, [filterInstance, filterKey, filterProcess, filterSource, filterVersion, isActive, routeInstance, routed, runSearch]);
 
   useEffect(() => {
     if (
@@ -87,34 +165,57 @@ export function ProcessInstanceSearchPanel({
   }, [detail, executionApi, isActive]);
 
   useEffect(() => () => {
+    collectionRequests.current.invalidate();
     detailLoader.current.clear(executionApi, setDetail);
     consumedInitialInstance.current = undefined;
   }, [executionApi]);
 
   useEffect(() => {
-    if (detail !== null || !restoreFocus.current) return;
+    if (detail !== null || !restoreFocus.current || (routed && routeInstance !== undefined)) return;
     restoreFocus.current = false;
     const row = returnFocusKey.current === null
       ? undefined
       : rowRefs.current.get(returnFocusKey.current);
     requestAnimationFrame(() => { (row ?? collectionHeading.current)?.focus(); });
-  }, [detail]);
+  }, [detail, routeInstance, routed]);
 
-  if (detail !== null) {
+  function backToCollection(): void {
+    restoreFocus.current = true;
+    if (navigation !== undefined) {
+      const { instance: _instance, view: _view, ...search } = navigation.search;
+      navigation.navigate(search);
+    }
+    detailLoader.current.clear(executionApi, setDetail);
+    setLookupError(null);
+  }
+
+  const detailInstance = detail !== null && detail.kind === ProcessExecutionDetailLoadKind.Current
+    ? detail.instance : detail?.requested;
+  if (routed && routeInstance !== undefined && detailInstance?.processInstanceId !== routeInstance) {
+    return (
+      <section className={styles.panel}>
+        <h2>Process instance</h2>
+        <Button variant={ButtonVariant.Secondary} onPress={backToCollection}>Back to Process instances</Button>
+        {lookupError === null
+          ? <p role="status">Finding the public Process instance…</p>
+          : <p role="alert">Process instance unavailable. {lookupError}</p>}
+      </section>
+    );
+  }
+
+  if (detail !== null && (!routed || routeInstance !== undefined)) {
     return (
       <ProcessInstanceExecutionDetailBoundary
         api={executionApi}
         definitionApi={definitionApi}
         operatorAuditApi={operatorAuditApi}
-        onBack={() => {
-          restoreFocus.current = true;
-          detailLoader.current.clear(executionApi, setDetail);
-        }}
+        onBack={backToCollection}
         onUnavailable={(requested, message) => {
           executionApi.invalidate();
           setDetail({ kind: ProcessExecutionDetailLoadKind.Failed, requested, message });
         }}
         state={detail}
+        {...(navigation === undefined ? {} : { navigation })}
       />
     );
   }
@@ -127,25 +228,27 @@ export function ProcessInstanceSearchPanel({
       version,
       sourceSha256,
     });
-    setBusy("search");
-    setError(null);
-    try {
-      const page = await api.search(request);
-      setInstances(page.instances);
-      setActiveRequest(request);
-      setNextCursor(page.nextCursor);
-      setSearched(true);
-    } catch (cause: unknown) {
-      setError(errorMessage(cause));
-    } finally {
-      setBusy(null);
+    if (navigation !== undefined) {
+      const { filterInstance: _filterInstance, process: _process, version: _version, source: _source, ...rest } = navigation.search;
+      const changed = processInstanceId !== (filterInstance ?? "") || processId !== (filterProcess ?? "") ||
+        version !== (filterVersion === undefined ? "" : String(filterVersion)) || sourceSha256 !== (filterSource ?? "");
+      navigation.navigate({
+        ...rest,
+        ...(request.processInstanceId === undefined ? {} : { filterInstance: request.processInstanceId }),
+        ...(request.processId === undefined ? {} : { process: request.processId }),
+        ...(request.version === undefined ? {} : { version: request.version }),
+        ...(request.sourceSha256 === undefined ? {} : { source: request.sourceSha256 }),
+      });
+      if (changed) return;
     }
+    await runSearch(request);
   }
 
   async function loadMore(): Promise<void> {
     if (activeRequest === null || nextCursor === null) {
       return;
     }
+    const generation = collectionRequests.current.begin();
     setBusy("more");
     setError(null);
     try {
@@ -157,12 +260,13 @@ export function ProcessInstanceSearchPanel({
         nextCursor,
         accumulatedIds,
       );
+      if (!collectionRequests.current.isCurrent(generation)) return;
       setInstances((current) => [...current, ...page.instances]);
       setNextCursor(page.nextCursor);
     } catch (cause: unknown) {
-      setError(errorMessage(cause));
+      if (collectionRequests.current.isCurrent(generation)) setError(errorMessage(cause));
     } finally {
-      setBusy(null);
+      if (collectionRequests.current.isCurrent(generation)) setBusy(null);
     }
   }
 
@@ -173,9 +277,9 @@ export function ProcessInstanceSearchPanel({
     >
       <div className={styles.heading}>
         <div>
-          <p className={styles.eyebrow}>Global Process-instance search</p>
-          <h2 id="process-instance-search-heading" ref={collectionHeading} tabIndex={-1}>Confirmed Product 2 starts</h2>
-          <p>Search only the exact public identity recorded after a confirmed start.</p>
+          <p className={styles.eyebrow}>Find an instance</p>
+          <h2 id="process-instance-search-heading" ref={collectionHeading} tabIndex={-1}>Process instances</h2>
+          <p>Instances started through this app, including scheduled and message-triggered starts.</p>
         </div>
       </div>
 
@@ -231,14 +335,15 @@ export function ProcessInstanceSearchPanel({
 
       {error === null ? null : <p className={styles.error} role="alert">{error}</p>}
       {searched && instances.length === 0 ? (
-        <p className={styles.empty}>No confirmed starts match these exact filters.</p>
+        <p className={styles.empty}>No process instances match these filters.</p>
       ) : (
         <ProcessInstanceSearchTable
           instances={instances}
           onOpen={(instance, row) => {
             returnFocusKey.current = instance.processInstanceId;
             rowRefs.current.set(instance.processInstanceId, row);
-            void detailLoader.current.load(instance, executionApi, setDetail);
+            if (navigation === undefined) void detailLoader.current.load(instance, executionApi, setDetail);
+            else navigation.navigate({ ...navigation.search, instance: instance.processInstanceId, view: "overview" });
           }}
           registerRow={(processInstanceId, row) => {
             if (row === null) rowRefs.current.delete(processInstanceId);
@@ -274,7 +379,7 @@ export function ProcessInstanceSearchTable({
   }
   return (
     <div className={styles.results}>
-      <table aria-label="Confirmed Product 2 starts">
+      <table aria-label="Process instances">
         <thead>
           <tr>
             <th scope="col">Process-instance ID</th>

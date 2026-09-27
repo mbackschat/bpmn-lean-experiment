@@ -47,7 +47,8 @@ const runnablePanel = transformedPanel.code
     '"@bpmn-lean/platform-ui-kit"',
     JSON.stringify(import.meta.resolve("@bpmn-lean/platform-ui-kit")),
   )
-  .replaceAll('"react"', JSON.stringify(import.meta.resolve("react")));
+  .replaceAll('"react"', JSON.stringify(import.meta.resolve("react")))
+  .replaceAll('"./latest-request.ts"', JSON.stringify(new URL("../src/latest-request.ts", import.meta.url).href));
 const panelModule = await import(
   `data:text/javascript;base64,${Buffer.from(runnablePanel).toString("base64")}`
 ) as Readonly<{
@@ -125,7 +126,7 @@ test("renders one global confirmed-start search form with only exact filters", (
     isActive: true,
   }));
 
-  assert.match(html, /Confirmed Product 2 starts/u);
+  assert.match(html, /Process instances/u);
   assert.match(html, /name="processInstanceId"/u);
   assert.match(html, /name="processId"/u);
   assert.match(html, /type="number"[^>]*min="1"[^>]*name="version"/u);
@@ -160,7 +161,7 @@ test("renders every public identity field in a native table and no host metadata
     instances: [instance],
   }));
 
-  assert.match(html, /<table aria-label="Confirmed Product 2 starts"/u);
+  assert.match(html, /<table aria-label="Process instances"/u);
   assert.match(html, /<thead/u);
   assert.match(html, /<tbody/u);
   assert.match(html, /instance-42/u);

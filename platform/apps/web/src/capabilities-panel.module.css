@@ -133,10 +133,38 @@
 .capabilityTable thead th:nth-child(4) { width: 34%; }
 .capabilityTable thead th:nth-child(5) { width: 20%; }
 
-.betaTable thead th:nth-child(1) { width: 22%; }
-.betaTable thead th:nth-child(2) { width: 20%; }
-.betaTable thead th:nth-child(3) { width: 18%; }
-.betaTable thead th:nth-child(4) { width: 40%; }
+.checkpoints,
+.checkpointDetails {
+  display: grid;
+  gap: var(--ui-space-3);
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.checkpointDetails dt {
+  font: var(--ui-font-label);
+}
+
+.checkpoints > li {
+  display: grid;
+  gap: var(--ui-space-3);
+  padding: var(--ui-space-4);
+  border: var(--ui-border);
+  border-radius: var(--ui-radius-surface);
+  background: var(--ui-color-surface);
+}
+
+.checkpoints h4 {
+  margin: 0;
+  font: var(--ui-font-label);
+}
+
+.checkpointDetails dd {
+  margin: var(--ui-space-1) 0 0;
+  overflow-wrap: anywhere;
+}
 
 @container (max-width: 68rem) {
   .summary {
@@ -154,6 +182,8 @@
   }
 
   .tableOwner caption {
+    display: block;
+    width: 100%;
     border: var(--ui-border);
     border-radius: var(--ui-radius-surface);
     background: var(--ui-color-surface);

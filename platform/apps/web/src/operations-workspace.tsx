@@ -11,6 +11,7 @@ import type { ProcessInstanceSearchApi } from "./process-instance-search-api.ts"
 import type { ProcessExecutionApi } from "./process-execution-api.ts";
 import type { OperatorAuditApi } from "./operator-audit-api.ts";
 import { ProcessInstanceSearchPanel } from "./process-instance-search-panel.tsx";
+import type { OperationsSearch, WorkspaceNavigation } from "./navigation/route-search.ts";
 import styles from "./operations-workspace.module.css";
 
 export type OperationsWorkspaceProps = Readonly<{
@@ -20,6 +21,7 @@ export type OperationsWorkspaceProps = Readonly<{
   processExecutionApi: ProcessExecutionApi;
   processInstanceSearchApi: ProcessInstanceSearchApi;
   initialInstance?: PublicProcessInstanceIdentity;
+  navigation?: WorkspaceNavigation<OperationsSearch>;
 }>;
 
 /** Full-width operational workspace grouped by instances, current incidents, and action audit. */
@@ -30,8 +32,10 @@ export function OperationsWorkspace({
   processExecutionApi,
   processInstanceSearchApi,
   initialInstance,
+  navigation,
 }: OperationsWorkspaceProps) {
-  const [tab, setTab] = useState("process-instances");
+  const [localTab, setTab] = useState("process-instances");
+  const tab = navigation?.search.tab ?? (navigation === undefined ? localTab : "process-instances");
   useEffect(() => {
     if (initialInstance !== undefined) setTab("process-instances");
   }, [initialInstance]);
@@ -40,7 +44,12 @@ export function OperationsWorkspace({
       <WorkspaceTabs
         aria-label="Operations"
         selectedKey={tab}
-        onSelectionChange={setTab}
+        onSelectionChange={(next) => {
+          if (navigation === undefined) setTab(next);
+          else if (next === "process-instances" || next === "incidents" || next === "audit") {
+            navigation.navigate({ ...navigation.search, tab: next });
+          }
+        }}
         tabs={[{
           id: "process-instances",
           label: "Process instances",
@@ -52,6 +61,7 @@ export function OperationsWorkspace({
               executionApi={processExecutionApi}
               operatorAuditApi={operatorAuditApi}
               isActive={tab === "process-instances"}
+              {...(navigation === undefined ? {} : { navigation })}
               {...(initialInstance === undefined ? {} : { initialInstance })}
             />
           ),
@@ -64,6 +74,7 @@ export function OperationsWorkspace({
               api={incidentApi}
               definitionApi={definitionApi}
               isActive={tab === "incidents"}
+              {...(navigation === undefined ? {} : { navigation })}
             />
           ),
         }, {

@@ -8,6 +8,7 @@ import type { IncidentOperationsApi } from "./incident-operations-api.ts";
 import type { DefinitionApiClient } from "./definitions-api.ts";
 import { LatestRequest } from "./latest-request.ts";
 import styles from "./incidents-panel.module.css";
+import type { OperationsSearch, WorkspaceNavigation } from "./navigation/route-search.ts";
 
 export enum IncidentDetailLoadKind {
   Pending = "pending",
@@ -69,6 +70,7 @@ export class IncidentDetailLoader {
 }
 
 export type IncidentDetailLoadBoundaryProps = Readonly<{
+  navigation?: WorkspaceNavigation<OperationsSearch>;
   api: IncidentOperationsApi;
   definitionApi: Pick<DefinitionApiClient, "getPresentation">;
   onBack: () => void;
@@ -87,6 +89,7 @@ export function IncidentDetailLoadBoundary({
   onRetentionChange = () => undefined,
   onRetry,
   state,
+  navigation,
 }: IncidentDetailLoadBoundaryProps) {
   if (state === null) return null;
   switch (state.kind) {
@@ -99,6 +102,7 @@ export function IncidentDetailLoadBoundary({
           onBack={onBack}
           onCommitted={onCommitted}
           onRetentionChange={onRetentionChange}
+          {...(navigation === undefined ? {} : { navigation })}
         />
       );
     case IncidentDetailLoadKind.Pending:

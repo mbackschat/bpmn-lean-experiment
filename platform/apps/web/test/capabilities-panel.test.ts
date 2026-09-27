@@ -10,7 +10,7 @@ import { build } from "vite";
 import { mvpCapabilityCatalog } from "../../../../model-corpus/mvp-capabilities.ts";
 import { muePreviewBetaTestOracle } from "../../../../scripts/mue-preview-beta-test-oracle.ts";
 
-const dependencies = ["react/jsx-runtime", "react"] as const;
+const dependencies = ["react/jsx-runtime", "react", "@bpmn-lean/platform-ui-kit"] as const;
 const built = await build({
   configFile: false,
   logLevel: "silent",
@@ -93,6 +93,9 @@ test("presents the exact Beta checkpoint matrix without changing the capability 
   }));
 
   assert.match(html, /MUE Preview Beta/u);
+  assert.match(html, /<h3[^>]*>Implementation checkpoints<\/h3>/u);
+  assert.doesNotMatch(html, /<h3>MUE Preview Beta<\/h3>/u);
+  assert.match(html, /Historical MUE Preview Beta evidence/u);
   assert.match(html, /not full MUE closure or BPMN conformance/iu);
   assert.deepEqual(
     [...html.matchAll(/data-beta-content-id="([^"]+)"/gu)].map((match) => match[1]),
@@ -101,7 +104,7 @@ test("presents the exact Beta checkpoint matrix without changing the capability 
   for (const expectation of muePreviewBetaTestOracle) {
     const rowStart = html.indexOf(`data-beta-content-id="${expectation.id}"`);
     assert.notEqual(rowStart, -1, `missing Beta row ${expectation.id}`);
-    const rowEnd = html.indexOf("</tr>", rowStart);
+    const rowEnd = html.indexOf("</li>", rowStart);
     assert.notEqual(rowEnd, -1, `unterminated Beta row ${expectation.id}`);
     const row = html.slice(rowStart, rowEnd);
     for (const expectedText of [

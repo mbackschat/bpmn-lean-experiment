@@ -139,7 +139,7 @@ test("claims and completes a Boolean task through the global Human Work panel", 
 
   await page.goto("/", { timeout: 10_000 });
   await page.getByRole("navigation", { name: "Primary navigation" })
-    .getByRole("button", { name: "Work", exact: true })
+    .getByRole("link", { name: "Work", exact: true })
     .click();
   await expect(page.getByRole("heading", { name: "Work", level: 1 })).toBeVisible();
   const panel = page.getByRole("region", { name: "Tasks" });
@@ -151,11 +151,11 @@ test("claims and completes a Boolean task through the global Human Work panel", 
   await expect(row.getByRole("cell")).toHaveCount(6);
   await expect(row).toContainText("reviewers");
   await expect(row).toContainText("Unclaimed");
-  await expect(row.getByRole("button", { name: taskName, exact: true })).toHaveCount(0);
+  await expect(row.getByRole("button", { name: `Edit task: ${taskName}`, exact: true })).toHaveCount(0);
 
   await row.getByRole("button", { name: "Claim", exact: true }).click();
   await expect(row).toContainText("Claimed by demo-user");
-  await expect(row.getByRole("button", { name: taskName, exact: true })).toBeVisible();
+  await expect(row.getByRole("button", { name: `Edit task: ${taskName}`, exact: true })).toBeVisible();
   await page.reload();
   const reloadedPanel = page.getByRole("region", { name: "Tasks" });
   const reloadedRow = reloadedPanel
@@ -164,7 +164,7 @@ test("claims and completes a Boolean task through the global Human Work panel", 
     .filter({ hasText: taskName });
   await expect(reloadedRow).toContainText("Claimed by demo-user");
 
-  await reloadedRow.getByRole("button", { name: taskName }).click();
+  await reloadedRow.getByRole("button", { name: `Edit task: ${taskName}` }).click();
   const detailTabs = reloadedPanel.getByRole("tablist", { name: "Task detail views" });
   await detailTabs.getByRole("tab", { name: "Diagram" }).click();
   await expect(reloadedPanel.getByText("Generated layout", { exact: true })).toBeVisible();

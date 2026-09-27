@@ -50,8 +50,6 @@ export function DataTable<Row extends RowData>({
     data: [...rows],
     columns: columns.map((column) => helper.display({
       id: column.id,
-      header: () => column.header,
-      cell: (context) => column.cell(context.row.original),
     })),
     getRowId: rowId,
   });
@@ -69,7 +67,7 @@ export function DataTable<Row extends RowData>({
                 <th key={header.id} scope="col">
                   {header.isPlaceholder
                     ? null
-                    : <table.FlexRender header={header} />}
+                    : columns.find(({ id }) => id === header.column.id)!.header}
                 </th>
               ))}
             </tr>
@@ -86,7 +84,8 @@ export function DataTable<Row extends RowData>({
                   data-label={columns.find(({ id }) => id === cell.column.id)!
                     .responsiveLabel}
                 >
-                  <table.FlexRender cell={cell} />
+                  {/* Render callbacks are not component types: invoking them keeps controls mounted across updates (ui-quality.spec.ts focus-return regression). */}
+                  {columns.find(({ id }) => id === cell.column.id)!.cell(row.original)}
                 </td>
               ))}
             </tr>

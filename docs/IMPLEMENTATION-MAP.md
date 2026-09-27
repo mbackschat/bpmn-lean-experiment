@@ -2,6 +2,8 @@
 
 This repository-wide map is the mandatory implementation-status router. Read it after [PLAN.md](PLAN.md), then read every detail map named by the active work item or resolved target paths. Exact family status, evidence, and absences live only in the routed detail maps.
 
+**Frontend architecture discussion or recommendation:** first follow [Before frontend recommendations](../CLAUDE.md#before-frontend-recommendations). It routes the earlier stack research, adopted architecture decisions and reopen conditions, information architecture, and UI design; reading the implementation map alone is insufficient for choosing a router or state-management approach.
+
 ## Current claim
 
 The MIT BPMN engine and platform remain separate under [PROJECT-DESIGN.md](PROJECT-DESIGN.md#product-division) and [ARCHITECTURE.md](ARCHITECTURE.md). M0 through M6 and Horizons 1 and 2 are closed. Product 2 shared mode uses PostgreSQL 18 with replicated API and recovery workers; local mode remains single-node. The evaluation Compose distribution and browser walkthrough are complete.

@@ -67,9 +67,9 @@ test("uncertain incident Retry retains exact identity across detail and workspac
   await expect(page.getByRole("button", { name: "Back to incidents", exact: true })).toBeDisabled();
 
   const navigation = page.getByRole("navigation", { name: "Primary navigation" });
-  await navigation.getByRole("button", { name: "Work", exact: true }).click();
+  await navigation.getByRole("link", { name: "Work", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Work", level: 1 })).toBeVisible();
-  await navigation.getByRole("button", { name: "Operations", exact: true }).click();
+  await navigation.getByRole("link", { name: "Operations", exact: true }).click();
   await expect(exactRetry).toBeVisible();
   await exactRetry.click();
   await expect(page.getByRole("heading", { name: "Current incidents", exact: true })).toBeFocused();
@@ -95,7 +95,7 @@ async function openPrimaryIncident(page: Page): Promise<void> {
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/");
   await page.getByRole("navigation", { name: "Primary navigation" })
-    .getByRole("button", { name: "Operations", exact: true }).click();
+    .getByRole("link", { name: "Operations", exact: true }).click();
   await page.getByRole("tablist", { name: "Operations", exact: true })
     .getByRole("tab", { name: "Incidents", exact: true }).click();
   await incidentSelection(page, "primary").click();

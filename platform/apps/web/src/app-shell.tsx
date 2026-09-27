@@ -1,4 +1,3 @@
-import { Button, ButtonVariant } from "@bpmn-lean/platform-ui-kit";
 import { Activity, useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 
@@ -18,6 +17,9 @@ export type AppShellProps = Readonly<{
   about: ReactNode;
   definitions: ReactNode;
   onNavigate: (workspace: AppWorkspace) => void;
+  navigationHref: (workspace: AppWorkspace) => string;
+  homeHref: string;
+  onHome: () => void;
   operations: ReactNode;
   work: ReactNode;
 }>;
@@ -54,6 +56,9 @@ export function AppShell({
   about,
   definitions,
   onNavigate,
+  navigationHref,
+  homeHref,
+  onHome,
   operations,
   work,
 }: AppShellProps) {
@@ -71,24 +76,27 @@ export function AppShell({
   return (
     <div className={styles.shell}>
       <aside className={styles.sidebar}>
-        <div className={styles.brand}>
+        <a className={styles.brand} href={homeHref} aria-label="BPMN Lean home"
+          onClick={(event) => {
+            if (event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+            event.preventDefault();
+            onHome();
+          }}>
           <span className={styles.brandMark} aria-hidden="true">BL</span>
           <div>
             <strong>BPMN Lean</strong>
             <span>Platform</span>
           </div>
-        </div>
+        </a>
         <nav className={styles.navigation} aria-label="Primary navigation">
           {workspaceDetails.map(({ id, label }) => (
-            <Button
-              key={id}
-              className={styles.navigationItem!}
-              variant={ButtonVariant.Navigation}
+            <a key={id} className={styles.navigationLink} href={navigationHref(id)}
               {...(id === activeWorkspace ? { "aria-current": "page" } : {})}
-              onPress={() => { onNavigate(id); }}
-            >
-              {label}
-            </Button>
+              onClick={(event) => {
+                if (event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+                event.preventDefault();
+                onNavigate(id);
+              }}>{label}</a>
           ))}
         </nav>
         <p className={styles.identity}>Signed in as <strong>demo-user</strong></p>

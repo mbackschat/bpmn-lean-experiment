@@ -19,14 +19,18 @@ import { FlowNodeMetricsApiClient } from "./flow-node-metrics-api.ts";
 import { MessageStartPublicationApiClient } from "./message-start-publication-api.ts";
 import { ProcessShowcasePanel } from "./process-showcase-panel.tsx";
 import { LatestRequest } from "./latest-request.ts";
+import type { DefinitionSearch, WorkspaceNavigation } from "./navigation/route-search.ts";
+import styles from "./definition-workspace.module.css";
 
 export type DeferredDefinitionWorkspaceProps = Readonly<{
+  navigation?: WorkspaceNavigation<DefinitionSearch>;
   origin: string;
   onOpenInstance?: (instance: PublicProcessInstanceIdentity) => void;
 }>;
 
 export function DeferredDefinitionWorkspace({
   origin,
+  navigation,
   onOpenInstance,
 }: DeferredDefinitionWorkspaceProps) {
   const api = useMemo(() => new DefinitionApiClient(origin), [origin]);
@@ -46,12 +50,24 @@ export function DeferredDefinitionWorkspace({
   const [deployment, setDeployment] = useState<DefinitionDeployResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [showCatalog, setShowCatalog] = useState(false);
+  const [localCatalog, setLocalCatalog] = useState(false);
+  const showCatalog = navigation === undefined ? localCatalog : navigation.search.view === "showcases";
+  const navigationRef = useRef(navigation);
+  navigationRef.current = navigation;
+  const setShowCatalog = (show: boolean) => {
+    if (navigation === undefined) setLocalCatalog(show);
+    else {
+      const { view, model, ...search } = navigation.search;
+      navigation.navigate(show ? { ...search, view: "showcases" } : search);
+    }
+  };
+  const routeProcess = navigation?.search.process;
+  const routeVersion = navigation?.search.version;
   const requests = useRef(new LatestRequest());
   const selectedDefinition = useRef<DeployedDefinitionVersion | null>(null);
   const exploreButton = useRef<HTMLButtonElement>(null);
   const workspace = useRef<HTMLDivElement>(null);
-  const returnFocus = useRef<"explore" | "definition" | null>(null);
+  const returnFocus = useRef<"explore" | "start" | null>(null);
 
   const selectDefinition = useCallback((definition: DeployedDefinitionVersion | null) => {
     selectedDefinition.current = definition;
@@ -59,6 +75,10 @@ export function DeferredDefinitionWorkspace({
   }, []);
 
   const openDefinition = useCallback(async (definition: DeployedDefinitionVersion) => {
+    if (navigationRef.current !== undefined) {
+      navigationRef.current.navigate({ process: definition.processId, version: definition.version });
+      return;
+    }
     const generation = requests.current.begin();
     setError(null);
     setLoading(true);
@@ -84,8 +104,11 @@ export function DeferredDefinitionWorkspace({
       const response = await api.listDefinitions();
       if (!requests.current.isCurrent(generation)) return false;
       setDefinitions(response.definitions);
-      const exact = preferred ?? selectedDefinition.current;
-      const next = exact ?? response.definitions[0];
+      const route = navigationRef.current;
+      const exact = preferred ?? (route === undefined ? selectedDefinition.current : null);
+      const requested = route?.search.process;
+      const next = exact ?? (requested === undefined ? response.definitions[0] : response.definitions.find((entry) => entry.processId === requested));
+      if (requested !== undefined && next === undefined) throw new Error("Definition unavailable. This process is not in the published definition list.");
       if (next === undefined) {
         setVersions([]);
         selectDefinition(null);
@@ -93,11 +116,17 @@ export function DeferredDefinitionWorkspace({
         const response = await api.listVersions(next.processId);
         if (!requests.current.isCurrent(generation)) return false;
         setVersions(response.versions);
-        selectDefinition(exact ?? response.versions.at(-1) ?? next);
+        const version = preferred?.version ?? route?.search.version;
+        const resolved = version === undefined ? exact ?? response.versions.at(-1) ?? next : response.versions.find((entry) => entry.version === version);
+        if (resolved === undefined) throw new Error("Definition version unavailable. Choose a retained version.");
+        selectDefinition(resolved);
+        if (route !== undefined && (route.search.process !== resolved.processId || route.search.version !== resolved.version)) {
+          route.navigate({ ...route.search, process: resolved.processId, version: resolved.version }, true);
+        }
       }
       return true;
     } catch (cause: unknown) {
-      if (requests.current.isCurrent(generation)) setError(errorMessage(cause));
+      if (requests.current.isCurrent(generation)) { selectDefinition(null); setVersions([]); setError(errorMessage(cause)); }
       return false;
     } finally {
       if (requests.current.isCurrent(generation)) setLoading(false);
@@ -107,50 +136,52 @@ export function DeferredDefinitionWorkspace({
   useEffect(() => {
     void refresh();
     return () => requests.current.invalidate();
-  }, [refresh]);
+  }, [refresh, routeProcess, routeVersion]);
   useEffect(() => {
     if (showCatalog || returnFocus.current === null) return;
     const target = returnFocus.current === "explore" ? exploreButton.current
-      : workspace.current?.querySelector<HTMLSelectElement>("select");
+      : workspace.current?.querySelector<HTMLElement>("#start-heading");
+    if (target === null || target === undefined) return;
     returnFocus.current = null;
-    target?.focus();
-  }, [showCatalog]);
+    target.focus();
+  }, [showCatalog, selected, loading]);
 
-  async function deploy(event: FormEvent<HTMLFormElement>): Promise<void> {
+  async function deploy(event: FormEvent<HTMLFormElement>): Promise<boolean> {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
     const source = form.get("source");
     const semanticProfile = form.get("semanticProfile");
     if (!(source instanceof File) || source.size === 0) {
       setError("Choose a nonempty BPMN XML file.");
-      return;
+      return false;
     }
     if (typeof semanticProfile !== "string" || semanticProfile.length === 0) {
       setError("Enter the exact semantic profile ID.");
-      return;
+      return false;
     }
     const generation = requests.current.begin();
     setLoading(true);
     setError(null);
+    setDeployment(null);
     try {
       const result = await api.deploy({
         bytes: new Uint8Array(await source.arrayBuffer()),
         sourceId: source.name,
         semanticProfile,
       });
-      if (!requests.current.isCurrent(generation)) return;
+      if (!requests.current.isCurrent(generation)) return false;
       setDeployment(result);
       switch (result.status) {
         case DefinitionDeployStatus.Deployed:
-          await refresh(result.definition);
-          break;
+          return await refresh(result.definition);
         case DefinitionDeployStatus.Rejected:
-          break;
+          return false;
         default:
-          assertNever(result);
+          return assertNever(result);
       }
     } catch (cause: unknown) {
       if (requests.current.isCurrent(generation)) setError(errorMessage(cause));
+      return false;
     } finally {
       if (requests.current.isCurrent(generation)) setLoading(false);
     }
@@ -158,19 +189,23 @@ export function DeferredDefinitionWorkspace({
   if (showCatalog) return (
     <ProcessShowcasePanel
       api={api}
+      definitions={definitions}
+      {...(navigation === undefined ? {} : { navigation })}
       onBack={() => { returnFocus.current = "explore"; setShowCatalog(false); void refresh(); }}
       onPrepared={async (definition) => {
         if (!await refresh(definition)) throw new Error("The prepared definition could not be loaded. Return to Definitions and refresh.");
-        returnFocus.current = "definition";
-        setShowCatalog(false);
+        returnFocus.current = "start";
+        if (navigationRef.current === undefined) setLocalCatalog(false);
+        else navigationRef.current.navigate({ process: definition.processId, version: definition.version, tab: "start" });
       }}
     />
   );
   return (
-    <div ref={workspace}>
+    <div ref={workspace} className={styles.catalogWorkspace}>
     <Button ref={exploreButton} onPress={() => { requests.current.invalidate(); setLoading(false); setShowCatalog(true); }}>Explore process showcases</Button>
     <DefinitionWorkspace
       api={api}
+      {...(navigation === undefined ? {} : { navigation })}
       correlatedMessageApi={correlatedMessageApi}
       definitions={definitions}
       deployment={deployment}
@@ -182,12 +217,18 @@ export function DeferredDefinitionWorkspace({
       onOpenDefinition={openDefinition}
       {...(onOpenInstance === undefined ? {} : { onOpenInstance })}
       onSelectVersion={(definition) => {
-        requests.current.invalidate();
-        setLoading(false);
-        selectDefinition(definition);
+        if (navigation !== undefined) navigation.navigate({ ...navigation.search, process: definition.processId, version: definition.version });
+        else {
+          requests.current.invalidate();
+          setLoading(false);
+          selectDefinition(definition);
+        }
       }}
       scheduleApi={scheduleApi}
-      selected={selected}
+      selected={navigation !== undefined && selected !== null && (
+        (routeProcess !== undefined && selected.processId !== routeProcess) ||
+        (routeVersion !== undefined && selected.version !== routeVersion)
+      ) ? null : selected}
       versions={versions}
     />
     </div>

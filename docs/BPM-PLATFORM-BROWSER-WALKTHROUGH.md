@@ -4,6 +4,8 @@
 
 Implemented and maintained as a text-first tutorial over the containerized Product 2 evaluation distribution. The screenshots are generated from the same public browser journey and illustrate stable landmarks, but the instructions remain complete when images are unavailable. This is a user guide and evaluation aid, not semantic, compatibility, performance, or production-capacity evidence.
 
+The hash-link navigation described below is implemented with [composed browser acceptance](BPM-PLATFORM-INFORMATION-ARCHITECTURE-SPEC.md#acceptance). Existing distribution screenshots illustrate the earlier workspace surfaces; the text describes the current navigation.
+
 ## What you will do
 
 This walkthrough uses one persistent evaluation topology to:
@@ -39,13 +41,13 @@ From a prepared contributor checkout, run:
 
 Open the printed origin, normally [http://127.0.0.1:3000](http://127.0.0.1:3000). Set `PLATFORM_PORT` if that port is occupied. This command builds the current Product 2 web/runtime graph and starts a private local platform and real Temporal server. It uses an isolated fresh Namespace and temporary data; Ctrl-C stops this host and removes only its temporary state. It neither starts nor resets the persistent Compose distribution. Lean and CIB Seven are not needed to execute these browser instances; their retained evidence qualifies the engine profiles.
 
-Open **Definitions → Explore process showcases**. Search by business purpose or BPMN element. The curated catalog offers three human-work examples and nine guided simulations; **Include all retained engine models** exposes the wider retained catalog without claiming that every model has a browser journey. Each detail explains what to try, the exact supported element variants and limits, and the separate CIB comparison boundary.
+Open the printed **Prepared process catalog** link, or **Definitions → Explore process showcases**. The isolated host prepares all twelve curated definitions before reporting ready: three human-work examples and nine guided simulations. It creates no Process instances until you choose Start. Each prepared entry has its business description, **Open definition** and **Go to Start** links bound to the published version. Search by business purpose or BPMN element; **Show additional models** changes only which retained models are visible, without claiming that every model has a browser journey. Each detail explains what to try, the exact supported element variants and limits, and the separate CIB comparison boundary.
 
 1. Select a process and read its description and restrictions.
-2. Choose **Prepare this showcase** to deploy its exact retained source/profile. This does not start an instance.
-3. Inspect **Diagram**, then open **Start** and choose the displayed version. Required example input is shown before start.
-4. For **Interactive human work**, open **Work**, claim each task, fill the form and complete it. For **Guided simulation**, the isolated host supplies the declared simulated participants and integrations through published engine commands.
-5. Keep the returned instance ID, open **Operations**, search that ID and inspect **Overview** and **History**. Human-work journeys also produce **Operator history**. Diagram availability follows the model's actual source/presentation boundary.
+2. Choose **Go to Start** for a prepared entry, or **Open definition** to inspect its diagram first. On another host, an unprepared example offers **Prepare this showcase**, which deploys the exact model and opens **Ready to start** with its description and example input. Preparation alone does not run it.
+3. Choose **Start version …**. You can inspect **Diagram** first and use its prominent **Start process** shortcut to return.
+4. Follow **What happens next**. For **Interactive human work**, choose **Open task inbox**, claim a task, choose **Edit task**, fill the form and complete it. For **Guided simulation**, the isolated host supplies the declared simulated participants and integrations.
+5. Choose **View instance in Operations** directly from the start result to inspect **Overview** and **History**, without searching or copying an ID. Human-work journeys also produce **Operator history**. Diagram availability follows the model's actual source/presentation boundary.
 
 | Business evaluation | Interaction |
 |---|---|
@@ -57,6 +59,14 @@ Open **Definitions → Explore process showcases**. Search by business purpose o
 | Travel cancellation; reservation withdrawal | Simulated bookings and reversal effects; inspect Compensation and bounded Transaction/Cancel |
 
 The same catalog is present in the ordinary platform. Guided preparation is disabled when the isolated host marker is absent, because the ordinary platform supplies no simulated participant. Manually starting an uploaded matching definition does not install such a participant. Retained engine-only models are inspectable but offer no browser-run action. No model promises general BPMN conformance, unrestricted CIB compatibility, a live external business service, or production capacity.
+
+## Share a view and use browser history
+
+In the routing-enabled build, copy the browser's complete address, including the part after `#`, to return to a workspace, exact definition version and tab, selected showcase, task or Operations detail. Catalog searches and the additional-model toggle, plus submitted Operations filters, travel with the location. Browser **Back** and **Forward** revisit those selections; reloading resolves the selection against the current public API.
+
+A link shares a view, not access rights. The recipient must use the same available platform and pass its actor authorization. A task must still be claimed before completion, and a stale or unavailable item supplies no action. Links do not contain form answers, pending commands or retry identities and never start, claim or complete work by opening them.
+
+Drafts and exact retries survive permitted tab and workspace changes within the current browser session. Navigation that would replace an item with a pending or uncertain command stays blocked until that operation has a definite result. Reloading or opening the link elsewhere does not restore those in-memory drafts or operations. Use the displayed exact-retry control when delivery is uncertain.
 
 ## Seven-minute MUE Preview Alpha live demo
 
@@ -161,6 +171,8 @@ Open **About**. Confirm that **Coverage boundary** says **Not a conformance clai
 
 The table reports exact variants rather than a percentage. BPMN requirement coverage, selected CIB compatibility, and platform functionality remain separate denominators.
 
+**Implementation checkpoints** identifies the historical MUE Preview Beta evidence. Its rows retain the limits recorded at that checkpoint; the executable overview describes current supported variants. At ordinary desktop width, both table captions fill their available width rather than wrapping into narrow columns.
+
 ![About workspace showing the versioned BPMN capability boundary and non-conformance notice](assets/bpm-platform-browser-walkthrough/01-about-capability-boundary.png)
 
 ## 2. Deploy and inspect structured Human Work
@@ -172,13 +184,15 @@ The table reports exact variants rather than a percentage. BPMN requirement cove
 
 The result should say **Admitted and deployed** for `Process_ExpenseExceptionReview`, version 1 on a clean distribution. Its **Diagram** view says **Generated layout** because the admitted source intentionally contains no BPMN DI. Product 2 retains a digest-bound presentation sidecar and an exact-source-bound Human Task catalog without changing the admitted source or adding form meaning to Product 1.
 
+**Process diagram** names the view. **BPMN process ID** identifies the technical identifier declared by the model, not a running instance or a friendly business title. Source/generated layout and the derived-copy warning remain separate provenance facts.
+
 ![Definitions workspace showing the deployed expense-exception Process and generated BPMN diagram](assets/bpm-platform-browser-walkthrough/02-expense-definition-diagram.png)
 
 Choose **Download diagrammed BPMN** if you want a derived document that merges the exact semantic model with validated BPMN DI for use in a BPMN modeller. It is not the admitted source.
 
 ## 3. Start the exact definition version
 
-Open the definition's **Start** view and choose **Start version 1**, or the displayed selected version if you retained earlier state. Keep the returned Process-instance ID.
+Choose **Start process** beside the diagram to open the starting details, then choose **Start version 1**, or the displayed selected version if you retained earlier state. The Start tab remains available. After confirmation, **View instance in Operations** opens the exact returned Process instance.
 
 The public identity binds the instance to its Process ID, definition version, exact source digest, and semantic profile. Product 2 keeps the Temporal observation locator private.
 
@@ -187,7 +201,7 @@ The public identity binds the instance to its Process ID, definition version, ex
 1. Open **Work** and choose **Refresh** until **Review exception** appears.
 2. Confirm candidate group `reviewers`, priority 80, and state **Unclaimed**.
 3. Choose **Claim** and confirm **Claimed by demo-user**.
-4. Select **Review exception**, then inspect **Details** and **Diagram** if desired.
+4. Choose **Edit task** beside **Review exception**, then inspect **Details** and **Diagram** if desired. Editing opens the form; it does not approve or complete the task.
 
 Claim state, actor policy, priority, and the form catalog are Product 2 concerns. Task occurrence identity and the completion result come only from Product 1's publication.
 

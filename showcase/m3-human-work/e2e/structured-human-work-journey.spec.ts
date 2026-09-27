@@ -88,7 +88,7 @@ for (const viewport of [{ width: 1280, height: 800 }, { width: 1600, height: 900
 
       await structuredRow.getByRole("button", { name: "Claim", exact: true }).click();
       await expect(structuredRow).toContainText("Claimed by demo-user");
-      await structuredRow.getByRole("button", { name: "Review exception", exact: true }).click();
+      await structuredRow.getByRole("button", { name: "Edit task: Review exception", exact: true }).click();
       await expect(tasks.getByRole("heading", { name: "Review exception", exact: true })).toBeFocused();
       await expect(tasks).toContainText("Review the expense exception and choose a resolution.");
       const taskTabs = tasks.getByRole("tablist", { name: "Task detail views" });
@@ -276,7 +276,7 @@ async function proveTerminalHistory(
   await navigate(page, "Operations");
   await page.getByLabel("Process-instance ID").fill(processInstanceId);
   await page.getByRole("button", { name: "Search", exact: true }).click();
-  const row = page.getByRole("table", { name: "Confirmed Product 2 starts" })
+  const row = page.getByRole("table", { name: "Process instances" })
     .getByRole("row")
     .filter({ hasText: processInstanceId });
   await row.getByRole("button", { name: `View details ${processInstanceId}` }).click();
@@ -350,7 +350,7 @@ async function navigate(
   workspace: "About" | "Definitions" | "Operations" | "Work",
 ): Promise<void> {
   const button = page.getByRole("navigation", { name: "Primary navigation" })
-    .getByRole("button", { name: workspace, exact: true });
+    .getByRole("link", { name: workspace, exact: true });
   const heading = page.getByRole("heading", { name: workspace, level: 1 });
   if (await button.getAttribute("aria-current") === "page") {
     await expect(heading).toBeVisible();

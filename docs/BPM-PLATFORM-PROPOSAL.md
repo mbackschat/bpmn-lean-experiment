@@ -130,6 +130,7 @@ Evidence, alternatives, measured footprints, and the rationale are owned by [the
 | Table logic | `@tanstack/react-table` 9.0.1, MIT | Owner-selected 2026-08-07 |
 | Virtualization | `@tanstack/react-virtual` 3.14.9, MIT | Owner-selected 2026-08-07 |
 | Server state | `@tanstack/react-query` 5.101.4, MIT | Owner-selected 2026-08-07 |
+| Browser navigation | `@tanstack/react-router` 1.170.40, code-based typed hash routes | Owner-adopted 2026-09-27; implemented with composed acceptance |
 | Component kit | Platform-owned, written over the primitives | Our source, roughly 2,000 lines expected |
 | Diagram rendering | `bpmn-js` 18.22.1 `NavigatedViewer` with its marker and `overlays` APIs | Owner-approved 2026-08-09 with the bpmn.io watermark and notice obligations retained |
 | Read-model store | `node:sqlite`, part of the pinned Node 24.18.0 | No approval needed; upstream experimental status to be recorded |
@@ -154,7 +155,13 @@ Measured on 2026-08-07 by installing into an empty project on the pinned Node 24
 
 The owner approved the exact M1 web set on 2026-08-09: runtime `react@19.2.8` and `react-dom@19.2.8`, plus development-only `vite@7.3.6`, `@types/react@19.2.18`, and `@types/react-dom@19.2.4`. Vite and both declaration packages are build and type-check inputs only. They do not enter the static distribution or the platform's reachable production dependency graph.
 
-The two React runtime roots add exactly three MIT identities to that graph: React, React DOM, and `scheduler@0.27.0`. The package manager denies `esbuild`'s install script; the locked optional native binary and the clean production build prove that the script is not required. The M1 workspace deliberately uses plain CSS and no component framework, router, state library, or server-side meta-framework.
+The two React runtime roots add exactly three MIT identities to that graph: React, React DOM, and `scheduler@0.27.0`. The package manager denies `esbuild`'s install script; the locked optional native binary and the clean production build prove that the script is not required. The original M1 workspace used plain CSS and no component framework, router, state library, or server-side meta-framework. Later component/style decisions and the routing adoption below supersede those historical exclusions only within their approved scope.
+
+### Approval record for TanStack Router
+
+On 2026-09-27 the owner directed “Introduce and establish correct tech stack” and “stay focussed”, approving `@tanstack/react-router@1.170.40` for code-based typed hash routes, with the existing TanStack Query shared through one application QueryClient. The [architecture register](ARCHITECTURE.md#architecture-decision-register) reopens ARC-010, ARC-012 and ARC-015 only for routing; the [information architecture](BPM-PLATFORM-INFORMATION-ARCHITECTURE-SPEC.md#browser-location-and-state-ownership) owns the public selection boundary and command-retention rules. Static hosting, API-only access, React Aria, Table, CSS Modules, Vite and lazy viewer loading remain selected. SSR, a generalized form library, virtualization and a persistent draft store are not added.
+
+The 2026-09-27 manifest and licence audit found seven net new resolved packages, with existing Store dependencies reused. The direct router and remaining added packages are MIT except `isbot@5.2.2`, whose inspected Unlicense permits commercial use and redistribution without reciprocal terms and is explicitly accepted by the platform licence policy. No install hooks, telemetry hooks or CDN assets are introduced. Exact resolved identities belong to the web manifest and pnpm lockfile rather than a second mutable inventory here. Routing is implemented under the [composed acceptance boundary](BPM-PLATFORM-INFORMATION-ARCHITECTURE-SPEC.md#acceptance); adoption does not raise the initial-graph budget. Removal cost is confined to typed location/history bindings and their workspace consumers; public APIs, engine meaning and feature-owned commands remain independent.
 
 ### Approval record for `bpmn-js`
 

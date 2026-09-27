@@ -36,6 +36,17 @@
   color: var(--ui-color-error);
 }
 
+.nextSteps {
+  display: grid;
+  justify-items: start;
+  gap: var(--ui-space-4);
+}
+
+.nextSteps h3,
+.nextSteps p {
+  margin: 0;
+}
+
 .previewInput {
   display: flex;
   flex-wrap: wrap;

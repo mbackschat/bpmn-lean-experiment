@@ -69,7 +69,7 @@ test("makes focus and stale-response behavior explicit", () => {
   assert.match(incidents, /requests\.current\.isCurrent\(generation\)/u);
   assert.match(incidents, /rowRefs/u);
   assert.match(incidents, /restoreCollectionFocus\.current = \{ rowKey: returnFocusKey\.current \}/u);
-  assert.match(incidents, /queueFocus\(row \?\? heading\.current\)/u);
+  assert.match(incidents, /\(row \?\? heading\.current\)\?\.focus\(\)/u);
   assert.match(audit, /sequence\.current\.isCurrent\(activeLoad\.generation\)/u);
   assert.match(audit, /beginIncidentAuditLoad\(sequence\.current, focus\)/u);
   assert.match(audit, /ref=\{errorAlert\} tabIndex=\{-1\}/u);

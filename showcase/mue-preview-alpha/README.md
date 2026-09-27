@@ -16,6 +16,12 @@ Refresh the three presentation-only fallback frames with `./scripts/pnpm.sh run 
 
 The same harness also qualifies the separate [Product 2 failed-Process outcome](../../docs/BPM-PLATFORM-FAILED-PROCESS-SPEC.md). That acceptance deploys the exact registered travel-cancellation XML through public HTTP, starts successful and failed executions with explicit data, and uses a labelled test actor for metadata-free published User Tasks. A declared Activity simulation refuses ground-travel cancellation for one explicit snapshot input. Both terminal publications must survive platform restart and remain byte-identical through public export and browser download; every actual Run is replayed. This adds inspection evidence, not a Compensation browser catalog entry or Human Work form.
 
+## RC prepared process catalog
+
+`./scripts/pnpm.sh run demo:rc` starts the isolated RC host and prepares the existing twelve curated definitions through the public deployment API before printing its ready URL. Preparation runs sequentially and refuses admission failures or mismatched source/profile receipts. It never starts instances. The printed catalog link exposes each prepared model's business purpose, exact definition link and Start details; browser refresh does not deploy another version. Ordinary platform startup remains unchanged. The [RC walkthrough](../../docs/BPM-PLATFORM-BROWSER-WALKTHROUGH.md#rc-process-showcase-catalog) owns the user journey.
+
+The preparation helper tests, live startup inventory/zero-instance witness and retained human/guided browser journeys cover this non-material demo composition change. It changes no engine meaning, admission capability or semantic claim.
+
 ## Presentation fallback
 
 If the local browser or Temporal process cannot be recovered during a presentation, use the maintained frames in order:

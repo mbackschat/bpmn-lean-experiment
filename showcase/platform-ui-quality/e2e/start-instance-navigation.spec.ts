@@ -5,7 +5,7 @@ import {
   installExecutionPublicationFixtures,
 } from "./execution-publication-fixtures.ts";
 
-test("a confirmed start opens its exact instance in Operations without a search", async ({ page }) => {
+test("diagram leads to explicit start and its exact instance without a search @responsive", async ({ page }) => {
   await installExecutionPublicationFixtures(page);
   const definition = {
     processId: executionPublicationLabels.processId,
@@ -38,24 +38,38 @@ test("a confirmed start opens its exact instance in Operations without a search"
   });
   const executionRequests: string[] = [];
   const searchRequests: string[] = [];
+  const startRequests: string[] = [];
   page.on("request", (request) => {
     const path = new URL(request.url()).pathname;
     if (path.endsWith("/execution")) executionRequests.push(path);
     if (path === "/api/v1/process-instances") searchRequests.push(path);
+    if (path.endsWith("/start")) startRequests.push(path);
   });
 
   await page.goto("/");
   const navigation = page.getByRole("navigation", { name: "Primary navigation" });
-  await navigation.getByRole("button", { name: "Definitions", exact: true }).click();
-  await page.getByRole("tab", { name: "Start", exact: true }).click();
+  await navigation.getByRole("link", { name: "Definitions", exact: true }).click();
+  const shortcut = page.getByRole("button", { name: "Start process", exact: true });
+  await expect(shortcut).toBeInViewport();
+  await shortcut.focus();
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("heading", { name: "Ready to start", exact: true })).toBeFocused();
+  await expect(page).toHaveURL(/tab=start/);
+  expect(startRequests).toEqual([]);
   await page.getByRole("button", { name: "Start version 4", exact: true }).click();
   await expect(page.getByTestId("started-instance-id")).toHaveText(instance.processInstanceId);
+  await expect(page.getByText("What happens next", { exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Open task inbox", exact: true })).toHaveCount(0);
+  await page.getByRole("tab", { name: "Diagram", exact: true }).click();
+  await page.getByRole("button", { name: "Start process", exact: true }).click();
+  await expect(page.getByTestId("started-instance-id")).toHaveText(instance.processInstanceId);
+  expect(startRequests).toHaveLength(1);
 
   const openInstance = page.getByRole("button", { name: "View instance in Operations", exact: true });
   await expect(openInstance).toBeVisible();
   await openInstance.focus();
   await page.keyboard.press("Enter");
-  await expect(navigation.getByRole("button", { name: "Operations", exact: true })).toHaveAttribute("aria-current", "page");
+  await expect(navigation.getByRole("link", { name: "Operations", exact: true })).toHaveAttribute("aria-current", "page");
   await expect(page.getByRole("heading", { name: `Process instance ${instance.processInstanceId}`, exact: true })).toBeFocused();
   const detail = page.locator('[data-ui="process-execution-detail"]');
   await expect(detail).toContainText(definition.processId);
@@ -66,7 +80,7 @@ test("a confirmed start opens its exact instance in Operations without a search"
   expect(searchRequests).toEqual([]);
 
   await detail.getByRole("button", { name: "Back to Process instances", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "Confirmed Product 2 starts", exact: true })).toBeFocused();
+  await expect(page.getByRole("heading", { name: "Process instances", exact: true })).toBeFocused();
   await expect(detail).toHaveCount(0);
 
   await page.getByRole("tab", { name: "Audit", exact: true }).click();
@@ -75,7 +89,7 @@ test("a confirmed start opens its exact instance in Operations without a search"
   await expect(detail).toHaveCount(0);
   expect(executionRequests).toHaveLength(1);
 
-  await navigation.getByRole("button", { name: "Definitions", exact: true }).click();
+  await navigation.getByRole("link", { name: "Definitions", exact: true }).click();
   await openInstance.click();
   await expect(page.getByRole("heading", { name: `Process instance ${instance.processInstanceId}`, exact: true })).toBeFocused();
   expect(executionRequests).toEqual([

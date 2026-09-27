@@ -6,7 +6,7 @@ import type {
   ProcessInstanceStartResult,
   PublicProcessInstanceIdentity,
 } from "@bpmn-lean/platform-contracts";
-import { Button } from "@bpmn-lean/platform-ui-kit";
+import { Button, ButtonVariant, InlineDisclosure } from "@bpmn-lean/platform-ui-kit";
 
 import type { DefinitionApiClient } from "./definitions-api";
 import styles from "./definition-start-panel.module.css";
@@ -50,19 +50,19 @@ export function DefinitionStartPanel({
     <section className={styles.panel} aria-labelledby="start-heading">
       <div className={styles.layout}>
         <div>
-          <p className={styles.eyebrow}>Exact version command</p>
-          <h2 id="start-heading">Start this definition</h2>
+          <h2 id="start-heading" tabIndex={-1}>Ready to start</h2>
           <p>
-            The platform sends version {definition.version} and its stored source identity to the engine.
+            Start a new instance of {showcase?.title ?? definition.processId}, version {definition.version}.
+            {" "}Each start creates a separate instance.
           </p>
         </div>
-        <Button isPending={starting} onPress={() => { void start(); }}>
+        <Button variant={result?.status === ProcessInstanceStartStatus.Started ? ButtonVariant.Secondary : ButtonVariant.Primary} isPending={starting} onPress={() => { void start(); }}>
           {starting ? "Starting…" : `Start version ${definition.version}`}
         </Button>
       </div>
       {alphaStart === null ? null : (
         <div className={styles.previewInput} data-testid="mue-preview-alpha-start-input">
-          <strong>MUE Preview Alpha</strong>
+          <strong>Example input</strong>
           <span>{alphaStart.label}</span>
         </div>
       )}
@@ -72,14 +72,22 @@ export function DefinitionStartPanel({
           <p>{showcase.showcase.tryIt}</p>
           {showcase.showcase.mode === "guided" ? <p>Guided simulation: the RC showcase host supplies simulated participants and external services. On other hosts, this starts the model without those participants.</p> : null}
           {showcase.showcase.start.initialVariables.length === 0 ? null : (
-            <details><summary>Showcase start data</summary><pre>{JSON.stringify(showcase.showcase.start.initialVariables, null, 2)}</pre></details>
+            <InlineDisclosure title="Showcase start data"><pre>{JSON.stringify(showcase.showcase.start.initialVariables, null, 2)}</pre></InlineDisclosure>
           )}
         </div>
       )}
       {error === null ? null : <p className={styles.error} role="alert">{error}</p>}
       <StartResult result={result} />
-      {result?.status === ProcessInstanceStartStatus.Started && onOpenInstance !== undefined ? (
-        <Button onPress={() => onOpenInstance(result.instance)}>View instance in Operations</Button>
+      {result?.status === ProcessInstanceStartStatus.Started ? (
+        <div className={styles.nextSteps}>
+          <h3>What happens next</h3>
+          {showcase?.showcase?.mode === "human" ? (
+            <p>Open the task inbox, find this process, then claim and complete its tasks. The inbox shows work available to you; a task may take a moment to appear. <a href="#/work">Open task inbox</a></p>
+          ) : (
+            <p>{showcase?.showcase?.mode === "guided" ? "The showcase host supplies simulated participants and services. " : ""}Open this instance to see its current state, diagram and History.</p>
+          )}
+          {onOpenInstance === undefined ? null : <Button onPress={() => onOpenInstance(result.instance)}>View instance in Operations</Button>}
+        </div>
       ) : null}
     </section>
   );

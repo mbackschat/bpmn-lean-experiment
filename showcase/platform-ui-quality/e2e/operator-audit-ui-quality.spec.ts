@@ -160,9 +160,9 @@ async function openProcessDetail(
 ) {
   const capture = await installOperatorAuditFixtures(page, options);
   await page.goto("/");
-  await page.getByRole("button", { name: "Operations", exact: true }).click();
+  await page.getByRole("link", { name: "Operations", exact: true }).click();
   await page.getByRole("button", { name: "Search", exact: true }).click();
-  await expect(page.getByRole("table", { name: "Confirmed Product 2 starts" })).toBeVisible();
+  await expect(page.getByRole("table", { name: "Process instances" })).toBeVisible();
   await page.getByRole("button", {
     name: `View details ${operatorAuditLabels.processInstanceId}`,
   }).click();

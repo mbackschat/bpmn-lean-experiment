@@ -35,11 +35,11 @@ test("Operations is a primary keyboard-reachable workspace", async ({ page }) =>
   await page.goto("/");
 
   const navigation = page.getByRole("navigation", { name: "Primary navigation" });
-  const operations = navigation.getByRole("button", { name: "Operations", exact: true });
+  const operations = navigation.getByRole("link", { name: "Operations", exact: true });
   await expect(operations).toBeVisible();
   await expect(page.locator("body")).toBeFocused();
   await page.keyboard.press("Tab");
-  await expect(navigation.getByRole("button", { name: "Work", exact: true })).toBeFocused();
+  await expect(navigation.getByRole("link", { name: "Work", exact: true })).toBeFocused();
   await operations.focus();
   await page.keyboard.press("Enter");
   await expect(page.getByRole("heading", { name: "Operations", level: 1 })).toBeFocused();
@@ -318,7 +318,7 @@ async function openOperations(
 ) {
   const capture = await installOperationsApiFixtures(page, options);
   await page.goto("/");
-  await page.getByRole("button", { name: "Operations", exact: true }).click();
+  await page.getByRole("link", { name: "Operations", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Operations", level: 1 })).toBeVisible();
   return capture;
 }

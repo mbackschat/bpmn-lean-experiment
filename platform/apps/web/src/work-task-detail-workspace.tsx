@@ -17,6 +17,7 @@ import type {
 } from "@bpmn-lean/platform-contracts";
 
 import type { DefinitionApiClient } from "./definitions-api";
+import type { WorkSearch, WorkspaceNavigation } from "./navigation/route-search.ts";
 import { BpmnDiagramMarkerKind } from "./bpmn-viewer-contract.ts";
 import type { WorkCompletionView } from "./work-completion-operation";
 import type { WorkCompletionSubmission } from "./work-completion-operation";
@@ -37,6 +38,7 @@ export type WorkTaskDetailWorkspaceProps = Readonly<{
   completionView: WorkCompletionView;
   definitionApi?: Pick<DefinitionApiClient, "getPresentation">;
   detail: PublicTaskDetail;
+  navigation?: WorkspaceNavigation<WorkSearch>;
   onBack: () => void;
   onComplete: WorkTaskFormProps["onComplete"];
   onRetry: () => void;
@@ -47,6 +49,7 @@ export function WorkTaskDetailWorkspace({
   completionView,
   definitionApi,
   detail,
+  navigation,
   onBack,
   onComplete,
   onRetry,
@@ -99,6 +102,17 @@ export function WorkTaskDetailWorkspace({
         key={JSON.stringify([task.task.id.processInstanceId, task.task.id.elementId, task.task.id.activation])}
         aria-label="Task detail views"
         tabs={tabs}
+        {...(navigation === undefined ? {} : {
+          selectedKey: navigation.search.view ?? "form",
+          onSelectionChange: (view: string) => {
+            switch (view) {
+              case "form":
+              case "diagram":
+              case "details":
+                navigation.navigate({ ...navigation.search, view });
+            }
+          },
+        })}
       />
     </div>
   );

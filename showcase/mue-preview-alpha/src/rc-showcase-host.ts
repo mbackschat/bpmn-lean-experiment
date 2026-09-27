@@ -28,6 +28,7 @@ try {
   await runtime.start();
   ready = true;
   console.log(`RC showcase: ${runtime.origin} (participants and effects are simulations)`);
+  console.log(`Prepared process catalog: ${runtime.origin}/#/definitions?view=showcases`);
   if (stopRequested) shutdown();
   await runtime.wait();
 } finally {

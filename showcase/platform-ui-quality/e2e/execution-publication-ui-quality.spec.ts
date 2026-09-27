@@ -187,7 +187,7 @@ test("Operator history selected during execution loading survives publication ar
   await expect(page.locator('[data-ui="operator-history"]')).toBeVisible();
 });
 
-test("tab abandonment and Back invalidate delayed execution responses", async ({ page }) => {
+test("tab return restores selected instance and Back invalidates delayed execution responses", async ({ page }) => {
   await openProcessInstances(page, ExecutionPublicationFixtureState.Delayed);
   let selection = processSelection(page);
   const abandonedByTab = page.waitForResponse(isExecutionPageResponse);
@@ -199,10 +199,11 @@ test("tab abandonment and Back invalidate delayed execution responses", async ({
   await page.getByRole("tab", { name: "Incidents" }).click();
   await abandonedByTab;
   await page.getByRole("tab", { name: "Process instances" }).click();
-  await expect(page.locator('[data-ui="process-execution-detail"]')).toHaveCount(0);
+  await expect(page.locator('[data-ui="process-execution-detail"]')).toBeVisible();
+  await page.getByRole("button", { name: "Back to Process instances" }).click();
 
   await page.getByRole("button", { name: "Search", exact: true }).click();
-  await expect(page.getByRole("table", { name: "Confirmed Product 2 starts" })).toBeVisible();
+  await expect(page.getByRole("table", { name: "Process instances" })).toBeVisible();
   selection = processSelection(page);
   const abandonedByBack = page.waitForResponse(isExecutionPageResponse);
   await selection.click();
@@ -240,9 +241,9 @@ async function openProcessInstances(
 ) {
   const capture = await installExecutionPublicationFixtures(page, state);
   await page.goto("/");
-  await page.getByRole("button", { name: "Operations", exact: true }).click();
+  await page.getByRole("link", { name: "Operations", exact: true }).click();
   await page.getByRole("button", { name: "Search", exact: true }).click();
-  await expect(page.getByRole("table", { name: "Confirmed Product 2 starts" })).toBeVisible();
+  await expect(page.getByRole("table", { name: "Process instances" })).toBeVisible();
   return capture;
 }
 

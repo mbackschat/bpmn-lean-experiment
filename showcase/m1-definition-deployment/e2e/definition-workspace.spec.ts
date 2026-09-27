@@ -79,7 +79,7 @@ async function deploy(
 
 async function openDefinitions(page: import("@playwright/test").Page): Promise<void> {
   await page.getByRole("navigation", { name: "Primary navigation" })
-    .getByRole("button", { name: "Definitions", exact: true })
+    .getByRole("link", { name: "Definitions", exact: true })
     .click();
   await expect(page.getByRole("heading", { name: "Definitions", level: 1 })).toBeVisible();
 }

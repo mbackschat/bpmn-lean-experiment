@@ -105,7 +105,7 @@ test("Flow-node metrics discards delayed old-version and abandoned-tab responses
 
 async function openMetrics(page: import("@playwright/test").Page): Promise<void> {
   await page.goto("/");
-  await page.getByRole("button", { name: "Definitions" }).click();
+  await page.getByRole("link", { name: "Definitions" }).click();
   const diagramTab = page.getByRole("tab", { name: "Diagram", exact: true });
   await diagramTab.focus();
   await page.keyboard.press("ArrowRight");

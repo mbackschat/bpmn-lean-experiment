@@ -1,11 +1,123 @@
 import { expect, test } from "@playwright/test";
 import { installPublicApiFixtures } from "./fixtures.ts";
+import { fileURLToPath } from "node:url";
+import { buildProcessShowcaseCatalog } from "../../../scripts/rc-showcase-catalog.ts";
+
+test("prepared showcases link to the published exact definition without redeployment @responsive", async ({ page }) => {
+  await installPublicApiFixtures(page);
+  const entries = await buildProcessShowcaseCatalog(fileURLToPath(new URL("../../../", import.meta.url)));
+  const model = entries.find((entry) => entry.id === "request-review-with-form")!;
+  const definition = {
+    processId: "Prepared_Showcase", version: 7,
+    source: { kind: "bpmnSource", id: "process.bpmn", sha256: model.sha256, byteLength: Buffer.byteLength(model.xml), declaredEncoding: "UTF-8", decodedAs: "UTF-8" },
+    semanticProfile: model.profile, startCapabilities: { messageStarts: [], timerStarts: [] },
+  };
+  let mutations = 0;
+  page.on("request", (request) => { if (request.method() === "POST") mutations++; });
+  await page.route("**/api/v1/definitions", (route) => route.fulfill({ json: { definitions: [definition] } }));
+  await page.route("**/Prepared_Showcase/versions", (route) => route.fulfill({ json: { processId: definition.processId, versions: [definition] } }));
+  await page.goto("/#/definitions?view=showcases");
+  const row = page.locator(`[data-model-id="${model.id}"]`);
+  await expect(row.getByText("Prepared · Ready to start", { exact: true })).toBeVisible();
+  await row.getByRole("link", { name: "Open definition", exact: true }).click();
+  await expect(page.getByRole("combobox", { name: "Version", exact: true })).toHaveValue("7");
+  await expect(page.getByRole("tab", { name: "Diagram", exact: true })).toHaveAttribute("aria-selected", "true");
+  await page.goBack();
+  await row.getByRole("link", { name: "Go to Start", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Start version 7", exact: true })).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole("button", { name: "Start version 7", exact: true })).toBeVisible();
+  expect(mutations).toBe(0);
+});
+
+for (const modelId of ["request-review-with-form", "external-service-recording", "ordered-batch-document-review"]) {
+  test(`showcase ${modelId} leads from preparation to explicit start and next action @responsive`, async ({ page }) => {
+    await installPublicApiFixtures(page);
+    const entries = await buildProcessShowcaseCatalog(fileURLToPath(new URL("../../../", import.meta.url)));
+    const model = entries.find((entry) => entry.id === modelId)!;
+    const definition = {
+      processId: "Prepared_Showcase", version: 3,
+      source: { kind: "bpmnSource", id: "process.bpmn", sha256: model.sha256, byteLength: Buffer.byteLength(model.xml), declaredEncoding: "UTF-8", decodedAs: "UTF-8" },
+      semanticProfile: model.profile, startCapabilities: { messageStarts: [], timerStarts: [] },
+    };
+    const newer = { ...definition, version: 4 };
+    let prepared = false;
+    let starts = 0;
+    await page.route("**/rc-showcase-runtime.json", (route) => route.fulfill({ json: { kind: "rcShowcaseRuntime", version: 1 } }));
+    await page.route("**/api/v1/definitions", (route) => route.fulfill({ json: { definitions: prepared ? [newer] : [] } }));
+    await page.route("**/Prepared_Showcase/versions", (route) => route.fulfill({ json: { processId: definition.processId, versions: [definition, newer] } }));
+    await page.route("**/api/v1/definitions?*", (route) => {
+      prepared = true;
+      return route.fulfill({ status: 201, json: { status: "deployed", definition } });
+    });
+    await page.route("**/versions/3/start", (route) => {
+      starts++;
+      expect(route.request().postDataJSON()).toEqual(model.showcase!.start);
+      return route.fulfill({ status: 201, json: { status: "started", instance: { processInstanceId: "prepared-instance", definition } } });
+    });
+    await page.goto(`/#/definitions?view=showcases&model=${model.id}`);
+    await page.getByRole("button", { name: "Prepare this showcase" }).click();
+    await expect(page.getByRole("tab", { name: "Start", exact: true })).toHaveAttribute("aria-selected", "true");
+    await expect(page.getByRole("heading", { name: "Ready to start", exact: true })).toBeFocused();
+    await expect(page.getByRole("region", { name: "Ready to start", exact: true })).toContainText(model.title);
+    await expect(page.getByRole("combobox", { name: "Version", exact: true })).toHaveValue("3");
+    expect(starts).toBe(0);
+    if (model.showcase!.start.initialVariables.length > 0) {
+      await page.getByRole("button", { name: "Show Showcase start data", exact: true }).click();
+      const hide = page.getByRole("button", { name: "Hide Showcase start data", exact: true });
+      await expect(hide).toHaveAttribute("aria-expanded", "true");
+      await hide.click();
+    }
+    const start = page.getByRole("button", { name: "Start version 3", exact: true });
+    await expect(start).toBeInViewport();
+    await start.click();
+    await expect(page.getByText("What happens next", { exact: true })).toBeVisible();
+    const nextAction = page.getByRole("button", { name: "View instance in Operations", exact: true });
+    await expect(nextAction).toBeVisible();
+    const spacing = await nextAction.evaluate((button) => {
+      const paragraph = button.previousElementSibling!;
+      return button.getBoundingClientRect().top - paragraph.getBoundingClientRect().bottom;
+    });
+    expect(spacing).toBeGreaterThanOrEqual(16);
+    expect(starts).toBe(1);
+    const inbox = page.getByRole("link", { name: "Open task inbox", exact: true });
+    if (model.showcase!.mode === "human") {
+      await expect(inbox).toBeVisible();
+      await inbox.click();
+      await expect(page).toHaveURL(/#\/work$/);
+    } else await expect(inbox).toHaveCount(0);
+    await expect(page.locator("html")).toHaveJSProperty("scrollWidth", await page.locator("html").evaluate((element) => element.clientWidth));
+  });
+}
+
+test("showcase disclosures use explicit Show and Hide buttons and expand inline @responsive", async ({ page }) => {
+  await installPublicApiFixtures(page);
+  await page.goto("/#/definitions?view=showcases");
+  const show = page.getByRole("button", { name: "Show What this demonstrates about the approach", exact: true });
+  const disclosure = page.locator('[data-ui="inline-disclosure"]').filter({ has: show });
+  expect((await disclosure.boundingBox())!.height).toBeCloseTo((await show.boundingBox())!.height, 0);
+  const search = page.getByLabel("Find a process or BPMN element");
+  const before = (await search.boundingBox())!.y;
+  await show.focus();
+  await page.keyboard.press("Enter");
+  const hide = page.getByRole("button", { name: "Hide What this demonstrates about the approach", exact: true });
+  await expect(hide).toBeFocused();
+  await expect(hide).toHaveAttribute("aria-expanded", "true");
+  expect((await search.boundingBox())!.y).toBeGreaterThan(before);
+  await page.keyboard.press("Space");
+  await expect(show).toHaveAttribute("aria-expanded", "false");
+  await page.getByRole("button", { name: "Explore Review content and risk in parallel", exact: true }).click();
+  await page.getByRole("button", { name: "Show Exact source and profile", exact: true }).click();
+  await expect(page.locator('[data-ui="inline-disclosure"] pre')).toBeVisible();
+  await page.getByRole("button", { name: "Hide Exact source and profile", exact: true }).click();
+  await expect(page.locator('[data-ui="inline-disclosure"] pre')).not.toBeVisible();
+});
 
 test("showcases distinguish manual work, simulated participants and retained engine evidence @responsive", async ({ page }) => {
   await installPublicApiFixtures(page);
   await page.route("**/rc-showcase-runtime.json", (route) => route.fulfill({ status: 404 }));
   await page.goto("/");
-  await page.getByRole("navigation", { name: "Primary navigation" }).getByRole("button", { name: "Definitions", exact: true }).click();
+  await page.getByRole("navigation", { name: "Primary navigation" }).getByRole("link", { name: "Definitions", exact: true }).click();
   const explore = page.getByRole("button", { name: "Explore process showcases", exact: true });
   await explore.focus();
   await page.keyboard.press("Enter");
@@ -25,7 +137,7 @@ test("showcases distinguish manual work, simulated participants and retained eng
   await catalog.getByRole("button", { name: "Back to showcase catalog" }).click();
   await expect(catalog.getByRole("button", { name: "Explore Withdraw a resource reservation", exact: true })).toBeFocused();
   await catalog.getByLabel("Find a process or BPMN element").fill("");
-  await catalog.getByLabel("Include all retained engine models").check();
+  await catalog.getByLabel("Show additional models (view only)").check();
   await expect(catalog.locator("[data-model-id]")).toHaveCount(45);
   await catalog.getByRole("button", { name: "Explore Prepare two work items in parallel", exact: true }).click();
   await expect(catalog).toContainText("metadata-free");
@@ -44,7 +156,7 @@ test("showcase preparation keeps its originating selection until the response se
     await route.fulfill({ status: 503, json: { error: { code: "notFound", message: "Preparation unavailable." } } });
   });
   await page.goto("/");
-  await page.getByRole("navigation", { name: "Primary navigation" }).getByRole("button", { name: "Definitions", exact: true }).click();
+  await page.getByRole("navigation", { name: "Primary navigation" }).getByRole("link", { name: "Definitions", exact: true }).click();
   await page.getByRole("button", { name: "Explore process showcases", exact: true }).click();
   await page.getByRole("button", { name: "Explore Review content and risk in parallel", exact: true }).click();
   await page.getByRole("button", { name: "Prepare this showcase" }).click();

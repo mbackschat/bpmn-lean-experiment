@@ -25,7 +25,9 @@ export {
   DataTableResponsiveMode,
 } from "./data-table.js";
 export type { DataTableColumn, DataTableProps } from "./data-table.js";
-export { ConfirmationDialog } from "./dialog.js";
-export type { ConfirmationDialogProps } from "./dialog.js";
+export { ConfirmationDialog, ModalDialog } from "./dialog.js";
+export type { ConfirmationDialogProps, ModalDialogProps } from "./dialog.js";
+export { InlineDisclosure } from "./disclosure.js";
+export type { InlineDisclosureProps } from "./disclosure.js";
 export { WorkspaceTabs } from "./tabs.js";
 export type { WorkspaceTab, WorkspaceTabsProps } from "./tabs.js";

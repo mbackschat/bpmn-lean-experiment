@@ -113,7 +113,8 @@ test("requires two-sided mutation evidence inside production-backed user journey
   assert.match(processLedger, /mutation invariant was translated into a successful browser script[\s\S]*stale-generation instance[\s\S]*`executable guard`/u);
   assert.match(fixedFixtureJourney, /test\("unclaimed tasks cannot enter the completion flow"/u);
   assert.match(fixedFixtureJourney, /test\("known completion conflicts are not presented as unknown delivery"/u);
-  assert.match(workInbox, /row\.claim === null \? \([\s\S]*<span>/u);
+  assert.match(workInbox, /cell: \(row\) => <span>\{row\.task\.name \?\? row\.task\.id\.elementId\}<\/span>/u);
+  assert.match(fixedFixtureJourney, /test\("unclaimed tasks cannot enter the completion flow"[\s\S]*name: "Edit task: Validate corporate ownership evidence"[\s\S]*toHaveCount\(0\)/u);
   assert.match(workInbox, /error instanceof WorkApiError && error\.status >= 400 && error\.status < 500/u);
   assert.match(completionOperation, /if \(claim === null\)[\s\S]*must claim the task before completion/u);
   assert.deepEqual(workAuditIsolationViolations(productionJourney), []);

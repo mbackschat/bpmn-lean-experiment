@@ -8,7 +8,7 @@ for (const kind of ["boolean", "string"] as const) {
     const details = [legacyDetail(kind, 1), legacyDetail(kind, 2)];
     await installWorkFixtures(page, details);
     await page.goto("/");
-    await page.getByRole("button", { name: "Review 1", exact: true }).click();
+    await page.getByRole("button", { name: "Edit task: Review 1", exact: true }).click();
     if (kind === "boolean") await page.getByRole("radio", { name: "False", exact: true }).press("Space");
     else await page.getByRole("textbox", { name: "decision", exact: true }).fill("Keep my exact draft");
 
@@ -17,7 +17,7 @@ for (const kind of ["boolean", "string"] as const) {
     else await expect(page.getByRole("textbox", { name: "decision", exact: true })).toHaveValue("Keep my exact draft");
 
     await page.getByRole("button", { name: "Back to tasks" }).click();
-    await page.getByRole("button", { name: "Review 2", exact: true }).click();
+    await page.getByRole("button", { name: "Edit task: Review 2", exact: true }).click();
     if (kind === "boolean") {
       await expect(page.getByRole("radio", { name: "False", exact: true })).not.toBeChecked();
       await expect(page.getByRole("radio", { name: "True", exact: true })).not.toBeChecked();
@@ -28,14 +28,14 @@ for (const kind of ["boolean", "string"] as const) {
 test("Work draft survives primary navigation away and back @responsive", async ({ page }) => {
   await installWorkFixtures(page, [structuredDetail(1)]);
   await page.goto("/");
-  await page.getByRole("button", { name: "Review 1", exact: true }).click();
+  await page.getByRole("button", { name: "Edit task: Review 1", exact: true }).click();
   await page.getByRole("textbox", { name: "Reference", exact: true }).fill("Workspace draft");
   await page.getByRole("radio", { name: "False", exact: true }).press("Space");
   await page.getByRole("button", { name: "Request changes", exact: true }).click();
   await page.getByRole("textbox", { name: "Reason", exact: true }).fill("Keep the selected action");
-  await page.getByRole("button", { name: "Definitions", exact: true }).click();
+  await page.getByRole("link", { name: "Definitions", exact: true }).click();
   await expect(page.getByRole("textbox", { name: "Reference", exact: true })).toHaveCount(0);
-  await page.getByRole("button", { name: "Work", exact: true }).click();
+  await page.getByRole("link", { name: "Work", exact: true }).click();
   await expect(page.getByRole("textbox", { name: "Reference", exact: true })).toHaveValue("Workspace draft");
   await expect(page.getByRole("radio", { name: "False", exact: true })).toBeChecked();
   await expect(page.getByRole("textbox", { name: "Reason", exact: true })).toHaveValue("Keep the selected action");
@@ -44,7 +44,7 @@ test("Work draft survives primary navigation away and back @responsive", async (
 test("retained completion makes radio and checkbox choices visibly unavailable @responsive", async ({ page }) => {
   await installWorkFixtures(page, [structuredDetail(1)]);
   await page.goto("/");
-  await page.getByRole("button", { name: "Review 1", exact: true }).click();
+  await page.getByRole("button", { name: "Edit task: Review 1", exact: true }).click();
   await page.getByRole("textbox", { name: "Reference", exact: true }).fill("Pending delivery");
   await page.getByRole("checkbox", { name: "Receipt", exact: true }).press("Space");
   await page.getByRole("button", { name: "Approve", exact: true }).click();
@@ -61,7 +61,7 @@ test("retained completion makes radio and checkbox choices visibly unavailable @
 test("structured input and selected resolution survive tabs, including exact completion retry @responsive", async ({ page }) => {
   const requests = await installWorkFixtures(page, [structuredDetail(1), structuredDetail(2)]);
   await page.goto("/");
-  await page.getByRole("button", { name: "Review 1", exact: true }).click();
+  await page.getByRole("button", { name: "Edit task: Review 1", exact: true }).click();
   await page.getByRole("textbox", { name: "Reference", exact: true }).fill("Draft-4711");
   await page.getByRole("radio", { name: "False", exact: true }).press("Space");
   await page.getByRole("button", { name: "Request changes", exact: true }).click();
@@ -87,7 +87,7 @@ test("structured input and selected resolution survive tabs, including exact com
   expect(requests).toHaveLength(2);
   expect(requests[1]).toEqual(requests[0]);
 
-  await page.getByRole("button", { name: "Review 2", exact: true }).click();
+  await page.getByRole("button", { name: "Edit task: Review 2", exact: true }).click();
   await expect(page.getByRole("textbox", { name: "Reference", exact: true })).toHaveValue("");
   await expect(page.getByRole("radio", { name: "True", exact: true })).toBeChecked();
   await expect(page.getByRole("textbox", { name: "Reason", exact: true })).toHaveCount(0);
@@ -96,7 +96,7 @@ test("structured input and selected resolution survive tabs, including exact com
 test("an incompatible structured Boolean is unavailable, never an empty editable choice @responsive", async ({ page }) => {
   const requests = await installWorkFixtures(page, [structuredDetail(1, true)]);
   await page.goto("/");
-  await page.getByRole("button", { name: "Review 1", exact: true }).click();
+  await page.getByRole("button", { name: "Edit task: Review 1", exact: true }).click();
   const panel = page.getByRole("tabpanel", { name: "Form", exact: true });
   await expect(panel.getByRole("alert")).toContainText(/unavailable/i);
   await expect(panel.getByRole("alert")).toContainText("Notify submitter");

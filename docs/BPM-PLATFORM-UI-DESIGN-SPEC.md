@@ -38,6 +38,8 @@ The preflight precedes red/green production work. Tests then lock the selected p
 
 React Aria Components owns accessible interaction behavior for controls. TanStack Query owns bounded HTTP state, and TanStack Table may own collection row modeling. `platform/ui-kit/` owns shared interaction components, one root-token and document-reset sheet, and co-located CSS Modules for every styled component. `platform/apps/web/` owns workspace composition and feature CSS Modules. A feature may place a shared component through its public `className`, but it may not restyle the component's internal structure or interaction state.
 
+The implemented routing extension uses TanStack Router for typed hash locations and a shared application QueryClient for existing Query-backed Work reads. Definitions and Operations retain their bounded feature loaders; no wholesale data-fetch migration is selected. The [information architecture](BPM-PLATFORM-INFORMATION-ARCHITECTURE-SPEC.md#browser-location-and-state-ownership) owns URL selection, Back/Forward and mutation guards. React Activity retains visited workspace drafts within the browser session; controls and exact operations remain feature-owned. Its [composed acceptance](BPM-PLATFORM-INFORMATION-ARCHITECTURE-SPEC.md#acceptance) qualifies routing independently of the historical review receipt above.
+
 Global CSS is limited to document defaults, font inheritance, root tokens, and the intentionally global `bpmn-js` viewer surface. Feature selectors, responsive rules, and business-state styling belong in CSS Modules. React Aria data attributes such as `data-hovered`, `data-focused`, `data-pressed`, `data-disabled`, and `data-pending` are selected only beneath the owning module root. No second global component sheet, feature-wide selector, or application override becomes an implicit theme layer.
 
 ## Visual foundations
@@ -78,6 +80,14 @@ One page heading identifies the workspace; one section heading identifies the co
 
 Primary actions use a filled accent button. Secondary navigation and low-risk contextual actions use plain or outlined controls. Destructive actions require a distinct semantic treatment when introduced; release is not destructive and remains an ordinary task action.
 
+Action buttons use their natural content width, including inside responsive table cards and grids. Full-width buttons require an explicit layout purpose, such as a navigation rail; container stretching is not a reason. Preserve a minimum 44-pixel action height. Group explanatory text and its next action with a layout gap of at least `--ui-space-4` (16px), rather than relying on incidental paragraph margins.
+
+The upper-left brand links to the initial Work inbox, with a visible hover and keyboard focus state and an accessible home label. It uses the same router and pending-action safeguards as other navigation.
+
+**Explicit controls throughout the product:** use visibly styled, verb-labelled buttons for actions, links for navigation, and plain text for names and descriptions. A title, row, card or colored area is not an action control. Never make an essential action depend on clicking an unmarked surface or discovering hover behavior. A button role alone does not establish a visual affordance: action controls need persistent button styling and a visible focus state. Keep the object name separate from the verb; Edit task opens work, while Approve or Complete submits a decision. Standard tabs, disclosures and form controls retain their native interaction patterns. Apply this rule to new and changed surfaces, and verify the visible label, styling and keyboard behavior in their journey tests.
+
+Design complete journeys before arranging controls: identify the user's objective, current object, primary action, visible outcome and next action using the [evaluation journeys](BPM-PLATFORM-INFORMATION-ARCHITECTURE-SPEC.md#evaluation-journeys). Inspection tabs cannot be the sole discovery path for a primary action. Definitions offers Start process beside the diagram; preparation lands directly on the exact version's starting details. After creation, What happens next leads to the task inbox or exact instance inspection. Task names remain text, with a filled Edit task button and secondary Release control in the row's Action group. Opening a form must never look like submitting its business decision.
+
 Tabs organize related views of one selected object. They must use the React Aria Tabs pattern once the shared component is introduced. Until that extraction, native roles, selected state, focus behavior, and keyboard behavior must remain equivalent. Tabs do not switch between unrelated products.
 
 Task collections use one native table, row, header-cell, and data-cell DOM at every width. Each data cell carries one visible responsive label in card mode; desktop headers are visually hidden only after those labels become visible. A collection-container query reflows the same row into a labeled card before controls or content need horizontal overflow. Table and card presentations never duplicate task content or actions, and the task collection never uses `overflow-x: auto`, an inner horizontal scrollbar, clipped cells, or a second viewport-specific DOM.
@@ -91,6 +101,26 @@ A user-visible mutation is actionable only when its current public prerequisite 
 Diagrams receive a stable minimum working height and use the full content width. Loading, generated-layout provenance, rendering failure, and missing presentation are visible states. Viewer attribution stays visible and unmodified.
 
 The About capability table uses one native table at desktop widths, with one row per exact executable BPMN element variant. Status is always written as text; CIB evidence is never encoded only by color. Long restrictions wrap inside their cells, and the table reflows through its owning CSS Module without horizontal page overflow. A short summary precedes the table, but summary counts never become a combined BPMN/CIB/platform percentage.
+
+When responsive tables become block layouts, their captions also become full-width blocks rather than retaining shrinkwrapped table-caption boxes. Desktop tables retain native caption layout. At the supported widths the About capability caption spans at least 90% of its table and fits within two text lines. **Implementation checkpoints** and **Executable BPMN elements and variants** are independently collapsible sections. The former groups all seven historical checkpoint cards; the latter contains the complete current capability table. Cards retain their titles, evidence, product surface and remaining limits without individual Show/Hide controls. Collapse meaningful groups rather than replacing each card with an extra interaction. Operational headings use **Process instances** and **Process diagram**; technical identity is explicitly labelled **BPMN process ID**. The catalog's **Show additional models** checkbox changes visibility only, and its entry button is spaced apart from definition controls.
+
+## Disclosures and dialogs
+
+Choose the interaction by the user's task, not by the available screen space:
+
+| Need | Pattern | Required behavior |
+|---|---|---|
+| Optional explanation, source, start data or exact History values | Shared `InlineDisclosure` | An outlined Show/Hide button, expansion state announced through `aria-expanded`, content in normal document flow, and keyboard activation without moving focus away from the trigger |
+| A bounded form or decision that temporarily needs attention | Shared `ModalDialog` | A descriptive title, centered bounded surface, dimmed backdrop, inactive background, contained keyboard focus and visible Cancel/Close action |
+| A long or multi-step activity | Dedicated workspace/detail view | Stable navigation, sufficient content area and an explicit return path; do not squeeze it into an overlay |
+
+Inline disclosures push following content down. They never float over unrelated controls, hide essential actions or require outside-click dismissal. The same visible button both expands and collapses the content; its label changes from Show to Hide. Expanded code and identifiers wrap within the panel. Supplementary content may be collapsed initially; errors, prerequisites and the next primary action must remain visible without expansion.
+
+Collapsed disclosures leave only their trigger visible: no empty border, background, padding or reserved content height. Keep decorative spacing and borders on an inner content wrapper, not on the React Aria `DisclosurePanel` that owns hiding. Browser acceptance compares the collapsed disclosure's height with its trigger before opening and after closing, as well as checking hidden content and keyboard behavior.
+
+Modals open with focus on the first useful field or safe decision. Cancel/Close, Escape and backdrop dismissal restore focus to the opener. During an in-flight command, dismissal may be disabled only with an adjacent explanation; closing must never imply that a submitted operation was cancelled. Keep errors and entered values in the dialog after failure, and close after confirmed successful completion. Prevent duplicate submission. Use the shared React Aria components rather than imitating a modal with absolute positioning, elevated z-index or a styled disclosure summary.
+
+The 2026-09-27 application audit covers all five former disclosure sites. Add BPMN definition uses a modal; showcase explanation, exact source/profile, showcase start data and exact History stimulus values use inline Show/Hide controls. Incident cancellation shares the modal foundation and retains its safe initial focus. Browser acceptance must distinguish these patterns: test backdrop/dismissal/focus for a modal, normal-flow expansion and collapse for inline information, plus errors, pending commands and both supported viewport widths.
 
 ## Responsive behavior
 
@@ -134,7 +164,7 @@ Automated measurements prove geometry, interaction, and state rather than subjec
 
 ## Exclusions
 
-This specification does not select a themed component framework, utility-CSS framework, CSS-in-JS runtime, router, generalized form library, chart library, or design-token build system. It does not copy CIB Seven styling. It does not require parallel viewport-specific DOM trees when responsive CSS can preserve one accessible structure.
+This specification does not select a themed component framework, utility-CSS framework, CSS-in-JS runtime, generalized form library, chart library, virtualization, SSR, persistent draft store or design-token build system. The 2026-09-27 routing adoption supersedes only the former router exclusion. It does not copy CIB Seven styling or require parallel viewport-specific DOM trees when responsive CSS can preserve one accessible structure.
 
 ## References
 

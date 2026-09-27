@@ -38,6 +38,9 @@ const module = await import(
     about: ReactNode;
     definitions: ReactNode;
     onNavigate: (workspace: string) => void;
+    navigationHref: (workspace: string) => string;
+    homeHref: string;
+    onHome: () => void;
     operations: ReactNode;
     work: ReactNode;
   }>>;
@@ -56,11 +59,15 @@ test("uses a persistent primary navigation and renders only the selected workspa
     about: createElement("p", null, "about-content"),
     definitions: createElement("p", null, "definitions-content"),
     onNavigate: () => undefined,
+    homeHref: "/#/work",
+    onHome: () => undefined,
+    navigationHref: (workspace) => `/#/${workspace}`,
     operations: createElement("p", null, "operations-content"),
     work: createElement("p", null, "work-content"),
   }));
 
   assert.match(html, /aria-label="Primary navigation"/u);
+  assert.match(html, /<a[^>]+href="\/#\/work"[^>]+>Work<\/a>/u);
   assert.match(html, />Work</u);
   assert.match(html, />Definitions</u);
   assert.match(html, />Operations</u);
@@ -77,6 +84,9 @@ test("gives Definitions the full content workspace rather than a catalog sidebar
     about: createElement("p", null, "about-content"),
     definitions: createElement("p", null, "definitions-content"),
     onNavigate: () => undefined,
+    homeHref: "/#/work",
+    onHome: () => undefined,
+    navigationHref: (workspace) => `/#/${workspace}`,
     operations: createElement("p", null, "operations-content"),
     work: createElement("p", null, "work-content"),
   }));
@@ -94,6 +104,9 @@ test("groups Process instances and incident work under the Operations destinatio
     about: createElement("p", null, "about-content"),
     definitions: createElement("p", null, "definitions-content"),
     onNavigate: () => undefined,
+    homeHref: "/#/work",
+    onHome: () => undefined,
+    navigationHref: (workspace) => `/#/${workspace}`,
     operations: createElement("p", null, "operations-content"),
     work: createElement("p", null, "work-content"),
   }));
@@ -110,6 +123,9 @@ test("opens About as a read-only utility destination", () => {
     about: createElement("p", null, "about-content"),
     definitions: createElement("p", null, "definitions-content"),
     onNavigate: () => undefined,
+    homeHref: "/#/work",
+    onHome: () => undefined,
+    navigationHref: (workspace) => `/#/${workspace}`,
     operations: createElement("p", null, "operations-content"),
     work: createElement("p", null, "work-content"),
   }));

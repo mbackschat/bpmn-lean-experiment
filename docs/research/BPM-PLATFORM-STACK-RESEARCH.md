@@ -2,7 +2,7 @@
 
 ## Status
 
-**Project-authored research carrying one bounded recommendation.** The recommendation alone adopts no dependency. Each adoption requires owner approval and the resolved-graph checks in [the platform's dependency posture](../PROJECT-DESIGN.md#dependency-posture); `bpmn-js` 18.22.1 and the exact React/Vite M1 set received that approval on 2026-08-09, as [the proposal's adoption records](../BPM-PLATFORM-PROPOSAL.md#approval-record-for-react-and-vite) record. Owner decisions taken during this research are listed in [Decisions taken](#10-decisions-taken) and remain owned by [PROJECT-DESIGN.md](../PROJECT-DESIGN.md) and [PLAN.md](../PLAN.md), not by this document.
+**Project-authored research with recorded owner adoptions.** The original comparison is dated 2026-08-07; its footprint and ecosystem measurements are historical. The selected component stack, React/Vite and viewer have adoption records, and the owner adopted focused TanStack Router navigation on 2026-09-27. Research alone adopts no dependency: [the proposal's adoption records](../BPM-PLATFORM-PROPOSAL.md#selected-stack) and [architecture register](../ARCHITECTURE.md#architecture-decision-register) own those choices, subject to the resolved-graph checks in [the dependency posture](../PROJECT-DESIGN.md#dependency-posture).
 
 Reviewers can read sections 1 to 3 for the conclusion and sections 4 onward for the evidence behind it.
 
@@ -30,6 +30,14 @@ Stated by the owner, with dates where a decision was taken during this research.
 ## 3. Recommendation
 
 **`react-aria-components` for behavior and accessibility, plus `@tanstack/react-table`, `@tanstack/react-virtual`, and `@tanstack/react-query`, with a platform-owned component kit written over them, `bpmn-js` for diagram rendering, and `node:sqlite` for the read model.**
+
+This is the original component recommendation, subsequently adopted in bounded slices. Virtualization remains outside the implemented UI slice. The owner-approved routing extension below is an adoption, not a new recommendation to replace the stack.
+
+### Adopted routing extension
+
+The 2026-09-27 owner decision selects TanStack Router's code-based typed hash routes and a shared application QueryClient. The practical requirement is shareable exact selections and views with browser Back/Forward and reload, while retaining the static API-only deployment. The prior survey already identified TanStack Router in Camunda's new unified frontend; that is precedent for the dependency family, not authority for copying its file-based routing, XState or framework choices.
+
+Hash routing avoids a server fallback requirement; code-based routes keep the bounded route tree explicit without adopting route generation or a full-stack framework. React Activity retains workspace/session drafts, while feature code retains pending and uncertain commands. URL state is limited to public selection and view state under the [information architecture](../BPM-PLATFORM-INFORMATION-ARCHITECTURE-SPEC.md#browser-location-and-state-ownership). React Aria, Table, CSS Modules, Vite and lazy diagram loading remain in place. No SSR, generalized form library, virtualization or general state manager is added. The [adoption record](../BPM-PLATFORM-PROPOSAL.md#approval-record-for-tanstack-router) owns the exact version, completed dependency audit including the Unlicense exception, and implemented routing's composed acceptance boundary.
 
 ### Requirement mapping
 
@@ -155,7 +163,7 @@ Apache-2.0 throughout, with the frontend enforcing a production licence allowlis
 
 **None uses a server-side meta-framework.** Temporal runs SvelteKit with its server half switched off, Camunda evaluated the same space and shipped plain Vite, and CIB ships Webpack and Vite bundles. All three serve a static client bundle from a backend process written in another language. The shared reason is the architecture this project also has: a long-running engine process, and a UI that is an authenticated API client with no public content and no rendering to gain. This is evidence about product shape, not framework quality.
 
-Footprint is not the argument against Next.js. Measured, `next react react-dom` resolves to **54 packages**, smaller than its reputation. The arguments are that its value is SSR, React Server Components, incremental static regeneration, routing, and image optimization, none of which this product needs; that it has no first-class answer for the long-running Temporal Worker and projection subscriber that must run regardless, so it does not remove the multi-process problem it appears to solve; and that a single Node process serving an API and a static bundle is a better deployment story for a self-hosted product.
+Footprint was not the argument against Next.js. The original measurement of `next react react-dom` resolved to **54 packages**, smaller than its reputation. SSR, React Server Components, incremental static regeneration and image optimization supplied no selected product requirement. Routing is now selected independently through the adopted extension above; it does not require a server-side framework. Long-running Temporal Workers and projection subscribers still have their own lifecycles, and a Node process serving the API and static bundle retains the self-hosted deployment shape.
 
 **Camunda 8 and both CIB Seven web generations render BPMN with `bpmn-js` and decorate it through the `overlays` API.** Temporal Web UI is not a BPMN product and does not render BPMN; the earlier statement that all three analogues used `bpmn-js` was incorrect.
 
@@ -387,6 +395,7 @@ Recorded for traceability; the durable owners are [PROJECT-DESIGN.md](../PROJECT
 9. **`bpmn-js` 18.22.1** for viewer-only diagram rendering, with its exact bpmn.io license notice retained and its required watermark left unchanged, visible, linked, and unobstructed. Owner-approved 2026-08-09 after comparison with `bpmn-visualization`.
 10. **React 19.2.8 and React DOM 19.2.8 with development-only Vite 7.3.6**, plus exact React declaration packages, for the M1 static client. Owner-approved 2026-08-09; no server-side meta-framework or component-kit dependency is introduced by this decision.
 11. **CSS Modules** for the platform-owned component kit. Owner-selected 2026-08-12 because Vite compiles them to ordinary CSS with no added dependency or runtime, while React Aria states remain directly styleable through their public `data-*` attributes.
+12. **TanStack Router for typed hash navigation**, owner-adopted 2026-09-27 under the [focused routing record](../BPM-PLATFORM-PROPOSAL.md#approval-record-for-tanstack-router). This reopens the earlier routing exclusion without selecting a server-side framework, form library or virtualization. The resolved licence audit and composed browser acceptance qualify the implementation. The historical component-footprint measurements do not describe this new dependency closure.
 
 ## 11. Remaining open decisions
 

@@ -1,3 +1,4 @@
+import { InlineDisclosure } from "@bpmn-lean/platform-ui-kit";
 import {
   SemanticTransitionKind,
   StimulusKind,
@@ -57,10 +58,9 @@ function TransitionRecord({
             <Fact label="Logical time" value={`${record.logicalTimeMs} ms`} />
             {stimulusOccurrence(record.transition.stimulus)}
           </dl>
-          <details>
-            <summary>Exact stimulus values</summary>
+          <InlineDisclosure title="Exact stimulus values">
             <pre>{JSON.stringify(record.transition.stimulus, null, 2)}</pre>
-          </details>
+          </InlineDisclosure>
         </>
       );
     case SemanticTransitionKind.InternalOperation:

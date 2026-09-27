@@ -42,14 +42,14 @@ test("corpus request-review-with-form completes its production user journey", as
   await expect(taskRow).toHaveCount(1);
   await expect(taskRow).toContainText("Unclaimed");
   await expect(taskRow).toContainText("reviewers");
-  await expect(taskRow.getByRole("button", { name: "Approve", exact: true }))
+  await expect(taskRow.getByRole("button", { name: "Edit task: Approve", exact: true }))
     .toHaveCount(0);
   await expect(tasks.getByRole("button", { name: "Complete task", exact: true }))
     .toHaveCount(0);
 
   await taskRow.getByRole("button", { name: "Claim", exact: true }).click();
   await expect(taskRow).toContainText("Claimed by demo-user");
-  await taskRow.getByRole("button", { name: "Approve", exact: true }).click();
+  await taskRow.getByRole("button", { name: "Edit task: Approve", exact: true }).click();
   await expect(tasks.getByRole("heading", { name: "Approve", exact: true })).toBeFocused();
   const taskTabs = tasks.getByRole("tablist", { name: "Task detail views" });
   await taskTabs.getByRole("tab", { name: "Diagram", exact: true }).click();
@@ -68,7 +68,7 @@ test("corpus request-review-with-form completes its production user journey", as
   await navigate(page, "Operations");
   await page.getByLabel("Process-instance ID").fill(processInstanceId!);
   await page.getByRole("button", { name: "Search", exact: true }).click();
-  const instanceTable = page.getByRole("table", { name: "Confirmed Product 2 starts" });
+  const instanceTable = page.getByRole("table", { name: "Process instances" });
   const instanceRow = instanceTable.getByRole("row").filter({ hasText: processInstanceId! });
   await expect(instanceRow).toHaveCount(1);
   await instanceRow.getByRole("button", {
@@ -115,7 +115,7 @@ async function navigate(
   workspace: "Definitions" | "Operations" | "Work",
 ): Promise<void> {
   await page.getByRole("navigation", { name: "Primary navigation" })
-    .getByRole("button", { name: workspace, exact: true })
+    .getByRole("link", { name: workspace, exact: true })
     .click();
   await expect(page.getByRole("heading", { name: workspace, level: 1 })).toBeFocused();
 }

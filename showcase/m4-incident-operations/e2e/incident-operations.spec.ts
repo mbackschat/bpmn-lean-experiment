@@ -99,7 +99,7 @@ test("operates both graduated current incidents through the production boundary"
 
   await page.goto("/");
   await page.getByRole("navigation", { name: "Primary navigation" })
-    .getByRole("button", { name: "Operations", exact: true })
+    .getByRole("link", { name: "Operations", exact: true })
     .click();
   const operationsTabs = page.getByRole("tablist", { name: "Operations" });
   await operationsTabs.getByRole("tab", { name: "Incidents" }).click();
@@ -207,7 +207,7 @@ test("operates both graduated current incidents through the production boundary"
     .fill(retryStarted.processInstanceId);
   await page.getByRole("button", { name: "Search", exact: true }).click();
   const processTable = page.getByRole("table", {
-    name: "Confirmed Product 2 starts",
+    name: "Process instances",
   });
   await expect(processTable).toContainText(retryStarted.processInstanceId);
   await expect(processTable).toContainText(retryProfile);

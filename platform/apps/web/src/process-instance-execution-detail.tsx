@@ -23,6 +23,7 @@ import { ProcessInstanceExecutionDiagram } from "./process-instance-execution-di
 import { ProcessInstanceExecutionHistory } from "./process-instance-execution-history.tsx";
 import { ProcessOperatorHistory } from "./process-operator-history.tsx";
 import styles from "./process-instance-execution-detail.module.css";
+import type { OperationsSearch, WorkspaceNavigation } from "./navigation/route-search.ts";
 
 export enum ProcessExecutionDetailLoadKind {
   Pending = "pending",
@@ -121,6 +122,7 @@ export class ProcessExecutionDetailLoader {
 }
 
 export type ProcessInstanceExecutionDetailBoundaryProps = Readonly<{
+  navigation?: WorkspaceNavigation<OperationsSearch>;
   api: ProcessExecutionApi;
   definitionApi: Pick<DefinitionApiClient, "getPresentation">;
   operatorAuditApi: OperatorAuditApi;
@@ -137,6 +139,7 @@ export function ProcessInstanceExecutionDetailBoundary({
   onBack,
   onUnavailable,
   state,
+  navigation,
 }: ProcessInstanceExecutionDetailBoundaryProps) {
   if (state === null) return null;
   const instance = state.kind === ProcessExecutionDetailLoadKind.Current
@@ -151,11 +154,13 @@ export function ProcessInstanceExecutionDetailBoundary({
       onUnavailable={(message) => { onUnavailable(instance, message); }}
       operatorAuditApi={operatorAuditApi}
       state={state}
+      {...(navigation === undefined ? {} : { navigation })}
     />
   );
 }
 
 type ProcessInstanceExecutionDetailProps = Readonly<{
+  navigation?: WorkspaceNavigation<OperationsSearch>;
   api: ProcessExecutionApi;
   definitionApi: Pick<DefinitionApiClient, "getPresentation">;
   instance: PublicProcessInstanceIdentity;
@@ -173,8 +178,11 @@ function ProcessInstanceExecutionDetail({
   onUnavailable,
   operatorAuditApi,
   state,
+  navigation,
 }: ProcessInstanceExecutionDetailProps) {
-  const [tab, setTab] = useState("overview");
+  const [localTab, setTab] = useState("overview");
+  const tab = navigation === undefined ? localTab : navigation.search.view === "audit"
+    ? "overview" : navigation.search.view ?? "overview";
   const [downloadStatus, setDownloadStatus] = useState<"pending" | null>(null);
   const heading = useRef<HTMLHeadingElement>(null);
   const interactiveFocusClaimed = useRef(false);
@@ -220,6 +228,9 @@ function ProcessInstanceExecutionDetail({
     downloadRequests.invalidate();
     setDownloadStatus(null);
     setTab(next);
+    if (navigation !== undefined && (next === "overview" || next === "history" || next === "diagram" || next === "operator-history")) {
+      navigation.navigate({ ...navigation.search, view: next });
+    }
   }
 
   const semanticTabs = state.kind === ProcessExecutionDetailLoadKind.Current
@@ -279,7 +290,7 @@ function ProcessInstanceExecutionDetail({
           state.kind !== ProcessExecutionDetailLoadKind.Current &&
           target.closest('[data-key="operator-history"]') !== null
         ) {
-          setTab("operator-history");
+          if (tab !== "operator-history") selectTab("operator-history");
         }
       }}
     >

@@ -88,7 +88,7 @@ async function deploy(page: Page, processId: string, source: string): Promise<vo
 
 async function openDefinitions(page: Page): Promise<void> {
   await page.getByRole("navigation", { name: "Primary navigation" })
-    .getByRole("button", { name: "Definitions", exact: true })
+    .getByRole("link", { name: "Definitions", exact: true })
     .click();
   await expect(page.getByRole("heading", { name: "Definitions", level: 1 })).toBeVisible();
 }

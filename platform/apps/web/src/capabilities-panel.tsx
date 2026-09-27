@@ -1,3 +1,5 @@
+import { InlineDisclosure } from "@bpmn-lean/platform-ui-kit";
+
 import {
   BpmnCapabilitySupport,
   CibCapabilityEvidenceKind,
@@ -54,33 +56,25 @@ export function CapabilitiesPanel({ productVersion }: CapabilitiesPanelProps) {
       <aside className={styles.boundary} aria-label="Coverage boundary">
         <strong>Not a conformance claim.</strong> Each row is an exact, restricted executable profile. BPMN coverage, selected CIB compatibility evidence, and platform journey coverage remain separate measures.
       </aside>
+      <InlineDisclosure title="Implementation checkpoints">
       <div className={styles.beta}>
-        <h3>MUE Preview Beta</h3>
-        <p>All seven reviewed checkpoint boundaries are integrated. This delivery checkpoint is not full MUE closure or BPMN conformance; each evidence kind and remaining limit stays explicit.</p>
-        <div className={`${styles.tableOwner} ${styles.betaTable}`}>
-          <table>
-            <caption>MUE Preview Beta checkpoint boundaries</caption>
-            <thead>
-              <tr>
-                <th scope="col">Checkpoint</th>
-                <th scope="col">Evidence</th>
-                <th scope="col">Product surface</th>
-                <th scope="col">Remaining limit</th>
-              </tr>
-            </thead>
-            <tbody>
-              {muePreviewBetaCheckpoints.map((checkpoint) => (
-                <tr key={checkpoint.id} data-beta-content-id={checkpoint.id}>
-                  <th scope="row" data-label="Checkpoint">{checkpoint.title}</th>
-                  <td data-label="Evidence">{betaEvidenceLabel(checkpoint.evidenceKind)}</td>
-                  <td data-label="Product surface">{betaSurfaceLabel(checkpoint.productSurface)}</td>
-                  <td data-label="Remaining limit">{checkpoint.boundary}; {checkpoint.remainingLimit}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <h3 id="implementation-checkpoints-heading">Implementation checkpoints</h3>
+        <p>Historical MUE Preview Beta evidence: these seven checkpoints record the boundaries and remaining limits at that delivery checkpoint. This is not full MUE closure or BPMN conformance. The executable overview describes current supported variants.</p>
+        <ul className={styles.checkpoints} aria-labelledby="implementation-checkpoints-heading">
+          {muePreviewBetaCheckpoints.map((checkpoint) => (
+            <li key={checkpoint.id} data-beta-content-id={checkpoint.id}>
+                <h4>{checkpoint.title}</h4>
+                <dl className={styles.checkpointDetails}>
+                  <div><dt>Evidence</dt><dd>{betaEvidenceLabel(checkpoint.evidenceKind)}</dd></div>
+                  <div><dt>Product surface</dt><dd>{betaSurfaceLabel(checkpoint.productSurface)}</dd></div>
+                  <div><dt>Remaining limit</dt><dd>{checkpoint.boundary}; {checkpoint.remainingLimit}</dd></div>
+                </dl>
+            </li>
+          ))}
+        </ul>
       </div>
+      </InlineDisclosure>
+      <InlineDisclosure title="Executable BPMN elements and variants">
       <div className={`${styles.tableOwner} ${styles.capabilityTable}`}>
         <table>
           <caption>Executable BPMN element and semantic-variant overview</caption>
@@ -106,6 +100,7 @@ export function CapabilitiesPanel({ productVersion }: CapabilitiesPanelProps) {
           </tbody>
         </table>
       </div>
+      </InlineDisclosure>
       <p className={styles.followUp}>
         The repository requirement ledger owns BPMN dispositions; the implementation map owns exact current evidence. Unsupported or broader behavior remains outside these rows until its semantic profile and tests are approved.
       </p>

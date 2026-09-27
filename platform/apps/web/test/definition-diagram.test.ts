@@ -23,6 +23,9 @@ test("definition diagrams fetch resolved presentation instead of admitted source
   assert.match(diagramSource, /Diagram view is unavailable/u);
   assert.match(diagramSource, /Download diagrammed BPMN/u);
   assert.match(diagramSource, /Derived presentation copy, not admitted source/u);
+  assert.match(diagramSource, />Process diagram<\/p>/u);
+  assert.match(diagramSource, /BPMN process ID: \{definition\.processId\}/u);
+  assert.doesNotMatch(diagramSource, /Resolved BPMN presentation/u);
   assert.match(
     diagramSource,
     /downloadDefinitionPresentation\(presentation\)/u,

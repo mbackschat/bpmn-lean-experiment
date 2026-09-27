@@ -96,7 +96,7 @@ test("public Compensation start preserves success and failure through restart, i
 async function openDetail(page: Page, instance: PublicProcessInstanceIdentity): Promise<void> {
   await page.goto("/");
   await page.getByRole("navigation", { name: "Primary navigation" })
-    .getByRole("button", { name: "Operations", exact: true }).click();
+    .getByRole("link", { name: "Operations", exact: true }).click();
   await page.getByLabel("Process-instance ID").fill(instance.processInstanceId);
   await page.getByRole("button", { name: "Search", exact: true }).click();
   await page.getByRole("button", { name: `View details ${instance.processInstanceId}` }).click();

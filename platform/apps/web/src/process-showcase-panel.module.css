@@ -13,7 +13,11 @@
 .collection li > button { flex-shrink: 0; max-width: 35%; }
 .collection span, .capabilities small { color: var(--ui-color-muted); }
 .capabilities li { display: grid; gap: var(--ui-space-2); border-bottom: var(--ui-border); padding-bottom: var(--ui-space-3); }
-.explanation { background: var(--ui-color-inset); padding: var(--ui-space-4); border: var(--ui-border); }
-.explanation p { margin-top: var(--ui-space-3); }
 .mode { font-weight: 650; color: var(--ui-color-accent); }
+.actions { flex-shrink: 0; }
+.prepared { display: grid; gap: var(--ui-space-2); }
+.prepared strong { color: var(--ui-color-accent); font: var(--ui-font-label); }
+.links { display: flex; flex-wrap: wrap; gap: var(--ui-space-4); }
+.links a { display: inline-flex; align-items: center; min-height: 44px; color: var(--ui-color-accent-hover); }
+.links a:focus-visible { outline: 2px solid var(--ui-color-focus); outline-offset: 2px; }
 @media (max-width: 1000px) { .collection li { flex-direction: column; align-items: start; } .collection li > button { max-width: 100%; } }

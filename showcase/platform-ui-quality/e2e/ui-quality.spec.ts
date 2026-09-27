@@ -65,6 +65,11 @@ test("task collection remains usable and contained at the declared viewport @res
     await assertNoOverflow(rows.nth(index), `task row ${index}`);
   }
   await assertOwnedActionsFit(page.getByRole("region", { name: "Tasks" }));
+  for (const claim of await taskCollection.getByRole("button", { name: "Claim", exact: true }).all()) {
+    const box = (await claim.boundingBox())!;
+    expect(box.width).toBeLessThan(200);
+    expect(box.height).toBeGreaterThanOrEqual(44);
+  }
 
   await expect(page.getByRole("navigation", { name: "Primary navigation" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Refresh" })).toBeVisible();
@@ -72,10 +77,17 @@ test("task collection remains usable and contained at the declared viewport @res
 
 test("selected task form preserves keyboard navigation and focus return @responsive", async ({ page }) => {
   await openFixture(page);
-  const taskButton = page.getByRole("button", { name: fixtureLabels.task });
+  const taskButton = page.getByRole("button", { name: `Edit task: ${fixtureLabels.task}`, exact: true });
+  await expect(taskButton).toHaveText("Edit task");
+  const taskRow = page.getByRole("row").filter({ hasText: fixtureLabels.task });
+  await expect(taskRow.getByRole("cell").first().getByRole("button")).toHaveCount(0);
+  await expect(taskRow.getByRole("cell").last().getByRole("button", { name: `Edit task: ${fixtureLabels.task}`, exact: true })).toBeVisible();
+  await expect(taskButton).toHaveCSS("background-color", "rgb(15, 107, 92)");
+  await expect(page.getByRole("table", { name: "Current tasks" }).getByText(fixtureLabels.task, { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: fixtureLabels.task, exact: true })).toHaveCount(0);
   await expect(taskButton).toBeVisible();
   await page.keyboard.press("Tab");
-  await expect(page.getByRole("button", { name: "Work", exact: true })).toBeFocused();
+  await expect(page.getByRole("link", { name: "Work", exact: true })).toBeFocused();
   await taskButton.focus();
   await page.keyboard.press("Enter");
   const heading = page.getByRole("heading", { name: fixtureLabels.task });
@@ -110,33 +122,42 @@ test("selected task form preserves keyboard navigation and focus return @respons
 
 test("About exposes the versioned capability boundary without overflow @responsive", async ({ page }) => {
   await openFixture(page);
-  await page.getByRole("button", { name: "About", exact: true }).click();
+  await page.getByRole("link", { name: "About", exact: true }).click();
 
   await expect(page.getByRole("heading", { name: "About", level: 1 })).toBeFocused();
   await expect(page.getByRole("heading", { name: "BPMN Lean 0.1.0" })).toBeVisible();
   await expect(page.getByText("Not a conformance claim.", { exact: true })).toBeVisible();
   await expect(page.getByText("CIB Seven 2.2.0", { exact: true })).toBeVisible();
-  const betaTable = page.getByRole("table", {
-    name: "MUE Preview Beta checkpoint boundaries",
-  });
-  await expect(betaTable.locator("tbody tr")).toHaveCount(
+  const showCheckpoints = page.getByRole("button", { name: "Show Implementation checkpoints", exact: true });
+  await expect(page.getByRole("list", { name: "Implementation checkpoints" })).not.toBeVisible();
+  await showCheckpoints.focus();
+  await page.keyboard.press("Enter");
+  const checkpoints = page.getByRole("list", { name: "Implementation checkpoints" });
+  await expect(checkpoints).toBeVisible();
+  await expect(checkpoints.getByRole("button")).toHaveCount(0);
+  await expect(checkpoints.locator("[data-beta-content-id]")).toHaveCount(
     muePreviewBetaTestOracle.length,
   );
-  expect(await betaTable.locator("tbody tr").evaluateAll((rows) =>
+  expect(await checkpoints.locator("[data-beta-content-id]").evaluateAll((rows) =>
     rows.map((row) => row.getAttribute("data-beta-content-id"))
   )).toEqual(muePreviewBetaTestOracle.map(({ id }) => id));
   for (const expectation of muePreviewBetaTestOracle) {
-    const row = betaTable.locator(`[data-beta-content-id="${expectation.id}"]`);
-    await expect(row.getByRole("rowheader")).toHaveText(expectation.title);
-    await expect(row.locator('td[data-label="Evidence"]')).toHaveText(expectation.evidenceLabel);
-    await expect(row.locator('td[data-label="Product surface"]')).toHaveText(expectation.productSurfaceLabel);
-    await expect(row.locator('td[data-label="Remaining limit"]')).toHaveText(
+    const row = checkpoints.locator(`[data-beta-content-id="${expectation.id}"]`);
+    await expect(row.getByRole("heading", { name: expectation.title, exact: true })).toBeVisible();
+    await expect(row.locator("dd").nth(0)).toHaveText(expectation.evidenceLabel);
+    await expect(row.locator("dd").nth(1)).toHaveText(expectation.productSurfaceLabel);
+    await expect(row.locator("dd").nth(2)).toHaveText(
       `${expectation.boundary}; ${expectation.remainingLimit}`,
     );
+    await assertNoOverflow(row, "expanded checkpoint");
+
   }
+  const showCapabilities = page.getByRole("button", { name: "Show Executable BPMN elements and variants", exact: true });
+  await showCapabilities.click();
   const capabilityTable = page.getByRole("table", {
     name: "Executable BPMN element and semantic-variant overview",
   });
+  await expect(checkpoints).toBeVisible();
   await expect(capabilityTable.locator("tbody tr")).toHaveCount(
     mvpCapabilityCatalog.capabilities.length,
   );
@@ -150,13 +171,26 @@ test("About exposes the versioned capability boundary without overflow @responsi
 
   await assertNoOverflow(page.locator("html"), "About document");
   await assertNoOverflow(page.locator("main"), "About workspace");
-  await assertNoOverflow(betaTable, "Beta checkpoint table");
+  await assertNoOverflow(checkpoints, "checkpoint disclosures");
   await assertNoOverflow(capabilityTable, "capability table");
+  for (const [title, content] of [
+    ["Implementation checkpoints", checkpoints],
+    ["Executable BPMN elements and variants", capabilityTable],
+  ] as const) {
+    const hide = page.getByRole("button", { name: `Hide ${title}`, exact: true });
+    await hide.focus();
+    await page.keyboard.press("Space");
+    await expect(content).not.toBeVisible();
+    const show = page.getByRole("button", { name: `Show ${title}`, exact: true });
+    await expect(show).toBeFocused();
+    const section = page.locator('[data-ui="inline-disclosure"]').filter({ has: show });
+    expect((await section.boundingBox())!.height).toBeCloseTo((await show.boundingBox())!.height, 0);
+  }
 });
 
 test("reduced motion is active and task-detail diagram stays contained @responsive", async ({ page }) => {
   await openFixture(page);
-  await page.getByRole("button", { name: fixtureLabels.task }).click();
+  await page.getByRole("button", { name: `Edit task: ${fixtureLabels.task}` }).click();
   await page.getByRole("tab", { name: "Diagram" }).click();
   await waitForStableUi(page, { diagram: true });
   const completeDiagram = page.getByRole("region", {
@@ -215,7 +249,7 @@ test("unclaimed tasks cannot enter the completion flow", async ({ page }) => {
 
   await expect(row.getByText("Unclaimed", { exact: true })).toBeVisible();
   await expect(row.getByRole("button", {
-    name: "Validate corporate ownership evidence",
+    name: "Edit task: Validate corporate ownership evidence",
     exact: true,
   })).toHaveCount(0);
   await expect(row.getByRole("button", { name: "Claim", exact: true })).toBeVisible();
@@ -228,7 +262,7 @@ test("task snapshot errors are explicit", async ({ page }) => {
 
 test("incompatible form data remains non-editable", async ({ page }) => {
   await openFixture(page, { taskDetail: FixtureTaskDetailState.Incompatible });
-  await page.getByRole("button", { name: fixtureLabels.task }).click();
+  await page.getByRole("button", { name: `Edit task: ${fixtureLabels.task}` }).click();
   await expect(page.getByRole("alert")).toHaveText(
     "The current value does not match the declared field type.",
   );
@@ -253,7 +287,7 @@ test("rendering failures remain truthful", async ({ page }) => {
 
 test("called Process task diagrams remain honestly unavailable", async ({ page }) => {
   await openFixture(page, { taskDetail: FixtureTaskDetailState.CalledProcess });
-  await page.getByRole("button", { name: fixtureLabels.task }).click();
+  await page.getByRole("button", { name: `Edit task: ${fixtureLabels.task}` }).click();
   await page.getByRole("tab", { name: "Diagram" }).click();
   await expect(page.getByRole("status")).toContainText(
     "this task belongs to a called Process",
@@ -262,7 +296,7 @@ test("called Process task diagrams remain honestly unavailable", async ({ page }
 
 test("task diagrams reject a missing rendered element", async ({ page }) => {
   await openFixture(page, { presentation: FixturePresentationState.MissingTaskElement });
-  await page.getByRole("button", { name: fixtureLabels.task }).click();
+  await page.getByRole("button", { name: `Edit task: ${fixtureLabels.task}` }).click();
   await page.getByRole("tab", { name: "Diagram" }).click();
   await expect(page.getByRole("alert")).toContainText(
     "is not present in the rendered diagram",
@@ -345,11 +379,11 @@ async function openDefinitionDiagram(
   presentation: FixturePresentationState,
 ): Promise<void> {
   await openFixture(page, { presentation });
-  await page.getByRole("button", { name: "Definitions" }).click();
+  await page.getByRole("link", { name: "Definitions" }).click();
   await expect(page.getByRole("heading", { name: "Definitions", level: 1 })).toBeVisible();
 }
 
 async function openCompletableTask(page: import("@playwright/test").Page): Promise<void> {
-  await page.getByRole("button", { name: fixtureLabels.task }).click();
+  await page.getByRole("button", { name: `Edit task: ${fixtureLabels.task}` }).click();
   await page.getByRole("radio", { name: "True" }).press("Space");
 }

@@ -6,7 +6,8 @@
     "BSD-3-Clause",
     "ISC",
     "LicenseRef-bpmn.io",
-    "MIT"
+    "MIT",
+    "Unlicense"
   ],
   "licenseOverrides": {
     "bpmn-js@18.22.1": {

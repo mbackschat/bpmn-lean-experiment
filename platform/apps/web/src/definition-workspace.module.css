@@ -1,3 +1,13 @@
+.catalogWorkspace {
+  display: grid;
+  gap: var(--ui-space-5);
+  min-width: 0;
+}
+
+.catalogWorkspace > button {
+  justify-self: start;
+}
+
 .workspace {
   container-type: inline-size;
   display: grid;
@@ -6,7 +16,7 @@
 
 .toolbar {
   display: grid;
-  grid-template-columns: minmax(16rem, 1.5fr) minmax(9rem, 0.5fr) auto;
+  grid-template-columns: minmax(16rem, 1.5fr) minmax(9rem, 0.5fr);
   align-items: end;
   gap: var(--ui-space-4);
   border: var(--ui-border);
@@ -41,45 +51,51 @@
   color: var(--ui-color-muted);
 }
 
-.deployDisclosure {
-  position: relative;
-}
-
-.deployDisclosure summary {
-  min-height: 44px;
-  border-radius: var(--ui-radius-control);
-  padding: var(--ui-space-3) var(--ui-space-4);
-  background: var(--ui-color-accent);
-  color: var(--ui-color-surface);
-  font: var(--ui-font-label);
-  list-style: none;
-  cursor: pointer;
-}
-
-.deployDisclosure summary::-webkit-details-marker {
-  display: none;
-}
-
 .deployForm {
-  position: absolute;
-  z-index: 20;
-  top: calc(100% + var(--ui-space-2));
-  right: 0;
   display: grid;
-  width: min(48rem, 100cqw);
-  grid-template-columns: minmax(14rem, 1fr) minmax(15rem, 1fr) auto;
-  align-items: end;
   gap: var(--ui-space-4);
-  border: var(--ui-border);
-  border-radius: var(--ui-radius-surface);
-  padding: var(--ui-space-4);
-  background: var(--ui-color-surface);
+  min-width: 0;
+}
+
+.deployActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--ui-space-3);
+}
+
+.addDefinition {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ui-space-4);
+}
+
+.addDefinition p {
+  margin: 0;
+  color: var(--ui-color-muted);
 }
 
 .details,
 .triggerPanels {
   display: grid;
   gap: var(--ui-space-4);
+}
+
+.startAction {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--ui-space-4);
+  border-radius: var(--ui-radius-surface);
+  padding: var(--ui-space-4);
+  background: var(--ui-color-accent-soft);
+}
+
+.startAction p {
+  margin: var(--ui-space-1) 0 0;
+  color: var(--ui-color-muted);
 }
 
 .empty,
@@ -143,14 +159,7 @@
 }
 
 @container (max-width: 56rem) {
-  .toolbar,
-  .deployForm {
+  .toolbar {
     grid-template-columns: 1fr;
-  }
-
-  .deployForm {
-    position: static;
-    width: 100%;
-    margin-top: var(--ui-space-3);
   }
 }
