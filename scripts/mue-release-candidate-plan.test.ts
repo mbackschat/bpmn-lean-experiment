@@ -18,7 +18,7 @@ const releaseCandidateContent = [
   ["COMPENSATION-TRANSACTIONS", "satisfied"],
 ] as const;
 
-const unfinishedExecutionOrder = ["MUE-RELEASE-CANDIDATE"] as const;
+const unfinishedExecutionOrder = ["MUE-ACCEPTANCE"] as const;
 
 test("freezes all seven selected RC capabilities before integration", async () => {
   const plan = await readFile(path.join(projectRoot, "docs/PLAN.md"), "utf8");
@@ -39,7 +39,7 @@ test("freezes all seven selected RC capabilities before integration", async () =
     /^(?:H3-WORKLOAD-ISOLATION|CONFORMANCE-CLOSURE|MUE-RELEASE-CANDIDATE)$/mu,
     "later maturity work and the RC delivery checkpoint are not MUE content",
   );
-  assert.match(section, /^Integration state: `active`\.$/mu);
+  assert.match(section, /^Integration state: `satisfied`\.$/mu);
   assert.match(section, /feature surface freezes only after all seven rows are `satisfied`/u);
   assert.match(section, /H3-WORKLOAD-ISOLATION[^\n]+Engine `v0\.3`/u);
   assert.match(section, /CONFORMANCE-CLOSURE[^\n]+Engine `v0\.9`/u);
@@ -48,12 +48,12 @@ test("freezes all seven selected RC capabilities before integration", async () =
     .filter(({ id }) => unfinishedExecutionOrder.includes(id as typeof unfinishedExecutionOrder[number]))
     .map(({ id }) => id);
   assert.deepEqual(orderedIds, unfinishedExecutionOrder, "ordered work must retain frozen integration");
-  assert.equal(parseOrderedWork(plan).find(({ state }) => state === "active")?.id, "MUE-RELEASE-CANDIDATE");
+  assert.equal(parseOrderedWork(plan).find(({ state }) => state === "active")?.id, "MUE-ACCEPTANCE");
 });
 
 test("rejects unfinished content, premature later work and a broader hidden denominator", async () => {
   const plan = await readFile(path.join(projectRoot, "docs/PLAN.md"), "utf8");
-  const prematureLaterWork = plan.replace("`MUE-RELEASE-CANDIDATE` · **active**", "`CONFORMANCE-CLOSURE` · **active**");
+  const prematureLaterWork = plan.replace("`MUE-ACCEPTANCE` · **active**", "`CONFORMANCE-CLOSURE` · **active**");
   const rcMarker = "### MUE Release Candidate critical path\n";
   const rcStart = plan.indexOf(rcMarker);
   assert.notEqual(rcStart, -1);

@@ -6,7 +6,7 @@ This file owns immediate execution order, blockers, current measured evidence, a
 
 M0 through M6 and Horizons 1 and 2 are closed. The [production lifecycle specification](TEMPORAL-PROCESS-LIFECYCLE-SPEC.md#workflow-chain-production-contract) owns the retained Product 1 floor; [`implementation-status-owner:TEMPORAL-HOSTING`](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md) owns its current evidence boundary and deployment correction.
 
-The non-binding [engine maturity ladder](PROJECT-DESIGN.md#engine-maturity-roadmap-labels) names the closed Product 1 floor Engine `v0.1`, **Runnable MVP**, and Engine `v0.2`, **Minimum Useful Engine (MUE)**, as the current direction. The closure-reviewed [MUE Preview Alpha specification](MUE-PREVIEW-ALPHA-SPEC.md) is tagged at `phase/mue-preview-alpha`, and the closure-reviewed [MUE Preview Beta specification](MUE-PREVIEW-BETA-SPEC.md) is tagged at `phase/mue-preview-beta`. The sequence now returns to the selected [breadth and risk ordering](PROJECT-DESIGN.md#cib-seven-220-breadth-ordering) toward the later [showcase acceptance milestones](SHOWCASE-MILESTONE-LADDER-DECISION.md#showcase-milestone-ladder).
+The non-binding [engine maturity ladder](PROJECT-DESIGN.md#engine-maturity-roadmap-labels) names the closed Product 1 floor Engine `v0.1`, **Runnable MVP**, and Engine `v0.2`, **Minimum Useful Engine (MUE)**, as the current direction. The closure-reviewed [MUE Preview Alpha specification](MUE-PREVIEW-ALPHA-SPEC.md) is tagged at `phase/mue-preview-alpha`, and the closure-reviewed [MUE Preview Beta specification](MUE-PREVIEW-BETA-SPEC.md) is tagged at `phase/mue-preview-beta`. The owner selected bounded MUE acceptance on 2026-09-28; the seven RC capability boundaries below remain frozen.
 
 ### MUE Preview Beta critical path
 
@@ -41,7 +41,7 @@ Unresolved concurrency, durability, cancellation, or retained-state risk in eith
 
 Integration state: `satisfied`.
 
-Every row is satisfied. The closure-reviewed [MUE Preview Beta integration specification](MUE-PREVIEW-BETA-SPEC.md) integrates the checkpoints into one coherent Product 2 preview and discloses every remaining limit. Its exact release acceptance and complete clean path-selected gate are green at closure target `361911b8`; the same isolated reviewer approved the row-evidence correction at `8bcd8746`, and the immutable local `phase/mue-preview-beta` tag records the checkpoint. Content IDs with broader work now return to the queue for full MUE closure. `H3-WORKLOAD-ISOLATION` remains Engine `v0.3`; `CONFORMANCE-CLOSURE`, Engine `v0.9`, and reserved Engine `v1.0` remain later conditional boundaries.
+Every row is satisfied. The closure-reviewed [MUE Preview Beta integration specification](MUE-PREVIEW-BETA-SPEC.md) integrates the checkpoints into one coherent Product 2 preview and discloses every remaining limit. Its exact release acceptance and complete clean path-selected gate are green at closure target `361911b8`; the same isolated reviewer approved the row-evidence correction at `8bcd8746`, and the immutable local `phase/mue-preview-beta` tag records the checkpoint. The RC table below owns the subsequently closed implementation boundary. `H3-WORKLOAD-ISOLATION` remains Engine `v0.3`; `CONFORMANCE-CLOSURE`, Engine `v0.9`, and reserved Engine `v1.0` remain later conditional boundaries.
 
 ### MUE Release Candidate critical path
 
@@ -59,53 +59,52 @@ Every row is satisfied. The closure-reviewed [MUE Preview Beta integration speci
 
 The completed risk-first sequence covers data lifetime, internal scheduling, subscription races and Compensation/Transaction cancellation. Ordered work now retains RC qualification after evidence reconciliation and feature freeze. The feature surface freezes only after all seven rows are `satisfied`; subsequent RC work may repair cross-family defects and evidence only, not add features. `H3-WORKLOAD-ISOLATION` stays in Engine `v0.3`, while `CONFORMANCE-CLOSURE` stays in Engine `v0.9`.
 
-Integration state: `active`.
+Integration state: `satisfied`.
 
-All seven selected content boundaries are satisfied. The feature surface is frozen at the closure-qualified implementation `9fb6705b`; no new capability is selected. The local `phase/mue-release-candidate` tag records the qualified RC. On 2026-09-28 the owner explicitly authorized moving it once to the completed UI, asset and dependency-security correction commit; the earlier target `91b759a1` remains the original qualification record. This is not Engine `v0.2` release approval, general BPMN conformance, or publication authorization. The receipt/graduation and freeze increment is non-material under the [review gate](TESTING-SPEC.md#independent-cold-review-gate): it records accepted boundaries without changing their meaning, admission or guarantees. Existing plan, review-receipt, link, maturity and corpus guards cover the integration records.
+The published `phase/mue-release-candidate` tag points to `a637757c`; `91b759a1` retains the original qualification record and `9fb6705b` the closure-qualified semantic implementation. RC publication is complete; final MUE acceptance is not. The owner explicitly authorizes one further RC tag correction after the runtime CI job succeeds, including a guarded force push of that tag.
 
-Owner instruction on 2026-09-28 authorizes updating the READMEs, completing this correction checkpoint, moving the RC tag to the latest commit and pushing. Apply the [three-level verification policy](TESTING-SPEC.md#three-level-verification-policy) proportionately; the owner requests focused affected-surface checks rather than repeated full-suite runs.
+### MUE acceptance goal
+
+Close Minimum Useful Engine acceptance for the frozen seven-capability RC scope: repair qualification and user-journey defects, demonstrate the complete supported journeys, reconcile exact-commit evidence and known limitations, and present the resulting boundary for explicit owner acceptance. After acceptance, record closure and create the immutable `engine/v0.2` milestone tag. Add no new capability or proof programme; reuse valid evidence and reserve complete verification for final integration.
 
 ## Ordered work
 
 Exactly one stable work ID is active. Required maps are part of the routing contract, not descriptive tags.
 
-### Regional trial disposition
-
-The regional trial observations are complete. The [recorded disposition](CAPSULE-COST-LEDGER.md#regional-workflow-trial-disposition-2026-09-26) retains unchanged assurance but establishes no productivity or elapsed-time gain. Qualification and selected-capability closure remain separate obligations.
-
 ### External-review correction checklist
 
-The six reviews supplied on 2026-09-05 and their correction audits are complete; the later [architecture/workflow review follow-up](CAPSULE-COST-LEDGER.md#architecture-and-workflow-review-follow-up-2026-09-20) has its own evidence and dispositions.
+The six external reviews and correction audits are complete; the [cost ledger](CAPSULE-COST-LEDGER.md#repair-closure-costs) retains the repair evidence. No prior review finding is reopened by this acceptance cycle.
 
-The closure-reviewed [seven-byte capacity correction](capsules/COMPENSATION-EMPTY-STATE-CAPACITY-REPAIR-SPEC.md) supplies the declaration minimum used by the closure-reviewed [initialization repair](capsules/RUNTIME-INITIALIZATION-ASSURANCE-REPAIR-SPEC.md). The unchanged empty-state theorem and actual committed-start guarantees remain intact; no general all-transition preservation theorem is claimed. The [cost ledger](CAPSULE-COST-LEDGER.md#repair-closure-costs) owns contiguous measurements and comparisons.
+The selected scheduling and bounded Transaction accounts are independently closure-approved at `9fb6705b`; [scheduling receipts](INTERNAL-COMMUTATION-PROPOSAL.md#independent-cold-review-receipt) and the [Transaction receipt](capsules/TRANSACTION-CANCELLATION-SPEC.md#independent-cold-review-receipt) own their exact limits. Broader commutation, wider Compensation/Transaction combinations, unselected proof families, workload isolation and conformance expansion are outside this acceptance cycle.
 
-Within the dependency order below, prioritize high-risk work before packaging and acceptance work. Treat likely broad Lean changes—shared representations, quantified proof dependencies, and kernel-reduction consumers—as an explicit risk signal, and establish those checkpoints before lower-risk profile registration, corpus/disclosure, or UI integration.
+1. `MUE-ACCEPTANCE` · **active** · Owner: [MUE delivery checkpoints](PROJECT-DESIGN.md#mue-delivery-checkpoints), [testing specification](TESTING-SPEC.md) · Maps: [assurance/adoption](ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md), [platform](BPM-PLATFORM-IMPLEMENTATION-MAP.md), [Temporal](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md) · Action: Execute the acceptance priorities below; fix blockers within the frozen scope before final owner acceptance.
+2. `CONFORMANCE-CLOSURE` · **later** · Owner: [requirement ledger](BPMN-REQUIREMENT-LEDGER.md), [conformance target](BPMN-CONFORMANCE-TARGET.md) · Maps: [contracts/source](ENGINE-CONTRACTS-AND-SOURCE-IMPLEMENTATION-MAP.md), [runtime/proof](ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md), [assurance/adoption](ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md) · Action: Select later Process Execution work only after MUE acceptance; retain the adopted dependency, risk and practical-reach order.
 
-The selected scheduling amendment and bounded Transaction cancellation are independently closure-approved at `9fb6705b`; [their receipts](INTERNAL-COMMUTATION-PROPOSAL.md#independent-cold-review-receipt) and the [Transaction specification](capsules/TRANSACTION-CANCELLATION-SPEC.md#independent-cold-review-receipt) own the exact scope. The generated maturity vector, capability/corpus union, requirement/CIB measures and About restrictions are reconciled by their existing executable guards. The unfinished broader commutation proposal, wider Compensation/Transaction combinations and unselected proof families remain outside RC.
-
-1. `MUE-RELEASE-CANDIDATE` · **active** · Owner: [MUE delivery checkpoints](PROJECT-DESIGN.md#mue-delivery-checkpoints), [testing specification](TESTING-SPEC.md) · Maps: [assurance/adoption](ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md), [platform](BPM-PLATFORM-IMPLEMENTATION-MAP.md), [Temporal](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md) · Action: UI evaluation corrections are committed at `ed6e0cc6`. Current walkthrough assets and dependency-security corrections are complete; publish their validated checkpoint and move the local `phase/mue-release-candidate` tag as explicitly authorized on 2026-09-28. Discuss the full-MUE plan before selecting later capabilities.
-2. `CONFORMANCE-CLOSURE` · **later** · Owner: [requirement ledger](BPMN-REQUIREMENT-LEDGER.md), [conformance target](BPMN-CONFORMANCE-TARGET.md) · Maps: [contracts/source](ENGINE-CONTRACTS-AND-SOURCE-IMPLEMENTATION-MAP.md), [runtime/proof](ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md), [assurance/adoption](ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md) · Action: Continue Process Execution closure by normative dependency, semantic risk, practical reach, and the adopted [showcase ladder](SHOWCASE-MILESTONE-LADDER-DECISION.md#showcase-milestone-ladder) after owner selection.
+| Priority | Task | Acceptance condition |
+|---|---|---|
+| P1 | Repair clean-checkout runtime qualification; inspect remaining CI verdicts. | Reproduce the build-output dependency in publication-schema fixtures, guard the class, pass the affected gates and the corrected runtime CI job. Then make the owner-authorized RC tag correction. |
+| P2 | Validate supported user journeys using the [walkthrough](BPM-PLATFORM-BROWSER-WALKTHROUGH.md) and existing production-browser gates. | Discover and start a human process, claim/edit/complete its task, inspect outcome and Action history; retain navigation, disclosures, recovery and incident journeys. Human evaluation has no simulated participants. |
+| P3 | Reconcile evidence, restrictions and final integrated qualification. | Every selected capability and advertised journey has applicable passing evidence; stale documentation is corrected; no failed, missing or in-progress gate is reported as acceptance. Reuse unchanged evidence and run missing release gates once. |
+| P4 | Present the exact MUE acceptance boundary and record the decision. | Explicit owner acceptance closes all selected obligations before the immutable `engine/v0.2` tag. General BPMN conformance, production scale and package SemVer remain separate decisions. |
 
 ## Current evidence
 
 - Closure qualification. Command: `./scripts/verify.sh` phases and the corrected registered pipeline. Status: `exit 0` for the accepted component commands. Date: `2026-09-26`. Commit: `9fb6705b`. Clean library, execution-check and runtime phases pass at `6229db87`; its nine preliminary pipeline parity commands pass before the final assertion fails. The single test-oracle correction passes the complete registered pipeline at `9fb6705b`, leaving all successful parent-phase inputs unchanged. Both independent second correction audits approve the composition; [the Transaction receipt](capsules/TRANSACTION-CANCELLATION-SPEC.md#independent-cold-review-receipt) and [cost ledger](CAPSULE-COST-LEDGER.md#transaction-closure-correction-and-cost-2026-09-26) retain exact targets, failures and limits.
 
-- Evidence reconciliation. Command: `./scripts/pnpm.sh run test:infrastructure`. Status: `exit 0`. Date: `2026-09-26`. Commit: `6229db87`. The infrastructure gate checks the generated family vector, separate requirement/CIB denominators and executable whole-model union. Product 2 consumes canonical capability restrictions, including bounded Transaction/Cancel support, without a new Transaction browser-catalog claim. Final Product 2, PostgreSQL, showcase and browser gates remain the integrated qualification boundary.
+- Published RC qualification inspection. Command: `gh run view 36366543661 --json jobs,status,conclusion`. Status: `exit 0` for inspection, not qualification. Date: `2026-09-28`. Commit: `a637757c`. [Runtime job](https://github.com/mbackschat/bpmn-lean-experiment/actions/runs/36366543661/job/108754023383) failed before package builds: publication-schema coverage imports a fixture that requires semantic-core build output. Lean remains in progress. Dependency security, platform, PostgreSQL, showcase and UI workflows passed.
 
 ## Exact resume point
 
-Active work ID: `MUE-RELEASE-CANDIDATE`.
+Active work ID: `MUE-ACCEPTANCE`.
 
-Risk band: Post-tag UI evaluation corrections.
+Risk band: P1 clean-checkout runtime qualification.
 
-Owner instruction, 2026-09-26: continue autonomously; use affected-package checks and reserve complete verification for integrated qualification.
+Owner instruction, 2026-09-28: keep the RC feature scope frozen, prioritize bounded MUE acceptance, fix runtime CI, then move the RC tag to the corrected latest commit with a guarded force push. Continue autonomously through authorized work; explicit MUE acceptance remains the final decision.
 
-Latest owner sequence: finish RC with useful runnable UI showcases describing business purpose, BPMN elements, supported extent and evidence; tag RC, then prepare a full-MUE plan for discussion before implementation. The seven engine content IDs remain unchanged.
+CPU constraint: root-owned Lean validation permits one process tree, one CPU, 3 GiB and no additional swap. Reuse valid warmed or hosted evidence; report CPU-intensive validation completion.
 
-CPU constraint: root-owned Lean validation permits one process tree, one CPU, 3 GiB and no additional swap. Reuse warmed dependencies; report CPU-intensive validation completion.
+Next action: reproduce the publication-fixture runtime dependency without compiled workspace output, repair the shared fixture boundary, run focused and affected-package checks, commit, then establish a green runtime CI job before correcting the RC tag. Continue P2 and P3 in priority order.
 
-Next action: discuss full-MUE scope after the owner-authorized publication of this validated RC correction checkpoint. The [walkthrough](BPM-PLATFORM-BROWSER-WALKTHROUGH.md) covers current human-work and operational journeys; [INFOGRAPHICS.md](INFOGRAPHICS.md) owns AVIF delivery and ignored PNG masters. The [security procedure](CONTRIBUTOR-SETUP-GUIDE.md#dependency-security-procedure) requires a 14-day quarantine and exact, reviewed urgent exceptions. After focused checks, commit and move the local RC tag once under the owner's 2026-09-28 authorization. Push the completed branch and RC tag under the explicit 2026-09-28 authorization; do not declare Engine `v0.2` released.
+Oracle: clean-checkout runtime qualification succeeds; all seven capability rows remain unchanged; supported human journeys and final applicable gates pass with exact target evidence; disclosures retain limitations. Owner acceptance precedes the MUE tag.
 
-Oracle: direct links and browser history restore exact public views, malformed selections stay nonactionable, drafts and uncertain actions retain their existing guarantees, copy and layout regressions pass, and the production bundle remains below its existing size boundary. The seven RC capability rows remain unchanged. The refreshed screenshot directory exactly matches its catalog, links resolve, the production bundle and navigation checks pass, and dependency policy and advisory checks pass.
-
-Stop if qualification exposes unreviewed semantics or weaker guarantees. Preserve stashes `f35bdd6b0424b2e3d5d06f101eb822bd285ab29e` and `76a2b017a630d23203ded482227382003f296f0b`.
+Stop if qualification requires unreviewed semantic changes or weaker guarantees, or when the final owner acceptance decision is ready. Preserve stashes `f35bdd6b0424b2e3d5d06f101eb822bd285ab29e` and `76a2b017a630d23203ded482227382003f296f0b`.
