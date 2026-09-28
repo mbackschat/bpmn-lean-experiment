@@ -61,7 +61,7 @@ test("enables documentation capture only through the exact opt-in", () => {
   }
 });
 
-test("retains one 1600 by 900 fallback frame for every landmark", async () => {
+test("keeps optional Alpha captures in ignored test output instead of documentation", async () => {
   assert.deepEqual(
     alphaDemoFallbackFrames.map(({ landmark, filename }) => ({ landmark, filename })),
     [
@@ -79,14 +79,10 @@ test("retains one 1600 by 900 fallback frame for every landmark", async () => {
       },
     ],
   );
-  for (const { filename, alt } of alphaDemoFallbackFrames) {
+  const capture = await readFile(new URL("../e2e/alpha-preview.spec.ts", import.meta.url), "utf8");
+  assert.match(capture, /test\.info\(\)\.outputPath\(frame\.filename\)/u);
+  assert.doesNotMatch(capture, /docs\/assets\/mue-preview-alpha-demo/u);
+  for (const { alt } of alphaDemoFallbackFrames) {
     assert.ok(alt.length > 0);
-    const bytes = await readFile(new URL(
-      `../../../docs/assets/mue-preview-alpha-demo/${filename}`,
-      import.meta.url,
-    ));
-    assert.equal(bytes.subarray(0, 8).toString("hex"), "89504e470d0a1a0a");
-    assert.equal(bytes.readUInt32BE(16), 1_600);
-    assert.equal(bytes.readUInt32BE(20), 900);
   }
 });

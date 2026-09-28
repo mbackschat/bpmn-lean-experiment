@@ -1,4 +1,3 @@
-import { mkdir } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
 import { expect, test } from "@playwright/test";
@@ -30,10 +29,6 @@ const modelPath = fileURLToPath(new URL(
 let runtime: MuePreviewAlphaShowcaseRuntime;
 const audiencePauseMs = readAlphaDemoPauseMs(process.env);
 const captureFallbackFrames = readAlphaDemoCaptureEnabled(process.env);
-const fallbackCaptureDirectory = fileURLToPath(new URL(
-  "../../../docs/assets/mue-preview-alpha-demo/",
-  import.meta.url,
-));
 
 test.beforeAll(async () => {
   runtime = await MuePreviewAlphaShowcaseRuntime.create();
@@ -181,13 +176,12 @@ async function presentAudienceLandmark(
 ): Promise<void> {
   if (captureFallbackFrames) {
     const frame = alphaDemoFallbackFrame(landmark);
-    await mkdir(fallbackCaptureDirectory, { recursive: true });
     await preview(page).evaluate((element) => {
       element.scrollIntoView({ block: "start" });
     });
     await page.screenshot({
       animations: "disabled",
-      path: `${fallbackCaptureDirectory}${frame.filename}`,
+      path: test.info().outputPath(frame.filename),
     });
     process.stdout.write(`ALPHA_DEMO_CAPTURE ${frame.filename}\n`);
   }

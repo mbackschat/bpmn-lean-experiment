@@ -4,7 +4,7 @@
 
 Implemented and maintained as a text-first tutorial over the containerized Product 2 evaluation distribution. The screenshots are generated from the same public browser journey and illustrate stable landmarks, but the instructions remain complete when images are unavailable. This is a user guide and evaluation aid, not semantic, compatibility, performance, or production-capacity evidence.
 
-The hash-link navigation described below is implemented with [composed browser acceptance](BPM-PLATFORM-INFORMATION-ARCHITECTURE-SPEC.md#acceptance). Existing distribution screenshots illustrate the earlier workspace surfaces; the text describes the current navigation.
+The hash-link navigation described below is implemented with [composed browser acceptance](BPM-PLATFORM-INFORMATION-ARCHITECTURE-SPEC.md#acceptance). The screenshots follow the current start-first Definitions journey, grouped capability overview and Operations views; the [capture record](#screenshot-capture-record) identifies their source and environment.
 
 ## What you will do
 
@@ -136,7 +136,7 @@ The headline and Alpha commands are author-side headed rehearsals and each start
 
 ### Presenter fallback
 
-If the headline browser cannot start, continue from the retained [capability boundary](assets/bpm-platform-browser-walkthrough/01-about-capability-boundary.png), [expense Process diagram](assets/bpm-platform-browser-walkthrough/02-expense-definition-diagram.png), [structured approval form](assets/bpm-platform-browser-walkthrough/04-expense-structured-form.png), and [committed semantic History](assets/bpm-platform-browser-walkthrough/05-completed-process-history.png). If the Alpha witness cannot start, use its retained [natural completion](assets/mue-preview-alpha-demo/01-natural-completion.png), [Timer interruption](assets/mue-preview-alpha-demo/02-timer-interruption.png), and [interrupted completion](assets/mue-preview-alpha-demo/03-interrupted-completion.png) frames. These are fallback illustrations, not substitutes for the executable gates.
+If the headline browser cannot start, continue from the retained [capability boundary](assets/bpm-platform-browser-walkthrough/01-about-capability-boundary.png), [expense Process diagram](assets/bpm-platform-browser-walkthrough/06-definition-start-and-diagram.png), [structured approval form](assets/bpm-platform-browser-walkthrough/09-expense-structured-form.png), and [committed semantic History](assets/bpm-platform-browser-walkthrough/12-completed-process-history.png). The retired Alpha fallback images are no longer maintained; use the current platform walkthrough for UI illustrations. These are fallback illustrations, not substitutes for the executable gates.
 
 ## Prerequisites and lifecycle
 
@@ -171,32 +171,47 @@ docker compose run --rm --no-deps bpmn-worker initialize-fresh-namespace --reten
 
 ## 1. Inspect the honest capability boundary
 
-Open **About**. Confirm that **Coverage boundary** says **Not a conformance claim** and that the evidence-backed-variant summary equals the complete set of rows in the canonical executable element and semantic-variant table. Compare a standards-only row with a row carrying classified CIB Seven evidence.
+Open **About**. Confirm that **Coverage boundary** says **Not a conformance claim**. Expand **Executable BPMN elements and variants**, then expand a family to inspect its variants and restrictions. **Expand all families** and **Collapse all families** let you switch between the full inventory and its overview. Compare a standards-only row with a row carrying classified CIB Seven evidence.
 
 The table reports exact variants rather than a percentage. BPMN requirement coverage, selected CIB compatibility, and platform functionality remain separate denominators.
 
-**Implementation checkpoints** identifies the historical MUE Preview Beta evidence. Its rows retain the limits recorded at that checkpoint; the executable overview describes current supported variants. At ordinary desktop width, both table captions fill their available width rather than wrapping into narrow columns.
+**Implementation checkpoints** identifies the historical MUE Preview Beta evidence. Its rows retain the limits recorded at that checkpoint; the executable overview describes current supported variants. Expand this section only when you need its historical checkpoint details; it stays separate from the current capability families.
 
 ![About workspace showing the versioned BPMN capability boundary and non-conformance notice](assets/bpm-platform-browser-walkthrough/01-about-capability-boundary.png)
 
-## 2. Deploy and inspect structured Human Work
+![About workspace showing expandable BPMN families and a selected family with its supported variants](assets/bpm-platform-browser-walkthrough/02-about-capability-families.png)
 
-1. Open **Definitions** and expand **Add BPMN definition**.
+## 2. Choose a showcase or deploy your BPMN
+
+Open **Definitions → Explore process showcases** to browse interactive examples. **Explore** opens the business description, BPMN name and ID, supported elements and what to try. The RC host pre-prepares the interactive examples; on a fresh shared evaluation host, choose **Prepare this showcase** to deploy one before starting it.
+
+![Process showcase catalog offering interactive human-work examples and explicit Explore buttons](assets/bpm-platform-browser-walkthrough/03-process-showcases.png)
+
+![Expense-exception showcase explaining its business purpose, BPMN identity and human-work journey](assets/bpm-platform-browser-walkthrough/04-showcase-description.png)
+
+The following steps exercise the alternative upload route with the same expense-exception model. Use either preparation or upload for this run, so the version numbers remain predictable.
+
+
+1. Open **Definitions** and choose **Add BPMN definition**. A modal dialog opens; **Cancel**, Escape or clicking its backdrop dismisses it before submission.
 2. Select [`scenarios/expense-exception-review/process.bpmn`](../scenarios/expense-exception-review/process.bpmn).
 3. Enter semantic profile ID `bpmn-2.0.2-bpmn-lean-structured-human-work-draft`.
-4. Choose **Deploy definition**.
+4. Choose **Deploy definition**. Successful deployment closes the dialog.
 
-The result should say **Admitted and deployed** for `Process_ExpenseExceptionReview`, version 1 on a clean distribution. Its **Diagram** view says **Generated layout** because the admitted source intentionally contains no BPMN DI. Product 2 retains a digest-bound presentation sidecar and an exact-source-bound Human Task catalog without changing the admitted source or adding form meaning to Product 1.
+![Add BPMN definition dialog showing the selected XML file, semantic profile and explicit dismissal](assets/bpm-platform-browser-walkthrough/05-deploy-definition-dialog.png)
+
+The result should say **Admitted and deployed** for `Process_ExpenseExceptionReview`, version 1 on a clean distribution. Its diagram below **Ready to start** says **Generated layout** because the admitted source intentionally contains no BPMN DI. Product 2 retains a digest-bound presentation sidecar and an exact-source-bound Human Task catalog without changing the admitted source or adding form meaning to Product 1.
 
 **Process diagram** names the view. **BPMN process ID** identifies the technical identifier declared by the model, not a running instance or a friendly business title. Source/generated layout and the derived-copy warning remain separate provenance facts.
 
-![Definitions workspace showing the deployed expense-exception Process and generated BPMN diagram](assets/bpm-platform-browser-walkthrough/02-expense-definition-diagram.png)
+![Definitions workspace showing the start action above the expense-exception BPMN diagram](assets/bpm-platform-browser-walkthrough/06-definition-start-and-diagram.png)
 
 Choose **Download diagrammed BPMN** if you want a derived document that merges the exact semantic model with validated BPMN DI for use in a BPMN modeller. It is not the admitted source.
 
 ## 3. Start the exact definition version
 
 Review the start form above the diagram, then choose **Start version 1**, or the displayed selected version if you retained earlier state. Message and schedule controls are in the collapsed **Triggers** section below the diagram. After confirmation, **View instance in Operations** opens the exact returned Process instance.
+
+![Definitions workspace showing expanded message and schedule controls below the diagram](assets/bpm-platform-browser-walkthrough/07-definition-triggers.png)
 
 The public identity binds the instance to its Process ID, definition version, exact source digest, and semantic profile. Product 2 keeps the Temporal observation locator private.
 
@@ -209,14 +224,14 @@ The public identity binds the instance to its Process ID, definition version, ex
 
 Claim state, actor policy, priority, and the form catalog are Product 2 concerns. Task occurrence identity and the completion result come only from Product 1's publication.
 
-![Work inbox showing the unclaimed Review exception task, candidate group, and priority](assets/bpm-platform-browser-walkthrough/03-expense-work-inbox.png)
+![Work inbox showing the unclaimed Review exception task, candidate group, and priority](assets/bpm-platform-browser-walkthrough/08-expense-work-inbox.png)
 
 ## 5. Complete the structured form
 
 Open the task's **Form** view and enter:
 
 - Request reference: `EXP-WALKTHROUGH-001`
-- Expense date: `2026-08-17`
+- Expense date: `2026-09-28`
 - Approved amount: `4250`
 - Cost center: **Engineering**
 - Risk flags: **Missing receipt** and **Policy exception**
@@ -224,7 +239,13 @@ Open the task's **Form** view and enter:
 
 Choose **Approve**. A committed completion closes the detail and, after the background projection refresh, the Work collection reports **No current tasks**. If the response was transport-indeterminate, use the offered **Retry completion** control because it resubmits the retained command identity rather than creating a different completion.
 
-![Claimed Review exception task showing its completed structured approval form](assets/bpm-platform-browser-walkthrough/04-expense-structured-form.png)
+![Claimed Review exception task showing its completed structured approval form](assets/bpm-platform-browser-walkthrough/09-expense-structured-form.png)
+
+![Expense review form showing the selected risk flags, approval decision and explicit Approve action](assets/bpm-platform-browser-walkthrough/09b-expense-approval-action.png)
+
+Open **Operations → Action history**, choose **Task actions** and **Apply filters** to see your claim and completion. **Show details** opens labelled information across the available width; the optional raw record remains inside a separate disclosure.
+
+![Operations Action history showing the current user’s task claim and completion with expanded labelled details](assets/bpm-platform-browser-walkthrough/10-task-action-history.png)
 
 For a validation exercise, select **Abort** before entering a required resolution reason. The form should focus the missing field. Product 2 validates the exact catalog-bound request and computes one canonical typed patch before the engine atomically commits or rejects the task occurrence.
 
@@ -237,11 +258,13 @@ For a validation exercise, select **Abort** before entering a required resolutio
 
 Semantic History is published by the engine. Product 2 never reconstructs it from Temporal Event History or state differences.
 
-![Completed expense-exception Process showing its committed semantic History](assets/bpm-platform-browser-walkthrough/05-completed-process-history.png)
+![Operations process-instance list showing labelled definition and instance identities with explicit View details buttons](assets/bpm-platform-browser-walkthrough/11-process-instances.png)
+
+![Completed expense-exception Process showing its committed semantic History](assets/bpm-platform-browser-walkthrough/12-completed-process-history.png)
 
 Open **Diagram** and inspect the terminal committed positions over the retained definition presentation.
 
-![Completed expense-exception Process showing its terminal committed Diagram](assets/bpm-platform-browser-walkthrough/06-completed-process-diagram.png)
+![Completed expense-exception Process showing its terminal committed Diagram](assets/bpm-platform-browser-walkthrough/13-completed-process-diagram.png)
 
 ## 7. Inspect exact-version metrics
 
@@ -249,9 +272,7 @@ Open **Operations → Process metrics**, select `Process_ExpenseExceptionReview`
 
 Metrics come from complete engine-published flow-node occurrences for one exact-definition population. They are not transition counts or platform request durations.
 
-The retained screenshot predates the navigation move; current metrics live in Operations and retain the same values.
-
-![Expense-exception process showing exact-version flow-node frequency metrics](assets/bpm-platform-browser-walkthrough/07-definition-flow-node-metrics.png)
+![Operations workspace showing exact-version flow-node frequency metrics for the expense-exception process](assets/bpm-platform-browser-walkthrough/14-operations-process-metrics.png)
 
 ## 8. Create two independently operable incidents
 
@@ -263,7 +284,7 @@ Use [`scenarios/service-task-effect/process.bpmn`](../scenarios/service-task-eff
 
 The retry profile publishes only **Retry**. The cancellation profile additionally publishes **Cancel Process**. These controls reflect exact engine-published interactions rather than generic actions inferred from an error state.
 
-![Operations workspace showing Retry-only and cancellable current Service Task incidents](assets/bpm-platform-browser-walkthrough/08-current-incidents.png)
+![Operations workspace showing Retry-only and cancellable current Service Task incidents](assets/bpm-platform-browser-walkthrough/15-current-incidents.png)
 
 ## 9. Retry and cancel
 
@@ -271,17 +292,17 @@ Open the retry-profile incident and choose **Retry**. If the response is transpo
 
 Open the remaining incident and choose **Cancel Process**. The confirmation dialog initially focuses **Keep Process running** and explains that cancellation removes all remaining live work. Choose **Cancel root Process** only after reviewing that scope.
 
-![Incident detail showing the confirmation dialog for cancelling the incident-bearing root Process](assets/bpm-platform-browser-walkthrough/09-cancel-process-confirmation.png)
+![Incident detail showing the confirmation dialog for cancelling the incident-bearing root Process](assets/bpm-platform-browser-walkthrough/16-cancel-process-confirmation.png)
 
 The command targets the exact incident-gated hosting root. It does not expose a Temporal Workflow ID or treat native Temporal cancellation as a BPMN fact.
 
-## 10. Inspect incident action audit
+## 10. Inspect Action history
 
 Return to the top-level Operations collection and open **Action history**. Your task claims and completions appear under **Your task actions**; retries and cancellations appear under **Incident actions**. Use **Activity type** to narrow the view, optionally enter an exact **Process instance ID**, then **Apply filters**. **Refresh history** requests new first pages; each list has its own **Load more** control. Successful incident outcomes read **Completed successfully**. **View process** opens the selected instance’s full Operator history.
 
-Each audit stream is Product 2 evidence with its own source order. Task search shows only your actions; incident search follows Operations permissions. The streams remain distinct from semantic History and are not merged into one timeline. The retained image below predates the unified Action history layout.
+Each audit stream is Product 2 evidence with its own source order. Task search shows only your actions; incident search follows Operations permissions. The streams remain distinct from semantic History and are not merged into one timeline. Expand **Show details** to read the selected record below its summary; technical payloads do not occupy a narrow table column.
 
-![Incident action audit showing committed Retry and Cancel Process actions for demo-user](assets/bpm-platform-browser-walkthrough/10-incident-action-audit.png)
+![Operations Action history showing committed Retry and Cancel process outcomes with full-width incident details](assets/bpm-platform-browser-walkthrough/17-incident-action-history.png)
 
 ## Stop or retain the environment
 
@@ -304,6 +325,14 @@ Readers do not need the screenshot tooling. Maintainers regenerate the complete 
 The command allocates a dynamic loopback port, starts an isolated Compose project with fresh temporary volumes, drives only public accessible UI landmarks in one Chromium browser, writes the ten 1440 by 900 images, and removes the isolated containers and volumes after success or failure. It does not reuse or delete the ordinary evaluation distribution's state.
 
 Screenshot refresh is not part of ordinary commit CI and performs no pixel comparison. The manual or tagged [evaluation distribution workflow](../.github/workflows/evaluation-distribution.yml) can regenerate and upload the catalog as a review artifact. Direct execution against an already-running origin is an advanced package-level path documented in the [screenshot project README](../showcase/platform-browser-walkthrough/README.md).
+
+## Screenshot capture record
+
+Refreshed on 2026-09-28 from the UI committed at `ed6e0cc6` with the subsequent stable-router security correction, using Chromium at 1440 × 900, English locale, UTC and reduced motion. Every screenshot was captured from the public UI with real starts, task actions, metrics and incident outcomes; no requests were intercepted or results fabricated.
+
+The capture used freshly built production containers for the API, recovery worker and BPMN worker, with fresh isolated PostgreSQL 18 and Temporal services. The final public-browser journey passed, including retained-command resolution before leaving an incident. Task-owned containers and volumes were removed afterwards; reusable images were retained. This establishes a current container build and documentation capture, not a new semantic-conformance or production-capacity claim.
+
+The expanded catalog covers the newly grouped About inventory, showcase catalog and descriptions, deployment modal, Start above Diagram, inline Triggers, task Action history and labelled instance list. Operations metrics and incident Action history replace the former Definitions metrics and narrow audit screenshots. Retired Alpha demo images are excluded from both documentation and the downloadable distribution.
 
 ## Troubleshooting
 

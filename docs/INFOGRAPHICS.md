@@ -1,4 +1,4 @@
-# Project infographics guide
+# Project infographics
 
 ## Status
 
@@ -10,14 +10,22 @@ This guide records the exact content, visual grammar, source owners, snapshot bo
 
 Durable architectural statements must be refreshed from [PROJECT-DESIGN.md](PROJECT-DESIGN.md), the [Semantic Process IL specification](SEMANTIC-PROCESS-IL-SPEC.md), and [TESTING-SPEC.md](TESTING-SPEC.md). Exact current implementation status must be refreshed from the detail maps routed by [`implementation-status-router`](IMPLEMENTATION-MAP.md), and current sequencing from [PLAN.md](PLAN.md). The images do not replace those owners.
 
+## Skill and file ownership
+
+Use the maintained [infographic-bytebytego-style skill](https://github.com/mbackschat/coding-setup/tree/main/skills/infographic-bytebytego-style) for generation, refinement, visual acceptance and AVIF export. This record follows its separation of stable communication design, dated factual input and generation/export history.
+
+Track browser-ready AVIFs in `docs/assets/project-infographics/` and use them in README embeds and download links. Keep accepted PNG masters with the same basename locally in that directory; Git ignores existing and future PNGs, including nested drafts. This policy applies to infographics, not browser screenshots or visual-test baselines. Do not force-add a master to Git.
+
+The content and source sections below own the communication intent and dated copy. The [export record](#avif-export-record) owns the derivative hashes and measurements. A format conversion does not refresh architectural facts, status icons or the source date printed on a poster.
+
 ## Asset inventory
 
 | Asset | README purpose | Dominant layout | Status treatment | Raster |
 |---|---|---|---|---|
-| `assets/project-infographics/why-lean-helps.png` | Explain why formal semantics materially improve a production BPMN engine | Vertical transformation flow with an evidence orbit | Durable architecture, commit-stamped | 1024 × 1536 PNG |
-| `assets/project-infographics/correctness-stack.png` | Explain how authority, proof, independent implementation, and executable evidence compose | Layered stack with one question per layer | Durable architecture, commit-stamped | 1024 × 1536 PNG |
-| `assets/project-infographics/product-2-vision.png` | Show the Product 2 operating journey and which platform capabilities are implemented, bounded, or still ahead | Journey-card catalog with a maturity ribbon | Explicit implementation snapshot | 1024 × 1536 PNG |
-| `assets/project-infographics/bpmn-execution-on-temporal.png` | Show the deployed system around one admitted BPMN execution and locate source storage, compilation, the interpreter, semantic state, Temporal durability, Activities, and Product 2 projections | Distributed runtime topology with explicit process and persistence boundaries | Durable architecture, commit-stamped | 1024 × 1536 PNG |
+| [why-lean-helps](assets/project-infographics/why-lean-helps.avif) | Explain why formal semantics materially improve a production BPMN engine | Vertical transformation flow with an evidence orbit | Durable architecture, commit-stamped | 1024 × 1536 AVIF |
+| [correctness-stack](assets/project-infographics/correctness-stack.avif) | Explain how authority, proof, independent implementation, and executable evidence compose | Layered stack with one question per layer | Durable architecture, commit-stamped | 1024 × 1536 AVIF |
+| [product-2-vision](assets/project-infographics/product-2-vision.avif) | Show the Product 2 operating journey and which platform capabilities are implemented, bounded, or still ahead | Journey-card catalog with a maturity ribbon | Explicit implementation snapshot | 1024 × 1536 AVIF |
+| [bpmn-execution-on-temporal](assets/project-infographics/bpmn-execution-on-temporal.avif) | Show the deployed system around one admitted BPMN execution and locate source storage, compilation, the interpreter, semantic state, Temporal durability, Activities, and Product 2 projections | Distributed runtime topology with explicit process and persistence boundaries | Durable architecture, commit-stamped | 1024 × 1536 AVIF |
 
 ## Initial source snapshot
 
@@ -270,7 +278,26 @@ When the generator cannot render all exact copy legibly, simplify the visual dec
 4. Generate one raster asset per request using the maintained prompt. Do not batch several infographics into one generated canvas.
 5. Inspect the full-resolution image for text fidelity, semantic arrows, legend consistency, contrast, clipping, and false visual equivalence.
 6. Refine by editing the generated image with one targeted correction at a time. Do not regenerate unchanged content merely to seek a more favorable random result.
-7. Save the final PNG at the registered asset path, update its README embed if the path changed, and run the documentation and link guards.
+7. Save the accepted PNG master locally in `docs/assets/project-infographics/`, then export its same-basename AVIF using the command below. Commit the AVIF, not the ignored PNG. Update the current inventory, hashes, export measurements and README links together, then run the documentation and link guards.
+
+### AVIF export
+
+Install `avifenc`, `avifdec` and ImageMagick `magick` before exporting. From the repository root, set the installed skill location and run its helper for each accepted PNG:
+
+```sh
+INFOGRAPHIC_SKILL_ROOT="$HOME/Projects/coding-setup/skills/infographic-bytebytego-style"
+"$INFOGRAPHIC_SKILL_ROOT/scripts/png-to-avif" docs/assets/project-infographics/why-lean-helps.png
+```
+
+The default `web-compact` profile retains dimensions, uses quality 55, speed 0 and YUV444, verifies decoding, and rejects outputs above 150,000 bytes or DSSIM 0.006. Use `--force` only to deliberately replace a stale AVIF. Do not silently resize, weaken the fidelity limit or switch to the unbounded `poster` profile after a failure.
+
+An existing local master is the exact pixel reference. If it is missing, the four original masters can be recovered individually from commit `ed6e0cc6` (the last checkpoint before the AVIF migration):
+
+```sh
+git show ed6e0cc6:docs/assets/project-infographics/why-lean-helps.png > docs/assets/project-infographics/why-lean-helps.png
+```
+
+For later images without a retained original, decoding an AVIF provides a visual reference but does not recover the original PNG pixels. Generative tools reproduce communication intent, not guaranteed pixel-identical output. Preserve complete submitted creation/correction prompts and tool/model/seed details when actually exposed for future generations; the original guide retained the content and prompt-construction recipe, not a complete tool submission transcript or seed. Do not invent that missing history.
 
 ## Acceptance checklist
 
@@ -289,3 +316,27 @@ When the generator cannot render all exact copy legibly, simplify the visual dec
 - Product 2 status marks match the commit printed in the footer.
 - No aggregate coverage percentage or general conformance claim appears.
 - The image remains legible at the width used in the README.
+
+## AVIF export record
+
+On 2026-09-28 the four existing PNG masters from `ed6e0cc6` were converted without regeneration, editing, cropping or downscaling. Their original source snapshot and factual qualifiers remain unchanged; this is publication-format maintenance, not a new implementation or conformance assessment. The original generation date/model/seed were not recorded beyond the source snapshot above.
+
+Each invocation used `"$INFOGRAPHIC_SKILL_ROOT/scripts/png-to-avif" docs/assets/project-infographics/<basename>.png` from the repository root, with the default `web-compact` profile. All four decode at 1024 × 1536 and pass the helper's byte-size and DSSIM gates.
+
+| Basename | PNG master bytes (local only) | AVIF bytes | DSSIM |
+|---|---:|---:|---:|
+| [why-lean-helps](assets/project-infographics/why-lean-helps.avif) | 1,513,698 | 71,917 | 0.00415614 |
+| [correctness-stack](assets/project-infographics/correctness-stack.avif) | 1,642,021 | 86,303 | 0.00447543 |
+| [product-2-vision](assets/project-infographics/product-2-vision.avif) | 1,712,310 | 74,813 | 0.00403317 |
+| [bpmn-execution-on-temporal](assets/project-infographics/bpmn-execution-on-temporal.avif) | 1,564,975 | 83,744 | 0.005198 |
+
+Accepted file identities (SHA-256):
+
+| Basename | Local PNG master | Tracked AVIF |
+|---|---|---|
+| `why-lean-helps` | `18b4fbf98ced1cb549d40aabb46e2a0e61ec48a55d94c4ae5d2ca33b3dafee74` | `3a49f1e784516e89b9595dc8f3b67674a8e3d170fe4dc1deca3226e94fe0cc01` |
+| `correctness-stack` | `7ebec78cd3dabd7798f803cfc9fe245ae0c21d24bb25f08607ab9ed4eccfee27` | `0e2b1fc75fa7720b9916cbc2e477653fba94b08bade93471e4281a5e20519c3a` |
+| `product-2-vision` | `36f8cc45e46dc429198160e319780f64bb8e1590c9b291e12b70f2c8e720cbd9` | `21b2639211c4fca969e01d4f3c54cb8de8da2fa248482a018f20149b92b1e8b6` |
+| `bpmn-execution-on-temporal` | `0e7591ccaf4a29c4f8d6f39f1c3cec323d2692377bad70d5c3f9128af844b38b` | `db2b9b48ca478e9dd5f96150ba9fe48775ccf6e023688af1abd617892fdd5776` |
+
+Visual acceptance compared each original PNG with its decoded AVIF side by side at 512 × 768. Text, connectors, colors and layout remained readable with no visible content loss. No new factual or status audit is claimed: the Product 2 poster still depicts its dated snapshot, including a partial Beta icon where the old copy recipe specifies a checkmark. That pre-existing difference belongs to a future content refresh, not this format conversion. AVIF re-encoding does not carry the PNG's embedded C2PA manifest; the ignored masters retain the original files.

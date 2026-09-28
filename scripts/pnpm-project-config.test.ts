@@ -74,16 +74,66 @@ test("pins the repository-local virtual store in ordinary and CI execution", asy
   );
 });
 
-test("does not carry release-age exceptions when release-age protection is disabled", async () => {
-  const environment = pnpmEnvironment("true");
-  assert.equal(
-    await runPnpm(["config", "get", "minimumReleaseAge"], environment),
-    "undefined",
-  );
-  assert.equal(
-    await runPnpm(["config", "get", "minimumReleaseAgeExclude"], environment),
-    "undefined",
-  );
+test("enforces a fourteen-day dependency quarantine without lockfile bypasses", async () => {
+  for (const ci of [undefined, "true"]) {
+    const environment = pnpmEnvironment(ci);
+    assert.equal(await runPnpm(["config", "get", "minimumReleaseAge"], environment), "20160");
+    assert.equal(await runPnpm(["config", "get", "minimumReleaseAgeStrict"], environment), "true");
+    assert.equal(await runPnpm(["config", "get", "trustLockfile"], environment), "false");
+    assert.equal(await runPnpm(["config", "get", "minimumReleaseAgeIgnoreMissingTime"], environment), "false");
+  }
+});
+
+function validateSecurityExceptions(selectors: readonly string[], table: string, now: number): void {
+  const rows = table.split("\n").filter((line) => line.startsWith("| ") && !line.startsWith("| Package "));
+  const records = rows.map((line) => line.split("|").slice(1, -1).map((cell) => cell.trim()));
+  assert.deepEqual(records.map(([selector]) => selector).sort(), [...selectors].sort());
+  assert.equal(new Set(selectors).size, selectors.length);
+  for (const record of records) {
+    assert.equal(record.length, 6, "exception record must contain six fields");
+    const [selector, advisory, published, expires, reviewer, reason] = record;
+    assert.match(selector ?? "", /^(?:@[a-z0-9._-]+\/)?[a-z0-9._-]+@\d+\.\d+\.\d+$/u);
+    assert.match(advisory ?? "", /^\[[^\]]+\]\(https:\/\/[^\s)]+\)$/u);
+    const publication = Date.parse(published ?? "");
+    const expiration = Date.parse(expires ?? "");
+    assert.ok(Number.isFinite(publication) && publication <= now, "published timestamp must be valid and in the past");
+    assert.equal(expiration, publication + 14 * 24 * 60 * 60 * 1000, "exception expires when the release reaches fourteen days");
+    assert.ok(expiration > now, "remove expired release-age exceptions");
+    assert.ok(reviewer && reason, "exception requires a reviewer and risk justification");
+  }
+}
+
+test("release-age exceptions are exact, documented and unexpired", async () => {
+  const configured = await runPnpm(["config", "get", "minimumReleaseAgeExclude", "--json"], pnpmEnvironment(undefined));
+  const selectors = (configured === "undefined" || configured === "") ? [] : JSON.parse(configured) as string[];
+  const guide = await readFile(path.join(projectRoot, "docs/CONTRIBUTOR-SETUP-GUIDE.md"), "utf8");
+  const section = guide.split("### Active security release-age exceptions\n")[1]?.split("\n##")[0];
+  assert.ok(section !== undefined, "missing security exception register");
+  validateSecurityExceptions(selectors, section, Date.now());
+});
+
+test("security exception guard rejects broad, undocumented and expired bypasses", () => {
+  const now = Date.parse("2026-09-28T00:00:00Z");
+  const row = "| example@1.2.3 | [GHSA](https://github.com/advisories/GHSA-test) | 2026-09-27T00:00:00Z | 2026-10-11T00:00:00Z | maintainer | Exposed service needs the verified fix. |";
+  validateSecurityExceptions(["example@1.2.3"], row, now);
+  for (const selector of ["example", "@example/*", "example@^1.2.3", "example@1.2.3-beta.1"]) {
+    assert.throws(() => validateSecurityExceptions([selector], row.replace("example@1.2.3", selector), now));
+  }
+  assert.throws(() => validateSecurityExceptions(["example@1.2.3"], "", now));
+  assert.throws(() => validateSecurityExceptions(["example@1.2.3"], row, Date.parse("2026-10-11T00:00:00Z")));
+  assert.throws(() => validateSecurityExceptions(["example@1.2.3"], row.replace("2026-10-11", "2026-10-12"), now));
+  assert.throws(() => validateSecurityExceptions(["example@1.2.3"], row.replace("maintainer", ""), now));
+});
+
+test("security monitoring runs daily and on changes without a full build", async () => {
+  const workflow = await readFile(path.join(projectRoot, ".github/workflows/dependency-security.yml"), "utf8");
+  assert.match(workflow, /cron: "\d+ \d+ \* \* \*"/u);
+  assert.match(workflow, /  pull_request:/u);
+  assert.match(workflow, /  push:/u);
+  assert.match(workflow, /pnpm audit --audit-level=high/u);
+  assert.match(workflow, /pnpm install --frozen-lockfile --ignore-scripts/u);
+  assert.match(workflow, /node --test scripts\/pnpm-project-config.test.ts/u);
+  assert.doesNotMatch(workflow, /continue-on-error|--prod|--ignore-registry-errors|verify\.sh|lake\.sh/u);
 });
 
 test("derives workspace build order from package manifests", async () => {

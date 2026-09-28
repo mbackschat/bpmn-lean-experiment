@@ -17,39 +17,71 @@ export const screenshotCatalog = Object.freeze([
     alt: "About workspace showing the versioned BPMN capability boundary and non-conformance notice",
   }),
   screenshot({
-    filename: "02-expense-definition-diagram.png",
-    alt: "Definitions workspace showing the deployed expense-exception Process and generated BPMN diagram",
+    filename: "02-about-capability-families.png",
+    alt: "About workspace showing expandable BPMN families and a selected family with its supported variants",
   }),
   screenshot({
-    filename: "03-expense-work-inbox.png",
+    filename: "03-process-showcases.png",
+    alt: "Process showcase catalog offering interactive human-work examples and explicit Explore buttons",
+  }),
+  screenshot({
+    filename: "04-showcase-description.png",
+    alt: "Expense-exception showcase explaining its business purpose, BPMN identity and human-work journey",
+  }),
+  screenshot({
+    filename: "05-deploy-definition-dialog.png",
+    alt: "Add BPMN definition dialog showing the selected XML file, semantic profile and explicit dismissal",
+  }),
+  screenshot({
+    filename: "06-definition-start-and-diagram.png",
+    alt: "Definitions workspace showing the start action above the expense-exception BPMN diagram",
+  }),
+  screenshot({
+    filename: "07-definition-triggers.png",
+    alt: "Definitions workspace showing expanded message and schedule controls below the diagram",
+  }),
+  screenshot({
+    filename: "08-expense-work-inbox.png",
     alt: "Work inbox showing the unclaimed Review exception task, candidate group, and priority",
   }),
   screenshot({
-    filename: "04-expense-structured-form.png",
+    filename: "09-expense-structured-form.png",
     alt: "Claimed Review exception task showing its completed structured approval form",
   }),
   screenshot({
-    filename: "05-completed-process-history.png",
+    filename: "09b-expense-approval-action.png",
+    alt: "Expense review form showing the selected risk flags, approval decision and explicit Approve action",
+  }),
+  screenshot({
+    filename: "10-task-action-history.png",
+    alt: "Operations Action history showing the current user’s task claim and completion with expanded labelled details",
+  }),
+  screenshot({
+    filename: "11-process-instances.png",
+    alt: "Operations process-instance list showing labelled definition and instance identities with explicit View details buttons",
+  }),
+  screenshot({
+    filename: "12-completed-process-history.png",
     alt: "Completed expense-exception Process showing its committed semantic History",
   }),
   screenshot({
-    filename: "06-completed-process-diagram.png",
+    filename: "13-completed-process-diagram.png",
     alt: "Completed expense-exception Process showing its terminal committed Diagram",
   }),
   screenshot({
-    filename: "07-definition-flow-node-metrics.png",
-    alt: "Expense-exception definition showing exact-version flow-node frequency metrics",
+    filename: "14-operations-process-metrics.png",
+    alt: "Operations workspace showing exact-version flow-node frequency metrics for the expense-exception process",
   }),
   screenshot({
-    filename: "08-current-incidents.png",
+    filename: "15-current-incidents.png",
     alt: "Operations workspace showing Retry-only and cancellable current Service Task incidents",
   }),
   screenshot({
-    filename: "09-cancel-process-confirmation.png",
+    filename: "16-cancel-process-confirmation.png",
     alt: "Incident detail showing the confirmation dialog for cancelling the incident-bearing root Process",
   }),
   screenshot({
-    filename: "10-incident-action-audit.png",
-    alt: "Incident action audit showing committed Retry and Cancel Process actions for demo-user",
+    filename: "17-incident-action-history.png",
+    alt: "Operations Action history showing committed Retry and Cancel process outcomes with full-width incident details",
   }),
 ] as const);

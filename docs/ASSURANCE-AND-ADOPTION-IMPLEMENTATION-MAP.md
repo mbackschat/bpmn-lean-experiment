@@ -164,6 +164,8 @@ Registered answer-free scenarios run their declared Lean, TypeScript, Temporal, 
 
 ## Evidence owners
 
+[Dependency security](CONTRIBUTOR-SETUP-GUIDE.md#dependency-security-procedure).
+
 [TESTING-SPEC.md](TESTING-SPEC.md), the generated pipeline report, guarded scenario/profile catalogs, [CIB relationship register](CIB-BPMN-RELATION-REGISTER.md), [A12 compatibility ledger](research/A12-WORKFLOWS-COMPATIBILITY-LEDGER.md), and executable corpus bind these claims. Latest measured results belong in [PLAN.md](PLAN.md).
 
 Registered answer-free scenarios run their declared Lean, TypeScript, Temporal, and pinned CIB lanes with seeded mutations and content-bound evidence. TypeScript produces the shared checked graph and program, while Lean checks lowering independently without parsing XML. Product drivers use published interactions and occurrence identities. Live execution is required once per distinct host mechanism; composed product examples are not an independent semantic lane.

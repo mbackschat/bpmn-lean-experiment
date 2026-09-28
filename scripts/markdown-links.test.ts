@@ -271,6 +271,7 @@ test("keeps maintained documentation indexed and role-named", async () => {
   const reservedSingletons = new Set([
     "ARCHITECTURE.md",
     "DOC-DISCIPLINE.md",
+    "INFOGRAPHICS.md",
     "PLAN.md",
     "PROJECT-DESIGN.md",
     "README.md",
@@ -329,6 +330,7 @@ test("documents the exact suffixless singleton exceptions", async () => {
   assert.deepEqual(documented, [
     "ARCHITECTURE.md",
     "DOC-DISCIPLINE.md",
+    "INFOGRAPHICS.md",
     "PLAN.md",
     "PROJECT-DESIGN.md",
     "README.md",

@@ -8,6 +8,10 @@ packages:
   - platform/workers/*
   - showcase/*
 enableGlobalVirtualStore: false
+minimumReleaseAge: 20160
+minimumReleaseAgeStrict: true
+minimumReleaseAgeIgnoreMissingTime: false
+trustLockfile: false
 allowBuilds:
   '@swc/core': false
   esbuild: false

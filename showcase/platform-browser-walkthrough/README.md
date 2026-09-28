@@ -2,7 +2,7 @@
 
 This documentation-only Playwright project captures the stable landmarks used by the maintained [BPM platform browser walkthrough](../../docs/BPM-PLATFORM-BROWSER-WALKTHROUGH.md). It drives an already-running containerized evaluation distribution exclusively through its public browser UI. It does not start Docker, import product or showcase helpers, intercept requests, compare pixels, or supply an alternative host.
 
-The ordered names and concise alternative text live in [`src/screenshot-catalog.ts`](src/screenshot-catalog.ts). Capture uses the tracked [`expense-exception-review`](../../scenarios/expense-exception-review/process.bpmn) and [`service-task-effect`](../../scenarios/service-task-effect/process.bpmn) BPMN files through the visible deployment file input. Generated images belong in [`docs/assets/bpm-platform-browser-walkthrough`](../../docs/assets/bpm-platform-browser-walkthrough/).
+The ordered names and concise alternative text live in [`src/screenshot-catalog.ts`](src/screenshot-catalog.ts). Capture uses the tracked [`expense-exception-review`](../../scenarios/expense-exception-review/process.bpmn) and [`service-task-effect`](../../scenarios/service-task-effect/process.bpmn) BPMN files through the visible deployment file input. The catalog covers grouped BPMN capabilities, showcase descriptions, deployment, starting a process, human work, metrics and readable action details. Remove obsolete images when changing the catalog; the documentation guard requires an exact directory match. Generated images belong in [`docs/assets/bpm-platform-browser-walkthrough`](../../docs/assets/bpm-platform-browser-walkthrough/).
 
 The ordinary focused loop is service-free:
 

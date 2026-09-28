@@ -125,6 +125,8 @@ Targeted diagnostics may override `BPMN_XSD_PATH`, `BPMN_CMOF_PATH`, or `BPMN_MI
 
 ## Coding-agent startup checklist
 
+Dependency selection follows the [supply-chain guideline](../CLAUDE.md#dependencies) and the [security update procedure](#dependency-security-procedure).
+
 1. Read the current checkpoint in [PLAN.md](PLAN.md), then use [`implementation-status-router`](IMPLEMENTATION-MAP.md) to route to the detail maps that own the exact implemented/absent boundary.
 2. Inspect `git status --short --branch` and `git log -5 --oneline`; preserve unrelated work.
 3. Run `./scripts/doctor.sh verify`. If it reports missing external inputs, run `./scripts/setup-external-sources.sh verify`; if it reports missing workspace packages, install the frozen pnpm lock.
@@ -152,3 +154,27 @@ A fork is not a place to mix instrumentation into the pristine evidence baseline
 Both CI platforms provision the `verify` scope from the repository-owned OMG hash manifest before installing workspace packages and running the full MIT engine gate. They do not fetch A12. Network availability is part of provisioning, not semantic execution. Once provisioned, verification is fail-closed and offline with respect to the normative corpus identity; a missing or mismatched input fails before semantic claims are evaluated. A hosted A12 adoption job may be added only as a separately named opt-in job that invokes the same fail-closed `adoption` scope and never becomes a prerequisite for the engine gate.
 
 Product 2 uses separate clean-commit entry points for ordinary platform, PostgreSQL, showcase compatibility, and UI work. Run every command selected by the changed paths: `./scripts/pnpm.sh run test:pre-push:platform`, `./scripts/pnpm.sh run test:pre-push:platform-postgresql` with `BPMN_TEST_POSTGRES_URL` set, `./scripts/pnpm.sh run test:pre-push:showcase`, and `./scripts/pnpm.sh run test:pre-push:ui`. Use `test:platform-postgresql:local` instead of managing a persistent local database. These boundaries are deliberately independent so GitHub can run cross-boundary work concurrently and no local wrapper serially rebuilds the same dependency graph. The hosted Verify workflow likewise skips its unrelated two-operating-system Product 1 matrix for a Product 2-only diff, while shared manifest, lockfile, workspace, documentation, and mixed changes still require Product 1 verification.
+
+
+## Dependency security procedure
+
+Routine direct and transitive npm updates use stable releases published at least 14 days ago. [pnpm-workspace.yaml](../pnpm-workspace.yaml) enforces `minimumReleaseAge: 20160`, strict resolution, refusal of missing publication timestamps and verification of existing lockfiles. Local, CI and container installs use the same settings. Frozen lockfiles preserve identity; they do not bypass the age check. Keep dependency lifecycle scripts disabled unless individually reviewed. See [pnpm's supply-chain guidance](https://pnpm.io/supply-chain-security).
+
+High or critical advisories require prompt assessment of application, developer-machine and CI exposure. Active exploitation or credible package compromise requires immediate remediation: patch, disable the affected functionality or remove the dependency. An applicable security fix need not wait 14 days when delay presents the greater risk. Severity alone does not authorize blindly installing a new release; an inapplicable advisory requires recorded evidence and a review date rather than silent suppression.
+
+1. Verify the maintainer's advisory, affected versions, fixed version and exposure in our runtime or build tools. Prefer an already aged, supported fixed release when available.
+2. Select the smallest supported fix. Review published package changes, provenance where available, lifecycle scripts and newly introduced dependencies. Provenance and a clean vulnerability scan do not prove absence of malicious code.
+3. If the fix is younger than 14 days, add only its exact stable `package@version` to pnpm's `minimumReleaseAgeExclude` and the register below. Record the advisory link, registry publication timestamp, expiry exactly 14 days after publication, reviewer and concrete risk justification. Review any required transitive exception separately. No wildcards, ranges, package-wide exemptions or global weakening are permitted.
+4. Review the lockfile diff, run `./scripts/pnpm.sh audit --audit-level=high`, the dependency policy guard and relevant affected-package tests, and exercise the affected application journey. Never use automatic forced upgrades or audit-ignore flags as remediation. Any acceptance of an unresolved vulnerability requires explicit owner approval, mitigation, evidence and a review deadline; it is separate from an age exception.
+5. Remove the exclusion and register row once the release reaches 14 days. The guard fails expired, broad or undocumented exceptions. Dependency changes retain the [ordinary approval requirement](../CLAUDE.md#dependencies); the exception record cannot manufacture approval.
+
+[Dependency security CI](../.github/workflows/dependency-security.yml) runs daily at 05:43 UTC, on pull requests, pushes to `main` and manual dispatch. It installs the locked dependencies with scripts disabled, runs [the policy guard](../scripts/pnpm-project-config.test.ts) and audits runtime and development dependencies. High/critical advisories and registry failures fail the job; no full build, Lean, Docker or browser suite runs. The workflow never upgrades or auto-merges packages. GitHub schedules may be delayed, and the workflow becomes active only after it reaches the default branch. It then checks the last pushed lockfile without further pushes; unpushed changes need local checks. In public repositories GitHub disables scheduled workflows after 60 days without repository activity; see [GitHub schedule behavior](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule).
+
+Enable GitHub dependency alerts and security notifications in repository/account settings as a complementary signal; adding this workflow does not configure those settings or branch protection. A failed check is visible in Actions and PR checks, with notifications controlled by GitHub preferences. The scan detects known advisories, not all supply-chain attacks. To run the same policy and advisory checks locally after installation: `node --test scripts/pnpm-project-config.test.ts` and `./scripts/pnpm.sh audit --audit-level=high`.
+
+### Active security release-age exceptions
+
+No active exceptions. Each entry must match one exact pnpm exclusion; use UTC ISO timestamps. Remove this sentence when adding an exception.
+
+| Package | Advisory | Published | Expires | Reviewer | Risk justification |
+|---|---|---|---|---|---|

@@ -52,6 +52,7 @@ An approved proposal remains a proposal until its contract is implemented. “Ap
 The following names identify repository-wide owners and do not require another suffix:
 
 - `README.md` — navigation and project front door;
+- `INFOGRAPHICS.md` — publication-asset inventory, regeneration inputs, and AVIF export records;
 - `ARCHITECTURE.md` — concrete repository layout, package dependency direction, deployment shape, and architecture decision register;
 - `PROJECT-DESIGN.md` — the durable architectural argument and decision model;
 - `PLAN.md` — current ordered work, blockers, and exact resume point;
@@ -69,6 +70,7 @@ The executable filename guard permits exactly these suffixless names under `docs
 
 - `README.md`;
 - `ARCHITECTURE.md`;
+- `INFOGRAPHICS.md`;
 - `PROJECT-DESIGN.md`;
 - `PLAN.md`;
 - `SOURCES.md`;

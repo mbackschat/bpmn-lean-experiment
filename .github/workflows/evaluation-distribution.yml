@@ -134,7 +134,7 @@ jobs:
           cp deploy/evaluation/demo deploy/evaluation/published-images.compose.yaml "$bundle_root/deploy/evaluation/"
           cp deploy/evaluation/postgresql/001_roles.sql "$bundle_root/deploy/evaluation/postgresql/"
           cp docs/BPM-PLATFORM-BROWSER-WALKTHROUGH.md "$bundle_root/docs/"
-          cp -R docs/assets/bpm-platform-browser-walkthrough docs/assets/mue-preview-alpha-demo "$bundle_root/docs/assets/"
+          cp -R docs/assets/bpm-platform-browser-walkthrough "$bundle_root/docs/assets/"
           cp -R scenarios/expense-exception-review scenarios/service-task-effect scenarios/sequential-multi-instance "$bundle_root/scenarios/"
           chmod +x "$bundle_root/deploy/evaluation/demo"
           {

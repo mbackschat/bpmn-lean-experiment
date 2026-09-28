@@ -327,6 +327,8 @@ Before measuring a staged line ceiling, anchor the preceding stage to a commit o
 
 ### Dependencies
 
+**Routine npm updates must use stable releases at least 14 days old**, including transitive dependencies. Keep strict release-age enforcement, reject missing publication timestamps, verify frozen lockfiles and keep dependency install scripts disabled unless individually reviewed. An urgent security fix may bypass the waiting period only for an exact package version with a verified advisory, exposure assessment, reviewer, justification and expiry when the release reaches 14 days. Never exempt a whole package or scope, disable the policy globally, or suppress an advisory to make a build pass. Follow the [security update procedure and exception register](docs/CONTRIBUTOR-SETUP-GUIDE.md#dependency-security-procedure). Age reduces exposure to newly compromised releases; it does not establish safety.
+
 Keep each component’s dependencies at the smallest approved set and add one only when a concrete capability requires it. Obtain explicit user approval before adding, removing, upgrading, vendoring, or replacing any Lake, Java, Node, pnpm, Temporal, parser, test, build, or runtime dependency. **This applies to the BPM platform exactly as it applies to the engine.** A platform dependency cannot reach the semantic core, but that is not what the rule protects: under [the platform's dependency posture](docs/PROJECT-DESIGN.md#dependency-posture) every resolved package is attack surface, while maintained MIT-compatible work is preferred over reimplementing a solved problem. Weigh a candidate against the whole alternative, including the defects we would own, not against its package count.
 
 Record exact version, role, license, provenance, and removal cost before adoption.
@@ -342,6 +344,7 @@ Use one owner for each fact and link to it elsewhere:
 | Information | Owner |
 |---|---|
 | Document roles, suffix contracts, lifecycle, placement, and same-change triggers | [DOC-DISCIPLINE.md](docs/DOC-DISCIPLINE.md) |
+| Infographic creation, revision, AVIF publication and ignored local PNG masters | [INFOGRAPHICS.md](docs/INFOGRAPHICS.md); use the linked infographic-bytebytego-style skill |
 | Mission, authority, and approved durable boundaries | [PROJECT-DESIGN.md](docs/PROJECT-DESIGN.md) |
 | Concrete repository layout, module ownership, dependency direction, and deployment shape | [ARCHITECTURE.md](docs/ARCHITECTURE.md) |
 | Semantic Process IL contract, exact proof boundary, maintained obligations, and growth rules | [SEMANTIC-PROCESS-IL-SPEC.md](docs/SEMANTIC-PROCESS-IL-SPEC.md) |

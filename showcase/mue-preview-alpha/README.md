@@ -12,7 +12,7 @@ Run the complete Alpha acceptance gate with `./scripts/pnpm.sh run test:release:
 
 Run the presenter-paced browser journey with `./scripts/pnpm.sh run demo:mue-preview-alpha`. It uses pinned Playwright Chromium and pauses only after the natural branch has committed its ordered aggregate, while the interrupted branch is already at its committed escalation checkpoint, and after the interrupted terminal result is visible. Ordinary evidence runs keep these pauses disabled.
 
-Refresh the three presentation-only fallback frames with `./scripts/pnpm.sh run demo:mue-preview-alpha:capture`. The command drives the same real journey headlessly and captures only those three safe landmarks at 1600 by 900. The frames are documentation aids, not additional product or semantic evidence.
+Capture three optional presentation frames with `./scripts/pnpm.sh run demo:mue-preview-alpha:capture`. The command drives the same real journey headlessly and captures only those three safe landmarks at 1600 by 900. The frames go to ignored Playwright test output, not the maintained documentation. They are presentation aids, not additional product or semantic evidence.
 
 The same harness also qualifies the separate [Product 2 failed-Process outcome](../../docs/BPM-PLATFORM-FAILED-PROCESS-SPEC.md). That acceptance deploys the exact registered travel-cancellation XML through public HTTP, starts successful and failed executions with explicit data, and uses a labelled test actor for metadata-free published User Tasks. A declared Activity simulation refuses ground-travel cancellation for one explicit snapshot input. Both terminal publications must survive platform restart and remain byte-identical through public export and browser download; every actual Run is replayed. This adds inspection evidence, not a Compensation browser catalog entry or Human Work form.
 
@@ -26,8 +26,4 @@ The preparation helper tests, live startup inventory/zero-instance witnesses for
 
 ## Presentation fallback
 
-If the local browser or Temporal process cannot be recovered during a presentation, use the maintained frames in order:
-
-1. [Natural completion and ordered aggregate](../../docs/assets/mue-preview-alpha-demo/01-natural-completion.png)
-2. [Timer interruption and escalation task](../../docs/assets/mue-preview-alpha-demo/02-timer-interruption.png)
-3. [Interrupted completion without partial output](../../docs/assets/mue-preview-alpha-demo/03-interrupted-completion.png)
+Use the maintained [platform browser walkthrough](../../docs/BPM-PLATFORM-BROWSER-WALKTHROUGH.md) for current UI illustrations. The obsolete Alpha documentation frames have been removed; the Alpha acceptance journey and optional local capture command remain available.

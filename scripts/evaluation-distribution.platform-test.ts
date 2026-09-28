@@ -259,7 +259,7 @@ test("evaluation workflow is manual or tagged and never routine", async () => {
   assert.match(workflow, /published-images\.compose\.yaml/u);
   assert.match(workflow, /cp docs\/BPM-PLATFORM-BROWSER-WALKTHROUGH\.md/u);
   assert.match(workflow, /scenarios\/expense-exception-review/u);
-  assert.match(workflow, /docs\/assets\/mue-preview-alpha-demo/u);
+  assert.doesNotMatch(workflow, /docs\/assets\/mue-preview-alpha-demo/u);
   assert.match(
     workflow,
     /\.artifacts\/mue-preview-alpha-demo\/deploy\/evaluation\/demo prepare/u,

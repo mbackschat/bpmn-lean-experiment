@@ -37,21 +37,29 @@ test("captures the ordered text-first platform walkthrough landmarks", async ({ 
   await navigate(page, "About");
   const capabilityBoundary = page.getByLabel("Coverage boundary");
   await expect(capabilityBoundary).toContainText("Not a conformance claim.");
-  const capabilityTable = page.getByRole("table", {
-    name: "Executable BPMN element and semantic-variant overview",
-  });
-  await expect(capabilityTable.locator("tbody tr")).toHaveCount(
-    mvpCapabilityCatalog.capabilities.length,
-  );
-  expect(await capabilityTable.locator("tbody tr").evaluateAll((rows) =>
-    rows.map((row) => row.getAttribute("data-capability-id"))
-  )).toEqual(mvpCapabilityCatalog.capabilities.map(({ id }) => id));
   await capture(page, "01-about-capability-boundary.png", capabilityBoundary, captured);
+  await page.getByRole("button", { name: "Show Executable BPMN elements and variants", exact: true }).click();
+  const families = page.getByRole("region", { name: "Executable BPMN element and semantic-variant overview" });
+  await families.getByRole("button", { name: "Expand all families", exact: true }).click();
+  expect(await families.locator("tbody tr").evaluateAll((rows) =>
+    rows.map((row) => row.getAttribute("data-capability-id")).sort()
+  )).toEqual(mvpCapabilityCatalog.capabilities.map(({ id }) => id).toSorted());
+  await families.getByRole("button", { name: "Collapse all families", exact: true }).click();
+  await families.getByRole("button", { name: /^Show Process structure/ }).click();
+  await capture(page, "02-about-capability-families.png", families.getByRole("button", { name: "Expand all families", exact: true }), captured);
 
   await navigate(page, "Definitions");
-  await deployDefinition(page, expenseBpmnPath, expenseProfile, expenseProcessId, "1");
-  await page.getByText("Add BPMN definition", { exact: true }).click();
-  await expect(page.getByLabel("BPMN XML file")).toBeHidden();
+  await page.getByRole("button", { name: "Explore process showcases", exact: true }).click();
+  const showcases = page.getByRole("region", { name: "Process showcases", exact: true });
+  const expenseShowcase = showcases.locator('[data-model-id="expense-exception-review"]');
+  await expect(expenseShowcase).toBeVisible();
+  await capture(page, "03-process-showcases.png", showcases.getByRole("heading", { name: "Explore process showcases", exact: true }), captured);
+  await expenseShowcase.getByRole("button", { name: /^Explore / }).click();
+  await expect(showcases.getByRole("region", { name: "BPMN process identity" })).toContainText(expenseProcessId);
+  await capture(page, "04-showcase-description.png", showcases.getByRole("heading", { level: 2 }), captured);
+  await showcases.getByRole("button", { name: "Back to definitions", exact: true }).click();
+  await deployDefinition(page, expenseBpmnPath, expenseProfile, expenseProcessId, "1", captured);
+
   const expenseDiagram = page.getByRole("region", {
     name: `Complete diagram workspace for ${expenseProcessId}, version 1`,
   });
@@ -59,7 +67,11 @@ test("captures the ordered text-first platform walkthrough landmarks", async ({ 
   await expect(expenseDiagram.getByLabel(
     `BPMN diagram for ${expenseProcessId}, version 1`,
   )).toBeVisible();
-  await capture(page, "02-expense-definition-diagram.png", expenseDiagram, captured);
+  await page.getByRole("heading", { name: "Definitions", level: 1 }).evaluate((element) => element.scrollIntoView());
+  await capture(page, "06-definition-start-and-diagram.png", page.getByRole("heading", { name: "Ready to start", exact: true }), captured);
+  await page.getByRole("button", { name: "Show Triggers", exact: true }).click();
+  await capture(page, "07-definition-triggers.png", page.getByRole("button", { name: "Hide Triggers", exact: true }), captured);
+  await page.getByRole("button", { name: "Hide Triggers", exact: true }).click();
 
   const expenseInstanceId = await startSelectedDefinition(page, 1);
   await navigate(page, "Work");
@@ -71,7 +83,7 @@ test("captures the ordered text-first platform walkthrough landmarks", async ({ 
   await expect(expenseTask).toContainText("reviewers");
   await expect(expenseTask).toContainText("80");
   await expect(expenseTask).toContainText("Unclaimed");
-  await capture(page, "03-expense-work-inbox.png", expenseTask, captured);
+  await capture(page, "08-expense-work-inbox.png", expenseTask, captured);
 
   await expenseTask.getByRole("button", { name: "Claim", exact: true }).click();
   await expect(expenseTask).toContainText("Claimed by demo-user");
@@ -85,15 +97,25 @@ test("captures the ordered text-first platform walkthrough landmarks", async ({ 
   await expect(tasks.getByLabel("Resolution reason")).toHaveCount(0);
   await capture(
     page,
-    "04-expense-structured-form.png",
+    "09-expense-structured-form.png",
     tasks.getByRole("heading", { name: "Review exception", exact: true }),
     captured,
   );
+  await capture(page, "09b-expense-approval-action.png", tasks.getByRole("button", { name: "Approve", exact: true }), captured);
   await tasks.getByRole("button", { name: "Approve", exact: true }).click();
   await settleRetainedWorkCompletion(tasks, page);
   await refreshWorkUntilEmpty(tasks, page);
 
-  await openCompletedProcess(page, expenseInstanceId);
+  await navigate(page, "Operations");
+  await page.getByRole("tab", { name: "Action history", exact: true }).click();
+  await page.getByRole("combobox", { name: "Activity type", exact: true }).selectOption("tasks");
+  await page.getByRole("button", { name: "Apply filters", exact: true }).click();
+  const taskActions = page.getByRole("region", { name: "Your task actions", exact: true });
+  await expect(taskActions.getByRole("table")).toContainText("Complete task");
+  await taskActions.getByRole("button", { name: "Show details", exact: true }).last().click();
+  await capture(page, "10-task-action-history.png", taskActions, captured);
+
+  await openCompletedProcess(page, expenseInstanceId, captured);
   const processDetail = page.getByRole("region", {
     name: `Process instance ${expenseInstanceId}`,
   });
@@ -106,7 +128,7 @@ test("captures the ordered text-first platform walkthrough landmarks", async ({ 
     hasText: "completeUserTaskInstance",
   });
   await expect(completionRecord).toHaveCount(1);
-  await capture(page, "05-completed-process-history.png", completionRecord, captured);
+  await capture(page, "12-completed-process-history.png", completionRecord, captured);
 
   await processDetail.getByRole("tab", { name: "Diagram", exact: true }).click();
   const executionDiagram = processDetail.getByRole("region", {
@@ -115,7 +137,7 @@ test("captures the ordered text-first platform walkthrough landmarks", async ({ 
   });
   await expect(executionDiagram.getByText("Generated layout", { exact: true })).toBeVisible();
   await expect(executionDiagram.getByRole("heading", { name: "Diagram", exact: true })).toBeVisible();
-  await capture(page, "06-completed-process-diagram.png", executionDiagram, captured);
+  await capture(page, "13-completed-process-diagram.png", executionDiagram, captured);
 
   await navigate(page, "Definitions");
   await page.getByRole("combobox", { name: "Definition", exact: true })
@@ -128,7 +150,7 @@ test("captures the ordered text-first platform walkthrough landmarks", async ({ 
   await expect(metrics.getByText("All retained evidence", { exact: true })).toBeVisible();
   await expect(metrics.getByText("1 Process instance", { exact: true })).toBeVisible();
   await expect(metrics.getByRole("table", { name: "Process metric values" })).toBeVisible();
-  await capture(page, "07-definition-flow-node-metrics.png", metrics, captured);
+  await capture(page, "14-operations-process-metrics.png", metrics, captured);
 
   const retryInstanceId = await deployAndStartIncidentProfile(page, retryProfile, 1);
   const cancellationInstanceId = await deployAndStartIncidentProfile(
@@ -154,23 +176,23 @@ test("captures the ordered text-first platform walkthrough landmarks", async ({ 
   await expect(cancellationRow).toContainText("Cancel Process");
   await capture(
     page,
-    "08-current-incidents.png",
+    "15-current-incidents.png",
     page.getByRole("heading", { name: "Current incidents", level: 2 }),
     captured,
   );
 
   await openIncident(page, retryInstanceId);
   await page.getByRole("button", { name: "Retry", exact: true }).click();
-  await resubmitRetainedIncidentActionOnce(page, "Submit Retry again");
+  await settleRetainedIncidentAction(page, "Submit Retry again");
 
   await openIncident(page, cancellationInstanceId);
   await page.getByRole("button", { name: "Cancel Process", exact: true }).click();
   const confirmation = page.getByRole("dialog", { name: "Cancel root Process?" });
   await expect(confirmation).toContainText("removes all remaining live work");
   await expect(confirmation.getByRole("button", { name: "Keep Process running" })).toBeFocused();
-  await capture(page, "09-cancel-process-confirmation.png", confirmation, captured);
+  await capture(page, "16-cancel-process-confirmation.png", confirmation, captured);
   await confirmation.getByRole("button", { name: "Cancel root Process" }).click();
-  await resubmitRetainedIncidentActionOnce(page, "Submit Cancel Process again");
+  await settleRetainedIncidentAction(page, "Submit Cancel Process again");
   await refreshIncidentsUntilAbsent(
     operationsTabs,
     currentIncidents,
@@ -178,13 +200,16 @@ test("captures the ordered text-first platform walkthrough landmarks", async ({ 
   );
 
   await operationsTabs.getByRole("tab", { name: "Action history", exact: true }).click();
+  await page.getByRole("combobox", { name: "Activity type", exact: true }).selectOption("incidents");
+  await page.getByRole("button", { name: "Apply filters", exact: true }).click();
   const auditHeading = page.getByRole("heading", { name: "Action history", level: 2 });
   await expect(auditHeading).toBeVisible();
   const auditPanel = page.getByRole("region", { name: "Incident actions", exact: true });
   const audit = auditPanel.getByRole("table", { name: "Incident actions" });
   await refreshAuditUntilActionsCommitted(page, auditPanel, audit);
   await expect(audit).toContainText("demo-user");
-  await capture(page, "10-incident-action-audit.png", auditHeading, captured);
+  await audit.getByRole("button", { name: "Show details", exact: true }).last().click();
+  await capture(page, "17-incident-action-history.png", auditPanel, captured);
 
   expect(captured).toEqual(screenshotCatalog.map(({ filename }) => filename));
 });
@@ -223,6 +248,7 @@ async function deployDefinition(
   semanticProfile: string,
   processId: string,
   version: string,
+  captured?: string[],
 ): Promise<void> {
   const sourceInput = page.getByLabel("BPMN XML file");
   if (!await sourceInput.isVisible()) {
@@ -231,18 +257,24 @@ async function deployDefinition(
   await sourceInput.setInputFiles(sourcePath);
   await page.getByRole("textbox", { name: "Semantic profile ID", exact: true })
     .fill(semanticProfile);
+  if (captured !== undefined) await capture(page, "05-deploy-definition-dialog.png", page.getByRole("dialog", { name: "Add BPMN definition", exact: true }), captured);
   await page.getByRole("button", { name: "Deploy definition", exact: true }).click();
   await expect(page.getByText("Admitted and deployed", { exact: true })).toBeVisible();
   await expect(page.getByRole("combobox", { name: "Definition", exact: true }))
     .toHaveValue(processId);
   await expect(page.getByRole("combobox", { name: "Version", exact: true }))
     .toHaveValue(version);
+  await expect(page.getByRole("dialog", { name: "Add BPMN definition", exact: true })).toBeHidden();
 }
 
 async function startSelectedDefinition(page: Page, version: number): Promise<string> {
-  await page.getByRole("button", { name: `Start version ${version}`, exact: true }).click();
+  const [response] = await Promise.all([
+    page.waitForResponse((candidate) => candidate.request().method() === "POST" && candidate.url().endsWith("/start")),
+    page.getByRole("button", { name: `Start version ${version}`, exact: true }).click(),
+  ]);
+  expect(response.ok(), await response.text()).toBe(true);
   await expect(page.getByText("Process instance started", { exact: true })).toBeVisible();
-  const instanceId = page.getByText(instanceIdPattern, { exact: true });
+  const instanceId = page.getByTestId("started-instance-id").filter({ visible: true });
   await expect(instanceId).toHaveCount(1);
   const value = await instanceId.textContent();
   if (value === null || !instanceIdPattern.test(value)) {
@@ -288,7 +320,7 @@ async function settleRetainedWorkCompletion(tasks: Locator, page: Page): Promise
 
 async function fillApprovalForm(tasks: Locator): Promise<void> {
   await tasks.getByLabel("Request reference").fill("EXP-WALKTHROUGH-001");
-  await tasks.getByLabel("Expense date").fill("2026-08-17");
+  await tasks.getByLabel("Expense date").fill("2026-09-28");
   await tasks.getByLabel("Approved amount").fill("4250");
   await tasks.getByRole("radio", { name: "Engineering", exact: true }).press("Space");
   await tasks.getByRole("checkbox", { name: "Missing receipt", exact: true }).press("Space");
@@ -297,13 +329,15 @@ async function fillApprovalForm(tasks: Locator): Promise<void> {
   await expect(tasks.getByRole("button", { name: "Approve", exact: true })).toBeVisible();
 }
 
-async function openCompletedProcess(page: Page, processInstanceId: string): Promise<void> {
+async function openCompletedProcess(page: Page, processInstanceId: string, captured: string[]): Promise<void> {
   await navigate(page, "Operations");
+  await page.getByRole("tab", { name: "Process instances", exact: true }).click();
   await page.getByRole("textbox", { name: "Process-instance ID", exact: true })
     .fill(processInstanceId);
   await page.getByRole("button", { name: "Search", exact: true }).click();
   const results = page.getByRole("table", { name: "Process instances" });
   await expect(results).toContainText(processInstanceId);
+  await capture(page, "11-process-instances.png", results, captured);
   const detail = page.getByRole("region", { name: `Process instance ${processInstanceId}` });
   const historyTab = detail.getByRole("tab", { name: "History", exact: true });
   const unavailable = detail.getByRole("alert");
@@ -416,24 +450,19 @@ async function openIncident(page: Page, processInstanceId: string): Promise<void
   await expect(overview).toBeVisible();
 }
 
-/**
- * Resubmits the UI-retained exact action identity once, then leaves convergence
- * to the durable recovery worker. Spinning on this bounded Product 1 call adds
- * no ownership evidence and can starve the rest of the public journey.
- */
-async function resubmitRetainedIncidentActionOnce(
+/** Resolves the same retained action before leaving, as required by the incident workspace's uncertain-command boundary. */
+async function settleRetainedIncidentAction(
   page: Page,
   resubmitLabel: "Submit Retry again" | "Submit Cancel Process again",
 ): Promise<void> {
   const collection = page.getByRole("heading", { name: "Current incidents", level: 2 });
   const resubmit = page.getByRole("button", { name: resubmitLabel, exact: true });
-  await expect(collection.or(resubmit)).toBeVisible();
-  if (await collection.isVisible()) return;
-  await page.waitForTimeout(1_000);
-  await resubmit.click();
-  await expect(collection.or(resubmit)).toBeVisible();
-  if (await collection.isVisible()) return;
-  await page.getByRole("button", { name: "Back to incidents", exact: true }).click();
+  for (let attempt = 0; attempt < 10; attempt += 1) {
+    await expect(collection.or(resubmit)).toBeVisible();
+    if (await collection.isVisible()) return;
+    await page.waitForTimeout(1_000);
+    await resubmit.click();
+  }
   await expect(collection).toBeVisible();
 }
 
@@ -478,6 +507,10 @@ async function capture(
   if (catalogEntry === undefined) throw new Error(`Unknown screenshot contract entry ${filename}.`);
   await expect(landmark).toBeVisible();
   await landmark.scrollIntoViewIfNeeded();
+  if (["02-about-capability-families.png", "06-definition-start-and-diagram.png", "07-definition-triggers.png", "10-task-action-history.png", "17-incident-action-history.png"].includes(filename)) {
+    await landmark.evaluate((element) => element.scrollIntoView({ block: "start" }));
+    await page.evaluate(() => window.scrollBy(0, -24));
+  }
   await page.evaluate(async () => { await document.fonts.ready; });
   const path = resolve(repositoryRoot, screenshotTargetDirectory, filename);
   await mkdir(dirname(path), { recursive: true });
