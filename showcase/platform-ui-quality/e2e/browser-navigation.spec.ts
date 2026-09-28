@@ -1,10 +1,11 @@
 import { expect, test } from "@playwright/test";
-import { fixtureLabels, installPublicApiFixtures } from "./fixtures.ts";
+import { fixtureLabels, installPublicApiFixtures, waitForStableUi } from "./fixtures.ts";
 
 for (const initiallyExpanded of [false, true]) {
   test(`Triggers ${initiallyExpanded ? "collapse" : "expansion"} preserves the reading position @responsive`, async ({ page }) => {
     await installPublicApiFixtures(page);
     await page.goto(`/#/definitions?tab=${initiallyExpanded ? "triggers" : "diagram"}`);
+    await waitForStableUi(page, { diagram: true });
     const toggle = page.getByRole("button", { name: `${initiallyExpanded ? "Hide" : "Show"} Triggers`, exact: true });
     await toggle.evaluate((element) => element.scrollIntoView({ block: "end" }));
     const before = await page.evaluate(() => window.scrollY);

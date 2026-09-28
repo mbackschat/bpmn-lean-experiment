@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 import { mvpCapabilityCatalog } from "../../../model-corpus/mvp-capabilities.ts";
+import webManifest from "../../../platform/apps/web/package.json" with { type: "json" };
 import { muePreviewBetaTestOracle } from "../../../scripts/mue-preview-beta-test-oracle.ts";
 
 import {
@@ -156,7 +157,7 @@ test("About exposes the versioned capability boundary without overflow @responsi
   await page.getByRole("link", { name: "About", exact: true }).click();
 
   await expect(page.getByRole("heading", { name: "About", level: 1 })).toBeFocused();
-  await expect(page.getByRole("heading", { name: "BPMN Lean 0.1.0" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: `BPMN Lean ${webManifest.version}` })).toBeVisible();
   await expect(page.getByText("Not a conformance claim.", { exact: true })).toBeVisible();
   await expect(page.getByText("CIB Seven 2.2.0", { exact: true })).toBeVisible();
   const showCheckpoints = page.getByRole("button", { name: "Show Implementation checkpoints", exact: true });
