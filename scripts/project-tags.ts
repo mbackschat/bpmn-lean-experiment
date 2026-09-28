@@ -109,13 +109,15 @@ function assertReleaseVersion(repository: string, request: ProjectTagRequest): v
   if (request.kind !== ProjectTagKind.Release) {
     return;
   }
-  const manifest = JSON.parse(
-    readFileSync(path.join(repository, "package.json"), "utf8"),
-  ) as Readonly<{ version?: unknown }>;
-  if (manifest.version !== request.identifier) {
-    throw new Error(
-      `package.json version ${JSON.stringify(manifest.version)} does not match release ${request.identifier}`,
-    );
+  for (const relativePath of ["package.json", "platform/apps/web/package.json"]) {
+    const manifest = JSON.parse(
+      readFileSync(path.join(repository, relativePath), "utf8"),
+    ) as Readonly<{ version?: unknown }>;
+    if (manifest.version !== request.identifier) {
+      throw new Error(
+        `${relativePath} version ${JSON.stringify(manifest.version)} does not match release ${request.identifier}`,
+      );
+    }
   }
 }
 

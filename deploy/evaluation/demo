@@ -4,7 +4,7 @@ set -eu
 script_directory=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 bundle_root=$(CDPATH= cd -- "$script_directory/../.." && pwd)
 environment_file=${BPMN_EVALUATION_BUNDLE_ENV:-"$script_directory/published-images.env"}
-project_name=${BPMN_EVALUATION_PROJECT_NAME:-bpmn-lean-mue-preview-alpha-native}
+project_name=${BPMN_EVALUATION_PROJECT_NAME:-bpmn-lean-evaluation-published}
 BPMN_EVALUATION_NAMESPACE=${BPMN_EVALUATION_NAMESPACE:-bpmn-evaluation}
 export BPMN_EVALUATION_NAMESPACE
 
@@ -93,6 +93,37 @@ verify_project_images() {
   verify_image "$BPMN_EVALUATION_PLATFORM_RECOVERY_WORKER_IMAGE"
 }
 
+prepare_human_showcases() {
+  manifest="$script_directory/prepared-human-showcases.txt"
+  if [ ! -s "$manifest" ]; then
+    printf 'Published demo has no prepared human processes\n' >&2
+    exit 1
+  fi
+  origin=$(read_assignment BPMN_EVALUATION_ORIGIN)
+  while IFS='|' read -r model_id source_path semantic_profile expected_sha256; do
+    if ! printf '%s\n' "$source_path" | grep -Eq '^scenarios/[a-z0-9-]+/process\.bpmn$' \
+      || ! printf '%s\n' "$semantic_profile" | grep -Eq '^[a-z0-9.-]+$'; then
+      printf 'Invalid prepared process binding: %s\n' "$model_id" >&2
+      exit 1
+    fi
+    model_file="$bundle_root/$source_path"
+    actual_sha256=$(shasum -a 256 "$model_file" | cut -d ' ' -f 1)
+    if [ "$actual_sha256" != "$expected_sha256" ]; then
+      printf 'Prepared process source differs from its retained digest: %s\n' "$model_id" >&2
+      exit 1
+    fi
+    status=$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' \
+      --request POST --header 'content-type: application/bpmn+xml' --header 'accept: application/json' \
+      --data-binary @"$model_file" \
+      "$origin/api/v1/definitions?sourceId=process.bpmn&semanticProfile=$semantic_profile")
+    if [ "$status" != 201 ]; then
+      printf 'Prepared process %s was not admitted (HTTP %s)\n' "$model_id" "$status" >&2
+      exit 1
+    fi
+    printf 'PREPARED_HUMAN_SHOWCASE model=%s\n' "$model_id"
+  done < "$manifest"
+}
+
 report_ready() {
   origin=$(read_assignment BPMN_EVALUATION_ORIGIN)
   compose ps
@@ -112,6 +143,7 @@ case "$command" in
     compose up --no-build --pull never --wait temporal
     compose run --rm --no-deps --pull never bpmn-worker initialize-fresh-namespace --retention-seconds 86400
     compose up --no-build --pull never --wait
+    prepare_human_showcases
     report_ready
     ;;
   start)

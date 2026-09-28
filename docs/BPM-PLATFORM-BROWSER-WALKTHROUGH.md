@@ -78,7 +78,7 @@ Use this run of show when presenting the project rather than evaluating each wor
 
 ### Zero-build demo machine
 
-The recommended demo-machine path is the `mue-preview-alpha-demo-<commit>` artifact from a successful manual [Evaluation distribution workflow](../.github/workflows/evaluation-distribution.yml) run with image publication enabled. The artifact contains the Compose topology, exact database-role initialization, this guide and fallback images, the three retained demonstration models, and an environment file that pins all four project images to their published OCI index digests. Each index contains `linux/amd64` and `linux/arm64`, carries the source commit and complete tracked-source-tree digest, and is published with BuildKit provenance and an SBOM. PostgreSQL and Temporal retain their separately pinned upstream digests.
+The recommended demo-machine path is the `mue-evaluation-v0.2.0-rc.1.tar.gz` asset of the qualified prerelease; until that release exists, a successful manual [Evaluation distribution workflow](../.github/workflows/evaluation-distribution.yml) run with image publication offers a commit-named artifact to signed-in GitHub users. The bundle contains the Compose topology, database-role initialization, this guide and fallback images, three prepared interactive human-process definitions, additional retained presentation models, and an environment file that pins all four project images to their published OCI index digests. Each index contains `linux/amd64` and `linux/arm64`, carries the source commit and complete tracked-source-tree digest, and is published with BuildKit provenance and an SBOM. PostgreSQL and Temporal retain their separately pinned upstream digests. On macOS, use Docker Desktop with Linux containers or Rancher Desktop with dockerd (moby), select the matching Docker context, and verify `docker info` plus Docker Compose `2.24.4` or later before preparing the bundle.
 
 Download and unpack that artifact on a compatible Docker host. No repository checkout, Node, pnpm, compiler, or image build is used there. While online, prepare and prove one fresh isolated stack with:
 
@@ -87,7 +87,7 @@ Download and unpack that artifact on a compatible Docker host. No repository che
 ./deploy/evaluation/demo status
 ```
 
-`prepare` pulls only the exact recorded digests, verifies every project image's source labels, removes only the bundle's demo volumes, initializes its fresh `bpmn-evaluation` Namespace with one-day retention, and starts Compose with `--no-build`. The default project is `bpmn-lean-mue-preview-alpha-native`, separate from earlier unversioned demo volumes. The publishing workflow logs out of GHCR and executes this same command before offering the artifact, proving anonymous pull and exact published-image startup.
+`prepare` pulls only the exact recorded digests, verifies every project image's source labels, removes only the bundle's demo volumes, initializes its fresh `bpmn-evaluation` Namespace with one-day retention, and starts Compose with `--no-build`. It then verifies and deploys the three retained interactive human processes through the public definition API, leaving their instances unstarted for the evaluator. The default project is `bpmn-lean-evaluation-published`, separate from earlier unversioned demo volumes. The publishing workflow logs out of GHCR and executes this same command before offering the artifact, proving anonymous pull, exact published-image startup, and process admission.
 
 After preparation, show-time restart performs no build, registry request, or pull:
 

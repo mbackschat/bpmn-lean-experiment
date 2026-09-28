@@ -195,7 +195,7 @@ Follow the [engine quick start](packages/temporal-adapter/README.md#quick-start)
 
 ### Use the BPM platform in a browser
 
-For a demo machine, use the zero-build `mue-preview-alpha-demo-<commit>` artifact produced by the manual **Evaluation distribution** workflow. After unpacking it, one command pulls exact `linux/amd64` or `linux/arm64` image digests, verifies their source provenance, and starts the real PostgreSQL, Temporal, Product 1 Worker, and Product 2 stack without Git, Node, pnpm, or a local image build:
+For a demo machine, download `mue-evaluation-v0.2.0-rc.1.tar.gz` from the [versioned prerelease](https://github.com/mbackschat/bpmn-lean-experiment/releases/tag/v0.2.0-rc.1) once published. It appears only after the exact published images and bundled startup pass CI smoke testing. Before that release is published, a successful manual [Evaluation distribution workflow](https://github.com/mbackschat/bpmn-lean-experiment/actions/workflows/evaluation-distribution.yml) run with image publication offers a commit-named artifact to signed-in GitHub users. On macOS, use **Docker Desktop** with Linux containers or **Rancher Desktop** with **dockerd (moby)** selected under **Preferences → Container Engine**. Start the chosen desktop app, select its Docker context, and confirm `docker info` succeeds and `docker compose version` is at least `2.24.4`. The bundle uses Docker Compose, including `!reset` in its image-only override; Rancher Desktop's containerd/nerdctl mode is outside this Docker Compose path. Unpack the archive into an empty directory and run the following there. `prepare` verifies the retained source of three interactive human processes, deploys them, and starts PostgreSQL, Temporal, the BPMN Worker, and the web platform from exact `linux/amd64` or `linux/arm64` image digests without Git, Node, pnpm, or a local image build. It uses the standard `curl` and `shasum` command-line tools:
 
 ```sh
 ./deploy/evaluation/demo prepare
@@ -260,7 +260,7 @@ Supporting lemmas count `private theorem` and every explicit `lemma` command, ma
 | Language | Files | Code | Comments | Blanks |
 |---|---:|---:|---:|---:|
 | Java | 85 | 11,508 | 251 | 1,156 |
-| TypeScript | 1,951 | 400,832 | 9,767 | 25,232 |
+| TypeScript | 1,952 | 400,987 | 9,768 | 25,237 |
 | Lean | 718 | 150,058 | 7,799 | 13,118 |
 <!-- publication-statistics:language-footprint:end -->
 

@@ -61,7 +61,7 @@ The completed risk-first sequence covers data lifetime, internal scheduling, sub
 
 Integration state: `satisfied`.
 
-The RC was published at `a637757c` under `phase/mue-release-candidate`; `91b759a1` retains the original qualification record and `9fb6705b` the closure-qualified semantic implementation. RC publication is complete; final MUE acceptance is not. The owner-authorized guarded force push moved the RC tag to `6ce2310e`; the owner monitors [its CI run](https://github.com/mbackschat/bpmn-lean-experiment/actions/runs/36369151995). The owner subsequently authorized grouping the acceptance-host repairs into one commit, moving the RC tag again, and pushing without waiting for CI. On 2026-09-28 the owner accepted the disclosed intermittent native-runtime risk for this RC checkpoint, without asserting its root cause is fixed or that final MUE acceptance has passed.
+The historical `phase/mue-release-candidate` feature-freeze checkpoint currently points to `4c6e7238`; `91b759a1` retains the original qualification record and `9fb6705b` the closure-qualified semantic implementation. On 2026-09-28 the owner accepted the disclosed intermittent native-runtime risk for this RC checkpoint, without asserting its root cause is fixed or that final MUE acceptance has passed. The separately versioned, downloadable RC distribution is selected as `v0.2.0-rc.1` and remains untagged until its own exact committed target, Docker image bundle, user journey and release gates qualify. Historical Preview Alpha and Beta phase tags remain at their original targets; no retrospective `v0.2.0-alpha.*` or `v0.2.0-beta.*` tags are created.
 
 ### MUE acceptance goal
 
@@ -84,7 +84,7 @@ The selected scheduling and bounded Transaction accounts are independently closu
 |---|---|---|
 | P1 | Repair clean-checkout runtime qualification; inspect remaining CI verdicts. | Reproduce the build-output dependency in publication-schema fixtures, guard the class, pass the affected gates and the corrected runtime CI job. The owner-authorized RC tag correction precedes the CI verdict; qualification remains pending until green. |
 | P2 | Validate supported user journeys using the [walkthrough](BPM-PLATFORM-BROWSER-WALKTHROUGH.md) and existing production-browser gates. | Discover and start a human process, claim/edit/complete its task, inspect outcome and Action history; retain navigation, disclosures, recovery and incident journeys. Human evaluation has no simulated participants. |
-| P3 | Reconcile evidence, restrictions and final integrated qualification. | Every selected capability and advertised journey has applicable passing evidence; stale documentation is corrected; no failed, missing or in-progress gate is reported as acceptance. Reuse unchanged evidence and run missing release gates once. |
+| P3 | Qualify the versioned RC distribution and reconcile evidence, restrictions and final integrated qualification. | The image-only Compose bundle is executable on the selected desktop Docker paths, its browser shows the release version, and every advertised journey has applicable passing evidence; no failed, missing or in-progress gate is reported as acceptance. Reuse unchanged evidence and run missing release gates once. |
 | P4 | Present the exact MUE acceptance boundary and record the decision. | Explicit owner acceptance closes all selected obligations before the immutable `engine/v0.2` tag. General BPMN conformance, production scale and package SemVer remain separate decisions. |
 
 ## Current evidence
@@ -99,11 +99,11 @@ Active work ID: `MUE-ACCEPTANCE`.
 
 Risk band: P3 runtime qualification failures and evidence reconciliation; P1 CI verdict is owner-monitored.
 
-Owner instruction, 2026-09-28: keep the RC feature scope frozen, prioritize bounded MUE acceptance, fix runtime CI and its cold-build timeout/cache mechanism, move the RC tag to the corrected latest commit, force-push once, and do not wait for CI completion. The owner will monitor CI; explicit MUE acceptance remains the final decision.
+Owner instruction, 2026-09-28: keep the RC feature scope frozen and complete bounded MUE acceptance. Preserve the historical phase tags, version only the qualified RC distribution as `v0.2.0-rc.1`, support Docker Desktop and Rancher Desktop with dockerd/moby, and put the evaluator run path in the top-level README. The owner monitors CI; explicit MUE acceptance remains the final decision.
 
 CPU constraint: root-owned Lean validation permits one process tree, one CPU, 3 GiB and no additional swap. Reuse valid warmed or hosted evidence; report CPU-intensive validation completion.
 
-Next action: commit the validated RC host repairs and [native-crash investigation](research/NODE-V8-CRASH-INVESTIGATION-RESEARCH.md), move `phase/mue-release-candidate` to that commit and push the branch and tag under the owner's renewed authorization. The owner monitors hosted CI; its verdict and the native root cause remain open for MUE acceptance.
+Next action: the 2026-09-28 Docker Desktop diagnostic built the current images, admitted three human processes, served `0.2.0-rc.1`, and completed a real task with Action history. Run clean-commit gates and the manual publisher before `v0.2.0-rc.1`; its tagged run must prove anonymous startup before attaching the bundle. A real Rancher Desktop smoke, hosted CI verdict, and [native crash cause](research/NODE-V8-CRASH-INVESTIGATION-RESEARCH.md) remain open. Preserve historical phase tags.
 
 Oracle: clean-checkout runtime qualification succeeds; all seven capability rows remain unchanged; supported human journeys and final applicable gates pass with exact target evidence; disclosures retain limitations. Owner acceptance precedes the MUE tag.
 

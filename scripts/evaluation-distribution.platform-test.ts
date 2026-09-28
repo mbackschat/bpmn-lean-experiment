@@ -1,6 +1,12 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { spawnSync } from "node:child_process";
+import { copyFile, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
+import { buildProcessShowcaseCatalog } from "./rc-showcase-catalog.ts";
+import { writeEvaluationShowcases } from "./write-evaluation-showcases.ts";
 
 const composePath = new URL("../compose.yaml", import.meta.url);
 const dockerfilePath = new URL("../Dockerfile", import.meta.url);
@@ -21,6 +27,83 @@ const postgresqlRolesPath = new URL(
   "../deploy/evaluation/postgresql/001_roles.sql",
   import.meta.url,
 );
+
+test("published bundle prepares exactly the retained interactive human journeys", async () => {
+  const projectRoot = fileURLToPath(new URL("..", import.meta.url));
+  const bundleRoot = await mkdtemp(path.join(os.tmpdir(), "evaluation-showcases-"));
+  try {
+    await writeEvaluationShowcases(projectRoot, bundleRoot);
+    const catalog = await buildProcessShowcaseCatalog(projectRoot);
+    const human = catalog.filter((entry) => entry.showcase?.mode === "human");
+    const manifest = await readFile(path.join(bundleRoot, "deploy/evaluation/prepared-human-showcases.txt"), "utf8");
+    assert.deepEqual(manifest.trimEnd().split("\n"), human.map((model) =>
+      [model.id, model.sourcePath, model.profile, model.sha256].join("|")));
+    for (const model of human) {
+      assert.equal(await readFile(path.join(bundleRoot, model.sourcePath), "utf8"), model.xml);
+    }
+  } finally {
+    await rm(bundleRoot, { recursive: true, force: true });
+  }
+});
+
+test("Docker-only launcher admits all prepared human processes and refuses altered source", async () => {
+  const projectRoot = fileURLToPath(new URL("..", import.meta.url));
+  const temporary = await mkdtemp(path.join(os.tmpdir(), "evaluation-launcher-"));
+  const bundleRoot = path.join(temporary, "bundle");
+  const launcher = path.join(bundleRoot, "deploy/evaluation/demo");
+  const curlLog = path.join(temporary, "curl.log");
+  const fakeBin = path.join(temporary, "bin");
+  const revision = "a".repeat(40);
+  const sourceTree = "b".repeat(64);
+  try {
+    await writeEvaluationShowcases(projectRoot, bundleRoot);
+    await copyFile(fileURLToPath(publishedLauncherPath), launcher);
+    await mkdir(fakeBin);
+    await writeFile(path.join(fakeBin, "docker"), `#!/bin/sh
+if [ "$1" = image ]; then
+  case "$4" in
+    *source-tree-sha256*) printf '%s\\n' '${sourceTree}' ;;
+    *) printf '%s\\n' '${revision}' ;;
+  esac
+fi
+`, { mode: 0o755 });
+    await writeFile(path.join(fakeBin, "curl"), `#!/bin/sh
+printf '%s\\n' "$*" >> "$EVALUATION_CURL_LOG"
+printf '201'
+`, { mode: 0o755 });
+    const image = (target: string): string =>
+      `ghcr.io/mbackschat/bpmn-lean-experiment/evaluation-${target}@sha256:${"c".repeat(64)}`;
+    await writeFile(path.join(bundleRoot, "deploy/evaluation/published-images.env"), [
+      `BPMN_EVALUATION_SOURCE_REVISION=${revision}`,
+      `BPMN_EVALUATION_SOURCE_TREE_SHA256=${sourceTree}`,
+      "BPMN_EVALUATION_ORIGIN=http://127.0.0.1:3000",
+      `BPMN_EVALUATION_PLATFORM_MIGRATE_IMAGE=${image("platform-migrate")}`,
+      `BPMN_EVALUATION_BPMN_WORKER_IMAGE=${image("bpmn-worker")}`,
+      `BPMN_EVALUATION_PLATFORM_API_IMAGE=${image("platform-api")}`,
+      `BPMN_EVALUATION_PLATFORM_RECOVERY_WORKER_IMAGE=${image("platform-recovery-worker")}`,
+    ].join("\n") + "\n");
+    const run = () => spawnSync("sh", [launcher, "prepare"], {
+      encoding: "utf8", env: { ...process.env, PATH: `${fakeBin}:${process.env.PATH ?? ""}`, EVALUATION_CURL_LOG: curlLog },
+    });
+    const prepared = run();
+    assert.equal(prepared.status, 0, prepared.stderr);
+    const catalog = await buildProcessShowcaseCatalog(projectRoot);
+    const human = catalog.filter((entry) => entry.showcase?.mode === "human");
+    const requests = (await readFile(curlLog, "utf8")).trimEnd().split("\n");
+    assert.equal(requests.length, human.length);
+    for (const [index, model] of human.entries()) {
+      assert.match(requests[index]!, new RegExp(`semanticProfile=${model.profile.replaceAll(".", "\\.")}`, "u"));
+      assert.match(prepared.stdout, new RegExp(`PREPARED_HUMAN_SHOWCASE model=${model.id}`, "u"));
+    }
+    await writeFile(path.join(bundleRoot, human[0]!.sourcePath), "altered source");
+    const rejected = run();
+    assert.notEqual(rejected.status, 0);
+    assert.match(rejected.stderr, /source differs from its retained digest/u);
+    assert.equal((await readFile(curlLog, "utf8")).trimEnd().split("\n").length, human.length);
+  } finally {
+    await rm(temporary, { recursive: true, force: true });
+  }
+});
 
 test("evaluation distribution has the closed healthy topology", async () => {
   const compose = await readFile(composePath, "utf8");
@@ -132,7 +215,7 @@ test("evaluation readiness and fresh setup share one explicitly selected Namespa
   }
   assert.match(serviceBlock(compose, "bpmn-worker"), /8080\/readyz/u);
   assert.match(runtimeStage(dockerfile, "bpmn-worker"), /ENTRYPOINT \["node", "dist\/evaluation-worker-main\.js"\]\nCMD \[\]/u);
-  assert.match(launcher, /bpmn-lean-mue-preview-alpha-native/u);
+  assert.match(launcher, /bpmn-lean-evaluation-published/u);
   assert.match(launcher, /export BPMN_EVALUATION_NAMESPACE/u);
   const prepare = launcher.slice(launcher.indexOf("  prepare)"), launcher.indexOf("  start)"));
   const start = launcher.slice(launcher.indexOf("  start)"), launcher.indexOf("  status)"));
@@ -205,6 +288,7 @@ test("published demo launcher needs Docker but can never build", async () => {
   const launcher = await readFile(publishedLauncherPath, "utf8");
 
   assert.match(launcher, /^#!\/bin\/sh$/mu);
+  assert.doesNotMatch(launcher, /mue-preview-alpha-native/u);
   assert.match(launcher, /docker compose/u);
   assert.match(launcher, /--no-build/u);
   assert.match(launcher, /--pull never/u);
@@ -213,6 +297,9 @@ test("published demo launcher needs Docker but can never build", async () => {
   assert.match(launcher, /status\)/u);
   assert.match(launcher, /stop\)/u);
   assert.match(launcher, /@sha256:\[0-9a-f\]\{64\}/u);
+  assert.match(launcher, /prepared-human-showcases\.txt/u);
+  assert.match(launcher, /shasum -a 256/u);
+  assert.match(launcher, /api\/v1\/definitions\?sourceId=/u);
   assert.doesNotMatch(launcher, /^\. "\$environment_file"$/mu);
   assert.doesNotMatch(launcher, /(?:pnpm|npm|node|git|docker (?:compose )?build)/u);
 });
@@ -222,6 +309,10 @@ test("evaluation workflow is manual or tagged and never routine", async () => {
 
   assert.match(workflow, /^  workflow_dispatch:$/mu);
   assert.match(workflow, /^  push:\n    tags:\n      - "v\*"$/mu);
+  assert.match(workflow, /if: github\.ref_type == 'tag'/u);
+  assert.match(workflow, /root_version="\$\(jq -r \.version package\.json\)"/u);
+  assert.match(workflow, /web_version="\$\(jq -r \.version platform\/apps\/web\/package\.json\)"/u);
+  assert.match(workflow, /\[ "\$root_version" != "\$web_version" \] \|\| \[ "\$GITHUB_REF_NAME" != "v\$root_version" \]/u);
   assert.doesNotMatch(workflow, /^  pull_request:/mu);
   assert.doesNotMatch(workflow, /^    branches:/mu);
   assert.match(workflow, /runs-on: ubuntu-latest/u);
@@ -259,12 +350,17 @@ test("evaluation workflow is manual or tagged and never routine", async () => {
   assert.match(workflow, /published-images\.compose\.yaml/u);
   assert.match(workflow, /cp docs\/BPM-PLATFORM-BROWSER-WALKTHROUGH\.md/u);
   assert.match(workflow, /scenarios\/expense-exception-review/u);
+  assert.match(workflow, /write-evaluation-showcases\.ts/u);
+  assert.match(workflow, /contents: write/u);
+  assert.match(workflow, /gh release create/u);
+  assert.match(workflow, /--verify-tag --prerelease/u);
   assert.doesNotMatch(workflow, /docs\/assets\/mue-preview-alpha-demo/u);
   assert.match(
     workflow,
-    /\.artifacts\/mue-preview-alpha-demo\/deploy\/evaluation\/demo prepare/u,
+    /\.artifacts\/mue-evaluation-demo\/deploy\/evaluation\/demo prepare/u,
   );
-  assert.match(workflow, /name: mue-preview-alpha-demo-\$\{\{ github\.sha \}\}/u);
+  assert.doesNotMatch(workflow, /mue-preview-alpha-demo|mue-preview-alpha-native/u);
+  assert.match(workflow, /name: mue-evaluation-\$\{\{ github\.ref_type == 'tag' && github\.ref_name \|\| github\.sha \}\}/u);
 });
 
 test("migration and runtime database credentials stay separate", async () => {

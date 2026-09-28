@@ -18,7 +18,7 @@ on:
       - "v*"
 
 permissions:
-  contents: read
+  contents: write
   packages: write
 
 concurrency:
@@ -35,6 +35,16 @@ jobs:
     steps:
       - name: Check out source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Verify release tag and displayed product version
+        if: github.ref_type == 'tag'
+        run: |
+          root_version="$(jq -r .version package.json)"
+          web_version="$(jq -r .version platform/apps/web/package.json)"
+          if [ "$root_version" != "$web_version" ] || [ "$GITHUB_REF_NAME" != "v$root_version" ]; then
+            printf 'Release tag, root version, and browser product version differ\n' >&2
+            exit 1
+          fi
 
       - name: Build and start the evaluation distribution
         run: |
@@ -123,7 +133,7 @@ jobs:
           image_prefix="ghcr.io/${GITHUB_REPOSITORY,,}"
           image_tag="sha-$GITHUB_SHA"
           source_tree_sha256="$(git ls-tree -r --full-tree -z HEAD | sha256sum | cut -d ' ' -f 1)"
-          bundle_root=".artifacts/mue-preview-alpha-demo"
+          bundle_root=".artifacts/mue-evaluation-demo"
           environment_file="$bundle_root/deploy/evaluation/published-images.env"
           mkdir -p \
             "$bundle_root/deploy/evaluation/postgresql" \
@@ -136,6 +146,7 @@ jobs:
           cp docs/BPM-PLATFORM-BROWSER-WALKTHROUGH.md "$bundle_root/docs/"
           cp -R docs/assets/bpm-platform-browser-walkthrough "$bundle_root/docs/assets/"
           cp -R scenarios/expense-exception-review scenarios/service-task-effect scenarios/sequential-multi-instance "$bundle_root/scenarios/"
+          node scripts/write-evaluation-showcases.ts "$bundle_root"
           chmod +x "$bundle_root/deploy/evaluation/demo"
           {
             printf 'BPMN_EVALUATION_SOURCE_REVISION=%s\n' "$GITHUB_SHA"
@@ -188,25 +199,37 @@ jobs:
         if: github.event_name == 'push' || inputs.publish_images == true
         run: |
           docker logout ghcr.io
-          .artifacts/mue-preview-alpha-demo/deploy/evaluation/demo prepare
+          .artifacts/mue-evaluation-demo/deploy/evaluation/demo prepare
           curl --fail --silent --show-error http://127.0.0.1:3000/ >/dev/null
           curl --fail --silent --show-error http://127.0.0.1:3000/api/v1/definitions >/dev/null
 
       - name: Show published service state after failure
         if: failure() && (github.event_name == 'push' || inputs.publish_images == true)
         run: |
-          .artifacts/mue-preview-alpha-demo/deploy/evaluation/demo status
-          docker compose --project-name bpmn-lean-mue-preview-alpha-native --env-file .artifacts/mue-preview-alpha-demo/deploy/evaluation/published-images.env -f .artifacts/mue-preview-alpha-demo/compose.yaml -f .artifacts/mue-preview-alpha-demo/deploy/evaluation/published-images.compose.yaml logs --no-color
+          .artifacts/mue-evaluation-demo/deploy/evaluation/demo status
+          docker compose --project-name bpmn-lean-evaluation-published --env-file .artifacts/mue-evaluation-demo/deploy/evaluation/published-images.env -f .artifacts/mue-evaluation-demo/compose.yaml -f .artifacts/mue-evaluation-demo/deploy/evaluation/published-images.compose.yaml logs --no-color
 
       - name: Stop the published evaluation distribution
         if: always() && (github.event_name == 'push' || inputs.publish_images == true)
-        run: .artifacts/mue-preview-alpha-demo/deploy/evaluation/demo stop
+        run: .artifacts/mue-evaluation-demo/deploy/evaluation/demo stop
 
-      - name: Upload zero-build MUE Preview Alpha bundle
+      - name: Upload zero-build MUE evaluation bundle
         if: github.event_name == 'push' || inputs.publish_images == true
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: mue-preview-alpha-demo-${{ github.sha }}
+          name: mue-evaluation-${{ github.ref_type == 'tag' && github.ref_name || github.sha }}
           if-no-files-found: error
           retention-days: 30
-          path: .artifacts/mue-preview-alpha-demo/
+          path: .artifacts/mue-evaluation-demo/
+
+      - name: Publish qualified prerelease bundle
+        if: github.ref_type == 'tag'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          archive=".artifacts/mue-evaluation-${GITHUB_REF_NAME}.tar.gz"
+          tar -czf "$archive" -C .artifacts/mue-evaluation-demo .
+          gh release create "$GITHUB_REF_NAME" "$archive" \
+            --verify-tag --prerelease \
+            --title "MUE ${GITHUB_REF_NAME} evaluation distribution" \
+            --notes "Docker Compose evaluation bundle with digest-pinned Linux amd64 and arm64 images. See README.md for Docker Desktop and Rancher Desktop setup."

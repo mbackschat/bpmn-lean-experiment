@@ -30,12 +30,18 @@ function git(repository: string, ...arguments_: ReadonlyArray<string>): string {
 
 async function initializeRepository(repository: string, version = "0.2.0"): Promise<string> {
   await mkdir(repository, { recursive: true });
+  await mkdir(path.join(repository, "platform/apps/web"), { recursive: true });
   git(repository, "init", "--quiet");
   git(repository, "config", "user.name", "Project Tag Test");
   git(repository, "config", "user.email", "project-tags@example.invalid");
   await mkdir(path.join(repository, "scripts"), { recursive: true });
   await writeFile(
     path.join(repository, "package.json"),
+    `${JSON.stringify({ version }, null, 2)}\n`,
+    "utf8",
+  );
+  await writeFile(
+    path.join(repository, "platform/apps/web/package.json"),
     `${JSON.stringify({ version }, null, 2)}\n`,
     "utf8",
   );
@@ -59,7 +65,7 @@ async function initializeRepository(repository: string, version = "0.2.0"): Prom
     ].join("\n"),
     "utf8",
   );
-  git(repository, "add", "package.json", "publication-statistics.status", "scripts/publication-statistics.ts");
+  git(repository, "add", "package.json", "platform/apps/web/package.json", "publication-statistics.status", "scripts/publication-statistics.ts");
   git(repository, "commit", "--quiet", "-m", "baseline");
   return git(repository, "rev-parse", "HEAD");
 }
@@ -168,6 +174,28 @@ test("binds release tags to the committed package version and refuses collisions
     git(repository, "tag", "--delete", "v0.2.0-rc.1");
     git(repository, "tag", "v0.2.0-rc.1", head);
     assert.throws(() => createProjectTag(repository, request), /annotated/u);
+  } finally {
+    await rm(repository, { recursive: true, force: true });
+  }
+});
+
+test("refuses a release when the browser displays a different product version", async () => {
+  const repository = await mkdtemp(path.join(os.tmpdir(), "project-release-browser-version-"));
+  try {
+    await initializeRepository(repository, "0.2.0-rc.1");
+    await writeFile(
+      path.join(repository, "platform/apps/web/package.json"),
+      `${JSON.stringify({ version: "0.1.0" }, null, 2)}\n`,
+      "utf8",
+    );
+    git(repository, "add", "platform/apps/web/package.json");
+    git(repository, "commit", "--quiet", "-m", "make browser product version stale");
+    assert.throws(() => createProjectTag(repository, {
+      kind: ProjectTagKind.Release,
+      identifier: "0.2.0-rc.1",
+      message: "Release 0.2.0-rc.1",
+      receiptDirectories: [successfulReceipt(repository, "browser-version")],
+    }), /platform\/apps\/web\/package\.json version/u);
   } finally {
     await rm(repository, { recursive: true, force: true });
   }
