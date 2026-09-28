@@ -62,6 +62,30 @@ const documentedInstructionSurfaces = [
 ] as const;
 const bareLeanCommand = /(?<![\w./-])lake\s+(?:build|test|exe|env|update|clean)\b/u;
 
+test("publication schema gates run without workspace build output", () => {
+  const result = spawnSync(process.execPath, ["--input-type=module", "-e", `
+    import { registerHooks } from "node:module";
+    registerHooks({
+      resolve(specifier, context, nextResolve) {
+        if (specifier.startsWith("@bpmn-lean/")) {
+          throw new Error("Build-free schema gate loaded workspace runtime: " + specifier);
+        }
+        const resolved = nextResolve(specifier, context);
+        if (/\\/(?:packages|platform)\\/.*\\/dist\\//u.test(resolved.url)) {
+          throw new Error("Build-free schema gate loaded workspace output: " + resolved.url);
+        }
+        return resolved;
+      },
+    });
+    await import("./scripts/execution-publication-contract-coverage.test.ts");
+  `], {
+    cwd: fileURLToPath(new URL("../", import.meta.url)),
+    encoding: "utf8",
+    timeout: 10_000,
+  });
+  assert.equal(result.status, 0, result.stderr + result.stdout);
+});
+
 type CommandSurface = Readonly<{
   relativePath: string;
   source: string;

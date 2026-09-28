@@ -8,7 +8,7 @@ import { Ajv2020 } from "ajv/dist/2020.js";
 import {
   canonicalExportFixture,
   publicationPage,
-} from "../packages/temporal-adapter/protocol/test/semantic-publication-fixture.ts";
+} from "../packages/temporal-adapter/protocol/test/semantic-publication-wire-fixture.ts";
 import {
   declaredConstObjectValues,
   declaredEnumMembers,
