@@ -158,6 +158,8 @@ async function openExecution(
   processInstanceId: string,
 ): Promise<void> {
   await navigate(page, "Operations");
+  const back = page.getByRole("button", { name: "Back to Process instances", exact: true });
+  if (await back.isVisible()) await back.click();
   await page.getByLabel("Process-instance ID").fill(processInstanceId);
   await page.getByRole("button", { name: "Search", exact: true }).click();
   const instanceRow = page
@@ -180,7 +182,13 @@ async function navigate(
   await page.getByRole("navigation", { name: "Primary navigation" })
     .getByRole("link", { name: workspace, exact: true })
     .click();
-  await expect(page.getByRole("heading", { name: workspace, level: 1 })).toBeFocused();
+  await expect(page.getByRole("heading", { name: workspace, level: 1 })).toBeVisible();
+  const instanceHeading = page.locator("#process-execution-detail-heading");
+  if (workspace === "Operations" && await instanceHeading.isVisible()) {
+    await expect(instanceHeading).toBeFocused();
+  } else {
+    await expect(page.getByRole("heading", { name: workspace, level: 1 })).toBeFocused();
+  }
 }
 
 function requireApiOrigin(): string {

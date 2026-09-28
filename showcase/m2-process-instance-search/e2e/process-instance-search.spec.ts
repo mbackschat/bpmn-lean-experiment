@@ -195,33 +195,30 @@ async function assertRenderedIdentity(
     .getByRole("row")
     .filter({ hasText: expected.processInstanceId });
   await expect(row, `Process-instance row ${expected.processInstanceId}`).toHaveCount(1);
-  const rowHeader = row.getByRole("rowheader");
-  const cells = row.getByRole("cell");
-  await expect(rowHeader, "Process-instance ID rendering").toHaveText(
-    expected.processInstanceId,
-  );
-  await expect(cells, "complete public row value and action count").toHaveCount(6);
-  await expect(cells.nth(0), "BPMN Process ID rendering").toHaveText(
-    expected.definition.processId,
-  );
-  await expect(cells.nth(1), "exact deployed version rendering").toHaveText(
-    String(expected.definition.version),
-  );
-  await expect(cells.nth(2), "exact source ID rendering").toHaveText(
-    expected.definition.source.id,
-  );
-  await expect(cells.nth(3), "exact source digest rendering").toHaveText(
-    expected.definition.source.sha256,
-  );
-  await expect(cells.nth(4), "exact semantic profile rendering").toHaveText(
-    expected.definition.semanticProfile,
-  );
-  await expect(
-    cells.nth(5).getByRole("button", {
-      name: `View details ${expected.processInstanceId}`,
-    }),
-    "exact Process-instance detail action",
-  ).toHaveCount(1);
+  await expect(row.locator('[data-label="Instance ID"]'), "Process-instance ID rendering")
+    .toHaveText(expected.processInstanceId);
+  await expect(row.locator('[data-label="Process"]'), "BPMN Process ID rendering")
+    .toHaveText(expected.definition.processId);
+  await expect(row.locator('[data-label="Definition version"]'), "exact deployed version rendering")
+    .toHaveText(String(expected.definition.version));
+  await expect(row.getByRole("button", {
+    name: `View details ${expected.processInstanceId}`, exact: true,
+  }), "exact Process-instance detail action").toHaveCount(1);
+  await row.getByRole("button", { name: "Show Technical details", exact: true }).click();
+  const details = panel.getByRole("region", {
+    name: `Technical details for ${expected.processInstanceId}`, exact: true,
+  });
+  for (const [label, value] of [
+    ["BPMN process ID", expected.definition.processId],
+    ["BPMN file", expected.definition.source.id],
+    ["File fingerprint (SHA-256)", expected.definition.source.sha256],
+    ["Execution profile", expected.definition.semanticProfile],
+  ] as const) {
+    await expect(details.getByText(label, { exact: true }).locator("xpath=following-sibling::dd[1]"))
+      .toHaveText(value);
+  }
+  await row.getByRole("button", { name: "Hide Technical details", exact: true }).click();
+  await expect(details).toHaveCount(0);
 }
 
 async function deployDefinition(

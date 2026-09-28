@@ -26,6 +26,7 @@ import {
   ExternalTemporalRuntime,
   bpmnProcessWorkflowType,
   createCachedLocalEnvironment,
+  createTemporalClient,
   createHostEffectActivities,
   decodeJsonPayload,
   historyEvents,
@@ -87,18 +88,20 @@ test("searches three confirmed Product 2 starts without discovering private Temp
     environmentStartupDeadlineMs,
     "M2 Process-instance search Temporal environment startup",
   );
+  const namespace = "m2-process-instance-search-acceptance";
+  const client = createTemporalClient({ connection: environment.client.connection, namespace });
   let platform: PlatformServerRuntime | undefined;
   let worker: ExternalTemporalRuntime | undefined;
   const searchCaptures: CapturedJson<ProcessInstanceSearchPage>[] = [];
 
   try {
-    worker = await startWorker(environment.address, environment.namespace ?? "default");
+    worker = await startWorker(environment.address, namespace);
     platform = await startPlatform(
       origin,
       port,
       dataDirectory,
       environment.address,
-      environment.namespace ?? "default",
+      namespace,
     );
     const token = `${Date.now()}_${process.pid}`;
     const sharedProcessId = `Process_Search_Shared_${token}`;
@@ -121,15 +124,15 @@ test("searches three confirmed Product 2 starts without discovering private Temp
       semanticProfile: directProfile,
     })).value;
     assert.equal(directDefinition.version, 1);
-    const workflowsBeforeDirect = await listWorkflowExecutions(environment.client);
+    const workflowsBeforeDirect = await listWorkflowExecutions(client);
     const directStart = (await startDefinition(origin, directDefinition)).value;
     const directExecution = await waitForOnlyNewWorkflow(
-      environment.client,
+      client,
       workflowsBeforeDirect,
       "direct exact-version start",
     );
     await assertWorkflowHostsInstance(
-      environment.client,
+      client,
       directExecution,
       directStart.instance.processInstanceId,
       directTask,
@@ -146,8 +149,8 @@ test("searches three confirmed Product 2 starts without discovering private Temp
       scheduleDefinition.source.sha256,
       directDefinition.source.sha256,
     );
-    const schedulesBefore = await listScheduleIds(environment.client);
-    const workflowsBeforeSchedule = await listWorkflowExecutions(environment.client);
+    const schedulesBefore = await listScheduleIds(client);
+    const workflowsBeforeSchedule = await listWorkflowExecutions(client);
     const scheduleId = `search-schedule-${token}`;
     const scheduled = await putDefinitionSchedule(
       origin,
@@ -158,7 +161,7 @@ test("searches three confirmed Product 2 starts without discovering private Temp
     assert.equal(scheduled.value.status, DefinitionScheduleStatus.Scheduled);
     const privateScheduleId = requireOnlyNewIdentity(
       schedulesBefore,
-      await listScheduleIds(environment.client),
+      await listScheduleIds(client),
       "definition schedule",
     );
     const startedSchedule = await waitForStartedSchedule(
@@ -168,12 +171,12 @@ test("searches three confirmed Product 2 starts without discovering private Temp
     );
     const scheduleInstance = requireScheduleInstance(startedSchedule.value);
     const scheduleExecution = await waitForOnlyNewWorkflow(
-      environment.client,
+      client,
       workflowsBeforeSchedule,
       "one-action Timer Schedule",
     );
     await assertWorkflowHostsInstance(
-      environment.client,
+      client,
       scheduleExecution,
       scheduleInstance.processInstanceId,
       scheduleTask,
@@ -192,7 +195,7 @@ test("searches three confirmed Product 2 starts without discovering private Temp
     assert.equal(messageDefinition.version, 1);
     const messageStart = messageDefinition.startCapabilities.messageStarts[0];
     assert.ok(messageStart !== undefined);
-    const workflowsBeforeMessage = await listWorkflowExecutions(environment.client);
+    const workflowsBeforeMessage = await listWorkflowExecutions(client);
     const publicationId = `search-publication-${token}`;
     await putMessageStartPublication(
       origin,
@@ -203,12 +206,12 @@ test("searches three confirmed Product 2 starts without discovering private Temp
     const acceptedPublication = await waitForAcceptedPublication(origin, publicationId);
     const messageInstance = requirePublicationInstance(acceptedPublication.value);
     const messageExecution = await waitForOnlyNewWorkflow(
-      environment.client,
+      client,
       workflowsBeforeMessage,
       "Message Start publication",
     );
     await assertWorkflowHostsInstance(
-      environment.client,
+      client,
       messageExecution,
       messageInstance.processInstanceId,
       messageTask,
@@ -217,13 +220,13 @@ test("searches three confirmed Product 2 starts without discovering private Temp
     const externalInstanceId = `Outside_Product_2_${token}`;
     const externalWorkflowId = `outside-product-two-${token}`;
     const externalExecution = await startOutsideProductTwo(
-      environment.client,
+      client,
       directExecution,
       externalWorkflowId,
       externalInstanceId,
     );
     await assertWorkflowHostsInstance(
-      environment.client,
+      client,
       externalExecution,
       externalInstanceId,
       directTask,
@@ -247,7 +250,7 @@ test("searches three confirmed Product 2 starts without discovering private Temp
       port,
       dataDirectory,
       environment.address,
-      environment.namespace ?? "default",
+      namespace,
     );
 
     const secondPage = await searchProcessInstances(origin, {
@@ -553,12 +556,12 @@ async function startWorker(
   namespace: string,
 ): Promise<ExternalTemporalRuntime> {
   return await withDeadline(
-    ExternalTemporalRuntime.connect({
+    ExternalTemporalRuntime.initializeFreshNamespace({
       address,
       namespace,
       taskQueue,
       identity: `bpmn-m2-process-search-worker-${process.pid}`,
-    }, createHostEffectActivities([])),
+    }, createHostEffectActivities([]), 86_400),
     20_000,
     "M2 Process-instance search production Worker startup",
   );

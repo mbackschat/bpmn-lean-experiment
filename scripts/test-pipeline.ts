@@ -84,7 +84,6 @@ const testFiles = modelCorpusOnly
 const testRun = await runProjectCommand(
   process.execPath,
   [
-    "--no-parallel-scavenge",
     "--test",
     "--test-concurrency=1",
     ...testFiles,

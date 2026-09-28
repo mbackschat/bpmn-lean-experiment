@@ -21,6 +21,7 @@ import {
   TemporalScenarioRunner,
   bpmnProcessWorkflowType,
   createCachedLocalEnvironment,
+  createTemporalClient,
   createHostEffectActivities,
   isCompletedProcessReceipt,
   readTestProcessTerminalResult,
@@ -82,13 +83,21 @@ test("M2 schedules exact version 1, decides cancellation races, and replays", as
     environmentStartupDeadlineMs,
     "M2 Temporal environment startup",
   );
+  const namespace = "m2-definition-scheduling-acceptance";
+  const client = createTemporalClient({ connection: environment.client.connection, namespace });
   let platform: PlatformServerRuntime | undefined;
   let initialWorker: ExternalTemporalRuntime | undefined;
   let replacementWorker: ExternalTemporalRuntime | undefined;
   let replayRunner: TemporalScenarioRunner | undefined;
 
   try {
-    initialWorker = await startWorker(environment.address, environment.namespace ?? "default", "initial");
+    initialWorker = await withDeadline(
+      ExternalTemporalRuntime.initializeFreshNamespace({
+        address: environment.address, namespace, taskQueue,
+        identity: `bpmn-m2-scheduling-initial-${process.pid}`,
+      }, createHostEffectActivities([]), 86_400),
+      20_000, "M2 scheduling native initialization",
+    );
     await delay(100);
     await initialWorker.shutdown();
     initialWorker = undefined;
@@ -99,7 +108,7 @@ test("M2 schedules exact version 1, decides cancellation races, and replays", as
       port,
       dataDirectory,
       environment.address,
-      environment.namespace ?? "default",
+      namespace,
     );
     const template = await readFile(sourceUrl, "utf8");
     const versionOneBytes = Buffer.from(
@@ -123,7 +132,7 @@ test("M2 schedules exact version 1, decides cancellation races, and replays", as
       durationMs: 1_000,
     }]);
 
-    const scheduleIdsBefore = await listScheduleIds(environment.client);
+    const scheduleIdsBefore = await listScheduleIds(client);
     const primaryScheduleId = `schedule-version-1-${process.pid}`;
     const primaryPut = await putDefinitionSchedule(
       origin,
@@ -141,7 +150,7 @@ test("M2 schedules exact version 1, decides cancellation races, and replays", as
     );
     const privateScheduleId = requireOnlyNewIdentity(
       scheduleIdsBefore,
-      await listScheduleIds(environment.client),
+      await listScheduleIds(client),
       "version-1 schedule",
     );
 
@@ -163,7 +172,7 @@ test("M2 schedules exact version 1, decides cancellation races, and replays", as
       port,
       dataDirectory,
       environment.address,
-      environment.namespace ?? "default",
+      namespace,
     );
     const afterRestart = await getDefinitionSchedule(
       origin,
@@ -175,7 +184,7 @@ test("M2 schedules exact version 1, decides cancellation races, and replays", as
     assert.equal(afterRestart.value.definition.version, 1);
 
     const action = await waitForExactScheduleAction(
-      environment.client,
+      client,
       privateScheduleId,
       primaryPut.value.dueAt,
     );
@@ -183,7 +192,7 @@ test("M2 schedules exact version 1, decides cancellation races, and replays", as
     assertProgramSource(action.actionArgs[1], versionOne.value.source.sha256);
     assert.notEqual(action.workflowId, action.description.action.workflowId);
     const absentHistory = await withDeadline(
-      environment.client.workflow
+      client.workflow
         .getHandle(action.workflowId, action.firstExecutionRunId)
         .fetchHistory(),
       operationDeadlineMs,
@@ -212,11 +221,11 @@ test("M2 schedules exact version 1, decides cancellation races, and replays", as
     const versionOneList = await listDefinitionSchedules(origin, versionOne.value);
     publicCaptures.push(versionOneList);
     assert.deepEqual(versionOneList.value.schedules, [started.value]);
-    await waitForScheduleCleanup(environment.client, privateScheduleId);
+    await waitForScheduleCleanup(client, privateScheduleId);
 
     replacementWorker = await startWorker(
       environment.address,
-      environment.namespace ?? "default",
+      namespace,
       "replacement",
     );
     const handle = replacementWorker.workflowClient.getHandle(
@@ -225,7 +234,7 @@ test("M2 schedules exact version 1, decides cancellation races, and replays", as
     );
     const task = await waitForOpenUserTask(
       processHandle(
-        environment.client.workflow,
+        client.workflow,
         action.workflowId,
         action.firstExecutionRunId,
       ),
@@ -285,11 +294,11 @@ test("M2 schedules exact version 1, decides cancellation races, and replays", as
     await replayRunner.shutdown();
     replayRunner = undefined;
 
-    const schedulesBeforeDirectStart = await listScheduleIds(environment.client);
+    const schedulesBeforeDirectStart = await listScheduleIds(client);
     const directInput = directWorkflowInput(action.actionArgs[0]);
     const directWorkflowId = `direct-start-mutation-${process.pid}`;
     await withDeadline(
-      environment.client.workflow.start(bpmnProcessWorkflowType, {
+      client.workflow.start(bpmnProcessWorkflowType, {
         taskQueue,
         workflowId: directWorkflowId,
         workflowIdReusePolicy: "REJECT_DUPLICATE",
@@ -299,7 +308,7 @@ test("M2 schedules exact version 1, decides cancellation races, and replays", as
       "direct Workflow-start mutation",
     );
     assert.deepEqual(
-      await listScheduleIds(environment.client),
+      await listScheduleIds(client),
       schedulesBeforeDirectStart,
       "a direct Workflow start must create no Schedule action",
     );
@@ -309,9 +318,9 @@ test("M2 schedules exact version 1, decides cancellation races, and replays", as
       "latest version lookup cannot satisfy the version-1 schedule",
     );
 
-    const workflowsBeforeCancellation = await listWorkflowIds(environment.client);
+    const workflowsBeforeCancellation = await listWorkflowIds(client);
     const cancellationScheduleId = `cancel-before-due-${process.pid}`;
-    const cancellationSchedulesBefore = await listScheduleIds(environment.client);
+    const cancellationSchedulesBefore = await listScheduleIds(client);
     const cancellationPut = await putDefinitionSchedule(
       origin,
       versionOne.value,
@@ -322,7 +331,7 @@ test("M2 schedules exact version 1, decides cancellation races, and replays", as
     assert.equal(cancellationPut.value.status, "scheduled");
     const cancellationPrivateId = requireOnlyNewIdentity(
       cancellationSchedulesBefore,
-      await listScheduleIds(environment.client),
+      await listScheduleIds(client),
       "cancellation schedule",
     );
     const cancelled = await deleteDefinitionSchedule(
@@ -333,7 +342,7 @@ test("M2 schedules exact version 1, decides cancellation races, and replays", as
     publicCaptures.push(cancelled);
     assert.equal(cancelled.value.status, "cancelled");
     assert.equal(cancelled.value.instance, null);
-    await waitForScheduleCleanup(environment.client, cancellationPrivateId);
+    await waitForScheduleCleanup(client, cancellationPrivateId);
 
     await platform.close();
     platform = await startPlatform(
@@ -341,7 +350,7 @@ test("M2 schedules exact version 1, decides cancellation races, and replays", as
       port,
       dataDirectory,
       environment.address,
-      environment.namespace ?? "default",
+      namespace,
     );
     const repeatedCancellation = await deleteDefinitionSchedule(
       origin,
@@ -355,7 +364,7 @@ test("M2 schedules exact version 1, decides cancellation races, and replays", as
       await delay(waitPastCancellationDue);
     }
     assert.deepEqual(
-      await listWorkflowIds(environment.client),
+      await listWorkflowIds(client),
       workflowsBeforeCancellation,
       "a durably cancelled Schedule must start no Workflow",
     );

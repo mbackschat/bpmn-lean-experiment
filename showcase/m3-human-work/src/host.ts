@@ -39,12 +39,12 @@ async function runShowcaseHost(): Promise<void> {
       "M3 Human Work browser Temporal environment startup",
     );
     worker = await withDeadline(
-      ExternalTemporalRuntime.connect({
+      ExternalTemporalRuntime.initializeFreshNamespace({
         address: environment.address,
-        namespace: environment.namespace ?? "default",
+        namespace: identity,
         taskQueue: configured.temporalTaskQueue,
         identity: `${identity}-worker`,
-      }, createHostEffectActivities([])),
+      }, createHostEffectActivities([]), 86_400),
       operationDeadlineMs,
       "M3 Human Work browser Worker startup",
     );
@@ -52,7 +52,7 @@ async function runShowcaseHost(): Promise<void> {
       ...configured,
       dataDirectory,
       temporalAddress: environment.address,
-      temporalNamespace: environment.namespace ?? "default",
+      temporalNamespace: identity,
     });
     const origin = await withDeadline(
       platform.listen(),

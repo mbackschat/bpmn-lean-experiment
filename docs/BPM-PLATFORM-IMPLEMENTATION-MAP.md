@@ -12,6 +12,8 @@ The 2026-09-27 owner-adopted [typed hash routing](BPM-PLATFORM-INFORMATION-ARCHI
 
 The [failed-Process contract checkpoint](BPM-PLATFORM-FAILED-PROCESS-SPEC.md#public-contract) adds strict copied-value acceptance and rejected incident-result decoding. The approved checkpoint is followed by failed-state storage, schema-epoch-12 readiness, terminal projection completeness, late-action rejection, and read-only Operations inspection. The public-start, restart, inspection, export and replay journey, independent closure review and clean integration pass.
 
+The RC acceptance-host repair is classified non-material: it applies the existing native deployment contract to fresh browser and service fixtures without changing BPMN meaning, public APIs, or refinement claims. The [bootstrap guard](../scripts/platform-harness-policy.platform-test.ts) checks discovered hosts and planted regressions; existing live M1–M4 journeys decide readiness, exact-version binding, worker absence/replacement, response-loss recovery, privacy and replay. Browser assertions follow the adopted combined start/diagram, Triggers disclosure, Action history and retained-detail navigation. [PLAN.md](PLAN.md#current-evidence) owns current verdicts; these corrections do not imply complete release or MUE acceptance.
+
 ## Implemented
 
 - Presentation-only automatic layout covers the curated RC showcase models, including expanded nested scopes, Transactions and visible data/compensation associations, with recursively checked DI and unchanged executable XML. The [diagram decision](BPMN-DIAGRAM-PRESENTATION-DECISION.md#selected-generator) owns the bounded coverage and adapter epoch.

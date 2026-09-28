@@ -15,6 +15,8 @@ import type { PlatformServerRuntime } from "@bpmn-lean/platform-server";
 import {
   ExternalTemporalRuntime,
   createCachedLocalEnvironment,
+  createTemporalClient,
+  createHostEffectActivities,
   historyEvents,
   isCompletedProcessReceipt,
   processWorkflowId,
@@ -70,22 +72,26 @@ test("runs the complete durable Human Work slice", async () => {
     40_000,
     "M3 Human Work Temporal environment startup",
   );
+  const namespace = "m3-human-work-acceptance";
+  const client = createTemporalClient({ connection: environment.client.connection, namespace });
   let platform: PlatformServerRuntime | undefined;
   let worker: ExternalTemporalRuntime | undefined;
   const publicCaptures: CapturedJson<unknown>[] = [];
 
   try {
-    worker = await startWorker(
-      environment.address,
-      environment.namespace ?? "default",
-      `bpmn-m3-human-work-worker-${process.pid}`,
+    worker = await withDeadline(
+      ExternalTemporalRuntime.initializeFreshNamespace({
+        address: environment.address, namespace, taskQueue,
+        identity: `bpmn-m3-human-work-worker-${process.pid}`,
+      }, createHostEffectActivities([]), 86_400),
+      20_000, "M3 Human Work native initialization",
     );
     platform = await startPlatform(
       origin,
       port,
       dataDirectory,
       environment.address,
-      environment.namespace ?? "default",
+      namespace,
     );
     const token = `${Date.now()}_${process.pid}`;
     const sources = await humanWorkSources(token);
@@ -95,11 +101,11 @@ test("runs the complete durable Human Work slice", async () => {
       sourceId: `human-work-${token}.bpmn`,
       semanticProfile: metadataProfile,
     })).value;
-    const beforeDirect = await listWorkflowExecutions(environment.client);
+    const beforeDirect = await listWorkflowExecutions(client);
     const direct = capture(publicCaptures,
       await startDefinition(origin, metadataDefinition)).value.instance;
     const directExecution = await waitForOnlyNewWorkflow(
-      environment.client,
+      client,
       beforeDirect,
       "direct Human Work start",
     );
@@ -111,7 +117,7 @@ test("runs the complete durable Human Work slice", async () => {
       semanticProfile: timerProfile,
     })).value;
     const scheduleId = `human-work-schedule-${token}`;
-    const beforeSchedule = await listWorkflowExecutions(environment.client);
+    const beforeSchedule = await listWorkflowExecutions(client);
     capture(publicCaptures, await putDefinitionSchedule(
       origin,
       timerDefinition,
@@ -120,7 +126,7 @@ test("runs the complete durable Human Work slice", async () => {
     ));
     const scheduled = await waitForStartedSchedule(origin, timerDefinition, scheduleId);
     const scheduleExecution = await waitForOnlyNewWorkflow(
-      environment.client,
+      client,
       beforeSchedule,
       "Timer Schedule Human Work start",
     );
@@ -138,7 +144,7 @@ test("runs the complete durable Human Work slice", async () => {
     const messageStart = messageDefinition.startCapabilities.messageStarts[0];
     assert.ok(messageStart !== undefined);
     const publicationId = `human-work-publication-${token}`;
-    const beforeMessage = await listWorkflowExecutions(environment.client);
+    const beforeMessage = await listWorkflowExecutions(client);
     capture(publicCaptures, await putMessageStartPublication(
       origin,
       publicationId,
@@ -147,7 +153,7 @@ test("runs the complete durable Human Work slice", async () => {
     ));
     const published = await waitForAcceptedPublication(origin, publicationId);
     const messageExecution = await waitForOnlyNewWorkflow(
-      environment.client,
+      client,
       beforeMessage,
       "Message Start Human Work start",
     );
@@ -158,9 +164,9 @@ test("runs the complete durable Human Work slice", async () => {
     assertDistinctInstances([direct, scheduled.instance, published.instance]);
 
     const [metadataTask, timerTask, messageTask] = await Promise.all([
-      waitForOneOpenTask(environment.client, directExecution, `Review request ${token}`),
-      waitForOneOpenTask(environment.client, scheduleExecution, `Hidden timer task ${token}`),
-      waitForOneOpenTask(environment.client, messageExecution, `Hidden message task ${token}`),
+      waitForOneOpenTask(client, directExecution, `Review request ${token}`),
+      waitForOneOpenTask(client, scheduleExecution, `Hidden timer task ${token}`),
+      waitForOneOpenTask(client, messageExecution, `Hidden message task ${token}`),
     ]);
     assert.ok(Object.hasOwn(metadataTask, "metadata"));
     assert.equal(Object.hasOwn(timerTask, "metadata"), false);
@@ -197,7 +203,7 @@ test("runs the complete durable Human Work slice", async () => {
     worker = undefined;
     worker = await startWorker(
       environment.address,
-      environment.namespace ?? "default",
+      namespace,
       `bpmn-m3-human-work-replacement-${process.pid}`,
     );
     platform = await startPlatform(
@@ -205,7 +211,7 @@ test("runs the complete durable Human Work slice", async () => {
       port,
       dataDirectory,
       environment.address,
-      environment.namespace ?? "default",
+      namespace,
     );
     const afterRestart = capture(publicCaptures, await listWorkTasks(origin));
     assert.deepEqual(afterRestart.value.tasks[0]?.claim, claimed.value.claim);
@@ -219,7 +225,7 @@ test("runs the complete durable Human Work slice", async () => {
         value: { kind: "boolean", value: true },
       }],
     };
-    const handle = environment.client.workflow.getHandle(
+    const handle = client.workflow.getHandle(
       processWorkflowId(direct.processInstanceId),
     );
     await discardCompletionResponse(
@@ -251,7 +257,7 @@ test("runs the complete durable Human Work slice", async () => {
       port,
       dataDirectory,
       environment.address,
-      environment.namespace ?? "default",
+      namespace,
     );
     const retained = capture(publicCaptures, await completeTask(
       origin,

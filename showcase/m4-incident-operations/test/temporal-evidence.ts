@@ -2,7 +2,6 @@ import assert from "node:assert/strict";
 
 import {
   TemporalScenarioRunner,
-  createCachedLocalEnvironment,
   durableUpdateOutcomes,
   historyEvents,
   isCancelledProcessReceipt,
@@ -11,14 +10,11 @@ import {
   readTestProcessTerminalResult,
   withDeadline,
 } from "@bpmn-lean/temporal-testkit";
-import type { TemporalHistory } from "@bpmn-lean/temporal-testkit";
+import type { TemporalHistory, TemporalWorkflowClient } from "@bpmn-lean/temporal-testkit";
 
 const operationDeadlineMs = 10_000;
 const replayStartupDeadlineMs = 30_000;
 
-type TemporalClient = Awaited<
-  ReturnType<typeof createCachedLocalEnvironment>
->["client"];
 
 type ProcessEvidence = Readonly<{
   status: "completed" | "cancelled";
@@ -37,16 +33,16 @@ export type ShowcaseEvidence = Readonly<{
 /** Isolated acceptance evidence. No value from history feeds Product 2 or an action. */
 export async function verifyIncidentTerminalEvidence(
   input: Readonly<{
-    client: TemporalClient;
+    client: TemporalWorkflowClient;
     retryProcessInstanceId: string;
     cancelledProcessInstanceId: string;
     temporalCacheDirectory: string;
   }>,
 ): Promise<ShowcaseEvidence> {
-  const retryHandle = input.client.workflow.getHandle(
+  const retryHandle = input.client.getHandle(
     processWorkflowId(input.retryProcessInstanceId),
   );
-  const cancellationHandle = input.client.workflow.getHandle(
+  const cancellationHandle = input.client.getHandle(
     processWorkflowId(input.cancelledProcessInstanceId),
   );
   const [retryResult, cancellationResult, retryHistory, cancellationHistory] =

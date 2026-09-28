@@ -186,21 +186,21 @@ test("operates both graduated current incidents through the production boundary"
   await expect(incidentsHeading).toBeFocused();
   await expect(page.getByText("No current incidents.", { exact: true })).toBeVisible();
 
-  await operationsTabs.getByRole("tab", { name: "Audit" }).click();
-  await expect(page.getByRole("heading", {
-    name: "Incident action audit",
-    level: 2,
-  })).toBeVisible();
-  const topAudit = page.getByRole("table", { name: "Incident action audit" });
-  await expect(topAudit).toContainText("Retry");
-  await expect(topAudit).toContainText("Cancel Process");
-  await page.getByRole("textbox", { name: "Actor ID" }).fill("demo-user");
-  await page.getByRole("button", { name: "Apply audit filters" }).click();
-  await expect(page.getByRole("heading", {
-    name: "Incident action audit",
-    level: 2,
-  })).toBeFocused();
+  await operationsTabs.getByRole("tab", { name: "Action history", exact: true }).click();
+  const actionHistory = page.getByRole("region", { name: "Action history", exact: true });
+  await expect(actionHistory).toBeVisible();
+  await actionHistory.getByLabel("Activity type", { exact: true }).selectOption("incidents");
+  await actionHistory.getByRole("button", { name: "Apply filters", exact: true }).click();
+  const topAudit = actionHistory.getByRole("table", { name: "Incident actions", exact: true });
+  await expect(topAudit).toContainText("Retry service");
+  await expect(topAudit).toContainText("Cancel process");
   await expect(topAudit).toContainText("demo-user");
+  await expect(topAudit.getByText("Completed successfully", { exact: true })).toHaveCount(2);
+  await actionHistory.getByLabel("Process instance ID", { exact: true }).fill(retryStarted.processInstanceId);
+  await actionHistory.getByRole("button", { name: "Apply filters", exact: true }).click();
+  await expect(topAudit).toContainText(retryStarted.processInstanceId);
+  await expect(topAudit).not.toContainText(cancellationStarted.processInstanceId);
+  await expect(topAudit.getByText("Completed successfully", { exact: true })).toHaveCount(1);
 
   await operationsTabs.getByRole("tab", { name: "Process instances" }).click();
   await page.getByRole("textbox", { name: "Process-instance ID" })
@@ -210,7 +210,10 @@ test("operates both graduated current incidents through the production boundary"
     name: "Process instances",
   });
   await expect(processTable).toContainText(retryStarted.processInstanceId);
-  await expect(processTable).toContainText(retryProfile);
+  await processTable.getByRole("button", { name: "Show Technical details", exact: true }).click();
+  await expect(processTable.getByRole("region", {
+    name: `Technical details for ${retryStarted.processInstanceId}`, exact: true,
+  })).toContainText(retryProfile);
 
   const audit = capture(publicCaptures, await readIncidentAudit(apiOrigin)).value;
   expect(audit.events.map(({ actionKind, outcome }) => [actionKind, outcome]))

@@ -30,7 +30,7 @@ test("schedules exact version 1 before publishing version 2 and displays the sta
   const diagram = page.getByLabel(`BPMN diagram for ${processId}, version 1`);
   await expect(diagram).toBeVisible();
   await expect(diagram.getByRole("link", { name: "Powered by bpmn.io" })).toBeVisible();
-  await page.getByRole("tab", { name: "Triggers" }).click();
+  await page.getByRole("button", { name: "Show Triggers", exact: true }).click();
   const schedules = page.getByRole("region", { name: "Definition schedules" });
   await expect(schedules.getByLabel("Published Timer Start capabilities")).toContainText(
     "TimerStart_PT1S",
@@ -54,7 +54,7 @@ test("schedules exact version 1 before publishing version 2 and displays the sta
   await expect(versionSelect.getByRole("option")).toHaveCount(2);
   expect(Date.now()).toBeLessThan(Date.parse(dueAt));
   await versionSelect.selectOption("1");
-  await page.getByRole("tab", { name: "Triggers" }).click();
+  await expect(page.getByRole("button", { name: "Hide Triggers", exact: true })).toHaveAttribute("aria-expanded", "true");
   await expect(schedules).toContainText(`Every schedule remains bound to ${processId}, version 1.`);
 
   await expect.poll(

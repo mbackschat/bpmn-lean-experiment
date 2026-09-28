@@ -22,6 +22,7 @@ Read the smallest relevant document before changing a boundary:
 | Vendor-by-vendor enterprise process-orchestration landscape used as the primary external market input | [Enterprise process orchestration competitive landscape dossier](ENTERPRISE-PROCESS-ORCHESTRATION-COMPETITIVE-LANDSCAPE-RESEARCH.md) |
 | Full competitive scope for product 2, its alignment with the initial platform proposal, and the recommended growth horizon | [BPM platform competitive scope](BPM-PLATFORM-COMPETITIVE-SCOPE-RESEARCH.md) |
 | Temporal replay, messaging, retries, versioning, and adapter boundaries | [Temporal execution model](TEMPORAL-EXECUTION-RESEARCH.md) |
+| Intermittent Node/V8 native crashes, distinguishing GC and async-hook failures, diagnostic evidence and open root-cause discriminators | [Node and V8 crash investigation](NODE-V8-CRASH-INVESTIGATION-RESEARCH.md) |
 | TLA+, behavioral equivalence, model checking, and auxiliary formal tools | [TLA+ and bisimulation research](TLA-AND-BISIMULATION-RESEARCH.md) |
 | CIB Seven and Temporal source instrumentation | [Reference instrumentation](../REFERENCE-INSTRUMENTATION-POLICY.md) |
 | Exact source revisions and controlled sibling checkouts | [Sources](../SOURCES.md) |

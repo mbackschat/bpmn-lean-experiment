@@ -37,8 +37,8 @@ test("deploys, versions, renders, starts, and rejects a runtime-created third-pa
   await expect(revisedDiagram.getByText(diagramText(secondTaskName))).toBeVisible();
 
   await versionSelect.selectOption("1");
-  await page.getByRole("tab", { name: "Start" }).click();
-  const startPanel = page.getByRole("region", { name: "Start this definition" });
+  const startPanel = page.getByRole("region", { name: "Ready to start" });
+  await expect(startPanel).toBeVisible();
   await page.getByRole("button", { name: "Start version 1" }).click();
   await expect(startPanel.getByText("Process instance started")).toBeVisible();
   await expect(startPanel.getByText(`${processId}, version 1`, { exact: true })).toBeVisible();

@@ -25,6 +25,7 @@ import {
   TemporalScenarioRunner,
   bpmnProcessWorkflowType,
   createCachedLocalEnvironment,
+  createTemporalClient,
   createHostEffectActivities,
   isCompletedProcessReceipt,
   readTestProcessTerminalResult,
@@ -83,17 +84,29 @@ test("M2 publishes one exact Message Start after response loss and replays", asy
     environmentStartupDeadlineMs,
     "M2 Message Start Temporal environment startup",
   );
+  const namespace = "m2-message-start-ingress-acceptance";
+  const client = createTemporalClient({ connection: environment.client.connection, namespace });
   let platform: PlatformServerRuntime | undefined;
+  let initialWorker: ExternalTemporalRuntime | undefined;
   let replacementWorker: ExternalTemporalRuntime | undefined;
   let replayRunner: TemporalScenarioRunner | undefined;
 
   try {
+    initialWorker = await withDeadline(
+      ExternalTemporalRuntime.initializeFreshNamespace({
+        address: environment.address, namespace, taskQueue,
+        identity: `bpmn-m2-message-initial-${process.pid}`,
+      }, createHostEffectActivities([]), 86_400),
+      20_000, "M2 Message Start native initialization",
+    );
+    await initialWorker.shutdown();
+    initialWorker = undefined;
     platform = await startPlatform(
       origin,
       port,
       dataDirectory,
       environment.address,
-      environment.namespace ?? "default",
+      namespace,
     );
     const token = `${Date.now()}_${process.pid}`;
     const processId = `Process_MessageStart_M2_${token}`;
@@ -150,8 +163,8 @@ test("M2 publishes one exact Message Start after response loss and replays", asy
     const versionTwoMessageStart = versionTwo.value.startCapabilities.messageStarts[0];
     assert.ok(versionTwoMessageStart !== undefined);
 
-    const workflowsBefore = await listWorkflowExecutions(environment.client);
-    const schedulesBefore = await listScheduleIds(environment.client);
+    const workflowsBefore = await listWorkflowExecutions(client);
+    const schedulesBefore = await listScheduleIds(client);
     assert.deepEqual(schedulesBefore, []);
     const publicationId = `publication-${token}`;
     const abort = new AbortController();
@@ -162,7 +175,7 @@ test("M2 publishes one exact Message Start after response loss and replays", asy
       messageStart,
       abort.signal,
     );
-    const execution = await waitForOnlyNewWorkflow(environment.client, workflowsBefore);
+    const execution = await waitForOnlyNewWorkflow(client, workflowsBefore);
     abort.abort();
     await discardedResponse.catch((error: unknown) => {
       if (!(error instanceof Error) || error.name !== "AbortError") {
@@ -172,10 +185,10 @@ test("M2 publishes one exact Message Start after response loss and replays", asy
     await delay(50);
     assert.equal(execution.type, bpmnProcessWorkflowType);
     assert.equal(execution.taskQueue, taskQueue);
-    assert.deepEqual(await listScheduleIds(environment.client), schedulesBefore);
-    assert.equal((await listWorkflowExecutions(environment.client)).length, workflowsBefore.length + 1);
+    assert.deepEqual(await listScheduleIds(client), schedulesBefore);
+    assert.equal((await listWorkflowExecutions(client)).length, workflowsBefore.length + 1);
 
-    const handle = processHandle(environment.client.workflow, execution);
+    const handle = processHandle(client.workflow, execution);
     const absentHistory = await withDeadline(
       handle.fetchHistory(),
       operationDeadlineMs,
@@ -193,7 +206,7 @@ test("M2 publishes one exact Message Start after response loss and replays", asy
       port,
       dataDirectory,
       environment.address,
-      environment.namespace ?? "default",
+      namespace,
     );
     const recovered = await getMessageStartPublication(origin, publicationId);
     publicCaptures.push(recovered);
@@ -211,11 +224,11 @@ test("M2 publishes one exact Message Start after response loss and replays", asy
     publicCaptures.push(retry);
     assert.equal(retry.status, 200);
     assert.deepEqual(retry.value, recovered.value);
-    assert.equal((await listWorkflowExecutions(environment.client)).length, workflowsBefore.length + 1);
+    assert.equal((await listWorkflowExecutions(client)).length, workflowsBefore.length + 1);
 
     replacementWorker = await startWorker(
       environment.address,
-      environment.namespace ?? "default",
+      namespace,
     );
     const task = await waitForOpenUserTask(handle, versionOneTask);
     assert.notEqual(task.name, versionTwoTask);
@@ -293,7 +306,7 @@ test("M2 publishes one exact Message Start after response loss and replays", asy
     replayRunner = undefined;
 
     const versionTwoReferencePublicationId = `version-two-reference-${token}`;
-    const referenceWorkflowsBefore = await listWorkflowExecutions(environment.client);
+    const referenceWorkflowsBefore = await listWorkflowExecutions(client);
     const versionTwoReference = await putMessageStartPublication(
       origin,
       versionTwoReferencePublicationId,
@@ -302,11 +315,11 @@ test("M2 publishes one exact Message Start after response loss and replays", asy
     );
     publicCaptures.push(versionTwoReference);
     const versionTwoExecution = await waitForOnlyNewWorkflow(
-      environment.client,
+      client,
       referenceWorkflowsBefore,
     );
     const versionTwoHistory = await withDeadline(
-      processHandle(environment.client.workflow, versionTwoExecution).fetchHistory(),
+      processHandle(client.workflow, versionTwoExecution).fetchHistory(),
       operationDeadlineMs,
       "exact version-2 reference Workflow history",
     ) as TemporalHistory;
@@ -319,15 +332,15 @@ test("M2 publishes one exact Message Start after response loss and replays", asy
     assertNoSemanticInstanceFanout([startArguments, versionTwoArguments]);
 
     const fanoutWorkflowId = `direct-message-start-fanout-mutation-${token}`;
-    const fanoutWorkflowsBefore = await listWorkflowExecutions(environment.client);
-    const directSchedulesBefore = await listScheduleIds(environment.client);
+    const fanoutWorkflowsBefore = await listWorkflowExecutions(client);
+    const directSchedulesBefore = await listScheduleIds(client);
     const fanoutStimulus = fanoutStartInput(
       versionTwoArguments[0],
       recovered.value.instance.processInstanceId,
       `fanout-message-start-${token}`,
     );
     await withDeadline(
-      environment.client.workflow.start(bpmnProcessWorkflowType, {
+      client.workflow.start(bpmnProcessWorkflowType, {
         taskQueue,
         workflowId: fanoutWorkflowId,
         workflowIdReusePolicy: "REJECT_DUPLICATE",
@@ -337,13 +350,13 @@ test("M2 publishes one exact Message Start after response loss and replays", asy
       "additional matching-version Workflow-start mutation",
     );
     const fanoutExecution = await waitForOnlyNewWorkflow(
-      environment.client,
+      client,
       fanoutWorkflowsBefore,
     );
     assert.equal(fanoutExecution.workflowId, fanoutWorkflowId);
-    assert.deepEqual(await listScheduleIds(environment.client), directSchedulesBefore);
+    assert.deepEqual(await listScheduleIds(client), directSchedulesBefore);
     const fanoutHistory = await withDeadline(
-      processHandle(environment.client.workflow, fanoutExecution).fetchHistory(),
+      processHandle(client.workflow, fanoutExecution).fetchHistory(),
       operationDeadlineMs,
       "additional matching-version Workflow history",
     ) as TemporalHistory;
@@ -360,9 +373,9 @@ test("M2 publishes one exact Message Start after response loss and replays", asy
 
     const directPublicationId = `direct-start-${token}`;
     const directWorkflowId = `direct-message-start-mutation-${token}`;
-    const directWorkflowsBefore = await listWorkflowExecutions(environment.client);
+    const directWorkflowsBefore = await listWorkflowExecutions(client);
     await withDeadline(
-      environment.client.workflow.start(bpmnProcessWorkflowType, {
+      client.workflow.start(bpmnProcessWorkflowType, {
         taskQueue,
         workflowId: directWorkflowId,
         workflowIdReusePolicy: "REJECT_DUPLICATE",
@@ -376,7 +389,7 @@ test("M2 publishes one exact Message Start after response loss and replays", asy
       "publication-linked direct Workflow-start mutation",
     );
     const directExecution = await waitForOnlyNewWorkflow(
-      environment.client,
+      client,
       directWorkflowsBefore,
     );
     assert.equal(directExecution.workflowId, directWorkflowId);
@@ -401,6 +414,7 @@ test("M2 publishes one exact Message Start after response loss and replays", asy
     const cleanupFailures: unknown[] = [];
     for (const cleanup of [
       replayRunner === undefined ? undefined : () => replayRunner?.shutdown(),
+      initialWorker === undefined ? undefined : () => initialWorker?.shutdown(),
       replacementWorker === undefined ? undefined : () => replacementWorker?.shutdown(),
       platform === undefined ? undefined : () => platform?.close(),
       () => environment.teardown(),

@@ -272,6 +272,8 @@ async function proveTerminalHistory(
   processInstanceId: string,
 ): Promise<void> {
   await navigate(page, "Operations");
+  const back = page.getByRole("button", { name: "Back to Process instances", exact: true });
+  if (await back.isVisible()) await back.click();
   await page.getByLabel("Process-instance ID").fill(processInstanceId);
   await page.getByRole("button", { name: "Search", exact: true }).click();
   const row = page.getByRole("table", { name: "Process instances" })
@@ -355,7 +357,13 @@ async function navigate(
     return;
   }
   await button.click();
-  await expect(heading).toBeFocused();
+  await expect(heading).toBeVisible();
+  const instanceHeading = page.locator("#process-execution-detail-heading");
+  if (workspace === "Operations" && await instanceHeading.isVisible()) {
+    await expect(instanceHeading).toBeFocused();
+  } else {
+    await expect(heading).toBeFocused();
+  }
 }
 
 function requireApiOrigin(): string {

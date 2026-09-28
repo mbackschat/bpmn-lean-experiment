@@ -115,6 +115,18 @@ CIB Seven is presumed to implement BPMN faithfully, operationalize gaps or incon
 
 ## Working method
 
+### Root cause before fixes and workarounds
+
+This rule applies to every issue: product behavior, UI/UX, semantics, dependencies, native runtimes, tests, builds, CI, infrastructure, and documentation. Investigate the causal mechanism before selecting a correction or establishing a workaround. Name the exact failing boundary and the invariant it breaks; distinguish observed evidence, a plausible hypothesis, and a demonstrated cause. A matching stack trace or upstream issue is a lead, not proof that the same cause applies here.
+
+Reproduce the failure with the smallest separating witness, then test the proposed explanation against a second instance or an adversarial counterexample. Fix the responsible mechanism and verify both the original failure and the broader failure class. If the cause is still unknown, record it as unresolved and continue diagnosis; do not relabel symptom suppression as a repair.
+
+Do not disable a compiler, runtime feature, validation, assertion, or test; reduce coverage; increase retries or deadlines; or substitute a dependency merely to obtain a green result. Before proposing any workaround, report the root-cause investigation, remaining uncertainty, why a direct repair is unavailable, and the workaround's consequences and removal condition. Establishing a workaround requires explicit owner approval; earlier use elsewhere and a passing rerun are not approval or evidence of a root-cause fix. Diagnostic experiments may vary settings to test a hypothesis, but must remain separate from accepted configuration and qualification evidence.
+
+For an upstream defect, verify the applicable versions and source-level explanation or reproducer, identify an actual corrective patch when available, and validate it under the intended configuration while respecting dependency approval and age rules. If no demonstrated correction is available, report the blocker honestly. Keep affected release qualification open until the cause is corrected or the owner explicitly accepts a documented exception; continue independent authorized work.
+
+### Established practices
+
 Default to common, established ecosystem practices and native tool mechanisms. Do not invent a bespoke abstraction, policy, manifest, workflow, or duplicate source of truth when the standard practice satisfies the requirement. When a concrete project constraint requires a deviation, explain the standard approach, the exact gap, and the tradeoff to the owner and obtain approval before implementing the deviation.
 
 If ordinary work exposes a defect in the documentation control plane, surface it and treat it as a regular project defect: identify the root mechanism, reproduce the class with a separating guard, fix it proportionately, and continue the selected work. Do not silently route around the defect or automatically reopen a special documentation programme.

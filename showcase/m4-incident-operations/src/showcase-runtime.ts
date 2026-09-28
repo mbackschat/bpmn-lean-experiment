@@ -24,6 +24,7 @@ import {
 } from "../test/temporal-evidence.ts";
 import type { ShowcaseEvidence } from "../test/temporal-evidence.ts";
 
+const namespace = "bpmn-m4-incident-operations";
 const operationDeadlineMs = 10_000;
 const environmentStartupDeadlineMs = 40_000;
 
@@ -61,7 +62,16 @@ export class IncidentOperationsShowcaseRuntime {
       environmentStartupDeadlineMs,
       "M4 incident operations Temporal environment startup",
     );
-    await this.startWorker();
+    this.#worker = await withDeadline(
+      ExternalTemporalRuntime.initializeFreshNamespace({
+        address: this.#environment.address,
+        namespace,
+        taskQueue: readPlatformServerConfig().temporalTaskQueue,
+        identity: `bpmn-m4-incident-operations-worker-${process.pid}`,
+      }, this.#effectActivities.activities, 86_400),
+      operationDeadlineMs,
+      "M4 incident operations native initialization",
+    );
     await this.#startPlatform();
     await this.#startControlServer();
   }
@@ -83,7 +93,7 @@ export class IncidentOperationsShowcaseRuntime {
     this.#worker = await withDeadline(
       ExternalTemporalRuntime.connect({
         address: environment.address,
-        namespace: environment.namespace ?? "default",
+        namespace,
         taskQueue: readPlatformServerConfig().temporalTaskQueue,
         identity: `bpmn-m4-incident-operations-worker-${process.pid}`,
       }, this.#effectActivities.activities),
@@ -93,9 +103,9 @@ export class IncidentOperationsShowcaseRuntime {
   }
 
   async verifyAndReplay(request: VerificationRequest): Promise<ShowcaseEvidence> {
-    const environment = this.#requireEnvironment();
+    if (this.#worker === undefined) throw new Error("M4 Worker must be running for evidence inspection");
     return verifyIncidentTerminalEvidence({
-      client: environment.client,
+      client: this.#worker.workflowClient,
       retryProcessInstanceId: request.retryProcessInstanceId,
       cancelledProcessInstanceId: request.cancelledProcessInstanceId,
       temporalCacheDirectory: this.#temporalCacheDirectory,
@@ -133,7 +143,7 @@ export class IncidentOperationsShowcaseRuntime {
       ...configured,
       dataDirectory: this.#dataDirectory,
       temporalAddress: environment.address,
-      temporalNamespace: environment.namespace ?? "default",
+      temporalNamespace: namespace,
     });
     try {
       await withDeadline(

@@ -29,17 +29,17 @@ async function runShowcaseHost(): Promise<void> {
       identity: `${identity}-server`,
       downloadDirectory: temporalCacheDirectory,
     });
-    worker = await ExternalTemporalRuntime.connect({
+    worker = await ExternalTemporalRuntime.initializeFreshNamespace({
       address: environment.address,
-      namespace: environment.namespace ?? "default",
+      namespace: identity,
       taskQueue: configured.temporalTaskQueue,
       identity: `${identity}-worker`,
-    }, createHostEffectActivities([]));
+    }, createHostEffectActivities([]), 86_400);
     platform = await createPlatformServer({
       ...configured,
       dataDirectory,
       temporalAddress: environment.address,
-      temporalNamespace: environment.namespace ?? "default",
+      temporalNamespace: identity,
     });
     const origin = await platform.listen();
     process.stdout.write(`M1 showcase ready at ${origin}\n`);

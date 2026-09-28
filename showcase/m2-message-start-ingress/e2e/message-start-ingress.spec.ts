@@ -41,7 +41,7 @@ test("publishes the exact version-1 Message Start capability after version 2 exi
   await expect(versionSelect.getByRole("option")).toHaveCount(2);
 
   await versionSelect.selectOption("1");
-  await page.getByRole("tab", { name: "Triggers" }).click();
+  await page.getByRole("button", { name: "Show Triggers", exact: true }).click();
   const publication = page.getByRole("region", { name: "Message Start publication" });
   await expect(publication).toContainText(`${processId}, version 1`);
   const capabilities = publication.getByLabel("Published Message Start capabilities");

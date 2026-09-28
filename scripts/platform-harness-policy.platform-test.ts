@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { globSync, readFileSync } from "node:fs";
 import { test } from "node:test";
 
 import {
@@ -92,5 +92,28 @@ test("direct platform harnesses use only erasable syntax", () => {
       [],
       `Node executes ${configPath} TypeScript without a transform step`,
     );
+  }
+});
+
+function assertNativeShowcaseBootstrap(source: string, file: string): void {
+  assert.match(source, /ExternalTemporalRuntime\.initializeFreshNamespace\(/u,
+    `${file}: fresh acceptance hosts must initialize native Current before public starts`);
+  assert.doesNotMatch(source, /environment\.namespace \?\? "default"/u,
+    `${file}: platform and evidence must use the explicitly initialized Namespace`);
+}
+
+test("fresh browser and service acceptance hosts establish native enrollment instead of only connecting", () => {
+  const hosts = globSync(["showcase/*/src/**/*.ts", "showcase/*/test/*.test.ts"]).filter((file) => {
+    const source = readFileSync(file, "utf8");
+    return source.includes("createCachedLocalEnvironment({") &&
+      (file.includes("/test/") || source.includes("createPlatformServer({"));
+  });
+  assert.ok(hosts.length > 0);
+  for (const file of hosts) {
+    const source = readFileSync(file, "utf8");
+    assertNativeShowcaseBootstrap(source, file);
+    assert.throws(() => assertNativeShowcaseBootstrap(source.replaceAll(
+      "ExternalTemporalRuntime.initializeFreshNamespace(", "ExternalTemporalRuntime.connect("), file));
+    assert.throws(() => assertNativeShowcaseBootstrap(`${source}\nconst namespace = environment.namespace ?? "default";`, file));
   }
 });
