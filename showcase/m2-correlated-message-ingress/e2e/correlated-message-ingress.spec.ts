@@ -69,7 +69,7 @@ test("shows unique, zero, and ambiguous correlation without a Process locator", 
   });
   expect(candidate.key).toEqual({ kind: "string", value: "settlement-unique" });
 
-  await page.getByRole("tab", { name: "Triggers", exact: true }).click();
+  await page.getByRole("button", { name: "Show Triggers", exact: true }).click();
   const panel = page.getByRole("region", {
     name: "Correlated Message publication",
   });
@@ -201,7 +201,7 @@ async function deployExactDefinition(page: Page): Promise<void> {
 async function startExactDefinition(
   page: Page,
 ): Promise<PublicProcessInstanceIdentity> {
-  await page.getByRole("tab", { name: "Start", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Ready to start", exact: true })).toBeVisible();
   const responsePromise = page.waitForResponse((response) =>
     response.request().method() === "POST" &&
     new URL(response.url()).pathname.endsWith("/start")
