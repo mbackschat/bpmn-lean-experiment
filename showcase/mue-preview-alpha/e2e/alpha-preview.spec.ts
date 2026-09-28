@@ -142,7 +142,9 @@ async function startExactDefinition(page: Page): Promise<PublicProcessInstanceId
   if (result.status !== ProcessInstanceStartStatus.Started) {
     throw new Error(`Alpha exact start was rejected: ${result.failure.evidence}`);
   }
-  await expect(page.getByText("Process instance started", { exact: true })).toBeVisible();
+  await expect(page).toHaveURL(/#\/operations\?instance=/u);
+  await expect(page.locator('[data-ui="process-execution-detail"]'))
+    .toHaveAttribute("data-instance-id", result.instance.processInstanceId);
   return result.instance;
 }
 
@@ -150,7 +152,7 @@ async function openInitialExecution(
   page: Page,
   instance: PublicProcessInstanceIdentity,
 ): Promise<void> {
-  await navigate(page, "Operations");
+  await page.getByRole("button", { name: "Back to Process instances" }).click();
   await page.getByLabel("Process-instance ID").fill(instance.processInstanceId);
   await page.getByRole("button", { name: "Search", exact: true }).click();
   const details = page.getByRole("button", {
