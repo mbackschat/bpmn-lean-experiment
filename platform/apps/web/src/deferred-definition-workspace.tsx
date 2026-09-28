@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Activity, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { Button } from "@bpmn-lean/platform-ui-kit";
 
@@ -15,7 +15,6 @@ import { DefinitionScheduleApiClient } from "./definition-schedule-api.ts";
 import {
   DefinitionWorkspace,
 } from "./definition-workspace.tsx";
-import { FlowNodeMetricsApiClient } from "./flow-node-metrics-api.ts";
 import { MessageStartPublicationApiClient } from "./message-start-publication-api.ts";
 import { ProcessShowcasePanel } from "./process-showcase-panel.tsx";
 import { LatestRequest } from "./latest-request.ts";
@@ -42,7 +41,6 @@ export function DeferredDefinitionWorkspace({
     () => new MessageStartPublicationApiClient(origin),
     [origin],
   );
-  const metricsApi = useMemo(() => new FlowNodeMetricsApiClient(origin), [origin]);
   const scheduleApi = useMemo(() => new DefinitionScheduleApiClient(origin), [origin]);
   const [definitions, setDefinitions] = useState<ReadonlyArray<DeployedDefinitionVersion>>([]);
   const [versions, setVersions] = useState<ReadonlyArray<DeployedDefinitionVersion>>([]);
@@ -186,7 +184,8 @@ export function DeferredDefinitionWorkspace({
       if (requests.current.isCurrent(generation)) setLoading(false);
     }
   }
-  if (showCatalog) return (
+  return <>
+    {showCatalog ? (
     <ProcessShowcasePanel
       api={api}
       definitions={definitions}
@@ -199,8 +198,8 @@ export function DeferredDefinitionWorkspace({
         else navigationRef.current.navigate({ process: definition.processId, version: definition.version, tab: "start" });
       }}
     />
-  );
-  return (
+    ) : null}
+    <Activity mode={showCatalog ? "hidden" : "visible"}>
     <div ref={workspace} className={styles.catalogWorkspace}>
     <Button ref={exploreButton} onPress={() => { requests.current.invalidate(); setLoading(false); setShowCatalog(true); }}>Explore process showcases</Button>
     <DefinitionWorkspace
@@ -212,7 +211,6 @@ export function DeferredDefinitionWorkspace({
       error={error}
       loading={loading}
       messageStartPublicationApi={messageStartPublicationApi}
-      metricsApi={metricsApi}
       onDeploy={deploy}
       onOpenDefinition={openDefinition}
       {...(onOpenInstance === undefined ? {} : { onOpenInstance })}
@@ -232,7 +230,8 @@ export function DeferredDefinitionWorkspace({
       versions={versions}
     />
     </div>
-  );
+    </Activity>
+  </>;
 }
 
 function errorMessage(error: unknown): string {

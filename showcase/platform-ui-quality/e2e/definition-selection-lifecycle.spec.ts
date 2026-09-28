@@ -125,11 +125,9 @@ test("start results stay with the exact version that was started", async ({ page
   await page.goto("/");
   await page.getByRole("navigation", { name: "Primary navigation" }).getByRole("link", { name: "Definitions", exact: true }).click();
   await page.getByRole("combobox", { name: "Version", exact: true }).selectOption("7");
-  await page.getByRole("tab", { name: "Start", exact: true }).click();
   await page.getByRole("button", { name: "Start version 7" }).click();
   await requested.promise;
   await page.getByRole("combobox", { name: "Version", exact: true }).selectOption("8");
-  await page.getByRole("tab", { name: "Start", exact: true }).click();
   const response = page.waitForResponse("**/versions/7/start");
   pending.resolve();
   await response;
@@ -171,7 +169,6 @@ test("a delayed route selection suppresses the preceding version's start action"
   const older = { ...definition, version: 6 };
   await page.route("**/Process_Responsive_Human_Work_Review/versions", (route) => route.fulfill({ json: { processId: definition.processId, versions: [older, definition] } }));
   await openDefinitions(page);
-  await page.getByRole("tab", { name: "Start", exact: true }).click();
   await expect(page.getByRole("button", { name: "Start version 7" })).toBeVisible();
   const pending = Promise.withResolvers<void>();
   const requested = Promise.withResolvers<void>();

@@ -2,6 +2,9 @@
   appearance: none;
   display: inline-flex;
   justify-self: start;
+  align-self: start;
+  width: fit-content;
+  flex: 0 1 auto;
   max-width: 100%;
   align-items: center;
   justify-content: center;
@@ -79,7 +82,6 @@
 }
 
 .navigation {
-  width: 100%;
   justify-content: flex-start;
   border-color: transparent;
   padding: var(--ui-space-3);

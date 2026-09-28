@@ -26,6 +26,8 @@ Answer these after a capsule or milestone closes, and again at each session hand
 10. **Delegated staging.** While any delegated lane was active, did I stage only the root-owned reviewed paths explicitly, and did I inspect the staged diff before committing?
 11. **Stage boundary.** Which governed review stage did this work cross, and did I pause at it? Name the commit I paused at, or the lanes that were built past it before the review opened.
 
+12. **Presentation choice.** What question does this screen answer, which facts need scanning versus sustained reading, and did I inspect realistic expanded content before calling the design usable?
+
 ## Escalation rule
 
 A finding recorded a second time refutes its own prose disposition: the rule existed and did not bind. The second occurrence therefore requires an **executable guard**, not a better-worded reminder — unless no repository fact can observe the class at all, which is what `unguardable` records. That exception exists because the rule as first written assumed every recurring finding is guardable, and a finding about how results are *reported* is not: the repository cannot see a claim made in prose about itself. [The executable check](../scripts/document-reviewability.test.ts) enforces this — a row at two or more instances whose disposition is not `executable guard` fails the infrastructure gate.
@@ -1234,6 +1236,23 @@ Evidence
 **First observed:** final MUE RC qualification at `73872c18` on 2026-09-26.
 
 The retained journey fails with `WorkerDeploymentNotReady` before any Process is created. Its host now initializes a fresh named Namespace and Current deployment using the existing production operation, and every platform command and prerequisite query uses the same Namespace. The unchanged unique, zero-match, ambiguity and response-loss assertions then pass. The HTTP helper checks the response status before decoding, preserving the failure category. Review question: does each maintained acceptance host establish every creation-readiness prerequisite before exercising product behavior? The retained journey guards this host, not every bootstrap path; other maintained showcases require their own acceptance evidence.
+
+### Finding 69
+
+API-shaped presentation placed long structured records in ordinary table cells. Guidelines emphasized control mechanics without a content-selection rule, and collapsed-state screenshots plus overflow checks were mistaken for evidence of readable expanded content.
+
+Instances
+: 2
+
+Disposition
+: `executable guard`
+
+Evidence
+: [Action history expanded-record checks](../showcase/platform-ui-quality/e2e/action-history.spec.ts), [Process instance detail checks](../showcase/platform-ui-quality/e2e/rc-feedback-copy.spec.ts), [content-first presentation](BPM-PLATFORM-UI-DESIGN-SPEC.md#content-first-presentation)
+
+**First observed:** owner review of expanded Action history on 2026-09-28.
+
+The design decision was wrong before validation: a generic Details column received an entire event JSON payload instead of a separate reading area. The same mechanism was independently reproduced in Process instances. Fixed-width columns confined details to 188 pixels in the wide Action history view and 371 pixels in the forced card layout for Process instances. Middle alignment and stretched card cells then separated summary values from their headings. The shared table now supplies a full-width detail row beneath a compact, top-aligned summary. Readable facts precede optional raw data. Browser guards separate this geometric failure class through width, placement, stable summary height and keyboard-collapse assertions; they cannot prove that any arbitrary design meets a user's needs. Content selection remains an explicit design-review judgment, required before component selection by question 12 and the owning UI guideline. Existing beginner and journey requirements already applied; the missing rule does not excuse failing to apply them.
 
 ## Update rule
 

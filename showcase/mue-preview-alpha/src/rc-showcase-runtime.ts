@@ -29,18 +29,19 @@ type Environment = Awaited<ReturnType<typeof createCachedLocalEnvironment>>;
 export type RcShowcaseRuntimeOptions = Readonly<{
   port?: number;
   webAssetDirectory?: string;
+  automatedParticipants?: boolean;
 }>;
 
 const defaultWebAssets = fileURLToPath(new URL("../../../platform/apps/web/dist/", import.meta.url));
 const temporalCacheDirectory = fileURLToPath(new URL("../../../.cache/temporal-cli/", import.meta.url));
 
-/** Isolated simulation host; all semantic decisions still pass through published engine commands. */
+/** Isolated evaluation host; scripted participants require an explicit automation launch. */
 export class RcShowcaseRuntime {
   readonly #directory: string;
   readonly #port: number;
   readonly #bindings: readonly RcShowcaseBinding[];
   readonly #stop = new AbortController();
-  readonly #actors: RcShowcaseActors;
+  readonly #actors: RcShowcaseActors | undefined;
   #environment: Environment | undefined;
   #worker: ExternalTemporalRuntime | undefined;
   #platform: PlatformServerRuntime | undefined;
@@ -50,17 +51,17 @@ export class RcShowcaseRuntime {
   #closing: Promise<void> | undefined;
   #started = false;
 
-  private constructor(directory: string, port: number, bindings: readonly RcShowcaseBinding[]) {
+  private constructor(directory: string, port: number, bindings: readonly RcShowcaseBinding[], automatedParticipants: boolean) {
     this.#directory = directory;
     this.#port = port;
     this.#bindings = bindings;
-    this.#actors = new RcShowcaseActors(bindings, async (binding, instance) => {
+    this.#actors = automatedParticipants ? new RcShowcaseActors(bindings, async (binding, instance) => {
       try {
         await driveRcShowcaseActor(binding, this.#interactionPort(instance), this.#stop.signal);
       } catch (error: unknown) {
         if (!this.#isStoppedWait(error)) throw error;
       }
-    });
+    }) : undefined;
   }
 
   static async create(options: RcShowcaseRuntimeOptions = {}): Promise<RcShowcaseRuntime> {
@@ -68,6 +69,8 @@ export class RcShowcaseRuntime {
     if (!Number.isSafeInteger(requestedPort) || requestedPort < 0 || requestedPort > 65_535) {
       throw new RangeError("RC showcase port must be 0 or a valid TCP port");
     }
+    const automatedParticipants = options.automatedParticipants ?? false;
+    if (typeof automatedParticipants !== "boolean") throw new TypeError("automatedParticipants must be boolean");
     const bindings = await loadRcShowcaseBindings();
     mergeRcEffectHandlers(bindings);
     const port = requestedPort === 0 ? await allocatePlaywrightLoopbackPort() : requestedPort;
@@ -76,8 +79,8 @@ export class RcShowcaseRuntime {
       const webDirectory = join(directory, "web");
       await cp(options.webAssetDirectory ?? defaultWebAssets, webDirectory, { recursive: true });
       await writeFile(join(webDirectory, "rc-showcase-runtime.json"),
-        JSON.stringify({ kind: "rcShowcaseRuntime", version: 1 }));
-      return new RcShowcaseRuntime(directory, port, bindings);
+        JSON.stringify({ kind: "rcShowcaseRuntime", version: 1, automatedParticipants }));
+      return new RcShowcaseRuntime(directory, port, bindings, automatedParticipants);
     } catch (error: unknown) {
       await rm(directory, { recursive: true, force: true });
       throw error;
@@ -91,7 +94,7 @@ export class RcShowcaseRuntime {
 
   assertHealthy(): void {
     if (this.#failure !== undefined) throw this.#failure;
-    this.#actors.check();
+    this.#actors?.check();
   }
 
   async start(): Promise<void> {
@@ -117,8 +120,9 @@ export class RcShowcaseRuntime {
         maxWorkProcesses: 100, maxWorkTasks: 1_000,
       });
       this.#origin = await withDeadline(this.#platform.listen(), 20_000, "RC showcase platform listen");
+      const catalog = await buildProcessShowcaseCatalog(fileURLToPath(new URL("../../../", import.meta.url)));
       await prepareRcShowcases(this.#origin,
-        await buildProcessShowcaseCatalog(fileURLToPath(new URL("../../../", import.meta.url))), (input, init) => fetch(input, {
+        catalog.filter((entry) => this.#actors !== undefined || entry.showcase?.mode === "human"), (input, init) => fetch(input, {
         ...init, signal: AbortSignal.any([this.#stop.signal, AbortSignal.timeout(10_000)]),
       }));
       this.#polling = this.#poll().catch((error: unknown) => {
@@ -152,7 +156,7 @@ export class RcShowcaseRuntime {
     await this.#polling;
     const failures: unknown[] = this.#failure === undefined ? [] : [this.#failure];
     for (const close of [
-      () => this.#actors.drain(),
+      () => this.#actors?.drain(),
       () => this.#platform?.close(),
       () => this.#worker?.shutdown(),
       () => this.#environment?.teardown(),
@@ -165,8 +169,13 @@ export class RcShowcaseRuntime {
   }
 
   async #poll(): Promise<void> {
+    if (this.#stop.signal.aborted) return;
+    if (this.#actors === undefined) {
+      await new Promise<void>((resolve) => this.#stop.signal.addEventListener("abort", () => resolve(), { once: true }));
+      return;
+    }
     while (!this.#stop.signal.aborted) {
-      this.#actors.check();
+      this.#actors?.check();
       let cursor: string | undefined;
       const cursors = new Set<string>();
       do {
@@ -183,7 +192,7 @@ export class RcShowcaseRuntime {
           if (cursors.has(cursor)) throw new Error("RC instance discovery repeated a page cursor");
           cursors.add(cursor);
         }
-        this.#actors.check();
+        this.#actors?.check();
       } while (cursor !== undefined);
       await delay(250, undefined, { signal: this.#stop.signal });
     }

@@ -24,6 +24,8 @@ import { ProcessInstanceExecutionHistory } from "./process-instance-execution-hi
 import { ProcessOperatorHistory } from "./process-operator-history.tsx";
 import styles from "./process-instance-execution-detail.module.css";
 import type { OperationsSearch, WorkspaceNavigation } from "./navigation/route-search.ts";
+import { findProcessShowcase } from "./process-showcase-catalog.ts";
+import { ProcessDescriptionLink } from "./process-description-link.tsx";
 
 export enum ProcessExecutionDetailLoadKind {
   Pending = "pending",
@@ -180,6 +182,7 @@ function ProcessInstanceExecutionDetail({
   state,
   navigation,
 }: ProcessInstanceExecutionDetailProps) {
+  const showcase = findProcessShowcase(instance.definition);
   const [localTab, setTab] = useState("overview");
   const tab = navigation === undefined ? localTab : navigation.search.view === "audit"
     ? "overview" : navigation.search.view ?? "overview";
@@ -279,6 +282,7 @@ function ProcessInstanceExecutionDetail({
     <section
       className={styles.workspace}
       data-ui="process-execution-detail"
+      data-instance-id={instance.processInstanceId}
       aria-labelledby="process-execution-detail-heading"
       onFocusCapture={(event) => {
         const target = event.target as HTMLElement;
@@ -301,9 +305,20 @@ function ProcessInstanceExecutionDetail({
             Process instance {instance.processInstanceId}
           </h2>
           <p><code>{instance.definition.processId}</code></p>
+          {navigation === undefined ? null : <ProcessDescriptionLink definition={instance.definition} />}
         </div>
         <Button variant={ButtonVariant.Secondary} onPress={onBack}>Back to Process instances</Button>
       </div>
+      {showcase?.showcase?.mode === "guided" ? (
+        <div className={styles.demonstration}>
+          <strong>{showcase.title}</strong>
+          <p>In the RC demo, participants and services act automatically. This example may finish before you open it. History shows what happened.</p>
+          <p role="status" aria-live="polite">{state.kind === ProcessExecutionDetailLoadKind.Current
+            ? demonstrationStatus(state.publication.current.state.status)
+            : state.kind === ProcessExecutionDetailLoadKind.Failed ? "Process status unavailable" : "Checking process status…"}</p>
+          <Button variant={ButtonVariant.Secondary} onPress={() => selectTab("history")} isDisabled={state.kind !== ProcessExecutionDetailLoadKind.Current}>View execution history</Button>
+        </div>
+      ) : null}
       <ExecutionAvailability state={state} />
       <WorkspaceTabs
         aria-label="Process instance detail"
@@ -313,6 +328,15 @@ function ProcessInstanceExecutionDetail({
       />
     </section>
   );
+}
+
+function demonstrationStatus(status: ProcessStatus): string {
+  switch (status) {
+    case ProcessStatus.Running: return "Process running — progress updates automatically.";
+    case ProcessStatus.Completed: return "Process completed — open History to explore the recorded steps.";
+    case ProcessStatus.Cancelled: return "Process cancelled — open History to inspect what happened.";
+    case ProcessStatus.Failed: return "Process failed — inspect the failure details and History.";
+  }
 }
 
 function ExecutionOverview({

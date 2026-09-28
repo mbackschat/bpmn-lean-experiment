@@ -113,26 +113,27 @@ export function FlowNodeMetricsPanel({
   return (
     <section
       className={styles.panel}
-      aria-label={`Flow-node metrics for ${definition.processId}, version ${definition.version}`}
+      aria-label={`Process metrics for ${definition.processId}, version ${definition.version}`}
       data-ui="flow-node-metrics-detail"
       data-load-state={currentLoad.kind}
     >
       <header className={styles.heading}>
         <div>
           <p className={styles.eyebrow}>Definition version insight</p>
-          <h2 ref={heading} tabIndex={-1}>Flow-node metrics</h2>
+          <h2 ref={heading} tabIndex={-1}>Process metrics</h2>
+          <p>How often each step ran and how long completed steps took.</p>
         </div>
         <span>Version {definition.version}</span>
       </header>
 
       {currentLoad.kind === LoadingStateKind ? (
-        <p className={styles.loading} role="status">Loading flow-node metrics…</p>
+        <p className={styles.loading} role="status">Loading process metrics…</p>
       ) : null}
 
       {currentLoad.kind === FlowNodeMetricsLoadStateKind.Unavailable ? (
         <div className={styles.unavailable}>
           <p ref={unavailableAlert} tabIndex={-1} role="alert">
-            Flow-node metrics are unavailable.
+            Process metrics are unavailable.
           </p>
           <Button variant={ButtonVariant.Secondary} onPress={retry}>Retry</Button>
         </div>
@@ -145,7 +146,7 @@ export function FlowNodeMetricsPanel({
               <strong>All retained evidence</strong>
               <span>{currentLoad.snapshot.population.processInstances} Process instance{currentLoad.snapshot.population.processInstances === 1 ? "" : "s"}</span>
             </p>
-            <div className={styles.modes} role="group" aria-label="Flow-node metric mode">
+            <div className={styles.modes} role="group" aria-label="Process metric mode">
               <Button
                 className={styles.modeButton!}
                 variant={ButtonVariant.Secondary}
@@ -182,7 +183,7 @@ export function FlowNodeMetricsPanel({
           )}
 
           <div className={styles.tableOwner} data-ui="flow-node-metrics-table-owner">
-            <table aria-label="Flow-node metric values">
+            <table aria-label="Process metric values">
               <thead>
                 <tr>
                   <th scope="col" rowSpan={2}>Element ID</th>

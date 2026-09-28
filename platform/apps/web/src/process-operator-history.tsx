@@ -77,9 +77,10 @@ export function ProcessOperatorHistory({ api, instance, isActive }: ProcessOpera
     <section className={styles.history} data-ui="operator-history" aria-labelledby="operator-history-heading">
       <div className={styles.heading}>
         <div>
-          <p className={styles.eyebrow}>Platform action record</p>
+          <p className={styles.eyebrow}>Action history</p>
           <h3 id="operator-history-heading">Operator history</h3>
-          <p>Two independently captured source-local streams. Their timestamps and positions do not establish a merged or causal chronology.</p>
+          <p>Who performed which actions, and their recorded outcomes.</p>
+          <p>Task actions and incident actions are listed separately. Their timestamps do not establish a shared order across the two lists.</p>
         </div>
         {state.kind === OperatorHistoryLoadKind.Current ? (
           <Button onPress={() => { downloadOperatorAudit(state.download); }}>

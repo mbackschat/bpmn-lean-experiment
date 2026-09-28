@@ -23,11 +23,21 @@
   border-bottom: var(--ui-border);
   padding: var(--ui-space-3);
   text-align: left;
-  vertical-align: middle;
+  vertical-align: top;
 }
 
 .table td {
   overflow-wrap: anywhere;
+}
+
+.details {
+  display: grid;
+  gap: var(--ui-space-4);
+  min-width: 0;
+}
+
+.table tr[data-expanded] > td {
+  border-bottom: 0;
 }
 
 @container (max-width: 62rem) {
@@ -70,6 +80,7 @@
     padding: 0;
     overflow-wrap: anywhere;
     white-space: normal;
+    align-content: start;
   }
 
   .collection[data-responsive="cards"] td::before {
@@ -87,6 +98,26 @@
   .collection[data-responsive="cards"] td > * {
     max-width: 100%;
     overflow-wrap: anywhere;
+  }
+
+  .collection[data-responsive="cards"] tr[data-expanded] {
+    border-bottom: 0;
+    border-radius: var(--ui-radius-surface) var(--ui-radius-surface) 0 0;
+  }
+
+  .collection[data-responsive="cards"] tr[data-ui="data-table-details"] {
+    display: block;
+    margin-top: 0;
+    border-top: 0;
+    border-radius: 0 0 var(--ui-radius-surface) var(--ui-radius-surface);
+  }
+
+  .collection[data-responsive="cards"] tr[data-ui="data-table-details"] > td {
+    display: block;
+  }
+
+  .collection[data-responsive="cards"] tr[data-ui="data-table-details"] > td::before {
+    display: none;
   }
 }
 

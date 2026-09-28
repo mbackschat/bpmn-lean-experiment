@@ -1,4 +1,5 @@
-import { InlineDisclosure } from "@bpmn-lean/platform-ui-kit";
+import { useState } from "react";
+import { Button, ButtonVariant, InlineDisclosure } from "@bpmn-lean/platform-ui-kit";
 
 import {
   BpmnCapabilitySupport,
@@ -26,6 +27,17 @@ export type CapabilitiesPanelProps = Readonly<{
 }>;
 
 export function CapabilitiesPanel({ productVersion }: CapabilitiesPanelProps) {
+  const [expandedFamilies, setExpandedFamilies] = useState<ReadonlySet<string>>(() => new Set());
+  const families = Map.groupBy(mvpCapabilityCatalog.capabilities, (capability) => capability.family);
+
+  function setFamilyExpanded(family: string, expanded: boolean): void {
+    setExpandedFamilies((previous) => {
+      const next = new Set(previous);
+      if (expanded) next.add(family);
+      else next.delete(family);
+      return next;
+    });
+  }
   return (
     <section className={styles.panel} aria-labelledby="capabilities-heading">
       <div className={styles.introduction}>
@@ -75,31 +87,40 @@ export function CapabilitiesPanel({ productVersion }: CapabilitiesPanelProps) {
       </div>
       </InlineDisclosure>
       <InlineDisclosure title="Executable BPMN elements and variants">
-      <div className={`${styles.tableOwner} ${styles.capabilityTable}`}>
-        <table>
-          <caption>Executable BPMN element and semantic-variant overview</caption>
-          <thead>
-            <tr>
-              <th scope="col">Family</th>
-              <th scope="col">Element or variant</th>
-              <th scope="col">Current status</th>
-              <th scope="col">Current restriction</th>
-              <th scope="col">CIB Seven evidence</th>
-            </tr>
-          </thead>
-          <tbody>
-            {mvpCapabilityCatalog.capabilities.map((capability) => (
-              <tr key={capability.id} data-capability-id={capability.id}>
-                <td data-label="Family">{capability.family}</td>
-                <th scope="row" data-label="Element or variant">{capability.element}</th>
-                <td data-label="Current status">{supportLabel(capability.support)}</td>
-                <td data-label="Current restriction">{capability.restriction}</td>
-                <td data-label="CIB Seven evidence">{cibEvidenceLabel(capability.cibEvidence)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+        <section className={styles.families} aria-label="Executable BPMN element and semantic-variant overview">
+          <p>{mvpCapabilityCatalog.capabilities.length} element variants in {families.size} families. Expand a family to inspect its restrictions and evidence.</p>
+          <div className={styles.familyActions}>
+            <Button variant={ButtonVariant.Secondary} onPress={() => setExpandedFamilies(new Set(families.keys()))}>Expand all families</Button>
+            <Button variant={ButtonVariant.Secondary} onPress={() => setExpandedFamilies(new Set())}>Collapse all families</Button>
+          </div>
+          {[...families].map(([family, capabilities]) => (
+            <InlineDisclosure key={family} title={`${family} (${capabilities.length})`} isExpanded={expandedFamilies.has(family)} onExpandedChange={(expanded) => setFamilyExpanded(family, expanded)}>
+              <div className={`${styles.tableOwner} ${styles.capabilityTable}`}>
+                <table>
+                  <caption>{family} — elements and variants</caption>
+                  <thead>
+                    <tr>
+                      <th scope="col">Element or variant</th>
+                      <th scope="col">Current status</th>
+                      <th scope="col">Current restriction</th>
+                      <th scope="col">CIB Seven evidence</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {capabilities.map((capability) => (
+                      <tr key={capability.id} data-capability-id={capability.id}>
+                        <th scope="row" data-label="Element or variant">{capability.element}</th>
+                        <td data-label="Current status">{supportLabel(capability.support)}</td>
+                        <td data-label="Current restriction">{capability.restriction}</td>
+                        <td data-label="CIB Seven evidence">{cibEvidenceLabel(capability.cibEvidence)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </InlineDisclosure>
+          ))}
+        </section>
       </InlineDisclosure>
       <p className={styles.followUp}>
         The repository requirement ledger owns BPMN dispositions; the implementation map owns exact current evidence. Unsupported or broader behavior remains outside these rows until its semantic profile and tests are approved.

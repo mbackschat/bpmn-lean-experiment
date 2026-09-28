@@ -10,7 +10,18 @@ export type AppContext = Readonly<{ origin: string; productVersion: string; quer
 const rootRoute = createRootRouteWithContext<AppContext>()({ component: RoutedApp });
 const indexRoute = createRoute({ getParentRoute: () => rootRoute, path: "/", beforeLoad: () => { throw redirect({ to: "/work", replace: true }); } });
 const workRoute = createRoute({ getParentRoute: () => rootRoute, path: "/work", validateSearch: validateWorkSearch });
-const definitionsRoute = createRoute({ getParentRoute: () => rootRoute, path: "/definitions", validateSearch: validateDefinitionSearch });
+const definitionsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/definitions",
+  validateSearch: validateDefinitionSearch,
+  beforeLoad: ({ search }) => {
+    if (search.tab === "metrics") throw redirect({ to: "/operations", replace: true, search: {
+      tab: "metrics",
+      ...(search.process === undefined ? {} : { process: search.process }),
+      ...(search.version === undefined ? {} : { version: search.version }),
+    } });
+  },
+});
 const operationsRoute = createRoute({ getParentRoute: () => rootRoute, path: "/operations", validateSearch: validateOperationsSearch });
 const aboutRoute = createRoute({ getParentRoute: () => rootRoute, path: "/about" });
 

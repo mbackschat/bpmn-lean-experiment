@@ -17,6 +17,10 @@
 .actions { flex-shrink: 0; }
 .prepared { display: grid; gap: var(--ui-space-2); }
 .prepared strong { color: var(--ui-color-accent); font: var(--ui-font-label); }
+.identity { display: grid; gap: var(--ui-space-3); }
+.identity dl { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--ui-space-2) var(--ui-space-4); margin: 0; }
+.identity dt { color: var(--ui-color-muted); font: var(--ui-font-label); }
+.identity dd { margin: 0; }
 .links { display: flex; flex-wrap: wrap; gap: var(--ui-space-4); }
 .links a { display: inline-flex; align-items: center; min-height: 44px; color: var(--ui-color-accent-hover); }
 .links a:focus-visible { outline: 2px solid var(--ui-color-focus); outline-offset: 2px; }

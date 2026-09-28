@@ -8,10 +8,17 @@ import styles from "./disclosure.module.css";
 export type InlineDisclosureProps = Readonly<{
   title: string;
   children: ReactNode;
+  isExpanded?: boolean;
+  onExpandedChange?: (expanded: boolean) => void;
 }>;
 
-export function InlineDisclosure({ title, children }: InlineDisclosureProps) {
-  const [expanded, setExpanded] = useState(false);
+export function InlineDisclosure({ title, children, isExpanded, onExpandedChange }: InlineDisclosureProps) {
+  const [localExpanded, setLocalExpanded] = useState(false);
+  const expanded = isExpanded ?? localExpanded;
+  function setExpanded(next: boolean): void {
+    if (isExpanded === undefined) setLocalExpanded(next);
+    onExpandedChange?.(next);
+  }
   return (
     <Disclosure className={styles.disclosure!} data-ui="inline-disclosure" isExpanded={expanded} onExpandedChange={setExpanded}>
       <Button className={styles.trigger!} slot="trigger" variant={ButtonVariant.Secondary}>

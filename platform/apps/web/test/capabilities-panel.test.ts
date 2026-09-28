@@ -82,8 +82,8 @@ test("presents versioned BPMN and CIB capability boundaries from the canonical c
   assert.match(html, /publishes no partial output/iu);
   assert.match(html, /No CIB target selected/u);
   assert.deepEqual(
-    [...html.matchAll(/data-capability-id="([^"]+)"/gu)].map((match) => match[1]),
-    mvpCapabilityCatalog.capabilities.map(({ id }) => id),
+    [...html.matchAll(/data-capability-id="([^"]+)"/gu)].map((match) => match[1]).sort(),
+    mvpCapabilityCatalog.capabilities.map(({ id }) => id).sort(),
   );
 });
 

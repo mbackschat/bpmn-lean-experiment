@@ -113,7 +113,7 @@ export function IncidentAuditPanel({
     <section className={styles.panel} data-ui="incident-audit" aria-labelledby={fixedIncident === undefined ? "incident-audit-heading" : "incident-detail-audit-heading"}>
       <div className={styles.heading}>
         <div>
-          <p className={styles.eyebrow}>Platform action record</p>
+          <p className={styles.eyebrow}>Action history</p>
           <h2
             id={fixedIncident === undefined ? "incident-audit-heading" : "incident-detail-audit-heading"}
             ref={heading}
@@ -121,7 +121,8 @@ export function IncidentAuditPanel({
           >
             {fixedIncident === undefined ? "Incident action audit" : "Actions for this incident"}
           </h2>
-          <p>These rows are platform actions. They do not prove that an incident is current.</p>
+          <p>Who performed which actions, and their recorded outcomes.</p>
+          <p>These recorded actions do not tell you whether an incident is still current.</p>
         </div>
       </div>
 
@@ -130,7 +131,7 @@ export function IncidentAuditPanel({
       ) : null}
 
       <p ref={status} tabIndex={-1} className={styles.status} role="status">
-        {loading ? "Loading incident action audit…" : searched ? `${events.length} platform action records shown.` : "Incident action audit is ready."}
+        {loading ? "Loading incident action audit…" : searched ? `${events.length} recorded actions shown.` : "Incident action audit is ready."}
       </p>
       {error === null ? null : <p role="alert" ref={errorAlert} tabIndex={-1} className={styles.error}>{error}</p>}
       {!loading && error === null && searched && events.length === 0

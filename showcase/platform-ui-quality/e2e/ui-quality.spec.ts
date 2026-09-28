@@ -87,6 +87,8 @@ test("selected task form preserves keyboard navigation and focus return @respons
   await expect(page.getByRole("button", { name: fixtureLabels.task, exact: true })).toHaveCount(0);
   await expect(taskButton).toBeVisible();
   await page.keyboard.press("Tab");
+  await expect(page.getByRole("link", { name: "BPMN Lean home", exact: true })).toBeFocused();
+  await page.keyboard.press("Tab");
   await expect(page.getByRole("link", { name: "Work", exact: true })).toBeFocused();
   await taskButton.focus();
   await page.keyboard.press("Enter");
@@ -118,6 +120,35 @@ test("selected task form preserves keyboard navigation and focus return @respons
 
   await page.getByRole("button", { name: "Back to tasks" }).click();
   await expect(taskButton).toBeFocused();
+});
+
+test("About groups capability families with independent and bulk collapse @responsive", async ({ page }) => {
+  await openFixture(page);
+  await page.getByRole("link", { name: "About", exact: true }).click();
+  await page.getByRole("button", { name: "Show Executable BPMN elements and variants", exact: true }).click();
+  const families = [...new Set(mvpCapabilityCatalog.capabilities.map(({ family }) => family))];
+  const overview = page.getByRole("region", { name: "Executable BPMN element and semantic-variant overview", exact: true });
+  await expect(overview).toBeVisible();
+  await expect(overview.getByRole("table")).toHaveCount(0);
+  for (const family of families) {
+    const count = mvpCapabilityCatalog.capabilities.filter((entry) => entry.family === family).length;
+    await expect(overview.getByRole("button", { name: `Show ${family} (${count})`, exact: true })).toHaveAttribute("aria-expanded", "false");
+  }
+  const first = overview.getByRole("button", { name: /^Show Process structure / });
+  await first.focus();
+  await page.keyboard.press("Enter");
+  await expect(overview.getByRole("table")).toHaveCount(1);
+  const hide = overview.getByRole("button", { name: /^Hide Process structure / });
+  await expect(hide).toBeFocused();
+  await page.keyboard.press("Space");
+  await expect(first).toBeFocused();
+  await expect(overview.getByRole("table")).toHaveCount(0);
+  await overview.getByRole("button", { name: "Expand all families", exact: true }).click();
+  await expect(overview.getByRole("table")).toHaveCount(families.length);
+  await overview.getByRole("button", { name: "Collapse all families", exact: true }).click();
+  await expect(overview.getByRole("table")).toHaveCount(0);
+  await expect(overview.getByRole("button", { name: "Collapse all families", exact: true })).toBeFocused();
+  await assertNoOverflow(overview, "collapsed family overview");
 });
 
 test("About exposes the versioned capability boundary without overflow @responsive", async ({ page }) => {
@@ -154,16 +185,17 @@ test("About exposes the versioned capability boundary without overflow @responsi
   }
   const showCapabilities = page.getByRole("button", { name: "Show Executable BPMN elements and variants", exact: true });
   await showCapabilities.click();
-  const capabilityTable = page.getByRole("table", {
+  const capabilityTable = page.getByRole("region", {
     name: "Executable BPMN element and semantic-variant overview",
   });
+  await capabilityTable.getByRole("button", { name: "Expand all families", exact: true }).click();
   await expect(checkpoints).toBeVisible();
   await expect(capabilityTable.locator("tbody tr")).toHaveCount(
     mvpCapabilityCatalog.capabilities.length,
   );
   expect(await capabilityTable.locator("tbody tr").evaluateAll((rows) =>
-    rows.map((row) => row.getAttribute("data-capability-id"))
-  )).toEqual(mvpCapabilityCatalog.capabilities.map(({ id }) => id));
+    rows.map((row) => row.getAttribute("data-capability-id")).sort()
+  )).toEqual(mvpCapabilityCatalog.capabilities.map(({ id }) => id).sort());
   const timerStart = capabilityTable.locator('[data-capability-id="timerStartEvent"]');
   await expect(timerStart).toContainText("Timer Start Event");
   await expect(timerStart).toContainText("no recurrence or calendar form");
@@ -236,9 +268,30 @@ test("loading task snapshots are explicit", async ({ page }) => {
   await expect(page.getByRole("table", { name: "Current tasks" })).toBeVisible();
 });
 
-test("empty task snapshots are explicit", async ({ page }) => {
+test("empty task snapshots keep Refresh content-sized in narrow containers @responsive", async ({ page }) => {
   await openFixture(page, { work: FixtureWorkState.Empty });
   await expect(page.getByText("No current tasks.", { exact: true })).toBeVisible();
+  const panel = page.getByRole("region", { name: "Tasks", exact: true });
+  await panel.evaluate((element) => { element.style.maxWidth = "740px"; });
+  const refresh = panel.getByRole("button", { name: "Refresh", exact: true });
+  expect((await refresh.boundingBox())!.width).toBeLessThan(160);
+  expect((await refresh.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+  await refresh.focus();
+  await page.keyboard.press("Enter");
+  await expect(refresh).toBeEnabled();
+  await expect(refresh).toBeFocused();
+  await panel.screenshot({ path: test.info().outputPath("compact-refresh.png") });
+});
+
+test("task completion actions stay content-sized in narrow containers @responsive", async ({ page }) => {
+  await openFixture(page);
+  await page.locator("main").evaluate((element) => { element.style.maxWidth = "740px"; });
+  await openCompletableTask(page);
+  const complete = page.getByRole("button", { name: "Complete task", exact: true });
+  await expect(complete).toBeVisible();
+  expect((await complete.boundingBox())!.width).toBeLessThan(220);
+  expect((await complete.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+  await assertOwnedActionsFit(page.locator("main"));
 });
 
 test("unclaimed tasks cannot enter the completion flow", async ({ page }) => {

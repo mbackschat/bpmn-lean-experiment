@@ -28,7 +28,7 @@ The export contains no opaque engine locator, Workflow ID, Run ID, Task Queue, E
 
 CIB Seven `2.2` records authenticated operations in a queryable User Operation Log and distinguishes task-worker operations from operator operations. Its public API supports Process-instance, user, category, and timestamp-order queries. The pristine pinned community Cockpit source has no matching User Operation Log or export interface, so CIB supports the data and filtering relationship but not a claimed UI precedent.
 
-Camunda 8 independently exposes an authorization-controlled audit log and offers both a general Operations Log and an exact Process-instance Operations Log. This supports instance-local placement beside broader operational audit. The project deliberately keeps its existing top-level incident Audit panel unchanged because it has no cross-capability global audit contract.
+Camunda 8 independently exposes an authorization-controlled audit log and offers both a general Operations Log and an exact Process-instance Operations Log. This supports instance-local placement beside broader operational audit. The original M5 increment kept its top-level incident Audit panel unchanged. The later [Action history composition](BPM-PLATFORM-INFORMATION-ARCHITECTURE-SPEC.md#operations-flow) adds existing self-only Work search beside incident search without introducing a global cross-capability audit contract.
 
 | Boundary | Adopt | Deliberately change | Exclude | Project fact that decides |
 |---|---|---|---|---|
@@ -145,7 +145,7 @@ The tab owns loading, empty, current, and unavailable states. A material failure
 
 `Download operator audit` is available only after one exact canonical response has passed validation. Activating it downloads the retained verified bytes with the validated server filename. No hidden second fetch or browser-side JSON reconstruction is allowed. The two governed desktop widths are 1280 and 1600 CSS pixels. Both collections use one accessible semantic DOM each and produce no horizontal page or row overflow.
 
-The top-level Operations `Audit` tab remains the incident-action collection defined by M4. Renaming it, merging Work audit into it, or adding global cross-capability filters would select a broader product surface and is excluded.
+The original M5 increment left the top-level Operations Audit tab incident-only. The owner-selected 2026-09-28 [Action history composition](BPM-PLATFORM-INFORMATION-ARCHITECTURE-SPEC.md#operations-flow) supersedes that placement: it presents the unchanged self-only Work search and Operations incident search in separate paged collections. It does not widen this specification’s per-instance export, authorization, snapshot or ordering contract. Global cross-actor Work search and a merged timeline remain excluded.
 
 ## Failure and integrity behavior
 

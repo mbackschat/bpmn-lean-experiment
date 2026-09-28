@@ -41,13 +41,15 @@ From a prepared contributor checkout, run:
 
 Open the printed origin, normally [http://127.0.0.1:3000](http://127.0.0.1:3000). Set `PLATFORM_PORT` if that port is occupied. This command builds the current Product 2 web/runtime graph and starts a private local platform and real Temporal server. It uses an isolated fresh Namespace and temporary data; Ctrl-C stops this host and removes only its temporary state. It neither starts nor resets the persistent Compose distribution. Lean and CIB Seven are not needed to execute these browser instances; their retained evidence qualifies the engine profiles.
 
-Open the printed **Prepared process catalog** link, or **Definitions → Explore process showcases**. The isolated host prepares all twelve curated definitions before reporting ready: three human-work examples and nine guided simulations. It creates no Process instances until you choose Start. Each prepared entry has its business description, **Open definition** and **Go to Start** links bound to the published version. Search by business purpose or BPMN element; **Show additional models** changes only which retained models are visible, without claiming that every model has a browser journey. Each detail explains what to try, the exact supported element variants and limits, and the separate CIB comparison boundary.
+Open the printed **Prepared process catalog** link, or **Definitions → Explore process showcases**. The user-facing host prepares only three interactive definitions before reporting ready: request approval, parallel content/risk review, and expense-exception review. Their tasks wait for the person using Work; this launch creates no simulated-user actor. It creates no Process instances until you choose Start. Each prepared entry has its business description, **Open definition** and **Go to Start** links bound to the published version. Search by business purpose or BPMN element; **Include automated examples and engine models** changes only which retained models are visible, without claiming that every model has a browser journey. Each detail explains what to try, the exact supported element variants and limits, and the separate CIB comparison boundary.
 
 1. Select a process and read its description and restrictions.
 2. Choose **Go to Start** for a prepared entry, or **Open definition** to inspect its diagram first. On another host, an unprepared example offers **Prepare this showcase**, which deploys the exact model and opens **Ready to start** with its description and example input. Preparation alone does not run it.
-3. Choose **Start version …**. You can inspect **Diagram** first and use its prominent **Start process** shortcut to return.
-4. Follow **What happens next**. For **Interactive human work**, choose **Open task inbox**, claim a task, choose **Edit task**, fill the form and complete it. For **Guided simulation**, the isolated host supplies the declared simulated participants and integrations.
+3. Review the start form above the diagram, then choose **Start version …**. The diagram is available below for inspection; no tab change is needed.
+4. Follow **What happens next**. For **Interactive human work**, choose **Open task inbox**, claim a task, choose **Edit task**, fill the form and complete it. On the separate automation host, **Guided simulation** Start opens the confirmed instance automatically. The isolated host supplies the declared simulated participants and integrations, so the example may already be completed when you see it. The visible status updates while it is running; choose **View execution history** to inspect the recorded sequence.
 5. Choose **View instance in Operations** directly from the start result to inspect **Overview** and **History**, without searching or copying an ID. Human-work journeys also produce **Operator history**. Diagram availability follows the model's actual source/presentation boundary.
+
+Use **Process description** from Definitions or an instance to return to its matching showcase. `Process_TerminateEnd` is the advanced repeated-application-reminder demonstration: its script finishes the review before terminating the local subprocess. It demonstrates repeated handlers and subscription cleanup, not cancellation of unfinished review work. Treat it as technical coverage evidence rather than an interactive cancellation showcase.
 
 | Business evaluation | Interaction |
 |---|---|
@@ -58,7 +60,9 @@ Open the printed **Prepared process catalog** link, or **Definitions → Explore
 | Claim context and decision | Simulated assessor; inspect direct input/output mediation |
 | Travel cancellation; reservation withdrawal | Simulated bookings and reversal effects; inspect Compensation and bounded Transaction/Cancel |
 
-The same catalog is present in the ordinary platform. Guided preparation is disabled when the isolated host marker is absent, because the ordinary platform supplies no simulated participant. Manually starting an uploaded matching definition does not install such a participant. Retained engine-only models are inspectable but offer no browser-run action. No model promises general BPMN conformance, unrestricted CIB compatibility, a live external business service, or production capacity.
+For automated testing, use `./scripts/pnpm.sh run demo:rc:automated` (default port 3001). It prepares the full technical catalog and explicitly enables scripted participants; interactive examples still require the ordinary Work actions and browser tests perform those actions. Each launch owns a fresh Temporal server/Namespace, Worker queue and temporary platform store, so automation cannot consume the user demo's tasks. External service simulations are host effects and remain distinct from human task completion. Existing engine scenarios and neutral interaction plans are unchanged.
+
+The same catalog is present in the ordinary platform. Its default list shows interactive human work. Guided preparation is disabled unless the host marker explicitly advertises automated participants; missing or old markers do not enable it. `Process_ClaimAssessment` remains an automated data-mapping fixture without a human form, so the user-facing launch neither prepares it nor lists it among its ready-to-start processes. Manually starting an uploaded matching definition on the user-facing host does not install such a participant. Restart an already-running `demo:rc` to apply this launch change; refreshing its browser alone cannot remove actors from the old server. Retained engine-only models are inspectable but offer no browser-run action. No model promises general BPMN conformance, unrestricted CIB compatibility, a live external business service, or production capacity.
 
 ## Share a view and use browser history
 
@@ -192,7 +196,7 @@ Choose **Download diagrammed BPMN** if you want a derived document that merges t
 
 ## 3. Start the exact definition version
 
-Choose **Start process** beside the diagram to open the starting details, then choose **Start version 1**, or the displayed selected version if you retained earlier state. The Start tab remains available. After confirmation, **View instance in Operations** opens the exact returned Process instance.
+Review the start form above the diagram, then choose **Start version 1**, or the displayed selected version if you retained earlier state. Message and schedule controls are in the collapsed **Triggers** section below the diagram. After confirmation, **View instance in Operations** opens the exact returned Process instance.
 
 The public identity binds the instance to its Process ID, definition version, exact source digest, and semantic profile. Product 2 keeps the Temporal observation locator private.
 
@@ -241,11 +245,13 @@ Open **Diagram** and inspect the terminal committed positions over the retained 
 
 ## 7. Inspect exact-version metrics
 
-Return to **Definitions**, select `Process_ExpenseExceptionReview` and its deployed version, then open **Flow-node metrics**. Confirm **All retained evidence**, **1 Process instance**, and the frequency and completed-duration table.
+Open **Operations → Process metrics**, select `Process_ExpenseExceptionReview` and its deployed version. Alternatively, use **View process metrics** in that exact definition. Confirm **All retained evidence**, **1 Process instance**, and the frequency and completed-duration table.
 
 Metrics come from complete engine-published flow-node occurrences for one exact-definition population. They are not transition counts or platform request durations.
 
-![Expense-exception definition showing exact-version flow-node frequency metrics](assets/bpm-platform-browser-walkthrough/07-definition-flow-node-metrics.png)
+The retained screenshot predates the navigation move; current metrics live in Operations and retain the same values.
+
+![Expense-exception process showing exact-version flow-node frequency metrics](assets/bpm-platform-browser-walkthrough/07-definition-flow-node-metrics.png)
 
 ## 8. Create two independently operable incidents
 
@@ -271,9 +277,9 @@ The command targets the exact incident-gated hosting root. It does not expose a 
 
 ## 10. Inspect incident action audit
 
-Return to the top-level Operations collection, open **Audit**, and filter actor ID to `demo-user`. Refresh until the settled status reports the platform action records and the table shows committed Retry and Cancel Process rows.
+Return to the top-level Operations collection and open **Action history**. Your task claims and completions appear under **Your task actions**; retries and cancellations appear under **Incident actions**. Use **Activity type** to narrow the view, optionally enter an exact **Process instance ID**, then **Apply filters**. **Refresh history** requests new first pages; each list has its own **Load more** control. Successful incident outcomes read **Completed successfully**. **View process** opens the selected instance’s full Operator history.
 
-The audit stream is Product 2 evidence with its own contiguous source order. It remains distinct from semantic History.
+Each audit stream is Product 2 evidence with its own source order. Task search shows only your actions; incident search follows Operations permissions. The streams remain distinct from semantic History and are not merged into one timeline. The retained image below predates the unified Action history layout.
 
 ![Incident action audit showing committed Retry and Cancel Process actions for demo-user](assets/bpm-platform-browser-walkthrough/10-incident-action-audit.png)
 

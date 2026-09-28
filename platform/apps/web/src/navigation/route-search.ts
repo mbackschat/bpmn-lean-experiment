@@ -14,10 +14,12 @@ export type DefinitionSearch = Readonly<{
 }>;
 
 export type OperationsSearch = Readonly<{
-  tab?: "process-instances" | "incidents" | "audit";
+  tab?: "process-instances" | "incidents" | "audit" | "metrics";
   instance?: string;
   incident?: string;
   view?: "overview" | "diagram" | "history" | "operator-history" | "audit";
+  auditType?: "tasks" | "incidents";
+  auditInstance?: string;
   filterInstance?: string;
   process?: string;
   version?: number;
@@ -49,9 +51,10 @@ export function validateDefinitionSearch(input: Record<string, unknown>): Defini
 
 export function validateOperationsSearch(input: Record<string, unknown>): OperationsSearch {
   return {
-    ...choiceField(input, "tab", ["process-instances", "incidents", "audit"]),
+    ...choiceField(input, "tab", ["process-instances", "incidents", "audit", "metrics"]),
     ...choiceField(input, "view", ["overview", "diagram", "history", "operator-history", "audit"]),
     ...textField(input, "instance"), ...textField(input, "incident"),
+    ...choiceField(input, "auditType", ["tasks", "incidents"]), ...textField(input, "auditInstance"),
     ...textField(input, "filterInstance"), ...textField(input, "process"),
     ...versionField(input), ...textField(input, "source"),
   };

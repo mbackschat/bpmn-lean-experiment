@@ -186,7 +186,4 @@
     grid-template-columns: 1fr;
   }
 
-  .resolutionActions > button {
-    flex: 1 1 100%;
-  }
 }

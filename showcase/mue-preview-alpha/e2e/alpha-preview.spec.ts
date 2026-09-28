@@ -134,8 +134,6 @@ async function startExactDefinition(page: Page): Promise<PublicProcessInstanceId
   await navigate(page, "Definitions");
   await page.getByRole("combobox", { name: "Definition", exact: true })
     .selectOption(processId);
-  await page.getByRole("tablist", { name: "Definition views" })
-    .getByRole("tab", { name: "Start", exact: true }).click();
   await expect(page.getByTestId("mue-preview-alpha-start-input")).toContainText(
     "contract, invoice, receipt",
   );

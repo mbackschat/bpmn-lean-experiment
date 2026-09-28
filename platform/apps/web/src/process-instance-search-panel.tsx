@@ -5,7 +5,7 @@ import type {
   ProcessInstanceSearchRequest,
   PublicProcessInstanceIdentity,
 } from "@bpmn-lean/platform-contracts";
-import { Button, ButtonVariant } from "@bpmn-lean/platform-ui-kit";
+import { Button, ButtonVariant, DataTable, DataTableResponsiveMode } from "@bpmn-lean/platform-ui-kit";
 
 import type { ProcessInstanceSearchApi } from "./process-instance-search-api.ts";
 import type { DefinitionApiClient } from "./definitions-api.ts";
@@ -22,6 +22,7 @@ import type {
 import styles from "./process-instance-search-panel.module.css";
 import type { OperationsSearch, WorkspaceNavigation } from "./navigation/route-search.ts";
 import { LatestRequest } from "./latest-request.ts";
+import { findProcessShowcase } from "./process-showcase-catalog.ts";
 
 export type ProcessInstanceSearchPanelProps = Readonly<{
   api: ProcessInstanceSearchApi;
@@ -156,7 +157,8 @@ export function ProcessInstanceSearchPanel({
       !isActive ||
       detail?.kind !== ProcessExecutionDetailLoadKind.Current ||
       detail.publication.current.state.status !== "running" ||
-      !Object.hasOwn(detail.publication.current.state, "openMultiInstances")
+      (!Object.hasOwn(detail.publication.current.state, "openMultiInstances")
+        && findProcessShowcase(detail.instance.definition)?.showcase?.mode !== "guided")
     ) return;
     const timer = window.setTimeout(() => {
       void detailLoader.current.refresh(detail, executionApi, setDetail);
@@ -378,46 +380,42 @@ export function ProcessInstanceSearchTable({
     return null;
   }
   return (
-    <div className={styles.results}>
-      <table aria-label="Process instances">
-        <thead>
-          <tr>
-            <th scope="col">Process-instance ID</th>
-            <th scope="col">Process ID</th>
-            <th scope="col">Version</th>
-            <th scope="col">Source ID</th>
-            <th scope="col">Source digest</th>
-            <th scope="col">Semantic profile</th>
-            <th scope="col">Details</th>
-          </tr>
-        </thead>
-        <tbody>
-          {instances.map((instance) => (
-            <tr key={instance.processInstanceId}>
-              <th scope="row"><code>{instance.processInstanceId}</code></th>
-              <td><code>{instance.definition.processId}</code></td>
-              <td>{instance.definition.version}</td>
-              <td><code>{instance.definition.source.id}</code></td>
-              <td><code>{instance.definition.source.sha256}</code></td>
-              <td><code>{instance.definition.semanticProfile}</code></td>
-              <td>
-                <Button
-                  variant={ButtonVariant.Secondary}
-                  ref={(row) => { registerRow(instance.processInstanceId, row); }}
-                  onPress={(event) => {
-                    const row = event.target;
-                    if (row instanceof HTMLButtonElement) onOpen(instance, row);
-                  }}
-                  aria-label={`View details ${instance.processInstanceId}`}
-                >
-                  View details
-                </Button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <DataTable
+      aria-label="Process instances"
+      rows={instances}
+      rowId={(instance) => instance.processInstanceId}
+      responsiveMode={DataTableResponsiveMode.Cards}
+      rowDetails={{ title: "Technical details", content: (instance) => <>
+        <p>These identifiers help match this run to the exact process definition.</p>
+        <dl className={styles.technical}>
+          <dt>BPMN process ID</dt><dd><code>{instance.definition.processId}</code></dd>
+          <dt>BPMN file</dt><dd>{instance.definition.source.id}</dd>
+          <dt>File fingerprint (SHA-256)</dt><dd><code>{instance.definition.source.sha256}</code></dd>
+          <dt>Execution profile</dt><dd><code>{instance.definition.semanticProfile}</code></dd>
+        </dl>
+      </> }}
+      columns={[{
+        id: "process", header: "Process", responsiveLabel: "Process",
+        cell: (instance) => <strong>{findProcessShowcase(instance.definition)?.title ?? instance.definition.processId}</strong>,
+      }, {
+        id: "instance", header: "Instance ID", responsiveLabel: "Instance ID",
+        cell: (instance) => <code>{instance.processInstanceId}</code>,
+      }, {
+        id: "version", header: "Definition version", responsiveLabel: "Definition version",
+        cell: (instance) => <span>{instance.definition.version}</span>,
+      }, {
+        id: "action", header: "Action", responsiveLabel: "Action",
+        cell: (instance) => <Button
+          variant={ButtonVariant.Secondary}
+          ref={(row) => { registerRow(instance.processInstanceId, row); }}
+          onPress={(event) => {
+            const row = event.target;
+            if (row instanceof HTMLButtonElement) onOpen(instance, row);
+          }}
+          aria-label={`View details ${instance.processInstanceId}`}
+        >View details</Button>,
+      }]}
+    />
   );
 }
 

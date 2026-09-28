@@ -133,7 +133,7 @@ test("an uncertain incident retains its exact action across route views and Oper
   await expect(retry).toBeVisible();
   await expect(page.getByRole("button", { name: "Back to incidents", exact: true })).toBeDisabled();
   const tabs = page.getByRole("tablist", { name: "Operations", exact: true });
-  await tabs.getByRole("tab", { name: "Audit", exact: true }).click();
+  await tabs.getByRole("tab", { name: "Action history", exact: true }).click();
   await tabs.getByRole("tab", { name: "Incidents", exact: true }).click();
   await expect(retry).toBeVisible();
   await retry.click();

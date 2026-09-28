@@ -121,15 +121,13 @@ test("captures the ordered text-first platform walkthrough landmarks", async ({ 
   await page.getByRole("combobox", { name: "Definition", exact: true })
     .selectOption(expenseProcessId);
   await page.getByRole("combobox", { name: "Version", exact: true }).selectOption("1");
-  await page.getByRole("tablist", { name: "Definition views" })
-    .getByRole("tab", { name: "Flow-node metrics", exact: true })
-    .click();
+  await page.getByRole("link", { name: "View process metrics", exact: true }).click();
   const metrics = page.getByRole("region", {
-    name: `Flow-node metrics for ${expenseProcessId}, version 1`,
+    name: `Process metrics for ${expenseProcessId}, version 1`,
   });
   await expect(metrics.getByText("All retained evidence", { exact: true })).toBeVisible();
   await expect(metrics.getByText("1 Process instance", { exact: true })).toBeVisible();
-  await expect(metrics.getByRole("table", { name: "Flow-node metric values" })).toBeVisible();
+  await expect(metrics.getByRole("table", { name: "Process metric values" })).toBeVisible();
   await capture(page, "07-definition-flow-node-metrics.png", metrics, captured);
 
   const retryInstanceId = await deployAndStartIncidentProfile(page, retryProfile, 1);
@@ -179,12 +177,11 @@ test("captures the ordered text-first platform walkthrough landmarks", async ({ 
     cancellationInstanceId,
   );
 
-  await operationsTabs.getByRole("tab", { name: "Audit", exact: true }).click();
-  const auditHeading = page.getByRole("heading", { name: "Incident action audit", level: 2 });
+  await operationsTabs.getByRole("tab", { name: "Action history", exact: true }).click();
+  const auditHeading = page.getByRole("heading", { name: "Action history", level: 2 });
   await expect(auditHeading).toBeVisible();
-  await page.getByRole("textbox", { name: "Actor ID", exact: true }).fill("demo-user");
-  const auditPanel = page.getByRole("region", { name: "Incident action audit" });
-  const audit = auditPanel.getByRole("table", { name: "Incident action audit" });
+  const auditPanel = page.getByRole("region", { name: "Incident actions", exact: true });
+  const audit = auditPanel.getByRole("table", { name: "Incident actions" });
   await refreshAuditUntilActionsCommitted(page, auditPanel, audit);
   await expect(audit).toContainText("demo-user");
   await capture(page, "10-incident-action-audit.png", auditHeading, captured);
@@ -243,9 +240,6 @@ async function deployDefinition(
 }
 
 async function startSelectedDefinition(page: Page, version: number): Promise<string> {
-  await page.getByRole("tablist", { name: "Definition views" })
-    .getByRole("tab", { name: "Start", exact: true })
-    .click();
   await page.getByRole("button", { name: `Start version ${version}`, exact: true }).click();
   await expect(page.getByText("Process instance started", { exact: true })).toBeVisible();
   const instanceId = page.getByText(instanceIdPattern, { exact: true });
@@ -454,24 +448,24 @@ async function refreshAuditUntilActionsCommitted(
   auditPanel: Locator,
   audit: Locator,
 ): Promise<void> {
-  const apply = page.getByRole("button", { name: "Apply audit filters", exact: true });
+  const apply = page.getByRole("button", { name: "Refresh history", exact: true });
   const status = auditPanel.getByRole("status");
   for (let attempt = 0; attempt < 20; attempt += 1) {
     await apply.click();
     const text = await audit.textContent().catch(() => null);
     if (
       text?.includes("Retry") === true &&
-      text.includes("Cancel Process") &&
-      text.includes("committed")
+      text.includes("Cancel process") &&
+      text.includes("Completed successfully")
     ) {
-      await expect(status).toContainText(/platform action records shown/u);
+      await expect(status).toContainText(/recorded incident actions shown/u);
       return;
     }
     await page.waitForTimeout(200);
   }
   await expect(audit).toContainText("Retry");
-  await expect(audit).toContainText("Cancel Process");
-  await expect(audit).toContainText("committed");
+  await expect(audit).toContainText("Cancel process");
+  await expect(audit).toContainText("Completed successfully");
 }
 
 async function capture(

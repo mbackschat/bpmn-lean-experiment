@@ -25,8 +25,6 @@ test("parallel content and risk review completes its production user journey", a
     level: 2,
   })).toBeVisible();
 
-  const definitionTabs = page.getByRole("tablist", { name: "Definition views" });
-  await definitionTabs.getByRole("tab", { name: "Start", exact: true }).click();
   await page.getByRole("button", { name: "Start version 1", exact: true }).click();
   await expect(page.getByText("Process instance started", { exact: true })).toBeVisible();
   const processInstanceId = await page.getByTestId("started-instance-id").textContent();

@@ -9,6 +9,7 @@ export type ProcessShowcaseEntry = Readonly<{
   sha256: string;
   profile: string;
   xml: string;
+  bpmnProcesses: ReadonlyArray<Readonly<{ id: string; name: string | null }>>;
   capabilityIds: ReadonlyArray<MvpBpmnCapabilityId>;
   pipelineCaseId: string | null;
   browserEvidence: "journeyBacked" | "guidedJourneyBacked" | "notCatalogReady";
@@ -80,7 +81,7 @@ export const rcShowcases = [
     modelId: "application-subscription-boundary-message",
     mode: "guided",
     configuration: "repeatable-event-subscriptions.json",
-    tryIt: "Watch two simulated reminder Messages create separate handler occurrences while review remains active. Inspect exact handler completion and subscription cleanup.",
+    tryIt: "Advanced technical demonstration: two simulated reminder Messages create separate handlers while review remains active. The script completes the review before reaching the Terminate End Event, so it demonstrates subscription cleanup but not cancellation of unfinished review work. Open History to inspect the sequence; the automatic run finishes quickly.",
   },
   {
     modelId: "confirmed-travel-cancellation",

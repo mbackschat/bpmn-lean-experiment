@@ -74,7 +74,7 @@ export function App({ origin, productVersion }: AppProps) {
   const definitionNavigation = useMemo<WorkspaceNavigation<DefinitionSearch>>(() => ({
     search: definitionSearch,
     navigate: (search, replace = false) => {
-      if (router.state.location.pathname === "/definitions") void router.navigate({ to: "/definitions", search, replace });
+      if (router.state.location.pathname === "/definitions") void router.navigate({ to: "/definitions", search, replace, resetScroll: false });
       else setSaved((current) => ({ ...current, definitions: search }));
     },
     retainSelection: (key) => retain(AppWorkspace.Definitions, key),

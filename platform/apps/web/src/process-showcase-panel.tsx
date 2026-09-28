@@ -59,7 +59,8 @@ export function ProcessShowcasePanel({ api, navigation, onPrepared, onBack, defi
         if (controller.signal.aborted) return;
         setRuntimeAvailable(typeof value === "object" && value !== null
           && "kind" in value && value.kind === "rcShowcaseRuntime"
-          && "version" in value && value.version === 1);
+          && "version" in value && value.version === 1
+          && "automatedParticipants" in value && value.automatedParticipants === true);
       }).catch(() => { if (!controller.signal.aborted) setRuntimeAvailable(false); });
     return () => controller.abort();
   }, []);
@@ -100,7 +101,7 @@ export function ProcessShowcasePanel({ api, navigation, onPrepared, onBack, defi
   if (navigation?.search.model !== undefined && selected === null) return <section aria-label="Process showcases"><h2>Showcase unavailable</h2><p>This link does not identify a retained showcase.</p><Button onPress={() => setSelected(null)}>Back to showcase catalog</Button></section>;
 
   const search = query.trim().toLocaleLowerCase();
-  const visible = entries.filter((entry) => (allModels || entry.showcase !== null)
+  const visible = entries.filter((entry) => (allModels || entry.showcase?.mode === "human" || (runtimeAvailable && entry.showcase !== null))
     && [entry.title, entry.businessPurpose, ...entry.capabilityIds.map((id) =>
       mvpBpmnCapabilities.find((capability) => capability.id === id)?.element ?? id)]
       .some((text) => text.toLocaleLowerCase().includes(search)));
@@ -113,18 +114,25 @@ export function ProcessShowcasePanel({ api, navigation, onPrepared, onBack, defi
     <section className={styles.panel} aria-label="Process showcases">
       <Button variant={ButtonVariant.Secondary} isDisabled={pending} onPress={onBack}>Back to definitions</Button>
       <h2 ref={heading} tabIndex={-1}>{selected?.title ?? "Explore process showcases"}</h2>
+      {selected === null ? null : <section className={styles.identity} aria-label="BPMN process identity">
+        {selected.bpmnProcesses.map((process) => <dl key={process.id}>
+          {process.name === null || process.name.length === 0 ? null : <><dt>BPMN name</dt><dd>{process.name}</dd></>}
+          <dt>BPMN process ID</dt><dd><code>{process.id}</code></dd>
+        </dl>)}
+      </section>}
       {selected === null ? <>
         <p>Choose a process that interests you. Prepared examples link directly to their definition and starting details; other examples need preparation first. Starting always remains your choice.</p>
-        <p>Human-work paths use real claim and form interactions. Guided simulations use real Temporal execution with explicitly simulated participants and services.</p>
+        <p>Tasks wait for you. Start a process, open Work, claim a task and complete its form. Nothing completes your human tasks automatically.</p>
+        {runtimeAvailable ? <p>Automation host: additional technical examples use scripted participants and simulated services. These are labelled Guided simulation.</p> : null}
         <InlineDisclosure title="What this demonstrates about the approach">
           <p>BPMN defines the model. Lean supplies the profile's reference account and its declared proved or checked assurance; it is not executing the browser instance. The TypeScript semantic core executes the admitted model, and Temporal hosts durable execution. CIB Seven is a compatibility oracle for selected profiles, not the runtime behind this UI.</p>
           <p>A passing example establishes its bounded path. It does not prove every BPMN combination, general CIB compatibility, or production capacity. About lists exact element variants and restrictions.</p>
         </InlineDisclosure>
         <div className={styles.filters}>
           <label>Find a process or BPMN element<input type="search" value={query} onChange={(event) => setQuery(event.currentTarget.value)} /></label>
-          <label><input type="checkbox" checked={allModels} onChange={(event) => setAllModels(event.currentTarget.checked)} />Show additional models (view only)</label>
+          <label><input type="checkbox" checked={allModels} onChange={(event) => setAllModels(event.currentTarget.checked)} />Include automated examples and engine models</label>
         </div>
-        <p>These additional models document engine coverage. They do not have a runnable walkthrough in this app.</p>
+        <p>Additional models document technical coverage. Automated examples require a separate automation host; they are not interactive human-work showcases.</p>
         <p role="status">{visible.length} matching processes</p>
         <ul className={styles.collection} ref={list}>
           {visible.map((model) => {
@@ -145,7 +153,7 @@ export function ProcessShowcasePanel({ api, navigation, onPrepared, onBack, defi
         {selected.showcase === null ? <p>{selected.browserLimit}</p> : <>
           <h3>What to try</h3><p>{selected.showcase.tryIt}</p>
           {selected.showcase.mode === "guided" ? <p>Participants and external services are simulated by the isolated RC showcase host. This is an engine demonstration, not a human inbox or a live business integration.</p> : <p>After starting, use Work to claim and complete each task. Inspect the exact instance in Operations for current state, semantic History and operator actions.</p>}
-          {selected.showcase.mode === "guided" && !runtimeAvailable ? <p role="status">Guided execution is unavailable on this host. Launch the isolated RC showcase host with <code>./scripts/pnpm.sh run demo:rc</code> to try it.</p> : null}
+          {selected.showcase.mode === "guided" && !runtimeAvailable ? <p role="status">Guided execution is unavailable on this host. This automated example is not prepared for user evaluation. For automated testing, launch <code>./scripts/pnpm.sh run demo:rc:automated</code> separately.</p> : null}
           {prepared === undefined ? <Button isPending={pending} isDisabled={selected.showcase.mode === "guided" && !runtimeAvailable} onPress={() => { void prepare(selected); }}>Prepare this showcase</Button>
             : <PreparedDefinitionLinks definition={prepared} />}
           {pending ? <p role="status">Preparing this exact model. Wait for the result before choosing another showcase.</p> : null}

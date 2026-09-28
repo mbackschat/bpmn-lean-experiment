@@ -6,10 +6,11 @@ test("About captions use the available width without losing desktop table layout
   await page.goto("/");
   await page.getByRole("navigation", { name: "Primary navigation" }).getByRole("link", { name: "About", exact: true }).click();
   await page.getByRole("button", { name: "Show Executable BPMN elements and variants", exact: true }).click();
+  await page.getByRole("button", { name: "Expand all families", exact: true }).click();
   await page.evaluate(() => document.fonts.ready);
 
   for (const name of [
-    "Executable BPMN element and semantic-variant overview",
+    "Process structure — elements and variants",
   ]) {
     const table = page.getByRole("table", { name, exact: true });
     const caption = table.locator("caption");

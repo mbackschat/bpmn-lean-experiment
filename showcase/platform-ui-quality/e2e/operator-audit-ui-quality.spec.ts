@@ -25,6 +25,8 @@ test("Operator history preserves two source-local arrays and downloads retained 
   await selectOperatorHistoryWithKeyboard(page);
   const history = page.locator('[data-ui="operator-history"]');
 
+  await expect(history.getByText("Action history", { exact: true })).toBeVisible();
+  await expect(history).toContainText("Who performed which actions, and their recorded outcomes.");
   await expect(history.getByRole("heading", { name: "Work actions (2)" })).toBeVisible();
   await expect(history.getByRole("heading", { name: "Incident actions (2)" })).toBeVisible();
   await expect(history).toContainText(`Captured head ${operatorAuditLabels.workHeadEventId}`);

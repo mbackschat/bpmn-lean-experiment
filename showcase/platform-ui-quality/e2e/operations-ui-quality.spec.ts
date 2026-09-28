@@ -39,6 +39,8 @@ test("Operations is a primary keyboard-reachable workspace", async ({ page }) =>
   await expect(operations).toBeVisible();
   await expect(page.locator("body")).toBeFocused();
   await page.keyboard.press("Tab");
+  await expect(page.getByRole("link", { name: "BPMN Lean home", exact: true })).toBeFocused();
+  await page.keyboard.press("Tab");
   await expect(navigation.getByRole("link", { name: "Work", exact: true })).toBeFocused();
   await operations.focus();
   await page.keyboard.press("Enter");
@@ -202,8 +204,8 @@ test("response-loss Retry keeps exact public bytes and private facts absent", as
   expect(new Set(capture.actions.map(({ url }) => url)).size).toBe(1);
   expect(new Set(capture.actions.map(({ body }) => body)).size).toBe(1);
 
-  await page.getByRole("tab", { name: "Audit" }).click();
-  await expect(page.getByRole("heading", { name: "Incident action audit" })).toBeVisible();
+  await page.getByRole("tab", { name: "Action history" }).click();
+  await expect(page.getByRole("heading", { name: "Action history" })).toBeVisible();
   const publicBrowserState = await page.evaluate(() => ({
     dom: document.documentElement.outerHTML,
     forms: Array.from(document.forms, (form) => ({
@@ -230,27 +232,25 @@ test("response-loss Retry keeps exact public bytes and private facts absent", as
   })).toEqual([]);
 });
 
-test("top audit filtering and paging move focus without claiming currentness @responsive", async ({ page }) => {
+test("top history filtering and paging preserve incident context @responsive", async ({ page }) => {
   await openOperations(page, { audit: FixtureIncidentAuditState.Loading });
-  await page.getByRole("tab", { name: "Audit" }).click();
-  const audit = page.locator('[data-ui="incident-audit"]');
-  await expect(audit.getByRole("status")).toHaveText("Loading incident action audit…");
-  await expect(audit.getByText(
-    "These rows are platform actions. They do not prove that an incident is current.",
-    { exact: true },
-  )).toBeVisible();
-  await expect(audit.getByRole("table", { name: "Incident action audit" })).toBeVisible();
-  await audit.getByRole("textbox", { name: "Actor ID" }).fill(operationsFixtureLabels.actor);
-  await audit.getByRole("combobox", { name: "Action" }).selectOption("retryIncident");
-  await audit.getByRole("button", { name: "Apply audit filters" }).click();
-  await expect(audit.getByRole("heading", { name: "Incident action audit" })).toBeFocused();
-  await audit.getByRole("button", { name: "Next audit page" }).click();
-  await expect(audit.locator('[data-audit-event-id="audit-event-000003"]')).toBeFocused();
-  await assertNoOverflow(audit, "top audit");
-  await assertNoOverflow(audit.locator("form"), "top audit filters");
-  const rows = audit.getByRole("table", { name: "Incident action audit" }).getByRole("row");
+  await page.getByRole("tab", { name: "Action history" }).click();
+  const audit = page.getByRole("region", { name: "Action history", exact: true });
+  const incidents = audit.getByRole("region", { name: "Incident actions", exact: true });
+  await expect(incidents.getByRole("status")).toHaveText("Loading incident actions…");
+  await expect(incidents).toContainText("Recorded incident actions do not indicate whether an incident is still current.");
+  await expect(incidents.getByRole("table", { name: "Incident actions" })).toBeVisible();
+  await audit.getByLabel("Activity type").selectOption("incidents");
+  await audit.getByLabel("Process instance ID", { exact: true }).fill(operationsFixtureLabels.process);
+  await audit.getByRole("button", { name: "Apply filters" }).click();
+  await incidents.getByRole("button", { name: "Load more incident actions" }).click();
+  await expect(incidents.getByRole("status")).toBeFocused();
+  await expect(incidents.getByRole("status")).toHaveText("2 recorded incident actions shown.");
+  await assertNoOverflow(audit, "top history");
+  await assertNoOverflow(audit.locator("form"), "history filters");
+  const rows = incidents.getByRole("table").getByRole("row");
   for (let index = 1; index < await rows.count(); index += 1) {
-    await assertNoOverflow(rows.nth(index), `audit row ${index}`);
+    await assertNoOverflow(rows.nth(index), `history row ${index}`);
   }
   await assertOwnedActionsFit(audit);
 });
@@ -292,7 +292,7 @@ test("empty and error audit states are explicit", async ({ browser }) => {
   for (const stateCase of [{
     state: FixtureIncidentAuditState.Empty,
     role: null,
-    message: "No platform incident actions match these filters.",
+    message: "No incident actions match these filters.",
   }, {
     state: FixtureIncidentAuditState.Error,
     role: "alert",
@@ -301,8 +301,8 @@ test("empty and error audit states are explicit", async ({ browser }) => {
     const page = await browser.newPage();
     await page.emulateMedia({ reducedMotion: "reduce" });
     await openOperations(page, { audit: stateCase.state });
-    await page.getByRole("tab", { name: "Audit" }).click();
-    const audit = page.locator('[data-ui="incident-audit"]');
+    await page.getByRole("tab", { name: "Action history" }).click();
+    const audit = page.getByRole("region", { name: "Action history", exact: true });
     const target = stateCase.role === null
       ? audit.getByText(stateCase.message, { exact: true })
       : audit.getByRole(stateCase.role).filter({ hasText: stateCase.message });

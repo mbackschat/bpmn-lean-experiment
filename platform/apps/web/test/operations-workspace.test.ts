@@ -34,7 +34,7 @@ const auditCss = await readFile(
 test("uses the approved Operations information architecture and complete responsive table", () => {
   assert.match(workspace, /label: "Process instances"/u);
   assert.match(workspace, /label: "Incidents"/u);
-  assert.match(workspace, /label: "Audit"/u);
+  assert.match(workspace, /label: "Action history"/u);
   assert.match(workspace, /ProcessInstanceSearchPanel/u);
   assert.match(collection, /aria-label="Current incidents"/u);
   assert.match(collection, /DataTableResponsiveMode\.Cards/u);
@@ -73,7 +73,7 @@ test("makes focus and stale-response behavior explicit", () => {
   assert.match(audit, /sequence\.current\.isCurrent\(activeLoad\.generation\)/u);
   assert.match(audit, /beginIncidentAuditLoad\(sequence\.current, focus\)/u);
   assert.match(audit, /ref=\{errorAlert\} tabIndex=\{-1\}/u);
-  assert.match(audit, /They do not prove that an incident is current/u);
+  assert.match(audit, /These recorded actions do not tell you whether an incident is still current/u);
 });
 
 test("does not promote a collection row to actionable detail before exact corroboration", () => {

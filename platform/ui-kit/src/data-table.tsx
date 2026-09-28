@@ -5,6 +5,8 @@ import {
 } from "@tanstack/react-table";
 import type { RowData } from "@tanstack/react-table";
 import type { ReactNode } from "react";
+import { Fragment, useId, useState } from "react";
+import { Button, ButtonVariant } from "./button.js";
 
 import styles from "./data-table.module.css";
 
@@ -34,6 +36,7 @@ export type DataTableProps<Row extends RowData> = Readonly<{
   columns: readonly DataTableColumn<Row>[];
   rowId: (row: Row) => string;
   responsiveMode?: DataTableResponsiveMode;
+  rowDetails?: Readonly<{ title: string; content: (row: Row) => ReactNode }>;
 }>;
 
 /** Native table semantics backed by TanStack's headless row and cell model. */
@@ -43,7 +46,10 @@ export function DataTable<Row extends RowData>({
   columns,
   rowId,
   responsiveMode = DataTableResponsiveMode.None,
+  rowDetails,
 }: DataTableProps<Row>) {
+  const detailsPrefix = useId();
+  const [expanded, setExpanded] = useState<ReadonlySet<string>>(() => new Set());
   const helper = createColumnHelper<typeof features, Row>();
   const table = useTable({
     features,
@@ -70,26 +76,50 @@ export function DataTable<Row extends RowData>({
                     : columns.find(({ id }) => id === header.column.id)!.header}
                 </th>
               ))}
+              {rowDetails === undefined ? null : <th scope="col">{rowDetails.title}</th>}
             </tr>
           ))}
         </thead>
         <tbody>
-          {table.getRowModel().rows.map((row) => (
-            <tr key={row.id}>
-              {row.getAllCells().map((cell) => (
-                <td
-                  key={cell.id}
-                  data-card-width={columns.find(({ id }) => id === cell.column.id)!
-                    .cardWidth ?? DataTableCardWidth.Half}
-                  data-label={columns.find(({ id }) => id === cell.column.id)!
-                    .responsiveLabel}
-                >
-                  {/* Render callbacks are not component types: invoking them keeps controls mounted across updates (ui-quality.spec.ts focus-return regression). */}
-                  {columns.find(({ id }) => id === cell.column.id)!.cell(row.original)}
+          {table.getRowModel().rows.map((row) => {
+            const isExpanded = rowDetails !== undefined && expanded.has(row.id);
+            const detailsId = `${detailsPrefix}-${encodeURIComponent(row.id)}`;
+            return <Fragment key={row.id}>
+              <tr data-expanded={isExpanded || undefined}>
+                {row.getAllCells().map((cell) => (
+                  <td
+                    key={cell.id}
+                    data-card-width={columns.find(({ id }) => id === cell.column.id)!
+                      .cardWidth ?? DataTableCardWidth.Half}
+                    data-label={columns.find(({ id }) => id === cell.column.id)!
+                      .responsiveLabel}
+                  >
+                    {/* Render callbacks are not component types: invoking them keeps controls mounted across updates (ui-quality.spec.ts focus-return regression). */}
+                    {columns.find(({ id }) => id === cell.column.id)!.cell(row.original)}
+                  </td>
+                ))}
+                {rowDetails === undefined ? null : <td data-label={rowDetails.title}>
+                  <Button variant={ButtonVariant.Secondary} aria-expanded={isExpanded}
+                    {...(isExpanded ? { "aria-controls": detailsId } : {})}
+                    onPress={() => setExpanded((current) => {
+                      const next = new Set(current);
+                      if (next.has(row.id)) next.delete(row.id);
+                      else next.add(row.id);
+                      return next;
+                    })}>
+                    {isExpanded ? "Hide" : "Show"} {rowDetails.title}
+                  </Button>
+                </td>}
+              </tr>
+              {isExpanded && rowDetails !== undefined ? <tr data-ui="data-table-details">
+                <td colSpan={columns.length + 1}>
+                  <div id={detailsId} className={styles.details} role="region" aria-label={`${rowDetails.title} for ${row.id}`}>
+                    {rowDetails.content(row.original)}
+                  </div>
                 </td>
-              ))}
-            </tr>
-          ))}
+              </tr> : null}
+            </Fragment>;
+          })}
         </tbody>
       </table>
     </div>

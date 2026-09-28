@@ -1,9 +1,12 @@
+import { ProcessMetricsWorkspace } from "./process-metrics-workspace.tsx";
+import type { FlowNodeMetricsApi } from "./flow-node-metrics-api.ts";
 import { useEffect, useState } from "react";
 import type { PublicProcessInstanceIdentity } from "@bpmn-lean/platform-contracts";
 
 import { WorkspaceTabs } from "@bpmn-lean/platform-ui-kit";
 
-import { IncidentAuditPanel } from "./incident-audit-panel.tsx";
+import { ActionHistoryPanel } from "./action-history-panel.tsx";
+import type { WorkApiClient } from "./work-tasks-api.ts";
 import type { IncidentOperationsApi } from "./incident-operations-api.ts";
 import { IncidentsPanel } from "./incidents-panel.tsx";
 import type { DefinitionApiClient } from "./definitions-api.ts";
@@ -15,8 +18,10 @@ import type { OperationsSearch, WorkspaceNavigation } from "./navigation/route-s
 import styles from "./operations-workspace.module.css";
 
 export type OperationsWorkspaceProps = Readonly<{
-  definitionApi: Pick<DefinitionApiClient, "getPresentation">;
+  definitionApi: Pick<DefinitionApiClient, "getPresentation" | "listDefinitions" | "listVersions">;
+  metricsApi: FlowNodeMetricsApi;
   incidentApi: IncidentOperationsApi;
+  workAuditApi: Pick<WorkApiClient, "readAudit">;
   operatorAuditApi: OperatorAuditApi;
   processExecutionApi: ProcessExecutionApi;
   processInstanceSearchApi: ProcessInstanceSearchApi;
@@ -27,7 +32,9 @@ export type OperationsWorkspaceProps = Readonly<{
 /** Full-width operational workspace grouped by instances, current incidents, and action audit. */
 export function OperationsWorkspace({
   definitionApi,
+  metricsApi,
   incidentApi,
+  workAuditApi,
   operatorAuditApi,
   processExecutionApi,
   processInstanceSearchApi,
@@ -46,7 +53,7 @@ export function OperationsWorkspace({
         selectedKey={tab}
         onSelectionChange={(next) => {
           if (navigation === undefined) setTab(next);
-          else if (next === "process-instances" || next === "incidents" || next === "audit") {
+          else if (next === "process-instances" || next === "incidents" || next === "audit" || next === "metrics") {
             navigation.navigate({ ...navigation.search, tab: next });
           }
         }}
@@ -78,9 +85,13 @@ export function OperationsWorkspace({
             />
           ),
         }, {
+          id: "metrics",
+          label: "Process metrics",
+          content: <ProcessMetricsWorkspace definitionApi={definitionApi} metricsApi={metricsApi} {...(navigation === undefined ? {} : { navigation })} />,
+        }, {
           id: "audit",
-          label: "Audit",
-          content: <IncidentAuditPanel api={incidentApi} isActive={tab === "audit"} />,
+          label: "Action history",
+          content: <ActionHistoryPanel workApi={workAuditApi} incidentApi={incidentApi} {...(navigation === undefined ? {} : { navigation })} />,
         }]}
       />
     </div>

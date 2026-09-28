@@ -35,10 +35,14 @@ export function DefinitionStartPanel({
     setError(null);
     setResult(null);
     try {
-      setResult(await api.start(
+      const started = await api.start(
         definition,
         showcase?.showcase?.start ?? alphaStart?.command ?? { initialVariables: [] },
-      ));
+      );
+      setResult(started);
+      if (started.status === ProcessInstanceStartStatus.Started && showcase?.showcase?.mode === "guided") {
+        onOpenInstance?.(started.instance);
+      }
     } catch (cause: unknown) {
       setError(cause instanceof Error ? cause.message : "Unknown platform failure");
     } finally {
@@ -70,7 +74,10 @@ export function DefinitionStartPanel({
         <div className={styles.previewInput}>
           <strong>{showcase.title}</strong>
           <p>{showcase.showcase.tryIt}</p>
-          {showcase.showcase.mode === "guided" ? <p>Guided simulation: the RC showcase host supplies simulated participants and external services. On other hosts, this starts the model without those participants.</p> : null}
+          {showcase.showcase.mode === "guided" ? <div>
+            <strong>Automatic demonstration</strong>
+            <p>In the RC demo, simulated participants and services run this example automatically, often within seconds. After Start, we’ll open the instance so you can see its progress, result and History. On other hosts, tasks wait for their participants.</p>
+          </div> : null}
           {showcase.showcase.start.initialVariables.length === 0 ? null : (
             <InlineDisclosure title="Showcase start data"><pre>{JSON.stringify(showcase.showcase.start.initialVariables, null, 2)}</pre></InlineDisclosure>
           )}

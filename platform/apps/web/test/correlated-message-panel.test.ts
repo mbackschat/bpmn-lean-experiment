@@ -174,7 +174,7 @@ test("places correlated Message publication in the exact-definition Triggers wor
     new URL("../src/definition-workspace.tsx", import.meta.url),
     "utf8",
   );
-  assert.match(source, /label: "Triggers"[\s\S]*<CorrelatedMessagePanel/u);
+  assert.match(source, /<InlineDisclosure title="Triggers"[\s\S]*<CorrelatedMessagePanel/u);
   assert.match(source, /api=\{correlatedMessageApi\}/u);
 });
 

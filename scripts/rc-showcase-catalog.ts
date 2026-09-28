@@ -7,6 +7,7 @@ import type { ProcessShowcaseEntry } from "../model-corpus/rc-showcases.ts";
 import type { DefinitionVersionStartCommand } from "../platform/contracts/src/definition-start-command.ts";
 import { detectExecutableBpmnCapabilities } from "./executable-model-capabilities.ts";
 import { requireExecutableModelCorpusManifest } from "./executable-model-corpus-manifest.ts";
+import { flattenElements, parseXmlElements } from "./minimal-xml-tree.ts";
 
 /** Builds a read-only UI projection; source admission and execution remain engine operations. */
 export async function buildProcessShowcaseCatalog(projectRoot: string): Promise<ReadonlyArray<ProcessShowcaseEntry>> {
@@ -53,6 +54,12 @@ export async function buildProcessShowcaseCatalog(projectRoot: string): Promise<
       sha256: model.source.sha256,
       profile: model.profile,
       xml,
+      bpmnProcesses: flattenElements(parseXmlElements(xml).roots)
+        .filter((element) => element.name === "process")
+        .map(({ attributes }) => {
+          if (attributes.id === undefined) throw new Error(`Showcase BPMN Process lacks an ID: ${model.id}`);
+          return { id: xmlAttributeText(attributes.id), name: attributes.name === undefined ? null : xmlAttributeText(attributes.name) };
+        }),
       capabilityIds: detectExecutableBpmnCapabilities(xml),
       pipelineCaseId: model.pipelineCaseId,
       browserEvidence: model.product2.kind,
@@ -66,4 +73,17 @@ export async function buildProcessShowcaseCatalog(projectRoot: string): Promise<
     if (!result.some(({ id }) => id === selection.modelId)) throw new Error(`Unknown showcase ${selection.modelId}`);
   }
   return result;
+}
+
+function xmlAttributeText(value: string): string {
+  return value.replace(/&(#x[0-9a-fA-F]+|#[0-9]+|amp|lt|gt|quot|apos);/gu, (_, entity: string) => {
+    switch (entity) {
+      case "amp": return "&";
+      case "lt": return "<";
+      case "gt": return ">";
+      case "quot": return '"';
+      case "apos": return "'";
+      default: return String.fromCodePoint(entity.startsWith("#x") ? Number.parseInt(entity.slice(2), 16) : Number.parseInt(entity.slice(1), 10));
+    }
+  });
 }

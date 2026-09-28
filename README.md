@@ -32,7 +32,9 @@ Read [PLAN.md](docs/PLAN.md) for current execution order, root [`implementation-
 
 This is a commit-stamped publication snapshot rather than a live status owner. Its exact inputs and refresh procedure are recorded in the [project infographics guide](docs/PROJECT-INFOGRAPHICS-GUIDE.md#infographic-3-product-2-vision-and-progress).
 
-For interactive evaluation, run `./scripts/pnpm.sh run demo:rc` from a prepared checkout, then open **Definitions → Explore process showcases**. The [RC walkthrough](docs/BPM-PLATFORM-BROWSER-WALKTHROUGH.md#rc-process-showcase-catalog) explains launch, business examples, simulated participants and evidence limits.
+Definitions presents Start above the diagram; optional Triggers expand below it. **Operations → Process metrics** shows step frequency and completed duration for a selected process version, also linked from Definitions.
+
+For interactive evaluation, run `./scripts/pnpm.sh run demo:rc` from a prepared checkout, then open **Definitions → Explore process showcases**. The [RC walkthrough](docs/BPM-PLATFORM-BROWSER-WALKTHROUGH.md#rc-process-showcase-catalog) explains the three prepared interactive processes, real task completion, the separate `demo:rc:automated` test launch, and evidence limits.
 
 ## Architecture at a glance
 
@@ -258,7 +260,7 @@ Supporting lemmas count `private theorem` and every explicit `lemma` command, ma
 | Language | Files | Code | Comments | Blanks |
 |---|---:|---:|---:|---:|
 | Java | 85 | 11,508 | 251 | 1,156 |
-| TypeScript | 1,949 | 400,069 | 9,759 | 25,191 |
+| TypeScript | 1,950 | 400,407 | 9,760 | 25,207 |
 | Lean | 718 | 150,058 | 7,799 | 13,118 |
 <!-- publication-statistics:language-footprint:end -->
 

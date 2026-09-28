@@ -51,31 +51,19 @@
   justify-self: start;
 }
 
-.results {
-  max-width: 100%;
-  overflow: hidden;
+.technical {
+  margin: 0;
 }
 
-.results table {
-  width: 100%;
-  border-collapse: collapse;
-  font: var(--ui-font-body);
-  text-align: left;
-}
-
-.results th,
-.results td {
-  border-bottom: var(--ui-border);
-  padding: var(--ui-space-3);
-  vertical-align: top;
-  overflow-wrap: anywhere;
-}
-
-.results thead th {
+.technical dt {
+  margin-top: var(--ui-space-3);
   color: var(--ui-color-muted);
   font: var(--ui-font-label);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+}
+
+.technical dd {
+  margin: var(--ui-space-1) 0 0;
+  overflow-wrap: anywhere;
 }
 
 .empty {
@@ -94,40 +82,6 @@
 @container (max-width: 68rem) {
   .form {
     grid-template-columns: repeat(2, minmax(12rem, 1fr));
-  }
-
-  .results table,
-  .results tbody {
-    display: block;
-  }
-
-  .results thead {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
-  }
-
-  .results tr {
-    display: grid;
-    gap: var(--ui-space-2);
-    border: var(--ui-border);
-    border-radius: var(--ui-radius-surface);
-    padding: var(--ui-space-3);
-    background: var(--ui-color-inset);
-  }
-
-  .results tr + tr {
-    margin-top: var(--ui-space-3);
-  }
-
-  .results th,
-  .results td {
-    display: block;
-    border: 0;
-    padding: 0;
   }
 }
 

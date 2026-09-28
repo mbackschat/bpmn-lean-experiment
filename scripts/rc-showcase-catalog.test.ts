@@ -19,6 +19,12 @@ test("projects retained business models and twelve configured evaluation paths w
   const ordinary = catalog.find((model) => model.id === "parallel-work-preparation")!;
   assert.equal(ordinary.showcase, null);
   assert.match(ordinary.browserLimit, /metadata-free/u);
+  assert.deepEqual(catalog.find((model) => model.id === "claim-assessment-with-input-and-decision")?.bpmnProcesses,
+    [{ id: "Process_ClaimAssessment", name: null }]);
+  assert.deepEqual(catalog.find((model) => model.id === "parallel-content-and-risk-review")?.bpmnProcesses,
+    [{ id: "Process_ParallelUserTaskMetadata", name: "Parallel content and risk review" }]);
+  assert.deepEqual(catalog.find((model) => model.id === "called-process-fulfilment")?.bpmnProcesses,
+    [{ id: "CallerProcess", name: null }, { id: "CalledProcess", name: null }]);
 });
 
 test("binds runnable data to exact source and profile rather than the business label", async () => {

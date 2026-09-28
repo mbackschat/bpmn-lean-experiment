@@ -3,9 +3,9 @@ import { spawn } from "node:child_process";
 import { once } from "node:events";
 import { test } from "node:test";
 
-for (const signal of ["SIGINT", "SIGTERM"] as const) {
-  test(`RC showcase exits cleanly after ${signal}`, { timeout: 60_000 }, async () => {
-    const child = spawn(process.execPath, [new URL("../src/rc-showcase-host.ts", import.meta.url).pathname], {
+for (const automated of [false, true]) for (const signal of ["SIGINT", "SIGTERM"] as const) {
+  test(`RC ${automated ? "automation" : "user"} showcase exits cleanly after ${signal}`, { timeout: 60_000 }, async () => {
+    const child = spawn(process.execPath, [new URL("../src/rc-showcase-host.ts", import.meta.url).pathname, ...(automated ? ["--automated-participants"] : [])], {
       env: { ...process.env, PLATFORM_PORT: "0" }, stdio: ["ignore", "pipe", "pipe"],
     });
     const exit = once(child, "exit");

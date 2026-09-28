@@ -13,18 +13,65 @@ test.beforeEach(async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
 });
 
-test("Flow-node metrics uses one exact snapshot for badges and its complete table @responsive", async ({ page }) => {
+test("Definitions links to exact Operations metrics with reload and browser history @responsive", async ({ page }) => {
+  await installFlowNodeMetricsFixtures(page);
+  await page.goto("/#/definitions?process=Metrics_Process&version=7");
+  const link = page.getByRole("link", { name: "View process metrics", exact: true });
+  await expect(link).toHaveAttribute("href", /operations.*tab=metrics.*process=Metrics_Process.*version=7/);
+  await link.click();
+  await expect(page.getByRole("tab", { name: "Process metrics", exact: true })).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByText("7 Process instances", { exact: true })).toBeVisible();
+  await versionPicker(page).selectOption("8");
+  await expect(page.getByText("8 Process instances", { exact: true })).toBeVisible();
+  await page.goBack();
+  await expect(versionPicker(page)).toHaveValue("7");
+  await page.goForward();
+  await expect(versionPicker(page)).toHaveValue("8");
+  await page.reload();
+  await expect(page.getByText("8 Process instances", { exact: true })).toBeVisible();
+  await page.getByRole("link", { name: "View definition", exact: true }).click();
+  await expect(page).toHaveURL(/definitions.*version=8/);
+  await expect(page.getByRole("button", { name: "Start version 8" })).toBeVisible();
+});
+
+test("legacy metrics links redirect without losing their exact definition", async ({ page }) => {
+  await installFlowNodeMetricsFixtures(page);
+  await page.goto("/#/definitions?process=Metrics_Process&version=7&tab=metrics");
+  await expect(page).toHaveURL(/operations.*tab=metrics/);
+  await expect(versionPicker(page)).toHaveValue("7");
+  await expect(page.getByText("7 Process instances", { exact: true })).toBeVisible();
+});
+
+test("unavailable metrics selections never fall back to another process or version", async ({ page }) => {
+  const fixture = await installFlowNodeMetricsFixtures(page);
+  for (const search of ["process=missing", "process=Metrics_Process&version=999"]) {
+    await page.goto(`/#/operations?tab=metrics&${search}`);
+    await expect(page.getByRole("alert")).toContainText("unavailable");
+    await expect(page.getByRole("table", { name: "Process metric values" })).toHaveCount(0);
+  }
+  expect(fixture.metricsRequestCount()).toBe(0);
+});
+
+test("empty metrics process selection explains the next step", async ({ page }) => {
+  await installFlowNodeMetricsFixtures(page);
+  await page.route("**/api/v1/definitions", (route) => route.fulfill({ json: { definitions: [] } }));
+  await page.goto("/#/operations?tab=metrics");
+  await expect(page.getByText(/No process definitions are available yet/)).toBeVisible();
+  await expect(page.getByRole("link", { name: "Open Definitions" })).toBeVisible();
+});
+
+test("Process metrics uses one exact snapshot for badges and its complete table @responsive", async ({ page }) => {
   const fixture = await installFlowNodeMetricsFixtures(page);
   await openMetrics(page);
 
   const detail = page.getByRole("region", {
-    name: "Flow-node metrics for Metrics_Process, version 8",
+    name: "Process metrics for Metrics_Process, version 8",
   });
-  const heading = detail.getByRole("heading", { name: "Flow-node metrics" });
+  const heading = detail.getByRole("heading", { name: "Process metrics" });
   await expect(heading).toBeFocused();
   await expect(detail.getByText("All retained evidence", { exact: true })).toBeVisible();
   await expect(detail.getByText("8 Process instances", { exact: true })).toBeVisible();
-  const table = detail.getByRole("table", { name: "Flow-node metric values" });
+  const table = detail.getByRole("table", { name: "Process metric values" });
   await expect(table).toBeVisible();
   await expect(table.getByRole("row")).toHaveCount(7);
   await expect(table.getByRole("row", { name: /Task_Running/u })).toContainText(
@@ -50,6 +97,7 @@ test("Flow-node metrics uses one exact snapshot for badges and its complete tabl
   await assertNoOverflow(detail, "metric detail");
   await assertNoOverflow(table, "metric table");
   await assertOwnedActionsFit(detail);
+  await page.screenshot({ path: test.info().outputPath("operations-process-metrics.png") });
 });
 
 for (const failure of [
@@ -57,61 +105,57 @@ for (const failure of [
   FlowNodeMetricsFixtureFailure.Unavailable,
   FlowNodeMetricsFixtureFailure.Transport,
 ] as const) {
-  test(`Flow-node metrics suppresses a prior snapshot after ${failure}`, async ({ page }) => {
+  test(`Process metrics suppresses a prior snapshot after ${failure}`, async ({ page }) => {
     await installFlowNodeMetricsFixtures(page, { failure });
     await openMetrics(page);
-    await expect(page.getByRole("table", { name: "Flow-node metric values" })).toBeVisible();
+    await expect(page.getByRole("table", { name: "Process metric values" })).toBeVisible();
     await versionPicker(page).selectOption("7");
     const alert = page.getByRole("alert");
-    await expect(alert).toHaveText("Flow-node metrics are unavailable.");
+    await expect(alert).toHaveText("Process metrics are unavailable.");
     await expect(alert).toBeFocused();
-    await expect(page.getByRole("table", { name: "Flow-node metric values" })).toHaveCount(0);
+    await expect(page.getByRole("table", { name: "Process metric values" })).toHaveCount(0);
     await expect(page.locator(".bpmn-platform-metric-badge")).toHaveCount(0);
   });
 }
 
-test("Flow-node metrics Retry is keyboard reachable and loads only the retried exact version", async ({ page }) => {
+test("Process metrics Retry is keyboard reachable and loads only the retried exact version", async ({ page }) => {
   await installFlowNodeMetricsFixtures(page, { failVersionSevenOnce: true });
   await openMetrics(page);
   await versionPicker(page).selectOption("7");
   const alert = page.getByRole("alert");
-  await expect(alert).toHaveText("Flow-node metrics are unavailable.");
+  await expect(alert).toHaveText("Process metrics are unavailable.");
   await expect(alert).toBeFocused();
   await page.keyboard.press("Tab");
   const retry = page.getByRole("button", { name: "Retry" });
   await expect(retry).toBeFocused();
   await page.keyboard.press("Enter");
-  await expect(page.getByRole("heading", { name: "Flow-node metrics" })).toBeFocused();
+  await expect(page.getByRole("heading", { name: "Process metrics" })).toBeFocused();
   await expect(page.getByText("7 Process instances", { exact: true })).toBeVisible();
 });
 
-test("Flow-node metrics discards delayed old-version and abandoned-tab responses", async ({ page }) => {
+test("Process metrics discards delayed old-version and abandoned-tab responses", async ({ page }) => {
   await installFlowNodeMetricsFixtures(page, { delayedVersionSeven: true });
   await openMetrics(page);
   await versionPicker(page).selectOption("7");
-  await expect(page.locator('[data-ui="flow-node-metrics-detail"]').getByRole("status")).toContainText("Loading flow-node metrics");
-  await expect(page.getByRole("heading", { name: "Flow-node metrics" })).toBeFocused();
+  await expect(page.locator('[data-ui="flow-node-metrics-detail"]').getByRole("status")).toContainText("Loading process metrics");
+  await expect(page.getByRole("heading", { name: "Process metrics" })).toBeFocused();
   await versionPicker(page).selectOption("8");
   await expect(page.getByText("8 Process instances", { exact: true })).toBeVisible();
   await page.waitForTimeout(700);
   await expect(page.getByText("7 Process instances", { exact: true })).toHaveCount(0);
 
   await versionPicker(page).selectOption("7");
-  await page.getByRole("tab", { name: "Diagram", exact: true }).click();
+  await page.getByRole("tab", { name: "Process instances", exact: true }).click();
   await page.waitForTimeout(700);
-  await expect(page.getByRole("table", { name: "Flow-node metric values" })).toHaveCount(0);
+  await expect(page.getByRole("table", { name: "Process metric values" })).toHaveCount(0);
   await expect(page.locator(".bpmn-platform-metric-badge")).toHaveCount(0);
 });
 
 async function openMetrics(page: import("@playwright/test").Page): Promise<void> {
-  await page.goto("/");
-  await page.getByRole("link", { name: "Definitions" }).click();
-  const diagramTab = page.getByRole("tab", { name: "Diagram", exact: true });
-  await diagramTab.focus();
-  await page.keyboard.press("ArrowRight");
-  const metricsTab = page.getByRole("tab", { name: "Flow-node metrics" });
+  await page.goto("/#/operations?tab=metrics");
+  const metricsTab = page.getByRole("tab", { name: "Process metrics", exact: true });
   await expect(metricsTab).toHaveAttribute("aria-selected", "true");
-  await expect(page.getByRole("heading", { name: "Flow-node metrics" })).toBeFocused();
+  await expect(page.getByRole("heading", { name: "Process metrics" })).toBeFocused();
   await expect(page.getByText("All retained evidence", { exact: true })).toBeVisible();
 }
 

@@ -18,9 +18,11 @@ The same harness also qualifies the separate [Product 2 failed-Process outcome](
 
 ## RC prepared process catalog
 
-`./scripts/pnpm.sh run demo:rc` starts the isolated RC host and prepares the existing twelve curated definitions through the public deployment API before printing its ready URL. Preparation runs sequentially and refuses admission failures or mismatched source/profile receipts. It never starts instances. The printed catalog link exposes each prepared model's business purpose, exact definition link and Start details; browser refresh does not deploy another version. Ordinary platform startup remains unchanged. The [RC walkthrough](../../docs/BPM-PLATFORM-BROWSER-WALKTHROUGH.md#rc-process-showcase-catalog) owns the user journey.
+`./scripts/pnpm.sh run demo:rc` starts the isolated RC host and prepares only the three interactive human-work definitions through the public deployment API before printing its ready URL. Preparation runs sequentially and refuses admission failures or mismatched source/profile receipts. It never starts instances. The printed catalog link exposes each prepared model's business purpose, exact definition link and Start details; browser refresh does not deploy another version. Ordinary platform startup remains unchanged. The [RC walkthrough](../../docs/BPM-PLATFORM-BROWSER-WALKTHROUGH.md#rc-process-showcase-catalog) owns the user journey.
 
-The preparation helper tests, live startup inventory/zero-instance witness and retained human/guided browser journeys cover this non-material demo composition change. It changes no engine meaning, admission capability or semantic claim.
+The separate `./scripts/pnpm.sh run demo:rc:automated` launch (default port 3001) prepares the full curated catalog and enables scripted participants. The default launch (port 3000) constructs no actor and performs no instance-discovery polling. Both use fresh isolated Temporal namespaces and temporary platform stores. The runtime marker advertises automation explicitly; the catalog fails closed when that field is missing.
+
+The preparation helper tests, live startup inventory/zero-instance witnesses for both modes, retained human/guided browser journeys, manual-host scripted-model refusal and shutdown checks cover this non-material demo composition change. It changes no engine meaning, admission capability or semantic claim.
 
 ## Presentation fallback
 

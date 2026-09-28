@@ -55,8 +55,8 @@ test("uncertain incident Retry retains exact identity across detail and workspac
   expect(capture.actions).toHaveLength(1);
 
   const operationsTabs = page.getByRole("tablist", { name: "Operations", exact: true });
-  await operationsTabs.getByRole("tab", { name: "Audit", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "Incident action audit", exact: true })).toBeVisible();
+  await operationsTabs.getByRole("tab", { name: "Action history", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Action history", exact: true })).toBeVisible();
   await operationsTabs.getByRole("tab", { name: "Incidents", exact: true }).click();
   await expect(exactRetry).toBeVisible();
   await expect(page.getByRole("heading", {

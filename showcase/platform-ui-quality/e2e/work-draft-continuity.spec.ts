@@ -25,6 +25,19 @@ for (const kind of ["boolean", "string"] as const) {
   });
 }
 
+test("structured resolution buttons stay content-sized in narrow containers @responsive", async ({ page }) => {
+  await installWorkFixtures(page, [structuredDetail(1)]);
+  await page.goto("/");
+  await page.locator("main").evaluate((element) => { element.style.maxWidth = "740px"; });
+  await page.getByRole("button", { name: "Edit task: Review 1", exact: true }).click();
+  for (const name of ["Approve", "Request changes"]) {
+    const button = page.getByRole("button", { name, exact: true });
+    await expect(button).toBeVisible();
+    expect((await button.boundingBox())!.width).toBeLessThan(220);
+    expect((await button.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+  }
+});
+
 test("Work draft survives primary navigation away and back @responsive", async ({ page }) => {
   await installWorkFixtures(page, [structuredDetail(1)]);
   await page.goto("/");

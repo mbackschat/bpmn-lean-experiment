@@ -1,4 +1,5 @@
-import { Button, ButtonVariant, ModalDialog, WorkspaceTabs } from "@bpmn-lean/platform-ui-kit";
+import { Link } from "@tanstack/react-router";
+import { Button, ButtonVariant, InlineDisclosure, ModalDialog } from "@bpmn-lean/platform-ui-kit";
 import { DefinitionDeployStatus } from "@bpmn-lean/platform-contracts";
 import type {
   DefinitionDeployResult,
@@ -15,12 +16,10 @@ import { DefinitionSchedulePanel } from "./definition-schedule-panel";
 import { DefinitionStartPanel } from "./definition-start-panel";
 import type { DefinitionScheduleApiClient } from "./definition-schedule-api";
 import type { DefinitionApiClient } from "./definitions-api";
-import type { FlowNodeMetricsApi } from "./flow-node-metrics-api.ts";
-import { FlowNodeMetricsPanel } from "./flow-node-metrics-panel.tsx";
 import type { MessageStartPublicationApiClient } from "./message-start-publication-api";
 import { MessageStartPublicationPanel } from "./message-start-publication-panel";
 import type { DefinitionSearch, WorkspaceNavigation } from "./navigation/route-search.ts";
-import { findProcessShowcase } from "./process-showcase-catalog.ts";
+import { ProcessDescriptionLink } from "./process-description-link.tsx";
 import styles from "./definition-workspace.module.css";
 
 export type DefinitionWorkspaceProps = Readonly<{
@@ -32,7 +31,6 @@ export type DefinitionWorkspaceProps = Readonly<{
   error: string | null;
   loading: boolean;
   messageStartPublicationApi: MessageStartPublicationApiClient;
-  metricsApi: FlowNodeMetricsApi;
   onDeploy: (event: FormEvent<HTMLFormElement>) => Promise<boolean>;
   onOpenDefinition: (definition: DeployedDefinitionVersion) => Promise<void>;
   onOpenInstance?: (instance: PublicProcessInstanceIdentity) => void;
@@ -51,7 +49,6 @@ export function DefinitionWorkspace({
   error,
   loading,
   messageStartPublicationApi,
-  metricsApi,
   onDeploy,
   onOpenDefinition,
   onOpenInstance,
@@ -154,7 +151,6 @@ export function DefinitionWorkspace({
           definition={selected}
           {...(onOpenInstance === undefined ? {} : { onOpenInstance })}
           messageStartPublicationApi={messageStartPublicationApi}
-          metricsApi={metricsApi}
           scheduleApi={scheduleApi}
         />
       )}
@@ -169,7 +165,6 @@ function DefinitionDetails({
   definition,
   onOpenInstance,
   messageStartPublicationApi,
-  metricsApi,
   scheduleApi,
 }: Readonly<{
   navigation?: WorkspaceNavigation<DefinitionSearch>;
@@ -178,84 +173,42 @@ function DefinitionDetails({
   definition: DeployedDefinitionVersion;
   onOpenInstance?: (instance: PublicProcessInstanceIdentity) => void;
   messageStartPublicationApi: MessageStartPublicationApiClient;
-  metricsApi: FlowNodeMetricsApi;
   scheduleApi: DefinitionScheduleApiClient;
 }>) {
-  const [localTab, setLocalTab] = useState("diagram");
+  const [localTriggers, setLocalTriggers] = useState(false);
   const details = useRef<HTMLElement>(null);
-  const focusStart = useRef(false);
-  const showcase = findProcessShowcase(definition);
-  const selectedTab = navigation?.search.tab ?? localTab;
+  const triggers = useRef<HTMLDivElement>(null);
+  const section = navigation?.search.tab;
+  const triggersOpen = navigation === undefined ? localTriggers : section === "triggers";
   useEffect(() => {
-    if (selectedTab === "start" && focusStart.current) {
-      details.current?.querySelector<HTMLElement>("#start-heading")?.focus();
-      focusStart.current = false;
-    }
-  }, [selectedTab]);
-  const setSelectedTab = (tab: string) => {
-    if (navigation === undefined) setLocalTab(tab);
-    else navigation.navigate({ ...navigation.search, tab: tab as NonNullable<DefinitionSearch["tab"]> });
-  };
-  const tabs = [{
-    id: "diagram",
-    label: "Diagram",
-    content: <DefinitionDiagram api={api} definition={definition} />,
-  }, {
-    id: "metrics",
-    label: "Flow-node metrics",
-    content: (
-      <FlowNodeMetricsPanel
-        active={selectedTab === "metrics"}
-        definition={definition}
-        definitionApi={api}
-        metricsApi={metricsApi}
-      />
-    ),
-  }, {
-    id: "start",
-    label: "Start",
-    keepMounted: true,
-    content: <DefinitionStartPanel key={`${definition.processId}:${definition.version}:${definition.source.sha256}:${definition.semanticProfile}`} api={api} definition={definition} {...(onOpenInstance === undefined ? {} : { onOpenInstance })} />,
-  }, {
-    id: "triggers",
-    label: "Triggers",
-    content: (
-      <div className={styles.triggerPanels}>
-        <CorrelatedMessagePanel
-          key={`correlated-message:${definition.processId}:${definition.version}`}
-          api={correlatedMessageApi}
-          definition={definition}
-        />
-        <MessageStartPublicationPanel
-          key={`message-publication:${definition.processId}:${definition.version}`}
-          api={messageStartPublicationApi}
-          definition={definition}
-        />
-        <DefinitionSchedulePanel
-          key={`schedule:${definition.processId}:${definition.version}`}
-          api={scheduleApi}
-          definition={definition}
-        />
-      </div>
-    ),
-  }];
+    if (section === "start") details.current?.querySelector<HTMLElement>("#start-heading")?.focus();
+    else if (section === "triggers") triggers.current?.querySelector<HTMLButtonElement>("button")?.focus();
+  }, [section, definition.version]);
   return (
     <section ref={details} className={styles.details} aria-label={`${definition.processId}, version ${definition.version}`}>
-      {selectedTab === "start" ? null : (
-        <div className={styles.startAction}>
-          <div>
-            <strong>{showcase?.title ?? "Run this process"}</strong>
-            <p>Ready to try it? Review the starting details, then create a new instance.</p>
-          </div>
-          <Button onPress={() => { focusStart.current = true; setSelectedTab("start"); }}>Start process</Button>
-        </div>
-      )}
-      <WorkspaceTabs
-        aria-label="Definition views"
-        tabs={tabs}
-        selectedKey={selectedTab}
-        onSelectionChange={setSelectedTab}
+      <div className={styles.contextLinks}>
+        {navigation === undefined ? null : <ProcessDescriptionLink definition={definition} search={navigation.search} />}
+        <Link className={styles.metricsLink} to="/operations" search={{ tab: "metrics", process: definition.processId, version: definition.version }}>View process metrics</Link>
+      </div>
+      <DefinitionStartPanel
+        key={`${definition.processId}:${definition.version}:${definition.source.sha256}:${definition.semanticProfile}`}
+        api={api} definition={definition}
+        {...(onOpenInstance === undefined ? {} : { onOpenInstance })}
       />
+      <DefinitionDiagram api={api} definition={definition} />
+      <div ref={triggers}>
+        <InlineDisclosure title="Triggers" isExpanded={triggersOpen} onExpandedChange={(expanded) => {
+          if (navigation === undefined) setLocalTriggers(expanded);
+          else navigation.navigate({ ...navigation.search, tab: expanded ? "triggers" : "diagram" });
+        }}>
+          <div className={styles.triggerPanels}>
+            <p>Start or continue processes through messages and schedules.</p>
+            <CorrelatedMessagePanel key={`correlated-message:${definition.processId}:${definition.version}`} api={correlatedMessageApi} definition={definition} />
+            <MessageStartPublicationPanel key={`message-publication:${definition.processId}:${definition.version}`} api={messageStartPublicationApi} definition={definition} />
+            <DefinitionSchedulePanel key={`schedule:${definition.processId}:${definition.version}`} api={scheduleApi} definition={definition} />
+          </div>
+        </InlineDisclosure>
+      </div>
     </section>
   );
 }

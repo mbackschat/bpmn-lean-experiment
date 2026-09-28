@@ -119,7 +119,7 @@ type ProcessDisposition = typeof processDispositions[number];
 const executableDisposition: ProcessDisposition = "executable guard";
 
 function isExecutableLink(target: string): boolean {
-  return target.endsWith(".test.ts") ||
+  return target.endsWith(".test.ts") || target.endsWith(".spec.ts") ||
     (target.startsWith("../scripts/") && target.endsWith(".ts"));
 }
 
@@ -431,6 +431,12 @@ test("the process-assessment escalation rule rejects every weak disposition", ()
         instances: "3",
         disposition: "`executable guard`",
         evidence: "[guard](../scripts/what-binds.test.ts)",
+      },
+      {
+        finding: "browser-guarded recurrence",
+        instances: "2",
+        disposition: "`executable guard`",
+        evidence: "[browser check](../showcase/platform-ui-quality/e2e/action-history.spec.ts)",
       },
       {
         finding: "single occurrence answered by a question",

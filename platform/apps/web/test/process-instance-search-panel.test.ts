@@ -48,6 +48,7 @@ const runnablePanel = transformedPanel.code
     JSON.stringify(import.meta.resolve("@bpmn-lean/platform-ui-kit")),
   )
   .replaceAll('"react"', JSON.stringify(import.meta.resolve("react")))
+  .replaceAll('"./process-showcase-catalog.ts"', JSON.stringify(new URL("../src/process-showcase-catalog.ts", import.meta.url).href))
   .replaceAll('"./latest-request.ts"', JSON.stringify(new URL("../src/latest-request.ts", import.meta.url).href));
 const panelModule = await import(
   `data:text/javascript;base64,${Buffer.from(runnablePanel).toString("base64")}`
@@ -156,20 +157,19 @@ test("uses a fixed internal page size while preserving every supplied exact filt
   }), { limit: 2 });
 });
 
-test("renders every public identity field in a native table and no host metadata", () => {
+test("renders a summary with optional technical details and no host metadata", () => {
   const html = renderToStaticMarkup(createElement(ProcessInstanceSearchTable, {
     instances: [instance],
   }));
 
-  assert.match(html, /<table aria-label="Process instances"/u);
+  assert.match(html, /<table[^>]*aria-label="Process instances"/u);
   assert.match(html, /<thead/u);
   assert.match(html, /<tbody/u);
   assert.match(html, /instance-42/u);
   assert.match(html, /Process_Order/u);
   assert.match(html, />3</u);
-  assert.match(html, /orders\.bpmn/u);
-  assert.match(html, new RegExp("d{64}", "u"));
-  assert.match(html, /cib-seven-2\.2\.0:message-start/u);
+  assert.match(html, /aria-expanded="false"/u);
+  assert.doesNotMatch(html, /orders\.bpmn|d{64}|cib-seven-2\.2\.0:message-start/u);
   assert.doesNotMatch(html, /private-workflow|running|2026-08-12|ordinal/iu);
 });
 
@@ -194,4 +194,14 @@ test("makes each exact public identity an instance-detail selection", () => {
 
   assert.match(html, /View details instance-42/u);
   assert.match(html, /<button/u);
+});
+
+test("keeps every instance-card value labelled when table headings are hidden", () => {
+  const html = renderToStaticMarkup(createElement(ProcessInstanceSearchTable, {
+    instances: [instance, { ...instance, processInstanceId: "instance-41" }],
+  }));
+  for (const label of ["Process", "Instance ID", "Definition version", "Technical details", "Action"]) {
+    assert.equal(html.split(`data-label="${label}"`).length - 1, 2, label);
+  }
+  assert.match(html, /Show.*Technical details/u);
 });

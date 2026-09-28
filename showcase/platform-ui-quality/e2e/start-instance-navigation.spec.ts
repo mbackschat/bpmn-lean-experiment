@@ -49,19 +49,16 @@ test("diagram leads to explicit start and its exact instance without a search @r
   await page.goto("/");
   const navigation = page.getByRole("navigation", { name: "Primary navigation" });
   await navigation.getByRole("link", { name: "Definitions", exact: true }).click();
-  const shortcut = page.getByRole("button", { name: "Start process", exact: true });
-  await expect(shortcut).toBeInViewport();
-  await shortcut.focus();
-  await page.keyboard.press("Enter");
-  await expect(page.getByRole("heading", { name: "Ready to start", exact: true })).toBeFocused();
-  await expect(page).toHaveURL(/tab=start/);
+  const start = page.getByRole("button", { name: "Start version 4", exact: true });
+  await expect(start).toBeInViewport();
   expect(startRequests).toEqual([]);
-  await page.getByRole("button", { name: "Start version 4", exact: true }).click();
+  await start.focus();
+  await page.keyboard.press("Enter");
   await expect(page.getByTestId("started-instance-id")).toHaveText(instance.processInstanceId);
   await expect(page.getByText("What happens next", { exact: true })).toBeVisible();
   await expect(page.getByRole("link", { name: "Open task inbox", exact: true })).toHaveCount(0);
-  await page.getByRole("tab", { name: "Diagram", exact: true }).click();
-  await page.getByRole("button", { name: "Start process", exact: true }).click();
+  await page.getByRole("button", { name: "Show Triggers", exact: true }).click();
+  await page.getByRole("button", { name: "Hide Triggers", exact: true }).click();
   await expect(page.getByTestId("started-instance-id")).toHaveText(instance.processInstanceId);
   expect(startRequests).toHaveLength(1);
 
@@ -83,7 +80,7 @@ test("diagram leads to explicit start and its exact instance without a search @r
   await expect(page.getByRole("heading", { name: "Process instances", exact: true })).toBeFocused();
   await expect(detail).toHaveCount(0);
 
-  await page.getByRole("tab", { name: "Audit", exact: true }).click();
+  await page.getByRole("tab", { name: "Action history", exact: true }).click();
   await page.getByRole("tab", { name: "Process instances", exact: true }).click();
   await expect(page.getByRole("button", { name: "Search", exact: true })).toBeVisible();
   await expect(detail).toHaveCount(0);

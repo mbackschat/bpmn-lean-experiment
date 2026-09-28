@@ -13,6 +13,23 @@
   background: var(--ui-color-surface);
 }
 
+.demonstration {
+  display: grid;
+  justify-items: start;
+  gap: var(--ui-space-4);
+  padding: var(--ui-space-4);
+  border-radius: var(--ui-radius-control);
+  background: var(--ui-color-accent-soft);
+}
+
+.demonstration p {
+  margin: 0;
+}
+
+.demonstration [role="status"] {
+  font: var(--ui-font-section);
+}
+
 .header {
   display: flex;
   align-items: flex-start;
