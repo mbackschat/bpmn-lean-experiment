@@ -244,14 +244,27 @@ test("the elaboration guard rejects an absent, enabled, or library-only setting"
   assert.equal(synchronousPackageElaboration(`[[lean_lib]]\nname = \"Example\"\n${option}`), false);
 });
 
-test("the hosted Lean library lane retains its unchanged cold-build ceiling", async () => {
+test("hosted cold Lean builds have recovery headroom instead of a 30-minute cutoff", async () => {
   const workflow = await readFile(verificationWorkflowPath, "utf8");
-  const job = workflow.match(
-    /verify_lean:[\s\S]*?timeout-minutes: (\d+)/u,
-  );
-  assert.notEqual(job, null, "verify_lean timeout is absent");
-  const timeoutMinutes = Number(job?.[1]);
-  assert.equal(timeoutMinutes, 30, "the hard ceiling must not be raised to hide duplicated work");
+  const library = workflow.split("  verify_lean:\n")[1]?.split("  verify_lean_checks:")[0] ?? "";
+  const jobMinutes = Number(library.match(/timeout-minutes: (\d+)/u)?.[1]);
+  const buildMinutes = Number(library.match(/id: lean-build\n\s+timeout-minutes: (\d+)/u)?.[1]);
+  assert.ok(buildMinutes >= 120, "cold proof elaboration must not inherit the failed 30-minute budget");
+  assert.ok(jobMinutes >= buildMinutes + 15, "reserve setup and cache-save time outside compilation");
+  assert.match(library, /uses: actions\/cache\/restore@/u);
+  assert.match(library, /id: lean-cache/u);
+  assert.match(library, /steps\.lean-cache\.outputs\.cache-primary-key/u);
+  const partial = library.split("- name: Preserve partial Lean build output")[1]?.split("- name:")[0] ?? "";
+  assert.match(partial, /always\(\)/u);
+  assert.match(partial, /steps\.lean-build\.outcome == 'failure'/u);
+  assert.match(partial, /steps\.lean-build\.outcome == 'cancelled'/u);
+  assert.match(partial, /uses: actions\/cache\/save@/u);
+  assert.match(partial, /timeout-minutes: 5/u);
+  assert.match(partial, /cache-primary-key \}\}-partial-\$\{\{ github\.run_id \}\}-\$\{\{ github\.run_attempt \}\}/u);
+  assert.match(library, /restore-keys:[\s\S]*?-partial-/u);
+  const completed = library.split("- name: Save completed Lean build output")[1]?.split("- name:")[0] ?? "";
+  assert.match(completed, /steps\.lean-build\.outcome == 'success'/u);
+  assert.match(completed, /cache-hit != 'true'/u);
 });
 
 test("the hosted Lean cache identity includes the root import closure and nested sources", async () => {

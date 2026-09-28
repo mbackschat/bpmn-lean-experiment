@@ -82,10 +82,9 @@ jobs:
     needs: changes
     if: needs.changes.outputs.product1 == 'true'
     runs-on: ubuntu-latest
-    # Run 33748926595 completed the library build in 25m47s on 2026-09-03 from a
-    # fallback cache. Executable checks are separated below so this unchanged
-    # ceiling measures proof elaboration rather than duplicate native codegen.
-    timeout-minutes: 30
+    # Run 36366543661 (2026-09-28) lost a productive cold build at 524/692
+    # jobs to the old 30-minute limit. Leave recovery time outside compilation.
+    timeout-minutes: 135
     env:
       # One decision for the Lean build cache, announced by the first step so
       # every run records which mode produced its result. The weekly schedule
@@ -121,26 +120,42 @@ jobs:
           test: false
           use-mathlib-cache: false
 
-      - name: Cache Lean build output
-        # lean-action only restores `.lake`; it registers no save step because
-        # verify.sh owns the build. Without this, every run rebuilds Lean from
-        # scratch, which measured 79s of a 213s Ubuntu run. The key is the exact
-        # Lean source state, so an unchanged tree hits and a changed tree falls
-        # back to the newest prefix match for an incremental rebuild. The
-        # scheduled run skips the cache to keep one from-scratch build a week.
+      - name: Restore Lean build output
+        id: lean-cache
         if: env.LEAN_CACHE == 'true'
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: .lake
           key: lake-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain', 'lakefile.toml', 'lake-manifest.json', 'BpmnSemantics.lean', 'BpmnSemantics/**/*.lean') }}
           restore-keys: |
+            lake-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain', 'lakefile.toml', 'lake-manifest.json', 'BpmnSemantics.lean', 'BpmnSemantics/**/*.lean') }}-partial-
             lake-${{ runner.os }}-${{ runner.arch }}-
 
       - name: Require clean committed HEAD
         run: node scripts/clean-committed-head.ts
 
       - name: Verify Lean library
+        id: lean-build
+        timeout-minutes: 120
         run: ./scripts/verify.sh lean-library
+
+      - name: Save completed Lean build output
+        if: env.LEAN_CACHE == 'true' && steps.lean-build.outcome == 'success' && steps.lean-cache.outputs.cache-hit != 'true'
+        timeout-minutes: 5
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .lake
+          key: ${{ steps.lean-cache.outputs.cache-primary-key }}
+
+      - name: Preserve partial Lean build output
+        # A partial cache accelerates retry but must never occupy the immutable
+        # completed-source key (actions/cache save documentation).
+        if: always() && env.LEAN_CACHE == 'true' && steps.lean-cache.outputs.cache-primary-key != '' && (steps.lean-build.outcome == 'failure' || steps.lean-build.outcome == 'cancelled')
+        timeout-minutes: 5
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .lake
+          key: ${{ steps.lean-cache.outputs.cache-primary-key }}-partial-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Stage Lean library output
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
