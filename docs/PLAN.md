@@ -61,7 +61,7 @@ The completed risk-first sequence covers data lifetime, internal scheduling, sub
 
 Integration state: `satisfied`.
 
-The historical `phase/mue-release-candidate` feature-freeze checkpoint currently points to `4c6e7238`; `91b759a1` retains the original qualification record and `9fb6705b` the closure-qualified semantic implementation. On 2026-09-28 the owner accepted the disclosed intermittent native-runtime risk for this RC checkpoint, without asserting its root cause is fixed or that final MUE acceptance has passed. The separately versioned, downloadable RC distribution is selected as `v0.2.0-rc.1` and remains untagged until its own exact committed target, Docker image bundle, user journey and release gates qualify. Historical Preview Alpha and Beta phase tags remain at their original targets; no retrospective `v0.2.0-alpha.*` or `v0.2.0-beta.*` tags are created.
+The original `phase/mue-release-candidate` target was `4c6e7238`; `91b759a1` holds the qualification record and `9fb6705b` the qualified semantics. On 2026-09-28 the owner accepted disclosed intermittent native-runtime risk for RC, without accepting a root-cause fix or final MUE closure. The downloadable distribution `v0.2.0-rc.1` remains untagged pending exact-commit bundle, journey and release qualification. The owner directed one pre-publication RC phase-tag realignment to that qualified commit. Preview Alpha and Beta phase tags remain unchanged; no retrospective version tags are created.
 
 ### MUE acceptance goal
 
@@ -99,11 +99,11 @@ Active work ID: `MUE-ACCEPTANCE`.
 
 Risk band: P3 runtime qualification failures and evidence reconciliation; P1 CI verdict is owner-monitored.
 
-Owner instruction, 2026-09-28: keep the RC feature scope frozen and complete bounded MUE acceptance. Preserve the historical phase tags, version only the qualified RC distribution as `v0.2.0-rc.1`, support Docker Desktop and Rancher Desktop with dockerd/moby, and put the evaluator run path in the top-level README. The owner monitors CI; explicit MUE acceptance remains the final decision.
+Owner instruction, 2026-09-28: freeze RC scope, finish MUE acceptance, retain Alpha/Beta tags, align RC phase and `v0.2.0-rc.1` at the qualified commit, support Docker Desktop and Rancher Desktop dockerd/moby, and document startup in the root README. The owner monitors CI; MUE acceptance remains separate.
 
 CPU constraint: root-owned Lean validation permits one process tree, one CPU, 3 GiB and no additional swap. Reuse valid warmed or hosted evidence; report CPU-intensive validation completion.
 
-Next action: the 2026-09-28 Docker Desktop diagnostic built the current images, admitted three human processes, served `0.2.0-rc.1`, and completed a real task with Action history. Run clean-commit gates and the manual publisher before `v0.2.0-rc.1`; its tagged run must prove anonymous startup before attaching the bundle. A real Rancher Desktop smoke, hosted CI verdict, and [native crash cause](research/NODE-V8-CRASH-INVESTIGATION-RESEARCH.md) remain open. Preserve historical phase tags.
+Next action: the 2026-09-28 Docker Desktop diagnostic built the current images, admitted three human processes, served `0.2.0-rc.1`, and completed a real task with Action history. Resolve the clean-commit Temporal serial-test failure, run release gates and the manual publisher, then align the RC phase and new version tag at the qualified commit; its tagged run must prove anonymous startup before attaching the bundle. A real Rancher Desktop smoke, hosted CI verdict, and [native crash cause](research/NODE-V8-CRASH-INVESTIGATION-RESEARCH.md) remain open. Preserve the Alpha and Beta phase tags.
 
 Oracle: clean-checkout runtime qualification succeeds; all seven capability rows remain unchanged; supported human journeys and final applicable gates pass with exact target evidence; disclosures retain limitations. Owner acceptance precedes the MUE tag.
 
