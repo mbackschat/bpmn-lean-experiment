@@ -61,7 +61,7 @@ The completed risk-first sequence covers data lifetime, internal scheduling, sub
 
 Integration state: `satisfied`.
 
-The RC was published at `a637757c` under `phase/mue-release-candidate`; `91b759a1` retains the original qualification record and `9fb6705b` the closure-qualified semantic implementation. RC publication is complete; final MUE acceptance is not. The owner now authorizes one RC tag correction and guarded force push before CI completes, and will monitor the new run personally; this does not assert qualification success.
+The RC was published at `a637757c` under `phase/mue-release-candidate`; `91b759a1` retains the original qualification record and `9fb6705b` the closure-qualified semantic implementation. RC publication is complete; final MUE acceptance is not. The owner-authorized single guarded force push moved the RC tag to `6ce2310e`; the owner monitors [its CI run](https://github.com/mbackschat/bpmn-lean-experiment/actions/runs/36369151995). Publication does not assert qualification success.
 
 ### MUE acceptance goal
 
@@ -91,19 +91,19 @@ The selected scheduling and bounded Transaction accounts are independently closu
 
 - Closure qualification. Command: `./scripts/verify.sh` phases and the corrected registered pipeline. Status: `exit 0` for the accepted component commands. Date: `2026-09-26`. Commit: `9fb6705b`. Clean library, execution-check and runtime phases pass at `6229db87`; its nine preliminary pipeline parity commands pass before the final assertion fails. The single test-oracle correction passes the complete registered pipeline at `9fb6705b`, leaving all successful parent-phase inputs unchanged. Both independent second correction audits approve the composition; [the Transaction receipt](capsules/TRANSACTION-CANCELLATION-SPEC.md#independent-cold-review-receipt) and [cost ledger](CAPSULE-COST-LEDGER.md#transaction-closure-correction-and-cost-2026-09-26) retain exact targets, failures and limits.
 
-- Published RC qualification inspection. Command: `gh run view 36366543661 --json jobs,status,conclusion`. Status: `exit 0` for inspection, not qualification. Date: `2026-09-28`. Commit: `a637757c`. [Runtime job](https://github.com/mbackschat/bpmn-lean-experiment/actions/runs/36366543661/job/108754023383) failed before package builds: publication-schema coverage imports a fixture that requires semantic-core build output. Lean was cancelled at the repository’s 30-minute cutoff after 524/692 jobs, losing its success-only cache. The runtime fixture repair is committed at `717da4a7`; the subsequent workflow correction adds recovery headroom and partial-cache saving. Dependency security, platform, PostgreSQL, showcase and UI workflows passed.
+- Human-evaluation acceptance. Command: `env PLAYWRIGHT_PREBUILT_WEB=true ./scripts/pnpm.sh --filter @bpmn-lean/showcase-mue-preview-alpha exec playwright test rc-showcase-journeys.spec.ts --grep 'user host'`, after `build:release-product2`. Status: `exit 0`. Date: `2026-09-28`. Commit: `6ce2310e`. All six checks pass: human-only startup without instances, prepared diagrams, three complete claim/form/History/Action-history journeys, and no scripted completion of an explicitly uploaded automated model. This is fresh production-bundle/real-Temporal evidence, not complete release qualification. Receipts: `/tmp/mue-acceptance-human-build-6ce2310e` and `/tmp/mue-acceptance-human-6ce2310e`. The prior RC runtime import failure is repaired at `717da4a7`; the hosted timeout/cache repair is `6ce2310e`, with the new CI verdict left to the owner.
 
 ## Exact resume point
 
 Active work ID: `MUE-ACCEPTANCE`.
 
-Risk band: P1 clean-checkout runtime qualification.
+Risk band: P2 human-journey acceptance and P3 evidence reconciliation; P1 CI verdict is owner-monitored.
 
 Owner instruction, 2026-09-28: keep the RC feature scope frozen, prioritize bounded MUE acceptance, fix runtime CI and its cold-build timeout/cache mechanism, move the RC tag to the corrected latest commit, force-push once, and do not wait for CI completion. The owner will monitor CI; explicit MUE acceptance remains the final decision.
 
 CPU constraint: root-owned Lean validation permits one process tree, one CPU, 3 GiB and no additional swap. Reuse valid warmed or hosted evidence; report CPU-intensive validation completion.
 
-Next action: publish the guarded runtime and workflow corrections with the RC tag, then hand off CI monitoring to the owner. CI success is still required for P1 acceptance. Resume P2 and P3 after the verdict is known.
+Next action: retain the six passing human-host checks at `6ce2310e`, reconcile stale RC documentation, and inspect remaining navigation/recovery/incident evidence without duplicating unchanged suites. CI success remains required for P1; do not move the RC tag again or wait on the owner-monitored run.
 
 Oracle: clean-checkout runtime qualification succeeds; all seven capability rows remain unchanged; supported human journeys and final applicable gates pass with exact target evidence; disclosures retain limitations. Owner acceptance precedes the MUE tag.
 

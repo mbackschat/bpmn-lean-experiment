@@ -102,3 +102,27 @@ test("walkthrough embeds every exact 1440 by 900 catalog image once", async () =
     );
   }
 });
+
+function assertScreenshotCatalogReference(summary: string): void {
+  assert.match(summary, /\[[^\]]+\]\([^)]*screenshot-catalog\.ts\)/u,
+    "delegate the changing image inventory to its executable catalog");
+  const withoutDimensions = summary.replace(/\b\d+\s+(?:by|×)\s+\d+\b/gu, "");
+  assert.doesNotMatch(withoutDimensions, /\b(?:\d+|zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred)[ -]+(?:image|screenshot)s?\b/iu,
+    "do not duplicate a catalog cardinality in navigation or refresh prose");
+}
+
+test("walkthrough inventory summaries reference the catalog instead of copying its count", async () => {
+  const map = await readFile("docs/BPM-PLATFORM-IMPLEMENTATION-MAP.md", "utf8");
+  const walkthrough = await readFile(walkthroughDocument, "utf8");
+  const summaries = [
+    map.split("\n").find((line) => line.startsWith("- One text-first maintained browser walkthrough")) ?? "",
+    walkthrough.split("\n").find((line) => line.startsWith("The command allocates a dynamic loopback port")) ?? "",
+  ];
+  for (const summary of summaries) {
+    assertScreenshotCatalogReference(summary);
+    assert.throws(() => assertScreenshotCatalogReference(summary.replace(/\[[^\]]+\]\([^)]*screenshot-catalog\.ts\)/u, "the ten-image catalog")));
+    for (const copy of ["ten 1440 by 900 images", "18-image catalog", "twenty-four screenshots", "77 screenshots"]) {
+      assert.throws(() => assertScreenshotCatalogReference(`${summary} Writes ${copy}.`));
+    }
+  }
+});

@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
@@ -36,4 +37,19 @@ test("binds runnable data to exact source and profile rather than the business l
   });
   assert.ok(catalog.every((model) => model.businessPurpose.length > 0));
   assert.ok(catalog.every((model) => model.pipelineCaseId !== null));
+});
+
+function assertLaunchDocumentation(markdown: string): void {
+  assert.match(markdown, /`demo:rc`/u);
+  assert.match(markdown, /`demo:rc:automated`/u);
+  assert.match(markdown, /no simulated-user actor/u);
+}
+
+test("current RC documentation distinguishes user and automation launches", async () => {
+  for (const file of ["docs/BPM-PLATFORM-IMPLEMENTATION-MAP.md", "docs/BPM-PLATFORM-BROWSER-WALKTHROUGH.md"]) {
+    const markdown = await readFile(new URL(`../${file}`, import.meta.url), "utf8");
+    assertLaunchDocumentation(markdown);
+    assert.throws(() => assertLaunchDocumentation(markdown.replaceAll("`demo:rc:automated`", "`demo:rc`")));
+    assert.throws(() => assertLaunchDocumentation(markdown.replaceAll("no simulated-user actor", "a simulated-user actor")));
+  }
 });

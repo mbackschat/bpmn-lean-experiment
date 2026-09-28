@@ -273,17 +273,19 @@ The fourth instance survived a first correction and reached a governing document
 A live status fact was restated away from its owner and outlived the change that falsified it: an ordered-work item kept a blocked label for eleven commits after the same document recorded it unblocked, a capsule Status section copied an absence inventory that three landed lanes made wrong, and a capsule denied the existence of a semantic-core test that the implementation map linked in the same commit.
 
 Instances
-: 6
+: 8
 
 Disposition
 : `executable guard`
 
 Evidence
-: [ordered-work status agreement](../scripts/plan-status-consistency.test.ts)
+: [ordered-work status agreement](../scripts/plan-status-consistency.test.ts), [RC launch documentation](../scripts/rc-showcase-catalog.test.ts), [screenshot inventory delegation](../scripts/walkthrough-screenshot-refresh.platform-test.ts)
 
 **First observed:** [Interrupting Activity boundary Timer](capsules/ACTIVITY-BOUNDARY-TIMER-SPEC.md) capsule . The sixth instance inverts the direction and is the costliest yet: compressing a 1404-word map passage to 236 words moved a capsule's *proof boundary* — two victory bridges taking hypotheses their own transitions do not establish, and a victory relation never wired into global soundness — out of the only document that owned it, while the replacement's absence paragraph was a verbatim copy of the requirement ledger's exclusion list, which the map's own convention says the capsule holds. Deleting a duplicate and deleting a sole record look identical while editing; the classification has to come from asking which other document would still carry the fact, and it was not asked
 
 The third instance also refuted the first disposition's reach: the guard binds statements inside one document and cannot see a capsule contradicting a different owner, so the correction removes the duplicated claims rather than re-synchronizing them. The fourth instance is the same mechanism at a stage boundary: the Sub-Process boundary Timer capsule was handed to closure review with a Status paragraph still denying the scenarios, seeded mutations, and Temporal witness that the same commit contained, contradicting both its own owner-inventory row and two routed owner documents, and the cold reviewer found it rather than any guard. It also shows why the count matters more than the prose: the third instance had already recorded *delete the copy* as the correction, and the copy was nonetheless re-synchronized twice during this capsule instead of removed. The fifth instance is a profile artifact rather than a capsule: `bpmn-2.0.2-user-task-preserved-notation-draft` listed `per-element-admission-diagnostics` among its exclusions, the same proposal's D3 then implemented those diagnostics for every profile, and no gate observed that the artifact now denied a capability the compiler had. It was found by reading the artifact while writing an unrelated requirement row. This time the recorded correction was followed and the copy was deleted rather than re-synchronized
+
+The 2026-09-28 RC acceptance sweep found two further instances: the platform map still advertised automated preparation after the human launch changed, and both the map and screenshot-refresh instructions retained the former image count. Structural documentation checks and passing browser tests did not compare these prose copies. The correction removes copied catalog counts, links the executable catalogs, distinguishes both launch modes, and extends the existing guards with separating mutations. Those guards protect the named launch contract and inventory summaries, not arbitrary prose truth. The earlier no-duplication rule already applied; it was not followed.
 
 ### Finding 15
 
