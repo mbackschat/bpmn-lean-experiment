@@ -61,7 +61,7 @@ The completed risk-first sequence covers data lifetime, internal scheduling, sub
 
 Integration state: `satisfied`.
 
-The original `phase/mue-release-candidate` target was `4c6e7238`; `91b759a1` holds the qualification record and `9fb6705b` the qualified semantics. On 2026-09-28 the owner accepted disclosed intermittent native-runtime risk for RC, without accepting a root-cause fix or final MUE closure. The downloadable distribution `v0.2.0-rc.1` remains untagged pending exact-commit bundle, journey and release qualification. The owner directed one pre-publication RC phase-tag realignment to that qualified commit. Preview Alpha and Beta phase tags remain unchanged; no retrospective version tags are created.
+The original `phase/mue-release-candidate` target was `4c6e7238`; `91b759a1` holds the qualification record and `9fb6705b` the qualified semantics. On 2026-09-28 the owner accepted disclosed intermittent native-runtime risk for RC, without accepting a root-cause fix or final MUE closure. The published distribution tag `v0.2.0-rc.1` remains fixed at `16c5b9f6`. On 2026-09-30 the owner directed another RC phase-tag realignment to the latest documentation commit, retaining that versioned distribution identity and the existing risk exception. Preview Alpha and Beta phase tags remain unchanged; no retrospective version tags are created.
 
 ### MUE acceptance goal
 
@@ -89,7 +89,7 @@ The selected scheduling and bounded Transaction accounts are independently closu
 
 ## Current evidence
 
-- Runtime qualification. Command: `./scripts/pnpm.sh run test:temporal:built`. Status: `exit 0`. Date: `2026-09-28`. Commit: `d2c65265` with worktree changes. Receipt: `/tmp/mue-temporal-unsuppressed-complete`, all 818 checks with ordinary V8 settings. Earlier clean-commit `test:pre-push` failed after Lean passed (`/tmp/mue-ci-repair-pre-push`). The [Node/V8 crash investigation](research/NODE-V8-CRASH-INVESTIGATION-RESEARCH.md) owns the two native signatures, diagnostic reproductions and unresolved causal boundary. One pass does not close the intermittent crash or clean-commit release qualification. Historical semantic closure remains in [the Transaction receipt](capsules/TRANSACTION-CANCELLATION-SPEC.md#independent-cold-review-receipt).
+- Runtime qualification. Command: `./scripts/pnpm.sh run test:pre-push`. Status: `exit 1`. Date: `2026-09-30`. Commit: `6dc643d3`, clean documentation checkpoint. Receipt: `/tmp/bpmn-readme-audience-6dc643d3-pre-push-host`. Infrastructure, Lean, semantic-core/importer and CIB/comparator checks passed; the concurrent Temporal testkit lane failed with a native child crash and a separate one-second VM initialization timeout. The [Node/V8 crash investigation](research/NODE-V8-CRASH-INVESTIGATION-RESEARCH.md#2026-09-30-documentation-checkpoint-recurrence) owns the report identity and unresolved causal boundaries. The earlier ordinary-settings package pass remains historical evidence, not closure. RC publication retains the owner-accepted exception; final MUE runtime acceptance remains open.
 
 - Human and operational journeys. Command: `env PLAYWRIGHT_PREBUILT_WEB=true ./scripts/pnpm.sh --filter @bpmn-lean/showcase-mue-preview-alpha exec playwright test rc-showcase-journeys.spec.ts --grep "user host"`, plus affected browser/service gates. Status: `exit 0`. Date: `2026-09-28`. Commit: `6ce2310e` for human checks; grouped repairs in the worktree over `d2c65265`. Six human-host checks pass in `/tmp/mue-acceptance-human-6ce2310e`; twelve browser checks across the six repaired M1–M4 packages pass in `/tmp/mue-rc-browser-acceptance-final`; all four live service witnesses pass in `/tmp/mue-service-hosts-green`. Client-package, type and focused guards also pass. Worktree receipts name the parent HEAD, not clean-commit release qualification. Hosted CI remains owner-monitored.
 
@@ -99,11 +99,11 @@ Active work ID: `MUE-ACCEPTANCE`.
 
 Risk band: P3 runtime qualification failures and evidence reconciliation; P1 CI verdict is owner-monitored.
 
-Owner instruction, 2026-09-28: freeze RC scope, finish MUE acceptance, retain Alpha/Beta tags, align RC phase and `v0.2.0-rc.1` at the qualified commit, support Docker Desktop and Rancher Desktop dockerd/moby, and document startup in the root README. The owner monitors CI; MUE acceptance remains separate.
+Owner instruction, 2026-09-30: commit and push the README audience revision and realign the RC phase tag to the latest documentation checkpoint. Preserve the published `v0.2.0-rc.1` distribution identity. The frozen RC scope, Docker Desktop and Rancher Desktop dockerd/moby support, and owner-monitored CI remain unchanged; MUE acceptance is separate.
 
 CPU constraint: root-owned Lean validation permits one process tree, one CPU, 3 GiB and no additional swap. Reuse valid warmed or hosted evidence; report CPU-intensive validation completion.
 
-Next action: the 2026-09-28 Docker Desktop diagnostic built the current images, admitted three human processes, served `0.2.0-rc.1`, and completed a real task with Action history. Resolve the clean-commit Temporal serial-test failure, run release gates and the manual publisher, then align the RC phase and new version tag at the qualified commit; its tagged run must prove anonymous startup before attaching the bundle. A real Rancher Desktop smoke, hosted CI verdict, and [native crash cause](research/NODE-V8-CRASH-INVESTIGATION-RESEARCH.md) remain open. Preserve the Alpha and Beta phase tags.
+Next action: investigate the clean-commit native crash recurrence and separate direct-VM initialization timeout without weakening runtime settings or checks. Reconcile remaining MUE distribution-acceptance evidence against the published `v0.2.0-rc.1` bundle rather than moving its tag. A real Rancher Desktop smoke, hosted CI verdict, and [native crash cause](research/NODE-V8-CRASH-INVESTIGATION-RESEARCH.md) remain open. Preserve the Alpha and Beta phase tags.
 
 Oracle: clean-checkout runtime qualification succeeds; all seven capability rows remain unchanged; supported human journeys and final applicable gates pass with exact target evidence; disclosures retain limitations. Owner acceptance precedes the MUE tag.
 

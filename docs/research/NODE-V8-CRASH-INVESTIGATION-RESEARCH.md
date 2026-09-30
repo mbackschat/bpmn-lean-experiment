@@ -2,7 +2,7 @@
 
 ## Status
 
-Investigated on 2026-09-28; cause unresolved. This is diagnostic research, not an adopted runtime change or proof that the product cannot run on Node.js. The RC owner accepted publishing with the disclosed intermittent qualification risk; final MUE runtime acceptance remains open.
+Investigated through 2026-09-30; cause unresolved and the native fault has recurred with ordinary runtime settings. This is diagnostic research, not an adopted runtime change or proof that the product cannot run on Node.js. The RC owner accepted publishing with the disclosed intermittent qualification risk; final MUE runtime acceptance remains open.
 
 ## Environment and observed failures
 
@@ -13,6 +13,14 @@ An independent diagnostic command, `node --stress-compaction --max-old-space-siz
 The ordinary serial Temporal lane at `0b47c750` reproduced the native failure without diagnostic GC flags: `/tmp/mue-rc-temporal-serial-isolation-20260928` exited 1 after `workflow-chain-publication-segments.temporal-serial-test.ts` passed, when the `workflow-chain-recovery-capacity.temporal-serial-test.ts` child exited without an assertion. The matching macOS report `node-2026-09-28-132512.ips`, SHA-256 `480a7a4817c4a37bdda4700378256ad470d14b4f76558edb9d1b410d3086cff8`, records `EXC_BAD_ACCESS/SIGSEGV` at `0xe` in the same V8 root visitor, mark-compact collection and baseline prologue. This is a second distinct ordinary test file with the same native signature; it does not establish the source of the invalid stack slot. An earlier clean-commit gate at the same target had instead returned `unavailable` from a final publication query; that assertion passed alone and in this serial run, so its cause remains separate and unproven.
 
 A separate 2026-09-24 report, `node-2026-09-24-182812.ips`, SHA-256 `aa2efd8824d486be874e781bb7b3a8fa48c1f4bb422a249314f3f171deecd69a`, records `SIGABRT` at `node::InternalCallbackScope::Close` and an `execution_async_id` assertion. A small diagnostic using `vm.runInContext` with a timeout, Promise/`AsyncLocalStorage` work, and async hooks can reproduce this callback failure. The adapter's direct-VM harness has an execution timeout, making this worth investigating, but the diagnostic does not prove that a production Worker follows that path. This abort must not be counted as another instance of the `0xe` GC fault.
+
+### 2026-09-30 documentation checkpoint recurrence
+
+At clean commit `6dc643d3`, `./scripts/pnpm.sh run test:pre-push` passed the 611 infrastructure checks, Lean checks, semantic-core and importer tests, and CIB/comparator checks before failing in the concurrent Temporal testkit lane. Receipt `/tmp/bpmn-readme-audience-6dc643d3-pre-push-host` retains exit 1 and the exact command. The selected test command was `node --test --test-concurrency=4 packages/temporal-adapter/testkit/test/*.test.ts`; its summary reports 358 passing checks and two failures. This commit changed only documentation, so the failure does not demonstrate a runtime regression introduced by that change.
+
+The `temporal-adapter.test.ts` child failed without a reported TypeScript assertion. The matching macOS report `node-2026-09-30-035021.ips` captures PID `30735` at `2026-09-30 03:50:06.7227 +0200` and has SHA-256 `f6050158d2f6dce30596559a491cc540dc79fa5e7016ac646d95fea8653159de`. It records `EXC_BAD_ACCESS/SIGSEGV` at `0xe`, the same root visitor and mark-compact stack, and `Builtins_BaselineOutOfLinePrologue`. The environment remains Node `v24.18.0`, V8 `13.6.233.17-node.50`, macOS arm64, without diagnostic GC or compiler-suppression flags. This confirms recurrence of the observed native failure class; it does not establish its originating instruction or a corrective patch.
+
+Separately, `repeatable-subscription-temporal.test.ts` failed its initialization assertion when the SDK VM returned `Script execution timed out after 1000ms`. The [direct-VM harness](../../packages/temporal-adapter/testkit/test/direct-vm-activation-harness.ts) supplies that one-second execution limit. Host load measured after completion was `11.88`, but that observation does not prove contention caused the timeout or connect it to the native crash. The timeout's cause and the smallest independently failing pair remain unresolved. No flags, deadlines, concurrency settings, dependencies, or test coverage were changed; the failed gate remains failed under the existing RC publication exception.
 
 ## Mechanism assessment
 
