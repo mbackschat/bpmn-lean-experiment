@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { test } from "node:test";
 
@@ -7,6 +8,24 @@ import { BpmnAutoLayoutPresentationAdapter } from "../dist/index.js";
 import { parsePresentationModel } from "../dist/presentation-model.js";
 
 const catalog = await buildProcessShowcaseCatalog(fileURLToPath(new URL("../../../../", import.meta.url)));
+const nestedSource = await readFile(new URL("../../../../scenarios/terminate-end-event/process.bpmn", import.meta.url), "utf8");
+for (const seedId of ["Normal_Outer", "LayoutSeedDiagram", "LayoutSeedPlane", "LayoutSeedShape_0"]) {
+  test(`preserves expanded scope coverage when source occupies ${seedId} and its suffixes`, async () => {
+    const source = nestedSource.replaceAll("UserTask_Outer", seedId)
+      .replaceAll("Start_Root", `${seedId}_1`).replaceAll("End_Root", `${seedId}_2`);
+    const adapter = new BpmnAutoLayoutPresentationAdapter();
+    const generated = await adapter.generate(source, "Process_TerminateEnd");
+    const composed = await adapter.validateGeneratedComposition(source, "Process_TerminateEnd", generated.diagramInterchangeXml);
+    assert.equal(composed.replace(generated.diagramInterchangeXml, ""), source);
+    const parsed = await parsePresentationModel(composed, "seed collision presentation");
+    const shapes = parsed.definitions.diagrams![0]!.plane!.planeElement!;
+    assert.equal(shapes.find((shape) => shape.bpmnElement?.id === "SubProcess_Work")?.isExpanded, true);
+    for (const id of [seedId, `${seedId}_1`, `${seedId}_2`, "UserTask_Trigger", "UserTask_Sibling"]) {
+      assert.equal(shapes.filter((shape) => shape.bpmnElement?.id === id).length, 1);
+    }
+    assert.deepEqual(await adapter.generate(source, "Process_TerminateEnd"), generated);
+  });
+}
 const selected = [
   ["claim-assessment-with-input-and-decision", "Process_ClaimAssessment"],
   ["confirmed-travel-cancellation", "Process_Compensation"],

@@ -61,7 +61,7 @@ The completed risk-first sequence covers data lifetime, internal scheduling, sub
 
 Integration state: `satisfied`.
 
-The original `phase/mue-release-candidate` target was `4c6e7238`; `91b759a1` holds the qualification record and `9fb6705b` the qualified semantics. On 2026-09-28 the owner accepted disclosed intermittent native-runtime risk for RC, without accepting a root-cause fix or final MUE closure. The published distribution tag `v0.2.0-rc.1` remains fixed at `16c5b9f6`. On 2026-09-30 the owner directed another RC phase-tag realignment to the latest documentation commit, retaining that versioned distribution identity and the existing risk exception. Preview Alpha and Beta phase tags remain unchanged; no retrospective version tags are created.
+The original `phase/mue-release-candidate` target was `4c6e7238`; `91b759a1` holds the qualification record and `9fb6705b` the qualified semantics. On 2026-09-28 the owner accepted disclosed intermittent native-runtime risk for RC, without accepting a root-cause fix or final MUE closure. The published distribution tag `v0.2.0-rc.1` remains fixed at `16c5b9f6`. On 2026-09-30 the owner directed an RC phase-tag realignment to documentation checkpoint `4e489a08`, then directed the reviewed corrections to be committed, the RC phase tag moved to that correction commit, and both pushed. The former target for this correction is `4e489a08`; the versioned distribution identity and existing native-runtime risk exception remain unchanged. Preview Alpha and Beta phase tags remain unchanged; no retrospective version tags are created.
 
 ### MUE acceptance goal
 
@@ -91,7 +91,7 @@ The selected scheduling and bounded Transaction accounts are independently closu
 
 - Runtime qualification. Command: `./scripts/pnpm.sh run test:pre-push`. Status: `exit 1`. Date: `2026-09-30`. Commit: `6dc643d3`, clean documentation checkpoint. Receipt: `/tmp/bpmn-readme-audience-6dc643d3-pre-push-host`. Infrastructure, Lean, semantic-core/importer and CIB/comparator checks passed; the concurrent Temporal testkit lane failed with a native child crash and a separate one-second VM initialization timeout. The [Node/V8 crash investigation](research/NODE-V8-CRASH-INVESTIGATION-RESEARCH.md#2026-09-30-documentation-checkpoint-recurrence) owns the report identity and unresolved causal boundaries. The earlier ordinary-settings package pass remains historical evidence, not closure. RC publication retains the owner-accepted exception; final MUE runtime acceptance remains open.
 
-- Human and operational journeys. Command: `env PLAYWRIGHT_PREBUILT_WEB=true ./scripts/pnpm.sh --filter @bpmn-lean/showcase-mue-preview-alpha exec playwright test rc-showcase-journeys.spec.ts --grep "user host"`, plus affected browser/service gates. Status: `exit 0`. Date: `2026-09-28`. Commit: `6ce2310e` for human checks; grouped repairs in the worktree over `d2c65265`. Six human-host checks pass in `/tmp/mue-acceptance-human-6ce2310e`; twelve browser checks across the six repaired M1–M4 packages pass in `/tmp/mue-rc-browser-acceptance-final`; all four live service witnesses pass in `/tmp/mue-service-hosts-green`. Client-package, type and focused guards also pass. Worktree receipts name the parent HEAD, not clean-commit release qualification. Hosted CI remains owner-monitored.
+- RC corrections. Command: `env PLAYWRIGHT_PREBUILT_WEB=true ./scripts/pnpm.sh --filter @bpmn-lean/showcase-platform-ui-quality exec playwright test e2e/definition-selection-lifecycle.spec.ts --project=chromium-1600`, plus web/diagram package and workflow regression checks. Status: `exit 0`. Date: `2026-09-30`. Commit: `4e489a08`, with correction worktree changes. Browser receipt: `/tmp/bpmn-review-fix-browser.MgWXdI` (13 checks); diagram package receipt: `/tmp/bpmn-layout-collision-green.NGNaSO` (24 checks). Web package checks cover independent publication/export ownership; browser checks cover delayed Start after selection and workspace changes. Diagram collision tests reserve existing suffixes and retain deterministic output. Independent correction audit found no blockers. These worktree results do not establish clean-commit runtime qualification; the preceding native-runtime exception remains open.
 
 ## Exact resume point
 
@@ -99,7 +99,7 @@ Active work ID: `MUE-ACCEPTANCE`.
 
 Risk band: P3 runtime qualification failures and evidence reconciliation; P1 CI verdict is owner-monitored.
 
-Owner instruction, 2026-09-30: commit and push the README audience revision and realign the RC phase tag to the latest documentation checkpoint. Preserve the published `v0.2.0-rc.1` distribution identity. The frozen RC scope, Docker Desktop and Rancher Desktop dockerd/moby support, and owner-monitored CI remain unchanged; MUE acceptance is separate.
+Owner instruction, 2026-09-30: repair the confirmed navigation, request, diagram and release-workflow defects, commit, realign `phase/mue-release-candidate` to the correction commit, then push. Preserve `v0.2.0-rc.1` and the Alpha/Beta phase tags. Frozen RC scope, desktop support and owner-monitored CI remain unchanged; this instruction does not close MUE acceptance.
 
 CPU constraint: root-owned Lean validation permits one process tree, one CPU, 3 GiB and no additional swap. Reuse valid warmed or hosted evidence; report CPU-intensive validation completion.
 

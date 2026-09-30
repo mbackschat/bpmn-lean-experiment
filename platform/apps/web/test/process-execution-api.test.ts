@@ -239,3 +239,68 @@ test("a delayed response cannot satisfy a superseded complete-history request", 
   await assert.rejects(abandoned, ProcessExecutionUnavailableError);
   assert.equal((await currentRequest).headRevision, 2);
 });
+
+function exportResponse(): Response {
+  const bytes = serializeExecutionPublicationExport({
+    format: "bpmn-lean.execution-publication.v1",
+    ...identity,
+    headRevision: 2,
+    batches: [startBatch],
+    current,
+  }, identity);
+  const body = new ArrayBuffer(bytes.byteLength);
+  new Uint8Array(body).set(bytes);
+  return new Response(body, { headers: {
+    "content-type": "application/json",
+    "content-disposition": 'attachment; filename="execution-Instance_1.json"',
+  } });
+}
+
+for (const firstKind of ["publication", "export"] as const) {
+  test(`concurrent publication and export succeed when ${firstKind} starts first`, async () => {
+    const publicationResponse = Promise.withResolvers<Response>();
+    const downloadResponse = Promise.withResolvers<Response>();
+    const api = new ProcessExecutionApiClient("https://platform.test", async (input) =>
+      new URL(String(input)).pathname.endsWith("/export")
+        ? downloadResponse.promise : publicationResponse.promise);
+    const publication = firstKind === "publication" ? api.getComplete(instance) : null;
+    const download = api.getExport(instance);
+    const results = Promise.all([publication ?? api.getComplete(instance), download]);
+    downloadResponse.resolve(exportResponse());
+    publicationResponse.resolve(jsonResponse(page()));
+    const [snapshot, exported] = await results;
+    assert.equal(snapshot.headRevision, 2);
+    assert.equal(exported.filename, "execution-Instance_1.json");
+    assert.equal(decodeCanonicalExecutionPublicationExport(exported.bytes, identity).headRevision, 2);
+  });
+}
+
+for (const kind of ["publication", "export"] as const) {
+  test(`a newer ${kind} request supersedes only the previous request of its kind`, async () => {
+    const first = Promise.withResolvers<Response>();
+    let calls = 0;
+    const response = () => kind === "publication" ? jsonResponse(page()) : exportResponse();
+    const api = new ProcessExecutionApiClient("https://platform.test", async () =>
+      ++calls === 1 ? first.promise : response());
+    const read = () => kind === "publication" ? api.getComplete(instance) : api.getExport(instance);
+    const rejected = assert.rejects(read(), ProcessExecutionUnavailableError);
+    const currentRequest = read();
+    first.resolve(response());
+    await rejected;
+    await currentRequest;
+  });
+}
+
+test("invalidating the selected instance supersedes both publication and export requests", async () => {
+  const publicationResponse = Promise.withResolvers<Response>();
+  const downloadResponse = Promise.withResolvers<Response>();
+  const api = new ProcessExecutionApiClient("https://platform.test", async (input) =>
+    new URL(String(input)).pathname.endsWith("/export")
+      ? downloadResponse.promise : publicationResponse.promise);
+  const publicationRejected = assert.rejects(api.getComplete(instance), ProcessExecutionUnavailableError);
+  const downloadRejected = assert.rejects(api.getExport(instance), ProcessExecutionUnavailableError);
+  api.invalidate();
+  publicationResponse.resolve(jsonResponse(page()));
+  downloadResponse.resolve(exportResponse());
+  await Promise.all([publicationRejected, downloadRejected]);
+});

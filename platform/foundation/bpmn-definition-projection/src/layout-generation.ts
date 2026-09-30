@@ -7,6 +7,7 @@ import { layoutInventory, sourceReferences } from "./layout-inventory.js";
 export async function generateLayout(sourceXml: string): Promise<string> {
   const moddle = createPresentationModdle();
   const source = await parsePresentationModel(sourceXml, "layout input");
+  const reservedIds = new Set(Object.keys(source.elementsById));
   const process = source.definitions.rootElements!.find((element) => element.$type === "bpmn:Process")!;
   const inventory = layoutInventory(process);
   const nodes = inventory.shapes.filter((element) => element.$instanceOf("bpmn:FlowNode"));
@@ -28,12 +29,12 @@ export async function generateLayout(sourceXml: string): Promise<string> {
     node.set("outgoing", outgoing.get(node) ?? []);
   }
   // bpmn-auto-layout 1.3.0 reads expansion from input DI and then replaces it (Layouter.layoutProcess).
-  const plane = moddle.create("bpmndi:BPMNPlane", { id: "LayoutSeedPlane", bpmnElement: process,
+  const plane = moddle.create("bpmndi:BPMNPlane", { id: allocateSeedId("LayoutSeedPlane", reservedIds), bpmnElement: process,
     planeElement: inventory.scopes.slice(1).map((scope, index) => moddle.create("bpmndi:BPMNShape", {
-      id: `LayoutSeedShape_${index}`, bpmnElement: scope, isExpanded: true,
+      id: allocateSeedId(`LayoutSeedShape_${index}`, reservedIds), bpmnElement: scope, isExpanded: true,
     })),
   });
-  source.definitions.set("diagrams", [moddle.create("bpmndi:BPMNDiagram", { id: "LayoutSeedDiagram", plane })]);
+  source.definitions.set("diagrams", [moddle.create("bpmndi:BPMNDiagram", { id: allocateSeedId("LayoutSeedDiagram", reservedIds), plane })]);
   const candidate = await parsePresentationModel(await layoutProcess((await moddle.toXML(source.definitions, { format: true })).xml), "layout candidate");
   const outputPlane = candidate.definitions.diagrams![0]!.plane!;
   const candidateProcess = candidate.definitions.rootElements!.find((element) => element.id === process.id)!;
@@ -52,6 +53,13 @@ export async function generateLayout(sourceXml: string): Promise<string> {
   }
   outputPlane.set("planeElement", geometry);
   return (await moddle.toXML(candidate.definitions, { format: true })).xml;
+}
+
+function allocateSeedId(preferred: string, reserved: Set<string>): string {
+  let candidate = preferred;
+  for (let suffix = 1; reserved.has(candidate); suffix += 1) candidate = `${preferred}_${suffix}`;
+  reserved.add(candidate);
+  return candidate;
 }
 
 function connectBounds(source: ModdleElement, target: ModdleElement): { x: number; y: number }[] {

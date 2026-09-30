@@ -62,7 +62,8 @@ export class ProcessExecutionProtocolError extends Error {
 export class ProcessExecutionApiClient implements ProcessExecutionApi {
   readonly #origin: string;
   readonly #fetch: typeof fetch;
-  readonly #requests = new LatestRequest();
+  readonly #publicationRequests = new LatestRequest();
+  readonly #exportRequests = new LatestRequest();
 
   constructor(baseUrl: string | URL, fetcher?: typeof fetch) {
     const url = new URL(baseUrl);
@@ -78,7 +79,7 @@ export class ProcessExecutionApiClient implements ProcessExecutionApi {
   ): Promise<ExecutionPublicationExport> {
     const instance = snapshotInstance(requestedInstance);
     const identity = executionPublicationIdentityForPublicProcessInstance(instance);
-    const generation = this.#requests.begin();
+    const generation = this.#publicationRequests.begin();
     const batches: CommittedTransitionBatch[] = [];
     let afterRevision = 0;
     let observedHead = 0;
@@ -89,10 +90,10 @@ export class ProcessExecutionApiClient implements ProcessExecutionApi {
         afterRevision,
         limit: publicationPageLimit,
       })), { headers: { accept: jsonMediaType } });
-      this.#requireCurrent(generation);
+      this.#requireCurrent(this.#publicationRequests, generation);
       if (response.status !== 200) await this.#throwApiError(response);
       const value = await readStrictJson(response);
-      this.#requireCurrent(generation);
+      this.#requireCurrent(this.#publicationRequests, generation);
       let page;
       try {
         page = decodeExecutionPublicationPage(value, {
@@ -140,16 +141,16 @@ export class ProcessExecutionApiClient implements ProcessExecutionApi {
   ): Promise<ExecutionPublicationDownload> {
     const instance = snapshotInstance(requestedInstance);
     const identity = executionPublicationIdentityForPublicProcessInstance(instance);
-    const generation = this.#requests.begin();
+    const generation = this.#exportRequests.begin();
     const response = await this.#fetch(this.#url(
       executionPublicationExportPath(identity.processInstanceId),
     ), { headers: { accept: jsonMediaType } });
-    this.#requireCurrent(generation);
+    this.#requireCurrent(this.#exportRequests, generation);
     if (response.status !== 200) await this.#throwApiError(response);
     requireJsonMediaType(response, "execution publication export");
     const filename = requireAttachmentFilename(response.headers.get("content-disposition"));
     const bytes = new Uint8Array(await response.arrayBuffer());
-    this.#requireCurrent(generation);
+    this.#requireCurrent(this.#exportRequests, generation);
     try {
       decodeCanonicalExecutionPublicationExport(bytes, identity);
     } catch (cause: unknown) {
@@ -162,15 +163,16 @@ export class ProcessExecutionApiClient implements ProcessExecutionApi {
   }
 
   invalidate(): void {
-    this.#requests.invalidate();
+    this.#publicationRequests.invalidate();
+    this.#exportRequests.invalidate();
   }
 
   #url(pathname: string): URL {
     return new URL(pathname, this.#origin);
   }
 
-  #requireCurrent(generation: number): void {
-    if (!this.#requests.isCurrent(generation)) {
+  #requireCurrent(requests: LatestRequest, generation: number): void {
+    if (!requests.isCurrent(generation)) {
       throw new ProcessExecutionUnavailableError(
         "The committed execution request was superseded.",
       );

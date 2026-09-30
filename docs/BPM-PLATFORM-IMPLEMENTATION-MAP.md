@@ -16,7 +16,7 @@ The RC acceptance-host repair is classified non-material: it applies the existin
 
 ## Implemented
 
-- Presentation-only automatic layout covers the curated RC showcase models, including expanded nested scopes, Transactions and visible data/compensation associations, with recursively checked DI and unchanged executable XML. The [diagram decision](BPMN-DIAGRAM-PRESENTATION-DECISION.md#selected-generator) owns the bounded coverage and adapter epoch.
+- Presentation-only automatic layout covers the curated RC showcase models, including expanded nested scopes, Transactions and visible data/compensation associations, with recursively checked DI and unchanged executable XML. Private expansion-seed IDs are allocated outside all source IDs, including occupied suffixes; existing successful presentation bytes and generator identity remain unchanged. The [diagram decision](BPMN-DIAGRAM-PRESENTATION-DECISION.md#selected-generator) owns the bounded coverage and adapter epoch.
 
 ### BPM platform
 
@@ -80,6 +80,8 @@ The RC acceptance-host repair is classified non-material: it applies the existin
 - Conversation `messageFlowRef` parsing in the private Product 2 diagram parser: its pinned upstream descriptor still uses the plural property. The admitted correlation model has no source DI and its selected Triggers journey claims no diagram; the semantic compiler's existing correction and execution remain independent.
 
 ## Evidence owners
+
+The non-material review corrections retain Start receipts while revoking automatic navigation on departure, and isolate polling from export cancellation. [Browser lifecycle checks](../showcase/platform-ui-quality/e2e/definition-selection-lifecycle.spec.ts), [execution-client checks](../platform/apps/web/test/process-execution-api.test.ts), and [layout collision checks](../platform/foundation/bpmn-definition-projection/test/showcase-diagrams.test.ts) cover the separating races and identifier collisions without changing engine meaning or public contracts.
 
 [ARCHITECTURE.md](ARCHITECTURE.md) owns the concrete module and deployment shape. Product 2 specifications own their public contracts, package tests bind module behavior, PostgreSQL gates bind shared mode, and maintained Chromium journeys bind the selected user-facing surfaces.
 

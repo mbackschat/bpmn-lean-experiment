@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { ProcessInstanceStartStatus } from "@bpmn-lean/platform-contracts";
 import type {
@@ -12,6 +12,7 @@ import type { DefinitionApiClient } from "./definitions-api";
 import styles from "./definition-start-panel.module.css";
 import { resolveMuePreviewAlphaStart } from "./mue-preview-alpha-start";
 import { findProcessShowcase } from "./process-showcase-catalog.ts";
+import { LatestRequest } from "./latest-request.ts";
 
 export type DefinitionStartPanelProps = Readonly<{
   api: DefinitionApiClient;
@@ -27,10 +28,13 @@ export function DefinitionStartPanel({
   const [result, setResult] = useState<ProcessInstanceStartResult | null>(null);
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const automaticNavigation = useRef(new LatestRequest());
+  useEffect(() => () => { automaticNavigation.current.invalidate(); }, []);
   const alphaStart = resolveMuePreviewAlphaStart(definition);
   const showcase = findProcessShowcase(definition);
 
   async function start(): Promise<void> {
+    const navigationGeneration = automaticNavigation.current.begin();
     setStarting(true);
     setError(null);
     setResult(null);
@@ -40,7 +44,8 @@ export function DefinitionStartPanel({
         showcase?.showcase?.start ?? alphaStart?.command ?? { initialVariables: [] },
       );
       setResult(started);
-      if (started.status === ProcessInstanceStartStatus.Started && showcase?.showcase?.mode === "guided") {
+      if (started.status === ProcessInstanceStartStatus.Started && showcase?.showcase?.mode === "guided"
+        && automaticNavigation.current.isCurrent(navigationGeneration)) {
         onOpenInstance?.(started.instance);
       }
     } catch (cause: unknown) {

@@ -37,7 +37,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Verify release tag and displayed product version
-        if: github.ref_type == 'tag'
+        if: github.ref_type == 'tag' && startsWith(github.ref_name, 'v') && (github.event_name == 'push' || inputs.publish_images == true)
         run: |
           root_version="$(jq -r .version package.json)"
           web_version="$(jq -r .version platform/apps/web/package.json)"
@@ -67,7 +67,7 @@ jobs:
         run: docker compose down --volumes --remove-orphans
 
       - name: Resolve pinned toolchain versions
-        if: github.event_name == 'push' || inputs.refresh_walkthrough_screenshots == true
+        if: github.event_name == 'push' || inputs.refresh_walkthrough_screenshots == true || inputs.publish_images == true
         id: pins
         run: |
           eval "$(./scripts/pinned-toolchain.sh)"
@@ -77,13 +77,13 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: Set up pnpm
-        if: github.event_name == 'push' || inputs.refresh_walkthrough_screenshots == true
+        if: github.event_name == 'push' || inputs.refresh_walkthrough_screenshots == true || inputs.publish_images == true
         uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
         with:
           version: ${{ steps.pins.outputs.pnpm }}
 
       - name: Set up Node
-        if: github.event_name == 'push' || inputs.refresh_walkthrough_screenshots == true
+        if: github.event_name == 'push' || inputs.refresh_walkthrough_screenshots == true || inputs.publish_images == true
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: ${{ steps.pins.outputs.node }}
@@ -223,7 +223,7 @@ jobs:
           path: .artifacts/mue-evaluation-demo/
 
       - name: Publish qualified prerelease bundle
-        if: github.ref_type == 'tag'
+        if: github.ref_type == 'tag' && startsWith(github.ref_name, 'v') && (github.event_name == 'push' || inputs.publish_images == true)
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |

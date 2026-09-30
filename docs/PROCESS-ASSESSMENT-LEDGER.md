@@ -292,7 +292,7 @@ The 2026-09-28 RC acceptance sweep found two further instances: the platform map
 A checklist item was corrected only where attention already was, leaving its siblings unaudited: a capsule's Required evidence list was amended for the two scenarios under discussion while two other Required items stayed listed and absent, a stale claim was fixed in the owning map but not in the capsule that copied it, one Required-Lean list was corrected while the sibling list and matrix row restating the same obligation were not, and the correction for that then declared itself the single owner while one sibling enumeration survived.
 
 Instances
-: 29
+: 30
 
 Disposition
 : `unguardable`
@@ -319,6 +319,8 @@ The twenty-seventh instance is public Compensation registration at `953f5d64`: e
 The twenty-eighth instance is the Product 2 failed-Process public-contract checkpoint at `152f3973`: strict acceptance was implemented and recorded in its new owner while engine maps and the Compensation owner still required rejection. The correction scopes earlier rejection evidence to its historical checkpoints, links the later consumer acceptance boundary, and preserves unfinished persistence, recovery, service, UI and journey obligations. The same sweep also removes stale public-registration qualification claims from routed owners.
 
 The twenty-ninth instance is failed-Process closure at `d9ff8d16`: downstream implementation and live acceptance landed while current engine, Temporal, IL, requirement and Compensation-owner passages still called them unfinished. The correction links the consumer outcome from those owners and preserves historical exclusions. No generated changed-section inventory can establish that an unchanged claim is still true.
+
+The thirtieth instance is RC tag realignment: the plan recorded the owner-directed move while the product design still called all phase tags original and the contributor guide described a single pre-publication exception. The correction routes current RC targets and qualification to the plan and preserves immutable distribution identity. The existing sibling question applies; arbitrary prose consistency remains unguardable.
 
 ### Finding 16
 
@@ -1257,6 +1259,57 @@ Evidence
 **First observed:** owner review of expanded Action history on 2026-09-28.
 
 The design decision was wrong before validation: a generic Details column received an entire event JSON payload instead of a separate reading area. The same mechanism was independently reproduced in Process instances. Fixed-width columns confined details to 188 pixels in the wide Action history view and 371 pixels in the forced card layout for Process instances. Middle alignment and stretched card cells then separated summary values from their headings. The shared table now supplies a full-width detail row beneath a compact, top-aligned summary. Readable facts precede optional raw data. Browser guards separate this geometric failure class through width, placement, stable summary height and keyboard-collapse assertions; they cannot prove that any arbitrary design meets a user's needs. Content selection remains an explicit design-review judgment, required before component selection by question 12 and the owning UI guideline. Existing beginner and journey requirements already applied; the missing rule does not excuse failing to apply them.
+
+### Finding 70
+
+Async request ownership followed component or client lifetime instead of the operation's user-visible scope, so unrelated work superseded valid results or a late result reclaimed navigation.
+
+Instances
+: 2
+
+Disposition
+: `executable guard`
+
+Evidence
+: [Start navigation lifecycle](../showcase/platform-ui-quality/e2e/definition-selection-lifecycle.spec.ts), [publication/export concurrency](../platform/apps/web/test/process-execution-api.test.ts)
+
+**First observed:** recent-change RC audit on 2026-09-30.
+
+Leaving a retained Start panel now revokes that invocation's navigation token permanently without discarding its receipt. Publication polling and export keep separate generations; changing the instance invalidates both. Separating tests cover leave-and-return, version changes, both request completion orders and same-kind supersession.
+
+### Finding 71
+
+Private generated identifiers assumed a reserved namespace absent from the public source contract; representative fixtures never occupied those names.
+
+Instances
+: 1
+
+Disposition
+: `executable guard`
+
+Evidence
+: [diagram seed collision tests](../platform/foundation/bpmn-definition-projection/test/showcase-diagrams.test.ts)
+
+**First observed:** recent-change RC audit on 2026-09-30.
+
+The layout seed allocator reserves every parsed source ID and every new allocation. Tests occupy diagram, plane and shape seed names plus successive suffixes, require expanded Sub-Processes and repeatable composition, and retain the ordinary-source control.
+
+### Finding 72
+
+Workflow checks asserted that steps existed without evaluating their shared event, ref and input conditions, so permitted combinations omitted prerequisites or ran publication after smoke-only execution.
+
+Instances
+: 1
+
+Disposition
+: `executable guard`
+
+Evidence
+: [evaluation workflow condition matrix](../scripts/evaluation-distribution.platform-test.ts)
+
+**First observed:** recent-change RC audit on 2026-09-30.
+
+The guard evaluates actual step predicates across branch, phase-tag and version-tag dispatches with independent publishing and screenshot inputs. Release validation and attachment require version-tag publication; every bundle-producing path prepares its pinned toolchain.
 
 ## Update rule
 

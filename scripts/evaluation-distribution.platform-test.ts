@@ -5,6 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
+import { runInNewContext } from "node:vm";
 import { buildProcessShowcaseCatalog } from "./rc-showcase-catalog.ts";
 import { writeEvaluationShowcases } from "./write-evaluation-showcases.ts";
 
@@ -361,6 +362,41 @@ test("evaluation workflow is manual or tagged and never routine", async () => {
   );
   assert.doesNotMatch(workflow, /mue-preview-alpha-demo|mue-preview-alpha-native/u);
   assert.match(workflow, /name: mue-evaluation-\$\{\{ github\.ref_type == 'tag' && github\.ref_name \|\| github\.sha \}\}/u);
+});
+
+test("manual evaluation respects publishing intent and prepares the publisher toolchain", async () => {
+  const workflow = await readFile(workflowPath, "utf8");
+  const enabled = (name: string, event: string, refType: string, refName: string, publish: boolean, screenshots: boolean): boolean => {
+    const step = workflow.split(`      - name: ${name}\n`)[1]?.split("      - name:")[0];
+    const condition = step?.match(/^        if: (.+)$/mu)?.[1];
+    assert.ok(condition, `missing condition for ${name}`);
+    return runInNewContext(condition, {
+      github: { event_name: event, ref_type: refType, ref_name: refName },
+      inputs: { publish_images: publish, refresh_walkthrough_screenshots: screenshots },
+      startsWith: (value: string, prefix: string) => value.startsWith(prefix),
+    }, { timeout: 1000 }) as boolean;
+  };
+  for (const event of ["push", "workflow_dispatch"]) {
+    for (const [refType, refName] of [["branch", "main"], ["tag", "phase/mue-release-candidate"], ["tag", "v0.2.0-rc.1"]] as const) {
+      if (event === "push" && !refName.startsWith("v")) continue;
+      for (const publish of [false, true]) {
+        for (const screenshots of [false, true]) {
+          const context = [event, refType, refName, publish, screenshots] as const;
+          const buildsBundle = enabled("Publish immutable multi-platform evaluation images and bundle", ...context);
+          const releases = event === "push" || (publish && refName.startsWith("v"));
+          for (const step of ["Verify release tag and displayed product version", "Publish qualified prerelease bundle"]) {
+            assert.equal(enabled(step, ...context), releases, `${step}: ${JSON.stringify(context)}`);
+          }
+          if (buildsBundle) {
+            for (const step of ["Resolve pinned toolchain versions", "Set up pnpm", "Set up Node"]) {
+              assert.equal(enabled(step, ...context), true, `${step}: publisher needs pinned Node for its TypeScript bundle writer`);
+            }
+          }
+          assert.equal(enabled("Install screenshot Chromium", ...context), event === "push" || screenshots);
+        }
+      }
+    }
+  }
 });
 
 test("migration and runtime database credentials stay separate", async () => {
