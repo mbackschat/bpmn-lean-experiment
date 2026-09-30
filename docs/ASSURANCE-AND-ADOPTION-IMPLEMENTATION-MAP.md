@@ -164,7 +164,7 @@ Registered answer-free scenarios run their declared Lean, TypeScript, Temporal, 
 
 ## Evidence owners
 
-[Dependency security](CONTRIBUTOR-SETUP-GUIDE.md#dependency-security-procedure).
+[Pre-push/CI security](CONTRIBUTOR-SETUP-GUIDE.md#dependency-security-procedure).
 
 [TESTING-SPEC.md](TESTING-SPEC.md), the generated pipeline report, guarded scenario/profile catalogs, [CIB relationship register](CIB-BPMN-RELATION-REGISTER.md), [A12 compatibility ledger](research/A12-WORKFLOWS-COMPATIBILITY-LEDGER.md), and executable corpus bind these claims. Latest measured results belong in [PLAN.md](PLAN.md).
 

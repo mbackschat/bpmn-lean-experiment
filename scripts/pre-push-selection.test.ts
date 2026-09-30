@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import path from "node:path";
 import { test } from "node:test";
+import { runCommand } from "./run-command.ts";
 
 import {
   discoverProduct2PrePushWorkflowGates,
@@ -13,6 +16,50 @@ import {
 function pathFilteredWorkflow(gate: string): string {
   return `on:\n  push:\n    branches:\n      - main\n    paths:\n      - "package.json"\njobs:\n  quality:\n    steps:\n      - run: ./scripts/pnpm.sh run ${gate}\n`;
 }
+
+test("complete pre-push always audits before path selection and propagates security failures", async (context) => {
+  const directory = await mkdtemp(path.join(tmpdir(), "bpmn-pre-push-security-"));
+  context.after(() => rm(directory, { force: true, recursive: true }));
+  const log = path.join(directory, "commands.log");
+  await writeFile(path.join(directory, "pnpm"), `#!/bin/sh
+printf 'pnpm %s\\n' "$*" >> "$PRE_PUSH_TEST_LOG"
+case "$*" in
+  check:clean-head) exit "$PRE_PUSH_TEST_CLEAN_EXIT" ;;
+  test:dependency-security) exit "$PRE_PUSH_TEST_SECURITY_EXIT" ;;
+  *) exit 99 ;;
+esac
+`, { mode: 0o755 });
+  await writeFile(path.join(directory, "node"), `#!/bin/sh
+printf 'node %s\\n' "$*" >> "$PRE_PUSH_TEST_LOG"
+`, { mode: 0o755 });
+  const manifest = JSON.parse(await readFile("package.json", "utf8")) as {
+    scripts: Record<string, string>;
+  };
+  const command = manifest.scripts["test:pre-push"];
+  assert.ok(command);
+  for (const [cleanExit, securityExit] of [[0, 0], [0, 1], [0, 17], [1, 0]]) {
+    await writeFile(log, "");
+    const result = runCommand("/bin/sh", ["-c", command], {
+      cwd: process.cwd(),
+      env: {
+        ...process.env,
+        PATH: `${directory}:${process.env.PATH ?? ""}`,
+        PRE_PUSH_TEST_LOG: log,
+        PRE_PUSH_TEST_CLEAN_EXIT: String(cleanExit),
+        PRE_PUSH_TEST_SECURITY_EXIT: String(securityExit),
+      },
+      timeoutMs: 5_000,
+    });
+    const exit = cleanExit || securityExit;
+    if (exit === 0) await result;
+    else await assert.rejects(result, new RegExp(`exited with ${exit}\\b`, "u"));
+    assert.deepEqual((await readFile(log, "utf8")).trim().split("\n"), [
+      "pnpm check:clean-head",
+      ...(cleanExit === 0 ? ["pnpm test:dependency-security"] : []),
+      ...(exit === 0 ? ["node scripts/pre-push-selection.ts"] : []),
+    ]);
+  }
+});
 
 test("discovers both GitHub workflow filename extensions", () => {
   assert.equal(isGitHubWorkflowFileName("platform-quality.yml"), true);

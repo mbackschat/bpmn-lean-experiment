@@ -127,12 +127,14 @@ test("security exception guard rejects broad, undocumented and expired bypasses"
 
 test("security monitoring runs daily and on changes without a full build", async () => {
   const workflow = await readFile(path.join(projectRoot, ".github/workflows/dependency-security.yml"), "utf8");
+  const manifest = JSON.parse(await readFile(path.join(projectRoot, "package.json"), "utf8")) as PackageManifest;
+  const securityCommand = manifest.scripts?.["test:dependency-security"] ?? "";
   assert.match(workflow, /cron: "\d+ \d+ \* \* \*"/u);
   assert.match(workflow, /  pull_request:/u);
   assert.match(workflow, /  push:/u);
-  assert.match(workflow, /pnpm audit --audit-level=high/u);
+  assert.match(workflow, /run: \.\/scripts\/pnpm\.sh run test:dependency-security/u);
+  assert.equal(securityCommand, "node --test scripts/pnpm-project-config.test.ts && pnpm audit --audit-level=high");
   assert.match(workflow, /pnpm install --frozen-lockfile --ignore-scripts/u);
-  assert.match(workflow, /node --test scripts\/pnpm-project-config.test.ts/u);
   assert.doesNotMatch(workflow, /continue-on-error|--prod|--ignore-registry-errors|verify\.sh|lake\.sh/u);
 });
 

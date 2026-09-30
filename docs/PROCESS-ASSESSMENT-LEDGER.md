@@ -579,20 +579,22 @@ The closure reviewer raised it against its own verdict: it could confirm two cor
 
 ### Finding 31
 
-Test files accumulated that no gate command selects, and no gate could report them because a gate only reports what it ran.
+Verification obligations existed outside the aggregate gate that was treated as complete, and the gate could report only what it selected.
 
 Instances
-: 1
+: 2
 
 Disposition
 : `executable guard`
 
 Evidence
-: [test-selection coverage](../scripts/test-selection-coverage.test.ts)
+: [test-selection coverage](../scripts/test-selection-coverage.test.ts), [pre-push security failure propagation](../scripts/pre-push-selection.test.ts)
 
 **First observed:** [Runtime-state invariant](RUNTIME-STATE-INVARIANT-SPEC.md) closure follow-up
 
 Forty tracked files across four `temporal-adapter` packages were unreachable: three packages declared a `build` script and no test script while no root command named their directories, and the fourth drifted because the capacity lane names five `.temporal-test.ts` siblings by hand, so every file added afterwards had to be appended by hand and four were not. They were live rather than rotten — 165 assertions passing in two seconds — so the cost was carrying review and maintenance for evidence that protected nothing. The guard derives the runnable set from `git ls-files`, excludes the frozen A12 tree by reading its own manifest rather than a second hardcoded prefix, and asserts the unselected set exactly so a file that becomes covered must leave the list in the same change. Its own first formulation scanned every `scripts/` file as a command surface, including its own test, and so read its recorded pending list as proof those files were selected, reporting zero orphans while thirty-six were unwired; seeding an orphan in an uncovered directory is what exposed it. The first formulation was also too weak in a second way, and the sweep it enabled found the real cost: asking whether any command *names* a file marks a package covered when it declares its own `test:built` script and nothing invokes it. Three packages were in that state, and one of them, the recovery worker, had stopped compiling four days earlier when a reviewed change removed a constructor option and left its caller passing it. The first diagnosis, that no lane built it, was wrong and the correction matters more than the defect: `build:platform-postgresql` already filtered that package in, so a lane existed. That lane needs a PostgreSQL database, which puts it outside the deliberately database-free local loop, and the branch is a hundred and seventy-nine commits ahead of `origin/main`, so no workflow had ever run on the breaking commit either. A package whose only compile lane is database-backed is therefore never compiled on a machine that does not push. The durable fix is the one that landed by luck rather than by that reasoning: the database-free operations checkpoint now builds it, and a measurement of all twenty-seven buildable packages confirms every one is compiled by some database-free gate. Its tests stayed green because Node strips types without checking them, so a broken package reported twenty-eight passes. The guard now decides reachability from automatically invoked gate roots, following script, workspace-filter, and runner edges. Four wrong models preceded the working one, each caught by measuring rather than reasoning: omitting filter edges reported two hundred and twenty-eight false orphans, omitting runner files hid the differential pipeline, `--filter ... exec` resolves paths against the filtered package rather than the root, and a literal cross-product leaked until an anti-vacuity assertion refused a partition that had silently become empty. The four remaining files needed no allowance after all: running them took 6.5 seconds and they passed, so the hand-written lane was replaced by a glob over the `.temporal-test.ts` suffix that already means "needs a live Temporal server", and the guard now asserts an empty unselected set with no exception list to decay
+
+On 2026-09-30, the local pre-push selector covered Product 1 and path-filtered Product 2 checks but omitted the unconditional dependency-security workflow. A clean local pass therefore preceded a hosted high-severity advisory failure. The shared policy/audit command now runs before path selection on every complete pre-push, with executable success, advisory-failure, registry-failure and dirty-tree controls. Updating the lockfile alone would leave this selection defect intact.
 
 ### Finding 32
 

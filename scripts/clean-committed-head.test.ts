@@ -66,7 +66,7 @@ test("makes clean committed HEAD the shared local and GitHub pre-push boundary",
   );
   assert.equal(
     manifest.scripts?.["test:pre-push"],
-    "node scripts/pre-push-selection.ts",
+    "pnpm check:clean-head && pnpm test:dependency-security && node scripts/pre-push-selection.ts",
   );
   assert.equal(
     manifest.scripts?.["test:pre-push:verify"],

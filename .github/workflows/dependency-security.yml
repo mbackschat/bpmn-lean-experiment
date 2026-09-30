@@ -41,7 +41,5 @@ jobs:
           cache: pnpm
       - name: Install locked dependencies without lifecycle scripts
         run: pnpm install --frozen-lockfile --ignore-scripts
-      - name: Check dependency policy and security exception expiry
-        run: node --test scripts/pnpm-project-config.test.ts
-      - name: Check runtime and development dependency advisories
-        run: pnpm audit --audit-level=high
+      - name: Check dependency policy and runtime and development advisories
+        run: ./scripts/pnpm.sh run test:dependency-security
