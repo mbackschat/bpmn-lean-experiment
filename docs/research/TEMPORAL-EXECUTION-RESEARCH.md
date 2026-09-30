@@ -752,6 +752,14 @@ The full local Temporal development server is the preferred integration target b
 
 After a durable baseline exists, `Worker.runReplayHistories` should run as a separate fast batch over committed history fixtures. Live integration and retained-history replay test different invariants and both become required at that boundary.
 
+## Closed-Run Query eviction investigation
+
+On 2026-09-30, hosted Verify run `36706606358` at `36262674` failed when the empty Transaction's final E1 publication was unavailable. Local instrumentation also observed a compensated Transaction's selected segment reject its descriptor digest, and separate Queries exhaust the existing five-second deadline. The hosted log does not preserve the underlying Query error, so neither local failure is established as that run's cause. The digest rejection remains unexplained and must not be folded into the timeout mechanism below.
+
+A minimal diagnostic using the installed TypeScript SDK `1.21.0`, CLI `1.8.1` and server `1.31.2` demonstrates a separate upstream Query-loss defect without BPMN code. A Workflow registers one constant synchronous Query and completes. The diagnostic holds its real eviction activation, queues Queries pinned to that Run, waits for the exact SDK buffered-task debug events, then releases eviction. One queued Query returns its constant value. With two queued Queries, one returns and one reaches its unchanged five-second deadline; the same Run emits the leftover-buffer warning. Receipt `/tmp/bpmn-sdk-query-eviction-bound-diagnostic` retains the seven-second execution and expected failing two-answer assertion; the probe is `/tmp/bpmn-sdk-query-eviction/query-eviction-bound.test.mjs`.
+
+The source-level boundary is Core's eviction processing: `finish_activation` transfers the task buffer out of the evicted Run, but `process_post_activation` reinstantiates only its first task and drops the remaining buffered Queries after warning. This breaks preservation of accepted Query work across eviction. The exact SDK `1.21.0` [Core source](https://github.com/temporalio/sdk-rust/blob/3dac9013b9031e5ffd51d7335838585b2db42efb/crates/sdk-core/src/worker/workflow/workflow_stream.rs#L363) matches the controlled witness. The same path remains in the released SDK `1.24.0` [Core source](https://github.com/temporalio/sdk-rust/blob/db635f0f21b0168a01f993e0f1b6c0f1983ec2bc/crates/sdk-core/src/worker/workflow/workflow_stream.rs#L390); this inspection identifies no corrective release and does not qualify an upgrade. No retry, serialization workaround, SDK replacement, or weaker publication guarantee is adopted. Qualification remains open alongside the distinct [native crash investigation](NODE-V8-CRASH-INVESTIGATION-RESEARCH.md).
+
 ## Open decisions
 
 The following decisions remain unapproved:
