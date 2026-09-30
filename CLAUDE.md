@@ -351,6 +351,8 @@ Every workspace package that publishes `dist/` owns its own `build` script. Root
 
 ## Documentation ownership
 
+Before editing the root README or its explanatory infographic copy, read and apply [the top-level README audience contract](docs/DOC-DISCIPLINE.md#top-level-readme-audience).
+
 Use one owner for each fact and link to it elsewhere:
 
 | Information | Owner |

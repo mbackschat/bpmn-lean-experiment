@@ -10,6 +10,8 @@ This guide records the exact content, visual grammar, source owners, snapshot bo
 
 Durable architectural statements must be refreshed from [PROJECT-DESIGN.md](PROJECT-DESIGN.md), the [Semantic Process IL specification](SEMANTIC-PROCESS-IL-SPEC.md), and [TESTING-SPEC.md](TESTING-SPEC.md). Exact current implementation status must be refreshed from the detail maps routed by [`implementation-status-router`](IMPLEMENTATION-MAP.md), and current sequencing from [PLAN.md](PLAN.md). The images do not replace those owners.
 
+Apply [the top-level README audience contract](DOC-DISCIPLINE.md#top-level-readme-audience) when writing or revising explanatory copy. Readers should understand the practical value and component roles without prior Lean knowledge. This writing requirement does not itself require regenerating existing assets.
+
 ## Skill and file ownership
 
 Use the maintained [infographic-bytebytego-style skill](https://github.com/mbackschat/coding-setup/tree/main/skills/infographic-bytebytego-style) for generation, refinement, visual acceptance and AVIF export. This record follows its separation of stable communication design, dated factual input and generation/export history.

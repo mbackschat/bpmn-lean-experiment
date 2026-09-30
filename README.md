@@ -1,18 +1,18 @@
 # BPMN on Temporal Workflows
 
-This project turns reviewed BPMN 2.0.2 execution semantics into an executable Lean reference and a separately written, pure TypeScript semantic core. Lean proves selected semantic obligations; a Temporal adapter hosts the TypeScript core durably without deciding BPMN meaning.
+This project builds a BPMN execution engine on Temporal Workflows, with Lean to make process behavior precise and prove selected guarantees. A TypeScript interpreter executes those rules; a Temporal adapter keeps processes running across waits and failures.
 
-The goal is BPMN Process Execution Conformance. The release candidate demonstrates selected profiles, not a complete conformance proof. A BPM platform consumes only the engine's published contract.
+The goal is **BPMN Process Execution Conformance**: processes that execute according to the BPMN 2.0.2 standard. The release candidate covers a defined subset of BPMN behavior; complete conformance remains open. A BPM platform adds human work and process operations through the engine's public API.
 
-- 🐳 **Evaluate the RC:** [Run the Docker demo](#test-drive-the-release-candidate-with-docker). No checkout or build needed.
+- 🐳 **Evaluate the RC:** [Run the Docker or Rancher Desktop demo](#try-the-rc-with-docker-or-rancher-desktop). No checkout or build needed.
 - 🔬 **Understand the research:** Read [the rationale and evidence](#research-approach-and-evidence) and [the architecture at a glance](#architecture-at-a-glance).
 - 🛠️ **Contribute:** Follow the [engine quick start](#run-the-temporal-engine) or [prepare a contributor environment](#prepare-a-contributor-environment).
 
-## Test-drive the release candidate with Docker
+## Try the RC with Docker or Rancher Desktop
 
 The [v0.2.0-rc.1 evaluation bundle](https://github.com/mbackschat/bpmn-lean-experiment/releases/download/v0.2.0-rc.1/mue-evaluation-v0.2.0-rc.1.tar.gz) runs the browser app and its engine from published Docker images. You need Docker Compose `2.24.4` or later, a browser, `curl`, and `shasum`. No repository checkout, Node, pnpm, Lean, Temporal installation, or image build is needed.
 
-**🐳 1. Start Docker.** On macOS, use Docker Desktop or Rancher Desktop with **dockerd (moby)** selected under **Preferences → Container Engine**. On Linux, use Docker Engine with the Compose plugin. Check that `docker info` succeeds and `docker compose version` shows `2.24.4` or later.
+**🐳 1. Start your container engine.** On macOS, use Docker Desktop or [Rancher Desktop](https://docs.rancherdesktop.io/getting-started/installation/). On Linux, use Rancher Desktop or Docker Engine with the Compose plugin. In Rancher Desktop, select **dockerd (moby)** as the container engine so the same Docker commands work. Check that `docker info` succeeds and `docker compose version` shows `2.24.4` or later.
 
 On Windows, the Docker images require Linux-container mode, and the `demo` launcher requires a Unix shell. Native PowerShell and Command Prompt cannot run it as written. Running the commands inside a WSL 2 Linux distribution with [Docker Desktop WSL integration](https://docs.docker.com/desktop/features/wsl/) is a possible route, but this project has not qualified that Windows setup.
 
@@ -25,7 +25,7 @@ tar -xzf demo.tar.gz
 ./deploy/evaluation/demo prepare
 ```
 
-The last command pulls the digest-pinned images, starts the stack, and prepares three human processes.
+The last command downloads the published images, starts the stack, and prepares three interactive processes. You complete their human tasks yourself.
 
 **🌐 3. Try a process.** Open the printed `LIVE_DEMO_READY` address. Choose **Definitions → Explore process showcases**, start a prepared process, then complete its task under **Work**.
 
@@ -33,53 +33,91 @@ The [browser walkthrough](docs/BPM-PLATFORM-BROWSER-WALKTHROUGH.md#zero-build-de
 
 ## Why this project exists
 
-BPMN 2.0.2, CIB Seven, and Temporal answer different questions:
+Moving BPMN processes from an engine such as CIB Seven to Temporal raises a question: **will the processes still behave as their BPMN models specify?** Parallel work, messages, timers, and cancellation must keep their meaning even when the underlying runtime changes.
 
-- **BPMN 2.0.2** defines the normative notation, metamodel, and Process Execution obligations.
-- **CIB Seven** is a mature executable implementation and a useful empirical oracle for explicitly selected compatibility profiles, but it is not the normative standard.
-- **Temporal** supplies durable execution, replay, messaging, timers, Activities, and recovery, but those mechanisms do not define BPMN behavior.
+- **BPMN 2.0.2** defines what the process elements mean and how they should execute.
+- **CIB Seven** provides a mature implementation against which we compare selected behavior, including explicitly scoped compatibility choices.
+- **Temporal** provides reliable workflow execution and recovery. The BPMN engine still has to decide how a BPMN process behaves.
 
-A direct BPMN-to-Temporal translation can accidentally turn Workflow handlers, retries, Event History, or SDK scheduling into process semantics. This project keeps the evaluator pure and explicit, then checks whether the durable host preserves its public results. The platform presents and operates published facts; it does not reconstruct missing BPMN facts from Temporal or its own database.
-
-Some existing diagrams still say “Product 2.” That is the [architecture's internal label](docs/PROJECT-DESIGN.md#product-division) for the **BPM platform**; “Product 1” means the **BPMN engine**. This README uses the product names, and the artwork will adopt them when it is next refreshed.
+The approach separates **process meaning** from **execution infrastructure**. We describe the BPMN rules in Lean, implement them in a TypeScript interpreter, and check that Temporal hosting preserves the results. This makes the rules reviewable without having to infer them from retries, queues, or runtime scheduling. The BPM platform adds human tasks, forms, and monitoring on top of the engine's public API.
 
 ## Research approach and evidence
 
 ### Why Lean and TypeScript?
 
-Each admitted BPMN profile begins with a reviewed account of what the process means. Lean makes selected rules executable and supports quantified theorems and counterexamples before those rules spread through production code. Lean is a reference and proof tool, not a runtime dependency of the release images. A separately written, I/O-free TypeScript interpreter runs the admitted model in production and can be tested without Temporal. It executes inside a Temporal Workflow when durability is needed.
+**Lean helps us check the rules behind the engine.** A BPMN engine must handle more than the happy path: parallel work may finish in different orders, and a process may be cancelled while it is waiting. We write an executable model of these rules in Lean, a programming language with a mathematical proof checker. It lets us prove selected properties across all the cases a proof covers, rather than checking only the examples we can think to test.
 
-The two implementations can expose transcription errors, such as a wrong identity check. They implement the **same** reviewed account, however, so their agreement cannot rule out a mistake in that account or in source facts both receive. [The design decision](docs/PROJECT-DESIGN.md#two-kinds-of-independence) and [evidence-lane rules](docs/TESTING-SPEC.md#evidence-lanes) make that distinction explicit.
+**TypeScript puts those rules to work.** Its interpreter decides which process steps run next, what must wait, and how tasks and events change the process. Those decisions are separate from network and database operations, so they can be tested on their own and then inside a Temporal Workflow. Lean is used during development and verification; you do not need it to run the published Docker images.
+
+**Proofs and tests answer different questions.** Lean checks properties of the model. Comparison tests check that the separately written TypeScript engine follows it, and hosting tests check its behavior on Temporal. We also review the BPMN standard and compare selected examples with CIB Seven: two implementations agreeing does not establish that their shared interpretation is correct. The [design rationale](docs/PROJECT-DESIGN.md#two-kinds-of-independence) and [verification approach](docs/TESTING-SPEC.md#evidence-lanes) explain the boundaries in more detail.
 
 <p align="center">
-  <a href="docs/assets/project-infographics/why-lean-helps.avif"><img src="docs/assets/project-infographics/why-lean-helps.avif" alt="Why Lean helps build a BPMN engine: exact BPMN XML is admitted and lowered to the Semantic Process IL, interpreted in Lean, independently transcribed in TypeScript, durably hosted by Temporal, and checked through separate evidence lanes." width="560"></a>
+  <a href="docs/assets/project-infographics/why-lean-helps.avif"><img src="docs/assets/project-infographics/why-lean-helps.avif" alt="Why Lean helps: describe and check BPMN execution rules, implement them in TypeScript, and test that Temporal hosting preserves their behavior." width="560"></a>
 </p>
 
-The graphic shows the roles of the two interpreters and their evidence boundaries. Its dated source and exact copy are in the [infographics guide](docs/INFOGRAPHICS.md#infographic-1-why-lean-helps-build-a-bpmn-engine).
+The graphic connects the execution model, the running engine, and their checks. Its source notes are in the [infographics guide](docs/INFOGRAPHICS.md#infographic-1-why-lean-helps-build-a-bpmn-engine).
 
 ### Why Temporal?
 
-Processes wait for people, messages, timers, and external work. We chose Temporal for durable coordination: it supplies Workflow history and replay after Worker loss, message ingress, timers, and Activities for external effects. Its TypeScript Workflow hosts the pure interpreter while the semantic core decides BPMN-visible state and outcomes. Temporal's retries, scheduling, and Event History are therefore hosting mechanisms, not BPMN rules. Activity side effects still require idempotency or reconciliation; durability alone does not make them exactly once. The [Temporal research](docs/research/TEMPORAL-EXECUTION-RESEARCH.md#executive-model) explains those tradeoffs, and the [runtime diagram](#how-bpmn-executes-across-the-distributed-system) shows where each component runs.
+Business processes may wait hours or days for people, messages, timers, or external services. Temporal records their execution so they can resume after a worker fails. It also supplies durable timers, messaging, and retried service calls, avoiding the need to build that infrastructure from scratch.
+
+Our TypeScript interpreter runs inside a Temporal Workflow. The interpreter owns the BPMN decisions; Temporal owns durable coordination and recovery. A retried service call can still repeat an external action, so integrations must handle duplicate requests. The [Temporal research](docs/research/TEMPORAL-EXECUTION-RESEARCH.md#executive-model) explains the tradeoffs, and the [runtime diagram](#how-bpmn-executes-across-the-distributed-system) shows where each component runs.
 
 ### What has been demonstrated?
 
-- **A rule can be proved, not just illustrated.** For an ordinary waiting User Task, the [identity theorem](BpmnSemantics/SemanticProcess/Execution.lean) rejects a completion for the wrong occurrence with unchanged state; the [capsule](docs/capsules/USER-TASK-INTERACTION-SPEC.md) also records why matching only the BPMN element ID is insufficient. This proves that rule in the Lean account under its stated assumptions, not the whole implementation.
-- **Separate implementations can catch disagreements.** [Registered, answer-free scenarios](docs/TESTING-SPEC.md#complete-differentialrefinement-pipeline) compare Lean and TypeScript results; declared CIB cases add a pinned compatibility observation, and seeded mutations check that the comparisons notice selected differences. These are finite, profile-bound checks, as defined by the [evidence lanes](docs/TESTING-SPEC.md#evidence-lanes).
-- **The selected behavior survives real hosting tests.** [Temporal evidence](docs/TEMPORAL-TEST-EVIDENCE-MAP.md) exercises Worker replacement, command recovery, continuation, and replay for admitted profiles. The [RC browser walkthrough](docs/BPM-PLATFORM-BROWSER-WALKTHROUGH.md#rc-process-showcase-catalog) lets readers start and complete three interactive human processes through the platform.
+The approach already supports complete example processes and several kinds of verification:
 
-Together these results demonstrate the approach on selected end-to-end slices. They do not prove arbitrary XML import, universal Lean–TypeScript equivalence, general Temporal refinement, production scale, or OMG Process Execution Conformance. [Current acceptance work](docs/PLAN.md#mue-acceptance-goal), the [`implementation-status-router`](docs/IMPLEMENTATION-MAP.md) for implemented and absent boundaries, and the [open Node/V8 crash investigation](docs/research/NODE-V8-CRASH-INVESTIGATION-RESEARCH.md) remain separate from those demonstrated results.
+- **A range of BPMN processes runs on the engine.** The [retained example processes](model-corpus/EXECUTABLE-MODEL-CORPUS-MAP.md) exercise human and service tasks, conditional and parallel paths, subprocesses and called processes, messages and timers, sequential and parallel review batches, and the supported compensation and transaction-cancellation cases.
+- **Selected execution rules have machine-checked proofs.** These cover properties of [parallel reviews](docs/capsules/PARALLEL-MULTI-INSTANCE-SPEC.md#lean-assurance-lane), [cancellation](docs/capsules/REPEATABLE-EVENT-SUBSCRIPTIONS-SPEC.md#lean-assurance-lane), and [human-task interaction](docs/capsules/USER-TASK-INTERACTION-SPEC.md#lean-assurance-lane), helping us check difficult behavior beyond individual test runs.
+- **The TypeScript engine agrees with Lean on the tested process examples.** The [comparison tests](docs/TESTING-SPEC.md#complete-differentialrefinement-pipeline) run the same tasks, messages, and timer events through both and compare the results. Selected examples also compare against CIB Seven. Tests with deliberately introduced mistakes check that the comparisons can detect incorrect behavior.
+- **Processes retain progress after a worker restart.** The [hosting tests](docs/TEMPORAL-TEST-EVIDENCE-MAP.md) cover waiting tasks, messages, timers, and parallel reviews. They also check recovery when a task completion was accepted but its acknowledgement was lost, and continuation when a process outgrows its configured execution-history limit.
+- **People can work through complete processes in the BPM platform.** The [three prepared interactive examples](docs/BPM-PLATFORM-BROWSER-WALKTHROUGH.md#rc-process-showcase-catalog) let users select and start a process, claim a task, fill in its form, complete the work, and inspect progress and Action history.
+
+**This is evidence for the approach, not complete BPMN conformance.** The RC supports selected BPMN features and example journeys. It does not yet accept arbitrary BPMN models or establish that every possible execution is correct; broader coverage and production readiness remain work ahead. See [current acceptance work](docs/PLAN.md#mue-acceptance-goal) and the [`implementation-status-router`](docs/IMPLEMENTATION-MAP.md) for exact support and restrictions. The [Node/V8 investigation](docs/research/NODE-V8-CRASH-INVESTIGATION-RESEARCH.md) records an unresolved native-runtime risk.
+
+<details>
+<summary>Optional: repository statistics</summary>
+
+#### Repository statistics
+
+These counts describe the scale of the formal model and implementation. Several declarations can support one behavior, so their number does not measure BPMN conformance or independent guarantees.
+
+##### Lean declarations
+
+<!-- publication-statistics:lean-declarations:start -->
+| Metric | Count |
+|---|---:|
+| Public theorem declarations | 4,398 |
+| Supporting lemma declarations | 916 |
+| All declaration commands | 10,357 |
+| Proof declarations / all declaration commands | 51.3% |
+
+Supporting lemmas count `private theorem` and every explicit `lemma` command, matching the repository convention. All declaration commands count `theorem`, `lemma`, `def`, `abbrev`, `opaque`, `axiom`, `constant`, `inductive`, `structure`, `class`, and `instance` after masking Lean comments and literals.
+<!-- publication-statistics:lean-declarations:end -->
+
+##### Language footprint
+
+<!-- publication-statistics:language-footprint:start -->
+| Language | Files | Code | Comments | Blanks |
+|---|---:|---:|---:|---:|
+| Java | 85 | 11,508 | 251 | 1,156 |
+| TypeScript | 1,952 | 400,991 | 9,768 | 25,237 |
+| Lean | 718 | 150,058 | 7,799 | 13,118 |
+<!-- publication-statistics:language-footprint:end -->
+
+Maintainers refresh these tables with `./scripts/pnpm.sh run publication-stats:update`. Tokei measures source size and is needed only for this publication step.
+
+</details>
 
 ## Current implementation
 
-The image below records the release-candidate snapshot at `16c5b9f6`: Alpha, Beta, and RC are reached, while final MUE acceptance remains open. For exact capability boundaries, see [`implementation-status-owner:BPM-PLATFORM`](docs/BPM-PLATFORM-IMPLEMENTATION-MAP.md) and the [executable model corpus](model-corpus/README.md); the [repository guide](#repository-guide) links to the remaining status owners.
+The release candidate combines the BPMN engine with a platform for starting processes, completing human work, and following their progress. The image below shows the RC snapshot at `16c5b9f6`; final acceptance of the **Minimal Useful Engine (MUE)** remains open. For exact capability boundaries, see [`implementation-status-owner:BPM-PLATFORM`](docs/BPM-PLATFORM-IMPLEMENTATION-MAP.md) and the [executable model corpus](model-corpus/README.md).
 
 <p align="center">
-  <a href="docs/assets/project-infographics/product-2-vision.avif"><img src="docs/assets/project-infographics/product-2-vision.avif" alt="BPM platform vision and progress snapshot: implemented definition management, starts, discovery, Human Work, operations, history, metrics, durable execution, bounded shared runtime, and explicitly planned production and identity capabilities." width="560"></a>
+  <a href="docs/assets/project-infographics/product-2-vision.avif"><img src="docs/assets/project-infographics/product-2-vision.avif" alt="BPM platform RC snapshot: process definitions, human tasks, monitoring, and action history, alongside planned capabilities." width="560"></a>
 </p>
 
-Its exact inputs and refresh procedure are recorded in the [project infographics guide](docs/INFOGRAPHICS.md#infographic-3-bpm-platform-vision-and-progress).
-
-Definitions presents Start above the diagram; optional Triggers expand below it. **Operations → Process metrics** shows step frequency and completed duration for a selected process version, also linked from Definitions.
+The artwork uses the internal name “Product 2” for the **BPM platform**. Its source notes and refresh procedure are in the [infographics guide](docs/INFOGRAPHICS.md#infographic-3-bpm-platform-vision-and-progress).
 
 For contributors with a prepared source checkout, `./scripts/pnpm.sh run demo:rc` offers a separate development launch. The [RC walkthrough](docs/BPM-PLATFORM-BROWSER-WALKTHROUGH.md#rc-process-showcase-catalog) explains its interactive processes, real task completion, the separate `demo:rc:automated` test launch, and evidence limits.
 
@@ -87,63 +125,51 @@ For contributors with a prepared source checkout, `./scripts/pnpm.sh run demo:rc
 
 ```mermaid
 flowchart LR
-  BPMN[OMG BPMN 2.0.2] --> Account[Reviewed semantic account]
-  CIB[CIB Seven evidence] -. selected profiles only .-> Account
-  Account --> Profile[Versioned semantic profile]
-
-  XML[Exact BPMN XML] --> Source[Bounded source admission]
-  Profile --> Source
-  Source --> Checked[Checked BPMN graph]
-  Checked --> IL[Semantic Process IL]
-  IL --> Core[Pure TypeScript semantic core]
-  Profile --> Core
-  Core --> Adapter[Temporal adapter]
-  Adapter --> Temporal[Temporal service]
-  Adapter --> API[Published engine contract]
-  API --> Platform[BPM platform API and UI]
-
-  Checked --> Lean[Lean reference interpreter]
-  IL --> Lean
-  Profile --> Lean
-  Lean --> Evidence[Differential and law evidence]
-  Core --> Evidence
-  Adapter --> Evidence
-  CIB -. when declared .-> Evidence
+  XML[BPMN process file] --> Import[Validate and prepare]
+  Import --> Model[Prepared process model]
+  Model --> Core[TypeScript interpreter]
+  Core --> Host[Temporal hosting]
+  Host --> Platform[BPM platform]
+  Model --> Lean[Lean reference interpreter]
+  Lean --> Tests[Compare execution results]
+  Core --> Tests
 ```
 
-The components deliberately have different jobs:
+Both interpreters receive the prepared process model and follow the same reviewed BPMN rules. The Lean model also carries the proofs; the TypeScript interpreter is the running engine. The platform uses the hosted engine through its public API.
 
-| Component | Responsibility | Explicit boundary |
-|---|---|---|
-| Lean reference | Executable operational account, reusable theorems, and checked counterexamples | Does not prove the XML parser, TypeScript implementation, Temporal, database, or network |
-| TypeScript semantic core | Dependency-free production evaluator for immutable Semantic Process programs | Performs no I/O and imports no Temporal, CIB, or platform code |
-| BPMN source ingestion | Captures exact bytes, validates the selected profile, builds the checked graph, and lowers to the IL | Raw moddle objects never leave the package |
-| Temporal adapter | Durably hosts one semantic Process instance per Workflow, carries commands, timers, effects, results, and replay | Temporal tasks, attempts, retries, and Event History never become BPMN facts |
-| BPM platform | Owns deployment, identity, work, forms, operations, projections, audit, and the browser UI | Consumes only narrowed public engine entry points |
+| Component | What it contributes |
+|---|---|
+| BPMN importer | Reads the process file, checks supported features, and prepares it for execution while preserving the original XML |
+| Lean model and interpreter | Makes execution rules precise, runs reference examples, and proves selected properties |
+| TypeScript interpreter, called the **semantic core** | Applies those rules to running processes without network or database operations |
+| Temporal adapter | Handles durable waits, messages, timers, service calls, and recovery while leaving BPMN decisions to the interpreter |
+| BPM platform | Adds process deployment, a task inbox, forms, monitoring, and Action history through the engine's API |
 
-The [research approach](#research-approach-and-evidence) explains why these components are separate and what their combined evidence can establish.
+The prepared model, called the **Semantic Process IL**, describes a process definition's fixed structure. Each running instance has its own changing state: for example, which tasks are active and what data has been collected. Completing a task changes that instance, while its definition stays intact.
+
+The [project design](docs/PROJECT-DESIGN.md) explains the separation, and the [architecture](docs/ARCHITECTURE.md) maps it to packages and deployments.
 
 <p align="center">
-  <a href="docs/assets/project-infographics/correctness-stack.avif"><img src="docs/assets/project-infographics/correctness-stack.avif" alt="The project's correctness stack: BPMN authority, reviewed profile and CIB classification, checked source and lowering, Lean formal semantics, the independent TypeScript core, differential and mutation evidence, and durable Product evidence." width="560"></a>
+  <a href="docs/assets/project-infographics/correctness-stack.avif"><img src="docs/assets/project-infographics/correctness-stack.avif" alt="How the checks fit together: review BPMN rules, prove selected model properties, compare the TypeScript engine with Lean, and test execution on Temporal." width="560"></a>
 </p>
 
-Each layer answers a different question, and no layer silently inherits another layer's claim. The maintained copy and regeneration inputs are in the [project infographics guide](docs/INFOGRAPHICS.md#infographic-2-the-projects-correctness-stack).
+This graphic shows how the different checks build confidence together. Its source notes are in the [infographics guide](docs/INFOGRAPHICS.md#infographic-2-the-projects-correctness-stack).
 
 ## Key decisions
 
-- **Interpreter, not code generator.** One generic evaluator executes immutable Semantic Process data. Generated TypeScript is not an authority for a model's meaning.
-- **Exact source and profile identity.** Admission binds the original BPMN bytes, digest, selected profile, and resulting checked representations. A different source or profile is a different definition.
-- **Bounded, honest claims.** A profile states exactly which structure and behavior are admitted. Unsupported BPMN is rejected or preserved as declared, never silently approximated.
-- **Explicit scheduling, not collection order.** Multiple enabled internal operations advance together only under an exact reviewed non-interference criterion; otherwise the evaluator reports ambiguity instead of treating Program order as BPMN meaning.
-- **CIB is classified evidence.** CIB Seven is used only where a profile names the relationship and observation boundary. Standards-only profiles do not invent a CIB comparison.
-- **Durability is below semantics.** Temporal hosts commands and recovery; the pure core decides BPMN-visible outcomes.
-- **The platform stays downstream.** The BPM platform may enrich human and operational workflows, but forms, claims, audit, and persistence do not leak into the BPMN core.
+- **Execute process models through an interpreter.** BPMN files become process data for one shared engine, rather than separately generated TypeScript workflows.
+- **Keep definitions traceable.** Each definition records its original BPMN file and the selected execution rules, called a **semantic profile**. Changing either creates a different definition.
+- **Make unsupported behavior visible.** The engine checks what a profile supports. It does not silently approximate an unsupported BPMN feature or invent an ordering for ambiguous concurrent work.
+- **Keep BPMN and CIB compatibility distinct.** BPMN is the standard; comparisons with CIB Seven establish only the explicitly selected compatibility behavior. See the [conformance target](docs/BPMN-CONFORMANCE-TARGET.md) for the full goal.
 
 ## Technical walkthrough
 
 ### From XML to one pure transition
 
-The source package returns either a deterministic rejection with located diagnostics or an accepted checked graph and Semantic Process program. The semantic core then applies an explicit stimulus to an explicit runtime state:
+<details>
+<summary>Optional: follow one execution step in TypeScript</summary>
+
+The importer either reports why it cannot execute a file or returns the prepared process model. The interpreter's `applyStimulus` operation then applies an event or command to an instance's state. This example starts a process without contacting Temporal:
 
 ```ts
 import {
@@ -181,7 +207,9 @@ const started = applyStimulus(compilation.semanticProcess, initialState, {
 const observation = observeStableState(compilation.semanticProcess, started.state);
 ```
 
-`applyStimulus` is pure: equal admitted programs, states, stimuli, and closure limits produce equal results. The Temporal Workflow calls this same incremental boundary and durably retains its command/result protocol; it does not replace it with generated Workflow control flow.
+`applyStimulus` is pure: the same process, state, input, and execution limits produce the same result. The Temporal Workflow calls this same operation and records the commands and outcomes durably.
+
+</details>
 
 ### How BPMN executes across the distributed system
 
@@ -189,9 +217,12 @@ const observation = observeStableState(compilation.semanticProcess, started.stat
   <a href="docs/assets/project-infographics/bpmn-execution-on-temporal.avif"><img src="docs/assets/project-infographics/bpmn-execution-on-temporal.avif" alt="How BPMN executes across the distributed system: the BPM platform stores exact BPMN in PostgreSQL; the Temporal service coordinates durable waits, replay, timers, and Activities; the BPMN Worker runs the pure TypeScript semantic core that owns token flow, task identity, and BPMN-visible outcomes." width="560"></a>
 </p>
 
-The BPM platform API compiles and starts exact source, PostgreSQL stores source and platform projections, the Temporal service schedules and persists durable work, and the separate BPMN Worker executes the Workflow bundle containing the Semantic Process IL, RuntimeState, and pure interpreter. The diagram's paired callout distinguishes Temporal's durability services from the semantic core's BPMN decisions. The exact copy, deployment qualifications, architectural sources, and regeneration prompts are maintained in the [project infographics guide](docs/INFOGRAPHICS.md#infographic-4-how-bpmn-executes-across-temporal).
+The platform stores BPMN files and its own records in PostgreSQL. A BPMN worker runs the TypeScript interpreter inside a Temporal Workflow, while the Temporal service records execution and coordinates durable work. The diagram separates these runtime responsibilities from the interpreter's BPMN decisions; its source notes are in the [infographics guide](docs/INFOGRAPHICS.md#infographic-4-how-bpmn-executes-across-temporal).
 
 ### Through the browser lifecycle
+
+<details>
+<summary>Optional: follow a process start and task completion through the APIs</summary>
 
 ```mermaid
 sequenceDiagram
@@ -219,6 +250,8 @@ sequenceDiagram
 
 The maintained [browser walkthrough](docs/BPM-PLATFORM-BROWSER-WALKTHROUGH.md) turns this sequence into hands-on exercises using the production server, web client, Temporal-hosted engine, structured expense-exception model, and incident Operations views.
 
+</details>
+
 ## Contributor quick start
 
 ### Run the Temporal engine
@@ -242,7 +275,7 @@ Follow the [engine quick start](packages/temporal-adapter/README.md#quick-start)
 
 ### Build the evaluation stack from source
 
-The [Docker test drive](#test-drive-the-release-candidate-with-docker) uses published images without a checkout. Contributors building the evaluation stack from source can initialize a separate project once:
+The [Docker or Rancher Desktop test drive](#try-the-rc-with-docker-or-rancher-desktop) uses published images without a checkout. Contributors building the evaluation stack from source can initialize a separate project once:
 
 ```sh
 export COMPOSE_PROJECT_NAME=bpmn-lean-evaluation-native
@@ -276,33 +309,6 @@ nvm use
 
 Use [`./scripts/lake.sh`](scripts/lake.sh) for every Lean build. It is the single owner of repository Lean parallelism and prevents concurrent build trees. Setup, memory-bounded Lean guidance, and clean-machine recovery are in the [contributor setup guide](docs/CONTRIBUTOR-SETUP-GUIDE.md); the complete gate matrix is in [TESTING-SPEC.md](docs/TESTING-SPEC.md).
 
-## Repository statistics
-
-These publication statistics are refreshed by the maintainer with `./scripts/pnpm.sh run publication-stats:update`. Tokei is a publication tool, not a contributor prerequisite or normal CI dependency.
-
-### Lean declarations
-
-<!-- publication-statistics:lean-declarations:start -->
-| Metric | Count |
-|---|---:|
-| Public theorem declarations | 4,398 |
-| Supporting lemma declarations | 916 |
-| All declaration commands | 10,357 |
-| Proof declarations / all declaration commands | 51.3% |
-
-Supporting lemmas count `private theorem` and every explicit `lemma` command, matching the repository convention. All declaration commands count `theorem`, `lemma`, `def`, `abbrev`, `opaque`, `axiom`, `constant`, `inductive`, `structure`, `class`, and `instance` after masking Lean comments and literals.
-<!-- publication-statistics:lean-declarations:end -->
-
-### Language footprint
-
-<!-- publication-statistics:language-footprint:start -->
-| Language | Files | Code | Comments | Blanks |
-|---|---:|---:|---:|---:|
-| Java | 85 | 11,508 | 251 | 1,156 |
-| TypeScript | 1,952 | 400,991 | 9,768 | 25,237 |
-| Lean | 718 | 150,058 | 7,799 | 13,118 |
-<!-- publication-statistics:language-footprint:end -->
-
 ## Repository guide
 
 ```text
@@ -321,9 +327,9 @@ showcase/            BPM platform acceptance harnesses
 
 | Need | Read |
 |---|---|
-| Try the browser product | [Browser walkthrough](docs/BPM-PLATFORM-BROWSER-WALKTHROUGH.md) |
-| Route to exact support and restrictions | [`implementation-status-router`](docs/IMPLEMENTATION-MAP.md) |
-| Understand the semantic and product boundaries | [Project design](docs/PROJECT-DESIGN.md) |
+| Try a process and complete its tasks | [Browser walkthrough](docs/BPM-PLATFORM-BROWSER-WALKTHROUGH.md) |
+| Check supported features and restrictions | [`implementation-status-router`](docs/IMPLEMENTATION-MAP.md) |
+| Understand the approach and component responsibilities | [Project design](docs/PROJECT-DESIGN.md) |
 | Understand packages and deployment | [Architecture](docs/ARCHITECTURE.md) |
 | Inspect the executable model collection | [Model corpus](model-corpus/README.md) |
 | Prepare a clean machine | [Contributor setup guide](docs/CONTRIBUTOR-SETUP-GUIDE.md) |
@@ -333,7 +339,7 @@ showcase/            BPM platform acceptance harnesses
 
 ## Contributing
 
-Read [CLAUDE.md](CLAUDE.md), also exposed through the [AGENTS.md](AGENTS.md) symlink, before changing the project. Semantic changes begin with the smallest source-grounded separating witness and end with an honest claim boundary, independent evidence, a meaningful mutation, and the applicable review gate.
+Read [CLAUDE.md](CLAUDE.md), also exposed through the [AGENTS.md](AGENTS.md) symlink, before changing the project. Changes to execution rules start from the BPMN standard, with tests that distinguish the intended behavior from plausible mistakes. The [testing specification](docs/TESTING-SPEC.md) defines the required checks and reviews.
 
 ## License
 

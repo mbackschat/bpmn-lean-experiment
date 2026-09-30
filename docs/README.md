@@ -98,7 +98,7 @@ This is the sole documentation registry for the project. It identifies the purpo
 
 | Document | Audience and ownership |
 |---|---|
-| Top-level [README.md](../README.md) | New readers; durable purpose, architecture, quick start, and routes to the live implementation map and plan |
+| Top-level [README.md](../README.md) | Project introduction, rationale, evaluation quick start, and routes to deeper evidence; follow [the README audience contract](DOC-DISCIPLINE.md#top-level-readme-audience) |
 | [DOC-DISCIPLINE.md](DOC-DISCIPLINE.md) | Contributors and agents; filename-role contracts, spec/proposal lifecycle, document homes, same-change triggers, and archive rules aligned with `a12-rulekit` |
 | [archived/AGENT-DOCUMENTATION-CONTROL-PLANE-PROPOSAL.md](archived/AGENT-DOCUMENTATION-CONTROL-PLANE-PROPOSAL.md) | Completed documentation-control-plane proposal; historical baseline, selected structural routing design, migration safeguards, and review chronology whose stable contracts live in current instruction, discipline, testing, plan, map, and script owners |
 | [archived/LEAN-COMMENT-DISCIPLINE-PROPOSAL.md](archived/LEAN-COMMENT-DISCIPLINE-PROPOSAL.md) | Completed Lean comment-discipline proposal; historical motivation, anti-boilerplate rationale, implementation closure account, and approved external-review receipts whose stable contracts live in `CLAUDE.md` and `TESTING-SPEC.md` |

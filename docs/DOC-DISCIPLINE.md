@@ -76,6 +76,16 @@ The executable filename guard permits exactly these suffixless names under `docs
 - `SOURCES.md`;
 - `DOC-DISCIPLINE.md`.
 
+## Top-level README audience
+
+The root [README.md](../README.md) is for BPMN modelers, developers coming from BPMN/CIB Seven, and Temporal developers interested in BPMN execution. These readers are technically interested but new to Lean; they are not assumed to be mathematicians or formal-methods specialists. “Casual” describes their limited time and desired depth, not a lack of technical ability.
+
+Their first questions are what the project solves, why it combines Lean and TypeScript with Temporal, what Lean adds beyond ordinary testing, how far the approach has been demonstrated, and how to try it. Answer those questions before introducing implementation machinery. Explain Lean through its practical contribution to understanding and checking process behavior; readers should not need to learn proof syntax or follow a theorem inventory to understand its value.
+
+Lead with purpose and practical benefit, then explain the approach and evidence. Introduce unfamiliar terms in plain language when they become necessary. Prefer recognizable process situations over low-level edge cases, internal product numbers, and authority or obligation jargon. Keep proof details, source APIs, repository statistics, and maintainer procedures optional through links or clearly marked sections.
+
+Explain the assurance boundary once in accessible language: Lean proves selected properties of the execution model, while separate tests check the TypeScript implementation and Temporal hosting. Neither proves that the entire engine conforms to BPMN. Link to exact evidence and restrictions rather than repeatedly qualifying every sentence or treating proof counts as a measure of conformance. Apply this audience contract to the explanatory copy of the README's [infographics](INFOGRAPHICS.md) as well.
+
 ## Status is separate from role
 
 Every maintained proposal, spec, research result, experiment, decision, policy, target, and handoff must contain an exact `## Status` section within its first 15 nonblank lines. Archived and locally ingested reference documents are outside this current-status rule.
