@@ -81,6 +81,8 @@ The RC acceptance-host repair is classified non-material: it applies the existin
 
 ## Evidence owners
 
+Definition selection immediately revokes the preceding definition and its Version choices before navigating, preventing a pending selection from being redirected through stale versions. This correction is non-material under [the review negative case](TESTING-SPEC.md#independent-cold-review-gate); the [selection lifecycle checks](../showcase/platform-ui-quality/e2e/definition-selection-lifecycle.spec.ts) cover unavailable pending controls, exact resolution and retained Start ownership. Public contracts and engine behavior are unchanged.
+
 The non-material review corrections retain Start receipts while revoking automatic navigation on departure, and isolate polling from export cancellation. [Browser lifecycle checks](../showcase/platform-ui-quality/e2e/definition-selection-lifecycle.spec.ts), [execution-client checks](../platform/apps/web/test/process-execution-api.test.ts), and [layout collision checks](../platform/foundation/bpmn-definition-projection/test/showcase-diagrams.test.ts) cover the separating races and identifier collisions without changing engine meaning or public contracts.
 
 [ARCHITECTURE.md](ARCHITECTURE.md) owns the concrete module and deployment shape. Product 2 specifications own their public contracts, package tests bind module behavior, PostgreSQL gates bind shared mode, and maintained Chromium journeys bind the selected user-facing surfaces.

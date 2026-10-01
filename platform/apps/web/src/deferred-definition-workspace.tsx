@@ -74,6 +74,9 @@ export function DeferredDefinitionWorkspace({
 
   const openDefinition = useCallback(async (definition: DeployedDefinitionVersion) => {
     if (navigationRef.current !== undefined) {
+      requests.current.invalidate();
+      selectDefinition(null);
+      setVersions([]);
       navigationRef.current.navigate({ process: definition.processId, version: definition.version });
       return;
     }

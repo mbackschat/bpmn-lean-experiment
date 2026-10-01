@@ -113,6 +113,35 @@ test("latest definition selection wins over delayed version requests", async ({ 
   await expect(selection).toHaveValue(third.processId);
 });
 
+test("pending definition selection cannot reselect the preceding definition through its versions", async ({ page }) => {
+  await installPublicApiFixtures(page);
+  const second = { ...definition, processId: "Process_Second", version: 2 };
+  await page.route("**/api/v1/definitions", (route) => route.fulfill({ json: { definitions: [definition, second] } }));
+  const pending = Promise.withResolvers<void>();
+  const requested = Promise.withResolvers<void>();
+  await page.route("**/Process_Second/versions", async (route) => {
+    requested.resolve();
+    await pending.promise;
+    await route.fulfill({ json: { processId: second.processId, versions: [second] } });
+  });
+  await openDefinitions(page);
+  const selection = page.getByRole("combobox", { name: "Definition", exact: true });
+  const versions = page.getByRole("combobox", { name: "Version", exact: true });
+  try {
+    await selection.selectOption(second.processId);
+    await requested.promise;
+    await expect(page).toHaveURL(/process=Process_Second/);
+    await expect(versions).toBeDisabled();
+    await expect(versions.getByRole("option", { name: "Version 7", exact: true })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: /^Start version/u })).toHaveCount(0);
+    pending.resolve();
+    await expect(selection).toHaveValue(second.processId);
+    await expect(versions).toHaveValue("2");
+    await expect(versions).toBeEnabled();
+    await expect(page.getByRole("button", { name: "Start version 2", exact: true })).toBeVisible();
+  } finally { pending.resolve(); }
+});
+
 test("start results stay with the exact version that was started", async ({ page }) => {
   await installPublicApiFixtures(page);
   const newer = { ...definition, version: 8 };
