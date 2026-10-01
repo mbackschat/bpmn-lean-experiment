@@ -4,6 +4,8 @@
 
 Investigated through 2026-09-30; cause unresolved and the native fault has recurred with ordinary runtime settings. This is diagnostic research, not an adopted runtime change or proof that the product cannot run on Node.js. The RC owner accepted publishing with the disclosed intermittent qualification risk; final MUE runtime acceptance remains open.
 
+The [project defect ledger](../TEMPORAL-DEFECTS-LEDGER.md) tracks the GC crash, VM initialization timeout and async-hooks abort separately, including attribution, next actions and closure requirements.
+
 ## Environment and observed failures
 
 The local runtime is Node `v24.18.0`, V8 `13.6.233.17-node.50`, macOS arm64. A clean-commit `test:pre-push` at `717da4a7` passed Lean and reached the Temporal hosted lane, then its `repeatable-subscription-pipeline.temporal-test.ts` child crashed. The command receipt is `/tmp/mue-ci-repair-pre-push` (exit 1); macOS report `node-2026-09-28-044202.ips` has SHA-256 `6c3ca61fcde2570ea42aa5382df0cf1b65b0f5ea92bd77eee1014f4683e6a074`. The crash is `EXC_BAD_ACCESS/SIGSEGV` at `0xe`; the triggered stack enters `ClearStaleLeftTrimmedPointerVisitor::VisitRootPointers`, `InternalFrame::Iterate`, mark-compact collection, `Runtime_StackGuardWithGap`, and `Builtins_BaselineOutOfLinePrologue`. The Node test runner reports a failed child file rather than a TypeScript assertion failure. Earlier subscription/VM native failures and the historical Sparkplug suppression are retained in [the cost ledger](../CAPSULE-COST-LEDGER.md#public-compensation-registration-2026-09-24).

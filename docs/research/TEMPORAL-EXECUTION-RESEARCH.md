@@ -754,6 +754,8 @@ After a durable baseline exists, `Worker.runReplayHistories` should run as a sep
 
 ## Closed-Run Query eviction investigation
 
+The [project defect ledger](../TEMPORAL-DEFECTS-LEDGER.md) owns defect disposition, next actions and closure tracking; this section retains the diagnostic evidence.
+
 On 2026-09-30, hosted Verify run `36706606358` at `36262674` failed when the empty Transaction's final E1 publication was unavailable. Local instrumentation also observed a compensated Transaction's selected segment reject its descriptor digest, and separate Queries exhaust the existing five-second deadline. The hosted log does not preserve the underlying Query error, so neither local failure is established as that run's cause. The digest rejection remains unexplained and must not be folded into the timeout mechanism below.
 
 A minimal diagnostic using the installed TypeScript SDK `1.21.0`, CLI `1.8.1` and server `1.31.2` demonstrates a separate upstream Query-loss defect without BPMN code. A Workflow registers one constant synchronous Query and completes. The diagnostic holds its real eviction activation, queues Queries pinned to that Run, waits for the exact SDK buffered-task debug events, then releases eviction. One queued Query returns its constant value. With two queued Queries, one returns and one reaches its unchanged five-second deadline; the same Run emits the leftover-buffer warning. Receipt `/tmp/bpmn-sdk-query-eviction-bound-diagnostic` retains the seven-second execution and expected failing two-answer assertion; the probe is `/tmp/bpmn-sdk-query-eviction/query-eviction-bound.test.mjs`.
