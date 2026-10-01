@@ -25,6 +25,7 @@ Keep experiments out of the default semantic authority until they are adopted. P
 
 | Experiment | State | Focused gate |
 |---|---|---|
+| [Private Core Query eviction correction](../research/TEMPORAL-EXECUTION-RESEARCH.md#private-core-correction-and-usage-check) | Bounded SDK defect corrected and validated; [private patch](temporal-query-eviction-core/core.patch) retained, production adoption open | Isolated Core library unit suite and SDK 1.21.0 live Query comparison; exact commands and receipts in the investigation |
 | [Internal commutation proof architecture](INTERNAL-COMMUTATION-PROOF-ARCHITECTURE-EXPERIMENT.md) | Closed; corrected external review, countermodels, and two measured replacements retained; neither adopted | Historical isolated `./scripts/lake.sh build` under 3 GiB; exact alternative patches and measurements linked in the report |
 | [Semantic representation experiment](SEMANTIC-REPRESENTATION-EXPERIMENT.md) | Executed; provisional candidates retained | `./scripts/lake.sh exe checkSemanticRepresentationSpike` |
 | [BPMN XML ingestion experiment](BPMN-XML-INGESTION-EXPERIMENT.md) | Closed; bounded source boundary adopted | `./scripts/pnpm.sh run test:bpmn-source` and optional `test:miwg` |

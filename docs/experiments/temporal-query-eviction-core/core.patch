@@ -1,0 +1,313 @@
+From 7cb28c682e417418538f628143bf983d903e6a24 Mon Sep 17 00:00:00 2001
+From: Martin Backschat <mbackschat@mail.de>
+Date: Thu, 1 Oct 2026 09:54:56 +0200
+Subject: [PATCH] fix(core): preserve buffered queries across run eviction
+
+Transfer the remaining same-run buffer without changing query supersession groups. A pending history fetch may let a later task produce the replacement run activation, which must be retained.
+---
+ crates/sdk-core/src/core_tests/mod.rs         |   1 +
+ .../sdk-core/src/core_tests/query_eviction.rs | 135 ++++++++++++++++++
+ .../worker/workflow/buffered_tasks_tests.rs   |  80 +++++++++++
+ crates/sdk-core/src/worker/workflow/mod.rs    |  12 ++
+ .../src/worker/workflow/workflow_stream.rs    |  21 +--
+ 5 files changed, 240 insertions(+), 9 deletions(-)
+ create mode 100644 crates/sdk-core/src/core_tests/query_eviction.rs
+ create mode 100644 crates/sdk-core/src/worker/workflow/buffered_tasks_tests.rs
+
+diff --git a/crates/sdk-core/src/core_tests/mod.rs b/crates/sdk-core/src/core_tests/mod.rs
+index 29f5df27..3c264e21 100644
+--- a/crates/sdk-core/src/core_tests/mod.rs
++++ b/crates/sdk-core/src/core_tests/mod.rs
+@@ -1,5 +1,6 @@
+ mod activity_tasks;
+ mod queries;
++mod query_eviction;
+ mod replay_flag;
+ mod updates;
+ mod workers;
+diff --git a/crates/sdk-core/src/core_tests/query_eviction.rs b/crates/sdk-core/src/core_tests/query_eviction.rs
+new file mode 100644
+index 00000000..9df6f517
+--- /dev/null
++++ b/crates/sdk-core/src/core_tests/query_eviction.rs
+@@ -0,0 +1,135 @@
++use crate::{
++    replay::TestHistoryBuilder,
++    test_help::{
++        MocksHolder, ResponseType, WorkerTestHelpers, hist_to_poll_resp, mock_worker, query_ok,
++    },
++    worker::{LEGACY_QUERY_ID, client::mocks::mock_worker_client},
++};
++use std::time::Duration;
++use temporalio_common::protos::{
++    coresdk::{
++        workflow_activation::{WorkflowActivationJob, workflow_activation_job},
++        workflow_completion::WorkflowActivationCompletion,
++    },
++    temporal::api::{enums::v1::EventType, query::v1::WorkflowQuery},
++};
++use tokio_stream::wrappers::UnboundedReceiverStream;
++
++#[rstest::rstest]
++#[tokio::test]
++async fn preserves_queries_buffered_during_same_run_eviction(
++    #[values(1, 2, 3)] query_count: usize,
++    #[values(0, 1, 10)] cache_capacity: usize,
++    #[values(false, true)] first_query_needs_fetch: bool,
++) {
++    let mut history = TestHistoryBuilder::default();
++    history.add_by_type(EventType::WorkflowExecutionStarted);
++    history.add_full_wf_task();
++    history.add_workflow_execution_completed();
++    let full_history = history.get_full_history_info().unwrap();
++    let (sender, receiver) = tokio::sync::mpsc::unbounded_channel();
++    sender
++        .send(hist_to_poll_resp(&history, "evicted", 1.into()).resp)
++        .unwrap();
++    let mut client = mock_worker_client();
++    client
++        .expect_complete_workflow_task()
++        .returning(|_| Ok(Default::default()));
++    client
++        .expect_respond_legacy_query()
++        .returning(|_, _| Ok(Default::default()));
++    client.expect_get_workflow_execution_history().returning(move |_, _, _| {
++        Ok(temporalio_common::protos::temporal::api::workflowservice::v1::GetWorkflowExecutionHistoryResponse {
++            history: Some(full_history.clone().into()),
++            ..Default::default()
++        })
++    });
++    let mut mocks = MocksHolder::from_wft_stream(client, UnboundedReceiverStream::new(receiver));
++    mocks.worker_cfg(|cfg| cfg.max_cached_workflows = cache_capacity);
++    let core = mock_worker(mocks);
++    let task = core.poll_workflow_activation().await.unwrap();
++    let run_id = task.run_id.clone();
++    core.complete_execution(&run_id).await;
++    let eviction = core.poll_workflow_activation().await.unwrap();
++    assert_matches!(
++        eviction.jobs.as_slice(),
++        [WorkflowActivationJob {
++            variant: Some(workflow_activation_job::Variant::RemoveFromCache(_)),
++        }]
++    );
++    for query in 0..query_count {
++        let mut task = hist_to_poll_resp(&history, "evicted", ResponseType::AllHistory).resp;
++        task.task_token = format!("query-{query}").into_bytes();
++        if first_query_needs_fetch && query == 0 {
++            task.history = Some(Default::default());
++        }
++        task.started_event_id = 0;
++        task.query = Some(WorkflowQuery {
++            query_type: query.to_string(),
++            ..Default::default()
++        });
++        sender.send(task).unwrap();
++    }
++    // Workflow processing runs on a separate thread, so use the real-clock buffer
++    // barrier from queries_arent_lost_in_buffer_void rather than a paused Tokio clock.
++    tokio::time::sleep(Duration::from_millis(100)).await;
++    core.complete_workflow_activation(WorkflowActivationCompletion::empty(eviction.run_id))
++        .await
++        .unwrap();
++    let replay = core.poll_workflow_activation().await.unwrap();
++    assert_matches!(
++        replay.jobs.as_slice(),
++        [WorkflowActivationJob {
++            variant: Some(workflow_activation_job::Variant::InitializeWorkflow(_)),
++        }]
++    );
++    core.complete_execution(&replay.run_id).await;
++    let mut seen = std::collections::HashSet::new();
++    for query in 0..query_count {
++        let mut next_query = None;
++        for _ in 0..3 {
++            let task =
++                tokio::time::timeout(Duration::from_secs(1), core.poll_workflow_activation())
++                    .await
++                    .expect("every buffered Query must reach a language activation")
++                    .unwrap();
++            assert_eq!(task.run_id, run_id);
++            match task.jobs.as_slice() {
++                [
++                    WorkflowActivationJob {
++                        variant: Some(workflow_activation_job::Variant::RemoveFromCache(_)),
++                    },
++                ] => core
++                    .complete_workflow_activation(WorkflowActivationCompletion::empty(task.run_id))
++                    .await
++                    .unwrap(),
++                [
++                    WorkflowActivationJob {
++                        variant: Some(workflow_activation_job::Variant::InitializeWorkflow(_)),
++                    },
++                ] => core.complete_execution(&task.run_id).await,
++                _ => {
++                    next_query = Some(task);
++                    break;
++                }
++            }
++        }
++        let task = next_query.expect("at most one eviction and replay may precede each Query");
++        assert_eq!(task.run_id, run_id);
++        let observed = assert_matches!(task.jobs.as_slice(), [WorkflowActivationJob {
++            variant: Some(workflow_activation_job::Variant::QueryWorkflow(q)),
++        }] => q.query_type.parse::<usize>().unwrap());
++        assert!(observed < query_count && seen.insert(observed));
++        if !first_query_needs_fetch {
++            assert_eq!(observed, query);
++        }
++        core.complete_workflow_activation(WorkflowActivationCompletion::from_cmd(
++            task.run_id,
++            query_ok(LEGACY_QUERY_ID.to_string(), "constant"),
++        ))
++        .await
++        .unwrap();
++    }
++    drop(sender);
++    core.shutdown().await;
++}
+diff --git a/crates/sdk-core/src/worker/workflow/buffered_tasks_tests.rs b/crates/sdk-core/src/worker/workflow/buffered_tasks_tests.rs
+new file mode 100644
+index 00000000..5b895c0f
+--- /dev/null
++++ b/crates/sdk-core/src/worker/workflow/buffered_tasks_tests.rs
+@@ -0,0 +1,80 @@
++use super::{
++    BufferedTasks, PermittedWFT, history_update::HistoryPaginator, wft_poller::validate_wft,
++};
++use crate::{
++    abstractions::tests::fixed_size_permit_dealer,
++    replay::TestHistoryBuilder,
++    test_help::hist_to_poll_resp,
++    worker::{WorkflowSlotKind, client::mocks::mock_worker_client},
++};
++use std::sync::Arc;
++use temporalio_common::protos::{
++    coresdk::WorkflowSlotInfo,
++    temporal::api::{enums::v1::EventType, query::v1::WorkflowQuery},
++};
++
++async fn task(id: u32, query: bool) -> PermittedWFT {
++    let mut history = TestHistoryBuilder::default();
++    history.add_by_type(EventType::WorkflowExecutionStarted);
++    history.add_full_wf_task();
++    let mut response = hist_to_poll_resp(&history, "buffer-order", 1.into()).resp;
++    response.attempt = id as i32;
++    if query {
++        response.started_event_id = 0;
++        response.query = Some(WorkflowQuery::default());
++    }
++    let (paginator, work) = HistoryPaginator::from_poll(
++        validate_wft(response).unwrap(),
++        Arc::new(mock_worker_client()),
++    )
++    .await
++    .unwrap();
++    let dealer = fixed_size_permit_dealer::<WorkflowSlotKind>(1);
++    let permit = dealer.acquire_owned().await.into_used(WorkflowSlotInfo {
++        workflow_type: work.workflow_type.clone(),
++        is_sticky: false,
++    });
++    PermittedWFT {
++        work,
++        permit,
++        paginator,
++    }
++}
++
++#[rstest::rstest]
++#[tokio::test]
++async fn transferring_buffer_preserves_query_groups(
++    #[values(false, true)] current_queries: bool,
++    #[values(false, true)] superseded: bool,
++) {
++    let mut original = BufferedTasks::default();
++    if current_queries {
++        original.buffer(task(1, true).await);
++        original.buffer(task(2, true).await);
++    }
++    original.buffer(task(3, false).await);
++    original.buffer(task(4, true).await);
++    original.buffer(task(5, true).await);
++    assert_eq!(
++        original.get_next_wft().unwrap().work.attempt,
++        if current_queries { 1 } else { 4 }
++    );
++    let mut restored = BufferedTasks::default();
++    for task in original.into_buffer_order() {
++        restored.buffer(task);
++    }
++    if superseded {
++        restored.buffer(task(6, false).await);
++    }
++    let mut actual = vec![];
++    while let Some(task) = restored.get_next_wft() {
++        actual.push(task.work.attempt);
++    }
++    let expected = match (current_queries, superseded) {
++        (true, false) => vec![2, 4, 5, 3],
++        (false, false) => vec![5, 3],
++        (true, true) => vec![2, 6],
++        (false, true) => vec![6],
++    };
++    assert_eq!(actual, expected);
++}
+diff --git a/crates/sdk-core/src/worker/workflow/mod.rs b/crates/sdk-core/src/worker/workflow/mod.rs
+index b663d8ae..af7c4dd7 100644
+--- a/crates/sdk-core/src/worker/workflow/mod.rs
++++ b/crates/sdk-core/src/worker/workflow/mod.rs
+@@ -1209,7 +1209,19 @@ struct BufferedTasks {
+     query_only_tasks_for_buffered: VecDeque<PermittedWFT>,
+ }
+ 
++#[cfg(test)]
++mod buffered_tasks_tests;
++
+ impl BufferedTasks {
++    fn into_buffer_order(self) -> impl Iterator<Item = PermittedWFT> {
++        // BufferedTasks::buffer associates Queries with the preceding WFT. Preserve that
++        // association so a superseding WFT still invalidates only its own buffered Queries.
++        self.query_only_tasks
++            .into_iter()
++            .chain(self.wft)
++            .chain(self.query_only_tasks_for_buffered)
++    }
++
+     /// Buffers a new task. If it is a query-only task, multiple such tasks may be buffered which
+     /// all will be handled at the end of the current WFT. If a new WFT which would advance history
+     /// is provided, it will be buffered - but if another such task comes in while there is already
+diff --git a/crates/sdk-core/src/worker/workflow/workflow_stream.rs b/crates/sdk-core/src/worker/workflow/workflow_stream.rs
+index 0c86f3fe..8f132e54 100644
+--- a/crates/sdk-core/src/worker/workflow/workflow_stream.rs
++++ b/crates/sdk-core/src/worker/workflow/workflow_stream.rs
+@@ -376,18 +376,21 @@ impl WFStream {
+             let mut maybe_wfts = maybe_ready_wft.unwrap_or_default();
+             if let Some(first_wft) = maybe_wfts.pop() {
+                 res = self.instantiate_or_update(first_wft);
+-                // We accept that there might be query tasks remaining in the buffer if we evicted
+-                // and re-instantiated here. It's likely those tasks are now invalidated anyway.
+-                if maybe_buffered.has_tasks() && should_evict {
+-                    warn!("There were leftover buffered tasks when evicting run");
+-                }
+             }
+             // If there happened to be more than one buffered WFT for this run, move them into the
+             // now-instantiated run's buffer.
+-            for wft in maybe_wfts {
+-                let should_be_nothing = self.instantiate_or_update(wft);
+-                if should_be_nothing.is_some() {
+-                    dbg_panic!("Extra buffered run should not have produced an activation");
++            for wft in maybe_wfts
++                .into_iter()
++                .chain(maybe_buffered.into_buffer_order())
++            {
++                // _instantiate_or_update may defer the first task for a history fetch, so
++                // a later task with full history can produce the first activation instead.
++                match self.instantiate_or_update(wft) {
++                    Some(activation) if res.is_none() => res = Some(activation),
++                    Some(_) => {
++                        dbg_panic!("Extra buffered run should not have produced an activation")
++                    }
++                    None => {}
+                 }
+             }
+         }
