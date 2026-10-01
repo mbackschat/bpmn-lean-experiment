@@ -54,7 +54,7 @@ The private native-build budget is a measured exception to the ordinary two-minu
 
 **Equivalence.** The private baseline executable has SHA-256 `f68ec3ab188189981d40fdf971138d43f6e0e5fc8dcd2cccce4c047f95f7e039` and UUID `081CDD3B-04BB-312D-9A23-7388D3F06D71`. All 34 instructions of its `Builtins_BaselineOutOfLinePrologue` match the installed release binary apart from absolute addresses, including `stp x3, x4` at `+92`. Every `v8_*` build variable equals the release configuration; the only differing scalar variables are the compiler versions (release LLVM/Xcode 16, private Apple Clang 21). V8 generates this builtin with its own macro assembler, so the compiler difference does not reach the compared instructions.
 
-**Backport.** The unmodified upstream patch `https://github.com/v8/v8/commit/0b94a9fd23ba5f59b3f675fb04d60a9b0102e27d.patch` (SHA-256 `edf7074cbc79b3667b1cbf73978dbaef14c541e0fa763c721e6e7508785bc18a`) applies to `deps/v8` with `git apply --directory=deps/v8` and only line offsets. The applied diff touches the same ten files with the same 46 additions and 23 deletions as upstream; its SHA-256 is `5bb839eb7215c10b7cde9c05c2967cc1aa0f528729f0d61e06b5a283f39738db`. Only the two ARM64 files are compiled for this target. The incremental candidate build `/tmp/mue-node-candidate-build` (exit 0, asserted, 85 seconds) recompiled them, regenerated the V8 and Node snapshots and relinked. The candidate executable has SHA-256 `1cd8ecf5bea7142d4f73806a94603f515b760cab633f5dfee112c05d5e750906` and UUID `36B63F33-B711-3235-8DAB-F9DE43BD3A0E`. Its prologue differs from the baseline only at `+92` and `+116`, which save and restore `x3, xzr` instead of `x3, x4`. The private artifacts and the upstream patch stay outside the repository; neither is a project dependency or distribution artifact.
+**Backport.** The unmodified upstream patch, retained as [`v8-0b94a9fd.patch`](../experiments/node-runtime-corrections/v8-0b94a9fd.patch), `https://github.com/v8/v8/commit/0b94a9fd23ba5f59b3f675fb04d60a9b0102e27d.patch` (SHA-256 `edf7074cbc79b3667b1cbf73978dbaef14c541e0fa763c721e6e7508785bc18a`) applies to `deps/v8` with `git apply --directory=deps/v8` and only line offsets. The applied diff touches the same ten files with the same 46 additions and 23 deletions as upstream; its SHA-256 is `5bb839eb7215c10b7cde9c05c2967cc1aa0f528729f0d61e06b5a283f39738db`. Only the two ARM64 files are compiled for this target. The incremental candidate build `/tmp/mue-node-candidate-build` (exit 0, asserted, 85 seconds) recompiled them, regenerated the V8 and Node snapshots and relinked. The candidate executable has SHA-256 `1cd8ecf5bea7142d4f73806a94603f515b760cab633f5dfee112c05d5e750906` and UUID `36B63F33-B711-3235-8DAB-F9DE43BD3A0E`. Its prologue differs from the baseline only at `+92` and `+116`, which save and restore `x3, xzr` instead of `x3, x4`. The private artifacts and the upstream patch stay outside the repository; neither is a project dependency or distribution artifact.
 
 **Deterministic separating witness.** The defect requires a dead `x4` value that is not a valid tagged root while a GC runs inside the baseline prologue's stack-guard call. Natural register contents make that rare. The witness makes it deterministic. It compiles a function with Sparkplug, requests a GC at the next stack check before each call, and runs under LLDB. LLDB writes `0xf` into `x4` at the prologue's slow-path label (`+76`, the `b.lo` target) and continues. `x4` carries no JavaScript-linkage value in this non-sandbox configuration, so the injection models arbitrary caller state without changing program meaning.
 
@@ -67,7 +67,7 @@ for (let i = 0; i < 64; i++) { %ScheduleGCInStackCheck(); sum = callee(sum); }
 if (sum !== 64) throw new Error('unexpected sum ' + sum);
 ```
 
-The run uses `node --allow-natives-syntax --expose-gc`, with an LLDB breakpoint at `Builtins_BaselineOutOfLinePrologue` address slide 76 whose commands are `register write x4 0xf` and `continue`. Without `--expose-gc` the installed runtime's fatal-error trace confirms the routing: `Runtime_StackGuardWithGap` called from `Builtins_BaselineOutOfLinePrologue` in `callee`. A parser of the LLDB log classifies each run.
+The run uses `node --allow-natives-syntax --expose-gc`, with an LLDB breakpoint at `Builtins_BaselineOutOfLinePrologue` address slide 76 whose commands are `register write x4 0xf` and `continue`. Without `--expose-gc` the installed runtime's fatal-error trace confirms the routing: `Runtime_StackGuardWithGap` called from `Builtins_BaselineOutOfLinePrologue` in `callee`. A parser of the LLDB log classifies each run. The witness, LLDB commands, driver and classifier are reproduced under [retained diagnostic sources](#retained-diagnostic-sources).
 
 | Binary | Injected `x4` | Result |
 |---|---|---|
@@ -80,7 +80,7 @@ The run uses `node --allow-natives-syntax --expose-gc`, with an LLDB breakpoint 
 
 Thus the injected value reaches the GC root set only through the baseline's `x4` save, and the correction removes that path. The installed and private baselines both reproduce the production crash signature, so the private build is a faithful baseline for this defect.
 
-**Captured workload with ordinary settings.** The same injection was applied to the captured repeatable-subscription and oversized-ingress files under LLDB, using the released SDK, `--test --test-isolation=none` and ordinary V8 flags. The baseline faulted at `0xe` in `InternalFrame::Iterate` after 606 injections and six passing checks (`/tmp/mue-v8-workload-inject-baseline`). The 600-second debugger bound then expired during symbolicated teardown. The candidate passed all 14 checks after 2,452 injections and exited zero in 76 seconds (`/tmp/mue-v8-workload-inject-candidate`). This shows the corrected runtime keeps the product workload's behavior while the faulty register path is exercised continuously.
+**Captured workload with ordinary settings.** The same injection, driven by `run-workload-inject.sh` from the [retained sources](#retained-diagnostic-sources), was applied to the captured repeatable-subscription and oversized-ingress files under LLDB, using the released SDK, `--test --test-isolation=none` and ordinary V8 flags. The baseline faulted at `0xe` in `InternalFrame::Iterate` after 606 injections and six passing checks (`/tmp/mue-v8-workload-inject-baseline`). The 600-second debugger bound then expired during symbolicated teardown. The candidate passed all 14 checks after 2,452 injections and exited zero in 76 seconds (`/tmp/mue-v8-workload-inject-candidate`). This shows the corrected runtime keeps the product workload's behavior while the faulty register path is exercised continuously.
 
 **Unforced stress comparison.** Six alternating rounds per binary of the earlier stress command (`--stress-compaction --max-old-space-size=192 --test --test-concurrency=2`, receipts under `/tmp/mue-v8-stress-compare`) produced no `0xe` fault on either binary. That workload had faulted on the installed binary in its single calibration run (`/tmp/mue-v8-stress-installed-1`, report `node-2026-10-01-130855.ips`, SHA-256 `e214fe5e3a10f38641b908d8249f83059d82abe3b42267142553f5059ac33423`). At this base rate the unforced comparison does not separate the builds and is not repair evidence. Every assertion failure in it, on both binaries, was `Script execution timed out after 1000ms` from the oversized-ingress direct-VM harness under stress compaction. Those failures are diagnostic-setting observations and do not by themselves explain TD-004.
 
@@ -92,7 +92,7 @@ The witness script, LLDB command file, log classifiers and every receipt named h
 
 ### 2026-10-01 direct-VM timeout and async-hooks abort mechanisms
 
-These runs used the V8-corrected candidate so that TD-003 could not confound them. A process-local preload timed each SDK `vm.runInContext` call and attributed overlapping main-thread GC pauses from `PerformanceObserver` `gc` entries. No test, deadline or dependency changed. Evidence is under `/tmp/mue-td004`.
+These runs used the V8-corrected candidate so that TD-003 could not confound them. A process-local preload timed each SDK `vm.runInContext` call and attributed overlapping main-thread GC pauses from `PerformanceObserver` `gc` entries. No test, deadline or dependency changed. The GC-attribution preload, synchronous timeout log, retention probe and summary are reproduced under [retained diagnostic sources](#retained-diagnostic-sources). Run evidence is under `/tmp/mue-td004`.
 
 **Deadline provenance.** The [direct-VM harness](../../packages/temporal-adapter/testkit/test/direct-vm-activation-harness.ts) passes `1_000` milliseconds to `VMWorkflowCreator.create`. The pinned `@temporalio/worker` `1.21.0` defaults `isolateExecutionTimeout` to `5s`, and no project Worker overrides it. The harness limit is therefore five times stricter than the production Worker it emulates. The SDK enforces it with Node's wall-clock `vm` watchdog.
 
@@ -119,14 +119,14 @@ require('node:test').test('vm timeout', () => {
 });
 ```
 
-Under `node --test` this aborts in 3 of 3 runs on the installed `v24.18.0`, the V8-corrected candidate, official `v24.21.0` LTS and official `v26.10.0`; the newest two were downloaded from nodejs.org and their published SHA-256 sums were checked. It matches the older [Node issue 38503](https://github.com/nodejs/node/issues/38503) and [Temporal TypeScript SDK issue 939](https://github.com/temporalio/sdk-typescript/issues/939), neither of which records a fix. In three contended product rounds, each aborted `managed-wait-host-wakeup` child had logged a direct-VM `activate` timeout of 1,001–1,040 ms and then no exit. Not every timeout aborts: a repeatable-subscription child timed out and failed normally.
+The retained `async-stack-timeout-repro.cjs` [listing](#retained-diagnostic-sources) runs this with `MODE=node-test`. Under `node --test` it aborts in 3 of 3 runs on the installed `v24.18.0`, the V8-corrected candidate, official `v24.21.0` LTS and official `v26.10.0`; the newest two were downloaded from nodejs.org and their published SHA-256 sums were checked. It matches the older [Node issue 38503](https://github.com/nodejs/node/issues/38503) and [Temporal TypeScript SDK issue 939](https://github.com/temporalio/sdk-typescript/issues/939), neither of which records a fix. In three contended product rounds, each aborted `managed-wait-host-wakeup` child had logged a direct-VM `activate` timeout of 1,001–1,040 ms and then no exit. Not every timeout aborts: a repeatable-subscription child timed out and failed normally.
 
-**Private Node correction.** The patch records the async-id stack length on entry to `EvalMachine`. After `CancelTerminateExecution` for this invocation's watchdog or SIGINT, it pops contexts back to that length with the existing `pop_async_context`. Outer contexts, including those of an enclosing timed evaluation, remain intact. The diff `/tmp/mue-private-node/patch/td005-node-contextify.diff` (SHA-256 `f610c9feb7c37a2578358a4c7a904d469d238ab9ba2b6959efe8cb1d3f2c3a6d`) adds ten lines to `src/node_contextify.cc` on top of the V8 candidate tree. `/tmp/mue-node-candidate2-build` (exit 0, asserted) produced the executable with SHA-256 `2ce7564c4ff8b820e27dce0938beb9be1bc4bdbafabdd5e39fcf34cb8e75b650` and UUID `2AD803DC-07A1-361C-B395-C8EBE992079B`.
+**Private Node correction.** The patch records the async-id stack length on entry to `EvalMachine`. After `CancelTerminateExecution` for this invocation's watchdog or SIGINT, it pops contexts back to that length with the existing `pop_async_context`. Outer contexts, including those of an enclosing timed evaluation, remain intact. The retained [Node patch](../experiments/node-runtime-corrections/node-contextify-async-stack.patch) applies with `git apply` to the pristine source and adds ten lines to `src/node_contextify.cc` on top of the V8 candidate tree. `/tmp/mue-node-candidate2-build` (exit 0, asserted) produced the executable with SHA-256 `2ce7564c4ff8b820e27dce0938beb9be1bc4bdbafabdd5e39fcf34cb8e75b650` and UUID `2AD803DC-07A1-361C-B395-C8EBE992079B`.
 
 | Check | V8-only candidate | V8 + Node candidate |
 |---|---|---|
 | Reproducer under `node --test`, and with an explicit `async_hooks` hook, three runs each | abort every run | survives every run, timeout still thrown |
-| Caller `executionAsyncId`, `AsyncLocalStorage` store and later microtasks after a timeout | abort | all preserved |
+| Caller `executionAsyncId`, `AsyncLocalStorage` store and later microtasks after a timeout ([check](#retained-diagnostic-sources)) | abort | all preserved |
 | Contended three-file rounds | abort in 3 of 3 rounds | no abort in 3 rounds; every child exits; failures equal the 1, 3 and 1 logged timeouts |
 | Node `tools/test.py` vm, async-hooks and AsyncLocalStorage selection | not run | 241 of 241 pass (`/tmp/mue-node-td005-node-suite-2`) |
 | `test:temporal` | 818 of 818 | 818 of 818 (`/tmp/mue-node-candidate-td005-test-temporal`) |
@@ -142,3 +142,296 @@ The ignored local archive `.cache/mue-td004-td005-investigation-20261001.tar.gz`
 ## Remaining discriminator and release boundary
 
 The causal V8 correction is demonstrated for the reproduced `0xe` failure class on macOS arm64; it is not adopted. Closing TD-003 requires a runtime containing `0b94a9fd`, or an equivalent fix, to become the project's pinned Node through the dependency-adoption decision and to pass the applicable product and distribution gates on that exact artifact. Upstream issue 62393 includes conflicting reports about newer Node lines, so a version change counts only after its prologue disassembly and the separating witness have been checked. A private source build is not a distributable runtime. The Linux and distribution images need their own check, because their Node binaries come from different build pipelines. The [direct-VM timeout and async-hooks mechanisms](#2026-10-01-direct-vm-timeout-and-async-hooks-abort-mechanisms) are separate from TD-003 and need their own decisions. [The plan](../PLAN.md#current-evidence) owns current qualification status; this note owns the investigation and its uncertainty.
+
+## Retained diagnostic sources
+
+All listings except `run-workload-inject.sh` are byte-identical to the files that produced the evidence above; `async-stack-timeout-repro.cjs` was run as `timeout-variants.cjs`. `run-workload-inject.sh` generalizes the hard-coded driver used for `/tmp/mue-v8-workload-inject-*` to take the executable and bound as arguments. Rerun from an extracted copy against the V8 candidate, it reproduced the result: 2,409 injections and 14 of 14 checks passing. Before the listings moved here, the witness driver, reproducer and context check reproduced their separating verdicts from repository copies. They are kept as Markdown listings because the repository admits no hand-written JavaScript module, and the V8 witness's natives syntax is not TypeScript. The [upstream V8 patch](../experiments/node-runtime-corrections/v8-0b94a9fd.patch) and the project's [Node correction](../experiments/node-runtime-corrections/node-contextify-async-stack.patch) are retained as files. To run a listing, save it under its heading name, keeping each group's files in one directory. They are diagnostics, not product code, gates or dependencies.
+
+### V8 prologue witness
+
+#### `stack-check-gc.js`
+
+V8 separating witness; run with `--allow-natives-syntax --expose-gc`.
+
+```js
+// Separating witness for V8 0b94a9fd: a GC requested at a Sparkplug
+// out-of-line prologue stack check scans the INTERNAL frame that saves x4.
+// Run with --allow-natives-syntax --sparkplug under stack-check-gc.lldb.
+function callee(value) {
+  return value + 1;
+}
+%CompileBaseline(callee);
+if (!%ActiveTierIsSparkplug(callee)) {
+  throw new Error('callee is not running Sparkplug code');
+}
+let sum = 0;
+for (let i = 0; i < 64; i++) {
+  %ScheduleGCInStackCheck();
+  sum = callee(sum);
+}
+if (sum !== 64) throw new Error('unexpected sum ' + sum);
+console.log('stack-check-gc witness completed');
+```
+
+#### `stack-check-gc.lldb`
+
+LLDB commands writing an invalid `x4` at the slow-path label.
+
+```text
+settings set target.disable-aslr false
+settings set auto-confirm true
+disassemble --name Builtins_BaselineOutOfLinePrologue --count 34
+breakpoint set --name Builtins_BaselineOutOfLinePrologue --address-slide 76
+breakpoint command add 1
+register write x4 0xf
+script print("MUE-X4-INJECTED")
+continue
+DONE
+```
+
+#### `run-witness.sh`
+
+Witness driver: `run-witness.sh <node> <inject|control> <output-directory>`.
+
+```bash
+#!/usr/bin/env bash
+# usage: run-witness.sh <node-executable> <inject|control> <output-directory>
+set -uo pipefail
+node_bin=$1 mode=$2 out=$3
+here=$(cd "$(dirname "$0")" && pwd)
+mkdir -p "$out"
+[ -e "$out/lldb.log" ] && { echo "refusing to reuse $out" >&2; exit 2; }
+shasum -a 256 "$node_bin" "$here/stack-check-gc.js" "$here/stack-check-gc.lldb" > "$out/inputs.sha256"
+"$node_bin" -p 'JSON.stringify({version:process.version,v8:process.versions.v8,sandbox:process.config.variables.v8_enable_sandbox})' > "$out/runtime.json"
+args=(--batch)
+if [ "$mode" = inject ]; then args+=(-s "$here/stack-check-gc.lldb"); fi
+args+=(-o run -k 'thread backtrace -c 12' -k 'register read x4 x8 pc' -k 'breakpoint list' -k 'process kill')
+gtimeout --kill-after=5s 120s lldb "${args[@]}" -- "$node_bin" --allow-natives-syntax --expose-gc "$here/stack-check-gc.js" > "$out/lldb.log" 2>&1
+echo $? > "$out/lldb-exit-status"
+python3 "$here/verdict.py" "$mode" "$out/lldb.log" > "$out/verdict.json"
+cat "$out/verdict.json"
+```
+
+#### `verdict.py`
+
+Classifier for the witness LLDB log.
+
+```python
+import json, re, sys
+mode, path = sys.argv[1], sys.argv[2]
+log = open(path, encoding='utf-8', errors='replace').read()
+slow = re.search(r'b\.lo\s+0x[0-9a-f]+\s+; <\+76>', log) is not None
+save = re.search(r'<\+92>:\s+stp\s+(x3), (x4|xzr), \[sp, #-0x10\]!', log)
+hits = len(re.findall(r'^MUE-X4-INJECTED$', log, re.M))
+crash = re.search(r'stop reason = EXC_BAD_ACCESS \(code=1, address=(0x[0-9a-f]+)\)', log)
+visitor = 'ClearStaleLeftTrimmedPointerVisitor::VisitRootPointers' in log and 'InternalFrame::Iterate' in log
+exit_m = re.search(r'Process \d+ exited with status = (\d+)', log)
+completed = 'stack-check-gc witness completed' in log
+v = {
+  'mode': mode,
+  'slowPathLabelAt76': slow if mode == 'inject' else None,
+  'savedPairAt92': list(save.groups()) if save else None,
+  'injectionHits': hits,
+  'faultAddress': crash.group(1) if crash else None,
+  'gcRootVisitorFault': bool(crash and visitor),
+  'processExitStatus': int(exit_m.group(1)) if exit_m else None,
+  'witnessCompleted': completed,
+}
+v['outcome'] = ('gc-root-fault' if v['gcRootVisitorFault'] and v['faultAddress'] == '0xe'
+  else 'completed' if completed and v['processExitStatus'] == 0 else 'indeterminate')
+print(json.dumps(v, indent=2))
+```
+
+#### `run-workload-inject.sh`
+
+Captured Temporal workload under the same injection: `run-workload-inject.sh <node> <output-directory> [lldb-bound-seconds]`.
+
+```bash
+#!/usr/bin/env bash
+# usage: run-workload-inject.sh <node-executable> <output-directory> [lldb-bound-seconds]
+# Runs the captured Temporal workload under LLDB with ordinary V8 flags, writing an invalid x4 at
+# every Sparkplug out-of-line-prologue slow path. Diagnostic only; run from inside a built checkout.
+set -uo pipefail
+node_bin=$1 out=$2 bound=${3:-600}
+here=$(cd "$(dirname "$0")" && pwd)
+repo=$(git rev-parse --show-toplevel)
+mkdir -p "$out"; [ -e "$out/lldb.log" ] && { echo "refusing to reuse $out" >&2; exit 2; }
+cd "$repo"
+git rev-parse HEAD > "$out/git-head"
+shasum -a 256 "$node_bin" "$here/stack-check-gc.lldb" > "$out/inputs.sha256"
+env CI=true gtimeout --kill-after=5s "${bound}s" lldb --batch -s "$here/stack-check-gc.lldb" -o run \
+  -k 'thread backtrace -c 12' -k 'register read x4 x8 pc' -k 'process kill' -- \
+  "$node_bin" --test --test-isolation=none --test-reporter=spec \
+  packages/temporal-adapter/testkit/test/repeatable-subscription-temporal.test.ts \
+  packages/temporal-adapter/testkit/test/oversized-command-ingress.test.ts > "$out/lldb.log" 2>&1
+echo $? > "$out/lldb-exit-status"
+python3 - "$out/lldb.log" > "$out/verdict.json" <<'PY'
+import json, re, sys
+log = open(sys.argv[1], errors='replace').read()
+crash = re.search(r'stop reason = EXC_BAD_ACCESS \(code=1, address=(0x[0-9a-f]+)\)', log)
+def count(key):
+    match = re.search(r'^ℹ ' + key + r' (\d+)$', log, re.M)
+    return int(match.group(1)) if match else None
+saved = re.search(r'<\+92>:\s+stp\s+(x3), (x4|xzr)', log)
+exited = re.search(r'Process \d+ exited with status = (\d+)', log)
+print(json.dumps({
+    'injectionHits': len(re.findall(r'^MUE-X4-INJECTED$', log, re.M)),
+    'savedPairAt92': list(saved.groups()) if saved else None,
+    'faultAddress': crash.group(1) if crash else None,
+    'gcRootVisitorFault': bool(crash) and 'InternalFrame::Iterate' in log,
+    'processExit': int(exited.group(1)) if exited else None,
+    'tests': count('tests'), 'pass': count('pass'), 'fail': count('fail'),
+}, indent=1))
+PY
+cat "$out/verdict.json"
+```
+
+### VM timeout and async-stack diagnostics
+
+#### `async-stack-timeout-repro.cjs`
+
+TD-005 reproducer; `MODE=node-test node --test async-stack-timeout-repro.cjs` aborts on affected runtimes, `MODE=promise-hook` and the default survive.
+
+```js
+const vm = require('node:vm');
+const v8 = require('node:v8');
+const mode = process.env.MODE;
+if (mode === 'promise-hook') v8.promiseHooks.createHook({ init() {}, settled() {} });
+const a = vm.createContext({}, { microtaskMode: 'afterEvaluate' });
+const run = () => {
+  try { vm.runInContext('Promise.resolve().then(()=>{while(1){}})', a, { timeout: 5 }); }
+  catch (e) { console.log('caught:', e.message); }
+};
+if (mode === 'node-test') require('node:test').test('vm timeout', run); else run();
+setImmediate(() => console.log('immediate ran; process survived'));
+```
+
+#### `context-preserved.cjs`
+
+Adversarial check that a corrected runtime preserves the caller async context.
+
+```js
+// After a terminated afterEvaluate evaluation, the caller's async context must be unchanged.
+const vm = require('node:vm');
+const { AsyncLocalStorage, AsyncResource, createHook, executionAsyncId } = require('node:async_hooks');
+createHook({ init() {} }).enable();
+const als = new AsyncLocalStorage();
+const ctx = vm.createContext({}, { microtaskMode: 'afterEvaluate' });
+const results = [];
+new AsyncResource('Outer').runInAsyncScope(() => als.run('outer', () => {
+  const before = executionAsyncId();
+  try { vm.runInContext('Promise.resolve().then(()=>{while(1){}})', ctx, { timeout: 5 }); } catch (e) { results.push(e.code); }
+  results.push(executionAsyncId() === before, als.getStore() === 'outer');
+  // A non-timed-out evaluation in the same context still runs its microtasks.
+  vm.runInContext('globalThis.ok = 0; Promise.resolve().then(() => { globalThis.ok = 1; })', ctx, { timeout: 1000 });
+  results.push(vm.runInContext('globalThis.ok', ctx) === 1);
+}));
+setImmediate(() => { results.push(executionAsyncId() > 0); console.log(JSON.stringify(results)); });
+```
+
+#### `vm-gc-timing-preload.cjs`
+
+`--require` preload timing SDK VM calls and attributing GC pauses; writes to `MUE_VM_TIMING_DIR` at exit.
+
+```js
+// Diagnostic only: times SDK vm.runInContext calls and attributes overlapping GC pauses.
+const vm = require('node:vm');
+const fs = require('node:fs');
+const { PerformanceObserver, performance } = require('node:perf_hooks');
+const v8 = require('node:v8');
+const original = vm.runInContext;
+const calls = [];
+const gcs = [];
+new PerformanceObserver((list) => {
+  for (const e of list.getEntries()) gcs.push({ start: e.startTime, duration: e.duration, kind: e.detail?.kind });
+}).observe({ entryTypes: ['gc'] });
+vm.runInContext = function (code, context, options) {
+  const start = performance.now();
+  const cpu = process.cpuUsage();
+  let error;
+  try { return original.apply(this, arguments); }
+  catch (e) { error = e.message; throw e; }
+  finally {
+    if (options?.timeout) {
+      const d = process.cpuUsage(cpu);
+      calls.push({ heapMB: v8.getHeapStatistics().used_heap_size / 1048576, phase: String(code).split('(')[0].slice(0, 60), start, wallMs: performance.now() - start, cpuMs: (d.user + d.system) / 1000, timeoutMs: options.timeout, error });
+    }
+  }
+};
+process.on('exit', () => {
+  for (const c of calls) {
+    const end = c.start + c.wallMs;
+    const overlapping = gcs.filter((g) => g.start < end && g.start + g.duration > c.start);
+    c.gcMs = overlapping.reduce((s, g) => s + Math.min(end, g.start + g.duration) - Math.max(c.start, g.start), 0);
+    c.gcCount = overlapping.length;
+    c.gcMaxMs = overlapping.reduce((m, g) => Math.max(m, g.duration), 0);
+  }
+  const heapMB = calls.map((c) => c.heapMB);
+  const slow = calls.filter((c) => c.wallMs > 100 || c.error).sort((a, b) => b.wallMs - a.wallMs);
+  fs.writeFileSync(`${process.env.MUE_VM_TIMING_DIR}/vm-gc-${process.pid}.json`, JSON.stringify({ file: process.argv[1], execArgv: process.execArgv, node: process.execPath, calls: calls.length, timeouts: calls.filter((c) => c.error).length, heapFirstMB: heapMB[0], heapMaxMB: Math.max(...heapMB), heapLastMB: heapMB.at(-1), slow }, null, 1));
+});
+```
+
+#### `vm-event-preload.cjs`
+
+`--require` preload logging each VM timeout synchronously, so an aborting child keeps its evidence.
+
+```js
+// Diagnostic only: synchronously logs each SDK VM timeout so an aborting child keeps its evidence.
+const vm = require('node:vm');
+const fs = require('node:fs');
+const original = vm.runInContext;
+const log = `${process.env.MUE_VM_TIMING_DIR}/vm-events-${process.pid}.log`;
+fs.appendFileSync(log, `${Date.now()} start ${process.argv.slice(1).join(' ')}\n`);
+vm.runInContext = function (code, context, options) {
+  const start = performance.now();
+  try { return original.apply(this, arguments); }
+  catch (e) {
+    if (/timed out/.test(e.message)) fs.appendFileSync(log, `${Date.now()} timeout ${(performance.now() - start).toFixed(1)}ms ${String(code).split('(')[0].slice(0, 50)}\n`);
+    throw e;
+  }
+};
+process.on('exit', (code) => fs.appendFileSync(log, `${Date.now()} exit ${code}\n`));
+```
+
+#### `retention-preload.cjs`
+
+Retention probe; requires `--expose-gc` and forces a full GC after each SDK VM `destroy`.
+
+```js
+// Diagnostic only: retained heap after a forced full GC following each SDK VM destroy.
+const vm = require('node:vm');
+const v8 = require('node:v8');
+const fs = require('node:fs');
+const original = vm.runInContext;
+const samples = [];
+let destroys = 0;
+vm.runInContext = function (code) {
+  const result = original.apply(this, arguments);
+  if (String(code).startsWith('__TEMPORAL__.api.destroy')) {
+    destroys += 1;
+    const ordinal = destroys;
+    setImmediate(() => { global.gc(); samples.push({ ordinal, retainedMB: v8.getHeapStatistics().used_heap_size / 1048576, contexts: v8.getHeapStatistics().number_of_native_contexts, detached: v8.getHeapStatistics().number_of_detached_contexts }); });
+  }
+  return result;
+};
+process.on('exit', () => fs.writeFileSync(`${process.env.MUE_VM_TIMING_DIR}/retention-${process.pid}.json`, JSON.stringify({ file: process.argv.slice(1), destroys, samples }, null, 1)));
+```
+
+#### `summarize-gc.py`
+
+Summary of the GC-attribution records: `summarize-gc.py <directory> [rows]`.
+
+```python
+import json,glob,sys
+rows=[]; n=0
+for p in glob.glob(sys.argv[1]+'/vm-gc-*.json'):
+    d=json.load(open(p)); n+=d['calls']
+    for c in d['slow']: c['file']=d['file'].split('/')[-1]; rows.append(c)
+rows.sort(key=lambda r:-r['wallMs'])
+heaps=[(json.load(open(p))) for p in glob.glob(sys.argv[1]+'/vm-gc-*.json')]
+for d in sorted(heaps,key=lambda d:-(d.get('heapMaxMB') or 0))[:5]: print('heap', d['file'].split('/')[-1][:40], 'calls',d['calls'], 'first %.0f max %.0f last %.0f MB'%(d.get('heapFirstMB') or 0,d.get('heapMaxMB') or 0,d.get('heapLastMB') or 0))
+print('timed calls',n,'timeouts',sum(1 for r in rows if r.get('error')))
+for r in rows[:int(sys.argv[2]) if len(sys.argv)>2 else 10]:
+    print(f"wall={r['wallMs']:7.1f} gc={r['gcMs']:7.1f} (n={r['gcCount']:3d} max={r['gcMaxMs']:6.1f}) cpu={r['cpuMs']:7.1f} {r['phase'][:28]:28s} {r['file'][:34]} {'TIMEOUT' if r.get('error') else ''}")
+```

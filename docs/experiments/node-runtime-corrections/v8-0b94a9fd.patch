@@ -1,0 +1,299 @@
+From 0b94a9fd23ba5f59b3f675fb04d60a9b0102e27d Mon Sep 17 00:00:00 2001
+From: Igor Sheludko <ishell@chromium.org>
+Date: Mon, 26 May 2025 19:50:14 +0200
+Subject: [PATCH] [leaptiering] Fix BaselineOutOfLinePrologue builtin
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+... which tried to preserve kJavaScriptCallDispatchHandleRegister even
+on configurations where it's not used which resulted in a random value
+on the stack discoverable by GC.
+This issue triggered only on non-sandbox configuration with enabled
+leaptiering.
+
+Drive-by: fix MacroAssembler::GenerateTailCallToReturnedCode() on riscv
+port which wasn't preserving dispatch handle as all the other ports do.
+
+Bug: 42204201
+Fixed: 413769394
+
+Change-Id: If146b0b7a6cf972ed5a881142f40980774f19cba
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/6587010
+Commit-Queue: Igor Sheludko <ishell@chromium.org>
+Reviewed-by: Olivier Flückiger <olivf@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#100512}
+---
+ src/builtins/arm64/builtins-arm64.cc           |  3 ++-
+ src/builtins/loong64/builtins-loong64.cc       |  5 +++--
+ src/builtins/mips64/builtins-mips64.cc         |  5 +++--
+ src/builtins/riscv/builtins-riscv.cc           |  7 +++++--
+ src/builtins/x64/builtins-x64.cc               |  5 +++--
+ src/codegen/arm64/macro-assembler-arm64.cc     | 11 ++++++-----
+ src/codegen/loong64/macro-assembler-loong64.cc |  5 +++--
+ src/codegen/mips64/macro-assembler-mips64.cc   |  5 +++--
+ src/codegen/riscv/macro-assembler-riscv.cc     | 18 +++++++++++++++---
+ src/codegen/x64/macro-assembler-x64.cc         |  5 +++--
+ 10 files changed, 46 insertions(+), 23 deletions(-)
+
+diff --git a/src/builtins/arm64/builtins-arm64.cc b/src/builtins/arm64/builtins-arm64.cc
+index 626950a51b16..879d15d85eef 100644
+--- a/src/builtins/arm64/builtins-arm64.cc
++++ b/src/builtins/arm64/builtins-arm64.cc
+@@ -1298,11 +1298,12 @@ void Builtins::Generate_BaselineOutOfLinePrologue(MacroAssembler* masm) {
+ 
+     FrameScope frame_scope(masm, StackFrame::INTERNAL);
+     // Save incoming new target or generator
+-    Register maybe_dispatch_handle = V8_ENABLE_LEAPTIERING_BOOL
++    Register maybe_dispatch_handle = V8_JS_LINKAGE_INCLUDES_DISPATCH_HANDLE_BOOL
+                                          ? kJavaScriptCallDispatchHandleRegister
+                                          : padreg;
+     // No need to SmiTag as dispatch handles always look like Smis.
+     static_assert(kJSDispatchHandleShift > 0);
++    __ AssertSmi(maybe_dispatch_handle);
+     __ Push(maybe_dispatch_handle, new_target);
+     __ SmiTag(frame_size);
+     __ PushArgument(frame_size);
+diff --git a/src/builtins/loong64/builtins-loong64.cc b/src/builtins/loong64/builtins-loong64.cc
+index 26523e2f0049..a9353d939aad 100644
+--- a/src/builtins/loong64/builtins-loong64.cc
++++ b/src/builtins/loong64/builtins-loong64.cc
+@@ -1103,15 +1103,16 @@ void Builtins::Generate_BaselineOutOfLinePrologue(MacroAssembler* masm) {
+     FrameScope frame_scope(masm, StackFrame::INTERNAL);
+     // Save incoming new target or generator
+     __ Push(kJavaScriptCallNewTargetRegister);
+-#ifdef V8_ENABLE_LEAPTIERING
++#ifdef V8_JS_LINKAGE_INCLUDES_DISPATCH_HANDLE
+     // No need to SmiTag as dispatch handles always look like Smis.
+     static_assert(kJSDispatchHandleShift > 0);
++    __ AssertSmi(kJavaScriptCallDispatchHandleRegister);
+     __ Push(kJavaScriptCallDispatchHandleRegister);
+ #endif
+     __ SmiTag(frame_size);
+     __ Push(frame_size);
+     __ CallRuntime(Runtime::kStackGuardWithGap);
+-#ifdef V8_ENABLE_LEAPTIERING
++#ifdef V8_JS_LINKAGE_INCLUDES_DISPATCH_HANDLE
+     __ Pop(kJavaScriptCallDispatchHandleRegister);
+ #endif
+     __ Pop(kJavaScriptCallNewTargetRegister);
+diff --git a/src/builtins/mips64/builtins-mips64.cc b/src/builtins/mips64/builtins-mips64.cc
+index cf7ee09c52a8..05333d63e972 100644
+--- a/src/builtins/mips64/builtins-mips64.cc
++++ b/src/builtins/mips64/builtins-mips64.cc
+@@ -1065,15 +1065,16 @@ void Builtins::Generate_BaselineOutOfLinePrologue(MacroAssembler* masm) {
+     FrameScope frame_scope(masm, StackFrame::INTERNAL);
+     // Save incoming new target or generator
+     __ Push(kJavaScriptCallNewTargetRegister);
+-#ifdef V8_ENABLE_LEAPTIERING
++#ifdef V8_JS_LINKAGE_INCLUDES_DISPATCH_HANDLE
+     // No need to SmiTag as dispatch handles always look like Smis.
+     static_assert(kJSDispatchHandleShift > 0);
++    __ AssertSmi(kJavaScriptCallDispatchHandleRegister);
+     __ Push(kJavaScriptCallDispatchHandleRegister);
+ #endif
+     __ SmiTag(frame_size);
+     __ Push(frame_size);
+     __ CallRuntime(Runtime::kStackGuardWithGap);
+-#ifdef V8_ENABLE_LEAPTIERING
++#ifdef V8_JS_LINKAGE_INCLUDES_DISPATCH_HANDLE
+     __ Pop(kJavaScriptCallDispatchHandleRegister);
+ #endif
+     __ Pop(kJavaScriptCallNewTargetRegister);
+diff --git a/src/builtins/riscv/builtins-riscv.cc b/src/builtins/riscv/builtins-riscv.cc
+index 13f20751ea99..b22c90514d5f 100644
+--- a/src/builtins/riscv/builtins-riscv.cc
++++ b/src/builtins/riscv/builtins-riscv.cc
+@@ -1099,15 +1099,18 @@ void Builtins::Generate_BaselineOutOfLinePrologue(MacroAssembler* masm) {
+     FrameScope frame_scope(masm, StackFrame::INTERNAL);
+     // Save incoming new target or generator
+     __ Push(kJavaScriptCallNewTargetRegister);
+-#if defined(V8_ENABLE_LEAPTIERING) && defined(V8_TARGET_ARCH_RISCV64)
++#if defined(V8_JS_LINKAGE_INCLUDES_DISPATCH_HANDLE) && \
++    defined(V8_TARGET_ARCH_RISCV64)
+     // No need to SmiTag as dispatch handles always look like Smis.
+     static_assert(kJSDispatchHandleShift > 0);
++    __ AssertSmi(kJavaScriptCallDispatchHandleRegister);
+     __ Push(kJavaScriptCallDispatchHandleRegister);
+ #endif
+     __ SmiTag(frame_size);
+     __ Push(frame_size);
+     __ CallRuntime(Runtime::kStackGuardWithGap);
+-#if defined(V8_ENABLE_LEAPTIERING) && defined(V8_TARGET_ARCH_RISCV64)
++#if defined(V8_JS_LINKAGE_INCLUDES_DISPATCH_HANDLE) && \
++    defined(V8_TARGET_ARCH_RISCV64)
+     __ Pop(kJavaScriptCallDispatchHandleRegister);
+ #endif
+     __ Pop(kJavaScriptCallNewTargetRegister);
+diff --git a/src/builtins/x64/builtins-x64.cc b/src/builtins/x64/builtins-x64.cc
+index fc7a4d1a6dd9..21b8cc3b2b5f 100644
+--- a/src/builtins/x64/builtins-x64.cc
++++ b/src/builtins/x64/builtins-x64.cc
+@@ -2023,15 +2023,16 @@ void Builtins::Generate_BaselineOutOfLinePrologue(MacroAssembler* masm) {
+       FrameScope inner_frame_scope(masm, StackFrame::INTERNAL);
+       // Save incoming new target or generator
+       __ Push(new_target);
+-#ifdef V8_ENABLE_LEAPTIERING
++#ifdef V8_JS_LINKAGE_INCLUDES_DISPATCH_HANDLE
+       // No need to SmiTag as dispatch handles always look like Smis.
+       static_assert(kJSDispatchHandleShift > 0);
++      __ AssertSmi(kJavaScriptCallDispatchHandleRegister);
+       __ Push(kJavaScriptCallDispatchHandleRegister);
+ #endif
+       __ SmiTag(frame_size);
+       __ Push(frame_size);
+       __ CallRuntime(Runtime::kStackGuardWithGap, 1);
+-#ifdef V8_ENABLE_LEAPTIERING
++#ifdef V8_JS_LINKAGE_INCLUDES_DISPATCH_HANDLE
+       __ Pop(kJavaScriptCallDispatchHandleRegister);
+ #endif
+       __ Pop(new_target);
+diff --git a/src/codegen/arm64/macro-assembler-arm64.cc b/src/codegen/arm64/macro-assembler-arm64.cc
+index 8ce6831d0eb6..05b2d812ab62 100644
+--- a/src/codegen/arm64/macro-assembler-arm64.cc
++++ b/src/codegen/arm64/macro-assembler-arm64.cc
+@@ -1525,14 +1525,15 @@ void MacroAssembler::GenerateTailCallToReturnedCode(
+     FrameScope scope(this, StackFrame::INTERNAL);
+     // Push a copy of the target function, the new target, the actual
+     // argument count, and the dispatch handle.
+-    Register lastreg = V8_ENABLE_LEAPTIERING_BOOL
+-                           ? kJavaScriptCallDispatchHandleRegister
+-                           : padreg;
++    Register maybe_dispatch_handle = V8_JS_LINKAGE_INCLUDES_DISPATCH_HANDLE_BOOL
++                                         ? kJavaScriptCallDispatchHandleRegister
++                                         : padreg;
+     SmiTag(kJavaScriptCallArgCountRegister);
+     // No need to SmiTag the dispatch handle as it always looks like a Smi.
+     static_assert(kJSDispatchHandleShift > 0);
++    AssertSmi(maybe_dispatch_handle);
+     Push(kJavaScriptCallTargetRegister, kJavaScriptCallNewTargetRegister,
+-         kJavaScriptCallArgCountRegister, lastreg);
++         kJavaScriptCallArgCountRegister, maybe_dispatch_handle);
+     // Push another copy as a parameter to the runtime call.
+     PushArgument(kJavaScriptCallTargetRegister);
+ 
+@@ -1543,7 +1544,7 @@ void MacroAssembler::GenerateTailCallToReturnedCode(
+ 
+     // Restore target function, new target, actual argument count, and dispatch
+     // handle.
+-    Pop(lastreg, kJavaScriptCallArgCountRegister,
++    Pop(maybe_dispatch_handle, kJavaScriptCallArgCountRegister,
+         kJavaScriptCallNewTargetRegister, kJavaScriptCallTargetRegister);
+     SmiUntag(kJavaScriptCallArgCountRegister);
+   }
+diff --git a/src/codegen/loong64/macro-assembler-loong64.cc b/src/codegen/loong64/macro-assembler-loong64.cc
+index 49a8c1eb24a6..30fc14083b60 100644
+--- a/src/codegen/loong64/macro-assembler-loong64.cc
++++ b/src/codegen/loong64/macro-assembler-loong64.cc
+@@ -5111,9 +5111,10 @@ void MacroAssembler::GenerateTailCallToReturnedCode(
+     SmiTag(kJavaScriptCallArgCountRegister);
+     Push(kJavaScriptCallTargetRegister, kJavaScriptCallNewTargetRegister,
+          kJavaScriptCallArgCountRegister);
+-#ifdef V8_ENABLE_LEAPTIERING
++#ifdef V8_JS_LINKAGE_INCLUDES_DISPATCH_HANDLE
+     // No need to SmiTag since dispatch handles always look like Smis.
+     static_assert(kJSDispatchHandleShift > 0);
++    AssertSmi(kJavaScriptCallDispatchHandleRegister);
+     Push(kJavaScriptCallDispatchHandleRegister);
+ #endif
+     // Function is also the parameter to the runtime call.
+@@ -5124,7 +5125,7 @@ void MacroAssembler::GenerateTailCallToReturnedCode(
+ 
+     // Restore target function, new target, actual argument count and dispatch
+     // handle.
+-#ifdef V8_ENABLE_LEAPTIERING
++#ifdef V8_JS_LINKAGE_INCLUDES_DISPATCH_HANDLE
+     Pop(kJavaScriptCallDispatchHandleRegister);
+ #endif
+     Pop(kJavaScriptCallTargetRegister, kJavaScriptCallNewTargetRegister,
+diff --git a/src/codegen/mips64/macro-assembler-mips64.cc b/src/codegen/mips64/macro-assembler-mips64.cc
+index 46b78daefda0..db6f31ad3da3 100644
+--- a/src/codegen/mips64/macro-assembler-mips64.cc
++++ b/src/codegen/mips64/macro-assembler-mips64.cc
+@@ -6579,16 +6579,17 @@ void MacroAssembler::GenerateTailCallToReturnedCode(
+     SmiTag(kJavaScriptCallArgCountRegister);
+     Push(kJavaScriptCallTargetRegister, kJavaScriptCallNewTargetRegister,
+          kJavaScriptCallArgCountRegister);
+-#ifdef V8_ENABLE_LEAPTIERING
++#ifdef V8_JS_LINKAGE_INCLUDES_DISPATCH_HANDLE
+     // No need to SmiTag since dispatch handles always look like Smis.
+     static_assert(kJSDispatchHandleShift > 0);
++    AssertSmi(kJavaScriptCallDispatchHandleRegister);
+     Push(kJavaScriptCallDispatchHandleRegister);
+ #endif
+     // Function is also the parameter to the runtime call.
+     Push(kJavaScriptCallTargetRegister);
+     CallRuntime(function_id, 1);
+     // Restore target function, new target and actual argument count.
+-#ifdef V8_ENABLE_LEAPTIERING
++#ifdef V8_JS_LINKAGE_INCLUDES_DISPATCH_HANDLE
+     Pop(kJavaScriptCallDispatchHandleRegister);
+ #endif
+     Pop(kJavaScriptCallTargetRegister, kJavaScriptCallNewTargetRegister,
+diff --git a/src/codegen/riscv/macro-assembler-riscv.cc b/src/codegen/riscv/macro-assembler-riscv.cc
+index 94ddfb712407..3ac2adaa8559 100644
+--- a/src/codegen/riscv/macro-assembler-riscv.cc
++++ b/src/codegen/riscv/macro-assembler-riscv.cc
+@@ -186,15 +186,23 @@ void MacroAssembler::GenerateTailCallToReturnedCode(
+   //  -- a0 : actual argument count
+   //  -- a1 : target function (preserved for callee)
+   //  -- a3 : new target (preserved for callee)
++  //  -- a4 : dispatch handle (preserved for callee)
+   // -----------------------------------
+   {
+     FrameScope scope(this, StackFrame::INTERNAL);
+-    // Push a copy of the target function, the new target and the actual
+-    // argument count.
++    // Push a copy of the target function, the new target, the actual
++    // argument count, and the dispatch handle.
+     // Push function as parameter to the runtime call.
+     SmiTag(kJavaScriptCallArgCountRegister);
++#if defined(V8_JS_LINKAGE_INCLUDES_DISPATCH_HANDLE) && \
++    defined(V8_TARGET_ARCH_RISCV64)
++    // No need to SmiTag as dispatch handles always look like Smis.
++    static_assert(kJSDispatchHandleShift > 0);
++    AssertSmi(kJavaScriptCallDispatchHandleRegister);
++    Push(kJavaScriptCallDispatchHandleRegister);
++#endif
+     Push(kJavaScriptCallTargetRegister, kJavaScriptCallNewTargetRegister,
+-         kJavaScriptCallArgCountRegister, kJavaScriptCallTargetRegister);
++         kJavaScriptCallArgCountRegister);
+ 
+     CallRuntime(function_id, 1);
+     // Use the return value before restoring a0
+@@ -202,6 +210,10 @@ void MacroAssembler::GenerateTailCallToReturnedCode(
+     // Restore target function, new target and actual argument count.
+     Pop(kJavaScriptCallTargetRegister, kJavaScriptCallNewTargetRegister,
+         kJavaScriptCallArgCountRegister);
++#if defined(V8_JS_LINKAGE_INCLUDES_DISPATCH_HANDLE) && \
++    defined(V8_TARGET_ARCH_RISCV64)
++    Pop(kJavaScriptCallDispatchHandleRegister);
++#endif
+     SmiUntag(kJavaScriptCallArgCountRegister);
+   }
+ 
+diff --git a/src/codegen/x64/macro-assembler-x64.cc b/src/codegen/x64/macro-assembler-x64.cc
+index 13eaf6f43298..d6f2f85b4968 100644
+--- a/src/codegen/x64/macro-assembler-x64.cc
++++ b/src/codegen/x64/macro-assembler-x64.cc
+@@ -1255,9 +1255,10 @@ void MacroAssembler::GenerateTailCallToReturnedCode(
+     Push(kJavaScriptCallNewTargetRegister);
+     SmiTag(kJavaScriptCallArgCountRegister);
+     Push(kJavaScriptCallArgCountRegister);
+-#ifdef V8_ENABLE_LEAPTIERING
++#ifdef V8_JS_LINKAGE_INCLUDES_DISPATCH_HANDLE
+     // No need to SmiTag since dispatch handles always look like Smis.
+     static_assert(kJSDispatchHandleShift > 0);
++    AssertSmi(kJavaScriptCallDispatchHandleRegister);
+     Push(kJavaScriptCallDispatchHandleRegister);
+ #endif
+     // Function is also the parameter to the runtime call.
+@@ -1270,7 +1271,7 @@ void MacroAssembler::GenerateTailCallToReturnedCode(
+ 
+     // Restore target function, new target, actual argument count, and dispatch
+     // handle.
+-#ifdef V8_ENABLE_LEAPTIERING
++#ifdef V8_JS_LINKAGE_INCLUDES_DISPATCH_HANDLE
+     Pop(kJavaScriptCallDispatchHandleRegister);
+ #endif
+     Pop(kJavaScriptCallArgCountRegister);
