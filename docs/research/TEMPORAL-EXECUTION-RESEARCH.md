@@ -768,7 +768,7 @@ The upstream review on that date found that [issue 716](https://github.com/tempo
 
 ### Private Core correction and usage check
 
-On 2026-10-01 the owner authorized private development and validation, while declining upstream publication. The separating question was whether the loss requires BPMN adapter behavior or occurs inside Core under supported Query use. Temporal's [TypeScript Query documentation](https://docs.temporal.io/develop/typescript/workflows/message-passing#send-a-query) supports completed-Workflow Queries during retention with an available Worker; handlers must be synchronous and read-only. The adapter's [segment handlers](../../packages/temporal-adapter/workflow/src/workflow-publication-segments.ts) and [selected-Run client](../../packages/temporal-adapter/client/src/workflow-publication-segment-client.ts) use that contract. The five-line diagnostic Workflow has one constant synchronous handler and immediately completes, with no BPMN imports, Activities, Updates, continuation, or application data. Its eviction barrier delays acknowledgment without changing task payloads. A separate public-API-only control returned all 30 concurrent Queries on both the released SDK and private bridge; this is a schedule-sensitive loss, not a measured general concurrency limit. Adapter size is unnecessary for the demonstrated failure, and no comparison establishes that this adapter is Temporal's largest client.
+On 2026-10-01 the owner authorized private development and validation, while declining upstream publication at that point. The separating question was whether the loss requires BPMN adapter behavior or occurs inside Core under supported Query use. Temporal's [TypeScript Query documentation](https://docs.temporal.io/develop/typescript/workflows/message-passing#send-a-query) supports completed-Workflow Queries during retention with an available Worker; handlers must be synchronous and read-only. The adapter's [segment handlers](../../packages/temporal-adapter/workflow/src/workflow-publication-segments.ts) and [selected-Run client](../../packages/temporal-adapter/client/src/workflow-publication-segment-client.ts) use that contract. The five-line diagnostic Workflow has one constant synchronous handler and immediately completes, with no BPMN imports, Activities, Updates, continuation, or application data. Its eviction barrier delays acknowledgment without changing task payloads. A separate public-API-only control returned all 30 concurrent Queries on both the released SDK and private bridge; this is a schedule-sensitive loss, not a measured general concurrency limit. Adapter size is unnecessary for the demonstrated failure, and no comparison establishes that this adapter is Temporal's largest client.
 
 The retained [Core patch](../experiments/temporal-query-eviction-core/core.patch) applies to SDK `1.21.0` Core `3dac9013b9031e5ffd51d7335838585b2db42efb`; private commit `7cb28c682e417418538f628143bf983d903e6a24` is on `experiment/mue-query-eviction` in `/tmp/mue-private-core/bridge/sdk-core`. It transfers the remaining evicted-Run buffer in insertion-group order, preserving each Query's association with its buffered Workflow Task and existing supersession behavior. If the first task requires a history fetch, a later full-history task may produce the replacement Run's first activation; that activation is retained. A naive execution-order drain fails two supersession guards, and a transfer that assumes the first task always instantiates the Run fails the mixed-history witness. Patch SHA-256 is `9f42a251d189d0925f2cb9f265c3045e4a3f2b91b0c98e4ae47e6778c80f494d`; applying it to an independent temporary index reconstructs the exact private commit tree.
 
@@ -785,7 +785,119 @@ Both native bridges use the published `@temporalio/core-bridge` `1.21.0` sources
 
 Exact build/test commands and outputs are retained in the named receipts. The complete unit command is `cargo test --locked --manifest-path /tmp/mue-private-core/bridge/sdk-core/Cargo.toml -p temporalio-sdk-core --lib -- --test-threads=2`; native builds use the bridge manifest with `cargo build --locked`. A process-local preload selects the experimental native bridge without changing installed SDK files. The private local archive `.cache/temporal-query-eviction-core-evidence.tar.gz` retains the patch, both lockfiles, probes, preload, provenance, receipt files and their manifest (archive SHA-256 `582536277512da80d15b4fa568876637ea8dfdacf990afd998ee45a4f8eabdc4`). The pristine pinned reference remains unchanged.
 
-This validates a bounded SDK Core correction and identifies the demonstrated Query loss as an implementation defect under supported use. It proves neither persisted process-data loss nor the cause of every product read failure. Production dependency adoption, Linux/distribution qualification, independent upstream review, Transaction descriptor-digest rejection, and adoption of corrections for the [native V8, direct-VM timeout and async-hooks failures](../TEMPORAL-DEFECTS-LEDGER.md) remain open. No dependency replacement, workaround, public contract, BPMN meaning or refinement claim is adopted; this experimental retention is non-material under the cold-review gate and is covered by the Core regressions, live comparison and repository documentation/infrastructure guards. No upstream issue or patch was published.
+This validates a bounded SDK Core correction and identifies the demonstrated Query loss as an implementation defect under supported use. It proves neither persisted process-data loss nor the cause of every product read failure. Production dependency adoption, Linux/distribution qualification, independent upstream review, Transaction descriptor-digest rejection, and adoption of corrections for the [native V8, direct-VM timeout and async-hooks failures](../TEMPORAL-DEFECTS-LEDGER.md) remain open. No dependency replacement, workaround, public contract, BPMN meaning or refinement claim is adopted; this experimental retention is non-material under the cold-review gate and is covered by the Core regressions, live comparison and repository documentation/infrastructure guards. Later on 2026-10-01 the owner approved an upstream report, reviewed its text, and it was filed as [Core issue 1621](https://github.com/temporalio/sdk-rust/issues/1621) with the production diff inline and the reproduction described in prose.
+
+### Retained Query-eviction reproducer
+
+The live reproducer is retained here because the upstream report describes it rather than attaching it. It is the receipted probe with the local CLI path replaced by `TEMPORAL_CLI_PATH` and the multi-Query counts taken from `QUERY_COUNTS` (default `1,2`). Place both files in a directory whose `node_modules` resolves the installed TypeScript SDK `1.21.0` packages. The listing is the file that produced the rerun below (SHA-256 `f1b084724b4ae2d242e1b027b101d0cf53d80f71560c7f689d6ca5522c969682`; `workflows.js` `5b93bd8a313a74145ecbd9a95ad1771bb556ebdf756affd642e52f2c74816113`).
+
+Rerun on the released SDK at 2026-10-01 18:20 UTC: the one-Query control passes, and with two Queries both are buffered, one is answered, one reaches the five-second deadline, and Core logs one leftover-buffer warning. The three-Query case no longer reproduces as it did in the morning receipt `/tmp/mue-query-eviction-three`, which buffered all three Queries before release. In three evening runs, including the unmodified morning probe, only two of the three Queries reached the Worker while eviction was held, so the barrier expired; a diagnostic copy with a ten-second barrier still saw two. The cause of that delivery difference is not established, and the three-Query row of the upstream report rests on the morning receipt.
+
+#### `workflows.js`
+
+```js
+import { defineQuery, setHandler } from '@temporalio/workflow';
+export async function terminalQueryWorkflow() {
+  setHandler(defineQuery('constant'), () => 'sealed-value');
+  return 'done';
+}
+```
+
+#### `query-eviction.test.mjs`
+
+```js
+// TD-001 reproducer: holds a completed Run's eviction, queues N Queries pinned to that Run, then
+// releases it. On TypeScript SDK 1.21.0 only the first buffered Query is answered.
+// usage: TEMPORAL_CLI_PATH=<temporal CLI 1.8.1 executable> [QUERY_COUNTS=1,3] node --test query-eviction.test.mjs
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import { createRequire } from 'node:module';
+import { fileURLToPath } from 'node:url';
+import { DefaultLogger, Runtime, Worker, bundleWorkflowCode } from '@temporalio/worker';
+import { TestWorkflowEnvironment } from '@temporalio/testing';
+
+const cliPath = process.env.TEMPORAL_CLI_PATH;
+const counts = (process.env.QUERY_COUNTS ?? '1,2').split(',').map(Number);
+assert.ok(cliPath, 'TEMPORAL_CLI_PATH must name the Temporal CLI executable');
+const require = createRequire(import.meta.url);
+assert.equal(require('@temporalio/worker/package.json').version, '1.21.0');
+function deferred() { let resolve; const promise = new Promise(r => { resolve = r; }); return { promise, resolve }; }
+function bounded(promise, ms, name) {
+  let timer;
+  return Promise.race([promise, new Promise((_, reject) => { timer = setTimeout(() => reject(new Error(`${name} exceeded ${ms}ms`)), ms); })]).finally(() => clearTimeout(timer));
+}
+function emit(facts) { process.stderr.write(`QUERY_EVICTION_DIAGNOSTIC ${JSON.stringify(facts)}\n`); }
+let active;
+Runtime.install({
+  logger: new DefaultLogger('DEBUG', entry => {
+    const isBuffered = entry.message.startsWith('Got new WFT for a run with outstanding work, buffering it');
+    const isDiscard = entry.message === 'There were leftover buffered tasks when evicting run';
+    if (isBuffered || isDiscard || entry.level === 'ERROR') {
+      emit({ phase: 'sdk-log', message: entry.message, meta: entry.meta });
+    }
+    if (active && isBuffered && JSON.stringify(entry.meta ?? {}).includes(active.runId)) {
+      active.buffered += 1;
+      if (active.buffered === active.expected) active.bufferedReady.resolve();
+    }
+    if (active && isDiscard) active.discardWarnings += 1;
+  }),
+  telemetryOptions: { logging: { filter: 'WARN,temporalio_sdk_core::worker::workflow=DEBUG', forward: {} } },
+});
+const original = Worker.prototype.handleActivation;
+assert.equal(typeof original, 'function');
+Worker.prototype.handleActivation = async function (workflow, input) {
+  if (active && workflow?.info?.workflowId === active.workflowId && !input.synthetic && !active.held && input.activation.jobs.some(job => job.removeFromCache)) {
+    active.held = true;
+    active.runId = input.activation.runId;
+    emit({ phase: 'eviction-held', runId: active.runId, jobs: input.activation.jobs });
+    active.evictionReady.resolve();
+    await active.release.promise;
+  }
+  return original.call(this, workflow, input);
+};
+
+test('closed Workflow preserves every query queued during eviction', async t => {
+  const env = await bounded(TestWorkflowEnvironment.createLocal({ server: { executable: {
+    type: 'existing-path', path: cliPath,
+  } } }), 20_000, 'environment startup');
+  let worker;
+  let completion;
+  try {
+    const workflowBundle = await bundleWorkflowCode({ workflowsPath: fileURLToPath(new URL('./workflows.js', import.meta.url)) });
+    worker = await Worker.create({ connection: env.nativeConnection, workflowBundle, taskQueue: 'query-eviction-diagnostic' });
+    completion = worker.run();
+    for (const expected of counts) {
+      await t.test(`${expected} queued query control`, async () => {
+        active = { workflowId: `query-eviction-${expected}`, expected, buffered: 0, discardWarnings: 0, held: false, runId: '', evictionReady: deferred(), bufferedReady: deferred(), release: deferred() };
+        const probe = active;
+        const handle = await env.client.workflow.start('terminalQueryWorkflow', { workflowId: `query-eviction-${expected}`, taskQueue: 'query-eviction-diagnostic' });
+        assert.equal(await bounded(handle.result(), 5_000, 'terminal receipt'), 'done');
+        await bounded(probe.evictionReady.promise, 5_000, 'terminal eviction');
+        assert.equal(probe.runId, handle.firstExecutionRunId);
+        const pinned = env.client.workflow.getHandle(handle.workflowId, probe.runId);
+        const outcomes = Promise.allSettled(Array.from({ length: expected }, () =>
+          env.client.connection.withDeadline(Date.now() + 5_000, () => pinned.query('constant'))));
+        try {
+          await bounded(probe.bufferedReady.promise, 3_000, 'exact SDK buffered-query events');
+          emit({ phase: 'barrier-satisfied', runId: probe.runId, buffered: probe.buffered, expected });
+        } finally { probe.release.resolve(); }
+        const results = await outcomes;
+        emit({ phase: 'results', runId: probe.runId, expected, buffered: probe.buffered, discardWarnings: probe.discardWarnings,
+          results: results.map(result => result.status === 'fulfilled' ? result : ({ status: result.status, reason: { name: result.reason.name, message: result.reason.message, cause: { code: result.reason.cause?.code, message: result.reason.cause?.message } } })) });
+        assert.equal(probe.buffered, expected);
+        assert.deepEqual(results.map(result => result.status === 'fulfilled' ? result.value : result.status), Array(expected).fill('sealed-value'));
+      });
+    }
+  } finally {
+    active?.release.resolve();
+    active = undefined;
+    if (worker) worker.shutdown();
+    if (completion) await bounded(completion, 10_000, 'Worker shutdown');
+    await env.teardown();
+    Worker.prototype.handleActivation = original;
+  }
+});
+```
 
 ### Product qualification and digest discrimination
 
