@@ -137,9 +137,27 @@ During the Node suite, report `node-2026-10-01-153439.ips` records `node::Abort`
 
 The ignored local archive `.cache/mue-td004-td005-investigation-20261001.tar.gz` (SHA-256 `ad5254abdcf57f76f379e372c6012a4dd1207ee32b30319dff08644aadcbb355`) retains the preloads, timing records, receipts, Node patch, TD-005 executable, release checksums and a 453-file SHA-256 manifest.
 
+**Upstream report.** On the owner's decision, the defect was reported as [Node issue 66439](https://github.com/nodejs/node/issues/66439) on 2026-10-01, with a ten-line reproducer that arms the check through an explicit `async_hooks` hook rather than the test runner. Before filing, the reproducer exited with status 1 and `async hook stack has become corrupted (actual: 3, expected: 1)` in 3 of 3 runs on installed `v24.18.0`, official `v24.21.0`, official `v26.10.0` and the `main` nightly `v27.0.0-nightly20261001cede7e6740`. The nightly's darwin-arm64 archive matched its published SHA-256 sum. Without the hook the nightly survives, and the V8 + Node candidate survives with it. The retained Node patch applies to `main` revision `cede7e6740` with a 12-line offset. [Issue 38503](https://github.com/nodejs/node/issues/38503), which analysed the same mechanism, was closed in July 2026 by commit `4f844f4` (`repl: use inspector over vm`). That commit removed the REPL trigger, not the `vm` defect. [Temporal TypeScript SDK issue 939](https://github.com/temporalio/sdk-typescript/issues/939) is still open and reports the same message from a Worker on a Workflow Task timeout under Node 16.
+
 **Concurrent observation.** One 16-spinner round on the released SDK failed `execution publication Query returned unavailable`. That matches TD-001's symptom; it was not diagnosed and is not attributed here.
 
 **Official releases.** The same witness classifies the newest official darwin-arm64 releases, whose published SHA-256 sums were checked. Node `v24.21.0` LTS (V8 `13.6.233.17-node.53`) still saves `x3, x4` at `+92` and faults at `0xe` after 2 injections. Node `v26.10.0` (V8 `14.6.202.34-node.34`) saves `x3, xzr` and completes after 65 injections. Both are non-sandbox builds. No official v24 release checked so far contains the correction, so adopting one without a private build means a major-version runtime change. Evidence is in `/tmp/mue-v8-witness/v24.21.0-inject` and `/tmp/mue-v8-witness/v26.10.0-inject`.
+
+### 2026-10-01 recurrences after the harness correction
+
+**Recurrences on the installed runtime.** After the TD-004 harness correction, the installed `v24.18.0` crashed three times in ordinary runs: once in a focused direct-VM selection, and twice in the concurrent part of `test:temporal` at `2ecbe7f6`, where 759 of 761 tests passed before the lane stopped (`/tmp/mue-td004-test-temporal`). Every report records `SIGSEGV` at `0xe` in `ClearStaleLeftTrimmedPointerVisitor::VisitRootPointers` called from `InternalFrame::Iterate`, the TD-003 signature.
+
+**The harness change does not cause the crashes.** The comparison alternated runtime and harness revision for the two crashing files under `--test-concurrency=4`. The V8-corrected candidate differs from the stock build only in the prologue's saved register pair.
+
+| Runtime and harness | Rounds | Rounds with a TD-003 crash |
+|---|---|---|
+| Installed `v24.18.0`, harness before `79eb1f71` | 30 | 8 |
+| Installed `v24.18.0`, corrected harness | 30 | 7 |
+| V8-corrected candidate, corrected harness | 20 | 0 |
+
+All 13 crash reports from the 20-round arm have the TD-003 signature. The crash rate does not depend on the harness revision, and the crashes disappear when only the prologue register changes. Today's rate on the installed runtime is much higher than in the earlier unforced stress comparison, which recorded no fault; the cause of that variation is not established. The drivers, outputs and crash reports are under `/tmp/mue-td004` (`ab.sh`, `ab2.sh`, `ab.out`, `ab2.out`, `ab2-node-*.ips`).
+
+**Linux release prologues.** The official linux-arm64 and linux-x64 archives of `v24.18.0` and `v26.10.0` matched their published SHA-256 sums. A static disassembly of `Builtins_BaselineOutOfLinePrologue` locates the slow path that saves registers into the INTERNAL frame before `Runtime::kStackGuardWithGap`. On linux-arm64, `v24.18.0` stores `stp x3, x4` (word `0xa9bf13e3`) and `v26.10.0` stores `stp x3, xzr` (`0xa9bf7fe3`), matching the darwin builds. On linux-x64, `v24.18.0` pushes and pops the unused dispatch-handle register `%r15` around the call, and `v26.10.0` omits both, which is the x64 hunk of `0b94a9fd`. This is static evidence only; the separating witness has not run on Linux. Disassemblies are in `/tmp/mue-node26-linux`.
 
 ## Remaining discriminator and release boundary
 
