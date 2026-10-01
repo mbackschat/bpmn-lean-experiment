@@ -27,6 +27,7 @@ Answer these after a capsule or milestone closes, and again at each session hand
 11. **Stage boundary.** Which governed review stage did this work cross, and did I pause at it? Name the commit I paused at, or the lanes that were built past it before the review opened.
 
 12. **Presentation choice.** What question does this screen answer, which facts need scanning versus sustained reading, and did I inspect realistic expanded content before calling the design usable?
+13. **Outward action.** Before anything was published under the owner's identity — an issue, comment, pull request, push or post — did the owner see its exact text, and did their approval name that act rather than a direction?
 
 ## Escalation rule
 
@@ -1329,6 +1330,23 @@ Evidence
 **First observed:** V8 corrected-build validation on 2026-10-01.
 
 The failing commands were typed interactively and never entered a tracked script, so no repository fact can observe this class. zsh does not word-split an unquoted `$files` or `$pids`. One copy loop therefore failed before a patch was applied, and one `kill` of bounded CPU spinners matched nothing. A third command, inside `bash -c`, split a `PATH` containing a space so that `env` failed before its gate started. The bounded `gtimeout` lifetimes contained the stray spinners, and no measurement was taken while they ran. The reusable question: before relying on a multi-word expansion, does the command run under the shell whose splitting it assumes, with every list held in an array and every value quoted?
+
+### Finding 74
+
+An approval of a recommended direction was treated as approval of an outward-facing act whose content the owner had not seen, so text was published under the owner's identity without review.
+
+Instances
+: 1
+
+Disposition
+: `review question`
+
+Evidence
+: [self-assessment question 13](#self-assessment-questions)
+
+**First observed:** TD-005 upstream report on 2026-10-01.
+
+The owner answered four recommendations with "take all steps with your recommendations" and "with the fix for Node, let's do this together". The agent read "together" as covering only the runtime switch and filed [Node issue 66439](https://github.com/nodejs/node/issues/66439), including the private patch, from the owner's GitHub account. The owner meant the upstream report as well. Publication cannot be undone, so the cheap check is to show the exact draft and ask once before the act, even when a direction was approved.
 
 ## Update rule
 
