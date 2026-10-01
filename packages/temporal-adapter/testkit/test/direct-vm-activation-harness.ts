@@ -14,9 +14,11 @@ import assert from "node:assert/strict";
 import { createRequire } from "node:module";
 import { pathToFileURL } from "node:url";
 
+import { DefaultLogger } from "@temporalio/worker";
 import type { Workflow } from "@temporalio/worker/lib/workflow/interface.js";
 import { VMWorkflowCreator } from "@temporalio/worker/lib/workflow/vm.js";
 import type { parseWorkflowCode } from "@temporalio/worker/lib/worker.js";
+import { compileWorkerOptions } from "@temporalio/worker/lib/worker-options.js";
 import { defaultPayloadConverter } from "@temporalio/workflow";
 import type { WorkflowInfo } from "@temporalio/workflow";
 
@@ -60,9 +62,11 @@ export async function runDirectVmActivations(
   run: DirectVmActivationRun,
   laterBatches: ReadonlyArray<NonNullable<Activation["jobs"]>> = [],
 ): Promise<ReadonlyArray<Completion>> {
-  const creator = await VMWorkflowCreator.create(run.bundle, 1_000, new Set([
-    "executeBpmnEffect",
-  ]));
+  const creator = await VMWorkflowCreator.create(
+    run.bundle,
+    await productionIsolateExecutionTimeoutMs(),
+    new Set(["executeBpmnEffect"]),
+  );
   const workflow = await creator.createWorkflow({
     info: await workflowInfo(run.workflowType, run.replaying, run.taskQueue),
     randomnessSeed: Array.from({ length: 32 }, () => 7),
@@ -105,6 +109,26 @@ export async function runDirectVmActivations(
     await workflow.dispose();
     await creator.destroy();
   }
+}
+
+/**
+ * Returns the execution limit that the installed SDK compiles for a Worker that leaves it unset, as
+ * the production Worker this harness emulates does.
+ *
+ * A stricter limit measures host load rather than Workflow behavior: Node's `vm` watchdog counts
+ * wall time, including main-thread GC pauses that stretch under CPU oversubscription (TD-004).
+ */
+async function productionIsolateExecutionTimeoutMs(): Promise<number> {
+  const common = await importInstalledWorkerDependency("@temporalio/common");
+  const metricMeter = common["noopMetricMeter"];
+  if (!isMetricMeter(metricMeter)) {
+    throw new TypeError("Pinned Temporal common package does not export noopMetricMeter");
+  }
+  return compileWorkerOptions(
+    { taskQueue: "direct-vm-activation" },
+    new DefaultLogger("ERROR"),
+    metricMeter,
+  ).isolateExecutionTimeoutMs;
 }
 
 /** Initializes the Workflow, then delivers `readyJobs` as a single second activation. */
@@ -250,4 +274,16 @@ function isTypedSearchAttributes(
   return typeof Reflect.get(value, "get") === "function" &&
     typeof Reflect.get(value, "copy") === "function" &&
     typeof Reflect.get(value, "getAll") === "function";
+}
+
+function isMetricMeter(
+  value: unknown,
+): value is Parameters<typeof compileWorkerOptions>[2] {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    return false;
+  }
+  return typeof Reflect.get(value, "createCounter") === "function" &&
+    typeof Reflect.get(value, "createHistogram") === "function" &&
+    typeof Reflect.get(value, "createGauge") === "function" &&
+    typeof Reflect.get(value, "withTags") === "function";
 }
