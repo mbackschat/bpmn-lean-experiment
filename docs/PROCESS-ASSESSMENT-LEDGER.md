@@ -1313,6 +1313,23 @@ Evidence
 
 The guard evaluates actual step predicates across branch, phase-tag and version-tag dispatches with independent publishing and screenshot inputs. Release validation and attachment require version-tag publication; every bundle-producing path prepares its pinned toolchain.
 
+### Finding 73
+
+An ad hoc command relied on unquoted parameter expansion to split a list into words, under a shell whose splitting rules differed from the author's assumption.
+
+Instances
+: 3
+
+Disposition
+: `unguardable`
+
+Evidence
+: [self-terminating helper processes](../CLAUDE.md#verification)
+
+**First observed:** V8 corrected-build validation on 2026-10-01.
+
+The failing commands were typed interactively and never entered a tracked script, so no repository fact can observe this class. zsh does not word-split an unquoted `$files` or `$pids`. One copy loop therefore failed before a patch was applied, and one `kill` of bounded CPU spinners matched nothing. A third command, inside `bash -c`, split a `PATH` containing a space so that `env` failed before its gate started. The bounded `gtimeout` lifetimes contained the stray spinners, and no measurement was taken while they ran. The reusable question: before relying on a multi-word expansion, does the command run under the shell whose splitting it assumes, with every list held in an array and every value quoted?
+
 ## Update rule
 
 At each capsule closure and each session handoff, answer the questions above and either add a row or record that none applied. When a mechanism already has a row, increment its instance count instead of adding a near-duplicate — the count is the signal the escalation rule reads. Keep the finding text describing the mechanism, not the incident, so a second occurrence in different code still matches the same row.

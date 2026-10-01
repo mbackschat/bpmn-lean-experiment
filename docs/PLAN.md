@@ -103,7 +103,7 @@ The RC corrections and phase-tag realignment are retained at `36262674`; the sec
 
 CPU constraint: root-owned Lean validation permits one process tree, one CPU, 3 GiB and no additional swap. Reuse valid warmed or hosted evidence; report CPU-intensive validation completion.
 
-Next action: V8 correction `0b94a9fd` passed [equivalent private-build validation](research/NODE-V8-CRASH-INVESTIGATION-RESEARCH.md#2026-10-01-corrected-build-validation); runtime adoption awaits owner decision. Investigate the direct-VM timeout and its linked async-hooks abort.
+Next action: V8 correction `0b94a9fd` passed [equivalent private-build validation](research/NODE-V8-CRASH-INVESTIGATION-RESEARCH.md#2026-10-01-corrected-build-validation); the [direct-VM timeout and async-hooks abort](TEMPORAL-DEFECTS-LEDGER.md#td-004-direct-vm-initialization-timeout) have demonstrated mechanisms. Runtime adoption and harness deadline await owner decisions.
 
 Private Core `7cb28c68`: seven passing [publication/recovery/replay checks](research/TEMPORAL-EXECUTION-RESEARCH.md#product-qualification-and-digest-discrimination) at `d41251dc`; broader qualification and adoption remain open. Capture rejected Transaction inputs; passing digest comparisons establish no repair. Production dependencies remain unchanged. Selection correction requires a new distribution; preserve `v0.2.0-rc.1`. Rancher is owner-deferred; do not install it. No weaker assertions, retry workaround or new Lean work is selected.
 
