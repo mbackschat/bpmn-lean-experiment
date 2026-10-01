@@ -185,6 +185,10 @@ The adapter uses Temporal CLI `v1.8.1` through `TestWorkflowEnvironment.createLo
 
 The optional timer calibration uses `TestWorkflowEnvironment.createTimeSkipping`. Its `cached-download` executable selector is `default`, which `@temporalio/testing` resolves against the pinned SDK name and version; the resulting binary is cached under ignored `.cache/temporal-test-server/` and is not redistributed. This lane runs the same exact semantic result and durable timer-history assertion but does not replace the pinned CLI full-server duration, Worker-restart, replay, or cleanup evidence.
 
+## Node and V8 crash source evidence
+
+The [native crash investigation](research/NODE-V8-CRASH-INVESTIGATION-RESEARCH.md#2026-10-01-source-binary-and-live-stack-evidence) inspected individual upstream source files on 2026-10-01: Node `v24.18.0` at immutable revision [`20da4aeadabc5b0a01e3fcf520f91df8285c68a2`](https://github.com/nodejs/node/tree/20da4aeadabc5b0a01e3fcf520f91df8285c68a2), its V8 ARM64 baseline prologue and linkage definitions, and corrective V8 commit [`0b94a9fd23ba5f59b3f675fb04d60a9b0102e27d`](https://github.com/v8/v8/commit/0b94a9fd23ba5f59b3f675fb04d60a9b0102e27d). Node is MIT with bundled component notices; these V8 files carry the V8 BSD-style license. The downloaded files remain temporary read-only diagnostic inputs, not a registered checkout, copied project source, adopted runtime patch or distribution artifact. The research owner binds the installed binary hash, disassembly and live crash evidence; project toolchain pins remain unchanged.
+
 ## Temporal TypeScript samples
 
 Pinned baseline checkout: [temporalio/samples-typescript at `fb0aa23`](https://github.com/temporalio/samples-typescript/tree/fb0aa23d75394a132646de883842dfacdacd5aa0)
