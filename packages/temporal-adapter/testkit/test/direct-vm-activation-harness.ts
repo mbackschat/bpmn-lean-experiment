@@ -67,48 +67,59 @@ export async function runDirectVmActivations(
     await productionIsolateExecutionTimeoutMs(),
     new Set(["executeBpmnEffect"]),
   );
-  const workflow = await creator.createWorkflow({
-    info: await workflowInfo(run.workflowType, run.replaying, run.taskQueue),
-    randomnessSeed: Array.from({ length: 32 }, () => 7),
-    now: run.initialNowMs ?? 0,
-    showStackTraceSources: false,
-  });
-  const runId = workflowRunId(run.workflowType, run.replaying);
   try {
-    run.assertInitialization(await workflow.activate({
-      runId,
-      timestamp: await timestamp(run.initialNowMs ?? 0),
-      historyLength: 3,
-      isReplaying: run.replaying,
-      availableInternalFlags: run.sdkFlags ?? [],
-      jobs: [...(run.replaying ? (run.replayPatches ?? []).map((patchId) => ({ notifyHasPatch: { patchId } })) : []), {
-        initializeWorkflow: {
-          workflowId: workflowId(run.workflowType, run.replaying),
-          workflowType: run.workflowType,
-          arguments: [...run.args],
-        },
-      }],
-    }));
-    const completions: Completion[] = [];
-    let elapsedMs = run.initialNowMs ?? 0;
-    let historyLength = 3;
-    for (const jobs of [run.readyJobs, ...laterBatches]) {
-      elapsedMs += run.activationStepMs ?? 1_000;
-      historyLength += 4;
-      completions.push(await workflow.activate({
-        runId,
-        timestamp: await timestamp(elapsedMs),
-        historyLength,
-        isReplaying: run.replaying,
-        availableInternalFlags: run.sdkFlags ?? [],
-        jobs,
-      }));
+    const workflow = await creator.createWorkflow({
+      info: await workflowInfo(run.workflowType, run.replaying, run.taskQueue),
+      randomnessSeed: Array.from({ length: 32 }, () => 7),
+      now: run.initialNowMs ?? 0,
+      showStackTraceSources: false,
+    });
+    try {
+      return await activateInOrder(workflow, run, laterBatches);
+    } finally {
+      await workflow.dispose();
     }
-    return completions;
   } finally {
-    await workflow.dispose();
     await creator.destroy();
   }
+}
+
+async function activateInOrder(
+  workflow: Workflow,
+  run: DirectVmActivationRun,
+  laterBatches: ReadonlyArray<NonNullable<Activation["jobs"]>>,
+): Promise<ReadonlyArray<Completion>> {
+  const runId = workflowRunId(run.workflowType, run.replaying);
+  run.assertInitialization(await workflow.activate({
+    runId,
+    timestamp: await timestamp(run.initialNowMs ?? 0),
+    historyLength: 3,
+    isReplaying: run.replaying,
+    availableInternalFlags: run.sdkFlags ?? [],
+    jobs: [...(run.replaying ? (run.replayPatches ?? []).map((patchId) => ({ notifyHasPatch: { patchId } })) : []), {
+      initializeWorkflow: {
+        workflowId: workflowId(run.workflowType, run.replaying),
+        workflowType: run.workflowType,
+        arguments: [...run.args],
+      },
+    }],
+  }));
+  const completions: Completion[] = [];
+  let elapsedMs = run.initialNowMs ?? 0;
+  let historyLength = 3;
+  for (const jobs of [run.readyJobs, ...laterBatches]) {
+    elapsedMs += run.activationStepMs ?? 1_000;
+    historyLength += 4;
+    completions.push(await workflow.activate({
+      runId,
+      timestamp: await timestamp(elapsedMs),
+      historyLength,
+      isReplaying: run.replaying,
+      availableInternalFlags: run.sdkFlags ?? [],
+      jobs,
+    }));
+  }
+  return completions;
 }
 
 /**

@@ -7,6 +7,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
+import { globalHandlers } from "@temporalio/worker/lib/workflow/vm-shared.js";
+
 import { runDirectVmActivations } from "./direct-vm-activation-harness.ts";
 import type { ParsedWorkflowCode } from "./direct-vm-activation-harness.ts";
 
@@ -21,6 +23,12 @@ test("direct-VM harness admits Workflow work that the production Worker's execut
     } } };
   `);
   await assert.rejects(runDirectVmActivations(probeRun(bundle)), /initRuntime finished/);
+});
+
+test("direct-VM harness unregisters the bundle when Workflow creation fails", async () => {
+  const bundle = probeBundle("failing-evaluation", `throw new Error("bundle evaluation failed");`);
+  await assert.rejects(runDirectVmActivations(probeRun(bundle)), /bundle evaluation failed/);
+  assert.equal(globalHandlers.bundleFilenameToSourceMapConsumer.has(bundle.filename), false);
 });
 
 function probeBundle(name: string, code: string): ParsedWorkflowCode {
