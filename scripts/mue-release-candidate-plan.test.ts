@@ -48,12 +48,41 @@ test("freezes all seven selected RC capabilities before integration", async () =
     .filter(({ id }) => unfinishedExecutionOrder.includes(id as typeof unfinishedExecutionOrder[number]))
     .map(({ id }) => id);
   assert.deepEqual(orderedIds, unfinishedExecutionOrder, "ordered work must retain frozen integration");
-  assert.equal(parseOrderedWork(plan).find(({ state }) => state === "active")?.id, "MUE-ACCEPTANCE");
+  assertSemanticsWindow(plan);
 });
+
+test("keeps pulled-forward semantics ordered outside deferred MUE acceptance", async () => {
+  const plan = await readFile(path.join(projectRoot, "docs/PLAN.md"), "utf8");
+  assertSemanticsWindow(plan);
+  assert.throws(() => assertSemanticsWindow(plan.replace(
+    "`STRUCTURED-PROCESS-COMPOSITION` · **active**",
+    "`STRUCTURED-PROCESS-COMPOSITION` · **queued**",
+  )), /semantic work/u);
+  assert.throws(() => assertSemanticsWindow(plan.replace(
+    "`MUE-ACCEPTANCE` · **later**",
+    "`MUE-ACCEPTANCE` · **active**",
+  )), /deferred MUE/u);
+  assert.throws(() => assertSemanticsWindow(plan.replaceAll(
+    "CALL-ACTIVITY-DATA-BOUNDARIES", "UNSELECTED-CAPABILITY",
+  )), /selected order/u);
+});
+
+function assertSemanticsWindow(plan: string): void {
+  const entries = parseOrderedWork(plan);
+  assert.equal(entries.find(({ state }) => state === "active")?.id,
+    "STRUCTURED-PROCESS-COMPOSITION", "semantic work must be active during the owner-selected window");
+  assert.equal(entries.find(({ id }) => id === "MUE-ACCEPTANCE")?.state,
+    "later", "deferred MUE acceptance must remain open outside semantic work");
+  assert.deepEqual(entries.slice(0, 3).map(({ id }) => id), [
+    "STRUCTURED-PROCESS-COMPOSITION",
+    "CALL-ACTIVITY-DATA-BOUNDARIES",
+    "INTERRUPTING-MESSAGE-EVENT-SUBPROCESS",
+  ], "pulled-forward capabilities must retain the selected order");
+}
 
 test("rejects unfinished content, premature later work and a broader hidden denominator", async () => {
   const plan = await readFile(path.join(projectRoot, "docs/PLAN.md"), "utf8");
-  const prematureLaterWork = plan.replace("`MUE-ACCEPTANCE` · **active**", "`CONFORMANCE-CLOSURE` · **active**");
+  const prematureLaterWork = plan.replace("`MUE-ACCEPTANCE` · **later**", "`CONFORMANCE-CLOSURE` · **later**");
   const rcMarker = "### MUE Release Candidate critical path\n";
   const rcStart = plan.indexOf(rcMarker);
   assert.notEqual(rcStart, -1);

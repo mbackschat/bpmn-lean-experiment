@@ -63,7 +63,7 @@ function assertMuePreviewBetaCriticalPath(plan: string): void {
   );
   const orderedActive = parseOrderedWork(plan).find(({ state }) => state === "active");
   assert.ok(rows.every(({ state }) => state === "satisfied"), "every Beta content boundary must be satisfied before integration");
-  assert.equal(orderedActive?.id, "MUE-ACCEPTANCE", "closed RC content must hand work to frozen MUE acceptance");
+  assert.equal(orderedActive?.id, "STRUCTURED-PROCESS-COMPOSITION", "owner-selected semantic work must preserve closed RC content");
   assert.match(section, /^Integration state: `satisfied`\.$/mu, "Beta integration must remain closed after every content row is satisfied");
 
   const riskMarker = "#### Risk-first execution bands\n";
