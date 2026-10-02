@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 
 export const subagentReviewPolicyBaseline = "b361681";
+export const reviewPolicyBaseline = "f1ef362";
 
 export const ReviewStage = Object.freeze({
   Proposal: "Proposal",
@@ -23,6 +24,31 @@ export type ReviewReceipt = Readonly<{
 }>;
 
 const receiptHeading = "## Independent cold-review receipt";
+
+/** Applies the immutable f1ef362 exemption before parsing a required review receipt. */
+export function reviewReceiptOrNull(
+  document: string,
+  documentPath: string,
+): ReadonlyMap<ReviewStage, ReviewReceipt> | null {
+  if (baselineGrandfatheredReviewDocuments().includes(documentPath)) return null;
+  return parseReceipt(document, documentPath);
+}
+
+export function baselineGrandfatheredReviewDocuments(): ReadonlyArray<string> {
+  assert.equal(
+    isReviewCommitTarget(reviewPolicyBaseline),
+    true,
+    "the immutable review-policy baseline must remain an ancestor of HEAD",
+  );
+  return gitLines([
+    "ls-tree", "-r", "--name-only", reviewPolicyBaseline, "--", "docs",
+  ])
+    .filter((file) => !file.startsWith("docs/archived/"))
+    .filter((file) => !file.startsWith("docs/reference/"))
+    .filter((file) =>
+      file.endsWith("-SPEC.md") || /^docs\/[^/]+-PROPOSAL\.md$/u.test(file))
+    .sort();
+}
 const commitPattern = /^[0-9a-f]{7,40}$/u;
 const approvedVerdicts = new Set(["approve", "approve-with-required-edits"]);
 const transientReviewState = /\breview-pending\b|\bawaiting (?:its )?(?:mandatory )?(?:independent )?review\b|\bpending checkpoint approval\b/iu;

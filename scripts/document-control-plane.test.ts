@@ -24,7 +24,7 @@ import {
 } from "./document-control-plane.ts";
 import {
   ReviewStage,
-  parseReceipt,
+  reviewReceiptOrNull,
   receiptRow,
 } from "./independent-review-receipt.ts";
 import {
@@ -92,16 +92,42 @@ test("the plan never restates a review state its receipt owns", async () => {
     planReviewOwnerPaths(resume).map(async (relative) => {
       const documentPath = path.join("docs", relative);
       const document = await readFile(path.join(projectRoot, documentPath), "utf8");
+      const receipt = reviewReceiptOrNull(document, documentPath);
+      if (receipt === null) return [];
       const row = receiptRow(
-        parseReceipt(document, documentPath),
+        receipt,
         ReviewStage.Proposal,
         documentPath,
       );
-      return { path: documentPath, verdict: row.verdict, target: row.target };
+      return [{ path: documentPath, verdict: row.verdict, target: row.target }];
     }),
   );
-  assert.deepEqual(planReviewRoutingFindings(resume, owners), []);
-  assert.deepEqual(planReviewRestatementFindings(resume, owners), []);
+  assert.deepEqual(planReviewRoutingFindings(resume, owners.flat()), []);
+  assert.deepEqual(planReviewRestatementFindings(resume, owners.flat()), []);
+});
+
+test("resume routes preserve pre-policy exemptions without excusing required or malformed receipts", () => {
+  for (const documentPath of [
+    "docs/TESTING-SPEC.md",
+    "docs/SEMANTIC-PROCESS-IL-SPEC.md",
+  ]) {
+    assert.equal(reviewReceiptOrNull("# Contract\n", documentPath), null);
+  }
+  assert.throws(
+    () => reviewReceiptOrNull("# Contract\n", "docs/capsules/NEW-CONTRACT-SPEC.md"),
+    /must contain.*receipt/u,
+  );
+  assert.throws(
+    () => reviewReceiptOrNull(
+      "## Independent cold-review receipt\n",
+      "docs/capsules/NEW-CONTRACT-SPEC.md",
+    ),
+    /three review stages/u,
+  );
+  assert.deepEqual(
+    planReviewRoutingFindings("Next action: obtain the cold review.", []),
+    ["resume point names review work but routes to no governed review owner"],
+  );
 });
 
 test("rejects a stale review state and a misplaced gate token", () => {

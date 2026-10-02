@@ -8,6 +8,7 @@ import {
   assertIndependentlyApproved,
   assertReceiptRow,
   assertReviewContinuity,
+  baselineGrandfatheredReviewDocuments,
   correctionAuditRounds,
   gitLines,
   isOwnerApproved,
@@ -15,6 +16,7 @@ import {
   parseProposalStatus,
   parseReceipt,
   receiptRow,
+  reviewPolicyBaseline,
   ReviewStage,
   subagentReviewPolicyBaseline,
   transientReviewStateFindings,
@@ -25,7 +27,6 @@ const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 const documentationRoot = path.join(projectRoot, "docs");
 const capsuleRoot = path.join(projectRoot, "docs/capsules");
 
-const reviewPolicyBaseline = "f1ef362";
 const expectedGrandfatheredReviewDocuments = [
   "docs/CIB-SEVEN-COMPATIBILITY-SCOPE-PROPOSAL.md",
   "docs/COMPOSITIONAL-BPMN-ADMISSION-PROPOSAL.md",
@@ -80,30 +81,6 @@ test("all pending stages can record their packet-bound target with the verdict",
     [stage, { stage, target: "not-recorded", isolation: "not-recorded", verdict: "pending",
       correctionAudit: "not-applicable" }])), "pending-stages"));
 });
-
-function baselineGrandfatheredReviewDocuments(): ReadonlyArray<string> {
-  assert.equal(
-    isReviewCommitTarget(reviewPolicyBaseline),
-    true,
-    "the immutable review-policy baseline must remain an ancestor of HEAD",
-  );
-  return gitLines([
-    "ls-tree",
-    "-r",
-    "--name-only",
-    reviewPolicyBaseline,
-    "--",
-    "docs",
-  ])
-    .filter((file) => !file.startsWith("docs/archived/"))
-    .filter((file) => !file.startsWith("docs/reference/"))
-    .filter(
-      (file) =>
-        file.endsWith("-SPEC.md") ||
-        /^docs\/[^/]+-PROPOSAL\.md$/u.test(file),
-    )
-    .sort();
-}
 
 async function activeReviewDocumentPaths(): Promise<ReadonlyArray<string>> {
   return (await readdir(documentationRoot, { recursive: true }))
