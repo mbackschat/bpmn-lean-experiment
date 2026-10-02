@@ -2,14 +2,14 @@
 
 ## Status
 
-Lifecycle: draft
-Review: pending
+Lifecycle: owner-approved
+Review: approved
 
 ## Question and current boundary
 
 Can the engine admit reusable acyclic composition of existing scalar data-bearing User Tasks, ordinary User Tasks and paired Exclusive decisions/merges, so a completed task's associated output determines subsequent routing and later task input without inventing another execution mechanism?
 
-The proposed answer is the structured account below. This is post-MUE semantic work selected in [PLAN](../PLAN.md#ordered-work), outside the frozen seven-capability acceptance boundary. No implementation or hosting claim is made by this draft. Runtime adoption and live hosting qualification remain deferred under the owner's minimum semantics-focus period; a semantic checkpoint cannot graduate this capsule or advertise hosted support.
+The approved answer is the structured account below. This is post-MUE semantic work selected in [PLAN](../PLAN.md#ordered-work), outside the frozen seven-capability acceptance boundary. No implementation or hosting claim is made by this proposal. Runtime adoption and live hosting qualification remain deferred under the owner's minimum semantics-focus period; a semantic checkpoint cannot graduate this capsule or advertise hosted support.
 
 The present admission boundary is demonstrated by two schema-valid diagnostic variants of retained sources: append an ordinary archive task to [claim assessment](../../scenarios/activity-data-input-output-user-task/process.bpmn), and replace the three terminal ends of [conditional routing](../../scenarios/exclusive-gateway-simple-boolean/process.bpmn) with one Exclusive Merge, archive task and None End. Both original sources compile; both variants reject as unsupported. The composed-data reader additionally binds the retained model's literal IDs and name. The new capability must recognize structure and references; accepting another list of business-specific IDs would not establish composition.
 
@@ -151,6 +151,6 @@ Record reproducible baseline-to-closure nonblank code/documentation churn in the
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `477fb99c` | `fork-turns-none` | `approve` | `not-required` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |

@@ -102,7 +102,7 @@ Active work ID: `STRUCTURED-PROCESS-COMPOSITION`.
 
 Risk band: source admission, data routing and structured control-flow composition in independent Lean/TypeScript accounts.
 
-Next action: independently review the [structured composition proposal](capsules/STRUCTURED-PROCESS-COMPOSITION-PROPOSAL.md). It selects structural pairing, branch-intersection input availability and the existing closure bound over reused task/gateway operations. After proposal approval, implement red/green in Lean and TypeScript; reassess if a general proof programme becomes necessary.
+Next action: implement the approved [composition proposal](capsules/STRUCTURED-PROCESS-COMPOSITION-PROPOSAL.md) red/green in Lean and TypeScript, starting with serial data handoff. Its first green semantic checkpoint requires independent review before later lanes. Reassess if a general proof programme becomes necessary.
 
 Keep semantics active; reconsider deferred work no earlier than 2026-10-05, without an automatic switch. Local performance tests stay skipped under external CPU load. Lean remains one process tree, one CPU and 3 GiB without additional swap. Database selection remains [sequential SQLite versus concurrent PostgreSQL](TESTING-SPEC.md#three-level-verification-policy).
 
