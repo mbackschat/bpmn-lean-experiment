@@ -11,6 +11,7 @@ import {
   PostgresqlFlowNodeOccurrenceRepository,
   PostgresqlIncidentActionRepository,
   PostgresqlProcessInstanceRepository,
+  ProcessInstanceIdentityIntegrityError,
 } from "@bpmn-lean/platform-operate";
 import type { PostgresqlRuntime } from "@bpmn-lean/platform-postgresql-runtime";
 
@@ -157,7 +158,7 @@ if (baseUrl === undefined) {
     },
   );
 
-  test("equivalent and conflicting registrations race through independent runtimes", async () => {
+  test("concurrent equivalent registrations converge to one exact row and ordinal", async () => {
     await resetOperateDatabase(runtime);
     const runtimes = Array.from({ length: 8 }, (_, index) =>
       createOperateTestRuntime(baseUrl, `operate-registration-${index}`, 2));
@@ -167,16 +168,65 @@ if (baseUrl === undefined) {
         await new PostgresqlProcessInstanceRepository(independent)
           .recordConfirmed(publication)));
       assert.equal(new Set(ordinals).size, 1);
+      const retained = await new PostgresqlProcessInstanceRepository(runtime)
+        .search({ limit: 10 });
+      assert.equal(retained.length, 1);
+      assert.equal(retained[0]?.ordinal, ordinals[0]);
+      assert.deepEqual(retained[0]?.instance, publication.instance);
       const outcomes = await Promise.allSettled([
         new PostgresqlProcessInstanceRepository(runtimes[0]!).recordConfirmed(
           { ...publication, locator: "changed" },
         ),
-        new PostgresqlProcessInstanceRepository(runtimes[1]!).recordConfirmed(
-          publication,
-        ),
+        new PostgresqlProcessInstanceRepository(runtimes[1]!).recordConfirmed(publication),
       ]);
       assert.equal(outcomes[0]?.status, "rejected");
+      if (outcomes[0]?.status === "rejected") {
+        assert.ok(outcomes[0].reason instanceof ProcessInstanceIdentityIntegrityError);
+      }
       assert.equal(outcomes[1]?.status, "fulfilled");
+      assert.deepEqual(
+        await new PostgresqlProcessInstanceRepository(runtime).search({ limit: 10 }),
+        retained,
+      );
+    } finally {
+      await Promise.all(runtimes.map(async (independent) => await independent.close()));
+    }
+  });
+
+  test("concurrent fresh conflicting registrations classify one loser and preserve the exact winner", async () => {
+    await resetOperateDatabase(runtime);
+    const first = processPublication("fresh-conflict-instance");
+    const candidates = [first, {
+      ...first,
+      instance: {
+        ...first.instance,
+        definition: { ...first.instance.definition, version: 2 },
+      },
+    }];
+    const runtimes = candidates.map((_, index) =>
+      createOperateTestRuntime(baseUrl, `operate-fresh-conflict-${index}`, 2));
+    try {
+      const outcomes = await Promise.allSettled(candidates.map(async (candidate, index) =>
+        await new PostgresqlProcessInstanceRepository(runtimes[index]!)
+          .recordConfirmed(candidate)));
+      const winners = outcomes.flatMap((outcome, index) =>
+        outcome.status === "fulfilled" ? [{ index, ordinal: outcome.value }] : []);
+      const losers = outcomes.flatMap(outcome =>
+        outcome.status === "rejected" ? [outcome.reason] : []);
+      assert.equal(winners.length, 1);
+      assert.equal(losers.length, 1);
+      assert.ok(losers[0] instanceof ProcessInstanceIdentityIntegrityError);
+      const winner = winners[0]!;
+      const repository = new PostgresqlProcessInstanceRepository(runtime);
+      const rows = await repository.search({ limit: 10 });
+      assert.equal(rows.length, 1);
+      assert.equal(rows[0]?.ordinal, winner.ordinal);
+      assert.deepEqual(rows[0]?.instance, candidates[winner.index]?.instance);
+      assert.equal(
+        await repository.recordConfirmed(candidates[winner.index]!),
+        winner.ordinal,
+      );
+      assert.deepEqual(await repository.search({ limit: 10 }), rows);
     } finally {
       await Promise.all(runtimes.map(async (independent) => await independent.close()));
     }

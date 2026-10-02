@@ -4,7 +4,6 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { test } from "node:test";
-import { Worker } from "node:worker_threads";
 
 import {
   ProcessInstanceIdentityIntegrityError,
@@ -167,42 +166,27 @@ test("does not reopen a closed registration after a delayed indeterminate observ
   });
 });
 
-test("independent concurrent equivalent records converge to one row and ordinal", async () => {
-  await withDatabaseFile(async (databaseFile) => {
-    const results = await race(databaseFile, [
-      instance("equivalent", 1),
-      instance("equivalent", 1),
-    ]);
-    assert.deepEqual(results, [
-      { outcome: "recorded", ordinal: 1 },
-      { outcome: "recorded", ordinal: 1 },
-    ]);
-    const repository = new SqliteProcessInstanceRepository(databaseFile);
-    try {
-      assert.equal((await repository.search({ limit: 10 })).length, 1);
-    } finally {
-      repository.close();
-    }
+test("sequential equivalent records converge to one row and ordinal", async () => {
+  await withRepository(async (repository) => {
+    const exact = publication(instance("equivalent", 1));
+    assert.equal(await repository.recordConfirmed(exact), 1);
+    assert.equal(await repository.recordConfirmed(exact), 1);
+    assert.equal((await repository.search({ limit: 10 })).length, 1);
   });
 });
 
-test("independent concurrent conflicting records classify one loser and preserve winner", async () => {
-  await withDatabaseFile(async (databaseFile) => {
-    const candidates = [instance("conflict", 1), instance("conflict", 2)];
-    const results = await race(databaseFile, candidates);
-    assert.equal(results.filter(({ outcome }) => outcome === "recorded").length, 1);
-    assert.equal(results.filter(({ outcome }) => outcome === "integrity").length, 1);
-
-    const winnerIndex = results.findIndex(({ outcome }) => outcome === "recorded");
-    const repository = new SqliteProcessInstanceRepository(databaseFile);
-    try {
-      const rows = await repository.search({ limit: 10 });
-      assert.equal(rows.length, 1);
-      assert.deepEqual(rows[0]?.instance, candidates[winnerIndex]);
-      assert.equal(rows[0]?.ordinal, 1);
-    } finally {
-      repository.close();
-    }
+test("sequential conflicting records reject drift and preserve the first record", async () => {
+  await withRepository(async (repository) => {
+    const exact = instance("conflict", 1);
+    assert.equal(await repository.recordConfirmed(publication(exact)), 1);
+    await assert.rejects(
+      repository.recordConfirmed(publication(instance("conflict", 2))),
+      ProcessInstanceIdentityIntegrityError,
+    );
+    const rows = await repository.search({ limit: 10 });
+    assert.equal(rows.length, 1);
+    assert.deepEqual(rows[0]?.instance, exact);
+    assert.equal(rows[0]?.ordinal, 1);
   });
 });
 
@@ -269,44 +253,6 @@ test("rejects private input and fails closed on corrupt stored identity or index
     );
   });
 });
-
-type RaceResult =
-  | Readonly<{ outcome: "recorded"; ordinal: number }>
-  | Readonly<{ outcome: "integrity" }>;
-
-async function race(
-  databaseFile: string,
-  candidates: ReadonlyArray<PublicProcessInstanceIdentity>,
-): Promise<ReadonlyArray<RaceResult>> {
-  const gateBuffer = new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT * 2);
-  const gate = new Int32Array(gateBuffer);
-  const workers = candidates.map((candidate) => new Worker(
-    new URL("./sqlite-process-instance-race-worker.ts", import.meta.url),
-    { workerData: { databaseFile, gate: gateBuffer, instance: candidate } },
-  ));
-  await waitUntil(() => Atomics.load(gate, 1) === workers.length);
-  Atomics.store(gate, 0, 1);
-  Atomics.notify(gate, 0, workers.length);
-  return Promise.all(workers.map(workerResult));
-}
-
-function workerResult(worker: Worker): Promise<RaceResult> {
-  return new Promise((resolve, reject) => {
-    worker.once("message", (message: RaceResult) => resolve(message));
-    worker.once("error", reject);
-    worker.once("exit", (code) => {
-      if (code !== 0) {
-        reject(new Error(`race worker exited with code ${code}`));
-      }
-    });
-  });
-}
-
-async function waitUntil(predicate: () => boolean): Promise<void> {
-  while (!predicate()) {
-    await new Promise<void>((resolve) => setImmediate(resolve));
-  }
-}
 
 async function withRepository(
   run: (

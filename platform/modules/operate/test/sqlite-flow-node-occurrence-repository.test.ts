@@ -122,12 +122,8 @@ test("appends, advances, and marks occurrences without deleting accepted rows", 
       "flow_node_occurrences",
     ]);
 
-    const outcomes = await Promise.allSettled([
-      occurrences.applyPage(registration, occurrenceSuffixWithSuccessor()),
-      occurrences.mark(registration, FlowNodeOccurrenceProjectionStatus.Gap),
-    ]);
-
-    assert.deepEqual(outcomes.map(({ status }) => status), ["fulfilled", "fulfilled"]);
+    await occurrences.applyPage(registration, occurrenceSuffixWithSuccessor());
+    await occurrences.mark(registration, FlowNodeOccurrenceProjectionStatus.Gap);
     const image = await occurrences.get(registration.instance.processInstanceId);
     assert.equal(image?.headRevision, 3);
     assert.equal(image?.status, FlowNodeOccurrenceProjectionStatus.Gap);

@@ -137,12 +137,8 @@ test("appends and marks without deleting accepted publication rows", async () =>
       "execution_publication_records",
     ]);
 
-    const outcomes = await Promise.allSettled([
-      publications.applyPage(registered, secondPage()),
-      publications.mark(registered, ExecutionPublicationProjectionStatus.Gap),
-    ]);
-
-    assert.deepEqual(outcomes.map(({ status }) => status), ["fulfilled", "fulfilled"]);
+    await publications.applyPage(registered, secondPage());
+    await publications.mark(registered, ExecutionPublicationProjectionStatus.Gap);
     const retained = publicationChildRows(databaseFile);
     assert.deepEqual(retained[0].slice(0, prefix[0].length), prefix[0]);
     assert.deepEqual(retained[1].slice(0, prefix[1].length), prefix[1]);

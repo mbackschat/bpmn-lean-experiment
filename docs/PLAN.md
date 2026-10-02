@@ -89,7 +89,7 @@ The selected scheduling and bounded Transaction accounts are independently closu
 
 ## Current evidence
 
-- Committed definition-selection qualification. Command: `env CI=true ./scripts/pnpm.sh run test:pre-push:ui`. Status: `exit 0`. Date: `2026-10-01`. Commit: `00412058`, clean committed target. Receipt: `/tmp/mue-selection-clean-ui`. All 196 browser checks and UI package checks pass. The red witness exposes stale Version choices during another definition's load; the correction revokes the preceding selection before navigation. Public engine contracts are unchanged.
+- Database test separation. Command: `env CI=true ./scripts/pnpm.sh --filter @bpmn-lean/platform-operate test`; PostgreSQL: `./scripts/with-postgresql-18.sh ./scripts/pnpm.sh --filter @bpmn-lean/platform-operate test:postgresql:built`. Status: `exit 0`. Date: `2026-10-02`. Commit: `38ac2e2b`, pre-commit correction, not clean-HEAD qualification. Receipts: `/tmp/mue-db-ownership-operate-package` and `/tmp/mue-db-ownership-postgresql-final`. Ordinary package: 132 passes; PostgreSQL: 60, no skips. A changed-identity mutation fails with two winners. [Testing](TESTING-SPEC.md#three-level-verification-policy) owns selection/cadence.
 
 - Published RC evaluation. Command: `env BPMN_EVALUATION_PROJECT_NAME=mue-acceptance-rc1-1d11abc0 /tmp/mue-acceptance-distribution-1d11abc0/deploy/evaluation/demo start`. Status: `exit 0` for restart; browser qualification incomplete. Date: `2026-10-01`. Commit: `16c5b9f6`, fixed distribution source. Receipt: `/tmp/mue-bundle-restart`; browser evidence: `/tmp/mue-acceptance-distribution-1d11abc0/browser-receipt.json`. Docker Desktop restarts without building/pulling, retaining claimed parallel work and its sibling. Playwright reaches human approval, request changes, parallel completion, incident Retry and Cancel, with terminal History and Action history. Earlier unavailable Work/execution/audit reads remain failures. The browser shows `0.2.0-rc.1`, which still contains the selection defect. Rancher smoke remains open by owner direction. Task containers stopped; volumes/images retained.
 
@@ -99,15 +99,15 @@ Active work ID: `MUE-ACCEPTANCE`.
 
 Risk band: P1 unresolved runtime mechanisms; P2 human journeys and P3 distribution evidence.
 
-The RC corrections and phase-tag realignment are retained at `36262674`; the security correction and failure evidence are pushed through `8d68acf4`. Preserve `v0.2.0-rc.1` and the Alpha/Beta phase tags; no further RC phase-tag move is authorized by the security correction.
+RC corrections and phase-tag realignment: `36262674`; pushed security/failure evidence: `8d68acf4`. Preserve `v0.2.0-rc.1` and Alpha/Beta tags; no further RC tag move is authorized.
 
 CPU constraint: root-owned Lean validation permits one process tree, one CPU, 3 GiB and no additional swap. Reuse valid warmed or hosted evidence; report CPU-intensive validation completion.
 
-Next action: with the owner, adopt Node `26.10.0` after 2026-10-05 and qualify it for [TD-003 and TD-004](TEMPORAL-DEFECTS-LEDGER.md#td-003-native-v8-garbage-collection-crash); [TD-005](TEMPORAL-DEFECTS-LEDGER.md#td-005-async-hooks-callback-abort) awaits upstream.
+Next action: retain the [database test separation](TESTING-SPEC.md#three-level-verification-policy), then with the owner adopt Node `26.10.0` after 2026-10-05 and qualify [TD-003/TD-004](TEMPORAL-DEFECTS-LEDGER.md#td-003-native-v8-garbage-collection-crash); TD-005 awaits upstream. Private-build diagnosis is outside this correction.
 
 Private Core `7cb28c68`: seven passing [publication/recovery/replay checks](research/TEMPORAL-EXECUTION-RESEARCH.md#product-qualification-and-digest-discrimination) at `d41251dc`; broader qualification and adoption remain open. Capture rejected Transaction inputs; passing digest comparisons establish no repair. Production dependencies remain unchanged. Selection correction requires a new distribution; preserve `v0.2.0-rc.1`. Rancher is owner-deferred; do not install it. No weaker assertions, retry workaround or new Lean work is selected.
 
-Reuse [hosted qualification at `8d68acf4`](https://github.com/mbackschat/bpmn-lean-experiment/actions/runs/36712077521), including its security and Product 2 workflows. Preserve the failed `/tmp/bpmn-security-811ce35a-pre-push` receipt, [native investigation](research/NODE-V8-CRASH-INVESTIGATION-RESEARCH.md#2026-09-30-documentation-checkpoint-recurrence) and [SDK Query-loss finding](research/TEMPORAL-EXECUTION-RESEARCH.md#closed-run-query-eviction-investigation); later passing runs prove no repair.
+Reuse [hosted qualification at `8d68acf4`](https://github.com/mbackschat/bpmn-lean-experiment/actions/runs/36712077521). Preserve failed receipts `/tmp/bpmn-security-811ce35a-pre-push` and `/tmp/mue-prepush-38ac2e2b-v8-fixed.LInMLg`, [native investigation](research/NODE-V8-CRASH-INVESTIGATION-RESEARCH.md#2026-09-30-documentation-checkpoint-recurrence) and [Query-loss finding](research/TEMPORAL-EXECUTION-RESEARCH.md#closed-run-query-eviction-investigation). Test selection repairs neither private-Node descriptor loss nor failed qualification. Nothing new is pushed.
 
 Oracle: clean-checkout runtime qualification succeeds; all seven capability rows remain unchanged; supported human journeys and final applicable gates pass with exact target evidence; disclosures retain limitations. Owner acceptance precedes the MUE tag.
 

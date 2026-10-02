@@ -87,6 +87,8 @@ The non-material review corrections retain Start receipts while revoking automat
 
 [ARCHITECTURE.md](ARCHITECTURE.md) owns the concrete module and deployment shape. Product 2 specifications own their public contracts, package tests bind module behavior, PostgreSQL gates bind shared mode, and maintained Chromium journeys bind the selected user-facing surfaces.
 
+The owner-directed [database test separation](TESTING-SPEC.md#three-level-verification-policy) keeps local SQLite witnesses sequential and shared database-concurrency witnesses on real PostgreSQL. [Operate repository tests](../platform/modules/operate/test/postgresql/postgresql-operate-repositories.test.ts) retain exact-row/ordinal convergence and fresh conflicting-identity winner preservation. This harness correction is non-material under the [review negative case](TESTING-SPEC.md#independent-cold-review-gate): public outcomes, production adapters, BPMN meaning and hosting claims are unchanged. Package tests, PostgreSQL witnesses, harness types and infrastructure guards cover it; it establishes no repair of the private Node descriptor defect.
+
 ## Nearest unsupported claims
 
 - **Platform scale:** database high availability, backup/restore, online rollback, mixed versions, replicas, poolers, partitioning, tenant isolation, production capacity, and measured throughput, latency, saturation, failover, and cost remain absent.
