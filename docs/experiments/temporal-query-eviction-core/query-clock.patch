@@ -1,0 +1,347 @@
+From 14ce5270e2e978bb332ffed33d7d86cae72252f9 Mon Sep 17 00:00:00 2001
+From: Martin Backschat <mbackschat@mail.de>
+Date: Fri, 2 Oct 2026 17:17:14 +0200
+Subject: [PATCH] fix(core): defer pending query inputs until the task clock is
+ known
+
+Legacy Query history can end before the next task starts. Preserve initialization and recorded-command validation while deferring new inputs so live execution and cold replay use the same recorded clock.
+---
+ crates/sdk-core/src/core_tests/queries.rs     | 171 ++++++++++++++++++
+ .../src/worker/workflow/history_update.rs     | 111 +++++++++++-
+ 2 files changed, 276 insertions(+), 6 deletions(-)
+
+diff --git a/crates/sdk-core/src/core_tests/queries.rs b/crates/sdk-core/src/core_tests/queries.rs
+index fc70dcd1..6eb59c67 100644
+--- a/crates/sdk-core/src/core_tests/queries.rs
++++ b/crates/sdk-core/src/core_tests/queries.rs
+@@ -42,6 +42,177 @@ use temporalio_common::protos::{
+         },
+     },
+ };
++use tokio_stream::wrappers::UnboundedReceiverStream;
++
++#[rstest::rstest]
++#[case::before_first_task(false)]
++#[case::after_first_task_timeout(true)]
++#[tokio::test]
++async fn legacy_query_initializes_before_first_completed_task(#[case] timed_out: bool) {
++    let mut history = TestHistoryBuilder::default();
++    history.add_by_type(EventType::WorkflowExecutionStarted);
++    history.add_workflow_task_scheduled();
++    if timed_out {
++        history.add_workflow_task_started();
++        history.add_workflow_task_timed_out();
++        history.add_workflow_task_scheduled();
++    }
++    history.add_we_signaled("pending", vec![]);
++    history.add_workflow_task_started();
++    let mut query = hist_to_poll_resp(&history, "query-before-task", ResponseType::ToTaskNum(1)).resp;
++    query.history.as_mut().unwrap().events.pop();
++    query.started_event_id = 0;
++    query.previous_started_event_id = 0;
++    query.query = Some(WorkflowQuery { query_type: "clock".into(), ..Default::default() });
++    let expected_time = query.history.as_ref().unwrap().events[0].event_time;
++    let (sender, receiver) = tokio::sync::mpsc::unbounded_channel();
++    sender.send(query).unwrap();
++    drop(sender);
++    let mut client = mock_worker_client();
++    client.expect_respond_legacy_query().times(1).returning(|_, _| Ok(Default::default()));
++    let mut mocks = MocksHolder::from_wft_stream(client, UnboundedReceiverStream::new(receiver));
++    mocks.worker_cfg(|config| config.max_cached_workflows = 10);
++    let core = mock_worker(mocks);
++    let first = core.poll_workflow_activation().await.unwrap();
++    assert_matches!(first.jobs.as_slice(), [WorkflowActivationJob {
++        variant: Some(workflow_activation_job::Variant::InitializeWorkflow(_)),
++    }]);
++    assert_eq!(first.timestamp, expected_time);
++    core.complete_workflow_activation(WorkflowActivationCompletion::empty(first.run_id)).await.unwrap();
++    let query = core.poll_workflow_activation().await.unwrap();
++    assert_matches!(query.jobs.as_slice(), [WorkflowActivationJob {
++        variant: Some(workflow_activation_job::Variant::QueryWorkflow(_)),
++    }]);
++    assert_eq!(query.timestamp, expected_time);
++    core.complete_workflow_activation(WorkflowActivationCompletion::from_cmd(query.run_id,
++        query_ok(LEGACY_QUERY_ID, "initialized"))).await.unwrap();
++    core.shutdown().await;
++}
++
++#[tokio::test]
++async fn legacy_query_with_pending_timer_preserves_task_clock_and_delivery() {
++    let history = canned_histories::single_timer("1");
++    let mut query = hist_to_poll_resp(&history, "pending-timer", ResponseType::ToTaskNum(2)).resp;
++    query.history.as_mut().unwrap().events.truncate(7);
++    query.started_event_id = 0;
++    query.previous_started_event_id = 3;
++    query.query = Some(WorkflowQuery {
++        query_type: "clock".to_string(),
++        ..Default::default()
++    });
++    let (sender, receiver) = tokio::sync::mpsc::unbounded_channel();
++    sender.send(query).unwrap();
++    let mut client = mock_worker_client();
++    client
++        .expect_respond_legacy_query()
++        .times(1)
++        .returning(|_, _| Ok(Default::default()));
++    client
++        .expect_complete_workflow_task()
++        .times(1)
++        .returning(|_| Ok(Default::default()));
++    let mut mocks = MocksHolder::from_wft_stream(client, UnboundedReceiverStream::new(receiver));
++    mocks.worker_cfg(|config| config.max_cached_workflows = 10);
++    let core = mock_worker(mocks);
++    let first = core.poll_workflow_activation().await.unwrap();
++    assert_matches!(
++        first.jobs.as_slice(),
++        [WorkflowActivationJob {
++            variant: Some(workflow_activation_job::Variant::InitializeWorkflow(_)),
++        }]
++    );
++    core.complete_workflow_activation(WorkflowActivationCompletion::from_cmd(
++        first.run_id,
++        start_timer_cmd(1, Duration::from_secs(1)),
++    ))
++    .await
++    .unwrap();
++    let query = core.poll_workflow_activation().await.unwrap();
++    assert_matches!(
++        query.jobs.as_slice(),
++        [WorkflowActivationJob {
++            variant: Some(workflow_activation_job::Variant::QueryWorkflow(_)),
++        }]
++    );
++    core.complete_workflow_activation(WorkflowActivationCompletion::from_cmd(
++        query.run_id,
++        query_ok(LEGACY_QUERY_ID, "waiting"),
++    ))
++    .await
++    .unwrap();
++    let real = hist_to_poll_resp(&history, "pending-timer", ResponseType::OneTask(2)).resp;
++    let expected_time = real
++        .history
++        .as_ref()
++        .unwrap()
++        .events
++        .last()
++        .unwrap()
++        .event_time;
++    sender.send(real).unwrap();
++    let fired = core.poll_workflow_activation().await.unwrap();
++    assert_matches!(
++        fired.jobs.as_slice(),
++        [WorkflowActivationJob {
++            variant: Some(workflow_activation_job::Variant::FireTimer(_)),
++        }]
++    );
++    assert_eq!(fired.timestamp, expected_time);
++    core.complete_execution(&fired.run_id).await;
++    drop(sender);
++    core.shutdown().await;
++}
++
++#[tokio::test]
++async fn legacy_query_pending_input_still_checks_recorded_commands() {
++    let history = canned_histories::single_timer("1");
++    let mut query = hist_to_poll_resp(
++        &history,
++        "pending-timer-command",
++        ResponseType::ToTaskNum(2),
++    )
++    .resp;
++    query.history.as_mut().unwrap().events.truncate(7);
++    query.started_event_id = 0;
++    query.previous_started_event_id = 3;
++    query.query = Some(WorkflowQuery {
++        query_type: "clock".to_string(),
++        ..Default::default()
++    });
++    let (sender, receiver) = tokio::sync::mpsc::unbounded_channel();
++    sender.send(query).unwrap();
++    drop(sender);
++    let mut client = mock_worker_client();
++    client
++        .expect_respond_legacy_query()
++        .times(1)
++        .returning(|_, result| {
++            assert!(matches!(result, LegacyQueryResult::Failed(failure)
++            if failure.force_cause() == WorkflowTaskFailedCause::NonDeterministicError));
++            Ok(Default::default())
++        });
++    let mut mocks = MocksHolder::from_wft_stream(client, UnboundedReceiverStream::new(receiver));
++    mocks.worker_cfg(|config| {
++        config.max_cached_workflows = 10;
++        config.ignore_evicts_on_shutdown = false;
++    });
++    let core = mock_worker(mocks);
++    let first = core.poll_workflow_activation().await.unwrap();
++    core.complete_workflow_activation(WorkflowActivationCompletion::empty(first.run_id))
++        .await
++        .unwrap();
++    let next = core.poll_workflow_activation().await.unwrap();
++    assert_matches!(
++        next.jobs.as_slice(),
++        [WorkflowActivationJob {
++            variant: Some(workflow_activation_job::Variant::RemoveFromCache(_)),
++        }]
++    );
++    core.complete_workflow_activation(WorkflowActivationCompletion::empty(next.run_id))
++        .await
++        .unwrap();
++    core.shutdown().await;
++}
+ 
+ #[rstest::rstest]
+ #[case::with_history(true)]
+diff --git a/crates/sdk-core/src/worker/workflow/history_update.rs b/crates/sdk-core/src/worker/workflow/history_update.rs
+index 85658994..a643acb8 100644
+--- a/crates/sdk-core/src/worker/workflow/history_update.rs
++++ b/crates/sdk-core/src/worker/workflow/history_update.rs
+@@ -579,8 +579,7 @@ impl HistoryUpdate {
+         if let Some(ix_first_relevant) = self.starting_index_after_skipping(from_wft_started_id) {
+             self.events.drain(0..ix_first_relevant);
+         }
+-        let next_wft_ix =
+-            find_end_index_of_next_wft_seq(&self.events, from_wft_started_id, self.has_last_wft);
++        let next_wft_ix = self.next_wft_sequence_end(&self.events, from_wft_started_id);
+         match next_wft_ix {
+             NextWFTSeqEndIndex::Incomplete(siz) => {
+                 if self.has_last_wft {
+@@ -602,6 +601,37 @@ impl HistoryUpdate {
+         }
+     }
+ 
++    fn next_wft_sequence_end(
++        &self,
++        events: &[HistoryEvent],
++        from_event_id: i64,
++    ) -> NextWFTSeqEndIndex {
++        let end = find_end_index_of_next_wft_seq(events, from_event_id, self.has_last_wft);
++        if matches!(end, NextWFTSeqEndIndex::Incomplete(_))
++            && self.has_last_wft
++            && self.wft_started_id == 0
++        {
++            // legacy_query_pending_input_still_checks_recorded_commands requires matching the
++            // completed task's commands; new inputs require the next task's recorded clock.
++            // legacy_query_initializes_before_first_completed_task also requires the execution
++            // start so Queries before the first task retain initialization and its start clock.
++            let prefix = events
++                .iter()
++                .take_while(|event| {
++                    event.event_id > from_event_id
++                        && (event.is_command_event()
++                            || matches!(event.event_type(), EventType::WorkflowTaskCompleted | EventType::WorkflowExecutionStarted))
++                })
++                .count();
++            return if prefix == 0 {
++                NextWFTSeqEndIndex::Incomplete(0)
++            } else {
++                NextWFTSeqEndIndex::Complete(prefix - 1)
++            };
++        }
++        end
++    }
++
+     fn build_next_wft(&mut self, drain_this_much: usize) -> NextWFT {
+         NextWFT::WFT(
+             self.events.drain(0..=drain_this_much).collect(),
+@@ -621,10 +651,12 @@ impl HistoryUpdate {
+         if relevant_events.is_empty() {
+             return relevant_events;
+         }
+-        let ix_end =
+-            find_end_index_of_next_wft_seq(relevant_events, from_wft_started_id, self.has_last_wft)
+-                .index();
+-        &relevant_events[0..=ix_end]
++        match self.next_wft_sequence_end(relevant_events, from_wft_started_id) {
++            NextWFTSeqEndIndex::Incomplete(0) if self.has_last_wft && self.wft_started_id == 0 => {
++                &[]
++            }
++            end => &relevant_events[0..=end.index()],
++        }
+     }
+ 
+     /// Returns true if this update has the next needed WFT sequence, false if events will need to
+@@ -798,6 +830,9 @@ fn find_end_index_of_next_wft_seq(
+         }
+     }
+ 
++    if has_last_wft && let Some((_, index)) = wft_started_event_id_to_index.last() {
++        return NextWFTSeqEndIndex::Complete(*index);
++    }
+     NextWFTSeqEndIndex::Incomplete(last_index)
+ }
+ 
+@@ -865,6 +900,70 @@ mod tests {
+         assert_eq!(seq_2.last().unwrap().event_id, 8);
+     }
+ 
++    #[rstest::rstest]
++    #[case::activity(EventType::ActivityTaskCompleted)]
++    #[case::timer(EventType::TimerFired)]
++    #[case::signal(EventType::WorkflowExecutionSignaled)]
++    fn legacy_query_does_not_deliver_inputs_before_workflow_task_started(#[case] input: EventType) {
++        let mut history = TestHistoryBuilder::default();
++        history.add_by_type(EventType::WorkflowExecutionStarted);
++        history.add_full_wf_task();
++        let mut events = history.get_full_history_info().unwrap().events().to_vec();
++        events.push(HistoryEvent {
++            event_id: 5,
++            event_type: input as i32,
++            ..Default::default()
++        });
++        events.push(HistoryEvent {
++            event_id: 6,
++            event_type: EventType::WorkflowTaskScheduled as i32,
++            ..Default::default()
++        });
++        let (mut query, remaining) = HistoryUpdate::from_events(events, 3, 0, true);
++        assert!(remaining.is_empty());
++        assert_eq!(
++            query
++                .take_next_wft_sequence(0)
++                .unwrap_events()
++                .last()
++                .unwrap()
++                .event_id,
++            3
++        );
++        assert_eq!(
++            query
++                .take_next_wft_sequence(3)
++                .unwrap_events()
++                .last()
++                .unwrap()
++                .event_id,
++            4
++        );
++        assert_matches!(query.take_next_wft_sequence(3), NextWFT::ReplayOver);
++
++        let mut events = history.get_full_history_info().unwrap().events().to_vec();
++        events.push(HistoryEvent {
++            event_id: 5,
++            event_type: input as i32,
++            ..Default::default()
++        });
++        events.push(HistoryEvent {
++            event_id: 6,
++            event_type: EventType::WorkflowTaskScheduled as i32,
++            ..Default::default()
++        });
++        events.push(HistoryEvent {
++            event_id: 7,
++            event_type: EventType::WorkflowTaskStarted as i32,
++            ..Default::default()
++        });
++        let (mut query, _) = HistoryUpdate::from_events(events, 3, 0, true);
++        query.take_next_wft_sequence(0).unwrap_events();
++        let next = query.take_next_wft_sequence(3).unwrap_events();
++        assert_eq!(next.last().unwrap().event_id, 7);
++        assert!(next.iter().any(|event| event.event_type() == input));
++    }
++
+     #[test]
+     fn skips_wft_failed() {
+         let failed_hist = canned_histories::workflow_fails_with_reset_after_timer("t", "runid");
+-- 
+2.54.0 (Apple Git-157)
+

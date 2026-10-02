@@ -756,7 +756,7 @@ After a durable baseline exists, `Worker.runReplayHistories` should run as a sep
 
 The [project defect ledger](../TEMPORAL-DEFECTS-LEDGER.md) owns defect disposition, next actions and closure tracking; this section retains the diagnostic evidence.
 
-On 2026-09-30, hosted Verify run `36706606358` at `36262674` failed when the empty Transaction's final E1 publication was unavailable. Local instrumentation also observed a compensated Transaction's selected segment reject its descriptor digest, and separate Queries exhaust the existing five-second deadline. The hosted log does not preserve the underlying Query error, so neither local failure is established as that run's cause. The digest rejection remains unexplained and must not be folded into the timeout mechanism below.
+On 2026-09-30, hosted Verify run `36706606358` at `36262674` failed when the empty Transaction's final E1 publication was unavailable. Local instrumentation also observed a compensated Transaction's selected segment reject its descriptor digest, and separate Queries exhaust the existing five-second deadline. The hosted log does not preserve the underlying Query error, so neither local failure is established as that run's cause. The digest rejection was unexplained at that checkpoint and is distinct from the timeout mechanism below; the later [clock investigation](#legacy-query-pending-input-clock-investigation) establishes its cause.
 
 A minimal diagnostic using the installed TypeScript SDK `1.21.0`, CLI `1.8.1` and server `1.31.2` demonstrates a separate upstream Query-loss defect without BPMN code. A Workflow registers one constant synchronous Query and completes. The diagnostic holds its real eviction activation, queues Queries pinned to that Run, waits for the exact SDK buffered-task debug events, then releases eviction. One queued Query returns its constant value. With two queued Queries, one returns and one reaches its unchanged five-second deadline; the same Run emits the leftover-buffer warning. Receipt `/tmp/bpmn-sdk-query-eviction-bound-diagnostic` retains the seven-second execution and expected failing two-answer assertion; the probe is `/tmp/bpmn-sdk-query-eviction/query-eviction-bound.test.mjs`.
 
@@ -785,7 +785,7 @@ Both native bridges use the published `@temporalio/core-bridge` `1.21.0` sources
 
 Exact build/test commands and outputs are retained in the named receipts. The complete unit command is `cargo test --locked --manifest-path /tmp/mue-private-core/bridge/sdk-core/Cargo.toml -p temporalio-sdk-core --lib -- --test-threads=2`; native builds use the bridge manifest with `cargo build --locked`. A process-local preload selects the experimental native bridge without changing installed SDK files. The private local archive `.cache/temporal-query-eviction-core-evidence.tar.gz` retains the patch, both lockfiles, probes, preload, provenance, receipt files and their manifest (archive SHA-256 `582536277512da80d15b4fa568876637ea8dfdacf990afd998ee45a4f8eabdc4`). The pristine pinned reference remains unchanged.
 
-This validates a bounded SDK Core correction and identifies the demonstrated Query loss as an implementation defect under supported use. It proves neither persisted process-data loss nor the cause of every product read failure. Production dependency adoption, Linux/distribution qualification, independent upstream review, Transaction descriptor-digest rejection, and adoption of corrections for the [native V8, direct-VM timeout and async-hooks failures](../TEMPORAL-DEFECTS-LEDGER.md) remain open. No dependency replacement, workaround, public contract, BPMN meaning or refinement claim is adopted; this experimental retention is non-material under the cold-review gate and is covered by the Core regressions, live comparison and repository documentation/infrastructure guards. Later on 2026-10-01 the owner approved an upstream report, reviewed its text, and it was filed as [Core issue 1621](https://github.com/temporalio/sdk-rust/issues/1621) with the production diff inline and the reproduction described in prose.
+This validates a bounded SDK Core correction and identifies the demonstrated Query loss as an implementation defect under supported use. It proves neither persisted process-data loss nor the cause of every product read failure. Production dependency adoption, Linux/distribution qualification, independent upstream review, adoption of the distinct Query-clock correction below, and adoption of corrections for the [native V8, direct-VM timeout and async-hooks failures](../TEMPORAL-DEFECTS-LEDGER.md) remain open. No dependency replacement, workaround, public contract, BPMN meaning or refinement claim is adopted; this experimental retention is non-material under the cold-review gate and is covered by the Core regressions, live comparison and repository documentation/infrastructure guards. Later on 2026-10-01 the owner approved an upstream report, reviewed its text, and it was filed as [Core issue 1621](https://github.com/temporalio/sdk-rust/issues/1621) with the production diff inline and the reproduction described in prose.
 
 ### Retained Query-eviction reproducer
 
@@ -905,7 +905,7 @@ At project commit `d41251dc` on 2026-10-01, the same private native artifact pas
 
 The original digest rejection is retained in `/tmp/bpmn-transaction-publication-diagnostic`: both parallel reads selected Run ordinal 4, revisions 10–12, from a latest-Run snapshot at revision 15, and both received the digest-substitution error. That receipt lacks the rejected Run's history and reconstructed digest inputs. A new diagnostic at `d41251dc` forced cache misses through process-local `Worker.create` instrumentation (`maxCachedWorkflows: 0`) while using the private Core correction, and captured selected descriptors, paired pages and Continue-As-New history inputs. `/tmp/mue-transaction-forced-replay` passed all three Transaction variants; nine retained-segment comparisons matched both the carried descriptor and final occurrence timestamp, with no digest rejection. One open-User-Task polling Query reached its existing one-second deadline before the existing poll loop progressed; it is not evidence that all diagnostic reads succeeded. The cache change and additional capture Queries make this a diagnostic rather than ordinary qualification.
 
-The timestamp hypothesis remains open: the adapter hashes occurrence commit timestamps obtained from the deterministic Workflow clock, so a replay-time difference could change the digest without changing semantic revisions. [Core issue 1606](https://github.com/temporalio/sdk-rust/issues/1606), checked 2026-10-01, reports merging a no-command Workflow Task with an immediately following empty task. The nine new captured histories contain no adjacent Workflow-Task-completed/scheduled pair of that shape, consistent with the earlier 25-Run passing-history inspection in `/tmp/mue-transaction-digest-capture/replay-shape-analysis.json`. Neither collection contains the original rejected Run, so this does not exclude the hypothesis. The [subsequent capture](#released-core-product-read-attribution) retains new failing histories; local digest reconstruction remains open. No timestamp, digest, retry or ordering correction is justified by the passing comparisons.
+At that checkpoint the timestamp hypothesis remained open: the adapter hashes occurrence commit timestamps obtained from the deterministic Workflow clock, so a replay-time difference could change the digest without changing semantic revisions. [Core issue 1606](https://github.com/temporalio/sdk-rust/issues/1606), checked 2026-10-01, reports merging a no-command Workflow Task with an immediately following empty task. The nine new captured histories contain no adjacent Workflow-Task-completed/scheduled pair of that shape, consistent with the earlier 25-Run passing-history inspection in `/tmp/mue-transaction-digest-capture/replay-shape-analysis.json`. Neither collection contains the original rejected Run, so this does not exclude the hypothesis. The [subsequent capture](#released-core-product-read-attribution) retains new failing histories, reconstructed in the [clock investigation](#legacy-query-pending-input-clock-investigation). The passing comparisons alone justified no timestamp, digest, retry or ordering correction.
 
 ### Released-Core product read attribution
 
@@ -922,6 +922,121 @@ The exact warning `There were leftover buffered tasks when evicting run` appears
 The gRPC `1.14.5` package gate in `/tmp/mue-grpc-test-temporal` also used the V8-corrected Node build and installed Core. Its separate receipt assertion returns `COMMAND_RECEIPT_VERDICT=failure`, exit 1. The four test batches total 819 passes out of 820, correcting the earlier handoff's 794-of-795 count. The sole failure is `traverses aligned publication segments without exposing Workflow Runs`: a retained read returns `unavailable`, preceded by the same Core warning at 19:55:37 UTC. This supports TD-001 attribution for that failure and demonstrates the failure class existed before the gRPC update; it does not qualify the update as green. The receipt names committed base `2ed36b64` with the dependency edit still uncommitted, so it is not exact-commit qualification of `834342fd`.
 
 The ignored local archive `.cache/mue-product-read-attribution-20261001.tar.gz` (SHA-256 `a2a4478d5cdf27a5fc1110dc707f7ce9e2333643229ac6b8039ed4e9a50adc8f`) retains all 200 logs, the loop summary, descriptor/history captures, diagnostic preload and loop command, seeded control, and failed gRPC gate receipt. No dependency adoption, retry, deadline change or weaker read assertion follows from this attribution.
+
+### Legacy Query pending-input clock investigation
+
+The 2026-10-02 question was whether TD-002 changes semantic state, digest canonicalization or the host clock used to seal an otherwise identical publication. An offline reconstruction applies the pure semantic step to each captured Activity result and rebuilds the Run-local paired publication. It asserts exact equality with the continuation's final semantic state and compares every Workflow-Task-start timestamp against both digests. Receipt `/tmp/mue-td002-asserted-clock-reconstruction-20261002` passes for twelve distinct failing Runs: the preceding task's timestamp alone reproduces each carried digest, and the next task's timestamp alone reproduces each cold-recomputed digest. No identity, revision, byte bound or digest check changes.
+
+A second instance was predicted in a minimal Workflow with one Activity, one read-only Query and one Continue-As-New carrying `Date.now()`. Queries race with Activity completion after Worker replacement; a cold Worker then reconstructs the first Run. Released Core fails `/tmp/mue-clock-query-race-20261002`: Run `01a0fd12-9e21-7668-a92b-9779c90ed219` carries `1790952250916`, while cold replay returns `1790952252002`. Incoming live `ResolveActivity` has history length 8 and the old clock; cold replay has length 9 and the second task's clock. The earlier query-free-completion control passes twenty rounds. This reproduces the mechanism independently of BPMN and gRPC update behavior.
+
+The failing boundary is Core's `HistoryUpdate::take_next_wft_sequence`: a final-page legacy Query has `wft_started_id == 0`, and its history can end with completed Activity, fired Timer or Signal inputs plus WorkflowTaskScheduled, before WorkflowTaskStarted. The old incomplete-tail fallback delivers those inputs using the preceding clock and advances the cached machine. The later real task inherits the advanced state; cold replay includes the actual start first. This breaks agreement between live execution and cold reconstruction. Core issue 1606's adjacent empty-task/heartbeat shape is a separate lead, not the demonstrated cause here.
+
+The [retained clock patch](../experiments/temporal-query-eviction-core/query-clock.patch) is private commit `14ce5270e2e978bb332ffed33d7d86cae72252f9`, parent `7cb28c682e417418538f628143bf983d903e6a24`. It consumes only initialization and the completed task's contiguous command-validation prefix from an unstarted legacy-Query tail; pending inputs remain for the real task. A valid started no-command task still supplies its recorded clock. The first candidate's broader tail skip failed the missing-Timer-command adversary and was discarded. Independent read-only review also found a fresh-query initialization regression; fresh and first-task-timeout worker witnesses reproduced it before the startup-prefix correction. The same reviewer approved the corrected two file blobs after auditing command matching, pagination, marker/heartbeat and eviction-group preservation.
+
+| Separating guard | Faulty observation | Corrected evidence |
+|---|---|---|
+| Pending Activity/Timer/Signal tail; valid started-task positive controls | All three parser variants prematurely deliver the unstarted tail (`/tmp/mue-core-clock-red-valid-20261002`) | Complete suite passes; real-task Timer witness delivers exactly once at the recorded next-task clock |
+| Recorded Timer command omitted | Naive tail skip wrongly permits Query (`/tmp/mue-core-clock-command-validation-red-valid-20261002`) | Query fails with NonDeterministicError and cache eviction |
+| Fresh Query, including a first timed-out task and pending Signal | First candidate dispatches Query before initialization (`/tmp/mue-core-clock-initialization-red-20261002`) | InitializeWorkflow precedes Query at execution-start time; Signal remains withheld |
+| Complete Core library unit suite | Earlier candidates fail the discriminators above | 397 pass, zero fail, one existing ignored transition reporter (`/tmp/mue-core-clock-initialization-suite-20261002`) |
+| Unchanged twenty-round live/cold Query race | Released Core retains differing clocks | All twenty rounds agree with the last recorded task start (`/tmp/mue-core-clock-query-race-green-20261002`) |
+| Unchanged product publication, recovery and replay | Earlier released-Core qualification remains failed | Four Transaction checks and three segment/recovery-capacity checks pass (`/tmp/mue-core-clock-product-transaction-20261002`, `/tmp/mue-core-clock-product-segments-20261002`) |
+
+The combined native bridge is `/tmp/mue-private-core/query-clock.node`, SHA-256 `d71c25e645a5e5f592ae961e7f9c8fd76de0fa520f13c3c7b671af9cb46ba392`. Build receipt `/tmp/mue-core-clock-final-native-20261002` passes with the unchanged bridge production lock, Rust/Cargo 1.98.0, protoc 23.4, two jobs and a debug macOS arm64 build. SDK 1.21.0, CLI 1.8.1/server 1.31.2 and the approved V8-corrected Node 24.18.0 remain the functional configuration. Patch SHA-256 is `72cb0c0b08a4dba1c142c52722449e209670d1e2a86f8a784ac6b361efdfcc5d`; a temporary index reconstructs exact commit tree `c5c0fcac3ac1e064eb7a3f317b949ae378aeedc2`. Installed SDK files, dependency pins and distribution artifacts are unchanged.
+
+The unchanged eviction probe `/tmp/mue-core-clock-eviction-green-20261002` returns all answers for one/two Queries but fails its three-Query admission barrier before all three reach Core. A separate diagnostic changes only nonsticky poll allocation from ratio 0.2 to 0.5: candidate `/tmp/mue-eviction-poll-capacity-candidate-20261002` returns all one/two/three answers, while baseline `/tmp/mue-eviction-poll-capacity-baseline-20261002` still loses the second Query and also fails the third barrier. These are diagnostic comparisons, not production configuration or a demonstrated root cause of the barrier failure. Preserve both failed receipts. The complete Core suite retains the deterministic full/mixed-history eviction-group guards.
+
+The owner reported heavy external CPU use and excluded local performance tests. The earlier candidate PMI attempt `/tmp/mue-core-candidate-pmi-d75031e3-20261002` failed the unchanged 50% deadline-margin assertion at 51.4%; no attribution to the candidate build is established. No local PMI/SMI margin rerun, performance result or complete Temporal qualification is claimed. Prior failed clean pre-push qualification remains failed. This correction guarantees the demonstrated active, nonterminal input/clock ordering; inherited pending-input tails followed by execution termination or timeout are excluded. Adoption, Linux/distribution qualification and final MUE acceptance remain open.
+
+A separate standalone SDK Worker control, without `node:test`, observes `kTotals == 0` and `kCheck == 1` in its ordinary Workflow thread across initialization, Activity completion and continuation (`/tmp/mue-production-async-hooks-live-20261002`). Node's callback-scope native abort checks are guarded by `kTotals`; `kCheck` alone does not establish hook activation. An earlier diagnostic wrongly asserted zero for both counters and failed; it is retained as a rejected control. This small Workflow does not qualify the platform's complete deployed composition or exclude telemetry/hook-enabled callers. TD-005's production disposition remains open; no termination stress is run under the CPU constraint.
+
+The ignored archive `.cache/mue-query-clock-evidence-20261002.tar.gz`, SHA-256 `3582326de98340fc1feea0ccd0e8e4b621d148960ab84ce675612c7360d8e670`, retains the original twelve-Run inputs, asserted reconstruction, decisive minimal failing history, live/cold facts, diagnostic sources, private patch, build locks, source-review provenance, successful and failed receipts, and a file manifest. Every claimed command result above was read and separately asserted. No upstream report is authorized for TD-002.
+
+#### Retained minimal clock Workflow
+
+Save the two listings in one temporary directory using the names shown. They are diagnostic sources; the repository's prohibition on hand-written JavaScript modules is preserved. Resolve SDK 1.21.0 dependencies there using the same external diagnostic setup as the retained Query-eviction reproducer. Set `TEMPORAL_CLI_PATH` to CLI 1.8.1 and run `node --test clock-query-race.test.mjs`; select the private bridge only through the retained process-local native preload. All RPC deadlines and expected equality remain unchanged.
+
+`clock-workflows.js`:
+
+```js
+import { continueAsNew, defineQuery, proxyActivities, setHandler } from '@temporalio/workflow';
+const { probeActivity } = proxyActivities({ startToCloseTimeout: '20s', heartbeatTimeout: '2s' });
+export async function publicationClockWorkflow(carried = null) {
+  let publication = carried;
+  setHandler(defineQuery('publicationClock'), () => publication);
+  if (carried !== null) return carried;
+  await probeActivity();
+  publication = Date.now();
+  return continueAsNew(publication);
+}
+```
+
+`clock-query-race.test.mjs`:
+
+```js
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import { fileURLToPath } from 'node:url';
+import { writeFile } from 'node:fs/promises';
+import { Worker, bundleWorkflowCode } from '@temporalio/worker';
+import { TestWorkflowEnvironment } from '@temporalio/testing';
+import { Context } from '@temporalio/activity';
+function deferred() { let resolve; const promise = new Promise(r => { resolve = r; }); return { promise, resolve }; }
+function bounded(promise, ms, name) { let timer; return Promise.race([promise, new Promise((_, reject) => { timer = setTimeout(() => reject(new Error(`${name} exceeded ${ms}ms`)), ms); })]).finally(() => clearTimeout(timer)); }
+const decode = payload => JSON.parse(Buffer.from(payload.data).toString('utf8'));
+const original = Worker.prototype.handleActivation;
+Worker.prototype.handleActivation = async function(workflow, input) {
+  const { activation } = input;
+  process.stderr.write(`CLOCK_ACTIVATION ${JSON.stringify({ identity: this.options.identity, runId: activation.runId, replay: activation.isReplaying, time: activation.timestamp, historyLength: activation.historyLength, jobs: activation.jobs.map(job => Object.keys(job).filter(key => job[key] != null)) })}\n`);
+  return original.call(this, workflow, input);
+};
+test('Activity completion publication clock is identical after cold reconstruction', async () => {
+  const env = await bounded(TestWorkflowEnvironment.createLocal({ server: { executable: { type: 'existing-path', path: process.env.TEMPORAL_CLI_PATH } } }), 20_000, 'environment startup');
+  const bundle = await bundleWorkflowCode({ workflowsPath: fileURLToPath(new URL('./clock-workflows.js', import.meta.url)) });
+  let started, replacementStarted, released, invocations;
+  let worker, completion;
+  async function start(identity) {
+    worker = await Worker.create({ connection: env.nativeConnection, workflowBundle: bundle, taskQueue: 'publication-clock', identity,
+      activities: { async probeActivity() { if (++invocations === 1) started.resolve(); else replacementStarted.resolve(); while (!released) { Context.current().heartbeat(); await Context.current().sleep(25); } return 'done'; } } });
+    completion = worker.run();
+  }
+  async function stop() { worker.shutdown(); await bounded(completion, 10_000, 'Worker shutdown'); worker = undefined; }
+  const facts = [];
+  try {
+    await start('clock-original');
+    for (let round = 0; round < 20; round++) {
+      started = deferred(); replacementStarted = deferred(); released = false; invocations = 0;
+      const handle = await env.client.workflow.start('publicationClockWorkflow', { workflowId: `publication-clock-${round}`, taskQueue: 'publication-clock' });
+      await bounded(started.promise, 5_000, 'first Activity start');
+      await stop(); await start('clock-replacement');
+      await bounded(replacementStarted.promise, 5_000, 'replacement Activity start');
+      await env.client.connection.withDeadline(Date.now() + 5_000, () => handle.query('publicationClock'));
+      released = true;
+      await Promise.all(Array.from({ length: 3 }, () => env.client.connection.withDeadline(Date.now() + 5_000,
+        () => handle.query('publicationClock'))));
+      const live = await bounded(handle.result(), 5_000, 'terminal receipt');
+      const originalRun = env.client.workflow.getHandle(handle.workflowId, handle.firstExecutionRunId);
+      const history = await env.client.connection.withDeadline(Date.now() + 5_000, () => originalRun.fetchHistory());
+      await stop(); await start('clock-cold');
+      const reconstructed = await env.client.connection.withDeadline(Date.now() + 5_000, () => originalRun.query('publicationClock'));
+      const taskTimes = history.events.filter(event => event.workflowTaskStartedEventAttributes).map(event => Number(event.eventTime.seconds) * 1000 + Math.floor(event.eventTime.nanos / 1_000_000));
+      const continuation = history.events.find(event => event.workflowExecutionContinuedAsNewEventAttributes).workflowExecutionContinuedAsNewEventAttributes.input.payloads.map(decode)[0];
+      const fact = { round, runId: handle.firstExecutionRunId, live, continuation, reconstructed, taskTimes };
+      facts.push(fact); process.stderr.write(`CLOCK_REPLAY_FACT ${JSON.stringify(fact)}\n`);
+      await writeFile(`/tmp/mue-clock-history-${round}.json`, JSON.stringify(history, null, 2));
+      assert.equal(live, continuation);
+      assert.equal(reconstructed, live);
+      assert.equal(live, taskTimes.at(-1));
+    }
+  } finally {
+    released = true;
+    await writeFile('/tmp/mue-clock-facts.json', JSON.stringify(facts, null, 2));
+    if (worker) await stop();
+    await env.teardown();
+    Worker.prototype.handleActivation = original;
+  }
+});
+```
 
 ## Open decisions
 
