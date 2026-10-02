@@ -11,7 +11,15 @@ The external corpus may contain:
 - `examples/` — the official non-normative BPMN 2.0 by Example PDF/archive and machine-readable example archive.
 - `BPMN-2.0.2.md` and `BPMN-2_0_2_images/` — optional disposable digital-first conversion cache, not fetched or verified as an official input.
 
-The existing Markdown conversion used PyMuPDF4LLM without OCR because 530 pages have a text layer and only two pages are image-only. Its original QA confirmed 14,442 Markdown lines, all 333 referenced image paths present exactly once, reconstructed headings through Clause 15 and the annexes, and readable execution-semantics figures such as the Activity lifecycle. The conversion is a research cache rather than a reproducible or authoritative input; regenerate and re-check it when the cache is needed.
+The existing Markdown conversion used PyMuPDF4LLM without OCR because 530 pages have a text layer and only two pages are image-only. Its original QA confirmed 14,442 Markdown lines, all 333 referenced image paths present exactly once, reconstructed headings through Clause 15 and the annexes, and readable execution-semantics figures such as the Activity lifecycle. The conversion is the default reading copy; the pinned official artifacts retain normative authority.
+
+## Reading workflow
+
+Search and read the existing [BPMN Markdown](../../../../oss/omg-bpmn-2.0.2/BPMN-2.0.2.md) first, including its linked extracted figures. Use the [normative PDF](../../../../oss/omg-bpmn-2.0.2/BPMN-2.0.2.pdf) only when an identified passage, table or diagram is absent, damaged or ambiguous in that reading copy. Ordinary clause review does not require reopening or re-extracting the PDF. CMOF and XSD remain the direct sources for metamodel and XML facts.
+
+If a required specification is available only as PDF, extract it once into Markdown beside its external source, retain source identity and figure links, and check the required text, tables and diagrams. Reuse that copy thereafter; regenerate only when it is absent or the source changes, and repair specific extraction gaps when found. Keep conversions outside pristine Git checkouts and outside the project redistribution boundary. Markdown remains optional for ordinary verification, but must be available for a research task that needs the reading copy.
+
+The corpus uses the tracked [ripgrep exclusion file](.ignore) to hide PDF filenames and contents from ordinary `rg --files` and `rg` searches. The fetcher installs it in the external corpus; existing corpora can copy it there without changing official inputs. This is a discovery guard, not an access restriction: explicit paths and ignore overrides still work. The [project instructions](../../../CLAUDE.md#reference-and-source-discipline) require naming the exact gap before using them, followed by a retained repair. Hash verification keeps the originals at their manifest-bound paths.
 
 ## Fetch and verification
 

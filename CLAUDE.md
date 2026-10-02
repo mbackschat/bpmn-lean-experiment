@@ -400,6 +400,10 @@ Project-authored code and documentation are released under the [MIT License](LIC
 
 The downloaded OMG PDF, machine-readable files, examples, Markdown conversion, and extracted figures are external local research material described by [the tracked reference pointer](docs/reference/bpmn-2.0.2/README.md) and stored by default at sibling `../oss/omg-bpmn-2.0.2`. Track only project-authored digests, provenance, hashes, and fetch/verification tooling; do not stage or redistribute the external corpus.
 
+Read specification material from existing Markdown, HTML, or other searchable text in the registered source location first. For PDF-only material, create and check one reusable Markdown extraction beside the external source, then use it for subsequent work. Consult the PDF only for an identified extraction gap or ambiguity, such as a missing diagram or damaged table; retain corrections so the same passage does not need repeated extraction. Follow the [BPMN reading workflow](docs/reference/bpmn-2.0.2/README.md#reading-workflow) for the existing conversion and figures.
+
+Before opening a PDF, name the specific gap in the text or extracted figures and the page or clause needed to resolve it. Do not bypass the search exclusions for routine reading or re-extract a whole PDF when the reading copy already exists. After a justified fallback, repair the external reading copy or retain a source-linked correction beside it. Source-hash verification and initial conversion may access PDF bytes without being reading fallbacks.
+
 For CIB or Temporal source changes, preserve a clean pinned evidence lane and follow the branch, provenance, noninterference, and shadow-equivalence rules in [REFERENCE-INSTRUMENTATION-POLICY.md](docs/REFERENCE-INSTRUMENTATION-POLICY.md).
 
 ## Verification

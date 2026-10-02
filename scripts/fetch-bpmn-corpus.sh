@@ -69,6 +69,7 @@ fetch_file "examples/BPMN-2.0-by-Example.zip" "https://www.omg.org/cgi-bin/doc?d
 fetch_file "examples/BPMN-2.0-machine-readable-examples.zip" "https://www.omg.org/cgi-bin/doc?dtc/10-06-03.zip"
 
 BPMN_CORPUS_ROOT="$download_root" "$script_dir/verify-bpmn-corpus.sh"
+cp "$project_root/docs/reference/bpmn-2.0.2/.ignore" "$download_root/.ignore"
 mv "$download_root" "$corpus_root"
 trap - 0 1 2 3 15
 echo "BPMN corpus installed at $corpus_root"

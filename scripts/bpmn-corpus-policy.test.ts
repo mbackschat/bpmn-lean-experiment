@@ -66,6 +66,18 @@ test("defaults executable consumers to the external corpus with explicit overrid
   assert.match(verifyScript, /LOCAL-CORPUS\.sha256/u);
 });
 
+test("keeps PDF originals outside ordinary corpus discovery", async () => {
+  const [ignore, fetchScript, instructions] = await Promise.all([
+    readFile(path.join(projectRoot, "docs/reference/bpmn-2.0.2/.ignore"), "utf8"),
+    readFile(path.join(projectRoot, "scripts/fetch-bpmn-corpus.sh"), "utf8"),
+    readFile(path.join(projectRoot, "CLAUDE.md"), "utf8"),
+  ]);
+  assert.deepEqual(ignore.split("\n").filter((line) => line !== "" && !line.startsWith("#")), ["*.[pP][dD][fF]"]);
+  assert.match(fetchScript, /cp "\$project_root\/docs\/reference\/bpmn-2\.0\.2\/\.ignore" "\$download_root\/\.ignore"/u);
+  assert.match(instructions, /Before opening a PDF, name the specific gap/u);
+  assert.match(instructions, /Do not bypass the search exclusions for routine reading/u);
+});
+
 test("the CMOF calibration fails rather than skipping missing evidence", () => {
   const result = spawnSync(
     process.execPath,

@@ -1,0 +1,2 @@
+# Read Markdown and extracted figures first; PDFs are explicit gap-only fallbacks.
+*.[pP][dD][fF]
