@@ -1,0 +1,156 @@
+# Structured Process composition proposal
+
+## Status
+
+Lifecycle: draft
+Review: pending
+
+## Question and current boundary
+
+Can the engine admit reusable acyclic composition of existing scalar data-bearing User Tasks, ordinary User Tasks and paired Exclusive decisions/merges, so a completed task's associated output determines subsequent routing and later task input without inventing another execution mechanism?
+
+The proposed answer is the structured account below. This is post-MUE semantic work selected in [PLAN](../PLAN.md#ordered-work), outside the frozen seven-capability acceptance boundary. No implementation or hosting claim is made by this draft. Runtime adoption and live hosting qualification remain deferred under the owner's minimum semantics-focus period; a semantic checkpoint cannot graduate this capsule or advertise hosted support.
+
+The present admission boundary is demonstrated by two schema-valid diagnostic variants of retained sources: append an ordinary archive task to [claim assessment](../../scenarios/activity-data-input-output-user-task/process.bpmn), and replace the three terminal ends of [conditional routing](../../scenarios/exclusive-gateway-simple-boolean/process.bpmn) with one Exclusive Merge, archive task and None End. Both original sources compile; both variants reject as unsupported. The composed-data reader additionally binds the retained model's literal IDs and name. The new capability must recognize structure and references; accepting another list of business-specific IDs would not establish composition.
+
+## Normative basis and inherited accounts
+
+BPMN 2.0.2 Clauses 10.4.1–10.4.2 and 13.3.2 define Activity input selection before activation, output association at completion, and the containing context receiving the output. Clauses 10.6.2 and 13.4.2 and Table 13.2 define ordered first-true/default routing and per-arriving-token Exclusive Merge. Clauses 13.2 and 13.3 retain Process completion and Sequence Flow progression. Consult the [external Markdown reading copy](../reference/bpmn-2.0.2/README.md#reading-workflow); CMOF/XSD settle ownership, defaults, references and XML structure.
+
+The [composed Activity-data specification](ACTIVITY-DATA-INPUT-OUTPUT-MEDIATION-SPEC.md) owns the one-input/one-output transition, null-versus-absence distinction, exact submitted DataOutput binding, association-targeted write and atomic cleanup. The [conditional-routing specification](EXCLUSIVE-GATEWAY-CONDITION-SPEC.md) owns Simple Boolean v1 and XML Sequence Flow declaration order. The [cyclic-control-flow specification](CYCLIC-CONTROL-FLOW-SPEC.md#checked-graph-and-lowering) owns the reusable merge relation; this proposal uses its single-arrival subset in an acyclic model and adds no cycle meaning.
+
+The standard permits unavailable input to wait and later be reevaluated. This capability does not implement that broader ingress/liveness account: start admission below excludes a potential unavailable required task input. That restriction is a selected admission boundary, not a claim that BPMN rejects such a model. Missing variables in Simple Boolean expressions retain their existing total evaluation and do not become required task inputs.
+
+## Required, optional and excluded scope
+
+Required: one private executable root Process, one None Start, one None End, at least one User Task, a finite acyclic graph, complete reference/ownership closure, and structured serial or paired Exclusive composition. Every task has one incoming and one outgoing flow. Each data-bearing task has exactly the existing composed direct scalar input/output interface, with distinct input and output Process Properties within that task. Property endpoints may be reused by different tasks. All source IDs are arbitrary valid distinct BPMN IDs; display names are optional and non-authoritative.
+
+Optional: any finite number of ordinary tasks and composed data-bearing tasks, serial and nested paired decisions, empty branch paths, and Process Properties with no selected data association. Each divergent gateway has exactly two ordered conditioned flows plus one conditionless default. Each paired merge has exactly three incoming flows and one outgoing flow. Definitions explicitly selects `urn:bpmn-lean:expression:simple-boolean:v1`, including a model containing no gateway, so adding a decision never changes the language default. Initial data and composed-task output values remain bounded strings or explicit null.
+
+Excluded: arbitrary unstructured graphs, cycles, implicit Activity fan-in/fan-out, parallel or Inclusive branching, unpaired/mixed gateways, other gateway arities, missing default, conditions outside divergent Exclusive outputs, additional Start/End Events, nested scopes, Call Activities, boundary Events, subscriptions, effects, Multi-Instance, Compensation/Transactions, assignment/form metadata, input-only/output-only mediation, multiple/optional/while-executing sets or bindings, stable local output, transformations, collections, new expressions or values, and a new public command or observation field. Source preservation remains the existing profile-selected admission policy; this proposal selects no new preservation-only notation.
+
+These restrictions do not change the immutable graph or operation representations. Later profiles can widen the excluded mechanisms or admit input reevaluation without reinterpreting sources accepted here. Empty branches are real selected paths: their conditions belong to the divergent gateway even when the target is the merge.
+
+## Public contract and layer ownership
+
+The candidate profile identity is `bpmn-2.0.2-structured-process-composition-draft`. It remains a private checkpoint identity until the registration and hosting obligations close. Existing profile identities, admitted source bytes and results retain their contracts.
+
+Source admission produces the existing checked alternatives: None Start/End, ordinary User Task, composed data-input/output User Task, Exclusive Gateway and Exclusive Merge. Lowering emits existing `initiate`, `awaitUserTask`, `awaitDataInputOutputUserTask`, `choose`, `mergeExclusive`, `reachNoneEnd` and root `completeScope` operations. There is no new opcode, serialized region tree, runtime collection, result arm or synthetic occurrence.
+
+The source reader resolves every Property, data item, set and association through parser-object ownership. Global element identity remains unique while the same Property object may be referenced from several tasks. Each task retains the predecessor's seven-way distinctness obligation for its task, associations and endpoints. Checked admission and Program admission independently validate their own references and capabilities; Lean additionally requires exact equality with its own lowering. XML candidate declaration order is preserved separately from canonical unordered collection sorting.
+
+Start uses the existing `startProcess` stimulus with a canonical string/null binding collection. The required-input analysis below decides whether those bindings suffice. Unrelated canonical start bindings remain permitted and preserved. Ordinary User Task completion accepts an empty patch only; composed-task completion requires exactly its existing DataOutput-named binding. This per-task rule is necessary because profile-level string/null admission alone would otherwise let an ordinary task write arbitrary Process data. Wrong, extra, stale or malformed completion rejects with exact predecessor-state preservation.
+
+Accepted composed completion writes the associated Process Property before internal continuation. A following decision reads the resulting Process context; a following data task copies that context into its own occurrence-local input scope. Previous input scopes and task/Activity occurrences are disposed atomically by the inherited completion. Published task input, variable, lifecycle and occurrence facts remain engine-owned; the platform derives none from source or state differences.
+
+## Admission algorithm
+
+The [profile-parameterized admission contract](../PROFILE-PARAMETERIZED-ADMISSION-SPEC.md) remains structural validation plus a capability, not a growing disjunction of exact business-model predicates. Retain generic graph identity, arity, ownership, reachability, co-reachability and acyclicity checks. The new capability selects only the kinds above, one root/start/end/completion, and the following finite structural decision.
+
+For structure, operate on a private analysis graph retaining edge multiplicity. Repeatedly contract a task vertex with one incoming and one outgoing edge. Contract a divergent gateway and converging gateway as one region only when all three outgoing edges of the former lead directly to the latter, they are exactly the latter's three incoming edges, and their remaining external arities are one in and one out. Inner regions therefore contract before their enclosing pair. Each contraction removes vertices; choose a deterministic canonical-ID order for analysis, without assigning runtime scheduling meaning to it. Admission succeeds only when every task and gateway has been consumed and the sole residual edge connects the retained Start and End. Reject bypasses, crossing regions, disconnected material, duplicate ownership and leftover vertices. This derived analysis graph is never serialized or executed.
+
+For required data, use the admitted acyclic control graph without evaluating branch conditions. At entry the set of definitely written Process Properties is empty. A task preserves that set and a composed task adds its output target after completion. A split copies the set to every branch; a merge intersects the incoming sets. For each composed task, add its required input source to the start requirement if it is absent from the definitely written set before that task. Start must contain every resulting requirement; explicit null counts as present. This is deliberately conservative across syntactic branches: a condition that happens to be false does not remove an input obligation. No Process binding is deleted by an admitted completion. Both languages decide this analysis independently; they must not trust a compiler-supplied answer or a new cached wire field.
+
+For automatic closure, calculate the longest internal path from Process initiation and from every task-completion continuation, stopping after arming the next task or completing the root. Count initiation, each choice/merge, task arming, None End consumption and root completion as their actual existing internal steps. Take the maximum across all branches; refuse a definition whose bound exceeds `semanticProcessClosureLimit = 8`. Do not raise the runtime limit or discover predictable exhaustion during a started execution. A long sequence of tasks remains admissible because each accepted completion is a new resumption boundary. Nested empty decision regions can exceed the bound and must reject before execution.
+
+The nearest wrong data algorithm is union at a merge: a value written only on the approval branch is then incorrectly treated as available on the rejection branch. The nearest wrong control algorithm is treating an Exclusive Merge as a synchronizing join: the selected branch reaches it while unselected branches never produce tokens.
+
+## Semantic rules and separating examples
+
+| Rule | Proposition | Decisive discriminator |
+|---|---|---|
+| `SPC-SOURCE-01` | Admission depends on structure and resolved identities, not business IDs or declaration layout. | Rename every ID and optional name; reorder unordered declarations while retaining conditional-flow order. Acceptance and normalized behavior agree. |
+| `SPC-STRUCTURE-01` | Every admitted node belongs to serial composition or one completely paired Exclusive region. | Crossing branch edges, a bypass around a merge, disconnected task and duplicated edge reject; nested paired regions and empty branches admit when within closure bounds. |
+| `SPC-AVAILABLE-01` | An accepted start supplies every required input not definitely produced earlier on every structural path. | One branch alone writes the post-merge task's input: omitting its initial binding rejects; initializing it admits; all branches writing it removes that initial requirement. |
+| `SPC-ROUTE-01` | A completed task's associated output determines subsequent first-true/default routing. | Invoice review writes `Property_Decision` through a differently named DataOutput; distinct selected branch waits expose evaluating before the write or writing under the submitted name. |
+| `SPC-CONTINUE-01` | The selected branch alone passes the merge and resumes the common continuation. | Approval, rejection and default each reach the same archive task; unselected branches have no lifecycle facts or waits. |
+| `SPC-INPUT-01` | A later task receives the current associated Property value in its own local input scope. | A prior scope is gone, the next scope has a different occurrence owner and input ID, and null remains distinct from absence. |
+| `SPC-COMMAND-01` | Completion writes only the selected task's allowed output and refuses stale or additional data. | Ordinary completion with a nonempty patch and composed completion with a Property-named output both reject with exact state preservation. |
+| `SPC-CLOSURE-01` | Every accepted start/completion reaches the next explicit task wait or terminal completion within the existing internal bound. | Exact-bound and one-over definitions separate admission; long serial task chains remain accepted. |
+
+The retained business model will be invoice assessment: read a submitted invoice summary, write a decision, choose approval/rejection/manual-review work, merge, then archive the recorded decision. A second model uses serial data handoff without a gateway. Neither model supplies expected answers to an execution target. Independent test expectations name exact task/Activity owners, input bindings, Process writes, selected control places and terminal state, rather than only comparing the two evaluators.
+
+## Lean assurance lane
+
+Lane shape: proved
+
+Evidence: reuse the [composed data relation](../../BpmnSemantics/SemanticProcess/ActivityDataInputOutput.lean), [command admission](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean), and existing [execution assembly](../../BpmnSemantics/SemanticProcess/Execution.lean). New composition proofs must connect the structural/data admission decisions to actual reachable execution, not merely prove a private graph walk or an evaluator-equals-result premise. They are not implemented yet.
+
+The required quantified propositions are: admitted execution has one control unit at a time (one live token, one task wait, or the end/completion phase); accepted start requirements and inherited output-only writes preserve availability at every reached data task; each actual internal transition decreases the computed remaining burst rank; and every resulting stable Running state contains the exact externally completable task. Rejected commands preserve the complete state. Hypotheses include admitted Program/checked lowering, canonical start bindings, exact command acceptance and reachable predecessors; they must not assume availability, uniqueness, termination or the desired successor as hypotheses.
+
+Finite Lean fixtures cover independent lowering, all invoice routes, null handoff, alias/refusal cases, branch-intersection negatives and exact/one-over closure boundaries. They supplement the quantified account. There is no new transition family, so no new evaluator-backed relation constructor or blanket soundness theorem is selected. Existing relation soundness remains bounded by its existing hypotheses.
+
+Effort bound: one composition admission proof owner and separately bounded control, data-availability and closure proof owners, each subject to existing source and 3 GiB execution limits. Establish a separating theorem for each risk before expanding fixtures. If the proof requires a universal all-BPMN preservation programme, a new runtime representation or stronger assumed conclusions, stop and record the precise unresolved obligation for owner direction. Do not silently downgrade the lane or broaden the programme. Local performance tests remain deferred; required correctness validation retains the repository's memory/thread controls.
+
+## Temporal hosting and refinement preflight
+
+Durable ingress remains Process start and occurrence/content-bound User Task completion Updates. Durable waits are the existing passive ordinary or data-bearing task waits. There are no Timers, Signals, external effects, Temporal Activities, Child Workflows, modeled cancellation or new lifecycle mechanisms. The host persists immutable Program plus committed semantic state and publishes the existing E1/E2 facts; all dataflow and branch selection occur in the pure core.
+
+The state relation is equality with the committed pure-core state, including Process bindings, the current task and optional Activity-local input scope, activation counters, publication heads and command recovery. Every stable nonterminal admitted state has exactly one passive task; host capability is checked separately before Workflow start. New semantic-profile admission alone does not authorize the adapter to start it.
+
+FIFO accepted-Update order and the current content-bound recovery contract handle duplicate, reordered and changed-content submissions. A stale completion cannot target a later task or write the earlier output again. Continue-As-New carries the complete current state at a stable boundary and respects the existing accepted-handler fence. Worker replacement and replay must reproduce the same selected branch and copied input. Host termination/failure produces no fabricated BPMN output, cleanup or completion.
+
+The smallest later live witness starts invoice review, forces rollover with its input-bearing task open, replaces the Worker, completes with a distinct DataOutput name, observes only the selected branch, passes its merge, observes the archive task's copied decision, completes and recovers the same command result, then replays every Run. A wrong-name submission precedes the accepted completion. A host-bypass mutation substitutes an unselected branch and must fail a public task/publication assertion. This preflight establishes feasibility requirements only; live qualification remains open during the semantics-only period.
+
+## Evidence and compatibility boundaries
+
+| Lane | Required evidence and explicit limit |
+|---|---|
+| BPMN | Named clauses, machine-readable ownership/reference facts, schema-valid whole models and explicit admission restrictions; no conformance claim |
+| Source | Object-identity association resolution, arbitrary-ID tests, declaration-order discriminator and full checked-to-Program binding; Lean does not parse XML |
+| Lean | Quantified composition laws plus separately bounded fixtures; no universal runtime preservation claim |
+| TypeScript | Independently authored admission/dataflow decisions and exact pre/post-state assertions for every rule and nearest counterexample |
+| Differential | Answer-free schedules through independently realized Lean/core semantics; seeded wrong-write, early-choice, union-at-merge and synchronizing-merge mutations must disagree |
+| CIB Seven | Existing lifecycle/order calibration only; no new data-association, composition or Simple Boolean compatibility claim |
+| Temporal | Preflight now; production rollover/replacement/recovery/replay and bypass witness later, before registration/closure |
+| Corpus/product | On public support registration, retain whole models, exact pipeline bindings, capability/restriction rows, generated map and About disclosure atomically; no new UI journey in this capsule |
+
+The [relationship register](../CIB-BPMN-RELATION-REGISTER.md) bounds inherited `CIB-AGR-0001`, `CIB-AGR-0002`, `CIB-OP-0001`, `CIB-AGR-0006` and `CIB-INT-0001`. Its gateway calibration is explicitly from CIB Seven 2.0.0 and must not be relabeled 2.2.0. Standards data mediation and Simple Boolean truth are not CIB-executed evidence. Pinned CIB Seven 2.2.0 breadth supports prioritization, not an unrun compatibility claim. No new relationship or CIB extension is selected merely to complete this standard mechanism.
+
+Common-mode risks are a shared XML-to-checked error, branch-order loss before either evaluator, dataflow analysis shared with its expected answer, and a graph-only proof disconnected from actual transitions. Independent exact-source expectations, order/identity permutations, branch-specific negative models and the actual-execution proof bridge address these separately. The nearest unsupported behavior is a path that waits for an initially unavailable Property to be supplied by later external ingress.
+
+## Versioning consequences
+
+The [contract evolution policy](../../contracts/README.md#evolution-policy) and [pre-release evolution policy](../PROJECT-DESIGN.md#pre-release-evolution-policy) apply. This is an additive profile over unchanged wire variants; existing profiles are not silently widened. No compatibility reader or durable-history version switch is introduced. Private checkpoint enrollment is removed atomically when the public profile and its evidence register.
+
+| Boundary | Owners and required disposition |
+|---|---|
+| Source | [Compiler](../../packages/bpmn-source/src/checked-process-compiler.ts), [dispatch](../../packages/bpmn-source/src/compilation-dispatch.ts), [composed data reader](../../packages/bpmn-source/src/activity-data-input-output-source.ts), [checked admission](../../packages/bpmn-source/src/checked-process-admission.ts), and [source package guide](../../packages/bpmn-source/README.md): add reusable structural/data projection for the new capability; preserve old admitted source/result contracts and every foreign-attribute/unsupported-content rejection. |
+| Capability and data domain | [Profile selection](../../packages/semantic-core/src/semantic-process-profile.ts), [catalog](../../packages/semantic-core/src/semantic-profile-catalog.ts), [value domains](../../packages/semantic-core/src/semantic-profile-value-domain.ts), [graph policy](../../packages/semantic-core/src/semantic-process-graph-policy.ts), and [core source map](../../packages/semantic-core/SOURCE-MAP.md): classify the private capability, existing kinds, acyclic graph policy and per-surface data rules. |
+| Independent Lean admission | [Checked admission](../../BpmnSemantics/SemanticProcess/CheckedProcessAdmission.lean), [Program validation](../../BpmnSemantics/SemanticProcess/ProgramStructuralValidation.lean), and [command admission](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean): independently decide structure, required initial data, bound and per-task completion; keep dedicated analysis/proof owners outside shared dispatchers. |
+| Runtime | [Core command admission](../../packages/semantic-core/src/semantic-command-admission.ts), inherited data/control operations and Lean execution: add only profile-specific command admission and the necessary reusable admission decisions. Any required change to inherited transition meaning reopens this proposal. |
+| Host | [Host admission](../../packages/temporal-adapter/protocol/src/host-admission.ts): refuse the private capability until the separately reviewed hosting/registration lane. No Workflow behavior is implemented during the semantic checkpoint. |
+| Guards | [Schema coverage](../../scripts/contract-schema-coverage.test.ts), [definition artifacts](../../scripts/contract-definition-artifacts.test.ts), [operation consumer census](../../scripts/semantic-operation-consumer-census.test.ts), [internal census](../../scripts/internal-commutation-census.test.ts), [source hygiene](../../scripts/source-hygiene.test.ts), [Lean source contracts](../../scripts/lean-source-contracts.test.ts), [requirement consistency](../../scripts/requirement-ledger-consistency.test.ts), [corpus policy](../../scripts/bpmn-corpus-policy.test.ts), [test selection](../../scripts/test-selection-coverage.test.ts), [reviewability](../../scripts/document-reviewability.test.ts) and [independent review](../../scripts/independent-review-policy.test.ts): retain closed unions, truthful profile/evidence inventories and all existing refusal contracts; no blanket assertion relaxation. |
+
+### Owners this implementation grows
+
+| Owner | Headroom | Constraint |
+|---|---:|---|
+| [Checked compiler](../../packages/bpmn-source/src/checked-process-compiler.ts) | 394 | Delegate data projection; retain one structural compiler. |
+| [Compilation dispatch](../../packages/bpmn-source/src/compilation-dispatch.ts) | 434 | Add the private profile route only. |
+| [Composed data source](../../packages/bpmn-source/src/activity-data-input-output-source.ts) | 334 | Extract reusable association projection while preserving predecessor admission. |
+| [Checked admission](../../packages/bpmn-source/src/checked-process-admission.ts) | 107 | Delegate the new profile analysis. |
+| [Profile selection](../../packages/semantic-core/src/semantic-process-profile.ts) | 534 | Select the structural capability without fixture IDs. |
+| [Core command admission](../../packages/semantic-core/src/semantic-command-admission.ts) | 303 | Delegate start requirements and per-task completion payload checks. |
+| [Value domains](../../packages/semantic-core/src/semantic-profile-value-domain.ts) | 526 | Classify string/null start and completion surfaces. |
+| [Lean checked admission](../../BpmnSemantics/SemanticProcess/CheckedProcessAdmission.lean) | 356 | Independently select the checked analysis. |
+| [Lean Program validation](../../BpmnSemantics/SemanticProcess/ProgramStructuralValidation.lean) | 22 | Delegate; do not put the analysis in this nearly full owner. |
+| [Lean command admission](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean) | 77 | Delegate start and completion decisions. |
+
+These are measured nonblank lines before the existing 800-line review target. If planned growth exceeds available headroom, first extract a cohesive existing responsibility without changing its contract. The guard remeasures these figures; rerun `what-binds` when target paths change. New analysis and proof mechanisms belong in focused owners, with their source-map and library reachability obligations.
+
+No operation variant, RuntimeState collection or public observation field is added, so exhaustive operation/collection readers and generated wire schemas should remain byte-identical. A new profile may require closed profile readers and capability registries to change; compiler success alone cannot prove those inventories complete. Public profile/corpus/product obligations remain a later atomic lane, never a reason to advertise the private checkpoint.
+
+## Review and closure obligations
+
+Independent proposal approval precedes production Lean/core work. The first green semantic admission/runtime checkpoint receives its own cold review before artifact, host or public-registration work. Closure requires exact rule-to-evidence reconciliation, all selected gates, the deferred hosting witness, truthful support/absence maps and independent closure approval. The [testing specification](../TESTING-SPEC.md#independent-cold-review-gate) owns those stages; this document does not create an exception for the semantics-only period.
+
+Record reproducible baseline-to-closure nonblank code/documentation churn in the [cost ledger](../CAPSULE-COST-LEDGER.md), comparing the existing composed-data and cyclic-control-flow increments. Authoring elapsed time is unknown unless measured. Reassess after each committed increment: reuse the already proved operations, keep analysis out of shared dispatchers, and remove temporary checkpoint enrollment at registration. Do not reopen the superseded universal checked-source proof programme.
+
+## Independent cold-review receipt
+
+| Stage | Review target | Isolation | Verdict | Correction audit |
+|---|---|---|---|---|
+| Proposal | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
+| Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
