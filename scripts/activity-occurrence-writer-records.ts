@@ -181,7 +181,7 @@ export const writerRecords = new Map<string, WriterRecord>([
       markers: ["theorem completeDataInputUserTask_activity_identity_discipline"],
     },
   }],
-  ["BpmnSemantics/SemanticProcess/ActivityDataInputOutput.lean#activateDataInputOutputUserTask?@1", {
+  ["BpmnSemantics/SemanticProcess/ActivityDataInputOutputRuntime.lean#activateDataInputOutputUserTask?@1", {
     classification: WriterClassification.Issuer,
     claimPreservation: ClaimPreservation.DisjointInsertion,
     evidence: {
@@ -241,7 +241,7 @@ export const writerRecords = new Map<string, WriterRecord>([
       markers: ["theorem prepared_data_activity_patch_preserves_claims"],
     },
   }],
-  ["BpmnSemantics/SemanticProcess/ActivityDataInputOutput.lean#completeDataInputOutputUserTask?@1", {
+  ["BpmnSemantics/SemanticProcess/ActivityDataInputOutputRuntime.lean#completeDataInputOutputUserTask?@1", {
     classification: WriterClassification.IdentityRemoving,
     claimPreservation: ClaimPreservation.Removal,
     evidence: {

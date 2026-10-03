@@ -2,7 +2,7 @@
 
 ## Status
 
-Lifecycle: owner-approved
+Lifecycle: implementation-in-progress
 Review: approved
 
 ## Question and boundary
@@ -137,7 +137,8 @@ Source discriminators include independent global renaming and omitted/changed na
 | [Call runtime](../../packages/semantic-core/src/semantic-process-call-runtime.ts) | 378 | Extend actual invoke/return and exact cleanup, including prepared patches. |
 | [Lean data](../../BpmnSemantics/SemanticProcess/Data.lean) | 509 | Preserve existing Property/local meanings while adding a distinct Process-interface owner. |
 | [Lean Call](../../BpmnSemantics/SemanticProcess/CallActivity.lean) | 210 | Separate interface laws before growth would exceed the target. |
-| [Lean composed task](../../BpmnSemantics/SemanticProcess/ActivityDataInputOutput.lean) | 43 | Extract cohesive existing proof obligations first if the endpoint/identity extension cannot fit; do not raise its cap. |
+| [Lean composed laws](../../BpmnSemantics/SemanticProcess/ActivityDataInputOutput.lean) | 208 | Keep existing propositions while extending endpoints and identity; do not raise its cap. |
+| [Lean composed runtime](../../BpmnSemantics/SemanticProcess/ActivityDataInputOutputRuntime.lean) | 624 | Own the existing atomic evaluators and exact task/interface joins. |
 | [Task detail](../../packages/temporal-adapter/protocol/src/user-task-detail.ts) | 710 | Resolve requested variables by semantic ownership. |
 
 ### Atomic consumers and guards
@@ -157,6 +158,10 @@ No CIB data relationship is selected. The pinned parser's `parseInputParameter` 
 Before public support, register the supplier whole model, exact profile/scenarios/pipeline binding, capability/restriction row, generated corpus map and About disclosure atomically after hosted evidence passes. Reconcile the requirement disposition and every affected implementation map. The mandatory semantic checkpoint precedes downstream hosting/registration; closure remains a separate independent review. Keep the established claim (bounded interface transfer) separate from the nearest unsupported claim (general per-instance variables and repeated calls).
 
 At closure, record commit-bounded code/document churn in the [cost ledger](../CAPSULE-COST-LEDGER.md), compared with the [composed Activity data capsule](ACTIVITY-DATA-INPUT-OUTPUT-MEDIATION-SPEC.md) and the original Call boundary. Cost does not justify weakening isolation, retained predecessor propositions or exact evidence. Local performance tests remain skipped under external CPU load; mandatory correctness and memory-bound proof checks remain applicable.
+
+## Current implementation boundary
+
+The existing composed Activity evaluators now live in [their runtime owner](../../BpmnSemantics/SemanticProcess/ActivityDataInputOutputRuntime.lean), while their relations and proofs remain in [the original law owner](../../BpmnSemantics/SemanticProcess/ActivityDataInputOutput.lean). The extraction preserves evaluator bodies and theorem propositions; it establishes no Call data behavior. Typed endpoints, Process interfaces and the new transfer laws remain unimplemented.
 
 ## Independent cold-review receipt
 
