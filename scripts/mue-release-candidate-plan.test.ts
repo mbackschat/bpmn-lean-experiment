@@ -67,8 +67,8 @@ test("keeps the current semantic checkpoint ahead of practical coverage planning
     `\`${active.id}\` · **queued**`,
   )), /semantic work/u);
   assert.throws(() => assertSemanticsWindow(plan.replace(
-    "`CIB7-PRACTICAL-COVERAGE` · **queued**",
-    "`MUE-ACCEPTANCE` · **queued**",
+    "`CIB7-PRACTICAL-COVERAGE` ·",
+    "`MUE-ACCEPTANCE` ·",
   )), /MUE acceptance/u);
   assert.throws(() => assertSemanticsWindow(plan.replaceAll(
     "CALL-ACTIVITY-DATA-BOUNDARIES", "UNSELECTED-CAPABILITY",
@@ -141,7 +141,7 @@ test("practical coverage retains both subprocess forms without forcing their pri
 
 test("rejects unfinished content, premature later work and a broader hidden denominator", async () => {
   const plan = await readFile(path.join(projectRoot, "docs/PLAN.md"), "utf8");
-  const prematureLaterWork = plan.replace("`CIB7-PRACTICAL-COVERAGE` · **queued**", "`MUE-ACCEPTANCE` · **queued**");
+  const prematureLaterWork = plan.replace("`CIB7-PRACTICAL-COVERAGE` ·", "`MUE-ACCEPTANCE` ·");
   const rcMarker = "### MUE Release Candidate critical path\n";
   const rcStart = plan.indexOf(rcMarker);
   assert.notEqual(rcStart, -1);
