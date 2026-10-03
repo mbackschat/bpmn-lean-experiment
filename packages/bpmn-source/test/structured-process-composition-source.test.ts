@@ -4,13 +4,13 @@ import {
   STRUCTURED_PROCESS_COMPOSITION_CHECKPOINT_PROFILE_ID,
   SimpleBooleanExpressionLanguage,
   CommandOutcome, StimulusKind, VariableValueKind, applyStimulus, initialState,
-  structuredCompositionCheckedGraph,
+  structuredCompositionCheckedGraph, isWellFormedSemanticProcessProgram, SemanticOperationKind,
 } from "@bpmn-lean/semantic-core";
-import type { VariableBinding } from "@bpmn-lean/semantic-core";
+import type { VariableBinding, CheckedProcess, SemanticProcessProgram } from "@bpmn-lean/semantic-core";
 import {
   BpmnCompilationStatus,
   CheckedNodeKind,
-  compileBpmnToSemanticProcess,
+  compileBpmnToSemanticProcess, lowerCheckedProcess,
 } from "@bpmn-lean/bpmn-source";
 
 function dataTask(id: string, input: string, output: string): string {
@@ -62,6 +62,41 @@ test("compiles serial scalar handoff with shared Process Property ownership", as
       directInput: { associationId: "assess_read", sourcePropertyId: "summary", targetDataInputId: "assess_in", targetDataInputName: null },
       directOutput: { associationId: "assess_write", sourceDataOutputId: "assess_out", sourceDataOutputName: null, targetPropertyId: "decision" } },
   ]);
+});
+
+test("checked and standalone Program admission preserve global data identity with shared Properties", async () => {
+  const result = await compile(serial);
+  assert.equal(result.status, BpmnCompilationStatus.Accepted);
+  if (result.status !== BpmnCompilationStatus.Accepted) return;
+  const admitted = (checked: CheckedProcess) => structuredCompositionCheckedGraph(
+    { ...checked, flows: checked.sequenceFlows });
+  assert.equal(admitted(result.checkedProcess), true);
+  assert.equal(isWellFormedSemanticProcessProgram(result.semanticProcess), true);
+  const mutations = [
+    ["directInput", "targetDataInputId", "assess_in"],
+    ["directOutput", "sourceDataOutputId", "assess_out"],
+    ["directInput", "associationId", "assess_read"],
+    ["directOutput", "associationId", "assess_write"],
+    ["directInput", "associationId", "assess"],
+    ["directInput", "sourcePropertyId", "assess"],
+    ["directInput", "targetDataInputId", "summary"],
+    ["directOutput", "targetPropertyId", "assess_in"],
+    ["directInput", "associationId", "first"],
+    ["directInput", "sourcePropertyId", "first"],
+    ["directOutput", "sourceDataOutputId", "Invoice"],
+    ["directOutput", "targetPropertyId", "Invoice"],
+  ] as const;
+  for (const [side, field, alias] of mutations) {
+    const label = `${side}.${field} aliases ${alias}`;
+    const checked: CheckedProcess = { ...result.checkedProcess, nodes: result.checkedProcess.nodes.map((node) =>
+      node.kind === CheckedNodeKind.DataInputOutputUserTask && node.id === "archive"
+        ? { ...node, [side]: { ...node[side], [field]: alias } } : node) };
+    const program: SemanticProcessProgram = { ...result.semanticProcess, operations: result.semanticProcess.operations.map((operation) =>
+      operation.kind === SemanticOperationKind.AwaitDataInputOutputUserTask && operation.task.elementId === "archive"
+        ? { ...operation, [side]: { ...operation[side], [field]: alias } } : operation) };
+    assert.deepEqual(lowerCheckedProcess(checked), program, label);
+    assert.deepEqual([admitted(checked), isWellFormedSemanticProcessProgram(program)], [false, false], label);
+  }
 });
 
 test("compiles ordinary serial tasks under the same explicit expression language", async () => {

@@ -207,9 +207,36 @@ def checkedVertex? (source : CheckedProcess) (node : CheckedNode) : Option Verte
   | .exclusiveMerge _ => return { id, kind := .merge, outputs }
   | _ => none
 
+/-- SPC-SOURCE-01 preserves unique declarations while allowing repeated root Property references. -/
+def dataIdentitiesValid (declarations : List String)
+    (interfaces : List (DirectActivityDataInput × DirectActivityDataOutput)) : Bool :=
+  let owned := declarations ++ interfaces.flatMap fun (input, output) =>
+    [input.associationId, input.targetDataInputId, output.associationId, output.sourceDataOutputId]
+  owned.eraseDups.length == owned.length && interfaces.all fun (input, output) =>
+    !owned.contains input.sourcePropertyId && !owned.contains output.targetPropertyId
+
+def checkedIdentitiesValid (source : CheckedProcess) : Bool :=
+  dataIdentitiesValid
+    (source.processId.value :: (source.nodes.map (·.id.value)) ++ (source.sequenceFlows.map (·.id.value)))
+    (source.nodes.filterMap fun node => match node with
+      | .dataInputOutputUserTask _ _ input output => some (input, output)
+      | _ => none)
+
+def programIdentitiesValid (program : Program) : Bool :=
+  dataIdentitiesValid
+    (program.processId.value :: (program.operations.filterMap fun operation => match operation with
+      | .completeScope .. => none
+      | .initiate _ origin _ | .reachNoneEnd _ origin _ | .awaitUserTask _ origin ..
+      | .awaitDataInputOutputUserTask _ origin .. | .choose _ origin ..
+      | .mergeExclusive _ origin .. => some origin.elementId.value
+      | _ => none) ++ (program.controlPlaces.map (·.origin.elementId.value)))
+    (program.operations.filterMap fun operation => match operation with
+      | .awaitDataInputOutputUserTask _ _ _ _ _ _ input output => some (input, output)
+      | _ => none)
+
 def checkedAnalysis (source : CheckedProcess) : Option Analysis := do
   if !(source.definitionScopes.length == 1 && source.compensation.isNone &&
-      source.transactionCancellation.isNone) then none
+      source.transactionCancellation.isNone && checkedIdentitiesValid source) then none
   else analyze (← source.nodes.mapM (checkedVertex? source))
 
 def isScopeCompletion : SemanticOperation → Bool
@@ -222,6 +249,7 @@ def programAnalysis (program : Program) : Option Analysis := do
       program.compensationActivityRetention.isNone &&
       program.compensationEventSubProcessSnapshots.isNone &&
       program.compensationExecution.isNone) then none
+  else if !programIdentitiesValid program then none
   else do
     let completions := program.operations.filter isScopeCompletion
     let completion ← unique? completions

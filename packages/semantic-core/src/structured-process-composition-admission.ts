@@ -58,10 +58,24 @@ export function structuredCompositionCheckedShape(nodes: readonly CheckedNode[],
     });
 }
 
+/** SPC-SOURCE-01 permits shared root Properties, but local data elements have one declaration owner. */
+function dataIdentitiesValid(declarations: readonly string[], tasks: readonly Readonly<{
+  directInput: { associationId: string; sourcePropertyId: string; targetDataInputId: string };
+  directOutput: { associationId: string; sourceDataOutputId: string; targetPropertyId: string };
+}>[]): boolean {
+  const owned = [...declarations, ...tasks.flatMap(({ directInput: input, directOutput: output }) =>
+    [input.associationId, input.targetDataInputId, output.associationId, output.sourceDataOutputId])];
+  const identities = new Set(owned);
+  return identities.size === owned.length && tasks.every(({ directInput: input, directOutput: output }) =>
+    !identities.has(input.sourcePropertyId) && !identities.has(output.targetPropertyId));
+}
+
 export function structuredCompositionCheckedGraph(graph: Readonly<{
-  nodes: readonly CheckedNode[]; flows: readonly CheckedSequenceFlow[];
+  processId: string; nodes: readonly CheckedNode[]; flows: readonly CheckedSequenceFlow[];
 }> & Pick<CheckedProcess, "compensation" | "transactionCancellation">): boolean {
-  if (graph.compensation !== undefined || graph.transactionCancellation !== undefined) return false;
+  if (graph.compensation !== undefined || graph.transactionCancellation !== undefined ||
+      !dataIdentitiesValid([graph.processId, ...graph.nodes.map(({ id }) => id), ...graph.flows.map(({ id }) => id)],
+        graph.nodes.filter((node) => node.kind === CheckedNodeKind.DataInputOutputUserTask))) return false;
   const vertices: Vertex[] = [];
   if (new Set(graph.flows.map(({ id }) => id)).size !== graph.flows.length) return false;
   for (const node of graph.nodes) {
@@ -97,7 +111,11 @@ function programVertices(program: SemanticProcessProgram): readonly Vertex[] | u
   if (!structuredCompositionProgramShape(program.operations, program.definitionScopes.length) ||
       program.internalSchedulingMode !== InternalSchedulingMode.RejectObservableChoice ||
       program.compensationActivityRetention !== undefined || program.compensationEventSubProcessSnapshots !== undefined ||
-      program.compensationExecution !== undefined) return undefined;
+      program.compensationExecution !== undefined ||
+      !dataIdentitiesValid([program.processId,
+        ...program.operations.filter((operation) => operation.kind !== SemanticOperationKind.CompleteScope)
+          .map(({ origin }) => origin.elementId), ...program.controlPlaces.map(({ origin }) => origin.elementId)],
+        program.operations.filter((operation) => operation.kind === SemanticOperationKind.AwaitDataInputOutputUserTask))) return undefined;
   const consumers = new Map<string, string[]>();
   for (const operation of program.operations) {
     const inputs = operation.kind === SemanticOperationKind.MergeExclusive ? operation.inputs :

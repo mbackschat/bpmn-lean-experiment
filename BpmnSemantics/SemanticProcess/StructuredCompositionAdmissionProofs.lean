@@ -385,7 +385,9 @@ theorem program_analysis_projection
   unfold programAnalysis at analyzed
   split at analyzed
   · contradiction
-  · simp only [bind, Option.bind_eq_some_iff] at analyzed
+  · split at analyzed
+    · contradiction
+    simp only [bind, Option.bind_eq_some_iff] at analyzed
     obtain ⟨completion, selected, analyzed⟩ := analyzed
     cases completion <;> try simp only at analyzed
     all_goals try contradiction

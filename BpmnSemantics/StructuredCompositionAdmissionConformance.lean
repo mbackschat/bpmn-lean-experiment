@@ -27,6 +27,49 @@ theorem serial_start_requires_only_invoice : (StructuredComposition.programAnaly
 theorem serial_automatic_burst_is_two : (StructuredComposition.programAnalysis serialProgram).map (·.maximumBurst) =
     some 2 := by decide +kernel
 
+private def aliasInput (input : DirectActivityDataInput) (variant : Nat) : DirectActivityDataInput :=
+  match variant with
+  | 0 => { input with targetDataInputId := "AssessInput" }
+  | 2 => { input with associationId := "Assess" }
+  | 3 => { input with sourcePropertyId := "Assess" }
+  | 4 => { input with associationId := "a" }
+  | 5 => { input with sourcePropertyId := "InvoiceProcess" }
+  | _ => input
+
+private def aliasOutput (output : DirectActivityDataOutput) (variant : Nat) : DirectActivityDataOutput :=
+  if variant == 1 then { output with sourceDataOutputId := "AssessOutput" } else output
+
+private def aliasedChecked (variant : Nat) : CheckedProcess :=
+  { serialChecked with nodes := serialChecked.nodes.map fun node =>
+      match node with
+      | .dataInputOutputUserTask id name input output =>
+          if id.value == "Archive" then
+            .dataInputOutputUserTask id name (aliasInput input variant) (aliasOutput output variant)
+          else node
+      | _ => node }
+
+private def aliasedProgram (variant : Nat) : Program :=
+  { serialProgram with operations := serialProgram.operations.map fun operation =>
+      match operation with
+      | .awaitDataInputOutputUserTask id origin input output task name directInput directOutput =>
+          if task.value == "Archive" then
+            .awaitDataInputOutputUserTask id origin input output task name
+              (aliasInput directInput variant) (aliasOutput directOutput variant)
+          else operation
+      | _ => operation }
+
+theorem cross_task_aliases_retain_exact_lowering :
+    ([0, 1, 2, 3, 4, 5].all fun variant =>
+      lowerCheckedProcess (aliasedChecked variant) == aliasedProgram variant) = true := by decide +kernel
+
+theorem checked_cross_task_and_cross_role_aliases_rejected :
+    ([0, 1, 2, 3, 4, 5].map fun variant => checkedWellFormed (aliasedChecked variant)) =
+      [false, false, false, false, false, false] := by decide +kernel
+
+theorem program_cross_task_and_cross_role_aliases_rejected :
+    ([0, 1, 2, 3, 4, 5].map fun variant => programProfileCapabilitiesValid (aliasedProgram variant)) =
+      [false, false, false, false, false, false] := by decide +kernel
+
 private def branched (allWrite : Bool) : List StructuredComposition.Vertex :=
   [ { id := "start", kind := .start, outputs := ["choice"] }
   , { id := "choice", kind := .choice, outputs := ["approve", "reject", "manual"] }
