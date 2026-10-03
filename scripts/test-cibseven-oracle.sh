@@ -17,6 +17,7 @@ juel_gateway_order_probe_path="$runner_dir/src/test/resources/org/bpmnlean/cibse
 receive_task_probe_path="$project_root/scenarios/message-addressed-receive-task/process.bpmn"
 sequential_multi_instance_probe_path="$runner_dir/src/test/resources/org/bpmnlean/cibseven/CibSevenSequentialMultiInstancePhaseZeroProbeTest.bpmn"
 message_correlation_probe_path="$runner_dir/src/test/resources/org/bpmnlean/cibseven/CibSevenMessageCorrelationPhaseZeroProbeTest.bpmn"
+business_effect_data_probe_path="$runner_dir/src/test/resources/org/bpmnlean/cibseven/business-effect-data.bpmn"
 
 test -f "$maven_settings"
 "$project_root/scripts/check-external-sources.sh" verify
@@ -33,6 +34,7 @@ test -f "$maven_settings"
   "$juel_gateway_order_probe_path" \
   "$receive_task_probe_path" \
   "$sequential_multi_instance_probe_path" \
-  "$message_correlation_probe_path"
+  "$message_correlation_probe_path" \
+  "$business_effect_data_probe_path"
 
 exec node "$project_root/scripts/run-cibseven-tests.ts"

@@ -398,6 +398,8 @@ The scoped-data replacement adds class guards in both pure implementations: acti
 
 ## Current CIB gate
 
+The [business effect data experiment](experiments/BUSINESS-EFFECT-DATA-EXPERIMENT.md) adds a schema-validated, exact-order input-mapping probe to the CIB `2.2.0` suite. It remains phase-zero research rather than a registered compatibility profile.
+
 ```sh
 ./scripts/test-cibseven-oracle.sh
 ```
