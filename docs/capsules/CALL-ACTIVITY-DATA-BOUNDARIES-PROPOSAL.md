@@ -222,14 +222,16 @@ The complete infrastructure gate exposed a writer-census false positive: the exh
 
 Checkpoint reflection: reuse of typed Activity endpoints and existing Call control preserved the selected account without consuming more than the four approved proof owners. The broad integration cost came from a shared runtime-storage migration and predecessor proofs that expanded admission branches; explicit profile exclusions preserved those propositions. The obsolete temporary full-build timeout added no evidence and is corrected to the documented allowance. Future proof maintenance should prefer existing admission-shape lemmas where they cover the required fact; this checkpoint opens no further proof programme.
 
-The complete infrastructure gate passes all 624 tests plus harness types (`/tmp/call-data-checkpoint-infrastructure-qualified`, separately asserted). Independent review of `378665ed` requires reconciliation of the current IL contract; the correction audit remains pending. Hosting, public registration and cold aggregate resource acceptance remain open.
+The complete infrastructure gate passes all 624 tests plus harness types (`/tmp/call-data-checkpoint-infrastructure-qualified`, separately asserted). Independent review of `378665ed` and the approved correction audit of `a0faec2c` establish the private semantic checkpoint. Hosting and public registration remain open. Cold aggregate resource acceptance remains open and its investigation is owner-deferred while the development machine is heavily loaded; semantics work continues under the existing execution bounds.
 
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
 | Proposal | `b1d41150` | `fork-turns-none` | `approve` | `not-required` |
-| Semantic checkpoint | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
+| Semantic checkpoint | `378665ed` | `fork-turns-none` | `approve-with-required-edits` | `a0faec2c` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
 The independent proposal review approved `b1d41150` on 2026-10-03 with no findings. Packet digest: `1b4ca92f6681998ba866e6e16f3e479021e96e5cdbfb68acac10cce653b2ffaf`. The reviewer checked the normative interpretation, singleton correspondence, actual scheduler and task-detail consumers, migration obligations and bounded proof effort. Its nine focused documentation/review files passed 100 tests, and `doctor.sh verify` passed; receipts `/tmp/call-data-proposal-review-docs` and `/tmp/call-data-proposal-review-doctor` were separately asserted. Approval authorizes implementation only; scheduled preservation, live hosting and public support remain unestablished.
+
+The independent checkpoint review required reconciliation of the IL contract and identified a stale conformance-module comment. The same reviewer approved correction `a0faec2c` on 2026-10-03, closing both findings without a new material discrepancy. The correction changes no evaluator or theorem body; original runtime evidence remains applicable. Its packet digest is `6bc652677677f371b654b0987801fb0e5c720ab327f7cc1e1ae304ec7d667fd6`. Independent documentation/schema checks passed 29 tests and the targeted contract/body/digest probe passed; receipts `/tmp/call-data-correction-independent-docs` and `/tmp/call-data-correction-independent-contract` were separately asserted. This approves the private checkpoint only; live hosting, public registration and cold aggregate resource acceptance remain open.
