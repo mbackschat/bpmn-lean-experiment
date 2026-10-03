@@ -2,8 +2,8 @@
 
 ## Status
 
-Lifecycle: owner-approved
-Review: approved
+Lifecycle: draft
+Review: pending
 
 ## Question and boundary
 
@@ -97,7 +97,7 @@ Lane shape: proved
 
 Evidence: reuse [regional cancellation](../../BpmnSemantics/SemanticProcess/ScopeCancellation.lean), [scope completion](../../BpmnSemantics/SemanticProcess/ScopeCompletion.lean) and existing [execution assembly](../../BpmnSemantics/SemanticProcess/Execution.lean). New declarative relations and evaluator-soundness bridges must cover parent registration, Message interruption and no-continuation handler completion.
 
-Quantified laws establish exact listener issuance and binding, no handler before triggering, atomic all-region withdrawal with outside/context/counter frames, exact fresh handler creation, stale-identity refusal under explicit uniqueness, passive-listener expiry and token-free child disposal. Conclusions cannot be premises disguised as successful successor construction. Existing generic predicates and predecessor theorem propositions retain their meanings, except for the narrowly scoped helper-domain correction in the [child-entry assurance amendment](#child-entry-assurance-amendment). Extend field frames where the new collection requires them.
+Quantified laws establish exact listener issuance and binding, no handler before triggering, atomic all-region withdrawal with outside/context/counter frames, exact fresh handler creation, stale-identity refusal under explicit uniqueness, passive-listener expiry and token-free child disposal. Conclusions cannot be premises disguised as successful successor construction. Existing generic predicates and predecessor theorem propositions retain their meanings, except for the scoped domain corrections in the [child-entry amendment](#child-entry-assurance-amendment) and [foreign-runtime amendment](#foreign-runtime-assurance-amendment). Extend field frames where the new collection requires them.
 
 Bound the effort to three cohesive new law owners of at most 800 nonblank lines each: registration/binding, interruption/framing, and completion/refusal. One additional conformance owner, also at most 800, checks independently stated source/Program discrimination, complete scheduled traces, every reached validity prefix and E1/E2 expectations. Runtime helpers remain separate from proofs. This proves the named local laws and checks the bounded composed executions; it claims no universal reachable-state preservation, arbitrary-graph progress, fairness or cross-language equivalence theorem. Reassess before exceeding the bound or changing the lane. Lean remains serialized at one CPU and 3 GiB without extra swap; the deferred cold aggregate investigation is not reopened by this proposal.
 
@@ -117,13 +117,25 @@ Preserve the complete theorem propositions of all three current consumers:
 - `created_bindings` in the same [scope-creation owner](../../BpmnSemantics/SemanticProcess/ScopeCreationLifecycleStructuralValidity.lean).
 - `prepared_bounded_scope_preserves_structural_program_validity` in [bounded-scope projection](../../BpmnSemantics/SemanticProcess/InternalBoundedScopeProjection.lean).
 
-Each consumer must derive the entry witness from its existing operation membership and definition binding. No caller may assume the census conclusion, successor validity or a new profile exclusion. The helper is the sole authorized predecessor proposition change; no new law module, wider assurance lane, BPMN capability, representation or hosting claim is selected.
+Each consumer must derive the entry witness from its existing operation membership and definition binding. No caller may assume the census conclusion, successor validity or a new profile exclusion. This amendment authorizes only the helper proposition change; no new law module, wider assurance lane, BPMN capability, representation or hosting claim is selected.
 
 #### Acceptance and exclusions
 
 The existing single conformance owner must check both complete admission of the application-withdrawal Program and its nested handler's zero ordinary entries while Compensation snapshots are absent. These facts separate the amended domain from the old implication. Compile the corrected helper and all three consumers, retaining their proposition text, then include them in the affected semantic-checkpoint gate. Keep the three-law-owner and one-conformance-owner bounds, one Lean process tree, one CPU and 3 GiB without extra swap.
 
 Reject a fabricated handler entry, rejection of the approved Message profile, an assumed exact-one result, weakening of the three consumer propositions, or suppressing any validity check. The independent review evaluates this amendment against the complete capsule; the subsequent semantic checkpoint must verify the implementation and separating witnesses. Cold aggregate resource acceptance and live hosting remain deferred.
+
+### Foreign-runtime assurance amendment
+
+The Message account at `3404ddb0` and child-entry amendment at `45a9eb4c` retain their recorded approvals. This additional amendment requires independent proposal approval before changing the structured-composition frame. The isolated kernel witness at `/tmp/imes-domain-probe-corrected` establishes that the existing `ForeignRuntimeEmpty` and `TaskLifetimeShape` admit an ordinary task state carrying a foreign Message listener, while actual command admission rejects every completion. Its Program is well formed, has a successful composition analysis and satisfies the helper's remaining ownership and nonempty-wait premises.
+
+Extend the family-specific [`ForeignRuntimeEmpty`](../../BpmnSemantics/SemanticProcess/StructuredCompositionLifecycleProofs.lean) with `state.eventSubProcessMessageSubscriptions = []`. This explicitly strengthens the expanded predicate used by `LifecycleFrame` and the arbitrary-state helper [`exact_task_lifetime_has_admitted_completion`](../../BpmnSemantics/SemanticProcess/StructuredCompositionProgressProofs.lean). The resulting establishment and preservation propositions concern this stronger frame; unchanged declaration text alone is not proposition preservation. This is the only additional predecessor-domain exception beyond the child-entry amendment. Keep generic runtime validity predicates unchanged.
+
+Preserve the complete premises and completion conclusion of `reached_task_has_admitted_completion`, deriving the stronger frame along actual committed-start reachability. Preserve the premises of `committed_start_has_lifecycle_frame`, `reached_state_has_lifecycle_frame` and the Transaction start laws. No caller may assume listener absence, successful completion or successor validity merely to recover these guarantees.
+
+As an integration prerequisite, both accounts' Message-family admission gate must reject declarations as well as listeners on foreign profiles, with the complete predecessor state unchanged. An actually committed ordinary start then supplies declaration absence without a new well-formedness premise. The selected Message profile continues to validate its complete declaration graph. Keep raw start construction and unrelated failure classifications unchanged; malformed declarations must neither be silently ignored nor become a committed foreign listener.
+
+The existing conformance owner must retain the ordinary-task state discriminator, positive ordinary and Message starts, and foreign-declaration start refusals on two predecessor profiles. The TypeScript gate needs the corresponding independent discriminators. Compile the stronger frame's establishment and preservation proofs and the unchanged reachable completion theorem. Retain three new law owners and one conformance owner, each within 800 nonblank lines; this amendment selects no additional BPMN behavior, assurance programme, live hosting or cold resource investigation.
 
 ## Temporal hosting and refinement preflight
 
@@ -167,6 +179,6 @@ The private profile is `bpmn-2.0.2-interrupting-message-event-subprocess-draft`.
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `45a9eb4c` | `fork-turns-none` | `approve` | `not-required` |
+| Proposal | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
