@@ -212,6 +212,8 @@ def removeCalledProcessTree (state : RuntimeState)
     tokens := state.tokens.filter fun token => !removedOwner token.owner
     waits := state.waits.filter fun wait => !removedOwner wait.owner
     messageWaits := state.messageWaits.filter fun wait => !removedOwner wait.owner
+    eventSubProcessMessageSubscriptions := state.eventSubProcessMessageSubscriptions.filter fun listener =>
+      !removedOwner listener.owner
     timerWaits := state.timerWaits.filter fun wait => !removedOwner wait.owner
     effectWaits := state.effectWaits.filter fun wait => !removedOwner wait.owner
     effectIncidents := state.effectIncidents.filter fun incident => !removedOwner incident.wait.owner

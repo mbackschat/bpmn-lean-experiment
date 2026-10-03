@@ -1,5 +1,7 @@
+import { projectInterruptingMessageEventSubProcesses } from "./interrupting-message-event-subprocess-source.js";
 import { scalarProcessProperties } from "./activity-data-input-output-projection.js";
 import {
+  INTERRUPTING_MESSAGE_EVENT_SUBPROCESS_CHECKPOINT_PROFILE_ID,
   STRUCTURED_PROCESS_COMPOSITION_CHECKPOINT_PROFILE_ID,
   CheckedProcessKind,
   compareCanonicalStrings,
@@ -196,11 +198,12 @@ export function compileCheckedProcess(
     processId,
     bpmnTypes.subProcessType,
     processLocus,
+    semanticProfile,
   );
   if (scoped === undefined) {
     return unsupported(
       classification,
-      "Every embedded SubProcess must be ordinary, have an ID, and contain a FlowElements graph.",
+      "Every embedded SubProcess must have an admitted trigger, an ID, and a FlowElements graph.",
     );
   }
   if (!terminateEndSourcePropertiesValid(scoped.elements, semanticProfile)) {
@@ -275,6 +278,13 @@ export function compileCheckedProcess(
     );
   }
 
+  const messageHandlers = semanticProfile === INTERRUPTING_MESSAGE_EVENT_SUBPROCESS_CHECKPOINT_PROFILE_ID
+    ? projectInterruptingMessageEventSubProcesses(process, scoped.elements, nodes, sequenceFlows) : undefined;
+  if (semanticProfile === INTERRUPTING_MESSAGE_EVENT_SUBPROCESS_CHECKPOINT_PROFILE_ID && messageHandlers === undefined) {
+    return unsupported([], "The interrupting Message handler requires exact owned containment, interruption, channel and entry flow.");
+  }
+  const handlerDeclarations = messageHandlers === undefined ? {} : { interruptingMessageEventSubProcesses: messageHandlers };
+
   const allIds = [
     processId,
     ...nodes.map(({ id }) => id),
@@ -298,6 +308,7 @@ export function compileCheckedProcess(
         sequenceFlowScopes,
         nodes,
         flows: sequenceFlows,
+        ...handlerDeclarations,
       },
       definitions.expressionLanguage,
       semanticProfile,
@@ -328,6 +339,7 @@ export function compileCheckedProcess(
       ),
       nodes: [...nodes].sort(compareIds),
       sequenceFlows: [...sequenceFlows].sort(compareIds),
+      ...handlerDeclarations,
     },
     diagnostics: [],
   };

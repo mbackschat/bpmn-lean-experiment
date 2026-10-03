@@ -316,6 +316,8 @@ import BpmnSemantics.SemanticProcess.TransactionBranchPhases
 import BpmnSemantics.SemanticProcess.TransactionCommandPhases
 import BpmnSemantics.SemanticProcess.TransactionSchedulingGuarantees
 import BpmnSemantics.SemanticProcess.InternalSnapshotArmingExecution
+import BpmnSemantics.InterruptingMessageEventSubProcessConformance
+import BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessInterruptionLaws
 
 /-! Root of the BPMN semantic contract library.
 

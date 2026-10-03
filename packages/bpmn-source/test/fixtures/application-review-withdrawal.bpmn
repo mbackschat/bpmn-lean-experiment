@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="Definitions_ApplicationReview" targetNamespace="https://bpmn-lean.local/tests/application-review">
+  <bpmn:message id="Message_Withdrawal" name="Application withdrawn" />
+  <bpmn:interface id="Interface_Applications" name="Applications">
+    <bpmn:operation id="Operation_Withdraw" name="Withdraw application">
+      <bpmn:inMessageRef>Message_Withdrawal</bpmn:inMessageRef>
+    </bpmn:operation>
+  </bpmn:interface>
+  <bpmn:process id="Process_ApplicationReview" name="Review application with withdrawal" isExecutable="true">
+    <bpmn:startEvent id="Start_Application" />
+    <bpmn:parallelGateway id="Fork_Checks" gatewayDirection="Diverging" />
+    <bpmn:userTask id="Task_Eligibility" name="Check eligibility" />
+    <bpmn:userTask id="Task_Documents" name="Check documents" />
+    <bpmn:endEvent id="End_Eligibility" />
+    <bpmn:endEvent id="End_Documents" />
+    <bpmn:sequenceFlow id="Flow_Start_Checks" sourceRef="Start_Application" targetRef="Fork_Checks" />
+    <bpmn:sequenceFlow id="Flow_Checks_Eligibility" sourceRef="Fork_Checks" targetRef="Task_Eligibility" />
+    <bpmn:sequenceFlow id="Flow_Checks_Documents" sourceRef="Fork_Checks" targetRef="Task_Documents" />
+    <bpmn:sequenceFlow id="Flow_Eligibility_End" sourceRef="Task_Eligibility" targetRef="End_Eligibility" />
+    <bpmn:sequenceFlow id="Flow_Documents_End" sourceRef="Task_Documents" targetRef="End_Documents" />
+    <bpmn:subProcess id="Handler_Withdrawal" name="Handle withdrawal" triggeredByEvent="true">
+      <bpmn:startEvent id="Start_Withdrawal">
+        <bpmn:messageEventDefinition id="Definition_Withdrawal" messageRef="Message_Withdrawal" operationRef="Operation_Withdraw" />
+      </bpmn:startEvent>
+      <bpmn:userTask id="Task_Withdrawal" name="Acknowledge withdrawal" />
+      <bpmn:endEvent id="End_Withdrawal" />
+      <bpmn:sequenceFlow id="Flow_Withdrawal_Task" sourceRef="Start_Withdrawal" targetRef="Task_Withdrawal" />
+      <bpmn:sequenceFlow id="Flow_Withdrawal_End" sourceRef="Task_Withdrawal" targetRef="End_Withdrawal" />
+    </bpmn:subProcess>
+  </bpmn:process>
+</bpmn:definitions>

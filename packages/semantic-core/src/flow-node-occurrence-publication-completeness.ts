@@ -277,6 +277,7 @@ function internalDelta(
         lifecycleEnd(call, FlowNodeOccurrenceTerminalKind.Completed),
       ]);
     }
+    case SemanticOperationKind.CompleteEventSubProcess:
     case SemanticOperationKind.CompleteScope: {
       const definition = uniqueDefinition(program, operation.scopeId);
       if (definition === null) failCompleteness();

@@ -94,6 +94,8 @@ private theorem prepared_completion_fields (program : Program) (before after : R
     after = { before with
       tokens := after.tokens
       scopeOccurrences := before.scopeOccurrences.filter (fun scope => decide (scope.id ≠ prepared.selection.root.id))
+      eventSubProcessMessageSubscriptions := before.eventSubProcessMessageSubscriptions.filter
+        (fun listener => decide (listener.owner ≠ prepared.selection.root.id))
       timerWaits := before.timerWaits.filter (regionalSelectionReferenceRetention before prepared.selection).timer
       activityOccurrences := before.activityOccurrences.filter (regionalSelectionReferenceRetention before prepared.selection).activity } := by
   have update := preparedRegional_execution_fields program before after hosting operation prepared valid running afterRunning found applied
@@ -145,28 +147,34 @@ private theorem completion_updates_commute (before afterLeft afterRight : Runtim
     (leftUpdate : afterLeft = { before with
       tokens := afterLeft.tokens
       scopeOccurrences := before.scopeOccurrences.filter (fun scope => decide (scope.id ≠ leftRoot))
+      eventSubProcessMessageSubscriptions := before.eventSubProcessMessageSubscriptions.filter
+        (fun listener => decide (listener.owner ≠ leftRoot))
       timerWaits := before.timerWaits.filter leftTimer
       activityOccurrences := before.activityOccurrences.filter leftActivity })
     (rightUpdate : afterRight = { before with
       tokens := afterRight.tokens
       scopeOccurrences := before.scopeOccurrences.filter (fun scope => decide (scope.id ≠ rightRoot))
+      eventSubProcessMessageSubscriptions := before.eventSubProcessMessageSubscriptions.filter
+        (fun listener => decide (listener.owner ≠ rightRoot))
       timerWaits := before.timerWaits.filter rightTimer
       activityOccurrences := before.activityOccurrences.filter rightActivity }) :
     { afterLeft with
       tokens := [], endOccurrences := 0
       scopeOccurrences := afterLeft.scopeOccurrences.filter (fun scope => decide (scope.id ≠ rightRoot))
+      eventSubProcessMessageSubscriptions := afterLeft.eventSubProcessMessageSubscriptions.filter
+        (fun listener => decide (listener.owner ≠ rightRoot))
       timerWaits := afterLeft.timerWaits.filter rightTimer
       activityOccurrences := afterLeft.activityOccurrences.filter rightActivity } =
     { afterRight with
       tokens := [], endOccurrences := 0
       scopeOccurrences := afterRight.scopeOccurrences.filter (fun scope => decide (scope.id ≠ leftRoot))
+      eventSubProcessMessageSubscriptions := afterRight.eventSubProcessMessageSubscriptions.filter
+        (fun listener => decide (listener.owner ≠ leftRoot))
       timerWaits := afterRight.timerWaits.filter leftTimer
       activityOccurrences := afterRight.activityOccurrences.filter leftActivity } := by
   rw [leftUpdate, rightUpdate]
   congr 1
-  · simp only [List.filter_filter, Bool.and_comm]
-  · simp only [List.filter_filter, Bool.and_comm]
-  · simp only [List.filter_filter, Bool.and_comm]
+  all_goals simp only [List.filter_filter, Bool.and_comm]
 
 private theorem return_completion_updates_commute (before returned completed : RuntimeState)
     (record : CalledProcessOccurrence) (root : ScopeOccurrenceId) (keepTimer : TimerWait → Bool)
@@ -175,11 +183,15 @@ private theorem return_completion_updates_commute (before returned completed : R
     (completedUpdate : completed = { before with
       tokens := completed.tokens
       scopeOccurrences := before.scopeOccurrences.filter (fun scope => decide (scope.id ≠ root))
+      eventSubProcessMessageSubscriptions := before.eventSubProcessMessageSubscriptions.filter
+        (fun listener => decide (listener.owner ≠ root))
       timerWaits := before.timerWaits.filter keepTimer
       activityOccurrences := before.activityOccurrences.filter keepActivity }) :
     { returned with
       tokens := [], endOccurrences := 0
       scopeOccurrences := returned.scopeOccurrences.filter (fun scope => decide (scope.id ≠ root))
+      eventSubProcessMessageSubscriptions := returned.eventSubProcessMessageSubscriptions.filter
+        (fun listener => decide (listener.owner ≠ root))
       timerWaits := returned.timerWaits.filter keepTimer
       activityOccurrences := returned.activityOccurrences.filter keepActivity } =
       { removeCalledProcessTree completed record with
@@ -187,9 +199,7 @@ private theorem return_completion_updates_commute (before returned completed : R
   rw [returnedUpdate, completedUpdate]
   simp only [removeCalledProcessTree]
   congr 1
-  · simp only [List.filter_filter, Bool.and_comm]
-  · simp only [List.filter_filter, Bool.and_comm]
-  · simp only [List.filter_filter, Bool.and_comm]
+  all_goals simp only [List.filter_filter, Bool.and_comm]
 
 private theorem return_updates_commute (before afterLeft afterRight : RuntimeState)
     (left right : CalledProcessOccurrence)

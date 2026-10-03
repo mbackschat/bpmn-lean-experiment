@@ -68,17 +68,19 @@ theorem committed_start_process_bindings
     program_analysis_excludes_foreign_declarations program analysis analyzed
   cases created : runningProgramStartState? program instanceId bindings with
   | none =>
-      simp [admitStimulus, callDataRuntimeStateValid, noSnapshots, initialState, profile, created] at committed
-      split at committed <;> contradiction
+      simp [admitStimulus, callDataRuntimeStateValid, interruptingMessageEventSubProcessStateValid,
+        noSnapshots, initialState, profile, created] at committed
+      split at committed <;> first | contradiction | (split at committed <;> contradiction)
   | some started =>
       have data : started.variables.process.bindings = bindings := by
         simp only [runningProgramStartState?, bind, pure, Option.bind_eq_some_iff] at created
         obtain ⟨root, found, created⟩ := created
         cases Option.some.inj created
         rfl
-      simp [admitStimulus, callDataRuntimeStateValid, noSnapshots, initialState, profile, created] at committed ⊢
+      simp [admitStimulus, callDataRuntimeStateValid, interruptingMessageEventSubProcessStateValid,
+        noSnapshots, initialState, profile, created] at committed ⊢
       split at committed
-      · simp_all
+      · split at committed <;> simp_all
       · contradiction
 
 theorem committed_start_requirements_remain_present

@@ -19,18 +19,19 @@ import type {
   MessageRootArtifacts,
 } from "./root-definition-selection.js";
 
-/** Projects one exact top-level, payload-free operation-addressed Message Start Event. */
+/** Projects a payload-free operation channel; only the selected handler can spell out its interruption default. */
 export function projectMessageStartEvent(
   element: ElementRecord,
   id: string,
   artifacts: MessageRootArtifacts | undefined,
+  interruptingHandler = false,
 ): Extract<CheckedNode, { kind: CheckedNodeKind.MessageStartEvent }> | undefined {
   if (
     !hasOnlyProjectedFlowElementKeys(
       element,
       ProjectedFlowElementShape.MessageStartEvent,
     ) ||
-    Object.hasOwn(element, "isInterrupting") ||
+    (interruptingHandler ? (element.isInterrupting !== undefined && element.isInterrupting !== true) : Object.hasOwn(element, "isInterrupting")) ||
     Object.hasOwn(element, "parallelMultiple") ||
     element.eventDefinitionRef !== undefined ||
     element.dataOutputs !== undefined ||

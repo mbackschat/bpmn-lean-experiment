@@ -3,9 +3,11 @@ import {
   SemanticOperationKind,
   SemanticTransitionKind,
   StimulusKind,
+  sameMessageChannel,
 } from "@bpmn-lean/semantic-core";
 import type {
   ScopeOccurrenceId,
+  InterruptingMessageEventSubProcess,
   SemanticOperation,
   SemanticProcessProgram,
   Stimulus,
@@ -151,6 +153,7 @@ function internalOperationStarts(
       );
     case SemanticOperationKind.ReturnProcess:
     case SemanticOperationKind.CompleteScope:
+    case SemanticOperationKind.CompleteEventSubProcess:
       return false;
     case SemanticOperationKind.TriggerCompensation:
       return compensationTriggerStarts(operation, transitionOwner, value, program);
@@ -196,7 +199,14 @@ function externalStimulusStarts(
     case StimulusKind.RetryIncident:
     case StimulusKind.CancelIncidentProcess:
       return false;
-    case StimulusKind.DeliverMessage:
+    case StimulusKind.DeliverMessage: {
+      const handler = eventSubProcessDeclarationForElement(String(value.elementId), owner.definitionScopeId, program);
+      if (handler !== null) {
+        return stimulus.subscriptionId.processInstanceId === owner.processInstanceId &&
+          stimulus.subscriptionId.elementId === handler.startEventId &&
+          stimulus.subscriptionId.activation === 1 && owner.activation === 1 &&
+          sameMessageChannel(handler.channel, stimulus.channel);
+      }
       return stimulus.subscriptionId.processInstanceId ===
           owner.processInstanceId &&
         stimulus.subscriptionId.elementId === value.elementId &&
@@ -206,6 +216,7 @@ function externalStimulusStarts(
           operation.boundaryMessage.elementId === value.elementId &&
           operationOwnsScope(operation, owner.definitionScopeId, program)
         );
+    }
     case StimulusKind.CompleteUserTaskInstance: {
       if (stimulus.taskId.processInstanceId !== owner.processInstanceId) {
         return false;
@@ -317,11 +328,13 @@ function elementBelongsToProgram(
   if (compensationElementBelongsToProgram(elementId, ownerScopeId, program)) {
     return true;
   }
+  if (eventSubProcessDeclarationForElement(elementId, ownerScopeId, program) !== null) return true;
   return program.operations.some((operation) => {
     const ownership = program.operationScopes.find(({ operationId }) =>
       operationId === operation.id);
     return ownership !== undefined && (
       (ownership.scopeId === ownerScopeId &&
+        operation.kind !== SemanticOperationKind.CompleteEventSubProcess &&
         operation.kind !==
           SemanticOperationKind.AwaitSequentialMultiInstanceUserTask &&
         operation.origin.elementId === elementId) ||
@@ -334,6 +347,25 @@ function elementBelongsToProgram(
       )
     );
   });
+}
+
+/** IMES-OBSERVE-01 places the handler in its parent and its instantaneous Start inside the handler. */
+function eventSubProcessDeclarationForElement(
+  elementId: string,
+  ownerScopeId: string,
+  program: SemanticProcessProgram,
+): InterruptingMessageEventSubProcess | null {
+  const declarations = (program.interruptingMessageEventSubProcesses ?? []).filter((declaration) =>
+    (declaration.elementId === elementId && declaration.parentScopeId === ownerScopeId) ||
+    (declaration.startEventId === elementId && declaration.handlerScopeId === ownerScopeId));
+  const declaration = declarations[0];
+  if (declarations.length !== 1 || declaration === undefined) return null;
+  const handlers = program.definitionScopes.filter(({ id }) => id === declaration.handlerScopeId);
+  const parents = program.definitionScopes.filter(({ id }) => id === declaration.parentScopeId);
+  return handlers.length === 1 && parents.length === 1 &&
+    handlers[0]?.parentScopeId === declaration.parentScopeId &&
+    handlers[0]?.originElementId === declaration.elementId &&
+    parents[0]?.parentScopeId === null && parents[0].originElementId === program.processId ? declaration : null;
 }
 
 function compensationTriggerStarts(
@@ -498,6 +530,7 @@ function operationPublishesNestedElement(
     case SemanticOperationKind.TerminateScope:
     case SemanticOperationKind.ReachNoneEnd:
     case SemanticOperationKind.CompleteScope:
+    case SemanticOperationKind.CompleteEventSubProcess:
     case SemanticOperationKind.TriggerCompensation:
       return false;
     default:

@@ -1,3 +1,5 @@
+import { isInterruptingMessageEventSubProcessDeclaration, interruptingMessageEventSubProcessProgramGraph } from "./interrupting-message-event-subprocess-program-admission.js";
+import { INTERRUPTING_MESSAGE_EVENT_SUBPROCESS_CHECKPOINT_PROFILE_ID } from "./semantic-profile-catalog.js";
 import { callDataStimulusDataAdmitted } from "./call-data-command-admission.js";
 import { transactionCancellationProgramGraph } from "./transaction-cancellation-admission.js";
 import { callDataProgramGraph } from "./call-data-program-admission.js";
@@ -157,6 +159,7 @@ export function isWellFormedSemanticProcessProgram(
   const operations = Array.isArray(value.operations)
     ? value.operations
     : undefined;
+  const hasMessageEventSubProcesses = Object.hasOwn(value, "interruptingMessageEventSubProcesses");
   const hasCompensationActivityRetention = Object.prototype.hasOwnProperty.call(
     value,
     "compensationActivityRetention",
@@ -180,6 +183,7 @@ export function isWellFormedSemanticProcessProgram(
       "controlPlaceScopes",
       "controlPlaces",
       "operations",
+      ...(hasMessageEventSubProcesses ? ["interruptingMessageEventSubProcesses"] : []),
       ...(hasCompensationActivityRetention
         ? ["compensationActivityRetention"]
         : []),
@@ -233,6 +237,8 @@ export function isWellFormedSemanticProcessProgram(
       )) ||
     (hasCompensationExecution &&
       !isCompensationExecutionDeclaration(value.compensationExecution)) ||
+    (hasMessageEventSubProcesses && (!Array.isArray(value.interruptingMessageEventSubProcesses) ||
+      !value.interruptingMessageEventSubProcesses.every(isInterruptingMessageEventSubProcessDeclaration))) ||
     !isSortedById(controlPlaces) ||
     !isSortedById(operations)
   ) {
@@ -274,6 +280,9 @@ export function isWellFormedSemanticProcessProgram(
   }
   const program = value as unknown as SemanticProcessProgram;
   const snapshotTargets = program.compensationEventSubProcessSnapshots?.targets;
+  if (identity.semanticProfile === INTERRUPTING_MESSAGE_EVENT_SUBPROCESS_CHECKPOINT_PROFILE_ID) {
+    if (!interruptingMessageEventSubProcessProgramGraph(program)) return false;
+  } else if (hasMessageEventSubProcesses || checkedOperations.some(({ kind }) => kind === SemanticOperationKind.CompleteEventSubProcess)) return false;
   if (identity.semanticProfile === CALL_ACTIVITY_DATA_BOUNDARIES_CHECKPOINT_PROFILE_ID &&
       !callDataProgramGraph(program)) return false;
   if (identity.semanticProfile === STRUCTURED_PROCESS_COMPOSITION_CHECKPOINT_PROFILE_ID &&
@@ -293,7 +302,7 @@ export function isWellFormedSemanticProcessProgram(
     compensationRetentionProgramDefects(program).length === 0 &&
     compensationEventSubProcessSnapshotProgramDefects(program).length === 0 &&
     compensationExecutionMatchesProgram(program) &&
-    (snapshotTargets === undefined
+    (snapshotTargets === undefined && program.interruptingMessageEventSubProcesses === undefined
       ? isWellFormedSemanticProcessGraph({
         semanticProfile: identity.semanticProfile,
         processId: value.processId,
@@ -311,7 +320,7 @@ export function isWellFormedSemanticProcessProgram(
       controlPlaceScopes,
       controlPlaceIds: [...placeIds],
       operations: checkedOperations,
-    }, snapshotTargets));
+    }, snapshotTargets ?? [], program.interruptingMessageEventSubProcesses ?? []));
 }
 
 function isWellFormedDefinitionScope(

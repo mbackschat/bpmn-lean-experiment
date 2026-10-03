@@ -49,7 +49,16 @@ theorem RootCompensationExecutionDomain.of_zero_profile (program : Program)
     rw [same] at zero
     change (none : Option Nat) = some 0 at zero
     contradiction
-  simp only [programProfileCapabilitiesValid, callData, transaction, Bool.false_eq_true, legacy,
+  have messageHandler :
+      (program.identity.semanticProfile == interruptingMessageEventSubProcessProfileId) = false := by
+    apply Bool.eq_false_iff.mpr
+    intro selected
+    have same : program.identity.semanticProfile = interruptingMessageEventSubProcessProfileId := by
+      simpa only [beq_iff_eq] using selected
+    rw [same] at zero
+    change (none : Option Nat) = some 0 at zero
+    contradiction
+  simp only [programProfileCapabilitiesValid, callData, transaction, messageHandler, Bool.false_eq_true, legacy,
     ↓reduceIte, Bool.and_eq_true] at capabilities
   cases shape : programShape? program.identity.semanticProfile.value with
   | none => simp [shape] at zero

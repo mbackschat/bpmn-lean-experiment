@@ -1,5 +1,7 @@
 import {
   CheckedNodeKind,
+  INTERRUPTING_MESSAGE_EVENT_SUBPROCESS_CHECKPOINT_PROFILE_ID,
+  interruptingMessageEventSubProcessCheckedGraph,
   COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID,
   REPEATABLE_EVENT_SUBSCRIPTIONS_CHECKPOINT_PROFILE_ID,
   GatewayDirection,
@@ -9,6 +11,7 @@ import {
 } from "@bpmn-lean/semantic-core";
 import type {
   CheckedCompensation,
+  CheckedInterruptingMessageEventSubProcess,
   CheckedNode,
   CheckedSequenceFlow,
   DefinitionScope,
@@ -25,6 +28,7 @@ export type CheckedProcessGraph = Readonly<{
   nodes: ReadonlyArray<CheckedNode>;
   flows: ReadonlyArray<CheckedSequenceFlow>;
   compensation?: CheckedCompensation;
+  interruptingMessageEventSubProcesses?: ReadonlyArray<CheckedInterruptingMessageEventSubProcess>;
 }>;
 
 type AdmittedCheckedProcessGraph = Readonly<{
@@ -37,6 +41,8 @@ export function resolveAdmittedCheckedProcessGraph(
   graph: CheckedProcessGraph,
   semanticProfile: string = SemanticProfileId.UserTask,
 ): AdmittedCheckedProcessGraph | undefined {
+  const messageHandlers = semanticProfile === INTERRUPTING_MESSAGE_EVENT_SUBPROCESS_CHECKPOINT_PROFILE_ID;
+  if (messageHandlers ? !interruptingMessageEventSubProcessCheckedGraph(graph) : graph.interruptingMessageEventSubProcesses !== undefined) return undefined;
   const graphPolicy = semanticGraphPolicyForProfile(semanticProfile);
   const nodeScopes = ownershipMap(
     graph.nodeScopes,
@@ -89,7 +95,10 @@ function isAdmittedDefinitionScope(
   dormantScopeIds: ReadonlySet<string>,
   semanticProfile: string,
 ): boolean {
-  const nodes = graph.nodes.filter(({ id }) => nodeScopes.get(id) === scopeId);
+  // BPMN 10.3.5 excludes only the fully validated handler from its parent's normal flow.
+  const handlerIds = semanticProfile === INTERRUPTING_MESSAGE_EVENT_SUBPROCESS_CHECKPOINT_PROFILE_ID
+    ? new Set(graph.interruptingMessageEventSubProcesses?.map(({ elementId }) => elementId)) : new Set<string>();
+  const nodes = graph.nodes.filter(({ id }) => nodeScopes.get(id) === scopeId && !handlerIds.has(id));
   const flows = graph.flows.filter(({ id }) => flowScopes.get(id) === scopeId);
   const nodeIds = new Set(nodes.map(({ id }) => id));
   const exceptionalEdges = exceptionalEdgesWithinScope(

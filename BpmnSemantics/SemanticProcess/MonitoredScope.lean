@@ -166,6 +166,8 @@ def completeMonitoredScopePair (state : RuntimeState) (pair : MonitoredScopePair
   { state with
     tokens := addToken state.tokens pair.output pair.parent.id
     scopeOccurrences := state.scopeOccurrences.filter fun child => decide (child.id ≠ pair.child.id)
+    eventSubProcessMessageSubscriptions := state.eventSubProcessMessageSubscriptions.filter
+      (fun listener => decide (listener.owner ≠ pair.child.id))
     timerWaits := removeMonitoredScopeTimer state.timerWaits pair.timer
     activityOccurrences := state.activityOccurrences.erase pair.record }
 
@@ -176,7 +178,9 @@ theorem monitoredScope_primitive_completion (program : Program) (state completed
     scopeQuiescent state pair.child.id = true ∧
     completed = { state with
       tokens := addToken state.tokens pair.output pair.parent.id
-      scopeOccurrences := state.scopeOccurrences.filter fun child => decide (child.id ≠ pair.child.id) } := by
+      scopeOccurrences := state.scopeOccurrences.filter fun child => decide (child.id ≠ pair.child.id)
+      eventSubProcessMessageSubscriptions := state.eventSubProcessMessageSubscriptions.filter
+        (fun listener => decide (listener.owner ≠ pair.child.id)) } := by
   obtain ⟨unique, _, parent, parentCensus, _, _, _, _, _, _, running⟩ := bound.2.1
   have parentMember : pair.parent ∈ state.scopeOccurrences :=
     (List.mem_filter.mp (show pair.parent ∈ state.scopeOccurrences.filter (fun value => decide (value.id = pair.parent.id)) by

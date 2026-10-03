@@ -28,10 +28,12 @@ theorem graph_output_producer_identity (program : Program) (place : ControlPlace
     · simp only [Bool.and_eq_true] at valid
       have ports := List.all_eq_true.mp valid.1.1.1.2 place declared
       simp only [Bool.and_eq_true, decide_eq_true_eq] at ports
-      have count := ports.1
-      obtain ⟨producer, census⟩ := List.length_eq_one_iff.mp count
       have leftIn := memberId left leftMember leftOutput
       have rightIn := memberId right rightMember rightOutput
+      have positive : 0 < (producers program.operations place.id).length :=
+        List.length_pos_iff.mpr (List.ne_nil_of_mem leftIn)
+      have count : (producers program.operations place.id).length = 1 := by omega
+      obtain ⟨producer, census⟩ := List.length_eq_one_iff.mp count
       simp only [census, List.mem_singleton] at leftIn rightIn
       exact leftIn.trans rightIn.symm
     · contradiction

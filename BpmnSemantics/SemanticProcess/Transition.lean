@@ -25,6 +25,7 @@ import BpmnSemantics.SemanticProcess.MessageMonitoredTask
 import BpmnSemantics.SemanticProcess.CompensationActivityRetentionProducers
 import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotTransition
 import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerTransition
+import BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessCompletionLaws
 
 /-! # Semantic Process internal transitions
 
@@ -354,6 +355,11 @@ inductive OperationStep (program : Program) :
       OperationStep program
         (.completeScope id origin scopeId parentOutput) before after
 
+  | completeEventSubProcess (id : OperationId) (origin : BpmnElementOrigin)
+      (scopeId : DefinitionScopeId) (before after : RuntimeState)
+      (transition : EventSubProcessCompletionStep program before scopeId origin.elementId after) :
+      OperationStep program (.completeEventSubProcess id origin scopeId) before after
+
 private def fireWithoutCompensationSnapshots? (program : Program)
     (operation : SemanticOperation)
     (state : RuntimeState) :
@@ -433,6 +439,8 @@ private def fireWithoutCompensationSnapshots? (program : Program)
       terminateScopeState? program state id origin input scopeId
   | .completeScope _ _ scopeId parentOutput =>
       completeSelectedScope? program state scopeId parentOutput
+  | .completeEventSubProcess _ origin scopeId =>
+      completeEventSubProcessState? program state scopeId origin.elementId
   | .triggerCompensation .. | .cancelTransaction .. => none
 
 /-- Dispatcher and constructor-selection check: `fire?` routes every operation kind to the state
@@ -537,6 +545,8 @@ private theorem fireWithoutCompensationSnapshots_sound (program : Program)
     | exact .terminateScope _ _ _ _ before after
         (terminateScopeState_sound program before after _ _ _ _ result)
     | exact .completeScope _ _ _ _ before after result
+    | exact .completeEventSubProcess _ _ _ before after
+        (completeEventSubProcessState_sound _ _ _ _ _ result)
     | case triggerCompensation =>
         exact False.elim (by simp [fireWithoutCompensationSnapshots?] at result)
     | case cancelTransaction =>

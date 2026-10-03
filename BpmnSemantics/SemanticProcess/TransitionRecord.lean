@@ -46,6 +46,7 @@ inductive SemanticOperationKind where
   | reachNoneEnd
   | terminateScope
   | completeScope
+  | completeEventSubProcess
   | triggerCompensation
   | cancelTransaction
   deriving Repr, DecidableEq
@@ -86,6 +87,7 @@ def SemanticOperation.kind : SemanticOperation → SemanticOperationKind
   | .reachNoneEnd .. => .reachNoneEnd
   | .terminateScope .. => .terminateScope
   | .completeScope .. => .completeScope
+  | .completeEventSubProcess .. => .completeEventSubProcess
   | .triggerCompensation .. => .triggerCompensation
   | .cancelTransaction .. => .cancelTransaction
 
@@ -125,6 +127,7 @@ def SemanticOperation.origin : SemanticOperation → BpmnElementOrigin
   | .reachNoneEnd _ origin _
   | .terminateScope _ origin _ _
   | .completeScope _ origin _ _
+  | .completeEventSubProcess _ origin _
   | .triggerCompensation _ origin _ _ _
   | .cancelTransaction _ origin _ _ _ _ => origin
 

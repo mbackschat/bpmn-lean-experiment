@@ -506,9 +506,12 @@ theorem dataInputOutputCompletionStep_preserves_runtimeStateWellFormed
       have callData : (program.identity.semanticProfile == callDataCheckpointProfileId) = false := by
         rw [profile]
         decide +kernel
-      simp only [programProfileCapabilitiesValid, callData, transaction, Bool.false_eq_true, legacy,
+      have messageHandler : (program.identity.semanticProfile == interruptingMessageEventSubProcessProfileId) = false := by
+        rw [profile]
+        decide +kernel
+      simp only [programProfileCapabilitiesValid, callData, transaction, messageHandler, Bool.false_eq_true, legacy,
         ↓reduceIte, Bool.and_eq_true] at admitted
-      have noSequential := admitted.1.1
+      have noSequential := admitted.2.1.1
       simp [programSequentialMultiInstanceProfileMatches, profile,
         activityDataInputOutputUserTaskProfileId, sequentialMultiInstanceUserTaskProfileId]
         at noSequential
@@ -519,7 +522,7 @@ theorem dataInputOutputCompletionStep_preserves_runtimeStateWellFormed
         cases candidate <;> simp_all
       have noSequentialControllers := sequential_controllers_absent program before
         noSequentialOperation sequentialBindings
-      have parallelFamily := admitted.1.2
+      have parallelFamily := admitted.2.1.2
       simp [programParallelMultiInstanceProfileMatches, profile,
         activityDataInputOutputUserTaskProfileId, parallelMultiInstanceUserTaskProfileId]
         at parallelFamily

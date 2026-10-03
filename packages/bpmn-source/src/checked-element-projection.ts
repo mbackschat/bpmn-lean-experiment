@@ -1,3 +1,4 @@
+import { isInterruptingMessageHandlerStart } from "./interrupting-message-event-subprocess-source.js";
 /**
  * Projection of admitted source elements into checked nodes and Sequence Flows.
  *
@@ -123,6 +124,7 @@ export function projectCheckedNodes(
               element,
               id,
               rootSelection.messageArtifacts,
+              isInterruptingMessageHandlerStart(element, semanticProfile),
             ) ?? projectTimerStartEvent(element, id);
       case bpmnTypes.subProcessType:
         return isProjectableEmbeddedSubProcess(element)

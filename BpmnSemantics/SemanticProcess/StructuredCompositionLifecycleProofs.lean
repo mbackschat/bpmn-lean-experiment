@@ -1,18 +1,19 @@
 import BpmnSemantics.SemanticProcess.StructuredCompositionClosureProofs
 import BpmnSemantics.SemanticProcess.GraphReachabilityLaws
+import BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessRegistrationLaws
 
 /-! SPC-CLOSURE-01 requires reachable lifecycle and exact Activity-local shape, beyond input availability and decreasing rank. These predicates describe the existing runtime and are preserved through its actual operations and command admission. -/
 
 namespace BpmnSemantics.SemanticProcess.StructuredComposition
 
-/-- The selected capsule has no foreign waits or controllers that can obstruct root quiescence. -/
+/-- SPC-CLOSURE-01 excludes foreign execution state, including listeners refused by command admission. -/
 def ForeignRuntimeEmpty (state : RuntimeState) : Prop :=
   state.messageWaits = [] ∧ state.timerWaits = [] ∧ state.effectWaits = [] ∧
     state.effectIncidents = [] ∧ state.selectedBranchSets = [] ∧ state.eventRaces = [] ∧
     state.calledProcessOccurrences = [] ∧ state.sequentialMultiInstanceControllers = [] ∧
     state.parallelMultiInstanceControllers = [] ∧ state.compensationActivityRetentions = [] ∧
     state.compensationParentContextRetentions = [] ∧ state.compensationTriggers = [] ∧
-    state.compensationHandlerEffectWaits = []
+    state.compensationHandlerEffectWaits = [] ∧ state.eventSubProcessMessageSubscriptions = []
 
 /-- A running composition has its one live Process root; completion retires that root. -/
 def RootLifecycle (state : RuntimeState) : Prop :=
@@ -174,18 +175,20 @@ theorem committed_start_has_lifecycle_frame
     LifecycleFrame (admitStimulus program initialState
       (.startProcess commandId processId instanceId bindings)).state := by
   obtain ⟨_, _, noRetention, noSnapshots, _⟩ := program_analysis_excludes_foreign_declarations program analysis analyzed
+  have noListeners := committed_foreign_profile_has_no_message_declarations program initialState _
+    (by rw [profile]; decide +kernel) committed
   cases created : runningProgramStartState? program instanceId bindings with
   | none =>
-    simp [admitStimulus, callDataRuntimeStateValid, noSnapshots, initialState, profile, created] at committed
-    split at committed <;> contradiction
+    simp [admitStimulus, callDataRuntimeStateValid, interruptingMessageEventSubProcessStateValid, noListeners, noSnapshots, initialState, profile, created] at committed
+    split at committed <;> first | contradiction | (split at committed <;> contradiction)
   | some started =>
     have framed : LifecycleFrame started := by
       simp only [runningProgramStartState?, bind, pure, Option.bind_eq_some_iff] at created
       obtain ⟨root, _, created⟩ := created
       cases Option.some.inj created
-      refine ⟨by simp [ForeignRuntimeEmpty, noRetention, runningStartState, initialState], Or.inl ?_⟩
+      refine ⟨by simp [ForeignRuntimeEmpty, noRetention, noListeners, runningStartState, initialState], Or.inl ?_⟩
       exact ⟨{ processInstanceId := instanceId, definitionScopeId := root.id, activation := 1 }, rfl, rfl⟩
-    simp [admitStimulus, callDataRuntimeStateValid, noSnapshots, initialState, profile, created] at committed ⊢
+    simp [admitStimulus, callDataRuntimeStateValid, interruptingMessageEventSubProcessStateValid, noListeners, noSnapshots, initialState, profile, created] at committed ⊢
     split at committed
     · simp_all
     · contradiction
@@ -262,18 +265,16 @@ theorem committed_start_has_task_lifetime_shape
   obtain ⟨_, _, _, noSnapshots, _⟩ := program_analysis_excludes_foreign_declarations program analysis analyzed
   cases created : runningProgramStartState? program instanceId bindings with
   | none =>
-    simp [admitStimulus, callDataRuntimeStateValid, noSnapshots, initialState, profile, created] at committed
-    split at committed <;> contradiction
+    simp [admitStimulus, callDataRuntimeStateValid, interruptingMessageEventSubProcessStateValid, noSnapshots, initialState, profile, created] at committed
+    split at committed <;> first | contradiction | (split at committed <;> contradiction)
   | some started =>
     have shaped : TaskLifetimeShape program started := by
       simp only [runningProgramStartState?, bind, pure, Option.bind_eq_some_iff] at created
       obtain ⟨_, _, created⟩ := created
       cases Option.some.inj created
       exact Or.inl ⟨rfl, rfl, rfl⟩
-    simp [admitStimulus, callDataRuntimeStateValid, noSnapshots, initialState, profile, created] at committed ⊢
-    split at committed
-    · simp_all
-    · contradiction
+    simp [admitStimulus, callDataRuntimeStateValid, interruptingMessageEventSubProcessStateValid, noSnapshots, initialState, profile, created] at committed ⊢
+    split at committed <;> first | contradiction | (split at committed <;> simp_all)
 
 theorem root_owner_matches_running_instance
     (state : RuntimeState) (owner : ScopeOccurrenceId) (instanceId : SemanticId)
@@ -625,8 +626,8 @@ theorem committed_start_has_declared_root_owner
   obtain ⟨sole, soleEq⟩ := List.length_eq_one_iff.mp oneScope
   cases created : runningProgramStartState? program instanceId bindings with
   | none =>
-    simp [admitStimulus, callDataRuntimeStateValid, noSnapshots, initialState, profile, created] at committed
-    split at committed <;> contradiction
+    simp [admitStimulus, callDataRuntimeStateValid, interruptingMessageEventSubProcessStateValid, noSnapshots, initialState, profile, created] at committed
+    split at committed <;> first | contradiction | (split at committed <;> contradiction)
   | some started =>
     have owned : ∃ owner, owner.definitionScopeId = sole.id ∧ RootOwnedControl owner started := by
       simp only [runningProgramStartState?, bind, pure, Option.bind_eq_some_iff] at created
@@ -641,10 +642,8 @@ theorem committed_start_has_declared_root_owner
       simp [RootOwnedControl, runningStartState, initialState]
     obtain ⟨owner, key, owned⟩ := owned
     refine ⟨sole, owner, soleEq, key, ?_⟩
-    simp [admitStimulus, callDataRuntimeStateValid, noSnapshots, initialState, profile, created] at committed ⊢
-    split at committed
-    · simp_all
-    · contradiction
+    simp [admitStimulus, callDataRuntimeStateValid, interruptingMessageEventSubProcessStateValid, noSnapshots, initialState, profile, created] at committed ⊢
+    split at committed <;> first | contradiction | (split at committed <;> simp_all)
 
 
 theorem admitted_program_has_unique_identity_keys
@@ -739,10 +738,11 @@ theorem admitted_operations_share_declared_root
     cases operation <;> simp only [OperationAllowed] at selected
     all_goals try contradiction
     all_goals try rfl
-    case completeScope id origin scope output =>
-      cases output with
-      | none => change place ∈ ([] : List ControlPlaceId) at port; contradiction
-      | some output => contradiction
+    case completeScope id origin scope output => cases output <;> first | contradiction | exact List.not_mem_nil port
+  have noHandlers : program.interruptingMessageEventSubProcesses = [] := by
+    by_cases absent : program.interruptingMessageEventSubProcesses = []
+    · exact absent
+    · simpa [definitions] using message_declarations_require_two_scopes program wellFormed absent
   have graph := programWellFormed_graph program wellFormed
   have witness : ∃ start edges,
       operationOwningScope? program start = some root.id ∧
@@ -773,7 +773,9 @@ theorem admitted_operations_share_declared_root
           rcases List.mem_append.mp included with coreEdge | callEdge
           · rcases List.mem_append.mp coreEdge with ordinaryEdge | parallelEdge
             · rcases List.mem_append.mp ordinaryEdge with portEdge | completionEdge
-              · obtain ⟨place, _, portEdge⟩ := List.mem_flatMap.mp portEdge
+              · change edge ∈ program.interruptingMessageEventSubProcesses.flatMap _ ++ _ at portEdge
+                simp only [noHandlers, List.flatMap_nil, List.nil_append] at portEdge
+                obtain ⟨place, _, portEdge⟩ := List.mem_flatMap.mp portEdge
                 obtain ⟨producer, produces, portEdge⟩ := List.mem_flatMap.mp portEdge
                 obtain ⟨consumer, consumes, edgeEq⟩ := List.mem_map.mp portEdge
                 obtain ⟨producerOp, producerMember, produced⟩ := List.mem_filterMap.mp produces
@@ -805,12 +807,12 @@ theorem admitted_operations_share_declared_root
                   obtain ⟨scope, _, produced⟩ := Option.bind_eq_some_iff.mp produced
                   obtain ⟨completion, found, produced⟩ := Option.bind_eq_some_iff.mp produced
                   obtain ⟨completionOp, completionMember, names⟩ := List.exists_of_findSome?_eq_some found
-                  cases completionOp <;> simp only at names
+                  have completionAllowed := allowed _ completionMember
+                  cases completionOp <;> simp only [OperationAllowed] at completionAllowed names
                   all_goals try contradiction
                   case completeScope completionId completionOrigin completionScope output =>
                     split at names
                     · have completionKey := Option.some.inj names
-                      have outputAllowed := allowed _ completionMember
                       cases output with
                       | some output => contradiction
                       | none =>
@@ -828,12 +830,11 @@ theorem admitted_operations_share_declared_root
       · contradiction
     · contradiction
   obtain ⟨start, edges, anchor, preserved, reachable⟩ := witness
-  have pathOwned : ∀ target, GraphReaches edges start target → operationOwningScope? program target = some root.id := by
-    intro target path
-    induction path with
-    | refl => exact anchor
-    | step path edge ih => exact preserved _ edge ih
   intro operation member
-  exact pathOwned operation.id (reachable operation member)
+  have path := reachable operation member
+  generalize operation.id = target at path ⊢
+  induction path with
+  | refl => exact anchor
+  | step path edge ih => exact preserved _ edge ih
 
 end BpmnSemantics.SemanticProcess.StructuredComposition

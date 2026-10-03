@@ -55,6 +55,7 @@ structure ShapeCardinalities where
   scopeTerminations : Nat := 0
   ends : Nat := 0
   scopeCompletions : Nat := 0
+  eventSubProcessCompletions : Nat := 0
   compensationTriggers : Nat := 0
   deriving DecidableEq
 
@@ -186,6 +187,8 @@ def addOperationCardinality (counts : ShapeCardinalities)
         { counts with scopeTerminations := counts.scopeTerminations + 1 }
     | .completeScope .. =>
         { counts with scopeCompletions := counts.scopeCompletions + 1 }
+    | .completeEventSubProcess .. =>
+        { counts with eventSubProcessCompletions := counts.eventSubProcessCompletions + 1 }
     | .triggerCompensation .. | .cancelTransaction .. =>
         { counts with compensationTriggers := counts.compensationTriggers + 1 }
 

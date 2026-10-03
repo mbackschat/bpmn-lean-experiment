@@ -20,6 +20,8 @@ import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshot
 import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerCompletion
 import BpmnSemantics.SemanticProcess.CompensationStartDataAdmission
 import BpmnSemantics.SemanticProcess.StructuredCompositionCommandAdmission
+import BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessStateValidation
+import BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessInterruption
 
 /-! # Semantic Process external command admission
 
@@ -304,7 +306,10 @@ private def dataInputOutputStartBindingsAdmitted (program : Program)
       match state.control with
       | .running instanceId =>
           let delivery :=
-            if isMonitoredMessageBoundaryDefinition program ⟨subscriptionId.elementId.value⟩ then
+            if program.interruptingMessageEventSubProcesses.any (fun declaration =>
+                declaration.startEventId.value == subscriptionId.elementId.value) then
+              deliverEventSubProcessMessage program state subscriptionId channel
+            else if isMonitoredMessageBoundaryDefinition program ⟨subscriptionId.elementId.value⟩ then
               spawnFromMessageMonitoredUserTask? program state subscriptionId channel
             else if isMessageBoundaryDefinition program ⟨subscriptionId.elementId.value⟩ then
               interruptMessageBoundedUserTask? program state subscriptionId channel
@@ -464,6 +469,7 @@ theorem dispatchStimulus_withSnapshotDeclaration_rejects (program : Program)
     (state : RuntimeState)
     (stimulus : Stimulus) : ExternalAdmission :=
   if !callDataRuntimeStateValid program state then { outcome := .rejected, state }
+  else if !interruptingMessageEventSubProcessStateValid program state then { outcome := .rejected, state }
   else
   match stimulus with
   | .deliverCorrelatedPayloadMessage delivery =>
@@ -668,10 +674,14 @@ private theorem rawCommittedStart_shape (program : Program) (stimulus : Stimulus
     cases checked : callDataRuntimeStateValid program initialState with
     | false => simp [admitStimulusWithoutCompensationSnapshots, checked] at committed
     | true => rfl
+  have handlerValid : interruptingMessageEventSubProcessStateValid program initialState = true := by
+    cases checked : interruptingMessageEventSubProcessStateValid program initialState with
+    | false => simp [admitStimulusWithoutCompensationSnapshots, valid, checked] at committed
+    | true => rfl
   cases stimulus <;> simp only at startKind <;> try contradiction
   all_goals subst instanceId
   all_goals
-    simp only [admitStimulusWithoutCompensationSnapshots, valid, Bool.not_true,
+    simp only [admitStimulusWithoutCompensationSnapshots, valid, handlerValid, Bool.not_true,
       Bool.false_eq_true, ↓reduceIte] at committed ⊢
     simp only [initialState, dispatchStimulusWithoutCompensationSnapshots] at committed ⊢
   case startProcess commandId processId requested variables =>

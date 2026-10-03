@@ -2,8 +2,8 @@ import BpmnSemantics.SemanticProcess.InternalRegionalCompletionMultiInstanceVali
 import BpmnSemantics.SemanticProcess.InternalRegionalCompletionCompensationValidity
 import BpmnSemantics.SemanticProcess.InternalRegionalChildProjectionValidity
 
-/-! Child completion changes scope/token positions and may withdraw one bounded Activity
-and its deadline. All other runtime fields remain unchanged. Owner closure protects the
+/-! Child completion changes scope/token positions, expires owned passive listeners and may
+withdraw one bounded Activity and its deadline. Owner closure protects the
 retained Activity owners that quiescence alone does not constrain. -/
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
@@ -17,7 +17,8 @@ private theorem child_completion_runtime_frame (program : Program) (before after
     (result : completeSelectedScope? program before definition (some output) = some after) :
     after = { before with
       scopeOccurrences := after.scopeOccurrences, tokens := after.tokens
-      timerWaits := after.timerWaits, activityOccurrences := after.activityOccurrences } := by
+      timerWaits := after.timerWaits, activityOccurrences := after.activityOccurrences
+      eventSubProcessMessageSubscriptions := after.eventSubProcessMessageSubscriptions } := by
   obtain ⟨ordinary, completed, timers, activities, rfl⟩ :=
     completeSelectedScope_ordinary_withdrawal program before after definition (some output) result
   have update := (completeScopeState_selected_update before ordinary definition (some output) root census completed).2
@@ -55,7 +56,8 @@ private theorem child_completion_wait_owners (before after : RuntimeState)
     (selected : InternalRegionalSelection)
     (frame : after = { before with
       scopeOccurrences := after.scopeOccurrences, tokens := after.tokens
-      timerWaits := after.timerWaits, activityOccurrences := after.activityOccurrences })
+      timerWaits := after.timerWaits, activityOccurrences := after.activityOccurrences
+      eventSubProcessMessageSubscriptions := after.eventSubProcessMessageSubscriptions })
     (scopes : after.scopeOccurrences = before.scopeOccurrences.filter
       (fun scope => decide (scope.id ≠ selected.root.id)))
     (fields : regionalReferenceFieldsMatch before after (regionalSelectionReferenceRetention before selected))

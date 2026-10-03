@@ -133,10 +133,17 @@ private theorem admitted_task_invariant (p : Program) (roles : TransactionAdmitt
     (running : before.control = .running instanceId) (emptyTokens : before.tokens = []) :
     TransactionContinuationInvariant roles
       (admitStimulusWithCompensationSnapshots p before (.completeUserTaskInstance commandId taskId submitted)).state := by
+  by_cases handlerValid : interruptingMessageEventSubProcessStateValid p before = true
+  case neg =>
+    simp [admitStimulusWithCompensationSnapshots, roles.snapshotsAbsent, handlerValid,
+      callDataRuntimeStateValid, roles.profileSelected, transactionCancellationCheckpointProfileId,
+      callDataCheckpointProfileId]
+    exact invariant
+
   obtain ⟨parallel, sequential, messageMonitored, messageBounded, bounded, composed,
       dataInput, dataOutput, monitored⟩ := transaction_task_dispatch_selectors p graph ⟨taskId.elementId.value⟩
   simp only [admitStimulusWithCompensationSnapshots, roles.snapshotsAbsent]
-  simp [running, invariant.inert.2.2.2.1, parallel, sequential, messageMonitored, messageBounded,
+  simp [handlerValid, running, invariant.inert.2.2.2.1, parallel, sequential, messageMonitored, messageBounded,
     bounded, composed, dataInput, dataOutput, monitored, callDataRuntimeStateValid,
     roles.profileSelected, transactionCancellationCheckpointProfileId, callDataCheckpointProfileId]
   cases completed : completeOrdinaryUserTaskWithCompensation? completeUserTask p before taskId with
@@ -155,8 +162,15 @@ private theorem admitted_handler_invariant (p : Program) (roles : TransactionAdm
     (running : before.control = .running instanceId) (emptyTokens : before.tokens = []) :
     TransactionContinuationInvariant roles
       (admitStimulusWithCompensationSnapshots p before (.completeEffect commandId effectId result)).state := by
+  by_cases handlerValid : interruptingMessageEventSubProcessStateValid p before = true
+  case neg =>
+    simp [admitStimulusWithCompensationSnapshots, roles.snapshotsAbsent, handlerValid,
+      callDataRuntimeStateValid, roles.profileSelected, transactionCancellationCheckpointProfileId,
+      callDataCheckpointProfileId]
+    exact invariant
+
   simp only [admitStimulusWithCompensationSnapshots, roles.snapshotsAbsent]
-  simp [running, invariant.inert.2.2.2.1, invariant.inert.2.2.1, callDataRuntimeStateValid,
+  simp [handlerValid, running, invariant.inert.2.2.2.1, invariant.inert.2.2.1, callDataRuntimeStateValid,
     roles.profileSelected, transactionCancellationCheckpointProfileId, callDataCheckpointProfileId]
   split
   · cases completed : attemptCompensationHandlerEffectCompletion p before effectId result with

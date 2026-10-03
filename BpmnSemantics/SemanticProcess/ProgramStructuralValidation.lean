@@ -140,6 +140,7 @@ def operationWaitDeclarationKeys : SemanticOperation → List WaitDeclarationKey
   | .reachNoneEnd ..
   | .terminateScope ..
   | .completeScope ..
+  | .completeEventSubProcess ..
   | .triggerCompensation .. | .cancelTransaction .. => []
 
 def operationDeclaresWaitKey (operation : SemanticOperation)
@@ -522,6 +523,8 @@ private def operationWellFormed (program : Program) (places : List ControlPlace)
         nonempty origin.elementId.value &&
         nonempty scopeId.value &&
         parentOutput.all (placeExists places)
+  | .completeEventSubProcess id origin scopeId =>
+      completeEventSubProcessOperationWellFormed program id origin scopeId
   | .triggerCompensation id origin definitionScopeId input output =>
       nonempty id.value && nonempty origin.elementId.value &&
         nonempty definitionScopeId.value && input != output &&

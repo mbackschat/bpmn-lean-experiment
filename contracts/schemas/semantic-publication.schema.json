@@ -187,6 +187,7 @@
             "terminateScope",
             "reachNoneEnd",
             "completeScope",
+            "completeEventSubProcess",
             "triggerCompensation",
             "cancelTransaction"
           ]

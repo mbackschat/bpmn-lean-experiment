@@ -250,6 +250,7 @@ export const SemanticOperationKind = {
   TerminateScope: "terminateScope",
   ReachNoneEnd: "reachNoneEnd",
   CompleteScope: "completeScope",
+  CompleteEventSubProcess: "completeEventSubProcess",
   TriggerCompensation: "triggerCompensation",
   CancelTransaction: "cancelTransaction",
 } as const;

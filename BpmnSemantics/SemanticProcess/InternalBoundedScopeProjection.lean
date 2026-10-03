@@ -434,7 +434,10 @@ theorem prepared_bounded_scope_preserves_structural_program_validity
         (fun candidate => decide (candidate.id = contract.operationId)) := by rw [operations]; simp
     exact (List.mem_filter.mp filtered).1
   have census := child_entry_census program definition entry.owner.definitionScopeId admitted snapshots
-    definitionFacts.1 definitionMatch.1.2
+    definitionFacts.1 definitionMatch.1.2 ⟨_, member, by
+      cases disposition : contract.disposition <;>
+        simp [InternalBoundedScopeContract.operation, disposition,
+          enteredChildScopeId?, definitionMatch.1.1]⟩
   obtain ⟨sole, singleton⟩ := List.length_eq_one_iff.mp census
   have filtered : contract.operation ∈ program.operations.filter
       (fun operation => decide (enteredChildScopeId? operation = some definition.id)) := by

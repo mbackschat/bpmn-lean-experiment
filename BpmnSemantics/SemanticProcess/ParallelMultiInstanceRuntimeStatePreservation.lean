@@ -562,9 +562,12 @@ theorem admitted_parallel_has_no_sequential_operation (program : Program)
   have callData : (program.identity.semanticProfile == callDataCheckpointProfileId) = false := by
     rw [account.profile]
     decide +kernel
-  simp only [programProfileCapabilitiesValid, callData, transaction, Bool.false_eq_true, legacy,
+  have messageHandler : (program.identity.semanticProfile == interruptingMessageEventSubProcessProfileId) = false := by
+    rw [account.profile]
+    rfl
+  simp only [programProfileCapabilitiesValid, callData, transaction, messageHandler, Bool.false_eq_true, legacy,
     ↓reduceIte, Bool.and_eq_true] at capabilities
-  have selected := capabilities.1.1
+  have selected := capabilities.2.1.1
   simp [programSequentialMultiInstanceProfileMatches, account.profile,
     parallelMultiInstanceUserTaskProfileId, sequentialMultiInstanceUserTaskProfileId] at selected
   intro operation member

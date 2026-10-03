@@ -60,6 +60,7 @@ export function semanticOperationInternalFamily(
       return InternalOperationFamily.MergeAndOrdinaryEnd;
     case SemanticOperationKind.ReturnProcess:
     case SemanticOperationKind.CompleteScope:
+    case SemanticOperationKind.CompleteEventSubProcess:
     case SemanticOperationKind.ThrowError:
     case SemanticOperationKind.TerminateScope:
       return InternalOperationFamily.ScopeReturnCompletionAndInterruption;
@@ -81,6 +82,7 @@ export enum InternalRuntimeStateAtomDomain {
   ControlToken = "controlToken",
   UserTaskWait = "userTaskWait",
   MessageWait = "messageWait",
+  EventSubProcessMessageSubscription = "eventSubProcessMessageSubscription",
   TimerWait = "timerWait",
   EffectWait = "effectWait",
   EffectIncident = "effectIncident",
@@ -120,6 +122,7 @@ export const internalRuntimeStateFieldCensus = {
   controlTokens: { leanField: "tokens", atomDomain: InternalRuntimeStateAtomDomain.ControlToken },
   userTaskWaits: { leanField: "waits", atomDomain: InternalRuntimeStateAtomDomain.UserTaskWait },
   messageWaits: { leanField: "messageWaits", atomDomain: InternalRuntimeStateAtomDomain.MessageWait },
+  eventSubProcessMessageSubscriptions: { leanField: "eventSubProcessMessageSubscriptions", atomDomain: InternalRuntimeStateAtomDomain.EventSubProcessMessageSubscription },
   timerWaits: { leanField: "timerWaits", atomDomain: InternalRuntimeStateAtomDomain.TimerWait },
   effectWaits: { leanField: "effectWaits", atomDomain: InternalRuntimeStateAtomDomain.EffectWait },
   effectIncidents: { leanField: "effectIncidents", atomDomain: InternalRuntimeStateAtomDomain.EffectIncident },

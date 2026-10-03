@@ -9,6 +9,7 @@ import BpmnSemantics.SemanticProcess.ConfiguredTaskLowering
 import BpmnSemantics.SemanticProcess.TimerStartLowering
 import BpmnSemantics.SemanticProcess.TerminateEndLowering
 import BpmnSemantics.SemanticProcess.CompensationSourceLowering
+import BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessLowering
 
 /-! # Canonical checked-process lowering
 
@@ -285,32 +286,34 @@ private def lowerNode (source : CheckedProcess) :
         (firstPlace (incomingPlaces source id)) (childEntryPlace source childScopeId) childScopeId, scopeId)
   | .cancelEndEvent id => lowerTransactionCancel source id (firstPlace (incomingPlaces source id))
   | .cancelBoundaryEvent .. => none
-  | .embeddedSubProcess id childScopeId => do
-      let scopeId ← checkedNodeScopeId? source id
-      match timerBoundaryFor source id with
-      | some (timerId, interruption, durationLiteral, outputFlowId) =>
-          pure
-            ((match interruption with
-              | .interrupting => SemanticOperation.enterBoundedScope
-              | .nonInterrupting => SemanticOperation.enterMonitoredScope)
-              (nodeOperationId id)
-              { elementId := id }
-              (firstPlace (incomingPlaces source id))
-              (childEntryPlace source childScopeId)
-              childScopeId
-              { elementId := timerId
-                durationMs := normalizeBoundaryTimerExpression durationLiteral
-                recurrence := match durationLiteral with | .cycle _ => some .repeating | _ => none
-                output := firstPlace (outgoingPlaces source timerId)
-                origin := { elementId := outputFlowId } }, scopeId)
-      | none =>
-          pure
-            (.enterScope
-              (nodeOperationId id)
-              { elementId := id }
-              (firstPlace (incomingPlaces source id))
-              (childEntryPlace source childScopeId)
-              childScopeId, scopeId)
+  | .embeddedSubProcess id childScopeId =>
+      if checkedMessageEventSubProcessElement source id then none
+      else do
+        let scopeId ← checkedNodeScopeId? source id
+        match timerBoundaryFor source id with
+        | some (timerId, interruption, durationLiteral, outputFlowId) =>
+            pure
+              ((match interruption with
+                | .interrupting => SemanticOperation.enterBoundedScope
+                | .nonInterrupting => SemanticOperation.enterMonitoredScope)
+                (nodeOperationId id)
+                { elementId := id }
+                (firstPlace (incomingPlaces source id))
+                (childEntryPlace source childScopeId)
+                childScopeId
+                { elementId := timerId
+                  durationMs := normalizeBoundaryTimerExpression durationLiteral
+                  recurrence := match durationLiteral with | .cycle _ => some .repeating | _ => none
+                  output := firstPlace (outgoingPlaces source timerId)
+                  origin := { elementId := outputFlowId } }, scopeId)
+        | none =>
+            pure
+              (.enterScope
+                (nodeOperationId id)
+                { elementId := id }
+                (firstPlace (incomingPlaces source id))
+                (childEntryPlace source childScopeId)
+                childScopeId, scopeId)
   | .callActivity id calledProcessId data => do
       let scopeId ← checkedNodeScopeId? source id
       let calledRoot ← source.definitionScopes.find? fun scope =>
@@ -612,7 +615,7 @@ theorem lowering_preserves_user_task_resumption_cut
       { id := ⟨id.value⟩, name, metadata }, ?_, rfl, rfl⟩
   simp [lowerNode, unbounded, noMessageBoundary, scope]
 
-private def lowerScopeCompletion (source : CheckedProcess)
+private def lowerOrdinaryScopeCompletion (source : CheckedProcess)
     (scope : DefinitionScope) : Option (SemanticOperation × DefinitionScopeId) :=
   if checkedScopeIsCompensationDormant source scope then none
   else if scope.parentScopeId.isNone &&
@@ -638,6 +641,12 @@ private def lowerScopeCompletion (source : CheckedProcess)
         { elementId := scope.originElementId }
         scope.id
         parentOutput, scope.id)
+
+private def lowerScopeCompletion (source : CheckedProcess)
+    (scope : DefinitionScope) : Option (SemanticOperation × DefinitionScopeId) :=
+  match lowerMessageEventSubProcessCompletion? source scope with
+  | some completion => some completion
+  | none => lowerOrdinaryScopeCompletion source scope
 
 private def insertScopedOperation
     (operation : SemanticOperation × DefinitionScopeId) :
@@ -695,6 +704,7 @@ def lowerCheckedProcess (source : CheckedProcess) : Program :=
         !eventRaceConfigurationFlow source flow).map
           CheckedSequenceFlow.toControlPlace
     operations := scopedOperations.map (·.1)
+    interruptingMessageEventSubProcesses := lowerMessageEventSubProcessDeclarations source
     compensationActivityRetention :=
       if source.transactionCancellation.isSome then lowerTransactionRetention source
       else lowerCheckedCompensationActivityRetention source

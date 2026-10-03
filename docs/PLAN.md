@@ -111,9 +111,10 @@ Active work ID: `INTERRUPTING-MESSAGE-EVENT-SUBPROCESS`.
 
 Risk band: parent subscription lifetime, scope-wide interruption and handler execution.
 
-Last verification: [Component evidence](capsules/INTERRUPTING-MESSAGE-EVENT-SUBPROCESS-PROPOSAL.md#implementation-progress) records 1,525 passing core tests, the stronger composition frame and unchanged reachable-completion theorem, and retained foreign-listener discriminators. Complete Lean integration failed in InternalRegionalPairExecutionFrame and TransactionCommandPhases; `/tmp/imes-library-frame-qualified` is separately asserted red. Cold resource investigation remains owner-deferred.
+Last verification: [Component evidence](capsules/INTERRUPTING-MESSAGE-EVENT-SUBPROCESS-PROPOSAL.md#implementation-progress) records 1,525 core tests, 626 infrastructure tests plus harness types, the complete 732-job Lean library, the 283-job checked-source experiment and refreshed five-schedule Lean/core parity. All receipts are separately asserted; the complete Lean snapshot matches current inputs. Cold resource investigation remains owner-deferred.
 
-Next action: correct the two integration proof failures, finish complete Lean/experiment verification and contract/evidence reconciliation, then commit and independently review the semantic checkpoint. The [foreign-runtime assurance amendment](capsules/INTERRUPTING-MESSAGE-EVENT-SUBPROCESS-PROPOSAL.md#foreign-runtime-assurance-amendment) owns the strengthened predecessor frame.
+Next action: commit and independently review the green private semantic checkpoint, then build the Practical CIB7 Coverage inventory. The [foreign-runtime assurance amendment](capsules/INTERRUPTING-MESSAGE-EVENT-SUBPROCESS-PROPOSAL.md#foreign-runtime-assurance-amendment) owns the strengthened predecessor frame. Registration and live hosting remain unqualified.
+
 
 Keep semantics active; reconsider deferred work no earlier than 2026-10-05, without an automatic switch. Local performance tests stay skipped under external CPU load. Lean remains one process tree, one CPU and 3 GiB without additional swap. Database selection remains [sequential SQLite versus concurrent PostgreSQL](TESTING-SPEC.md#three-level-verification-policy).
 

@@ -5,6 +5,7 @@ import {
 } from "./checked-process-contract.js";
 import {
   CALL_ACTIVITY_DATA_BOUNDARIES_CHECKPOINT_PROFILE_ID,
+  INTERRUPTING_MESSAGE_EVENT_SUBPROCESS_CHECKPOINT_PROFILE_ID,
   COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID,
   MESSAGE_KEY_CORRELATION_CHECKPOINT_PROFILE_ID,
   SemanticProfileId,
@@ -27,6 +28,10 @@ export function requiredCheckedProcessShape(
   const start = CheckedNodeKind.NoneStartEvent;
   const end = CheckedNodeKind.NoneEndEvent;
   switch (semanticProfile) {
+    case INTERRUPTING_MESSAGE_EVENT_SUBPROCESS_CHECKPOINT_PROFILE_ID:
+      return nestedChecked([start, CheckedNodeKind.ParallelGateway, CheckedNodeKind.UserTask,
+        CheckedNodeKind.UserTask, end, end, CheckedNodeKind.EmbeddedSubProcess,
+        CheckedNodeKind.MessageStartEvent, CheckedNodeKind.UserTask, end]);
     case CALL_ACTIVITY_DATA_BOUNDARIES_CHECKPOINT_PROFILE_ID:
       return nestedChecked([start, CheckedNodeKind.CallActivity, CheckedNodeKind.DataInputOutputUserTask,
         end, start, CheckedNodeKind.DataInputOutputUserTask, end]);

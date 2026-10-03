@@ -8,6 +8,7 @@ import type {
 } from "./contract.js";
 import {
   CALL_ACTIVITY_DATA_BOUNDARIES_CHECKPOINT_PROFILE_ID,
+  INTERRUPTING_MESSAGE_EVENT_SUBPROCESS_CHECKPOINT_PROFILE_ID,
   STRUCTURED_PROCESS_COMPOSITION_CHECKPOINT_PROFILE_ID,
   TRANSACTION_CANCELLATION_CHECKPOINT_PROFILE_ID,
   COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID,
@@ -25,6 +26,7 @@ export enum VariableWriteSurface {
 
 type SemanticProfile =
   | typeof CALL_ACTIVITY_DATA_BOUNDARIES_CHECKPOINT_PROFILE_ID
+  | typeof INTERRUPTING_MESSAGE_EVENT_SUBPROCESS_CHECKPOINT_PROFILE_ID
   | typeof STRUCTURED_PROCESS_COMPOSITION_CHECKPOINT_PROFILE_ID
   | typeof SemanticProfileId[keyof typeof SemanticProfileId]
   | typeof TRANSACTION_CANCELLATION_CHECKPOINT_PROFILE_ID
@@ -63,6 +65,7 @@ const admittedSemanticProfiles: ReadonlySet<string> = new Set(
   [
     ...Object.values(SemanticProfileId),
     CALL_ACTIVITY_DATA_BOUNDARIES_CHECKPOINT_PROFILE_ID,
+    INTERRUPTING_MESSAGE_EVENT_SUBPROCESS_CHECKPOINT_PROFILE_ID,
     STRUCTURED_PROCESS_COMPOSITION_CHECKPOINT_PROFILE_ID,
     TRANSACTION_CANCELLATION_CHECKPOINT_PROFILE_ID,
   COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID,
@@ -121,6 +124,8 @@ function profileValueDomain(
   surface: VariableWriteSurface,
 ): ReadonlyArray<VariableValueKind> | null {
   switch (semanticProfile) {
+    case INTERRUPTING_MESSAGE_EVENT_SUBPROCESS_CHECKPOINT_PROFILE_ID:
+      return surfaceValueDomain(surface);
     case SemanticProfileId.SequentialMultiInstanceUserTask:
       // This table closes the kind-level surface. Command admission separately binds exact input
       // and output names, cardinality, and the review-versus-escalation task-local domains.

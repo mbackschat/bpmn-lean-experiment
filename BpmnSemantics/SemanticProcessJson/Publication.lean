@@ -72,6 +72,7 @@ private def operationKindJson : SemanticOperationKind → Option Json
   | .reachNoneEnd => some (toJson "reachNoneEnd")
   | .terminateScope => some (toJson "terminateScope")
   | .completeScope => some (toJson "completeScope")
+  | .completeEventSubProcess => some (toJson "completeEventSubProcess")
   | .triggerCompensation => some (toJson "triggerCompensation")
   | .cancelTransaction => some (toJson "cancelTransaction")
 

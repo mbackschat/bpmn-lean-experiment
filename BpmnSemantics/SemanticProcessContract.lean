@@ -372,6 +372,10 @@ inductive SemanticOperation where
       (origin : BpmnElementOrigin)
       (scopeId : DefinitionScopeId)
       (parentOutput : Option ControlPlaceId)
+  | completeEventSubProcess
+      (id : OperationId)
+      (origin : BpmnElementOrigin)
+      (scopeId : DefinitionScopeId)
   | triggerCompensation
       (id : OperationId)
       (origin : BpmnElementOrigin)
@@ -421,6 +425,7 @@ def SemanticOperation.id : SemanticOperation → OperationId
   | .reachNoneEnd id _ _
   | .terminateScope id _ _ _
   | .completeScope id _ _ _
+  | .completeEventSubProcess id _ _
   | .triggerCompensation id _ _ _ _
   | .cancelTransaction id _ _ _ _ _ => id
 
@@ -500,6 +505,16 @@ structure CompensationExecutionDeclaration where
   limits : CompensationTriggerLimits
   deriving Repr, DecidableEq
 
+/-- IMES-TRIGGER-01 supplies a child entry without an ordinary parent input or continuation. -/
+structure InterruptingMessageEventSubProcessDeclaration where
+  parentScopeId : DefinitionScopeId
+  handlerScopeId : DefinitionScopeId
+  elementId : NodeId
+  startEventId : NodeId
+  channel : MessageChannel
+  childEntry : ControlPlaceId
+  deriving Repr, DecidableEq
+
 structure Program where
   identity : ProgramIdentity
   internalSchedulingMode : InternalSchedulingMode
@@ -513,6 +528,7 @@ structure Program where
   compensationEventSubProcessSnapshots :
     Option CompensationEventSubProcessSnapshotDeclaration := none
   compensationExecution : Option CompensationExecutionDeclaration := none
+  interruptingMessageEventSubProcesses : List InterruptingMessageEventSubProcessDeclaration := []
   deriving Repr, DecidableEq
 
 namespace Obligations

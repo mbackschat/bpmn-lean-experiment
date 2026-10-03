@@ -563,8 +563,10 @@ private def commandPublicationsJson (program : SemanticProcess.Program)
         traced (some ∘ stimulusJson)
       let replays := SemanticProcess.replayCommittedTransitionsWithCompensationSnapshots program initial
         traced.committedTransitions = some traced.result.state
-      let openOccurrences := SemanticProcess.projectOpenFlowNodeOccurrencesWithCompensation?
-        program traced.result.state
+      let openOccurrences :=
+        if program.identity.semanticProfile = SemanticProcess.interruptingMessageEventSubProcessProfileId then
+          SemanticProcess.projectOpenFlowNodeOccurrencesWithMessageHandler? program traced.result.state
+        else SemanticProcess.projectOpenFlowNodeOccurrencesWithCompensation? program traced.result.state
       let record := Json.mkObj
         [ ("commandId", toJson (SemanticProcess.stimulusCommandId stimulus).value)
         , ("outcome", commandOutcomeJson traced.result.outcome)

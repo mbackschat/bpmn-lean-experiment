@@ -33,9 +33,11 @@ theorem definition_singleton (program : Program) (id : DefinitionScopeId)
 
 theorem child_entry_census (program : Program) (definition : DefinitionScope)
     (parent : DefinitionScopeId) (admitted : programWellFormed program = true)
-    (snapshots : program.compensationEventSubProcessSnapshots = none)
+    (_snapshots : program.compensationEventSubProcessSnapshots = none)
     (member : definition ∈ program.definitionScopes)
-    (nested : definition.parentScopeId = some parent) :
+    (nested : definition.parentScopeId = some parent)
+    (entryExists : ∃ operation ∈ program.operations,
+      enteredChildScopeId? operation = some definition.id) :
     (program.operations.filter fun operation =>
       decide (enteredChildScopeId? operation = some definition.id)).length = 1 := by
   have graph := programWellFormed_graph program admitted
@@ -53,18 +55,23 @@ theorem child_entry_census (program : Program) (definition : DefinitionScope)
           root = true := by grind
       simp only [compensationEventSubProcessSnapshotScopeLifecycleWellFormed, Bool.and_eq_true] at lifecycle
       have scopeValid := List.all_eq_true.mp lifecycle.2 definition member
-      change (if (match program.compensationEventSubProcessSnapshots with
-        | none => []
-        | some declaration => declaration.targets.map
-            CompensationEventSubProcessSnapshotTarget.handlerScopeId).contains definition.id
-        then _ else _) = true at scopeValid
-      simp only [snapshots, List.contains_nil, Bool.false_eq_true, ↓reduceIte] at scopeValid
-      change ((_ : Bool) && match definition.parentScopeId with
-        | none => _
-        | some _ => (program.operations.filter fun operation =>
-            decide (enteredChildScopeId? operation = some definition.id)).length = 1) = true at scopeValid
-      simpa only [nested, Bool.and_eq_true, decide_eq_true_eq] using
-        ((Bool.and_eq_true _ _).mp scopeValid).2
+      change (if (_ : Bool) then _ else _) = true at scopeValid
+      split at scopeValid
+      · simp only [Bool.and_eq_true, List.isEmpty_iff] at scopeValid
+        have empty : (program.operations.filter fun operation =>
+            decide (enteredChildScopeId? operation = some definition.id)) = [] := scopeValid.1.2
+        obtain ⟨entry, entryMember, enters⟩ := entryExists
+        have present : entry ∈ program.operations.filter (fun operation =>
+            decide (enteredChildScopeId? operation = some definition.id)) :=
+          List.mem_filter.mpr ⟨entryMember, by simp [enters]⟩
+        rw [empty] at present
+        contradiction
+      · change ((_ : Bool) && match definition.parentScopeId with
+          | none => _
+          | some _ => (program.operations.filter fun operation =>
+              decide (enteredChildScopeId? operation = some definition.id)).length = 1) = true at scopeValid
+        simpa only [nested, Bool.and_eq_true, decide_eq_true_eq] using
+          ((Bool.and_eq_true _ _).mp scopeValid).2
     · contradiction
   · contradiction
 
@@ -105,6 +112,7 @@ theorem prepareInternalScopeCreation_child_excludes_bounded_entry
         simp only [internalScopeCreationDefinitionMatches, Bool.and_eq_true, decide_eq_true_eq] at matching
         have census := child_entry_census program definition owner.definitionScopeId admitted snapshots
           definitionMember matching.1.2
+          ⟨_, operationMember, by simp [enteredChildScopeId?, matching.1.1]⟩
         obtain ⟨sole, singleton⟩ := List.length_eq_one_iff.mp census
         have ordinaryMember : .enterScope selectedId selectedOrigin selectedInput selectedEntry selectedScope ∈
             program.operations.filter (fun candidate =>
@@ -348,6 +356,7 @@ private theorem created_bindings (program : Program) (state : RuntimeState)
             at matchingDefinition
           have census := child_entry_census program definition owner.definitionScopeId admitted snapshots
             definitionFacts.1 matchingDefinition.1.2
+            ⟨_, operationMember, by simp [enteredChildScopeId?, matchingDefinition.1.1]⟩
           obtain ⟨sole, singleton⟩ := List.length_eq_one_iff.mp census
           have operationFiltered : .enterScope id selectedOrigin input entry childScope ∈
               program.operations.filter (fun operation => decide (enteredChildScopeId? operation = some definition.id)) :=

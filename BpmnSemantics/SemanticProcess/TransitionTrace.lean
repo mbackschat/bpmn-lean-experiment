@@ -203,7 +203,7 @@ private def evaluateStimulusScheduled (closureLimit : Nat) (program : Program)
           candidateTransitions := none, candidateLifecycles := none }
       else
       let commandId := stimulusCommandId stimulus
-      let externalLifecycle := flowNodeOccurrenceDeltaForStimulus? program state
+      let externalLifecycle := flowNodeOccurrenceDeltaForStimulusWithMessageHandler? program state
         admission.state stimulus 0
       let closure := InternalCommutation.closeScheduledTraced closureLimit program commandId
         1 0 schedule admission.state

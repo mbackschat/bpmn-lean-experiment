@@ -87,6 +87,10 @@ export const STRUCTURED_PROCESS_COMPOSITION_CHECKPOINT_PROFILE_ID =
 export const CALL_ACTIVITY_DATA_BOUNDARIES_CHECKPOINT_PROFILE_ID =
   "bpmn-2.0.2-call-activity-data-boundaries-draft";
 
+/** The Message handler capsule separates private semantics from hosted capability registration. */
+export const INTERRUPTING_MESSAGE_EVENT_SUBPROCESS_CHECKPOINT_PROFILE_ID =
+  "bpmn-2.0.2-interrupting-message-event-subprocess-draft";
+
 /** Transition alias retained while correlation closure lanes migrate to the registered catalog member. */
 export const MESSAGE_KEY_CORRELATION_CHECKPOINT_PROFILE_ID =
   SemanticProfileId.MessageKeyCorrelation;

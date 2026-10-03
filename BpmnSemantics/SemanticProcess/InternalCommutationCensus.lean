@@ -52,6 +52,7 @@ def semanticOperationInternalFamily : SemanticOperation → InternalOperationFam
   | .reachNoneEnd _ _ _ => .mergeAndOrdinaryEnd
   | .returnProcess _ _ _ _ _ _
   | .completeScope _ _ _ _
+  | .completeEventSubProcess _ _ _
   | .throwError _ _ _ _ _
   | .terminateScope _ _ _ _ => .scopeReturnCompletionAndInterruption
   | .completeParallelMultiInstanceUserTask _ _ _ _ _ => .externallyAddressedCompletion
@@ -65,6 +66,7 @@ inductive InternalRuntimeStateAtomDomain where
   | controlToken
   | userTaskWait
   | messageWait
+  | eventSubProcessMessageSubscription
   | timerWait
   | effectWait
   | effectIncident
@@ -98,6 +100,7 @@ inductive InternalRuntimeStateField where
   | tokens
   | waits
   | messageWaits
+  | eventSubProcessMessageSubscriptions
   | timerWaits
   | effectWaits
   | effectIncidents
@@ -132,6 +135,7 @@ def internalRuntimeStateFieldAtomDomain :
   | .tokens => .controlToken
   | .waits => .userTaskWait
   | .messageWaits => .messageWait
+  | .eventSubProcessMessageSubscriptions => .eventSubProcessMessageSubscription
   | .timerWaits => .timerWait
   | .effectWaits => .effectWait
   | .effectIncidents => .effectIncident

@@ -1,6 +1,7 @@
 import BpmnSemantics.SemanticProcess.InternalExecutionFrontier
 import BpmnSemantics.SemanticProcess.InternalChoiceSchedule
 import BpmnSemantics.SemanticProcess.InternalTransitionPublication
+import BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessFlowNodeOccurrence
 
 /-! Bounded closure consumes explicit choices only after universally independent normalization,
 under the [approved choice account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md#explicit-observable-choice).
@@ -188,7 +189,7 @@ private def singletonClosureStep (program : Program) (commandId : SemanticId)
       | .mergeInput .. => (selectInternalMerge? state offer.operation offer.alternative).map
           (fun selected => [selected.record])
     lifecycles := match offer.alternative with
-      | .operation _ => (flowNodeOccurrenceDeltaForOperation? program state offer.successor
+      | .operation _ => (flowNodeOccurrenceDeltaForOperationWithMessageHandler? program state offer.successor
           offer.operation commandId first).map List.singleton
       | .mergeInput .. => do
           let instanceId ← hostingInstanceId? state

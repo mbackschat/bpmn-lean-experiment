@@ -695,6 +695,9 @@ private def decodeOperation (json : Json) :
           ⟨← stringField json "scopeId"⟩
           ((← decodeOptionalString (← field json "parentOutput")).map
             ControlPlaceId.mk))
+  | "completeEventSubProcess" =>
+      requireObjectShape json ["id", "kind", "origin", "scopeId"]
+      pure (.completeEventSubProcess id origin ⟨← stringField json "scopeId"⟩)
   | "triggerCompensation" =>
       requireObjectShape json
         ["definitionScopeId", "id", "input", "kind", "origin", "output"]
@@ -730,6 +733,17 @@ private def decodeControlPlaceScopeOwnership (json : Json) :
     { controlPlaceId := ⟨← stringField json "controlPlaceId"⟩
       scopeId := ⟨← stringField json "scopeId"⟩ }
 
+private def decodeInterruptingMessageEventSubProcess (json : Json) :
+    Except String InterruptingMessageEventSubProcessDeclaration := do
+  requireObjectShape json ["channel", "childEntry", "elementId", "handlerScopeId", "parentScopeId", "startEventId"]
+  pure {
+    parentScopeId := ⟨← stringField json "parentScopeId"⟩
+    handlerScopeId := ⟨← stringField json "handlerScopeId"⟩
+    elementId := ⟨← stringField json "elementId"⟩
+    startEventId := ⟨← stringField json "startEventId"⟩
+    channel := ← decodeOperationMessageChannel (← field json "channel")
+    childEntry := ⟨← stringField json "childEntry"⟩ }
+
 /-- Decode the exact current Semantic Process wire shape without establishing structural validity, profile capability, or equality with checked-process lowering. -/
 def decodeProgram (json : Json) : Except String Program := do
   let compensationActivityRetention ←
@@ -737,11 +751,13 @@ def decodeProgram (json : Json) : Except String Program := do
   let compensationEventSubProcessSnapshots ←
     decodeCompensationEventSubProcessSnapshotsField json
   let compensationExecution ← decodeCompensationExecutionField json
+  let messageHandlers ← optionalField json "interruptingMessageEventSubProcesses"
   let optionalKeys :=
     (if compensationActivityRetention.isSome then ["compensationActivityRetention"] else []) ++
     (if compensationEventSubProcessSnapshots.isSome then
       ["compensationEventSubProcessSnapshots"] else []) ++
-    (if compensationExecution.isSome then ["compensationExecution"] else [])
+    (if compensationExecution.isSome then ["compensationExecution"] else []) ++
+    (if messageHandlers.isSome then ["interruptingMessageEventSubProcesses"] else [])
   requireObjectShape json
     (optionalKeys ++
       ["controlPlaceScopes", "controlPlaces", "definitionScopes", "identity",
@@ -765,6 +781,9 @@ def decodeProgram (json : Json) : Except String Program := do
       operations := ← decodeArray decodeOperation (← field json "operations")
       compensationActivityRetention
       compensationEventSubProcessSnapshots
-      compensationExecution }
+      compensationExecution
+      interruptingMessageEventSubProcesses := ← match messageHandlers with
+        | none => pure []
+        | some handlers => decodeArray decodeInterruptingMessageEventSubProcess handlers }
 
 end BpmnSemantics.SemanticProcessJson

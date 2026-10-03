@@ -9,6 +9,7 @@
 import type { DirectActivityDataInput } from "./activity-data-input-contract.js";
 import type { DirectActivityDataOutput } from "./activity-data-output-contract.js";
 import type { CallDataInterface } from "./call-data-contract.js";
+import type { CheckedInterruptingMessageEventSubProcess } from "./interrupting-message-event-subprocess-contract.js";
 import type { DirectCatchEventPayloadOutput } from "./catch-event-payload-contract.js";
 import type { CheckedTransactionCancellation } from "./transaction-source-contract.js";
 import type { CheckedCompensation } from "./compensation-source-contract.js";
@@ -415,4 +416,5 @@ export type CheckedProcess = DeepReadonly<{
   sequenceFlows: CheckedSequenceFlow[];
   compensation?: CheckedCompensation;
   transactionCancellation?: CheckedTransactionCancellation;
+  interruptingMessageEventSubProcesses?: CheckedInterruptingMessageEventSubProcess[];
 }>;

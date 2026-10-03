@@ -95,7 +95,7 @@ private def ownedWaitDefinitions : SemanticOperation → OwnedWaitDefinitions
   | .selectMany ..
   | .synchronizeSelected .. | .throwError .. | .reachNoneEnd ..
   | .terminateScope ..
-  | .completeScope ..
+  | .completeScope .. | .completeEventSubProcess ..
   | .triggerCompensation .. | .cancelTransaction .. => {}
 
 private def taskDefinitions (program : Program) : List UserTaskDefinition :=
@@ -254,7 +254,7 @@ private def openTimers (program : Program) (state : RuntimeState) :
 
 private def openMessageSubscriptions (program : Program)
     (state : RuntimeState) : List OpenMessageSubscription :=
-  (messageDefinitions program).flatMap fun message =>
+  let ordinary := (messageDefinitions program).flatMap fun message =>
     (state.messageWaits.filter fun wait =>
       decide (wait.elementId = message.elementId)).map fun wait =>
         { id :=
@@ -262,6 +262,14 @@ private def openMessageSubscriptions (program : Program)
               elementId := ⟨message.elementId.value⟩
               activation := wait.activation }
           channel := wait.channel }
+  let listeners := state.eventSubProcessMessageSubscriptions.map fun listener =>
+    { id := listener.id, channel := listener.channel : OpenMessageSubscription }
+  (ordinary ++ listeners).mergeSort fun left right =>
+    if left.id.processInstanceId ≠ right.id.processInstanceId then
+      left.id.processInstanceId.value < right.id.processInstanceId.value
+    else if left.id.elementId ≠ right.id.elementId then
+      left.id.elementId.value < right.id.elementId.value
+    else left.id.activation ≤ right.id.activation
 
 private def openEffects (program : Program) (state : RuntimeState) :
     List OpenEffect :=
@@ -410,6 +418,9 @@ private def openIncidents (program : Program) (state : RuntimeState) :
 
 private def messageEnabledInteraction? (program : Program) (state : RuntimeState)
     (subscription : OpenMessageSubscription) : Option EnabledInteraction :=
+  if (selectEventSubProcessMessageDelivery? program state subscription.id subscription.channel).isSome then
+    some (.deliverMessage subscription.id subscription.channel)
+  else
   match messageWaitDeclarers program ⟨subscription.id.elementId.value⟩ with
   | [.awaitPayloadMessage ..] =>
       some (.deliverPayloadMessage subscription.id subscription.channel)

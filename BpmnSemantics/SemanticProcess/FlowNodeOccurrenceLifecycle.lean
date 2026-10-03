@@ -182,7 +182,8 @@ def flowNodeSelectedOperationOwner? (state : RuntimeState) :
   | .synchronizeSelected _ _ _ _ selectionKey => selectedJoinOwner? state selectionKey
   | .returnProcess id origin _ _ _ _ => uniqueReturnOwner? state id origin
   | .completeParallelMultiInstanceUserTask .. => none
-  | .completeScope _ _ scopeId _ => uniqueCompletingScopeOwner? state scopeId
+  | .completeScope _ _ scopeId _ | .completeEventSubProcess _ _ scopeId =>
+      uniqueCompletingScopeOwner? state scopeId
 
 def hostingInstanceId? (state : RuntimeState) : Option SemanticId :=
   match state.control with
@@ -813,6 +814,11 @@ def candidateFlowNodeOccurrenceDeltaForOperation? (program : Program) (before af
           decide (occurrence.id.definitionScopeId = scopeId) with
       | [{ id, parent := some _ }] => pure (canonicalFlowNodeOccurrenceDelta [] [completedEnd (.scope id)])
       | [{ parent := none, .. }] => pure (canonicalFlowNodeOccurrenceDelta [] [])
+      | _ => none
+  | .completeEventSubProcess _ _ scopeId =>
+      match before.scopeOccurrences.filter fun occurrence =>
+          decide (occurrence.id.definitionScopeId = scopeId) with
+      | [{ id, parent := some _ }] => pure (canonicalFlowNodeOccurrenceDelta [] [completedEnd (.scope id)])
       | _ => none
   | .triggerCompensation .. | .cancelTransaction .. => none
 

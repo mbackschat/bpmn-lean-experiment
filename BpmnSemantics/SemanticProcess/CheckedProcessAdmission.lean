@@ -197,7 +197,8 @@ private def checkedEventRaceConfigurationValid (source : CheckedProcess) : Bool 
         | _ => false
     | _ => true
 
-private def checkedNodeArityValid (repeatable : Bool) (flows : List CheckedSequenceFlow) :
+private def checkedNodeArityValid (repeatable : Bool) (dormantHandlers : List NodeId)
+    (flows : List CheckedSequenceFlow) :
     CheckedNode → Bool
   | .noneStartEvent id =>
       incomingCount flows id = 0 && outgoingCount flows id = 1
@@ -220,7 +221,9 @@ private def checkedNodeArityValid (repeatable : Bool) (flows : List CheckedSeque
         flows.any (fun flow => flow.id == outputFlowId && flow.sourceId == id)
   | .cancelEndEvent id => incomingCount flows id == 1 && outgoingCount flows id == 0
   | .embeddedSubProcess id _ =>
-      incomingCount flows id = 1 && outgoingCount flows id = 1
+      if dormantHandlers.contains id then
+        incomingCount flows id = 0 && outgoingCount flows id = 0
+      else incomingCount flows id = 1 && outgoingCount flows id = 1
   | .callActivity id calledProcessId data =>
       callDataInterfaceValid data id.value calledProcessId.value &&
       nonempty calledProcessId.value &&
@@ -455,7 +458,8 @@ def checkedWellFormed (source : CheckedProcess) : Bool :=
                     candidateFlowIds.contains flow.id
                 | _ => false)) &&
     source.nodes.all (checkedNodeArityValid
-      (source.identity.semanticProfile == repeatableSubscriptionCheckpointProfileId) source.sequenceFlows) &&
+      (source.identity.semanticProfile == repeatableSubscriptionCheckpointProfileId)
+      (source.interruptingMessageEventSubProcesses.map (·.elementId)) source.sequenceFlows) &&
     checkedInclusivePairingValid source &&
     checkedEventRaceConfigurationValid source &&
     checkedErrorHandlersValid source &&

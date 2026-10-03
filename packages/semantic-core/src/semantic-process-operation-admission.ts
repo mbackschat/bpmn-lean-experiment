@@ -479,6 +479,9 @@ export function isWellFormedSemanticOperation(
         hasOnlyKeys(value, ["id", "kind", "origin", "input"]) &&
         isPlaceReference(value.input, placeIds)
       );
+    case SemanticOperationKind.CompleteEventSubProcess:
+      return hasOnlyKeys(value, ["id", "kind", "origin", "scopeId"]) &&
+        isNonEmptyString(value.scopeId) && scopeOrigins.has(value.scopeId);
     case SemanticOperationKind.CompleteScope:
       return (
         hasOnlyKeys(value, [

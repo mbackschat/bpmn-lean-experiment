@@ -121,6 +121,8 @@ const flowNodeLifecyclePath =
   "BpmnSemantics/SemanticProcess/FlowNodeOccurrenceLifecycle.lean";
 const flowNodeBoundaryStartsPath =
   "BpmnSemantics/SemanticProcess/FlowNodeOccurrenceBoundaryStarts.lean";
+const messageHandlerLifecyclePath =
+  "BpmnSemantics/SemanticProcess/InterruptingMessageEventSubProcessFlowNodeOccurrence.lean";
 const openProjectionHelpers = [
   "processIdForOwner?",
   "waitStart?",
@@ -141,6 +143,8 @@ function candidateProjectionReuseViolations(
         )
       : normalized === flowNodeBoundaryStartsPath
         ? 0
+        : normalized === messageHandlerLifecyclePath
+          ? lines.findIndex((line) => /^def\s+messageHandlerDeliveryDelta\?/u.test(line.trim()))
         : -1;
   if (firstCandidateLine < 0) {
     return [];
@@ -166,6 +170,21 @@ function candidateProjectionReuseViolations(
 }
 
 const evaluatorIndependentRelations = Object.freeze([
+  Object.freeze({
+    path: "BpmnSemantics/SemanticProcess/InterruptingMessageEventSubProcessRegistrationLaws.lean",
+    relation: "EventSubProcessRegistrationStep",
+    evaluator: "installEventSubProcessListener",
+  }),
+  Object.freeze({
+    path: "BpmnSemantics/SemanticProcess/InterruptingMessageEventSubProcessInterruptionLaws.lean",
+    relation: "EventSubProcessInterruptionStep",
+    evaluator: "applyEventSubProcessInterruption",
+  }),
+  Object.freeze({
+    path: "BpmnSemantics/SemanticProcess/InterruptingMessageEventSubProcessCompletionLaws.lean",
+    relation: "EventSubProcessCompletionStep",
+    evaluator: "completeEventSubProcessState?",
+  }),
   Object.freeze({
     path: "BpmnSemantics/SemanticProcess/TransactionCancellationSemantics.lean",
     relation: "TransactionCancellationStep",
@@ -412,6 +431,18 @@ def candidateWaitStart? := waitStart?
   );
 });
 
+test("Message handler candidates stay independent of their open projection", () => {
+  const sourcePath = "BpmnSemantics/SemanticProcess/InterruptingMessageEventSubProcessFlowNodeOccurrence.lean";
+  const source = "/-! Handler publication. -/\n" +
+    "def projectOpenHandler? := scopeStart?\n" +
+    "def messageHandlerDeliveryDelta? := scopeStart?\n";
+  assert.deepEqual(leanSourceViolations(sourcePath, source).map(formatViolation), [
+    `${sourcePath}:3: candidate lifecycle construction reuses open-projection helper \`scopeStart?\``,
+  ]);
+  assert.deepEqual(leanSourceViolations(sourcePath,
+    source.replace("messageHandlerDeliveryDelta? := scopeStart?", "messageHandlerDeliveryDelta? := none")), []);
+});
+
 test("declarative compensation relations cannot delegate meaning to their evaluators", () => {
   const path =
     "BpmnSemantics/SemanticProcess/CompensationTriggerHandlerFrontier.lean";
@@ -443,8 +474,11 @@ inductive CompensationFrontierRefusalStep : Prop where
   assert.deepEqual(leanSourceViolations(path, independent), []);
 });
 
-test("Transaction relations reject evaluator-defined cancellation and joining", () => {
+test("Transition relations reject evaluator-defined successors", () => {
   for (const [file, relation, evaluator, sibling] of [
+    ["InterruptingMessageEventSubProcessRegistrationLaws", "EventSubProcessRegistrationStep", "installEventSubProcessListener", "UnusedSibling"],
+    ["InterruptingMessageEventSubProcessInterruptionLaws", "EventSubProcessInterruptionStep", "applyEventSubProcessInterruption", "UnusedSibling"],
+    ["InterruptingMessageEventSubProcessCompletionLaws", "EventSubProcessCompletionStep", "completeEventSubProcessState?", "UnusedSibling"],
     ["TransactionCancellationSemantics", "TransactionCancellationStep", "attemptTransactionCancellation", "TransactionCancellationReady"],
     ["TransactionCancellation", "TransactionCancellationJoin", "finishTransactionCancellation?", "CompensationCompletionRouting"],
     ["TransactionCancellation", "CompensationCompletionRouting", "compensationCompletionRoute?", "TransactionCancellationJoin"],

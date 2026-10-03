@@ -132,7 +132,7 @@ private def correspondenceOperationSupported : SemanticOperation → Bool
   | .awaitMonitoredUserTask .. | .awaitEffect ..
   | .mergeExclusive .. | .choose .. | .selectMany ..
   | .synchronizeSelected .. | .throwError .. | .triggerCompensation .. | .cancelTransaction ..
-  | .terminateScope .. => false
+  | .terminateScope .. | .completeEventSubProcess .. => false
 
 private def programEnabledTransitions (program : Program)
     (state : RuntimeState) : List (OperationId × RuntimeState) :=

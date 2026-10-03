@@ -310,6 +310,7 @@ function isRuntimeState(value: unknown): value is RuntimeState {
     "userTaskWaits", "messageWaits", "timerWaits", "effectWaits",
     "effectIncidents", "selectedBranchSets", "eventRaces",
     "calledProcessOccurrences", "activityOccurrences",
+    ...(Object.hasOwn(value, "eventSubProcessMessageSubscriptions") ? ["eventSubProcessMessageSubscriptions"] : []),
     ...(Object.hasOwn(value, "sequentialMultiInstanceControllers")
       ? ["sequentialMultiInstanceControllers"]
       : []),
@@ -339,6 +340,8 @@ function isRuntimeState(value: unknown): value is RuntimeState {
     !isList(value.controlTokens, isControlToken) ||
     !isList(value.userTaskWaits, isUserTaskWait) ||
     !isList(value.messageWaits, isMessageWait) ||
+    (Object.hasOwn(value, "eventSubProcessMessageSubscriptions") &&
+      !isList(value.eventSubProcessMessageSubscriptions, isEventSubProcessMessageSubscription)) ||
     !isList(value.timerWaits, isTimerWait) ||
     !isList(value.effectWaits, isEffectWait) ||
     !isList(value.effectIncidents, isEffectIncident) ||
@@ -478,6 +481,11 @@ function isMessageWait(value: unknown): boolean {
   return isRecord(value) && hasOnlyKeys(value, ["id", "owner", "channel", "output"]) &&
     isOccurrenceId(value.id) && isScopeId(value.owner) &&
     isMessageChannel(value.channel) && isNonemptyString(value.output);
+}
+
+function isEventSubProcessMessageSubscription(value: unknown): boolean {
+  return isRecord(value) && hasOnlyKeys(value, ["id", "owner", "channel"]) &&
+    isOccurrenceId(value.id) && isScopeId(value.owner) && isMessageChannel(value.channel);
 }
 
 function isTimerWait(value: unknown): boolean {

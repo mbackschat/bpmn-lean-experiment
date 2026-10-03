@@ -128,7 +128,8 @@ private def operationOriginElementId : SemanticOperation → Option NodeId
   | .synchronizeSelected _ origin _ _ _ | .throwError _ origin _ _ _
   | .reachNoneEnd _ origin _ | .terminateScope _ origin _ _
   | .cancelTransaction _ origin _ _ _ _
-  | .completeScope _ origin _ _ => some origin.elementId
+  | .completeScope _ origin _ _
+  | .completeEventSubProcess _ origin _ => some origin.elementId
 
 private def bodyElementIds : CompensationSubjectDefinition → List NodeId
   | .boundaryActivity _ body | .eventSubProcess _ _ body =>

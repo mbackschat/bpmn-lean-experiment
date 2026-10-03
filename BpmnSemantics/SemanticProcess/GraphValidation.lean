@@ -16,7 +16,8 @@ private def operationInputs : SemanticOperation → List ControlPlaceId
   | .initiateTimer ..
   | .returnProcess ..
   | .completeParallelMultiInstanceUserTask ..
-  | .completeScope .. => []
+  | .completeScope ..
+  | .completeEventSubProcess .. => []
   | .enterScope _ _ input _ _
   | .enterBoundedScope _ _ input _ _ _
   | .enterMonitoredScope _ _ input _ _ _
@@ -90,6 +91,7 @@ def operationOutputs : SemanticOperation → List ControlPlaceId
       candidates.map (·.output) ++ [defaultBranch.output]
   | .throwError _ _ _ _ handler => [handler.output]
   | .reachNoneEnd ..
+  | .completeEventSubProcess ..
   | .terminateScope .. => []
   | .completeScope _ _ _ parentOutput => parentOutput.toList
   | .initiateMessage _ _ _ outputs => outputs
@@ -216,6 +218,9 @@ def operationRespectsScopes (program : Program)
                 | some parent, some output =>
                     placesOwnedBy program [output] parent
                 | _, _ => false
+      | .completeEventSubProcess id origin scopeId =>
+          scopeId == owner && owner != entryRootId &&
+            completeEventSubProcessOperationWellFormed program id origin scopeId
       | .terminateScope _ _ input scopeId =>
           scopeId = owner && placesOwnedBy program [input] owner
       | .cancelTransaction _ _ scopeId input output _ =>
@@ -264,7 +269,8 @@ def scopedOwnershipComplete (program : Program)
 private def completionId? (program : Program) (scopeId : DefinitionScopeId) :
     Option OperationId :=
   program.operations.findSome? fun
-    | .completeScope id _ candidate _ =>
+    | .completeScope id _ candidate _
+    | .completeEventSubProcess id _ candidate =>
         if candidate = scopeId then some id else none
     | _ => none
 
@@ -289,8 +295,19 @@ private def parallelMultiInstanceCompletionEdges (program : Program) :
         some { source := entryOperationId, target := id }
     | _ => none
 
+/-- IMES-ARM-01 and IMES-CLOSE-01 contribute reachability dependencies, never token-producing ports. -/
+private def messageHandlerEdges (program : Program) : List (GraphEdge OperationId) :=
+  program.interruptingMessageEventSubProcesses.flatMap fun declaration =>
+    match program.operations.findSome? (fun | .initiate id _ _ => some id | _ => none),
+        consumers program.operations declaration.childEntry,
+        completionId? program declaration.handlerScopeId,
+        completionId? program declaration.parentScopeId with
+    | some start, [entry], some handlerCompletion, some parentCompletion =>
+        [{ source := start, target := entry }, { source := handlerCompletion, target := parentCompletion }]
+    | _, _, _, _ => []
+
 private def programEdges (program : Program) : List (GraphEdge OperationId) :=
-  placeEdges program ++ completionEdges program ++ parallelMultiInstanceCompletionEdges program ++
+  messageHandlerEdges program ++ placeEdges program ++ completionEdges program ++ parallelMultiInstanceCompletionEdges program ++
     (callCompletionPairs program).map fun pair =>
       { source := pair.1, target := pair.2 }
 
@@ -313,6 +330,7 @@ def semanticOperationIsResumptionCut : SemanticOperation → Bool
   | .synchronizeSelected .. | .throwError .. | .reachNoneEnd ..
   | .terminateScope ..
   | .completeScope ..
+  | .completeEventSubProcess ..
   | .triggerCompensation .. | .cancelTransaction .. => false
 
 /-- Independently classify Semantic Process graph edges removed after an `awaitUserTask` producer. -/
@@ -420,7 +438,8 @@ def programGraphWellFormedWithScopeLifecycle (program : Program)
             boundedScopeEntryOriginsOwnTheirScopes program &&
             scopeLifecycle program entryRoot &&
             program.controlPlaces.all (fun place =>
-            (producers program.operations place.id).length = 1 &&
+            (producers program.operations place.id).length +
+              (program.interruptingMessageEventSubProcesses.filter (fun declaration => declaration.childEntry == place.id)).length = 1 &&
               (consumers program.operations place.id).length = 1) &&
             allReachableWithin operationIds edges fuel start &&
             allCoreachableWithin operationIds edges fuel ends &&

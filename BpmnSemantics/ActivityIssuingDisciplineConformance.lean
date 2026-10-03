@@ -79,39 +79,12 @@ private theorem completeScopeState_preserves_activity_occurrences
     (parentOutput : Option ControlPlaceId)
     (completion : completeScopeState? state scopeId parentOutput = some completed) :
     completed.activityOccurrences = state.activityOccurrences := by
-  revert completion
-  have expansion :
-      completeScopeState? state scopeId parentOutput =
-        (match state.scopeOccurrences.filter fun occurrence =>
-        decide (occurrence.id.definitionScopeId = scopeId) with
-      | [occurrence] =>
-          if !scopeQuiescent state occurrence.id then none
-          else
-            match occurrence.parent, parentOutput, state.control with
-            | none, none, .running instanceId =>
-                if state.initiationPending then none
-                else some
-                  { state with
-                    control := .completed instanceId
-                    scopeOccurrences := []
-                    compensationActivityRetentions :=
-                      state.compensationActivityRetentions.filter fun retention =>
-                        decide (retention.owner ≠ occurrence.id) }
-            | some parent, some output, .running _ =>
-                if state.scopeOccurrences.any fun candidate => candidate.id == parent then
-                  some
-                    { state with
-                      tokens := addToken state.tokens output parent
-                      scopeOccurrences := state.scopeOccurrences.filter fun candidate =>
-                        decide (candidate.id ≠ occurrence.id) }
-                else none
-            | _, _, _ => none
-      | _ => none) := rfl
-  intro completion
-  rw [expansion] at completion
-  repeat' split at completion
-  all_goals simp_all
-  all_goals rw [← completion]
+  unfold completeScopeState? at completion
+  split at completion
+  · rename_i occurrence selected
+    exact (completeScopeState_reference_fields state completed scopeId parentOutput occurrence
+      selected (by simpa only [completeScopeState?, selected] using completion)).2.1
+  · simp at completion
 
 /-- Regional cancellation only filters Activity records, so every successor record is an exact
 predecessor record. -/

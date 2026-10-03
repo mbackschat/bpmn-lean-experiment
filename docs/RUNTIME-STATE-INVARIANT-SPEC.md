@@ -42,6 +42,14 @@ Two monotonicity facts are separate relations rather than conjuncts, because whe
 | `RSI-BIND-05` | each selected-branch record's selection key matches exactly one `selectMany`, each event race matches exactly one `awaitEventRace`, and each called record matches exactly one paired `invokeProcess` and `returnProcess`. **Implemented narrower than stated:** the `selectMany` and `awaitEventRace` clauses only; the called-record clause is decided nowhere, since `calledProcessAssociationsValid` never reads `program.operations` |
 | `RSI-BIND-06` | the Program admits exactly one declaring operation for every family-tagged wait element identity whether or not a live wait exists. Equal element text remains admissible across different wait families. Lean and the independently structured TypeScript Program validator enforce this before runtime-state admission |
 
+### Declaration-owned Message Event Sub-Process listeners
+
+For the private [interrupting Message Event Sub-Process account](capsules/INTERRUPTING-MESSAGE-EVENT-SUBPROCESS-PROPOSAL.md#representation-and-lifetime), `eventSubProcessMessageSubscriptions` has an explicit declaration-owned binding: its identity names the declared Message Start, its owner is the exact live containing parent occurrence, and its channel equals the declaration. This supplements `RSI-BIND-04`; the existing operation-owned wait equation is unchanged. Registration precedes handler creation and is passive: it does not block quiescence or count as an executing child or public flow-node occurrence.
+
+[Lean family validation](../BpmnSemantics/SemanticProcess/InterruptingMessageEventSubProcessStateValidation.lean) supplements the unchanged generic predicates through `interruptingMessageEventSubProcessCheckpointStateWellFormed`; [TypeScript aggregate validation](../packages/semantic-core/src/runtime-state-well-formedness.ts) includes its independently written family validator. The exact private profile and complete admitted declaration graph are required. Pre-start state must equal the pristine initial state. After Start, the parent, listener and issuance counters must agree; ordinary work requires the listener, while a live or already-issued handler excludes remaining ordinary parent work and a live listener. Handler identity, parent linkage and cardinality are exact. Terminal state contains no live listener, scope, token, task or Activity. Duplicate counters, undeclared or duplicate listeners, wrong channel/owner, ordinary Message identity aliases, and unsupported work collections reject.
+
+TypeScript requires the collection absent before Start and under older profiles, but present after successful Start even when empty; Lean's explicit list defaults to empty. The family gate does not retrofit its phase constraints into old generic Lean theorem propositions or claim equivalence of the complete cross-language predicates. Local family laws and finite reached-prefix checks retain the capsule's bounded assurance lane; general preservation remains open.
+
 ### Layer 3: monotonicity
 
 | Rule | Proposition |
@@ -73,6 +81,7 @@ This inventory locates the current Lean aggregate's checks, including imported c
 | `tokens`; `controlTokens` | `runtimePositionValid`: multiplicity, live owner, and owning Program place; `canonicalCollectionOrder`: complete place/owner order with multiplicity preserved |
 | `waits`; `userTaskWaits` | `waitOwnersLive`, `waitIdentitiesUnique`, `waitDeclarationsValid`, `canonicalCollectionOrder`, and the User Task branch of `runtimeStateIdentityBound` |
 | `messageWaits` | owner, identity, declaration, and order checks; event-race and attached-handler associations; counter bound open |
+| `eventSubProcessMessageSubscriptions` | separate Message Event Sub-Process family predicate: pristine start, exact declaration/parent/channel and issuance binding, passive/active/retired phase exclusion; composed beside the unchanged Lean aggregate and inside the TypeScript aggregate |
 | `timerWaits` | owner, identity, declaration, order, and Timer counter bound; event-race and attached-handler associations |
 | `effectWaits`, `effectIncidents` | owner and declaration checks; effect-wait uniqueness/order and imported `effectIncidentAssociationsValid`; Effect counter bound open |
 | `selectedBranchSets` | owner, order, and `hiddenRecordDeclarationsValid`; overlapping split-occurrence identity remains open |
@@ -90,14 +99,14 @@ This inventory locates the current Lean aggregate's checks, including imported c
 
 The Activity-local gap is distinct from the repaired cancellation path: withdrawal now removes affected local scopes, but an arbitrarily supplied running state can still contain an orphan local scope. `RSI-OWN-01` does not cover `variables.activities`, and ordering cannot establish attachment. Reopen with a consumer-specific ownership account and separating live/orphan witnesses before relying on that fact; this disclosure adds no predicate or preservation claim.
 
-Two representation constraints must be resolved before broader admission. The current Inclusive `SelectedBranchSet` identifies its owner and split selection key but has no split-occurrence ordinal; overlapping loop iterations need an occurrence identity so one iteration cannot consume another's selection. Event Sub-Process start subscriptions live in the enclosing parent before the handler scope exists, so their lowering must reconcile that parent ownership with `RSI-BIND-04`'s declaring-operation scope equation. Neither feature may inherit the current restriction as general BPMN meaning. [Semantic Process IL](SEMANTIC-PROCESS-IL-SPEC.md#runtime-state) owns the representation boundary.
+The current Inclusive `SelectedBranchSet` identifies its owner and split selection key but has no split-occurrence ordinal; overlapping loop iterations need an occurrence identity so one iteration cannot consume another's selection. The declaration-owned Message listener account above resolves parent ownership for its bounded Event Sub-Process slice without changing ordinary waits. Neither admission restriction is general BPMN meaning. [Semantic Process IL](SEMANTIC-PROCESS-IL-SPEC.md#runtime-state) owns the representation boundary.
 
 **`RSI-BOUND-01` membership criterion.** A counter family belongs when every site that writes one of its live-member collections leaves the member's activation at or below its key's count in that site's post-state and no site lowers the count. Minting sites satisfy the first condition by numbering from the counter and writing the advanced count in the same transition. Restore, retry, and reinsert sites satisfy it by preserving an activation that already satisfied the inequality. A family with any writer that leaves a live member above its key's post-state count is excluded.
 
 | Family | Counter | Live members | Current contract |
 |---|---|---|---|
 | User Task | `activations` / `taskActivations` | `waits` / `userTaskWaits` | implemented |
-| Message | `messageActivations` | `messageWaits` | open |
+| Message | `messageActivations` | `messageWaits`, `eventSubProcessMessageSubscriptions` | general bound open; the private Message Event Sub-Process family separately checks its exact listener issuance |
 | Timer | `timerActivations` | `timerWaits` | implemented |
 | Effect | `effectActivations` | `effectWaits`, each incident-retained wait, and each `variables.activities` owner | open |
 | Event race | `eventRaceActivations` | `eventRaces` | open |
@@ -133,7 +142,7 @@ Reopen when a consumer needs a stated conjunct discharged rather than assumed, w
 
 ## Enforcement
 
-The predicate gates the fail-closed command path and the Workflow-continuation boundary in TypeScript. It gates nothing in Lean: the pre-dispatch gate is **excluded**, because gating on a predicate whose preservation is unproved risks refusing a reachable state.
+The predicate gates the fail-closed command path and the Workflow-continuation boundary in TypeScript. The generic predicate gates no Lean command path: its general pre-dispatch gate is **excluded**, because gating on a predicate whose preservation is unproved risks refusing a reachable state. The private Message Event Sub-Process command path separately enforces its bounded family predicate; this does not change that generic enforcement boundary.
 
 The gate decides a narrower set than the predicate. Program-agreement classes are excluded from it, because deciding them needs the complete definition and the program handed to a command is only the hosting one. `LiveIdentityAboveCounter` is included because the implemented branches read one state and no called definition.
 

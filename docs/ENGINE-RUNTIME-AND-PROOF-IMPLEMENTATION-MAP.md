@@ -166,7 +166,7 @@ Private [Call data](capsules/CALL-ACTIVITY-DATA-BOUNDARIES-PROPOSAL.md#current-i
 
 ### BPMN conformance
 
-- Primary engine roadmap and ultimate Process Execution Conformance target are explicit
+- The [CIB7 implementation ceiling](PROJECT-DESIGN.md#cib-seven-220-breadth-ordering) bounds the standards roadmap; full Process Execution Conformance is unclaimed
 - the disposition ledger records thirteen first-pass mechanism families and reviewed requirements separately from CIB and A12 coverage
 - control mechanisms cover per-incoming-flow parallel synchronization, one Simple Boolean Exclusive Gateway, one structured Inclusive split and selected-subset join, and one exact operation-addressed Message-versus-`PT1S` Event-Based Gateway race with bounded durable refinement
 - Event mechanisms cover one exact Intermediate Catch Timer, operation-addressed payload-free and scalar-payload Intermediate Catch Message subscriptions, the registered single-property context-backed correlated-payload subscription, and one interrupting payload-free Message Boundary Event on a User Task
@@ -197,7 +197,7 @@ The exact sequential Multi-Instance User Task profile is implemented and executi
 ### Definition and execution scopes
 
 - arbitrary or repeated nesting, loops that reactivate one definition scope, and concurrent occurrences of the same child definition
-- executable Event Sub-Processes outside the bounded compensation snapshot/handler restoration account, public Call Activities beyond the exact two-Process empty-data normal-return slice, Transactions beyond the [bounded cancellation account](capsules/TRANSACTION-CANCELLATION-SPEC.md), Compensation source/profile admission beyond the exact registered topology, Temporal execution beyond its dedicated scheduler, Multi-Instance Sub-Process snapshots, general cancellation beyond the exact reviewed regional slices, and exceptional propagation beyond one direct-parent exact-code Error handler
+- public Event Sub-Processes outside the bounded compensation snapshot/handler restoration account, public Call Activities beyond the exact two-Process empty-data normal-return slice, Transactions beyond the [bounded cancellation account](capsules/TRANSACTION-CANCELLATION-SPEC.md), Compensation source/profile admission beyond the exact registered topology, Temporal execution beyond its dedicated scheduler, Multi-Instance Sub-Process snapshots, general cancellation beyond the exact reviewed regional slices, and exceptional propagation beyond one direct-parent exact-code Error handler
 - public projection of definition-scope or runtime-scope identity
 
 ### Lean

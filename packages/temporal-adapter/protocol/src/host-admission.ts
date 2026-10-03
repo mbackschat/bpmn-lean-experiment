@@ -1,6 +1,7 @@
 import {
   InternalSchedulingMode,
   CALL_ACTIVITY_DATA_BOUNDARIES_CHECKPOINT_PROFILE_ID,
+  INTERRUPTING_MESSAGE_EVENT_SUBPROCESS_CHECKPOINT_PROFILE_ID,
   STRUCTURED_PROCESS_COMPOSITION_CHECKPOINT_PROFILE_ID,
   COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID,
   TRANSACTION_CANCELLATION_CHECKPOINT_PROFILE_ID,
@@ -48,6 +49,16 @@ import type {
 export function assessTemporalHostCapability(
   program: SemanticProcessProgram,
 ): TemporalHostCapabilityResult {
+  // IMES hosting preflight requires listener continuity, response-loss recovery and replay qualification.
+  if (program.identity.semanticProfile === INTERRUPTING_MESSAGE_EVENT_SUBPROCESS_CHECKPOINT_PROFILE_ID) {
+    return {
+      kind: TemporalHostCapabilityResultKind.Rejected,
+      failure: {
+        code: TemporalHostAdmissionFailureCode.InterruptingMessageEventSubProcessQualificationUnavailable,
+        evidence: "Interrupting Message Event Sub-Processes remain a private semantic checkpoint pending hosting qualification.",
+      },
+    };
+  }
   // CDATA's approved preflight requires rollover, replacement and replay before hosting.
   if (program.identity.semanticProfile === CALL_ACTIVITY_DATA_BOUNDARIES_CHECKPOINT_PROFILE_ID) {
     return {
@@ -357,6 +368,7 @@ function classifyHostOperation(
     case SemanticOperationKind.ReachNoneEnd:
     case SemanticOperationKind.TerminateScope:
     case SemanticOperationKind.CompleteScope:
+    case SemanticOperationKind.CompleteEventSubProcess:
       return HostOperationClass.Passive;
     case SemanticOperationKind.AwaitCorrelatedPayloadMessage:
       return HostOperationClass.CorrelatedMessageWait;

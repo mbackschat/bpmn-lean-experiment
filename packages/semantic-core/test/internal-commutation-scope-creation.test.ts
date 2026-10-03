@@ -278,8 +278,6 @@ test("mints a nested child in its called Process instance rather than the hostin
     calledEntered,
     calledRoot,
     {
-      input: "place:Called_Start",
-      childEntry: "place:Nested_Entry",
       childScopeId: "scope:Nested_Called",
     },
   ), {

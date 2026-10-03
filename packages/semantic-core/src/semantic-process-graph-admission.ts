@@ -1,3 +1,4 @@
+import type { InterruptingMessageEventSubProcess } from "./interrupting-message-event-subprocess-contract.js";
 import { SemanticOperationKind } from "./semantic-process-contract.js";
 import type { CompensationEventSubProcessSnapshotTarget } from "./compensation-event-sub-process-snapshot-contract.js";
 import type { DefinitionScope } from "./semantic-value-contract.js";
@@ -38,23 +39,26 @@ export type SemanticProcessGraph = Readonly<{
 export function isWellFormedSemanticProcessGraph(
   graph: SemanticProcessGraph,
 ): boolean {
-  return isWellFormedSemanticProcessGraphWithDormantHandlers(graph, new Set());
+  return isWellFormedSemanticProcessGraphWithDormantHandlers(graph, new Set(), []);
 }
 
 /** Internal Program-composition seam; the package entry point deliberately does not export it. */
 export function isWellFormedSemanticProcessProgramGraph(
   graph: SemanticProcessGraph,
   targets: ReadonlyArray<CompensationEventSubProcessSnapshotTarget>,
+  messageHandlers: ReadonlyArray<InterruptingMessageEventSubProcess> = [],
 ): boolean {
   return isWellFormedSemanticProcessGraphWithDormantHandlers(
     graph,
     new Set(targets.map(({ handlerScopeId }) => handlerScopeId)),
+    messageHandlers,
   );
 }
 
 function isWellFormedSemanticProcessGraphWithDormantHandlers(
   graph: SemanticProcessGraph,
   dormantHandlerScopeIds: ReadonlySet<string>,
+  messageHandlers: ReadonlyArray<InterruptingMessageEventSubProcess>,
 ): boolean {
   const graphPolicy = semanticGraphPolicyForProfile(graph.semanticProfile);
   if (graphPolicy === undefined) {
@@ -117,6 +121,7 @@ function isWellFormedSemanticProcessGraphWithDormantHandlers(
       operationScope,
       placeScope,
       root.id,
+      messageHandlers,
     )) {
       return false;
     }
@@ -130,7 +135,7 @@ function isWellFormedSemanticProcessGraphWithDormantHandlers(
   if (
     graph.controlPlaceIds.some(
       (placeId) =>
-        producers.get(placeId)?.length !== 1 ||
+        (producers.get(placeId)?.length ?? 0) + messageHandlers.filter(({ childEntry }) => childEntry === placeId).length !== 1 ||
         consumers.get(placeId)?.length !== 1,
     )
   ) {
@@ -159,6 +164,7 @@ function isWellFormedSemanticProcessGraphWithDormantHandlers(
       root.id,
       operationScope,
       dormantHandlerScopeIds,
+      messageHandlers,
     )
   ) {
     return false;
@@ -176,15 +182,24 @@ function isWellFormedSemanticProcessGraphWithDormantHandlers(
     ...operationsOfKind(graph, SemanticOperationKind.TerminateScope),
   ].flatMap((predecessor) => {
     const scopeId = operationScope.get(predecessor.id);
-    const completion = operationsOfKind(
-      graph,
-      SemanticOperationKind.CompleteScope,
-    ).find((candidate) => candidate.scopeId === scopeId);
+    const completion = [...operationsOfKind(graph, SemanticOperationKind.CompleteScope),
+      ...operationsOfKind(graph, SemanticOperationKind.CompleteEventSubProcess)]
+      .find((candidate) => candidate.scopeId === scopeId);
     return completion === undefined
       ? []
       : [{ source: predecessor.id, target: completion.id }];
   });
+  // Declaration activation and child retirement are structural dependencies, not produced tokens.
+  const handlerEdges = messageHandlers.flatMap((declaration) => {
+    const target = consumers.get(declaration.childEntry)?.[0];
+    const completion = operationsOfKind(graph, SemanticOperationKind.CompleteEventSubProcess)
+      .find(({ scopeId }) => scopeId === declaration.handlerScopeId);
+    return target === undefined || completion === undefined ? [] : [
+      { source: start.id, target }, { source: completion.id, target: end.id },
+    ];
+  });
   const edges = [
+    ...handlerEdges,
     ...placeEdges,
     ...completionEdges,
     ...callCompletionEdges(graph.operations, operationScope),
@@ -263,6 +278,7 @@ function operationRespectsScopes(
   operationScope: ReadonlyMap<string, string>,
   placeScope: ReadonlyMap<string, string>,
   entryRootId: string,
+  messageHandlers: ReadonlyArray<InterruptingMessageEventSubProcess>,
 ): boolean {
   const owner = operationScope.get(operation.id);
   if (owner === undefined) {
@@ -345,6 +361,13 @@ function operationRespectsScopes(
     case SemanticOperationKind.TerminateScope:
       return operation.scopeId === owner &&
         referencesOwnedBy([operation.input], owner);
+    case SemanticOperationKind.CompleteEventSubProcess: {
+      const declaration = messageHandlers.find(({ handlerScopeId }) => handlerScopeId === owner);
+      const scope = graph.definitionScopes.find(({ id }) => id === owner);
+      return declaration !== undefined && operation.scopeId === owner &&
+        operation.origin.elementId === declaration.elementId && scope?.parentScopeId === declaration.parentScopeId &&
+        owner !== entryRootId && placeScope.get(declaration.childEntry) === owner;
+    }
     case SemanticOperationKind.CompleteScope: {
       const scope = graph.definitionScopes.find(({ id }) => id === owner);
       return operation.scopeId === owner &&
@@ -367,6 +390,7 @@ function hasOneCompletionStrategyPerScope(
   entryRootId: string,
   operationScope: ReadonlyMap<string, string>,
   dormantHandlerScopeIds: ReadonlySet<string>,
+  messageHandlers: ReadonlyArray<InterruptingMessageEventSubProcess>,
 ): boolean {
   const completions = operationsOfKind(
     graph,
@@ -382,6 +406,10 @@ function hasOneCompletionStrategyPerScope(
   ];
   const returns = operationsOfKind(graph, SemanticOperationKind.ReturnProcess);
   return graph.definitionScopes.every(({ id, parentScopeId }) => {
+    const handler = messageHandlers.find(({ handlerScopeId }) => handlerScopeId === id);
+    if (handler !== undefined) return parentScopeId === handler.parentScopeId &&
+      completions.every(({ scopeId }) => scopeId !== id) && entries.every(({ childScopeId }) => childScopeId !== id) &&
+      operationsOfKind(graph, SemanticOperationKind.CompleteEventSubProcess).filter(({ scopeId }) => scopeId === id).length === 1;
     if (dormantHandlerScopeIds.has(id)) {
       return parentScopeId !== null &&
         completions.every(({ scopeId }) => scopeId !== id) &&
@@ -512,6 +540,7 @@ function operationInputs(
     case SemanticOperationKind.InitiateTimer:
     case SemanticOperationKind.CompleteScope:
     case SemanticOperationKind.CompleteParallelMultiInstanceUserTask:
+    case SemanticOperationKind.CompleteEventSubProcess:
     case SemanticOperationKind.ReturnProcess:
       return [];
     case SemanticOperationKind.EnterScope:
@@ -627,6 +656,7 @@ function operationOutputs(
       return [operation.output];
     case SemanticOperationKind.TerminateScope:
     case SemanticOperationKind.ReachNoneEnd:
+    case SemanticOperationKind.CompleteEventSubProcess:
       return [];
     case SemanticOperationKind.CompleteScope:
       return operation.parentOutput === null ? [] : [operation.parentOutput];

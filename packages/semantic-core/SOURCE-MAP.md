@@ -11,12 +11,18 @@ This contributor map assigns source-file responsibilities inside `@bpmn-lean/sem
 | [wire.ts](src/wire.ts) | Exact non-normalized wire strings, rejecting lone UTF-16 surrogates |
 | [deep-readonly.ts](src/deep-readonly.ts) | The project-owned deeply immutable contract utility |
 | [semantic-process-state.ts](src/semantic-process-state.ts) | Committed runtime-state shape: control tokens, scopes, waits, and occurrence records |
+| [pristine-runtime-state.ts](src/pristine-runtime-state.ts) | Exhaustive field comparison with the initial state for capsules requiring pristine starts |
 | [checked-process-contract.ts](src/checked-process-contract.ts) | Project-owned checked BPMN graph contract |
 | [call-data-contract.ts](src/call-data-contract.ts) | Empty or scalar Call interfaces with exact owned port/set declarations and caller associations |
 | [call-data-command-admission.ts](src/call-data-command-admission.ts) | Required mapped request, declared caller start names and exact Task-output command fields |
 | [call-data-state-validation.ts](src/call-data-state-validation.ts) | Private Call root/interface bijection, declared scalar ports, completion lifetime and Task/local-scope joins |
 | [call-data-program-admission.ts](src/call-data-program-admission.ts) | Standalone scalar Call Program topology, endpoint ownership and retained identity closure |
 | [call-data-admission.ts](src/call-data-admission.ts) | Singleton correspondence, local references and distinct declaration identities for Call data |
+| [interrupting-message-event-subprocess-contract.ts](src/interrupting-message-event-subprocess-contract.ts) | Distinct checked/IL handler declarations and passive parent Message subscriptions |
+| [interrupting-message-event-subprocess-admission.ts](src/interrupting-message-event-subprocess-admission.ts) | Exact owned parallel-check and withdrawal-handler source topology |
+| [interrupting-message-event-subprocess-runtime.ts](src/interrupting-message-event-subprocess-runtime.ts) | Parent listener registration, regional interruption and quiescent handler completion without a parent continuation |
+| [interrupting-message-event-subprocess-state-validation.ts](src/interrupting-message-event-subprocess-state-validation.ts) | Pristine starts, exact listener/parent binding, interrupting handler exclusivity and terminal listener expiry |
+| [interrupting-message-event-subprocess-program-admission.ts](src/interrupting-message-event-subprocess-program-admission.ts) | Standalone declaration, operation topology and scope admission for the private Message handler Program |
 | [compensation-source-contract.ts](src/compensation-source-contract.ts) | Checkpoint-only checked Compensation subjects, bodies, dependencies, restored binding, and fixed limits |
 | [semantic-process-contract.ts](src/semantic-process-contract.ts) | Immutable Semantic Process IL contract |
 | [compensation-activity-retention-contract.ts](src/compensation-activity-retention-contract.ts) | Hidden boundary Compensation declaration, completion facts, retained-record, and refusal contracts |
@@ -159,6 +165,8 @@ This contributor map assigns source-file responsibilities inside `@bpmn-lean/sem
 | [semantic-transition-trace.ts](src/semantic-transition-trace.ts) | Committed transition facts, scheduled lower-layer publication, and replay validation against exact consumed Merge inputs |
 | [flow-node-occurrence-candidates.ts](src/flow-node-occurrence-candidates.ts) | Program-selected element and Process resolution for occurrence owners |
 | [flow-node-occurrence-lifecycle.ts](src/flow-node-occurrence-lifecycle.ts) | Flow-node lifecycle derivation, compensation dispatch, and fold validation |
+| [flow-node-occurrence-interrupting-message-event-subprocess.ts](src/flow-node-occurrence-interrupting-message-event-subprocess.ts) | Declaration-owned handler scopes and predecessor-selected Message trigger facts |
+| [flow-node-occurrence-interrupting-message-event-subprocess-completeness.ts](src/flow-node-occurrence-interrupting-message-event-subprocess-completeness.ts) | Independent bounded Message handler lifecycle reconstruction from declarations and retained ordinary work |
 | [flow-node-occurrence-compensation.ts](src/flow-node-occurrence-compensation.ts) | Exact open and transition-local Compensation throw, handler, and distinct handler-body occurrence projection |
 | [flow-node-occurrence-open-set.ts](src/flow-node-occurrence-open-set.ts) | Open flow-node occurrence projection with exact Boundary Timer declaration and host binding |
 | [flow-node-occurrence-publication-completeness.ts](src/flow-node-occurrence-publication-completeness.ts) | Internal-transition publication completeness |

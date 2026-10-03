@@ -56,6 +56,7 @@ import {
 import { createMessageWait } from "./semantic-process-message.js";
 import { applyMessageInitiation } from "./semantic-process-message-start.js";
 import { applyTimerInitiation } from "./semantic-process-timer-start.js";
+import { completeEventSubProcess, selectEventSubProcessCompletion } from "./interrupting-message-event-subprocess-runtime.js";
 import { terminateScope } from "./semantic-process-termination-runtime.js";
 import {
   commonTokenOwner,
@@ -629,6 +630,10 @@ function applyInternalOperationState(
         (selected) => reachNoneEnd(operation, state, selected),
         captureOwner,
       );
+    }
+    case SemanticOperationKind.CompleteEventSubProcess: {
+      const occurrence = selectEventSubProcessCompletion(program, operation, state);
+      return applyOwnedOperation(occurrence?.id, () => completeEventSubProcess(program, operation, state), captureOwner);
     }
     case SemanticOperationKind.CompleteScope: {
       const owner = completeScopeOwner(operation.scopeId, state);

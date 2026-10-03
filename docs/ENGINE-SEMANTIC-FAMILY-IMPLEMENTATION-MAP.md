@@ -52,6 +52,14 @@ The [complete phase induction](../BpmnSemantics/SemanticProcess/TransactionExecu
 
 **Absent.** No generic invariant, mixed Transaction batch, CIB compatibility, successful protocol-controlled Transaction or hazard recovery is established. [PLAN](PLAN.md#exact-resume-point) owns RC integration and the next action.
 
+## Interrupting Message Event Sub-Process
+
+The [Message Event Sub-Process proposal](capsules/INTERRUPTING-MESSAGE-EVENT-SUBPROCESS-PROPOSAL.md) owns the approved private application-withdrawal account and its pending semantic checkpoint.
+
+**Implemented.** Source admission and independent Lean/TypeScript lowering retain a dormant parent-owned Message listener beside two ordinary User Tasks. Exact delivery cancels remaining ordinary work, preserves the parent and completed history, and creates one handler. Normal completion expires the listener; handler completion emits no parent token. Three local Lean law owners and a bounded conformance matrix cover registration, interruption, completion, explicit race orders, refusal, fuel rollback, prefix validity and replay. Five source-bound schedules agree on complete E1/E2 publication. Strict continuation storage is migrated and host admission rejects the private profile.
+
+**Absent.** Independent checkpoint approval, live Temporal refinement, CIB compatibility, public registration, corpus/disclosure closure and platform use remain open. Non-interrupting or repeated handlers, nested parents, other triggers, payload and correlation are excluded. Local laws and finite checks establish no universal preservation or cross-language correspondence theorem.
+
 ## Interrupting Activity boundary Message
 
 The [interrupting Activity boundary Message specification](capsules/ACTIVITY-BOUNDARY-MESSAGE-SPEC.md) is implemented, independently closure-reviewed, evidence-closed, and graduated for one payload-free, operation-addressed interrupting Message Boundary Event on one User Task.

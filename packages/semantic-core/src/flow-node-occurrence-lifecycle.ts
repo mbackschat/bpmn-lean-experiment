@@ -66,6 +66,7 @@ import {
   projectCompensationTriggerLifecycle,
 } from "./flow-node-occurrence-compensation.js";
 import { projectTransactionCancellationLifecycle } from "./flow-node-occurrence-transaction-cancellation.js";
+import { eventSubProcessTriggerOccurrences } from "./flow-node-occurrence-interrupting-message-event-subprocess.js";
 
 export enum FlowNodeOccurrenceTerminalKind {
   Completed = "completed",
@@ -258,6 +259,11 @@ function externalLifecycle(
       return completed(stimulus.taskId);
     }
     case StimulusKind.DeliverMessage: {
+      if (program.interruptingMessageEventSubProcesses?.some(({ startEventId }) => startEventId === stimulus.subscriptionId.elementId)) {
+        const trigger = eventSubProcessTriggerOccurrences(program, before, stimulus);
+        return trigger === null ? null : pieces(trigger.started,
+          cancelledRegion(program, before, trigger.parent, true), trigger.instantaneous);
+      }
       if (isMessageBoundaryDefinition(program, stimulus.subscriptionId) ||
           isMonitoredMessageBoundaryDefinition(program, stimulus.subscriptionId)) {
         const pair = messageBoundaryPairForSubscription(
@@ -456,6 +462,7 @@ function internalLifecycle(
         terminal: FlowNodeOccurrenceTerminalKind.Completed,
       }]);
     }
+    case SemanticOperationKind.CompleteEventSubProcess:
     case SemanticOperationKind.CompleteScope: {
       const occurrence = only(before.scopeOccurrences.filter(({ id }) => sameScopeOccurrence(id, owner)));
       return occurrence?.parent === null ? pieces() : pieces([], [{

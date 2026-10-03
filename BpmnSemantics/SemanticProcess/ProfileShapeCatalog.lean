@@ -8,6 +8,7 @@ import BpmnSemantics.SemanticProcess.MessageKeyCorrelationProfileAdmission
 import BpmnSemantics.SemanticProcess.CompensationSourceProfileAdmission
 import BpmnSemantics.SemanticProcess.RepeatableSubscriptionAdmission
 import BpmnSemantics.SemanticProcess.CallDataAdmission
+import BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessProgramAdmission
 
 /-! # Semantic profile shape catalog
 
@@ -516,6 +517,7 @@ def profileGraphPolicy? (profile : String) : Option ProfileGraphPolicy :=
   else if profile = transactionCancellationCheckpointProfileId.value ||
       profile = structuredCompositionCheckpointProfileId.value ||
       profile = callDataCheckpointProfileId.value ||
+      profile = interruptingMessageEventSubProcessProfileId.value ||
       profile = repeatableSubscriptionCheckpointProfileId.value ||
       ((checkedShape? profile).isSome && (programShape? profile).isSome) then
     some .acyclic
@@ -543,6 +545,9 @@ private def operationPropertyEndpoints : SemanticOperation → Bool
 
 /-- Exact checked node and definition-scope cardinalities selected by the profile. -/
 def checkedProfileCapabilitiesValid (source : CheckedProcess) : Bool :=
+  if source.identity.semanticProfile == interruptingMessageEventSubProcessProfileId then
+    interruptingMessageEventSubProcessCheckedGraph source
+  else source.interruptingMessageEventSubProcesses.isEmpty &&
   if source.identity.semanticProfile == callDataCheckpointProfileId then
     callDataCheckedGraph source
   else if source.identity.semanticProfile == structuredCompositionCheckpointProfileId then
@@ -631,6 +636,9 @@ private def operationPayloadCapabilitiesValid (profile : String)
 
 /-- Exact operation and definition-scope cardinalities selected by the profile. -/
 def programProfileCapabilitiesValid (program : Program) : Bool :=
+  if program.identity.semanticProfile == interruptingMessageEventSubProcessProfileId then
+    interruptingMessageEventSubProcessProgramGraph program
+  else program.interruptingMessageEventSubProcesses.isEmpty &&
   if program.identity.semanticProfile == callDataCheckpointProfileId then
     callDataProgramGraph program
   else if program.identity.semanticProfile == transactionCancellationCheckpointProfileId then

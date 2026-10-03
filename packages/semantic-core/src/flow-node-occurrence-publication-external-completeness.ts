@@ -32,6 +32,7 @@ import { sameMessageChannel } from "./message-channel.js";
 import type { ScopeOccurrenceId } from "./semantic-process-state.js";
 import type { UnnumberedCommittedTransitionRecord } from "./semantic-transition-trace.js";
 import { compareCanonicalStrings } from "./wire.js";
+import { expectedEventSubProcessMessageLifecycle } from "./flow-node-occurrence-interrupting-message-event-subprocess-completeness.js";
 import {
   parallelMultiInstanceBoundaryHosts,
   parallelMultiInstanceCompletionEnds,
@@ -119,6 +120,9 @@ export function expectedExternalLifecycle(
           ));
     }
     case StimulusKind.DeliverMessage: {
+      if (program.interruptingMessageEventSubProcesses?.some(({ startEventId }) => startEventId === stimulus.subscriptionId.elementId)) {
+        return expectedEventSubProcessMessageLifecycle(program, open, stimulus, commandId, transitionIndex);
+      }
       const message = requireWait(open, stimulus.subscriptionId);
       const bounded = messageBoundaryPair(
         program,

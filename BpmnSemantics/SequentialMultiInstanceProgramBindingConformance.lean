@@ -179,6 +179,9 @@ def substitutedSequentialMultiInstanceProgram : Program :=
 theorem every_other_profile_refuses_the_distinct_sequential_multi_instance_operation
     (profile : ProfileId) (different : profile ≠ sequentialMultiInstanceUserTaskProfileId) :
     programProfileCapabilitiesValid (programForProfile profile) = false := by
+  by_cases messageHandler : profile = interruptingMessageEventSubProcessProfileId
+  · subst profile
+    decide +kernel
   by_cases callData : profile = callDataCheckpointProfileId
   · subst profile
     decide +kernel
@@ -194,11 +197,13 @@ theorem every_other_profile_refuses_the_distinct_sequential_multi_instance_opera
     decide +kernel
   have notCallData : (program.identity.semanticProfile == callDataCheckpointProfileId) = false := by
     decide +kernel
+  have notMessageHandler : (program.identity.semanticProfile == interruptingMessageEventSubProcessProfileId) = false := by
+    decide +kernel
   have admitted := exact_registered_profile_shape_is_admitted
-  simp only [programProfileCapabilitiesValid, legacy, notCallData, notTransaction, Bool.false_eq_true,
+  simp only [programProfileCapabilitiesValid, legacy, notCallData, notTransaction, notMessageHandler, Bool.false_eq_true,
     ↓reduceIte, Bool.and_eq_true] at admitted
   have exactProfileMatch : programSequentialMultiInstanceProfileMatches program = true :=
-    admitted.1.1
+    admitted.2.1.1
   have programProfile : program.identity.semanticProfile =
       sequentialMultiInstanceUserTaskProfileId := by
     rfl
@@ -217,6 +222,10 @@ theorem every_other_profile_refuses_the_distinct_sequential_multi_instance_opera
     rw [operationPresent]
     simp only [different, decide_false, Bool.true_beq]
   unfold programProfileCapabilitiesValid
+  have notMessageHandlerProfile :
+      ((programForProfile profile).identity.semanticProfile == interruptingMessageEventSubProcessProfileId) = false := by
+    simpa only [programForProfile, beq_eq_false_iff_ne] using messageHandler
+  rw [notMessageHandlerProfile, if_neg Bool.false_ne_true]
   have notCallDataProfile :
       ((programForProfile profile).identity.semanticProfile == callDataCheckpointProfileId) = false := by
     simpa only [programForProfile, beq_eq_false_iff_ne] using callData

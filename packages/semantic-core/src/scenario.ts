@@ -62,6 +62,7 @@ import {
   applyStimulusWithTrace,
 } from "./semantic-transition-trace.js";
 import { isWellFormedRuntimeState } from "./runtime-state-well-formedness.js";
+import { interruptingMessageEventSubProcessStateIsValid } from "./interrupting-message-event-subprocess-state-validation.js";
 import type {
   TracedCommandResult,
   UnnumberedCommittedExecutionPublication,
@@ -167,7 +168,7 @@ export function projectOpenTimers(
 export function projectOpenMessageSubscriptions(
   state: RuntimeState,
 ): ReadonlyArray<OpenMessageSubscription> {
-  return state.messageWaits
+  return [...state.messageWaits, ...(state.eventSubProcessMessageSubscriptions ?? [])]
     .map(({ id, channel }) => ({ id, channel }))
     .sort(compareOpenOccurrences);
 }
@@ -212,7 +213,8 @@ export function observeStableState(
   program: SemanticProcessProgram,
   state: RuntimeState,
 ): StateObservation | null {
-  if (!incidentStateAllowsDispatch(program, state)) {
+  if (!incidentStateAllowsDispatch(program, state) ||
+      !interruptingMessageEventSubProcessStateIsValid(program, state)) {
     return null;
   }
   switch (state.control.kind) {
@@ -338,6 +340,13 @@ function projectEnabledMessageInteractions(
       default:
         return assertNever(deliveryKind);
     }
+  }
+  for (const subscription of state.eventSubProcessMessageSubscriptions ?? []) {
+    interactions.push({
+      kind: StimulusKind.DeliverMessage,
+      subscriptionId: subscription.id,
+      channel: subscription.channel,
+    });
   }
   return interactions;
 }

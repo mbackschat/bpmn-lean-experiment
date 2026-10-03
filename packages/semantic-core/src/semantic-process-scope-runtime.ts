@@ -103,7 +103,7 @@ export type SelectedChildScopeEntry = Readonly<{
 export function selectChildScopeEntry(
   state: RuntimeState,
   parent: ScopeOccurrenceId,
-  entry: ChildScopeEntry,
+  entry: Pick<ChildScopeEntry, "childScopeId">,
 ): SelectedChildScopeEntry | null {
   if (
     state.control.kind !== ControlStateKind.Running ||
@@ -145,6 +145,11 @@ export function completeScope(
           instanceId: selected.instanceId,
         },
         scopeOccurrences: [],
+        ...(state.eventSubProcessMessageSubscriptions === undefined ? {} : {
+          eventSubProcessMessageSubscriptions: state.eventSubProcessMessageSubscriptions.filter(
+            ({ owner }) => !sameScopeOccurrence(owner, selected.occurrence.id),
+          ),
+        }),
         ...(state.compensationActivityRetentions === undefined
           ? {}
           : {
@@ -157,6 +162,11 @@ export function completeScope(
     case ScopeCompletionSelectionKind.Child:
       return {
         ...state,
+        ...(state.eventSubProcessMessageSubscriptions === undefined ? {} : {
+          eventSubProcessMessageSubscriptions: state.eventSubProcessMessageSubscriptions.filter(
+            ({ owner }) => !sameScopeOccurrence(owner, selected.occurrence.id),
+          ),
+        }),
         controlTokens: addToken(
           state.controlTokens,
           selected.parentOutput,

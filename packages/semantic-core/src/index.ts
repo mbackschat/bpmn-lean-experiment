@@ -12,6 +12,10 @@ export {
 export * from "./activity-data-output-contract.js";
 export * from "./call-data-contract.js";
 export * from "./call-data-admission.js";
+export * from "./interrupting-message-event-subprocess-contract.js";
+export * from "./interrupting-message-event-subprocess-admission.js";
+export * from "./interrupting-message-event-subprocess-program-admission.js";
+export * from "./interrupting-message-event-subprocess-state-validation.js";
 export * from "./catch-event-payload-contract.js";
 export * from "./compensation-activity-retention-contract.js";
 export * from "./compensation-activity-retention.js";

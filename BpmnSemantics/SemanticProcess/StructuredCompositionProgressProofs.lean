@@ -269,6 +269,8 @@ theorem exact_task_lifetime_has_admitted_completion
     have staticOwner := scopeOwned operation member wait live
     obtain ⟨_, _, noRetention, noSnapshots, _⟩ := program_analysis_excludes_foreign_declarations program analysis analyzed
     have noIncidents := foreign.2.2.2.1
+    have noDeclarations := well_formed_foreign_profile_has_no_message_declarations program wellFormed (by rw [profile]; decide +kernel)
+    have noListeners : state.eventSubProcessMessageSubscriptions = [] := by simp_all only [ForeignRuntimeEmpty]
     refine ⟨wait, live, ?_⟩
     cases operation <;> simp only at details
     all_goals try contradiction
@@ -281,7 +283,7 @@ theorem exact_task_lifetime_has_admitted_completion
       obtain ⟨noParallel, noSequential, noMessageMonitored, noMessageBounded, noBounded,
         noInput, noOutput, noMonitored⟩ := admitted_completion_foreign_families_absent program analysis wait.task.id analyzed
       refine ⟨[], ?_⟩
-      simp [admitStimulus, callDataRuntimeStateValid, noSnapshots, noIncidents, running, noParallel, noSequential, noMessageMonitored,
+      simp [admitStimulus, callDataRuntimeStateValid, interruptingMessageEventSubProcessStateValid, noDeclarations, noListeners, noSnapshots, noIncidents, running, noParallel, noSequential, noMessageMonitored,
         noMessageBounded, noBounded, noData, guards.2, noInput, noOutput, noMonitored,
         completeOrdinaryUserTaskWithCompensation?, compensationTargetDeclaredForFamily, noRetention,
         completeUserTask, waits, isCallActivityProgram, profile, structuredCompositionCheckpointProfileId,
@@ -309,7 +311,7 @@ theorem exact_task_lifetime_has_admitted_completion
       obtain ⟨noParallel, noSequential, noMessageMonitored, noMessageBounded, noBounded, _, _, _⟩ :=
         admitted_completion_foreign_families_absent program analysis taskId analyzed
       refine ⟨[{ name := directOutput.sourceDataOutputId, value := .null }], ?_⟩
-      simp [admitStimulus, callDataRuntimeStateValid, noSnapshots, noIncidents, running, taskEq, noParallel, noSequential,
+      simp [admitStimulus, callDataRuntimeStateValid, interruptingMessageEventSubProcessStateValid, noDeclarations, noListeners, noSnapshots, noIncidents, running, taskEq, noParallel, noSequential,
         noMessageMonitored, noMessageBounded, noBounded, selected, completed, processDataBindingsAdmitted,
         profile, variableValueAdmitted, structuredCompositionCheckpointProfileId]
 

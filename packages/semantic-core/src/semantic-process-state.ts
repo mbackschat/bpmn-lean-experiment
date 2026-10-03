@@ -26,6 +26,7 @@ import type { SequentialMultiInstanceController } from "./sequential-multi-insta
 import type { ParallelMultiInstanceController } from "./parallel-multi-instance-controller.js";
 import type { UserTaskMetadata } from "./user-task-metadata.js";
 import type { LocalDataOwner } from "./local-data-owner.js";
+import type { EventSubProcessMessageSubscription } from "./interrupting-message-event-subprocess-contract.js";
 import { compareCanonicalStrings } from "./wire.js";
 
 export enum ControlStateKind {
@@ -172,6 +173,7 @@ export type RuntimeState = DeepReadonly<{
   controlTokens: ControlPlaceTokens[];
   userTaskWaits: SemanticUserTaskWait[];
   messageWaits: SemanticMessageWait[];
+  eventSubProcessMessageSubscriptions?: EventSubProcessMessageSubscription[];
   timerWaits: SemanticTimerWait[];
   effectWaits: SemanticEffectWait[];
   effectIncidents: SemanticEffectIncident[];

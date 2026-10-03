@@ -2,6 +2,7 @@
 import { SemanticOperationKind } from "./semantic-process-contract.js";
 import {
   CALL_ACTIVITY_DATA_BOUNDARIES_CHECKPOINT_PROFILE_ID,
+  INTERRUPTING_MESSAGE_EVENT_SUBPROCESS_CHECKPOINT_PROFILE_ID,
   COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID,
   MESSAGE_KEY_CORRELATION_CHECKPOINT_PROFILE_ID,
   SemanticProfileId,
@@ -307,6 +308,19 @@ export function requiredProgramShape(
         SemanticOperationKind.ReachNoneEnd,
         SemanticOperationKind.ReachNoneEnd,
         SemanticOperationKind.CompleteScope,
+        SemanticOperationKind.CompleteScope,
+      ]);
+    case INTERRUPTING_MESSAGE_EVENT_SUBPROCESS_CHECKPOINT_PROFILE_ID:
+      return nestedProgram([
+        SemanticOperationKind.Initiate,
+        SemanticOperationKind.Duplicate,
+        SemanticOperationKind.AwaitUserTask,
+        SemanticOperationKind.AwaitUserTask,
+        SemanticOperationKind.AwaitUserTask,
+        SemanticOperationKind.ReachNoneEnd,
+        SemanticOperationKind.ReachNoneEnd,
+        SemanticOperationKind.ReachNoneEnd,
+        SemanticOperationKind.CompleteEventSubProcess,
         SemanticOperationKind.CompleteScope,
       ]);
     case CALL_ACTIVITY_DATA_BOUNDARIES_CHECKPOINT_PROFILE_ID:

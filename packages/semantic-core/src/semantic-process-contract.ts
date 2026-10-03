@@ -12,6 +12,7 @@
 import type { DirectActivityDataInput } from "./activity-data-input-contract.js";
 import type { DirectActivityDataOutput } from "./activity-data-output-contract.js";
 import type { CallDataInterface } from "./call-data-contract.js";
+import type { InterruptingMessageEventSubProcess } from "./interrupting-message-event-subprocess-contract.js";
 import type { DirectCatchEventPayloadOutput } from "./catch-event-payload-contract.js";
 import type { CompensationActivityRetentionDeclaration } from "./compensation-activity-retention-contract.js";
 import type { CompensationEventSubProcessSnapshotDeclaration } from "./compensation-event-sub-process-snapshot-contract.js";
@@ -93,6 +94,7 @@ export enum SemanticOperationKind {
   TerminateScope = "terminateScope",
   ReachNoneEnd = "reachNoneEnd",
   CompleteScope = "completeScope",
+  CompleteEventSubProcess = "completeEventSubProcess",
 }
 
 export enum SemanticOriginKind {
@@ -685,6 +687,11 @@ export type SemanticOperation =
         kind: SemanticOperationKind.CompleteScope;
         scopeId: string;
         parentOutput: string | null;
+      }>)
+  | (OperationBase &
+      DeepReadonly<{
+        kind: SemanticOperationKind.CompleteEventSubProcess;
+        scopeId: string;
       }>);
 
 export type SemanticProcessProgram = DeepReadonly<{
@@ -700,4 +707,5 @@ export type SemanticProcessProgram = DeepReadonly<{
   compensationActivityRetention?: CompensationActivityRetentionDeclaration;
   compensationEventSubProcessSnapshots?: CompensationEventSubProcessSnapshotDeclaration;
   compensationExecution?: CompensationExecutionDeclaration;
+  interruptingMessageEventSubProcesses?: InterruptingMessageEventSubProcess[];
 }>;

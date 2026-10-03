@@ -1,6 +1,6 @@
 # Engine contracts and source implementation map
 
-This detail map owns exact current wire, semantic-profile, checked-source, Semantic Process IL, and source-admission status. Root routing and cross-area claims remain in [`implementation-status-router`](IMPLEMENTATION-MAP.md).
+This map owns wire, profile, checked-source, IL and source-admission status. Root routing and cross-area claims remain in [`implementation-status-router`](IMPLEMENTATION-MAP.md).
 
 ## Current boundary
 
@@ -32,7 +32,9 @@ The registered interrupting Activity boundary Message profile admits one exact o
 
 [Subscriptions](capsules/REPEATABLE-EVENT-SUBSCRIPTIONS-SPEC.md): admission/codecs/lowering, Lean/core publication, durable hosting and registered pipeline independently closure-reviewed.
 
-Transaction wire/admission boundary: [`implementation-status-owner:ENGINE-SEMANTIC-FAMILY`](ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md#transaction-cancellation).
+Transaction: [`implementation-status-owner:ENGINE-SEMANTIC-FAMILY`](ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md#transaction-cancellation).
+
+Private Message handler: [`implementation-status-owner:ENGINE-SEMANTIC-FAMILY`](ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md#interrupting-message-event-sub-process).
 
 ## Implemented
 
@@ -147,7 +149,7 @@ Transaction wire/admission boundary: [`implementation-status-owner:ENGINE-SEMANT
 - classification refusals in the generic compiler and all three selected-shape readers name their element through [one locating owner](../packages/bpmn-source/src/admission-diagnostics.ts): nullable `id`, `$type`, containment path, named property or attribute, and the missing capability; unsupported own properties on selected executed flow elements are classified before projection through [one closed profile/type key inventory](../packages/bpmn-source/src/projected-flow-element-keys.ts), collected across loci, deduplicated, and ordered by path numerically. Parser warnings keep that record in parse order
 - `xsi:type` is admitted as **parser-consumed**, selecting the resolved element type every projector then judges; `xsi:schemaLocation` and `xsi:noNamespaceSchemaLocation` are content-free schema hints. Each requires a prefix resolved from the document's own binding, and `xsi:nil` rejects because it empties content
 - the optional adoption gate compiles the exact external CreateDocument source through a data-only overlay and compares both current adoption fixtures with the frozen baseline generation
-- wrong sigils, method/property expressions, implicit XPath, wrong or per-expression language, invalid Simple Boolean syntax, conditional default, unsupported executable attributes/elements, altered parameters/mappings, false interruption, attachment/code drift, missing/catch-all/nonmatching/extra/non-direct Error handlers, Event Sub-Processes, and cross-scope Sequence Flows reject
+- wrong sigils, method/property expressions, implicit XPath, wrong or per-expression language, invalid Simple Boolean syntax, conditional default, unsupported executable attributes/elements, altered parameters/mappings, false interruption, attachment/code drift, missing/catch-all/nonmatching/extra/non-direct Error handlers, unselected Event Sub-Processes, and cross-scope Sequence Flows reject
 - malformed, unprefixed, extra-colon, unknown-prefix, foreign-namespace, unresolved, self, and non-Process Call targets reject; declaration permutation is canonical and the called binding follows the QName rather than a fixture constant
 
 ### Boolean attribute coercion at source admission
@@ -190,7 +192,7 @@ This section owns a cross-cutting admission rule that no single capsule owns, be
 - Compensation source/profile admission beyond the exact registered topology, targeted or asynchronous throws, wider handler bodies or mappings, other dependency graphs; Product 2 support belongs to the [failed-Process outcome](BPM-PLATFORM-FAILED-PROCESS-SPEC.md#implemented-outcome-and-epistemic-closure)
 - addressless, operation-addressed, instantiating, or data-bearing Receive Task; Message payload beyond the exact one-output catch profile and one registered correlated source; Message key/global correlation beyond that single-property profile; modeled throw; Message Flow execution; and other Message Event loci
 - Message Boundary forms beyond the exact registered Activity profile
-- multiple or mixed Message Start Events, Event Sub-Process start, explicit `isInterrupting`, referenced or repeated MessageEventDefinitions, payload, Message Flow execution, routing, buffering, correlation, or definition-version fanout
+- multiple or mixed Message Start Events, public Event Sub-Process start, explicit `isInterrupting`, referenced or repeated MessageEventDefinitions, payload, Message Flow execution, routing, buffering, correlation, or definition-version fanout
 - An element on refusals over the document or checked graph, on unsupported values of consumed keys, or on nested event-definition and mapping-child failures that have no separately reviewed inventory. Those remain `unsupportedModel` records with `element: null`. Preserved material is retained only in the exact source bytes, with no query surface or public projection
 - The whole BPMN data family, and foreign content at every undeclared locus. A mapped Service Task overlay may declare only exact inert expanded-name/element-type pairs; unconsumed attributes, wildcards, and whole-type exemptions reject
 

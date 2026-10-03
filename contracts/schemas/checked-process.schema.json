@@ -64,6 +64,14 @@
     },
     "transactionCancellation": {
       "$ref": "#/$defs/checkedTransactionCancellation"
+    },
+    "interruptingMessageEventSubProcesses": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 1,
+      "items": {
+        "$ref": "#/$defs/interruptingMessageEventSubProcess"
+      }
     }
   },
   "$defs": {
@@ -2187,6 +2195,42 @@
           }
         }
       ]
+    },
+    "interruptingMessageEventSubProcess": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "parentScopeId",
+        "handlerScopeId",
+        "elementId",
+        "startEventId",
+        "channel",
+        "interruption",
+        "childEntryFlowId"
+      ],
+      "properties": {
+        "parentScopeId": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "handlerScopeId": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "elementId": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "startEventId": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "channel": {
+          "$ref": "#/$defs/operationMessageChannel"
+        },
+        "interruption": {
+          "const": "interrupting"
+        },
+        "childEntryFlowId": {
+          "$ref": "#/$defs/nonemptyString"
+        }
+      }
     }
   }
 }

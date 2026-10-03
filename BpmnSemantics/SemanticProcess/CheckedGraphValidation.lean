@@ -72,7 +72,9 @@ def checkedSequenceFlowScopeId? (source : CheckedProcess)
 private def scopedNodes (source : CheckedProcess) (scopeId : DefinitionScopeId) :
     List CheckedNode :=
   source.nodes.filter fun node =>
-    checkedNodeScopeId? source (checkedNodeId node) == some scopeId
+    checkedNodeScopeId? source (checkedNodeId node) == some scopeId &&
+      !source.interruptingMessageEventSubProcesses.any (fun declaration =>
+        declaration.parentScopeId == scopeId && declaration.elementId == node.id)
 
 private def scopedFlows (source : CheckedProcess) (scopeId : DefinitionScopeId) :
     List CheckedSequenceFlow :=

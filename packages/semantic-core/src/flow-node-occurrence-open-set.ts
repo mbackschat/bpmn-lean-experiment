@@ -59,6 +59,8 @@ import {
   matchesEffectLocalDataOwner,
 } from "./local-data-owner.js";
 import { projectOpenCompensationOccurrences } from "./flow-node-occurrence-compensation.js";
+import { eventSubProcessScopeIsDeclared } from "./flow-node-occurrence-interrupting-message-event-subprocess.js";
+import { interruptingMessageEventSubProcessStateIsValid } from "./interrupting-message-event-subprocess-state-validation.js";
 
 const WaitAnchorKind = "wait" as SemanticFlowNodeOccurrenceAnchorKind.Wait;
 const ScopeAnchorKind = "scope" as SemanticFlowNodeOccurrenceAnchorKind.Scope;
@@ -103,6 +105,7 @@ export function projectOpenFlowNodeOccurrences(
   program: SemanticProcessProgram,
   state: RuntimeState,
 ): UnnumberedFlowNodeOccurrenceStart[] | null {
+  if (!interruptingMessageEventSubProcessStateIsValid(program, state)) return null;
   if (state.control.kind !== ControlStateKind.Running) {
     return runtimeHasNoLiveOwners(state) ? [] : null;
   }
@@ -299,7 +302,8 @@ function projectEmbeddedScopes(
       operationOwnedBy(program, candidate, parent)
     ));
     const processId = processIdForFlowNodeOwner(program, state, parent);
-    if (definition === undefined || operation === undefined || processId === null) {
+    if (definition === undefined || processId === null ||
+        (operation === undefined && !eventSubProcessScopeIsDeclared(program, occurrence))) {
       return false;
     }
     projected.push({
@@ -447,6 +451,7 @@ function waitMatchesUserTask(
       case SemanticOperationKind.TerminateScope:
       case SemanticOperationKind.ReachNoneEnd:
       case SemanticOperationKind.CompleteScope:
+      case SemanticOperationKind.CompleteEventSubProcess:
         return false;
       default:
         return assertNeverOperation(operation);

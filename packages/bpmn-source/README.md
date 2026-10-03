@@ -25,6 +25,8 @@ The private [structured-composition checkpoint](../../docs/capsules/STRUCTURED-P
 
 The [required scalar interface reader](src/scalar-io-specification.ts) retains exact owner, port and set identities for the [Call data work](../../docs/capsules/CALL-ACTIVITY-DATA-BOUNDARIES-PROPOSAL.md). The existing composed-task projector shares that reader while retaining its own profile restrictions. The [Call data projector](src/call-data-source.ts) binds caller associations to the Call ports and checks correspondence with the separately owned called interface. The private Call data reader admits the complete supplier model with exact serial topology and typed Process-interface Task endpoints, and binds both lowered Call halves. Independent Lean admission and scalar execution remain unfinished; hosted/public registration stays unavailable. The existing exact-source cardinality guard rejects parser-overwritten extra interfaces.
 
+The private [interrupting Message Event Sub-Process reader](src/interrupting-message-event-subprocess-source.ts) admits one parallel application-review Process and its dormant withdrawal handler. Its [lowerer](src/interrupting-message-event-subprocess-lowering.ts) retains the declaration-owned entry and token-free handler completion. The [approved proposal](../../docs/capsules/INTERRUPTING-MESSAGE-EVENT-SUBPROCESS-PROPOSAL.md) owns the bounded account; source admission alone establishes no execution or hosting result.
+
 ## Quick start
 
 Run the focused compiler gate:

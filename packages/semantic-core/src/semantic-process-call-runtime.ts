@@ -392,6 +392,9 @@ function removeCalledProcessTree(
     controlTokens: state.controlTokens.filter(({ owner }) => !removedOwner(owner)),
     userTaskWaits: state.userTaskWaits.filter(({ owner }) => !removedOwner(owner)),
     messageWaits: state.messageWaits.filter(({ owner }) => !removedOwner(owner)),
+    ...(state.eventSubProcessMessageSubscriptions === undefined ? {} : {
+      eventSubProcessMessageSubscriptions: state.eventSubProcessMessageSubscriptions.filter(({ owner }) => !removedOwner(owner)),
+    }),
     timerWaits: state.timerWaits.filter(({ owner }) => !removedOwner(owner)),
     effectWaits: state.effectWaits.filter(({ owner }) => !removedOwner(owner)),
     effectIncidents: state.effectIncidents.filter(

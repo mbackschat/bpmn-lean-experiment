@@ -190,6 +190,21 @@ theorem effect_result_route_failure_is_rejected
     | some _ => simp [admitStimulus, declared]
   simp [applyStimulus, rejectedAdmission]
 
+private theorem raw_task_completion_frames_message_phase (program : Program)
+    (before after : RuntimeState) (instanceId processId : SemanticId)
+    (task : TaskDefinitionId) (activation : Nat)
+    (running : before.control = .running instanceId)
+    (completed : completeUserTask before processId task activation = some after) :
+    interruptingMessageEventSubProcessStateValid program after =
+      interruptingMessageEventSubProcessStateValid program before := by
+  unfold completeUserTask at completed
+  split at completed
+  · simp at completed
+  · rename_i wait found
+    cases completed
+    exact message_handler_phase_wait_token_exchange program before instanceId wait running
+      (List.mem_of_find?_eq_some found)
+
 /-- Matching ordinary User Task completions with one admitted successor agree after successful closure.
 `CLOSURE-ATOMIC-01` retains each distinct input on rollback, so admitted-successor equality alone does not equate failed results. -/
 theorem user_task_completion_with_same_successor_is_equal
@@ -253,6 +268,14 @@ theorem user_task_completion_with_same_successor_is_equal
     simp [callDataRuntimeStateValid, notCallData]
   have rightDataValid : callDataRuntimeStateValid program rightState = true := by
     simp [callDataRuntimeStateValid, notCallData]
+  have leftPhaseValid : interruptingMessageEventSubProcessStateValid program leftState = true := by
+    cases checked : interruptingMessageEventSubProcessStateValid program leftState with
+    | false => simp [applyStimulus, admitStimulus, snapshotAbsent, leftDataValid, checked] at committed
+    | true => rfl
+  have rightPhaseValid : interruptingMessageEventSubProcessStateValid program rightState = true := by
+    rw [← raw_task_completion_frames_message_phase program rightState successor _ _ _ _ rightRunning rightCompletion,
+      raw_task_completion_frames_message_phase program leftState successor _ _ _ _ leftRunning leftCompletion]
+    exact leftPhaseValid
   have inputRefused (state : RuntimeState) :=
     undeclaredTaskRefusesCompletion program state submittedTaskId.processInstanceId
       ⟨submittedTaskId.elementId.value⟩ submittedTaskId.activation noDataInputTask
@@ -277,7 +300,7 @@ theorem user_task_completion_with_same_successor_is_equal
     cases outputPresent : (dataOutputTaskOperations program).any (fun entry =>
       decide (entry.1 = ⟨submittedTaskId.elementId.value⟩)) <;>
   simp [applyStimulus, StimulusResult.ofScheduledClosure, StimulusResult.ofClosure,
-    admitStimulus, snapshotAbsent, leftDataValid, rightDataValid, leftNoIncidents,
+    admitStimulus, snapshotAbsent, leftDataValid, rightDataValid, leftPhaseValid, rightPhaseValid, leftNoIncidents,
     rightNoIncidents, leftRunning, rightRunning,
     ordinaryTask.1, ordinaryTask.2, noSequentialMultiInstance, noParallelMultiInstance,
     noMessageBoundedTask, noMessageMonitoredTask, noDataInputOutputTask, inputPresent, outputPresent,

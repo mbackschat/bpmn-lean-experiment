@@ -192,6 +192,7 @@ export function candidateLongLivedStarts(
     case SemanticOperationKind.TerminateScope:
     case SemanticOperationKind.ReachNoneEnd:
     case SemanticOperationKind.CompleteScope:
+    case SemanticOperationKind.CompleteEventSubProcess:
       return [];
     default:
       return assertNever(operation);

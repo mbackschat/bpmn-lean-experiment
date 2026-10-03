@@ -54,6 +54,8 @@ def completeQuiescentScope? (state : RuntimeState)
       else some ({ state with
           control := .completed instanceId
           scopeOccurrences := []
+          eventSubProcessMessageSubscriptions := state.eventSubProcessMessageSubscriptions.filter fun listener =>
+            decide (listener.owner ≠ occurrence.id)
           compensationActivityRetentions :=
             state.compensationActivityRetentions.filter fun retention =>
               decide (retention.owner ≠ occurrence.id) })
@@ -61,6 +63,8 @@ def completeQuiescentScope? (state : RuntimeState)
       if state.scopeOccurrences.any fun candidate => candidate.id == parent then
         some ({ state with
             tokens := addToken state.tokens output parent
+            eventSubProcessMessageSubscriptions := state.eventSubProcessMessageSubscriptions.filter fun listener =>
+              decide (listener.owner ≠ occurrence.id)
             scopeOccurrences := state.scopeOccurrences.filter fun candidate =>
               decide (candidate.id ≠ occurrence.id) })
       else none
@@ -90,12 +94,16 @@ theorem completeScopeState_selected_update (state completed : RuntimeState)
           else some { state with
             control := .completed instanceId
             scopeOccurrences := []
+            eventSubProcessMessageSubscriptions := state.eventSubProcessMessageSubscriptions.filter fun listener =>
+              decide (listener.owner ≠ occurrence.id)
             compensationActivityRetentions := state.compensationActivityRetentions.filter fun retention =>
               decide (retention.owner ≠ occurrence.id) }
       | some parent, some output, .running _ =>
           if state.scopeOccurrences.any (fun candidate => candidate.id == parent) then
             some { state with
               tokens := addToken state.tokens output parent
+              eventSubProcessMessageSubscriptions := state.eventSubProcessMessageSubscriptions.filter fun listener =>
+                decide (listener.owner ≠ occurrence.id)
               scopeOccurrences := state.scopeOccurrences.filter fun candidate => decide (candidate.id ≠ occurrence.id) }
           else none
       | _, _, _ => none) = some completed := by

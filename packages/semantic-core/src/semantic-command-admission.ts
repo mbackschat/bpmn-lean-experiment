@@ -1,4 +1,5 @@
 import { callDataStateIsValid } from "./call-data-state-validation.js";
+import { deliverEventSubProcessMessage } from "./interrupting-message-event-subprocess-runtime.js";
 import { callDataStimulusDataAdmitted } from "./call-data-command-admission.js";
 /**
  * Admission of an external stimulus against committed runtime state.
@@ -325,6 +326,10 @@ export function admit(
         : { outcome: CommandOutcome.Committed, state: next };
     }
     case StimulusKind.DeliverMessage: {
+      if (program.interruptingMessageEventSubProcesses?.some(({ startEventId }) => startEventId === stimulus.subscriptionId.elementId)) {
+        const next = deliverEventSubProcessMessage(program, state, stimulus);
+        return next === null ? { outcome: CommandOutcome.Rejected, state } : { outcome: CommandOutcome.Committed, state: next };
+      }
       if (isMonitoredMessageBoundaryDefinition(program, stimulus.subscriptionId)) {
         const next = spawnFromMessageMonitoredUserTask(program, state, stimulus);
         return next === null

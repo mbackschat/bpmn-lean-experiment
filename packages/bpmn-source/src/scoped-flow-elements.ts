@@ -1,3 +1,4 @@
+import { INTERRUPTING_MESSAGE_EVENT_SUBPROCESS_CHECKPOINT_PROFILE_ID } from "@bpmn-lean/semantic-core";
 import type {
   DefinitionScope,
 } from "@bpmn-lean/semantic-core";
@@ -34,7 +35,7 @@ export type ScopedFlowElements = Readonly<{
 /**
  * Flattens FlowElementsContainer containment while preserving definition scope.
  *
- * This boundary accepts ordinary embedded SubProcesses only. Profile admission
+ * This boundary preserves ordinary children and the selected Message handler. Profile admission
  * separately limits the permitted scope count and node-kind multiset.
  */
 export function collectScopedFlowElements(
@@ -42,6 +43,7 @@ export function collectScopedFlowElements(
   processId: string,
   subProcessType: string,
   processLocus: ElementLocus,
+  semanticProfile?: string,
 ): ScopedFlowElements | undefined {
   const rootScopeId = definitionScopeId(processId);
   const flowElements = asElementArray(process.flowElements);
@@ -62,6 +64,7 @@ export function collectScopedFlowElements(
       containedLocus(processLocus, "flowElements"),
       definitionScopes,
       elements,
+      semanticProfile,
     )
   ) {
     return undefined;
@@ -76,6 +79,7 @@ function collectScope(
   containerLocus: ElementLocus,
   definitionScopes: DefinitionScope[],
   elements: ScopedSourceElement[],
+  semanticProfile: string | undefined,
 ): boolean {
   for (const [index, element] of flowElements.entries()) {
     const locus = containedLocus(containerLocus, index);
@@ -88,7 +92,7 @@ function collectScope(
     if (
       id === undefined ||
       childElements === undefined ||
-      !isOrdinaryEmbeddedSubProcess(element)
+      !isSelectedEmbeddedSubProcess(element, semanticProfile)
     ) {
       return false;
     }
@@ -106,6 +110,7 @@ function collectScope(
         containedLocus(locus, "flowElements"),
         definitionScopes,
         elements,
+        semanticProfile,
       )
     ) {
       return false;
@@ -114,10 +119,15 @@ function collectScope(
   return true;
 }
 
+function isSelectedEmbeddedSubProcess(element: ElementRecord, semanticProfile: string | undefined): boolean {
+  return isOrdinaryEmbeddedSubProcess(element) ||
+    (semanticProfile === INTERRUPTING_MESSAGE_EVENT_SUBPROCESS_CHECKPOINT_PROFILE_ID && element.triggeredByEvent === true &&
+      (element.name === undefined || typeof element.name === "string"));
+}
+
 function isOrdinaryEmbeddedSubProcess(element: ElementRecord): boolean {
   return (element.name === undefined || typeof element.name === "string") &&
-    (element.triggeredByEvent === undefined ||
-      element.triggeredByEvent === false);
+    (element.triggeredByEvent === undefined || element.triggeredByEvent === false);
 }
 
 export function definitionScopeId(originElementId: string): string {

@@ -417,15 +417,30 @@ private def decodeSequenceFlowScopeOwnership (json : Json) :
     { sequenceFlowId := ⟨← stringField json "sequenceFlowId"⟩
       scopeId := ⟨← stringField json "scopeId"⟩ }
 
+private def decodeCheckedInterruptingMessageEventSubProcess (json : Json) :
+    Except String CheckedInterruptingMessageEventSubProcess := do
+  requireObjectShape json ["channel", "childEntryFlowId", "elementId", "handlerScopeId",
+    "interruption", "parentScopeId", "startEventId"]
+  pure {
+    parentScopeId := ⟨← stringField json "parentScopeId"⟩
+    handlerScopeId := ⟨← stringField json "handlerScopeId"⟩
+    elementId := ⟨← stringField json "elementId"⟩
+    startEventId := ⟨← stringField json "startEventId"⟩
+    channel := ← decodeOperationMessageChannel (← field json "channel")
+    interruption := ← decodeBoundaryInterruption (← stringField json "interruption")
+    childEntryFlowId := ⟨← stringField json "childEntryFlowId"⟩ }
+
 /-- Decode the exact current checked-process wire shape without admitting it structurally. Required nullable fields such as a User Task name must be present even when their value is `null`. -/
 def decodeCheckedProcess (json : Json) : Except String CheckedProcess := do
   let compensation ← decodeOptionalCheckedCompensationField json
   let transactionCancellation ← decodeOptionalCheckedTransactionField json
+  let messageHandlers ← optionalField json "interruptingMessageEventSubProcesses"
   requireObjectShape json
     (["definitionScopes", "identity", "kind", "nodeScopes", "nodes",
       "processId", "sequenceFlowScopes", "sequenceFlows"] ++
       (if compensation.isSome then ["compensation"] else []) ++
-      (if transactionCancellation.isSome then ["transactionCancellation"] else []))
+      (if transactionCancellation.isSome then ["transactionCancellation"] else []) ++
+      (if messageHandlers.isSome then ["interruptingMessageEventSubProcesses"] else []))
   expectStringField json "kind" "checkedProcess"
   pure
     { identity := ← decodeSourceIdentity (← field json "identity")
@@ -441,6 +456,9 @@ def decodeCheckedProcess (json : Json) : Except String CheckedProcess := do
       sequenceFlows :=
         ← decodeArray decodeCheckedSequenceFlow
           (← field json "sequenceFlows")
-      compensation, transactionCancellation }
+      compensation, transactionCancellation
+      interruptingMessageEventSubProcesses := ← match messageHandlers with
+        | none => pure []
+        | some handlers => decodeArray decodeCheckedInterruptingMessageEventSubProcess handlers }
 
 end BpmnSemantics.SemanticProcessJson

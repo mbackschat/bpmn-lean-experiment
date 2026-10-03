@@ -95,6 +95,11 @@ function removeScopeOccurrenceRegion(
     userTaskWaits: withoutCalledProcesses.userTaskWaits.filter(
       ({ owner }) => !isInterrupted(owner),
     ),
+    ...(withoutCalledProcesses.eventSubProcessMessageSubscriptions === undefined ? {} : {
+      eventSubProcessMessageSubscriptions: withoutCalledProcesses.eventSubProcessMessageSubscriptions.filter(
+        ({ owner }) => !isInterrupted(owner),
+      ),
+    }),
     messageWaits: withoutCalledProcesses.messageWaits.filter(
       ({ id, owner }) => !isInterrupted(owner) && !withdrawnRecords.some(
         ({ attachedHandlers }) => attachedHandlers.some((handler) =>

@@ -1,4 +1,5 @@
 import {
+  INTERRUPTING_MESSAGE_EVENT_SUBPROCESS_CHECKPOINT_PROFILE_ID,
   MessageChannelKind,
   REPEATABLE_EVENT_SUBSCRIPTIONS_CHECKPOINT_PROFILE_ID,
   SemanticProfileId,
@@ -99,6 +100,8 @@ export function selectRootDefinitions(
     return unselected([]);
   }
   switch (semanticProfile) {
+    case INTERRUPTING_MESSAGE_EVENT_SUBPROCESS_CHECKPOINT_PROFILE_ID:
+      return selected(selectMessageRoots(rootElements, process, true));
     case REPEATABLE_EVENT_SUBSCRIPTIONS_CHECKPOINT_PROFILE_ID:
       return selected(selectSubscriptionRoots(rootElements, process));
     case SemanticProfileId.MessageStart:
@@ -170,6 +173,7 @@ function unselected(
 function selectMessageRoots(
   rootElements: ReadonlyArray<ElementRecord>,
   process: ElementRecord,
+  optionalNames = false,
 ): RootDefinitionSelection | undefined {
   const messages = elementsOfType(rootElements, bpmnTypes.messageType);
   const interfaces = elementsOfType(rootElements, bpmnTypes.interfaceType);
@@ -184,13 +188,13 @@ function selectMessageRoots(
     !hasOnlyModelledKeys(message, ["$type", "id", "name"]) ||
     message.itemRef !== undefined ||
     !hasOnlyModelledKeys(interface_, ["$type", "id", "name", "operations"]) ||
-    typeof interface_.name !== "string"
+    !(typeof interface_.name === "string" || (optionalNames && interface_.name === undefined))
   ) {
     return undefined;
   }
   const operations = asElementArray(interface_.operations);
   if (operations?.length !== 1) return undefined;
-  const selection = selectSubscriptionRoots(rootElements, process);
+  const selection = selectSubscriptionRoots(rootElements, process, optionalNames);
   return selection === undefined ? undefined : {
     ...selection,
     messageArtifacts: selection.messageArtifacts?.filter(isOperationMessageRootArtifacts),
@@ -235,6 +239,7 @@ function selectDirectMessageRoots(
 function selectSubscriptionRoots(
   rootElements: ReadonlyArray<ElementRecord>,
   process: ElementRecord,
+  optionalNames = false,
 ): RootDefinitionSelection | undefined {
   const messages = elementsOfType(rootElements, bpmnTypes.messageType);
   const interfaces = elementsOfType(rootElements, bpmnTypes.interfaceType);
@@ -254,7 +259,7 @@ function selectSubscriptionRoots(
   for (const interface_ of interfaces) {
     const interfaceId = readId(interface_);
     const operations = asElementArray(interface_.operations);
-    if (interfaceId === undefined || typeof interface_.name !== "string" ||
+    if (interfaceId === undefined || !(typeof interface_.name === "string" || (optionalNames && interface_.name === undefined)) ||
         !hasOnlyModelledKeys(interface_, ["$type", "id", "name", "operations"]) ||
         operations === undefined || operations.length === 0) {
       return undefined;
@@ -266,7 +271,7 @@ function selectSubscriptionRoots(
       if (message === undefined || messageId === undefined || interfaceOperationId === undefined ||
           operation.$type !== bpmnTypes.operationType ||
           !hasOnlyModelledKeys(operation, ["$type", "id", "name"]) ||
-          typeof operation.name !== "string" ||
+          !(typeof operation.name === "string" || (optionalNames && operation.name === undefined)) ||
           operation.outMessageRef !== undefined || operation.errorRefs !== undefined ||
           operation.implementationRef !== undefined) {
         return undefined;

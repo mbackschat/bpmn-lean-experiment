@@ -49,6 +49,7 @@ export { RuntimeStateDefect };
 import { sequentialMultiInstanceBindingsForState } from "./sequential-multi-instance-binding.js";
 import { compareCanonicalStrings } from "./wire.js";
 import { runtimeStateIdentityBound } from "./runtime-state-identity-bound.js";
+import { interruptingMessageEventSubProcessStateIsValid } from "./interrupting-message-event-subprocess-state-validation.js";
 import { compareActivityVariableScopes } from "./runtime-state-collection-ordering.js";
 import {
   compensationRetentionStateDefects,
@@ -186,6 +187,7 @@ function declaredElementIds(
       case SemanticOperationKind.TerminateScope:
       case SemanticOperationKind.ReachNoneEnd:
       case SemanticOperationKind.CompleteScope:
+      case SemanticOperationKind.CompleteEventSubProcess:
         break;
       default:
         assertNeverDeclarer(operation);
@@ -250,6 +252,10 @@ export function runtimeStateDefects(
   state: RuntimeState,
 ): ReadonlyArray<RuntimeStateDefect> {
   const defects: RuntimeStateDefect[] = [];
+
+  if (!interruptingMessageEventSubProcessStateIsValid(program, state)) {
+    defects.push(RuntimeStateDefect.EventSubProcessMessageInvalid);
+  }
 
   const programRequiresSequentialMultiInstanceControllers = program.operations.some(
     ({ kind }) => kind === SemanticOperationKind.AwaitSequentialMultiInstanceUserTask,
@@ -769,6 +775,7 @@ const GATED_DEFECTS: ReadonlySet<RuntimeStateDefect> = new Set([
   RuntimeStateDefect.CompensationEventSubProcessSnapshotInvalid,
   RuntimeStateDefect.CompensationExecutionProfileMismatch,
   RuntimeStateDefect.CompensationExecutionInvalid,
+  RuntimeStateDefect.EventSubProcessMessageInvalid,
 ]);
 
 /**

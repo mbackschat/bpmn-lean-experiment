@@ -102,11 +102,17 @@ theorem transaction_admitted_task_continuation (p : Program) (roles : Transactio
     TransactionContinuationState roles
       (admitStimulusWithCompensationSnapshots p before
         (.completeUserTaskInstance commandId taskId submitted)).state := by
+  by_cases handlerValid : interruptingMessageEventSubProcessStateValid p before = true
+  case neg =>
+    simp [admitStimulusWithCompensationSnapshots, roles.snapshotsAbsent, handlerValid,
+      callDataRuntimeStateValid, roles.profileSelected, transactionCancellationCheckpointProfileId,
+      callDataCheckpointProfileId]
+    exact phase
   obtain ⟨parallel, sequential, messageMonitored, messageBounded, bounded, composed,
       dataInput, dataOutput, monitored⟩ := transaction_task_dispatch_selectors p graph
     ⟨taskId.elementId.value⟩
   simp only [admitStimulusWithCompensationSnapshots, roles.snapshotsAbsent]
-  simp [running, noIncidents, parallel, sequential, messageMonitored, messageBounded,
+  simp [handlerValid, running, noIncidents, parallel, sequential, messageMonitored, messageBounded,
     bounded, composed, dataInput, dataOutput, monitored, callDataRuntimeStateValid,
     roles.profileSelected, transactionCancellationCheckpointProfileId, callDataCheckpointProfileId]
   cases completed : completeOrdinaryUserTaskWithCompensation? completeUserTask p before taskId with
@@ -126,8 +132,14 @@ theorem transaction_admitted_handler_continuation (p : Program) (roles : Transac
     (noEffects : before.effectWaits = []) (emptyTokens : before.tokens = []) :
     TransactionContinuationState roles
       (admitStimulusWithCompensationSnapshots p before (.completeEffect commandId effectId result)).state := by
+  by_cases handlerValid : interruptingMessageEventSubProcessStateValid p before = true
+  case neg =>
+    simp [admitStimulusWithCompensationSnapshots, roles.snapshotsAbsent, handlerValid,
+      callDataRuntimeStateValid, roles.profileSelected, transactionCancellationCheckpointProfileId,
+      callDataCheckpointProfileId]
+    exact phase
   simp only [admitStimulusWithCompensationSnapshots, roles.snapshotsAbsent]
-  simp [running, noIncidents, noEffects, callDataRuntimeStateValid, roles.profileSelected,
+  simp [handlerValid, running, noIncidents, noEffects, callDataRuntimeStateValid, roles.profileSelected,
     transactionCancellationCheckpointProfileId, callDataCheckpointProfileId]
   split
   · cases completed : attemptCompensationHandlerEffectCompletion p before effectId result with
@@ -150,8 +162,13 @@ theorem transaction_absent_incident_commands_preserve_state
       (.reportEffectFailure commandId effectId generation)).state = before ∧
     (admitStimulusWithCompensationSnapshots p before
       (.retryIncident commandId incidentId)).state = before := by
+  by_cases handlerValid : interruptingMessageEventSubProcessStateValid p before = true
+  case neg =>
+    simp [admitStimulusWithCompensationSnapshots, roles.snapshotsAbsent, handlerValid,
+      callDataRuntimeStateValid, roles.profileSelected, transactionCancellationCheckpointProfileId,
+      callDataCheckpointProfileId]
   cases control : before.control <;>
-    simp [admitStimulusWithCompensationSnapshots, roles.snapshotsAbsent, control,
+    simp [admitStimulusWithCompensationSnapshots, roles.snapshotsAbsent, handlerValid, control,
       noIncidents, noEffects, reportEffectFailure, retryEffectIncident]
 
 /-- The selected grammar has no external Message, Timer or incident work to consume. -/
@@ -166,6 +183,17 @@ theorem transaction_other_admissions_preserve_state
       | .startProcess .. | .completeUserTaskInstance .. | .completeEffect .. => False
       | _ => True) :
     (admitStimulusWithCompensationSnapshots p before stimulus).state = before := by
+  by_cases handlerValid : interruptingMessageEventSubProcessStateValid p before = true
+  case neg =>
+    simp [admitStimulusWithCompensationSnapshots, roles.snapshotsAbsent, handlerValid,
+      callDataRuntimeStateValid, roles.profileSelected, transactionCancellationCheckpointProfileId,
+      callDataCheckpointProfileId]
+  have noDeclarations : p.interruptingMessageEventSubProcesses = [] := by
+    have clean : p.interruptingMessageEventSubProcesses = [] ∧
+        before.eventSubProcessMessageSubscriptions = [] := by
+      simpa [interruptingMessageEventSubProcessStateValid, selectedProfile,
+        transactionCancellationCheckpointProfileId, interruptingMessageEventSubProcessProfileId] using handlerValid
+    exact clean.1
   obtain ⟨messageMonitored, messageBounded, _, _, _, _, _⟩ :=
     transaction_alternative_task_inventories_empty p graph
   have timers := transaction_timer_dispatch_absent p graph
@@ -176,7 +204,7 @@ theorem transaction_other_admissions_preserve_state
         messageKeyCorrelationProfileId])]
   all_goals
     cases control : before.control
-    all_goals simp [admitStimulusWithCompensationSnapshots, roles.snapshotsAbsent,
+    all_goals simp [admitStimulusWithCompensationSnapshots, roles.snapshotsAbsent, handlerValid,
       control, noIncidents, noEffects, noMessages, noTimers, selectedProfile,
       admitMessageStart?, messageStartTargetMatchesProgram, messageStartProfileId,
       admitTimerStart?, timerStartTargetMatchesProgram, timerStartProfileId,
@@ -185,7 +213,7 @@ theorem transaction_other_admissions_preserve_state
       isMessageBoundaryDefinition, messageBounded, deliverMessage, deliverPayloadMessage,
       (timers _).1, (timers _).2, fireTimer, reportEffectFailure, retryEffectIncident,
       incidentProcessCancellationRoot?, incidentProcessCancellationEligibility?,
-      serviceTaskIncidentCancellationCheckpointProfileId]
+      serviceTaskIncidentCancellationCheckpointProfileId, noDeclarations]
 
 /-- Transaction's selected Process-data domain derives an empty Start patch from admission. -/
 theorem transaction_start_data_is_empty (bindings : List VariableBinding)
@@ -207,9 +235,14 @@ theorem transaction_committed_start_empty_normal_form (p : Program) (roles : Tra
     (admitStimulusWithCompensationSnapshots p initialState
       (.startProcess commandId processId instanceId submitted)).state =
         transactionRootStartState roles instanceId [] := by
+  have handlerValid : interruptingMessageEventSubProcessStateValid p initialState = true := by
+    cases checked : interruptingMessageEventSubProcessStateValid p initialState with
+    | false => simp [admitStimulusWithCompensationSnapshots, roles.snapshotsAbsent, checked] at committed
+    | true => rfl
+
   simp only [admitStimulusWithCompensationSnapshots, roles.snapshotsAbsent] at committed ⊢
-  simp only [initialState] at committed ⊢
-  simp [roles.profileSelected, transactionCancellationCheckpointProfileId,
+  simp only [initialState] at handlerValid committed ⊢
+  simp [handlerValid, roles.profileSelected, transactionCancellationCheckpointProfileId,
     compensationSourceCheckpointProfileId, activityDataInputOutputUserTaskProfileId,
     callDataRuntimeStateValid, callDataCheckpointProfileId] at committed ⊢
   simp only [transaction_start_builder_normal_form p roles wellFormed] at committed ⊢

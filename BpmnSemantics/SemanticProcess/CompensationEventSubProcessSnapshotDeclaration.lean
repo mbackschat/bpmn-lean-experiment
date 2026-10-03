@@ -1,4 +1,5 @@
 import BpmnSemantics.SemanticProcess.JsonSupport
+import BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessProgramAdmission
 
 /-! # Compensation Event Sub-Process snapshot declaration
 
@@ -38,7 +39,7 @@ def enteredChildScopeId? : SemanticOperation → Option DefinitionScopeId
   | .synchronize .. | .mergeExclusive .. | .choose .. | .selectMany ..
   | .synchronizeSelected ..
   | .throwError .. | .reachNoneEnd .. | .terminateScope ..
-  | .completeScope .. | .triggerCompensation .. | .cancelTransaction .. => none
+  | .completeScope .. | .completeEventSubProcess .. | .triggerCompensation .. | .cancelTransaction .. => none
 
 private def completesScope (scopeId : DefinitionScopeId) : SemanticOperation → Bool
   | .completeScope _ _ completedScopeId _ => completedScopeId == scopeId
@@ -174,17 +175,25 @@ private def declaredHandlerScopeIds (program : Program) : List DefinitionScopeId
 private def declaredScopeLifecycleValid (program : Program)
     (entryRootId : DefinitionScopeId) (handlerScopeIds : List DefinitionScopeId)
     (scope : DefinitionScope) : Bool :=
-  if handlerScopeIds.contains scope.id then
+  let messageHandler := program.interruptingMessageEventSubProcesses.any (fun declaration =>
+    declaration.handlerScopeId == scope.id)
+  if handlerScopeIds.contains scope.id || messageHandler then
     scope.parentScopeId.isSome &&
       (program.operations.filter (completesScope scope.id)).isEmpty &&
       (program.operations.filter fun operation =>
-        enteredChildScopeId? operation = some scope.id).isEmpty
+        enteredChildScopeId? operation = some scope.id).isEmpty &&
+      (!messageHandler || (program.operations.filter fun
+        | .completeEventSubProcess _ _ candidate => candidate == scope.id
+        | _ => false).length == 1)
   else ordinaryScopeLifecycleValid program entryRootId scope
 
 /-- Program-aware lifecycle admission derives exactly the valid declaration's handler scopes; callers cannot supply exemptions. -/
 def compensationEventSubProcessSnapshotScopeLifecycleWellFormed
     (program : Program) (entryRootId : DefinitionScopeId) : Bool :=
-  compensationEventSubProcessSnapshotDeclarationValid program &&
+  (compensationEventSubProcessSnapshotDeclarationValid program &&
+    (program.interruptingMessageEventSubProcesses.isEmpty ||
+      (program.identity.semanticProfile == interruptingMessageEventSubProcessProfileId &&
+        interruptingMessageEventSubProcessProgramGraph program))) &&
     program.definitionScopes.all
       (declaredScopeLifecycleValid program entryRootId
         (declaredHandlerScopeIds program))
@@ -200,6 +209,7 @@ theorem scopeLifecycle_parentless_completion_is_entryRoot (program : Program)
   simp only [compensationEventSubProcessSnapshotScopeLifecycleWellFormed, Bool.and_eq_true] at valid
   have lifecycle := List.all_eq_true.mp valid.2 scope member
   unfold declaredScopeLifecycleValid at lifecycle
+  dsimp only at lifecycle
   split at lifecycle
   · simp [parentless] at lifecycle
   · unfold ordinaryScopeLifecycleValid at lifecycle

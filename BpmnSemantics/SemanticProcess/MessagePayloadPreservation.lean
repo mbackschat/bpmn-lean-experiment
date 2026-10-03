@@ -113,9 +113,12 @@ theorem deliverPayloadMessage_preserves_runtimeStateWellFormed
       have callData : (program.identity.semanticProfile == callDataCheckpointProfileId) = false := by
         rw [profile]
         decide +kernel
-      simp only [programProfileCapabilitiesValid, callData, transaction, Bool.false_eq_true, legacy,
+      have messageHandler : (program.identity.semanticProfile == interruptingMessageEventSubProcessProfileId) = false := by
+        rw [profile]
+        decide +kernel
+      simp only [programProfileCapabilitiesValid, callData, transaction, messageHandler, Bool.false_eq_true, legacy,
         ↓reduceIte, Bool.and_eq_true] at capabilities
-      have parallelFamily := capabilities.1.2
+      have parallelFamily := capabilities.2.1.2
       simp [programParallelMultiInstanceProfileMatches, profile, messagePayloadCatchProfileId,
         parallelMultiInstanceUserTaskProfileId] at parallelFamily
       obtain ⟨aggregate, lifecycle⟩ := wellFormed.1

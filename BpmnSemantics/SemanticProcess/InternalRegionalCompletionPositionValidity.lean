@@ -196,8 +196,13 @@ theorem completeScopeState_child_preserves_position (program : Program) (before 
             intro candidate _
             by_cases same : candidate.id = parent <;> simp [same, different]
           simpa only [exactLiveOccurrence, census, equal] using live
-      simpa only [removed, running] using runtimePositionValid_addToken program expectedInstanceId removed output parent
+      have added := runtimePositionValid_addToken program expectedInstanceId removed output parent
         removedValid parentLive placeDeclared placeOwner
+      refine runtimePositionValid_tokens_sublist_frame program expectedInstanceId _ _ added ?_ ?_ ?_ ?_
+      · simp [removed, running]
+      · rfl
+      · rfl
+      · exact List.Sublist.refl _
     · simp at result
   exact finish
 

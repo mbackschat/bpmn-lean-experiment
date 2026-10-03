@@ -6,6 +6,7 @@ import type {
 } from "./contract.js";
 import { sameMessageChannel } from "./message-channel.js";
 import { applyInternalInitiationPatch } from "./internal-transition-initiation-patch.js";
+import { armEventSubProcessMessageSubscriptions } from "./interrupting-message-event-subprocess-runtime.js";
 import { SemanticOperationKind } from "./semantic-process-contract.js";
 import type { SemanticProcessProgram } from "./semantic-process-contract.js";
 import { SemanticProfileId } from "./semantic-process-profile.js";
@@ -94,7 +95,7 @@ export function admitProcessStart(
   if (reserved === null) {
     return null;
   }
-  return initializeCompensationActivityRetention(program, {
+  const initialized = initializeCompensationActivityRetention(program, {
     ...reserved,
     ...(program.identity.semanticProfile ===
         SemanticProfileId.SequentialMultiInstanceUserTask
@@ -119,6 +120,7 @@ export function admitProcessStart(
       process: { bindings: stimulus.initialVariables },
     },
   }, rootOccurrence);
+  return armEventSubProcessMessageSubscriptions(program, initialized, rootOccurrence);
 }
 
 /** Creates the empty root occurrence shared by payload-free resolved Process starts. */

@@ -506,8 +506,14 @@ function messageInteractionKind(
         return false;
     }
   });
-  if (declarers.length !== 1) {
+  const handlers = (program.interruptingMessageEventSubProcesses ?? []).filter(({ startEventId }) => startEventId === elementId);
+  if (declarers.length + handlers.length !== 1) {
     return null;
+  }
+  const handler = handlers[0];
+  if (handler !== undefined) {
+    return isMessageChannel(message.channel) && sameMessageChannel(message.channel, handler.channel)
+      ? StimulusKind.DeliverMessage : null;
   }
   switch (declarers[0]?.kind) {
     case SemanticOperationKind.AwaitPayloadMessage:

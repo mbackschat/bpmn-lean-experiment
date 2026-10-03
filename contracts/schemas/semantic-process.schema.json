@@ -74,9 +74,73 @@
     },
     "compensationExecution": {
       "$ref": "#/$defs/compensationExecutionDeclaration"
+    },
+    "interruptingMessageEventSubProcesses": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 1,
+      "items": {
+        "$ref": "#/$defs/interruptingMessageEventSubProcess"
+      }
     }
   },
   "$defs": {
+    "completeEventSubProcess": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "origin",
+        "scopeId"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "kind": {
+          "const": "completeEventSubProcess"
+        },
+        "origin": {
+          "$ref": "#/$defs/bpmnElementOrigin"
+        },
+        "scopeId": {
+          "$ref": "#/$defs/nonemptyString"
+        }
+      }
+    },
+    "interruptingMessageEventSubProcess": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "parentScopeId",
+        "handlerScopeId",
+        "elementId",
+        "startEventId",
+        "channel",
+        "childEntry"
+      ],
+      "properties": {
+        "parentScopeId": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "handlerScopeId": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "elementId": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "startEventId": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "channel": {
+          "$ref": "#/$defs/operationMessageChannel"
+        },
+        "childEntry": {
+          "$ref": "#/$defs/nonemptyString"
+        }
+      }
+    },
     "nonemptyString": {
       "type": "string",
       "minLength": 1
@@ -2669,6 +2733,9 @@
         },
         {
           "$ref": "#/$defs/cancelTransaction"
+        },
+        {
+          "$ref": "#/$defs/completeEventSubProcess"
         }
       ]
     },

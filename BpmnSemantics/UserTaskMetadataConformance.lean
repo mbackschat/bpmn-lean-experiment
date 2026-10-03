@@ -378,6 +378,8 @@ theorem completion_is_metadata_irrelevant
       simp [completeUserTask, waitingStateFor, waitFor, taskDefinitionFor,
         SequentialUserTask.exactWait, SequentialUserTask.exactTaskInstanceId, successor]
     simp [applyStimulus, admitStimulus,
+      show interruptingMessageEventSubProcessStateValid (programFor exactMetadata)
+        (waitingStateFor leftMetadata) = true from rfl,
       show (programFor exactMetadata).compensationEventSubProcessSnapshots = none from rfl,
       show (waitingStateFor leftMetadata).effectIncidents = [] from rfl,
       show (waitingStateFor leftMetadata).control =

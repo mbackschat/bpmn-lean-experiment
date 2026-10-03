@@ -1,3 +1,4 @@
+import { isPristineRuntimeState } from "./pristine-runtime-state.js";
 import { ActivityBodyKind, sameActivityOccurrence } from "./activity-occurrence.js";
 import { CallDataKind } from "./call-data-contract.js";
 import { callDataProgramGraph } from "./call-data-program-admission.js";
@@ -7,7 +8,7 @@ import { matchesActivityLocalDataOwner } from "./local-data-owner.js";
 import { calledProcessAssociationsAreValid } from "./semantic-process-call-runtime.js";
 import { SemanticOperationKind } from "./semantic-process-contract.js";
 import type { AwaitDataInputOutputUserTaskOperation, SemanticProcessProgram } from "./semantic-process-contract.js";
-import { ControlStateKind, initialState, sameOccurrence, sameScopeOccurrence } from "./semantic-process-state.js";
+import { ControlStateKind, sameOccurrence, sameScopeOccurrence } from "./semantic-process-state.js";
 import type { CalledProcessOccurrence, RuntimeState, ScopeOccurrenceId } from "./semantic-process-state.js";
 import { CALL_ACTIVITY_DATA_BOUNDARIES_CHECKPOINT_PROFILE_ID } from "./semantic-profile-catalog.js";
 import { isVariablePatch } from "./variable-value.js";
@@ -20,7 +21,7 @@ import { isVariablePatch } from "./variable-value.js";
 export function callDataStateIsValid(program: SemanticProcessProgram, state: RuntimeState): boolean {
   if (program.identity.semanticProfile !== CALL_ACTIVITY_DATA_BOUNDARIES_CHECKPOINT_PROFILE_ID) return true;
   if (state.control.kind === ControlStateKind.NotStarted) {
-    return pristineCallState(state);
+    return isPristineRuntimeState(state);
   }
   if (!callDataProgramGraph(program)) return false;
   const invoke = program.operations.find((operation) => operation.kind === SemanticOperationKind.InvokeProcess);
@@ -57,44 +58,6 @@ export function callDataStateIsValid(program: SemanticProcessProgram, state: Run
   return taskDataJoins(program, state, tasks, caller, record);
 }
 
-/** CallDataStateValidation.callDataRuntimeStateValid requires initialState before the first start, including passive history. */
-function pristineCallState(state: RuntimeState): boolean {
-  const pristine = {
-    control: state.control.kind === initialState.control.kind,
-    initiationPending: state.initiationPending === initialState.initiationPending,
-    scopeOccurrences: state.scopeOccurrences.length === initialState.scopeOccurrences.length,
-    controlTokens: state.controlTokens.length === initialState.controlTokens.length,
-    userTaskWaits: state.userTaskWaits.length === initialState.userTaskWaits.length,
-    messageWaits: state.messageWaits.length === initialState.messageWaits.length,
-    timerWaits: state.timerWaits.length === initialState.timerWaits.length,
-    effectWaits: state.effectWaits.length === initialState.effectWaits.length,
-    effectIncidents: state.effectIncidents.length === initialState.effectIncidents.length,
-    selectedBranchSets: state.selectedBranchSets.length === initialState.selectedBranchSets.length,
-    eventRaces: state.eventRaces.length === initialState.eventRaces.length,
-    calledProcessOccurrences: state.calledProcessOccurrences.length === initialState.calledProcessOccurrences.length,
-    activityOccurrences: state.activityOccurrences.length === initialState.activityOccurrences.length,
-    sequentialMultiInstanceControllers: state.sequentialMultiInstanceControllers === initialState.sequentialMultiInstanceControllers,
-    parallelMultiInstanceControllers: state.parallelMultiInstanceControllers === initialState.parallelMultiInstanceControllers,
-    compensationActivityRetentions: state.compensationActivityRetentions === initialState.compensationActivityRetentions,
-    compensationParentContextRetentions: state.compensationParentContextRetentions === initialState.compensationParentContextRetentions,
-    compensationTriggers: state.compensationTriggers === initialState.compensationTriggers,
-    compensationHandlerEffectWaits: state.compensationHandlerEffectWaits === initialState.compensationHandlerEffectWaits,
-    variables: state.variables.process.bindings.length === initialState.variables.process.bindings.length &&
-      state.variables.activities.length === initialState.variables.activities.length &&
-      state.variables.processInterfaces.length === initialState.variables.processInterfaces.length,
-    taskActivations: state.taskActivations.length === initialState.taskActivations.length,
-    messageActivations: state.messageActivations.length === initialState.messageActivations.length,
-    timerActivations: state.timerActivations.length === initialState.timerActivations.length,
-    eventRaceActivations: state.eventRaceActivations.length === initialState.eventRaceActivations.length,
-    callActivations: state.callActivations.length === initialState.callActivations.length,
-    effectActivations: state.effectActivations.length === initialState.effectActivations.length,
-    scopeActivations: state.scopeActivations.length === initialState.scopeActivations.length,
-    activityActivations: state.activityActivations.length === initialState.activityActivations.length,
-    endOccurrences: state.endOccurrences === initialState.endOccurrences,
-    logicalTimeMs: state.logicalTimeMs === initialState.logicalTimeMs,
-  } satisfies Record<keyof RuntimeState, boolean>;
-  return Object.values(pristine).every(Boolean);
-}
 
 function calledOutputLifetime(
   state: RuntimeState,

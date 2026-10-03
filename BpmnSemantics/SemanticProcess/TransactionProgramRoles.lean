@@ -290,6 +290,10 @@ theorem transactionCancellationProgramGraph_roles (p : Program)
       exact identity.trans (congrArg (fun element => "scope:" ++ element.value) origin.symm)
     scheduling := ?_ }⟩
   all_goals
+    try (have checked := admitted
+         repeat' first | exact checked.2 | exact checked.1 | replace checked := checked.1
+         done)
+  all_goals
     try dsimp only [TransactionProgramRoles.unique?, TransactionProgramRoles.exactInventory,
       TransactionProgramRoles.soleConsumer?, TransactionProgramRoles.taskChain?,
       TransactionProgramRoles.operationOwner?, TransactionProgramRoles.controlPlaceOwner?,

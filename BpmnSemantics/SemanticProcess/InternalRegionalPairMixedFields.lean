@@ -67,6 +67,8 @@ theorem completion_cancel_fields_commute (before completed cancelled : RuntimeSt
     (completionTokens cancelTokens : List ControlToken) (cancelCount : Nat)
     (completionUpdate : completed = { before with
       scopeOccurrences := before.scopeOccurrences.filter (fun scope => decide (scope.id ≠ completionRoot))
+      eventSubProcessMessageSubscriptions := before.eventSubProcessMessageSubscriptions.filter
+        (fun listener => decide (listener.owner ≠ completionRoot))
       timerWaits := before.timerWaits.filter keepTimer
       activityOccurrences := before.activityOccurrences.filter keepActivity
       tokens := completionTokens })
@@ -95,6 +97,8 @@ theorem completion_cancel_fields_commute (before completed cancelled : RuntimeSt
     { cancelScopeSubtree completed root disposition with tokens := [], endOccurrences := 0 } =
       { cancelled with
         scopeOccurrences := cancelled.scopeOccurrences.filter (fun scope => decide (scope.id ≠ completionRoot))
+        eventSubProcessMessageSubscriptions := cancelled.eventSubProcessMessageSubscriptions.filter
+          (fun listener => decide (listener.owner ≠ completionRoot))
         timerWaits := cancelled.timerWaits.filter keepTimer
         activityOccurrences := cancelled.activityOccurrences.filter keepActivity
         tokens := [], endOccurrences := 0 } := by

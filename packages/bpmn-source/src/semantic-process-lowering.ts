@@ -1,3 +1,4 @@
+import { isDeclaredMessageEventSubProcess, lowerInterruptingMessageEventSubProcessDeclarations, lowerMessageEventSubProcessCompletion } from "./interrupting-message-event-subprocess-lowering.js";
 import { lowerTransactionDeclarations, lowerTransactionCancel } from "./transaction-source-lowering.js";
 import {
   BoundaryInterruption,
@@ -68,7 +69,7 @@ export function lowerCheckedProcess(
   const completionOperations = source.definitionScopes.flatMap((scope) =>
     isDormantCompensationScope(source, scope.id)
       ? []
-      : [lowerCalledProcessReturn(scope, source) ?? lowerScopeCompletion(scope, source)]
+      : [lowerMessageEventSubProcessCompletion(scope, source) ?? lowerCalledProcessReturn(scope, source) ?? lowerScopeCompletion(scope, source)]
   );
   const scopedOperations = [...nodeOperations, ...completionOperations];
   const configurationFlows = eventRaceConfigurationFlowIds(source);
@@ -109,6 +110,7 @@ export function lowerCheckedProcess(
       .sort(compareIds),
     ...lowerCompensationSourceDeclarations(source),
     ...lowerTransactionDeclarations(source),
+    ...lowerInterruptingMessageEventSubProcessDeclarations(source),
   };
   return program;
 }
@@ -151,6 +153,7 @@ function lowerNode(
       return [lowerCallActivityInvoke(node, source)];
     case CheckedNodeKind.TransactionSubProcess:
     case CheckedNodeKind.EmbeddedSubProcess: {
+      if (isDeclaredMessageEventSubProcess(source, node.id)) return [];
       const entry = {
         input: requireOnly(incoming, node.id, "incoming"),
         childEntry: childEntryPlace(source, node.childScopeId),

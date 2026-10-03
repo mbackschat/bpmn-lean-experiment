@@ -370,8 +370,13 @@ private theorem admittedSharedParallelEntryAccount (program : Program)
   have callData : (program.identity.semanticProfile == callDataCheckpointProfileId) = false := by
     rw [profile]
     decide +kernel
-  simp only [programProfileCapabilitiesValid, callData, transaction, Bool.false_eq_true, legacy,
-    ↓reduceIte, Bool.and_eq_true] at capabilities
+  have messageHandler :
+      (program.identity.semanticProfile == interruptingMessageEventSubProcessProfileId) = false := by
+    rw [profile]
+    rfl
+  simp only [programProfileCapabilitiesValid, callData, transaction, messageHandler,
+    Bool.false_eq_true, legacy, ↓reduceIte, Bool.and_eq_true] at capabilities
+  obtain ⟨_, capabilities⟩ := capabilities
   obtain ⟨profileEntry, completionOperation, entries, completions, paired, completionLookup⟩ :=
     programParallelMultiInstanceProfile_pair_census program profile capabilities.1.2
   have selectedExact := programWellFormed_parallel_projection_exact program entryOperation

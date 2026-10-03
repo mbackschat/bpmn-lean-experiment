@@ -41,6 +41,7 @@ export const RuntimeStateDefect = {
     "compensationEventSubProcessSnapshotInvalid",
   CompensationExecutionProfileMismatch: "compensationExecutionProfileMismatch",
   CompensationExecutionInvalid: "compensationExecutionInvalid",
+  EventSubProcessMessageInvalid: "eventSubProcessMessageInvalid",
 } as const;
 
 export type RuntimeStateDefect =

@@ -49,7 +49,7 @@ private theorem startingProgramFacts (program : Program) (instanceId : SemanticI
       simp only [Bool.and_eq_true] at graph
       have lifecycle : compensationEventSubProcessSnapshotScopeLifecycleWellFormed program
           entryRoot = true := by grind
-      exact ((Bool.and_eq_true _ _).mp lifecycle).1
+      exact ((Bool.and_eq_true _ _).mp ((Bool.and_eq_true _ _).mp lifecycle).1).1
     · contradiction
   · contradiction
 
@@ -233,9 +233,13 @@ private theorem startedWithSnapshots_wellFormed (program : Program) (instanceId 
     sequentialMultiInstanceControllerProgramBindingsValid,
     sequentialMultiInstanceOperationBindingComplete,
     controllerIdentitiesUnique, controllersNotExhausted, parallelMultiInstanceControllersOrdered]
-  intro operation _
-  cases operation <;> simp
-  split <;> rfl
+  constructor
+  · split
+    · split <;> rfl
+    · rfl
+  · intro operation _
+    cases operation <;> simp
+    split <;> rfl
 
 /-- `RSI-OBL-01`. On the empty state, well-formedness reduces exactly to the position predicate the
 account already had.

@@ -2,7 +2,7 @@
 
 ## Status
 
-Lifecycle: owner-approved
+Lifecycle: implementation-in-progress
 Review: approved
 
 ## Question and boundary
@@ -157,23 +157,79 @@ The proposed additions bind source admission, checked/IL declarations, both deco
 
 | Owner | Remaining headroom to the 800-line review target | Constraint |
 |---|---|---|
-| [IL contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 143 | Keep declaration details in one family owner. |
-| [Runtime state](../../packages/semantic-core/src/semantic-process-state.ts) | 355 | Add the distinct parent-listener collection without duplicating it. |
-| [Scope runtime](../../packages/semantic-core/src/semantic-process-scope-runtime.ts) | 553 | Preserve ordinary completion while withdrawing passive owned listeners. |
-| [Root initialization](../../packages/semantic-core/src/semantic-process-triggered-start.ts) | 582 | Delegate atomic parent registration to the family owner. |
-| [Checked graph](../../packages/semantic-core/src/checked-process-contract.ts) | 397 | Retain exact source ownership and entry flow. |
-| [Open-set projection](../../packages/semantic-core/src/flow-node-occurrence-open-set.ts) | 20 | Add only a narrow hook to a cohesive family projection owner. |
-| [Lifecycle projection](../../packages/semantic-core/src/flow-node-occurrence-lifecycle.ts) | 45 | Delegate cancellation and handler facts without generic state differencing. |
-| [Host admission](../../packages/temporal-adapter/protocol/src/host-admission.ts) | 427 | Keep hosted capability closed until its own qualification passes. |
-| [Lean state](../../BpmnSemantics/SemanticProcess/RuntimeState.lean) | 56 | Keep subscription types/runtime helpers in a cohesive family owner. |
-| [Lean completion](../../BpmnSemantics/SemanticProcess/ScopeCompletion.lean) | 630 | Preserve ordinary-child continuation and add exact passive expiry. |
-| [Lean cancellation](../../BpmnSemantics/SemanticProcess/ScopeCancellation.lean) | 555 | Classify the new collection in every removal path. |
+| [IL contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 135 | Keep declaration details in one family owner. |
+| [Runtime state](../../packages/semantic-core/src/semantic-process-state.ts) | 353 | Add the distinct parent-listener collection without duplicating it. |
+| [Scope runtime](../../packages/semantic-core/src/semantic-process-scope-runtime.ts) | 543 | Preserve ordinary completion while withdrawing passive owned listeners. |
+| [Root initialization](../../packages/semantic-core/src/semantic-process-triggered-start.ts) | 580 | Delegate atomic parent registration to the family owner. |
+| [Checked graph](../../packages/semantic-core/src/checked-process-contract.ts) | 395 | Retain exact source ownership and entry flow. |
+| [Open-set projection](../../packages/semantic-core/src/flow-node-occurrence-open-set.ts) | 15 | Add only a narrow hook to a cohesive family projection owner. |
+| [Lifecycle projection](../../packages/semantic-core/src/flow-node-occurrence-lifecycle.ts) | 38 | Delegate cancellation and handler facts without generic state differencing. |
+| [Host admission](../../packages/temporal-adapter/protocol/src/host-admission.ts) | 415 | Keep hosted capability closed until its own qualification passes. |
+| [Lean state](../../BpmnSemantics/SemanticProcess/RuntimeState.lean) | 37 | Keep subscription types/runtime helpers in a cohesive family owner. |
+| [Lean completion](../../BpmnSemantics/SemanticProcess/ScopeCompletion.lean) | 622 | Preserve ordinary-child continuation and add exact passive expiry. |
+| [Lean cancellation](../../BpmnSemantics/SemanticProcess/ScopeCancellation.lean) | 553 | Classify the new collection in every removal path. |
 
 ### Atomic consumers and guards
 
 Required guards include [schema coverage](../../scripts/contract-schema-coverage.test.ts), [definition artifacts](../../scripts/contract-definition-artifacts.test.ts), [projected source keys](../../packages/bpmn-source/test/projected-flow-element-keys.test.ts), [runtime removal completeness](../../scripts/runtime-collection-removal-completeness.test.ts), [operation consumers](../../scripts/semantic-operation-consumer-census.test.ts), [internal commutation](../../scripts/internal-commutation-census.test.ts), [canonical ordering](../../scripts/canonical-ordering.test.ts), [source hygiene](../../scripts/source-hygiene.test.ts) and [Lean cost](../../scripts/lean-module-cost.test.ts). Use red/green separating witnesses, focused then affected-package gates, bounded Lean elaboration and independent semantic-checkpoint review. Skip local performance tests.
 
 The private profile is `bpmn-2.0.2-interrupting-message-event-subprocess-draft`. Before public support, register its whole model, exact scenarios/profile/pipeline binding, capability restrictions, generated corpus map and About disclosure atomically after live hosting passes. Closure separately reconciles the requirement disposition, evidence maps and cost against the existing Message-boundary and repeatable-subscription capsules. No public profile, corpus coverage or hosted support is claimed by this proposal.
+
+## Implementation progress
+
+[`implementation-status-owner:ENGINE-SEMANTIC-FAMILY`](../ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md#interrupting-message-event-sub-process) owns the exact private implementation and absence boundary.
+
+Uncommitted work on 2026-10-03 implements source/IL admission, parent listener registration, regional interruption, passive expiry, token-free handler completion and E1/E2 publication in TypeScript. Both scheduling modes validate every reached prefix, both initial task-arm orders, exact 4/1/3 startup/delivery/handler-completion fuel and one-less-fuel rollback without publication. Continuation decoding preserves dormant and consumed-listener phases; host admission explicitly refuses this private profile pending its separate qualification.
+
+The aggregate TypeScript runtime gate now enforces the family validator, including missing/duplicate listeners and counters, wrong ownership/channel, simultaneous handler/listener, surviving ordinary work, orphan handlers and ordinary-Message identity aliases. The separating red showed that direct command refusal alone did not establish generic state validity; the corrected aggregate gate and the full semantic-core suite pass.
+
+Lean's three approved local law owners now compile: [registration/binding](../../BpmnSemantics/SemanticProcess/InterruptingMessageEventSubProcessRegistrationLaws.lean), [interruption/framing](../../BpmnSemantics/SemanticProcess/InterruptingMessageEventSubProcessInterruptionLaws.lean), and [completion/refusal](../../BpmnSemantics/SemanticProcess/InterruptingMessageEventSubProcessCompletionLaws.lean). They connect explicit declarative relations to the family helpers and establish listener issuance, fresh-child selection, regional withdrawal, outside Task/listener preservation, Process-data/history frames, token-free child disposal and passive expiry. Lean now dispatches token-free handler completion and selects its child-only lifecycle terminal. Process-start admission installs the parent listener without creating a handler; a kernel witness connects that committed state to the declarative registration relation. The family state validator rejects altered pre-start state, missing listeners during ordinary work, duplicate issuance history and simultaneous listener/handler phases, alongside the unchanged generic invariant. Direct Message admission now consumes the listener, cancels both live ordinary tasks and their Activity records, retains the parent and creates only the handler entry token; the successor passes family and generic validity. The independent handler open projection and candidate lifecycle fold pass dormant/triggered/completed-state checks and reject orphan handlers and mismatched successors. Scheduled startup, withdrawal and handler completion now pass with respectively five, two and four aligned transition/lifecycle entries. E1 now exposes the dormant parent listener without an active child wait. The bounded matrix checks both scheduling modes, both task-arm orders, both ordinary completion orders, withdrawal before or after either task, both final-completion/Message races, exact fuel and atomic one-less-fuel rollback, every replayed prefix, and strict replay. Invalid, future, foreign, wrong-channel, payload-bearing and stale commands preserve state and publish nothing. These are bounded execution checks, not a complete checkpoint or full-library result.
+
+Lean now also passes complete checked-source admission, independent Program-profile admission, source-to-IL lowering and complete Program structural/graph admission. The [single conformance owner](../../BpmnSemantics/InterruptingMessageEventSubProcessConformance.lean) distinguishes declaration-owned entry and token-free completion, rejects injected declarations on older profiles, shared ordinary-task outputs, wrong handler ownership and ordinary-child completion, and retains the ordinary-profile control. These admission checks remain separate from the bounded runtime matrix above. The reviewed child-entry amendment and all three consumers compile with the consumer propositions unchanged; the generic initialization proof also compiles after deriving the existing snapshot fact through the extended admission conjunction and proving the singleton Message-counter order. The earlier failed proof gate remains retained. The existing task-completion equality proposition also compiles unchanged after a local phase-frame law relates task-wait removal to its successor token.
+
+The [source-bound comparison](../../packages/differential/test/interrupting-message-event-subprocess-lean-core.integration-test.ts) checks independent Lean lowering and complete E1/E2 equality across five schedules, including stale-command refusal and replay. Its red result separated a missing handler open-occurrence dispatch in the Lean JSON emitter; the corrected emitter passes. This comparison supplies finite cross-language evidence without a correspondence theorem.
+
+The initial full-library gate exposed nine predecessor proof-script failures; their focused correction passes 304 jobs (`/tmp/imes-proof-consumers-corrected`). The next complete gate remains failed at `/tmp/imes-library-corrected`: child-completion framing, composition closure and Transaction initialization were its three failed modules. The child-completion frame now permits passive-listener expiry, and composition closure compiles (`/tmp/imes-frame-consumers`); that receipt still fails in the downstream composition lifecycle owner. Transaction initialization now derives declaration absence from its existing well-formedness and profile assumptions, with no changed proposition.
+
+The foreign-declaration start discriminator fails as intended in `/tmp/imes-foreign-declaration-lean-red`. Both accounts now reject foreign declarations at the existing family gate, before start construction, preserving the complete predecessor state. TypeScript's direct runtime validator also failed the separating test before correction (`/tmp/imes-foreign-declaration-ts-red`). Its corrected complete core passes 1,524 tests, and harness types pass. Lean passes the bounded conformance owner and Transaction proof together in `/tmp/imes-foreign-declaration-lean-green` (332 jobs, 1,923,620,864-byte cgroup peak, zero limit/OOM events, pressure or swap). The stronger composition frame is verified separately below.
+
+The reviewed stronger frame is implemented: committed foreign-profile starts establish declaration absence, admitted composition steps and completions preserve listener absence, and the existing reachable-task completion and bounded scheduled-closure declarations remain unchanged. The focused progress gate passes all 260 jobs (`/tmp/imes-frame-progress-green`), at 310,124,544-byte cgroup peak with zero limit/OOM events, pressure or swap. The retained conformance discriminator proves that an injected listener leaves ordinary task lifetime and ownership intact but violates the strengthened frame and rejects every completion without mutation (`/tmp/imes-frame-discriminator`, 281 jobs, 1,743,171,584-byte peak, zero limit/OOM events, pressure or swap). TypeScript independently checks ordinary and data-bearing completions against their valid predecessors; the complete core passes 1,525 tests and harness types pass. The complete library and separately gated experiment now pass as recorded below; independent checkpoint review remains outstanding.
+
+The final integration correction preserves Transaction command/start and reachable-phase propositions by separating unchanged-state family rejection from admitted dispatch. Regional completion's exact record-update laws now include expiry of listeners owned by the completed scope; the dependent completion/completion, return/completion and completion/cancellation laws prove those filters commute. No additional predecessor-domain premise was introduced. `/tmp/imes-complete-proof-integration` passes the complete 732-job library and 283-job checked-source experiment under one CPU, 3 GiB and no additional swap, with 678,731,776-byte cgroup peak and zero limit/OOM events, pressure or swap. All 759 current Lean/build inputs match the mounted snapshot. Earlier failed integration receipts remain retained.
+
+The four changed conformance source owners have fresh memory measurements in [the cost record](../../scripts/lean-module-cost.ts), bound to exact mounted bytes and completed receipts: `/tmp/imes-activity-issuing-cost`, `/tmp/imes-sequential-binding-cost`, `/tmp/imes-metadata-warm-cost` and `/tmp/imes-frame-discriminator`. Each compiles only its target against warm dependencies under one CPU, 3 GiB and no additional swap, with zero limit/OOM events. The four measured dependency closures and build inputs remain byte-identical: 78, 270, 288 and 286 inputs respectively, checked after the final integration corrections. This is individual target evidence; cold aggregate resource acceptance remains deferred.
+
+Current separately asserted receipts:
+
+| Gate | Result | Receipt |
+|---|---|---|
+| Semantic core, including foreign declarations and listener-contaminated task states | 1,525 passed | `/tmp/imes-frame-core-complete` |
+| Complete infrastructure and harness types | 626 passed | `/tmp/imes-final-infrastructure-loopback` |
+| Protocol | 145 passed | `/tmp/imes-protocol-final` |
+| Platform publication reader | 18 passed | `/tmp/imes-platform-publication-tests` |
+| Source hygiene, removal and ordering | 35 passed | `/tmp/imes-publication-hygiene` |
+| Focused core/protocol test types | Passed | `/tmp/imes-runtime-invariant-types` |
+| Three local Lean law owners and Program operation decoder | Passed, 38 build jobs | `/tmp/imes-lean-local-laws-complete` |
+| Complete source/Program admission, lowering and proof-contract counterexample | Passed, 67 build jobs; bounded cgroup peak 742,244,352 bytes, no pressure/OOM/swap | `/tmp/imes-program-admission-green` |
+| Publication/schema coverage and Lean source contracts | 27 passed | `/tmp/imes-admission-source-guards` |
+| Ordinary-entry helper and three unchanged consumer propositions | Passed, 197 build jobs | `/tmp/imes-child-entry-consumers-fifth` |
+| Handler completion dispatch and child-only lifecycle candidate | Passed, 153 build jobs; bounded peak 1,550,512,128 bytes, no pressure/OOM/swap | `/tmp/imes-completion-publication-green` |
+| Start registration, declarative registration bridge and family/generic state checks | Passed, 156 build jobs; bounded peak 946,290,688 bytes, no pressure/OOM/swap | `/tmp/imes-start-registration-green` |
+| Generic initialization proof after listener registration | Passed, 127 build jobs | `/tmp/imes-start-proof-correction` |
+| Direct Message ingress after four explicit startup choices, both-task cancellation and successor validity | Passed, 157 build jobs; bounded peak 896,114,688 bytes, no pressure/OOM/swap | `/tmp/imes-message-delivery-green` |
+| Lean source contracts, module bounds, runtime removal, plan and RC guards | 62 passed | `/tmp/imes-lean-ingress-source-guards` |
+| Independent handler projection and lifecycle fold | Passed, 158 build jobs; bounded peak 942,338,048 bytes, no pressure/OOM/swap | `/tmp/imes-handler-lifecycle-green` |
+| Completion-position proof and scheduled-trace dependency closure | Passed, 243 build jobs; predecessor completion proposition preserved | `/tmp/imes-scheduled-prerequisites-frame` |
+| Scheduled startup, withdrawal and handler completion with aligned publications | Passed, 267 build jobs; bounded peak 1,036,079,104 bytes, no pressure/OOM/swap | `/tmp/imes-scheduled-publication-green` |
+| Lifecycle candidate/projection independence guard, including the new family owner | 19 passed | `/tmp/imes-candidate-independence-green` |
+| Complete bounded Lean scheduling, refusal, prefix validity, replay and E1/E2 matrix | Passed, 275 build jobs; bounded peak 1,729,949,696 bytes, no pressure/OOM/swap | `/tmp/imes-e1-and-schedule-matrix-green` |
+| Lean JSON interpreter publication dispatch | Passed, 278 build jobs | `/tmp/imes-json-publication-hook` |
+| Source-bound independent lowering and five Lean/core E1/E2 schedules | Passed on current sources and rebuilt TypeScript, pinned Node 24.18.0, one CPU/3 GiB; 263,856,128-byte peak, zero limit/OOM events, pressure or swap | `/tmp/imes-bounded-parity` |
+| Complete Lean library and checked-source experiment | Passed, 732 and 283 jobs | `/tmp/imes-complete-proof-integration` |
+| Complete Product 1 harness types | Passed | `/tmp/imes-foreign-listener-types-corrected` |
+| Assurance reachability, frozen experiment census, scope-entry regression and Lean test-lane guards | 21 passed | `/tmp/imes-import-and-scope-consumers-green` |
+
+The earlier publication-coverage failure remains retained at `/tmp/imes-publication-schema-green` (provisional name, failed verdict). Its missing operation encoding and decoding arms are now present; the green source guard is not execution evidence for that operation. These are progress results, not an approved checkpoint. The complete proof-consumer gate is green; finish independent checkpoint review before crossing into registration or hosting. The infrastructure sandbox run `/tmp/imes-final-infrastructure-practical` failed only because loopback binding was denied; the permission-enabled run above passes the unchanged test. No performance, cold aggregate resource or live hosting qualification was run.
 
 ## Independent cold-review receipt
 

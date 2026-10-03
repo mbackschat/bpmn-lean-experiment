@@ -55,6 +55,13 @@ structure MessageWait where
   output : ControlPlaceId
   deriving Repr, DecidableEq
 
+/-- A passive parent-owned Message listener has no normal-flow output or executing child Start. -/
+structure EventSubProcessMessageSubscription where
+  id : MessageSubscriptionId
+  owner : ScopeOccurrenceId
+  channel : MessageChannel
+  deriving Repr, DecidableEq
+
 structure EffectWait where
   processInstanceId : SemanticId
   owner : ScopeOccurrenceId
@@ -315,6 +322,7 @@ structure RuntimeState where
   tokens : List ControlToken
   waits : List UserTaskWait
   messageWaits : List MessageWait
+  eventSubProcessMessageSubscriptions : List EventSubProcessMessageSubscription := []
   timerWaits : List TimerWait
   effectWaits : List EffectWait
   effectIncidents : List SemanticEffectIncident := []
@@ -472,10 +480,22 @@ def runningProgramStartState? (program : Program) (instanceId : SemanticId)
     { processInstanceId := instanceId
       definitionScopeId := root.id
       activation := 1 }
+  let listeners : List EventSubProcessMessageSubscription :=
+    match program.interruptingMessageEventSubProcesses with
+    | [declaration] =>
+        if declaration.parentScopeId == root.id then
+          [{ id := { processInstanceId := instanceId,
+                     elementId := ⟨declaration.startEventId.value⟩, activation := 1 },
+             owner, channel := declaration.channel }]
+        else []
+    | _ => []
   pure
     { runningStartState instanceId initialVariables with
       scopeOccurrences := [{ id := owner, parent := none }]
       scopeActivations := [{ scopeId := root.id, count := 1 }]
+      eventSubProcessMessageSubscriptions := listeners
+      messageActivations := listeners.map fun listener =>
+        { elementId := ⟨listener.id.elementId.value⟩, count := listener.id.activation }
       compensationActivityRetentions :=
         match program.compensationActivityRetention with
         | none => []

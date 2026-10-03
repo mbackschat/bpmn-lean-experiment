@@ -210,8 +210,23 @@ theorem transaction_start_builder_normal_form (p : Program) (roles : Transaction
     (variables : List VariableBinding) :
     runningProgramStartState? p instanceId variables =
       some (transactionRootStartState roles instanceId variables) := by
+  have noListeners : p.interruptingMessageEventSubProcesses = [] := by
+    have graph := programWellFormed_graph p wellFormed
+    unfold programGraphWellFormedForProgram programGraphWellFormedWithScopeLifecycle at graph
+    dsimp only at graph
+    split at graph
+    · split at graph
+      · simp only [Bool.and_eq_true] at graph
+        have lifecycle := graph.1.1.1.1.2
+        simp only [compensationEventSubProcessSnapshotScopeLifecycleWellFormed,
+          Bool.and_eq_true] at lifecycle
+        simpa [roles.profileSelected, transactionCancellationCheckpointProfileId,
+          interruptingMessageEventSubProcessProfileId] using lifecycle.1.2
+      · contradiction
+    · contradiction
   simp [runningProgramStartState?, roles.root_definition_selected, roles.retentionPresent,
-    roles.retentionScope, roles.child_scope_ne_root wellFormed, transactionRootStartState]
+    roles.retentionScope, roles.child_scope_ne_root wellFormed, transactionRootStartState, noListeners,
+    runningStartState, initialState]
 
 /-- Actual committed Start admission fixes every state field, with no runtime-validity premise. -/
 theorem transaction_committed_start_normal_form (p : Program) (roles : TransactionAdmittedRoles p)

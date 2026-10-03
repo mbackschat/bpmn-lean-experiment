@@ -114,6 +114,8 @@ def cancelScopeSubtree (state : RuntimeState) (root : ScopeOccurrenceId)
     waits := state.waits.filter fun wait => !cancelled wait.owner
     messageWaits := state.messageWaits.filter fun wait =>
       !cancelled wait.owner && !activityRecordsAttachMessageWait withdrawnActivities wait
+    eventSubProcessMessageSubscriptions := state.eventSubProcessMessageSubscriptions.filter fun listener =>
+      !cancelled listener.owner
     timerWaits := state.timerWaits.filter fun wait =>
       !cancelled wait.owner && !anyTimerIdNamesWait withdrawnTimers wait
     activityOccurrences := retainedByRegion cancelled state.activityOccurrences (retainedCancellationRoot root disposition)

@@ -539,11 +539,13 @@ theorem completion_admission_dispatch_or_refusal
     cases snapshots : program.compensationEventSubProcessSnapshots with
     | some declaration => simp [admitStimulus, snapshots]
     | none =>
-        cases incidents : before.effectIncidents with
-        | nil => simp [admitStimulus, dispatchStimulus, snapshots, dataValid, incidents]
-        | cons incident rest =>
-            by_cases valid : incidentStateAdmitted program before = true <;>
-              simp [admitStimulus, dispatchStimulus, snapshots, dataValid, incidents, valid]
+        by_cases messageValid : interruptingMessageEventSubProcessStateValid program before = true
+        · cases incidents : before.effectIncidents with
+          | nil => simp [admitStimulus, dispatchStimulus, snapshots, dataValid, messageValid, incidents]
+          | cons incident rest =>
+              by_cases valid : incidentStateAdmitted program before = true <;>
+                simp [admitStimulus, dispatchStimulus, snapshots, dataValid, messageValid, incidents, valid]
+        · simp [admitStimulus, snapshots, dataValid, messageValid]
 
 theorem rejected_completion_preserves_state
     (program : Program) (analysis : Analysis) (before : RuntimeState)

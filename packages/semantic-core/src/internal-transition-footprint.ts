@@ -434,6 +434,7 @@ export function deriveInternalTransitionFootprint(
     case SemanticOperationKind.TerminateScope:
     case SemanticOperationKind.ReachNoneEnd:
     case SemanticOperationKind.CompleteScope:
+    case SemanticOperationKind.CompleteEventSubProcess:
       return null;
     default:
       return assertNever(operation);

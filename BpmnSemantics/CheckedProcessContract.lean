@@ -368,6 +368,17 @@ structure SequenceFlowScopeOwnership where
   scopeId : DefinitionScopeId
   deriving Repr, DecidableEq
 
+/-- BPMN §10.3.5 keeps a triggered handler outside its parent's normal Sequence Flow. -/
+structure CheckedInterruptingMessageEventSubProcess where
+  parentScopeId : DefinitionScopeId
+  handlerScopeId : DefinitionScopeId
+  elementId : NodeId
+  startEventId : NodeId
+  channel : MessageChannel
+  interruption : BoundaryInterruption
+  childEntryFlowId : SequenceFlowId
+  deriving Repr, DecidableEq
+
 structure CheckedProcess where
   identity : SourceIdentity
   processId : ProcessId
@@ -378,6 +389,7 @@ structure CheckedProcess where
   sequenceFlows : List CheckedSequenceFlow
   compensation : Option CheckedCompensation := none
   transactionCancellation : Option CheckedTransactionCancellation := none
+  interruptingMessageEventSubProcesses : List CheckedInterruptingMessageEventSubProcess := []
   deriving Repr, DecidableEq
 
 end BpmnSemantics.SemanticProcess
