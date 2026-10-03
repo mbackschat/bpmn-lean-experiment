@@ -2,8 +2,8 @@
 
 ## Status
 
-Lifecycle: draft
-Review: pending
+Lifecycle: owner-approved
+Review: approved
 
 ## Question and boundary
 
@@ -179,6 +179,8 @@ The private profile is `bpmn-2.0.2-interrupting-message-event-subprocess-draft`.
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `21f47214` | `fork-turns-none` | `approve` | `not-required` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+
+The independent review of `21f47214` approved the foreign-runtime amendment without findings. Packet `13ebf7f4bf52fa003c115f1919f200a9505cafa7dd6fc5da38004144fc2ffcef` binds the proposal target; 54 documentation guards and two assurance-lane guards pass. The reviewer checked the frozen diagnostic predicate copies against the target. This approves the scoped proof-domain correction, not the unfinished implementation or a reachable-deadlock claim.
