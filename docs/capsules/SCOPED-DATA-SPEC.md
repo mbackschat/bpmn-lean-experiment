@@ -38,7 +38,7 @@ No compatibility reader, root-scope wrapper, migration function, format counter,
 
 ## Runtime replacement
 
-The TypeScript contract is:
+The Process and Activity-local components of the TypeScript contract are:
 
 ```ts
 type ProcessVariableScope = DeepReadonly<{
@@ -59,12 +59,9 @@ type ActivityVariableScope = DeepReadonly<{
   owner: LocalDataOwner;
   bindings: VariableBinding[];
 }>;
-
-type ScopedVariables = DeepReadonly<{
-  process: ProcessVariableScope;
-  activities: ActivityVariableScope[];
-}>;
 ```
+
+The current [ScopedVariables contract](../../packages/semantic-core/src/semantic-process-state.ts) composes these components with the required `processInterfaces` collection owned by the separate [Call data account](CALL-ACTIVITY-DATA-BOUNDARIES-PROPOSAL.md#checked-representation-and-runtime-ownership). That private extension does not widen this capsule’s effect-mapping scope.
 
 `RuntimeState.processVariables` is removed and replaced by `RuntimeState.variables: ScopedVariables`. The Lean runtime makes the same replacement with distinct `ProcessVariableScope`, `ActivityVariableScope`, and `ScopedVariables` structures.
 

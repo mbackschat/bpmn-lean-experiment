@@ -104,7 +104,7 @@ Risk band: per-instance data scope and explicit caller/callee mappings in indepe
 
 Last verification: complete Lean library, core/source/protocol/infrastructure suites, types and 23 individual memory checks pass. Aggregate-build pressure remains recorded. Evidence: [evidence boundaries](capsules/CALL-ACTIVITY-DATA-BOUNDARIES-PROPOSAL.md#current-implementation-boundary).
 
-Next action: commit the green semantic checkpoint and obtain independent review under the [approved proposal](capsules/CALL-ACTIVITY-DATA-BOUNDARIES-PROPOSAL.md). Hosted qualification remains deferred. Retain [composition closure obligations](capsules/STRUCTURED-PROCESS-COMPOSITION-PROPOSAL.md#private-rule-to-evidence-reconciliation).
+Next action: obtain the same-reviewer correction audit for `378665ed` on the reconciled IL contract under the [approved proposal](capsules/CALL-ACTIVITY-DATA-BOUNDARIES-PROPOSAL.md). Hosted qualification remains deferred. Retain [composition closure obligations](capsules/STRUCTURED-PROCESS-COMPOSITION-PROPOSAL.md#private-rule-to-evidence-reconciliation).
 
 Keep semantics active; reconsider deferred work no earlier than 2026-10-05, without an automatic switch. Local performance tests stay skipped under external CPU load. Lean remains one process tree, one CPU and 3 GiB without additional swap. Database selection remains [sequential SQLite versus concurrent PostgreSQL](TESTING-SPEC.md#three-level-verification-policy).
 

@@ -15,9 +15,9 @@ import BpmnSemantics.SemanticProcess.CallDataStateValidation
 
 /-! # Call data boundary discriminators
 
-These finite declarations and raw transfers separate exact owner/reference correspondence from
-label matching, cross-Process associations and control-only data loss. They establish no admitted
-supplier trace or scheduled closure.
+These finite declarations, transfers and scheduled supplier traces separate exact owner/reference
+correspondence from label matching, cross-Process associations and control-only data loss.
+The selected scalar profile bounds these checks; they establish no general call equivalence.
 -/
 
 namespace BpmnSemantics.CallActivityDataBoundariesConformance

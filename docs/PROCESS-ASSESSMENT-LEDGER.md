@@ -295,7 +295,7 @@ The 2026-09-28 RC acceptance sweep found two further instances: the platform map
 A checklist item was corrected only where attention already was, leaving its siblings unaudited: a capsule's Required evidence list was amended for the two scenarios under discussion while two other Required items stayed listed and absent, a stale claim was fixed in the owning map but not in the capsule that copied it, one Required-Lean list was corrected while the sibling list and matrix row restating the same obligation were not, and the correction for that then declared itself the single owner while one sibling enumeration survived.
 
 Instances
-: 30
+: 31
 
 Disposition
 : `unguardable`
@@ -324,6 +324,8 @@ The twenty-eighth instance is the Product 2 failed-Process public-contract check
 The twenty-ninth instance is failed-Process closure at `d9ff8d16`: downstream implementation and live acceptance landed while current engine, Temporal, IL, requirement and Compensation-owner passages still called them unfinished. The correction links the consumer outcome from those owners and preserves historical exclusions. No generated changed-section inventory can establish that an unchanged claim is still true.
 
 The thirtieth instance is RC tag realignment: the plan recorded the owner-directed move while the product design still called all phase tags original and the contributor guide described a single pre-publication exception. The correction routes current RC targets and qualification to the plan and preserves immutable distribution identity. The existing sibling question applies; arbitrary prose consistency remains unguardable.
+
+The thirty-first instance is the private scalar Call checkpoint at `378665ed`: the endpoint paragraph was updated while checked/IL type excerpts, runtime storage and invocation/return sections still described the predecessor contract. Independent review exposed the inconsistency. The correction reads those sections together with lowering, well-formedness, supported/excluded surfaces and the scoped-data sibling, links the shared data-shape owner and preserves the private-versus-hosted boundary. Question 8 remains the applicable control for semantic consistency across differently worded passages.
 
 ### Finding 16
 

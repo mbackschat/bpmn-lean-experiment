@@ -222,7 +222,7 @@ The complete infrastructure gate exposed a writer-census false positive: the exh
 
 Checkpoint reflection: reuse of typed Activity endpoints and existing Call control preserved the selected account without consuming more than the four approved proof owners. The broad integration cost came from a shared runtime-storage migration and predecessor proofs that expanded admission branches; explicit profile exclusions preserved those propositions. The obsolete temporary full-build timeout added no evidence and is corrected to the documented allowance. Future proof maintenance should prefer existing admission-shape lemmas where they cover the required fact; this checkpoint opens no further proof programme.
 
-The complete infrastructure gate passes all 624 tests plus harness types (`/tmp/call-data-checkpoint-infrastructure-qualified`, separately asserted). The private semantic checkpoint is ready for its immutable independent review; hosting, public registration and cold aggregate resource acceptance remain open.
+The complete infrastructure gate passes all 624 tests plus harness types (`/tmp/call-data-checkpoint-infrastructure-qualified`, separately asserted). Independent review of `378665ed` requires reconciliation of the current IL contract; the correction audit remains pending. Hosting, public registration and cold aggregate resource acceptance remain open.
 
 ## Independent cold-review receipt
 

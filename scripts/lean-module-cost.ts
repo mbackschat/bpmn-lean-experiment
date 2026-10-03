@@ -138,7 +138,7 @@ export const leanModuleCostRecord = {
     "BpmnSemantics.TransactionCancellationJoinPublicationConformance",
   ],
   rows: [
-    { module: "BpmnSemantics.CallActivityDataBoundariesConformance", sourceSha256: "ac2b3767e5385206a66f3d0e277a5b4db2676a3697b9dd72b2a0c7a0f18d8c0e", peakResidentKib: 1631184, elapsedSeconds: 63.31, measurementReceiptSha256: "403d6a890f4fb2481cac440bbcac9dc7e3bca0cad931b2df5a3cf70204f263f7", measuredAtCommit: "88db155f3e20ded02bbf81d1a0f7781ca82691ce" },
+    { module: "BpmnSemantics.CallActivityDataBoundariesConformance", sourceSha256: "cfa9db59ab6b243492dbacddb186de9b78c43284dffeaea676859c67bdafbf92", peakResidentKib: 1621332, elapsedSeconds: 81.56, measurementReceiptSha256: "0040afccdafb7b668fea4e4e5a57dc48ffb07f4574d6d04f134c10c609c3f38c", measuredAtCommit: "88db155f3e20ded02bbf81d1a0f7781ca82691ce" },
     { module: "BpmnSemantics.StructuredCompositionAdmissionConformance", sourceSha256: "b12aa97a3c84744e12b18e73beb26b4a940f5fa29c046f053c144b41c5593fe5", peakResidentKib: 1207580, elapsedSeconds: 9.44, measurementReceiptSha256: "ec0aa2213b7b66c82fb5c1ec44a2a171ae89333fa69d266e38a9adf203a4aa9f", measuredAtCommit: "c5a9d5a62e334cca7591bd907c60ce245e728f6c" },
     { module: "BpmnSemantics.StructuredCompositionCommandConformance", sourceSha256: "9759aac4eb19b2a3d249b90b44e0d80251b99ad26b9d731d08890c3d1ee9ace1", peakResidentKib: 774520, elapsedSeconds: 1.99, measurementReceiptSha256: "597ffd6658cf45e3bec095c324b8e5800259f960d941bf1b72f2eaf726843a91", measuredAtCommit: "b6b6c4478c789b3749a2f494e4d26936e105f5cf" },
     {
