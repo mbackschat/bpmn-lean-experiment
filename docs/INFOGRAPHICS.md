@@ -39,7 +39,7 @@ Before regenerating an asset, record its new committed source snapshot separatel
 
 ## Release-candidate refresh source
 
-The BPM platform progress and Temporal runtime refreshes use committed source `16c5b9f6`, reviewed on 2026-09-29. The `v0.2.0-rc.1` release tag identifies the published distribution at that source; [PLAN.md](PLAN.md#mue-acceptance-goal) keeps final MUE acceptance separate. The other two infographics retain their 2026-08-25 source and footer.
+The BPM platform progress and Temporal runtime refreshes use committed source `16c5b9f6`, reviewed on 2026-09-29. The `v0.2.0-rc.1` release tag identifies the published distribution at that source; [the historical RC boundary](PLAN.md#mue-release-candidate-critical-path) retains its qualification limits. [Practical CIB7 Coverage](PROJECT-DESIGN.md#practical-cib7-coverage) now supersedes separate MUE acceptance work. The other two infographics retain their 2026-08-25 source and footer.
 
 | Material claim | Source | Status at `16c5b9f6` | Scope |
 |---|---|---|---|

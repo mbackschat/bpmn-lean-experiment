@@ -19,7 +19,7 @@ The pinned-source findings and family inventory are in [CIB Seven BPMN extension
 
 CIB Seven compatibility is an overlay on the vendor-neutral BPMN execution core, not the first or highest layer of the product. Standard BPMN propositions remain usable without a CIB profile. This document selects only the CIB syntax, interpretations, extensions, configurations, and host relations that a named compatibility profile adds.
 
-CIB Seven `2.2.0` nevertheless has a distinct planning role: its executable BPMN Process breadth is the primary baseline for ordering which standards mechanisms the project closes after the M0 engine-runner floor. That priority does not make CIB normative, promote all CIB extensions into scope, require a CIB target for every standards capsule, or combine BPMN and CIB coverage measures. The durable rule is owned by [PROJECT-DESIGN.md](PROJECT-DESIGN.md#cib-seven-220-breadth-ordering).
+The 2026-10-03 owner amendment makes CIB Seven `2.2.0` implemented element breadth and feature depth the scope ceiling, as well as the ordering baseline: behavior absent from CIB7 is out of scope. Pinned implementation evidence must establish the depth of every selected mechanism. That priority does not make CIB normative, promote all CIB extensions into scope, require a CIB target for every standards capsule, or combine BPMN and CIB coverage measures. The durable rule is owned by [PROJECT-DESIGN.md](PROJECT-DESIGN.md#cib-seven-220-breadth-ordering).
 
 A12 Workflows sits above this layer as a downstream adoption target. Its corpus may justify prioritizing one CIB surface, but A12 handler names, Java APIs, integration façades, and model-specific shapes belong to an A12 adoption adapter or exact compatibility fixture. They do not become generic CIB semantics.
 
@@ -151,7 +151,7 @@ The second mode must fail fast on unsupported API calls and document class-loadi
 
 The downstream adoption target is A12 Workflows `release/2025.06`, not one consuming application and not every CIB feature speculatively. The defined [A12 Workflows compatibility ledger](research/A12-WORKFLOWS-COMPATIBILITY-LEDGER.md) inventories its maintained BPMN elements, extension bindings, `DelegateExecution` calls, variables, expressions, scripts, listeners, errors, engine integration, and REST/JMS façade consumers. The A12 Full Stack Project Template is the canonical downstream-project blueprint, while its Workflows-enabled materialization remains a required future integration fixture.
 
-The inventory prioritizes reusable BPMN mechanisms first and the necessary CIB overlay second. Typed variables and input/output mappings, conditional routing, message correlation, boundary Error behavior, and User Task lifecycle are lower-layer mechanisms with A12 consumers; bean-token bindings, assignment/form extensions, exact expression subsets, and delegate bridging are CIB or A12 adoption work layered on top. Absence from the A12 corpus does not remove a construct from the ultimate BPMN conformance target, and presence does not move A12 semantics into the engine.
+The inventory prioritizes reusable BPMN mechanisms first and the necessary CIB overlay second. Typed variables and input/output mappings, conditional routing, message correlation, boundary Error behavior, and User Task lifecycle are lower-layer mechanisms with A12 consumers; bean-token bindings, assignment/form extensions, exact expression subsets, and delegate bridging are CIB or A12 adoption work layered on top. Absence from the A12 corpus does not remove a construct from the CIB7-bounded BPMN target, and presence does not move A12 semantics into the engine.
 
 The `CreateDocument` and boundary-error slices intentionally test the complete stack once at two difficult effect/data/fault seams. They are not a mandate to add a dedicated semantic path for every A12 model. Later models that reuse the same BPMN and CIB contracts should be handled by profile/adoption configuration and regression evidence.
 
@@ -249,7 +249,7 @@ Apart from the completed bounded Service Task work and its phase-zero probe, thi
 
 ## Approved owner decisions
 
-The owner approved these eight decisions:
+The owner approved these decisions:
 
 1. target selected source and behavioral compatibility, not general CIB engine API replacement;
 2. use project-owned handler identities and effect contracts as the primary replacement API;
@@ -259,6 +259,8 @@ The owner approved these eight decisions:
 6. treat full Process Engine Java/REST/plugin compatibility as a non-goal unless a separately funded compatibility program is approved.
 7. for the first read-only CIB expression capsule, provide complete approved context to the actual pinned JUEL runtime behind a Java Activity, build no project AST/evaluator, keep mutation and engine-service calls separate, and adopt only the explicitly approved dependency set recorded by that capsule.
 8. use CIB Seven `2.2.0` executable BPMN breadth as the primary ordering baseline for the near-term standards schedule while keeping BPMN authority, CIB relationship classification, A12 `2.0.0` profiles, and all three coverage denominators separate.
+
+9. on 2026-10-03, restrict future BPMN element breadth and feature depth to behavior implemented by CIB Seven `2.2.0`; [the durable scope ceiling](PROJECT-DESIGN.md#cib-seven-220-breadth-ordering) owns selection evidence, existing-difference disposition and claim limits.
 
 ## Reopen conditions
 

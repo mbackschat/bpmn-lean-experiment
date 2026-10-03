@@ -18,7 +18,13 @@ const releaseCandidateContent = [
   ["COMPENSATION-TRANSACTIONS", "satisfied"],
 ] as const;
 
-const unfinishedExecutionOrder = ["MUE-ACCEPTANCE"] as const;
+const unfinishedExecutionOrder = ["CIB7-PRACTICAL-COVERAGE"] as const;
+const semanticExecutionOrder = [
+  "STRUCTURED-PROCESS-COMPOSITION",
+  "CALL-ACTIVITY-DATA-BOUNDARIES",
+  "INTERRUPTING-MESSAGE-EVENT-SUBPROCESS",
+  "CIB7-PRACTICAL-COVERAGE",
+] as const;
 
 test("freezes all seven selected RC capabilities before integration", async () => {
   const plan = await readFile(path.join(projectRoot, "docs/PLAN.md"), "utf8");
@@ -47,11 +53,11 @@ test("freezes all seven selected RC capabilities before integration", async () =
   const orderedIds = parseOrderedWork(plan)
     .filter(({ id }) => unfinishedExecutionOrder.includes(id as typeof unfinishedExecutionOrder[number]))
     .map(({ id }) => id);
-  assert.deepEqual(orderedIds, unfinishedExecutionOrder, "ordered work must retain frozen integration");
+  assert.deepEqual(orderedIds, unfinishedExecutionOrder, "ordered work must retain practical coverage planning");
   assertSemanticsWindow(plan);
 });
 
-test("keeps pulled-forward semantics ordered outside deferred MUE acceptance", async () => {
+test("keeps the current semantic checkpoint ahead of practical coverage planning", async () => {
   const plan = await readFile(path.join(projectRoot, "docs/PLAN.md"), "utf8");
   assertSemanticsWindow(plan);
   const active = parseOrderedWork(plan).find(({ state }) => state === "active");
@@ -61,18 +67,18 @@ test("keeps pulled-forward semantics ordered outside deferred MUE acceptance", a
     `\`${active.id}\` · **queued**`,
   )), /semantic work/u);
   assert.throws(() => assertSemanticsWindow(plan.replace(
-    "`MUE-ACCEPTANCE` · **later**",
-    "`MUE-ACCEPTANCE` · **active**",
-  )), /deferred MUE/u);
+    "`CIB7-PRACTICAL-COVERAGE` · **queued**",
+    "`MUE-ACCEPTANCE` · **queued**",
+  )), /MUE acceptance/u);
   assert.throws(() => assertSemanticsWindow(plan.replaceAll(
     "CALL-ACTIVITY-DATA-BOUNDARIES", "UNSELECTED-CAPABILITY",
   )), /selected order/u);
 });
 
-test("the semantic window permits both approved queue advances", async () => {
+test("the semantic window permits every selected queue advance", async () => {
   const plan = await readFile(path.join(projectRoot, "docs/PLAN.md"), "utf8");
-  for (const activeIndex of [1, 2]) {
-    const advanced = parseOrderedWork(plan).slice(0, 3).reduce((text, entry, index) => text.replace(
+  for (const activeIndex of [1, 2, 3]) {
+    const advanced = parseOrderedWork(plan).slice(0, semanticExecutionOrder.length).reduce((text, entry, index) => text.replace(
       `\`${entry.id}\` · **${entry.state}**`,
       `\`${entry.id}\` · **${index < activeIndex ? "later" : index === activeIndex ? "active" : "queued"}**`,
     ), plan);
@@ -83,14 +89,15 @@ test("the semantic window permits both approved queue advances", async () => {
 test("the semantic window rejects skipped predecessors, deferred successors and multiple active items", async () => {
   const plan = await readFile(path.join(projectRoot, "docs/PLAN.md"), "utf8");
   for (const states of [
-    ["queued", "active", "queued"],
-    ["later", "queued", "active"],
-    ["active", "later", "queued"],
-    ["later", "active", "later"],
-    ["active", "active", "queued"],
-    ["later", "later", "later"],
+    ["queued", "active", "queued", "queued"],
+    ["later", "queued", "active", "queued"],
+    ["active", "later", "queued", "queued"],
+    ["later", "active", "later", "queued"],
+    ["active", "active", "queued", "queued"],
+    ["later", "later", "later", "later"],
+    ["later", "later", "queued", "active"],
   ]) {
-    const invalid = parseOrderedWork(plan).slice(0, 3).reduce((text, entry, index) => text.replace(
+    const invalid = parseOrderedWork(plan).slice(0, semanticExecutionOrder.length).reduce((text, entry, index) => text.replace(
       `\`${entry.id}\` · **${entry.state}**`, `\`${entry.id}\` · **${states[index]}**`,
     ), plan);
     assert.throws(() => assertSemanticsWindow(invalid), /semantic (queue|work)/u);
@@ -99,14 +106,11 @@ test("the semantic window rejects skipped predecessors, deferred successors and 
 
 function assertSemanticsWindow(plan: string): void {
   const entries = parseOrderedWork(plan);
-  assert.equal(entries.find(({ id }) => id === "MUE-ACCEPTANCE")?.state,
-    "later", "deferred MUE acceptance must remain open outside semantic work");
-  assert.deepEqual(entries.slice(0, 3).map(({ id }) => id), [
-    "STRUCTURED-PROCESS-COMPOSITION",
-    "CALL-ACTIVITY-DATA-BOUNDARIES",
-    "INTERRUPTING-MESSAGE-EVENT-SUBPROCESS",
-  ], "pulled-forward capabilities must retain the selected order");
-  const selected = entries.slice(0, 3);
+  assert.ok(!entries.some(({ id }) => id === "MUE-ACCEPTANCE"),
+    "MUE acceptance must not be a separate work item or prerequisite");
+  assert.deepEqual(entries.slice(0, semanticExecutionOrder.length).map(({ id }) => id),
+    semanticExecutionOrder, "pulled-forward capabilities must retain the selected order");
+  const selected = entries.slice(0, semanticExecutionOrder.length);
   const activeIndex = selected.findIndex(({ state }) => state === "active");
   assert.ok(activeIndex >= 0 && entries.filter(({ state }) => state === "active").length === 1,
     "exactly one selected semantic work item must be active");
@@ -115,9 +119,29 @@ function assertSemanticsWindow(plan: string): void {
   "semantic queue must retain deferred predecessors and queued successors");
 }
 
+test("practical coverage retains both subprocess forms without forcing their priority", async () => {
+  const plan = await readFile(path.join(projectRoot, "docs/PLAN.md"), "utf8");
+  const assertExtension = (document: string): void => {
+    const section = document.split("### Practical CIB7 Coverage goal\n")[1]?.split("\n## ")[0];
+    assert.ok(section !== undefined);
+    const rows = section.split("\n").filter(line => line.startsWith("| `"));
+    assert.deepEqual(rows.map(line => /^\| `([^`]+)` \| `(queued|active|satisfied)` \|/u.exec(line)?.slice(1)), [
+      ["SEQUENTIAL-MULTI-INSTANCE-SUBPROCESS", "queued"],
+      ["PARALLEL-MULTI-INSTANCE-SUBPROCESS", "queued"],
+    ], "both practical coverage obligations must remain explicit and unfinished");
+    assert.match(section, /2026-10-03/u);
+    assert.match(section, /PROJECT-DESIGN\.md#cib-seven-220-breadth-ordering/u);
+  };
+  assertExtension(plan);
+  for (const id of ["SEQUENTIAL-MULTI-INSTANCE-SUBPROCESS", "PARALLEL-MULTI-INSTANCE-SUBPROCESS"]) {
+    assert.throws(() => assertExtension(plan.replace(`| \`${id}\` | \`queued\` |`, `| \`${id}\` | \`satisfied\` |`)), /unfinished/u);
+    assert.throws(() => assertExtension(plan.split("\n").filter(line => !line.startsWith(`| \`${id}\` |`)).join("\n")), /unfinished/u);
+  }
+});
+
 test("rejects unfinished content, premature later work and a broader hidden denominator", async () => {
   const plan = await readFile(path.join(projectRoot, "docs/PLAN.md"), "utf8");
-  const prematureLaterWork = plan.replace("`MUE-ACCEPTANCE` · **later**", "`CONFORMANCE-CLOSURE` · **later**");
+  const prematureLaterWork = plan.replace("`CIB7-PRACTICAL-COVERAGE` · **queued**", "`MUE-ACCEPTANCE` · **queued**");
   const rcMarker = "### MUE Release Candidate critical path\n";
   const rcStart = plan.indexOf(rcMarker);
   assert.notEqual(rcStart, -1);
@@ -131,7 +155,7 @@ test("rejects unfinished content, premature later work and a broader hidden deno
     "| `COMPENSATION-TRANSACTIONS` | `queued` |",
   );
   assert.throws(() => assertReleaseCandidatePath(unfinished), /satisfied/u);
-  assert.throws(() => assertReleaseCandidatePath(prematureLaterWork), /frozen integration/u);
+  assert.throws(() => assertReleaseCandidatePath(prematureLaterWork), /practical coverage planning/u);
   assert.throws(() => assertReleaseCandidatePath(broadened), /MUE content/u);
 });
 
@@ -146,7 +170,7 @@ function assertReleaseCandidatePath(plan: string): void {
   const orderedIds = parseOrderedWork(plan)
     .filter(({ id }) => unfinishedExecutionOrder.includes(id as typeof unfinishedExecutionOrder[number]))
     .map(({ id }) => id);
-  assert.deepEqual(orderedIds, unfinishedExecutionOrder, "ordered work must retain frozen integration");
+  assert.deepEqual(orderedIds, unfinishedExecutionOrder, "ordered work must retain practical coverage planning");
 }
 
 function releaseCandidateSection(plan: string): string {

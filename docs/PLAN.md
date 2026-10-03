@@ -1,12 +1,12 @@
 # Plan
 
-This file owns immediate execution order, blockers, current measured evidence, and the exact resume action. Durable decisions, implementation detail, semantic meaning, and test procedure belong in their linked owners. Completed work leaves this file after its current consequence has an owner; Git retains history.
+This file owns execution order, blockers, current evidence and the exact resume action. Linked owners retain durable meaning and history.
 
 ## Current checkpoint
 
 M0 through M6 and Horizons 1 and 2 are closed. The [production lifecycle specification](TEMPORAL-PROCESS-LIFECYCLE-SPEC.md#workflow-chain-production-contract) owns the retained Product 1 floor; [`implementation-status-owner:TEMPORAL-HOSTING`](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md) owns its current evidence boundary and deployment correction.
 
-The non-binding [engine maturity ladder](PROJECT-DESIGN.md#engine-maturity-roadmap-labels) names the closed Product 1 floor Engine `v0.1`, **Runnable MVP**, and Engine `v0.2`, **Minimum Useful Engine (MUE)**, as the current direction. The closure-reviewed [MUE Preview Alpha specification](MUE-PREVIEW-ALPHA-SPEC.md) is tagged at `phase/mue-preview-alpha`, and the closure-reviewed [MUE Preview Beta specification](MUE-PREVIEW-BETA-SPEC.md) is tagged at `phase/mue-preview-beta`. The owner selected bounded MUE acceptance on 2026-09-28; the seven RC capability boundaries below remain frozen.
+The primary objective is [Practical CIB7 Coverage](PROJECT-DESIGN.md#practical-cib7-coverage); the [maturity ladder](PROJECT-DESIGN.md#engine-maturity-roadmap-labels) retains historical labels. [Alpha](MUE-PREVIEW-ALPHA-SPEC.md) and [Beta](MUE-PREVIEW-BETA-SPEC.md) retain their `phase/mue-preview-alpha` and `phase/mue-preview-beta` tags. The seven RC boundaries remain historical evidence; the practical coverage goal below owns selected scope.
 
 ### MUE Preview Beta critical path
 
@@ -26,26 +26,26 @@ The non-binding [engine maturity ladder](PROJECT-DESIGN.md#engine-maturity-roadm
 
 #### Risk-first execution bands
 
-Unresolved concurrency, durability, cancellation, or retained-state risk in either unfinished Beta area outranks capability packaging and closure. Only its minimum contract, harness, gate, review, and documentation may precede the next risk band.
+These closed bands retain the Beta evidence boundary; [the integration specification](MUE-PREVIEW-BETA-SPEC.md) owns their closure.
 
 | Order | State | Band | Exit condition; deferred work |
 |---|---|---|---|
 | 1 | `satisfied` | Subscription population/concurrency | Barrier-linearized complete discovery, pending-registration exclusion, all-or-infrastructure fanout, result reservation, and settle-before-next order. |
 | 2 | `satisfied` | Subscription delivery/recovery | Same-target response-loss recovery, contradiction quarantine without rematch, Worker replacement, and replay. |
-| 3 | `satisfied` | Boundary-handler eligibility/lifetime | Implement the approved representation for exact ordinary/current Multi-Instance User Tasks, including zero-item identity, one-item-first all-success, and pre-commit capacity. Multi-Instance Sub-Processes remain excluded pending their multiplicity account. |
+| 3 | `satisfied` | Boundary-handler eligibility/lifetime | Exact ordinary/current Multi-Instance User Task eligibility, zero-item identity, all-success priority and capacity; no Multi-Instance Sub-Process retention. |
 | 4 | `satisfied` | Event Sub-Process snapshots | Preserve complete Process/Sub-Process parent context, provisional per-instance snapshots, promotion, and exact failed/interrupted/cancelled purge before triggering. |
 | 5 | `satisfied` | Compensation order/cancellation | Execute deterministic dependency-aware handlers, nested cancellation, and failure outcomes through the first semantic vertical checkpoint. |
 | 6 | `satisfied` | Cross-Workflow durability | Compensation and correlation-ingress continuation, capacity, replacement, and replay have independently reviewed private checkpoints. |
-| 7 | `satisfied` | Capability and evidence closure | Product 1, registered evidence, retained corpus/disclosure, Product 2, cost/reflection, clean complete gates, and independent closure review are green. Compensation breadth remains deferred after Beta. |
+| 7 | `satisfied` | Capability and evidence closure | Registered evidence, corpus/disclosure, Product 2, cost and independent closure; broader Compensation deferred. |
 | 8 | `satisfied` | Beta integration | Compose the Product 2 preview, disclose limits, pass the clean complete gate and review, and tag Beta. |
 
 Integration state: `satisfied`.
 
-Every Beta row is satisfied; [the integration specification](MUE-PREVIEW-BETA-SPEC.md) owns closure and the immutable `phase/mue-preview-beta` checkpoint. The RC table below owns the subsequently closed implementation boundary.
+[Beta closure](MUE-PREVIEW-BETA-SPEC.md) owns the immutable checkpoint; RC closes the boundaries below.
 
 ### MUE Release Candidate critical path
 
-`MUE-RELEASE-CANDIDATE` is the integration and feature-freeze checkpoint, not an eighth content ID. The owner-selected MUE boundary is exactly the same seven content IDs as Beta, but an RC row closes its stated implementation boundary rather than accepting a representative checkpoint.
+`MUE-RELEASE-CANDIDATE` freezes the historical seven content IDs below; it is not an eighth content ID. Practical coverage is separate.
 
 | Content ID | State | Exact RC closure boundary | Evidence or closure owner |
 |---|---|---|---|
@@ -57,15 +57,22 @@ Every Beta row is satisfied; [the integration specification](MUE-PREVIEW-BETA-SP
 | `EVENT-SUBSCRIPTIONS` | `satisfied` | Close reusable Message/Timer subscription lifetime across the admitted catch and Activity-boundary loci, including repeatable non-interrupting paths, deterministic completion/trigger races, and exact scope cleanup. | [Repeatable subscription specification](capsules/REPEATABLE-EVENT-SUBSCRIPTIONS-SPEC.md) |
 | `COMPENSATION-TRANSACTIONS` | `satisfied` | Register the reviewed Compensation account as a public capability and close one bounded Transaction Sub-Process cancellation path through compensation and a Cancel Boundary Event. | [Public Compensation registration](capsules/COMPENSATION-TRIGGER-HANDLER-PROPOSAL.md#public-registration-implementation) and [Transaction specification](capsules/TRANSACTION-CANCELLATION-SPEC.md) |
 
-The completed risk-first sequence covers data lifetime, internal scheduling, subscription races and Compensation/Transaction cancellation. Ordered work now retains RC qualification after evidence reconciliation and feature freeze. The feature surface freezes only after all seven rows are `satisfied`; subsequent RC work may repair cross-family defects and evidence only, not add features. `H3-WORKLOAD-ISOLATION` stays in Engine `v0.3`, while `CONFORMANCE-CLOSURE` stays in Engine `v0.9`.
+The historical RC feature surface freezes only after all seven rows are `satisfied`. Its qualification permits stabilization; Practical CIB7 Coverage advances independently without rewriting RC evidence. `H3-WORKLOAD-ISOLATION` stays in Engine `v0.3`, while `CONFORMANCE-CLOSURE` stays in Engine `v0.9`.
 
 Integration state: `satisfied`.
 
-[The project tag policy](../CLAUDE.md#project-tags) and [MUE delivery checkpoints](PROJECT-DESIGN.md#mue-delivery-checkpoints) own the historical RC phase realignments. Preserve the published `v0.2.0-rc.1` distribution at `16c5b9f6`, Alpha/Beta tags, and the existing bounded native-runtime risk exception. Final MUE acceptance remains open; no further tag move is authorized.
+[The project tag policy](../CLAUDE.md#project-tags) and [MUE delivery checkpoints](PROJECT-DESIGN.md#mue-delivery-checkpoints) own the historical RC phase realignments. Preserve the published `v0.2.0-rc.1` distribution at `16c5b9f6`, Alpha/Beta tags, and the existing bounded native-runtime risk exception. MUE acceptance has not passed and is no longer a separate work item; no further tag move is authorized.
 
-### MUE acceptance goal
+### Practical CIB7 Coverage goal
 
-Close Minimum Useful Engine acceptance for the frozen seven-capability RC scope: repair qualification and user-journey defects, demonstrate the complete supported journeys, reconcile exact-commit evidence and known limitations, and present the resulting boundary for explicit owner acceptance. After acceptance, record closure and create the immutable `engine/v0.2` milestone tag. Add no new capability or proof programme; reuse valid evidence and reserve complete verification for final integration.
+On 2026-10-03 the owner made Practical CIB7 Coverage the primary objective, superseding separate MUE acceptance. Review practical element depth and useful combinations within the [CIB7 implementation ceiling](PROJECT-DESIGN.md#cib-seven-220-breadth-ordering). Both Multi-Instance Sub-Process forms remain required, with priority determined by that inventory.
+
+| Added obligation | State | Acceptance boundary |
+|---|---|---|
+| `SEQUENTIAL-MULTI-INSTANCE-SUBPROCESS` | `queued` | Collection-driven repeated subprocess work, per-instance identity/data isolation, completion and outer interruption; exact CIB-supported data behavior is selected in the proposal. |
+| `PARALLEL-MULTI-INSTANCE-SUBPROCESS` | `queued` | Concurrent subprocess instances, completion accounting, selected early completion and cancellation; exact CIB-supported result handling is selected in the proposal. |
+
+Acceptance covers source/Lean/TypeScript, applicable CIB evidence, Temporal refinement/replay and whole-model journeys across the reviewed practical inventory. No separate MUE gate or new version/tag is selected; preserve existing release evidence and unresolved failures.
 
 ## Ordered work
 
@@ -75,20 +82,22 @@ Exactly one stable work ID is active. Required maps are part of the routing cont
 
 The six external reviews and correction audits are complete; the [repair cost ledger](CAPSULE-COST-LEDGER.md#repair-closure-costs) retains their evidence. No finding is reopened.
 
-1. `STRUCTURED-PROCESS-COMPOSITION` · **later** · Owner: [composition proposal](capsules/STRUCTURED-PROCESS-COMPOSITION-PROPOSAL.md) · Maps: [contracts/source](ENGINE-CONTRACTS-AND-SOURCE-IMPLEMENTATION-MAP.md), [runtime/proof](ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md), [semantic families](ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md), [semantic invariants](ENGINE-SEMANTIC-INVARIANT-IMPLEMENTATION-MAP.md), [Temporal](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md), [assurance/adoption](ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md) · Action: Preserve the approved private semantic checkpoint and reconciled execution evidence. Hosting, public registration and capsule closure remain deferred under the owner-selected semantics window.
-2. `CALL-ACTIVITY-DATA-BOUNDARIES` · **later** · Owner: [Call data proposal](capsules/CALL-ACTIVITY-DATA-BOUNDARIES-PROPOSAL.md), [requirement ledger](BPMN-REQUIREMENT-LEDGER.md) · Maps: [contracts/source](ENGINE-CONTRACTS-AND-SOURCE-IMPLEMENTATION-MAP.md), [runtime/proof](ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md), [semantic invariants](ENGINE-SEMANTIC-INVARIANT-IMPLEMENTATION-MAP.md), [Temporal](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md), [assurance/adoption](ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md) · Action: Preserve the approved private scalar Call checkpoint. Hosting, public registration and closure remain deferred; the proposal owns exclusions.
+1. `STRUCTURED-PROCESS-COMPOSITION` · **later** · Owner: [composition proposal](capsules/STRUCTURED-PROCESS-COMPOSITION-PROPOSAL.md) · Maps: [contracts/source](ENGINE-CONTRACTS-AND-SOURCE-IMPLEMENTATION-MAP.md), [runtime/proof](ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md), [semantic families](ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md), [semantic invariants](ENGINE-SEMANTIC-INVARIANT-IMPLEMENTATION-MAP.md), [Temporal](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md), [assurance/adoption](ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md) · Action: Preserve the private checkpoint; hosting, registration and closure remain deferred.
+2. `CALL-ACTIVITY-DATA-BOUNDARIES` · **later** · Owner: [Call data proposal](capsules/CALL-ACTIVITY-DATA-BOUNDARIES-PROPOSAL.md), [requirement ledger](BPMN-REQUIREMENT-LEDGER.md) · Maps: [contracts/source](ENGINE-CONTRACTS-AND-SOURCE-IMPLEMENTATION-MAP.md), [runtime/proof](ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md), [semantic invariants](ENGINE-SEMANTIC-INVARIANT-IMPLEMENTATION-MAP.md), [Temporal](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md), [assurance/adoption](ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md) · Action: Preserve the private scalar Call checkpoint; hosting, registration and closure remain deferred.
 3. `INTERRUPTING-MESSAGE-EVENT-SUBPROCESS` · **active** · Owner: [Message handler proposal](capsules/INTERRUPTING-MESSAGE-EVENT-SUBPROCESS-PROPOSAL.md), [requirement ledger](BPMN-REQUIREMENT-LEDGER.md) · Maps: [contracts/source](ENGINE-CONTRACTS-AND-SOURCE-IMPLEMENTATION-MAP.md), [runtime/proof](ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md), [semantic families](ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md), [semantic invariants](ENGINE-SEMANTIC-INVARIANT-IMPLEMENTATION-MAP.md), [Temporal](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md), [assurance/adoption](ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md) · Action: Review and implement one scope-wide Message trigger that interrupts ordinary application work and starts one withdrawal handler; non-interrupting and repeated handlers remain excluded.
-4. `MUE-ACCEPTANCE` · **later** · Owner: [MUE delivery checkpoints](PROJECT-DESIGN.md#mue-delivery-checkpoints), [testing specification](TESTING-SPEC.md) · Maps: [assurance/adoption](ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md), [platform](BPM-PLATFORM-IMPLEMENTATION-MAP.md), [Temporal](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md) · Action: Reconsider runtime adoption, browser journeys and distribution qualification no earlier than 2026-10-05; resume only after reprioritization. Retain failed and missing gates.
-5. `CONFORMANCE-CLOSURE` · **later** · Owner: [requirement ledger](BPMN-REQUIREMENT-LEDGER.md), [conformance target](BPMN-CONFORMANCE-TARGET.md) · Maps: [contracts/source](ENGINE-CONTRACTS-AND-SOURCE-IMPLEMENTATION-MAP.md), [runtime/proof](ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md), [assurance/adoption](ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md) · Action: Retain the adopted dependency, risk and practical-reach order for remaining Process Execution work after the three owner-selected increments.
+4. `CIB7-PRACTICAL-COVERAGE` · **queued** · Owner: [Practical CIB7 Coverage](PROJECT-DESIGN.md#practical-cib7-coverage), [requirement ledger](BPMN-REQUIREMENT-LEDGER.md) · Maps: [contracts/source](ENGINE-CONTRACTS-AND-SOURCE-IMPLEMENTATION-MAP.md), [runtime/proof](ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md), [semantic families](ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md), [Temporal](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md), [assurance/adoption](ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md) · Action: After the Message checkpoint, review the practical element/depth matrix and prioritize gaps by whole-model reach, dependencies and semantic risk.
+5. `SEQUENTIAL-MULTI-INSTANCE-SUBPROCESS` · **later** · Owner: [practical coverage goal](#practical-cib7-coverage-goal), [CIB scope ceiling](PROJECT-DESIGN.md#cib-seven-220-breadth-ordering) · Maps: [contracts/source](ENGINE-CONTRACTS-AND-SOURCE-IMPLEMENTATION-MAP.md), [runtime/proof](ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md), [semantic families](ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md), [Temporal](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md), [assurance/adoption](ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md) · Action: Required practical scope; select the bounded account and implementation order through the coverage inventory.
+6. `PARALLEL-MULTI-INSTANCE-SUBPROCESS` · **later** · Owner: [practical coverage goal](#practical-cib7-coverage-goal), [CIB scope ceiling](PROJECT-DESIGN.md#cib-seven-220-breadth-ordering) · Maps: [contracts/source](ENGINE-CONTRACTS-AND-SOURCE-IMPLEMENTATION-MAP.md), [runtime/proof](ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md), [semantic families](ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md), [Temporal](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md), [assurance/adoption](ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md) · Action: Required practical scope; select the bounded account and implementation order through the coverage inventory.
+7. `CONFORMANCE-CLOSURE` · **later** · Owner: [requirement ledger](BPMN-REQUIREMENT-LEDGER.md), [conformance target](BPMN-CONFORMANCE-TARGET.md) · Maps: [contracts/source](ENGINE-CONTRACTS-AND-SOURCE-IMPLEMENTATION-MAP.md), [runtime/proof](ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md), [assurance/adoption](ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md) · Action: Audit remaining standards claims within the CIB7 implementation ceiling; no implementation beyond that ceiling is selected.
 
-The owner selected semantics-only work through at least 2026-10-05. Semantics remains active beyond that date unless reprioritized; no automatic switch to runtime adoption, Linux qualification, browser journeys or distribution work occurs. The three post-MUE increments remain outside the frozen seven-capability acceptance boundary. Each needs normative and independent account review, a bounded Lean lane and Temporal preflight; live hosting qualification remains open. Prioritize BPMN requirements, semantic risk and pinned CIB Seven 2.2.0 reach, keeping compatibility claims separately evidenced. The non-material queue correction uses plan/RC guards to permit ordered semantic advancement while rejecting skipped predecessors, multiple active items, omitted capabilities and premature acceptance; the frozen denominator stays closed.
+Semantics-only work continues through at least 2026-10-05 and beyond unless reprioritized; no automatic runtime, Linux, browser or distribution switch occurs. Finish the Message checkpoint, then prioritize practical CIB7 depth. Each increment needs independent account review, bounded Lean assurance and Temporal preflight. Live hosting stays deferred; MUE qualification is not a sequencing prerequisite.
 
 | Priority | Task | Acceptance condition |
 |---|---|---|
 | P1 | Deferred at least until 2026-10-05: close the runtime mechanisms tracked in the [defect ledger](TEMPORAL-DEFECTS-LEDGER.md). | Retain the passing clean-checkout CI evidence; demonstrate corrections for Query loss during eviction, Transaction descriptor-digest rejection, native V8 faults and direct-VM initialization timeout without weaker assertions or unapproved workarounds. |
 | P2 | Deferred at least until 2026-10-05: validate supported user journeys using the [walkthrough](BPM-PLATFORM-BROWSER-WALKTHROUGH.md) and existing production-browser gates. | Discover and start a human process, claim/edit/complete its task, inspect outcome and Action history; retain navigation, disclosures, recovery and incident journeys. Human evaluation has no simulated participants. |
-| P3 | Deferred at least until 2026-10-05: qualify the versioned RC distribution and reconcile evidence, restrictions and final integrated qualification. | The image-only Compose bundle is executable on the selected desktop Docker paths, its browser shows the release version, and every advertised journey has applicable passing evidence; no failed, missing or in-progress gate is reported as acceptance. Reuse unchanged evidence and run missing release gates once. |
-| P4 | Present the exact MUE acceptance boundary and record the decision. | Explicit owner acceptance closes all selected obligations before the immutable `engine/v0.2` tag. General BPMN conformance, production scale and package SemVer remain separate decisions. |
+| P3 | Deferred at least until 2026-10-05: qualify the versioned RC distribution and reconcile evidence, restrictions and final integrated qualification. | Image-only desktop Compose execution, visible release version and passing advertised journeys; reuse valid evidence and run missing gates. No failed, missing or running gate counts as acceptance. |
+| P4 | Qualify Practical CIB7 Coverage when its reviewed inventory is complete. | Required variants and whole-model journeys pass applicable gates; restrictions remain explicit. Owner acceptance, release versioning and scale qualification stay separate decisions. |
 
 ## Current evidence
 
@@ -102,12 +111,12 @@ Active work ID: `INTERRUPTING-MESSAGE-EVENT-SUBPROCESS`.
 
 Risk band: parent subscription lifetime, scope-wide interruption and handler execution.
 
-Last verification: [Message handler proposal approved](capsules/INTERRUPTING-MESSAGE-EVENT-SUBPROCESS-PROPOSAL.md#independent-cold-review-receipt) at `3404ddb0`; independent focused guards pass 110/110. Cold aggregate resource acceptance remains open; investigation is owner-deferred during heavy external load.
+Last verification: [Component evidence](capsules/INTERRUPTING-MESSAGE-EVENT-SUBPROCESS-PROPOSAL.md#implementation-progress) records 1,525 passing core tests, the stronger composition frame and unchanged reachable-completion theorem, and retained foreign-listener discriminators. Complete Lean integration failed in InternalRegionalPairExecutionFrame and TransactionCommandPhases; `/tmp/imes-library-frame-qualified` is separately asserted red. Cold resource investigation remains owner-deferred.
 
-Next action: implement the reviewed [foreign-runtime assurance amendment](capsules/INTERRUPTING-MESSAGE-EVENT-SUBPROCESS-PROPOSAL.md#foreign-runtime-assurance-amendment), then finish proof-consumer verification and contract/evidence reconciliation before committing and independently reviewing the semantic checkpoint.
+Next action: correct the two integration proof failures, finish complete Lean/experiment verification and contract/evidence reconciliation, then commit and independently review the semantic checkpoint. The [foreign-runtime assurance amendment](capsules/INTERRUPTING-MESSAGE-EVENT-SUBPROCESS-PROPOSAL.md#foreign-runtime-assurance-amendment) owns the strengthened predecessor frame.
 
 Keep semantics active; reconsider deferred work no earlier than 2026-10-05, without an automatic switch. Local performance tests stay skipped under external CPU load. Lean remains one process tree, one CPU and 3 GiB without additional swap. Database selection remains [sequential SQLite versus concurrent PostgreSQL](TESTING-SPEC.md#three-level-verification-policy).
 
-Oracle: the selected semantic account passes bounded Lean laws/checks and independent TypeScript discriminators; no hosted or CIB claim exceeds its own evidence. Final MUE acceptance and push qualification remain open under the [defect ledger](TEMPORAL-DEFECTS-LEDGER.md).
+Oracle: the selected semantic account passes bounded Lean laws/checks and independent TypeScript discriminators; no hosted or CIB claim exceeds its own evidence. Practical coverage acceptance and push qualification remain open under the [defect ledger](TEMPORAL-DEFECTS-LEDGER.md).
 
 Stop if the account contradicts normative evidence, requires an unapproved language/dependency or exceeds its bounded assurance scope. Preserve release tags and stashes `f35bdd6b0424b2e3d5d06f101eb822bd285ab29e` and `76a2b017a630d23203ded482227382003f296f0b`.

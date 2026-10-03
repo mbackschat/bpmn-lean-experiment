@@ -2,7 +2,7 @@
 
 This project builds a BPMN execution engine on Temporal Workflows, with Lean to make process behavior precise and prove selected guarantees. A TypeScript interpreter executes those rules; a Temporal adapter keeps processes running across waits and failures.
 
-The goal is **BPMN Process Execution Conformance**: processes that execute according to the BPMN 2.0.2 standard. The release candidate covers a defined subset of BPMN behavior; complete conformance remains open. A BPM platform adds human work and process operations through the engine's public API.
+The goal is practical BPMN 2.0.2 execution within **CIB Seven’s implemented element breadth and feature depth**. The release candidate covers a defined subset; [Practical CIB7 Coverage](docs/PROJECT-DESIGN.md#practical-cib7-coverage) is the primary objective, covering useful feature depth and whole-process combinations. MUE checkpoints retain their historical evidence. Full OMG Process Execution Conformance is not promised. A BPM platform adds human work and process operations through the engine's public API.
 
 - 🐳 **Evaluate the RC:** [Run the Docker or Rancher Desktop demo](#try-the-rc-with-docker-or-rancher-desktop). No checkout or build needed.
 - 🔬 **Understand the research:** Read [the rationale and evidence](#research-approach-and-evidence) and [the architecture at a glance](#architecture-at-a-glance).
@@ -73,7 +73,7 @@ The approach already supports complete example processes and several kinds of ve
 - **Processes retain progress after a worker restart.** The [hosting tests](docs/TEMPORAL-TEST-EVIDENCE-MAP.md) cover waiting tasks, messages, timers, and parallel reviews. They also check recovery when a task completion was accepted but its acknowledgement was lost, and continuation when a process outgrows its configured execution-history limit.
 - **People can work through complete processes in the BPM platform.** The [three prepared interactive examples](docs/BPM-PLATFORM-BROWSER-WALKTHROUGH.md#rc-process-showcase-catalog) let users select and start a process, claim a task, fill in its form, complete the work, and inspect progress and Action history.
 
-**This is evidence for the approach, not complete BPMN conformance.** The RC supports selected BPMN features and example journeys. It does not yet accept arbitrary BPMN models or establish that every possible execution is correct; broader coverage and production readiness remain work ahead. See [current acceptance work](docs/PLAN.md#mue-acceptance-goal) and the [`implementation-status-router`](docs/IMPLEMENTATION-MAP.md) for exact support and restrictions. The [Node/V8 investigation](docs/research/NODE-V8-CRASH-INVESTIGATION-RESEARCH.md) records an unresolved native-runtime risk.
+**This is evidence for the approach, not complete BPMN conformance.** The RC supports selected BPMN features and example journeys. It does not yet accept arbitrary BPMN models or establish that every possible execution is correct; broader coverage and production readiness remain work ahead. See [current acceptance work](docs/PLAN.md#practical-cib7-coverage-goal) and the [`implementation-status-router`](docs/IMPLEMENTATION-MAP.md) for exact support and restrictions. The [Node/V8 investigation](docs/research/NODE-V8-CRASH-INVESTIGATION-RESEARCH.md) records an unresolved native-runtime risk.
 
 <details>
 <summary>Optional: repository statistics</summary>
@@ -111,7 +111,7 @@ Maintainers refresh these tables with `./scripts/pnpm.sh run publication-stats:u
 
 ## Current implementation
 
-The release candidate combines the BPMN engine with a platform for starting processes, completing human work, and following their progress. The image below shows the RC snapshot at `16c5b9f6`; final acceptance of the **Minimal Useful Engine (MUE)** remains open. For exact capability boundaries, see [`implementation-status-owner:BPM-PLATFORM`](docs/BPM-PLATFORM-IMPLEMENTATION-MAP.md) and the [executable model corpus](model-corpus/README.md).
+The release candidate combines the BPMN engine with a platform for starting processes, completing human work, and following their progress. The image below shows the RC snapshot at `16c5b9f6`; its historical MUE qualification does not establish Practical CIB7 Coverage. For exact capability boundaries, see [`implementation-status-owner:BPM-PLATFORM`](docs/BPM-PLATFORM-IMPLEMENTATION-MAP.md) and the [executable model corpus](model-corpus/README.md).
 
 <p align="center">
   <a href="docs/assets/project-infographics/product-2-vision.avif"><img src="docs/assets/project-infographics/product-2-vision.avif" alt="BPM platform RC snapshot: process definitions, human tasks, monitoring, and action history, alongside planned capabilities." width="560"></a>

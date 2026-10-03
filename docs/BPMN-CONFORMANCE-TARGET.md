@@ -8,9 +8,9 @@ This document owns the project’s standard-facing goal and the semantic consequ
 
 ## Target
 
-The ultimate product target is **OMG BPMN 2.0.2 Process Execution Conformance** for a Temporal-hosted adapter that imports BPMN Process diagram types, including their definitional Collaboration, and executes the operational semantics.
+The product target is BPMN 2.0.2 execution within **CIB Seven `2.2.0` implemented element breadth and feature depth**, as selected by the owner on 2026-10-03. [The scope ceiling](PROJECT-DESIGN.md#cib-seven-220-breadth-ordering) supersedes the former unconditional goal of complete OMG Process Execution Conformance. Features or deeper variants absent from CIB7 are out of scope.
 
-This is the exact standards interpretation of “a fully BPMN V2 conforming Temporal adapter that reads BPMN V2 and runs on Temporal.”
+OMG Process Execution Conformance remains the standard-defined claim against which coverage is described, not a promise to implement requirements beyond that ceiling. BPMN defines the meaning of selected behavior; CIB7 defines practical scope, and evidence-backed differences remain classified separately.
 
 It is not **BPMN Complete Conformance**. The standard reserves Complete Conformance for an implementation that simultaneously satisfies Process Modeling, Process Execution, BPEL Process Execution, and Choreography Modeling conformance. A headless execution adapter is not required to create, display, or export the standard graphical notation, map models to WS-BPEL, or interpret choreography models.
 
@@ -30,7 +30,7 @@ The working presumption is that CIB Seven implements BPMN faithfully, operationa
 
 ## Layering and coverage accounting
 
-BPMN Process Execution coverage is the primary implementation roadmap. Within that roadmap, practical breadth and semantic risk are co-equal scheduling inputs after normative dependencies. Practical breadth measures reusable mechanisms demanded by independent model families and the CIB Seven execution baseline. Semantic risk identifies families whose concurrency, ordering, interruption, scope, liveness, runtime identity, data, or durable-hosting obligations could invalidate the current semantic representation or require non-local redesign. A rare high-risk family may therefore precede a common low-risk mechanism. The reusable engine is specified and implemented in standard BPMN terms first; a CIB Seven profile may then refine an underspecified choice, select an engine extension, or record a bounded compatibility relation. A12 Workflows is a downstream adoption target that may prioritize which BPMN requirements and CIB overlays are addressed first, but it is not a BPMN authority or a substitute conformance denominator.
+[Practical CIB7 Coverage](PROJECT-DESIGN.md#practical-cib7-coverage) is the primary implementation objective, with BPMN Process Execution meaning authoritative within the CIB7 implementation ceiling. Within that roadmap, practical breadth and semantic risk are co-equal scheduling inputs after normative dependencies. Practical breadth measures reusable mechanisms demanded by independent model families and the CIB Seven execution baseline. Semantic risk identifies families whose concurrency, ordering, interruption, scope, liveness, runtime identity, data, or durable-hosting obligations could invalidate the current semantic representation or require non-local redesign. A rare high-risk family may therefore precede a common low-risk mechanism. The reusable engine is specified and implemented in standard BPMN terms first; a CIB Seven profile may then refine an underspecified choice, select an engine extension, or record a bounded compatibility relation. A12 Workflows is a downstream adoption target that may prioritize which BPMN requirements and CIB overlays are addressed first, but it is not a BPMN authority or a substitute conformance denominator.
 
 The project therefore maintains three separate views:
 
@@ -74,7 +74,7 @@ Clause 10 is not independently required as a graphical/modeling conformance clai
 
 ## Import and admission policy
 
-Process Execution Conformance requires more than parsing one self-contained XML file. The eventual ingestion boundary must support `bpmn:definitions` roots and target namespaces, imported BPMN 2.0 definitions, XML Schema 1.0 types, WSDL 2.0 interfaces, transitive import closure, and cross-file QName references. Import acceptance, model normalization, deployment validation, and execution admission are separate stages with separate outcomes.
+Process Execution Conformance requires more than parsing one self-contained XML file. A full conformance claim would require the ingestion boundary to support `bpmn:definitions` roots and target namespaces, imported BPMN 2.0 definitions, XML Schema 1.0 types, WSDL 2.0 interfaces, transitive import closure, and cross-file QName references. Import acceptance, model normalization, deployment validation, and execution admission are separate stages with separate outcomes.
 
 That separation matters because Clause 15 permits interchange of incomplete models, while execution requires the details needed by the operational semantics. A syntactically importable document must not be silently treated as deployable or executable.
 
@@ -97,7 +97,7 @@ Clause 13 classifies the following as non-operational or containing non-operatio
 - `Process.isClosed`;
 - `SequenceFlow.isImmediate`.
 
-The project may optionally define executable extensions for these elements, but those choices are not required for Process Execution Conformance and must be versioned in a profile. Clause 13.3.3 gives Abstract Task an explicit no-work operational account: it completes upon activation and is never executed by an IT system. A configured external-work Task must therefore be a distinct versioned extension, not a reinterpretation of plain Abstract Task. CIB Seven behavior for any such extension remains a separate compatibility question.
+Within the CIB7 implementation ceiling, the project may select executable extensions for these elements, but those choices are not required for Process Execution Conformance and must be versioned in a profile. Clause 13.3.3 gives Abstract Task an explicit no-work operational account: it completes upon activation and is never executed by an IT system. A configured external-work Task must therefore be a distinct versioned extension, not a reinterpretation of plain Abstract Task. CIB Seven behavior for any such extension remains a separate compatibility question.
 
 Ignoring an element means making an explicit supported, rejected, or unsupported decision. It never means silently inventing a no-op where the standard assigns another meaning. Abstract Task immediate completion is the standard's explicit meaning, even when a bounded executable profile defers admission of that shape.
 
