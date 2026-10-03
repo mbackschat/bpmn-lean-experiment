@@ -61,9 +61,7 @@ function assertMuePreviewBetaCriticalPath(plan: string): void {
     muePreviewBetaTestOracle.map(({ id }) => [id, "satisfied"]),
     "the MUE Preview Beta table must retain all seven authoritative content IDs and their current states",
   );
-  const orderedActive = parseOrderedWork(plan).find(({ state }) => state === "active");
   assert.ok(rows.every(({ state }) => state === "satisfied"), "every Beta content boundary must be satisfied before integration");
-  assert.equal(orderedActive?.id, "STRUCTURED-PROCESS-COMPOSITION", "owner-selected semantic work must preserve closed RC content");
   assert.match(section, /^Integration state: `satisfied`\.$/mu, "Beta integration must remain closed after every content row is satisfied");
 
   const riskMarker = "#### Risk-first execution bands\n";
@@ -156,6 +154,17 @@ test("makes the complete MUE Preview Beta critical path executable", async () =>
     )),
     /risk-first handoff/u,
   );
+});
+
+test("closed Beta permits each approved successor semantic item", async () => {
+  const plan = await readFile(planPath, "utf8");
+  for (const activeIndex of [1, 2]) {
+    const advanced = parseOrderedWork(plan).slice(0, 3).reduce((text, entry, index) => text.replace(
+      `\`${entry.id}\` · **${entry.state}**`,
+      `\`${entry.id}\` · **${index < activeIndex ? "later" : index === activeIndex ? "active" : "queued"}**`,
+    ), plan);
+    assert.doesNotThrow(() => assertMuePreviewBetaCriticalPath(advanced));
+  }
 });
 
 test("keeps the MUE Preview Beta testing contract aligned with the closed integration handoff", async () => {

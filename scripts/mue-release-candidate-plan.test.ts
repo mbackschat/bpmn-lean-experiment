@@ -54,9 +54,11 @@ test("freezes all seven selected RC capabilities before integration", async () =
 test("keeps pulled-forward semantics ordered outside deferred MUE acceptance", async () => {
   const plan = await readFile(path.join(projectRoot, "docs/PLAN.md"), "utf8");
   assertSemanticsWindow(plan);
+  const active = parseOrderedWork(plan).find(({ state }) => state === "active");
+  assert.ok(active !== undefined);
   assert.throws(() => assertSemanticsWindow(plan.replace(
-    "`STRUCTURED-PROCESS-COMPOSITION` · **active**",
-    "`STRUCTURED-PROCESS-COMPOSITION` · **queued**",
+    `\`${active.id}\` · **active**`,
+    `\`${active.id}\` · **queued**`,
   )), /semantic work/u);
   assert.throws(() => assertSemanticsWindow(plan.replace(
     "`MUE-ACCEPTANCE` · **later**",
@@ -67,10 +69,36 @@ test("keeps pulled-forward semantics ordered outside deferred MUE acceptance", a
   )), /selected order/u);
 });
 
+test("the semantic window permits both approved queue advances", async () => {
+  const plan = await readFile(path.join(projectRoot, "docs/PLAN.md"), "utf8");
+  for (const activeIndex of [1, 2]) {
+    const advanced = parseOrderedWork(plan).slice(0, 3).reduce((text, entry, index) => text.replace(
+      `\`${entry.id}\` · **${entry.state}**`,
+      `\`${entry.id}\` · **${index < activeIndex ? "later" : index === activeIndex ? "active" : "queued"}**`,
+    ), plan);
+    assert.doesNotThrow(() => assertSemanticsWindow(advanced));
+  }
+});
+
+test("the semantic window rejects skipped predecessors, deferred successors and multiple active items", async () => {
+  const plan = await readFile(path.join(projectRoot, "docs/PLAN.md"), "utf8");
+  for (const states of [
+    ["queued", "active", "queued"],
+    ["later", "queued", "active"],
+    ["active", "later", "queued"],
+    ["later", "active", "later"],
+    ["active", "active", "queued"],
+    ["later", "later", "later"],
+  ]) {
+    const invalid = parseOrderedWork(plan).slice(0, 3).reduce((text, entry, index) => text.replace(
+      `\`${entry.id}\` · **${entry.state}**`, `\`${entry.id}\` · **${states[index]}**`,
+    ), plan);
+    assert.throws(() => assertSemanticsWindow(invalid), /semantic (queue|work)/u);
+  }
+});
+
 function assertSemanticsWindow(plan: string): void {
   const entries = parseOrderedWork(plan);
-  assert.equal(entries.find(({ state }) => state === "active")?.id,
-    "STRUCTURED-PROCESS-COMPOSITION", "semantic work must be active during the owner-selected window");
   assert.equal(entries.find(({ id }) => id === "MUE-ACCEPTANCE")?.state,
     "later", "deferred MUE acceptance must remain open outside semantic work");
   assert.deepEqual(entries.slice(0, 3).map(({ id }) => id), [
@@ -78,6 +106,13 @@ function assertSemanticsWindow(plan: string): void {
     "CALL-ACTIVITY-DATA-BOUNDARIES",
     "INTERRUPTING-MESSAGE-EVENT-SUBPROCESS",
   ], "pulled-forward capabilities must retain the selected order");
+  const selected = entries.slice(0, 3);
+  const activeIndex = selected.findIndex(({ state }) => state === "active");
+  assert.ok(activeIndex >= 0 && entries.filter(({ state }) => state === "active").length === 1,
+    "exactly one selected semantic work item must be active");
+  assert.deepEqual(selected.map(({ state }) => state), selected.map((_, index) =>
+    index < activeIndex ? "later" : index === activeIndex ? "active" : "queued"),
+  "semantic queue must retain deferred predecessors and queued successors");
 }
 
 test("rejects unfinished content, premature later work and a broader hidden denominator", async () => {
