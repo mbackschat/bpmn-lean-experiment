@@ -104,7 +104,7 @@ Risk band: parent subscription lifetime, scope-wide interruption and handler exe
 
 Last verification: [Message handler proposal approved](capsules/INTERRUPTING-MESSAGE-EVENT-SUBPROCESS-PROPOSAL.md#independent-cold-review-receipt) at `3404ddb0`; independent focused guards pass 110/110. Cold aggregate resource acceptance remains open; investigation is owner-deferred during heavy external load.
 
-Next action: implement the approved [Message handler account](capsules/INTERRUPTING-MESSAGE-EVENT-SUBPROCESS-PROPOSAL.md) with red/green source and execution witnesses, bounded Lean laws and independent checkpoint review. Retain deferred [Call](capsules/CALL-ACTIVITY-DATA-BOUNDARIES-PROPOSAL.md#closure-and-compatibility-boundary) and [composition](capsules/STRUCTURED-PROCESS-COMPOSITION-PROPOSAL.md#private-rule-to-evidence-reconciliation) closure obligations.
+Next action: review the [child-entry assurance amendment](capsules/INTERRUPTING-MESSAGE-EVENT-SUBPROCESS-PROPOSAL.md#child-entry-assurance-amendment), then integrate Lean runtime execution and obtain checkpoint review. TypeScript, local Lean laws and complete source/Program admission pass. Retain deferred [Call](capsules/CALL-ACTIVITY-DATA-BOUNDARIES-PROPOSAL.md#closure-and-compatibility-boundary) and [composition](capsules/STRUCTURED-PROCESS-COMPOSITION-PROPOSAL.md#private-rule-to-evidence-reconciliation) closure obligations.
 
 Keep semantics active; reconsider deferred work no earlier than 2026-10-05, without an automatic switch. Local performance tests stay skipped under external CPU load. Lean remains one process tree, one CPU and 3 GiB without additional swap. Database selection remains [sequential SQLite versus concurrent PostgreSQL](TESTING-SPEC.md#three-level-verification-policy).
 

@@ -2,8 +2,8 @@
 
 ## Status
 
-Lifecycle: owner-approved
-Review: approved
+Lifecycle: draft
+Review: pending
 
 ## Question and boundary
 
@@ -97,9 +97,33 @@ Lane shape: proved
 
 Evidence: reuse [regional cancellation](../../BpmnSemantics/SemanticProcess/ScopeCancellation.lean), [scope completion](../../BpmnSemantics/SemanticProcess/ScopeCompletion.lean) and existing [execution assembly](../../BpmnSemantics/SemanticProcess/Execution.lean). New declarative relations and evaluator-soundness bridges must cover parent registration, Message interruption and no-continuation handler completion.
 
-Quantified laws establish exact listener issuance and binding, no handler before triggering, atomic all-region withdrawal with outside/context/counter frames, exact fresh handler creation, stale-identity refusal under explicit uniqueness, passive-listener expiry and token-free child disposal. Conclusions cannot be premises disguised as successful successor construction. Existing generic predicates and predecessor theorem propositions retain their meanings; extend field frames where the new collection requires them.
+Quantified laws establish exact listener issuance and binding, no handler before triggering, atomic all-region withdrawal with outside/context/counter frames, exact fresh handler creation, stale-identity refusal under explicit uniqueness, passive-listener expiry and token-free child disposal. Conclusions cannot be premises disguised as successful successor construction. Existing generic predicates and predecessor theorem propositions retain their meanings, except for the narrowly scoped helper-domain correction in the [child-entry assurance amendment](#child-entry-assurance-amendment). Extend field frames where the new collection requires them.
 
 Bound the effort to three cohesive new law owners of at most 800 nonblank lines each: registration/binding, interruption/framing, and completion/refusal. One additional conformance owner, also at most 800, checks independently stated source/Program discrimination, complete scheduled traces, every reached validity prefix and E1/E2 expectations. Runtime helpers remain separate from proofs. This proves the named local laws and checks the bounded composed executions; it claims no universal reachable-state preservation, arbitrary-graph progress, fairness or cross-language equivalence theorem. Reassess before exceeding the bound or changing the lane. Lean remains serialized at one CPU and 3 GiB without extra swap; the deferred cold aggregate investigation is not reopened by this proposal.
+
+### Child-entry assurance amendment
+
+The original proposal was independently approved at `3404ddb0`; that review remains the authority for the unchanged BPMN account. This amendment changes only the proof domain described below and requires its own proposal review before the helper correction. The current receipt records this amended target, not a withdrawal of the original semantic approval. Existing uncommitted implementation remains outside this documentation-only review target.
+
+#### Contract and necessity
+
+The existing [`child_entry_census`](../../BpmnSemantics/SemanticProcess/ScopeCreationLifecycleStructuralValidity.lean) concludes exactly one ordinary entry operation from Program admission, absent Compensation snapshots and a nested definition. The approved Message Event Sub-Process is nested, has no Compensation snapshots, and enters through its declaration with zero ordinary entry operations. Admission of that handler therefore invalidates the helper's former domain. This is a proof-domain correction; the Message handler account, ordinary scope execution and generic validity predicates keep their selected meanings.
+
+Require an actual entry witness for the definition in `child_entry_census`: an operation belonging to `program.operations` whose `enteredChildScopeId?` is `some definition.id`. Retain the existing premises and exact-one conclusion. The additional premise establishes existence of an ordinary, bounded or monitored entry, not uniqueness, successful execution or successor validity. Do not substitute a global absence-of-Message-declarations premise: an ordinary scope's census depends on its own entry, not on whether another scope is an Event Sub-Process.
+
+Preserve the complete theorem propositions of all three current consumers:
+
+- `prepareInternalScopeCreation_child_excludes_bounded_entry` in [scope-creation structural validity](../../BpmnSemantics/SemanticProcess/ScopeCreationLifecycleStructuralValidity.lean).
+- `created_bindings` in the same [scope-creation owner](../../BpmnSemantics/SemanticProcess/ScopeCreationLifecycleStructuralValidity.lean).
+- `prepared_bounded_scope_preserves_structural_program_validity` in [bounded-scope projection](../../BpmnSemantics/SemanticProcess/InternalBoundedScopeProjection.lean).
+
+Each consumer must derive the entry witness from its existing operation membership and definition binding. No caller may assume the census conclusion, successor validity or a new profile exclusion. The helper is the sole authorized predecessor proposition change; no new law module, wider assurance lane, BPMN capability, representation or hosting claim is selected.
+
+#### Acceptance and exclusions
+
+The existing single conformance owner must check both complete admission of the application-withdrawal Program and its nested handler's zero ordinary entries while Compensation snapshots are absent. These facts separate the amended domain from the old implication. Compile the corrected helper and all three consumers, retaining their proposition text, then include them in the affected semantic-checkpoint gate. Keep the three-law-owner and one-conformance-owner bounds, one Lean process tree, one CPU and 3 GiB without extra swap.
+
+Reject a fabricated handler entry, rejection of the approved Message profile, an assumed exact-one result, weakening of the three consumer propositions, or suppressing any validity check. The independent review evaluates this amendment against the complete capsule; the subsequent semantic checkpoint must verify the implementation and separating witnesses. Cold aggregate resource acceptance and live hosting remain deferred.
 
 ## Temporal hosting and refinement preflight
 
@@ -143,6 +167,6 @@ The private profile is `bpmn-2.0.2-interrupting-message-event-subprocess-draft`.
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `3404ddb0` | `fork-turns-none` | `approve` | `not-required` |
+| Proposal | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
