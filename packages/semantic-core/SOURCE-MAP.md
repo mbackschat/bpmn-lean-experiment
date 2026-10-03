@@ -41,6 +41,8 @@ This contributor map assigns source-file responsibilities inside `@bpmn-lean/sem
 | [semantic-process-graph-policy.ts](src/semantic-process-graph-policy.ts) | Profile-owned graph policy shared by checked-source and Semantic Process admission |
 | [semantic-process-profile.ts](src/semantic-process-profile.ts) | Profile-selected operation capabilities |
 | [repeatable-subscription-admission.ts](src/repeatable-subscription-admission.ts) | Complete checked-graph and Program admission for the bounded subscription profile |
+| [structured-process-composition-admission.ts](src/structured-process-composition-admission.ts) | Private structured composition analysis, required initial inputs and task-local completion admission |
+| [semantic-process-limits.ts](src/semantic-process-limits.ts) | Shared automatic-closure limit for admission and execution |
 | [checked-process-profile-shape.ts](src/checked-process-profile-shape.ts) | Profile-selected checked-node shapes |
 | [semantic-program-profile-shape.ts](src/semantic-program-profile-shape.ts) | Profile-selected operation shapes |
 | [semantic-profile-catalog.ts](src/semantic-profile-catalog.ts) | Semantic profile identities |

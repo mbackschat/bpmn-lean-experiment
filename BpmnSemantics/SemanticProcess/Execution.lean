@@ -252,6 +252,8 @@ theorem user_task_completion_with_same_successor_is_equal
     dataOutputUndeclaredTaskRefusesCompletion program state
       submittedTaskId.processInstanceId ⟨submittedTaskId.elementId.value⟩
       submittedTaskId.activation submittedValues noOutputAssociation
+  cases completionAdmitted : structuredCompositionOrdinaryCompletionAdmitted program
+      submittedTaskId submittedValues <;>
   cases inputPresent : (dataInputTaskOperations program).any (fun entry =>
     decide (entry.1 = ⟨submittedTaskId.elementId.value⟩)) <;>
     cases outputPresent : (dataOutputTaskOperations program).any (fun entry =>
@@ -262,7 +264,7 @@ theorem user_task_completion_with_same_successor_is_equal
     ordinaryTask.1, ordinaryTask.2, noSequentialMultiInstance, noParallelMultiInstance,
     noMessageBoundedTask, noMessageMonitoredTask, noDataInputOutputTask, inputPresent, outputPresent,
     inputRefused, outputRefused,
-    ordinaryProgram, valuesAdmitted,
+    ordinaryProgram, valuesAdmitted, completionAdmitted,
     completeOrdinaryUserTaskWithCompensation?, nonCompensationTarget, leftCompletion,
     rightCompletion] at committed ⊢
   split at committed <;> simp_all

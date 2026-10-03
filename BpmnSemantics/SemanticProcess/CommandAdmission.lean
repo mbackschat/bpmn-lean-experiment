@@ -17,6 +17,7 @@ import BpmnSemantics.SemanticProcess.CompensationActivityRetentionProducers
 import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshot
 import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerCompletion
 import BpmnSemantics.SemanticProcess.CompensationStartDataAdmission
+import BpmnSemantics.SemanticProcess.StructuredCompositionCommandAdmission
 
 /-! # Semantic Process external command admission
 
@@ -128,7 +129,9 @@ private def dataInputOutputStartBindingsAdmitted (program : Program)
       match state.control with
       | .notStarted =>
           let bindingsAdmitted :=
-            if program.identity.semanticProfile = compensationSourceCheckpointProfileId then
+            if program.identity.semanticProfile = structuredCompositionCheckpointProfileId then
+              structuredCompositionStartBindingsAdmitted program initialVariables
+            else if program.identity.semanticProfile = compensationSourceCheckpointProfileId then
               compensationStartDataAdmitted program instanceId initialVariables
             else if parallelMultiInstanceProgramAdmitted program then
               parallelMultiInstanceStartBindingsAdmitted program initialVariables
@@ -268,6 +271,7 @@ private def dataInputOutputStartBindingsAdmitted (program : Program)
           | some successor =>
               if taskId.processInstanceId = instanceId &&
                   !isCallActivityProgram program &&
+                  structuredCompositionOrdinaryCompletionAdmitted program taskId submittedValues &&
                   processDataBindingsAdmitted program.identity.semanticProfile
                     .userTaskCompletion submittedValues then
                 { outcome := .committed

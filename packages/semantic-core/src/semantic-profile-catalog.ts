@@ -79,6 +79,10 @@ export const SemanticProfileId = Object.freeze({
     "bpmn-2.0.2-bpmn-lean-structured-human-work-draft",
 } as const);
 
+/** SPC's private semantic checkpoint is withheld from hosted/public profile registration. */
+export const STRUCTURED_PROCESS_COMPOSITION_CHECKPOINT_PROFILE_ID =
+  "bpmn-2.0.2-structured-process-composition-draft";
+
 /** Transition alias retained while correlation closure lanes migrate to the registered catalog member. */
 export const MESSAGE_KEY_CORRELATION_CHECKPOINT_PROFILE_ID =
   SemanticProfileId.MessageKeyCorrelation;

@@ -1,4 +1,6 @@
+import { scalarProcessProperties } from "./activity-data-input-output-projection.js";
 import {
+  STRUCTURED_PROCESS_COMPOSITION_CHECKPOINT_PROFILE_ID,
   CheckedProcessKind,
   compareCanonicalStrings,
 } from "@bpmn-lean/semantic-core";
@@ -112,6 +114,7 @@ export function compileCheckedProcess(
   classifyForeignAttributes: ForeignAttributeClassification,
   sourceOverlay: SourceOverlayIdentity | null,
 ): CheckedCompilationProjection {
+  const structuredComposition = semanticProfile === STRUCTURED_PROCESS_COMPOSITION_CHECKPOINT_PROFILE_ID;
   const capability = preservationCapability(semanticProfile);
   const configuredTaskPolicy =
     configuredTaskProjectionPolicyForProfile(semanticProfile);
@@ -167,15 +170,17 @@ export function compileCheckedProcess(
     ...unadmittedKeyRejections(
       process,
       processLocus,
-      ["$type", "id", "name", "isExecutable", "flowElements"],
+      ["$type", "id", "name", "isExecutable", "flowElements",
+        ...(structuredComposition ? ["properties"] : [])],
       capability?.processKeys ?? new Set(),
       capability,
     ),
   );
-  if (process.isExecutable !== true) {
+  if (process.isExecutable !== true ||
+      (structuredComposition && scalarProcessProperties(process) === undefined)) {
     return unsupported(
       classification,
-      "The bounded compiler requires an explicitly executable Process.",
+      "The bounded compiler requires an explicitly executable Process and the selected Process-property shape.",
     );
   }
 
@@ -211,6 +216,7 @@ export function compileCheckedProcess(
   const flowKeyRejections = projectedFlowElementKeyRejections(
     definitions,
     [...sourceNodes, ...sourceFlows].map(({ element }) => element),
+    structuredComposition ? FlowElementProjectionProfile.StructuredComposition :
     isUserTaskMetadataProfile(semanticProfile)
       ? FlowElementProjectionProfile.UserTaskMetadata
       : FlowElementProjectionProfile.Generic,

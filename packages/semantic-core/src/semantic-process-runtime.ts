@@ -165,7 +165,8 @@ export type StimulusEvaluationResult = DeepReadonly<{
   selectedInternalPreparations: (PreparedInternalTransition[] | null)[];
 }>;
 
-export const semanticProcessClosureLimit = 8;
+export { semanticProcessClosureLimit } from "./semantic-process-limits.js";
+import { semanticProcessClosureLimit } from "./semantic-process-limits.js";
 
 export function validateClosureLimit(closureLimit: number): void {
   if (!Number.isSafeInteger(closureLimit) || closureLimit < 0) {

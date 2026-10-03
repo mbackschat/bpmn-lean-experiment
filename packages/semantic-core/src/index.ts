@@ -117,3 +117,5 @@ export { repeatableSubscriptionCheckedGraph } from "./repeatable-subscription-ad
 
 export * from "./transaction-source-contract.js";
 export * from "./transaction-cancellation-admission.js";
+
+export { structuredCompositionCheckedGraph } from "./structured-process-composition-admission.js";

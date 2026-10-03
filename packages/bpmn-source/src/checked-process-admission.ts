@@ -1,4 +1,6 @@
 import {
+  STRUCTURED_PROCESS_COMPOSITION_CHECKPOINT_PROFILE_ID,
+  structuredCompositionCheckedGraph,
   BoundaryInterruption,
   CheckedNodeKind,
   COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID,
@@ -66,6 +68,8 @@ export function isAdmittedCheckedProcess(
     hasSelectedActivityBoundaryMessageTopology(semanticProfile, graph) &&
     hasSelectedExpressionLanguage(semanticProfile, expressionLanguage) &&
     hasSelectedConditions(semanticProfile, graph.flows) &&
+    (semanticProfile !== STRUCTURED_PROCESS_COMPOSITION_CHECKPOINT_PROFILE_ID ||
+      structuredCompositionCheckedGraph(graph)) &&
     hasSelectedParallelTopology(semanticProfile, graph) &&
     hasSelectedStructuredHumanWorkTopology(semanticProfile, graph) &&
     hasSelectedCyclicTopology(semanticProfile, graph) &&
@@ -540,6 +544,7 @@ function hasSelectedExpressionLanguage(
   switch (semanticProfile) {
     case SemanticProfileId.ExclusiveGatewaySimpleBoolean:
     case SemanticProfileId.InclusiveGatewaySelectedBranches:
+    case STRUCTURED_PROCESS_COMPOSITION_CHECKPOINT_PROFILE_ID:
     case SemanticProfileId.ParallelMultiInstanceUserTask:
     case SemanticProfileId.UserTaskCycle:
     case SemanticProfileId.StructuredHumanWork:
@@ -554,6 +559,8 @@ function hasSelectedConditions(
   flows: ReadonlyArray<CheckedSequenceFlow>,
 ): boolean {
   switch (semanticProfile) {
+    case STRUCTURED_PROCESS_COMPOSITION_CHECKPOINT_PROFILE_ID:
+      return true;
     case SemanticProfileId.ExclusiveGatewaySimpleBoolean:
     case SemanticProfileId.InclusiveGatewaySelectedBranches:
     case SemanticProfileId.UserTaskCycle:

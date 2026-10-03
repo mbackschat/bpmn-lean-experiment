@@ -1,4 +1,6 @@
 import { transactionCancellationProgramShape } from "./transaction-cancellation-admission.js";
+import { structuredCompositionCheckedShape, structuredCompositionProgramShape } from "./structured-process-composition-admission.js";
+import { STRUCTURED_PROCESS_COMPOSITION_CHECKPOINT_PROFILE_ID } from "./semantic-profile-catalog.js";
 import { repeatableSubscriptionCheckedShape, repeatableSubscriptionProgramShape } from "./repeatable-subscription-admission.js";
 import {
   CheckedNodeKind,
@@ -28,6 +30,7 @@ import {
 } from "./user-task-metadata.js";
 
 export {
+  STRUCTURED_PROCESS_COMPOSITION_CHECKPOINT_PROFILE_ID,
   TRANSACTION_CANCELLATION_CHECKPOINT_PROFILE_ID,
   COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID,
   REPEATABLE_EVENT_SUBSCRIPTIONS_CHECKPOINT_PROFILE_ID,
@@ -42,6 +45,9 @@ export function profileAllowsProgramShape(
   actualOperations: ReadonlyArray<SemanticOperation>,
   definitionScopeCount: number,
 ): boolean {
+  if (semanticProfile === STRUCTURED_PROCESS_COMPOSITION_CHECKPOINT_PROFILE_ID) {
+    return structuredCompositionProgramShape(actualOperations, definitionScopeCount);
+  }
   if (semanticProfile === TRANSACTION_CANCELLATION_CHECKPOINT_PROFILE_ID) {
     return transactionCancellationProgramShape(actualOperations, definitionScopeCount);
   }
@@ -155,6 +161,9 @@ export function profileAllowsCheckedProcessShape(
   nodes: ReadonlyArray<CheckedNode>,
   definitionScopeCount: number,
 ): boolean {
+  if (semanticProfile === STRUCTURED_PROCESS_COMPOSITION_CHECKPOINT_PROFILE_ID) {
+    return structuredCompositionCheckedShape(nodes, definitionScopeCount);
+  }
   if (semanticProfile === REPEATABLE_EVENT_SUBSCRIPTIONS_CHECKPOINT_PROFILE_ID) {
     return repeatableSubscriptionCheckedShape(nodes, definitionScopeCount);
   }

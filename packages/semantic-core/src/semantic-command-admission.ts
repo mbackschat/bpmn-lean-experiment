@@ -123,6 +123,7 @@ import { isGateAdmissibleRuntimeState } from "./runtime-state-well-formedness.js
 import { initializeCompensationExecutionState } from "./compensation-trigger-handler-runtime-state-validation.js";
 import { completeCompensationHandlerEffect } from "./compensation-trigger-handler-completion.js";
 import { compensationStartDataAdmitted } from "./compensation-start-data-admission.js";
+import { structuredCompositionStimulusDataAdmitted } from "./structured-process-composition-admission.js";
 
 export type SemanticCommandOutcome =
   | CommandOutcome.Committed
@@ -209,6 +210,7 @@ export function admit(
   stimulus: Stimulus,
 ): CommandAdmission {
   if (
+    !structuredCompositionStimulusDataAdmitted(program, stimulus) ||
     !incidentStateAllowsDispatch(program, state) ||
     !admissibleCommittedState(program, state) ||
     !sequentialMultiInstanceStimulusDataAdmitted(program, stimulus) ||

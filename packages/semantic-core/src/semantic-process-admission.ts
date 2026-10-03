@@ -1,4 +1,6 @@
 import { transactionCancellationProgramGraph } from "./transaction-cancellation-admission.js";
+import { STRUCTURED_PROCESS_COMPOSITION_CHECKPOINT_PROFILE_ID } from "./semantic-profile-catalog.js";
+import { structuredCompositionProgramGraph, structuredCompositionStimulusDataAdmitted } from "./structured-process-composition-admission.js";
 import { TRANSACTION_CANCELLATION_CHECKPOINT_PROFILE_ID, REPEATABLE_EVENT_SUBSCRIPTIONS_CHECKPOINT_PROFILE_ID } from "./semantic-profile-catalog.js";
 import { repeatableSubscriptionProgramGraph } from "./repeatable-subscription-admission.js";
 import {
@@ -102,6 +104,7 @@ export function supportsSemanticProcessScenario(
       program.identity.sourceOverlay,
       scenario.bpmn.sourceOverlay,
     ) &&
+    structuredCompositionStimulusDataAdmitted(program, start) &&
     compensationStartDataAdmitted(program, start) &&
     processStartMatchesProgram(start, program)
   );
@@ -121,6 +124,7 @@ export function supportsSemanticProcessExecution(
       program.definitionScopes.length,
     ) &&
     profileAllowsStimulusValueDomain(program.identity.semanticProfile, start) &&
+    structuredCompositionStimulusDataAdmitted(program, start) &&
     sequentialMultiInstanceStimulusDataAdmitted(program, start) &&
     compensationStartDataAdmitted(program, start) &&
     processStartMatchesProgram(start, program)
@@ -266,6 +270,8 @@ export function isWellFormedSemanticProcessProgram(
   }
   const program = value as unknown as SemanticProcessProgram;
   const snapshotTargets = program.compensationEventSubProcessSnapshots?.targets;
+  if (identity.semanticProfile === STRUCTURED_PROCESS_COMPOSITION_CHECKPOINT_PROFILE_ID &&
+      !structuredCompositionProgramGraph(program)) return false;
   if (identity.semanticProfile === TRANSACTION_CANCELLATION_CHECKPOINT_PROFILE_ID &&
       !transactionCancellationProgramGraph(program)) return false;
   if (identity.semanticProfile === REPEATABLE_EVENT_SUBSCRIPTIONS_CHECKPOINT_PROFILE_ID) {

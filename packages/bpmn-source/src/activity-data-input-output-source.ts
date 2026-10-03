@@ -1,5 +1,5 @@
 /**
- * The exact source reader for one User Task composing direct Activity input and output.
+ * The exact predecessor source reader, delegating scalar Activity input/output projection.
  *
  * Both association directions and both set memberships resolve against the parser's object graph.
  * This makes Process ownership and cross-Activity exclusion properties of the resolved model rather
@@ -44,19 +44,10 @@ import type { ElementRecord } from "./moddle-graph.js";
 import {
   foreignAttributeRejections,
 } from "./preserved-element-classification.js";
+import { projectDataInputOutputUserTask } from "./activity-data-input-output-projection.js";
 import { definitionScopeId } from "./scoped-flow-elements.js";
 
 const bpmnTypes = metamodelManifest.compilerProjection;
-const selectedTypes = Object.freeze({
-  property: "bpmn:Property",
-  inputOutputSpecification: "bpmn:InputOutputSpecification",
-  dataInput: "bpmn:DataInput",
-  dataOutput: "bpmn:DataOutput",
-  inputSet: "bpmn:InputSet",
-  outputSet: "bpmn:OutputSet",
-  dataInputAssociation: "bpmn:DataInputAssociation",
-  dataOutputAssociation: "bpmn:DataOutputAssociation",
-});
 
 const ids = Object.freeze({
   definitions: "Definitions_ActivityDataInputOutputClaimAssessment",
@@ -235,6 +226,7 @@ function readExactSource(rootElement: unknown): ExactSource | undefined {
   ) {
     return undefined;
   }
+  if (!hasExactTaskIdentity(task)) return undefined;
   const dataInputOutputNode = projectDataInputOutputUserTask(
     task,
     inputProperty,
@@ -249,81 +241,20 @@ function readExactSource(rootElement: unknown): ExactSource | undefined {
   };
 }
 
-function projectDataInputOutputUserTask(
-  task: ElementRecord,
-  inputProperty: ElementRecord,
-  outputProperty: ElementRecord,
-): ExactSource["dataInputOutputNode"] | undefined {
-  if (
-    task.$type !== bpmnTypes.userTaskType ||
-    readId(task) !== ids.task ||
-    task.name !== ids.taskName ||
-    !hasOnlyModelledKeys(task, [
-      "$type",
-      "id",
-      "name",
-      "ioSpecification",
-      "dataInputAssociations",
-      "dataOutputAssociations",
-    ]) ||
-    task.loopCharacteristics !== undefined
-  ) {
-    return undefined;
-  }
+/** Keeps the predecessor's exact fixture restriction outside the reusable association projection. */
+function hasExactTaskIdentity(task: ElementRecord): boolean {
   const io = asElement(task.ioSpecification);
-  const dataInputs = asElementArray(io?.dataInputs);
-  const dataOutputs = asElementArray(io?.dataOutputs);
-  const dataInput = dataInputs?.[0];
-  const dataOutput = dataOutputs?.[0];
-  if (
-    io === undefined ||
-    io.$type !== selectedTypes.inputOutputSpecification ||
-    readId(io) !== ids.ioSpecification ||
-    !hasOnlyModelledKeys(io, [
-      "$type",
-      "id",
-      "dataInputs",
-      "dataOutputs",
-      "inputSets",
-      "outputSets",
-    ]) ||
-    dataInputs?.length !== 1 || dataInput === undefined ||
-    dataOutputs?.length !== 1 || dataOutput === undefined ||
-    dataInput === dataOutput ||
-    !isRequiredScalarDataInput(dataInput) ||
-    !isRequiredScalarDataOutput(dataOutput) ||
-    !hasExactInputSet(asElementArray(io.inputSets), dataInput) ||
-    !hasExactOutputSet(asElementArray(io.outputSets), dataOutput) ||
-    !hasExactInputAssociation(
-      asElementArray(task.dataInputAssociations),
-      inputProperty,
-      dataInput,
-    ) ||
-    !hasExactOutputAssociation(
-      asElementArray(task.dataOutputAssociations),
-      dataOutput,
-      outputProperty,
-    )
-  ) {
-    return undefined;
-  }
-  return {
-    kind: CheckedNodeKind.DataInputOutputUserTask,
-    id: ids.task,
-    name: ids.taskName,
-    directInput: {
-      associationId: ids.inputAssociation,
-      sourcePropertyId: ids.inputProperty,
-      targetDataInputId: ids.dataInput,
-      targetDataInputName: optionalName(dataInput),
-    },
-    directOutput: {
-      associationId: ids.outputAssociation,
-      sourceDataOutputId: ids.dataOutput,
-      sourceDataOutputName: optionalName(dataOutput),
-      targetPropertyId: ids.outputProperty,
-    },
-  };
+  const expected: readonly [ElementRecord | undefined, string][] = [
+    [task, ids.task], [io, ids.ioSpecification],
+    [asElementArray(io?.dataInputs)?.[0], ids.dataInput],
+    [asElementArray(io?.dataOutputs)?.[0], ids.dataOutput],
+    [asElementArray(io?.inputSets)?.[0], ids.inputSet],
+    [asElementArray(io?.outputSets)?.[0], ids.outputSet],
+    [asElementArray(task.dataInputAssociations)?.[0], ids.inputAssociation],
+    [asElementArray(task.dataOutputAssociations)?.[0], ids.outputAssociation],
+  ];
+  return task.name === ids.taskName && expected.every(([element, id]) =>
+    element !== undefined && readId(element) === id);
 }
 
 function isExactProcess(value: ElementRecord): boolean {
@@ -344,94 +275,12 @@ function findExactProperty(
   expectedId: string,
 ): ElementRecord | undefined {
   return properties?.find((property) =>
-    property.$type === selectedTypes.property &&
+    property.$type === "bpmn:Property" &&
     readId(property) === expectedId &&
     hasOnlyModelledKeys(property, ["$type", "id"]) &&
     property.itemSubjectRef === undefined &&
     property.dataState === undefined
   );
-}
-
-function isRequiredScalarDataInput(value: ElementRecord): boolean {
-  return value.$type === selectedTypes.dataInput &&
-    readId(value) === ids.dataInput &&
-    hasOnlyModelledKeys(value, ["$type", "id", "name"]) &&
-    (value.name === undefined || typeof value.name === "string") &&
-    value.isCollection === false &&
-    value.itemSubjectRef === undefined &&
-    value.dataState === undefined;
-}
-
-function isRequiredScalarDataOutput(value: ElementRecord): boolean {
-  return value.$type === selectedTypes.dataOutput &&
-    readId(value) === ids.dataOutput &&
-    hasOnlyModelledKeys(value, ["$type", "id", "name"]) &&
-    (value.name === undefined || typeof value.name === "string") &&
-    value.isCollection === false &&
-    value.itemSubjectRef === undefined &&
-    value.dataState === undefined;
-}
-
-function hasExactInputSet(
-  inputSets: ReadonlyArray<ElementRecord> | undefined,
-  dataInput: ElementRecord,
-): boolean {
-  const inputSet = inputSets?.[0];
-  return inputSets?.length === 1 && inputSet !== undefined &&
-    inputSet.$type === selectedTypes.inputSet &&
-    readId(inputSet) === ids.inputSet &&
-    hasOnlyModelledKeys(inputSet, ["$type", "id", "dataInputRefs"]) &&
-    sameReferences(inputSet.dataInputRefs, [dataInput]) &&
-    inputSet.optionalInputRefs === undefined &&
-    inputSet.whileExecutingInputRefs === undefined &&
-    inputSet.outputSetRefs === undefined;
-}
-
-function hasExactOutputSet(
-  outputSets: ReadonlyArray<ElementRecord> | undefined,
-  dataOutput: ElementRecord,
-): boolean {
-  const outputSet = outputSets?.[0];
-  return outputSets?.length === 1 && outputSet !== undefined &&
-    outputSet.$type === selectedTypes.outputSet &&
-    readId(outputSet) === ids.outputSet &&
-    hasOnlyModelledKeys(outputSet, ["$type", "id", "dataOutputRefs"]) &&
-    sameReferences(outputSet.dataOutputRefs, [dataOutput]) &&
-    outputSet.optionalOutputRefs === undefined &&
-    outputSet.whileExecutingOutputRefs === undefined &&
-    outputSet.inputSetRefs === undefined;
-}
-
-function hasExactInputAssociation(
-  associations: ReadonlyArray<ElementRecord> | undefined,
-  inputProperty: ElementRecord,
-  dataInput: ElementRecord,
-): boolean {
-  const association = associations?.[0];
-  return associations?.length === 1 && association !== undefined &&
-    association.$type === selectedTypes.dataInputAssociation &&
-    readId(association) === ids.inputAssociation &&
-    hasOnlyModelledKeys(association, ["$type", "id", "sourceRef", "targetRef"]) &&
-    sameReferences(association.sourceRef, [inputProperty]) &&
-    association.targetRef === dataInput &&
-    association.transformation === undefined &&
-    association.assignment === undefined;
-}
-
-function hasExactOutputAssociation(
-  associations: ReadonlyArray<ElementRecord> | undefined,
-  dataOutput: ElementRecord,
-  outputProperty: ElementRecord,
-): boolean {
-  const association = associations?.[0];
-  return associations?.length === 1 && association !== undefined &&
-    association.$type === selectedTypes.dataOutputAssociation &&
-    readId(association) === ids.outputAssociation &&
-    hasOnlyModelledKeys(association, ["$type", "id", "sourceRef", "targetRef"]) &&
-    sameReferences(association.sourceRef, [dataOutput]) &&
-    association.targetRef === outputProperty &&
-    association.transformation === undefined &&
-    association.assignment === undefined;
 }
 
 function selectedBpmnElementIdsAreDistinct(): boolean {
@@ -445,19 +294,6 @@ function selectedBpmnElementIdsAreDistinct(): boolean {
     ids.dataOutput,
   ];
   return new Set(selectedIds).size === selectedIds.length;
-}
-
-function optionalName(value: ElementRecord): string | null {
-  return typeof value.name === "string" ? value.name : null;
-}
-
-function sameReferences(
-  value: unknown,
-  expected: ReadonlyArray<ElementRecord>,
-): boolean {
-  const actual = asElementArray(value);
-  return actual?.length === expected.length &&
-    actual.every((entry, index) => entry === expected[index]);
 }
 
 function hasTypeAndId(

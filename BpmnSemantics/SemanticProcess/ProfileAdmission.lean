@@ -2,7 +2,7 @@ import BpmnSemantics.SemanticProcess.ProfileShapeCatalog
 
 /-! # Semantic profile admission consequences
 
-The cardinality representation, folds, and catalogs live in `ProfileShapeCatalog`; this module
+Counts live in `ProfileCardinalities` and selection in `ProfileShapeCatalog`; this module
 retains the stable theorem surface consumed by runtime-preservation proofs.
 -/
 

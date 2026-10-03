@@ -616,6 +616,7 @@ private def firstStimulusMatchesProgram (program : Program) :
 def supportsScenario (program : Program) (scenario : Scenario) : Bool :=
   programWellFormed program &&
     programProfileCapabilitiesValid program &&
+    structuredCompositionScenarioStartAdmitted program scenario.stimuli &&
     stimulusSequenceSupported scenario.stimuli &&
     firstStimulusMatchesProgram program scenario.stimuli &&
     decide (

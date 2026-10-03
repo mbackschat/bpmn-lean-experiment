@@ -4,7 +4,7 @@ This detail map owns the exact current cross-cutting runtime, scope, Lean, TypeS
 
 ## Current boundary
 
-Lean and the independently written TypeScript core execute the reviewed Semantic Process account over immutable serializable state. Closed families remain profile-bounded; no evidence establishes general BPMN execution or a cross-target correspondence theorem.
+Lean and independently written TypeScript execute reviewed Semantic Process semantics over immutable serializable state. Families remain profile-bounded; general BPMN execution and cross-target correspondence remain unproved.
 
 Exact BPMN bytes admit through a checked project-owned graph to the [Semantic Process IL](SEMANTIC-PROCESS-IL-SPEC.md), which a Lean reference interpreter and an independently written TypeScript semantic core each evaluate, and which a Temporal adapter hosts durably.
 
@@ -65,6 +65,8 @@ Product 1 rejects malformed and over-cap starts as semantic-process unsupported,
 Transaction semantics: [`implementation-status-owner:ENGINE-SEMANTIC-FAMILY`](ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md#transaction-cancellation).
 
 ## Implemented
+
+Private [composition](capsules/STRUCTURED-PROCESS-COMPOSITION-PROPOSAL.md#lean-assurance-lane): bounded scheduler progress proved; full Lean gate passes; review open; hosting unavailable.
 
 ### Runtime scoped data
 

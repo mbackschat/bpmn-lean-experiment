@@ -138,6 +138,8 @@ export const leanModuleCostRecord = {
     "BpmnSemantics.TransactionCancellationJoinPublicationConformance",
   ],
   rows: [
+    { module: "BpmnSemantics.StructuredCompositionAdmissionConformance", sourceSha256: "ce81cf0c937696e76e9855555a0dd50d426b77d345d0bc7ee3f960691f8e07ae", peakResidentKib: 830252, elapsedSeconds: 3.43, measurementReceiptSha256: "15e573e6558b54900010f59658c2df5dcef5dc33b5b7a819151ebb18ae903283", measuredAtCommit: "29f6748d14852ca7937284ee5bcad8dcf455620b" },
+    { module: "BpmnSemantics.StructuredCompositionCommandConformance", sourceSha256: "9759aac4eb19b2a3d249b90b44e0d80251b99ad26b9d731d08890c3d1ee9ace1", peakResidentKib: 773460, elapsedSeconds: 1.79, measurementReceiptSha256: "debd6895e2bfd3e4377523f03f8fc7b2f70670539d3f2f7533a2cfad0ce99e81", measuredAtCommit: "29f6748d14852ca7937284ee5bcad8dcf455620b" },
     {
       module: "BpmnSemantics.TransactionSourceConformance", sourceSha256: "ec708f43145ab93fce3e74809e88cb0d2ff35f876f3eb131d11cb9c64506cfba",
       peakResidentKib: 1612540,

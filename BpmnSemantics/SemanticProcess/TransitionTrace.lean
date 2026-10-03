@@ -1,4 +1,5 @@
 import BpmnSemantics.SemanticProcess.TransitionRecord
+import BpmnSemantics.SemanticProcess.ClosureLimit
 import BpmnSemantics.SemanticProcess.InternalTransitionPublication
 import BpmnSemantics.SemanticProcess.InternalCommutation
 import BpmnSemantics.SemanticProcess.InternalPreparedArming
@@ -408,7 +409,6 @@ theorem applyStimulusTraced_withSnapshotDeclaration_rejects
   simp [applyStimulusTraced, evaluateStimulus, evaluateStimulusScheduled, admitStimulus, declared,
     publishEvaluatedTransitions, publishEvaluatedLifecycles]
 
-def scenarioClosureLimit : Nat := 8
 
 /-- Erasing the trace preserves the result-only evaluator's exact result. -/
 theorem applyStimulusTraced_erases_to_applyStimulus

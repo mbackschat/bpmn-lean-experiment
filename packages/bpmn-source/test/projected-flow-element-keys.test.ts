@@ -31,6 +31,7 @@ type ConsumerSite = Readonly<{
 type MatrixEntry = readonly [string, string, readonly string[]];
 
 const consumers = [
+  { source: "activity-data-input-output-projection.ts", anchor: "projectDataInputOutputUserTask", elementName: "task", shape: "DataInputOutputUserTask" },
   { source: "checked-element-projection.ts", anchor: "projectCheckedSequenceFlows", elementName: "flow", shape: "StandardSequenceFlow" },
   { source: "checked-element-projection.ts", anchor: "classifyGateway", elementName: "element", shape: "ParallelGateway" },
   { source: "checked-element-projection.ts", anchor: "projectExclusiveMerge", elementName: "element", shape: "ExclusiveOrInclusiveGateway" },
@@ -66,6 +67,11 @@ const consumers = [
 ] as const satisfies ReadonlyArray<ConsumerSite>;
 
 const inventoryCases = [
+  ["structuredCompositionShapes", "startEventType", ["PlainNode"]],
+  ["structuredCompositionShapes", "endEventType", ["PlainNode"]],
+  ["structuredCompositionShapes", "userTaskType", ["DataInputOutputUserTask"]],
+  ["structuredCompositionShapes", "exclusiveGatewayType", ["ExclusiveOrInclusiveGateway"]],
+  ["structuredCompositionShapes", "sequenceFlowType", ["StandardSequenceFlow"]],
   ["genericShapes", "startEventType", ["PlainNode", "MessageStartEvent", "TimerStartEvent"]],
   ["genericShapes", "userTaskType", ["PlainNode"]],
   ["genericShapes", "endEventType", ["PlainNode", "ErrorEndEvent", "TerminateEndEvent"]],
@@ -247,6 +253,7 @@ function assertInventoryOwnership(files: ReadonlyMap<string, SourceFile>): void 
   );
   assert.deepEqual(profileDispatch(file), {
     Generic: "genericShapes",
+    StructuredComposition: "structuredCompositionShapes",
     MappedSuccessServiceTask: "mappedSuccessShapes",
     MappedBoundaryErrorServiceTask: "mappedBoundaryShapes",
     CallActivity: "callActivityShapes",

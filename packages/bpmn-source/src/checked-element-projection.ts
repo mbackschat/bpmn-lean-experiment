@@ -12,6 +12,7 @@
  * because the compiler requires every scoped element to be a projectable node or a Sequence Flow.
  */
 import {
+  STRUCTURED_PROCESS_COMPOSITION_CHECKPOINT_PROFILE_ID,
   CheckedNodeKind,
   EffectOperation,
   EffectProtocol,
@@ -89,6 +90,8 @@ import {
   readUserTaskMetadataSource,
 } from "./user-task-metadata-source.js";
 
+import { projectOwnedDataInputOutputUserTask } from "./activity-data-input-output-projection.js";
+
 const bpmnTypes = metamodelManifest.compilerProjection;
 const camundaNamespace = "http://camunda.org/schema/1.0/bpmn";
 const effectProtocol = "urn:bpmn-lean:effect:probe-v1";
@@ -153,6 +156,10 @@ export function projectCheckedNodes(
         const name = readOptionalName(element);
         if (name === undefined) {
           return undefined;
+        }
+        if (semanticProfile === STRUCTURED_PROCESS_COMPOSITION_CHECKPOINT_PROFILE_ID &&
+            element.ioSpecification !== undefined) {
+          return projectOwnedDataInputOutputUserTask(element, rootSelection.process);
         }
         return isUserTaskMetadataProfile(semanticProfile)
           ? projectUserTaskMetadata(

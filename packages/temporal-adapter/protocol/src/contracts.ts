@@ -78,6 +78,7 @@ export enum TemporalHostCapabilityResultKind {
 }
 
 export enum TemporalHostAdmissionFailureCode {
+  StructuredCompositionQualificationUnavailable = "structuredCompositionQualificationUnavailable",
   InternalChoiceSchedulerUnavailable = "internalChoiceSchedulerUnavailable",
   ConcurrentHostDrivenWaits = "concurrentHostDrivenWaits",
   CompensationSchedulerUnavailable = "compensationSchedulerUnavailable",

@@ -203,7 +203,7 @@ The 800-nonblank-line review target is the extraction threshold. These headroom 
 |---|---:|---|
 | [Lean ProfileAdmission](../../BpmnSemantics/SemanticProcess/ProfileAdmission.lean) | 754 | profile-shape catalog extracted; keep this owner as dispatch only |
 | [Lean SemanticProcessContract](../../BpmnSemantics/SemanticProcessContract.lean) | 299 | checked Compensation support and direct Activity-data carriers are extracted |
-| [TypeScript profile admission](../../packages/bpmn-source/src/checked-process-admission.ts) | 107 | keep complete checkpoint validation in its bounded owner |
+| [TypeScript profile admission](../../packages/bpmn-source/src/checked-process-admission.ts) | 100 | keep complete checkpoint validation in its bounded owner |
 | [Lean Lowering](../../BpmnSemantics/SemanticProcess/Lowering.lean) | 112 | keep Compensation construction in its bounded sibling module |
 | [TypeScript lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 123 | keep Compensation construction in its bounded sibling module |
 | [TypeScript compilation dispatch](../../packages/bpmn-source/src/compilation-dispatch.ts) | 434 | dispatch only; no Compensation validation belongs here |

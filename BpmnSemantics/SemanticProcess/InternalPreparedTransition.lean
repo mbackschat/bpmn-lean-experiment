@@ -369,6 +369,22 @@ theorem prepareInternalTransition_sound (program : Program) (state : RuntimeStat
     | exact boundedScope _ found
     | exact prepareOrdinaryInternalTransition_sound program state _ prepared found
 
+/-- Ordinary discovery cannot acquire a Merge-input alternative from its preparation dispatch. -/
+theorem prepareInternalTransition_alternative (program : Program) (state : RuntimeState)
+    (operation : SemanticOperation) (prepared : PreparedInternalTransition)
+    (found : prepareInternalTransition? program state operation = some prepared) :
+    prepared.alternative = .operation operation.id := by
+  have same := (prepareInternalTransition_sound program state operation prepared found).2.1
+  cases prepared
+  all_goals try simpa only [PreparedInternalTransition.alternative] using congrArg (fun operation => InternalAlternative.operation operation.id) same
+  case mergeInput merge =>
+    cases operation <;>
+      simp [prepareInternalTransition?, prepareOrdinaryInternalTransition?, prepareTimerTaskInternalTransition?,
+        prepareMessageTaskInternalTransition?, prepareBoundedScopeInternalTransition?,
+        Option.map_eq_some_iff, Option.bind_eq_some_iff] at found
+    all_goals repeat' first | split at found | contradiction | (obtain ⟨_, _, found⟩ := found)
+    all_goals simp_all [Option.map_eq_some_iff]
+
 private theorem prepareInternalTransitionList_sound (program : Program) (state : RuntimeState)
     (operations : List SemanticOperation) (prepared : List PreparedInternalTransition)
     (found : operations.mapM (prepareInternalTransition? program state) = some prepared) :

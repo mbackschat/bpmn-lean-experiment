@@ -21,6 +21,8 @@ The package also exposes an optional pinned MIWG observation lane for source-int
 
 [Concrete Lean fixture binding](test/lean-fixture-bindings.integration-test.ts) compiles the retained sequential, parallel, and cyclic sources and compares their complete checked graphs and Programs with the authored Lean fixtures. It also compares the six corresponding sequential and parallel Scenario documents, including stimuli, observations, and provenance. `test:lean-fixture-bindings:built` runs after restored Lean and TypeScript outputs in the complete verification gate; synthetic countermodels and arbitrary-schedule theorems have no corresponding Scenario binding.
 
+The private [structured-composition checkpoint](../../docs/capsules/STRUCTURED-PROCESS-COMPOSITION-PROPOSAL.md) reuses the structural compiler and [scalar interface projector](src/activity-data-input-output-projection.ts) for serial and paired Exclusive composition. Hosted support and public profile registration remain unavailable.
+
 ## Quick start
 
 Run the focused compiler gate:

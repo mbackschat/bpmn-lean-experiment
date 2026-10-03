@@ -4,7 +4,7 @@ This detail map owns exact current wire, semantic-profile, checked-source, Seman
 
 ## Current boundary
 
-Exact BPMN bytes are captured, admitted under a guarded profile into a project-owned checked graph, and lowered deterministically into the Semantic Process IL. Current profiles remain bounded, versioned, and fail closed; unsupported source is rejected or preserved only where a reviewed profile says so. The first interchange composition profile combines the existing CIB Seven User Task Process-data surface with the existing standard-notation preservation capability without changing the executed projection.
+Exact BPMN bytes are captured and admitted under bounded, versioned, fail-closed profiles into a project-owned checked graph and deterministically lowered into Semantic Process IL. Unsupported source rejects or is preserved only by reviewed profile rules. The first interchange profile combines CIB Seven User Task Process data with standard-notation preservation without changing the executed projection.
 
 The registered sequential Multi-Instance profile admits one exact schema-valid batch-review source into one closed checked node and one `awaitSequentialMultiInstanceUserTask` operation with exact data associations, one lifetime Timer arm, fixed limits, and exact natural and interrupted schedules. The same profile identity is execution-admitted across source, Lean, the TypeScript core, the differential pipeline, Product 1, and the registered corpus.
 
@@ -35,6 +35,8 @@ The registered interrupting Activity boundary Message profile admits one exact o
 Transaction wire/admission boundary: [`implementation-status-owner:ENGINE-SEMANTIC-FAMILY`](ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md#transaction-cancellation).
 
 ## Implemented
+
+[Private composition checkpoint](capsules/STRUCTURED-PROCESS-COMPOSITION-PROPOSAL.md#semantic-checkpoint-implementation): component gates pass; independent review remains open. Hosting and public registration are unavailable.
 
 ### Wire contracts
 

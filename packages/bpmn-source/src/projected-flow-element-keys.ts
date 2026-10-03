@@ -33,6 +33,7 @@ const noPreservedKeys: ReadonlySet<string> = new Set();
 
 export const FlowElementProjectionProfile = Object.freeze({
   Generic: "generic",
+  StructuredComposition: "structuredComposition",
   MappedSuccessServiceTask: "mappedSuccessServiceTask",
   MappedBoundaryErrorServiceTask: "mappedBoundaryErrorServiceTask",
   CallActivity: "callActivity",
@@ -44,6 +45,7 @@ export type FlowElementProjectionProfile =
 
 export const ProjectedFlowElementShape = Object.freeze({
   PlainNode: "plainNode",
+  DataInputOutputUserTask: "dataInputOutputUserTask",
   UserTaskMetadata: "userTaskMetadata",
   EmbeddedSubProcess: "embeddedSubProcess",
   StandardSequenceFlow: "standardSequenceFlow",
@@ -72,6 +74,9 @@ export type ProjectedFlowElementShape =
   typeof ProjectedFlowElementShape[keyof typeof ProjectedFlowElementShape];
 
 export const projectedFlowElementKeys = Object.freeze({
+  [ProjectedFlowElementShape.DataInputOutputUserTask]: Object.freeze([
+    "$type", "id", "name", "ioSpecification", "dataInputAssociations", "dataOutputAssociations",
+  ]),
   [ProjectedFlowElementShape.PlainNode]: Object.freeze([
     "$type", "id", "name",
   ]),
@@ -195,6 +200,8 @@ export function projectedFlowElementShapes(
   type: unknown,
 ): ReadonlyArray<ProjectedFlowElementShape> | undefined {
   switch (profile) {
+    case FlowElementProjectionProfile.StructuredComposition:
+      return structuredCompositionShapes(type);
     case FlowElementProjectionProfile.Generic:
       return genericShapes(type);
     case FlowElementProjectionProfile.MappedSuccessServiceTask:
@@ -205,6 +212,22 @@ export function projectedFlowElementShapes(
       return callActivityShapes(type);
     case FlowElementProjectionProfile.UserTaskMetadata:
       return userTaskMetadataShapes(type);
+  }
+}
+
+function structuredCompositionShapes(type: unknown): ReadonlyArray<ProjectedFlowElementShape> | undefined {
+  switch (type) {
+    case bpmnTypes.startEventType:
+    case bpmnTypes.endEventType:
+      return [ProjectedFlowElementShape.PlainNode];
+    case bpmnTypes.userTaskType:
+      return [ProjectedFlowElementShape.DataInputOutputUserTask];
+    case bpmnTypes.exclusiveGatewayType:
+      return [ProjectedFlowElementShape.ExclusiveOrInclusiveGateway];
+    case bpmnTypes.sequenceFlowType:
+      return [ProjectedFlowElementShape.StandardSequenceFlow];
+    default:
+      return undefined;
   }
 }
 

@@ -42,6 +42,19 @@ def selectInternalExecutionFrontier (mode : InternalSchedulingMode) (ordinal : N
                   | none => .ambiguous
       | _ => .ambiguous
 
+/-- A singleton uses no scheduling directive when its preparation names that same discovered alternative. -/
+theorem selectInternalExecutionFrontier_singleton (mode : InternalSchedulingMode) (ordinal : Nat)
+    (schedule : InternalChoiceSchedule) (offer : InternalExecutionOffer)
+    (aligned : ∀ prepared, offer.preparation = some prepared → prepared.alternative = offer.alternative) :
+    selectInternalExecutionFrontier mode ordinal schedule { offers := [offer] } =
+      .execute [offer] schedule false := by
+  cases preparation : offer.preparation with
+  | none => simp [selectInternalExecutionFrontier, preparation, List.mapM_cons, List.mapM_nil]
+  | some prepared =>
+    simp [selectInternalExecutionFrontier, preparation, List.mapM_cons, List.mapM_nil,
+      classifyPreparedInternalFrontier, sortBy, sortInsertBy, normalizingInternalPrepared,
+      findInternalExecutionOffer?, aligned prepared preparation]
+
 /-- Normalization consumes no directive. A choice consumes one exact head for the complete
 canonical prepared frontier and selects exactly the alternative named by that head.
 -/
@@ -245,6 +258,32 @@ def closeScheduledTraced (fuel : Nat) (program : Program) (commandId : SemanticI
                     remaining step.state)
 termination_by fuel
 decreasing_by exact Nat.lt_succ_of_le (Nat.sub_le _ _)
+
+/-- Stability is accepted before fuel is inspected, including at the exact zero-fuel boundary. -/
+theorem closeScheduledTraced_stable (fuel : Nat) (program : Program) (commandId : SemanticId)
+    (index ordinal : Nat) (state : RuntimeState)
+    (frontier : deriveInternalExecutionFrontier program state = {}) :
+    closeScheduledTraced fuel program commandId index ordinal [] state =
+      { state, records := some [], lifecycles := some [] } := by
+  unfold closeScheduledTraced
+  simp [frontier]
+
+/-- Singleton execution preserves the recursive closure's result state and failure verdict, independently of optional publication output. -/
+theorem closeScheduledTraced_singleton_step (fuel : Nat) (program : Program) (commandId : SemanticId)
+    (index ordinal : Nat) (state : RuntimeState) (offer : InternalExecutionOffer)
+    (frontier : deriveInternalExecutionFrontier program state = { offers := [offer] })
+    (aligned : ∀ prepared, offer.preparation = some prepared → prepared.alternative = offer.alternative) :
+    (closeScheduledTraced (fuel + 1) program commandId index ordinal [] state).state =
+      (closeScheduledTraced fuel program commandId (index + 1) ordinal [] offer.successor).state ∧
+    (closeScheduledTraced (fuel + 1) program commandId index ordinal [] state).failed =
+      (closeScheduledTraced fuel program commandId (index + 1) ordinal [] offer.successor).failed := by
+  rw [closeScheduledTraced]
+  simp only [frontier, List.isEmpty_cons, Bool.false_and, Bool.false_eq_true, ↓reduceIte]
+  rw [selectInternalExecutionFrontier_singleton _ _ _ offer aligned]
+  simp only [List.length_nil, Nat.not_lt_zero, ↓reduceIte, executeSelectedFrontier?, Nat.sub_zero,
+    singletonClosureStep, Nat.add_zero, Bool.false_eq_true]
+  unfold prependClosureStep
+  split <;> simp [ScheduledClosureResult.failed]
 
 /-- A complete execution ends on an empty schedule; every step is the actual frontier selection
 and checked execution, rather than an independently chosen interleaving.

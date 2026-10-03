@@ -63,6 +63,33 @@ def mergeProcessVariableBindings
     (replacements ++ existing.filter fun binding =>
       !replacedNames.contains binding.name)
 
+private theorem insertVariableBinding_perm (binding : VariableBinding)
+    (bindings : List VariableBinding) :
+    (insertVariableBinding binding bindings).Perm (binding :: bindings) := by
+  induction bindings with
+  | nil => exact List.Perm.refl _
+  | cons first rest ih =>
+      unfold insertVariableBinding
+      split
+      · exact List.Perm.refl _
+      · exact (List.Perm.cons first ih).trans (List.Perm.swap binding first rest)
+
+private theorem sortVariableBindings_perm (bindings : List VariableBinding) :
+    (sortVariableBindings bindings).Perm bindings := by
+  induction bindings with
+  | nil => exact List.Perm.refl _
+  | cons first rest ih =>
+      exact (insertVariableBinding_perm first (sortVariableBindings rest)).trans
+        (List.Perm.cons first ih)
+
+/-- Canonical ordering preserves exactly the patch plus unreplaced bindings; composition
+availability proofs need this fact without depending on the private sorting algorithm. -/
+theorem mergeProcessVariableBindings_perm (existing replacements : List VariableBinding) :
+    (mergeProcessVariableBindings existing replacements).Perm
+      (replacements ++ existing.filter fun binding =>
+        !(replacements.map (·.name)).contains binding.name) :=
+  sortVariableBindings_perm _
+
 /-- Exact equality for discriminated local-data owners. -/
 def localDataOwnerMatches (left right : LocalDataOwner) : Bool :=
   decide (left = right)
