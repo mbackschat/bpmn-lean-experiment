@@ -36,7 +36,7 @@ Transaction wire/admission boundary: [`implementation-status-owner:ENGINE-SEMANT
 
 ## Implemented
 
-[Private composition checkpoint](capsules/STRUCTURED-PROCESS-COMPOSITION-PROPOSAL.md#semantic-checkpoint-implementation): component gates pass; independent review remains open. Hosting and public registration are unavailable.
+[Private composition checkpoint](capsules/STRUCTURED-PROCESS-COMPOSITION-PROPOSAL.md#semantic-checkpoint-implementation): checkpoint approved; component gates pass. Hosting and public registration are unavailable.
 
 ### Wire contracts
 

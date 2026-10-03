@@ -102,7 +102,7 @@ Active work ID: `STRUCTURED-PROCESS-COMPOSITION`.
 
 Risk band: source admission, data routing and structured control-flow composition in independent Lean/TypeScript accounts.
 
-Next action: complete the semantic-checkpoint correction audit under the [composition proposal](capsules/STRUCTURED-PROCESS-COMPOSITION-PROPOSAL.md). The correction preserves global data identity across tasks and clarifies finite Lean evidence. Artifact, hosting and public-registration work remain behind that review.
+Next action: complete the retained Lean execution witnesses and answer-free differential evidence under the [composition proposal](capsules/STRUCTURED-PROCESS-COMPOSITION-PROPOSAL.md). Cover invoice routes, null completion handoff and the exact nine-step refusal. Keep live hosting and public registration deferred.
 
 Keep semantics active; reconsider deferred work no earlier than 2026-10-05, without an automatic switch. Local performance tests stay skipped under external CPU load. Lean remains one process tree, one CPU and 3 GiB without additional swap. Database selection remains [sequential SQLite versus concurrent PostgreSQL](TESTING-SPEC.md#three-level-verification-policy).
 

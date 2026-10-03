@@ -66,7 +66,7 @@ Transaction semantics: [`implementation-status-owner:ENGINE-SEMANTIC-FAMILY`](EN
 
 ## Implemented
 
-Private [composition](capsules/STRUCTURED-PROCESS-COMPOSITION-PROPOSAL.md#lean-assurance-lane): bounded scheduler progress proved; full Lean gate passes; review open; hosting unavailable.
+Private [composition](capsules/STRUCTURED-PROCESS-COMPOSITION-PROPOSAL.md#lean-assurance-lane): bounded scheduler progress proved; full Lean gate passes; checkpoint approved; hosting unavailable.
 
 ### Runtime scoped data
 
