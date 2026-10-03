@@ -2,8 +2,8 @@
 
 ## Status
 
-Lifecycle: draft
-Review: pending
+Lifecycle: owner-approved
+Review: approved
 
 ## Question and boundary
 
@@ -162,8 +162,8 @@ At closure, record commit-bounded code/document churn in the [cost ledger](../CA
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `b1d41150` | `fork-turns-none` | `approve` | `not-required` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
-The bounded read-only preflight against `8d0d88bb` identified the normative target-direction conflict, the owner-derived task identity requirement and the task-detail caller-data leak. It supplied design feedback only, not an independent proposal receipt. The required cold review must evaluate the complete proposed interpretation, matching predicate, storage/projection boundary, assurance bound and migration obligations before implementation.
+The independent proposal review approved `b1d41150` on 2026-10-03 with no findings. Packet digest: `1b4ca92f6681998ba866e6e16f3e479021e96e5cdbfb68acac10cce653b2ffaf`. The reviewer checked the normative interpretation, singleton correspondence, actual scheduler and task-detail consumers, migration obligations and bounded proof effort. Its nine focused documentation/review files passed 100 tests, and `doctor.sh verify` passed; receipts `/tmp/call-data-proposal-review-docs` and `/tmp/call-data-proposal-review-doctor` were separately asserted. Approval authorizes implementation only; scheduled preservation, live hosting and public support remain unestablished.

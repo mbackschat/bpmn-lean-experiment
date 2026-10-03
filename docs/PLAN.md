@@ -104,7 +104,7 @@ Risk band: per-instance data scope and explicit caller/callee mappings in indepe
 
 Last verification: `./scripts/lake.sh test` passes 705 jobs; [private execution evidence](capsules/STRUCTURED-PROCESS-COMPOSITION-PROPOSAL.md#private-execution-evidence) records the comparison gates.
 
-Next action: independently review the [Call data proposal](capsules/CALL-ACTIVITY-DATA-BOUNDARIES-PROPOSAL.md), including normative interpretation, interface ownership, task-detail isolation and proof effort. Implement only after approval; retain [composition closure obligations](capsules/STRUCTURED-PROCESS-COMPOSITION-PROPOSAL.md#private-rule-to-evidence-reconciliation).
+Next action: implement the independently approved [Call data proposal](capsules/CALL-ACTIVITY-DATA-BOUNDARIES-PROPOSAL.md), beginning with cohesive proof-owner extraction if needed, then typed endpoints and isolated Process interfaces under red/green gates. Retain [composition closure obligations](capsules/STRUCTURED-PROCESS-COMPOSITION-PROPOSAL.md#private-rule-to-evidence-reconciliation).
 
 Keep semantics active; reconsider deferred work no earlier than 2026-10-05, without an automatic switch. Local performance tests stay skipped under external CPU load. Lean remains one process tree, one CPU and 3 GiB without additional swap. Database selection remains [sequential SQLite versus concurrent PostgreSQL](TESTING-SPEC.md#three-level-verification-policy).
 
