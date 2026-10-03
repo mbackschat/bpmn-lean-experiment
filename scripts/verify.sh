@@ -50,6 +50,7 @@ verify_pipeline() {
   node --test --test-concurrency=1 packages/differential/test/compensation-pipeline-lean-core.integration-test.ts
   node --test --test-concurrency=1 packages/differential/test/transaction-pipeline-lean-core.integration-test.ts
   node --test --test-concurrency=1 packages/differential/test/repeatable-subscriptions-lean-core.integration-test.ts
+  node --test --test-concurrency=1 packages/differential/test/structured-composition-lean-core.integration-test.ts
   env BPMN_PIPELINE_PREBUILT=1 ./scripts/pnpm.sh run test:pipeline
   git diff --check
 }

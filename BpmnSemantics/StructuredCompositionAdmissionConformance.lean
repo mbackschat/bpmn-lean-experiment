@@ -116,6 +116,19 @@ theorem nested_empty_regions_reach_exact_bound : (StructuredComposition.analyze 
 theorem one_deeper_region_exceeds_bound : (StructuredComposition.analyze (nested 4)).map (·.maximumBurst) =
     some (scenarioClosureLimit + 2) := by decide +kernel
 
+private def nineStep : List StructuredComposition.Vertex := (nested 3).map fun vertex =>
+  if vertex.id == "split3" then { vertex with outputs := ["task", "merge3", "split2"] }
+  else if vertex.id == "merge3" then { vertex with outputs := ["end"] }
+  else if vertex.id == "task" then { vertex with outputs := ["merge3"] }
+  else vertex
+
+theorem empty_route_reaches_exactly_nine_steps :
+    (StructuredComposition.analyze nineStep).map (·.maximumBurst) = some 9 := by decide +kernel
+
+theorem exact_nine_step_route_exceeds_admission_limit :
+    ((StructuredComposition.analyze nineStep).map fun analysis =>
+      decide (analysis.maximumBurst ≤ scenarioClosureLimit)) = some false := by decide +kernel
+
 theorem private_profile_refuses_explicit_scheduling : programProfileCapabilitiesValid
     { serialProgram with internalSchedulingMode := .requireChoiceSchedule } = false := by decide +kernel
 
