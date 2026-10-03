@@ -3,6 +3,7 @@ import { CheckedNodeKind } from "./checked-process-contract.js";
 import type { DeepReadonly } from "./deep-readonly.js";
 import { SemanticOperationKind } from "./semantic-process-contract.js";
 import {
+  CALL_ACTIVITY_DATA_BOUNDARIES_CHECKPOINT_PROFILE_ID,
   STRUCTURED_PROCESS_COMPOSITION_CHECKPOINT_PROFILE_ID,
   TRANSACTION_CANCELLATION_CHECKPOINT_PROFILE_ID,
   COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID,
@@ -50,6 +51,7 @@ export function semanticGraphPolicyForProfile(
     case SemanticProfileId.UserTaskCycle:
       return userTaskResumptionBoundedGraphPolicy;
     case STRUCTURED_PROCESS_COMPOSITION_CHECKPOINT_PROFILE_ID:
+    case CALL_ACTIVITY_DATA_BOUNDARIES_CHECKPOINT_PROFILE_ID:
     case SemanticProfileId.TimerStart:
     case SemanticProfileId.MessageStart:
     case SemanticProfileId.ActivityBoundaryTimer:

@@ -121,7 +121,8 @@ theorem data_completion_preserves_lifecycle_frame
   · simp only [Option.bind_eq_some_iff] at completed
     obtain ⟨_, _, _, _, completed⟩ := completed
     split at completed
-    · cases Option.some.inj completed
+    · obtain ⟨_, _, completed⟩ := Option.bind_eq_some_iff.mp completed
+      cases Option.some.inj completed
       exact empty
     · contradiction
   · contradiction
@@ -175,7 +176,7 @@ theorem committed_start_has_lifecycle_frame
   obtain ⟨_, _, noRetention, noSnapshots, _⟩ := program_analysis_excludes_foreign_declarations program analysis analyzed
   cases created : runningProgramStartState? program instanceId bindings with
   | none =>
-    simp [admitStimulus, noSnapshots, initialState, profile, created] at committed
+    simp [admitStimulus, callDataRuntimeStateValid, noSnapshots, initialState, profile, created] at committed
     split at committed <;> contradiction
   | some started =>
     have framed : LifecycleFrame started := by
@@ -184,7 +185,7 @@ theorem committed_start_has_lifecycle_frame
       cases Option.some.inj created
       refine ⟨by simp [ForeignRuntimeEmpty, noRetention, runningStartState, initialState], Or.inl ?_⟩
       exact ⟨{ processInstanceId := instanceId, definitionScopeId := root.id, activation := 1 }, rfl, rfl⟩
-    simp [admitStimulus, noSnapshots, initialState, profile, created] at committed ⊢
+    simp [admitStimulus, callDataRuntimeStateValid, noSnapshots, initialState, profile, created] at committed ⊢
     split at committed
     · simp_all
     · contradiction
@@ -261,7 +262,7 @@ theorem committed_start_has_task_lifetime_shape
   obtain ⟨_, _, _, noSnapshots, _⟩ := program_analysis_excludes_foreign_declarations program analysis analyzed
   cases created : runningProgramStartState? program instanceId bindings with
   | none =>
-    simp [admitStimulus, noSnapshots, initialState, profile, created] at committed
+    simp [admitStimulus, callDataRuntimeStateValid, noSnapshots, initialState, profile, created] at committed
     split at committed <;> contradiction
   | some started =>
     have shaped : TaskLifetimeShape program started := by
@@ -269,7 +270,7 @@ theorem committed_start_has_task_lifetime_shape
       obtain ⟨_, _, created⟩ := created
       cases Option.some.inj created
       exact Or.inl ⟨rfl, rfl, rfl⟩
-    simp [admitStimulus, noSnapshots, initialState, profile, created] at committed ⊢
+    simp [admitStimulus, callDataRuntimeStateValid, noSnapshots, initialState, profile, created] at committed ⊢
     split at committed
     · simp_all
     · contradiction
@@ -337,12 +338,9 @@ theorem data_arming_preserves_task_lifetime_shape
     have rootEq := selected_token_has_root_owner before owner root input owned bounded selected
     have instanceEq := root_owner_matches_running_instance before owner instanceId frame owned runningEq
     have typed : variableValueAdmitted activityDataInputOutputUserTaskProfileId .processStart source.value = true := by
-      simp only [dataInputOutputSourceBinding?, bind, Option.bind_eq_some_iff] at available
-      obtain ⟨binding, _, available⟩ := available
-      split at available
-      · cases Option.some.inj available
-        assumption
-      · contradiction
+      have scalar := readActivityDataInput_scalar available
+      cases value : source.value <;> simp [processInterfaceScalar, variableValueAdmitted,
+        activityDataInputOutputUserTaskProfileId, value] at scalar ⊢
     obtain ⟨_, _, noWait, _⟩ := enabled_token_under_bound_is_single before input root bounded selected
     obtain ⟨noRecords, noScopes⟩ := no_wait_has_no_activity_lifetime program before shape noWait
     split at active
@@ -350,14 +348,14 @@ theorem data_arming_preserves_task_lifetime_shape
     · cases Option.some.inj active
       apply Or.inr
       refine ⟨{
-        processInstanceId := instanceId
+        processInstanceId := root.processInstanceId
         owner := root
         task := { id := taskId, name := taskName }
         activation := activationCount before taskId + 1
         output }, .awaitDataInputOutputUserTask id origin input output taskId taskName directInput directOutput, ?_⟩
       simp only [noWait, noRecords, noScopes, insertUserTaskWait, insertActivityOccurrence,
         addActivityOccurrenceVariableScope, insertActivityVariableScope]
-      refine ⟨True.intro, member, runningEq, by simp [rootEq, instanceEq], True.intro, True.intro, True.intro,
+      refine ⟨True.intro, member, by simpa [rootEq, instanceEq] using runningEq, True.intro, True.intro, True.intro, True.intro,
         activityActivationCount before taskId + 1, { name := directInput.targetDataInputId, value := source.value }, rfl, typed, rfl, rfl⟩
 
 
@@ -471,8 +469,9 @@ theorem data_completion_clears_task_lifetime
   obtain ⟨recordBound, scopeBound⟩ := task_lifetime_collections_bounded program before shape
   obtain ⟨_, _, _, _, _, _, noWait, _⟩ :=
     data_completion_has_exact_continuation program before after instanceId taskId activation bindings bounded completed
-  obtain ⟨_, _, _, wait, record, _, variables, _, _, _, _, joined, _, removed, _, _, records, scopes⟩ :=
+  obtain ⟨_, _, _, wait, record, _, variables, _, _, _, _, joined, _, removed, _, _, records, written⟩ :=
     dataInputOutputCompletionJoin completed
+  have scopes := writeActivityDataOutput_preserves_activities written
   apply Or.inl
   refine ⟨noWait, ?_, ?_⟩
   · cases values : before.activityOccurrences with
@@ -626,7 +625,7 @@ theorem committed_start_has_declared_root_owner
   obtain ⟨sole, soleEq⟩ := List.length_eq_one_iff.mp oneScope
   cases created : runningProgramStartState? program instanceId bindings with
   | none =>
-    simp [admitStimulus, noSnapshots, initialState, profile, created] at committed
+    simp [admitStimulus, callDataRuntimeStateValid, noSnapshots, initialState, profile, created] at committed
     split at committed <;> contradiction
   | some started =>
     have owned : ∃ owner, owner.definitionScopeId = sole.id ∧ RootOwnedControl owner started := by
@@ -642,7 +641,7 @@ theorem committed_start_has_declared_root_owner
       simp [RootOwnedControl, runningStartState, initialState]
     obtain ⟨owner, key, owned⟩ := owned
     refine ⟨sole, owner, soleEq, key, ?_⟩
-    simp [admitStimulus, noSnapshots, initialState, profile, created] at committed ⊢
+    simp [admitStimulus, callDataRuntimeStateValid, noSnapshots, initialState, profile, created] at committed ⊢
     split at committed
     · simp_all
     · contradiction

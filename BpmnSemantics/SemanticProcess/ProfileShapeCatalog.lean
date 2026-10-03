@@ -7,6 +7,7 @@ import BpmnSemantics.SemanticProcess.ParallelMultiInstanceProfileAdmission
 import BpmnSemantics.SemanticProcess.MessageKeyCorrelationProfileAdmission
 import BpmnSemantics.SemanticProcess.CompensationSourceProfileAdmission
 import BpmnSemantics.SemanticProcess.RepeatableSubscriptionAdmission
+import BpmnSemantics.SemanticProcess.CallDataAdmission
 
 /-! # Semantic profile shape catalog
 
@@ -514,14 +515,37 @@ def profileGraphPolicy? (profile : String) : Option ProfileGraphPolicy :=
     some .resumptionBounded
   else if profile = transactionCancellationCheckpointProfileId.value ||
       profile = structuredCompositionCheckpointProfileId.value ||
+      profile = callDataCheckpointProfileId.value ||
       profile = repeatableSubscriptionCheckpointProfileId.value ||
       ((checkedShape? profile).isSome && (programShape? profile).isSome) then
     some .acyclic
   else none
 
+private def propertyInput (input : DirectActivityDataInput) : Bool :=
+  match input.source with | .property _ => true | .processDataInput _ => false
+
+private def propertyOutput (output : DirectActivityDataOutput) : Bool :=
+  match output.target with | .property _ => true | .processDataOutput _ => false
+
+private def checkedPropertyEndpoints : CheckedNode → Bool
+  | .callActivity _ _ data => decide (data = .empty)
+  | .dataInputUserTask _ _ input => propertyInput input
+  | .dataOutputUserTask _ _ output => propertyOutput output
+  | .dataInputOutputUserTask _ _ input output => propertyInput input && propertyOutput output
+  | _ => true
+
+private def operationPropertyEndpoints : SemanticOperation → Bool
+  | .invokeProcess _ _ _ _ _ _ _ data | .returnProcess _ _ _ _ _ data => decide (data = .empty)
+  | .awaitDataInputUserTask _ _ _ _ _ _ input => propertyInput input
+  | .awaitDataOutputUserTask _ _ _ _ _ _ output => propertyOutput output
+  | .awaitDataInputOutputUserTask _ _ _ _ _ _ input output => propertyInput input && propertyOutput output
+  | _ => true
+
 /-- Exact checked node and definition-scope cardinalities selected by the profile. -/
 def checkedProfileCapabilitiesValid (source : CheckedProcess) : Bool :=
-  if source.identity.semanticProfile == structuredCompositionCheckpointProfileId then
+  if source.identity.semanticProfile == callDataCheckpointProfileId then
+    callDataCheckedGraph source
+  else if source.identity.semanticProfile == structuredCompositionCheckpointProfileId then
     structuredCompositionCheckedGraph source
   else if source.identity.semanticProfile == transactionCancellationCheckpointProfileId then
     transactionCancellationCheckedGraph source
@@ -535,6 +559,7 @@ def checkedProfileCapabilitiesValid (source : CheckedProcess) : Bool :=
     | some (scopeCount, shape) =>
         source.definitionScopes.length = scopeCount &&
           nodeCardinalities source.nodes = shape &&
+          source.nodes.all checkedPropertyEndpoints &&
           checkedUserTaskMetadataValid source.identity.semanticProfile source.nodes &&
           checkedParallelTopologyValid source &&
           checkedActivityBoundaryMessageTopologyValid source &&
@@ -606,7 +631,9 @@ private def operationPayloadCapabilitiesValid (profile : String)
 
 /-- Exact operation and definition-scope cardinalities selected by the profile. -/
 def programProfileCapabilitiesValid (program : Program) : Bool :=
-  if program.identity.semanticProfile == transactionCancellationCheckpointProfileId then
+  if program.identity.semanticProfile == callDataCheckpointProfileId then
+    callDataProgramGraph program
+  else if program.identity.semanticProfile == transactionCancellationCheckpointProfileId then
     transactionCancellationProgramGraph program
   else if program.identity.semanticProfile = repeatableSubscriptionCheckpointProfileId then
     repeatableSubscriptionProgramGraph program
@@ -617,6 +644,7 @@ def programProfileCapabilitiesValid (program : Program) : Bool :=
     | some (scopeCount, shape) =>
         program.definitionScopes.length = scopeCount &&
           operationCardinalities program.operations = shape &&
+          program.operations.all operationPropertyEndpoints &&
           programUserTaskMetadataValid program.identity.semanticProfile
             program.operations &&
           programParallelTopologyValid program &&

@@ -78,6 +78,7 @@ private theorem selected_call_caller (state : RuntimeState) (operation : Semanti
   unfold selectInternalScopeCreation? at found
   obtain ⟨hosting, _, found⟩ := Option.bind_eq_some_iff.mp found
   cases operation
+  all_goals try (split at found)
   all_goals first
     | contradiction
     | obtain ⟨owner, _, found⟩ := Option.bind_eq_some_iff.mp found

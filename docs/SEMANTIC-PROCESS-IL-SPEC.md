@@ -170,9 +170,19 @@ type UserTaskMetadata = DeepReadonly<{
   };
 }>;
 
+type ActivityDataInputSource = DeepReadonly<
+  | { kind: "property"; propertyId: string }
+  | { kind: "processDataInput"; dataInputId: string }
+>;
+
+type ActivityDataOutputTarget = DeepReadonly<
+  | { kind: "property"; propertyId: string }
+  | { kind: "processDataOutput"; dataOutputId: string }
+>;
+
 type DirectActivityDataInput = DeepReadonly<{
   associationId: string;
-  sourcePropertyId: string;
+  source: ActivityDataInputSource;
   targetDataInputId: string;
   targetDataInputName: string | null;
 }>;
@@ -181,7 +191,7 @@ type DirectActivityDataOutput = DeepReadonly<{
   associationId: string;
   sourceDataOutputId: string;
   sourceDataOutputName: string | null;
-  targetPropertyId: string;
+  target: ActivityDataOutputTarget;
 }>;
 
 type DirectCatchEventPayloadOutput = DeepReadonly<{
@@ -906,7 +916,7 @@ An accepted completion for that occurrence removes the wait and adds one token t
 
 ### Activity data-input User Task wait
 
-`awaitDataInputUserTask` is enabled only when its input control place holds a token **and** the Process scope holds exactly one binding named by `directInput.sourcePropertyId`. Zero bindings and two bindings under one name are both unavailable, so the selected value never depends on collection order. A present binding whose value arm is `null` is available and is copied as explicit null: absence and null are different pre-states, and the profile's value domain admits both at Process start.
+The standalone input profile selects a Property source. `awaitDataInputUserTask` is enabled only when its input control place holds a token **and** the Process scope holds exactly one binding named by `directInput.source.propertyId`. Zero bindings and two bindings under one name are both unavailable, so the selected value never depends on collection order. A present binding whose value arm is `null` is available and is copied as explicit null: absence and null are different pre-states, and the profile's value domain admits both at Process start.
 
 Firing is atomic. It consumes the input token, creates the task occurrence and its wait, mints the Activity occurrence record with an empty attached-Timer list, and inserts one Activity-occurrence-owned local scope holding exactly `{ name: directInput.targetDataInputId, value: <the selected binding's value> }`. Process scope is unchanged: the association copies, it does not move.
 
@@ -918,15 +928,17 @@ Completion accepts no submitted values, because the profile's OutputSet is empty
 
 Firing consumes the input token, creates the task occurrence and its wait, mints the Activity occurrence record with an empty attached-Timer list, and inserts one Activity-occurrence-owned local scope holding no bindings. The empty scope publishes no input collection.
 
-Completion accepts exactly one submitted value, named by `directOutput.sourceDataOutputId`. Any other name, an omitted value, and a second value are all refused with exact state preservation, because the single declared output must be available for the `OutputSet` to be selected. An accepted completion fills that output, executes the association by writing `{ name: directOutput.targetPropertyId, value: <the submitted value> }` into Process scope, disposes the wait, the Activity record, and the local scope together, and adds one token to `output`. The submitted name never reaches Process scope: the association, not the command, decides the destination. A record listing an attached Timer belongs to another family and is refused here rather than completed.
+The standalone profile selects a Property target. Completion accepts exactly one submitted value, named by `directOutput.sourceDataOutputId`. Any other name, an omitted value, and a second value are all refused with exact state preservation, because the single declared output must be available for the `OutputSet` to be selected. An accepted completion fills that output, executes the association by writing `{ name: directOutput.target.propertyId, value: <the submitted value> }` into Process scope, disposes the wait, the Activity record, and the local scope together, and adds one token to `output`. The submitted name never reaches Process scope: the association, not the command, decides the destination. A record listing an attached Timer belongs to another family and is refused here rather than completed.
 
 ### Composed Activity data-input/output User Task wait
 
-`awaitDataInputOutputUserTask` combines the two boundary rules without composing the two predecessor evaluators. Activation has the input arm's exact readiness rule: one owner-matching token and exactly one String-or-null Process binding named by `directInput.sourcePropertyId`. It consumes the token and atomically creates one task wait, one Activity record, and one Activity-occurrence-owned local scope containing only the copied DataInput. Missing or duplicate Process sources make no transition; explicit null remains available. Process bindings are unchanged, and the open task publishes exactly that copied input while no DataOutput or target Property is invented.
+`awaitDataInputOutputUserTask` combines the two boundary rules without composing the two predecessor evaluators. For the registered Property-only profiles, activation has the input arm's exact readiness rule: one owner-matching token and exactly one String-or-null Process binding named by `directInput.source.propertyId`. It consumes the token and atomically creates one task wait, one Activity record, and one Activity-occurrence-owned local scope containing only the copied DataInput. Missing or duplicate Process sources make no transition; explicit null remains available. Process bindings are unchanged, and the open task publishes exactly that copied input while no DataOutput or target Property is invented.
 
 Completion requires exactly one submitted String-or-null binding named by `directOutput.sourceDataOutputId` and an exact join among the unique composed declaration, task wait, Activity record, operation scope, and sole one-binding local scope. The local binding must still be the copied DataInput; it is not compared with the current Process source because later independent Process writes must not rewrite activation history. Any duplicate declaration, wait, record, or local owner; malformed local content; attached handler; wrong operation or scope owner; wrong, missing, extra, or stale output; or unsupported value refuses with exact state preservation.
 
-An accepted completion routes the submitted value only to `directOutput.targetPropertyId`, preserves the input Property and unrelated Process bindings, removes that same task wait, Activity record, and input-bearing local scope, adds the outgoing token, and resumes closure in one transition. There is no stable local DataOutput or intermediate state between fill, association, cleanup, and continuation. Its internal-commutation family is `compositeWaitAndActivityArming`; the [finite prepared arming account](INTERNAL-COMMUTATION-PROPOSAL.md#finite-prepared-arming-checkpoint) owns its implemented footprint and batching boundary.
+An accepted completion routes the submitted value only to `directOutput.target.propertyId`, preserves the input Property and unrelated Process bindings, removes that same task wait, Activity record, and input-bearing local scope, adds the outgoing token, and resumes closure in one transition. There is no stable local DataOutput or intermediate state between fill, association, cleanup, and continuation. Its internal-commutation family is `compositeWaitAndActivityArming`; the [finite prepared arming account](INTERNAL-COMMUTATION-PROPOSAL.md#finite-prepared-arming-checkpoint) owns its implemented footprint and batching boundary.
+
+The directional descriptor variants also support Process-interface endpoints in the existing composed evaluator. A Property endpoint is available only when the task's complete token owner belongs to the hosting Process instance. A Process DataInput or DataOutput selects exactly one interface scope with the complete owner identity; duplicate scopes refuse, and neither endpoint falls back to caller Properties. Task and Activity identity derive from that token owner. Writing a Process DataOutput preserves caller Properties and the immutable Process input. The [Call data proposal](capsules/CALL-ACTIVITY-DATA-BOUNDARIES-PROPOSAL.md#current-implementation-boundary) owns this private extension's evidence and remaining invocation, return, admission and hosting obligations; existing profiles continue to admit only Property endpoints.
 
 ### Sequential Multi-Instance User Task
 

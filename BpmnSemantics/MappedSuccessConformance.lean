@@ -197,7 +197,8 @@ theorem literal_input_commits_exact_arguments :
 def expectedWaitingVariables : ScopedVariables :=
   { process := { bindings := [] }
     activities :=
-      [{ owner := .effectOccurrence effectId, bindings := arguments }] }
+      [{ owner := .effectOccurrence effectId, bindings := arguments }]
+    processInterfaces := [] }
 
 theorem activation_creates_complete_occurrence_owned_local_scope :
     waitingState.variables = expectedWaitingVariables := by
@@ -215,7 +216,8 @@ theorem completion_removes_only_the_matching_owned_scope :
       some
         { process := { bindings := [expectedVariable "example-result"] }
           activities :=
-            [{ owner := .effectOccurrence secondEffectId, bindings := arguments }] } := by
+            [{ owner := .effectOccurrence secondEffectId, bindings := arguments }]
+          processInterfaces := [] } := by
   decide +kernel
 
 theorem duplicate_owned_scope_is_rejected :
@@ -248,7 +250,8 @@ def privateLocalState : RuntimeState :=
           [{ owner := .effectOccurrence effectId
              bindings :=
                arguments ++
-                 [{ name := "privateOnly", value := .string "secret" }] }] } }
+                 [{ name := "privateOnly", value := .string "secret" }] }]
+        processInterfaces := [] } }
 
 theorem activity_local_bindings_remain_outside_public_observation :
     (observeStableState program privateLocalState).map
@@ -318,7 +321,8 @@ theorem successful_result_maps_only_process_target (reference : String) :
         outputMappings (successResult reference) =
       some
         { process := { bindings := [expectedVariable reference] }
-          activities := [] } := by
+          activities := []
+          processInterfaces := [] } := by
   simp [completeActivityVariableScope, expectedWaitingVariables,
     activityScopeMatches, localDataOwnerMatches, applyEffectResult, applyEffectPatch,
     outputMappings, successResult, expectedVariable]
@@ -389,7 +393,8 @@ private def writeLocalPatchToProcessScope (state : RuntimeState) : RuntimeState 
       { process :=
           { bindings :=
               [ { name := "result", value := .string "example-result" } ] }
-        activities := [] } }
+        activities := []
+        processInterfaces := [] } }
 
 theorem direct_patch_to_process_scope_is_a_non_law :
     (writeLocalPatchToProcessScope waitingState).variables.process.bindings =

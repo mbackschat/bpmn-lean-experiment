@@ -248,6 +248,7 @@ private theorem selection_calls_frame (state : RuntimeState) (operation : Semant
     unfold selectInternalScopeCreation? at found
     obtain ⟨hosting, _, found⟩ := Option.bind_eq_some_iff.mp found
     cases operation
+    all_goals try (split at found)
     all_goals first
       | contradiction
       | obtain ⟨owner, _, found⟩ := Option.bind_eq_some_iff.mp found
@@ -313,65 +314,68 @@ private theorem selection_created_facts (program : Program) (state : RuntimeStat
             exact ⟨ownerHosting, trivial, retainedLive⟩
           · intro _ _
             simp [Hosting]
-  | invokeProcess id origin input process scopeId entry returnOperation =>
-      obtain ⟨owner, _, found⟩ := Option.bind_eq_some_iff.mp found
-      repeat first | contradiction | split at found
-      all_goals cases found
-      all_goals
-        simp only [internalScopeCreationDefinitionMatches, Bool.and_eq_true,
-          decide_eq_true_eq] at matching
-        have ownerHosting : owner.processInstanceId = hosting := by assumption
-        have different : deriveCalledProcessInstanceId owner.processInstanceId origin.elementId
-            (callActivationCount state origin.elementId + 1) ≠ hosting := by
-          rw [← ownerHosting]
-          exact calledProcessIdentity_differs_from_caller _ _ _
-        let rootId : ScopeOccurrenceId :=
-          { processInstanceId := deriveCalledProcessInstanceId owner.processInstanceId
-              origin.elementId (callActivationCount state origin.elementId + 1)
-            definitionScopeId := scopeId, activation := 1 }
-        have notHosting (definition : DefinitionScope) :
-            ¬ Hosting program hosting definition { id := rootId, parent := none } := by
-          intro accepted
-          exact different accepted.2.1
-        refine ⟨⟨scope, definition, called_instance_nonempty _ _ _, Nat.zero_lt_succ 0, ?_⟩,
-          fun definition _ => notHosting definition⟩
-        simp only [matching.1.2]
-        refine Or.inr ⟨notHosting scope, ?_⟩
-        unfold Called
-        let record : CalledProcessOccurrence :=
-          { id :=
-              { processInstanceId := owner.processInstanceId
-                elementId := ⟨origin.elementId.value⟩
-                activation := callActivationCount state origin.elementId + 1 }
-            caller := owner, calledProcessId := process, calledRoot := rootId,
-            returnOperationId := returnOperation }
-        refine ⟨record, ?_, matching.2.symm⟩
-        change (sortCallRecords (record :: state.calledProcessOccurrences)).filter
-          (fun candidate => decide (candidate.calledRoot = rootId)) = [record]
-        apply List.Perm.eq_singleton
-        have permutation := (sortCallRecords_perm (record :: state.calledProcessOccurrences)).filter
-          (fun candidate => decide (candidate.calledRoot = rootId))
-        have absent : state.calledProcessOccurrences.filter (fun record =>
-            decide (record.calledRoot =
+  | invokeProcess id origin input process scopeId entry returnOperation data =>
+      cases data with
+      | scalar => simp at found
+      | empty =>
+          obtain ⟨owner, _, found⟩ := Option.bind_eq_some_iff.mp found
+          repeat first | contradiction | split at found
+          all_goals cases found
+          all_goals
+            simp only [internalScopeCreationDefinitionMatches, Bool.and_eq_true,
+              decide_eq_true_eq] at matching
+            have ownerHosting : owner.processInstanceId = hosting := by assumption
+            have different : deriveCalledProcessInstanceId owner.processInstanceId origin.elementId
+                (callActivationCount state origin.elementId + 1) ≠ hosting := by
+              rw [← ownerHosting]
+              exact calledProcessIdentity_differs_from_caller _ _ _
+            let rootId : ScopeOccurrenceId :=
               { processInstanceId := deriveCalledProcessInstanceId owner.processInstanceId
                   origin.elementId (callActivationCount state origin.elementId + 1)
-                definitionScopeId := scopeId, activation := 1 })) = [] := by
-          apply List.filter_eq_nil_iff.mpr
-          intro old member
-          simp only [decide_eq_true_eq]
-          intro equal
-          have excluded : (state.calledProcessOccurrences.filter fun candidate =>
-            decide (candidate.id =
-                { processInstanceId := owner.processInstanceId, elementId := ⟨origin.elementId.value⟩,
-                  activation := callActivationCount state origin.elementId + 1 } ||
-              candidate.calledRoot.processInstanceId = deriveCalledProcessInstanceId
-                owner.processInstanceId origin.elementId
-                  (callActivationCount state origin.elementId + 1))).length = 0 := by assumption
-          have denied := List.filter_eq_nil_iff.mp (List.length_eq_zero_iff.mp excluded) old member
-          exact denied (by simp [equal])
-        simpa only [List.filter_cons, show record.calledRoot = rootId from rfl,
-          decide_true, ↓reduceIte, show state.calledProcessOccurrences.filter
-            (fun candidate => decide (candidate.calledRoot = rootId)) = [] from absent] using permutation
+                definitionScopeId := scopeId, activation := 1 }
+            have notHosting (definition : DefinitionScope) :
+                ¬ Hosting program hosting definition { id := rootId, parent := none } := by
+              intro accepted
+              exact different accepted.2.1
+            refine ⟨⟨scope, definition, called_instance_nonempty _ _ _, Nat.zero_lt_succ 0, ?_⟩,
+              fun definition _ => notHosting definition⟩
+            simp only [matching.1.2]
+            refine Or.inr ⟨notHosting scope, ?_⟩
+            unfold Called
+            let record : CalledProcessOccurrence :=
+              { id :=
+                  { processInstanceId := owner.processInstanceId
+                    elementId := ⟨origin.elementId.value⟩
+                    activation := callActivationCount state origin.elementId + 1 }
+                caller := owner, calledProcessId := process, calledRoot := rootId,
+                returnOperationId := returnOperation }
+            refine ⟨record, ?_, matching.2.symm⟩
+            change (sortCallRecords (record :: state.calledProcessOccurrences)).filter
+              (fun candidate => decide (candidate.calledRoot = rootId)) = [record]
+            apply List.Perm.eq_singleton
+            have permutation := (sortCallRecords_perm (record :: state.calledProcessOccurrences)).filter
+              (fun candidate => decide (candidate.calledRoot = rootId))
+            have absent : state.calledProcessOccurrences.filter (fun record =>
+                decide (record.calledRoot =
+                  { processInstanceId := deriveCalledProcessInstanceId owner.processInstanceId
+                      origin.elementId (callActivationCount state origin.elementId + 1)
+                    definitionScopeId := scopeId, activation := 1 })) = [] := by
+              apply List.filter_eq_nil_iff.mpr
+              intro old member
+              simp only [decide_eq_true_eq]
+              intro equal
+              have excluded : (state.calledProcessOccurrences.filter fun candidate =>
+                decide (candidate.id =
+                    { processInstanceId := owner.processInstanceId, elementId := ⟨origin.elementId.value⟩,
+                      activation := callActivationCount state origin.elementId + 1 } ||
+                  candidate.calledRoot.processInstanceId = deriveCalledProcessInstanceId
+                    owner.processInstanceId origin.elementId
+                      (callActivationCount state origin.elementId + 1))).length = 0 := by assumption
+              have denied := List.filter_eq_nil_iff.mp (List.length_eq_zero_iff.mp excluded) old member
+              exact denied (by simp [equal])
+            simpa only [List.filter_cons, show record.calledRoot = rootId from rfl,
+              decide_true, ↓reduceIte, show state.calledProcessOccurrences.filter
+                (fun candidate => decide (candidate.calledRoot = rootId)) = [] from absent] using permutation
   | _ => simp at found
 
 /-- Child insertion is shared by ordinary and bounded entry. Its facts describe the selected

@@ -16,19 +16,22 @@ theorem regionalSelection_lifecycle_owner (program : Program) (state : RuntimeSt
   unfold selectInternalRegional? at found
   obtain ⟨_, _, found⟩ := Option.bind_eq_some_iff.mp found
   cases operation with
-  | returnProcess id origin process definition output =>
-      dsimp only at found
-      repeat' first
-        | (solve | simp at found)
-        | (solve |
-            cases found
-            rename_i _ _ record census _ _ _ root scopes _ _ _ _
-            have rootId := scope_identity_of_census state record.calledRoot root scopes
-            change (match state.calledProcessOccurrences.filter (fun record =>
-              decide (record.returnOperationId = id && record.id.elementId.value = origin.elementId.value)) with
-              | [record] => some record.calledRoot | _ => none) = some root.id
-            rw [census, rootId])
-        | split at found
+  | returnProcess id origin process definition output data =>
+      cases data with
+      | scalar => simp at found
+      | empty =>
+          dsimp only at found
+          repeat' first
+            | (solve | simp at found)
+            | (solve |
+                cases found
+                rename_i _ _ record census _ _ _ root scopes _ _ _ _
+                have rootId := scope_identity_of_census state record.calledRoot root scopes
+                change (match state.calledProcessOccurrences.filter (fun record =>
+                  decide (record.returnOperationId = id && record.id.elementId.value = origin.elementId.value)) with
+                  | [record] => some record.calledRoot | _ => none) = some root.id
+                rw [census, rootId])
+            | split at found
   | completeScope id origin definition output =>
       dsimp only at found
       repeat' first
@@ -76,7 +79,7 @@ theorem regionalSelection_lifecycle_facts (program : Program) (state : RuntimeSt
     (operation : SemanticOperation) (selected : InternalRegionalSelection)
     (found : selectInternalRegional? program state operation = some selected) :
     match operation, selected.kind with
-    | .returnProcess id origin _ _ _, .returning record =>
+    | .returnProcess id origin _ _ _ _, .returning record =>
         state.calledProcessOccurrences.filter (fun candidate =>
           decide (candidate.returnOperationId = id && candidate.id.elementId.value = origin.elementId.value)) = [record]
     | .completeScope _ _ definition _, .completing _ =>
@@ -88,12 +91,15 @@ theorem regionalSelection_lifecycle_facts (program : Program) (state : RuntimeSt
   unfold selectInternalRegional? at found
   obtain ⟨_, _, found⟩ := Option.bind_eq_some_iff.mp found
   cases operation with
-  | returnProcess id origin process definition output =>
-      dsimp only at found
-      repeat' first
-        | (solve | simp at found)
-        | (solve | cases found; assumption)
-        | split at found
+  | returnProcess id origin process definition output data =>
+      cases data with
+      | scalar => simp at found
+      | empty =>
+          dsimp only at found
+          repeat' first
+            | (solve | simp at found)
+            | (solve | cases found; assumption)
+            | split at found
   | completeScope id origin definition output =>
       dsimp only at found
       repeat' first

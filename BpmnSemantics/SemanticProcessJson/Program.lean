@@ -1,3 +1,4 @@
+import BpmnSemantics.SemanticProcessJson.CallData
 import BpmnSemantics.SemanticProcess.JsonSupport
 import BpmnSemantics.SemanticProcessJson.Elements
 import BpmnSemantics.SemanticProcessJson.CompensationActivityRetention
@@ -59,28 +60,6 @@ private def decodeDataInputTaskDefinition (json : Json) :
     Except String (TaskDefinitionId × Option String) := do
   requireObjectShape json ["elementId", "name"]
   pure (⟨← stringField json "elementId"⟩, ← decodeOptionalString (← field json "name"))
-
-/-- Decode one direct Data Input Association's exact source identities. -/
-private def decodeDirectActivityDataInput (json : Json) :
-    Except String DirectActivityDataInput := do
-  requireObjectShape json
-    ["associationId", "sourcePropertyId", "targetDataInputId", "targetDataInputName"]
-  pure
-    { associationId := ← stringField json "associationId"
-      sourcePropertyId := ← stringField json "sourcePropertyId"
-      targetDataInputId := ← stringField json "targetDataInputId"
-      targetDataInputName := ← decodeOptionalString (← field json "targetDataInputName") }
-
-/-- Decode one direct Data Output Association's exact source identities. -/
-private def decodeDirectActivityDataOutput (json : Json) :
-    Except String DirectActivityDataOutput := do
-  requireObjectShape json
-    ["associationId", "sourceDataOutputId", "sourceDataOutputName", "targetPropertyId"]
-  pure
-    { associationId := ← stringField json "associationId"
-      sourceDataOutputId := ← stringField json "sourceDataOutputId"
-      sourceDataOutputName := ← decodeOptionalString (← field json "sourceDataOutputName")
-      targetPropertyId := ← stringField json "targetPropertyId" }
 
 private def decodeDirectCatchEventPayloadOutput (json : Json) :
     Except String DirectCatchEventPayloadOutput := do
@@ -400,7 +379,7 @@ private def decodeOperation (json : Json) :
           (← decodeBoundaryTimerArm (← field json "boundaryTimer") true))
   | "invokeProcess" =>
       requireObjectShape json
-        ["calledEntry", "calledProcessId", "calledRootScopeId", "id",
+        ["calledEntry", "calledProcessId", "calledRootScopeId", "data", "id",
           "input", "kind", "origin", "returnOperationId"]
       pure
         (.invokeProcess id origin
@@ -408,16 +387,18 @@ private def decodeOperation (json : Json) :
           ⟨← stringField json "calledProcessId"⟩
           ⟨← stringField json "calledRootScopeId"⟩
           ⟨← stringField json "calledEntry"⟩
-          ⟨← stringField json "returnOperationId"⟩)
+          ⟨← stringField json "returnOperationId"⟩
+          (← decodeCallDataInterface (← field json "data")))
   | "returnProcess" =>
       requireObjectShape json
-        ["calledProcessId", "calledRootScopeId", "callerOutput", "id",
+        ["calledProcessId", "calledRootScopeId", "callerOutput", "data", "id",
           "kind", "origin"]
       pure
         (.returnProcess id origin
           ⟨← stringField json "calledProcessId"⟩
           ⟨← stringField json "calledRootScopeId"⟩
-          ⟨← stringField json "callerOutput"⟩)
+          ⟨← stringField json "callerOutput"⟩
+          (← decodeCallDataInterface (← field json "data")))
   | "awaitUserTask" =>
       requireObjectShape json
         ["id", "input", "kind", "origin", "output", "task"]

@@ -23,6 +23,8 @@ The package also exposes an optional pinned MIWG observation lane for source-int
 
 The private [structured-composition checkpoint](../../docs/capsules/STRUCTURED-PROCESS-COMPOSITION-PROPOSAL.md) reuses the structural compiler and [scalar interface projector](src/activity-data-input-output-projection.ts) for serial and paired Exclusive composition. Hosted support and public profile registration remain unavailable.
 
+The [required scalar interface reader](src/scalar-io-specification.ts) retains exact owner, port and set identities for the [Call data work](../../docs/capsules/CALL-ACTIVITY-DATA-BOUNDARIES-PROPOSAL.md). The existing composed-task projector shares that reader while retaining its own profile restrictions. The [Call data projector](src/call-data-source.ts) binds caller associations to the Call ports and checks correspondence with the separately owned called interface. The private Call data reader admits the complete supplier model with exact serial topology and typed Process-interface Task endpoints, and binds both lowered Call halves. Independent Lean admission and scalar execution remain unfinished; hosted/public registration stays unavailable. The existing exact-source cardinality guard rejects parser-overwritten extra interfaces.
+
 ## Quick start
 
 Run the focused compiler gate:

@@ -7,6 +7,7 @@
  * owner prevents sequential reuse of the input-only and output-only evaluators from minting two
  * occurrences for one BPMN Activity.
  */
+import { writeActivityDataOutputTarget } from "./activity-data-endpoint.js";
 import {
   activityOccurrenceForTaskBody,
   sameActivityOccurrence,
@@ -31,7 +32,6 @@ import type {
 } from "./semantic-process-contract.js";
 import {
   activityOccurrenceVariableBindings,
-  mergeProcessVariableBindings,
   removeActivityOccurrenceVariableScope,
 } from "./semantic-process-data.js";
 import {
@@ -107,17 +107,12 @@ export function completeDataInputOutputUserTask(
   ) {
     return null;
   }
-  const disposed = removeActivityOccurrenceVariableScope(
-    state.variables,
-    selected.record.id,
+  const written = writeActivityDataOutputTarget(
+    state, selected.wait.owner, selected.definition.directOutput.target, filled,
   );
-  if (disposed === null) {
-    return null;
-  }
-  const routed = {
-    name: selected.definition.directOutput.targetPropertyId,
-    value: filled.value,
-  };
+  if (written === null) return null;
+  const disposed = removeActivityOccurrenceVariableScope(written, selected.record.id);
+  if (disposed === null) return null;
   return {
     ...state,
     controlTokens: addToken(
@@ -131,15 +126,7 @@ export function completeDataInputOutputUserTask(
     activityOccurrences: state.activityOccurrences.filter(
       (candidate) => !sameActivityOccurrence(candidate.id, selected.record.id),
     ),
-    variables: {
-      ...disposed,
-      process: {
-        bindings: mergeProcessVariableBindings(
-          disposed.process.bindings,
-          [routed],
-        ),
-      },
-    },
+    variables: disposed,
   };
 }
 

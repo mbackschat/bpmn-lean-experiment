@@ -1,3 +1,4 @@
+import BpmnSemantics.SemanticProcess.CallDataAdmission
 import BpmnSemantics.SemanticProcess.JsonSupport
 import BpmnSemantics.SemanticProcess.MessageKeyCorrelationProfileAdmission
 import BpmnSemantics.SemanticProcess.StructuredCompositionAdmission
@@ -94,6 +95,7 @@ private inductive ProcessDataValueDomain where
           -- OutputSet selects no output mediation at all.
           , activityDataInputUserTaskProfileId.value
           , activityDataInputOutputUserTaskProfileId.value
+          , callDataCheckpointProfileId.value
           , structuredCompositionCheckpointProfileId.value
           , structuredHumanWorkProfileId.value ] then
         .stringNull
@@ -108,6 +110,7 @@ private inductive ProcessDataValueDomain where
           -- mediation at all.
           , activityDataOutputUserTaskProfileId.value
           , activityDataInputOutputUserTaskProfileId.value
+          , callDataCheckpointProfileId.value
           , structuredCompositionCheckpointProfileId.value
           , "bpmn-2.0.2-user-task-cycle-draft" ] then
         .stringNull

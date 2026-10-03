@@ -3,11 +3,15 @@ export * from "./activity-body-turnover.js";
 export * from "./flow-node-occurrence-retained-pairing.js";
 export * from "./activity-occurrence.js";
 export * from "./activity-data-input-contract.js";
+export { ActivityDataEndpointKind } from "./activity-data-endpoint.js";
+export type { ActivityDataInputSource, ActivityDataOutputTarget } from "./activity-data-endpoint.js";
 export * from "./activity-data-input-observation.js";
 export {
   isDataInputTaskDefinition,
 } from "./semantic-process-activity-data-input-runtime.js";
 export * from "./activity-data-output-contract.js";
+export * from "./call-data-contract.js";
+export * from "./call-data-admission.js";
 export * from "./catch-event-payload-contract.js";
 export * from "./compensation-activity-retention-contract.js";
 export * from "./compensation-activity-retention.js";
@@ -90,6 +94,7 @@ export * from "./semantic-value-contract.js";
 export * from "./checked-process-contract.js";
 export * from "./semantic-process-contract.js";
 export * from "./semantic-process-data.js";
+export * from "./process-interface-data.js";
 export {
   isWellFormedSemanticProcessGraph,
   type SemanticProcessGraph,

@@ -68,9 +68,11 @@ Transaction protocol/admission boundary: [`implementation-status-owner:ENGINE-SE
 
 ### Temporal adapter
 
-- One semantic-lifetime Workflow receiving the start stimulus and admitted Semantic Process program
-- handle-free `started | rejected` production start after semantic and host admission; success exposes only the Process-instance ID
-- caller-configured Worker/client lifecycle with content-derived Workflow and command identities
+- [Private scalar Calls](capsules/CALL-ACTIVITY-DATA-BOUNDARIES-PROPOSAL.md#temporal-hosting-and-refinement-preflight): typed host refusal.
+
+- One semantic-lifetime Workflow receives start and admitted Semantic Process program
+- handle-free `started | rejected` production start after semantic/host admission; success exposes only Process-instance ID
+- caller-configured Worker/client lifecycle with content-derived Workflow/command identities
 - one core-owned semantic loop with committed-state Query projection, User Task Update ingress, one Message Signal carrying distinct payload-free and payload-bearing command arms, durable Timer wakeup, bounded effect Activity, and retained result recovery
 - [atomic closure failure](capsules/INTERNAL-CLOSURE-ATOMICITY-REPAIR-SPEC.md): the Workflow classifies either harness closure failure as `BpmnSemanticClosureFailure` before publication or recovery outcome processing. The [production-loop regression](../packages/temporal-adapter/workflow/test/closure-failure-classification.test.ts) drives actual fuel exhaustion and late ambiguity after recovery admission, preserves exact committed RuntimeState, trace, recovery records, and paired publication, and retains successful completion with exact canonical publication
 - protocol, Workflow-recovery, continuation, publication, and testkit validation understand the registered correlated global address and per-instance delivery arm; host admission accepts only the exact isolated profile shape, and the target-free Product 1 operation is driven by the maintained runner

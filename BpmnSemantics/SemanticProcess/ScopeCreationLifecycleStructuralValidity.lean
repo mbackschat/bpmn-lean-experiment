@@ -120,12 +120,15 @@ theorem prepareInternalScopeCreation_child_excludes_bounded_entry
           simp only [List.mem_singleton] at ordinaryMember boundedMember
           have impossible := ordinaryMember.trans boundedMember.symm
           contradiction
-  | invokeProcess selectedId selectedOrigin selectedInput process scope entry returned =>
-      obtain ⟨owner, _, selection⟩ := Option.bind_eq_some_iff.mp selection
-      dsimp only at selection
-      repeat first | contradiction | split at selection
-      all_goals cases selection
-      all_goals contradiction
+  | invokeProcess selectedId selectedOrigin selectedInput process scope entry returned data =>
+      cases data with
+      | scalar => simp at selection
+      | empty =>
+          obtain ⟨owner, _, selection⟩ := Option.bind_eq_some_iff.mp selection
+          dsimp only at selection
+          repeat first | contradiction | split at selection
+          all_goals cases selection
+          all_goals contradiction
   | _ => contradiction
 
 def EntryBinding (program : Program) (occurrence : RuntimeScopeOccurrence)
@@ -152,7 +155,7 @@ private theorem invoke_return_census (program : Program)
     (returnedId : OperationId) (paired : callOperationsPaired program = true)
     (member : .invokeProcess id origin input process root entry returnedId ∈ program.operations) :
     (program.operations.filter fun operation => match operation with
-      | .invokeProcess _ _ _ _ _ _ returned => decide (returned = returnedId)
+      | .invokeProcess _ _ _ _ _ _ returned _ => decide (returned = returnedId)
       | _ => false).length = 1 := by
   unfold callOperationsPaired at paired
   dsimp only at paired
@@ -247,7 +250,7 @@ def CallBinding (program : Program) (state : RuntimeState)
     (program.operations.filter fun operation =>
       if !operationOwnedBy program operation record.caller then false
       else match operation with
-      | .invokeProcess _ origin _ process root _ returned =>
+      | .invokeProcess _ origin _ process root _ returned _ =>
           origin.elementId.value = record.id.elementId.value && process = record.calledProcessId &&
             root = record.calledRoot.definitionScopeId && returned = record.returnOperationId
       | _ => false).length = 1
@@ -376,97 +379,100 @@ private theorem created_bindings (program : Program) (state : RuntimeState)
             ⟨⟨ownerHosting, trivial⟩, afterOwner⟩⟩
           · simpa [ownerHosting] using ownerNonempty
           · simpa [matchingDefinition.1.1] using definitionNonempty
-  | invokeProcess id selectedOrigin input process root entry returned =>
-      obtain ⟨owner, _, selection⟩ := Option.bind_eq_some_iff.mp selection
-      try dsimp only at selection
-      repeat first | contradiction | split at selection
-      all_goals cases selection
-      all_goals
-        simp only [internalScopeCreationDefinitionMatches, Bool.and_eq_true, decide_eq_true_eq]
-          at matchingDefinition
-        have paired : callOperationsPaired program = true := by
-          simp only [programWellFormed, Bool.and_eq_true] at admitted
-          grind
-        have census := invoke_return_census program id selectedOrigin input process root entry returned
-          paired operationMember
-        obtain ⟨sole, singleton⟩ := List.length_eq_one_iff.mp census
-        have operationFiltered : .invokeProcess id selectedOrigin input process root entry returned ∈
-            program.operations.filter (fun operation => match operation with
-              | .invokeProcess _ _ _ _ _ _ candidate => decide (candidate = returned)
-              | _ => false) := List.mem_filter.mpr ⟨operationMember, by simp⟩
-        rw [singleton] at operationFiltered
-        simp only [List.mem_singleton] at operationFiltered
-        rw [← operationFiltered] at singleton
-        refine ⟨?_, ?_⟩
-        · let calledInstance := deriveCalledProcessInstanceId owner.processInstanceId selectedOrigin.elementId
-            (callActivationCount state selectedOrigin.elementId + 1)
-          let rootId : ScopeOccurrenceId :=
-            { processInstanceId := calledInstance, definitionScopeId := root, activation := 1 }
-          let added : CalledProcessOccurrence :=
-            { id := { processInstanceId := owner.processInstanceId,
-                      elementId := ⟨selectedOrigin.elementId.value⟩,
-                      activation := callActivationCount state selectedOrigin.elementId + 1 },
-              caller := owner, calledProcessId := process, calledRoot := rootId, returnOperationId := returned }
-          have absent : state.calledProcessOccurrences.filter (fun record => decide
-              (record.calledRoot = rootId &&
-                record.calledProcessId.value = definition.originElementId.value)) = [] := by
-            apply List.filter_eq_nil_iff.mpr
-            intro record member accepted
-            have accepted := (Bool.and_eq_true _ _).mp (of_decide_eq_true accepted)
-            have equal := of_decide_eq_true accepted.1
-            have excluded : (state.calledProcessOccurrences.filter fun candidate => decide
-              (candidate.id = added.id || candidate.calledRoot.processInstanceId = calledInstance)).length = 0 := by
-              assumption
-            have denied := List.filter_eq_nil_iff.mp (List.length_eq_zero_iff.mp excluded) record member
-            exact denied (by simp [equal, rootId])
-          have count : ((sortCallRecords (added :: state.calledProcessOccurrences)).filter fun record => decide
-              (record.calledRoot = rootId &&
-                record.calledProcessId.value = definition.originElementId.value)).length = 1 := by
-            rw [((sortCallRecords_perm (added :: state.calledProcessOccurrences)).filter _).length_eq]
-            simp only [List.filter_cons, show added.calledRoot = rootId from rfl,
-              show added.calledProcessId.value = definition.originElementId.value from matchingDefinition.2.symm,
-              decide_true, Bool.true_and, ↓reduceIte, absent, List.length_singleton]
-          have different : calledInstance ≠ hosting := by
-            have callerHosting : owner.processInstanceId = hosting := by assumption
-            rw [← callerHosting]
-            exact calledProcessIdentity_differs_from_caller _ _ _
-          have nonempty : calledInstance.value ≠ "" := by
-            change "call:" ++ toString owner.processInstanceId.value.utf8ByteSize ++ ":" ++
-              owner.processInstanceId.value ++ ":" ++ toString selectedOrigin.elementId.value.utf8ByteSize ++
-              ":" ++ selectedOrigin.elementId.value ++ ":" ++
-                toString (callActivationCount state selectedOrigin.elementId + 1) ≠ ""
-            intro equal
-            have size := congrArg String.utf8ByteSize equal
-            simp only [String.utf8ByteSize_append] at size
-            change 5 + _ + 1 + _ + 1 + _ + 1 + _ + 1 + _ = 0 at size
-            omega
-          simp only [ScopeBinding, InternalScopeCreationSelection.apply, definitions,
-            matchingDefinition.1.2, running, EntryBinding, Bool.and_true,
-            show deriveCalledProcessInstanceId owner.processInstanceId selectedOrigin.elementId
-              (callActivationCount state selectedOrigin.elementId + 1) ≠ hosting from different,
-            ↓reduceIte, Bool.and_eq_true, decide_eq_true_eq]
-          exact ⟨⟨⟨⟨by simpa using nonempty,
-            by simpa [matchingDefinition.1.1] using definitionNonempty⟩, by decide +kernel⟩,
-            afterCreated⟩, by simpa only [Bool.and_eq_true, decide_eq_true_eq] using count⟩
-        · intro record kind
-          cases kind
-          unfold CallBinding
-          simp only [Bool.and_eq_true]
-          constructor
-          · simp only [occurrenceOwnerValid, Bool.and_eq_true, decide_eq_true_eq]
-            simp only [internalScopeCreationOrigin?, Option.some.injEq] at originFound
-            exact ⟨⟨⟨⟨by simpa using ownerNonempty, by simpa [← originFound] using originNonempty⟩,
-              Nat.zero_lt_succ _⟩, trivial⟩, afterOwner⟩
-          · simp only [decide_eq_true_eq]
-            suffices exactCall : (program.operations.filter _) =
-                [.invokeProcess id selectedOrigin input process root entry returned] by rw [exactCall]; rfl
-            apply filter_singleton_of_subpredicate program.operations _ _ _ singleton
-            · intro candidate _ accepted
-              split at accepted <;> try contradiction
-              cases candidate <;> simp only at accepted <;> try contradiction
-              simp only [Bool.and_eq_true, decide_eq_true_eq] at accepted ⊢
-              exact accepted.2
-            · simp [owned]
+  | invokeProcess id selectedOrigin input process root entry returned data =>
+      cases data with
+      | scalar => simp at selection
+      | empty =>
+          obtain ⟨owner, _, selection⟩ := Option.bind_eq_some_iff.mp selection
+          try dsimp only at selection
+          repeat first | contradiction | split at selection
+          all_goals cases selection
+          all_goals
+            simp only [internalScopeCreationDefinitionMatches, Bool.and_eq_true, decide_eq_true_eq]
+              at matchingDefinition
+            have paired : callOperationsPaired program = true := by
+              simp only [programWellFormed, Bool.and_eq_true] at admitted
+              grind
+            have census := invoke_return_census program id selectedOrigin input process root entry returned
+              paired operationMember
+            obtain ⟨sole, singleton⟩ := List.length_eq_one_iff.mp census
+            have operationFiltered : .invokeProcess id selectedOrigin input process root entry returned ∈
+                program.operations.filter (fun operation => match operation with
+                  | .invokeProcess _ _ _ _ _ _ candidate _ => decide (candidate = returned)
+                  | _ => false) := List.mem_filter.mpr ⟨operationMember, by simp⟩
+            rw [singleton] at operationFiltered
+            simp only [List.mem_singleton] at operationFiltered
+            rw [← operationFiltered] at singleton
+            refine ⟨?_, ?_⟩
+            · let calledInstance := deriveCalledProcessInstanceId owner.processInstanceId selectedOrigin.elementId
+                (callActivationCount state selectedOrigin.elementId + 1)
+              let rootId : ScopeOccurrenceId :=
+                { processInstanceId := calledInstance, definitionScopeId := root, activation := 1 }
+              let added : CalledProcessOccurrence :=
+                { id := { processInstanceId := owner.processInstanceId,
+                          elementId := ⟨selectedOrigin.elementId.value⟩,
+                          activation := callActivationCount state selectedOrigin.elementId + 1 },
+                  caller := owner, calledProcessId := process, calledRoot := rootId, returnOperationId := returned }
+              have absent : state.calledProcessOccurrences.filter (fun record => decide
+                  (record.calledRoot = rootId &&
+                    record.calledProcessId.value = definition.originElementId.value)) = [] := by
+                apply List.filter_eq_nil_iff.mpr
+                intro record member accepted
+                have accepted := (Bool.and_eq_true _ _).mp (of_decide_eq_true accepted)
+                have equal := of_decide_eq_true accepted.1
+                have excluded : (state.calledProcessOccurrences.filter fun candidate => decide
+                  (candidate.id = added.id || candidate.calledRoot.processInstanceId = calledInstance)).length = 0 := by
+                  assumption
+                have denied := List.filter_eq_nil_iff.mp (List.length_eq_zero_iff.mp excluded) record member
+                exact denied (by simp [equal, rootId])
+              have count : ((sortCallRecords (added :: state.calledProcessOccurrences)).filter fun record => decide
+                  (record.calledRoot = rootId &&
+                    record.calledProcessId.value = definition.originElementId.value)).length = 1 := by
+                rw [((sortCallRecords_perm (added :: state.calledProcessOccurrences)).filter _).length_eq]
+                simp only [List.filter_cons, show added.calledRoot = rootId from rfl,
+                  show added.calledProcessId.value = definition.originElementId.value from matchingDefinition.2.symm,
+                  decide_true, Bool.true_and, ↓reduceIte, absent, List.length_singleton]
+              have different : calledInstance ≠ hosting := by
+                have callerHosting : owner.processInstanceId = hosting := by assumption
+                rw [← callerHosting]
+                exact calledProcessIdentity_differs_from_caller _ _ _
+              have nonempty : calledInstance.value ≠ "" := by
+                change "call:" ++ toString owner.processInstanceId.value.utf8ByteSize ++ ":" ++
+                  owner.processInstanceId.value ++ ":" ++ toString selectedOrigin.elementId.value.utf8ByteSize ++
+                  ":" ++ selectedOrigin.elementId.value ++ ":" ++
+                    toString (callActivationCount state selectedOrigin.elementId + 1) ≠ ""
+                intro equal
+                have size := congrArg String.utf8ByteSize equal
+                simp only [String.utf8ByteSize_append] at size
+                change 5 + _ + 1 + _ + 1 + _ + 1 + _ + 1 + _ = 0 at size
+                omega
+              simp only [ScopeBinding, InternalScopeCreationSelection.apply, definitions,
+                matchingDefinition.1.2, running, EntryBinding, Bool.and_true,
+                show deriveCalledProcessInstanceId owner.processInstanceId selectedOrigin.elementId
+                  (callActivationCount state selectedOrigin.elementId + 1) ≠ hosting from different,
+                ↓reduceIte, Bool.and_eq_true, decide_eq_true_eq]
+              exact ⟨⟨⟨⟨by simpa using nonempty,
+                by simpa [matchingDefinition.1.1] using definitionNonempty⟩, by decide +kernel⟩,
+                afterCreated⟩, by simpa only [Bool.and_eq_true, decide_eq_true_eq] using count⟩
+            · intro record kind
+              cases kind
+              unfold CallBinding
+              simp only [Bool.and_eq_true]
+              constructor
+              · simp only [occurrenceOwnerValid, Bool.and_eq_true, decide_eq_true_eq]
+                simp only [internalScopeCreationOrigin?, Option.some.injEq] at originFound
+                exact ⟨⟨⟨⟨by simpa using ownerNonempty, by simpa [← originFound] using originNonempty⟩,
+                  Nat.zero_lt_succ _⟩, trivial⟩, afterOwner⟩
+              · simp only [decide_eq_true_eq]
+                suffices exactCall : (program.operations.filter _) =
+                    [.invokeProcess id selectedOrigin input process root entry returned] by rw [exactCall]; rfl
+                apply filter_singleton_of_subpredicate program.operations _ _ _ singleton
+                · intro candidate _ accepted
+                  split at accepted <;> try contradiction
+                  cases candidate <;> simp only at accepted <;> try contradiction
+                  simp only [Bool.and_eq_true, decide_eq_true_eq] at accepted ⊢
+                  exact accepted.2
+                · simp [owned]
   | _ => contradiction
 
 private theorem selected_call_root (state : RuntimeState) (operation : SemanticOperation)
@@ -477,6 +483,7 @@ private theorem selected_call_root (state : RuntimeState) (operation : SemanticO
   unfold selectInternalScopeCreation? at found
   obtain ⟨hosting, _, found⟩ := Option.bind_eq_some_iff.mp found
   cases operation
+  all_goals try (split at found)
   all_goals first
     | contradiction
     | obtain ⟨owner, _, found⟩ := Option.bind_eq_some_iff.mp found

@@ -374,7 +374,7 @@ async function verifyCatalogEntry(entry: FrozenCatalogEntry): Promise<void> {
     entry.admission,
     `${entry.key} admission projection`,
   );
-  requireDeepEqual(result.checkedProcess, entry.checkedProcess, `${entry.key} checked projection`);
+  requireDeepEqual(result.checkedProcess, baselineWithEmptyCallData(entry.checkedProcess, "nodes"), `${entry.key} checked projection`);
   const {
     internalSchedulingMode,
     ...baselineComparableSemanticProcess
@@ -386,9 +386,26 @@ async function verifyCatalogEntry(entry: FrozenCatalogEntry): Promise<void> {
   );
   requireDeepEqual(
     baselineComparableSemanticProcess,
-    entry.semanticProcess,
+    baselineWithEmptyCallData(entry.semanticProcess, "operations"),
     `${entry.key} Semantic Process projection except the required post-baseline scheduling mode`,
   );
+}
+
+/** The Call-data capsule adds explicit empty declarations; frozen baseline bytes remain immutable. */
+function baselineWithEmptyCallData(value: unknown, field: "nodes" | "operations"): JsonObject {
+  const root = objectValue(value, "baseline definition");
+  const declarations = arrayValue(root[field], `baseline ${field}`).map((value) => {
+    const declaration = objectValue(value, "baseline declaration");
+    switch (declaration.kind) {
+      case "callActivity":
+      case "invokeProcess":
+      case "returnProcess":
+        requireEqual(Object.hasOwn(declaration, "data"), false, "pre-migration Call data absence");
+        return { ...declaration, data: { kind: "empty" } };
+      default: return declaration;
+    }
+  });
+  return { ...root, [field]: declarations };
 }
 
 function registrationBinding(registration: FrozenBinding): JsonObject {

@@ -21,11 +21,11 @@ export function dataTask(id: string, input: string, output: string,
     output: `place:${output}`,
     task: { elementId: id, name: null },
     directInput: {
-      associationId: `${id}_InputAssociation`, sourcePropertyId,
+      associationId: `${id}_InputAssociation`, source: { kind: "property", propertyId: sourcePropertyId },
       targetDataInputId: `${id}_Input`, targetDataInputName: null,
     },
     directOutput: {
-      associationId: `${id}_OutputAssociation`, targetPropertyId,
+      associationId: `${id}_OutputAssociation`, target: { kind: "property", propertyId: targetPropertyId },
       sourceDataOutputId: `${id}_Output`, sourceDataOutputName: null,
     },
   };

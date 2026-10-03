@@ -69,9 +69,10 @@ private def checkedDefinitionScopesValid (source : CheckedProcess) : Bool :=
   strictlySortedStrings (source.definitionScopes.map fun scope => scope.id.value) &&
     nestedValid &&
     if source.identity.semanticProfile.value =
-        "bpmn-2.0.2-called-process-call-activity-draft" then
+        "bpmn-2.0.2-called-process-call-activity-draft" ||
+        source.identity.semanticProfile == callDataCheckpointProfileId then
       match entryRoots, source.nodes.filterMap fun
-          | .callActivity id calledProcessId => some (id, calledProcessId)
+          | .callActivity id calledProcessId _ => some (id, calledProcessId)
           | _ => none with
       | [entry], [(callId, calledProcessId)] =>
           roots.length = 2 &&
@@ -220,7 +221,8 @@ private def checkedNodeArityValid (repeatable : Bool) (flows : List CheckedSeque
   | .cancelEndEvent id => incomingCount flows id == 1 && outgoingCount flows id == 0
   | .embeddedSubProcess id _ =>
       incomingCount flows id = 1 && outgoingCount flows id = 1
-  | .callActivity id calledProcessId =>
+  | .callActivity id calledProcessId data =>
+      callDataInterfaceValid data id.value calledProcessId.value &&
       nonempty calledProcessId.value &&
         incomingCount flows id = 1 && outgoingCount flows id = 1
   | .boundaryErrorEvent id _ error outputFlowId =>
@@ -245,16 +247,16 @@ private def checkedNodeArityValid (repeatable : Bool) (flows : List CheckedSeque
   -- association read the DataInput it is meant to fill.
   | .dataInputUserTask id _ directInput =>
       let identities :=
-        [id.value, directInput.associationId, directInput.sourcePropertyId,
+        [id.value, directInput.associationId, directInput.source.id,
           directInput.targetDataInputId]
       identities.all nonempty &&
         identities.eraseDups.length = identities.length &&
         incomingCount flows id = 1 && outgoingCount flows id = 1
   | .dataInputOutputUserTask id _ directInput directOutput =>
       let identities :=
-        [id.value, directInput.associationId, directInput.sourcePropertyId,
+        [id.value, directInput.associationId, directInput.source.id,
           directInput.targetDataInputId, directOutput.associationId,
-          directOutput.sourceDataOutputId, directOutput.targetPropertyId]
+          directOutput.sourceDataOutputId, directOutput.target.id]
       identities.all nonempty &&
         identities.eraseDups.length = identities.length &&
         incomingCount flows id = 1 && outgoingCount flows id = 1
@@ -264,7 +266,7 @@ private def checkedNodeArityValid (repeatable : Bool) (flows : List CheckedSeque
   | .dataOutputUserTask id _ directOutput =>
       let identities :=
         [id.value, directOutput.associationId, directOutput.sourceDataOutputId,
-          directOutput.targetPropertyId]
+          directOutput.target.id]
       identities.all nonempty &&
         identities.eraseDups.length = identities.length &&
         incomingCount flows id = 1 && outgoingCount flows id = 1

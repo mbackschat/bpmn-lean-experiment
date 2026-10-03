@@ -30,6 +30,8 @@ Neutral scenarios contain no expected answer. CIB evidence is a separate immutab
 
 Schema validation is a boundary guard, not correspondence evidence. The maintained Ajv Draft 2020-12 gate validates artifacts, checks content identities and known CIB–BPMN relationships, and includes answer-smuggling, stale-evidence, and invalid-projection mutations. CIB calibration, Lean laws, TypeScript behavior, Temporal refinement, and differential comparison remain separate claim lanes.
 
+Direct Activity associations carry directional endpoints: `source` is a closed Property or Process DataInput reference, and `target` is a closed Property or Process DataOutput reference. IDs name the exact declaration; display names do not resolve references. Existing Activity-data profiles retain their Property arms. The [Call-data proposal](../docs/capsules/CALL-ACTIVITY-DATA-BOUNDARIES-PROPOSAL.md) owns the private Process-interface extension and its pending qualification; a schema-valid port reference alone establishes no owner closure or executable support.
+
 ## Exact scalar and JSON boundary
 
 Every wire integer represented as a JavaScript `number` is an integer in the inclusive range `0..9007199254740991`, with stricter positive minima where the field requires one. Schemas state both bounds, and TypeScript, Lean, and the CIB adapter reject values outside them rather than rounding or narrowing them.

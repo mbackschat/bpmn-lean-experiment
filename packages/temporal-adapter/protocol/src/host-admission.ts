@@ -1,5 +1,6 @@
 import {
   InternalSchedulingMode,
+  CALL_ACTIVITY_DATA_BOUNDARIES_CHECKPOINT_PROFILE_ID,
   STRUCTURED_PROCESS_COMPOSITION_CHECKPOINT_PROFILE_ID,
   COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID,
   TRANSACTION_CANCELLATION_CHECKPOINT_PROFILE_ID,
@@ -47,6 +48,16 @@ import type {
 export function assessTemporalHostCapability(
   program: SemanticProcessProgram,
 ): TemporalHostCapabilityResult {
+  // CDATA's approved preflight requires rollover, replacement and replay before hosting.
+  if (program.identity.semanticProfile === CALL_ACTIVITY_DATA_BOUNDARIES_CHECKPOINT_PROFILE_ID) {
+    return {
+      kind: TemporalHostCapabilityResultKind.Rejected,
+      failure: {
+        code: TemporalHostAdmissionFailureCode.CallDataQualificationUnavailable,
+        evidence: "Call Activity data boundaries remain a private semantic checkpoint pending hosting qualification.",
+      },
+    };
+  }
   // SPC's approved preflight withholds hosting until rollover/replacement/replay qualification.
   if (program.identity.semanticProfile === STRUCTURED_PROCESS_COMPOSITION_CHECKPOINT_PROFILE_ID) {
     return {

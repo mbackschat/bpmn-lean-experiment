@@ -8,6 +8,7 @@
  */
 import type { DirectActivityDataInput } from "./activity-data-input-contract.js";
 import type { DirectActivityDataOutput } from "./activity-data-output-contract.js";
+import type { CallDataInterface } from "./call-data-contract.js";
 import type { DirectCatchEventPayloadOutput } from "./catch-event-payload-contract.js";
 import type { CheckedTransactionCancellation } from "./transaction-source-contract.js";
 import type { CheckedCompensation } from "./compensation-source-contract.js";
@@ -177,6 +178,7 @@ export type CheckedNode =
       kind: CheckedNodeKind.CallActivity;
       id: string;
       calledProcessId: string;
+      data: CallDataInterface;
     }>
   | DeepReadonly<{
       kind: CheckedNodeKind.BoundaryErrorEvent;

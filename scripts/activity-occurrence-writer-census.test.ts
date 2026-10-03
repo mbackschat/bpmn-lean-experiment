@@ -139,16 +139,50 @@ function typeScriptTokens(source: string): ReadonlyArray<Token> {
       index += identifier[0].length;
       continue;
     }
-    const pair = source.slice(index, index + 2);
-    if (pair === "=>") {
-      tokens.push({ value: pair, line });
-      index += 2;
+    const operator = /^(?:===|!==|=>|==|!=|&&|\|\||\?\?)/u.exec(source.slice(index))?.[0];
+    if (operator !== undefined) {
+      tokens.push({ value: operator, line });
+      index += operator.length;
       continue;
     }
     tokens.push({ value: character, line });
     index += 1;
   }
   return tokens;
+}
+
+function typeScriptPropertyExpression(tokens: ReadonlyArray<Token>, start: number): ReadonlyArray<string> {
+  const expression: string[] = [];
+  const delimiters: string[] = [];
+  for (let cursor = start; cursor < tokens.length; cursor += 1) {
+    const value = tokens[cursor]?.value;
+    if (value === undefined) break;
+    if (delimiters.length === 0 && (value === "," || value === ";" || value === "}")) break;
+    expression.push(value);
+    if (value === "(" || value === "[" || value === "{") {
+      delimiters.push(value);
+    } else if (value === ")" || value === "]" || value === "}") {
+      delimiters.pop();
+    }
+  }
+  return expression;
+}
+
+/** Only a top-level equality settles the result as boolean; conditionals and logical operators may still produce collections. */
+function isTypeScriptEqualitySummary(expression: ReadonlyArray<string>): boolean {
+  let depth = 0;
+  let equality = false;
+  for (const token of expression) {
+    if (depth === 0) {
+      switch (token) {
+        case "?": case "&&": case "||": case "??": case "=>": case "=": return false;
+        case "===": case "!==": case "==": case "!=": equality = true;
+      }
+    }
+    if (token === "(" || token === "[" || token === "{") depth += 1;
+    else if (token === ")" || token === "]" || token === "}") depth -= 1;
+  }
+  return equality;
 }
 
 function typeScriptObjectWriterLines(source: string): ReadonlySet<number> {
@@ -173,7 +207,9 @@ function typeScriptObjectWriterLines(source: string): ReadonlySet<number> {
     const next = tokens[index + 1]?.value;
     const valueStart = tokens[index + 2]?.value;
     const declarativeObjectValue = next === ":" && valueStart === "{";
-    if (!declarativeObjectValue &&
+    const equalitySummary = next === ":" &&
+      isTypeScriptEqualitySummary(typeScriptPropertyExpression(tokens, index + 2));
+    if (!declarativeObjectValue && !equalitySummary &&
         (previous === "{" || previous === ",") &&
         (next === ":" || next === "," || next === "}")) {
       writerLines.add(token.line);
@@ -191,20 +227,7 @@ function typeScriptActivityOccurrenceExpression(source: string): ReadonlyArray<s
     const objectProperty = (previous === undefined || previous === "{" || previous === ",") && next === ":";
     const directAssignment = previous === "." && next === "=";
     if (!objectProperty && !directAssignment) continue;
-    const expression: string[] = [];
-    const delimiters: string[] = [];
-    for (let cursor = index + 2; cursor < tokens.length; cursor += 1) {
-      const value = tokens[cursor]?.value;
-      if (value === undefined) break;
-      if (delimiters.length === 0 && (value === "," || value === ";" || value === "}")) break;
-      expression.push(value);
-      if (value === "(" || value === "[" || value === "{") {
-        delimiters.push(value);
-      } else if (value === ")" || value === "]" || value === "}") {
-        delimiters.pop();
-      }
-    }
-    return expression;
+    return typeScriptPropertyExpression(tokens, index + 2);
   }
   return undefined;
 }
@@ -230,7 +253,7 @@ function writerSitesFromSource(
     if (nextDeclaration !== null) declaration = nextDeclaration;
     const writesCollection = language === SourceLanguage.Lean
       ? /\bactivityOccurrences\s*:=/u.test(line)
-      : typeScriptWriterLines.has(index) || /\.activityOccurrences\s*=/u.test(line);
+      : typeScriptWriterLines.has(index) || /\.activityOccurrences\s*=(?!=|>)/u.test(line);
     if (!writesCollection || declaration?.production !== true) continue;
     const ordinalKey = `${relativePath}#${declaration.owner}`;
     const ordinal = (ordinals.get(ordinalKey) ?? 0) + 1;
@@ -509,4 +532,18 @@ test("the census parser sees independent writer forms without treating declarati
   ].join("\n"));
   assert.deepEqual(typeScript.map(({ key }) => key), ["seeded.ts#seeded@1"]);
   assert.deepEqual(lean.map(({ key }) => key), ["Seeded.lean#seeded@1"]);
+});
+
+test("boolean equality summaries are reads while conditional and filtered collections remain writers", () => {
+  const cases = [
+    ["state.activityOccurrences.length === 0", false],
+    ["state.activityOccurrences === previous.activityOccurrences", false],
+    ["state.activityOccurrences.length === 0 ? [] : state.activityOccurrences", true],
+    ["state.activityOccurrences.length === 0 && state.activityOccurrences", true],
+    ["state.activityOccurrences.filter((item) => item.id !== removed.id)", true],
+    ["select<ActivityOccurrence>(state.activityOccurrences)", true],
+  ] as const;
+  const actual = cases.map(([expression]) => writerSitesFromSource("seeded.ts", SourceLanguage.TypeScript,
+    `export function inspect(state: State) {\n  return { activityOccurrences: ${expression} };\n}`).length);
+  assert.deepEqual(actual, cases.map(([, writes]) => writes ? 1 : 0));
 });

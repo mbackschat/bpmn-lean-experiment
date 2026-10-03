@@ -130,7 +130,8 @@ private def syntheticState : RuntimeState :=
     variables :=
       { process := { bindings := [] }
         activities :=
-          [{ owner := .effectOccurrence childEffectId, bindings := [] }] }
+          [{ owner := .effectOccurrence childEffectId, bindings := [] }]
+        processInterfaces := [] }
     activations := [{ taskId := ⟨"HistoryTask"⟩, count := 7 }]
     messageActivations := [{ elementId := ⟨"HistoryMessage"⟩, count := 5 }]
     timerActivations := [{ elementId := ⟨"HistoryTimer"⟩, count := 4 }]

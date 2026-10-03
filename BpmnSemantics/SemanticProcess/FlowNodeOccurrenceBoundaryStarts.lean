@@ -324,7 +324,7 @@ def candidateCallStart? (program : Program) (operation : SemanticOperation)
     Option UnnumberedFlowNodeOccurrenceStart := do
   let processId ← processIdForSelectedOperation? program operation owner
   match operation with
-  | .invokeProcess _ origin _ calledProcessId calledRootScopeId _ returnOperationId =>
+  | .invokeProcess _ origin _ calledProcessId calledRootScopeId _ returnOperationId _ =>
       if record.caller ≠ owner || record.id.processInstanceId ≠ owner.processInstanceId ||
           record.id.elementId.value ≠ origin.elementId.value || record.id.activation = 0 ||
           record.calledProcessId ≠ calledProcessId ||

@@ -14,7 +14,7 @@ private def owner : ScopeOccurrenceId := rootScopeOccurrenceId instanceId proces
 
 private def directInput : DirectActivityDataInput :=
   { associationId := "InputAssociation_Coverage"
-    sourcePropertyId := "Property_ClaimSummary"
+    source := .property "Property_ClaimSummary"
     targetDataInputId := "Input_Coverage"
     targetDataInputName := some "Claim summary" }
 
@@ -22,7 +22,7 @@ private def directOutput : DirectActivityDataOutput :=
   { associationId := "OutputAssociation_Coverage"
     sourceDataOutputId := "Output_Coverage"
     sourceDataOutputName := some "Decision"
-    targetPropertyId := "Property_CoverageDecision" }
+    target := .property "Property_CoverageDecision" }
 
 private def data : SemanticOperation :=
   .awaitDataInputOutputUserTask ⟨"operation:UserTask_Coverage"⟩
@@ -86,7 +86,7 @@ private def ready : RuntimeState :=
     activations := [{ taskId := ⟨"UserTask_Coverage"⟩, count := 2 }]
     activityActivations := [{ taskId := ⟨"UserTask_Coverage"⟩, count := 7 }]
     logicalTimeMs := 321
-    variables := { process := { bindings := [summary] }, activities := [] } }
+    variables := { process := { bindings := [summary] }, activities := [], processInterfaces := [] } }
 
 private def frontier : List SemanticOperation := [data, ordinary, timer]
 private def prepared : List PreparedInternalArming :=

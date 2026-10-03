@@ -82,7 +82,9 @@ theorem preparedRegional_graph_filters (program : Program) (before after : Runti
     rw [same, inside] at outside
     contradiction
   cases operation with
-  | returnProcess id origin process definition output =>
+  | returnProcess id origin process definition output data =>
+      have empty := prepareInternalRegional_return_data_empty program before id origin process definition output data prepared found
+      subst data
       obtain ⟨returned, record, root, returnedApply, kind, rootEq, rootLive, parentless, _, update, _⟩ :=
         preparedReturn_quiescent_fields program before hosting id origin process definition output prepared valid found
       have same : returned = after := Option.some.inj (returnedApply.symm.trans applied)

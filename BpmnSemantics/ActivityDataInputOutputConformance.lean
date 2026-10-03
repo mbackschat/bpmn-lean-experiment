@@ -45,7 +45,7 @@ retaining the input Property and unrelated Process binding. -/
 theorem acceptedOutputIsRoutedAndPreservesOtherProcessBindings :
     (approved.outcome, approved.state.variables.process.bindings) =
       (CommandOutcome.committed,
-        [ { name := claimDirectOutput.targetPropertyId, value := .string "approve" }
+        [ { name := claimDirectOutput.target.id, value := .string "approve" }
         , summary
         , unrelated ]) := by
   decide +kernel

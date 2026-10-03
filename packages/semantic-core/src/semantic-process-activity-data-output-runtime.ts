@@ -14,6 +14,7 @@
  * `DataOutput` id and writing under the associated `Property` id are two names on purpose, and code
  * that collapsed them would pass every routed expectation by coincidence.
  */
+import { ActivityDataEndpointKind, writeActivityDataOutputTarget } from "./activity-data-endpoint.js";
 import {
   ActivityBodyKind,
   activityOccurrenceForTaskBody,
@@ -37,7 +38,6 @@ import type {
 } from "./semantic-process-contract.js";
 import {
   addActivityOccurrenceVariableScope,
-  mergeProcessVariableBindings,
   removeActivityOccurrenceVariableScope,
 } from "./semantic-process-data.js";
 import {
@@ -164,16 +164,19 @@ export function completeDataOutputUserTask(
     return null;
   }
   const selected = dataOutputTaskFor(program, state, stimulus.taskId);
-  if (selected === undefined) {
+  if (selected === undefined || selected.definition.directOutput.target.kind !== ActivityDataEndpointKind.Property) {
     return null;
   }
   const filled = filledDeclaredOutput(selected.definition, stimulus);
   if (filled === undefined) {
     return null;
   }
-  const routed = associatedProcessBinding(selected.definition, filled);
+  const written = writeActivityDataOutputTarget(
+    state, selected.wait.owner, selected.definition.directOutput.target, filled,
+  );
+  if (written === null) return null;
   const disposed = removeActivityOccurrenceVariableScope(
-    state.variables,
+    written,
     selected.record.id,
   );
   if (disposed === null) {
@@ -192,14 +195,7 @@ export function completeDataOutputUserTask(
     activityOccurrences: state.activityOccurrences.filter(
       (candidate) => !sameActivityOccurrence(candidate.id, selected.record.id),
     ),
-    variables: {
-      ...disposed,
-      process: {
-        bindings: mergeProcessVariableBindings(disposed.process.bindings, [
-          routed,
-        ]),
-      },
-    },
+    variables: disposed,
   };
 }
 
@@ -219,22 +215,6 @@ function filledDeclaredOutput(
       submitted.name === definition.directOutput.sourceDataOutputId
     ? cloneVariableBinding(submitted)
     : undefined;
-}
-
-/**
- * Executes the direct association: the local value under the association's target `Property` name.
- *
- * The submitted name is deliberately discarded here. It identified the `DataOutput` inside the
- * Activity, and the association alone decides which Process `Property` receives the value.
- */
-function associatedProcessBinding(
-  definition: AwaitDataOutputUserTaskOperation,
-  filled: VariableBinding,
-): VariableBinding {
-  return {
-    name: definition.directOutput.targetPropertyId,
-    value: filled.value,
-  };
 }
 
 function dataOutputDefinition(

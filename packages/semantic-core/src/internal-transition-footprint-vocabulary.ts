@@ -19,6 +19,8 @@ export enum InternalTransitionStateAtomKind {
   ParallelControllerSlot = "parallelControllerSlot",
   ParallelControllersPresence = "parallelControllersPresence",
   ParallelControllerSnapshot = "parallelControllerSnapshot",
+  ProcessInterfaceScope = "processInterfaceScope",
+  ProcessInterfaceInput = "processInterfaceInput",
   ProcessVariable = "processVariable",
   RuntimeControl = "runtimeControl",
   SelectedBranch = "selectedBranch",

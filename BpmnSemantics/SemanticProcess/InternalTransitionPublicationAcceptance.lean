@@ -79,14 +79,23 @@ private theorem scope_creation_selected_owner (state : RuntimeState)
     selectedOperationOwner? state operation = some selected.owner := by
   unfold selectInternalScopeCreation? at found
   obtain ⟨hosting, _, found⟩ := Option.bind_eq_some_iff.mp found
-  cases operation
-  all_goals first
-    | contradiction
-    | obtain ⟨owner, owned, found⟩ := Option.bind_eq_some_iff.mp found
-      dsimp only at found
-      repeat first | contradiction | split at found
-      all_goals cases found
-      all_goals exact owned
+  cases operation with
+  | invokeProcess _ _ _ _ _ _ _ data =>
+      cases data with
+      | scalar => simp at found
+      | empty =>
+          obtain ⟨owner, owned, found⟩ := Option.bind_eq_some_iff.mp found
+          dsimp only at found
+          repeat first | contradiction | split at found
+          all_goals cases found
+          all_goals exact owned
+  | enterScope _ _ _ _ _ =>
+      obtain ⟨owner, owned, found⟩ := Option.bind_eq_some_iff.mp found
+      split at found
+      · contradiction
+      · cases found
+        exact owned
+  | _ => contradiction
 
 theorem prepared_scope_creation_publication_template_accepted (program : Program) (state : RuntimeState)
     (prepared : PreparedInternalScopeCreation) (instanceId commandId : SemanticId) (transitionIndex : Nat)

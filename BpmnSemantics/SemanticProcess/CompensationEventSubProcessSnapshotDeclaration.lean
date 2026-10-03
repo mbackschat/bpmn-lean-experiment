@@ -56,14 +56,14 @@ private def ordinaryScopeLifecycleValid (program : Program)
         (program.operations.filter (completesScope scope.id)).length = 1 &&
           (program.operations.filter fun operation =>
             match operation with
-            | .returnProcess id _ _ _ _ =>
+            | .returnProcess id _ _ _ _ _ =>
                 operationScope? program id = some scope.id
             | _ => false).isEmpty
       else
         (program.operations.filter (completesScope scope.id)).isEmpty &&
           (program.operations.filter fun operation =>
             match operation with
-            | .returnProcess id _ _ _ _ =>
+            | .returnProcess id _ _ _ _ _ =>
                 operationScope? program id = some scope.id
             | _ => false).length = 1
   | some _ =>

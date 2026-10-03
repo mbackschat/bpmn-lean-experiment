@@ -57,7 +57,8 @@ private def state : RuntimeState :=
         activities :=
           [{ owner := .activityOccurrence activityId, bindings := [] },
            { owner := .activityOccurrence { activityId with activation := 2 }, bindings := [] },
-           { owner := .effectOccurrence ⟨⟨"Instance"⟩, ⟨"Child"⟩, 1⟩, bindings := [] }] } }
+           { owner := .effectOccurrence ⟨⟨"Instance"⟩, ⟨"Child"⟩, 1⟩, bindings := [] }]
+        processInterfaces := [] } }
 
 theorem removal_withdraws_exact_activity_local_data :
     (cancelScopeSubtree state child .remove).variables.activities =

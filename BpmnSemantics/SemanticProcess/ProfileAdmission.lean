@@ -49,4 +49,26 @@ theorem parallelMultiInstanceProfile_has_no_event_race_operation (program : Prog
     simp at present
   cases operation <;> simp_all [isEventRaceOperation]
 
+/-- The retained composed data profile admits Property endpoints only; Process ports require their
+own approved profile rather than changing this profile's completion guarantee. -/
+theorem activityDataInputOutputProfile_property_endpoints (program : Program)
+    (profile : program.identity.semanticProfile = activityDataInputOutputUserTaskProfileId)
+    (capabilities : programProfileCapabilitiesValid program = true)
+    (id : OperationId) (origin : BpmnElementOrigin) (input output : ControlPlaceId)
+    (taskId : TaskDefinitionId) (taskName : Option String)
+    (directInput : DirectActivityDataInput) (directOutput : DirectActivityDataOutput)
+    (member : SemanticOperation.awaitDataInputOutputUserTask id origin input output taskId
+      taskName directInput directOutput ∈ program.operations) :
+    (∃ propertyId, directInput.source = .property propertyId) ∧
+      ∃ propertyId, directOutput.target = .property propertyId := by
+  simp only [programProfileCapabilitiesValid] at capabilities
+  rw [profile] at capabilities
+  simp [programShape?, activityDataInputOutputUserTaskProfileId,
+    sequentialMultiInstanceUserTaskProfileId, parallelMultiInstanceUserTaskProfileId] at capabilities
+  have selected := capabilities.2.1.1.1.1.1.1.1.2
+  have endpoint := selected _ member
+  change ((match directInput.source with | .property _ => true | .processDataInput _ => false) &&
+    (match directOutput.target with | .property _ => true | .processDataOutput _ => false)) = true at endpoint
+  cases source : directInput.source <;> cases target : directOutput.target <;> simp_all
+
 end BpmnSemantics.SemanticProcess

@@ -177,12 +177,14 @@ inductive SemanticOperation where
       (calledRootScopeId : DefinitionScopeId)
       (calledEntry : ControlPlaceId)
       (returnOperationId : OperationId)
+      (data : CallDataInterface := .empty)
   | returnProcess
       (id : OperationId)
       (origin : BpmnElementOrigin)
       (calledProcessId : ProcessId)
       (calledRootScopeId : DefinitionScopeId)
       (callerOutput : ControlPlaceId)
+      (data : CallDataInterface := .empty)
   | awaitUserTask
       (id : OperationId)
       (origin : BpmnElementOrigin)
@@ -390,8 +392,8 @@ def SemanticOperation.id : SemanticOperation → OperationId
   | .enterScope id _ _ _ _
   | .enterBoundedScope id _ _ _ _ _
   | .enterMonitoredScope id _ _ _ _ _
-  | .invokeProcess id _ _ _ _ _ _
-  | .returnProcess id _ _ _ _
+  | .invokeProcess id _ _ _ _ _ _ _
+  | .returnProcess id _ _ _ _ _
   | .awaitUserTask id _ _ _ _
   | .awaitDataInputUserTask id _ _ _ _ _ _
   | .awaitDataInputOutputUserTask id _ _ _ _ _ _ _

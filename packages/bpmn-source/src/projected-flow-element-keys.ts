@@ -37,6 +37,7 @@ export const FlowElementProjectionProfile = Object.freeze({
   MappedSuccessServiceTask: "mappedSuccessServiceTask",
   MappedBoundaryErrorServiceTask: "mappedBoundaryErrorServiceTask",
   CallActivity: "callActivity",
+  CallActivityData: "callActivityData",
   UserTaskMetadata: "userTaskMetadata",
 } as const);
 
@@ -68,6 +69,7 @@ export const ProjectedFlowElementShape = Object.freeze({
   MappedBoundaryEvent: "mappedBoundaryEvent",
   MappedBoundarySequenceFlow: "mappedBoundarySequenceFlow",
   CallActivity: "callActivity",
+  CallActivityData: "callActivityData",
 } as const);
 
 export type ProjectedFlowElementShape =
@@ -150,6 +152,9 @@ export const projectedFlowElementKeys = Object.freeze({
   [ProjectedFlowElementShape.CallActivity]: Object.freeze([
     "$type", "id", "name", "calledElement",
   ]),
+  [ProjectedFlowElementShape.CallActivityData]: Object.freeze([
+    "$type", "id", "name", "calledElement", "ioSpecification", "dataInputAssociations", "dataOutputAssociations",
+  ]),
 } as const satisfies Readonly<
   Record<ProjectedFlowElementShape, ReadonlyArray<string>>
 >);
@@ -210,6 +215,8 @@ export function projectedFlowElementShapes(
       return mappedBoundaryShapes(type);
     case FlowElementProjectionProfile.CallActivity:
       return callActivityShapes(type);
+    case FlowElementProjectionProfile.CallActivityData:
+      return callActivityDataShapes(type);
     case FlowElementProjectionProfile.UserTaskMetadata:
       return userTaskMetadataShapes(type);
   }
@@ -365,6 +372,22 @@ function callActivityShapes(
       return [ProjectedFlowElementShape.PlainNode];
     case bpmnTypes.callActivityType:
       return [ProjectedFlowElementShape.CallActivity];
+    case bpmnTypes.sequenceFlowType:
+      return [ProjectedFlowElementShape.StandardSequenceFlow];
+    default:
+      return undefined;
+  }
+}
+
+function callActivityDataShapes(type: unknown): ReadonlyArray<ProjectedFlowElementShape> | undefined {
+  switch (type) {
+    case bpmnTypes.startEventType:
+    case bpmnTypes.endEventType:
+      return [ProjectedFlowElementShape.PlainNode];
+    case bpmnTypes.userTaskType:
+      return [ProjectedFlowElementShape.DataInputOutputUserTask];
+    case bpmnTypes.callActivityType:
+      return [ProjectedFlowElementShape.CallActivityData];
     case bpmnTypes.sequenceFlowType:
       return [ProjectedFlowElementShape.StandardSequenceFlow];
     default:

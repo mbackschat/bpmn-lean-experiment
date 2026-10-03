@@ -107,7 +107,8 @@ theorem transaction_admitted_task_continuation (p : Program) (roles : Transactio
     ⟨taskId.elementId.value⟩
   simp only [admitStimulusWithCompensationSnapshots, roles.snapshotsAbsent]
   simp [running, noIncidents, parallel, sequential, messageMonitored, messageBounded,
-    bounded, composed, dataInput, dataOutput, monitored]
+    bounded, composed, dataInput, dataOutput, monitored, callDataRuntimeStateValid,
+    roles.profileSelected, transactionCancellationCheckpointProfileId, callDataCheckpointProfileId]
   cases completed : completeOrdinaryUserTaskWithCompensation? completeUserTask p before taskId with
   | none => dsimp only; exact phase
   | some successor =>
@@ -126,7 +127,8 @@ theorem transaction_admitted_handler_continuation (p : Program) (roles : Transac
     TransactionContinuationState roles
       (admitStimulusWithCompensationSnapshots p before (.completeEffect commandId effectId result)).state := by
   simp only [admitStimulusWithCompensationSnapshots, roles.snapshotsAbsent]
-  simp [running, noIncidents, noEffects]
+  simp [running, noIncidents, noEffects, callDataRuntimeStateValid, roles.profileSelected,
+    transactionCancellationCheckpointProfileId, callDataCheckpointProfileId]
   split
   · cases completed : attemptCompensationHandlerEffectCompletion p before effectId result with
     | refused reason => dsimp only; exact phase
@@ -208,7 +210,8 @@ theorem transaction_committed_start_empty_normal_form (p : Program) (roles : Tra
   simp only [admitStimulusWithCompensationSnapshots, roles.snapshotsAbsent] at committed ⊢
   simp only [initialState] at committed ⊢
   simp [roles.profileSelected, transactionCancellationCheckpointProfileId,
-    compensationSourceCheckpointProfileId, activityDataInputOutputUserTaskProfileId] at committed ⊢
+    compensationSourceCheckpointProfileId, activityDataInputOutputUserTaskProfileId,
+    callDataRuntimeStateValid, callDataCheckpointProfileId] at committed ⊢
   simp only [transaction_start_builder_normal_form p roles wellFormed] at committed ⊢
   split at committed
   · rename_i parallel

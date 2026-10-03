@@ -4,6 +4,7 @@ import { test } from "node:test";
 import {
   ControlStateKind,
   LocalDataOwnerKind,
+  VariableValueKind,
   addActivityVariableScope,
   completeActivityVariableScope,
   compareLocalDataOwners,
@@ -134,6 +135,7 @@ test("effect completion removes only the effect arm with equal coordinates", () 
   assert.deepEqual(completed, {
     process: { bindings: [] },
     activities: [{ owner: activityOwner, bindings: [] }],
+    processInterfaces: [],
   });
 });
 
@@ -174,4 +176,25 @@ test("effect incident association cannot consume an equal-coordinate Activity ow
   };
 
   assert.equal(effectWaitCanBecomeIncident(state, wait), false);
+});
+
+test("effect completion preserves isolated Process interfaces with equal port names", () => {
+  const variables = {
+    ...initialState.variables,
+    processInterfaces: [
+      {
+        owner: { processInstanceId: "Called_1", definitionScopeId: "Called", activation: 1 },
+        inputs: [{ name: "request", value: { kind: VariableValueKind.String, value: "first" } }],
+        outputs: [],
+      },
+      {
+        owner: { processInstanceId: "Called_2", definitionScopeId: "Called", activation: 1 },
+        inputs: [{ name: "request", value: { kind: VariableValueKind.String, value: "second" } }],
+        outputs: [{ name: "result", value: { kind: VariableValueKind.Null } }],
+      },
+    ],
+  } as const;
+  const withEffect = addActivityVariableScope(variables, effectId, []);
+  const completed = completeActivityVariableScope(withEffect, effectId, [], [], false);
+  assert.deepEqual(completed, variables);
 });

@@ -75,7 +75,7 @@ def regionalPositionDelta? (program : Program) (selected : InternalRegionalSelec
   let removedTokens := positions.controlTokens.filter fun token => region.contains token.owner
   let removedScopes := positions.scopes.filter fun scope => region.contains scope.id
   match selected.operation, selected.kind with
-  | .returnProcess _ _ _ _ output, .returning record => do
+  | .returnProcess _ _ _ _ output _, .returning record => do
       let produced ← regionalOutputPosition? program output record.caller
       pure { consumedTokens := removedTokens, producedTokens := [produced]
              enteredScopes := [], exitedScopes := removedScopes }

@@ -251,50 +251,53 @@ theorem prepared_scope_creation_candidate (program : Program) (state : RuntimeSt
           rw [singleton]
           simp only [bind, Option.bind, created, startFound, pure, Pure.pure]
           rfl
-  | invokeProcess id selectedOrigin input process root entry returned =>
-      obtain ⟨owner, owned, selection⟩ := Option.bind_eq_some_iff.mp selection
-      try dsimp only at selection
-      repeat first | contradiction | split at selection
-      all_goals cases selection
-      all_goals
-        let record : CalledProcessOccurrence :=
-          { id := { processInstanceId := owner.processInstanceId,
-                    elementId := ⟨selectedOrigin.elementId.value⟩,
-                    activation := callActivationCount state selectedOrigin.elementId + 1 },
-            caller := owner, calledProcessId := process,
-            calledRoot :=
-              { processInstanceId := deriveCalledProcessInstanceId owner.processInstanceId
-                  selectedOrigin.elementId (callActivationCount state selectedOrigin.elementId + 1)
-                definitionScopeId := root, activation := 1 }
-            returnOperationId := returned }
-        have excluded : (state.calledProcessOccurrences.filter fun candidate => decide
-            (candidate.id = record.id ||
-              candidate.calledRoot.processInstanceId = record.calledRoot.processInstanceId)).length = 0 := by
-          assumption
-        have absent : state.calledProcessOccurrences.filter (fun candidate => decide (candidate.id = record.id)) = [] := by
-          apply List.filter_eq_nil_iff.mpr
-          intro candidate member matched
-          have denied := List.filter_eq_nil_iff.mp (List.length_eq_zero_iff.mp excluded) candidate member
-          exact denied (by simp [of_decide_eq_true matched])
-        have singleton : (sortCallRecords (record :: state.calledProcessOccurrences)).filter
-            (fun candidate => decide (candidate.id = record.id)) = [record] := by
-          apply List.Perm.eq_singleton
-          have permutation := (sortCallRecords_perm (record :: state.calledProcessOccurrences)).filter
-            (fun candidate => decide (candidate.id = record.id))
-          simpa only [List.filter_cons, decide_true, ↓reduceIte, absent] using permutation
-        simp only [internalScopeCreationStart?] at startFound
-        simp only [makeInternalScopeCreationPreparation, candidateFlowNodeOccurrenceDeltaForOperation?,
-          flowNodeSelectedOperationOwner?, owned, bind, Option.bind, InternalScopeCreationSelection.apply]
-        change (do
-          let actual ← match (sortCallRecords (record :: state.calledProcessOccurrences)).filter
-              (fun candidate => decide (candidate.id = record.id)) with
-            | [actual] => some actual | _ => none
-          pure (canonicalFlowNodeOccurrenceDelta
-            [← candidateCallStart? program (.invokeProcess id selectedOrigin input process root entry returned)
-              owner actual] [])) = some { started := [start], ended := [] }
-        rw [singleton]
-        simp only [bind, Option.bind, record, startFound, pure, Pure.pure]
-        rfl
+  | invokeProcess id selectedOrigin input process root entry returned data =>
+      cases data with
+      | scalar => simp at selection
+      | empty =>
+          obtain ⟨owner, owned, selection⟩ := Option.bind_eq_some_iff.mp selection
+          try dsimp only at selection
+          repeat first | contradiction | split at selection
+          all_goals cases selection
+          all_goals
+            let record : CalledProcessOccurrence :=
+              { id := { processInstanceId := owner.processInstanceId,
+                        elementId := ⟨selectedOrigin.elementId.value⟩,
+                        activation := callActivationCount state selectedOrigin.elementId + 1 },
+                caller := owner, calledProcessId := process,
+                calledRoot :=
+                  { processInstanceId := deriveCalledProcessInstanceId owner.processInstanceId
+                      selectedOrigin.elementId (callActivationCount state selectedOrigin.elementId + 1)
+                    definitionScopeId := root, activation := 1 }
+                returnOperationId := returned }
+            have excluded : (state.calledProcessOccurrences.filter fun candidate => decide
+                (candidate.id = record.id ||
+                  candidate.calledRoot.processInstanceId = record.calledRoot.processInstanceId)).length = 0 := by
+              assumption
+            have absent : state.calledProcessOccurrences.filter (fun candidate => decide (candidate.id = record.id)) = [] := by
+              apply List.filter_eq_nil_iff.mpr
+              intro candidate member matched
+              have denied := List.filter_eq_nil_iff.mp (List.length_eq_zero_iff.mp excluded) candidate member
+              exact denied (by simp [of_decide_eq_true matched])
+            have singleton : (sortCallRecords (record :: state.calledProcessOccurrences)).filter
+                (fun candidate => decide (candidate.id = record.id)) = [record] := by
+              apply List.Perm.eq_singleton
+              have permutation := (sortCallRecords_perm (record :: state.calledProcessOccurrences)).filter
+                (fun candidate => decide (candidate.id = record.id))
+              simpa only [List.filter_cons, decide_true, ↓reduceIte, absent] using permutation
+            simp only [internalScopeCreationStart?] at startFound
+            simp only [makeInternalScopeCreationPreparation, candidateFlowNodeOccurrenceDeltaForOperation?,
+              flowNodeSelectedOperationOwner?, owned, bind, Option.bind, InternalScopeCreationSelection.apply]
+            change (do
+              let actual ← match (sortCallRecords (record :: state.calledProcessOccurrences)).filter
+                  (fun candidate => decide (candidate.id = record.id)) with
+                | [actual] => some actual | _ => none
+              pure (canonicalFlowNodeOccurrenceDelta
+                [← candidateCallStart? program (.invokeProcess id selectedOrigin input process root entry returned)
+                  owner actual] [])) = some { started := [start], ended := [] }
+            rw [singleton]
+            simp only [bind, Option.bind, record, startFound, pure, Pure.pure]
+            rfl
   | _ => contradiction
 
 theorem prepareInternalScopeCreation_accepted_lifecycle (program : Program) (state : RuntimeState)

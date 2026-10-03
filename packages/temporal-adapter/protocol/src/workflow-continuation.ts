@@ -527,9 +527,13 @@ function isCalledProcessOccurrence(value: unknown): boolean {
 }
 
 function isScopedVariables(value: unknown): boolean {
-  return isRecord(value) && hasOnlyKeys(value, ["process", "activities"]) &&
+  return isRecord(value) && hasOnlyKeys(value, ["process", "activities", "processInterfaces"]) &&
     isRecord(value.process) && hasOnlyKeys(value.process, ["bindings"]) &&
-    isVariablePatch(value.process.bindings) && isList(value.activities, (activity) =>
+    isVariablePatch(value.process.bindings) &&
+    isList(value.processInterfaces, (scope) =>
+      isRecord(scope) && hasOnlyKeys(scope, ["owner", "inputs", "outputs"]) &&
+      isScopeId(scope.owner) && isVariablePatch(scope.inputs) && isVariablePatch(scope.outputs)) &&
+    isList(value.activities, (activity) =>
       isRecord(activity) && hasOnlyKeys(activity, ["owner", "bindings"]) &&
       isLocalDataOwner(activity.owner) && isVariablePatch(activity.bindings));
 }

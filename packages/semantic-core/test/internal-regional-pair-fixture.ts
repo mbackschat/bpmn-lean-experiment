@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import {
-  SemanticOperationKind as Kind, SemanticOriginKind, StimulusKind,
+  CallDataKind, SemanticOperationKind as Kind, SemanticOriginKind, StimulusKind,
   applyInternalOperationStep, compareCanonicalStrings, initialState,
 } from "@bpmn-lean/semantic-core";
 import type { RuntimeState, SemanticOperation, SemanticProcessProgram } from "@bpmn-lean/semantic-core";
@@ -61,7 +61,7 @@ export function regionalFrontierFixture(kinds: readonly [RegionalKind, RegionalK
     const entry = addOperation(kind === Kind.ReturnProcess
       ? { ...operationBase(name), kind: Kind.InvokeProcess, input: place(`${name}_Input`),
         calledEntry: place(`${name}_Entry`), calledProcessId, calledRootScopeId: scopeId,
-        returnOperationId: `operation:Return_${name}` }
+        returnOperationId: `operation:Return_${name}`, data: { kind: CallDataKind.Empty } }
       : bounded
         ? { ...operationBase(name), kind: Kind.EnterBoundedScope, input: place(`${name}_Input`),
           childEntry: place(`${name}_Entry`), childScopeId: scopeId,
@@ -71,7 +71,7 @@ export function regionalFrontierFixture(kinds: readonly [RegionalKind, RegionalK
           childEntry: place(`${name}_Entry`), childScopeId: scopeId });
     const completion: InternalRegionalOperation = kind === Kind.ReturnProcess
       ? { ...operationBase(`Return_${name}`), origin: entry.origin, kind,
-        calledProcessId, calledRootScopeId: scopeId, callerOutput: completionOutput }
+        calledProcessId, calledRootScopeId: scopeId, callerOutput: completionOutput, data: { kind: CallDataKind.Empty } }
       : { ...operationBase(`Complete_${name}`), origin: entry.origin, kind: Kind.CompleteScope,
         scopeId, parentOutput: completionOutput };
     addOperation(completion, scopeId);

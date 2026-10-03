@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { SemanticOperationKind as Kind, compareCanonicalStrings } from "@bpmn-lean/semantic-core";
+import { CallDataKind, SemanticOperationKind as Kind, compareCanonicalStrings } from "@bpmn-lean/semantic-core";
 import type { RuntimeState, SemanticOperation, SemanticProcessProgram } from "@bpmn-lean/semantic-core";
 import type { InternalScopeCreationOperation } from "../src/internal-transition-scope-creation-preparation.ts";
 import { regionalPairFixture } from "./internal-regional-pair-fixture.ts";
@@ -38,7 +38,7 @@ export function regionalScopeCreationFixture(regionalKind: RegionalKind, kind: S
   const creation: InternalScopeCreationOperation = kind === Kind.EnterScope
     ? { ...operationBase(name), kind, input: side.input, childEntry: entry, childScopeId: scopeId }
     : { ...operationBase(name), kind, input: side.input, calledEntry: entry, calledProcessId,
-      calledRootScopeId: scopeId, returnOperationId: "operation:Return_Side_Created" };
+      calledRootScopeId: scopeId, returnOperationId: "operation:Return_Side_Created", data: { kind: CallDataKind.Empty } };
   const additions: SemanticOperation[] = [
     { ...operationBase("Side_Created_Task"), kind: Kind.AwaitUserTask, input: entry, output: end,
       task: { elementId: "Side_Created_Task", name: "Review created work" } },
@@ -47,7 +47,7 @@ export function regionalScopeCreationFixture(regionalKind: RegionalKind, kind: S
       ? { ...operationBase("Complete_Side_Created"), origin: creation.origin, kind: Kind.CompleteScope,
         scopeId, parentOutput: side.output }
       : { ...operationBase("Return_Side_Created"), origin: creation.origin, kind: Kind.ReturnProcess,
-        calledProcessId, calledRootScopeId: scopeId, callerOutput: side.output },
+        calledProcessId, calledRootScopeId: scopeId, callerOutput: side.output, data: { kind: CallDataKind.Empty } },
   ];
   const program: SemanticProcessProgram = { ...fixture.program,
     definitionScopes: [...fixture.program.definitionScopes, { id: scopeId,

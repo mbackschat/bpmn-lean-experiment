@@ -29,7 +29,9 @@ theorem preparedRegional_removed_censuses (program : Program) (before : RuntimeS
     exact ⟨fun token member inside => writes _ (regionalCensusWrites_contains_removed_token before prepared.region outputs token member inside),
       fun record member inside => writes _ (regionalCensusWrites_contains_removed_selection before prepared.region outputs record member inside)⟩
   cases operation with
-  | returnProcess id origin process definition output =>
+  | returnProcess id origin process definition output data =>
+      have empty := prepareInternalRegional_return_data_empty program before id origin process definition output data prepared found
+      subst data
       obtain ⟨record, kind, _, _⟩ := regionalSelection_return_record program before id origin process definition output prepared.selection selected
       rw [kind] at census
       exact ofCensus [output] census

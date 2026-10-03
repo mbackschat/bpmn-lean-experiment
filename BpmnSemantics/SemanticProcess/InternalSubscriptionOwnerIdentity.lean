@@ -14,7 +14,7 @@ theorem subscription_projectable_no_called_record (program : Program) (state : R
     (admitted : repeatableSubscriptionProgramGraph program = true)
     (structural : flowNodeOccurrenceStructuralProgramValidity program state = true)
     (record : CalledProcessOccurrence) (member : record ∈ state.calledProcessOccurrences) : False := by
-  obtain ⟨id, origin, input, process, root, entry, returned, declared, _⟩ :=
+  obtain ⟨id, origin, input, process, root, entry, returned, data, declared, _⟩ :=
     flowNodeOccurrenceStructuralProgramValidity_call_declarer program state record structural member
   have allowed := repeatableSubscriptionProgramGraph_operation program admitted _ declared
   contradiction

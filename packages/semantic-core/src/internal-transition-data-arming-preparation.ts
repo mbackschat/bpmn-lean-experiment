@@ -1,3 +1,4 @@
+import { ActivityDataEndpointKind } from "./activity-data-endpoint.js";
 import { candidateProcessId, operationIsSelectedFromProgram } from "./flow-node-occurrence-candidates.js";
 import { InternalPublicationTemplateAnchorKind } from "./internal-publication-template.js";
 import type { InternalPublicationTemplate } from "./internal-publication-template.js";
@@ -7,7 +8,7 @@ import type { InternalOperationAlternative } from "./internal-transition-alterna
 import { deriveInternalDataArmingPatch } from "./internal-transition-data-arming-patch.js";
 import type { InternalDataArmingOperation, InternalDataArmingPatch } from "./internal-transition-data-arming-patch.js";
 import { canonicalUniquePublicationAtoms, canonicalUniqueStateAtoms } from "./internal-transition-footprint-ordering.js";
-import type { InternalTransitionCandidate, InternalTransitionFootprint } from "./internal-transition-footprint.js";
+import type { InternalTransitionCandidate, InternalTransitionFootprint, InternalTransitionStateAtom } from "./internal-transition-footprint.js";
 import { InternalTransitionPublicationAtomKind, InternalTransitionStateAtomKind } from "./internal-transition-footprint-vocabulary.js";
 import { affectedTokenBucketsAreExact, tokenOwnerCensusAtoms } from "./internal-transition-token-preparation.js";
 import { InternalOccurrenceKind, openWaitAnchorIsAbsent, operationIsUniqueWaitDeclarer } from "./internal-transition-wait-census.js";
@@ -45,7 +46,7 @@ export function deriveInternalDataArmingPreparation(
   if (
     owner === null ||
     state.control.kind !== ControlStateKind.Running ||
-    owner.processInstanceId !== state.control.instanceId ||
+    (operation.kind !== SemanticOperationKind.AwaitDataInputOutputUserTask && owner.processInstanceId !== state.control.instanceId) ||
     !operationIsSelectedFromProgram(program, operation, owner)
   ) return null;
   const selectedOwner = onlyTokenOwner(state, operation.input);
@@ -92,10 +93,7 @@ export function deriveInternalDataArmingPreparation(
     { kind: InternalTransitionStateAtomKind.RuntimeControl, instanceId: state.control.instanceId },
     { kind: InternalTransitionStateAtomKind.ScopeOccurrence, owner },
     { kind: InternalTransitionStateAtomKind.LogicalTime },
-    ...(operation.kind === SemanticOperationKind.AwaitDataOutputUserTask ? [] : [{
-      kind: InternalTransitionStateAtomKind.ProcessVariable,
-      name: operation.directInput.sourcePropertyId,
-    } as const]),
+    ...inputReadAtoms(operation, owner),
     token, association, ...counters, wait, anchor, scope,
   ]);
   const writes = canonicalUniqueStateAtoms([
@@ -150,4 +148,17 @@ export function deriveInternalDataArmingPreparation(
 
 function safeActivation(value: number): boolean {
   return Number.isSafeInteger(value) && value > 0;
+}
+
+function inputReadAtoms(operation: InternalDataArmingOperation, owner: ScopeOccurrenceId): readonly InternalTransitionStateAtom[] {
+  if (operation.kind === SemanticOperationKind.AwaitDataOutputUserTask) return [];
+  switch (operation.directInput.source.kind) {
+    case ActivityDataEndpointKind.Property:
+      return [{ kind: InternalTransitionStateAtomKind.ProcessVariable, name: operation.directInput.source.propertyId }];
+    case ActivityDataEndpointKind.ProcessDataInput:
+      return [
+        { kind: InternalTransitionStateAtomKind.ProcessInterfaceScope, owner },
+        { kind: InternalTransitionStateAtomKind.ProcessInterfaceInput, owner, dataInputId: operation.directInput.source.dataInputId },
+      ];
+  }
 }

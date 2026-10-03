@@ -68,7 +68,7 @@ theorem committed_start_process_bindings
     program_analysis_excludes_foreign_declarations program analysis analyzed
   cases created : runningProgramStartState? program instanceId bindings with
   | none =>
-      simp [admitStimulus, noSnapshots, initialState, profile, created] at committed
+      simp [admitStimulus, callDataRuntimeStateValid, noSnapshots, initialState, profile, created] at committed
       split at committed <;> contradiction
   | some started =>
       have data : started.variables.process.bindings = bindings := by
@@ -76,7 +76,7 @@ theorem committed_start_process_bindings
         obtain ⟨root, found, created⟩ := created
         cases Option.some.inj created
         rfl
-      simp [admitStimulus, noSnapshots, initialState, profile, created] at committed ⊢
+      simp [admitStimulus, callDataRuntimeStateValid, noSnapshots, initialState, profile, created] at committed ⊢
       split at committed
       · simp_all
       · contradiction
@@ -312,8 +312,9 @@ theorem reached_data_task_input_is_available
       (admitStimulus program initialState (.startProcess commandId processId instanceId bindings)).state reached)
     (member : SemanticOperation.awaitDataInputOutputUserTask id origin input output taskId taskName
       directInput directOutput ∈ program.operations)
+    (running : reached.control = .running token.owner.processInstanceId)
     (live : token ∈ reached.tokens) (position : token.placeId = input) :
-    ∃ binding, dataInputOutputSourceBinding? reached directInput = some binding := by
+    ∃ binding, dataInputOutputSourceBinding? reached token.owner directInput = some binding := by
   obtain ⟨_, _, _, vertices, _, _, graph⟩ := program_analysis_projection program analysis analyzed
   have startPositions := committed_start_has_input_positions program vertices analysis commandId processId instanceId
     bindings profile committed
@@ -326,7 +327,7 @@ theorem reached_data_task_input_is_available
   have required := committed_start_requirements_remain_present program analysis commandId processId instanceId bindings
     reached profile analyzed committed reachable
   exact input_position_supplies_data_task_lookup program vertices analysis reached token id origin input output
-    taskId taskName directInput directOutput analyzed graph member live position positions valid required
+    taskId taskName directInput directOutput analyzed graph member running live position positions valid required
 
 def runtimeBurstRank (program : Program) (analysis : Analysis) (state : RuntimeState) : Nat :=
   if state.initiationPending then analysis.maximumBurst
@@ -685,7 +686,7 @@ theorem data_completion_within_burst_bound
     runtimeBurstRank program analysis after ≤ analysis.maximumBurst := by
   obtain ⟨contract, _, next, declared, _, _, _, tokens, output⟩ :=
     data_completion_has_exact_continuation program before after instanceId taskId activation bindings bounded completed
-  obtain ⟨source, included, target, consumer, shape⟩ :=
+  obtain ⟨source, included, target, consumer, shape, _, _⟩ :=
     completion_contract_has_analyzed_vertex program analysis taskId contract analyzed declared
   exact continuation_frame_within_burst_bound program vertices analysis after source next target graph included
     (by simp [shape]) (by simp [shape]) tokens (by simpa [output] using consumer)

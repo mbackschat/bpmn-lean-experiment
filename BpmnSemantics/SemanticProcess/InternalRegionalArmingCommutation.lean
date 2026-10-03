@@ -82,7 +82,9 @@ private theorem regional_arming_successors_equal (program : Program) (before aft
         exact dataArming_cancellation_commutes program before contract patch _ disposition
           armFound canonical cancelledOutside
   cases operation with
-  | returnProcess id origin process definition output =>
+  | returnProcess id origin process definition output data =>
+      have empty := prepareInternalRegional_return_data_empty program before id origin process definition output data regional regionalFound
+      subst data
       obtain ⟨returned, record, root, returnedApply, kind, _, _, _, _, update, _⟩ :=
         preparedReturn_quiescent_fields program before arm.scopeFramePatch.runtimeInstanceId id origin process definition output
           regional beforeWF regionalFound

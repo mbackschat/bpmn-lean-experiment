@@ -11,14 +11,20 @@ import {
 } from "@bpmn-lean/bpmn-source";
 import {
   callCompletionEdges,
+  CallDataKind,
   isWellFormedSemanticProcessProgram,
 } from "@bpmn-lean/semantic-core";
 import type {
   SemanticOperation,
   SemanticProcessProgram,
+  ScalarCallData,
+  ScalarIoSpecification,
 } from "@bpmn-lean/semantic-core";
 
 const profile = "bpmn-2.0.2-called-process-call-activity-draft";
+const { lowerCallActivityInvoke, lowerCalledProcessReturn } = await import(
+  new URL("../dist/call-activity-lowering.js", import.meta.url).href
+) as typeof import("../src/call-activity-lowering.ts");
 const limits = Object.freeze({ maxBytes: 1024 * 1024, parserDeadlineMs: 1_000 });
 const source = await readFile(
   new URL("./fixtures/call-activity-called-process.bpmn", import.meta.url),
@@ -69,7 +75,7 @@ test("admits the exact in-document called Process association", async () => {
   ]);
   assert.deepEqual(
     result.checkedProcess.nodes.filter(({ kind }) => kind === CheckedNodeKind.CallActivity),
-    [{ kind: CheckedNodeKind.CallActivity, id: "Call_CalledProcess", calledProcessId: "CalledProcess" }],
+    [{ kind: CheckedNodeKind.CallActivity, id: "Call_CalledProcess", calledProcessId: "CalledProcess", data: { kind: "empty" } }],
   );
   assert.deepEqual(
     result.semanticProcess.operations.filter(({ kind }) =>
@@ -87,6 +93,7 @@ test("admits the exact in-document called Process association", async () => {
         calledRootScopeId: "scope:CalledProcess",
         calledEntry: "place:Flow_Called_Start_Task",
         returnOperationId: "operation:return-process:Call_CalledProcess",
+        data: { kind: "empty" },
       },
       {
         id: "operation:CallerStart",
@@ -101,6 +108,7 @@ test("admits the exact in-document called Process association", async () => {
         calledProcessId: "CalledProcess",
         calledRootScopeId: "scope:CalledProcess",
         callerOutput: "place:Flow_Caller_Call_Task",
+        data: { kind: "empty" },
       },
     ],
   );
@@ -141,6 +149,55 @@ test("canonicalizes both Process roots, flow elements, and reference declaration
     { ...original.semanticProcess, identity: { ...original.semanticProcess.identity, sourceSha256: "digest" } },
     { ...permuted.semanticProcess, identity: { ...permuted.semanticProcess.identity, sourceSha256: "digest" } },
   );
+});
+
+test("Call lowering retains scalar declarations and independently binds both operation halves", async () => {
+  const result = await compile(source);
+  assert.equal(result.status, BpmnCompilationStatus.Accepted);
+  if (result.status !== BpmnCompilationStatus.Accepted) return;
+  const call = result.checkedProcess.nodes.find((node) => node.kind === CheckedNodeKind.CallActivity);
+  assert.ok(call?.kind === CheckedNodeKind.CallActivity);
+  const io = (ownerId: string): ScalarIoSpecification => ({ ownerId, id: `${ownerId}_io`,
+    input: { id: `${ownerId}_in`, name: null }, output: { id: `${ownerId}_out`, name: null },
+    inputSet: { id: `${ownerId}_inputs`, name: null, dataInputRefs: [`${ownerId}_in`] },
+    outputSet: { id: `${ownerId}_outputs`, name: null, dataOutputRefs: [`${ownerId}_out`] } });
+  const data: ScalarCallData = { kind: CallDataKind.Scalar, callerProperties: ["Request", "Result", "Unused"],
+    call: io(call.id), called: io(call.calledProcessId),
+    directInput: { associationId: "Read", source: { kind: "property", propertyId: "Request" },
+      targetDataInputId: `${call.id}_in`, targetDataInputName: null },
+    directOutput: { associationId: "Write", sourceDataOutputId: `${call.id}_out`, sourceDataOutputName: null,
+      target: { kind: "property", propertyId: "Result" } } };
+  const checkedCall = { ...call, data };
+  const checked = { ...result.checkedProcess, nodes: result.checkedProcess.nodes.map((node) => node === call ? checkedCall : node) };
+  const root = checked.definitionScopes.find((scope) => scope.originElementId === call.calledProcessId);
+  assert.ok(root);
+  const invoke = lowerCallActivityInvoke(checkedCall, checked).operation;
+  const returned = lowerCalledProcessReturn(root, checked)?.operation;
+  assert.ok(returned);
+  assert.deepEqual(invoke.data, data);
+  assert.deepEqual(returned.data, data);
+  const program = { ...result.semanticProcess, operations: result.semanticProcess.operations.map((operation) =>
+    operation.id === invoke.id ? invoke : operation.id === returned.id ? returned : operation) };
+  assert.equal(callActivityDefinitionBindingValid(checked, program), true);
+  assert.equal(isWellFormedSemanticProcessProgram(program), true);
+  for (const changed of [
+    { ...data, callerProperties: [...data.callerProperties, "Invented"] },
+    { ...data, called: { ...data.called, input: { ...data.called.input, name: "Changed label" } } },
+    { ...data, directInput: { ...data.directInput, associationId: "OtherAssociation" } },
+  ]) {
+    for (const selected of [[invoke.id], [returned.id], [invoke.id, returned.id]]) {
+      const altered: SemanticProcessProgram = { ...program, operations: program.operations.map((operation): SemanticOperation => {
+        switch (operation.kind) {
+          case SemanticOperationKind.InvokeProcess:
+          case SemanticOperationKind.ReturnProcess:
+            return selected.includes(operation.id) ? { ...operation, data: changed } : operation;
+          default: return operation;
+        }
+      }) };
+      assert.equal(callActivityDefinitionBindingValid(checked, altered), false);
+      assert.equal(isWellFormedSemanticProcessProgram(altered), selected.length === 2);
+    }
+  }
 });
 
 test("derives the called binding from the QName instead of a fixture constant", async () => {

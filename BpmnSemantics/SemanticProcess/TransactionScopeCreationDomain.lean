@@ -131,13 +131,16 @@ theorem scopeCreation_rootCompensationDomain (program : Program) (state : Runtim
                   rcases memberShape with root | child
                   · simp [root] at definitionMatches
                   · exact False.elim (unchanged (by grind))
-              | invokeProcess id callOrigin input process scope entry returnOperation =>
-                  have member := invocationMember id callOrigin input process scope entry returnOperation rfl
-                  simp only [compensationActivityRetentionDeclarationValid, retentionPresent,
-                    Bool.and_eq_true, Bool.not_eq_true'] at retentionValid
-                  have absent := retentionValid.2
-                  have rejected := List.any_eq_false.mp absent _ member
-                  contradiction
+              | invokeProcess id callOrigin input process scope entry returnOperation data =>
+                  cases data with
+                  | scalar => simp [internalScopeCreationDefinitionMatches] at definitionMatches
+                  | empty =>
+                      have member := invocationMember id callOrigin input process scope entry returnOperation rfl
+                      simp only [compensationActivityRetentionDeclarationValid, retentionPresent,
+                        Bool.and_eq_true, Bool.not_eq_true'] at retentionValid
+                      have absent := retentionValid.2
+                      have rejected := List.any_eq_false.mp absent _ member
+                      contradiction
               | _ => simp [internalScopeCreationDefinitionMatches] at definitionMatches
             · contradiction
       · contradiction

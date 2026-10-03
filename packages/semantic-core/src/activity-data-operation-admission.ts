@@ -1,3 +1,4 @@
+import { activityDataInputSourceId, activityDataOutputTargetId, isActivityDataInputSource, isActivityDataOutputTarget } from "./activity-data-endpoint.js";
 import { isWellFormedWireString } from "./wire.js";
 
 /**
@@ -33,12 +34,12 @@ export function isWellFormedAwaitDataInputUserTaskOperation(
     !isRecord(value.directInput) ||
     !hasOnlyKeys(value.directInput, [
       "associationId",
-      "sourcePropertyId",
+      "source",
       "targetDataInputId",
       "targetDataInputName",
     ]) ||
     !isNonEmptyString(value.directInput.associationId) ||
-    !isNonEmptyString(value.directInput.sourcePropertyId) ||
+    !isActivityDataInputSource(value.directInput.source) ||
     !isNonEmptyString(value.directInput.targetDataInputId) ||
     !isOptionalName(value.directInput.targetDataInputName)
   ) {
@@ -47,7 +48,7 @@ export function isWellFormedAwaitDataInputUserTaskOperation(
   const identities = [
     value.task.elementId,
     value.directInput.associationId,
-    value.directInput.sourcePropertyId,
+    activityDataInputSourceId(value.directInput.source),
     value.directInput.targetDataInputId,
   ];
   return new Set(identities).size === identities.length;
@@ -79,6 +80,8 @@ export function isWellFormedAwaitDataInputOutputUserTaskOperation(
     !isRecord(value.task) ||
     !isRecord(value.directInput) ||
     !isRecord(value.directOutput) ||
+    !isActivityDataInputSource(value.directInput.source) ||
+    !isActivityDataOutputTarget(value.directOutput.target) ||
     !isWellFormedAwaitDataInputUserTaskOperation({
       id: value.id,
       kind: value.kind,
@@ -103,11 +106,11 @@ export function isWellFormedAwaitDataInputOutputUserTaskOperation(
   const identities = [
     value.task.elementId,
     value.directInput.associationId,
-    value.directInput.sourcePropertyId,
+    activityDataInputSourceId(value.directInput.source),
     value.directInput.targetDataInputId,
     value.directOutput.associationId,
     value.directOutput.sourceDataOutputId,
-    value.directOutput.targetPropertyId,
+    activityDataOutputTargetId(value.directOutput.target),
   ];
   return new Set(identities).size === identities.length;
 }
@@ -116,7 +119,7 @@ export function isWellFormedAwaitDataInputOutputUserTaskOperation(
  * The direct Data Output Association arm of one output-bearing User Task entry operation.
  *
  * The four identities are the exact source identities the completion resolves by, so they must be
- * present and mutually distinct. `sourceDataOutputId` and `targetPropertyId` differing is the
+ * present and mutually distinct. `sourceDataOutputId` and the target endpoint identity differing is the
  * load-bearing one: equal ids would make a routed write and a name-merged write indistinguishable,
  * which is precisely the confusion this family exists to rule out.
  */
@@ -148,12 +151,12 @@ export function isWellFormedAwaitDataOutputUserTaskOperation(
       "associationId",
       "sourceDataOutputId",
       "sourceDataOutputName",
-      "targetPropertyId",
+      "target",
     ]) ||
     !isNonEmptyString(value.directOutput.associationId) ||
     !isNonEmptyString(value.directOutput.sourceDataOutputId) ||
     !isOptionalName(value.directOutput.sourceDataOutputName) ||
-    !isNonEmptyString(value.directOutput.targetPropertyId)
+    !isActivityDataOutputTarget(value.directOutput.target)
   ) {
     return false;
   }
@@ -161,7 +164,7 @@ export function isWellFormedAwaitDataOutputUserTaskOperation(
     value.task.elementId,
     value.directOutput.associationId,
     value.directOutput.sourceDataOutputId,
-    value.directOutput.targetPropertyId,
+    activityDataOutputTargetId(value.directOutput.target),
   ];
   return new Set(identities).size === identities.length;
 }

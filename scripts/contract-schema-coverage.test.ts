@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
+import { Ajv2020 } from "ajv/dist/2020.js";
 
 import { compareCanonicalStrings } from "./contract-artifacts.ts";
 import {
@@ -11,6 +12,41 @@ import {
 } from "./schema-structure.ts";
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
+
+test("direct Activity data endpoints distinguish Property and directional Process ports", async () => {
+  for (const schema of ["checked-process.schema.json", "semantic-process.schema.json"]) {
+    const document: unknown = JSON.parse(await readFile(`${projectRoot}/contracts/schemas/${schema}`, "utf8"));
+    assert.ok(isRecord(document));
+    assert.ok(isRecord(document.$defs));
+    const ajv = new Ajv2020({ strict: true });
+    const input = ajv.compile({ $defs: document.$defs, $ref: "#/$defs/directActivityDataInput" });
+    const output = ajv.compile({ $defs: document.$defs, $ref: "#/$defs/directActivityDataOutput" });
+    const inputBase = { associationId: "Read", targetDataInputId: "TaskInput", targetDataInputName: null };
+    const outputBase = { associationId: "Write", sourceDataOutputId: "TaskOutput", sourceDataOutputName: null };
+    for (const source of [{ kind: "property", propertyId: "Request" }, { kind: "processDataInput", dataInputId: "ProcessInput" }]) {
+      assert.equal(input({ ...inputBase, source }), true, `${schema}: ${JSON.stringify(input.errors)}`);
+    }
+    for (const target of [{ kind: "property", propertyId: "Result" }, { kind: "processDataOutput", dataOutputId: "ProcessOutput" }]) {
+      assert.equal(output({ ...outputBase, target }), true, `${schema}: ${JSON.stringify(output.errors)}`);
+    }
+    for (const source of [
+      { kind: "processDataOutput", dataOutputId: "WrongDirection" },
+      { kind: "processDataInput", dataInputId: "", propertyId: "Extra" },
+      { kind: "property", propertyId: "Request", dataInputId: "Extra" },
+      { kind: "property" },
+    ]) assert.equal(input({ ...inputBase, source }), false, `${schema}: accepts invalid source`);
+    for (const target of [
+      { kind: "processDataInput", dataInputId: "WrongDirection" },
+      { kind: "processDataOutput", dataOutputId: "" },
+      { kind: "property", propertyId: "Result", dataOutputId: "Extra" },
+      { kind: "property" },
+    ]) assert.equal(output({ ...outputBase, target }), false, `${schema}: accepts invalid target`);
+    assert.equal(input({ ...inputBase, sourcePropertyId: "Request" }), false);
+    assert.equal(output({ ...outputBase, targetPropertyId: "Result" }), false);
+    assert.equal(input({ ...inputBase, source: { kind: "property", propertyId: "Request" }, sourcePropertyId: "Request" }), false);
+    assert.equal(output({ ...outputBase, target: { kind: "property", propertyId: "Result" }, targetPropertyId: "Result" }), false);
+  }
+});
 
 /**
  * The projection guard is one-directional: it validates the artifacts that exist, so a semantic

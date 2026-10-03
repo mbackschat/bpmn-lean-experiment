@@ -1,10 +1,13 @@
 import {
+  CALL_ACTIVITY_DATA_BOUNDARIES_CHECKPOINT_PROFILE_ID,
   CheckedNodeKind,
+  CallDataKind,
   CheckedProcessKind,
   SemanticProfileId,
   compareCanonicalStrings,
 } from "@bpmn-lean/semantic-core";
 import type {
+  CallDataInterface,
   CheckedNode,
   CheckedProcess,
   CheckedSequenceFlow,
@@ -39,10 +42,22 @@ import {
   projectedFlowElementKeyRejections,
 } from "./projected-flow-element-keys.js";
 import { definitionScopeId } from "./scoped-flow-elements.js";
+import { projectCallDataInterfaces } from "./call-data-source.js";
+import { projectProcessDataInputOutputUserTask } from "./activity-data-input-output-projection.js";
+import type { ExactContainmentCardinality } from "./singleton-containment-admission.js";
 
 const bpmnTypes = metamodelManifest.compilerProjection;
 
+/** CDATA-MATCH-01 requires all four interfaces; moddle silently overwrites singleton containments. */
+export function callDataContainmentCardinalities(semanticProfile: string): ReadonlyArray<ExactContainmentCardinality> {
+  return semanticProfile === CALL_ACTIVITY_DATA_BOUNDARIES_CHECKPOINT_PROFILE_ID
+    ? [{ property: "CallData.ioSpecification", projectedType: "bpmn:InputOutputSpecification",
+      xmlLocalName: "ioSpecification", expectedOccurrences: 4 }]
+    : [];
+}
+
 type ProcessElements = Readonly<{
+  element: ElementRecord;
   processId: string;
   nodes: ReadonlyArray<ElementRecord>;
   flows: ReadonlyArray<ElementRecord>;
@@ -62,6 +77,7 @@ export function compileCallActivityCheckedProcess(
   semanticProfile: string,
   sourceOverlay: SourceOverlayIdentity | null,
 ): CheckedCompilationProjection {
+  const scalarData = semanticProfile === CALL_ACTIVITY_DATA_BOUNDARIES_CHECKPOINT_PROFILE_ID;
   const definitions = asElement(rootElement);
   if (
     definitions === undefined ||
@@ -83,7 +99,7 @@ export function compileCallActivityCheckedProcess(
   if (roots?.length !== 2 || processes?.length !== 2) {
     return unsupported("Call Activity requires exactly two in-document Process roots.");
   }
-  const projected = processes.map(projectProcessElements);
+  const projected = processes.map((process) => projectProcessElements(process, scalarData));
   if (!projected.every(
     (entry): entry is ProcessElements => entry !== undefined,
   )) {
@@ -102,7 +118,7 @@ export function compileCallActivityCheckedProcess(
   const keyRejections = projectedFlowElementKeyRejections(
     definitions,
     selectedElements,
-    FlowElementProjectionProfile.CallActivity,
+    scalarData ? FlowElementProjectionProfile.CallActivityData : FlowElementProjectionProfile.CallActivity,
   );
   if (keyRejections === undefined) {
     return unsupported("Every selected Call Activity flow element requires an exact key inventory entry.");
@@ -116,16 +132,21 @@ export function compileCallActivityCheckedProcess(
   const call = caller.nodes.find(({ $type }) => $type === bpmnTypes.callActivityType);
   const calledProcessId = call === undefined
     ? undefined
-    : resolveCalledProcessId(call, definitions, processElements, caller.processId);
+    : resolveCalledProcessId(call, definitions, processElements, caller.processId, scalarData);
   const called = processElements.find(({ processId }) => processId === calledProcessId);
   if (call === undefined || calledProcessId === undefined || called === undefined || !hasCalledShape(called)) {
     return unsupported("The Call Activity QName must resolve to the distinct selected called Process shape.");
   }
 
+  const data = scalarData ? projectCallDataInterfaces(call, caller.element, called.element) : { kind: CallDataKind.Empty } as const;
+  if (data === undefined || (scalarData && caller.element.ioSpecification !== undefined)) {
+    return unsupported("Call data requires exact caller associations and a distinct matching called interface.");
+  }
+
   const allNodes = [...caller.nodes, ...called.nodes];
   const allFlows = [...caller.flows, ...called.flows];
   const sequenceFlows = projectSequenceFlows(allFlows);
-  const nodes = projectNodes(allNodes, call, calledProcessId);
+  const nodes = projectNodes(allNodes, call, calledProcessId, data);
   const definitionScopes = [caller, called]
     .map(({ processId }) => ({
       id: definitionScopeId(processId),
@@ -194,10 +215,11 @@ export function compileCallActivityCheckedProcess(
   };
 }
 
-function projectProcessElements(process: ElementRecord): ProcessElements | undefined {
+function projectProcessElements(process: ElementRecord, scalarData: boolean): ProcessElements | undefined {
   if (
-    !hasOnlyModelledKeys(process, ["$type", "id", "name", "isExecutable", "flowElements"]) ||
-    process.isExecutable !== true
+    !hasOnlyModelledKeys(process, ["$type", "id", "name", "isExecutable", "flowElements",
+      ...(scalarData ? ["processType", "properties", "ioSpecification"] : [])]) ||
+    process.isExecutable !== true || (scalarData && process.processType !== "Private")
   ) {
     return undefined;
   }
@@ -208,7 +230,7 @@ function projectProcessElements(process: ElementRecord): ProcessElements | undef
   }
   const nodes = elements.filter(({ $type }) => $type !== bpmnTypes.sequenceFlowType);
   const flows = elements.filter(({ $type }) => $type === bpmnTypes.sequenceFlowType);
-  return { processId, nodes, flows };
+  return { element: process, processId, nodes, flows };
 }
 
 function hasCallerShape(value: ProcessElements): boolean {
@@ -244,11 +266,12 @@ function resolveCalledProcessId(
   definitions: ElementRecord,
   processes: ReadonlyArray<ProcessElements>,
   callerProcessId: string,
+  scalarData: boolean,
 ): string | undefined {
-  if (!hasOnlyProjectedFlowElementKeys(
+  if (!(scalarData ? hasScalarCallKeys(call) : hasOnlyProjectedFlowElementKeys(
     call,
     ProjectedFlowElementShape.CallActivity,
-  ) || typeof call.calledElement !== "string") {
+  )) || typeof call.calledElement !== "string") {
     return undefined;
   }
   const parts = call.calledElement.split(":");
@@ -274,10 +297,15 @@ function resolveCalledProcessId(
   return localName;
 }
 
+function hasScalarCallKeys(call: ElementRecord): boolean {
+  return hasOnlyProjectedFlowElementKeys(call, ProjectedFlowElementShape.CallActivityData);
+}
+
 function projectNodes(
   elements: ReadonlyArray<ElementRecord>,
   call: ElementRecord,
   calledProcessId: string,
+  data: CallDataInterface,
 ): ReadonlyArray<CheckedNode> | undefined {
   const projected = elements.map((element): CheckedNode | undefined => {
     const id = readId(element);
@@ -291,9 +319,13 @@ function projectNodes(
           : undefined;
       case bpmnTypes.callActivityType:
         return element === call
-          ? { kind: CheckedNodeKind.CallActivity, id, calledProcessId }
+          ? { kind: CheckedNodeKind.CallActivity, id, calledProcessId, data }
           : undefined;
       case bpmnTypes.userTaskType: {
+        if (data.kind === CallDataKind.Scalar) {
+          const process = asElement(element.$parent);
+          return process === undefined ? undefined : projectProcessDataInputOutputUserTask(element, process);
+        }
         const name = readOptionalName(element);
         return isPlainNode(element) && name !== undefined
           ? { kind: CheckedNodeKind.UserTask, id, name }

@@ -148,6 +148,10 @@ def cancelScopeSubtree (state : RuntimeState) (root : ScopeOccurrenceId)
         !cancelled record.caller && !cancelled record.calledRoot
     variables :=
       { state.variables with
+        processInterfaces := state.variables.processInterfaces.filter fun scope =>
+          match disposition with
+          | .retain => scope.owner = root || !cancelled scope.owner
+          | .remove => !cancelled scope.owner
         activities := state.variables.activities.filter fun activity =>
           !calledInstances.contains activity.owner.processInstanceId &&
             !(withdrawnActivities.any fun record =>

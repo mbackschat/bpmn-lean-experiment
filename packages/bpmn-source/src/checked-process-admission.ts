@@ -1,4 +1,5 @@
 import {
+  CALL_ACTIVITY_DATA_BOUNDARIES_CHECKPOINT_PROFILE_ID,
   STRUCTURED_PROCESS_COMPOSITION_CHECKPOINT_PROFILE_ID,
   structuredCompositionCheckedGraph,
   BoundaryInterruption,
@@ -502,7 +503,8 @@ function embeddedNodesOwnChildScopes(
     ({ parentScopeId }) => parentScopeId === null,
   );
   const expectedRootCount =
-    semanticProfile === SemanticProfileId.CalledProcessCallActivity ? 2 : 1;
+    semanticProfile === SemanticProfileId.CalledProcessCallActivity ||
+      semanticProfile === CALL_ACTIVITY_DATA_BOUNDARIES_CHECKPOINT_PROFILE_ID ? 2 : 1;
   const compensationHandlers = semanticProfile ===
       COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID
     ? graph.compensation?.subjects.flatMap((subject) =>

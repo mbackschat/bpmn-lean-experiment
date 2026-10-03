@@ -24,7 +24,7 @@ structure PreparedInternalScopeCreation where
   deriving Repr, DecidableEq
 
 def internalScopeCreationOrigin? : SemanticOperation → Option BpmnElementOrigin
-  | .enterScope _ origin _ _ _ | .invokeProcess _ origin _ _ _ _ _ => some origin
+  | .enterScope _ origin _ _ _ | .invokeProcess _ origin _ _ _ _ _ _ => some origin
   | _ => none
 
 /-- Identity populations are checked before any parent or origin payload can select an alias. -/
@@ -42,7 +42,7 @@ def internalScopeCreationDefinitionMatches (operation : SemanticOperation)
   | .enterScope _ origin _ _ scope =>
       definition.id = scope && definition.parentScopeId = some owner.definitionScopeId &&
         definition.originElementId = origin.elementId
-  | .invokeProcess _ _ _ process scope _ _ =>
+  | .invokeProcess _ _ _ process scope _ _ .empty =>
       definition.id = scope && definition.parentScopeId = none &&
         definition.originElementId.value = process.value
   | _ => false

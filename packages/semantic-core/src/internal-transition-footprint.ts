@@ -125,6 +125,15 @@ export type InternalTransitionStateAtom = Readonly<
     }
   | { kind: InternalTransitionStateAtomKind.ParallelControllersPresence }
   | {
+      kind: InternalTransitionStateAtomKind.ProcessInterfaceScope;
+      owner: ScopeOccurrenceId;
+    }
+  | {
+      kind: InternalTransitionStateAtomKind.ProcessInterfaceInput;
+      owner: ScopeOccurrenceId;
+      dataInputId: string;
+    }
+  | {
       kind: InternalTransitionStateAtomKind.ProcessVariable;
       name: string;
     }

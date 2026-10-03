@@ -27,6 +27,7 @@ import {
   compileBpmnToSemanticProcess,
 } from "@bpmn-lean/bpmn-source";
 import {
+  CALL_ACTIVITY_DATA_BOUNDARIES_CHECKPOINT_PROFILE_ID,
   MESSAGE_KEY_CORRELATION_CHECKPOINT_PROFILE_ID,
   SEQUENTIAL_MULTI_INSTANCE_USER_TASK_PROFILE_ID,
   SemanticProfileId,
@@ -276,6 +277,13 @@ const dispatchFixtures = {
     sourceId: "call-activity-test",
     semanticProfile: SemanticProfileId.CalledProcessCallActivity,
     find: '<bpmn:startEvent id="CallerStart"',
+  },
+  callActivityData: {
+    path: "the Call Activity data reader",
+    source: new URL("./fixtures/call-activity-data-boundaries.bpmn", import.meta.url),
+    sourceId: "supplier-onboarding-call-data",
+    semanticProfile: CALL_ACTIVITY_DATA_BOUNDARIES_CHECKPOINT_PROFILE_ID,
+    find: '<bpmn:startEvent id="Start_Onboarding"',
   },
   userTaskMetadata: {
     path: "the User Task metadata reader",

@@ -100,9 +100,14 @@ def filledDeclaredOutput? (directOutput : DirectActivityDataOutput)
 /-- `ADOUTPUT-ROUTE-01`. Executes the direct association: the filled value under the association's target `Property` name.
 
 The submitted name is deliberately discarded. It identified the `DataOutput` inside the Activity, and the association alone decides which Process `Property` receives the value. -/
-def associatedProcessBinding (directOutput : DirectActivityDataOutput)
+def associatedProcessBinding (propertyId : String)
     (filled : VariableBinding) : VariableBinding :=
-  { name := directOutput.targetPropertyId, value := filled.value }
+  { name := propertyId, value := filled.value }
+
+def dataOutputPropertyTarget? (directOutput : DirectActivityDataOutput) : Option String :=
+  match directOutput.target with
+  | .property propertyId => some propertyId
+  | .processDataOutput _ => none
 
 /-- The one live task wait named by an exact completion identity, or `none`.
 
@@ -125,6 +130,7 @@ def completeDataOutputUserTask? (program : Program) (state : RuntimeState)
     Option RuntimeState := do
   let _ ← dataOutputRunningInstance? state
   let directOutput ← dataOutputAssociation? program taskId
+  let propertyId ← dataOutputPropertyTarget? directOutput
   let filled ← filledDeclaredOutput? directOutput submittedValues
   let task ← dataOutputTaskWait? state processInstanceId taskId activation
   let record ← activityOccurrenceForTaskWait? state.activityOccurrences task
@@ -144,7 +150,7 @@ def completeDataOutputUserTask? (program : Program) (state : RuntimeState)
             process :=
               { bindings := mergeProcessVariableBindings
                   variables.process.bindings
-                  [associatedProcessBinding directOutput filled] } } }
+                  [associatedProcessBinding propertyId filled] } } }
   else
     none
 
@@ -174,7 +180,8 @@ inductive DataOutputCompletionStep (program : Program) :
   | complete (before : RuntimeState) (instanceId processInstanceId : SemanticId)
       (taskId : TaskDefinitionId) (activation : Nat)
       (submittedValues : List VariableBinding)
-      (directOutput : DirectActivityDataOutput) (filled : VariableBinding)
+      (directOutput : DirectActivityDataOutput) (filled : VariableBinding) (propertyId : String)
+      (property : dataOutputPropertyTarget? directOutput = some propertyId)
       (running : before.control = .running instanceId)
       (association : dataOutputAssociation? program taskId = some directOutput)
       (available : filledDeclaredOutput? directOutput submittedValues = some filled)
@@ -184,7 +191,7 @@ inductive DataOutputCompletionStep (program : Program) :
         activation submittedValues = some after)
       (routed : after.variables.process.bindings =
         mergeProcessVariableBindings before.variables.process.bindings
-          [associatedProcessBinding directOutput filled]) :
+          [associatedProcessBinding propertyId filled]) :
       DataOutputCompletionStep program before after
 
 private theorem dataOutputRunningInstance_sound {state : RuntimeState}
@@ -329,10 +336,11 @@ private theorem completionJoin {program : Program} {state after : RuntimeState}
     {activation : Nat} {submittedValues : List VariableBinding}
     (step : completeDataOutputUserTask? program state processInstanceId taskId
       activation submittedValues = some after) :
-    ∃ instanceId directOutput filled, ∃ record : ActivityOccurrence, ∃ variables,
+    ∃ instanceId directOutput filled propertyId, ∃ record : ActivityOccurrence, ∃ variables,
       dataOutputRunningInstance? state = some instanceId ∧
       dataOutputAssociation? program taskId = some directOutput ∧
       filledDeclaredOutput? directOutput submittedValues = some filled ∧
+      dataOutputPropertyTarget? directOutput = some propertyId ∧
       (dataOutputTaskWait? state processInstanceId taskId activation).isSome = true ∧
       removeActivityOccurrenceVariableScope state.variables
         { processInstanceId := record.processInstanceId
@@ -345,7 +353,7 @@ private theorem completionJoin {program : Program} {state after : RuntimeState}
         { variables with
           process :=
             { bindings := mergeProcessVariableBindings variables.process.bindings
-                [associatedProcessBinding directOutput filled] } } := by
+                [associatedProcessBinding propertyId filled] } } := by
   unfold completeDataOutputUserTask? at step
   cases running : dataOutputRunningInstance? state with
   | none => simp [running] at step
@@ -353,28 +361,31 @@ private theorem completionJoin {program : Program} {state after : RuntimeState}
       cases association : dataOutputAssociation? program taskId with
       | none => simp [running, association] at step
       | some directOutput =>
-          cases available : filledDeclaredOutput? directOutput submittedValues with
-          | none => simp [running, association, available] at step
-          | some filled =>
-              cases live : dataOutputTaskWait? state processInstanceId taskId activation with
-              | none => simp [running, association, live] at step
-              | some task =>
-                  cases joined :
-                      activityOccurrenceForTaskWait? state.activityOccurrences task with
-                  | none => simp [running, association, live, joined] at step
-                  | some record =>
-                      cases removed : removeActivityOccurrenceVariableScope state.variables
-                          { processInstanceId := record.processInstanceId
-                            activityElementId := ⟨record.activityElementId.value⟩
-                            activation := record.activation } with
-                      | none =>
-                          simp [running, association, live, joined, removed] at step
-                      | some variables =>
-                          simp [running, association, available, live, joined, removed] at step
-                          obtain ⟨_, changed⟩ := step
-                          cases changed
-                          exact ⟨instanceId, directOutput, filled, record, variables,
-                            rfl, rfl, available, rfl, removed, rfl, rfl⟩
+          cases target : dataOutputPropertyTarget? directOutput with
+          | none => simp [running, association, target] at step
+          | some propertyId =>
+              cases available : filledDeclaredOutput? directOutput submittedValues with
+              | none => simp [running, association, target, available] at step
+              | some filled =>
+                  cases live : dataOutputTaskWait? state processInstanceId taskId activation with
+                  | none => simp [running, association, live] at step
+                  | some task =>
+                      cases joined :
+                          activityOccurrenceForTaskWait? state.activityOccurrences task with
+                      | none => simp [running, association, live, joined] at step
+                      | some record =>
+                          cases removed : removeActivityOccurrenceVariableScope state.variables
+                              { processInstanceId := record.processInstanceId
+                                activityElementId := ⟨record.activityElementId.value⟩
+                                activation := record.activation } with
+                          | none =>
+                              simp [running, association, live, joined, removed] at step
+                          | some variables =>
+                              simp [running, association, target, available, live, joined, removed] at step
+                              obtain ⟨_, changed⟩ := step
+                              cases changed
+                              exact ⟨instanceId, directOutput, filled, propertyId, record, variables,
+                                rfl, rfl, available, target, rfl, removed, rfl, rfl⟩
 
 /-- `ADOUTPUT-ROUTE-01`. A committed completion writes exactly the association's target `Property`, carrying the value submitted under the declared `DataOutput` id.
 
@@ -383,15 +394,16 @@ theorem dataOutputCompletionWritesTheAssociatedProperty {program : Program}
     {state after : RuntimeState} {processInstanceId : SemanticId}
     {taskId : TaskDefinitionId} {activation : Nat}
     {submittedValues : List VariableBinding}
-    {directOutput : DirectActivityDataOutput} {filled : VariableBinding}
+    {directOutput : DirectActivityDataOutput} {filled : VariableBinding} {propertyId : String}
+    (property : dataOutputPropertyTarget? directOutput = some propertyId)
     (association : dataOutputAssociation? program taskId = some directOutput)
     (available : filledDeclaredOutput? directOutput submittedValues = some filled)
     (step : completeDataOutputUserTask? program state processInstanceId taskId
       activation submittedValues = some after) :
     after.variables.process.bindings =
       mergeProcessVariableBindings state.variables.process.bindings
-        [associatedProcessBinding directOutput filled] := by
-  obtain ⟨_, directOutput', filled', _, variables, _, association', available', _,
+        [associatedProcessBinding propertyId filled] := by
+  obtain ⟨_, directOutput', filled', propertyId', _, variables, _, association', available', target, _,
     removed, _, changed⟩ := completionJoin step
   have sameOutput : directOutput' = directOutput :=
     Option.some.inj (association'.symm.trans association)
@@ -399,6 +411,8 @@ theorem dataOutputCompletionWritesTheAssociatedProperty {program : Program}
   have sameFilled : filled' = filled :=
     Option.some.inj (available'.symm.trans available)
   subst sameFilled
+  have sameProperty : propertyId' = propertyId := Option.some.inj (target.symm.trans property)
+  subst sameProperty
   have processUnchanged : variables.process = state.variables.process :=
     removeActivityOccurrenceVariableScope_preserves_process removed
   rw [changed]
@@ -416,7 +430,7 @@ theorem dataOutputCompletionDisposesOneLocalScope {program : Program}
           (activityOccurrenceScopeMatches owner)).length = 1 ∧
         after.variables.activities.filter
           (activityOccurrenceScopeMatches owner) = [] := by
-  obtain ⟨_, _, _, _, _, _, _, _, _, removed, _, changed⟩ := completionJoin step
+  obtain ⟨_, _, _, _, _, _, _, _, _, _, _, removed, _, changed⟩ := completionJoin step
   obtain ⟨present, absent⟩ := removeActivityOccurrenceVariableScope_disposes removed
   refine ⟨_, present, ?_⟩
   rw [changed]
@@ -430,12 +444,12 @@ theorem completeDataOutputUserTask_sound (program : Program)
     (step : completeDataOutputUserTask? program state processInstanceId taskId
       activation submittedValues = some after) :
     DataOutputCompletionStep program state after := by
-  obtain ⟨instanceId, directOutput, filled, _, _, running, association, available,
-    live, _, _, _⟩ := completionJoin step
+  obtain ⟨instanceId, directOutput, filled, propertyId, _, _, running, association, available,
+    property, live, _, _, _⟩ := completionJoin step
   exact .complete state instanceId processInstanceId taskId activation submittedValues
-    directOutput filled (dataOutputRunningInstance_sound running) association available
+    directOutput filled propertyId property (dataOutputRunningInstance_sound running) association available
     live after step
-    (dataOutputCompletionWritesTheAssociatedProperty association available step)
+    (dataOutputCompletionWritesTheAssociatedProperty property association available step)
 
 /-- The successor's exact Activity record, so the issuing and claim laws below name one term. -/
 def dataOutputActivityRecord (state : RuntimeState) (instanceId : SemanticId)
@@ -500,7 +514,7 @@ theorem completeDataOutputUserTask_activity_identity_discipline {program : Progr
     activityIdentityIssuingDiscipline before after = true := by
   apply activityIdentityIssuingDiscipline_of_subset
   intro occurrence present
-  obtain ⟨_, _, _, _, _, _, _, _, _, _, retained, _⟩ := completionJoin step
+  obtain ⟨_, _, _, _, _, _, _, _, _, _, _, _, retained, _⟩ := completionJoin step
   rw [retained] at present
   exact (List.mem_filter.mp present).1
 

@@ -69,7 +69,9 @@ private theorem regional_timerTask_successors_equal (program : Program) (before 
     timer_task_cancellation_commutes program before contract patch _ disposition
       taskFound canonical live cancelledOutside
   cases operation with
-  | returnProcess id origin process definition output =>
+  | returnProcess id origin process definition output data =>
+      have empty := prepareInternalRegional_return_data_empty program before id origin process definition output data regional regionalFound
+      subst data
       obtain ⟨returned, record, root, returnedApply, kind, _, _, _, _, update, _⟩ :=
         preparedReturn_quiescent_fields program before patch.arm.runtimeInstanceId id origin process definition output
           regional beforeWF regionalFound

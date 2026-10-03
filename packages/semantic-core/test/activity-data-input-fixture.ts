@@ -39,12 +39,12 @@ export const instanceId = "ActivityDataInputInstance_1";
 export const sourcePropertyId = "Property_ReviewContext";
 export const targetDataInputId = "DataInput_ReviewContext";
 
-export const directInput: DirectActivityDataInput = Object.freeze({
+export const directInput = Object.freeze({
   associationId: "DataInputAssociation_ReviewContext",
-  sourcePropertyId,
+  source: { kind: "property", propertyId: sourcePropertyId },
   targetDataInputId,
   targetDataInputName: "Review context",
-});
+} as const satisfies DirectActivityDataInput);
 
 export const dataInputProgram = rootScopedProgram({
   kind: SemanticProcessKind.SemanticProcess,

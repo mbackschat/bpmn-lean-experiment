@@ -298,7 +298,7 @@ test("a program merging the DataOutput and the target Property into one id is re
             ...routed,
             directOutput: {
               ...routed.directOutput,
-              targetPropertyId: routed.directOutput.sourceDataOutputId,
+              target: { kind: "property", propertyId: routed.directOutput.sourceDataOutputId },
             },
           }
         : operation
@@ -307,4 +307,21 @@ test("a program merging the DataOutput and the target Property into one id is re
 
   assert.equal(isWellFormedSemanticProcessProgram(dataOutputProgram), true);
   assert.equal(isWellFormedSemanticProcessProgram(merged), false);
+});
+
+test("standalone output completion refuses a Process output endpoint without disposing its armed lifetime", async () => {
+  const { completeDataOutputUserTask } = await import(
+    new URL("../dist/semantic-process-activity-data-output-runtime.js", import.meta.url).href
+  ) as typeof import("../src/semantic-process-activity-data-output-runtime.ts");
+  const active = started();
+  const owner = active.userTaskWaits[0]?.owner;
+  assert.ok(owner !== undefined);
+  const withOutput: RuntimeState = { ...active, variables: { ...active.variables,
+    processInterfaces: [{ owner, inputs: [], outputs: [] }] } };
+  const snapshot = structuredClone(withOutput);
+  const operations = dataOutputProgram.operations.map((operation) => operation.kind === SemanticOperationKind.AwaitDataOutputUserTask
+    ? { ...operation, directOutput: { ...operation.directOutput, target: { kind: "processDataOutput" as const, dataOutputId: "ProcessOutput" } } }
+    : operation);
+  assert.equal(completeDataOutputUserTask({ ...dataOutputProgram, operations }, withOutput, decideApproved), null);
+  assert.deepEqual(withOutput, snapshot);
 });

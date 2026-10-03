@@ -1,8 +1,9 @@
 /** Parser-owned scalar Activity interfaces shared by exact and structural source admission. */
 import { CheckedNodeKind } from "@bpmn-lean/semantic-core";
-import type { CheckedNode } from "@bpmn-lean/semantic-core";
+import type { ActivityDataInputSource, ActivityDataOutputTarget, CheckedNode } from "@bpmn-lean/semantic-core";
 import { asElement, asElementArray, hasOnlyModelledKeys, readId } from "./moddle-graph.js";
 import type { ElementRecord } from "./moddle-graph.js";
+import { projectScalarIoSpecification } from "./scalar-io-specification.js";
 import { hasValidDataInputOutputUserTaskIdentities } from "./activity-data-input-output-checked-admission.js";
 import { hasOnlyProjectedFlowElementKeys, ProjectedFlowElementShape } from "./projected-flow-element-keys.js";
 
@@ -10,11 +11,6 @@ type DataInputOutputUserTask = Extract<CheckedNode, { kind: CheckedNodeKind.Data
 
 const selectedTypes = Object.freeze({
   property: "bpmn:Property",
-  inputOutputSpecification: "bpmn:InputOutputSpecification",
-  dataInput: "bpmn:DataInput",
-  dataOutput: "bpmn:DataOutput",
-  inputSet: "bpmn:InputSet",
-  outputSet: "bpmn:OutputSet",
   dataInputAssociation: "bpmn:DataInputAssociation",
   dataOutputAssociation: "bpmn:DataOutputAssociation",
 });
@@ -25,6 +21,22 @@ export function projectDataInputOutputUserTask(
   inputProperty: ElementRecord,
   outputProperty: ElementRecord,
 ): DataInputOutputUserTask | undefined {
+  const selected = projectScalarIoSpecification(task);
+  const inputId = readId(inputProperty);
+  const outputId = readId(outputProperty);
+  if (selected === undefined || selected.declaration.inputSet.name !== null ||
+      selected.declaration.outputSet.name !== null || inputId === undefined || outputId === undefined) return undefined;
+  return projectTask(task, inputProperty, outputProperty,
+    { kind: "property", propertyId: inputId }, { kind: "property", propertyId: outputId });
+}
+
+function projectTask(
+  task: ElementRecord,
+  inputElement: ElementRecord,
+  outputElement: ElementRecord,
+  source: ActivityDataInputSource,
+  target: ActivityDataOutputTarget,
+): DataInputOutputUserTask | undefined {
   const taskId = readId(task);
   if (
     task.$type !== "bpmn:UserTask" || taskId === undefined ||
@@ -34,52 +46,32 @@ export function projectDataInputOutputUserTask(
   ) {
     return undefined;
   }
-  const io = asElement(task.ioSpecification);
-  const dataInputs = asElementArray(io?.dataInputs);
-  const dataOutputs = asElementArray(io?.dataOutputs);
-  const dataInput = dataInputs?.[0];
-  const dataOutput = dataOutputs?.[0];
+  const selected = projectScalarIoSpecification(task);
+  if (selected === undefined) return undefined;
+  const { input: dataInput, output: dataOutput } = selected;
   if (
-    io === undefined ||
-    io.$type !== selectedTypes.inputOutputSpecification ||
-    readId(io) === undefined ||
-    !hasOnlyModelledKeys(io, [
-      "$type",
-      "id",
-      "dataInputs",
-      "dataOutputs",
-      "inputSets",
-      "outputSets",
-    ]) ||
-    dataInputs?.length !== 1 || dataInput === undefined ||
-    dataOutputs?.length !== 1 || dataOutput === undefined ||
-    dataInput === dataOutput ||
-    !isRequiredScalarDataInput(dataInput) ||
-    !isRequiredScalarDataOutput(dataOutput) ||
-    !hasExactInputSet(asElementArray(io.inputSets), dataInput) ||
-    !hasExactOutputSet(asElementArray(io.outputSets), dataOutput) ||
     !hasExactInputAssociation(
       asElementArray(task.dataInputAssociations),
-      inputProperty,
+      inputElement,
       dataInput,
+      task,
     ) ||
     !hasExactOutputAssociation(
       asElementArray(task.dataOutputAssociations),
       dataOutput,
-      outputProperty,
+      outputElement,
+      task,
     )
   ) {
     return undefined;
   }
   const inputAssociation = asElementArray(task.dataInputAssociations)?.[0];
   const outputAssociation = asElementArray(task.dataOutputAssociations)?.[0];
-  const inputPropertyId = readId(inputProperty);
-  const outputPropertyId = readId(outputProperty);
   const inputId = readId(dataInput);
   const outputId = readId(dataOutput);
   const inputAssociationId = inputAssociation === undefined ? undefined : readId(inputAssociation);
   const outputAssociationId = outputAssociation === undefined ? undefined : readId(outputAssociation);
-  if (inputPropertyId === undefined || outputPropertyId === undefined || inputId === undefined ||
+  if (inputId === undefined ||
       outputId === undefined || inputAssociationId === undefined || outputAssociationId === undefined) return undefined;
   const node: DataInputOutputUserTask = {
     kind: CheckedNodeKind.DataInputOutputUserTask,
@@ -87,7 +79,7 @@ export function projectDataInputOutputUserTask(
     name: optionalName(task),
     directInput: {
       associationId: inputAssociationId,
-      sourcePropertyId: inputPropertyId,
+      source,
       targetDataInputId: inputId,
       targetDataInputName: optionalName(dataInput),
     },
@@ -95,7 +87,7 @@ export function projectDataInputOutputUserTask(
       associationId: outputAssociationId,
       sourceDataOutputId: outputId,
       sourceDataOutputName: optionalName(dataOutput),
-      targetPropertyId: outputPropertyId,
+      target,
     },
   };
   return hasValidDataInputOutputUserTaskIdentities(node) ? node : undefined;
@@ -122,63 +114,40 @@ export function projectOwnedDataInputOutputUserTask(task: ElementRecord, process
     ? projectDataInputOutputUserTask(task, source, target) : undefined;
 }
 
-function isRequiredScalarDataInput(value: ElementRecord): boolean {
-  return value.$type === selectedTypes.dataInput &&
-    readId(value) !== undefined &&
-    hasOnlyModelledKeys(value, ["$type", "id", "name"]) &&
-    (value.name === undefined || typeof value.name === "string") &&
-    value.isCollection === false &&
-    value.itemSubjectRef === undefined &&
-    value.dataState === undefined;
+/** CDATA-OWNER-01 resolves endpoints only in the task's actual containing Process. */
+export function projectProcessDataInputOutputUserTask(task: ElementRecord, process: ElementRecord): DataInputOutputUserTask | undefined {
+  if (process.$type !== "bpmn:Process" || task.$parent !== process ||
+      asElementArray(process.flowElements)?.filter((element) => element === task).length !== 1) return undefined;
+  const properties = scalarProcessProperties(process);
+  if (properties === undefined || properties.some((property) => property.$parent !== process)) return undefined;
+  const io = process.ioSpecification === undefined ? undefined : projectScalarIoSpecification(process);
+  if (process.ioSpecification !== undefined && io === undefined) return undefined;
+  const inputAssociation = asElementArray(task.dataInputAssociations)?.[0];
+  const outputAssociation = asElementArray(task.dataOutputAssociations)?.[0];
+  const source = asElementArray(inputAssociation?.sourceRef)?.[0];
+  const target = asElement(outputAssociation?.targetRef);
+  if (source === undefined || target === undefined) return undefined;
+  const sourceId = readId(source);
+  const targetId = readId(target);
+  if (sourceId === undefined || targetId === undefined) return undefined;
+  const input: ActivityDataInputSource | undefined = properties.includes(source)
+    ? { kind: "property", propertyId: sourceId }
+    : source === io?.input ? { kind: "processDataInput", dataInputId: sourceId } : undefined;
+  const output: ActivityDataOutputTarget | undefined = properties.includes(target)
+    ? { kind: "property", propertyId: targetId }
+    : target === io?.output ? { kind: "processDataOutput", dataOutputId: targetId } : undefined;
+  return input === undefined || output === undefined ? undefined : projectTask(task, source, target, input, output);
 }
 
-function isRequiredScalarDataOutput(value: ElementRecord): boolean {
-  return value.$type === selectedTypes.dataOutput &&
-    readId(value) !== undefined &&
-    hasOnlyModelledKeys(value, ["$type", "id", "name"]) &&
-    (value.name === undefined || typeof value.name === "string") &&
-    value.isCollection === false &&
-    value.itemSubjectRef === undefined &&
-    value.dataState === undefined;
-}
-
-function hasExactInputSet(
-  inputSets: ReadonlyArray<ElementRecord> | undefined,
-  dataInput: ElementRecord,
-): boolean {
-  const inputSet = inputSets?.[0];
-  return inputSets?.length === 1 && inputSet !== undefined &&
-    inputSet.$type === selectedTypes.inputSet &&
-    readId(inputSet) !== undefined &&
-    hasOnlyModelledKeys(inputSet, ["$type", "id", "dataInputRefs"]) &&
-    sameReferences(inputSet.dataInputRefs, [dataInput]) &&
-    inputSet.optionalInputRefs === undefined &&
-    inputSet.whileExecutingInputRefs === undefined &&
-    inputSet.outputSetRefs === undefined;
-}
-
-function hasExactOutputSet(
-  outputSets: ReadonlyArray<ElementRecord> | undefined,
-  dataOutput: ElementRecord,
-): boolean {
-  const outputSet = outputSets?.[0];
-  return outputSets?.length === 1 && outputSet !== undefined &&
-    outputSet.$type === selectedTypes.outputSet &&
-    readId(outputSet) !== undefined &&
-    hasOnlyModelledKeys(outputSet, ["$type", "id", "dataOutputRefs"]) &&
-    sameReferences(outputSet.dataOutputRefs, [dataOutput]) &&
-    outputSet.optionalOutputRefs === undefined &&
-    outputSet.whileExecutingOutputRefs === undefined &&
-    outputSet.inputSetRefs === undefined;
-}
-
-function hasExactInputAssociation(
+export function hasExactInputAssociation(
   associations: ReadonlyArray<ElementRecord> | undefined,
   inputProperty: ElementRecord,
   dataInput: ElementRecord,
+  owner: ElementRecord,
 ): boolean {
   const association = associations?.[0];
   return associations?.length === 1 && association !== undefined &&
+    association.$parent === owner &&
     association.$type === selectedTypes.dataInputAssociation &&
     readId(association) !== undefined &&
     hasOnlyModelledKeys(association, ["$type", "id", "sourceRef", "targetRef"]) &&
@@ -188,13 +157,15 @@ function hasExactInputAssociation(
     association.assignment === undefined;
 }
 
-function hasExactOutputAssociation(
+export function hasExactOutputAssociation(
   associations: ReadonlyArray<ElementRecord> | undefined,
   dataOutput: ElementRecord,
   outputProperty: ElementRecord,
+  owner: ElementRecord,
 ): boolean {
   const association = associations?.[0];
   return associations?.length === 1 && association !== undefined &&
+    association.$parent === owner &&
     association.$type === selectedTypes.dataOutputAssociation &&
     readId(association) !== undefined &&
     hasOnlyModelledKeys(association, ["$type", "id", "sourceRef", "targetRef"]) &&

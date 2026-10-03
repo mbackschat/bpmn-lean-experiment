@@ -109,7 +109,7 @@ private def operationOriginElementId : SemanticOperation → Option NodeId
   | .initiate _ origin _ | .initiateMessage _ origin _ _ | .initiateTimer _ origin _ _
   | .enterScope _ origin _ _ _ | .enterBoundedScope _ origin _ _ _ _
   | .enterMonitoredScope _ origin _ _ _ _
-  | .invokeProcess _ origin _ _ _ _ _ | .returnProcess _ origin _ _ _
+  | .invokeProcess _ origin _ _ _ _ _ _ | .returnProcess _ origin _ _ _ _
   | .awaitUserTask _ origin _ _ _ | .awaitDataInputUserTask _ origin _ _ _ _ _
   | .awaitDataInputOutputUserTask _ origin _ _ _ _ _ _
   | .awaitDataOutputUserTask _ origin _ _ _ _ _

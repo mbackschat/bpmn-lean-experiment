@@ -69,7 +69,7 @@ theorem makeInternalDataArmingPatch_frame
       makeInternalDataArmingPatch program state right rightOwner rightOrigin rightSource := by
   simp only [makeInternalDataArmingPatch, applyInternalDataArmingPatch,
     applyInternalArmingPatch, dataInputOutputActivityRecord, activationCount,
-    activityActivationCount]
+    activityActivationCount, dataInputOutputRunningInstance?]
   rw [taskCounter_set_other state _ _ _ _ different,
     taskCounter_set_other state _ _ _ _ different]
 
@@ -122,9 +122,9 @@ theorem prepareInternalDataArmingContract_preserved
     unfold onlyTokenOwner? tokenOwners
     rw [tokenFilter_remove_other _ _ _ _ inputsDifferent]
     exact owned
-  have runningFrame : after.control = .running rightOwner.processInstanceId := running
+  have runningFrame : dataArmingHostValid after rightOwner right.data = true := running
   have liveFrame : exactLiveOccurrence after rightOwner = true := live
-  have sourceFrame : dataArmingBindings? after right.data = some rightSource :=
+  have sourceFrame : dataArmingBindings? after rightOwner right.data = some rightSource :=
     sourceFound
   have patchFrame : makeInternalDataArmingPatch program after right rightOwner
       rightOrigin rightSource = rightPatch :=

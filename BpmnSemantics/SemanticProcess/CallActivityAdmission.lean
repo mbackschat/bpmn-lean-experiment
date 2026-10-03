@@ -15,6 +15,7 @@ private structure InvokeBinding where
   calledRoot : DefinitionScopeId
   calledEntry : ControlPlaceId
   returnOperationId : OperationId
+  data : CallDataInterface
 
 private structure ReturnBinding where
   id : OperationId
@@ -22,6 +23,7 @@ private structure ReturnBinding where
   calledProcessId : ProcessId
   calledRoot : DefinitionScopeId
   callerOutput : ControlPlaceId
+  data : CallDataInterface
 
 private def operationScope? (program : Program) (operationId : OperationId) :
     Option DefinitionScopeId :=
@@ -56,7 +58,7 @@ def returnProcessOperationWellFormed (program : Program)
 /-- Count every identity-associated invoke/return before validating its other fields. -/
 def callOperationsPaired (program : Program) : Bool :=
   let invokes : List InvokeBinding := program.operations.filterMap fun
-    | .invokeProcess id origin input calledProcessId calledRoot calledEntry returned =>
+    | .invokeProcess id origin input calledProcessId calledRoot calledEntry returned data =>
         some (show InvokeBinding from
           { id
             origin
@@ -64,12 +66,12 @@ def callOperationsPaired (program : Program) : Bool :=
             calledProcessId
             calledRoot
             calledEntry
-            returnOperationId := returned })
+            returnOperationId := returned, data })
     | _ => none
   let returns : List ReturnBinding := program.operations.filterMap fun
-    | .returnProcess id origin calledProcessId calledRoot callerOutput =>
+    | .returnProcess id origin calledProcessId calledRoot callerOutput data =>
         some (show ReturnBinding from
-          { id, origin, calledProcessId, calledRoot, callerOutput })
+          { id, origin, calledProcessId, calledRoot, callerOutput, data })
     | _ => none
   if invokes.isEmpty && returns.isEmpty then true
   else
@@ -95,7 +97,7 @@ def callOperationsPaired (program : Program) : Bool :=
                       placeScope? program returned.callerOutput = some entryRoot.id &&
                       returned.origin = invoke.origin &&
                       returned.calledProcessId = invoke.calledProcessId &&
-                      returned.calledRoot = invoke.calledRoot
+                      returned.calledRoot = invoke.calledRoot && returned.data = invoke.data
                 | _ => false
             | _ => false)
           && returns.all fun returned =>
@@ -110,17 +112,18 @@ theorem callOperationsPaired_return_caller_scope (program : Program)
     (calledProcess : ProcessId) (calledRoot : DefinitionScopeId) (calledEntry : ControlPlaceId)
     (returnedId : OperationId) (returnOrigin : BpmnElementOrigin) (returnProcess : ProcessId)
     (returnRoot : DefinitionScopeId) (output : ControlPlaceId) (callerScope : DefinitionScopeId)
+    {invokeData returnData : CallDataInterface}
     (paired : callOperationsPaired program = true)
-    (invocation : .invokeProcess invokeId invokeOrigin input calledProcess calledRoot calledEntry returnedId ∈ program.operations)
-    (returning : .returnProcess returnedId returnOrigin returnProcess returnRoot output ∈ program.operations)
+    (invocation : .invokeProcess invokeId invokeOrigin input calledProcess calledRoot calledEntry returnedId invokeData ∈ program.operations)
+    (returning : .returnProcess returnedId returnOrigin returnProcess returnRoot output returnData ∈ program.operations)
     (caller : (program.operationScopes.find? fun binding => decide (binding.operationId = invokeId)).map (·.scopeId) = some callerScope) :
     (program.controlPlaceScopes.find? fun binding => decide (binding.controlPlaceId = output)).map (·.scopeId) = some callerScope := by
   let actual : ReturnBinding :=
     { id := returnedId, origin := returnOrigin, calledProcessId := returnProcess,
-      calledRoot := returnRoot, callerOutput := output }
+      calledRoot := returnRoot, callerOutput := output, data := returnData }
   have actualMember : actual ∈ program.operations.filterMap (fun
-      | .returnProcess id origin process root output => some (show ReturnBinding from
-          { id, origin, calledProcessId := process, calledRoot := root, callerOutput := output })
+      | .returnProcess id origin process root output data => some (show ReturnBinding from
+          { id, origin, calledProcessId := process, calledRoot := root, callerOutput := output, data })
       | _ => none) := List.mem_filterMap.mpr ⟨_, returning, rfl⟩
   unfold callOperationsPaired at paired
   dsimp only at paired
@@ -146,6 +149,7 @@ theorem callOperationsPaired_return_caller_scope (program : Program)
         dsimp only [actual] at selected
         split at selected
         · simp only [Bool.and_eq_true, decide_eq_true_eq] at selected
+          have selected := selected.1
           obtain ⟨⟨⟨⟨⟨⟨⟨⟨⟨_, _⟩, invokeScope⟩, _⟩, _⟩, _⟩, outputScope⟩, _⟩, _⟩, _⟩ := selected
           change (program.operationScopes.find? fun binding => decide (binding.operationId = invokeId)).map (·.scopeId) = some entryRoot.id at invokeScope
           have sameScope := Option.some.inj (caller.symm.trans invokeScope)
@@ -158,11 +162,12 @@ theorem callOperationsPaired_return_caller_scope (program : Program)
 theorem callOperationsPaired_calledRoot_ne_entryRoot (program : Program) (entryRoot : DefinitionScopeId)
     (id : OperationId) (origin : BpmnElementOrigin) (input : ControlPlaceId) (process : ProcessId)
     (root : DefinitionScopeId) (entry : ControlPlaceId) (returned : OperationId)
+    {data : CallDataInterface}
     (paired : callOperationsPaired program = true)
     (hosting : (match (generalizing := false) program.definitionScopes.filter (fun scope =>
         scope.parentScopeId.isNone && scope.originElementId.value = program.processId.value) with
       | [scope] => some scope.id | _ => none) = some entryRoot)
-    (member : .invokeProcess id origin input process root entry returned ∈ program.operations) : root ≠ entryRoot := by
+    (member : .invokeProcess id origin input process root entry returned data ∈ program.operations) : root ≠ entryRoot := by
   unfold callOperationsPaired at paired
   dsimp only at paired
   split at paired
@@ -182,6 +187,7 @@ theorem callOperationsPaired_calledRoot_ne_entryRoot (program : Program) (entryR
       split at selected
       · split at selected
         · simp only [Bool.and_eq_true, decide_eq_true_eq] at selected
+          have selected := selected.1
           obtain ⟨⟨⟨⟨⟨⟨⟨⟨⟨same, different⟩, _⟩, _⟩, _⟩, _⟩, _⟩, _⟩, _⟩, _⟩ := selected
           exact fun equal => different (same.trans (equal.trans rootEq.symm))
         · contradiction
@@ -191,7 +197,7 @@ theorem callOperationsPaired_calledRoot_ne_entryRoot (program : Program) (entryR
 /-- Virtual graph edges from the unique called End operation to its return. -/
 def callCompletionPairs (program : Program) : List (OperationId × OperationId) :=
   program.operations.filterMap fun
-    | .returnProcess returnId _ _ calledRoot _ =>
+    | .returnProcess returnId _ _ calledRoot _ _ =>
         match program.operations.filter fun operation =>
             match operation with
             | .reachNoneEnd endId _ _ =>

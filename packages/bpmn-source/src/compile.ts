@@ -1,4 +1,4 @@
-import { TRANSACTION_CANCELLATION_CHECKPOINT_PROFILE_ID } from "@bpmn-lean/semantic-core";
+import { CALL_ACTIVITY_DATA_BOUNDARIES_CHECKPOINT_PROFILE_ID, TRANSACTION_CANCELLATION_CHECKPOINT_PROFILE_ID } from "@bpmn-lean/semantic-core";
 import {
   BpmnCompilationStatus,
   BpmnSourceDiagnosticCode,
@@ -64,6 +64,7 @@ import {
   userTaskMetadataBindingValid,
 } from "./user-task-metadata-source.js";
 import { preservationCapability } from "./preserved-element-classification.js";
+import { callDataContainmentCardinalities } from "./call-activity-source.js";
 import {
   isWarningWithinOpaqueRendering,
 } from "./opaque-rendering-retention.js";
@@ -214,6 +215,7 @@ export async function compileBpmnToSemanticProcess(
       ...messagePayloadCatchContainmentCardinalities(request.semanticProfile),
       ...messageKeyCorrelationContainmentCardinalities(request.semanticProfile),
       ...compensationSourceContainmentCardinalities(request.semanticProfile),
+      ...callDataContainmentCardinalities(request.semanticProfile),
     ],
   );
   if (cardinalityMismatch !== undefined) {
@@ -266,7 +268,8 @@ export async function compileBpmnToSemanticProcess(
     ]);
   }
   if (
-    request.semanticProfile === SemanticProfileId.CalledProcessCallActivity &&
+    (request.semanticProfile === SemanticProfileId.CalledProcessCallActivity ||
+      request.semanticProfile === CALL_ACTIVITY_DATA_BOUNDARIES_CHECKPOINT_PROFILE_ID) &&
     (!isWellFormedSemanticProcessProgram(semanticProcess) ||
       !callActivityDefinitionBindingValid(
         projection.checkedProcess,

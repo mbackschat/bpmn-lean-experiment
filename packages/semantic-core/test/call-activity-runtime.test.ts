@@ -376,6 +376,14 @@ test("interrupting a caller removes its separately parentless called Process sub
     activityOccurrences: [],
     userTaskWaits: [],
     logicalTimeMs: 73,
+    variables: {
+      ...withoutControllers.variables,
+      processInterfaces: [host, caller.id, directCalledRoot, nestedCalledRoot].map((owner) => ({
+        owner,
+        inputs: [{ name: "request", value: { kind: VariableValueKind.String, value: owner.processInstanceId } }],
+        outputs: [],
+      })),
+    },
     sequentialMultiInstanceControllers: [
       withdrawnController,
       unrelatedController,
@@ -399,6 +407,7 @@ test("interrupting a caller removes its separately parentless called Process sub
     "the direct and nested called roots are both in the removed closure",
   );
   assert.deepEqual(after.variables.process, withControllers.variables.process);
+  assert.deepEqual(after.variables.processInterfaces, [withControllers.variables.processInterfaces[0]]);
   assert.equal(after.logicalTimeMs, withControllers.logicalTimeMs);
   for (const field of [
     "endOccurrences",

@@ -559,7 +559,10 @@ theorem admitted_parallel_has_no_sequential_operation (program : Program)
   have transaction : (program.identity.semanticProfile == transactionCancellationCheckpointProfileId) = false := by
     rw [account.profile]
     decide +kernel
-  simp only [programProfileCapabilitiesValid, transaction, Bool.false_eq_true, legacy,
+  have callData : (program.identity.semanticProfile == callDataCheckpointProfileId) = false := by
+    rw [account.profile]
+    decide +kernel
+  simp only [programProfileCapabilitiesValid, callData, transaction, Bool.false_eq_true, legacy,
     ↓reduceIte, Bool.and_eq_true] at capabilities
   have selected := capabilities.1.1
   simp [programSequentialMultiInstanceProfileMatches, account.profile,

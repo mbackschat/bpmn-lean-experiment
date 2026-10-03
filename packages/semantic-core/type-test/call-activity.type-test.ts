@@ -1,4 +1,5 @@
 import { CheckedNodeKind } from "../src/checked-process-contract.js";
+import { CallDataKind } from "../src/call-data-contract.js";
 import { SemanticOperationKind, SemanticOriginKind } from "../src/semantic-process-contract.js";
 import type { CheckedNode } from "../src/checked-process-contract.js";
 import type {
@@ -10,6 +11,7 @@ const checkedCall = {
   kind: CheckedNodeKind.CallActivity,
   id: "Call_CalledProcess",
   calledProcessId: "CalledProcess",
+  data: { kind: CallDataKind.Empty },
 } as const satisfies CheckedNode;
 
 const invoke = {
@@ -21,6 +23,7 @@ const invoke = {
   calledRootScopeId: "scope:CalledProcess",
   calledEntry: "place:Flow_Called_Start_Task",
   returnOperationId: "operation:return-process:Call_CalledProcess",
+  data: { kind: CallDataKind.Empty },
 } as const satisfies InvokeProcessOperation;
 
 const returned = {
@@ -30,6 +33,7 @@ const returned = {
   calledProcessId: "CalledProcess",
   calledRootScopeId: "scope:CalledProcess",
   callerOutput: "place:Flow_Caller_Call_Task",
+  data: { kind: CallDataKind.Empty },
 } as const satisfies ReturnProcessOperation;
 
 declare let checkedCallContract: Extract<

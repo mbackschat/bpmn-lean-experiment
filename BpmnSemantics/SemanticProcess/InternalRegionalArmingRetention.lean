@@ -68,19 +68,34 @@ theorem regionalSelection_return_root (program : Program) (state : RuntimeState)
     selected.root.id = record.calledRoot ∧ selected.root.parent = none := by
   unfold selectInternalRegional? at found
   obtain ⟨_, _, found⟩ := Option.bind_eq_some_iff.mp found
-  cases operation
-  all_goals
-    dsimp only at found
-    repeat' first
-      | (solve | simp at found)
-      | (solve | cases found; simp at kind)
-      | (solve |
-          cases found
-          cases kind
-          exact ⟨scope_identity_of_census state _ _ (by assumption),
-            Option.isNone_iff_eq_none.mp (by assumption)⟩)
-      | split at found
-      | obtain ⟨_, _, found⟩ := Option.bind_eq_some_iff.mp found
+  cases operation with
+  | returnProcess _ _ _ _ _ data =>
+      cases data with
+      | scalar => simp at found
+      | empty =>
+          dsimp only at found
+          repeat' first
+            | (solve | simp at found)
+            | (solve | cases found; simp at kind)
+            | (solve |
+                cases found
+                cases kind
+                exact ⟨scope_identity_of_census state _ _ (by assumption),
+                  Option.isNone_iff_eq_none.mp (by assumption)⟩)
+            | split at found
+            | obtain ⟨_, _, found⟩ := Option.bind_eq_some_iff.mp found
+  | _ =>
+      dsimp only at found
+      repeat' first
+        | (solve | simp at found)
+        | (solve | cases found; simp at kind)
+        | (solve |
+            cases found
+            cases kind
+            exact ⟨scope_identity_of_census state _ _ (by assumption),
+              Option.isNone_iff_eq_none.mp (by assumption)⟩)
+        | split at found
+        | obtain ⟨_, _, found⟩ := Option.bind_eq_some_iff.mp found
 
 private theorem completing_withdrawal (program : Program) (state : RuntimeState)
     (operation : SemanticOperation) (selected : InternalRegionalSelection)
@@ -90,15 +105,26 @@ private theorem completing_withdrawal (program : Program) (state : RuntimeState)
     ∃ definition output, selectSubscribedCompletionWithdrawal? program state definition output = some withdrawal := by
   unfold selectInternalRegional? at found
   obtain ⟨_, _, found⟩ := Option.bind_eq_some_iff.mp found
-  cases operation
-  all_goals
-    dsimp only at found
-    repeat' first
-      | (solve | simp at found)
-      | (solve | cases found; simp at kind)
-      | (solve | cases found; cases kind; exact ⟨_, _, by assumption⟩)
-      | split at found
-      | obtain ⟨_, _, found⟩ := Option.bind_eq_some_iff.mp found
+  cases operation with
+  | returnProcess _ _ _ _ _ data =>
+      cases data with
+      | scalar => simp at found
+      | empty =>
+          dsimp only at found
+          repeat' first
+            | (solve | simp at found)
+            | (solve | cases found; simp at kind)
+            | (solve | cases found; cases kind; exact ⟨_, _, by assumption⟩)
+            | split at found
+            | obtain ⟨_, _, found⟩ := Option.bind_eq_some_iff.mp found
+  | _ =>
+      dsimp only at found
+      repeat' first
+        | (solve | simp at found)
+        | (solve | cases found; simp at kind)
+        | (solve | cases found; cases kind; exact ⟨_, _, by assumption⟩)
+        | split at found
+        | obtain ⟨_, _, found⟩ := Option.bind_eq_some_iff.mp found
 
 theorem regionalSelection_bounded_deadline (program : Program) (state : RuntimeState)
     (operation : SemanticOperation) (selected : InternalRegionalSelection)

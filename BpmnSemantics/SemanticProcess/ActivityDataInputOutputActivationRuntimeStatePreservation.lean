@@ -69,11 +69,11 @@ theorem activityDataInputOutput_parallelBindings_of_forbidden
 /-- ADINPUT-SCOPE-01, ADOUTPUT-ATOMIC-01, and ADIO-SCOPE-01 use the same unbounded task/Activity lifetime. Local bindings do not alter its identity or controller frames. -/
 theorem unboundedTaskActivityInsertion_preserves_runtimeStateWellFormed
     (program : Program) (expectedInstanceId : SemanticId) (before : RuntimeState)
-    (instanceId : SemanticId) (owner : ScopeOccurrenceId)
+    (hosting instanceId : SemanticId) (owner : ScopeOccurrenceId)
     (input output : ControlPlaceId) (taskId : TaskDefinitionId) (taskName : Option String)
     (bindings : List VariableBinding) (operation : SemanticOperation)
     (wellFormed : runtimeStateWellFormed program expectedInstanceId before = true)
-    (running : before.control = .running instanceId)
+    (running : before.control = .running hosting)
     (selected : onlyTokenOwner? before input = some owner)
     (declared : operation ∈ program.operations)
     (declaration : UnboundedUserTaskWaitDeclaration
@@ -161,9 +161,6 @@ theorem unboundedTaskActivityInsertion_preserves_runtimeStateWellFormed
   have positionAfter : runtimePositionValid program expectedInstanceId successor = true :=
     runtimePositionValid_removeToken_frame program expectedInstanceId before successor
       input owner position selected rfl rfl rfl rfl
-  have runningIdentity : instanceId = expectedInstanceId := by
-    exact runtimePositionValid_running_instance program expectedInstanceId instanceId
-      before position running
   have racesAfter : eventRaceAssociationsValid successor = true := by
     simpa [successor, eventRaceAssociationsValid] using races
   have incidentsAfter : effectIncidentAssociationsValid successor = true := by
@@ -324,7 +321,7 @@ theorem unboundedTaskActivityInsertion_preserves_runtimeStateWellFormed
     rcases (mem_canonicalInsertBy userTaskWaitBefore insertedWait wait
       before.waits).mp raw with new | old
     · subst wait
-      simpa [insertedWait, runningIdentity] using declarer
+      simpa [insertedWait] using declarer
     · exact List.all_eq_true.mp declarations.1.1.1.1 wait
         (List.mem_filter.mpr ⟨old, sameInstance⟩)
   have hiddenAfter : hiddenRecordDeclarationsValid program successor = true := by
@@ -570,9 +567,9 @@ theorem unboundedTaskActivityInsertion_preserves_runtimeStateWellFormed
     exact snapshots
   have executionAfter : compensationExecutionStateValid program successor = true := by
     let armed := activateUserTask before instanceId owner input output { id := taskId, name := taskName }
-    have armedValid := compensationExecutionStateValid_activateUserTask program before instanceId
+    have armedValid := compensationExecutionStateValid_activateUserTask program before hosting
       instanceId owner input output { id := taskId, name := taskName } running selected execution
-    exact compensationExecutionStateValid_running_ordinary program armed successor instanceId
+    exact compensationExecutionStateValid_running_ordinary program armed successor hosting
       running rfl rfl rfl rfl rfl rfl armedValid
       (by intro trigger member prior; exact prior)
       (by intro trigger member quiet; exact quiet)
@@ -592,28 +589,24 @@ theorem dataInputOutputActivationStep_preserves_runtimeStateWellFormed_general
     (wellFormed : runtimeStateWellFormed program expectedInstanceId before = true)
     (transition : DataInputOutputActivationStep program before after) :
     runtimeStateWellFormed program expectedInstanceId after = true := by
-  cases transition
-  case activate =>
-      rename_i instanceId id origin input output taskId taskName directInput directOutput
-        declared running source success
-      unfold activateDataInputOutputUserTask? at success
-      cases selected : onlyTokenOwner? before input with
-      | none => simp [selected] at success
-      | some owner =>
-          cases available : dataInputOutputSourceBinding? before directInput with
-          | none => simp [selected, running, available] at success
-          | some binding =>
-              rw [selected, dataInputOutputRunningInstance_of_running running, available] at success
-              simp only [Option.bind_eq_bind, Option.bind_some] at success
-              split at success
-              · simp at success
-              · cases success
-                exact unboundedTaskActivityInsertion_preserves_runtimeStateWellFormed program
-                  expectedInstanceId before instanceId owner input output taskId taskName
-                  [{ name := directInput.targetDataInputId, value := binding.value }]
-                  (.awaitDataInputOutputUserTask id origin input output taskId taskName directInput
-                    directOutput) wellFormed running selected declared
-                  (.dataInputOutput id origin input directInput directOutput rfl rfl) (by left)
+  cases transition with
+  | activate instanceId id origin input output taskId taskName directInput directOutput
+      declared running owner owned source _ success =>
+      cases available : dataInputOutputSourceBinding? before owner directInput with
+      | none => simp [available] at source
+      | some binding =>
+          unfold activateDataInputOutputUserTask? at success
+          simp only [owned, dataInputOutputRunningInstance_of_running running,
+            Option.bind_eq_bind, Option.bind_some, available] at success
+          split at success
+          · simp at success
+          · cases success
+            exact unboundedTaskActivityInsertion_preserves_runtimeStateWellFormed program
+              expectedInstanceId before instanceId owner.processInstanceId owner input output taskId taskName
+              [{ name := directInput.targetDataInputId, value := binding.value }]
+              (.awaitDataInputOutputUserTask id origin input output taskId taskName directInput
+                directOutput) wellFormed running owned declared
+              (.dataInputOutput id origin input directInput directOutput rfl rfl) (by left)
 
 theorem dataInputOutputActivationStep_preserves_runtimeStateWellFormed
     (program : Program) (expectedInstanceId : SemanticId)

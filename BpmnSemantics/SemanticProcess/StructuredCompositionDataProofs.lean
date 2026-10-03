@@ -58,21 +58,22 @@ theorem present_unique_name_has_exact_lookup (bindings : List VariableBinding) (
   exact List.length_eq_one_iff.mp one
 
 theorem present_unique_typed_input_is_available
-    (state : RuntimeState) (input : DirectActivityDataInput)
+    (state : RuntimeState) (owner : ScopeOccurrenceId) (input : DirectActivityDataInput)
+    (running : state.control = .running owner.processInstanceId)
+    (endpoint : input.source = .property input.source.id)
     (unique : (state.variables.process.bindings.map (·.name)).Nodup)
-    (present : BindingPresent state.variables.process.bindings input.sourcePropertyId)
+    (present : BindingPresent state.variables.process.bindings input.source.id)
     (typed : ∀ binding ∈ state.variables.process.bindings,
       variableValueAdmitted activityDataInputOutputUserTaskProfileId .processStart binding.value = true) :
-    ∃ binding, dataInputOutputSourceBinding? state input = some binding := by
-  obtain ⟨binding, filtered⟩ := present_unique_name_has_exact_lookup _ input.sourcePropertyId unique present
-  have selected : binding ∈ state.variables.process.bindings.filter
-      (fun candidate => decide (candidate.name = input.sourcePropertyId)) := by
-    rw [filtered]
-    simp
-  have valueAdmitted := typed binding (List.mem_filter.mp selected).1
-  have found : dataInputSourceBinding? state input = some binding := by
-    simp [dataInputSourceBinding?, filtered]
-  exact ⟨binding, by simp [dataInputOutputSourceBinding?, found, valueAdmitted]⟩
+    ∃ binding, dataInputOutputSourceBinding? state owner input = some binding := by
+  obtain ⟨binding, filtered⟩ := present_unique_name_has_exact_lookup _ input.source.id unique present
+  have member : binding ∈ state.variables.process.bindings := (List.mem_filter.mp
+    (show binding ∈ state.variables.process.bindings.filter
+      (fun candidate => decide (candidate.name = input.source.id)) by rw [filtered]; simp)).1
+  exact ⟨binding, readActivityDataInput_root_property running endpoint filtered
+    (by have scalar := typed binding member
+        cases value : binding.value <;> simp [processInterfaceScalar, variableValueAdmitted,
+          activityDataInputOutputUserTaskProfileId, value] at scalar ⊢)⟩
 
 theorem definite_input_is_written_on_each_predecessor
     (vertices : List Vertex) (facts : List DataFact) (id name : String)
@@ -195,10 +196,10 @@ theorem composed_completion_preserves_binding_presence
     (name : String) (present : BindingPresent before.variables.process.bindings name)
     (completed : completeDataInputOutputUserTask? program before instanceId taskId activation
       bindings = some after) : BindingPresent after.variables.process.bindings name := by
-  obtain ⟨_, contract, filled, _, _, _, _, _, declared, supplied, _⟩ :=
-    dataInputOutputCompletionJoin completed
-  rw [dataInputOutputCompletionWritesAssociatedProperty declared supplied completed]
-  exact merge_preserves_binding_presence _ _ name present
+  rcases dataInputOutputCompletionProcessEffect completed with unchanged | ⟨written, _, changed⟩
+  · simpa only [unchanged] using present
+  · rw [changed]
+    exact merge_preserves_binding_presence _ _ name present
 
 theorem composed_completion_preserves_unique_binding_names
     (program : Program) (before after : RuntimeState) (instanceId : SemanticId)
@@ -206,24 +207,25 @@ theorem composed_completion_preserves_unique_binding_names
     (unique : (before.variables.process.bindings.map (·.name)).Nodup)
     (completed : completeDataInputOutputUserTask? program before instanceId taskId activation
       bindings = some after) : (after.variables.process.bindings.map (·.name)).Nodup := by
-  obtain ⟨_, contract, filled, _, _, _, _, _, declared, supplied, _⟩ :=
-    dataInputOutputCompletionJoin completed
-  rw [dataInputOutputCompletionWritesAssociatedProperty declared supplied completed]
-  exact merge_single_write_preserves_unique_names _ _ unique
+  rcases dataInputOutputCompletionProcessEffect completed with unchanged | ⟨written, _, changed⟩
+  · simpa only [unchanged] using unique
+  · rw [changed]
+    exact merge_single_write_preserves_unique_names _ _ unique
 
 theorem composed_completion_supplies_associated_property
     (program : Program) (before after : RuntimeState) (instanceId : SemanticId)
     (taskId : TaskDefinitionId) (activation : Nat) (bindings : List VariableBinding)
     (contract : DataInputOutputTaskContract)
+    (endpoint : contract.directOutput.target = .property contract.directOutput.target.id)
     (declared : dataInputOutputTaskContract? program taskId = some contract)
     (completed : completeDataInputOutputUserTask? program before instanceId taskId activation
       bindings = some after) :
-    BindingPresent after.variables.process.bindings contract.directOutput.targetPropertyId := by
+    BindingPresent after.variables.process.bindings contract.directOutput.target.id := by
   obtain ⟨_, selected, filled, _, _, _, _, _, selectedEq, supplied, _⟩ :=
     dataInputOutputCompletionJoin completed
   have same : selected = contract := Option.some.inj (selectedEq.symm.trans declared)
   subst selected
-  rw [dataInputOutputCompletionWritesAssociatedProperty declared supplied completed]
+  rw [dataInputOutputCompletionWritesAssociatedProperty endpoint declared supplied completed]
   apply replacement_binding_present
   exact ⟨_, List.mem_singleton_self _, rfl⟩
 
@@ -231,21 +233,22 @@ theorem composed_completion_supplies_unique_associated_property
     (program : Program) (before after : RuntimeState) (instanceId : SemanticId)
     (taskId : TaskDefinitionId) (activation : Nat) (bindings : List VariableBinding)
     (contract : DataInputOutputTaskContract)
+    (endpoint : contract.directOutput.target = .property contract.directOutput.target.id)
     (declared : dataInputOutputTaskContract? program taskId = some contract)
     (completed : completeDataInputOutputUserTask? program before instanceId taskId activation
       bindings = some after) :
     ∃ binding,
       after.variables.process.bindings.filter
-        (fun candidate => decide (candidate.name = contract.directOutput.targetPropertyId)) = [binding] ∧
-      binding.name = contract.directOutput.targetPropertyId := by
+        (fun candidate => decide (candidate.name = contract.directOutput.target.id)) = [binding] ∧
+      binding.name = contract.directOutput.target.id := by
   obtain ⟨_, selected, filled, _, _, _, _, _, selectedEq, supplied, _⟩ :=
     dataInputOutputCompletionJoin completed
   have same : selected = contract := Option.some.inj (selectedEq.symm.trans declared)
   subst selected
-  rw [dataInputOutputCompletionWritesAssociatedProperty declared supplied completed]
-  exact ⟨associatedProcessBinding contract.directOutput filled,
+  rw [dataInputOutputCompletionWritesAssociatedProperty endpoint declared supplied completed]
+  exact ⟨associatedProcessBinding contract.directOutput.target.id filled,
     merge_single_write_has_exact_binding before.variables.process.bindings
-      (associatedProcessBinding contract.directOutput filled), rfl⟩
+      (associatedProcessBinding contract.directOutput.target.id filled), rfl⟩
 
 theorem admitted_internal_step_preserves_process_bindings
     (program : Program) (analysis : Analysis) (operation : SemanticOperation)
@@ -385,36 +388,23 @@ theorem ordinary_composition_completion_has_empty_patch
 theorem composed_completion_preserves_valid_bindings
     (program : Program) (before after : RuntimeState) (instanceId : SemanticId)
     (taskId : TaskDefinitionId) (activation : Nat) (bindings : List VariableBinding)
-    (profile : program.identity.semanticProfile = structuredCompositionCheckpointProfileId)
+    (_profile : program.identity.semanticProfile = structuredCompositionCheckpointProfileId)
     (valid : ProcessBindingsValid before.variables.process.bindings)
-    (accepted : processDataBindingsAdmitted program.identity.semanticProfile
+    (_accepted : processDataBindingsAdmitted program.identity.semanticProfile
       .userTaskCompletion bindings = true)
     (completed : completeDataInputOutputUserTask? program before instanceId taskId activation
       bindings = some after) : ProcessBindingsValid after.variables.process.bindings := by
-  obtain ⟨_, contract, filled, _, _, _, _, _, declared, supplied, _⟩ :=
-    dataInputOutputCompletionJoin completed
-  have member : filled ∈ bindings := by
-    unfold filledDeclaredOutput? at supplied
-    split at supplied
-    · split at supplied
-      · cases Option.some.inj supplied
-        simp
-      · contradiction
-    · contradiction
-  have typed := List.all_eq_true.mp accepted filled member
-  change variableValueAdmitted program.identity.semanticProfile .userTaskCompletion filled.value = true at typed
-  rw [profile, (composition_scalar_domains_agree filled.value).2] at typed
-  constructor
-  · exact composed_completion_preserves_unique_binding_names program before after instanceId taskId
-      activation bindings valid.1 completed
-  · rw [dataInputOutputCompletionWritesAssociatedProperty declared supplied completed]
+  rcases dataInputOutputCompletionProcessEffect completed with unchanged | ⟨written, scalar, changed⟩
+  · simpa only [unchanged] using valid
+  · rw [changed]
+    refine ⟨merge_single_write_preserves_unique_names _ written valid.1, ?_⟩
     intro binding included
-    have elements := (mergeProcessVariableBindings_perm before.variables.process.bindings
-      [associatedProcessBinding contract.directOutput filled]).mem_iff.mp included
-    rcases List.mem_append.mp elements with written | retained
-    · have same := List.mem_singleton.mp written
+    rcases List.mem_append.mp ((mergeProcessVariableBindings_perm before.variables.process.bindings
+      [written]).mem_iff.mp included) with replaced | retained
+    · have same := List.mem_singleton.mp replaced
       subst binding
-      exact typed
+      cases value : written.value <;> simp [processInterfaceScalar, variableValueAdmitted,
+        activityDataInputOutputUserTaskProfileId, value] at scalar ⊢
     · exact valid.2 binding (List.mem_filter.mp retained).1
 
 theorem completion_dispatch_preserves_valid_bindings
@@ -453,8 +443,9 @@ theorem composed_completion_supplies_successor_inputs
     (source : Vertex) (targetId : String)
     (analyzed : analyze vertices = some analysis) (member : source ∈ analysis.ordered)
     (edge : targetId ∈ source.outputs)
-    (writes : source.writes = some contract.directOutput.targetPropertyId)
+    (writes : source.writes = some contract.directOutput.target.id)
     (inputs : InputsPresent vertices analysis before.variables.process.bindings source.id)
+    (endpoint : contract.directOutput.target = .property contract.directOutput.target.id)
     (declared : dataInputOutputTaskContract? program taskId = some contract)
     (completed : completeDataInputOutputUserTask? program before instanceId taskId activation
       bindings = some after) : InputsPresent vertices analysis after.variables.process.bindings targetId := by
@@ -467,7 +458,7 @@ theorem composed_completion_supplies_successor_inputs
     have target := Option.some.inj (same.symm.trans writes)
     rw [target]
     exact composed_completion_supplies_associated_property program before after instanceId taskId
-      activation bindings contract declared completed
+      activation bindings contract endpoint declared completed
 
 theorem declared_completion_transports_input_obligations
     (program : Program) (analysis : Analysis) (vertices : List Vertex)
@@ -481,7 +472,7 @@ theorem declared_completion_transports_input_obligations
       bindings = some after) :
     ∃ target, consumer? program contract.output = some target ∧
       InputsPresent vertices analysis after.variables.process.bindings target := by
-  obtain ⟨vertex, member, target, consumer, shape⟩ :=
+  obtain ⟨vertex, member, target, consumer, shape, _, endpoint⟩ :=
     completion_contract_has_analyzed_vertex program analysis taskId contract analyzed declared
   refine ⟨target, consumer, ?_⟩
   apply composed_completion_supplies_successor_inputs program analysis vertices before after instanceId
@@ -489,6 +480,7 @@ theorem declared_completion_transports_input_obligations
   · simp [shape]
   · simp [shape]
   · simpa [shape] using inputs
+  · exact endpoint
   · exact declared
   · exact completed
 
@@ -528,11 +520,12 @@ theorem input_position_supplies_data_task_lookup
     (analyzed : programAnalysis program = some analysis) (graph : analyze vertices = some analysis)
     (member : SemanticOperation.awaitDataInputOutputUserTask id origin input output taskId taskName
       directInput directOutput ∈ program.operations)
+    (running : state.control = .running token.owner.processInstanceId)
     (live : token ∈ state.tokens) (position : token.placeId = input)
     (positions : RuntimeInputPositions program vertices analysis state)
     (valid : ProcessBindingsValid state.variables.process.bindings)
     (required : ∀ name ∈ analysis.required, BindingPresent state.variables.process.bindings name) :
-    ∃ binding, dataInputOutputSourceBinding? state directInput = some binding := by
+    ∃ binding, dataInputOutputSourceBinding? state token.owner directInput = some binding := by
   obtain ⟨target, consumer, present⟩ := positions.1 token live
   rw [position] at consumer
   have named := consumer_names_the_input_operation program input target _ consumer member (by
@@ -540,13 +533,14 @@ theorem input_position_supplies_data_task_lookup
   obtain ⟨vertex, included, projected⟩ := program_analysis_projects_each_executable_operation
     program analysis _ analyzed member rfl
   have identity := projected_operation_preserves_identity program _ vertex projected
-  have reads : vertex.reads = some directInput.sourcePropertyId := by
-    simp only [operationVertex?, bind, pure, Option.bind_eq_some_iff] at projected
-    obtain ⟨next, _, same⟩ := projected
-    cases Option.some.inj same
-    rfl
-  apply present_unique_typed_input_is_available state directInput valid.1 _ valid.2
-  rcases analysis_read_obligation vertices analysis vertex directInput.sourcePropertyId graph included reads
+  cases source : directInput.source <;> cases destination : directOutput.target <;>
+    simp [operationVertex?, source, destination, bind, Option.bind_eq_some_iff] at projected
+  obtain ⟨next, _, same⟩ := projected
+  have reads : vertex.reads = some directInput.source.id := by
+    simp [← same, source, ActivityDataInputSource.id]
+  apply present_unique_typed_input_is_available state token.owner directInput running
+    (by simp [source, ActivityDataInputSource.id]) valid.1 _ valid.2
+  rcases analysis_read_obligation vertices analysis vertex directInput.source.id graph included reads
       with initial | inherited
   · exact required _ initial
   · have same : vertex.id = target := identity.trans named.symm

@@ -30,6 +30,23 @@ test("binds ordinary verification to the exact immutable baseline artifact", asy
   );
 });
 
+test("the explicit-empty migration cannot overwrite a changed frozen Call declaration", async () => {
+  const artifact = decodePreservationArtifact(await readPreservationFixtureBytes());
+  for (const [field, declarations, kind] of [
+    ["checkedProcess", "nodes", "callActivity"],
+    ["semanticProcess", "operations", "invokeProcess"],
+    ["semanticProcess", "operations", "returnProcess"],
+  ] as const) {
+    const candidate = mutableObject(structuredClone(artifact), "artifact");
+    const catalog = mutableArray(candidate.catalog, "catalog").map((entry) => mutableObject(entry, "entry"));
+    const call = catalog.flatMap((entry) => mutableArray(mutableObject(entry[field], field)[declarations], declarations))
+      .map((entry) => mutableObject(entry, "declaration")).find((entry) => entry.kind === kind);
+    assert.ok(call);
+    call.data = { kind: "scalar" };
+    await assert.rejects(verifyCyclicControlFlowPreservation(candidate), /pre-migration Call data absence/);
+  }
+});
+
 test("seeded mismatches reach the ordinary preservation verifier", async (context) => {
   const artifact = decodePreservationArtifact(await readPreservationFixtureBytes());
   const seeds = [

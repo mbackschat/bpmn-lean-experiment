@@ -189,7 +189,7 @@ function completeFailure(
       candidate === trigger ? failedTrigger : candidate
     ).sort(compareTriggers),
     compensationHandlerEffectWaits: [],
-    variables: { ...state.variables, activities: [] },
+    variables: { ...state.variables, activities: [], processInterfaces: [] },
   };
   return compensationExecutionStateDefects(program, prospective).length === 0
     ? prospective

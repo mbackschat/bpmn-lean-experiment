@@ -71,7 +71,9 @@ theorem regional_localPatch_successors_equal (program : Program) (before after a
     (fun place member => tokenOutside place (List.mem_append_right _ member))
     (fun record inserted => branchOutside record (.inl inserted))
   cases regionalOperation with
-  | returnProcess id origin process definition output =>
+  | returnProcess id origin process definition output data =>
+      have empty := prepareInternalRegional_return_data_empty program before id origin process definition output data regional regionalFound
+      subst data
       obtain ⟨returned, record, root, returnedApply, kind, _, _, _, _, update,
         _, _, _, _, _, _, _, branches, _, _⟩ :=
         preparedReturn_quiescent_fields program before hosting id origin process definition output regional beforeWF regionalFound

@@ -120,9 +120,9 @@ The original reviewer independently confirmed that profile-independent algebraic
 
 | Existing helper owner | Added nonblank lines | Proven function contract |
 |---|---:|---|
-| [Prepared transition](../../BpmnSemantics/SemanticProcess/InternalPreparedTransition.lean) | 15 | Ordinary preparation preserves its discovered operation alternative. |
-| [Execution frontier](../../BpmnSemantics/SemanticProcess/InternalExecutionFrontier.lean) | 67 | Empty/singleton per-operation discovery aggregates faithfully, with declaration uniqueness required. Existing discovery helpers are directly available to proofs. |
-| [Scheduled closure](../../BpmnSemantics/SemanticProcess/InternalScheduledClosure.lean) | 36 | An aligned singleton consumes no directive; stable closure checks before fuel; a singleton step retains the recursive state/failure result independently of optional publication. |
+| [Prepared transition](../../BpmnSemantics/SemanticProcess/InternalPreparedTransition.lean) | 370 | Ordinary preparation preserves its discovered operation alternative. |
+| [Execution frontier](../../BpmnSemantics/SemanticProcess/InternalExecutionFrontier.lean) | 671 | Empty/singleton per-operation discovery aggregates faithfully, with declaration uniqueness required. Existing discovery helpers are directly available to proofs. |
+| [Scheduled closure](../../BpmnSemantics/SemanticProcess/InternalScheduledClosure.lean) | 442 | An aligned singleton consumes no directive; stable closure checks before fuel; a singleton step retains the recursive state/failure result independently of optional publication. |
 
 These conditional helper laws carry no composition profile, lifecycle, checked-source or rank assumptions. The composition owner derives their prerequisites. They neither replace the independent semantic-checkpoint review nor qualify Temporal hosting.
 
@@ -171,15 +171,15 @@ The [contract evolution policy](../../contracts/README.md#evolution-policy) and 
 | Owner | Headroom | Constraint |
 |---|---:|---|
 | [Checked compiler](../../packages/bpmn-source/src/checked-process-compiler.ts) | 388 | Delegate data projection; retain one structural compiler. |
-| [Compilation dispatch](../../packages/bpmn-source/src/compilation-dispatch.ts) | 434 | Add the private profile route only. |
+| [Compilation dispatch](../../packages/bpmn-source/src/compilation-dispatch.ts) | 423 | Add the private profile route only. |
 | [Composed data source](../../packages/bpmn-source/src/activity-data-input-output-source.ts) | 490 | Extract reusable association projection while preserving predecessor admission. |
-| [Checked admission](../../packages/bpmn-source/src/checked-process-admission.ts) | 100 | Delegate the new profile analysis. |
-| [Profile selection](../../packages/semantic-core/src/semantic-process-profile.ts) | 525 | Select the structural capability without fixture IDs. |
-| [Core command admission](../../packages/semantic-core/src/semantic-command-admission.ts) | 301 | Delegate start requirements and per-task completion payload checks. |
-| [Value domains](../../packages/semantic-core/src/semantic-profile-value-domain.ts) | 522 | Classify string/null start and completion surfaces. |
-| [Lean checked admission](../../BpmnSemantics/SemanticProcess/CheckedProcessAdmission.lean) | 356 | Independently select the checked analysis. |
-| [Lean Program validation](../../BpmnSemantics/SemanticProcess/ProgramStructuralValidation.lean) | 22 | Delegate; do not put the analysis in this nearly full owner. |
-| [Lean command admission](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean) | 73 | Delegate start and completion decisions. |
+| [Checked admission](../../packages/bpmn-source/src/checked-process-admission.ts) | 98 | Delegate the new profile analysis. |
+| [Profile selection](../../packages/semantic-core/src/semantic-process-profile.ts) | 490 | Select the structural capability without fixture IDs. |
+| [Core command admission](../../packages/semantic-core/src/semantic-command-admission.ts) | 296 | Delegate start requirements and per-task completion payload checks. |
+| [Value domains](../../packages/semantic-core/src/semantic-profile-value-domain.ts) | 518 | Classify string/null start and completion surfaces. |
+| [Lean checked admission](../../BpmnSemantics/SemanticProcess/CheckedProcessAdmission.lean) | 354 | Independently select the checked analysis. |
+| [Lean Program validation](../../BpmnSemantics/SemanticProcess/ProgramStructuralValidation.lean) | 19 | Delegate; do not put the analysis in this nearly full owner. |
+| [Lean command admission](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean) | 52 | Delegate start and completion decisions. |
 
 These are measured nonblank lines before the existing 800-line review target. If planned growth exceeds available headroom, first extract a cohesive existing responsibility without changing its contract. The guard remeasures these figures; rerun `what-binds` when target paths change. New analysis and proof mechanisms belong in focused owners, with their source-map and library reachability obligations.
 

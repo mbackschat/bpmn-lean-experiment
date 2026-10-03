@@ -420,6 +420,7 @@ theorem projected_operation_preserves_identity
     | (rcases projected with ⟨_, _, rfl⟩; rfl)
     | (rcases projected with ⟨_, _, _, rfl⟩; rfl)
     | (cases projected; rfl)
+    | (split at projected <;> simp_all [Option.bind_eq_some_iff]; rcases projected with ⟨_, _, rfl⟩; rfl)
 
 theorem consumer_identifies_unique_input_operation
     (program : Program) (place : ControlPlaceId) (id : String)
@@ -498,14 +499,18 @@ theorem completion_contract_has_analyzed_vertex
       consumer? program contract.output = some target ∧
       vertex =
         { id := contract.operationId.value, kind := .task, outputs := [target]
-          reads := some contract.directInput.sourcePropertyId
-          writes := some contract.directOutput.targetPropertyId } := by
+          reads := some contract.directInput.source.id
+          writes := some contract.directOutput.target.id } ∧
+      contract.directInput.source = .property contract.directInput.source.id ∧
+      contract.directOutput.target = .property contract.directOutput.target.id := by
   obtain ⟨_, origin, member⟩ := dataInputOutputTaskContract_facts declared
   obtain ⟨vertex, included, projected⟩ := program_analysis_projects_each_executable_operation
     program analysis _ analyzed member rfl
-  simp [operationVertex?, bind, Option.bind_eq_some_iff] at projected
-  obtain ⟨target, consumer, same⟩ := projected
-  exact ⟨vertex, included, target, consumer, same.symm⟩
+  cases source : contract.directInput.source <;> cases target : contract.directOutput.target <;>
+    simp [operationVertex?, source, target, bind, Option.bind_eq_some_iff] at projected
+  obtain ⟨next, consumer, same⟩ := projected
+  exact ⟨vertex, included, next, consumer, by simpa [source, target, ActivityDataInputSource.id,
+    ActivityDataOutputTarget.id, SemanticOperation.id] using same.symm, rfl, rfl⟩
 
 theorem analysis_ordered_ids_unique (vertices : List Vertex) (analysis : Analysis)
     (analyzed : analyze vertices = some analysis) : (analysis.ordered.map (·.id)).Nodup := by
@@ -654,26 +659,16 @@ theorem running_start_control_fields
 theorem committed_initial_start_control_fields
     (program : Program) (commandId processId instanceId : SemanticId)
     (bindings : List VariableBinding)
-    (profile : program.identity.semanticProfile = structuredCompositionCheckpointProfileId)
+    (_profile : program.identity.semanticProfile = structuredCompositionCheckpointProfileId)
     (committed : (admitStimulus program initialState
       (.startProcess commandId processId instanceId bindings)).outcome = .committed) :
     let started := (admitStimulus program initialState
       (.startProcess commandId processId instanceId bindings)).state
     started.tokens = [] ∧ started.waits = [] ∧ started.initiationPending = true := by
   dsimp only
-  cases snapshot : program.compensationEventSubProcessSnapshots with
-  | some declaration => simp [admitStimulus, snapshot] at committed
-  | none =>
-      cases created : runningProgramStartState? program instanceId bindings with
-      | none =>
-          simp [admitStimulus, snapshot, initialState, profile, created] at committed
-          split at committed <;> contradiction
-      | some started =>
-          have fields := running_start_control_fields program instanceId bindings started created
-          simp [admitStimulus, snapshot, initialState, profile, created] at committed ⊢
-          split at committed
-          · simp_all
-          · contradiction
+  obtain ⟨_, variables, created⟩ := admitStimulus_committed_start_shape program
+    (.startProcess commandId processId instanceId bindings) instanceId rfl committed
+  exact running_start_control_fields program instanceId variables _ created
 
 theorem refused_start_preserves_state
     (program : Program) (state : RuntimeState)

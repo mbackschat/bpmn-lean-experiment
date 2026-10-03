@@ -27,6 +27,7 @@ import {
 import type {
   CompleteUserTaskInstanceStimulus,
   RuntimeState,
+  SemanticProcessProgram,
   StartProcessStimulus,
   VariableBinding,
 } from "@bpmn-lean/semantic-core";
@@ -81,7 +82,7 @@ const program = rootScopedProgram({
       task: { elementId: taskElementId, name: "Approve application" },
       directInput: {
         associationId: "DataInputAssociation_Application",
-        sourcePropertyId,
+        source: { kind: "property", propertyId: sourcePropertyId },
         targetDataInputId,
         targetDataInputName: "Application",
       },
@@ -89,7 +90,7 @@ const program = rootScopedProgram({
         associationId: "DataOutputAssociation_Decision",
         sourceDataOutputId,
         sourceDataOutputName: "Decision",
-        targetPropertyId,
+        target: { kind: "property", propertyId: targetPropertyId },
       },
     },
     {
@@ -206,13 +207,13 @@ for (const [label, initialVariables] of [
 
 test("Process start derives the input Property from the sole declaration", () => {
   const renamedSourcePropertyId = "Property_RenamedInput";
-  const renamed = {
+  const renamed: SemanticProcessProgram = {
     ...program,
     operations: program.operations.map((candidate) =>
       candidate.kind === SemanticOperationKind.AwaitDataInputOutputUserTask
         ? {
             ...candidate,
-            directInput: { ...candidate.directInput, sourcePropertyId: renamedSourcePropertyId },
+            directInput: { ...candidate.directInput, source: { kind: "property", propertyId: renamedSourcePropertyId } },
           }
         : candidate
     ),
@@ -477,4 +478,139 @@ test("cross-half association identity reuse is inadmissible", () => {
 
   assert.equal(isWellFormedSemanticProcessProgram(program), true);
   assert.equal(isWellFormedSemanticProcessProgram(collision), false);
+});
+
+test("called-owner Property input cannot read the hosting caller's same-name Property", () => {
+  const ready = committed(initialState, start("caller-property-isolation", []));
+  const calledOwner = { ...owner, processInstanceId: "called-instance" };
+  const state = { ...ready, variables: { ...ready.variables, process: { bindings: [application] } } };
+  assert.equal(armDataInputOutputUserTask(operation, state, calledOwner), null);
+});
+
+// CDATA-OWNER-01: these raw evaluator witnesses deliberately bypass profile admission and do not admit repeated Calls.
+const calledOwner = { ...owner, processInstanceId: "called-instance" };
+const processInputId = "ProcessInput_Application";
+const processOutputId = "ProcessOutput_Decision";
+const interfaceOperation = {
+  ...operation,
+  directInput: { ...operation.directInput, source: { kind: "processDataInput", dataInputId: processInputId } },
+  directOutput: { ...operation.directOutput, target: { kind: "processDataOutput", dataOutputId: processOutputId } },
+} as const;
+const interfaceProgram = {
+  ...program,
+  operations: program.operations.map((candidate) => candidate.id === operation.id ? interfaceOperation : candidate),
+};
+
+function interfaceReady(value: VariableBinding["value"], otherOwner = owner): RuntimeState {
+  const ready = committed(initialState, start("interface-ready", []));
+  return {
+    ...ready,
+    controlTokens: ready.controlTokens.map((token) => ({ ...token, owner: calledOwner })),
+    variables: {
+      ...ready.variables,
+      process: { bindings: [application, { name: targetPropertyId, value: { kind: VariableValueKind.String, value: "caller-before-return" } }] },
+      processInterfaces: [
+        { owner: calledOwner, inputs: [{ name: processInputId, value }], outputs: [] },
+        { owner: otherOwner, inputs: [{ name: processInputId, value: { kind: VariableValueKind.String, value: "foreign" } }], outputs: [] },
+      ],
+    },
+  };
+}
+
+function completeInterface(state: RuntimeState, selectedProgram: SemanticProcessProgram = interfaceProgram): RuntimeState | null {
+  return runtimeModule.completeDataInputOutputUserTask(selectedProgram, state, {
+    ...approve, taskId: { ...taskId, processInstanceId: calledOwner.processInstanceId },
+  });
+}
+
+for (const otherOwner of [
+  owner,
+  { ...calledOwner, definitionScopeId: "scope:Foreign" },
+  { ...calledOwner, activation: 2 },
+]) {
+  test(`typed task endpoints isolate the complete owner from ${JSON.stringify(otherOwner)}`, () => {
+    const ready = interfaceReady({ kind: VariableValueKind.String, value: "called-input" }, otherOwner);
+    const before = structuredClone(ready);
+    const armed = armDataInputOutputUserTask(interfaceOperation, ready, calledOwner);
+    assert.ok(armed !== null);
+    assert.deepEqual(ready, before);
+    assert.deepEqual(armed.variables.activities[0]?.bindings, [{ name: targetDataInputId, value: { kind: VariableValueKind.String, value: "called-input" } }]);
+    assert.notEqual(armed.variables.activities[0]?.bindings[0]?.value, ready.variables.processInterfaces[0]?.inputs[0]?.value);
+    const completed = completeInterface(armed);
+    assert.ok(completed !== null);
+    assert.deepEqual(completed.variables.process, ready.variables.process);
+    assert.deepEqual(completed.variables.processInterfaces[0]?.inputs, ready.variables.processInterfaces[0]?.inputs);
+    assert.deepEqual(completed.variables.processInterfaces[0]?.outputs, [{ name: processOutputId, value: approve.submittedValues[0]?.value }]);
+    assert.deepEqual(completed.variables.processInterfaces[1], ready.variables.processInterfaces[1]);
+    assert.deepEqual(completed.variables.activities, []);
+    assert.deepEqual(completed.userTaskWaits, []);
+  });
+}
+
+test("called task explicit-null Process input is available while absence and duplicate owners or ports refuse", () => {
+  const ready = interfaceReady({ kind: VariableValueKind.Null });
+  const armed = armDataInputOutputUserTask(interfaceOperation, ready, calledOwner);
+  assert.ok(armed !== null);
+  assert.deepEqual(armed.variables.activities[0]?.bindings, [{ name: targetDataInputId, value: { kind: VariableValueKind.Null } }]);
+  const selected = ready.variables.processInterfaces[0];
+  assert.ok(selected !== undefined);
+  for (const processInterfaces of [
+    [ { ...selected, inputs: [] } ],
+    [ selected, { ...selected, inputs: [] } ],
+    [ { ...selected, inputs: [...selected.inputs, { name: processInputId, value: { kind: VariableValueKind.Boolean, value: true } as const }] } ],
+  ]) {
+    const malformed = { ...ready, variables: { ...ready.variables, processInterfaces } };
+    const before = structuredClone(malformed);
+    assert.equal(armDataInputOutputUserTask(interfaceOperation, malformed, calledOwner), null);
+    assert.deepEqual(malformed, before);
+  }
+});
+
+test("called completion refuses caller Property fallback and ambiguous output owner without disposing locals", () => {
+  const armed = armDataInputOutputUserTask(interfaceOperation, interfaceReady({ kind: VariableValueKind.Null }), calledOwner);
+  assert.ok(armed !== null);
+  const propertyProgram = { ...interfaceProgram, operations: interfaceProgram.operations.map((candidate) =>
+    candidate.id === operation.id ? { ...interfaceOperation, directOutput: operation.directOutput } : candidate) };
+  const before = structuredClone(armed);
+  assert.equal(completeInterface(armed, propertyProgram), null);
+  assert.deepEqual(armed, before);
+  const selected = armed.variables.processInterfaces[0];
+  assert.ok(selected !== undefined);
+  for (const processInterfaces of [
+    [selected, { ...selected, inputs: [], outputs: [] }],
+    [{ ...selected, outputs: [{ name: processOutputId, value: { kind: VariableValueKind.Null } as const }, { name: processOutputId, value: { kind: VariableValueKind.Boolean, value: true } as const }] }],
+  ]) {
+    const malformed: RuntimeState = { ...armed, variables: { ...armed.variables, processInterfaces } };
+    const snapshot = structuredClone(malformed);
+    assert.equal(completeInterface(malformed), null);
+    assert.deepEqual(malformed, snapshot);
+  }
+});
+
+test("structural Activity endpoint readers accept closed typed arms and reject legacy or mixed shapes", async () => {
+  const { isWellFormedAwaitDataInputOutputUserTaskOperation: valid } = await import(
+    new URL("../dist/activity-data-operation-admission.js", import.meta.url).href
+  ) as typeof import("../src/activity-data-operation-admission.ts");
+  const places = new Set(program.controlPlaces.map(({ id }) => id));
+  assert.equal(valid(operation, places), true);
+  assert.equal(valid(interfaceOperation, places), true);
+  for (const source of [
+    sourcePropertyId,
+    { kind: "property", propertyId: "" },
+    { kind: "property", propertyId: sourcePropertyId, dataInputId: processInputId },
+    { kind: "processDataInput", dataInputId: "" },
+    { kind: "processDataInput", propertyId: sourcePropertyId },
+    { kind: "processDataOutput", dataOutputId: processOutputId },
+    { kind: "unknown", propertyId: sourcePropertyId },
+  ]) assert.equal(valid({ ...operation, directInput: { ...operation.directInput, source } }, places), false);
+  for (const target of [
+    targetPropertyId,
+    { kind: "property", propertyId: "" },
+    { kind: "property", propertyId: targetPropertyId, dataOutputId: processOutputId },
+    { kind: "processDataOutput", dataOutputId: "" },
+    { kind: "processDataOutput", propertyId: targetPropertyId },
+    { kind: "processDataInput", dataInputId: processInputId },
+  ]) assert.equal(valid({ ...operation, directOutput: { ...operation.directOutput, target } }, places), false);
+  assert.equal(valid({ ...operation, directInput: { ...operation.directInput, sourcePropertyId } }, places), false);
+  assert.equal(valid({ ...operation, directOutput: { ...operation.directOutput, targetPropertyId } }, places), false);
 });

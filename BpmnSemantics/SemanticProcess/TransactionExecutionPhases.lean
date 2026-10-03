@@ -137,7 +137,8 @@ private theorem admitted_task_invariant (p : Program) (roles : TransactionAdmitt
       dataInput, dataOutput, monitored⟩ := transaction_task_dispatch_selectors p graph ⟨taskId.elementId.value⟩
   simp only [admitStimulusWithCompensationSnapshots, roles.snapshotsAbsent]
   simp [running, invariant.inert.2.2.2.1, parallel, sequential, messageMonitored, messageBounded,
-    bounded, composed, dataInput, dataOutput, monitored]
+    bounded, composed, dataInput, dataOutput, monitored, callDataRuntimeStateValid,
+    roles.profileSelected, transactionCancellationCheckpointProfileId, callDataCheckpointProfileId]
   cases completed : completeOrdinaryUserTaskWithCompensation? completeUserTask p before taskId with
   | none => dsimp only; exact invariant
   | some successor =>
@@ -155,7 +156,8 @@ private theorem admitted_handler_invariant (p : Program) (roles : TransactionAdm
     TransactionContinuationInvariant roles
       (admitStimulusWithCompensationSnapshots p before (.completeEffect commandId effectId result)).state := by
   simp only [admitStimulusWithCompensationSnapshots, roles.snapshotsAbsent]
-  simp [running, invariant.inert.2.2.2.1, invariant.inert.2.2.1]
+  simp [running, invariant.inert.2.2.2.1, invariant.inert.2.2.1, callDataRuntimeStateValid,
+    roles.profileSelected, transactionCancellationCheckpointProfileId, callDataCheckpointProfileId]
   split
   · cases completed : attemptCompensationHandlerEffectCompletion p before effectId result with
     | refused reason => dsimp only; exact invariant

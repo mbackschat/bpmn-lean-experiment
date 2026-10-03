@@ -575,6 +575,7 @@ function richIncidentState(incident: RuntimeState): RuntimeState {
       returnOperationId: "operation:return-second",
     }],
     variables: {
+      processInterfaces: [],
       process: incident.variables.process,
       activities: [
         { owner: createEffectLocalDataOwner(rootEffectId), bindings: [] },

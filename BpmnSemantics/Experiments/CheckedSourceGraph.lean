@@ -64,7 +64,7 @@ def nodeArityValid (source : CheckedProcess) :
   | .cancelEndEvent ..
   | .cancelBoundaryEvent ..
   | .embeddedSubProcess _ _
-  | .callActivity _ _
+  | .callActivity _ _ _
   | .boundaryErrorEvent ..
   | .timerBoundaryEvent ..
   | .messageBoundaryEvent ..

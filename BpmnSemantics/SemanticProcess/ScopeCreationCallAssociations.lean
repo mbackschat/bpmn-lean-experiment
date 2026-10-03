@@ -284,34 +284,37 @@ theorem selectInternalScopeCreation_preserves_callAssociations (state : RuntimeS
       · cases found
         apply (associations_iff _ hosting (by exact running)).mpr
         exact child_insert_associations state hosting _ owner rfl facts
-  | invokeProcess id origin input process definition entry returnOperation =>
-      obtain ⟨owner, _, found⟩ := Option.bind_eq_some_iff.mp found
-      repeat first | contradiction | split at found
-      all_goals cases found
-      all_goals
-        apply (associations_iff _ hosting (by exact running)).mpr
-        apply call_insert_associations state hosting
-        · exact facts
-        · rfl
-        · rfl
-        · assumption
-        · rfl
-        · exact Nat.zero_lt_succ _
-        · rfl
-        · exact separated _ rfl
-        · rfl
-        · apply root_count_of_singleton <;> first | assumption | (simp_all only [Bool.and_eq_true,
-            decide_eq_true_eq])
-        · simpa only [Bool.decide_and] using (by assumption :
-            (state.calledProcessOccurrences.filter fun record =>
-              record.caller = owner && record.id.elementId.value = origin.elementId.value).length = 0)
-        · intro occurrence member
-          have absent : (state.scopeOccurrences.filter fun occurrence =>
-              decide (occurrence.id.processInstanceId = deriveCalledProcessInstanceId
-                owner.processInstanceId origin.elementId (callActivationCount state origin.elementId + 1))).length = 0 :=
-            by assumption
-          simpa only [decide_eq_true_eq] using
-            List.filter_eq_nil_iff.mp (List.length_eq_zero_iff.mp absent) occurrence member
+  | invokeProcess id origin input process definition entry returnOperation data =>
+      cases data with
+      | scalar => simp at found
+      | empty =>
+          obtain ⟨owner, _, found⟩ := Option.bind_eq_some_iff.mp found
+          repeat first | contradiction | split at found
+          all_goals cases found
+          all_goals
+            apply (associations_iff _ hosting (by exact running)).mpr
+            apply call_insert_associations state hosting
+            · exact facts
+            · rfl
+            · rfl
+            · assumption
+            · rfl
+            · exact Nat.zero_lt_succ _
+            · rfl
+            · exact separated _ rfl
+            · rfl
+            · apply root_count_of_singleton <;> first | assumption | (simp_all only [Bool.and_eq_true,
+                decide_eq_true_eq])
+            · simpa only [Bool.decide_and] using (by assumption :
+                (state.calledProcessOccurrences.filter fun record =>
+                  record.caller = owner && record.id.elementId.value = origin.elementId.value).length = 0)
+            · intro occurrence member
+              have absent : (state.scopeOccurrences.filter fun occurrence =>
+                  decide (occurrence.id.processInstanceId = deriveCalledProcessInstanceId
+                    owner.processInstanceId origin.elementId (callActivationCount state origin.elementId + 1))).length = 0 :=
+                by assumption
+              simpa only [decide_eq_true_eq] using
+                List.filter_eq_nil_iff.mp (List.length_eq_zero_iff.mp absent) occurrence member
   | _ => simp at found
 
 /-- Freshness alone cannot justify a called root: omitting its record breaks the existing

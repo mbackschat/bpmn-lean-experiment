@@ -36,7 +36,9 @@ theorem preparedRegional_pending_frame (program : Program) (before after : Runti
   have same : actual = after := Option.some.inj (executed.symm.trans applied)
   subst actual
   cases operation with
-  | returnProcess id origin process definition output =>
+  | returnProcess id origin process definition output data =>
+      have empty := prepareInternalRegional_return_data_empty program before id origin process definition output data prepared found
+      subst data
       have raw : returnProcessState? before id origin process definition output = some after := by
         simp only [fire?, snapshots] at fired
         exact fired

@@ -549,6 +549,7 @@ test("binds the Call Activity node and exact invocation pair", async () => {
     calledRootScopeId: "scope:CalledProcess",
     calledEntry: "place:Flow_Called_Start_Task",
     returnOperationId: "operation:return-process:Call_CalledProcess",
+    data: { kind: "empty" },
   };
   const returned = {
     id: "operation:return-process:Call_CalledProcess",
@@ -557,16 +558,37 @@ test("binds the Call Activity node and exact invocation pair", async () => {
     calledProcessId: "CalledProcess",
     calledRootScopeId: "scope:CalledProcess",
     callerOutput: "place:Flow_Caller_Call_Task",
+    data: { kind: "empty" },
   };
 
   assert.equal(node({
     kind: "callActivity",
     id: "Call_CalledProcess",
     calledProcessId: "CalledProcess",
+    data: { kind: "empty" },
   }), true);
   assert.equal(node({ kind: "callActivity", id: "Call_CalledProcess" }), false);
   assert.equal(operation(invoke), true);
   assert.equal(operation(returned), true);
+  const io = (ownerId: string) => ({ ownerId, id: `${ownerId}_io`,
+    input: { id: `${ownerId}_in`, name: null }, output: { id: `${ownerId}_out`, name: null },
+    inputSet: { id: `${ownerId}_inputs`, name: null, dataInputRefs: [`${ownerId}_in`] },
+    outputSet: { id: `${ownerId}_outputs`, name: null, dataOutputRefs: [`${ownerId}_out`] } });
+  const scalar = { kind: "scalar", callerProperties: ["Request", "Result"], call: io("Call"), called: io("Process"),
+    directInput: { associationId: "Read", source: { kind: "property", propertyId: "Request" },
+      targetDataInputId: "Call_in", targetDataInputName: null },
+    directOutput: { associationId: "Write", sourceDataOutputId: "Call_out", sourceDataOutputName: null,
+      target: { kind: "property", propertyId: "Result" } } };
+  const call = { kind: "callActivity", id: "Call", calledProcessId: "Process" };
+  assert.equal(node({ ...call, data: scalar }), true);
+  assert.equal(operation({ ...invoke, data: scalar }), true);
+  assert.equal(operation({ ...returned, data: scalar }), true);
+  for (const data of [undefined, null, { kind: "empty", callerProperties: [] }, { ...scalar, called: undefined },
+    { ...scalar, callerProperties: [1] }, { ...scalar, call: { ...scalar.call, optional: true } }]) {
+    assert.equal(node({ ...call, data }), false);
+    assert.equal(operation({ ...invoke, data }), false);
+    assert.equal(operation({ ...returned, data }), false);
+  }
   assert.equal(operation({ ...invoke, calledEntry: undefined }), false);
   assert.equal(operation({ ...returned, returnOperationId: invoke.returnOperationId }), false);
 });
@@ -591,7 +613,7 @@ test("binds composed Activity data input/output as one closed checked and Progra
   });
   const directInput = {
     associationId: "InputAssociation",
-    sourcePropertyId: "InputProperty",
+    source: { kind: "property", propertyId: "InputProperty" },
     targetDataInputId: "DataInput",
     targetDataInputName: null,
   };
@@ -599,7 +621,7 @@ test("binds composed Activity data input/output as one closed checked and Progra
     associationId: "OutputAssociation",
     sourceDataOutputId: "DataOutput",
     sourceDataOutputName: null,
-    targetPropertyId: "OutputProperty",
+    target: { kind: "property", propertyId: "OutputProperty" },
   };
   const composedNode = {
     kind: "dataInputOutputUserTask",

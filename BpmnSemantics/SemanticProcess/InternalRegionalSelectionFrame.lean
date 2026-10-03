@@ -34,11 +34,14 @@ theorem regionalSelection_read_frame (program : Program) (before after : Runtime
   rw [running, hosted]
   dsimp only [Option.bind_some]
   cases operation with
-  | returnProcess id origin process definition output =>
-    dsimp only at found ⊢
-    rw [associations, calls, scopes]
-    repeat' first | (solve | simp at found) | split at found
-    all_goals cases found <;> simp_all only [↓reduceIte]
+  | returnProcess id origin process definition output data =>
+      cases data with
+      | scalar => simp at found
+      | empty =>
+          dsimp only at found ⊢
+          rw [associations, calls, scopes]
+          repeat' first | (solve | simp at found) | split at found
+          all_goals cases found <;> simp_all only [↓reduceIte]
   | completeScope id origin definition output =>
     dsimp only at found ⊢
     rw [scopes]

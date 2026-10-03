@@ -92,7 +92,7 @@ def fireNode? (source : CheckedProcess) (node : CheckedNode)
   | .cancelEndEvent .. => none
   | .cancelBoundaryEvent .. => none
   | .embeddedSubProcess _ _ => none
-  | .callActivity _ _ => none
+  | .callActivity _ _ _ => none
   | .boundaryErrorEvent .. => none
   | .timerBoundaryEvent .. => none
   | .messageBoundaryEvent .. => none

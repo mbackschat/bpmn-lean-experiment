@@ -13,6 +13,7 @@ import BpmnSemantics.SemanticProcess.ActivityDataInput
 import BpmnSemantics.SemanticProcess.ActivityDataInputOutput
 import BpmnSemantics.SemanticProcess.ActivityDataOutput
 import BpmnSemantics.SemanticProcess.CallActivity
+import BpmnSemantics.SemanticProcess.CallDataTransfer
 import BpmnSemantics.SemanticProcess.CyclicControlFlow
 import BpmnSemantics.SemanticProcess.SimpleBooleanExpression
 import BpmnSemantics.SemanticProcess.ScopeCancellation
@@ -194,6 +195,20 @@ inductive OperationStep (program : Program) :
       OperationStep program
         (.returnProcess id origin calledProcessId calledRootScopeId callerOutput)
         before after
+  | invokeScalarProcess (id origin input calledProcessId calledRootScopeId calledEntry
+      returnOperationId data) (before after : RuntimeState)
+      (transition : InvokeScalarProcessStep before origin input calledProcessId
+        calledRootScopeId calledEntry returnOperationId data after) :
+      OperationStep program
+        (.invokeProcess id origin input calledProcessId calledRootScopeId
+          calledEntry returnOperationId (.scalar data)) before after
+  | returnScalarProcess (id origin calledProcessId calledRootScopeId callerOutput data)
+      (before after : RuntimeState)
+      (transition : ReturnScalarProcessStep before id origin calledProcessId
+        calledRootScopeId callerOutput data after) :
+      OperationStep program
+        (.returnProcess id origin calledProcessId calledRootScopeId callerOutput (.scalar data))
+        before after
   | awaitUserTask (id origin input output task) (before after : RuntimeState)
       (transition : awaitUserTaskState? before input output task = some after) :
       OperationStep program (.awaitUserTask id origin input output task) before after
@@ -353,12 +368,19 @@ private def fireWithoutCompensationSnapshots? (program : Program)
   | .enterMonitoredScope _ origin input childEntry childScopeId boundaryTimer =>
       armBoundedScopeState? state origin input childEntry childScopeId boundaryTimer
   | .invokeProcess _ origin input calledProcessId calledRootScopeId calledEntry
-      returnOperationId =>
+      returnOperationId .empty =>
       invokeProcessState? state origin input calledProcessId calledRootScopeId
         calledEntry returnOperationId
-  | .returnProcess id origin calledProcessId calledRootScopeId callerOutput =>
+  | .returnProcess id origin calledProcessId calledRootScopeId callerOutput .empty =>
       returnProcessState? state id origin calledProcessId calledRootScopeId
         callerOutput
+  | .invokeProcess _ origin input calledProcessId calledRootScopeId calledEntry
+      returnOperationId (.scalar data) =>
+      invokeProcessWithDataState? state origin input calledProcessId calledRootScopeId
+        calledEntry returnOperationId (.scalar data)
+  | .returnProcess id origin calledProcessId calledRootScopeId callerOutput (.scalar data) =>
+      returnProcessWithDataState? state id origin calledProcessId calledRootScopeId
+        callerOutput (.scalar data)
   | .awaitUserTask _ _ input output task =>
       awaitUserTaskState? state input output task
   | .awaitDataInputUserTask _ _ input output taskId taskName directInput =>
@@ -438,10 +460,22 @@ private theorem fireWithoutCompensationSnapshots_sound (program : Program)
     | exact OperationStep.enterMonitoredScope _ _ _ _ _ _ before after
         (armBoundedScopeState_sound before after _ _ _ _ _
           (by simpa [fireWithoutCompensationSnapshots?] using result))
-    | exact .invokeProcess _ _ _ _ _ _ _ before after
-        (invokeProcessState_sound _ _ _ _ _ _ _ _ result)
-    | exact .returnProcess _ _ _ _ _ before after
-        (returnProcessState_sound _ _ _ _ _ _ _ result)
+    | rename_i id origin input process root entry returned data
+      cases data with
+      | empty =>
+          exact .invokeProcess id origin input process root entry returned before after
+            (invokeProcessState_sound _ _ _ _ _ _ _ _ result)
+      | scalar data =>
+          exact .invokeScalarProcess id origin input process root entry returned data before after
+            (invokeProcessWithDataState_sound _ _ _ _ _ _ _ _ _ result)
+    | rename_i id origin process root output data
+      cases data with
+      | empty =>
+          exact .returnProcess id origin process root output before after
+            (returnProcessState_sound _ _ _ _ _ _ _ result)
+      | scalar data =>
+          exact .returnScalarProcess id origin process root output data before after
+            (returnProcessWithDataState_sound _ _ _ _ _ _ _ _ result)
     | exact .awaitUserTask _ _ _ _ _ before after result
     | exact .awaitDataInputUserTask _ _ _ _ _ _ _ before after result
     | exact .awaitDataInputOutputUserTask _ _ _ _ _ _ _ _ before after result

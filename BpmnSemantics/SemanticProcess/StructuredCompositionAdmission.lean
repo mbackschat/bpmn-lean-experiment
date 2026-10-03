@@ -177,9 +177,11 @@ def operationVertex? (program : Program) (operation : SemanticOperation) : Optio
       if task.metadata.isSome then none
       else return { id, kind := .task, outputs := [← consumer? program output] }
   | .awaitDataInputOutputUserTask _ _ _ output _ _ directInput directOutput =>
-      return { id, kind := .task, outputs := [← consumer? program output]
-               reads := some directInput.sourcePropertyId
-               writes := some directOutput.targetPropertyId }
+      match directInput.source, directOutput.target with
+      | .property source, .property target =>
+          return { id, kind := .task, outputs := [← consumer? program output]
+                   reads := some source, writes := some target }
+      | _, _ => none
   | .choose _ _ _ candidates defaultOutput _ =>
       if candidates.length != 2 then none
       else return { id, kind := .choice
@@ -200,8 +202,10 @@ def checkedVertex? (source : CheckedProcess) (node : CheckedNode) : Option Verte
   | .userTask _ _ metadata =>
       if metadata.isSome then none else return { id, kind := .task, outputs }
   | .dataInputOutputUserTask _ _ input output =>
-      return { id, kind := .task, outputs, reads := some input.sourcePropertyId
-               writes := some output.targetPropertyId }
+      match input.source, output.target with
+      | .property source, .property target =>
+          return { id, kind := .task, outputs, reads := some source, writes := some target }
+      | _, _ => none
   | .exclusiveGateway _ candidates _ =>
       if candidates.length != 2 then none else return { id, kind := .choice, outputs }
   | .exclusiveMerge _ => return { id, kind := .merge, outputs }
@@ -213,7 +217,9 @@ def dataIdentitiesValid (declarations : List String)
   let owned := declarations ++ interfaces.flatMap fun (input, output) =>
     [input.associationId, input.targetDataInputId, output.associationId, output.sourceDataOutputId]
   owned.eraseDups.length == owned.length && interfaces.all fun (input, output) =>
-    !owned.contains input.sourcePropertyId && !owned.contains output.targetPropertyId
+    match input.source, output.target with
+    | .property source, .property target => !owned.contains source && !owned.contains target
+    | _, _ => false
 
 def checkedIdentitiesValid (source : CheckedProcess) : Bool :=
   dataIdentitiesValid

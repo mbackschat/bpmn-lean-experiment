@@ -13,11 +13,11 @@ open CallActivityConformance
 
 private def extraOperations (distinctInvokeId : Bool) : List SemanticOperation :=
   program.operations.filterMap fun
-    | .invokeProcess id origin input process root entry returned =>
+    | .invokeProcess id origin input process root entry returned _ =>
         some (.invokeProcess
           (if distinctInvokeId then ⟨"operation:AliasedCall"⟩ else id)
           origin input process root entry returned)
-    | .returnProcess _ origin process root output =>
+    | .returnProcess _ origin process root output _ =>
         some (.returnProcess ⟨"operation:UnclaimedReturn"⟩ origin process root output)
     | _ => none
 

@@ -134,7 +134,7 @@ theorem prepareInternalDataArmingContract_after_bounded_scope
     dataContract.taskId (activityActivationCount state ⟨contract.origin.elementId.value⟩ + 1) keys
   have patchFrame : makeInternalDataArmingPatch program after dataContract dataOwner dataOrigin source = data := by
     simp only [activityActivationCount] at counter
-    simp only [makeInternalDataArmingPatch, after, bounded, InternalBoundedScopeSelection.apply,
+    simp only [makeInternalDataArmingPatch, dataInputOutputRunningInstance?, after, bounded, InternalBoundedScopeSelection.apply,
       makeInternalBoundedScopeSelection, InternalScopeCreationSelection.apply, fields.2.2,
       dataInputOutputActivityRecord, activationCount, activityActivationCount, counter, data]
   have anchorFrame : openWaitAnchorAbsent after data.arm.write.occurrence = true := by
@@ -163,13 +163,18 @@ theorem prepareInternalDataArmingContract_after_bounded_scope
     rcases member with rfl | member
     · simp [identities, bodies]
     · exact List.any_eq_false.mp recordAbsent record member
-  have runningFrame : after.control = .running dataOwner.processInstanceId := by
+  have runningFrame : dataArmingHostValid after dataOwner dataContract.data = true := by
     simpa only [after, bounded, InternalBoundedScopeSelection.apply, makeInternalBoundedScopeSelection,
-      InternalScopeCreationSelection.apply, fields.2.2] using running
-  have sourceFrame : dataArmingBindings? after dataContract.data = some source := by
-    simpa only [after, bounded, InternalBoundedScopeSelection.apply, makeInternalBoundedScopeSelection,
-      InternalScopeCreationSelection.apply, fields.2.2, dataArmingBindings?, dataInputOutputSourceBinding?,
-      dataInputSourceBinding?] using sourceFound
+      InternalScopeCreationSelection.apply, fields.2.2, dataArmingHostValid] using running
+  have sourceFrame : dataArmingBindings? after dataOwner dataContract.data = some source := by
+    rw [dataArmingBindings_process_frame state after dataOwner dataContract.data
+      (by simp only [after, bounded, InternalBoundedScopeSelection.apply, makeInternalBoundedScopeSelection,
+        InternalScopeCreationSelection.apply, fields.2.2])
+      (by simp only [after, bounded, InternalBoundedScopeSelection.apply, makeInternalBoundedScopeSelection,
+        InternalScopeCreationSelection.apply, fields.2.2])
+      (by simp only [after, bounded, InternalBoundedScopeSelection.apply, makeInternalBoundedScopeSelection,
+        InternalScopeCreationSelection.apply, fields.2.2])]
+    exact sourceFound
   have scopeFrame : after.variables.activities.any
       (activityOccurrenceScopeMatches (activityOwnerForRecord data.record)) = false := by
     simpa only [after, bounded, InternalBoundedScopeSelection.apply, makeInternalBoundedScopeSelection,

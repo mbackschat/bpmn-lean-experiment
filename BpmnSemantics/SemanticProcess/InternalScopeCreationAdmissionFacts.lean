@@ -17,9 +17,10 @@ theorem callOperationsPaired_invoke_input_scope_ne_calledRoot
     (input : ControlPlaceId) (calledProcessId : ProcessId)
     (calledRoot : DefinitionScopeId) (calledEntry : ControlPlaceId)
     (returnOperationId : OperationId) (inputScope : DefinitionScopeId)
+    {data : CallDataInterface}
     (paired : callOperationsPaired program = true)
     (member : .invokeProcess id origin input calledProcessId calledRoot calledEntry
-      returnOperationId ∈ program.operations)
+      returnOperationId data ∈ program.operations)
     (inputBinding : program.controlPlaceScopes.filter
       (fun ownership => decide (ownership.controlPlaceId = input)) =
       [{ controlPlaceId := input, scopeId := inputScope }]) :
@@ -41,14 +42,14 @@ theorem callOperationsPaired_invoke_input_scope_ne_calledRoot
         have selected := paired.1.2
         rw [List.all_filterMap] at selected
         have selected := List.all_eq_true.mp selected
-          (.invokeProcess id origin input calledProcessId calledRoot calledEntry returnOperationId)
+          (.invokeProcess id origin input calledProcessId calledRoot calledEntry returnOperationId data)
           member
         dsimp only at selected
         split at selected
         · split at selected
           · simp only [Bool.and_eq_true, decide_eq_true_eq] at selected
             obtain ⟨⟨⟨⟨⟨⟨⟨⟨⟨rootEq, different⟩, _⟩, _⟩, inputFound⟩, _⟩, _⟩, _⟩, _⟩, _⟩ :=
-              selected
+              selected.1
             change (program.controlPlaceScopes.find? fun ownership =>
               decide (ownership.controlPlaceId = input)).map (·.scopeId) =
                 some entryRoot.id at inputFound
@@ -102,17 +103,26 @@ theorem prepareInternalScopeCreation_called_definition_ne_owner
   dsimp only [makeInternalScopeCreationPreparation] at called ⊢
   unfold selectInternalScopeCreation? at selection
   obtain ⟨hosting, _, selection⟩ := Option.bind_eq_some_iff.mp selection
-  cases operation
-  all_goals first
-    | contradiction
-    | obtain ⟨owner, _, selection⟩ := Option.bind_eq_some_iff.mp selection
-      dsimp only at selection
-      repeat first | contradiction | split at selection
-      all_goals cases selection
+  cases operation with
+  | invokeProcess _ _ _ _ _ _ _ data =>
+      cases data
       all_goals first
         | contradiction
-        | exact callOperationsPaired_invoke_input_scope_ne_calledRoot
-            program _ _ _ _ _ _ _ _ paired member inputBinding
+        | obtain ⟨owner, _, selection⟩ := Option.bind_eq_some_iff.mp selection
+          dsimp only at selection
+          repeat first | contradiction | split at selection
+          all_goals cases selection
+          all_goals first
+            | contradiction
+            | exact callOperationsPaired_invoke_input_scope_ne_calledRoot
+                program _ _ _ _ _ _ _ _ paired member inputBinding
+  | enterScope _ _ _ _ _ =>
+      obtain ⟨owner, _, selection⟩ := Option.bind_eq_some_iff.mp selection
+      split at selection
+      · contradiction
+      · cases selection
+        contradiction
+  | _ => contradiction
 
 theorem prepareInternalScopeCreation_preserves_callAssociations
     (program : Program) (state : RuntimeState) (operation : SemanticOperation)

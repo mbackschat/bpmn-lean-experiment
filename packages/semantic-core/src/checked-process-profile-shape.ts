@@ -4,6 +4,7 @@ import {
   CheckedNodeKind,
 } from "./checked-process-contract.js";
 import {
+  CALL_ACTIVITY_DATA_BOUNDARIES_CHECKPOINT_PROFILE_ID,
   COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID,
   MESSAGE_KEY_CORRELATION_CHECKPOINT_PROFILE_ID,
   SemanticProfileId,
@@ -26,6 +27,9 @@ export function requiredCheckedProcessShape(
   const start = CheckedNodeKind.NoneStartEvent;
   const end = CheckedNodeKind.NoneEndEvent;
   switch (semanticProfile) {
+    case CALL_ACTIVITY_DATA_BOUNDARIES_CHECKPOINT_PROFILE_ID:
+      return nestedChecked([start, CheckedNodeKind.CallActivity, CheckedNodeKind.DataInputOutputUserTask,
+        end, start, CheckedNodeKind.DataInputOutputUserTask, end]);
     // Preservation, value-domain, and passive metadata choices do not change this checked shape.
     case SemanticProfileId.UserTask:
     case SemanticProfileId.UserTaskProcessDataPreservedNotation:

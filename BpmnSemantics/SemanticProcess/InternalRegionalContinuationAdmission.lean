@@ -24,7 +24,7 @@ theorem declaredReturn_continuation_binding (program : Program) (state : Runtime
     (∃ declared, program.controlPlaces.filter (fun candidate => decide (candidate.id = output)) = [declared]) ∧
       program.controlPlaceScopes.filter (fun ownership => decide (ownership.controlPlaceId = output)) =
         [{ controlPlaceId := output, scopeId := record.caller.definitionScopeId }] := by
-  obtain ⟨invokeId, invokeOrigin, input, calledProcess, calledRoot, entry, returned,
+  obtain ⟨invokeId, invokeOrigin, input, calledProcess, calledRoot, entry, returned, data,
     invocation, owned, _, _, _, returnedEq⟩ :=
       flowNodeOccurrenceStructuralProgramValidity_call_declarer program state record structural member
   have caller : (program.operationScopes.find? fun binding => decide (binding.operationId = invokeId)).map

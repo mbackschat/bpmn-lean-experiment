@@ -10,12 +10,12 @@ def dataTask (id input output reads writes : String) : SemanticOperation :=
   .awaitDataInputOutputUserTask ⟨"operation:" ++ id⟩ { elementId := ⟨id⟩ }
     ⟨"place:" ++ input⟩ ⟨"place:" ++ output⟩ ⟨id⟩ none
     { associationId := id ++ "InputAssociation"
-      sourcePropertyId := reads
+      source := .property reads
       targetDataInputId := id ++ "Input"
       targetDataInputName := none }
     { associationId := id ++ "OutputAssociation"
       sourceDataOutputId := id ++ "Output"
-      targetPropertyId := writes
+      target := .property writes
       sourceDataOutputName := none }
 
 def serialOperations : List SemanticOperation :=
@@ -62,15 +62,15 @@ def serialChecked : CheckedProcess :=
       { sequenceFlowId := ⟨id⟩, scopeId := ⟨"scope:InvoiceProcess"⟩ }
     nodes :=
       [ .dataInputOutputUserTask ⟨"Archive"⟩ none
-          { associationId := "ArchiveInputAssociation", sourcePropertyId := "Decision"
+          { associationId := "ArchiveInputAssociation", source := .property "Decision"
             targetDataInputId := "ArchiveInput", targetDataInputName := none }
           { associationId := "ArchiveOutputAssociation", sourceDataOutputId := "ArchiveOutput"
-            targetPropertyId := "Receipt", sourceDataOutputName := none }
+            target := .property "Receipt", sourceDataOutputName := none }
       , .dataInputOutputUserTask ⟨"Assess"⟩ none
-          { associationId := "AssessInputAssociation", sourcePropertyId := "Invoice"
+          { associationId := "AssessInputAssociation", source := .property "Invoice"
             targetDataInputId := "AssessInput", targetDataInputName := none }
           { associationId := "AssessOutputAssociation", sourceDataOutputId := "AssessOutput"
-            targetPropertyId := "Decision", sourceDataOutputName := none }
+            target := .property "Decision", sourceDataOutputName := none }
       , .noneEndEvent ⟨"End"⟩
       , .userTask ⟨"Notify"⟩ none none
       , .noneStartEvent ⟨"Start"⟩ ]

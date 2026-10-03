@@ -200,10 +200,12 @@ private def operationWellFormed (program : Program) (places : List ControlPlace)
             place.origin = boundaryTimer.origin)) &&
         placeExists program.controlPlaces input &&
         placeExists program.controlPlaces childEntry
-  | .invokeProcess id origin input calledProcessId calledRoot calledEntry returned =>
+  | .invokeProcess id origin input calledProcessId calledRoot calledEntry returned data =>
+      callDataInterfaceValid data origin.elementId.value calledProcessId.value &&
       invokeProcessOperationWellFormed program id origin input calledProcessId
         calledRoot calledEntry returned
-  | .returnProcess id origin calledProcessId calledRoot callerOutput =>
+  | .returnProcess id origin calledProcessId calledRoot callerOutput data =>
+      callDataInterfaceValid data origin.elementId.value calledProcessId.value &&
       returnProcessOperationWellFormed program id origin calledProcessId calledRoot
         callerOutput
   | .awaitUserTask id origin input output task =>
@@ -219,7 +221,7 @@ private def operationWellFormed (program : Program) (places : List ControlPlace)
   -- it is meant to fill.
   | .awaitDataInputUserTask id origin input output taskId taskName directInput =>
       let identities :=
-        [taskId.value, directInput.associationId, directInput.sourcePropertyId,
+        [taskId.value, directInput.associationId, directInput.source.id,
           directInput.targetDataInputId]
       nonempty id.value &&
         nonempty origin.elementId.value &&
@@ -234,9 +236,9 @@ private def operationWellFormed (program : Program) (places : List ControlPlace)
   | .awaitDataInputOutputUserTask id origin input output taskId taskName directInput
       directOutput =>
       let identities :=
-        [taskId.value, directInput.associationId, directInput.sourcePropertyId,
+        [taskId.value, directInput.associationId, directInput.source.id,
           directInput.targetDataInputId, directOutput.associationId,
-          directOutput.sourceDataOutputId, directOutput.targetPropertyId]
+          directOutput.sourceDataOutputId, directOutput.target.id]
       nonempty id.value &&
         nonempty origin.elementId.value &&
         identities.all nonempty &&
@@ -254,7 +256,7 @@ private def operationWellFormed (program : Program) (places : List ControlPlace)
   | .awaitDataOutputUserTask id origin input output taskId taskName directOutput =>
       let identities :=
         [taskId.value, directOutput.associationId, directOutput.sourceDataOutputId,
-          directOutput.targetPropertyId]
+          directOutput.target.id]
       nonempty id.value &&
         nonempty origin.elementId.value &&
         identities.all nonempty &&
@@ -584,6 +586,7 @@ def programWellFormed (program : Program) : Bool :=
     program.operations.all (operationRecurrenceValid program.identity.semanticProfile) &&
     inclusiveOperationsPaired program.operations &&
     callOperationsPaired program &&
+    (program.identity.semanticProfile != callDataCheckpointProfileId || callDataProgramGraph program) &&
     (program.operations.filter isInitiate).length = 1 &&
     programGraphWellFormedForProgram program &&
     programWaitDeclarersUnique program.operations &&

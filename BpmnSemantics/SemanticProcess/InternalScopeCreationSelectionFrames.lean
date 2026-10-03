@@ -81,6 +81,7 @@ theorem selectInternalScopeCreation_read_frame (before after : RuntimeState)
   unfold selectInternalScopeCreation? at found ⊢
   simp only [control, running, bind, Option.bind] at found ⊢
   cases operation
+  all_goals try (split at found)
   all_goals first
     | contradiction
     | obtain ⟨selectedOwner, owned, found⟩ := Option.bind_eq_some_iff.mp found
@@ -109,6 +110,7 @@ theorem scopeCreation_selection_child_facts (state : RuntimeState)
   unfold selectInternalScopeCreation? at found
   simp only [running, bind, Option.bind] at found
   cases operation
+  all_goals try (split at found)
   all_goals first
     | contradiction
     | obtain ⟨owner, _, found⟩ := Option.bind_eq_some_iff.mp found
@@ -137,6 +139,7 @@ theorem scopeCreation_selection_call_facts (state : RuntimeState)
   unfold selectInternalScopeCreation? at found
   simp only [running, bind, Option.bind] at found
   cases operation
+  all_goals try (split at found)
   all_goals first
     | contradiction
     | obtain ⟨owner, _, found⟩ := Option.bind_eq_some_iff.mp found
@@ -216,10 +219,11 @@ theorem scopeCreation_selection_call_associations (state : RuntimeState)
   unfold selectInternalScopeCreation? at found
   obtain ⟨hosting, _, found⟩ := Option.bind_eq_some_iff.mp found
   cases operation
+  all_goals try (split at found)
   all_goals first
     | contradiction
     | obtain ⟨owner, _, found⟩ := Option.bind_eq_some_iff.mp found
-      dsimp only at found
+      try dsimp only at found
       repeat first | contradiction | split at found
       all_goals cases found
       all_goals first | contradiction | assumption

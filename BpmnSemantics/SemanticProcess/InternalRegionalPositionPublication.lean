@@ -18,7 +18,9 @@ theorem preparedRegional_position_delta (program : Program) (before : RuntimeSta
       applyPreparedInternalRegional? program before prepared = some after ∧
       controlPositionDelta? program hosting before after = some prepared.publicationTemplate.positionDelta := by
   cases operation with
-  | returnProcess id origin process definition output =>
+  | returnProcess id origin process definition output data =>
+      have empty := prepareInternalRegional_return_data_empty program before id origin process definition output data prepared found
+      subst data
       exact preparedReturn_position_delta program before id origin process definition output prepared found
   | completeScope id origin definition output =>
       exact preparedComplete_position_delta program before id origin definition output prepared found

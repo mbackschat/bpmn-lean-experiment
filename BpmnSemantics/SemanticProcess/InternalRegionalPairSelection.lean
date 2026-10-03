@@ -14,15 +14,18 @@ theorem returning_record_member (program : Program) (state : RuntimeState)
     (found : selectInternalRegional? program state operation = some selected)
     (kind : selected.kind = .returning record) : record ∈ state.calledProcessOccurrences := by
   cases operation with
-  | returnProcess id origin process definition output =>
-      obtain ⟨actual, actualKind, _, census⟩ :=
-        regionalSelection_return_record program state id origin process definition output selected found
-      have same : actual = record := by simpa only [kind, InternalRegionalKind.returning.injEq] using actualKind.symm
-      subst actual
-      have member : record ∈ state.calledProcessOccurrences.filter (fun candidate =>
-          decide (candidate.returnOperationId = id && candidate.id.elementId.value = origin.elementId.value)) := by
-        rw [census]; simp
-      exact (List.mem_filter.mp member).1
+  | returnProcess id origin process definition output data =>
+      cases data with
+      | scalar => simp [regionalSelection_scalar_return_refused] at found
+      | empty =>
+          obtain ⟨actual, actualKind, _, census⟩ :=
+            regionalSelection_return_record program state id origin process definition output selected found
+          have same : actual = record := by simpa only [kind, InternalRegionalKind.returning.injEq] using actualKind.symm
+          subst actual
+          have member : record ∈ state.calledProcessOccurrences.filter (fun candidate =>
+              decide (candidate.returnOperationId = id && candidate.id.elementId.value = origin.elementId.value)) := by
+            rw [census]; simp
+          exact (List.mem_filter.mp member).1
   | _ =>
       unfold selectInternalRegional? at found
       obtain ⟨_, _, found⟩ := Option.bind_eq_some_iff.mp found

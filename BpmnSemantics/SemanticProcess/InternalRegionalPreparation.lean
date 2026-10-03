@@ -61,6 +61,21 @@ theorem prepareInternalRegional_facts (program : Program) (state : RuntimeState)
         cases found
         simp_all
 
+/-- CDATA's scalar copy-back obligation excludes it from control-only regional preparation. -/
+theorem prepareInternalRegional_return_data_empty (program : Program) (state : RuntimeState)
+    (id : OperationId) (origin : BpmnElementOrigin) (process : ProcessId)
+    (definition : DefinitionScopeId) (output : ControlPlaceId) (data : CallDataInterface)
+    (prepared : PreparedInternalRegional)
+    (found : prepareInternalRegional? program state
+      (.returnProcess id origin process definition output data) = some prepared) : data = .empty := by
+  have closed := (prepareInternalRegional_facts program state _ prepared found).2.2.2.1
+  have selected := (ownershipClosedSelection_facts program state _ prepared.selection closed).1
+  cases data with
+  | empty => rfl
+  | scalar =>
+      rw [regionalSelection_scalar_return_refused] at selected
+      contradiction
+
 /-- TXC's selected frontier requires no regional batch with child-owned Compensation. -/
 theorem prepareInternalRegional_rootCompensationDomain (program : Program) (state : RuntimeState)
     (operation : SemanticOperation) (prepared : PreparedInternalRegional)

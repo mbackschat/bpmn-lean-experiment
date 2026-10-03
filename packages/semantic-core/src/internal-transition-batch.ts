@@ -2,6 +2,9 @@ import {
   applyPreparedInternalArming,
   deriveInternalArmingPreparation,
 } from "./internal-transition-arming-batch.js";
+import { CallDataKind } from "./call-data-contract.js";
+import { applyPreparedInternalCallData, deriveInternalCallDataPreparation } from "./internal-transition-call-data-preparation.js";
+import type { PreparedInternalCallData } from "./internal-transition-call-data-preparation.js";
 import type { PreparedInternalArming } from "./internal-transition-arming-batch.js";
 import {
   applyPreparedInternalLocalControl,
@@ -48,6 +51,7 @@ function boundedScopePreparationAdmitted(
 }
 
 export enum PreparedInternalTransitionFamily {
+  CallData = "callData",
   Arming = "arming",
   LocalControl = "localControl",
   ScopeCreation = "scopeCreation",
@@ -58,6 +62,7 @@ export enum PreparedInternalTransitionFamily {
 }
 
 export type PreparedInternalTransition = Readonly<
+  | PreparedInternalCallData & { family: PreparedInternalTransitionFamily.CallData }
   | PreparedInternalArming & { family: PreparedInternalTransitionFamily.Arming }
   | PreparedInternalLocalControl & { family: PreparedInternalTransitionFamily.LocalControl }
   | PreparedInternalScopeCreation & { family: PreparedInternalTransitionFamily.ScopeCreation }
@@ -76,6 +81,18 @@ export function deriveInternalTransitionPreparation(
   state: RuntimeState,
   candidate: InternalTransitionCandidate,
 ): PreparedInternalTransition | null {
+  if (candidate.operation.kind === SemanticOperationKind.InvokeProcess ||
+      candidate.operation.kind === SemanticOperationKind.ReturnProcess) {
+    switch (candidate.operation.data.kind) {
+      case CallDataKind.Scalar: {
+        const prepared = deriveInternalCallDataPreparation(program, state, candidate.operation);
+        return prepared === null || candidate.owner === null || !sameScopeOccurrence(prepared.owner, candidate.owner)
+          ? null : { family: PreparedInternalTransitionFamily.CallData, ...prepared };
+      }
+      case CallDataKind.Empty:
+        break;
+    }
+  }
   switch (candidate.operation.kind) {
     case SemanticOperationKind.EnterMonitoredScope:
     case SemanticOperationKind.EnterBoundedScope: {
@@ -165,6 +182,10 @@ export function applyPreparedInternalTransition(
   prepared: PreparedInternalTransition,
 ): RuntimeState | null {
   switch (prepared.family) {
+    case PreparedInternalTransitionFamily.CallData: {
+      const { family: _family, ...callData } = prepared;
+      return applyPreparedInternalCallData(program, state, callData);
+    }
     case PreparedInternalTransitionFamily.BoundedScope: {
       const { family: _family, owner, ...bounded } = prepared;
       if (!boundedScopePreparationAdmitted(program, bounded.operation)) return null;

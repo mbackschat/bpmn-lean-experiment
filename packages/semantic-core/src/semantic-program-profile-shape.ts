@@ -1,6 +1,7 @@
 /** Exact Semantic Process operation multisets admitted by reviewed semantic profiles. */
 import { SemanticOperationKind } from "./semantic-process-contract.js";
 import {
+  CALL_ACTIVITY_DATA_BOUNDARIES_CHECKPOINT_PROFILE_ID,
   COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID,
   MESSAGE_KEY_CORRELATION_CHECKPOINT_PROFILE_ID,
   SemanticProfileId,
@@ -306,6 +307,17 @@ export function requiredProgramShape(
         SemanticOperationKind.ReachNoneEnd,
         SemanticOperationKind.ReachNoneEnd,
         SemanticOperationKind.CompleteScope,
+        SemanticOperationKind.CompleteScope,
+      ]);
+    case CALL_ACTIVITY_DATA_BOUNDARIES_CHECKPOINT_PROFILE_ID:
+      return nestedProgram([
+        SemanticOperationKind.Initiate,
+        SemanticOperationKind.InvokeProcess,
+        SemanticOperationKind.AwaitDataInputOutputUserTask,
+        SemanticOperationKind.ReachNoneEnd,
+        SemanticOperationKind.ReturnProcess,
+        SemanticOperationKind.AwaitDataInputOutputUserTask,
+        SemanticOperationKind.ReachNoneEnd,
         SemanticOperationKind.CompleteScope,
       ]);
     case SemanticProfileId.CalledProcessCallActivity:

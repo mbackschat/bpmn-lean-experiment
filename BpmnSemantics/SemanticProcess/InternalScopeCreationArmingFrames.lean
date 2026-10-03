@@ -110,13 +110,33 @@ theorem prepareInternalDataArm_after_scope_creation (program : Program) (state :
   have ownerAfter : onlyTokenOwner? (selected.apply state) contract.input = some owner := by
     simpa only [onlyTokenOwner?, scopeCreation_apply_census state selected contract.input input entry]
       using owned
-  simp only [prepareInternalDataArmingContract?, owned, ownerAfter, bind, Option.bind,
-    live, liveAfter] at found ⊢
-  cases kind : selected.kind <;>
-    simpa only [InternalScopeCreationSelection.apply, kind, makeInternalDataArmingPatch,
-      activationCount, dataInputOutputActivityRecord, activityActivationCount,
-      dataArmingBindings?, dataInputOutputSourceBinding?, dataInputSourceBinding?, openWaitAnchorAbsent,
-      openWaitAnchors] using found
+  have hostFrame : dataArmingHostValid (selected.apply state) owner contract.data = true := by
+    cases kind : selected.kind <;>
+      simpa only [InternalScopeCreationSelection.apply, kind, dataArmingHostValid] using running
+  have sourceFrame : dataArmingBindings? (selected.apply state) owner contract.data = some source := by
+    rw [dataArmingBindings_process_frame state (selected.apply state) owner contract.data
+      (by cases kind : selected.kind <;> simp only [InternalScopeCreationSelection.apply, kind]) (by cases kind : selected.kind <;> simp only [InternalScopeCreationSelection.apply, kind])
+      (by cases kind : selected.kind <;> simp only [InternalScopeCreationSelection.apply, kind])]
+    exact available
+  have patchFrame : makeInternalDataArmingPatch program (selected.apply state)
+      contract owner inputOrigin source = patch := by
+    rw [patchEq]
+    cases kind : selected.kind <;>
+      simp only [InternalScopeCreationSelection.apply, kind, makeInternalDataArmingPatch,
+        dataInputOutputRunningInstance?, activationCount, activityActivationCount, dataInputOutputActivityRecord]
+  have anchorFrame : openWaitAnchorAbsent (selected.apply state) patch.arm.write.occurrence = true := by
+    cases kind : selected.kind <;>
+      simpa only [InternalScopeCreationSelection.apply, kind, openWaitAnchorAbsent, openWaitAnchors] using absent
+  have scopeFrame : (selected.apply state).variables.activities.any
+      (activityOccurrenceScopeMatches (activityOwnerForRecord patch.record)) = false := by
+    cases kind : selected.kind <;> simpa only [InternalScopeCreationSelection.apply, kind] using fresh
+  have recordFrame : (selected.apply state).activityOccurrences.any (fun record =>
+      sameActivityOccurrence record patch.record || !activityBodyClaimsDisjoint record patch.record) = false := by
+    cases kind : selected.kind <;> simpa only [InternalScopeCreationSelection.apply, kind] using bodyFresh
+  simp only [prepareInternalDataArmingContract?, ownerAfter, hostFrame, programSelection,
+    liveAfter, origin, sourceFrame, patchFrame, declarer, anchorFrame, scopeFrame, recordFrame,
+    bind, Option.bind, Bool.not_true, Bool.false_or, Bool.or_false, Bool.false_eq_true, if_false]
+  rfl
 
 theorem scopeArming_bucket_frame (state : RuntimeState)
     (selected : InternalScopeCreationSelection) (instanceId : SemanticId)

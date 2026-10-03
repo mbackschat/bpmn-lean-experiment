@@ -146,10 +146,10 @@ function companions(): ArmingOperation[] {
       task: { elementId: "Side_Task", name: "Concurrent review" } },
     { ...operationBase("Side_DataTask"), kind: SemanticOperationKind.AwaitDataInputOutputUserTask, input, output,
       task: { elementId: "Side_DataTask", name: "Review submitted details" },
-      directInput: { associationId: "Side_InputAssociation", sourcePropertyId: "takeA",
+      directInput: { associationId: "Side_InputAssociation", source: { kind: "property", propertyId: "takeA" },
         targetDataInputId: "Side_DataInput", targetDataInputName: "Details" },
       directOutput: { associationId: "Side_OutputAssociation", sourceDataOutputId: "Side_DataOutput",
-        sourceDataOutputName: "Decision", targetPropertyId: "Side_Decision" } },
+        sourceDataOutputName: "Decision", target: { kind: "property", propertyId: "Side_Decision"  }} },
     { ...messageBase, kind: SemanticOperationKind.AwaitMessage },
     { ...messageBase, kind: SemanticOperationKind.AwaitPayloadMessage,
       directOutput: { associationId: "Side_MessageAssociation", sourceDataOutputId: "Side_MessageOutput",
@@ -406,6 +406,7 @@ test("each mixed family rejects stale complete preparations despite unchanged op
         forged = { ...member, footprint: { ...member.footprint, reads: [] } };
         break;
       case PreparedInternalTransitionFamily.LocalControl:
+      case PreparedInternalTransitionFamily.CallData:
       case PreparedInternalTransitionFamily.ScopeCreation:
       case PreparedInternalTransitionFamily.BoundedScope:
       case PreparedInternalTransitionFamily.Regional:

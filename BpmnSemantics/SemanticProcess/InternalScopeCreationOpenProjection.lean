@@ -335,6 +335,7 @@ theorem scopeCreation_called_parent_none (state : RuntimeState) (operation : Sem
   unfold selectInternalScopeCreation? at selection
   obtain ⟨hosting, _, selection⟩ := Option.bind_eq_some_iff.mp selection
   cases operation
+  all_goals try (split at selection)
   all_goals first
     | contradiction
     | obtain ⟨owner, _, selection⟩ := Option.bind_eq_some_iff.mp selection

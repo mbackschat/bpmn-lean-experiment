@@ -56,11 +56,11 @@ test("compiles serial scalar handoff with shared Process Property ownership", as
   if (result.status !== BpmnCompilationStatus.Accepted) return;
   assert.deepEqual(result.checkedProcess.nodes.filter(({ kind }) => kind === CheckedNodeKind.DataInputOutputUserTask), [
     { kind: CheckedNodeKind.DataInputOutputUserTask, id: "archive", name: "archive",
-      directInput: { associationId: "archive_read", sourcePropertyId: "decision", targetDataInputId: "archive_in", targetDataInputName: null },
-      directOutput: { associationId: "archive_write", sourceDataOutputId: "archive_out", sourceDataOutputName: null, targetPropertyId: "receipt" } },
+      directInput: { associationId: "archive_read", source: { kind: "property", propertyId: "decision" }, targetDataInputId: "archive_in", targetDataInputName: null },
+      directOutput: { associationId: "archive_write", sourceDataOutputId: "archive_out", sourceDataOutputName: null, target: { kind: "property", propertyId: "receipt"  }} },
     { kind: CheckedNodeKind.DataInputOutputUserTask, id: "assess", name: "assess",
-      directInput: { associationId: "assess_read", sourcePropertyId: "summary", targetDataInputId: "assess_in", targetDataInputName: null },
-      directOutput: { associationId: "assess_write", sourceDataOutputId: "assess_out", sourceDataOutputName: null, targetPropertyId: "decision" } },
+      directInput: { associationId: "assess_read", source: { kind: "property", propertyId: "summary" }, targetDataInputId: "assess_in", targetDataInputName: null },
+      directOutput: { associationId: "assess_write", sourceDataOutputId: "assess_out", sourceDataOutputName: null, target: { kind: "property", propertyId: "decision"  }} },
   ]);
 });
 
@@ -78,22 +78,23 @@ test("checked and standalone Program admission preserve global data identity wit
     ["directInput", "associationId", "assess_read"],
     ["directOutput", "associationId", "assess_write"],
     ["directInput", "associationId", "assess"],
-    ["directInput", "sourcePropertyId", "assess"],
+    ["directInput", "source", "assess"],
     ["directInput", "targetDataInputId", "summary"],
-    ["directOutput", "targetPropertyId", "assess_in"],
+    ["directOutput", "target", "assess_in"],
     ["directInput", "associationId", "first"],
-    ["directInput", "sourcePropertyId", "first"],
+    ["directInput", "source", "first"],
     ["directOutput", "sourceDataOutputId", "Invoice"],
-    ["directOutput", "targetPropertyId", "Invoice"],
+    ["directOutput", "target", "Invoice"],
   ] as const;
   for (const [side, field, alias] of mutations) {
     const label = `${side}.${field} aliases ${alias}`;
+    const value = field === "source" || field === "target" ? { kind: "property", propertyId: alias } : alias;
     const checked: CheckedProcess = { ...result.checkedProcess, nodes: result.checkedProcess.nodes.map((node) =>
       node.kind === CheckedNodeKind.DataInputOutputUserTask && node.id === "archive"
-        ? { ...node, [side]: { ...node[side], [field]: alias } } : node) };
+        ? { ...node, [side]: { ...node[side], [field]: value } } : node) };
     const program: SemanticProcessProgram = { ...result.semanticProcess, operations: result.semanticProcess.operations.map((operation) =>
       operation.kind === SemanticOperationKind.AwaitDataInputOutputUserTask && operation.task.elementId === "archive"
-        ? { ...operation, [side]: { ...operation[side], [field]: alias } } : operation) };
+        ? { ...operation, [side]: { ...operation[side], [field]: value } } : operation) };
     assert.deepEqual(lowerCheckedProcess(checked), program, label);
     assert.deepEqual([admitted(checked), isWellFormedSemanticProcessProgram(program)], [false, false], label);
   }

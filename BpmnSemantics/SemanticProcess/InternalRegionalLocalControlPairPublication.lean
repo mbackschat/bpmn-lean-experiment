@@ -39,7 +39,9 @@ theorem preparedRegional_preserves_runtimeStateWellFormed (program : Program) (b
     ∃ after, applyPreparedInternalRegional? program before prepared = some after ∧
       runtimeStateWellFormed program instanceId after = true := by
   cases operation with
-  | returnProcess id origin process definition output =>
+  | returnProcess id origin process definition output data =>
+      have empty := prepareInternalRegional_return_data_empty program before id origin process definition output data prepared found
+      subst data
       exact preparedReturn_preserves_runtimeStateWellFormed program before instanceId id origin process definition output prepared valid found
   | completeScope id origin definition output =>
       cases output with
@@ -69,7 +71,9 @@ theorem preparedRegional_accepted_lifecycle (program : Program) (before : Runtim
   have owners : waitOwnersLive before = true := by simp_all only
   have identities : waitIdentitiesUnique before = true := by simp_all only
   cases operation with
-  | returnProcess id origin process definition output =>
+  | returnProcess id origin process definition output data =>
+      have empty := prepareInternalRegional_return_data_empty program before id origin process definition output data prepared found
+      subst data
       exact preparedReturn_accepted_lifecycle program before instanceId commandId transitionIndex
         id origin process definition output prepared programWF beforeWF found
   | completeScope id origin definition output =>

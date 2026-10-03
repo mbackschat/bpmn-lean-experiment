@@ -1,6 +1,7 @@
 import { transactionCancellationProgramShape } from "./transaction-cancellation-admission.js";
+import { CallDataKind } from "./call-data-contract.js";
 import { structuredCompositionCheckedShape, structuredCompositionProgramShape } from "./structured-process-composition-admission.js";
-import { STRUCTURED_PROCESS_COMPOSITION_CHECKPOINT_PROFILE_ID } from "./semantic-profile-catalog.js";
+import { CALL_ACTIVITY_DATA_BOUNDARIES_CHECKPOINT_PROFILE_ID, STRUCTURED_PROCESS_COMPOSITION_CHECKPOINT_PROFILE_ID } from "./semantic-profile-catalog.js";
 import { repeatableSubscriptionCheckedShape, repeatableSubscriptionProgramShape } from "./repeatable-subscription-admission.js";
 import {
   CheckedNodeKind,
@@ -30,6 +31,7 @@ import {
 } from "./user-task-metadata.js";
 
 export {
+  CALL_ACTIVITY_DATA_BOUNDARIES_CHECKPOINT_PROFILE_ID,
   STRUCTURED_PROCESS_COMPOSITION_CHECKPOINT_PROFILE_ID,
   TRANSACTION_CANCELLATION_CHECKPOINT_PROFILE_ID,
   COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID,
@@ -55,8 +57,13 @@ export function profileAllowsProgramShape(
     return repeatableSubscriptionProgramShape(actualOperations, definitionScopeCount);
   }
   const required = requiredProgramShape(semanticProfile);
+  const scalarCalls = semanticProfile === CALL_ACTIVITY_DATA_BOUNDARIES_CHECKPOINT_PROFILE_ID;
   return required !== undefined &&
     definitionScopeCount === required.definitionScopeCount &&
+    (scalarCalls || actualOperations.every(hasPropertyActivityOperationEndpoints)) &&
+    actualOperations.every((operation) =>
+      (operation.kind !== SemanticOperationKind.InvokeProcess && operation.kind !== SemanticOperationKind.ReturnProcess) ||
+      operation.data.kind === (scalarCalls ? CallDataKind.Scalar : CallDataKind.Empty)) &&
     sameCardinalities(
       actualOperations.map(({ kind }) => kind),
       required.operationKinds,
@@ -168,8 +175,12 @@ export function profileAllowsCheckedProcessShape(
     return repeatableSubscriptionCheckedShape(nodes, definitionScopeCount);
   }
   const required = requiredCheckedProcessShape(semanticProfile);
+  const scalarCalls = semanticProfile === CALL_ACTIVITY_DATA_BOUNDARIES_CHECKPOINT_PROFILE_ID;
   return required !== undefined &&
     definitionScopeCount === required.definitionScopeCount &&
+    (scalarCalls || nodes.every(hasPropertyActivityNodeEndpoints)) &&
+    nodes.every((node) => node.kind !== CheckedNodeKind.CallActivity ||
+      node.data.kind === (scalarCalls ? CallDataKind.Scalar : CallDataKind.Empty)) &&
     sameCardinalities(nodes.map(({ kind }) => kind), required.nodeKinds) &&
     nodes.every((node) =>
       (node.kind !== CheckedNodeKind.TimerBoundaryEvent &&
@@ -205,6 +216,32 @@ export function profileAllowsCheckedProcessShape(
             node.outputMappings.length === 0 &&
             node.bpmnErrorRoute === null),
       ));
+}
+
+function hasPropertyActivityOperationEndpoints(operation: SemanticOperation): boolean {
+  switch (operation.kind) {
+    case SemanticOperationKind.AwaitDataInputUserTask:
+      return operation.directInput.source.kind === "property";
+    case SemanticOperationKind.AwaitDataOutputUserTask:
+      return operation.directOutput.target.kind === "property";
+    case SemanticOperationKind.AwaitDataInputOutputUserTask:
+      return operation.directInput.source.kind === "property" && operation.directOutput.target.kind === "property";
+    default:
+      return true;
+  }
+}
+
+function hasPropertyActivityNodeEndpoints(node: CheckedNode): boolean {
+  switch (node.kind) {
+    case CheckedNodeKind.DataInputUserTask:
+      return node.directInput.source.kind === "property";
+    case CheckedNodeKind.DataOutputUserTask:
+      return node.directOutput.target.kind === "property";
+    case CheckedNodeKind.DataInputOutputUserTask:
+      return node.directInput.source.kind === "property" && node.directOutput.target.kind === "property";
+    default:
+      return true;
+  }
 }
 
 function userTaskMetadataMatchesProfileSelection(

@@ -111,7 +111,7 @@ theorem declaredComplete_hosting_instance (program : Program) (before : RuntimeS
     simp [same, parentless] at parentEq
   · exact hostingInstance
   · obtain ⟨record, recordMember, calledRoot⟩ := called
-    obtain ⟨invokeId, invokeOrigin, input, process, calledScope, calledEntry, returned,
+    obtain ⟨invokeId, invokeOrigin, input, process, calledScope, calledEntry, returned, data,
       invocation, _, _, _, calledScopeEq, _⟩ :=
         flowNodeOccurrenceStructuralProgramValidity_call_declarer program before record structural recordMember
     have paired : callOperationsPaired program = true := by

@@ -2,6 +2,7 @@ import {
   CheckedNodeKind,
   SemanticOperationKind,
   SemanticOriginKind,
+  sameCallDataInterface,
 } from "@bpmn-lean/semantic-core";
 import type {
   CheckedNode,
@@ -41,6 +42,7 @@ export function lowerCallActivityInvoke(
       calledRootScopeId: calledRoot.id,
       calledEntry: requireOnlyFlowPlace(source, calledStart.id, "outgoing"),
       returnOperationId: returnOperationId(node.id),
+      data: node.data,
     },
   };
 }
@@ -70,6 +72,7 @@ export function lowerCalledProcessReturn(
       calledProcessId: call.calledProcessId,
       calledRootScopeId: scope.id,
       callerOutput: requireOnlyFlowPlace(source, call.id, "outgoing"),
+      data: call.data,
     },
   };
 }
@@ -150,6 +153,7 @@ export function callActivityDefinitionBindingValid(
     return false;
   }
   return invoke.origin.elementId === call.id &&
+    sameCallDataInterface(invoke.data, call.data) && sameCallDataInterface(returned.data, call.data) &&
     invoke.input === requireOnlyFlowPlace(source, call.id, "incoming") &&
     invoke.calledProcessId === call.calledProcessId &&
     invoke.calledRootScopeId === calledRoot.id &&

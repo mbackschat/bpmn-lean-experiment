@@ -377,7 +377,8 @@ theorem data_completion_preserves_control_unit_bound
   · simp only [Option.bind_eq_some_iff] at completed
     obtain ⟨scope, scopeFound, variables, removed, completed⟩ := completed
     split at completed
-    · cases Option.some.inj completed
+    · obtain ⟨_, _, completed⟩ := Option.bind_eq_some_iff.mp completed
+      cases Option.some.inj completed
       simp [ControlUnitBound, single, noTokens, pending, addToken, canonicalInsertBy]
     · contradiction
   · contradiction
@@ -484,7 +485,8 @@ theorem data_completion_has_exact_continuation
     simp only [Option.bind_eq_some_iff] at completed
     obtain ⟨scope, scopeFound, variables, removed, completed⟩ := completed
     split at completed
-    · cases Option.some.inj completed
+    · obtain ⟨_, _, completed⟩ := Option.bind_eq_some_iff.mp completed
+      cases Option.some.inj completed
       refine ⟨contract, wait, { placeId := wait.output, owner := wait.owner }, declared, key.1, key.2.2.1, ?_⟩
       simp [single, noTokens, addToken, canonicalInsertBy, output]
     · contradiction
@@ -531,14 +533,17 @@ theorem completion_admission_dispatch_or_refusal
       dispatchStimulus program before (.completeUserTaskInstance commandId taskId bindings) ∨
     admitStimulus program before (.completeUserTaskInstance commandId taskId bindings) =
       { outcome := .rejected, state := before } := by
-  cases snapshots : program.compensationEventSubProcessSnapshots with
-  | some declaration => simp [admitStimulus, snapshots]
-  | none =>
-      cases incidents : before.effectIncidents with
-      | nil => simp [admitStimulus, dispatchStimulus, snapshots, incidents]
-      | cons incident rest =>
-          by_cases valid : incidentStateAdmitted program before = true <;>
-            simp [admitStimulus, dispatchStimulus, snapshots, incidents, valid]
+  cases dataValid : callDataRuntimeStateValid program before with
+  | false => exact Or.inr (admitStimulus_invalid_call_data_state program before _ dataValid)
+  | true =>
+    cases snapshots : program.compensationEventSubProcessSnapshots with
+    | some declaration => simp [admitStimulus, snapshots]
+    | none =>
+        cases incidents : before.effectIncidents with
+        | nil => simp [admitStimulus, dispatchStimulus, snapshots, dataValid, incidents]
+        | cons incident rest =>
+            by_cases valid : incidentStateAdmitted program before = true <;>
+              simp [admitStimulus, dispatchStimulus, snapshots, dataValid, incidents, valid]
 
 theorem rejected_completion_preserves_state
     (program : Program) (analysis : Analysis) (before : RuntimeState)
@@ -759,7 +764,8 @@ theorem data_completion_preserves_root_ownership
   · simp only [Option.bind_eq_some_iff] at completed
     obtain ⟨_, _, _, _, completed⟩ := completed
     split at completed
-    · cases Option.some.inj completed
+    · obtain ⟨_, _, completed⟩ := Option.bind_eq_some_iff.mp completed
+      cases Option.some.inj completed
       simp only [RootOwnedControl, addToken, mem_canonicalInsertBy, forall_eq_or_imp]
       exact ⟨owned.1, ⟨same, owned.2.1⟩, fun wait member => owned.2.2 wait (List.mem_of_mem_erase member)⟩
     · contradiction
@@ -789,29 +795,19 @@ theorem completion_admission_preserves_root_ownership
 
 theorem committed_start_has_root_owner
     (program : Program) (commandId processId instanceId : SemanticId) (bindings : List VariableBinding)
-    (profile : program.identity.semanticProfile = structuredCompositionCheckpointProfileId)
+    (_profile : program.identity.semanticProfile = structuredCompositionCheckpointProfileId)
     (committed : (admitStimulus program initialState
       (.startProcess commandId processId instanceId bindings)).outcome = .committed) :
     ∃ owner, RootOwnedControl owner (admitStimulus program initialState
       (.startProcess commandId processId instanceId bindings)).state := by
-  cases snapshot : program.compensationEventSubProcessSnapshots with
-  | some declaration => simp [admitStimulus, snapshot] at committed
-  | none =>
-    cases created : runningProgramStartState? program instanceId bindings with
-    | none =>
-      simp [admitStimulus, snapshot, initialState, profile, created] at committed
-      split at committed <;> contradiction
-    | some started =>
-      have owned : ∃ owner, RootOwnedControl owner started := by
-        simp only [runningProgramStartState?, bind, pure, Option.bind_eq_some_iff] at created
-        obtain ⟨root, _, created⟩ := created
-        cases Option.some.inj created
-        exact ⟨{ processInstanceId := instanceId, definitionScopeId := root.id, activation := 1 },
-          by simp [RootOwnedControl, runningStartState, initialState]⟩
-      simp [admitStimulus, snapshot, initialState, profile, created] at committed ⊢
-      split at committed
-      · simp_all
-      · contradiction
+  obtain ⟨_, variables, created⟩ := admitStimulus_committed_start_shape program
+    (.startProcess commandId processId instanceId bindings) instanceId rfl committed
+  simp only [runningProgramStartState?, bind, pure, Option.bind_eq_some_iff] at created
+  obtain ⟨root, _, created⟩ := created
+  have same := (Option.some.inj created).symm
+  rw [same]
+  exact ⟨{ processInstanceId := instanceId, definitionScopeId := root.id, activation := 1 },
+    by simp [RootOwnedControl, runningStartState, initialState]⟩
 
 theorem admitted_program_has_initiation
     (program : Program) (analysis : Analysis) (wellFormed : programWellFormed program = true)

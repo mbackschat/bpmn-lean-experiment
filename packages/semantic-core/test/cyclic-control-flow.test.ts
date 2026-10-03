@@ -243,6 +243,7 @@ test("merge preserves the only token owner and every unrelated state field", () 
     logicalTimeMs: 37,
     taskActivations: [{ elementId: "EarlierTask", count: 4 }],
     variables: {
+      processInterfaces: [],
       process: {
         bindings: [{
           name: "kept",
@@ -269,6 +270,7 @@ test("a candidate-output swap reaches the wrong back-edge before the same public
   const state: RuntimeState = {
     ...runningState([token("place:Flow_TaskToChoice", 1)]),
     variables: {
+      processInterfaces: [],
       process: {
         bindings: [{
           name: "route",

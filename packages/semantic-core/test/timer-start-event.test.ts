@@ -216,6 +216,7 @@ test("closes an exact Timer Start occurrence in two unique internal steps", () =
   assert.equal(twoSteps.internalStepBoundExceeded, false);
   assert.deepEqual(twoSteps.state, waiting);
   assert.deepEqual(twoSteps.state.variables, {
+    processInterfaces: [],
     process: { bindings: [] },
     activities: [],
   });

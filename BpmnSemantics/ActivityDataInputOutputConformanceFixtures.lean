@@ -17,7 +17,7 @@ open BpmnSemantics.SemanticProcess
 
 def claimDirectInput : DirectActivityDataInput :=
   { associationId := "DataInputAssociation_ClaimSummary"
-    sourcePropertyId := "Property_ClaimSummary"
+    source := .property "Property_ClaimSummary"
     targetDataInputId := "DataInput_ClaimSummary"
     targetDataInputName := some "Claim summary" }
 
@@ -25,7 +25,7 @@ def claimDirectOutput : DirectActivityDataOutput :=
   { associationId := "DataOutputAssociation_ClaimDecision"
     sourceDataOutputId := "DataOutput_ClaimDecision"
     sourceDataOutputName := some "Claim decision"
-    targetPropertyId := "Property_ClaimDecision" }
+    target := .property "Property_ClaimDecision" }
 
 def claimProcessId : ProcessId := ⟨"Process_ClaimAssessment"⟩
 
@@ -118,10 +118,10 @@ private def claimScopeOwner : ScopeOccurrenceId :=
     activation := 1 }
 
 def summary : VariableBinding :=
-  { name := claimDirectInput.sourcePropertyId, value := .string "claim-4711" }
+  { name := claimDirectInput.source.id, value := .string "claim-4711" }
 
 def nullSummary : VariableBinding :=
-  { name := claimDirectInput.sourcePropertyId, value := .null }
+  { name := claimDirectInput.source.id, value := .null }
 
 def unrelated : VariableBinding :=
   { name := "Property_Unrelated", value := .string "retain-me" }
@@ -146,7 +146,7 @@ def seededReady : RuntimeState :=
     control := .running claimInstanceId
     scopeOccurrences := [{ id := claimScopeOwner, parent := none }]
     tokens := [{ placeId := ⟨"place:Flow_ClaimReceived_Assess"⟩, owner := claimScopeOwner }]
-    variables := { process := { bindings := [summary, unrelated] }, activities := [] }
+    variables := { process := { bindings := [summary, unrelated] }, activities := [], processInterfaces := [] }
     scopeActivations := [{ scopeId := claimDefinitionScopeId, count := 1 }] }
 
 theorem seededReady_is_seeded_start :
@@ -188,7 +188,8 @@ def active : RuntimeState :=
       { process := { bindings := [summary, unrelated] }
         activities :=
           [{ owner := .activityOccurrence claimActivityOwner
-             bindings := [{ name := claimDirectInput.targetDataInputId, value := summary.value }] }] }
+             bindings := [{ name := claimDirectInput.targetDataInputId, value := summary.value }] }]
+        processInterfaces := [] }
     activations := [{ taskId := ⟨"UserTask_AssessClaim"⟩, count := 1 }]
     scopeActivations := [{ scopeId := claimDefinitionScopeId, count := 1 }]
     activityActivations := [{ taskId := ⟨"UserTask_AssessClaim"⟩, count := 1 }] }
@@ -214,9 +215,10 @@ def approved : StimulusResult :=
         variables :=
           { process :=
               { bindings :=
-                  [{ name := claimDirectOutput.targetPropertyId, value := .string "approve" },
+                  [{ name := claimDirectOutput.target.id, value := .string "approve" },
                    summary, unrelated] }
-            activities := [] }
+            activities := []
+            processInterfaces := [] }
         activations := [{ taskId := ⟨"UserTask_AssessClaim"⟩, count := 1 }]
         scopeActivations := [{ scopeId := claimDefinitionScopeId, count := 1 }]
         activityActivations := [{ taskId := ⟨"UserTask_AssessClaim"⟩, count := 1 }]

@@ -24,12 +24,12 @@ private def decisionDirectOutput : DirectActivityDataOutput :=
   { associationId := "DataOutputAssociation_Decision"
     sourceDataOutputId := "DataOutput_Decision"
     sourceDataOutputName := some "Underwriting decision"
-    targetPropertyId := "Property_UnderwritingOutcome" }
+    target := .property "Property_UnderwritingOutcome" }
 
 /-- The capsule's routing precondition. Stated as its own checked fact because every write law below
 is vacuously satisfiable by a name-merged implementation when these two identities agree. -/
 theorem declaredOutputAndAssociatedPropertyAreDistinct :
-    decisionDirectOutput.sourceDataOutputId ≠ decisionDirectOutput.targetPropertyId := by
+    decisionDirectOutput.sourceDataOutputId ≠ decisionDirectOutput.target.id := by
   decide +kernel
 
 private def underwritingProcessId : ProcessId :=
@@ -76,7 +76,7 @@ private def mergedIdentityCheckedProcess : CheckedProcess :=
       , .noneStartEvent ⟨"StartEvent_Application"⟩
       , .dataOutputUserTask ⟨"UserTask_Decide"⟩ (some "Decide credit application")
           { decisionDirectOutput with
-            targetPropertyId := decisionDirectOutput.sourceDataOutputId } ] }
+            target := .property decisionDirectOutput.sourceDataOutputId } ] }
 
 /-- `ADOUTPUT-ROUTE-01`'s precondition made executable rather than merely asserted.
 
@@ -164,7 +164,7 @@ private def approved : StimulusResult :=
 theorem completionWritesTheAssociatedPropertyOnly :
     (approved.outcome, approved.state.variables.process.bindings) =
       (CommandOutcome.committed,
-        [{ name := decisionDirectOutput.targetPropertyId, value := .string "approved" }]) := by
+        [{ name := decisionDirectOutput.target.id, value := .string "approved" }]) := by
   decide +kernel
 
 /-- `ADOUTPUT-ATOMIC-01`. The wait, the Activity record, and the local scope leave in the same
@@ -179,7 +179,7 @@ theorem completedProcessPublishesTheWrittenProperty :
       (observation.status, observation.openUserTasks, observation.variables)) =
       some
         (ProcessStatus.completed, [],
-          [{ name := decisionDirectOutput.targetPropertyId,
+          [{ name := decisionDirectOutput.target.id,
              value := .string "approved" }]) := by
   decide +kernel
 
@@ -191,7 +191,7 @@ it is written rather than treated as an omission. -/
 theorem suppliedNullIsWrittenRatherThanOmitted :
     (nullDecided.outcome, nullDecided.state.variables.process.bindings) =
       (CommandOutcome.committed,
-        [{ name := decisionDirectOutput.targetPropertyId, value := .null }]) := by
+        [{ name := decisionDirectOutput.target.id, value := .null }]) := by
   decide +kernel
 
 /-- `ADOUTPUT-ROUTE-01`'s separating non-law. Submitting the association's *target* name is a name
@@ -200,7 +200,7 @@ name-merged completion would commit here and reach the same Process scope as the
 theorem submissionUnderTheTargetNameIsRefused :
     applyStimulus scenarioClosureLimit underwritingProgram started.state
         (complete "decide-under-target-name"
-          [{ name := decisionDirectOutput.targetPropertyId, value := .string "approved" }]) =
+          [{ name := decisionDirectOutput.target.id, value := .string "approved" }]) =
       { outcome := .rejected
         state := started.state
         internalStepBoundExceeded := false

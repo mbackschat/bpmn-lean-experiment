@@ -68,11 +68,13 @@ Transaction semantics: [`implementation-status-owner:ENGINE-SEMANTIC-FAMILY`](EN
 
 Private [composition](capsules/STRUCTURED-PROCESS-COMPOSITION-PROPOSAL.md#lean-assurance-lane): scheduler progress proved; checkpoint approved; Lean execution/parity passes; hosting unavailable.
 
+Private [Call data](capsules/CALL-ACTIVITY-DATA-BOUNDARIES-PROPOSAL.md#current-implementation-boundary): isolated scalar transfer/return, typed task endpoints, scheduled publications and atomic refusal; hosting unavailable.
+
 ### Runtime scoped data
 
-- One immutable Lean/TypeScript representation with Process bindings and private local bindings owned by distinct complete effect or Activity occurrence arms
-- effect activation creates the owned input scope; direct Activity data-input and composed input/output arming create the Activity-occurrence-owned copy of one Process binding
-- success and matching Error completion require one exact owner, apply program-owned output mapping, and remove only that scope atomically
+- Immutable Lean/TypeScript storage: Process bindings, occurrence-owned interfaces and effect/Activity local scopes
+- Effect activation copies mapped input; Activity arming copies the declared Property or Process input
+- Success and matching Error completion map outputs and atomically dispose the local owner
 - Process-only canonical variable projection; the selected one-element input collection of a live data-bearing task is the sole Activity-local fact reaching public observation
 - an Activity-owned scope of any cardinality but one publishes no input collection in either account, exactly as owning no scope does, rather than truncating a larger collection or failing the projection
 - cross-owner, missing-owner, duplicate-owner, private-local non-observability, closure-limit, data-independent-enabledness, and compile-time immutability guards
@@ -195,7 +197,7 @@ The exact sequential Multi-Instance User Task profile is implemented and executi
 ### Definition and execution scopes
 
 - arbitrary or repeated nesting, loops that reactivate one definition scope, and concurrent occurrences of the same child definition
-- executable Event Sub-Processes outside the bounded compensation snapshot/handler restoration account, Call Activities beyond the exact two-Process empty-data normal-return slice, Transactions beyond the [bounded cancellation account](capsules/TRANSACTION-CANCELLATION-SPEC.md), Compensation source/profile admission beyond the exact registered topology, Temporal execution beyond its dedicated scheduler, Multi-Instance Sub-Process snapshots, general cancellation beyond the exact reviewed regional slices, and exceptional propagation beyond one direct-parent exact-code Error handler
+- executable Event Sub-Processes outside the bounded compensation snapshot/handler restoration account, public Call Activities beyond the exact two-Process empty-data normal-return slice, Transactions beyond the [bounded cancellation account](capsules/TRANSACTION-CANCELLATION-SPEC.md), Compensation source/profile admission beyond the exact registered topology, Temporal execution beyond its dedicated scheduler, Multi-Instance Sub-Process snapshots, general cancellation beyond the exact reviewed regional slices, and exceptional propagation beyond one direct-parent exact-code Error handler
 - public projection of definition-scope or runtime-scope identity
 
 ### Lean
@@ -213,7 +215,7 @@ The exact sequential Multi-Instance User Task profile is implemented and executi
 
 ### TypeScript semantic core
 
-- I/O, byte-level parser, Temporal SDK, CIB dependency, JUEL/XPath/FEEL/script grammar or evaluation, conditional-evaluation receipts, form schema or validation, general BPMN state model, raw source-binding interpretation, effect execution or transport digest, integer execution outside exact M6 User Task completion, String-list values outside M6 completion and the exact Multi-Instance profile bindings, nested or heterogeneous values, general mapping expressions or scope nesting, Call data or generalized definition graphs, general faults or Error propagation beyond one direct parent, timer forms or races beyond the exact capsule, public or hosted scheduled choice, arbitrary graph execution
+- I/O, byte-level parser, Temporal SDK, CIB dependency, JUEL/XPath/FEEL/script grammar or evaluation, conditional-evaluation receipts, form schema or validation, general BPMN state model, raw source-binding interpretation, effect execution or transport digest, integer execution outside exact M6 User Task completion, String-list values outside M6 completion and the exact Multi-Instance profile bindings, nested or heterogeneous values, general mapping expressions or scope nesting, [public Call data](capsules/CALL-ACTIVITY-DATA-BOUNDARIES-PROPOSAL.md#current-implementation-boundary) or generalized definition graphs, general faults or Error propagation beyond one direct parent, timer forms or races beyond the exact capsule, public or hosted scheduled choice, arbitrary graph execution
 
 ### BPMN conformance
 

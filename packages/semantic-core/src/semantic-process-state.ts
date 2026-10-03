@@ -146,10 +146,18 @@ export type ActivityVariableScope = DeepReadonly<{
   bindings: VariableBinding[];
 }>;
 
+/** Private callable-Process ports retain their complete semantic scope owner. */
+export type ProcessInterfaceScope = DeepReadonly<{
+  owner: ScopeOccurrenceId;
+  inputs: VariableBinding[];
+  outputs: VariableBinding[];
+}>;
+
 /** The single runtime representation for Process and Activity-local data. */
 export type ScopedVariables = DeepReadonly<{
   process: ProcessVariableScope;
   activities: ActivityVariableScope[];
+  processInterfaces: ProcessInterfaceScope[];
 }>;
 
 type ActivationCounter = DeepReadonly<{
@@ -238,6 +246,7 @@ export const initialState: RuntimeState = {
   variables: {
     process: { bindings: [] },
     activities: [],
+    processInterfaces: [],
   },
   taskActivations: [],
   messageActivations: [],

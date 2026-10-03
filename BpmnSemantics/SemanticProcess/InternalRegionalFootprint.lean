@@ -53,7 +53,7 @@ def regionalBaseFootprint? (state : RuntimeState) (hosting : SemanticId)
     .ordinary (.scopeOccurrence owner), .ordinary (.scopeParent owner selected.root.parent),
     .ordinary .logicalTime, regionAtom]
   match selected.operation, selected.kind with
-  | .returnProcess _ _ _ _ output, .returning record =>
+  | .returnProcess _ _ _ _ output _, .returning record =>
       let association := InternalRegionalStateAtom.ordinary (.callAssociation record)
       let continuation := InternalRegionalStateAtom.ordinary (.controlToken record.caller output)
       some
@@ -105,14 +105,21 @@ theorem regionalSelection_has_footprint (program : Program) (state : RuntimeStat
   simp only [regionalStateFootprint?, runningInstance?, running, Option.bind_eq_bind, Option.bind_some]
   unfold selectInternalRegional? at found
   obtain ⟨_, _, found⟩ := Option.bind_eq_some_iff.mp found
-  cases operation
-  all_goals
-    dsimp only at found
-    repeat' first
-      | (solve | simp at found)
-      | (solve | cases found; simp_all [regionalBaseFootprint?])
-      | split at found
-      | obtain ⟨_, _, found⟩ := Option.bind_eq_some_iff.mp found
+  cases operation with
+  | returnProcess id origin process definition output data =>
+      cases data <;> dsimp only at found
+      repeat' first
+        | (solve | simp at found)
+        | (solve | cases found; simp_all [regionalBaseFootprint?])
+        | split at found
+        | obtain ⟨_, _, found⟩ := Option.bind_eq_some_iff.mp found
+  | _ =>
+      dsimp only at found
+      repeat' first
+        | (solve | simp at found)
+        | (solve | cases found; simp_all [regionalBaseFootprint?])
+        | split at found
+        | obtain ⟨_, _, found⟩ := Option.bind_eq_some_iff.mp found
 
 theorem regionalStateFootprint_protects_withdrawn_activity (state : RuntimeState)
     (selected : InternalRegionalSelection) (region : InternalOccurrenceRegion) (footprint : InternalRegionalStateFootprint)

@@ -13,9 +13,8 @@ import { SemanticOperationKind } from "./semantic-process-contract.js";
 import type { SemanticOperation, SemanticProcessProgram } from "./semantic-process-contract.js";
 import {
   calledProcessAssociationsAreValid,
-  invokeCalledProcess,
-  returnCalledProcess,
 } from "./semantic-process-call-runtime.js";
+import { invokeCalledProcessWithData, returnCalledProcessWithData } from "./semantic-process-call-data-runtime.js";
 import {
   choose,
   duplicate,
@@ -433,7 +432,7 @@ function applyInternalOperationState(
       const caller = onlyTokenOwner(state, operation.input);
       return applyOwnedOperation(
         caller,
-        (selected) => invokeCalledProcess(operation, state, selected),
+        (selected) => invokeCalledProcessWithData(operation, state, selected),
         captureOwner,
       );
     }
@@ -441,7 +440,7 @@ function applyInternalOperationState(
       const owner = returnProcessOwner(operation, state);
       return applyOwnedOperation(
         owner,
-        () => returnCalledProcess(operation, state),
+        () => returnCalledProcessWithData(operation, state),
         captureOwner,
       );
     }

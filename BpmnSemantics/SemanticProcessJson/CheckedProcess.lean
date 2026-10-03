@@ -1,3 +1,4 @@
+import BpmnSemantics.SemanticProcessJson.CallData
 import BpmnSemantics.SemanticProcessJson.TransactionSource
 import BpmnSemantics.SemanticProcess.JsonSupport
 import BpmnSemantics.SemanticProcessJson.Elements
@@ -81,28 +82,6 @@ def decodeCheckedUserTask (json : Json) : Except String CheckedNode := do
       ⟨← stringField json "id"⟩
       (← decodeOptionalString (← field json "name"))
       metadata)
-
-/-- Decode one direct Data Input Association's exact source identities. -/
-private def decodeDirectActivityDataInput (json : Json) :
-    Except String DirectActivityDataInput := do
-  requireObjectShape json
-    ["associationId", "sourcePropertyId", "targetDataInputId", "targetDataInputName"]
-  pure
-    { associationId := ← stringField json "associationId"
-      sourcePropertyId := ← stringField json "sourcePropertyId"
-      targetDataInputId := ← stringField json "targetDataInputId"
-      targetDataInputName := ← decodeOptionalString (← field json "targetDataInputName") }
-
-/-- Decode one direct Data Output Association's exact source identities. -/
-private def decodeDirectActivityDataOutput (json : Json) :
-    Except String DirectActivityDataOutput := do
-  requireObjectShape json
-    ["associationId", "sourceDataOutputId", "sourceDataOutputName", "targetPropertyId"]
-  pure
-    { associationId := ← stringField json "associationId"
-      sourceDataOutputId := ← stringField json "sourceDataOutputId"
-      sourceDataOutputName := ← decodeOptionalString (← field json "sourceDataOutputName")
-      targetPropertyId := ← stringField json "targetPropertyId" }
 
 private def decodeDirectCatchEventPayloadOutput (json : Json) :
     Except String DirectCatchEventPayloadOutput := do
@@ -199,11 +178,12 @@ private def decodeCheckedNode (json : Json) : Except String CheckedNode := do
           ⟨← stringField json "id"⟩
           ⟨← stringField json "childScopeId"⟩)
   | "callActivity" =>
-      requireObjectShape json ["calledProcessId", "id", "kind"]
+      requireObjectShape json ["calledProcessId", "data", "id", "kind"]
       pure
         (.callActivity
           ⟨← stringField json "id"⟩
-          ⟨← stringField json "calledProcessId"⟩)
+          ⟨← stringField json "calledProcessId"⟩
+          (← decodeCallDataInterface (← field json "data")))
   | "boundaryErrorEvent" =>
       requireObjectShape json
         ["attachedToRef", "error", "id", "kind", "outputFlowId"]

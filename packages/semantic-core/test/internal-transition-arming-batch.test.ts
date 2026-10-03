@@ -45,10 +45,10 @@ function dataTask(suffix: string): AwaitDataInputOutputUserTaskOperation {
     ...operationBase(`UserTask_${suffix}`), kind: SemanticOperationKind.AwaitDataInputOutputUserTask,
     input: `place:Flow_Ready_${suffix}`, output: `place:Flow_${suffix}_Done`,
     task: { elementId: `UserTask_${suffix}`, name: suffix },
-    directInput: { associationId: `InputAssociation_${suffix}`, sourcePropertyId: sourceName,
+    directInput: { associationId: `InputAssociation_${suffix}`, source: { kind: "property", propertyId: sourceName },
       targetDataInputId: `Input_${suffix}`, targetDataInputName: "Claim summary" },
     directOutput: { associationId: `OutputAssociation_${suffix}`, sourceDataOutputId: `Output_${suffix}`,
-      sourceDataOutputName: "Decision", targetPropertyId: `Property_${suffix}Decision` },
+      sourceDataOutputName: "Decision", target: { kind: "property", propertyId: `Property_${suffix}Decision` } },
   };
 }
 

@@ -38,9 +38,10 @@ theorem prepared_data_arm_preserves_runtime
   have member : contract.operation ∈ userTaskWaitDeclarers program contract.taskId := by
     rw [declarers]
     simp
+  obtain ⟨host, hosted⟩ := dataArmingHostValid_running running
   exact unboundedTaskActivityInsertion_preserves_runtimeStateWellFormed program expectedInstanceId
-    state owner.processInstanceId owner contract.input contract.output contract.taskId
-    contract.taskName bindings contract.operation wellFormed running owned
+    state host owner.processInstanceId owner contract.input contract.output contract.taskId
+    contract.taskName bindings contract.operation wellFormed hosted owned
     (List.mem_filter.mp member).1 (dataArming_unbounded_declaration contract _ _ _) (by
       cases dataEq : contract.data <;>
         simp only [InternalDataArmingContract.operation, dataEq] <;> left)
@@ -284,19 +285,20 @@ theorem prepared_data_arm_preserves_runtime_and_open_projection_exact
     expectedInstanceId stateValid prepared
   obtain ⟨owner, inputOrigin, source, _, running, _, live, _, _, _, absent, _, _, rfl⟩ :=
     prepareInternalDataArmingContract_facts program state contract patch prepared
+  obtain ⟨host, hosted⟩ := dataArmingHostValid_running running
   let patch := makeInternalDataArmingPatch program state contract owner inputOrigin source
   let after := applyInternalDataArmingPatch state patch
   cases projected : projectOpenFlowNodeOccurrences? program state with
   | none => simp [projected] at openBefore
   | some current =>
       have validities := projectOpenFlowNodeOccurrences_validities program state current
-        owner.processInstanceId running projected
+        host hosted projected
       have structural : flowNodeOccurrenceStructuralProgramValidity program state = true := by
         have parts := validities.1
         simp only [flowNodeOccurrenceProgramValidity, Bool.and_eq_true] at parts
         exact parts.1.1.1
       have processSome := processIdForOwner_isSome_of_open_projection program state owner
-        current owner.processInstanceId running structural validities.2.1 live projected
+        current host hosted structural validities.2.1 live projected
       cases processEq : processIdForOwner? program state owner with
       | none => simp [processEq] at processSome
       | some processId =>
@@ -336,7 +338,7 @@ theorem prepared_data_arm_preserves_runtime_and_open_projection_exact
               have newAnchor : ∃ occurrence, newStart.anchor = .wait occurrence :=
                 ⟨_, waitStart_anchor_of_eq program state _ _ _ newStart started⟩
               obtain ⟨next, afterProjected, nextEq⟩ := one_wait_insert_open_projection_exact
-                program state after newStart current running running projected waitInsertion
+                program state after newStart current hosted hosted projected waitInsertion
                 scopesFrame callsFrame newAnchor freshWaits programValid occurrencesAfter
                 associations.1 callsAfter associations.2 messagePairsAfter
               exact ⟨current, newStart, next, rfl, rfl, afterProjected, nextEq, wellAfter⟩

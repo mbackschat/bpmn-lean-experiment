@@ -58,16 +58,19 @@ theorem regionalSelection_retention_fields (program : Program) (before after : R
   unfold fire? at result
   rw [snapshotAbsent] at result
   cases operation with
-  | returnProcess id origin process definition output =>
-      dsimp only at found
-      change returnProcessState? before id origin process definition output = some after at result
-      unfold returnProcessState? at result
-      repeat' first | (solve | simp at found) | split at found
-      all_goals
-        cases found
-        simp only [*, ↓reduceIte, Option.some.injEq] at result
-        subst after
-        exact ⟨⟨rfl, rfl, rfl, rfl, rfl, rfl⟩, rfl⟩
+  | returnProcess id origin process definition output data =>
+      cases data with
+      | scalar => simp at found
+      | empty =>
+          dsimp only at found
+          change returnProcessState? before id origin process definition output = some after at result
+          unfold returnProcessState? at result
+          repeat' first | (solve | simp at found) | split at found
+          all_goals
+            cases found
+            simp only [*, ↓reduceIte, Option.some.injEq] at result
+            subst after
+            exact ⟨⟨rfl, rfl, rfl, rfl, rfl, rfl⟩, rfl⟩
   | completeScope id origin definition output =>
       dsimp only at found
       change completeSelectedScope? program before definition output = some after at result

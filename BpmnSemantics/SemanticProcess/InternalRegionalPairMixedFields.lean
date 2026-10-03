@@ -57,7 +57,7 @@ theorem return_cancel_fields_commute (before returned cancelled : RuntimeState)
   congr 1
   all_goals first
   | exact filters _ _ _
-  | (congr 1; exact filters _ _ _)
+  | (congr 1 <;> exact filters _ _ _)
 
 /-- Completion retains its selected Activity and Timer masks while cancellation retains
 its exact predecessor populations, so both bounded and unbounded field filters commute. -/
@@ -113,6 +113,6 @@ theorem completion_cancel_fields_commute (before completed cancelled : RuntimeSt
   congr 1
   all_goals first
   | exact filters _ _ _
-  | (congr 1; exact filters _ _ _)
+  | (congr 1 <;> exact filters _ _ _)
 
 end BpmnSemantics.SemanticProcess.InternalCommutation

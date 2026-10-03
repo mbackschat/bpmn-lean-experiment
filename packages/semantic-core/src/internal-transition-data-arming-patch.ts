@@ -1,3 +1,4 @@
+import { ActivityDataEndpointKind, readActivityDataInputSource } from "./activity-data-endpoint.js";
 import { ActivityBodyKind, compareActivityOccurrences } from "./activity-occurrence.js";
 import type { ActivityOccurrence } from "./activity-occurrence.js";
 import { VariableValueKind } from "./contract.js";
@@ -40,7 +41,7 @@ export function deriveInternalDataArmingPatch(
   owner: ScopeOccurrenceId,
 ): InternalDataArmingPatch | null {
   if (state.control.kind !== ControlStateKind.Running) return null;
-  const bindings = deriveArmingBindings(operation, state);
+  const bindings = deriveArmingBindings(operation, state, owner);
   if (bindings === null) return null;
   const taskId = {
     processInstanceId: owner.processInstanceId,
@@ -90,17 +91,16 @@ export function applyInternalDataArmingPatch(
   };
 }
 
-function deriveArmingBindings(operation: InternalDataArmingOperation, state: RuntimeState): ArmingBindings | null {
+function deriveArmingBindings(operation: InternalDataArmingOperation, state: RuntimeState, owner: ScopeOccurrenceId): ArmingBindings | null {
+  if (operation.kind === SemanticOperationKind.AwaitDataInputUserTask &&
+      operation.directInput.source.kind !== ActivityDataEndpointKind.Property) return null;
   switch (operation.kind) {
     case SemanticOperationKind.AwaitDataOutputUserTask:
       return [];
     case SemanticOperationKind.AwaitDataInputUserTask:
     case SemanticOperationKind.AwaitDataInputOutputUserTask: {
-      const matching = state.variables.process.bindings.filter(
-        ({ name }) => name === operation.directInput.sourcePropertyId,
-      );
-      const source = matching[0];
-      if (matching.length !== 1 || source === undefined) return null;
+      const source = readActivityDataInputSource(state, owner, operation.directInput.source);
+      if (source === undefined) return null;
       switch (source.value.kind) {
         case VariableValueKind.String:
         case VariableValueKind.Null:

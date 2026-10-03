@@ -301,7 +301,7 @@ function projectDataOutputUserTask(
       associationId: ids.association,
       sourceDataOutputId: ids.dataOutput,
       sourceDataOutputName: ids.dataOutputName,
-      targetPropertyId: ids.property,
+      target: { kind: "property", propertyId: ids.property },
     },
   };
 }

@@ -242,7 +242,7 @@ function state(tokens: RuntimeState["controlTokens"], records: RuntimeState["sel
     control: { kind: ControlStateKind.Running, instanceId },
     scopeOccurrences: [{ id: first, parent: root }, { id: second, parent: root }, { id: root, parent: null }],
     scopeActivations: [{ elementId: childScope, count: 2 }],
-    variables: { process: { bindings: [{ name: "takeB", value: { kind: VariableValueKind.Null } }] }, activities: [] },
+    variables: { processInterfaces: [], process: { bindings: [{ name: "takeB", value: { kind: VariableValueKind.Null } }] }, activities: [] },
     controlTokens: [...tokens].sort(compareTokenPlaces),
     selectedBranchSets: [...records].sort(compareSelectedBranchSets),
   };

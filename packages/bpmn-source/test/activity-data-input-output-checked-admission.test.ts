@@ -44,7 +44,7 @@ function composedGraph(
       name: "Assess claim",
       directInput: {
         associationId: identities.inputAssociationId,
-        sourcePropertyId: identities.inputSourcePropertyId,
+        source: { kind: "property", propertyId: identities.inputSourcePropertyId },
         targetDataInputId: identities.inputTargetDataInputId,
         targetDataInputName: "Claim summary",
       },
@@ -52,7 +52,7 @@ function composedGraph(
         associationId: identities.outputAssociationId,
         sourceDataOutputId: identities.outputSourceDataOutputId,
         sourceDataOutputName: "Claim decision",
-        targetPropertyId: identities.outputTargetPropertyId,
+        target: { kind: "property", propertyId: identities.outputTargetPropertyId },
       },
     },
     { kind: CheckedNodeKind.NoneEndEvent, id: "End" },
@@ -140,4 +140,28 @@ test("rejects every within-half and cross-half composed Activity-data identity a
     }))
   );
   assert.deepEqual(rejectedAliases, aliases);
+});
+
+test("Process interface endpoint identities obey the same cross-role separation", () => {
+  const graph = composedGraph();
+  const propertyTask = graph.nodes.find((node) => node.kind === CheckedNodeKind.DataInputOutputUserTask);
+  assert.ok(propertyTask);
+  const task = {
+    ...propertyTask,
+    directInput: { ...propertyTask.directInput, source: { kind: "processDataInput", dataInputId: "ProcessInput" } },
+    directOutput: { ...propertyTask.directOutput, target: { kind: "processDataOutput", dataOutputId: "ProcessOutput" } },
+  } as const;
+  assert.equal(hasValidDataInputOutputUserTaskIdentities(task), true);
+  for (const alias of [task.id, task.directInput.associationId, task.directInput.targetDataInputId,
+    task.directOutput.associationId, task.directOutput.sourceDataOutputId, task.directOutput.target.dataOutputId, ""]) {
+    assert.equal(hasValidDataInputOutputUserTaskIdentities({
+      ...task, directInput: { ...task.directInput, source: { kind: "processDataInput", dataInputId: alias } },
+    }), false, alias);
+  }
+  for (const alias of [task.id, task.directInput.associationId, task.directInput.targetDataInputId,
+    task.directOutput.associationId, task.directOutput.sourceDataOutputId, task.directInput.source.dataInputId, ""]) {
+    assert.equal(hasValidDataInputOutputUserTaskIdentities({
+      ...task, directOutput: { ...task.directOutput, target: { kind: "processDataOutput", dataOutputId: alias } },
+    }), false, alias);
+  }
 });

@@ -16,7 +16,7 @@ private def checkedNodeId : CheckedNode → NodeId
   | .transactionSubProcess id _ _
   | .cancelEndEvent id
   | .cancelBoundaryEvent id _ _
-  | .callActivity id _
+  | .callActivity id _ _
   | .boundaryErrorEvent id _ _ _
   | .timerBoundaryEvent id _ _ _ _
   | .messageBoundaryEvent id _ _ _ _

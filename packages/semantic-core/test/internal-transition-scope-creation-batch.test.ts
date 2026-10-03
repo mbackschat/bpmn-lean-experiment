@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
-  CommandOutcome, SemanticOperationKind, SemanticTransitionKind, VariableValueKind,
+  CallDataKind, CommandOutcome, SemanticOperationKind, SemanticTransitionKind, VariableValueKind,
   applyInternalOperationStep, applyStimulusWithTrace, compareCanonicalStrings, initialState,
   isWellFormedRuntimeState, isWellFormedSemanticProcessProgram, projectControlPositionDelta,
   projectCurrentControlPositions, projectFlowNodeOccurrenceLifecycleDelta,
@@ -68,13 +68,13 @@ function fixture(kinds: readonly ScopeKind[], armKind: ArmKind = SemanticOperati
     const operation: InternalScopeCreationOperation = kind === SemanticOperationKind.EnterScope
       ? { ...operationBase(name), kind, input: place(`${name}_Input`), childEntry: place(`${name}_Entry`), childScopeId: scopeId }
       : { ...operationBase(name), kind, input: place(`${name}_Input`), calledEntry: place(`${name}_Entry`),
-        calledProcessId, calledRootScopeId: scopeId, returnOperationId: `operation:Return_${name}` };
+        calledProcessId, calledRootScopeId: scopeId, returnOperationId: `operation:Return_${name}`, data: { kind: CallDataKind.Empty } };
     addOperation(operation);
     addOperation(kind === SemanticOperationKind.EnterScope
       ? { ...operationBase(`Complete_${name}`), origin: operation.origin, kind: SemanticOperationKind.CompleteScope,
         scopeId, parentOutput: place(`${name}_Output`) }
       : { ...operationBase(`Return_${name}`), origin: operation.origin, kind: SemanticOperationKind.ReturnProcess,
-        calledProcessId, calledRootScopeId: scopeId, callerOutput: place(`${name}_Output`) }, scopeId);
+        calledProcessId, calledRootScopeId: scopeId, callerOutput: place(`${name}_Output`), data: { kind: CallDataKind.Empty } }, scopeId);
     return operation;
   });
   addPlaces(["Start", "End", "Local_Input", "Local_Left", "Local_Right", "Local_Left_Done", "Local_Right_Done",

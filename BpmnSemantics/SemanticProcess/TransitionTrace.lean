@@ -410,6 +410,26 @@ theorem applyStimulusTraced_withSnapshotDeclaration_rejects
     publishEvaluatedTransitions, publishEvaluatedLifecycles]
 
 
+/-- Admission refusal retains the complete received state and exposes no E1 or E2 publication. -/
+theorem applyStimulusTraced_of_rejected_admission (closureLimit : Nat) (program : Program)
+    (state : RuntimeState) (stimulus : Stimulus)
+    (rejected : admitStimulus program state stimulus = { outcome := .rejected, state }) :
+    applyStimulusTraced closureLimit program state stimulus =
+      { result := { outcome := .rejected, state, internalStepBoundExceeded := false, ambiguousInternalChoice := false }
+        committedTransitions := [], flowNodeOccurrenceLifecycles := [] } := by
+  simp [applyStimulusTraced, evaluateStimulus, evaluateStimulusScheduled, rejected,
+    publishEvaluatedTransitions, publishEvaluatedLifecycles]
+
+/-- Every malformed Call-data command preserves its input state and publishes nothing, at any fuel. -/
+theorem applyStimulusTraced_invalid_call_data_state (closureLimit : Nat) (program : Program)
+    (state : RuntimeState) (stimulus : Stimulus)
+    (invalid : callDataRuntimeStateValid program state = false) :
+    applyStimulusTraced closureLimit program state stimulus =
+      { result := { outcome := .rejected, state, internalStepBoundExceeded := false, ambiguousInternalChoice := false }
+        committedTransitions := [], flowNodeOccurrenceLifecycles := [] } :=
+  applyStimulusTraced_of_rejected_admission closureLimit program state stimulus
+    (admitStimulus_invalid_call_data_state program state stimulus invalid)
+
 /-- Erasing the trace preserves the result-only evaluator's exact result. -/
 theorem applyStimulusTraced_erases_to_applyStimulus
     (closureLimit : Nat) (program : Program) (state : RuntimeState) (stimulus : Stimulus) :

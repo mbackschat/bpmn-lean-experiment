@@ -36,7 +36,7 @@ const limits: BpmnSourceLimits = Object.freeze({
 
 const directInput = {
   associationId: "DataInputAssociation_ReviewContext",
-  sourcePropertyId: "Property_ReviewContext",
+  source: { kind: "property", propertyId: "Property_ReviewContext" },
   targetDataInputId: "DataInput_ReviewContext",
   targetDataInputName: "Review context",
 } as const;

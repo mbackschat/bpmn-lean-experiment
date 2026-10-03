@@ -12,6 +12,7 @@
  * whose value arm is null is available and is copied as explicit null. A truthiness test here would
  * make a valid null-valued source behave as a permanently unavailable one.
  */
+import { ActivityDataEndpointKind, readActivityDataInputSource } from "./activity-data-endpoint.js";
 import {
   ActivityBodyKind,
   activityOccurrenceForTaskBody,
@@ -72,10 +73,11 @@ export function armDataInputUserTask(
   state: RuntimeState,
   owner: ScopeOccurrenceId,
 ): RuntimeState | null {
-  if (state.control.kind !== ControlStateKind.Running) {
+  if (state.control.kind !== ControlStateKind.Running ||
+      operation.directInput.source.kind !== ActivityDataEndpointKind.Property) {
     return null;
   }
-  const source = availableSourceBinding(state, operation);
+  const source = availableSourceBinding(state, operation, owner);
   if (source === undefined) {
     return null;
   }
@@ -195,14 +197,10 @@ export function completeDataInputUserTask(
 function availableSourceBinding(
   state: RuntimeState,
   operation: AwaitDataInputUserTaskOperation,
+  owner: ScopeOccurrenceId,
 ): VariableBinding | undefined {
-  const matching = state.variables.process.bindings.filter(
-    ({ name }) => name === operation.directInput.sourcePropertyId,
-  );
-  const binding = matching[0];
-  return matching.length === 1 && binding !== undefined
-    ? cloneVariableBinding(binding)
-    : undefined;
+  const binding = readActivityDataInputSource(state, owner, operation.directInput.source);
+  return binding === undefined ? undefined : cloneVariableBinding(binding);
 }
 
 function dataInputDefinition(

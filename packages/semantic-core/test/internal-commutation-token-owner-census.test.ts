@@ -94,12 +94,12 @@ for (const composed of [false, true]) {
     const reader = composed ? {
       ...task, kind: SemanticOperationKind.AwaitDataInputOutputUserTask,
       directInput: {
-        associationId: "InputAssociation", sourcePropertyId: "Property_Input",
+        associationId: "InputAssociation", source: { kind: "property", propertyId: "Property_Input" },
         targetDataInputId: "DataInput", targetDataInputName: "Input",
       },
       directOutput: {
         associationId: "OutputAssociation", sourceDataOutputId: "DataOutput",
-        sourceDataOutputName: "Output", targetPropertyId: "Property_Output",
+        sourceDataOutputName: "Output", target: { kind: "property", propertyId: "Property_Output" },
       },
     } as const : task;
     for (const output of [task.input, distinctOutput]) {

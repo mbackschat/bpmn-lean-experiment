@@ -1,3 +1,5 @@
+import type { DirectActivityDataInput } from "./activity-data-input-contract.js";
+import type { DirectActivityDataOutput } from "./activity-data-output-contract.js";
 import { CheckedNodeKind, GatewayDirection } from "./checked-process-contract.js";
 import type { CheckedNode, CheckedProcess, CheckedSequenceFlow } from "./checked-process-contract.js";
 import { StimulusKind } from "./contract.js";
@@ -60,14 +62,15 @@ export function structuredCompositionCheckedShape(nodes: readonly CheckedNode[],
 
 /** SPC-SOURCE-01 permits shared root Properties, but local data elements have one declaration owner. */
 function dataIdentitiesValid(declarations: readonly string[], tasks: readonly Readonly<{
-  directInput: { associationId: string; sourcePropertyId: string; targetDataInputId: string };
-  directOutput: { associationId: string; sourceDataOutputId: string; targetPropertyId: string };
+  directInput: DirectActivityDataInput;
+  directOutput: DirectActivityDataOutput;
 }>[]): boolean {
   const owned = [...declarations, ...tasks.flatMap(({ directInput: input, directOutput: output }) =>
     [input.associationId, input.targetDataInputId, output.associationId, output.sourceDataOutputId])];
   const identities = new Set(owned);
   return identities.size === owned.length && tasks.every(({ directInput: input, directOutput: output }) =>
-    !identities.has(input.sourcePropertyId) && !identities.has(output.targetPropertyId));
+    input.source.kind === "property" && output.target.kind === "property" &&
+    !identities.has(input.source.propertyId) && !identities.has(output.target.propertyId));
 }
 
 export function structuredCompositionCheckedGraph(graph: Readonly<{
@@ -88,7 +91,8 @@ export function structuredCompositionCheckedGraph(graph: Readonly<{
       case CheckedNodeKind.UserTask: kind = VertexKind.Task; break;
       case CheckedNodeKind.DataInputOutputUserTask:
         kind = VertexKind.Task;
-        data = { reads: node.directInput.sourcePropertyId, writes: node.directOutput.targetPropertyId }; break;
+        if (node.directInput.source.kind !== "property" || node.directOutput.target.kind !== "property") return false;
+        data = { reads: node.directInput.source.propertyId, writes: node.directOutput.target.propertyId }; break;
       case CheckedNodeKind.ExclusiveMerge: kind = VertexKind.Merge; break;
       case CheckedNodeKind.ExclusiveGateway:
         kind = VertexKind.Choice;
@@ -137,7 +141,8 @@ function programVertices(program: SemanticProcessProgram): readonly Vertex[] | u
       case SemanticOperationKind.AwaitUserTask: kind = VertexKind.Task; places = [operation.output]; break;
       case SemanticOperationKind.AwaitDataInputOutputUserTask:
         kind = VertexKind.Task; places = [operation.output];
-        data = { reads: operation.directInput.sourcePropertyId, writes: operation.directOutput.targetPropertyId }; break;
+        if (operation.directInput.source.kind !== "property" || operation.directOutput.target.kind !== "property") return undefined;
+        data = { reads: operation.directInput.source.propertyId, writes: operation.directOutput.target.propertyId }; break;
       default: return undefined;
     }
     const outputs: string[] = [];

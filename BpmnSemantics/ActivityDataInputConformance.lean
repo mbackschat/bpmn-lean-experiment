@@ -49,7 +49,8 @@ private def activityScope : ActivityVariableScope :=
 private def mixedVariables : ScopedVariables :=
   addActivityVariableScope
     { process := { bindings := [] }
-      activities := [activityScope] }
+      activities := [activityScope]
+      processInterfaces := [] }
     effectOccurrenceId
     []
 
@@ -57,7 +58,8 @@ theorem effectCompletionPreservesEqualCoordinateActivityScope :
     completeActivityVariableScope mixedVariables effectOccurrenceId [] (.success []) =
       some
         { process := { bindings := [] }
-          activities := [activityScope] } := by
+          activities := [activityScope]
+          processInterfaces := [] } := by
   decide +kernel
 
 /-! ## The invoice-review witnesses
@@ -70,7 +72,7 @@ one carrying explicit null. The quantified laws for this family are stated at th
 
 private def reviewDirectInput : DirectActivityDataInput :=
   { associationId := "DataInputAssociation_ReviewContext"
-    sourcePropertyId := "Property_ReviewContext"
+    source := .property "Property_ReviewContext"
     targetDataInputId := "DataInput_ReviewContext"
     targetDataInputName := some "Review context" }
 
@@ -109,10 +111,10 @@ private def startReview (commandId : String)
   .startProcess ⟨commandId⟩ ⟨reviewProcessId.value⟩ reviewInstanceId initialVariables
 
 private def presentContext : VariableBinding :=
-  { name := reviewDirectInput.sourcePropertyId, value := .string "invoice-4711" }
+  { name := reviewDirectInput.source.id, value := .string "invoice-4711" }
 
 private def nullContext : VariableBinding :=
-  { name := reviewDirectInput.sourcePropertyId, value := .null }
+  { name := reviewDirectInput.source.id, value := .null }
 
 private def startWithContext : Stimulus :=
   startReview "start-with-review-context" [presentContext]
@@ -242,7 +244,7 @@ completion is refused rather than merged into Process scope. -/
 theorem submittedValuesPreserveTheActiveState :
     applyStimulus scenarioClosureLimit reviewProgram (runStart startWithContext).state
         (.completeUserTaskInstance ⟨"complete-review-with-values"⟩ reviewTaskInstanceId
-          [{ name := reviewDirectInput.sourcePropertyId, value := .string "reviewed" }]) =
+          [{ name := reviewDirectInput.source.id, value := .string "reviewed" }]) =
       { outcome := .rejected
         state := (runStart startWithContext).state
         internalStepBoundExceeded := false

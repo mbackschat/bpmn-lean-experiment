@@ -28,10 +28,13 @@ theorem dataInputRunningInstance_of_running {state : RuntimeState}
 /-- The exact present Process binding one direct association reads, or `none`. -/
 def dataInputSourceBinding? (state : RuntimeState)
     (directInput : DirectActivityDataInput) : Option VariableBinding :=
-  match state.variables.process.bindings.filter fun binding =>
-      decide (binding.name = directInput.sourcePropertyId) with
-  | [binding] => some binding
-  | _ => none
+  match directInput.source with
+  | .property propertyId =>
+      match state.variables.process.bindings.filter fun binding =>
+          decide (binding.name = propertyId) with
+      | [binding] => some binding
+      | _ => none
+  | .processDataInput _ => none
 
 /-- `ADINPUT-READY-01` and `ADINPUT-COPY-01`. Consumes the incoming token and produces the task occurrence, its Activity record, and the occurrence-owned copy in one step.
 

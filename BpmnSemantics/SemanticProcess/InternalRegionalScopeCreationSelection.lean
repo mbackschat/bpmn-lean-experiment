@@ -25,7 +25,7 @@ private theorem selection_query_frame (program : Program) (before after : Runtim
     (withdrawal : ∀ definition output choice, selectSubscribedCompletionWithdrawal? program before definition output = some choice →
       selectSubscribedCompletionWithdrawal? program after definition output = some choice)
     (populations : match (generalizing := false) operation with
-      | .returnProcess id origin _ _ _ =>
+      | .returnProcess id origin _ _ _ _ =>
           after.calledProcessOccurrences.filter (fun record => decide
             (record.returnOperationId = id && record.id.elementId.value = origin.elementId.value)) =
           before.calledProcessOccurrences.filter (fun record => decide
@@ -55,17 +55,20 @@ private theorem selection_query_frame (program : Program) (before after : Runtim
   rw [running, hosted]
   dsimp only [Option.bind_some]
   cases operation with
-  | returnProcess id origin process definition output =>
-      dsimp only at found ⊢
-      rw [populations.1]
-      repeat' first | (solve | simp at found) | split at found
-      all_goals
-        rename_i valid _ record returnCensus processEq definitionEq _ root rootCensus parentless callerCount processCount quiescent
-        cases found
-        have rootAfter := scopes record.calledRoot (by simp [rootCensus])
-        have callerAfter := scopes record.caller (by omega)
-        have processAfter := populations.2 record rfl
-        simp_all only [↓reduceIte]
+  | returnProcess id origin process definition output data =>
+      cases data with
+      | scalar => simp at found
+      | empty =>
+          dsimp only at found ⊢
+          rw [populations.1]
+          repeat' first | (solve | simp at found) | split at found
+          all_goals
+            rename_i valid _ record returnCensus processEq definitionEq _ root rootCensus parentless callerCount processCount quiescent
+            cases found
+            have rootAfter := scopes record.calledRoot (by simp [rootCensus])
+            have callerAfter := scopes record.caller (by omega)
+            have processAfter := populations.2 record rfl
+            simp_all only [↓reduceIte]
   | completeScope id origin definition output =>
       dsimp only at found ⊢
       rw [populations]
@@ -156,6 +159,7 @@ private theorem created_parent (state : RuntimeState) (operation : SemanticOpera
   unfold selectInternalScopeCreation? at found
   obtain ⟨_, _, found⟩ := Option.bind_eq_some_iff.mp found
   cases operation
+  all_goals try (split at found)
   all_goals first
     | contradiction
     | obtain ⟨_, _, found⟩ := Option.bind_eq_some_iff.mp found
@@ -367,61 +371,64 @@ theorem scopeCreation_regional_selection
   · exact subscribed_completion_withdrawal program state hosting creationOperation selected programValid
       position afterPosition running selection
   · cases operation with
-    | returnProcess id returnOrigin process rootDefinition output =>
-        obtain ⟨record, kind, rootId, census⟩ := regionalSelection_return_record program state
-          id returnOrigin process rootDefinition output regional.selection found
-        have present : record ∈ state.calledProcessOccurrences.filter (fun record => decide
-            (record.returnOperationId = id && record.id.elementId.value = returnOrigin.elementId.value)) := by
-          rw [census]; simp
-        obtain ⟨member, named⟩ := List.mem_filter.mp present
-        have named := of_decide_eq_true named
-        simp only [Bool.and_eq_true, decide_eq_true_eq] at named
-        refine ⟨?_, ?_⟩
-        · cases creationKind : selected.kind with
-          | child => simp only [InternalScopeCreationSelection.apply, creationKind]
-          | called inserted =>
-              obtain ⟨_, _, current, _, _, _, _, _, opened, _, _, _⟩ :=
-                regionalPublicationTemplate_facts program state regional.selection regional.region _ published
-              have allValidity := (projectOpenFlowNodeOccurrences_validities program state current hosting running opened).1
-              have structural : flowNodeOccurrenceStructuralProgramValidity program state = true := by
-                simp only [flowNodeOccurrenceProgramValidity, Bool.and_eq_true, and_assoc] at allValidity
-                exact allValidity.1
-              have callers := regionalScopeCreation_call_caller_eq program state hosting record inserted
-                creationOperation selected position structural running member selection creationKind
-              obtain ⟨_, _, _, _, _, absent, _, _⟩ := scopeCreation_selection_call_facts
-                state creationOperation selected inserted hosting running selection creationKind
-              have rejected : decide (inserted.returnOperationId = id &&
-                  inserted.id.elementId.value = returnOrigin.elementId.value) = false := by
-                apply decide_eq_false_iff_not.mpr
-                intro matching
-                simp only [Bool.and_eq_true, decide_eq_true_eq] at matching
-                have old : record ∈ state.calledProcessOccurrences.filter (fun candidate =>
-                    candidate.caller = selected.owner && candidate.id.elementId.value = inserted.id.elementId.value) :=
-                  List.mem_filter.mpr ⟨member, by simp [callers, named.2, matching.2]⟩
-                rw [List.length_eq_zero_iff.mp absent] at old
-                contradiction
-              simp only [InternalScopeCreationSelection.apply, creationKind]
-              have perm := (sortCallRecords_perm (inserted :: state.calledProcessOccurrences)).filter
-                (fun record => decide (record.returnOperationId = id && record.id.elementId.value = returnOrigin.elementId.value))
-              simp only [List.filter_cons, rejected, Bool.false_eq_true, ↓reduceIte, census] at perm ⊢
-              exact List.perm_singleton.mp perm
-        · intro actual actualKind
-          have same : actual = record := by simpa only [kind, InternalRegionalKind.returning.injEq] using actualKind.symm
-          subst actual
-          apply scopeCreation_apply_scope_filter
-          cases creationKind : selected.kind with
-          | child => simp [created_parent state creationOperation selected selection, creationKind]
-          | called inserted =>
-              obtain ⟨_, _, _, _, _, _, absent, _⟩ := scopeCreation_selection_call_facts
-                state creationOperation selected inserted hosting running selection creationKind
-              have different : selected.created.id.processInstanceId ≠ record.calledRoot.processInstanceId := by
-                intro same
-                have old : regional.selection.root ∈ state.scopeOccurrences.filter (fun scope => decide
-                    (scope.id.processInstanceId = selected.created.id.processInstanceId)) :=
-                  List.mem_filter.mpr ⟨rootMember, by simp [rootId, same]⟩
-                rw [List.length_eq_zero_iff.mp absent] at old
-                contradiction
-              simp [different]
+    | returnProcess id returnOrigin process rootDefinition output data =>
+        cases data with
+        | scalar => simp [regionalSelection_scalar_return_refused] at found
+        | empty =>
+            obtain ⟨record, kind, rootId, census⟩ := regionalSelection_return_record program state
+              id returnOrigin process rootDefinition output regional.selection found
+            have present : record ∈ state.calledProcessOccurrences.filter (fun record => decide
+                (record.returnOperationId = id && record.id.elementId.value = returnOrigin.elementId.value)) := by
+              rw [census]; simp
+            obtain ⟨member, named⟩ := List.mem_filter.mp present
+            have named := of_decide_eq_true named
+            simp only [Bool.and_eq_true, decide_eq_true_eq] at named
+            refine ⟨?_, ?_⟩
+            · cases creationKind : selected.kind with
+              | child => simp only [InternalScopeCreationSelection.apply, creationKind]
+              | called inserted =>
+                  obtain ⟨_, _, current, _, _, _, _, _, opened, _, _, _⟩ :=
+                    regionalPublicationTemplate_facts program state regional.selection regional.region _ published
+                  have allValidity := (projectOpenFlowNodeOccurrences_validities program state current hosting running opened).1
+                  have structural : flowNodeOccurrenceStructuralProgramValidity program state = true := by
+                    simp only [flowNodeOccurrenceProgramValidity, Bool.and_eq_true, and_assoc] at allValidity
+                    exact allValidity.1
+                  have callers := regionalScopeCreation_call_caller_eq program state hosting record inserted
+                    creationOperation selected position structural running member selection creationKind
+                  obtain ⟨_, _, _, _, _, absent, _, _⟩ := scopeCreation_selection_call_facts
+                    state creationOperation selected inserted hosting running selection creationKind
+                  have rejected : decide (inserted.returnOperationId = id &&
+                      inserted.id.elementId.value = returnOrigin.elementId.value) = false := by
+                    apply decide_eq_false_iff_not.mpr
+                    intro matching
+                    simp only [Bool.and_eq_true, decide_eq_true_eq] at matching
+                    have old : record ∈ state.calledProcessOccurrences.filter (fun candidate =>
+                        candidate.caller = selected.owner && candidate.id.elementId.value = inserted.id.elementId.value) :=
+                      List.mem_filter.mpr ⟨member, by simp [callers, named.2, matching.2]⟩
+                    rw [List.length_eq_zero_iff.mp absent] at old
+                    contradiction
+                  simp only [InternalScopeCreationSelection.apply, creationKind]
+                  have perm := (sortCallRecords_perm (inserted :: state.calledProcessOccurrences)).filter
+                    (fun record => decide (record.returnOperationId = id && record.id.elementId.value = returnOrigin.elementId.value))
+                  simp only [List.filter_cons, rejected, Bool.false_eq_true, ↓reduceIte, census] at perm ⊢
+                  exact List.perm_singleton.mp perm
+            · intro actual actualKind
+              have same : actual = record := by simpa only [kind, InternalRegionalKind.returning.injEq] using actualKind.symm
+              subst actual
+              apply scopeCreation_apply_scope_filter
+              cases creationKind : selected.kind with
+              | child => simp [created_parent state creationOperation selected selection, creationKind]
+              | called inserted =>
+                  obtain ⟨_, _, _, _, _, _, absent, _⟩ := scopeCreation_selection_call_facts
+                    state creationOperation selected inserted hosting running selection creationKind
+                  have different : selected.created.id.processInstanceId ≠ record.calledRoot.processInstanceId := by
+                    intro same
+                    have old : regional.selection.root ∈ state.scopeOccurrences.filter (fun scope => decide
+                        (scope.id.processInstanceId = selected.created.id.processInstanceId)) :=
+                      List.mem_filter.mpr ⟨rootMember, by simp [rootId, same]⟩
+                    rw [List.length_eq_zero_iff.mp absent] at old
+                    contradiction
+                  simp [different]
     | completeScope id completeOrigin rootDefinition output =>
         obtain ⟨withdrawal, kind, census⟩ := regionalSelection_complete_census program state id completeOrigin
           rootDefinition output regional.selection found

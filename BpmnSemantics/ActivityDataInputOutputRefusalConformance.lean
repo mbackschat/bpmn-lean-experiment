@@ -47,7 +47,7 @@ theorem zeroOutputsRefuseWithExactStatePreservation :
 theorem targetPropertyNamedOutputRefusesWithExactStatePreservation :
     applyStimulus scenarioClosureLimit claimProgram active
         (completeClaim "complete-under-target"
-          [{ name := claimDirectOutput.targetPropertyId, value := .string "approve" }]) =
+          [{ name := claimDirectOutput.target.id, value := .string "approve" }]) =
       refused active := by
   exact applyStimulus_rejected_of_admission _ _ _ _ rfl
 

@@ -1,8 +1,10 @@
 /** Exact, caller-selected User Task input projection over committed semantic state. */
 import {
+  ControlStateKind,
   compareCanonicalStrings,
   isWellFormedWireString,
   projectOpenUserTasks,
+  sameOccurrenceId,
 } from "@bpmn-lean/semantic-core";
 import type {
   RuntimeState,
@@ -28,11 +30,15 @@ export function projectUserTaskDetail(
     return null;
   }
   const selectedNames = new Set(request.inputVariableNames);
+  const waits = state.userTaskWaits.filter(({ id }) => sameOccurrenceId(id, task.id));
+  const callerOwned = state.control.kind === ControlStateKind.Running &&
+    task.id.processInstanceId === state.control.instanceId &&
+    waits.length === 1 && waits[0]?.owner.processInstanceId === state.control.instanceId;
   return {
     task,
-    inputVariables: state.variables.process.bindings.filter(
+    inputVariables: callerOwned ? state.variables.process.bindings.filter(
       ({ name }) => selectedNames.has(name),
-    ),
+    ) : [],
   };
 }
 

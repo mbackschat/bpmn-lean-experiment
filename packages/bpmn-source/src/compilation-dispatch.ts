@@ -1,5 +1,6 @@
 import { compileTransactionSourceCheckedProcess } from "./transaction-source.js";
 import {
+  CALL_ACTIVITY_DATA_BOUNDARIES_CHECKPOINT_PROFILE_ID,
   TRANSACTION_CANCELLATION_CHECKPOINT_PROFILE_ID,
   COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID,
   MESSAGE_KEY_CORRELATION_CHECKPOINT_PROFILE_ID,
@@ -71,6 +72,7 @@ export const CompilationDispatchId = Object.freeze({
   MappedSuccessServiceTask: "mappedSuccessServiceTask",
   MappedBoundaryErrorServiceTask: "mappedBoundaryErrorServiceTask",
   CallActivity: "callActivity",
+  CallActivityData: "callActivityData",
   UserTaskMetadata: "userTaskMetadata",
   SequentialMultiInstanceUserTask: "sequentialMultiInstanceUserTask",
   ParallelMultiInstanceUserTask: "parallelMultiInstanceUserTask",
@@ -139,8 +141,15 @@ export const compilationDispatches: ReadonlyArray<CompilationDispatch> =
       semanticProfile: SemanticProfileId.CalledProcessCallActivity,
       reader: (rootElement, source, overlay) =>
         overlay === null
-          ? compileCallActivityWithClassification(rootElement, source)
+          ? compileCallActivityWithClassification(rootElement, source, SemanticProfileId.CalledProcessCallActivity)
           : unsupported("The Call Activity profile does not admit a source overlay."),
+    },
+    {
+      id: CompilationDispatchId.CallActivityData,
+      semanticProfile: CALL_ACTIVITY_DATA_BOUNDARIES_CHECKPOINT_PROFILE_ID,
+      reader: (rootElement, source, overlay) => overlay === null
+        ? compileCallActivityWithClassification(rootElement, source, CALL_ACTIVITY_DATA_BOUNDARIES_CHECKPOINT_PROFILE_ID)
+        : unsupported("The Call data profile does not admit a source overlay."),
     },
     {
       id: CompilationDispatchId.UserTaskMetadata,
@@ -284,6 +293,7 @@ export function compileDispatchedCheckedProcess(
     case CompilationDispatchId.MappedSuccessServiceTask:
     case CompilationDispatchId.MappedBoundaryErrorServiceTask:
     case CompilationDispatchId.CallActivity:
+    case CompilationDispatchId.CallActivityData:
       return dispatch.reader(rootElement, source, overlay);
     case CompilationDispatchId.UserTaskMetadata:
       return compileUserTaskMetadataSource(
@@ -333,11 +343,12 @@ function compileUserTaskMetadataSource(
 function compileCallActivityWithClassification(
   rootElement: unknown,
   source: BpmnSourceIdentity,
+  semanticProfile: string,
 ): CheckedCompilationProjection {
   const projection = compileCallActivityCheckedProcess(
     rootElement,
     source,
-    SemanticProfileId.CalledProcessCallActivity,
+    semanticProfile,
     null,
   );
   const definitions = asElement(rootElement);

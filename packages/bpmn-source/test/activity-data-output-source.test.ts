@@ -48,7 +48,7 @@ const directOutput = {
   associationId: "DataOutputAssociation_Decision",
   sourceDataOutputId: "DataOutput_Decision",
   sourceDataOutputName: "Underwriting decision",
-  targetPropertyId: "Property_UnderwritingOutcome",
+  target: { kind: "property", propertyId: "Property_UnderwritingOutcome" },
 } as const;
 
 async function compile(

@@ -10,6 +10,17 @@ namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
 open BpmnSemantics
 
+/-- CDATA-OWNER-01: interface inputs are immutable during their scope lifetime. Internal creation
+and disposal change that same scope; external output completion is outside internal batching.
+The owner atom protects the interface census as well as the selected input value. -/
+def dataArmingInputAtom (owner : ScopeOccurrenceId) : ActivityDataInputSource → InternalStateAtom
+  | .property propertyId => .processVariable propertyId
+  | .processDataInput _ => .scopeOccurrence owner
+
+theorem process_input_atom_is_not_property (owner : ScopeOccurrenceId) (port propertyId : String) :
+    dataArmingInputAtom owner (.processDataInput port) ≠ .processVariable propertyId := by
+  simp [dataArmingInputAtom]
+
 def footprintOfDataPatch (contract : InternalDataArmingContract)
     (patch : InternalDataArmingPatch) : InternalTransitionFootprint :=
   let ordinary := footprintOfPatch patch.arm
@@ -22,7 +33,7 @@ def footprintOfDataPatch (contract : InternalDataArmingContract)
   { ordinary with
     reads := canonicalStateAtomSet
       (ordinary.reads ++ (contract.data.inputAssociation?.toList.map fun input =>
-        .processVariable input.sourcePropertyId) ++ [counter, record, scope] ++ claims)
+        dataArmingInputAtom patch.arm.owner input.source) ++ [counter, record, scope] ++ claims)
     writes := canonicalStateAtomSet
       (ordinary.writes ++ [counter, record, scope] ++ (patch.bindings.map fun binding =>
         .activityVariable (.activityOccurrence activity) binding.name) ++ claims) }
@@ -47,9 +58,23 @@ theorem ordinary_writes_subset_data_writes (contract : InternalDataArmingContrac
 theorem data_arming_reads_source (contract : InternalDataArmingContract)
     (patch : InternalDataArmingPatch) (input : DirectActivityDataInput)
     (selected : contract.data.inputAssociation? = some input) :
-    .processVariable input.sourcePropertyId ∈
+    dataArmingInputAtom patch.arm.owner input.source ∈
       (footprintOfDataPatch contract patch).reads := by
   simp [footprintOfDataPatch, selected, canonicalStateAtomSet, mem_sortBy]
+
+theorem data_arming_reads_property_source (contract : InternalDataArmingContract)
+    (patch : InternalDataArmingPatch) (input : DirectActivityDataInput) (propertyId : String)
+    (selected : contract.data.inputAssociation? = some input)
+    (endpoint : input.source = .property propertyId) :
+    .processVariable propertyId ∈ (footprintOfDataPatch contract patch).reads := by
+  simpa [endpoint, dataArmingInputAtom] using data_arming_reads_source contract patch input selected
+
+theorem data_arming_reads_process_input_owner (contract : InternalDataArmingContract)
+    (patch : InternalDataArmingPatch) (input : DirectActivityDataInput) (port : String)
+    (selected : contract.data.inputAssociation? = some input)
+    (endpoint : input.source = .processDataInput port) :
+    .scopeOccurrence patch.arm.owner ∈ (footprintOfDataPatch contract patch).reads := by
+  simpa [endpoint, dataArmingInputAtom] using data_arming_reads_source contract patch input selected
 
 theorem data_arming_does_not_write_process (contract : InternalDataArmingContract)
     (patch : InternalDataArmingPatch) (name : String) :

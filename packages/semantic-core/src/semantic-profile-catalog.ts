@@ -83,6 +83,10 @@ export const SemanticProfileId = Object.freeze({
 export const STRUCTURED_PROCESS_COMPOSITION_CHECKPOINT_PROFILE_ID =
   "bpmn-2.0.2-structured-process-composition-draft";
 
+/** Call data remains private until the capsule's separate hosting qualification closes. */
+export const CALL_ACTIVITY_DATA_BOUNDARIES_CHECKPOINT_PROFILE_ID =
+  "bpmn-2.0.2-call-activity-data-boundaries-draft";
+
 /** Transition alias retained while correlation closure lanes migrate to the registered catalog member. */
 export const MESSAGE_KEY_CORRELATION_CHECKPOINT_PROFILE_ID =
   SemanticProfileId.MessageKeyCorrelation;

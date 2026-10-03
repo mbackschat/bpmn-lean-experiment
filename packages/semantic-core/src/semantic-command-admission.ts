@@ -1,3 +1,5 @@
+import { callDataStateIsValid } from "./call-data-state-validation.js";
+import { callDataStimulusDataAdmitted } from "./call-data-command-admission.js";
 /**
  * Admission of an external stimulus against committed runtime state.
  *
@@ -201,7 +203,8 @@ function activityDataInputOutputStartDataAdmitted(
   return declarations.length === 1 && declaration !== undefined &&
     (stimulus.initialVariables.length === 0 ||
       (stimulus.initialVariables.length === 1 &&
-        stimulus.initialVariables[0]?.name === declaration.directInput.sourcePropertyId));
+        declaration.directInput.source.kind === "property" &&
+        stimulus.initialVariables[0]?.name === declaration.directInput.source.propertyId));
 }
 
 export function admit(
@@ -210,9 +213,11 @@ export function admit(
   stimulus: Stimulus,
 ): CommandAdmission {
   if (
+    !callDataStimulusDataAdmitted(program, stimulus) ||
     !structuredCompositionStimulusDataAdmitted(program, stimulus) ||
     !incidentStateAllowsDispatch(program, state) ||
     !admissibleCommittedState(program, state) ||
+    !callDataStateIsValid(program, state) ||
     !sequentialMultiInstanceStimulusDataAdmitted(program, stimulus) ||
     !parallelMultiInstanceStimulusDataAdmitted(program, stimulus) ||
     (stimulus.kind === StimulusKind.StartProcess &&

@@ -12,8 +12,9 @@ open FlowNodeOccurrenceProgramValidity.Internal
 private theorem paired_invocation_host (program : Program)
     (id : OperationId) (origin : BpmnElementOrigin) (input : ControlPlaceId)
     (process : ProcessId) (root : DefinitionScopeId) (entry : ControlPlaceId) (returned : OperationId)
+    {data : CallDataInterface}
     (paired : callOperationsPaired program = true)
-    (member : .invokeProcess id origin input process root entry returned ∈ program.operations) :
+    (member : .invokeProcess id origin input process root entry returned data ∈ program.operations) :
     ∃ entryRoot : DefinitionScope,
       program.definitionScopes.filter (fun scope => scope.parentScopeId.isNone &&
         scope.originElementId.value = program.processId.value) = [entryRoot] ∧
@@ -52,7 +53,7 @@ theorem regionalScopeCreation_call_caller_hosting (program : Program) (state : R
   have paired : callOperationsPaired program = true := by
     simp only [programWellFormed, Bool.and_eq_true] at programValid
     grind
-  obtain ⟨id, origin, input, process, root, entry, returned, invocation, owned, _, _, _, _⟩ :=
+  obtain ⟨id, origin, input, process, root, entry, returned, data, invocation, owned, _, _, _, _⟩ :=
     flowNodeOccurrenceStructuralProgramValidity_call_declarer program state record structural member
   obtain ⟨entryRoot, roots, declaredOwner⟩ :=
     paired_invocation_host program id origin input process root entry returned paired invocation
@@ -84,7 +85,7 @@ theorem regionalScopeCreation_call_caller_hosting (program : Program) (state : R
     simp [same, parentless] at parentEq
   · simpa only [callerId] using hosted
   · obtain ⟨parentCall, parentMember, calledRoot⟩ := called
-    obtain ⟨invokeId, invokeOrigin, invokeInput, calledProcess, calledScope, calledEntry, returnedId,
+    obtain ⟨invokeId, invokeOrigin, invokeInput, calledProcess, calledScope, calledEntry, returnedId, data,
       declaration, _, _, _, scopeEq, _⟩ :=
       flowNodeOccurrenceStructuralProgramValidity_call_declarer program state parentCall structural parentMember
     have excluded := callOperationsPaired_calledRoot_ne_entryRoot program entryRoot.id invokeId invokeOrigin invokeInput
@@ -109,23 +110,32 @@ theorem regionalScopeCreation_call_caller_eq (program : Program) (state : Runtim
       ∃ root ∈ state.scopeOccurrences, root.id = creation.owner ∧ root.parent = none := by
     unfold selectInternalScopeCreation? at found
     simp only [running, bind, Option.bind] at found
-    cases operation
-    all_goals first
-      | contradiction
-      | obtain ⟨_, _, found⟩ := Option.bind_eq_some_iff.mp found
-        try dsimp only at found
-        repeat first | contradiction | split at found
-        all_goals cases found
+    cases operation with
+    | invokeProcess _ _ _ _ _ _ _ data =>
+        cases data
         all_goals first
           | contradiction
-          | rename_i callerRoot census matching _ _
-            have parentless : callerRoot.parent = none := by simpa using (Bool.and_eq_true_iff.mp matching).2
-            have identity := scope_identity_of_census state _ callerRoot census
-            have present : callerRoot ∈ state.scopeOccurrences := by
-              have singleton : callerRoot ∈ state.scopeOccurrences.filter (fun candidate => decide (candidate.id = callerRoot.id)) := by
-                rw [identity, census]; simp
-              exact (List.mem_filter.mp singleton).1
-            exact ⟨callerRoot, present, identity, parentless⟩
+          | obtain ⟨_, _, found⟩ := Option.bind_eq_some_iff.mp found
+            try dsimp only at found
+            repeat first | contradiction | split at found
+            all_goals cases found
+            all_goals first
+              | contradiction
+              | rename_i callerRoot census matching _ _
+                have parentless : callerRoot.parent = none := by simpa using (Bool.and_eq_true_iff.mp matching).2
+                have identity := scope_identity_of_census state _ callerRoot census
+                have present : callerRoot ∈ state.scopeOccurrences := by
+                  have singleton : callerRoot ∈ state.scopeOccurrences.filter (fun candidate => decide (candidate.id = callerRoot.id)) := by
+                    rw [identity, census]; simp
+                  exact (List.mem_filter.mp singleton).1
+                exact ⟨callerRoot, present, identity, parentless⟩
+    | enterScope _ _ _ _ _ =>
+        obtain ⟨_, _, found⟩ := Option.bind_eq_some_iff.mp found
+        split at found
+        · contradiction
+        · cases found
+          contradiction
+    | _ => contradiction
   have roots := calledProcessAssociationsValid_parentless_root_unique state hosting running associations
     oldRoot newRoot oldMember newMember oldParent newParent (by rw [oldIdentity, newIdentity, oldHosting, newHosting])
   simpa only [oldIdentity, newIdentity] using roots

@@ -30,8 +30,13 @@ theorem reached_token_has_enabled_consumer
     reached profile analyzed committed reachable
   have bounded := committed_start_task_execution_has_at_most_one_control_unit program analysis commandId processId
     instanceId bindings reached profile analyzed committed reachable
-  have shape := (reached_state_has_exact_lifecycle program analysis commandId processId instanceId bindings reached
-    wellFormed profile analyzed committed reachable).2
+  obtain ⟨frame, shape⟩ := reached_state_has_exact_lifecycle program analysis commandId processId instanceId bindings reached
+    wellFormed profile analyzed committed reachable
+  obtain ⟨owner, startOwned⟩ := committed_start_has_root_owner program commandId processId instanceId bindings profile committed
+  have owned := task_execution_preserves_root_ownership program analysis _ reached owner analyzed startOwned startBound reachable
+  have tokenRunning : reached.control = .running token.owner.processInstanceId := by
+    rw [owned.2.1 token live, root_owner_matches_running_instance reached owner runningId frame owned running]
+    exact running
   have single := (live_token_under_bound_is_single reached token bounded live).1
   obtain ⟨target, consumer, _⟩ := positions.1 token live
   obtain ⟨operation, member, uniqueConsumer, consumes, namedConsumer⟩ := consumer_identifies_unique_input_operation program token.placeId target consumer
@@ -49,7 +54,7 @@ theorem reached_token_has_enabled_consumer
   case awaitDataInputOutputUserTask id origin input output taskId taskName directInput directOutput =>
     obtain ⟨source, available⟩ := reached_data_task_input_is_available program analysis commandId processId instanceId
       bindings reached token id origin input output taskId taskName directInput directOutput wellFormed profile analyzed
-      committed reachable member live consumes
+      committed reachable member tokenRunning live consumes
     have noScopes := (no_wait_has_no_activity_lifetime program reached shape
       (live_token_under_bound_is_single reached token bounded live).2.1).2
     simp only [fire?, noSnapshots]
@@ -276,7 +281,7 @@ theorem exact_task_lifetime_has_admitted_completion
       obtain ⟨noParallel, noSequential, noMessageMonitored, noMessageBounded, noBounded,
         noInput, noOutput, noMonitored⟩ := admitted_completion_foreign_families_absent program analysis wait.task.id analyzed
       refine ⟨[], ?_⟩
-      simp [admitStimulus, noSnapshots, noIncidents, running, noParallel, noSequential, noMessageMonitored,
+      simp [admitStimulus, callDataRuntimeStateValid, noSnapshots, noIncidents, running, noParallel, noSequential, noMessageMonitored,
         noMessageBounded, noBounded, noData, guards.2, noInput, noOutput, noMonitored,
         completeOrdinaryUserTaskWithCompensation?, compensationTargetDeclaredForFamily, noRetention,
         completeUserTask, waits, isCallActivityProgram, profile, structuredCompositionCheckpointProfileId,
@@ -286,6 +291,9 @@ theorem exact_task_lifetime_has_admitted_completion
       have declared := declared_data_task_has_exact_contract program id origin input output taskId taskName directInput
         directOutput wellFormed member
       have selected := exact_data_contract_selects_data_dispatch program taskId _ declared
+      obtain ⟨_, _, _, _, _, _, endpoint⟩ := completion_contract_has_analyzed_vertex program analysis taskId _ analyzed declared
+      change directOutput.target = .property directOutput.target.id at endpoint
+      obtain ⟨propertyId, propertyEndpoint⟩ : ∃ propertyId, directOutput.target = .property propertyId := ⟨_, endpoint⟩
       change operationOwningScope? program id = some wait.owner.definitionScopeId at staticOwner
       have ready : ∃ after, completeDataInputOutputUserTask? program state wait.processInstanceId taskId wait.activation
           [{ name := directOutput.sourceDataOutputId, value := .null }] = some after := by
@@ -293,12 +301,15 @@ theorem exact_task_lifetime_has_admitted_completion
           filledDeclaredOutput?, dataInputOutputTaskWait?, waits, taskEq, activityOccurrenceForTaskWait?,
           records, recordBodyNamesWait, activityBodyTask?, taskIdNamesWait, dataInputOutputRuntimeJoinValid,
           outputEq, staticOwner, processOwner, dataInputOutputLocalScope?, scopes, activityOccurrenceScopeMatches,
-          activityOwnerForRecord, localDataOwnerMatches, bindingName, typed, removeActivityOccurrenceVariableScope]
+          activityOwnerForRecord, localDataOwnerMatches, bindingName, removeActivityOccurrenceVariableScope,
+          writeActivityDataOutput?, propertyEndpoint, processInterfaceScalar, activityDataPropertyOwner, running]
+        cases value : binding.value <;> simp [value, variableValueAdmitted,
+          activityDataInputOutputUserTaskProfileId] at typed ⊢
       obtain ⟨after, completed⟩ := ready
       obtain ⟨noParallel, noSequential, noMessageMonitored, noMessageBounded, noBounded, _, _, _⟩ :=
         admitted_completion_foreign_families_absent program analysis taskId analyzed
       refine ⟨[{ name := directOutput.sourceDataOutputId, value := .null }], ?_⟩
-      simp [admitStimulus, noSnapshots, noIncidents, running, taskEq, noParallel, noSequential,
+      simp [admitStimulus, callDataRuntimeStateValid, noSnapshots, noIncidents, running, taskEq, noParallel, noSequential,
         noMessageMonitored, noMessageBounded, noBounded, selected, completed, processDataBindingsAdmitted,
         profile, variableValueAdmitted, structuredCompositionCheckpointProfileId]
 
@@ -379,7 +390,7 @@ theorem admitted_merge_port_has_provenance
   have allNonempty : program.controlPlaces.all (fun place =>
       nonempty place.id.value && nonempty place.origin.elementId.value) = true := by
     simp only [programWellFormed, Bool.and_eq_true] at wellFormed
-    exact wellFormed.1.1.1.1.1.1.1.1.1.2
+    grind
   have nonemptyOrigin : declared.origin.elementId.value ≠ "" := by
     have valid := List.all_eq_true.mp allNonempty declared declaredMember
     simp only [Bool.and_eq_true] at valid

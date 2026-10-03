@@ -523,7 +523,7 @@
       "additionalProperties": false,
       "required": [
         "associationId",
-        "sourcePropertyId",
+        "source",
         "targetDataInputId",
         "targetDataInputName"
       ],
@@ -531,8 +531,41 @@
         "associationId": {
           "$ref": "#/$defs/nonemptyString"
         },
-        "sourcePropertyId": {
-          "$ref": "#/$defs/nonemptyString"
+        "source": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "kind",
+                "propertyId"
+              ],
+              "properties": {
+                "kind": {
+                  "const": "property"
+                },
+                "propertyId": {
+                  "$ref": "#/$defs/nonemptyString"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "kind",
+                "dataInputId"
+              ],
+              "properties": {
+                "kind": {
+                  "const": "processDataInput"
+                },
+                "dataInputId": {
+                  "$ref": "#/$defs/nonemptyString"
+                }
+              }
+            }
+          ]
         },
         "targetDataInputId": {
           "$ref": "#/$defs/nonemptyString"
@@ -552,7 +585,7 @@
         "associationId",
         "sourceDataOutputId",
         "sourceDataOutputName",
-        "targetPropertyId"
+        "target"
       ],
       "properties": {
         "associationId": {
@@ -567,8 +600,41 @@
             "null"
           ]
         },
-        "targetPropertyId": {
-          "$ref": "#/$defs/nonemptyString"
+        "target": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "kind",
+                "propertyId"
+              ],
+              "properties": {
+                "kind": {
+                  "const": "property"
+                },
+                "propertyId": {
+                  "$ref": "#/$defs/nonemptyString"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "kind",
+                "dataOutputId"
+              ],
+              "properties": {
+                "kind": {
+                  "const": "processDataOutput"
+                },
+                "dataOutputId": {
+                  "$ref": "#/$defs/nonemptyString"
+                }
+              }
+            }
+          ]
         }
       }
     },
@@ -1054,7 +1120,8 @@
           "required": [
             "kind",
             "id",
-            "calledProcessId"
+            "calledProcessId",
+            "data"
           ],
           "properties": {
             "kind": {
@@ -1065,6 +1132,9 @@
             },
             "calledProcessId": {
               "$ref": "#/$defs/nonemptyString"
+            },
+            "data": {
+              "$ref": "#/$defs/callDataInterface"
             }
           }
         },
@@ -1956,6 +2026,167 @@
           }
         }
       }
+    },
+    "scalarIoSpecification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ownerId",
+        "id",
+        "input",
+        "output",
+        "inputSet",
+        "outputSet"
+      ],
+      "properties": {
+        "ownerId": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "id": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "input": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "name"
+          ],
+          "properties": {
+            "id": {
+              "$ref": "#/$defs/nonemptyString"
+            },
+            "name": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        },
+        "output": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "name"
+          ],
+          "properties": {
+            "id": {
+              "$ref": "#/$defs/nonemptyString"
+            },
+            "name": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        },
+        "inputSet": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "name",
+            "dataInputRefs"
+          ],
+          "properties": {
+            "id": {
+              "$ref": "#/$defs/nonemptyString"
+            },
+            "name": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "dataInputRefs": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/nonemptyString"
+              }
+            }
+          }
+        },
+        "outputSet": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "name",
+            "dataOutputRefs"
+          ],
+          "properties": {
+            "id": {
+              "$ref": "#/$defs/nonemptyString"
+            },
+            "name": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "dataOutputRefs": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/nonemptyString"
+              }
+            }
+          }
+        }
+      }
+    },
+    "callDataInterface": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind"
+          ],
+          "properties": {
+            "kind": {
+              "const": "empty"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "callerProperties",
+            "call",
+            "called",
+            "directInput",
+            "directOutput"
+          ],
+          "properties": {
+            "kind": {
+              "const": "scalar"
+            },
+            "callerProperties": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/nonemptyString"
+              }
+            },
+            "call": {
+              "$ref": "#/$defs/scalarIoSpecification"
+            },
+            "called": {
+              "$ref": "#/$defs/scalarIoSpecification"
+            },
+            "directInput": {
+              "$ref": "#/$defs/directActivityDataInput"
+            },
+            "directOutput": {
+              "$ref": "#/$defs/directActivityDataOutput"
+            }
+          }
+        }
+      ]
     }
   }
 }

@@ -77,7 +77,7 @@ theorem preparedRegional_execution_fields (program : Program) (before after : Ru
     (found : prepareInternalRegional? program before operation = some prepared)
     (applied : applyPreparedInternalRegional? program before prepared = some after) :
     match (generalizing := false) operation, prepared.selection.kind with
-    | .returnProcess _ _ _ _ output, .returning record =>
+    | .returnProcess _ _ _ _ output _, .returning record =>
         after = { removeCalledProcessTree before record with tokens := addToken before.tokens output record.caller }
     | .completeScope _ _ _ output, .completing withdrawal =>
         match (generalizing := false) prepared.selection.root.parent, output with
@@ -105,7 +105,9 @@ theorem preparedRegional_execution_fields (program : Program) (before after : Ru
   have same : actual = after := Option.some.inj (executed.symm.trans applied)
   subst actual
   cases operation with
-  | returnProcess id origin process definition output =>
+  | returnProcess id origin process definition output data =>
+      have empty := prepareInternalRegional_return_data_empty program before id origin process definition output data prepared found
+      subst data
       obtain ⟨returned, record, root, returnedApplied, kind, _, _, _, _, update, _⟩ :=
         preparedReturn_quiescent_fields program before hosting id origin process definition output prepared valid found
       have sameReturned : returned = after := Option.some.inj (returnedApplied.symm.trans applied)
@@ -365,7 +367,9 @@ theorem regional_pair_effect_populations (program : Program) (before after : Run
     valid running leftFound rightFound independent applied).1.trans running
   have update := preparedRegional_execution_fields program before after hosting leftOperation left valid running afterRunning leftFound applied
   cases leftOperation with
-  | returnProcess id origin process definition output =>
+  | returnProcess id origin process definition output data =>
+      have empty := prepareInternalRegional_return_data_empty program before id origin process definition output data left leftFound
+      subst data
       obtain ⟨returned, record, root, returnedApplied, _, _, _, _, _, _, _, _, _, _, effects, incidents, _⟩ :=
         preparedReturn_quiescent_fields program before hosting id origin process definition output left valid leftFound
       have same : returned = after := Option.some.inj (returnedApplied.symm.trans applied)

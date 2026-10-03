@@ -64,7 +64,7 @@ theorem regionalStateFootprint_census_writes (state : RuntimeState)
     (footprint : InternalRegionalStateFootprint)
     (found : regionalStateFootprint? state selected region = some footprint) :
     match selected.operation, selected.kind with
-    | .returnProcess _ _ _ _ output, .returning _ =>
+    | .returnProcess _ _ _ _ output _, .returning _ =>
         ∀ atom ∈ regionalCensusWrites state region [output], atom ∈ footprint.writes
     | .throwError _ _ _ _ handler, .interrupting _ =>
         ∀ atom ∈ regionalCensusWrites state region [handler.output], atom ∈ footprint.writes

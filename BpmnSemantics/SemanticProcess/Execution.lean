@@ -1,4 +1,5 @@
 import BpmnSemantics.SemanticProcess.TransitionTrace
+import BpmnSemantics.SemanticProcess.CallDataStateLaws
 
 /-! # Semantic Process external execution
 
@@ -235,6 +236,23 @@ theorem user_task_completion_with_same_successor_is_equal
         (.completeUserTaskInstance completionCommandId submittedTaskId submittedValues) =
       applyStimulus closureLimit program rightState
         (.completeUserTaskInstance completionCommandId submittedTaskId submittedValues) := by
+  have notCallData : program.identity.semanticProfile ≠ callDataCheckpointProfileId := by
+    intro profile
+    have valid : callDataRuntimeStateValid program leftState = true := by
+      cases checked : callDataRuntimeStateValid program leftState with
+      | false =>
+          have refused := admitStimulus_invalid_call_data_state program leftState
+            (.completeUserTaskInstance completionCommandId submittedTaskId submittedValues) checked
+          simp [applyStimulus, refused] at committed
+      | true => rfl
+    have composed := callData_valid_completion_has_composed_definition program leftState successor
+      submittedTaskId.processInstanceId submittedTaskId.processInstanceId
+      ⟨submittedTaskId.elementId.value⟩ submittedTaskId.activation profile leftRunning valid leftCompletion
+    simp [noDataInputOutputTask] at composed
+  have leftDataValid : callDataRuntimeStateValid program leftState = true := by
+    simp [callDataRuntimeStateValid, notCallData]
+  have rightDataValid : callDataRuntimeStateValid program rightState = true := by
+    simp [callDataRuntimeStateValid, notCallData]
   have inputRefused (state : RuntimeState) :=
     undeclaredTaskRefusesCompletion program state submittedTaskId.processInstanceId
       ⟨submittedTaskId.elementId.value⟩ submittedTaskId.activation noDataInputTask
@@ -259,7 +277,7 @@ theorem user_task_completion_with_same_successor_is_equal
     cases outputPresent : (dataOutputTaskOperations program).any (fun entry =>
       decide (entry.1 = ⟨submittedTaskId.elementId.value⟩)) <;>
   simp [applyStimulus, StimulusResult.ofScheduledClosure, StimulusResult.ofClosure,
-    admitStimulus, snapshotAbsent, leftNoIncidents,
+    admitStimulus, snapshotAbsent, leftDataValid, rightDataValid, leftNoIncidents,
     rightNoIncidents, leftRunning, rightRunning,
     ordinaryTask.1, ordinaryTask.2, noSequentialMultiInstance, noParallelMultiInstance,
     noMessageBoundedTask, noMessageMonitoredTask, noDataInputOutputTask, inputPresent, outputPresent,

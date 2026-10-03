@@ -78,7 +78,7 @@ function task(suffix: string): AwaitDataInputOutputUserTaskOperation {
     task: { elementId: `UserTask_${suffix}`, name: suffix },
     directInput: {
       associationId: `DataInputAssociation_${suffix}`,
-      sourcePropertyId: source.name,
+      source: { kind: "property", propertyId: source.name },
       targetDataInputId: `DataInput_${suffix}`,
       targetDataInputName: "Claim summary",
     },
@@ -86,7 +86,7 @@ function task(suffix: string): AwaitDataInputOutputUserTaskOperation {
       associationId: `DataOutputAssociation_${suffix}`,
       sourceDataOutputId: `DataOutput_${suffix}`,
       sourceDataOutputName: "Decision",
-      targetPropertyId: `Property_${suffix}Decision`,
+      target: { kind: "property", propertyId: `Property_${suffix}Decision` },
     },
   };
 }
@@ -438,3 +438,68 @@ for (const ordinary of ordinaryOperations()) {
     }
   });
 }
+
+test("called task preparation reads exact interface membership and port and emits owner-derived identities", () => {
+  const calledOwner = { ...owner, processInstanceId: "called-claim" };
+  const calledOperation = { ...leftOperation,
+    directInput: { ...leftOperation.directInput, source: { kind: "processDataInput", dataInputId: "ProcessInput" } },
+    directOutput: { ...leftOperation.directOutput, target: { kind: "processDataOutput", dataOutputId: "ProcessOutput" } },
+  } as const;
+  const calledProgram = { ...program, operations: [calledOperation] };
+  const state: RuntimeState = {
+    ...before,
+    scopeOccurrences: [...before.scopeOccurrences, { id: calledOwner, parent: null }],
+    controlTokens: [{ placeId: calledOperation.input, owner: calledOwner, multiplicity: 1 }],
+    calledProcessOccurrences: [{ id: { processInstanceId: instanceId, elementId: "Call", activation: 1 },
+      caller: owner, calledRoot: calledOwner, calledProcessId: processId, returnOperationId: "Return" }],
+    variables: { ...before.variables,
+      processInterfaces: [{ owner: calledOwner, inputs: [{ name: "ProcessInput", value: { kind: VariableValueKind.Null } }], outputs: [] }] },
+  };
+  const prepared = prepare(calledProgram, state, { operation: calledOperation, owner: calledOwner });
+  assert.ok(prepared !== null);
+  assert.equal(prepared.footprint.reads.some((atom) => atom.kind === Atom.ProcessVariable), false);
+  assert.deepEqual(prepared.footprint.reads.filter((atom) => atom.kind === Atom.ProcessInterfaceScope || atom.kind === Atom.ProcessInterfaceInput), [
+    { kind: Atom.ProcessInterfaceInput, owner: calledOwner, dataInputId: "ProcessInput" },
+    { kind: Atom.ProcessInterfaceScope, owner: calledOwner },
+  ]);
+  assert.equal(prepared.patch.wait.id.processInstanceId, calledOwner.processInstanceId);
+  assert.equal(prepared.patch.record.id.processInstanceId, calledOwner.processInstanceId);
+  const after = applyPatch(state, prepared.patch);
+  assert.deepEqual(after.variables.processInterfaces, state.variables.processInterfaces);
+  assert.deepEqual(after.variables.process, state.variables.process);
+  assert.deepEqual(after.variables.activities[0]?.bindings, [{ name: calledOperation.directInput.targetDataInputId, value: { kind: VariableValueKind.Null } }]);
+  const duplicate = { ...state, variables: { ...state.variables,
+    processInterfaces: [...state.variables.processInterfaces, { owner: calledOwner, inputs: [], outputs: [] }] } };
+  assert.equal(prepare(calledProgram, duplicate, { operation: calledOperation, owner: calledOwner }), null);
+});
+
+test("standalone input preparation refuses Process endpoints while output arming stays token-only", () => {
+  const { directOutput, ...inputBase } = leftOperation;
+  const inputOperation = { ...inputBase, kind: SemanticOperationKind.AwaitDataInputUserTask,
+    directInput: { ...inputBase.directInput, source: { kind: "processDataInput", dataInputId: "ProcessInput" } } } as const;
+  const { directInput: _input, ...outputBase } = leftOperation;
+  const outputOperation = { ...outputBase, kind: SemanticOperationKind.AwaitDataOutputUserTask,
+    directOutput: { ...directOutput, target: { kind: "processDataOutput", dataOutputId: "ProcessOutput" } } } as const;
+  const state: RuntimeState = { ...before, variables: { ...before.variables,
+    processInterfaces: [{ owner, inputs: [{ name: "ProcessInput", value: { kind: VariableValueKind.Null } }], outputs: [] }] } };
+  assert.equal(prepare({ ...program, operations: [inputOperation] }, state, { operation: inputOperation, owner }), null);
+  const output = prepare({ ...program, operations: [outputOperation] }, state, { operation: outputOperation, owner });
+  assert.ok(output !== null);
+  assert.deepEqual(output.patch.bindings, []);
+  assert.equal(output.footprint.reads.some((atom) => atom.kind === Atom.ProcessInterfaceInput || atom.kind === Atom.ProcessInterfaceScope), false);
+});
+
+test("standalone output preparation refuses a called owner while retaining hosting-instance arming", () => {
+  const { directInput: _input, ...base } = leftOperation;
+  const operation = { ...base, kind: SemanticOperationKind.AwaitDataOutputUserTask } as const;
+  const selected = { ...program, operations: [operation] };
+  assert.ok(prepare(selected, before, { operation, owner }) !== null);
+  const calledOwner = { ...owner, processInstanceId: "called-output" };
+  const state: RuntimeState = { ...before,
+    scopeOccurrences: [...before.scopeOccurrences, { id: calledOwner, parent: null }],
+    controlTokens: [{ placeId: operation.input, owner: calledOwner, multiplicity: 1 }],
+    calledProcessOccurrences: [{ id: { processInstanceId: instanceId, elementId: "Call", activation: 1 },
+      caller: owner, calledRoot: calledOwner, calledProcessId: processId, returnOperationId: "Return" }],
+  };
+  assert.equal(prepare(selected, state, { operation, owner: calledOwner }), null);
+});

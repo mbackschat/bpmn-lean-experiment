@@ -157,7 +157,7 @@ const resumable = {
   eventRaces: [],
   calledProcessOccurrences: [],
   activityOccurrences: [],
-  variables: { process: { bindings: [] }, activities: [] },
+  variables: { processInterfaces: [], process: { bindings: [] }, activities: [] },
   taskActivations: [],
   messageActivations: [],
   timerActivations: [{ elementId: "TimerCatch_1", count: 1 }],
@@ -239,6 +239,20 @@ test("a resumable checkpoint is accepted unchanged", () => {
     requireBpmnWorkflowContinuationStateV1(resumable, program, instanceId),
     resumable,
   );
+});
+
+test("continuation requires the Process interface collection without a legacy default", () => {
+  const { processInterfaces: omitted, ...legacyVariables } = resumable.variables;
+  assert.deepEqual(omitted, []);
+  assert.throws(() => requireBpmnWorkflowContinuationStateV1(
+    { ...resumable, variables: legacyVariables }, program, instanceId,
+  ));
+  for (const processInterfaces of [null, {}, [{ owner: {}, inputs: [], outputs: [] }]]) {
+    assert.throws(() => requireBpmnWorkflowContinuationStateV1(
+      { ...resumable, variables: { ...resumable.variables, processInterfaces } },
+      program, instanceId,
+    ));
+  }
 });
 
 test("an effect-local scope crosses continuation with its discriminated owner", () => {

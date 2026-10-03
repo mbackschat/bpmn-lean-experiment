@@ -18,12 +18,6 @@ inductive ProcessControl where
   | failed (instanceId : SemanticId) (failure : CompensationHandlerFailure)
   deriving Repr, DecidableEq
 
-structure ScopeOccurrenceId where
-  processInstanceId : SemanticId
-  definitionScopeId : DefinitionScopeId
-  activation : Nat
-  deriving Repr, DecidableEq
-
 structure RuntimeScopeOccurrence where
   id : ScopeOccurrenceId
   parent : Option ScopeOccurrenceId

@@ -204,6 +204,7 @@ theorem scopeCreation_region_frame
     unfold selectInternalScopeCreation? at selection
     obtain ⟨_, _, selection⟩ := Option.bind_eq_some_iff.mp selection
     cases creationOperation
+    all_goals try (split at selection)
     all_goals first
       | contradiction
       | obtain ⟨_, _, selection⟩ := Option.bind_eq_some_iff.mp selection

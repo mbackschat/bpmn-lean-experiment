@@ -53,8 +53,9 @@ theorem prepared_data_arm_candidate_singleton
   obtain ⟨runtimeProcess, runtimeProcessEq, newStartEq⟩ := Option.bind_eq_some_iff.mp startEq
   have newStartExact := Option.some.inj newStartEq
   subst newStart
+  obtain ⟨host, hosted⟩ := dataArmingHostValid_running running
   have processAligned := candidateProcessIdForDefinitionScope_eq_processIdForOwner
-    program state owner runtimeProcess owner.processInstanceId programValid running structural live
+    program state owner runtimeProcess host programValid hosted structural live
       runtimeProcessEq
   obtain ⟨binding, operationSelection, scopeSelection, scopeMatches⟩ :=
     exactProgramSelection_parts program contract.operation owner programValid selected
@@ -98,8 +99,9 @@ theorem prepared_data_arm_lifecycle_singleton
       openBefore prepared
   obtain ⟨owner, _, _, _, running, _, _, _, _, _, _, _, _, _⟩ :=
     prepareInternalDataArmingContract_facts program state contract patch prepared
+  obtain ⟨host, hosted⟩ := dataArmingHostValid_running running
   have validities := projectOpenFlowNodeOccurrences_validities program state current
-    owner.processInstanceId running beforeEq
+    host hosted beforeEq
   have candidate := prepared_data_arm_candidate_singleton program state contract patch commandId
     transitionIndex newStart programValid validities.1 prepared started
   refine ⟨newStart, started, single_start_candidate_accepted program state _ contract.operation

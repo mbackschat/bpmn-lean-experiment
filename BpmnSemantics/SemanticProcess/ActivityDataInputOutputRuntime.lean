@@ -1,6 +1,6 @@
 import BpmnSemantics.SemanticProcess.ActivityDataInput
 import BpmnSemantics.SemanticProcess.ActivityDataOutput
-import BpmnSemantics.SemanticProcess.ValueDomain
+import BpmnSemantics.SemanticProcess.ActivityDataEndpointRuntime
 
 /-! # Composed direct Activity data input and output
 
@@ -24,15 +24,10 @@ def dataInputOutputRunningInstance? (state : RuntimeState) : Option SemanticId :
   | .running instanceId => some instanceId
   | _ => none
 
-/-- The composed profile admits only String/null at activation, including injected ready states;
-`runtimeStateWellFormed` does not constrain the Process binding value domain. -/
-def dataInputOutputSourceBinding? (state : RuntimeState)
-    (directInput : DirectActivityDataInput) : Option VariableBinding := do
-  let binding ← dataInputSourceBinding? state directInput
-  if variableValueAdmitted activityDataInputOutputUserTaskProfileId .processStart binding.value then
-    some binding
-  else
-    none
+/-- Scalar selection is keyed by the selected token owner, not hosting control (CDATA-OWNER-01). -/
+def dataInputOutputSourceBinding? (state : RuntimeState) (owner : ScopeOccurrenceId)
+    (directInput : DirectActivityDataInput) : Option VariableBinding :=
+  readActivityDataInput? state owner directInput
 
 /-- `ADIO-READY-01` and `ADIO-SCOPE-01`. Activate one composed Activity only after selecting one
 exact Process input binding, and create its wait, record, and sole input-bearing local scope
@@ -42,8 +37,9 @@ def activateDataInputOutputUserTask? (state : RuntimeState)
     (taskName : Option String) (directInput : DirectActivityDataInput) :
     Option RuntimeState := do
   let owner ← onlyTokenOwner? state input
-  let instanceId ← dataInputOutputRunningInstance? state
-  let source ← dataInputOutputSourceBinding? state directInput
+  let _ ← dataInputOutputRunningInstance? state
+  let instanceId := owner.processInstanceId
+  let source ← dataInputOutputSourceBinding? state owner directInput
   let taskActivation := activationCount state taskId + 1
   let activityActivation := activityActivationCount state taskId + 1
   let activityOwner : ActivityOccurrenceId :=
@@ -151,8 +147,7 @@ def dataInputOutputLocalScope? (state : RuntimeState) (record : ActivityOccurren
       match scope.bindings with
       | [binding] =>
           if binding.name = directInput.targetDataInputId &&
-              variableValueAdmitted activityDataInputOutputUserTaskProfileId
-                .processStart binding.value then
+              processInterfaceScalar binding.value then
             some scope
           else
             none
@@ -175,17 +170,14 @@ def completeDataInputOutputUserTask? (program : Program) (state : RuntimeState)
     let variables ← removeActivityOccurrenceVariableScope state.variables
       (activityOwnerForRecord record)
     if record.attachedHandlers.isEmpty then
+      let routed ← writeActivityDataOutput? state task.owner variables contract.directOutput filled
       pure
         { state with
           waits := state.waits.erase task
           tokens := addToken state.tokens task.output task.owner
           activityOccurrences := state.activityOccurrences.filter fun candidate =>
             !sameActivityOccurrence candidate record
-          variables :=
-            { variables with
-              process :=
-                { bindings := mergeProcessVariableBindings variables.process.bindings
-                    [associatedProcessBinding contract.directOutput filled] } } }
+          variables := routed }
     else
       none
   else

@@ -85,7 +85,8 @@ theorem preparedReturn_effect_program_validity (program : Program) (before : Run
       flowNodeOccurrenceEffectProgramValidity program after = true := by
   obtain ⟨after, record, root, applied, _, _, _, _, quiet, actual, scopes, _, _, _, effects, incidents, _⟩ :=
     preparedReturn_quiescent_fields program before expected id origin process definition output prepared valid found
-  let restored := { after with variables := before.variables }
+  let restored := { after with variables :=
+    { after.variables with process := before.variables.process, activities := before.variables.activities } }
   have restoredValid : flowNodeOccurrenceEffectProgramValidity program restored = true :=
     regional_child_effect_program_validity program before restored root.id prior quiet scopes effects incidents rfl
   let keep := fun dataScope : ActivityVariableScope =>

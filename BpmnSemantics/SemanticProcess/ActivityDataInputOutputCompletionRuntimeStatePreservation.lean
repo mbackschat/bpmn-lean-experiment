@@ -1,4 +1,5 @@
 import BpmnSemantics.SemanticProcess.TransactionCompensationProfileDomains
+import BpmnSemantics.SemanticProcess.ProfileAdmission
 import BpmnSemantics.SemanticProcess.ActivityDataInputOutputActivationRuntimeStatePreservation
 
 /-! # Composed Activity-data completion runtime-state preservation
@@ -176,7 +177,8 @@ theorem dataInputOutputCompletionStep_preserves_runtimeStateWellFormed
   cases transition
   case complete =>
       rename_i instanceId processInstanceId taskId activation submittedValues contract filled
-        running declared available live success routed
+        relationTask relationRecord relationVariables running declared available live
+        relationJoined relationRemoved success routed
       obtain ⟨runningInstance, contract', filled', task, record, scope, variables, runningFound,
         declared', available', liveFound, joined, scopeFound, removed, handlers, waitsAfter,
         recordsAfter, variablesAfter⟩ := dataInputOutputCompletionJoin success
@@ -184,13 +186,22 @@ theorem dataInputOutputCompletionStep_preserves_runtimeStateWellFormed
       subst contract'
       have filledEq : filled' = filled := Option.some.inj (available'.symm.trans available)
       subst filled'
+      obtain ⟨contractTaskEq, origin, operationMember⟩ :=
+        dataInputOutputTaskContract_facts declared
+      obtain ⟨_, propertyId, endpoint⟩ := activityDataInputOutputProfile_property_endpoints
+        program profile capabilities contract.operationId origin contract.input contract.output
+        contract.taskId contract.taskName contract.directInput contract.directOutput operationMember
+      have routedProperty := (writeActivityDataOutput_sound variablesAfter).2
+      simp only [endpoint] at routedProperty
+      have routedVariables := routedProperty.2
       have valid : dataInputOutputRuntimeJoinValid program contract task record = true := by
         cases validEq : dataInputOutputRuntimeJoinValid program contract task record
         · unfold completeDataInputOutputUserTask? at success
           simp [runningFound, declared, available, liveFound, joined, validEq] at success
         · rfl
       unfold completeDataInputOutputUserTask? at success
-      simp [runningFound, declared, available, liveFound, joined, valid, scopeFound, removed] at success
+      simp [runningFound, declared, available, liveFound, joined, valid, scopeFound, removed,
+        variablesAfter] at success
       let successor : RuntimeState :=
         { before with
           waits := before.waits.erase task
@@ -201,17 +212,15 @@ theorem dataInputOutputCompletionStep_preserves_runtimeStateWellFormed
             { variables with
               process :=
                 { bindings := mergeProcessVariableBindings variables.process.bindings
-                    [associatedProcessBinding contract.directOutput filled] } } }
+                    [associatedProcessBinding propertyId filled] } } }
       have successorEq : after = successor := by
-        exact (by simpa [successor] using success.2.symm)
+        simpa [successor, routedVariables, associatedProcessBinding] using success.2.symm
       subst after
       change runtimeStateWellFormed program expectedInstanceId successor = true
       have taskFacts := dataInputOutputTaskWait_facts liveFound
       obtain ⟨taskMember, _, taskIdEq, _⟩ := taskFacts
       obtain ⟨recordMember, body, bodyEq, bodyNames⟩ :=
         activityOccurrenceForTaskWait_sound joined
-      obtain ⟨contractTaskEq, origin, operationMember⟩ :=
-        dataInputOutputTaskContract_facts declared
       simp only [dataInputOutputRuntimeJoinValid, Bool.and_eq_true,
         decide_eq_true_eq] at valid
       obtain ⟨⟨⟨⟨⟨⟨outputEq, operationScopeEq⟩, taskOwnerIdentity⟩,
@@ -494,7 +503,10 @@ theorem dataInputOutputCompletionStep_preserves_runtimeStateWellFormed
       have transaction : (program.identity.semanticProfile == transactionCancellationCheckpointProfileId) = false := by
         rw [profile]
         decide +kernel
-      simp only [programProfileCapabilitiesValid, transaction, Bool.false_eq_true, legacy,
+      have callData : (program.identity.semanticProfile == callDataCheckpointProfileId) = false := by
+        rw [profile]
+        decide +kernel
+      simp only [programProfileCapabilitiesValid, callData, transaction, Bool.false_eq_true, legacy,
         ↓reduceIte, Bool.and_eq_true] at admitted
       have noSequential := admitted.1.1
       simp [programSequentialMultiInstanceProfileMatches, profile,

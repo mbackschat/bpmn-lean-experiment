@@ -407,6 +407,9 @@ function removeCalledProcessTree(
     ),
     variables: {
       ...state.variables,
+      processInterfaces: state.variables.processInterfaces.filter(
+        ({ owner }) => !removedOwner(owner),
+      ),
       activities: state.variables.activities.filter(
         ({ owner }) =>
           !removedInstanceIds.has(localDataOwnerProcessInstanceId(owner)),

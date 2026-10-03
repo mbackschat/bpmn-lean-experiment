@@ -12,6 +12,11 @@ This contributor map assigns source-file responsibilities inside `@bpmn-lean/sem
 | [deep-readonly.ts](src/deep-readonly.ts) | The project-owned deeply immutable contract utility |
 | [semantic-process-state.ts](src/semantic-process-state.ts) | Committed runtime-state shape: control tokens, scopes, waits, and occurrence records |
 | [checked-process-contract.ts](src/checked-process-contract.ts) | Project-owned checked BPMN graph contract |
+| [call-data-contract.ts](src/call-data-contract.ts) | Empty or scalar Call interfaces with exact owned port/set declarations and caller associations |
+| [call-data-command-admission.ts](src/call-data-command-admission.ts) | Required mapped request, declared caller start names and exact Task-output command fields |
+| [call-data-state-validation.ts](src/call-data-state-validation.ts) | Private Call root/interface bijection, declared scalar ports, completion lifetime and Task/local-scope joins |
+| [call-data-program-admission.ts](src/call-data-program-admission.ts) | Standalone scalar Call Program topology, endpoint ownership and retained identity closure |
+| [call-data-admission.ts](src/call-data-admission.ts) | Singleton correspondence, local references and distinct declaration identities for Call data |
 | [compensation-source-contract.ts](src/compensation-source-contract.ts) | Checkpoint-only checked Compensation subjects, bodies, dependencies, restored binding, and fixed limits |
 | [semantic-process-contract.ts](src/semantic-process-contract.ts) | Immutable Semantic Process IL contract |
 | [compensation-activity-retention-contract.ts](src/compensation-activity-retention-contract.ts) | Hidden boundary Compensation declaration, completion facts, retained-record, and refusal contracts |
@@ -55,9 +60,12 @@ This contributor map assigns source-file responsibilities inside `@bpmn-lean/sem
 | [user-task-metadata.ts](src/user-task-metadata.ts) | Assignment-only User Task metadata, wire-distinct from the legacy form-bearing arm |
 | [variable-value.ts](src/variable-value.ts) | Representation-neutral variable-value validation, cloning, ordering, and equality |
 | [semantic-process-data.ts](src/semantic-process-data.ts) | Effect-occurrence input mappings and Activity variable-scope lifecycle |
+| [process-interface-data.ts](src/process-interface-data.ts) | Private scalar Process-interface selection, snapshot insertion and isolated output replacement by complete scope occurrence |
 | [local-data-owner.ts](src/local-data-owner.ts) | Closed effect-or-Activity ownership identity for Activity-local variable scopes |
 | [call-activity-admission.ts](src/call-activity-admission.ts) | Cross-definition invocation and return pairing |
 | [semantic-process-call-runtime.ts](src/semantic-process-call-runtime.ts) | Called-instance lifecycle and subtree cleanup |
+| [semantic-process-call-data-runtime.ts](src/semantic-process-call-data-runtime.ts) | Atomic scalar Call input snapshot and required-output copy-back over the control primitives |
+| [internal-transition-call-data-preparation.ts](src/internal-transition-call-data-preparation.ts) | Retained scalar Call transfer, data dependencies and atomic prepared execution |
 | [effect-transport-material.ts](src/effect-transport-material.ts) | Definition fields stable across compiler-only changes, deliberately distinct from semantic identity |
 | [semantic-process-error-runtime.ts](src/semantic-process-error-runtime.ts) | Error propagation and handler selection |
 | [semantic-process-scope-cancellation.ts](src/semantic-process-scope-cancellation.ts) | Shared scope-subtree classification and regional cancellation |
@@ -79,6 +87,7 @@ This contributor map assigns source-file responsibilities inside `@bpmn-lean/sem
 | [semantic-process-activity-data-input-runtime.ts](src/semantic-process-activity-data-input-runtime.ts) | A User Task occurrence whose entry waits on one Process binding and copies it into the Activity's own scope |
 | [semantic-process-activity-data-input-output-runtime.ts](src/semantic-process-activity-data-input-output-runtime.ts) | One User Task occurrence whose input-dependent activation and exact output completion share the same input-bearing Activity-local scope |
 | [activity-data-input-contract.ts](src/activity-data-input-contract.ts) | The Task-neutral value describing one direct Data Input Association |
+| [activity-data-endpoint.ts](src/activity-data-endpoint.ts) | Closed Property/Process-port endpoints, exact identity validation and owner-bound data access |
 | [activity-data-input-observation.ts](src/activity-data-input-observation.ts) | The one-element selected-input collection an open task publishes |
 | [semantic-process-activity-data-output-runtime.ts](src/semantic-process-activity-data-output-runtime.ts) | A User Task occurrence whose accepted completion fills one declared output and writes it through the association |
 | [activity-data-output-contract.ts](src/activity-data-output-contract.ts) | The Task-neutral value describing one direct Data Output Association |

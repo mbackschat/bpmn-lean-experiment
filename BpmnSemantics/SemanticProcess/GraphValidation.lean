@@ -20,7 +20,7 @@ private def operationInputs : SemanticOperation → List ControlPlaceId
   | .enterScope _ _ input _ _
   | .enterBoundedScope _ _ input _ _ _
   | .enterMonitoredScope _ _ input _ _ _
-  | .invokeProcess _ _ input _ _ _ _
+  | .invokeProcess _ _ input _ _ _ _ _
   | .awaitUserTask _ _ input _ _
   | .awaitDataInputUserTask _ _ input _ _ _ _
   | .awaitDataInputOutputUserTask _ _ input _ _ _ _ _
@@ -50,8 +50,8 @@ private def operationInputs : SemanticOperation → List ControlPlaceId
 
 def operationOutputs : SemanticOperation → List ControlPlaceId
   | .initiate _ _ output
-  | .invokeProcess _ _ _ _ _ output _
-  | .returnProcess _ _ _ _ output
+  | .invokeProcess _ _ _ _ _ output _ _
+  | .returnProcess _ _ _ _ output _
   | .awaitUserTask _ _ _ output _
   | .awaitDataInputUserTask _ _ _ output _ _ _
   | .awaitDataInputOutputUserTask _ _ _ output _ _ _ _
@@ -199,10 +199,10 @@ def operationRespectsScopes (program : Program)
             placesOwnedBy program [boundaryTimer.output] owner &&
             (definitionScope? program childScopeId).any fun scope =>
               scope.parentScopeId == some owner
-      | .invokeProcess _ _ input _ calledRoot childEntry _ =>
+      | .invokeProcess _ _ input _ calledRoot childEntry _ _ =>
           placesOwnedBy program [input] owner &&
             placesOwnedBy program [childEntry] calledRoot
-      | .returnProcess _ _ _ calledRoot callerOutput =>
+      | .returnProcess _ _ _ calledRoot callerOutput _ =>
           calledRoot = owner &&
             (definitionScope? program owner).any (·.parentScopeId.isNone) &&
             placesOwnedBy program [callerOutput] entryRootId

@@ -152,7 +152,9 @@ theorem preparedRegional_control_filters (program : Program) (before after : Run
     rw [same, rootInside] at outside
     contradiction
   cases operation with
-  | returnProcess id origin process definition output =>
+  | returnProcess id origin process definition output data =>
+      have empty := prepareInternalRegional_return_data_empty program before id origin process definition output data prepared found
+      subst data
       obtain ⟨returned, record, root, returnedApply, kind, rootEq, _, _, _, update,
         scopeFields, _, _, _, _, _, _, branchFields, _, _⟩ :=
         preparedReturn_quiescent_fields program before hosting id origin process definition output prepared valid found

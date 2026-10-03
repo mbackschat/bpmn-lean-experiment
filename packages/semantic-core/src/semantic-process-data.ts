@@ -164,6 +164,7 @@ export function completeActivityVariableScope(
     return null;
   }
   return {
+    ...variables,
     process: { bindings: processBindings },
     activities: variables.activities.filter((scope) => scope !== activity),
   };

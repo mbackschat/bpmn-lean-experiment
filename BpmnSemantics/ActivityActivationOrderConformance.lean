@@ -24,7 +24,8 @@ private def state : RuntimeState :=
     activityActivations :=
       [{ taskId := ⟨"a"⟩, count := 7 }, { taskId := ⟨"z"⟩, count := 2 }]
     variables := { process := { bindings := [{ name := "source", value := .string "value" }] }
-                   activities := [] } }
+                   activities := []
+                   processInterfaces := [] } }
 
 private def boundary : BoundaryTimerArm :=
   { elementId := ⟨"deadline"⟩, durationMs := 1000, output := ⟨"expired"⟩,
@@ -43,7 +44,7 @@ private def scopeAfter : RuntimeState :=
 
 private def inputAfter : Option RuntimeState :=
   activateDataInputUserTask? state ⟨"input"⟩ ⟨"output"⟩ ⟨"z"⟩ none
-    { associationId := "association", sourcePropertyId := "source",
+    { associationId := "association", source := .property "source",
       targetDataInputId := "input-value", targetDataInputName := none }
 
 private def outputAfter : Option RuntimeState :=

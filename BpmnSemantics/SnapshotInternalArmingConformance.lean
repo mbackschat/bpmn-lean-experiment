@@ -72,7 +72,7 @@ private def ready : RuntimeState :=
     scopeOccurrences := [{ id := owner, parent := none }]
     scopeActivations := [{ scopeId := rootDefinitionScopeId processId, count := 1 }]
     tokens := ["a0", "b0", "c0", "d0", "e0", "f0"].map fun name => { placeId := ⟨name⟩, owner }
-    variables := { process := { bindings := [{ name := "v", value := .string "x" }] }, activities := [] }
+    variables := { process := { bindings := [{ name := "v", value := .string "x" }] }, activities := [], processInterfaces := [] }
     compensationParentContextRetentions := [.provisional { id := owner, parent := none } ⟨"scope:Z"⟩] }
 
 private def prepared : List PreparedInternalArming :=

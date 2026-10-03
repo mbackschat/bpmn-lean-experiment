@@ -62,7 +62,7 @@ theorem makeInternalDataArmingPatch_ordinary_frame (program : Program) (state : 
   simp only [internalActivationCount] at taskFrame
   simp only [makeInternalDataArmingPatch, dataInputOutputActivityRecord,
     armingTimeRead_frame, taskFrame, activityActivationCount,
-    ordinary_arming_activity_counts]
+    ordinary_arming_activity_counts, dataInputOutputRunningInstance?, armingControlRead_frame]
 
 /-- Complete data preparation survives any independent ordinary arm, including Effect locals. -/
 theorem prepareInternalDataArmingContract_ordinary_preserved
@@ -93,10 +93,13 @@ theorem prepareInternalDataArmingContract_ordinary_preserved
   have ownerFrame := armingOwnerRead_frame state ordinary contract.input inputDistinct.symm
   have anchorFrame := armingOpenAnchorRead_frame state ordinary _ occurrenceDistinct.symm
   have sourceFrame := dataArmingBindings_process_frame state
-    (applyInternalArmingPatch state ordinary) contract.data
-    (armingProcessVariablesRead_frame state ordinary)
+    (applyInternalArmingPatch state ordinary) owner contract.data
+    (armingControlRead_frame state ordinary) (armingProcessVariablesRead_frame state ordinary)
+    (by cases written : ordinary.write <;> simp [applyInternalArmingPatch, written])
+  have hostFrame : dataArmingHostValid (applyInternalArmingPatch state ordinary) owner contract.data = true := by
+    simpa only [dataArmingHostValid, armingControlRead_frame] using running
   simp [prepareInternalDataArmingContract?, ownerFrame, owned,
-    armingControlRead_frame, running, armingLiveOwnerRead_frame, selected, live,
+    hostFrame, armingLiveOwnerRead_frame, selected, live,
     originFound, sourceFrame, sourceFound, patchFrame, unique, anchorFrame,
     anchorAbsent, ordinary_arming_activity_scope_read, ordinary_arming_activity_records]
   simpa using And.intro scopeAbsent recordAbsent

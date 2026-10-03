@@ -214,7 +214,7 @@ private theorem return_updates_commute (before afterLeft afterRight : RuntimeSta
   congr 1
   all_goals first
   | exact filters _ _ _
-  | (congr 1; exact filters _ _ _)
+  | (congr 1 <;> exact filters _ _ _)
 
 private theorem regional_return_pair_fields (program : Program)
     (before afterLeft afterRight finalLR finalRL : RuntimeState) (hosting : SemanticId)
@@ -380,7 +380,7 @@ private theorem cancellation_fields_commute (before afterLeft afterRight : Runti
   congr 1
   all_goals first
   | exact filters _ _ _
-  | (congr 1; exact filters _ _ _)
+  | (congr 1 <;> exact filters _ _ _)
 
 private theorem regional_cancellation_pair_fields (program : Program)
     (before afterLeft afterRight finalLR finalRL : RuntimeState) (hosting : SemanticId)

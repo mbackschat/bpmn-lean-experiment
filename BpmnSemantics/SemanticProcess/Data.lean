@@ -9,6 +9,12 @@ namespace BpmnSemantics.SemanticProcess
 
 open BpmnSemantics
 
+structure ScopeOccurrenceId where
+  processInstanceId : SemanticId
+  definitionScopeId : DefinitionScopeId
+  activation : Nat
+  deriving Repr, DecidableEq
+
 /-- Process-owned bindings that form the public variable projection. -/
 structure ProcessVariableScope where
   bindings : List VariableBinding
@@ -31,15 +37,24 @@ structure ActivityVariableScope where
   bindings : List VariableBinding
   deriving Repr, DecidableEq
 
-/-- The single runtime representation for Process and Activity-local data. -/
+/-- Passive callable interface data belongs to the complete called-root occurrence, separate from caller Properties. An absent output is unavailable; a present null remains available (CDATA-OWNER-01). -/
+structure ProcessInterfaceScope where
+  owner : ScopeOccurrenceId
+  inputs : List VariableBinding
+  outputs : List VariableBinding
+  deriving Repr, DecidableEq
+
+/-- The single runtime representation for Process, callable-interface, and Activity-local data. -/
 structure ScopedVariables where
   process : ProcessVariableScope
   activities : List ActivityVariableScope
+  processInterfaces : List ProcessInterfaceScope
   deriving Repr, DecidableEq
 
 def emptyScopedVariables : ScopedVariables :=
   { process := { bindings := [] }
-    activities := [] }
+    activities := []
+    processInterfaces := [] }
 
 private def insertVariableBinding (binding : VariableBinding) :
     List VariableBinding → List VariableBinding
@@ -322,10 +337,24 @@ def completeActivityVariableScope
       | none => none
       | some processBindings =>
           some
-            { process := { bindings := processBindings }
+            { variables with
+              process := { bindings := processBindings }
               activities :=
                 variables.activities.filter fun scope =>
                   !activityScopeMatches owner scope }
   | _ => none
+
+theorem completeActivityVariableScope_preserves_processInterfaces
+    {variables completed : ScopedVariables} {owner : EffectOccurrenceId}
+    {outputMappings : List VariableMapping} {result : EffectExecutionResult}
+    (completion : completeActivityVariableScope variables owner outputMappings result = some completed) :
+    completed.processInterfaces = variables.processInterfaces := by
+  unfold completeActivityVariableScope at completion
+  split at completion
+  · split at completion
+    · simp at completion
+    · cases completion
+      rfl
+  · simp at completion
 
 end BpmnSemantics.SemanticProcess

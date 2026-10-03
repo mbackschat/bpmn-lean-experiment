@@ -16,7 +16,8 @@ theorem running_start_installs_only_process_bindings
     (instanceId : SemanticId) (bindings : List VariableBinding) :
     (runningStartState instanceId bindings).variables =
       { process := { bindings }
-        activities := [] } := by
+        activities := []
+        processInterfaces := [] } := by
   rfl
 
 /-- The selected start data is committed before internal closure reaches the first User Task wait. -/

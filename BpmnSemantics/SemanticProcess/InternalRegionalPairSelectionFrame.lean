@@ -62,34 +62,37 @@ theorem regionalSelection_filter_frame (program : Program) (before after : Runti
   rw [running, hosted]
   dsimp only [Option.bind_some]
   cases operation with
-  | returnProcess id origin process definition output =>
-      dsimp only at found ⊢
-      repeat' first | (solve | simp at found) | split at found
-      all_goals
-        rename_i valid _ record returnCensus processEq definitionEq _ root rootCensus parentless callerCount processCount quiescent
-        cases found
-        have rootIdentity := scope_identity_of_census before record.calledRoot root rootCensus
-        have rootPresent : root ∈ before.scopeOccurrences :=
-          (List.mem_filter.mp (show root ∈ before.scopeOccurrences.filter
-            (fun scope => decide (scope.id = record.calledRoot)) by simp [rootCensus])).1
-        have rootAfter := regional_pair_retained_singleton _ keepScope _ root rootCensus rootKept
-        have callAfter := regional_pair_retained_singleton _ keepCall _ record returnCensus callKept.1
-        have callerAfter := retained_census before.scopeOccurrences keepScope
-          (fun scope => decide (scope.id = record.caller)) (by
-            intro scope member named
-            exact callKept.2 scope member (of_decide_eq_true named))
-        obtain ⟨processRoot, processCensus⟩ := List.length_eq_one_iff.mp processCount
-        have sameRoot : root = processRoot := by
-          have member : root ∈ before.scopeOccurrences.filter (fun scope => decide (
-              scope.id.processInstanceId = record.calledRoot.processInstanceId && scope.parent.isNone)) :=
-            List.mem_filter.mpr ⟨rootPresent, by simp [rootIdentity, parentless]⟩
-          have singleton : root ∈ [processRoot] := by
-            rw [← processCensus]
-            exact member
-          exact List.mem_singleton.mp singleton
-        subst processRoot
-        have processAfter := regional_pair_retained_singleton _ keepScope _ root processCensus rootKept
-        simp_all only [↓reduceIte, List.length_singleton]
+  | returnProcess id origin process definition output data =>
+      cases data with
+      | scalar => simp at found
+      | empty =>
+          dsimp only at found ⊢
+          repeat' first | (solve | simp at found) | split at found
+          all_goals
+            rename_i valid _ record returnCensus processEq definitionEq _ root rootCensus parentless callerCount processCount quiescent
+            cases found
+            have rootIdentity := scope_identity_of_census before record.calledRoot root rootCensus
+            have rootPresent : root ∈ before.scopeOccurrences :=
+              (List.mem_filter.mp (show root ∈ before.scopeOccurrences.filter
+                (fun scope => decide (scope.id = record.calledRoot)) by simp [rootCensus])).1
+            have rootAfter := regional_pair_retained_singleton _ keepScope _ root rootCensus rootKept
+            have callAfter := regional_pair_retained_singleton _ keepCall _ record returnCensus callKept.1
+            have callerAfter := retained_census before.scopeOccurrences keepScope
+              (fun scope => decide (scope.id = record.caller)) (by
+                intro scope member named
+                exact callKept.2 scope member (of_decide_eq_true named))
+            obtain ⟨processRoot, processCensus⟩ := List.length_eq_one_iff.mp processCount
+            have sameRoot : root = processRoot := by
+              have member : root ∈ before.scopeOccurrences.filter (fun scope => decide (
+                  scope.id.processInstanceId = record.calledRoot.processInstanceId && scope.parent.isNone)) :=
+                List.mem_filter.mpr ⟨rootPresent, by simp [rootIdentity, parentless]⟩
+              have singleton : root ∈ [processRoot] := by
+                rw [← processCensus]
+                exact member
+              exact List.mem_singleton.mp singleton
+            subst processRoot
+            have processAfter := regional_pair_retained_singleton _ keepScope _ root processCensus rootKept
+            simp_all only [↓reduceIte, List.length_singleton]
   | completeScope id origin definition output =>
       dsimp only at found ⊢
       split at found

@@ -38,7 +38,7 @@ const limits: BpmnSourceLimits = Object.freeze({
 
 const directInput = {
   associationId: "DataInputAssociation_ClaimSummary",
-  sourcePropertyId: "Property_ClaimSummary",
+  source: { kind: "property", propertyId: "Property_ClaimSummary" },
   targetDataInputId: "DataInput_ClaimSummary",
   targetDataInputName: "Claim summary",
 } as const;
@@ -46,7 +46,7 @@ const directOutput = {
   associationId: "DataOutputAssociation_ClaimDecision",
   sourceDataOutputId: "DataOutput_ClaimDecision",
   sourceDataOutputName: "Claim decision",
-  targetPropertyId: "Property_ClaimDecision",
+  target: { kind: "property", propertyId: "Property_ClaimDecision" },
 } as const;
 
 async function compile(

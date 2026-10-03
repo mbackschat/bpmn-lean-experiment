@@ -11,6 +11,7 @@
  */
 import type { DirectActivityDataInput } from "./activity-data-input-contract.js";
 import type { DirectActivityDataOutput } from "./activity-data-output-contract.js";
+import type { CallDataInterface } from "./call-data-contract.js";
 import type { DirectCatchEventPayloadOutput } from "./catch-event-payload-contract.js";
 import type { CompensationActivityRetentionDeclaration } from "./compensation-activity-retention-contract.js";
 import type { CompensationEventSubProcessSnapshotDeclaration } from "./compensation-event-sub-process-snapshot-contract.js";
@@ -350,7 +351,7 @@ export type AwaitMonitoredUserTaskOperation = OperationBase &
  * One User Task occurrence whose entry both waits and fills one occupied Activity data input.
  *
  * Separate from `awaitUserTask` because enabledness differs: this arm is enabled only while the
- * Process binding named by `directInput.sourcePropertyId` exists, and firing it writes an
+ * Process binding named by `directInput.source` exists, and firing it writes an
  * Activity-owned local scope and an Activity occurrence record that the plain arm never produces.
  * Its `output` is the sole normal outgoing route, taken by the completion command rather than here.
  */
@@ -392,7 +393,7 @@ export type AwaitDataInputOutputUserTaskOperation = OperationBase &
  * decides what an accepted completion must carry. Firing this arm arms an empty Activity-owned local
  * scope and an Activity occurrence record; the completion fills the scope under
  * `directOutput.sourceDataOutputId`, executes the association into the Process binding named by
- * `directOutput.targetPropertyId`, and disposes the scope in the same transition.
+ * `directOutput.target`, and disposes the scope in the same transition.
  */
 export type AwaitDataOutputUserTaskOperation = OperationBase &
   DeepReadonly<{
@@ -528,6 +529,7 @@ export type InvokeProcessOperation = OperationBase &
     calledRootScopeId: string;
     calledEntry: string;
     returnOperationId: string;
+    data: CallDataInterface;
   }>;
 
 export type ReturnProcessOperation = OperationBase &
@@ -536,6 +538,7 @@ export type ReturnProcessOperation = OperationBase &
     calledProcessId: string;
     calledRootScopeId: string;
     callerOutput: string;
+    data: CallDataInterface;
   }>;
 
 /** Consumes one End Event input and clears the live contents of its exact containing occurrence. */

@@ -1,3 +1,5 @@
+import BpmnSemantics.SemanticProcess.CallDataCommandAdmission
+import BpmnSemantics.SemanticProcess.CallDataStateValidation
 import BpmnSemantics.SemanticProcess.Incident
 import BpmnSemantics.SemanticProcess.IncidentCancellation
 import BpmnSemantics.SemanticProcess.MessageStartAdmission
@@ -118,8 +120,11 @@ private def dataInputOutputStartBindingsAdmitted (program : Program)
   match dataInputOutputTaskContracts program, bindings with
   | [_], [] => true
   | [contract], [binding] =>
-      binding.name == contract.directInput.sourcePropertyId &&
-        processDataBindingsAdmitted program.identity.semanticProfile .processStart bindings
+      match contract.directInput.source with
+      | .property propertyId =>
+          binding.name == propertyId &&
+            processDataBindingsAdmitted program.identity.semanticProfile .processStart bindings
+      | .processDataInput _ => false
   | _, _ => false
 
 @[simp] private def dispatchStimulusWithoutCompensationSnapshots (program : Program)
@@ -129,7 +134,9 @@ private def dataInputOutputStartBindingsAdmitted (program : Program)
       match state.control with
       | .notStarted =>
           let bindingsAdmitted :=
-            if program.identity.semanticProfile = structuredCompositionCheckpointProfileId then
+            if program.identity.semanticProfile = callDataCheckpointProfileId then
+              callDataStartBindingsAdmitted program initialVariables
+            else if program.identity.semanticProfile = structuredCompositionCheckpointProfileId then
               structuredCompositionStartBindingsAdmitted program initialVariables
             else if program.identity.semanticProfile = compensationSourceCheckpointProfileId then
               compensationStartDataAdmitted program instanceId initialVariables
@@ -225,7 +232,8 @@ private def dataInputOutputStartBindingsAdmitted (program : Program)
                 taskId.processInstanceId ⟨taskId.elementId.value⟩
                 taskId.activation submittedValues with
             | some successor =>
-                if taskId.processInstanceId = instanceId &&
+                if (taskId.processInstanceId = instanceId ||
+                    callDataCalledTaskInstanceAdmitted program state taskId) &&
                     processDataBindingsAdmitted program.identity.semanticProfile
                       .userTaskCompletion submittedValues then
                   { outcome := .committed, state := successor }
@@ -455,6 +463,8 @@ theorem dispatchStimulus_withSnapshotDeclaration_rejects (program : Program)
 @[simp] private def admitStimulusWithoutCompensationSnapshots (program : Program)
     (state : RuntimeState)
     (stimulus : Stimulus) : ExternalAdmission :=
+  if !callDataRuntimeStateValid program state then { outcome := .rejected, state }
+  else
   match stimulus with
   | .deliverCorrelatedPayloadMessage delivery =>
       admitCorrelatedPayloadMessage program state delivery
@@ -613,6 +623,13 @@ def admitStimulus (program : Program) (state : RuntimeState)
   | none => admitStimulusWithoutCompensationSnapshots program state stimulus
   | some _ => { outcome := .rejected, state }
 
+/-- CDATA-REFUSE-01 rejects malformed owned data before any command mutation. -/
+theorem admitStimulus_invalid_call_data_state (program : Program) (state : RuntimeState)
+    (stimulus : Stimulus) (invalid : callDataRuntimeStateValid program state = false) :
+    admitStimulus program state stimulus = { outcome := .rejected, state } := by
+  cases declared : program.compensationEventSubProcessSnapshots <;>
+    simp [admitStimulus, declared, invalid]
+
 theorem admitStimulus_withSnapshotDeclaration_rejects (program : Program)
     (state : RuntimeState) (stimulus : Stimulus)
     (declaration : CompensationEventSubProcessSnapshotDeclaration)
@@ -647,11 +664,16 @@ private theorem rawCommittedStart_shape (program : Program) (stimulus : Stimulus
       stimulus).outcome = .committed) :
     ∃ variables, runningProgramStartState? program instanceId variables =
       some (admitStimulusWithoutCompensationSnapshots program initialState stimulus).state := by
+  have valid : callDataRuntimeStateValid program initialState = true := by
+    cases checked : callDataRuntimeStateValid program initialState with
+    | false => simp [admitStimulusWithoutCompensationSnapshots, checked] at committed
+    | true => rfl
   cases stimulus <;> simp only at startKind <;> try contradiction
   all_goals subst instanceId
   all_goals
-    simp only [admitStimulusWithoutCompensationSnapshots, initialState,
-      dispatchStimulusWithoutCompensationSnapshots] at committed ⊢
+    simp only [admitStimulusWithoutCompensationSnapshots, valid, Bool.not_true,
+      Bool.false_eq_true, ↓reduceIte] at committed ⊢
+    simp only [initialState, dispatchStimulusWithoutCompensationSnapshots] at committed ⊢
   case startProcess commandId processId requested variables =>
     refine ⟨variables, ?_⟩
     cases built : runningProgramStartState? program requested variables <;> grind

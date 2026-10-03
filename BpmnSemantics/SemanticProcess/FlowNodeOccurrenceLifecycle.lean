@@ -149,7 +149,7 @@ def flowNodeSelectedOperationOwner? (state : RuntimeState) :
   | .enterScope _ _ input _ _
   | .enterBoundedScope _ _ input _ _ _
   | .enterMonitoredScope _ _ input _ _ _
-  | .invokeProcess _ _ input _ _ _ _
+  | .invokeProcess _ _ input _ _ _ _ _
   | .awaitUserTask _ _ input _ _
   | .awaitDataInputUserTask _ _ input _ _ _ _
   | .awaitDataInputOutputUserTask _ _ input _ _ _ _ _
@@ -180,7 +180,7 @@ def flowNodeSelectedOperationOwner? (state : RuntimeState) :
       | [token] => some token.owner
       | _ => none
   | .synchronizeSelected _ _ _ _ selectionKey => selectedJoinOwner? state selectionKey
-  | .returnProcess id origin _ _ _ => uniqueReturnOwner? state id origin
+  | .returnProcess id origin _ _ _ _ => uniqueReturnOwner? state id origin
   | .completeParallelMultiInstanceUserTask .. => none
   | .completeScope _ _ scopeId _ => uniqueCompletingScopeOwner? state scopeId
 
@@ -654,14 +654,14 @@ def candidateFlowNodeOccurrenceDeltaForOperation? (program : Program) (before af
         | [child] => some child
         | _ => none
       pure (canonicalFlowNodeOccurrenceDelta [← candidateScopeStart? program operation owner child] [])
-  | .invokeProcess _ origin _ _ _ _ _ =>
+  | .invokeProcess _ origin _ _ _ _ _ _ =>
       let activation := callActivationCount before origin.elementId + 1
       let id := occurrenceId owner.processInstanceId origin.elementId activation
       let record ← match after.calledProcessOccurrences.filter fun record => decide (record.id = id) with
         | [record] => some record
         | _ => none
       pure (canonicalFlowNodeOccurrenceDelta [← candidateCallStart? program operation owner record] [])
-  | .returnProcess id origin _ _ _ =>
+  | .returnProcess id origin _ _ _ _ =>
       let record ← match before.calledProcessOccurrences.filter fun record =>
           decide (record.returnOperationId = id && record.id.elementId.value = origin.elementId.value) with
         | [record] => some record

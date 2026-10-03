@@ -6,6 +6,7 @@ import type {
   SemanticOperation,
 } from "./semantic-process-contract.js";
 import { isWellFormedWireString } from "./wire.js";
+import { callDataInterfaceValid, isCallDataInterface, sameCallDataInterface } from "./call-data-admission.js";
 
 type OperationEdge = Readonly<{ source: string; target: string }>;
 
@@ -23,13 +24,15 @@ export function isWellFormedInvokeProcessOperation(
       "calledRootScopeId",
       "calledEntry",
       "returnOperationId",
+      "data",
     ]) &&
     isPlaceReference(value.input, placeIds) &&
     isNonEmptyString(value.calledProcessId) &&
     isNonEmptyString(value.calledRootScopeId) &&
     scopeOrigins.has(value.calledRootScopeId) &&
     isPlaceReference(value.calledEntry, placeIds) &&
-    isNonEmptyString(value.returnOperationId);
+    isNonEmptyString(value.returnOperationId) &&
+    hasOwnedCallData(value);
 }
 
 export function isWellFormedReturnProcessOperation(
@@ -44,11 +47,13 @@ export function isWellFormedReturnProcessOperation(
       "calledProcessId",
       "calledRootScopeId",
       "callerOutput",
+      "data",
     ]) &&
     isNonEmptyString(value.calledProcessId) &&
     isNonEmptyString(value.calledRootScopeId) &&
     scopeOrigins.has(value.calledRootScopeId) &&
-    isPlaceReference(value.callerOutput, placeIds);
+    isPlaceReference(value.callerOutput, placeIds) &&
+    hasOwnedCallData(value);
 }
 
 /** Requires each invocation to cross from the entry root into one exact called-root return pair. */
@@ -97,7 +102,8 @@ export function callOperationsArePaired(
         returned.origin.kind === SemanticOriginKind.BpmnElement &&
         returned.origin.elementId === invoke.origin.elementId &&
         returned.calledProcessId === invoke.calledProcessId &&
-        returned.calledRootScopeId === invoke.calledRootScopeId;
+        returned.calledRootScopeId === invoke.calledRootScopeId &&
+        sameCallDataInterface(invoke.data, returned.data);
     }) &&
     returns.every((returned) =>
       invokes.filter(({ returnOperationId }) => returnOperationId === returned.id)
@@ -149,4 +155,11 @@ function hasOnlyKeys(
 
 function isNonEmptyString(value: unknown): value is string {
   return isWellFormedWireString(value) && value.length > 0;
+}
+
+function hasOwnedCallData(value: Record<string, unknown>): boolean {
+  const origin = value.origin;
+  return typeof origin === "object" && origin !== null && "elementId" in origin &&
+    isNonEmptyString(origin.elementId) && isNonEmptyString(value.calledProcessId) &&
+    isCallDataInterface(value.data) && callDataInterfaceValid(value.data, origin.elementId, value.calledProcessId);
 }

@@ -65,7 +65,7 @@ theorem makeInternalDataArmingPatch_timer_task_frame
   simp only [activationCount, activityActivationCount] at taskFrame activityFrame
   simp only [makeInternalDataArmingPatch, makeInternalTimerTaskPatch, applyInternalTimerTaskPatch,
     applyInternalArmingPatch, dataInputOutputActivityRecord, activationCount,
-    activityActivationCount, taskFrame, activityFrame]
+    activityActivationCount, dataInputOutputRunningInstance?, taskFrame, activityFrame]
 
 theorem makeInternalTimerTaskPatch_data_frame
     (program : Program) (state : RuntimeState)
@@ -147,9 +147,9 @@ theorem prepareInternalDataArmingContract_timer_task_preserved
     rcases member with rfl | member
     · simp [identities, bodies]
     · exact List.any_eq_false.mp recordAbsent record member
-  have runningFrame : after.control = .running dataOwner.processInstanceId := running
+  have runningFrame : dataArmingHostValid after dataOwner dataContract.data = true := running
   have liveFrame : exactLiveOccurrence after dataOwner = true := live
-  have sourceFrame : dataArmingBindings? after dataContract.data = some source := sourceFound
+  have sourceFrame : dataArmingBindings? after dataOwner dataContract.data = some source := sourceFound
   have scopeFrame : after.variables.activities.any
       (activityOccurrenceScopeMatches (activityOwnerForRecord data.record)) = false := scopeAbsent
   change prepareInternalDataArmingContract? program after dataContract = some data

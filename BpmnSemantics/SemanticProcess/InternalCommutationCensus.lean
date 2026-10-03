@@ -42,7 +42,7 @@ def semanticOperationInternalFamily : SemanticOperation → InternalOperationFam
   | .awaitParallelMultiInstanceUserTask _ _ _ _ _ _ _ _ _ _
   | .awaitEventRace _ _ _ _ _ => .compositeWaitAndActivityArming
   | .enterScope _ _ _ _ _
-  | .invokeProcess _ _ _ _ _ _ _ => .scopeCreationAndCallInvocation
+  | .invokeProcess _ _ _ _ _ _ _ _ => .scopeCreationAndCallInvocation
   | .duplicate _ _ _ _
   | .synchronize _ _ _ _
   | .choose _ _ _ _ _ _
@@ -50,7 +50,7 @@ def semanticOperationInternalFamily : SemanticOperation → InternalOperationFam
   | .synchronizeSelected _ _ _ _ _ => .localControlTransformation
   | .mergeExclusive _ _ _ _
   | .reachNoneEnd _ _ _ => .mergeAndOrdinaryEnd
-  | .returnProcess _ _ _ _ _
+  | .returnProcess _ _ _ _ _ _
   | .completeScope _ _ _ _
   | .throwError _ _ _ _ _
   | .terminateScope _ _ _ _ => .scopeReturnCompletionAndInterruption

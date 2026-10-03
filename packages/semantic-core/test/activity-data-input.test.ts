@@ -364,3 +364,18 @@ test("a second locally owned binding publishes no input collection either", () =
     undefined,
   ]);
 });
+
+test("standalone input arming refuses a Process input endpoint even when its owned port is available", async () => {
+  const { armDataInputUserTask } = await import(
+    new URL("../dist/semantic-process-activity-data-input-runtime.js", import.meta.url).href
+  ) as typeof import("../src/semantic-process-activity-data-input-runtime.ts");
+  const declaration = dataInputProgram.operations.find((operation) => operation.kind === SemanticOperationKind.AwaitDataInputUserTask);
+  assert.ok(declaration?.kind === SemanticOperationKind.AwaitDataInputUserTask);
+  const state = committed(initialState, startWithoutReviewContext);
+  const withInput: RuntimeState = { ...state, variables: { ...state.variables,
+    processInterfaces: [{ owner, inputs: [{ name: "ProcessInput", value: { kind: VariableValueKind.Null } }], outputs: [] }] } };
+  const snapshot = structuredClone(withInput);
+  assert.equal(armDataInputUserTask({ ...declaration, directInput: { ...declaration.directInput,
+    source: { kind: "processDataInput", dataInputId: "ProcessInput" } } }, withInput, owner), null);
+  assert.deepEqual(withInput, snapshot);
+});

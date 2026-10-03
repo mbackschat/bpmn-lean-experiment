@@ -311,7 +311,7 @@ private def lowerNode (source : CheckedProcess) :
               (firstPlace (incomingPlaces source id))
               (childEntryPlace source childScopeId)
               childScopeId, scopeId)
-  | .callActivity id calledProcessId => do
+  | .callActivity id calledProcessId data => do
       let scopeId ← checkedNodeScopeId? source id
       let calledRoot ← source.definitionScopes.find? fun scope =>
         decide (scope.parentScopeId.isNone &&
@@ -324,7 +324,7 @@ private def lowerNode (source : CheckedProcess) :
           calledProcessId
           calledRoot.id
           (childEntryPlace source calledRoot.id)
-          (returnProcessOperationId id), scopeId)
+          (returnProcessOperationId id) data, scopeId)
   | .boundaryErrorEvent .. => none
   -- The deadline has no operation of its own: it belongs to the Activity it is attached to, so no
   -- program can express the two waits as unrelated siblings.
@@ -618,16 +618,16 @@ private def lowerScopeCompletion (source : CheckedProcess)
   else if scope.parentScopeId.isNone &&
       scope.originElementId.value ≠ source.processId.value then
     match source.nodes.filter fun
-        | .callActivity _ calledProcessId =>
+        | .callActivity _ calledProcessId _ =>
             calledProcessId.value = scope.originElementId.value
         | _ => false with
-    | [.callActivity callId calledProcessId] => some
+    | [.callActivity callId calledProcessId data] => some
         (.returnProcess
           (returnProcessOperationId callId)
           { elementId := callId }
           calledProcessId
           scope.id
-          (firstPlace (outgoingPlaces source callId)), scope.id)
+          (firstPlace (outgoingPlaces source callId)) data, scope.id)
     | _ => none
   else
     let parentOutput := scope.parentScopeId.map fun _ =>

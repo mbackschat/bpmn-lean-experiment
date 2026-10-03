@@ -28,7 +28,7 @@ def selectInternalRegional? (program : Program) (state : RuntimeState)
     (operation : SemanticOperation) : Option InternalRegionalSelection :=
   (runningInstance? state).bind fun _ => do
   match operation with
-  | .returnProcess id origin process definition _ =>
+  | .returnProcess id origin process definition _ .empty =>
       if calledProcessAssociationsValid state then
         match state.calledProcessOccurrences.filter (fun record =>
             decide (record.returnOperationId = id && record.id.elementId.value = origin.elementId.value)) with
@@ -90,6 +90,14 @@ def selectInternalRegional? (program : Program) (state : RuntimeState)
       | _ => none
   | _ => none
 
+/-- CDATA-OUTPUT-01 requires scalar return to prepare its required output before disposal. -/
+theorem regionalSelection_scalar_return_refused (program : Program) (state : RuntimeState)
+    (id : OperationId) (origin : BpmnElementOrigin) (process : ProcessId)
+    (definition : DefinitionScopeId) (output : ControlPlaceId) (data : ScalarCallData) :
+    selectInternalRegional? program state
+      (.returnProcess id origin process definition output (.scalar data)) = none := by
+  cases control : state.control <;> simp [selectInternalRegional?, runningInstance?, control]
+
 /-- Exact matching Error selection remains available for arbitrary occurrence identities. -/
 theorem regionalSelection_error_of_facts (program : Program) (state : RuntimeState)
     (id : OperationId) (origin : BpmnElementOrigin) (input : ControlPlaceId)
@@ -119,8 +127,9 @@ theorem regionalSelection_operation (program : Program) (state : RuntimeState)
   unfold selectInternalRegional? at found
   obtain ⟨_, _, found⟩ := Option.bind_eq_some_iff.mp found
   cases operation
+  all_goals try (split at found)
   all_goals
-    dsimp only at found
+    try dsimp only at found
     repeat first
       | contradiction
       | (solve | cases found <;> rfl)
@@ -147,14 +156,21 @@ theorem regionalSelection_root_member (program : Program) (state : RuntimeState)
     exact (List.mem_filter.mp present).1
   unfold selectInternalRegional? at found
   obtain ⟨_, _, found⟩ := Option.bind_eq_some_iff.mp found
-  cases operation
-  all_goals
-    dsimp only at found
-    repeat' first
-      | (solve | simp at found)
-      | (solve | cases found; exact member _ _ (by assumption))
-      | split at found
-      | obtain ⟨_, _, found⟩ := Option.bind_eq_some_iff.mp found
+  cases operation with
+  | returnProcess id origin process definition output data =>
+      cases data <;> dsimp only at found
+      repeat' first
+        | (solve | simp at found)
+        | (solve | cases found; exact member _ _ (by assumption))
+        | split at found
+        | obtain ⟨_, _, found⟩ := Option.bind_eq_some_iff.mp found
+  | _ =>
+      dsimp only at found
+      repeat' first
+        | (solve | simp at found)
+        | (solve | cases found; exact member _ _ (by assumption))
+        | split at found
+        | obtain ⟨_, _, found⟩ := Option.bind_eq_some_iff.mp found
 
 /-- Every running raw Return remains selectable, including arbitrary Call identity and activation. -/
 theorem regionalSelection_return_complete (program : Program) (state after : RuntimeState)
@@ -255,15 +271,18 @@ theorem regionalSelection_refines (program : Program) (state : RuntimeState)
   unfold fire?
   rw [snapshotAbsent]
   cases operation with
-  | returnProcess id origin process definition output =>
-      dsimp only at found
-      change ∃ after, returnProcessState? state id origin process definition output = some after
-      unfold returnProcessState?
-      repeat' first | (solve | simp at found) | split at found
-      all_goals
-        first
-          | (simp at found; done)
-          | (simp only [*, ↓reduceIte]; exact ⟨_, rfl⟩)
+  | returnProcess id origin process definition output data =>
+      cases data with
+      | scalar => simp at found
+      | empty =>
+          dsimp only at found
+          change ∃ after, returnProcessState? state id origin process definition output = some after
+          unfold returnProcessState?
+          repeat' first | (solve | simp at found) | split at found
+          all_goals
+            first
+              | (simp at found; done)
+              | (simp only [*, ↓reduceIte]; exact ⟨_, rfl⟩)
   | completeScope id origin definition output =>
       dsimp only at found
       change ∃ after, completeSelectedScope? program state definition output = some after
@@ -322,9 +341,12 @@ theorem regionalSelection_preserves_position (program : Program) (state : Runtim
   unfold fire? at result
   rw [snapshotAbsent] at result
   cases operation with
-  | returnProcess id origin process definition output =>
-      exact declaredReturn_preserves_position program state after expectedInstanceId hosting id origin process definition output
-        valid structural running declared result
+  | returnProcess id origin process definition output data =>
+      cases data with
+      | scalar => simp [selectInternalRegional?, runningInstance?, running] at found
+      | empty =>
+          exact declaredReturn_preserves_position program state after expectedInstanceId hosting id origin process definition output
+            valid structural running declared result
   | completeScope id origin definition output =>
       exact declaredSelectedComplete_preserves_position program state after expectedInstanceId hosting id origin definition output
         valid structural running declared result

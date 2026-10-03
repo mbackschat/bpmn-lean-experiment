@@ -15,7 +15,7 @@ open BpmnSemantics.SemanticProcess
 
 theorem outputPropertyStartRefusesWithExactStatePreservation :
     runStart (startClaim "start-output-property"
-      [{ name := claimDirectOutput.targetPropertyId, value := .string "seed" }]) =
+      [{ name := claimDirectOutput.target.id, value := .string "seed" }]) =
       refused initialState := by
   exact applyStimulus_rejected_of_admission _ _ _ _ rfl
 
@@ -28,7 +28,7 @@ private def readyWithInput (value : VariableValue) : RuntimeState :=
   let ready := (runStart startWithoutSummary).state
   { ready with
     variables := { ready.variables with process :=
-      { bindings := [{ name := claimDirectInput.sourcePropertyId, value }] } } }
+      { bindings := [{ name := claimDirectInput.source.id, value }] } } }
 
 theorem unsupportedReadyInputStatesRemainRuntimeWellFormed :
     [.boolean true, .integer 1, .stringList ["item"]].all (fun value =>

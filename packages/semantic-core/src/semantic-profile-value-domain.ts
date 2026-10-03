@@ -7,6 +7,7 @@ import type {
   VariableBinding,
 } from "./contract.js";
 import {
+  CALL_ACTIVITY_DATA_BOUNDARIES_CHECKPOINT_PROFILE_ID,
   STRUCTURED_PROCESS_COMPOSITION_CHECKPOINT_PROFILE_ID,
   TRANSACTION_CANCELLATION_CHECKPOINT_PROFILE_ID,
   COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID,
@@ -23,6 +24,7 @@ export enum VariableWriteSurface {
 }
 
 type SemanticProfile =
+  | typeof CALL_ACTIVITY_DATA_BOUNDARIES_CHECKPOINT_PROFILE_ID
   | typeof STRUCTURED_PROCESS_COMPOSITION_CHECKPOINT_PROFILE_ID
   | typeof SemanticProfileId[keyof typeof SemanticProfileId]
   | typeof TRANSACTION_CANCELLATION_CHECKPOINT_PROFILE_ID
@@ -60,6 +62,7 @@ const scalarValueDomain = Object.freeze([
 const admittedSemanticProfiles: ReadonlySet<string> = new Set(
   [
     ...Object.values(SemanticProfileId),
+    CALL_ACTIVITY_DATA_BOUNDARIES_CHECKPOINT_PROFILE_ID,
     STRUCTURED_PROCESS_COMPOSITION_CHECKPOINT_PROFILE_ID,
     TRANSACTION_CANCELLATION_CHECKPOINT_PROFILE_ID,
   COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID,
@@ -154,6 +157,7 @@ function profileValueDomain(
       // pre-states here, and the completion surface stays empty because this profile's OutputSet is
       // empty: it selects no output mediation at all.
       return surfaceValueDomain(surface, stringNullValueDomain);
+    case CALL_ACTIVITY_DATA_BOUNDARIES_CHECKPOINT_PROFILE_ID:
     case STRUCTURED_PROCESS_COMPOSITION_CHECKPOINT_PROFILE_ID:
     case SemanticProfileId.ActivityDataInputOutputUserTask:
       return surfaceValueDomain(

@@ -31,7 +31,7 @@ type ConsumerSite = Readonly<{
 type MatrixEntry = readonly [string, string, readonly string[]];
 
 const consumers = [
-  { source: "activity-data-input-output-projection.ts", anchor: "projectDataInputOutputUserTask", elementName: "task", shape: "DataInputOutputUserTask" },
+  { source: "activity-data-input-output-projection.ts", anchor: "projectTask", elementName: "task", shape: "DataInputOutputUserTask" },
   { source: "checked-element-projection.ts", anchor: "projectCheckedSequenceFlows", elementName: "flow", shape: "StandardSequenceFlow" },
   { source: "checked-element-projection.ts", anchor: "classifyGateway", elementName: "element", shape: "ParallelGateway" },
   { source: "checked-element-projection.ts", anchor: "projectExclusiveMerge", elementName: "element", shape: "ExclusiveOrInclusiveGateway" },
@@ -62,11 +62,17 @@ const consumers = [
   { source: "mapped-boundary-error-service-task-source.ts", anchor: "projectBoundaryRoute", elementName: "boundary", shape: "MappedBoundaryEvent" },
   { source: "mapped-boundary-error-service-task-source.ts", anchor: "projectUserTask", elementName: "value", shape: "PlainNode" },
   { source: "call-activity-source.ts", anchor: "resolveCalledProcessId", elementName: "call", shape: "CallActivity" },
+  { source: "call-activity-source.ts", anchor: "hasScalarCallKeys", elementName: "call", shape: "CallActivityData" },
   { source: "call-activity-source.ts", anchor: "projectSequenceFlows", elementName: "flow", shape: "StandardSequenceFlow" },
   { source: "call-activity-source.ts", anchor: "isPlainNode", elementName: "element", shape: "PlainNode" },
 ] as const satisfies ReadonlyArray<ConsumerSite>;
 
 const inventoryCases = [
+  ["callActivityDataShapes", "startEventType", ["PlainNode"]],
+  ["callActivityDataShapes", "endEventType", ["PlainNode"]],
+  ["callActivityDataShapes", "userTaskType", ["DataInputOutputUserTask"]],
+  ["callActivityDataShapes", "callActivityType", ["CallActivityData"]],
+  ["callActivityDataShapes", "sequenceFlowType", ["StandardSequenceFlow"]],
   ["structuredCompositionShapes", "startEventType", ["PlainNode"]],
   ["structuredCompositionShapes", "endEventType", ["PlainNode"]],
   ["structuredCompositionShapes", "userTaskType", ["DataInputOutputUserTask"]],
@@ -257,6 +263,7 @@ function assertInventoryOwnership(files: ReadonlyMap<string, SourceFile>): void 
     MappedSuccessServiceTask: "mappedSuccessShapes",
     MappedBoundaryErrorServiceTask: "mappedBoundaryShapes",
     CallActivity: "callActivityShapes",
+    CallActivityData: "callActivityDataShapes",
     UserTaskMetadata: "userTaskMetadataShapes",
   });
 }

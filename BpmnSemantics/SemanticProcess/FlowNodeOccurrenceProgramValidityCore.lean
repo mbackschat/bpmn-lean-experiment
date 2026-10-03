@@ -90,7 +90,7 @@ private def callRecordValid (program : Program) (state : RuntimeState)
     (program.operations.filter fun operation =>
       if !operationOwnedBy program operation record.caller then false
       else match operation with
-      | .invokeProcess _ origin _ calledProcessId calledRootScopeId _ returnOperationId =>
+      | .invokeProcess _ origin _ calledProcessId calledRootScopeId _ returnOperationId _ =>
           origin.elementId.value = record.id.elementId.value &&
             calledProcessId = record.calledProcessId &&
             calledRootScopeId = record.calledRoot.definitionScopeId &&
@@ -109,9 +109,9 @@ theorem flowNodeOccurrenceStructuralProgramValidity_call_declarer (program : Pro
     (state : RuntimeState) (record : CalledProcessOccurrence)
     (valid : flowNodeOccurrenceStructuralProgramValidity program state = true)
     (member : record ∈ state.calledProcessOccurrences) :
-    ∃ id origin input process root entry returned,
-      .invokeProcess id origin input process root entry returned ∈ program.operations ∧
-      operationOwnedBy program (.invokeProcess id origin input process root entry returned) record.caller = true ∧
+    ∃ id origin input process root entry returned data,
+      .invokeProcess id origin input process root entry returned data ∈ program.operations ∧
+      operationOwnedBy program (.invokeProcess id origin input process root entry returned data) record.caller = true ∧
       origin.elementId.value = record.id.elementId.value ∧ process = record.calledProcessId ∧
       root = record.calledRoot.definitionScopeId ∧ returned = record.returnOperationId := by
   simp only [flowNodeOccurrenceStructuralProgramValidity, Bool.and_eq_true, List.all_eq_true] at valid
@@ -121,7 +121,7 @@ theorem flowNodeOccurrenceStructuralProgramValidity_call_declarer (program : Pro
   have selected : operation ∈ program.operations.filter (fun operation =>
       if !operationOwnedBy program operation record.caller then false
       else match operation with
-      | .invokeProcess _ origin _ process root _ returned =>
+      | .invokeProcess _ origin _ process root _ returned _ =>
           origin.elementId.value = record.id.elementId.value && process = record.calledProcessId &&
             root = record.calledRoot.definitionScopeId && returned = record.returnOperationId
       | _ => false) := by rw [singleton]; simp
@@ -134,7 +134,7 @@ theorem flowNodeOccurrenceStructuralProgramValidity_call_declarer (program : Pro
     all_goals first
       | contradiction
       | (simp only [Bool.and_eq_true, decide_eq_true_eq] at fields
-         exact ⟨_, _, _, _, _, _, _, present, owned, fields.1.1.1, fields.1.1.2, fields.1.2, fields.2⟩)
+         exact ⟨_, _, _, _, _, _, _, _, present, owned, fields.1.1.1, fields.1.1.2, fields.1.2, fields.2⟩)
 
 /-- Structural validity makes every exact live scope owner's Process identity nonempty. -/
 theorem flowNodeOccurrenceStructuralProgramValidity_live_owner_nonempty (program : Program)

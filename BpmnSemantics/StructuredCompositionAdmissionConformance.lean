@@ -31,9 +31,9 @@ private def aliasInput (input : DirectActivityDataInput) (variant : Nat) : Direc
   match variant with
   | 0 => { input with targetDataInputId := "AssessInput" }
   | 2 => { input with associationId := "Assess" }
-  | 3 => { input with sourcePropertyId := "Assess" }
+  | 3 => { input with source := .property "Assess" }
   | 4 => { input with associationId := "a" }
-  | 5 => { input with sourcePropertyId := "InvoiceProcess" }
+  | 5 => { input with source := .property "InvoiceProcess" }
   | _ => input
 
 private def aliasOutput (output : DirectActivityDataOutput) (variant : Nat) : DirectActivityDataOutput :=

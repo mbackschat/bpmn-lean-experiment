@@ -110,7 +110,10 @@ theorem deliverPayloadMessage_preserves_runtimeStateWellFormed
       have transaction : (program.identity.semanticProfile == transactionCancellationCheckpointProfileId) = false := by
         rw [profile]
         decide +kernel
-      simp only [programProfileCapabilitiesValid, transaction, Bool.false_eq_true, legacy,
+      have callData : (program.identity.semanticProfile == callDataCheckpointProfileId) = false := by
+        rw [profile]
+        decide +kernel
+      simp only [programProfileCapabilitiesValid, callData, transaction, Bool.false_eq_true, legacy,
         ↓reduceIte, Bool.and_eq_true] at capabilities
       have parallelFamily := capabilities.1.2
       simp [programParallelMultiInstanceProfileMatches, profile, messagePayloadCatchProfileId,

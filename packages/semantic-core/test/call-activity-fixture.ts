@@ -1,4 +1,5 @@
 import {
+  CallDataKind,
   InternalSchedulingMode,
   SemanticOperationKind,
   SemanticOriginKind,
@@ -66,6 +67,7 @@ export const callActivityProgram = {
     {
       id: `operation:${callElementId}`,
       kind: SemanticOperationKind.InvokeProcess,
+      data: { kind: CallDataKind.Empty },
       origin: { kind: SemanticOriginKind.BpmnElement, elementId: callElementId },
       input: "place:Caller_Start",
       calledProcessId,
@@ -117,6 +119,7 @@ export const callActivityProgram = {
     {
       id: `operation:return-process:${callElementId}`,
       kind: SemanticOperationKind.ReturnProcess,
+      data: { kind: CallDataKind.Empty },
       origin: { kind: SemanticOriginKind.BpmnElement, elementId: callElementId },
       calledProcessId,
       calledRootScopeId: calledScopeId,

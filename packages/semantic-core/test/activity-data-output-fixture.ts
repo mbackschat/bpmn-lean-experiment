@@ -39,12 +39,12 @@ export const instanceId = "ActivityDataOutputInstance_1";
 export const sourceDataOutputId = "DataOutput_Decision";
 export const targetPropertyId = "Property_UnderwritingOutcome";
 
-export const directOutput: DirectActivityDataOutput = Object.freeze({
+export const directOutput = Object.freeze({
   associationId: "DataOutputAssociation_Decision",
   sourceDataOutputId,
   sourceDataOutputName: "Underwriting decision",
-  targetPropertyId,
-});
+  target: { kind: "property", propertyId: targetPropertyId },
+} as const satisfies DirectActivityDataOutput);
 
 export const dataOutputProgram = rootScopedProgram({
   kind: SemanticProcessKind.SemanticProcess,

@@ -33,8 +33,8 @@ export function internalArmingOperation(kind: InternalArmingKind, input: string,
         timer: { elementId: "Side_Timer", durationMs: 1000 } };
     case Kind.AwaitDataInputOutputUserTask:
       return { ...ordinary, kind,
-        directInput: { associationId: "Input_Association", sourcePropertyId: "details", targetDataInputId: "Input", targetDataInputName: "Details" },
-        directOutput: { associationId: "Output_Association", sourceDataOutputId: "Output", sourceDataOutputName: "Decision", targetPropertyId: "decision" } };
+        directInput: { associationId: "Input_Association", source: { kind: "property", propertyId: "details" }, targetDataInputId: "Input", targetDataInputName: "Details" },
+        directOutput: { associationId: "Output_Association", sourceDataOutputId: "Output", sourceDataOutputName: "Decision", target: { kind: "property", propertyId: "decision"  }} };
     case Kind.AwaitMessage:
       return { ...messageBase, kind };
     case Kind.AwaitPayloadMessage:

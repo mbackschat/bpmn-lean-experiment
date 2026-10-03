@@ -85,7 +85,9 @@ theorem regional_pair_retained_timer_frame (program : Program) (before after : R
   have afterRunning := (regional_pair_control_frame program before after hosting leftOperation rightOperation left right
     valid running leftFound rightFound independent applied).1.trans running
   cases leftOperation with
-  | returnProcess id origin process definition output =>
+  | returnProcess id origin process definition output data =>
+      have empty := prepareInternalRegional_return_data_empty program before id origin process definition output data left leftFound
+      subst data
       obtain ⟨returned, record, root, returnedApplied, _, _, _, parentless, quiet, _, scopes,
         tasks, _, timers, _, _, activities, _, _, census⟩ :=
         preparedReturn_quiescent_fields program before hosting id origin process definition output left valid leftFound
@@ -650,7 +652,9 @@ private theorem cancellation_entry_not_ended (program : Program) (state : Runtim
       valid running leftFound rightFound independent leftCancels rightCancels opened entry member
     simp [otherCancelled, cancelled] at separate
   cases leftOperation with
-  | returnProcess id origin process definition output =>
+  | returnProcess id origin process definition output data =>
+      have empty := prepareInternalRegional_return_data_empty program state id origin process definition output data left leftFound
+      subst data
       obtain ⟨record, kind, _, census⟩ := regionalSelection_return_record program state id origin process definition output left.selection selected
       simp only [regionalLifecycleTemplate?, operation, kind] at lifecycle
       split at lifecycle

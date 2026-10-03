@@ -62,7 +62,7 @@ def selectInternalScopeCreation? (state : RuntimeState) (operation : SemanticOpe
                     activation := scopeActivationCount state definition + 1 }
             parent := some owner }
         pure { operation, owner, input, entry, created, kind := .child }
-  | .invokeProcess _ origin input process definition entry returnOperation =>
+  | .invokeProcess _ origin input process definition entry returnOperation .empty =>
       let owner ← onlyTokenOwner? state input
       if (state.tokens.filter fun token : ControlToken =>
           decide (token.placeId = input && token.owner = owner)).length ≠ 1 then none
@@ -102,6 +102,15 @@ def selectInternalScopeCreation? (state : RuntimeState) (operation : SemanticOpe
       else none
   | _ => none
 
+/-- CDATA-INPUT-01 requires scalar Calls to use their data-aware atomic preparation. -/
+theorem scopeCreationSelection_scalar_refused (state : RuntimeState)
+    (id : OperationId) (origin : BpmnElementOrigin) (input entry : ControlPlaceId)
+    (process : ProcessId) (definition : DefinitionScopeId) (returned : OperationId)
+    (data : ScalarCallData) :
+    selectInternalScopeCreation? state
+      (.invokeProcess id origin input process definition entry returned (.scalar data)) = none := by
+  cases control : state.control <;> simp [selectInternalScopeCreation?, control]
+
 /-- Child occurrence identity advances the predecessor's retained issuance high-water mark. -/
 theorem scopeCreationSelection_child_issued_activation (state : RuntimeState)
     (id : OperationId) (origin : BpmnElementOrigin) (input entry : ControlPlaceId)
@@ -137,6 +146,7 @@ theorem selectInternalScopeCreation_operation (state : RuntimeState)
   unfold selectInternalScopeCreation? at found
   obtain ⟨hosting, _, found⟩ := Option.bind_eq_some_iff.mp found
   cases operation
+  all_goals try (split at found)
   all_goals first
     | contradiction
     | obtain ⟨owner, _, found⟩ := Option.bind_eq_some_iff.mp found
@@ -186,33 +196,36 @@ theorem selectInternalScopeCreation_refines (program : Program) (state : Runtime
           simp only [enterScopeState?, owned, running, bind, Option.bind, fresh, Bool.false_eq_true,
             ↓reduceIte,
             InternalScopeCreationSelection.apply]
-  | invokeProcess id origin input process definition entry returnOperation =>
-      obtain ⟨owner, owned, found⟩ := Option.bind_eq_some_iff.mp found
-      change invokeProcessState? state origin input process definition entry returnOperation = _
-      have rootSelected : (match state.control with
-          | .running instanceId | .completed instanceId | .cancelled instanceId => some instanceId
-          | .notStarted | .failed .. => none) = some hosting := by rw [running]
-      unfold invokeProcessState?
-      conv =>
-        lhs
-        arg 3
-        change (match state.control with
-          | .running instanceId | .completed instanceId | .cancelled instanceId => some instanceId
-          | .notStarted | .failed .. => none)
-      rw [owned, rootSelected]
-      change (if calledProcessAssociationsValid state then
-        if owner.processInstanceId = hosting then
-          if (state.tokens.filter fun token =>
-              decide (token.placeId = input && token.owner = owner)).length = 1 then
-            if (state.calledProcessOccurrences.filter fun record =>
-                record.caller = owner && record.id.elementId.value = origin.elementId.value).length = 0
-              then _ else none
-          else none
-        else none
-      else none) = _
-      repeat first | split at found | contradiction
-      all_goals cases found
-      all_goals simp_all [InternalScopeCreationSelection.apply]
+  | invokeProcess id origin input process definition entry returnOperation data =>
+      cases data with
+      | scalar => simp at found
+      | empty =>
+          obtain ⟨owner, owned, found⟩ := Option.bind_eq_some_iff.mp found
+          change invokeProcessState? state origin input process definition entry returnOperation = _
+          have rootSelected : (match state.control with
+              | .running instanceId | .completed instanceId | .cancelled instanceId => some instanceId
+              | .notStarted | .failed .. => none) = some hosting := by rw [running]
+          unfold invokeProcessState?
+          conv =>
+            lhs
+            arg 3
+            change (match state.control with
+              | .running instanceId | .completed instanceId | .cancelled instanceId => some instanceId
+              | .notStarted | .failed .. => none)
+          rw [owned, rootSelected]
+          change (if calledProcessAssociationsValid state then
+            if owner.processInstanceId = hosting then
+              if (state.tokens.filter fun token =>
+                  decide (token.placeId = input && token.owner = owner)).length = 1 then
+                if (state.calledProcessOccurrences.filter fun record =>
+                    record.caller = owner && record.id.elementId.value = origin.elementId.value).length = 0
+                  then _ else none
+              else none
+            else none
+          else none) = _
+          repeat first | split at found | contradiction
+          all_goals cases found
+          all_goals simp_all [InternalScopeCreationSelection.apply]
   | _ => simp at found
 
 end BpmnSemantics.SemanticProcess.InternalCommutation

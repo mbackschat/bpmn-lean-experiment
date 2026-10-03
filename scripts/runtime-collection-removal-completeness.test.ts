@@ -38,6 +38,7 @@ const calledRemoval = "function removeCalledProcessTree(";
 const regionRemoval = "function removeScopeOccurrenceRegion(";
 
 const leanRuntimeStateOwner = "BpmnSemantics/SemanticProcess/RuntimeState.lean";
+const leanDataOwner = "BpmnSemantics/SemanticProcess/Data.lean";
 const leanRemovalOwners = [
   ["BpmnSemantics/SemanticProcess/ScopeCancellation.lean", "def cancelScopeSubtree ("],
   ["BpmnSemantics/SemanticProcess/CallActivity.lean", "def removeCalledProcessTree ("],
@@ -173,8 +174,12 @@ function unfiltered(fields: ReadonlySet<string>, ...covered: ReadonlySet<string>
 }
 
 function leanRuntimeFields(source: string): ReadonlySet<string> {
-  const declaration = source.split("structure RuntimeState where\n")[1]?.split("\n  deriving")[0];
-  assert.ok(declaration !== undefined, "Lean RuntimeState declaration was not parsed");
+  return leanStructureFields(source, "RuntimeState");
+}
+
+function leanStructureFields(source: string, name: string): ReadonlySet<string> {
+  const declaration = source.split(`structure ${name} where\n`)[1]?.split("\n  deriving")[0];
+  assert.ok(declaration !== undefined, `Lean ${name} declaration was not parsed`);
   return new Set([...declaration.matchAll(/^  (\w+) :/gm)].map((match) => match[1]!));
 }
 
@@ -193,6 +198,51 @@ function leanUnfiltered(fields: ReadonlySet<string>, assigned: ReadonlySet<strin
     !unfilteredFields.has(field === "activations" ? "taskActivations" : field) &&
     !assigned.has(field)
   );
+}
+
+// The hosting caller's Property store survives regional removal; every other ScopedVariables
+// collection has a removable owner (CALL-ACTIVITY-DATA-BOUNDARIES, runtime ownership contract).
+function missingScopedCollections(
+  declared: ReadonlySet<string>, assigned: ReadonlySet<string>,
+): string[] {
+  return [...declared].filter((field) => field !== "process" && !assigned.has(field));
+}
+
+for (const [owner, signature] of [
+  [calledOwner, calledRemoval], [regionOwner, regionRemoval],
+] as const) {
+  test(`${owner} removes every nested owner-keyed data collection`, () => {
+    const declared = topLevelKeys(braceSpan(read(runtimeStateOwner), "export type ScopedVariables = DeepReadonly<{"));
+    const literal = braceSpan(returnedLiteral(owner, signature), "variables: {");
+    const assigned = topLevelKeys(literal);
+    assert.ok(declared.has("activities") && declared.has("processInterfaces"));
+    assert.deepEqual(missingScopedCollections(declared, assigned), []);
+    assert.deepEqual(missingScopedCollections(new Set([...declared, "newOwnedData"]), assigned), ["newOwnedData"]);
+    for (const field of declared) {
+      if (field === "process") continue;
+      const mutated = renamedField(literal, field);
+      assert.notEqual(mutated, literal, `${owner}: ${field}`);
+      assert.deepEqual(missingScopedCollections(declared, topLevelKeys(mutated)), [field]);
+    }
+  });
+}
+
+for (const [owner, signature] of leanRemovalOwners) {
+  test(`${owner} removes every nested owner-keyed data collection`, () => {
+    const declared = leanStructureFields(read(leanDataOwner), "ScopedVariables");
+    const literal = leanRemovalLiteral(read(owner), signature);
+    const variables = literal.split("    variables :=")[1];
+    assert.ok(variables !== undefined, `${owner}: absent variables assignment`);
+    const assigned = new Set([...variables.matchAll(/^        (\w+) :=/gm)].map((match) => match[1]!));
+    assert.ok(declared.has("activities") && declared.has("processInterfaces"));
+    assert.deepEqual(missingScopedCollections(declared, assigned), []);
+    assert.deepEqual(missingScopedCollections(new Set([...declared, "newOwnedData"]), assigned), ["newOwnedData"]);
+    for (const field of declared) {
+      if (field === "process") continue;
+      const mutated = new Set([...assigned].filter((key) => key !== field));
+      assert.deepEqual(missingScopedCollections(declared, mutated), [field]);
+    }
+  });
 }
 
 for (const [owner, signature] of leanRemovalOwners) {

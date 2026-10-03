@@ -292,7 +292,7 @@ function projectDataInputUserTask(
     name: ids.taskName,
     directInput: {
       associationId: ids.association,
-      sourcePropertyId: ids.property,
+      source: { kind: "property", propertyId: ids.property },
       targetDataInputId: ids.dataInput,
       targetDataInputName: ids.dataInputName,
     },

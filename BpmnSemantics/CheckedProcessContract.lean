@@ -1,5 +1,5 @@
 import BpmnSemantics.Scenario
-import BpmnSemantics.SemanticProcess.ActivityDataContract
+import BpmnSemantics.SemanticProcess.CallDataContract
 import BpmnSemantics.SemanticProcess.CorrelationScalarPath
 
 /-! # BpmnSemantics.CheckedProcessContract — checked definitions and shared identities
@@ -232,7 +232,7 @@ inductive CheckedNode where
   | transactionSubProcess (id : NodeId) (childScopeId : DefinitionScopeId) (method : String)
   | cancelEndEvent (id : NodeId)
   | cancelBoundaryEvent (id attachedToRef : NodeId) (outputFlowId : SequenceFlowId)
-  | callActivity (id : NodeId) (calledProcessId : ProcessId)
+  | callActivity (id : NodeId) (calledProcessId : ProcessId) (data : CallDataInterface := .empty)
   | boundaryErrorEvent (id attachedToRef : NodeId)
       (error : ErrorReference) (outputFlowId : SequenceFlowId)
   /-- The XSD and CMOF default `cancelActivity` to `true`. The disjoint expression retains the exact source duration or cycle lexeme for independent normalization. -/
@@ -317,7 +317,7 @@ def CheckedNode.id : CheckedNode → NodeId
   | .transactionSubProcess id _ _
   | .cancelEndEvent id
   | .cancelBoundaryEvent id _ _
-  | .callActivity id _
+  | .callActivity id _ _
   | .boundaryErrorEvent id _ _ _
   | .timerBoundaryEvent id _ _ _ _
   | .messageBoundaryEvent id _ _ _ _

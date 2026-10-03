@@ -45,7 +45,9 @@ theorem preparedArming_regional_start_frame (program : Program) (before after : 
   have actualEq : actual = after := Option.some.inj (actualApplied.symm.trans applied)
   subst actual
   cases regionalOperation with
-  | returnProcess id origin process definition output =>
+  | returnProcess id origin process definition output data =>
+      have empty := prepareInternalRegional_return_data_empty program before id origin process definition output data regional regionalFound
+      subst data
       obtain ⟨returned, record, root, returnedApply, kind, _, _, _, _, update, _⟩ :=
         preparedReturn_quiescent_fields program before arm.scopeFramePatch.runtimeInstanceId id origin
           process definition output regional beforeWF regionalFound

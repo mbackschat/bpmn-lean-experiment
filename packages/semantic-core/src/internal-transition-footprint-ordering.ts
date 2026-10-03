@@ -30,7 +30,7 @@ import type {
   EventRace,
   ScopeOccurrenceId,
 } from "./semantic-process-state.js";
-import { sameOccurrence } from "./semantic-process-state.js";
+import { sameOccurrence, sameScopeOccurrence } from "./semantic-process-state.js";
 import { compareCanonicalStrings } from "./wire.js";
 
 export function canonicalUniqueStateAtoms(
@@ -163,6 +163,10 @@ function stateAtomParts(
       ];
     case InternalTransitionStateAtomKind.ParallelControllersPresence:
       return [atom.kind];
+    case InternalTransitionStateAtomKind.ProcessInterfaceScope:
+      return [atom.kind, ...scopeParts(atom.owner)];
+    case InternalTransitionStateAtomKind.ProcessInterfaceInput:
+      return [atom.kind, ...scopeParts(atom.owner), atom.dataInputId];
     case InternalTransitionStateAtomKind.ProcessVariable:
       return [atom.kind, atom.name];
     case InternalTransitionStateAtomKind.ControlToken:
@@ -261,6 +265,11 @@ function stateAtomsConflict(
       InternalTransitionStateAtomKind.SequentialController,
     );
   }
+  if (isProcessInterfaceAtom(left) && isProcessInterfaceAtom(right) &&
+      (left.kind === InternalTransitionStateAtomKind.ProcessInterfaceScope ||
+       right.kind === InternalTransitionStateAtomKind.ProcessInterfaceScope)) {
+    return sameScopeOccurrence(left.owner, right.owner);
+  }
   if (compareStateAtoms(left, right) === 0) {
     return true;
   }
@@ -269,6 +278,14 @@ function stateAtomsConflict(
   }
   return right.kind === InternalTransitionStateAtomKind.OccurrenceRegion &&
     occurrenceRegionConflictsWithAtom(right.region, left);
+}
+
+function isProcessInterfaceAtom(atom: InternalTransitionStateAtom): atom is Extract<
+  InternalTransitionStateAtom,
+  { kind: InternalTransitionStateAtomKind.ProcessInterfaceScope | InternalTransitionStateAtomKind.ProcessInterfaceInput }
+> {
+  return atom.kind === InternalTransitionStateAtomKind.ProcessInterfaceScope ||
+    atom.kind === InternalTransitionStateAtomKind.ProcessInterfaceInput;
 }
 
 function occurrenceRegionConflictsWithAtom(
@@ -305,6 +322,8 @@ function occurrenceRegionConflictsWithAtom(
     case InternalTransitionStateAtomKind.SequentialControllerOutput:
     case InternalTransitionStateAtomKind.SequentialControllerSnapshot:
     case InternalTransitionStateAtomKind.ScopeOccurrence:
+    case InternalTransitionStateAtomKind.ProcessInterfaceScope:
+    case InternalTransitionStateAtomKind.ProcessInterfaceInput:
     case InternalTransitionStateAtomKind.Wait:
       return internalOccurrenceRegionContains(region, atom.owner);
     case InternalTransitionStateAtomKind.Activation:

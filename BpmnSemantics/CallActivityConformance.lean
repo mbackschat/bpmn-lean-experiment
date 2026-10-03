@@ -439,7 +439,7 @@ theorem duplicate_called_process_identity_with_one_valid_root_is_rejected :
 private def wrongCalledEntryProgram : Program :=
   { program with
     operations := program.operations.map fun
-      | .invokeProcess id origin input calledProcess calledRoot _ returned =>
+      | .invokeProcess id origin input calledProcess calledRoot _ returned _ =>
           .invokeProcess id origin input calledProcess calledRoot
             ⟨"place:F2_CallCallerTask"⟩ returned
       | operation => operation }
@@ -450,9 +450,9 @@ theorem target_root_entry_permutation_fails_binding :
 private def wrongCalledRootProgram : Program :=
   { program with
     operations := program.operations.map fun
-      | .invokeProcess id origin input calledProcess _ calledEntry returned =>
+      | .invokeProcess id origin input calledProcess _ calledEntry returned _ =>
           .invokeProcess id origin input calledProcess callerScopeId calledEntry returned
-      | .returnProcess id origin calledProcess _ output =>
+      | .returnProcess id origin calledProcess _ output _ =>
           .returnProcess id origin calledProcess callerScopeId output
       | operation => operation }
 
@@ -474,7 +474,7 @@ theorem wrong_return_owner_is_rejected :
 private def wrongReturnPairProgram : Program :=
   { program with
     operations := program.operations.map fun
-      | .invokeProcess id origin input calledProcess calledRoot calledEntry _ =>
+      | .invokeProcess id origin input calledProcess calledRoot calledEntry _ _ =>
           .invokeProcess id origin input calledProcess calledRoot calledEntry
             ⟨"operation:wrong-return"⟩
       | operation => operation }
