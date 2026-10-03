@@ -186,6 +186,53 @@ for (const [decision, selected] of [["approved", "approve"], ["rejected", "rejec
   });
 }
 
+for (const keepNames of [true, false]) {
+  test(`every source identity can change with display names ${keepNames ? "replaced" : "omitted"}`, async () => {
+    const sourceIds = [...invoice.matchAll(/\bid="([^"]+)"/gu)].map(match => match[1]!);
+    const renamed = new Map(sourceIds.map((id, index) => [id, `renamed_${index.toString().padStart(3, "0")}`]));
+    const id = (original: string): string => {
+      const value = renamed.get(original);
+      assert.notEqual(value, undefined, original);
+      return value!;
+    };
+    const xml = invoice
+      .replace(/\b(id|sourceRef|targetRef|default)="([^"]+)"/gu, (_, attribute: string, value: string) => `${attribute}="${id(value)}"`)
+      .replace(/(<bpmn:(?:sourceRef|targetRef|dataInputRefs|dataOutputRefs)>)([^<]+)(<\/bpmn:[^>]+>)/gu,
+        (_, before: string, value: string, after: string) => `${before}${id(value)}${after}`)
+      .replaceAll('stringEquals(decision,', `stringEquals(${id("decision")},`)
+      .replace(/ name="([^"]+)"/gu, (_, name: string) => keepNames ? ` name="Display ${id(name)}"` : "");
+    assert.deepEqual([...xml.matchAll(/\bid="([^"]+)"/gu)].map(match => match[1]), sourceIds.map(id));
+    assert.ok(sourceIds.every(original => !xml.includes(`id="${original}"`)));
+    const compiled = await compile(xml);
+    assert.equal(compiled.status, BpmnCompilationStatus.Accepted, JSON.stringify(compiled));
+    if (compiled.status !== BpmnCompilationStatus.Accepted) return;
+    for (const [decision, branch] of [["approved", "approve"], ["rejected", "reject"], [null, "manual"]] as const) {
+      const started = applyStimulus(compiled.semanticProcess, initialState, { kind: StimulusKind.StartProcess,
+        commandId: "start", processId: id("Invoice"), instanceId: "renamed-invoice",
+        initialVariables: [binding(id("summary"), "Invoice 4711")] });
+      assert.equal(started.outcome, CommandOutcome.Committed);
+      let state = started.state;
+      assert.deepEqual(state.userTaskWaits.map(wait => wait.id.elementId), [id("assess")]);
+      for (const [task, values, next] of [
+        ["assess", [binding(id("assess_out"), decision)], branch],
+        [branch, [], "archive"],
+        ["archive", [binding(id("archive_out"), "saved")], null],
+      ] as const) {
+        const result = applyStimulus(compiled.semanticProcess, state, { kind: StimulusKind.CompleteUserTaskInstance,
+          commandId: `complete-${task}`, taskId: { processInstanceId: "renamed-invoice", elementId: id(task), activation: 1 },
+          submittedValues: values });
+        assert.equal(result.outcome, CommandOutcome.Committed);
+        state = result.state;
+        assert.deepEqual(state.userTaskWaits.map(wait => wait.id.elementId), next === null ? [] : [id(next)]);
+        if (next === "archive") assert.deepEqual(state.variables.activities.map(scope => scope.bindings), [[binding(id("archive_in"), decision)]]);
+      }
+      assert.equal(state.control.kind, "completed");
+      assert.deepEqual(state.variables.activities, []);
+      assert.deepEqual(state.variables.process.bindings, [binding(id("summary"), "Invoice 4711"), binding(id("decision"), decision), binding(id("receipt"), "saved")]);
+    }
+  });
+}
+
 test("declaration permutation preserves source references while candidate declaration order remains semantic", async () => {
   const original = await compile(invoice);
   assert.equal(original.status, BpmnCompilationStatus.Accepted);
@@ -214,6 +261,39 @@ test("nested regions and empty branches contract without losing edge multiplicit
     ${flow("a", "s", "outer")}${flow("b", "inner_merge", "outer_merge")}${flow("c", "outer_merge", "t")}${flow("d", "t", "e")}`);
   assert.equal((await compile(xml)).status, BpmnCompilationStatus.Accepted);
   assert.equal((await compile(xml.replace('id="b" sourceRef="inner_merge" targetRef="outer_merge"', 'id="b" sourceRef="inner_merge" targetRef="e"'))).status, BpmnCompilationStatus.Rejected);
+});
+
+test("structured source refuses a bypass, disconnected task and duplicate control edge", async () => {
+  const mutations = [
+    invoice.replace('id="reviewed" sourceRef="manual" targetRef="route_merge"', 'id="reviewed" sourceRef="manual" targetRef="end"'),
+    invoice.replace('</bpmn:process>', '<bpmn:userTask id="Unreachable" /></bpmn:process>'),
+    invoice.replace('</bpmn:process>', `${flow("duplicate", "assess", "route")}</bpmn:process>`),
+  ];
+  for (const xml of mutations) {
+    assert.notEqual(xml, invoice);
+    assert.equal((await compile(xml)).status, BpmnCompilationStatus.Rejected);
+  }
+});
+
+test("overlapping conditions choose the first source-declared candidate after the associated write", async () => {
+  const first = flow("route_first", "route", "approve", 'stringEquals(decision,"approved")');
+  const second = flow("route_second", "route", "reject", 'stringEquals(decision,"approved")');
+  const overlap = invoice.replace('stringEquals(decision,"rejected")', 'stringEquals(decision,"approved")');
+  assert.ok(overlap.includes(first) && overlap.includes(second));
+  const reversed = overlap.replace(first, "FIRST_CANDIDATE").replace(second, first).replace("FIRST_CANDIDATE", second);
+  for (const [xml, selected] of [[overlap, "approve"], [reversed, "reject"]] as const) {
+    const compiled = await compile(xml);
+    assert.equal(compiled.status, BpmnCompilationStatus.Accepted);
+    if (compiled.status !== BpmnCompilationStatus.Accepted) return;
+    const started = applyStimulus(compiled.semanticProcess, initialState, { kind: StimulusKind.StartProcess,
+      commandId: "start", processId: "Invoice", instanceId: "invoice-order", initialVariables: [binding("summary", "Invoice 4711")] });
+    assert.equal(started.outcome, CommandOutcome.Committed);
+    const completed = applyStimulus(compiled.semanticProcess, started.state, { kind: StimulusKind.CompleteUserTaskInstance,
+      commandId: "complete-assess", taskId: { processInstanceId: "invoice-order", elementId: "assess", activation: 1 },
+      submittedValues: [binding("assess_out", "approved")] });
+    assert.equal(completed.outcome, CommandOutcome.Committed);
+    assert.deepEqual(completed.state.userTaskWaits.map(wait => wait.id.elementId), [selected]);
+  }
 });
 
 test("source admission separates an eight-step closure from a nine-step empty route", async () => {
