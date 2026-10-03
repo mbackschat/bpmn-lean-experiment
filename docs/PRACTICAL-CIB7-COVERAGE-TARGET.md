@@ -4,6 +4,8 @@
 
 Owner-selected delivery objective; this inventory specifies required practical depth, not implemented support. Each new semantic account still needs its governed capsule review. [PLAN](PLAN.md) owns sequencing and current blockers; exact implementation and evidence remain in the detail maps routed by [`implementation-status-router`](IMPLEMENTATION-MAP.md).
 
+The independent source/scope review approved correction `ba8d939e` against inventory target `d5cd2767` with no remaining required findings. Its order-preservation correction follows CIB XML-order/first-match behavior. This review approves the inventory boundary, not individual semantic accounts or hosting qualification.
+
 ## Objective and boundary
 
 Make ordinary business processes executable across the practical BPMN elements and depth implemented by CIB Seven `2.2.0`, with Lean and TypeScript agreeing on their meaning and Temporal preserving that meaning durably. [PROJECT-DESIGN](PROJECT-DESIGN.md#practical-cib7-coverage) owns the objective and [CIB7 ceiling](PROJECT-DESIGN.md#cib-seven-220-breadth-ordering). Historical MUE checkpoints supply reusable evidence; they do not establish this broader result.
