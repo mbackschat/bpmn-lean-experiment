@@ -15,6 +15,7 @@
  * refuses any other count, so those two are consumed evidence rather than discarded content.
  */
 import assert from "node:assert/strict";
+import { source as serialBusinessSource, profile as serialBusinessProfile, sourceOverlay as serialBusinessSourceOverlay } from "./serial-business-task-fixture.ts";
 import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 
@@ -238,6 +239,7 @@ type DispatchFixture = Readonly<{
   semanticProfile: string;
   find: string;
   prepare?: (source: string) => string;
+  sourceOverlay?: ReturnType<typeof serialBusinessSourceOverlay>;
 }>;
 
 const dispatchFixtures = {
@@ -250,6 +252,10 @@ const dispatchFixtures = {
     sourceId: "preserved-notation-diagnostics",
     semanticProfile: SemanticProfileId.UserTaskPreservedNotation,
     find: '<bpmn:startEvent id="StartEvent_1"',
+  },
+  serialBusinessTasks: {
+    path: "the serial business task reader", source: serialBusinessSource, sourceId: "invoice",
+    semanticProfile: serialBusinessProfile, sourceOverlay: serialBusinessSourceOverlay(), find: '<startEvent id="Start"',
   },
   mappedSuccessServiceTask: {
     path: "the mapped-success reader",
@@ -451,7 +457,7 @@ test("applies foreign-attribute admission through every registered compilation d
         sourceId: fixture.sourceId,
         expectedSha256: undefined,
         semanticProfile: fixture.semanticProfile,
-        sourceOverlay: null,
+        sourceOverlay: "sourceOverlay" in fixture ? fixture.sourceOverlay : null,
         limits: semanticProcessTestLimits,
       }),
       compileBpmnToSemanticProcess({
@@ -459,7 +465,7 @@ test("applies foreign-attribute admission through every registered compilation d
         sourceId: `${fixture.sourceId}-foreign-attribute`,
         expectedSha256: undefined,
         semanticProfile: fixture.semanticProfile,
-        sourceOverlay: null,
+        sourceOverlay: "sourceOverlay" in fixture ? fixture.sourceOverlay : null,
         limits: semanticProcessTestLimits,
       }),
     ]);

@@ -143,7 +143,8 @@ export function deriveInternalOrdinaryArmingPatch(
         state.effectActivations,
         operation.effect.elementId,
       );
-      const arguments_ = evaluateInputMappings(operation.effect.inputMappings);
+      const arguments_ = evaluateInputMappings(operation.effect.inputMappings, state.variables.process.bindings);
+      if (arguments_ === null) return null;
       return {
         kind: InternalOrdinaryArmingPatchKind.Effect,
         owner,

@@ -461,6 +461,16 @@ This is a CIB public lifecycle extension beyond bare BPMN Process execution. BPM
 
 The research queue is not evidence and does not authorize implementation. It prevents a useful extension candidate from being conflated with a deviation or silently entering the semantic core.
 
+### CIB-EXT-0015 — serial business-task enclosing inputs and local results
+
+**Status:** Selected bounded extension under the approved [serial business-task account](capsules/SERIAL-BUSINESS-TASK-COMPOSITION-PROPOSAL.md); implementation and profile evidence remain open.
+
+CIB Seven `2.2.0` input parameters evaluate against the enclosing scope before writing Activity-local inputs. Output parameters evaluate against the Activity scope; a local result takes precedence over a same-named parent value. The selected account admits only its explicit scalar literal/reference subset, unambiguous named delegate bindings and exact supplied output sources. Its identifier, reserved-name, initialization and result-patch restrictions are project admission decisions, not general CIB behavior.
+
+**Evidence:** The [phase-zero experiment](experiments/BUSINESS-EFFECT-DATA-EXPERIMENT.md) and [public-service probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenBusinessEffectDataPhaseZeroProbeTest.java) separate both input declaration orders, present null, missing-input failure before invocation, local output precedence and Process-instance separation. [Artifact-verifier coverage](../scripts/contract-artifact-projections.test.ts) requires this registered relationship and rejects a profile reference when its registry entry is absent. Full profile equivalence and retained scenario evidence remain unestablished.
+
+**Boundary:** No general JUEL, bean/Java API compatibility, nested mapping, parent-output fallback, technical-failure equivalence or concurrent execution is claimed. CIB's async-before job precedes invocation; the project's committed argument snapshot and durable external-effect interval remain its own operational realization. Input/final-output comparisons do not establish equivalent transaction timing or exactly-once external effects.
+
 ## Permitted operational-detail register
 
 ### CIB-OP-0001 — CIB host task identity mapped to project semantic task identity

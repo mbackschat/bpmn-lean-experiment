@@ -274,6 +274,7 @@ theorem mismatched_error_code_is_rejected
       (.bpmnError submittedCode message
         [{ name := "result", value := .null }])
       0
+      (by decide +kernel)
       (by
         have reversed : checkedRoute.code ≠ submittedCode :=
           Ne.symm mismatch

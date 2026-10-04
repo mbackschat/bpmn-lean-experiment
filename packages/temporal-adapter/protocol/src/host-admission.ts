@@ -3,6 +3,7 @@ import {
   CALL_ACTIVITY_DATA_BOUNDARIES_CHECKPOINT_PROFILE_ID,
   INTERRUPTING_MESSAGE_EVENT_SUBPROCESS_CHECKPOINT_PROFILE_ID,
   STRUCTURED_PROCESS_COMPOSITION_CHECKPOINT_PROFILE_ID,
+  SERIAL_BUSINESS_TASK_CHECKPOINT_PROFILE_ID,
   COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID,
   TRANSACTION_CANCELLATION_CHECKPOINT_PROFILE_ID,
   MESSAGE_KEY_CORRELATION_CHECKPOINT_PROFILE_ID,
@@ -49,6 +50,15 @@ import type {
 export function assessTemporalHostCapability(
   program: SemanticProcessProgram,
 ): TemporalHostCapabilityResult {
+  if (program.identity.semanticProfile === SERIAL_BUSINESS_TASK_CHECKPOINT_PROFILE_ID) {
+    return {
+      kind: TemporalHostCapabilityResultKind.Rejected,
+      failure: {
+        code: TemporalHostAdmissionFailureCode.SerialBusinessTaskQualificationUnavailable,
+        evidence: "Serial business tasks require the capsule's pending hosting and handler qualification.",
+      },
+    };
+  }
   // IMES hosting preflight requires listener continuity, response-loss recovery and replay qualification.
   if (program.identity.semanticProfile === INTERRUPTING_MESSAGE_EVENT_SUBPROCESS_CHECKPOINT_PROFILE_ID) {
     return {

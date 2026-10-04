@@ -80,6 +80,7 @@ theorem effect_result_mapping_failure_is_rejected
     (program : Program) (wait : EffectWait)
     (completionCommandId : SemanticId)
     (result : EffectExecutionResult) (logicalTimeMs : Nat)
+    (legacy : program.identity.semanticProfile ≠ serialBusinessTaskProfileId)
     (invalid :
       let owner : EffectOccurrenceId :=
         { processInstanceId := wait.processInstanceId
@@ -137,7 +138,7 @@ theorem effect_result_mapping_failure_is_rejected
     cases declared : program.compensationEventSubProcessSnapshots with
     | none =>
         simp [admitStimulus, declared, noIncidents, running, noCompensationWaits,
-          exactOrdinaryWaits, noCompletion]
+          exactOrdinaryWaits, noCompletion, legacy]
     | some _ => simp [admitStimulus, declared]
   simp [applyStimulus, rejectedAdmission]
 
@@ -146,6 +147,7 @@ theorem effect_result_route_failure_is_rejected
     (program : Program) (wait : EffectWait)
     (completionCommandId : SemanticId)
     (result : EffectExecutionResult) (logicalTimeMs : Nat)
+    (legacy : program.identity.semanticProfile ≠ serialBusinessTaskProfileId)
     (invalid : effectResultOutput wait result = none) :
     let effectId : EffectOccurrenceId :=
       { processInstanceId := wait.processInstanceId
@@ -186,7 +188,7 @@ theorem effect_result_route_failure_is_rejected
     cases declared : program.compensationEventSubProcessSnapshots with
     | none =>
         simp [admitStimulus, declared, noIncidents, running, noCompensationWaits,
-          exactOrdinaryWaits, noCompletion]
+          exactOrdinaryWaits, noCompletion, legacy]
     | some _ => simp [admitStimulus, declared]
   simp [applyStimulus, rejectedAdmission]
 
@@ -214,6 +216,11 @@ theorem user_task_completion_with_same_successor_is_equal
     (submittedTaskId : UserTaskInstanceId)
     (submittedValues : List VariableBinding)
     (snapshotAbsent : program.compensationEventSubProcessSnapshots = none)
+    (serialGuardAgreement :
+      serialBusinessCommandAdmitted program leftState
+        (.completeUserTaskInstance completionCommandId submittedTaskId submittedValues) =
+      serialBusinessCommandAdmitted program rightState
+        (.completeUserTaskInstance completionCommandId submittedTaskId submittedValues))
     (leftRunning : leftState.control = .running submittedTaskId.processInstanceId)
     (rightRunning : rightState.control = .running submittedTaskId.processInstanceId)
     (ordinaryTask :
@@ -251,6 +258,13 @@ theorem user_task_completion_with_same_successor_is_equal
         (.completeUserTaskInstance completionCommandId submittedTaskId submittedValues) =
       applyStimulus closureLimit program rightState
         (.completeUserTaskInstance completionCommandId submittedTaskId submittedValues) := by
+  have leftSerial : serialBusinessCommandAdmitted program leftState
+      (.completeUserTaskInstance completionCommandId submittedTaskId submittedValues) = true := by
+    cases accepted : serialBusinessCommandAdmitted program leftState
+        (.completeUserTaskInstance completionCommandId submittedTaskId submittedValues) with
+    | false => simp [applyStimulus, admitStimulus, snapshotAbsent, accepted] at committed
+    | true => rfl
+  have rightSerial := serialGuardAgreement.symm.trans leftSerial
   have notCallData : program.identity.semanticProfile ≠ callDataCheckpointProfileId := by
     intro profile
     have valid : callDataRuntimeStateValid program leftState = true := by
@@ -270,7 +284,7 @@ theorem user_task_completion_with_same_successor_is_equal
     simp [callDataRuntimeStateValid, notCallData]
   have leftPhaseValid : interruptingMessageEventSubProcessStateValid program leftState = true := by
     cases checked : interruptingMessageEventSubProcessStateValid program leftState with
-    | false => simp [applyStimulus, admitStimulus, snapshotAbsent, leftDataValid, checked] at committed
+    | false => simp [applyStimulus, admitStimulus, snapshotAbsent, leftSerial, leftDataValid, checked] at committed
     | true => rfl
   have rightPhaseValid : interruptingMessageEventSubProcessStateValid program rightState = true := by
     rw [← raw_task_completion_frames_message_phase program rightState successor _ _ _ _ rightRunning rightCompletion,
@@ -293,6 +307,8 @@ theorem user_task_completion_with_same_successor_is_equal
     dataOutputUndeclaredTaskRefusesCompletion program state
       submittedTaskId.processInstanceId ⟨submittedTaskId.elementId.value⟩
       submittedTaskId.activation submittedValues noOutputAssociation
+  cases serialInput : (program.identity.semanticProfile != serialBusinessTaskProfileId ||
+      SerialBusinessTask.bindingsValid (SerialBusinessTask.programHandlers program) submittedValues) <;>
   cases completionAdmitted : structuredCompositionOrdinaryCompletionAdmitted program
       submittedTaskId submittedValues <;>
   cases inputPresent : (dataInputTaskOperations program).any (fun entry =>
@@ -300,12 +316,12 @@ theorem user_task_completion_with_same_successor_is_equal
     cases outputPresent : (dataOutputTaskOperations program).any (fun entry =>
       decide (entry.1 = ⟨submittedTaskId.elementId.value⟩)) <;>
   simp [applyStimulus, StimulusResult.ofScheduledClosure, StimulusResult.ofClosure,
-    admitStimulus, snapshotAbsent, leftDataValid, rightDataValid, leftPhaseValid, rightPhaseValid, leftNoIncidents,
+    admitStimulus, snapshotAbsent, leftSerial, rightSerial, leftDataValid, rightDataValid, leftPhaseValid, rightPhaseValid, leftNoIncidents,
     rightNoIncidents, leftRunning, rightRunning,
     ordinaryTask.1, ordinaryTask.2, noSequentialMultiInstance, noParallelMultiInstance,
     noMessageBoundedTask, noMessageMonitoredTask, noDataInputOutputTask, inputPresent, outputPresent,
     inputRefused, outputRefused,
-    ordinaryProgram, valuesAdmitted, completionAdmitted,
+    ordinaryProgram, valuesAdmitted, completionAdmitted, serialInput,
     completeOrdinaryUserTaskWithCompensation?, nonCompensationTarget, leftCompletion,
     rightCompletion] at committed ⊢
   split at committed <;> simp_all

@@ -16,5 +16,8 @@
   },
   "dependencies": {
     "@bpmn-lean/semantic-core": "workspace:*"
+  },
+  "devDependencies": {
+    "@bpmn-lean/bpmn-source": "workspace:*"
   }
 }

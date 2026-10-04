@@ -197,7 +197,7 @@ private def checkedEventRaceConfigurationValid (source : CheckedProcess) : Bool 
         | _ => false
     | _ => true
 
-private def checkedNodeArityValid (repeatable : Bool) (dormantHandlers : List NodeId)
+private def checkedNodeArityValid (serial repeatable : Bool) (dormantHandlers : List NodeId)
     (flows : List CheckedSequenceFlow) :
     CheckedNode → Bool
   | .noneStartEvent id =>
@@ -336,6 +336,7 @@ private def checkedNodeArityValid (repeatable : Bool) (dormantHandlers : List No
         descriptor.operation = "urn:bpmn-lean:effect-operation:probe-v1" &&
         incomingCount flows id = 1 && outgoingCount flows id = 1
   | .serviceTask id descriptor inputMappings outputMappings route =>
+      ((serial && SerialBusinessTask.descriptorValid descriptor && route.isNone) ||
       (descriptor.protocol = "urn:bpmn-lean:effect-protocol:activity-v1" &&
         ((descriptor.operation = "urn:bpmn-lean:effect-operation:probe-v1" &&
           inputMappings.isEmpty &&
@@ -350,7 +351,7 @@ private def checkedNodeArityValid (repeatable : Bool) (dormantHandlers : List No
             "urn:bpmn-lean:effect-operation:mapped-boundary-error-v1" &&
           singleStringLiteralMapping inputMappings &&
           singleLocalVariableMapping outputMappings &&
-          wellFormedCheckedBpmnErrorRoute id route))) &&
+          wellFormedCheckedBpmnErrorRoute id route)))) &&
         incomingCount flows id = 1 && outgoingCount flows id = 1
   | .parallelGateway id .diverging =>
       incomingCount flows id = 1 && outgoingCount flows id ≥ 2
@@ -458,6 +459,7 @@ def checkedWellFormed (source : CheckedProcess) : Bool :=
                     candidateFlowIds.contains flow.id
                 | _ => false)) &&
     source.nodes.all (checkedNodeArityValid
+      (source.identity.semanticProfile == serialBusinessTaskProfileId)
       (source.identity.semanticProfile == repeatableSubscriptionCheckpointProfileId)
       (source.interruptingMessageEventSubProcesses.map (·.elementId)) source.sequenceFlows) &&
     checkedInclusivePairingValid source &&

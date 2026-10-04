@@ -46,6 +46,7 @@ import type {
   ScopeOccurrenceId,
 } from "./semantic-process-state.js";
 import { MappingExpressionKind } from "./semantic-value-contract.js";
+import { evaluateInputMappings } from "./semantic-process-data.js";
 import { matchesEffectLocalDataOwner } from "./local-data-owner.js";
 import { isWellFormedWireString } from "./wire.js";
 
@@ -362,7 +363,7 @@ export function deriveInternalTransitionFootprint(
         state.messageWaits.map(({ id }) => id),
         owner.processInstanceId,
         [],
-        operation.processPropertySelector.propertyId,
+        [operation.processPropertySelector.propertyId],
       );
     case SemanticOperationKind.AwaitTimer:
       return waitFootprint(
@@ -377,11 +378,17 @@ export function deriveInternalTransitionFootprint(
         state.timerWaits.map(({ id }) => id),
       );
     case SemanticOperationKind.AwaitEffect: {
+      if (evaluateInputMappings(operation.effect.inputMappings, state.variables.process.bindings) === null) return null;
       const inputNames: string[] = [];
+      const processNames: string[] = [];
       for (const mapping of operation.effect.inputMappings) {
         switch (mapping.expression.kind) {
           case MappingExpressionKind.StringLiteral:
             inputNames.push(mapping.target);
+            break;
+          case MappingExpressionKind.EnclosingVariable:
+            inputNames.push(mapping.target);
+            processNames.push(mapping.expression.name);
             break;
           case MappingExpressionKind.LocalVariable:
             return null;
@@ -401,6 +408,7 @@ export function deriveInternalTransitionFootprint(
         state.effectWaits.map(({ id }) => id),
         owner.processInstanceId,
         inputNames,
+        [...new Set(processNames)],
       );
     }
     case SemanticOperationKind.Initiate:
@@ -531,7 +539,7 @@ function waitFootprint(
   waits: ReadonlyArray<OccurrenceId>,
   processInstanceId: string = owner.processInstanceId,
   activityVariableNames: ReadonlyArray<string> = [],
-  processVariableName: string | null = null,
+  processVariableNames: ReadonlyArray<string> = [],
 ): InternalTransitionFootprint | null {
   const matchingTokens = state.controlTokens.filter(({ placeId, multiplicity }) =>
     placeId === operation.input && multiplicity > 0
@@ -588,9 +596,9 @@ function waitFootprint(
   ) {
     return null;
   }
-  if (processVariableName !== null) {
+  if (operation.kind === SemanticOperationKind.AwaitCorrelatedPayloadMessage) {
     const bindings = state.variables.process.bindings.filter(
-      ({ name }) => name === processVariableName,
+      ({ name }) => name === operation.processPropertySelector.propertyId,
     );
     const value = bindings.length === 1 ? bindings[0]?.value : undefined;
     if (
@@ -647,12 +655,9 @@ function waitFootprint(
     openWaitAnchor,
     { kind: InternalTransitionStateAtomKind.LogicalTime },
     ...(occurrenceKind === InternalOccurrenceKind.Effect ? [activityScope] : []),
-    ...(processVariableName === null
-      ? []
-      : [{
-          kind: InternalTransitionStateAtomKind.ProcessVariable,
-          name: processVariableName,
-        } as const]),
+    ...processVariableNames.map((name) => ({
+      kind: InternalTransitionStateAtomKind.ProcessVariable, name,
+    } as const)),
   ]);
   const writes = canonicalUniqueStateAtoms([
     controlToken,

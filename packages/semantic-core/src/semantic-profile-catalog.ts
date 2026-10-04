@@ -110,3 +110,7 @@ export const REPEATABLE_EVENT_SUBSCRIPTIONS_CHECKPOINT_PROFILE_ID =
 /** Preserves checkpoint consumers while the public catalog owns the registered identity. */
 export const TRANSACTION_CANCELLATION_CHECKPOINT_PROFILE_ID =
   SemanticProfileId.TransactionCancellation;
+
+/** SBT hosting qualification precedes public capability registration. */
+export const SERIAL_BUSINESS_TASK_CHECKPOINT_PROFILE_ID =
+  "cibseven-2.2.0-serial-business-tasks-draft";

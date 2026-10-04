@@ -683,7 +683,7 @@ private theorem prepared_arm_candidate_singleton (program : Program) (state : Ru
         elementId := effect.elementId,
         activation := effectActivationCount state effect.elementId + 1,
         descriptor := effect.descriptor,
-        arguments := (evaluateInputMappings effect.inputMappings).getD [],
+        arguments := (evaluateEnclosingInputMappings state.variables.process.bindings effect.inputMappings).getD [],
         outputMappings := effect.outputMappings, output, bpmnErrorRoute := route }
     have filtered : (insertEffectWait wait state.effectWaits).filter (fun old =>
         decide (old.owner = owner) && decide (old.elementId = effect.elementId) &&
@@ -695,14 +695,15 @@ private theorem prepared_arm_candidate_singleton (program : Program) (state : Ru
         (fun old member => (keyFresh old member).1)
     dsimp [wait] at filtered
     rw [filtered]
-    cases evaluatedEq : evaluateInputMappings effect.inputMappings with
+    cases evaluatedEq : evaluateEnclosingInputMappings state.variables.process.bindings effect.inputMappings with
     | none => exact (unique evaluatedEq).elim
     | some bindings =>
         have candidate := candidateWaitStart_of_exact_selection program
           (.awaitEffect id origin input output effect route) owner owner.processInstanceId
           effect.elementId (effectActivationCount state effect.elementId + 1) runtimeProcess binding
           operationSelection scopeSelection scopeMatches processAligned rfl (by omega)
-        simp [candidate]
+        have snapshot := evaluateEnclosingInputMappings_snapshot _ _ _ evaluatedEq
+        simp [candidate, snapshot]
         rfl
 
 /-- Exact open projection and the candidate together settle singleton lifecycle acceptance. -/

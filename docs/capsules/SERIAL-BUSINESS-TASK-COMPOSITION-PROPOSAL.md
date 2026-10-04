@@ -2,8 +2,8 @@
 
 ## Status
 
-Lifecycle: draft
-Review: pending
+Lifecycle: implementation-in-progress
+Review: approved
 
 ## Question and boundary
 
@@ -15,7 +15,7 @@ The retained [CIB experiment](../experiments/BUSINESS-EFFECT-DATA-EXPERIMENT.md)
 
 BPMN 2.0.2 §§13.2, 13.3.2 and 13.3.3 supply sequential progression, Activity completion and User/Service Task lifecycle. The [Markdown-first reference route](../reference/bpmn-2.0.2/README.md) owns access; the standard does not prescribe CIB variable APIs or `camunda:inputOutput`.
 
-The [relationship register](../CIB-BPMN-RELATION-REGISTER.md) and [compatibility scope](../CIB-SEVEN-COMPATIBILITY-SCOPE-PROPOSAL.md) separate these layers. Inherit the string/null public start/completion behavior classified by `CIB-EXT-0005` and `CIB-EXT-0006`, and the stable effect-identity separation of the [effect specification](SERVICE-TASK-EFFECT-SPEC.md). The new outer-input/local-output exact-token mapping is a bounded CIB extension. Record its own reviewed relationship and verifier coverage before production implementation; the experiment is its current evidence, not a registered profile. A durable intent followed by a separately committed result is a project operational realization, not a claim that CIB commits an in-flight delegate interval. Do not relabel the predecessor CIB `2.0.0` mapped-service evidence as `2.2.0` evidence.
+The [relationship register](../CIB-BPMN-RELATION-REGISTER.md) and [compatibility scope](../CIB-SEVEN-COMPATIBILITY-SCOPE-PROPOSAL.md) separate these layers. Inherit the string/null public start/completion behavior classified by `CIB-EXT-0005` and `CIB-EXT-0006`, and the stable effect-identity separation of the [effect specification](SERVICE-TASK-EFFECT-SPEC.md). The new outer-input/local-output exact-token mapping is a bounded CIB extension. The registered `CIB-EXT-0015` relationship and its artifact-verifier guard record that boundary; the experiment is its current evidence, not a registered profile. A durable intent followed by a separately committed result is a project operational realization, not a claim that CIB commits an in-flight delegate interval. Do not relabel the predecessor CIB `2.0.0` mapped-service evidence as `2.2.0` evidence.
 
 This proposal expressly selects the exact-token extension below. It does not adopt JUEL, beans or Java execution inside Lean/core. Broader expression/script execution and a public handler registry remain governed by the compatibility proposal. The consumer here is a real project-owned invoice-validation journey using the existing caller-supplied effect Activity interface; no new dependency, registry abstraction or execution language is required.
 
@@ -62,7 +62,7 @@ The [scoped-data account](SCOPED-DATA-SPEC.md) remains the runtime representatio
 
 Lane shape: proved
 
-Evidence: extend the independent [data evaluator](../../BpmnSemantics/SemanticProcess/Data.lean), [effect relation](../../BpmnSemantics/SemanticProcess/EffectCompletion.lean) and [execution assembly](../../BpmnSemantics/SemanticProcess/Execution.lean). The selected laws must concern actual reachable serial execution and precise mapping premises, not evaluator equality as a substitute for meaning.
+Evidence: quantified work is owned by [data/frame laws](../../BpmnSemantics/SemanticProcess/SerialBusinessTaskDataProofs.lean), [actual execution/lifetime laws](../../BpmnSemantics/SemanticProcess/SerialBusinessTaskLifecycleProofs.lean) and [ordered progress](../../BpmnSemantics/SemanticProcess/SerialBusinessTaskProgressProofs.lean). The [implementation record](#implementation-in-progress) distinguishes compiled bridges from unfinished obligations. Laws must concern actual reachable execution and explicit mapping premises, not evaluator equality as a substitute for meaning.
 
 Prove input lookup uses the enclosing context and preserves it; snapshot argument/local-scope equality; exact output-target writes and preservation of other Process bindings/owners; state preservation on refused commands; and, from independently admitted exact lowering plus an accepted start, required input availability, one exact task/effect lifetime and bounded successful closure after every accepted completion. A successful transition's soundness bridge must expose the lookup, identity, patch, output and continuation premises. Do not assume the desired successor, successful preparation, input availability or an already completable wait to prove those facts.
 
@@ -94,19 +94,19 @@ Use two project-owned whole models: invoice Review→Validate→Finalize and a c
 
 | Owner | Headroom | Constraint |
 |---|---:|---|
-| [Shared values](../../packages/semantic-core/src/semantic-value-contract.ts) | 703 | Add only the explicit closed expression arm. |
-| [Core mappings](../../packages/semantic-core/src/semantic-process-data.ts) | 535 | Reuse mapping/frame mechanisms; preserve predecessor semantics. |
-| [Operation admission](../../packages/semantic-core/src/semantic-process-operation-admission.ts) | 105 | Delegate profile-specific mapping decisions. |
-| [Command admission](../../packages/semantic-core/src/semantic-command-admission.ts) | 291 | Delegate required-start and result-domain checks. |
+| [Shared values](../../packages/semantic-core/src/semantic-value-contract.ts) | 698 | Add only the explicit closed expression arm. |
+| [Core mappings](../../packages/semantic-core/src/semantic-process-data.ts) | 498 | Reuse mapping/frame mechanisms; preserve predecessor semantics. |
+| [Operation admission](../../packages/semantic-core/src/semantic-process-operation-admission.ts) | 99 | Delegate profile-specific mapping decisions. |
+| [Command admission](../../packages/semantic-core/src/semantic-command-admission.ts) | 288 | Delegate required-start and result-domain checks. |
 | [Open-set validation](../../packages/semantic-core/src/flow-node-occurrence-open-set.ts) | 15 | Extract the cohesive effect-wait validation only if growth exceeds this margin. |
 | [Source compiler](../../packages/bpmn-source/src/checked-process-compiler.ts) | 377 | Retain structural compilation and delegate profile projection. |
-| [Source dispatch](../../packages/bpmn-source/src/compilation-dispatch.ts) | 423 | Add one private capability route. |
-| [Checked admission](../../packages/bpmn-source/src/checked-process-admission.ts) | 98 | Delegate the serial capability analysis. |
-| [Lean checked contract](../../BpmnSemantics/CheckedProcessContract.lean) | 452 | Preserve all existing alternatives. |
-| [Lean data](../../BpmnSemantics/SemanticProcess/Data.lean) | 483 | Reuse mapping semantics and preserve existing output restrictions. |
-| [Lean effect completion](../../BpmnSemantics/SemanticProcess/EffectCompletion.lean) | 721 | Keep independently stated transition premises and soundness separate. |
-| [Lean Program admission](../../BpmnSemantics/SemanticProcess/ProgramStructuralValidation.lean) | 16 | Delegate; do not place serial analysis here. |
-| [Lean command admission](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean) | 42 | Delegate; preserve closed profile decisions. |
+| [Source dispatch](../../packages/bpmn-source/src/compilation-dispatch.ts) | 418 | Add one private capability route. |
+| [Checked admission](../../packages/bpmn-source/src/checked-process-admission.ts) | 95 | Delegate the serial capability analysis. |
+| [Lean checked contract](../../BpmnSemantics/CheckedProcessContract.lean) | 451 | Preserve all existing alternatives. |
+| [Lean data](../../BpmnSemantics/SemanticProcess/Data.lean) | 370 | Reuse mapping semantics and preserve existing output restrictions. |
+| [Lean effect completion](../../BpmnSemantics/SemanticProcess/EffectCompletion.lean) | 648 | Keep independently stated transition premises and soundness separate. |
+| [Lean Program admission](../../BpmnSemantics/SemanticProcess/ProgramStructuralValidation.lean) | 14 | Delegate; do not place serial analysis here. |
+| [Lean command admission](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean) | 8 | Delegate; preserve closed profile decisions. |
 
 These measurements are the nonblank margin before the 800-line review target, derived through `what-binds`. If planned growth exceeds its margin, extract a cohesive existing responsibility without changing its contract and remeasure. New owners require ordinary source-map and default-library reachability coverage. This is not permission to compress existing proof or absence claims.
 
@@ -124,6 +124,51 @@ Record baseline-to-closure code/document churn in the [cost ledger](../CAPSULE-C
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `bbdd1112` | `fork-turns-none` | `approve-with-required-edits` | `4b849114` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+
+The same independent reviewer approved correction `4b849114`, closing the sole delegate/context-name finding. Proposal packet digest: `e5c7f71c5c29da29206bde324e8a09073cdfc27c0e3f1b0b03741c2dba6bd7bb`. The complete correction infrastructure gate passes 626 tests plus harness types (`/tmp/serial-business-r1-infrastructure`, separately asserted). Approval selects the account only; implementation and hosting evidence remain open.
+
+## Implementation in progress
+
+Current family status is owned by [`implementation-status-owner:ENGINE-SEMANTIC-FAMILY`](../ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md#serial-business-task-composition). This is an unreviewed private implementation. Typed host admission refuses it; public registration and live Temporal qualification remain absent.
+
+### Compiled guarantee and remaining work
+
+The latest compiled proof checkpoint is `/tmp/serial-business-lean-reached-readiness8.log` (warning-free completed result inspected). From the private profile, independent program analysis, an actual committed start and actual execution reachability, `reached_serial_invariant` derives nonempty instance identity, declared root, exact token/wait ownership, canonical issuance and Process data, ordered remaining suffix, required-input availability, captured local lifetime, private associations and complete runtime validity. The same reached invariant derives actual public commitment for every `AdmissibleCompletion`, whose premises specify live wait identity and canonical scalar payload coverage, never a successful completion function. `serial_position_progress` excludes stranded running states; `serial_settled_frontier` derives the actual empty scheduler frontier for live waits and completed control. `reached_scheduled_closure_is_bounded` proves that the actual scheduler, with at least two steps available, preserves reachability and reaches a live wait or completed control without closure failure.
+
+The required proof obligations are implemented. Root qualification of the three frozen owners passes in `/tmp/serial-business-proof-final-bounded`: one CPU, 3 GiB, no additional swap, a 1,287,086,080-byte cgroup peak and zero memory-limit events. Exact mounted source hashes are retained in `.cache/serial-business-proof-final/evidence/source-sha256.json`. The owners occupy 799/798/798 nonblank lines. The private checkpoint passes the source/core/protocol, differential, infrastructure and Lean correctness gates below; independent checkpoint review remains open.
+
+The proof uses the existing singleton scheduler: `ordinaryExecutionFrontier` obtains the actual `fire?` successor, and singleton execution does not require a prepared batch. The quantified closure result must establish the bounded actual state and absence of closure failure. It does not imply presence of optional trace/lifecycle publications; complete E1/E2 comparison remains separate evidence. No successful successor, successful preparation or already completable wait is assumed.
+
+### Retained verification evidence
+
+All command receipts below were separately asserted. Delegated Lean logs are distinguished from receipts; their terminal successful build results were inspected. These results qualify the private implementation for independent checkpoint review; none establishes public or hosted support.
+
+| Boundary | Latest retained result |
+|---|---|
+| Complete TypeScript packages | Source: 1,153 tests, `/tmp/serial-business-start-id-source-suite`; core: 1,531, `/tmp/serial-business-start-id-core-suite`; protocol: 146, `/tmp/serial-business-protocol-qualified`. |
+| Serial execution | `/tmp/serial-business-chain-closure` covers leading, trailing and consecutive Services, earlier-output availability, exact one/two-step closure and one-smaller rollback. `/tmp/serial-business-empty-instance-ts-green` adds atomic refusal on both User-first and Service-first starts. |
+| Independent lowering and execution | `/tmp/serial-business-final-lean-ts-parity` compares four cases across independent lowering, E1 results and complete E2 publications, including null fan-out, literal inputs, empty mappings and malformed/foreign/stale-result refusals. Native dependencies and the JSON runner were refreshed in `/tmp/serial-business-final-native-dependencies`. |
+| Complete Lean library | `/tmp/serial-business-checkpoint-lean-library` passes all 736 jobs under the unchanged one-CPU, 3 GiB/no-additional-swap bound, with a 3,030,032,384-byte cgroup peak and zero memory-limit events. It uses the retained build cache and does not close deferred cold-library resource acceptance. |
+| Bounded kernel fixtures | `/tmp/serial-business-profile-law-measured2-<module>` covers SerialBusinessTaskConformance, MappedSuccessConformance, MappedBoundaryErrorConformance and UserTaskMetadataConformance under one CPU, 3 GiB and no additional swap, with zero memory-limit events. Exact transitive source/build hashes are retained in `.cache/serial-business-profile-law-fixtures/evidence/measurement-inputs.json`; [the module-cost registry](../../scripts/lean-module-cost.ts) binds these receipts. `/tmp/serial-business-profile-law-cost-guard` passes. |
+| Infrastructure and documentation | The general integration-file/direct-command discovery repair in `de175e79` passes 629 infrastructure checks (`/tmp/integration-discovery-final-infrastructure`) and focused platform guards (`/tmp/integration-discovery-platform-final`). The staged feature passes all 629 infrastructure checks and harness types in `/tmp/serial-business-checkpoint-infrastructure-loopback`. The earlier sandboxed attempt failed only on loopback socket permission; a separate minimal Node listener reproduced `EPERM`, and the complete gate passed with loopback access. Subsequent evidence-document edits pass `/tmp/serial-business-checkpoint-final-docs`. |
+
+The private raw Start guard originally copied an empty instance ID into committed state, while the next admission rejected its invalid root occurrence. Both User-first and Service-first chains reproduce the mechanism in `/tmp/serial-business-empty-instance-ts-red-corrected`; `/tmp/serial-business-empty-instance-lean-red2` independently disproves atomic rejection. Both implementations now enforce the existing wire nonempty-instance requirement before private start admission. The TypeScript green receipt above and `/tmp/serial-business-empty-instance-lean-green` pass; no nonempty-instance premise was added to the accepted-start proof. Earlier harness/equality-instance errors remain retained and are not behavioral evidence.
+
+### Proof reassessment and process record
+
+The structured-User proof excludes effect waits. The serial account therefore indexes actual execution by the remaining admitted-chain suffix and its still-needed input names, rather than recording a second completed-prefix history. Exact suffix position subsumes the initial standalone control-bound induction. The complete readiness audit additionally required declared root/port ownership, metadata and Error-route equality, canonical issuance and live User-counter bounds; these facts were added to the unified witness rather than patched into individual guards.
+
+The compiled development sequence is retained in the delegated logs `/tmp/serial-business-lean-canonical-invariant4.log`, `/tmp/serial-business-lean-owned-position6.log`, `/tmp/serial-business-lean-wait-guards8.log`, `/tmp/serial-business-lean-runtime-guard3.log`, `/tmp/serial-business-lean-fire-phase.log`, `/tmp/serial-business-lean-frontier-offer4.log` and the current joint-fire log. Preceding numbered failures remain diagnostic evidence. Shared root normalization and Compensation normalization each replaced repeated reduction across position cases; no compiler limit was increased.
+
+At the owner-size reassessment, joint fire/completion preservation and accepted-start accounts replaced repeated operation inversion. Consumer inspection found no external dependency on the replaced frame helpers. This retires their provisional arbitrary-state generalization without declared-root/ordered-position evidence; it preserves the approved accepted-start reachability guarantee and every required mapping/frame/refusal endpoint law. One recursive `follow` certificate retains the existing static head/permutation/link projections. A proof-only work count, bounded by two and zero exactly at a settled state, decreases under the same actual-fire inversion; one scheduler induction then establishes closure. No owner, runtime field or admission restriction was added. The compiled consolidations are retained in `/tmp/serial-business-lean-joint-completion.log`, `/tmp/serial-business-lean-follow-certificate.log` and `/tmp/serial-business-lean-joint-start.log`.
+
+Exact completion delegation replaced the provisional arbitrary-program dispatch/refusal wrapper, serving preservation and readiness together. Superseded control-bound and depth-forgetting projections were removed; callers consume the stronger joint invariant. A generic selected-profile simplifier reproduced default-heartbeat exhaustion in two guard proofs; targeted condition rewriting corrected that elaboration mechanism without raising limits.
+
+The new shared ingress guard exposed positional branch-splitting failures in existing Structured Composition proofs. One nonselected-profile simplification theorem in CommandAdmission fixes the class; the provisional per-proof correction and two redundant Execution helpers were removed. `/tmp/serial-business-shared-profile-normalization2`, `/tmp/serial-business-shared-profile-native-warm` and `/tmp/serial-business-shared-profile-native-clean` pass. The first theorem-elaboration failure remains retained. Runtime meaning is unchanged; the final bounded fixtures above qualify the resulting shared inputs.
+
+Two preparation gaps remain explicit. First, the legacy null-result fixture initially compiled in native `/tmp/serial-business-lean-data-red` without the required cgroup bound. It was moved into the root-owned conformance module and subsequently qualified under the fixed bound; that does not retroactively qualify its first build. Second, after the empty-ID correction, the root refreshed Docker dependencies but returned the Lean lease before warming the separate native closure. The delegated build rebuilt shared dependencies and was allowed to finish under the no-interruption rule. Subsequent lease releases followed root-owned native warming. All new finite fixtures otherwise retained root-owned bounded first builds.
+
+Earlier bounded inputs and measurements remain in `.cache/serial-business-final-fixtures` and `.cache/serial-business-start-id-fixtures`; the latest profile-law snapshot above supersedes their qualification of current inputs. The first profile-law attempt was denied access to the Docker socket before Lean ran; its authorized offline retry supplies the retained verdict. Earlier infrastructure failures caught a relocated fixture digest, stale headroom entries and a documentation word limit. The witness-specific selection guard was replaced by the general discovery repair rather than retained as another special case.

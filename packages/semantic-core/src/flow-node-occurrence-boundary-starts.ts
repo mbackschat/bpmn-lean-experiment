@@ -10,7 +10,7 @@ import {
   ActivityHandlerKind,
 } from "./activity-occurrence.js";
 import { sameMessageChannel } from "./message-channel.js";
-import { evaluateInputMappings } from "./semantic-process-data.js";
+import { inputMappingSnapshotMatches } from "./semantic-process-data.js";
 import { SemanticOperationKind } from "./semantic-process-contract.js";
 import type {
   SemanticOperation,
@@ -131,7 +131,7 @@ export function candidateLongLivedStarts(
         candidate.id.elementId === operation.effect.elementId &&
         candidate.output === operation.output &&
         sameJson(candidate.descriptor, operation.effect.descriptor) &&
-        sameJson(candidate.arguments, evaluateInputMappings(operation.effect.inputMappings)) &&
+        inputMappingSnapshotMatches(operation.effect.inputMappings, candidate.arguments) &&
         sameJson(candidate.outputMappings, operation.effect.outputMappings) &&
         sameJson(candidate.bpmnErrorRoute, operation.bpmnErrorRoute) &&
         sameScopeOccurrence(candidate.owner, owner)

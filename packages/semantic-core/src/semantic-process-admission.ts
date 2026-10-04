@@ -1,3 +1,5 @@
+import { serialBusinessProgramGraph, serialBusinessStimulusDataAdmitted } from "./serial-business-task-admission.js";
+import { SERIAL_BUSINESS_TASK_CHECKPOINT_PROFILE_ID } from "./semantic-profile-catalog.js";
 import { isInterruptingMessageEventSubProcessDeclaration, interruptingMessageEventSubProcessProgramGraph } from "./interrupting-message-event-subprocess-program-admission.js";
 import { INTERRUPTING_MESSAGE_EVENT_SUBPROCESS_CHECKPOINT_PROFILE_ID } from "./semantic-profile-catalog.js";
 import { callDataStimulusDataAdmitted } from "./call-data-command-admission.js";
@@ -109,6 +111,7 @@ export function supportsSemanticProcessScenario(
       scenario.bpmn.sourceOverlay,
     ) &&
     callDataStimulusDataAdmitted(program, start) &&
+    serialBusinessStimulusDataAdmitted(program, start) &&
     structuredCompositionStimulusDataAdmitted(program, start) &&
     compensationStartDataAdmitted(program, start) &&
     processStartMatchesProgram(start, program)
@@ -130,6 +133,7 @@ export function supportsSemanticProcessExecution(
     ) &&
     profileAllowsStimulusValueDomain(program.identity.semanticProfile, start) &&
     callDataStimulusDataAdmitted(program, start) &&
+    serialBusinessStimulusDataAdmitted(program, start) &&
     structuredCompositionStimulusDataAdmitted(program, start) &&
     sequentialMultiInstanceStimulusDataAdmitted(program, start) &&
     compensationStartDataAdmitted(program, start) &&
@@ -273,12 +277,14 @@ export function isWellFormedSemanticProcessProgram(
       placeIds,
       placeOrigins,
       scopeOrigins,
+      identity.semanticProfile,
     )) {
       return false;
     }
     checkedOperations.push(operation);
   }
   const program = value as unknown as SemanticProcessProgram;
+  if (identity.semanticProfile === SERIAL_BUSINESS_TASK_CHECKPOINT_PROFILE_ID && !serialBusinessProgramGraph(program)) return false;
   const snapshotTargets = program.compensationEventSubProcessSnapshots?.targets;
   if (identity.semanticProfile === INTERRUPTING_MESSAGE_EVENT_SUBPROCESS_CHECKPOINT_PROFILE_ID) {
     if (!interruptingMessageEventSubProcessProgramGraph(program)) return false;

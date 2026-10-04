@@ -1,3 +1,5 @@
+import { serialBusinessProgramShape, serialBusinessCheckedShape } from "./serial-business-task-admission.js";
+import { SERIAL_BUSINESS_TASK_CHECKPOINT_PROFILE_ID } from "./semantic-profile-catalog.js";
 import { transactionCancellationProgramShape } from "./transaction-cancellation-admission.js";
 import { CallDataKind } from "./call-data-contract.js";
 import { structuredCompositionCheckedShape, structuredCompositionProgramShape } from "./structured-process-composition-admission.js";
@@ -31,6 +33,7 @@ import {
 } from "./user-task-metadata.js";
 
 export {
+  SERIAL_BUSINESS_TASK_CHECKPOINT_PROFILE_ID,
   INTERRUPTING_MESSAGE_EVENT_SUBPROCESS_CHECKPOINT_PROFILE_ID,
   CALL_ACTIVITY_DATA_BOUNDARIES_CHECKPOINT_PROFILE_ID,
   STRUCTURED_PROCESS_COMPOSITION_CHECKPOINT_PROFILE_ID,
@@ -48,6 +51,7 @@ export function profileAllowsProgramShape(
   actualOperations: ReadonlyArray<SemanticOperation>,
   definitionScopeCount: number,
 ): boolean {
+  if (semanticProfile === SERIAL_BUSINESS_TASK_CHECKPOINT_PROFILE_ID) return serialBusinessProgramShape(actualOperations, definitionScopeCount);
   if (semanticProfile === STRUCTURED_PROCESS_COMPOSITION_CHECKPOINT_PROFILE_ID) {
     return structuredCompositionProgramShape(actualOperations, definitionScopeCount);
   }
@@ -169,6 +173,7 @@ export function profileAllowsCheckedProcessShape(
   nodes: ReadonlyArray<CheckedNode>,
   definitionScopeCount: number,
 ): boolean {
+  if (semanticProfile === SERIAL_BUSINESS_TASK_CHECKPOINT_PROFILE_ID) return serialBusinessCheckedShape(nodes, definitionScopeCount);
   if (semanticProfile === STRUCTURED_PROCESS_COMPOSITION_CHECKPOINT_PROFILE_ID) {
     return structuredCompositionCheckedShape(nodes, definitionScopeCount);
   }

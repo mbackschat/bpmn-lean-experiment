@@ -128,7 +128,7 @@ def activateEffect (state : RuntimeState) (instanceId : SemanticId)
     (effect : EffectDefinition) (bpmnErrorRoute : Option BpmnErrorRoute) :
     RuntimeState :=
   let activation := effectActivationCount state effect.elementId + 1
-  let arguments := (evaluateInputMappings effect.inputMappings).getD []
+  let arguments := (evaluateEnclosingInputMappings state.variables.process.bindings effect.inputMappings).getD []
   let effectOwner : EffectOccurrenceId :=
     { processInstanceId := instanceId
       elementId := ⟨effect.elementId.value⟩

@@ -2,6 +2,8 @@ import {
   EffectOperation,
   EffectProtocol,
   SemanticProfileId,
+  SERIAL_BUSINESS_TASK_CHECKPOINT_PROFILE_ID,
+  isSerialBusinessIdentifier,
 } from "@bpmn-lean/semantic-core";
 import type { SourceOverlayIdentity } from "@bpmn-lean/semantic-core";
 
@@ -47,6 +49,16 @@ export function selectMappedServiceTaskSourcePolicy(
   semanticProfile: string,
   overlay: AdmittedSourceOverlay | null,
 ): SourcePolicySelection {
+  if (semanticProfile === SERIAL_BUSINESS_TASK_CHECKPOINT_PROFILE_ID) {
+    if (overlay === null || overlay.semanticProfile !== semanticProfile || overlay.inertAttributes.length > 0 ||
+      overlay.effectBindings.length === 0 || hasDuplicateSourceBinding(overlay.effectBindings) ||
+      !overlay.effectBindings.every(({ source, descriptor }) => isSerialBusinessIdentifier(descriptor.operation) &&
+        source.delegateExpression === `\${${descriptor.operation}}` && descriptor.protocol === EffectProtocol.Activity &&
+        (source.implementation === null || source.implementation === EffectProtocol.Activity))) {
+      return rejected("Serial business tasks require exact named Activity bindings and no inert attributes.");
+    }
+    return { policy: { sourceOverlay: overlay.identity, effectBindings: overlay.effectBindings, inertAttributes: [] }, rejection: null };
+  }
   const builtIn = builtInBinding(semanticProfile);
   if (builtIn === undefined) {
     return overlay === null

@@ -378,7 +378,7 @@ theorem prepared_arm_projectWaits_insert (program : Program) (state : RuntimeSta
           (effects ++ incidents) newStart timerPerm
   case awaitEffect.isFalse.running =>
     rename_i id origin input output effect route instanceId selection
-    let bindings := (evaluateInputMappings effect.inputMappings).getD []
+    let bindings := (evaluateEnclosingInputMappings state.variables.process.bindings effect.inputMappings).getD []
     let wait : EffectWait :=
       { processInstanceId := owner.processInstanceId, owner, elementId := effect.elementId,
         activation := effectActivationCount state effect.elementId + 1,
@@ -649,7 +649,7 @@ theorem prepared_arm_preserves_flowNodeOccurrenceProgramValidity (program : Prog
     all_goals rfl
   case awaitEffect.isFalse.running =>
     rename_i id origin input output effect route instanceId selection
-    let bindings := (evaluateInputMappings effect.inputMappings).getD []
+    let bindings := (evaluateEnclosingInputMappings state.variables.process.bindings effect.inputMappings).getD []
     let wait : EffectWait :=
       { processInstanceId := owner.processInstanceId, owner, elementId := effect.elementId,
         activation := effectActivationCount state effect.elementId + 1,
@@ -699,15 +699,15 @@ theorem prepared_arm_preserves_flowNodeOccurrenceProgramValidity (program : Prog
       intro activity member
       have rejected := List.all_eq_true.mp rejectedAll activity member
       simpa [effectWaitOccurrenceId, effectWaitOccurrence] using rejected
-    have arguments : evaluateInputMappings effect.inputMappings = some bindings := by
-      cases evaluatedEq : evaluateInputMappings effect.inputMappings with
+    have arguments : evaluateEnclosingInputMappings state.variables.process.bindings effect.inputMappings = some bindings := by
+      cases evaluatedEq : evaluateEnclosingInputMappings state.variables.process.bindings effect.inputMappings with
       | none => exact False.elim (unique evaluatedEq)
       | some values => simp [bindings, evaluatedEq]
     have referenceValid := flowNodeOccurrenceProgramValidity_insertOrdinaryEffect program state id
       origin input effect
         route wait bindings valid declarers declared live processId
         (by simpa [wait] using elementId) (by simp [wait]) rfl originElement rfl rfl
-        arguments rfl rfl rfl
+        (evaluateEnclosingInputMappings_snapshot _ _ _ arguments) rfl rfl rfl
         (fun candidateId candidateOrigin candidateInput candidateOutput candidateEffect
           candidateRoute member => programWellFormed_awaitEffect_elements_align program
             programAdmitted candidateId candidateOrigin candidateInput candidateOutput candidateEffect

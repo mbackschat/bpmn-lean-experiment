@@ -66,6 +66,9 @@ def decodeMappingExpression (json : Json) :
   | "stringLiteral" =>
       requireObjectShape json ["kind", "value"]
       pure (.stringLiteral (← stringField json "value"))
+  | "enclosingVariable" =>
+      requireObjectShape json ["kind", "name"]
+      pure (.enclosingVariable (← stringField json "name"))
   | "localVariable" =>
       requireObjectShape json ["kind", "name"]
       pure (.localVariable (← stringField json "name"))

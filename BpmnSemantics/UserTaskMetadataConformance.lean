@@ -338,6 +338,11 @@ theorem completion_is_metadata_irrelevant
         SequentialUserTask.exactWait.output SequentialUserTask.exactWait.owner }
   apply user_task_completion_with_same_successor_is_equal
     (successor := successor)
+    (serialGuardAgreement := by
+      have legacy : ((programFor exactMetadata).identity.semanticProfile !=
+          serialBusinessTaskProfileId) = true := by decide +kernel
+      unfold serialBusinessCommandAdmitted
+      rw [if_pos legacy, if_pos legacy])
     (noDataInputOutputTask := by decide +kernel)
     (noMessageMonitoredTask := by decide +kernel)
   · rfl
@@ -377,7 +382,14 @@ theorem completion_is_metadata_irrelevant
         SequentialUserTask.exactTaskInstanceId.activation = some successor := by
       simp [completeUserTask, waitingStateFor, waitFor, taskDefinitionFor,
         SequentialUserTask.exactWait, SequentialUserTask.exactTaskInstanceId, successor]
-    simp [applyStimulus, admitStimulus,
+    have serialGuard : serialBusinessCommandAdmitted (programFor exactMetadata)
+        (waitingStateFor leftMetadata)
+        (.completeUserTaskInstance commandId SequentialUserTask.exactTaskInstanceId submittedValues) = true := by
+      have legacy : ((programFor exactMetadata).identity.semanticProfile !=
+          serialBusinessTaskProfileId) = true := by decide +kernel
+      unfold serialBusinessCommandAdmitted
+      rw [if_pos legacy]
+    simp [applyStimulus, admitStimulus, serialGuard,
       show interruptingMessageEventSubProcessStateValid (programFor exactMetadata)
         (waitingStateFor leftMetadata) = true from rfl,
       show (programFor exactMetadata).compensationEventSubProcessSnapshots = none from rfl,

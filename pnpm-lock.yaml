@@ -98,6 +98,10 @@ importers:
       '@bpmn-lean/semantic-core':
         specifier: workspace:*
         version: link:../../semantic-core
+    devDependencies:
+      '@bpmn-lean/bpmn-source':
+        specifier: workspace:*
+        version: link:../../bpmn-source
 
   packages/temporal-adapter/runner:
     dependencies:

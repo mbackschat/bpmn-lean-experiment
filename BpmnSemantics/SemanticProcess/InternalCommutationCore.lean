@@ -460,7 +460,7 @@ def prepareInternalArm? (program : Program) (state : RuntimeState)
             elementId := timer.elementId, activation := next,
             deadlineMs := state.logicalTimeMs + timer.durationMs, output })
     | .awaitEffect _ _ _ output effect route =>
-        let evaluated := evaluateInputMappings effect.inputMappings
+        let evaluated := evaluateEnclosingInputMappings state.variables.process.bindings effect.inputMappings
         if evaluated.isNone then none else
         let bindings := evaluated.getD []
         let next := effectActivationCount state effect.elementId + 1
@@ -526,6 +526,10 @@ def footprintOfPatch (patch : InternalArmingPatch) : InternalTransitionFootprint
     | .effect wait _ => [.activityVariableScope (.effectOccurrence (effectWaitOccurrence wait))]
     | _ => []
   let correlationReads := match patch.operation with
+    | .awaitEffect _ _ _ _ effect _ => effect.inputMappings.filterMap fun mapping =>
+        match mapping.expression with
+        | .enclosingVariable name => some (.processVariable name)
+        | _ => none
     | .awaitCorrelatedPayloadMessage _ _ _ _ _ _ _ _ processPropertySelector =>
         [.processVariable processPropertySelector.propertyId]
     | _ => []

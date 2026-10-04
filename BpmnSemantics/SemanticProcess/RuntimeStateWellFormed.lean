@@ -714,11 +714,11 @@ def hiddenRecordDeclarationsValid (program : Program) (state : RuntimeState) : B
 /-- Which `RuntimeState` values the semantic account admits, for one program and one expected
 semantic instance identity.
 
-This is a representation obligation, not an admission capability: it changes no admitted model, no
-accepted transition, and no canonical projection. Lean installs no gate. The TypeScript command and
-continuation gates intentionally enforce the predicate before general preservation is proved, so any
-newly refused state reached through an accepted transition is a validator defect until it is shown
-unreachable or the predicate or transition account is corrected. -/
+This representation predicate defines no admission capability or canonical projection. TypeScript
+command and continuation admission enforce it; Lean's private serial business-task ingress also
+enforces it through `serialBusinessCommandAdmitted` in `CommandAdmission`. General preservation
+remains separate: a newly refused state reached through an accepted transition is a validator defect
+until it is shown unreachable or the predicate or transition account is corrected. -/
 def runtimeStateWellFormed (program : Program) (instanceId : SemanticId)
     (state : RuntimeState) : Bool :=
   runtimePositionValid program instanceId state &&

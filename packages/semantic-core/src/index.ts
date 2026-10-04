@@ -128,3 +128,5 @@ export * from "./transaction-source-contract.js";
 export * from "./transaction-cancellation-admission.js";
 
 export { structuredCompositionCheckedGraph } from "./structured-process-composition-admission.js";
+export * from "./serial-business-task-policy.js";
+export * from "./serial-business-task-admission.js";

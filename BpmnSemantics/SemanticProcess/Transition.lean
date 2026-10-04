@@ -77,7 +77,11 @@ def awaitEffectState? (state : RuntimeState) (input output : ControlPlaceId)
     Option RuntimeState := do
   let owner ← onlyTokenOwner? state input
   let _ ← runningInstance? state
-  pure (activateEffect state owner.processInstanceId owner input output effect route)
+  let _ ← evaluateEnclosingInputMappings state.variables.process.bindings effect.inputMappings
+  let effectOwner : EffectOccurrenceId :=
+    ⟨owner.processInstanceId, ⟨effect.elementId.value⟩, effectActivationCount state effect.elementId + 1⟩
+  if state.variables.activities.any (activityScopeMatches effectOwner) then none
+  else pure (activateEffect state owner.processInstanceId owner input output effect route)
 
 def duplicateState? (state : RuntimeState) (input : ControlPlaceId)
     (outputs : List ControlPlaceId) : Option RuntimeState := do

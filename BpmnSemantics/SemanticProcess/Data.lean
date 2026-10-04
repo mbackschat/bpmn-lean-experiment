@@ -2,7 +2,7 @@ import BpmnSemantics.SemanticProcessContract
 
 /-! # Semantic Process bounded data mappings
 
-This module owns the string-only mapping mechanisms admitted by mapped Service Task profiles. It deliberately implements only the empty payload-free effect and the exact one-literal-input/one-local-output shape.
+This module owns scoped binding merges, immutable containing-context input evaluation, captured input snapshots and local result mappings; profile admission selects the permitted expression and scalar subsets.
 -/
 
 namespace BpmnSemantics.SemanticProcess
@@ -105,6 +105,61 @@ theorem mergeProcessVariableBindings_perm (existing replacements : List Variable
         !(replacements.map (·.name)).contains binding.name) :=
   sortVariableBindings_perm _
 
+private theorem insertVariableBinding_strictOrder (binding : VariableBinding) (bindings : List VariableBinding)
+    (ordered : bindings.Pairwise (fun left right => left.name < right.name))
+    (fresh : binding.name ∉ bindings.map (·.name)) :
+    (insertVariableBinding binding bindings).Pairwise (fun left right => left.name < right.name) := by
+  induction bindings with
+  | nil => simp [insertVariableBinding]
+  | cons first rest ih =>
+    obtain ⟨headOrder, tailOrder⟩ := List.pairwise_cons.mp ordered
+    have different : binding.name ≠ first.name := fun same => fresh (by simp [same])
+    have tailFresh : binding.name ∉ rest.map (·.name) := fun member => fresh (List.mem_cons_of_mem _ member)
+    by_cases before : binding.name < first.name
+    · rw [insertVariableBinding, if_pos before]
+      apply List.pairwise_cons.mpr
+      refine ⟨?_, ordered⟩
+      intro value member
+      rcases List.mem_cons.mp member with rfl | later
+      · exact before
+      · exact String.lt_trans before (headOrder value later)
+    · rw [insertVariableBinding, if_neg before]
+      apply List.pairwise_cons.mpr
+      refine ⟨?_, ih tailOrder tailFresh⟩
+      intro value member
+      have included := (insertVariableBinding_perm binding rest).mem_iff.mp member
+      rcases List.mem_cons.mp included with rfl | later
+      · exact Std.lt_of_le_of_ne (by simpa using before) (Ne.symm different)
+      · exact headOrder value later
+
+private theorem sortVariableBindings_strictOrder (bindings : List VariableBinding)
+    (unique : (bindings.map (·.name)).Nodup) :
+    (sortVariableBindings bindings).Pairwise (fun left right => left.name < right.name) := by
+  induction bindings with
+  | nil => simp [sortVariableBindings]
+  | cons first rest ih =>
+    obtain ⟨fresh, uniqueRest⟩ := List.nodup_cons.mp unique
+    apply insertVariableBinding_strictOrder first (sortVariableBindings rest) (ih uniqueRest)
+    intro duplicate
+    exact fresh (((sortVariableBindings_perm rest).map (·.name)).mem_iff.mp duplicate)
+
+/-- Canonical merging strictly orders names when each supplied scope/patch names a variable at most once. This exposes the actual private sorter's ordering guarantee to profile proofs. -/
+theorem mergeProcessVariableBindings_strictOrder (existing replacements : List VariableBinding)
+    (existingUnique : (existing.map (·.name)).Nodup)
+    (replacementUnique : (replacements.map (·.name)).Nodup) :
+    (mergeProcessVariableBindings existing replacements).Pairwise (fun left right => left.name < right.name) := by
+  apply sortVariableBindings_strictOrder
+  rw [List.map_append]
+  apply List.pairwise_append.mpr
+  refine ⟨replacementUnique, ?_, ?_⟩
+  · have sub : (existing.filter (fun binding => !(replacements.map (·.name)).contains binding.name)).Sublist existing := List.filter_sublist
+    exact (sub.map (·.name)).nodup existingUnique
+  · intro left leftMember right rightMember same
+    obtain ⟨binding, member, named⟩ := List.mem_map.mp rightMember
+    have absent : binding.name ∉ replacements.map (·.name) := by
+      simpa [List.contains_eq_mem] using (List.mem_filter.mp member).2
+    exact absent (by simpa [named, ← same] using leftMember)
+
 /-- Exact equality for discriminated local-data owners. -/
 def localDataOwnerMatches (left right : LocalDataOwner) : Bool :=
   decide (left = right)
@@ -172,6 +227,72 @@ def evaluateInputMappings : List VariableMapping →
   | [{ target, expression := .stringLiteral value }] =>
       some [{ name := target, value := .string value }]
   | _ => none
+
+
+/-- SBT-INPUT-01 reads one immutable containing context; duplicate bindings are unavailable. -/
+def enclosingVariable? (bindings : List VariableBinding) (name : String) : Option VariableValue :=
+  match bindings.filter (·.name == name) with
+  | [binding] => match binding.value with
+      | .string _ | .null => some binding.value
+      | _ => none
+  | _ => none
+
+def evaluateEnclosingInputMappings (bindings : List VariableBinding) :
+    List VariableMapping → Option (List VariableBinding)
+  | [] => some []
+  | mapping :: rest => do
+      let value ← match mapping.expression with
+        | .stringLiteral value => some (.string value)
+        | .enclosingVariable name => enclosingVariable? bindings name
+        | .localVariable _ => none
+      return { name := mapping.target, value } :: (← evaluateEnclosingInputMappings bindings rest)
+
+/-- SBT-SNAPSHOT-01 checks immutable mapping positions without consulting current Process data. -/
+def inputSnapshotMatches : List VariableMapping → List VariableBinding → Bool
+  | [], [] => true
+  | mapping :: mappings, binding :: bindings =>
+      mapping.target == binding.name &&
+        (match mapping.expression with
+        | .stringLiteral value => binding.value == .string value
+        | .enclosingVariable _ => match binding.value with
+            | .string _ | .null => true
+            | _ => false
+        | .localVariable _ => false) && inputSnapshotMatches mappings bindings
+  | _, _ => false
+
+theorem evaluateEnclosingInputMappings_snapshot (context : List VariableBinding)
+    (mappings : List VariableMapping) (bindings : List VariableBinding)
+    (evaluated : evaluateEnclosingInputMappings context mappings = some bindings) :
+    inputSnapshotMatches mappings bindings = true := by
+  induction mappings generalizing bindings with
+  | nil => simp [evaluateEnclosingInputMappings] at evaluated; subst bindings; rfl
+  | cons mapping rest ih =>
+      cases expression : mapping.expression with
+      | localVariable name => simp [evaluateEnclosingInputMappings, expression] at evaluated
+      | stringLiteral value =>
+          cases tailEq : evaluateEnclosingInputMappings context rest with
+          | none => simp [evaluateEnclosingInputMappings, expression, tailEq] at evaluated
+          | some tail =>
+              simp [evaluateEnclosingInputMappings, expression, tailEq] at evaluated
+              subst bindings
+              simpa [inputSnapshotMatches, expression] using ih tail tailEq
+      | enclosingVariable name =>
+          cases lookup : enclosingVariable? context name with
+          | none => simp [evaluateEnclosingInputMappings, expression, lookup] at evaluated
+          | some value =>
+              cases tailEq : evaluateEnclosingInputMappings context rest with
+              | none => simp [evaluateEnclosingInputMappings, expression, lookup, tailEq] at evaluated
+              | some tail =>
+                  simp [evaluateEnclosingInputMappings, expression, lookup, tailEq] at evaluated
+                  subst bindings
+                  have tailValid := ih tail tailEq
+                  unfold enclosingVariable? at lookup
+                  split at lookup
+                  · rename_i binding found
+                    cases kind : binding.value <;>
+                      simp_all [inputSnapshotMatches]
+                    all_goals cases value <;> simp_all
+                  · simp at lookup
 
 def singleStringLiteralMapping : List VariableMapping → Bool
   | [{ target, expression := .stringLiteral value }] =>

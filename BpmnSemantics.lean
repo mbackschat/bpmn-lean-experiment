@@ -319,6 +319,11 @@ import BpmnSemantics.SemanticProcess.InternalSnapshotArmingExecution
 import BpmnSemantics.InterruptingMessageEventSubProcessConformance
 import BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessInterruptionLaws
 
+import BpmnSemantics.SemanticProcess.SerialBusinessTaskDataProofs
+import BpmnSemantics.SemanticProcess.SerialBusinessTaskLifecycleProofs
+import BpmnSemantics.SemanticProcess.SerialBusinessTaskProgressProofs
+import BpmnSemantics.SerialBusinessTaskConformance
+
 /-! Root of the BPMN semantic contract library.
 
 The root contains profile-independent vocabulary, the sequential User Task capsule, and executable contract locks.

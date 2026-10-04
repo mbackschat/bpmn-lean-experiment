@@ -1,5 +1,6 @@
 import BpmnSemantics.SemanticProcess.ProfileCardinalities
 import BpmnSemantics.SemanticProcess.StructuredCompositionAdmission
+import BpmnSemantics.SemanticProcess.SerialBusinessTaskAdmission
 import BpmnSemantics.SemanticProcess.TransactionSourceAdmission
 import BpmnSemantics.SemanticProcess.ValueDomain
 import BpmnSemantics.SemanticProcess.StructuredHumanWorkAdmission
@@ -516,6 +517,7 @@ def profileGraphPolicy? (profile : String) : Option ProfileGraphPolicy :=
     some .resumptionBounded
   else if profile = transactionCancellationCheckpointProfileId.value ||
       profile = structuredCompositionCheckpointProfileId.value ||
+      profile = serialBusinessTaskProfileId.value ||
       profile = callDataCheckpointProfileId.value ||
       profile = interruptingMessageEventSubProcessProfileId.value ||
       profile = repeatableSubscriptionCheckpointProfileId.value ||
@@ -550,6 +552,8 @@ def checkedProfileCapabilitiesValid (source : CheckedProcess) : Bool :=
   else source.interruptingMessageEventSubProcesses.isEmpty &&
   if source.identity.semanticProfile == callDataCheckpointProfileId then
     callDataCheckedGraph source
+  else if source.identity.semanticProfile == serialBusinessTaskProfileId then
+    (SerialBusinessTask.checkedAnalysis source).isSome
   else if source.identity.semanticProfile == structuredCompositionCheckpointProfileId then
     structuredCompositionCheckedGraph source
   else if source.identity.semanticProfile == transactionCancellationCheckpointProfileId then
@@ -662,7 +666,9 @@ def programProfileCapabilitiesValid (program : Program) : Bool :=
             program.identity.semanticProfile.value program.operations
           && messageKeyCorrelationProgramPayloadValid program &&
           compensationSourceProgramProfileValid program
-    | none => program.identity.semanticProfile == structuredCompositionCheckpointProfileId &&
+    | none => if program.identity.semanticProfile == serialBusinessTaskProfileId then
+        (SerialBusinessTask.programAnalysis program).isSome
+      else program.identity.semanticProfile == structuredCompositionCheckpointProfileId &&
         structuredCompositionProgramGraph program
 
 end BpmnSemantics.SemanticProcess

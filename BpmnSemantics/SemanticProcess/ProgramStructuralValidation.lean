@@ -409,7 +409,9 @@ private def operationWellFormed (program : Program) (places : List ControlPlace)
         nonempty origin.elementId.value &&
         nonempty effect.elementId.value &&
         decide (origin.elementId = effect.elementId) &&
-        ((effect.descriptor.protocol =
+        ((program.identity.semanticProfile == serialBusinessTaskProfileId &&
+          SerialBusinessTask.descriptorValid effect.descriptor && bpmnErrorRoute.isNone) ||
+        (effect.descriptor.protocol =
               "urn:bpmn-lean:effect-protocol:activity-v1" &&
             effect.descriptor.operation =
               "urn:bpmn-lean:effect-operation:probe-v1" &&

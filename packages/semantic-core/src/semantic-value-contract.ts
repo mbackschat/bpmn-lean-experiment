@@ -25,6 +25,7 @@ export type ErrorReference = DeepReadonly<{
 export enum MappingExpressionKind {
   StringLiteral = "stringLiteral",
   LocalVariable = "localVariable",
+  EnclosingVariable = "enclosingVariable",
 }
 
 export type MappingExpression =
@@ -34,6 +35,10 @@ export type MappingExpression =
     }>
   | DeepReadonly<{
       kind: MappingExpressionKind.LocalVariable;
+      name: string;
+    }>
+  | DeepReadonly<{
+      kind: MappingExpressionKind.EnclosingVariable;
       name: string;
     }>;
 

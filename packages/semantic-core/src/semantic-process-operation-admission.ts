@@ -1,3 +1,5 @@
+import { serialBusinessEffectAdmitted } from "./serial-business-task-policy.js";
+import { SERIAL_BUSINESS_TASK_CHECKPOINT_PROFILE_ID } from "./semantic-profile-catalog.js";
 import {
   EffectOperation,
   EffectProtocol,
@@ -221,6 +223,7 @@ export function isWellFormedSemanticOperation(
   placeIds: ReadonlySet<string>,
   placeOrigins: ReadonlyMap<string, string>,
   scopeOrigins: ReadonlyMap<string, string>,
+  semanticProfile: string = "",
 ): value is SemanticOperation {
   if (
     !isRecord(value) ||
@@ -382,6 +385,7 @@ export function isWellFormedSemanticOperation(
           value.effect,
           value.bpmnErrorRoute,
           placeIds,
+          semanticProfile,
         )
       );
     case SemanticOperationKind.Duplicate:
@@ -565,7 +569,9 @@ function isSupportedEffectContract(
   effect: Record<string, unknown>,
   bpmnErrorRoute: unknown,
   placeIds: ReadonlySet<string>,
+  semanticProfile: string,
 ): boolean {
+  if (semanticProfile === SERIAL_BUSINESS_TASK_CHECKPOINT_PROFILE_ID) return bpmnErrorRoute === null && serialBusinessEffectAdmitted(effect);
   if (
     !isRecord(effect.descriptor) ||
     !hasOnlyKeys(effect.descriptor, ["protocol", "operation"]) ||

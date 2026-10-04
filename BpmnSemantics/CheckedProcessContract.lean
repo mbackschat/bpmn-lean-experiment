@@ -57,6 +57,7 @@ inductive GatewayDirection where
 inductive MappingExpression where
   | stringLiteral (value : String)
   | localVariable (name : String)
+  | enclosingVariable (name : String)
   deriving Repr, DecidableEq
 
 structure VariableMapping where

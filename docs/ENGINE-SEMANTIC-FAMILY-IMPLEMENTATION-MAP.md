@@ -26,6 +26,14 @@ The [capsule registry](capsules/README.md), the Lean modules under [`BpmnSemanti
 
 Reading these sections together supports no cross-family theorem. A mechanism two families share is established only where each section says so independently, and this map is where such a split becomes visible rather than where it is resolved. A mechanism recorded in the invariant map is likewise established for a family only where that family's section says so.
 
+## Serial business-task composition
+
+The approved [serial business-task account](capsules/SERIAL-BUSINESS-TASK-COMPOSITION-PROPOSAL.md#implementation-in-progress) is an unreviewed private implementation checkpoint.
+
+**Implemented.** Exact-overlay source admission and independent Lean/TypeScript serial-chain analysis cover root User/Service chains, named handlers, enclosing input snapshots and exact String/null output mapping. Whole-chain tests and four-case lowering/result/publication comparison pass. Committed start and actual execution derive nonempty instance and declared root identity, exact token/wait ownership, canonical issuance, ordered suffix, required-input availability, canonical Process data and captured local lifetime. Valid completion payloads commit through actual public admission; actual scheduled closure reaches a wait or completion within two internal steps. The capsule owns bounded proof receipts and the reassessment.
+
+**Open.** Independent implementation review remains open; the private source/core/protocol, differential, infrastructure and full Lean gates pass. Public profile/corpus registration and live Temporal qualification remain absent; typed host admission refuses this private profile. These results establish no additional public CIB coverage.
+
 ## Compensation retention and Event Sub-Process parent snapshots
 
 The independently approved [boundary-handler retention proposal](capsules/COMPENSATION-BOUNDARY-HANDLER-RETENTION-PROPOSAL.md) is implemented through its hidden representation checkpoint and exact completion-producer slice. The [Compensation Event Sub-Process snapshot proposal](capsules/COMPENSATION-EVENT-SUB-PROCESS-SNAPSHOT-PROPOSAL.md) has an independently approved first green semantic checkpoint. This remains an in-progress standards-only family. The exact [public Compensation registration](capsules/COMPENSATION-TRIGGER-HANDLER-PROPOSAL.md#public-registration-implementation) is implemented and independently accepted after clean integration.

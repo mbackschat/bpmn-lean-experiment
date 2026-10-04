@@ -4,6 +4,7 @@ import BpmnSemantics.SemanticProcess.Incident
 import BpmnSemantics.SemanticProcess.IncidentCancellation
 import BpmnSemantics.SemanticProcess.MessageStartAdmission
 import BpmnSemantics.SemanticProcess.ProfileAdmission
+import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
 import BpmnSemantics.SemanticProcess.SequentialMultiInstanceTransition
 import BpmnSemantics.SemanticProcess.ParallelMultiInstanceTransition
 import BpmnSemantics.SemanticProcess.ValueDomain
@@ -35,6 +36,31 @@ open BpmnSemantics
 structure ExternalAdmission where
   outcome : CommandOutcome
   state : RuntimeState
+
+/-- The private serial profile admits only its three ingress families and exact current definition/occurrence associations. -/
+def serialBusinessCommandAdmitted (program : Program) (state : RuntimeState)
+    (stimulus : Stimulus) : Bool :=
+  if program.identity.semanticProfile != serialBusinessTaskProfileId then true
+  else programWellFormed program && programProfileCapabilitiesValid program &&
+    SerialBusinessTask.bindingsValid (SerialBusinessTask.programHandlers program)
+      state.variables.process.bindings &&
+    serialRuntimeAssociationsValid program state &&
+    (match state.control with
+      | .notStarted => state == initialState
+      | .running instanceId | .completed instanceId => runtimeStateWellFormed program instanceId state
+      | _ => false) &&
+    match stimulus with
+    | .startProcess _ _ instanceId _ => !instanceId.value.isEmpty
+    | .completeUserTaskInstance .. | .completeEffect .. => true
+    | _ => false
+
+@[simp] theorem serialBusinessCommandAdmitted_of_other_profile
+    (program : Program) (state : RuntimeState) (stimulus : Stimulus)
+    (unselected : program.identity.semanticProfile ≠ serialBusinessTaskProfileId) :
+    serialBusinessCommandAdmitted program state stimulus = true := by
+  unfold serialBusinessCommandAdmitted
+  simp only [bne_iff_ne]
+  exact if_pos unselected
 
 /-! Closed raw dispatchers remain private because they do not enforce snapshot declaration admission. -/
 
@@ -136,7 +162,9 @@ private def dataInputOutputStartBindingsAdmitted (program : Program)
       match state.control with
       | .notStarted =>
           let bindingsAdmitted :=
-            if program.identity.semanticProfile = callDataCheckpointProfileId then
+            if program.identity.semanticProfile = serialBusinessTaskProfileId then
+              SerialBusinessTask.startBindingsAdmitted program initialVariables
+            else if program.identity.semanticProfile = callDataCheckpointProfileId then
               callDataStartBindingsAdmitted program initialVariables
             else if program.identity.semanticProfile = structuredCompositionCheckpointProfileId then
               structuredCompositionStartBindingsAdmitted program initialVariables
@@ -281,6 +309,8 @@ private def dataInputOutputStartBindingsAdmitted (program : Program)
           | some successor =>
               if taskId.processInstanceId = instanceId &&
                   !isCallActivityProgram program &&
+                  (program.identity.semanticProfile != serialBusinessTaskProfileId ||
+                    SerialBusinessTask.bindingsValid (SerialBusinessTask.programHandlers program) submittedValues) &&
                   structuredCompositionOrdinaryCompletionAdmitted program taskId submittedValues &&
                   processDataBindingsAdmitted program.identity.semanticProfile
                     .userTaskCompletion submittedValues then
@@ -401,7 +431,8 @@ private def dataInputOutputStartBindingsAdmitted (program : Program)
                     { outcome := .rejected, state }
               | .refused _ => { outcome := .rejected, state }
           | [], [_] =>
-              match completeEffect state effectId result with
+              match (if program.identity.semanticProfile == serialBusinessTaskProfileId then
+                completeSerialEffect? program state effectId result else completeEffect state effectId result) with
               | some successor =>
                   if effectId.processInstanceId = instanceId then
                     { outcome := .committed, state := successor }
@@ -468,7 +499,8 @@ theorem dispatchStimulus_withSnapshotDeclaration_rejects (program : Program)
 @[simp] private def admitStimulusWithoutCompensationSnapshots (program : Program)
     (state : RuntimeState)
     (stimulus : Stimulus) : ExternalAdmission :=
-  if !callDataRuntimeStateValid program state then { outcome := .rejected, state }
+  if !serialBusinessCommandAdmitted program state stimulus then { outcome := .rejected, state }
+  else if !callDataRuntimeStateValid program state then { outcome := .rejected, state }
   else if !interruptingMessageEventSubProcessStateValid program state then { outcome := .rejected, state }
   else
   match stimulus with
@@ -670,18 +702,22 @@ private theorem rawCommittedStart_shape (program : Program) (stimulus : Stimulus
       stimulus).outcome = .committed) :
     ∃ variables, runningProgramStartState? program instanceId variables =
       some (admitStimulusWithoutCompensationSnapshots program initialState stimulus).state := by
+  have serialValid : serialBusinessCommandAdmitted program initialState stimulus = true := by
+    cases checked : serialBusinessCommandAdmitted program initialState stimulus with
+    | false => simp [admitStimulusWithoutCompensationSnapshots, checked] at committed
+    | true => rfl
   have valid : callDataRuntimeStateValid program initialState = true := by
     cases checked : callDataRuntimeStateValid program initialState with
-    | false => simp [admitStimulusWithoutCompensationSnapshots, checked] at committed
+    | false => simp [admitStimulusWithoutCompensationSnapshots, serialValid, checked] at committed
     | true => rfl
   have handlerValid : interruptingMessageEventSubProcessStateValid program initialState = true := by
     cases checked : interruptingMessageEventSubProcessStateValid program initialState with
-    | false => simp [admitStimulusWithoutCompensationSnapshots, valid, checked] at committed
+    | false => simp [admitStimulusWithoutCompensationSnapshots, serialValid, valid, checked] at committed
     | true => rfl
   cases stimulus <;> simp only at startKind <;> try contradiction
   all_goals subst instanceId
   all_goals
-    simp only [admitStimulusWithoutCompensationSnapshots, valid, handlerValid, Bool.not_true,
+    simp only [admitStimulusWithoutCompensationSnapshots, serialValid, valid, handlerValid, Bool.not_true,
       Bool.false_eq_true, ↓reduceIte] at committed ⊢
     simp only [initialState, dispatchStimulusWithoutCompensationSnapshots] at committed ⊢
   case startProcess commandId processId requested variables =>

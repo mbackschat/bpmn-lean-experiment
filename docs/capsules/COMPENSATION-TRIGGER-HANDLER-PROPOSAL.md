@@ -448,15 +448,15 @@ The operation census must classify trigger creation and frontier activation as o
 
 | Existing owner | Current headroom | Growth condition |
 |---|---:|---|
-| [shared effect values](../../packages/semantic-core/src/semantic-value-contract.ts) | 703 | one operation literal and exact descriptor type only |
+| [shared effect values](../../packages/semantic-core/src/semantic-value-contract.ts) | 698 | one operation literal and exact descriptor type only |
 | [TS Program](../../packages/semantic-core/src/semantic-process-contract.ts) | 135 | references only |
-| [TS operation admission](../../packages/semantic-core/src/semantic-process-operation-admission.ts) | 105 | declaration validation extracted before growth |
+| [TS operation admission](../../packages/semantic-core/src/semantic-process-operation-admission.ts) | 99 | declaration validation extracted before growth |
 | [TS graph admission](../../packages/semantic-core/src/semantic-process-graph-admission.ts) | 106 | declaration and checkpoint-topology delegation only |
 | [TS Compensation checkpoint topology](../../packages/semantic-core/src/compensation-source-checkpoint-topology.ts) | 672 | exact draft-profile source topology only |
 | [TS RuntimeState](../../packages/semantic-core/src/semantic-process-state.ts) | 353 | collection/control references only |
 | [TS runtime validity](../../packages/semantic-core/src/runtime-state-well-formedness.ts) | 41 | extract compensation validity first |
 | [TS runtime defects](../../packages/semantic-core/src/runtime-state-defect.ts) | 753 | new defect arms only |
-| [TS command admission](../../packages/semantic-core/src/semantic-command-admission.ts) | 291 | result dispatch only |
+| [TS command admission](../../packages/semantic-core/src/semantic-command-admission.ts) | 288 | result dispatch only |
 | [TS transition trace](../../packages/semantic-core/src/semantic-transition-trace.ts) | 422 | failed arm only |
 | [TS lifecycle](../../packages/semantic-core/src/flow-node-occurrence-lifecycle.ts) | 38 | delegate compensation projection |
 | [TS lifecycle completeness](../../packages/semantic-core/src/flow-node-occurrence-publication-external-completeness.ts) | 42 | delegate compensation oracle |
@@ -467,14 +467,14 @@ The operation census must classify trigger creation and frontier activation as o
 | [TS internal attempt](../../packages/semantic-core/src/internal-transition-attempt.ts) | 668 | trigger-attempt delegation only |
 | [Lean Program](../../BpmnSemantics/SemanticProcessContract.lean) | 282 | direct Activity-data carriers extracted into a bounded owner |
 | [Lean RuntimeState](../../BpmnSemantics/SemanticProcess/RuntimeState.lean) | 37 | trigger collection reference only |
-| [Lean effect completion](../../BpmnSemantics/SemanticProcess/EffectCompletion.lean) | 721 | compensation relation only |
-| [Lean command admission](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean) | 42 | result dispatch only |
-| [Lean transition](../../BpmnSemantics/SemanticProcess/Transition.lean) | 50 | extract before adding the new dispatcher arm |
+| [Lean effect completion](../../BpmnSemantics/SemanticProcess/EffectCompletion.lean) | 648 | compensation relation only |
+| [Lean command admission](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean) | 8 | result dispatch only |
+| [Lean transition](../../BpmnSemantics/SemanticProcess/Transition.lean) | 46 | extract before adding the new dispatcher arm |
 | [Lean internal attempt](../../BpmnSemantics/SemanticProcess/InternalOperationAttempt.lean) | 752 | trigger-attempt delegation only |
 | [Lean scenario contract](../../BpmnSemantics/Scenario.lean) | 437 | failed union only |
 | [Lean observation consumer](../../BpmnSemantics/SemanticProcess/Scenario.lean) | 194 | handler-effect/failed projection and selected scenario dispatch |
 | [Lean JSON](../../BpmnSemantics/SemanticProcessJsonMain.lean) | 184 | canonical encoding and selected publication dispatch |
-| [Temporal protocol](../../packages/temporal-adapter/protocol/src/contracts.ts) | 538 | failed receipt arm only |
+| [Temporal protocol](../../packages/temporal-adapter/protocol/src/contracts.ts) | 537 | failed receipt arm only |
 | [effect transport](../../packages/temporal-adapter/protocol/src/effect-transport.ts) | 618 | compensation key material and canonical tuple only |
 | [receipt validators](../../packages/temporal-adapter/protocol/src/lifecycle-results.ts) | 444 | failed receipt decoder only |
 | [publication validator](../../packages/temporal-adapter/protocol/src/semantic-publication-validation.ts) | 79 | failed discriminator only; extract state validation before other growth |

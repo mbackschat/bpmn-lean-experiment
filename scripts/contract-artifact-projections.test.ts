@@ -635,3 +635,14 @@ test("requires every semantic profile to identify its reviewed CIB-BPMN relation
     /profile references unknown CIB-BPMN relationship/,
   );
 });
+
+test("binds the serial business mapping relationship to the live register", async () => {
+  const artifact = cloneArtifactSet(requiredAt(await readAndVerifyArtifactSets(projectRoot), 0, "artifact sets"));
+  const relationship = "CIB-EXT-0015";
+  assert.ok(artifact.registeredRelationshipIds.has(relationship));
+  artifact.profile.bpmn.relationships = [relationship];
+  const withoutRelationship = { ...artifact, registeredRelationshipIds: new Set(
+    [...artifact.registeredRelationshipIds].filter(id => id !== relationship),
+  ) };
+  assert.throws(() => verifyArtifactSet(withoutRelationship), /profile references unknown CIB-BPMN relationship/);
+});

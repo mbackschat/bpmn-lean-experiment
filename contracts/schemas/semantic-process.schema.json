@@ -1886,6 +1886,22 @@
               "$ref": "#/$defs/nonemptyString"
             }
           }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "name"
+          ],
+          "properties": {
+            "kind": {
+              "const": "enclosingVariable"
+            },
+            "name": {
+              "$ref": "#/$defs/nonemptyString"
+            }
+          }
         }
       ]
     },

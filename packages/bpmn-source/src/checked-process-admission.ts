@@ -1,4 +1,6 @@
 import {
+  SERIAL_BUSINESS_TASK_CHECKPOINT_PROFILE_ID,
+  serialBusinessCheckedGraph,
   CALL_ACTIVITY_DATA_BOUNDARIES_CHECKPOINT_PROFILE_ID,
   STRUCTURED_PROCESS_COMPOSITION_CHECKPOINT_PROFILE_ID,
   structuredCompositionCheckedGraph,
@@ -71,6 +73,7 @@ export function isAdmittedCheckedProcess(
     hasSelectedConditions(semanticProfile, graph.flows) &&
     (semanticProfile !== STRUCTURED_PROCESS_COMPOSITION_CHECKPOINT_PROFILE_ID ||
       structuredCompositionCheckedGraph(graph)) &&
+    (semanticProfile !== SERIAL_BUSINESS_TASK_CHECKPOINT_PROFILE_ID || serialBusinessCheckedGraph(graph)) &&
     hasSelectedParallelTopology(semanticProfile, graph) &&
     hasSelectedStructuredHumanWorkTopology(semanticProfile, graph) &&
     hasSelectedCyclicTopology(semanticProfile, graph) &&

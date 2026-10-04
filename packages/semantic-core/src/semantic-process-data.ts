@@ -23,17 +23,29 @@ import {
 
 export function evaluateInputMappings(
   mappings: ReadonlyArray<VariableMapping>,
-): ReadonlyArray<VariableBinding> {
-  return mappings.map((mapping): VariableBinding => {
+  enclosingBindings: ReadonlyArray<VariableBinding> = [],
+): ReadonlyArray<VariableBinding> | null {
+  const result: VariableBinding[] = [];
+  for (const mapping of mappings) {
+    if (result.some(({ name }) => name === mapping.target)) return null;
     switch (mapping.expression.kind) {
       case MappingExpressionKind.StringLiteral:
-        return {
+        result.push({
           name: mapping.target,
           value: {
             kind: VariableValueKind.String,
             value: mapping.expression.value,
           },
-        };
+        });
+        break;
+      case MappingExpressionKind.EnclosingVariable: {
+        const sourceName = mapping.expression.name;
+        const matching = enclosingBindings.filter(({ name }) => name === sourceName);
+        const source = matching[0];
+        if (matching.length !== 1 || source === undefined || !isPermittedValue(source, true)) return null;
+        result.push({ ...cloneVariableBinding(source), name: mapping.target });
+        break;
+      }
       case MappingExpressionKind.LocalVariable:
         throw new TypeError(
           "Local-variable expressions are not admitted as effect inputs",
@@ -41,7 +53,32 @@ export function evaluateInputMappings(
       default:
         return assertNever(mapping.expression);
     }
-  }).sort(compareBindings);
+  }
+  return result.sort(compareBindings);
+}
+
+/** SBT-SNAPSHOT-01 captures enclosing reads at activation; projection must not reevaluate mutable Process data. */
+export function inputMappingSnapshotMatches(
+  mappings: ReadonlyArray<VariableMapping>,
+  arguments_: ReadonlyArray<VariableBinding>,
+): boolean {
+  if (mappings.length !== arguments_.length) return false;
+  const ordered = [...mappings].sort((left, right) => compareCanonicalStrings(left.target, right.target));
+  return ordered.every((mapping, index) => {
+    const binding = arguments_[index];
+    if (binding === undefined || binding.name !== mapping.target ||
+      (index > 0 && ordered[index - 1]?.target === mapping.target)) return false;
+    switch (mapping.expression.kind) {
+      case MappingExpressionKind.StringLiteral:
+        return binding.value.kind === VariableValueKind.String && binding.value.value === mapping.expression.value;
+      case MappingExpressionKind.EnclosingVariable:
+        return isPermittedValue(binding, true);
+      case MappingExpressionKind.LocalVariable:
+        return false;
+      default:
+        return assertNever(mapping.expression);
+    }
+  });
 }
 
 /**
@@ -177,19 +214,20 @@ function applyEffectPatch(
   localPatch: ReadonlyArray<VariableBinding>,
   allowNull: boolean,
 ): ReadonlyArray<VariableBinding> | null {
-  const requiredLocalNames = outputMappings.map((mapping) => {
+  const requiredLocalNames = [...new Set(outputMappings.map((mapping) => {
     const expression = mapping.expression;
     switch (expression.kind) {
       case MappingExpressionKind.LocalVariable:
         return expression.name;
       case MappingExpressionKind.StringLiteral:
+      case MappingExpressionKind.EnclosingVariable:
         throw new TypeError(
-          "String literals are not admitted as effect outputs",
+          "Only local-variable expressions are admitted as effect outputs",
         );
       default:
         return assertNever(expression);
     }
-  }).sort(compareCanonicalStrings);
+  }))].sort(compareCanonicalStrings);
   const patch = validatePatch(
     localPatch,
     requiredLocalNames,

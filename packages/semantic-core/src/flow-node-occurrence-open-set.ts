@@ -29,7 +29,7 @@ import {
 import {
   effectIncidentAssociationsAreValid,
 } from "./semantic-process-incident-validation.js";
-import { evaluateInputMappings } from "./semantic-process-data.js";
+import { inputMappingSnapshotMatches } from "./semantic-process-data.js";
 import {
   ControlStateKind,
   sameOccurrence,
@@ -609,7 +609,7 @@ function waitMatchesEffect(
       operation.effect.elementId === wait.id.elementId &&
       operation.output === wait.output &&
       sameJson(operation.effect.descriptor, wait.descriptor) &&
-      sameJson(evaluateInputMappings(operation.effect.inputMappings), wait.arguments) &&
+      inputMappingSnapshotMatches(operation.effect.inputMappings, wait.arguments) &&
       sameJson(operation.effect.outputMappings, wait.outputMappings) &&
       sameJson(operation.bpmnErrorRoute, wait.bpmnErrorRoute) &&
       operationOwnedBy(program, operation, wait.owner)

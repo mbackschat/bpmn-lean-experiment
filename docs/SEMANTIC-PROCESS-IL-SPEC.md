@@ -105,6 +105,7 @@ type DefinitionScope = DeepReadonly<{
 type MappingExpression = DeepReadonly<
   | { kind: "stringLiteral"; value: string }
   | { kind: "localVariable"; name: string }
+  | { kind: "enclosingVariable"; name: string }
 >;
 
 type VariableMapping = DeepReadonly<{
@@ -397,7 +398,7 @@ type SequenceFlowScopeOwnership = DeepReadonly<{
 }>;
 ```
 
-`MappingExpression.localVariable` is the implemented direct-lookup representation for two exact admitted JUEL-shaped output tokens; it is not a general expression language. It must not grow operators, paths, coercion, conditions, or other JUEL syntax. A future CIB JUEL mapping capsule must atomically replace this shortcut with pinned-runtime evaluation or retain one explicit exact-token equivalence under a single owner; pre-release production code must not expose two selectable evaluation accounts for the same source.
+`MappingExpression.localVariable` represents an exact admitted output lookup in the completed effect-local scope. The private [serial business-task account](capsules/SERIAL-BUSINESS-TASK-COMPOSITION-PROPOSAL.md) adds `enclosingVariable` for an exact input lookup in the immutable context enclosing the Activity at activation; its current root-only admission supplies Process bindings. Captured arguments remain occurrence-owned snapshots and are never reevaluated against a later Process context. Existing mapped profiles retain their literal-only input contract. These arms do not admit operators, paths, coercion, conditions or general JUEL; a broader mapping capsule must replace the shortcut with pinned-runtime evaluation or retain one explicit exact-token equivalence under one owner, without selectable competing accounts for the same source.
 
 `CheckedProcess` means that parsing, supported-element admission, reference resolution, gateway-direction classification, profile membership, and bounded structural checks have succeeded. A rejected document does not produce this artifact.
 

@@ -31,7 +31,7 @@ theorem awaitMessageState_eq (state : RuntimeState) (input output : ControlPlace
 
 theorem awaitTimerState_eq (state : RuntimeState) (input output : ControlPlaceId) (timer : TimerDefinition) : awaitTimerState? state input output timer = (do let owner ← onlyTokenOwner? state input; let _ ← runningStateInstance? state; pure (activateTimer state owner.processInstanceId owner input output timer)) := rfl
 
-theorem awaitEffectState_eq (state : RuntimeState) (input output : ControlPlaceId) (effect : EffectDefinition) (route : Option BpmnErrorRoute) : awaitEffectState? state input output effect route = (do let owner ← onlyTokenOwner? state input; let _ ← runningStateInstance? state; pure (activateEffect state owner.processInstanceId owner input output effect route)) := rfl
+theorem awaitEffectState_eq (state : RuntimeState) (input output : ControlPlaceId) (effect : EffectDefinition) (route : Option BpmnErrorRoute) : awaitEffectState? state input output effect route = (do let owner ← onlyTokenOwner? state input; let _ ← runningStateInstance? state; let _ ← evaluateEnclosingInputMappings state.variables.process.bindings effect.inputMappings; if state.variables.activities.any (activityScopeMatches ⟨owner.processInstanceId, ⟨effect.elementId.value⟩, effectActivationCount state effect.elementId + 1⟩) then none else pure (activateEffect state owner.processInstanceId owner input output effect route)) := rfl
 
 private theorem correlated_prepared_state_frame_facts (program : Program)
     (state : RuntimeState) (id : OperationId) (origin : BpmnElementOrigin)
@@ -117,7 +117,11 @@ theorem prepareInternalArm_applies (program : Program) (state : RuntimeState)
       cases controlEq : state.control <;> simp_all
       all_goals
         obtain ⟨_, _, _, patchEq⟩ := prepared
-        rfl
+        first
+        | rfl
+        | rename_i id origin input output effect route instanceId selection nonempty guards
+          cases evaluated : evaluateEnclosingInputMappings state.variables.process.bindings effect.inputMappings <;>
+            simp_all [InternalArmingWrite.available, effectWaitOccurrence]
 
 theorem prepared_operation_eq (program : Program) (state : RuntimeState)
     (operation : SemanticOperation) (patch : InternalArmingPatch)

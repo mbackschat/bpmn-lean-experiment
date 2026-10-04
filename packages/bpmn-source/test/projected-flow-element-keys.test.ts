@@ -31,6 +31,8 @@ type ConsumerSite = Readonly<{
 type MatrixEntry = readonly [string, string, readonly string[]];
 
 const consumers = [
+  { source: "serial-business-task-source.ts", anchor: "compileSerialBusinessTaskSource", elementName: "element", shape: "PlainNode" },
+  { source: "serial-business-task-source.ts", anchor: "serviceNode", elementName: "element", shape: "SerialBusinessServiceTask" },
   { source: "activity-data-input-output-projection.ts", anchor: "projectTask", elementName: "task", shape: "DataInputOutputUserTask" },
   { source: "checked-element-projection.ts", anchor: "projectCheckedSequenceFlows", elementName: "flow", shape: "StandardSequenceFlow" },
   { source: "checked-element-projection.ts", anchor: "classifyGateway", elementName: "element", shape: "ParallelGateway" },

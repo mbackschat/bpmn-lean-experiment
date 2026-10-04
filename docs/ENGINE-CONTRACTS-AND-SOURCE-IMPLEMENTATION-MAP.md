@@ -4,7 +4,7 @@ This map owns wire, profile, checked-source, IL and source-admission status. Roo
 
 ## Current boundary
 
-Exact BPMN bytes are captured and admitted under bounded, versioned, fail-closed profiles into a project-owned checked graph and deterministically lowered into Semantic Process IL. Unsupported source rejects or is preserved only by reviewed profile rules. The first interchange profile combines CIB Seven User Task Process data with standard-notation preservation without changing the executed projection.
+Exact BPMN bytes enter a checked graph under bounded, versioned, fail-closed profiles and deterministically lower to Semantic Process IL. Unsupported source rejects unless reviewed rules permit preservation. Interchange preserves standard notation without changing User Task Process-data execution. Private [`implementation-status-owner:ENGINE-SEMANTIC-FAMILY`](ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md#serial-business-task-composition) remains unqualified for hosting.
 
 The registered sequential Multi-Instance profile admits one exact schema-valid batch-review source into one closed checked node and one `awaitSequentialMultiInstanceUserTask` operation with exact data associations, one lifetime Timer arm, fixed limits, and exact natural and interrupted schedules. The same profile identity is execution-admitted across source, Lean, the TypeScript core, the differential pipeline, Product 1, and the registered corpus.
 

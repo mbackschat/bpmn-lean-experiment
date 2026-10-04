@@ -45,6 +45,7 @@ export type FlowElementProjectionProfile =
   typeof FlowElementProjectionProfile[keyof typeof FlowElementProjectionProfile];
 
 export const ProjectedFlowElementShape = Object.freeze({
+  SerialBusinessServiceTask: "serialBusinessServiceTask",
   PlainNode: "plainNode",
   DataInputOutputUserTask: "dataInputOutputUserTask",
   UserTaskMetadata: "userTaskMetadata",
@@ -76,6 +77,9 @@ export type ProjectedFlowElementShape =
   typeof ProjectedFlowElementShape[keyof typeof ProjectedFlowElementShape];
 
 export const projectedFlowElementKeys = Object.freeze({
+  [ProjectedFlowElementShape.SerialBusinessServiceTask]: Object.freeze([
+    "$type", "id", "name", "implementation", "extensionElements",
+  ]),
   [ProjectedFlowElementShape.DataInputOutputUserTask]: Object.freeze([
     "$type", "id", "name", "ioSpecification", "dataInputAssociations", "dataOutputAssociations",
   ]),

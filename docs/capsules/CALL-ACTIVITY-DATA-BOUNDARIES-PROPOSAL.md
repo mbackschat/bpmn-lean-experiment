@@ -139,7 +139,7 @@ Source discriminators include independent global renaming and omitted/changed na
 | [Call source reader](../../packages/bpmn-source/src/call-activity-source.ts) | 411 | Keep QName/control admission separate from reusable scalar-interface reading. |
 | [Runtime state](../../packages/semantic-core/src/semantic-process-state.ts) | 353 | Declare the interface collection; put its operations in a cohesive data owner. |
 | [Call runtime](../../packages/semantic-core/src/semantic-process-call-runtime.ts) | 372 | Extend actual invoke/return and exact cleanup, including prepared patches. |
-| [Lean data](../../BpmnSemantics/SemanticProcess/Data.lean) | 483 | Preserve existing Property/local meanings while adding a distinct Process-interface owner. |
+| [Lean data](../../BpmnSemantics/SemanticProcess/Data.lean) | 370 | Preserve existing Property/local meanings while adding a distinct Process-interface owner. |
 | [Lean Call](../../BpmnSemantics/SemanticProcess/CallActivity.lean) | 206 | Separate interface laws before growth would exceed the target. |
 | [Lean composed laws](../../BpmnSemantics/SemanticProcess/ActivityDataInputOutput.lean) | 57 | Keep existing propositions while extending endpoints and identity; do not raise its cap. |
 | [Lean composed runtime](../../BpmnSemantics/SemanticProcess/ActivityDataInputOutputRuntime.lean) | 632 | Own the existing atomic evaluators and exact task/interface joins. |
