@@ -4,6 +4,8 @@
 
 The private [mixed-task control-flow profile](../../docs/capsules/MIXED-TASK-CONTROL-FLOW-PROPOSAL.md) and its [business Error extension](../../docs/capsules/MIXED-TASK-BUSINESS-ERROR-PROPOSAL.md) are explicitly refused pending recovery and replay qualification.
 
+The [invoice Activity example](runner/examples/invoice-effect-activities.ts) implements the existing caller-supplied `EffectActivityImplementations` contract outside the test-probe dispatcher. Pass `createInvoiceEffectActivities()` to the external Worker's Activity argument: `invoiceValidator` reads one string `payload` and returns `valid` or `rework`; `invoiceClassifier` accepts `valid` and returns `standard`, each in local `result`. Unknown bindings and malformed input fail explicitly. These pure example rules need no external deduplication store; an integration with external writes must honor the supplied idempotency key. This example does not open the private serial/mixed profiles or establish public whole-process acceptance.
+
 ## What you can do
 
 Run an admitted BPMN Process against an existing Temporal service, observe current semantic waits, submit occurrence-bound commands, and recover or replay the durable execution through the same product boundary.

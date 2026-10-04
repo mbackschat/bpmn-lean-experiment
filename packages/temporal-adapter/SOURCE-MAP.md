@@ -1,5 +1,7 @@
 # Temporal adapter source map
 
+The caller-owned [invoice Activity example](runner/examples/invoice-effect-activities.ts) demonstrates argument-derived validation/classification through the existing Worker contract. [Focused tests](testkit/test/invoice-effect-activities.test.ts) cover current input, malformed/unknown requests and retry determinism. Public admission remains closed.
+
 This contributor map assigns package responsibilities and Temporal SDK ownership. Human orientation and commands start in the [README](README.md); lifecycle semantics and current evidence remain in the linked specifications and evidence map.
 
 ## Private serial business-task boundary
