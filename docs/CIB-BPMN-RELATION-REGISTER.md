@@ -22,11 +22,11 @@ The counts below cover only entries reviewed and recorded by this project. Zero 
 
 | Lane | Recorded entries | Open candidates | Meaning |
 |---|---:|---:|---|
-| Reviewed normative agreements | 11 | 0 | A bounded BPMN requirement and pinned CIB observation agree |
+| Reviewed normative agreements | 11 | 1 | A bounded BPMN requirement and pinned CIB observation agree |
 | Permitted operational details | 9 | 0 | CIB or the oracle adapter chooses host mechanics without changing required BPMN observations |
 | Confirmed normative deviations | 0 | 1 | Clear BPMN requirement and pinned CIB evidence establish incompatible behavior |
 | CIB interpretations of BPMN gaps or inconsistencies | 2 | 0 | CIB selects an operational meaning where BPMN does not uniquely settle it |
-| Selected CIB extensions | 14 | 0 | Project profile deliberately includes behavior beyond bare BPMN execution |
+| Selected CIB extensions | 15 | 1 | Project profile deliberately includes behavior beyond bare BPMN execution |
 | Configuration-specific realizations | 8 | 0 | Behavior is permitted or meaningful only under a declared CIB environment |
 | Known CIB limitations within reviewed scope | 2 | 0 | Unsupported or incomplete behavior that is not yet classified as a normative deviation |
 
@@ -219,6 +219,18 @@ The repository-wide audit on 2026-07-24 found no previously visited observation 
 **Fidelity boundary:** Task existence, generated task identity, item value, loop-variable values, Timer-job identity and due date, task staleness, boundary-route activation, and Process completion are observed through public CIB services. The probe supplies the collection under the literal `loopDataInputRef` identity because that is CIB's public Process-variable binding; this does not establish general BPMN Data Association execution or the project mediator.
 
 **Boundary:** This agreement is limited to one private executable Process, one collection-driven sequential Multi-Instance User Task, three strings or an empty collection, one exact interrupting Boundary Timer, and one boundary-route User Task. Counter meaning is classified separately by `CIB-INT-0002`; output aggregation is excluded by `CIB-LIM-0001`. General Multi-Instance, another Activity body, completion conditions, parallel generation, other data mapping, repeated activation, and a CIB compatibility profile remain unreviewed.
+
+### CIB-AGR-0012 — CIB7 2.2.0 exact-code business Error recovery
+
+**Status:** Candidate bounded normative agreement; pending [mixed-task business Error proposal](capsules/MIXED-TASK-BUSINESS-ERROR-PROPOSAL.md) review.
+
+**BPMN basis:** Clauses 13.3.3 and 13.5.3 and Tables 10.86, 10.91 and 10.92 require the selected matching Error to interrupt its attached Service Task and follow the boundary Sequence Flow instead of normal completion.
+
+**Pinned CIB observation:** CIB Seven `2.2.0`, revision `5a45b47ea22688d774de97277c3ff7013f54fdd2`, routes the exact `InvoiceRejected` result to Recover, permits reentry through Review with fresh task/automation occurrences, and takes normal continuation on subsequent success. Technical failure does not activate this boundary; changing the declared code removes the catch. The default unmatched path has the separate mapping-sensitive host outcomes recorded in the experiment.
+
+**Evidence:** The [eight-probe experiment](experiments/BUSINESS-EFFECT-DATA-EXPERIMENT.md#business-failure-follow-up), [public-service probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenBusinessFailurePhaseZeroProbeTest.java) and [registered-relationship guard](../scripts/contract-artifact-projections.test.ts). No project semantic profile is qualified by this observation alone.
+
+**Boundary:** One attached exact-code catch in a single-control root Process with repeated work; no catch-all, multiple-handler precedence, ancestor propagation or transaction/refinement equality. Output mapping is separately classified as `CIB-EXT-0016`; project occurrence IDs and typed command results are not CIB observations.
 
 ## Interpretation register
 
@@ -470,6 +482,18 @@ CIB Seven `2.2.0` input parameters evaluate against the enclosing scope before w
 **Evidence:** The [phase-zero experiment](experiments/BUSINESS-EFFECT-DATA-EXPERIMENT.md) and [public-service probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenBusinessEffectDataPhaseZeroProbeTest.java) separate both input declaration orders, present null, missing-input failure before invocation, local output precedence and Process-instance separation. [Artifact-verifier coverage](../scripts/contract-artifact-projections.test.ts) requires this registered relationship and rejects a profile reference when its registry entry is absent. Full profile equivalence and retained scenario evidence remain unestablished.
 
 **Boundary:** No general JUEL, bean/Java API compatibility, nested mapping, parent-output fallback, technical-failure equivalence or concurrent execution is claimed. CIB's async-before job precedes invocation; the project's committed argument snapshot and durable external-effect interval remain its own operational realization. Input/final-output comparisons do not establish equivalent transaction timing or exactly-once external effects.
+
+### CIB-EXT-0016 — CIB7 2.2.0 caught-business-Error output mapping
+
+**Status:** Observed bounded extension; selection pending in the [mixed-task business Error proposal](capsules/MIXED-TASK-BUSINESS-ERROR-PROPOSAL.md).
+
+CIB Seven `2.2.0` applies the attached Service Task's output parameters on the matching Error path before Activity-local cleanup. A local result shadows a same-named parent, including present null. Without a local result, lookup may inherit the parent; with no binding in either scope, mapping fails and rolls back the asynchronous job command before recovery work commits. The proposed project account requires complete explicit local results on both result arms, selecting local precedence but excluding fallback and missing-result execution.
+
+**BPMN boundary:** Bare BPMN does not define the CIB `inputOutput` extension during cancellation. This is an extension over the normative interrupting catch, not a claim that BPMN requires fault-path output mediation. The project retains typed `bpmnError` as an Activity result; CIB's Java exception and same-command transaction are host mechanisms.
+
+**Evidence:** The [business-failure experiment](experiments/BUSINESS-EFFECT-DATA-EXPERIMENT.md#business-failure-follow-up), its [public-service probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenBusinessFailurePhaseZeroProbeTest.java), pristine `ExecutionEntity.destroy`/`IoParameter.execute`/`OutputParameter.execute` source, and [artifact reference verification](../scripts/contract-artifact-projections.test.ts). CIB supplies this mapping account and cannot also count as independent corroboration of it.
+
+**Boundary:** String/null results and declared scalar mappings only; no arbitrary JUEL, Java binary compatibility, Process-side delegate writes, nested scope, missing-local fallback, retry equivalence or exactly-once external effects. The unmatched Error's root-cleanup failure is observed separately, including a literal-output counterexample and mapping-free control; it is not adopted semantics or a new BPMN deviation claim. Existing `2.0.0` records and profiles remain unchanged.
 
 ## Permitted operational-detail register
 
