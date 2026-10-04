@@ -28,11 +28,11 @@ Reading these sections together supports no cross-family theorem. A mechanism tw
 
 ## Serial business-task composition
 
-The approved [serial business-task account](capsules/SERIAL-BUSINESS-TASK-COMPOSITION-PROPOSAL.md#implementation-in-progress) has a private checkpoint reviewed at `c260579f`; the required source-identity admission correction awaits its audit.
+The approved [serial business-task account](capsules/SERIAL-BUSINESS-TASK-COMPOSITION-PROPOSAL.md#implementation-in-progress) has an independently approved private checkpoint at correction `c9427286` to reviewed target `c260579f`.
 
 **Implemented.** Exact-overlay source admission and independent Lean/TypeScript serial-chain analysis cover root User/Service chains, named handlers, enclosing input snapshots and exact String/null output mapping. Whole-chain tests and four-case lowering/result/publication comparison pass. Committed start and actual execution derive nonempty instance and declared root identity, exact token/wait ownership, canonical issuance, ordered suffix, required-input availability, canonical Process data and captured local lifetime. Valid completion payloads commit through actual public admission; actual scheduled closure reaches a wait or completion within two internal steps. The capsule owns bounded proof receipts and the reassessment.
 
-**Open.** Independent implementation review remains open; the private source/core/protocol, differential, infrastructure and full Lean gates pass. Public profile/corpus registration and live Temporal qualification remain absent; typed host admission refuses this private profile. These results establish no additional public CIB coverage.
+**Open.** The private source/core/protocol, differential, infrastructure and full Lean gates pass, and independent implementation review is complete. Public profile/corpus registration and live Temporal qualification remain absent; typed host admission refuses this private profile. These results establish no additional public CIB coverage.
 
 ## Compensation retention and Event Sub-Process parent snapshots
 
