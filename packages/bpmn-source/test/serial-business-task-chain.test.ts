@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { BpmnCompilationStatus } from "@bpmn-lean/bpmn-source";
 import {
-  CommandOutcome, EffectExecutionResultKind, StimulusKind, VariableValueKind,
+  CommandOutcome, EffectExecutionResultKind, SemanticOperationKind, StimulusKind, VariableValueKind,
   applyStimulus, initialState, isWellFormedSemanticProcessProgram, supportsSemanticProcessExecution,
 } from "@bpmn-lean/semantic-core";
 import type { RuntimeState, SemanticProcessProgram, Stimulus, VariableBinding } from "@bpmn-lean/semantic-core";
@@ -24,6 +24,35 @@ function mappings(source: string, targets: readonly string[]): string {
 
 const scalar = (name: string, value: string): VariableBinding => ({ name, value: { kind: VariableValueKind.String, value } });
 const nullResult = { name: "result", value: { kind: VariableValueKind.Null } } as const;
+
+for (const { collision, flowCollision, duplicate } of [
+  { collision: "flow-flow", flowCollision: true, duplicate: "Flow_1" },
+  { collision: "flow-task", flowCollision: true, duplicate: "Validate" },
+  { collision: "flow-process", flowCollision: true, duplicate: "Invoice" },
+  { collision: "start-process", flowCollision: false, duplicate: "Invoice" },
+  { collision: "start-task", flowCollision: false, duplicate: "Validate" },
+  { collision: "start-end", flowCollision: false, duplicate: "End" },
+]) {
+  test(`serial Program rejects ${collision} source identity collisions before start`, async () => {
+    const compiled = await compile(invoiceXml([{ id: "Review", service: false }, { id: "Validate", service: true }]));
+    assert.equal(compiled.status, BpmnCompilationStatus.Accepted);
+    if (compiled.status !== BpmnCompilationStatus.Accepted) return;
+    const program = compiled.semanticProcess;
+    const start = { kind: StimulusKind.StartProcess, commandId: "start", processId: "Invoice", instanceId: "invoice", initialVariables: [] } as const;
+    assert.equal(isWellFormedSemanticProcessProgram(program), true);
+    assert.equal(applyStimulus(program, initialState, start).outcome, CommandOutcome.Committed);
+    const mutated = {
+      ...program,
+      controlPlaces: program.controlPlaces.map((place, index) => flowCollision && index === 0 ? { ...place, origin: { ...place.origin, elementId: duplicate } } : place),
+      operations: program.operations.map(operation => !flowCollision && operation.kind === SemanticOperationKind.Initiate ?
+        { ...operation, origin: { ...operation.origin, elementId: duplicate } } : operation),
+    };
+    assert.equal(isWellFormedSemanticProcessProgram(mutated), false);
+    const result = applyStimulus(mutated, initialState, start);
+    assert.equal(result.outcome, CommandOutcome.Rejected);
+    assert.deepEqual(result.state, initialState);
+  });
+}
 
 for (const sequence of ["HS", "SH"]) {
   test(`reject an empty instance identity before committing a ${sequence} chain`, async () => {

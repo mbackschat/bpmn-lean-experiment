@@ -28,7 +28,7 @@ Reading these sections together supports no cross-family theorem. A mechanism tw
 
 ## Serial business-task composition
 
-The approved [serial business-task account](capsules/SERIAL-BUSINESS-TASK-COMPOSITION-PROPOSAL.md#implementation-in-progress) is an unreviewed private implementation checkpoint.
+The approved [serial business-task account](capsules/SERIAL-BUSINESS-TASK-COMPOSITION-PROPOSAL.md#implementation-in-progress) has a private checkpoint reviewed at `c260579f`; the required source-identity admission correction awaits its audit.
 
 **Implemented.** Exact-overlay source admission and independent Lean/TypeScript serial-chain analysis cover root User/Service chains, named handlers, enclosing input snapshots and exact String/null output mapping. Whole-chain tests and four-case lowering/result/publication comparison pass. Committed start and actual execution derive nonempty instance and declared root identity, exact token/wait ownership, canonical issuance, ordered suffix, required-input availability, canonical Process data and captured local lifetime. Valid completion payloads commit through actual public admission; actual scheduled closure reaches a wait or completion within two internal steps. The capsule owns bounded proof receipts and the reassessment.
 

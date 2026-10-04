@@ -125,14 +125,18 @@ Record baseline-to-closure code/document churn in the [cost ledger](../CAPSULE-C
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
 | Proposal | `bbdd1112` | `fork-turns-none` | `approve-with-required-edits` | `4b849114` |
-| Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Semantic checkpoint | `c260579f` | `not-recorded` | `pending` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
 The same independent reviewer approved correction `4b849114`, closing the sole delegate/context-name finding. Proposal packet digest: `e5c7f71c5c29da29206bde324e8a09073cdfc27c0e3f1b0b03741c2dba6bd7bb`. The complete correction infrastructure gate passes 626 tests plus harness types (`/tmp/serial-business-r1-infrastructure`, separately asserted). Approval selects the account only; implementation and hosting evidence remain open.
 
 ## Implementation in progress
 
-Current family status is owned by [`implementation-status-owner:ENGINE-SEMANTIC-FAMILY`](../ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md#serial-business-task-composition). This is an unreviewed private implementation. Typed host admission refuses it; public registration and live Temporal qualification remain absent.
+Current family status is owned by [`implementation-status-owner:ENGINE-SEMANTIC-FAMILY`](../ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md#serial-business-task-composition). Independent checkpoint review requires one admission correction; its audit remains open. Typed host admission refuses it; public registration and live Temporal qualification remain absent.
+
+The cold reviewer assessed `4b849114..c260579f` using packet digest `3bf8d2fccec9fd93a4aa05f67163c03ad8d1cdbd855d0e431b1ac42536441b93` and found that TypeScript IL admission omitted the combined Process/node/Sequence Flow origin-identity census already enforced by Lean. Duplicate flow origins, node/flow collisions and Process/Start collisions admitted and committed Start; the checked-source boundary already rejected these aliases. The correction adds one census in serial Program analysis, excluding the legitimate Process-origin reuse by scope completion. Six retained collision variants reproduce the failure in `/tmp/serial-business-origin-red` and pass in `/tmp/serial-business-origin-green`; both receipts were separately asserted. No semantic account or Lean source changes. The reviewer reported no other required finding and deferred routine focused gates to the correction audit; unaffected bounded and full-library Lean evidence remains valid.
+
+Correction qualification passes the semantic-core build, all 1,531 core tests, all 1,159 source tests and harness types in `/tmp/serial-business-origin-build`, `/tmp/serial-business-origin-core`, `/tmp/serial-business-origin-source` and `/tmp/serial-business-origin-types`; terminal results and separate receipt assertions are green. These gates qualify the correction for the same reviewer's audit, not for public or hosted use.
 
 ### Compiled guarantee and remaining work
 

@@ -98,6 +98,13 @@ function programAnalysis(program: SemanticProcessProgram): ReadonlySet<string> |
       program.internalSchedulingMode !== InternalSchedulingMode.RejectObservableChoice || program.compensationActivityRetention !== undefined ||
       program.compensationEventSubProcessSnapshots !== undefined || program.compensationExecution !== undefined ||
       program.interruptingMessageEventSubProcesses !== undefined) return null;
+  const sourceIdentities = [program.processId, ...program.controlPlaces.map(place => place.origin.elementId)];
+  for (const operation of program.operations) {
+    if (operation.kind === SemanticOperationKind.CompleteScope) continue;
+    if (!("elementId" in operation.origin)) return null;
+    sourceIdentities.push(operation.origin.elementId);
+  }
+  if (new Set(sourceIdentities).size !== sourceIdentities.length) return null;
   const vertices: Vertex[] = [];
   const usedPlaces = new Set<string>();
   for (const operation of program.operations) {
