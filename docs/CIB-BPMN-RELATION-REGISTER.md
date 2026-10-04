@@ -224,7 +224,7 @@ The repository-wide audit on 2026-07-24 found no previously visited observation 
 
 **Status:** Candidate bounded normative agreement; pending [mixed-task business Error proposal](capsules/MIXED-TASK-BUSINESS-ERROR-PROPOSAL.md) review.
 
-**BPMN basis:** Clauses 13.3.3 and 13.5.3 and Tables 10.86, 10.91 and 10.92 require the selected matching Error to interrupt its attached Service Task and follow the boundary Sequence Flow instead of normal completion.
+**BPMN basis:** Clauses 13.3.3 and 13.5.3, Table 8.41 and Tables 10.90, 10.91 and 10.92 require the selected matching Error to interrupt its attached Service Task and follow the boundary Sequence Flow instead of normal completion.
 
 **Pinned CIB observation:** CIB Seven `2.2.0`, revision `5a45b47ea22688d774de97277c3ff7013f54fdd2`, routes the exact `InvoiceRejected` result to Recover, permits reentry through Review with fresh task/automation occurrences, and takes normal continuation on subsequent success. Technical failure does not activate this boundary; changing the declared code removes the catch. The default unmatched path has the separate mapping-sensitive host outcomes recorded in the experiment.
 
