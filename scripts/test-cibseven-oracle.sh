@@ -17,6 +17,7 @@ juel_gateway_order_probe_path="$runner_dir/src/test/resources/org/bpmnlean/cibse
 receive_task_probe_path="$project_root/scenarios/message-addressed-receive-task/process.bpmn"
 sequential_multi_instance_probe_path="$runner_dir/src/test/resources/org/bpmnlean/cibseven/CibSevenSequentialMultiInstancePhaseZeroProbeTest.bpmn"
 sequential_mi_subprocess_probe_path="$runner_dir/src/test/resources/org/bpmnlean/cibseven/sequential-mi-subprocess-probe.bpmn"
+sequential_mi_business_probe_path="$runner_dir/src/test/resources/org/bpmnlean/cibseven/sequential-mi-business-subprocess-probe.bpmn"
 message_correlation_probe_path="$runner_dir/src/test/resources/org/bpmnlean/cibseven/CibSevenMessageCorrelationPhaseZeroProbeTest.bpmn"
 business_effect_data_probe_path="$runner_dir/src/test/resources/org/bpmnlean/cibseven/business-effect-data.bpmn"
 
@@ -36,6 +37,7 @@ test -f "$maven_settings"
   "$receive_task_probe_path" \
   "$sequential_multi_instance_probe_path" \
   "$sequential_mi_subprocess_probe_path" \
+  "$sequential_mi_business_probe_path" \
   "$message_correlation_probe_path" \
   "$business_effect_data_probe_path"
 

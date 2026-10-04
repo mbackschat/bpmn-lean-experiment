@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  id="InvoiceDataDefinitions" targetNamespace="https://bpmn-lean.org/probes/mi-business-data">
+  <process id="InvoiceDataBatch" isExecutable="true">
+    <startEvent id="Start" />
+    <sequenceFlow id="EnterBatch" sourceRef="Start" targetRef="ReviewInvoice" />
+    <subProcess id="ReviewInvoice" name="Review and validate one invoice">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="reviewStatus">pending</camunda:inputParameter>
+          <camunda:inputParameter name="decision">unset</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+      <multiInstanceLoopCharacteristics isSequential="true"
+        camunda:collection="items" camunda:elementVariable="item" />
+      <startEvent id="ItemStart" />
+      <sequenceFlow id="EnterReview" sourceRef="ItemStart" targetRef="Review" />
+      <userTask id="Review" name="Review invoice" />
+      <sequenceFlow id="Reviewed" sourceRef="Review" targetRef="Validate" />
+      <serviceTask id="Validate" name="Validate reviewed invoice"
+        camunda:delegateExpression="${invoiceValidator}">
+        <extensionElements>
+          <camunda:inputOutput>
+            <camunda:inputParameter name="payload">${item}</camunda:inputParameter>
+            <camunda:inputParameter name="status">${reviewStatus}</camunda:inputParameter>
+            <camunda:outputParameter name="decision">${result}</camunda:outputParameter>
+          </camunda:inputOutput>
+        </extensionElements>
+      </serviceTask>
+      <sequenceFlow id="Validated" sourceRef="Validate" targetRef="Confirm" />
+      <userTask id="Confirm" name="Confirm validation result" />
+      <sequenceFlow id="Confirmed" sourceRef="Confirm" targetRef="ItemEnd" />
+      <endEvent id="ItemEnd" />
+    </subProcess>
+    <sequenceFlow id="BatchReviewed" sourceRef="ReviewInvoice" targetRef="PublishBatch" />
+    <userTask id="PublishBatch" name="Publish batch outcome" />
+    <sequenceFlow id="Published" sourceRef="PublishBatch" targetRef="End" />
+    <endEvent id="End" />
+  </process>
+</definitions>
