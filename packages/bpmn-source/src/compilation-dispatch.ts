@@ -1,7 +1,8 @@
 import { compileTransactionSourceCheckedProcess } from "./transaction-source.js";
-import { compileSerialBusinessTaskSource } from "./serial-business-task-source.js";
+import { compileMixedTaskControlFlowSource, compileSerialBusinessTaskSource } from "./serial-business-task-source.js";
 import {
   CALL_ACTIVITY_DATA_BOUNDARIES_CHECKPOINT_PROFILE_ID,
+  MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID,
   SERIAL_BUSINESS_TASK_CHECKPOINT_PROFILE_ID,
   TRANSACTION_CANCELLATION_CHECKPOINT_PROFILE_ID,
   COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID,
@@ -70,6 +71,7 @@ import {
 } from "./compensation-source.js";
 
 export const CompilationDispatchId = Object.freeze({
+  MixedTaskControlFlow: "mixedTaskControlFlow",
   SerialBusinessTasks: "serialBusinessTasks",
   Generic: "generic",
   MappedSuccessServiceTask: "mappedSuccessServiceTask",
@@ -119,6 +121,7 @@ const genericDispatch = {
 export const compilationDispatches: ReadonlyArray<CompilationDispatch> =
   Object.freeze([
     genericDispatch,
+    { id: CompilationDispatchId.MixedTaskControlFlow, semanticProfile: MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID, reader: compileMixedTaskControlFlowSource },
     { id: CompilationDispatchId.SerialBusinessTasks, semanticProfile: SERIAL_BUSINESS_TASK_CHECKPOINT_PROFILE_ID, reader: compileSerialBusinessTaskSource },
     {
       id: CompilationDispatchId.MappedSuccessServiceTask,
@@ -306,6 +309,7 @@ export function compileDispatchedCheckedProcess(
         overlay,
         semanticProfile,
       );
+    case CompilationDispatchId.MixedTaskControlFlow:
     case CompilationDispatchId.SerialBusinessTasks:
     case CompilationDispatchId.SequentialMultiInstanceUserTask:
     case CompilationDispatchId.ParallelMultiInstanceUserTask:

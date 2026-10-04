@@ -2,8 +2,8 @@
 
 ## Status
 
-Lifecycle: draft
-Review: pending
+Lifecycle: owner-approved
+Review: approved
 
 ## Question and current boundary
 
@@ -11,7 +11,7 @@ Can ordinary human/automated business processes branch, rejoin and return to ear
 
 This is the next increment of [Practical CIB7 Coverage](../PRACTICAL-CIB7-COVERAGE-TARGET.md). The [serial business-task checkpoint](SERIAL-BUSINESS-TASK-COMPOSITION-PROPOSAL.md) supplies named automation and scalar mapping; [structured composition](STRUCTURED-PROCESS-COMPOSITION-PROPOSAL.md) supplies data-dependent routing; [cyclic control flow](CYCLIC-CONTROL-FLOW-SPEC.md) supplies resumption cuts and repeated occurrences. Their current profiles exclude this combination. The reusable mechanism is a root Process carrying at most one control unit, not another exact invoice topology or paired-region recognizer.
 
-At baseline `b70c6308`, a schema-valid invoice Review → Validate → Decision → Finalize model with a conditional return through a two-input Merge is rejected by serial admission. `/tmp/mixed-task-existing-gap-discriminator` separately records refusal at the explicit expression-language boundary and, after removing only that attribute diagnostically, at the gateway-kind boundary. Its source is `/tmp/mixed-task-invoice-rework.bpmn`; `xmllint` validates it against the pinned BPMN schema. This establishes missing composition, not a new runtime defect or implementation qualification. Production semantics remain unchanged pending independent proposal approval.
+At baseline `b70c6308`, a schema-valid invoice Review → Validate → Decision → Finalize model with a conditional return through a two-input Merge is rejected by serial admission. `/tmp/mixed-task-existing-gap-discriminator` separately records refusal at the explicit expression-language boundary and, after removing only that attribute diagnostically, at the gateway-kind boundary. Its source is `/tmp/mixed-task-invoice-rework.bpmn`; `xmllint` validates it against the pinned BPMN schema. This establishes missing composition, not a new runtime defect or implementation qualification. This diagnostic preceded proposal approval; implementation evidence is recorded separately below.
 
 ## Basis and selected scope
 
@@ -108,18 +108,18 @@ Admission extends the existing [compiler](../../packages/bpmn-source/src/checked
 | Owner | Headroom | Constraint |
 |---|---:|---|
 | [Compiler](../../packages/bpmn-source/src/checked-process-compiler.ts) | 377 | Keep analysis outside shared dispatch and preserve existing profile restrictions. |
-| [Checked validator](../../packages/bpmn-source/src/checked-process-admission.ts) | 95 | Keep analysis outside shared dispatch and preserve existing profile restrictions. |
-| [Serial source projection](../../packages/bpmn-source/src/serial-business-task-source.ts) | 690 | Keep analysis outside shared dispatch and preserve existing profile restrictions. |
+| [Checked validator](../../packages/bpmn-source/src/checked-process-admission.ts) | 90 | Keep analysis outside shared dispatch and preserve existing profile restrictions. |
+| [Serial source projection](../../packages/bpmn-source/src/serial-business-task-source.ts) | 672 | Keep analysis outside shared dispatch and preserve existing profile restrictions. |
 | [Checked contract](../../packages/semantic-core/src/checked-process-contract.ts) | 395 | Widen Exclusive candidates; retain Inclusive and old-profile cardinalities. |
 | [Checked-to-IL lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 120 | Widen Exclusive candidates; retain Inclusive and old-profile cardinalities. |
 | [Lean checked decoding](../../BpmnSemantics/SemanticProcessJson/CheckedProcess.lean) | 357 | Widen Exclusive candidates; retain Inclusive and old-profile cardinalities. |
-| [Lean checked validation](../../BpmnSemantics/SemanticProcess/CheckedProcessAdmission.lean) | 348 | Widen Exclusive candidates; retain Inclusive and old-profile cardinalities. |
+| [Lean checked validation](../../BpmnSemantics/SemanticProcess/CheckedProcessAdmission.lean) | 347 | Widen Exclusive candidates; retain Inclusive and old-profile cardinalities. |
 | [TypeScript IL](../../packages/semantic-core/src/semantic-process-contract.ts) | 135 | Keep analysis outside shared dispatch and preserve existing profile restrictions. |
 | [Choice admission](../../packages/semantic-core/src/simple-boolean-choice-admission.ts) | 665 | Keep analysis outside shared dispatch and preserve existing profile restrictions. |
-| [Graph policy](../../packages/semantic-core/src/semantic-process-graph-policy.ts) | 701 | Keep analysis outside shared dispatch and preserve existing profile restrictions. |
-| [Lean graph validation](../../BpmnSemantics/SemanticProcess/GraphValidation.lean) | 53 | Keep analysis outside shared dispatch and preserve existing profile restrictions. |
+| [Graph policy](../../packages/semantic-core/src/semantic-process-graph-policy.ts) | 694 | Keep analysis outside shared dispatch and preserve existing profile restrictions. |
+| [Lean graph validation](../../BpmnSemantics/SemanticProcess/GraphValidation.lean) | 48 | Keep analysis outside shared dispatch and preserve existing profile restrictions. |
 | [Lean Program validation](../../BpmnSemantics/SemanticProcess/ProgramStructuralValidation.lean) | 14 | Keep analysis outside shared dispatch and preserve existing profile restrictions. |
-| [Lean command admission](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean) | 8 | Keep analysis outside shared dispatch and preserve existing profile restrictions. |
+| [Lean command admission](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean) | 5 | Keep analysis outside shared dispatch and preserve existing profile restrictions. |
 | [Lean Program JSON](../../BpmnSemantics/SemanticProcessJson/Program.lean) | 50 | Keep analysis outside shared dispatch and preserve existing profile restrictions. |
 
 These are nonblank margins before the 800-line review target, not growth budgets. If planned growth exceeds a margin, extract an existing cohesive responsibility without changing behavior before adding the capability; do not compress proofs or erase absence claims.
@@ -136,6 +136,52 @@ The nearest unsupported claims are mixed-task parallelism, nested scopes, busine
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `b40eda56` | `fork-turns-none` | `approve-with-required-edits` | `745c836b` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+
+The independent cold reviewer approved correction `745c836b`, closing the checked-source cardinality inventory omission. Original packet digest: `ab20a4fe657c26776f292c421e9ec06430d2a8571aa8ce5c714b57487fa7ff15`; correction packet digest: `d80c3099eeeed413b5a0adf065a4c99d95d08f563728364a3197f89cf052a4c2`. The independently executed checked-schema discriminator and writer-barrier graph search passed; these are finite diagnostics, not the required Lean proof. All 59 correction documentation checks pass in `/tmp/mixed-task-proposal-r1-docs`, separately asserted; unchanged infrastructure retains 629 passing checks. Approval selects the account only; implementation and hosting remain open.
+
+## Implementation progress
+
+The private increment admits the reviewed graph family through checked source, IL validation and ordinary command execution. Exclusive candidate sequences are nonempty; Inclusive and existing profile cardinalities remain unchanged. The shared business-task reader preserves the mapping and expression contracts. No new runtime state or operation was introduced. The [host gate](../../packages/temporal-adapter/protocol/src/host-admission.ts) explicitly refuses this private profile until live qualification. This is implementation evidence, not public support or capsule closure.
+
+The [admission laws](../../BpmnSemantics/SemanticProcess/MixedTaskControlFlowAdmissionLaws.lean) prove writer-free reachability obligations, cut acyclicity, rank decrease and bounded admitted ranks. The [data owner](../../BpmnSemantics/SemanticProcess/MixedTaskControlFlowDataProofs.lean) derives required read availability from actual committed Start; Human patches preserve it, Service patches supply barrier writes, and available canonical bindings make actual input evaluation total. It also proves arbitrary ordered first-true/default selection and refusal of nonunique effect-local ownership. The path invariant covers admitted graphs without enumerating business topologies.
+
+The [lifecycle owner](../../BpmnSemantics/SemanticProcess/MixedTaskControlFlowLifecycleProofs.lean) derives runtime guards from exact root ownership, canonical data and one token-or-wait position. Primitive valid Human/effect payloads commit through actual public command admission; accepted and refused completions preserve the invariant and issuance counters. The [progress owner](../../BpmnSemantics/SemanticProcess/MixedTaskControlFlowProgressProofs.lean) proves the reachable invariant from admitted Program and actual committed Start, unique actual firing, faithful scheduler discovery including Merge preparation, and scheduled closure within eight steps after every reachable resumption. Counter monotonicity across actual execution and strict increment on issuance prevent task/effect identity reuse. These theorems do not assume successful arming, preparation or completion, and do not bound business-loop iterations or prove business termination.
+
+All four assembly owners, the existing serial progress proofs and JSON runner build warning-free in `/tmp/mixed-task-complete-proof-assembly` (295 jobs); the final nonunique-owner refusal strengthening passes in `/tmp/mixed-task-owner-refusal-proof` (271 jobs). Both receipts were separately asserted. The admission/data/lifecycle/progress owners occupy 295/720/744/779 nonblank lines respectively, within their individual 800-line bounds. The existing [Merge preparation theorem](../../BpmnSemantics/SemanticProcess/StructuredCompositionProgressProofs.lean) now takes explicit ownership and snapshot-absence facts, derived by both callers; the structured-composition claim is retained. A shared effect-counter lookup law supports issuance reasoning without changing runtime behavior.
+
+Cross-target evidence covers twenty-five scenarios across mixed and retained serial profiles: immediate approval, repeated finite rework, nullable result fan-out, opposite declaration orders with competing true conditions, middle/last candidate selection, renamed and reordered source declarations, branch-dependent initialization and unsupported starts. Exact eight-step resumption succeeds; nine-step source admission and raw checked admission reject. Exact lowering, E1 results and complete E2 publications agree; rework checks fresh identities and current argument snapshots. A raw checked internal-only cycle is refused by both targets. Source tests reject absent, stale and duplicated local owners while preserving the exact predecessor; the stale-owner witness retains current bindings to isolate identity. `/tmp/mixed-task-final-boundary-parity` passes all eleven focused tests, separately asserted. The finite rework prefix witnesses continued resumability, not unconditional termination.
+
+TypeScript analysis has thirteen focused tests and six killed algorithm mutations. `/tmp/mixed-task-runtime-mutants` additionally reverses candidate priority and reuses effect activation `1`: the first breaks the first-true E1 comparison, the second fails the expected second activation. Both actual assertion failures were inspected, generated artifacts were restored byte-for-byte, and the positive gate above ran after restoration. `/tmp/mixed-task-burst-mutant` also raises all three admission checks to nine steps; the source-boundary assertion fails with acceptance instead of rejection, and `/tmp/mixed-task-burst-restored` passes after byte-exact restoration. Both receipts were separately asserted. This is semantic mutation evidence; it does not substitute for the deferred host recovery/rollover mutation.
+
+Two shared integration corrections retain existing contracts. Missing initial bindings originally produced a rejected command in Lean where TypeScript refused scenario support; the same predicted failure reproduced under the serial profile. The [scenario runner](../../BpmnSemantics/SemanticProcess/Scenario.lean) now applies both business profiles' initial-data contracts before execution, while actual missing-data Start still rejects with its exact predecessor. The broader TypeScript build also exposed the [branch-bypass helper](../../packages/temporal-adapter/testkit/src/branch-bypass-mutation-workflows.ts)'s two-candidate assumption. Its probe now explicitly refuses other arities; one-candidate dereference and three-candidate truncation are locked by Red/Green tests (`/tmp/mixed-task-bypass-cardinality-red`, `/tmp/mixed-task-bypass-cardinality-green`). The helper's two-branch purpose is unchanged. Its pure transformation is exposed through the existing testkit entry point so the harness resolves package sources rather than generated output. `/tmp/mixed-task-bypass-source-gate` passes thirty tests, including one/three-candidate refusal, retained two-candidate swapping, source policy and test selection; its receipt is separately asserted.
+
+Completed affected checks, each with a separately asserted receipt:
+
+| Boundary | Evidence |
+|---|---|
+| TypeScript verification build | `/tmp/mixed-task-final-build-2`; final testkit export rebuild `/tmp/mixed-task-testkit-build` |
+| Complete core/source regression | 2,711 passing tests, `/tmp/mixed-task-complete-core-source`; supersedes the earlier three corrected inventory failures |
+| Source boundary after the burst discriminator | 1,168 passing tests, `/tmp/mixed-task-final-source-regression` |
+| Contracts | 113 passing tests, `/tmp/mixed-task-complete-contracts` |
+| Differential package | 166 passing tests, `/tmp/mixed-task-complete-differential` |
+| Temporal components, without live hosting | 421 passing tests, `/tmp/mixed-task-complete-host-components` |
+| Semantic and harness types | `/tmp/mixed-task-final-semantic-types`, `/tmp/mixed-task-boundary-types-2` |
+
+The metamodel check and `doctor.sh verify` pass. `/tmp/mixed-task-final-guards` passed its Lean, resource-registry, documentation and consumer checks but rejected the new harness's direct generated-output import. The source-only entry-point correction passes the thirty-test gate above; final documentation checks pass all 39 tests in `/tmp/mixed-task-final-doc-guards`, separately asserted.
+
+`/tmp/mixed-task-complete-testkit-unit` is a failed qualification attempt: the `test:temporal:built:concurrent` glob also selected live Temporal tests. It records 280 passes, 69 failures and ten cancellations; failures report ephemeral-server startup or loopback-listen `EPERM`, with dependent tests cancelled. The command selection exceeded the deferred live scope. No rerun, hosted evidence or runtime diagnosis is claimed; the separate 421-test component result remains the non-live evidence.
+
+The three changed legacy kernel-fixture owners have refreshed isolated measurements under one CPU, 3 GiB and no additional swap, each with zero controlled memory events. The [module-cost registry](../../scripts/lean-module-cost.ts) binds their exact source and separately asserted receipts. All 769 final source/build inputs remain byte-identical to `.cache/mixed-task-qualified-source/inputs.json`; these measurements supersede the earlier dependency snapshot. Timing under external load supplies no performance claim.
+
+| Module | GNU RSS (KiB) | Receipt |
+|---|---:|---|
+| `MappedSuccessConformance` | 1,521,656 | `/tmp/mixed-task-final-measured-MappedSuccessConformance` |
+| `MappedBoundaryErrorConformance` | 1,436,468 | `/tmp/mixed-task-final-measured-MappedBoundaryErrorConformance` |
+| `UserTaskMetadataConformance` | 1,356,612 | `/tmp/mixed-task-final-measured-UserTaskMetadataConformance` |
+
+The complete cached Lean gate passes all 741 jobs in `/tmp/mixed-task-complete-lean-library-3`, separately asserted, with a 217,784,320-byte cgroup peak and zero controlled memory events under one CPU, 3 GiB and no additional swap. Its preceding run exposed two legacy proof consumers of the shared admission guard: metadata proofs unfolded its old single-profile condition, and Transaction proofs left the newly added profile branch unresolved. They now use the shared other-profile lemma and explicit Transaction profile facts without changing their claims. `/tmp/mixed-task-legacy-proof-correction-2` qualifies the corrections. The failed run also reached the cgroup ceiling with reclamation events but no OOM kill; it remains failed evidence, and the cached correction run does not close cold aggregate-library acceptance.
+
+The per-module resource records are current. The final source/import/consumer/cost/documentation guard composition passes all 138 checks in `/tmp/mixed-task-checkpoint-qualified-guards`, separately asserted, after correcting documentation budgets and route atoms. Independent cold checkpoint review remains open. Hosting/replay, public registration, corpus/disclosure and closure review remain later obligations. Public support and capsule closure remain unqualified.

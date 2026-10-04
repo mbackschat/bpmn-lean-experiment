@@ -623,11 +623,24 @@ private def firstStimulusMatchesProgram (program : Program) :
   | stimulus :: _ => startStimulusMatchesProgram program stimulus
   | [] => false
 
+/-- Business-task scenario support requires the same initial data as TypeScript support admission; command refusal remains a separate outcome. -/
+private def businessTaskScenarioStartAdmitted (program : Program) (stimuli : List Stimulus) : Bool :=
+  if program.identity.semanticProfile != serialBusinessTaskProfileId &&
+      program.identity.semanticProfile != mixedTaskControlFlowProfileId then true
+  else match stimuli with
+    | .startProcess _ _ instanceId bindings :: _ =>
+        !instanceId.value.isEmpty &&
+          if program.identity.semanticProfile == mixedTaskControlFlowProfileId then
+            MixedTaskControlFlow.startBindingsAdmitted program bindings
+          else SerialBusinessTask.startBindingsAdmitted program bindings
+    | _ => false
+
 /-- Admit only the `scenario` document kind for a structurally well-formed, profile-capability-valid program whose profile and source identity match the scenario and whose requested observations are exactly the required observation list. -/
 def supportsScenario (program : Program) (scenario : Scenario) : Bool :=
   programWellFormed program &&
     programProfileCapabilitiesValid program &&
     structuredCompositionScenarioStartAdmitted program scenario.stimuli &&
+    businessTaskScenarioStartAdmitted program scenario.stimuli &&
     stimulusSequenceSupported scenario.stimuli &&
     firstStimulusMatchesProgram program scenario.stimuli &&
     decide (

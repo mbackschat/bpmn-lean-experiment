@@ -14,6 +14,7 @@
  * attributes rather than all of them: its projector reads exactly two `camunda` attributes and
  * refuses any other count, so those two are consumed evidence rather than discarded content.
  */
+import { source as mixedTaskSource, profile as mixedTaskProfile, sourceOverlay as mixedTaskSourceOverlay } from "./mixed-task-control-flow-fixture.ts";
 import assert from "node:assert/strict";
 import { source as serialBusinessSource, profile as serialBusinessProfile, sourceOverlay as serialBusinessSourceOverlay } from "./serial-business-task-fixture.ts";
 import { readFile } from "node:fs/promises";
@@ -252,6 +253,10 @@ const dispatchFixtures = {
     sourceId: "preserved-notation-diagnostics",
     semanticProfile: SemanticProfileId.UserTaskPreservedNotation,
     find: '<bpmn:startEvent id="StartEvent_1"',
+  },
+  mixedTaskControlFlow: {
+    path: "the mixed-task control-flow reader", source: mixedTaskSource, sourceId: "invoice-rework",
+    semanticProfile: mixedTaskProfile, sourceOverlay: mixedTaskSourceOverlay(), find: '<startEvent id="Start"',
   },
   serialBusinessTasks: {
     path: "the serial business task reader", source: serialBusinessSource, sourceId: "invoice",

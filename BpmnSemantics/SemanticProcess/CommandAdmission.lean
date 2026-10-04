@@ -37,10 +37,10 @@ structure ExternalAdmission where
   outcome : CommandOutcome
   state : RuntimeState
 
-/-- The private serial profile admits only its three ingress families and exact current definition/occurrence associations. -/
+/-- SBT-REFUSE-01 and MTCF retain the same single-control-unit ingress and definition/occurrence associations. -/
 def serialBusinessCommandAdmitted (program : Program) (state : RuntimeState)
     (stimulus : Stimulus) : Bool :=
-  if program.identity.semanticProfile != serialBusinessTaskProfileId then true
+  if program.identity.semanticProfile != serialBusinessTaskProfileId && program.identity.semanticProfile != mixedTaskControlFlowProfileId then true
   else programWellFormed program && programProfileCapabilitiesValid program &&
     SerialBusinessTask.bindingsValid (SerialBusinessTask.programHandlers program)
       state.variables.process.bindings &&
@@ -56,11 +56,12 @@ def serialBusinessCommandAdmitted (program : Program) (state : RuntimeState)
 
 @[simp] theorem serialBusinessCommandAdmitted_of_other_profile
     (program : Program) (state : RuntimeState) (stimulus : Stimulus)
-    (unselected : program.identity.semanticProfile ≠ serialBusinessTaskProfileId) :
+    (unselected : program.identity.semanticProfile ≠ serialBusinessTaskProfileId)
+    (unselectedMixed : program.identity.semanticProfile ≠ mixedTaskControlFlowProfileId) :
     serialBusinessCommandAdmitted program state stimulus = true := by
   unfold serialBusinessCommandAdmitted
-  simp only [bne_iff_ne]
-  exact if_pos unselected
+  simp only [Bool.and_eq_true, bne_iff_ne]
+  exact if_pos ⟨unselected, unselectedMixed⟩
 
 /-! Closed raw dispatchers remain private because they do not enforce snapshot declaration admission. -/
 
@@ -162,7 +163,9 @@ private def dataInputOutputStartBindingsAdmitted (program : Program)
       match state.control with
       | .notStarted =>
           let bindingsAdmitted :=
-            if program.identity.semanticProfile = serialBusinessTaskProfileId then
+            if program.identity.semanticProfile = mixedTaskControlFlowProfileId then
+              MixedTaskControlFlow.startBindingsAdmitted program initialVariables
+            else if program.identity.semanticProfile = serialBusinessTaskProfileId then
               SerialBusinessTask.startBindingsAdmitted program initialVariables
             else if program.identity.semanticProfile = callDataCheckpointProfileId then
               callDataStartBindingsAdmitted program initialVariables
@@ -309,7 +312,7 @@ private def dataInputOutputStartBindingsAdmitted (program : Program)
           | some successor =>
               if taskId.processInstanceId = instanceId &&
                   !isCallActivityProgram program &&
-                  (program.identity.semanticProfile != serialBusinessTaskProfileId ||
+                  ((program.identity.semanticProfile != serialBusinessTaskProfileId && program.identity.semanticProfile != mixedTaskControlFlowProfileId) ||
                     SerialBusinessTask.bindingsValid (SerialBusinessTask.programHandlers program) submittedValues) &&
                   structuredCompositionOrdinaryCompletionAdmitted program taskId submittedValues &&
                   processDataBindingsAdmitted program.identity.semanticProfile
@@ -431,7 +434,7 @@ private def dataInputOutputStartBindingsAdmitted (program : Program)
                     { outcome := .rejected, state }
               | .refused _ => { outcome := .rejected, state }
           | [], [_] =>
-              match (if program.identity.semanticProfile == serialBusinessTaskProfileId then
+              match (if program.identity.semanticProfile == serialBusinessTaskProfileId || program.identity.semanticProfile == mixedTaskControlFlowProfileId then
                 completeSerialEffect? program state effectId result else completeEffect state effectId result) with
               | some successor =>
                   if effectId.processInstanceId = instanceId then

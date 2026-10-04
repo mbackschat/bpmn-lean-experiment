@@ -4,6 +4,7 @@ import type { DeepReadonly } from "./deep-readonly.js";
 import { SemanticOperationKind } from "./semantic-process-contract.js";
 import {
   CALL_ACTIVITY_DATA_BOUNDARIES_CHECKPOINT_PROFILE_ID,
+  MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID,
   SERIAL_BUSINESS_TASK_CHECKPOINT_PROFILE_ID,
   INTERRUPTING_MESSAGE_EVENT_SUBPROCESS_CHECKPOINT_PROFILE_ID,
   STRUCTURED_PROCESS_COMPOSITION_CHECKPOINT_PROFILE_ID,
@@ -26,8 +27,8 @@ export type SemanticGraphPolicy = DeepReadonly<
   | { kind: SemanticGraphPolicyKind.Acyclic }
   | {
       kind: SemanticGraphPolicyKind.ResumptionBounded;
-      checkedResumptionNodeKinds: [CheckedNodeKind.UserTask];
-      semanticResumptionOperationKinds: [SemanticOperationKind.AwaitUserTask];
+      checkedResumptionNodeKinds: Array<CheckedNodeKind.UserTask | CheckedNodeKind.ServiceTask>;
+      semanticResumptionOperationKinds: Array<SemanticOperationKind.AwaitUserTask | SemanticOperationKind.AwaitEffect>;
     }
 >;
 
@@ -45,11 +46,18 @@ const userTaskResumptionBoundedGraphPolicy: SemanticGraphPolicy = Object.freeze(
   ] as const),
 });
 
+const mixedTaskResumptionBoundedGraphPolicy: SemanticGraphPolicy = Object.freeze({
+  kind: SemanticGraphPolicyKind.ResumptionBounded,
+  checkedResumptionNodeKinds: Object.freeze([CheckedNodeKind.UserTask, CheckedNodeKind.ServiceTask] as const),
+  semanticResumptionOperationKinds: Object.freeze([SemanticOperationKind.AwaitUserTask, SemanticOperationKind.AwaitEffect] as const),
+});
+
 /** Selects the complete graph policy for one admitted semantic capability. */
 export function semanticGraphPolicyForProfile(
   semanticProfile: string,
 ): SemanticGraphPolicy | undefined {
   switch (semanticProfile) {
+    case MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID: return mixedTaskResumptionBoundedGraphPolicy;
     case SemanticProfileId.UserTaskCycle:
       return userTaskResumptionBoundedGraphPolicy;
     case SERIAL_BUSINESS_TASK_CHECKPOINT_PROFILE_ID:

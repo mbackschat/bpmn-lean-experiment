@@ -264,10 +264,11 @@ function projectUserTaskMetadata(
     : { kind: CheckedNodeKind.UserTask, id, name };
 }
 
-function projectExclusiveMerge(
+export function projectExclusiveMerge(
   element: ElementRecord,
   id: string,
   flows: ReadonlyArray<CheckedSequenceFlow>,
+  variableArity = false,
 ): Extract<CheckedNode, { kind: CheckedNodeKind.ExclusiveMerge }> | undefined {
   if (
     !hasOnlyProjectedFlowElementKeys(
@@ -284,7 +285,7 @@ function projectExclusiveMerge(
   }
   const incoming = flows.filter(({ targetId }) => targetId === id);
   const outgoing = flows.filter(({ sourceId }) => sourceId === id);
-  return incoming.length === 3 &&
+  return (variableArity ? incoming.length >= 2 : incoming.length === 3) &&
       outgoing.length === 1 &&
       outgoing[0]?.condition === null
     ? { kind: CheckedNodeKind.ExclusiveMerge, id }

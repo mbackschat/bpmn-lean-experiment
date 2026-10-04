@@ -3,6 +3,7 @@ export * from "@bpmn-lean/temporal-runner";
 export * from "@bpmn-lean/temporal-worker";
 export * from "@bpmn-lean/temporal-workflow";
 export * from "./bypass-mutation.js";
+export { mutateConditionalSelection } from "./branch-bypass-mutation-workflows.js";
 export * from "./completion-delivery.js";
 export * from "./contracts.js";
 export * from "./effect-scenario-execution.js";

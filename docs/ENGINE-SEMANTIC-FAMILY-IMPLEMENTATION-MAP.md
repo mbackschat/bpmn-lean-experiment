@@ -26,6 +26,14 @@ The [capsule registry](capsules/README.md), the Lean modules under [`BpmnSemanti
 
 Reading these sections together supports no cross-family theorem. A mechanism two families share is established only where each section says so independently, and this map is where such a split becomes visible rather than where it is resolved. A mechanism recorded in the invariant map is likewise established for a family only where that family's section says so.
 
+## Mixed-task control flow
+
+The approved [mixed-task account](capsules/MIXED-TASK-CONTROL-FLOW-PROPOSAL.md#implementation-progress) has a private implementation; independent checkpoint review remains open.
+
+**Implemented.** Source admission and independent Lean/TypeScript execution cover root User/Service tasks, ordered Exclusive choices/merges and task-crossing cycles. Writer-barrier reachability selects initial inputs; task-cut ranks bound automatic closure at eight steps. Named handlers and String/null mappings retain their contract. Actual Start and execution derive single-control ownership, read availability, local lifetime, valid-payload acceptance, fresh issuance and bounded closure. Cross-target tests compare lowering and complete E1/E2 results, including order, stale-owner and burst-bound counterexamples.
+
+**Open.** Public registration, hosting/replay and checkpoint/closure review remain open. Typed host admission refuses the profile. No business termination, mixed-task concurrency, nested scope, business failure or additional public CIB coverage is claimed.
+
 ## Serial business-task composition
 
 The approved [serial business-task account](capsules/SERIAL-BUSINESS-TASK-COMPOSITION-PROPOSAL.md#implementation-in-progress) has an independently approved private checkpoint at correction `c9427286` to reviewed target `c260579f`.

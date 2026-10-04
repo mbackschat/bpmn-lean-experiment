@@ -390,7 +390,7 @@ function lowerNode(
           lowerConditionalCandidate(source.sequenceFlows, flowId)
         ) as [
           ReturnType<typeof lowerConditionalCandidate>,
-          ReturnType<typeof lowerConditionalCandidate>,
+          ...ReturnType<typeof lowerConditionalCandidate>[],
         ],
         defaultOutput: controlPlaceId(node.defaultFlowId),
         defaultOrigin: {
@@ -402,7 +402,7 @@ function lowerNode(
       return scoped({
         ...base,
         kind: SemanticOperationKind.MergeExclusive,
-        inputs: requireExactThree(incoming, node.id, "incoming"),
+        inputs: requireMany(incoming, node.id, "incoming") as [string, ...string[]],
         output: requireOnly(outgoing, node.id, "outgoing"),
       });
     case CheckedNodeKind.InclusiveGateway:

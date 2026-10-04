@@ -1,6 +1,6 @@
 import BpmnSemantics.SemanticProcess.ProfileCardinalities
 import BpmnSemantics.SemanticProcess.StructuredCompositionAdmission
-import BpmnSemantics.SemanticProcess.SerialBusinessTaskAdmission
+import BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmission
 import BpmnSemantics.SemanticProcess.TransactionSourceAdmission
 import BpmnSemantics.SemanticProcess.ValueDomain
 import BpmnSemantics.SemanticProcess.StructuredHumanWorkAdmission
@@ -506,14 +506,16 @@ private def configuredTaskCheckedPayloadValid (source : CheckedProcess) : Bool :
     | _, _, _, _ => false
   else true
 
-/-- Closed graph-policy capability. Every pre-cycle profile retains whole-graph acyclicity; only the exact cycle profile selects the User Task resumption cut. -/
+/-- Profile-owned cycle cuts preserve the older User-only boundary and the MTCF User/Service boundary separately. -/
 inductive ProfileGraphPolicy where
   | acyclic
   | resumptionBounded
+  | mixedTaskResumptionBounded
   deriving Repr, DecidableEq
 
 def profileGraphPolicy? (profile : String) : Option ProfileGraphPolicy :=
-  if profile = "bpmn-2.0.2-user-task-cycle-draft" then
+  if profile = mixedTaskControlFlowProfileId.value then some .mixedTaskResumptionBounded
+  else if profile = "bpmn-2.0.2-user-task-cycle-draft" then
     some .resumptionBounded
   else if profile = transactionCancellationCheckpointProfileId.value ||
       profile = structuredCompositionCheckpointProfileId.value ||
@@ -552,6 +554,8 @@ def checkedProfileCapabilitiesValid (source : CheckedProcess) : Bool :=
   else source.interruptingMessageEventSubProcesses.isEmpty &&
   if source.identity.semanticProfile == callDataCheckpointProfileId then
     callDataCheckedGraph source
+  else if source.identity.semanticProfile == mixedTaskControlFlowProfileId then
+    (MixedTaskControlFlow.checkedAnalysis source).isSome
   else if source.identity.semanticProfile == serialBusinessTaskProfileId then
     (SerialBusinessTask.checkedAnalysis source).isSome
   else if source.identity.semanticProfile == structuredCompositionCheckpointProfileId then
@@ -666,7 +670,9 @@ def programProfileCapabilitiesValid (program : Program) : Bool :=
             program.identity.semanticProfile.value program.operations
           && messageKeyCorrelationProgramPayloadValid program &&
           compensationSourceProgramProfileValid program
-    | none => if program.identity.semanticProfile == serialBusinessTaskProfileId then
+    | none => if program.identity.semanticProfile == mixedTaskControlFlowProfileId then
+        (MixedTaskControlFlow.programAnalysis program).isSome
+      else if program.identity.semanticProfile == serialBusinessTaskProfileId then
         (SerialBusinessTask.programAnalysis program).isSome
       else program.identity.semanticProfile == structuredCompositionCheckpointProfileId &&
         structuredCompositionProgramGraph program

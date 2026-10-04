@@ -1,0 +1,24 @@
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" targetNamespace="urn:procurement-assessment" expressionLanguage="urn:bpmn-lean:expression:simple-boolean:v1">
+  <process id="Assessment" name="Route a procurement assessment and record its result" isExecutable="true">
+    <startEvent id="Start"/>
+    <exclusiveGateway id="Route" gatewayDirection="Diverging" default="InternalRoute"/>
+    <serviceTask id="Supplier" name="Obtain supplier assessment" implementation="urn:bpmn-lean:effect-protocol:activity-v1" camunda:asyncBefore="true" camunda:delegateExpression="${supplierAssessment}">
+      <extensionElements><camunda:inputOutput><camunda:outputParameter name="assessment">${result}</camunda:outputParameter></camunda:inputOutput></extensionElements>
+    </serviceTask>
+    <userTask id="Internal" name="Review the existing internal assessment"/>
+    <exclusiveGateway id="Merge" gatewayDirection="Converging"/>
+    <serviceTask id="Record" name="Record the selected assessment" implementation="urn:bpmn-lean:effect-protocol:activity-v1" camunda:asyncBefore="true" camunda:delegateExpression="${recordAssessment}">
+      <extensionElements><camunda:inputOutput><camunda:inputParameter name="payload">${assessment}</camunda:inputParameter></camunda:inputOutput></extensionElements>
+    </serviceTask>
+    <userTask id="Approve" name="Approve the recorded assessment"/>
+    <endEvent id="End"/>
+    <sequenceFlow id="Begin" sourceRef="Start" targetRef="Route"/>
+    <sequenceFlow id="SupplierRoute" sourceRef="Route" targetRef="Supplier"><conditionExpression xsi:type="bpmn:tFormalExpression">stringEquals(route,"supplier")</conditionExpression></sequenceFlow>
+    <sequenceFlow id="InternalRoute" sourceRef="Route" targetRef="Internal"/>
+    <sequenceFlow id="SupplierDone" sourceRef="Supplier" targetRef="Merge"/>
+    <sequenceFlow id="InternalDone" sourceRef="Internal" targetRef="Merge"/>
+    <sequenceFlow id="RecordInput" sourceRef="Merge" targetRef="Record"/>
+    <sequenceFlow id="Recorded" sourceRef="Record" targetRef="Approve"/>
+    <sequenceFlow id="Approved" sourceRef="Approve" targetRef="End"/>
+  </process>
+</definitions>

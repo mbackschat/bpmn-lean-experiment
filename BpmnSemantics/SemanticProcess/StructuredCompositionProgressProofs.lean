@@ -418,10 +418,11 @@ theorem singleton_merge_has_position_delta
   · simp [internalLocalControlPositionDelta?, List.eraseDups_cons, Ne.symm same, inputFound, outputFound, List.mapM_cons, List.mapM_nil]
 
 theorem singleton_merge_preparation_is_total
-    (program : Program) (analysis : Analysis) (state : RuntimeState) (token : ControlToken)
+    (program : Program) (state : RuntimeState) (token : ControlToken)
     (root : DefinitionScope) (instanceId : SemanticId)
     (id : OperationId) (origin : BpmnElementOrigin) (inputs : List ControlPlaceId) (output : ControlPlaceId)
-    (wellFormed : programWellFormed program = true) (analyzed : programAnalysis program = some analysis)
+    (wellFormed : programWellFormed program = true) (noSnapshots : program.compensationEventSubProcessSnapshots = none)
+    (owned : operationOwningScope? program id = some token.owner.definitionScopeId)
     (origins : (program.controlPlaces.map (·.origin.elementId)).Nodup)
     (definitions : program.definitionScopes = [root]) (rootKey : token.owner.definitionScopeId = root.id)
     (member : SemanticOperation.mergeExclusive id origin inputs output ∈ program.operations)
@@ -433,9 +434,6 @@ theorem singleton_merge_preparation_is_total
       applyPreparedInternalTransition? program state (.mergeInput prepared) =
         fire? program (.mergeExclusive id origin inputs output) state := by
   let operation := SemanticOperation.mergeExclusive id origin inputs output
-  have owned : operationOwningScope? program id = some token.owner.definitionScopeId := by
-    rw [rootKey]
-    exact admitted_operations_share_declared_root program analysis root wellFormed analyzed definitions operation member
   obtain ⟨delta, deltaFound⟩ := singleton_merge_has_position_delta program id origin inputs token.placeId output
     token.owner wellFormed origins member offered owned
   obtain ⟨operations, places⟩ := admitted_program_has_unique_identity_keys program wellFormed
@@ -463,7 +461,6 @@ theorem singleton_merge_preparation_is_total
     have absent : output ∉ inputs := by simpa using valid.1.1.2
     intro equal
     exact absent (equal ▸ offered)
-  obtain ⟨_, _, _, noSnapshots, _⟩ := program_analysis_excludes_foreign_declarations program analysis analyzed
   let selected : InternalMergeSelection := { operation, owner := token.owner, input := token.placeId, output }
   let prepared := makeInternalMergePreparation state selected instanceId { processId, elementId := origin.elementId, owner := token.owner } delta
   have ready : prepareInternalMerge? program state operation (.mergeInput id token.owner token.placeId) = some prepared := by
@@ -700,8 +697,10 @@ theorem enabled_operation_has_singleton_discovery
           change live = owner at liveOwner
           simpa [liveOwner, tokenOwner] using scopes
         · simp [control] at completed
-      obtain ⟨prepared, ready, applied⟩ := singleton_merge_preparation_is_total program analysis state token root instanceId
-        id origin inputs output wellFormed analyzed origins definitions (by simpa [tokenOwner] using rootKey)
+      obtain ⟨prepared, ready, applied⟩ := singleton_merge_preparation_is_total program state token root instanceId
+        id origin inputs output wellFormed (program_analysis_excludes_foreign_declarations program analysis analyzed).2.2.2.1
+        (by rw [tokenOwner, rootKey]; exact admitted_operations_share_declared_root program analysis root wellFormed analyzed definitions _ member)
+        origins definitions (by simpa [tokenOwner] using rootKey)
         member single port scopes control frame.1.2
       rw [fired] at applied
       have alternatives : internalMergeInputAlternatives state (.mergeExclusive id origin inputs output) =

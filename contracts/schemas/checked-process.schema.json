@@ -1681,8 +1681,7 @@
             },
             "candidateFlowIds": {
               "type": "array",
-              "minItems": 2,
-              "maxItems": 2,
+              "minItems": 1,
               "uniqueItems": true,
               "items": {
                 "$ref": "#/$defs/nonemptyString"

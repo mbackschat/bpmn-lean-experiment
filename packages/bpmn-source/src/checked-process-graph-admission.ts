@@ -1,4 +1,5 @@
 import {
+  MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID,
   CheckedNodeKind,
   INTERRUPTING_MESSAGE_EVENT_SUBPROCESS_CHECKPOINT_PROFILE_ID,
   interruptingMessageEventSubProcessCheckedGraph,
@@ -208,9 +209,9 @@ function hasSelectedArity(
           return incoming === 2 && outgoing === 1;
       }
     case CheckedNodeKind.ExclusiveGateway:
-      return incoming === 1 && outgoing === 3;
+      return incoming === 1 && (semanticProfile === MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID ? outgoing >= 2 : outgoing === 3);
     case CheckedNodeKind.ExclusiveMerge:
-      return incoming === 3 && outgoing === 1;
+      return (semanticProfile === MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID ? incoming >= 2 : incoming === 3) && outgoing === 1;
     case CheckedNodeKind.InclusiveGateway:
       switch (node.direction) {
         case GatewayDirection.Diverging:

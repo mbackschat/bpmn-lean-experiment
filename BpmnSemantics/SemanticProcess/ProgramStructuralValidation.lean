@@ -409,7 +409,7 @@ private def operationWellFormed (program : Program) (places : List ControlPlace)
         nonempty origin.elementId.value &&
         nonempty effect.elementId.value &&
         decide (origin.elementId = effect.elementId) &&
-        ((program.identity.semanticProfile == serialBusinessTaskProfileId &&
+        (((program.identity.semanticProfile == serialBusinessTaskProfileId || program.identity.semanticProfile == mixedTaskControlFlowProfileId) &&
           SerialBusinessTask.descriptorValid effect.descriptor && bpmnErrorRoute.isNone) ||
         (effect.descriptor.protocol =
               "urn:bpmn-lean:effect-protocol:activity-v1" &&
@@ -461,8 +461,8 @@ private def operationWellFormed (program : Program) (places : List ControlPlace)
       nonempty id.value &&
         nonempty origin.elementId.value &&
         placeExists places input &&
-        candidates.length = 2 &&
-        (candidates.map (·.output)).eraseDups.length = 2 &&
+        (if program.identity.semanticProfile == mixedTaskControlFlowProfileId then !candidates.isEmpty else candidates.length = 2) &&
+        (candidates.map (·.output)).eraseDups.length = candidates.length &&
         !((candidates.map (·.output)).contains defaultOutput) &&
         candidates.all fun candidate =>
           simpleBooleanExpressionValid candidate.condition &&

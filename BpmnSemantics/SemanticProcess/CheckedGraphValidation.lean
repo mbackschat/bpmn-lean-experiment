@@ -167,6 +167,11 @@ private def checkedGraphPolicyValid (source : CheckedProcess)
   | some .acyclic => acyclicClosed edges fuel
   | some .resumptionBounded =>
       acyclicClosed (checkedResumptionCutEdges nodes edges) fuel
+  | some .mixedTaskResumptionBounded =>
+      acyclicClosed (edges.filter fun edge => !nodes.any (fun node =>
+        checkedNodeId node == edge.source && match node with
+          | .userTask .. | .serviceTask .. => true
+          | _ => false)) fuel
   | none => false
 
 /-- Finite per-scope graph progress backstop independent of any complete model topology. -/

@@ -1,4 +1,7 @@
+import { projectExclusiveGateway } from "./simple-boolean-exclusive-gateway-source.js";
+import { projectCheckedSequenceFlows, projectExclusiveMerge } from "./checked-element-projection.js";
 import {
+  MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID, mixedTaskControlCheckedGraph,
   CheckedNodeKind, CheckedProcessKind, MappingExpressionKind, SERIAL_BUSINESS_TASK_CHECKPOINT_PROFILE_ID,
   compareCanonicalStrings, serialBusinessCheckedGraph, serialBusinessMappingsAdmitted,
 } from "@bpmn-lean/semantic-core";
@@ -21,11 +24,20 @@ const camunda = "http://camunda.org/schema/1.0/bpmn";
 
 /** CIB-EXT-0015 consumes exact binding and mapping syntax before independent checked-chain admission. */
 export function compileSerialBusinessTaskSource(root: unknown, source: BpmnSourceIdentity, overlay: AdmittedSourceOverlay | null): CheckedCompilationProjection {
-  const selection = selectMappedServiceTaskSourcePolicy(SERIAL_BUSINESS_TASK_CHECKPOINT_PROFILE_ID, overlay);
+  return compileBusinessTaskSource(root, source, overlay, SERIAL_BUSINESS_TASK_CHECKPOINT_PROFILE_ID);
+}
+
+export function compileMixedTaskControlFlowSource(root: unknown, source: BpmnSourceIdentity, overlay: AdmittedSourceOverlay | null): CheckedCompilationProjection {
+  return compileBusinessTaskSource(root, source, overlay, MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID);
+}
+
+function compileBusinessTaskSource(root: unknown, source: BpmnSourceIdentity, overlay: AdmittedSourceOverlay | null, semanticProfile: string): CheckedCompilationProjection {
+  const mixed = semanticProfile === MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID;
+  const selection = selectMappedServiceTaskSourcePolicy(semanticProfile, overlay);
   if (selection.policy === null) return unsupported(selection.rejection);
   const definitions = asElement(root);
   if (definitions?.$type !== "bpmn:Definitions" || !hasOnlyModelledKeys(definitions,
-    ["$type", "id", "targetNamespace", "exporter", "exporterVersion", "rootElements", "diagrams"])) return unsupported("Expected one exact BPMN Definitions document.");
+    ["$type", "id", "targetNamespace", "exporter", "exporterVersion", "rootElements", "diagrams", ...(mixed ? ["expressionLanguage"] : [])])) return unsupported("Expected one exact BPMN Definitions document.");
   const foreign = exactForeignAttributeRejections(definitions, locateContainedElements(definitions),
     (type, namespace, name) => type === "bpmn:ServiceTask" && namespace === camunda && (name === "delegateExpression" || name === "asyncBefore"));
   if (foreign.length > 0) return { checkedProcess: undefined, diagnostics: orderedElementDiagnostics(foreign) };
@@ -36,6 +48,9 @@ export function compileSerialBusinessTaskSource(root: unknown, source: BpmnSourc
   const processId = readId(process);
   const elements = asElementArray(process.flowElements);
   if (processId === undefined || elements === undefined) return unsupported("Process and flow elements require IDs.");
+  const flowElements = elements.filter(element => element.$type === "bpmn:SequenceFlow");
+  const flows = mixed ? projectCheckedSequenceFlows(flowElements, definitions.expressionLanguage, undefined) : projectMappedSuccessSequenceFlows(flowElements);
+  if (flows === undefined) return unsupported("Sequence Flows exceed the selected condition contract.");
   const nodes: CheckedNode[] = [];
   for (const element of elements) {
     let node: CheckedNode | undefined;
@@ -50,26 +65,31 @@ export function compileSerialBusinessTaskSource(root: unknown, source: BpmnSourc
         }
         break;
       }
+      case "bpmn:ExclusiveGateway": {
+        const id = readId(element);
+        if (mixed && id !== undefined) node = projectExclusiveMerge(element, id, flows, true) ?? projectExclusiveGateway(element, id, flows, true);
+        break;
+      }
       case "bpmn:ServiceTask": node = serviceNode(element, definitions, selection.policy); break;
-      default: return unsupported("Only None events, User Tasks, Service Tasks and Sequence Flows are admitted.");
+      default: return unsupported("The flow element is outside the selected business-task contract.");
     }
-    if (node === undefined) return unsupported("A flow element exceeds the serial business task contract.");
+    if (node === undefined) return unsupported("A flow element exceeds the selected business-task contract.");
     nodes.push(node);
   }
-  const flows = projectMappedSuccessSequenceFlows(elements.filter(element => element.$type === "bpmn:SequenceFlow"));
   const ids = [processId, ...elements.map(readId)];
-  if (flows === undefined || new Set(ids).size !== ids.length || !serialBusinessCheckedGraph({ nodes, flows })) return unsupported("Expected a complete, unique serial business chain with exact mappings.");
+  if (new Set(ids).size !== ids.length || (!mixed && !serialBusinessCheckedGraph({ nodes, flows }))) return unsupported("Expected a complete, unique serial business chain with exact mappings.");
   const scopeId = definitionScopeId(processId);
   const checkedProcess: CheckedProcess = {
     kind: CheckedProcessKind.CheckedProcess,
-    identity: { semanticProfile: SERIAL_BUSINESS_TASK_CHECKPOINT_PROFILE_ID, sourceId: source.id, sourceSha256: source.sha256, sourceOverlay: selection.policy.sourceOverlay },
+    identity: { semanticProfile, sourceId: source.id, sourceSha256: source.sha256, sourceOverlay: selection.policy.sourceOverlay },
     processId, definitionScopes: [{ id: scopeId, parentScopeId: null, originElementId: processId }],
     nodeScopes: nodes.map(({ id }) => ({ nodeId: id, scopeId })).sort((a, b) => compareCanonicalStrings(a.nodeId, b.nodeId)),
     sequenceFlowScopes: flows.map(({ id }) => ({ sequenceFlowId: id, scopeId })).sort((a, b) => compareCanonicalStrings(a.sequenceFlowId, b.sequenceFlowId)),
     nodes: [...nodes].sort((a, b) => compareCanonicalStrings(a.id, b.id)), sequenceFlows: [...flows].sort((a, b) => compareCanonicalStrings(a.id, b.id)),
   };
-  return isAdmittedCheckedProcess({ ...checkedProcess, flows: checkedProcess.sequenceFlows }, definitions.expressionLanguage, SERIAL_BUSINESS_TASK_CHECKPOINT_PROFILE_ID)
-    ? { checkedProcess, diagnostics: [] } : unsupported("The checked business chain does not satisfy root graph admission.");
+  if (mixed && !mixedTaskControlCheckedGraph({ ...checkedProcess, flows })) return unsupported("The mixed-task control graph fails admission.");
+  return isAdmittedCheckedProcess({ ...checkedProcess, flows: checkedProcess.sequenceFlows }, definitions.expressionLanguage, semanticProfile)
+    ? { checkedProcess, diagnostics: [] } : unsupported("The checked business-task graph does not satisfy root graph admission.");
 }
 
 function serviceNode(element: ElementRecord, definitions: ElementRecord, policy: MappedServiceTaskSourcePolicy): CheckedNode | undefined {

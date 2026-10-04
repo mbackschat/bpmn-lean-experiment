@@ -39,7 +39,7 @@ export function runBpmnProcessBranchBypassMutation(
   ));
 }
 
-function mutateConditionalSelection(
+export function mutateConditionalSelection(
   semanticProcess: SemanticProcessProgram,
 ): SemanticProcessProgram {
   let conditionalSelectionCount = 0;
@@ -48,6 +48,11 @@ function mutateConditionalSelection(
       case SemanticOperationKind.Choose: {
         conditionalSelectionCount += 1;
         const [first, second] = operation.candidates;
+        if (operation.candidates.length !== 2 || second === undefined) {
+          throw new TypeError(
+            "Branch-bypass mutation requires exactly two Exclusive candidates",
+          );
+        }
         return {
           ...operation,
           candidates: [

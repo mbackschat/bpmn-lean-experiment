@@ -339,10 +339,10 @@ theorem completion_is_metadata_irrelevant
   apply user_task_completion_with_same_successor_is_equal
     (successor := successor)
     (serialGuardAgreement := by
-      have legacy : ((programFor exactMetadata).identity.semanticProfile !=
-          serialBusinessTaskProfileId) = true := by decide +kernel
-      unfold serialBusinessCommandAdmitted
-      rw [if_pos legacy, if_pos legacy])
+      have guard (state : RuntimeState) (stimulus : Stimulus) :
+          serialBusinessCommandAdmitted (programFor exactMetadata) state stimulus = true :=
+        serialBusinessCommandAdmitted_of_other_profile _ _ _ (by decide +kernel) (by decide +kernel)
+      simp only [guard])
     (noDataInputOutputTask := by decide +kernel)
     (noMessageMonitoredTask := by decide +kernel)
   · rfl
@@ -385,10 +385,7 @@ theorem completion_is_metadata_irrelevant
     have serialGuard : serialBusinessCommandAdmitted (programFor exactMetadata)
         (waitingStateFor leftMetadata)
         (.completeUserTaskInstance commandId SequentialUserTask.exactTaskInstanceId submittedValues) = true := by
-      have legacy : ((programFor exactMetadata).identity.semanticProfile !=
-          serialBusinessTaskProfileId) = true := by decide +kernel
-      unfold serialBusinessCommandAdmitted
-      rw [if_pos legacy]
+      exact serialBusinessCommandAdmitted_of_other_profile _ _ _ (by decide +kernel) (by decide +kernel)
     simp [applyStimulus, admitStimulus, serialGuard,
       show interruptingMessageEventSubProcessStateValid (programFor exactMetadata)
         (waitingStateFor leftMetadata) = true from rfl,

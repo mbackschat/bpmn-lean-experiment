@@ -741,7 +741,7 @@ theorem indexed_completion_guard (program : Program) (analysis : Analysis) (stat
   all_goals
     unfold serialBusinessCommandAdmitted
     rw [show (program.identity.semanticProfile != serialBusinessTaskProfileId) = false from by rw [profile]; rfl]
-    simp only [Bool.false_eq_true, ↓reduceIte, wellFormed, capabilities, canonical, associations, control, runtime, Bool.true_and]
+    simp only [Bool.false_and, Bool.false_eq_true, ↓reduceIte, wellFormed, capabilities, canonical, associations, control, runtime, Bool.true_and]
     cases stimulus <;> simp only [IsSerialCompletion] at completion <;> (first | contradiction | rfl)
 
 /-- Accepted start derives the one exact Process owner, foreign-state absence, ordered position, remaining-input presence and captured local lifetime together. -/

@@ -340,7 +340,7 @@ type CheckedNode = DeepReadonly<
       kind: "exclusiveGateway";
       id: string;
       direction: "diverging";
-      candidateFlowIds: [string, string];
+      candidateFlowIds: [string, ...string[]];
       defaultFlowId: string;
     }
   | {
@@ -722,7 +722,7 @@ type SemanticOperation = DeepReadonly<
   | (OperationBase & {
       kind: "choose";
       input: string;
-      candidates: [ConditionalCandidate, ConditionalCandidate];
+      candidates: [ConditionalCandidate, ...ConditionalCandidate[]];
       defaultOutput: string;
       defaultOrigin: {
         kind: "bpmnSequenceFlow";
@@ -916,7 +916,7 @@ The first lowering is total only over a valid `CheckedProcess` admitted by the b
 | explicit Sub-Process boundary Error Event | no independent operation; its checked attachment, matching Error, and outgoing parent flow are retained in the resolved `throwError.handler` |
 | diverging Parallel Gateway | `duplicate` |
 | converging Parallel Gateway | `synchronize` |
-| exact divergent Exclusive Gateway under Simple Boolean v1 | `choose` with two declaration-ordered candidates and one default |
+| divergent Exclusive Gateway under Simple Boolean v1 | `choose` with a nonempty declaration-ordered candidate sequence and one default; existing profiles retain two candidates, while the private [mixed-task account](capsules/MIXED-TASK-CONTROL-FLOW-PROPOSAL.md) admits arbitrary nonempty cardinality |
 | identity-only converging Exclusive Gateway | `mergeExclusive` with one canonical nonempty input collection and one output derived only from checked Sequence Flow endpoints |
 | exact structured divergent Inclusive Gateway under Simple Boolean v1 | `selectMany` with two canonical candidates, one default, branch-local expected join inputs, and the split identity as selection key |
 | paired converging Inclusive Gateway | `synchronizeSelected` with the three canonical model inputs and the paired split identity |
@@ -1159,7 +1159,7 @@ The [final preparation account](INTERNAL-COMMUTATION-PROPOSAL.md#prepared-transi
 - every `initiateMessage` has one complete operation-addressed channel and a canonical nonempty collection of distinct existing outputs; the registered Message Start profile has exactly one output;
 - every `initiateTimer` has exact duration `1000` and a canonical nonempty collection of distinct existing outputs; the registered Timer Start capability has exactly one output;
 - every `mergeExclusive` has a canonical nonempty collection of distinct inputs, one distinct existing output, and the selected cycle profile has exactly three inputs;
-- every `choose` has exactly two distinct candidate outputs, a distinct existing default output, valid Simple Boolean expressions, and exact Sequence Flow origin/output agreement;
+- every `choose` has a nonempty declaration-ordered sequence of distinct candidate outputs, a distinct existing default output, valid Simple Boolean expressions, and exact Sequence Flow origin/output agreement; existing profiles retain exactly two candidates, and only the private mixed-task profile broadens that cardinality;
 - every `selectMany` has exactly two canonical distinct candidate outputs, one distinct default output, three distinct existing branch-local expected join inputs, valid Simple Boolean expressions, exact Sequence Flow origin/output agreement, and one nonempty selection key;
 - every `synchronizeSelected` has exactly three canonical distinct inputs, one existing output, and the same nonempty selection key as exactly one `selectMany`; its input set equals that selection's three candidate/default expected inputs;
 - every ordinary single-occurrence operation payload element identifier matches its BPMN origin;

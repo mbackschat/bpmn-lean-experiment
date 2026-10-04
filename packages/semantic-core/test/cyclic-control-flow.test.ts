@@ -560,6 +560,8 @@ function swapChoiceCandidateOutputs(
   operation: Extract<SemanticOperation, { kind: SemanticOperationKind.Choose }>,
 ): Extract<SemanticOperation, { kind: SemanticOperationKind.Choose }> {
   const [first, second] = operation.candidates;
+  assert.equal(operation.candidates.length, 2);
+  assert.ok(second);
   return {
     ...operation,
     candidates: [

@@ -374,6 +374,11 @@ private def programGraphPolicyValid (program : Program)
   | some .acyclic => acyclicClosed edges fuel
   | some .resumptionBounded =>
       acyclicClosed (programResumptionCutEdges program edges) fuel
+  | some .mixedTaskResumptionBounded =>
+      acyclicClosed (edges.filter fun edge => !program.operations.any (fun operation =>
+        operation.id == edge.source && match operation with
+          | .awaitUserTask .. | .awaitEffect .. => true
+          | _ => false)) fuel
   | none => false
 
 private def initiateIds (operations : List SemanticOperation) :

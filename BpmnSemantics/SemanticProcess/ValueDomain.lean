@@ -2,7 +2,7 @@ import BpmnSemantics.SemanticProcess.CallDataAdmission
 import BpmnSemantics.SemanticProcess.JsonSupport
 import BpmnSemantics.SemanticProcess.MessageKeyCorrelationProfileAdmission
 import BpmnSemantics.SemanticProcess.StructuredCompositionAdmission
-import BpmnSemantics.SemanticProcess.SerialBusinessTaskAdmission
+import BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmission
 
 /-! # Semantic Process value-domain admission
 
@@ -97,6 +97,7 @@ private inductive ProcessDataValueDomain where
           , activityDataInputUserTaskProfileId.value
           , activityDataInputOutputUserTaskProfileId.value
           , callDataCheckpointProfileId.value
+          , mixedTaskControlFlowProfileId.value
           , serialBusinessTaskProfileId.value
           , structuredCompositionCheckpointProfileId.value
           , structuredHumanWorkProfileId.value ] then
@@ -113,6 +114,7 @@ private inductive ProcessDataValueDomain where
           , activityDataOutputUserTaskProfileId.value
           , activityDataInputOutputUserTaskProfileId.value
           , callDataCheckpointProfileId.value
+          , mixedTaskControlFlowProfileId.value
           , serialBusinessTaskProfileId.value
           , structuredCompositionCheckpointProfileId.value
           , "bpmn-2.0.2-user-task-cycle-draft" ] then

@@ -30,6 +30,7 @@ test("serial business lowering, local data, refusals and complete publications a
     { id: "null-fanout", xml: original.replace('</camunda:inputOutput>', '<camunda:outputParameter name="receipt">${result}</camunda:outputParameter></camunda:inputOutput>'), nullResult: true, empty: false },
     { id: "literal", xml: original.replace('${request}', 'literal-invoice'), nullResult: false, empty: false },
     { id: "empty", xml: original.replace(/<extensionElements>[\s\S]*?<\/extensionElements>/u, ''), nullResult: false, empty: true },
+    { id: "missing-input", xml: original, nullResult: false, empty: false },
   ];
   const inputs = await Promise.all(cases.map(async selected => {
     const compiled = await compile(selected.xml);
@@ -48,6 +49,10 @@ test("serial business lowering, local data, refusals and complete publications a
       { ...completion, commandId: "refuse-stale" },
       { kind: StimulusKind.CompleteUserTaskInstance, commandId: "finalize", taskId: { processInstanceId: instanceId, elementId: "Finalize", activation: 1 }, submittedValues: [] },
     ];
+    if (selected.id === "missing-input") {
+      stimuli.splice(0, stimuli.length, { kind: StimulusKind.StartProcess, commandId: "refuse-missing-input",
+        processId: program.processId, instanceId, initialVariables: [] });
+    }
     const scenario: Scenario = { kind: ScenarioDocumentKind.Scenario, id: selected.id, profile,
       bpmn: { id: program.identity.sourceId, sha256: program.identity.sourceSha256, sourceOverlay: program.identity.sourceOverlay, relativePath: `${selected.id}.bpmn` },
       stimuli, observations,
@@ -75,6 +80,15 @@ test("serial business lowering, local data, refusals and complete publications a
       assert.deepEqual(record.scenario, scenario);
       assert.deepEqual(record.definitionBinding, { kind: "leanDefinitionBinding", sourceSha256: program.identity.sourceSha256, semanticProfile: profile, programMatchesLeanLowering: true });
       assert.deepEqual(record.result, runScenario(scenario, program), `${scenario.id} E1`);
+      if (scenario.id === "missing-input") {
+        assert.deepEqual(record.result, { outcome: { kind: "semantic", outcome: "unsupported" }, trace: [{ kind: "deployment", outcome: "unsupported" }] });
+        assert.deepEqual(record.commandPublications, []);
+        const command = applyStimulusWithTrace(program, initialState, scenario.stimuli[0]!);
+        assert.equal(command.result.outcome, CommandOutcome.Rejected);
+        assert.deepEqual(command.result.state, initialState);
+        assert.deepEqual(command.committedTransitions, []);
+        continue;
+      }
       let state = initialState;
       const publications = scenario.stimuli.map(stimulus => {
         const before = state;

@@ -27,7 +27,7 @@ export function isWellFormedChooseOperation(
     ]) ||
     !isPlaceReference(value.input, placeIds) ||
     !Array.isArray(value.candidates) ||
-    value.candidates.length !== 2 ||
+    value.candidates.length === 0 ||
     !isPlaceReference(value.defaultOutput, placeIds) ||
     !isSequenceFlowOrigin(value.defaultOrigin) ||
     placeOrigins.get(value.defaultOutput) !==
@@ -51,7 +51,7 @@ export function isWellFormedChooseOperation(
     isRecord(candidate) ? candidate.output : undefined
   );
   return (
-    new Set(candidateOutputs).size === 2 &&
+    new Set(candidateOutputs).size === candidates.length &&
     !candidateOutputs.includes(value.defaultOutput)
   );
 }

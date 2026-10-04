@@ -130,3 +130,5 @@ export * from "./transaction-cancellation-admission.js";
 export { structuredCompositionCheckedGraph } from "./structured-process-composition-admission.js";
 export * from "./serial-business-task-policy.js";
 export * from "./serial-business-task-admission.js";
+
+export { mixedTaskControlCheckedGraph } from "./mixed-task-control-flow-admission.js";

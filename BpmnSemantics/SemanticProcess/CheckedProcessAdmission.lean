@@ -122,9 +122,9 @@ private def checkedConditionValid : Option CheckedCondition → Bool
 
 private def checkedExclusiveGatewayValid (flows : List CheckedSequenceFlow)
     (id : NodeId) (candidateFlowIds : List SequenceFlowId)
-    (defaultFlowId : SequenceFlowId) : Bool :=
-  candidateFlowIds.length = 2 &&
-    (candidateFlowIds.eraseDups).length = 2 &&
+    (defaultFlowId : SequenceFlowId) (variableArity : Bool := false) : Bool :=
+  (if variableArity then !candidateFlowIds.isEmpty else candidateFlowIds.length = 2) &&
+    (candidateFlowIds.eraseDups).length = candidateFlowIds.length &&
     !candidateFlowIds.contains defaultFlowId &&
     candidateFlowIds.all fun candidateId =>
       match flows.find? fun flow => decide (flow.id = candidateId) with
@@ -197,7 +197,7 @@ private def checkedEventRaceConfigurationValid (source : CheckedProcess) : Bool 
         | _ => false
     | _ => true
 
-private def checkedNodeArityValid (serial repeatable : Bool) (dormantHandlers : List NodeId)
+private def checkedNodeArityValid (serial repeatable mixed : Bool) (dormantHandlers : List NodeId)
     (flows : List CheckedSequenceFlow) :
     CheckedNode → Bool
   | .noneStartEvent id =>
@@ -358,11 +358,11 @@ private def checkedNodeArityValid (serial repeatable : Bool) (dormantHandlers : 
   | .parallelGateway id .converging =>
       incomingCount flows id ≥ 2 && outgoingCount flows id = 1
   | .exclusiveMerge id =>
-      incomingCount flows id = 3 && outgoingCount flows id = 1
+      (if mixed then incomingCount flows id ≥ 2 else incomingCount flows id = 3) && outgoingCount flows id = 1
   | .exclusiveGateway id candidateFlowIds defaultFlowId =>
       incomingCount flows id = 1 &&
-        outgoingCount flows id = 3 &&
-        checkedExclusiveGatewayValid flows id candidateFlowIds defaultFlowId
+        outgoingCount flows id = candidateFlowIds.length + 1 &&
+        checkedExclusiveGatewayValid flows id candidateFlowIds defaultFlowId mixed
   | .inclusiveGatewayDiverging id candidateFlowIds defaultFlowId =>
       incomingCount flows id = 1 &&
         outgoingCount flows id = 3 &&
@@ -459,8 +459,9 @@ def checkedWellFormed (source : CheckedProcess) : Bool :=
                     candidateFlowIds.contains flow.id
                 | _ => false)) &&
     source.nodes.all (checkedNodeArityValid
-      (source.identity.semanticProfile == serialBusinessTaskProfileId)
+      (source.identity.semanticProfile == serialBusinessTaskProfileId || source.identity.semanticProfile == mixedTaskControlFlowProfileId)
       (source.identity.semanticProfile == repeatableSubscriptionCheckpointProfileId)
+      (source.identity.semanticProfile == mixedTaskControlFlowProfileId)
       (source.interruptingMessageEventSubProcesses.map (·.elementId)) source.sequenceFlows) &&
     checkedInclusivePairingValid source &&
     checkedEventRaceConfigurationValid source &&

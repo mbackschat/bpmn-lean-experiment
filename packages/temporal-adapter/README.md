@@ -2,6 +2,8 @@
 
 `packages/temporal-adapter/` contains the packages that durably host the pure [TypeScript semantic core](../semantic-core/README.md) on Temporal. The subsystem separates client, Workflow, Worker, product runner, protocol, and test-only dependencies so Temporal mechanisms never define BPMN behavior.
 
+The private [mixed-task control-flow profile](../../docs/capsules/MIXED-TASK-CONTROL-FLOW-PROPOSAL.md) is explicitly refused pending recovery and replay qualification.
+
 ## What you can do
 
 Run an admitted BPMN Process against an existing Temporal service, observe current semantic waits, submit occurrence-bound commands, and recover or replay the durable execution through the same product boundary.

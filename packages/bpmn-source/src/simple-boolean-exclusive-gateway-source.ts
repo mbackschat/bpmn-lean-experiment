@@ -38,6 +38,7 @@ export function projectExclusiveGateway(
   element: ElementRecord,
   id: string,
   flows: ReadonlyArray<CheckedSequenceFlow>,
+  variableArity = false,
 ): Extract<
   CheckedNode,
   { kind: CheckedNodeKind.ExclusiveGateway }
@@ -68,24 +69,23 @@ export function projectExclusiveGateway(
   );
   if (
     flows.filter(({ targetId }) => targetId === id).length !== 1 ||
-    outgoing.length !== 3 ||
+    outgoing.length !== candidates.length + 1 ||
     defaultFlowId === undefined ||
     defaultCandidate?.condition !== null ||
-    candidates.length !== 2 ||
+    (variableArity ? candidates.length === 0 : candidates.length !== 2) ||
     candidates.some(({ id: flowId }) => flowId === defaultFlowId)
   ) {
     return undefined;
   }
   const first = candidates[0];
-  const second = candidates[1];
-  if (first === undefined || second === undefined) {
+  if (first === undefined) {
     return undefined;
   }
   return {
     kind: CheckedNodeKind.ExclusiveGateway,
     id,
     direction: GatewayDirection.Diverging,
-    candidateFlowIds: [first.id, second.id],
+    candidateFlowIds: [first.id, ...candidates.slice(1).map(candidate => candidate.id)],
     defaultFlowId,
   };
 }

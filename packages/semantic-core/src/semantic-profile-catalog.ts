@@ -114,3 +114,7 @@ export const TRANSACTION_CANCELLATION_CHECKPOINT_PROFILE_ID =
 /** SBT hosting qualification precedes public capability registration. */
 export const SERIAL_BUSINESS_TASK_CHECKPOINT_PROFILE_ID =
   "cibseven-2.2.0-serial-business-tasks-draft";
+
+/** MTCF hosting remains unavailable until its recovery and replay witnesses qualify the profile. */
+export const MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID =
+  "cibseven-2.2.0-mixed-task-control-flow-draft";

@@ -570,6 +570,14 @@ theorem effectActivationCount_set_other (state : RuntimeState) (target query : N
   unfold effectActivationCount setEffectActivationCount; rw [elementActivationCount_map_insert_other effectActivationBefore EffectActivation.elementId EffectActivation.count _ _ (Ne.symm different)]
   exact elementActivationCount_map_filter_other EffectActivation.elementId EffectActivation.count target query different state.effectActivations
 
+theorem effectActivationCount_set_self (state : RuntimeState) (target : NodeId) (count : Nat) :
+    effectActivationCount { state with effectActivations := setEffectActivationCount state.effectActivations target count } target = count := by
+  unfold effectActivationCount setEffectActivationCount
+  rw [elementActivationCount_map_eq]
+  apply mappedActivationCount_insert_self
+  intro value mem
+  exact of_decide_eq_true (List.mem_filter.mp mem).2
+
 theorem setActivationCount_commutes_of_ordered (leftId rightId : TaskDefinitionId) (leftCount rightCount : Nat) (different : leftId ≠ rightId) (values : List TaskActivation) (ordered : orderedBy activationBefore values = true) :
     setActivationCount (setActivationCount values leftId leftCount) rightId rightCount =
       setActivationCount (setActivationCount values rightId rightCount) leftId leftCount := by

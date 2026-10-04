@@ -37,7 +37,7 @@ Run the focused compiler gate:
 
 ## Learn more
 
-- [Serial business-task source reader](src/serial-business-task-source.ts) owns the private exact-overlay, named-handler and input/output token projection; the [capsule](../../docs/capsules/SERIAL-BUSINESS-TASK-COMPOSITION-PROPOSAL.md) owns its open qualification boundary.
+- [Business-task source reader](src/serial-business-task-source.ts) shares exact-overlay, named-handler and input/output token projection between [serial composition](../../docs/capsules/SERIAL-BUSINESS-TASK-COMPOSITION-PROPOSAL.md) and [mixed-task branching/rework](../../docs/capsules/MIXED-TASK-CONTROL-FLOW-PROPOSAL.md). Each private profile retains its own graph admission and qualification boundary.
 
 - [BPMN XML ingestion decision](../../docs/BPMN-XML-INGESTION-DECISION.md) owns the trust, parser, and source-preservation boundary.
 - [Semantic Process IL specification](../../docs/SEMANTIC-PROCESS-IL-SPEC.md) owns the checked graph and lowering contracts.

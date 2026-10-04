@@ -349,7 +349,7 @@ export type CheckedNode =
       kind: CheckedNodeKind.ExclusiveGateway;
       id: string;
       direction: GatewayDirection.Diverging;
-      candidateFlowIds: [string, string];
+      candidateFlowIds: [string, ...string[]];
       defaultFlowId: string;
     }>
   | DeepReadonly<{

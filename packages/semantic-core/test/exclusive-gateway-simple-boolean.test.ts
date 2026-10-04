@@ -294,7 +294,7 @@ test("rejects a branch origin that differs from its control place", () => {
                   elementId: "Flow_Second",
                 },
               },
-              operation.candidates[1],
+              ...operation.candidates.slice(1),
             ],
           }
         : operation

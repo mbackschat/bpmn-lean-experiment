@@ -6,6 +6,8 @@ This contributor map assigns package responsibilities and Temporal SDK ownership
 
 [Host admission](protocol/src/host-admission.ts) returns `serialBusinessTaskQualificationUnavailable` for the private [serial business-task profile](../../docs/capsules/SERIAL-BUSINESS-TASK-COMPOSITION-PROPOSAL.md). The [refusal witness](protocol/test/serial-business-task-host-refusal.test.ts) first verifies semantic execution support, then checks that pending handler/hosting qualification cannot be bypassed by the existing scheduler.
 
+The [mixed-task refusal witness](protocol/test/mixed-task-control-flow-host-refusal.test.ts) likewise checks `mixedTaskControlFlowQualificationUnavailable` after confirming semantic execution support for the [mixed-task profile](../../docs/capsules/MIXED-TASK-CONTROL-FLOW-PROPOSAL.md).
+
 ## Native deployment boundaries
 
 - [External Worker runtime](worker/src/external-temporal-runtime.ts) binds exact loaded bytes to native `PINNED` options. [Fresh initialization](worker/src/workflow-deployment-initialization.ts) creates the Namespace before Worker registration and initial-Current selection; its [matrix](worker/test/workflow-deployment-initialization.test.ts) guards failure ordering and routing drift.

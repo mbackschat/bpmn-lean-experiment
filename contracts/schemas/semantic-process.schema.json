@@ -2283,8 +2283,7 @@
         },
         "candidates": {
           "type": "array",
-          "minItems": 2,
-          "maxItems": 2,
+          "minItems": 1,
           "items": {
             "$ref": "#/$defs/conditionalCandidate"
           }

@@ -77,7 +77,7 @@ theorem admitted_serial_guard_has_no_foreign_effects (program : Program) (before
     before.effectIncidents = [] ∧ before.compensationHandlerEffectWaits = [] := by
   unfold serialBusinessCommandAdmitted at guarded
   rw [show (program.identity.semanticProfile != serialBusinessTaskProfileId) = false from by rw [profile]; rfl] at guarded
-  simp only [Bool.false_eq_true, ↓reduceIte, Bool.and_eq_true] at guarded
+  simp only [Bool.false_and, Bool.false_eq_true, ↓reduceIte, Bool.and_eq_true] at guarded
   have joined := guarded.1.1.2
   dsimp only [serialRuntimeAssociationsValid] at joined
   simp only [Bool.and_eq_true] at joined
@@ -89,7 +89,7 @@ theorem guarded_program_admission (program : Program) (state : RuntimeState) (st
     (guarded : serialBusinessCommandAdmitted program state stimulus = true) : programWellFormed program = true ∧ programProfileCapabilitiesValid program = true := by
   unfold serialBusinessCommandAdmitted at guarded
   rw [show (program.identity.semanticProfile != serialBusinessTaskProfileId) = false from by rw [profile]; rfl] at guarded
-  simp only [Bool.false_eq_true, ↓reduceIte, Bool.and_eq_true] at guarded
+  simp only [Bool.false_and, Bool.false_eq_true, ↓reduceIte, Bool.and_eq_true] at guarded
   exact guarded.1.1.1.1
 
 theorem guarded_start_instance_nonempty (program : Program) (state : RuntimeState)
@@ -99,7 +99,7 @@ theorem guarded_start_instance_nonempty (program : Program) (state : RuntimeStat
       (.startProcess commandId processId instanceId bindings) = true) : instanceId.value ≠ "" := by
   unfold serialBusinessCommandAdmitted at guarded
   rw [show (program.identity.semanticProfile != serialBusinessTaskProfileId) = false from by rw [profile]; rfl] at guarded
-  simp only [Bool.false_eq_true, ↓reduceIte, Bool.and_eq_true] at guarded
+  simp only [Bool.false_and, Bool.false_eq_true, ↓reduceIte, Bool.and_eq_true] at guarded
   have nonempty : instanceId.value.isEmpty = false := by simpa using guarded.2
   intro empty
   simp [empty] at nonempty

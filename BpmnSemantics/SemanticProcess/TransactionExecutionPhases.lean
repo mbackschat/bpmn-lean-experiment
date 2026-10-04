@@ -217,7 +217,8 @@ theorem transaction_admission_commits_or_preserves_state (p : Program) (roles : 
   cases stimulus
   case startProcess commandId processId instanceId submitted =>
     cases control : before.control
-    all_goals simp [admitStimulusWithCompensationSnapshots, roles.snapshotsAbsent, control, inert.2.2.2.1]
+    all_goals simp [admitStimulusWithCompensationSnapshots, roles.snapshotsAbsent, control, inert.2.2.2.1,
+      roles.profileSelected, transactionCancellationCheckpointProfileId, serialBusinessTaskProfileId, mixedTaskControlFlowProfileId]
     repeat' first | exact Or.inl rfl | exact Or.inr rfl | split
   case completeUserTaskInstance commandId taskId submitted =>
     obtain ⟨parallel, sequential, messageMonitored, messageBounded, bounded, composed,

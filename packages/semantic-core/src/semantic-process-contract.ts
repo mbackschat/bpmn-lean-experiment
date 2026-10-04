@@ -660,7 +660,7 @@ export type SemanticOperation =
       DeepReadonly<{
         kind: SemanticOperationKind.Choose;
         input: string;
-        candidates: [ConditionalCandidate, ConditionalCandidate];
+        candidates: [ConditionalCandidate, ...ConditionalCandidate[]];
         defaultOutput: string;
         defaultOrigin: BpmnSequenceFlowOrigin;
       }>)
