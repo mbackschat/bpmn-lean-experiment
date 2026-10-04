@@ -105,6 +105,7 @@ export type SemanticDifferentialCase<Id extends string = string> = DeepReadonly<
   id: Id;
   scenarioRelativePath: string;
   bpmnRelativePath: string;
+  sourceOverlayRelativePath?: string;
   cib: CibPipelineConfiguration | null;
   injectMutation: (result: MutableScenarioResult) => void;
   expectedInjectedDisagreement: ObservationValueDisagreement;

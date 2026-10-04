@@ -13,6 +13,14 @@ export async function loadAndCompileCases<
 ): Promise<ReadonlyArray<PipelineContext<Case>>> {
   const sourceBytes = new Map<string, Promise<Buffer>>();
   const compilations = new Map<string, Promise<BpmnCompilationResult>>();
+  const readSource = (absolutePath: string): Promise<Buffer> => {
+    let bytes = sourceBytes.get(absolutePath);
+    if (bytes === undefined) {
+      bytes = readFile(absolutePath);
+      sourceBytes.set(absolutePath, bytes);
+    }
+    return bytes;
+  };
   const loaded = await Promise.all(
     cases.map(async (pipelineCase) => {
       const scenarioPath = path.join(
@@ -39,25 +47,33 @@ export async function loadAndCompileCases<
     loaded.map(async (context) => {
       const { pipelineCase, scenario } = context;
       const bpmnPath = path.join(projectRoot, pipelineCase.bpmnRelativePath);
-      let bytesPromise = sourceBytes.get(bpmnPath);
-      if (bytesPromise === undefined) {
-        bytesPromise = readFile(bpmnPath);
-        sourceBytes.set(bpmnPath, bytesPromise);
+      const overlayIdentity = scenario.bpmn.sourceOverlay;
+      const overlayPath = pipelineCase.sourceOverlayRelativePath === undefined ? null
+        : path.join(projectRoot, pipelineCase.sourceOverlayRelativePath);
+      if (overlayIdentity !== null && overlayPath === null) {
+        throw new Error(`Source overlay requires a selected path for ${pipelineCase.id}`);
       }
+      if (overlayIdentity === null && overlayPath !== null) {
+        throw new Error(`Source overlay path requires a scenario identity for ${pipelineCase.id}`);
+      }
+      const sourceOverlay = overlayIdentity === null || overlayPath === null ? null
+        : { ...overlayIdentity, bytes: await readSource(overlayPath) };
       const compilationKey = JSON.stringify([
         bpmnPath,
         scenario.bpmn.id,
         scenario.bpmn.sha256,
         scenario.profile,
+        overlayPath,
+        overlayIdentity,
       ]);
       let compilationPromise = compilations.get(compilationKey);
       if (compilationPromise === undefined) {
-        compilationPromise = bytesPromise.then((bytes) =>
+        compilationPromise = readSource(bpmnPath).then((bytes) =>
           compileBpmnToSemanticProcess({
             bytes,
             sourceId: scenario.bpmn.id,
             expectedSha256: scenario.bpmn.sha256,
-            sourceOverlay: null,
+            sourceOverlay,
             semanticProfile: scenario.profile,
             limits: {
               maxBytes: 1024 * 1024,
