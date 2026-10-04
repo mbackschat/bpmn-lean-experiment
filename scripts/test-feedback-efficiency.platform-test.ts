@@ -8,6 +8,13 @@ import { requiresProduct1Verification } from "./ci-change-selection.ts";
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 
+test("RC shutdown qualification is explicitly selected and reuses showcase builds", async () => {
+  const workflow = await read(".github/workflows/showcase-quality.yml");
+  assert.match(workflow, /workflow_dispatch:\n    inputs:\n      rc_shutdown:\n        description: [^\n]+\n        type: boolean\n        default: false/u);
+  assert.match(workflow, /if: github\.event_name != 'workflow_dispatch' \|\| !inputs\.rc_shutdown\n        run: \.\/scripts\/pnpm\.sh run test:pre-push:showcase/u);
+  assert.match(workflow, /if: github\.event_name == 'workflow_dispatch' && inputs\.rc_shutdown\n        run: \|\n          node scripts\/clean-committed-head\.ts\n          \.\/scripts\/pnpm\.sh run test:feedback-policy\n          \.\/scripts\/pnpm\.sh run build:release-product2\n          \.\/scripts\/pnpm\.sh --filter '\.\/showcase\/\*\*' --if-present run type-test\n          node --test showcase\/mue-preview-alpha\/test\/rc-showcase-shutdown\.integration-test\.ts/u);
+});
+
 test("skips the heavy Product 1 matrix only for Product 2-only paths", () => {
   assert.equal(requiresProduct1Verification(["platform/apps/web/src/app.tsx"]), false);
   assert.equal(requiresProduct1Verification(["showcase/m3-human-work/e2e/human-work.spec.ts"]), false);

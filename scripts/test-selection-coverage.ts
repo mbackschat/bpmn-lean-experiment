@@ -17,7 +17,8 @@ import { fileURLToPath } from "node:url";
  * those scripts. Nine tests ran nowhere, and one of the packages had stopped compiling entirely
  * because a reviewed change removed a constructor option and no lane ever built the caller.
  *
- * A gate root is a root-manifest script named by a tracked shell script or CI workflow. Reachability
+ * Gate roots include direct Node test commands and root-manifest scripts named by a tracked shell
+ * script or CI workflow, including explicitly selected manual qualification. Reachability
  * follows both `pnpm <script>` edges within the root manifest and `pnpm --filter <package> [run]
  * <script>` edges into workspace manifests. Omitting the filter edges is not a small error: it
  * reported two hundred and twenty-eight false orphans, nearly every platform test in the repository.
@@ -25,7 +26,7 @@ import { fileURLToPath } from "node:url";
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 
-const testFilePattern = /\.(?:test|platform-test|temporal-test|temporal-serial-test)\.ts$/u;
+const testFilePattern = /\.(?:test|integration-test|platform-test|temporal-test|temporal-serial-test)\.ts$/u;
 
 /**
  * TypeScript path tokens inside a command string, glob metacharacters included.
@@ -114,8 +115,8 @@ function manifests(): ReadonlyMap<string, Manifest> {
 /**
  * Root-manifest scripts a tracked shell script or CI workflow invokes.
  *
- * These are the only entry points that run without a contributor choosing to type them, so a test
- * reachable from none of them has no automatic coverage regardless of how many manifests name it.
+ * A manifest entry alone does not connect a test to a gate. Manual qualification counts as a
+ * reachable lane, without claiming that it runs on every commit.
  */
 function gateRoots(root: Manifest): ReadonlySet<string> {
   const roots = new Set<string>();
@@ -127,6 +128,15 @@ function gateRoots(root: Manifest): ReadonlySet<string> {
     }
   }
   return roots;
+}
+
+/** Direct repository-root Node test commands are gate edges too; verify.sh runs Lean comparisons this way. */
+export function directNodeTestEntrypoints(source: string): ReadonlyArray<string> {
+  const commands = source.replaceAll(/\\\r?\n/gu, " ").split(/\r?\n/u);
+  return commands.flatMap((line) => {
+    const command = line.match(/^\s*(?:(?:-\s*)?run:\s*)?(?:env\s+(?:[A-Za-z_][A-Za-z0-9_]*=\S+\s+)+)?node\s+--test\b(.*)$/u);
+    return command === null ? [] : [...command[1]!.split(" #")[0]!.matchAll(typeScriptPathToken)].map(([token]) => token);
+  });
 }
 
 /** Tracked non-test TypeScript sources, so a command naming a runner can be followed into it. */
@@ -165,7 +175,10 @@ function reachableTokens(
   const byName = manifests();
   const runnerSources = runnerSourceBodies();
   const root = byName.get("") ?? { directory: "", scripts: new Map<string, string>() };
-  const tokens: Array<{ base: string; token: string }> = [];
+  const tokens: Array<{ base: string; token: string }> = trackedFiles()
+    .filter((file) => /\.(?:sh|ya?ml)$/u.test(file))
+    .flatMap((file) => directNodeTestEntrypoints(readFileSync(path.join(projectRoot, file), "utf8")))
+    .map((token) => ({ base: "", token }));
   const visited = new Set<string>();
   const pending = [...selectRoots(root)].map((script) => ({ packageName: "", script }));
 
@@ -264,7 +277,7 @@ function unreachable(
 }
 
 /**
- * Test files no automatically invoked gate reaches.
+ * Test files no tracked gate reaches.
  *
  * Every lane counts, including the PostgreSQL suites, which a workflow runs against a real database
  * even though the ordinary local loop stays database-free. The result is the finding itself, not a

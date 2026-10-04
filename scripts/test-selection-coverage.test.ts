@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readdirSync } from "node:fs";
 import { test } from "node:test";
 
-import { runnableTestFiles, unselectedTestFiles } from "./test-selection-coverage.ts";
+import { directNodeTestEntrypoints, runnableTestFiles, unselectedTestFiles } from "./test-selection-coverage.ts";
 
 test("host-clock winner witnesses with Worker replacement stay in the serial lane", () => {
   const files = readdirSync(new URL("../packages/temporal-adapter/testkit/test/", import.meta.url));
@@ -17,7 +17,7 @@ test("host-clock winner witnesses with Worker replacement stay in the serial lan
 });
 
 /**
- * Every tracked test file must be reachable from an automatically invoked gate.
+ * Every tracked test file must be reachable from a tracked gate.
  *
  * The oracle is the repository's own command graph. A test no command reaches contributes no
  * evidence while looking exactly like a covered test, and no gate can report it, because a gate
@@ -31,6 +31,30 @@ test("every tracked test file is reachable from a gate command", () => {
   // against a real database, so "the ordinary loop stays database-free" is a statement about local
   // development and not about coverage.
   assert.deepEqual(unselectedTestFiles(), []);
+});
+
+test("the runnable inventory includes integration witnesses from distinct semantic families", () => {
+  const runnable = new Set(runnableTestFiles());
+  for (const family of ["structured-composition", "interrupting-message-event-subprocess"]) {
+    const file = `packages/differential/test/${family}-lean-core.integration-test.ts`;
+    assert.equal(runnable.has(file), true, file);
+  }
+});
+
+test("direct shell and workflow commands select integration tests without selecting references", () => {
+  assert.deepEqual(directNodeTestEntrypoints([
+    "node --test --test-concurrency=1 packages/one/test/*.integration-test.ts",
+    "  node --test \\",
+    "    packages/two/test/closure.integration-test.ts",
+    "  run: env CI=true node --test packages/three/test/ports.integration-test.ts # ignored.test.ts",
+    "# node --test packages/ignored/test/comment.test.ts",
+    'echo "node --test packages/ignored/test/text.test.ts"',
+    "node packages/ignored/test/not-a-test-command.ts",
+  ].join("\n")), [
+    "packages/one/test/*.integration-test.ts",
+    "packages/two/test/closure.integration-test.ts",
+    "packages/three/test/ports.integration-test.ts",
+  ]);
 });
 
 test("the runnable set excludes frozen legacy evidence and still covers the repository", () => {
