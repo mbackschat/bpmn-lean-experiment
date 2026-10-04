@@ -22,11 +22,11 @@ The counts below cover only entries reviewed and recorded by this project. Zero 
 
 | Lane | Recorded entries | Open candidates | Meaning |
 |---|---:|---:|---|
-| Reviewed normative agreements | 11 | 1 | A bounded BPMN requirement and pinned CIB observation agree |
+| Reviewed normative agreements | 12 | 0 | A bounded BPMN requirement and pinned CIB observation agree |
 | Permitted operational details | 9 | 0 | CIB or the oracle adapter chooses host mechanics without changing required BPMN observations |
 | Confirmed normative deviations | 0 | 1 | Clear BPMN requirement and pinned CIB evidence establish incompatible behavior |
 | CIB interpretations of BPMN gaps or inconsistencies | 2 | 0 | CIB selects an operational meaning where BPMN does not uniquely settle it |
-| Selected CIB extensions | 15 | 1 | Project profile deliberately includes behavior beyond bare BPMN execution |
+| Selected CIB extensions | 16 | 0 | Project profile deliberately includes behavior beyond bare BPMN execution |
 | Configuration-specific realizations | 8 | 0 | Behavior is permitted or meaningful only under a declared CIB environment |
 | Known CIB limitations within reviewed scope | 2 | 0 | Unsupported or incomplete behavior that is not yet classified as a normative deviation |
 
@@ -222,7 +222,7 @@ The repository-wide audit on 2026-07-24 found no previously visited observation 
 
 ### CIB-AGR-0012 — CIB7 2.2.0 exact-code business Error recovery
 
-**Status:** Candidate bounded normative agreement; pending [mixed-task business Error proposal](capsules/MIXED-TASK-BUSINESS-ERROR-PROPOSAL.md) review.
+**Status:** Reviewed bounded normative agreement under the approved [mixed-task business Error account](capsules/MIXED-TASK-BUSINESS-ERROR-PROPOSAL.md); implementation and profile qualification remain open.
 
 **BPMN basis:** Clauses 13.3.3 and 13.5.3, Table 8.41 and Tables 10.90, 10.91 and 10.92 require the selected matching Error to interrupt its attached Service Task and follow the boundary Sequence Flow instead of normal completion.
 
@@ -485,9 +485,9 @@ CIB Seven `2.2.0` input parameters evaluate against the enclosing scope before w
 
 ### CIB-EXT-0016 — CIB7 2.2.0 caught-business-Error output mapping
 
-**Status:** Observed bounded extension; selection pending in the [mixed-task business Error proposal](capsules/MIXED-TASK-BUSINESS-ERROR-PROPOSAL.md).
+**Status:** Selected bounded extension under the approved [mixed-task business Error account](capsules/MIXED-TASK-BUSINESS-ERROR-PROPOSAL.md); implementation and profile qualification remain open.
 
-CIB Seven `2.2.0` applies the attached Service Task's output parameters on the matching Error path before Activity-local cleanup. A local result shadows a same-named parent, including present null. Without a local result, lookup may inherit the parent; with no binding in either scope, mapping fails and rolls back the asynchronous job command before recovery work commits. The proposed project account requires complete explicit local results on both result arms, selecting local precedence but excluding fallback and missing-result execution.
+CIB Seven `2.2.0` applies the attached Service Task's output parameters on the matching Error path before Activity-local cleanup. A local result shadows a same-named parent, including present null. Without a local result, lookup may inherit the parent; with no binding in either scope, mapping fails and rolls back the asynchronous job command before recovery work commits. The selected project account requires complete explicit local results on both result arms, selecting local precedence but excluding fallback and missing-result execution.
 
 **BPMN boundary:** Bare BPMN does not define the CIB `inputOutput` extension during cancellation. This is an extension over the normative interrupting catch, not a claim that BPMN requires fault-path output mediation. The project retains typed `bpmnError` as an Activity result; CIB's Java exception and same-command transaction are host mechanisms.
 

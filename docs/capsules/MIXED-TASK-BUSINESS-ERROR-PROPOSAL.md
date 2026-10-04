@@ -2,8 +2,8 @@
 
 ## Status
 
-Lifecycle: draft
-Review: pending
+Lifecycle: owner-approved
+Review: approved
 
 ## Question and basis
 
@@ -13,7 +13,7 @@ This extends the approved [mixed-task account](MIXED-TASK-CONTROL-FLOW-PROPOSAL.
 
 BPMN 2.0.2 Clause 13.3.3 treats a Service Task fault as an interrupting Error; Clause 13.5.3 consumes the event, cancels the attached Activity and follows its boundary flow. Table 8.41 supplies exact Error code matching; Tables 10.90, 10.91 and 10.92 establish boundary attachment and interruption. The existing [Markdown reading copy](../reference/bpmn-2.0.2/README.md#reading-workflow) suffices. Bare BPMN does not prescribe CIB output mappings during cancellation.
 
-The pinned CIB7 `2.2.0` [eight-probe experiment](../experiments/BUSINESS-EFFECT-DATA-EXPERIMENT.md#business-failure-follow-up) establishes caught-path mapping, local-null precedence, repeated work, technical rollback, parent fallback and missing-result failure. The proposed register classifications are `CIB-AGR-0012` for the bounded catch and `CIB-EXT-0016` for caught-path mapping; inherited input/result restrictions remain `CIB-EXT-0015`. The [relationship register](../CIB-BPMN-RELATION-REGISTER.md) distinguishes observed evidence from pending profile selection. The unmatched cleanup defect is not selected behavior.
+The pinned CIB7 `2.2.0` [eight-probe experiment](../experiments/BUSINESS-EFFECT-DATA-EXPERIMENT.md#business-failure-follow-up) establishes caught-path mapping, local-null precedence, repeated work, technical rollback, parent fallback and missing-result failure. The selected register classifications are `CIB-AGR-0012` for the bounded catch and `CIB-EXT-0016` for caught-path mapping; inherited input/result restrictions remain `CIB-EXT-0015`. The [relationship register](../CIB-BPMN-RELATION-REGISTER.md) distinguishes selected rules from observed unhandled behavior. The unmatched cleanup defect is not selected behavior.
 
 ## Required contract and exclusions
 
@@ -99,6 +99,8 @@ Cold proposal review precedes semantic implementation. The first green semantic 
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `ea8b0bc3` | `fork-turns-none` | `approve-with-required-edits` | `96590b37` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+
+The independent reviewer approved correction `96590b37`, closing the normative-table citation finding without changing the account. Proposal packet digest: `9d06012252ecd64d4ab4be8edc707b2fb9fb95e345cb0d1a037b6614fd6ae0fd`; correction packet digest: `91ffaeb114df47af1025a7178f0bcff21cac49f063ca82ea5fb6f23a2144134b`. All 45 independently executed documentation, artifact-relationship and normative-reference checks pass in `/tmp/business-error-independent-r1-gates` at `6f25d480`, separately asserted. The initial direct test execution lacked a durable receipt; the same reviewer completed receipt-backed qualification before approval was recorded. The root complete infrastructure gate passes 630 checks in `/tmp/business-error-proposal-qualified`, separately asserted. Owner selection follows the standing instruction to implement reviewed Practical CIB7 Coverage recommendations without further decisions. Approval selects this account only; implementation, Lean compilation, hosting and public qualification remain open.
