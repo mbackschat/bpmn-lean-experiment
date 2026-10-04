@@ -2,9 +2,11 @@ import assert from "node:assert/strict";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { test } from "node:test";
 import { isDeepStrictEqual } from "node:util";
-import { BpmnCompilationStatus, lowerCheckedProcess } from "@bpmn-lean/bpmn-source";
+import { BpmnCompilationStatus, compileBpmnToSemanticProcess, lowerCheckedProcess } from "@bpmn-lean/bpmn-source";
+import { completeEffectCommandId } from "@bpmn-lean/temporal-protocol";
 import {
   ObservationRequestKind, CheckedNodeKind, CommandOutcome, ControlStateKind, EffectExecutionResultKind, ScenarioDocumentKind, compareCanonicalStrings,
   StimulusKind, VariableValueKind, applyStimulusWithTrace, initialState, isWellFormedRuntimeState, isWellFormedSemanticProcessProgram,
@@ -25,6 +27,18 @@ const observations = [ObservationRequestKind.Deployment, ObservationRequestKind.
 
 test("mixed-task branching, rework, local data and complete publications agree with Lean", async () => {
   const original = await readFile(source, "utf8");
+  const root = fileURLToPath(new URL("../../../", import.meta.url));
+  const retainedPath = new URL("./fixtures/mixed-invoice-rework.scenario.json", import.meta.url);
+  const retained = parseStrictJson<Scenario>(await readFile(retainedPath, "utf8"), "retained rework scenario");
+  assert.equal(retained.id, "invoice-rework");
+  assert.equal(retained.profile, profile);
+  assert.ok(retained.bpmn.sourceOverlay !== null);
+  for (const stimulus of retained.stimuli) {
+    assert.ok(!stimulus.commandId.startsWith("refuse-"));
+    if (stimulus.kind === StimulusKind.CompleteEffect) {
+      assert.equal(stimulus.commandId, completeEffectCommandId(stimulus.effectId, stimulus.result));
+    }
+  }
   const cases = [1, 3].flatMap(count => (count === 1 ? ["rework"] : ["rework", "revise", "resubmit"]).map(result => ({
     id: `candidates-${count}-${result}`, result, xml: count === 1 ? original : original.replace('<sequenceFlow id="Accept"',
       ["Revise", "Resubmit"].map(id => `<sequenceFlow id="${id}" sourceRef="Decision" targetRef="Reentry"><conditionExpression xsi:type="bpmn:tFormalExpression">stringEquals(decision,"${id.toLowerCase()}")</conditionExpression></sequenceFlow>`).join("") + '<sequenceFlow id="Accept"'),
@@ -144,11 +158,21 @@ test("mixed-task branching, rework, local data and complete publications agree w
     inputs.push({ ...input, id, unsupportedStart: true, scenario: scenarioFor(id, input.program,
       [{ ...start, commandId: "refuse-missing-first-input", initialVariables: start.initialVariables.filter(binding => binding.name !== requiredName) }]) });
   }
+  const retainedXml = await readFile(path.join(root, retained.bpmn.relativePath), "utf8");
+  const bytes = new Uint8Array(await readFile(new URL("./fixtures/mixed-invoice-rework.overlay.json", import.meta.url)));
+  const retainedCompilation = await compileBpmnToSemanticProcess({ bytes: new TextEncoder().encode(retainedXml),
+    sourceId: retained.bpmn.id, expectedSha256: retained.bpmn.sha256, semanticProfile: profile,
+    sourceOverlay: { ...retained.bpmn.sourceOverlay, bytes }, limits: { maxBytes: 1024 * 1024, parserDeadlineMs: 1000 } });
+  assert.equal(retainedCompilation.status, BpmnCompilationStatus.Accepted);
+  if (retainedCompilation.status !== BpmnCompilationStatus.Accepted) throw new Error("Retained rework journey rejected");
+  inputs.push({ id: retained.id, xml: retainedXml, scenario: retained,
+    program: retainedCompilation.semanticProcess, checkedProcess: retainedCompilation.checkedProcess });
   const directory = await mkdtemp(path.join(tmpdir(), "bpmn-mixed-task-parity-"));
   try {
     const definitions = path.join(directory, "definitions.jsonl");
     await writeFile(definitions, inputs.map(({ scenario, checkedProcess, program }) => JSON.stringify({ scenarioId: scenario.id, checkedProcess, semanticProcess: program })).join("\n") + "\n");
     const paths = await Promise.all(inputs.map(async ({ scenario, xml }) => {
+      if (scenario.id === retained.id) return path.relative(root, fileURLToPath(retainedPath));
       const file = path.join(directory, `${scenario.id}.json`);
       await writeFile(file, JSON.stringify(scenario));
       await writeFile(path.join(directory, scenario.bpmn.relativePath), xml);
@@ -180,6 +204,13 @@ test("mixed-task branching, rework, local data and complete publications agree w
         const traced = applyStimulusWithTrace(program, before, stimulus);
         state = traced.result.state;
         const rejected = stimulus.commandId.startsWith("refuse-");
+        if (scenario.id === retained.id && stimulus.kind === StimulusKind.CompleteUserTaskInstance
+          && stimulus.taskId.elementId === "Review") {
+          assert.deepEqual(state.effectWaits.map(wait => ({ id: wait.id, arguments: wait.arguments })), [{
+            id: { ...effectId, activation: stimulus.taskId.activation },
+            arguments: [binding("payload", stimulus.taskId.activation === 1 ? "draft" : "INV-42")],
+          }]);
+        }
         if (stimulus.kind === StimulusKind.CompleteUserTaskInstance && stimulus.commandId.startsWith("review-round-")) {
           assert.deepEqual(state.effectWaits.map(wait => ({ id: wait.id, arguments: wait.arguments })), [{
             id: { ...effectId, activation: stimulus.taskId.activation }, arguments: [binding("payload", `revision-${stimulus.taskId.activation}`)],
@@ -203,6 +234,8 @@ test("mixed-task branching, rework, local data and complete publications agree w
       assert.equal(state.control.kind, expectedWait ? ControlStateKind.Running : ControlStateKind.Completed);
       assert.deepEqual(state.userTaskWaits.map(wait => wait.id), expectedWait ? [{ processInstanceId: instanceId, ...expectedWait }] : []);
       assert.deepEqual(state.variables.activities, []);
+      if (scenario.id === retained.id) assert.deepEqual(state.variables.process.bindings,
+        [binding("decision", "valid"), binding("request", "INV-42")]);
       if (nullableFanout) assert.deepEqual(state.variables.process.bindings, [
         { name: "audit", value: { kind: VariableValueKind.Null } }, { name: "decision", value: { kind: VariableValueKind.Null } },
         binding("request", "revision-1"), binding("result", "parent-result"),
