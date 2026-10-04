@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  id="InvoiceBatchDefinitions" targetNamespace="https://bpmn-lean.org/probes/mi-subprocess">
+  <process id="InvoiceBatch" isExecutable="true">
+    <startEvent id="Start" />
+    <sequenceFlow id="EnterBatch" sourceRef="Start" targetRef="ReviewInvoice" />
+    <subProcess id="ReviewInvoice" name="Review one invoice">
+      <multiInstanceLoopCharacteristics isSequential="true"
+        camunda:collection="items" camunda:elementVariable="item">
+        <completionCondition>${stop}</completionCondition>
+      </multiInstanceLoopCharacteristics>
+      <startEvent id="ItemStart" />
+      <sequenceFlow id="EnterChecks" sourceRef="ItemStart" targetRef="Checks" />
+      <parallelGateway id="Checks" />
+      <sequenceFlow id="CommercialCheck" sourceRef="Checks" targetRef="Commercial" />
+      <sequenceFlow id="ComplianceCheck" sourceRef="Checks" targetRef="Compliance" />
+      <userTask id="Commercial" name="Check commercial terms" />
+      <sequenceFlow id="CommercialDone" sourceRef="Commercial" targetRef="CommercialEnd" />
+      <endEvent id="CommercialEnd" />
+      <userTask id="Compliance" name="Check invoice compliance" />
+      <sequenceFlow id="ComplianceDone" sourceRef="Compliance" targetRef="ComplianceEnd" />
+      <endEvent id="ComplianceEnd" />
+    </subProcess>
+    <sequenceFlow id="BatchReviewed" sourceRef="ReviewInvoice" targetRef="PublishBatch" />
+    <userTask id="PublishBatch" name="Publish batch outcome" />
+    <sequenceFlow id="Published" sourceRef="PublishBatch" targetRef="End" />
+    <endEvent id="End" />
+  </process>
+</definitions>
