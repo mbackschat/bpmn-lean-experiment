@@ -2,7 +2,7 @@
 
 `@bpmn-lean/semantic-core` is the dependency-free TypeScript evaluator for admitted Semantic Process programs. It owns BPMN-visible state transitions and canonical observations, while file I/O, XML parsing, CIB Seven integration, Temporal SDK code, and external effects stay outside the package.
 
-The private [mixed-task control-flow increment](../../docs/capsules/MIXED-TASK-CONTROL-FLOW-PROPOSAL.md) adds branching and rework over User and Service Tasks. Its TypeScript source/core checks pass; Lean integration, quantified proofs and hosting qualification remain open.
+The private [mixed-task control-flow checkpoint](../../docs/capsules/MIXED-TASK-CONTROL-FLOW-PROPOSAL.md) covers branching and rework over User and Service Tasks with independent Lean/TypeScript evidence. The [business Error extension](../../docs/capsules/MIXED-TASK-BUSINESS-ERROR-PROPOSAL.md#implementation-progress) is in progress; its TypeScript raw admission and execution checks pass. Hosting qualification remains open.
 
 ## What you can do
 

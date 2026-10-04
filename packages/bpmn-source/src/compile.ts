@@ -1,4 +1,4 @@
-import { MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID, CALL_ACTIVITY_DATA_BOUNDARIES_CHECKPOINT_PROFILE_ID, SERIAL_BUSINESS_TASK_CHECKPOINT_PROFILE_ID, TRANSACTION_CANCELLATION_CHECKPOINT_PROFILE_ID } from "@bpmn-lean/semantic-core";
+import { MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID, MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID, CALL_ACTIVITY_DATA_BOUNDARIES_CHECKPOINT_PROFILE_ID, SERIAL_BUSINESS_TASK_CHECKPOINT_PROFILE_ID, TRANSACTION_CANCELLATION_CHECKPOINT_PROFILE_ID } from "@bpmn-lean/semantic-core";
 import {
   BpmnCompilationStatus,
   BpmnSourceDiagnosticCode,
@@ -251,7 +251,7 @@ export async function compileBpmnToSemanticProcess(
     return reject(projection.diagnostics);
   }
   const semanticProcess = lowerCheckedProcess(projection.checkedProcess);
-  if ((request.semanticProfile === MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID || request.semanticProfile === SERIAL_BUSINESS_TASK_CHECKPOINT_PROFILE_ID) && !isWellFormedSemanticProcessProgram(semanticProcess)) {
+  if ((request.semanticProfile === MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID || request.semanticProfile === MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID || request.semanticProfile === SERIAL_BUSINESS_TASK_CHECKPOINT_PROFILE_ID) && !isWellFormedSemanticProcessProgram(semanticProcess)) {
     return reject([diagnostic(BpmnSourceDiagnosticCode.UnsupportedModel, "The lowered business chain must satisfy independent IL admission.")]);
   }
   if (request.semanticProfile === TRANSACTION_CANCELLATION_CHECKPOINT_PROFILE_ID &&

@@ -118,3 +118,7 @@ export const SERIAL_BUSINESS_TASK_CHECKPOINT_PROFILE_ID =
 /** MTCF hosting remains unavailable until its recovery and replay witnesses qualify the profile. */
 export const MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID =
   "cibseven-2.2.0-mixed-task-control-flow-draft";
+
+/** MBERR-HOST-01 requires recovery and replay evidence before hosted qualification. */
+export const MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID =
+  "cibseven-2.2.0-mixed-task-business-error-draft";

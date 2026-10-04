@@ -450,7 +450,7 @@ The operation census must classify trigger creation and frontier activation as o
 |---|---:|---|
 | [shared effect values](../../packages/semantic-core/src/semantic-value-contract.ts) | 698 | one operation literal and exact descriptor type only |
 | [TS Program](../../packages/semantic-core/src/semantic-process-contract.ts) | 135 | references only |
-| [TS operation admission](../../packages/semantic-core/src/semantic-process-operation-admission.ts) | 99 | declaration validation extracted before growth |
+| [TS operation admission](../../packages/semantic-core/src/semantic-process-operation-admission.ts) | 98 | declaration validation extracted before growth |
 | [TS graph admission](../../packages/semantic-core/src/semantic-process-graph-admission.ts) | 106 | declaration and checkpoint-topology delegation only |
 | [TS Compensation checkpoint topology](../../packages/semantic-core/src/compensation-source-checkpoint-topology.ts) | 672 | exact draft-profile source topology only |
 | [TS RuntimeState](../../packages/semantic-core/src/semantic-process-state.ts) | 353 | collection/control references only |
@@ -467,12 +467,12 @@ The operation census must classify trigger creation and frontier activation as o
 | [TS internal attempt](../../packages/semantic-core/src/internal-transition-attempt.ts) | 668 | trigger-attempt delegation only |
 | [Lean Program](../../BpmnSemantics/SemanticProcessContract.lean) | 282 | direct Activity-data carriers extracted into a bounded owner |
 | [Lean RuntimeState](../../BpmnSemantics/SemanticProcess/RuntimeState.lean) | 37 | trigger collection reference only |
-| [Lean effect completion](../../BpmnSemantics/SemanticProcess/EffectCompletion.lean) | 648 | compensation relation only |
-| [Lean command admission](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean) | 5 | result dispatch only |
+| [Lean effect completion](../../BpmnSemantics/SemanticProcess/EffectCompletion.lean) | 627 | compensation relation only |
+| [Lean command admission](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean) | 26 | result dispatch only |
 | [Lean transition](../../BpmnSemantics/SemanticProcess/Transition.lean) | 46 | extract before adding the new dispatcher arm |
 | [Lean internal attempt](../../BpmnSemantics/SemanticProcess/InternalOperationAttempt.lean) | 752 | trigger-attempt delegation only |
 | [Lean scenario contract](../../BpmnSemantics/Scenario.lean) | 437 | failed union only |
-| [Lean observation consumer](../../BpmnSemantics/SemanticProcess/Scenario.lean) | 182 | handler-effect/failed projection and selected scenario dispatch |
+| [Lean observation consumer](../../BpmnSemantics/SemanticProcess/Scenario.lean) | 181 | handler-effect/failed projection and selected scenario dispatch |
 | [Lean JSON](../../BpmnSemantics/SemanticProcessJsonMain.lean) | 184 | canonical encoding and selected publication dispatch |
 | [Temporal protocol](../../packages/temporal-adapter/protocol/src/contracts.ts) | 536 | failed receipt arm only |
 | [effect transport](../../packages/temporal-adapter/protocol/src/effect-transport.ts) | 618 | compensation key material and canonical tuple only |

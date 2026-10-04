@@ -82,6 +82,7 @@ theorem effect_result_mapping_failure_is_rejected
     (result : EffectExecutionResult) (logicalTimeMs : Nat)
     (legacy : program.identity.semanticProfile ≠ serialBusinessTaskProfileId)
     (legacyMixed : program.identity.semanticProfile ≠ mixedTaskControlFlowProfileId)
+    (legacyError : program.identity.semanticProfile ≠ mixedTaskBusinessErrorProfileId)
     (invalid :
       let owner : EffectOccurrenceId :=
         { processInstanceId := wait.processInstanceId
@@ -139,7 +140,7 @@ theorem effect_result_mapping_failure_is_rejected
     cases declared : program.compensationEventSubProcessSnapshots with
     | none =>
         simp [admitStimulus, declared, noIncidents, running, noCompensationWaits,
-          exactOrdinaryWaits, noCompletion, legacy, legacyMixed]
+          exactOrdinaryWaits, noCompletion, legacy, legacyMixed, legacyError]
     | some _ => simp [admitStimulus, declared]
   simp [applyStimulus, rejectedAdmission]
 
@@ -150,6 +151,7 @@ theorem effect_result_route_failure_is_rejected
     (result : EffectExecutionResult) (logicalTimeMs : Nat)
     (legacy : program.identity.semanticProfile ≠ serialBusinessTaskProfileId)
     (legacyMixed : program.identity.semanticProfile ≠ mixedTaskControlFlowProfileId)
+    (legacyError : program.identity.semanticProfile ≠ mixedTaskBusinessErrorProfileId)
     (invalid : effectResultOutput wait result = none) :
     let effectId : EffectOccurrenceId :=
       { processInstanceId := wait.processInstanceId
@@ -190,7 +192,7 @@ theorem effect_result_route_failure_is_rejected
     cases declared : program.compensationEventSubProcessSnapshots with
     | none =>
         simp [admitStimulus, declared, noIncidents, running, noCompensationWaits,
-          exactOrdinaryWaits, noCompletion, legacy, legacyMixed]
+          exactOrdinaryWaits, noCompletion, legacy, legacyMixed, legacyError]
     | some _ => simp [admitStimulus, declared]
   simp [applyStimulus, rejectedAdmission]
 
@@ -309,7 +311,7 @@ theorem user_task_completion_with_same_successor_is_equal
     dataOutputUndeclaredTaskRefusesCompletion program state
       submittedTaskId.processInstanceId ⟨submittedTaskId.elementId.value⟩
       submittedTaskId.activation submittedValues noOutputAssociation
-  cases serialInput : ((program.identity.semanticProfile != serialBusinessTaskProfileId && program.identity.semanticProfile != mixedTaskControlFlowProfileId) ||
+  cases serialInput : ((program.identity.semanticProfile != serialBusinessTaskProfileId && program.identity.semanticProfile != mixedTaskControlFlowProfileId && program.identity.semanticProfile != mixedTaskBusinessErrorProfileId) ||
       SerialBusinessTask.bindingsValid (SerialBusinessTask.programHandlers program) submittedValues) <;>
   cases completionAdmitted : structuredCompositionOrdinaryCompletionAdmitted program
       submittedTaskId submittedValues <;>

@@ -1,4 +1,5 @@
 import {
+  MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID,
   MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID, mixedTaskControlCheckedGraph,
   SERIAL_BUSINESS_TASK_CHECKPOINT_PROFILE_ID,
   serialBusinessCheckedGraph,
@@ -60,8 +61,8 @@ export function isAdmittedCheckedProcess(
     ) &&
     admittedGraph !== undefined &&
     checkedNodeIdentitiesAreValid(graph.nodes) &&
-    (semanticProfile === MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID || graph.nodes.every(node => node.kind !== CheckedNodeKind.ExclusiveGateway || node.candidateFlowIds.length === 2)) &&
-    (semanticProfile !== MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID || mixedTaskControlCheckedGraph(graph)) &&
+    (semanticProfile === MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID || semanticProfile === MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID || graph.nodes.every(node => node.kind !== CheckedNodeKind.ExclusiveGateway || node.candidateFlowIds.length === 2)) &&
+    ((semanticProfile !== MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID && semanticProfile !== MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID) || mixedTaskControlCheckedGraph(graph, semanticProfile)) &&
     embeddedNodesOwnChildScopes(graph, admittedGraph.nodeScopes, semanticProfile) &&
     hasSelectedCallActivityDefinitions(
       semanticProfile,
@@ -552,6 +553,7 @@ function hasSelectedExpressionLanguage(
   switch (semanticProfile) {
     case SemanticProfileId.ExclusiveGatewaySimpleBoolean:
     case SemanticProfileId.InclusiveGatewaySelectedBranches:
+    case MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID:
     case MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID:
     case STRUCTURED_PROCESS_COMPOSITION_CHECKPOINT_PROFILE_ID:
     case SemanticProfileId.ParallelMultiInstanceUserTask:
@@ -568,6 +570,7 @@ function hasSelectedConditions(
   flows: ReadonlyArray<CheckedSequenceFlow>,
 ): boolean {
   switch (semanticProfile) {
+    case MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID:
     case MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID:
     case STRUCTURED_PROCESS_COMPOSITION_CHECKPOINT_PROFILE_ID:
       return true;

@@ -354,4 +354,38 @@ theorem message_payload_and_correlation_checked_program_and_stimulus_wire_contra
         (scenarioDocumentWithStimulus "{\"address\":{\"channel\":{\"interfaceId\":\"interface\",\"interfaceOperationId\":\"operation\",\"kind\":\"operationMessage\",\"messageId\":\"message\"},\"correlationKeyId\":\"correlationKey\",\"definition\":{\"compiler\":\"bpmn-source-semantic-process\",\"semanticProfile\":\"profile\",\"sourceId\":\"source\",\"sourceOverlay\":null,\"sourceSha256\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"},\"processId\":\"process\"},\"commandId\":\"deliver\",\"correlationPropertyId\":\"correlationProperty\",\"ingressOrdinal\":0,\"kind\":\"deliverCorrelatedPayloadMessage\",\"payload\":{\"kind\":\"string\",\"value\":\"settlement-reference-123\"},\"processPropertyId\":\"processProperty\",\"subscriptionId\":{\"activation\":1,\"elementId\":\"catch\",\"processInstanceId\":\"instance\"}}") = true := by
   native_decide
 
+private def effectResultAccepted (businessError : Bool) (names : List String) : Bool :=
+  let patch := Lean.Json.arr (names.map fun name => Lean.Json.mkObj
+    [("name", .str name), ("value", Lean.Json.mkObj [("kind", .str "null")])]).toArray
+  let result := Lean.Json.mkObj
+    ([("kind", .str (if businessError then "bpmnError" else "success")), ("localPatch", patch)] ++
+      if businessError then [("code", .str "REVIEW"), ("message", .null)] else [])
+  match decodeEffectExecutionResult result with
+  | .ok _ => true
+  | .error _ => false
+
+theorem effect_success_duplicate_patch_wire_admission :
+    effectResultAccepted false ["a", "a"] = false := by
+  decide +kernel
+
+theorem effect_success_reversed_patch_wire_admission :
+    effectResultAccepted false ["b", "a"] = false := by
+  decide +kernel
+
+theorem effect_success_canonical_patch_wire_admission :
+    effectResultAccepted false ["a", "b"] = true := by
+  decide +kernel
+
+theorem effect_bpmnError_duplicate_patch_wire_admission :
+    effectResultAccepted true ["a", "a"] = false := by
+  decide +kernel
+
+theorem effect_bpmnError_reversed_patch_wire_admission :
+    effectResultAccepted true ["b", "a"] = false := by
+  decide +kernel
+
+theorem effect_bpmnError_canonical_patch_wire_admission :
+    effectResultAccepted true ["a", "b"] = true := by
+  decide +kernel
+
 end BpmnSemantics.SemanticProcessJsonConformance

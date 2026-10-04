@@ -83,6 +83,77 @@ test("all task continuations contribute to the burst maximum", () => {
   assert.equal(analyze(graph)?.maximumBurst, 8);
 });
 
+function exceptionalBurst(choices: number): readonly MixedTaskControlVertex[] {
+  return [vertex("start", Kind.Start, ["check"]),
+    vertex("check", Kind.Task, ["normal", "choice0"]),
+    vertex("normal", Kind.Task, ["merge"]),
+    ...Array.from({ length: choices }, (_, index) => vertex(`choice${index}`, Kind.Choice,
+      [index + 1 === choices ? "recovery" : `choice${index + 1}`, "merge"])),
+    vertex("recovery", Kind.Task, ["merge"]), vertex("merge", Kind.Merge, ["end"]),
+    vertex("end", Kind.End, [])];
+}
+
+test("every alternative wait continuation contributes its own resumption burst", () => {
+  assert.equal(analyze(exceptionalBurst(5))?.maximumBurst, 8);
+  assert.equal(analyze(exceptionalBurst(6))?.maximumBurst, 9);
+  const reordered = exceptionalBurst(6).map(item => item.id === "check"
+    ? { ...item, outputs: [...item.outputs].reverse() } : item).reverse();
+  assert.deepEqual(analyze(reordered), analyze(exceptionalBurst(6)));
+});
+
+test("an exceptional bypass defeats a normal-path writer but not a writer before both exits", () => {
+  const graph = [vertex("start", Kind.Start, ["check"]),
+    vertex("check", Kind.Task, ["normalWriter", "merge"]),
+    vertex("normalWriter", Kind.Task, ["merge"], [], ["value"]),
+    vertex("merge", Kind.Merge, ["reader"]), vertex("reader", Kind.Task, ["end"], ["value"]),
+    vertex("end", Kind.End, [])];
+  assert.deepEqual(analyze(graph), { requiredInputs: ["value"], maximumBurst: 2 });
+  assert.deepEqual(analyze(graph.map(item => item.id === "check" ? { ...item, writes: ["value"] } : item)),
+    { requiredInputs: [], maximumBurst: 2 });
+});
+
+test("a recovery writer cannot initialize the first entry and every wait exit cuts a cycle", () => {
+  const graph = [vertex("start", Kind.Start, ["retry"]), vertex("retry", Kind.Merge, ["check"]),
+    vertex("check", Kind.Task, ["end", "correct"], ["value"]),
+    vertex("correct", Kind.Task, ["retry"], [], ["value"]), vertex("end", Kind.End, [])];
+  assert.deepEqual(analyze(graph), { requiredInputs: ["value"], maximumBurst: 3 });
+});
+
+test("an internal cycle reached only through an exceptional exit still rejects", () => {
+  assert.equal(analyze([vertex("start", Kind.Start, ["check"]),
+    vertex("check", Kind.Task, ["normal", "cycle"]), vertex("normal", Kind.Task, ["exit"]),
+    vertex("cycle", Kind.Merge, ["choice"]), vertex("choice", Kind.Choice, ["cycle", "exit"]),
+    vertex("exit", Kind.Merge, ["end"]), vertex("end", Kind.End, [])]), undefined);
+});
+
+test("alternative wait edges retain multiplicity at a shared merge", () => {
+  assert.deepEqual(analyze([vertex("start", Kind.Start, ["check"]),
+    vertex("check", Kind.Task, ["merge", "merge"]), vertex("merge", Kind.Merge, ["end"]),
+    vertex("end", Kind.End, [])]), { requiredInputs: [], maximumBurst: 3 });
+});
+
+test("the existing mixed-task checked profile still refuses implicit task forks", async () => {
+  const { mixedTaskControlCheckedGraph } = await import(
+    new URL("../dist/mixed-task-control-flow-admission.js", import.meta.url).href
+  ) as typeof import("../src/mixed-task-control-flow-admission.ts");
+  const { CheckedNodeKind: Node } = await import(
+    new URL("../dist/checked-process-contract.js", import.meta.url).href
+  ) as typeof import("../src/checked-process-contract.ts");
+  const graph: Parameters<typeof mixedTaskControlCheckedGraph>[0] = {
+    processId: "process", definitionScopes: [{ id: "scope", parentScopeId: null, originElementId: "process" }],
+    nodes: [{ kind: Node.NoneStartEvent, id: "start" },
+      { kind: Node.UserTask, id: "task", name: null }, { kind: Node.NoneEndEvent, id: "end" }],
+    flows: [{ id: "begin", sourceId: "start", targetId: "task", condition: null },
+      { id: "finish", sourceId: "task", targetId: "end", condition: null }],
+  };
+  assert.equal(mixedTaskControlCheckedGraph(graph), true);
+  const fork: Parameters<typeof mixedTaskControlCheckedGraph>[0] = { ...graph, nodes: [...graph.nodes, { kind: Node.ExclusiveMerge, id: "merge" }],
+    flows: [graph.flows[0]!, { id: "normal", sourceId: "task", targetId: "merge", condition: null },
+      { id: "extra", sourceId: "task", targetId: "merge", condition: null },
+      { id: "finish", sourceId: "merge", targetId: "end", condition: null }] };
+  assert.equal(mixedTaskControlCheckedGraph(fork), false);
+});
+
 test("arbitrarily long task-separated chains have a two-step burst", () => {
   const graph = [vertex("start", Kind.Start, ["task0"]),
     ...Array.from({ length: 1500 }, (_, index) => vertex(`task${index}`, Kind.Task,

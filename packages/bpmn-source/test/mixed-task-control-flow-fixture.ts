@@ -10,7 +10,8 @@ export const source = new URL(
   import.meta.url,
 );
 
-export function invoiceWithBurst(xml: string, length: 8 | 9): string {
+export function invoiceWithBurst(xml: string, length: 8 | 9,
+  continuation: Readonly<{ id: string; source: string; target: string }> = { id: "Check", source: "Review", target: "Validate" }): string {
   const depths = length === 8 ? [2, 1, 1] : [2, 2, 1];
   const nodes: string[] = [];
   const flows: string[] = [];
@@ -23,16 +24,16 @@ export function invoiceWithBurst(xml: string, length: 8 | 9): string {
       flows.push(`<sequenceFlow id="${choice}True" sourceRef="${choice}" targetRef="${index + 1 < depth ? `Burst${group}Choice${index + 1}` : merge}"><conditionExpression xsi:type="bpmn:tFormalExpression">true</conditionExpression></sequenceFlow>`);
       flows.push(`<sequenceFlow id="${choice}Default" sourceRef="${choice}" targetRef="${merge}"/>`);
     }
-    flows.push(`<sequenceFlow id="${merge}Continue" sourceRef="${merge}" targetRef="${group + 1 < depths.length ? `Burst${group + 1}Choice0` : "Validate"}"/>`);
+    flows.push(`<sequenceFlow id="${merge}Continue" sourceRef="${merge}" targetRef="${group + 1 < depths.length ? `Burst${group + 1}Choice0` : continuation.target}"/>`);
   }
-  return xml.replace('<sequenceFlow id="Check" sourceRef="Review" targetRef="Validate"/>',
-    `${nodes.join("")}<sequenceFlow id="Check" sourceRef="Review" targetRef="Burst0Choice0"/>${flows.join("")}`);
+  return xml.replace(`<sequenceFlow id="${continuation.id}" sourceRef="${continuation.source}" targetRef="${continuation.target}"/>`,
+    `${nodes.join("")}<sequenceFlow id="${continuation.id}" sourceRef="${continuation.source}" targetRef="Burst0Choice0"/>${flows.join("")}`);
 }
 
-export function sourceOverlay(handlers: readonly string[] = ["invoiceValidator"]) {
+export function sourceOverlay(handlers: readonly string[] = ["invoiceValidator"], semanticProfile: string = profile) {
   const id = "invoice-handlers";
   const bytes = new TextEncoder().encode(JSON.stringify({
-    kind: "bpmnSourceOverlay", id, semanticProfile: profile,
+    kind: "bpmnSourceOverlay", id, semanticProfile,
     effectBindings: handlers.toSorted(compareCanonicalStrings).map(handler => ({
       source: { implementation: protocol, delegateExpression: `\${${handler}}` },
       descriptor: { protocol, operation: handler },

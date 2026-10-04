@@ -197,7 +197,7 @@ private def checkedEventRaceConfigurationValid (source : CheckedProcess) : Bool 
         | _ => false
     | _ => true
 
-private def checkedNodeArityValid (serial repeatable mixed : Bool) (dormantHandlers : List NodeId)
+private def checkedNodeArityValid (serial repeatable mixed businessError : Bool) (dormantHandlers : List NodeId)
     (flows : List CheckedSequenceFlow) :
     CheckedNode → Bool
   | .noneStartEvent id =>
@@ -336,7 +336,8 @@ private def checkedNodeArityValid (serial repeatable mixed : Bool) (dormantHandl
         descriptor.operation = "urn:bpmn-lean:effect-operation:probe-v1" &&
         incomingCount flows id = 1 && outgoingCount flows id = 1
   | .serviceTask id descriptor inputMappings outputMappings route =>
-      ((serial && SerialBusinessTask.descriptorValid descriptor && route.isNone) ||
+      ((serial && SerialBusinessTask.descriptorValid descriptor &&
+        (route.isNone || (businessError && wellFormedCheckedBpmnErrorRoute id route))) ||
       (descriptor.protocol = "urn:bpmn-lean:effect-protocol:activity-v1" &&
         ((descriptor.operation = "urn:bpmn-lean:effect-operation:probe-v1" &&
           inputMappings.isEmpty &&
@@ -459,9 +460,10 @@ def checkedWellFormed (source : CheckedProcess) : Bool :=
                     candidateFlowIds.contains flow.id
                 | _ => false)) &&
     source.nodes.all (checkedNodeArityValid
-      (source.identity.semanticProfile == serialBusinessTaskProfileId || source.identity.semanticProfile == mixedTaskControlFlowProfileId)
+      (source.identity.semanticProfile == serialBusinessTaskProfileId || source.identity.semanticProfile == mixedTaskControlFlowProfileId || source.identity.semanticProfile == mixedTaskBusinessErrorProfileId)
       (source.identity.semanticProfile == repeatableSubscriptionCheckpointProfileId)
-      (source.identity.semanticProfile == mixedTaskControlFlowProfileId)
+      (source.identity.semanticProfile == mixedTaskControlFlowProfileId || source.identity.semanticProfile == mixedTaskBusinessErrorProfileId)
+      (source.identity.semanticProfile == mixedTaskBusinessErrorProfileId)
       (source.interruptingMessageEventSubProcesses.map (·.elementId)) source.sequenceFlows) &&
     checkedInclusivePairingValid source &&
     checkedEventRaceConfigurationValid source &&

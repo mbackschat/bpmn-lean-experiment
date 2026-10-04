@@ -98,6 +98,7 @@ private inductive ProcessDataValueDomain where
           , activityDataInputOutputUserTaskProfileId.value
           , callDataCheckpointProfileId.value
           , mixedTaskControlFlowProfileId.value
+          , mixedTaskBusinessErrorProfileId.value
           , serialBusinessTaskProfileId.value
           , structuredCompositionCheckpointProfileId.value
           , structuredHumanWorkProfileId.value ] then
@@ -115,6 +116,7 @@ private inductive ProcessDataValueDomain where
           , activityDataInputOutputUserTaskProfileId.value
           , callDataCheckpointProfileId.value
           , mixedTaskControlFlowProfileId.value
+          , mixedTaskBusinessErrorProfileId.value
           , serialBusinessTaskProfileId.value
           , structuredCompositionCheckpointProfileId.value
           , "bpmn-2.0.2-user-task-cycle-draft" ] then

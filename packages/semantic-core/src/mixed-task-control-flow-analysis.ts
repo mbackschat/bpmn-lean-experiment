@@ -82,7 +82,9 @@ export function analyzeMixedTaskControlFlow(
     }
   }
   let maximumBurst = ranks[start]!;
-  for (const task of tasks) maximumBurst = Math.max(maximumBurst, ranks[outputs[task]![0]!]!);
+  for (const task of tasks) {
+    for (const continuation of outputs[task]!) maximumBurst = Math.max(maximumBurst, ranks[continuation]!);
+  }
 
   const readersByName = new Map<string, number[]>();
   const writersByName = new Map<string, Set<number>>();
@@ -111,7 +113,7 @@ export function analyzeMixedTaskControlFlow(
 function validArity(kind: MixedTaskControlKind, incoming: number, outgoing: number): boolean {
   switch (kind) {
     case MixedTaskControlKind.Start: return incoming === 0 && outgoing === 1;
-    case MixedTaskControlKind.Task: return incoming === 1 && outgoing === 1;
+    case MixedTaskControlKind.Task: return incoming === 1 && outgoing >= 1;
     case MixedTaskControlKind.Choice: return incoming === 1 && outgoing >= 2;
     case MixedTaskControlKind.Merge: return incoming >= 2 && outgoing === 1;
     case MixedTaskControlKind.End: return incoming === 1 && outgoing === 0;

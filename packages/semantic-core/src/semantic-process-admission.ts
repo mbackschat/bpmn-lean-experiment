@@ -1,6 +1,6 @@
 import { mixedTaskControlProgramGraph, mixedTaskControlStimulusDataAdmitted } from "./mixed-task-control-flow-admission.js";
 import { serialBusinessProgramGraph, serialBusinessStimulusDataAdmitted } from "./serial-business-task-admission.js";
-import { MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID, SERIAL_BUSINESS_TASK_CHECKPOINT_PROFILE_ID } from "./semantic-profile-catalog.js";
+import { MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID, MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID, SERIAL_BUSINESS_TASK_CHECKPOINT_PROFILE_ID } from "./semantic-profile-catalog.js";
 import { isInterruptingMessageEventSubProcessDeclaration, interruptingMessageEventSubProcessProgramGraph } from "./interrupting-message-event-subprocess-program-admission.js";
 import { INTERRUPTING_MESSAGE_EVENT_SUBPROCESS_CHECKPOINT_PROFILE_ID } from "./semantic-profile-catalog.js";
 import { callDataStimulusDataAdmitted } from "./call-data-command-admission.js";
@@ -287,7 +287,7 @@ export function isWellFormedSemanticProcessProgram(
     checkedOperations.push(operation);
   }
   const program = value as unknown as SemanticProcessProgram;
-  if (identity.semanticProfile === MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID && !mixedTaskControlProgramGraph(program)) return false;
+  if ((identity.semanticProfile === MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID || identity.semanticProfile === MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID) && !mixedTaskControlProgramGraph(program)) return false;
   if (identity.semanticProfile === SERIAL_BUSINESS_TASK_CHECKPOINT_PROFILE_ID && !serialBusinessProgramGraph(program)) return false;
   const snapshotTargets = program.compensationEventSubProcessSnapshots?.targets;
   if (identity.semanticProfile === INTERRUPTING_MESSAGE_EVENT_SUBPROCESS_CHECKPOINT_PROFILE_ID) {

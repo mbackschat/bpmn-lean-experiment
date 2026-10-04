@@ -30,6 +30,7 @@ import {
 } from "@bpmn-lean/bpmn-source";
 import {
   CALL_ACTIVITY_DATA_BOUNDARIES_CHECKPOINT_PROFILE_ID,
+  MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID,
   MESSAGE_KEY_CORRELATION_CHECKPOINT_PROFILE_ID,
   SEQUENTIAL_MULTI_INSTANCE_USER_TASK_PROFILE_ID,
   SemanticProfileId,
@@ -253,6 +254,11 @@ const dispatchFixtures = {
     sourceId: "preserved-notation-diagnostics",
     semanticProfile: SemanticProfileId.UserTaskPreservedNotation,
     find: '<bpmn:startEvent id="StartEvent_1"',
+  },
+  mixedTaskBusinessError: {
+    path: "the mixed-task business Error reader", source: new URL("./fixtures/mixed-task-invoice-business-error.bpmn", import.meta.url),
+    sourceId: "invoice-business-error", semanticProfile: MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID,
+    sourceOverlay: mixedTaskSourceOverlay(["invoiceValidator", "policyChecker"], MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID), find: '<startEvent id="Start"',
   },
   mixedTaskControlFlow: {
     path: "the mixed-task control-flow reader", source: mixedTaskSource, sourceId: "invoice-rework",

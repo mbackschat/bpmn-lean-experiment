@@ -3,6 +3,7 @@ import {
   CALL_ACTIVITY_DATA_BOUNDARIES_CHECKPOINT_PROFILE_ID,
   INTERRUPTING_MESSAGE_EVENT_SUBPROCESS_CHECKPOINT_PROFILE_ID,
   STRUCTURED_PROCESS_COMPOSITION_CHECKPOINT_PROFILE_ID,
+  MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID,
   MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID,
   SERIAL_BUSINESS_TASK_CHECKPOINT_PROFILE_ID,
   COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID,
@@ -51,12 +52,13 @@ import type {
 export function assessTemporalHostCapability(
   program: SemanticProcessProgram,
 ): TemporalHostCapabilityResult {
-  if (program.identity.semanticProfile === MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID) {
+  if (program.identity.semanticProfile === MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID ||
+      program.identity.semanticProfile === MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID) {
     return {
       kind: TemporalHostCapabilityResultKind.Rejected,
       failure: {
         code: TemporalHostAdmissionFailureCode.MixedTaskControlFlowQualificationUnavailable,
-        evidence: "Mixed-task control flow requires the capsule's pending recovery and replay qualification.",
+        evidence: "Mixed-task control flow and business Error recovery require their pending recovery and replay qualification.",
       },
     };
   }

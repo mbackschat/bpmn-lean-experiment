@@ -798,7 +798,9 @@ theorem ordered_suffix_wait_guards (program : Program) (analysis : Analysis) (st
       · simp_all [serialRuntimeAssociationsValid, waitDeclarationsValid, ForeignRuntimeEmpty,
           effectWaitDeclarers_eq_keyFilter, declaredByExactlyOneOwnedOperation, SemanticOperation.id,
           activityScopeMatches, localDataOwnerMatches]
-        with_unfolding_all exact congrArg List.length census
+        with_unfolding_all
+          apply Eq.trans ?_ (congrArg List.length census)
+          congr 2; funext op; cases op <;> first | rfl | (rename_i route; cases route <;> rfl)
       · simp_all
 
 /-- Admissible completion identities are taken from live waits; result coverage is over distinct declared local sources. -/

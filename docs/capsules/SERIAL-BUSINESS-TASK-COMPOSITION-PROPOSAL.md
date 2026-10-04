@@ -96,17 +96,17 @@ Use two project-owned whole models: invoice Review→Validate→Finalize and a c
 |---|---:|---|
 | [Shared values](../../packages/semantic-core/src/semantic-value-contract.ts) | 698 | Add only the explicit closed expression arm. |
 | [Core mappings](../../packages/semantic-core/src/semantic-process-data.ts) | 498 | Reuse mapping/frame mechanisms; preserve predecessor semantics. |
-| [Operation admission](../../packages/semantic-core/src/semantic-process-operation-admission.ts) | 99 | Delegate profile-specific mapping decisions. |
+| [Operation admission](../../packages/semantic-core/src/semantic-process-operation-admission.ts) | 98 | Delegate profile-specific mapping decisions. |
 | [Command admission](../../packages/semantic-core/src/semantic-command-admission.ts) | 286 | Delegate required-start and result-domain checks. |
 | [Open-set validation](../../packages/semantic-core/src/flow-node-occurrence-open-set.ts) | 15 | Extract the cohesive effect-wait validation only if growth exceeds this margin. |
 | [Source compiler](../../packages/bpmn-source/src/checked-process-compiler.ts) | 377 | Retain structural compilation and delegate profile projection. |
-| [Source dispatch](../../packages/bpmn-source/src/compilation-dispatch.ts) | 414 | Add one private capability route. |
-| [Checked admission](../../packages/bpmn-source/src/checked-process-admission.ts) | 90 | Delegate the serial capability analysis. |
+| [Source dispatch](../../packages/bpmn-source/src/compilation-dispatch.ts) | 410 | Add one private capability route. |
+| [Checked admission](../../packages/bpmn-source/src/checked-process-admission.ts) | 87 | Delegate the serial capability analysis. |
 | [Lean checked contract](../../BpmnSemantics/CheckedProcessContract.lean) | 451 | Preserve all existing alternatives. |
 | [Lean data](../../BpmnSemantics/SemanticProcess/Data.lean) | 370 | Reuse mapping semantics and preserve existing output restrictions. |
-| [Lean effect completion](../../BpmnSemantics/SemanticProcess/EffectCompletion.lean) | 648 | Keep independently stated transition premises and soundness separate. |
-| [Lean Program admission](../../BpmnSemantics/SemanticProcess/ProgramStructuralValidation.lean) | 14 | Delegate; do not place serial analysis here. |
-| [Lean command admission](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean) | 5 | Delegate; preserve closed profile decisions. |
+| [Lean effect completion](../../BpmnSemantics/SemanticProcess/EffectCompletion.lean) | 627 | Keep independently stated transition premises and soundness separate. |
+| [Lean Program admission](../../BpmnSemantics/SemanticProcess/ProgramStructuralValidation.lean) | 12 | Delegate; do not place serial analysis here. |
+| [Lean command admission](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean) | 26 | Delegate; preserve closed profile decisions. |
 
 These measurements are the nonblank margin before the 800-line review target, derived through `what-binds`. If planned growth exceeds its margin, extract a cohesive existing responsibility without changing its contract and remeasure. New owners require ordinary source-map and default-library reachability coverage. This is not permission to compress existing proof or absence claims.
 

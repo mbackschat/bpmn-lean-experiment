@@ -9,6 +9,9 @@ namespace BpmnSemantics.SemanticProcess
 abbrev mixedTaskControlFlowProfileId : ProfileId :=
   ⟨"cibseven-2.2.0-mixed-task-control-flow-draft"⟩
 
+abbrev mixedTaskBusinessErrorProfileId : ProfileId :=
+  ⟨"cibseven-2.2.0-mixed-task-business-error-draft"⟩
+
 namespace MixedTaskControlFlow
 
 inductive Kind where
@@ -64,7 +67,8 @@ def aritiesValid (vertices : List Vertex) : Bool :=
       match vertex.kind with
       | .start => inputs == 0 && outputs == 1
       | .finish => inputs == 1 && outputs == 0
-      | .human | .service => inputs == 1 && outputs == 1
+      | .human => inputs == 1 && outputs == 1
+      | .service => inputs == 1 && outputs ≥ 1
       | .choice => inputs == 1 && outputs ≥ 2
       | .merge => inputs ≥ 2 && outputs == 1
 
@@ -153,6 +157,47 @@ def checkedChoiceValid (source : CheckedProcess) (id : NodeId)
     source.sequenceFlows.any (fun flow =>
       flow.id == default && flow.sourceId == id && flow.condition.isNone)
 
+def routesAdmitted (profile : ProfileId) (hasRoute : Bool) : Bool :=
+  if profile == mixedTaskBusinessErrorProfileId then hasRoute
+  else profile == mixedTaskControlFlowProfileId && !hasRoute
+
+def checkedRoutes (source : CheckedProcess) : List CheckedBpmnErrorRoute :=
+  source.nodes.filterMap fun node => match node with
+    | .serviceTask _ _ _ _ route => route
+    | _ => none
+
+/-- MBERR-CATCH-01 binds exceptional production to its attached boundary and exact flow. -/
+def checkedProducer? (source : CheckedProcess) (flow : CheckedSequenceFlow) : Option NodeId := do
+  let producer ← StructuredComposition.unique? (source.nodes.filter fun node =>
+    node.id == flow.sourceId || match node with
+      | .serviceTask _ _ _ _ (some route) =>
+          route.attachedToRef == node.id && route.boundaryEventId == flow.sourceId &&
+            route.outputFlowId == flow.id
+      | _ => false)
+  return producer.id
+
+def checkedRouteValid (source : CheckedProcess) (service : NodeId)
+    (route : CheckedBpmnErrorRoute) : Bool :=
+  route.attachedToRef == service && nonempty route.code &&
+    (source.sequenceFlows.filter (·.sourceId == route.boundaryEventId)).length == 1 &&
+    !(source.sequenceFlows.any (·.targetId == route.boundaryEventId)) &&
+    source.sequenceFlows.any (fun flow => flow.id == route.outputFlowId &&
+      flow.sourceId == route.boundaryEventId && flow.condition.isNone)
+
+def checkedRoutesValid (source : CheckedProcess) : Bool :=
+  let routes := checkedRoutes source
+  let declarations := source.processId.value :: source.nodes.map (·.id.value) ++
+    source.sequenceFlows.map (·.id.value) ++
+    routes.flatMap (fun route => [route.boundaryEventId.value, route.errorDefinitionId.value]) ++
+    (routes.map (·.errorElementId.value)).eraseDups
+  routesAdmitted source.identity.semanticProfile (!routes.isEmpty) && uniqueNames declarations &&
+    source.nodes.all (fun node => match node with
+      | .serviceTask id _ _ _ (some route) => checkedRouteValid source id route
+      | _ => true) &&
+    routes.all (fun route => routes.all fun other =>
+      route.errorElementId != other.errorElementId ||
+        (route.code == other.code && route.errorName == other.errorName))
+
 def checkedVertex? (source : CheckedProcess) (node : CheckedNode) : Option Vertex := do
   let id := node.id.value
   let outputs := (source.sequenceFlows.filter (·.sourceId == node.id)).map (·.targetId.value)
@@ -161,11 +206,21 @@ def checkedVertex? (source : CheckedProcess) (node : CheckedNode) : Option Verte
   | .noneEndEvent _ => return { id, kind := .finish, outputs }
   | .userTask _ _ none => return { id, kind := .human, outputs }
   | .serviceTask _ descriptor inputs mappings none =>
-      if !(SerialBusinessTask.descriptorValid descriptor &&
+      if !(outputs.length == 1 && SerialBusinessTask.descriptorValid descriptor &&
           SerialBusinessTask.mappingsValid (SerialBusinessTask.checkedHandlers source) inputs mappings)
       then none
       else return { id, kind := .service, outputs, reads := SerialBusinessTask.readNames inputs,
                     writes := mappings.map (·.target) }
+  | .serviceTask service descriptor inputs mappings (some route) =>
+      if !(outputs.length == 1 && checkedRouteValid source service route &&
+          SerialBusinessTask.descriptorValid descriptor &&
+          SerialBusinessTask.mappingsValid (SerialBusinessTask.checkedHandlers source) inputs mappings)
+      then none
+      else do
+        let exceptional ← StructuredComposition.unique? (source.sequenceFlows.filter fun flow =>
+          flow.id == route.outputFlowId && flow.sourceId == route.boundaryEventId)
+        return { id, kind := .service, outputs := outputs ++ [exceptional.targetId.value],
+                 reads := SerialBusinessTask.readNames inputs, writes := mappings.map (·.target) }
   | .exclusiveGateway nodeId candidates default =>
       if !checkedChoiceValid source nodeId candidates default then none
       else do
@@ -194,8 +249,9 @@ def checkedAnalysis (source : CheckedProcess) : Option Analysis := do
   if !(source.identity.sourceOverlay.isSome && checkedOwnershipValid source root &&
       source.compensation.isNone && source.transactionCancellation.isNone &&
       source.interruptingMessageEventSubProcesses.isEmpty && uniqueNames identities &&
+      checkedRoutesValid source &&
       source.sequenceFlows.all (fun flow =>
-        source.nodes.any (·.id == flow.sourceId) && source.nodes.any (·.id == flow.targetId) &&
+        (checkedProducer? source flow).isSome && source.nodes.any (·.id == flow.targetId) &&
         (flow.condition.isNone || source.nodes.any (fun node => match node with
           | .exclusiveGateway id candidates _ => id == flow.sourceId && candidates.contains flow.id
           | _ => false)))) then none
@@ -209,7 +265,8 @@ def operationInputs : SemanticOperation → List ControlPlaceId
 
 def operationOutputs : SemanticOperation → List ControlPlaceId
   | .initiate _ _ output | .awaitUserTask _ _ _ output _
-  | .awaitEffect _ _ _ output .. | .mergeExclusive _ _ _ output => [output]
+  | .awaitEffect _ _ _ output _ none | .mergeExclusive _ _ _ output => [output]
+  | .awaitEffect _ _ _ output _ (some route) => [output, route.output]
   | .choose _ _ _ candidates default _ => candidates.map (·.output) ++ [default]
   | _ => []
 
@@ -232,6 +289,22 @@ def choiceOriginsValid (program : Program) (candidates : List ConditionalCandida
         place.id == candidate.output && place.origin == candidate.origin)) &&
     program.controlPlaces.any (fun place => place.id == default && place.origin == origin)
 
+def programRoutes (program : Program) : List BpmnErrorRoute :=
+  program.operations.filterMap fun operation => match operation with
+    | .awaitEffect _ _ _ _ _ route => route
+    | _ => none
+
+def programRouteValid (program : Program) (route : BpmnErrorRoute) : Bool :=
+  nonempty route.code && program.controlPlaces.any (fun place =>
+    place.id == route.output && place.origin.elementId == route.origin.sequenceFlowId)
+
+def programRoutesValid (program : Program) : Bool :=
+  let routes := programRoutes program
+  routesAdmitted program.identity.semanticProfile (!routes.isEmpty) &&
+    routes.all (programRouteValid program) &&
+    routes.all (fun route => routes.all fun other =>
+      route.origin.errorElementId != other.origin.errorElementId || route.code == other.code)
+
 def operationVertex? (program : Program) (operation : SemanticOperation) : Option Vertex := do
   let id := operation.id.value
   match operation with
@@ -245,6 +318,15 @@ def operationVertex? (program : Program) (operation : SemanticOperation) : Optio
           SerialBusinessTask.mappingsValid (SerialBusinessTask.programHandlers program)
             effect.inputMappings effect.outputMappings) then none
       else return { id, kind := .service, outputs := [← consumer? program output],
+                    reads := SerialBusinessTask.readNames effect.inputMappings,
+                    writes := effect.outputMappings.map (·.target) }
+  | .awaitEffect _ origin _ output effect (some route) =>
+      if !(origin.elementId == effect.elementId && programRouteValid program route &&
+          SerialBusinessTask.descriptorValid effect.descriptor &&
+          SerialBusinessTask.mappingsValid (SerialBusinessTask.programHandlers program)
+            effect.inputMappings effect.outputMappings) then none
+      else return { id, kind := .service,
+                    outputs := [← consumer? program output, ← consumer? program route.output],
                     reads := SerialBusinessTask.readNames effect.inputMappings,
                     writes := effect.outputMappings.map (·.target) }
   | .choose _ _ _ candidates default origin =>
@@ -283,7 +365,8 @@ def programAnalysis (program : Program) : Option Analysis := do
       program.compensationActivityRetention.isNone && program.compensationEventSubProcessSnapshots.isNone &&
       program.compensationExecution.isNone && program.interruptingMessageEventSubProcesses.isEmpty &&
       uniqueNames (program.operations.map (·.id.value)) &&
-      uniqueNames (program.controlPlaces.map (·.id.value)) && programEdgesValid program) then none
+      uniqueNames (program.controlPlaces.map (·.id.value)) && programEdgesValid program &&
+      programRoutesValid program) then none
   else do
     let completion ← StructuredComposition.unique?
       (program.operations.filter StructuredComposition.isScopeCompletion)
@@ -294,7 +377,10 @@ def programAnalysis (program : Program) : Option Analysis := do
           let operations := program.operations.filter fun op => !StructuredComposition.isScopeCompletion op
           let origins ← operations.mapM operationOrigin?
           let identities := program.processId.value :: origins.map (·.elementId.value) ++
-            program.controlPlaces.map (·.origin.elementId.value)
+            program.controlPlaces.map (·.origin.elementId.value) ++
+            (programRoutes program).flatMap (fun route =>
+              [route.origin.boundaryEventId.value, route.origin.errorDefinitionId.value]) ++
+            ((programRoutes program).map (·.origin.errorElementId.value)).eraseDups
           if !uniqueNames identities then none
           else analyze (← operations.mapM (operationVertex? program))
     | _ => none

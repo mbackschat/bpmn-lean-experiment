@@ -255,7 +255,7 @@ The complete `what-binds` inventory requires [`implementation-status-owner:ENGIN
 | [TS Error preparation](../../packages/semantic-core/src/internal-transition-error-preparation.ts) | 706 | purge footprint |
 | [TS termination preparation](../../packages/semantic-core/src/internal-transition-termination-preparation.ts) | 714 | purge footprint |
 | [Lean Program](../../BpmnSemantics/SemanticProcessContract.lean) | 282 | direct Activity-data carriers extracted into a bounded owner |
-| [Lean structural admission](../../BpmnSemantics/SemanticProcess/ProgramStructuralValidation.lean) | 14 | declaration hook |
+| [Lean structural admission](../../BpmnSemantics/SemanticProcess/ProgramStructuralValidation.lean) | 12 | declaration hook |
 | [Lean graph admission](../../BpmnSemantics/SemanticProcess/GraphValidation.lean) | 48 | lifecycle helper extracted; preserve the recovered headroom |
 | [Lean RuntimeState](../../BpmnSemantics/SemanticProcess/RuntimeState.lean) | 37 | collection reference only |
 | [Lean well-formedness](../../BpmnSemantics/SemanticProcess/RuntimeStateWellFormed.lean) | 50 | delegated predicate |
@@ -265,7 +265,7 @@ The complete `what-binds` inventory requires [`implementation-status-owner:ENGIN
 | [Lean transition](../../BpmnSemantics/SemanticProcess/Transition.lean) | 46 | dispatch only; the applied-result contract is extracted |
 | [Lean internal-operation attempt](../../BpmnSemantics/SemanticProcess/InternalOperationAttempt.lean) | 752 | validate every applied snapshot-aware successor before exposure |
 | [Lean trace closure](../../BpmnSemantics/SemanticProcess/TransitionTrace.lean) | 340 | refusal rollback/no trace |
-| [Lean command admission](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean) | 5 | map root-capacity refusal to `Rejected`, never `semanticFailure`, and reject an invalid committed post-state |
+| [Lean command admission](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean) | 26 | map root-capacity refusal to `Rejected`, never `semanticFailure`, and reject an invalid committed post-state |
 | [Lean census](../../BpmnSemantics/SemanticProcess/InternalCommutationCensus.lean) | 645 | new state field |
 | [Lean footprint core](../../BpmnSemantics/SemanticProcess/InternalCommutationCore.lean) | 280 | snapshot atom/footprint |
 | [Lean Program decoder](../../BpmnSemantics/SemanticProcessJson/Program.lean) | 50 | focused decoder |

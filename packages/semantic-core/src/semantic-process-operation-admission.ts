@@ -1,5 +1,5 @@
 import { serialBusinessEffectAdmitted } from "./serial-business-task-policy.js";
-import { MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID, SERIAL_BUSINESS_TASK_CHECKPOINT_PROFILE_ID } from "./semantic-profile-catalog.js";
+import { MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID, MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID, SERIAL_BUSINESS_TASK_CHECKPOINT_PROFILE_ID } from "./semantic-profile-catalog.js";
 import {
   EffectOperation,
   EffectProtocol,
@@ -426,7 +426,7 @@ export function isWellFormedSemanticOperation(
         value.inputs.every((input) => input !== value.output)
       );
     case SemanticOperationKind.Choose:
-      return (semanticProfile === MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID || (Array.isArray(value.candidates) && value.candidates.length === 2)) && isWellFormedChooseOperation(
+      return (semanticProfile === MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID || semanticProfile === MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID || (Array.isArray(value.candidates) && value.candidates.length === 2)) && isWellFormedChooseOperation(
         value,
         placeIds,
         placeOrigins,
@@ -571,6 +571,7 @@ function isSupportedEffectContract(
   placeIds: ReadonlySet<string>,
   semanticProfile: string,
 ): boolean {
+  if (semanticProfile === MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID) return (bpmnErrorRoute === null || isWellFormedBpmnErrorRoute(bpmnErrorRoute, placeIds)) && serialBusinessEffectAdmitted(effect);
   if (semanticProfile === MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID || semanticProfile === SERIAL_BUSINESS_TASK_CHECKPOINT_PROFILE_ID) return bpmnErrorRoute === null && serialBusinessEffectAdmitted(effect);
   if (
     !isRecord(effect.descriptor) ||

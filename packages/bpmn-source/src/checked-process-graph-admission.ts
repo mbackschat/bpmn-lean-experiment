@@ -1,4 +1,5 @@
 import {
+  MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID,
   MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID,
   CheckedNodeKind,
   INTERRUPTING_MESSAGE_EVENT_SUBPROCESS_CHECKPOINT_PROFILE_ID,
@@ -209,9 +210,9 @@ function hasSelectedArity(
           return incoming === 2 && outgoing === 1;
       }
     case CheckedNodeKind.ExclusiveGateway:
-      return incoming === 1 && (semanticProfile === MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID ? outgoing >= 2 : outgoing === 3);
+      return incoming === 1 && (semanticProfile === MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID || semanticProfile === MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID ? outgoing >= 2 : outgoing === 3);
     case CheckedNodeKind.ExclusiveMerge:
-      return (semanticProfile === MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID ? incoming >= 2 : incoming === 3) && outgoing === 1;
+      return (semanticProfile === MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID || semanticProfile === MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID ? incoming >= 2 : incoming === 3) && outgoing === 1;
     case CheckedNodeKind.InclusiveGateway:
       switch (node.direction) {
         case GatewayDirection.Diverging:
@@ -301,6 +302,7 @@ function embeddedBoundaryHostForFlow(
   CheckedNode,
   {
     kind:
+      | CheckedNodeKind.ServiceTask
       | CheckedNodeKind.SequentialMultiInstanceUserTask
       | CheckedNodeKind.ParallelMultiInstanceUserTask;
   }
@@ -310,14 +312,21 @@ function embeddedBoundaryHostForFlow(
       CheckedNode,
       {
         kind:
+          | CheckedNodeKind.ServiceTask
           | CheckedNodeKind.SequentialMultiInstanceUserTask
           | CheckedNodeKind.ParallelMultiInstanceUserTask;
       }
-    > =>
-      (node.kind === CheckedNodeKind.SequentialMultiInstanceUserTask ||
-        node.kind === CheckedNodeKind.ParallelMultiInstanceUserTask) &&
-      node.boundaryTimer.elementId === flow.sourceId &&
-      node.boundaryTimer.outputFlowId === flow.id,
+    > => {
+      switch (node.kind) {
+        case CheckedNodeKind.ServiceTask:
+          return node.bpmnErrorRoute !== null && node.bpmnErrorRoute.attachedToRef === node.id &&
+            node.bpmnErrorRoute.boundaryEventId === flow.sourceId && node.bpmnErrorRoute.outputFlowId === flow.id;
+        case CheckedNodeKind.SequentialMultiInstanceUserTask:
+        case CheckedNodeKind.ParallelMultiInstanceUserTask:
+          return node.boundaryTimer.elementId === flow.sourceId && node.boundaryTimer.outputFlowId === flow.id;
+        default: return false;
+      }
+    },
   );
 }
 

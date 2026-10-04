@@ -309,7 +309,7 @@ def decodeEffectExecutionResult (json : Json) :
       requireObjectShape json ["kind", "localPatch"]
       pure
         (.success
-          (← decodeArray decodeVariableBinding (← field json "localPatch")))
+          (← decodeCanonicalVariableBindings (← field json "localPatch")))
   | "bpmnError" =>
       requireObjectShape json ["code", "kind", "localPatch", "message"]
       let code ← stringField json "code"
@@ -322,7 +322,7 @@ def decodeEffectExecutionResult (json : Json) :
         (.bpmnError
           code
           message
-          (← decodeArray decodeVariableBinding (← field json "localPatch")))
+          (← decodeCanonicalVariableBindings (← field json "localPatch")))
   | kind => throw s!"unsupported effect result {kind}"
 
 end BpmnSemantics.SemanticProcessJson

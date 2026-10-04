@@ -4,6 +4,7 @@ import type { DeepReadonly } from "./deep-readonly.js";
 import { SemanticOperationKind } from "./semantic-process-contract.js";
 import {
   CALL_ACTIVITY_DATA_BOUNDARIES_CHECKPOINT_PROFILE_ID,
+  MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID,
   MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID,
   SERIAL_BUSINESS_TASK_CHECKPOINT_PROFILE_ID,
   INTERRUPTING_MESSAGE_EVENT_SUBPROCESS_CHECKPOINT_PROFILE_ID,
@@ -57,6 +58,7 @@ export function semanticGraphPolicyForProfile(
   semanticProfile: string,
 ): SemanticGraphPolicy | undefined {
   switch (semanticProfile) {
+    case MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID:
     case MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID: return mixedTaskResumptionBoundedGraphPolicy;
     case SemanticProfileId.UserTaskCycle:
       return userTaskResumptionBoundedGraphPolicy;

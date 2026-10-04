@@ -1,4 +1,4 @@
-import BpmnSemantics.SemanticProcess.MixedTaskControlFlowDataProofs
+import BpmnSemantics.SemanticProcess.MixedTaskBusinessErrorCompletionProofs
 import BpmnSemantics.SemanticProcess.SerialBusinessTaskLifecycleProofs
 
 /-! MTCF-PROGRESS-01 and MTCF-REPEAT-01 require one graph-indexed control unit with exact wait ownership and an actual Start-derived root frame, independent of any assumed serial traversal order. -/
@@ -31,12 +31,11 @@ inductive Position (program : Program) (analysis : Analysis) (state : RuntimeSta
       (fields : frontierFields state = (false, [], [], [wait],
         [{ owner := .effectOccurrence ⟨wait.processInstanceId, ⟨wait.elementId.value⟩, wait.activation⟩,
            bindings := wait.arguments }]))
-      (declared : .awaitEffect id origin input wait.output effect none ∈ program.operations)
-      (projected : operationVertex? program (.awaitEffect id origin input wait.output effect none) = some vertex)
+      (declared : .awaitEffect id origin input wait.output effect wait.bpmnErrorRoute ∈ program.operations)
+      (projected : operationVertex? program (.awaitEffect id origin input wait.output effect wait.bpmnErrorRoute) = some vertex)
       (element : effect.elementId = wait.elementId) (descriptor : effect.descriptor = wait.descriptor)
       (outputs : effect.outputMappings = wait.outputMappings)
       (snapshot : inputSnapshotMatches effect.inputMappings wait.arguments = true)
-      (route : wait.bpmnErrorRoute = none)
       (owned : operationOwningScope? program id = some wait.owner.definitionScopeId) :
       Position program analysis state (some vertex)
   | finished (fields : frontierFields state = (false, [], [], [], [])) :
@@ -74,31 +73,35 @@ theorem analyzed_start_root_declared (program : Program) (analysis : Analysis)
 
 theorem committed_start_has_exact_builder (program : Program) (analysis : Analysis)
     (commandId processId instanceId : SemanticId) (bindings : List VariableBinding)
-    (profile : program.identity.semanticProfile = mixedTaskControlFlowProfileId)
+    (profile : program.identity.semanticProfile = mixedTaskControlFlowProfileId ∨
+      program.identity.semanticProfile = mixedTaskBusinessErrorProfileId)
     (analyzed : programAnalysis program = some analysis)
     (committed : (admitStimulus program initialState
       (.startProcess commandId processId instanceId bindings)).outcome = .committed) :
     runningProgramStartState? program instanceId bindings = some (admitStimulus program initialState
       (.startProcess commandId processId instanceId bindings)).state := by
-  obtain ⟨_, snapshots, _⟩ := program_analysis_declarations_absent program analysis analyzed
-  have guarded := serial_committed_ingress_has_checked_predecessor program initialState
-    (.startProcess commandId processId instanceId bindings) committed
-  cases created : runningProgramStartState? program instanceId bindings with
-  | none =>
-      simp [admitStimulus, snapshots, guarded, profile, created,
-        show initialState.effectIncidents = [] from rfl,
-        show initialState.control = .notStarted from rfl] at committed
-      repeat' (split at committed <;> simp_all)
-  | some started =>
-      simp [admitStimulus, snapshots, guarded, profile, created,
-        show initialState.effectIncidents = [] from rfl,
-        show initialState.control = .notStarted from rfl] at committed ⊢
-      repeat' (split at committed <;> simp_all)
+  rcases profile with profile | profile
+  all_goals
+    obtain ⟨_, snapshots, _⟩ := program_analysis_declarations_absent program analysis analyzed
+    have guarded := serial_committed_ingress_has_checked_predecessor program initialState
+      (.startProcess commandId processId instanceId bindings) committed
+    cases created : runningProgramStartState? program instanceId bindings with
+    | none =>
+        simp [admitStimulus, snapshots, guarded, profile, created,
+          show initialState.effectIncidents = [] from rfl,
+          show initialState.control = .notStarted from rfl] at committed
+        repeat' (split at committed <;> simp_all)
+    | some started =>
+        simp [admitStimulus, snapshots, guarded, profile, created,
+          show initialState.effectIncidents = [] from rfl,
+          show initialState.control = .notStarted from rfl] at committed ⊢
+        repeat' (split at committed <;> simp_all)
 
 /-- The actual admitted Start establishes the root lifetime, issuance frame, graph position and data obligations together. -/
 theorem committed_start_has_invariant (program : Program) (analysis : Analysis)
     (commandId processId instanceId : SemanticId) (bindings : List VariableBinding)
-    (profile : program.identity.semanticProfile = mixedTaskControlFlowProfileId)
+    (profile : program.identity.semanticProfile = mixedTaskControlFlowProfileId ∨
+      program.identity.semanticProfile = mixedTaskBusinessErrorProfileId)
     (analyzed : programAnalysis program = some analysis)
     (committed : (admitStimulus program initialState
       (.startProcess commandId processId instanceId bindings)).outcome = .committed) :
@@ -174,9 +177,9 @@ theorem position_frame (program : Program) (analysis : Analysis) (frontier : Opt
   | token vertex member token fields consumer bound => exact .token vertex member token (same.trans fields) consumer bound
   | human vertex member wait id origin input fields declared projected metadata owned =>
       exact .human vertex member wait id origin input (same.trans fields) declared projected metadata owned
-  | effect vertex member wait id origin input effect fields declared projected element descriptor outputs snapshot route owned =>
+  | effect vertex member wait id origin input effect fields declared projected element descriptor outputs snapshot owned =>
       exact .effect vertex member wait id origin input effect (same.trans fields) declared projected
-        element descriptor outputs snapshot route owned
+        element descriptor outputs snapshot owned
   | finished fields => exact .finished (same.trans fields)
 
 theorem admitted_start_id (vertices : List Vertex) (analysis : Analysis)
@@ -222,7 +225,7 @@ theorem human_completion_preserves_position (program : Program) (analysis : Anal
     | token vertex member token fields consumer bound =>
         simp only [frontierFields, Prod.mk.injEq] at fields
         simp [fields.2.2.1] at live
-    | effect vertex member wait id origin input effect fields declared projected element descriptor outputs snapshot route owned =>
+    | effect vertex member wait id origin input effect fields declared projected element descriptor outputs snapshot owned =>
         simp only [frontierFields, Prod.mk.injEq] at fields
         simp [fields.2.2.1] at live
     | finished fields =>
@@ -261,72 +264,73 @@ theorem effect_completion_preserves_position (program : Program) (analysis : Ana
     (before after : RuntimeState) (effectId : EffectOccurrenceId) (result : EffectExecutionResult)
     (wellFormed : programWellFormed program = true) (analyzed : programAnalysis program = some analysis) (indexed : AtPosition program analysis before)
     (owner : ScopeOccurrenceId) (framed : RootFrame owner before)
-    (completed : completeSerialEffect? program before effectId result = some after) :
+    (completed : completeBusinessEffect? (SerialBusinessTask.programHandlers program) before effectId result = some after) :
     RootFrame owner after ∧ AtPosition program analysis after := by
   obtain ⟨tokensOwned, humansOwned, effectsOwned, life, foreign, issued⟩ := framed
   obtain ⟨frontier, position, available, canonical⟩ := indexed
   have graph := program_analysis_graph program analysis analyzed
-  have sound := completeSerialEffect_sound program before after effectId result completed
-  cases sound with
-  | commit selected scope patch bindings occurrence owned mapped =>
-    have live : selected ∈ before.effectWaits := (List.mem_filter.mp
-      (show selected ∈ before.effectWaits.filter (effectOccurrenceMatches effectId) by rw [occurrence]; simp)).1
-    have runningLife : before.control = .running owner.processInstanceId ∧
-        before.scopeOccurrences = [{ id := owner, parent := none }] := by
-      rcases life with running | ⟨_, _, _, _, empty, _⟩
-      · exact running
-      · simp [empty] at live
-    have root := effectsOwned selected live
-    cases position with
-    | pending vertex member start kind fields =>
-        simp only [frontierFields, Prod.mk.injEq] at fields
-        simp [fields.2.2.2.1] at live
-    | token vertex member token fields consumer bound =>
-        simp only [frontierFields, Prod.mk.injEq] at fields
-        simp [fields.2.2.2.1] at live
-    | human vertex member wait id origin input fields declared projected metadata owned =>
-        simp only [frontierFields, Prod.mk.injEq] at fields
-        simp [fields.2.2.2.1] at live
-    | finished fields =>
-        simp only [frontierFields, Prod.mk.injEq] at fields
-        simp [fields.2.2.2.1] at live
-    | effect vertex member wait id origin input effect fields declared projected element descriptor outputs snapshot route owned =>
-        simp only [frontierFields, Prod.mk.injEq] at fields
-        have same : selected = wait := by simpa [fields.2.2.2.1] using live
-        subst selected
-        have localMatch : activityScopeMatches effectId
+  obtain ⟨selected, scope, patch, bindings, output, occurrence, owned, _, selectedOutput, mapped, successor⟩ :=
+    business_completion_facts (SerialBusinessTask.programHandlers program) before after effectId result completed
+  subst after
+  have live : selected ∈ before.effectWaits := (List.mem_filter.mp
+    (show selected ∈ before.effectWaits.filter (effectOccurrenceMatches effectId) by rw [occurrence]; simp)).1
+  have runningLife : before.control = .running owner.processInstanceId ∧
+      before.scopeOccurrences = [{ id := owner, parent := none }] := by
+    rcases life with running | ⟨_, _, _, _, empty, _⟩
+    · exact running
+    · simp [empty] at live
+  have root := effectsOwned selected live
+  cases position with
+  | pending vertex member start kind fields =>
+      simp only [frontierFields, Prod.mk.injEq] at fields
+      simp [fields.2.2.2.1] at live
+  | token vertex member token fields consumer bound =>
+      simp only [frontierFields, Prod.mk.injEq] at fields
+      simp [fields.2.2.2.1] at live
+  | human vertex member wait id origin input fields declared projected metadata owned =>
+      simp only [frontierFields, Prod.mk.injEq] at fields
+      simp [fields.2.2.2.1] at live
+  | finished fields =>
+      simp only [frontierFields, Prod.mk.injEq] at fields
+      simp [fields.2.2.2.1] at live
+  | effect vertex member wait id origin input effect fields declared projected element descriptor outputs snapshot owned =>
+      simp only [frontierFields, Prod.mk.injEq] at fields
+      have same : selected = wait := by simpa [fields.2.2.2.1] using live
+      subst selected
+      have localMatch : activityScopeMatches effectId
+          { owner := .effectOccurrence ⟨wait.processInstanceId, ⟨wait.elementId.value⟩, wait.activation⟩,
+            bindings := wait.arguments } = true := by
+        cases matched : activityScopeMatches effectId
             { owner := .effectOccurrence ⟨wait.processInstanceId, ⟨wait.elementId.value⟩, wait.activation⟩,
-              bindings := wait.arguments } = true := by
-          cases matched : activityScopeMatches effectId
-              { owner := .effectOccurrence ⟨wait.processInstanceId, ⟨wait.elementId.value⟩, wait.activation⟩,
-                bindings := wait.arguments } <;> simp_all
-        simp [operationVertex?, Option.bind_eq_some_iff] at projected
-        obtain ⟨admitted, nextId, consumer, vertexEq⟩ := projected
-        have mappings : SerialBusinessTask.mappingsValid (SerialBusinessTask.programHandlers program) effect.inputMappings effect.outputMappings = true := admitted.2
-        have nextOutput : vertex.outputs = [nextId] := by rw [← vertexEq]
-        have targets : vertex.writes = wait.outputMappings.map (·.target) := by rw [← vertexEq, ← outputs]
-        have edge : nextId ∈ vertex.outputs := by simp [nextOutput]
-        obtain ⟨next, nextMember, named⟩ := output_has_vertex analysis.vertices analysis graph vertex member nextId edge
-        refine ⟨?_, ?_⟩
-        · refine ⟨?_, humansOwned, ?_, Or.inl runningLife, foreign, issued⟩ <;>
-            simp [fields.2.2.2.1, fields.2.1, root.1, addToken, canonicalInsertBy]
-        refine ⟨some next, ?_, ?_, ?_⟩
-        · apply Position.token next nextMember ⟨wait.output, wait.owner⟩
-          · simp [frontierFields, fields.1, fields.2.1, fields.2.2.1, fields.2.2.2.1,
-              fields.2.2.2.2, localMatch, addToken, canonicalInsertBy]
-          · simpa [named] using consumer
-          · exact SerialBusinessTask.owned_operation_port program (.awaitEffect id origin input wait.output effect none) wait.output wait.owner
-              wellFormed declared rfl (by change wait.output ∈ [input, wait.output]; simp) owned
-        · change InputsAvailable analysis.vertices next.id bindings
-          rw [named]
-          exact service_patch_preserves_available analysis.vertices vertex nextId (SerialBusinessTask.programHandlers program) wait.outputMappings
-            before.variables.process.bindings patch bindings member edge targets available mapped
-        · have mappedOutputs : SerialBusinessTask.mappingsValid (SerialBusinessTask.programHandlers program) effect.inputMappings wait.outputMappings = true := by
-            simpa [outputs] using mappings
-          exact SerialBusinessTask.serial_patch_preserves_domain _ _ _ _ _ _
-            (strictlySortedStrings_nodup _ (Bool.and_eq_true_iff.mp canonical).1)
-            (strictlySortedStrings_nodup _ (Bool.and_eq_true_iff.mp (Bool.and_eq_true_iff.mp (Bool.and_eq_true_iff.mp mappedOutputs).1).1).2)
-            canonical mappedOutputs mapped
+              bindings := wait.arguments } <;> simp_all
+      have data := service_projection_data program vertex id origin input wait.output effect wait.bpmnErrorRoute projected
+      have mappings := data.2.1
+      have targets : vertex.writes = wait.outputMappings.map (·.target) := by simpa [outputs] using data.2.2.2
+      have outputMember := selected_effect_output_declared wait result output id origin input effect selectedOutput
+      obtain ⟨nextId, edge, consumer⟩ := operation_output_consumer program
+        (.awaitEffect id origin input wait.output effect wait.bpmnErrorRoute) vertex output projected outputMember
+      obtain ⟨next, nextMember, named⟩ := output_has_vertex analysis.vertices analysis graph vertex member nextId edge
+      refine ⟨?_, ?_⟩
+      · refine ⟨?_, humansOwned, ?_, Or.inl runningLife, foreign, issued⟩ <;>
+          simp [fields.2.2.2.1, fields.2.1, root.1, addToken, canonicalInsertBy]
+      refine ⟨some next, ?_, ?_, ?_⟩
+      · apply Position.token next nextMember ⟨output, wait.owner⟩
+        · simp [frontierFields, fields.1, fields.2.1, fields.2.2.1, fields.2.2.2.1,
+            fields.2.2.2.2, localMatch, addToken, canonicalInsertBy]
+        · simpa [named] using consumer
+        · apply SerialBusinessTask.owned_operation_port program (.awaitEffect id origin input wait.output effect wait.bpmnErrorRoute) output wait.owner
+            wellFormed declared rfl ?_ owned
+          cases routeEq : wait.bpmnErrorRoute <;> simp_all [operationControlPlaces, operationOutputs, SemanticProcess.operationOutputs]
+      · change InputsAvailable analysis.vertices next.id bindings
+        rw [named]
+        exact service_patch_preserves_available analysis.vertices vertex nextId (SerialBusinessTask.programHandlers program) wait.outputMappings
+          before.variables.process.bindings patch bindings member edge targets available mapped
+      · have mappedOutputs : SerialBusinessTask.mappingsValid (SerialBusinessTask.programHandlers program) effect.inputMappings wait.outputMappings = true := by
+          simpa [outputs] using mappings
+        exact SerialBusinessTask.serial_patch_preserves_domain _ _ _ _ _ _
+          (strictlySortedStrings_nodup _ (Bool.and_eq_true_iff.mp canonical).1)
+          (strictlySortedStrings_nodup _ (Bool.and_eq_true_iff.mp (Bool.and_eq_true_iff.mp (Bool.and_eq_true_iff.mp mappedOutputs).1).1).2)
+          canonical mappedOutputs mapped
 
 def FirePhase (before : RuntimeState) (operation : SemanticOperation) (owner : ScopeOccurrenceId) : Prop :=
   (before.initiationPending = true ∧ (match operation with | .initiate .. => true | _ => false) = true) ∨
@@ -365,14 +369,11 @@ theorem fire_phase (program : Program) (analysis : Analysis) (before after : Run
         obtain ⟨root, found, _⟩ := active
         exact Or.inr (Or.inl (by simpa [operationInputs] using tokenPhase input root found))
   case awaitEffect id origin input output effect route =>
-    cases route with
-    | some route => contradiction
-    | none =>
-      cases step with
-      | awaitEffect _ _ _ _ _ _ _ _ active =>
-          simp only [awaitEffectState?, bind, pure, Option.bind_eq_some_iff] at active
-          obtain ⟨root, found, _⟩ := active
-          exact Or.inr (Or.inl (by simpa [operationInputs] using tokenPhase input root found))
+    cases step with
+    | awaitEffect _ _ _ _ _ _ _ _ active =>
+        simp only [awaitEffectState?, bind, pure, Option.bind_eq_some_iff] at active
+        obtain ⟨root, found, _⟩ := active
+        exact Or.inr (Or.inl (by simpa [operationInputs] using tokenPhase input root found))
   case choose id origin input candidates default defaultOrigin =>
     cases step with
     | choose _ _ _ _ _ _ _ _ active =>
@@ -499,7 +500,7 @@ theorem position_guard (program : Program) (analysis : Analysis) (state : Runtim
       cases position with
       | pending vertex included start kind fields => simp_all [frontierFields]
       | human vertex included wait id origin input fields declared projected metadata owned => simp_all [frontierFields]
-      | effect vertex included wait id origin input effect fields declared projected element descriptor outputs snapshot route owned => simp_all [frontierFields]
+      | effect vertex included wait id origin input effect fields declared projected element descriptor outputs snapshot owned => simp_all [frontierFields]
       | finished fields => simp_all [frontierFields]
       | token vertex included token fields consumer bound =>
         simp only [frontierFields, Prod.mk.injEq] at fields
@@ -566,8 +567,8 @@ theorem position_guard (program : Program) (analysis : Analysis) (state : Runtim
 theorem position_wait_guards (program : Program) (analysis : Analysis) (state : RuntimeState)
     (owner : ScopeOccurrenceId) (wellFormed : programWellFormed program = true)
     (root : DeclaredRoot program owner) (framed : RootFrame owner state)
-    (indexed : AtPosition program analysis state) :
-    serialRuntimeAssociationsValid program state = true ∧
+    (indexed : AtPosition program analysis state) (analyzed : programAnalysis program = some analysis) :
+    serialRuntimeAssociationsValid program state (program.identity.semanticProfile == mixedTaskBusinessErrorProfileId) = true ∧
       waitDeclarationsValid program owner.processInstanceId state = true := by
   obtain ⟨definition, scopes, parent, origin, key, activation⟩ := root
   have frameParts := framed
@@ -590,10 +591,12 @@ theorem position_wait_guards (program : Program) (analysis : Analysis) (state : 
           userTaskWaitDeclarers_eq_keyFilter, declaredByExactlyOneOwnedOperation, SemanticOperation.id]
         with_unfolding_all exact congrArg List.length census
       · simp_all
-  | effect vertex included wait id origin input effect fields declared projected element descriptor outputs snapshot route owned =>
-      have census := SerialBusinessTask.effect_wait_census program wait id origin input effect wellFormed declared element descriptor outputs route snapshot
-      have aligned := programWellFormed_awaitEffect_elements_align program wellFormed id origin input wait.output effect none declared
-      have unique := programWellFormed_waitDeclarer program (.awaitEffect id origin input wait.output effect none)
+  | effect vertex included wait id origin input effect fields declared projected element descriptor outputs snapshot owned =>
+      have admitted := analyzed_effect_route_admitted program analysis id origin input wait.output effect wait.bpmnErrorRoute analyzed declared
+      have census := business_effect_wait_census program wait id origin input effect
+        (program.identity.semanticProfile == mixedTaskBusinessErrorProfileId) wellFormed declared element descriptor outputs admitted snapshot
+      have aligned := programWellFormed_awaitEffect_elements_align program wellFormed id origin input wait.output effect wait.bpmnErrorRoute declared
+      have unique := programWellFormed_waitDeclarer program (.awaitEffect id origin input wait.output effect wait.bpmnErrorRoute)
         (effectWaitDeclarationKey wait.elementId) wellFormed declared
         (by simp [operationDeclaresWaitKey, operationWaitDeclarationKeys, aligned, element])
       simp only [frontierFields, Prod.mk.injEq] at fields
@@ -611,7 +614,7 @@ theorem position_runtime_guard (program : Program) (analysis : Analysis) (state 
     (root : DeclaredRoot program owner) (framed : RootFrame owner state)
     (indexed : AtPosition program analysis state) : runtimeStateWellFormed program owner.processInstanceId state = true := by
   have positionValid := position_guard program analysis state owner wellFormed analyzed nonempty root framed indexed
-  have declarations := (position_wait_guards program analysis state owner wellFormed root framed indexed).2
+  have declarations := (position_wait_guards program analysis state owner wellFormed root framed indexed analyzed).2
   obtain ⟨retention, snapshots, compensation, _⟩ := program_analysis_declarations_absent program analysis analyzed
   have allowed := program_analysis_operations_allowed program analysis analyzed
   have sequential : program.operations.all (sequentialMultiInstanceOperationBindingComplete program state) = true := by
@@ -660,7 +663,8 @@ theorem position_runtime_guard (program : Program) (analysis : Analysis) (state 
 
 /-- Exact live identity and admissible supplied data suffice for actual dispatcher success, including nullable fan-out. -/
 theorem admissible_completion_dispatch_commits (program : Program) (analysis : Analysis) (state : RuntimeState)
-    (owner : ScopeOccurrenceId) (stimulus : Stimulus) (profile : program.identity.semanticProfile = mixedTaskControlFlowProfileId)
+    (owner : ScopeOccurrenceId) (stimulus : Stimulus) (profile : program.identity.semanticProfile = mixedTaskControlFlowProfileId ∨
+      program.identity.semanticProfile = mixedTaskBusinessErrorProfileId)
     (analyzed : programAnalysis program = some analysis) (framed : RootFrame owner state)
     (indexed : AtPosition program analysis state) (admissible : SerialBusinessTask.AdmissibleCompletion program state stimulus) :
     (dispatchStimulus program state stimulus).outcome = .committed := by
@@ -684,12 +688,14 @@ theorem admissible_completion_dispatch_commits (program : Program) (analysis : A
         rcases framed.2.2.2.1 with ⟨running, _⟩ | ⟨_, _, _, _, empty, _⟩ <;> simp_all
       have noCompensation : state.compensationHandlerEffectWaits = [] := framed.2.2.2.2.1.2.2.2.2.2.2.2.2.2.2.2.2.1
       obtain ⟨bindings, mapped⟩ := SerialBusinessTask.serial_patch_exists (SerialBusinessTask.programHandlers program) wait.outputMappings state.variables.process.bindings patch sources collected valid count covered
-      simp [dispatchStimulus, snapshots, running, noCompensation, profile, completeSerialEffect?, fields.1,
-        effectOccurrenceMatches, completeSerialActivityScope?, fields.2, activityScopeMatches, localDataOwnerMatches, mapped]
+      rcases profile with profile | profile <;>
+        simp [dispatchStimulus, snapshots, running, noCompensation, profile, completeSerialEffect?, completeBusinessEffect?, effectResultOutput, fields.1,
+          effectOccurrenceMatches, completeSerialActivityScope?, fields.2, activityScopeMatches, localDataOwnerMatches, mapped]
 
 theorem human_admission_preserves_position (program : Program) (analysis : Analysis)
     (before : RuntimeState) (commandId : SemanticId) (taskId : UserTaskInstanceId) (bindings : List VariableBinding)
-    (profile : program.identity.semanticProfile = mixedTaskControlFlowProfileId)
+    (profile : program.identity.semanticProfile = mixedTaskControlFlowProfileId ∨
+      program.identity.semanticProfile = mixedTaskBusinessErrorProfileId)
     (wellFormed : programWellFormed program = true) (analyzed : programAnalysis program = some analysis) (indexed : AtPosition program analysis before)
     (owner : ScopeOccurrenceId) (framed : RootFrame owner before) :
     RootFrame owner (admitStimulus program before (.completeUserTaskInstance commandId taskId bindings)).state ∧
@@ -709,7 +715,8 @@ theorem human_admission_preserves_position (program : Program) (analysis : Analy
 
 theorem effect_admission_preserves_position (program : Program) (analysis : Analysis)
     (before : RuntimeState) (commandId : SemanticId) (effectId : EffectOccurrenceId) (result : EffectExecutionResult)
-    (profile : program.identity.semanticProfile = mixedTaskControlFlowProfileId)
+    (profile : program.identity.semanticProfile = mixedTaskControlFlowProfileId ∨
+      program.identity.semanticProfile = mixedTaskBusinessErrorProfileId)
     (wellFormed : programWellFormed program = true) (analyzed : programAnalysis program = some analysis) (indexed : AtPosition program analysis before)
     (owner : ScopeOccurrenceId) (framed : RootFrame owner before) :
     RootFrame owner (admitStimulus program before (.completeEffect commandId effectId result)).state ∧
@@ -719,30 +726,32 @@ theorem effect_admission_preserves_position (program : Program) (analysis : Anal
   | false => simpa [admitStimulus, snapshots, guarded] using And.intro framed indexed
   | true =>
     rw [serial_completion_admission_eq_dispatch program analysis before _ profile analyzed framed.2.2.2.2.1 guarded trivial]
-    rcases guarded_effect_dispatch_cases program analysis before commandId effectId result profile analyzed guarded with
+    rcases business_profile_effect_dispatch_cases program analysis before commandId effectId result profile analyzed guarded with
       refused | ⟨after, completed, accepted⟩
     · simpa [refused] using And.intro framed indexed
     · rw [accepted]
       exact effect_completion_preserves_position program analysis before after effectId result wellFormed analyzed indexed owner framed completed
 
 theorem indexed_completion_guard (program : Program) (analysis : Analysis) (state : RuntimeState)
-    (owner : ScopeOccurrenceId) (stimulus : Stimulus) (profile : program.identity.semanticProfile = mixedTaskControlFlowProfileId)
+    (owner : ScopeOccurrenceId) (stimulus : Stimulus) (profile : program.identity.semanticProfile = mixedTaskControlFlowProfileId ∨
+      program.identity.semanticProfile = mixedTaskBusinessErrorProfileId)
     (wellFormed : programWellFormed program = true) (capabilities : programProfileCapabilitiesValid program = true)
     (framed : RootFrame owner state) (indexed : AtPosition program analysis state)
-    (associations : serialRuntimeAssociationsValid program state = true)
+    (associations : serialRuntimeAssociationsValid program state (program.identity.semanticProfile == mixedTaskBusinessErrorProfileId) = true)
     (runtime : runtimeStateWellFormed program owner.processInstanceId state = true) (completion : SerialBusinessTask.IsSerialCompletion stimulus) :
     serialBusinessCommandAdmitted program state stimulus = true := by
   obtain ⟨_, _, _, canonical⟩ := indexed
-  rcases framed.2.2.2.1 with ⟨control, _⟩ | ⟨control, _⟩
+  rcases profile with profile | profile <;> rcases framed.2.2.2.1 with ⟨control, _⟩ | ⟨control, _⟩
   all_goals
     unfold serialBusinessCommandAdmitted
-    rw [show (program.identity.semanticProfile != mixedTaskControlFlowProfileId) = false from by rw [profile]; rfl]
-    simp only [Bool.and_false, Bool.false_eq_true, ↓reduceIte, wellFormed, capabilities, canonical, associations, control, runtime, Bool.true_and]
+    simp only [profile] at associations
+    simp only [profile, bne_self_eq_false, Bool.and_false, Bool.false_and, Bool.false_eq_true, ↓reduceIte, wellFormed, capabilities, canonical, associations, control, runtime, Bool.true_and]
     cases stimulus <;> simp only [SerialBusinessTask.IsSerialCompletion] at completion <;> (first | contradiction | rfl)
 
 /-- Both accepted and refused completion commands retain issuance high-water marks, so completing an occurrence cannot make its identity reusable. -/
 theorem completion_preserves_issuance (program : Program) (analysis : Analysis) (before : RuntimeState)
-    (stimulus : Stimulus) (profile : program.identity.semanticProfile = mixedTaskControlFlowProfileId)
+    (stimulus : Stimulus) (profile : program.identity.semanticProfile = mixedTaskControlFlowProfileId ∨
+      program.identity.semanticProfile = mixedTaskBusinessErrorProfileId)
     (analyzed : programAnalysis program = some analysis) (foreign : ForeignRuntimeEmpty before)
     (completion : SerialBusinessTask.IsSerialCompletion stimulus) :
     (admitStimulus program before stimulus).state.activations = before.activations ∧
@@ -764,11 +773,13 @@ theorem completion_preserves_issuance (program : Program) (analysis : Analysis) 
         · cases Option.some.inj completed
           exact ⟨rfl, rfl⟩
     case completeEffect commandId effectId result =>
-      rcases guarded_effect_dispatch_cases program analysis before commandId effectId result profile analyzed guarded with
+      rcases business_profile_effect_dispatch_cases program analysis before commandId effectId result profile analyzed guarded with
         refused | ⟨after, completed, committed⟩
       · simp [refused]
       · rw [committed]
-        cases completeSerialEffect_sound program before after effectId result completed
+        obtain ⟨_, _, _, _, _, _, _, _, _, _, successor⟩ :=
+          business_completion_facts (SerialBusinessTask.programHandlers program) before after effectId result completed
+        rw [successor]
         exact ⟨rfl, rfl⟩
 
 end BpmnSemantics.SemanticProcess.MixedTaskControlFlow

@@ -326,7 +326,10 @@ import BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmissionLaws
 import BpmnSemantics.SemanticProcess.MixedTaskControlFlowDataProofs
 import BpmnSemantics.SemanticProcess.MixedTaskControlFlowLifecycleProofs
 import BpmnSemantics.SemanticProcess.MixedTaskControlFlowProgressProofs
+import BpmnSemantics.SemanticProcess.MixedTaskBusinessErrorCompletionProofs
+import BpmnSemantics.SemanticProcess.MixedTaskBusinessErrorReachabilityProofs
 import BpmnSemantics.SerialBusinessTaskConformance
+import BpmnSemantics.MixedTaskBusinessErrorConformance
 
 /-! Root of the BPMN semantic contract library.
 

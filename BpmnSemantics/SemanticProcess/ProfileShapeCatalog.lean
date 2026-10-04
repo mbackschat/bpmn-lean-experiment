@@ -514,7 +514,7 @@ inductive ProfileGraphPolicy where
   deriving Repr, DecidableEq
 
 def profileGraphPolicy? (profile : String) : Option ProfileGraphPolicy :=
-  if profile = mixedTaskControlFlowProfileId.value then some .mixedTaskResumptionBounded
+  if profile = mixedTaskControlFlowProfileId.value || profile = mixedTaskBusinessErrorProfileId.value then some .mixedTaskResumptionBounded
   else if profile = "bpmn-2.0.2-user-task-cycle-draft" then
     some .resumptionBounded
   else if profile = transactionCancellationCheckpointProfileId.value ||
@@ -554,7 +554,7 @@ def checkedProfileCapabilitiesValid (source : CheckedProcess) : Bool :=
   else source.interruptingMessageEventSubProcesses.isEmpty &&
   if source.identity.semanticProfile == callDataCheckpointProfileId then
     callDataCheckedGraph source
-  else if source.identity.semanticProfile == mixedTaskControlFlowProfileId then
+  else if source.identity.semanticProfile == mixedTaskControlFlowProfileId || source.identity.semanticProfile == mixedTaskBusinessErrorProfileId then
     (MixedTaskControlFlow.checkedAnalysis source).isSome
   else if source.identity.semanticProfile == serialBusinessTaskProfileId then
     (SerialBusinessTask.checkedAnalysis source).isSome
@@ -670,7 +670,7 @@ def programProfileCapabilitiesValid (program : Program) : Bool :=
             program.identity.semanticProfile.value program.operations
           && messageKeyCorrelationProgramPayloadValid program &&
           compensationSourceProgramProfileValid program
-    | none => if program.identity.semanticProfile == mixedTaskControlFlowProfileId then
+    | none => if program.identity.semanticProfile == mixedTaskControlFlowProfileId || program.identity.semanticProfile == mixedTaskBusinessErrorProfileId then
         (MixedTaskControlFlow.programAnalysis program).isSome
       else if program.identity.semanticProfile == serialBusinessTaskProfileId then
         (SerialBusinessTask.programAnalysis program).isSome

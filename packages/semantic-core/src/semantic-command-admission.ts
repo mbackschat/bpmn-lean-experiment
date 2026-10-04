@@ -1,6 +1,6 @@
 import { mixedTaskControlStimulusDataAdmitted } from "./mixed-task-control-flow-admission.js";
 import { serialBusinessStimulusDataAdmitted } from "./serial-business-task-admission.js";
-import { MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID, SERIAL_BUSINESS_TASK_CHECKPOINT_PROFILE_ID } from "./semantic-profile-catalog.js";
+import { MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID, MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID, SERIAL_BUSINESS_TASK_CHECKPOINT_PROFILE_ID } from "./semantic-profile-catalog.js";
 import { callDataStateIsValid } from "./call-data-state-validation.js";
 import { deliverEventSubProcessMessage } from "./interrupting-message-event-subprocess-runtime.js";
 import { callDataStimulusDataAdmitted } from "./call-data-command-admission.js";
@@ -471,7 +471,7 @@ export function admit(
         wait.id,
         wait.outputMappings,
         stimulus.result.localPatch,
-        stimulus.result.kind === EffectExecutionResultKind.BpmnError || program.identity.semanticProfile === MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID || program.identity.semanticProfile === SERIAL_BUSINESS_TASK_CHECKPOINT_PROFILE_ID,
+        stimulus.result.kind === EffectExecutionResultKind.BpmnError || program.identity.semanticProfile === MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID || program.identity.semanticProfile === MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID || program.identity.semanticProfile === SERIAL_BUSINESS_TASK_CHECKPOINT_PROFILE_ID,
       );
       if (variables === null) {
         return { outcome: CommandOutcome.Rejected, state };

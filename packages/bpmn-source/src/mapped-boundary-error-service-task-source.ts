@@ -197,7 +197,7 @@ function projectProcess(
   return accepted(source, policy, processId, nodes, flows, route);
 }
 
-function projectBoundaryRoute(
+export function projectBoundaryRoute(
   boundary: ElementRecord,
   service: ElementRecord,
   error: ElementRecord,
@@ -245,7 +245,7 @@ function projectBoundaryRoute(
   };
 }
 
-function isExactRootError(value: ElementRecord): boolean {
+export function isExactRootError(value: ElementRecord): boolean {
   return value.$type === "bpmn:Error" &&
     readId(value) !== undefined &&
     typeof value.errorCode === "string" &&

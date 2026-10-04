@@ -8,6 +8,8 @@ This contributor map assigns package responsibilities and Temporal SDK ownership
 
 The [mixed-task refusal witness](protocol/test/mixed-task-control-flow-host-refusal.test.ts) likewise checks `mixedTaskControlFlowQualificationUnavailable` after confirming semantic execution support for the [mixed-task profile](../../docs/capsules/MIXED-TASK-CONTROL-FLOW-PROPOSAL.md).
 
+The [business Error refusal witness](protocol/test/mixed-task-business-error-host-admission.test.ts) verifies the same typed refusal for the [Error-recovery extension](../../docs/capsules/MIXED-TASK-BUSINESS-ERROR-PROPOSAL.md), including a Program with its operations removed.
+
 ## Native deployment boundaries
 
 - [External Worker runtime](worker/src/external-temporal-runtime.ts) binds exact loaded bytes to native `PINNED` options. [Fresh initialization](worker/src/workflow-deployment-initialization.ts) creates the Namespace before Worker registration and initial-Current selection; its [matrix](worker/test/workflow-deployment-initialization.test.ts) guards failure ordering and routing drift.

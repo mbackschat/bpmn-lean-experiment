@@ -73,38 +73,44 @@ theorem admitted_start_inputs_available (program : Program) (analysis : Analysis
 /-- Public committed Start establishes availability rather than accepting it as a premise. -/
 theorem committed_start_inputs_available (program : Program) (analysis : Analysis)
     (commandId processId instanceId : SemanticId) (bindings : List VariableBinding)
-    (profile : program.identity.semanticProfile = mixedTaskControlFlowProfileId)
+    (profile : program.identity.semanticProfile = mixedTaskControlFlowProfileId ∨
+      program.identity.semanticProfile = mixedTaskBusinessErrorProfileId)
     (analyzed : programAnalysis program = some analysis)
     (committed : (admitStimulus program initialState
       (.startProcess commandId processId instanceId bindings)).outcome = .committed) :
     SerialBusinessTask.bindingsValid (SerialBusinessTask.programHandlers program) bindings = true ∧
       InputsAvailable analysis.vertices analysis.startId bindings := by
-  apply admitted_start_inputs_available program analysis bindings analyzed
-  obtain ⟨_, snapshots, _⟩ := program_analysis_declarations_absent program analysis analyzed
-  cases admitted : startBindingsAdmitted program bindings with
-  | true => rfl
-  | false => simp [admitStimulus, snapshots, initialState, profile, admitted] at committed
+  rcases profile with profile | profile
+  all_goals
+    apply admitted_start_inputs_available program analysis bindings analyzed
+    obtain ⟨_, snapshots, _⟩ := program_analysis_declarations_absent program analysis analyzed
+    cases admitted : startBindingsAdmitted program bindings with
+    | true => rfl
+    | false => simp [admitStimulus, snapshots, initialState, profile, admitted] at committed
 
 /-- Missing required data refuses the actual command and preserves the complete initial state. -/
 theorem missing_required_start_refused (program : Program) (analysis : Analysis)
     (commandId processId instanceId : SemanticId) (bindings : List VariableBinding) (name : String)
-    (profile : program.identity.semanticProfile = mixedTaskControlFlowProfileId)
+    (profile : program.identity.semanticProfile = mixedTaskControlFlowProfileId ∨
+      program.identity.semanticProfile = mixedTaskBusinessErrorProfileId)
     (analyzed : programAnalysis program = some analysis) (required : name ∈ analysis.required)
     (missing : ¬ SerialBusinessTask.BindingPresent bindings name) :
     admitStimulus program initialState (.startProcess commandId processId instanceId bindings) =
       { outcome := .rejected, state := initialState } := by
-  have refused : startBindingsAdmitted program bindings = false := by
-    cases admitted : startBindingsAdmitted program bindings with
-    | false => rfl
-    | true =>
-      have data : SerialBusinessTask.bindingsValid (SerialBusinessTask.programHandlers program) bindings = true ∧
-          analysis.required.all (fun key => bindings.any (·.name == key)) = true := by
-        simpa [startBindingsAdmitted, analyzed] using admitted
-      obtain ⟨binding, member, named⟩ := List.any_eq_true.mp
-        (List.all_eq_true.mp data.2 name required)
-      exact False.elim (missing ⟨binding, member, by simpa using named⟩)
-  obtain ⟨_, snapshots, _⟩ := program_analysis_declarations_absent program analysis analyzed
-  simp [admitStimulus, snapshots, initialState, profile, refused]
+  rcases profile with profile | profile
+  all_goals
+    have refused : startBindingsAdmitted program bindings = false := by
+      cases admitted : startBindingsAdmitted program bindings with
+      | false => rfl
+      | true =>
+        have data : SerialBusinessTask.bindingsValid (SerialBusinessTask.programHandlers program) bindings = true ∧
+            analysis.required.all (fun key => bindings.any (·.name == key)) = true := by
+          simpa [startBindingsAdmitted, analyzed] using admitted
+        obtain ⟨binding, member, named⟩ := List.any_eq_true.mp
+          (List.all_eq_true.mp data.2 name required)
+        exact False.elim (missing ⟨binding, member, by simpa using named⟩)
+    obtain ⟨_, snapshots, _⟩ := program_analysis_declarations_absent program analysis analyzed
+    simp [admitStimulus, snapshots, initialState, profile, refused]
 
 private theorem prepend_edge {α : Type} (edges : List (GraphEdge α)) (source middle target : α)
     (edge : { source, target := middle } ∈ edges) (path : GraphReaches edges middle target) :
@@ -159,7 +165,7 @@ theorem human_patch_preserves_available (vertices : List Vertex) (vertex : Verte
     (nonwriter_edge_preserves_available vertices vertex target before member output (by simp [human]) available)
   exact SerialBusinessTask.merge_preserves_binding_presence before patch
 
-/-- Successful mapped completion supplies the barrier writes and preserves all other names. -/
+/-- MTCF-DATA-01 and MBERR-DATA-01 require the same barrier writes on every declared continuation. -/
 theorem service_patch_preserves_available (vertices : List Vertex) (vertex : Vertex)
     (target : String) (handlers : List String) (outputs : List VariableMapping)
     (before patch after : List VariableBinding) (member : vertex ∈ vertices)
@@ -178,6 +184,32 @@ theorem service_patch_preserves_available (vertices : List Vertex) (vertex : Ver
       (prepend_edge _ vertex.id target reader.id
         (writer_barrier_edge vertices vertex name target member output (fun h => written h.2)) path)
 
+/-- Exact local results establish the successor data; MBERR-DATA-01 does not assume successful mapping or available successor inputs. -/
+theorem valid_service_patch_establishes_continuation_data
+    (vertices : List Vertex) (vertex : Vertex) (target : String)
+    (handlers sources : List String) (inputs outputs : List VariableMapping)
+    (before patch : List VariableBinding) (member : vertex ∈ vertices)
+    (output : target ∈ vertex.outputs) (writes : vertex.writes = outputs.map (·.target))
+    (available : InputsAvailable vertices vertex.id before)
+    (canonical : SerialBusinessTask.bindingsValid handlers before = true)
+    (mappings : SerialBusinessTask.mappingsValid handlers inputs outputs = true)
+    (collected : outputs.mapM (fun mapping => match mapping.expression with
+      | .localVariable name => some name | _ => none) = some sources)
+    (valid : SerialBusinessTask.bindingsValid handlers patch = true)
+    (count : sources.eraseDups.length = patch.length)
+    (covered : sources.all (fun name => patch.any (·.name == name)) = true) :
+    ∃ after, serialEffectPatch? handlers outputs before patch = some after ∧
+      InputsAvailable vertices target after ∧ SerialBusinessTask.bindingsValid handlers after = true := by
+  obtain ⟨after, completed⟩ := SerialBusinessTask.serial_patch_exists
+    handlers outputs before patch sources collected valid count covered
+  refine ⟨after, completed, service_patch_preserves_available vertices vertex target handlers outputs
+    before patch after member output writes available completed, ?_⟩
+  exact SerialBusinessTask.serial_patch_preserves_domain handlers inputs outputs before patch after
+    (strictlySortedStrings_nodup _ (Bool.and_eq_true_iff.mp canonical).1)
+    (strictlySortedStrings_nodup _
+      (Bool.and_eq_true_iff.mp (Bool.and_eq_true_iff.mp (Bool.and_eq_true_iff.mp mappings).1).1).2)
+    canonical mappings completed
+
 /-- Canonical available Process data makes actual immutable input evaluation total. -/
 theorem available_inputs_evaluable (vertices : List Vertex) (vertex : Vertex)
     (handlers : List String) (bindings : List VariableBinding) (inputs outputs : List VariableMapping)
@@ -192,22 +224,33 @@ theorem available_inputs_evaluable (vertices : List Vertex) (vertex : Vertex)
   apply SerialBusinessTask.canonical_present_binding_evaluable handlers bindings name canonical
   exact available_current_read vertices vertex bindings member available name (by simpa [reads] using read)
 
+/-- MBERR-DATA-01 attaches the same mapping facts to either continuation without assuming a normal-only Service declaration. -/
+theorem service_projection_data (program : Program) (vertex : Vertex)
+    (id : OperationId) (origin : BpmnElementOrigin) (input output : ControlPlaceId)
+    (effect : EffectDefinition) (route : Option BpmnErrorRoute)
+    (projected : operationVertex? program (.awaitEffect id origin input output effect route) = some vertex) :
+    vertex.kind = .service ∧
+      SerialBusinessTask.mappingsValid (SerialBusinessTask.programHandlers program)
+        effect.inputMappings effect.outputMappings = true ∧
+      vertex.reads = SerialBusinessTask.readNames effect.inputMappings ∧
+      vertex.writes = effect.outputMappings.map (·.target) := by
+  cases route <;> simp_all [operationVertex?, Option.bind_eq_some_iff] <;> grind
+
 theorem current_service_inputs_evaluable (program : Program) (state : RuntimeState)
     (vertices : List Vertex) (vertex : Vertex) (id : OperationId) (origin : BpmnElementOrigin)
-    (input output : ControlPlaceId) (effect : EffectDefinition) (member : vertex ∈ vertices)
-    (projected : operationVertex? program (.awaitEffect id origin input output effect none) = some vertex)
+    (input output : ControlPlaceId) (effect : EffectDefinition) {route : Option BpmnErrorRoute}
+    (member : vertex ∈ vertices)
+    (projected : operationVertex? program (.awaitEffect id origin input output effect route) = some vertex)
     (available : InputsAvailable vertices vertex.id state.variables.process.bindings)
     (canonical : SerialBusinessTask.bindingsValid (SerialBusinessTask.programHandlers program)
       state.variables.process.bindings = true) :
     ∃ arguments, evaluateEnclosingInputMappings state.variables.process.bindings effect.inputMappings = some arguments := by
-  simp [operationVertex?, Option.bind_eq_some_iff] at projected
-  obtain ⟨admitted, _, _, vertexEq⟩ := projected
+  obtain ⟨_, mappings, reads, _⟩ := service_projection_data program vertex id origin input output effect route projected
   exact available_inputs_evaluable vertices vertex (SerialBusinessTask.programHandlers program)
-    state.variables.process.bindings effect.inputMappings effect.outputMappings member
-    (by simp [← vertexEq]) available canonical admitted.2
+    state.variables.process.bindings effect.inputMappings effect.outputMappings member reads available canonical mappings
 
 def OperationAllowed : SemanticOperation → Prop
-  | .initiate .. | .awaitUserTask .. | .awaitEffect _ _ _ _ _ none
+  | .initiate .. | .awaitUserTask .. | .awaitEffect ..
   | .choose .. | .mergeExclusive .. | .reachNoneEnd .. | .completeScope _ _ _ none => True
   | _ => False
 
@@ -270,8 +313,6 @@ private theorem projected_operation_allowed (program : Program) (operation : Sem
     (vertex : Vertex) (projected : operationVertex? program operation = some vertex) :
     OperationAllowed operation := by
   cases operation <;> simp_all [OperationAllowed, operationVertex?]
-  case awaitEffect id origin input output effect route =>
-    cases route <;> simp_all
 
 theorem program_analysis_completion (program : Program) (analysis : Analysis)
     (analyzed : programAnalysis program = some analysis) :
@@ -381,46 +422,55 @@ theorem program_places_unique_origins (program : Program) (analysis : Analysis)
           split at analyzed
           · contradiction
           · rename_i unique
-            have count : (program.processId.value :: origins.map (·.elementId.value) ++
-                program.controlPlaces.map (·.origin.elementId.value)).eraseDups.length =
-                (program.processId.value :: origins.map (·.elementId.value) ++
-                program.controlPlaces.map (·.origin.elementId.value)).length := by
-              exact (show _ ∧ _ from by simpa [uniqueNames] using unique).2
-            have distinct := StructuredComposition.equal_deduplicated_length_has_unique_names _ count
-            exact (List.nodup_append.mp (List.nodup_cons.mp distinct).2).2.1
+            let names := program.processId.value :: origins.map (·.elementId.value) ++
+              program.controlPlaces.map (·.origin.elementId.value) ++
+              (programRoutes program).flatMap (fun route =>
+                [route.origin.boundaryEventId.value, route.origin.errorDefinitionId.value]) ++
+              ((programRoutes program).map (·.origin.errorElementId.value)).eraseDups
+            have valid : uniqueNames names = true := by simpa [names] using unique
+            have distinct := StructuredComposition.equal_deduplicated_length_has_unique_names names
+              (by simpa only [beq_iff_eq] using (Bool.and_eq_true_iff.mp valid).2)
+            simp only [names, List.nodup_cons, List.nodup_append] at distinct
+            grind
 
 theorem admitted_serial_guard_has_no_foreign_effects (program : Program) (before : RuntimeState)
-    (stimulus : Stimulus) (profile : program.identity.semanticProfile = mixedTaskControlFlowProfileId)
+    (stimulus : Stimulus) (profile : program.identity.semanticProfile = mixedTaskControlFlowProfileId ∨
+      program.identity.semanticProfile = mixedTaskBusinessErrorProfileId)
     (guarded : serialBusinessCommandAdmitted program before stimulus = true) :
     before.effectIncidents = [] ∧ before.compensationHandlerEffectWaits = [] := by
-  unfold serialBusinessCommandAdmitted at guarded
-  rw [show (program.identity.semanticProfile != mixedTaskControlFlowProfileId) = false from by rw [profile]; rfl] at guarded
-  simp only [Bool.and_false, Bool.false_eq_true, ↓reduceIte, Bool.and_eq_true] at guarded
-  have joined := guarded.1.1.2
-  dsimp only [serialRuntimeAssociationsValid] at joined
-  simp only [Bool.and_eq_true] at joined
-  exact ⟨List.isEmpty_iff.mp joined.1.1.1.1.1.1.1.1.1.1.2,
-    List.isEmpty_iff.mp joined.1.1.1.1.2⟩
+  rcases profile with profile | profile
+  all_goals
+    unfold serialBusinessCommandAdmitted at guarded
+    simp only [profile, bne_self_eq_false, Bool.and_false, Bool.false_and, Bool.false_eq_true, ↓reduceIte, Bool.and_eq_true] at guarded
+    have joined := guarded.1.1.2
+    dsimp only [serialRuntimeAssociationsValid] at joined
+    simp only [Bool.and_eq_true] at joined
+    exact ⟨List.isEmpty_iff.mp joined.1.1.1.1.1.1.1.1.1.1.2,
+      List.isEmpty_iff.mp joined.1.1.1.1.2⟩
 
 theorem guarded_program_admission (program : Program) (state : RuntimeState) (stimulus : Stimulus)
-    (profile : program.identity.semanticProfile = mixedTaskControlFlowProfileId)
+    (profile : program.identity.semanticProfile = mixedTaskControlFlowProfileId ∨
+      program.identity.semanticProfile = mixedTaskBusinessErrorProfileId)
     (guarded : serialBusinessCommandAdmitted program state stimulus = true) : programWellFormed program = true ∧ programProfileCapabilitiesValid program = true := by
-  unfold serialBusinessCommandAdmitted at guarded
-  rw [show (program.identity.semanticProfile != mixedTaskControlFlowProfileId) = false from by rw [profile]; rfl] at guarded
-  simp only [Bool.and_false, Bool.false_eq_true, ↓reduceIte, Bool.and_eq_true] at guarded
-  exact guarded.1.1.1.1
+  rcases profile with profile | profile
+  all_goals
+    unfold serialBusinessCommandAdmitted at guarded
+    simp only [profile, bne_self_eq_false, Bool.and_false, Bool.false_and, Bool.false_eq_true, ↓reduceIte, Bool.and_eq_true] at guarded
+    exact guarded.1.1.1.1
 
 theorem guarded_start_instance_nonempty (program : Program) (state : RuntimeState)
     (commandId processId instanceId : SemanticId) (bindings : List VariableBinding)
-    (profile : program.identity.semanticProfile = mixedTaskControlFlowProfileId)
+    (profile : program.identity.semanticProfile = mixedTaskControlFlowProfileId ∨
+      program.identity.semanticProfile = mixedTaskBusinessErrorProfileId)
     (guarded : serialBusinessCommandAdmitted program state
       (.startProcess commandId processId instanceId bindings) = true) : instanceId.value ≠ "" := by
-  unfold serialBusinessCommandAdmitted at guarded
-  rw [show (program.identity.semanticProfile != mixedTaskControlFlowProfileId) = false from by rw [profile]; rfl] at guarded
-  simp only [Bool.and_false, Bool.false_eq_true, ↓reduceIte, Bool.and_eq_true] at guarded
-  have nonempty : instanceId.value.isEmpty = false := by simpa using guarded.2
-  intro empty
-  simp [empty] at nonempty
+  rcases profile with profile | profile
+  all_goals
+    unfold serialBusinessCommandAdmitted at guarded
+    simp only [profile, bne_self_eq_false, Bool.and_false, Bool.false_and, Bool.false_eq_true, ↓reduceIte, Bool.and_eq_true] at guarded
+    have nonempty : instanceId.value.isEmpty = false := by simpa using guarded.2
+    intro empty
+    simp [empty] at nonempty
 
 
 private theorem allowed_filterMap_absent (program : Program) (project : SemanticOperation → Option α)
@@ -494,7 +544,8 @@ theorem completion_foreign_families_absent (program : Program) (analysis : Analy
 /-- The existing User Task dispatcher either refuses exactly or commits its actual raw completion and canonical Process merge. -/
 theorem human_dispatch_cases (program : Program) (analysis : Analysis) (before : RuntimeState)
     (commandId : SemanticId) (taskId : UserTaskInstanceId) (bindings : List VariableBinding)
-    (profile : program.identity.semanticProfile = mixedTaskControlFlowProfileId)
+    (profile : program.identity.semanticProfile = mixedTaskControlFlowProfileId ∨
+      program.identity.semanticProfile = mixedTaskBusinessErrorProfileId)
     (analyzed : programAnalysis program = some analysis) :
     let result := dispatchStimulus program before (.completeUserTaskInstance commandId taskId bindings)
     (result = { outcome := .rejected, state := before } ∧
@@ -506,66 +557,71 @@ theorem human_dispatch_cases (program : Program) (analysis : Analysis) (before :
       result = { outcome := .committed, state :=
         { after with variables := { after.variables with process :=
           { bindings := mergeProcessVariableBindings after.variables.process.bindings bindings } } } } := by
-  dsimp only
-  obtain ⟨noRetention, noSnapshots, _⟩ := program_analysis_declarations_absent program analysis analyzed
-  obtain ⟨noParallel, noSequential, noMessageMonitored, noMessageBounded, noBounded,
-    noInput, noOutput, noMonitored, noComposed⟩ := completion_foreign_families_absent program analysis
-      ⟨taskId.elementId.value⟩ analyzed
-  have ordinary : isCallActivityProgram program = false := by
-    simp [isCallActivityProgram, profile, mixedTaskControlFlowProfileId]
-  have legacy : completeOrdinaryUserTaskWithCompensation? completeUserTask program before taskId =
-      completeUserTask before taskId.processInstanceId ⟨taskId.elementId.value⟩ taskId.activation := by
-    simp [completeOrdinaryUserTaskWithCompensation?, compensationTargetDeclaredForFamily, noRetention]
-  have typed : SerialBusinessTask.bindingsValid (SerialBusinessTask.programHandlers program) bindings = true →
-      processDataBindingsAdmitted program.identity.semanticProfile .userTaskCompletion bindings = true := by
-    intro valid
-    apply List.all_eq_true.mpr
-    intro binding member
-    have scalarValue := (Bool.and_eq_true_iff.mp (List.all_eq_true.mp (Bool.and_eq_true_iff.mp valid).2 binding member)).2
-    cases valueEq : binding.value <;> simp [valueEq, SerialBusinessTask.scalar] at scalarValue
-    all_goals rw [profile]; rfl
-  cases control : before.control <;>
-    simp only [dispatchStimulus, noSnapshots] <;>
-    simp [control, noParallel, noSequential, noMessageMonitored, noMessageBounded,
-      noBounded, noInput, noOutput, noMonitored, noComposed, ordinary, legacy]
-  case running instanceId =>
-    cases completed : completeUserTask before taskId.processInstanceId
-        ⟨taskId.elementId.value⟩ taskId.activation with
-    | none => simp
-    | some after =>
-        simp only
-        split
-        · rename_i accepted
-          have patchValid : SerialBusinessTask.bindingsValid (SerialBusinessTask.programHandlers program) bindings = true := by
-            simpa [profile] using accepted.1.1.2
-          exact Or.inr ⟨patchValid, after, rfl, rfl⟩
-        · rename_i rejected
-          refine Or.inl ⟨rfl, ?_⟩
-          by_cases identity : taskId.processInstanceId = instanceId
-          · by_cases valid : SerialBusinessTask.bindingsValid (SerialBusinessTask.programHandlers program) bindings = true
-            · rw [typed valid] at rejected
-              simp [profile, identity, valid, structuredCompositionOrdinaryCompletionAdmitted,
-                mixedTaskControlFlowProfileId, structuredCompositionCheckpointProfileId] at rejected
-            · exact Or.inr (Or.inl (by simpa using valid))
-          · exact Or.inl (Ne.symm identity)
+  rcases profile with profile | profile
+  all_goals
+    dsimp only
+    obtain ⟨noRetention, noSnapshots, _⟩ := program_analysis_declarations_absent program analysis analyzed
+    obtain ⟨noParallel, noSequential, noMessageMonitored, noMessageBounded, noBounded,
+      noInput, noOutput, noMonitored, noComposed⟩ := completion_foreign_families_absent program analysis
+        ⟨taskId.elementId.value⟩ analyzed
+    have ordinary : isCallActivityProgram program = false := by
+      simp [isCallActivityProgram, profile, mixedTaskControlFlowProfileId, mixedTaskBusinessErrorProfileId]
+    have legacy : completeOrdinaryUserTaskWithCompensation? completeUserTask program before taskId =
+        completeUserTask before taskId.processInstanceId ⟨taskId.elementId.value⟩ taskId.activation := by
+      simp [completeOrdinaryUserTaskWithCompensation?, compensationTargetDeclaredForFamily, noRetention]
+    have typed : SerialBusinessTask.bindingsValid (SerialBusinessTask.programHandlers program) bindings = true →
+        processDataBindingsAdmitted program.identity.semanticProfile .userTaskCompletion bindings = true := by
+      intro valid
+      apply List.all_eq_true.mpr
+      intro binding member
+      have scalarValue := (Bool.and_eq_true_iff.mp (List.all_eq_true.mp (Bool.and_eq_true_iff.mp valid).2 binding member)).2
+      cases valueEq : binding.value <;> simp [valueEq, SerialBusinessTask.scalar] at scalarValue
+      all_goals rw [profile]; rfl
+    cases control : before.control <;>
+      simp only [dispatchStimulus, noSnapshots] <;>
+      simp [control, noParallel, noSequential, noMessageMonitored, noMessageBounded,
+        noBounded, noInput, noOutput, noMonitored, noComposed, ordinary, legacy]
+    case running instanceId =>
+      cases completed : completeUserTask before taskId.processInstanceId
+          ⟨taskId.elementId.value⟩ taskId.activation with
+      | none => simp
+      | some after =>
+          simp only
+          split
+          · rename_i accepted
+            have patchValid : SerialBusinessTask.bindingsValid (SerialBusinessTask.programHandlers program) bindings = true := by
+              simpa [profile] using accepted.1.1.2
+            exact Or.inr ⟨patchValid, after, rfl, rfl⟩
+          · rename_i rejected
+            refine Or.inl ⟨rfl, ?_⟩
+            by_cases identity : taskId.processInstanceId = instanceId
+            · by_cases valid : SerialBusinessTask.bindingsValid (SerialBusinessTask.programHandlers program) bindings = true
+              · rw [typed valid] at rejected
+                simp [profile, identity, valid, structuredCompositionOrdinaryCompletionAdmitted,
+                  mixedTaskControlFlowProfileId, mixedTaskBusinessErrorProfileId, structuredCompositionCheckpointProfileId] at rejected
+              · exact Or.inr (Or.inl (by simpa using valid))
+            · exact Or.inl (Ne.symm identity)
 
 
 theorem serial_completion_admission_eq_dispatch (program : Program) (analysis : Analysis)
     (before : RuntimeState) (stimulus : Stimulus)
-    (profile : program.identity.semanticProfile = mixedTaskControlFlowProfileId)
+    (profile : program.identity.semanticProfile = mixedTaskControlFlowProfileId ∨
+      program.identity.semanticProfile = mixedTaskBusinessErrorProfileId)
     (analyzed : programAnalysis program = some analysis) (foreign : SerialBusinessTask.ForeignRuntimeEmpty before)
     (guarded : serialBusinessCommandAdmitted program before stimulus = true)
     (completion : SerialBusinessTask.IsSerialCompletion stimulus) :
     admitStimulus program before stimulus = dispatchStimulus program before stimulus := by
-  obtain ⟨_, snapshots, _, messages⟩ := program_analysis_declarations_absent program analysis analyzed
-  have dataValid : callDataRuntimeStateValid program before = true := by
-    simp [callDataRuntimeStateValid, profile, mixedTaskControlFlowProfileId, callDataCheckpointProfileId]
-  have messageValid : interruptingMessageEventSubProcessStateValid program before = true := by
-    simp_all [interruptingMessageEventSubProcessStateValid, SerialBusinessTask.ForeignRuntimeEmpty,
-      mixedTaskControlFlowProfileId, interruptingMessageEventSubProcessProfileId]
-  have incidents : before.effectIncidents = [] := foreign.2.2.1
-  cases stimulus <;> simp only [SerialBusinessTask.IsSerialCompletion] at completion <;> try contradiction
-  all_goals simp [admitStimulus, dispatchStimulus, snapshots, guarded, dataValid, messageValid, incidents]
+  rcases profile with profile | profile
+  all_goals
+    obtain ⟨_, snapshots, _, messages⟩ := program_analysis_declarations_absent program analysis analyzed
+    have dataValid : callDataRuntimeStateValid program before = true := by
+      simp [callDataRuntimeStateValid, profile, mixedTaskControlFlowProfileId, mixedTaskBusinessErrorProfileId, callDataCheckpointProfileId]
+    have messageValid : interruptingMessageEventSubProcessStateValid program before = true := by
+      simp_all [interruptingMessageEventSubProcessStateValid, SerialBusinessTask.ForeignRuntimeEmpty,
+        mixedTaskControlFlowProfileId, mixedTaskBusinessErrorProfileId, interruptingMessageEventSubProcessProfileId]
+    have incidents : before.effectIncidents = [] := foreign.2.2.1
+    cases stimulus <;> simp only [SerialBusinessTask.IsSerialCompletion] at completion <;> try contradiction
+    all_goals simp [admitStimulus, dispatchStimulus, snapshots, guarded, dataValid, messageValid, incidents]
 
 theorem guarded_effect_dispatch_cases (program : Program) (analysis : Analysis) (before : RuntimeState)
     (commandId : SemanticId) (effectId : EffectOccurrenceId) (result : EffectExecutionResult)
@@ -577,7 +633,7 @@ theorem guarded_effect_dispatch_cases (program : Program) (analysis : Analysis) 
         dispatchStimulus program before (.completeEffect commandId effectId result) = { outcome := .committed, state := after } := by
   obtain ⟨_, snapshots, _⟩ := program_analysis_declarations_absent program analysis analyzed
   have noCompensation := (admitted_serial_guard_has_no_foreign_effects program before
-    (.completeEffect commandId effectId result) profile guarded).2
+    (.completeEffect commandId effectId result) (Or.inl profile) guarded).2
   cases control : before.control <;>
     simp [dispatchStimulus, snapshots, control, noCompensation, profile]
   split
@@ -658,9 +714,9 @@ theorem human_issuance_counters (state : RuntimeState) (instanceId : SemanticId)
     exact Nat.le_refl _
 
 theorem effect_issuance_counters (state : RuntimeState) (instanceId : SemanticId) (owner : ScopeOccurrenceId)
-    (input output : ControlPlaceId) (effect : EffectDefinition) :
-    CountersMonotone state (activateEffect state instanceId owner input output effect none) ∧
-      effectActivationCount (activateEffect state instanceId owner input output effect none) effect.elementId = effectActivationCount state effect.elementId + 1 := by
+    (input output : ControlPlaceId) (effect : EffectDefinition) (route : Option BpmnErrorRoute := none) :
+    CountersMonotone state (activateEffect state instanceId owner input output effect route) ∧
+      effectActivationCount (activateEffect state instanceId owner input output effect route) effect.elementId = effectActivationCount state effect.elementId + 1 := by
   have self := effectActivationCount_set_self state effect.elementId (effectActivationCount state effect.elementId + 1)
   refine ⟨⟨fun _ => Nat.le_refl _, ?_⟩, self⟩
   intro query
@@ -697,17 +753,14 @@ theorem fire_counters_monotone (program : Program) (analysis : Analysis) (operat
         cases Option.some.inj active
         exact (human_issuance_counters before instanceId owner input output task).1
   case awaitEffect id origin input output effect route =>
-    cases route with
-    | some route => contradiction
-    | none =>
-      cases step with
-      | awaitEffect _ _ _ _ _ _ _ _ active =>
-          simp only [awaitEffectState?, bind, pure, Option.bind_eq_some_iff] at active
-          obtain ⟨owner, _, instanceId, _, arguments, _, active⟩ := active
-          split at active
-          · contradiction
-          · cases Option.some.inj active
-            exact (effect_issuance_counters before owner.processInstanceId owner input output effect).1
+    cases step with
+    | awaitEffect _ _ _ _ _ _ _ _ active =>
+        simp only [awaitEffectState?, bind, pure, Option.bind_eq_some_iff] at active
+        obtain ⟨owner, _, instanceId, _, arguments, _, active⟩ := active
+        split at active
+        · contradiction
+        · cases Option.some.inj active
+          exact (effect_issuance_counters before owner.processInstanceId owner input output effect route).1
   case choose id origin input candidates fallback defaultOrigin =>
     cases step with
     | choose _ _ _ _ _ _ _ _ active =>

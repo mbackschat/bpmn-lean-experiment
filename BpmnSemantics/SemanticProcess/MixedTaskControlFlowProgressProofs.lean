@@ -260,50 +260,46 @@ theorem fire_preserves_position_with_depth (program : Program) (analysis : Analy
       · simpa [positionDepth, activateUserTask, parts.2.2.1, parts.2.2.2.1, insertUserTaskWait]
           using admitted_rank_positive analysis.vertices analysis accepted vertex included
   case awaitEffect id origin input output effect route =>
-    cases route with
-    | some route => contradiction
-    | none =>
-      cases step with
-      | awaitEffect _ _ _ _ _ _ _ _ active =>
-        simp only [awaitEffectState?, bind, pure, Option.bind_eq_some_iff] at active
-        obtain ⟨owner, found, instanceId, running, arguments, evaluated, active⟩ := active
-        obtain ⟨vertex, included, token, rfl, fields, inputEq, ownerEq, consumer, declared⟩ :=
-          position_with_token program analysis before frontier input owner position found
-        have projected := token_consumer_projects_current_vertex program analysis (.awaitEffect id origin input output effect none)
-          vertex input analyzed member included (by simp [operationInputs]) consumer
-        have owned := SerialBusinessTask.token_operation_owned program (.awaitEffect id origin input output effect none) token wellFormed member rfl
-          (by change token.placeId ∈ [input, output]; simp [inputEq]) declared
-        have parts := fields
-        simp only [frontierFields, Prod.mk.injEq] at parts
-        have present : token ∈ before.tokens := by simp [parts.2.1]
-        have runningLife := SerialBusinessTask.root_lifecycle_running_of_token rootOwner before life token present
-        have root := tokenOwners token present
-        split at active
-        · contradiction
-        · cases Option.some.inj active
-          refine ⟨?_, some vertex, ?_, available, canonical, ?_⟩
-          · refine ⟨?_, ?_, ?_, Or.inl runningLife, foreign,
-              SerialBusinessTask.effect_activation_issuance before owner.processInstanceId owner input output effect issued⟩ <;>
-              simp [activateEffect, parts.2.1, parts.2.2.1, parts.2.2.2.1, inputEq, ownerEq, root,
-                removeToken, insertEffectWait, canonicalInsertBy]
-          · apply Position.effect vertex included
-              { processInstanceId := owner.processInstanceId, owner, elementId := effect.elementId,
-                activation := effectActivationCount before effect.elementId + 1, descriptor := effect.descriptor,
-                arguments, outputMappings := effect.outputMappings, output, bpmnErrorRoute := none }
-              id origin input effect
-            · simp [frontierFields, activateEffect, evaluated, parts.1, parts.2.1, parts.2.2.1,
-                parts.2.2.2.1, parts.2.2.2.2, inputEq, ownerEq, removeToken, insertEffectWait,
-                canonicalInsertBy, addActivityVariableScope, insertActivityVariableScope]
-            · exact member
-            · exact projected
-            · rfl
-            · rfl
-            · rfl
-            · exact evaluateEnclosingInputMappings_snapshot _ _ _ evaluated
-            · rfl
-            · simpa [ownerEq, SemanticOperation.id] using owned
-          · simpa [positionDepth, activateEffect, parts.2.2.1, parts.2.2.2.1, insertEffectWait, canonicalInsertBy]
-              using admitted_rank_positive analysis.vertices analysis accepted vertex included
+    cases step with
+    | awaitEffect _ _ _ _ _ _ _ _ active =>
+      simp only [awaitEffectState?, bind, pure, Option.bind_eq_some_iff] at active
+      obtain ⟨owner, found, instanceId, running, arguments, evaluated, active⟩ := active
+      obtain ⟨vertex, included, token, rfl, fields, inputEq, ownerEq, consumer, declared⟩ :=
+        position_with_token program analysis before frontier input owner position found
+      have projected := token_consumer_projects_current_vertex program analysis (.awaitEffect id origin input output effect route)
+        vertex input analyzed member included (by simp [operationInputs]) consumer
+      have owned := SerialBusinessTask.token_operation_owned program (.awaitEffect id origin input output effect route) token wellFormed member rfl
+        (by cases route <;> (change token.placeId ∈ input :: _; simp [inputEq])) declared
+      have parts := fields
+      simp only [frontierFields, Prod.mk.injEq] at parts
+      have present : token ∈ before.tokens := by simp [parts.2.1]
+      have runningLife := SerialBusinessTask.root_lifecycle_running_of_token rootOwner before life token present
+      have root := tokenOwners token present
+      split at active
+      · contradiction
+      · cases Option.some.inj active
+        refine ⟨?_, some vertex, ?_, available, canonical, ?_⟩
+        · refine ⟨?_, ?_, ?_, Or.inl runningLife, foreign,
+            effect_activation_issuance_with_route before owner.processInstanceId owner input output effect route issued⟩ <;>
+            simp [activateEffect, parts.2.1, parts.2.2.1, parts.2.2.2.1, inputEq, ownerEq, root,
+              removeToken, insertEffectWait, canonicalInsertBy]
+        · apply Position.effect vertex included
+            { processInstanceId := owner.processInstanceId, owner, elementId := effect.elementId,
+              activation := effectActivationCount before effect.elementId + 1, descriptor := effect.descriptor,
+              arguments, outputMappings := effect.outputMappings, output, bpmnErrorRoute := route }
+            id origin input effect
+          · simp [frontierFields, activateEffect, evaluated, parts.1, parts.2.1, parts.2.2.1,
+              parts.2.2.2.1, parts.2.2.2.2, inputEq, ownerEq, removeToken, insertEffectWait,
+              canonicalInsertBy, addActivityVariableScope, insertActivityVariableScope]
+          · exact member
+          · exact projected
+          · rfl
+          · rfl
+          · rfl
+          · exact evaluateEnclosingInputMappings_snapshot _ _ _ evaluated
+          · simpa [ownerEq, SemanticOperation.id] using owned
+        · simpa [positionDepth, activateEffect, parts.2.2.1, parts.2.2.2.1, insertEffectWait, canonicalInsertBy]
+            using admitted_rank_positive analysis.vertices analysis accepted vertex included
   case reachNoneEnd id origin input =>
     cases step with
     | reachNoneEnd _ _ _ _ _ active =>
@@ -348,7 +344,7 @@ theorem fire_preserves_position_with_depth (program : Program) (analysis : Analy
               simp [frontierFields, noTokens] at fields
           | human vertex included wait id origin input fields declared projected metadata owned =>
               simp [frontierFields, noHumans] at fields
-          | effect vertex included wait id origin input effect fields declared projected element descriptor outputs snapshot route owned =>
+          | effect vertex included wait id origin input effect fields declared projected element descriptor outputs snapshot owned =>
               simp [frontierFields, noEffects] at fields
           | finished fields => rfl
         subst frontier
@@ -373,7 +369,7 @@ theorem position_progress (program : Program) (analysis : Analysis) (state : Run
     | human vertex included wait id origin input fields member projected metadata owned =>
         simp only [frontierFields, Prod.mk.injEq] at fields
         exact Or.inl (by simp [fields.2.2.1])
-    | effect vertex included wait id origin input effect fields member projected element descriptor outputs snapshot route owned =>
+    | effect vertex included wait id origin input effect fields member projected element descriptor outputs snapshot owned =>
         simp only [frontierFields, Prod.mk.injEq] at fields
         exact Or.inr (Or.inl (by simp [fields.2.2.2.1]))
     | pending vertex included start kind fields =>
@@ -411,14 +407,11 @@ theorem position_progress (program : Program) (analysis : Analysis) (state : Run
           simp [fire_awaitUserTask_withoutSnapshotDeclaration _ _ _ _ _ _ _ absent,
             awaitUserTaskState?, onlyTokenOwner?, tokenOwners, fields.2.1, consumes', runningInstance?, running]
         case awaitEffect id origin input output effect route =>
-          cases route with
-          | some route => contradiction
-          | none =>
-            obtain ⟨arguments, evaluated⟩ := current_service_inputs_evaluable program state analysis.vertices vertex id origin input output effect included projected available canonical
-            simp only [fire?, absent]
-            change ∃ after, awaitEffectState? state input output effect none = some after
-            simp [awaitEffectState?, onlyTokenOwner?, tokenOwners,
-              fields.2.1, consumes', runningInstance?, running, evaluated, fields.2.2.2.2]
+          obtain ⟨arguments, evaluated⟩ := current_service_inputs_evaluable program state analysis.vertices vertex id origin input output effect included projected available canonical
+          simp only [fire?, absent]
+          change ∃ after, awaitEffectState? state input output effect route = some after
+          simp [awaitEffectState?, onlyTokenOwner?, tokenOwners,
+            fields.2.1, consumes', runningInstance?, running, evaluated, fields.2.2.2.2]
         case choose id origin input candidates output defaultOrigin =>
           obtain ⟨selected, selection⟩ := StructuredComposition.unique_bindings_make_choice_total state.variables.process.bindings
             (strictlySortedStrings_nodup _ (Bool.and_eq_true_iff.mp canonical).1) candidates output
@@ -606,7 +599,7 @@ theorem settled_position_depth_zero (program : Program) (analysis : Analysis) (s
       | pending vertex included start kind fields => simp [frontierFields, pending] at fields
       | token vertex included token fields consumer bound => simp [frontierFields, tokens] at fields
       | human vertex included wait id origin input fields declared projected metadata owned => simp [frontierFields, humans] at fields
-      | effect vertex included wait id origin input effect fields declared projected element descriptor outputs snapshot route owned =>
+      | effect vertex included wait id origin input effect fields declared projected element descriptor outputs snapshot owned =>
           simp [frontierFields, effects] at fields
       | finished fields => simp [positionDepth, humans, effects, completed]
 
@@ -682,7 +675,8 @@ open InternalCommutation in
 /-- An actual committed Start supplies the scheduler invariant and its eight-step budget; neither is an extra readiness premise. -/
 theorem committed_start_scheduled_closure (program : Program) (analysis : Analysis)
     (commandId processId instanceId : SemanticId) (bindings : List VariableBinding) (index ordinal : Nat)
-    (profile : program.identity.semanticProfile = mixedTaskControlFlowProfileId)
+    (profile : program.identity.semanticProfile = mixedTaskControlFlowProfileId ∨
+      program.identity.semanticProfile = mixedTaskBusinessErrorProfileId)
     (wellFormed : programWellFormed program = true) (analyzed : programAnalysis program = some analysis)
     (committed : (admitStimulus program initialState (.startProcess commandId processId instanceId bindings)).outcome = .committed) :
     let started := (admitStimulus program initialState (.startProcess commandId processId instanceId bindings)).state
@@ -700,14 +694,15 @@ theorem committed_start_scheduled_closure (program : Program) (analysis : Analys
 /-- Accepted start derives the one exact Process owner, foreign-state absence, graph position, writer-free input presence and captured local lifetime together. -/
 theorem reached_invariant (program : Program) (analysis : Analysis)
     (commandId processId instanceId : SemanticId) (bindings : List VariableBinding) (reached : RuntimeState)
-    (profile : program.identity.semanticProfile = mixedTaskControlFlowProfileId)
+    (profile : program.identity.semanticProfile = mixedTaskControlFlowProfileId ∨
+      program.identity.semanticProfile = mixedTaskBusinessErrorProfileId)
     (analyzed : programAnalysis program = some analysis)
     (committed : (admitStimulus program initialState
       (.startProcess commandId processId instanceId bindings)).outcome = .committed)
     (reachable : SerialBusinessTask.ExecutionReachable program (admitStimulus program initialState
       (.startProcess commandId processId instanceId bindings)).state reached) :
     ∃ owner, owner.processInstanceId = instanceId ∧ instanceId.value ≠ "" ∧ SerialBusinessTask.DeclaredRoot program owner ∧ RootFrame owner reached ∧ AtPosition program analysis reached ∧
-      serialRuntimeAssociationsValid program reached = true ∧ runtimeStateWellFormed program instanceId reached = true ∧
+      serialRuntimeAssociationsValid program reached (program.identity.semanticProfile == mixedTaskBusinessErrorProfileId) = true ∧ runtimeStateWellFormed program instanceId reached = true ∧
       ∀ stimulus, SerialBusinessTask.AdmissibleCompletion program reached stimulus → (admitStimulus program reached stimulus).outcome = .committed := by
   have guarded := serial_committed_ingress_has_checked_predecessor program initialState
     (.startProcess commandId processId instanceId bindings) committed
@@ -734,7 +729,7 @@ theorem reached_invariant (program : Program) (analysis : Analysis)
         exact human_admission_preserves_position program analysis _ commandId taskId bindings profile wellFormed analyzed ih.2 owner ih.1
     | effect commandId effectId result reachable ih =>
         exact effect_admission_preserves_position program analysis _ commandId effectId result profile wellFormed analyzed ih.2 owner ih.1
-  have associations := (position_wait_guards program analysis reached owner wellFormed declared joint.1 joint.2).1
+  have associations := (position_wait_guards program analysis reached owner wellFormed declared joint.1 joint.2 analyzed).1
   have runtime := position_runtime_guard program analysis reached owner wellFormed analyzed
     (by simpa [instanceEq] using nonempty) declared joint.1 joint.2
   refine ⟨owner, instanceEq, nonempty, declared, joint.1, joint.2, associations, by simpa [instanceEq] using runtime, ?_⟩
@@ -751,7 +746,8 @@ open InternalCommutation in
 theorem reached_scheduled_closure_is_bounded (program : Program) (analysis : Analysis)
     (startCommandId commandId processId instanceId : SemanticId) (bindings : List VariableBinding)
     (state : RuntimeState) (fuel index ordinal : Nat)
-    (profile : program.identity.semanticProfile = mixedTaskControlFlowProfileId)
+    (profile : program.identity.semanticProfile = mixedTaskControlFlowProfileId ∨
+      program.identity.semanticProfile = mixedTaskBusinessErrorProfileId)
     (analyzed : programAnalysis program = some analysis)
     (committed : (admitStimulus program initialState (.startProcess startCommandId processId instanceId bindings)).outcome = .committed)
     (reachable : SerialBusinessTask.ExecutionReachable program (admitStimulus program initialState (.startProcess startCommandId processId instanceId bindings)).state state)
@@ -774,7 +770,8 @@ theorem reached_scheduled_closure_is_bounded (program : Program) (analysis : Ana
 /-- High-water marks survive every later execution prefix, including refused and accepted completions; together with strict issuance increments, revisiting a task cannot reuse an earlier occurrence. -/
 theorem reached_counters_monotone (program : Program) (analysis : Analysis)
     (commandId processId instanceId : SemanticId) (bindings : List VariableBinding) (before after : RuntimeState)
-    (profile : program.identity.semanticProfile = mixedTaskControlFlowProfileId) (analyzed : programAnalysis program = some analysis)
+    (profile : program.identity.semanticProfile = mixedTaskControlFlowProfileId ∨
+      program.identity.semanticProfile = mixedTaskBusinessErrorProfileId) (analyzed : programAnalysis program = some analysis)
     (committed : (admitStimulus program initialState (.startProcess commandId processId instanceId bindings)).outcome = .committed)
     (reached : SerialBusinessTask.ExecutionReachable program
       (admitStimulus program initialState (.startProcess commandId processId instanceId bindings)).state before)

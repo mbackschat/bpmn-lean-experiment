@@ -315,4 +315,17 @@ theorem admitted_rank_bounded (vertices : List Vertex) (analysis : Analysis)
           simp only [nextFound, Option.getD_some]
           omega
 
+/-- General continuation analysis must not broaden the inherited Service Task source shape (MBERR-CATCH-01). -/
+theorem unrouted_checked_service_keeps_one_output (source : CheckedProcess)
+    (id : NodeId) (descriptor : EffectDescriptor) (inputs outputs : List VariableMapping)
+    (vertex : Vertex)
+    (projected : checkedVertex? source (.serviceTask id descriptor inputs outputs none) = some vertex) :
+    vertex.outputs.length = 1 := by
+  simp only [checkedVertex?] at projected
+  split at projected
+  · contradiction
+  · simp_all
+    cases projected
+    simp_all
+
 end BpmnSemantics.SemanticProcess.MixedTaskControlFlow

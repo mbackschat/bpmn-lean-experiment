@@ -88,7 +88,8 @@ theorem completeEffect_sound
           occurrence mapping route
 
 /-- SBT-REFUSE-01 checks root ownership and the complete declaration/wait/local join before ingress. -/
-def serialRuntimeAssociationsValid (program : Program) (state : RuntimeState) : Bool :=
+def serialRuntimeAssociationsValid (program : Program) (state : RuntimeState)
+    (businessError : Bool := false) : Bool :=
   let ownerValid := fun (owner : ScopeOccurrenceId) =>
     state.control == .running owner.processInstanceId &&
       (state.scopeOccurrences.filter (·.id == owner)).length == 1 &&
@@ -111,6 +112,11 @@ def serialRuntimeAssociationsValid (program : Program) (state : RuntimeState) : 
         | .awaitEffect _ _ _ output effect none => effect.elementId == wait.elementId &&
             effect.descriptor == wait.descriptor && output == wait.output &&
             effect.outputMappings == wait.outputMappings && wait.bpmnErrorRoute.isNone &&
+            inputSnapshotMatches effect.inputMappings wait.arguments
+        | .awaitEffect _ _ _ output effect (some route) => businessError &&
+            effect.elementId == wait.elementId && effect.descriptor == wait.descriptor &&
+            output == wait.output && effect.outputMappings == wait.outputMappings &&
+            wait.bpmnErrorRoute == some route &&
             inputSnapshotMatches effect.inputMappings wait.arguments
         | _ => false)).length == 1 &&
       match state.variables.activities.filter (activityScopeMatches
@@ -161,6 +167,22 @@ def completeSerialEffect? (program : Program) (state : RuntimeState)
         effectWaits := state.effectWaits.erase wait
         variables
         tokens := addToken state.tokens wait.output wait.owner }
+  | _ => none
+
+/-- MBERR-MAP-01 combines exact local-result mapping with the active occurrence's attached route. -/
+def completeBusinessEffect? (handlers : List String) (state : RuntimeState)
+    (effectId : EffectOccurrenceId) (result : EffectExecutionResult) : Option RuntimeState := do
+  match state.effectWaits.filter (effectOccurrenceMatches effectId) with
+  | [wait] =>
+      let output ← effectResultOutput wait result
+      let patch := match result with
+        | .success patch | .bpmnError _ _ patch => patch
+      let variables ← completeSerialActivityScope? handlers state.variables effectId
+        wait.outputMappings (.success patch)
+      return { state with
+        effectWaits := state.effectWaits.erase wait
+        variables
+        tokens := addToken state.tokens output wait.owner }
   | _ => none
 
 end BpmnSemantics.SemanticProcess

@@ -740,7 +740,8 @@ theorem indexed_completion_guard (program : Program) (analysis : Analysis) (stat
   rcases framed.2.2.2.1 with ⟨control, _⟩ | ⟨control, _⟩
   all_goals
     unfold serialBusinessCommandAdmitted
-    rw [show (program.identity.semanticProfile != serialBusinessTaskProfileId) = false from by rw [profile]; rfl]
+    rw [show (program.identity.semanticProfile != serialBusinessTaskProfileId) = false from by rw [profile]; rfl,
+      show (program.identity.semanticProfile == mixedTaskBusinessErrorProfileId) = false from by rw [profile]; rfl]
     simp only [Bool.false_and, Bool.false_eq_true, ↓reduceIte, wellFormed, capabilities, canonical, associations, control, runtime, Bool.true_and]
     cases stimulus <;> simp only [IsSerialCompletion] at completion <;> (first | contradiction | rfl)
 

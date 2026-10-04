@@ -276,6 +276,7 @@ theorem mismatched_error_code_is_rejected
       0
       (by decide +kernel)
       (by decide +kernel)
+      (by decide +kernel)
       (by
         have reversed : checkedRoute.code ≠ submittedCode :=
           Ne.symm mismatch

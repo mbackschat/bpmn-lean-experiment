@@ -7,6 +7,7 @@ import type {
   VariableBinding,
 } from "./contract.js";
 import {
+  MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID,
   MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID,
   SERIAL_BUSINESS_TASK_CHECKPOINT_PROFILE_ID,
   CALL_ACTIVITY_DATA_BOUNDARIES_CHECKPOINT_PROFILE_ID,
@@ -27,6 +28,7 @@ export enum VariableWriteSurface {
 }
 
 type SemanticProfile =
+  | typeof MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID
   | typeof MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID
   | typeof SERIAL_BUSINESS_TASK_CHECKPOINT_PROFILE_ID
   | typeof CALL_ACTIVITY_DATA_BOUNDARIES_CHECKPOINT_PROFILE_ID
@@ -68,6 +70,7 @@ const scalarValueDomain = Object.freeze([
 const admittedSemanticProfiles: ReadonlySet<string> = new Set(
   [
     ...Object.values(SemanticProfileId),
+    MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID,
     MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID,
     SERIAL_BUSINESS_TASK_CHECKPOINT_PROFILE_ID,
     CALL_ACTIVITY_DATA_BOUNDARIES_CHECKPOINT_PROFILE_ID,
@@ -130,6 +133,7 @@ function profileValueDomain(
   surface: VariableWriteSurface,
 ): ReadonlyArray<VariableValueKind> | null {
   switch (semanticProfile) {
+    case MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID:
     case MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID:
     case SERIAL_BUSINESS_TASK_CHECKPOINT_PROFILE_ID: return surfaceValueDomain(surface, stringNullValueDomain, stringNullValueDomain, stringNullValueDomain);
     case INTERRUPTING_MESSAGE_EVENT_SUBPROCESS_CHECKPOINT_PROFILE_ID:

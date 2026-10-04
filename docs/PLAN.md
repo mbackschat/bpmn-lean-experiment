@@ -6,7 +6,7 @@ This file owns execution order, blockers, current evidence and the exact resume 
 
 M0 through M6 and Horizons 1 and 2 are closed. The [production lifecycle specification](TEMPORAL-PROCESS-LIFECYCLE-SPEC.md#workflow-chain-production-contract) owns the retained Product 1 floor; [`implementation-status-owner:TEMPORAL-HOSTING`](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md) owns its current evidence boundary and deployment correction.
 
-The primary objective is [Practical CIB7 Coverage](PROJECT-DESIGN.md#practical-cib7-coverage); the [maturity ladder](PROJECT-DESIGN.md#engine-maturity-roadmap-labels) retains historical labels. [Alpha](MUE-PREVIEW-ALPHA-SPEC.md) and [Beta](MUE-PREVIEW-BETA-SPEC.md) retain their `phase/mue-preview-alpha` and `phase/mue-preview-beta` tags. The seven RC boundaries remain historical evidence; the practical coverage goal below owns selected scope.
+The sole delivery target is [Practical CIB7 Coverage](PROJECT-DESIGN.md#practical-cib7-coverage); the [maturity ladder](PROJECT-DESIGN.md#engine-maturity-roadmap-labels) retains historical labels. [Alpha](MUE-PREVIEW-ALPHA-SPEC.md) and [Beta](MUE-PREVIEW-BETA-SPEC.md) retain their `phase/mue-preview-alpha` and `phase/mue-preview-beta` tags. The seven RC boundaries remain historical evidence; the practical coverage goal below owns selected scope.
 
 ### MUE Preview Beta critical path
 
@@ -65,7 +65,7 @@ Integration state: `satisfied`.
 
 ### Practical CIB7 Coverage goal
 
-On 2026-10-03 the owner made Practical CIB7 Coverage the primary objective, superseding separate MUE acceptance. Review practical element depth and useful combinations within the [CIB7 implementation ceiling](PROJECT-DESIGN.md#cib-seven-220-breadth-ordering). Both Multi-Instance Sub-Process forms remain required, with priority determined by that inventory.
+On 2026-10-03 the owner selected Practical CIB7 Coverage, superseding separate MUE acceptance. Reconfirmed 2026-10-04: MUE RC was sufficient; only Practical CIB7 Coverage is intended for showing and releasing. Review practical element depth and useful combinations within the [CIB7 implementation ceiling](PROJECT-DESIGN.md#cib-seven-220-breadth-ordering). Both Multi-Instance Sub-Process forms remain required, with priority determined by that inventory.
 
 | Added obligation | State | Acceptance boundary |
 |---|---|---|
@@ -78,7 +78,7 @@ Acceptance covers source/Lean/TypeScript, applicable CIB evidence, Temporal refi
 
 Exactly one stable work ID is active. Required maps are part of the routing contract, not descriptive tags.
 
-The [test-selection repair](../scripts/test-selection-coverage.ts) includes integration witnesses and direct gate commands. The previously orphaned RC shutdown witness is wired to opt-in manual showcase qualification; live qualification remains deferred.
+The [test-selection repair](../scripts/test-selection-coverage.ts) includes integration witnesses and direct gate commands. The previously orphaned RC shutdown witness is wired to opt-in manual showcase qualification; select it when the current delivery boundary requires that evidence.
 
 ### External-review correction checklist
 
@@ -92,18 +92,18 @@ The six external reviews and correction audits are complete; the [repair cost le
 6. `PARALLEL-MULTI-INSTANCE-SUBPROCESS` · **later** · Owner: [practical coverage goal](#practical-cib7-coverage-goal), [CIB scope ceiling](PROJECT-DESIGN.md#cib-seven-220-breadth-ordering) · Maps: [contracts/source](ENGINE-CONTRACTS-AND-SOURCE-IMPLEMENTATION-MAP.md), [runtime/proof](ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md), [semantic families](ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md), [Temporal](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md), [assurance/adoption](ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md) · Action: Required practical scope; select the bounded account and implementation order through the coverage inventory.
 7. `CONFORMANCE-CLOSURE` · **later** · Owner: [requirement ledger](BPMN-REQUIREMENT-LEDGER.md), [conformance target](BPMN-CONFORMANCE-TARGET.md) · Maps: [contracts/source](ENGINE-CONTRACTS-AND-SOURCE-IMPLEMENTATION-MAP.md), [runtime/proof](ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md), [assurance/adoption](ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md) · Action: Audit remaining standards claims within the CIB7 implementation ceiling; no implementation beyond that ceiling is selected.
 
-Semantics-only work continues through at least 2026-10-05 and beyond unless reprioritized; no automatic runtime, Linux, browser or distribution switch occurs. The Message checkpoint is approved; prioritize practical CIB7 depth. Each increment needs independent account review, bounded Lean assurance and Temporal preflight. Live hosting stays deferred; MUE qualification is not a sequencing prerequisite.
+Owner direction on 2026-10-04 replaces semantics-only work and October 5 qualification deferrals with [balanced delivery](../CLAUDE.md#balance-semantic-breadth-and-usable-delivery), superseding earlier checkpoint timing deferrals. Finish business Error semantics, then qualify its prerequisites and recovery journey before another independent family. Preserve missing evidence; MUE acceptance stays superseded and release publication separate.
 
 | Priority | Task | Acceptance condition |
 |---|---|---|
-| P1 | Deferred at least until 2026-10-05: close the runtime mechanisms tracked in the [defect ledger](TEMPORAL-DEFECTS-LEDGER.md). | Retain the passing clean-checkout CI evidence; demonstrate corrections for Query loss during eviction, Transaction descriptor-digest rejection, native V8 faults and direct-VM initialization timeout without weaker assertions or unapproved workarounds. |
-| P2 | Deferred at least until 2026-10-05: validate supported user journeys using the [walkthrough](BPM-PLATFORM-BROWSER-WALKTHROUGH.md) and existing production-browser gates. | Discover and start a human process, claim/edit/complete its task, inspect outcome and Action history; retain navigation, disclosures, recovery and incident journeys. Human evaluation has no simulated participants. |
-| P3 | Deferred at least until 2026-10-05: qualify the versioned RC distribution and reconcile evidence, restrictions and final integrated qualification. | Image-only desktop Compose execution, visible release version and passing advertised journeys; reuse valid evidence and run missing gates. No failed, missing or running gate counts as acceptance. |
+| P1 | Resolve runtime mechanisms that block the selected capability’s qualification, tracked in the [defect ledger](TEMPORAL-DEFECTS-LEDGER.md). | Retain the passing clean-checkout CI evidence; demonstrate corrections for Query loss during eviction, Transaction descriptor-digest rejection, native V8 faults and direct-VM initialization timeout without weaker assertions or unapproved workarounds. |
+| P2 | Qualify the selected capability’s supported user journey using the [walkthrough](BPM-PLATFORM-BROWSER-WALKTHROUGH.md) and existing production-browser gates. | Discover and start a human process, claim/edit/complete its task, inspect outcome and Action history; retain navigation, disclosures, recovery and incident journeys. Human evaluation has no simulated participants. |
+| P3 | Qualify distribution behavior needed by the selected journey; broader RC acceptance stays separate. | Image-only desktop Compose execution, visible release version and passing advertised journeys; reuse valid evidence and run missing gates. No failed, missing or running gate counts as acceptance. |
 | P4 | Qualify Practical CIB7 Coverage when its reviewed inventory is complete. | Required variants and whole-model journeys pass applicable gates; restrictions remain explicit. Owner acceptance, release versioning and scale qualification stay separate decisions. |
 
 ## Current evidence
 
-- Push qualification. Command: `env CI=true ./scripts/pnpm.sh run test:pre-push`, approved V8-fixed Node. Status: `exit 1`. Date: `2026-10-02`. Commit: `3ee96954`, clean target. Receipt: `/tmp/mue-prepush-3ee96954-v8-fixed-20261002`, separately asserted. Temporal: 819/820; PMI E1 read `unavailable` follows TD-001's eviction warning. Security, infrastructure and Lean pass; pipeline/platform/PostgreSQL/showcase/UI lanes unrun. No retry or push.
+- Publication. Command: `git push origin HEAD:refs/heads/main`. Status: `exit 0`. Date: `2026-10-04`. Commit: `46632f02`. [Hosted security](https://github.com/mbackschat/bpmn-lean-experiment/actions/runs/37198813350) passes (`/tmp/dependency-security-hosted-46632f02`, separately asserted). GitHub bypassed pending `verify-complete`; qualification remains open. Unfinished Error implementation stays local. Preserve TD-001 failure `/tmp/mue-prepush-3ee96954-v8-fixed-20261002` (`3ee96954`, Temporal 819/820).
 
 - Published RC evaluation. Command: `env BPMN_EVALUATION_PROJECT_NAME=mue-acceptance-rc1-1d11abc0 /tmp/mue-acceptance-distribution-1d11abc0/deploy/evaluation/demo start`. Status: `exit 0` for restart; browser qualification incomplete. Date: `2026-10-01`. Commit: `16c5b9f6`, fixed distribution source. Receipt: `/tmp/mue-bundle-restart`; browser evidence: `/tmp/mue-acceptance-distribution-1d11abc0/browser-receipt.json`. Docker Desktop restarts without building/pulling, retaining claimed parallel work and its sibling. Playwright reaches human approval, request changes, parallel completion, incident Retry and Cancel, with terminal History and Action history. Earlier unavailable Work/execution/audit reads remain failures. The browser shows `0.2.0-rc.1`, which still contains the selection defect. Rancher smoke remains open by owner direction. Task containers stopped; volumes/images retained.
 
@@ -113,12 +113,12 @@ Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
 Risk band: useful cross-family composition and practical CIB7 feature depth.
 
-Last verification: the [Message checkpoint evidence](capsules/INTERRUPTING-MESSAGE-EVENT-SUBPROCESS-PROPOSAL.md#implementation-progress) retains complete source/core/Lean and bounded parity gates. The [business effect data experiment](experiments/BUSINESS-EFFECT-DATA-EXPERIMENT.md) passes the complete CIB oracle gate (`/tmp/business-effect-data-complete-oracle`, separately asserted): outer-scope input lookup, local-result precedence, present null, missing-input failure and instance separation. Existing private checkpoints remain approved; cold resource investigation is deferred.
+Last verification: the [business data experiment](experiments/BUSINESS-EFFECT-DATA-EXPERIMENT.md) passes the complete CIB oracle gate (`/tmp/business-effect-data-complete-oracle`, separately asserted), including scope lookup, local-result precedence, null, missing input and instance separation.
 
-Next action: implement the approved [mixed-task business Error account](capsules/MIXED-TASK-BUSINESS-ERROR-PROPOSAL.md), starting with exceptional-continuation admission/data/burst discriminators. Eight discriminators and complete oracle/infrastructure gates pass; unmatched cleanup failure remains unselected host behavior. Preserve approved mixed-task `47f6f996`/`245962ad`, serial `c9427286` and Message `c2132704` checkpoints. Live hosting, cold aggregate-library acceptance and public registration remain open.
+Next action: commit the [business Error checkpoint](capsules/MIXED-TASK-BUSINESS-ERROR-PROPOSAL.md#implementation-progress), obtain independent review, then follow the balanced hosting sequence. Actual-Start proofs and the complete cached library pass `/tmp/business-error-complete-lean-library-corrected`, separately asserted. The first library run’s memory pressure remains recorded; cold resource acceptance stays open. Source-bound E1/E2 recovery comparison passes `/tmp/business-error-differential-qualified`, separately asserted. Its decoder mismatch is corrected for both effect-result arms; malformed-wire rejection and six kernel-decided cases pass. Typed host refusal stays enforced; public registration remains open. Unmatched CIB cleanup failure stays unselected. Preserve approved checkpoints.
 
 
-Keep semantics active; reconsider deferred work no earlier than 2026-10-05, without an automatic switch. Local performance tests stay skipped under external CPU load. Lean remains one process tree, one CPU and 3 GiB without additional swap. Database selection remains [sequential SQLite versus concurrent PostgreSQL](TESTING-SPEC.md#three-level-verification-policy).
+Advance practical semantics and usable capabilities together; no calendar qualification hold applies. Local performance tests and cold full-library resource investigation stay deferred under external CPU load. Lean remains one process tree, one CPU and 3 GiB without additional swap. Database selection remains [sequential SQLite versus concurrent PostgreSQL](TESTING-SPEC.md#three-level-verification-policy).
 
 Oracle: the selected semantic account passes bounded Lean laws/checks and independent TypeScript discriminators; no hosted or CIB claim exceeds its own evidence. Practical coverage acceptance and push qualification remain open under the [defect ledger](TEMPORAL-DEFECTS-LEDGER.md).
 
