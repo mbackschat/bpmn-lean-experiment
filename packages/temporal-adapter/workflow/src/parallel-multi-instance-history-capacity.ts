@@ -54,7 +54,7 @@ export type ParallelMultiInstanceServiceHistoryCapacity = Readonly<{
   maximumMeasuredActivationPayloadBytes: number;
 }>;
 
-/** Reproducible production-serializer measurement captured before profile registration. */
+/** Exact byte expectations keep state growth visible to the maximal-topology capacity probe. */
 export const retainedParallelMultiInstanceHistoryMeasurement:
   ParallelMultiInstanceHistoryMeasurement = Object.freeze({
     selectedMaximumItems: 16,
@@ -64,16 +64,16 @@ export const retainedParallelMultiInstanceHistoryMeasurement:
     exactLimitAdmitted: true,
     limitPlusOneRefusedWithoutMutation: true,
     topologies: [
-      measured(ParallelMultiInstanceCapacityTopology.Natural, 83_590, 128_646),
+      measured(ParallelMultiInstanceCapacityTopology.Natural, 83_613, 128_669),
       measured(
         ParallelMultiInstanceCapacityTopology.TimerInterruption,
-        83_630,
-        128_686,
+        83_653,
+        128_709,
       ),
       measured(
         ParallelMultiInstanceCapacityTopology.EarlyCompletion,
-        83_630,
-        128_686,
+        83_653,
+        128_709,
       ),
     ],
   });

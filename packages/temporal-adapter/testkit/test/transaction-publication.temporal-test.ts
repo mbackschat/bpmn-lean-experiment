@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
+import { inspect } from "node:util";
 import { Context } from "@temporalio/activity";
 import { WorkflowClient } from "@temporalio/client";
 import { BpmnCompilationStatus, compileBpmnToSemanticProcess } from "@bpmn-lean/bpmn-source";
@@ -73,6 +74,14 @@ test("Transaction public commands preserve paired publication through empty, com
         return next({ ...input, options: { ...input.options,
           args: [args[0], args[1], { ...hostInput, eventHistoryEventLimit: 3 }],
         } });
+      }, async query(input, next) {
+        try {
+          return await next(input);
+        } catch (error) {
+          // TD-001/TD-002 attribution needs the SDK failure before the public unavailable projection.
+          t.diagnostic(inspect({ query: input.queryType, execution: input.workflowExecution, error }, { depth: 6 }));
+          throw error;
+        }
       } }],
     });
     for (const selected of ["empty", "success", "failure"] as const) {
