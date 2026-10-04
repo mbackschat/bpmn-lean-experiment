@@ -33,13 +33,14 @@ Excluded: implicit task split/merge, Parallel/Inclusive/Event-Based or mixed Gat
 
 ## Representation and admission
 
-Reuse the checked node variants and `initiate`, `awaitUserTask`, `awaitEffect`, `choose`, `mergeExclusive`, `reachNoneEnd` and root `completeScope` operations. Runtime state, stimulus/result arms, E1/E2 and effect descriptors gain no field. The existing ordered choice representation widens from two candidates to a nonempty sequence:
+Reuse the checked node variants and `initiate`, `awaitUserTask`, `awaitEffect`, `choose`, `mergeExclusive`, `reachNoneEnd` and root `completeScope` operations. Runtime state, stimulus/result arms, E1/E2 and effect descriptors gain no field. Both ordered Exclusive representations widen atomically from two candidates to nonempty sequences:
 
 ```ts
+type OrderedCandidateFlowIds = readonly [string, ...string[]];
 type OrderedCandidates = readonly [ConditionalCandidate, ...ConditionalCandidate[]];
 ```
 
-`ConditionalCandidate` retains its existing condition, output and flow origin. Generic wire/operation validation admits that sequence; each old profile retains its exact two-candidate restriction in profile admission. Lean already represents candidates as a list; every decoder, lowerer and profile-specific cardinality check must agree. Do not widen old source/program admission through the generic change. Canonical sorting still applies only to unordered collections.
+The checked Exclusive Gateway's `candidateFlowIds` uses `OrderedCandidateFlowIds`; the IL Choice's `candidates` uses `OrderedCandidates`. `ConditionalCandidate` retains its existing condition, output and flow origin. Both schemas and generic validators admit those sequences; each old profile retains its exact two-candidate restriction at checked and Program admission. Inclusive Gateway candidate fields and their exact-two rules remain unchanged, including shared validation helpers used by both gateway families. Lean already represents both sequences as lists; every decoder, lowerer and profile-specific cardinality check must agree. Lowering maps every checked candidate in retained order and removes its exact-two tuple assertion. Do not widen old source/program admission through the generic change. Canonical sorting still applies only to unordered collections.
 
 Checked admission and raw Program admission independently validate complete source identity uniqueness, references, root ownership, edge multiplicity, producer/consumer uniqueness, reachability from Start and co-reachability to End. The Program census distinguishes synthetic operation/place IDs from source origins and excludes legitimate Process-origin reuse by `completeScope`. Lean independently analyzes the checked graph and Program and checks exact lowering. Neither target trusts serialized analysis results. Do not require paired regions or a reducible whole-graph shape: single-token operations suffice for this scope.
 
@@ -98,6 +99,8 @@ The smallest later live witness completes one validation with rework, updates th
 
 Pre-release evolution applies. The candidate sequence widening changes [TypeScript IL](../../packages/semantic-core/src/semantic-process-contract.ts), [wire schema](../../contracts/schemas/semantic-process.schema.json), [choice admission](../../packages/semantic-core/src/simple-boolean-choice-admission.ts), [Lean JSON](../../BpmnSemantics/SemanticProcessJson/Program.lean), lowerers and consumer guards atomically. Old-profile candidate counts and graph policies remain exact; existing accepted bytes and results must be preserved. No legacy reader, new runtime collection or cross-version durable-history claim is added.
 
+The same atomic change widens only the Exclusive arm of the [checked contract](../../packages/semantic-core/src/checked-process-contract.ts) and [checked schema](../../contracts/schemas/checked-process.schema.json), together with [checked profile validation](../../packages/bpmn-source/src/checked-process-admission.ts), [checked-to-IL lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts), [Lean checked decoding](../../BpmnSemantics/SemanticProcessJson/CheckedProcess.lean) and [Lean checked validation](../../BpmnSemantics/SemanticProcess/CheckedProcessAdmission.lean). One- and three-candidate checked witnesses must pass the widened schema and selected profile, lower to all candidates, and execute in both languages; identical arity mutations under old profiles and on the Inclusive arm must still reject. A schema-only widening or a cast over a two-element checked tuple is incomplete.
+
 Admission extends the existing [compiler](../../packages/bpmn-source/src/checked-process-compiler.ts), [checked validator](../../packages/bpmn-source/src/checked-process-admission.ts), [serial source projection](../../packages/bpmn-source/src/serial-business-task-source.ts), [graph policy](../../packages/semantic-core/src/semantic-process-graph-policy.ts), [Lean graph validator](../../BpmnSemantics/SemanticProcess/GraphValidation.lean), [Program validator](../../BpmnSemantics/SemanticProcess/ProgramStructuralValidation.lean) and [command admission](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean). New analyses belong in cohesive owners, not growing shared dispatchers or copied serial/structured recognizers. Re-run `what-binds` for each concrete implementation path before editing.
 
 ### Owners this implementation grows
@@ -107,6 +110,10 @@ Admission extends the existing [compiler](../../packages/bpmn-source/src/checked
 | [Compiler](../../packages/bpmn-source/src/checked-process-compiler.ts) | 377 | Keep analysis outside shared dispatch and preserve existing profile restrictions. |
 | [Checked validator](../../packages/bpmn-source/src/checked-process-admission.ts) | 95 | Keep analysis outside shared dispatch and preserve existing profile restrictions. |
 | [Serial source projection](../../packages/bpmn-source/src/serial-business-task-source.ts) | 690 | Keep analysis outside shared dispatch and preserve existing profile restrictions. |
+| [Checked contract](../../packages/semantic-core/src/checked-process-contract.ts) | 395 | Widen Exclusive candidates; retain Inclusive and old-profile cardinalities. |
+| [Checked-to-IL lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 120 | Widen Exclusive candidates; retain Inclusive and old-profile cardinalities. |
+| [Lean checked decoding](../../BpmnSemantics/SemanticProcessJson/CheckedProcess.lean) | 357 | Widen Exclusive candidates; retain Inclusive and old-profile cardinalities. |
+| [Lean checked validation](../../BpmnSemantics/SemanticProcess/CheckedProcessAdmission.lean) | 348 | Widen Exclusive candidates; retain Inclusive and old-profile cardinalities. |
 | [TypeScript IL](../../packages/semantic-core/src/semantic-process-contract.ts) | 135 | Keep analysis outside shared dispatch and preserve existing profile restrictions. |
 | [Choice admission](../../packages/semantic-core/src/simple-boolean-choice-admission.ts) | 665 | Keep analysis outside shared dispatch and preserve existing profile restrictions. |
 | [Graph policy](../../packages/semantic-core/src/semantic-process-graph-policy.ts) | 701 | Keep analysis outside shared dispatch and preserve existing profile restrictions. |
