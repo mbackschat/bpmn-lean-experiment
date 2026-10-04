@@ -32,7 +32,7 @@ The [mixed-task account](capsules/MIXED-TASK-CONTROL-FLOW-PROPOSAL.md#implementa
 
 **Implemented.** Source and independent Lean/TypeScript cover root User/Service tasks, ordered Exclusive choices/merges and task-crossing cycles. Writer barriers select initial inputs; task-cut ranks bound closure at eight steps. Actual execution establishes single-control ownership, available reads, local lifetime, valid-payload acceptance and fresh issuance. Cross-target lowering/E1/E2 tests include ordering, stale-owner and burst-bound counterexamples; named handlers and String/null mapping remain exact.
 
-**Open.** Registration, hosting/replay and closure remain open; host admission refuses. The [business Error extension](capsules/MIXED-TASK-BUSINESS-ERROR-PROPOSAL.md#implementation-progress) passes XML/TypeScript checks, finite Lean recovery journeys, quantified actual-Start preservation/completion proofs and source-bound E1/E2 differential checks; complete checkpoint qualification remains open. No termination, concurrency, nested scope or additional public coverage is claimed.
+**Open.** Registration, hosting/replay and closure remain open; host admission refuses. The [business Error extension](capsules/MIXED-TASK-BUSINESS-ERROR-PROPOSAL.md#implementation-progress) passes XML/TypeScript checks, finite Lean recovery journeys, quantified actual-Start preservation/completion proofs and source-bound E1/E2 differential checks; independent semantic checkpoint review approved `0156e9be`. No termination, concurrency, nested scope or additional public coverage is claimed.
 
 ## Serial business-task composition
 
