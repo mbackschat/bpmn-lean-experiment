@@ -154,11 +154,18 @@ export type ProcessInterfaceScope = DeepReadonly<{
   outputs: VariableBinding[];
 }>;
 
-/** The single runtime representation for Process and Activity-local data. */
+/** Body declarations belong to one complete live scope occurrence (SMIS-DATA-01). */
+export type ScopeVariableScope = DeepReadonly<{
+  owner: ScopeOccurrenceId;
+  bindings: VariableBinding[];
+}>;
+
+/** The single runtime representation for Process, scope and Activity-local data. */
 export type ScopedVariables = DeepReadonly<{
   process: ProcessVariableScope;
   activities: ActivityVariableScope[];
   processInterfaces: ProcessInterfaceScope[];
+  scopes: ScopeVariableScope[];
 }>;
 
 type ActivationCounter = DeepReadonly<{
@@ -249,6 +256,7 @@ export const initialState: RuntimeState = {
     process: { bindings: [] },
     activities: [],
     processInterfaces: [],
+    scopes: [],
   },
   taskActivations: [],
   messageActivations: [],

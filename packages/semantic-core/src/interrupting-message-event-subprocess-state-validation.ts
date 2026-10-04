@@ -20,7 +20,7 @@ export function interruptingMessageEventSubProcessStateIsValid(program: Semantic
       state.messageWaits.length !== 0 || state.timerWaits.length !== 0 || state.effectWaits.length !== 0 ||
       state.effectIncidents.length !== 0 || state.selectedBranchSets.length !== 0 || state.eventRaces.length !== 0 ||
       state.calledProcessOccurrences.length !== 0 || state.variables.process.bindings.length !== 0 ||
-      state.variables.activities.length !== 0 || state.variables.processInterfaces.length !== 0 ||
+      state.variables.scopes.length !== 0 || state.variables.activities.length !== 0 || state.variables.processInterfaces.length !== 0 ||
       state.sequentialMultiInstanceControllers !== undefined || state.parallelMultiInstanceControllers !== undefined ||
       state.compensationActivityRetentions !== undefined || state.compensationParentContextRetentions !== undefined ||
       state.compensationTriggers !== undefined || state.compensationHandlerEffectWaits !== undefined) return false;

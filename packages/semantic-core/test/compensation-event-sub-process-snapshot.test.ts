@@ -194,7 +194,7 @@ function runningState(
       handlerScopeId,
     })),
     variables: {
-      processInterfaces: [],
+      scopes: [], processInterfaces: [],
       process: {
         bindings: [{
           name: "context",
@@ -639,7 +639,7 @@ test("selected-root completion retains exactly one promoted root owner", () => {
       handlerScopeId: rootHandlerScopeId,
     }],
     variables: {
-      processInterfaces: [],
+      scopes: [], processInterfaces: [],
       process: {
         bindings: [{
           name: "root",

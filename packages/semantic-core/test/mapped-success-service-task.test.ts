@@ -157,7 +157,7 @@ test("commits the literal input as immutable effect arguments", () => {
     },
   ]);
   assert.deepEqual(waiting.state.variables, {
-    processInterfaces: [],
+    scopes: [], processInterfaces: [],
     process: { bindings: [] },
     activities: [{
       owner: createEffectLocalDataOwner(effectId),
@@ -184,7 +184,7 @@ test("maps one successful local patch into Process scope and removes local state
   assert.equal(completed.outcome, CommandOutcome.Committed);
   assert.deepEqual(completed.state.effectWaits, []);
   assert.deepEqual(completed.state.variables, {
-    processInterfaces: [],
+    scopes: [], processInterfaces: [],
     process: {
       bindings: [{
         name: "resultValue",
@@ -200,7 +200,7 @@ test("maps one successful local patch into Process scope and removes local state
   const hostOwnedMappingMutation = {
     ...waiting,
     variables: {
-      processInterfaces: [],
+      scopes: [], processInterfaces: [],
       process: {
         bindings: successResult.localPatch,
       },
@@ -314,7 +314,7 @@ test("keys local scopes by complete occurrence and removes only the matching own
   );
 
   assert.deepEqual(completed, {
-    processInterfaces: [],
+    scopes: [], processInterfaces: [],
     process: {
       bindings: [{
         name: "resultValue",

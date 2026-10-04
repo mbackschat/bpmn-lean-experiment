@@ -33,6 +33,8 @@ private theorem completion_update (program : Program) (before after : RuntimeSta
         let completed := { before with
           tokens := addToken before.tokens place parent
           scopeOccurrences := before.scopeOccurrences.filter (fun scope => decide (scope.id ≠ selected.root.id))
+          variables := { before.variables with scopes :=
+            (before.variables.scopes.filter fun scope => decide (scope.owner ≠ selected.root.id)) }
           eventSubProcessMessageSubscriptions := before.eventSubProcessMessageSubscriptions.filter
             (fun listener => decide (listener.owner ≠ selected.root.id)) }
         match (generalizing := false) withdrawal with
@@ -87,6 +89,8 @@ theorem preparedRegional_execution_fields (program : Program) (before after : Ru
             let completed := { before with
               tokens := addToken before.tokens place parent
               scopeOccurrences := before.scopeOccurrences.filter (fun scope => decide (scope.id ≠ prepared.selection.root.id))
+              variables := { before.variables with scopes :=
+                (before.variables.scopes.filter fun scope => decide (scope.owner ≠ prepared.selection.root.id)) }
               eventSubProcessMessageSubscriptions := before.eventSubProcessMessageSubscriptions.filter
                 (fun listener => decide (listener.owner ≠ prepared.selection.root.id)) }
             match (generalizing := false) withdrawal with
@@ -154,6 +158,8 @@ theorem preparedCompletion_filter_update (program : Program) (before after : Run
     after = { before with
       tokens := addToken before.tokens output parent
       scopeOccurrences := before.scopeOccurrences.filter (fun scope => decide (scope.id ≠ prepared.selection.root.id))
+      variables := { before.variables with scopes :=
+        (before.variables.scopes.filter fun scope => decide (scope.owner ≠ prepared.selection.root.id)) }
       eventSubProcessMessageSubscriptions := before.eventSubProcessMessageSubscriptions.filter
         (fun listener => decide (listener.owner ≠ prepared.selection.root.id))
       timerWaits := before.timerWaits.filter (regionalSelectionReferenceRetention before prepared.selection).timer

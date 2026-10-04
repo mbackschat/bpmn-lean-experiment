@@ -89,7 +89,7 @@ private def ready : RuntimeState :=
     activations := [{ taskId := ⟨"UserTask_Coverage"⟩, count := 2 }]
     activityActivations := [{ taskId := ⟨"UserTask_Coverage"⟩, count := 7 }]
     logicalTimeMs := 321
-    variables := { process := { bindings := [summary] }, activities := [], processInterfaces := [] } }
+    variables := { process := { bindings := [summary] }, activities := [], processInterfaces := [], scopes := [] } }
 
 private def frontier : List SemanticOperation := [data, ordinary, routing]
 private def prepared : List PreparedInternalTransition :=

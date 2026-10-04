@@ -44,6 +44,7 @@ import BpmnSemantics.SubProcessErrorPropagationConformance
 import BpmnSemantics.SemanticProcess.ErrorPropagation
 import BpmnSemantics.ScopeCancellationConformance
 import BpmnSemantics.ScopeCompletionConformance
+import BpmnSemantics.ScopeVariableDataConformance
 import BpmnSemantics.ScopeStorageOrderConformance
 import BpmnSemantics.SemanticProcess.ScopeStorageOrder
 import BpmnSemantics.ActivityBoundaryTimerConformance

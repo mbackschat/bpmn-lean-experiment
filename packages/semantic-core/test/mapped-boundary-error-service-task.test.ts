@@ -262,7 +262,7 @@ test("applies the validated null patch and opens only the boundary route", () =>
     },
   ]);
   assert.deepEqual(caught.state.variables, {
-    processInterfaces: [],
+    scopes: [], processInterfaces: [],
     process: { bindings: [
     {
       name: "resultValue",

@@ -121,7 +121,7 @@ theorem arming_ordinary_completion_commutes (before : RuntimeState) (arm : Prepa
       cases write : patch.arm.write
       all_goals
         simp only [PreparedInternalArming.apply, PreparedInternalArming.scopeFramePatch,
-          applyInternalDataArmingPatch, applyInternalArmingPatch, write] at quiet continuation ⊢
+          applyInternalDataArmingPatch, applyInternalArmingPatch, addActivityOccurrenceVariableScope, write] at quiet continuation ⊢
         simp only [completeScopeState?, census, quiet]
         split
         · rfl

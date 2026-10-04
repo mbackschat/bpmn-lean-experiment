@@ -173,7 +173,7 @@ def cancellationCounterexampleState : RuntimeState :=
               bindings := [{ name := "suspended", value := .string "gone" }] }
           , { owner := .effectOccurrence extraEffectId
               bindings := [{ name := "open", value := .string "gone" }] } ]
-        processInterfaces := [] }
+        processInterfaces := [], scopes := [] }
     activations := [{ taskId := ⟨"HistoryTask"⟩, count := 7 }]
     messageActivations := [{ elementId := ⟨"HistoryMessage"⟩, count := 6 }]
     timerActivations := [{ elementId := ⟨"HistoryTimer"⟩, count := 5 }]

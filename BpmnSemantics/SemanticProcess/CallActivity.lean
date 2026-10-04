@@ -245,6 +245,7 @@ def removeCalledProcessTree (state : RuntimeState)
         !removed.contains wait.handlerId.processInstanceId
     variables :=
       { state.variables with
+        scopes := state.variables.scopes.filter fun scope => !removedOwner scope.owner
         processInterfaces := state.variables.processInterfaces.filter fun scope =>
           !removedOwner scope.owner
         activities := state.variables.activities.filter fun activity =>

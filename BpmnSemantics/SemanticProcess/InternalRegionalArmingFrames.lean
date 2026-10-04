@@ -165,7 +165,10 @@ theorem preparedRegional_interface_census (program : Program) (before after : Ru
       have raw : completeSelectedScope? program before definition output = some after := by
         simp only [fire?, snapshots] at fired
         exact fired
-      rw [regionalLocalData_selected_completion_variables program before after definition output raw]
+      have interfaces := congrArg ScopedVariables.processInterfaces
+        (regionalLocalData_selected_completion_variables program before after definition output raw)
+      change after.variables.processInterfaces = before.variables.processInterfaces at interfaces
+      rw [interfaces]
   | throwError id origin input error handler =>
       have raw : throwErrorState? before input error handler = some after := by
         simp only [fire?, snapshots] at fired

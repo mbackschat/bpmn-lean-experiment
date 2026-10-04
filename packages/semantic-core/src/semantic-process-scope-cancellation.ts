@@ -183,6 +183,7 @@ function removeScopeOccurrenceRegion(
     ),
     variables: {
       ...withoutCalledProcesses.variables,
+      scopes: withoutCalledProcesses.variables.scopes.filter(({ owner }) => !isRemovedSnapshotOwner(owner)),
       processInterfaces: withoutCalledProcesses.variables.processInterfaces.filter(
         ({ owner }) => !isRemovedSnapshotOwner(owner),
       ),

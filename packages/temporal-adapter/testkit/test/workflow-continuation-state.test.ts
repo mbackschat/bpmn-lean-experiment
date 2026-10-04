@@ -157,7 +157,7 @@ const resumable = {
   eventRaces: [],
   calledProcessOccurrences: [],
   activityOccurrences: [],
-  variables: { processInterfaces: [], process: { bindings: [] }, activities: [] },
+  variables: { scopes: [], processInterfaces: [], process: { bindings: [] }, activities: [] },
   taskActivations: [],
   messageActivations: [],
   timerActivations: [{ elementId: "TimerCatch_1", count: 1 }],
@@ -251,6 +251,20 @@ test("continuation requires the Process interface collection without a legacy de
     assert.throws(() => requireBpmnWorkflowContinuationStateV1(
       { ...resumable, variables: { ...resumable.variables, processInterfaces } },
       program, instanceId,
+    ));
+  }
+});
+
+test("continuation requires scope storage and refuses unselected body data", () => {
+  const { scopes: omitted, ...legacyVariables } = resumable.variables;
+  assert.deepEqual(omitted, []);
+  assert.throws(() => requireBpmnWorkflowContinuationStateV1(
+    { ...resumable, variables: legacyVariables }, program, instanceId,
+  ));
+  const owner = resumable.scopeOccurrences[0]!.id;
+  for (const scopes of [null, {}, [{ owner: {}, bindings: [] }], [{ owner, bindings: [] }]]) {
+    assert.throws(() => requireBpmnWorkflowContinuationStateV1(
+      { ...resumable, variables: { ...resumable.variables, scopes } }, program, instanceId,
     ));
   }
 });

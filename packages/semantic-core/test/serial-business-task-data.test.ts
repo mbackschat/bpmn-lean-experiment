@@ -42,7 +42,7 @@ test("captured arguments validate against their declaration without rereading ch
 test("present null is an input value and requires explicit permission in a success result", () => {
   const nullBinding = { name: "result", value: { kind: VariableValueKind.Null } } as const;
   assert.deepEqual(evaluateInputMappings([inputs[0]!], [{ ...nullBinding, name: "request" }]), [{ ...nullBinding, name: "payload" }]);
-  const variables = { processInterfaces: [], process: { bindings: [] }, activities: [{ owner: createEffectLocalDataOwner(owner), bindings: [binding("result", "input-value")] }] };
+  const variables = { scopes: [], processInterfaces: [], process: { bindings: [] }, activities: [{ owner: createEffectLocalDataOwner(owner), bindings: [binding("result", "input-value")] }] };
   const outputs = ["decision", "receipt"].map(target => ({ target, expression: { kind: MappingExpressionKind.LocalVariable, name: "result" } } as const));
   assert.equal(completeActivityVariableScope(variables, owner, outputs, [], true), null);
   assert.equal(completeActivityVariableScope(variables, owner, outputs, [nullBinding], false), null);
@@ -53,7 +53,7 @@ test("present null is an input value and requires explicit permission in a succe
 
 test("one explicit local result can feed two declared outputs without parent fallback", () => {
   const variables = {
-    processInterfaces: [],
+    scopes: [], processInterfaces: [],
     process: { bindings: [binding("result", "parent"), binding("unrelated", "keep")] },
     activities: [{ owner: createEffectLocalDataOwner(owner), bindings: [binding("payload", "reviewed")] }],
   };
@@ -62,7 +62,7 @@ test("one explicit local result can feed two declared outputs without parent fal
   assert.equal(completeActivityVariableScope(variables, owner, outputs, [], false), null);
   const completed = completeActivityVariableScope(variables, owner, outputs, [binding("result", "approved")], false);
   assert.deepEqual(completed, {
-    processInterfaces: [],
+    scopes: [], processInterfaces: [],
     process: { bindings: [binding("decision", "approved"), binding("receipt", "approved"), binding("result", "parent"), binding("unrelated", "keep")] },
     activities: [],
   });

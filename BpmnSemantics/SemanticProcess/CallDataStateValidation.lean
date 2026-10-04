@@ -70,7 +70,7 @@ def callDataRuntimeStateValid (program : Program) (state : RuntimeState) : Bool 
       match state.control with
       | .notStarted => state == initialState
       | .running host =>
-          callDataStartBindingsAdmitted program state.variables.process.bindings &&
+          state.variables.scopes.isEmpty && callDataStartBindingsAdmitted program state.variables.process.bindings &&
             runtimePositionValid program host state && calledProcessAssociationsValid state &&
             state.calledProcessOccurrences.length ≤ 1 &&
             state.scopeOccurrences.length == state.calledProcessOccurrences.length + 1 &&
@@ -81,7 +81,7 @@ def callDataRuntimeStateValid (program : Program) (state : RuntimeState) : Bool 
             state.activityOccurrences.length == state.waits.length &&
             state.variables.activities.length == state.waits.length
       | .completed _ | .cancelled _ | .failed .. =>
-          callDataStartBindingsAdmitted program state.variables.process.bindings &&
+          state.variables.scopes.isEmpty && callDataStartBindingsAdmitted program state.variables.process.bindings &&
             state.variables.processInterfaces.isEmpty && state.calledProcessOccurrences.isEmpty &&
             state.waits.isEmpty && state.activityOccurrences.isEmpty && state.variables.activities.isEmpty
 

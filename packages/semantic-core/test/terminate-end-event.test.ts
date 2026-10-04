@@ -415,7 +415,7 @@ test("regional termination removes every child owner while retaining the child r
       withdrawnActivity,
     ],
     variables: {
-      processInterfaces: [],
+      scopes: [], processInterfaces: [],
       process: {
         bindings: [{
           name: "preserved",

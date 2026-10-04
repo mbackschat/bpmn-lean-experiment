@@ -72,6 +72,7 @@ This contributor map assigns source-file responsibilities inside `@bpmn-lean/sem
 | [structured-parallel-body-analysis.ts](src/structured-parallel-body-analysis.ts) | Private linear-time serial/paired-parallel topology check, including separate branch Ends; [discriminators](test/structured-parallel-body-analysis.test.ts) preserve multiplicity and reject crossing/incomplete regions |
 | [mixed-task-control-flow-admission.ts](src/mixed-task-control-flow-admission.ts) | Private checked/IL graph and command admission, including attached [business Error routes](../../docs/capsules/MIXED-TASK-BUSINESS-ERROR-PROPOSAL.md#implementation-progress) |
 | [process-interface-data.ts](src/process-interface-data.ts) | Private scalar Process-interface selection, snapshot insertion and isolated output replacement by complete scope occurrence |
+| [scope-variable-data.ts](src/scope-variable-data.ts) | Unique complete-owner selection, pre-entry initialization, null shadowing, nearest enclosing writes and exact disposal for private body declarations |
 | [local-data-owner.ts](src/local-data-owner.ts) | Closed effect-or-Activity ownership identity for Activity-local variable scopes |
 | [call-activity-admission.ts](src/call-activity-admission.ts) | Cross-definition invocation and return pairing |
 | [semantic-process-call-runtime.ts](src/semantic-process-call-runtime.ts) | Called-instance lifecycle and subtree cleanup |

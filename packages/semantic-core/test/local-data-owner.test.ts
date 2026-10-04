@@ -135,7 +135,7 @@ test("effect completion removes only the effect arm with equal coordinates", () 
   assert.deepEqual(completed, {
     process: { bindings: [] },
     activities: [{ owner: activityOwner, bindings: [] }],
-    processInterfaces: [],
+    scopes: [], processInterfaces: [],
   });
 });
 

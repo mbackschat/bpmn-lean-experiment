@@ -24,7 +24,8 @@ export function isPristineRuntimeState(state: RuntimeState): boolean {
     compensationParentContextRetentions: state.compensationParentContextRetentions === initialState.compensationParentContextRetentions,
     compensationTriggers: state.compensationTriggers === initialState.compensationTriggers,
     compensationHandlerEffectWaits: state.compensationHandlerEffectWaits === initialState.compensationHandlerEffectWaits,
-    variables: state.variables.process.bindings.length === initialState.variables.process.bindings.length &&
+    variables: state.variables.scopes.length === initialState.variables.scopes.length &&
+      state.variables.process.bindings.length === initialState.variables.process.bindings.length &&
       state.variables.activities.length === initialState.variables.activities.length &&
       state.variables.processInterfaces.length === initialState.variables.processInterfaces.length,
     taskActivations: state.taskActivations.length === initialState.taskActivations.length,

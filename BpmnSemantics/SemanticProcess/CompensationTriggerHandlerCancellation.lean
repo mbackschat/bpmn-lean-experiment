@@ -99,7 +99,7 @@ inductive CompensationHandlerFailureCancellationStep (before : RuntimeState)
           compensationTriggers := before.compensationTriggers.map fun candidate =>
             if candidate.id == trigger.id then failedTrigger else candidate
           compensationHandlerEffectWaits := []
-          variables := { before.variables with activities := [], processInterfaces := [] } }) :
+          variables := { before.variables with activities := [], processInterfaces := [], scopes := [] } }) :
       CompensationHandlerFailureCancellationStep before wait trigger handler code message after
 
 theorem CompensationHandlerFailureCancellationStep.activity_identity_discipline

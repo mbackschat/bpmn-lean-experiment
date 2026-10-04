@@ -4,7 +4,7 @@
 
 The private [mixed-task control-flow checkpoint](../../docs/capsules/MIXED-TASK-CONTROL-FLOW-PROPOSAL.md) covers branching and rework over User and Service Tasks with independent Lean/TypeScript evidence. The [business Error extension](../../docs/capsules/MIXED-TASK-BUSINESS-ERROR-PROPOSAL.md#implementation-progress) is in progress; its TypeScript raw admission and execution checks pass. Hosting qualification remains open.
 
-The [sequential MI Sub-Process proposal](../../docs/capsules/SEQUENTIAL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#implementation-progress) has a private body-topology checker. It is not connected to source or runtime admission.
+The [sequential MI Sub-Process proposal](../../docs/capsules/SEQUENTIAL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#implementation-progress) has private body-topology and occurrence-owned data components. Source admission and repeated-body execution remain open.
 
 ## What you can do
 

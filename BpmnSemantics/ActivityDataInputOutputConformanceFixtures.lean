@@ -146,7 +146,7 @@ def seededReady : RuntimeState :=
     control := .running claimInstanceId
     scopeOccurrences := [{ id := claimScopeOwner, parent := none }]
     tokens := [{ placeId := ⟨"place:Flow_ClaimReceived_Assess"⟩, owner := claimScopeOwner }]
-    variables := { process := { bindings := [summary, unrelated] }, activities := [], processInterfaces := [] }
+    variables := { process := { bindings := [summary, unrelated] }, activities := [], processInterfaces := [], scopes := [] }
     scopeActivations := [{ scopeId := claimDefinitionScopeId, count := 1 }] }
 
 theorem seededReady_is_seeded_start :
@@ -189,7 +189,7 @@ def active : RuntimeState :=
         activities :=
           [{ owner := .activityOccurrence claimActivityOwner
              bindings := [{ name := claimDirectInput.targetDataInputId, value := summary.value }] }]
-        processInterfaces := [] }
+        processInterfaces := [], scopes := [] }
     activations := [{ taskId := ⟨"UserTask_AssessClaim"⟩, count := 1 }]
     scopeActivations := [{ scopeId := claimDefinitionScopeId, count := 1 }]
     activityActivations := [{ taskId := ⟨"UserTask_AssessClaim"⟩, count := 1 }] }
@@ -218,7 +218,7 @@ def approved : StimulusResult :=
                   [{ name := claimDirectOutput.target.id, value := .string "approve" },
                    summary, unrelated] }
             activities := []
-            processInterfaces := [] }
+            processInterfaces := [], scopes := [] }
         activations := [{ taskId := ⟨"UserTask_AssessClaim"⟩, count := 1 }]
         scopeActivations := [{ scopeId := claimDefinitionScopeId, count := 1 }]
         activityActivations := [{ taskId := ⟨"UserTask_AssessClaim"⟩, count := 1 }]

@@ -194,7 +194,7 @@ def compensationFailureSuccessor (state : RuntimeState)
       compensationTriggers :=
         replaceTrigger selected.trigger failedTrigger state.compensationTriggers
       compensationHandlerEffectWaits := []
-      variables := { state.variables with activities := [], processInterfaces := [] } }
+      variables := { state.variables with activities := [], processInterfaces := [], scopes := [] } }
   successor
 
 private theorem failOtherHandler_sound (failed candidate : CompensationHandlerExecution) :

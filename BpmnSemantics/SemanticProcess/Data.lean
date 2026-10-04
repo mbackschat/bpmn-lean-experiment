@@ -44,17 +44,25 @@ structure ProcessInterfaceScope where
   outputs : List VariableBinding
   deriving Repr, DecidableEq
 
-/-- The single runtime representation for Process, callable-interface, and Activity-local data. -/
+/-- SMIS-DATA-01 keeps embedded-body declarations on their complete scope occurrence. -/
+structure ScopeVariableScope where
+  owner : ScopeOccurrenceId
+  bindings : List VariableBinding
+  deriving Repr, DecidableEq
+
+/-- The single runtime representation for Process, callable-interface, scope-local and Activity-local data. -/
 structure ScopedVariables where
   process : ProcessVariableScope
   activities : List ActivityVariableScope
   processInterfaces : List ProcessInterfaceScope
+  scopes : List ScopeVariableScope
   deriving Repr, DecidableEq
 
 def emptyScopedVariables : ScopedVariables :=
   { process := { bindings := [] }
     activities := []
-    processInterfaces := [] }
+    processInterfaces := []
+    scopes := [] }
 
 private def insertVariableBinding (binding : VariableBinding) :
     List VariableBinding → List VariableBinding

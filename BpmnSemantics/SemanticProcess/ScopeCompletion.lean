@@ -54,6 +54,7 @@ def completeQuiescentScope? (state : RuntimeState)
       else some ({ state with
           control := .completed instanceId
           scopeOccurrences := []
+          variables := { state.variables with scopes := [] }
           eventSubProcessMessageSubscriptions := state.eventSubProcessMessageSubscriptions.filter fun listener =>
             decide (listener.owner ≠ occurrence.id)
           compensationActivityRetentions :=
@@ -63,6 +64,8 @@ def completeQuiescentScope? (state : RuntimeState)
       if state.scopeOccurrences.any fun candidate => candidate.id == parent then
         some ({ state with
             tokens := addToken state.tokens output parent
+            variables := { state.variables with scopes :=
+              (state.variables.scopes.filter fun scope => decide (scope.owner ≠ occurrence.id)) }
             eventSubProcessMessageSubscriptions := state.eventSubProcessMessageSubscriptions.filter fun listener =>
               decide (listener.owner ≠ occurrence.id)
             scopeOccurrences := state.scopeOccurrences.filter fun candidate =>
@@ -94,6 +97,7 @@ theorem completeScopeState_selected_update (state completed : RuntimeState)
           else some { state with
             control := .completed instanceId
             scopeOccurrences := []
+            variables := { state.variables with scopes := [] }
             eventSubProcessMessageSubscriptions := state.eventSubProcessMessageSubscriptions.filter fun listener =>
               decide (listener.owner ≠ occurrence.id)
             compensationActivityRetentions := state.compensationActivityRetentions.filter fun retention =>
@@ -102,6 +106,8 @@ theorem completeScopeState_selected_update (state completed : RuntimeState)
           if state.scopeOccurrences.any (fun candidate => candidate.id == parent) then
             some { state with
               tokens := addToken state.tokens output parent
+              variables := { state.variables with scopes :=
+                (state.variables.scopes.filter fun scope => decide (scope.owner ≠ occurrence.id)) }
               eventSubProcessMessageSubscriptions := state.eventSubProcessMessageSubscriptions.filter fun listener =>
                 decide (listener.owner ≠ occurrence.id)
               scopeOccurrences := state.scopeOccurrences.filter fun candidate => decide (candidate.id ≠ occurrence.id) }
@@ -112,6 +118,36 @@ theorem completeScopeState_selected_update (state completed : RuntimeState)
   · simp at completion
   · rename_i quiet
     exact ⟨by simpa using quiet, completion⟩
+
+/-- SMIS-DATA-01 retires exactly the completed child frame, or all frames when the root closes. -/
+theorem completeScopeState_variable_fields (state completed : RuntimeState)
+    (scopeId : DefinitionScopeId) (parentOutput : Option ControlPlaceId)
+    (occurrence : RuntimeScopeOccurrence)
+    (unique : state.scopeOccurrences.filter (fun candidate =>
+      decide (candidate.id.definitionScopeId = scopeId)) = [occurrence])
+    (completion : completeScopeState? state scopeId parentOutput = some completed) :
+    completed.variables = { state.variables with scopes := match occurrence.parent with
+      | none => []
+      | some _ => state.variables.scopes.filter fun scope => decide (scope.owner ≠ occurrence.id) } := by
+  have update := (completeScopeState_selected_update state completed scopeId parentOutput occurrence unique completion).2
+  repeat' split at update
+  all_goals first
+    | (simp at update; done)
+    | (simp only [Option.some.injEq] at update; subst completed; simp_all)
+
+/-- Completion preserves Process, Activity and interface data while disposing scope-local frames. -/
+theorem completeScopeState_preserves_unrelated_variables (state completed : RuntimeState)
+    (scopeId : DefinitionScopeId) (parentOutput : Option ControlPlaceId)
+    (completion : completeScopeState? state scopeId parentOutput = some completed) :
+    { completed.variables with scopes := state.variables.scopes } = state.variables := by
+  have original := completion
+  unfold completeScopeState? at completion
+  split at completion
+  · rename_i occurrence unique
+    split at completion
+    · simp at completion
+    · rw [completeScopeState_variable_fields state completed scopeId parentOutput occurrence unique original]
+  · simp at completion
 
 private theorem completeQuiescentScope_preserves_unrelated_components
     (state completed : RuntimeState) (occurrence : RuntimeScopeOccurrence)

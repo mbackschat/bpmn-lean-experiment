@@ -162,20 +162,11 @@ theorem regionalRetainedLocalDataClosed_after_filter (before after : RuntimeStat
 theorem regionalLocalData_completion_variables (program : Program) (before after : RuntimeState)
     (scopeId : DefinitionScopeId) (parentOutput : Option ControlPlaceId)
     (result : completeBoundedScope? program before scopeId parentOutput = some after) :
-    after.variables = before.variables := by
+    { after.variables with scopes := before.variables.scopes } = before.variables := by
   have ordinaryVariables (completed : RuntimeState)
       (ordinary : completeScopeState? before scopeId parentOutput = some completed) :
-      completed.variables = before.variables := by
-    unfold completeScopeState? at ordinary
-    split at ordinary
-    · split at ordinary
-      · simp at ordinary
-      · unfold completeQuiescentScope? at ordinary
-        repeat' split at ordinary
-        all_goals first
-          | (simp at ordinary; done)
-          | (simp only [Option.some.injEq] at ordinary; subst completed; rfl)
-    · simp at ordinary
+      { completed.variables with scopes := before.variables.scopes } = before.variables :=
+    completeScopeState_preserves_unrelated_variables before completed scopeId parentOutput ordinary
   unfold completeBoundedScope? at result
   cases ordinary : completeScopeState? before scopeId parentOutput with
   | none => simp [ordinary] at result
@@ -191,7 +182,7 @@ Activity-local values exactly; preparation separately checks retained local owne
 theorem regionalLocalData_selected_completion_variables (program : Program) (before after : RuntimeState)
     (scopeId : DefinitionScopeId) (parentOutput : Option ControlPlaceId)
     (result : completeSelectedScope? program before scopeId parentOutput = some after) :
-    after.variables = before.variables := by
+    { after.variables with scopes := before.variables.scopes } = before.variables := by
   unfold completeSelectedScope? at result
   split at result
   · have step := completeMonitoredScope_sound program before after scopeId parentOutput result

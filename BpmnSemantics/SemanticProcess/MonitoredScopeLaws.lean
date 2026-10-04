@@ -48,7 +48,7 @@ theorem monitored_scope_completion_retires_timer (program : Program) (state : Ru
 theorem monitored_scope_completion_handler_frames (state : RuntimeState) (pair : MonitoredScopePair) :
     let after := completeMonitoredScopePair state pair
     after.waits = state.waits ∧ after.messageWaits = state.messageWaits ∧
-    after.variables = state.variables ∧ after.logicalTimeMs = state.logicalTimeMs ∧
+    { after.variables with scopes := state.variables.scopes } = state.variables ∧ after.logicalTimeMs = state.logicalTimeMs ∧
     after.activations = state.activations ∧ after.activityActivations = state.activityActivations ∧
     after.timerActivations = state.timerActivations ∧ after.messageActivations = state.messageActivations ∧
     after.scopeActivations = state.scopeActivations ∧ after.effectActivations = state.effectActivations ∧

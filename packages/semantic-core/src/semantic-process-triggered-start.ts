@@ -178,6 +178,7 @@ export function admitTriggeredStartRoot(
       process: { bindings: [] },
       activities: [],
       processInterfaces: [],
+      scopes: [],
     },
   }, rootOccurrence);
 }

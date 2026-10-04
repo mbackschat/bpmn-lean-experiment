@@ -112,7 +112,7 @@ def waiting (name : String) : RuntimeState :=
     effectWaits := [effectWait name]
     variables :=
       { process := { bindings := [{ name := "result", value := .string "parent" }] }
-        processInterfaces := []
+        processInterfaces := [], scopes := []
         activities := [{ owner := .effectOccurrence (effectId name), bindings := [] }] } }
 
 def nullPatch : List VariableBinding := [{ name := "result", value := .null }]
@@ -124,7 +124,7 @@ def completedAt (name continuation : String) : RuntimeState :=
     variables :=
       { process := { bindings := [{ name := "decision", value := .null },
           { name := "result", value := .string "parent" }] }
-        processInterfaces := []
+        processInterfaces := [], scopes := []
         activities := [] } }
 
 theorem primitive_success_maps_null_and_preserves_parent :

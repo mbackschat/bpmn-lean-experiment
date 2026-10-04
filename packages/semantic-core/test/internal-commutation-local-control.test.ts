@@ -183,7 +183,7 @@ const choiceState: RuntimeState = {
     multiplicity: 1,
   }],
   variables: {
-    processInterfaces: [],
+    scopes: [], processInterfaces: [],
     process: {
       bindings: [
         { name: "fallback", value: { kind: VariableValueKind.Null } },

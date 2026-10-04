@@ -2,7 +2,7 @@ import BpmnSemantics.SemanticProcess.InternalRegionalProjectionFrames
 import BpmnSemantics.SemanticProcess.InternalRegionalCompletionOpenProjection
 
 /-! Child completion retains every User Task and Effect wait and their exact declarations.
-Quiescence protects their live-owner census while local data remains byte-for-byte unchanged. -/
+Quiescence protects their live-owner census while Activity-local data remains byte-for-byte unchanged. -/
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

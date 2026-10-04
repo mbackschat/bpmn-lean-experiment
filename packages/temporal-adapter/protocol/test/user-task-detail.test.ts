@@ -21,7 +21,7 @@ function taskState(instanceId: string, scopeId: string): RuntimeState {
     activityOccurrences: [{ id: activity, owner, operationId: "AwaitReview", body: { kind: ActivityBodyKind.UserTask, task }, attachedHandlers: [] }],
     variables: {
       process: { bindings: [{ name: "SharedName", value: { kind: VariableValueKind.String, value: "Caller secret" } }] },
-      processInterfaces: [],
+      scopes: [], processInterfaces: [],
       activities: [{
         owner: { kind: LocalDataOwnerKind.ActivityOccurrence, id: activity },
         bindings: [{ name: "SharedName", value: { kind: VariableValueKind.String, value: "Task input" } }],

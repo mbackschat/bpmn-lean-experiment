@@ -156,8 +156,8 @@ Mechanically inspected owners and their measured headroom are below. A structura
 | Owner | Headroom before 800 nonblank lines |
 |---|---:|
 | [IL contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 135 |
-| [Runtime state](../../packages/semantic-core/src/semantic-process-state.ts) | 353 |
-| [Scope runtime](../../packages/semantic-core/src/semantic-process-scope-runtime.ts) | 543 |
+| [Runtime state](../../packages/semantic-core/src/semantic-process-state.ts) | 346 |
+| [Scope runtime](../../packages/semantic-core/src/semantic-process-scope-runtime.ts) | 539 |
 | [Public contract](../../packages/semantic-core/src/contract.ts) | 311 |
 
 The `what-binds` inventory requires [operation consumers](../../scripts/semantic-operation-consumer-census.test.ts), [runtime cleanup completeness](../../scripts/runtime-collection-removal-completeness.test.ts), [commutation census](../../scripts/internal-commutation-census.test.ts), [Activity ownership](../../scripts/activity-occurrence-writer-census.test.ts), [shared schema coverage](../../scripts/contract-schema-coverage.test.ts), [publication coverage](../../scripts/execution-publication-contract-coverage.test.ts), [Lean/source contracts](../../scripts/lean-source-contracts.test.ts), [source hygiene](../../scripts/source-hygiene.test.ts), [artifact relationship references](../../scripts/contract-artifact-projections.test.ts) and [reviewability](../../scripts/document-reviewability.test.ts). These are constraints on implementation, not proposed exemptions. Run binding discovery again for concrete new source/Lean/host paths before editing them.
@@ -171,6 +171,8 @@ The nearest unsupported claim is general MI Sub-Process support: parallel outer 
 ## Implementation progress
 
 The private [body topology checker](../../packages/semantic-core/src/structured-parallel-body-analysis.ts) consumes each node and edge once using an explicit region stack. Its [tests](../../packages/semantic-core/test/structured-parallel-body-analysis.test.ts) separate serial/nested parallel/separate-End bodies from crossing regions, partial joins, implicit forks/merges, cycles and disconnected material. Parallel edge multiplicity is retained. This component has no source/IL admission caller yet and establishes no burst, data, repeated-scope execution, Lean or hosting evidence.
+
+The private [TypeScript storage](../../packages/semantic-core/src/scope-variable-data.ts) and [Lean storage laws](../../BpmnSemantics/SemanticProcess/ScopeVariableData.lean) add complete-occurrence body frames, pre-entry mapping, present-null shadowing, nearest-existing writes and exact disposal. [Lean discriminators](../../BpmnSemantics/ScopeVariableDataConformance.lean) and [TypeScript tests](../../packages/semantic-core/test/scope-variable-data.test.ts) cover the same missing-parent, declaration-order, owner-collision, null and turnover controls. Shared completion/cancellation/call cleanup includes the new collection; retained-root Terminate preserves its frame. Continuation ingress requires the field without a legacy default and refuses nonempty body data; shared MI ownership/profile validation remains part of admission work. This is storage evidence only: source/IL selection, command policy, MI execution, complete Lean/TS scenario agreement and hosted recovery remain open.
 
 ## Independent cold-review receipt
 

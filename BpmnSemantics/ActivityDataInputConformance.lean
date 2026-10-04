@@ -50,7 +50,7 @@ private def mixedVariables : ScopedVariables :=
   addActivityVariableScope
     { process := { bindings := [] }
       activities := [activityScope]
-      processInterfaces := [] }
+      processInterfaces := [], scopes := [] }
     effectOccurrenceId
     []
 
@@ -59,7 +59,7 @@ theorem effectCompletionPreservesEqualCoordinateActivityScope :
       some
         { process := { bindings := [] }
           activities := [activityScope]
-          processInterfaces := [] } := by
+          processInterfaces := [], scopes := [] } := by
   decide +kernel
 
 /-! ## The invoice-review witnesses

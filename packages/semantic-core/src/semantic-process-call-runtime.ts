@@ -410,6 +410,7 @@ function removeCalledProcessTree(
     ),
     variables: {
       ...state.variables,
+      scopes: state.variables.scopes.filter(({ owner }) => !removedOwner(owner)),
       processInterfaces: state.variables.processInterfaces.filter(
         ({ owner }) => !removedOwner(owner),
       ),

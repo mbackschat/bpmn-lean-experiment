@@ -194,7 +194,7 @@ def nestedCounterexampleState : RuntimeState :=
                 elementId := ⟨"ChildEffect"⟩
                 activation := 1 }
              bindings := [{ name := "local", value := .string "gone" }] }]
-        processInterfaces := [] }
+        processInterfaces := [], scopes := [] }
     activations := [{ taskId := ⟨"HistoryTask"⟩, count := 7 }]
     messageActivations := [{ elementId := ⟨"HistoryMessage"⟩, count := 6 }]
     timerActivations := [{ elementId := ⟨"HistoryTimer"⟩, count := 5 }]

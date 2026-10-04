@@ -130,7 +130,7 @@ theorem completion_preserves_parallel_bindings (program : Program) (before after
     (fields : regionalReferenceFieldsMatch before after (regionalSelectionReferenceRetention before selected))
     (tasks : after.waits = before.waits)
     (controllers : after.parallelMultiInstanceControllers = before.parallelMultiInstanceControllers)
-    (variables : after.variables = before.variables)
+    (processBindings : after.variables.process.bindings = before.variables.process.bindings)
     (activations : ∀ id, activationCount after id = activationCount before id)
     (activityActivations : ∀ id, activityActivationCount after id = activityActivationCount before id)
     (timerActivations : ∀ id, timerActivationCount after id = timerActivationCount before id)
@@ -166,7 +166,7 @@ theorem completion_preserves_parallel_bindings (program : Program) (before after
     exact parallel_binding_of_retained_work program before after controller (fun _ => true)
       facts prior recordFrame (tasks.trans (List.filter_eq_self.mpr (by intros; rfl)).symm)
       (fields.2.2.2.2.1 ▸ List.filter_sublist)
-      bodies afterBodies (by rw [variables]) activations activityActivations timerActivations
+      bodies afterBodies processBindings activations activityActivations timerActivations
   · intro controller member entry arm tuple
     have kept := completion_keeps_task_body before selected withdrawal kind tuple.record (Or.inr (by simp [tuple.body]))
     have present : tuple.record ∈ before.activityOccurrences.filter (regionalParallelNamesRecord controller) := by

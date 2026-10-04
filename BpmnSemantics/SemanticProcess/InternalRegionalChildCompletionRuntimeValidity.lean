@@ -2,7 +2,7 @@ import BpmnSemantics.SemanticProcess.InternalRegionalCompletionMultiInstanceVali
 import BpmnSemantics.SemanticProcess.InternalRegionalCompletionCompensationValidity
 import BpmnSemantics.SemanticProcess.InternalRegionalChildProjectionValidity
 
-/-! Child completion changes scope/token positions, expires owned passive listeners and may
+/-! Child completion changes scope/token positions, disposes its scope-local frame, expires owned passive listeners and may
 withdraw one bounded Activity and its deadline. Owner closure protects the
 retained Activity owners that quiescence alone does not constrain. -/
 
@@ -18,6 +18,7 @@ private theorem child_completion_runtime_frame (program : Program) (before after
     after = { before with
       scopeOccurrences := after.scopeOccurrences, tokens := after.tokens
       timerWaits := after.timerWaits, activityOccurrences := after.activityOccurrences
+      variables := { before.variables with scopes := after.variables.scopes }
       eventSubProcessMessageSubscriptions := after.eventSubProcessMessageSubscriptions } := by
   obtain ⟨ordinary, completed, timers, activities, rfl⟩ :=
     completeSelectedScope_ordinary_withdrawal program before after definition (some output) result
@@ -57,6 +58,7 @@ private theorem child_completion_wait_owners (before after : RuntimeState)
     (frame : after = { before with
       scopeOccurrences := after.scopeOccurrences, tokens := after.tokens
       timerWaits := after.timerWaits, activityOccurrences := after.activityOccurrences
+      variables := { before.variables with scopes := after.variables.scopes }
       eventSubProcessMessageSubscriptions := after.eventSubProcessMessageSubscriptions })
     (scopes : after.scopeOccurrences = before.scopeOccurrences.filter
       (fun scope => decide (scope.id ≠ selected.root.id)))
@@ -172,8 +174,10 @@ theorem preparedChildComplete_preserves_runtimeStateWellFormed (program : Progra
     (by rw [controllerFrame]; exact List.Sublist.refl _) waitIds activityIds controllerIds
   have nextSequential := completion_preserves_sequential_bindings program before after prepared.selection withdrawal kind
     fields taskFrame controllerFrame closed activities sequential controllerIds bodyClaims timers
+  have processBindings := congrArg (fun variables : ScopedVariables => variables.process.bindings)
+    (regionalLocalData_selected_completion_variables program before after definition (some output) result)
   have nextParallel := completion_preserves_parallel_bindings program before after prepared.selection withdrawal kind
-    fields taskFrame (by rw [frame]) (by rw [frame]) (by intro; rw [frame]; rfl)
+    fields taskFrame (by rw [frame]) processBindings (by intro; rw [frame]; rfl)
     (by intro; rw [frame]; rfl) (by intro; rw [frame]; rfl) closed activities parallel bodyClaims timers
   have nextControllers : controllersOwnLiveActivity after = true := by
     unfold controllersOwnLiveActivity

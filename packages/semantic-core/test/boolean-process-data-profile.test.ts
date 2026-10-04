@@ -314,7 +314,7 @@ test("rejects Boolean effect success and BPMN Error patches with exact state pre
       incidentAlreadyRetried: false,
     }],
     variables: {
-      processInterfaces: [],
+      scopes: [], processInterfaces: [],
       process: waiting.variables.process,
       activities: [{ owner: createEffectLocalDataOwner(effectId), bindings: [] }],
     },

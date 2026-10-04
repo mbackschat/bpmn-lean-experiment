@@ -235,7 +235,7 @@ export function startedState(stimulus: { initialVariables: ReadonlyArray<Variabl
     scopeOccurrences: [{ id: owner, parent: null }],
     scopeActivations: [{ elementId: owner.definitionScopeId, count: 1 }],
     variables: {
-      processInterfaces: [],
+      scopes: [], processInterfaces: [],
       process: { bindings: [...stimulus.initialVariables] },
       activities: [],
     },

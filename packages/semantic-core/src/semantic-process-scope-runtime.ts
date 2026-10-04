@@ -145,6 +145,7 @@ export function completeScope(
           instanceId: selected.instanceId,
         },
         scopeOccurrences: [],
+        variables: { ...state.variables, scopes: [] },
         ...(state.eventSubProcessMessageSubscriptions === undefined ? {} : {
           eventSubProcessMessageSubscriptions: state.eventSubProcessMessageSubscriptions.filter(
             ({ owner }) => !sameScopeOccurrence(owner, selected.occurrence.id),
@@ -172,6 +173,9 @@ export function completeScope(
           selected.parentOutput,
           selected.parent,
         ),
+        variables: { ...state.variables, scopes: state.variables.scopes.filter(
+          ({ owner }) => !sameScopeOccurrence(owner, selected.occurrence.id),
+        ) },
         scopeOccurrences: state.scopeOccurrences.filter(
           (candidate) => candidate !== selected.occurrence,
         ),

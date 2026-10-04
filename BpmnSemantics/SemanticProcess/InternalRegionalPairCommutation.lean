@@ -94,6 +94,8 @@ private theorem prepared_completion_fields (program : Program) (before after : R
     after = { before with
       tokens := after.tokens
       scopeOccurrences := before.scopeOccurrences.filter (fun scope => decide (scope.id ≠ prepared.selection.root.id))
+      variables := { before.variables with scopes :=
+        (before.variables.scopes.filter fun scope => decide (scope.owner ≠ prepared.selection.root.id)) }
       eventSubProcessMessageSubscriptions := before.eventSubProcessMessageSubscriptions.filter
         (fun listener => decide (listener.owner ≠ prepared.selection.root.id))
       timerWaits := before.timerWaits.filter (regionalSelectionReferenceRetention before prepared.selection).timer
@@ -147,6 +149,8 @@ private theorem completion_updates_commute (before afterLeft afterRight : Runtim
     (leftUpdate : afterLeft = { before with
       tokens := afterLeft.tokens
       scopeOccurrences := before.scopeOccurrences.filter (fun scope => decide (scope.id ≠ leftRoot))
+      variables := { before.variables with scopes :=
+        (before.variables.scopes.filter fun scope => decide (scope.owner ≠ leftRoot)) }
       eventSubProcessMessageSubscriptions := before.eventSubProcessMessageSubscriptions.filter
         (fun listener => decide (listener.owner ≠ leftRoot))
       timerWaits := before.timerWaits.filter leftTimer
@@ -154,6 +158,8 @@ private theorem completion_updates_commute (before afterLeft afterRight : Runtim
     (rightUpdate : afterRight = { before with
       tokens := afterRight.tokens
       scopeOccurrences := before.scopeOccurrences.filter (fun scope => decide (scope.id ≠ rightRoot))
+      variables := { before.variables with scopes :=
+        (before.variables.scopes.filter fun scope => decide (scope.owner ≠ rightRoot)) }
       eventSubProcessMessageSubscriptions := before.eventSubProcessMessageSubscriptions.filter
         (fun listener => decide (listener.owner ≠ rightRoot))
       timerWaits := before.timerWaits.filter rightTimer
@@ -161,6 +167,8 @@ private theorem completion_updates_commute (before afterLeft afterRight : Runtim
     { afterLeft with
       tokens := [], endOccurrences := 0
       scopeOccurrences := afterLeft.scopeOccurrences.filter (fun scope => decide (scope.id ≠ rightRoot))
+      variables := { afterLeft.variables with scopes :=
+        (afterLeft.variables.scopes.filter fun scope => decide (scope.owner ≠ rightRoot)) }
       eventSubProcessMessageSubscriptions := afterLeft.eventSubProcessMessageSubscriptions.filter
         (fun listener => decide (listener.owner ≠ rightRoot))
       timerWaits := afterLeft.timerWaits.filter rightTimer
@@ -168,6 +176,8 @@ private theorem completion_updates_commute (before afterLeft afterRight : Runtim
     { afterRight with
       tokens := [], endOccurrences := 0
       scopeOccurrences := afterRight.scopeOccurrences.filter (fun scope => decide (scope.id ≠ leftRoot))
+      variables := { afterRight.variables with scopes :=
+        (afterRight.variables.scopes.filter fun scope => decide (scope.owner ≠ leftRoot)) }
       eventSubProcessMessageSubscriptions := afterRight.eventSubProcessMessageSubscriptions.filter
         (fun listener => decide (listener.owner ≠ leftRoot))
       timerWaits := afterRight.timerWaits.filter leftTimer
@@ -183,6 +193,8 @@ private theorem return_completion_updates_commute (before returned completed : R
     (completedUpdate : completed = { before with
       tokens := completed.tokens
       scopeOccurrences := before.scopeOccurrences.filter (fun scope => decide (scope.id ≠ root))
+      variables := { before.variables with scopes :=
+        (before.variables.scopes.filter fun scope => decide (scope.owner ≠ root)) }
       eventSubProcessMessageSubscriptions := before.eventSubProcessMessageSubscriptions.filter
         (fun listener => decide (listener.owner ≠ root))
       timerWaits := before.timerWaits.filter keepTimer
@@ -190,6 +202,8 @@ private theorem return_completion_updates_commute (before returned completed : R
     { returned with
       tokens := [], endOccurrences := 0
       scopeOccurrences := returned.scopeOccurrences.filter (fun scope => decide (scope.id ≠ root))
+      variables := { returned.variables with scopes :=
+        (returned.variables.scopes.filter fun scope => decide (scope.owner ≠ root)) }
       eventSubProcessMessageSubscriptions := returned.eventSubProcessMessageSubscriptions.filter
         (fun listener => decide (listener.owner ≠ root))
       timerWaits := returned.timerWaits.filter keepTimer

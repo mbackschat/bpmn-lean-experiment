@@ -195,7 +195,7 @@ test("admits an exact operation-addressed Message start and closes at one User T
   assert.equal(isStableStateResumable(closed.state), true);
   assert.deepEqual(closed.state.messageWaits, []);
   assert.deepEqual(closed.state.variables, {
-    processInterfaces: [],
+    scopes: [], processInterfaces: [],
     process: { bindings: [] },
     activities: [],
   });

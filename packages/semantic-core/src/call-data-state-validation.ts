@@ -23,7 +23,7 @@ export function callDataStateIsValid(program: SemanticProcessProgram, state: Run
   if (state.control.kind === ControlStateKind.NotStarted) {
     return isPristineRuntimeState(state);
   }
-  if (!callDataProgramGraph(program)) return false;
+  if (!callDataProgramGraph(program) || state.variables.scopes.length !== 0) return false;
   const invoke = program.operations.find((operation) => operation.kind === SemanticOperationKind.InvokeProcess);
   const complete = program.operations.find((operation) => operation.kind === SemanticOperationKind.CompleteScope);
   const tasks = program.operations.filter((operation) => operation.kind === SemanticOperationKind.AwaitDataInputOutputUserTask);

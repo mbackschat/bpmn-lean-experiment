@@ -162,7 +162,7 @@ const state: RuntimeState = {
     nextCompletionOrdinal: 1,
     records: [],
   }],
-  variables: { processInterfaces: [], process: { bindings: [] }, activities: [] },
+  variables: { scopes: [], processInterfaces: [], process: { bindings: [] }, activities: [] },
   taskActivations: [],
   messageActivations: [],
   timerActivations: [],

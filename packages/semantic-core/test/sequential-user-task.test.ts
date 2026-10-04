@@ -90,7 +90,7 @@ test("start closes at one stable User Task wait", async () => {
     calledProcessOccurrences: [],
     activityOccurrences: [],
     variables: {
-      processInterfaces: [],
+      scopes: [], processInterfaces: [],
       process: {
         bindings: [
           {
@@ -183,7 +183,7 @@ test("matching occurrence completion closes the Process", async () => {
     calledProcessOccurrences: [],
     activityOccurrences: [],
     variables: {
-      processInterfaces: [],
+      scopes: [], processInterfaces: [],
       process: {
         bindings: [
           {

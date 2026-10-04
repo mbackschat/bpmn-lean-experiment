@@ -24,7 +24,7 @@ private def unselectedWorkAbsent (state : RuntimeState) : Bool :=
   state.messageWaits.isEmpty && state.timerWaits.isEmpty && state.effectWaits.isEmpty &&
     state.effectIncidents.isEmpty && state.selectedBranchSets.isEmpty && state.eventRaces.isEmpty &&
     state.calledProcessOccurrences.isEmpty && state.variables.process.bindings.isEmpty &&
-    state.variables.activities.isEmpty && state.variables.processInterfaces.isEmpty &&
+    state.variables.activities.isEmpty && state.variables.processInterfaces.isEmpty && state.variables.scopes.isEmpty &&
     state.sequentialMultiInstanceControllers.isEmpty && state.parallelMultiInstanceControllers.isEmpty &&
     state.compensationActivityRetentions.isEmpty && state.compensationParentContextRetentions.isEmpty &&
     state.compensationTriggers.isEmpty && state.compensationHandlerEffectWaits.isEmpty
