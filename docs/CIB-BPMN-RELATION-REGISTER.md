@@ -234,7 +234,7 @@ The repository-wide audit on 2026-07-24 found no previously visited observation 
 
 ### CIB-AGR-0013 — sequential Multi-Instance Sub-Process completion
 
-**Status:** Candidate bounded agreement for the [sequential Sub-Process proposal](capsules/SEQUENTIAL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md); independent review and profile qualification pending.
+**Status:** Candidate bounded agreement for the [sequential Sub-Process proposal](capsules/SEQUENTIAL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md); proposal review approved; profile selection and qualification pending.
 
 **BPMN basis:** §§13.3.4 and 13.3.7 require a complete inner Sub-Process before the next sequential instance, one-time instance count, empty-input continuation and completion-condition evaluation at body completion.
 
@@ -507,7 +507,7 @@ CIB Seven `2.2.0` applies the attached Service Task's output parameters on the m
 
 ### CIB-EXT-0017 — repeated Sub-Process body-local mapping and enclosing writes
 
-**Status:** Candidate bounded extension for the [sequential Sub-Process proposal](capsules/SEQUENTIAL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md); selection awaits independent review.
+**Status:** Candidate bounded extension for the [sequential Sub-Process proposal](capsules/SEQUENTIAL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md); proposal review approved; profile selection and qualification pending.
 
 CIB input parameters initialize local bindings in each new body. Human completion updates the nearest existing binding, while a Service output parameter evaluates its Activity-local result and writes through the enclosing scope. Declared body locals shadow parent variables, including present null. With those declarations absent, the same writes reach the existing Process variables. Body disposal removes locals and the next body reinitializes them. The exact CIB `inputOutput` and Task Service variable protocol are extensions, not normative BPMN data-association syntax.
 
