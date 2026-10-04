@@ -14,6 +14,7 @@ This contributor map groups the Java runner by source responsibility. Human orie
 | [`CibSevenOracleMain.java`](src/main/java/org/bpmnlean/cibseven/CibSevenOracleMain.java) | Persistent JSON-lines process boundary |
 | Probe and runner tests under [`src/test/java/org/bpmnlean/cibseven/`](src/test/java/org/bpmnlean/cibseven/) | Bounded calibration witnesses, adversarial controls, and package-level oracle evidence |
 | [Business effect data probe](src/test/java/org/bpmnlean/cibseven/CibSevenBusinessEffectDataPhaseZeroProbeTest.java) | Outer-scope input lookup, local output precedence, null/missing input and Process separation; [experiment boundary](../../docs/experiments/BUSINESS-EFFECT-DATA-EXPERIMENT.md) |
+| [Business-failure probe](src/test/java/org/bpmnlean/cibseven/CibSevenBusinessFailurePhaseZeroProbeTest.java) | Caught Error mapping, rework, technical rollback, missing results and unmatched cleanup controls; [experiment boundary](../../docs/experiments/BUSINESS-EFFECT-DATA-EXPERIMENT.md#business-failure-follow-up) |
 | [`CibSevenPipelineExportBridge.java`](src/test/java/org/bpmnlean/cibseven/CibSevenPipelineExportBridge.java) | Test-scope bridge used by the Node differential pipeline |
 | [`replace-cibseven-evidence.ts`](../../scripts/replace-cibseven-evidence.ts) | Explicit verifier-checked evidence replacement |
 
