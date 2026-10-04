@@ -2,9 +2,9 @@
 
 ## Status
 
-Active project ledger, reviewed 2026-10-02. It tracks the runtime failures encountered during MUE qualification, including confirmed SDK defects and failures whose cause or ownership remains unresolved. “Temporal” names the affected hosting stack; an entry does not by itself assign fault to Temporal.
+Active project ledger, reviewed 2026-10-04. It tracks the runtime failures encountered during MUE qualification, including confirmed SDK defects and failures whose cause or ownership remains unresolved. “Temporal” names the affected hosting stack; an entry does not by itself assign fault to Temporal.
 
-This document owns defect IDs, project disposition, impact, next actions and closure requirements. Linked research owns the detailed diagnosis, version and source provenance, reproducer commands, crash reports and historical measurements. [PLAN.md](PLAN.md#ordered-work) owns execution order and final MUE acceptance; this ledger does not change the frozen capability scope or open new Lean work.
+This document owns defect IDs, project disposition, impact, next actions and closure requirements. Linked research owns the detailed diagnosis, version and source provenance, reproducer commands, crash reports and historical measurements. [PLAN.md](PLAN.md#ordered-work) owns execution order and Practical CIB7 Coverage acceptance; this ledger does not change the frozen capability scope or open new Lean work.
 
 ## Inventory
 
@@ -27,6 +27,14 @@ Retain each ID when its disposition changes or it closes. Record a correction's 
 - **Product attribution:** The [released-Core product logs](research/TEMPORAL-EXECUTION-RESEARCH.md#released-core-product-read-attribution) associate four Transaction read failures before the gRPC update and the single segment-traversal failure after it with Core's exact leftover-buffer warning. This supports TD-001 attribution for those reads; it does not establish the cause of earlier browser or CI failures that lack underlying error evidence.
 - **Next action:** Complete broader product and intended Linux/distribution qualification of the exact candidate, then obtain the dependency-adoption decision before shipping it.
 - **Closure:** The adopted dependency contains the demonstrated correction and applicable product/distribution gates pass against that exact artifact. After first declining upstream publication, the owner approved a reviewed report, filed as [Core issue 1621](https://github.com/temporalio/sdk-rust/issues/1621) on 2026-10-01 with the production diff inline; the [reproducer](research/TEMPORAL-EXECUTION-RESEARCH.md#retained-query-eviction-reproducer) is retained locally. Historical upstream issue 716 and patch 740 concern another buffer and do not close this entry.
+
+### 2026-10-04 qualification and official-release check
+
+The new serial/mixed business composition witness passes four of five journeys on installed SDK `1.21.0`; the serial invoice final-publication read returns `unavailable` after the leftover-buffer warning (`/tmp/business-composition-host-corrected`). The unchanged comparison passes all five against the combined private bridge. The complete Temporal functional gate then passes all 856 tests on that bridge and the V8-corrected Node build (`/tmp/business-composition-private-core-complete-temporal`, separately asserted after terminal completion). [The capsule evidence](capsules/SERIAL-BUSINESS-TASK-COMPOSITION-PROPOSAL.md#retained-verification-evidence) binds the exact artifact and limits: macOS arm64 diagnostic qualification only; installed-dependency, Linux/distribution and adoption gates remain open.
+
+Both upstream reports remain open without a maintainer response as checked on 2026-10-04. Official TypeScript SDK `v1.24.0` pins [Core `db635f0f`](https://github.com/temporalio/sdk-typescript/tree/v1.24.0/packages/core-bridge/sdk-core). Its [eviction path](https://github.com/temporalio/sdk-rust/blob/db635f0f21b0168a01f993e0f1b6c0f1983ec2bc/crates/sdk-core/src/worker/workflow/workflow_stream.rs#L388-L427) still removes the Run, takes one buffered task and merely warns about the remainder; its [history sequencing](https://github.com/temporalio/sdk-rust/blob/db635f0f21b0168a01f993e0f1b6c0f1983ec2bc/crates/sdk-core/src/worker/workflow/history_update.rs#L578-L634) still consumes an incomplete final sequence without the private clock deferral. This source inspection finds neither demonstrated correction in that release; it is not an execution result for SDK `1.24.0`, and an upgrade is not selected as a repair.
+
+The owner directed prevention of runtime-investigation drift on 2026-10-04. The isolated Linux build was stopped and reaped before producing a candidate (`/tmp/business-core-linux-build-provisioned`, exit 137 from the requested container stop, not evidence of an OOM or compiler defect). The preceding offline attempt lacked a Linux-only crate; its provisioned successor had reached compilation. Toolchain/cache artifacts remain reusable, but neither attempt qualifies Linux. Further builds and probes are deferred under [the active plan](PLAN.md#exact-resume-point); independent whole-process acceptance and registration preparation take priority.
 
 ## TD-002: Transaction publication descriptor rejected
 
