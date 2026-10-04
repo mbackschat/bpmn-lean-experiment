@@ -179,5 +179,5 @@ The private [TypeScript storage](../../packages/semantic-core/src/scope-variable
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
 | Proposal | `1c665017` | `fork-turns-none` | `approve-with-required-edits` | `49c720fb` |
-| Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Semantic checkpoint | `038fa643` | `fork-turns-none` | `approve` | `not-required` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
