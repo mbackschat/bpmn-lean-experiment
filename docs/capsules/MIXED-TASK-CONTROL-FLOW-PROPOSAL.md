@@ -1,0 +1,134 @@
+# Mixed-task control flow proposal
+
+## Status
+
+Lifecycle: draft
+Review: pending
+
+## Question and current boundary
+
+Can ordinary human/automated business processes branch, rejoin and return to earlier work through reusable Exclusive control flow, while preserving current data, fresh task occurrences and bounded automatic execution?
+
+This is the next increment of [Practical CIB7 Coverage](../PRACTICAL-CIB7-COVERAGE-TARGET.md). The [serial business-task checkpoint](SERIAL-BUSINESS-TASK-COMPOSITION-PROPOSAL.md) supplies named automation and scalar mapping; [structured composition](STRUCTURED-PROCESS-COMPOSITION-PROPOSAL.md) supplies data-dependent routing; [cyclic control flow](CYCLIC-CONTROL-FLOW-SPEC.md) supplies resumption cuts and repeated occurrences. Their current profiles exclude this combination. The reusable mechanism is a root Process carrying at most one control unit, not another exact invoice topology or paired-region recognizer.
+
+At baseline `b70c6308`, a schema-valid invoice Review → Validate → Decision → Finalize model with a conditional return through a two-input Merge is rejected by serial admission. `/tmp/mixed-task-existing-gap-discriminator` separately records refusal at the explicit expression-language boundary and, after removing only that attribute diagnostically, at the gateway-kind boundary. Its source is `/tmp/mixed-task-invoice-rework.bpmn`; `xmllint` validates it against the pinned BPMN schema. This establishes missing composition, not a new runtime defect or implementation qualification. Production semantics remain unchanged pending independent proposal approval.
+
+## Basis and selected scope
+
+BPMN 2.0.2 Table 7.2 permits Sequence Flow loops. Clauses 10.6.2 and 13.4.2 and Table 13.2 specify ordered first-true/default choice and per-arrival pass-through merging. Activity completion and Process completion retain Clauses 13.3.2 and 13.2. Read the existing [Markdown corpus](../reference/bpmn-2.0.2/README.md#reading-workflow); no PDF fallback is needed.
+
+Pinned CIB Seven `2.2.0`, revision `5a45b47ea22688d774de97277c3ff7013f54fdd2`, iterates outgoing transitions without a fixed branch count in `ExclusiveGatewayActivityBehavior#doLeave`. `ExclusiveGatewayTest#testDivergingExclusiveGateway`, `#testMergingExclusiveGateway`, `#testMultipleValidConditions` and `#testDefaultSequenceFlow` provide source-test precedents. The [practical-depth research](../research/CIB-SEVEN-BPMN-BREADTH-RESEARCH.md#practical-depth-refresh) owns this source inventory. Research doctor verification passed before inspection. Source inspection does not establish new CIB execution evidence.
+
+Required: one private executable root Process, one None Start and one None End, finite uniquely identified nodes/flows, ordinary User Tasks, named Service Tasks and separate divergent/convergent Exclusive Gateways. Admit any finite task sequence or graph satisfying the structural/data/burst rules below, including acyclic graphs, unpaired merges, nested decisions and cycles. At least one task is required; neither a particular task mixture nor a gateway is mandatory. A mixed invoice journey is mandatory evidence. Every task has one incoming and one outgoing flow; Start has zero/one and End one/zero. A Choice has one incoming, one or more conditioned outgoing candidates and one conditionless referenced default. A Merge has two or more incoming and exactly one outgoing flow. Unspecified gateway direction is inferred from those arities; contradictory or mixed directions reject.
+
+Definitions explicitly selects the unchanged [Simple Boolean v1 language](../SIMPLE-BOOLEAN-EXPRESSION-DECISION.md), even without a Choice. Conditions belong only to a Choice's outgoing non-default flows, including flows entering a Merge. A Merge neither re-evaluates nor forbids its incoming conditions. Candidate order is XML Sequence Flow declaration order, never sorted IDs or gateway reference order. Merge input order has no execution meaning. A default is always required; missing-default exception behavior remains deferred.
+
+The candidate private profile is `cibseven-2.2.0-mixed-task-control-flow-draft`. It inherits the serial profile's named binding, exact source overlay, reserved-name, enclosing-input snapshot, String/null and exact local-result contract. The overlay remains required even in a human-only graph; unused declared bindings have no semantic effect. User completions submit the inherited canonical String/null Process patch, including an empty patch. Service completions supply exactly the distinct local sources required by their declared outputs; one source may feed several targets. All explicit scalar limits and null-versus-absence rules remain inherited. No new expression or task-data interpretation is selected.
+
+The [relationship register](../CIB-BPMN-RELATION-REGISTER.md) retains `CIB-EXT-0015` for the unchanged input/output extension account, `CIB-AGR-0006` and `CIB-INT-0001` for the bounded historical gateway calibration, and the inherited task/start relationships. These do not establish CIB execution of this profile, Simple Boolean/JUEL equivalence, repeated-effect transaction equivalence or exactly-once business effects. No new CIB extension is required merely to compose standard control flow.
+
+Optional within this account: adjacent Service Tasks, human-only or automated-only graphs, empty decision branches and multiple returns to earlier tasks. Full-graph co-reachability to End is structural, not a promise that supplied conditions will ever select an exit.
+
+Excluded: implicit task split/merge, Parallel/Inclusive/Event-Based or mixed Gateways, multiple live control units, additional event kinds, scopes, Calls, Multi-Instance, metadata/forms, Activity data associations, structured values, business Error/incident/failure handling, cancellation and compensation. These remain practical-coverage obligations under their own accounts; their exclusion here does not dispose them. No iteration cap, guaranteed Process termination or fairness assumption is introduced.
+
+## Representation and admission
+
+Reuse the checked node variants and `initiate`, `awaitUserTask`, `awaitEffect`, `choose`, `mergeExclusive`, `reachNoneEnd` and root `completeScope` operations. Runtime state, stimulus/result arms, E1/E2 and effect descriptors gain no field. The existing ordered choice representation widens from two candidates to a nonempty sequence:
+
+```ts
+type OrderedCandidates = readonly [ConditionalCandidate, ...ConditionalCandidate[]];
+```
+
+`ConditionalCandidate` retains its existing condition, output and flow origin. Generic wire/operation validation admits that sequence; each old profile retains its exact two-candidate restriction in profile admission. Lean already represents candidates as a list; every decoder, lowerer and profile-specific cardinality check must agree. Do not widen old source/program admission through the generic change. Canonical sorting still applies only to unordered collections.
+
+Checked admission and raw Program admission independently validate complete source identity uniqueness, references, root ownership, edge multiplicity, producer/consumer uniqueness, reachability from Start and co-reachability to End. The Program census distinguishes synthetic operation/place IDs from source origins and excludes legitimate Process-origin reuse by `completeScope`. Lean independently analyzes the checked graph and Program and checks exact lowering. Neither target trusts serialized analysis results. Do not require paired regions or a reducible whole-graph shape: single-token operations suffice for this scope.
+
+For cycles, remove only outgoing continuations of admitted User and Service Tasks from the analysis graph. Require the resulting finite graph to be acyclic. The checked/IL cut mapping is exactly UserTask/awaitUserTask and ServiceTask/awaitEffect for this profile; old profiles retain their own cut sets. Arming a Service Task creates an explicit effect wait; its continuation appears only after an admitted external completion. An internal-only cycle still rejects when a task exists elsewhere in the graph.
+
+For required initial data, use ordinary reachability with guaranteed writes as barriers. For each enclosing input name read by a Service Task, remove outgoing edges of every Service Task that writes that name. If the reader remains reachable from Start, require that name at Start. Otherwise every path to the reader completed a writer first. A writer's own input is read before its outgoing barrier, so a task cannot initialize its own missing input. User patches guarantee no write because an empty patch is legal. Include every syntactic branch without evaluating conditions; explicit null is present. No admitted completion deletes Process bindings. Compute this independently in Lean and TypeScript, retaining edge identities but no serialized dataflow cache. This handles cycles without treating a later-iteration write as a first-entry guarantee.
+
+For automatic closure, compute a rank over the cut DAG: task arming costs one and stops; None End costs two including root completion; every other vertex costs one plus the maximum successor rank. Check Start and every task-continuation target against the unchanged `semanticProcessClosureLimit = 8`. Reject a predictable over-bound burst before execution. This bounds each resumption, not the number of task completions or total Process lifetime.
+
+## Rules and decisive evidence
+
+| Rule | Required claim | Separating witness |
+|---|---|---|
+| `MTCF-SOURCE-01` | Structural admission preserves source ownership, ordered candidates and old-profile restrictions. | Rename every ID and reorder only unordered declarations; swap overlapping-true candidate declarations separately; raw Program origin aliases and old-profile one/three-candidate changes reject. |
+| `MTCF-CHOICE-01` | Any admitted candidate count selects exactly the first true or the default. | One, two and three candidates; first/middle/last/default; tail mutation and two simultaneously true conditions; two/four-input merges pass only the offered token. |
+| `MTCF-DATA-01` | Every reached input exists and each activation captures current Process data before local writes. | A producer on one branch cannot initialize the other; both branches writing removes the initial requirement; a write only on a back-edge cannot supply first entry; own-read/own-write still requires initial data. |
+| `MTCF-REPEAT-01` | Each repeated task occurrence is fresh and retains its own snapshot/result ownership. | Review request A, validation requests rework, Review request B, validation receives B under a fresh effect key; old human/effect completions refuse without any state or publication change. |
+| `MTCF-PROGRESS-01` | Actual admitted execution preserves one control unit and closes to one completable wait or completed Process within the derived burst bound. | Exact eight-step burst passes and nine rejects; long task-separated chains and repeated finite schedules pass; reachable internal-only cycle rejects despite a task on an exit path. |
+| `MTCF-HOST-01` | Hosting preserves those facts across durable effect delivery, recovery and replay. | Pending second validation survives rollover/replacement without reusing the first occurrence's arguments, result or public receipt; host bypass reusing an element-only effect key fails. |
+
+The retained main journey is invoice review, named validation, conditional rework and final human completion. A second journey offers several distinct assessment routes that reconverge before common automation, separating merge/dataflow mistakes. Schedules are answer-free. Expected branch tokens, task/effect owners, argument snapshots, local cleanup, Process writes and complete E1/E2 publications are asserted independently before cross-target comparison. Immediate exit, multiple reworks, nullable fan-out and stale commands are included. Mutations must change the deciding algorithm or transition: union-like data availability, treating a back-edge write as initialized, cutting a Choice instead of a wait, candidate reordering and element-only effect identity. Changed expected output alone is not algorithm mutation evidence.
+
+## Lean assurance lane
+
+Lane shape: proved
+
+Evidence: extend the reusable [graph reachability laws](../../BpmnSemantics/SemanticProcess/GraphReachabilityLaws.lean), [actual transition account](../../BpmnSemantics/SemanticProcess/Transition.lean), [serial lifecycle](../../BpmnSemantics/SemanticProcess/SerialBusinessTaskLifecycleProofs.lean) and [scheduled closure](../../BpmnSemantics/SemanticProcess/InternalScheduledClosure.lean). New composition-specific analysis/data/lifecycle/progress owners carry the required assembly; inherited profile-specific theorems are not silently generalized by changing their premises.
+
+Required quantified guarantees start from independently admitted Program, exact checked lowering and an actual committed Start. Actual internal execution and admitted User/effect completions preserve root ownership, canonical scalar data, input availability, at most one control unit, fresh issuance, and exact token-or-wait lifetime. A Running stable state has one exact wait whose primitive valid completion payload commits through public admission. Each actual automatic step decreases the derived rank; actual scheduled closure with the admitted bound succeeds and reaches such a wait or completion after Start and every accepted completion. Rejected commands preserve the complete predecessor state. No theorem assumes successful arming/preparation/completion, already available inputs, or its desired successor.
+
+Prove the finite graph lemmas connecting writer-barrier reachability to entry paths and the selected wait cut to internal acyclicity; connect them to actual runtime operations. The general ordered-choice law preserves first-true/default behavior for arbitrary nonempty candidates. Existing evaluator-result relation arms retain their stated soundness-only status and do not count as progress evidence. Checked countermodels include an endless sequence of rework inputs, stale local ownership, a missing first-entry binding and a raw internal-only cycle. They distinguish conditional progress from unconditional termination.
+
+Effort bound: four focused assembly owners (admission, data, lifecycle, progress), each within 800 nonblank lines, reusing existing operation/scheduler laws; separately bounded finite fixtures. Reassess after admission/data soundness before runtime assembly. If the bound is exceeded, first remove duplicate inversion or factor a genuinely shared obligation without changing its claim; record the exact unresolved theorem rather than accumulating topology cases or assuming success. One Lean process tree, one CPU and 3 GiB without additional swap remain binding; new kernel fixtures first compile under that bound. No cold full-library resource investigation or performance qualification is selected.
+
+## Temporal hosting and refinement preflight
+
+The existing start and content/occurrence-bound User Task Updates remain durable ingress. Service invocation uses the existing immutable argument snapshot, named Activity contract, occurrence-bound effect key and success-result delivery. Stable wait sets contain exactly one User Task or one effect; no timer, new cancellation scope, child Workflow or concurrent wait set is introduced. Raw semantic admission and pre-start host capability remain separate. The private profile receives an explicit typed qualification-unavailable refusal until live evidence exists.
+
+The state relation is equality of immutable definition identity and committed core state, including activation counters, captured arguments, exact pending effect identity, Process bindings, publications and accepted-command recovery. Queue order and content-bound deduplication distinguish retry from a new occurrence. A late completion from the first validation cannot resolve the second. Activity retries retain one effect identity; revisiting the same Service Task creates a new identity. Physical attempts remain host facts, and external business side effects are not claimed exactly once.
+
+The smallest later live witness completes one validation with rework, updates the invoice, starts the second validation, forces rollover while it is pending, replaces the Worker, recovers the same second request/result, refuses stale first-occurrence ingress, reaches Finalize and replays every Run. Preserve accepted-handler fencing and cross-Run result recovery. A bypass mutation caches by BPMN element ID and must fail the fresh-arguments/occurrence/publication assertions. Engine shutdown or transport failure creates no modeled business failure. Live hosting stays deferred during semantics-only work; preflight is not refinement evidence.
+
+## Evidence boundaries
+
+| Lane | Required evidence and exact limit |
+|---|---|
+| BPMN/profile | Named clauses and schema-valid whole models; selected root/single-control/scalar restrictions are admission bounds, not general BPMN meaning. |
+| Source/TypeScript | Independent raw checked/IL refusals, exact XML order, graph/data/burst discriminators and complete finite business journeys. |
+| Lean | Quantified graph-to-actual-execution obligations above plus finite decoder/lowering/publication witnesses. Lean does not parse XML. |
+| CIB | Reuse classified mapping and order calibration only; source tests establish implementation depth, not execution of the new profile. |
+| Differential | Independent lowering and complete results/E1/E2 across success and adversarial schedules; injected mechanisms must fail. |
+| Temporal | Typed private refusal now; the later durable recovery/replay and bypass witness before hosted support. |
+| Corpus/platform | Public promotion atomically adds retained whole models, exact pipeline bindings, capability/restriction rows, generated corpus map and About disclosure under the [corpus contract](../../model-corpus/README.md#admission-and-product-readiness-gate). No platform-derived identity or new UI is selected. |
+
+## Versioning consequences
+
+Pre-release evolution applies. The candidate sequence widening changes [TypeScript IL](../../packages/semantic-core/src/semantic-process-contract.ts), [wire schema](../../contracts/schemas/semantic-process.schema.json), [choice admission](../../packages/semantic-core/src/simple-boolean-choice-admission.ts), [Lean JSON](../../BpmnSemantics/SemanticProcessJson/Program.lean), lowerers and consumer guards atomically. Old-profile candidate counts and graph policies remain exact; existing accepted bytes and results must be preserved. No legacy reader, new runtime collection or cross-version durable-history claim is added.
+
+Admission extends the existing [compiler](../../packages/bpmn-source/src/checked-process-compiler.ts), [checked validator](../../packages/bpmn-source/src/checked-process-admission.ts), [serial source projection](../../packages/bpmn-source/src/serial-business-task-source.ts), [graph policy](../../packages/semantic-core/src/semantic-process-graph-policy.ts), [Lean graph validator](../../BpmnSemantics/SemanticProcess/GraphValidation.lean), [Program validator](../../BpmnSemantics/SemanticProcess/ProgramStructuralValidation.lean) and [command admission](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean). New analyses belong in cohesive owners, not growing shared dispatchers or copied serial/structured recognizers. Re-run `what-binds` for each concrete implementation path before editing.
+
+### Owners this implementation grows
+
+| Owner | Headroom | Constraint |
+|---|---:|---|
+| [Compiler](../../packages/bpmn-source/src/checked-process-compiler.ts) | 377 | Keep analysis outside shared dispatch and preserve existing profile restrictions. |
+| [Checked validator](../../packages/bpmn-source/src/checked-process-admission.ts) | 95 | Keep analysis outside shared dispatch and preserve existing profile restrictions. |
+| [Serial source projection](../../packages/bpmn-source/src/serial-business-task-source.ts) | 690 | Keep analysis outside shared dispatch and preserve existing profile restrictions. |
+| [TypeScript IL](../../packages/semantic-core/src/semantic-process-contract.ts) | 135 | Keep analysis outside shared dispatch and preserve existing profile restrictions. |
+| [Choice admission](../../packages/semantic-core/src/simple-boolean-choice-admission.ts) | 665 | Keep analysis outside shared dispatch and preserve existing profile restrictions. |
+| [Graph policy](../../packages/semantic-core/src/semantic-process-graph-policy.ts) | 701 | Keep analysis outside shared dispatch and preserve existing profile restrictions. |
+| [Lean graph validation](../../BpmnSemantics/SemanticProcess/GraphValidation.lean) | 53 | Keep analysis outside shared dispatch and preserve existing profile restrictions. |
+| [Lean Program validation](../../BpmnSemantics/SemanticProcess/ProgramStructuralValidation.lean) | 14 | Keep analysis outside shared dispatch and preserve existing profile restrictions. |
+| [Lean command admission](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean) | 8 | Keep analysis outside shared dispatch and preserve existing profile restrictions. |
+| [Lean Program JSON](../../BpmnSemantics/SemanticProcessJson/Program.lean) | 50 | Keep analysis outside shared dispatch and preserve existing profile restrictions. |
+
+These are nonblank margins before the 800-line review target, not growth budgets. If planned growth exceeds a margin, extract an existing cohesive responsibility without changing behavior before adding the capability; do not compress proofs or erase absence claims.
+
+Binding guards include [schema coverage](../../scripts/contract-schema-coverage.test.ts), [definition artifacts](../../scripts/contract-definition-artifacts.test.ts), [operation consumers](../../scripts/semantic-operation-consumer-census.test.ts), [internal census](../../scripts/internal-commutation-census.test.ts), [source hygiene](../../scripts/source-hygiene.test.ts), [Lean source contracts](../../scripts/lean-source-contracts.test.ts), [module memory](../../scripts/lean-module-cost.test.ts), [test selection](../../scripts/test-selection-coverage.test.ts), [requirement consistency](../../scripts/requirement-ledger-consistency.test.ts), [corpus](../../scripts/bpmn-corpus-policy.test.ts), [reviewability](../../scripts/document-reviewability.test.ts), [links](../../scripts/markdown-links.test.ts), [review policy](../../scripts/independent-review-policy.test.ts), [old cyclic source preservation](../../packages/bpmn-source/test/cyclic-control-flow-preservation.test.ts) and [raw cyclic core](../../packages/semantic-core/test/cyclic-control-flow.test.ts). Exact-two generic assertions must move to explicit old-profile checks, not disappear. Existing profile and wait-cut inventories must reject missing or extra classifications. Complete affected-package and required Lean gates follow focused Red/Green; no live or performance gate is implied.
+
+## Review and closure
+
+Cold proposal approval precedes production semantic changes. The first green source/core/Lean/protocol checkpoint needs independent cold review before public promotion. Closure requires every rule reconciled across its independent evidence, the deferred host witness, truthful corpus/support records and closure review. Record baseline-to-closure cost against serial business tasks and structured composition in the [cost ledger](../CAPSULE-COST-LEDGER.md); unknown authoring time remains unknown.
+
+The nearest unsupported claims are mixed-task parallelism, nested scopes, business failure and structured values. Shared XML normalization, a wrong cut-set classification and conflating first-entry data with later-iteration data are common-mode risks; independent source expectations, raw Program mutations and quantified entry-path laws separate them. A finite rework schedule cannot prove termination or unbounded hosting. Reopen this account if it needs a new runtime transition family, changes inherited mapping/expression meaning, or cannot state its progress obligation without assuming the result.
+
+## Independent cold-review receipt
+
+| Stage | Review target | Isolation | Verdict | Correction audit |
+|---|---|---|---|---|
+| Proposal | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
+| Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
