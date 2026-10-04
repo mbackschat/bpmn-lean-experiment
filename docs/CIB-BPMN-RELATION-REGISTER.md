@@ -132,7 +132,7 @@ The repository-wide audit on 2026-07-24 found no previously visited observation 
 
 **Status:** Reviewed bounded agreement
 
-**BPMN basis:** BPMN 2.0.2 Clauses 13.3.3 and 13.5.3 plus Tables 10.86, 10.91, and 10.92 require the selected matching Error to interrupt the attached Service Task and continue only through the Error Boundary Event's outgoing Sequence Flow.
+**BPMN basis:** BPMN 2.0.2 Clauses 13.3.3 and 13.5.3 plus Table 8.41 and Tables 10.90, 10.91, and 10.92 require the selected matching Error to interrupt the attached Service Task and continue only through the Error Boundary Event's outgoing Sequence Flow.
 
 **Pinned CIB observation:** CIB Seven `2.0.0` at revision `57ed69550f1c9c2619b9711d8877418bb084a371` catches both code-only and message-bearing `BpmnError("LinkLimitReachedError", ...)` from the exact attached Service Task, exposes the boundary-route User Task, and does not execute the normal End path. An independently perturbed Error code and attachment each fail the deployment-derived profile comparison.
 
@@ -198,7 +198,7 @@ The repository-wide audit on 2026-07-24 found no previously visited observation 
 
 **Status:** Reviewed bounded agreement
 
-**BPMN basis:** BPMN 2.0.2 Clauses 13.3.3 and 13.5.3 plus Tables 10.86, 10.91, and 10.92 require one matching Error to interrupt the attached Service Task and continue only through the Error Boundary Event's outgoing Sequence Flow.
+**BPMN basis:** BPMN 2.0.2 Clauses 13.3.3 and 13.5.3 plus Table 8.41 and Tables 10.90, 10.91, and 10.92 require one matching Error to interrupt the attached Service Task and continue only through the Error Boundary Event's outgoing Sequence Flow.
 
 **Pinned CIB observation:** CIB Seven `2.0.0` at revision `57ed69550f1c9c2619b9711d8877418bb084a371` catches the exact `MappedBusinessError` raised by the neutral mapped-boundary Service Task, exposes only `ReviewMappedError`, and reaches Process completion only after that User Task completes.
 
