@@ -1,10 +1,10 @@
 import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 /**
- * Which tracked test files a gate command actually selects.
+ * Which tracked or pending test files a gate command actually selects.
  *
  * A test file that no command names is not a weak test, it is zero evidence: it costs review and
  * maintenance, reports nothing, and looks identical to a covered file in every listing. This module
@@ -17,7 +17,7 @@ import { fileURLToPath } from "node:url";
  * those scripts. Nine tests ran nowhere, and one of the packages had stopped compiling entirely
  * because a reviewed change removed a constructor option and no lane ever built the caller.
  *
- * Gate roots include direct Node test commands and root-manifest scripts named by a tracked shell
+ * Gate roots include direct Node test commands and root-manifest scripts named by a working-tree shell
  * script or CI workflow, including explicitly selected manual qualification. Reachability
  * follows both `pnpm <script>` edges within the root manifest and `pnpm --filter <package> [run]
  * <script>` edges into workspace manifests. Omitting the filter edges is not a small error: it
@@ -39,10 +39,10 @@ const typeScriptPathToken = /[A-Za-z0-9_@./*-]*\.ts\b/gu;
 
 const legacyManifestPath = "adoption/a12/legacy/manifest.json";
 
-function trackedFiles(): ReadonlyArray<string> {
-  return execFileSync("git", ["ls-files"], { cwd: projectRoot, encoding: "utf8" })
-    .split("\n")
-    .filter((line) => line.length > 0);
+function workingTreeFiles(root = projectRoot): ReadonlyArray<string> {
+  return execFileSync("git", ["ls-files", "--cached", "--others", "--exclude-standard", "-z"], { cwd: root, encoding: "utf8" })
+    .split("\0")
+    .filter((file) => file.length > 0 && existsSync(path.join(root, file)));
 }
 
 /**
@@ -52,9 +52,9 @@ function trackedFiles(): ReadonlyArray<string> {
  * The manifest is their existing owner; a second hardcoded prefix here would be a copy that nothing
  * compares, and it would silently stop excluding them if the tree ever moved.
  */
-function frozenPaths(): ReadonlySet<string> {
+function frozenPaths(root = projectRoot): ReadonlySet<string> {
   const manifest: unknown = JSON.parse(
-    readFileSync(path.join(projectRoot, legacyManifestPath), "utf8"),
+    readFileSync(path.join(root, legacyManifestPath), "utf8"),
   );
   if (typeof manifest !== "object" || manifest === null || !("entries" in manifest)) {
     throw new TypeError(`${legacyManifestPath} is missing its entries`);
@@ -73,10 +73,10 @@ function frozenPaths(): ReadonlySet<string> {
   );
 }
 
-/** Every tracked test file a gate is expected to reach. */
-export function runnableTestFiles(): ReadonlyArray<string> {
-  const frozen = frozenPaths();
-  return trackedFiles().filter((file) => testFilePattern.test(file) && !frozen.has(file));
+/** Every tracked or pending test file a gate is expected to reach. */
+export function runnableTestFiles(root = projectRoot): ReadonlyArray<string> {
+  const frozen = frozenPaths(root);
+  return workingTreeFiles(root).filter((file) => testFilePattern.test(file) && !frozen.has(file));
 }
 
 type Manifest = Readonly<{ directory: string; scripts: ReadonlyMap<string, string> }>;
@@ -99,7 +99,7 @@ function readScripts(file: string): ReadonlyMap<string, string> {
 /** Every workspace manifest by package name, plus the root manifest under the empty name. */
 function manifests(): ReadonlyMap<string, Manifest> {
   const byName = new Map<string, Manifest>();
-  for (const file of trackedFiles()) {
+  for (const file of workingTreeFiles()) {
     if (path.basename(file) !== "package.json") continue;
     const parsed: unknown = JSON.parse(readFileSync(path.join(projectRoot, file), "utf8"));
     const name = typeof parsed === "object" && parsed !== null && "name" in parsed &&
@@ -113,14 +113,14 @@ function manifests(): ReadonlyMap<string, Manifest> {
 }
 
 /**
- * Root-manifest scripts a tracked shell script or CI workflow invokes.
+ * Root-manifest scripts a working-tree shell script or CI workflow invokes.
  *
  * A manifest entry alone does not connect a test to a gate. Manual qualification counts as a
  * reachable lane, without claiming that it runs on every commit.
  */
 function gateRoots(root: Manifest): ReadonlySet<string> {
   const roots = new Set<string>();
-  for (const file of trackedFiles()) {
+  for (const file of workingTreeFiles()) {
     if (!/\.(?:sh|ya?ml)$/u.test(file)) continue;
     const body = readFileSync(path.join(projectRoot, file), "utf8");
     for (const [, name] of body.matchAll(/pnpm(?:\.sh)? run ([a-z0-9:_-]+)/gu)) {
@@ -139,17 +139,17 @@ export function directNodeTestEntrypoints(source: string): ReadonlyArray<string>
   });
 }
 
-/** Tracked non-test TypeScript sources, so a command naming a runner can be followed into it. */
+/** Working-tree non-test TypeScript sources, so a command naming a runner can be followed into it. */
 function runnerSourceBodies(): ReadonlyMap<string, string> {
   return new Map(
-    trackedFiles()
+    workingTreeFiles()
       .filter((file) => file.endsWith(".ts") && !testFilePattern.test(file))
       .map((file) => [file, readFileSync(path.join(projectRoot, file), "utf8")] as const),
   );
 }
 
 /**
- * The tracked source a command's runner token refers to.
+ * The working-tree source a command's runner token refers to.
  *
  * `pnpm --filter <package> exec node test/run-suites.ts` runs with the filtered package as the
  * working directory, so the token does not resolve against the manifest that named it. A unique
@@ -175,7 +175,7 @@ function reachableTokens(
   const byName = manifests();
   const runnerSources = runnerSourceBodies();
   const root = byName.get("") ?? { directory: "", scripts: new Map<string, string>() };
-  const tokens: Array<{ base: string; token: string }> = trackedFiles()
+  const tokens: Array<{ base: string; token: string }> = workingTreeFiles()
     .filter((file) => /\.(?:sh|ya?ml)$/u.test(file))
     .flatMap((file) => directNodeTestEntrypoints(readFileSync(path.join(projectRoot, file), "utf8")))
     .map((token) => ({ base: "", token }));
@@ -251,7 +251,7 @@ function globToPattern(candidate: string): RegExp {
 }
 
 /**
- * Test files no tracked command names.
+ * Test files no working-tree command names.
  *
  * The result is the finding itself, not a boolean, so the guard can require an exact set: a file
  * that leaves the list forces the recorded set to change in the same commit, and a newly orphaned
@@ -277,7 +277,7 @@ function unreachable(
 }
 
 /**
- * Test files no tracked gate reaches.
+ * Test files no working-tree gate reaches.
  *
  * Every lane counts, including the PostgreSQL suites, which a workflow runs against a real database
  * even though the ordinary local loop stays database-free. The result is the finding itself, not a
