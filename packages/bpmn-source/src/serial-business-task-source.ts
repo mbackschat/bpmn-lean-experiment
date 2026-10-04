@@ -1,11 +1,12 @@
+import { readBusinessTaskMappings } from "./business-task-mapping-source.js";
 import { projectExclusiveGateway } from "./simple-boolean-exclusive-gateway-source.js";
 import { projectCheckedSequenceFlows, projectExclusiveMerge } from "./checked-element-projection.js";
 import {
   MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID, MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID, mixedTaskControlCheckedGraph,
-  CheckedNodeKind, CheckedProcessKind, MappingExpressionKind, SERIAL_BUSINESS_TASK_CHECKPOINT_PROFILE_ID,
-  compareCanonicalStrings, serialBusinessCheckedGraph, serialBusinessMappingsAdmitted,
+  CheckedNodeKind, CheckedProcessKind, SERIAL_BUSINESS_TASK_CHECKPOINT_PROFILE_ID,
+  compareCanonicalStrings, serialBusinessCheckedGraph,
 } from "@bpmn-lean/semantic-core";
-import type { CheckedBpmnErrorRoute, CheckedNode, CheckedProcess, CheckedSequenceFlow, VariableMapping } from "@bpmn-lean/semantic-core";
+import type { CheckedBpmnErrorRoute, CheckedNode, CheckedProcess, CheckedSequenceFlow } from "@bpmn-lean/semantic-core";
 import { isAdmittedCheckedProcess } from "./checked-process-admission.js";
 import { locateContainedElements, orderedElementDiagnostics } from "./admission-diagnostics.js";
 import { BpmnSourceDiagnosticCode } from "./contracts.js";
@@ -135,37 +136,10 @@ function serviceNode(element: ElementRecord, definitions: ElementRecord, policy:
   const attributes = readForeignAttributes(element, definitions);
   const binding = selectedEffectBinding(policy, typeof element.implementation === "string" ? element.implementation : null, attributes?.get(`${camunda}#delegateExpression`));
   if (id === undefined || binding === undefined || attributes?.get(`${camunda}#asyncBefore`) !== "true") return undefined;
-  const mappings = readMappings(element.extensionElements);
+  const mappings = readBusinessTaskMappings(element.extensionElements);
   return mappings === undefined ? undefined : { kind: CheckedNodeKind.ServiceTask, id, descriptor: binding.descriptor, ...mappings, bpmnErrorRoute: null };
 }
 
-function readMappings(value: unknown): Readonly<{ inputMappings: readonly VariableMapping[]; outputMappings: readonly VariableMapping[] }> | undefined {
-  if (value === undefined) return { inputMappings: [], outputMappings: [] };
-  const extension = asElement(value);
-  const values = asElementArray(extension?.values);
-  const io = values?.[0];
-  if (extension?.$type !== "bpmn:ExtensionElements" || !hasOnlyModelledKeys(extension, ["$type", "values"]) || values?.length !== 1 ||
-      io?.$type !== "camunda:inputOutput" || !hasOnlyModelledKeys(io, ["$type", "$children"])) return undefined;
-  const children = io.$children === undefined ? [] : asElementArray(io.$children);
-  if (children === undefined) return undefined;
-  const inputMappings: VariableMapping[] = [];
-  const outputMappings: VariableMapping[] = [];
-  for (const parameter of children) {
-    if (!hasOnlyModelledKeys(parameter, ["$type", "name", "$body"]) || typeof parameter.name !== "string" || typeof parameter.$body !== "string") return undefined;
-    const name = /^\$\{([A-Za-z_][A-Za-z0-9_]*)\}$/u.exec(parameter.$body)?.[1];
-    switch (parameter.$type) {
-      case "camunda:inputParameter": inputMappings.push({ target: parameter.name, expression: name === undefined ?
-        { kind: MappingExpressionKind.StringLiteral, value: parameter.$body } : { kind: MappingExpressionKind.EnclosingVariable, name } }); break;
-      case "camunda:outputParameter":
-        if (name === undefined) return undefined;
-        outputMappings.push({ target: parameter.name, expression: { kind: MappingExpressionKind.LocalVariable, name } }); break;
-      default: return undefined;
-    }
-  }
-  inputMappings.sort((a, b) => compareCanonicalStrings(a.target, b.target));
-  outputMappings.sort((a, b) => compareCanonicalStrings(a.target, b.target));
-  return serialBusinessMappingsAdmitted(inputMappings, true) && serialBusinessMappingsAdmitted(outputMappings, false) ? { inputMappings, outputMappings } : undefined;
-}
 
 function unsupported(evidence: string): CheckedCompilationProjection {
   return { checkedProcess: undefined, diagnostics: [{ code: BpmnSourceDiagnosticCode.UnsupportedModel, element: null, evidence }] };

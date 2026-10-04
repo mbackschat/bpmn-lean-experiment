@@ -109,7 +109,7 @@ Admission extends the existing [compiler](../../packages/bpmn-source/src/checked
 |---|---:|---|
 | [Compiler](../../packages/bpmn-source/src/checked-process-compiler.ts) | 377 | Keep analysis outside shared dispatch and preserve existing profile restrictions. |
 | [Checked validator](../../packages/bpmn-source/src/checked-process-admission.ts) | 87 | Keep analysis outside shared dispatch and preserve existing profile restrictions. |
-| [Serial source projection](../../packages/bpmn-source/src/serial-business-task-source.ts) | 637 | Keep analysis outside shared dispatch and preserve existing profile restrictions. |
+| [Serial source projection](../../packages/bpmn-source/src/serial-business-task-source.ts) | 663 | Keep analysis outside shared dispatch and preserve existing profile restrictions. |
 | [Checked contract](../../packages/semantic-core/src/checked-process-contract.ts) | 395 | Widen Exclusive candidates; retain Inclusive and old-profile cardinalities. |
 | [Checked-to-IL lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 120 | Widen Exclusive candidates; retain Inclusive and old-profile cardinalities. |
 | [Lean checked decoding](../../BpmnSemantics/SemanticProcessJson/CheckedProcess.lean) | 357 | Widen Exclusive candidates; retain Inclusive and old-profile cardinalities. |
