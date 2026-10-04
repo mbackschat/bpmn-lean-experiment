@@ -4,6 +4,8 @@
 
 The private [mixed-task control-flow checkpoint](../../docs/capsules/MIXED-TASK-CONTROL-FLOW-PROPOSAL.md) covers branching and rework over User and Service Tasks with independent Lean/TypeScript evidence. The [business Error extension](../../docs/capsules/MIXED-TASK-BUSINESS-ERROR-PROPOSAL.md#implementation-progress) is in progress; its TypeScript raw admission and execution checks pass. Hosting qualification remains open.
 
+The [sequential MI Sub-Process proposal](../../docs/capsules/SEQUENTIAL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#implementation-progress) has a private body-topology checker. It is not connected to source or runtime admission.
+
 ## What you can do
 
 Use the package to start an admitted Process, submit typed stimuli such as task completion or timer firing, inspect stable state, and run answer-free semantic scenarios. `applyStimulus` is pure: equal admitted programs, states, stimuli, and closure limits produce equal results.

@@ -69,6 +69,7 @@ This contributor map assigns source-file responsibilities inside `@bpmn-lean/sem
 | [serial-business-task-policy.ts](src/serial-business-task-policy.ts) | Private named-handler, exact mapping-token, canonical scalar and handler-shadowing policy |
 | [serial-business-task-admission.ts](src/serial-business-task-admission.ts) | Independent checked/IL serial-chain analysis, required initial bindings and command data admission |
 | [mixed-task-control-flow-analysis.ts](src/mixed-task-control-flow-analysis.ts) | All-continuation task-cut ranks and writer-barrier initial-input analysis for single-control graphs |
+| [structured-parallel-body-analysis.ts](src/structured-parallel-body-analysis.ts) | Private linear-time serial/paired-parallel topology check, including separate branch Ends; [discriminators](test/structured-parallel-body-analysis.test.ts) preserve multiplicity and reject crossing/incomplete regions |
 | [mixed-task-control-flow-admission.ts](src/mixed-task-control-flow-admission.ts) | Private checked/IL graph and command admission, including attached [business Error routes](../../docs/capsules/MIXED-TASK-BUSINESS-ERROR-PROPOSAL.md#implementation-progress) |
 | [process-interface-data.ts](src/process-interface-data.ts) | Private scalar Process-interface selection, snapshot insertion and isolated output replacement by complete scope occurrence |
 | [local-data-owner.ts](src/local-data-owner.ts) | Closed effect-or-Activity ownership identity for Activity-local variable scopes |

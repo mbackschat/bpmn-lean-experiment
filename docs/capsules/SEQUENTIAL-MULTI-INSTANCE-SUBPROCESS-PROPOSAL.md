@@ -2,7 +2,7 @@
 
 ## Status
 
-Lifecycle: owner-approved
+Lifecycle: implementation-in-progress
 Review: approved
 
 ## Question and boundary
@@ -167,6 +167,10 @@ The `what-binds` inventory requires [operation consumers](../../scripts/semantic
 Close only with applicable proofs, independent Lean/TS execution, source/IL negative admission, the selected CIB relation and retained answer-free comparisons, required review stages, functional Temporal recovery/replay, and usable whole-process acceptance. Public promotion atomically adds the profile, [corpus](../../model-corpus/README.md) model/pipeline binding, capability/restriction row, generated map and Product 2 disclosure. Reuse existing business Activity interfaces; a test-only delegate does not satisfy public handler delivery.
 
 The nearest unsupported claim is general MI Sub-Process support: parallel outer bodies, mutable collections, interruption, deeper nesting and wider predicates remain open. Shared XML lowering and a shared interpretation are common-mode risks; independent raw-graph/IL negatives, CIB controls and deliberate wrong-owner/first-End/stale-result mutations address them. Compare baseline-to-closure cost with the ordinary embedded-scope and mixed-task increments in the [cost ledger](../CAPSULE-COST-LEDGER.md); unknown authoring cost remains unknown.
+
+## Implementation progress
+
+The private [body topology checker](../../packages/semantic-core/src/structured-parallel-body-analysis.ts) consumes each node and edge once using an explicit region stack. Its [tests](../../packages/semantic-core/test/structured-parallel-body-analysis.test.ts) separate serial/nested parallel/separate-End bodies from crossing regions, partial joins, implicit forks/merges, cycles and disconnected material. Parallel edge multiplicity is retained. This component has no source/IL admission caller yet and establishes no burst, data, repeated-scope execution, Lean or hosting evidence.
 
 ## Independent cold-review receipt
 

@@ -131,6 +131,8 @@ Private [Call data](capsules/CALL-ACTIVITY-DATA-BOUNDARIES-PROPOSAL.md#current-i
 
 ### TypeScript semantic core
 
+[Private MI groundwork](capsules/SEQUENTIAL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#implementation-progress).
+
 - Dependency-free Semantic Process contracts
 - shared safe-string admission, Unicode scalar ordering, and deeply immutable profile, program, runtime, stimulus, and result data
 - topology-independent structural validation plus exact profile definition-scope and operation-kind cardinality
