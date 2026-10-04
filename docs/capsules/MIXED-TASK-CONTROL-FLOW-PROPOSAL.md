@@ -137,10 +137,12 @@ The nearest unsupported claims are mixed-task parallelism, nested scopes, busine
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
 | Proposal | `b40eda56` | `fork-turns-none` | `approve-with-required-edits` | `745c836b` |
-| Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Semantic checkpoint | `47f6f996` | `fork-turns-none` | `approve-with-required-edits` | `245962ad` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
 The independent cold reviewer approved correction `745c836b`, closing the checked-source cardinality inventory omission. Original packet digest: `ab20a4fe657c26776f292c421e9ec06430d2a8571aa8ce5c714b57487fa7ff15`; correction packet digest: `d80c3099eeeed413b5a0adf065a4c99d95d08f563728364a3197f89cf052a4c2`. The independently executed checked-schema discriminator and writer-barrier graph search passed; these are finite diagnostics, not the required Lean proof. All 59 correction documentation checks pass in `/tmp/mixed-task-proposal-r1-docs`, separately asserted; unchanged infrastructure retains 629 passing checks. Approval selects the account only; implementation and hosting remain open.
+
+The semantic checkpoint reviewer approved correction `245962ad`, closing the stale IL graph-policy description. Checkpoint packet digest: `7a43b774cc4876e84362a7c75111ee5acdd36cd6f5f396835d239103857992cb`; correction packet digest: `3e8aaf1d769d7bf6ac5590be979cec5cb2b28d77a2b13bc1636ccb5382e8a0c4`. Independent verification passed 28 focused source, analysis, parity and host-refusal tests, the permitted Lean proof target, and 24 correction documentation checks; `/tmp/mixed-task-cold-review-focused`, `/tmp/mixed-task-cold-review-lean` and `/tmp/mixed-task-cold-review-r1-docs` were separately asserted. No required findings remain. Hosting, public registration, cold aggregate-library acceptance and closure remain open.
 
 ## Implementation progress
 
