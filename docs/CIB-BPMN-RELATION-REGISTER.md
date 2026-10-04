@@ -18,15 +18,15 @@ This presumption guides investigation; it does not replace evidence or authorize
 
 ## Current dashboard
 
-The counts below cover only entries reviewed and recorded by this project. Zero does not mean that the complete CIB Seven engine has been proven free of deviations.
+The counts below cover only entries recorded by this project, including the separately counted open candidates. Selection and qualification follow each entry's status. Zero does not mean that the complete CIB Seven engine has been proven free of deviations.
 
 | Lane | Recorded entries | Open candidates | Meaning |
 |---|---:|---:|---|
-| Reviewed normative agreements | 12 | 0 | A bounded BPMN requirement and pinned CIB observation agree |
+| Normative agreement records | 13 | 1 | A bounded BPMN requirement and pinned CIB observation agree; candidates remain unapproved |
 | Permitted operational details | 9 | 0 | CIB or the oracle adapter chooses host mechanics without changing required BPMN observations |
 | Confirmed normative deviations | 0 | 1 | Clear BPMN requirement and pinned CIB evidence establish incompatible behavior |
 | CIB interpretations of BPMN gaps or inconsistencies | 2 | 0 | CIB selects an operational meaning where BPMN does not uniquely settle it |
-| Selected CIB extensions | 16 | 0 | Project profile deliberately includes behavior beyond bare BPMN execution |
+| CIB extension records | 17 | 1 | Project profile deliberately includes behavior beyond bare BPMN execution; candidates remain unselected |
 | Configuration-specific realizations | 8 | 0 | Behavior is permitted or meaningful only under a declared CIB environment |
 | Known CIB limitations within reviewed scope | 2 | 0 | Unsupported or incomplete behavior that is not yet classified as a normative deviation |
 
@@ -231,6 +231,16 @@ The repository-wide audit on 2026-07-24 found no previously visited observation 
 **Evidence:** The [eight-probe experiment](experiments/BUSINESS-EFFECT-DATA-EXPERIMENT.md#business-failure-follow-up), [public-service probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenBusinessFailurePhaseZeroProbeTest.java) and [registered-relationship guard](../scripts/contract-artifact-projections.test.ts). No project semantic profile is qualified by this observation alone.
 
 **Boundary:** One attached exact-code catch in a single-control root Process with repeated work; no catch-all, multiple-handler precedence, ancestor propagation or transaction/refinement equality. Output mapping is separately classified as `CIB-EXT-0016`; project occurrence IDs and typed command results are not CIB observations.
+
+### CIB-AGR-0013 — sequential Multi-Instance Sub-Process completion
+
+**Status:** Candidate bounded agreement for the [sequential Sub-Process proposal](capsules/SEQUENTIAL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md); independent review and profile qualification pending.
+
+**BPMN basis:** §§13.3.4 and 13.3.7 require a complete inner Sub-Process before the next sequential instance, one-time instance count, empty-input continuation and completion-condition evaluation at body completion.
+
+**Evidence:** The [public-service lifecycle probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenSequentialMultiInstanceSubprocessProbeTest.java) against CIB Seven `2.2.0` separates both orders of two inner branches, fresh Task IDs, stale completion, zero input and early completion only after the complete body. It also observes a fixed total while a changed collection supplies the next item; collection shortening rolls back completion. [Research](research/CIB-SEVEN-BPMN-BREADTH-RESEARCH.md#sequential-multi-instance-sub-process-account) retains the exact source and execution boundaries. [Artifact reference verification](../scripts/contract-artifact-projections.test.ts) rejects a profile reference if this entry is removed.
+
+**Boundary:** Public Tasks, variables, completed Activity history and Process existence, with explicit command order and background jobs disabled. This is no general MI agreement, project identity equivalence or Temporal refinement. The proposed read-only collection restriction excludes mutable-collection execution without claiming CIB snapshot behavior. Candidate rules: `SMIS-ENTER-01`, `SMIS-END-01`, `SMIS-EARLY-01`.
 
 ## Interpretation register
 
@@ -494,6 +504,16 @@ CIB Seven `2.2.0` applies the attached Service Task's output parameters on the m
 **Evidence:** The [business-failure experiment](experiments/BUSINESS-EFFECT-DATA-EXPERIMENT.md#business-failure-follow-up), its [public-service probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenBusinessFailurePhaseZeroProbeTest.java), pristine `ExecutionEntity.destroy`/`IoParameter.execute`/`OutputParameter.execute` source, and [artifact reference verification](../scripts/contract-artifact-projections.test.ts). CIB supplies this mapping account and cannot also count as independent corroboration of it.
 
 **Boundary:** String/null results and declared scalar mappings only; no arbitrary JUEL, Java binary compatibility, Process-side delegate writes, nested scope, missing-local fallback, retry equivalence or exactly-once external effects. The unmatched Error's root-cleanup failure is observed separately, including a literal-output counterexample and mapping-free control; it is not adopted semantics or a new BPMN deviation claim. Existing `2.0.0` records and profiles remain unchanged.
+
+### CIB-EXT-0017 — repeated Sub-Process body-local mapping and enclosing writes
+
+**Status:** Candidate bounded extension for the [sequential Sub-Process proposal](capsules/SEQUENTIAL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md); selection awaits independent review.
+
+CIB input parameters initialize local bindings in each new body. Human completion updates the nearest existing binding, while a Service output parameter evaluates its Activity-local result and writes through the enclosing scope. Declared body locals shadow parent variables, including present null. With those declarations absent, the same writes reach the existing Process variables. Body disposal removes locals and the next body reinitializes them. The exact CIB `inputOutput` and Task Service variable protocol are extensions, not normative BPMN data-association syntax.
+
+**Evidence:** The [mixed human/Service body probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenSequentialMultiInstanceDataProbeTest.java) against CIB Seven `2.2.0` separates repeated bodies, interleaved Processes, null and missing body declarations. The [research boundary](research/CIB-SEVEN-BPMN-BREADTH-RESEARCH.md#repeated-body-data-boundary) identifies `InputParameter.execute` and `OutputParameter.execute`; [artifact reference verification](../scripts/contract-artifact-projections.test.ts) checks registration. This source-informed account and its CIB probe are not independent semantic interpretations.
+
+**Boundary:** One ordinary body level, string/null mappings, explicit local Service results and nearest existing parent/body bindings. No arbitrary JUEL, general nested mapping, MI output aggregation, external side-effect rollback or Temporal transaction equivalence. Existing `CIB-EXT-0015` remains root-only; it is not silently broadened. Candidate rule: `SMIS-DATA-01`.
 
 ## Permitted operational-detail register
 

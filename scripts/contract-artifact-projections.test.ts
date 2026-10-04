@@ -647,3 +647,15 @@ test("binds business mapping and Error relationships to the live register", asyn
     assert.throws(() => verifyArtifactSet(withoutRelationship), /profile references unknown CIB-BPMN relationship/);
   }
 });
+
+test("binds sequential Sub-Process relationships to the live register", async () => {
+  const artifact = cloneArtifactSet(requiredAt(await readAndVerifyArtifactSets(projectRoot), 0, "artifact sets"));
+  for (const relationship of ["CIB-AGR-0013", "CIB-EXT-0017"]) {
+    assert.ok(artifact.registeredRelationshipIds.has(relationship), relationship);
+    artifact.profile.bpmn.relationships = [relationship];
+    const withoutRelationship = { ...artifact, registeredRelationshipIds: new Set(
+      [...artifact.registeredRelationshipIds].filter(id => id !== relationship),
+    ) };
+    assert.throws(() => verifyArtifactSet(withoutRelationship), /profile references unknown CIB-BPMN relationship/);
+  }
+});
