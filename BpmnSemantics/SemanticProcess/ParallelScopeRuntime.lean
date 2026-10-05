@@ -242,4 +242,64 @@ theorem completeParallelScope_preserves_process {entry : ParallelScopeEntry} {ta
   cases retirement <;> cases Option.some.inj completed <;>
     simpa only [cancelParallelBodies_preserves_process, cancelParallelBody_preserves_process] using frame.1
 
+private theorem scopeCounter_insert_missing (scopeId : DefinitionScopeId) (count : Nat)
+    (values : List ScopeActivation) (absent : ∀ value ∈ values, value.scopeId ≠ scopeId) :
+    (((canonicalInsertBy scopeActivationBefore ⟨scopeId, count⟩ values).find?
+      fun value => decide (value.scopeId = scopeId)).map (·.count)).getD 0 = count := by
+  induction values with
+  | nil => simp [canonicalInsertBy]
+  | cons current rest ih =>
+      have different := absent current (by simp)
+      have restAbsent : ∀ value ∈ rest, value.scopeId ≠ scopeId :=
+        fun value member => absent value (by simp [member])
+      simp only [canonicalInsertBy]
+      split
+      · simp
+      · simpa [different] using ih restAbsent
+
+private theorem scopeCounter_set (state : RuntimeState) (scopeId : DefinitionScopeId) (count : Nat) :
+    scopeActivationCount { state with scopeActivations := setScopeActivationCount state.scopeActivations scopeId count }
+      scopeId = count := by
+  unfold scopeActivationCount setScopeActivationCount
+  apply scopeCounter_insert_missing
+  intro value member equal
+  have different := (List.mem_filter.mp member).2
+  simp [equal] at different
+
+/-- PMIS-ENTER-01 allocates one fresh ordinal per body, independently of item equality. -/
+theorem issueParallelBodies_scope_ordinals {entry : ParallelScopeEntry} {parent : ScopeOccurrenceId}
+    {items : List String} {index : Nat} {state result : RuntimeState} {iterations : List ParallelScopeIteration}
+    (issued : issueParallelBodies? entry parent items index state = some (result, iterations)) :
+    iterations.map (·.scope.activation) = List.range' (scopeActivationCount state entry.childScopeId + 1) items.length ∧
+    scopeActivationCount result entry.childScopeId = scopeActivationCount state entry.childScopeId + items.length := by
+  induction items generalizing state index iterations with
+  | nil => simp [issueParallelBodies?] at issued; rcases issued with ⟨rfl, rfl⟩; simp
+  | cons item items ih =>
+      unfold issueParallelBodies? at issued
+      obtain ⟨variables, _, issued⟩ := Option.bind_eq_some_iff.mp issued
+      obtain ⟨⟨successor, rest⟩, generated, issued⟩ := Option.bind_eq_some_iff.mp issued
+      cases Option.some.inj issued
+      obtain ⟨ordinals, count⟩ := ih generated
+      have updated := scopeCounter_set state entry.childScopeId (scopeActivationCount state entry.childScopeId + 1)
+      simp only [scopeActivationCount] at updated
+      simp only [scopeActivationCount] at ordinals count ⊢
+      simp only [updated] at ordinals count
+      constructor
+      · simpa [List.range'] using congrArg
+          (List.cons (scopeActivationCount state entry.childScopeId + 1)) ordinals
+      · simpa [Nat.add_assoc, Nat.add_comm 1] using count
+
+/-- PMIS-ENTER-01: equal item values cannot alias the generated body identities. -/
+theorem issueParallelBodies_distinct_scopes {entry : ParallelScopeEntry} {parent : ScopeOccurrenceId}
+    {items : List String} {index : Nat} {state result : RuntimeState} {iterations : List ParallelScopeIteration}
+    (issued : issueParallelBodies? entry parent items index state = some (result, iterations)) :
+    (iterations.map (·.scope)).Nodup := by
+  have ordinals := (issueParallelBodies_scope_ordinals issued).1
+  have unique : (iterations.map (·.scope.activation)).Nodup := by
+    rw [ordinals]
+    exact List.nodup_range'
+  apply List.Pairwise.of_map (S := fun a b : Nat => a ≠ b) ScopeOccurrenceId.activation
+    (fun _ _ different equal => different (congrArg ScopeOccurrenceId.activation equal))
+  simpa only [List.map_map, Function.comp_def] using List.nodup_iff_pairwise_ne.mp unique
+
 end BpmnSemantics.SemanticProcess
