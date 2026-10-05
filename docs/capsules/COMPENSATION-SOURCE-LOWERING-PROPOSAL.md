@@ -208,7 +208,7 @@ The 800-nonblank-line review target is the extraction threshold. These headroom 
 | [TypeScript lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 100 | keep Compensation construction in its bounded sibling module |
 | [TypeScript compilation dispatch](../../packages/bpmn-source/src/compilation-dispatch.ts) | 405 | dispatch only; no Compensation validation belongs here |
 | [TypeScript checked graph contract](../../packages/semantic-core/src/checked-process-contract.ts) | 375 | keep the closed Compensation shape in its bounded contract owner |
-| [TypeScript graph admission](../../packages/bpmn-source/src/checked-process-graph-admission.ts) | 394 | keep only the declaration-derived dormant-scope composition seam |
+| [TypeScript graph admission](../../packages/bpmn-source/src/checked-process-graph-admission.ts) | 393 | keep only the declaration-derived dormant-scope composition seam |
 | [Lean checked JSON](../../BpmnSemantics/SemanticProcessJson/CheckedProcess.lean) | 333 | keep optional-field decoding in the bounded Compensation decoder |
 | [Lean checked admission](../../BpmnSemantics/SemanticProcess/CheckedProcessAdmission.lean) | 339 | keep exact Compensation validation in its bounded sibling owner |
 

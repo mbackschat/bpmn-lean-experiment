@@ -48,7 +48,18 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 /** SMIS-DATA-01 separates pre-entry initialization from local/item/Process resolution inside the body. */
 export function analyzeSequentialScopeData(program: Pick<SemanticProcessProgram, "operations" | "operationScopes">): SequentialScopeDataAnalysis | undefined {
-  const entries = program.operations.filter(operation => operation.kind === Op.EnterSequentialMultiInstanceScope);
+  return analyzeRepeatedScopeData(program, Op.EnterSequentialMultiInstanceScope);
+}
+
+/** PMIS-DATA-01 uses the same pre-entry mapping domain; concurrent execution remains separately qualified. */
+export function analyzeParallelScopeData(program: Pick<SemanticProcessProgram, "operations" | "operationScopes">): SequentialScopeDataAnalysis | undefined {
+  return analyzeRepeatedScopeData(program, Op.EnterParallelMultiInstanceScope);
+}
+
+function analyzeRepeatedScopeData(program: Pick<SemanticProcessProgram, "operations" | "operationScopes">,
+  entryKind: Op.EnterSequentialMultiInstanceScope | Op.EnterParallelMultiInstanceScope): SequentialScopeDataAnalysis | undefined {
+  const entries = program.operations.filter(operation =>
+    (operation.kind === Op.EnterSequentialMultiInstanceScope || operation.kind === Op.EnterParallelMultiInstanceScope)).filter(operation => operation.kind === entryKind);
   const entry = entries[0];
   if (entries.length !== 1 || entry === undefined) return undefined;
   const effects = program.operations.filter(operation => operation.kind === Op.AwaitEffect);

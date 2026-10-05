@@ -10,6 +10,7 @@ import {
   INTERRUPTING_MESSAGE_EVENT_SUBPROCESS_CHECKPOINT_PROFILE_ID,
   STRUCTURED_PROCESS_COMPOSITION_CHECKPOINT_PROFILE_ID,
   SEQUENTIAL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID,
+  PARALLEL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID,
   TRANSACTION_CANCELLATION_CHECKPOINT_PROFILE_ID,
   COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID,
   REPEATABLE_EVENT_SUBSCRIPTIONS_CHECKPOINT_PROFILE_ID,
@@ -54,7 +55,7 @@ const mixedTaskResumptionBoundedGraphPolicy: SemanticGraphPolicy = Object.freeze
   semanticResumptionOperationKinds: Object.freeze([SemanticOperationKind.AwaitUserTask, SemanticOperationKind.AwaitEffect] as const),
 });
 
-/** Selects the complete graph policy for one admitted semantic capability. */
+/** Selects the graph policy for one source/IL profile; execution admission is separate. */
 export function semanticGraphPolicyForProfile(
   semanticProfile: string,
 ): SemanticGraphPolicy | undefined {
@@ -66,6 +67,7 @@ export function semanticGraphPolicyForProfile(
     case SERIAL_BUSINESS_TASK_CHECKPOINT_PROFILE_ID:
     case STRUCTURED_PROCESS_COMPOSITION_CHECKPOINT_PROFILE_ID:
     case SEQUENTIAL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID:
+    case PARALLEL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID:
     case CALL_ACTIVITY_DATA_BOUNDARIES_CHECKPOINT_PROFILE_ID:
     case INTERRUPTING_MESSAGE_EVENT_SUBPROCESS_CHECKPOINT_PROFILE_ID:
     case SemanticProfileId.TimerStart:

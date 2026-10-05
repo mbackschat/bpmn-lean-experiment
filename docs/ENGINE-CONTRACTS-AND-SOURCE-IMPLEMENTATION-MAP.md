@@ -4,7 +4,7 @@ This map owns wire, profile, checked-source, IL and source-admission status. Rou
 
 ## Current boundary
 
-[Parallel MI lowering](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#private-checked-source-lowering): private; compilation unavailable.
+[Parallel MI compilation](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#private-source-compilation): private; execution unavailable.
 
 Exact BPMN bytes enter a checked graph under bounded, versioned, fail-closed profiles and deterministically lower to Semantic Process IL. Unsupported source rejects unless reviewed rules permit preservation. Interchange preserves standard notation without changing User Task Process-data execution. Private [`implementation-status-owner:ENGINE-SEMANTIC-FAMILY`](ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md#serial-business-task-composition) remains unqualified for hosting.
 

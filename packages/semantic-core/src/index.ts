@@ -1,7 +1,7 @@
 export * from "./contract.js";
-export { SEQUENTIAL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID } from "./semantic-profile-catalog.js";
+export { SEQUENTIAL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID, PARALLEL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID } from "./semantic-profile-catalog.js";
 export { analyzeSequentialScopeControl } from "./sequential-scope-control-analysis.js";
-export { analyzeSequentialScopeData } from "./sequential-scope-data-admission.js";
+export { analyzeSequentialScopeData, analyzeParallelScopeData } from "./sequential-scope-data-admission.js";
 export { sequentialScopeCheckpointValid } from "./sequential-scope-state-validation.js";
 export * from "./activity-body-turnover.js";
 export * from "./flow-node-occurrence-retained-pairing.js";
@@ -137,3 +137,6 @@ export * from "./serial-business-task-policy.js";
 export * from "./serial-business-task-admission.js";
 
 export { mixedTaskControlCheckedGraph } from "./mixed-task-control-flow-admission.js";
+
+export { analyzeRepeatedScopeStructure } from "./repeated-scope-control-analysis.js";
+export { isStructuredParallelBody } from "./structured-parallel-body-analysis.js";

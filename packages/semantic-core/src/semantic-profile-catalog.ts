@@ -127,3 +127,6 @@ export const MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID =
 /** MBERR-HOST-01 requires recovery and replay evidence before hosted qualification. */
 export const MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID =
   "cibseven-2.2.0-mixed-task-business-error-draft";
+
+export const PARALLEL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID =
+  "cibseven-2.2.0-parallel-multi-instance-subprocess-draft";

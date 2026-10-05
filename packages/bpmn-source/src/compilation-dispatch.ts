@@ -1,5 +1,5 @@
 import { compileTransactionSourceCheckedProcess } from "./transaction-source.js";
-import { compileSequentialScopeSource } from "./sequential-scope-source-compiler.js";
+import { compileSequentialScopeSource } from "./multi-instance-scope-source-compiler.js";
 import { compileMixedTaskBusinessErrorSource, compileMixedTaskControlFlowSource, compileSerialBusinessTaskSource } from "./serial-business-task-source.js";
 import {
   CALL_ACTIVITY_DATA_BOUNDARIES_CHECKPOINT_PROFILE_ID,

@@ -24,7 +24,7 @@ private def places : List String := ["incoming", "outgoing", "body-in", "body-ou
 private def program : Program :=
   { identity :=
       { compiler := .bpmnSourceSemanticProcess
-        semanticProfile := ⟨"cibseven-2.2.0-embedded-subprocess-completion-draft"⟩
+        semanticProfile := ⟨"cibseven-2.2.0-parallel-multi-instance-subprocess-draft"⟩
         sourceId := ⟨"paired-body"⟩
         sourceSha256 := "private-graph-witness" }
     internalSchedulingMode := .rejectObservableChoice
@@ -42,6 +42,9 @@ private def program : Program :=
 
 private def replacing (id : String) (replacement : SemanticOperation) : Program :=
   { program with operations := operations.map fun operation => if operation.id.value == id then replacement else operation }
+
+theorem parallel_source_graph_policy_does_not_admit_execution :
+    programProfileCapabilitiesValid program = false := by decide +kernel
 
 theorem paired_repeated_scope_graph_is_admitted : programGraphWellFormed program = true := by decide +kernel
 

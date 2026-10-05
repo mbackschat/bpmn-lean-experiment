@@ -116,7 +116,7 @@ Admission extends the existing [compiler](../../packages/bpmn-source/src/checked
 | [Lean checked validation](../../BpmnSemantics/SemanticProcess/CheckedProcessAdmission.lean) | 339 | Widen Exclusive candidates; retain Inclusive and old-profile cardinalities. |
 | [TypeScript IL](../../packages/semantic-core/src/semantic-process-contract.ts) | 97 | Keep analysis outside shared dispatch and preserve existing profile restrictions. |
 | [Choice admission](../../packages/semantic-core/src/simple-boolean-choice-admission.ts) | 665 | Keep analysis outside shared dispatch and preserve existing profile restrictions. |
-| [Graph policy](../../packages/semantic-core/src/semantic-process-graph-policy.ts) | 690 | Keep analysis outside shared dispatch and preserve existing profile restrictions. |
+| [Graph policy](../../packages/semantic-core/src/semantic-process-graph-policy.ts) | 688 | Keep analysis outside shared dispatch and preserve existing profile restrictions. |
 | [Lean graph validation](../../BpmnSemantics/SemanticProcess/GraphValidation.lean) | 8 | Keep analysis outside shared dispatch and preserve existing profile restrictions. |
 | [Lean Program validation](../../BpmnSemantics/SemanticProcess/ProgramStructuralValidation.lean) | 3 | Keep analysis outside shared dispatch and preserve existing profile restrictions. |
 | [Lean command admission](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean) | 3 | Keep analysis outside shared dispatch and preserve existing profile restrictions. |

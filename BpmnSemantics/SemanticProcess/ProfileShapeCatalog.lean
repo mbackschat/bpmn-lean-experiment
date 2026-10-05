@@ -523,6 +523,7 @@ def profileGraphPolicy? (profile : String) : Option ProfileGraphPolicy :=
       profile = structuredCompositionCheckpointProfileId.value ||
       profile = serialBusinessTaskProfileId.value ||
       profile = "cibseven-2.2.0-sequential-multi-instance-subprocess-draft" ||
+      profile = "cibseven-2.2.0-parallel-multi-instance-subprocess-draft" ||
       profile = callDataCheckpointProfileId.value ||
       profile = interruptingMessageEventSubProcessProfileId.value ||
       profile = repeatableSubscriptionCheckpointProfileId.value ||

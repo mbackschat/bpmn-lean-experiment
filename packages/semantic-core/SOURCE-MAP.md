@@ -191,7 +191,8 @@ This contributor map assigns source-file responsibilities inside `@bpmn-lean/sem
 | [sequential-scope-binding.ts](src/sequential-scope-binding.ts) | Exact current body, outer Activity, controller and local-frame binding shared by lifecycle and data access |
 | [sequential-scope-state-validation.ts](src/sequential-scope-state-validation.ts) | Bidirectional controller, Activity and body ownership with exact immutable collection index and item validation |
 | [sequential-scope-observation.ts](src/sequential-scope-observation.ts) | Private repeated-body progress, captured item, local bindings and exact current inner-work occurrence projection |
-| [sequential-scope-control-analysis.ts](src/sequential-scope-control-analysis.ts) | Scoped mixed-task and paired-parallel body analysis with bounded parent continuation and automatic-burst admission |
+| [repeated-scope-control-analysis.ts](src/repeated-scope-control-analysis.ts) | Shared repeated-scope topology projection with exact mode, child ownership and serial parent checks; execution capacity remains mode-specific |
+| [sequential-scope-control-analysis.ts](src/sequential-scope-control-analysis.ts) | Sequential turnover and automatic-burst admission over the shared repeated-scope topology |
 | [sequential-scope-data.ts](src/sequential-scope-data.ts) | Repeated-body input resolution, explicit Service result mapping, nearest-enclosing writes, protected names and Boolean User Task condition policy |
 | [sequential-scope-data-admission.ts](src/sequential-scope-data-admission.ts) | Private repeated-scope mapping checks, conservative Process input requirements and Start/command data restrictions; full profile admission remains separate |
 | [sequential-scope-program-admission.ts](src/sequential-scope-program-admission.ts) | Private TypeScript Program admission combining complete lifecycle shape, scoped mixed-body control, data requirements and distinct source identities |

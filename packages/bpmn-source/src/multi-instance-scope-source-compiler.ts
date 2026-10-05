@@ -1,5 +1,6 @@
 import { CheckedNodeKind as Kind, CheckedProcessKind, GatewayDirection, compareCanonicalStrings,
-  SEQUENTIAL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID as profile,
+  SEQUENTIAL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID, PARALLEL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID,
+  SemanticOperationKind as Op, analyzeRepeatedScopeStructure, isStructuredParallelBody, analyzeParallelScopeData,
   analyzeSequentialScopeControl, analyzeSequentialScopeData } from "@bpmn-lean/semantic-core";
 import type { CheckedNode, CheckedProcess, CheckedSequenceFlow } from "@bpmn-lean/semantic-core";
 import { BpmnSourceDiagnosticCode } from "./contracts.js";
@@ -14,14 +15,30 @@ import { declaredGatewayDirectionMatches } from "./gateway-direction-source.js";
 import { projectMappedSuccessSequenceFlows, projectPlainNode } from "./mapped-service-task-source.js";
 import { selectMappedServiceTaskSourcePolicy } from "./mapped-service-task-source-policy.js";
 import { projectSerialBusinessServiceTask } from "./serial-business-task-source.js";
-import { readSequentialSubProcessDeclaration } from "./multi-instance-subprocess-source.js";
+import { readSequentialSubProcessDeclaration, readParallelSubProcessDeclaration } from "./multi-instance-subprocess-source.js";
 import { resolveAdmittedCheckedProcessGraph } from "./checked-process-graph-admission.js";
 import { lowerCheckedProcess } from "./semantic-process-lowering.js";
 import type { AdmittedSourceOverlay } from "./source-overlay.js";
 
-/** SMIS-ADMIT-01 composes source, scoped graph, control-burst and data checks; execution registration remains separate. */
+enum RepetitionMode { Sequential, Parallel }
+
+/** SMIS-ADMIT-01 retains the selected sequential burst and data admission. */
 export function compileSequentialScopeSource(root: unknown, source: BpmnSourceIdentity,
   overlay: AdmittedSourceOverlay | null): CheckedCompilationProjection {
+  return compileRepeatedScopeSource(root, source, overlay, RepetitionMode.Sequential);
+}
+
+/** PMIS-ADMIT-01 projects the private graph; Start capacity, runtime admission and registration are separate. */
+export function compileParallelScopeSource(root: unknown, source: BpmnSourceIdentity,
+  overlay: AdmittedSourceOverlay | null): CheckedCompilationProjection {
+  return compileRepeatedScopeSource(root, source, overlay, RepetitionMode.Parallel);
+}
+
+function compileRepeatedScopeSource(root: unknown, source: BpmnSourceIdentity,
+  overlay: AdmittedSourceOverlay | null, mode: RepetitionMode): CheckedCompilationProjection {
+  const profile = mode === RepetitionMode.Sequential ? SEQUENTIAL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID
+    : PARALLEL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID;
+  const nodeKind = mode === RepetitionMode.Sequential ? Kind.SequentialMultiInstanceSubProcess : Kind.ParallelMultiInstanceSubProcess;
   const selection = selectMappedServiceTaskSourcePolicy(profile, overlay);
   if (selection.policy === null) return unsupported(selection.rejection);
   const definitions = asElement(root);
@@ -61,8 +78,9 @@ export function compileSequentialScopeSource(root: unknown, source: BpmnSourceId
       case "bpmn:ServiceTask": node = projectSerialBusinessServiceTask(element, definitions, selection.policy); break;
       case "bpmn:ParallelGateway": node = parallelGateway(element, id, flows); break;
       case "bpmn:SubProcess": {
-        const declaration = readSequentialSubProcessDeclaration(element, definitions, handlers);
-        if (declaration !== undefined) node = { kind: Kind.SequentialMultiInstanceSubProcess, id, childScopeId: definitionScopeId(id),
+        const declaration = mode === RepetitionMode.Sequential ? readSequentialSubProcessDeclaration(element, definitions, handlers)
+          : readParallelSubProcessDeclaration(element, definitions, handlers);
+        if (declaration !== undefined) node = { kind: nodeKind, id, childScopeId: definitionScopeId(id),
           collectionName: declaration.collectionName, itemName: declaration.itemName,
           bodyInputs: declaration.bodyInputs, completionBooleanName: declaration.completionBooleanName };
         break;
@@ -83,7 +101,7 @@ export function compileSequentialScopeSource(root: unknown, source: BpmnSourceId
       .sort((a, b) => compareCanonicalStrings(a.sequenceFlowId, b.sequenceFlowId)),
     nodes: nodes.sort((a, b) => compareCanonicalStrings(a.id, b.id)), sequenceFlows: [...flows].sort((a, b) => compareCanonicalStrings(a.id, b.id)),
   };
-  const entries = nodes.filter(node => node.kind === Kind.SequentialMultiInstanceSubProcess);
+  const entries = nodes.filter(node => (node.kind === Kind.SequentialMultiInstanceSubProcess || node.kind === Kind.ParallelMultiInstanceSubProcess)).filter(node => node.kind === nodeKind);
   const entry = entries[0];
   if (entries.length !== 1 || entry === undefined ||
       !resolveAdmittedCheckedProcessGraph({ ...checkedProcess, flows }, profile)) return unsupported("Repeated-scope ownership or graph admission failed.");
@@ -91,6 +109,12 @@ export function compileSequentialScopeSource(root: unknown, source: BpmnSourceId
   if (![Kind.UserTask, Kind.ServiceTask].every(kind => nodes.some(node => childIds.has(node.id) && node.kind === kind)))
     return unsupported("The repeated body requires both a User Task and a mapped Service Task.");
   const program = lowerCheckedProcess(checkedProcess);
+  if (mode === RepetitionMode.Parallel) {
+    const control = analyzeRepeatedScopeStructure(program, profile, Op.EnterParallelMultiInstanceScope);
+    return program.operations.length <= 1024 && control !== undefined && isStructuredParallelBody(control.body) &&
+      analyzeParallelScopeData(program) !== undefined ? { checkedProcess, diagnostics: [] }
+      : unsupported("Parallel repeated-scope structure or data dependencies exceed admission.");
+  }
   return analyzeSequentialScopeControl(program) !== undefined && analyzeSequentialScopeData(program) !== undefined
     ? { checkedProcess, diagnostics: [] } : unsupported("Repeated-scope control bursts or data dependencies exceed admission.");
 }

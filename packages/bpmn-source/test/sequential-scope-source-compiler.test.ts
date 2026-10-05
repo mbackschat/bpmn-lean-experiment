@@ -8,7 +8,7 @@ import { CheckedNodeKind, EffectProtocol, isWellFormedSemanticProcessProgram, Se
   StimulusKind, VariableValueKind as Value, CommandOutcome, EffectExecutionResultKind, ControlStateKind, SemanticOperationKind as Op,
   supportsSemanticProcessExecution } from "@bpmn-lean/semantic-core";
 const { importBpmnGraph } = await import(new URL("../dist/moddle-adapter.js", import.meta.url).href) as typeof import("../src/moddle-adapter.ts");
-const { compileSequentialScopeSource: compile } = await import(new URL("../dist/sequential-scope-source-compiler.js", import.meta.url).href) as typeof import("../src/sequential-scope-source-compiler.ts");
+const { compileSequentialScopeSource: compile } = await import(new URL("../dist/multi-instance-scope-source-compiler.js", import.meta.url).href) as typeof import("../src/multi-instance-scope-source-compiler.ts");
 const { lowerCheckedProcess } = await import(new URL("../dist/semantic-process-lowering.js", import.meta.url).href) as typeof import("../src/semantic-process-lowering.ts");
 const xml = prepareSource(await readFile(sourcePath, "utf8"));
 const overlay = { identity: { id: overlayDocument.id, sha256: sourceOverlay().sha256 }, semanticProfile: profile,
