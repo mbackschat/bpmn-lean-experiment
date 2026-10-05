@@ -48,6 +48,23 @@ A separating experiment on 2026-10-05 called the current closure evaluator with 
 
 Before approving implementation, evaluate a model-derived bounded-closure account: derive the admitted graph's maximum automatic work across all generated bodies, preserve the existing transition/publication sequence, and check the bound before Start. It must retain existing profiles' limits and prove actual reachable completion within its declared budget, with finite resource ceilings. This is a proposed semantic/admission design change requiring review, not an approved runtime workaround. Exit the feasibility check with a separating executable witness and a precise theorem statement, or record the failed alternative without inventing a smaller coverage claim. Partial closure must never be published as a committed stable state.
 
+### Bounded control experiment
+
+The retained [control witness](../../scripts/parallel-mi-closure-capacity-experiment.ts) compares fixed-eight closure with a graph-derived conservative bound using the actual closure evaluator. Run `node scripts/parallel-mi-closure-capacity-experiment.ts`; `--fixed-eight` is the deliberately failing control. Receipt `/tmp/parallel-mi-derived-capacity-ts-red` fails because sixteen serial bodies have not reached their first waits within eight operations. Receipt `/tmp/parallel-mi-derived-capacity-ts-green` passes all 64 cases and was separately asserted on 2026-10-05. Strict harness types pass `/tmp/parallel-mi-capacity-types-fixed`, also separately asserted.
+
+For this experimental acyclic account, let `N` be the collection size and `V` the number of body nodes after eliding the child Start. A conservative bound is `4 + N × (V + 1)`: four parent operations, each body node at most once and one retirement per body. Cancellation discards remaining work without fabricating completed bodies. This whole-execution count also bounds each automatic burst; it is deliberately looser than a maximum-burst analysis. The witness never changes the production limit or registers a profile.
+
+| Sixteen-body control graph | Measured largest burst | Derived whole-execution bound |
+|---|---:|---:|
+| Human then automated wait | 18 | 68 |
+| Parallel human/automated waits, join and confirmation | 50 | 116 |
+| Parallel waits with separate Ends | 50 | 100 |
+| Empty parallel branches between waits, preserving edge multiplicity | 18 | 100 |
+
+Each graph is exercised with zero, one, two and sixteen bodies, natural/early completion and forward/reverse schedules. Every nonterminal stable state exposes an external wait; natural completion uses the exact total count; early completion retires one body and cancels remaining bodies; reaching one separate End while a sibling waits does not retire the body. These are finite control checks, not exhaustive interleavings or production semantic/refinement evidence. The witness uses occurrence-qualified operation keys and contains no business data, source parser, handler execution or publication model. Production candidate selection and commutation must still preserve distinct occurrences of the same definition operation.
+
+The required general statement is: for every admitted structured acyclic body graph, admitted collection size and actual Start-reachable stable state, a valid external completion followed by automatic execution reaches a real wait or terminal state within the admission-derived bound, preserving the full state/publication relation. A proof needs a decreasing potential over unfired body nodes and unretired bodies, plus the existing token/ownership invariant; it cannot assume that a node fires only once without deriving that from admitted structure and reachability. The executable alternative is feasible for the tested control graphs. Exact production representation, admission resource ceiling, data-sensitive independence and this quantified theorem remain unresolved; stop this capacity experiment here and settle the parallel CIB data account before review.
+
 ## Lean assurance lane
 
 Lane shape: proved

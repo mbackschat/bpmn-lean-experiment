@@ -14,6 +14,7 @@ The report names the required implementation detail maps, guards, this registry,
 
 | Task | Entry point | Use |
 |---|---|---|
+| Inspect proposed parallel MI closure capacity | [`parallel-mi-closure-capacity-experiment.ts`](parallel-mi-closure-capacity-experiment.ts) | Run the bounded control experiment described in the [proposal](../docs/capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#bounded-control-experiment); no production admission or proof claim. |
 | Check local prerequisites | [`doctor.sh`](doctor.sh) | Run `./scripts/doctor.sh verify` at session start. Use its explicit `research`, `adoption`, or `all` scope only when the work needs those external inputs. |
 | Run pnpm reproducibly | [`pnpm.sh`](pnpm.sh) | Use this wrapper for project pnpm commands so the pinned toolchain and workspace policy apply. |
 | Run complete verification | [`verify.sh`](verify.sh) | Run the repository gate required by [TESTING-SPEC.md](../docs/TESTING-SPEC.md). Its stage arguments are CI-internal; contributors run the bare complete gate and do not compose it with a command that masks its exit status. |

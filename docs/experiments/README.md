@@ -25,6 +25,7 @@ Keep experiments out of the default semantic authority until they are adopted. P
 
 | Experiment | State | Focused gate |
 |---|---|---|
+| [Parallel MI closure capacity](../capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#bounded-control-experiment) | Fixed-eight control fails; graph-derived control bound passes finite schedules; production admission and general proof remain open | `node scripts/parallel-mi-closure-capacity-experiment.ts` |
 | [Business effect data](BUSINESS-EFFECT-DATA-EXPERIMENT.md) | Executed input-scope and business-failure discriminators; semantic adoption remains separately governed | `./scripts/test-cibseven-oracle.sh` |
 | [Private Core Query eviction correction](../research/TEMPORAL-EXECUTION-RESEARCH.md#private-core-correction-and-usage-check) | Bounded SDK defect corrected and validated; [private patch](temporal-query-eviction-core/core.patch) retained, production adoption open | Isolated Core library unit suite and SDK 1.21.0 live Query comparison; exact commands and receipts in the investigation |
 | [Private Core Query clock correction](../research/TEMPORAL-EXECUTION-RESEARCH.md#legacy-query-pending-input-clock-investigation) | Demonstrated SDK input/clock defect; reviewed [clock patch](temporal-query-eviction-core/query-clock.patch) and diagnostic listings retained, production adoption open | Core parser/Worker red-green guards, complete library suite, minimal live/cold witness and unchanged functional product checks; local performance deferred |
