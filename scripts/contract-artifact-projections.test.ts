@@ -648,9 +648,9 @@ test("binds business mapping and Error relationships to the live register", asyn
   }
 });
 
-test("binds sequential Sub-Process relationships to the live register", async () => {
+test("binds repeated Sub-Process relationships to the live register", async () => {
   const artifact = cloneArtifactSet(requiredAt(await readAndVerifyArtifactSets(projectRoot), 0, "artifact sets"));
-  for (const relationship of ["CIB-AGR-0013", "CIB-EXT-0017"]) {
+  for (const relationship of ["CIB-AGR-0013", "CIB-EXT-0017", "CIB-AGR-0014", "CIB-EXT-0018"]) {
     assert.ok(artifact.registeredRelationshipIds.has(relationship), relationship);
     artifact.profile.bpmn.relationships = [relationship];
     const withoutRelationship = { ...artifact, registeredRelationshipIds: new Set(

@@ -242,6 +242,16 @@ The repository-wide audit on 2026-07-24 found no previously visited observation 
 
 **Boundary:** Public Tasks, variables, completed Activity history and Process existence, with explicit command order and background jobs disabled. This is no general MI agreement, project identity equivalence or Temporal refinement. The proposed read-only collection restriction excludes mutable-collection execution without claiming CIB snapshot behavior. Candidate rules: `SMIS-ENTER-01`, `SMIS-END-01`, `SMIS-EARLY-01`.
 
+### CIB-AGR-0014 — parallel repeated-body completion and cancellation
+
+**Status:** Candidate bounded agreement for the [parallel Sub-Process draft](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md); independent proposal review and profile selection remain pending.
+
+**BPMN basis:** §§13.3.4 and 13.3.7 require completion of the inner Sub-Process before counting an instance, and cancellation of remaining instances when the completion condition succeeds.
+
+**Evidence:** The [parallel mixed-task probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenParallelMultiInstanceDataProbeTest.java) runs two concurrent bodies through Review, mapped validation and Confirm. Changing the Process condition during Review does not finish the body; completing Confirm cancels the sibling, rejects its stale Task completion and offers one parent continuation. Natural completion preserves the other body's open work. [Research](research/CIB-SEVEN-BPMN-BREADTH-RESEARCH.md#parallel-body-data-and-condition-context) retains the source and executable boundary.
+
+**Boundary:** Public task/variable APIs and Process existence, explicit command order, synchronous calibration delegates and disabled background jobs. This does not establish arbitrary nested MI, inner parallel control, production effect cancellation, Temporal refinement or public capability registration. The sequential relationship remains separate. [Artifact-reference verification](../scripts/contract-artifact-projections.test.ts) covers this candidate ID without admitting a new profile.
+
 ## Interpretation register
 
 An interpretation belongs here when BPMN is ambiguous, inconsistent, non-operational, or leaves several permitted behaviors and the pinned CIB engine supplies one concrete meaning. It is not labeled a deviation.
@@ -514,6 +524,16 @@ CIB input parameters initialize local bindings in each new body. Human completio
 **Evidence:** The [mixed human/Service body probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenSequentialMultiInstanceDataProbeTest.java) against CIB Seven `2.2.0` separates repeated bodies, interleaved Processes, null and missing body declarations. The [research boundary](research/CIB-SEVEN-BPMN-BREADTH-RESEARCH.md#repeated-body-data-boundary) identifies `InputParameter.execute` and `OutputParameter.execute`; [artifact reference verification](../scripts/contract-artifact-projections.test.ts) checks registration. This source-informed account and its CIB probe are not independent semantic interpretations.
 
 **Boundary:** One ordinary body level, string/null mappings, explicit local Service results and nearest existing parent/body bindings. No arbitrary JUEL, general nested mapping, MI output aggregation, external side-effect rollback or Temporal transaction equivalence. Existing `CIB-EXT-0015` remains root-only; it is not silently broadened. Candidate rule: `SMIS-DATA-01`.
+
+### CIB-EXT-0018 — parallel body mappings and post-disposal condition context
+
+**Status:** Candidate bounded extension for the [parallel Sub-Process draft](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md); independent proposal review and profile selection remain pending.
+
+CIB input parameters capture enclosing values into each concurrently created body. Declared locals isolate human completion and mapped Service results, including present null. Removing the declarations makes those writes reach the shared Process binding in explicit command order. The selected JUEL Process-variable completion condition is evaluated after body-local disposal: opposite local/Process Boolean values distinguish the enclosing condition value from the former body value. The proposal protects the selected condition name against local redeclaration rather than implying a general variable-scope contract.
+
+**Evidence:** The [parallel data probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenParallelMultiInstanceDataProbeTest.java) and [source-grounded research](research/CIB-SEVEN-BPMN-BREADTH-RESEARCH.md#parallel-body-data-and-condition-context) retain the four passing cases. [Artifact-reference verification](../scripts/contract-artifact-projections.test.ts) covers this candidate ID. CIB `inputOutput`, Task Service patches and JUEL name lookup are selected extension mechanisms, not normative DataAssociation syntax.
+
+**Boundary:** One ordinary body level, string/null data, Boolean condition controls, immutable input collection and synchronous mapped delegate success. No automatic rollback of committed sibling writes, arbitrary expressions, general local-variable accessibility after scope completion, MI output aggregation or durable-effect equivalence is claimed. `CIB-EXT-0017` retains its separate sequential evidence boundary.
 
 ## Permitted operational-detail register
 
