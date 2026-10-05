@@ -30,7 +30,9 @@ The table records inspected sources. Separately, the [four-case public-service p
 
 Required: one collection-driven parallel MI embedded Sub-Process in a root Process; a finite acyclic body mixing User Tasks and mapped-success Service Tasks; serial and structured Parallel regions, including separate branch None Ends; a serial parent continuation; empty input; distinct occurrences even for equal item values; body-local initialization and enclosing writes; natural completion and a selected Boolean Process-variable completion condition; cancellation of unfinished sibling bodies and their pending effects. Business handlers use the existing caller-supplied public binding.
 
-The proposed collection target remains sixteen String items with the existing item/collection byte limits. This target is **not yet demonstrated compatible with automatic-closure capacity**. Do not reduce it to fit a convenient two-item witness. Body-local mappings, present-null shadowing, immutable collection/item names, User Task patches and explicit Service result mappings reuse the sequential account's meaning. Body initialization evaluates all declared inputs in the pre-entry enclosing context; declarations cannot read one another. Shared Process writes follow explicit command order; different bodies do not imply commuting writes to the same binding.
+Candidate identity: `cibseven-2.2.0-parallel-multi-instance-subprocess-draft`, private until the applicable closure obligations pass. Its structural source admission must accept consistent identifier renaming and reject unsupported constructs before Start; profile selection never turns a parser warning into permission.
+
+The proposed collection target remains sixteen String items with the existing item/collection byte limits. This target is **not yet demonstrated with production automatic closure**. Do not reduce it to fit a convenient two-item witness. Body-local mappings, present-null shadowing, immutable collection/item names, User Task patches and explicit Service result mappings reuse the sequential account's meaning. Body initialization evaluates all declared inputs in the pre-entry enclosing context; declarations cannot read one another. Shared Process writes follow explicit command order; different bodies do not imply commuting writes to the same binding.
 
 Optional within this account: multiple human/automated tasks and nested paired Parallel regions inside each body, provided admission establishes the complete bound. Excluded from this increment, but retained as practical obligations where supported: nested MI/scopes, Calls, cycles and conditional branching inside the body, outer Timer interruption, Error/Escalation, Compensation, mutable collections, arbitrary predicate expressions and cardinality-driven admission. No general expression language, vendor delegate API, output aggregation or rollback of completed external side effects is inferred.
 
@@ -40,13 +42,53 @@ Cancellation removes the exact body's tokens, waits and local frames and records
 
 ## Representation and closure prerequisites
 
-The existing [Activity body](../../packages/semantic-core/src/activity-occurrence.ts) has a single-child scope arm. Parallel bodies need one authoritative multi-child ownership representation, integrated with uniqueness, cancellation, data lookup, quiescence and observation. A second controller list that independently duplicates child ownership is not acceptable. Keep fixed total and completed count separate from active membership; derive active count from authoritative membership. Public progress reuses the Sub-Process iteration shape and publishes all active bodies, with exact task/effect membership, rather than treating the first body as current.
+The existing [Activity body](../../packages/semantic-core/src/activity-occurrence.ts) has a single-child scope arm. Add a distinct parallel-child arm whose entries own the body identity and immutable iteration binding. The controller stores only outer identity and counts; it must not keep a second child list. Existing single-child bodies retain their representation and meaning.
+
+```ts
+import type { ActivityOccurrenceId } from "../../packages/semantic-core/src/activity-occurrence.js";
+import type { ScopeOccurrenceId } from "../../packages/semantic-core/src/semantic-process-state.js";
+
+type ParallelScopeIteration = Readonly<{
+  scope: ScopeOccurrenceId;
+  loopCounter: number;
+  item: string;
+}>;
+type ParallelChildScopesBody = Readonly<{
+  kind: "parallelChildScopes";
+  iterations: readonly [ParallelScopeIteration, ...ParallelScopeIteration[]];
+}>;
+type ParallelScopeController = Readonly<{
+  id: ActivityOccurrenceId;
+  total: number;
+  completed: number;
+}>;
+```
+
+Every active entry has a distinct scope identity and index in `[0, total)`, names the same child definition, and belongs to exactly one outer Activity. Keep entries in index order without renumbering after removal. Body-local frames remain in `variables.scopes`; the iteration item is resolved through this ownership relation rather than copied into a second binding store. While the controller is open, `completed + iterations.length = total`; early cancellation closes the whole controller atomically, so no partially cancelled open population is admitted. Public progress reuses the Sub-Process iteration shape and publishes all active entries with exact task/effect membership. Planned/generated equal total, active is membership size, pending and terminated are zero while open; closing publications distinguish completed from cancelled bodies.
+
+The IL adds `enterParallelMultiInstanceScope` and `completeParallelMultiInstanceScope`, with the same immutable entry fields and paired-entry reference as the sequential operations. The entry atomically issues the complete population and pre-entry local snapshots, consuming the parent token once. Completion is addressed to one exact child occurrence; it cannot select an arbitrary child by definition ID. Neither operation adds a second ordinary scope-completion route. The selected profile requires `isSequential=false`; other source/data restrictions follow the sequential contract explicitly, including protected collection/item/condition/handler names and CIB `asyncBefore=true` on the selected mapped Service sources. Body-local initialization performs no enclosing writes, and every body reaches an external wait before a completion can change Process data. No async-before equivalence is claimed.
+
+### Occurrence-addressed internal execution
+
+The [current frontier](../../packages/semantic-core/src/internal-transition-preparation.ts) attempts most operations once per definition and creates an operation-only alternative. The [runtime callback](../../packages/semantic-core/src/semantic-process-runtime.ts) likewise accepts only an operation. Repeated concurrent scopes require enumerating every eligible `(operationId, scopeOccurrence)` pair. Introduce that complete candidate at the frontier boundary and preserve it through attempt, preparation, alternative identity, selection, revalidation and application. Existing Merge input identity remains an additional discriminator; do not erase it or encode scope by concatenating strings. A callback that chooses the first matching scope is invalid even if IDs are canonically sorted.
+
+The [closure evaluator](../../packages/semantic-core/src/semantic-process-closure.ts) must revalidate the full candidate, not merely `operation.id`. Extend Lean and TypeScript selection together. Admission of independent batches requires the established footprint/preparation laws for the complete population, including occurrence-counter reservations and body-local reads. Ordinary activation order must not become an accidental business outcome. Shared Process writes and completion-condition cancellation remain serialized semantic commands; they are not independent just because they belong to different bodies. Required discriminators enable the same definition operation in two bodies, remove or mutate only one candidate, and verify that the other cannot be substituted. Reversing storage order must preserve the complete candidate set and canonical publications.
+
+### Selected admission and host capacities
+
+The proposed profile admits at most 1,024 IL operations across parent and body definitions, with the existing sixteen-item collection ceiling. Let `P` count parent operations, including the single MI entry but excluding its child-completion operation, and `V` count ordinary body operations, excluding that paired completion. Derive `B(N) = P + N × (V + 1)` at Start. The extra one charges each body's retirement; zero input still has a bounded parent path. The static operation ceiling and sixteen-item ceiling imply `B(N) ≤ 16,400`. This conservative finite ceiling permits long serial models while bounding instantaneous closure work; it is a proposed resource restriction, not a performance result or a CIB limit. Preserve the original eight-step admission/evaluation contract for every existing profile.
+
+Recompute the bound from admitted Program identity and collection cardinality in both accounts; do not trust a caller-provided budget. Resume and continuation validation must retain that binding. Every command either completes its whole automatic closure and publications, or rolls back without exposing partial state. A smaller diagnostic fuel value can still demonstrate exhaustion but cannot qualify production execution. Source, raw IL, Start and continuation admission must agree on these checks.
+
+Also admit at most 128 simultaneous body waits, including at most 64 pending semantic effects, checked against the complete reachable control frontier and actual collection size. A sixteen-body human/automated pair therefore fits the proposed count limits. Retain all existing byte limits for Program, committed state, publications, requests/results and continuation arguments; satisfying a count bound alone does not establish byte capacity. Oversized inputs reject before any external effect is scheduled. Select guards at each maximum and the next value, and require a complete sixteen-body representative with realistic selected data to fit the existing byte limits before public qualification.
+
+The [production Workflow contract](../../packages/temporal-adapter/protocol/src/workflow-chain.ts) currently allows only one pending Activity. This capsule therefore requires profile-aware pending-Activity admission up to 64 for its admitted effect population, with every existing profile retaining its current limit. Use the existing effect-frontier scheduler and Temporal Activities, with complete request preflight before scheduling the frontier. Serializing all bodies behind one Activity is not evidence for the full admitted completion orders. This profile-specific capacity change, its scheduler consumers and continuation validation belong in the governed implementation and hosting review; the draft does not change production configuration. Functional capacity, cancellation and replay evidence are required; performance qualification remains separately deferred for this session.
 
 The [closure evaluator](../../packages/semantic-core/src/semantic-process-closure.ts) charges each individual operation against [the eight-operation limit](../../packages/semantic-core/src/semantic-process-limits.ts), including operations applied in a prepared batch. With one ordinary Task activation per concurrent body, sixteen bodies already require more than eight operations before counting entry or forks. The [sequential analysis](../../packages/semantic-core/src/sequential-scope-control-analysis.ts) proves no bound for that multiplied frontier.
 
 A separating experiment on 2026-10-05 called the current closure evaluator with independent frontiers of eight, nine and sixteen operations. Eight completed; nine and sixteen returned `hitBound` before applying the batch. Receipt `/tmp/parallel-scope-closure-capacity` was separately asserted successful. This establishes the capacity mechanism, not an executable MI implementation. Batching is therefore an evaluated alternative that does not resolve the limit. Neither a larger global constant nor silently collapsing several observable operations into one establishes correctness.
 
-Before approving implementation, evaluate a model-derived bounded-closure account: derive the admitted graph's maximum automatic work across all generated bodies, preserve the existing transition/publication sequence, and check the bound before Start. It must retain existing profiles' limits and prove actual reachable completion within its declared budget, with finite resource ceilings. This is a proposed semantic/admission design change requiring review, not an approved runtime workaround. Exit the feasibility check with a separating executable witness and a precise theorem statement, or record the failed alternative without inventing a smaller coverage claim. Partial closure must never be published as a committed stable state.
+The selected model-derived account preserves individual transitions/publications and checks its conservative bound before Start. Its implementation must prove actual reachable completion within that budget. This is a proposed semantic/admission change requiring independent review, not an approved runtime workaround. The executable feasibility check below establishes only its finite control boundary. Partial closure must never be published as a committed stable state.
 
 ### Bounded control experiment
 
@@ -63,7 +105,7 @@ For this experimental acyclic account, let `N` be the collection size and `V` th
 
 Each graph is exercised with zero, one, two and sixteen bodies, natural/early completion and forward/reverse schedules. Every nonterminal stable state exposes an external wait; natural completion uses the exact total count; early completion retires one body and cancels remaining bodies; reaching one separate End while a sibling waits does not retire the body. These are finite control checks, not exhaustive interleavings or production semantic/refinement evidence. The witness uses occurrence-qualified operation keys and contains no business data, source parser, handler execution or publication model. Production candidate selection and commutation must still preserve distinct occurrences of the same definition operation.
 
-The required general statement is: for every admitted structured acyclic body graph, admitted collection size and actual Start-reachable stable state, a valid external completion followed by automatic execution reaches a real wait or terminal state within the admission-derived bound, preserving the full state/publication relation. A proof needs a decreasing potential over unfired body nodes and unretired bodies, plus the existing token/ownership invariant; it cannot assume that a node fires only once without deriving that from admitted structure and reachability. The executable alternative is feasible for the tested control graphs. Exact production representation, admission resource ceiling, data-sensitive independence and this quantified theorem remain unresolved; stop this capacity experiment here and settle the parallel CIB data account before review.
+The required general statement is: for every admitted structured acyclic body graph, admitted collection size and actual Start-reachable stable state, a valid external completion followed by automatic execution reaches a real wait or terminal state within the admission-derived bound, preserving the full state/publication relation. A proof needs a decreasing potential over unfired body nodes and unretired bodies, plus the existing token/ownership invariant; it cannot assume that a node fires only once without deriving that from admitted structure and reachability. The executable alternative is feasible for the tested control graphs. The representation/capacity contracts above are proposed; data-sensitive independence and this quantified theorem remain unproved. The capacity experiment is closed at this boundary; the separate CIB probe supplies the bounded data/context evidence.
 
 ## Lean assurance lane
 
@@ -73,18 +115,22 @@ Evidence: the existing [scope completion laws](../../BpmnSemantics/SemanticProce
 
 Required laws cover unique body ownership, fixed total, completed/active accounting, no early parent continuation, exact cancellation, local-data isolation, and preservation outside declared writes/cancellation. The closure obligation starts from admitted source and actual Start reachability; it cannot assume a successful evaluator result or the desired successor. Existing sequential bounded-resumption gaps remain open and cannot serve as established lemmas. No fairness or termination claim is made about external handlers.
 
+Declare separate Lean relation constructors for empty entry, population entry, nonfinal body retirement, natural exhaustion and early cancellation. Natural exhaustion takes precedence when no sibling remains; early cancellation requires a nonempty remaining population. Prove evaluator-to-relation dispatch and constructor selection separately from the ownership, frame and progress laws. The controller and its resource budget are synthetic execution state, not additional BPMN Activities or public facts; public progress is derived from the outer Activity and its bodies.
+
 Bound the initial assurance investigation to the ownership representation and multiplied-frontier theorem. Do not allocate additional proof modules or begin broad proof assembly before feasibility and independent proposal review. Finite Lean/TypeScript agreement is required alongside the laws, not substituted for them.
 
-| Separating case | Required distinction |
-|---|---|
-| Zero, one, two and sixteen items; duplicate item values | Cardinality, capacity and occurrence identity are independent. |
-| One inner branch ends while its sibling waits | No completed-body count or parent continuation yet. |
-| Interleave different bodies and reverse their completion order | Local frames remain isolated; shared writes follow command order. |
-| Set condition true while another inner branch remains | Evaluate only when a whole body completes. |
-| Complete one body while a sibling has a pending effect | Cancel the sibling semantically; late result cannot create completion. |
-| Cancel after a sibling has committed a Process write | Preserve the write; do not fabricate compensation or rollback. |
-| Same-named parent/local values, present null and reordered declarations | Exact lookup ownership and pre-entry initialization. |
-| Renamed source IDs, malformed child ownership and over-capacity graph | Structural admission; no fixture-specific exception. |
+| Rule and owning layer | Separating case | Evidence obligation |
+|---|---|---|
+| `PMIS-ENTER-01`, BPMN/profile | Zero, one, two and sixteen items; duplicate values | Lean generation/identity laws; independent core count/identity mutations; hosted initial publications. |
+| `PMIS-END-01`, BPMN | One inner branch ends while its sibling waits | Lean quiescence and one-continuation laws; first-End mutation; source CIB inner-parallel precedent and hosted branch orders. |
+| `PMIS-DATA-01`, CIB extension | Interleave bodies, shared writes, null and reordered input declarations | Candidate `CIB-EXT-0018`; Lean scoped-write frames; independent core wrong-owner/input-context controls; exact restored snapshots. |
+| `PMIS-EARLY-01`, BPMN/profile | True condition before and after whole-body completion | Candidate `CIB-AGR-0014`; Lean completed-count/condition law; core premature-completion mutation; hosted cancellation. |
+| `PMIS-CANCEL-01`, BPMN/host refinement | Pending sibling effect, late result and already committed shared write | Lean exact population cleanup; core stale-result and rollback mutations; CIB synchronous cleanup only; real Activity cancellation/recovery and every-Run replay. |
+| `PMIS-SELECT-01`, project interpreter | Same operation in two bodies; remove only one occurrence | Lean candidate completeness/preparation laws; independent core wrong-scope substitution control; full publication agreement. |
+| `PMIS-ADMIT-01`, project profile | Renaming, crossed regions, malformed ownership, exact/over-limit counts | Independent source/raw IL rejection; Lean derived-bound/resumption law; control experiment is finite evidence only; host capacity checks. |
+| `PMIS-PUBLIC-01`, project contract | Remove one active body's E1/E2 identity or retain a cancelled wait | Full Lean/core projection agreement, malformed publication controls, restored multi-body state and public whole-model acceptance. |
+
+All rows require independent TypeScript transcription and full Lean/TypeScript state, observation and refusal comparison; CIB probes do not replace either lane. The applicant-check model is one representative acceptance journey for reusable graph/ownership mechanisms, not a model-specific implementation. Common-mode risks include the shared interpretation, importer and declaration ordering; raw-IL controls, CIB scope counterexamples and deliberate wrong-owner/first-End/cancellation mutations must falsify those mistakes. Preserve neutral inputs separately from retained answers.
 
 ## Temporal hosting and refinement preflight
 
@@ -102,17 +148,21 @@ This proposal cannot advance to implementation approval until the capacity and o
 
 Follow the [pre-release evolution policy](../PROJECT-DESIGN.md#pre-release-evolution-policy). Any multi-child representation must migrate producers, strict Lean/TypeScript readers, schemas, observations, lifecycle projections and continuation validation atomically. Preserve the meaning of existing single-child and Task-only profiles; no durable-history compatibility is implied. Run binding discovery on concrete implementation paths before changing them.
 
-The existing [operation consumer census](../../scripts/semantic-operation-consumer-census.test.ts), [Activity ownership census](../../scripts/activity-occurrence-writer-census.test.ts), [cleanup completeness](../../scripts/runtime-collection-removal-completeness.test.ts), [publication coverage](../../scripts/execution-publication-contract-coverage.test.ts) and [reviewability guard](../../scripts/document-reviewability.test.ts) constrain the representation change. Their passing on this draft would not establish its semantics.
+The existing [operation consumer census](../../scripts/semantic-operation-consumer-census.test.ts), [Activity ownership census](../../scripts/activity-occurrence-writer-census.test.ts), [cleanup completeness](../../scripts/runtime-collection-removal-completeness.test.ts), [publication coverage](../../scripts/execution-publication-contract-coverage.test.ts), [commutation census](../../scripts/internal-commutation-census.test.ts), [shared schema coverage](../../scripts/contract-schema-coverage.test.ts), [Lean/source contracts](../../scripts/lean-source-contracts.test.ts), [relationship references](../../scripts/contract-artifact-projections.test.ts) and [reviewability guard](../../scripts/document-reviewability.test.ts) constrain the representation change. Their passing on this draft would not establish its semantics. Enumerate every schema, parser, source/IL reader, alternative/schedule consumer, cancellation owner, projection and host-capacity consumer before implementation; an operation census alone cannot discover consumers of a changed Activity-body union or budget.
 
 ### Owners this implementation grows
 
-Measured on 2026-10-05 against `dfb111b0`; recompute before implementation. The feasibility decision must name any additional owners before they grow.
+Measured on 2026-10-05 against `1454aa91`; recompute before implementation. These are directly affected owners, not an exhaustive migration census. If a planned change exceeds its remaining headroom, extract a cohesive owner before growth rather than increasing the limit.
 
 | Owner | Headroom before 800 nonblank lines |
 |---|---:|
 | [Activity body ownership](../../packages/semantic-core/src/activity-occurrence.ts) | 568 |
+| [IL contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 116 |
+| [Internal frontier](../../packages/semantic-core/src/internal-transition-preparation.ts) | 686 |
+| [Runtime dispatch](../../packages/semantic-core/src/semantic-process-runtime.ts) | 48 |
 | [Closure evaluator](../../packages/semantic-core/src/semantic-process-closure.ts) | 609 |
 | [Runtime state](../../packages/semantic-core/src/semantic-process-state.ts) | 344 |
+| [Workflow capacity contract](../../packages/temporal-adapter/protocol/src/workflow-chain.ts) | 234 |
 
 ## Independent cold-review receipt
 
