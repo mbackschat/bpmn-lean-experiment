@@ -191,28 +191,12 @@ theorem every_other_profile_refuses_the_distinct_sequential_multi_instance_opera
   by_cases transaction : profile = transactionCancellationCheckpointProfileId
   · subst profile
     decide +kernel
-  have legacy : program.identity.semanticProfile ≠ repeatableSubscriptionCheckpointProfileId := by
-    decide +kernel
-  have notTransaction : (program.identity.semanticProfile == transactionCancellationCheckpointProfileId) = false := by
-    decide +kernel
-  have notCallData : (program.identity.semanticProfile == callDataCheckpointProfileId) = false := by
-    decide +kernel
-  have notMessageHandler : (program.identity.semanticProfile == interruptingMessageEventSubProcessProfileId) = false := by
-    decide +kernel
-  have admitted := exact_registered_profile_shape_is_admitted
-  simp only [programProfileCapabilitiesValid, legacy, notCallData, notTransaction, notMessageHandler, Bool.false_eq_true,
-    ↓reduceIte, Bool.and_eq_true] at admitted
-  have exactProfileMatch : programSequentialMultiInstanceProfileMatches program = true :=
-    admitted.2.1.1
-  have programProfile : program.identity.semanticProfile =
-      sequentialMultiInstanceUserTaskProfileId := by
-    rfl
   have operationPresent : program.operations.any (fun
       | .awaitSequentialMultiInstanceUserTask .. => true
       | _ => false) = true := by
-    unfold programSequentialMultiInstanceProfileMatches at exactProfileMatch
-    have equalBooleans := beq_iff_eq.mp exactProfileMatch
-    exact equalBooleans.trans (by simp only [programProfile, decide_true])
+    decide +kernel
+  have notScopeProgram : SequentialScopeProgram.admitted (programForProfile profile) = false := by
+    rfl
   have mismatched :
       programSequentialMultiInstanceProfileMatches (programForProfile profile) = false := by
     unfold programSequentialMultiInstanceProfileMatches programForProfile
@@ -236,7 +220,7 @@ theorem every_other_profile_refuses_the_distinct_sequential_multi_instance_opera
       ((programForProfile profile).identity.semanticProfile == transactionCancellationCheckpointProfileId) = false := by
     simpa only [programForProfile, beq_eq_false_iff_ne] using transaction
   rw [notTransactionProfile, if_neg Bool.false_ne_true, mismatched]
-  rfl
+  simp only [notScopeProgram, Bool.false_and, Bool.and_false, ite_self]
 
 theorem profile_admission_refuses_omitted_duplicated_and_substituted_programs :
     (
