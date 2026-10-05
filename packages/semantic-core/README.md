@@ -6,6 +6,8 @@ The private [mixed-task control-flow checkpoint](../../docs/capsules/MIXED-TASK-
 
 The [sequential MI Sub-Process proposal](../../docs/capsules/SEQUENTIAL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#implementation-progress) has private topology/burst analysis and occurrence-owned data storage. Source admission and repeated-body execution remain open.
 
+The [Parallel MI Sub-Process ownership account](../../docs/capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#ownership-retirement-implementation) owns internal population retirement and the remaining integration boundary.
+
 ## What you can do
 
 Use the package to start an admitted Process, submit typed stimuli such as task completion or timer firing, inspect stable state, and run answer-free semantic scenarios. `applyStimulus` is pure: equal admitted programs, states, stimuli, and closure limits produce equal results.

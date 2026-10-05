@@ -4,7 +4,9 @@ This detail map owns the exact current cross-cutting runtime, scope, Lean, TypeS
 
 ## Current boundary
 
-Lean and independently written TypeScript execute reviewed Semantic Process semantics over immutable serializable state. Families remain profile-bounded; general BPMN execution and cross-target correspondence remain unproved.
+[Parallel MI ownership](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#ownership-retirement-implementation): retirement laws implemented; runtime integration open.
+
+Lean and TypeScript execute reviewed, profile-bounded semantics over immutable serializable state. General BPMN execution and cross-target correspondence remain unproved.
 
 Exact BPMN bytes lower through a checked project-owned graph to [Semantic Process IL](SEMANTIC-PROCESS-IL-SPEC.md), independently evaluated by Lean and TypeScript and durably hosted by Temporal.
 
