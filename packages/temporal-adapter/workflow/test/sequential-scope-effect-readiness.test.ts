@@ -77,6 +77,42 @@ test("ordinary MI hosting starts both committed effects without serializing thei
   assert.equal(new Set(requests.map(request => request.idempotencyKey)).size, 2);
 });
 
+test("ordinary MI hosting starts three committed effects before any callback is released", async () => {
+  const triple = await fixture(twoEffects
+    .replace('<userTask id="Branch0" />', service.replace('id="Validate"', 'id="ThirdValidate"'))
+    .replaceAll('targetRef="Branch0"', 'targetRef="ThirdValidate"')
+    .replaceAll('sourceRef="Branch0"', 'sourceRef="ThirdValidate"'));
+  const activity = Promise.withResolvers<EffectActivityResult>();
+  const requests: EffectRequest[] = [];
+  const host = input(triple.program, triple.state, async request => {
+    requests.push(request);
+    return activity.promise;
+  });
+  const waiting = waitForHostReadiness(host);
+  try {
+    await setImmediate();
+    assert.equal(projectOpenEffects(triple.state).length, 3);
+    assert.equal(requests.length, 3);
+    assert.equal(new Set(requests.map(request => request.idempotencyKey)).size, 3);
+    assert.equal(workflowRolloverPermitted({ requested: true,
+      managedBoundaryDeadlineArmed: false, managedReadinessCallbackPending: false,
+      effectActivityUnreconciled: host.effectScheduler.hasUnreconciledActivities() }), false);
+  } finally {
+    activity.resolve(success);
+    await setImmediate();
+    host.wake();
+    await waiting;
+  }
+  assert.equal(host.pendingStimuli.length, 3);
+  assert.equal(host.effectScheduler.hasUnreconciledActivities(), true);
+  let state = triple.state;
+  for (const command of host.pendingStimuli) {
+    state = commit(triple.program, state, command);
+    host.effectScheduler.reconcileCommittedState(state);
+  }
+  assert.equal(host.effectScheduler.hasUnreconciledActivities(), false);
+});
+
 test("a passive human completion wakes the host while an ordinary MI effect remains in flight", async () => {
   const activity = Promise.withResolvers<EffectActivityResult>();
   const host = input(single.program, single.state, async () => activity.promise);
