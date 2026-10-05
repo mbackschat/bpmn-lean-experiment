@@ -1,3 +1,4 @@
+import { validParallelScopeIterations } from "./parallel-scope-population.js";
 import { sequentialScopeStateValid } from "./sequential-scope-state-validation.js";
 import {
   SemanticOperationKind,
@@ -9,6 +10,7 @@ import type {
   TimerOccurrenceId,
 } from "./contract.js";
 import {
+  ActivityBodyKind,
   activityBodyTaskClaims,
   activityBodyScopeClaims,
   ActivityHandlerKind,
@@ -575,6 +577,11 @@ function activityOwnershipDefects(
       const matches = state.userTaskWaits.filter(({ id }) => sameOccurrence(id, task));
       return matches.length === 1 && matches.every((wait) => sameScopeOccurrence(wait.owner, owner));
     };
+    if (body.kind === ActivityBodyKind.ParallelChildScopes &&
+        (!validParallelScopeIterations(owner.processInstanceId, body.iterations) ||
+          body.iterations.some(({ scope }) => state.scopeOccurrences.some((occurrence) =>
+            sameScopeOccurrence(occurrence.id, scope) &&
+            (occurrence.parent === null || !sameScopeOccurrence(occurrence.parent, owner)))))) return false;
     return activityBodyTaskClaims(body).every(taskOwned) &&
       activityBodyScopeClaims(body).every((scope) => state.scopeOccurrences
         .filter(({ id }) => sameScopeOccurrence(id, scope)).length === 1);

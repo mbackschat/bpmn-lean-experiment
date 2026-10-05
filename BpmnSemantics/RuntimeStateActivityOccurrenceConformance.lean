@@ -133,4 +133,36 @@ theorem task_owner_agreement_preserves_child_scope_identity :
       decide (ownerA = ownerB) = false := by
   decide +kernel
 
+private def scopeIteration (activation index : Nat) : ParallelScopeIteration :=
+  { scope := { ownerB with activation }, loopCounter := index, item := "applicant" }
+
+private def parallelScopeState : RuntimeState :=
+  { ownershipState (.parallelChildScopes (scopeIteration 1 0) [scopeIteration 2 2]) [] with
+    scopeOccurrences := [{ id := ownerA, parent := none },
+      { id := ownerB, parent := some ownerA },
+      { id := { ownerB with activation := 2 }, parent := some ownerA }] }
+
+theorem parallel_scope_membership_preserves_gaps_and_equal_items :
+    activityRecordsOwnLiveWork parallelScopeState = true ∧
+      activityBodyScopeClaims (.parallelChildScopes (scopeIteration 1 0) [scopeIteration 2 2]) =
+        [ownerB, { ownerB with activation := 2 }] := by
+  decide +kernel
+
+theorem every_parallel_scope_member_requires_exact_live_parentage :
+    activityRecordsOwnLiveWork
+      { parallelScopeState with scopeOccurrences := parallelScopeState.scopeOccurrences.take 2 } = false ∧
+    activityRecordsOwnLiveWork
+      { parallelScopeState with scopeOccurrences := parallelScopeState.scopeOccurrences.map fun scope =>
+          if scope.id.activation = 2 then { scope with parent := none } else scope } = false := by
+  decide +kernel
+
+theorem parallel_scope_membership_refuses_duplicate_identity_and_index :
+    activityRecordsOwnLiveWork
+      { parallelScopeState with activityOccurrences := parallelScopeState.activityOccurrences.map fun record =>
+          { record with body := .parallelChildScopes (scopeIteration 1 0) [scopeIteration 1 2] } } = false ∧
+    activityRecordsOwnLiveWork
+      { parallelScopeState with activityOccurrences := parallelScopeState.activityOccurrences.map fun record =>
+          { record with body := .parallelChildScopes (scopeIteration 1 0) [scopeIteration 2 0] } } = false := by
+  decide +kernel
+
 end BpmnSemantics.RuntimeStateWellFormedConformance

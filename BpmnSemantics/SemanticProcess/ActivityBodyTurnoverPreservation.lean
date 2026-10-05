@@ -188,7 +188,7 @@ theorem replacedState_preserves_wellFormed (program : Program) (instanceId : Sem
     simp only [Bool.and_eq_true] at recordValid
     have recordOwners := recordValid.1.1.2
     cases shape : record.body with
-    | childScope scope => simp [activityBodyTask?, shape] at recordBody
+    | childScope scope | parallelChildScopes _ _ => simp [activityBodyTask?, shape] at recordBody
     | parallelUserTasks first rest => simp [activityBodyTask?, shape] at recordBody
     | userTask task =>
         simp only [activityBodyTask?, shape, Option.some.injEq] at recordBody

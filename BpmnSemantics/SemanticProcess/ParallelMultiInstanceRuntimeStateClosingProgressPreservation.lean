@@ -54,7 +54,7 @@ private theorem parallelBodyClaims_eq {record : ActivityOccurrence}
     activityBodyTaskClaims record.body = tasks := by
   cases shape : record.body with
   | userTask => simp [activityBodyParallelTasks?, shape] at body
-  | childScope => simp [activityBodyParallelTasks?, shape] at body
+  | childScope | parallelChildScopes _ _ => simp [activityBodyParallelTasks?, shape] at body
   | parallelUserTasks first rest =>
       simp only [activityBodyParallelTasks?, shape, Option.some.injEq] at body
       simpa [activityBodyTaskClaims, shape] using body
@@ -224,7 +224,7 @@ theorem sharedParallelProgress_preserves_runtimeStateWellFormed
     have oldCount : (before.waits.filter (taskIdNamesWait task)).length = 1 := by
       cases shape : record.body with
       | userTask oldTask => simp [activityBodyParallelTasks?, shape] at oldBody
-      | childScope oldScope => simp [activityBodyParallelTasks?, shape] at oldBody
+      | childScope oldScope | parallelChildScopes _ _ => simp [activityBodyParallelTasks?, shape] at oldBody
       | parallelUserTasks oldFirst oldRest =>
           simp only [activityBodyLive, shape, List.all_eq_true, decide_eq_true_eq] at recordLive
           have oldList : oldFirst :: oldRest = pendingParallelTaskIds controller.slots := by
@@ -290,6 +290,8 @@ theorem sharedParallelProgress_preserves_runtimeStateWellFormed
             simp only [activityBodyLive, shape]
             change exactLiveOccurrence before scope = true
             simpa [activityBodyLive, shape] using prior.1.1.1
+        | parallelChildScopes first rest =>
+            simpa only [activityBodyLive, shape, exactLiveOccurrence] using prior.1.1.1
         | userTask task =>
             simp only [activityBodyTaskClaims, shape, List.mem_singleton] at excludesTarget
             have priorBody := prior.1.1.1

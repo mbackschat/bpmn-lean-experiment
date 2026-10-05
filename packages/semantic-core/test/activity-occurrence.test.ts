@@ -23,6 +23,8 @@ import {
   SemanticOperationKind,
   SemanticOriginKind,
   activityOccurrenceForAttachedTimer,
+  activityBodyScope,
+  activityOccurrenceForScopeBody,
   activityBodyScopeClaims,
   activityBodyTaskClaims,
   attachedTimerWaits,
@@ -689,4 +691,59 @@ test("body claims preserve their identity domain, order and multiplicity", () =>
   ] as const;
   assert.deepEqual(bodies.map(activityBodyTaskClaims), [[task], [task, another, task], []]);
   assert.deepEqual(bodies.map(activityBodyScopeClaims), [[], [], [scope]]);
+});
+
+
+test("parallel scope claims resolve every child while singular access stays unambiguous", () => {
+  const state = armedState();
+  const original = state.activityOccurrences[0];
+  assert.ok(original);
+  assert.equal(original.body.kind, ActivityBodyKind.ChildScope);
+  if (original.body.kind !== ActivityBodyKind.ChildScope) assert.fail("expected child scope fixture");
+  const first = original.body.scope;
+  const second = { ...first, activation: first.activation + 1 };
+  const record: ActivityOccurrence = { ...original, body: {
+    kind: ActivityBodyKind.ParallelChildScopes,
+    iterations: [{ scope: first, loopCounter: 0, item: "same" },
+      { scope: second, loopCounter: 2, item: "same" }],
+  } };
+  assert.deepEqual(activityBodyScopeClaims(record.body), [first, second]);
+  assert.deepEqual(activityBodyTaskClaims(record.body), []);
+  assert.equal(activityBodyScope(record), undefined);
+  for (const scope of [first, second]) {
+    assert.deepEqual(activityOccurrenceForScopeBody([record], scope), record);
+    assert.equal(activityOccurrenceForScopeBody([record, { ...record, id: { ...record.id, activation: 99 } }], scope), undefined);
+  }
+});
+
+
+test("parallel scope liveness rejects a missing, foreign, duplicated or wrongly parented member", () => {
+  const state = armedState();
+  const original = state.activityOccurrences[0];
+  assert.ok(original);
+  if (original.body.kind !== ActivityBodyKind.ChildScope) assert.fail("expected child scope fixture");
+  const first = original.body.scope;
+  const second = { ...first, activation: first.activation + 1 };
+  const live = state.scopeOccurrences.find(({ id }) => id.definitionScopeId === first.definitionScopeId);
+  assert.ok(live);
+  const body = { kind: ActivityBodyKind.ParallelChildScopes,
+    iterations: [{ scope: first, loopCounter: 0, item: "same" }, { scope: second, loopCounter: 2, item: "same" }] } as const satisfies ActivityOccurrence["body"];
+  const valid: RuntimeState = { ...state, activityOccurrences: [{ ...original, body }],
+    scopeOccurrences: [...state.scopeOccurrences, { ...live, id: second }] };
+  assert.equal(defects(valid).includes("activityOccurrenceBodyAbsent"), false);
+  const malformed: readonly RuntimeState[] = [
+    { ...valid, scopeOccurrences: state.scopeOccurrences },
+    { ...valid, scopeOccurrences: [...state.scopeOccurrences, { ...live, id: second, parent: null }] },
+    ...([
+      [{ ...body.iterations[0], scope: { ...first, processInstanceId: "foreign" } }, body.iterations[1]],
+      [body.iterations[0], { ...body.iterations[1], scope: first }],
+      [body.iterations[0], { ...body.iterations[1], loopCounter: 0 }],
+      [body.iterations[1], body.iterations[0]],
+    ] as const).map((iterations): RuntimeState => ({ ...valid, activityOccurrences: [{ ...original,
+      body: { kind: ActivityBodyKind.ParallelChildScopes, iterations } }] })),
+  ];
+  for (const candidate of malformed) {
+    assert.equal(runtimeStateDefects(boundedScopeProgram, instanceId,
+      candidate).includes("activityOccurrenceBodyAbsent"), true);
+  }
 });

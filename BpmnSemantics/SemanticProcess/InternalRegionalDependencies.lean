@@ -46,14 +46,12 @@ def liftRegionalStateFootprint (owner : ScopeOccurrenceId) (footprint : Internal
 def regionalActivityBodyTasks : ActivityBody → List OccurrenceId
   | .userTask task => [task]
   | .parallelUserTasks first rest => first :: rest
-  | .childScope _ => []
+  | .childScope _ | .parallelChildScopes .. => []
 
 def regionalActivityAssociationsConflict (left right : ActivityOccurrence) : Bool :=
   sameActivityOccurrence left right ||
     (regionalActivityBodyTasks left.body).any (regionalActivityBodyTasks right.body).contains ||
-    (match left.body, right.body with
-      | .childScope left, .childScope right => left == right
-      | _, _ => false) ||
+    (activityBodyScopeClaims left.body).any (activityBodyScopeClaims right.body).contains ||
     left.attachedHandlers.any right.attachedHandlers.contains
 
 def regionalOwnsOrdinaryAtom (region : InternalOccurrenceRegion) : InternalStateAtom → Bool
@@ -72,6 +70,7 @@ def regionalOwnsAtom (region : InternalOccurrenceRegion) : InternalRegionalState
   | .activityAssociation record => region.contains record.owner ||
       match record.body with
       | .childScope child => region.contains child
+      | .parallelChildScopes first rest => (first :: rest).any fun iteration => region.contains iteration.scope
       | .userTask _ | .parallelUserTasks .. => false
   | .occurrenceRegion other => occurrenceRegionsOverlap region other
   | .initiationPending | .endIncrement | .endCount => false
@@ -120,6 +119,7 @@ private def bodyRank : ActivityBody → Nat
   | .userTask _ => 0
   | .parallelUserTasks .. => 1
   | .childScope _ => 2
+  | .parallelChildScopes .. => 3
 
 private def bodyBefore (left right : ActivityBody) : Bool :=
   if bodyRank left ≠ bodyRank right then bodyRank left < bodyRank right
@@ -129,6 +129,12 @@ private def bodyBefore (left right : ActivityBody) : Bool :=
         if lefts.length ≠ rights.length then lefts.length < rights.length
         else lexBefore occurrenceBefore (left :: lefts) (right :: rights)
     | .childScope left, .childScope right => scopeBefore left right
+    | .parallelChildScopes left lefts, .parallelChildScopes right rights =>
+        if lefts.length ≠ rights.length then lefts.length < rights.length
+        else lexBefore (fun left right =>
+          if left.scope ≠ right.scope then scopeBefore left.scope right.scope
+          else if left.loopCounter ≠ right.loopCounter then left.loopCounter < right.loopCounter
+          else left.item < right.item) (left :: lefts) (right :: rights)
     | _, _ => false
 
 private def handlerBefore : ActivityHandler → ActivityHandler → Bool

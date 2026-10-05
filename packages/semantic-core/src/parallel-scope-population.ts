@@ -36,12 +36,19 @@ export function validParallelScopePopulation(controller: ParallelScopeController
       !Number.isSafeInteger(controller.completed) || controller.completed < 0 ||
       controller.completed >= controller.total ||
       controller.completed + iterations.length !== controller.total) return false;
+  return validParallelScopeIterations(controller.id.processInstanceId, iterations) &&
+    iterations.every(({ loopCounter }) => loopCounter < controller.total);
+}
+
+/** The body-owned population has stable ordered indices and one scope definition (PMIS-ENTER-01). */
+export function validParallelScopeIterations(processInstanceId: string,
+  iterations: readonly ParallelScopeIteration[]): boolean {
+  if (iterations.length === 0) return false;
   const definition = iterations[0]?.scope.definitionScopeId;
   return iterations.every((iteration, index) =>
     Number.isSafeInteger(iteration.loopCounter) && iteration.loopCounter >= 0 &&
-    iteration.loopCounter < controller.total &&
     (index === 0 || (iterations[index - 1]?.loopCounter ?? iteration.loopCounter) < iteration.loopCounter) &&
-    iteration.scope.processInstanceId === controller.id.processInstanceId &&
+    iteration.scope.processInstanceId === processInstanceId &&
     iteration.scope.definitionScopeId === definition &&
     Number.isSafeInteger(iteration.scope.activation) && iteration.scope.activation > 0 &&
     !iterations.slice(0, index).some(previous => sameScopeOccurrence(previous.scope, iteration.scope)));

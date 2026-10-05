@@ -70,6 +70,38 @@ private theorem retained_activity_body_equal (before after : RuntimeState)
     simp only [activityBodyLive, activityTaskBodyOwnersAgree, body, exactLiveOccurrence,
       fields.1, census, and_self]
 
+  | parallelChildScopes first rest =>
+    simp only [body] at bodyClosed
+    have census (iteration : ParallelScopeIteration) (member : iteration ∈ first :: rest) :=
+      allMatchingRetained_preserves_census before.scopeOccurrences keep.scope
+        (fun occurrence => decide (occurrence.id = iteration.scope))
+        (List.all_eq_true.mp bodyClosed iteration member)
+    have sameRow (iteration : ParallelScopeIteration) (member : iteration ∈ first :: rest) :
+        (exactLiveOccurrence after iteration.scope &&
+          (after.scopeOccurrences.filter (fun scope => scope.id == iteration.scope)).all
+            (fun scope => scope.parent == some record.owner)) =
+        (exactLiveOccurrence before iteration.scope &&
+          (before.scopeOccurrences.filter (fun scope => scope.id == iteration.scope)).all
+            (fun scope => scope.parent == some record.owner)) := by
+      have predicate : (fun occurrence : RuntimeScopeOccurrence => occurrence.id == iteration.scope) =
+          (fun occurrence => decide (occurrence.id = iteration.scope)) := by
+        funext occurrence
+        apply Bool.eq_iff_iff.mpr
+        simp
+      simp only [exactLiveOccurrence, predicate, fields.1, census iteration member]
+    have sameAll := Bool.eq_iff_iff.mpr (show
+        ((first :: rest).all (fun iteration => exactLiveOccurrence after iteration.scope &&
+          (after.scopeOccurrences.filter (fun scope => scope.id == iteration.scope)).all
+            (fun scope => scope.parent == some record.owner)) = true) ↔
+        ((first :: rest).all (fun iteration => exactLiveOccurrence before iteration.scope &&
+          (before.scopeOccurrences.filter (fun scope => scope.id == iteration.scope)).all
+            (fun scope => scope.parent == some record.owner)) = true) by
+      simp only [List.all_eq_true]
+      constructor <;> intro holds iteration member
+      · rw [← sameRow iteration member]; exact holds iteration member
+      · rw [sameRow iteration member]; exact holds iteration member)
+    simp only [activityBodyLive, activityTaskBodyOwnersAgree, body, sameAll, and_self]
+
 private theorem retained_timer_census (before after : RuntimeState)
     (keep : RegionalReferenceRetention) (record : ActivityOccurrence) (timer : OccurrenceId)
     (fields : regionalReferenceFieldsMatch before after keep)

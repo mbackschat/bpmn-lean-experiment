@@ -1,4 +1,5 @@
 import BpmnSemantics.SemanticProcess.Data
+import BpmnSemantics.SemanticProcess.ParallelScopePopulation
 import BpmnSemantics.SemanticProcess.ParallelMultiInstanceController
 
 /-! # Semantic Process runtime state
@@ -138,6 +139,7 @@ inductive ActivityBody where
   | userTask (task : OccurrenceId)
   | parallelUserTasks (first : OccurrenceId) (rest : List OccurrenceId)
   | childScope (scope : ScopeOccurrenceId)
+  | parallelChildScopes (first : ParallelScopeIteration) (rest : List ParallelScopeIteration)
   deriving Repr, DecidableEq
 
 /-- The closed family tag for a wait attached to one Activity occurrence.

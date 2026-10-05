@@ -97,6 +97,28 @@ theorem activityRecordsOwnLiveWork_insertScopeOccurrence (state : RuntimeState)
         simp only [activityBodyLive, body]
         exact exactLiveOccurrence_insertScopeOccurrence_preserves state inserted owner fresh
           (by simpa [activityBodyLive, body] using live)
+    | parallelChildScopes first rest =>
+        simp only [activityBodyLive, body, Bool.and_eq_true] at live ⊢
+        refine ⟨live.1, List.all_eq_true.mpr ?_⟩
+        intro iteration member
+        have prior := Bool.and_eq_true_iff.mp (List.all_eq_true.mp live.2 iteration member)
+        apply Bool.and_eq_true_iff.mpr
+        constructor
+        · exact exactLiveOccurrence_insertScopeOccurrence_preserves state inserted iteration.scope fresh prior.1
+        · have different : inserted.id ≠ iteration.scope := by
+            intro same
+            have absent : state.scopeOccurrences.filter
+                (fun occurrence => decide (occurrence.id = iteration.scope)) = [] := by
+              simp only [List.filter_eq_nil_iff, decide_eq_true_eq]
+              simpa [same] using fresh
+            have liveCount := prior.1
+            simp [exactLiveOccurrence, absent] at liveCount
+          change ((insertScopeOccurrence inserted state.scopeOccurrences).filter _).all _ = true
+          unfold insertScopeOccurrence
+          rw [filter_canonicalInsertBy_rejected scopeOccurrenceBefore
+            (fun occurrence => occurrence.id == iteration.scope) inserted state.scopeOccurrences
+            (by simpa only [beq_eq_false_iff_ne] using different)]
+          exact prior.2
   simp only [activityRecordsOwnLiveWork, List.all_eq_true, Bool.and_eq_true] at valid ⊢
   intro record member
   have previous := valid record member

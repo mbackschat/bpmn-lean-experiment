@@ -79,6 +79,20 @@ theorem retained_activities_empty_of_no_body (before : RuntimeState)
       simp only [activityBodyLive, body, exactLiveOccurrence, ← census] at live
       simp at live
 
+  | parallelChildScopes first rest =>
+      simp only [activityBodyLive, body, Bool.and_eq_true, List.all_cons] at live
+      have firstLive := live.2.1.1
+      have firstClosed : allMatchingRetained before.scopeOccurrences keep.scope
+          (fun occurrence => decide (occurrence.id = first.scope)) = true := by
+        simp only [body, List.all_cons, Bool.and_eq_true] at bodyClosed
+        exact bodyClosed.1
+      have census := allMatchingRetained_preserves_census before.scopeOccurrences keep.scope
+        (fun occurrence => decide (occurrence.id = first.scope)) firstClosed
+      have empty : before.scopeOccurrences.filter keep.scope = [] :=
+        List.filter_eq_nil_iff.mpr (by intro scope member; simp [scopes scope member])
+      rw [empty] at census
+      simp [exactLiveOccurrence, ← census] at firstLive
+
 /-- AOO-BODY-01 accepts a child body naming the last live root; REG-OWN-CLOSE-01 is the
 separating condition when Complete removes that root but would retain the Activity. -/
 theorem live_child_root_does_not_imply_regional_closure (state : RuntimeState)

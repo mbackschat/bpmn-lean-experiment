@@ -257,7 +257,7 @@ theorem parallelMultiInstanceProgramBindingsValid_controller_facts
                             simp [activityBodyParallelTasks?, bodyShape] at body
                             exact ⟨first, by rw [← body]; simp⟩
                         | userTask task => simp [activityBodyParallelTasks?, bodyShape] at body
-                        | childScope scope => simp [activityBodyParallelTasks?, bodyShape] at body
+                        | childScope scope | parallelChildScopes _ _ => simp [activityBodyParallelTasks?, bodyShape] at body
                       obtain ⟨taskId, pendingMember⟩ := pendingNonempty
                       have familyValid := runtimeValid
                       simp only [parallelMultiInstanceRuntimeWellFormed, Bool.and_eq_true,

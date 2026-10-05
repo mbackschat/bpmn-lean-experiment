@@ -27,6 +27,9 @@ def regionalActivityReferencesClosed (state : RuntimeState) (keep : RegionalRefe
         allMatchingRetained state.waits keep.task (taskIdNamesWait task)
     | .childScope scope => allMatchingRetained state.scopeOccurrences keep.scope
         (fun occurrence => decide (occurrence.id = scope))
+    | .parallelChildScopes first rest => (first :: rest).all fun iteration =>
+        allMatchingRetained state.scopeOccurrences keep.scope
+          (fun occurrence => decide (occurrence.id = iteration.scope))
   body && record.attachedHandlers.all (fun handler => match handler with
     | .timer timer => allMatchingRetained state.timerWaits keep.timer (timerIdNamesWait timer)
     | .message message => allMatchingRetained state.messageWaits keep.message
@@ -129,6 +132,12 @@ private theorem regionalActivityReferencesClosed_after_filter (before after : Ru
         simp only [body] at parts ⊢
         rw [fields.1]
         exact allMatchingRetained_filter _ _ _ _ parts.1
+    | parallelChildScopes first rest =>
+        simp only [body] at parts ⊢
+        apply List.all_eq_true.mpr
+        intro iteration member
+        rw [fields.1]
+        exact allMatchingRetained_filter _ _ _ _ (List.all_eq_true.mp parts.1 iteration member)
   · apply List.all_eq_true.mpr
     intro handler member
     have prior := List.all_eq_true.mp parts.2 handler member
@@ -211,6 +220,11 @@ private theorem regionalActivityReferencesClosed_mono (state : RuntimeState)
     | childScope scope =>
       simp only [body] at parts ⊢
       exact allMatchingRetained_mono _ _ _ _ scopes parts.1
+    | parallelChildScopes first rest =>
+      simp only [body] at parts ⊢
+      apply List.all_eq_true.mpr
+      intro iteration member
+      exact allMatchingRetained_mono _ _ _ _ scopes (List.all_eq_true.mp parts.1 iteration member)
   · apply List.all_eq_true.mpr
     intro handler member
     have prior := List.all_eq_true.mp parts.2 handler member

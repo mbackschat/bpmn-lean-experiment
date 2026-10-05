@@ -464,6 +464,13 @@ function isActivityBody(value: unknown): boolean {
         isList(value.tasks, isOccurrenceId) && value.tasks.length > 0;
     case ActivityBodyKind.ChildScope:
       return hasOnlyKeys(value, ["kind", "scope"]) && isScopeId(value.scope);
+    case ActivityBodyKind.ParallelChildScopes:
+      return hasOnlyKeys(value, ["kind", "iterations"]) &&
+        isList(value.iterations, (iteration) =>
+          isRecord(iteration) && hasOnlyKeys(iteration, ["scope", "loopCounter", "item"]) &&
+          isScopeId(iteration.scope) && isSafeInteger(iteration.loopCounter, 0) &&
+          typeof iteration.item === "string" && isWellFormedWireString(iteration.item)) &&
+        value.iterations.length > 0;
     default:
       return false;
   }

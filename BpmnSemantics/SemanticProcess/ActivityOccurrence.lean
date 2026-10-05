@@ -110,11 +110,12 @@ theorem activityIdentityIssuingDiscipline_insertActivityOccurrence
 def activityBodyTaskClaims : ActivityBody → List OccurrenceId
   | .userTask task => [task]
   | .parallelUserTasks first rest => first :: rest
-  | .childScope _ => []
+  | .childScope _ | .parallelChildScopes .. => []
 
 /-- Every exact child-scope identity one Activity body claims. -/
 def activityBodyScopeClaims : ActivityBody → List ScopeOccurrenceId
   | .childScope scope => [scope]
+  | .parallelChildScopes first rest => (first :: rest).map (·.scope)
   | .userTask _ | .parallelUserTasks .. => []
 
 /-- The task occurrence a record's body names, when its body is a task. -/
@@ -122,13 +123,13 @@ def activityBodyTask? (record : ActivityOccurrence) : Option OccurrenceId :=
   match record.body with
   | .userTask task => some task
   | .parallelUserTasks .. => none
-  | .childScope _ => none
+  | .childScope _ | .parallelChildScopes .. => none
 
 /-- The canonical nonempty child list of a parallel Activity body. -/
 def activityBodyParallelTasks? (record : ActivityOccurrence) : Option (List OccurrenceId) :=
   match record.body with
   | .parallelUserTasks first rest => some (first :: rest)
-  | .userTask _ | .childScope _ => none
+  | .userTask _ | .childScope _ | .parallelChildScopes .. => none
 
 /-- The child scope occurrence a record's body names, when its body is a child scope. -/
 def activityBodyScope? (record : ActivityOccurrence) : Option ScopeOccurrenceId :=
@@ -136,6 +137,14 @@ def activityBodyScope? (record : ActivityOccurrence) : Option ScopeOccurrenceId 
   | .userTask _ => none
   | .parallelUserTasks .. => none
   | .childScope scope => some scope
+  | .parallelChildScopes .. => none
+
+/-- Full scope ownership lookup; the singular-body accessor remains specific to single-child profiles. -/
+def activityOccurrenceForScopeClaim? (records : List ActivityOccurrence) (scope : ScopeOccurrenceId) :
+    Option ActivityOccurrence :=
+  match records.filter fun record => (activityBodyScopeClaims record.body).contains scope with
+  | [record] => some record
+  | _ => none
 
 /-- Whether a record lists one exact Timer occurrence among the handlers attached to it. -/
 def recordAttaches (record : ActivityOccurrence) (timer : OccurrenceId) : Bool :=
@@ -287,6 +296,19 @@ theorem activityOccurrenceForTaskWait_sound {records : List ActivityOccurrence}
       · exact absurd holds (by simp)
   · exact absurd found (by simp)
 
+/-- Complete membership lookup cannot substitute another occurrence sharing only a definition. -/
+theorem activityOccurrenceForScopeClaim_sound {records : List ActivityOccurrence}
+    {scope : ScopeOccurrenceId} {record : ActivityOccurrence}
+    (found : activityOccurrenceForScopeClaim? records scope = some record) :
+    record ∈ records ∧ scope ∈ activityBodyScopeClaims record.body := by
+  unfold activityOccurrenceForScopeClaim? at found
+  split at found
+  · next singleton =>
+      cases found
+      obtain ⟨member, claimed⟩ := mem_of_filter_eq_singleton singleton
+      exact ⟨member, by simpa using claimed⟩
+  · simp at found
+
 /-- A record answered for a child scope occurrence is in the state and its body is that occurrence. -/
 theorem activityOccurrenceForScope_sound {records : List ActivityOccurrence}
     {scope : ScopeOccurrenceId} {record : ActivityOccurrence}
@@ -345,6 +367,8 @@ def recordInRegion (cancelled : ScopeOccurrenceId → Bool) (record : ActivityOc
     | .userTask _ => false
     | .parallelUserTasks .. => false
     | .childScope scope => cancelled scope && !(retainedRoot == some scope)
+    | .parallelChildScopes first rest => (first :: rest).any fun iteration =>
+        cancelled iteration.scope && !(retainedRoot == some iteration.scope)
 
 /-- The records and attached Timer occurrences a region withdraws. -/
 def withdrawnByRegion (cancelled : ScopeOccurrenceId → Bool)

@@ -21,6 +21,7 @@ import type {
   UserTaskInstanceId,
 } from "./contract.js";
 import type { DeepReadonly } from "./deep-readonly.js";
+import type { ParallelScopeIteration } from "./parallel-scope-population.js";
 import type { ScopeOccurrenceId } from "./semantic-process-state.js";
 import { compareCanonicalStrings } from "./wire.js";
 
@@ -47,6 +48,7 @@ export enum ActivityBodyKind {
   UserTask = "userTask",
   ParallelUserTasks = "parallelUserTasks",
   ChildScope = "childScope",
+  ParallelChildScopes = "parallelChildScopes",
 }
 
 export type ActivityBody =
@@ -55,7 +57,9 @@ export type ActivityBody =
       kind: ActivityBodyKind.ParallelUserTasks;
       tasks: [UserTaskInstanceId, ...UserTaskInstanceId[]];
     }>
-  | DeepReadonly<{ kind: ActivityBodyKind.ChildScope; scope: ScopeOccurrenceId }>;
+  | DeepReadonly<{ kind: ActivityBodyKind.ChildScope; scope: ScopeOccurrenceId }>
+  | DeepReadonly<{ kind: ActivityBodyKind.ParallelChildScopes;
+      iterations: [ParallelScopeIteration, ...ParallelScopeIteration[]] }>;
 
 /** The runtime family of one handler owned by an Activity occurrence. */
 export enum ActivityHandlerKind {
@@ -128,6 +132,7 @@ export function activityBodyTaskClaims(body: ActivityBody): ReadonlyArray<UserTa
     case ActivityBodyKind.ParallelUserTasks:
       return body.tasks;
     case ActivityBodyKind.ChildScope:
+    case ActivityBodyKind.ParallelChildScopes:
       return [];
   }
 }
@@ -140,6 +145,8 @@ export function activityBodyScopeClaims(body: ActivityBody): ReadonlyArray<Scope
       return [];
     case ActivityBodyKind.ChildScope:
       return [body.scope];
+    case ActivityBodyKind.ParallelChildScopes:
+      return body.iterations.map(({ scope }) => scope);
   }
 }
 

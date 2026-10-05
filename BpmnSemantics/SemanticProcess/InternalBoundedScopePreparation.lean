@@ -201,8 +201,11 @@ theorem prepareInternalBoundedScope_preserves_bodyClaims (program : Program) (st
     (makeInternalBoundedScopeSelection state contract entry).record old entry.created.id
   intro claimed
   have absent := List.any_eq_false.mp disjoint old member
-  cases body : old.body <;> simp [activityBodyScopeClaims, body] at claimed
-  subst_vars
-  simp [regionalActivityAssociationsConflict, makeInternalBoundedScopeSelection, body] at absent
+  have overlap : (activityBodyScopeClaims old.body).any
+      (activityBodyScopeClaims (makeInternalBoundedScopeSelection state contract entry).record.body).contains = true := by
+    apply List.any_eq_true.mpr
+    exact ⟨entry.created.id, claimed, by simp [makeInternalBoundedScopeSelection, activityBodyScopeClaims]⟩
+  apply absent
+  simp only [regionalActivityAssociationsConflict, overlap, Bool.or_true, Bool.true_or]
 
 end BpmnSemantics.SemanticProcess.InternalCommutation

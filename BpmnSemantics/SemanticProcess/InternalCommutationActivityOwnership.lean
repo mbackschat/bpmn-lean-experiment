@@ -75,6 +75,8 @@ theorem activityRecords_insertUserTaskWait (state : RuntimeState)
         simp only [activityBodyLive, bodyEq]
         change exactLiveOccurrence state scope = true
         simpa [activityBodyLive, bodyEq] using prior.1.1.1
+    | parallelChildScopes first rest =>
+        simpa only [activityBodyLive, bodyEq, exactLiveOccurrence] using prior.1.1.1
     | userTask body =>
         simp only [activityBodyLive, bodyEq]
         simpa only [decide_eq_true_eq] using taskBodyPreserved body (by
@@ -86,7 +88,7 @@ theorem activityRecords_insertUserTaskWait (state : RuntimeState)
           simpa only [decide_eq_true_eq] using prior.1.1.1 body bodyMember)
         simpa only [decide_eq_true_eq] using preserved
   · cases bodyEq : record.body with
-    | childScope scope => simp [activityTaskBodyOwnersAgree, bodyEq]
+    | childScope scope | parallelChildScopes _ _ => simp [activityTaskBodyOwnersAgree, bodyEq]
     | userTask body =>
         simp only [activityTaskBodyOwnersAgree, bodyEq]
         rw [taskOwnersPreserved body (by

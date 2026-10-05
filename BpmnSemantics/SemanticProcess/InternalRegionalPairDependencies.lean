@@ -23,8 +23,9 @@ theorem regionalStateAtomsConflict_symmetric (left right : InternalRegionalState
         regionalActivityAssociationsConflict second first := by
     simp only [regionalActivityAssociationsConflict, sameActivityOccurrence]
     rw [shared_member_symmetric (regionalActivityBodyTasks first.body),
+      shared_member_symmetric (activityBodyScopeClaims first.body),
       shared_member_symmetric first.attachedHandlers]
-    cases first.body <;> cases second.body <;> simp [BEq.beq, eq_comm]
+    simp only [BEq.beq, eq_comm]
   have regions (first second : InternalOccurrenceRegion) :
       occurrenceRegionsOverlap first second = occurrenceRegionsOverlap second first :=
     shared_member_symmetric first.members second.members

@@ -423,7 +423,7 @@ theorem activityTaskOwnersAgree_of_subsets (before after : RuntimeState)
       (before.waits.filter (taskIdNamesWait task)).all
         (fun wait => decide (wait.owner = original.owner)) = true := by
     cases shape : original.body with
-    | childScope => simp [activityBodyTaskClaims]
+    | childScope | parallelChildScopes _ _ => simp [activityBodyTaskClaims]
     | userTask | parallelUserTasks =>
         simpa [activityTaskBodyOwnersAgree, activityBodyTaskClaims, shape] using owners
   have retainedOwners : ∀ task ∈ activityBodyTaskClaims retained.body,
@@ -437,7 +437,7 @@ theorem activityTaskOwnersAgree_of_subsets (before after : RuntimeState)
     exact List.all_eq_true.mp (originalOwners task (claimsSubset task member)) wait
       (List.mem_filter.mpr ⟨waitsSubset wait present, named⟩)
   cases shape : retained.body with
-  | childScope => simp [activityTaskBodyOwnersAgree, shape]
+  | childScope | parallelChildScopes _ _ => simp [activityTaskBodyOwnersAgree, shape]
   | userTask | parallelUserTasks =>
       simpa [activityTaskBodyOwnersAgree, activityBodyTaskClaims, shape] using retainedOwners
 

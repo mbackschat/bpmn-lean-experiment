@@ -70,6 +70,20 @@ theorem regional_activity_record_mask (program : Program) (state : RuntimeState)
       rw [regional_live_mask program state expectedInstanceId instanceId valid running
         root region prepared scope scopeLive]
 
+  | parallelChildScopes first rest =>
+      have live := bodyLive.1.1.1
+      simp only [activityBodyLive, body, Bool.and_eq_true] at live
+      dsimp only
+      have row (iteration : ParallelScopeIteration) (iterationMember : iteration ∈ first :: rest) :=
+        regional_live_mask program state expectedInstanceId instanceId valid running root region prepared
+          iteration.scope ((Bool.and_eq_true_iff.mp (List.all_eq_true.mp live.2 iteration iterationMember)).1)
+      apply congrArg (fun value => region.contains record.owner || value)
+      apply Bool.eq_iff_iff.mpr
+      simp only [List.any_eq_true]
+      constructor <;> rintro ⟨iteration, member, selected⟩
+      · exact ⟨iteration, member, by simpa only [row iteration member] using selected⟩
+      · exact ⟨iteration, member, by simpa only [row iteration member] using selected⟩
+
 /-- Exact equality of the withdrawn records also fixes the complete attached-handler population. -/
 theorem regional_withdrawn_activities_eq (program : Program) (state : RuntimeState)
     (expectedInstanceId instanceId : SemanticId)

@@ -118,9 +118,17 @@ theorem activityBodyClaimsDisjoint_childScope_of_not_mem (record other : Activit
     (incoming : ScopeOccurrenceId)
     (absent : incoming ∉ activityBodyScopeClaims other.body) :
     activityBodyClaimsDisjoint { record with body := .childScope incoming } other = true := by
-  cases bodyShape : other.body <;>
-    simp_all [activityBodyClaimsDisjoint, exactListsOverlap, activityBodyTaskClaims,
-      activityBodyScopeClaims]
+  have noOverlap : exactListsOverlap [incoming] (activityBodyScopeClaims other.body) = false := by
+    apply Bool.eq_false_iff.mpr
+    intro overlap
+    simp only [exactListsOverlap, List.any_eq_true, decide_eq_true_eq] at overlap
+    obtain ⟨left, leftMem, right, rightMem, equal⟩ := overlap
+    have identity : right = incoming := equal.symm.trans (List.mem_singleton.mp leftMem)
+    exact absent (identity ▸ rightMem)
+  change (!exactListsOverlap [] (activityBodyTaskClaims other.body) &&
+    !exactListsOverlap [incoming] (activityBodyScopeClaims other.body)) = true
+  rw [noOverlap]
+  rfl
 
 /-- A parallel incoming body is disjoint when none of its member claims occurs in the other record. -/
 theorem activityBodyClaimsDisjoint_parallel_of_forall_not_mem (record other : ActivityOccurrence)

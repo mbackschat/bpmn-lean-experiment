@@ -286,6 +286,13 @@ theorem activityBodyScopeClaim_is_live (state : RuntimeState)
       simp [bodyEq, activityBodyScopeClaims] at claimed
       subst child
       simpa [activityBodyLive, bodyEq] using bodyLive
+  | parallelChildScopes first rest =>
+      obtain ⟨iteration, member, identity⟩ := List.mem_map.mp
+        (show child ∈ (first :: rest).map (·.scope) by simpa [bodyEq, activityBodyScopeClaims] using claimed)
+      simp only [activityBodyLive, bodyEq, Bool.and_eq_true] at bodyLive
+      have live := (List.all_eq_true.mp bodyLive.2 iteration member)
+      simp only [Bool.and_eq_true] at live
+      simpa [identity] using live.1
 
 /-- Successful bounded Sub-Process arming preserves body-claim uniqueness through the real atomic
 entry-and-deadline path. Scope entry excludes the selected child's definition from the pre-state,

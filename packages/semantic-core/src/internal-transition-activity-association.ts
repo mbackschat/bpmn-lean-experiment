@@ -1,6 +1,6 @@
-import type { UserTaskInstanceId } from "./contract.js";
 import {
-  ActivityBodyKind,
+  activityBodyTaskClaims,
+  activityBodyScopeClaims,
   sameActivityOccurrence,
   sameOccurrenceId,
 } from "./activity-occurrence.js";
@@ -25,27 +25,15 @@ export function activityAssociationsConflict(
 }
 
 function activityBodiesConflict(left: ActivityBody, right: ActivityBody): boolean {
-  const leftTasks = activityBodyTasks(left);
-  const rightTasks = activityBodyTasks(right);
+  const leftTasks = activityBodyTaskClaims(left);
+  const rightTasks = activityBodyTaskClaims(right);
   if (leftTasks.some((task) =>
     rightTasks.some((other) => sameOccurrenceId(task, other))
   )) {
     return true;
   }
-  return left.kind === ActivityBodyKind.ChildScope &&
-    right.kind === ActivityBodyKind.ChildScope &&
-    sameScopeId(left.scope, right.scope);
-}
-
-function activityBodyTasks(body: ActivityBody): ReadonlyArray<UserTaskInstanceId> {
-  switch (body.kind) {
-    case ActivityBodyKind.UserTask:
-      return [body.task];
-    case ActivityBodyKind.ParallelUserTasks:
-      return body.tasks;
-    case ActivityBodyKind.ChildScope:
-      return [];
-  }
+  return activityBodyScopeClaims(left).some((scope) =>
+    activityBodyScopeClaims(right).some((other) => sameScopeId(scope, other)));
 }
 
 function sameScopeId(left: ScopeOccurrenceId, right: ScopeOccurrenceId): boolean {

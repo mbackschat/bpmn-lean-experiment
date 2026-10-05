@@ -163,6 +163,11 @@ def activityBodyLive (state : RuntimeState) (record : ActivityOccurrence) : Bool
             decide (wait.task.id.value = task.elementId.value) &&
             decide (wait.activation = task.activation)).length = 1
   | .childScope scope => exactLiveOccurrence state scope
+  | .parallelChildScopes first rest =>
+      validParallelScopeIterations record.owner.processInstanceId (first :: rest) &&
+      (first :: rest).all (fun iteration => exactLiveOccurrence state iteration.scope &&
+        (state.scopeOccurrences.filter (fun scope => scope.id == iteration.scope)).all
+          (fun scope => scope.parent == some record.owner))
 
 /-- `AOO-OWN-01` compares task owners after body identity resolution; child scopes retain their own identity. -/
 def activityTaskBodyOwnersAgree (state : RuntimeState) (record : ActivityOccurrence) : Bool :=
@@ -172,7 +177,7 @@ def activityTaskBodyOwnersAgree (state : RuntimeState) (record : ActivityOccurre
   match record.body with
   | .userTask task => taskOwned task
   | .parallelUserTasks first rest => (first :: rest).all taskOwned
-  | .childScope _ => true
+  | .childScope _ | .parallelChildScopes .. => true
 
 /-- `AOO-BODY-01` and `AOO-OWN-01`. Every record has exactly one live body, and each attached handler
 resolves only in its tagged wait family under the record's own owner. -/

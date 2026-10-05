@@ -22,19 +22,24 @@ structure ParallelScopeController where
   completed : Nat
   deriving Repr, DecidableEq
 
+/-- PMIS-ENTER-01 preserves one definition, unique scope identities and increasing immutable indices. -/
+def validParallelScopeIterations (processInstanceId : SemanticId)
+    (iterations : List ParallelScopeIteration) : Bool :=
+  !iterations.isEmpty && iterations.all (fun iteration =>
+    decide (iteration.scope.processInstanceId = processInstanceId ∧ 0 < iteration.scope.activation) &&
+    isSafeWireNat iteration.scope.activation && isSafeWireNat iteration.loopCounter) &&
+  decide (iterations.Pairwise (fun left right =>
+    left.loopCounter < right.loopCounter ∧ left.scope ≠ right.scope ∧
+    left.scope.definitionScopeId = right.scope.definitionScopeId))
+
 /-- PMIS ownership uses the Activity membership, without a second controller-owned child list. -/
 def validParallelScopePopulation (controller : ParallelScopeController)
     (iterations : List ParallelScopeIteration) : Bool :=
   isSafeWireNat controller.total && isSafeWireNat controller.completed &&
   decide (controller.completed < controller.total ∧
     controller.completed + iterations.length = controller.total) &&
-  iterations.all (fun iteration =>
-    decide (iteration.loopCounter < controller.total ∧
-      iteration.scope.processInstanceId = controller.id.processInstanceId ∧
-      0 < iteration.scope.activation) && isSafeWireNat iteration.scope.activation) &&
-  decide (iterations.Pairwise (fun left right =>
-    left.loopCounter < right.loopCounter ∧ left.scope ≠ right.scope ∧
-    left.scope.definitionScopeId = right.scope.definitionScopeId))
+  validParallelScopeIterations controller.id.processInstanceId iterations &&
+  iterations.all (fun iteration => decide (iteration.loopCounter < controller.total))
 
 /-- Exact child selection retains both sides of the original membership order. -/
 def selectParallelScopeIteration (target : ScopeOccurrenceId) :

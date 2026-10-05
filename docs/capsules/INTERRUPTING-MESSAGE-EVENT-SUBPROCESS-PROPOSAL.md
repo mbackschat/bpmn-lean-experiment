@@ -165,7 +165,7 @@ The proposed additions bind source admission, checked/IL declarations, both deco
 | [Open-set projection](../../packages/semantic-core/src/flow-node-occurrence-open-set.ts) | 12 | Add only a narrow hook to a cohesive family projection owner. |
 | [Lifecycle projection](../../packages/semantic-core/src/flow-node-occurrence-lifecycle.ts) | 26 | Delegate cancellation and handler facts without generic state differencing. |
 | [Host admission](../../packages/temporal-adapter/protocol/src/host-admission.ts) | 395 | Keep hosted capability closed until its own qualification passes. |
-| [Lean state](../../BpmnSemantics/SemanticProcess/RuntimeState.lean) | 27 | Keep subscription types/runtime helpers in a cohesive family owner. |
+| [Lean state](../../BpmnSemantics/SemanticProcess/RuntimeState.lean) | 25 | Keep subscription types/runtime helpers in a cohesive family owner. |
 | [Lean completion](../../BpmnSemantics/SemanticProcess/ScopeCompletion.lean) | 587 | Preserve ordinary-child continuation and add exact passive expiry. |
 | [Lean cancellation](../../BpmnSemantics/SemanticProcess/ScopeCancellation.lean) | 543 | Classify the new collection in every removal path. |
 

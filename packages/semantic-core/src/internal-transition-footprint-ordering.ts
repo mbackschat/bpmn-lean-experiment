@@ -455,6 +455,10 @@ function activityBodyParts(
       ];
     case ActivityBodyKind.ChildScope:
       return [record.body.kind, ...scopeParts(record.body.scope)];
+    case ActivityBodyKind.ParallelChildScopes:
+      return [record.body.kind, record.body.iterations.length,
+        ...record.body.iterations.flatMap(({ scope, loopCounter, item }) =>
+          [...scopeParts(scope), loopCounter, item])];
   }
 }
 

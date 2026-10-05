@@ -100,7 +100,7 @@ def activeInstanceCount (state : RuntimeState)
       match record.body with
       | .userTask _ => 1
       | .parallelUserTasks .. => 0
-      | .childScope _ => 0
+      | .childScope _ | .parallelChildScopes .. => 0
   | _ => 0
 
 /-- Generated equals active plus completed, for a controller bound to one live task-bodied record.

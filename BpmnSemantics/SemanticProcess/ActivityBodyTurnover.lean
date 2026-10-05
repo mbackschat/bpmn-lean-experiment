@@ -560,6 +560,7 @@ theorem activityBodyTaskClaim_has_live_wait (state : RuntimeState)
   have taskLive : (state.waits.filter (taskIdNamesWait task)).length = 1 := by
     cases bodyShape : record.body with
     | childScope scope => simp [activityBodyTaskClaims, bodyShape] at claimMem
+    | parallelChildScopes first rest => simp [activityBodyTaskClaims, bodyShape] at claimMem
     | userTask body =>
         simp only [activityBodyTaskClaims, bodyShape, List.mem_singleton] at claimMem
         subst body
@@ -585,7 +586,7 @@ def recordBodyExcludesWait (wait : UserTaskWait) (record : ActivityOccurrence) :
   | .userTask task => taskIdNamesWait task wait == false
   | .parallelUserTasks first rest =>
       (first :: rest).all fun task => taskIdNamesWait task wait == false
-  | .childScope _ => true
+  | .childScope _ | .parallelChildScopes .. => true
 
 /-- Claim uniqueness supplies the sole-owner fact that body turnover previously carried as an
 independent premise. -/
@@ -611,6 +612,7 @@ theorem recordBodyExcludesWait_of_activityBodyClaimsUnique (state : RuntimeState
         simp [activityBodyTaskClaims]
     | parallelUserTasks first rest => simp [activityBodyTask?, recordShape] at recordBody
     | childScope scope => simp [activityBodyTask?, recordShape] at recordBody
+    | parallelChildScopes first rest => simp [activityBodyTask?, recordShape] at recordBody
   have noNamedClaim : ∀ task ∈ activityBodyTaskClaims other.body,
       taskIdNamesWait task wait = false := by
     intro task taskMem
@@ -623,6 +625,7 @@ theorem recordBodyExcludesWait_of_activityBodyClaimsUnique (state : RuntimeState
       exact named
   cases bodyShape : other.body with
   | childScope scope => simp [recordBodyExcludesWait, bodyShape]
+  | parallelChildScopes first rest => simp [recordBodyExcludesWait, bodyShape]
   | userTask task =>
       have excluded := noNamedClaim task (by simp [activityBodyTaskClaims, bodyShape])
       simp [recordBodyExcludesWait, bodyShape, excluded]
@@ -720,7 +723,7 @@ theorem activityRecordsOwnLiveWork_replacedState (state : RuntimeState)
       have same : candidate = other := by rw [← rebuilt]; simp [h]
       subst same
       cases bodyShape : candidate.body with
-      | childScope scope =>
+      | childScope scope | parallelChildScopes _ _ =>
         have prior := priorHolds.1.1.1
         simp only [activityBodyLive, bodyShape] at prior ⊢
         exact prior
@@ -778,7 +781,7 @@ theorem activityRecordsOwnLiveWork_replacedState (state : RuntimeState)
         · exact prior incoming (List.mem_filter.mpr ⟨(List.mem_filter.mp retained).1, hit⟩)
       have priorOwners := priorHolds.1.1.2
       cases shape : other.body with
-      | childScope scope => simp [activityTaskBodyOwnersAgree, shape]
+      | childScope scope | parallelChildScopes _ _ => simp [activityTaskBodyOwnersAgree, shape]
       | userTask task =>
           simp only [activityTaskBodyOwnersAgree, shape] at priorOwners ⊢
           exact taskOwners task (by simp [activityBodyTaskClaims, shape]) priorOwners

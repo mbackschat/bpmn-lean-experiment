@@ -48,7 +48,7 @@ def NonInterruptingBoundaryTimerBinding (state : RuntimeState) (record : Activit
   timer.owner = record.owner ∧ timer.processInstanceId = record.processInstanceId ∧
   record.owner.processInstanceId = record.processInstanceId ∧
   arm.elementId = timer.elementId ∧ arm.output = timer.output ∧
-  (match record.body with | .userTask _ | .childScope _ => True | .parallelUserTasks .. => False)
+  (match record.body with | .userTask _ | .childScope _ => True | .parallelUserTasks .. | .parallelChildScopes .. => False)
 
 /-- The bound is over all predecessor waits of this Timer element, not only the consumed wait.
 It establishes that the newly allocated identity cannot alias unrelated existing work. -/

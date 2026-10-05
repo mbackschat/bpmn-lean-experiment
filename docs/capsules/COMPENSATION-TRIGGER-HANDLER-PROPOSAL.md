@@ -454,7 +454,7 @@ The operation census must classify trigger creation and frontier activation as o
 | [TS graph admission](../../packages/semantic-core/src/semantic-process-graph-admission.ts) | 63 | declaration and checkpoint-topology delegation only |
 | [TS Compensation checkpoint topology](../../packages/semantic-core/src/compensation-source-checkpoint-topology.ts) | 672 | exact draft-profile source topology only |
 | [TS RuntimeState](../../packages/semantic-core/src/semantic-process-state.ts) | 344 | collection/control references only |
-| [TS runtime validity](../../packages/semantic-core/src/runtime-state-well-formedness.ts) | 53 | extract compensation validity first |
+| [TS runtime validity](../../packages/semantic-core/src/runtime-state-well-formedness.ts) | 46 | extract compensation validity first |
 | [TS runtime defects](../../packages/semantic-core/src/runtime-state-defect.ts) | 752 | new defect arms only |
 | [TS command admission](../../packages/semantic-core/src/semantic-command-admission.ts) | 280 | result dispatch only |
 | [TS transition trace](../../packages/semantic-core/src/semantic-transition-trace.ts) | 422 | failed arm only |
@@ -466,7 +466,7 @@ The operation census must classify trigger creation and frontier activation as o
 | [TS control-position projection](../../packages/semantic-core/src/control-position-projection.ts) | 382 | failed terminal-empty arm only |
 | [TS internal attempt](../../packages/semantic-core/src/internal-transition-attempt.ts) | 668 | trigger-attempt delegation only |
 | [Lean Program](../../BpmnSemantics/SemanticProcessContract.lean) | 232 | direct Activity-data carriers extracted into a bounded owner |
-| [Lean RuntimeState](../../BpmnSemantics/SemanticProcess/RuntimeState.lean) | 27 | trigger collection reference only |
+| [Lean RuntimeState](../../BpmnSemantics/SemanticProcess/RuntimeState.lean) | 25 | trigger collection reference only |
 | [Lean effect completion](../../BpmnSemantics/SemanticProcess/EffectCompletion.lean) | 627 | compensation relation only |
 | [Lean command admission](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean) | 3 | result dispatch only |
 | [Lean transition](../../BpmnSemantics/SemanticProcess/Transition.lean) | 29 | extract before adding the new dispatcher arm |
@@ -486,7 +486,7 @@ The operation census must classify trigger creation and frontier activation as o
 | [terminal receipt](../../packages/temporal-adapter/workflow/src/terminal-process-receipt.ts) | 670 | failed construction only |
 | [terminal envelope](../../packages/temporal-adapter/workflow/src/workflow-terminal-completion.ts) | 554 | failed validation only |
 | [incident query handler](../../packages/temporal-adapter/workflow/src/incident-operations-query-handler.ts) | 558 | failed terminal projection only |
-| [continuation](../../packages/temporal-adapter/protocol/src/workflow-continuation.ts) | 178 | new collections and failed refusal |
+| [continuation](../../packages/temporal-adapter/protocol/src/workflow-continuation.ts) | 171 | new collections and failed refusal |
 | [Workflow loop](../../packages/temporal-adapter/workflow/src/workflow-implementation.ts) | 9 | extract frontier scheduler before integration |
 | [host readiness](../../packages/temporal-adapter/workflow/src/workflow-host-readiness.ts) | 478 | scheduler delegation only |
 | [effect host](../../packages/temporal-adapter/workflow/src/effect-execution-host.ts) | 630 | compensation result dispatch only |

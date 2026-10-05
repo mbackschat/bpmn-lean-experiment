@@ -208,6 +208,10 @@ theorem regional_pair_cancellation_activity_frame (program : Program) (before af
           have inside := withdrawn
           simp only [recordInRegion, ownerInside, body, Bool.false_or, Bool.and_eq_true] at inside
           simpa [recordInRegion, ownerInside, body] using inside.1
+        | parallelChildScopes first rest =>
+          simp only [recordInRegion, ownerInside, body, Bool.false_or, List.any_eq_true] at withdrawn ⊢
+          obtain ⟨iteration, iterationMember, inside⟩ := withdrawn
+          exact ⟨iteration, iterationMember, by simpa using (Bool.and_eq_true_iff.mp inside).1⟩
     have regionMask := regional_activity_record_mask program before hosting hosting valid running
       right.selection.root.id right.region rightFacts.2.2.2.2.1 record member
     have regionInside : recordInRegion right.region.contains record = true := regionMask.symm.trans full

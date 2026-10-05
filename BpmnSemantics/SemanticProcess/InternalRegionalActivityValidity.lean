@@ -169,6 +169,52 @@ private theorem retained_body_live (state : RuntimeState) (root : ScopeOccurrenc
         · exact cancelScopeSubtree_preserves_uncancelled_owner state root .retain scope live
             (by simpa [retainedCancellationRoot, beq_iff_eq, same, Ne.symm same] using outside.2)
 
+  | parallelChildScopes first rest =>
+    simp only [activityBodyLive, body, Bool.and_eq_true] at live ⊢
+    refine ⟨live.1, List.all_eq_true.mpr ?_⟩
+    intro iteration member
+    have prior := List.all_eq_true.mp live.2 iteration member
+    let cancelled := fun owner => occurrenceInSubtree state.scopeOccurrences root owner ||
+      (calledInstanceClosure state root).contains owner.processInstanceId
+    have allOutside := (Bool.or_eq_false_iff.mp outside).2
+    rw [body] at allOutside
+    change (first :: rest).any (fun entry => cancelled entry.scope &&
+      !(retainedCancellationRoot root disposition == some entry.scope)) = false at allOutside
+    have missing : (cancelled iteration.scope &&
+        !(retainedCancellationRoot root disposition == some iteration.scope)) = false :=
+      Bool.eq_false_iff.mpr (List.any_eq_false.mp allOutside iteration member)
+    have census : (cancelScopeSubtree state root disposition).scopeOccurrences.filter
+        (fun occurrence => decide (occurrence.id = iteration.scope)) =
+        state.scopeOccurrences.filter (fun occurrence => decide (occurrence.id = iteration.scope)) := by
+      cases disposition with
+      | remove =>
+        have notRemoved : cancelled iteration.scope = false := by
+          simpa [retainedCancellationRoot] using missing
+        change (state.scopeOccurrences.filter (fun occurrence => !cancelled occurrence.id)).filter _ = _
+        rw [List.filter_filter]
+        apply List.filter_congr
+        intro occurrence _
+        by_cases identity : occurrence.id = iteration.scope <;> simp [identity, notRemoved]
+      | retain =>
+        change (state.scopeOccurrences.filter (fun occurrence => decide (occurrence.id = root) ||
+          !cancelled occurrence.id)).filter _ = _
+        rw [List.filter_filter]
+        apply List.filter_congr
+        intro occurrence _
+        by_cases identity : occurrence.id = iteration.scope
+        · by_cases same : iteration.scope = root
+          · simp [identity, same]
+          · have notRemoved : cancelled iteration.scope = false := by
+              simpa [retainedCancellationRoot, beq_iff_eq, same, Ne.symm same] using missing
+            simp [identity, notRemoved]
+        · simp [identity]
+    have predicate : (fun occurrence : RuntimeScopeOccurrence => occurrence.id == iteration.scope) =
+        (fun occurrence => decide (occurrence.id = iteration.scope)) := by
+      funext occurrence
+      apply Bool.eq_iff_iff.mpr
+      simp
+    simpa only [exactLiveOccurrence, predicate, census] using prior
+
 private theorem task_owners_preserved (state : RuntimeState) (root : ScopeOccurrenceId)
     (disposition : SelectedScopeDisposition) (record : ActivityOccurrence)
     (valid : activityTaskBodyOwnersAgree state record = true) :
@@ -190,7 +236,7 @@ private theorem task_owners_preserved (state : RuntimeState) (root : ScopeOccurr
   | parallelUserTasks first rest =>
     simp only [activityTaskBodyOwnersAgree, body] at valid ⊢
     exact List.all_eq_true.mpr fun task member => keeps task (List.all_eq_true.mp valid task member)
-  | childScope scope => simp [activityTaskBodyOwnersAgree, body]
+  | childScope scope | parallelChildScopes _ _ => simp [activityTaskBodyOwnersAgree, body]
 
 private theorem retained_timer_live (state : RuntimeState) (root : ScopeOccurrenceId)
     (disposition : SelectedScopeDisposition) (record : ActivityOccurrence) (wait : TimerWait)

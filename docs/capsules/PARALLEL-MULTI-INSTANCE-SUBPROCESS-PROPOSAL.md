@@ -152,7 +152,17 @@ Lean proves exact selector decomposition/identity, survivor framing, evaluator-t
 
 The complete core suite passes 1,638 tests (`/tmp/parallel-scope-population-core`, separately asserted). Focused receipts: `/tmp/parallel-scope-population-build`, `/tmp/parallel-scope-population-green`, `/tmp/parallel-scope-population-types`, and `/tmp/parallel-scope-population-lean-green`. Lean ran with one CPU, 3 GiB, no extra swap and no network; full-library memory and performance qualification remain deferred. The existing [proposal review](#independent-cold-review-receipt) approves the account, not this implementation; implementation review remains open.
 
-The ownership integration prerequisite centralizes complete task/scope claims in [Activity ownership](../../packages/semantic-core/src/activity-occurrence.ts). TypeScript lookup, liveness, duplicate-claim checks, regional retention and cancellation use those projections; Lean's unchanged claim definitions now live in [ActivityOccurrence](../../BpmnSemantics/SemanticProcess/ActivityOccurrence.lean), shared with uniqueness proofs. This behavior-preserving refactor retains all existing body arms. Complete core checks pass 1,639 tests (`/tmp/activity-claims-core`); strict types (`/tmp/activity-claims-types`), ownership/census guards (`/tmp/activity-claims-guards`) and Lean uniqueness/writer-preservation dependencies (`/tmp/activity-claims-lean`, 92 build jobs under the fixed resource bound) pass. The parallel body arm and wire migration remain unimplemented.
+The ownership integration prerequisite centralizes complete task/scope claims in [Activity ownership](../../packages/semantic-core/src/activity-occurrence.ts). TypeScript lookup, liveness, duplicate-claim checks, regional retention and cancellation use those projections; Lean's unchanged claim definitions now live in [ActivityOccurrence](../../BpmnSemantics/SemanticProcess/ActivityOccurrence.lean), shared with uniqueness proofs. This behavior-preserving refactor retains all existing body arms. Complete core checks pass 1,639 tests (`/tmp/activity-claims-core`); strict types (`/tmp/activity-claims-types`), ownership/census guards (`/tmp/activity-claims-guards`) and Lean uniqueness/writer-preservation dependencies (`/tmp/activity-claims-lean`, 92 build jobs under the fixed resource bound) pass. The following body-arm migration remains unqualified.
+
+### Body ownership representation checkpoint
+
+The working migration adds a nonempty `parallelChildScopes` body in Lean and TypeScript, complete scope-claim lookup/conflict/sort handling, all-member liveness with stable-index and parent validation, and strict Temporal continuation shape decoding. Existing single-child projections retain their singular meaning. TypeScript builds, all 1,641 core tests, 505 Temporal component tests, strict harness types and the focused ownership/source guards pass (`/tmp/parallel-body-build`, `/tmp/parallel-body-core`, `/tmp/parallel-body-components`, `/tmp/parallel-body-types`, `/tmp/parallel-body-migration-guards`, separately asserted). No Program producer, profile admission, controller-state integration, publication or public support is added.
+
+The affected Lean ownership/frame consumers pass: scope insertion, regional retention/removal, cancellation liveness, quiescence, paired cancellation, existing task completion and generic conflict symmetry (`/tmp/parallel-body-lean-local-frames`, `/tmp/parallel-body-validity-grouping`, `/tmp/parallel-body-pair-symmetry-green`, `/tmp/parallel-body-paired-cancellation`, `/tmp/parallel-body-completion-consumers`, separately asserted). Claim disjointness and conflict symmetry use membership arguments instead of enumerating body pairs; no recursion limit was raised. Kernel witnesses independently check complete membership, index gaps/equal items, exact parentage, missing members and duplicate identity/index refusal (`/tmp/parallel-body-focused-kernel`). Earlier missing-case failures and budget-stopped builds remain failed evidence, not qualification.
+
+Existing ownership-uniqueness and turnover regressions pass (`/tmp/parallel-body-scope-claim-regression`). Their dependency exposed a pre-existing profile-dispatch proof gap, separately corrected at `b3ee42ba` without changing theorem statements or admission.
+
+Continuation checks separate wire shape from live ownership and reject a parallel body substituted into the existing single-child profile even when its scope is live (`/tmp/parallel-body-wire-checkpoint`, 18 passing tests). Final harness types, source guards and documentation gates pass. This representation checkpoint awaits independent implementation review before controller/execution integration. Complete cross-language execution, hosting and public qualification remain open; no full-library memory or performance qualification was run.
 
 ## Existing host-capacity prerequisite
 
@@ -174,7 +184,7 @@ Measured on 2026-10-05 against `1454aa91`; Activity ownership refreshed after cl
 
 | Owner | Headroom before 800 nonblank lines |
 |---|---:|
-| [Activity body ownership](../../packages/semantic-core/src/activity-occurrence.ts) | 564 |
+| [Activity body ownership](../../packages/semantic-core/src/activity-occurrence.ts) | 557 |
 | [IL contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 116 |
 | [Internal frontier](../../packages/semantic-core/src/internal-transition-preparation.ts) | 686 |
 | [Runtime dispatch](../../packages/semantic-core/src/semantic-process-runtime.ts) | 48 |

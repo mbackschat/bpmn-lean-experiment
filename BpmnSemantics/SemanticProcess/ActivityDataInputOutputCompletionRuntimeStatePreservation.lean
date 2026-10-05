@@ -420,7 +420,7 @@ theorem dataInputOutputCompletionStep_preserves_runtimeStateWellFormed
         simp only [Bool.and_eq_true] at prior ⊢
         have taskOwnersAfter : activityTaskBodyOwnersAgree successor candidate = true := by
           cases shape : candidate.body with
-          | childScope scope => simp [activityTaskBodyOwnersAgree, shape]
+          | childScope scope | parallelChildScopes _ _ => simp [activityTaskBodyOwnersAgree, shape]
           | userTask claimed =>
               simp only [activityTaskBodyOwnersAgree, shape, successor]
               rw [waitFrame claimed (by simp [activityBodyTaskClaims, shape])]
@@ -436,7 +436,7 @@ theorem dataInputOutputCompletionStep_preserves_runtimeStateWellFormed
         refine ⟨⟨⟨?_, taskOwnersAfter⟩, by simpa [successor] using prior.1.2⟩,
           by simpa [successor] using prior.2⟩
         cases shape : candidate.body with
-        | childScope scope =>
+        | childScope scope | parallelChildScopes _ _ =>
             simpa [activityBodyLive, exactLiveOccurrence, successor, shape] using prior.1.1.1
         | userTask claimed =>
             simp only [activityBodyLive, shape, decide_eq_true_eq] at prior ⊢

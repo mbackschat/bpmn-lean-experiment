@@ -567,6 +567,48 @@ test("a carried User Task identity above its absent counter is refused", () => {
   );
 });
 
+test("single-child profiles refuse a parallel body even with a live owned scope", () => {
+  const entered = applyStimulus(boundedScopeProgram, initialState, startBoundedScope);
+  assert.equal(entered.outcome, CommandOutcome.Committed);
+  const [activity] = entered.state.activityOccurrences;
+  assert.ok(activity?.body.kind === ActivityBodyKind.ChildScope);
+  const state = {
+    ...entered.state,
+    activityOccurrences: [{ ...activity, body: {
+      kind: ActivityBodyKind.ParallelChildScopes,
+      iterations: [{ scope: activity.body.scope, loopCounter: 0, item: "applicant" }],
+    } }],
+  } as const satisfies RuntimeState;
+  assert.throws(() => requireBpmnWorkflowContinuationStateV1(
+    state, boundedScopeProgram, boundedScopeInstanceId,
+  ), /RuntimeState is not one /u);
+});
+
+test("parallel scope continuation shape is strict and does not bypass live ownership", () => {
+  const { activity, state } = activityOwnedContinuationFixture();
+  const iteration = {
+    scope: { ...activity.owner, activation: 999 },
+    loopCounter: 0,
+    item: "applicant",
+  };
+  const decode = (body: unknown) => requireBpmnWorkflowContinuationStateV1({
+    ...state,
+    activityOccurrences: [{ ...activity, body }],
+  }, program, instanceId);
+  const body = { kind: ActivityBodyKind.ParallelChildScopes, iterations: [iteration] };
+  assert.throws(() => decode(body), /RuntimeState is not one representable committed state/u);
+  for (const malformed of [
+    { ...body, iterations: [] },
+    { ...body, extra: true },
+    { ...body, iterations: [{ ...iteration, loopCounter: -1 }] },
+    { ...body, iterations: [{ ...iteration, item: null }] },
+    { ...body, iterations: [{ ...iteration, item: "\ud800" }] },
+    { ...body, iterations: [{ ...iteration, extra: true }] },
+  ]) {
+    assert.throws(() => decode(malformed), /Malformed committed RuntimeState continuation/u);
+  }
+});
+
 test("two Activity records cannot carry the same User Task body claim across a Run boundary", () => {
   const { activity, state: control } = activityOwnedContinuationFixture();
   assert.deepEqual(

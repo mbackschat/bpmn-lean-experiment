@@ -643,7 +643,7 @@ theorem sharedParallelTerminal_preserves_runtimeStateWellFormed
           prior.1.1.2 rfl (fun _ member => member)
           (fun _ member => (List.mem_filter.mp member).1)⟩
         cases shape : candidate.body with
-        | childScope scope =>
+        | childScope scope | parallelChildScopes _ _ =>
             simpa [activityBodyLive, shape, after, closeSharedParallelRegion,
               exactLiveOccurrence] using prior.1.1.1
         | userTask task =>
