@@ -2,6 +2,7 @@ import BpmnSemantics.SemanticProcess.ScopeCancellation
 import BpmnSemantics.SemanticProcess.ScopeCompletion
 import BpmnSemantics.SemanticProcess.ScopeVariableData
 import BpmnSemantics.SemanticProcess.CanonicalJsonStringCollection
+import BpmnSemantics.SemanticProcess.CollectionOrder
 
 /-! PMIS-ENTER-01, PMIS-END-01 and PMIS-CANCEL-01: atomic population entry and exact quiescent retirement. -/
 
@@ -301,5 +302,92 @@ theorem issueParallelBodies_distinct_scopes {entry : ParallelScopeEntry} {parent
   apply List.Pairwise.of_map (S := fun a b : Nat => a ≠ b) ScopeOccurrenceId.activation
     (fun _ _ different equal => different (congrArg ScopeOccurrenceId.activation equal))
   simpa only [List.map_map, Function.comp_def] using List.nodup_iff_pairwise_ne.mp unique
+
+/-- PMIS-ENTER-01 adds exactly the generated bodies under their parent, preserving existing occurrences with multiplicity. -/
+theorem issueParallelBodies_scope_population {entry : ParallelScopeEntry} {parent : ScopeOccurrenceId}
+    {items : List String} {index : Nat} {state result : RuntimeState} {iterations : List ParallelScopeIteration}
+    (issued : issueParallelBodies? entry parent items index state = some (result, iterations)) :
+    result.scopeOccurrences.Perm
+      (iterations.map (fun iteration => (⟨iteration.scope, some parent⟩ : RuntimeScopeOccurrence)) ++ state.scopeOccurrences) := by
+  induction items generalizing state index iterations with
+  | nil => simp [issueParallelBodies?] at issued; rcases issued with ⟨rfl, rfl⟩; simp
+  | cons item items ih =>
+      unfold issueParallelBodies? at issued
+      obtain ⟨variables, _, issued⟩ := Option.bind_eq_some_iff.mp issued
+      obtain ⟨⟨successor, rest⟩, generated, issued⟩ := Option.bind_eq_some_iff.mp issued
+      cases Option.some.inj issued
+      let child : ScopeOccurrenceId := ⟨parent.processInstanceId, entry.childScopeId,
+        scopeActivationCount state entry.childScopeId + 1⟩
+      have inserted : (insertScopeOccurrence ⟨child, some parent⟩ state.scopeOccurrences).Perm
+          (⟨child, some parent⟩ :: state.scopeOccurrences) := by
+        have filterAll (values : List RuntimeScopeOccurrence) : values.filter (fun _ => true) = values :=
+          List.filter_eq_self.mpr (by intros; rfl)
+        simpa only [insertScopeOccurrence, filterAll] using filter_canonicalInsertBy_perm scopeOccurrenceBefore
+          (fun _ => true) ⟨child, some parent⟩ state.scopeOccurrences rfl
+      exact (ih generated).trans ((List.Perm.append_left _ inserted).trans List.perm_middle)
+
+/-- PMIS-ENTER-01 keeps every generated body in the selected definition and Process instance. -/
+theorem issueParallelBodies_scope_domain {entry : ParallelScopeEntry} {parent : ScopeOccurrenceId}
+    {items : List String} {index : Nat} {state result : RuntimeState} {iterations : List ParallelScopeIteration}
+    (issued : issueParallelBodies? entry parent items index state = some (result, iterations)) :
+    ∀ iteration ∈ iterations, iteration.scope.processInstanceId = parent.processInstanceId ∧
+      iteration.scope.definitionScopeId = entry.childScopeId := by
+  induction items generalizing state index iterations with
+  | nil => simp [issueParallelBodies?] at issued; rcases issued with ⟨rfl, rfl⟩; simp
+  | cons item items ih =>
+      unfold issueParallelBodies? at issued
+      obtain ⟨variables, _, issued⟩ := Option.bind_eq_some_iff.mp issued
+      obtain ⟨⟨successor, rest⟩, generated, issued⟩ := Option.bind_eq_some_iff.mp issued
+      cases Option.some.inj issued
+      intro iteration member
+      rcases List.mem_cons.mp member with equal | member
+      · subst iteration; exact ⟨rfl, rfl⟩
+      · exact ih generated iteration member
+
+private theorem issueParallelBodies_preserves_scope_uniqueness {entry : ParallelScopeEntry}
+    {parent : ScopeOccurrenceId} {items : List String} {index : Nat}
+    {state result : RuntimeState} {iterations : List ParallelScopeIteration}
+    (issued : issueParallelBodies? entry parent items index state = some (result, iterations))
+    (distinct : (state.scopeOccurrences.map (·.id)).Nodup)
+    (absent : ∀ occurrence ∈ state.scopeOccurrences, occurrence.id.definitionScopeId ≠ entry.childScopeId) :
+    (result.scopeOccurrences.map (·.id)).Nodup := by
+  have population := (issueParallelBodies_scope_population issued).map RuntimeScopeOccurrence.id
+  have combined : ((iterations.map (·.scope)) ++ state.scopeOccurrences.map (·.id)).Nodup := by
+    apply List.nodup_append.mpr
+    refine ⟨issueParallelBodies_distinct_scopes issued, distinct, ?_⟩
+    intro scope member old oldMember equal
+    obtain ⟨iteration, iterationMember, rfl⟩ := List.mem_map.mp member
+    obtain ⟨occurrence, occurrenceMember, rfl⟩ := List.mem_map.mp oldMember
+    have domain := (issueParallelBodies_scope_domain issued iteration iterationMember).2
+    exact absent occurrence occurrenceMember (by rw [← equal]; exact domain)
+  apply population.symm.nodup
+  simpa only [List.map_append, List.map_map, Function.comp_def] using combined
+
+/-- PMIS-ENTER-01 preserves global scope-identity uniqueness from the actual entry guard. -/
+theorem enterParallelScope_preserves_scope_uniqueness {entry : ParallelScopeEntry} {parent : ScopeOccurrenceId}
+    {state result : RuntimeState}
+    (entered : enterParallelScope? entry state parent = some result)
+    (distinct : (state.scopeOccurrences.map (·.id)).Nodup) :
+    (result.scopeOccurrences.map (·.id)).Nodup := by
+  unfold enterParallelScope? at entered
+  split at entered <;> try contradiction
+  rename_i admitted
+  have absent : ∀ occurrence ∈ state.scopeOccurrences, occurrence.id.definitionScopeId ≠ entry.childScopeId := by
+    intro occurrence member equal
+    have present : state.scopeOccurrences.any (fun value => value.id.definitionScopeId == entry.childScopeId) = true :=
+      List.any_eq_true.mpr ⟨occurrence, member, by simp [equal]⟩
+    simp [present] at admitted
+  split at entered <;> try contradiction
+  split at entered <;> try contradiction
+  split at entered <;> try contradiction
+  split at entered
+  · cases Option.some.inj entered; exact distinct
+  · obtain ⟨⟨issued, iterations⟩, generated, installed⟩ := Option.bind_eq_some_iff.mp entered
+    cases iterations with
+    | nil => simp at installed
+    | cons first rest =>
+        cases Option.some.inj installed
+        have unique := issueParallelBodies_preserves_scope_uniqueness generated distinct absent
+        exact unique
 
 end BpmnSemantics.SemanticProcess
