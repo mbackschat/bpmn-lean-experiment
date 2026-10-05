@@ -180,6 +180,7 @@ function hasSelectedArity(
       return incoming === 0 && outgoing === 1;
     case CheckedNodeKind.TransactionSubProcess:
     case CheckedNodeKind.SequentialMultiInstanceSubProcess:
+    case CheckedNodeKind.ParallelMultiInstanceSubProcess:
     case CheckedNodeKind.EmbeddedSubProcess:
     case CheckedNodeKind.CallActivity:
     case CheckedNodeKind.UserTask:

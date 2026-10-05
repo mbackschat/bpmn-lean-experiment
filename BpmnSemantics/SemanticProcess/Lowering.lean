@@ -285,6 +285,11 @@ private def lowerNode (source : CheckedProcess) :
       pure (.enterSequentialMultiInstanceScope (nodeOperationId id) { elementId := id }
         (firstPlace (incomingPlaces source id)) (childEntryPlace source childScopeId) childScopeId
         (firstPlace (outgoingPlaces source id)) collectionName itemName bodyInputs condition, scopeId)
+  | .parallelMultiInstanceSubProcess id childScopeId collectionName itemName bodyInputs condition => do
+      let scopeId ← checkedNodeScopeId? source id
+      pure (.enterParallelMultiInstanceScope (nodeOperationId id) { elementId := id }
+        (firstPlace (incomingPlaces source id)) (childEntryPlace source childScopeId) childScopeId
+        (firstPlace (outgoingPlaces source id)) collectionName itemName bodyInputs condition, scopeId)
   | .transactionSubProcess id childScopeId _ => do
       let scopeId ← checkedNodeScopeId? source id
       pure (.enterScope (nodeOperationId id) { elementId := id }
@@ -652,12 +657,16 @@ private def lowerScopeCompletion (source : CheckedProcess)
   match lowerMessageEventSubProcessCompletion? source scope with
   | some completion => some completion
   | none =>
+      let completionId : OperationId := ⟨"operation:complete-scope:" ++ scope.id.value⟩
       match source.nodes.findSome? (fun
         | .sequentialMultiInstanceSubProcess id childScopeId _ _ _ _ =>
-            if childScopeId == scope.id then some id else none
+            if childScopeId == scope.id then some (SemanticOperation.completeSequentialMultiInstanceScope
+              completionId { elementId := id } (nodeOperationId id)) else none
+        | .parallelMultiInstanceSubProcess id childScopeId _ _ _ _ =>
+            if childScopeId == scope.id then some (SemanticOperation.completeParallelMultiInstanceScope
+              completionId { elementId := id } (nodeOperationId id)) else none
         | _ => none) with
-      | some id => some (.completeSequentialMultiInstanceScope
-          ⟨"operation:complete-scope:" ++ scope.id.value⟩ { elementId := id } (nodeOperationId id), scope.id)
+      | some completion => some (completion, scope.id)
       | none => lowerOrdinaryScopeCompletion source scope
 
 private def insertScopedOperation

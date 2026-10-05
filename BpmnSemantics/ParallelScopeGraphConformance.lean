@@ -1,4 +1,6 @@
 import BpmnSemantics.SemanticProcess.GraphValidation
+import BpmnSemantics.SemanticProcess.Lowering
+import BpmnSemantics.SemanticProcessJson.CheckedProcess
 
 /-! PMIS-END-01 checks paired parallel-scope declarations independently of private runtime execution. -/
 
@@ -75,5 +77,64 @@ theorem repeated_scope_requires_unique_completion : programGraphWellFormed { pro
 theorem parallel_completion_cannot_bind_sequential_entry : programGraphWellFormed
     (replacing "enter" (.enterSequentialMultiInstanceScope ⟨"enter"⟩ (origin "Batch")
       ⟨"incoming"⟩ ⟨"body-in"⟩ ⟨"body"⟩ ⟨"outgoing"⟩ "items" "item" [] none)) = false := by decide +kernel
+
+private def checkedParallel : CheckedProcess :=
+  { identity :=
+      { semanticProfile := program.identity.semanticProfile
+        sourceId := program.identity.sourceId
+        sourceSha256 := program.identity.sourceSha256 }
+    processId := program.processId
+    definitionScopes := program.definitionScopes
+    nodes := [.parallelMultiInstanceSubProcess ⟨"Batch"⟩ ⟨"body"⟩ "items" "item"
+        [⟨"local", .enclosingVariable "seed"⟩] (some "done"),
+      .noneEndEvent ⟨"ChildEnd"⟩, .noneStartEvent ⟨"ChildStart"⟩, .noneEndEvent ⟨"End"⟩,
+      .userTask ⟨"Review"⟩ none, .noneStartEvent ⟨"Start"⟩]
+    nodeScopes := [⟨⟨"Batch"⟩, ⟨"root"⟩⟩, ⟨⟨"ChildEnd"⟩, ⟨"body"⟩⟩,
+      ⟨⟨"ChildStart"⟩, ⟨"body"⟩⟩, ⟨⟨"End"⟩, ⟨"root"⟩⟩,
+      ⟨⟨"Review"⟩, ⟨"body"⟩⟩, ⟨⟨"Start"⟩, ⟨"root"⟩⟩]
+    sequenceFlows := [⟨⟨"body-in"⟩, ⟨"ChildStart"⟩, ⟨"Review"⟩, none⟩,
+      ⟨⟨"body-out"⟩, ⟨"Review"⟩, ⟨"ChildEnd"⟩, none⟩,
+      ⟨⟨"incoming"⟩, ⟨"Start"⟩, ⟨"Batch"⟩, none⟩, ⟨⟨"outgoing"⟩, ⟨"Batch"⟩, ⟨"End"⟩, none⟩]
+    sequenceFlowScopes := [⟨⟨"body-in"⟩, ⟨"body"⟩⟩, ⟨⟨"body-out"⟩, ⟨"body"⟩⟩,
+      ⟨⟨"incoming"⟩, ⟨"root"⟩⟩, ⟨⟨"outgoing"⟩, ⟨"root"⟩⟩] }
+
+theorem checked_parallel_lowering_keeps_pair_and_data :
+    ((lowerCheckedProcess checkedParallel).operations.filterMap fun
+      | .enterParallelMultiInstanceScope id origin _ _ scope _ collection item inputs condition =>
+          some (id, origin.elementId, scope, collection, item, inputs, condition)
+      | _ => none) = [(⟨"operation:Batch"⟩, ⟨"Batch"⟩, ⟨"body"⟩, "items", "item",
+        [⟨"local", .enclosingVariable "seed"⟩], some "done")] ∧
+    ((lowerCheckedProcess checkedParallel).operations.filterMap fun
+      | .completeParallelMultiInstanceScope _ origin entry => some (origin.elementId, entry)
+      | _ => none) = [(⟨"Batch"⟩, ⟨"operation:Batch"⟩)] ∧
+    programGraphWellFormed (lowerCheckedProcess checkedParallel) = true ∧
+    lowerCheckedProcess { checkedParallel with nodes := checkedParallel.nodes.reverse } =
+      lowerCheckedProcess checkedParallel := by
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · rfl
+  · decide +kernel
+  · decide +kernel
+  · decide +kernel
+
+private def parallelScopeNodeFields : List (String × Lean.Json) :=
+  [("kind", .str "parallelMultiInstanceSubProcess"), ("id", .str "mi"),
+   ("childScopeId", .str "body"), ("collectionName", .str "items"),
+   ("itemName", .str "item"), ("bodyInputs", .arr #[]), ("completionBooleanName", .null)]
+
+private def decodedNodes (fields : List (String × Lean.Json)) : Option (List CheckedNode) :=
+  let identity := Lean.Json.mkObj [("semanticProfile", .str "p"), ("sourceId", .str "s"),
+    ("sourceOverlay", .null), ("sourceSha256", .str "x")]
+  (SemanticProcessJson.decodeCheckedProcess (Lean.Json.mkObj [
+    ("kind", .str "checkedProcess"), ("identity", identity), ("processId", .str "p"),
+    ("definitionScopes", .arr #[]), ("nodeScopes", .arr #[]),
+    ("sequenceFlowScopes", .arr #[]), ("sequenceFlows", .arr #[]),
+    ("nodes", .arr #[Lean.Json.mkObj fields])])).toOption.map (·.nodes)
+
+theorem parallel_scope_wire_distinguishes_mode_and_rejects_missing_or_extra_fields :
+    decodedNodes parallelScopeNodeFields =
+      some [.parallelMultiInstanceSubProcess ⟨"mi"⟩ ⟨"body"⟩ "items" "item" [] none] ∧
+    decodedNodes (parallelScopeNodeFields.filter (·.1 != "collectionName")) = none ∧
+    decodedNodes (parallelScopeNodeFields ++ [("isSequential", .bool false)]) = none := by
+  decide +kernel
 
 end BpmnSemantics.ParallelScopeGraphConformance

@@ -150,7 +150,9 @@ function lowerNode(
           })
         : [];
     case CheckedNodeKind.SequentialMultiInstanceSubProcess:
-      return scoped({ ...base, kind: SemanticOperationKind.EnterSequentialMultiInstanceScope,
+    case CheckedNodeKind.ParallelMultiInstanceSubProcess:
+      return scoped({ ...base, kind: node.kind === CheckedNodeKind.SequentialMultiInstanceSubProcess
+        ? SemanticOperationKind.EnterSequentialMultiInstanceScope : SemanticOperationKind.EnterParallelMultiInstanceScope,
         input: requireOnly(incoming, node.id, "incoming"),
         childEntry: childEntryPlace(source, node.childScopeId), childScopeId: node.childScopeId,
         normalOutput: requireOnly(outgoing, node.id, "outgoing"),
@@ -526,11 +528,12 @@ function lowerScopeCompletion(
   source: CheckedProcess,
 ): ScopedOperation {
   const entry = source.nodes.find((node) =>
-    node.kind === CheckedNodeKind.SequentialMultiInstanceSubProcess && node.childScopeId === scope.id);
+    (node.kind === CheckedNodeKind.SequentialMultiInstanceSubProcess || node.kind === CheckedNodeKind.ParallelMultiInstanceSubProcess) && node.childScopeId === scope.id);
   if (entry !== undefined) return {
     scopeId: scope.id,
     operation: { id: `operation:complete-scope:${scope.id}`,
-      kind: SemanticOperationKind.CompleteSequentialMultiInstanceScope,
+      kind: entry.kind === CheckedNodeKind.SequentialMultiInstanceSubProcess
+        ? SemanticOperationKind.CompleteSequentialMultiInstanceScope : SemanticOperationKind.CompleteParallelMultiInstanceScope,
       origin: { kind: SemanticOriginKind.BpmnElement, elementId: entry.id },
       entryOperationId: operationId(entry.id) },
   };

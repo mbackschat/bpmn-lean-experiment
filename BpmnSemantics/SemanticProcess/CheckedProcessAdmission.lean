@@ -60,6 +60,7 @@ private def checkedDefinitionScopesValid (source : CheckedProcess) : Bool :=
           scopeExists source.definitionScopes parentScopeId &&
           (source.nodes.any fun
             | .transactionSubProcess id childScopeId _
+            | .parallelMultiInstanceSubProcess id childScopeId _ _ _ _
             | .sequentialMultiInstanceSubProcess id childScopeId _ _ _ _
             | .embeddedSubProcess id childScopeId =>
                 decide (
@@ -225,6 +226,7 @@ private def checkedNodeArityValid (serial repeatable mixed businessError : Bool)
       if dormantHandlers.contains id then
         incomingCount flows id = 0 && outgoingCount flows id = 0
       else incomingCount flows id = 1 && outgoingCount flows id = 1
+  | .parallelMultiInstanceSubProcess id ..
   | .sequentialMultiInstanceSubProcess id .. =>
       incomingCount flows id = 1 && outgoingCount flows id = 1
   | .callActivity id calledProcessId data =>

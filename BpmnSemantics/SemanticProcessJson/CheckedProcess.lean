@@ -183,6 +183,18 @@ private def decodeCheckedNode (json : Json) : Except String CheckedNode := do
         (← decodeNonemptyStringField json "itemName")
         (← decodeArray decodeVariableMapping (← field json "bodyInputs"))
         completionBooleanName)
+  | "parallelMultiInstanceSubProcess" =>
+      requireObjectShape json
+        ["bodyInputs", "childScopeId", "collectionName", "completionBooleanName", "id", "itemName", "kind"]
+      let completionBooleanName ← decodeOptionalString (← field json "completionBooleanName")
+      if completionBooleanName == some "" then throw "completion variable must be nonempty"
+      pure (.parallelMultiInstanceSubProcess
+        ⟨← decodeNonemptyStringField json "id"⟩
+        ⟨← decodeNonemptyStringField json "childScopeId"⟩
+        (← decodeNonemptyStringField json "collectionName")
+        (← decodeNonemptyStringField json "itemName")
+        (← decodeArray decodeVariableMapping (← field json "bodyInputs"))
+        completionBooleanName)
   | "embeddedSubProcess" =>
       requireObjectShape json ["childScopeId", "id", "kind"]
       pure

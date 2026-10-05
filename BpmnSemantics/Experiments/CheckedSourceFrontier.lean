@@ -142,7 +142,8 @@ private theorem hasToken_absent (state : SourceRuntimeState)
     (other : SequenceFlowId) (absent : other ∉ tokens) :
     hasToken state other = false := by
   have counts := (perm.filter fun token => decide (token = other)).length_eq
-  simp [hasToken, tokenMultiplicity, counts, untokenedCount other tokens absent]
+  simp [CheckedSourceSemantics.hasToken, CheckedSourceSemantics.tokenMultiplicity,
+    counts, untokenedCount other tokens absent]
 
 /-- Every incoming Flow of a node that no listed token Flow targets is untokened. -/
 theorem incomingUntokened (source : CheckedProcess) (state : SourceRuntimeState)
@@ -258,6 +259,7 @@ theorem nodeDisabled (source : CheckedProcess) (state : SourceRuntimeState)
   | sequentialMultiInstanceUserTask id name input output normalOutputFlowId
       boundaryTimer =>
       simp [nodeArityValid] at candidateArity
+  | parallelMultiInstanceSubProcess _ _ _ _ _ _
   | sequentialMultiInstanceSubProcess _ _ _ _ _ _ =>
       simp [nodeArityValid] at candidateArity
   | parallelMultiInstanceUserTask id name input output completionCondition normalOutputFlowId

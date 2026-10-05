@@ -13,6 +13,7 @@ structure ShapeCardinalities where
   timerInitiates : Nat := 0
   embeddedScopes : Nat := 0
   sequentialMultiInstanceSubProcesses : Nat := 0
+  parallelMultiInstanceSubProcesses : Nat := 0
   sequentialScopeEntries : Nat := 0
   sequentialScopeCompletions : Nat := 0
   parallelScopeEntries : Nat := 0
@@ -74,6 +75,8 @@ def nodeCardinalities (nodes : List CheckedNode) : ShapeCardinalities :=
         { counts with timerStarts := counts.timerStarts + 1 }
     | .sequentialMultiInstanceSubProcess .. =>
         { counts with sequentialMultiInstanceSubProcesses := counts.sequentialMultiInstanceSubProcesses + 1 }
+    | .parallelMultiInstanceSubProcess .. =>
+        { counts with parallelMultiInstanceSubProcesses := counts.parallelMultiInstanceSubProcesses + 1 }
     | .embeddedSubProcess .. =>
         { counts with embeddedScopes := counts.embeddedScopes + 1 }
     | .callActivity .. =>

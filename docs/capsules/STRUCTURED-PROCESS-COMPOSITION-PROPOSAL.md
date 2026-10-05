@@ -177,7 +177,7 @@ The [contract evolution policy](../../contracts/README.md#evolution-policy) and 
 | [Profile selection](../../packages/semantic-core/src/semantic-process-profile.ts) | 477 | Select the structural capability without fixture IDs. |
 | [Core command admission](../../packages/semantic-core/src/semantic-command-admission.ts) | 280 | Delegate start requirements and per-task completion payload checks. |
 | [Value domains](../../packages/semantic-core/src/semantic-profile-value-domain.ts) | 496 | Classify string/null start and completion surfaces. |
-| [Lean checked admission](../../BpmnSemantics/SemanticProcess/CheckedProcessAdmission.lean) | 341 | Independently select the checked analysis. |
+| [Lean checked admission](../../BpmnSemantics/SemanticProcess/CheckedProcessAdmission.lean) | 339 | Independently select the checked analysis. |
 | [Lean Program validation](../../BpmnSemantics/SemanticProcess/ProgramStructuralValidation.lean) | 3 | Delegate; do not put the analysis in this nearly full owner. |
 | [Lean command admission](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean) | 3 | Delegate start and completion decisions. |
 

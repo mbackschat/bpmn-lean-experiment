@@ -65,6 +65,7 @@ private theorem parseFrom_visited (source : CheckedProcess) (fuel : Nat)
         | dataOutputUserTask _ _ _ => simp [parseFrom, nodeResult] at result
         | sequentialMultiInstanceUserTask _ _ _ _ _ _ =>
             simp [parseFrom, nodeResult] at result
+        | parallelMultiInstanceSubProcess _ _ _ _ _ _
         | sequentialMultiInstanceSubProcess _ _ _ _ _ _ =>
             simp [parseFrom, nodeResult] at result
         | parallelMultiInstanceUserTask _ _ _ _ _ _ _ =>

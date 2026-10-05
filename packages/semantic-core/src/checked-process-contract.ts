@@ -45,6 +45,7 @@ export enum CheckedNodeKind {
   TimerStartEvent = "timerStartEvent",
   EmbeddedSubProcess = "embeddedSubProcess",
   SequentialMultiInstanceSubProcess = "sequentialMultiInstanceSubProcess",
+  ParallelMultiInstanceSubProcess = "parallelMultiInstanceSubProcess",
   TransactionSubProcess = "transactionSubProcess",
   CancelEndEvent = "cancelEndEvent",
   CancelBoundaryEvent = "cancelBoundaryEvent",
@@ -162,6 +163,15 @@ export type CheckedNode =
     }>
   | DeepReadonly<{
       kind: CheckedNodeKind.SequentialMultiInstanceSubProcess;
+      id: string;
+      childScopeId: string;
+      collectionName: string;
+      itemName: string;
+      bodyInputs: VariableMapping[];
+      completionBooleanName: string | null;
+    }>
+  | DeepReadonly<{
+      kind: CheckedNodeKind.ParallelMultiInstanceSubProcess;
       id: string;
       childScopeId: string;
       collectionName: string;

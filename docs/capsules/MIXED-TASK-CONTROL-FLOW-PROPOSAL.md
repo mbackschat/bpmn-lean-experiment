@@ -110,10 +110,10 @@ Admission extends the existing [compiler](../../packages/bpmn-source/src/checked
 | [Compiler](../../packages/bpmn-source/src/checked-process-compiler.ts) | 377 | Keep analysis outside shared dispatch and preserve existing profile restrictions. |
 | [Checked validator](../../packages/bpmn-source/src/checked-process-admission.ts) | 87 | Keep analysis outside shared dispatch and preserve existing profile restrictions. |
 | [Serial source projection](../../packages/bpmn-source/src/serial-business-task-source.ts) | 663 | Keep analysis outside shared dispatch and preserve existing profile restrictions. |
-| [Checked contract](../../packages/semantic-core/src/checked-process-contract.ts) | 385 | Widen Exclusive candidates; retain Inclusive and old-profile cardinalities. |
-| [Checked-to-IL lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 103 | Widen Exclusive candidates; retain Inclusive and old-profile cardinalities. |
-| [Lean checked decoding](../../BpmnSemantics/SemanticProcessJson/CheckedProcess.lean) | 345 | Widen Exclusive candidates; retain Inclusive and old-profile cardinalities. |
-| [Lean checked validation](../../BpmnSemantics/SemanticProcess/CheckedProcessAdmission.lean) | 341 | Widen Exclusive candidates; retain Inclusive and old-profile cardinalities. |
+| [Checked contract](../../packages/semantic-core/src/checked-process-contract.ts) | 375 | Widen Exclusive candidates; retain Inclusive and old-profile cardinalities. |
+| [Checked-to-IL lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 100 | Widen Exclusive candidates; retain Inclusive and old-profile cardinalities. |
+| [Lean checked decoding](../../BpmnSemantics/SemanticProcessJson/CheckedProcess.lean) | 333 | Widen Exclusive candidates; retain Inclusive and old-profile cardinalities. |
+| [Lean checked validation](../../BpmnSemantics/SemanticProcess/CheckedProcessAdmission.lean) | 339 | Widen Exclusive candidates; retain Inclusive and old-profile cardinalities. |
 | [TypeScript IL](../../packages/semantic-core/src/semantic-process-contract.ts) | 97 | Keep analysis outside shared dispatch and preserve existing profile restrictions. |
 | [Choice admission](../../packages/semantic-core/src/simple-boolean-choice-admission.ts) | 665 | Keep analysis outside shared dispatch and preserve existing profile restrictions. |
 | [Graph policy](../../packages/semantic-core/src/semantic-process-graph-policy.ts) | 690 | Keep analysis outside shared dispatch and preserve existing profile restrictions. |

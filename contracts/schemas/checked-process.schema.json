@@ -1928,6 +1928,49 @@
               "minLength": 1
             }
           }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "id",
+            "childScopeId",
+            "collectionName",
+            "itemName",
+            "bodyInputs",
+            "completionBooleanName"
+          ],
+          "properties": {
+            "kind": {
+              "const": "parallelMultiInstanceSubProcess"
+            },
+            "id": {
+              "$ref": "#/$defs/nonemptyString"
+            },
+            "childScopeId": {
+              "$ref": "#/$defs/nonemptyString"
+            },
+            "collectionName": {
+              "$ref": "#/$defs/nonemptyString"
+            },
+            "itemName": {
+              "$ref": "#/$defs/nonemptyString"
+            },
+            "bodyInputs": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/variableMapping"
+              }
+            },
+            "completionBooleanName": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "minLength": 1
+            }
+          }
         }
       ]
     },

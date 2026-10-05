@@ -229,6 +229,9 @@ inductive CheckedNode where
   | sequentialMultiInstanceSubProcess (id : NodeId) (childScopeId : DefinitionScopeId)
       (collectionName itemName : String) (bodyInputs : List VariableMapping)
       (completionBooleanName : Option String)
+  | parallelMultiInstanceSubProcess (id : NodeId) (childScopeId : DefinitionScopeId)
+      (collectionName itemName : String) (bodyInputs : List VariableMapping)
+      (completionBooleanName : Option String)
   | transactionSubProcess (id : NodeId) (childScopeId : DefinitionScopeId) (method : String)
   | cancelEndEvent (id : NodeId)
   | cancelBoundaryEvent (id attachedToRef : NodeId) (outputFlowId : SequenceFlowId)
@@ -315,6 +318,7 @@ def CheckedNode.id : CheckedNode → NodeId
   | .timerStartEvent id _
   | .embeddedSubProcess id _
   | .sequentialMultiInstanceSubProcess id _ _ _ _ _
+  | .parallelMultiInstanceSubProcess id _ _ _ _ _
   | .transactionSubProcess id _ _
   | .cancelEndEvent id
   | .cancelBoundaryEvent id _ _
