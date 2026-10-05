@@ -1,8 +1,10 @@
 # Engine contracts and source implementation map
 
-This map owns wire, profile, checked-source, IL and source-admission status. Root routing and cross-area claims remain in [`implementation-status-router`](IMPLEMENTATION-MAP.md).
+This map owns wire, profile, checked-source, IL and source-admission status. Routing and cross-area claims: [`implementation-status-router`](IMPLEMENTATION-MAP.md).
 
 ## Current boundary
+
+[Parallel MI declarations](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#private-source-declarations): private; compilation unavailable.
 
 Exact BPMN bytes enter a checked graph under bounded, versioned, fail-closed profiles and deterministically lower to Semantic Process IL. Unsupported source rejects unless reviewed rules permit preservation. Interchange preserves standard notation without changing User Task Process-data execution. Private [`implementation-status-owner:ENGINE-SEMANTIC-FAMILY`](ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md#serial-business-task-composition) remains unqualified for hosting.
 

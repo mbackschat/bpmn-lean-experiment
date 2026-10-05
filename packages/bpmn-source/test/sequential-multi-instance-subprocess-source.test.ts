@@ -5,23 +5,53 @@ import { MappingExpressionKind as Mapping } from "@bpmn-lean/semantic-core";
 
 const { importBpmnGraph } = await import(new URL("../dist/moddle-adapter.js", import.meta.url).href) as typeof import("../src/moddle-adapter.ts");
 const { asElement, asElementArray } = await import(new URL("../dist/moddle-graph.js", import.meta.url).href) as typeof import("../src/moddle-graph.ts");
-const { readSequentialSubProcessDeclaration: read } = await import(
-  new URL("../dist/sequential-multi-instance-subprocess-source.js", import.meta.url).href
-) as typeof import("../src/sequential-multi-instance-subprocess-source.ts");
+const { readSequentialSubProcessDeclaration: read, readParallelSubProcessDeclaration: readParallel } = await import(
+  new URL("../dist/multi-instance-subprocess-source.js", import.meta.url).href
+) as typeof import("../src/multi-instance-subprocess-source.ts");
 
 const source = await readFile(new URL("../../../runners/cibseven/src/test/resources/org/bpmnlean/cibseven/sequential-mi-business-subprocess-probe.bpmn", import.meta.url), "utf8");
 const loop = /<multiInstanceLoopCharacteristics[\s\S]*?\/>/u;
 const inputs = /<extensionElements>[\s\S]*?<\/extensionElements>/u;
 const handlers = new Set(["invoiceValidator"]);
 
-async function parse(xml: string) {
+async function parse(xml: string, reader = read) {
   const imported = await importBpmnGraph(xml, 5000);
   assert.deepEqual(imported.warnings, []);
   const definitions = asElement(imported.rootElement)!;
   const process = asElementArray(definitions.rootElements)![0]!;
   const body = asElementArray(process.flowElements)!.find(element => element.$type === "bpmn:SubProcess")!;
-  return read(body, definitions, handlers);
+  return reader(body, definitions, handlers);
 }
+
+test("parallel declarations honor explicit false and the BPMN default without entering the sequential profile", async () => {
+  assert.equal(typeof readParallel, "function");
+  const explicit = source.replace('isSequential="true"', 'isSequential="false"');
+  const omitted = source.replace(' isSequential="true"', "");
+  const expected = await parse(source);
+  assert.deepEqual(await parse(explicit, readParallel), expected);
+  assert.deepEqual(await parse(omitted, readParallel), expected);
+  assert.equal(await parse(explicit), undefined);
+  assert.equal(await parse(omitted), undefined);
+  assert.equal(await parse(source, readParallel), undefined);
+});
+
+test("parallel declarations retain the same bounded mappings and completion-condition restrictions", async () => {
+  assert.equal(typeof readParallel, "function");
+  const conditioned = source.replace(loop, '<multiInstanceLoopCharacteristics isSequential="false" camunda:collection="${items}" camunda:elementVariable="item"><completionCondition>${stopBatch}</completionCondition></multiInstanceLoopCharacteristics>');
+  assert.deepEqual(await parse(conditioned, readParallel),
+    await parse(conditioned.replace('isSequential="false"', 'isSequential="true"')));
+  for (const xml of [
+    conditioned.replace('>${stopBatch}<', '>${item}<'),
+    conditioned.replace('>${stopBatch}<', '>${stopBatch == true}<'),
+    conditioned.replace('camunda:elementVariable="item"', 'camunda:elementVariable="items"'),
+    conditioned.replace('name="reviewStatus"', 'name="stopBatch"'),
+    conditioned.replace('>pending<', '>${invoiceValidator}<'),
+    conditioned.replace('<completionCondition>', '<loopCardinality>2</loopCardinality><completionCondition>'),
+    conditioned.replace('inputParameter name="reviewStatus">pending</camunda:inputParameter>',
+      'outputParameter name="reviewStatus">${result}</camunda:outputParameter>'),
+    conditioned.replace('camunda:collection="${items}"', 'camunda:collection="${items}" camunda:asyncBefore="true"'),
+  ]) assert.equal(await parse(xml, readParallel), undefined);
+});
 
 test("projects the CIB repeated invoice body's collection, item and canonical local inputs", async () => {
   assert.deepEqual(await parse(source), {

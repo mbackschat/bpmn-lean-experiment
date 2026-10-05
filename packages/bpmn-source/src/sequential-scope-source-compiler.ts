@@ -14,7 +14,7 @@ import { declaredGatewayDirectionMatches } from "./gateway-direction-source.js";
 import { projectMappedSuccessSequenceFlows, projectPlainNode } from "./mapped-service-task-source.js";
 import { selectMappedServiceTaskSourcePolicy } from "./mapped-service-task-source-policy.js";
 import { projectSerialBusinessServiceTask } from "./serial-business-task-source.js";
-import { readSequentialSubProcessDeclaration } from "./sequential-multi-instance-subprocess-source.js";
+import { readSequentialSubProcessDeclaration } from "./multi-instance-subprocess-source.js";
 import { resolveAdmittedCheckedProcessGraph } from "./checked-process-graph-admission.js";
 import { lowerCheckedProcess } from "./semantic-process-lowering.js";
 import type { AdmittedSourceOverlay } from "./source-overlay.js";

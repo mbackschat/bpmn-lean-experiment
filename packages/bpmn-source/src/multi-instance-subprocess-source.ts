@@ -8,7 +8,7 @@ import { exactForeignAttributeRejections } from "./preserved-element-classificat
 
 const namespace = "http://camunda.org/schema/1.0/bpmn";
 
-export type SequentialSubProcessDeclaration = Readonly<{
+export type MultiInstanceSubProcessDeclaration = Readonly<{
   collectionName: string;
   itemName: string;
   completionBooleanName: string | null;
@@ -16,13 +16,26 @@ export type SequentialSubProcessDeclaration = Readonly<{
   requiredInitializationInputs: readonly string[];
 }>;
 
-/** SMIS-ADMIT-01 selects declaration syntax; complete graph, Start-data and operation-bound admission are separate. */
+enum SubProcessRepetitionMode { Sequential = "sequential", Parallel = "parallel" }
+
+/** SMIS-ADMIT-01 selects sequential declarations without admitting parallel defaults. */
 export function readSequentialSubProcessDeclaration(element: ElementRecord, definitions: ElementRecord,
-  handlerNames: ReadonlySet<string>): SequentialSubProcessDeclaration | undefined {
+  handlerNames: ReadonlySet<string>): MultiInstanceSubProcessDeclaration | undefined {
+  return readSubProcessDeclaration(element, definitions, handlerNames, SubProcessRepetitionMode.Sequential);
+}
+
+/** PMIS-ADMIT-01 follows Semantic.xsd's false default; graph, Start and execution admission remain separate. */
+export function readParallelSubProcessDeclaration(element: ElementRecord, definitions: ElementRecord,
+  handlerNames: ReadonlySet<string>): MultiInstanceSubProcessDeclaration | undefined {
+  return readSubProcessDeclaration(element, definitions, handlerNames, SubProcessRepetitionMode.Parallel);
+}
+
+function readSubProcessDeclaration(element: ElementRecord, definitions: ElementRecord,
+  handlerNames: ReadonlySet<string>, mode: SubProcessRepetitionMode): MultiInstanceSubProcessDeclaration | undefined {
   if (element.$type !== "bpmn:SubProcess" || readId(element) === undefined ||
       !hasOnlyModelledKeys(element, ["$type", "id", "name", "incoming", "outgoing", "flowElements", "loopCharacteristics", "extensionElements"])) return undefined;
   const loop = asElement(element.loopCharacteristics);
-  if (loop?.$type !== "bpmn:MultiInstanceLoopCharacteristics" || loop.isSequential !== true ||
+  if (loop?.$type !== "bpmn:MultiInstanceLoopCharacteristics" || loop.isSequential !== (mode === SubProcessRepetitionMode.Sequential) ||
       !hasOnlyModelledKeys(loop, ["$type", "id", "isSequential", "completionCondition"])) return undefined;
   const attributes = readForeignAttributes(loop, definitions);
   if (attributes === undefined) return undefined;
@@ -53,7 +66,7 @@ export function readSequentialSubProcessDeclaration(element: ElementRecord, defi
   const bodyInputs = readSubProcessInputMappings(element.extensionElements);
   if (bodyInputs === undefined || bodyInputs.some(mapping => names.includes(mapping.target) || handlerNames.has(mapping.target) ||
       (mapping.expression.kind === MappingExpressionKind.EnclosingVariable && handlerNames.has(mapping.expression.name)))) return undefined;
-  // SMIS-DATA-01 evaluates every declaration in the same Process context, before any body local exists.
+  // SMIS-DATA-01/PMIS-DATA-01 evaluate every declaration in the same Process context, before any body local exists.
   const requiredInitializationInputs = [...new Set(bodyInputs.flatMap(mapping =>
     mapping.expression.kind === MappingExpressionKind.EnclosingVariable ? [mapping.expression.name] : []))].sort(compareCanonicalStrings);
   return { collectionName, itemName, completionBooleanName, bodyInputs, requiredInitializationInputs };
