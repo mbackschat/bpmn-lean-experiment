@@ -4,7 +4,7 @@ This detail map owns the exact current cross-cutting runtime, scope, Lean, TypeS
 
 ## Current boundary
 
-[Parallel MI](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#paired-il-integration): ownership approved; private dispatch implemented; execution unqualified.
+[Parallel MI](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#paired-il-integration): private lifecycle/IL approved; execution unqualified.
 
 Lean and TypeScript execute reviewed, profile-bounded semantics over immutable serializable state. General BPMN execution and cross-target correspondence remain unproved.
 
