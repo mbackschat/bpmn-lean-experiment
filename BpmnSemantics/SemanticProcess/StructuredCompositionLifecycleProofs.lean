@@ -766,7 +766,7 @@ theorem admitted_operations_share_declared_root
             (List.all_eq_true.mp allReach operation.id (List.mem_map.mpr ⟨operation, member, rfl⟩))
         refine ⟨start, _, ?_, ?_, paths⟩
         · rw [← admitted_scope_lookup_is_exact program start wellFormed]
-          have anchor := of_decide_eq_true graph.1.1.1.1.1.1.1.1.1.1
+          have anchor := of_decide_eq_true graph.1.1.1.1.1.1.1.1.1.1.1
           change (program.operationScopes.find? (fun binding => decide (binding.operationId = start))).map (·.scopeId) = some entryRoot at anchor
           simpa only [rootEq] using anchor
         · intro edge included predecessor
@@ -780,6 +780,7 @@ theorem admitted_operations_share_declared_root
                 obtain ⟨consumer, consumes, edgeEq⟩ := List.mem_map.mp portEdge
                 obtain ⟨producerOp, producerMember, producerId, producerPort⟩ :=
                   producer_direct_output_witness program.operations place.id producer produces
+                    (fun id origin entry member => by simpa [OperationAllowed] using allowed _ member)
                     (fun id origin entry member => by simpa [OperationAllowed] using allowed _ member)
                 obtain ⟨consumerOp, consumerMember, consumed⟩ := List.mem_filterMap.mp consumes
                 split at consumed

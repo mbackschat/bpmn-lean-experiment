@@ -15,6 +15,8 @@ structure ShapeCardinalities where
   sequentialMultiInstanceSubProcesses : Nat := 0
   sequentialScopeEntries : Nat := 0
   sequentialScopeCompletions : Nat := 0
+  parallelScopeEntries : Nat := 0
+  parallelScopeCompletions : Nat := 0
   callActivities : Nat := 0
   boundaryErrors : Nat := 0
   boundaryTimers : Nat := 0
@@ -144,6 +146,10 @@ def addOperationCardinality (counts : ShapeCardinalities)
         { counts with sequentialScopeEntries := counts.sequentialScopeEntries + 1 }
     | .completeSequentialMultiInstanceScope .. =>
         { counts with sequentialScopeCompletions := counts.sequentialScopeCompletions + 1 }
+    | .enterParallelMultiInstanceScope .. =>
+        { counts with parallelScopeEntries := counts.parallelScopeEntries + 1 }
+    | .completeParallelMultiInstanceScope .. =>
+        { counts with parallelScopeCompletions := counts.parallelScopeCompletions + 1 }
     | .enterScope .. => { counts with scopeEntries := counts.scopeEntries + 1 }
     | .enterBoundedScope .. =>
         { counts with boundedScopeEntries := counts.boundedScopeEntries + 1 }

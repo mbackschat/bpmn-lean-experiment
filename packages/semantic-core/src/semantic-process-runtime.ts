@@ -653,6 +653,10 @@ function applyInternalOperationState(
       captureOwner(step.owner);
       return step.successor;
     }
+    case SemanticOperationKind.EnterParallelMultiInstanceScope:
+    case SemanticOperationKind.CompleteParallelMultiInstanceScope:
+      // PMIS-SELECT-01 requires an explicit scope occurrence, unavailable in this operation-only dispatch.
+      return null;
     default:
       return assertNever(operation);
   }

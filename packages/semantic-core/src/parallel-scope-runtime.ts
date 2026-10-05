@@ -1,6 +1,8 @@
 import { ActivityBodyKind, activityBodyScopeClaims, compareActivityOccurrences, sameActivityOccurrence } from "./activity-occurrence.js";
 import type { ActivityOccurrence } from "./activity-occurrence.js";
 import { VariableValueKind } from "./contract.js";
+import { SemanticOperationKind } from "./semantic-process-contract.js";
+import type { SemanticProcessProgram } from "./semantic-process-contract.js";
 import { ParallelScopeRetirementKind, retireParallelScopeIteration, validParallelScopePopulation } from "./parallel-scope-population.js";
 import type { ParallelScopeIteration } from "./parallel-scope-population.js";
 import { initializeScopeVariables, removeScopeVariables, selectScopeVariables } from "./scope-variable-data.js";
@@ -19,6 +21,45 @@ export type ParallelScopeEntry = Readonly<{
   collectionName: string; itemName: string; completionBooleanName: string | null;
   bodyInputs: readonly VariableMapping[];
 }>;
+
+/** PMIS-SELECT-01 preserves the selected operation and complete occurrence through paired IL binding. */
+export function applyParallelScopeOperation(program: Pick<SemanticProcessProgram, "operations" | "operationScopes">,
+  operationId: string, state: RuntimeState, owner: ScopeOccurrenceId): RuntimeState | null {
+  const selected = program.operations.filter(operation => operation.id === operationId);
+  const operation = selected[0];
+  if (selected.length !== 1 || operation === undefined) return null;
+  let entryId: string;
+  switch (operation.kind) {
+    case SemanticOperationKind.EnterParallelMultiInstanceScope: entryId = operation.id; break;
+    case SemanticOperationKind.CompleteParallelMultiInstanceScope: entryId = operation.entryOperationId; break;
+    default: return null;
+  }
+  const entries = program.operations.filter(candidate => candidate.id === entryId);
+  const entry = entries[0];
+  if (entries.length !== 1 || entry?.kind !== SemanticOperationKind.EnterParallelMultiInstanceScope) return null;
+  const completions = program.operations.filter(candidate => candidate.kind === SemanticOperationKind.CompleteParallelMultiInstanceScope &&
+    candidate.entryOperationId === entry.id);
+  const completion = completions[0];
+  if (completions.length !== 1 || completion === undefined || completion.origin.elementId !== entry.origin.elementId) return null;
+  const entryOwners = program.operationScopes.filter(candidate => candidate.operationId === entry.id);
+  const completionOwners = program.operationScopes.filter(candidate => candidate.operationId === completion.id);
+  const parentScopeId = entryOwners[0]?.scopeId;
+  if (entryOwners.length !== 1 || parentScopeId === undefined || completionOwners.length !== 1 ||
+      completionOwners[0]?.scopeId !== entry.childScopeId) return null;
+  const descriptor: ParallelScopeEntry = { id: entry.id, elementId: entry.origin.elementId,
+    input: entry.input, childEntry: entry.childEntry, childScopeId: entry.childScopeId, normalOutput: entry.normalOutput,
+    collectionName: entry.collectionName, itemName: entry.itemName, bodyInputs: entry.bodyInputs,
+    completionBooleanName: entry.completionBooleanName };
+  switch (operation.kind) {
+    case SemanticOperationKind.EnterParallelMultiInstanceScope:
+      return owner.definitionScopeId === parentScopeId ? enterParallelScope(descriptor, state, owner) : null;
+    case SemanticOperationKind.CompleteParallelMultiInstanceScope: {
+      const bodies = state.scopeOccurrences.filter(({ id }) => sameScopeOccurrence(id, owner));
+      return operation.id === completion.id && owner.definitionScopeId === entry.childScopeId && bodies.length === 1 &&
+        bodies[0]?.parent?.definitionScopeId === parentScopeId ? completeParallelScope(descriptor, state, owner) : null;
+    }
+  }
+}
 
 /** PMIS-ENTER-01 issues the entire population against one pre-entry Process snapshot, or nothing. */
 export function enterParallelScope(entry: ParallelScopeEntry, state: RuntimeState,

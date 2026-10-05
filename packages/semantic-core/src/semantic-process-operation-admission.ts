@@ -262,6 +262,7 @@ export function isWellFormedSemanticOperation(
         scopeOrigins.has(value.childScopeId)
       );
     case SemanticOperationKind.EnterSequentialMultiInstanceScope:
+    case SemanticOperationKind.EnterParallelMultiInstanceScope:
       return hasOnlyKeys(value, ["id", "kind", "origin", "input", "childEntry", "childScopeId", "normalOutput",
         "collectionName", "itemName", "bodyInputs", "completionBooleanName"]) &&
         isPlaceReference(value.input, placeIds) && isPlaceReference(value.childEntry, placeIds) &&
@@ -271,6 +272,7 @@ export function isWellFormedSemanticOperation(
         (value.completionBooleanName === null || isSerialBusinessIdentifier(value.completionBooleanName)) &&
         sequentialScopeBodyMappingsAdmitted(value.bodyInputs);
     case SemanticOperationKind.CompleteSequentialMultiInstanceScope:
+    case SemanticOperationKind.CompleteParallelMultiInstanceScope:
       return hasOnlyKeys(value, ["id", "kind", "origin", "entryOperationId"]) && isNonEmptyString(value.entryOperationId);
     case SemanticOperationKind.EnterMonitoredScope:
     case SemanticOperationKind.EnterBoundedScope:

@@ -63,6 +63,8 @@ export enum SemanticOperationKind {
   EnterScope = "enterScope",
   EnterSequentialMultiInstanceScope = "enterSequentialMultiInstanceScope",
   CompleteSequentialMultiInstanceScope = "completeSequentialMultiInstanceScope",
+  EnterParallelMultiInstanceScope = "enterParallelMultiInstanceScope",
+  CompleteParallelMultiInstanceScope = "completeParallelMultiInstanceScope",
   EnterBoundedScope = "enterBoundedScope",
   EnterMonitoredScope = "enterMonitoredScope",
   InvokeProcess = "invokeProcess",
@@ -474,6 +476,23 @@ export type CompleteSequentialMultiInstanceScopeOperation = OperationBase & Deep
   entryOperationId: string;
 }>;
 
+export type EnterParallelMultiInstanceScopeOperation = OperationBase & DeepReadonly<{
+  kind: SemanticOperationKind.EnterParallelMultiInstanceScope;
+  input: string;
+  childEntry: string;
+  childScopeId: string;
+  normalOutput: string;
+  collectionName: string;
+  itemName: string;
+  bodyInputs: VariableMapping[];
+  completionBooleanName: string | null;
+}>;
+
+export type CompleteParallelMultiInstanceScopeOperation = OperationBase & DeepReadonly<{
+  kind: SemanticOperationKind.CompleteParallelMultiInstanceScope;
+  entryOperationId: string;
+}>;
+
 export type AwaitSequentialMultiInstanceUserTaskOperation = OperationBase &
   DeepReadonly<{
     kind: SemanticOperationKind.AwaitSequentialMultiInstanceUserTask;
@@ -636,6 +655,8 @@ export type SemanticOperation =
   | AwaitMonitoredUserTaskOperation
   | EnterSequentialMultiInstanceScopeOperation
   | CompleteSequentialMultiInstanceScopeOperation
+  | EnterParallelMultiInstanceScopeOperation
+  | CompleteParallelMultiInstanceScopeOperation
   | AwaitSequentialMultiInstanceUserTaskOperation
   | AwaitParallelMultiInstanceUserTaskOperation
   | CompleteParallelMultiInstanceUserTaskOperation

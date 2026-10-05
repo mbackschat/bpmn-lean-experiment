@@ -369,6 +369,25 @@ private def decodeOperation (json : Json) :
       requireObjectShape json ["entryOperationId", "id", "kind", "origin"]
       pure (.completeSequentialMultiInstanceScope id origin
         ⟨← decodeNonemptyStringField json "entryOperationId"⟩)
+  | "enterParallelMultiInstanceScope" =>
+      requireObjectShape json
+        ["bodyInputs", "childEntry", "childScopeId", "collectionName", "completionBooleanName",
+          "id", "input", "itemName", "kind", "normalOutput", "origin"]
+      let completionBooleanName ← decodeOptionalString (← field json "completionBooleanName")
+      if completionBooleanName == some "" then throw "completion variable must be nonempty"
+      pure (.enterParallelMultiInstanceScope id origin
+        ⟨← decodeNonemptyStringField json "input"⟩
+        ⟨← decodeNonemptyStringField json "childEntry"⟩
+        ⟨← decodeNonemptyStringField json "childScopeId"⟩
+        ⟨← decodeNonemptyStringField json "normalOutput"⟩
+        (← decodeNonemptyStringField json "collectionName")
+        (← decodeNonemptyStringField json "itemName")
+        (← decodeArray decodeVariableMapping (← field json "bodyInputs"))
+        completionBooleanName)
+  | "completeParallelMultiInstanceScope" =>
+      requireObjectShape json ["entryOperationId", "id", "kind", "origin"]
+      pure (.completeParallelMultiInstanceScope id origin
+        ⟨← decodeNonemptyStringField json "entryOperationId"⟩)
   | "enterScope" =>
       requireObjectShape json
         ["childEntry", "childScopeId", "id", "input", "kind", "origin"]

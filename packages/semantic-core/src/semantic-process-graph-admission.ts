@@ -101,7 +101,7 @@ function isWellFormedSemanticProcessGraphWithDormantHandlers(
   )) {
     return false;
   }
-  if (!sequentialScopeOperationsArePaired(graph, operationScope)) return false;
+  if (!repeatedScopeOperationsArePaired(graph, operationScope)) return false;
   if (!parallelMultiInstanceOperationsArePaired(
     graph.operations,
     operationScope,
@@ -185,7 +185,8 @@ function isWellFormedSemanticProcessGraphWithDormantHandlers(
     const scopeId = operationScope.get(predecessor.id);
     const completion = [...operationsOfKind(graph, SemanticOperationKind.CompleteScope),
       ...operationsOfKind(graph, SemanticOperationKind.CompleteEventSubProcess),
-      ...operationsOfKind(graph, SemanticOperationKind.CompleteSequentialMultiInstanceScope)]
+      ...operationsOfKind(graph, SemanticOperationKind.CompleteSequentialMultiInstanceScope),
+      ...operationsOfKind(graph, SemanticOperationKind.CompleteParallelMultiInstanceScope)]
       .find((candidate) => operationScope.get(candidate.id) === scopeId);
     return completion === undefined
       ? []
@@ -304,14 +305,17 @@ function operationRespectsScopes(
         ({ id, parentScopeId }) => id === owner && parentScopeId === null,
       ) && referencesOwnedBy(operation.outputs, owner);
     case SemanticOperationKind.EnterSequentialMultiInstanceScope:
+    case SemanticOperationKind.EnterParallelMultiInstanceScope:
       return referencesOwnedBy([operation.input, operation.normalOutput], owner) &&
         referencesOwnedBy([operation.childEntry], operation.childScopeId) &&
         graph.definitionScopes.some(({ id, parentScopeId, originElementId }) =>
           id === operation.childScopeId && parentScopeId === owner &&
           originElementId === operation.origin.elementId);
     case SemanticOperationKind.CompleteSequentialMultiInstanceScope:
+    case SemanticOperationKind.CompleteParallelMultiInstanceScope:
       return graph.operations.some((entry) =>
-        entry.kind === SemanticOperationKind.EnterSequentialMultiInstanceScope &&
+        entry.kind === (operation.kind === SemanticOperationKind.CompleteParallelMultiInstanceScope
+          ? SemanticOperationKind.EnterParallelMultiInstanceScope : SemanticOperationKind.EnterSequentialMultiInstanceScope) &&
         entry.id === operation.entryOperationId && entry.childScopeId === owner);
     case SemanticOperationKind.EnterScope:
       return referencesOwnedBy([operation.input], owner) &&
@@ -413,13 +417,15 @@ function hasOneCompletionStrategyPerScope(
   // as a malformed program rather than as the missing case it is.
   const entries = [
     ...operationsOfKind(graph, SemanticOperationKind.EnterSequentialMultiInstanceScope),
+    ...operationsOfKind(graph, SemanticOperationKind.EnterParallelMultiInstanceScope),
     ...operationsOfKind(graph, SemanticOperationKind.EnterScope),
     ...operationsOfKind(graph, SemanticOperationKind.EnterBoundedScope),
     ...operationsOfKind(graph, SemanticOperationKind.EnterMonitoredScope),
   ];
   const returns = operationsOfKind(graph, SemanticOperationKind.ReturnProcess);
   return graph.definitionScopes.every(({ id, parentScopeId }) => {
-    const repeated = entries.filter((entry) => entry.kind === SemanticOperationKind.EnterSequentialMultiInstanceScope && entry.childScopeId === id);
+    const repeated = entries.filter((entry) => (entry.kind === SemanticOperationKind.EnterSequentialMultiInstanceScope ||
+      entry.kind === SemanticOperationKind.EnterParallelMultiInstanceScope) && entry.childScopeId === id);
     if (repeated.length > 0) return repeated.length === 1 && parentScopeId !== null &&
       entries.filter(({ childScopeId }) => childScopeId === id).length === 1 &&
       completions.every(({ scopeId }) => scopeId !== id) &&
@@ -559,12 +565,14 @@ function operationInputs(
     case SemanticOperationKind.InitiateMessage:
     case SemanticOperationKind.InitiateTimer:
     case SemanticOperationKind.CompleteSequentialMultiInstanceScope:
+    case SemanticOperationKind.CompleteParallelMultiInstanceScope:
     case SemanticOperationKind.CompleteScope:
     case SemanticOperationKind.CompleteParallelMultiInstanceUserTask:
     case SemanticOperationKind.CompleteEventSubProcess:
     case SemanticOperationKind.ReturnProcess:
       return [];
     case SemanticOperationKind.EnterSequentialMultiInstanceScope:
+    case SemanticOperationKind.EnterParallelMultiInstanceScope:
     case SemanticOperationKind.EnterScope:
     case SemanticOperationKind.EnterMonitoredScope:
     case SemanticOperationKind.EnterBoundedScope:
@@ -641,6 +649,7 @@ function operationOutputs(
         ? [operation.task.output, operation.boundaryMessage.output]
         : [operation.task.output, operation.boundaryTimer.output];
     case SemanticOperationKind.EnterSequentialMultiInstanceScope:
+    case SemanticOperationKind.EnterParallelMultiInstanceScope:
     case SemanticOperationKind.EnterScope:
       return [operation.childEntry];
     // The normal route is deliberately absent, exactly as for `enterScope`: it is the child scope's
@@ -682,9 +691,11 @@ function operationOutputs(
     case SemanticOperationKind.ReachNoneEnd:
     case SemanticOperationKind.CompleteEventSubProcess:
       return [];
-    case SemanticOperationKind.CompleteSequentialMultiInstanceScope: {
+    case SemanticOperationKind.CompleteSequentialMultiInstanceScope:
+    case SemanticOperationKind.CompleteParallelMultiInstanceScope: {
       const entry = operations.find(({ id }) => id === operation.entryOperationId);
-      return entry?.kind === SemanticOperationKind.EnterSequentialMultiInstanceScope
+      return entry?.kind === (operation.kind === SemanticOperationKind.CompleteParallelMultiInstanceScope
+        ? SemanticOperationKind.EnterParallelMultiInstanceScope : SemanticOperationKind.EnterSequentialMultiInstanceScope)
         ? [entry.normalOutput] : [];
     }
     case SemanticOperationKind.CompleteScope:
@@ -692,17 +703,23 @@ function operationOutputs(
   }
 }
 
-function sequentialScopeOperationsArePaired(
+function repeatedScopeOperationsArePaired(
   graph: SemanticProcessGraph,
   operationScope: ReadonlyMap<string, string>,
 ): boolean {
-  const entries = operationsOfKind(graph, SemanticOperationKind.EnterSequentialMultiInstanceScope);
-  const completions = operationsOfKind(graph, SemanticOperationKind.CompleteSequentialMultiInstanceScope);
+  const entries = [...operationsOfKind(graph, SemanticOperationKind.EnterSequentialMultiInstanceScope),
+    ...operationsOfKind(graph, SemanticOperationKind.EnterParallelMultiInstanceScope)];
+  const completions = [...operationsOfKind(graph, SemanticOperationKind.CompleteSequentialMultiInstanceScope),
+    ...operationsOfKind(graph, SemanticOperationKind.CompleteParallelMultiInstanceScope)];
   return entries.length === completions.length && entries.every((entry) =>
     graph.operations.every(operation => operation.origin.elementId !== entry.origin.elementId ||
-      (operation.kind === SemanticOperationKind.EnterSequentialMultiInstanceScope && operation.id === entry.id) ||
-      (operation.kind === SemanticOperationKind.CompleteSequentialMultiInstanceScope && operation.entryOperationId === entry.id)) &&
-    completions.filter((completion) => completion.entryOperationId === entry.id &&
+      (operation.kind === entry.kind && operation.id === entry.id) ||
+      ((operation.kind === SemanticOperationKind.CompleteSequentialMultiInstanceScope ||
+        operation.kind === SemanticOperationKind.CompleteParallelMultiInstanceScope) && operation.entryOperationId === entry.id)) &&
+    completions.filter((completion) => completion.kind ===
+      (entry.kind === SemanticOperationKind.EnterParallelMultiInstanceScope
+        ? SemanticOperationKind.CompleteParallelMultiInstanceScope : SemanticOperationKind.CompleteSequentialMultiInstanceScope) &&
+      completion.entryOperationId === entry.id &&
       completion.origin.elementId === entry.origin.elementId &&
       operationScope.get(completion.id) === entry.childScopeId).length === 1);
 }

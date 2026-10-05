@@ -129,6 +129,38 @@ def completeParallelScope? (entry : ParallelScopeEntry) (state : RuntimeState)
             (fun current iteration => cancelScopeSubtree current iteration.scope .remove) retired
           some { cancelled with tokens := addToken cancelled.tokens entry.normalOutput record.owner }
 
+def parallelScopeEntry? : SemanticOperation → Option ParallelScopeEntry
+  | .enterParallelMultiInstanceScope id origin input childEntry childScopeId output collection item mappings condition =>
+      some ⟨id, origin.elementId, input, childEntry, childScopeId, output, collection, item, mappings, condition⟩
+  | _ => none
+
+/-- PMIS-SELECT-01 binds the selected IL operation and full owner without choosing a sibling implicitly. -/
+def applyParallelScopeOperation? (program : Program) (operationId : OperationId) (state : RuntimeState)
+    (owner : ScopeOccurrenceId) : Option RuntimeState := do
+  let [operation] := program.operations.filter (·.id == operationId) | none
+  let entryId ← match operation with
+    | .enterParallelMultiInstanceScope id .. => some id
+    | .completeParallelMultiInstanceScope _ _ entryId => some entryId
+    | _ => none
+  let [entryOperation] := program.operations.filter (·.id == entryId) | none
+  let entry ← parallelScopeEntry? entryOperation
+  let [completion] := program.operations.filter (fun candidate => match candidate with
+    | .completeParallelMultiInstanceScope _ _ paired => paired == entry.id | _ => false) | none
+  if completion.origin.elementId != entry.elementId then none
+  else
+    let [entryOwner] := program.operationScopes.filter (·.operationId == entry.id) | none
+    let [completionOwner] := program.operationScopes.filter (·.operationId == completion.id) | none
+    if completionOwner.scopeId != entry.childScopeId then none
+    else match operation with
+    | .enterParallelMultiInstanceScope .. =>
+        if owner.definitionScopeId == entryOwner.scopeId then enterParallelScope? entry state owner else none
+    | .completeParallelMultiInstanceScope id .. =>
+        let [body] := state.scopeOccurrences.filter (·.id == owner) | none
+        if id != completion.id || owner.definitionScopeId != entry.childScopeId ||
+            body.parent.map (·.definitionScopeId) != some entryOwner.scopeId then none
+        else completeParallelScope? entry state owner
+    | _ => none
+
 /-- PMIS-DATA-01: issuing siblings cannot make an earlier body's locals visible to later input mappings. -/
 theorem issueParallelBodies_preserves_process {entry : ParallelScopeEntry} {parent : ScopeOccurrenceId}
     {items : List String} {index : Nat} {state result : RuntimeState} {iterations : List ParallelScopeIteration}

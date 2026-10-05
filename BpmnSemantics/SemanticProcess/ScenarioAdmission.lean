@@ -12,7 +12,7 @@ open BpmnSemantics
 def hasMultiInstanceDefinitions (program : Program) : Bool :=
   program.operations.any fun operation => match operation with
     | .awaitSequentialMultiInstanceUserTask .. | .awaitParallelMultiInstanceUserTask ..
-    | .enterSequentialMultiInstanceScope .. => true
+    | .enterSequentialMultiInstanceScope .. | .enterParallelMultiInstanceScope .. => true
     | _ => false
 
 private def requiredObservations (program : Program) : List ObservationKind :=

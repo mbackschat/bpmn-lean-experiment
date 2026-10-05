@@ -155,7 +155,7 @@ Mechanically inspected owners and their measured headroom are below. A structura
 
 | Owner | Headroom before 800 nonblank lines |
 |---|---:|
-| [IL contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 116 |
+| [IL contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 97 |
 | [Runtime state](../../packages/semantic-core/src/semantic-process-state.ts) | 342 |
 | [Scope runtime](../../packages/semantic-core/src/semantic-process-scope-runtime.ts) | 532 |
 | [Public contract](../../packages/semantic-core/src/contract.ts) | 290 |

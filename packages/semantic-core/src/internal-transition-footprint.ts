@@ -452,7 +452,9 @@ export function deriveInternalTransitionFootprint(
     case SemanticOperationKind.EnterMonitoredScope:
     case SemanticOperationKind.EnterBoundedScope:
     case SemanticOperationKind.EnterSequentialMultiInstanceScope:
+    case SemanticOperationKind.EnterParallelMultiInstanceScope:
     case SemanticOperationKind.CompleteSequentialMultiInstanceScope:
+    case SemanticOperationKind.CompleteParallelMultiInstanceScope:
     case SemanticOperationKind.InvokeProcess:
     case SemanticOperationKind.ReturnProcess:
     case SemanticOperationKind.AwaitSequentialMultiInstanceUserTask:

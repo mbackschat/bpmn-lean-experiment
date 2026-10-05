@@ -197,11 +197,12 @@ theorem mem_producers_of_direct_output (operations : List SemanticOperation)
 theorem producer_direct_output_witness (operations : List SemanticOperation)
     (place : ControlPlaceId) (producer : OperationId)
     (present : producer ∈ producers operations place)
-    (noPaired : ∀ id origin entry, .completeSequentialMultiInstanceScope id origin entry ∉ operations) :
+    (noPaired : ∀ id origin entry, .completeSequentialMultiInstanceScope id origin entry ∉ operations)
+    (noParallelPaired : ∀ id origin entry, .completeParallelMultiInstanceScope id origin entry ∉ operations) :
     ∃ operation ∈ operations, operation.id = producer ∧ place ∈ operationOutputs operation := by
   obtain ⟨operation, member, produced⟩ := List.mem_filterMap.mp present
   have directProduced : (if (operationOutputs operation).contains place then some operation.id else none) = some producer := by
-    cases operation <;> first | exact produced | exact False.elim (noPaired _ _ _ member)
+    cases operation <;> first | exact produced | exact False.elim (noPaired _ _ _ member) | exact False.elim (noParallelPaired _ _ _ member)
   split at directProduced
   · rename_i output
     exact ⟨operation, member, Option.some.inj directProduced, by simpa using output⟩

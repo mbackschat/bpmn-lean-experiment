@@ -86,7 +86,9 @@ private def ownedWaitDefinitions : SemanticOperation → OwnedWaitDefinitions
              durationMs := boundaryTimer.durationMs }] }
   | .completeParallelMultiInstanceUserTask .. => {}
   | .enterSequentialMultiInstanceScope .. => {}
+  | .enterParallelMultiInstanceScope .. => {}
   | .completeSequentialMultiInstanceScope .. => {}
+  | .completeParallelMultiInstanceScope .. => {}
   -- The deadline only. The bounded child's own task wait belongs to the child scope's `awaitUserTask`,
   -- so publishing it here would expose one task occurrence twice.
   | .enterBoundedScope _ _ _ _ _ boundaryTimer

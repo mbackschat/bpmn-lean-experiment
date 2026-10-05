@@ -502,6 +502,9 @@ function internalLifecycle(
         terminal: FlowNodeOccurrenceTerminalKind.Completed,
       }]);
     }
+    case SemanticOperationKind.EnterParallelMultiInstanceScope:
+    case SemanticOperationKind.CompleteParallelMultiInstanceScope:
+      return null;
     default:
       return assertNever(operation);
   }

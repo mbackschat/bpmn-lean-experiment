@@ -152,7 +152,9 @@ function operationWaitDeclarations(
     case SemanticOperationKind.InitiateMessage:
     case SemanticOperationKind.InitiateTimer:
     case SemanticOperationKind.EnterSequentialMultiInstanceScope:
+    case SemanticOperationKind.EnterParallelMultiInstanceScope:
     case SemanticOperationKind.CompleteSequentialMultiInstanceScope:
+    case SemanticOperationKind.CompleteParallelMultiInstanceScope:
     case SemanticOperationKind.EnterScope:
     case SemanticOperationKind.InvokeProcess:
     case SemanticOperationKind.ReturnProcess:

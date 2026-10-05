@@ -21,6 +21,7 @@ private def operationScope? (program : Program) (operationId : OperationId) :
 /-- The child definition scope entered by each scope-entering operation family. The exhaustive match makes a newly added family fail compilation until its lifecycle role is classified. -/
 def enteredChildScopeId? : SemanticOperation → Option DefinitionScopeId
   | .enterSequentialMultiInstanceScope _ _ _ _ childScopeId _ _ _ _ _
+  | .enterParallelMultiInstanceScope _ _ _ _ childScopeId _ _ _ _ _
   | .enterScope _ _ _ _ childScopeId
   | .enterBoundedScope _ _ _ _ childScopeId _
   | .enterMonitoredScope _ _ _ _ childScopeId _ => some childScopeId
@@ -31,6 +32,7 @@ def enteredChildScopeId? : SemanticOperation → Option DefinitionScopeId
   | .awaitSequentialMultiInstanceUserTask ..
   | .awaitParallelMultiInstanceUserTask ..
   | .completeSequentialMultiInstanceScope ..
+  | .completeParallelMultiInstanceScope ..
   | .completeParallelMultiInstanceUserTask ..
   | .awaitTimer .. | .awaitMessage .. | .awaitPayloadMessage ..
   | .awaitCorrelatedPayloadMessage .. | .awaitEventRace ..
@@ -80,17 +82,19 @@ def sequentialScopeOperationsPaired (program : Program) : Bool :=
           | _ => false).length == 1
     | _ => false
 
-private def hasSequentialScopeEntry (program : Program) (scopeId : DefinitionScopeId) : Bool :=
+private def hasRepeatedScopeEntry (program : Program) (scopeId : DefinitionScopeId) : Bool :=
   program.operations.any fun
-    | .enterSequentialMultiInstanceScope _ _ _ _ childScopeId _ _ _ _ _ => childScopeId == scopeId
+    | .enterSequentialMultiInstanceScope _ _ _ _ childScopeId _ _ _ _ _
+    | .enterParallelMultiInstanceScope _ _ _ _ childScopeId _ _ _ _ _ => childScopeId == scopeId
     | _ => false
 
 private def ordinaryScopeLifecycleValid (program : Program)
     (entryRootId : DefinitionScopeId) (scope : DefinitionScope) : Bool :=
-  (if scope.parentScopeId.isSome && hasSequentialScopeEntry program scope.id then
+  (if scope.parentScopeId.isSome && hasRepeatedScopeEntry program scope.id then
       (program.operations.filter (completesScope scope.id)).isEmpty &&
       (program.operations.filter fun
-        | .completeSequentialMultiInstanceScope id _ _ => operationScope? program id == some scope.id
+        | .completeSequentialMultiInstanceScope id _ _
+        | .completeParallelMultiInstanceScope id _ _ => operationScope? program id == some scope.id
         | _ => false).length == 1 &&
       (program.operations.all fun
         | .returnProcess id _ _ _ _ _ => operationScope? program id != some scope.id
@@ -287,7 +291,7 @@ theorem scopeLifecycle_completion_excludes_repeated_entry (program : Program)
     split at lifecycle
     · exact (Bool.and_eq_true_iff.mp (Bool.and_eq_true_iff.mp (Bool.and_eq_true_iff.mp lifecycle).1).1).2
     · obtain ⟨eid, eorigin, input, body, output, collection, item, mappings, condition, rfl⟩ := repeated
-      have hasEntry : hasSequentialScopeEntry program scope.id = true :=
+      have hasEntry : hasRepeatedScopeEntry program scope.id = true :=
         List.any_eq_true.mpr ⟨_, entered, by simp⟩
       simp only [ordinaryScopeLifecycleValid, child, hasEntry, Bool.true_and, ↓reduceIte, Bool.and_eq_true] at lifecycle
       exact lifecycle.1.1.1

@@ -108,7 +108,9 @@ private def operationOriginElementId : SemanticOperation → Option NodeId
   | .triggerCompensation .. => none
   | .initiate _ origin _ | .initiateMessage _ origin _ _ | .initiateTimer _ origin _ _
   | .enterSequentialMultiInstanceScope _ origin _ _ _ _ _ _ _ _
+  | .enterParallelMultiInstanceScope _ origin _ _ _ _ _ _ _ _
   | .completeSequentialMultiInstanceScope _ origin _
+  | .completeParallelMultiInstanceScope _ origin _
   | .enterScope _ origin _ _ _ | .enterBoundedScope _ origin _ _ _ _
   | .enterMonitoredScope _ origin _ _ _ _
   | .invokeProcess _ origin _ _ _ _ _ _ | .returnProcess _ origin _ _ _ _

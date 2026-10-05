@@ -26,6 +26,28 @@ private def probeSettled : RuntimeState :=
   { probeActive with tokens := probeActive.tokens.filter (·.owner != probeBody 5) }
 private def probeRetired : RuntimeState := (completeParallelScope? probeEntry probeSettled (probeBody 5)).getD initialState
 
+private def probePairedProgram : Program :=
+  { identity :=
+      { compiler := .bpmnSourceSemanticProcess
+        semanticProfile := ⟨"private-parallel-binding"⟩
+        sourceId := ⟨"binding"⟩
+        sourceSha256 := "private-binding-witness" },
+    internalSchedulingMode := .rejectObservableChoice, processId := ⟨"applicants"⟩,
+    definitionScopes := [], controlPlaces := [], controlPlaceScopes := [],
+    operationScopes := [⟨⟨"enter"⟩, ⟨"root"⟩⟩, ⟨⟨"complete"⟩, ⟨"body"⟩⟩],
+    operations := [.enterParallelMultiInstanceScope ⟨"enter"⟩ ⟨⟨"Checks"⟩⟩ ⟨"in"⟩ ⟨"check"⟩
+      ⟨"body"⟩ ⟨"out"⟩ "applicants" "applicant" [] (some "approved"),
+      .completeParallelMultiInstanceScope ⟨"complete"⟩ ⟨⟨"Checks"⟩⟩ ⟨"enter"⟩] }
+
+theorem parallel_il_binding_preserves_selected_occurrence_fixture :
+    applyParallelScopeOperation? probePairedProgram ⟨"enter"⟩ probeReady probeParent = some probeActive ∧
+    applyParallelScopeOperation? probePairedProgram ⟨"complete"⟩ probeSettled (probeBody 5) = some probeRetired ∧
+    applyParallelScopeOperation? probePairedProgram ⟨"complete"⟩ probeSettled (probeBody 6) = none ∧
+    applyParallelScopeOperation? { probePairedProgram with operations := probePairedProgram.operations.reverse }
+      ⟨"complete"⟩ probeSettled (probeBody 5) = some probeRetired ∧
+    applyParallelScopeOperation? { probePairedProgram with operationScopes := [] }
+      ⟨"complete"⟩ probeSettled (probeBody 5) = none := by decide +kernel
+
 theorem parallel_entry_disjoint_ownership_fixture :
     (enterParallelScope? probeEntry probeReady probeParent).isSome = true ∧
     probeActive.activityOccurrences.filter (·.activityElementId == probeOther.activityElementId) = [probeOther] ∧

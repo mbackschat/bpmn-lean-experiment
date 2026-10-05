@@ -158,6 +158,13 @@ inductive SemanticOperation where
       (bodyInputs : List VariableMapping) (completionBooleanName : Option String)
   | completeSequentialMultiInstanceScope
       (id : OperationId) (origin : BpmnElementOrigin) (entryOperationId : OperationId)
+  | enterParallelMultiInstanceScope
+      (id : OperationId) (origin : BpmnElementOrigin)
+      (input childEntry : ControlPlaceId) (childScopeId : DefinitionScopeId)
+      (normalOutput : ControlPlaceId) (collectionName itemName : String)
+      (bodyInputs : List VariableMapping) (completionBooleanName : Option String)
+  | completeParallelMultiInstanceScope
+      (id : OperationId) (origin : BpmnElementOrigin) (entryOperationId : OperationId)
   | enterScope
       (id : OperationId)
       (origin : BpmnElementOrigin)
@@ -401,7 +408,9 @@ def SemanticOperation.id : SemanticOperation → OperationId
   | .initiateMessage id _ _ _
   | .initiateTimer id _ _ _
   | .enterSequentialMultiInstanceScope id _ _ _ _ _ _ _ _ _
+  | .enterParallelMultiInstanceScope id _ _ _ _ _ _ _ _ _
   | .completeSequentialMultiInstanceScope id _ _
+  | .completeParallelMultiInstanceScope id _ _
   | .enterScope id _ _ _ _
   | .enterBoundedScope id _ _ _ _ _
   | .enterMonitoredScope id _ _ _ _ _
@@ -443,7 +452,9 @@ def SemanticOperation.origin : SemanticOperation → BpmnElementOrigin
   | .initiateMessage _ origin _ _
   | .initiateTimer _ origin _ _
   | .enterSequentialMultiInstanceScope _ origin _ _ _ _ _ _ _ _
+  | .enterParallelMultiInstanceScope _ origin _ _ _ _ _ _ _ _
   | .completeSequentialMultiInstanceScope _ origin _
+  | .completeParallelMultiInstanceScope _ origin _
   | .enterScope _ origin _ _ _
   | .enterBoundedScope _ origin _ _ _ _
   | .enterMonitoredScope _ origin _ _ _ _

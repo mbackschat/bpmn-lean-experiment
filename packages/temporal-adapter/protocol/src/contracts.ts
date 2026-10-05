@@ -78,6 +78,7 @@ export enum TemporalHostCapabilityResultKind {
 }
 
 export enum TemporalHostAdmissionFailureCode {
+  ParallelSubProcessQualificationUnavailable = "parallelSubProcessQualificationUnavailable",
   SequentialSubProcessQualificationUnavailable = "sequentialSubProcessQualificationUnavailable",
   InterruptingMessageEventSubProcessQualificationUnavailable = "interruptingMessageEventSubProcessQualificationUnavailable",
   StructuredCompositionQualificationUnavailable = "structuredCompositionQualificationUnavailable",

@@ -175,6 +175,9 @@ function internalOperationStarts(
         repeatedScopeStartMatches(entry, value, positions) &&
         positions.enteredScopes.every(scope => scope.id.activation > transitionOwner.activation);
     }
+    case SemanticOperationKind.EnterParallelMultiInstanceScope:
+    case SemanticOperationKind.CompleteParallelMultiInstanceScope:
+      return false;
     default:
       return assertNever(operation);
   }
@@ -561,6 +564,9 @@ function operationPublishesNestedElement(
       return false;
     case SemanticOperationKind.EnterSequentialMultiInstanceScope:
     case SemanticOperationKind.CompleteSequentialMultiInstanceScope:
+      return false;
+    case SemanticOperationKind.EnterParallelMultiInstanceScope:
+    case SemanticOperationKind.CompleteParallelMultiInstanceScope:
       return false;
     default:
       return assertNever(operation);

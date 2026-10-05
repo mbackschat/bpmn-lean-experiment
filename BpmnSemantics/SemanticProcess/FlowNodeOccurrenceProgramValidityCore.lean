@@ -56,6 +56,7 @@ def scopeOperationBindingValid (program : Program) (occurrence : RuntimeScopeOcc
         else match operation with
         | .enterScope _ origin _ _ childScopeId
         | .enterSequentialMultiInstanceScope _ origin _ _ childScopeId _ _ _ _ _
+        | .enterParallelMultiInstanceScope _ origin _ _ childScopeId _ _ _ _ _
         | .enterBoundedScope _ origin _ _ childScopeId _
         | .enterMonitoredScope _ origin _ _ childScopeId _ =>
             childScopeId = occurrence.id.definitionScopeId &&

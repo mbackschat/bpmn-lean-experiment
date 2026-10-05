@@ -500,6 +500,7 @@ def timerWaitDeclarers (program : Program) (elementId : NodeId) : List SemanticO
     | .awaitEventRace _ _ _ _ timer => decide (timer.elementId = elementId)
     | .initiate .. | .initiateMessage .. | .initiateTimer ..
     | .enterSequentialMultiInstanceScope .. | .completeSequentialMultiInstanceScope ..
+    | .enterParallelMultiInstanceScope .. | .completeParallelMultiInstanceScope ..
     | .enterScope .. | .invokeProcess .. | .returnProcess ..
     | .awaitUserTask .. | .awaitDataInputUserTask .. | .awaitDataInputOutputUserTask ..
     | .awaitDataOutputUserTask ..
@@ -528,6 +529,7 @@ def messageWaitDeclarers (program : Program) (elementId : NodeId) : List Semanti
         decide (boundaryMessage.elementId = elementId)
     | .initiate .. | .initiateMessage .. | .initiateTimer ..
     | .enterSequentialMultiInstanceScope .. | .completeSequentialMultiInstanceScope ..
+    | .enterParallelMultiInstanceScope .. | .completeParallelMultiInstanceScope ..
     | .enterScope .. | .enterBoundedScope .. | .enterMonitoredScope .. | .invokeProcess .. | .returnProcess ..
     | .awaitUserTask .. | .awaitDataInputUserTask .. | .awaitDataInputOutputUserTask ..
     | .awaitDataOutputUserTask ..
@@ -558,6 +560,7 @@ def userTaskWaitDeclarers (program : Program) (taskId : TaskDefinitionId) :
         decide (candidateTaskId = taskId)
     | .initiate .. | .initiateMessage .. | .initiateTimer ..
     | .enterSequentialMultiInstanceScope .. | .completeSequentialMultiInstanceScope ..
+    | .enterParallelMultiInstanceScope .. | .completeParallelMultiInstanceScope ..
     | .enterScope .. | .enterBoundedScope .. | .enterMonitoredScope .. | .invokeProcess .. | .returnProcess ..
     | .completeParallelMultiInstanceUserTask .. | .awaitTimer ..
     | .awaitMessage .. | .awaitPayloadMessage .. | .awaitCorrelatedPayloadMessage ..
@@ -573,6 +576,7 @@ def effectWaitDeclarers (program : Program) (elementId : NodeId) : List Semantic
     | .awaitEffect _ origin _ _ _ _ => decide (origin.elementId = elementId)
     | .initiate .. | .initiateMessage .. | .initiateTimer ..
     | .enterSequentialMultiInstanceScope .. | .completeSequentialMultiInstanceScope ..
+    | .enterParallelMultiInstanceScope .. | .completeParallelMultiInstanceScope ..
     | .enterScope .. | .enterBoundedScope .. | .enterMonitoredScope .. | .invokeProcess .. | .returnProcess ..
     | .awaitUserTask .. | .awaitDataInputUserTask .. | .awaitDataInputOutputUserTask ..
     | .awaitDataOutputUserTask ..

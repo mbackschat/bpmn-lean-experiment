@@ -114,13 +114,13 @@ Admission extends the existing [compiler](../../packages/bpmn-source/src/checked
 | [Checked-to-IL lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 103 | Widen Exclusive candidates; retain Inclusive and old-profile cardinalities. |
 | [Lean checked decoding](../../BpmnSemantics/SemanticProcessJson/CheckedProcess.lean) | 345 | Widen Exclusive candidates; retain Inclusive and old-profile cardinalities. |
 | [Lean checked validation](../../BpmnSemantics/SemanticProcess/CheckedProcessAdmission.lean) | 341 | Widen Exclusive candidates; retain Inclusive and old-profile cardinalities. |
-| [TypeScript IL](../../packages/semantic-core/src/semantic-process-contract.ts) | 116 | Keep analysis outside shared dispatch and preserve existing profile restrictions. |
+| [TypeScript IL](../../packages/semantic-core/src/semantic-process-contract.ts) | 97 | Keep analysis outside shared dispatch and preserve existing profile restrictions. |
 | [Choice admission](../../packages/semantic-core/src/simple-boolean-choice-admission.ts) | 665 | Keep analysis outside shared dispatch and preserve existing profile restrictions. |
 | [Graph policy](../../packages/semantic-core/src/semantic-process-graph-policy.ts) | 690 | Keep analysis outside shared dispatch and preserve existing profile restrictions. |
-| [Lean graph validation](../../BpmnSemantics/SemanticProcess/GraphValidation.lean) | 26 | Keep analysis outside shared dispatch and preserve existing profile restrictions. |
-| [Lean Program validation](../../BpmnSemantics/SemanticProcess/ProgramStructuralValidation.lean) | 7 | Keep analysis outside shared dispatch and preserve existing profile restrictions. |
+| [Lean graph validation](../../BpmnSemantics/SemanticProcess/GraphValidation.lean) | 8 | Keep analysis outside shared dispatch and preserve existing profile restrictions. |
+| [Lean Program validation](../../BpmnSemantics/SemanticProcess/ProgramStructuralValidation.lean) | 3 | Keep analysis outside shared dispatch and preserve existing profile restrictions. |
 | [Lean command admission](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean) | 3 | Keep analysis outside shared dispatch and preserve existing profile restrictions. |
-| [Lean Program JSON](../../BpmnSemantics/SemanticProcessJson/Program.lean) | 31 | Keep analysis outside shared dispatch and preserve existing profile restrictions. |
+| [Lean Program JSON](../../BpmnSemantics/SemanticProcessJson/Program.lean) | 12 | Keep analysis outside shared dispatch and preserve existing profile restrictions. |
 
 These are nonblank margins before the 800-line review target, not growth budgets. If planned growth exceeds a margin, extract an existing cohesive responsibility without changing behavior before adding the capability; do not compress proofs or erase absence claims.
 

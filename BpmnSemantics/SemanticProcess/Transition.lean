@@ -387,6 +387,8 @@ private def fireWithoutCompensationSnapshots? (program : Program)
       enterScopeWithCompensationRetention? program state input childEntry childScopeId
   | .enterSequentialMultiInstanceScope .. => (enterSequentialScope? operation state).map SequentialScopeEntryResult.state
   | .completeSequentialMultiInstanceScope .. => (completeSequentialScope? program operation state).map SequentialScopeCompletionResult.state
+  -- PMIS-SELECT-01 requires an explicit scope occurrence; this operation-only evaluator cannot supply it.
+  | .enterParallelMultiInstanceScope .. | .completeParallelMultiInstanceScope .. => none
   | .enterBoundedScope _ origin input childEntry childScopeId boundaryTimer
   | .enterMonitoredScope _ origin input childEntry childScopeId boundaryTimer =>
       armBoundedScopeState? state origin input childEntry childScopeId boundaryTimer
@@ -483,6 +485,10 @@ private theorem fireWithoutCompensationSnapshots_sound (program : Program)
         (enterSequentialScope_sound _ _ _ result)
     | exact .completeSequentialScope _ _ _ before after
         (completeSequentialScope_sound _ _ _ _ result)
+    | case enterParallelMultiInstanceScope =>
+        exact False.elim (by simp [fireWithoutCompensationSnapshots?] at result)
+    | case completeParallelMultiInstanceScope =>
+        exact False.elim (by simp [fireWithoutCompensationSnapshots?] at result)
     | exact OperationStep.enterBoundedScope _ _ _ _ _ _ before after
         (armBoundedScopeState_sound before after _ _ _ _ _
           (by simpa [fireWithoutCompensationSnapshots?] using result))

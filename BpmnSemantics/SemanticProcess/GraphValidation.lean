@@ -1,3 +1,4 @@
+import BpmnSemantics.SemanticProcess.ParallelScopeDeclaration
 import BpmnSemantics.SemanticProcess.GraphReachability
 import BpmnSemantics.SemanticProcess.CallActivityAdmission
 import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotDeclaration
@@ -16,10 +17,12 @@ private def operationInputs : SemanticOperation → List ControlPlaceId
   | .initiateTimer ..
   | .returnProcess ..
   | .completeSequentialMultiInstanceScope ..
+  | .completeParallelMultiInstanceScope ..
   | .completeParallelMultiInstanceUserTask ..
   | .completeScope ..
   | .completeEventSubProcess .. => []
   | .enterSequentialMultiInstanceScope _ _ input _ _ _ _ _ _ _
+  | .enterParallelMultiInstanceScope _ _ input _ _ _ _ _ _ _
   | .enterScope _ _ input _ _
   | .enterBoundedScope _ _ input _ _ _
   | .enterMonitoredScope _ _ input _ _ _
@@ -80,6 +83,7 @@ def operationOutputs : SemanticOperation → List ControlPlaceId
       [task.output, boundaryMessage.output]
   | .synchronizeSelected _ _ _ output _ => [output]
   | .enterSequentialMultiInstanceScope _ _ _ childEntry _ _ _ _ _ _
+  | .enterParallelMultiInstanceScope _ _ _ childEntry _ _ _ _ _ _
   | .enterScope _ _ _ childEntry _ => [childEntry]
   -- The boundary route is token-carrying and lands in the parent scope, unlike the child entry.
   | .enterBoundedScope _ _ _ childEntry _ boundaryTimer
@@ -94,6 +98,7 @@ def operationOutputs : SemanticOperation → List ControlPlaceId
       candidates.map (·.output) ++ [defaultBranch.output]
   | .throwError _ _ _ _ handler => [handler.output]
   | .completeSequentialMultiInstanceScope ..
+  | .completeParallelMultiInstanceScope ..
   | .reachNoneEnd ..
   | .completeEventSubProcess ..
   | .terminateScope .. => []
@@ -113,7 +118,9 @@ The excluded constructors deliberately cross a definition-scope boundary for at 
 -/
 def operationControlPlacesShareOwner : SemanticOperation → Bool
   | .enterSequentialMultiInstanceScope ..
+  | .enterParallelMultiInstanceScope ..
   | .completeSequentialMultiInstanceScope ..
+  | .completeParallelMultiInstanceScope ..
   | .enterScope ..
   | .enterBoundedScope ..
   | .enterMonitoredScope ..
@@ -143,6 +150,7 @@ def producers (operations : List SemanticOperation)
   operations.filterMap fun operation =>
     let outputs := match operation with
       | .completeSequentialMultiInstanceScope _ _ entryId => (sequentialScopeContinuation? operations entryId).toList
+      | .completeParallelMultiInstanceScope _ _ entryId => (parallelScopeContinuation? operations entryId).toList
       | _ => operationOutputs operation
     if outputs.contains place then
       some operation.id
@@ -194,6 +202,7 @@ def operationRespectsScopes (program : Program)
       | .initiateMessage _ _ _ outputs =>
           (definitionScope? program owner).any (·.parentScopeId.isNone) &&
             placesOwnedBy program outputs owner
+      | .enterParallelMultiInstanceScope _ origin input childEntry childScopeId output _ _ _ _
       | .enterSequentialMultiInstanceScope _ origin input childEntry childScopeId output _ _ _ _ =>
           placesOwnedBy program [input, output] owner && placesOwnedBy program [childEntry] childScopeId &&
             (definitionScope? program childScopeId).any fun scope =>
@@ -201,6 +210,11 @@ def operationRespectsScopes (program : Program)
       | .completeSequentialMultiInstanceScope _ _ entryId =>
           program.operations.any fun
             | .enterSequentialMultiInstanceScope id _ _ _ childScopeId _ _ _ _ _ =>
+                id == entryId && childScopeId == owner
+            | _ => false
+      | .completeParallelMultiInstanceScope _ _ entryId =>
+          program.operations.any fun
+            | .enterParallelMultiInstanceScope id _ _ _ childScopeId _ _ _ _ _ =>
                 id == entryId && childScopeId == owner
             | _ => false
       | .enterScope _ _ input childEntry childScopeId =>
@@ -287,6 +301,7 @@ def scopedOwnershipComplete (program : Program)
 private def completionId? (program : Program) (scopeId : DefinitionScopeId) :
     Option OperationId :=
   program.operations.findSome? fun
+    | .completeParallelMultiInstanceScope id _ _
     | .completeSequentialMultiInstanceScope id _ _ =>
         if operationScope? program id == some scopeId then some id else none
     | .completeScope id _ candidate _
@@ -341,6 +356,7 @@ def semanticOperationIsResumptionCut : SemanticOperation → Bool
   | .awaitParallelMultiInstanceUserTask .. => true
   | .awaitMessageBoundedUserTask .. | .awaitMessageMonitoredUserTask .. => true
   | .enterSequentialMultiInstanceScope .. | .completeSequentialMultiInstanceScope ..
+  | .enterParallelMultiInstanceScope .. | .completeParallelMultiInstanceScope ..
   | .initiate .. | .initiateMessage .. | .initiateTimer .. | .enterScope .. | .enterBoundedScope ..
   | .enterMonitoredScope ..
   | .invokeProcess .. | .returnProcess .. | .completeParallelMultiInstanceUserTask .. | .awaitTimer ..
@@ -461,7 +477,7 @@ def programGraphWellFormedWithScopeLifecycle (program : Program)
             scopeForestWellFormed program &&
             scopedOwnershipComplete program entryRoot &&
             parallelMultiInstancePairsShareScope program &&
-            sequentialScopeOperationsPaired program &&
+            sequentialScopeOperationsPaired program && parallelScopeOperationsPaired program &&
             boundedScopeEntryOriginsOwnTheirScopes program &&
             scopeLifecycle program entryRoot &&
             program.controlPlaces.all (fun place =>
@@ -670,11 +686,13 @@ theorem programGraphWellFormed_pairedOperationControlPlaceScopes (program : Prog
     rw [← projects]
     simp [operationControlPlaces, operationInputs, operationOutputs]
   have completionSameScope : operationControlPlacesShareOwner completion = true := by
-    cases entry <;> cases completion <;> simp_all [ParallelMultiInstanceArm.ofOperation?,
+    cases entry <;> simp [ParallelMultiInstanceArm.ofOperation?] at projects
+    cases completion <;> simp_all [ParallelMultiInstanceArm.ofOperation?,
       ParallelMultiInstanceCompletionArm.ofOperation?, parallelMultiInstanceOperationsPair,
       operationControlPlacesShareOwner]
   have completionPlaceMember : arm.normalOutput ∈ operationControlPlaces completion := by
-    cases entry <;> cases completion <;> simp_all [ParallelMultiInstanceArm.ofOperation?,
+    cases entry <;> simp [ParallelMultiInstanceArm.ofOperation?] at projects
+    cases completion <;> simp_all [ParallelMultiInstanceArm.ofOperation?,
       ParallelMultiInstanceCompletionArm.ofOperation?, parallelMultiInstanceOperationsPair,
       operationControlPlaces, operationInputs, operationOutputs]
   obtain ⟨inputOwner, inputDeclared, inputEntryScope, inputPlaceScope, inputPlaceDeclaration⟩ :=

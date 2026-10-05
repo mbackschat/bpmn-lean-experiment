@@ -2756,7 +2756,13 @@
           "$ref": "#/$defs/enterSequentialMultiInstanceScope"
         },
         {
+          "$ref": "#/$defs/enterParallelMultiInstanceScope"
+        },
+        {
           "$ref": "#/$defs/completeSequentialMultiInstanceScope"
+        },
+        {
+          "$ref": "#/$defs/completeParallelMultiInstanceScope"
         }
       ]
     },
@@ -3310,6 +3316,89 @@
         },
         "kind": {
           "const": "completeSequentialMultiInstanceScope"
+        },
+        "origin": {
+          "$ref": "#/$defs/bpmnElementOrigin"
+        },
+        "entryOperationId": {
+          "$ref": "#/$defs/nonemptyString"
+        }
+      }
+    },
+    "enterParallelMultiInstanceScope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "origin",
+        "input",
+        "childEntry",
+        "childScopeId",
+        "normalOutput",
+        "collectionName",
+        "itemName",
+        "bodyInputs",
+        "completionBooleanName"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "kind": {
+          "const": "enterParallelMultiInstanceScope"
+        },
+        "origin": {
+          "$ref": "#/$defs/bpmnElementOrigin"
+        },
+        "input": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "childEntry": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "childScopeId": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "normalOutput": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "collectionName": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "itemName": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "bodyInputs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/variableMapping"
+          }
+        },
+        "completionBooleanName": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        }
+      }
+    },
+    "completeParallelMultiInstanceScope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "origin",
+        "entryOperationId"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "kind": {
+          "const": "completeParallelMultiInstanceScope"
         },
         "origin": {
           "$ref": "#/$defs/bpmnElementOrigin"

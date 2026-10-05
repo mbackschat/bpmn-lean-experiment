@@ -148,6 +148,7 @@ def flowNodeSelectedOperationOwner? (state : RuntimeState) :
   | .initiate .. | .initiateMessage .. | .initiateTimer .. => rootScopeOccurrence? state
   | .enterScope _ _ input _ _
   | .enterSequentialMultiInstanceScope _ _ input _ _ _ _ _ _ _
+  | .enterParallelMultiInstanceScope _ _ input _ _ _ _ _ _ _
   | .enterBoundedScope _ _ input _ _ _
   | .enterMonitoredScope _ _ input _ _ _
   | .invokeProcess _ _ input _ _ _ _ _
@@ -182,7 +183,7 @@ def flowNodeSelectedOperationOwner? (state : RuntimeState) :
       | _ => none
   | .synchronizeSelected _ _ _ _ selectionKey => selectedJoinOwner? state selectionKey
   | .returnProcess id origin _ _ _ _ => uniqueReturnOwner? state id origin
-  | .completeParallelMultiInstanceUserTask .. => none
+  | .completeParallelMultiInstanceUserTask .. | .completeParallelMultiInstanceScope .. => none
   | .completeSequentialMultiInstanceScope _ origin _ => sequentialScopeFlowNodeOwner? state origin.elementId
   | .completeScope _ _ scopeId _ | .completeEventSubProcess _ _ scopeId =>
       uniqueCompletingScopeOwner? state scopeId
@@ -790,6 +791,7 @@ def candidateFlowNodeOccurrenceDeltaForOperation? (program : Program) (before af
       let starts ← parallelEntryFlowNodeStarts? program operation owner before after
       pure (canonicalFlowNodeOccurrenceDelta starts [])
   | .completeParallelMultiInstanceUserTask .. => none
+  | .enterParallelMultiInstanceScope .. | .completeParallelMultiInstanceScope .. => none
   | .enterSequentialMultiInstanceScope .. =>
       pure (canonicalFlowNodeOccurrenceDelta (← candidateSequentialScopeStarts? program operation owner after) [])
   | .completeSequentialMultiInstanceScope .. =>

@@ -337,6 +337,10 @@ function internalDelta(
           anchor.id.activation <= owner.activation)) failCompleteness();
       return lifecycleDelta(starts, [lifecycleEnd(scope, FlowNodeOccurrenceTerminalKind.Completed)]);
     }
+    case SemanticOperationKind.EnterParallelMultiInstanceScope:
+      return failCompleteness();
+    case SemanticOperationKind.CompleteParallelMultiInstanceScope:
+      return failCompleteness();
     default:
       return assertNever(operation);
   }

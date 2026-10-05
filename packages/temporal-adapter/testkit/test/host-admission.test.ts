@@ -57,6 +57,26 @@ async function compileFixture(
   return compilation.semanticProcess;
 }
 
+test("parallel Sub-Process declarations remain unavailable to Temporal before qualification", async () => {
+  const program = await compileFixture(
+    "../../../../scenarios/timer-user-task-composition/process.bpmn",
+    "parallel-host-refusal", "bpmn-2.0.2-timer-user-task-composition-draft",
+  );
+  const origin = { kind: SemanticOriginKind.BpmnElement, elementId: "Batch" } as const;
+  const declarations: SemanticOperation[] = [
+    { kind: SemanticOperationKind.EnterParallelMultiInstanceScope, id: "enter", origin,
+      input: "in", childEntry: "body-in", childScopeId: "body", normalOutput: "out",
+      collectionName: "items", itemName: "item", bodyInputs: [], completionBooleanName: null },
+    { kind: SemanticOperationKind.CompleteParallelMultiInstanceScope, id: "complete", origin, entryOperationId: "enter" },
+  ];
+  for (const declaration of declarations) {
+    const result = assessTemporalHostCapability({ ...program, operations: [...program.operations, declaration] });
+    assert.equal(result.kind, TemporalHostCapabilityResultKind.Rejected);
+    if (result.kind !== TemporalHostCapabilityResultKind.Rejected) assert.fail();
+    assert.equal(result.failure.code, "parallelSubProcessQualificationUnavailable");
+  }
+});
+
 test("admits each reachable wait set of the new linear composition", async () => {
   const program = await compileFixture(
     "../../../../scenarios/timer-user-task-composition/process.bpmn",

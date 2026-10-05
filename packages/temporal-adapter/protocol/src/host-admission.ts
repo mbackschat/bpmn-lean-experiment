@@ -51,6 +51,13 @@ import type {
 export function assessTemporalHostCapability(
   program: SemanticProcessProgram,
 ): TemporalHostCapabilityResult {
+  if (program.operations.some(({ kind }) => kind === SemanticOperationKind.EnterParallelMultiInstanceScope ||
+      kind === SemanticOperationKind.CompleteParallelMultiInstanceScope)) {
+    return { kind: TemporalHostCapabilityResultKind.Rejected, failure: {
+      code: TemporalHostAdmissionFailureCode.ParallelSubProcessQualificationUnavailable,
+      evidence: "Parallel MI Sub-Process hosting requires occurrence-addressed scheduling, capacity, recovery and replay qualification.",
+    } };
+  }
   if (program.operations.some(({ kind }) => kind === SemanticOperationKind.EnterSequentialMultiInstanceScope ||
       kind === SemanticOperationKind.CompleteSequentialMultiInstanceScope)) {
     return { kind: TemporalHostCapabilityResultKind.Rejected, failure: {
@@ -364,6 +371,8 @@ function classifyHostOperation(
     case SemanticOperationKind.InitiateMessage:
     case SemanticOperationKind.InitiateTimer:
     case SemanticOperationKind.EnterSequentialMultiInstanceScope:
+    case SemanticOperationKind.EnterParallelMultiInstanceScope:
+    case SemanticOperationKind.CompleteParallelMultiInstanceScope:
     case SemanticOperationKind.CompleteSequentialMultiInstanceScope:
     case SemanticOperationKind.EnterScope:
     case SemanticOperationKind.InvokeProcess:

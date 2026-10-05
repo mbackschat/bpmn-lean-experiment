@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { ActivityBodyKind, ControlStateKind, initialState, MappingExpressionKind, VariableValueKind } from "@bpmn-lean/semantic-core";
+import { ActivityBodyKind, ControlStateKind, initialState, MappingExpressionKind, SemanticOperationKind, SemanticOriginKind, VariableValueKind } from "@bpmn-lean/semantic-core";
 import type { RuntimeState, ScopeOccurrenceId } from "@bpmn-lean/semantic-core";
 import type { ParallelScopeEntry } from "../src/parallel-scope-runtime.ts";
-const { enterParallelScope, completeParallelScope } =
+const { enterParallelScope, completeParallelScope, applyParallelScopeOperation } =
   await import(new URL("../dist/parallel-scope-runtime.js", import.meta.url).href) as typeof import("../src/parallel-scope-runtime.ts");
 const { createEffectLocalDataOwner } =
   await import(new URL("../dist/local-data-owner.js", import.meta.url).href) as typeof import("../src/local-data-owner.ts");
@@ -34,6 +34,32 @@ function body(activation: number): ScopeOccurrenceId { return { ...parent, defin
 function settled(state: RuntimeState, target: ScopeOccurrenceId): RuntimeState {
   return { ...state, controlTokens: state.controlTokens.filter(token => token.owner.activation !== target.activation) };
 }
+
+test("paired IL dispatch preserves the chosen body and refuses missing, crossed or ambiguous declarations", () => {
+  const { elementId, ...fields } = entry;
+  const origin = { kind: SemanticOriginKind.BpmnElement, elementId } as const;
+  const enter = { ...fields, origin, kind: SemanticOperationKind.EnterParallelMultiInstanceScope } as const;
+  const complete = { id: "complete", kind: SemanticOperationKind.CompleteParallelMultiInstanceScope,
+    origin, entryOperationId: enter.id } as const;
+  const program = { operations: [enter, complete], operationScopes: [
+    { operationId: enter.id, scopeId: "root" }, { operationId: complete.id, scopeId: "body" }] };
+  const started = applyParallelScopeOperation(program, enter.id, ready(2), parent);
+  assert.deepEqual(started, active(2));
+  assert.ok(started);
+  const before = settled(started, body(6));
+  assert.deepEqual(applyParallelScopeOperation(program, complete.id, before, body(6)),
+    completeParallelScope(entry, before, body(6)));
+  assert.equal(applyParallelScopeOperation(program, complete.id, before, body(5)), null);
+  for (const invalid of [
+    { ...program, operations: [enter] },
+    { ...program, operations: [enter, complete, complete] },
+    { ...program, operations: [enter, { ...complete, entryOperationId: "missing" }] },
+    { ...program, operations: [enter, { ...complete, origin: { ...origin, elementId: "Other" } }] },
+    { ...program, operationScopes: [...program.operationScopes, program.operationScopes[0]!] },
+    { ...program, operationScopes: program.operationScopes.map(binding => ({ ...binding, scopeId: "root" })) },
+  ]) assert.equal(applyParallelScopeOperation(invalid, complete.id, before, body(6)), null);
+  assert.equal(applyParallelScopeOperation(program, "missing", before, body(6)), null);
+});
 
 test("empty entry consumes the parent once without issuing identities or local data", () => {
   const before = ready(0);

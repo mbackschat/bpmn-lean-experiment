@@ -47,6 +47,7 @@ export function semanticOperationInternalFamily(
     case SemanticOperationKind.AwaitEventRace:
       return InternalOperationFamily.CompositeWaitAndActivityArming;
     case SemanticOperationKind.EnterSequentialMultiInstanceScope:
+    case SemanticOperationKind.EnterParallelMultiInstanceScope:
     case SemanticOperationKind.EnterScope:
     case SemanticOperationKind.InvokeProcess:
       return InternalOperationFamily.ScopeCreationAndCallInvocation;
@@ -61,6 +62,7 @@ export function semanticOperationInternalFamily(
       return InternalOperationFamily.MergeAndOrdinaryEnd;
     case SemanticOperationKind.ReturnProcess:
     case SemanticOperationKind.CompleteSequentialMultiInstanceScope:
+    case SemanticOperationKind.CompleteParallelMultiInstanceScope:
     case SemanticOperationKind.CompleteScope:
     case SemanticOperationKind.CompleteEventSubProcess:
     case SemanticOperationKind.ThrowError:

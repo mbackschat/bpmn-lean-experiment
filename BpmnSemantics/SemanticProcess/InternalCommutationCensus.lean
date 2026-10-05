@@ -42,6 +42,7 @@ def semanticOperationInternalFamily : SemanticOperation → InternalOperationFam
   | .awaitParallelMultiInstanceUserTask _ _ _ _ _ _ _ _ _ _
   | .awaitEventRace _ _ _ _ _ => .compositeWaitAndActivityArming
   | .enterSequentialMultiInstanceScope _ _ _ _ _ _ _ _ _ _
+  | .enterParallelMultiInstanceScope _ _ _ _ _ _ _ _ _ _
   | .enterScope _ _ _ _ _
   | .invokeProcess _ _ _ _ _ _ _ _ => .scopeCreationAndCallInvocation
   | .duplicate _ _ _ _
@@ -53,6 +54,7 @@ def semanticOperationInternalFamily : SemanticOperation → InternalOperationFam
   | .reachNoneEnd _ _ _ => .mergeAndOrdinaryEnd
   | .returnProcess _ _ _ _ _ _
   | .completeSequentialMultiInstanceScope _ _ _
+  | .completeParallelMultiInstanceScope _ _ _
   | .completeScope _ _ _ _
   | .completeEventSubProcess _ _ _
   | .throwError _ _ _ _ _

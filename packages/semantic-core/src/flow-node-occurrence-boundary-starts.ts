@@ -211,6 +211,9 @@ export function candidateLongLivedStarts(
     }
     case SemanticOperationKind.CompleteSequentialMultiInstanceScope:
       return null;
+    case SemanticOperationKind.EnterParallelMultiInstanceScope:
+    case SemanticOperationKind.CompleteParallelMultiInstanceScope:
+      return null;
     default:
       return assertNever(operation);
   }

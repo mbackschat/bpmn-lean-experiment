@@ -124,7 +124,9 @@ def operationWaitDeclarationKeys : SemanticOperation → List WaitDeclarationKey
         timerWaitDeclarationKey timer.elementId]
   | .awaitEffect _ origin _ _ _ _ => [effectWaitDeclarationKey origin.elementId]
   | .enterSequentialMultiInstanceScope ..
+  | .enterParallelMultiInstanceScope ..
   | .completeSequentialMultiInstanceScope ..
+  | .completeParallelMultiInstanceScope ..
   | .initiate ..
   | .initiateMessage ..
   | .initiateTimer ..
@@ -170,6 +172,8 @@ private def wellFormedBpmnErrorRoute (places : List ControlPlace)
 
 def operationWellFormed (program : Program) (places : List ControlPlace) :
     SemanticOperation → Bool
+  | operation@(.enterParallelMultiInstanceScope ..) | operation@(.completeParallelMultiInstanceScope ..) =>
+      parallelScopeOperationWellFormed program operation
   | operation@(.enterSequentialMultiInstanceScope ..) | operation@(.completeSequentialMultiInstanceScope ..) =>
       SequentialScopeProgram.operationWellFormed program operation
   | .initiate id origin output =>

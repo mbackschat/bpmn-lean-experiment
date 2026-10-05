@@ -16,6 +16,8 @@ inductive SemanticOperationKind where
   | initiateTimer
   | enterSequentialMultiInstanceScope
   | completeSequentialMultiInstanceScope
+  | enterParallelMultiInstanceScope
+  | completeParallelMultiInstanceScope
   | enterScope
   | enterBoundedScope
   | enterMonitoredScope
@@ -59,6 +61,8 @@ def SemanticOperation.kind : SemanticOperation → SemanticOperationKind
   | .initiateTimer .. => .initiateTimer
   | .enterSequentialMultiInstanceScope .. => .enterSequentialMultiInstanceScope
   | .completeSequentialMultiInstanceScope .. => .completeSequentialMultiInstanceScope
+  | .enterParallelMultiInstanceScope .. => .enterParallelMultiInstanceScope
+  | .completeParallelMultiInstanceScope .. => .completeParallelMultiInstanceScope
   | .enterScope .. => .enterScope
   | .enterBoundedScope .. => .enterBoundedScope
   | .enterMonitoredScope .. => .enterMonitoredScope
