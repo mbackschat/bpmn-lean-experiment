@@ -43,6 +43,7 @@ Start with a Markdown evidence matrix inside the owning capsule. Do not introduc
 
 | Capsule | Status and scope |
 |---|---|
+| [Parallel MI Sub-Process proposal](PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md) | Draft concurrent mixed-work body account; ownership, closure-capacity and CIB data evidence prerequisites remain open |
 | [Sequential MI Sub-Process proposal](SEQUENTIAL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md) | Reviewed repeated mixed-work body account, scoped data and early completion; no implementation or hosting claim |
 | [User Task interaction](USER-TASK-INTERACTION-SPEC.md) | Evidence-closed draft for one structured User Task occurrence, exact discovery projection, and exact completion admission; not an immutable compatibility profile |
 | [User Task completion data](USER-TASK-COMPLETION-DATA-SPEC.md) | Implemented evidence-closed CIB Seven `2.2.0` completion-patch specification for canonical string/null Process-variable submission through the exact active User Task occurrence |
