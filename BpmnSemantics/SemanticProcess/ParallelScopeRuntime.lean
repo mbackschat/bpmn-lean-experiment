@@ -190,4 +190,56 @@ theorem issueParallelBodies_preserves_items_and_indices {entry : ParallelScopeEn
       obtain ⟨itemsEqual, indicesEqual⟩ := ih generated
       simp [itemsEqual, indicesEqual, List.range']
 
+/-- PMIS-DATA-01 covers the complete atomic entry, including empty populations and the outer controller. -/
+theorem enterParallelScope_preserves_process {entry : ParallelScopeEntry} {parent : ScopeOccurrenceId}
+    {state result : RuntimeState}
+    (entered : enterParallelScope? entry state parent = some result) :
+    result.variables.process = state.variables.process := by
+  unfold enterParallelScope? at entered
+  split at entered <;> try contradiction
+  split at entered <;> try contradiction
+  split at entered <;> try contradiction
+  split at entered <;> try contradiction
+  split at entered
+  · cases Option.some.inj entered
+    rfl
+  · obtain ⟨⟨issued, iterations⟩, generated, installed⟩ := Option.bind_eq_some_iff.mp entered
+    cases iterations with
+    | nil => simp at installed
+    | cons first rest =>
+        cases Option.some.inj installed
+        have frame := issueParallelBodies_preserves_process generated
+        exact frame
+
+private theorem cancelParallelBody_preserves_process (state : RuntimeState) (scope : ScopeOccurrenceId) :
+    (cancelScopeSubtree state scope .remove).variables.process = state.variables.process := rfl
+
+private theorem cancelParallelBodies_preserves_process (iterations : List ParallelScopeIteration)
+    (state : RuntimeState) :
+    (iterations.foldl (fun current iteration => cancelScopeSubtree current iteration.scope .remove) state).variables.process =
+      state.variables.process := by
+  induction iterations generalizing state with
+  | nil => rfl
+  | cons iteration rest ih => exact ih (cancelScopeSubtree state iteration.scope .remove)
+
+/-- PMIS-END-01/PMIS-CANCEL-01 dispose body-local data without rolling back committed Process writes. -/
+theorem completeParallelScope_preserves_process {entry : ParallelScopeEntry} {target : ScopeOccurrenceId}
+    {state result : RuntimeState}
+    (completed : completeParallelScope? entry state target = some result) :
+    result.variables.process = state.variables.process := by
+  unfold completeParallelScope? at completed
+  split at completed <;> try contradiction
+  split at completed <;> try contradiction
+  split at completed <;> try contradiction
+  split at completed <;> try contradiction
+  split at completed <;> try contradiction
+  dsimp only at completed
+  split at completed <;> try contradiction
+  obtain ⟨variables, removed, completed⟩ := Option.bind_eq_some_iff.mp completed
+  obtain ⟨condition, _, completed⟩ := Option.bind_eq_some_iff.mp completed
+  obtain ⟨retirement, _, completed⟩ := Option.bind_eq_some_iff.mp completed
+  have frame := removeScopeVariables_preserves_other_data removed
+  cases retirement <;> cases Option.some.inj completed <;>
+    simpa only [cancelParallelBodies_preserves_process, cancelParallelBody_preserves_process] using frame.1
+
 end BpmnSemantics.SemanticProcess

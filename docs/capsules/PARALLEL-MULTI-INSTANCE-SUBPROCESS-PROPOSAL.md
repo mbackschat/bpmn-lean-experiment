@@ -182,6 +182,10 @@ Lean proves Process-snapshot preservation and exact item/index generation for ar
 
 These functions consume private immutable entry descriptors, not admitted Programs. The paired binding checkpoint below remains private. Full Lean/TypeScript wire comparison, quantified reachable progress/global ownership preservation, occurrence-addressed scheduling and independent implementation review remain open. Existing controller-storage validation failures remain recorded above.
 
+### Complete lifecycle Process frame
+
+The [runtime proof owner](../../BpmnSemantics/SemanticProcess/ParallelScopeRuntime.lean) now proves `enterParallelScope_preserves_process` and `completeParallelScope_preserves_process` from actual successful evaluator results. They quantify over every accepted state and population, cover empty entry and partial/natural/early retirement, and require no successor-frame premise. Body-local disposal and sibling cancellation preserve already committed Process writes. The selected module and kernel fixtures pass `/tmp/parallel-process-frames-final` through the single-thread wrapper under one CPU and 3 GiB, separately asserted. Operational code is unchanged, so existing TypeScript lifecycle evidence is reused. Global ownership, identity, reachability, full wire agreement and independent review remain open.
+
 ### Paired IL integration
 
 The closed Lean/TypeScript operation unions and strict Program readers now carry `enterParallelMultiInstanceScope` and `completeParallelMultiInstanceScope`. Structural graph validation requires one same-family pair with matching Activity identity, parent/child ownership and one completion route; it rejects cross-family references, missing or duplicated completion and competing ordinary scope completion. Parallel declaration checks have a dedicated [Lean owner](../../BpmnSemantics/SemanticProcess/ParallelScopeDeclaration.lean).
