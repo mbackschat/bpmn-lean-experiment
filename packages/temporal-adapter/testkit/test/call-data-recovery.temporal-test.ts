@@ -4,6 +4,7 @@ import test from "node:test";
 import { CommandOutcome, ScenarioStepKind, StimulusKind, advanceScenario, observeStableState } from "@bpmn-lean/semantic-core";
 import type { CanonicalObservation, CompleteUserTaskInstanceStimulus } from "@bpmn-lean/semantic-core";
 import {
+  BpmnProcessStartResultKind, getTestProcessHandle, startBpmnProcess,
   BpmnWorkflowHostInputKind, WorkflowChainBudgetKind, bpmnProcessWorkflowType, bpmnSemanticTaskQueue,
   bpmnTraceQueryName, bpmnWorkflowContinuationV1, createCachedLocalEnvironment, loadBpmnWorkflowBundle,
   processWorkflowId, readTestProcessTerminalResult, readUserTaskDetail, requireBpmnWorkflowContinuationStateV1,
@@ -118,6 +119,40 @@ test("private Call data preserves supplier isolation through continuation, repla
         assert.ok(carriedInterface > 0);
         assert.equal(terminations, mode === "terminate" ? 1 : 0);
         assert.deepEqual(trace, oracle.trace);
+      });
+    }
+  } finally {
+    if (worker !== undefined) await stopBpmnTestWorker(worker);
+    await environment.teardown();
+  }
+});
+
+test("public supplier Call admission completes scalar data and publishes replayable outcomes", async t => {
+  const environment = await withDeadline(createCachedLocalEnvironment({ identity: "call-data-public",
+    downloadDirectory: temporalCacheDirectory }), 40_000, "Public Call Temporal environment startup");
+  let worker: WorkerLease | undefined;
+  try {
+    const bundle = await loadBpmnWorkflowBundle();
+    worker = await startBpmnTestWorker(environment, bundle, "call-data-public");
+    for (const value of ["supplier-summary", null]) {
+      await t.test(value === null ? "null" : "string", async () => {
+        const start = supplierStart(`supplier-public-${value === null ? "null" : "string"}`, value);
+        const started = await startBpmnProcess(environment.client.workflow, start, program, { taskQueue: bpmnSemanticTaskQueue });
+        assert.deepEqual(started, { kind: BpmnProcessStartResultKind.Started, processInstanceId: start.instanceId });
+        const oracle = createBusinessTaskHostOracle(environment, program, start);
+        oracle.advance(start);
+        await oracle.assertPublications();
+        await oracle.completeHuman("Task_AssessSupplier", "assess", [scalar("Output_TaskDecision", value)]);
+        await oracle.assertPublications();
+        await oracle.completeHuman("Task_FinalReview", "finish", [scalar("Output_FinalReviewReceipt", "onboarded")]);
+        const handle = getTestProcessHandle(environment.client.workflow, start.instanceId);
+        const terminal = await withDeadline(readTestProcessTerminalResult(handle), 20_000, "Public Call completion");
+        assert.deepEqual(terminal.receipt.finalState, observeStableState(program, oracle.state));
+        await oracle.assertPublications();
+        for (const run of await workflowChainRuns(environment, handle.workflowId)) {
+          const history = await environment.client.workflow.getHandle(handle.workflowId, run.runId).fetchHistory();
+          await replayBpmnHistory(bundle, history, handle.workflowId);
+        }
       });
     }
   } finally {

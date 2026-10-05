@@ -381,7 +381,7 @@ jobs:
       - name: Verify integration pipeline
         env:
           CI: "true"
-          BPMN_PIPELINE_WARM_BUDGET_MS: "187200"
+          BPMN_PIPELINE_WARM_BUDGET_MS: "191100"
         run: ./scripts/verify.sh pipeline
 
   # One stable check name for branch protection. `always()` is required:

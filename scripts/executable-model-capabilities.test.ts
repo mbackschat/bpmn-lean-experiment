@@ -472,3 +472,17 @@ test("classifies the interrupting Timer by its sequential Multi-Instance host", 
     /unclassified executable BPMN non-interrupting sequential Multi-Instance boundary Timer/u,
   );
 });
+
+test("Call inventory distinguishes scalar interfaces from the empty-data capability", async () => {
+  assert.match(mvpBpmnCapabilities.find(row => row.id === "directDataInputOutputUserTask")!.restriction, /called Process interface/u);
+  const scalar = await readFile(new URL("../packages/bpmn-source/test/fixtures/call-activity-data-boundaries.bpmn", import.meta.url), "utf8");
+  const empty = await readFile(new URL("../scenarios/called-process-call-activity/process.bpmn", import.meta.url), "utf8");
+  for (const xml of [scalar, scalar.replaceAll("Supplier", "Vendor").replaceAll("Summary", "Request")]) {
+    const capabilities = detectExecutableBpmnCapabilities(xml);
+    assert.ok(capabilities.includes("callActivityScalarData"));
+    assert.ok(!capabilities.includes("callActivity"));
+  }
+  const capabilities = detectExecutableBpmnCapabilities(empty);
+  assert.ok(capabilities.includes("callActivity"));
+  assert.ok(!capabilities.includes("callActivityScalarData"));
+});

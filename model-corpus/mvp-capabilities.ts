@@ -144,7 +144,7 @@ export const mvpBpmnCapabilities = Object.freeze([
     family: "Activities",
     element: "User Task with direct Data Input and Output",
     support: BpmnCapabilitySupport.BoundedStandard,
-    restriction: "One required scalar input copied from a Process Property and one required scalar output routed to a distinct Process Property on the same User Task occurrence; string/null values, one local input scope, and atomic output write and scope disposal on accepted completion.",
+    restriction: "One required String/null input and output on the same User Task occurrence, using distinct Process Properties or, only within the bounded scalar Call profile, its owning called Process interface. Accepted completion atomically writes the declared output and disposes the local input scope.",
     cibEvidence: notSelected,
   },
   {
@@ -201,6 +201,14 @@ export const mvpBpmnCapabilities = Object.freeze([
     element: "Call Activity",
     support: BpmnCapabilitySupport.BoundedStandard,
     restriction: "One in-document called Process, empty data, normal return, no recursion, deployment resolution, or Child Workflow identity.",
+    cibEvidence: notSelected,
+  },
+  {
+    id: "callActivityScalarData",
+    family: "Activities",
+    element: "Call Activity with scalar data",
+    support: BpmnCapabilitySupport.BoundedStandard,
+    restriction: "One in-document called Process with one String-or-null input and output, isolated interfaces and normal return; no child Properties, repeated or concurrent Calls, recursion or deployment resolution.",
     cibEvidence: notSelected,
   },
   {

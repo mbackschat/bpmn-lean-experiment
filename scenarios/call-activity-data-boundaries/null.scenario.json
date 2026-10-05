@@ -1,0 +1,98 @@
+{
+  "kind": "scenario",
+  "id": "call-data-supplier-null",
+  "profile": "bpmn-2.0.2-call-activity-data-boundaries-draft",
+  "bpmn": {
+    "id": "supplier-call-recovery",
+    "relativePath": "scenarios/call-activity-data-boundaries/process.bpmn",
+    "sha256": "5a34dfb4272520cecf3c23971f295bcf44a8bc27a5513166d0c0c8cc56d828f1",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "startProcess",
+      "commandId": "start",
+      "processId": "SupplierOnboarding",
+      "instanceId": "SupplierOnboarding_null",
+      "initialVariables": [
+        {
+          "name": "Property_DueDiligenceDecision",
+          "value": {
+            "kind": "string",
+            "value": "prior-decision"
+          }
+        },
+        {
+          "name": "Property_InternalNote",
+          "value": {
+            "kind": "string",
+            "value": "caller-only"
+          }
+        },
+        {
+          "name": "Property_SupplierSummary",
+          "value": {
+            "kind": "null"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "assess-supplier",
+      "taskId": {
+        "processInstanceId": "call:23:SupplierOnboarding_null:17:Call_DueDiligence:1",
+        "elementId": "Task_AssessSupplier",
+        "activation": 1
+      },
+      "submittedValues": [
+        {
+          "name": "Output_TaskDecision",
+          "value": {
+            "kind": "null"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-onboarding",
+      "taskId": {
+        "processInstanceId": "SupplierOnboarding_null",
+        "elementId": "Task_FinalReview",
+        "activation": 1
+      },
+      "submittedValues": [
+        {
+          "name": "Output_FinalReviewReceipt",
+          "value": {
+            "kind": "string",
+            "value": "onboarded"
+          }
+        }
+      ]
+    }
+  ],
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 10.3.6",
+      "BPMN 2.0.2 Clause 10.4.1",
+      "BPMN 2.0.2 Clause 10.4.2",
+      "BPMN 2.0.2 Clause 13.3.4"
+    ],
+    "cibRevision": "not-applicable",
+    "cibRefs": []
+  }
+}

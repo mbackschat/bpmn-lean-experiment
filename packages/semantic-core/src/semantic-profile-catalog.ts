@@ -18,6 +18,8 @@ export const SemanticProfileId = Object.freeze({
     "cibseven-2.0.0-mapped-boundary-error-service-task-draft",
   CalledProcessCallActivity:
     "bpmn-2.0.2-called-process-call-activity-draft",
+  CallActivityDataBoundaries:
+    "bpmn-2.0.2-call-activity-data-boundaries-draft",
   Compensation:
     "bpmn-2.0.2-compensation-source-checkpoint-draft",
   TransactionCancellation:
@@ -86,9 +88,9 @@ export const STRUCTURED_PROCESS_COMPOSITION_CHECKPOINT_PROFILE_ID =
 export const SEQUENTIAL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID =
   "cibseven-2.2.0-sequential-multi-instance-subprocess-draft";
 
-/** Call data remains private until the capsule's separate hosting qualification closes. */
+/** Preserves checkpoint consumers while the public catalog owns the registered identity. */
 export const CALL_ACTIVITY_DATA_BOUNDARIES_CHECKPOINT_PROFILE_ID =
-  "bpmn-2.0.2-call-activity-data-boundaries-draft";
+  SemanticProfileId.CallActivityDataBoundaries;
 
 /** The Message handler capsule separates private semantics from hosted capability registration. */
 export const INTERRUPTING_MESSAGE_EVENT_SUBPROCESS_CHECKPOINT_PROFILE_ID =

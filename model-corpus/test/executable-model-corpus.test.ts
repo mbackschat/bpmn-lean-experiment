@@ -39,15 +39,15 @@ test("binds every retained and external model to exact local evidence", async ()
     compileModel: compileCorpusModel,
   });
 
-  assert.equal(report.models.length, 52);
-  assert.equal(report.retainedModels, 45);
+  assert.equal(report.models.length, 53);
+  assert.equal(report.retainedModels, 46);
   assert.equal(report.externalModels, 7);
-  assert.equal(report.acceptedModels, 45);
+  assert.equal(report.acceptedModels, 46);
   assert.equal(report.rejectedModels, 7);
   assert.equal(report.catalogReadyModels, 12);
   assert.equal(report.models.filter(({ product2 }) => product2 === "journeyBacked").length, 3);
   assert.equal(report.models.filter(({ product2 }) => product2 === "guidedJourneyBacked").length, 9);
-  assert.equal(report.mvpCapabilities.length, 46);
+  assert.equal(report.mvpCapabilities.length, 47);
   assert.deepEqual(report.uncoveredMvpCapabilities, []);
   assert.equal(report.models[0]?.product2, "journeyBacked");
   assert.deepEqual(
@@ -60,6 +60,7 @@ test("binds every retained and external model to exact local evidence", async ()
       "expense-exception-review-approve",
       "exclusive-gateway-simple-boolean-first-true",
       "called-process-call-activity",
+      "call-data-supplier-string",
       "service-task-effect-success",
       "embedded-subprocess-completion-a-then-b",
       "subprocess-error-propagation-trigger-first",

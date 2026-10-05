@@ -251,6 +251,43 @@
       }
     },
     {
+      "id": "supplier-onboarding-call-data",
+      "title": "Onboard a supplier through isolated due diligence",
+      "businessPurpose": "Pass a supplier summary to due diligence, return its decision without exposing caller-only notes, and record final onboarding approval.",
+      "cloneFamily": "supplier-onboarding-call-data",
+      "constructs": [
+        "callActivity",
+        "endEvent",
+        "process",
+        "sequenceFlow",
+        "startEvent",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "calledProcess",
+        "userTaskWait",
+        "userTaskCompletion"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/call-activity-data-boundaries/process.bpmn",
+        "sha256": "5a34dfb4272520cecf3c23971f295bcf44a8bc27a5513166d0c0c8cc56d828f1",
+        "scenarioRelativePath": "scenarios/call-activity-data-boundaries/string.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "bpmn-2.0.2-call-activity-data-boundaries-draft",
+      "admission": {
+        "kind": "accepted"
+      },
+      "pipelineCaseId": "call-data-supplier-string",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "The engine pipeline covers scalar Call ownership and return; a complete production browser journey for supplier onboarding remains unqualified."
+      }
+    },
+    {
       "id": "external-service-recording",
       "title": "Record an external service effect",
       "businessPurpose": "Invoke an external service and finish the case only after its effect is recorded.",

@@ -1,6 +1,5 @@
 import {
   InternalSchedulingMode,
-  CALL_ACTIVITY_DATA_BOUNDARIES_CHECKPOINT_PROFILE_ID,
   INTERRUPTING_MESSAGE_EVENT_SUBPROCESS_CHECKPOINT_PROFILE_ID,
   STRUCTURED_PROCESS_COMPOSITION_CHECKPOINT_PROFILE_ID,
   MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID,
@@ -85,16 +84,6 @@ export function assessTemporalHostCapability(
       failure: {
         code: TemporalHostAdmissionFailureCode.InterruptingMessageEventSubProcessQualificationUnavailable,
         evidence: "Interrupting Message Event Sub-Processes remain a private semantic checkpoint pending hosting qualification.",
-      },
-    };
-  }
-  // CDATA's approved preflight requires rollover, replacement and replay before hosting.
-  if (program.identity.semanticProfile === CALL_ACTIVITY_DATA_BOUNDARIES_CHECKPOINT_PROFILE_ID) {
-    return {
-      kind: TemporalHostCapabilityResultKind.Rejected,
-      failure: {
-        code: TemporalHostAdmissionFailureCode.CallDataQualificationUnavailable,
-        evidence: "Call Activity data boundaries remain a private semantic checkpoint pending hosting qualification.",
       },
     };
   }

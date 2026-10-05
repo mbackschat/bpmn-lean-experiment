@@ -4,6 +4,7 @@ This directory contains reviewed semantic-profile artifacts. A profile identifie
 
 ## Artifact registry
 
+- [Scalar Call Activity data](bpmn-2.0.2-call-activity-data-boundaries-draft/README.md) registers isolated String-or-null input/output across one in-document Call.
 - [BPMN 2.0.2 Activity boundary Message draft](bpmn-2.0.2-activity-boundary-message-draft/README.md)
 - [BPMN 2.0.2 Activity boundary Timer draft](bpmn-2.0.2-activity-boundary-timer-draft/README.md)
 - [BPMN 2.0.2 Activity data-input User Task draft](bpmn-2.0.2-activity-data-input-user-task-draft/README.md)

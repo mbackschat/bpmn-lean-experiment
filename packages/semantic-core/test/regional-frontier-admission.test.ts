@@ -66,6 +66,9 @@ test("classifies every registered profile against the regional exclusion investi
     const excluded = retainsRegionalExclusionPremises(requiredProgramShape(profile),
       semanticGraphPolicyForProfile(profile));
     switch (profile) {
+      case SemanticProfileId.CallActivityDataBoundaries:
+        assert.equal(excluded, false, "CALL-ACTIVITY-DATA-BOUNDARIES owns scalar-interface scheduled closure outside the legacy regional premises");
+        break;
       case SemanticProfileId.RepeatableEventSubscriptions:
         assert.equal(excluded, false, "subscription admission reopens regional frontiers under its own quantified account");
         break;

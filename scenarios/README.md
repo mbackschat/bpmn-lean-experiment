@@ -4,6 +4,7 @@ This directory contains implementation-neutral BPMN resources, semantic stimuli,
 
 ## Scenario families
 
+- [Supplier onboarding with Call data](call-activity-data-boundaries/README.md) carries String and explicit null through isolated due diligence and caller approval.
 - The [Transaction cancellation scenarios](transaction-cancellation/README.md) withdraw a reservation with no eligible work, with completed work and active preparation, after the reservation branch ends, or with a typed release failure. They retain exact source binding and content-bound commands without a CIB target.
 
 - The [Compensation scenarios](compensation/README.md) reverse a confirmed travel itinerary through all three legal handler orders, failure at each handler, and stale-task refusal. They retain neutral Activity results, exact content-bound commands, and Lean/core/Temporal comparison without a CIB Compensation target.

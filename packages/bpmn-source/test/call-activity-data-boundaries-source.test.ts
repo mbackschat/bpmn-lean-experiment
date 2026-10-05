@@ -34,7 +34,7 @@ test("admits supplier onboarding with separate Call, Process and task scalar int
     operation.kind === SemanticOperationKind.InvokeProcess || operation.kind === SemanticOperationKind.ReturnProcess)) {
     assert.deepEqual(operation.data, call.data);
   }
-  assert.ok(!Object.values(SemanticProfileId).some((profile) => profile === result.checkedProcess.identity.semanticProfile));
+  assert.equal(result.checkedProcess.identity.semanticProfile, SemanticProfileId.CallActivityDataBoundaries);
 });
 
 test("Call interface correspondence follows owned singleton ports independently of labels", async () => {

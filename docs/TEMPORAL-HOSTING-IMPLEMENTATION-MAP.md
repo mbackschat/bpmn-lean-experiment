@@ -72,7 +72,7 @@ Transaction protocol/admission boundary: [`implementation-status-owner:ENGINE-SE
 
 ### Temporal adapter
 
-- [Private scalar Calls](capsules/CALL-ACTIVITY-DATA-BOUNDARIES-PROPOSAL.md#private-hosting-evidence): recovery/replay passes; public refusal remains.
+- [Scalar Calls](capsules/CALL-ACTIVITY-DATA-BOUNDARIES-PROPOSAL.md#registration-evidence): public execution/replay passes; closure remains open.
 
 - One semantic-lifetime Workflow receives start and admitted Semantic Process program
 - handle-free `started | rejected` production start after semantic/host admission; success exposes only Process-instance ID

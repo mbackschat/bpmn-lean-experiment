@@ -76,7 +76,7 @@ export function detectExecutableBpmnCapabilities(
         break;
       case "callActivity":
         rejectLoopVariant(element);
-        capabilities.add("callActivity");
+        capabilities.add(hasDirectChild(element, "ioSpecification") ? "callActivityScalarData" : "callActivity");
         break;
       case "subProcess":
         rejectLoopVariant(element);

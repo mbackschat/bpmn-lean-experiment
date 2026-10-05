@@ -6,6 +6,8 @@
 
 Declare one reference result and one or more candidates, then receive either equality or the first typed disagreement in outcome, trace length, observation kind, or observation value. Each pipeline case explicitly selects its targets and reference authority.
 
+The [scalar Call cases](test/call-data-pipeline-cases.ts) bind supplier String/null schedules to Lean, core and Temporal targets, with an exact called-owner mutation. [Registration controls](test/call-data-pipeline-cases.test.ts) check public admission, normal return and malformed-Program refusal.
+
 ## Quick start
 
 Run the pure comparator gate:

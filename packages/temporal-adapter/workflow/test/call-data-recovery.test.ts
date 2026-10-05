@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { CommandOutcome, ControlStateKind, StimulusKind, applyStimulusWithTrace, initialState } from "@bpmn-lean/semantic-core";
 import type { RuntimeState, Stimulus } from "@bpmn-lean/semantic-core";
-import { TemporalHostAdmissionFailureCode, assessTemporalHostCapability, projectUserTaskDetail,
+import { TemporalHostCapabilityResultKind, assessTemporalHostCapability, projectUserTaskDetail,
   requireBpmnWorkflowContinuationStateV1 } from "@bpmn-lean/temporal-protocol";
 import { scalar, supplierProgram as program, supplierStart } from "../../testkit/test/call-data-test-support.ts";
 
@@ -74,9 +74,6 @@ test("Call continuation rejects lost, aliased and prematurely completed interfac
   }
 });
 
-test("Call restoration evidence retains the public hosting qualification refusal", () => {
-  assert.deepEqual(assessTemporalHostCapability(program), { kind: "rejected", failure: {
-    code: TemporalHostAdmissionFailureCode.CallDataQualificationUnavailable,
-    evidence: "Call Activity data boundaries remain a private semantic checkpoint pending hosting qualification.",
-  } });
+test("Call restoration preserves the registered hosting capability", () => {
+  assert.deepEqual(assessTemporalHostCapability(program), { kind: TemporalHostCapabilityResultKind.Admitted });
 });

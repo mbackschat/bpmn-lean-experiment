@@ -38,6 +38,8 @@ export const pipelineCaseIdRegistry = Object.freeze([
   "non-interrupting-boundary-timer-deadline-then-both-branches",
   "non-interrupting-boundary-timer-completion-before-the-deadline",
   "called-process-call-activity",
+  "call-data-supplier-string",
+  "call-data-supplier-null",
   "user-task-cycle-repeat-rework-exit",
   "message-start-event",
   "timer-start-event",

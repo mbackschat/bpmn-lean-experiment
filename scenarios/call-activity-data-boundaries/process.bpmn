@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:tns="urn:bpmn-lean:test:supplier-onboarding"
+  id="Definitions_SupplierOnboarding" targetNamespace="urn:bpmn-lean:test:supplier-onboarding">
+  <bpmn:process id="SupplierOnboarding" isExecutable="true" processType="Private">
+    <bpmn:property id="Property_SupplierSummary" />
+    <bpmn:property id="Property_DueDiligenceDecision" />
+    <bpmn:property id="Property_OnboardingReceipt" />
+    <bpmn:property id="Property_InternalNote" />
+    <bpmn:startEvent id="Start_Onboarding">
+      <bpmn:outgoing>Flow_Onboarding_Call</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:callActivity id="Call_DueDiligence" name="Request supplier due diligence" calledElement="tns:SupplierDueDiligence">
+      <bpmn:incoming>Flow_Onboarding_Call</bpmn:incoming>
+      <bpmn:outgoing>Flow_Call_FinalReview</bpmn:outgoing>
+      <bpmn:ioSpecification id="IO_CallDueDiligence">
+        <bpmn:dataInput id="Input_CallSummary" name="Supplier summary" />
+        <bpmn:dataOutput id="Output_CallDecision" name="Due diligence decision" />
+        <bpmn:inputSet id="Inputs_CallDueDiligence">
+          <bpmn:dataInputRefs>Input_CallSummary</bpmn:dataInputRefs>
+        </bpmn:inputSet>
+        <bpmn:outputSet id="Outputs_CallDueDiligence">
+          <bpmn:dataOutputRefs>Output_CallDecision</bpmn:dataOutputRefs>
+        </bpmn:outputSet>
+      </bpmn:ioSpecification>
+      <bpmn:dataInputAssociation id="Association_RequestDueDiligence">
+        <bpmn:sourceRef>Property_SupplierSummary</bpmn:sourceRef>
+        <bpmn:targetRef>Input_CallSummary</bpmn:targetRef>
+      </bpmn:dataInputAssociation>
+      <bpmn:dataOutputAssociation id="Association_RecordDueDiligence">
+        <bpmn:sourceRef>Output_CallDecision</bpmn:sourceRef>
+        <bpmn:targetRef>Property_DueDiligenceDecision</bpmn:targetRef>
+      </bpmn:dataOutputAssociation>
+    </bpmn:callActivity>
+    <bpmn:userTask id="Task_FinalReview" name="Confirm supplier onboarding">
+      <bpmn:incoming>Flow_Call_FinalReview</bpmn:incoming>
+      <bpmn:outgoing>Flow_FinalReview_Complete</bpmn:outgoing>
+      <bpmn:ioSpecification id="IO_FinalReview">
+        <bpmn:dataInput id="Input_FinalReviewDecision" name="Decision to review" />
+        <bpmn:dataOutput id="Output_FinalReviewReceipt" name="Onboarding receipt" />
+        <bpmn:inputSet id="Inputs_FinalReview">
+          <bpmn:dataInputRefs>Input_FinalReviewDecision</bpmn:dataInputRefs>
+        </bpmn:inputSet>
+        <bpmn:outputSet id="Outputs_FinalReview">
+          <bpmn:dataOutputRefs>Output_FinalReviewReceipt</bpmn:dataOutputRefs>
+        </bpmn:outputSet>
+      </bpmn:ioSpecification>
+      <bpmn:dataInputAssociation id="Association_ReviewDecision">
+        <bpmn:sourceRef>Property_DueDiligenceDecision</bpmn:sourceRef>
+        <bpmn:targetRef>Input_FinalReviewDecision</bpmn:targetRef>
+      </bpmn:dataInputAssociation>
+      <bpmn:dataOutputAssociation id="Association_RecordReceipt">
+        <bpmn:sourceRef>Output_FinalReviewReceipt</bpmn:sourceRef>
+        <bpmn:targetRef>Property_OnboardingReceipt</bpmn:targetRef>
+      </bpmn:dataOutputAssociation>
+    </bpmn:userTask>
+    <bpmn:endEvent id="End_Onboarding">
+      <bpmn:incoming>Flow_FinalReview_Complete</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_Onboarding_Call" sourceRef="Start_Onboarding" targetRef="Call_DueDiligence" />
+    <bpmn:sequenceFlow id="Flow_Call_FinalReview" sourceRef="Call_DueDiligence" targetRef="Task_FinalReview" />
+    <bpmn:sequenceFlow id="Flow_FinalReview_Complete" sourceRef="Task_FinalReview" targetRef="End_Onboarding" />
+  </bpmn:process>
+  <bpmn:process id="SupplierDueDiligence" isExecutable="true" processType="Private">
+    <bpmn:ioSpecification id="IO_SupplierDueDiligence">
+      <bpmn:dataInput id="Input_ProcessSummary" name="Supplier summary" />
+      <bpmn:dataOutput id="Output_ProcessDecision" name="Due diligence decision" />
+      <bpmn:inputSet id="Inputs_SupplierDueDiligence">
+        <bpmn:dataInputRefs>Input_ProcessSummary</bpmn:dataInputRefs>
+      </bpmn:inputSet>
+      <bpmn:outputSet id="Outputs_SupplierDueDiligence">
+        <bpmn:dataOutputRefs>Output_ProcessDecision</bpmn:dataOutputRefs>
+      </bpmn:outputSet>
+    </bpmn:ioSpecification>
+    <bpmn:startEvent id="Start_DueDiligence">
+      <bpmn:outgoing>Flow_DueDiligence_Assess</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:userTask id="Task_AssessSupplier" name="Assess supplier risk">
+      <bpmn:incoming>Flow_DueDiligence_Assess</bpmn:incoming>
+      <bpmn:outgoing>Flow_Assess_Return</bpmn:outgoing>
+      <bpmn:ioSpecification id="IO_AssessSupplier">
+        <bpmn:dataInput id="Input_TaskSummary" name="Summary to assess" />
+        <bpmn:dataOutput id="Output_TaskDecision" name="Assessment result" />
+        <bpmn:inputSet id="Inputs_AssessSupplier">
+          <bpmn:dataInputRefs>Input_TaskSummary</bpmn:dataInputRefs>
+        </bpmn:inputSet>
+        <bpmn:outputSet id="Outputs_AssessSupplier">
+          <bpmn:dataOutputRefs>Output_TaskDecision</bpmn:dataOutputRefs>
+        </bpmn:outputSet>
+      </bpmn:ioSpecification>
+      <bpmn:dataInputAssociation id="Association_AssessSummary">
+        <bpmn:sourceRef>Input_ProcessSummary</bpmn:sourceRef>
+        <bpmn:targetRef>Input_TaskSummary</bpmn:targetRef>
+      </bpmn:dataInputAssociation>
+      <bpmn:dataOutputAssociation id="Association_ReturnDecision">
+        <bpmn:sourceRef>Output_TaskDecision</bpmn:sourceRef>
+        <bpmn:targetRef>Output_ProcessDecision</bpmn:targetRef>
+      </bpmn:dataOutputAssociation>
+    </bpmn:userTask>
+    <bpmn:endEvent id="End_DueDiligence">
+      <bpmn:incoming>Flow_Assess_Return</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_DueDiligence_Assess" sourceRef="Start_DueDiligence" targetRef="Task_AssessSupplier" />
+    <bpmn:sequenceFlow id="Flow_Assess_Return" sourceRef="Task_AssessSupplier" targetRef="End_DueDiligence" />
+  </bpmn:process>
+</bpmn:definitions>

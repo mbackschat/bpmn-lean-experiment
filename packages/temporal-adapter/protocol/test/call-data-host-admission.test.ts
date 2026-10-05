@@ -6,19 +6,15 @@ import { callActivityProgram, callActivityStart } from "../../../semantic-core/t
 import { program } from "../../../semantic-core/test/call-data-fixture.ts";
 
 for (const value of [{ kind: VariableValueKind.String, value: "supplier" }, { kind: VariableValueKind.Null }] as const) {
-  test(`private scalar Call execution with ${value.kind} remains refused before hosting`, () => {
+  test(`registered scalar Call execution with ${value.kind} is admitted for hosting`, () => {
     assert.equal(supportsSemanticProcessExecution(callActivityStart([{ name: "Request", value }]), program), true);
     const result = assessTemporalHostCapability(program);
-    assert.equal(result.kind, TemporalHostCapabilityResultKind.Rejected);
-    if (result.kind !== TemporalHostCapabilityResultKind.Rejected) assert.fail("private profile reached hosting");
-    assert.equal(result.failure.code, "callDataQualificationUnavailable");
+    assert.deepEqual(result, { kind: TemporalHostCapabilityResultKind.Admitted });
   });
 }
 
-test("private Call qualification cannot be bypassed by dropping the passive operations", () => {
-  const result = assessTemporalHostCapability({ ...program, operations: [] });
-  assert.equal(result.kind, TemporalHostCapabilityResultKind.Rejected);
-  if (result.kind !== TemporalHostCapabilityResultKind.Rejected) assert.fail("private profile reached hosting");
-  assert.equal(result.failure.code, "callDataQualificationUnavailable");
+test("Call execution still rejects missing operations and preserves empty-data hosting", () => {
+  assert.equal(supportsSemanticProcessExecution(callActivityStart([{ name: "Request",
+    value: { kind: VariableValueKind.String, value: "supplier" } }]), { ...program, operations: [] }), false);
   assert.deepEqual(assessTemporalHostCapability(callActivityProgram), { kind: TemporalHostCapabilityResultKind.Admitted });
 });
