@@ -244,7 +244,7 @@ The repository-wide audit on 2026-07-24 found no previously visited observation 
 
 ### CIB-AGR-0014 — parallel repeated-body completion and cancellation
 
-**Status:** Candidate bounded agreement for the [parallel Sub-Process draft](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md); independent proposal review and profile selection remain pending.
+**Status:** Candidate bounded agreement for the [parallel Sub-Process proposal](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#independent-cold-review-receipt); the linked receipt governs account approval; profile selection and qualification remain pending.
 
 **BPMN basis:** §§13.3.4 and 13.3.7 require completion of the inner Sub-Process before counting an instance, and cancellation of remaining instances when the completion condition succeeds.
 
@@ -527,7 +527,7 @@ CIB input parameters initialize local bindings in each new body. Human completio
 
 ### CIB-EXT-0018 — parallel body mappings and post-disposal condition context
 
-**Status:** Candidate bounded extension for the [parallel Sub-Process draft](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md); independent proposal review and profile selection remain pending.
+**Status:** Candidate bounded extension for the [parallel Sub-Process proposal](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#independent-cold-review-receipt); the linked receipt governs account approval; profile selection and qualification remain pending.
 
 CIB input parameters capture enclosing values into each concurrently created body. Declared locals isolate human completion and mapped Service results, including present null. Removing the declarations makes those writes reach the shared Process binding in explicit command order. The selected JUEL Process-variable completion condition is evaluated after body-local disposal: opposite local/Process Boolean values distinguish the enclosing condition value from the former body value. The proposal protects the selected condition name against local redeclaration rather than implying a general variable-scope contract.
 

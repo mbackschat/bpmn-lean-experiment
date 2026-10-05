@@ -2,14 +2,14 @@
 
 ## Status
 
-Lifecycle: draft
-Review: pending
+Lifecycle: owner-approved
+Review: approved
 
 ## Purpose and boundary
 
 Execute a collection of applicants' checks concurrently, with human review and automated validation inside each applicant's Sub-Process. Preserve body identity and local data, count completed bodies rather than individual tasks, and cancel unfinished bodies when the selected completion condition succeeds. This is required depth in [Practical CIB7 Coverage](../PRACTICAL-CIB7-COVERAGE-TARGET.md), not an optional exotic feature.
 
-This draft selects a substantial increment and identifies its unresolved feasibility obligations. It authorizes no implementation, public profile or coverage claim. [PLAN](../PLAN.md#exact-resume-point) retains implementation sequencing and failed hosting evidence. The [sequential Sub-Process account](SEQUENTIAL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md) supplies reusable body/data semantics; the [parallel User Task contract](PARALLEL-MULTI-INSTANCE-SPEC.md) supplies a comparison for accounting and cancellation, not evidence for repeated Sub-Process bodies.
+This proposal selects a substantial increment and identifies its unresolved implementation obligations. Its [review receipt](#independent-cold-review-receipt) owns account approval; [PLAN](../PLAN.md#exact-resume-point) retains implementation sequencing and failed hosting evidence. Approval establishes no public profile or coverage claim. The [sequential Sub-Process account](SEQUENTIAL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md) supplies reusable body/data semantics; the [parallel User Task contract](PARALLEL-MULTI-INSTANCE-SPEC.md) supplies a comparison for accounting and cancellation, not evidence for repeated Sub-Process bodies.
 
 ## Source basis
 
@@ -142,7 +142,7 @@ The smallest refinement witness uses two applicants: one has an open human check
 
 ## Acceptance boundary
 
-This proposal cannot advance to implementation approval until the capacity and ownership account is concrete, selected CIB relationships are classified with separating evidence, and independent cold review passes. Closure then requires the applicable proofs, full Lean/TypeScript state and refusal agreement, public handler integration, Temporal recovery/replay, registration and a retained applicant-check whole model with exact capability/restriction disclosure. The [corpus contract](../../model-corpus/README.md#admission-and-product-readiness-gate) owns atomic registration. Existing failed hosting gates remain failures; no runtime rerun or performance test is selected by this draft.
+The [independent review receipt](#independent-cold-review-receipt) governs approval of the capacity/ownership account and selected CIB relationships. Closure requires the applicable proofs, full Lean/TypeScript state and refusal agreement, public handler integration, Temporal recovery/replay, registration and a retained applicant-check whole model with exact capability/restriction disclosure. The [corpus contract](../../model-corpus/README.md#admission-and-product-readiness-gate) owns atomic registration. Existing failed hosting gates remain failures; no runtime rerun or performance test is selected by this proposal.
 
 ## Versioning consequences
 
@@ -168,6 +168,8 @@ Measured on 2026-10-05 against `1454aa91`; recompute before implementation. Thes
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `11b033ea` | `fork-turns-none` | `approve` | `not-required` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+
+Independent proposal review approved `11b033ea` without required corrections. Packet digest: `8662eaa9dc3e1afcaf5e0a0656d51a4c642c7a2b41ff668e0d1f0644937e49e3`. The reviewer independently passed 82 proposal/document checks (`/tmp/parallel-mi-cold-review-focused.log`), four CIB cases (`/tmp/parallel-mi-cold-review-cib.log`), the 64-case control experiment and a separate eight/nine/sixteen-operation batch discriminator; fixed-eight failed as intended. Approval covers the proposed account only. Production implementation, quantified progress/ownership proofs, complete cancellation/publication migration, sixteen-body byte capacity and hosting qualification remain open.
