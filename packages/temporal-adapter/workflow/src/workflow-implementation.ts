@@ -289,7 +289,9 @@ export async function runBpmnProcessWithHostEffects(
   const effectScheduler = semanticProcess.identity.semanticProfile === SEQUENTIAL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID
     ? createTemporalOrdinaryEffectFrontierScheduler(semanticProcess, executeEffect, failEffectCapacity,
       completion => enqueueStimulus(acceptedStimuli, pendingStimuli, completion, reserveStimulus),
-      () => workflowChainFence === WorkflowChainFenceState.Rollover)
+      () => workflowChainFence === WorkflowChainFenceState.Rollover,
+      { limits: workflowChain, hasRetainedWork: () => runRetention !== null && runRetention.traceEntries > 0,
+        requestRollover: () => { workflowChainFence = WorkflowChainFenceState.Rollover; } })
     : createTemporalCompensationFrontierScheduler(semanticProcess, executeEffect, failEffectCapacity);
   const boundedDeadlineSchedulerFor = (candidate: RuntimeState) =>
     boundedDeadlineSchedulers.find((scheduler) =>
@@ -759,7 +761,7 @@ export async function runBpmnProcessWithHostEffects(
       hostRecheckRequested: () =>
         workflowChain?.capacity.hasPendingFailure() === true ||
         workflowRolloverPermitted({
-          requested:
+          requested: workflowChainFence === WorkflowChainFenceState.Rollover ||
             workflowChain?.commandCapacity.rolloverRequested() === true,
           managedBoundaryDeadlineArmed: eventRaceScheduler.hasArmedTimer() ||
             boundedDeadlineSchedulers.some((scheduler) => scheduler.hasArmedDeadline()),

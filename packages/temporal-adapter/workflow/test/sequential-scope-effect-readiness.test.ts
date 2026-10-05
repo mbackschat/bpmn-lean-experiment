@@ -54,7 +54,7 @@ function input(program: SemanticProcessProgram, state: RuntimeState,
       recordMessageCallback: () => false, recordCompletionCallback: () => false, waitForReadiness: async () => [] },
     boundedDeadlineSchedulers: [],
     effectScheduler: createOrdinaryEffectFrontierScheduler(program, {
-      executeEffect, newActivitiesFenced,
+      executeEffect, newActivitiesFenced, reserveHistory: () => true,
       failCapacity: failure => { throw new Error(`capacity: ${failure.budget}`); },
       enqueueCompletion: completion => enqueueStimulus(host.acceptedStimuli, host.pendingStimuli, completion, host.reserveStimulus),
       waitUntil: predicate => predicate() ? Promise.resolve() : new Promise(resolve => waiters.push({ predicate, resolve })),

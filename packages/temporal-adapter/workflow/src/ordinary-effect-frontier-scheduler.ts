@@ -9,8 +9,11 @@ import {
   effectTransportKey,
   preflightEffectActivityRequest,
 } from "@bpmn-lean/temporal-protocol";
-import type { EffectActivityCapacityBound, EffectActivityResult, EffectRequest } from "@bpmn-lean/temporal-protocol";
-import { ActivityFailure, CancelledFailure, condition } from "@temporalio/workflow";
+import type { EffectActivityResult, EffectRequest } from "@bpmn-lean/temporal-protocol";
+import { ActivityFailure, CancelledFailure, condition, workflowInfo } from "@temporalio/workflow";
+import type { WorkflowChainObservedCapacityBound } from "./workflow-chain-capacity.js";
+import type { WorkflowChainEventHistoryLimits } from "./workflow-event-history-capacity.js";
+import { assessOrdinaryEffectHistoryReservation, OrdinaryEffectHistoryReservationKind } from "./ordinary-effect-history-reservation.js";
 import { legacyEffectActivityPolicy } from "./effect-activity-policy.js";
 import { effectActivityResultCommand, throwEffectHostFailure } from "./effect-execution-host.js";
 import { hostInvariantFailure } from "./host-invariant.js";
@@ -26,8 +29,9 @@ export type EffectFrontierScheduler = Readonly<{
 
 type Adapters = Readonly<{
   newActivitiesFenced: () => boolean;
+  reserveHistory: (issuedActivities: number, requestBytes: ReadonlyArray<number>) => boolean;
   executeEffect: (request: EffectRequest) => Promise<EffectActivityResult>;
-  failCapacity: (failure: EffectActivityCapacityBound) => never;
+  failCapacity: (failure: WorkflowChainObservedCapacityBound) => never;
   enqueueCompletion: (completion: Stimulus) => void;
   waitUntil: (predicate: () => boolean) => Promise<void>;
 }>;
@@ -73,12 +77,14 @@ export function createOrdinaryEffectFrontierScheduler(
       } };
     }).filter(plan => plan.owner === undefined);
     // SMIS hosting preflight: refuse the whole new frontier before issuing any external effect.
+    const requestBytes: number[] = [];
     for (const plan of plans) {
       const preflight = preflightEffectActivityRequest(plan.request);
       if (preflight.kind === EffectActivityCapacityPreflightKind.CapacityExceeded) {
         adapters.failCapacity(preflight.failure);
-      }
+      } else requestBytes.push(preflight.observedValue);
     }
+    if (!adapters.reserveHistory(owners.size, requestBytes)) return;
     for (const plan of plans) {
       const owner: Owner = { transportKey: plan.transportKey, phase: ActivityPhase.Running };
       owners.set(plan.key, owner);
@@ -140,8 +146,19 @@ export function createTemporalOrdinaryEffectFrontierScheduler(
   failCapacity: Adapters["failCapacity"],
   enqueueCompletion: Adapters["enqueueCompletion"],
   newActivitiesFenced: Adapters["newActivitiesFenced"],
+  history: Readonly<{ limits: WorkflowChainEventHistoryLimits | null; hasRetainedWork: () => boolean; requestRollover: () => void }>,
 ): EffectFrontierScheduler {
   return createOrdinaryEffectFrontierScheduler(program, {
     executeEffect, failCapacity, enqueueCompletion, newActivitiesFenced, waitUntil: condition,
+    reserveHistory(issuedActivities, requestBytes) {
+      if (history.limits === null) return true;
+      const reservation = assessOrdinaryEffectHistoryReservation({ limits: history.limits, history: workflowInfo(),
+        issuedActivities, requestBytes, hasRetainedWork: history.hasRetainedWork() });
+      switch (reservation.kind) {
+        case OrdinaryEffectHistoryReservationKind.Ready: return true;
+        case OrdinaryEffectHistoryReservationKind.Rollover: history.requestRollover(); return false;
+        case OrdinaryEffectHistoryReservationKind.CapacityExceeded: return failCapacity(reservation.failure);
+      }
+    },
   });
 }

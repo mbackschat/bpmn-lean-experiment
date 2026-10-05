@@ -4,7 +4,7 @@ This detail map owns exact current Product 1 protocol, client, Workflow, Worker,
 
 ## Current boundary
 
-[MI restoration](capsules/SEQUENTIAL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#implementation-progress) and [effect draining](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#issued-effect-drain-boundary) pass; hosting open.
+[MI restoration](capsules/SEQUENTIAL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#implementation-progress) and [effect reservation](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#frontier-history-reservation) pass; hosting open.
 
 Private [serial/mixed recovery witnesses](capsules/SERIAL-BUSINESS-TASK-COMPOSITION-PROPOSAL.md#retained-verification-evidence) retain installed-SDK failures and private-Core diagnostics. Private [business Error hosting evidence](capsules/MIXED-TASK-BUSINESS-ERROR-PROPOSAL.md#implementation-progress) covers recovery, continuation, replacement, E1/E2, replay and technical-failure separation; production admission and closure remain open. The same record owns the diagnosed 23-byte Multi-Instance serialization refresh; capacity bounds are unchanged.
 

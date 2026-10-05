@@ -4,7 +4,7 @@ import { mock, test } from "node:test";
 import * as sdk from "@temporalio/workflow";
 import { BpmnCompilationStatus, compileBpmnToSemanticProcess } from "@bpmn-lean/bpmn-source";
 import { EffectExecutionResultKind, StimulusKind, VariableValueKind, projectOpenEffects } from "@bpmn-lean/semantic-core";
-import { bpmnWorkflowChainPatchId, productionBpmnWorkflowInitialHostInput } from "@bpmn-lean/temporal-protocol";
+import { bpmnWorkflowChainPatchId, bpmnWorkflowChainCapacityExhaustedFailureType, productionBpmnWorkflowInitialHostInput } from "@bpmn-lean/temporal-protocol";
 import type { EffectActivityResult, EffectRequest } from "@bpmn-lean/temporal-protocol";
 import type { registerWorkflowCommandIngress } from "../src/workflow-command-ingress.js";
 import type { WorkflowChainSuccessorArguments } from "../src/workflow-chain-continuation.js";
@@ -12,23 +12,26 @@ import { profile, source, prepareSource, sourceOverlay, parallelBodySource } fro
 
 type Ingress = Parameters<typeof registerWorkflowCommandIngress>[0];
 let ingress: Ingress;
+let runId = "effect-drain";
 let historyLength = 1;
+let historySize = 0;
 let phase = 0;
 let successor: WorkflowChainSuccessorArguments | undefined;
 const continued = new Error("captured Continue-As-New");
-const activity = Promise.withResolvers<EffectActivityResult>();
+let activity = Promise.withResolvers<EffectActivityResult>();
 const requests: EffectRequest[] = [];
 
 mock.module("@temporalio/workflow", { cache: false, exports: {
   ...Object.fromEntries(Object.entries(sdk).filter(([name]) => name !== "default")),
   patched: (id: string) => id === bpmnWorkflowChainPatchId,
-  workflowInfo: () => ({ runId: "effect-drain", firstExecutionRunId: "effect-drain", workflowId: "effect-drain",
-    taskQueue: "effect-drain", historyLength, historySize: 0, continueAsNewSuggested: false }),
+  workflowInfo: () => ({ runId, firstExecutionRunId: "effect-drain", workflowId: "effect-drain",
+    taskQueue: "effect-drain", historyLength, historySize, continueAsNewSuggested: false }),
   setHandler: () => undefined,
   allHandlersFinished: () => true,
   continueAsNew: async (...args: WorkflowChainSuccessorArguments) => { successor = args; throw continued; },
   condition: async (predicate: () => boolean) => {
     if (predicate()) return;
+    assert.equal(historySize, 0, "history reservation must roll over before starting or waiting for Activities");
     switch (phase++) {
       case 0: {
         assert.equal(requests.length, 1);
@@ -68,7 +71,12 @@ const { runBpmnProcessWithHostEffects }: typeof import("../src/workflow-implemen
 const { ActivationDrain }: typeof import("../src/activation-tagged-readiness.js") =
   await import(new URL("../dist/activation-tagged-readiness.js", import.meta.url).href);
 
-test("the production loop fences ingress and new effects before waiting for rollover safety", async () => {
+for (const [label, size, issued, phases, remainingElement] of [
+  ["drains issued work", 0, 1, 2, "LaterValidate"],
+  ["reserves the frontier before issuing work", 7.5 * 1024 * 1024, 0, 0, "Validate"],
+] as const) test(`the production loop ${label}`, async () => {
+  runId = "effect-drain"; historyLength = 1; historySize = size; phase = 0; successor = undefined;
+  requests.length = 0; activity = Promise.withResolvers<EffectActivityResult>();
   const base = prepareSource(await readFile(source, "utf8"));
   const service = base.match(/<serviceTask id="Validate"[\s\S]*?<\/serviceTask>/u)?.[0];
   assert.ok(service);
@@ -90,9 +98,21 @@ test("the production loop fences ingress and new effects before waiting for roll
     productionBpmnWorkflowInitialHostInput()), error => error === continued);
   assert.ok(successor);
   assert.deepEqual(successor[3], ingress.currentState());
-  assert.equal(requests.length, 1);
-  assert.equal(phase, 2);
+  assert.equal(requests.length, issued);
+  assert.equal(phase, phases);
   const remaining = projectOpenEffects(ingress.currentState());
   assert.equal(remaining.length, 1);
-  assert.equal(remaining[0]!.id.elementId, "LaterValidate");
+  assert.equal(remaining[0]!.id.elementId, remainingElement);
+  if (size > 0) {
+    const carried = successor;
+    successor = undefined;
+    runId = "effect-drain-successor";
+    await assert.rejects(runBpmnProcessWithHostEffects(carried[0], carried[1],
+      async () => { assert.fail("No Timer belongs to this body"); },
+      request => { requests.push(request); return activity.promise; }, ActivationDrain.Required,
+      carried[2], carried[3], carried[4], carried[5], carried[6]),
+    error => error instanceof sdk.ApplicationFailure && error.type === bpmnWorkflowChainCapacityExhaustedFailureType);
+    assert.equal(successor, undefined, "an unfit fresh Run must refuse instead of continuing again");
+    assert.equal(requests.length, 0);
+  }
 });

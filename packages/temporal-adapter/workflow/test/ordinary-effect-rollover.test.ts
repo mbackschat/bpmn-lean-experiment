@@ -10,5 +10,5 @@ test("ordinary effect rollover drains issued work without extending its frontier
   const result = await promisify(execFile)(process.execPath, [
     "--experimental-test-module-mocks", "--test", "--test-reporter=tap", probe,
   ], { timeout: 20_000, env: environment });
-  assert.match(result.stdout, /# pass 1\b/u);
+  assert.match(result.stdout, /# pass 2\b/u);
 });
