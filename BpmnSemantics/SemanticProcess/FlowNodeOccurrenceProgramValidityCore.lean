@@ -45,7 +45,8 @@ end FlowNodeOccurrenceProgramValidity.Internal
 
 open FlowNodeOccurrenceProgramValidity.Internal
 
-private def scopeOperationBindingValid (program : Program) (occurrence : RuntimeScopeOccurrence)
+/-- Shared with scope-creation preservation so constructor coverage has one defining predicate. -/
+def scopeOperationBindingValid (program : Program) (occurrence : RuntimeScopeOccurrence)
     (definition : DefinitionScope) : Bool :=
   match occurrence.parent with
   | none => true
@@ -54,6 +55,7 @@ private def scopeOperationBindingValid (program : Program) (occurrence : Runtime
         if !operationOwnedBy program operation parent then false
         else match operation with
         | .enterScope _ origin _ _ childScopeId
+        | .enterSequentialMultiInstanceScope _ origin _ _ childScopeId _ _ _ _ _
         | .enterBoundedScope _ origin _ _ childScopeId _
         | .enterMonitoredScope _ origin _ _ childScopeId _ =>
             childScopeId = occurrence.id.definitionScopeId &&

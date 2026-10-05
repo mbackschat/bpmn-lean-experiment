@@ -258,6 +258,8 @@ theorem nodeDisabled (source : CheckedProcess) (state : SourceRuntimeState)
   | sequentialMultiInstanceUserTask id name input output normalOutputFlowId
       boundaryTimer =>
       simp [nodeArityValid] at candidateArity
+  | sequentialMultiInstanceSubProcess _ _ _ _ _ _ =>
+      simp [nodeArityValid] at candidateArity
   | parallelMultiInstanceUserTask id name input output completionCondition normalOutputFlowId
       boundaryTimer =>
       simp [nodeArityValid] at candidateArity

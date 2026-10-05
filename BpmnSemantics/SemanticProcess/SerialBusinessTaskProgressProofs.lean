@@ -19,19 +19,19 @@ theorem ordered_suffix_runtime_guard (program : Program) (analysis : Analysis) (
     intro operation member
     have selected := allowed operation member
     cases operation <;> simp_all [OperationAllowed, sequentialMultiInstanceOperationBindingComplete]
-  have noCompensation : (program.operations.any fun operation => match operation with
-      | .triggerCompensation .. | .cancelTransaction .. => true | _ => false) = false := by
-    apply List.any_eq_false.mpr
+  have compensationDeclaration : compensationExecutionDeclarationValid program = true := by
+    simp only [compensationExecutionDeclarationValid, compensation, Bool.not_eq_true', List.any_eq_false]
     intro operation member
     have selected := allowed operation member
     cases operation <;> simp_all [OperationAllowed]
-  have compensationDeclaration : compensationExecutionDeclarationValid program = true := by
-    unfold compensationExecutionDeclarationValid
-    rw [compensation]
-    change (!(program.operations.any fun operation => match operation with
-      | .triggerCompensation .. | .cancelTransaction .. => true | _ => false)) = true
-    rw [noCompensation]
-    rfl
+  have repeated : sequentialScopeStateValid program state = true := by
+    have noRepeated : program.operations.filterMap sequentialScopeEntry? = [] := by
+      apply List.filterMap_eq_nil_iff.mpr
+      intro operation member
+      have selected := allowed operation member
+      cases operation <;> simp_all [OperationAllowed, sequentialScopeEntry?]
+    have foreign := framed.2.2.2.2.1
+    simp_all [ForeignRuntimeEmpty, sequentialScopeStateValid]
   have parallel : parallelMultiInstanceProgramBindingsValid program state = true := by
     unfold parallelMultiInstanceProgramBindingsValid
     have empty : state.parallelMultiInstanceControllers = [] := by
@@ -70,6 +70,7 @@ theorem current_service_inputs_evaluable (program : Program) (state : RuntimeSta
   obtain ⟨admitted, _, _, vertexEq⟩ := projected
   have mappings : mappingsValid (programHandlers program) effect.inputMappings effect.outputMappings = true := admitted.2
   apply inputs_evaluable (programHandlers program) state.variables.process.bindings effect.inputMappings
+    (strictlySortedStrings_nodup _ (Bool.and_eq_true_iff.mp (Bool.and_eq_true_iff.mp (Bool.and_eq_true_iff.mp mappings).1).1).1)
     (Bool.and_eq_true_iff.mp (Bool.and_eq_true_iff.mp mappings).1).2
   intro name read
   apply canonical_present_binding_evaluable _ _ name canonical
@@ -228,7 +229,7 @@ theorem fire_preserves_suffix_with_depth (program : Program) (analysis : Analysi
     | none =>
       cases step with
       | awaitEffect _ _ _ _ _ _ _ _ active =>
-        simp only [awaitEffectState?, bind, pure, Option.bind_eq_some_iff] at active
+        simp only [awaitEffectState?, program_analysis_effect_inputs program analysis analyzed, bind, pure, Option.bind_eq_some_iff] at active
         obtain ⟨owner, found, instanceId, running, arguments, evaluated, active⟩ := active
         obtain ⟨vertex, rest, token, rfl, fields, inputEq, ownerEq, consumer, tokenDeclared⟩ :=
           position_with_token_has_current_head program analysis.ordered remaining before input owner position found
@@ -628,8 +629,8 @@ theorem serial_position_progress (program : Program) (analysis : Analysis) (stat
           | none =>
             obtain ⟨arguments, evaluated⟩ := current_service_inputs_evaluable program state id origin input output effect vertex rest projected available canonical
             simp only [fire?, absent]
-            change ∃ after, awaitEffectState? state input output effect none = some after
-            simp [awaitEffectState?, onlyTokenOwner?, tokenOwners,
+            change ∃ after, awaitEffectState? program state input output effect none = some after
+            simp [awaitEffectState?, program_analysis_effect_inputs program analysis analyzed, onlyTokenOwner?, tokenOwners,
               fields.2.1, consumes', runningInstance?, running, evaluated, fields.2.2.2.2]
         case reachNoneEnd id origin input =>
           simp [fire_reachNoneEnd_withoutSnapshotDeclaration _ _ _ _ _ absent,

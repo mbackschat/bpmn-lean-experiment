@@ -1,17 +1,21 @@
 /** Closed union validation for sequential and parallel Multi-Instance E1 progress. */
 import {
   SemanticOperationKind,
+  MultiInstanceBodyKind,
   VariableValueKind,
   compareCanonicalStrings,
   isWellFormedWireString,
 } from "@bpmn-lean/semantic-core";
 import type {
   OpenMultiInstance,
+  OpenEffect,
+  PublicScopePosition,
   OpenParallelMultiInstance,
   OpenUserTask,
   SemanticProcessProgram,
 } from "@bpmn-lean/semantic-core";
 
+import { isSequentialScopeProgress } from "./sequential-scope-publication-validation.js";
 import { isSequentialMultiInstanceProgress } from "./sequential-multi-instance-publication-validation.js";
 import { isCanonicalPublicationVariablePatch } from "./semantic-publication-variable-validation.js";
 
@@ -20,11 +24,14 @@ export function isMultiInstanceProgress(
   instanceId: unknown,
   openUserTasks: readonly OpenUserTask[],
   program: SemanticProcessProgram | null,
+  openEffects: readonly OpenEffect[] = [],
+  scopes: readonly PublicScopePosition[] = [],
 ): value is OpenMultiInstance[] {
   if (typeof instanceId !== "string" || !Array.isArray(value)) return false;
-  const sequential = value.filter((item) => isRecord(item) && item.mode === "sequential");
+  const bodies = value.filter(item => isRecord(item) && item.bodyKind === MultiInstanceBodyKind.SubProcess);
+  const sequential = value.filter((item) => isRecord(item) && item.mode === "sequential" && item.bodyKind === MultiInstanceBodyKind.UserTask);
   const parallel = value.filter((item) => isRecord(item) && item.mode === "parallel");
-  if (sequential.length + parallel.length !== value.length) return false;
+  if (sequential.length + parallel.length + bodies.length !== value.length) return false;
   const declaresSequential = program === null || program.operations.some(({ kind }) =>
     kind === SemanticOperationKind.AwaitSequentialMultiInstanceUserTask
   );
@@ -32,6 +39,7 @@ export function isMultiInstanceProgress(
     kind === SemanticOperationKind.AwaitParallelMultiInstanceUserTask
   );
   if (
+    !bodies.every(body => isSequentialScopeProgress(body, instanceId, openUserTasks, openEffects, scopes, program)) ||
     (!declaresSequential && sequential.length > 0) ||
     (!declaresParallel && parallel.length > 0) ||
     !isSequentialMultiInstanceProgress(sequential, instanceId, openUserTasks) ||
@@ -40,9 +48,12 @@ export function isMultiInstanceProgress(
     return false;
   }
   const progress = value as OpenMultiInstance[];
-  const taskIds = progress.flatMap(({ activeIterations }) =>
-    activeIterations.map(({ taskId }) => taskId)
-  );
+  const taskIds = progress.flatMap(item => item.bodyKind === MultiInstanceBodyKind.UserTask
+    ? item.activeIterations.map(({ taskId }) => taskId)
+    : item.activeIterations.flatMap(({ userTaskIds }) => userTaskIds));
+  const effectIds = progress.flatMap(item => item.bodyKind === MultiInstanceBodyKind.SubProcess
+    ? item.activeIterations.flatMap(({ effectIds }) => effectIds) : []);
+  if (!effectIds.every((id, index) => effectIds.findIndex(candidate => sameOccurrence(candidate, id)) === index)) return false;
   return canonical(progress, compareProgress) && taskIds.every((taskId, index) =>
     taskIds.findIndex((candidate) => sameOccurrence(candidate, taskId)) === index
   );
@@ -66,12 +77,13 @@ function isParallelProgress(
   if (
     !isRecord(value) ||
     !hasOnlyKeys(value, [
-      "id", "mode", "plannedInstanceCount", "pendingItemCount",
+      "id", "mode", "bodyKind", "plannedInstanceCount", "pendingItemCount",
       "numberOfInstances", "numberOfActiveInstances",
       "numberOfCompletedInstances", "numberOfTerminatedInstances",
       "activeIterations",
     ]) ||
     !isActivityOccurrence(value.id, instanceId) ||
+    value.bodyKind !== MultiInstanceBodyKind.UserTask ||
     value.mode !== "parallel" ||
     !isSafe(value.plannedInstanceCount, 1) ||
     value.pendingItemCount !== 0 ||

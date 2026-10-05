@@ -72,7 +72,7 @@ theorem sharedParallelEntry_preserves_runtimeStateWellFormed (program : Program)
             activityActivation }
       change runtimeStateWellFormed program expectedInstanceId successor = true
       simp only [runtimeStateWellFormed, Bool.and_eq_true] at wellFormed
-      obtain ⟨existing, ⟨⟨claims, retention⟩, snapshots⟩, execution⟩ := wellFormed
+      obtain ⟨existing, ⟨⟨⟨claims, retention⟩, snapshots⟩, execution⟩, repeated⟩ := wellFormed
       obtain ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨position, races⟩, incidents⟩, owners⟩, identities⟩,
         bounds⟩, declarations⟩, hidden⟩, order⟩, bodies⟩, timersUnambiguous⟩,
         messagesUnambiguous⟩, activityIds⟩, controllers⟩, sequentialBindings⟩,
@@ -800,5 +800,6 @@ theorem sharedParallelEntry_preserves_runtimeStateWellFormed (program : Program)
         identitiesAfter⟩, boundsAfter⟩, declarationsAfter⟩, hiddenAfter⟩, orderAfter⟩, bodiesAfter⟩,
         attachedAfter⟩, messagesUnambiguousAfter⟩, activityIdsAfter⟩, controllersAfter⟩,
         sequentialBindingsAfter⟩, parallelBindingsAfter⟩, controllerIdsAfter⟩, notExhaustedAfter⟩,
-        lifecycleAfter⟩, ⟨⟨⟨claimsAfter, retentionAfter⟩, snapshotsAfter⟩, executionAfter⟩⟩
+        lifecycleAfter⟩, ⟨⟨⟨⟨claimsAfter, retentionAfter⟩, snapshotsAfter⟩, executionAfter⟩,
+      account.repeatedScopeStateValid_frame before successor rfl repeated⟩⟩
 end BpmnSemantics.SemanticProcess

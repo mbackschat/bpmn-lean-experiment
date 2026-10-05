@@ -46,6 +46,7 @@ export function semanticOperationInternalFamily(
     case SemanticOperationKind.AwaitParallelMultiInstanceUserTask:
     case SemanticOperationKind.AwaitEventRace:
       return InternalOperationFamily.CompositeWaitAndActivityArming;
+    case SemanticOperationKind.EnterSequentialMultiInstanceScope:
     case SemanticOperationKind.EnterScope:
     case SemanticOperationKind.InvokeProcess:
       return InternalOperationFamily.ScopeCreationAndCallInvocation;
@@ -59,6 +60,7 @@ export function semanticOperationInternalFamily(
     case SemanticOperationKind.ReachNoneEnd:
       return InternalOperationFamily.MergeAndOrdinaryEnd;
     case SemanticOperationKind.ReturnProcess:
+    case SemanticOperationKind.CompleteSequentialMultiInstanceScope:
     case SemanticOperationKind.CompleteScope:
     case SemanticOperationKind.CompleteEventSubProcess:
     case SemanticOperationKind.ThrowError:
@@ -90,6 +92,7 @@ export enum InternalRuntimeStateAtomDomain {
   EventRace = "eventRace",
   CallOccurrence = "callOccurrence",
   ActivityOccurrence = "activityOccurrence",
+  SequentialScopeController = "sequentialScopeController",
   SequentialController = "sequentialController",
   ParallelController = "parallelController",
   CompensationActivityRetention = "compensationActivityRetention",
@@ -130,6 +133,7 @@ export const internalRuntimeStateFieldCensus = {
   eventRaces: { leanField: "eventRaces", atomDomain: InternalRuntimeStateAtomDomain.EventRace },
   calledProcessOccurrences: { leanField: "calledProcessOccurrences", atomDomain: InternalRuntimeStateAtomDomain.CallOccurrence },
   activityOccurrences: { leanField: "activityOccurrences", atomDomain: InternalRuntimeStateAtomDomain.ActivityOccurrence },
+  sequentialScopeControllers: { leanField: "sequentialScopeControllers", atomDomain: InternalRuntimeStateAtomDomain.SequentialScopeController },
   sequentialMultiInstanceControllers: { leanField: "sequentialMultiInstanceControllers", atomDomain: InternalRuntimeStateAtomDomain.SequentialController },
   parallelMultiInstanceControllers: { leanField: "parallelMultiInstanceControllers", atomDomain: InternalRuntimeStateAtomDomain.ParallelController },
   compensationActivityRetentions: { leanField: "compensationActivityRetentions", atomDomain: InternalRuntimeStateAtomDomain.CompensationActivityRetention },

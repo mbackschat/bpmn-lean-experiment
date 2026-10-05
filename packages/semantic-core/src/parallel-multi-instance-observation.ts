@@ -1,5 +1,5 @@
 /** Public progress derived from the exact indexed parallel controller binding. */
-import { VariableValueKind } from "./contract.js";
+import { MultiInstanceBodyKind, VariableValueKind } from "./contract.js";
 import type {
   OpenParallelMultiInstance,
   OpenParallelMultiInstanceIteration,
@@ -57,6 +57,7 @@ export function projectOpenParallelMultiInstances(
     return {
       id: binding.controller.id,
       mode: "parallel" as const,
+        bodyKind: MultiInstanceBodyKind.UserTask,
       plannedInstanceCount: binding.controller.slots.length,
       pendingItemCount: 0 as const,
       numberOfInstances: active.length + completed,

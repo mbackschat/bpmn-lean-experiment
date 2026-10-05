@@ -126,6 +126,11 @@ theorem prepareInternalArm_after_bounded_scope
   obtain ⟨selected, instanceId, ownerRecord, definition, start, delta,
     selection, _, _, _, _, _, _, _, _, _, rfl⟩ :=
     prepareInternalBoundedScope_facts program state contract prepared found
+  have noPopulation := regional_independent_activity_population_absent
+    (boundedScopeStateFootprint selected instanceId ownerRecord)
+    (PreparedInternalArming.ordinary ordinary.operation ordinary).stateFootprint ordinary.owner
+    selected.record independent
+    (by simp [boundedScopeStateFootprint, canonicalRegionalStateAtoms_mem])
   obtain ⟨inputs, entries, timers, anchors⟩ :=
     boundedScope_ordinary_independent_separation selected instanceId ownerRecord ordinary independent
   obtain ⟨entry, entryFound, rfl⟩ := selectInternalBoundedScope_facts state contract selected selection
@@ -134,6 +139,10 @@ theorem prepareInternalArm_after_bounded_scope
     contract.entryOperation ordinary entry ordinaryFound entryFound inputs entries
   let child := entry.apply state
   let after := (makeInternalBoundedScopeSelection state contract entry).apply state
+  have scopedFrames := prepared_arm_process_input_frames program child after operation ordinary
+    childPrepared noPopulation (by
+      simp only [after, child, InternalBoundedScopeSelection.apply, makeInternalBoundedScopeSelection,
+        InternalScopeCreationSelection.apply, fields.2.2])
   have counts : internalActivationCount after ordinary.write.kind ordinary.write.elementId =
       internalActivationCount child ordinary.write.kind ordinary.write.elementId := by
     cases kind : ordinary.write.kind with
@@ -162,6 +171,8 @@ theorem prepareInternalArm_after_bounded_scope
       InternalScopeCreationSelection.apply, fields.2.2, exactLiveOccurrence]
   · simp only [after, child, InternalBoundedScopeSelection.apply, makeInternalBoundedScopeSelection,
       InternalScopeCreationSelection.apply, fields.2.2]
+  · cases operation <;> exact scopedFrames.1
+  · exact scopedFrames.2
   · exact counts
   · simpa only [after, child, InternalBoundedScopeSelection.apply, makeInternalBoundedScopeSelection,
       InternalScopeCreationSelection.apply, fields.2.2, applyInternalArmingPatch,

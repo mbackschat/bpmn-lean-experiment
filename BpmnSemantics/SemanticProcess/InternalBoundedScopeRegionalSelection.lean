@@ -18,7 +18,10 @@ theorem boundedScope_region_after_independent
     (regionalFound : prepareInternalRegional? program state operation = some regional)
     (independent : regionalStateFootprintsIndependent regional.footprint bounded.footprint = true) :
     deriveInternalOccurrenceRegion? (bounded.selection.apply state) regional.selection.root.id = some regional.region := by
-  have childValid := prepareInternalBoundedScope_preserves_child_runtime program state contract bounded _ valid found
+  have childValid := prepareInternalBoundedScope_preserves_child_position program state contract bounded _ (by
+    have parts := valid
+    simp only [runtimeStateWellFormed, Bool.and_eq_true, and_assoc] at parts
+    exact parts.1) found
   obtain ⟨selected, hosting, owner, _, _, _, selection, running, _, _, ownerExact, _, _, _, _, _, rfl⟩ :=
     prepareInternalBoundedScope_facts program state contract bounded found
   have separated := boundedScope_other_child_independent regional.footprint selected hosting owner independent
@@ -27,8 +30,7 @@ theorem boundedScope_region_after_independent
   have runningControl : state.control = .running hosting := by
     cases control : state.control <;> simp_all [runningInstance?]
   have position : runtimePositionValid program hosting (entry.apply state) = true := by
-    simp only [runtimeStateWellFormed, Bool.and_eq_true, and_assoc] at childValid
-    exact childValid.1
+    exact childValid
   have derived := scopeCreation_region_frame program state operation contract.entryOperation regional entry
     hosting owner position regionalFound entryFound runningControl ownerExact separated
   let after := (makeInternalBoundedScopeSelection state contract entry).apply state
@@ -270,7 +272,10 @@ theorem selectInternalRegional_after_independent_bounded_scope
     (regionalFound : prepareInternalRegional? program state operation = some regional)
     (independent : regionalStateFootprintsIndependent regional.footprint bounded.footprint = true) :
     selectInternalRegional? program (bounded.selection.apply state) operation = some regional.selection := by
-  have childValid := prepareInternalBoundedScope_preserves_child_runtime program state contract bounded _ valid found
+  have childValid := prepareInternalBoundedScope_preserves_child_position program state contract bounded _ (by
+    have parts := valid
+    simp only [runtimeStateWellFormed, Bool.and_eq_true, and_assoc] at parts
+    exact parts.1) found
   have supplement := boundedScope_subscribed_completion_supplement_frame program state contract bounded found
   obtain ⟨selected, hosting, owner, _, _, _, selection, running, _, _, _, _, _, _, _, _, rfl⟩ :=
     prepareInternalBoundedScope_facts program state contract bounded found
@@ -283,8 +288,7 @@ theorem selectInternalRegional_after_independent_bounded_scope
     simp only [runtimeStateWellFormed, Bool.and_eq_true, and_assoc] at valid
     exact valid.1
   have childPosition : runtimePositionValid program hosting (entry.apply state) = true := by
-    simp only [runtimeStateWellFormed, Bool.and_eq_true, and_assoc] at childValid
-    exact childValid.1
+    exact childValid
   have childSelected := scopeCreation_regional_selection program state operation contract.entryOperation regional entry
     hosting owner programValid position childPosition regionalFound entryFound runningControl separated
   have facts := prepareInternalRegional_facts program state operation regional regionalFound

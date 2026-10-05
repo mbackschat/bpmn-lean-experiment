@@ -347,7 +347,7 @@ private theorem parallelProfile_eventRaces_empty (program : Program) (state : Ru
   apply List.eq_nil_iff_forall_not_mem.mpr
   intro race raceMember
   simp only [hiddenRecordDeclarationsValid, Bool.and_eq_true] at hidden
-  have declaration := List.all_eq_true.mp hidden.2 race raceMember
+  have declaration := List.all_eq_true.mp hidden.1.2 race raceMember
   obtain ⟨operation, singleton⟩ :=
     List.length_eq_one_iff.mp (of_decide_eq_true declaration)
   have filteredMember : operation ∈ program.operations.filter (fun
@@ -415,7 +415,7 @@ theorem sharedParallelTerminal_preserves_runtimeStateWellFormed
   let after := closeSharedParallelRegion before controller record output variables
   change runtimeStateWellFormed program expectedInstanceId after = true
   simp only [runtimeStateWellFormed, Bool.and_eq_true] at wellFormed
-  obtain ⟨existing, ⟨⟨claims, retention⟩, snapshots⟩, execution⟩ := wellFormed
+  obtain ⟨existing, ⟨⟨⟨claims, retention⟩, snapshots⟩, execution⟩, repeated⟩ := wellFormed
   obtain ⟨h17, _lifecycle⟩ := existing
   obtain ⟨h16, _notExhausted⟩ := h17
   obtain ⟨h15, _controllerIds⟩ := h16
@@ -586,9 +586,8 @@ theorem sharedParallelTerminal_preserves_runtimeStateWellFormed
         exact (List.mem_filter.mp retained).1
       exact timerDeclarations wait (List.mem_filter.mpr ⟨beforeMember, expected⟩)
   have hiddenAfter : hiddenRecordDeclarationsValid program after = true := by
-    simp only [hiddenRecordDeclarationsValid, Bool.and_eq_true] at hidden ⊢
-    refine ⟨by simpa [after, closeSharedParallelRegion] using hidden.1, ?_⟩
-    simp [after, closeSharedParallelRegion, noRaces]
+    change hiddenRecordDeclarationsValid program before = true
+    exact hidden
   simp only [canonicalCollectionOrder, Bool.and_eq_true] at order
   obtain ⟨⟨⟨⟨order, scopeOrder⟩, scopeCounterOrder⟩, callCounterOrder⟩, raceCounterOrder⟩ := order
   obtain ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨tokenOrder, activityCounterOrder⟩, taskOrder⟩, activationOrder⟩, messageWaitOrder⟩,
@@ -797,6 +796,7 @@ theorem sharedParallelTerminal_preserves_runtimeStateWellFormed
     activityIdsAfter⟩, controllersAfter⟩,
     sequentialBindingsAfter⟩, parallelBindingsAfter⟩, controllerIdsAfter⟩,
     notExhaustedAfter⟩, lifecycleAfter⟩,
-    ⟨⟨⟨claimsAfter, retentionAfter⟩, snapshotsAfter⟩, executionAfter⟩⟩
+    ⟨⟨⟨⟨claimsAfter, retentionAfter⟩, snapshotsAfter⟩, executionAfter⟩,
+      account.repeatedScopeStateValid_frame before after rfl repeated⟩⟩
 
 end BpmnSemantics.SemanticProcess

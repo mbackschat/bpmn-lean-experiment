@@ -69,6 +69,68 @@ theorem scopeArming_untouched_input (selected : InternalScopeCreationSelection)
     exact not_mem_right_of_listsDisjoint _ _ separated.1.1.1 _ written (scopeArming_input_read arm)
   exact ⟨distinct _ (by simp), distinct _ (by simp)⟩
 
+theorem scopeCreation_effect_input_frames (program : Program) (state : RuntimeState)
+    (scopeOperation : SemanticOperation) (scope : InternalScopeCreationSelection)
+    (scopeFound : selectInternalScopeCreation? state scopeOperation = some scope)
+    (owner : ScopeOccurrenceId) (id : OperationId) (origin : BpmnElementOrigin)
+    (input output : ControlPlaceId) (effect : EffectDefinition) (route : Option BpmnErrorRoute)
+    (evaluated : (evaluateEffectInputs? program state owner effect.inputMappings).isNone = false) :
+    (∀ mappings, evaluateEffectInputs? program (scope.apply state) owner mappings =
+      evaluateEffectInputs? program state owner mappings) ∧
+    scopedEffectInputReads? program (scope.apply state) owner (.awaitEffect id origin input output effect route) =
+      scopedEffectInputReads? program state owner (.awaitEffect id origin input output effect route) := by
+  cases scopeSelected : sequentialScopeProgramSelected program && hasSequentialScopeDefinition program owner with
+  | false =>
+      constructor
+      · intro mappings
+        simp only [evaluateEffectInputs?, scopeSelected]
+        cases kind : scope.kind <;> simp [InternalScopeCreationSelection.apply, kind]
+      · simp only [scopedEffectInputReads?, scopeSelected]
+        rfl
+  | true =>
+      cases binding : sequentialScopeBindingForOwner? program state owner with
+      | none =>
+          simp only [evaluateEffectInputs?, scopeSelected] at evaluated
+          simp [evaluateSequentialScopeInputs?, binding] at evaluated
+      | some bound =>
+          have afterBinding : sequentialScopeBindingForOwner? program (scope.apply state) owner = some bound := by
+            have inserted := sequentialScopeBindingForOwner_insert_scope program state scope.created owner bound
+              (selectInternalScopeCreation_fresh state scopeOperation scope scopeFound) binding
+            cases kind : scope.kind <;> simpa only [InternalScopeCreationSelection.apply, kind, sequentialScopeBindingForOwner?,
+              sequentialScopeBindingForEntry?] using inserted
+          constructor
+          · intro mappings
+            simp only [evaluateEffectInputs?, scopeSelected]
+            simp [evaluateSequentialScopeInputs?, binding, afterBinding]
+            cases kind : scope.kind <;> simp [InternalScopeCreationSelection.apply, kind, readSequentialScopeVariable?]
+          · simp only [scopedEffectInputReads?, scopeSelected]
+            simp [binding, afterBinding]
+
+theorem prepared_scopeCreation_input_frames (program : Program) (state : RuntimeState)
+    (scopeOperation : SemanticOperation) (scope : InternalScopeCreationSelection)
+    (scopeFound : selectInternalScopeCreation? state scopeOperation = some scope)
+    (operation : SemanticOperation) (patch : InternalArmingPatch)
+    (prepared : prepareInternalArm? program state operation = some patch) :
+    (match operation with
+      | .awaitEffect .. => ∀ mappings, evaluateEffectInputs? program (scope.apply state) patch.owner mappings =
+          evaluateEffectInputs? program state patch.owner mappings
+      | _ => True) ∧
+    scopedEffectInputReads? program (scope.apply state) patch.owner operation =
+      scopedEffectInputReads? program state patch.owner operation := by
+  cases operation <;> try exact ⟨True.intro, rfl⟩
+  rename_i id origin input output effect route
+  simp [prepareInternalArm?, internalArmInput?, internalArmOrigin?] at prepared
+  obtain ⟨owner, ownerEq, prepared⟩ := Option.bind_eq_some_iff.mp prepared
+  split at prepared
+  · simp at prepared
+  · obtain ⟨inputOrigin, inputOriginEq, prepared⟩ := Option.bind_eq_some_iff.mp prepared
+    cases controlEq : state.control <;> simp_all
+    all_goals
+      rcases prepared with ⟨evaluated, _, _, rfl⟩
+      exact scopeCreation_effect_input_frames program state scopeOperation scope scopeFound
+        owner id origin input output effect route (by
+          cases value : evaluateEffectInputs? program state owner effect.inputMappings <;> simp_all)
+
 theorem prepareInternalArm_after_scope_creation (program : Program) (state : RuntimeState)
     (operation scopeOperation : SemanticOperation) (patch : InternalArmingPatch)
     (selected : InternalScopeCreationSelection)
@@ -76,6 +138,8 @@ theorem prepareInternalArm_after_scope_creation (program : Program) (state : Run
     (scopeFound : selectInternalScopeCreation? state scopeOperation = some selected)
     (input : selected.input ≠ patch.input) (entry : selected.entry ≠ patch.input) :
     prepareInternalArm? program (selected.apply state) operation = some patch := by
+  have inputFrames := prepared_scopeCreation_input_frames program state scopeOperation selected scopeFound
+    operation patch found
   have inputFound := prepareInternalArm_input program state operation patch found
   have ownerFound := prepared_owner_lookup program state operation patch found
   have live := (prepared_arm_live_running program state operation patch found).1
@@ -90,7 +154,8 @@ theorem prepareInternalArm_after_scope_creation (program : Program) (state : Run
   | none => simp [originFound] at found
   | some origin =>
     simp only [originFound, ownerFound, ownerAfter, live, liveAfter] at found ⊢
-    cases kind : selected.kind <;>
+    cases operation <;> simp only [inputFrames.1, inputFrames.2]
+    all_goals cases kind : selected.kind <;>
       simpa only [InternalScopeCreationSelection.apply, kind, activationCount,
         messageActivationCount, timerActivationCount, effectActivationCount,
         openWaitAnchorAbsent, openWaitAnchors, InternalArmingWrite.available] using found

@@ -92,6 +92,7 @@ inductive CompensationHandlerFailureCancellationStep (before : RuntimeState)
           eventRaces := []
           calledProcessOccurrences := []
           activityOccurrences := []
+          sequentialScopeControllers := []
           sequentialMultiInstanceControllers := []
           parallelMultiInstanceControllers := []
           compensationActivityRetentions := []

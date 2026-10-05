@@ -124,12 +124,14 @@ theorem cancelScopeSubtree_preserves_wait_declarations (program : Program) (stat
     declarations_filter _ _ _ _ valid.2.2.2.2⟩
 
 /-- The implemented RSI-BIND-05 clauses depend on each retained record and immutable Program
-operations, so arbitrary cancellation preserves both declaring censuses. -/
+operations, so arbitrary cancellation preserves the declaring censuses. -/
 theorem cancelScopeSubtree_preserves_hidden_declarations (program : Program) (state : RuntimeState)
     (root : ScopeOccurrenceId) (disposition : SelectedScopeDisposition)
     (valid : hiddenRecordDeclarationsValid program state = true) :
     hiddenRecordDeclarationsValid program (cancelScopeSubtree state root disposition) = true := by
   simp only [hiddenRecordDeclarationsValid, Bool.and_eq_true] at valid ⊢
-  exact ⟨all_filter _ _ _ valid.1, all_filter _ _ _ valid.2⟩
+  obtain ⟨⟨selections, races⟩, controllers⟩ := valid
+  exact ⟨⟨all_filter _ _ _ selections, all_filter _ _ _ races⟩,
+    all_filter _ _ _ controllers⟩
 
 end BpmnSemantics.SemanticProcess

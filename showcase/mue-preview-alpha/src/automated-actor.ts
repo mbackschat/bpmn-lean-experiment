@@ -3,6 +3,7 @@ import { setTimeout as hostDelay } from "node:timers/promises";
 import type { PublicProcessInstanceIdentity } from "@bpmn-lean/platform-contracts";
 import {
   ProcessStatus,
+  MultiInstanceBodyKind,
   StimulusKind,
   VariableValueKind,
 } from "@bpmn-lean/semantic-core";
@@ -197,8 +198,8 @@ function requireRunningAlphaState(
   const controllers = state.openMultiInstances ?? [];
   if (controllers.length === 1) {
     const controller = controllers[0]!;
-    if (controller.mode !== "sequential") {
-      throw new Error("Alpha publication contains a non-Sequential Multi-Instance controller");
+    if (controller.mode !== "sequential" || controller.bodyKind !== MultiInstanceBodyKind.UserTask) {
+      throw new Error("Alpha publication requires a Sequential Multi-Instance User Task controller");
     }
     const loopCounter = requireExactController(processInstanceId, controller, state);
     if (journey === AlphaJourney.Interrupted && loopCounter > 1) {

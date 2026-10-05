@@ -1,6 +1,7 @@
 import { mixedTaskControlProgramShape, mixedTaskControlCheckedShape } from "./mixed-task-control-flow-admission.js";
 import { serialBusinessProgramShape, serialBusinessCheckedShape } from "./serial-business-task-admission.js";
-import { MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID, MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID, SERIAL_BUSINESS_TASK_CHECKPOINT_PROFILE_ID } from "./semantic-profile-catalog.js";
+import { MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID, MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID, SERIAL_BUSINESS_TASK_CHECKPOINT_PROFILE_ID, SEQUENTIAL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID } from "./semantic-profile-catalog.js";
+import { sequentialScopeProgramShape } from "./sequential-scope-program-admission.js";
 import { transactionCancellationProgramShape } from "./transaction-cancellation-admission.js";
 import { CallDataKind } from "./call-data-contract.js";
 import { structuredCompositionCheckedShape, structuredCompositionProgramShape } from "./structured-process-composition-admission.js";
@@ -54,6 +55,7 @@ export function profileAllowsProgramShape(
   actualOperations: ReadonlyArray<SemanticOperation>,
   definitionScopeCount: number,
 ): boolean {
+  if (semanticProfile === SEQUENTIAL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID) return sequentialScopeProgramShape(actualOperations, definitionScopeCount);
   if (semanticProfile === MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID || semanticProfile === MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID) return mixedTaskControlProgramShape(actualOperations, definitionScopeCount, semanticProfile);
   if (semanticProfile === SERIAL_BUSINESS_TASK_CHECKPOINT_PROFILE_ID) return serialBusinessProgramShape(actualOperations, definitionScopeCount);
   if (semanticProfile === STRUCTURED_PROCESS_COMPOSITION_CHECKPOINT_PROFILE_ID) {

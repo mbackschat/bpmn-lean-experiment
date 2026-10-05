@@ -294,7 +294,7 @@ theorem prepareInternalLocalControl_preserves_runtimeStateWellFormed
     delta deltaFound
   have executionValid : compensationExecutionStateValid program state = true := by
     simp only [runtimeStateWellFormed, Bool.and_eq_true] at beforeWF
-    exact beforeWF.2.2
+    exact beforeWF.2.1.2
   have separated := selectInternalLocalControl_separates_active_cancel
     program state operation selected executionValid selection
   have tokenWF := selected.tokens.preserves_runtimeStateWellFormed program instanceId

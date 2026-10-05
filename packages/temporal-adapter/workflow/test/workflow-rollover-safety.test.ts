@@ -15,7 +15,7 @@ test("permits only requested rollover with no managed host callback in flight", 
     false,
   );
   assert.equal(
-    workflowRolloverPermitted(safety({ compensationActivityUnreconciled: true })),
+    workflowRolloverPermitted(safety({ effectActivityUnreconciled: true })),
     false,
   );
 });
@@ -25,7 +25,7 @@ function safety(overrides: Partial<Parameters<typeof workflowRolloverPermitted>[
     requested: true,
     managedBoundaryDeadlineArmed: false,
     managedReadinessCallbackPending: false,
-    compensationActivityUnreconciled: false,
+    effectActivityUnreconciled: false,
     ...overrides,
   };
 }

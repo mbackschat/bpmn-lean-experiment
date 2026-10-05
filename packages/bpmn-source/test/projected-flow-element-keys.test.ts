@@ -32,7 +32,9 @@ type MatrixEntry = readonly [string, string, readonly string[]];
 
 const consumers = [
   { source: "serial-business-task-source.ts", anchor: "compileBusinessTaskSource", elementName: "element", shape: "PlainNode" },
-  { source: "serial-business-task-source.ts", anchor: "serviceNode", elementName: "element", shape: "SerialBusinessServiceTask" },
+  { source: "serial-business-task-source.ts", anchor: "projectSerialBusinessServiceTask", elementName: "element", shape: "SerialBusinessServiceTask" },
+  { source: "sequential-scope-source-compiler.ts", anchor: "compileSequentialScopeSource", elementName: "element", shape: "PlainNode" },
+  { source: "sequential-scope-source-compiler.ts", anchor: "parallelGateway", elementName: "element", shape: "ParallelGateway" },
   { source: "activity-data-input-output-projection.ts", anchor: "projectTask", elementName: "task", shape: "DataInputOutputUserTask" },
   { source: "checked-element-projection.ts", anchor: "projectCheckedSequenceFlows", elementName: "flow", shape: "StandardSequenceFlow" },
   { source: "checked-element-projection.ts", anchor: "classifyGateway", elementName: "element", shape: "ParallelGateway" },

@@ -147,24 +147,26 @@ theorem ordinary_available_activity_patch (state : RuntimeState)
     ← Bool.not_inj_iff]
 
 theorem prepareInternalArm_activity_patch (program : Program) (state : RuntimeState)
-    (patch : InternalDataArmingPatch) (operation : SemanticOperation) :
+    (patch : InternalDataArmingPatch) (operation : SemanticOperation) (ordinary : InternalArmingPatch)
+    (prepared : prepareInternalArm? program state operation = some ordinary)
+    (noPopulation : .activityPopulation ∉ (footprintOfPatch ordinary).reads) :
     prepareInternalArm? program (applyInternalDataArmingActivityPatch state patch) operation =
-      prepareInternalArm? program state operation := by
-  have ownerFrame (input) :
-      onlyTokenOwner? (applyInternalDataArmingActivityPatch state patch) input =
-        onlyTokenOwner? state input := rfl
-  have liveFrame (owner) :
-      exactLiveOccurrence (applyInternalDataArmingActivityPatch state patch) owner =
-        exactLiveOccurrence state owner := rfl
-  have anchorFrame (occurrence) :
-      openWaitAnchorAbsent (applyInternalDataArmingActivityPatch state patch) occurrence =
-        openWaitAnchorAbsent state occurrence := rfl
-  cases operation <;>
-    simp [prepareInternalArm?, internalArmInput?, internalArmOrigin?, ownerFrame, liveFrame,
-      anchorFrame, ordinary_available_activity_patch]
-  all_goals rfl
+      some ordinary := by
+  have inputs := prepared_arm_process_input_frames program state
+    (applyInternalDataArmingActivityPatch state patch) operation ordinary prepared noPopulation rfl
+  apply prepared_arm_read_frame program state _ operation ordinary prepared
+  · rfl
+  · rfl
+  · rfl
+  · intro owner; rfl
+  · rfl
+  · cases operation <;> exact inputs.1
+  · exact inputs.2
+  · cases ordinary.write <;> rfl
+  · rfl
+  · exact ordinary_available_activity_patch state patch ordinary.write
 
-/-- The Activity supplement is outside every ordinary preparation read, including tagged locals. -/
+/-- Footprint separation excludes Activity-population readers before applying the Activity supplement. -/
 theorem prepareInternalArm_data_preserved (program : Program) (state : RuntimeState)
     (contract : InternalDataArmingContract) (data : InternalDataArmingPatch)
     (operation : SemanticOperation) (ordinary : InternalArmingPatch)
@@ -184,7 +186,17 @@ theorem prepareInternalArm_data_preserved (program : Program) (state : RuntimeSt
     obtain ⟨_, _, _, _, _, _, _, _, _, _, _, _, _, rfl⟩ :=
       prepareInternalDataArmingContract_facts program state contract data dataPrepared
     rfl
-  rw [decomposition, prepareInternalArm_activity_patch]
-  exact framed
+  have noPopulation : .activityPopulation ∉ (footprintOfPatch ordinary).reads := by
+    intro member
+    have disjoint := separated
+    simp only [footprintsNonInterfering, stateReadSetsDisjoint, Bool.and_eq_true] at disjoint
+    have noWrites := disjoint.1.1.1.2
+    simp only [List.contains_eq_mem, member, decide_true, Bool.not_true, Bool.false_or,
+      Bool.not_eq_true', List.any_eq_false] at noWrites
+    have impossible := noWrites (.activityOccurrence (activityOwnerForRecord data.record))
+      (data_arming_writes_activity_record contract data)
+    simp at impossible
+  rw [decomposition]
+  exact prepareInternalArm_activity_patch program _ data operation ordinary framed noPopulation
 
 end BpmnSemantics.SemanticProcess.InternalCommutation

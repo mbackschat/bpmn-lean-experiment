@@ -24,9 +24,9 @@ private theorem cancellation_runtime_components (program : Program) (before : Ru
     (execution : compensationExecutionStateValid program (cancelScopeSubtree before root disposition) = true) :
     runtimeStateWellFormed program hosting (cancelScopeSubtree before root disposition) = true := by
   simp only [runtimeStateWellFormed, Bool.and_eq_true, and_assoc] at valid ⊢
-  obtain ⟨_, races, incidents, waitOwners, waitIds, identityBounds, waitDeclarations,
+  obtain ⟨beforePosition, races, incidents, waitOwners, waitIds, identityBounds, waitDeclarations,
     hiddenDeclarations, order, activities, timers, messages, activityIds, controllers,
-    sequential, parallel, controllerIds, exhaustion, _, bodyClaims, _, _, _⟩ := valid
+    sequential, parallel, controllerIds, exhaustion, _, bodyClaims, _, _, _, repeated⟩ := valid
   obtain ⟨nextWaitIds, nextActivityIds, nextControllerIds⟩ :=
     cancelScopeSubtree_preserves_identity_uniqueness before root disposition waitIds activityIds controllerIds
   obtain ⟨nextTimers, nextMessages, nextBodyClaims⟩ :=
@@ -51,7 +51,9 @@ private theorem cancellation_runtime_components (program : Program) (before : Ru
     nextControllerIds,
     cancelScopeSubtree_preserves_controller_exhaustion before root disposition exhaustion,
     by change (match before.control with | .notStarted => _ | _ => true) = true; rw [running],
-    nextBodyClaims, retention, snapshots, execution⟩
+    nextBodyClaims, retention, snapshots, execution,
+    cancelScopeSubtree_preserves_repeated_scope_state program before hosting root disposition
+      beforePosition running activityIds repeated⟩
 
 theorem preparedTerminate_preserves_runtimeStateWellFormed (program : Program) (before : RuntimeState)
     (hosting : SemanticId) (id : OperationId) (origin : BpmnElementOrigin)
@@ -62,7 +64,7 @@ theorem preparedTerminate_preserves_runtimeStateWellFormed (program : Program) (
       runtimeStateWellFormed program hosting after = true := by
   have components := valid
   simp only [runtimeStateWellFormed, Bool.and_eq_true, and_assoc] at components
-  obtain ⟨position, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, retention, snapshotValid, execution⟩ := components
+  obtain ⟨position, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, retention, snapshotValid, execution, _⟩ := components
   obtain ⟨snapshots, declared, _, closedSelection, _, _, published⟩ :=
     prepareInternalRegional_facts program before _ prepared found
   obtain ⟨selection, closed⟩ := ownershipClosedSelection_facts program before _ prepared.selection closedSelection
@@ -107,11 +109,11 @@ theorem preparedTerminate_preserves_runtimeStateWellFormed (program : Program) (
   simp only [runtimeStateWellFormed, Bool.and_eq_true, and_assoc] at cancelled ⊢
   obtain ⟨_, races, incidents, waits, waitIds, bounds, declarations, hidden, order, activities,
     timers, messages, activityIds, controllers, sequential, parallel, controllerIds, exhaustion,
-    _, bodies, retention, snapshotValid, execution⟩ := cancelled
+    _, bodies, retention, snapshotValid, execution, repeated⟩ := cancelled
   exact ⟨afterPosition, races, incidents, waits, waitIds, bounds, declarations, hidden, order, activities,
     timers, messages, activityIds, controllers, sequential, parallel, controllerIds, exhaustion,
     by change (match before.control with | .notStarted => _ | _ => true) = true; rw [running],
-    bodies, retention, snapshotValid, execution⟩
+    bodies, retention, snapshotValid, execution, repeated⟩
 
 theorem preparedError_preserves_runtimeStateWellFormed (program : Program) (before : RuntimeState)
     (hosting : SemanticId) (id : OperationId) (origin : BpmnElementOrigin)
@@ -123,7 +125,7 @@ theorem preparedError_preserves_runtimeStateWellFormed (program : Program) (befo
   have domain := prepareInternalRegional_rootCompensationDomain program before _ prepared found
   have components := valid
   simp only [runtimeStateWellFormed, Bool.and_eq_true, and_assoc] at components
-  obtain ⟨position, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, retention, snapshotValid, execution⟩ := components
+  obtain ⟨position, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, retention, snapshotValid, execution, _⟩ := components
   obtain ⟨snapshots, declared, _, closedSelection, _, _, published⟩ :=
     prepareInternalRegional_facts program before _ prepared found
   obtain ⟨selection, closed⟩ := ownershipClosedSelection_facts program before _ prepared.selection closedSelection
@@ -174,10 +176,10 @@ theorem preparedError_preserves_runtimeStateWellFormed (program : Program) (befo
   simp only [runtimeStateWellFormed, Bool.and_eq_true, and_assoc] at cancelled ⊢
   obtain ⟨_, races, incidents, waits, waitIds, bounds, declarations, hidden, _, activities,
     timers, messages, activityIds, controllers, sequential, parallel, controllerIds, exhaustion,
-    _, bodies, retention, snapshotValid, execution⟩ := cancelled
+    _, bodies, retention, snapshotValid, execution, repeated⟩ := cancelled
   exact ⟨afterPosition, races, incidents, waits, waitIds, bounds, declarations, hidden, afterOrder, activities,
     timers, messages, activityIds, controllers, sequential, parallel, controllerIds, exhaustion,
     by change (match before.control with | .notStarted => _ | _ => true) = true; rw [running],
-    bodies, retention, snapshotValid, afterExecution⟩
+    bodies, retention, snapshotValid, afterExecution, repeated⟩
 
 end BpmnSemantics.SemanticProcess.InternalCommutation

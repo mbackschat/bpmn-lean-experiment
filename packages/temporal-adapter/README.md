@@ -72,6 +72,8 @@ Run the focused adapter gate with:
 ./scripts/pnpm.sh run test:temporal
 ```
 
+The Multi-Instance host-clock headroom assertions are separate `performance:` subtests. For an owner-authorized session excluding performance qualification, prefix the gate with `NODE_OPTIONS=--test-skip-pattern=performance:`. The selector excludes those subtests from execution and Node's counts; qualification records must explicitly identify them as unrun. The complete functional parent tests still check timer outcomes, state, recovery and replay. Ordinary qualification retains the headroom assertions, and excluded checks supply no performance acceptance evidence.
+
 ## Learn more
 
 - [Source map](SOURCE-MAP.md) explains package and execution-environment ownership.

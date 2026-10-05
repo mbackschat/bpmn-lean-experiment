@@ -17,6 +17,8 @@
 import { source as mixedTaskSource, profile as mixedTaskProfile, sourceOverlay as mixedTaskSourceOverlay } from "./mixed-task-control-flow-fixture.ts";
 import assert from "node:assert/strict";
 import { source as serialBusinessSource, profile as serialBusinessProfile, sourceOverlay as serialBusinessSourceOverlay } from "./serial-business-task-fixture.ts";
+import { source as sequentialScopeSource, profile as sequentialScopeProfile, sourceOverlay as sequentialScopeOverlay,
+  prepareSource as prepareSequentialScopeSource } from "./sequential-scope-source-fixture.ts";
 import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 
@@ -267,6 +269,11 @@ const dispatchFixtures = {
   serialBusinessTasks: {
     path: "the serial business task reader", source: serialBusinessSource, sourceId: "invoice",
     semanticProfile: serialBusinessProfile, sourceOverlay: serialBusinessSourceOverlay(), find: '<startEvent id="Start"',
+  },
+  sequentialMultiInstanceSubProcess: {
+    path: "the sequential MI Sub-Process reader", source: sequentialScopeSource, sourceId: "invoice-batch",
+    semanticProfile: sequentialScopeProfile, sourceOverlay: sequentialScopeOverlay(),
+    prepare: prepareSequentialScopeSource, find: '<startEvent id="Start"',
   },
   mappedSuccessServiceTask: {
     path: "the mapped-success reader",

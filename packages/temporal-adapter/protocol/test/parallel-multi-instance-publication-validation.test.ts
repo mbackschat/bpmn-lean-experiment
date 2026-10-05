@@ -83,7 +83,7 @@ function parallelProgressPage(): any {
       activityElementId: "Review",
       activation: 1,
     },
-    mode: "parallel",
+    mode: "parallel", bodyKind: "userTask",
     plannedInstanceCount: 3,
     pendingItemCount: 0,
     numberOfInstances: 3,

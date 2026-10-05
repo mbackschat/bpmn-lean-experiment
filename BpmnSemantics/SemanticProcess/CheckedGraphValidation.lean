@@ -12,6 +12,7 @@ private def checkedNodeId : CheckedNode → NodeId
   | .noneStartEvent id
   | .messageStartEvent id _
   | .timerStartEvent id _
+  | .sequentialMultiInstanceSubProcess id _ _ _ _ _
   | .embeddedSubProcess id _
   | .transactionSubProcess id _ _
   | .cancelEndEvent id
@@ -94,6 +95,7 @@ private def attachedBoundaryHost? : CheckedNode → Option (GraphEdge NodeId)
   | .timerBoundaryEvent id attachedToRef _ _ _
   | .messageBoundaryEvent id attachedToRef _ _ _ =>
       some { source := attachedToRef, target := id }
+  | .sequentialMultiInstanceSubProcess ..
   | .transactionSubProcess .. | .cancelEndEvent ..
   | .noneStartEvent .. | .messageStartEvent .. | .timerStartEvent .. | .embeddedSubProcess .. | .callActivity ..
   | .userTask .. | .dataInputUserTask .. | .dataInputOutputUserTask .. | .dataOutputUserTask ..
@@ -137,6 +139,7 @@ def checkedNodeIsResumptionCut : CheckedNode → Bool
   | .dataOutputUserTask .. => true
   | .sequentialMultiInstanceUserTask .. => true
   | .parallelMultiInstanceUserTask .. => true
+  | .sequentialMultiInstanceSubProcess ..
   | .transactionSubProcess .. | .cancelEndEvent ..
   | .noneStartEvent .. | .messageStartEvent .. | .timerStartEvent .. | .embeddedSubProcess .. | .callActivity ..
   | .cancelBoundaryEvent .. | .boundaryErrorEvent .. | .timerBoundaryEvent .. | .messageBoundaryEvent ..

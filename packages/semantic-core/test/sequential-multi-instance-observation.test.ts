@@ -128,6 +128,7 @@ test("the loop counter and the projected item advance together across an iterati
   );
   assert.ok(after !== null);
   const [open] = progress(after);
+  assert.ok(open?.bodyKind === "userTask");
 
   assert.equal(open?.numberOfCompletedInstances, 1);
   assert.equal(open?.numberOfInstances, 2);

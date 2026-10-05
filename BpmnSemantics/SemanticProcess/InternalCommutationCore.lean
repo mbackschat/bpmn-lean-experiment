@@ -46,12 +46,15 @@ inductive InternalStateAtom where
   | processVariable (propertyId : String)
   | activityVariableScope (owner : LocalDataOwner)
   | activityVariable (owner : LocalDataOwner) (name : String)
+  | activityPopulation
   | activityOccurrence (occurrence : ActivityOccurrenceId)
   | activityBodyTaskClaim (occurrence : OccurrenceId)
   | selectedBranch (owner : ScopeOccurrenceId) (selectionKey : String)
   | selectedBranchOwners (selectionKey : String)
   | scopeParent (occurrence : ScopeOccurrenceId) (parent : Option ScopeOccurrenceId)
   | callAssociation (record : CalledProcessOccurrence)
+  | scopeVariableScope (owner : ScopeOccurrenceId)
+  | sequentialScopeController (id : ActivityOccurrenceId) (owner : ScopeOccurrenceId)
   deriving Repr, DecidableEq
 
 structure InternalPositionDelta where
@@ -99,6 +102,7 @@ structure InternalArmingPatch where
   inputOrigin : BpmnSequenceFlowOrigin
   owner : ScopeOccurrenceId
   write : InternalArmingWrite
+  inputReads : Option (List InternalStateAtom) := none
   deriving Repr, DecidableEq
 
 def kindRank : InternalWaitKind → Nat
@@ -154,6 +158,9 @@ def stateAtomRank : InternalStateAtom → Nat
   | .selectedBranchOwners _ => 14
   | .scopeParent _ _ => 15
   | .callAssociation _ => 16
+  | .scopeVariableScope _ => 17
+  | .sequentialScopeController _ _ => 18
+  | .activityPopulation => 19
 
 def stateAtomBefore (left right : InternalStateAtom) : Bool :=
   if stateAtomRank left ≠ stateAtomRank right then
@@ -162,6 +169,9 @@ def stateAtomBefore (left right : InternalStateAtom) : Bool :=
     match left, right with
     | .runtimeControl left, .runtimeControl right => left.value < right.value
     | .scopeOccurrence left, .scopeOccurrence right => scopeBefore left right
+    | .scopeVariableScope left, .scopeVariableScope right => scopeBefore left right
+    | .sequentialScopeController left leftOwner, .sequentialScopeController right rightOwner =>
+        if left ≠ right then localActivityOwnerBefore left right else scopeBefore leftOwner rightOwner
     | .controlToken leftOwner leftPlace, .controlToken rightOwner rightPlace =>
         if leftOwner ≠ rightOwner then scopeBefore leftOwner rightOwner
         else leftPlace.value < rightPlace.value
@@ -411,6 +421,23 @@ def InternalArmingWrite.available (state : RuntimeState) : InternalArmingWrite �
   | .effect wait _ => !state.variables.activities.any (activityScopeMatches (effectWaitOccurrence wait))
   | _ => true
 
+/-- SMIS-DATA-01 binds prepared reads to the same selected body as input evaluation. -/
+def scopedEffectInputReads? (program : Program) (state : RuntimeState) (owner : ScopeOccurrenceId)
+    (operation : SemanticOperation) : Option (List InternalStateAtom) := do
+  let .awaitEffect _ _ _ _ effect _ := operation | none
+  if !(sequentialScopeProgramSelected program && hasSequentialScopeDefinition program owner) then none
+  else
+    let binding ← sequentialScopeBindingForOwner? program state owner
+    let processReads := effect.inputMappings.filterMap fun mapping => match mapping.expression with
+      | .enclosingVariable name =>
+          if name != binding.entry.itemName && !(binding.locals.bindings.any (·.name == name)) then
+            some (.processVariable name) else none
+      | _ => none
+    some ([.activityPopulation, .activityOccurrence (sequentialScopeActivityId binding.activity),
+      .sequentialScopeController (sequentialScopeActivityId binding.activity) binding.activity.owner,
+      .scopeVariableScope owner, .scopeParent owner binding.body.parent,
+      .scopeOccurrence binding.activity.owner] ++ processReads)
+
 def prepareInternalArm? (program : Program) (state : RuntimeState)
     (operation : SemanticOperation) : Option InternalArmingPatch := do
   let input ← internalArmInput? operation
@@ -460,7 +487,7 @@ def prepareInternalArm? (program : Program) (state : RuntimeState)
             elementId := timer.elementId, activation := next,
             deadlineMs := state.logicalTimeMs + timer.durationMs, output })
     | .awaitEffect _ _ _ output effect route =>
-        let evaluated := evaluateEnclosingInputMappings state.variables.process.bindings effect.inputMappings
+        let evaluated := evaluateEffectInputs? program state owner effect.inputMappings
         if evaluated.isNone then none else
         let bindings := evaluated.getD []
         let next := effectActivationCount state effect.elementId + 1
@@ -484,7 +511,8 @@ def prepareInternalArm? (program : Program) (state : RuntimeState)
         input := input
         inputOrigin := inputOrigin
         owner := owner
-        write := write }
+        write := write
+        inputReads := scopedEffectInputReads? program state owner operation }
 
 def applyInternalArmingPatch (state : RuntimeState)
     (patch : InternalArmingPatch) : RuntimeState :=
@@ -552,7 +580,7 @@ def footprintOfPatch (patch : InternalArmingPatch) : InternalTransitionFootprint
       ([.runtimeControl patch.runtimeInstanceId, .scopeOccurrence patch.owner,
         .logicalTime, .controlToken patch.owner patch.input, .tokenOwners patch.input,
         .activation kind.activationKind elementId,
-        .wait kind occurrence, .openWaitAnchor occurrence] ++ extraReads ++ correlationReads)
+        .wait kind occurrence, .openWaitAnchor occurrence] ++ extraReads ++ patch.inputReads.getD correlationReads)
     writes := canonicalStateAtomSet
       ([.controlToken patch.owner patch.input, .tokenOwners patch.input,
         .activation kind.activationKind elementId,
@@ -576,11 +604,18 @@ namespace InternalCommutation
 
 def listsDisjoint [DecidableEq α] (left right : List α) : Bool := left.all fun value => !right.contains value
 
+/-- SMIS-IDENTITY-01 reads the unique declaration binding, so any Activity insertion can change it. -/
+def stateReadSetsDisjoint (writes reads : List InternalStateAtom) : Bool :=
+  listsDisjoint writes reads &&
+    (!reads.contains .activityPopulation || !(writes.any fun atom => match atom with
+      | .activityOccurrence _ | .activityPopulation => true
+      | _ => false))
+
 end InternalCommutation
 
 def footprintsNonInterfering (left right : InternalTransitionFootprint) : Bool :=
-  InternalCommutation.listsDisjoint left.writes right.reads &&
-    InternalCommutation.listsDisjoint right.writes left.reads &&
+  InternalCommutation.stateReadSetsDisjoint left.writes right.reads &&
+    InternalCommutation.stateReadSetsDisjoint right.writes left.reads &&
     InternalCommutation.listsDisjoint left.writes right.writes &&
     InternalCommutation.listsDisjoint left.publications right.publications
 

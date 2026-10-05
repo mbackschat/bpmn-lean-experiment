@@ -127,6 +127,26 @@ theorem listsDisjoint_of_subsets {α : Type} [DecidableEq α]
   intro atom member found
   exact separated atom (leftSubset member) (rightSubset found)
 
+theorem stateReadSetsDisjoint_of_subsets
+    {writes reads largerWrites largerReads : List InternalStateAtom}
+    (writeSubset : writes ⊆ largerWrites) (readSubset : reads ⊆ largerReads)
+    (separated : stateReadSetsDisjoint largerWrites largerReads = true) :
+    stateReadSetsDisjoint writes reads = true := by
+  simp only [stateReadSetsDisjoint, Bool.and_eq_true] at separated ⊢
+  refine ⟨listsDisjoint_of_subsets writeSubset readSubset separated.1, ?_⟩
+  by_cases present : InternalStateAtom.activityPopulation ∈ reads
+  · have largerPresent := readSubset present
+    have noWrites := separated.2
+    simp only [List.contains_eq_mem, largerPresent, decide_true, Bool.not_true,
+      Bool.false_or, Bool.not_eq_true', List.any_eq_false] at noWrites
+    apply Bool.or_eq_true_iff.mpr
+    right
+    simp only [Bool.not_eq_true', List.any_eq_false]
+    intro atom member
+    have absent := noWrites atom (writeSubset member)
+    cases atom <;> simp_all
+  · simp [List.contains_eq_mem, present]
+
 theorem footprintsNonInterfering_of_subsets
     (left right largerLeft largerRight : InternalTransitionFootprint)
     (leftReads : left.reads ⊆ largerLeft.reads)
@@ -138,8 +158,8 @@ theorem footprintsNonInterfering_of_subsets
     (separated : footprintsNonInterfering largerLeft largerRight = true) :
     footprintsNonInterfering left right = true := by
   simp only [footprintsNonInterfering, Bool.and_eq_true] at separated ⊢
-  exact ⟨⟨⟨listsDisjoint_of_subsets leftWrites rightReads separated.1.1.1,
-    listsDisjoint_of_subsets rightWrites leftReads separated.1.1.2⟩,
+  exact ⟨⟨⟨stateReadSetsDisjoint_of_subsets leftWrites rightReads separated.1.1.1,
+    stateReadSetsDisjoint_of_subsets rightWrites leftReads separated.1.1.2⟩,
     listsDisjoint_of_subsets leftWrites rightWrites separated.1.2⟩,
     listsDisjoint_of_subsets leftPublications rightPublications separated.2⟩
 

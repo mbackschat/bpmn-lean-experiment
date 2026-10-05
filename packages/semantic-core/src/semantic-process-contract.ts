@@ -61,6 +61,8 @@ export enum SemanticOperationKind {
   InitiateMessage = "initiateMessage",
   InitiateTimer = "initiateTimer",
   EnterScope = "enterScope",
+  EnterSequentialMultiInstanceScope = "enterSequentialMultiInstanceScope",
+  CompleteSequentialMultiInstanceScope = "completeSequentialMultiInstanceScope",
   EnterBoundedScope = "enterBoundedScope",
   EnterMonitoredScope = "enterMonitoredScope",
   InvokeProcess = "invokeProcess",
@@ -455,6 +457,23 @@ export type AwaitCorrelatedPayloadMessageOperation = OperationBase &
     processPropertySelector: CorrelationProcessPropertyPath;
   }>;
 
+export type EnterSequentialMultiInstanceScopeOperation = OperationBase & DeepReadonly<{
+  kind: SemanticOperationKind.EnterSequentialMultiInstanceScope;
+  input: string;
+  childEntry: string;
+  childScopeId: string;
+  normalOutput: string;
+  collectionName: string;
+  itemName: string;
+  bodyInputs: VariableMapping[];
+  completionBooleanName: string | null;
+}>;
+
+export type CompleteSequentialMultiInstanceScopeOperation = OperationBase & DeepReadonly<{
+  kind: SemanticOperationKind.CompleteSequentialMultiInstanceScope;
+  entryOperationId: string;
+}>;
+
 export type AwaitSequentialMultiInstanceUserTaskOperation = OperationBase &
   DeepReadonly<{
     kind: SemanticOperationKind.AwaitSequentialMultiInstanceUserTask;
@@ -615,6 +634,8 @@ export type SemanticOperation =
   | AwaitMessageBoundedUserTaskOperation
   | AwaitMessageMonitoredUserTaskOperation
   | AwaitMonitoredUserTaskOperation
+  | EnterSequentialMultiInstanceScopeOperation
+  | CompleteSequentialMultiInstanceScopeOperation
   | AwaitSequentialMultiInstanceUserTaskOperation
   | AwaitParallelMultiInstanceUserTaskOperation
   | CompleteParallelMultiInstanceUserTaskOperation

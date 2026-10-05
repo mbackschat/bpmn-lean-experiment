@@ -70,6 +70,7 @@ export function programOccurrenceStartMatchesTransition(
         record.transition.owner,
         value,
         program,
+        record.positionDelta,
       );
     }
     case SemanticTransitionKind.ExternalStimulus:
@@ -88,6 +89,7 @@ function internalOperationStarts(
   transitionOwner: ScopeOccurrenceId,
   value: OccurrenceFact,
   program: SemanticProcessProgram,
+  positions: CommittedTransitionRecord["positionDelta"],
 ): boolean {
   const owner = value.owner as ScopeOccurrenceId;
   const exactOrigin = operation.origin.elementId === value.elementId &&
@@ -162,9 +164,33 @@ function internalOperationStarts(
         operation.boundaryEventElementId === value.elementId &&
         parentOwnerCanMatch(transitionOwner, owner, program)
       );
+    case SemanticOperationKind.EnterSequentialMultiInstanceScope:
+      return exactOrigin && repeatedScopeStartMatches(operation, value, positions);
+    case SemanticOperationKind.CompleteSequentialMultiInstanceScope: {
+      const entry = uniqueOperation(program, operation.entryOperationId);
+      return entry?.kind === SemanticOperationKind.EnterSequentialMultiInstanceScope &&
+        entry.childScopeId === transitionOwner.definitionScopeId &&
+        positions.exitedScopes.some(scope => sameScope(scope.id, transitionOwner) &&
+          scope.parent !== null && sameScope(scope.parent, owner)) &&
+        repeatedScopeStartMatches(entry, value, positions) &&
+        positions.enteredScopes.every(scope => scope.id.activation > transitionOwner.activation);
+    }
     default:
       return assertNever(operation);
   }
+}
+
+/** FNOM-OCCURRENCE-01 derives a generated body's start from its exact E1 scope entry. */
+function repeatedScopeStartMatches(
+  entry: Extract<SemanticOperation, { kind: SemanticOperationKind.EnterSequentialMultiInstanceScope }>,
+  value: OccurrenceFact,
+  positions: CommittedTransitionRecord["positionDelta"],
+): boolean {
+  const owner = value.owner as ScopeOccurrenceId;
+  return value.elementId === entry.origin.elementId && positions.enteredScopes.length === 1 &&
+    positions.enteredScopes.every(scope => scope.id.definitionScopeId === entry.childScopeId &&
+      scope.id.processInstanceId === owner.processInstanceId && scope.bpmnElementId === value.elementId &&
+      scope.parent !== null && sameScope(scope.parent, owner));
 }
 
 function externalStimulusStarts(
@@ -532,6 +558,9 @@ function operationPublishesNestedElement(
     case SemanticOperationKind.CompleteScope:
     case SemanticOperationKind.CompleteEventSubProcess:
     case SemanticOperationKind.TriggerCompensation:
+      return false;
+    case SemanticOperationKind.EnterSequentialMultiInstanceScope:
+    case SemanticOperationKind.CompleteSequentialMultiInstanceScope:
       return false;
     default:
       return assertNever(operation);

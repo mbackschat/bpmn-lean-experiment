@@ -262,7 +262,7 @@ theorem fire_preserves_position_with_depth (program : Program) (analysis : Analy
   case awaitEffect id origin input output effect route =>
     cases step with
     | awaitEffect _ _ _ _ _ _ _ _ active =>
-      simp only [awaitEffectState?, bind, pure, Option.bind_eq_some_iff] at active
+      simp only [awaitEffectState?, program_analysis_effect_inputs program analysis analyzed, bind, pure, Option.bind_eq_some_iff] at active
       obtain ⟨owner, found, instanceId, running, arguments, evaluated, active⟩ := active
       obtain ⟨vertex, included, token, rfl, fields, inputEq, ownerEq, consumer, declared⟩ :=
         position_with_token program analysis before frontier input owner position found
@@ -409,8 +409,8 @@ theorem position_progress (program : Program) (analysis : Analysis) (state : Run
         case awaitEffect id origin input output effect route =>
           obtain ⟨arguments, evaluated⟩ := current_service_inputs_evaluable program state analysis.vertices vertex id origin input output effect included projected available canonical
           simp only [fire?, absent]
-          change ∃ after, awaitEffectState? state input output effect route = some after
-          simp [awaitEffectState?, onlyTokenOwner?, tokenOwners,
+          change ∃ after, awaitEffectState? program state input output effect route = some after
+          simp [awaitEffectState?, program_analysis_effect_inputs program analysis analyzed, onlyTokenOwner?, tokenOwners,
             fields.2.1, consumes', runningInstance?, running, evaluated, fields.2.2.2.2]
         case choose id origin input candidates output defaultOrigin =>
           obtain ⟨selected, selection⟩ := StructuredComposition.unique_bindings_make_choice_total state.variables.process.bindings

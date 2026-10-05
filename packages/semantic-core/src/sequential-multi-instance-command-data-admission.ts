@@ -25,7 +25,7 @@ export function sequentialMultiInstanceOperation(
 
 /** Whether one ordered collection fits every bound carried by the admitted operation. */
 export function sequentialMultiInstanceCollectionWithinLimits(
-  operation: AwaitSequentialMultiInstanceUserTaskOperation,
+  operation: Pick<AwaitSequentialMultiInstanceUserTaskOperation, "limits">,
   collection: ReadonlyArray<string>,
 ): boolean {
   const { maximumItems, maximumItemUtf8Bytes, maximumCanonicalCollectionUtf8Bytes } =

@@ -210,4 +210,32 @@ theorem writeScopeVariables_preserves_other_scopes {variables result : ScopedVar
     rcases written with ⟨_, rfl⟩
     exact write_scope_filter_other owner _ _
 
+/-- SMIS-DATA-01 routes values without creating, dropping or reidentifying any body-local owner. -/
+theorem writeScopeVariables_preserves_owner_census {variables result : ScopedVariables}
+    {owner : ScopeOccurrenceId} {patch : List VariableBinding}
+    (written : writeScopeVariables? variables owner patch = some result) :
+    result.scopes.map (·.owner) = variables.scopes.map (·.owner) := by
+  unfold writeScopeVariables? at written
+  obtain ⟨scope, _, written⟩ := Option.bind_eq_some_iff.mp written
+  split at written <;> try contradiction
+  cases Option.some.inj written
+  simp only [List.map_map]
+  apply List.map_congr_left
+  intro candidate _
+  simp only [Function.comp_def]
+  split <;> rfl
+
+/-- Unique frame selection depends on owner multiplicity, not mutable local values. -/
+theorem selectScopeVariables_owner_census (before after : ScopedVariables) (owner : ScopeOccurrenceId)
+    (owners : after.scopes.map (·.owner) = before.scopes.map (·.owner))
+    (selected : ∃ frame, selectScopeVariables? before owner = some frame) :
+    ∃ frame, selectScopeVariables? after owner = some frame := by
+  obtain ⟨frame, selected⟩ := selected
+  have lengths := congrArg (fun values : List ScopeOccurrenceId =>
+    (values.filter (fun candidate => decide (candidate = owner))).length) owners
+  simp only [List.filter_map, List.length_map, Function.comp_def] at lengths
+  rw [selectScopeVariables_iff.mp selected] at lengths
+  obtain ⟨nextFrame, census⟩ := List.length_eq_one_iff.mp lengths
+  exact ⟨nextFrame, selectScopeVariables_iff.mpr census⟩
+
 end BpmnSemantics.SemanticProcess

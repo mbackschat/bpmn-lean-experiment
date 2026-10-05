@@ -449,7 +449,7 @@ theorem prepared_bounded_scope_preserves_structural_program_validity
   simp only [List.mem_singleton] at filtered
   rw [← filtered] at singleton
   have entryBinding : EntryBinding program entry.created definition = true := by
-    unfold EntryBinding
+    unfold EntryBinding scopeOperationBindingValid
     rw [childFacts.2.2.1]
     simp only [decide_eq_true_eq]
     suffices exactEntry : (program.operations.filter _) = [contract.operation] by rw [exactEntry]; rfl
@@ -635,7 +635,7 @@ theorem prepared_bounded_scope_open_projection
       prepared.publicationTemplate.lifecycle = { started := [start], ended := [] } ∧
       projectOpenFlowNodeOccurrences? program (prepared.selection.apply state) =
         some (sortFlowNodeOccurrenceStarts (start :: current)) := by
-  have afterValid := prepared_bounded_scope_preserves_runtime program state contract prepared instanceId found valid
+  have afterValid := prepared_bounded_scope_preserves_runtime program state contract prepared instanceId admitted found valid
   have records : activityRecordsOwnLiveWork state = true := by
     simp only [runtimeStateWellFormed, Bool.and_eq_true] at valid
     simp_all only

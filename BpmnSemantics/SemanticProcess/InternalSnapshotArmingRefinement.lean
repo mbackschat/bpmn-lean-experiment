@@ -30,7 +30,7 @@ theorem running_valid_snapshot_purge_identity (program : Program)
     simp_all only
   have snapshots : compensationEventSubProcessSnapshotStateValid program state = true := by
     simp only [runtimeStateWellFormed, Bool.and_eq_true] at valid
-    exact valid.2.1.2
+    exact valid.2.1.1.2
   have kept : state.compensationParentContextRetentions.filter (fun retention =>
       match retention with
       | .provisional parent _ =>
@@ -134,7 +134,7 @@ theorem prepareInternalArm_attempt_applies (program : Program) (state : RuntimeS
   have fired := prepareInternalArm_applies erased state operation patch rfl erasedPrepared
   obtain ⟨_, instanceId, running⟩ := prepared_arm_live_running program state operation patch prepared
   have afterRunning : (applyInternalArmingPatch state patch).control = .running instanceId := by
-    cases patch with | mk _ _ _ _ _ _ _ _ _ write =>
+    cases patch with | mk _ _ _ _ _ _ _ _ _ write _ =>
       cases write <;> simpa [applyInternalArmingPatch] using running
   have purge := running_valid_snapshot_purge_identity program expectedInstanceId instanceId
     (applyInternalArmingPatch state patch)

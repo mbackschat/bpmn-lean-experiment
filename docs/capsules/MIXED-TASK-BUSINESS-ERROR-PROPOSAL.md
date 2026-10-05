@@ -84,12 +84,12 @@ Pre-release evolution applies. Add one private profile and classified relationsh
 | [Graph admission](../../packages/semantic-core/src/mixed-task-control-flow-admission.ts) | 595 |
 | [Business source projection](../../packages/bpmn-source/src/serial-business-task-source.ts) | 663 |
 | [Admission laws](../../BpmnSemantics/SemanticProcess/MixedTaskControlFlowAdmissionLaws.lean) | 493 |
-| [Data proofs](../../BpmnSemantics/SemanticProcess/MixedTaskControlFlowDataProofs.lean) | 29 |
+| [Data proofs](../../BpmnSemantics/SemanticProcess/MixedTaskControlFlowDataProofs.lean) | 16 |
 | [Lifecycle proofs](../../BpmnSemantics/SemanticProcess/MixedTaskControlFlowLifecycleProofs.lean) | 45 |
 | [Progress proofs](../../BpmnSemantics/SemanticProcess/MixedTaskControlFlowProgressProofs.lean) | 24 |
 | [Effect completion](../../BpmnSemantics/SemanticProcess/EffectCompletion.lean) | 627 |
 | [Completion proofs](../../BpmnSemantics/SemanticProcess/MixedTaskBusinessErrorCompletionProofs.lean) | 583 |
-| [Command admission](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean) | 26 |
+| [Command admission](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean) | 3 |
 
 These measured margins constrain the first implementation plan. Extract a cohesive existing responsibility before planned growth exceeds its margin; rerun bindings for every concrete added/growing path. Required guards include [schema coverage](../../scripts/contract-schema-coverage.test.ts), [artifact relationships](../../scripts/contract-artifact-projections.test.ts), [operation consumers](../../scripts/semantic-operation-consumer-census.test.ts), [Lean imports](../../scripts/lean-import-boundaries.test.ts), [module cost](../../scripts/lean-module-cost.test.ts), [test selection](../../scripts/test-selection-coverage.test.ts), [documentation reviewability](../../scripts/document-reviewability.test.ts) and [public corpus coverage](../../model-corpus/test/executable-model-corpus.test.ts). The source/core/contracts/differential and bounded complete Lean gates precede checkpoint review; unchanged CIB evidence is reused until the claimed comparison changes.
 
@@ -132,6 +132,8 @@ The complete post-refresh gate `/tmp/business-error-hosting-final-temporal` pass
 ## Review and closure
 
 Cold proposal review precedes semantic implementation. The first green semantic checkpoint needs independent review; closure additionally needs hosted refinement, retained whole-model evidence and truthful public registration. Shared interpretation and fixture lowering remain common-mode risks; independent raw-graph mutations, exact outputs and the two-task shared-code counterexample address them. Nearest unsupported claims remain ancestor/catch-all propagation, business-error concurrency, incidents and unconditional termination. Record baseline-to-closure cost against mixed-task composition in the [cost ledger](../CAPSULE-COST-LEDGER.md); unknown authoring time stays unknown.
+
+The current serial/mixed/Error proof regression failed before the stop signal arrived (`/tmp/business-delivery-proof-regression`, exit 1): the shared structured-composition User Task admission lemma did not split the new scoped-data admission guard. Both empty and nonempty incident populations expose the same missing case. The shared admission proof now reasons directly about dispatch versus unchanged refusal, covering the new guard without enumerating business outcomes; its focused build passes `/tmp/business-admission-contract-refactor`. The next regression exposed the same guard-normalization omission in the mixed-task account and a missing no-repeated-entry fact in the serial runtime guard. The selected-profile noninterference lemma compiles. Interrupted dependency rebuilds remain retained (`/tmp/business-profile-frame-fixed`, exit 125; `/tmp/business-profile-frame-bounded` and `/tmp/business-profile-resume-1005`, exit 124). The mixed-task admission proof now supplies its existing profile identity to that shared lemma. Serial and mixed runtime proofs derive absence of repeated entries from their admitted operation sets, then discharge the strengthened state invariant before assembling the runtime guard; theorem assumptions and proof budgets are unchanged. Both progress assemblies and primitive Error completion pass `/tmp/business-runtime-guards-1005`; actual-Start Error reachability passes `/tmp/business-reachability-1005`. Both receipts are separately asserted, as are the 66 source/architecture guards in `/tmp/business-runtime-source-guards-1005`. These results close the selected proof regression; general regional-cancellation preservation, current integration qualification and public promotion remain open.
 
 ## Independent cold-review receipt
 

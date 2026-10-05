@@ -115,6 +115,8 @@ function stateAtomParts(
   switch (atom.kind) {
     case InternalTransitionStateAtomKind.Activation:
       return [atom.kind, atom.occurrenceKind, atom.elementId];
+    case InternalTransitionStateAtomKind.ActivityPopulation:
+      return [atom.kind];
     case InternalTransitionStateAtomKind.ActivityAssociation:
       return [atom.kind, ...activityAssociationParts(atom.record)];
     case InternalTransitionStateAtomKind.ActivityVariable:
@@ -185,6 +187,7 @@ function stateAtomParts(
     case InternalTransitionStateAtomKind.SelectedBranchOwners:
       return [atom.kind, atom.selectionKey];
     case InternalTransitionStateAtomKind.SequentialController:
+    case InternalTransitionStateAtomKind.SequentialScopeController:
       return [
         atom.kind,
         ...activityOccurrenceIdParts(atom.id),
@@ -201,6 +204,7 @@ function stateAtomParts(
     case InternalTransitionStateAtomKind.SequentialControllersPresence:
       return [atom.kind];
     case InternalTransitionStateAtomKind.ScopeOccurrence:
+    case InternalTransitionStateAtomKind.ScopeVariableScope:
       return [atom.kind, ...scopeParts(atom.owner)];
     case InternalTransitionStateAtomKind.ScopeParent:
       return [
@@ -236,6 +240,12 @@ function stateAtomsConflict(
     right.kind === InternalTransitionStateAtomKind.ActivityAssociation
   ) {
     return activityAssociationsConflict(left.record, right.record);
+  }
+  if ((left.kind === InternalTransitionStateAtomKind.ActivityPopulation &&
+       right.kind === InternalTransitionStateAtomKind.ActivityAssociation) ||
+      (right.kind === InternalTransitionStateAtomKind.ActivityPopulation &&
+       left.kind === InternalTransitionStateAtomKind.ActivityAssociation)) {
+    return true;
   }
   if (isParallelControllerAtom(left) && isParallelControllerAtom(right)) {
     return controllerAtomsConflict(
@@ -293,6 +303,8 @@ function occurrenceRegionConflictsWithAtom(
   atom: InternalTransitionStateAtom,
 ): boolean {
   switch (atom.kind) {
+    case InternalTransitionStateAtomKind.ActivityPopulation:
+      return true;
     case InternalTransitionStateAtomKind.OccurrenceRegion:
       return internalOccurrenceRegionsOverlap(region, atom.region);
     case InternalTransitionStateAtomKind.ActivityAssociation:
@@ -322,6 +334,8 @@ function occurrenceRegionConflictsWithAtom(
     case InternalTransitionStateAtomKind.SequentialControllerOutput:
     case InternalTransitionStateAtomKind.SequentialControllerSnapshot:
     case InternalTransitionStateAtomKind.ScopeOccurrence:
+    case InternalTransitionStateAtomKind.SequentialScopeController:
+    case InternalTransitionStateAtomKind.ScopeVariableScope:
     case InternalTransitionStateAtomKind.ProcessInterfaceScope:
     case InternalTransitionStateAtomKind.ProcessInterfaceInput:
     case InternalTransitionStateAtomKind.Wait:

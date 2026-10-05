@@ -83,6 +83,9 @@ export const SemanticProfileId = Object.freeze({
 export const STRUCTURED_PROCESS_COMPOSITION_CHECKPOINT_PROFILE_ID =
   "bpmn-2.0.2-structured-process-composition-draft";
 
+export const SEQUENTIAL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID =
+  "cibseven-2.2.0-sequential-multi-instance-subprocess-draft";
+
 /** Call data remains private until the capsule's separate hosting qualification closes. */
 export const CALL_ACTIVITY_DATA_BOUNDARIES_CHECKPOINT_PROFILE_ID =
   "bpmn-2.0.2-call-activity-data-boundaries-draft";

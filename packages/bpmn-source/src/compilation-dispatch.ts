@@ -1,4 +1,5 @@
 import { compileTransactionSourceCheckedProcess } from "./transaction-source.js";
+import { compileSequentialScopeSource } from "./sequential-scope-source-compiler.js";
 import { compileMixedTaskBusinessErrorSource, compileMixedTaskControlFlowSource, compileSerialBusinessTaskSource } from "./serial-business-task-source.js";
 import {
   CALL_ACTIVITY_DATA_BOUNDARIES_CHECKPOINT_PROFILE_ID,
@@ -10,6 +11,7 @@ import {
   MESSAGE_KEY_CORRELATION_CHECKPOINT_PROFILE_ID,
   PARALLEL_MULTI_INSTANCE_USER_TASK_PROFILE_ID,
   SEQUENTIAL_MULTI_INSTANCE_USER_TASK_PROFILE_ID,
+  SEQUENTIAL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID,
   SemanticProfileId,
 } from "@bpmn-lean/semantic-core";
 
@@ -72,6 +74,7 @@ import {
 } from "./compensation-source.js";
 
 export const CompilationDispatchId = Object.freeze({
+  SequentialMultiInstanceSubProcess: "sequentialMultiInstanceSubProcess",
   MixedTaskBusinessError: "mixedTaskBusinessError",
   MixedTaskControlFlow: "mixedTaskControlFlow",
   SerialBusinessTasks: "serialBusinessTasks",
@@ -126,6 +129,7 @@ export const compilationDispatches: ReadonlyArray<CompilationDispatch> =
     { id: CompilationDispatchId.MixedTaskBusinessError, semanticProfile: MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID, reader: compileMixedTaskBusinessErrorSource },
     { id: CompilationDispatchId.MixedTaskControlFlow, semanticProfile: MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID, reader: compileMixedTaskControlFlowSource },
     { id: CompilationDispatchId.SerialBusinessTasks, semanticProfile: SERIAL_BUSINESS_TASK_CHECKPOINT_PROFILE_ID, reader: compileSerialBusinessTaskSource },
+    { id: CompilationDispatchId.SequentialMultiInstanceSubProcess, semanticProfile: SEQUENTIAL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID, reader: compileSequentialScopeSource },
     {
       id: CompilationDispatchId.MappedSuccessServiceTask,
       semanticProfile: SemanticProfileId.MappedSuccessServiceTask,
@@ -315,6 +319,7 @@ export function compileDispatchedCheckedProcess(
     case CompilationDispatchId.MixedTaskBusinessError:
     case CompilationDispatchId.MixedTaskControlFlow:
     case CompilationDispatchId.SerialBusinessTasks:
+    case CompilationDispatchId.SequentialMultiInstanceSubProcess:
     case CompilationDispatchId.SequentialMultiInstanceUserTask:
     case CompilationDispatchId.ParallelMultiInstanceUserTask:
     case CompilationDispatchId.ActivityDataInputUserTask:

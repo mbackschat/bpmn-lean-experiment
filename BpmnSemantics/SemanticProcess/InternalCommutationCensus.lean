@@ -41,6 +41,7 @@ def semanticOperationInternalFamily : SemanticOperation → InternalOperationFam
   | .awaitSequentialMultiInstanceUserTask _ _ _ _ _ _ _ _
   | .awaitParallelMultiInstanceUserTask _ _ _ _ _ _ _ _ _ _
   | .awaitEventRace _ _ _ _ _ => .compositeWaitAndActivityArming
+  | .enterSequentialMultiInstanceScope _ _ _ _ _ _ _ _ _ _
   | .enterScope _ _ _ _ _
   | .invokeProcess _ _ _ _ _ _ _ _ => .scopeCreationAndCallInvocation
   | .duplicate _ _ _ _
@@ -51,6 +52,7 @@ def semanticOperationInternalFamily : SemanticOperation → InternalOperationFam
   | .mergeExclusive _ _ _ _
   | .reachNoneEnd _ _ _ => .mergeAndOrdinaryEnd
   | .returnProcess _ _ _ _ _ _
+  | .completeSequentialMultiInstanceScope _ _ _
   | .completeScope _ _ _ _
   | .completeEventSubProcess _ _ _
   | .throwError _ _ _ _ _
@@ -74,6 +76,7 @@ inductive InternalRuntimeStateAtomDomain where
   | eventRace
   | callOccurrence
   | activityOccurrence
+  | sequentialScopeController
   | sequentialController
   | parallelController
   | compensationActivityRetention
@@ -108,6 +111,7 @@ inductive InternalRuntimeStateField where
   | eventRaces
   | calledProcessOccurrences
   | activityOccurrences
+  | sequentialScopeControllers
   | sequentialMultiInstanceControllers
   | parallelMultiInstanceControllers
   | compensationActivityRetentions
@@ -143,6 +147,7 @@ def internalRuntimeStateFieldAtomDomain :
   | .eventRaces => .eventRace
   | .calledProcessOccurrences => .callOccurrence
   | .activityOccurrences => .activityOccurrence
+  | .sequentialScopeControllers => .sequentialScopeController
   | .sequentialMultiInstanceControllers => .sequentialController
   | .parallelMultiInstanceControllers => .parallelController
   | .compensationActivityRetentions => .compensationActivityRetention

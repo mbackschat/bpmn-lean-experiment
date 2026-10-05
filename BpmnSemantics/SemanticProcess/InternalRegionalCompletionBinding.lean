@@ -1,3 +1,4 @@
+import BpmnSemantics.SemanticProcess.GraphReachabilityLaws
 import BpmnSemantics.SemanticProcess.InternalRegionalCompletionSelection
 
 /-! # Bounded completion declaration binding
@@ -19,8 +20,7 @@ theorem graph_output_producer_identity (program : Program) (place : ControlPlace
     left.id = right.id := by
   have memberId (operation : SemanticOperation) (member : operation ∈ program.operations)
       (output : place.id ∈ operationOutputs operation) : operation.id ∈ producers program.operations place.id := by
-    unfold producers
-    exact List.mem_filterMap.mpr ⟨operation, member, by simp [output]⟩
+    exact mem_producers_of_direct_output program.operations operation place.id member output
   unfold programGraphWellFormedForProgram programGraphWellFormedWithScopeLifecycle at valid
   dsimp only at valid
   split at valid

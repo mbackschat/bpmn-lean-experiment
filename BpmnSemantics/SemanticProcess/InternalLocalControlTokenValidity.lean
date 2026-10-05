@@ -88,7 +88,7 @@ theorem TokenPatch.preserves_runtimeStateWellFormed (program : Program)
   obtain ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨position, races⟩, incidents⟩, waitOwners⟩,
     waitIds⟩, identity⟩, waits⟩, hidden⟩, _order⟩, activities⟩, timers⟩, messages⟩,
     activityIds⟩, controllers⟩, sequential⟩, parallel⟩, controllerIds⟩, exhausted⟩,
-    notStarted⟩, compensation⟩ := valid
+    notStarted⟩, ⟨compensation, scopeValid⟩⟩ := valid
   obtain ⟨runningId, running⟩ :=
     runtimePositionValid_liveOccurrence_running program instanceId state patch.owner position live
   have executionAfter := patch.preserves_compensationExecutionStateValid program state
@@ -97,7 +97,7 @@ theorem TokenPatch.preserves_runtimeStateWellFormed (program : Program)
     position live declared owned, races⟩, incidents⟩, waitOwners⟩, waitIds⟩, identity⟩,
     waits⟩, hidden⟩, ordered⟩, activities⟩, timers⟩, messages⟩, activityIds⟩, controllers⟩,
     sequential⟩, parallel⟩, controllerIds⟩, exhausted⟩, notStarted⟩,
-    ⟨⟨⟨compensation.1.1.1, compensation.1.1.2⟩, compensation.1.2⟩, ?_⟩⟩
+    ⟨⟨⟨⟨compensation.1.1.1, compensation.1.1.2⟩, compensation.1.2⟩, ?_⟩, scopeValid⟩⟩
   exact executionAfter
 
 /-- Running open occurrences describe waits, scopes, and calls, so a token-only patch leaves the

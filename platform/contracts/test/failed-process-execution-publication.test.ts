@@ -127,7 +127,7 @@ test("rejects valid surviving waits and effects in a failed Process", () => {
       enabledInteractions: [{ kind: "completeUserTaskInstance", taskId: id }],
       openMultiInstances: [{
         id: { processInstanceId: id.processInstanceId, activityElementId: id.elementId, activation: 1 },
-        mode: "sequential", plannedInstanceCount: 1, pendingItemCount: 0,
+        mode: "sequential", bodyKind: "userTask", plannedInstanceCount: 1, pendingItemCount: 0,
         numberOfInstances: 1, numberOfActiveInstances: 1,
         numberOfCompletedInstances: 0, numberOfTerminatedInstances: 0,
         activeIterations: [{

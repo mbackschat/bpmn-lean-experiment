@@ -18,6 +18,7 @@ export function isPristineRuntimeState(state: RuntimeState): boolean {
     eventRaces: state.eventRaces.length === initialState.eventRaces.length,
     calledProcessOccurrences: state.calledProcessOccurrences.length === initialState.calledProcessOccurrences.length,
     activityOccurrences: state.activityOccurrences.length === initialState.activityOccurrences.length,
+    sequentialScopeControllers: state.sequentialScopeControllers === initialState.sequentialScopeControllers,
     sequentialMultiInstanceControllers: state.sequentialMultiInstanceControllers === initialState.sequentialMultiInstanceControllers,
     parallelMultiInstanceControllers: state.parallelMultiInstanceControllers === initialState.parallelMultiInstanceControllers,
     compensationActivityRetentions: state.compensationActivityRetentions === initialState.compensationActivityRetentions,

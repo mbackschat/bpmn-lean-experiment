@@ -69,7 +69,7 @@ test("parallel entry atomically opens one indexed task for every snapshotted ite
       activityElementId: "Review",
       activation: 1,
     },
-    mode: "parallel",
+    mode: "parallel", bodyKind: "userTask",
     plannedInstanceCount: 3,
     pendingItemCount: 0,
     numberOfInstances: 3,

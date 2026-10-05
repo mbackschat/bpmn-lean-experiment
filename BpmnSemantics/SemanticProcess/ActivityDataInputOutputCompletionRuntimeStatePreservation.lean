@@ -226,10 +226,11 @@ theorem dataInputOutputCompletionStep_preserves_runtimeStateWellFormed
       obtain ⟨⟨⟨⟨⟨⟨outputEq, operationScopeEq⟩, taskOwnerIdentity⟩,
         recordOwnerEq⟩, recordOwnerIdentity⟩, recordElementEq⟩, taskNameEq⟩ := valid
       simp only [runtimeStateWellFormed, Bool.and_eq_true] at wellFormed
-      have claims := wellFormed.2.1.1.1
-      have retention := wellFormed.2.1.1.2
-      have snapshots := wellFormed.2.1.2
-      have execution := wellFormed.2.2
+      have claims := wellFormed.2.1.1.1.1
+      have retention := wellFormed.2.1.1.1.2
+      have snapshots := wellFormed.2.1.1.2
+      have execution := wellFormed.2.1.2
+      have repeated := wellFormed.2.2
       obtain ⟨aggregate, lifecycle⟩ := wellFormed.1
       obtain ⟨aggregate, notExhausted⟩ := aggregate
       obtain ⟨aggregate, controllerIds⟩ := aggregate
@@ -509,7 +510,10 @@ theorem dataInputOutputCompletionStep_preserves_runtimeStateWellFormed
       have messageHandler : (program.identity.semanticProfile == interruptingMessageEventSubProcessProfileId) = false := by
         rw [profile]
         decide +kernel
-      simp only [programProfileCapabilitiesValid, callData, transaction, messageHandler, Bool.false_eq_true, legacy,
+      have repeatedScope : (program.identity.semanticProfile.value ==
+          "cibseven-2.2.0-sequential-multi-instance-subprocess-draft") = false := by
+        rw [profile]; decide +kernel
+      simp only [programProfileCapabilitiesValid, repeatedScope, callData, transaction, messageHandler, Bool.false_eq_true, legacy,
         ↓reduceIte, Bool.and_eq_true] at admitted
       have noSequential := admitted.2.1.1
       simp [programSequentialMultiInstanceProfileMatches, profile,
@@ -554,6 +558,9 @@ theorem dataInputOutputCompletionStep_preserves_runtimeStateWellFormed
             (by rw [profile]; decide +kernel) (by rw [profile]; rfl) capabilities) before successor instanceId
           running rfl rfl rfl rfl rfl rfl]
         exact execution
+      have repeatedAfter : sequentialScopeStateValid program successor = true :=
+        sequentialScopeStateValid_zero_profile_frame program before successor legacy
+          (by rw [profile]; rfl) capabilities rfl repeated
       simp only [runtimeStateWellFormed, Bool.and_eq_true]
       exact ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨positionAfter, racesAfter⟩,
         incidentsAfter⟩, ownersAfter⟩, identitiesAfter⟩, boundsAfter⟩, declarationsAfter⟩,
@@ -562,6 +569,6 @@ theorem dataInputOutputCompletionStep_preserves_runtimeStateWellFormed
         sequentialBindingsAfter⟩, parallelBindingsAfter⟩,
         by simpa [successor, controllerIdentitiesUnique] using controllerIds⟩,
         by simpa [successor, controllersNotExhausted] using notExhausted⟩, lifecycleAfter⟩,
-        ⟨⟨⟨claimsAfter, retentionAfter⟩, snapshotsAfter⟩, executionAfter⟩⟩
+        ⟨⟨⟨⟨claimsAfter, retentionAfter⟩, snapshotsAfter⟩, executionAfter⟩, repeatedAfter⟩⟩
 
 end BpmnSemantics.SemanticProcess

@@ -192,7 +192,7 @@ theorem prepareInternalMerge_preserves_runtimeStateWellFormed (program : Program
     selectInternalMerge_facts state operation alternative selected selection
   have executionValid : compensationExecutionStateValid program state = true := by
     simp only [runtimeStateWellFormed, Bool.and_eq_true] at valid
-    exact valid.2.2
+    exact valid.2.1.2
   have separated := selected.tokens.separatesActiveCancelOwners_of_owned_token program state
     executionValid ⟨selected.input, selected.owner⟩ present rfl
   exact selected.tokens.preserves_runtimeStateWellFormed program instanceId state valid separated live

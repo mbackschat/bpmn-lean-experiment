@@ -9,12 +9,6 @@ namespace BpmnSemantics.SemanticProcess
 
 open BpmnSemantics
 
-structure ScopeOccurrenceId where
-  processInstanceId : SemanticId
-  definitionScopeId : DefinitionScopeId
-  activation : Nat
-  deriving Repr, DecidableEq
-
 /-- Process-owned bindings that form the public variable projection. -/
 structure ProcessVariableScope where
   bindings : List VariableBinding
@@ -245,18 +239,23 @@ def enclosingVariable? (bindings : List VariableBinding) (name : String) : Optio
       | _ => none
   | _ => none
 
-def evaluateEnclosingInputMappings (bindings : List VariableBinding) :
+def scalarInputLookup? (read : String → Option VariableValue) (name : String) : Option VariableValue := do
+  let value ← read name
+  match value with
+  | .string _ | .null => some value
+  | _ => none
+
+def evaluateInputMappingsInOrder (read : String → Option VariableValue) :
     List VariableMapping → Option (List VariableBinding)
   | [] => some []
   | mapping :: rest => do
       let value ← match mapping.expression with
         | .stringLiteral value => some (.string value)
-        | .enclosingVariable name => enclosingVariable? bindings name
+        | .enclosingVariable name => scalarInputLookup? read name
         | .localVariable _ => none
-      return { name := mapping.target, value } :: (← evaluateEnclosingInputMappings bindings rest)
+      return { name := mapping.target, value } :: (← evaluateInputMappingsInOrder read rest)
 
-/-- SBT-SNAPSHOT-01 checks immutable mapping positions without consulting current Process data. -/
-def inputSnapshotMatches : List VariableMapping → List VariableBinding → Bool
+def orderedInputSnapshotMatches : List VariableMapping → List VariableBinding → Bool
   | [], [] => true
   | mapping :: mappings, binding :: bindings =>
       mapping.target == binding.name &&
@@ -265,42 +264,116 @@ def inputSnapshotMatches : List VariableMapping → List VariableBinding → Boo
         | .enclosingVariable _ => match binding.value with
             | .string _ | .null => true
             | _ => false
-        | .localVariable _ => false) && inputSnapshotMatches mappings bindings
+        | .localVariable _ => false) && orderedInputSnapshotMatches mappings bindings
   | _, _ => false
+
+/-- SBT-SNAPSHOT-01 treats mapping declarations by target name; duplicate targets cannot define a snapshot. -/
+def canonicalInputMappings? (mappings : List VariableMapping) : Option (List VariableMapping) :=
+  if (mappings.map (·.target)).Nodup then
+    some (mappings.mergeSort fun left right => decide (left.target ≤ right.target))
+  else none
+
+/-- Immutable snapshots use canonical target order independently of declaration order. -/
+def inputSnapshotMatches (mappings : List VariableMapping) (bindings : List VariableBinding) : Bool :=
+  match canonicalInputMappings? mappings with
+  | some ordered => orderedInputSnapshotMatches ordered bindings
+  | none => false
+
+def evaluateInputMappings? (read : String → Option VariableValue) (mappings : List VariableMapping) :
+    Option (List VariableBinding) := do
+  let ordered ← canonicalInputMappings? mappings
+  evaluateInputMappingsInOrder read ordered
+
+def evaluateEnclosingInputMappings (bindings : List VariableBinding) (mappings : List VariableMapping) :
+    Option (List VariableBinding) := evaluateInputMappings? (enclosingVariable? bindings) mappings
+
+theorem scalarInputLookup_enclosing (context : List VariableBinding) (name : String) :
+    scalarInputLookup? (enclosingVariable? context) name = enclosingVariable? context name := by
+  unfold scalarInputLookup? enclosingVariable?
+  split
+  · rename_i binding _
+    cases binding.value <;> rfl
+  · rfl
+
+/-- Available scalar sources suffice independently of the order chosen for evaluation. -/
+theorem evaluateInputMappingsInOrder_evaluable (read : String → Option VariableValue)
+    (mappings : List VariableMapping)
+    (available : ∀ mapping ∈ mappings, ∃ value,
+      (match mapping.expression with
+        | .stringLiteral value => some (.string value)
+        | .enclosingVariable name => scalarInputLookup? read name
+        | .localVariable _ => none) = some value) :
+    ∃ bindings, evaluateInputMappingsInOrder read mappings = some bindings := by
+  induction mappings with
+  | nil => exact ⟨[], rfl⟩
+  | cons mapping rest ih =>
+      obtain ⟨value, found⟩ := available mapping (by simp)
+      obtain ⟨tail, evaluated⟩ := ih (fun candidate member => available candidate (by simp [member]))
+      exact ⟨{ name := mapping.target, value } :: tail,
+        by cases expression : mapping.expression <;> simp_all [evaluateInputMappingsInOrder]⟩
+
+/-- Canonicalization preserves source availability; duplicate target refusal is a separate premise. -/
+theorem evaluateInputMappings_evaluable (read : String → Option VariableValue)
+    (mappings : List VariableMapping) (unique : (mappings.map (·.target)).Nodup)
+    (available : ∀ mapping ∈ mappings, ∃ value,
+      (match mapping.expression with
+        | .stringLiteral value => some (.string value)
+        | .enclosingVariable name => scalarInputLookup? read name
+        | .localVariable _ => none) = some value) :
+    ∃ bindings, evaluateInputMappings? read mappings = some bindings := by
+  unfold evaluateInputMappings? canonicalInputMappings?
+  simp only [unique, ↓reduceIte]
+  apply evaluateInputMappingsInOrder_evaluable
+  intro mapping member
+  exact available mapping ((List.mergeSort_perm mappings _).mem_iff.mp member)
+
+theorem evaluateInputMappingsInOrder_snapshot (read : String → Option VariableValue)
+    (mappings : List VariableMapping) (bindings : List VariableBinding)
+    (evaluated : evaluateInputMappingsInOrder read mappings = some bindings) :
+    orderedInputSnapshotMatches mappings bindings = true := by
+  induction mappings generalizing bindings with
+  | nil => simp [evaluateInputMappingsInOrder] at evaluated; subst bindings; rfl
+  | cons mapping rest ih =>
+      cases expression : mapping.expression with
+      | localVariable name => simp [evaluateInputMappingsInOrder, expression] at evaluated
+      | stringLiteral value =>
+          cases tailEq : evaluateInputMappingsInOrder read rest with
+          | none => simp [evaluateInputMappingsInOrder, expression, tailEq] at evaluated
+          | some tail =>
+              simp [evaluateInputMappingsInOrder, expression, tailEq] at evaluated
+              subst bindings
+              simpa [orderedInputSnapshotMatches, expression] using ih tail tailEq
+      | enclosingVariable name =>
+          cases lookup : scalarInputLookup? read name with
+          | none => simp [evaluateInputMappingsInOrder, expression, lookup] at evaluated
+          | some value =>
+              cases tailEq : evaluateInputMappingsInOrder read rest with
+              | none => simp [evaluateInputMappingsInOrder, expression, lookup, tailEq] at evaluated
+              | some tail =>
+                  simp [evaluateInputMappingsInOrder, expression, lookup, tailEq] at evaluated
+                  subst bindings
+                  have tailValid := ih tail tailEq
+                  cases found : read name with
+                  | none => simp [scalarInputLookup?, found] at lookup
+                  | some source =>
+                      cases source <;> simp_all [scalarInputLookup?, orderedInputSnapshotMatches]
+                      all_goals cases value <;> simp_all
+
+theorem evaluateInputMappings_snapshot (read : String → Option VariableValue)
+    (mappings : List VariableMapping) (bindings : List VariableBinding)
+    (evaluated : evaluateInputMappings? read mappings = some bindings) :
+    inputSnapshotMatches mappings bindings = true := by
+  cases ordered : canonicalInputMappings? mappings with
+  | none => simp [evaluateInputMappings?, ordered] at evaluated
+  | some mappings =>
+      simp only [evaluateInputMappings?, ordered] at evaluated
+      simpa only [inputSnapshotMatches, ordered] using evaluateInputMappingsInOrder_snapshot read mappings bindings evaluated
 
 theorem evaluateEnclosingInputMappings_snapshot (context : List VariableBinding)
     (mappings : List VariableMapping) (bindings : List VariableBinding)
     (evaluated : evaluateEnclosingInputMappings context mappings = some bindings) :
-    inputSnapshotMatches mappings bindings = true := by
-  induction mappings generalizing bindings with
-  | nil => simp [evaluateEnclosingInputMappings] at evaluated; subst bindings; rfl
-  | cons mapping rest ih =>
-      cases expression : mapping.expression with
-      | localVariable name => simp [evaluateEnclosingInputMappings, expression] at evaluated
-      | stringLiteral value =>
-          cases tailEq : evaluateEnclosingInputMappings context rest with
-          | none => simp [evaluateEnclosingInputMappings, expression, tailEq] at evaluated
-          | some tail =>
-              simp [evaluateEnclosingInputMappings, expression, tailEq] at evaluated
-              subst bindings
-              simpa [inputSnapshotMatches, expression] using ih tail tailEq
-      | enclosingVariable name =>
-          cases lookup : enclosingVariable? context name with
-          | none => simp [evaluateEnclosingInputMappings, expression, lookup] at evaluated
-          | some value =>
-              cases tailEq : evaluateEnclosingInputMappings context rest with
-              | none => simp [evaluateEnclosingInputMappings, expression, lookup, tailEq] at evaluated
-              | some tail =>
-                  simp [evaluateEnclosingInputMappings, expression, lookup, tailEq] at evaluated
-                  subst bindings
-                  have tailValid := ih tail tailEq
-                  unfold enclosingVariable? at lookup
-                  split at lookup
-                  · rename_i binding found
-                    cases kind : binding.value <;>
-                      simp_all [inputSnapshotMatches]
-                    all_goals cases value <;> simp_all
-                  · simp at lookup
+    inputSnapshotMatches mappings bindings = true :=
+  evaluateInputMappings_snapshot (enclosingVariable? context) mappings bindings evaluated
 
 def singleStringLiteralMapping : List VariableMapping → Bool
   | [{ target, expression := .stringLiteral value }] =>

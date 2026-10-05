@@ -75,7 +75,7 @@ theorem prepared_transition_preserves (program : Program) (state : RuntimeState)
       obtain ⟨current, projected⟩ := Option.isSome_iff_exists.mp openBefore
       obtain ⟨start, _, afterProjected⟩ := prepared_bounded_scope_open_projection program state contract scope
         instanceId current selected.2 programValid stateValid projected
-      exact ⟨prepared_bounded_scope_preserves_runtime program state contract scope instanceId selected.2 stateValid,
+      exact ⟨prepared_bounded_scope_preserves_runtime program state contract scope instanceId programValid selected.2 stateValid,
         control, by simp only [PreparedInternalTransition.apply, afterProjected, Option.isSome_some]⟩
   | timerTask contract patch =>
       have preserved := prepared_timer_task_preserves_runtime_and_open_set program state contract patch instanceId

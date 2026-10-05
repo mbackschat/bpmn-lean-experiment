@@ -115,6 +115,16 @@ function removeScopeOccurrenceRegion(
     activityOccurrences: withoutCalledProcesses.activityOccurrences.filter((record) =>
       !withdrawnRecords.includes(record)
     ),
+    ...(withoutCalledProcesses.sequentialScopeControllers === undefined
+      ? {}
+      : {
+        sequentialScopeControllers:
+          withoutCalledProcesses.sequentialScopeControllers.filter(
+            (controller) => !withdrawnRecords.some((record) =>
+              sameActivityOccurrence(record.id, controller.id)
+            ),
+          ),
+      }),
     ...(withoutCalledProcesses.sequentialMultiInstanceControllers === undefined
       ? {}
       : {

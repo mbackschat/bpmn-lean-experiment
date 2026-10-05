@@ -184,4 +184,27 @@ theorem graphReaches_antisymm [DecidableEq α]
       exact acyclicClosed_sound edges fuel accepted _ edgeMember
         (graphReaches_trans edges backward prior)
 
+/-- A direct output remains in the graph producer census when other operations use paired outputs. -/
+theorem mem_producers_of_direct_output (operations : List SemanticOperation)
+    (operation : SemanticOperation) (place : ControlPlaceId)
+    (member : operation ∈ operations) (output : place ∈ operationOutputs operation) :
+    operation.id ∈ producers operations place := by
+  apply List.mem_filterMap.mpr
+  refine ⟨operation, member, ?_⟩
+  cases operation <;> simp_all [operationOutputs]
+
+/-- In a declaration domain excluding paired completion, every graph producer exposes a direct port. -/
+theorem producer_direct_output_witness (operations : List SemanticOperation)
+    (place : ControlPlaceId) (producer : OperationId)
+    (present : producer ∈ producers operations place)
+    (noPaired : ∀ id origin entry, .completeSequentialMultiInstanceScope id origin entry ∉ operations) :
+    ∃ operation ∈ operations, operation.id = producer ∧ place ∈ operationOutputs operation := by
+  obtain ⟨operation, member, produced⟩ := List.mem_filterMap.mp present
+  have directProduced : (if (operationOutputs operation).contains place then some operation.id else none) = some producer := by
+    cases operation <;> first | exact produced | exact False.elim (noPaired _ _ _ member)
+  split at directProduced
+  · rename_i output
+    exact ⟨operation, member, Option.some.inj directProduced, by simpa using output⟩
+  · contradiction
+
 end BpmnSemantics.SemanticProcess

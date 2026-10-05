@@ -1,6 +1,7 @@
 import {
   MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID,
   MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID,
+  SEQUENTIAL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID,
   CheckedNodeKind,
   INTERRUPTING_MESSAGE_EVENT_SUBPROCESS_CHECKPOINT_PROFILE_ID,
   interruptingMessageEventSubProcessCheckedGraph,
@@ -178,6 +179,7 @@ function hasSelectedArity(
     case CheckedNodeKind.TimerStartEvent:
       return incoming === 0 && outgoing === 1;
     case CheckedNodeKind.TransactionSubProcess:
+    case CheckedNodeKind.SequentialMultiInstanceSubProcess:
     case CheckedNodeKind.EmbeddedSubProcess:
     case CheckedNodeKind.CallActivity:
     case CheckedNodeKind.UserTask:
@@ -204,10 +206,10 @@ function hasSelectedArity(
       switch (node.direction) {
         case GatewayDirection.Diverging:
           return incoming === 1 &&
-            (semanticProfile === REPEATABLE_EVENT_SUBSCRIPTIONS_CHECKPOINT_PROFILE_ID
+            (semanticProfile === REPEATABLE_EVENT_SUBSCRIPTIONS_CHECKPOINT_PROFILE_ID || semanticProfile === SEQUENTIAL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID
               ? outgoing >= 2 : outgoing === 2);
         case GatewayDirection.Converging:
-          return incoming === 2 && outgoing === 1;
+          return (semanticProfile === SEQUENTIAL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID ? incoming >= 2 : incoming === 2) && outgoing === 1;
       }
     case CheckedNodeKind.ExclusiveGateway:
       return incoming === 1 && (semanticProfile === MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID || semanticProfile === MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID ? outgoing >= 2 : outgoing === 3);

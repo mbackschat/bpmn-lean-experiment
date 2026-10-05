@@ -147,6 +147,7 @@ def flowNodeSelectedOperationOwner? (state : RuntimeState) :
     SemanticOperation → Option ScopeOccurrenceId
   | .initiate .. | .initiateMessage .. | .initiateTimer .. => rootScopeOccurrence? state
   | .enterScope _ _ input _ _
+  | .enterSequentialMultiInstanceScope _ _ input _ _ _ _ _ _ _
   | .enterBoundedScope _ _ input _ _ _
   | .enterMonitoredScope _ _ input _ _ _
   | .invokeProcess _ _ input _ _ _ _ _
@@ -182,6 +183,7 @@ def flowNodeSelectedOperationOwner? (state : RuntimeState) :
   | .synchronizeSelected _ _ _ _ selectionKey => selectedJoinOwner? state selectionKey
   | .returnProcess id origin _ _ _ _ => uniqueReturnOwner? state id origin
   | .completeParallelMultiInstanceUserTask .. => none
+  | .completeSequentialMultiInstanceScope _ origin _ => sequentialScopeFlowNodeOwner? state origin.elementId
   | .completeScope _ _ scopeId _ | .completeEventSubProcess _ _ scopeId =>
       uniqueCompletingScopeOwner? state scopeId
 
@@ -788,6 +790,11 @@ def candidateFlowNodeOccurrenceDeltaForOperation? (program : Program) (before af
       let starts ← parallelEntryFlowNodeStarts? program operation owner before after
       pure (canonicalFlowNodeOccurrenceDelta starts [])
   | .completeParallelMultiInstanceUserTask .. => none
+  | .enterSequentialMultiInstanceScope .. =>
+      pure (canonicalFlowNodeOccurrenceDelta (← candidateSequentialScopeStarts? program operation owner after) [])
+  | .completeSequentialMultiInstanceScope .. =>
+      pure (canonicalFlowNodeOccurrenceDelta
+        (← candidateSequentialScopeCompletionStarts? program operation owner before after) [completedEnd (.scope owner)])
   | .awaitEffect _ _ _ _ effect _ =>
       let activation := activationForNode (before.effectActivations.map fun value => (value.elementId, value.count)) effect.elementId + 1
       let wait ← match after.effectWaits.filter fun wait => decide

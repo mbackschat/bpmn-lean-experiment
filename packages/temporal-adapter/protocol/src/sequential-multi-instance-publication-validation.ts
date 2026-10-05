@@ -1,5 +1,6 @@
 /** Closed recursive validation for the optional sequential Multi-Instance E1 projection. */
 import {
+  MultiInstanceBodyKind,
   VariableValueKind,
   compareCanonicalStrings,
   isWellFormedWireString,
@@ -41,7 +42,7 @@ function isProgress(
     !isRecord(value) ||
     !hasOnlyKeys(value, [
       "id",
-      "mode",
+      "mode", "bodyKind",
       "plannedInstanceCount",
       "pendingItemCount",
       "numberOfInstances",
@@ -51,6 +52,7 @@ function isProgress(
       "activeIterations",
     ]) ||
     !isActivityOccurrence(value.id, instanceId) ||
+    value.bodyKind !== MultiInstanceBodyKind.UserTask ||
     value.mode !== "sequential" ||
     !isSafe(value.plannedInstanceCount, 1) ||
     !isSafe(value.pendingItemCount, 0) ||

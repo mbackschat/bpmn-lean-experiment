@@ -77,7 +77,7 @@ theorem preparedReturn_preserves_runtimeStateWellFormed (program : Program) (bef
   simp only [runtimeStateWellFormed, Bool.and_eq_true, and_assoc] at components
   obtain ⟨position, races, incidents, waitOwners, waitIds, bounds, declarations, hidden, order,
     activities, timers, messages, activityIds, controllers, sequential, parallel, controllerIds,
-    exhaustion, _, bodyClaims, retention, snapshotValid, execution⟩ := components
+    exhaustion, _, bodyClaims, retention, snapshotValid, execution, repeated⟩ := components
   obtain ⟨snapshots, declared, _, closedSelection, _, _, published⟩ :=
     prepareInternalRegional_facts program before _ prepared found
   obtain ⟨selection, closed⟩ := ownershipClosedSelection_facts program before _ prepared.selection closedSelection
@@ -132,6 +132,7 @@ theorem preparedReturn_preserves_runtimeStateWellFormed (program : Program) (bef
       parallel activities bodyClaims timers owners callClosed,
     nextControllerIds, removeCalledProcessTree_preserves_controller_exhaustion before call exhaustion,
     by change (match before.control with | .notStarted => _ | _ => true) = true; rw [running],
-    nextBodyClaims, nextRetention, nextSnapshots, nextExecution⟩
+    nextBodyClaims, nextRetention, nextSnapshots, nextExecution,
+    removeCalledProcessTree_preserves_repeated_scope_state program before call repeated⟩
 
 end BpmnSemantics.SemanticProcess.InternalCommutation

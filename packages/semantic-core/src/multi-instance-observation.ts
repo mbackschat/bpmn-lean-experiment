@@ -1,9 +1,10 @@
-/** Composition root for the additive sequential and parallel progress union. */
+/** Composition root for declared Multi-Instance body projections. */
 import type { OpenMultiInstance } from "./contract.js";
 import { projectOpenParallelMultiInstances } from "./parallel-multi-instance-observation.js";
 import type { SemanticProcessProgram } from "./semantic-process-contract.js";
 import type { RuntimeState } from "./semantic-process-state.js";
 import { projectOpenMultiInstances as projectOpenSequentialMultiInstances } from "./sequential-multi-instance-observation.js";
+import { projectOpenSequentialScopeMultiInstances } from "./sequential-scope-observation.js";
 import { compareCanonicalStrings } from "./wire.js";
 
 function compareProgress(
@@ -27,9 +28,10 @@ export function projectOpenMultiInstances(
 ): ReadonlyArray<OpenMultiInstance> | undefined | null {
   const sequential = projectOpenSequentialMultiInstances(program, state);
   const parallel = projectOpenParallelMultiInstances(program, state);
-  if (sequential === null || parallel === null) return null;
-  if (sequential === undefined && parallel === undefined) return undefined;
-  const combined = [...(sequential ?? []), ...(parallel ?? [])].sort(
+  const scopes = projectOpenSequentialScopeMultiInstances(program, state);
+  if (sequential === null || parallel === null || scopes === null) return null;
+  if (sequential === undefined && parallel === undefined && scopes === undefined) return undefined;
+  const combined = [...(sequential ?? []), ...(parallel ?? []), ...(scopes ?? [])].sort(
     compareProgress,
   );
   return combined.every((entry, index) =>

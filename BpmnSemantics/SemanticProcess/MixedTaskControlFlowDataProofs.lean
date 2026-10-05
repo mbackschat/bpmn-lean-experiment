@@ -219,6 +219,7 @@ theorem available_inputs_evaluable (vertices : List Vertex) (vertex : Vertex)
     (mappings : SerialBusinessTask.mappingsValid handlers inputs outputs = true) :
     ∃ arguments, evaluateEnclosingInputMappings bindings inputs = some arguments := by
   apply SerialBusinessTask.inputs_evaluable handlers bindings inputs
+    (strictlySortedStrings_nodup _ (Bool.and_eq_true_iff.mp (Bool.and_eq_true_iff.mp (Bool.and_eq_true_iff.mp mappings).1).1).1)
     (Bool.and_eq_true_iff.mp (Bool.and_eq_true_iff.mp mappings).1).2
   intro name read
   apply SerialBusinessTask.canonical_present_binding_evaluable handlers bindings name canonical
@@ -345,6 +346,14 @@ theorem program_analysis_operations_allowed (program : Program) (analysis : Anal
   | false =>
     obtain ⟨vertex, _, projected⟩ := operation_has_vertex program analysis operation analyzed member completes
     exact projected_operation_allowed program operation vertex projected
+
+theorem program_analysis_effect_inputs (program : Program) (analysis : Analysis)
+    (analyzed : programAnalysis program = some analysis) (state : RuntimeState) (owner : ScopeOccurrenceId) (mappings : List VariableMapping) :
+    evaluateEffectInputs? program state owner mappings = evaluateEnclosingInputMappings state.variables.process.bindings mappings := by
+  apply evaluateEffectInputs_without_repeated_scope
+  intro operation member
+  have allowed := program_analysis_operations_allowed program analysis analyzed operation member
+  cases operation <;> simp_all [OperationAllowed, sequentialScopeEntry?]
 
 theorem output_has_vertex (vertices : List Vertex) (analysis : Analysis)
     (accepted : analyze vertices = some analysis) (vertex : Vertex) (member : vertex ∈ vertices)
@@ -557,6 +566,10 @@ theorem human_dispatch_cases (program : Program) (analysis : Analysis) (before :
       result = { outcome := .committed, state :=
         { after with variables := { after.variables with process :=
           { bindings := mergeProcessVariableBindings after.variables.process.bindings bindings } } } } := by
+  have noRepeated owner : hasSequentialScopeDefinition program owner = false := by
+    simp only [hasSequentialScopeDefinition, List.any_eq_false, List.mem_filterMap]
+    rintro entry ⟨operation, member, projected⟩; have allowed := program_analysis_operations_allowed program analysis analyzed operation member
+    cases operation <;> simp_all [OperationAllowed, sequentialScopeEntry?]
   rcases profile with profile | profile
   all_goals
     dsimp only
@@ -579,7 +592,7 @@ theorem human_dispatch_cases (program : Program) (analysis : Analysis) (before :
       all_goals rw [profile]; rfl
     cases control : before.control <;>
       simp only [dispatchStimulus, noSnapshots] <;>
-      simp [control, noParallel, noSequential, noMessageMonitored, noMessageBounded,
+      simp [control, noRepeated, noParallel, noSequential, noMessageMonitored, noMessageBounded,
         noBounded, noInput, noOutput, noMonitored, noComposed, ordinary, legacy]
     case running instanceId =>
       cases completed : completeUserTask before taskId.processInstanceId
@@ -621,7 +634,8 @@ theorem serial_completion_admission_eq_dispatch (program : Program) (analysis : 
         mixedTaskControlFlowProfileId, mixedTaskBusinessErrorProfileId, interruptingMessageEventSubProcessProfileId]
     have incidents : before.effectIncidents = [] := foreign.2.2.1
     cases stimulus <;> simp only [SerialBusinessTask.IsSerialCompletion] at completion <;> try contradiction
-    all_goals simp [admitStimulus, dispatchStimulus, snapshots, guarded, dataValid, messageValid, incidents]
+    all_goals simp [admitStimulus, dispatchStimulus, snapshots, guarded, dataValid, messageValid, incidents,
+      profile, mixedTaskControlFlowProfileId, mixedTaskBusinessErrorProfileId]
 
 theorem guarded_effect_dispatch_cases (program : Program) (analysis : Analysis) (before : RuntimeState)
     (commandId : SemanticId) (effectId : EffectOccurrenceId) (result : EffectExecutionResult)
@@ -755,7 +769,7 @@ theorem fire_counters_monotone (program : Program) (analysis : Analysis) (operat
   case awaitEffect id origin input output effect route =>
     cases step with
     | awaitEffect _ _ _ _ _ _ _ _ active =>
-        simp only [awaitEffectState?, bind, pure, Option.bind_eq_some_iff] at active
+        simp only [awaitEffectState?, program_analysis_effect_inputs program analysis analyzed, bind, pure, Option.bind_eq_some_iff] at active
         obtain ⟨owner, _, instanceId, _, arguments, _, active⟩ := active
         split at active
         · contradiction

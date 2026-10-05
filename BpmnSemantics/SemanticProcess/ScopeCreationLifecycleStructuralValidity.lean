@@ -141,15 +141,7 @@ theorem prepareInternalScopeCreation_child_excludes_bounded_entry
 
 def EntryBinding (program : Program) (occurrence : RuntimeScopeOccurrence)
     (definition : DefinitionScope) : Bool :=
-  match occurrence.parent with
-  | none => true
-  | some parent => (program.operations.filter fun operation =>
-      if !operationOwnedBy program operation parent then false
-      else match operation with
-      | .enterScope _ origin _ _ child | .enterBoundedScope _ origin _ _ child _
-      | .enterMonitoredScope _ origin _ _ child _ =>
-          child = occurrence.id.definitionScopeId && origin.elementId = definition.originElementId
-      | _ => false).length = 1
+  scopeOperationBindingValid program occurrence definition
 
 private theorem length_filterMap_as_filter (values : List α) (f : α → Option β) :
     (values.filterMap f).length = (values.filter fun value => (f value).isSome).length := by
@@ -368,7 +360,7 @@ private theorem created_bindings (program : Program) (state : RuntimeState)
               { id := { processInstanceId := hosting, definitionScopeId := childScope,
                         activation := scopeActivationCount state childScope + 1 }, parent := some owner }
               definition = true := by
-            unfold EntryBinding
+            unfold EntryBinding scopeOperationBindingValid
             simp only [decide_eq_true_eq]
             suffices exactEntry : (program.operations.filter _ ) =
                 [.enterScope id selectedOrigin input entry childScope] by rw [exactEntry]; rfl
@@ -456,7 +448,7 @@ private theorem created_bindings (program : Program) (state : RuntimeState)
                 change 5 + _ + 1 + _ + 1 + _ + 1 + _ + 1 + _ = 0 at size
                 omega
               simp only [ScopeBinding, InternalScopeCreationSelection.apply, definitions,
-                matchingDefinition.1.2, running, EntryBinding, Bool.and_true,
+                matchingDefinition.1.2, running, EntryBinding, scopeOperationBindingValid, Bool.and_true,
                 show deriveCalledProcessInstanceId owner.processInstanceId selectedOrigin.elementId
                   (callActivationCount state selectedOrigin.elementId + 1) ≠ hosting from different,
                 ↓reduceIte, Bool.and_eq_true, decide_eq_true_eq]

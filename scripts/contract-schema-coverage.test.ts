@@ -13,6 +13,62 @@ import {
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 
+test("MI Sub-Process wire shapes bind completion to one entry and require explicit body data", async () => {
+  const declaration = { collectionName: "items", itemName: "item", bodyInputs: [], completionBooleanName: null };
+  const cases = [
+    { file: "checked-process", definition: "node", value: {
+      kind: "sequentialMultiInstanceSubProcess", id: "Batch", childScopeId: "Body", ...declaration,
+    } },
+    { file: "semantic-process", definition: "operation", value: {
+      kind: "enterSequentialMultiInstanceScope", id: "EnterBatch", origin: { kind: "bpmnElement", elementId: "Batch" },
+      input: "Incoming", childEntry: "BodyEntry", childScopeId: "Body", normalOutput: "Outgoing", ...declaration,
+    } },
+    { file: "semantic-process", definition: "operation", value: {
+      kind: "completeSequentialMultiInstanceScope", id: "CompleteBatch", origin: { kind: "bpmnElement", elementId: "Batch" },
+      entryOperationId: "EnterBatch",
+    } },
+  ];
+  for (const entry of cases) {
+    const document = JSON.parse(await readFile(`${projectRoot}/contracts/schemas/${entry.file}.schema.json`, "utf8"));
+    const validate = new Ajv2020({ strict: true }).compile({ $defs: document.$defs, $ref: `#/$defs/${entry.definition}` });
+    assert.equal(validate(entry.value), true, JSON.stringify(validate.errors));
+    for (const field of Object.keys(entry.value) as (keyof typeof entry.value)[]) {
+      const { [field]: _omitted, ...missing } = entry.value;
+      assert.equal(validate(missing), false, `${entry.value.kind}: missing ${field}`);
+    }
+    assert.equal(validate({ ...entry.value, parentOutput: "Invented" }), false);
+  }
+});
+
+test("MI progress wire shapes require a body discriminator and exact owned scope", async () => {
+  const document = JSON.parse(await readFile(`${projectRoot}/contracts/schemas/scenario.schema.json`, "utf8"));
+  const validate = new Ajv2020({ strict: true }).compile({ $defs: document.$defs, ...document.$defs.stateObservation.properties.openMultiInstances.items });
+  const id = { processInstanceId: "P", activityElementId: "Batch", activation: 1 };
+  const base = { id, mode: "sequential", plannedInstanceCount: 2, pendingItemCount: 1,
+    numberOfInstances: 1, numberOfActiveInstances: 1, numberOfCompletedInstances: 0,
+    numberOfTerminatedInstances: 0 };
+  const task = { loopCounter: 0, taskId: { processInstanceId: "P", elementId: "Task", activation: 1 },
+    taskInput: { name: "item", value: { kind: "string", value: "invoice" } }, completionBindingName: "result" };
+  const body = { loopCounter: 0, body: { processInstanceId: "P", definitionScopeId: "Body", activation: 1 },
+    item: task.taskInput, bindings: [], userTaskIds: [task.taskId], effectIds: [] };
+  for (const [bodyKind, iteration] of [["userTask", task], ["subProcess", body]] as const) {
+    const value = { ...base, bodyKind, activeIterations: [iteration] };
+    assert.equal(validate(value), true, JSON.stringify(validate.errors));
+    const { bodyKind: _omitted, ...legacy } = value;
+    assert.equal(validate(legacy), false);
+    assert.equal(validate({ ...value, bodyKind: "unknown" }), false);
+    assert.equal(validate({ ...value, activeIterations: [bodyKind === "userTask" ? body : task] }), false);
+  }
+  assert.equal(validate({ ...base, mode: "parallel", bodyKind: "subProcess", activeIterations: [body] }), false);
+  for (const field of Object.keys(body) as (keyof typeof body)[]) {
+    const { [field]: _omitted, ...missing } = body;
+    assert.equal(validate({ ...base, bodyKind: "subProcess", activeIterations: [missing] }), false);
+  }
+  for (const malformed of [{ ...body.body, activation: 0 }, { ...body.body, hostRunId: "private" }]) {
+    assert.equal(validate({ ...base, bodyKind: "subProcess", activeIterations: [{ ...body, body: malformed }] }), false);
+  }
+});
+
 test("direct Activity data endpoints distinguish Property and directional Process ports", async () => {
   for (const schema of ["checked-process.schema.json", "semantic-process.schema.json"]) {
     const document: unknown = JSON.parse(await readFile(`${projectRoot}/contracts/schemas/${schema}`, "utf8"));

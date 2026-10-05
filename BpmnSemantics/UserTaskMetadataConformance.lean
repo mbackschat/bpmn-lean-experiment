@@ -338,6 +338,7 @@ theorem completion_is_metadata_irrelevant
         SequentialUserTask.exactWait.output SequentialUserTask.exactWait.owner }
   apply user_task_completion_with_same_successor_is_equal
     (successor := successor)
+    (noRepeatedScope := by decide +kernel)
     (serialGuardAgreement := by
       have guard (state : RuntimeState) (stimulus : Stimulus) :
           serialBusinessCommandAdmitted (programFor exactMetadata) state stimulus = true :=
@@ -387,6 +388,8 @@ theorem completion_is_metadata_irrelevant
         (.completeUserTaskInstance commandId SequentialUserTask.exactTaskInstanceId submittedValues) = true := by
       exact serialBusinessCommandAdmitted_of_other_profile _ _ _ (by decide +kernel) (by decide +kernel) (by decide +kernel)
     simp [applyStimulus, admitStimulus, serialGuard,
+      show (programFor exactMetadata).identity.semanticProfile.value ≠
+        "cibseven-2.2.0-sequential-multi-instance-subprocess-draft" by decide +kernel,
       show interruptingMessageEventSubProcessStateValid (programFor exactMetadata)
         (waitingStateFor leftMetadata) = true from rfl,
       show (programFor exactMetadata).compensationEventSubProcessSnapshots = none from rfl,

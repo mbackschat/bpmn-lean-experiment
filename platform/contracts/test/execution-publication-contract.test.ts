@@ -518,6 +518,7 @@ type MutableTaskId = {
 type MutableSequentialController = {
   id: { processInstanceId: string; activityElementId: string; activation: number };
   mode: string;
+  bodyKind: string;
   plannedInstanceCount: number;
   pendingItemCount: number;
   numberOfInstances: number;
@@ -559,7 +560,7 @@ function sequentialMultiInstanceController(
       activityElementId: taskId.elementId,
       activation: activityActivation,
     },
-    mode: "sequential",
+    mode: "sequential", bodyKind: "userTask",
     plannedInstanceCount: 3,
     pendingItemCount: 2,
     numberOfInstances: 1,

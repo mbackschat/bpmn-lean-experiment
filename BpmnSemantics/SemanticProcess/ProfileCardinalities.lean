@@ -12,6 +12,9 @@ structure ShapeCardinalities where
   timerStarts : Nat := 0
   timerInitiates : Nat := 0
   embeddedScopes : Nat := 0
+  sequentialMultiInstanceSubProcesses : Nat := 0
+  sequentialScopeEntries : Nat := 0
+  sequentialScopeCompletions : Nat := 0
   callActivities : Nat := 0
   boundaryErrors : Nat := 0
   boundaryTimers : Nat := 0
@@ -67,6 +70,8 @@ def nodeCardinalities (nodes : List CheckedNode) : ShapeCardinalities :=
         { counts with messageStarts := counts.messageStarts + 1 }
     | .timerStartEvent .. =>
         { counts with timerStarts := counts.timerStarts + 1 }
+    | .sequentialMultiInstanceSubProcess .. =>
+        { counts with sequentialMultiInstanceSubProcesses := counts.sequentialMultiInstanceSubProcesses + 1 }
     | .embeddedSubProcess .. =>
         { counts with embeddedScopes := counts.embeddedScopes + 1 }
     | .callActivity .. =>
@@ -135,6 +140,10 @@ def addOperationCardinality (counts : ShapeCardinalities)
         { counts with messageInitiates := counts.messageInitiates + 1 }
     | .initiateTimer .. =>
         { counts with timerInitiates := counts.timerInitiates + 1 }
+    | .enterSequentialMultiInstanceScope .. =>
+        { counts with sequentialScopeEntries := counts.sequentialScopeEntries + 1 }
+    | .completeSequentialMultiInstanceScope .. =>
+        { counts with sequentialScopeCompletions := counts.sequentialScopeCompletions + 1 }
     | .enterScope .. => { counts with scopeEntries := counts.scopeEntries + 1 }
     | .enterBoundedScope .. =>
         { counts with boundedScopeEntries := counts.boundedScopeEntries + 1 }

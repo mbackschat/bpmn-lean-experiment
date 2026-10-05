@@ -224,6 +224,8 @@ def removeCalledProcessTree (state : RuntimeState)
     calledProcessOccurrences := state.calledProcessOccurrences.filter fun candidate =>
       candidate.id ≠ record.id &&
         !removedOwner candidate.caller && !removedOwner candidate.calledRoot
+    sequentialScopeControllers := state.sequentialScopeControllers.filter fun controller =>
+      !removed.contains controller.id.processInstanceId
     sequentialMultiInstanceControllers :=
       state.sequentialMultiInstanceControllers.filter fun controller =>
         !removed.contains controller.processInstanceId

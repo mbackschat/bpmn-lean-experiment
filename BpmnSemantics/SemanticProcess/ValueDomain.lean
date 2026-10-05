@@ -66,6 +66,7 @@ private inductive ProcessDataValueDomain where
   | stringListOnly
   | stringNull
   | stringNullBoolean
+  | stringNullBooleanList
   | scalar
   | structuredHumanWork
 
@@ -76,7 +77,9 @@ private inductive ProcessDataValueDomain where
 @[simp] private abbrev profileValueDomain (profile : ProfileId) :
     ProcessDataIngress → ProcessDataValueDomain
   | .processStart =>
-      if profile = compensationSourceCheckpointProfileId then
+      if profile.value = "cibseven-2.2.0-sequential-multi-instance-subprocess-draft" then
+        .stringNullBooleanList
+      else if profile = compensationSourceCheckpointProfileId then
         .stringOnly
       else if profile.value =
           "bpmn-2.0.2-sequential-multi-instance-user-task-draft" then
@@ -123,6 +126,7 @@ private inductive ProcessDataValueDomain where
         .stringNull
       else if profileIsOneOf profile
           [ booleanProcessDataCheckpointProfileId.value
+          , "cibseven-2.2.0-sequential-multi-instance-subprocess-draft"
           , userTaskAssignmentFormMetadataProfileId.value
           , parallelUserTaskMetadataCheckpointProfileId.value ] then
         .stringNullBoolean
@@ -146,6 +150,10 @@ def variableValueAdmitted (profile : ProfileId) (surface : ProcessDataIngress)
   | .stringNullBoolean, .string _
   | .stringNullBoolean, .null
   | .stringNullBoolean, .boolean _ => true
+  | .stringNullBooleanList, .string _
+  | .stringNullBooleanList, .null
+  | .stringNullBooleanList, .boolean _
+  | .stringNullBooleanList, .stringList _ => true
   | .scalar, .string _
   | .scalar, .boolean _
   | .scalar, .integer _

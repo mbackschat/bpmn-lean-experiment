@@ -1,4 +1,5 @@
 import BpmnSemantics.SemanticProcess.InternalCommutationCorrelationProjection
+import BpmnSemantics.SemanticProcess.SequentialScopeRuntimeLaws
 
 /-! # Internal commutation occurrence-projection frames
 
@@ -11,9 +12,9 @@ open BpmnSemantics
 
 namespace InternalCommutation
 
-theorem armingWaitStart_frame (program : Program) (state : RuntimeState) (patch : InternalArmingPatch) (owner : ScopeOccurrenceId) (element : NodeId) (activation : Nat) : waitStart? program (applyInternalArmingPatch state patch) owner element activation = waitStart? program state owner element activation := by cases patch with | mk _ _ _ _ _ _ _ _ _ write => cases write <;> rfl
-theorem armingScopeStart_frame (program : Program) (state : RuntimeState) (patch : InternalArmingPatch) (occurrence : RuntimeScopeOccurrence) : scopeStart? program (applyInternalArmingPatch state patch) occurrence = scopeStart? program state occurrence := by cases patch with | mk _ _ _ _ _ _ _ _ _ write => cases write <;> rfl
-theorem armingCallStart_frame (program : Program) (state : RuntimeState) (patch : InternalArmingPatch) (record : CalledProcessOccurrence) : callStart? program (applyInternalArmingPatch state patch) record = callStart? program state record := by cases patch with | mk _ _ _ _ _ _ _ _ _ write => cases write <;> rfl
+theorem armingWaitStart_frame (program : Program) (state : RuntimeState) (patch : InternalArmingPatch) (owner : ScopeOccurrenceId) (element : NodeId) (activation : Nat) : waitStart? program (applyInternalArmingPatch state patch) owner element activation = waitStart? program state owner element activation := by cases patch with | mk _ _ _ _ _ _ _ _ _ write _ => cases write <;> rfl
+theorem armingScopeStart_frame (program : Program) (state : RuntimeState) (patch : InternalArmingPatch) (occurrence : RuntimeScopeOccurrence) : scopeStart? program (applyInternalArmingPatch state patch) occurrence = scopeStart? program state occurrence := by cases patch with | mk _ _ _ _ _ _ _ _ _ write _ => cases write <;> rfl
+theorem armingCallStart_frame (program : Program) (state : RuntimeState) (patch : InternalArmingPatch) (record : CalledProcessOccurrence) : callStart? program (applyInternalArmingPatch state patch) record = callStart? program state record := by cases patch with | mk _ _ _ _ _ _ _ _ _ write _ => cases write <;> rfl
 
 theorem prepared_arm_anchor_shape (program : Program) (state : RuntimeState)
     (operation : SemanticOperation) (patch : InternalArmingPatch)
@@ -378,7 +379,7 @@ theorem prepared_arm_projectWaits_insert (program : Program) (state : RuntimeSta
           (effects ++ incidents) newStart timerPerm
   case awaitEffect.isFalse.running =>
     rename_i id origin input output effect route instanceId selection
-    let bindings := (evaluateEnclosingInputMappings state.variables.process.bindings effect.inputMappings).getD []
+    let bindings := (evaluateEffectInputs? program state owner effect.inputMappings).getD []
     let wait : EffectWait :=
       { processInstanceId := owner.processInstanceId, owner, elementId := effect.elementId,
         activation := effectActivationCount state effect.elementId + 1,
@@ -649,7 +650,7 @@ theorem prepared_arm_preserves_flowNodeOccurrenceProgramValidity (program : Prog
     all_goals rfl
   case awaitEffect.isFalse.running =>
     rename_i id origin input output effect route instanceId selection
-    let bindings := (evaluateEnclosingInputMappings state.variables.process.bindings effect.inputMappings).getD []
+    let bindings := (evaluateEffectInputs? program state owner effect.inputMappings).getD []
     let wait : EffectWait :=
       { processInstanceId := owner.processInstanceId, owner, elementId := effect.elementId,
         activation := effectActivationCount state effect.elementId + 1,
@@ -699,15 +700,15 @@ theorem prepared_arm_preserves_flowNodeOccurrenceProgramValidity (program : Prog
       intro activity member
       have rejected := List.all_eq_true.mp rejectedAll activity member
       simpa [effectWaitOccurrenceId, effectWaitOccurrence] using rejected
-    have arguments : evaluateEnclosingInputMappings state.variables.process.bindings effect.inputMappings = some bindings := by
-      cases evaluatedEq : evaluateEnclosingInputMappings state.variables.process.bindings effect.inputMappings with
+    have arguments : evaluateEffectInputs? program state owner effect.inputMappings = some bindings := by
+      cases evaluatedEq : evaluateEffectInputs? program state owner effect.inputMappings with
       | none => exact False.elim (unique evaluatedEq)
       | some values => simp [bindings, evaluatedEq]
     have referenceValid := flowNodeOccurrenceProgramValidity_insertOrdinaryEffect program state id
       origin input effect
         route wait bindings valid declarers declared live processId
         (by simpa [wait] using elementId) (by simp [wait]) rfl originElement rfl rfl
-        (evaluateEnclosingInputMappings_snapshot _ _ _ arguments) rfl rfl rfl
+        (evaluateEffectInputs_snapshot _ _ _ _ _ arguments) rfl rfl rfl
         (fun candidateId candidateOrigin candidateInput candidateOutput candidateEffect
           candidateRoute member => programWellFormed_awaitEffect_elements_align program
             programAdmitted candidateId candidateOrigin candidateInput candidateOutput candidateEffect

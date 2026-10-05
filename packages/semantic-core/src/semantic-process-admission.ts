@@ -1,4 +1,7 @@
 import { mixedTaskControlProgramGraph, mixedTaskControlStimulusDataAdmitted } from "./mixed-task-control-flow-admission.js";
+import { sequentialScopeProgramAdmitted } from "./sequential-scope-program-admission.js";
+import { sequentialScopeStimulusDataAdmitted } from "./sequential-scope-data-admission.js";
+import { SEQUENTIAL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID } from "./semantic-profile-catalog.js";
 import { serialBusinessProgramGraph, serialBusinessStimulusDataAdmitted } from "./serial-business-task-admission.js";
 import { MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID, MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID, SERIAL_BUSINESS_TASK_CHECKPOINT_PROFILE_ID } from "./semantic-profile-catalog.js";
 import { isInterruptingMessageEventSubProcessDeclaration, interruptingMessageEventSubProcessProgramGraph } from "./interrupting-message-event-subprocess-program-admission.js";
@@ -114,6 +117,7 @@ export function supportsSemanticProcessScenario(
     callDataStimulusDataAdmitted(program, start) &&
     mixedTaskControlStimulusDataAdmitted(program, start) &&
     serialBusinessStimulusDataAdmitted(program, start) &&
+    sequentialScopeStimulusDataAdmitted(program, start) &&
     structuredCompositionStimulusDataAdmitted(program, start) &&
     compensationStartDataAdmitted(program, start) &&
     processStartMatchesProgram(start, program)
@@ -137,6 +141,7 @@ export function supportsSemanticProcessExecution(
     callDataStimulusDataAdmitted(program, start) &&
     mixedTaskControlStimulusDataAdmitted(program, start) &&
     serialBusinessStimulusDataAdmitted(program, start) &&
+    sequentialScopeStimulusDataAdmitted(program, start) &&
     structuredCompositionStimulusDataAdmitted(program, start) &&
     sequentialMultiInstanceStimulusDataAdmitted(program, start) &&
     compensationStartDataAdmitted(program, start) &&
@@ -287,6 +292,7 @@ export function isWellFormedSemanticProcessProgram(
     checkedOperations.push(operation);
   }
   const program = value as unknown as SemanticProcessProgram;
+  if (identity.semanticProfile === SEQUENTIAL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID && !sequentialScopeProgramAdmitted(program)) return false;
   if ((identity.semanticProfile === MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID || identity.semanticProfile === MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID) && !mixedTaskControlProgramGraph(program)) return false;
   if (identity.semanticProfile === SERIAL_BUSINESS_TASK_CHECKPOINT_PROFILE_ID && !serialBusinessProgramGraph(program)) return false;
   const snapshotTargets = program.compensationEventSubProcessSnapshots?.targets;

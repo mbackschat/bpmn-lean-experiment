@@ -15,9 +15,11 @@ private def operationInputs : SemanticOperation → List ControlPlaceId
   | .initiateMessage ..
   | .initiateTimer ..
   | .returnProcess ..
+  | .completeSequentialMultiInstanceScope ..
   | .completeParallelMultiInstanceUserTask ..
   | .completeScope ..
   | .completeEventSubProcess .. => []
+  | .enterSequentialMultiInstanceScope _ _ input _ _ _ _ _ _ _
   | .enterScope _ _ input _ _
   | .enterBoundedScope _ _ input _ _ _
   | .enterMonitoredScope _ _ input _ _ _
@@ -77,6 +79,7 @@ def operationOutputs : SemanticOperation → List ControlPlaceId
   | .awaitMessageMonitoredUserTask _ _ _ task boundaryMessage =>
       [task.output, boundaryMessage.output]
   | .synchronizeSelected _ _ _ output _ => [output]
+  | .enterSequentialMultiInstanceScope _ _ _ childEntry _ _ _ _ _ _
   | .enterScope _ _ _ childEntry _ => [childEntry]
   -- The boundary route is token-carrying and lands in the parent scope, unlike the child entry.
   | .enterBoundedScope _ _ _ childEntry _ boundaryTimer
@@ -90,6 +93,7 @@ def operationOutputs : SemanticOperation → List ControlPlaceId
   | .selectMany _ _ _ candidates defaultBranch _ =>
       candidates.map (·.output) ++ [defaultBranch.output]
   | .throwError _ _ _ _ handler => [handler.output]
+  | .completeSequentialMultiInstanceScope ..
   | .reachNoneEnd ..
   | .completeEventSubProcess ..
   | .terminateScope .. => []
@@ -108,6 +112,8 @@ def operationControlPlaces (operation : SemanticOperation) : List ControlPlaceId
 The excluded constructors deliberately cross a definition-scope boundary for at least one port.
 -/
 def operationControlPlacesShareOwner : SemanticOperation → Bool
+  | .enterSequentialMultiInstanceScope ..
+  | .completeSequentialMultiInstanceScope ..
   | .enterScope ..
   | .enterBoundedScope ..
   | .enterMonitoredScope ..
@@ -135,7 +141,10 @@ theorem awaitCorrelatedPayloadMessage_output_mem_operationControlPlaces
 def producers (operations : List SemanticOperation)
     (place : ControlPlaceId) : List OperationId :=
   operations.filterMap fun operation =>
-    if (operationOutputs operation).contains place then
+    let outputs := match operation with
+      | .completeSequentialMultiInstanceScope _ _ entryId => (sequentialScopeContinuation? operations entryId).toList
+      | _ => operationOutputs operation
+    if outputs.contains place then
       some operation.id
     else
       none
@@ -185,6 +194,15 @@ def operationRespectsScopes (program : Program)
       | .initiateMessage _ _ _ outputs =>
           (definitionScope? program owner).any (·.parentScopeId.isNone) &&
             placesOwnedBy program outputs owner
+      | .enterSequentialMultiInstanceScope _ origin input childEntry childScopeId output _ _ _ _ =>
+          placesOwnedBy program [input, output] owner && placesOwnedBy program [childEntry] childScopeId &&
+            (definitionScope? program childScopeId).any fun scope =>
+              scope.parentScopeId == some owner && scope.originElementId == origin.elementId
+      | .completeSequentialMultiInstanceScope _ _ entryId =>
+          program.operations.any fun
+            | .enterSequentialMultiInstanceScope id _ _ _ childScopeId _ _ _ _ _ =>
+                id == entryId && childScopeId == owner
+            | _ => false
       | .enterScope _ _ input childEntry childScopeId =>
           placesOwnedBy program [input] owner &&
             placesOwnedBy program [childEntry] childScopeId &&
@@ -269,6 +287,8 @@ def scopedOwnershipComplete (program : Program)
 private def completionId? (program : Program) (scopeId : DefinitionScopeId) :
     Option OperationId :=
   program.operations.findSome? fun
+    | .completeSequentialMultiInstanceScope id _ _ =>
+        if operationScope? program id == some scopeId then some id else none
     | .completeScope id _ candidate _
     | .completeEventSubProcess id _ candidate =>
         if candidate = scopeId then some id else none
@@ -320,6 +340,7 @@ def semanticOperationIsResumptionCut : SemanticOperation → Bool
   | .awaitSequentialMultiInstanceUserTask .. => true
   | .awaitParallelMultiInstanceUserTask .. => true
   | .awaitMessageBoundedUserTask .. | .awaitMessageMonitoredUserTask .. => true
+  | .enterSequentialMultiInstanceScope .. | .completeSequentialMultiInstanceScope ..
   | .initiate .. | .initiateMessage .. | .initiateTimer .. | .enterScope .. | .enterBoundedScope ..
   | .enterMonitoredScope ..
   | .invokeProcess .. | .returnProcess .. | .completeParallelMultiInstanceUserTask .. | .awaitTimer ..
@@ -440,6 +461,7 @@ def programGraphWellFormedWithScopeLifecycle (program : Program)
             scopeForestWellFormed program &&
             scopedOwnershipComplete program entryRoot &&
             parallelMultiInstancePairsShareScope program &&
+            sequentialScopeOperationsPaired program &&
             boundedScopeEntryOriginsOwnTheirScopes program &&
             scopeLifecycle program entryRoot &&
             program.controlPlaces.all (fun place =>

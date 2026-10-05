@@ -156,7 +156,7 @@ theorem scopeCreation_runtime_rootCompensationDomain (program : Program) (instan
         operation ∈ program.operations) : RootCompensationExecutionDomain program := by
   have execution : compensationExecutionDeclarationValid program = true := by
     simp only [runtimeStateWellFormed, Bool.and_eq_true] at valid
-    have execution := valid.2.2
+    have execution := valid.2.1.2
     simp only [compensationExecutionStateValid, Bool.and_eq_true] at execution
     exact execution.1
   have member : definition ∈ program.definitionScopes := by

@@ -14,6 +14,20 @@ structure SemanticId where
   value : String
   deriving Repr, DecidableEq
 
+namespace SemanticProcess
+
+structure DefinitionScopeId where
+  value : String
+  deriving Repr, DecidableEq
+
+structure ScopeOccurrenceId where
+  processInstanceId : SemanticId
+  definitionScopeId : DefinitionScopeId
+  activation : Nat
+  deriving Repr, DecidableEq
+
+end SemanticProcess
+
 structure ProcessId where
   value : String
   deriving Repr, DecidableEq
@@ -324,9 +338,30 @@ structure OpenParallelMultiInstance where
   activeIterations : List OpenParallelMultiInstanceIteration
   deriving Repr, DecidableEq
 
+structure OpenSubProcessIteration where
+  loopCounter : Nat
+  body : SemanticProcess.ScopeOccurrenceId
+  item : VariableBinding
+  bindings : List VariableBinding
+  userTaskIds : List UserTaskInstanceId
+  effectIds : List EffectOccurrenceId
+  deriving Repr, DecidableEq
+
+structure OpenSequentialSubProcessMultiInstance where
+  id : ActivityOccurrenceId
+  plannedInstanceCount : Nat
+  pendingItemCount : Nat
+  numberOfInstances : Nat
+  numberOfActiveInstances : Nat
+  numberOfCompletedInstances : Nat
+  numberOfTerminatedInstances : Nat
+  activeIterations : List OpenSubProcessIteration
+  deriving Repr, DecidableEq
+
 inductive OpenMultiInstance where
   | sequential (value : OpenSequentialMultiInstance)
   | parallel (value : OpenParallelMultiInstance)
+  | sequentialSubProcess (value : OpenSequentialSubProcessMultiInstance)
   deriving Repr, DecidableEq
 
 /-- Public incident kind admitted by the configured failed-effect overlay. -/

@@ -5,6 +5,7 @@ import {
   CanonicalObservationKind,
   CommandOutcome,
   ProcessStatus,
+  MultiInstanceBodyKind,
   StimulusKind,
   UserTaskLifecycleState,
   VariableValueKind,
@@ -121,6 +122,7 @@ test("refuses a result bound to the wrong current business item", async () => {
   const processInstanceId = "Instance_WrongItem";
   const valid = alphaReviewState(processInstanceId, 1);
   const controller = valid.openMultiInstances![0]!;
+  assert.ok(controller.mode === "sequential" && controller.bodyKind === MultiInstanceBodyKind.UserTask);
   const iteration = controller.activeIterations[0]!;
   const wrong: StateObservation = {
     ...valid,
@@ -151,6 +153,7 @@ test("refuses a Parallel Multi-Instance controller at the Alpha boundary", async
   const processInstanceId = "Instance_Parallel";
   const valid = alphaReviewState(processInstanceId, 1);
   const controller = valid.openMultiInstances![0]!;
+  assert.ok(controller.mode === "sequential" && controller.bodyKind === MultiInstanceBodyKind.UserTask);
   const wrong: StateObservation = {
     ...valid,
     openMultiInstances: [{
@@ -170,7 +173,39 @@ test("refuses a Parallel Multi-Instance controller at the Alpha boundary", async
       publicInstance(processInstanceId),
       staticPort(wrong, () => { submissions += 1; }),
     ),
-    /non-Sequential Multi-Instance controller/u,
+    /requires a Sequential Multi-Instance User Task controller/u,
+  );
+  assert.equal(submissions, 0);
+});
+
+test("refuses a Sub-Process iteration before submitting a User Task command", async () => {
+  const processInstanceId = "Instance_SubProcess";
+  const valid = alphaReviewState(processInstanceId, 1);
+  const controller = valid.openMultiInstances![0]!;
+  assert.ok(controller.mode === "sequential" && controller.bodyKind === MultiInstanceBodyKind.UserTask);
+  const iteration = controller.activeIterations[0]!;
+  const wrong: StateObservation = {
+    ...valid,
+    openMultiInstances: [{
+      ...controller,
+      bodyKind: MultiInstanceBodyKind.SubProcess,
+      activeIterations: [{
+        loopCounter: iteration.loopCounter,
+        body: { processInstanceId, definitionScopeId: "body", activation: 2 },
+        item: iteration.taskInput,
+        bindings: [],
+        userTaskIds: [iteration.taskId],
+        effectIds: [],
+      }],
+    }],
+  };
+  let submissions = 0;
+  await assert.rejects(
+    new MuePreviewAlphaActor(async () => undefined).runNatural(
+      publicInstance(processInstanceId),
+      staticPort(wrong, () => { submissions += 1; }),
+    ),
+    /requires a Sequential Multi-Instance User Task controller/u,
   );
   assert.equal(submissions, 0);
 });
@@ -322,6 +357,7 @@ function alphaReviewState(processInstanceId: string, loopCounter: number): State
         activation: 1,
       },
       mode: "sequential",
+      bodyKind: MultiInstanceBodyKind.UserTask,
       plannedInstanceCount: exactInputItems.length,
       pendingItemCount: exactInputItems.length - loopCounter - 1,
       numberOfInstances: loopCounter + 1,

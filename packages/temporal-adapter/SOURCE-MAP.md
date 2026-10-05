@@ -12,6 +12,14 @@ The [mixed-task refusal witness](protocol/test/mixed-task-control-flow-host-refu
 
 The [business Error refusal witness](protocol/test/mixed-task-business-error-host-admission.test.ts) verifies the same typed refusal for the [Error-recovery extension](../../docs/capsules/MIXED-TASK-BUSINESS-ERROR-PROPOSAL.md), including a Program with its operations removed.
 
+## Private repeated-scope continuation
+
+The [continuation decoder](protocol/src/workflow-continuation.ts) carries repeated-scope controllers and body-local frames using the [core checkpoint validator](../semantic-core/src/sequential-scope-state-validation.ts). The [restoration controls](workflow/test/sequential-scope-recovery.test.ts) compare restored and uninterrupted two-body execution, pending-effect snapshots and transport identities, local disposal/reset, stale-result rejection, zero-item continuation and malformed associations. [Capsule evidence](../../docs/capsules/SEQUENTIAL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#implementation-progress) owns the exact boundary: broader recovery qualification, independent review and public registration remain open.
+
+The private [ordinary-effect scheduler](workflow/src/ordinary-effect-frontier-scheduler.ts) retains occurrence ownership across sibling commands and queues callbacks in ingress order. Its [readiness controls](workflow/test/sequential-scope-effect-readiness.test.ts) cover concurrent effects, passive human progress, snapshot retention, capacity refusal, host failure and rollover fencing. Public profile admission remains refused; component tests do not establish live recovery or replay.
+
+The [Sub-Process progress validator](protocol/src/sequential-scope-publication-validation.ts) checks the selected body union against current scopes, mapped locals and task/effect membership; [complete E1/E2 transaction controls](workflow/test/sequential-scope-publication.test.ts) cover both body turnovers and malformed associations. The [private live witness](testkit/test/sequential-scope-recovery.temporal-test.ts) passes Worker replacement beside a pending validation, stable retry identity, two bodies, stale-input refusal, Continue-As-New, exact publications and every-Run replay. Its live controls also cover zero items, initially true and later-set completion conditions, and typed/exhausted technical failures with exact publications and every-Run replay. This focused evidence does not close the general scheduler proof, independent review or public admission.
+
 ## Native deployment boundaries
 
 - [External Worker runtime](worker/src/external-temporal-runtime.ts) binds exact loaded bytes to native `PINNED` options. [Fresh initialization](worker/src/workflow-deployment-initialization.ts) creates the Namespace before Worker registration and initial-Current selection; its [matrix](worker/test/workflow-deployment-initialization.test.ts) guards failure ordering and routing drift.

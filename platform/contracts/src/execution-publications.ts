@@ -220,6 +220,8 @@ export const SemanticOperationKind = {
   InitiateMessage: "initiateMessage",
   InitiateTimer: "initiateTimer",
   EnterScope: "enterScope",
+  EnterSequentialMultiInstanceScope: "enterSequentialMultiInstanceScope",
+  CompleteSequentialMultiInstanceScope: "completeSequentialMultiInstanceScope",
   EnterBoundedScope: "enterBoundedScope",
   EnterMonitoredScope: "enterMonitoredScope",
   InvokeProcess: "invokeProcess",
@@ -391,6 +393,7 @@ export type OpenSequentialMultiInstanceIteration = DeepReadonly<{
 export type OpenSequentialMultiInstance = DeepReadonly<{
   id: ActivityOccurrenceId;
   mode: "sequential";
+  bodyKind: "userTask";
   plannedInstanceCount: number;
   pendingItemCount: number;
   numberOfInstances: number;
@@ -406,6 +409,7 @@ export type OpenParallelMultiInstanceIteration =
 export type OpenParallelMultiInstance = DeepReadonly<{
   id: ActivityOccurrenceId;
   mode: "parallel";
+  bodyKind: "userTask";
   plannedInstanceCount: number;
   pendingItemCount: 0;
   numberOfInstances: number;

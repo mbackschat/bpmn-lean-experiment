@@ -481,10 +481,11 @@ theorem prepared_arm_preserves_runtime (program : Program) (state : RuntimeState
     runtimeStateWellFormed program expectedInstanceId (applyInternalArmingPatch state patch) = true := by
   simp only [runtimeStateWellFormed, Bool.and_eq_true] at stateAdmitted
   have existing := stateAdmitted.1
-  have claims := stateAdmitted.2.1.1.1
-  have retentionValid := stateAdmitted.2.1.1.2
-  have snapshotValid := stateAdmitted.2.1.2
-  have executionValid := stateAdmitted.2.2
+  have claims := stateAdmitted.2.1.1.1.1
+  have retentionValid := stateAdmitted.2.1.1.1.2
+  have snapshotValid := stateAdmitted.2.1.1.2
+  have executionValid := stateAdmitted.2.1.2
+  have scopeValid := stateAdmitted.2.2
   obtain ⟨h17, terminal⟩ := existing
   obtain ⟨h16, exhausted⟩ := h17
   obtain ⟨h15, controllerIdentities⟩ := h16
@@ -642,13 +643,13 @@ theorem prepared_arm_preserves_runtime (program : Program) (state : RuntimeState
   have liveRunning := prepared_arm_live_running program state operation patch prepared
   have writeOwner := (prepared_arm_selection_unique program state operation patch prepared).2.2
   have ownersAfter : waitOwnersLive (applyInternalArmingPatch state patch) = true := by
-    cases patch with | mk _ _ _ _ _ _ _ _ _ write =>
+    cases patch with | mk _ _ _ _ _ _ _ _ _ write _ =>
       cases write <;> simp_all [applyInternalArmingPatch, waitOwnersLive,
         exactLiveOccurrence, all_insertUserTaskWait, insertMessageWait, insertTimerWait,
         insertEffectWait, all_canonicalInsertBy,
         InternalArmingWrite.owner]
   have identitiesAfter : waitIdentitiesUnique (applyInternalArmingPatch state patch) = true := by
-    cases patch with | mk _ _ _ _ _ _ _ _ _ write =>
+    cases patch with | mk _ _ _ _ _ _ _ _ _ write _ =>
       cases write with
       | userTask inserted =>
           simp only [applyInternalArmingPatch, waitIdentitiesUnique,
@@ -681,7 +682,7 @@ theorem prepared_arm_preserves_runtime (program : Program) (state : RuntimeState
               inserted state.effectWaits effects keyFresh (by simp [effectWaitKeyMatches])⟩
   have declarationsAfter : waitDeclarationsValid program expectedInstanceId
       (applyInternalArmingPatch state patch) = true := by
-    cases patch with | mk _ _ _ _ _ _ _ _ _ write =>
+    cases patch with | mk _ _ _ _ _ _ _ _ _ write _ =>
       cases write <;> simp_all [applyInternalArmingPatch, waitDeclarationsValid,
         all_insertUserTaskWait, insertMessageWait, insertTimerWait, insertEffectWait,
         all_canonicalInsertBy]
@@ -691,7 +692,7 @@ theorem prepared_arm_preserves_runtime (program : Program) (state : RuntimeState
         controllersOwnLiveActivity (applyInternalArmingPatch state patch) = true ∧
         controllerIdentitiesUnique (applyInternalArmingPatch state patch) = true ∧
         controllersNotExhausted (applyInternalArmingPatch state patch) = true := by
-    cases patch with | mk _ _ _ _ _ _ _ _ _ write =>
+    cases patch with | mk _ _ _ _ _ _ _ _ _ write _ =>
       cases write <;> exact ⟨hidden, activityIdentities, controllers,
         controllerIdentities, exhausted⟩
   obtain ⟨runningInstanceId, running⟩ := liveRunning.2
@@ -725,14 +726,14 @@ theorem prepared_arm_preserves_runtime (program : Program) (state : RuntimeState
        | .notStarted => notStartedStateEmpty (applyInternalArmingPatch state patch)
        | _ => true) = true := by
     have controlFrame : (applyInternalArmingPatch state patch).control = state.control := by
-      cases patch with | mk _ _ _ _ _ _ _ _ _ write => cases write <;> rfl
+      cases patch with | mk _ _ _ _ _ _ _ _ _ write _ => cases write <;> rfl
     rw [controlFrame, running]
   have claimsAfter : activityBodyClaimsUnique
       (applyInternalArmingPatch state patch).activityOccurrences = true := by
     have recordsFrame :
         (applyInternalArmingPatch state patch).activityOccurrences =
           state.activityOccurrences := by
-      cases patch with | mk _ _ _ _ _ _ _ _ _ write => cases write <;> rfl
+      cases patch with | mk _ _ _ _ _ _ _ _ _ write _ => cases write <;> rfl
     rw [recordsFrame]
     exact claims
   have retentionAfter : compensationActivityRetentionStateValid program
@@ -740,7 +741,7 @@ theorem prepared_arm_preserves_runtime (program : Program) (state : RuntimeState
     have retentionFrame : compensationActivityRetentionStateValid program
         (applyInternalArmingPatch state patch) =
           compensationActivityRetentionStateValid program state := by
-      cases patch with | mk _ _ _ _ _ _ _ _ _ write => cases write <;> rfl
+      cases patch with | mk _ _ _ _ _ _ _ _ _ write _ => cases write <;> rfl
     rw [retentionFrame]
     exact retentionValid
   have snapshotAfter : compensationEventSubProcessSnapshotStateValid program
@@ -748,9 +749,11 @@ theorem prepared_arm_preserves_runtime (program : Program) (state : RuntimeState
     have snapshotFrame : compensationEventSubProcessSnapshotStateValid program
         (applyInternalArmingPatch state patch) =
           compensationEventSubProcessSnapshotStateValid program state := by
-      cases patch with | mk _ _ _ _ _ _ _ _ _ write => cases write <;> rfl
+      cases patch with | mk _ _ _ _ _ _ _ _ _ write _ => cases write <;> rfl
     rw [snapshotFrame]
     exact snapshotValid
+  have scopeAfter : sequentialScopeStateValid program (applyInternalArmingPatch state patch) = true := by
+    cases patch with | mk _ _ _ _ _ _ _ _ _ write _ => cases write <;> exact scopeValid
   have after2 := And.intro positionAfter eventAfter
   have after3 := And.intro after2 incidentAfter
   have after4 := And.intro after3 ownersAfter
@@ -770,7 +773,7 @@ theorem prepared_arm_preserves_runtime (program : Program) (state : RuntimeState
   have after18 := And.intro after17 unchangedAfter.2.2.2.2
   simp only [runtimeStateWellFormed, Bool.and_eq_true]
   exact ⟨⟨after18, terminalAfter⟩,
-    ⟨⟨⟨claimsAfter, retentionAfter⟩, snapshotAfter⟩, executionAfter⟩⟩
+    ⟨⟨⟨⟨claimsAfter, retentionAfter⟩, snapshotAfter⟩, executionAfter⟩, scopeAfter⟩⟩
 
 end InternalCommutation
 

@@ -192,6 +192,8 @@ theorem parseFrom_sound (source : CheckedProcess) (fuel : Nat)
         | sequentialMultiInstanceUserTask id name input output normalOutputFlowId
             boundaryTimer =>
             simp [parseFrom, nodeResult] at result
+        | sequentialMultiInstanceSubProcess _ _ _ _ _ _ =>
+            simp [parseFrom, nodeResult] at result
         | parallelMultiInstanceUserTask id name input output completionCondition normalOutputFlowId
             boundaryTimer =>
             simp [parseFrom, nodeResult] at result

@@ -123,6 +123,8 @@ def operationWaitDeclarationKeys : SemanticOperation → List WaitDeclarationKey
       [messageWaitDeclarationKey message.elementId,
         timerWaitDeclarationKey timer.elementId]
   | .awaitEffect _ origin _ _ _ _ => [effectWaitDeclarationKey origin.elementId]
+  | .enterSequentialMultiInstanceScope ..
+  | .completeSequentialMultiInstanceScope ..
   | .initiate ..
   | .initiateMessage ..
   | .initiateTimer ..
@@ -166,8 +168,10 @@ private def wellFormedBpmnErrorRoute (places : List ControlPlace)
         nonempty route.origin.sequenceFlowId.value &&
         placeExists places route.output
 
-private def operationWellFormed (program : Program) (places : List ControlPlace) :
+def operationWellFormed (program : Program) (places : List ControlPlace) :
     SemanticOperation → Bool
+  | operation@(.enterSequentialMultiInstanceScope ..) | operation@(.completeSequentialMultiInstanceScope ..) =>
+      SequentialScopeProgram.operationWellFormed program operation
   | .initiate id origin output =>
       nonempty id.value &&
         nonempty origin.elementId.value &&
@@ -409,7 +413,8 @@ private def operationWellFormed (program : Program) (places : List ControlPlace)
         nonempty origin.elementId.value &&
         nonempty effect.elementId.value &&
         decide (origin.elementId = effect.elementId) &&
-        (((program.identity.semanticProfile == serialBusinessTaskProfileId || program.identity.semanticProfile == mixedTaskControlFlowProfileId) &&
+        (((program.identity.semanticProfile == serialBusinessTaskProfileId || program.identity.semanticProfile == mixedTaskControlFlowProfileId ||
+            sequentialScopeProgramSelected program) &&
           SerialBusinessTask.descriptorValid effect.descriptor && bpmnErrorRoute.isNone) ||
         (program.identity.semanticProfile == mixedTaskBusinessErrorProfileId &&
           SerialBusinessTask.descriptorValid effect.descriptor) ||

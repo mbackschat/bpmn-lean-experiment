@@ -25,10 +25,6 @@ structure ControlPlaceId where
   value : String
   deriving Repr, DecidableEq
 
-structure DefinitionScopeId where
-  value : String
-  deriving Repr, DecidableEq
-
 structure TaskDefinitionId where
   value : String
   deriving Repr, DecidableEq
@@ -230,6 +226,9 @@ inductive CheckedNode where
   | messageStartEvent (id : NodeId) (channel : MessageChannel)
   | timerStartEvent (id : NodeId) (durationLiteral : String)
   | embeddedSubProcess (id : NodeId) (childScopeId : DefinitionScopeId)
+  | sequentialMultiInstanceSubProcess (id : NodeId) (childScopeId : DefinitionScopeId)
+      (collectionName itemName : String) (bodyInputs : List VariableMapping)
+      (completionBooleanName : Option String)
   | transactionSubProcess (id : NodeId) (childScopeId : DefinitionScopeId) (method : String)
   | cancelEndEvent (id : NodeId)
   | cancelBoundaryEvent (id attachedToRef : NodeId) (outputFlowId : SequenceFlowId)
@@ -315,6 +314,7 @@ def CheckedNode.id : CheckedNode → NodeId
   | .messageStartEvent id _
   | .timerStartEvent id _
   | .embeddedSubProcess id _
+  | .sequentialMultiInstanceSubProcess id _ _ _ _ _
   | .transactionSubProcess id _ _
   | .cancelEndEvent id
   | .cancelBoundaryEvent id _ _

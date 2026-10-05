@@ -14,6 +14,8 @@ inductive SemanticOperationKind where
   | initiate
   | initiateMessage
   | initiateTimer
+  | enterSequentialMultiInstanceScope
+  | completeSequentialMultiInstanceScope
   | enterScope
   | enterBoundedScope
   | enterMonitoredScope
@@ -55,6 +57,8 @@ def SemanticOperation.kind : SemanticOperation → SemanticOperationKind
   | .initiate .. => .initiate
   | .initiateMessage .. => .initiateMessage
   | .initiateTimer .. => .initiateTimer
+  | .enterSequentialMultiInstanceScope .. => .enterSequentialMultiInstanceScope
+  | .completeSequentialMultiInstanceScope .. => .completeSequentialMultiInstanceScope
   | .enterScope .. => .enterScope
   | .enterBoundedScope .. => .enterBoundedScope
   | .enterMonitoredScope .. => .enterMonitoredScope
@@ -90,46 +94,6 @@ def SemanticOperation.kind : SemanticOperation → SemanticOperationKind
   | .completeEventSubProcess .. => .completeEventSubProcess
   | .triggerCompensation .. => .triggerCompensation
   | .cancelTransaction .. => .cancelTransaction
-
-def SemanticOperation.origin : SemanticOperation → BpmnElementOrigin
-  | .initiate _ origin _
-  | .initiateMessage _ origin _ _
-  | .initiateTimer _ origin _ _
-  | .enterScope _ origin _ _ _
-  | .enterBoundedScope _ origin _ _ _ _
-  | .enterMonitoredScope _ origin _ _ _ _
-  | .invokeProcess _ origin _ _ _ _ _ _
-  | .returnProcess _ origin _ _ _ _
-  | .awaitUserTask _ origin _ _ _
-  | .awaitDataInputUserTask _ origin _ _ _ _ _
-  | .awaitDataInputOutputUserTask _ origin _ _ _ _ _ _
-  | .awaitDataOutputUserTask _ origin _ _ _ _ _
-  | .awaitSequentialMultiInstanceUserTask _ origin _ _ _ _ _ _
-  | .awaitParallelMultiInstanceUserTask _ origin _ _ _ _ _ _ _ _
-  | .completeParallelMultiInstanceUserTask _ origin _ _ _
-  | .awaitTimer _ origin _ _ _
-  | .awaitMessage _ origin _ _ _
-  | .awaitPayloadMessage _ origin _ _ _ _
-  | .awaitCorrelatedPayloadMessage _ origin _ _ _ _ _ _ _
-  | .awaitEventRace _ origin _ _ _
-  | .awaitBoundedUserTask _ origin _ _ _
-  | .awaitMessageBoundedUserTask _ origin _ _ _
-  | .awaitMessageMonitoredUserTask _ origin _ _ _
-  | .awaitMonitoredUserTask _ origin _ _ _
-  | .awaitEffect _ origin _ _ _ _
-  | .duplicate _ origin _ _
-  | .synchronize _ origin _ _
-  | .mergeExclusive _ origin _ _
-  | .choose _ origin _ _ _ _
-  | .selectMany _ origin _ _ _ _
-  | .synchronizeSelected _ origin _ _ _
-  | .throwError _ origin _ _ _
-  | .reachNoneEnd _ origin _
-  | .terminateScope _ origin _ _
-  | .completeScope _ origin _ _
-  | .completeEventSubProcess _ origin _
-  | .triggerCompensation _ origin _ _ _
-  | .cancelTransaction _ origin _ _ _ _ => origin
 
 /-- Public metadata of one actually selected internal operation. -/
 structure InternalTransitionRecord where

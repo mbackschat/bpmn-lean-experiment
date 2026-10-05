@@ -126,12 +126,60 @@ theorem prepareInternalBoundedScope_rootCompensationDomain
       intro id origin input process scope output returnOperation same
       simp [InternalBoundedScopeContract.entryOperation] at same)
 
+/-- Admitted scope and origin populations separate bounded Activities from repeated-scope ownership. -/
+theorem prepared_bounded_scope_repeated_separation (program : Program) (state : RuntimeState)
+    (contract : InternalBoundedScopeContract) (prepared : PreparedInternalBoundedScope)
+    (admitted : programWellFormed program = true)
+    (found : prepareInternalBoundedScope? program state contract = some prepared) :
+    ∀ entry ∈ program.operations.filterMap sequentialScopeEntry?,
+      entry.childScopeId ≠ prepared.selection.creation.created.id.definitionScopeId ∧
+      entry.elementId ≠ contract.origin.elementId := by
+  obtain ⟨selected, hosting, ownerRecord, definition, start, delta, selection, running,
+    snapshots, operations, ownerExact, definitionFound, checks, _, _, position, rfl⟩ :=
+    prepareInternalBoundedScope_facts program state contract prepared found
+  dsimp only [makeInternalBoundedScopePreparation]
+  have definitions := definition_singleton program selected.creation.created.id.definitionScopeId definition definitionFound
+  have definitionFiltered : definition ∈ program.definitionScopes.filter
+      (fun candidate => decide (candidate.id = selected.creation.created.id.definitionScopeId)) := by rw [definitions]; simp
+  have definitionHeld := (List.mem_filter.mp definitionFiltered).1
+  have definitionId := of_decide_eq_true (List.mem_filter.mp definitionFiltered).2
+  have operationHeld : contract.operation ∈ program.operations :=
+    (List.mem_filter.mp (show contract.operation ∈ program.operations.filter
+      (fun candidate => decide (candidate.id = contract.operationId)) by rw [operations]; simp)).1
+  have facts := internalScopeCreationPredecessorChecks_facts program state contract.entryOperation
+    selected.creation contract.origin definition checks
+  have matching := facts.2.1
+  simp only [internalScopeCreationDefinitionMatches, InternalBoundedScopeContract.entryOperation,
+    Bool.and_eq_true, decide_eq_true_eq] at matching
+  have separate := scope_entry_excludes_repeated program definition contract.operation admitted definitionHeld operationHeld
+    (by cases disposition : contract.disposition <;> simp [InternalBoundedScopeContract.operation, disposition,
+      enteredChildScopeId?, matching.1.1])
+    (by cases disposition : contract.disposition <;> simp [InternalBoundedScopeContract.operation, disposition, sequentialScopeEntry?])
+  intro entry declared
+  have different := separate entry declared
+  refine ⟨by simpa only [definitionId] using different, ?_⟩
+  intro sameElement
+  obtain ⟨repeatedDefinition, repeatedHeld, repeatedId, repeatedOrigin⟩ :=
+    admitted_repeated_scope_definition program entry admitted declared
+  have exactOrigin := (internalScopeCreationDefinitionsExact_facts program definition facts.1 definitionHeld).2.2.2
+  obtain ⟨sole, singleton⟩ := List.length_eq_one_iff.mp exactOrigin
+  have first : definition ∈ program.definitionScopes.filter
+      (fun candidate => decide (candidate.originElementId = definition.originElementId)) := by simp [definitionHeld]
+  have second : repeatedDefinition ∈ program.definitionScopes.filter
+      (fun candidate => decide (candidate.originElementId = definition.originElementId)) :=
+    List.mem_filter.mpr ⟨repeatedHeld, by simp [repeatedOrigin, sameElement, matching.2]⟩
+  rw [singleton] at first second
+  have equal := (List.mem_singleton.mp second).trans (List.mem_singleton.mp first).symm
+  exact different (repeatedId.symm.trans (congrArg DefinitionScope.id equal))
+
 theorem prepareInternalBoundedScope_preserves_child_runtime
     (program : Program) (state : RuntimeState) (contract : InternalBoundedScopeContract)
     (prepared : PreparedInternalBoundedScope) (instanceId : SemanticId)
+    (admitted : programWellFormed program = true)
     (valid : runtimeStateWellFormed program instanceId state = true)
     (found : prepareInternalBoundedScope? program state contract = some prepared) :
     runtimeStateWellFormed program instanceId (prepared.selection.creation.apply state) = true := by
+  have separation := prepared_bounded_scope_repeated_separation program state contract prepared admitted found
   have domain := prepareInternalBoundedScope_rootCompensationDomain program state contract
     prepared instanceId valid found
   obtain ⟨selected, hosting, ownerRecord, definition, start, delta, selection, running,
@@ -143,17 +191,17 @@ theorem prepareInternalBoundedScope_preserves_child_runtime
     cases equation : state.control <;> simp_all [runningInstance?]
   have result := selectedScopeCreation_preserves_runtimeStateWellFormed program domain instanceId state
     contract.entryOperation entry hosting ownerRecord contract.origin definition delta
-    valid entryFound control snapshots ownerExact definitionFound checks position
+    valid entryFound control snapshots ownerExact definitionFound checks position (fun entry declared => (separation entry declared).1)
     (by intro record called; simp [child] at called)
   simpa only [makeInternalBoundedScopePreparation, makeInternalBoundedScopeSelection,
     InternalScopeCreationSelection.apply, child] using result
 
-theorem prepareInternalBoundedScope_preserves_runtimePositionValid
+theorem prepareInternalBoundedScope_preserves_child_position
     (program : Program) (state : RuntimeState) (contract : InternalBoundedScopeContract)
     (prepared : PreparedInternalBoundedScope) (instanceId : SemanticId)
     (valid : runtimePositionValid program instanceId state = true)
     (found : prepareInternalBoundedScope? program state contract = some prepared) :
-    runtimePositionValid program instanceId (prepared.selection.apply state) = true := by
+    runtimePositionValid program instanceId (prepared.selection.creation.apply state) = true := by
   obtain ⟨selected, hosting, ownerRecord, definition, start, delta, selection, running,
     _, _, ownerExact, definitionFound, checks, _, _, position, rfl⟩ :=
     prepareInternalBoundedScope_facts program state contract prepared found
@@ -165,6 +213,22 @@ theorem prepareInternalBoundedScope_preserves_runtimePositionValid
     contract.entryOperation entry instanceId hosting ownerRecord contract.origin definition delta
     valid entryFound control ownerExact definitionFound checks position
     (by intro record called; simp [child] at called)
+  simpa only [makeInternalBoundedScopePreparation, makeInternalBoundedScopeSelection,
+    InternalScopeCreationSelection.apply, child] using childPosition
+
+theorem prepareInternalBoundedScope_preserves_runtimePositionValid
+    (program : Program) (state : RuntimeState) (contract : InternalBoundedScopeContract)
+    (prepared : PreparedInternalBoundedScope) (instanceId : SemanticId)
+    (valid : runtimePositionValid program instanceId state = true)
+    (found : prepareInternalBoundedScope? program state contract = some prepared) :
+    runtimePositionValid program instanceId (prepared.selection.apply state) = true := by
+  have childPosition := prepareInternalBoundedScope_preserves_child_position program state contract
+    prepared instanceId valid found
+  obtain ⟨selected, hosting, ownerRecord, definition, start, delta, selection, running,
+    _, _, ownerExact, definitionFound, checks, _, _, position, rfl⟩ :=
+    prepareInternalBoundedScope_facts program state contract prepared found
+  obtain ⟨entry, entryFound, rfl⟩ := selectInternalBoundedScope_facts state contract selected selection
+  have child := (boundedScope_entry_selection_input state contract entry entryFound).2.2
   exact runtimePositionValid_tokens_sublist_frame program instanceId (entry.apply state)
     ((makeInternalBoundedScopeSelection state contract entry).apply state) childPosition
     (by simp only [InternalBoundedScopeSelection.apply, makeInternalBoundedScopeSelection,
@@ -314,13 +378,11 @@ theorem prepared_bounded_scope_preserves_activity_identities
 theorem prepared_bounded_scope_preserves_order
     (program : Program) (state : RuntimeState) (contract : InternalBoundedScopeContract)
     (prepared : PreparedInternalBoundedScope) (instanceId : SemanticId)
-    (found : prepareInternalBoundedScope? program state contract = some prepared)
+    (_found : prepareInternalBoundedScope? program state contract = some prepared)
     (valid : runtimeStateWellFormed program instanceId state = true) :
     canonicalCollectionOrder (prepared.selection.apply state) = true := by
-  have childValid := prepareInternalBoundedScope_preserves_child_runtime program state contract
-    prepared instanceId valid found
-  have childOrder := runtimeStateWellFormed_canonicalCollectionOrder program instanceId
-    (prepared.selection.creation.apply state) childValid
+  have childOrder := scopeCreation_preserves_canonicalCollectionOrder state prepared.selection.creation
+    (runtimeStateWellFormed_canonicalCollectionOrder program instanceId state valid)
   have prior := runtimeStateWellFormed_canonicalCollectionOrder program instanceId state valid
   simp only [canonicalCollectionOrder, Bool.and_eq_true, and_assoc] at prior childOrder
   obtain ⟨_, activityCounters, _, _, _, timers, _, _, timerCounters, _, _, _, _, _,
@@ -389,16 +451,35 @@ theorem prepared_bounded_scope_preserves_multiInstance
       sequentialMultiInstanceProgramBindingsValid program (prepared.selection.apply state) = true ∧
       parallelMultiInstanceProgramBindingsValid program (prepared.selection.apply state) = true := by
   have disjoint := prepared_bounded_scope_excludes_multiInstance program state contract prepared found
-  have childValid := prepareInternalBoundedScope_preserves_child_runtime program state contract
-    prepared instanceId valid found
-  simp only [runtimeStateWellFormed, Bool.and_eq_true, and_assoc] at childValid
-  obtain ⟨_, _, _, _, _, _, _, _, _, _, _, _, _, controllers, sequential, parallel, _⟩ := childValid
+  have prior := valid
+  simp only [runtimeStateWellFormed, Bool.and_eq_true, and_assoc] at prior
+  obtain ⟨_, _, _, _, _, _, _, _, _, _, _, _, _, controllers, sequential, parallel, _⟩ := prior
   obtain ⟨selected, _, _, _, _, _, selection, _, _, _, _, _, _, _, _, _, rfl⟩ :=
     prepareInternalBoundedScope_facts program state contract prepared found
   obtain ⟨entry, entryFound, rfl⟩ := selectInternalBoundedScope_facts state contract selected selection
   have child := (boundedScope_entry_selection_input state contract entry entryFound).2.2
   let selected := makeInternalBoundedScopeSelection state contract entry
   let childState := entry.apply state
+  have sequential : sequentialMultiInstanceProgramBindingsValid program childState = true := by
+    rw [sequentialMultiInstanceProgramBindingsValid_frame program state childState
+      (by simp [childState, InternalScopeCreationSelection.apply, child])
+      (by simp [childState, InternalScopeCreationSelection.apply, child])
+      (by simp [childState, InternalScopeCreationSelection.apply, child])
+      (by simp [childState, InternalScopeCreationSelection.apply, child])]
+    exact sequential
+  have parallel : parallelMultiInstanceProgramBindingsValid program childState = true := by
+    have frame := parallelMultiInstanceProgramBindingsValid_frame program state childState
+      (by simp [childState, InternalScopeCreationSelection.apply, child])
+      (by simp [childState, InternalScopeCreationSelection.apply, child])
+      (by simp [childState, InternalScopeCreationSelection.apply, child])
+      (by simp [childState, InternalScopeCreationSelection.apply, child])
+      (by simp [childState, InternalScopeCreationSelection.apply, child])
+      (by intro id; simp [childState, InternalScopeCreationSelection.apply, child, activationCount])
+      (by intro id; simp [childState, InternalScopeCreationSelection.apply, child, activityActivationCount])
+      (by intro id; simp [childState, InternalScopeCreationSelection.apply, child, timerActivationCount])
+    exact frame ▸ parallel
+  have controllers : controllersOwnLiveActivity childState = true := by
+    simpa only [controllersOwnLiveActivity, childState, InternalScopeCreationSelection.apply, child] using controllers
   let timerState : RuntimeState :=
     { childState with
       timerWaits := insertTimerWait selected.timer state.timerWaits
@@ -466,13 +547,15 @@ insertion's validity is derived by the existing scope-creation law, not assumed.
 theorem prepared_bounded_scope_preserves_runtime
     (program : Program) (state : RuntimeState) (contract : InternalBoundedScopeContract)
     (prepared : PreparedInternalBoundedScope) (instanceId : SemanticId)
+    (admitted : programWellFormed program = true)
     (found : prepareInternalBoundedScope? program state contract = some prepared)
     (wellFormed : runtimeStateWellFormed program instanceId state = true) :
     runtimeStateWellFormed program instanceId (prepared.selection.apply state) = true := by
+  have separation := prepared_bounded_scope_repeated_separation program state contract prepared admitted found
   have domain := prepareInternalBoundedScope_rootCompensationDomain program state contract
     prepared instanceId wellFormed found
   have childValid := prepareInternalBoundedScope_preserves_child_runtime program state contract
-    prepared instanceId wellFormed found
+    prepared instanceId admitted wellFormed found
   have orderAfter := prepared_bounded_scope_preserves_order program state contract prepared
     instanceId found wellFormed
   have multiAfter := prepared_bounded_scope_preserves_multiInstance program state contract prepared
@@ -481,7 +564,7 @@ theorem prepared_bounded_scope_preserves_runtime
   obtain ⟨position, races, _, owners, waitIds, bounds, declarations, _, _, records, timers,
     messages, activityIds, _, _, _, _, _, _, claims, _⟩ := wellFormed
   obtain ⟨_, _, incidents, _, _, _, _, hidden, _, _, _, _, _, _, _, _, controllerIds,
-    notExhausted, _, _, retention, snapshots, execution⟩ := childValid
+    notExhausted, _, _, retention, snapshots, execution, repeated⟩ := childValid
   have positionAfter := prepareInternalBoundedScope_preserves_runtimePositionValid program state
     contract prepared instanceId position found
   have ownersAfter := prepared_bounded_scope_preserves_wait_owners program state contract prepared found owners
@@ -525,13 +608,19 @@ theorem prepared_bounded_scope_preserves_runtime
       simp only [childState, InternalScopeCreationSelection.apply, child, control]
     exact (compensationExecutionStateValid_running_frame program domain childState after hosting childControl
       rfl rfl rfl rfl rfl rfl).trans execution
+  have repeatedAfter : sequentialScopeStateValid program after = true := by
+    have framed := sequentialScopeStateValid_insert_activity program childState selected.record
+      (fun repeated declared => Ne.symm (separation repeated declared).2) repeated
+    simpa only [after, selected, childState, InternalBoundedScopeSelection.apply,
+      makeInternalBoundedScopeSelection, InternalScopeCreationSelection.apply, child,
+      sequentialScopeStateValid, sequentialScopeBindingForEntry?, sequentialScopeCollection?] using framed
   change runtimeStateWellFormed program instanceId after = true
   simp only [runtimeStateWellFormed, Bool.and_eq_true, and_assoc]
   simp only [makeInternalBoundedScopePreparation, makeInternalBoundedScopeSelection,
     InternalScopeCreationSelection.apply, child] at incidents hidden controllerIds notExhausted retention snapshots
   refine ⟨positionAfter, racesAfter, ?_, ownersAfter, waitIdsAfter, boundsAfter, declarationsAfter,
     ?_, orderAfter, recordsAfter, timersAfter, messagesAfter, activityIdsAfter, multiAfter.1,
-    multiAfter.2.1, multiAfter.2.2, ?_, ?_, lifecycleAfter, claimsAfter, ?_, ?_, executionAfter⟩
+    multiAfter.2.1, multiAfter.2.2, ?_, ?_, lifecycleAfter, claimsAfter, ?_, ?_, executionAfter, repeatedAfter⟩
   all_goals
     simp only [after, selected, InternalBoundedScopeSelection.apply, makeInternalBoundedScopeSelection,
       InternalScopeCreationSelection.apply, child]

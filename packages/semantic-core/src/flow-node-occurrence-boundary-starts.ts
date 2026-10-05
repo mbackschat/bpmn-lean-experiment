@@ -11,6 +11,7 @@ import {
 } from "./activity-occurrence.js";
 import { sameMessageChannel } from "./message-channel.js";
 import { inputMappingSnapshotMatches } from "./semantic-process-data.js";
+import { sequentialScopeBindingForEntry } from "./sequential-scope-binding.js";
 import { SemanticOperationKind } from "./semantic-process-contract.js";
 import type {
   SemanticOperation,
@@ -194,6 +195,22 @@ export function candidateLongLivedStarts(
     case SemanticOperationKind.CompleteScope:
     case SemanticOperationKind.CompleteEventSubProcess:
       return [];
+    case SemanticOperationKind.EnterSequentialMultiInstanceScope: {
+      const binding = sequentialScopeBindingForEntry(operation, after);
+      if (binding === undefined) {
+        const hasBody = after.scopeOccurrences.some(({ id }) => id.definitionScopeId === operation.childScopeId);
+        const hasActivity = after.activityOccurrences.some(({ operationId }) => operationId === operation.id);
+        const hasController = (after.sequentialScopeControllers ?? []).some(({ id }) =>
+          id.activityElementId === operation.origin.elementId);
+        return hasBody || hasActivity || hasController ? null : [];
+      }
+      return !sameScopeOccurrence(binding.activity.owner, owner) ? null : [{
+        anchor: { kind: ScopeAnchorKind, id: binding.body.id },
+        processId, elementId: operation.origin.elementId, owner,
+      }];
+    }
+    case SemanticOperationKind.CompleteSequentialMultiInstanceScope:
+      return null;
     default:
       return assertNever(operation);
   }

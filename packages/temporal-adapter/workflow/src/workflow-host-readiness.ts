@@ -28,8 +28,8 @@ import {
 
 import type { BoundedDeadlineScheduler } from "./bounded-deadline-scheduler.js";
 import type {
-  CompensationFrontierScheduler,
-} from "./compensation-frontier-scheduler.js";
+  EffectFrontierScheduler,
+} from "./ordinary-effect-frontier-scheduler.js";
 import type { EffectActivityPolicy } from "./effect-activity-policy.js";
 import {
   effectActivityResultCommand,
@@ -71,7 +71,7 @@ export type HostReadinessInput = Readonly<{
   eventRaceScheduler: EventRaceReadinessScheduler;
   messageBoundedActivityScheduler: MessageBoundedActivityReadinessScheduler;
   boundedDeadlineSchedulers: ReadonlyArray<BoundedDeadlineScheduler>;
-  compensationScheduler: CompensationFrontierScheduler;
+  effectScheduler: EffectFrontierScheduler;
   subscriptionScheduler?: SubscriptionReadinessScheduler | undefined;
   waitForTimer: (durationMs: number) => Promise<void>;
   executeEffect: (request: EffectRequest) => Promise<EffectActivityResult>;
@@ -89,7 +89,7 @@ export async function waitForHostReadiness({
   eventRaceScheduler,
   messageBoundedActivityScheduler,
   boundedDeadlineSchedulers,
-  compensationScheduler,
+  effectScheduler,
   subscriptionScheduler,
   waitForTimer,
   executeEffect,
@@ -114,11 +114,11 @@ export async function waitForHostReadiness({
     pendingStimuli.push(...await subscriptionScheduler.waitForReadiness(Date.now(), hostWakeRequested));
     return HostReadinessAction.RecheckMainLoop;
   }
-  if (compensationScheduler.ownsCommittedFrontier(state)) {
+  if (effectScheduler.ownsCommittedFrontier(state)) {
     if (pendingStimuli.length > 0) {
       return HostReadinessAction.DrainSemanticQueue;
     }
-    const completion = await compensationScheduler.waitForReadiness(state, hostWakeRequested);
+    const completion = await effectScheduler.waitForReadiness(state, hostWakeRequested);
     if (completion !== undefined) {
       enqueueStimulus(acceptedStimuli, pendingStimuli, completion, reserveStimulus);
     }

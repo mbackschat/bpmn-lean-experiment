@@ -6,8 +6,9 @@ This module owns the quiescence predicate and the normal completion transition f
 occurrence: whether a scope *may* complete, and what completing it does. Regional cancellation is
 owned by `ScopeCancellation`; token operations and wait construction remain in `RuntimeState`.
 
-Completion is deliberately the only transition that may retire a scope occurrence normally, so a family
-that layers extra withdrawal on it composes this owner rather than reimplementing quiescence.
+Ordinary scopes use this completion rewrite. Sequential Multi-Instance bodies reuse its quiescence
+predicate with their paired repetition policy in `SequentialScopeRuntime`; a body ending must not also
+emit the ordinary parent continuation (SMIS-END-01).
 -/
 
 namespace BpmnSemantics.SemanticProcess

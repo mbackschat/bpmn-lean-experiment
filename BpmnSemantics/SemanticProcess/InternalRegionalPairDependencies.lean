@@ -31,6 +31,13 @@ theorem regionalStateAtomsConflict_symmetric (left right : InternalRegionalState
   cases left <;> cases right <;>
     simp [regionalStateAtomsConflict, regionalOwnsAtom, activity, regions, BEq.beq, eq_comm]
 
+  case ordinary.ordinary first second =>
+    cases first <;> cases second <;> simp only [eq_comm]
+  case ordinary.owned first second owner =>
+    cases first <;> cases second <;> simp only [eq_comm]
+  case owned.ordinary first owner second =>
+    cases first <;> cases second <;> simp only [eq_comm]
+
 theorem regionalStateFootprintsIndependent_symmetric (left right : InternalRegionalStateFootprint)
     (independent : regionalStateFootprintsIndependent left right = true) :
     regionalStateFootprintsIndependent right left = true := by
@@ -50,6 +57,19 @@ theorem regionalStateFootprintsIndependent_symmetric (left right : InternalRegio
     List.any_eq_true.mpr ⟨second, secondWrite, by
       rwa [regionalStateAtomsConflict_symmetric]⟩
   simp [reversed] at absent
+
+theorem regional_independent_activity_population_absent
+    (writer : InternalRegionalStateFootprint) (reader : InternalTransitionStateFootprint)
+    (owner : ScopeOccurrenceId) (record : ActivityOccurrence)
+    (independent : regionalStateFootprintsIndependent writer (liftRegionalStateFootprint owner reader) = true)
+    (written : .activityAssociation record ∈ writer.writes) :
+    .activityPopulation ∉ reader.reads := by
+  intro member
+  have lifted : .ordinary .activityPopulation ∈ (liftRegionalStateFootprint owner reader).reads :=
+    List.mem_map.mpr ⟨.activityPopulation, member, rfl⟩
+  have conflict := regional_independent_write_read _ _
+    (regionalStateFootprintsIndependent_symmetric _ _ independent) _ _ written lifted
+  simp [regionalStateAtomsConflict, regionalActivityTouchesLegacyAtom] at conflict
 
 /-- The existing region read/write atoms supply the disjointness required by the removal laws. -/
 theorem regional_pair_regions_disjoint (state : RuntimeState)

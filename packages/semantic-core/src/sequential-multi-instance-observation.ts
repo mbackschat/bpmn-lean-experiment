@@ -13,7 +13,7 @@
  * prevents registration state from becoming an observation-shape rule.
  */
 import { activityOccurrenceForTaskBody } from "./activity-occurrence.js";
-import { VariableValueKind } from "./contract.js";
+import { MultiInstanceBodyKind, VariableValueKind } from "./contract.js";
 import type {
   OpenSequentialMultiInstance,
   OpenSequentialMultiInstanceIteration,
@@ -104,6 +104,7 @@ export function projectOpenMultiInstances(
       return {
         id: controller.id,
         mode: "sequential" as const,
+        bodyKind: MultiInstanceBodyKind.UserTask,
         plannedInstanceCount: controller.snapshot.length,
         // Both normative identities are arithmetic over the three counts published beside them,
         // because both derive generated the same way. Reading `pendingItemCount(controller)` here

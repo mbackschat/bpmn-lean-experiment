@@ -21,7 +21,7 @@ export type ExactContainmentCardinality = Readonly<{
 type SingletonContainmentSpec = Readonly<{
   ownerType: string | null;
   property: string;
-  xmlLocalName: string;
+  xmlLocalNames: ReadonlyArray<string>;
 }>;
 
 /**
@@ -52,9 +52,8 @@ export function firstContainmentCardinalityMismatch(
         expectedOccurrences: null,
       };
     }
-    const sourceOccurrences = countOpeningElements(
-      searchableXml,
-      spec.xmlLocalName,
+    const sourceOccurrences = spec.xmlLocalNames.reduce(
+      (count, localName) => count + countOpeningElements(searchableXml, localName), 0,
     );
     const projectedOccurrences = [...elements.keys()].filter(
       (element) =>
@@ -102,20 +101,25 @@ function singletonContainmentSpec(
       return {
         ownerType: null,
         property,
-        xmlLocalName: property,
+        xmlLocalNames: [property],
       };
     case "SequenceFlow.conditionExpression":
       return {
         ownerType: metamodelManifest.compilerProjection.sequenceFlowType,
         property,
-        xmlLocalName: property,
+        xmlLocalNames: [property],
       };
     case "TimerEventDefinition.timeDuration":
       return {
         ownerType: metamodelManifest.compilerProjection.timerEventDefinitionType,
         property,
-        xmlLocalName: property,
+        xmlLocalNames: [property],
       };
+    case "Activity.loopCharacteristics":
+      return { ownerType: null, property,
+        xmlLocalNames: ["loopCharacteristics", "standardLoopCharacteristics", "multiInstanceLoopCharacteristics"] };
+    case "MultiInstanceLoopCharacteristics.completionCondition":
+      return { ownerType: null, property, xmlLocalNames: [property] };
     default:
       return undefined;
   }

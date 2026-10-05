@@ -173,6 +173,9 @@ function completeFailure(
     eventRaces: [],
     calledProcessOccurrences: [],
     activityOccurrences: [],
+    ...(state.sequentialScopeControllers === undefined
+      ? {}
+      : { sequentialScopeControllers: [] }),
     ...(state.sequentialMultiInstanceControllers === undefined
       ? {}
       : { sequentialMultiInstanceControllers: [] }),

@@ -414,12 +414,16 @@ theorem completion_dispatch_cases
   obtain ⟨noParallel, noSequential, noMessageMonitored, noMessageBounded, noBounded,
     noInput, noOutput, noMonitored⟩ :=
     admitted_completion_foreign_families_absent program analysis ⟨taskId.elementId.value⟩ analyzed
+  have noRepeated owner : hasSequentialScopeDefinition program owner = false := by
+    simp only [hasSequentialScopeDefinition, List.any_eq_false, List.mem_filterMap]
+    rintro entry ⟨operation, member, projected⟩; have allowed := program_analysis_operations_allowed program analysis analyzed operation member
+    cases operation <;> simp_all [OperationAllowed, sequentialScopeEntry?]
   have legacy : completeOrdinaryUserTaskWithCompensation? completeUserTask program before taskId =
       completeUserTask before taskId.processInstanceId ⟨taskId.elementId.value⟩ taskId.activation := by
     simp [completeOrdinaryUserTaskWithCompensation?, compensationTargetDeclaredForFamily, noRetention]
   cases control : before.control <;>
     simp only [dispatchStimulus, noSnapshots] <;>
-    simp [control, noParallel, noSequential, noMessageMonitored, noMessageBounded,
+    simp [control, noRepeated, noParallel, noSequential, noMessageMonitored, noMessageBounded,
       noBounded, noInput, noOutput, noMonitored, legacy]
   case running instanceId =>
     cases data : isDataInputOutputTaskDefinition program ⟨taskId.elementId.value⟩ with
@@ -533,23 +537,11 @@ theorem completion_admission_dispatch_or_refusal
       dispatchStimulus program before (.completeUserTaskInstance commandId taskId bindings) ∨
     admitStimulus program before (.completeUserTaskInstance commandId taskId bindings) =
       { outcome := .rejected, state := before } := by
-  cases dataValid : callDataRuntimeStateValid program before with
-  | false => exact Or.inr (admitStimulus_invalid_call_data_state program before _ dataValid)
-  | true =>
-    cases snapshots : program.compensationEventSubProcessSnapshots with
-    | some declaration => simp [admitStimulus, snapshots]
-    | none =>
-        by_cases serialValid : serialBusinessCommandAdmitted program before
-          (.completeUserTaskInstance commandId taskId bindings) = true
-        ·
-          by_cases messageValid : interruptingMessageEventSubProcessStateValid program before = true
-          · cases incidents : before.effectIncidents with
-            | nil => simp [admitStimulus, dispatchStimulus, snapshots, serialValid, dataValid, messageValid, incidents]
-            | cons incident rest =>
-                by_cases valid : incidentStateAdmitted program before = true <;>
-                  simp [admitStimulus, dispatchStimulus, snapshots, serialValid, dataValid, messageValid, incidents, valid]
-          · simp [admitStimulus, snapshots, serialValid, dataValid, messageValid]
-        · simp [admitStimulus, snapshots, serialValid]
+  cases snapshots : program.compensationEventSubProcessSnapshots with
+  | some declaration => exact Or.inr (by simp [admitStimulus, snapshots])
+  | none =>
+      simp [admitStimulus, dispatchStimulus, snapshots]
+      grind
 
 theorem rejected_completion_preserves_state
     (program : Program) (analysis : Analysis) (before : RuntimeState)

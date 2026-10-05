@@ -26,13 +26,13 @@ private theorem compensationCardinality (operations : List SemanticOperation) :
         cases operation <;> simp [addOperationCardinality, isCompensationOperation] <;> omega
   simpa using count {}
 
-/-- The existing exact profile census excludes Cancel operations when it admits no compensation trigger. -/
-theorem RootCompensationExecutionDomain.of_zero_profile (program : Program)
+/-- Exact profile counts exclude an absent operation family without adding successor-state assumptions. -/
+theorem profile_operationCardinality_zero (program : Program) (field : ShapeCardinalities → Nat)
     (legacy : program.identity.semanticProfile ≠ repeatableSubscriptionCheckpointProfileId)
     (zero : (programShape? program.identity.semanticProfile.value).map
-      (fun entry => entry.2.compensationTriggers) = some 0)
+      (fun entry => field entry.2) = some 0)
     (capabilities : programProfileCapabilitiesValid program = true) :
-    RootCompensationExecutionDomain program := by
+    field (operationCardinalities program.operations) = 0 := by
   have transaction : (program.identity.semanticProfile == transactionCancellationCheckpointProfileId) = false := by
     apply Bool.eq_false_iff.mpr
     intro selected
@@ -58,7 +58,16 @@ theorem RootCompensationExecutionDomain.of_zero_profile (program : Program)
     rw [same] at zero
     change (none : Option Nat) = some 0 at zero
     contradiction
-  simp only [programProfileCapabilitiesValid, callData, transaction, messageHandler, Bool.false_eq_true, legacy,
+  have repeatedScope : (program.identity.semanticProfile.value ==
+      "cibseven-2.2.0-sequential-multi-instance-subprocess-draft") = false := by
+    apply Bool.eq_false_iff.mpr
+    intro selected
+    have same : program.identity.semanticProfile.value =
+        "cibseven-2.2.0-sequential-multi-instance-subprocess-draft" := by simpa using selected
+    rw [same] at zero
+    change (none : Option Nat) = some 0 at zero
+    contradiction
+  simp only [programProfileCapabilitiesValid, repeatedScope, callData, transaction, messageHandler, Bool.false_eq_true, legacy,
     ↓reduceIte, Bool.and_eq_true] at capabilities
   cases shape : programShape? program.identity.semanticProfile.value with
   | none => simp [shape] at zero
@@ -67,16 +76,40 @@ theorem RootCompensationExecutionDomain.of_zero_profile (program : Program)
       simp only [shape, Option.map_some, Option.some.injEq] at zero
       simp only [shape, Bool.and_eq_true, decide_eq_true_eq] at capabilities
       have same : operationCardinalities program.operations = expected := by grind
-      have empty : program.operations.filter isCompensationOperation = [] := by
-        apply List.length_eq_zero_iff.mp
-        rw [← compensationCardinality, same, zero]
-      intro operation member
-      cases operation <;> try trivial
-      rename_i id origin scope input output boundary
-      have present : .cancelTransaction id origin scope input output boundary ∈
-          program.operations.filter isCompensationOperation :=
-        List.mem_filter.mpr ⟨member, rfl⟩
-      simp [empty] at present
+      rw [same, zero]
+
+/-- The existing exact profile census excludes Cancel operations when it admits no compensation trigger. -/
+theorem RootCompensationExecutionDomain.of_zero_profile (program : Program)
+    (legacy : program.identity.semanticProfile ≠ repeatableSubscriptionCheckpointProfileId)
+    (zero : (programShape? program.identity.semanticProfile.value).map
+      (fun entry => entry.2.compensationTriggers) = some 0)
+    (capabilities : programProfileCapabilitiesValid program = true) :
+    RootCompensationExecutionDomain program := by
+  have count := profile_operationCardinality_zero program (·.compensationTriggers) legacy zero capabilities
+  have empty : program.operations.filter isCompensationOperation = [] := by
+    apply List.length_eq_zero_iff.mp
+    rw [← compensationCardinality, count]
+  intro operation member
+  cases operation <;> try trivial
+  rename_i id origin scope input output boundary
+  have present : .cancelTransaction id origin scope input output boundary ∈
+      program.operations.filter isCompensationOperation := List.mem_filter.mpr ⟨member, rfl⟩
+  simp [empty] at present
+
+/-- A profile with no repeated-scope entries preserves that invariant whenever controller storage is unchanged. -/
+theorem sequentialScopeStateValid_zero_profile_frame (program : Program) (before after : RuntimeState)
+    (legacy : program.identity.semanticProfile ≠ repeatableSubscriptionCheckpointProfileId)
+    (zero : (programShape? program.identity.semanticProfile.value).map
+      (fun entry => entry.2.sequentialScopeEntries) = some 0)
+    (capabilities : programProfileCapabilitiesValid program = true)
+    (controllers : after.sequentialScopeControllers = before.sequentialScopeControllers)
+    (valid : sequentialScopeStateValid program before = true) :
+    sequentialScopeStateValid program after = true := by
+  have count := profile_operationCardinality_zero program (·.sequentialScopeEntries) legacy zero capabilities
+  have empty : program.operations.filterMap sequentialScopeEntry? = [] := by
+    apply List.length_eq_zero_iff.mp
+    rw [← repeatedScopeEntryCardinality, count]
+  simpa only [sequentialScopeStateValid, empty, controllers, List.filter_nil, List.all_nil, Bool.and_true] using valid
 
 theorem SharedParallelProgramAccount.rootCompensationDomain (program : Program)
     (arm : ParallelMultiInstanceArm) (ownerScope : DefinitionScopeId)

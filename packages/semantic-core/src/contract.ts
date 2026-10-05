@@ -1,3 +1,4 @@
+import type { ScopeOccurrenceId } from "./semantic-process-state.js";
 import type { ActivityOccurrenceId } from "./activity-occurrence.js";
 import type { DeepReadonly } from "./deep-readonly.js";
 import type { UserTaskMetadata } from "./user-task-metadata.js";
@@ -402,6 +403,11 @@ export type OpenEffectIncident = DeepReadonly<{
   effect: OpenEffect;
 }>;
 
+export enum MultiInstanceBodyKind {
+  UserTask = "userTask",
+  SubProcess = "subProcess",
+}
+
 /**
  * One iteration of an open sequential Multi-Instance Activity.
  *
@@ -434,6 +440,7 @@ export type OpenSequentialMultiInstanceIteration = DeepReadonly<{
 export type OpenSequentialMultiInstance = DeepReadonly<{
   id: ActivityOccurrenceId;
   mode: "sequential";
+  bodyKind: MultiInstanceBodyKind.UserTask;
   plannedInstanceCount: number;
   pendingItemCount: number;
   numberOfInstances: number;
@@ -450,6 +457,7 @@ export type OpenParallelMultiInstanceIteration =
 export type OpenParallelMultiInstance = DeepReadonly<{
   id: ActivityOccurrenceId;
   mode: "parallel";
+  bodyKind: MultiInstanceBodyKind.UserTask;
   plannedInstanceCount: number;
   pendingItemCount: 0;
   numberOfInstances: number;
@@ -459,7 +467,23 @@ export type OpenParallelMultiInstance = DeepReadonly<{
   activeIterations: OpenParallelMultiInstanceIteration[];
 }>;
 
+export type OpenSubProcessIteration = DeepReadonly<{
+  loopCounter: number;
+  body: ScopeOccurrenceId;
+  item: VariableBinding;
+  bindings: VariableBinding[];
+  userTaskIds: UserTaskInstanceId[];
+  effectIds: EffectOccurrenceId[];
+}>;
+
+export type OpenSequentialSubProcessMultiInstance =
+  Omit<OpenSequentialMultiInstance, "bodyKind" | "activeIterations"> & DeepReadonly<{
+    bodyKind: MultiInstanceBodyKind.SubProcess;
+    activeIterations: OpenSubProcessIteration[];
+  }>;
+
 export type OpenMultiInstance =
+  | OpenSequentialSubProcessMultiInstance
   | OpenSequentialMultiInstance
   | OpenParallelMultiInstance;
 

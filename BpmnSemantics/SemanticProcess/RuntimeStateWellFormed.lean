@@ -10,6 +10,7 @@ import BpmnSemantics.SemanticProcess.RuntimePositionValidity
 import BpmnSemantics.SemanticProcess.RuntimeStateIdentityBound
 import BpmnSemantics.SemanticProcess.SequentialMultiInstance
 import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeWellFormedness
+import BpmnSemantics.SemanticProcess.SequentialScopeStateValidation
 
 /-! # Runtime-state well-formedness
 
@@ -79,7 +80,7 @@ def notStartedStateEmpty (state : RuntimeState) : Bool :=
     state.effectWaits.isEmpty && state.effectIncidents.isEmpty &&
     state.selectedBranchSets.isEmpty && state.eventRaces.isEmpty &&
     state.calledProcessOccurrences.isEmpty && state.activityOccurrences.isEmpty &&
-    state.parallelMultiInstanceControllers.isEmpty &&
+    state.parallelMultiInstanceControllers.isEmpty && state.sequentialScopeControllers.isEmpty &&
     state.compensationActivityRetentions.isEmpty &&
     state.compensationParentContextRetentions.isEmpty &&
     state.compensationTriggers.isEmpty && state.compensationHandlerEffectWaits.isEmpty &&
@@ -492,6 +493,7 @@ def timerWaitDeclarers (program : Program) (elementId : NodeId) : List SemanticO
     | .enterMonitoredScope _ _ _ _ _ boundaryTimer => decide (boundaryTimer.elementId = elementId)
     | .awaitEventRace _ _ _ _ timer => decide (timer.elementId = elementId)
     | .initiate .. | .initiateMessage .. | .initiateTimer ..
+    | .enterSequentialMultiInstanceScope .. | .completeSequentialMultiInstanceScope ..
     | .enterScope .. | .invokeProcess .. | .returnProcess ..
     | .awaitUserTask .. | .awaitDataInputUserTask .. | .awaitDataInputOutputUserTask ..
     | .awaitDataOutputUserTask ..
@@ -519,6 +521,7 @@ def messageWaitDeclarers (program : Program) (elementId : NodeId) : List Semanti
     | .awaitMessageMonitoredUserTask _ _ _ _ boundaryMessage =>
         decide (boundaryMessage.elementId = elementId)
     | .initiate .. | .initiateMessage .. | .initiateTimer ..
+    | .enterSequentialMultiInstanceScope .. | .completeSequentialMultiInstanceScope ..
     | .enterScope .. | .enterBoundedScope .. | .enterMonitoredScope .. | .invokeProcess .. | .returnProcess ..
     | .awaitUserTask .. | .awaitDataInputUserTask .. | .awaitDataInputOutputUserTask ..
     | .awaitDataOutputUserTask ..
@@ -548,6 +551,7 @@ def userTaskWaitDeclarers (program : Program) (taskId : TaskDefinitionId) :
     | .awaitDataOutputUserTask _ _ _ _ candidateTaskId _ _ =>
         decide (candidateTaskId = taskId)
     | .initiate .. | .initiateMessage .. | .initiateTimer ..
+    | .enterSequentialMultiInstanceScope .. | .completeSequentialMultiInstanceScope ..
     | .enterScope .. | .enterBoundedScope .. | .enterMonitoredScope .. | .invokeProcess .. | .returnProcess ..
     | .completeParallelMultiInstanceUserTask .. | .awaitTimer ..
     | .awaitMessage .. | .awaitPayloadMessage .. | .awaitCorrelatedPayloadMessage ..
@@ -562,6 +566,7 @@ def effectWaitDeclarers (program : Program) (elementId : NodeId) : List Semantic
   program.operations.filter fun
     | .awaitEffect _ origin _ _ _ _ => decide (origin.elementId = elementId)
     | .initiate .. | .initiateMessage .. | .initiateTimer ..
+    | .enterSequentialMultiInstanceScope .. | .completeSequentialMultiInstanceScope ..
     | .enterScope .. | .enterBoundedScope .. | .enterMonitoredScope .. | .invokeProcess .. | .returnProcess ..
     | .awaitUserTask .. | .awaitDataInputUserTask .. | .awaitDataInputOutputUserTask ..
     | .awaitDataOutputUserTask ..
@@ -690,8 +695,8 @@ def waitDeclarationsValid (program : Program) (instanceId : SemanticId)
       declaredByExactlyOneOwnedOperation program
         (effectWaitDeclarers program incident.wait.elementId) incident.wait.owner)
 
-/-- The `selectMany` and `awaitEventRace` halves of `RSI-BIND-05`: each selected-branch record
-matches exactly one `selectMany` and each event race exactly one `awaitEventRace`.
+/-- `RSI-BIND-05` requires unique declarations for selected branches, event races and repeated-scope
+controllers. A controller uses its outer Activity element to identify the scope-entry declaration.
 
 The rule's third clause is **not** decided here or anywhere else in this predicate. Binding a called
 record to its paired `invokeProcess` and `returnProcess` is a program-side fact, and
@@ -707,6 +712,11 @@ def hiddenRecordDeclarationsValid (program : Program) (state : RuntimeState) : B
   state.eventRaces.all (fun race =>
     (program.operations.filter fun
       | .awaitEventRace _ origin _ _ _ => decide (origin.elementId.value = race.id.elementId.value)
+      | _ => false).length = 1) &&
+  state.sequentialScopeControllers.all (fun controller =>
+    (program.operations.filter fun
+      | .enterSequentialMultiInstanceScope _ origin _ _ _ _ _ _ _ _ =>
+          decide (origin.elementId.value = controller.id.activityElementId.value)
       | _ => false).length = 1)
 
 /-! ## The predicate -/
@@ -745,7 +755,7 @@ def runtimeStateWellFormed (program : Program) (instanceId : SemanticId)
     (activityBodyClaimsUnique state.activityOccurrences &&
       compensationActivityRetentionStateValid program state &&
       compensationEventSubProcessSnapshotStateValid program state &&
-      compensationExecutionStateValid program state)
+      compensationExecutionStateValid program state && sequentialScopeStateValid program state)
 
 theorem runtimeStateWellFormed_canonicalCollectionOrder (program : Program)
     (instanceId : SemanticId) (state : RuntimeState)

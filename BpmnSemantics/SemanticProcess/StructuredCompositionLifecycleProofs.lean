@@ -766,7 +766,7 @@ theorem admitted_operations_share_declared_root
             (List.all_eq_true.mp allReach operation.id (List.mem_map.mpr ⟨operation, member, rfl⟩))
         refine ⟨start, _, ?_, ?_, paths⟩
         · rw [← admitted_scope_lookup_is_exact program start wellFormed]
-          have anchor := of_decide_eq_true graph.1.1.1.1.1.1.1.1.1
+          have anchor := of_decide_eq_true graph.1.1.1.1.1.1.1.1.1.1
           change (program.operationScopes.find? (fun binding => decide (binding.operationId = start))).map (·.scopeId) = some entryRoot at anchor
           simpa only [rootEq] using anchor
         · intro edge included predecessor
@@ -778,25 +778,23 @@ theorem admitted_operations_share_declared_root
                 obtain ⟨place, _, portEdge⟩ := List.mem_flatMap.mp portEdge
                 obtain ⟨producer, produces, portEdge⟩ := List.mem_flatMap.mp portEdge
                 obtain ⟨consumer, consumes, edgeEq⟩ := List.mem_map.mp portEdge
-                obtain ⟨producerOp, producerMember, produced⟩ := List.mem_filterMap.mp produces
+                obtain ⟨producerOp, producerMember, producerId, producerPort⟩ :=
+                  producer_direct_output_witness program.operations place.id producer produces
+                    (fun id origin entry member => by simpa [OperationAllowed] using allowed _ member)
                 obtain ⟨consumerOp, consumerMember, consumed⟩ := List.mem_filterMap.mp consumes
-                split at produced
-                · rename_i producerPort
-                  split at consumed
-                  · rename_i consumerPort
-                    have producerId := Option.some.inj produced
-                    have consumerId := Option.some.inj consumed
-                    have leftPort : place.id ∈ operationControlPlaces producerOp :=
-                      List.mem_append_right _ (by simpa using producerPort)
-                    have rightPort : place.id ∈ operationControlPlaces consumerOp :=
-                      List.mem_append_left _ (by simpa using consumerPort)
-                    have equal := admitted_shared_port_has_same_operation_scope program producerOp consumerOp place.id
-                      wellFormed producerMember consumerMember (sameScope producerOp producerMember _ leftPort)
-                      (sameScope consumerOp consumerMember _ rightPort) leftPort rightPort
-                    cases edgeEq
-                    rw [producerId, consumerId] at equal
-                    exact equal.symm.trans predecessor
-                  · contradiction
+                split at consumed
+                · rename_i consumerPort
+                  have consumerId := Option.some.inj consumed
+                  have leftPort : place.id ∈ operationControlPlaces producerOp :=
+                    List.mem_append_right _ producerPort
+                  have rightPort : place.id ∈ operationControlPlaces consumerOp :=
+                    List.mem_append_left _ (by simpa using consumerPort)
+                  have equal := admitted_shared_port_has_same_operation_scope program producerOp consumerOp place.id
+                    wellFormed producerMember consumerMember (sameScope producerOp producerMember _ leftPort)
+                    (sameScope consumerOp consumerMember _ rightPort) leftPort rightPort
+                  cases edgeEq
+                  rw [producerId, consumerId] at equal
+                  exact equal.symm.trans predecessor
                 · contradiction
               · obtain ⟨operation, member, produced⟩ := List.mem_filterMap.mp completionEdge
                 have selected := allowed operation member

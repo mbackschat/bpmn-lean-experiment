@@ -131,12 +131,19 @@ theorem prepareInternalArm_message_task_preserved
       (liftRegionalStateFootprint ordinary.owner
         (PreparedInternalArming.ordinary operation ordinary).stateFootprint) = true) :
     prepareInternalArm? program (applyInternalMessageTaskPatch state message) operation = some ordinary := by
+  have noPopulation := regional_independent_activity_population_absent
+    (messageTaskStateFootprint message)
+    (PreparedInternalArming.ordinary operation ordinary).stateFootprint ordinary.owner
+    message.record independent
+    (by simp [messageTaskStateFootprint, canonicalRegionalStateAtoms_mem])
   obtain ⟨inputs, tasks, messages, anchors⟩ :=
     messageTask_ordinary_independent_separation message operation ordinary independent
   obtain ⟨_, owner, instanceId, origin, processId, _, _, _, _, _, _, _, _, _, _, _, _, rfl⟩ :=
     prepareInternalMessageTaskContract_facts program state contract message messagePrepared
   let message := makeInternalMessageTaskPatch program state contract owner instanceId processId origin
   let after := applyInternalMessageTaskPatch state message
+  have scopedFrames := prepared_arm_process_input_frames program state after operation ordinary
+    ordinaryPrepared noPopulation rfl
   have counts : internalActivationCount after ordinary.write.kind ordinary.write.elementId =
       internalActivationCount state ordinary.write.kind ordinary.write.elementId := by
     cases kind : ordinary.write.kind with
@@ -154,6 +161,8 @@ theorem prepareInternalArm_message_task_preserved
   · intro queried
     rfl
   · rfl
+  · cases operation <;> exact scopedFrames.1
+  · exact scopedFrames.2
   · exact counts
   · exact messageTaskOpenAnchorRead_frame state message _ rfl ordinary.write.occurrence
       (anchors _ (by simp [message])).symm (anchors _ (by simp [message])).symm

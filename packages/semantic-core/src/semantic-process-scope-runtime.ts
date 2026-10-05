@@ -69,6 +69,14 @@ export function enterChildScope(
   parent: ScopeOccurrenceId,
   entry: ChildScopeEntry,
 ): RuntimeState | null {
+  const issued = issueChildScope(state, parent, entry);
+  return issued === null ? null : { ...issued,
+    controlTokens: removeToken(issued.controlTokens, entry.input, parent) };
+}
+
+/** SMIS-END-01 reuses fresh scope issuance on turnover without consuming another parent token. */
+export function issueChildScope(state: RuntimeState, parent: ScopeOccurrenceId,
+  entry: Pick<ChildScopeEntry, "childEntry" | "childScopeId">): RuntimeState | null {
   const selected = selectChildScopeEntry(state, parent, entry);
   if (selected === null) {
     return null;
@@ -77,7 +85,7 @@ export function enterChildScope(
   return {
     ...state,
     controlTokens: addToken(
-      removeToken(state.controlTokens, entry.input, parent),
+      state.controlTokens,
       entry.childEntry,
       child,
     ),

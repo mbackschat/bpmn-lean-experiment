@@ -2751,6 +2751,12 @@
         },
         {
           "$ref": "#/$defs/completeEventSubProcess"
+        },
+        {
+          "$ref": "#/$defs/enterSequentialMultiInstanceScope"
+        },
+        {
+          "$ref": "#/$defs/completeSequentialMultiInstanceScope"
         }
       ]
     },
@@ -3229,6 +3235,89 @@
           }
         }
       ]
+    },
+    "enterSequentialMultiInstanceScope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "origin",
+        "input",
+        "childEntry",
+        "childScopeId",
+        "normalOutput",
+        "collectionName",
+        "itemName",
+        "bodyInputs",
+        "completionBooleanName"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "kind": {
+          "const": "enterSequentialMultiInstanceScope"
+        },
+        "origin": {
+          "$ref": "#/$defs/bpmnElementOrigin"
+        },
+        "input": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "childEntry": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "childScopeId": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "normalOutput": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "collectionName": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "itemName": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "bodyInputs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/variableMapping"
+          }
+        },
+        "completionBooleanName": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        }
+      }
+    },
+    "completeSequentialMultiInstanceScope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "origin",
+        "entryOperationId"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "kind": {
+          "const": "completeSequentialMultiInstanceScope"
+        },
+        "origin": {
+          "$ref": "#/$defs/bpmnElementOrigin"
+        },
+        "entryOperationId": {
+          "$ref": "#/$defs/nonemptyString"
+        }
+      }
     }
   }
 }

@@ -1070,6 +1070,7 @@
       "required": [
         "id",
         "mode",
+        "bodyKind",
         "plannedInstanceCount",
         "pendingItemCount",
         "numberOfInstances",
@@ -1108,6 +1109,9 @@
           "items": {
             "$ref": "#/$defs/openSequentialMultiInstanceIteration"
           }
+        },
+        "bodyKind": {
+          "const": "userTask"
         }
       }
     },
@@ -1117,6 +1121,7 @@
       "required": [
         "id",
         "mode",
+        "bodyKind",
         "plannedInstanceCount",
         "pendingItemCount",
         "numberOfInstances",
@@ -1155,6 +1160,9 @@
           "items": {
             "$ref": "#/$defs/openSequentialMultiInstanceIteration"
           }
+        },
+        "bodyKind": {
+          "const": "userTask"
         }
       }
     },
@@ -1689,6 +1697,9 @@
               },
               {
                 "$ref": "#/$defs/openParallelMultiInstance"
+              },
+              {
+                "$ref": "#/$defs/openSequentialSubProcessMultiInstance"
               }
             ]
           }
@@ -1760,6 +1771,120 @@
           "items": {
             "$ref": "#/$defs/canonicalObservation"
           }
+        }
+      }
+    },
+    "scopeOccurrenceId": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "processInstanceId",
+        "definitionScopeId",
+        "activation"
+      ],
+      "properties": {
+        "processInstanceId": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "activation": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "definitionScopeId": {
+          "$ref": "#/$defs/nonEmptyString"
+        }
+      }
+    },
+    "openSubProcessIteration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "loopCounter",
+        "body",
+        "item",
+        "bindings",
+        "userTaskIds",
+        "effectIds"
+      ],
+      "properties": {
+        "loopCounter": {
+          "$ref": "#/$defs/nonnegativeSafeInteger"
+        },
+        "body": {
+          "$ref": "#/$defs/scopeOccurrenceId"
+        },
+        "item": {
+          "$ref": "#/$defs/variableBinding"
+        },
+        "bindings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/variableBinding"
+          }
+        },
+        "userTaskIds": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/userTaskInstanceId"
+          }
+        },
+        "effectIds": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/effectOccurrenceId"
+          }
+        }
+      }
+    },
+    "openSequentialSubProcessMultiInstance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "mode",
+        "bodyKind",
+        "plannedInstanceCount",
+        "pendingItemCount",
+        "numberOfInstances",
+        "numberOfActiveInstances",
+        "numberOfCompletedInstances",
+        "numberOfTerminatedInstances",
+        "activeIterations"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/activityOccurrenceId"
+        },
+        "mode": {
+          "const": "sequential"
+        },
+        "plannedInstanceCount": {
+          "$ref": "#/$defs/nonnegativeSafeInteger"
+        },
+        "pendingItemCount": {
+          "$ref": "#/$defs/nonnegativeSafeInteger"
+        },
+        "numberOfInstances": {
+          "$ref": "#/$defs/nonnegativeSafeInteger"
+        },
+        "numberOfActiveInstances": {
+          "$ref": "#/$defs/nonnegativeSafeInteger"
+        },
+        "numberOfCompletedInstances": {
+          "$ref": "#/$defs/nonnegativeSafeInteger"
+        },
+        "numberOfTerminatedInstances": {
+          "$ref": "#/$defs/nonnegativeSafeInteger"
+        },
+        "activeIterations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/openSubProcessIteration"
+          }
+        },
+        "bodyKind": {
+          "const": "subProcess"
         }
       }
     }

@@ -20,6 +20,7 @@ private def operationScope? (program : Program) (operationId : OperationId) :
 
 /-- The child definition scope entered by each scope-entering operation family. The exhaustive match makes a newly added family fail compilation until its lifecycle role is classified. -/
 def enteredChildScopeId? : SemanticOperation → Option DefinitionScopeId
+  | .enterSequentialMultiInstanceScope _ _ _ _ childScopeId _ _ _ _ _
   | .enterScope _ _ _ _ childScopeId
   | .enterBoundedScope _ _ _ _ childScopeId _
   | .enterMonitoredScope _ _ _ _ childScopeId _ => some childScopeId
@@ -29,6 +30,7 @@ def enteredChildScopeId? : SemanticOperation → Option DefinitionScopeId
   | .awaitDataOutputUserTask ..
   | .awaitSequentialMultiInstanceUserTask ..
   | .awaitParallelMultiInstanceUserTask ..
+  | .completeSequentialMultiInstanceScope ..
   | .completeParallelMultiInstanceUserTask ..
   | .awaitTimer .. | .awaitMessage .. | .awaitPayloadMessage ..
   | .awaitCorrelatedPayloadMessage .. | .awaitEventRace ..
@@ -49,9 +51,52 @@ private def scopeHasOneEntry (program : Program) (scopeId : DefinitionScopeId) :
   (program.operations.filter fun operation =>
     enteredChildScopeId? operation = some scopeId).length = 1
 
+/-- SMIS-END-01 keeps the continuation on the entry; completion carries only its binding. -/
+def sequentialScopeContinuation? (operations : List SemanticOperation)
+    (entryId : OperationId) : Option ControlPlaceId :=
+  operations.findSome? fun
+    | .enterSequentialMultiInstanceScope id _ _ _ _ output _ _ _ _ =>
+        if id == entryId then some output else none
+    | _ => none
+
+/-- Each repeated body has exactly one completion with the same source Activity and child owner. -/
+def sequentialScopeOperationsPaired (program : Program) : Bool :=
+  let entries := program.operations.filter fun
+    | .enterSequentialMultiInstanceScope .. => true | _ => false
+  let completions := program.operations.filter fun
+    | .completeSequentialMultiInstanceScope .. => true | _ => false
+  entries.length == completions.length && entries.all fun
+    | .enterSequentialMultiInstanceScope id origin _ _ childScopeId _ _ _ _ _ =>
+        (program.operations.all fun operation =>
+          operation.origin.elementId != origin.elementId ||
+          match operation with
+          | .enterSequentialMultiInstanceScope entryId .. => entryId == id
+          | .completeSequentialMultiInstanceScope _ _ entryId => entryId == id
+          | _ => false) &&
+        (completions.filter fun
+          | .completeSequentialMultiInstanceScope completionId completionOrigin entryId =>
+              entryId == id && completionOrigin == origin &&
+                operationScope? program completionId == some childScopeId
+          | _ => false).length == 1
+    | _ => false
+
+private def hasSequentialScopeEntry (program : Program) (scopeId : DefinitionScopeId) : Bool :=
+  program.operations.any fun
+    | .enterSequentialMultiInstanceScope _ _ _ _ childScopeId _ _ _ _ _ => childScopeId == scopeId
+    | _ => false
+
 private def ordinaryScopeLifecycleValid (program : Program)
     (entryRootId : DefinitionScopeId) (scope : DefinitionScope) : Bool :=
-  (match scope.parentScopeId with
+  (if scope.parentScopeId.isSome && hasSequentialScopeEntry program scope.id then
+      (program.operations.filter (completesScope scope.id)).isEmpty &&
+      (program.operations.filter fun
+        | .completeSequentialMultiInstanceScope id _ _ => operationScope? program id == some scope.id
+        | _ => false).length == 1 &&
+      (program.operations.all fun
+        | .returnProcess id _ _ _ _ _ => operationScope? program id != some scope.id
+        | .completeEventSubProcess _ _ childScopeId => childScopeId != scope.id
+        | _ => true)
+  else match scope.parentScopeId with
   | none =>
       if scope.id = entryRootId then
         (program.operations.filter (completesScope scope.id)).length = 1 &&
@@ -213,7 +258,7 @@ theorem scopeLifecycle_parentless_completion_is_entryRoot (program : Program)
   split at lifecycle
   · simp [parentless] at lifecycle
   · unfold ordinaryScopeLifecycleValid at lifecycle
-    simp only [parentless, Bool.and_eq_true] at lifecycle
+    simp only [parentless, Option.isSome_none, Bool.false_and, Bool.false_eq_true, ↓reduceIte, Bool.and_eq_true] at lifecycle
     by_cases same : scope.id = entryRoot
     · exact same
     · simp only [same, ↓reduceIte, Bool.and_eq_true, List.isEmpty_iff] at lifecycle
@@ -221,5 +266,32 @@ theorem scopeLifecycle_parentless_completion_is_entryRoot (program : Program)
         List.mem_filter.mpr ⟨completion, by simp [completesScope]⟩
       rw [lifecycle.1.1] at present
       contradiction
+
+/-- SMIS-END-01 excludes ordinary completion from a repeated child definition. -/
+theorem scopeLifecycle_completion_excludes_repeated_entry (program : Program)
+    (entryRoot : DefinitionScopeId) (scope : DefinitionScope)
+    (id : OperationId) (origin : BpmnElementOrigin) (output : Option ControlPlaceId)
+    (entry : SemanticOperation)
+    (valid : compensationEventSubProcessSnapshotScopeLifecycleWellFormed program entryRoot = true)
+    (member : scope ∈ program.definitionScopes) (child : scope.parentScopeId.isSome = true)
+    (completion : .completeScope id origin scope.id output ∈ program.operations)
+    (entered : entry ∈ program.operations)
+    (repeated : ∃ eid eorigin input body output collection item mappings condition,
+      entry = .enterSequentialMultiInstanceScope eid eorigin input body scope.id output collection item mappings condition) : False := by
+  have present : .completeScope id origin scope.id output ∈ program.operations.filter (completesScope scope.id) :=
+    List.mem_filter.mpr ⟨completion, by simp [completesScope]⟩
+  have lifecycle := List.all_eq_true.mp (Bool.and_eq_true_iff.mp valid).2 scope member
+  have absent : (program.operations.filter (completesScope scope.id)).isEmpty = true := by
+    unfold declaredScopeLifecycleValid at lifecycle
+    dsimp only at lifecycle
+    split at lifecycle
+    · exact (Bool.and_eq_true_iff.mp (Bool.and_eq_true_iff.mp (Bool.and_eq_true_iff.mp lifecycle).1).1).2
+    · obtain ⟨eid, eorigin, input, body, output, collection, item, mappings, condition, rfl⟩ := repeated
+      have hasEntry : hasSequentialScopeEntry program scope.id = true :=
+        List.any_eq_true.mpr ⟨_, entered, by simp⟩
+      simp only [ordinaryScopeLifecycleValid, child, hasEntry, Bool.true_and, ↓reduceIte, Bool.and_eq_true] at lifecycle
+      exact lifecycle.1.1.1
+  rw [List.isEmpty_iff.mp absent] at present
+  contradiction
 
 end BpmnSemantics.SemanticProcess

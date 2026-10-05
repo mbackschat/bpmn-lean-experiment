@@ -46,13 +46,13 @@ theorem prepared_arm_compensation_open_frame (program : Program) (state : Runtim
     stateValid prepared
   have executionBefore : compensationExecutionStateValid program state = true := by
     simp only [runtimeStateWellFormed, Bool.and_eq_true] at stateValid
-    exact stateValid.2.2
+    exact stateValid.2.1.2
   have executionAfter : compensationExecutionStateValid program
       (applyInternalArmingPatch state patch) = true := by
     simp only [runtimeStateWellFormed, Bool.and_eq_true] at afterValid
-    exact afterValid.2.2
+    exact afterValid.2.1.2
   apply compensation_open_projection_frame program state _ executionBefore executionAfter
-  all_goals cases patch with | mk _ _ _ _ _ _ _ _ _ write => cases write <;> rfl
+  all_goals cases patch with | mk _ _ _ _ _ _ _ _ _ write _ => cases write <;> rfl
 
 theorem focused_open_projection_parts (program : Program) (state : RuntimeState)
     (current : List OpenSemanticFlowNodeOccurrence)

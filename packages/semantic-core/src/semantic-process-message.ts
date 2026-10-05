@@ -31,6 +31,7 @@ import type {
 } from "./semantic-process-state.js";
 
 export function createMessageWait(
+  program: SemanticProcessProgram,
   operation: Extract<
     SemanticOperation,
     {
@@ -42,9 +43,9 @@ export function createMessageWait(
   >,
   state: RuntimeState,
   owner: ScopeOccurrenceId,
-): RuntimeState {
-  const patch = deriveInternalOrdinaryArmingPatch(operation, state, owner);
-  return patch === null ? state : applyInternalOrdinaryArmingPatch(state, patch);
+): RuntimeState | null {
+  const patch = deriveInternalOrdinaryArmingPatch(program, operation, state, owner);
+  return patch === null ? null : applyInternalOrdinaryArmingPatch(state, patch);
 }
 
 /** Resolves the immutable Program arm that decides which delivery interaction one Message wait publishes. */

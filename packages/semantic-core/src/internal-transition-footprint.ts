@@ -49,6 +49,8 @@ import { MappingExpressionKind } from "./semantic-value-contract.js";
 import { evaluateInputMappings } from "./semantic-process-data.js";
 import { matchesEffectLocalDataOwner } from "./local-data-owner.js";
 import { isWellFormedWireString } from "./wire.js";
+import { hasSequentialScopeDefinition, sequentialScopeBindingForOwner } from "./sequential-scope-binding.js";
+import { evaluateSequentialScopeInputs } from "./sequential-scope-data.js";
 
 export type InternalOccurrence = Readonly<{
   kind: InternalOccurrenceKind;
@@ -60,6 +62,9 @@ export type InternalTransitionStateAtom = Readonly<
       kind: InternalTransitionStateAtomKind.Activation;
       occurrenceKind: InternalOccurrenceKind;
       elementId: string;
+    }
+  | {
+      kind: InternalTransitionStateAtomKind.ActivityPopulation;
     }
   | {
       kind: InternalTransitionStateAtomKind.ActivityAssociation;
@@ -154,6 +159,15 @@ export type InternalTransitionStateAtom = Readonly<
   | {
       kind: InternalTransitionStateAtomKind.SequentialController;
       id: ActivityOccurrenceId;
+      owner: ScopeOccurrenceId;
+    }
+  | {
+      kind: InternalTransitionStateAtomKind.SequentialScopeController;
+      id: ActivityOccurrenceId;
+      owner: ScopeOccurrenceId;
+    }
+  | {
+      kind: InternalTransitionStateAtomKind.ScopeVariableScope;
       owner: ScopeOccurrenceId;
     }
   | {
@@ -378,7 +392,13 @@ export function deriveInternalTransitionFootprint(
         state.timerWaits.map(({ id }) => id),
       );
     case SemanticOperationKind.AwaitEffect: {
-      if (evaluateInputMappings(operation.effect.inputMappings, state.variables.process.bindings) === null) return null;
+      const repeated = hasSequentialScopeDefinition(program, owner);
+      const binding = repeated ? sequentialScopeBindingForOwner(program, state, owner) : undefined;
+      if (repeated && binding === undefined) return null;
+      const arguments_ = repeated
+        ? evaluateSequentialScopeInputs(program, state, owner, operation.effect.inputMappings)
+        : evaluateInputMappings(operation.effect.inputMappings, state.variables.process.bindings);
+      if (arguments_ === null) return null;
       const inputNames: string[] = [];
       const processNames: string[] = [];
       for (const mapping of operation.effect.inputMappings) {
@@ -386,10 +406,15 @@ export function deriveInternalTransitionFootprint(
           case MappingExpressionKind.StringLiteral:
             inputNames.push(mapping.target);
             break;
-          case MappingExpressionKind.EnclosingVariable:
+          case MappingExpressionKind.EnclosingVariable: {
             inputNames.push(mapping.target);
-            processNames.push(mapping.expression.name);
+            const sourceName = mapping.expression.name;
+            if (binding === undefined || (sourceName !== binding.entry.itemName &&
+                !binding.locals.bindings.some(({ name }) => name === sourceName))) {
+              processNames.push(sourceName);
+            }
             break;
+          }
           case MappingExpressionKind.LocalVariable:
             return null;
           default:
@@ -409,6 +434,15 @@ export function deriveInternalTransitionFootprint(
         owner.processInstanceId,
         inputNames,
         [...new Set(processNames)],
+        binding === undefined ? [] : [
+          // SMIS-IDENTITY-01 selects a unique declaration record across the Activity population.
+          { kind: InternalTransitionStateAtomKind.ActivityPopulation },
+          { kind: InternalTransitionStateAtomKind.ActivityAssociation, record: binding.activity },
+          { kind: InternalTransitionStateAtomKind.SequentialScopeController, id: binding.activity.id, owner: binding.activity.owner },
+          { kind: InternalTransitionStateAtomKind.ScopeVariableScope, owner },
+          { kind: InternalTransitionStateAtomKind.ScopeParent, occurrence: owner, parent: binding.body.parent },
+          { kind: InternalTransitionStateAtomKind.ScopeOccurrence, owner: binding.activity.owner },
+        ],
       );
     }
     case SemanticOperationKind.Initiate:
@@ -417,6 +451,8 @@ export function deriveInternalTransitionFootprint(
     case SemanticOperationKind.EnterScope:
     case SemanticOperationKind.EnterMonitoredScope:
     case SemanticOperationKind.EnterBoundedScope:
+    case SemanticOperationKind.EnterSequentialMultiInstanceScope:
+    case SemanticOperationKind.CompleteSequentialMultiInstanceScope:
     case SemanticOperationKind.InvokeProcess:
     case SemanticOperationKind.ReturnProcess:
     case SemanticOperationKind.AwaitSequentialMultiInstanceUserTask:
@@ -540,6 +576,7 @@ function waitFootprint(
   processInstanceId: string = owner.processInstanceId,
   activityVariableNames: ReadonlyArray<string> = [],
   processVariableNames: ReadonlyArray<string> = [],
+  scopedReads: ReadonlyArray<InternalTransitionStateAtom> = [],
 ): InternalTransitionFootprint | null {
   const matchingTokens = state.controlTokens.filter(({ placeId, multiplicity }) =>
     placeId === operation.input && multiplicity > 0
@@ -643,6 +680,7 @@ function waitFootprint(
       ]
     : [];
   const reads = canonicalUniqueStateAtoms([
+    ...scopedReads,
     {
       kind: InternalTransitionStateAtomKind.RuntimeControl,
       instanceId: runtimeInstanceId,

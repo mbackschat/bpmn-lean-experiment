@@ -4,6 +4,8 @@ This detail map owns exact current Product 1 protocol, client, Workflow, Worker,
 
 ## Current boundary
 
+[Private MI restoration](capsules/SEQUENTIAL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#implementation-progress) passes; qualification remains open.
+
 Private [business Error hosting evidence](capsules/MIXED-TASK-BUSINESS-ERROR-PROPOSAL.md#implementation-progress) covers recovery, continuation, replacement, E1/E2, replay and technical-failure separation; production admission and closure remain open. The same record owns the diagnosed 23-byte Multi-Instance serialization refresh; capacity bounds are unchanged.
 
 Disposable mutation probes isolate queues by Workflow ID. [Lifecycle regressions](../packages/temporal-adapter/testkit/test/bypass-worker-startup.test.ts) cover both runners: late Workers shut down, start failures join shutdown, and trace-termination failures cannot skip it. Normal queue matching, hosting and timeouts are unchanged.

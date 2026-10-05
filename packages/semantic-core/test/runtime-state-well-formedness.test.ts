@@ -62,6 +62,26 @@ test("a state reached by admitted execution is well-formed", () => {
   assert.deepEqual(runtimeStateDefects(eventRaceProgram, instanceId(), initialState), []);
 });
 
+test("unrelated admitted profiles refuse injected repeated-scope controller records", () => {
+  const cases = [
+    { program: eventRaceProgram, id: instanceId(), state: armed },
+    { program: boundedProgram, id: boundedInstanceId,
+      state: applyStimulus(boundedProgram, initialState, boundedStart).state },
+  ];
+  const refusals = cases.map(({ program, id, state }) => {
+    assert.deepEqual(runtimeStateDefects(program, id, state), []);
+    const injected: RuntimeState = { ...state, sequentialScopeControllers: [{
+      id: state.activityOccurrences[0]?.id ?? {
+        processInstanceId: id, activityElementId: "undeclared-body", activation: 1,
+      },
+      total: 2, completed: 0, currentItem: "invoice",
+    }] };
+    return runtimeStateDefects(program, id, injected)
+      .includes(RuntimeStateDefect.UndeclaredHiddenRecord);
+  });
+  assert.deepEqual(refusals, [true, true]);
+});
+
 test("W1: a wait naming an occurrence that does not exist is refused", () => {
   // The owner is stranded by pointing the wait at an activation no occurrence carries, not by
   // emptying `scopeOccurrences`. Emptying it would destroy the hosting root, which the existing

@@ -60,6 +60,7 @@ private def checkedDefinitionScopesValid (source : CheckedProcess) : Bool :=
           scopeExists source.definitionScopes parentScopeId &&
           (source.nodes.any fun
             | .transactionSubProcess id childScopeId _
+            | .sequentialMultiInstanceSubProcess id childScopeId _ _ _ _
             | .embeddedSubProcess id childScopeId =>
                 decide (
                   childScopeId = scope.id &&
@@ -224,6 +225,8 @@ private def checkedNodeArityValid (serial repeatable mixed businessError : Bool)
       if dormantHandlers.contains id then
         incomingCount flows id = 0 && outgoingCount flows id = 0
       else incomingCount flows id = 1 && outgoingCount flows id = 1
+  | .sequentialMultiInstanceSubProcess id .. =>
+      incomingCount flows id = 1 && outgoingCount flows id = 1
   | .callActivity id calledProcessId data =>
       callDataInterfaceValid data id.value calledProcessId.value &&
       nonempty calledProcessId.value &&
@@ -460,7 +463,8 @@ def checkedWellFormed (source : CheckedProcess) : Bool :=
                     candidateFlowIds.contains flow.id
                 | _ => false)) &&
     source.nodes.all (checkedNodeArityValid
-      (source.identity.semanticProfile == serialBusinessTaskProfileId || source.identity.semanticProfile == mixedTaskControlFlowProfileId || source.identity.semanticProfile == mixedTaskBusinessErrorProfileId)
+      (source.identity.semanticProfile == serialBusinessTaskProfileId || source.identity.semanticProfile == mixedTaskControlFlowProfileId || source.identity.semanticProfile == mixedTaskBusinessErrorProfileId ||
+        source.identity.semanticProfile.value == "cibseven-2.2.0-sequential-multi-instance-subprocess-draft")
       (source.identity.semanticProfile == repeatableSubscriptionCheckpointProfileId)
       (source.identity.semanticProfile == mixedTaskControlFlowProfileId || source.identity.semanticProfile == mixedTaskBusinessErrorProfileId)
       (source.identity.semanticProfile == mixedTaskBusinessErrorProfileId)

@@ -5,6 +5,7 @@ import BpmnSemantics.SemanticProcess.InternalCommutationRuntimePreservation
 import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStateEntryOrder
 import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStatePreservation
 import BpmnSemantics.SemanticProcess.ActivityDataInputOutputMultiInstanceFrames
+import BpmnSemantics.SemanticProcess.InternalScopeCreationRuntimeValidity
 
 /-! # Activity-data activation runtime-state preservation
 
@@ -113,10 +114,11 @@ theorem unboundedTaskActivityInsertion_preserves_runtimeStateWellFormed
     cases declaration <;> simp [operationDeclaresWaitKey, operationWaitDeclarationKeys,
       userTaskWaitDeclarationKey]
   simp only [runtimeStateWellFormed, Bool.and_eq_true] at wellFormed
-  have claims := wellFormed.2.1.1.1
-  have retention := wellFormed.2.1.1.2
-  have snapshots := wellFormed.2.1.2
-  have execution := wellFormed.2.2
+  have claims := wellFormed.2.1.1.1.1
+  have retention := wellFormed.2.1.1.1.2
+  have snapshots := wellFormed.2.1.1.2
+  have execution := wellFormed.2.1.2
+  have repeated := wellFormed.2.2
   obtain ⟨aggregate, lifecycle⟩ := wellFormed.1
   obtain ⟨aggregate, notExhausted⟩ := aggregate
   obtain ⟨aggregate, controllerIds⟩ := aggregate
@@ -138,6 +140,9 @@ theorem unboundedTaskActivityInsertion_preserves_runtimeStateWellFormed
   have structural : programWellFormed program = true := by
     simp only [runtimePositionValid, Bool.and_eq_true] at position
     exact position.1.1
+  have repeatedAfter : sequentialScopeStateValid program successor = true := by
+    exact InternalCommutation.sequentialScopeStateValid_insert_activity program before record
+      (InternalCommutation.sequentialScopeEntry_task_separate program operation taskId structural declared declaresKey) repeated
   have operationIdsUnique :
       (program.operations.map (fun operation => operation.id)).Nodup := by
     apply activityDataInputOutput_nodup_of_string_projection_nodup _
@@ -580,7 +585,7 @@ theorem unboundedTaskActivityInsertion_preserves_runtimeStateWellFormed
     attachedMessagesAfter⟩, activityIdsAfter⟩, controllersAfter⟩,
     sequentialBindingsAfter⟩, parallelBindingsAfter⟩, controllerIdsAfter⟩,
     notExhaustedAfter⟩, lifecycleAfter⟩,
-    ⟨⟨⟨claimsAfter, retentionAfter⟩, snapshotsAfter⟩, executionAfter⟩⟩
+    ⟨⟨⟨⟨claimsAfter, retentionAfter⟩, snapshotsAfter⟩, executionAfter⟩, repeatedAfter⟩⟩
 
 /-- The composed activation retains its exact transition guarantee through the shared lifetime insertion. -/
 theorem dataInputOutputActivationStep_preserves_runtimeStateWellFormed_general

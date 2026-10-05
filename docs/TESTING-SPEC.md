@@ -523,6 +523,29 @@ This table classifies every current top-level and recursively reachable field of
 | `openMultiInstances[].id.processInstanceId` | `not-claimed` | Scenario-supplied semantic identity |
 | `openMultiInstances[].id.activityElementId` | `not-claimed` | Project-owned outer Activity element identity |
 | `openMultiInstances[].id.activation` | `not-claimed` | Project-owned Activity occurrence activation |
+| `openMultiInstances[].bodyKind` | `not-claimed` | Selected profile distinguishes a User Task from a repeated Sub-Process body |
+| `openMultiInstances[].activeIterations[].body` | `not-claimed` | Project-owned repeated-body scope occurrence; no selected CIB observation |
+| `openMultiInstances[].activeIterations[].body.processInstanceId` | `not-claimed` | Project-owned repeated-body scope occurrence; no selected CIB observation |
+| `openMultiInstances[].activeIterations[].body.activation` | `not-claimed` | Project-owned repeated-body scope occurrence; no selected CIB observation |
+| `openMultiInstances[].activeIterations[].body.definitionScopeId` | `not-claimed` | Project-owned repeated-body scope occurrence; no selected CIB observation |
+| `openMultiInstances[].activeIterations[].item` | `not-claimed` | Item captured from the private collection snapshot; no selected CIB observation |
+| `openMultiInstances[].activeIterations[].item.name` | `not-claimed` | Item captured from the private collection snapshot; no selected CIB observation |
+| `openMultiInstances[].activeIterations[].item.value` | `not-claimed` | Item captured from the private collection snapshot; no selected CIB observation |
+| `openMultiInstances[].activeIterations[].item.value.kind` | `not-claimed` | Item captured from the private collection snapshot; no selected CIB observation |
+| `openMultiInstances[].activeIterations[].item.value.value` | `not-claimed` | Item captured from the private collection snapshot; no selected CIB observation |
+| `openMultiInstances[].activeIterations[].bindings` | `not-claimed` | Project-owned repeated-body local data; no selected CIB observation |
+| `openMultiInstances[].activeIterations[].bindings[].name` | `not-claimed` | Project-owned repeated-body local data; no selected CIB observation |
+| `openMultiInstances[].activeIterations[].bindings[].value` | `not-claimed` | Project-owned repeated-body local data; no selected CIB observation |
+| `openMultiInstances[].activeIterations[].bindings[].value.kind` | `not-claimed` | Project-owned repeated-body local data; no selected CIB observation |
+| `openMultiInstances[].activeIterations[].bindings[].value.value` | `not-claimed` | Project-owned repeated-body local data; no selected CIB observation |
+| `openMultiInstances[].activeIterations[].userTaskIds` | `not-claimed` | Project-owned inner work occurrence identity; no selected CIB observation |
+| `openMultiInstances[].activeIterations[].userTaskIds[].processInstanceId` | `not-claimed` | Project-owned inner work occurrence identity; no selected CIB observation |
+| `openMultiInstances[].activeIterations[].userTaskIds[].elementId` | `not-claimed` | Project-owned inner work occurrence identity; no selected CIB observation |
+| `openMultiInstances[].activeIterations[].userTaskIds[].activation` | `not-claimed` | Project-owned inner work occurrence identity; no selected CIB observation |
+| `openMultiInstances[].activeIterations[].effectIds` | `not-claimed` | Project-owned inner work occurrence identity; no selected CIB observation |
+| `openMultiInstances[].activeIterations[].effectIds[].processInstanceId` | `not-claimed` | Project-owned inner work occurrence identity; no selected CIB observation |
+| `openMultiInstances[].activeIterations[].effectIds[].elementId` | `not-claimed` | Project-owned inner work occurrence identity; no selected CIB observation |
+| `openMultiInstances[].activeIterations[].effectIds[].activation` | `not-claimed` | Project-owned inner work occurrence identity; no selected CIB observation |
 | `openMultiInstances[].mode` | `not-claimed` | Standards profile selects the literal `sequential` mode |
 | `openMultiInstances[].plannedInstanceCount` | `not-claimed` | Derived from the private immutable snapshot under the standards profile |
 | `openMultiInstances[].pendingItemCount` | `not-claimed` | Derived from the snapshot and completed slots under the standards profile |

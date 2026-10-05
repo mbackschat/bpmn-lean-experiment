@@ -4,11 +4,11 @@ export function workflowRolloverPermitted(
     requested: boolean;
     managedBoundaryDeadlineArmed: boolean;
     managedReadinessCallbackPending: boolean;
-    compensationActivityUnreconciled: boolean;
+    effectActivityUnreconciled: boolean;
   }>,
 ): boolean {
   return safety.requested &&
     !safety.managedBoundaryDeadlineArmed &&
     !safety.managedReadinessCallbackPending &&
-    !safety.compensationActivityUnreconciled;
+    !safety.effectActivityUnreconciled;
 }

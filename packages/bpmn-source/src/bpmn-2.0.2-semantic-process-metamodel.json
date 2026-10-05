@@ -34,7 +34,8 @@
       "SubProcess FlowElementsContainer generalization and triggeredByEvent default",
       "ErrorEventDefinition.errorRef and Error name/code identity",
       "Process artifact containment, Compensation event definition activity/wait references, Activity compensation marker, and Association endpoints/direction",
-      "Transaction and CancelEventDefinition type identity, Transaction method/protocol ownership, and the exact XSD ##Compensate method default"
+      "Transaction and CancelEventDefinition type identity, Transaction method/protocol ownership, and the exact XSD ##Compensate method default",
+      "Activity loopCharacteristics and MultiInstanceLoopCharacteristics completionCondition singleton containment, including loop-characteristic subtype identity"
     ],
     "absent": [
       "complete BPMN20 metamodel",
@@ -321,6 +322,24 @@
       "name": "CancelEventDefinition",
       "directSuperClasses": [
         "EventDefinition"
+      ]
+    },
+    {
+      "name": "LoopCharacteristics",
+      "directSuperClasses": [
+        "BaseElement"
+      ]
+    },
+    {
+      "name": "MultiInstanceLoopCharacteristics",
+      "directSuperClasses": [
+        "LoopCharacteristics"
+      ]
+    },
+    {
+      "name": "StandardLoopCharacteristics",
+      "directSuperClasses": [
+        "LoopCharacteristics"
       ]
     }
   ],
@@ -764,6 +783,22 @@
       "lower": 0,
       "upper": 1,
       "containment": false
+    },
+    {
+      "owner": "Activity",
+      "name": "loopCharacteristics",
+      "type": "LoopCharacteristics",
+      "lower": 0,
+      "upper": 1,
+      "containment": true
+    },
+    {
+      "owner": "MultiInstanceLoopCharacteristics",
+      "name": "completionCondition",
+      "type": "Expression",
+      "lower": 0,
+      "upper": 1,
+      "containment": true
     }
   ]
 }

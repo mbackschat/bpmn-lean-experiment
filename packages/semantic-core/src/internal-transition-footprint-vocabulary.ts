@@ -1,5 +1,6 @@
 export enum InternalTransitionStateAtomKind {
   Activation = "activation",
+  ActivityPopulation = "activityPopulation",
   ActivityAssociation = "activityAssociation",
   ActivityVariable = "activityVariable",
   ActivityVariableScope = "activityVariableScope",
@@ -29,8 +30,10 @@ export enum InternalTransitionStateAtomKind {
   SequentialControllerOutput = "sequentialControllerOutput",
   SequentialControllersPresence = "sequentialControllersPresence",
   SequentialControllerSnapshot = "sequentialControllerSnapshot",
+  SequentialScopeController = "sequentialScopeController",
   ScopeOccurrence = "scopeOccurrence",
   ScopeParent = "scopeParent",
+  ScopeVariableScope = "scopeVariableScope",
   TokenOwners = "tokenOwners",
   Wait = "wait",
 }

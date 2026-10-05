@@ -86,7 +86,7 @@ function compileBusinessTaskSource(root: unknown, source: BpmnSourceIdentity, ov
         if (businessError) continue;
         return unsupported("Error boundaries require the selected business Error profile.");
       case "bpmn:ServiceTask": {
-        node = serviceNode(element, definitions, selection.policy);
+        node = projectSerialBusinessServiceTask(element, definitions, selection.policy);
         if (node?.kind === CheckedNodeKind.ServiceTask) node = { ...node, bpmnErrorRoute: routes.get(node.id) ?? null };
         break;
       }
@@ -130,7 +130,7 @@ function businessErrorRoutes(elements: readonly ElementRecord[], errors: readonl
   return routes.size > 0 && referenced.size === errors.length ? routes : undefined;
 }
 
-function serviceNode(element: ElementRecord, definitions: ElementRecord, policy: MappedServiceTaskSourcePolicy): CheckedNode | undefined {
+export function projectSerialBusinessServiceTask(element: ElementRecord, definitions: ElementRecord, policy: MappedServiceTaskSourcePolicy): CheckedNode | undefined {
   if (!hasOnlyProjectedFlowElementKeys(element, ProjectedFlowElementShape.SerialBusinessServiceTask)) return undefined;
   const id = readId(element);
   const attributes = readForeignAttributes(element, definitions);

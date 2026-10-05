@@ -45,7 +45,8 @@ theorem InternalSelectedBranchPatch.preserves_hiddenRecordDeclarationsValid (pro
     hiddenRecordDeclarationsValid program
       { state with selectedBranchSets := patch.apply state.selectedBranchSets } = true := by
   simp only [hiddenRecordDeclarationsValid, Bool.and_eq_true] at prior ⊢
-  refine ⟨patch.preserves_all state.selectedBranchSets _ prior.1 ?_, prior.2⟩
+  obtain ⟨⟨selections, races⟩, controllers⟩ := prior
+  refine ⟨⟨patch.preserves_all state.selectedBranchSets _ selections ?_, races⟩, controllers⟩
   intro record equality
   have counted : decide ((program.operations.filter fun
       | .selectMany _ _ _ _ _ selectionKey => decide (selectionKey = record.selectionKey)
@@ -183,7 +184,7 @@ theorem InternalSelectedBranchPatch.preserves_runtimeStateWellFormed (program : 
   obtain ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨position, races⟩, incidents⟩, waitOwners⟩,
     waitIds⟩, identity⟩, waits⟩, hidden⟩, _order⟩, activities⟩, timers⟩, messages⟩,
     activityIds⟩, controllers⟩, sequential⟩, parallel⟩, controllerIds⟩, exhausted⟩,
-    _notStarted⟩, compensation⟩ := valid
+    _notStarted⟩, ⟨compensation, scopeValid⟩⟩ := valid
   have executionAfter := patch.preserves_compensationExecutionStateValid program state
     instanceId running compensation.2 separated
   refine ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨position, races⟩, incidents⟩,
@@ -191,7 +192,7 @@ theorem InternalSelectedBranchPatch.preserves_runtimeStateWellFormed (program : 
     patch.preserves_hiddenRecordDeclarationsValid program state hidden declared⟩, ordered⟩,
     activities⟩, timers⟩, messages⟩, activityIds⟩, controllers⟩, sequential⟩, parallel⟩,
     controllerIds⟩, exhausted⟩, ?_⟩,
-    ⟨⟨⟨compensation.1.1.1, compensation.1.1.2⟩, compensation.1.2⟩, ?_⟩⟩
+    ⟨⟨⟨⟨compensation.1.1.1, compensation.1.1.2⟩, compensation.1.2⟩, ?_⟩, scopeValid⟩⟩
   · simp [running]
   · exact executionAfter
 
@@ -252,6 +253,8 @@ theorem selectedBranchSet_insert_invalid_declarer_count_refused (program : Progr
       | _ => false).length = 1) = false := by simp [invalid]
   simp only [hiddenRecordDeclarationsValid, InternalSelectedBranchPatch.apply,
     insertSelectedBranchSetCanonical_eq_canonicalInsertBy, all_canonicalInsertBy]
+  apply Bool.and_eq_false_iff.mpr
+  left
   apply Bool.and_eq_false_iff.mpr
   left
   apply Bool.and_eq_false_iff.mpr

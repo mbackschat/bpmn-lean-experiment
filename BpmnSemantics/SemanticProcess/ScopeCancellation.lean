@@ -119,6 +119,12 @@ def cancelScopeSubtree (state : RuntimeState) (root : ScopeOccurrenceId)
     timerWaits := state.timerWaits.filter fun wait =>
       !cancelled wait.owner && !anyTimerIdNamesWait withdrawnTimers wait
     activityOccurrences := retainedByRegion cancelled state.activityOccurrences (retainedCancellationRoot root disposition)
+    sequentialScopeControllers := state.sequentialScopeControllers.filter fun controller =>
+      !calledInstances.contains controller.id.processInstanceId &&
+        !(withdrawnActivities.any fun activity =>
+          controller.id.processInstanceId == activity.processInstanceId &&
+          controller.id.activityElementId.value == activity.activityElementId.value &&
+          controller.id.activation == activity.activation)
     sequentialMultiInstanceControllers :=
       state.sequentialMultiInstanceControllers.filter fun controller =>
         !calledInstances.contains controller.processInstanceId &&

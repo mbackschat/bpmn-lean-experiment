@@ -40,6 +40,7 @@ private def userTaskWaitValid (program : Program) (state : RuntimeState)
       | .initiate .. | .initiateMessage .. | .initiateTimer ..
       | .enterScope .. | .enterBoundedScope .. | .enterMonitoredScope .. | .invokeProcess .. | .returnProcess ..
       | .completeParallelMultiInstanceUserTask .. | .awaitTimer ..
+      | .enterSequentialMultiInstanceScope .. | .completeSequentialMultiInstanceScope ..
       | .awaitMessage .. | .awaitPayloadMessage .. | .awaitCorrelatedPayloadMessage ..
       | .awaitEventRace .. | .awaitEffect ..
       | .duplicate .. | .synchronize .. | .mergeExclusive ..

@@ -269,7 +269,8 @@ private theorem selectedBoundedChild_has_definition (entered : RuntimeState)
       cases selected
       exact matched.1
 
-private theorem activityBodyScopeClaim_is_live (state : RuntimeState)
+/-- `AOO-BODY-01` makes every child-scope claim an exact live-occurrence witness. -/
+theorem activityBodyScopeClaim_is_live (state : RuntimeState)
     (record : ActivityOccurrence) (child : ScopeOccurrenceId)
     (recordsOwn : activityRecordsOwnLiveWork state = true)
     (recordMem : record ∈ state.activityOccurrences)

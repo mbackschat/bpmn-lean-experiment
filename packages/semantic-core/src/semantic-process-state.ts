@@ -1,3 +1,4 @@
+import type { SequentialScopeController } from "./sequential-scope-controller.js";
 import type {
   CompensationHandlerFailure,
   EffectIncidentId,
@@ -207,6 +208,7 @@ export type RuntimeState = DeepReadonly<{
    * it has no cross-profile wire-shape distinction to preserve.
    */
   sequentialMultiInstanceControllers?: SequentialMultiInstanceController[];
+  sequentialScopeControllers?: SequentialScopeController[];
   /** Present exactly for programs declaring the parallel Multi-Instance operation. */
   parallelMultiInstanceControllers?: ParallelMultiInstanceController[];
   /** Present exactly for Programs declaring boundary-handler compensation retention. */

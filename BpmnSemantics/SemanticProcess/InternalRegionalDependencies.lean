@@ -35,7 +35,8 @@ def liftRegionalStateAtom (owner : ScopeOccurrenceId) (atom : InternalStateAtom)
   | .activityOccurrence .. | .activityBodyTaskClaim .. => .owned atom owner
   | .controlToken .. | .tokenOwners .. | .scopeOccurrence .. | .runtimeControl ..
   | .logicalTime | .activation .. | .processVariable .. | .selectedBranch ..
-  | .selectedBranchOwners .. | .scopeParent .. | .callAssociation .. => .ordinary atom
+  | .selectedBranchOwners .. | .scopeParent .. | .callAssociation ..
+  | .scopeVariableScope .. | .sequentialScopeController .. | .activityPopulation => .ordinary atom
 
 def liftRegionalStateFootprint (owner : ScopeOccurrenceId) (footprint : InternalTransitionStateFootprint) :
     InternalRegionalStateFootprint :=
@@ -56,7 +57,9 @@ def regionalActivityAssociationsConflict (left right : ActivityOccurrence) : Boo
     left.attachedHandlers.any right.attachedHandlers.contains
 
 def regionalOwnsOrdinaryAtom (region : InternalOccurrenceRegion) : InternalStateAtom → Bool
-  | .controlToken owner _ | .scopeOccurrence owner | .selectedBranch owner _ => region.contains owner
+  | .activityPopulation => true
+  | .controlToken owner _ | .scopeOccurrence owner | .selectedBranch owner _
+  | .scopeVariableScope owner | .sequentialScopeController _ owner => region.contains owner
   | .scopeParent occurrence parent => region.contains occurrence || parent.any region.contains
   | .callAssociation record => region.ownsCall record
   | .tokenOwners _ | .runtimeControl _ | .logicalTime | .activation .. | .processVariable _
@@ -74,6 +77,7 @@ def regionalOwnsAtom (region : InternalOccurrenceRegion) : InternalRegionalState
   | .initiationPending | .endIncrement | .endCount => false
 
 def regionalActivityTouchesLegacyAtom (record : ActivityOccurrence) : InternalStateAtom → Bool
+  | .activityPopulation => true
   | .activityOccurrence identity => identity == activityOwnerForRecord record
   | .activityBodyTaskClaim task => (regionalActivityBodyTasks record.body).contains task
   | _ => false
@@ -86,6 +90,10 @@ def regionalStateAtomsConflict (left right : InternalRegionalStateAtom) : Bool :
   | .activityAssociation record, .ordinary atom | .activityAssociation record, .owned atom _
   | .ordinary atom, .activityAssociation record | .owned atom _, .activityAssociation record =>
       regionalActivityTouchesLegacyAtom record atom
+  | .ordinary .activityPopulation, .owned (.activityOccurrence _) _
+  | .owned (.activityOccurrence _) _, .ordinary .activityPopulation
+  | .ordinary .activityPopulation, .ordinary (.activityOccurrence _)
+  | .ordinary (.activityOccurrence _), .ordinary .activityPopulation => true
   | .ordinary left, .ordinary right | .ordinary left, .owned right _
   | .owned left _, .ordinary right | .owned left _, .owned right _ => left == right
   | _, _ => left == right ||
@@ -240,11 +248,14 @@ theorem regionalSharedProcess_reads_commute (property : String) :
       { reads := [.ordinary (.processVariable property)], writes := [] } = true := by
   simp [regionalStateFootprintsIndependent, regionalAtomListsDisjoint]
 
-/-- Lifting preserves the existing keyed conflict relation; ownership adds only region interactions. -/
+/-- Lifting preserves keyed conflicts and the declaration-population dependency required by scoped reads. -/
 theorem regionalLift_preserves_key_conflict (leftOwner rightOwner : ScopeOccurrenceId)
     (left right : InternalStateAtom) :
     regionalStateAtomsConflict (liftRegionalStateAtom leftOwner left) (liftRegionalStateAtom rightOwner right) =
-      (left == right) := by
+      (match left, right with
+      | .activityPopulation, .activityOccurrence _
+      | .activityOccurrence _, .activityPopulation => true
+      | _, _ => left == right) := by
   cases left <;> cases right <;> rfl
 
 /-- The existing data-arming identity key and a complete regional Activity record name one resource. -/
@@ -264,5 +275,19 @@ theorem regionalActivity_legacy_dependency_symmetric (record : ActivityOccurrenc
     regionalStateAtomsConflict (.activityAssociation record) (liftRegionalStateAtom owner atom) =
       regionalStateAtomsConflict (liftRegionalStateAtom owner atom) (.activityAssociation record) := by
   cases atom <;> rfl
+
+theorem activityPopulation_read_conflicts_with_insertion (id : ActivityOccurrenceId) :
+    stateReadSetsDisjoint [.activityOccurrence id] [.activityPopulation] = false := by
+  simp [stateReadSetsDisjoint]
+theorem differentActivityKeys_read_independent (left right : ActivityOccurrenceId) (different : left ≠ right) :
+    stateReadSetsDisjoint [.activityOccurrence left] [.activityOccurrence right] = true := by
+  simp [stateReadSetsDisjoint, listsDisjoint, different]
+theorem activityPopulation_association_conflict (record : ActivityOccurrence) :
+    regionalStateAtomsConflict (.ordinary .activityPopulation) (.activityAssociation record) = true := rfl
+theorem activityAssociation_population_conflict (record : ActivityOccurrence) :
+    regionalStateAtomsConflict (.activityAssociation record) (.ordinary .activityPopulation) = true := rfl
+theorem activityPopulation_region_conflict (region : InternalOccurrenceRegion) :
+    regionalStateAtomsConflict (.ordinary .activityPopulation) (.occurrenceRegion region) = true := by
+  simp [regionalStateAtomsConflict, regionalOwnsAtom, regionalOwnsOrdinaryAtom]
 
 end BpmnSemantics.SemanticProcess.InternalCommutation

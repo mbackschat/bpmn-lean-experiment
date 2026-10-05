@@ -74,6 +74,14 @@ test("decodes only the paired declaration-owned compensation collections", () =>
     state,
   );
 
+  for (const unsupported of [
+    { ...state, sequentialScopeControllers: [] },
+    { ...state, variables: { ...state.variables, scopes: [{ owner: state.scopeOccurrences[0]!.id, bindings: [] }] } },
+  ]) {
+    assert.throws(() => requireBpmnWorkflowContinuationStateV1(unsupported, program, instanceId),
+      /representable committed state/u);
+  }
+
   const {
     compensationTriggers: _triggers,
     ...missingTriggers

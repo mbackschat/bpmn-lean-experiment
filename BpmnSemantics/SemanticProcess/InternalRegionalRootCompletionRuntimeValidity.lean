@@ -1,5 +1,6 @@
 import BpmnSemantics.SemanticProcess.InternalRegionalCompletionCompensationValidity
 import BpmnSemantics.SemanticProcess.InternalRegionalCompletionOpenProjection
+import BpmnSemantics.SemanticProcess.SequentialScopeRuntimeLaws
 
 /-! Root completion retires the sole quiescent scope. The predecessor's preparation
 and ownership closure rule out stranded work; successful Compensation history survives
@@ -21,7 +22,7 @@ theorem preparedRootComplete_preserves_runtimeStateWellFormed (program : Program
   simp only [runtimeStateWellFormed, Bool.and_eq_true, and_assoc] at components
   obtain ⟨position, races, incidents, owners, waitIds, bounds, declarations, hidden, order,
     activities, timers, messages, activityIds, controllers, sequential, parallel, controllerIds,
-    exhaustion, _, bodyClaims, retention, snapshotValid, execution⟩ := components
+    exhaustion, _, bodyClaims, retention, snapshotValid, execution, repeated⟩ := components
   obtain ⟨snapshots, declared, _, closedSelection, _, _, published⟩ :=
     prepareInternalRegional_facts program before _ prepared found
   obtain ⟨selection, closed⟩ := ownershipClosedSelection_facts program before _ prepared.selection closedSelection
@@ -104,6 +105,9 @@ theorem preparedRootComplete_preserves_runtimeStateWellFormed (program : Program
         refine ⟨after, applied, ?_⟩
         rw [actualFields] at afterPosition afterActivities afterRaces afterActivitiesEmpty nextRetention nextExecution ⊢
         change before.activityOccurrences = [] at afterActivitiesEmpty
+        have noRepeated := sequentialScopeStateValid_no_activities_no_controllers program before repeated afterActivitiesEmpty
+        have nextRepeated := sequentialScopeStateValid_empty program
+          { before with control := .completed hosting, scopeOccurrences := [] } afterActivitiesEmpty noRepeated rfl
         have nextOwners : waitOwnersLive { before with control := .completed hosting, scopeOccurrences := [] } = true := by
           simp only [waitOwnersLive, noTasks, noMessages, noTimers, noEffects, noIncidents,
             noSelected, noRaces, noCalls, afterActivitiesEmpty, List.all_nil, Bool.and_self]
@@ -116,6 +120,6 @@ theorem preparedRootComplete_preserves_runtimeStateWellFormed (program : Program
           nextOrder, afterActivities, timers, messages, activityIds, controllers, sequential, parallel,
           controllerIds, exhaustion, trivial, bodyClaims, nextRetention,
           by simpa only [compensationEventSubProcessSnapshotStateValid, snapshots] using snapshotValid,
-          nextExecution⟩
+          nextExecution, nextRepeated⟩
 
 end BpmnSemantics.SemanticProcess.InternalCommutation

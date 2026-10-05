@@ -1,4 +1,7 @@
+import { hasSequentialScopeDefinition } from "./sequential-scope-binding.js";
+import { completeSequentialScopeEffectData } from "./sequential-scope-data.js";
 import { mixedTaskControlStimulusDataAdmitted } from "./mixed-task-control-flow-admission.js";
+import { sequentialScopeStimulusDataAdmitted } from "./sequential-scope-data-admission.js";
 import { serialBusinessStimulusDataAdmitted } from "./serial-business-task-admission.js";
 import { MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID, MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID, SERIAL_BUSINESS_TASK_CHECKPOINT_PROFILE_ID } from "./semantic-profile-catalog.js";
 import { callDataStateIsValid } from "./call-data-state-validation.js";
@@ -220,6 +223,7 @@ export function admit(
     !callDataStimulusDataAdmitted(program, stimulus) ||
     !mixedTaskControlStimulusDataAdmitted(program, stimulus) ||
     !serialBusinessStimulusDataAdmitted(program, stimulus) ||
+    !sequentialScopeStimulusDataAdmitted(program, stimulus) ||
     !structuredCompositionStimulusDataAdmitted(program, stimulus) ||
     !incidentStateAllowsDispatch(program, state) ||
     !admissibleCommittedState(program, state) ||
@@ -466,7 +470,9 @@ export function admit(
       ) {
         return { outcome: CommandOutcome.Rejected, state };
       }
-      const variables = completeActivityVariableScope(
+      const variables = hasSequentialScopeDefinition(program, wait.owner)
+        ? completeSequentialScopeEffectData(program, state, wait, stimulus.result.localPatch)
+        : completeActivityVariableScope(
         state.variables,
         wait.id,
         wait.outputMappings,

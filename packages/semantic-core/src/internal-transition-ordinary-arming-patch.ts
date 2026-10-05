@@ -1,3 +1,5 @@
+import { hasSequentialScopeDefinition } from "./sequential-scope-binding.js";
+import { evaluateSequentialScopeInputs } from "./sequential-scope-data.js";
 import type { OccurrenceId } from "./contract.js";
 import {
   addActivityVariableScope,
@@ -8,6 +10,7 @@ import {
 } from "./semantic-process-contract.js";
 import type {
   SemanticOperation,
+  SemanticProcessProgram,
 } from "./semantic-process-contract.js";
 import {
   compareEffectWaits,
@@ -70,6 +73,7 @@ export type InternalOrdinaryArmingOperation = Extract<
 
 /** Constructs one local-edit patch without applying it or reading a successor state. */
 export function deriveInternalOrdinaryArmingPatch(
+  program: SemanticProcessProgram,
   operation: InternalOrdinaryArmingOperation,
   state: RuntimeState,
   owner: ScopeOccurrenceId,
@@ -143,7 +147,9 @@ export function deriveInternalOrdinaryArmingPatch(
         state.effectActivations,
         operation.effect.elementId,
       );
-      const arguments_ = evaluateInputMappings(operation.effect.inputMappings, state.variables.process.bindings);
+      const arguments_ = hasSequentialScopeDefinition(program, owner)
+        ? evaluateSequentialScopeInputs(program, state, owner, operation.effect.inputMappings)
+        : evaluateInputMappings(operation.effect.inputMappings, state.variables.process.bindings);
       if (arguments_ === null) return null;
       return {
         kind: InternalOrdinaryArmingPatchKind.Effect,

@@ -23,6 +23,108 @@ private theorem attachedMessagesUnambiguous_replacedState (state : RuntimeState)
     (fun candidate => candidate.messageHandlerOccurrences) (fun _ _ => rfl)
     state.activityOccurrences record (turnoverBodyId state wait body)
 
+private theorem sequentialScopeBinding_task_absent (entry : SequentialScopeEntry)
+    (state : RuntimeState) (record : ActivityOccurrence) (body : OccurrenceId)
+    (member : record ∈ state.activityOccurrences)
+    (named : record.activityElementId = entry.elementId)
+    (task : activityBodyTask? record = some body) :
+    sequentialScopeBindingForEntry? entry state = none := by
+  have present : record ∈ state.activityOccurrences.filter
+      (fun candidate => candidate.activityElementId == entry.elementId) := by
+    simp [List.mem_filter, member, named]
+  cases filtered : state.activityOccurrences.filter
+      (fun candidate => candidate.activityElementId == entry.elementId) with
+  | nil => simp [filtered] at present
+  | cons first rest =>
+    cases rest with
+    | cons second rest =>
+      cases control : state.control <;> simp [sequentialScopeBindingForEntry?, control, filtered]
+    | nil =>
+      have equal : record = first := by simpa [filtered] using present
+      subst first
+      cases shape : record.body <;> simp [activityBodyTask?, shape] at task
+      cases control : state.control <;> simp [sequentialScopeBindingForEntry?, control, filtered, shape]
+
+private theorem sequentialScopeStateValid_task_separate (program : Program)
+    (state : RuntimeState) (record : ActivityOccurrence) (body : OccurrenceId)
+    (member : record ∈ state.activityOccurrences)
+    (task : activityBodyTask? record = some body)
+    (valid : sequentialScopeStateValid program state = true)
+    (entry : SequentialScopeEntry) (declared : entry ∈ program.operations.filterMap sequentialScopeEntry?) :
+    record.activityElementId ≠ entry.elementId := by
+  intro named
+  have absent := sequentialScopeBinding_task_absent entry state record body member named task
+  have present : record ∈ state.activityOccurrences.filter
+      (fun candidate => candidate.activityElementId == entry.elementId) := by
+    simp [List.mem_filter, member, named]
+  simp only [sequentialScopeStateValid, Bool.and_eq_true] at valid
+  have entryValid := List.all_eq_true.mp valid.2 entry declared
+  cases activities : state.activityOccurrences.filter
+      (fun candidate => candidate.activityElementId == entry.elementId) with
+  | nil => simp [activities] at present
+  | cons first rest =>
+    cases rest <;> cases bodies : state.scopeOccurrences.filter
+      (fun occurrence => occurrence.id.definitionScopeId == entry.childScopeId) <;>
+      simp_all
+    split at entryValid <;> simp_all
+
+private theorem replaceBodyIn_filter_separate (records : List ActivityOccurrence)
+    (record : ActivityOccurrence) (incoming : OccurrenceId) (element : NodeId)
+    (separate : record.activityElementId ≠ element) :
+    (replaceBodyIn records record incoming).filter (fun candidate => candidate.activityElementId == element) =
+      records.filter (fun candidate => candidate.activityElementId == element) := by
+  induction records with
+  | nil => rfl
+  | cons first rest ih =>
+    by_cases selected : sameActivityOccurrence first record = true
+    · have named : first.activityElementId = record.activityElementId := by
+        have parts := selected
+        simp only [sameActivityOccurrence, Bool.and_eq_true, beq_iff_eq] at parts
+        exact parts.1.2
+      simp only [replaceBodyIn] at ih ⊢
+      simp [selected, named, separate, ih]
+    · simp only [replaceBodyIn] at ih ⊢
+      simp [selected, List.filter_cons, ih]
+
+/-- SMIS-IDENTITY-01 admits only child-scope bodies, so task turnover cannot change a repeated-scope binding. -/
+private theorem sequentialScopeStateValid_replacedState (program : Program)
+    (state : RuntimeState) (record : ActivityOccurrence) (wait : UserTaskWait) (body : OccurrenceId)
+    (member : record ∈ state.activityOccurrences)
+    (task : activityBodyTask? record = some body)
+    (valid : sequentialScopeStateValid program state = true) :
+    sequentialScopeStateValid program (replacedState state record wait body) = true := by
+  have frame (entry : SequentialScopeEntry) (declared : entry ∈ program.operations.filterMap sequentialScopeEntry?) :
+      (replacedState state record wait body).activityOccurrences.filter
+        (fun candidate => candidate.activityElementId == entry.elementId) =
+      state.activityOccurrences.filter (fun candidate => candidate.activityElementId == entry.elementId) :=
+    replaceBodyIn_filter_separate _ _ _ _
+      (sequentialScopeStateValid_task_separate program state record body member task valid entry declared)
+  have binding (entry : SequentialScopeEntry) (declared : entry ∈ program.operations.filterMap sequentialScopeEntry?) :
+      sequentialScopeBindingForEntry? entry (replacedState state record wait body) =
+        sequentialScopeBindingForEntry? entry state := by
+    unfold sequentialScopeBindingForEntry?
+    rw [frame entry declared]
+    rfl
+  unfold sequentialScopeStateValid at valid ⊢
+  rw [Bool.and_eq_true] at valid ⊢
+  constructor
+  · apply List.all_eq_true.mpr
+    intro controller held
+    have before := List.all_eq_true.mp valid.1 controller held
+    split at before
+    · rename_i entry selected
+      have declared : entry ∈ program.operations.filterMap sequentialScopeEntry? := by
+        have : entry ∈ (program.operations.filterMap sequentialScopeEntry?).filter
+            (fun entry => entry.elementId.value == controller.id.activityElementId.value) := by
+          rw [selected]; simp
+        exact (List.mem_filter.mp this).1
+      simpa only [selected, binding entry declared] using before
+    · contradiction
+  · apply List.all_eq_true.mpr
+    intro entry declared
+    rw [frame entry declared, binding entry declared]
+    exact List.all_eq_true.mp valid.2 entry declared
+
 /-- `AOO-TURNOVER-02`: the whole-state replacement carries a well-formed state to a well-formed state.
 
 The state invariant now supplies the sole-body fact for the outgoing wait. Freshness needs no premise
@@ -53,10 +155,11 @@ theorem replacedState_preserves_wellFormed (program : Program) (instanceId : Sem
   have namesWait : taskIdNamesWait body wait = true := (List.mem_filter.mp waitInFilter).2
   simp only [runtimeStateWellFormed, Bool.and_eq_true] at wellFormed ⊢
   have existing := wellFormed.1
-  have claimsUnique := wellFormed.2.1.1.1
-  have retentionValid := wellFormed.2.1.1.2
-  have snapshotValid := wellFormed.2.1.2
-  have executionValid := wellFormed.2.2
+  have claimsUnique := wellFormed.2.1.1.1.1
+  have retentionValid := wellFormed.2.1.1.1.2
+  have snapshotValid := wellFormed.2.1.1.2
+  have executionValid := wellFormed.2.1.2
+  have scopeValid := wellFormed.2.2
   obtain ⟨h17, lifecycle⟩ := existing
   obtain ⟨h16, notExhausted⟩ := h17
   obtain ⟨h15, controllerIds⟩ := h16
@@ -180,21 +283,7 @@ theorem replacedState_preserves_wellFormed (program : Program) (instanceId : Sem
       exfalso
       rw [hc] at lifecycle
       simp only [notStartedStateEmpty, Bool.and_eq_true, List.isEmpty_iff] at lifecycle
-      obtain ⟨lifecycle, _notPending⟩ := lifecycle
-      obtain ⟨lifecycle, _activityVariablesEmpty⟩ := lifecycle
-      obtain ⟨lifecycle, _handlerWaitsEmpty⟩ := lifecycle
-      obtain ⟨lifecycle, _triggersEmpty⟩ := lifecycle
-      obtain ⟨lifecycle, _snapshotRetentionsEmpty⟩ := lifecycle
-      obtain ⟨lifecycle, _retentionsEmpty⟩ := lifecycle
-      obtain ⟨lifecycle, _parallelEmpty⟩ := lifecycle
-      obtain ⟨lifecycle, _activitiesEmpty⟩ := lifecycle
-      obtain ⟨lifecycle, _callsEmpty⟩ := lifecycle
-      obtain ⟨lifecycle, _racesEmpty⟩ := lifecycle
-      obtain ⟨lifecycle, _selectionsEmpty⟩ := lifecycle
-      obtain ⟨lifecycle, _incidentsEmpty⟩ := lifecycle
-      obtain ⟨lifecycle, _effectsEmpty⟩ := lifecycle
-      obtain ⟨lifecycle, _timersEmpty⟩ := lifecycle
-      obtain ⟨waitsEmpty, _messagesEmpty⟩ := lifecycle
+      have waitsEmpty : state.waits = [] := by simp_all
       exact List.ne_nil_of_mem waitMem waitsEmpty
     | running _ => rfl
     | completed _ => rfl
@@ -260,7 +349,8 @@ theorem replacedState_preserves_wellFormed (program : Program) (instanceId : Sem
       simp only [replacedState] at waitsAbsent
       simpa only [scopeQuiescent, replacedState, waitsAbsent, absent] using quiet
   exact ⟨⟨after18, lifecycleAfter⟩,
-    ⟨⟨⟨claimsAfter, retentionAfter⟩, snapshotAfter⟩, executionAfter⟩⟩
+    ⟨⟨⟨⟨claimsAfter, retentionAfter⟩, snapshotAfter⟩, executionAfter⟩,
+      sequentialScopeStateValid_replacedState program state record wait body recordMem recordBody scopeValid⟩⟩
 
 /-- The resolver answers with the state rewrite exactly when the state holds a record naming a unique
 live body.

@@ -280,6 +280,11 @@ private def lowerNode (source : CheckedProcess) :
             some (lowerTimerStartOperation source id durationLiteral, scopeId)
           else none
       | none => none
+  | .sequentialMultiInstanceSubProcess id childScopeId collectionName itemName bodyInputs condition => do
+      let scopeId ← checkedNodeScopeId? source id
+      pure (.enterSequentialMultiInstanceScope (nodeOperationId id) { elementId := id }
+        (firstPlace (incomingPlaces source id)) (childEntryPlace source childScopeId) childScopeId
+        (firstPlace (outgoingPlaces source id)) collectionName itemName bodyInputs condition, scopeId)
   | .transactionSubProcess id childScopeId _ => do
       let scopeId ← checkedNodeScopeId? source id
       pure (.enterScope (nodeOperationId id) { elementId := id }
@@ -646,7 +651,14 @@ private def lowerScopeCompletion (source : CheckedProcess)
     (scope : DefinitionScope) : Option (SemanticOperation × DefinitionScopeId) :=
   match lowerMessageEventSubProcessCompletion? source scope with
   | some completion => some completion
-  | none => lowerOrdinaryScopeCompletion source scope
+  | none =>
+      match source.nodes.findSome? (fun
+        | .sequentialMultiInstanceSubProcess id childScopeId _ _ _ _ =>
+            if childScopeId == scope.id then some id else none
+        | _ => none) with
+      | some id => some (.completeSequentialMultiInstanceScope
+          ⟨"operation:complete-scope:" ++ scope.id.value⟩ { elementId := id } (nodeOperationId id), scope.id)
+      | none => lowerOrdinaryScopeCompletion source scope
 
 private def insertScopedOperation
     (operation : SemanticOperation × DefinitionScopeId) :

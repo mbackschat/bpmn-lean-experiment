@@ -1,4 +1,6 @@
 import BpmnSemantics.SemanticProcess.BusinessTaskCommandAdmission
+import BpmnSemantics.SemanticProcess.SequentialScopeRuntime
+import BpmnSemantics.SemanticProcess.SequentialScopeDataAdmission
 import BpmnSemantics.SemanticProcess.CallDataCommandAdmission
 import BpmnSemantics.SemanticProcess.CallDataStateValidation
 import BpmnSemantics.SemanticProcess.Incident
@@ -33,6 +35,12 @@ This module owns the complete external stimulus dispatch and the fail-closed run
 namespace BpmnSemantics.SemanticProcess
 
 open BpmnSemantics
+
+/-- SMIS-DATA-01 adds no ingress restriction to another profile. -/
+@[simp] theorem sequentialScopeDataAdmitted_of_other_profile (program : Program) (stimulus : Stimulus)
+    (unselected : program.identity.semanticProfile.value ≠ "cibseven-2.2.0-sequential-multi-instance-subprocess-draft") :
+    SequentialScopeData.stimulusAdmitted program stimulus = true := by
+  simp [SequentialScopeData.stimulusAdmitted, unselected]
 
 structure ExternalAdmission where
   outcome : CommandOutcome
@@ -138,7 +146,9 @@ private def dataInputOutputStartBindingsAdmitted (program : Program)
       match state.control with
       | .notStarted =>
           let bindingsAdmitted :=
-            if program.identity.semanticProfile = mixedTaskControlFlowProfileId || program.identity.semanticProfile = mixedTaskBusinessErrorProfileId then
+            if sequentialScopeProgramSelected program then
+              SequentialScopeData.startAdmitted program initialVariables
+            else if program.identity.semanticProfile = mixedTaskControlFlowProfileId || program.identity.semanticProfile = mixedTaskBusinessErrorProfileId then
               MixedTaskControlFlow.startBindingsAdmitted program initialVariables
             else if program.identity.semanticProfile = serialBusinessTaskProfileId then
               SerialBusinessTask.startBindingsAdmitted program initialVariables
@@ -182,7 +192,14 @@ private def dataInputOutputStartBindingsAdmitted (program : Program)
   | .completeUserTaskInstance _ taskId submittedValues =>
       match state.control with
       | .running instanceId =>
-          if let some operation := parallelMultiInstanceEntryForTask? program
+          if sequentialScopeProgramSelected program &&
+              (sequentialScopeTaskWaits state taskId).any (fun wait => hasSequentialScopeDefinition program wait.owner) then
+            match completeSequentialScopeUserTask? program state taskId submittedValues with
+            | some successor =>
+                if taskId.processInstanceId = instanceId then { outcome := .committed, state := successor }
+                else { outcome := .rejected, state }
+            | none => { outcome := .rejected, state }
+          else if let some operation := parallelMultiInstanceEntryForTask? program
               ({ value := taskId.elementId.value } : TaskDefinitionId) then
             match ParallelMultiInstanceArm.ofOperation? operation with
             | some arm =>
@@ -408,8 +425,10 @@ private def dataInputOutputStartBindingsAdmitted (program : Program)
                   else
                     { outcome := .rejected, state }
               | .refused _ => { outcome := .rejected, state }
-          | [], [_] =>
-              match (if program.identity.semanticProfile == mixedTaskBusinessErrorProfileId then
+          | [], [wait] =>
+              match (if sequentialScopeProgramSelected program && hasSequentialScopeDefinition program wait.owner then
+                completeSequentialScopeEffect? program state effectId result
+                else if program.identity.semanticProfile == mixedTaskBusinessErrorProfileId then
                 completeBusinessEffect? (SerialBusinessTask.programHandlers program) state effectId result
                 else if program.identity.semanticProfile == serialBusinessTaskProfileId || program.identity.semanticProfile == mixedTaskControlFlowProfileId then
                 completeSerialEffect? program state effectId result else completeEffect state effectId result) with
@@ -482,6 +501,7 @@ theorem dispatchStimulus_withSnapshotDeclaration_rejects (program : Program)
   if !serialBusinessCommandAdmitted program state stimulus then { outcome := .rejected, state }
   else if !callDataRuntimeStateValid program state then { outcome := .rejected, state }
   else if !interruptingMessageEventSubProcessStateValid program state then { outcome := .rejected, state }
+  else if !SequentialScopeData.stimulusAdmitted program stimulus then { outcome := .rejected, state }
   else
   match stimulus with
   | .deliverCorrelatedPayloadMessage delivery =>
@@ -694,10 +714,14 @@ private theorem rawCommittedStart_shape (program : Program) (stimulus : Stimulus
     cases checked : interruptingMessageEventSubProcessStateValid program initialState with
     | false => simp [admitStimulusWithoutCompensationSnapshots, serialValid, valid, checked] at committed
     | true => rfl
+  have scopeValid : SequentialScopeData.stimulusAdmitted program stimulus = true := by
+    cases checked : SequentialScopeData.stimulusAdmitted program stimulus with
+    | false => simp [admitStimulusWithoutCompensationSnapshots, serialValid, valid, handlerValid, checked] at committed
+    | true => rfl
   cases stimulus <;> simp only at startKind <;> try contradiction
   all_goals subst instanceId
   all_goals
-    simp only [admitStimulusWithoutCompensationSnapshots, serialValid, valid, handlerValid, Bool.not_true,
+    simp only [admitStimulusWithoutCompensationSnapshots, serialValid, valid, handlerValid, scopeValid, Bool.not_true,
       Bool.false_eq_true, ↓reduceIte] at committed ⊢
     simp only [initialState, dispatchStimulusWithoutCompensationSnapshots] at committed ⊢
   case startProcess commandId processId requested variables =>

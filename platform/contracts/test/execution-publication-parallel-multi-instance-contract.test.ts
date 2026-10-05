@@ -28,6 +28,7 @@ type ParallelController = {
     activation: number;
   };
   mode: string;
+  bodyKind: string;
   plannedInstanceCount: number;
   pendingItemCount: number;
   numberOfInstances: number;
@@ -103,7 +104,7 @@ function parallelMultiInstancePublicationPage(): ParallelPage {
       activityElementId: "UserTask_Review",
       activation: 1,
     },
-    mode: "parallel",
+    mode: "parallel", bodyKind: "userTask",
     plannedInstanceCount: 3,
     pendingItemCount: 0,
     numberOfInstances: 3,

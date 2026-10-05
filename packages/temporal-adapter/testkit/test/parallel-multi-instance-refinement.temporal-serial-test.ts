@@ -1,6 +1,6 @@
 /** Production Workflow-chain refinement for parallel Multi-Instance User Task. */
 import assert from "node:assert/strict";
-import test from "node:test";
+import test, { type TestContext } from "node:test";
 
 import {
   CanonicalObservationKind, CommandOutcome, VariableValueKind, runScenario,
@@ -60,7 +60,7 @@ const interruptedScenarioUrl = new URL("interrupted.scenario.json", scenarioRoot
 const bpmnUrl = new URL("process.bpmn", scenarioRoot);
 const operationDeadlineMs = 20_000;
 
-test("production PMI preserves indexed results and child lifecycles through every schedule", async () => {
+test("production PMI preserves indexed results and child lifecycles through every schedule", async (context) => {
   const [allScenario, firstScenario, interruptedScenario] = await Promise.all([
     loadJson<Scenario>(allScenarioUrl),
     loadJson<Scenario>(firstScenarioUrl),
@@ -91,7 +91,7 @@ test("production PMI preserves indexed results and child lifecycles through ever
     worker.lease = await startBpmnTestWorker(
       environment, bundle, "parallel-multi-instance-refinement-initial",
     );
-    await runNaturalRecovery(environment, bundle, worker, allScenario, program, operation);
+    await runNaturalRecovery(context, environment, bundle, worker, allScenario, program, operation);
     await runZeroItems(environment, bundle, allScenario, program, operation);
     await runOneItemFirst(environment, bundle, firstScenario, program, operation);
     await runTaskFirstInterruption(environment, bundle, interruptedScenario, program, operation);
@@ -105,6 +105,7 @@ test("production PMI preserves indexed results and child lifecycles through ever
 });
 
 async function runNaturalRecovery(
+  context: TestContext,
   environment: TestWorkflowEnvironment, bundle: WorkflowBundleWithSourceMap,
   worker: WorkerSlot, source: Scenario, program: SemanticProcessProgram,
   operation: ParallelOperation,
@@ -153,10 +154,13 @@ async function runNaturalRecovery(
       assert.deepEqual(requireLifetimeTimer(progress), lifetimeTimer);
     }
   }
-  assertHostClockDeadlineMargin({
+  const deadlineMeasurement = {
     label: "parallel Multi-Instance natural path",
     elapsedMs: Date.now() - armedAtMs,
     remainingMs: lifetimeTimer.deadlineMs - armed.logicalTimeMs,
+  };
+  await context.test("performance: natural PMI deadline headroom", () => {
+    assertHostClockDeadlineMargin(deadlineMeasurement);
   });
 
   const terminal = await withDeadline(

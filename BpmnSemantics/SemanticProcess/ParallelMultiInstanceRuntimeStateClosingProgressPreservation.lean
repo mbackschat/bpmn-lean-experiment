@@ -166,7 +166,7 @@ theorem sharedParallelProgress_preserves_runtimeStateWellFormed
     ownerScope account before taskId controller record running selectedController selectedRecord
     regionValid wellFormed
   simp only [runtimeStateWellFormed, Bool.and_eq_true] at wellFormed
-  obtain ⟨existing, ⟨⟨claims, retention⟩, snapshots⟩, execution⟩ := wellFormed
+  obtain ⟨existing, ⟨⟨⟨claims, retention⟩, snapshots⟩, execution⟩, repeated⟩ := wellFormed
   obtain ⟨h17, _lifecycle⟩ := existing
   obtain ⟨h16, _notExhausted⟩ := h17
   obtain ⟨h15, _controllerIds⟩ := h16
@@ -529,6 +529,7 @@ theorem sharedParallelProgress_preserves_runtimeStateWellFormed
     activityIdsAfter⟩, controllersAfter⟩,
     sequentialBindingsAfter⟩, parallelBindingsAfter⟩, controllerIdsAfter⟩,
     notExhaustedAfter⟩, lifecycleAfter⟩,
-    ⟨⟨⟨claimsAfter, retentionAfter⟩, snapshotsAfter⟩, executionAfter⟩⟩
+    ⟨⟨⟨⟨claimsAfter, retentionAfter⟩, snapshotsAfter⟩, executionAfter⟩,
+      account.repeatedScopeStateValid_frame before after rfl repeated⟩⟩
 
 end BpmnSemantics.SemanticProcess

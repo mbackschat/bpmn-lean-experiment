@@ -388,4 +388,65 @@ theorem effect_bpmnError_canonical_patch_wire_admission :
     effectResultAccepted true ["a", "b"] = true := by
   decide +kernel
 
+private def sequentialScopeNodeFields : List (String × Lean.Json) :=
+  [("kind", .str "sequentialMultiInstanceSubProcess"), ("id", .str "mi"),
+   ("childScopeId", .str "body"), ("collectionName", .str "items"),
+   ("itemName", .str "item"), ("bodyInputs", .arr #[]), ("completionBooleanName", .null)]
+
+private def sequentialScopeEntryFields : List (String × Lean.Json) :=
+  [("kind", .str "enterSequentialMultiInstanceScope"), ("id", .str "enter"),
+   ("origin", Lean.Json.mkObj [("kind", .str "bpmnElement"), ("elementId", .str "mi")]),
+   ("input", .str "before"), ("childEntry", .str "first"), ("childScopeId", .str "body"),
+   ("normalOutput", .str "after"), ("collectionName", .str "items"),
+   ("itemName", .str "item"), ("bodyInputs", .arr #[]), ("completionBooleanName", .str "done")]
+
+private def sequentialScopeCompletionFields : List (String × Lean.Json) :=
+  [("kind", .str "completeSequentialMultiInstanceScope"), ("id", .str "complete"),
+   ("origin", Lean.Json.mkObj [("kind", .str "bpmnElement"), ("elementId", .str "mi")]),
+   ("entryOperationId", .str "enter")]
+
+private def sequentialScopeDecodedNodes (fields : List (String × Lean.Json)) :
+    Option (List CheckedNode) :=
+  let identity := Lean.Json.mkObj [("semanticProfile", .str "p"), ("sourceId", .str "s"),
+    ("sourceOverlay", .null), ("sourceSha256", .str "x")]
+  (decodeCheckedProcess (Lean.Json.mkObj [("kind", .str "checkedProcess"), ("identity", identity),
+    ("processId", .str "p"), ("definitionScopes", .arr #[]), ("nodeScopes", .arr #[]),
+    ("sequenceFlowScopes", .arr #[]), ("sequenceFlows", .arr #[]),
+    ("nodes", .arr #[Lean.Json.mkObj fields])])).toOption.map (·.nodes)
+
+private def sequentialScopeDecodedOperations (fields : List (String × Lean.Json)) :
+    Option (List SemanticOperation) :=
+  let identity := Lean.Json.mkObj [("compiler", .str "bpmn-source-semantic-process"),
+    ("semanticProfile", .str "p"), ("sourceId", .str "s"), ("sourceOverlay", .null),
+    ("sourceSha256", .str "x")]
+  (decodeProgram (Lean.Json.mkObj [("kind", .str "semanticProcess"), ("identity", identity),
+    ("internalSchedulingMode", .str "rejectObservableChoice"), ("processId", .str "p"),
+    ("definitionScopes", .arr #[]), ("operationScopes", .arr #[]),
+    ("controlPlaceScopes", .arr #[]), ("controlPlaces", .arr #[]),
+    ("operations", .arr #[Lean.Json.mkObj fields])])).toOption.map (·.operations)
+
+theorem sequential_scope_wire_preserves_entry_policy_and_completion_binding :
+    sequentialScopeDecodedNodes sequentialScopeNodeFields =
+      some [.sequentialMultiInstanceSubProcess ⟨"mi"⟩ ⟨"body"⟩ "items" "item" [] none] ∧
+    sequentialScopeDecodedOperations sequentialScopeEntryFields =
+      some [.enterSequentialMultiInstanceScope ⟨"enter"⟩ { elementId := ⟨"mi"⟩ }
+        ⟨"before"⟩ ⟨"first"⟩ ⟨"body"⟩ ⟨"after"⟩ "items" "item" [] (some "done")] ∧
+    sequentialScopeDecodedOperations sequentialScopeCompletionFields =
+      some [.completeSequentialMultiInstanceScope ⟨"complete"⟩ { elementId := ⟨"mi"⟩ } ⟨"enter"⟩] := by
+  decide +kernel
+
+theorem sequential_scope_wire_rejects_missing_policy_and_empty_binding :
+    sequentialScopeDecodedNodes (sequentialScopeNodeFields.map fun (key, value) =>
+      (key, if key == "completionBooleanName" then .str "" else value)) = none ∧
+    sequentialScopeDecodedOperations
+      (sequentialScopeEntryFields.filter fun field => field.1 != "bodyInputs") = none ∧
+    sequentialScopeDecodedOperations (sequentialScopeCompletionFields.map fun (key, value) =>
+      (key, if key == "entryOperationId" then .str "" else value)) = none := by
+  decide +kernel
+
+theorem sequential_scope_completion_wire_rejects_a_second_continuation_owner :
+    sequentialScopeDecodedOperations
+      (sequentialScopeCompletionFields ++ [("normalOutput", .str "elsewhere")]) = none := by
+  decide +kernel
+
 end BpmnSemantics.SemanticProcessJsonConformance

@@ -117,12 +117,19 @@ theorem prepareInternalArm_timer_task_preserved
       (liftRegionalStateFootprint ordinary.owner
         (PreparedInternalArming.ordinary operation ordinary).stateFootprint) = true) :
     prepareInternalArm? program (applyInternalTimerTaskPatch state timer) operation = some ordinary := by
+  have noPopulation := regional_independent_activity_population_absent
+    (timerTaskStateFootprint timer)
+    (PreparedInternalArming.ordinary operation ordinary).stateFootprint ordinary.owner
+    timer.record independent
+    (by simp [timerTaskStateFootprint, canonicalRegionalStateAtoms_mem])
   obtain ⟨inputs, tasks, timers, anchors⟩ :=
     timerTask_ordinary_independent_separation timer operation ordinary independent
   obtain ⟨_, owner, instanceId, origin, processId, _, _, _, _, _, _, _, _, _, _, _, rfl⟩ :=
     prepareInternalTimerTaskContract_facts program state contract timer timerPrepared
   let timer := makeInternalTimerTaskPatch program state contract owner instanceId processId origin
   let after := applyInternalTimerTaskPatch state timer
+  have scopedFrames := prepared_arm_process_input_frames program state after operation ordinary
+    ordinaryPrepared noPopulation rfl
   have counts : internalActivationCount after ordinary.write.kind ordinary.write.elementId =
       internalActivationCount state ordinary.write.kind ordinary.write.elementId := by
     cases kind : ordinary.write.kind with
@@ -140,6 +147,8 @@ theorem prepareInternalArm_timer_task_preserved
   · intro queried
     rfl
   · rfl
+  · cases operation <;> exact scopedFrames.1
+  · exact scopedFrames.2
   · exact counts
   · exact timerTaskOpenAnchorRead_frame state timer _ rfl ordinary.write.occurrence
       (anchors _ (by simp [timer])).symm (anchors _ (by simp [timer])).symm

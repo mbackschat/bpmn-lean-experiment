@@ -338,6 +338,14 @@ function removeCalledProcessTree(
     activityOccurrences: state.activityOccurrences.filter(
       ({ owner }) => !removedOwner(owner),
     ),
+    ...(state.sequentialScopeControllers === undefined
+      ? {}
+      : {
+        sequentialScopeControllers:
+          state.sequentialScopeControllers.filter(
+            ({ id }) => !removedInstanceIds.has(id.processInstanceId),
+          ),
+      }),
     ...(state.sequentialMultiInstanceControllers === undefined
       ? {}
       : {

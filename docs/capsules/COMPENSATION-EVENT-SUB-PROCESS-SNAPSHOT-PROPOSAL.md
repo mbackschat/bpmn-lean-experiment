@@ -229,56 +229,56 @@ The complete `what-binds` inventory requires [`implementation-status-owner:ENGIN
 
 | Existing owner | Current headroom | Growth condition |
 |---|---:|---|
-| [TS Program](../../packages/semantic-core/src/semantic-process-contract.ts) | 135 | declaration reference only |
-| [TS Program admission](../../packages/semantic-core/src/semantic-process-admission.ts) | 318 | declaration before graph |
-| [TS graph admission](../../packages/semantic-core/src/semantic-process-graph-admission.ts) | 106 | private exact exemption plus later checkpoint-topology delegation |
-| [TS command admission](../../packages/semantic-core/src/semantic-command-admission.ts) | 286 | optional-field normalization |
-| [TS RuntimeState](../../packages/semantic-core/src/semantic-process-state.ts) | 346 | collection reference only |
-| [TS runtime-state defect](../../packages/semantic-core/src/runtime-state-defect.ts) | 753 | preserve the closed malformed-state classification or record a proved no-change mapping |
-| [TS well-formedness](../../packages/semantic-core/src/runtime-state-well-formedness.ts) | 41 | delegate before 800 |
+| [TS Program](../../packages/semantic-core/src/semantic-process-contract.ts) | 116 | declaration reference only |
+| [TS Program admission](../../packages/semantic-core/src/semantic-process-admission.ts) | 312 | declaration before graph |
+| [TS graph admission](../../packages/semantic-core/src/semantic-process-graph-admission.ts) | 63 | private exact exemption plus later checkpoint-topology delegation |
+| [TS command admission](../../packages/semantic-core/src/semantic-command-admission.ts) | 280 | optional-field normalization |
+| [TS RuntimeState](../../packages/semantic-core/src/semantic-process-state.ts) | 344 | collection reference only |
+| [TS runtime-state defect](../../packages/semantic-core/src/runtime-state-defect.ts) | 752 | preserve the closed malformed-state classification or record a proved no-change mapping |
+| [TS well-formedness](../../packages/semantic-core/src/runtime-state-well-formedness.ts) | 28 | delegate before 800 |
 | [TS preservation oracle](../../packages/differential/test/runtime-state-preservation.test.ts) | 658 | exact new-field preservation and malformed-state refusal |
 | [TS root start](../../packages/semantic-core/src/semantic-process-triggered-start.ts) | 579 | pre-mutation reservation |
-| [TS scope runtime](../../packages/semantic-core/src/semantic-process-scope-runtime.ts) | 539 | unbounded entry/promotion |
+| [TS scope runtime](../../packages/semantic-core/src/semantic-process-scope-runtime.ts) | 532 | unbounded entry/promotion |
 | [TS bounded scope](../../packages/semantic-core/src/semantic-process-bounded-scope-runtime.ts) | 429 | bounded entry/promotion |
-| [TS cancellation](../../packages/semantic-core/src/semantic-process-scope-cancellation.ts) | 565 | regional filtering |
-| [TS Call cleanup](../../packages/semantic-core/src/semantic-process-call-runtime.ts) | 371 | structural filtering only |
-| [TS evaluator](../../packages/semantic-core/src/semantic-process-runtime.ts) | 58 | three-arm dispatch only; snapshot and Activity-data staging are extracted |
+| [TS cancellation](../../packages/semantic-core/src/semantic-process-scope-cancellation.ts) | 555 | regional filtering |
+| [TS Call cleanup](../../packages/semantic-core/src/semantic-process-call-runtime.ts) | 363 | structural filtering only |
+| [TS evaluator](../../packages/semantic-core/src/semantic-process-runtime.ts) | 48 | three-arm dispatch only; snapshot and Activity-data staging are extracted |
 | [TS closure](../../packages/semantic-core/src/semantic-process-closure.ts) | 609 | refusal precedence/rollback |
 | [TS snapshot staging](../../packages/semantic-core/src/internal-transition-attempt.ts) | 668 | pre-mutation reservation/promotion selection |
-| [TS census](../../packages/semantic-core/src/internal-commutation-census.ts) | 652 | new state field |
-| [TS footprint vocabulary](../../packages/semantic-core/src/internal-transition-footprint-vocabulary.ts) | 758 | snapshot atoms |
-| [TS footprint union](../../packages/semantic-core/src/internal-transition-footprint.ts) | 86 | retention/capacity/context helpers |
-| [TS footprint order](../../packages/semantic-core/src/internal-transition-footprint-ordering.ts) | 214 | snapshot atom order and region overlap |
+| [TS census](../../packages/semantic-core/src/internal-commutation-census.ts) | 648 | new state field |
+| [TS footprint vocabulary](../../packages/semantic-core/src/internal-transition-footprint-vocabulary.ts) | 755 | snapshot atoms |
+| [TS footprint union](../../packages/semantic-core/src/internal-transition-footprint.ts) | 48 | retention/capacity/context helpers |
+| [TS footprint order](../../packages/semantic-core/src/internal-transition-footprint-ordering.ts) | 200 | snapshot atom order and region overlap |
 | [TS scope-entry preparation](../../packages/semantic-core/src/internal-transition-scope-creation-preparation.ts) | 483 | retention read/write |
 | [TS bounded-entry preparation](../../packages/semantic-core/src/internal-transition-bounded-scope-preparation.ts) | 557 | retention read/write |
 | [TS completion preparation](../../packages/semantic-core/src/internal-transition-scope-completion-preparation.ts) | 656 | context/retention footprint |
 | [TS Error preparation](../../packages/semantic-core/src/internal-transition-error-preparation.ts) | 706 | purge footprint |
 | [TS termination preparation](../../packages/semantic-core/src/internal-transition-termination-preparation.ts) | 714 | purge footprint |
-| [Lean Program](../../BpmnSemantics/SemanticProcessContract.lean) | 282 | direct Activity-data carriers extracted into a bounded owner |
-| [Lean structural admission](../../BpmnSemantics/SemanticProcess/ProgramStructuralValidation.lean) | 12 | declaration hook |
-| [Lean graph admission](../../BpmnSemantics/SemanticProcess/GraphValidation.lean) | 48 | lifecycle helper extracted; preserve the recovered headroom |
-| [Lean RuntimeState](../../BpmnSemantics/SemanticProcess/RuntimeState.lean) | 37 | collection reference only |
-| [Lean well-formedness](../../BpmnSemantics/SemanticProcess/RuntimeStateWellFormed.lean) | 50 | delegated predicate |
+| [Lean Program](../../BpmnSemantics/SemanticProcessContract.lean) | 232 | direct Activity-data carriers extracted into a bounded owner |
+| [Lean structural admission](../../BpmnSemantics/SemanticProcess/ProgramStructuralValidation.lean) | 7 | declaration hook |
+| [Lean graph admission](../../BpmnSemantics/SemanticProcess/GraphValidation.lean) | 26 | lifecycle helper extracted; preserve the recovered headroom |
+| [Lean RuntimeState](../../BpmnSemantics/SemanticProcess/RuntimeState.lean) | 27 | collection reference only |
+| [Lean well-formedness](../../BpmnSemantics/SemanticProcess/RuntimeStateWellFormed.lean) | 40 | delegated predicate |
 | [Lean initialization preservation](../../BpmnSemantics/SemanticProcess/RuntimeStateWellFormedInitialization.lean) | 376 | preserve the new invariant from the exact initialized state |
-| [Lean completion](../../BpmnSemantics/SemanticProcess/ScopeCompletion.lean) | 588 | promotion/frame |
-| [Lean cancellation](../../BpmnSemantics/SemanticProcess/ScopeCancellation.lean) | 549 | regional filtering |
-| [Lean transition](../../BpmnSemantics/SemanticProcess/Transition.lean) | 46 | dispatch only; the applied-result contract is extracted |
+| [Lean completion](../../BpmnSemantics/SemanticProcess/ScopeCompletion.lean) | 587 | promotion/frame |
+| [Lean cancellation](../../BpmnSemantics/SemanticProcess/ScopeCancellation.lean) | 543 | regional filtering |
+| [Lean transition](../../BpmnSemantics/SemanticProcess/Transition.lean) | 29 | dispatch only; the applied-result contract is extracted |
 | [Lean internal-operation attempt](../../BpmnSemantics/SemanticProcess/InternalOperationAttempt.lean) | 752 | validate every applied snapshot-aware successor before exposure |
 | [Lean trace closure](../../BpmnSemantics/SemanticProcess/TransitionTrace.lean) | 340 | refusal rollback/no trace |
-| [Lean command admission](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean) | 26 | map root-capacity refusal to `Rejected`, never `semanticFailure`, and reject an invalid committed post-state |
-| [Lean census](../../BpmnSemantics/SemanticProcess/InternalCommutationCensus.lean) | 645 | new state field |
-| [Lean footprint core](../../BpmnSemantics/SemanticProcess/InternalCommutationCore.lean) | 280 | snapshot atom/footprint |
-| [Lean Program decoder](../../BpmnSemantics/SemanticProcessJson/Program.lean) | 50 | focused decoder |
-| [Lean commutation preservation](../../BpmnSemantics/SemanticProcess/InternalCommutationRuntimePreservation.lean) | 41 | extract the snapshot frame before further growth |
-| [Lean correlation preservation](../../BpmnSemantics/SemanticProcess/MessageKeyCorrelationPreservation.lean) | 388 | frame new invariant |
-| [Lean payload preservation](../../BpmnSemantics/SemanticProcess/MessagePayloadPreservation.lean) | 491 | frame new invariant |
-| [Lean turnover preservation](../../BpmnSemantics/SemanticProcess/ActivityBodyTurnoverPreservation.lean) | 531 | frame new invariant |
+| [Lean command admission](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean) | 3 | map root-capacity refusal to `Rejected`, never `semanticFailure`, and reject an invalid committed post-state |
+| [Lean census](../../BpmnSemantics/SemanticProcess/InternalCommutationCensus.lean) | 640 | new state field |
+| [Lean footprint core](../../BpmnSemantics/SemanticProcess/InternalCommutationCore.lean) | 247 | snapshot atom/footprint |
+| [Lean Program decoder](../../BpmnSemantics/SemanticProcessJson/Program.lean) | 31 | focused decoder |
+| [Lean commutation preservation](../../BpmnSemantics/SemanticProcess/InternalCommutationRuntimePreservation.lean) | 38 | extract the snapshot frame before further growth |
+| [Lean correlation preservation](../../BpmnSemantics/SemanticProcess/MessageKeyCorrelationPreservation.lean) | 381 | frame new invariant |
+| [Lean payload preservation](../../BpmnSemantics/SemanticProcess/MessagePayloadPreservation.lean) | 484 | frame new invariant |
+| [Lean turnover preservation](../../BpmnSemantics/SemanticProcess/ActivityBodyTurnoverPreservation.lean) | 445 | frame new invariant |
 | [Lean issuing conformance](../../BpmnSemantics/ActivityIssuingDisciplineConformance.lean) | 605 | synchronize close witness |
-| [Lean MI entry preservation](../../BpmnSemantics/SemanticProcess/ParallelMultiInstanceRuntimeStateEntryPreservation.lean) | 1 | order fact extracted; frame new invariant |
+| [Lean MI entry preservation](../../BpmnSemantics/SemanticProcess/ParallelMultiInstanceRuntimeStateEntryPreservation.lean) | 0 | order fact extracted; frame new invariant |
 | [Lean MI closing selection](../../BpmnSemantics/SemanticProcess/ParallelMultiInstanceRuntimeStateClosingSelection.lean) | 204 | frame new invariant |
 | [Lean commutation publication](../../BpmnSemantics/SemanticProcess/InternalCommutationPublication.lean) | 297 | carry aggregate fact |
-| [Lean MI empty preservation](../../BpmnSemantics/SemanticProcess/ParallelMultiInstanceRuntimeStateEmptyPreservation.lean) | 699 | carry aggregate fact |
-| [Lean MI progress preservation](../../BpmnSemantics/SemanticProcess/ParallelMultiInstanceRuntimeStateClosingProgressPreservation.lean) | 282 | frame new invariant |
+| [Lean MI empty preservation](../../BpmnSemantics/SemanticProcess/ParallelMultiInstanceRuntimeStateEmptyPreservation.lean) | 698 | carry aggregate fact |
+| [Lean MI progress preservation](../../BpmnSemantics/SemanticProcess/ParallelMultiInstanceRuntimeStateClosingProgressPreservation.lean) | 281 | frame new invariant |
 | [Lean MI terminal preservation](../../BpmnSemantics/SemanticProcess/ParallelMultiInstanceRuntimeStateClosingTerminalPreservation.lean) | 33 | extract the frame proof before further growth |
 
 Every headroom figure is the measured number of nonblank lines remaining below the 800-line review target. An owner must extract before this checkpoint's planned growth consumes that figure; a row with insufficient headroom may not grow first. No size exception is requested. Planned bounded owners are `packages/semantic-core/src/compensation-event-sub-process-snapshot-contract.ts`, `packages/semantic-core/src/compensation-event-sub-process-snapshot.ts`, `packages/semantic-core/src/compensation-event-sub-process-snapshot-state-validation.ts`, `packages/semantic-core/test/compensation-event-sub-process-snapshot.test.ts`, `packages/semantic-core/test/compensation-event-sub-process-snapshot-integration.test.ts`, [Lean snapshot runtime](../../BpmnSemantics/SemanticProcess/CompensationEventSubProcessSnapshot.lean) with 99 lines of headroom, [Lean lifecycle laws](../../BpmnSemantics/SemanticProcess/CompensationEventSubProcessSnapshotLifecycleLaws.lean) with 446 lines, [Lean lifecycle integration](../../BpmnSemantics/CompensationEventSubProcessSnapshotLifecycleIntegrationConformance.lean) with 674 lines, `BpmnSemantics/SemanticProcess/CompensationEventSubProcessSnapshotDeclaration.lean`, its JSON decoder, and its remaining conformance targets. Root integration owns shared contracts, closure, schema, registries, status, and receipts.

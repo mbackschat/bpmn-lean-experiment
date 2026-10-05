@@ -1,13 +1,15 @@
+import BpmnSemantics.SemanticProcess.ScenarioAdmission
 import BpmnSemantics.SemanticProcess.Execution
 import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotTransitionTrace
 import BpmnSemantics.SemanticProcess.Lowering
 import BpmnSemantics.SemanticProcess.MessageKeyCorrelation
 import BpmnSemantics.SemanticProcess.ProfileAdmission
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import BpmnSemantics.SemanticProcess.SequentialScopeObservation
 
 /-! # Semantic Process scenario projection
 
-This module owns stable-state projection, scenario admission, and answer-free scenario execution over the pure stimulus boundary. It does not define lowering, transition meaning, or capsule fixtures.
+This module owns stable-state projection and answer-free scenario execution over the pure stimulus boundary. Pure admission is owned by [ScenarioAdmission](ScenarioAdmission.lean); lowering, transition meaning and capsule fixtures remain separate.
 -/
 
 namespace BpmnSemantics.SemanticProcess
@@ -83,6 +85,8 @@ private def ownedWaitDefinitions : SemanticOperation → OwnedWaitDefinitions
           [{ elementId := boundaryTimer.elementId
              durationMs := boundaryTimer.durationMs }] }
   | .completeParallelMultiInstanceUserTask .. => {}
+  | .enterSequentialMultiInstanceScope .. => {}
+  | .completeSequentialMultiInstanceScope .. => {}
   -- The deadline only. The bounded child's own task wait belongs to the child scope's `awaitUserTask`,
   -- so publishing it here would expose one task occurrence twice.
   | .enterBoundedScope _ _ _ _ _ boundaryTimer
@@ -395,14 +399,13 @@ private def openParallelMultiInstances (program : Program) (state : RuntimeState
            numberOfTerminatedInstances := 0
            activeIterations }]
 
-private def openMultiInstances (program : Program) (state : RuntimeState) :
+private def openMultiInstances (program : Program) (state : RuntimeState)
+    (scopes : List OpenSequentialSubProcessMultiInstance) :
     Option (List OpenMultiInstance) :=
-  let sequentialDefinitions := sequentialMultiInstanceObservationDefinitions program
-  let parallelDefinitions := parallelMultiInstanceObservationDefinitions program
-  if sequentialDefinitions.isEmpty && parallelDefinitions.isEmpty then none
+  if !hasMultiInstanceDefinitions program then none
   else some
     ((openSequentialMultiInstances program state).map .sequential ++
-      (openParallelMultiInstances program state).map .parallel)
+      (openParallelMultiInstances program state).map .parallel ++ scopes.map .sequentialSubProcess)
 
 private def openIncidents (program : Program) (state : RuntimeState) :
     List OpenEffectIncident :=
@@ -435,7 +438,8 @@ private def messageEnabledInteraction? (program : Program) (state : RuntimeState
   | _ => none
 
 def observeStableState (program : Program) (state : RuntimeState) :
-    Option StateObservation :=
+    Option StateObservation := do
+  let scopes ← sequentialScopeProgress? program state
   match state.control with
   | .notStarted => none
   | .running instanceId =>
@@ -463,7 +467,7 @@ def observeStableState (program : Program) (state : RuntimeState) :
             openTimers := openTimers program state
             openEffects := openEffects program state
             openIncidents := incidents
-            openMultiInstances := openMultiInstances program state
+            openMultiInstances := openMultiInstances program state scopes
             variables := state.variables.process.bindings
             enabledInteractions :=
               tasks.map (fun task => .completeUserTaskInstance task.id) ++
@@ -480,7 +484,7 @@ def observeStableState (program : Program) (state : RuntimeState) :
           openTimers := []
           openEffects := []
           openIncidents := []
-          openMultiInstances := openMultiInstances program state
+          openMultiInstances := openMultiInstances program state scopes
           variables := state.variables.process.bindings
           enabledInteractions := []
           logicalTimeMs := state.logicalTimeMs }
@@ -494,7 +498,7 @@ def observeStableState (program : Program) (state : RuntimeState) :
           openTimers := []
           openEffects := []
           openIncidents := []
-          openMultiInstances := openMultiInstances program state
+          openMultiInstances := openMultiInstances program state scopes
           variables := state.variables.process.bindings
           enabledInteractions := []
           logicalTimeMs := state.logicalTimeMs }
@@ -511,7 +515,7 @@ def observeStableState (program : Program) (state : RuntimeState) :
             openTimers := []
             openEffects := []
             openIncidents := []
-            openMultiInstances := openMultiInstances program state
+            openMultiInstances := openMultiInstances program state scopes
             variables := state.variables.process.bindings
             enabledInteractions := []
             logicalTimeMs := state.logicalTimeMs }
@@ -583,74 +587,6 @@ private def executeStimuli (closureLimit : Nat) (program : Program) :
             terminalExecution program .semanticFailure result.state observation
         | .unsupported =>
             terminalExecution program .unsupported result.state observation
-
-private def requiredObservations (program : Program) : List ObservationKind :=
-  let baseline :=
-    [ .deployment
-  , .commandResults
-  , .processStatus
-  , .activeWaits
-  , .openUserTasks
-  , .openTimers
-  , .openEffects ]
-  let multiInstance :=
-    if (sequentialMultiInstanceObservationDefinitions program).isEmpty &&
-        (parallelMultiInstanceObservationDefinitions program).isEmpty then []
-    else [.openMultiInstances]
-  baseline ++ multiInstance ++
-  [ .variables
-  , .enabledInteractions
-  , .logicalTime ]
-
-private def isProcessStartStimulus : Stimulus → Bool
-  | .startProcess .. | .triggerMessageStart .. | .triggerTimerStart .. => true
-  | .completeUserTaskInstance .. | .deliverMessage .. | .deliverPayloadMessage ..
-  | .deliverCorrelatedPayloadMessage ..
-  | .fireTimer ..
-  | .completeEffect .. | .reportEffectFailure .. | .retryIncident ..
-  | .cancelIncidentProcess .. => false
-
-/-- A scenario starts exactly once, in its first position, through one member of the closed start family. -/
-def stimulusSequenceSupported : List Stimulus → Bool
-  | .startProcess .. :: remaining
-  | .triggerMessageStart .. :: remaining
-  | .triggerTimerStart .. :: remaining =>
-      remaining.all fun stimulus => !isProcessStartStimulus stimulus
-  | _ => false
-
-private def firstStimulusMatchesProgram (program : Program) :
-    List Stimulus → Bool
-  | stimulus :: _ => startStimulusMatchesProgram program stimulus
-  | [] => false
-
-/-- Business-task scenario support requires the same initial data as TypeScript support admission; command refusal remains a separate outcome. -/
-private def businessTaskScenarioStartAdmitted (program : Program) (stimuli : List Stimulus) : Bool :=
-  if program.identity.semanticProfile != serialBusinessTaskProfileId &&
-      program.identity.semanticProfile != mixedTaskControlFlowProfileId &&
-      program.identity.semanticProfile != mixedTaskBusinessErrorProfileId then true
-  else match stimuli with
-    | .startProcess _ _ instanceId bindings :: _ =>
-        !instanceId.value.isEmpty &&
-          if program.identity.semanticProfile == mixedTaskControlFlowProfileId || program.identity.semanticProfile == mixedTaskBusinessErrorProfileId then
-            MixedTaskControlFlow.startBindingsAdmitted program bindings
-          else SerialBusinessTask.startBindingsAdmitted program bindings
-    | _ => false
-
-/-- Admit only the `scenario` document kind for a structurally well-formed, profile-capability-valid program whose profile and source identity match the scenario and whose requested observations are exactly the required observation list. -/
-def supportsScenario (program : Program) (scenario : Scenario) : Bool :=
-  programWellFormed program &&
-    programProfileCapabilitiesValid program &&
-    structuredCompositionScenarioStartAdmitted program scenario.stimuli &&
-    businessTaskScenarioStartAdmitted program scenario.stimuli &&
-    stimulusSequenceSupported scenario.stimuli &&
-    firstStimulusMatchesProgram program scenario.stimuli &&
-    decide (
-      scenario.kind = .scenario &&
-        scenario.profile = program.identity.semanticProfile &&
-        scenario.bpmn.id = program.identity.sourceId &&
-        scenario.bpmn.sha256 = program.identity.sourceSha256 &&
-        scenario.bpmn.sourceOverlay = program.identity.sourceOverlay &&
-        scenario.observations = requiredObservations program)
 
 /-- Run an admitted scenario with a caller-supplied bounded-closure harness limit. Failed support admission returns the unsupported deployment result without executing a stimulus. -/
 def runScenarioWithClosureLimit (closureLimit : Nat) (program : Program)

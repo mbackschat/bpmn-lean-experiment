@@ -73,7 +73,7 @@ export function deriveInternalOrdinaryArmingPreparation(
   }
   const footprint = deriveInternalTransitionFootprint(program, state, candidate);
   const processId = candidateProcessId(program, state, owner);
-  const patch = deriveInternalOrdinaryArmingPatch(operation, state, owner);
+  const patch = deriveInternalOrdinaryArmingPatch(program, operation, state, owner);
   if (footprint === null || processId === null || patch === null) {
     return null;
   }

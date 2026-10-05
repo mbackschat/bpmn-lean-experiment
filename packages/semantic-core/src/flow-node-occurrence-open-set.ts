@@ -295,6 +295,7 @@ function projectEmbeddedScopes(
     ));
     const operation = only(program.operations.filter((candidate) =>
       (candidate.kind === SemanticOperationKind.EnterScope ||
+        candidate.kind === SemanticOperationKind.EnterSequentialMultiInstanceScope ||
         candidate.kind === SemanticOperationKind.EnterBoundedScope ||
         candidate.kind === SemanticOperationKind.EnterMonitoredScope) &&
       candidate.childScopeId === occurrence.id.definitionScopeId &&
@@ -427,6 +428,8 @@ function waitMatchesUserTask(
       case SemanticOperationKind.Initiate:
       case SemanticOperationKind.InitiateMessage:
       case SemanticOperationKind.InitiateTimer:
+      case SemanticOperationKind.EnterSequentialMultiInstanceScope:
+      case SemanticOperationKind.CompleteSequentialMultiInstanceScope:
       case SemanticOperationKind.EnterScope:
       case SemanticOperationKind.EnterMonitoredScope:
       case SemanticOperationKind.EnterBoundedScope:

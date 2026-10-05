@@ -10,6 +10,8 @@ import BpmnSemantics.SemanticProcess.CompensationSourceProfileAdmission
 import BpmnSemantics.SemanticProcess.RepeatableSubscriptionAdmission
 import BpmnSemantics.SemanticProcess.CallDataAdmission
 import BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessProgramAdmission
+import BpmnSemantics.SemanticProcess.SequentialScopeProgramAdmission
+import BpmnSemantics.SemanticProcess.SequentialScopeCheckedAdmission
 
 /-! # Semantic profile shape catalog
 
@@ -520,6 +522,7 @@ def profileGraphPolicy? (profile : String) : Option ProfileGraphPolicy :=
   else if profile = transactionCancellationCheckpointProfileId.value ||
       profile = structuredCompositionCheckpointProfileId.value ||
       profile = serialBusinessTaskProfileId.value ||
+      profile = "cibseven-2.2.0-sequential-multi-instance-subprocess-draft" ||
       profile = callDataCheckpointProfileId.value ||
       profile = interruptingMessageEventSubProcessProfileId.value ||
       profile = repeatableSubscriptionCheckpointProfileId.value ||
@@ -549,7 +552,9 @@ private def operationPropertyEndpoints : SemanticOperation → Bool
 
 /-- Exact checked node and definition-scope cardinalities selected by the profile. -/
 def checkedProfileCapabilitiesValid (source : CheckedProcess) : Bool :=
-  if source.identity.semanticProfile == interruptingMessageEventSubProcessProfileId then
+  if source.identity.semanticProfile.value == "cibseven-2.2.0-sequential-multi-instance-subprocess-draft" then
+    (SequentialScopeChecked.analyze source).isSome
+  else if source.identity.semanticProfile == interruptingMessageEventSubProcessProfileId then
     interruptingMessageEventSubProcessCheckedGraph source
   else source.interruptingMessageEventSubProcesses.isEmpty &&
   if source.identity.semanticProfile == callDataCheckpointProfileId then
@@ -644,7 +649,9 @@ private def operationPayloadCapabilitiesValid (profile : String)
 
 /-- Exact operation and definition-scope cardinalities selected by the profile. -/
 def programProfileCapabilitiesValid (program : Program) : Bool :=
-  if program.identity.semanticProfile == interruptingMessageEventSubProcessProfileId then
+  if program.identity.semanticProfile.value == "cibseven-2.2.0-sequential-multi-instance-subprocess-draft" then
+    SequentialScopeProgram.admitted program
+  else if program.identity.semanticProfile == interruptingMessageEventSubProcessProfileId then
     interruptingMessageEventSubProcessProgramGraph program
   else program.interruptingMessageEventSubProcesses.isEmpty &&
   if program.identity.semanticProfile == callDataCheckpointProfileId then

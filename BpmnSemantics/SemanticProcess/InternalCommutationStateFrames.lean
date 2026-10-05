@@ -31,7 +31,7 @@ theorem awaitMessageState_eq (state : RuntimeState) (input output : ControlPlace
 
 theorem awaitTimerState_eq (state : RuntimeState) (input output : ControlPlaceId) (timer : TimerDefinition) : awaitTimerState? state input output timer = (do let owner ← onlyTokenOwner? state input; let _ ← runningStateInstance? state; pure (activateTimer state owner.processInstanceId owner input output timer)) := rfl
 
-theorem awaitEffectState_eq (state : RuntimeState) (input output : ControlPlaceId) (effect : EffectDefinition) (route : Option BpmnErrorRoute) : awaitEffectState? state input output effect route = (do let owner ← onlyTokenOwner? state input; let _ ← runningStateInstance? state; let _ ← evaluateEnclosingInputMappings state.variables.process.bindings effect.inputMappings; if state.variables.activities.any (activityScopeMatches ⟨owner.processInstanceId, ⟨effect.elementId.value⟩, effectActivationCount state effect.elementId + 1⟩) then none else pure (activateEffect state owner.processInstanceId owner input output effect route)) := rfl
+theorem awaitEffectState_eq (program : Program) (state : RuntimeState) (input output : ControlPlaceId) (effect : EffectDefinition) (route : Option BpmnErrorRoute) : awaitEffectState? program state input output effect route = (do let owner ← onlyTokenOwner? state input; let _ ← runningStateInstance? state; let arguments ← evaluateEffectInputs? program state owner effect.inputMappings; if state.variables.activities.any (activityScopeMatches ⟨owner.processInstanceId, ⟨effect.elementId.value⟩, effectActivationCount state effect.elementId + 1⟩) then none else pure (activateEffect state owner.processInstanceId owner input output effect route arguments)) := rfl
 
 private theorem correlated_prepared_state_frame_facts (program : Program)
     (state : RuntimeState) (id : OperationId) (origin : BpmnElementOrigin)
@@ -120,7 +120,7 @@ theorem prepareInternalArm_applies (program : Program) (state : RuntimeState)
         first
         | rfl
         | rename_i id origin input output effect route instanceId selection nonempty guards
-          cases evaluated : evaluateEnclosingInputMappings state.variables.process.bindings effect.inputMappings <;>
+          cases evaluated : evaluateEffectInputs? program state owner effect.inputMappings <;>
             simp_all [InternalArmingWrite.available, effectWaitOccurrence]
 
 theorem prepared_operation_eq (program : Program) (state : RuntimeState)
@@ -199,7 +199,7 @@ theorem applyInternalArmingPatch_preserves_runtimePosition (program : Program)
     runtimePositionValid program expectedInstanceId (applyInternalArmingPatch state patch) = true := by
   apply runtimePositionValid_removeToken_frame program expectedInstanceId state _ patch.input patch.owner
     position selected
-  all_goals cases patch with | mk _ _ _ _ _ _ _ _ _ write => cases write <;> rfl
+  all_goals cases patch with | mk _ _ _ _ _ _ _ _ _ write _ => cases write <;> rfl
 
 theorem occurrence_fields_differ (left right : OccurrenceId) (different : left ≠ right) :
     (left.processInstanceId ≠ right.processInstanceId ∨
@@ -317,7 +317,7 @@ theorem armingPatch_key_fresh_of_anchor_absent (state : RuntimeState) (patch : I
         timerWaitKeyMatches inserted old = false ∧ timerWaitKeyMatches old inserted = false
     | .effect inserted _ => ∀ old ∈ state.effectWaits,
         effectWaitKeyMatches inserted old = false ∧ effectWaitKeyMatches old inserted = false := by
-  cases patch with | mk _ _ _ _ _ _ _ _ _ write =>
+  cases patch with | mk _ _ _ _ _ _ _ _ _ write _ =>
     cases write <;> exact armingWrite_key_fresh_of_anchor_absent state _ absent
 
 theorem prepared_arm_key_fresh (program : Program) (state : RuntimeState)
@@ -420,7 +420,7 @@ theorem applyInternalArmingPatch_preserves_order (state : RuntimeState)
   have tokenOrder := orderedBy_removeToken state.tokens patch.input patch.owner
     (canonicalCollectionOrder_tokens state canonical)
   simp only [canonicalCollectionOrder, Bool.and_eq_true] at canonical ⊢
-  cases patch with | mk _ _ _ _ _ _ _ _ _ write =>
+  cases patch with | mk _ _ _ _ _ _ _ _ _ write _ =>
     cases write with
     | userTask wait =>
         have activationOrder := orderedBy_replaceStringKey
@@ -526,7 +526,7 @@ theorem prepared_arm_declared (program : Program) (state : RuntimeState)
     | .effect wait _ => declaredByExactlyOneOwnedOperation program
         (effectWaitDeclarers program wait.elementId) wait.owner = true := by
   have facts := prepared_arm_selection_unique program state operation patch prepared
-  cases patch with | mk patchOperation _ _ _ _ _ _ _ patchOwner write =>
+  cases patch with | mk patchOperation _ _ _ _ _ _ _ patchOwner write _ =>
     cases write <;>
       simp_all [uniqueFamilyDeclarer?, InternalArmingWrite.kind,
         InternalArmingWrite.elementId, InternalArmingWrite.owner]
@@ -544,7 +544,7 @@ theorem applyInternalArmingPatch_preserves_identityBound (state : RuntimeState)
     runtimeStateIdentityBound (applyInternalArmingPatch state patch) = true := by
   simp only [runtimeStateIdentityBound, Bool.and_eq_true] at holds ⊢
   obtain ⟨⟨tasks, timers⟩, activities⟩ := holds
-  cases patch with | mk _ _ _ _ _ _ _ _ _ write =>
+  cases patch with | mk _ _ _ _ _ _ _ _ _ write _ =>
     cases write with
     | userTask wait =>
         refine ⟨⟨?_, ?_⟩, ?_⟩

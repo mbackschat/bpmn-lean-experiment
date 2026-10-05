@@ -154,6 +154,7 @@ private def openSequentialMultiInstanceJson
   Json.mkObj
     [ ("id", activityOccurrenceIdJson multiInstance.id)
     , ("mode", toJson "sequential")
+    , ("bodyKind", toJson "userTask")
     , ("plannedInstanceCount", toJson multiInstance.plannedInstanceCount)
     , ("pendingItemCount", toJson multiInstance.pendingItemCount)
     , ("numberOfInstances", toJson multiInstance.numberOfInstances)
@@ -177,6 +178,7 @@ private def openParallelMultiInstanceJson
   Json.mkObj
     [ ("id", activityOccurrenceIdJson multiInstance.id)
     , ("mode", toJson "parallel")
+    , ("bodyKind", toJson "userTask")
     , ("plannedInstanceCount", toJson multiInstance.plannedInstanceCount)
     , ("pendingItemCount", toJson multiInstance.pendingItemCount)
     , ("numberOfInstances", toJson multiInstance.numberOfInstances)
@@ -187,7 +189,34 @@ private def openParallelMultiInstanceJson
         jsonArray
           (multiInstance.activeIterations.map openParallelMultiInstanceIterationJson)) ]
 
+private def subProcessIterationJson (iteration : OpenSubProcessIteration) : Json :=
+  Json.mkObj
+    [ ("loopCounter", toJson iteration.loopCounter)
+    , ("body", Json.mkObj
+        [ ("processInstanceId", toJson iteration.body.processInstanceId.value)
+        , ("definitionScopeId", toJson iteration.body.definitionScopeId.value)
+        , ("activation", toJson iteration.body.activation) ])
+    , ("item", variableBindingJson iteration.item)
+    , ("bindings", jsonArray (iteration.bindings.map variableBindingJson))
+    , ("userTaskIds", jsonArray (iteration.userTaskIds.map occurrenceIdJson))
+    , ("effectIds", jsonArray (iteration.effectIds.map occurrenceIdJson)) ]
+
+private def sequentialSubProcessMultiInstanceJson
+    (value : OpenSequentialSubProcessMultiInstance) : Json :=
+  Json.mkObj
+    [ ("id", activityOccurrenceIdJson value.id)
+    , ("mode", toJson "sequential")
+    , ("bodyKind", toJson "subProcess")
+    , ("plannedInstanceCount", toJson value.plannedInstanceCount)
+    , ("pendingItemCount", toJson value.pendingItemCount)
+    , ("numberOfInstances", toJson value.numberOfInstances)
+    , ("numberOfActiveInstances", toJson value.numberOfActiveInstances)
+    , ("numberOfCompletedInstances", toJson value.numberOfCompletedInstances)
+    , ("numberOfTerminatedInstances", toJson value.numberOfTerminatedInstances)
+    , ("activeIterations", jsonArray (value.activeIterations.map subProcessIterationJson)) ]
+
 private def openMultiInstanceJson : OpenMultiInstance → Json
+  | .sequentialSubProcess value => sequentialSubProcessMultiInstanceJson value
   | .sequential value => openSequentialMultiInstanceJson value
   | .parallel value => openParallelMultiInstanceJson value
 

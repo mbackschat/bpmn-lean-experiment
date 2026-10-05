@@ -151,6 +151,13 @@ inductive SemanticOperation where
       (origin : BpmnElementOrigin)
       (durationMs : Nat)
       (outputs : List ControlPlaceId)
+  | enterSequentialMultiInstanceScope
+      (id : OperationId) (origin : BpmnElementOrigin)
+      (input childEntry : ControlPlaceId) (childScopeId : DefinitionScopeId)
+      (normalOutput : ControlPlaceId) (collectionName itemName : String)
+      (bodyInputs : List VariableMapping) (completionBooleanName : Option String)
+  | completeSequentialMultiInstanceScope
+      (id : OperationId) (origin : BpmnElementOrigin) (entryOperationId : OperationId)
   | enterScope
       (id : OperationId)
       (origin : BpmnElementOrigin)
@@ -393,6 +400,8 @@ def SemanticOperation.id : SemanticOperation → OperationId
   | .initiate id _ _
   | .initiateMessage id _ _ _
   | .initiateTimer id _ _ _
+  | .enterSequentialMultiInstanceScope id _ _ _ _ _ _ _ _ _
+  | .completeSequentialMultiInstanceScope id _ _
   | .enterScope id _ _ _ _
   | .enterBoundedScope id _ _ _ _ _
   | .enterMonitoredScope id _ _ _ _ _
@@ -428,6 +437,48 @@ def SemanticOperation.id : SemanticOperation → OperationId
   | .completeEventSubProcess id _ _
   | .triggerCompensation id _ _ _ _
   | .cancelTransaction id _ _ _ _ _ => id
+
+def SemanticOperation.origin : SemanticOperation → BpmnElementOrigin
+  | .initiate _ origin _
+  | .initiateMessage _ origin _ _
+  | .initiateTimer _ origin _ _
+  | .enterSequentialMultiInstanceScope _ origin _ _ _ _ _ _ _ _
+  | .completeSequentialMultiInstanceScope _ origin _
+  | .enterScope _ origin _ _ _
+  | .enterBoundedScope _ origin _ _ _ _
+  | .enterMonitoredScope _ origin _ _ _ _
+  | .invokeProcess _ origin _ _ _ _ _ _
+  | .returnProcess _ origin _ _ _ _
+  | .awaitUserTask _ origin _ _ _
+  | .awaitDataInputUserTask _ origin _ _ _ _ _
+  | .awaitDataInputOutputUserTask _ origin _ _ _ _ _ _
+  | .awaitDataOutputUserTask _ origin _ _ _ _ _
+  | .awaitSequentialMultiInstanceUserTask _ origin _ _ _ _ _ _
+  | .awaitParallelMultiInstanceUserTask _ origin _ _ _ _ _ _ _ _
+  | .completeParallelMultiInstanceUserTask _ origin _ _ _
+  | .awaitTimer _ origin _ _ _
+  | .awaitMessage _ origin _ _ _
+  | .awaitPayloadMessage _ origin _ _ _ _
+  | .awaitCorrelatedPayloadMessage _ origin _ _ _ _ _ _ _
+  | .awaitEventRace _ origin _ _ _
+  | .awaitBoundedUserTask _ origin _ _ _
+  | .awaitMessageBoundedUserTask _ origin _ _ _
+  | .awaitMessageMonitoredUserTask _ origin _ _ _
+  | .awaitMonitoredUserTask _ origin _ _ _
+  | .awaitEffect _ origin _ _ _ _
+  | .duplicate _ origin _ _
+  | .synchronize _ origin _ _
+  | .mergeExclusive _ origin _ _
+  | .choose _ origin _ _ _ _
+  | .selectMany _ origin _ _ _ _
+  | .synchronizeSelected _ origin _ _ _
+  | .throwError _ origin _ _ _
+  | .reachNoneEnd _ origin _
+  | .terminateScope _ origin _ _
+  | .completeScope _ origin _ _
+  | .completeEventSubProcess _ origin _
+  | .triggerCompensation _ origin _ _ _
+  | .cancelTransaction _ origin _ _ _ _ => origin
 
 structure OperationScopeOwnership where
   operationId : OperationId

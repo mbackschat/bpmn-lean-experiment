@@ -1,3 +1,4 @@
+import BpmnSemantics.SemanticProcess.SequentialScopeRuntimeLaws
 import BpmnSemantics.SemanticProcess.Execution
 import BpmnSemantics.SemanticProcess.EffectCompletion
 import BpmnSemantics.SemanticProcess.WaitActivation
@@ -16,14 +17,14 @@ theorem enclosing_lookup_unique (context : List VariableBinding) (name : String)
   cases value : binding.value <;> simp_all [SerialBusinessTask.scalar]
 
 /-- Each input consults the original context even when an earlier target shadows its source. -/
-theorem enclosing_input_cons (context : List VariableBinding) (target name : String)
+theorem ordered_enclosing_input_cons (context : List VariableBinding) (target name : String)
     (rest : List VariableMapping) (value : VariableValue) (tail : List VariableBinding)
     (lookup : enclosingVariable? context name = some value)
-    (remaining : evaluateEnclosingInputMappings context rest = some tail) :
-    evaluateEnclosingInputMappings context
+    (remaining : evaluateInputMappingsInOrder (enclosingVariable? context) rest = some tail) :
+    evaluateInputMappingsInOrder (enclosingVariable? context)
       ({ target, expression := .enclosingVariable name } :: rest) =
       some ({ name := target, value } :: tail) := by
-  simp [evaluateEnclosingInputMappings, lookup, remaining]
+  simp [evaluateInputMappingsInOrder, scalarInputLookup_enclosing, lookup, remaining]
 
 /-- SBT-SNAPSHOT-01 ties the stored local scope to the same evaluated snapshot as the wait. -/
 theorem serial_activation_local_snapshot (state : RuntimeState)
@@ -582,33 +583,33 @@ theorem serial_patch_preserves_domain (handlers : List String) (inputs outputs :
   exact bindings_merge_valid handlers before writes beforeUnique (by simpa [names] using outputUnique)
     beforeValid (Bool.and_eq_true_iff.mpr ⟨by simpa [names] using ordered, domain⟩)
 
+theorem program_analysis_effect_inputs (program : Program) (analysis : Analysis)
+    (analyzed : programAnalysis program = some analysis) (state : RuntimeState) (owner : ScopeOccurrenceId) (mappings : List VariableMapping) :
+    evaluateEffectInputs? program state owner mappings = evaluateEnclosingInputMappings state.variables.process.bindings mappings := by
+  apply evaluateEffectInputs_without_repeated_scope
+  intro operation member
+  have allowed := program_analysis_operations_allowed program analysis analyzed operation member
+  cases operation <;> simp_all [OperationAllowed, sequentialScopeEntry?]
+
 /-- Availability is evaluated against the immutable containing bindings for every input, never an earlier input-local write. -/
 theorem inputs_evaluable (handlers : List String) (context : List VariableBinding)
-    (inputs : List VariableMapping)
+    (inputs : List VariableMapping) (unique : (inputs.map (·.target)).Nodup)
     (admitted : inputs.all (fun m => nameAllowed handlers m.target && match m.expression with
       | .stringLiteral value => literalValid value
       | .enclosingVariable name => nameAllowed handlers name
       | .localVariable _ => false) = true)
     (available : ∀ name ∈ readNames inputs, ∃ value, enclosingVariable? context name = some value) :
     ∃ arguments, evaluateEnclosingInputMappings context inputs = some arguments := by
-  induction inputs with
-  | nil => exact ⟨[], rfl⟩
-  | cons first rest ih =>
-    have tailAvailable : ∀ name ∈ readNames rest, ∃ value, enclosingVariable? context name = some value := by
-      intro name member
-      apply available name
-      cases first.expression <;> simp_all [readNames]
-    obtain ⟨tail, evaluated⟩ := ih (Bool.and_eq_true_iff.mp admitted).2 tailAvailable
-    have firstAllowed := (Bool.and_eq_true_iff.mp (Bool.and_eq_true_iff.mp admitted).1).2
-    cases expression : first.expression with
-    | localVariable name => simp [expression] at firstAllowed
-    | stringLiteral value =>
-        exact ⟨{ name := first.target, value := .string value } :: tail,
-          by simp [evaluateEnclosingInputMappings, expression, evaluated]⟩
-    | enclosingVariable name =>
-        obtain ⟨value, found⟩ := available name (by simp [readNames, expression])
-        exact ⟨{ name := first.target, value } :: tail,
-          by simp [evaluateEnclosingInputMappings, expression, found, evaluated]⟩
+  apply evaluateInputMappings_evaluable (enclosingVariable? context) inputs unique
+  intro mapping member
+  have allowed := List.all_eq_true.mp admitted mapping member
+  cases expression : mapping.expression with
+  | localVariable name => simp [expression] at allowed
+  | stringLiteral value => exact ⟨.string value, rfl⟩
+  | enclosingVariable name =>
+      have read : name ∈ readNames inputs := List.mem_filterMap.mpr ⟨mapping, member, by simp [expression]⟩
+      obtain ⟨value, found⟩ := available name read
+      exact ⟨value, by simpa [expression, scalarInputLookup_enclosing] using found⟩
 
 /-- The exact start-builder owner is the independently admitted sole hosting root, with its first activation. -/
 def DeclaredRoot (program : Program) (owner : ScopeOccurrenceId) : Prop :=
@@ -704,7 +705,8 @@ def ForeignRuntimeEmpty (state : RuntimeState) : Prop :=
   state.compensationTriggers = [] ∧ state.compensationHandlerEffectWaits = [] ∧
   state.eventSubProcessMessageSubscriptions = [] ∧ state.variables.processInterfaces = [] ∧ state.logicalTimeMs = 0 ∧
   state.messageActivations = [] ∧ state.timerActivations = [] ∧ state.eventRaceActivations = [] ∧
-  state.callActivations = [] ∧ state.activityActivations = []
+  state.callActivations = [] ∧ state.activityActivations = [] ∧
+  state.sequentialScopeControllers = [] ∧ state.variables.scopes = []
 
 /-- These issuance facts are exactly the retained counter/order checks read by serial command admission. -/
 def IssuanceFrame (state : RuntimeState) : Prop :=
@@ -751,9 +753,8 @@ theorem root_completion_shape (before after : RuntimeState) (owner : ScopeOccurr
     before.control = .running owner.processInstanceId ∧
     scopeQuiescent before owner = true ∧ before.initiationPending = false ∧
       after = { before with control := .completed owner.processInstanceId, scopeOccurrences := [] } := by
-  have listeners : before.eventSubProcessMessageSubscriptions = [] := by
-    have foreign := framed.2.2.2.2.1; simp_all [ForeignRuntimeEmpty]
-  have retentions : before.compensationActivityRetentions = [] := by
+  have ⟨listeners, retentions, locals⟩ : before.eventSubProcessMessageSubscriptions = [] ∧
+      before.compensationActivityRetentions = [] ∧ before.variables.scopes = [] := by
     have foreign := framed.2.2.2.2.1; simp_all [ForeignRuntimeEmpty]
   rcases framed.2.2.2.1 with ⟨running, scopes⟩ | ⟨_, scopes, _⟩
   · by_cases same : owner.definitionScopeId = scope
@@ -767,7 +768,7 @@ theorem root_completion_shape (before after : RuntimeState) (owner : ScopeOccurr
         · rename_i pending
           refine ⟨running, by simpa using quiet, by simpa using pending, ?_⟩
           have result := (Option.some.inj completed).symm
-          simpa [listeners, retentions] using result
+          simpa [listeners, retentions, ← locals] using result
     · simp [completeScopeState?, scopes, same] at completed
   · simp [completeScopeState?, scopes] at completed
 

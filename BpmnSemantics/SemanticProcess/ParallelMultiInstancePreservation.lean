@@ -374,7 +374,9 @@ private theorem admittedSharedParallelEntryAccount (program : Program)
       (program.identity.semanticProfile == interruptingMessageEventSubProcessProfileId) = false := by
     rw [profile]
     rfl
-  simp only [programProfileCapabilitiesValid, callData, transaction, messageHandler,
+  have repeatedScope : (program.identity.semanticProfile.value ==
+      "cibseven-2.2.0-sequential-multi-instance-subprocess-draft") = false := by rw [profile]; rfl
+  simp only [programProfileCapabilitiesValid, repeatedScope, callData, transaction, messageHandler,
     Bool.false_eq_true, legacy, ↓reduceIte, Bool.and_eq_true] at capabilities
   obtain ⟨_, capabilities⟩ := capabilities
   obtain ⟨profileEntry, completionOperation, entries, completions, paired, completionLookup⟩ :=
@@ -440,6 +442,49 @@ theorem sharedParallelProgramAccount_of_admission (program : Program)
       normalOutputDeclared := ⟨normalDeclared, normalDeclaration⟩,
       timerOutputDeclared := ⟨timerDeclared, timerDeclaration⟩, normalOutputOwner := normalOwner,
       timerOutputOwner := timerOwner, inputOwner }⟩⟩
+
+theorem repeatedScopeEntryCardinality (operations : List SemanticOperation) :
+    (operationCardinalities operations).sequentialScopeEntries =
+      (operations.filterMap sequentialScopeEntry?).length := by
+  unfold operationCardinalities
+  have count : ∀ counts : ShapeCardinalities,
+      (operations.foldl addOperationCardinality counts).sequentialScopeEntries =
+        counts.sequentialScopeEntries + (operations.filterMap sequentialScopeEntry?).length := by
+    intro counts
+    induction operations generalizing counts with
+    | nil => simp
+    | cons operation rest ih =>
+      rw [List.foldl_cons, ih]
+      cases operation <;> simp [addOperationCardinality, sequentialScopeEntry?] <;> omega
+  simpa using count {}
+
+/-- The admitted parallel User Task profile has no repeated Sub-Process entries; its census owns that exclusion. -/
+theorem SharedParallelProgramAccount.repeatedScopeEntries_absent {program : Program}
+    {arm : ParallelMultiInstanceArm} {owner : DefinitionScopeId}
+    (account : SharedParallelProgramAccount program arm owner) :
+    program.operations.filterMap sequentialScopeEntry? = [] := by
+  have capabilities := account.capabilities
+  simp only [programProfileCapabilitiesValid, account.profile, parallelMultiInstanceUserTaskProfileId,
+    interruptingMessageEventSubProcessProfileId, callDataCheckpointProfileId,
+    transactionCancellationCheckpointProfileId, repeatableSubscriptionCheckpointProfileId,
+    ProfileId.mk.injEq] at capabilities
+  have cardinality : (operationCardinalities program.operations).sequentialScopeEntries = 0 := by
+    simp [programShape?, sequentialMultiInstanceUserTaskProfileId, parallelMultiInstanceUserTaskProfileId] at capabilities
+    have counts : operationCardinalities program.operations =
+        withScopeCompletions 1 { initiates := 1, userTasks := 1, ends := 2 } := by grind
+    rw [counts]
+    rfl
+  apply List.length_eq_zero_iff.mp
+  rw [← repeatedScopeEntryCardinality, cardinality]
+
+/-- No repeated-scope declaration means unchanged controller storage suffices, independently of task results. -/
+theorem SharedParallelProgramAccount.repeatedScopeStateValid_frame {program : Program}
+    {arm : ParallelMultiInstanceArm} {owner : DefinitionScopeId}
+    (account : SharedParallelProgramAccount program arm owner) (before after : RuntimeState)
+    (controllers : after.sequentialScopeControllers = before.sequentialScopeControllers)
+    (valid : sequentialScopeStateValid program before = true) :
+    sequentialScopeStateValid program after = true := by
+  simpa only [sequentialScopeStateValid, account.repeatedScopeEntries_absent, controllers, List.filter_nil, List.all_nil, Bool.and_true] using valid
 
 /-- Public command application preserves the exact pre-state for every semantic refusal. -/
 def completeParallelMultiInstanceOrPreserve (arm : ParallelMultiInstanceArm)

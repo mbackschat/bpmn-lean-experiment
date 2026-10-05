@@ -1,6 +1,6 @@
 /** Production Workflow-chain refinement for sequential Multi-Instance User Task. */
 import assert from "node:assert/strict";
-import test from "node:test";
+import test, { type TestContext } from "node:test";
 
 import {
   CanonicalObservationKind, CommandOutcome, SemanticOperationKind,
@@ -51,7 +51,7 @@ const interruptedScenarioUrl = new URL("../../../../scenarios/sequential-multi-i
 const bpmnUrl = new URL("../../../../scenarios/sequential-multi-instance/process.bpmn", import.meta.url);
 const operationDeadlineMs = 20_000;
 
-test("production SMI preserves one lifetime Timer through rollover, replacement, recovery, interruption, and replay", async () => {
+test("production SMI preserves one lifetime Timer through rollover, replacement, recovery, interruption, and replay", async (context) => {
   const [naturalScenario, interruptedScenario] = await Promise.all([
     loadJson<Scenario>(naturalScenarioUrl),
     loadJson<Scenario>(interruptedScenarioUrl),
@@ -82,6 +82,7 @@ test("production SMI preserves one lifetime Timer through rollover, replacement,
       "sequential-multi-instance-refinement-initial",
     );
     await runNaturalRefinement(
+      context,
       environment,
       bundle,
       worker,
@@ -103,6 +104,7 @@ test("production SMI preserves one lifetime Timer through rollover, replacement,
 });
 
 async function runNaturalRefinement(
+  context: TestContext,
   environment: TestWorkflowEnvironment, bundle: WorkflowBundleWithSourceMap,
   worker: WorkerSlot, scenario: Scenario, semanticProcess: SemanticProcessProgram,
 ): Promise<void> {
@@ -192,10 +194,13 @@ async function runNaturalRefinement(
   );
   // Measured after the closing completion, because that round trip races the deadline like the
   // others: had it lost, interruption would have withdrawn the task it completes.
-  assertHostClockDeadlineMargin({
+  const deadlineMeasurement = {
     label: "sequential Multi-Instance natural path",
     elapsedMs: Date.now() - armedAtMs,
     remainingMs: lifetimeTimer.deadlineMs - firstState.logicalTimeMs,
+  };
+  await context.test("performance: natural SMI deadline headroom", () => {
+    assertHostClockDeadlineMargin(deadlineMeasurement);
   });
 
   const terminal = await withDeadline(
@@ -441,9 +446,11 @@ async function waitForIteration(
     workflowId,
     semanticProcess,
     processInstanceId,
-    (candidate) =>
-      candidate.openMultiInstances?.[0]?.activeIterations[0]?.taskId.activation ===
-        completion.taskId.activation,
+    (candidate) => {
+      const progress = candidate.openMultiInstances?.[0];
+      return progress?.bodyKind === "userTask" &&
+        progress.activeIterations[0]?.taskId.activation === completion.taskId.activation;
+    },
   );
   const controller = state.openMultiInstances?.[0];
   assert.ok(controller !== undefined);

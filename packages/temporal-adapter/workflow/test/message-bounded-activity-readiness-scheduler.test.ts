@@ -337,7 +337,7 @@ test("drains both wrong Message and wrong completion refusals before waiting on 
         eventRaceScheduler,
         messageBoundedActivityScheduler,
         boundedDeadlineSchedulers: [],
-        compensationScheduler: {
+        effectScheduler: {
           ownsCommittedFrontier: () => false,
           waitForReadiness: async () => {
             throw new Error("Compensation scheduler must not run");

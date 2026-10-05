@@ -81,6 +81,7 @@ function buildFixtures(base: MuePreviewAlphaFixtureBase) {
           activation: 1,
         },
         mode: "sequential",
+        bodyKind: "userTask",
         plannedInstanceCount: 3,
         pendingItemCount: 1,
         numberOfInstances: 2,

@@ -125,10 +125,10 @@ def activateMessage (state : RuntimeState) (instanceId : SemanticId)
 
 def activateEffect (state : RuntimeState) (instanceId : SemanticId)
     (owner : ScopeOccurrenceId) (input output : ControlPlaceId)
-    (effect : EffectDefinition) (bpmnErrorRoute : Option BpmnErrorRoute) :
+    (effect : EffectDefinition) (bpmnErrorRoute : Option BpmnErrorRoute)
+    (arguments : List VariableBinding := (evaluateEnclosingInputMappings state.variables.process.bindings effect.inputMappings).getD []) :
     RuntimeState :=
   let activation := effectActivationCount state effect.elementId + 1
-  let arguments := (evaluateEnclosingInputMappings state.variables.process.bindings effect.inputMappings).getD []
   let effectOwner : EffectOccurrenceId :=
     { processInstanceId := instanceId
       elementId := ⟨effect.elementId.value⟩

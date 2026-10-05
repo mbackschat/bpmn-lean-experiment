@@ -180,37 +180,35 @@ export function completeActivityVariableScope(
   localPatch: ReadonlyArray<VariableBinding>,
   allowNull: boolean,
 ): ScopedVariables | null {
-  const matching = variables.activities.filter((scope) =>
-    matchesEffectLocalDataOwner(scope.owner, owner)
-  );
-  if (matching.length !== 1) {
-    return null;
-  }
-  const activity = matching[0];
-  if (activity === undefined) {
-    return null;
-  }
-  const processBindings = applyEffectPatch(
-    activity.bindings,
-    outputMappings,
-    variables.process.bindings,
-    localPatch,
-    allowNull,
-  );
-  if (processBindings === null) {
-    return null;
-  }
-  return {
-    ...variables,
-    process: { bindings: processBindings },
-    activities: variables.activities.filter((scope) => scope !== activity),
+  const result = projectActivityVariableScopeResult(variables, owner, outputMappings, localPatch, allowNull);
+  return result === null ? null : {
+    ...result.variables,
+    process: { bindings: mergeProcessVariableBindings(variables.process.bindings, result.outputs) },
   };
 }
 
-function applyEffectPatch(
+/** Separates validated effect outputs from their destination; SMIS-DATA-01 requires nearest-scope writes. */
+export function projectActivityVariableScopeResult(
+  variables: ScopedVariables,
+  owner: EffectOccurrenceId,
+  outputMappings: ReadonlyArray<VariableMapping>,
+  localPatch: ReadonlyArray<VariableBinding>,
+  allowNull: boolean,
+): Readonly<{ variables: ScopedVariables; outputs: ReadonlyArray<VariableBinding> }> | null {
+  const matching = variables.activities.filter((scope) => matchesEffectLocalDataOwner(scope.owner, owner));
+  const activity = matching[0];
+  if (matching.length !== 1 || activity === undefined) return null;
+  const outputs = projectEffectPatch(activity.bindings, outputMappings, localPatch, allowNull);
+  if (outputs === null) return null;
+  return {
+    variables: { ...variables, activities: variables.activities.filter((scope) => scope !== activity) },
+    outputs,
+  };
+}
+
+function projectEffectPatch(
   arguments_: ReadonlyArray<VariableBinding>,
   outputMappings: ReadonlyArray<VariableMapping>,
-  processBindings: ReadonlyArray<VariableBinding>,
   localPatch: ReadonlyArray<VariableBinding>,
   allowNull: boolean,
 ): ReadonlyArray<VariableBinding> | null {
@@ -250,7 +248,7 @@ function applyEffectPatch(
     }
     return { name: mapping.target, value };
   });
-  return mergeProcessVariableBindings(processBindings, projected);
+  return mergeProcessVariableBindings([], projected);
 }
 
 function validatePatch(

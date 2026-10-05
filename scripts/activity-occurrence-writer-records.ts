@@ -1,3 +1,9 @@
+import { ClaimPreservation, WriterClassification } from "./activity-occurrence-writer-contract.ts";
+import type { WriterRecord } from "./activity-occurrence-writer-contract.ts";
+
+export { ClaimPreservation, SourceLanguage, WriterClassification } from "./activity-occurrence-writer-contract.ts";
+export type { Evidence, WriterRecord } from "./activity-occurrence-writer-contract.ts";
+
 /**
  * The reviewed classification of every production writer of the Activity-occurrence collection.
  *
@@ -9,46 +15,67 @@
  * owner. Evidence markers are exact substrings of the named file, so a renamed theorem or a reworded
  * test message invalidates the row rather than silently continuing to vouch for it.
  */
-export const SourceLanguage = {
-  Lean: "lean",
-  TypeScript: "typescript",
-} as const;
-
-export type SourceLanguage = typeof SourceLanguage[keyof typeof SourceLanguage];
-
-export const WriterClassification = {
-  Initializer: "initializer",
-  Issuer: "issuer",
-  IdentityPreserving: "identity-preserving",
-  IdentityRemoving: "identity-removing",
-} as const;
-
-export type WriterClassification = typeof WriterClassification[keyof typeof WriterClassification];
-
-export const ClaimPreservation = {
-  Initializer: "initializer",
-  DisjointInsertion: "disjoint-insertion",
-  Removal: "removal",
-  BodyReplacement: "body-replacement",
-  MemberRemoval: "member-removal",
-  ProjectionPreserving: "claim-projection-preserving",
-} as const;
-
-export type ClaimPreservation = typeof ClaimPreservation[keyof typeof ClaimPreservation];
-
-export type Evidence = Readonly<{
-  relativePath: string;
-  markers: ReadonlyArray<string>;
-}>;
-
-export type WriterRecord = Readonly<{
-  classification: WriterClassification;
-  claimPreservation: ClaimPreservation;
-  evidence?: Evidence;
-  claimEvidence?: Evidence;
-}>;
-
 export const writerRecords = new Map<string, WriterRecord>([
+  ["BpmnSemantics/SemanticProcess/SequentialScopeRuntime.lean#completeSequentialScopeResult?@1", {
+    classification: WriterClassification.IdentityRemoving,
+    claimPreservation: ClaimPreservation.Removal,
+    evidence: {
+      relativePath: "BpmnSemantics/SemanticProcess/SequentialScopeRuntimeLaws.lean",
+      markers: ["theorem sequentialScope_completion_activity_identity"],
+    },
+  }],
+  ["BpmnSemantics/SemanticProcess/SequentialScopeRuntime.lean#completeSequentialScopeResult?@2", {
+    classification: WriterClassification.IdentityPreserving,
+    claimPreservation: ClaimPreservation.BodyReplacement,
+    evidence: {
+      relativePath: "BpmnSemantics/SemanticProcess/SequentialScopeRuntimeLaws.lean",
+      markers: ["theorem sequentialScope_completion_activity_identity"],
+    },
+    claimEvidence: {
+      relativePath: "BpmnSemantics/SemanticProcess/SequentialScopeRuntimeLaws.lean",
+      markers: ["theorem sequentialScope_completion_body_claims"],
+    },
+  }],
+  ["BpmnSemantics/SemanticProcess/SequentialScopeRuntime.lean#enterSequentialScopeResult?@1", {
+    classification: WriterClassification.Issuer,
+    claimPreservation: ClaimPreservation.DisjointInsertion,
+    evidence: {
+      relativePath: "BpmnSemantics/SemanticProcess/SequentialScopeRuntimeLaws.lean",
+      markers: ["theorem sequentialScope_entry_activity_identity"],
+    },
+    claimEvidence: {
+      relativePath: "BpmnSemantics/SemanticProcess/SequentialScopeRuntimeLaws.lean",
+      markers: ["theorem sequentialScope_entry_body_claims"],
+    },
+  }],
+  ["packages/semantic-core/src/sequential-scope-runtime.ts#completeSequentialScopeStep@1", {
+    classification: WriterClassification.IdentityRemoving,
+    claimPreservation: ClaimPreservation.Removal,
+  }],
+  ["packages/semantic-core/src/sequential-scope-runtime.ts#completeSequentialScopeStep@2", {
+    classification: WriterClassification.IdentityPreserving,
+    claimPreservation: ClaimPreservation.BodyReplacement,
+    evidence: {
+      relativePath: "packages/semantic-core/test/sequential-scope-runtime.test.ts",
+      markers: ["quiescent body turnover keeps the outer identity and total, reinitializes locals, and issues one fresh child"],
+    },
+    claimEvidence: {
+      relativePath: "packages/semantic-core/test/sequential-scope-runtime.test.ts",
+      markers: ["turnover and terminal completion preserve unrelated scope data, tokens and Activity claims"],
+    },
+  }],
+  ["packages/semantic-core/src/sequential-scope-runtime.ts#enterSequentialScope@1", {
+    classification: WriterClassification.Issuer,
+    claimPreservation: ClaimPreservation.DisjointInsertion,
+    evidence: {
+      relativePath: "packages/semantic-core/test/sequential-scope-runtime.test.ts",
+      markers: ["positive repeated scope issues one fresh body and initializes locals from the unchanged parent"],
+    },
+    claimEvidence: {
+      relativePath: "packages/semantic-core/test/sequential-scope-runtime.test.ts",
+      markers: ["repeated scope entry preserves a sibling and inserts a disjoint body claim"],
+    },
+  }],
   ["BpmnSemantics/SemanticProcess/InternalMessageTaskPreparation.lean#applyInternalMessageTaskPatch@1", {
     classification: WriterClassification.Issuer,
     claimPreservation: ClaimPreservation.DisjointInsertion,

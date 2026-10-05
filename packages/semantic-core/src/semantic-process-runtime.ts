@@ -1,3 +1,4 @@
+import { enterSequentialScope, completeSequentialScopeStep } from "./sequential-scope-runtime.js";
 import { CommandOutcome } from "./contract.js";
 import type { Stimulus } from "./contract.js";
 import type { DeepReadonly } from "./deep-readonly.js";
@@ -449,7 +450,7 @@ function applyInternalOperationState(
       const taskOwner = onlyTokenOwner(state, operation.input);
       return applyOwnedOperation(
         taskOwner,
-        (selected) => createUserTaskWait(operation, state, selected),
+        (selected) => createUserTaskWait(program, operation, state, selected),
         captureOwner,
       );
     }
@@ -479,7 +480,7 @@ function applyInternalOperationState(
       const messageOwner = onlyTokenOwner(state, operation.input);
       return applyOwnedOperation(
         messageOwner,
-        (selected) => createMessageWait(operation, state, selected),
+        (selected) => createMessageWait(program, operation, state, selected),
         captureOwner,
       );
     }
@@ -487,7 +488,7 @@ function applyInternalOperationState(
       const messageOwner = onlyTokenOwner(state, operation.input);
       return applyOwnedOperation(
         messageOwner,
-        (selected) => createMessageWait(operation, state, selected),
+        (selected) => createMessageWait(program, operation, state, selected),
         captureOwner,
       );
     }
@@ -495,7 +496,7 @@ function applyInternalOperationState(
       const messageOwner = onlyTokenOwner(state, operation.input);
       return applyOwnedOperation(
         messageOwner,
-        (selected) => createMessageWait(operation, state, selected),
+        (selected) => createMessageWait(program, operation, state, selected),
         captureOwner,
       );
     }
@@ -503,7 +504,7 @@ function applyInternalOperationState(
       const timerOwner = onlyTokenOwner(state, operation.input);
       return applyOwnedOperation(
         timerOwner,
-        (selected) => createTimerWait(operation, state, selected),
+        (selected) => createTimerWait(program, operation, state, selected),
         captureOwner,
       );
     }
@@ -551,7 +552,7 @@ function applyInternalOperationState(
       const effectOwner = onlyTokenOwner(state, operation.input);
       return applyOwnedOperation(
         effectOwner,
-        (selected) => createEffectWait(operation, state, selected),
+        (selected) => createEffectWait(program, operation, state, selected),
         captureOwner,
       );
     }
@@ -642,6 +643,15 @@ function applyInternalOperationState(
         () => completeScopeWithdrawingDeadline(program, operation, state),
         captureOwner,
       );
+    }
+    case SemanticOperationKind.EnterSequentialMultiInstanceScope:
+      return applyOwnedOperation(onlyTokenOwner(state, operation.input),
+        (owner) => enterSequentialScope(operation, state, owner), captureOwner);
+    case SemanticOperationKind.CompleteSequentialMultiInstanceScope: {
+      const step = completeSequentialScopeStep(program, operation, state);
+      if (step === null) return null;
+      captureOwner(step.owner);
+      return step.successor;
     }
     default:
       return assertNever(operation);

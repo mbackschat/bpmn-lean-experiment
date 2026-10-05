@@ -95,18 +95,18 @@ Use two project-owned whole models: invoice Review→Validate→Finalize and a c
 | Owner | Headroom | Constraint |
 |---|---:|---|
 | [Shared values](../../packages/semantic-core/src/semantic-value-contract.ts) | 698 | Add only the explicit closed expression arm. |
-| [Core mappings](../../packages/semantic-core/src/semantic-process-data.ts) | 498 | Reuse mapping/frame mechanisms; preserve predecessor semantics. |
-| [Operation admission](../../packages/semantic-core/src/semantic-process-operation-admission.ts) | 98 | Delegate profile-specific mapping decisions. |
-| [Command admission](../../packages/semantic-core/src/semantic-command-admission.ts) | 286 | Delegate required-start and result-domain checks. |
-| [Open-set validation](../../packages/semantic-core/src/flow-node-occurrence-open-set.ts) | 15 | Extract the cohesive effect-wait validation only if growth exceeds this margin. |
+| [Core mappings](../../packages/semantic-core/src/semantic-process-data.ts) | 501 | Reuse mapping/frame mechanisms; preserve predecessor semantics. |
+| [Operation admission](../../packages/semantic-core/src/semantic-process-operation-admission.ts) | 86 | Delegate profile-specific mapping decisions. |
+| [Command admission](../../packages/semantic-core/src/semantic-command-admission.ts) | 280 | Delegate required-start and result-domain checks. |
+| [Open-set validation](../../packages/semantic-core/src/flow-node-occurrence-open-set.ts) | 12 | Extract the cohesive effect-wait validation only if growth exceeds this margin. |
 | [Source compiler](../../packages/bpmn-source/src/checked-process-compiler.ts) | 377 | Retain structural compilation and delegate profile projection. |
-| [Source dispatch](../../packages/bpmn-source/src/compilation-dispatch.ts) | 410 | Add one private capability route. |
+| [Source dispatch](../../packages/bpmn-source/src/compilation-dispatch.ts) | 405 | Add one private capability route. |
 | [Checked admission](../../packages/bpmn-source/src/checked-process-admission.ts) | 87 | Delegate the serial capability analysis. |
-| [Lean checked contract](../../BpmnSemantics/CheckedProcessContract.lean) | 451 | Preserve all existing alternatives. |
-| [Lean data](../../BpmnSemantics/SemanticProcess/Data.lean) | 363 | Reuse mapping semantics and preserve existing output restrictions. |
+| [Lean checked contract](../../BpmnSemantics/CheckedProcessContract.lean) | 450 | Preserve all existing alternatives. |
+| [Lean data](../../BpmnSemantics/SemanticProcess/Data.lean) | 299 | Reuse mapping semantics and preserve existing output restrictions. |
 | [Lean effect completion](../../BpmnSemantics/SemanticProcess/EffectCompletion.lean) | 627 | Keep independently stated transition premises and soundness separate. |
-| [Lean Program admission](../../BpmnSemantics/SemanticProcess/ProgramStructuralValidation.lean) | 12 | Delegate; do not place serial analysis here. |
-| [Lean command admission](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean) | 26 | Delegate; preserve closed profile decisions. |
+| [Lean Program admission](../../BpmnSemantics/SemanticProcess/ProgramStructuralValidation.lean) | 7 | Delegate; do not place serial analysis here. |
+| [Lean command admission](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean) | 3 | Delegate; preserve closed profile decisions. |
 
 These measurements are the nonblank margin before the 800-line review target, derived through `what-binds`. If planned growth exceeds its margin, extract a cohesive existing responsibility without changing its contract and remeasure. New owners require ordinary source-map and default-library reachability coverage. This is not permission to compress existing proof or absence claims.
 
@@ -119,6 +119,8 @@ Independent cold proposal approval precedes production semantic code. The first 
 Common-mode risks are a shared source normalization error, a profile guard accidentally widening an old mapped profile, a projection that reevaluates arguments, and a CIB observation that confuses transaction timing with durable effect identity. Independent raw argument observations, old-profile negatives, exact source-token tests, snapshot mutations and explicit host-relation evidence address different risks. The nearest unsupported claim is mixed branching or uninitialized human-created input, followed by business Error/incident handling and structured values.
 
 Record baseline-to-closure code/document churn in the [cost ledger](../CAPSULE-COST-LEDGER.md), comparing scoped data and structured composition. Keep unknown authoring time unknown. Reassess after the mapping frame and serial reachable-lifetime guarantees; preserve the required guarantee if a smaller representation is needed rather than adding case-specific profile exceptions.
+
+On 2026-10-04 the owner explicitly excluded performance qualification for this session until further notice. The PMI and SMI headroom assertions are now separate native Node `performance:` subtests; `NODE_OPTIONS=--test-skip-pattern=performance:` excludes only those measurements while preserving their complete functional parent journeys, actual Timer outcomes, Worker replacement, recovery and replay. The default gate still asserts both margins. The focused installed-SDK run passes all six executed tests in `/tmp/session-functional-multi-instance`; both performance subtests are unrun and absent from Node’s counts, not passed. Types and 41 focused selection/documentation/default-margin guards pass `/tmp/session-performance-separation-types` and `/tmp/session-performance-separation-guards`, separately asserted. This non-material test separation changes no BPMN meaning, host configuration or threshold; the former failed margin remains recorded.
 
 ## Independent cold-review receipt
 

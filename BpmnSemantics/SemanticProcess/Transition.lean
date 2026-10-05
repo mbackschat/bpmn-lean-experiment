@@ -1,3 +1,4 @@
+import BpmnSemantics.SemanticProcess.SequentialScopeRuntime
 import BpmnSemantics.SemanticProcess.WaitActivation
 import BpmnSemantics.SemanticProcess.BoundedScopeArming
 import BpmnSemantics.SemanticProcess.BoundedScope
@@ -72,16 +73,16 @@ def awaitEventRaceState? (state : RuntimeState) (origin : BpmnElementOrigin)
     (timer : EventRaceTimerArm) : Option RuntimeState :=
   armEventRaceState? state origin input message timer
 
-def awaitEffectState? (state : RuntimeState) (input output : ControlPlaceId)
+def awaitEffectState? (program : Program) (state : RuntimeState) (input output : ControlPlaceId)
     (effect : EffectDefinition) (route : Option BpmnErrorRoute) :
     Option RuntimeState := do
   let owner ← onlyTokenOwner? state input
   let _ ← runningInstance? state
-  let _ ← evaluateEnclosingInputMappings state.variables.process.bindings effect.inputMappings
+  let arguments ← evaluateEffectInputs? program state owner effect.inputMappings
   let effectOwner : EffectOccurrenceId :=
     ⟨owner.processInstanceId, ⟨effect.elementId.value⟩, effectActivationCount state effect.elementId + 1⟩
   if state.variables.activities.any (activityScopeMatches effectOwner) then none
-  else pure (activateEffect state owner.processInstanceId owner input output effect route)
+  else pure (activateEffect state owner.processInstanceId owner input output effect route arguments)
 
 def duplicateState? (state : RuntimeState) (input : ControlPlaceId)
     (outputs : List ControlPlaceId) : Option RuntimeState := do
@@ -173,6 +174,16 @@ inductive OperationStep (program : Program) :
         enterScopeWithCompensationRetention? program before input childEntry childScopeId = some after) :
       OperationStep program
         (.enterScope id origin input childEntry childScopeId) before after
+  | enterSequentialScope (id origin input childEntry childScopeId output collection item inputs condition)
+      (before after : RuntimeState)
+      (transition : SequentialScopeEntryStep
+        (.enterSequentialMultiInstanceScope id origin input childEntry childScopeId output collection item inputs condition) before after) :
+      OperationStep program
+        (.enterSequentialMultiInstanceScope id origin input childEntry childScopeId output collection item inputs condition) before after
+  | completeSequentialScope (id origin entry) (before after : RuntimeState)
+      (transition : SequentialScopeCompletionStep program
+        (.completeSequentialMultiInstanceScope id origin entry) before after) :
+      OperationStep program (.completeSequentialMultiInstanceScope id origin entry) before after
   | enterBoundedScope (id origin input childEntry childScopeId boundaryTimer)
       (before after : RuntimeState)
       (transition :
@@ -307,7 +318,7 @@ inductive OperationStep (program : Program) :
   | awaitEffect (id origin input output effect route)
       (before after : RuntimeState)
       (transition :
-        awaitEffectState? before input output effect route = some after) :
+        awaitEffectState? program before input output effect route = some after) :
       OperationStep program
         (.awaitEffect id origin input output effect route) before after
   | duplicate (id origin input outputs) (before after : RuntimeState)
@@ -374,6 +385,8 @@ private def fireWithoutCompensationSnapshots? (program : Program)
   | .initiateTimer _ _ _ outputs => initiateTimerState? state outputs
   | .enterScope _ _ input childEntry childScopeId =>
       enterScopeWithCompensationRetention? program state input childEntry childScopeId
+  | .enterSequentialMultiInstanceScope .. => (enterSequentialScope? operation state).map SequentialScopeEntryResult.state
+  | .completeSequentialMultiInstanceScope .. => (completeSequentialScope? program operation state).map SequentialScopeCompletionResult.state
   | .enterBoundedScope _ origin input childEntry childScopeId boundaryTimer
   | .enterMonitoredScope _ origin input childEntry childScopeId boundaryTimer =>
       armBoundedScopeState? state origin input childEntry childScopeId boundaryTimer
@@ -425,7 +438,7 @@ private def fireWithoutCompensationSnapshots? (program : Program)
   | .awaitMonitoredUserTask _ _ input task boundaryTimer =>
       armMonitoredUserTaskState? state input task boundaryTimer
   | .awaitEffect _ _ input output effect route =>
-      awaitEffectState? state input output effect route
+      awaitEffectState? program state input output effect route
   | .duplicate _ _ input outputs => duplicateState? state input outputs
   | .synchronize _ _ inputs output => synchronizeState? state inputs output
   | .mergeExclusive _ _ inputs output =>
@@ -466,6 +479,10 @@ private theorem fireWithoutCompensationSnapshots_sound (program : Program)
     | exact .initiateTimer _ _ _ _ before after
         (initiateTimerState_sound before after _ result)
     | exact .enterScope _ _ _ _ _ before after result
+    | exact .enterSequentialScope _ _ _ _ _ _ _ _ _ _ before after
+        (enterSequentialScope_sound _ _ _ result)
+    | exact .completeSequentialScope _ _ _ before after
+        (completeSequentialScope_sound _ _ _ _ result)
     | exact OperationStep.enterBoundedScope _ _ _ _ _ _ before after
         (armBoundedScopeState_sound before after _ _ _ _ _
           (by simpa [fireWithoutCompensationSnapshots?] using result))
@@ -685,7 +702,7 @@ theorem fire_withSnapshotDeclaration_is_disabled (program : Program)
     (route : Option BpmnErrorRoute)
     (absent : program.compensationEventSubProcessSnapshots = none) :
     fire? program (.awaitEffect id origin input output effect route) state =
-      awaitEffectState? state input output effect route := by
+      awaitEffectState? program state input output effect route := by
   simp [fire?, absent, fireWithoutCompensationSnapshots?]
 
 theorem fire_isSome_snapshotDeclaration_is_absent (program : Program)

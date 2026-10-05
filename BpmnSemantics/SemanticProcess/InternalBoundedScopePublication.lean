@@ -107,8 +107,8 @@ theorem prepared_bounded_scope_position_delta
     simp only [runtimeStateWellFormed, Bool.and_eq_true, and_assoc] at valid
     exact valid.1
   have beforePosition := position state valid
-  have afterPosition := position _
-    (prepared_bounded_scope_preserves_runtime program state contract prepared instanceId found valid)
+  have afterPosition := prepareInternalBoundedScope_preserves_runtimePositionValid program state contract
+    prepared instanceId beforePosition found
   obtain ⟨selected, hosting, ownerRecord, definition, start, delta, selection, _, _, _,
     ownerExact, _, checked, _, _, deltaFound, rfl⟩ :=
     prepareInternalBoundedScope_facts program state contract prepared found

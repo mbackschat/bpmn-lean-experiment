@@ -1,5 +1,5 @@
 import { ObservationRequestKind } from "./contract.js";
-import { SemanticProfileId } from "./semantic-profile-catalog.js";
+import { SemanticProfileId, SEQUENTIAL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID } from "./semantic-profile-catalog.js";
 
 /** The exact observation request order retained by every profile predating Multi-Instance support. */
 export const BASELINE_SCENARIO_OBSERVATIONS = Object.freeze([
@@ -35,6 +35,7 @@ export function scenarioObservationsForProfile(
   profile: string,
 ): ReadonlyArray<ObservationRequestKind> {
   switch (profile) {
+    case SEQUENTIAL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID:
     case SemanticProfileId.SequentialMultiInstanceUserTask:
     case SemanticProfileId.ParallelMultiInstanceUserTask:
       return SEQUENTIAL_MULTI_INSTANCE_SCENARIO_OBSERVATIONS;

@@ -345,7 +345,13 @@ theorem prepareInternalArm_retirement_frame (program : Program) (before after : 
     (live : exactLiveOccurrence after patch.owner = true)
     (control : after.control = before.control)
     (time : after.logicalTimeMs = before.logicalTimeMs)
-    (process : after.variables.process = before.variables.process) :
+    (process : after.variables.process = before.variables.process)
+    (effectInputs : match operation with
+      | .awaitEffect .. => ∀ mappings, evaluateEffectInputs? program after patch.owner mappings =
+          evaluateEffectInputs? program before patch.owner mappings
+      | _ => True)
+    (inputReads : scopedEffectInputReads? program after patch.owner operation =
+      scopedEffectInputReads? program before patch.owner operation) :
     prepareInternalArm? program after operation = some patch := by
   have input := prepareInternalArm_input program before operation patch found
   have previousOwner := prepared_owner_lookup program before operation patch found
@@ -371,7 +377,7 @@ theorem prepareInternalArm_retirement_frame (program : Program) (before after : 
     all_goals
       simp only [activationCount, messageActivationCount, timerActivationCount,
         effectActivationCount, retirement.tasks, retirement.messages, retirement.timers,
-        retirement.effects, time, process] at found ⊢
+        retirement.effects, time, process, inputReads] at found ⊢
       repeat' first | (solve | simp_all) | split at found
       all_goals simp_all [retirement.anchor_absent, retirement.available]
 
@@ -481,8 +487,19 @@ theorem prepareInternalArming_after_independent_regional (program : Program)
     simpa only [exactLiveOccurrence, frame.2.2.2.1] using facts.2.1
   cases arm with
   | ordinary operation patch =>
+    have noPopulation : .activityPopulation ∉ (footprintOfPatch patch).reads := by
+      intro member
+      have conflict := arming_regional_read_separation regional.footprint
+        (.ordinary operation patch) independent _ _
+        (regionalStateFootprint_region_write before regional.selection regional.region regional.footprint
+          (prepareInternalRegional_facts program before regionalOperation regional regionalFound).2.2.2.2.2.1) member
+      simp [liftRegionalStateAtom, regionalStateAtomsConflict, regionalOwnsAtom,
+        regionalOwnsOrdinaryAtom] at conflict
+    have inputs := prepared_arm_process_input_frames program before after operation patch armFound
+      noPopulation frame.2.2.1
     exact prepareInternalArm_retirement_frame program before after operation patch armFound
       retirement owned live frame.1 frame.2.1 frame.2.2.1
+      (by cases operation <;> exact inputs.1) inputs.2
   | data contract patch =>
     exact prepareInternalDataArm_retirement_frame program before after contract patch armFound
       retirement owned live frame.1 frame.2.1 frame.2.2.1 interfaceFrame

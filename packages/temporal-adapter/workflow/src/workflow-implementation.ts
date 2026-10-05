@@ -1,5 +1,6 @@
 import {
   CommandOutcome,
+  SEQUENTIAL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID,
   ScenarioStepKind,
   StimulusKind,
   advanceScenario,
@@ -65,6 +66,7 @@ import {
 import {
   createBoundedDeadlineSchedulers,
 } from "./bounded-deadline-scheduler.js";
+import { createTemporalOrdinaryEffectFrontierScheduler } from "./ordinary-effect-frontier-scheduler.js";
 import {
   createTemporalCompensationFrontierScheduler,
 } from "./compensation-frontier-scheduler.js";
@@ -284,11 +286,10 @@ export async function runBpmnProcessWithHostEffects(
       commandPublication.execution.headRevision,
     );
   };
-  const compensationScheduler = createTemporalCompensationFrontierScheduler(
-    semanticProcess,
-    executeEffect,
-    failEffectCapacity,
-  );
+  const effectScheduler = semanticProcess.identity.semanticProfile === SEQUENTIAL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID
+    ? createTemporalOrdinaryEffectFrontierScheduler(semanticProcess, executeEffect, failEffectCapacity,
+      completion => enqueueStimulus(acceptedStimuli, pendingStimuli, completion, reserveStimulus))
+    : createTemporalCompensationFrontierScheduler(semanticProcess, executeEffect, failEffectCapacity);
   const boundedDeadlineSchedulerFor = (candidate: RuntimeState) =>
     boundedDeadlineSchedulers.find((scheduler) =>
       scheduler.ownsCommittedDeadline(candidate)
@@ -401,7 +402,7 @@ export async function runBpmnProcessWithHostEffects(
           for (const scheduler of boundedDeadlineSchedulers) {
             scheduler.reconcileCommittedState(state);
           }
-          compensationScheduler.reconcileCommittedState(state);
+          effectScheduler.reconcileCommittedState(state);
           continue;
         case ProcessCorrelationRegistrationCycleKind.CompleteOpening: {
           const recovery = workflowChain.recovery.preflight(stage.stimulus);
@@ -637,7 +638,7 @@ export async function runBpmnProcessWithHostEffects(
               scheduler.reconcileCommittedState(state);
             }
           }
-          compensationScheduler.reconcileCommittedState(state);
+          effectScheduler.reconcileCommittedState(state);
           break;
         default:
           return assertNever(step);
@@ -665,12 +666,12 @@ export async function runBpmnProcessWithHostEffects(
       }
       await Promise.all([
         condition(allHandlersFinished),
-        compensationScheduler.waitForIdle(),
+        effectScheduler.waitForIdle(),
       ]);
       if (
         pendingStimuli.length === 0 && subscriptionScheduler?.hasPendingCallbacks() !== true &&
         allHandlersFinished() &&
-        !compensationScheduler.hasUnreconciledActivities()
+        !effectScheduler.hasUnreconciledActivities()
       ) {
         break;
       }
@@ -707,8 +708,8 @@ export async function runBpmnProcessWithHostEffects(
           boundedDeadlineSchedulers.some((scheduler) => scheduler.hasArmedDeadline()),
         managedReadinessCallbackPending:
           messageBoundedActivityScheduler.hasPendingCallbacks(),
-        compensationActivityUnreconciled:
-          compensationScheduler.hasUnreconciledActivities(),
+        effectActivityUnreconciled:
+          effectScheduler.hasUnreconciledActivities(),
       })
     ) {
       workflowChainFence = WorkflowChainFenceState.Rollover;
@@ -747,7 +748,7 @@ export async function runBpmnProcessWithHostEffects(
       eventRaceScheduler,
       messageBoundedActivityScheduler,
       boundedDeadlineSchedulers,
-      compensationScheduler,
+      effectScheduler,
       waitForTimer,
       executeEffect,
       effectActivityPolicy,
@@ -762,8 +763,8 @@ export async function runBpmnProcessWithHostEffects(
             boundedDeadlineSchedulers.some((scheduler) => scheduler.hasArmedDeadline()),
           managedReadinessCallbackPending:
             messageBoundedActivityScheduler.hasPendingCallbacks(),
-          compensationActivityUnreconciled:
-            compensationScheduler.hasUnreconciledActivities(),
+          effectActivityUnreconciled:
+            effectScheduler.hasUnreconciledActivities(),
         }),
     });
     if (readinessAction === HostReadinessAction.RecheckMainLoop) {

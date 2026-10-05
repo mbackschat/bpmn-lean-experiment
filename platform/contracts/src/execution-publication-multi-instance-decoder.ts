@@ -45,6 +45,7 @@ function requireController(
   requireExactKeys(value, label, [
     "id",
     "mode",
+    "bodyKind",
     "plannedInstanceCount",
     "pendingItemCount",
     "numberOfInstances",
@@ -58,6 +59,9 @@ function requireController(
     throw new TypeError(`${label} identity is invalid`);
   }
   const mode = requireMode(readOwn(value, "mode"), label);
+  if (readOwn(value, "bodyKind") !== "userTask") {
+    throw new TypeError(`${label}.bodyKind is invalid`);
+  }
   const counts = requireControllerCounts(value, mode, label);
   const iterations = requireDenseArray(
     readOwn(value, "activeIterations"),

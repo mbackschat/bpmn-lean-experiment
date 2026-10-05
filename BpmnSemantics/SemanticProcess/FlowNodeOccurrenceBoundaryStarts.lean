@@ -301,6 +301,7 @@ def candidateScopeStart? (program : Program) (operation : SemanticOperation)
   let processId ← processIdForSelectedOperation? program operation owner
   let origin ← match operation with
     | .enterScope _ origin _ _ childScopeId
+    | .enterSequentialMultiInstanceScope _ origin _ _ childScopeId _ _ _ _ _
     | .enterBoundedScope _ origin _ _ childScopeId _
     | .enterMonitoredScope _ origin _ _ childScopeId _ =>
         if occurrence.parent ≠ some owner || occurrence.id.definitionScopeId ≠ childScopeId ||
@@ -337,5 +338,36 @@ def candidateCallStart? (program : Program) (operation : SemanticOperation)
             elementId := origin.elementId
             owner }
   | _ => none
+
+/-- SMIS-IDENTITY-01 selects the generated body through its unique outer Activity. -/
+def sequentialScopeFlowNodeOwner? (state : RuntimeState) (elementId : NodeId) : Option ScopeOccurrenceId := do
+  let [record] := state.activityOccurrences.filter (fun record => record.activityElementId == elementId) | none
+  let .childScope child := record.body | none
+  pure child
+
+/-- FNOM-OCCURRENCE-01 counts each generated body; empty entry and final retirement start none. -/
+def candidateSequentialScopeStarts? (program : Program) (operation : SemanticOperation)
+    (owner : ScopeOccurrenceId) (after : RuntimeState) : Option (List UnnumberedFlowNodeOccurrenceStart) := do
+  let entry ← sequentialScopeEntry? operation
+  match sequentialScopeBindingForEntry? entry after with
+  | some binding =>
+      if binding.activity.owner ≠ owner then none
+      else pure [← candidateScopeStart? program operation owner binding.body]
+  | none =>
+      if after.scopeOccurrences.any (fun occurrence => occurrence.id.definitionScopeId == entry.childScopeId) ||
+          after.activityOccurrences.any (fun record => record.activityElementId == entry.elementId) ||
+          after.sequentialScopeControllers.any (fun controller => controller.id.activityElementId.value == entry.elementId.value)
+        then none
+      else pure []
+
+/-- SMIS-END-01 closes the selected old body before optionally starting its fresh successor. -/
+def candidateSequentialScopeCompletionStarts? (program : Program) (operation : SemanticOperation)
+    (owner : ScopeOccurrenceId) (before after : RuntimeState) : Option (List UnnumberedFlowNodeOccurrenceStart) := do
+  let .completeSequentialMultiInstanceScope _ origin entryId := operation | none
+  let binding ← sequentialScopeBindingForOwner? program before owner
+  let [entryOperation] := program.operations.filter (fun candidate => candidate.id == entryId) | none
+  if binding.entry.id ≠ entryId || binding.entry.elementId ≠ origin.elementId ||
+      after.scopeOccurrences.any (fun occurrence => occurrence.id == owner) then none
+  else candidateSequentialScopeStarts? program entryOperation binding.activity.owner after
 
 end BpmnSemantics.SemanticProcess

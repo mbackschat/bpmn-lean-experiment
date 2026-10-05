@@ -210,6 +210,14 @@ structure SequentialMultiInstanceController where
   outputSlots : List String
   deriving Repr, DecidableEq
 
+/-- SMIS-ENTER-01 fixes the total; the outer Activity owns the sole current child identity. -/
+structure SequentialScopeController where
+  id : ActivityOccurrenceId
+  total : Nat
+  completed : Nat
+  currentItem : String
+  deriving Repr, DecidableEq
+
 /-- Hidden inputs selected for one split activation and awaited by its paired join. -/
 structure SelectedBranchSet where
   owner : ScopeOccurrenceId
@@ -333,6 +341,7 @@ structure RuntimeState where
   /-- Absence and emptiness are one state here: the independently written core makes the same field
   optional only so continuation payloads under other profiles keep their byte shape, and no predicate
   or transition in either language distinguishes a missing collection from an empty one. -/
+  sequentialScopeControllers : List SequentialScopeController := []
   sequentialMultiInstanceControllers : List SequentialMultiInstanceController := []
   parallelMultiInstanceControllers : List ParallelMultiInstanceController := []
   compensationActivityRetentions : List CompensationActivityRetention := []
@@ -366,6 +375,7 @@ def initialState : RuntimeState :=
     eventRaces := []
     calledProcessOccurrences := []
     activityOccurrences := []
+    sequentialScopeControllers := []
     sequentialMultiInstanceControllers := []
     parallelMultiInstanceControllers := []
     compensationActivityRetentions := []
@@ -391,6 +401,7 @@ private def failedCompensationLiveRegionEmpty (state : RuntimeState) : Bool :=
     state.effectWaits.isEmpty && state.effectIncidents.isEmpty &&
     state.selectedBranchSets.isEmpty && state.eventRaces.isEmpty &&
     state.calledProcessOccurrences.isEmpty && state.activityOccurrences.isEmpty &&
+    state.sequentialScopeControllers.isEmpty &&
     state.sequentialMultiInstanceControllers.isEmpty &&
     state.parallelMultiInstanceControllers.isEmpty &&
     state.compensationActivityRetentions.isEmpty &&

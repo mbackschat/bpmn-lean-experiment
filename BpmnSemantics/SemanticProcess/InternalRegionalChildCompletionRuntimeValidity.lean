@@ -1,6 +1,7 @@
 import BpmnSemantics.SemanticProcess.InternalRegionalCompletionMultiInstanceValidity
 import BpmnSemantics.SemanticProcess.InternalRegionalCompletionCompensationValidity
 import BpmnSemantics.SemanticProcess.InternalRegionalChildProjectionValidity
+import BpmnSemantics.SemanticProcess.InternalRegionalControllerValidity
 
 /-! Child completion changes scope/token positions, disposes its scope-local frame, expires owned passive listeners and may
 withdraw one bounded Activity and its deadline. Owner closure protects the
@@ -111,6 +112,115 @@ private theorem child_completion_token_order (program : Program) (before after :
         exact orderedBy_addToken _ output owner ordered
       · contradiction
 
+private theorem child_completion_repeated_definitions (program : Program)
+    (id : OperationId) (origin : BpmnElementOrigin) (definition : DefinitionScopeId) (output : ControlPlaceId)
+    (valid : programWellFormed program = true)
+    (completion : .completeScope id origin definition (some output) ∈ program.operations) :
+    ∀ entry ∈ program.operations.filterMap sequentialScopeEntry?, entry.childScopeId ≠ definition := by
+  obtain ⟨root, scope, _, lifecycle, found, child⟩ := programGraphWellFormed_completion_binding program
+    id origin definition (some output) (programWellFormed_graph program valid) completion
+  have scopeId : scope.id = definition := by simpa using List.find?_some found
+  have scopeMember := List.mem_of_find?_eq_some found
+  have parent : scope.parentScopeId.isSome = true := by cases eq : scope.parentScopeId <;> simp_all
+  intro entry declared same
+  obtain ⟨operation, member, projected⟩ := List.mem_filterMap.mp declared
+  cases operation <;> simp only [sequentialScopeEntry?, Option.some.injEq] at projected <;> try contradiction
+  rename_i eid eorigin input body childScope normalOutput collection item mappings condition
+  subst entry
+  apply scopeLifecycle_completion_excludes_repeated_entry program root scope id origin (some output)
+    _ lifecycle scopeMember parent (by simpa only [scopeId] using completion) member
+  exact ⟨eid, eorigin, input, body, normalOutput, collection, item, mappings, condition,
+    by change childScope = definition at same; rw [same, scopeId]⟩
+
+private theorem child_completion_repeated_validity (program : Program) (before after : RuntimeState)
+    (selected : InternalRegionalSelection) (withdrawal : InternalCompletionWithdrawal)
+    (kind : selected.kind = .completing withdrawal)
+    (fields : regionalReferenceFieldsMatch before after (regionalSelectionReferenceRetention before selected))
+    (scopes : after.scopeOccurrences = before.scopeOccurrences.filter (fun scope => decide (scope.id ≠ selected.root.id)))
+    (locals : after.variables.scopes = before.variables.scopes.filter (fun scope => decide (scope.owner ≠ selected.root.id)))
+    (control : after.control = before.control)
+    (controllers : after.sequentialScopeControllers = before.sequentialScopeControllers)
+    (process : after.variables.process = before.variables.process)
+    (ownerClosed : regionalActivityOwnersClosed before (regionalSelectionReferenceRetention before selected) = true)
+    (distinct : ∀ entry ∈ program.operations.filterMap sequentialScopeEntry?, entry.childScopeId ≠ selected.root.id.definitionScopeId)
+    (valid : sequentialScopeStateValid program before = true) : sequentialScopeStateValid program after = true := by
+  let keep := (regionalSelectionReferenceRetention before selected).activity
+  have bodyKept (entry : SequentialScopeEntry) (declared : entry ∈ program.operations.filterMap sequentialScopeEntry?)
+      (binding : SequentialScopeBinding) (bound : sequentialScopeBindingForEntry? entry before = some binding) :
+      binding.body.id ≠ selected.root.id := by
+    have definition := (repeated_binding_members entry before binding bound).2.2.2.2.2.2.2.2.2.2.2
+    intro same
+    exact distinct entry declared (definition.symm.trans (congrArg ScopeOccurrenceId.definitionScopeId same))
+  have activityKept (entry : SequentialScopeEntry) (declared : entry ∈ program.operations.filterMap sequentialScopeEntry?)
+      (binding : SequentialScopeBinding) (bound : sequentialScopeBindingForEntry? entry before = some binding) :
+      keep binding.activity = true := by
+    have different := bodyKept entry declared binding bound
+    have body := (sequentialScope_binding_activity entry before binding bound).2
+    cases withdrawal <;> simp [keep, regionalSelectionReferenceRetention, kind, ordinaryCompletionReferenceRetention,
+      boundedCompletionReferenceRetention, monitoredCompletionReferenceRetention, body, different]
+  have nextBinding (entry : SequentialScopeEntry) (declared : entry ∈ program.operations.filterMap sequentialScopeEntry?)
+      (binding : SequentialScopeBinding) (bound : sequentialScopeBindingForEntry? entry before = some binding) :
+      sequentialScopeBindingForEntry? entry after = some binding := by
+    obtain ⟨activityMember, bodyMember, controllerMember, localMember, _, _, _, _, _, localOwner, ownerLive, _⟩ :=
+      repeated_binding_members entry before binding bound
+    have kept := activityKept entry declared binding bound
+    have different := bodyKept entry declared binding bound
+    have ownerRetained := List.all_eq_true.mp ownerClosed binding.activity activityMember
+    simp only [show (regionalSelectionReferenceRetention before selected).activity binding.activity = true from kept,
+      Bool.not_true, Bool.false_or] at ownerRetained
+    have nextOwner : after.scopeOccurrences.any (fun occurrence => occurrence.id == binding.activity.owner) = true := by
+      obtain ⟨owner, member, named⟩ := List.any_eq_true.mp ownerLive
+      have retained := List.all_eq_true.mp ownerRetained owner member
+      have ownerEq : owner.id = binding.activity.owner := by simpa using named
+      simp only [ownerEq, decide_true, Bool.not_true, Bool.false_or] at retained
+      rw [fields.1]
+      exact List.any_eq_true.mpr ⟨owner, List.mem_filter.mpr ⟨member, retained⟩, named⟩
+    apply sequentialScopeBindingForEntry_retained entry before after binding bound control
+      (fields.2.1 ▸ List.filter_sublist) _ (scopes ▸ List.filter_sublist) _
+      (by rw [controllers]; exact List.Sublist.refl _) _ (locals ▸ List.filter_sublist) _ nextOwner
+    · rw [fields.2.1]; exact List.mem_filter.mpr ⟨activityMember, kept⟩
+    · rw [scopes]; exact List.mem_filter.mpr ⟨bodyMember, by simp [different]⟩
+    · rw [controllers]; exact controllerMember
+    · rw [locals]; exact List.mem_filter.mpr ⟨localMember, by simp [localOwner, different]⟩
+  apply sequentialScopeStateValid_binding_frame program before after valid controllers _ _ nextBinding
+    (fun entry _ => by simp only [sequentialScopeCollection?, process])
+  · intro entry declared
+    rw [fields.2.1]
+    apply allMatchingRetained_preserves_census
+    apply List.all_eq_true.mpr
+    intro activity member
+    cases named : activity.activityElementId == entry.elementId with
+    | false => simp [named]
+    | true =>
+        change (!(activity.activityElementId == entry.elementId) || keep activity) = true
+        simp only [named, Bool.not_true, Bool.false_or]
+        have prior := List.all_eq_true.mp (Bool.and_eq_true_iff.mp valid).2 entry declared
+        dsimp only at prior
+        have present : activity ∈ before.activityOccurrences.filter (fun activity => activity.activityElementId == entry.elementId) :=
+          List.mem_filter.mpr ⟨member, named⟩
+        split at prior
+        · rename_i empty _; rw [empty] at present; contradiction
+        · rename_i record body census _
+          cases bound : sequentialScopeBindingForEntry? entry before with
+          | none => simp only [bound] at prior; contradiction
+          | some binding =>
+              have bindingCensus := (sequentialScope_binding_activity entry before binding bound).1
+              have same : activity = binding.activity := by simpa only [bindingCensus, List.mem_singleton] using present
+              simpa only [same] using activityKept entry declared binding bound
+        · contradiction
+  · intro entry declared
+    rw [scopes]
+    apply allMatchingRetained_preserves_census
+    apply List.all_eq_true.mpr
+    intro body member
+    cases named : body.id.definitionScopeId == entry.childScopeId with
+    | false => simp [named]
+    | true =>
+        have different : body.id ≠ selected.root.id := by
+          intro same
+          exact distinct entry declared ((beq_iff_eq.mp named).symm.trans (congrArg ScopeOccurrenceId.definitionScopeId same))
+        simp [named, different]
+
 theorem preparedChildComplete_preserves_runtimeStateWellFormed (program : Program) (before : RuntimeState)
     (hosting : SemanticId) (id : OperationId) (origin : BpmnElementOrigin)
     (definition : DefinitionScopeId) (output : ControlPlaceId) (prepared : PreparedInternalRegional)
@@ -123,7 +233,7 @@ theorem preparedChildComplete_preserves_runtimeStateWellFormed (program : Progra
   simp only [runtimeStateWellFormed, Bool.and_eq_true, and_assoc] at components
   obtain ⟨position, races, incidents, owners, waitIds, bounds, declarations, hidden, order,
     activities, timers, messages, activityIds, controllers, sequential, parallel, controllerIds,
-    exhaustion, _, bodyClaims, retention, snapshotValid, execution⟩ := components
+    exhaustion, _, bodyClaims, retention, snapshotValid, execution, repeated⟩ := components
   obtain ⟨snapshots, declared, _, closedSelection, _, _, published⟩ :=
     prepareInternalRegional_facts program before _ prepared found
   obtain ⟨selection, closed⟩ := ownershipClosedSelection_facts program before _ prepared.selection closedSelection
@@ -215,6 +325,22 @@ theorem preparedChildComplete_preserves_runtimeStateWellFormed (program : Progra
   have nextExecution := completion_child_compensation_execution program domain before after hosting hosting prepared.selection.root
     position running control member child scopes (by rw [frame]) (by rw [frame])
     (by rw [frame]; exact List.Subset.refl _) (by rw [frame]; exact List.Subset.refl _) execution
+  have locals : after.variables.scopes = before.variables.scopes.filter
+      (fun scope => decide (scope.owner ≠ prepared.selection.root.id)) := by
+    obtain ⟨ordinary, completed, ts, acts, update⟩ := completeSelectedScope_ordinary_withdrawal program before after definition (some output) result
+    have variables := completeScopeState_variable_fields before ordinary definition (some output) prepared.selection.root census completed
+    rw [update]
+    cases parent : prepared.selection.root.parent with
+    | none => exact (child parent).elim
+    | some owner => simpa only [parent] using congrArg ScopedVariables.scopes variables
+  have rootDefinition : prepared.selection.root.id.definitionScopeId = definition := by
+    have present : prepared.selection.root ∈ before.scopeOccurrences.filter (fun scope => decide (scope.id.definitionScopeId = definition)) := by rw [census]; simp
+    exact of_decide_eq_true (List.mem_filter.mp present).2
+  have distinct := child_completion_repeated_definitions program id origin definition output
+    (Bool.and_eq_true_iff.mp (Bool.and_eq_true_iff.mp position).1).1
+    (List.mem_filter.mp (by rw [declared]; simp)).1
+  have nextRepeated := child_completion_repeated_validity program before after prepared.selection withdrawal kind fields scopes locals
+    control (by rw [frame]) (by rw [frame]) ownerClosed (by simpa only [rootDefinition] using distinct) repeated
   refine ⟨after, applied, ?_⟩
   simp only [runtimeStateWellFormed, Bool.and_eq_true, and_assoc]
   exact ⟨nextPosition, nextRaces,
@@ -229,6 +355,6 @@ theorem preparedChildComplete_preserves_runtimeStateWellFormed (program : Progra
     by change (match after.control with | .notStarted => _ | _ => true) = true; rw [control, running],
     by rw [fields.2.1]; exact activityBodyClaimsUnique_filter _ _ bodyClaims,
     nextRetention, by rw [frame]; simpa only [compensationEventSubProcessSnapshotStateValid, snapshots] using snapshotValid,
-    nextExecution⟩
+    nextExecution, nextRepeated⟩
 
 end BpmnSemantics.SemanticProcess.InternalCommutation

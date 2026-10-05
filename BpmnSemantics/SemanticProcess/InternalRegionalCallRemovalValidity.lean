@@ -74,7 +74,7 @@ theorem removeCalledProcessTree_preserves_hidden_declarations (program : Program
     (valid : hiddenRecordDeclarationsValid program state = true) :
     hiddenRecordDeclarationsValid program (removeCalledProcessTree state call) = true := by
   simp only [hiddenRecordDeclarationsValid, Bool.and_eq_true] at valid ⊢
-  exact ⟨all_filter _ _ _ valid.1, all_filter _ _ _ valid.2⟩
+  exact ⟨⟨all_filter _ _ _ valid.1.1, all_filter _ _ _ valid.1.2⟩, all_filter _ _ _ valid.2⟩
 
 theorem removeCalledProcessTree_preserves_controller_owners (program : Program)
     (state : RuntimeState) (call : CalledProcessOccurrence)

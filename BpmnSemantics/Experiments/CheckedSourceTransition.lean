@@ -79,6 +79,7 @@ def fireNode? (source : CheckedProcess) (node : CheckedNode)
   | .dataInputUserTask .. => none
   | .dataInputOutputUserTask .. => none
   | .dataOutputUserTask .. => none
+  | .sequentialMultiInstanceSubProcess .. => none
   | .sequentialMultiInstanceUserTask .. => none
   | .parallelMultiInstanceUserTask .. => none
   | .intermediateCatchTimerEvent _ _ => none
@@ -164,6 +165,8 @@ theorem fireNode_sound (source : CheckedProcess) (node : CheckedNode)
   | dataOutputUserTask id name directOutput =>
       simp [fireNode?] at result
   | sequentialMultiInstanceUserTask id name input output normalOutputFlowId boundaryTimer =>
+      simp [fireNode?] at result
+  | sequentialMultiInstanceSubProcess _ _ _ _ _ _ =>
       simp [fireNode?] at result
   | parallelMultiInstanceUserTask id name input output completionCondition normalOutputFlowId boundaryTimer =>
       simp [fireNode?] at result

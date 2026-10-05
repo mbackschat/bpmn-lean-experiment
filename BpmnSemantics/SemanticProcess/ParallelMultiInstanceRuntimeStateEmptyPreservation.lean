@@ -27,7 +27,7 @@ theorem sharedParallelEmpty_preserves_runtimeStateWellFormed (program : Program)
         tokens := addToken (removeToken before.tokens arm.input owner) arm.normalOutput owner
         variables := publishSharedParallelResults before arm [] } = true := by
   simp only [runtimeStateWellFormed, Bool.and_eq_true] at wellFormed ⊢
-  obtain ⟨existing, preservedTail, execution⟩ := wellFormed
+  obtain ⟨existing, ⟨preservedTail, execution⟩, repeated⟩ := wellFormed
   obtain ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨position, races⟩, incidents⟩, owners⟩, identities⟩,
     bounds⟩, declarations⟩, hidden⟩, order⟩, bodies⟩, timersUnambiguous⟩,
     messagesUnambiguous⟩, activityIds⟩, controllers⟩, sequentialBindings⟩,
@@ -81,7 +81,8 @@ theorem sharedParallelEmpty_preserves_runtimeStateWellFormed (program : Program)
     rw [compensationExecutionStateValid_running_frame program account.rootCompensationDomain before successor instanceId
       running rfl rfl rfl rfl rfl rfl]
     exact execution
-  refine ⟨?_, ⟨preservedTail, executionAfter⟩⟩
+  refine ⟨?_, ⟨⟨preservedTail, executionAfter⟩,
+    account.repeatedScopeStateValid_frame before successor rfl repeated⟩⟩
   refine ⟨?_, lifecycleAfter⟩
   refine ⟨?_, notExhausted⟩
   refine ⟨?_, controllerIds⟩

@@ -161,7 +161,7 @@ This contributor map assigns source-file responsibilities inside `@bpmn-lean/sem
 | [internal-transition-wait-census.ts](src/internal-transition-wait-census.ts) | Complete ordinary and composite wait-declarer census plus untagged open-anchor exclusion |
 | [internal-transition-footprint-vocabulary.ts](src/internal-transition-footprint-vocabulary.ts) | Closed internal state and publication atom discriminators |
 | [internal-transition-footprint-ordering.ts](src/internal-transition-footprint-ordering.ts) | Canonical atom and paired-publication ordering without locale collation |
-| [internal-transition-footprint.ts](src/internal-transition-footprint.ts) | Exact-prestate footprint derivation and sufficient two-operation non-interference classification |
+| [internal-transition-footprint.ts](src/internal-transition-footprint.ts) | Exact-prestate footprint derivation, including repeated-body input dependencies, and sufficient two-operation non-interference classification |
 | [internal-transition-initiation-preparation.ts](src/internal-transition-initiation-preparation.ts) | Exact singleton Process-initiation footprint, local patch, and numbering-free instantaneous publication derived from the pre-state |
 | [internal-transition-initiation-patch.ts](src/internal-transition-initiation-patch.ts) | Shared local Process-initiation edits for None, Message, and Timer starts without whole-state replacement |
 | [internal-publication-template.ts](src/internal-publication-template.ts) | Private numbering-free transition and lifecycle templates with canonical alternative sorting and late command, transition, and local-index instantiation |
@@ -184,6 +184,15 @@ This contributor map assigns source-file responsibilities inside `@bpmn-lean/sem
 | [flow-node-occurrence-retained-pairing.ts](src/flow-node-occurrence-retained-pairing.ts) | The retained half of the Activity occurrence record for state-free consumers |
 | [sequential-multi-instance-contract.ts](src/sequential-multi-instance-contract.ts) | Registered sequential Multi-Instance profile identity across source, IL, runtime, and host |
 | [sequential-multi-instance-controller.ts](src/sequential-multi-instance-controller.ts) | The outer sequential controller, storing generators rather than counters |
+| [sequential-scope-controller.ts](src/sequential-scope-controller.ts) | Private repeated-scope controller storage keyed by exact outer Activity identity; the Activity body owns the current child reference |
+| [sequential-scope-runtime.ts](src/sequential-scope-runtime.ts) | Private repeated-scope entry, quiescent turnover and terminal continuation with atomic body-local initialization and disposal |
+| [sequential-scope-binding.ts](src/sequential-scope-binding.ts) | Exact current body, outer Activity, controller and local-frame binding shared by lifecycle and data access |
+| [sequential-scope-state-validation.ts](src/sequential-scope-state-validation.ts) | Bidirectional controller, Activity and body ownership with exact immutable collection index and item validation |
+| [sequential-scope-observation.ts](src/sequential-scope-observation.ts) | Private repeated-body progress, captured item, local bindings and exact current inner-work occurrence projection |
+| [sequential-scope-control-analysis.ts](src/sequential-scope-control-analysis.ts) | Scoped mixed-task and paired-parallel body analysis with bounded parent continuation and automatic-burst admission |
+| [sequential-scope-data.ts](src/sequential-scope-data.ts) | Repeated-body input resolution, explicit Service result mapping, nearest-enclosing writes, protected names and Boolean User Task condition policy |
+| [sequential-scope-data-admission.ts](src/sequential-scope-data-admission.ts) | Private repeated-scope mapping checks, conservative Process input requirements and Start/command data restrictions; full profile admission remains separate |
+| [sequential-scope-program-admission.ts](src/sequential-scope-program-admission.ts) | Private TypeScript Program admission combining complete lifecycle shape, scoped mixed-body control, data requirements and distinct source identities |
 | [sequential-multi-instance-binding.ts](src/sequential-multi-instance-binding.ts) | The exact program-to-runtime binding of one open sequential controller |
 | [sequential-multi-instance-admission.ts](src/sequential-multi-instance-admission.ts) | Well-formedness of the sequential Multi-Instance await operation |
 | [sequential-multi-instance-command-data-admission.ts](src/sequential-multi-instance-command-data-admission.ts) | The sequential Multi-Instance operation selected by the registered program shape |

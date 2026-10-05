@@ -1,5 +1,6 @@
-import { serialBusinessEffectAdmitted } from "./serial-business-task-policy.js";
-import { MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID, MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID, SERIAL_BUSINESS_TASK_CHECKPOINT_PROFILE_ID } from "./semantic-profile-catalog.js";
+import { isSerialBusinessIdentifier, serialBusinessEffectAdmitted } from "./serial-business-task-policy.js";
+import { sequentialScopeBodyMappingsAdmitted } from "./sequential-scope-data-admission.js";
+import { MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID, MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID, SERIAL_BUSINESS_TASK_CHECKPOINT_PROFILE_ID, SEQUENTIAL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID } from "./semantic-profile-catalog.js";
 import {
   EffectOperation,
   EffectProtocol,
@@ -260,6 +261,17 @@ export function isWellFormedSemanticOperation(
         isNonEmptyString(value.childScopeId) &&
         scopeOrigins.has(value.childScopeId)
       );
+    case SemanticOperationKind.EnterSequentialMultiInstanceScope:
+      return hasOnlyKeys(value, ["id", "kind", "origin", "input", "childEntry", "childScopeId", "normalOutput",
+        "collectionName", "itemName", "bodyInputs", "completionBooleanName"]) &&
+        isPlaceReference(value.input, placeIds) && isPlaceReference(value.childEntry, placeIds) &&
+        isPlaceReference(value.normalOutput, placeIds) && new Set([value.input, value.childEntry, value.normalOutput]).size === 3 &&
+        isNonEmptyString(value.childScopeId) && scopeOrigins.has(value.childScopeId) &&
+        isSerialBusinessIdentifier(value.collectionName) && isSerialBusinessIdentifier(value.itemName) &&
+        (value.completionBooleanName === null || isSerialBusinessIdentifier(value.completionBooleanName)) &&
+        sequentialScopeBodyMappingsAdmitted(value.bodyInputs);
+    case SemanticOperationKind.CompleteSequentialMultiInstanceScope:
+      return hasOnlyKeys(value, ["id", "kind", "origin", "entryOperationId"]) && isNonEmptyString(value.entryOperationId);
     case SemanticOperationKind.EnterMonitoredScope:
     case SemanticOperationKind.EnterBoundedScope:
       return isWellFormedScopeBoundaryTimerOperation(
@@ -572,7 +584,7 @@ function isSupportedEffectContract(
   semanticProfile: string,
 ): boolean {
   if (semanticProfile === MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID) return (bpmnErrorRoute === null || isWellFormedBpmnErrorRoute(bpmnErrorRoute, placeIds)) && serialBusinessEffectAdmitted(effect);
-  if (semanticProfile === MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID || semanticProfile === SERIAL_BUSINESS_TASK_CHECKPOINT_PROFILE_ID) return bpmnErrorRoute === null && serialBusinessEffectAdmitted(effect);
+  if (semanticProfile === SEQUENTIAL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID || semanticProfile === MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID || semanticProfile === SERIAL_BUSINESS_TASK_CHECKPOINT_PROFILE_ID) return bpmnErrorRoute === null && serialBusinessEffectAdmitted(effect);
   if (
     !isRecord(effect.descriptor) ||
     !hasOnlyKeys(effect.descriptor, ["protocol", "operation"]) ||

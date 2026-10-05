@@ -28,6 +28,7 @@ import type {
   SemanticProcessProgram,
 } from "./semantic-process-contract.js";
 import type { ScopeOccurrenceId } from "./semantic-process-state.js";
+import type { PublicControlPositionDelta } from "./control-position-projection.js";
 import { stimulusCommandId } from "./stimulus.js";
 import { SemanticTransitionKind } from "./semantic-transition-trace.js";
 import type {
@@ -143,6 +144,7 @@ function expectedDelta(
         supplied,
         commandId,
         transitionIndex,
+        record.positionDelta,
       );
     }
     default:
@@ -158,6 +160,7 @@ function internalDelta(
   supplied: UnnumberedFlowNodeOccurrenceDelta,
   commandId: string,
   transitionIndex: number,
+  positions: PublicControlPositionDelta,
 ): UnnumberedFlowNodeOccurrenceDelta {
   const processId = requireProcessId(program, owner);
   const operationInstant = instantOccurrence(
@@ -318,9 +321,44 @@ function internalDelta(
         commandId,
         transitionIndex,
       );
+    case SemanticOperationKind.EnterSequentialMultiInstanceScope:
+      if (positions.exitedScopes.length !== 0) failCompleteness();
+      return lifecycleDelta(repeatedScopeStarts(program, positions, operation, owner));
+    case SemanticOperationKind.CompleteSequentialMultiInstanceScope: {
+      const entry = requireUnique(program.operations.filter(candidate => candidate.id === operation.entryOperationId));
+      if (entry.kind !== SemanticOperationKind.EnterSequentialMultiInstanceScope ||
+          entry.origin.elementId !== operation.origin.elementId || entry.childScopeId !== owner.definitionScopeId) failCompleteness();
+      const scope = requireAnchor(open, { kind: SemanticFlowNodeOccurrenceAnchorKind.Scope, id: owner });
+      const exited = requireUnique(positions.exitedScopes);
+      if (!sameScope(exited.id, owner) || exited.parent === null || !sameScope(exited.parent, scope.owner) ||
+          exited.bpmnElementId !== entry.origin.elementId || scope.elementId !== entry.origin.elementId) failCompleteness();
+      const starts = repeatedScopeStarts(program, positions, entry, scope.owner);
+      if (starts.some(({ anchor }) => anchor.kind !== SemanticFlowNodeOccurrenceAnchorKind.Scope ||
+          anchor.id.activation <= owner.activation)) failCompleteness();
+      return lifecycleDelta(starts, [lifecycleEnd(scope, FlowNodeOccurrenceTerminalKind.Completed)]);
+    }
     default:
       return assertNever(operation);
   }
+}
+
+/** FNOM-OCCURRENCE-01 pairs each generated body using E1 scope facts, independently of supplied E2 starts. */
+function repeatedScopeStarts(
+  program: SemanticProcessProgram,
+  positions: PublicControlPositionDelta,
+  entry: Extract<SemanticOperation, { kind: SemanticOperationKind.EnterSequentialMultiInstanceScope }>,
+  parent: ScopeOccurrenceId,
+): UnnumberedFlowNodeOccurrenceStart[] {
+  const definition = uniqueDefinition(program, entry.childScopeId);
+  if (definition?.parentScopeId !== parent.definitionScopeId || definition.originElementId !== entry.origin.elementId ||
+      !operationOwnedBy(program, entry, parent) || positions.enteredScopes.length > 1) failCompleteness();
+  return positions.enteredScopes.map(scope => {
+    if (scope.parent === null || !sameScope(scope.parent, parent) || scope.bpmnElementId !== entry.origin.elementId ||
+        scope.id.definitionScopeId !== entry.childScopeId || scope.id.processInstanceId !== parent.processInstanceId ||
+        !safePositive(scope.id.activation)) failCompleteness();
+    return { anchor: { kind: SemanticFlowNodeOccurrenceAnchorKind.Scope, id: scope.id },
+      processId: requireProcessId(program, parent), elementId: entry.origin.elementId, owner: parent };
+  });
 }
 
 function requireOperation(

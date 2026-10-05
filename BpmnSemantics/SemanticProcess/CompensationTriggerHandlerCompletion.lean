@@ -187,6 +187,7 @@ def compensationFailureSuccessor (state : RuntimeState)
       eventRaces := []
       calledProcessOccurrences := []
       activityOccurrences := []
+      sequentialScopeControllers := []
       sequentialMultiInstanceControllers := []
       parallelMultiInstanceControllers := []
       compensationActivityRetentions := []

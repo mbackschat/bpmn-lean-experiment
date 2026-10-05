@@ -1,3 +1,4 @@
+import { sequentialScopeStateValid } from "./sequential-scope-state-validation.js";
 import {
   SemanticOperationKind,
   type SemanticProcessProgram,
@@ -171,6 +172,8 @@ function declaredElementIds(
       case SemanticOperationKind.Initiate:
       case SemanticOperationKind.InitiateMessage:
       case SemanticOperationKind.InitiateTimer:
+      case SemanticOperationKind.EnterSequentialMultiInstanceScope:
+      case SemanticOperationKind.CompleteSequentialMultiInstanceScope:
       case SemanticOperationKind.EnterScope:
       case SemanticOperationKind.InvokeProcess:
       case SemanticOperationKind.ReturnProcess:
@@ -336,6 +339,7 @@ export function runtimeStateDefects(
       state.calledProcessOccurrences.length > 0 ||
       state.activityOccurrences.length > 0 ||
       state.variables.activities.length > 0 ||
+      (state.sequentialScopeControllers?.length ?? 0) > 0 ||
       (state.sequentialMultiInstanceControllers?.length ?? 0) > 0 ||
       (state.parallelMultiInstanceControllers?.length ?? 0) > 0 ||
       (state.compensationParentContextRetentions?.length ?? 0) > 0 ||
@@ -418,7 +422,13 @@ export function runtimeStateDefects(
   );
   const hiddenRecordsDeclared =
     state.selectedBranchSets.every(({ selectionKey }) => selectionKeys.has(selectionKey)) &&
-    state.eventRaces.every(({ id }) => raceElementIds.has(id.elementId));
+    state.eventRaces.every(({ id }) => raceElementIds.has(id.elementId)) &&
+    (state.sequentialScopeControllers ?? []).every(({ id }) =>
+      program.operations.filter((operation) =>
+        operation.kind === SemanticOperationKind.EnterSequentialMultiInstanceScope &&
+        operation.origin.elementId === id.activityElementId
+      ).length === 1
+    );
   if (!hiddenRecordsDeclared) {
     defects.push(RuntimeStateDefect.UndeclaredHiddenRecord);
   }
@@ -426,6 +436,7 @@ export function runtimeStateDefects(
   defects.push(...activityOwnershipDefects(state));
   defects.push(...sequentialMultiInstanceDefects(program, state));
   defects.push(...parallelMultiInstanceStateDefectCodes(program, state));
+  if (!sequentialScopeStateValid(program, state)) defects.push(RuntimeStateDefect.SequentialScopeControllerBindingMismatch);
 
   const affectedActivationCounters = [
     state.taskActivations,
@@ -753,6 +764,8 @@ const GATED_DEFECTS: ReadonlySet<RuntimeStateDefect> = new Set([
   RuntimeStateDefect.DuplicateActivityBodyClaim,
   RuntimeStateDefect.UnownedAttachedWait,
   RuntimeStateDefect.DuplicateActivityOccurrence,
+  // SMIS-IDENTITY-01 fixes controller/body/collection agreement from this Program and one state.
+  RuntimeStateDefect.SequentialScopeControllerBindingMismatch,
   // Presence is decidable from the supplied program and one state, unlike the wait-declaration
   // classes excluded above. Gating it prevents both a profile-owned collection disappearing across
   // a Run and the optional field changing every older profile's canonical state shape.

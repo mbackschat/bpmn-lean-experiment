@@ -318,16 +318,16 @@ theorem human_dispatch_cases (program : Program) (analysis : Analysis) (before :
       completeUserTask before taskId.processInstanceId ⟨taskId.elementId.value⟩ taskId.activation := by
     simp [completeOrdinaryUserTaskWithCompensation?, compensationTargetDeclaredForFamily, noRetention]
   have typed : bindingsValid (programHandlers program) bindings = true →
-      processDataBindingsAdmitted program.identity.semanticProfile .userTaskCompletion bindings = true := by
+      processDataBindingsAdmitted serialBusinessTaskProfileId .userTaskCompletion bindings = true := by
     intro valid
     apply List.all_eq_true.mpr
     intro binding member
     have scalarValue := (Bool.and_eq_true_iff.mp (List.all_eq_true.mp (Bool.and_eq_true_iff.mp valid).2 binding member)).2
     cases valueEq : binding.value <;> simp [valueEq, scalar] at scalarValue
-    all_goals rw [profile]; rfl
+    all_goals rfl
   cases control : before.control <;>
     simp only [dispatchStimulus, noSnapshots] <;>
-    simp [control, noParallel, noSequential, noMessageMonitored, noMessageBounded,
+    simp [control, profile, serialBusinessTaskProfileId, noParallel, noSequential, noMessageMonitored, noMessageBounded,
       noBounded, noInput, noOutput, noMonitored, noComposed, ordinary, legacy]
   case running instanceId =>
     cases completed : completeUserTask before taskId.processInstanceId
@@ -338,7 +338,7 @@ theorem human_dispatch_cases (program : Program) (analysis : Analysis) (before :
         split
         · rename_i accepted
           have patchValid : bindingsValid (programHandlers program) bindings = true := by
-            simpa [profile] using accepted.1.1.2
+            simp_all
           exact Or.inr ⟨patchValid, after, rfl, rfl⟩
         · rename_i rejected
           refine Or.inl ⟨rfl, ?_⟩
@@ -411,14 +411,14 @@ theorem serial_completion_admission_eq_dispatch (program : Program) (analysis : 
     (completion : IsSerialCompletion stimulus) :
     admitStimulus program before stimulus = dispatchStimulus program before stimulus := by
   obtain ⟨_, snapshots, _, messages⟩ := program_analysis_declarations_absent program analysis analyzed
-  have dataValid : callDataRuntimeStateValid program before = true := by
-    simp [callDataRuntimeStateValid, profile, serialBusinessTaskProfileId, callDataCheckpointProfileId]
   have messageValid : interruptingMessageEventSubProcessStateValid program before = true := by
     simp_all [interruptingMessageEventSubProcessStateValid, ForeignRuntimeEmpty,
       serialBusinessTaskProfileId, interruptingMessageEventSubProcessProfileId]
   have incidents : before.effectIncidents = [] := foreign.2.2.1
   cases stimulus <;> simp only [IsSerialCompletion] at completion <;> try contradiction
-  all_goals simp [admitStimulus, dispatchStimulus, snapshots, guarded, dataValid, messageValid, incidents]
+  all_goals simp [admitStimulus, dispatchStimulus, snapshots, guarded, messageValid, incidents,
+    callDataRuntimeStateValid, SequentialScopeData.stimulusAdmitted, profile,
+    serialBusinessTaskProfileId, callDataCheckpointProfileId]
 
 theorem guarded_effect_dispatch_cases (program : Program) (analysis : Analysis) (before : RuntimeState)
     (commandId : SemanticId) (effectId : EffectOccurrenceId) (result : EffectExecutionResult)

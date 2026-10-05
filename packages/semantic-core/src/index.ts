@@ -1,4 +1,8 @@
 export * from "./contract.js";
+export { SEQUENTIAL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID } from "./semantic-profile-catalog.js";
+export { analyzeSequentialScopeControl } from "./sequential-scope-control-analysis.js";
+export { analyzeSequentialScopeData } from "./sequential-scope-data-admission.js";
+export { sequentialScopeCheckpointValid } from "./sequential-scope-state-validation.js";
 export * from "./activity-body-turnover.js";
 export * from "./flow-node-occurrence-retained-pairing.js";
 export * from "./activity-occurrence.js";

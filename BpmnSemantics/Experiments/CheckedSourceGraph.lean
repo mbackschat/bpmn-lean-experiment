@@ -55,6 +55,7 @@ def nodeArityValid (source : CheckedProcess) :
   | .dataInputUserTask .. => false
   | .dataInputOutputUserTask .. => false
   | .dataOutputUserTask .. => false
+  | .sequentialMultiInstanceSubProcess .. => false
   | .sequentialMultiInstanceUserTask .. => false
   | .parallelMultiInstanceUserTask .. => false
   | .payloadMessageCatchEvent .. => false

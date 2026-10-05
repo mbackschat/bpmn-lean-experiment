@@ -133,7 +133,7 @@ function pageWithMultiInstanceProgress(): any {
       activityElementId: "Review",
       activation: 1,
     },
-    mode: "sequential",
+    mode: "sequential", bodyKind: "userTask",
     plannedInstanceCount: 3,
     pendingItemCount: 2,
     numberOfInstances: 1,

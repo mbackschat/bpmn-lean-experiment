@@ -278,8 +278,8 @@ function isCurrent(
 ): value is CurrentCommittedExecution {
   if (!isRecord(value) || !hasOnlyKeys(value, ["revision", "state", "controlTokens", "scopes"]) ||
     value.revision !== page.headRevision ||
-    !isState(value.state, page.processInstanceId, program, processId) ||
     !isTokenList(value.controlTokens, program) || !isScopeList(value.scopes, program, true) ||
+    !isState(value.state, page.processInstanceId, program, processId, value.scopes) ||
     (lastLogicalTime !== undefined &&
       (value.state as StateObservation).logicalTimeMs !== lastLogicalTime)) {
     return false;
@@ -298,13 +298,15 @@ function isState(
   instanceId: unknown,
   program: SemanticProcessProgram | null,
   processId: string,
+  scopes: readonly PublicScopePosition[],
 ): value is StateObservation {
   const hasMultiInstances = isRecord(value) &&
     Object.hasOwn(value, "openMultiInstances");
   const failed = isRecord(value) && value.status === ProcessStatus.Failed;
   const programDeclaresMultiInstances = program?.operations.some(({ kind }) =>
     kind === SemanticOperationKind.AwaitSequentialMultiInstanceUserTask ||
-    kind === SemanticOperationKind.AwaitParallelMultiInstanceUserTask
+    kind === SemanticOperationKind.AwaitParallelMultiInstanceUserTask ||
+    kind === SemanticOperationKind.EnterSequentialMultiInstanceScope
   );
   if (!isRecord(value) || !hasOnlyKeys(value, [
     "kind", "instanceId", "status", "activeWaits", "openUserTasks",
@@ -338,6 +340,8 @@ function isState(
       instanceId,
       value.openUserTasks,
       program,
+      value.openEffects,
+      scopes,
     )) ||
     !isPatch(value.variables) || !isActiveWaits(value.activeWaits) ||
     !isEnabledInteractions(value.enabledInteractions, value, program, processId)) {

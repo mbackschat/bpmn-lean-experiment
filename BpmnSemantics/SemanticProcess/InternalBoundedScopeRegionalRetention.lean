@@ -38,7 +38,10 @@ theorem boundedScope_regional_classifiers
       calledInstanceClosure (bounded.selection.apply state) regional.selection.root.id =
         calledInstanceClosure state regional.selection.root.id ∧
       (bounded.selection.apply state).calledProcessOccurrences = state.calledProcessOccurrences := by
-  have childValid := prepareInternalBoundedScope_preserves_child_runtime program state contract bounded _ valid found
+  have childValid := prepareInternalBoundedScope_preserves_child_position program state contract bounded _ (by
+    have parts := valid
+    simp only [runtimeStateWellFormed, Bool.and_eq_true, and_assoc] at parts
+    exact parts.1) found
   have outside := boundedScope_regional_outside program state contract bounded operation regional found regionalFound independent
   obtain ⟨selected, hosting, owner, _, _, _, selection, running, _, _, _, _, _, _, _, _, rfl⟩ :=
     prepareInternalBoundedScope_facts program state contract bounded found
@@ -50,8 +53,7 @@ theorem boundedScope_regional_classifiers
     simp only [runtimeStateWellFormed, Bool.and_eq_true, and_assoc] at valid
     exact valid.1
   have childPosition : runtimePositionValid program hosting (entry.apply state) = true := by
-    simp only [runtimeStateWellFormed, Bool.and_eq_true, and_assoc] at childValid
-    exact childValid.1
+    exact childValid
   have childRunning := (scopeCreation_apply_control state entry).trans runningControl
   have subtree := scopeCreation_subtree_frame state entry regional.selection.root.id regional.region
     (prepareInternalRegional_facts program state operation regional regionalFound).2.2.2.2.1
@@ -83,7 +85,10 @@ theorem boundedScope_regional_live_owner_masks
       (regional.selection.root.parent = none →
         (processInstanceClosureWithin state.calledProcessOccurrences [regional.selection.root.id.processInstanceId]
           (state.calledProcessOccurrences.length + 1)).contains owner.processInstanceId = false) := by
-  have afterValid := prepared_bounded_scope_preserves_runtime program state contract bounded _ found valid
+  have afterValid := prepareInternalBoundedScope_preserves_runtimePositionValid program state contract bounded _ (by
+    have parts := valid
+    simp only [runtimeStateWellFormed, Bool.and_eq_true, and_assoc] at parts
+    exact parts.1) found
   have derived := boundedScope_region_after_independent program state contract bounded operation regional valid found regionalFound independent
   have classifiers := boundedScope_regional_classifiers program state contract bounded operation regional valid found regionalFound independent
   have selected := (ownershipClosedSelection_facts program state operation regional.selection
@@ -102,8 +107,7 @@ theorem boundedScope_regional_live_owner_masks
     cases stateControl : state.control <;> simp_all [runningInstance?, after, InternalBoundedScopeSelection.apply,
       makeInternalBoundedScopeSelection, InternalScopeCreationSelection.apply]
   have position : runtimePositionValid program hosting after = true := by
-    simp only [runtimeStateWellFormed, Bool.and_eq_true, and_assoc] at afterValid
-    exact afterValid.1
+    exact afterValid
   have rootMember : regional.selection.root ∈ after.scopeOccurrences := by
     simp only [after, InternalBoundedScopeSelection.apply, makeInternalBoundedScopeSelection,
       InternalScopeCreationSelection.apply, child]

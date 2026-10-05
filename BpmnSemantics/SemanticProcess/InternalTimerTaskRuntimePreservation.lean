@@ -1,6 +1,7 @@
 import BpmnSemantics.SemanticProcess.TransactionCompensationOrdinaryFrames
 import BpmnSemantics.SemanticProcess.InternalTimerTaskValidity
 import BpmnSemantics.SemanticProcess.ActivityDataInputOutputMultiInstanceFrames
+import BpmnSemantics.SemanticProcess.InternalScopeCreationRuntimeValidity
 import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStatePreservation
 import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStateEntryOrder
 
@@ -318,7 +319,7 @@ theorem prepared_timer_task_preserves_runtime
     (wellFormed : runtimeStateWellFormed program expectedInstance state = true) :
     runtimeStateWellFormed program expectedInstance (applyInternalTimerTaskPatch state patch) = true := by
   simp only [runtimeStateWellFormed, Bool.and_eq_true] at wellFormed
-  obtain ⟨aggregate, ⟨⟨⟨claims, retention⟩, snapshots⟩, execution⟩⟩ := wellFormed
+  obtain ⟨aggregate, ⟨⟨⟨⟨claims, retention⟩, snapshots⟩, execution⟩, repeated⟩⟩ := wellFormed
   obtain ⟨aggregate, _lifecycle⟩ := aggregate
   obtain ⟨aggregate, notExhausted⟩ := aggregate
   obtain ⟨aggregate, controllerIds⟩ := aggregate
@@ -349,10 +350,26 @@ theorem prepared_timer_task_preserves_runtime
   have multiAfter := prepared_timer_task_preserves_multiInstance program state contract patch prepared controllers sequential parallel
   have claimsAfter := prepareInternalTimerTaskContract_preserves_bodyClaims program state contract patch prepared claims
   have timerFresh := prepared_timer_task_timer_keys_fresh program state contract patch prepared
-  obtain ⟨_, owner, instanceId, inputOrigin, processId, owned, running, _, _, _, _, _, _, _, _, _, rfl⟩ :=
+  obtain ⟨_, owner, instanceId, inputOrigin, processId, owned, running, selectedOperation, _, _, _, _, _, _, _, _, rfl⟩ :=
     prepareInternalTimerTaskContract_facts program state contract patch prepared
   let selected := makeInternalTimerTaskPatch program state contract owner instanceId processId inputOrigin
   let after := applyInternalTimerTaskPatch state selected
+  have structural : programWellFormed program = true := by
+    simp only [runtimePositionValid, Bool.and_eq_true] at position
+    exact position.1.1
+  have declared : contract.operation ∈ program.operations := by
+    simp only [exactProgramSelection, Bool.and_eq_true, decide_eq_true_eq] at selectedOperation
+    obtain ⟨candidate, singleton⟩ := List.length_eq_one_iff.mp selectedOperation.1
+    have held : candidate ∈ program.operations.filter (fun candidate => decide (candidate = contract.operation)) := by
+      rw [singleton]; simp
+    obtain ⟨member, equal⟩ := List.mem_filter.mp held
+    simpa [of_decide_eq_true equal] using member
+  have declares : operationDeclaresWaitKey contract.operation (userTaskWaitDeclarationKey contract.task.id) = true := by
+    cases kind : contract.kind <;> simp [InternalTimerTaskContract.operation, kind, operationDeclaresWaitKey,
+      operationWaitDeclarationKeys, userTaskWaitDeclarationKey]
+  have repeatedAfter : sequentialScopeStateValid program after = true := by
+    exact sequentialScopeStateValid_insert_activity program state selected.record
+      (sequentialScopeEntry_task_separate program contract.operation contract.task.id structural declared declares) repeated
   have control : state.control = .running instanceId := by
     cases equation : state.control <;> simp_all [runningInstance?]
   have positionAfter : runtimePositionValid program expectedInstance after = true :=
@@ -392,6 +409,6 @@ theorem prepared_timer_task_preserves_runtime
     ownersAfter⟩, waitIdsAfter⟩, boundsAfter⟩, declarationsAfter⟩, hidden⟩,
     orderAfter⟩, recordsAfter⟩, timersAfter⟩, messagesAfter⟩, activityIdsAfter⟩,
     multiAfter.1⟩, multiAfter.2.1⟩, multiAfter.2.2⟩, controllerIds⟩, notExhausted⟩, lifecycleAfter⟩,
-    ⟨⟨⟨claimsAfter, retention⟩, snapshots⟩, executionAfter⟩⟩
+    ⟨⟨⟨⟨claimsAfter, retention⟩, snapshots⟩, executionAfter⟩, repeatedAfter⟩⟩
 
 end BpmnSemantics.SemanticProcess.InternalCommutation

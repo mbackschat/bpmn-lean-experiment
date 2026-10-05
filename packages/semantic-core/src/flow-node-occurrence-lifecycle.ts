@@ -30,6 +30,7 @@ import type {
 } from "./semantic-process-state.js";
 import { compareCanonicalStrings } from "./wire.js";
 import { candidateLongLivedStarts } from "./flow-node-occurrence-boundary-starts.js";
+import { sequentialScopeBindingForOwner } from "./sequential-scope-binding.js";
 import {
   candidateElementOccurrence,
   candidateOperationOccurrence,
@@ -446,6 +447,7 @@ function internalLifecycle(
       return starts === null || gateway === null ? null : pieces(starts, [], [gateway]);
     }
     case SemanticOperationKind.EnterScope:
+    case SemanticOperationKind.EnterSequentialMultiInstanceScope:
     case SemanticOperationKind.EnterMonitoredScope:
     case SemanticOperationKind.EnterBoundedScope: {
       const starts = candidateLongLivedStarts(program, before, after, operation, owner);
@@ -489,6 +491,16 @@ function internalLifecycle(
         cancelledRegion(program, before, attached, true),
         [end],
       );
+    }
+    case SemanticOperationKind.CompleteSequentialMultiInstanceScope: {
+      const binding = sequentialScopeBindingForOwner(program, before, owner);
+      if (binding === undefined || binding.entry.id !== operation.entryOperationId ||
+          after.scopeOccurrences.some(({ id }) => sameScopeOccurrence(id, owner))) return null;
+      const starts = candidateLongLivedStarts(program, before, after, binding.entry, binding.activity.owner);
+      return starts === null ? null : pieces(starts, [{
+        anchor: { kind: SemanticFlowNodeOccurrenceAnchorKind.Scope, id: owner },
+        terminal: FlowNodeOccurrenceTerminalKind.Completed,
+      }]);
     }
     default:
       return assertNever(operation);

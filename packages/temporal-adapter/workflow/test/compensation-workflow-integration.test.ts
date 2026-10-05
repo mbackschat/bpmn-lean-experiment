@@ -31,7 +31,7 @@ test("routes a Compensation frontier through its scheduler instead of the single
   });
   const pending = [];
   let genericExecutions = 0;
-  const compensationScheduler = {
+  const effectScheduler = {
     ownsCommittedFrontier: () => true,
     waitForReadiness: async () => completion,
     reconcileCommittedState: () => undefined,
@@ -56,7 +56,7 @@ test("routes a Compensation frontier through its scheduler instead of the single
       waitForReadiness: async () => [],
     },
     boundedDeadlineSchedulers: [],
-    compensationScheduler,
+    effectScheduler,
     waitForTimer: async () => undefined,
     executeEffect: async () => {
       genericExecutions += 1;

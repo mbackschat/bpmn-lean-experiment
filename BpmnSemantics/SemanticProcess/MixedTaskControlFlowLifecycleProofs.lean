@@ -371,7 +371,7 @@ theorem fire_phase (program : Program) (analysis : Analysis) (before after : Run
   case awaitEffect id origin input output effect route =>
     cases step with
     | awaitEffect _ _ _ _ _ _ _ _ active =>
-        simp only [awaitEffectState?, bind, pure, Option.bind_eq_some_iff] at active
+        simp only [awaitEffectState?, program_analysis_effect_inputs program analysis analyzed, bind, pure, Option.bind_eq_some_iff] at active
         obtain ⟨root, found, _⟩ := active
         exact Or.inr (Or.inl (by simpa [operationInputs] using tokenPhase input root found))
   case choose id origin input candidates default defaultOrigin =>
@@ -622,19 +622,19 @@ theorem position_runtime_guard (program : Program) (analysis : Analysis) (state 
     intro operation member
     have selected := allowed operation member
     cases operation <;> simp_all [OperationAllowed, sequentialMultiInstanceOperationBindingComplete]
-  have noCompensation : (program.operations.any fun operation => match operation with
-      | .triggerCompensation .. | .cancelTransaction .. => true | _ => false) = false := by
-    apply List.any_eq_false.mpr
+  have compensationDeclaration : compensationExecutionDeclarationValid program = true := by
+    simp only [compensationExecutionDeclarationValid, compensation, Bool.not_eq_true', List.any_eq_false]
     intro operation member
     have selected := allowed operation member
     cases operation <;> simp_all [OperationAllowed]
-  have compensationDeclaration : compensationExecutionDeclarationValid program = true := by
-    unfold compensationExecutionDeclarationValid
-    rw [compensation]
-    change (!(program.operations.any fun operation => match operation with
-      | .triggerCompensation .. | .cancelTransaction .. => true | _ => false)) = true
-    rw [noCompensation]
-    rfl
+  have repeated : sequentialScopeStateValid program state = true := by
+    have noRepeated : program.operations.filterMap sequentialScopeEntry? = [] := by
+      apply List.filterMap_eq_nil_iff.mpr
+      intro operation member
+      have selected := allowed operation member
+      cases operation <;> simp_all [OperationAllowed, sequentialScopeEntry?]
+    have foreign := framed.2.2.2.2.1
+    simp_all [ForeignRuntimeEmpty, sequentialScopeStateValid]
   have parallel : parallelMultiInstanceProgramBindingsValid program state = true := by
     unfold parallelMultiInstanceProgramBindingsValid
     have empty : state.parallelMultiInstanceControllers = [] := by

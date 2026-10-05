@@ -149,6 +149,14 @@ function lowerNode(
             output: requireOnly(outgoing, node.id, "outgoing"),
           })
         : [];
+    case CheckedNodeKind.SequentialMultiInstanceSubProcess:
+      return scoped({ ...base, kind: SemanticOperationKind.EnterSequentialMultiInstanceScope,
+        input: requireOnly(incoming, node.id, "incoming"),
+        childEntry: childEntryPlace(source, node.childScopeId), childScopeId: node.childScopeId,
+        normalOutput: requireOnly(outgoing, node.id, "outgoing"),
+        collectionName: node.collectionName, itemName: node.itemName,
+        bodyInputs: node.bodyInputs, completionBooleanName: node.completionBooleanName,
+      });
     case CheckedNodeKind.CallActivity:
       return [lowerCallActivityInvoke(node, source)];
     case CheckedNodeKind.TransactionSubProcess:
@@ -517,6 +525,15 @@ function lowerScopeCompletion(
   scope: DefinitionScope,
   source: CheckedProcess,
 ): ScopedOperation {
+  const entry = source.nodes.find((node) =>
+    node.kind === CheckedNodeKind.SequentialMultiInstanceSubProcess && node.childScopeId === scope.id);
+  if (entry !== undefined) return {
+    scopeId: scope.id,
+    operation: { id: `operation:complete-scope:${scope.id}`,
+      kind: SemanticOperationKind.CompleteSequentialMultiInstanceScope,
+      origin: { kind: SemanticOriginKind.BpmnElement, elementId: entry.id },
+      entryOperationId: operationId(entry.id) },
+  };
   return {
     scopeId: scope.id,
     operation: {

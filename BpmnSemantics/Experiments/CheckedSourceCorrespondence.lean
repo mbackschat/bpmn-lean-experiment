@@ -122,6 +122,7 @@ private def correspondenceOperationSupported : SemanticOperation → Bool
   | .awaitDataInputUserTask ..
   | .awaitDataInputOutputUserTask ..
   | .awaitDataOutputUserTask ..
+  | .enterSequentialMultiInstanceScope .. | .completeSequentialMultiInstanceScope ..
   | .awaitSequentialMultiInstanceUserTask ..
   | .awaitParallelMultiInstanceUserTask ..
   | .completeParallelMultiInstanceUserTask ..
