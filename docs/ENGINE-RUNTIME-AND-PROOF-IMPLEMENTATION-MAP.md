@@ -4,7 +4,7 @@ This detail map owns the exact current cross-cutting runtime, scope, Lean, TypeS
 
 ## Current boundary
 
-[Parallel MI ownership](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#ownership-retirement-implementation): retirement/body foundation implemented; integration/review open.
+[Parallel MI ownership](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#ownership-retirement-implementation): retirement/body checkpoint approved; integration open.
 
 Lean and TypeScript execute reviewed, profile-bounded semantics over immutable serializable state. General BPMN execution and cross-target correspondence remain unproved.
 

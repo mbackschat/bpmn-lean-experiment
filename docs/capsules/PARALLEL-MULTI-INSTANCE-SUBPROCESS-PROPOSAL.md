@@ -162,7 +162,7 @@ The affected Lean ownership/frame consumers pass: scope insertion, regional rete
 
 Existing ownership-uniqueness and turnover regressions pass (`/tmp/parallel-body-scope-claim-regression`). Their dependency exposed a pre-existing profile-dispatch proof gap, separately corrected at `b3ee42ba` without changing theorem statements or admission.
 
-Continuation checks separate wire shape from live ownership and reject a parallel body substituted into the existing single-child profile even when its scope is live (`/tmp/parallel-body-wire-checkpoint`, 18 passing tests). Final harness types, source guards and documentation gates pass. This representation checkpoint awaits independent implementation review before controller/execution integration. Complete cross-language execution, hosting and public qualification remain open; no full-library memory or performance qualification was run.
+Continuation checks separate wire shape from live ownership and reject a parallel body substituted into the existing single-child profile even when its scope is live (`/tmp/parallel-body-wire-checkpoint`, 18 passing tests). Final harness types, source guards and documentation gates pass. Independent checkpoint review approves this ownership/retirement prerequisite at `fa718a08`; controller/execution integration remains open. Complete cross-language execution, hosting and public qualification remain open; no full-library memory or performance qualification was run.
 
 ## Existing host-capacity prerequisite
 
@@ -197,7 +197,9 @@ Measured on 2026-10-05 against `1454aa91`; Activity ownership refreshed after cl
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
 | Proposal | `11b033ea` | `fork-turns-none` | `approve` | `not-required` |
-| Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Semantic checkpoint | `fa718a08` | `fork-turns-none` | `approve` | `not-required` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
 Independent proposal review approved `11b033ea` without required corrections. Packet digest: `8662eaa9dc3e1afcaf5e0a0656d51a4c642c7a2b41ff668e0d1f0644937e49e3`. The reviewer independently passed 82 proposal/document checks (`/tmp/parallel-mi-cold-review-focused.log`), four CIB cases (`/tmp/parallel-mi-cold-review-cib.log`), the 64-case control experiment and a separate eight/nine/sixteen-operation batch discriminator; fixed-eight failed as intended. Approval covers the proposed account only. Production implementation, quantified progress/ownership proofs, complete cancellation/publication migration, sixteen-body byte capacity and hosting qualification remain open.
+
+Independent semantic-checkpoint review approved `fa718a08` against `9cbd5b5d` without required corrections. Packet digest: `5fb981c72f6e62512cbce51e01a0670884195b9356ff7777a35c3a89d0d5d875`. The reviewer independently checked 1,632 retirement steps, mixed-arm conflicts, identity substitutions, aliases, all-member cancellation/retention, eight additional Lean kernel probes, 120 focused tests, strict harness types and the affected cached Lean proof targets. Approval covers the representation/retirement prerequisite only: actual quiescence, atomic controller/body cleanup, reachable progress, full wire agreement and Temporal refinement remain open.
