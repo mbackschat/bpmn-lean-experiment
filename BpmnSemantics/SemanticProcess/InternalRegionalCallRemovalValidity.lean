@@ -74,7 +74,10 @@ theorem removeCalledProcessTree_preserves_hidden_declarations (program : Program
     (valid : hiddenRecordDeclarationsValid program state = true) :
     hiddenRecordDeclarationsValid program (removeCalledProcessTree state call) = true := by
   simp only [hiddenRecordDeclarationsValid, Bool.and_eq_true] at valid ⊢
-  exact ⟨⟨all_filter _ _ _ valid.1.1, all_filter _ _ _ valid.1.2⟩, all_filter _ _ _ valid.2⟩
+  obtain ⟨⟨⟨parallel, selections⟩, races⟩, controllers⟩ := valid
+  have empty : state.parallelScopeControllers = [] := List.isEmpty_iff.mp parallel
+  exact ⟨⟨⟨by simp [removeCalledProcessTree, empty], all_filter _ _ _ selections⟩,
+    all_filter _ _ _ races⟩, all_filter _ _ _ controllers⟩
 
 theorem removeCalledProcessTree_preserves_controller_owners (program : Program)
     (state : RuntimeState) (call : CalledProcessOccurrence)

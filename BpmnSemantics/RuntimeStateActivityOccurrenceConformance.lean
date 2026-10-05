@@ -165,4 +165,20 @@ theorem parallel_scope_membership_refuses_duplicate_identity_and_index :
           { record with body := .parallelChildScopes (scopeIteration 1 0) [scopeIteration 2 0] } } = false := by
   decide +kernel
 
+private def parallelController : ParallelScopeController :=
+  { id := { processInstanceId := instanceId, activityElementId := ⟨"Activity"⟩, activation := 1 }
+    total := 3, completed := 1 }
+
+theorem parallel_controller_counts_bind_both_ways_to_activity_membership :
+    parallelScopeControllersConsistent
+      { parallelScopeState with parallelScopeControllers := [parallelController] } = true ∧
+    parallelScopeControllersConsistent parallelScopeState = false ∧
+    parallelScopeControllersConsistent
+      { parallelScopeState with parallelScopeControllers := [parallelController, parallelController] } = false ∧
+    parallelScopeControllersConsistent
+      { parallelScopeState with parallelScopeControllers := [{ parallelController with total := 4 }] } = false ∧
+    parallelScopeControllersConsistent
+      { parallelScopeState with parallelScopeControllers := [parallelController], activityOccurrences := [] } = false := by
+  decide +kernel
+
 end BpmnSemantics.RuntimeStateWellFormedConformance

@@ -125,6 +125,12 @@ def cancelScopeSubtree (state : RuntimeState) (root : ScopeOccurrenceId)
           controller.id.processInstanceId == activity.processInstanceId &&
           controller.id.activityElementId.value == activity.activityElementId.value &&
           controller.id.activation == activity.activation)
+    parallelScopeControllers := state.parallelScopeControllers.filter fun controller =>
+      !calledInstances.contains controller.id.processInstanceId &&
+        !(withdrawnActivities.any fun activity =>
+          controller.id.processInstanceId == activity.processInstanceId &&
+          controller.id.activityElementId.value == activity.activityElementId.value &&
+          controller.id.activation == activity.activation)
     sequentialMultiInstanceControllers :=
       state.sequentialMultiInstanceControllers.filter fun controller =>
         !calledInstances.contains controller.processInstanceId &&

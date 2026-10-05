@@ -346,6 +346,14 @@ function removeCalledProcessTree(
             ({ id }) => !removedInstanceIds.has(id.processInstanceId),
           ),
       }),
+    ...(state.parallelScopeControllers === undefined
+      ? {}
+      : {
+        parallelScopeControllers:
+          state.parallelScopeControllers.filter(
+            ({ id }) => !removedInstanceIds.has(id.processInstanceId),
+          ),
+      }),
     ...(state.sequentialMultiInstanceControllers === undefined
       ? {}
       : {

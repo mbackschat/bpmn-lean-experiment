@@ -130,8 +130,9 @@ theorem cancelScopeSubtree_preserves_hidden_declarations (program : Program) (st
     (valid : hiddenRecordDeclarationsValid program state = true) :
     hiddenRecordDeclarationsValid program (cancelScopeSubtree state root disposition) = true := by
   simp only [hiddenRecordDeclarationsValid, Bool.and_eq_true] at valid ⊢
-  obtain ⟨⟨selections, races⟩, controllers⟩ := valid
-  exact ⟨⟨all_filter _ _ _ selections, all_filter _ _ _ races⟩,
-    all_filter _ _ _ controllers⟩
+  obtain ⟨⟨⟨parallel, selections⟩, races⟩, controllers⟩ := valid
+  have empty : state.parallelScopeControllers = [] := List.isEmpty_iff.mp parallel
+  exact ⟨⟨⟨by simp [cancelScopeSubtree, empty], all_filter _ _ _ selections⟩,
+    all_filter _ _ _ races⟩, all_filter _ _ _ controllers⟩
 
 end BpmnSemantics.SemanticProcess

@@ -81,6 +81,7 @@ def notStartedStateEmpty (state : RuntimeState) : Bool :=
     state.selectedBranchSets.isEmpty && state.eventRaces.isEmpty &&
     state.calledProcessOccurrences.isEmpty && state.activityOccurrences.isEmpty &&
     state.parallelMultiInstanceControllers.isEmpty && state.sequentialScopeControllers.isEmpty &&
+    state.parallelScopeControllers.isEmpty &&
     state.compensationActivityRetentions.isEmpty &&
     state.compensationParentContextRetentions.isEmpty &&
     state.compensationTriggers.isEmpty && state.compensationHandlerEffectWaits.isEmpty &&
@@ -710,6 +711,7 @@ decides runtime-to-runtime association, never reading `program.operations`. Supp
 paired operations looked up by the record's `returnOperationId`, and is recorded as absent rather
 than assumed. -/
 def hiddenRecordDeclarationsValid (program : Program) (state : RuntimeState) : Bool :=
+  state.parallelScopeControllers.isEmpty &&
   state.selectedBranchSets.all (fun record =>
     (program.operations.filter fun
       | .selectMany _ _ _ _ _ selectionKey => decide (selectionKey = record.selectionKey)

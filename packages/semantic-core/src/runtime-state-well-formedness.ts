@@ -342,6 +342,7 @@ export function runtimeStateDefects(
       state.activityOccurrences.length > 0 ||
       state.variables.activities.length > 0 ||
       (state.sequentialScopeControllers?.length ?? 0) > 0 ||
+      (state.parallelScopeControllers?.length ?? 0) > 0 ||
       (state.sequentialMultiInstanceControllers?.length ?? 0) > 0 ||
       (state.parallelMultiInstanceControllers?.length ?? 0) > 0 ||
       (state.compensationParentContextRetentions?.length ?? 0) > 0 ||
@@ -422,7 +423,7 @@ export function runtimeStateDefects(
         : [],
     ),
   );
-  const hiddenRecordsDeclared =
+  const hiddenRecordsDeclared = (state.parallelScopeControllers?.length ?? 0) === 0 &&
     state.selectedBranchSets.every(({ selectionKey }) => selectionKeys.has(selectionKey)) &&
     state.eventRaces.every(({ id }) => raceElementIds.has(id.elementId)) &&
     (state.sequentialScopeControllers ?? []).every(({ id }) =>

@@ -176,6 +176,9 @@ function completeFailure(
     ...(state.sequentialScopeControllers === undefined
       ? {}
       : { sequentialScopeControllers: [] }),
+    ...(state.parallelScopeControllers === undefined
+      ? {}
+      : { parallelScopeControllers: [] }),
     ...(state.sequentialMultiInstanceControllers === undefined
       ? {}
       : { sequentialMultiInstanceControllers: [] }),

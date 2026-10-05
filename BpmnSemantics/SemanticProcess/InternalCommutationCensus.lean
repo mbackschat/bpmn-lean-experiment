@@ -77,6 +77,7 @@ inductive InternalRuntimeStateAtomDomain where
   | callOccurrence
   | activityOccurrence
   | sequentialScopeController
+  | parallelScopeController
   | sequentialController
   | parallelController
   | compensationActivityRetention
@@ -112,6 +113,7 @@ inductive InternalRuntimeStateField where
   | calledProcessOccurrences
   | activityOccurrences
   | sequentialScopeControllers
+  | parallelScopeControllers
   | sequentialMultiInstanceControllers
   | parallelMultiInstanceControllers
   | compensationActivityRetentions
@@ -148,6 +150,7 @@ def internalRuntimeStateFieldAtomDomain :
   | .calledProcessOccurrences => .callOccurrence
   | .activityOccurrences => .activityOccurrence
   | .sequentialScopeControllers => .sequentialScopeController
+  | .parallelScopeControllers => .parallelScopeController
   | .sequentialMultiInstanceControllers => .sequentialController
   | .parallelMultiInstanceControllers => .parallelController
   | .compensationActivityRetentions => .compensationActivityRetention

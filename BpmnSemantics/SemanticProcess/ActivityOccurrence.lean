@@ -22,6 +22,23 @@ namespace BpmnSemantics.SemanticProcess
 
 open BpmnSemantics
 
+/-- PMIS-ENTER-01 joins each controller to exactly one Activity-owned population, in both directions. -/
+def parallelScopeControllersConsistent (state : RuntimeState) : Bool :=
+  let names := fun (controller : ParallelScopeController) (record : ActivityOccurrence) =>
+    controller.id.processInstanceId == record.processInstanceId &&
+    controller.id.activityElementId.value == record.activityElementId.value &&
+    controller.id.activation == record.activation
+  state.parallelScopeControllers.all (fun controller =>
+    match state.activityOccurrences.filter (names controller) with
+    | [record] => match record.body with
+      | .parallelChildScopes first rest => validParallelScopePopulation controller (first :: rest)
+      | _ => false
+    | _ => false) &&
+  state.activityOccurrences.all (fun record => match record.body with
+    | .parallelChildScopes .. =>
+        decide ((state.parallelScopeControllers.filter (fun controller => names controller record)).length = 1)
+    | _ => true)
+
 def operationOwningScope? (program : Program) (id : OperationId) : Option DefinitionScopeId :=
   match program.operationScopes.filter fun ownership => decide (ownership.operationId = id) with
   | [ownership] => some ownership.scopeId

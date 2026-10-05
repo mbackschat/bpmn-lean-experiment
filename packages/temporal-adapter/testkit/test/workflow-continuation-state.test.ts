@@ -567,6 +567,17 @@ test("a carried User Task identity above its absent counter is refused", () => {
   );
 });
 
+test("continuation refuses parallel controllers before their Program binding is admitted", () => {
+  for (const controllers of [[], [{
+    id: { processInstanceId: instanceId, activityElementId: "Review", activation: 1 },
+    total: 1, completed: 0,
+  }]]) {
+    assert.throws(() => requireBpmnWorkflowContinuationStateV1(
+      { ...resumable, parallelScopeControllers: controllers }, program, instanceId,
+    ), /Malformed committed RuntimeState continuation/u);
+  }
+});
+
 test("single-child profiles refuse a parallel body even with a live owned scope", () => {
   const entered = applyStimulus(boundedScopeProgram, initialState, startBoundedScope);
   assert.equal(entered.outcome, CommandOutcome.Committed);

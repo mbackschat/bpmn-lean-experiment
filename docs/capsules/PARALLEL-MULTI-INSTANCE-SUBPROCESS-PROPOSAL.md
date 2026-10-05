@@ -164,6 +164,14 @@ Existing ownership-uniqueness and turnover regressions pass (`/tmp/parallel-body
 
 Continuation checks separate wire shape from live ownership and reject a parallel body substituted into the existing single-child profile even when its scope is live (`/tmp/parallel-body-wire-checkpoint`, 18 passing tests). Final harness types, source guards and documentation gates pass. Independent checkpoint review approves this ownership/retirement prerequisite at `fa718a08`; controller/execution integration remains open. Complete cross-language execution, hosting and public qualification remain open; no full-library memory or performance qualification was run.
 
+### Controller storage integration
+
+The private runtime state now carries `parallelScopeControllers` in Lean and TypeScript. Controller identity joins to exactly one Activity-owned parallel population in both directions, and the existing population validator checks completed/active accounting. Regional withdrawal removes the exact Activity's controller; called-Process removal removes its descendants' controllers; terminal compensation cleanup clears the collection. Unrelated TypeScript updates preserve optional-field absence. The commutation census records the field without claiming an admitted producer or independent preparation rule.
+
+Current Programs still reject nonempty parallel-scope controller collections as undeclared, and Temporal continuation decoding rejects the new field, including an empty array. This is a storage/cleanup prerequisite, not profile admission, cross-language execution, or hosted support. Entry/exit declarations, atomic body retirement and local-data disposal, occurrence-addressed execution, production wire binding and implementation review remain open.
+
+The complete TypeScript core suite passes 1,645 tests (`/tmp/parallel-controller-core-suite`); subsequent focused tests cover called-Process identity separation and existing-profile refusal. Final focused/source/census guards and strict harness types pass (`/tmp/parallel-controller-final-guards`, `/tmp/parallel-controller-closure-types-fixed`, separately asserted). Lean storage definitions, turnover and regional declaration preservation pass (`/tmp/parallel-controller-lean-storage`, `/tmp/parallel-controller-turnover-proof`, `/tmp/parallel-controller-declaration-proofs`). The exact controller fixture and its supporting ownership fixtures also pass an isolated kernel check against the built production definitions (`/tmp/parallel-controller-isolated-kernel`); corrected branch-selection preservation passes separately (`/tmp/parallel-controller-selection-preservation`), both asserted. Broader proof validation remains incomplete: `/tmp/parallel-controller-kernel-checked` and `/tmp/parallel-controller-kernel-local` hit their fixed budgets; `/tmp/parallel-controller-selected-proof` built the corrected selection declaration proof but failed initialization on the earlier sequential-scope validity obligation. These failures are not acceptance. No performance or full-library memory qualification was run.
+
 ## Existing host-capacity prerequisite
 
 The 2026-10-05 [ordinary effect-frontier discriminator](../../packages/temporal-adapter/workflow/test/sequential-scope-effect-readiness.test.ts) independently admits a three-Service-Task body, starts all three Activities before any callback is released, and retains ownership until the completion commands commit. The existing two-effect test also passes. The [history cost table](../../packages/temporal-adapter/workflow/src/workflow-event-history-capacity.ts) nevertheless budgets one Activity lifecycle and one request/result pair, using the production pending-Activity limit without a corresponding frontier-count admission check. The broken invariant is that the reserved history envelope covers all admitted work until rollover is possible; [rollover safety](../../packages/temporal-adapter/workflow/src/workflow-rollover-safety.ts) refuses continuation while any Activity remains unreconciled. This demonstrates an accounting/admission mismatch, not an observed service history overflow or the cause of an E1 failure.
@@ -184,12 +192,12 @@ Measured on 2026-10-05 against `1454aa91`; Activity ownership refreshed after cl
 
 | Owner | Headroom before 800 nonblank lines |
 |---|---:|
-| [Activity body ownership](../../packages/semantic-core/src/activity-occurrence.ts) | 557 |
+| [Activity body ownership](../../packages/semantic-core/src/activity-occurrence.ts) | 545 |
 | [IL contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 116 |
 | [Internal frontier](../../packages/semantic-core/src/internal-transition-preparation.ts) | 686 |
 | [Runtime dispatch](../../packages/semantic-core/src/semantic-process-runtime.ts) | 48 |
 | [Closure evaluator](../../packages/semantic-core/src/semantic-process-closure.ts) | 609 |
-| [Runtime state](../../packages/semantic-core/src/semantic-process-state.ts) | 344 |
+| [Runtime state](../../packages/semantic-core/src/semantic-process-state.ts) | 342 |
 | [Workflow capacity contract](../../packages/temporal-adapter/protocol/src/workflow-chain.ts) | 234 |
 
 ## Independent cold-review receipt

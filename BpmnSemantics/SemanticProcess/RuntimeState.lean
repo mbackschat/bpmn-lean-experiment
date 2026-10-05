@@ -344,6 +344,7 @@ structure RuntimeState where
   optional only so continuation payloads under other profiles keep their byte shape, and no predicate
   or transition in either language distinguishes a missing collection from an empty one. -/
   sequentialScopeControllers : List SequentialScopeController := []
+  parallelScopeControllers : List ParallelScopeController := []
   sequentialMultiInstanceControllers : List SequentialMultiInstanceController := []
   parallelMultiInstanceControllers : List ParallelMultiInstanceController := []
   compensationActivityRetentions : List CompensationActivityRetention := []
@@ -378,6 +379,7 @@ def initialState : RuntimeState :=
     calledProcessOccurrences := []
     activityOccurrences := []
     sequentialScopeControllers := []
+    parallelScopeControllers := []
     sequentialMultiInstanceControllers := []
     parallelMultiInstanceControllers := []
     compensationActivityRetentions := []
@@ -403,7 +405,7 @@ private def failedCompensationLiveRegionEmpty (state : RuntimeState) : Bool :=
     state.effectWaits.isEmpty && state.effectIncidents.isEmpty &&
     state.selectedBranchSets.isEmpty && state.eventRaces.isEmpty &&
     state.calledProcessOccurrences.isEmpty && state.activityOccurrences.isEmpty &&
-    state.sequentialScopeControllers.isEmpty &&
+    state.sequentialScopeControllers.isEmpty && state.parallelScopeControllers.isEmpty &&
     state.sequentialMultiInstanceControllers.isEmpty &&
     state.parallelMultiInstanceControllers.isEmpty &&
     state.compensationActivityRetentions.isEmpty &&

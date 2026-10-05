@@ -70,14 +70,16 @@ test("unrelated admitted profiles refuse injected repeated-scope controller reco
   ];
   const refusals = cases.map(({ program, id, state }) => {
     assert.deepEqual(runtimeStateDefects(program, id, state), []);
-    const injected: RuntimeState = { ...state, sequentialScopeControllers: [{
+    const injected = { ...state, sequentialScopeControllers: [{
       id: state.activityOccurrences[0]?.id ?? {
         processInstanceId: id, activityElementId: "undeclared-body", activation: 1,
       },
       total: 2, completed: 0, currentItem: "invoice",
-    }] };
-    return runtimeStateDefects(program, id, injected)
-      .includes(RuntimeStateDefect.UndeclaredHiddenRecord);
+    }] } satisfies RuntimeState;
+    const parallel: RuntimeState = { ...state, parallelScopeControllers:
+      injected.sequentialScopeControllers.map(({ id, total, completed }) => ({ id, total, completed })) };
+    return [injected, parallel].every(candidate => runtimeStateDefects(program, id, candidate)
+      .includes(RuntimeStateDefect.UndeclaredHiddenRecord));
   });
   assert.deepEqual(refusals, [true, true]);
 });

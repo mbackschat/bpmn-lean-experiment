@@ -45,8 +45,8 @@ theorem InternalSelectedBranchPatch.preserves_hiddenRecordDeclarationsValid (pro
     hiddenRecordDeclarationsValid program
       { state with selectedBranchSets := patch.apply state.selectedBranchSets } = true := by
   simp only [hiddenRecordDeclarationsValid, Bool.and_eq_true] at prior ⊢
-  obtain ⟨⟨selections, races⟩, controllers⟩ := prior
-  refine ⟨⟨patch.preserves_all state.selectedBranchSets _ selections ?_, races⟩, controllers⟩
+  obtain ⟨⟨⟨parallel, selections⟩, races⟩, controllers⟩ := prior
+  refine ⟨⟨⟨parallel, patch.preserves_all state.selectedBranchSets _ selections ?_⟩, races⟩, controllers⟩
   intro record equality
   have counted : decide ((program.operations.filter fun
       | .selectMany _ _ _ _ _ selectionKey => decide (selectionKey = record.selectionKey)
@@ -257,6 +257,8 @@ theorem selectedBranchSet_insert_invalid_declarer_count_refused (program : Progr
   left
   apply Bool.and_eq_false_iff.mpr
   left
+  apply Bool.and_eq_false_iff.mpr
+  right
   apply Bool.and_eq_false_iff.mpr
   left
   refine Eq.trans ?_ countFalse

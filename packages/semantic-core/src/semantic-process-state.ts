@@ -1,3 +1,4 @@
+import type { ParallelScopeController } from "./parallel-scope-population.js";
 import type { SequentialScopeController } from "./sequential-scope-controller.js";
 import type {
   CompensationHandlerFailure,
@@ -209,6 +210,7 @@ export type RuntimeState = DeepReadonly<{
    */
   sequentialMultiInstanceControllers?: SequentialMultiInstanceController[];
   sequentialScopeControllers?: SequentialScopeController[];
+  parallelScopeControllers?: ParallelScopeController[];
   /** Present exactly for programs declaring the parallel Multi-Instance operation. */
   parallelMultiInstanceControllers?: ParallelMultiInstanceController[];
   /** Present exactly for Programs declaring boundary-handler compensation retention. */

@@ -22,7 +22,8 @@ import type {
 } from "./contract.js";
 import type { DeepReadonly } from "./deep-readonly.js";
 import type { ParallelScopeIteration } from "./parallel-scope-population.js";
-import type { ScopeOccurrenceId } from "./semantic-process-state.js";
+import { validParallelScopePopulation } from "./parallel-scope-population.js";
+import type { RuntimeState, ScopeOccurrenceId } from "./semantic-process-state.js";
 import { compareCanonicalStrings } from "./wire.js";
 
 /**
@@ -97,6 +98,18 @@ export type ActivityOccurrence = DeepReadonly<{
   body: ActivityBody;
   attachedHandlers: ActivityHandlerOccurrence[];
 }>;
+
+/** PMIS-ENTER-01 binds controller counts to the sole Activity-owned population in both directions. */
+export function parallelScopeControllersConsistent(state: RuntimeState): boolean {
+  const controllers = state.parallelScopeControllers ?? [];
+  return controllers.every(controller => {
+    const matches = state.activityOccurrences.filter(activity => sameActivityOccurrence(activity.id, controller.id));
+    const activity = matches[0];
+    return matches.length === 1 && activity?.body.kind === ActivityBodyKind.ParallelChildScopes &&
+      validParallelScopePopulation(controller, activity.body.iterations);
+  }) && state.activityOccurrences.every(activity => activity.body.kind !== ActivityBodyKind.ParallelChildScopes ||
+    controllers.filter(controller => sameActivityOccurrence(controller.id, activity.id)).length === 1);
+}
 
 export function sameActivityOccurrence(
   left: ActivityOccurrenceId,

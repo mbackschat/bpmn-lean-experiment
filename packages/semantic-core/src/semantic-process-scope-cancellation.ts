@@ -125,6 +125,16 @@ function removeScopeOccurrenceRegion(
             ),
           ),
       }),
+    ...(withoutCalledProcesses.parallelScopeControllers === undefined
+      ? {}
+      : {
+        parallelScopeControllers:
+          withoutCalledProcesses.parallelScopeControllers.filter(
+            (controller) => !withdrawnRecords.some((record) =>
+              sameActivityOccurrence(record.id, controller.id)
+            ),
+          ),
+      }),
     ...(withoutCalledProcesses.sequentialMultiInstanceControllers === undefined
       ? {}
       : {
