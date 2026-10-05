@@ -25,6 +25,7 @@ export type EffectFrontierScheduler = Readonly<{
 }>;
 
 type Adapters = Readonly<{
+  newActivitiesFenced: () => boolean;
   executeEffect: (request: EffectRequest) => Promise<EffectActivityResult>;
   failCapacity: (failure: EffectActivityCapacityBound) => never;
   enqueueCompletion: (completion: Stimulus) => void;
@@ -57,6 +58,8 @@ export function createOrdinaryEffectFrontierScheduler(
   }
   function schedule(state: RuntimeState): void {
     checkFailure();
+    // workflowRolloverPermitted requires issued Activities to settle; extending their frontier prevents that drain.
+    if (adapters.newActivitiesFenced()) return;
     const plans = projectOpenEffects(state).map(effect => {
       const material = projectEffectTransportMaterial(program, effect);
       const transportKey = effectTransportKey(material);
@@ -136,8 +139,9 @@ export function createTemporalOrdinaryEffectFrontierScheduler(
   executeEffect: Adapters["executeEffect"],
   failCapacity: Adapters["failCapacity"],
   enqueueCompletion: Adapters["enqueueCompletion"],
+  newActivitiesFenced: Adapters["newActivitiesFenced"],
 ): EffectFrontierScheduler {
   return createOrdinaryEffectFrontierScheduler(program, {
-    executeEffect, failCapacity, enqueueCompletion, waitUntil: condition,
+    executeEffect, failCapacity, enqueueCompletion, newActivitiesFenced, waitUntil: condition,
   });
 }

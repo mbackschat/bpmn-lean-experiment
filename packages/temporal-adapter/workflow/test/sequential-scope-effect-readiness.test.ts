@@ -38,7 +38,8 @@ const multiple = await fixture(twoEffects);
 const success: EffectActivityResult = { kind: EffectExecutionResultKind.Success,
   localPatch: [{ name: "result", value: { kind: VariableValueKind.String, value: "accepted" } }] };
 function input(program: SemanticProcessProgram, state: RuntimeState,
-  executeEffect: (request: EffectRequest) => Promise<EffectActivityResult>): HostReadinessInput & { wake: () => void } {
+  executeEffect: (request: EffectRequest) => Promise<EffectActivityResult>,
+  newActivitiesFenced: () => boolean = () => false): HostReadinessInput & { wake: () => void } {
   const waiters: { predicate: () => boolean; resolve: () => void }[] = [];
   const host: HostReadinessInput & { wake: () => void } = {
     wake() {
@@ -53,7 +54,7 @@ function input(program: SemanticProcessProgram, state: RuntimeState,
       recordMessageCallback: () => false, recordCompletionCallback: () => false, waitForReadiness: async () => [] },
     boundedDeadlineSchedulers: [],
     effectScheduler: createOrdinaryEffectFrontierScheduler(program, {
-      executeEffect,
+      executeEffect, newActivitiesFenced,
       failCapacity: failure => { throw new Error(`capacity: ${failure.budget}`); },
       enqueueCompletion: completion => enqueueStimulus(host.acceptedStimuli, host.pendingStimuli, completion, host.reserveStimulus),
       waitUntil: predicate => predicate() ? Promise.resolve() : new Promise(resolve => waiters.push({ predicate, resolve })),
@@ -255,4 +256,58 @@ test("technical Activity failure does not become a BPMN completion or release th
   await waiting;
   assert.deepEqual(host.pendingStimuli, []);
   assert.equal(host.effectScheduler.hasUnreconciledActivities(), true);
+});
+
+
+test("rollover fencing leaves a fresh frontier unscheduled and its committed effects intact", async () => {
+  let calls = 0;
+  const host = input(multiple.program, multiple.state, async () => { calls++; return success; }, () => true);
+  await host.effectScheduler.waitForReadiness(multiple.state, () => true);
+  assert.equal(calls, 0);
+  assert.equal(host.effectScheduler.hasUnreconciledActivities(), false);
+  assert.equal(projectOpenEffects(multiple.state).length, 2);
+});
+
+test("rollover drains an issued effect while deferring a newly enabled sibling until the successor", async () => {
+  const later = await fixture(parallel.replace('<userTask id="Branch0" />',
+    '<userTask id="Branch0" />' + service.replace('id="Validate"', 'id="LaterValidate"') +
+    '<sequenceFlow id="AfterReview" sourceRef="Branch0" targetRef="LaterValidate" />')
+    .replace('id="Done0" sourceRef="Branch0"', 'id="Done0" sourceRef="LaterValidate"'));
+  const activity = Promise.withResolvers<EffectActivityResult>();
+  let fenced = false;
+  const requests: EffectRequest[] = [];
+  const host = input(later.program, later.state, request => {
+    requests.push(request); return activity.promise;
+  }, () => fenced);
+  const waiting = waitForHostReadiness(host);
+  try {
+    assert.equal(requests.length, 1);
+    fenced = true;
+    const humanCommand = human(later.state);
+    enqueueStimulus(host.acceptedStimuli, host.pendingStimuli, humanCommand);
+    await flush(host);
+    await waiting;
+    const widened = commit(later.program, later.state, host.pendingStimuli.shift()!);
+    assert.equal(projectOpenEffects(widened).length, 2);
+    host.effectScheduler.reconcileCommittedState(widened);
+    await host.effectScheduler.waitForReadiness(widened, () => true);
+    assert.equal(requests.length, 1, "a fenced Run must not extend its outstanding Activity work");
+    assert.equal(host.effectScheduler.hasUnreconciledActivities(), true);
+    activity.resolve(success);
+    await flush(host);
+    const drained = commit(later.program, widened, host.pendingStimuli.shift()!);
+    host.effectScheduler.reconcileCommittedState(drained);
+    assert.equal(host.effectScheduler.hasUnreconciledActivities(), false);
+    const remaining = projectOpenEffects(drained);
+    assert.equal(remaining.length, 1);
+    const successorRequests: EffectRequest[] = [];
+    const successor = input(later.program, drained, async request => { successorRequests.push(request); return success; });
+    await successor.effectScheduler.waitForReadiness(drained, () => true);
+    assert.equal(successorRequests.length, 1);
+    assert.notEqual(successorRequests[0]!.idempotencyKey, requests[0]!.idempotencyKey);
+  } finally {
+    activity.resolve(success);
+    await flush(host);
+    await waiting;
+  }
 });

@@ -1,0 +1,14 @@
+import assert from "node:assert/strict";
+import { execFile } from "node:child_process";
+import { fileURLToPath } from "node:url";
+import { promisify } from "node:util";
+import test from "node:test";
+
+test("ordinary effect rollover drains issued work without extending its frontier", async () => {
+  const probe = fileURLToPath(new URL("./ordinary-effect-rollover-probe.ts", import.meta.url));
+  const { NODE_TEST_CONTEXT: _runnerContext, ...environment } = process.env;
+  const result = await promisify(execFile)(process.execPath, [
+    "--experimental-test-module-mocks", "--test", "--test-reporter=tap", probe,
+  ], { timeout: 20_000, env: environment });
+  assert.match(result.stdout, /# pass 1\b/u);
+});

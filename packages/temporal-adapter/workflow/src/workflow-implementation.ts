@@ -288,7 +288,8 @@ export async function runBpmnProcessWithHostEffects(
   };
   const effectScheduler = semanticProcess.identity.semanticProfile === SEQUENTIAL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID
     ? createTemporalOrdinaryEffectFrontierScheduler(semanticProcess, executeEffect, failEffectCapacity,
-      completion => enqueueStimulus(acceptedStimuli, pendingStimuli, completion, reserveStimulus))
+      completion => enqueueStimulus(acceptedStimuli, pendingStimuli, completion, reserveStimulus),
+      () => workflowChainFence === WorkflowChainFenceState.Rollover)
     : createTemporalCompensationFrontierScheduler(semanticProcess, executeEffect, failEffectCapacity);
   const boundedDeadlineSchedulerFor = (candidate: RuntimeState) =>
     boundedDeadlineSchedulers.find((scheduler) =>
@@ -694,16 +695,17 @@ export async function runBpmnProcessWithHostEffects(
       throw workflowChain.capacity.applicationFailure();
     }
 
+    const rolloverRequested = workflowChain !== null && (
+      workflowChainFence === WorkflowChainFenceState.Rollover ||
+      workflowChain.commandCapacity.rolloverRequested() || runRetention?.rolloverRequested === true ||
+      workflowChainRolloverTriggered(workflowChain, runRetention !== null && runRetention.traceEntries > 0));
+    if (rolloverRequested && semanticProcess.identity.semanticProfile === SEQUENTIAL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID) {
+      workflowChainFence = WorkflowChainFenceState.Rollover;
+    }
     if (
       workflowChain !== null &&
       workflowRolloverPermitted({
-        requested: workflowChainFence === WorkflowChainFenceState.Rollover ||
-          workflowChain.commandCapacity.rolloverRequested() ||
-          runRetention?.rolloverRequested === true ||
-          workflowChainRolloverTriggered(
-            workflowChain,
-            runRetention !== null && runRetention.traceEntries > 0,
-          ),
+        requested: rolloverRequested,
         managedBoundaryDeadlineArmed: eventRaceScheduler.hasArmedTimer() ||
           boundedDeadlineSchedulers.some((scheduler) => scheduler.hasArmedDeadline()),
         managedReadinessCallbackPending:
