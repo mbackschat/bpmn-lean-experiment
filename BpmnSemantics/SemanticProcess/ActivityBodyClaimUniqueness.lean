@@ -14,17 +14,6 @@ namespace BpmnSemantics.SemanticProcess
 
 open BpmnSemantics
 
-/-- Every exact User Task identity one Activity body claims. -/
-def activityBodyTaskClaims : ActivityBody → List OccurrenceId
-  | .userTask task => [task]
-  | .parallelUserTasks first rest => first :: rest
-  | .childScope _ => []
-
-/-- Every exact child-scope identity one Activity body claims. -/
-def activityBodyScopeClaims : ActivityBody → List ScopeOccurrenceId
-  | .childScope scope => [scope]
-  | .userTask _ | .parallelUserTasks .. => []
-
 private def exactListsOverlap [DecidableEq α] (left right : List α) : Bool :=
   left.any fun leftClaim => right.any fun rightClaim => decide (leftClaim = rightClaim)
 

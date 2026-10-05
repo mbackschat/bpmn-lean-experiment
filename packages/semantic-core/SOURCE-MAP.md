@@ -124,7 +124,7 @@ This contributor map assigns source-file responsibilities inside `@bpmn-lean/sem
 | [semantic-process-timer-start.ts](src/semantic-process-timer-start.ts) | Timer-start admission and initiation |
 | [runtime-state-identity-bound.ts](src/runtime-state-identity-bound.ts) | User Task, Timer, and Activity live-identity bounds against matching activation counters |
 | [runtime-state-well-formedness.ts](src/runtime-state-well-formedness.ts) | Aggregate runtime-state invariant validation, monotone-regression detection, and the gated defect set |
-| [activity-occurrence.ts](src/activity-occurrence.ts) | One runtime record per Activity occurrence owning state beyond its body |
+| [activity-occurrence.ts](src/activity-occurrence.ts) | Activity occurrence identity, complete task/scope ownership claims and attached-handler lookup |
 | [activity-body-turnover.ts](src/activity-body-turnover.ts) | Replacing what an Activity occurrence owns without replacing the occurrence |
 | [runtime-state-defect.ts](src/runtime-state-defect.ts) | Stable classes of malformed committed runtime state |
 | [runtime-state-collection-ordering.ts](src/runtime-state-collection-ordering.ts) | Internal canonical ordering for commutation-affected RuntimeState collections |

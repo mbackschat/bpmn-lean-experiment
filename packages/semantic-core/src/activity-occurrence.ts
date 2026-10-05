@@ -120,20 +120,26 @@ export function compareActivityOccurrences(
   return element !== 0 ? element : left.id.activation - right.id.activation;
 }
 
-function bodyNames(body: ActivityBody, occurrence: OccurrenceId): boolean {
+/** Complete task-body claims preserve membership order and multiplicity (AOO-CLAIM-01). */
+export function activityBodyTaskClaims(body: ActivityBody): ReadonlyArray<UserTaskInstanceId> {
   switch (body.kind) {
     case ActivityBodyKind.UserTask:
-      return body.task.processInstanceId === occurrence.processInstanceId &&
-        body.task.elementId === occurrence.elementId &&
-        body.task.activation === occurrence.activation;
+      return [body.task];
     case ActivityBodyKind.ParallelUserTasks:
-      return body.tasks.some((task) =>
-        task.processInstanceId === occurrence.processInstanceId &&
-        task.elementId === occurrence.elementId &&
-        task.activation === occurrence.activation
-      );
+      return body.tasks;
     case ActivityBodyKind.ChildScope:
-      return false;
+      return [];
+  }
+}
+
+/** Scope and task claims remain distinct identity domains (AOO-CLAIM-01). */
+export function activityBodyScopeClaims(body: ActivityBody): ReadonlyArray<ScopeOccurrenceId> {
+  switch (body.kind) {
+    case ActivityBodyKind.UserTask:
+    case ActivityBodyKind.ParallelUserTasks:
+      return [];
+    case ActivityBodyKind.ChildScope:
+      return [body.scope];
   }
 }
 
@@ -148,7 +154,7 @@ export function activityOccurrenceForTaskBody(
   occurrences: ReadonlyArray<ActivityOccurrence>,
   task: UserTaskInstanceId,
 ): ActivityOccurrence | undefined {
-  return only(occurrences.filter((record) => bodyNames(record.body, task)));
+  return only(occurrences.filter((record) => activityBodyTaskClaims(record.body).some((claim) => sameOccurrenceId(claim, task))));
 }
 
 /** The record owning one child scope occurrence as its body, or `undefined`. */
@@ -157,10 +163,9 @@ export function activityOccurrenceForScopeBody(
   scope: ScopeOccurrenceId,
 ): ActivityOccurrence | undefined {
   return only(occurrences.filter((record) =>
-    record.body.kind === ActivityBodyKind.ChildScope &&
-    record.body.scope.processInstanceId === scope.processInstanceId &&
-    record.body.scope.definitionScopeId === scope.definitionScopeId &&
-    record.body.scope.activation === scope.activation
+    activityBodyScopeClaims(record.body).some((claim) =>
+      claim.processInstanceId === scope.processInstanceId &&
+      claim.definitionScopeId === scope.definitionScopeId && claim.activation === scope.activation)
   ));
 }
 

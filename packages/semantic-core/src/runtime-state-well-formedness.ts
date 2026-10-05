@@ -9,12 +9,12 @@ import type {
   TimerOccurrenceId,
 } from "./contract.js";
 import {
-  ActivityBodyKind,
+  activityBodyTaskClaims,
+  activityBodyScopeClaims,
   ActivityHandlerKind,
   attachedTimerOccurrences,
   compareActivityOccurrences,
   sameActivityOccurrence,
-  type ActivityBody,
   type ActivityOccurrence,
 } from "./activity-occurrence.js";
 import {
@@ -553,27 +553,6 @@ function sequentialMultiInstanceDefects(
   return defects;
 }
 
-function userTaskClaims(body: ActivityBody): ReadonlyArray<OccurrenceId> {
-  switch (body.kind) {
-    case ActivityBodyKind.UserTask:
-      return [body.task];
-    case ActivityBodyKind.ParallelUserTasks:
-      return body.tasks;
-    case ActivityBodyKind.ChildScope:
-      return [];
-  }
-}
-
-function childScopeClaims(body: ActivityBody): ReadonlyArray<ScopeOccurrenceId> {
-  switch (body.kind) {
-    case ActivityBodyKind.UserTask:
-    case ActivityBodyKind.ParallelUserTasks:
-      return [];
-    case ActivityBodyKind.ChildScope:
-      return [body.scope];
-  }
-}
-
 /**
  * Every way the Activity occurrence records disagree with what they claim to own.
  *
@@ -596,15 +575,9 @@ function activityOwnershipDefects(
       const matches = state.userTaskWaits.filter(({ id }) => sameOccurrence(id, task));
       return matches.length === 1 && matches.every((wait) => sameScopeOccurrence(wait.owner, owner));
     };
-    switch (body.kind) {
-      case ActivityBodyKind.UserTask:
-        return taskOwned(body.task);
-      case ActivityBodyKind.ParallelUserTasks:
-        return body.tasks.every(taskOwned);
-      case ActivityBodyKind.ChildScope:
-        return state.scopeOccurrences
-          .filter(({ id }) => sameScopeOccurrence(id, body.scope)).length === 1;
-    }
+    return activityBodyTaskClaims(body).every(taskOwned) &&
+      activityBodyScopeClaims(body).every((scope) => state.scopeOccurrences
+        .filter(({ id }) => sameScopeOccurrence(id, scope)).length === 1);
   };
   const listedHandlersLive = (record: ActivityOccurrence): boolean =>
     record.attachedHandlers.every((handler) => {
@@ -628,11 +601,11 @@ function activityOwnershipDefects(
     state.activityOccurrences.some((other, otherIndex) =>
       index < otherIndex &&
       (
-        userTaskClaims(record.body).some((task) =>
-          userTaskClaims(other.body).some((otherTask) => sameOccurrence(task, otherTask))
+        activityBodyTaskClaims(record.body).some((task) =>
+          activityBodyTaskClaims(other.body).some((otherTask) => sameOccurrence(task, otherTask))
         ) ||
-        childScopeClaims(record.body).some((scope) =>
-          childScopeClaims(other.body).some((otherScope) =>
+        activityBodyScopeClaims(record.body).some((scope) =>
+          activityBodyScopeClaims(other.body).some((otherScope) =>
             sameScopeOccurrence(scope, otherScope)
           )
         )

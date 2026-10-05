@@ -152,6 +152,8 @@ Lean proves exact selector decomposition/identity, survivor framing, evaluator-t
 
 The complete core suite passes 1,638 tests (`/tmp/parallel-scope-population-core`, separately asserted). Focused receipts: `/tmp/parallel-scope-population-build`, `/tmp/parallel-scope-population-green`, `/tmp/parallel-scope-population-types`, and `/tmp/parallel-scope-population-lean-green`. Lean ran with one CPU, 3 GiB, no extra swap and no network; full-library memory and performance qualification remain deferred. The existing [proposal review](#independent-cold-review-receipt) approves the account, not this implementation; implementation review remains open.
 
+The ownership integration prerequisite centralizes complete task/scope claims in [Activity ownership](../../packages/semantic-core/src/activity-occurrence.ts). TypeScript lookup, liveness, duplicate-claim checks, regional retention and cancellation use those projections; Lean's unchanged claim definitions now live in [ActivityOccurrence](../../BpmnSemantics/SemanticProcess/ActivityOccurrence.lean), shared with uniqueness proofs. This behavior-preserving refactor retains all existing body arms. Complete core checks pass 1,639 tests (`/tmp/activity-claims-core`); strict types (`/tmp/activity-claims-types`), ownership/census guards (`/tmp/activity-claims-guards`) and Lean uniqueness/writer-preservation dependencies (`/tmp/activity-claims-lean`, 92 build jobs under the fixed resource bound) pass. The parallel body arm and wire migration remain unimplemented.
+
 ## Existing host-capacity prerequisite
 
 The 2026-10-05 [ordinary effect-frontier discriminator](../../packages/temporal-adapter/workflow/test/sequential-scope-effect-readiness.test.ts) independently admits a three-Service-Task body, starts all three Activities before any callback is released, and retains ownership until the completion commands commit. The existing two-effect test also passes. The [history cost table](../../packages/temporal-adapter/workflow/src/workflow-event-history-capacity.ts) nevertheless budgets one Activity lifecycle and one request/result pair, using the production pending-Activity limit without a corresponding frontier-count admission check. The broken invariant is that the reserved history envelope covers all admitted work until rollover is possible; [rollover safety](../../packages/temporal-adapter/workflow/src/workflow-rollover-safety.ts) refuses continuation while any Activity remains unreconciled. This demonstrates an accounting/admission mismatch, not an observed service history overflow or the cause of an E1 failure.
@@ -168,11 +170,11 @@ The existing [operation consumer census](../../scripts/semantic-operation-consum
 
 ### Owners this implementation grows
 
-Measured on 2026-10-05 against `1454aa91`; recompute before implementation. These are directly affected owners, not an exhaustive migration census. If a planned change exceeds its remaining headroom, extract a cohesive owner before growth rather than increasing the limit.
+Measured on 2026-10-05 against `1454aa91`; Activity ownership refreshed after claim consolidation. Recompute before implementation. These are directly affected owners, not an exhaustive migration census. If a planned change exceeds its remaining headroom, extract a cohesive owner before growth rather than increasing the limit.
 
 | Owner | Headroom before 800 nonblank lines |
 |---|---:|
-| [Activity body ownership](../../packages/semantic-core/src/activity-occurrence.ts) | 568 |
+| [Activity body ownership](../../packages/semantic-core/src/activity-occurrence.ts) | 564 |
 | [IL contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 116 |
 | [Internal frontier](../../packages/semantic-core/src/internal-transition-preparation.ts) | 686 |
 | [Runtime dispatch](../../packages/semantic-core/src/semantic-process-runtime.ts) | 48 |

@@ -23,6 +23,8 @@ import {
   SemanticOperationKind,
   SemanticOriginKind,
   activityOccurrenceForAttachedTimer,
+  activityBodyScopeClaims,
+  activityBodyTaskClaims,
   attachedTimerWaits,
   applyInternalOperation,
   applyStimulus,
@@ -673,4 +675,18 @@ test("a same-shaped Message handler cannot masquerade as an attached Timer", () 
 
   assert.equal(activityOccurrenceForAttachedTimer([messageOnly], timerId), undefined);
   assert.deepEqual(attachedTimerWaits(messageOnly, [{ id: timerId }]), []);
+});
+
+
+test("body claims preserve their identity domain, order and multiplicity", () => {
+  const scope = { processInstanceId: "same", definitionScopeId: "body", activation: 3 };
+  const task = { processInstanceId: "same", elementId: "body", activation: 3 };
+  const another = { ...task, activation: 4 };
+  const bodies = [
+    { kind: ActivityBodyKind.UserTask, task },
+    { kind: ActivityBodyKind.ParallelUserTasks, tasks: [task, another, task] },
+    { kind: ActivityBodyKind.ChildScope, scope },
+  ] as const;
+  assert.deepEqual(bodies.map(activityBodyTaskClaims), [[task], [task, another, task], []]);
+  assert.deepEqual(bodies.map(activityBodyScopeClaims), [[], [], [scope]]);
 });

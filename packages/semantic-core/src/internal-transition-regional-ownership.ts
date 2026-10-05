@@ -1,5 +1,5 @@
 import {
-  ActivityBodyKind, ActivityHandlerKind, sameActivityOccurrence,
+  activityBodyScopeClaims, activityBodyTaskClaims, ActivityHandlerKind, sameActivityOccurrence,
 } from "./activity-occurrence.js";
 import type { ActivityHandlerOccurrence, ActivityOccurrence } from "./activity-occurrence.js";
 import type { InternalRegionalSelection } from "./internal-transition-regional-preparation.js";
@@ -40,19 +40,11 @@ export function regionalOwnershipIsClosed(state: RuntimeState, selection: Intern
           !sameOccurrence(wait.id, handler.occurrence) || keep.timer(wait));
     }
   };
-  const bodySurvives = ({ body }: ActivityOccurrence): boolean => {
-    switch (body.kind) {
-      case ActivityBodyKind.ChildScope:
-        return state.scopeOccurrences.every((scope) =>
-          !sameScopeOccurrence(scope.id, body.scope) || keep.scope(scope));
-      case ActivityBodyKind.UserTask:
-        return state.userTaskWaits.every((wait) =>
-          !sameOccurrence(wait.id, body.task) || keep.task(wait));
-      case ActivityBodyKind.ParallelUserTasks:
-        return body.tasks.every((task) => state.userTaskWaits.every((wait) =>
-          !sameOccurrence(wait.id, task) || keep.task(wait)));
-    }
-  };
+  const bodySurvives = ({ body }: ActivityOccurrence): boolean =>
+    activityBodyScopeClaims(body).every((claim) => state.scopeOccurrences.every((scope) =>
+      !sameScopeOccurrence(scope.id, claim) || keep.scope(scope))) &&
+    activityBodyTaskClaims(body).every((task) => state.userTaskWaits.every((wait) =>
+      !sameOccurrence(wait.id, task) || keep.task(wait)));
   // RSI-OWN-01 covers the record's owner independently of its body and attached handlers.
   const ownerSurvives = ({ owner }: ActivityOccurrence): boolean =>
     state.scopeOccurrences.every((scope) => !sameScopeOccurrence(scope.id, owner) || keep.scope(scope));

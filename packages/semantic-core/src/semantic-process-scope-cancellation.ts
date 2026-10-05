@@ -12,7 +12,7 @@ import {
   removeCalledProcessSubtreesForCallers,
 } from "./semantic-process-call-runtime.js";
 import {
-  ActivityBodyKind,
+  activityBodyScopeClaims,
   ActivityHandlerKind,
   attachedTimerOccurrences,
   sameActivityOccurrence,
@@ -221,8 +221,8 @@ export function scopeCancellationWithdrawnActivities(
     region.some(({ id }) => sameScopeOccurrence(id, owner));
   return state.activityOccurrences.filter(({ owner, body }) =>
     contains(owner) ||
-    (body.kind === ActivityBodyKind.ChildScope && contains(body.scope) &&
-      !(retainRoot && sameScopeOccurrence(body.scope, root.id)))
+    activityBodyScopeClaims(body).some((scope) => contains(scope) &&
+      !(retainRoot && sameScopeOccurrence(scope, root.id)))
   );
 }
 

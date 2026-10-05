@@ -232,7 +232,7 @@ The 800-nonblank-line soft target is the extraction threshold and 1,200 lines th
 |---|---:|---|
 | [TypeScript Program contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 116 | add only the optional declaration reference; extract before crossing 800 |
 | [TypeScript RuntimeState](../../packages/semantic-core/src/semantic-process-state.ts) | 344 | add only the optional collection reference; new types live elsewhere |
-| [TypeScript well-formedness](../../packages/semantic-core/src/runtime-state-well-formedness.ts) | 28 | add one delegated validator hook; extract before crossing 800 |
+| [TypeScript well-formedness](../../packages/semantic-core/src/runtime-state-well-formedness.ts) | 53 | add one delegated validator hook; extract before crossing 800 |
 | [TypeScript scope runtime](../../packages/semantic-core/src/semantic-process-scope-runtime.ts) | 532 | route normal root disposal only |
 | [TypeScript called-Process runtime](../../packages/semantic-core/src/semantic-process-call-runtime.ts) | 363 | remove owner-keyed records with a called-instance subtree even though declaring Programs exclude Call operations |
 | [TypeScript scope cancellation](../../packages/semantic-core/src/semantic-process-scope-cancellation.ts) | 555 | remove owner-keyed records with a cancelled region even though declaring Programs exclude cancellation |

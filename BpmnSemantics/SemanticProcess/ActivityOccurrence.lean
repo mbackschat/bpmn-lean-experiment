@@ -106,6 +106,17 @@ theorem activityIdentityIssuingDiscipline_insertActivityOccurrence
   · intro candidate present
     exact activityIdentityAdmittedAfter_of_mem present
 
+/-- Every exact User Task identity one Activity body claims. -/
+def activityBodyTaskClaims : ActivityBody → List OccurrenceId
+  | .userTask task => [task]
+  | .parallelUserTasks first rest => first :: rest
+  | .childScope _ => []
+
+/-- Every exact child-scope identity one Activity body claims. -/
+def activityBodyScopeClaims : ActivityBody → List ScopeOccurrenceId
+  | .childScope scope => [scope]
+  | .userTask _ | .parallelUserTasks .. => []
+
 /-- The task occurrence a record's body names, when its body is a task. -/
 def activityBodyTask? (record : ActivityOccurrence) : Option OccurrenceId :=
   match record.body with
