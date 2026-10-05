@@ -6,6 +6,8 @@ The private [mixed-task control-flow profile](../../docs/capsules/MIXED-TASK-CON
 
 The [invoice Activity example](runner/examples/invoice-effect-activities.ts) implements the existing caller-supplied `EffectActivityImplementations` contract outside the test-probe dispatcher. Pass `createInvoiceEffectActivities()` to the external Worker's Activity argument: `invoiceValidator` reads one string `payload` and returns `valid` or `rework`; `invoiceClassifier` accepts `valid` and returns `standard`, each in local `result`. For the business Error example, pass `createInvoiceRecoveryEffectActivities()` instead: its `invoiceValidator` returns `REVIEW_REQUIRED` for the example status `missing-reference`, while `policyChecker` returns that Error for `policy-review`; other string statuses return `valid`. These are separate caller-selected example policies, not engine rules. Unknown bindings and malformed input fail explicitly. These pure example rules need no external deduplication store; an integration with external writes must honor the supplied idempotency key. This example does not open the private serial/mixed profiles or establish public whole-process acceptance.
 
+Private [Call data recovery evidence](../../docs/capsules/CALL-ACTIVITY-DATA-BOUNDARIES-PROPOSAL.md#private-hosting-evidence) covers supplier input/output isolation, Worker replacement, rollover, termination and replay. Public start remains refused pending review and registration.
+
 ## What you can do
 
 Run an admitted BPMN Process against an existing Temporal service, observe current semantic waits, submit occurrence-bound commands, and recover or replay the durable execution through the same product boundary.

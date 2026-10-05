@@ -16,6 +16,7 @@ export {
 export * from "./activity-data-output-contract.js";
 export * from "./call-data-contract.js";
 export * from "./call-data-admission.js";
+export { callDataStateIsValid } from "./call-data-state-validation.js";
 export * from "./interrupting-message-event-subprocess-contract.js";
 export * from "./interrupting-message-event-subprocess-admission.js";
 export * from "./interrupting-message-event-subprocess-program-admission.js";

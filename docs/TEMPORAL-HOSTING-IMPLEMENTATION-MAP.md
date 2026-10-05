@@ -6,7 +6,7 @@ This detail map owns exact current Product 1 protocol, client, Workflow, Worker,
 
 [Private MI restoration](capsules/SEQUENTIAL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#implementation-progress) passes; qualification remains open.
 
-Private [serial/mixed recovery witnesses](capsules/SERIAL-BUSINESS-TASK-COMPOSITION-PROPOSAL.md#retained-verification-evidence) retain an installed-SDK Query failure and passing 856-test private-Core diagnostic. Private [business Error hosting evidence](capsules/MIXED-TASK-BUSINESS-ERROR-PROPOSAL.md#implementation-progress) covers recovery, continuation, replacement, E1/E2, replay and technical-failure separation; production admission and closure remain open. The same record owns the diagnosed 23-byte Multi-Instance serialization refresh; capacity bounds are unchanged.
+Private [serial/mixed recovery witnesses](capsules/SERIAL-BUSINESS-TASK-COMPOSITION-PROPOSAL.md#retained-verification-evidence) retain installed-SDK failures and private-Core diagnostics. Private [business Error hosting evidence](capsules/MIXED-TASK-BUSINESS-ERROR-PROPOSAL.md#implementation-progress) covers recovery, continuation, replacement, E1/E2, replay and technical-failure separation; production admission and closure remain open. The same record owns the diagnosed 23-byte Multi-Instance serialization refresh; capacity bounds are unchanged.
 
 Disposable mutation probes isolate queues by Workflow ID. [Lifecycle regressions](../packages/temporal-adapter/testkit/test/bypass-worker-startup.test.ts) cover both runners: late Workers shut down, start failures join shutdown, and trace-termination failures cannot skip it. Normal queue matching, hosting and timeouts are unchanged.
 
@@ -72,7 +72,7 @@ Transaction protocol/admission boundary: [`implementation-status-owner:ENGINE-SE
 
 ### Temporal adapter
 
-- [Private scalar Calls](capsules/CALL-ACTIVITY-DATA-BOUNDARIES-PROPOSAL.md#temporal-hosting-and-refinement-preflight): typed host refusal.
+- [Private scalar Calls](capsules/CALL-ACTIVITY-DATA-BOUNDARIES-PROPOSAL.md#private-hosting-evidence): recovery/replay passes; public refusal remains.
 
 - One semantic-lifetime Workflow receives start and admitted Semantic Process program
 - handle-free `started | rejected` production start after semantic/host admission; success exposes only Process-instance ID

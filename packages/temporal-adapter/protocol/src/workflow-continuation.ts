@@ -8,6 +8,7 @@ import {
   enabledInternalOperationCount,
   isCompensationActivityRetention,
   isGateAdmissibleRuntimeState,
+  callDataStateIsValid,
   sequentialScopeCheckpointValid,
   isCompensationHandlerEffectWait,
   isCompensationParentContextRetention,
@@ -207,6 +208,7 @@ export function requireBpmnWorkflowContinuationStateV1(
     throw new TypeError("RuntimeState is not one resumable stable checkpoint");
   }
   if (!isGateAdmissibleRuntimeState(program, processInstanceId, value) ||
+    !callDataStateIsValid(program, value) ||
     !sequentialScopeCheckpointValid(program, value) ||
     !recoveredTimeIsBelowEveryLiveDeadline(value)) {
     throw new TypeError("RuntimeState is not one representable committed state");
